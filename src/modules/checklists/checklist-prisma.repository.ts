@@ -38,6 +38,7 @@ type PrismaModelDelegate = {
   findFirst(args: unknown): Promise<unknown | null>;
   create(args: unknown): Promise<unknown>;
   update(args: unknown): Promise<unknown>;
+  updateMany(args: unknown): Promise<unknown>;
   deleteMany(args: unknown): Promise<unknown>;
   createMany(args: unknown): Promise<unknown>;
   upsert?(args: unknown): Promise<unknown>;
@@ -173,14 +174,84 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    // CHECKLIST P1 PR-02c (ALTA da junta) — PRESERVA a identidade dos componentes.
+    //
+    // O caminho anterior era `deleteMany` + `create` de TODOS os componentes: cada Salvar
+    // rotacionava os UUIDs, mesmo quando nada de estrutura mudava. Provado contra o Postgres:
+    // salvar só o NOME do modelo já trocava `id` dos dois componentes (componentKey sobrevivia).
+    //
+    // Por que isso perdia trabalho de campo: `checklist_run_answers.component_id` referencia o
+    // componente com `onDelete: Restrict`. Um técnico offline que respondeu com o id ANTIGO tem a
+    // resposta recusada para sempre quando sincroniza (o componente não existe mais); e um modelo
+    // que já tem resposta nem consegue ser salvo — o `deleteMany` estoura P2003 cru.
+    //
+    // Agora a reconciliação é por `component_key` (a chave ESTÁVEL, que já sobrevivia):
+    //   · chave que continua → UPDATE no lugar (o `id` permanece, respostas seguem válidas);
+    //   · chave nova → CREATE;
+    //   · chave removida → DELETE (e aqui o Restrict é CORRETO: apagar um componente respondido
+    //     deve falhar; o serviço traduz para 409 em vez de vazar o erro cru do Postgres).
     if (data.components) {
-      await this.client.checklistTemplateComponent.deleteMany({
-        where: {
-          tenant_id: data.tenantId,
-          template_id: data.checklistId,
-        },
-      });
+      const desired = data.components.map((component, index) => ({
+        componentKey: component.componentKey ?? `${component.type}_${index + 1}`,
+        type: component.type,
+        label: component.label,
+        required: component.required,
+        orderIndex: component.orderIndex ?? index,
+        config: component.config,
+        validationRules: component.validationRules,
+        visibilityRules: component.visibilityRules,
+      }));
+
+      const desiredKeys = new Set(desired.map((component) => component.componentKey));
+      const currentKeys = new Set(existing.components.map((component) => component.componentKey));
+
+      const removedKeys = [...currentKeys].filter((key) => !desiredKeys.has(key));
+      if (removedKeys.length > 0) {
+        await this.client.checklistTemplateComponent.deleteMany({
+          where: {
+            tenant_id: data.tenantId,
+            template_id: data.checklistId,
+            component_key: { in: removedKeys },
+          },
+        });
+      }
+
+      for (const component of desired) {
+        if (currentKeys.has(component.componentKey)) {
+          await this.client.checklistTemplateComponent.updateMany({
+            where: {
+              tenant_id: data.tenantId,
+              template_id: data.checklistId,
+              component_key: component.componentKey,
+            },
+            data: {
+              type: component.type,
+              label: component.label,
+              required: component.required,
+              order_index: component.orderIndex,
+              config: component.config,
+              validation_rules: component.validationRules,
+              visibility_rules: component.visibilityRules,
+            },
+          });
+        }
+      }
     }
+
+    const componentsToCreate = data.components
+      ? data.components
+          .map((component, index) => ({
+            component_key: component.componentKey ?? `${component.type}_${index + 1}`,
+            type: component.type,
+            label: component.label,
+            required: component.required,
+            order_index: component.orderIndex ?? index,
+            config: component.config,
+            validation_rules: component.validationRules,
+            visibility_rules: component.visibilityRules,
+          }))
+          .filter((component) => !existing.components.some((current) => current.componentKey === component.component_key))
+      : [];
 
     const record = await this.client.checklistTemplate.update({
       where: {
@@ -192,24 +263,18 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       data: {
         ...(data.name ? { name: data.name } : {}),
         ...(data.description !== undefined ? { description: data.description } : {}),
+        // CHECKLIST P1 PR-02c (P-CHK-PATCH-SEM-TYPE) — a coluna `type` ja existia em
+        // `checklist_templates` (nao ha migration aqui); faltava so grava-la no update.
+        ...(data.type ? { type: data.type } : {}),
         ...(data.status ? { status: data.status } : {}),
         ...(data.schema ? { schema: data.schema } : {}),
         updated_by: data.actorUserId,
-        ...(data.components
+        ...(componentsToCreate.length > 0
           ? {
               components: {
-                // P-CHK-TEMPLATE-PRISMA-V7 — mesmo motivo do createTemplate: `tenant_id` é inferido do template pai
-                // (relation-scalar compartilhado template/tenant); passá-lo explícito quebra no runtime do Prisma v7.
-                create: data.components.map((component, index) => ({
-                  component_key: component.componentKey ?? `${component.type}_${index + 1}`,
-                  type: component.type,
-                  label: component.label,
-                  required: component.required,
-                  order_index: component.orderIndex ?? index,
-                  config: component.config,
-                  validation_rules: component.validationRules,
-                  visibility_rules: component.visibilityRules,
-                })),
+                // P-CHK-TEMPLATE-PRISMA-V7 — `tenant_id` é inferido do template pai (relation-scalar
+                // compartilhado template/tenant); passá-lo explícito quebra no runtime do Prisma v7.
+                create: componentsToCreate,
               },
             }
           : {}),

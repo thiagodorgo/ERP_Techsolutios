@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Ban,
   ChevronDown,
   ChevronLeft,
   ChevronUp,
@@ -10,6 +11,7 @@ import {
   Lock,
   Plus,
   RefreshCcw,
+  RotateCcw,
   Save,
   Send,
   Smartphone,
@@ -29,13 +31,16 @@ import {
   CHECKLIST_TYPES,
   checklistStatusLabel,
   checklistTypeLabel,
+  resolveChecklistComponentDefaultConfig,
   resolveChecklistComponentTypeDescription,
   resolveChecklistComponentTypeLabel,
 } from "../checklist.constants";
 import {
   addEditorComponent,
   addEditorSection,
-  componentHelpText,
+  applyChecklistConfigChange,
+  checklistPublishBlockers,
+  checklistSaveBlockers,
   componentSectionIndex,
   componentsInSection,
   buildUpdateInputFromEditorDraft,
@@ -45,13 +50,14 @@ import {
   editorFieldChips,
   editorSectionCount,
   moveEditorComponent,
+  publishButtonState,
   canRemoveEditorSection,
   removeEditorComponent,
   removeEditorSection,
   renameEditorSection,
   updateEditorComponent,
 } from "../checklist-editor.model";
-import type { ChecklistEditorComponent, ChecklistEditorDraft } from "../checklist-editor.model";
+import type { ChecklistConfigChange, ChecklistEditorComponent, ChecklistEditorDraft } from "../checklist-editor.model";
 import {
   getTenantChecklist,
   listTenantChecklistComponents,
@@ -59,19 +65,23 @@ import {
   updateTenantChecklist,
 } from "../checklist.service";
 import { CHECKLIST_STATUS_TONE, resolveChecklistComponentTile } from "../checklist-tiles";
+import { ChecklistFieldInspector } from "../components/ChecklistFieldInspector";
 import { ChecklistToast, useChecklistToast } from "../components/ChecklistToast";
-import type { TenantChecklist, TenantChecklistComponentCatalogItem } from "../types";
+import type { TenantChecklist, TenantChecklistComponentCatalogItem, TenantChecklistStatus } from "../types";
 
-// CHECKLIST P1 PR-02b — o EDITOR de "Modelos de Checklist" em rota própria
+// CHECKLIST P1 PR-02b/02c — o EDITOR de "Modelos de Checklist" em rota própria
 // (/administrator/checklists/:checklistId), recriado sobre o protótipo do dono
 // (Modelos de Checklist.dc.html, bloco scEditor): header com nome inline + situação + dirty,
 // abas Estrutura/Aplicabilidade, paleta 264px + canvas com SEÇÕES + inspector 336px, modal
 // "Sair sem salvar?" e aba Aplicabilidade estática ("Em breve").
 //
-// FORA DESTE PR (não fingir que existe): inspector TIPADO por tipo de campo e Publicar são o
-// PR-02c; a pré-visualização em frame de telefone é o PR-02d. Os dois botões existem na
-// composição do header, DESABILITADOS e rotulados "Disponível em breve" — nunca clicáveis
-// prometendo o que ainda não faz.
+// PR-02c acrescenta: inspector TIPADO por tipo de campo (ChecklistFieldInspector), guard-rails de
+// publicação espelhando o validator do backend, o seletor de TIPO ligado (o PATCH passou a aceitar
+// `type` — P-CHK-PATCH-SEM-TYPE), guarda de saída suja para QUALQUER link interno, confirmação de
+// edição concorrente (P-CHK-PATCH-SEM-LOCK) e a ação de Inativar/Reativar no editor.
+//
+// FORA DESTE PR (não fingir que existe): a pré-visualização em frame de telefone é o PR-02d — o
+// botão existe na composição do header, DESABILITADO e marcado "Em breve".
 
 export const CHECKLIST_LIST_PATH = "/administrator/checklists";
 const CHECKLIST_RUNS_PATH = "/operations/checklists";
@@ -137,10 +147,13 @@ export function ChecklistEditorPage({
   initialChecklist,
   initialComponents,
   initialTab,
+  initialSelectedComponentKey,
 }: {
   readonly initialChecklist?: TenantChecklist;
   readonly initialComponents?: readonly TenantChecklistComponentCatalogItem[];
   readonly initialTab?: EditorTab;
+  /** Costura de teste: seleciona o campo pela CHAVE (o id é regenerado pelo backend a cada PATCH). */
+  readonly initialSelectedComponentKey?: string;
 } = {}) {
   const { checklistId } = useParams<{ checklistId: string }>();
   const { session } = useAuth();
@@ -163,10 +176,18 @@ export function ChecklistEditorPage({
     initialChecklist ? createEditorDraftFromChecklist(initialChecklist) : null,
   );
   const [catalog, setCatalog] = useState<readonly TenantChecklistComponentCatalogItem[]>(initialComponents ?? []);
-  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(
+    initialSelectedComponentKey && initialChecklist
+      ? (initialChecklist.components.find((component) => component.componentKey === initialSelectedComponentKey)?.id ?? null)
+      : null,
+  );
   const [tab, setTab] = useState<EditorTab>(initialTab ?? "estrutura");
   const [dirty, setDirty] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
+  /** Para onde o usuário tentou ir com o rascunho sujo — `null` = a lista de modelos (botão Voltar). */
+  const [pendingExitPath, setPendingExitPath] = useState<string | null>(null);
+  /** P-CHK-PATCH-SEM-LOCK: versão do servidor que mudou embaixo desta sessão de edição. */
+  const [conflict, setConflict] = useState<TenantChecklist | null>(null);
   const [loading, setLoading] = useState(initialChecklist === undefined);
   const [saving, setSaving] = useState(false);
   const visibility = editorActionVisibility({ canUpdate, canReadRuns, busy: saving });
@@ -183,8 +204,7 @@ export function ChecklistEditorPage({
   }, [apiContext, checklistId]);
 
   // Junta PR-02b (MÉDIA): a guarda de saída suja cobria só o botão Voltar. F5/fechar aba é a
-  // saída mais barata de cobrir e a mais fácil de acontecer sem querer. O bloqueio GLOBAL de
-  // rota (useBlocker/data-router) é requisito explícito do PR-02c.
+  // saída mais barata de cobrir e a mais fácil de acontecer sem querer.
   useEffect(() => {
     if (!dirty) return;
     const handler = (event: BeforeUnloadEvent) => {
@@ -194,6 +214,47 @@ export function ChecklistEditorPage({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
+
+  /**
+   * PR-02c — guarda de saída suja para QUALQUER link interno (sidebar, topbar, atalhos), não só o
+   * botão Voltar.
+   *
+   * LIMITAÇÃO HONESTA: `useBlocker` do react-router 7 exige um DATA ROUTER
+   * (`useDataRouterContext`) e o app monta um `BrowserRouter` clássico em `main.tsx` — migrar o
+   * roteador inteiro é mudança estrutural que este PR não tem autorização para fazer. A cobertura
+   * possível sem migrar é interceptar o CLIQUE em `<a href>` na fase de captura: o shell navega
+   * por `NavLink` (que renderiza âncora), então sidebar e topbar ficam cobertas. NÃO cobre:
+   * botão voltar/avançar do navegador e navegação PROGRAMÁTICA de outras telas (`navigate(...)`,
+   * ex.: paleta de comandos e o botão Sair) — para essas, a proteção que resta é o `beforeunload`
+   * (só recarga/fechamento) e o registro desta limitação.
+   */
+  useEffect(() => {
+    if (!dirty) return;
+
+    function onDocumentClickCapture(event: MouseEvent) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target as Element | null;
+      const anchor = typeof target?.closest === "function" ? target.closest("a[href]") : null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute("href");
+      const opensNewTab = anchor.getAttribute("target") === "_blank";
+      // Só navegação INTERNA (rota do app). Link externo/download/nova aba não perde o rascunho.
+      if (!href || opensNewTab || !href.startsWith("/") || href.startsWith("//")) return;
+      if (href === `${CHECKLIST_LIST_PATH}/${checklistId ?? ""}`) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingExitPath(href);
+      setConfirmExit(true);
+    }
+
+    document.addEventListener("click", onDocumentClickCapture, true);
+    return () => document.removeEventListener("click", onDocumentClickCapture, true);
+  }, [dirty, checklistId]);
 
   const selectedComponent = draft?.components.find((component) => component.id === selectedComponentId) ?? null;
 
@@ -243,9 +304,15 @@ export function ChecklistEditorPage({
     // Junta PR-02b (ALTA): o catálogo do backend devolve rótulo SEM acento ("Observacao",
     // "Seletor de veiculo"). Criar o campo com ele gravava a pergunta que o TÉCNICO lê no app,
     // errada e persistida. A paleta já resolvia pelo mapa local; a criação agora também.
+    // PR-02c: o mesmo vale para as OPÇÕES semeadas ("Opcao 1"/"Opcao 2") — são as respostas que o
+    // técnico lê e escolhe no aplicativo.
     const result = addEditorComponent(
       draft,
-      { ...item, label: resolveChecklistComponentTypeLabel(item.type, item.label) },
+      {
+        ...item,
+        label: resolveChecklistComponentTypeLabel(item.type, item.label),
+        defaultConfig: resolveChecklistComponentDefaultConfig(item.type, item.defaultConfig),
+      },
       targetSection,
     );
     applyDraft(result.draft);
@@ -271,18 +338,37 @@ export function ChecklistEditorPage({
    * PATCH do modelo. O backend REGENERA o id de cada componente a cada gravação (o `componentKey`
    * é que sobrevive), então a seleção é reancorada pela chave — senão o inspector "perderia" o
    * campo que o usuário acabou de configurar.
+   *
+   * `base` é o modelo do servidor usado como referência (schema-base + id). `force` pula a
+   * checagem de edição concorrente (o usuário já escolheu sobrescrever).
    */
-  async function persistDraft(): Promise<boolean> {
-    if (!apiContext || !checklist || !draft) return false;
+  async function persistDraft(options: { readonly force?: boolean; readonly base?: TenantChecklist } = {}): Promise<boolean> {
+    const target = options.base ?? checklist;
+    if (!apiContext || !target || !draft) return false;
+
+    // O backend REJEITA (400) modelo sem campo e campo de escolha sem opções — espelhado aqui para
+    // o usuário não perder o clique num erro de validação cru depois de montar o formulário todo.
+    const blockers = checklistSaveBlockers(draft);
+    if (blockers.length > 0) {
+      showToast(blockers[0], "warn");
+      return false;
+    }
 
     setSaving(true);
 
     try {
-      const saved = await updateTenantChecklist(
-        apiContext,
-        checklist.id,
-        buildUpdateInputFromEditorDraft(draft, checklist.schema),
-      );
+      // P-CHK-PATCH-SEM-LOCK (mitigação sem mudar contrato): o PATCH é last-write-wins. Antes de
+      // gravar, relê o modelo; se o `updatedAt` mudou desde a carga, alguém salvou por baixo — e a
+      // decisão (recarregar × sobrescrever) passa a ser do usuário, não um apagamento silencioso.
+      if (!options.force) {
+        const latest = await readLatestChecklist(target.id);
+        if (latest && latest.updatedAt !== target.updatedAt) {
+          setConflict(latest);
+          return false;
+        }
+      }
+
+      const saved = await updateTenantChecklist(apiContext, target.id, buildUpdateInputFromEditorDraft(draft, target.schema));
       const selectedKey = selectedComponent?.componentKey;
       const nextDraft = createEditorDraftFromChecklist(saved);
       setChecklist(saved);
@@ -300,16 +386,61 @@ export function ChecklistEditorPage({
     }
   }
 
+  /**
+   * Releitura best-effort para a guarda de concorrência. Se a leitura falhar (rede), devolve
+   * `null` e a gravação SEGUE: uma checagem opcional que falha não pode tirar do usuário a
+   * capacidade de salvar — o PATCH em si mostrará o erro real se a rede estiver fora.
+   */
+  async function readLatestChecklist(checklistIdToRead: string): Promise<TenantChecklist | null> {
+    if (!apiContext) return null;
+    try {
+      return await getTenantChecklist(apiContext, checklistIdToRead);
+    } catch {
+      return null;
+    }
+  }
+
   async function handleSave() {
     if (await persistDraft()) showToast("Modelo salvo. Publique para enviar ao aplicativo.", "ok");
   }
 
+  function handleReloadFromConflict() {
+    if (!conflict) return;
+    setChecklist(conflict);
+    setDraft(createEditorDraftFromChecklist(conflict));
+    setSelectedComponentId(null);
+    setDirty(false);
+    setConflict(null);
+    showToast("Modelo recarregado com a versão mais recente. As suas alterações não salvas foram descartadas.", "info");
+  }
+
+  async function handleOverwriteConflict() {
+    const latest = conflict;
+    setConflict(null);
+    if (!latest) return;
+    // Sobrescrever usa o schema RECÉM-lido como base: os campos são os desta sessão, mas nenhuma
+    // chave de schema que a outra pessoa gravou é derrubada por um payload obsoleto.
+    if (await persistDraft({ force: true, base: latest })) {
+      showToast("Modelo salvo por cima da versão anterior. Publique para enviar ao aplicativo.", "ok");
+    }
+  }
+
   // Junta PR-02b (ALTA): deixar Publicar desabilitado REMOVEU capacidade real do produto — o
-  // endpoint (POST /tenant/checklists/:id/publish) e o serviço já existem e funcionam. Os
-  // guard-rails de publicação (blockers por tipo) continuam sendo o PR-02c; aqui o botão publica
-  // de verdade e o backend segue como autoridade (erro real vira toast).
+  // endpoint (POST /tenant/checklists/:id/publish) e o serviço já existem e funcionam.
+  // PR-02c: guard-rails espelhando o validator + o rascunho é GRAVADO antes de publicar. Sem isso,
+  // publicar com alterações não salvas publicava a versão ANTIGA do servidor e o editor ainda
+  // sobrescrevia o rascunho com ela — perda silenciosa do trabalho na tela.
   async function handlePublish() {
     if (!apiContext || !checklist || saving) return;
+
+    const blockers = checklistPublishBlockers(draft ?? createEditorDraftFromChecklist(checklist));
+    if (blockers.length > 0) {
+      showToast(blockers[0], "warn");
+      return;
+    }
+
+    if (dirty && !(await persistDraft())) return;
+
     setSaving(true);
     try {
       const published = await publishTenantChecklist(apiContext, checklist.id);
@@ -324,22 +455,61 @@ export function ChecklistEditorPage({
     }
   }
 
-  function goToList(toastMessage?: string) {
-    navigate(CHECKLIST_LIST_PATH, toastMessage ? { state: { [CHECKLIST_TOAST_HANDOFF_KEY]: toastMessage } } : undefined);
+  /**
+   * Inativar/Reativar no editor (promessa da ata do PR-02a). Mesma chamada da lista
+   * (`updateTenantChecklist({ status })`), gate `tenant_checklists:update`. NÃO redefine o
+   * rascunho: quem tem alteração na tela não a perde por trocar a situação do modelo.
+   */
+  async function handleToggleStatus() {
+    if (!apiContext || !checklist || saving) return;
+
+    const nextStatus: TenantChecklistStatus = checklist.status === "inactive" ? "draft" : "inactive";
+    setSaving(true);
+
+    try {
+      const saved = await updateTenantChecklist(apiContext, checklist.id, { status: nextStatus });
+      setChecklist(saved);
+      showToast(
+        nextStatus === "inactive"
+          ? "Modelo inativado — não entra em novas ordens."
+          : "Modelo reativado como rascunho. Publique para enviar ao aplicativo.",
+        "ok",
+      );
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Falha ao alterar a situação do modelo.", "warn");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleBack() {
+  /** Sai do editor para `path` (ou para a lista). O toast só viaja quando o destino é a lista. */
+  function leaveEditor(path: string | null, toastMessage?: string) {
+    const destination = path ?? CHECKLIST_LIST_PATH;
+    navigate(
+      destination,
+      toastMessage && destination === CHECKLIST_LIST_PATH ? { state: { [CHECKLIST_TOAST_HANDOFF_KEY]: toastMessage } } : undefined,
+    );
+  }
+
+  /** Saída por controle do próprio editor: com rascunho sujo, confirma antes de sair. */
+  function guardedNavigate(path: string | null) {
     if (dirty) {
+      setPendingExitPath(path);
       setConfirmExit(true);
       return;
     }
-    goToList();
+    leaveEditor(path);
+  }
+
+  function handleBack() {
+    guardedNavigate(null);
   }
 
   async function handleSaveAndExit() {
+    const destination = pendingExitPath;
     setConfirmExit(false);
     // O toast não sobrevive à troca de rota — a mensagem viaja no state e a lista a exibe.
-    if (await persistDraft()) goToList("Modelo salvo.");
+    if (await persistDraft()) leaveEditor(destination, "Modelo salvo.");
   }
 
   const showSkeleton = loading && checklist === null;
@@ -364,7 +534,7 @@ export function ChecklistEditorPage({
                 <RefreshCcw size={15} aria-hidden="true" />
                 Tentar novamente
               </button>
-              <button type="button" className="ckb-ed-btn" onClick={() => goToList()}>
+              <button type="button" className="ckb-ed-btn" onClick={() => leaveEditor(null)}>
                 <ChevronLeft size={15} aria-hidden="true" />
                 Voltar para a lista de modelos
               </button>
@@ -377,6 +547,10 @@ export function ChecklistEditorPage({
 
   const statusTone = CHECKLIST_STATUS_TONE[checklist.status];
   const pendingChanges = hasChecklistPendingChanges(checklist);
+  // Guard-rails de publicação (protótipo `blockers()`, espelhando o validator do backend).
+  const publishBlockers = checklistPublishBlockers(draft);
+  const publishState = publishButtonState(publishBlockers);
+  const statusActionLabel = checklist.status === "inactive" ? "Reativar modelo" : "Inativar modelo";
 
   return (
     <div className="ckb-ed">
@@ -400,15 +574,15 @@ export function ChecklistEditorPage({
               readOnly={!canUpdate || visibility.editingFrozen}
               onChange={(event) => applyDraft({ ...draft, name: event.target.value })}
             />
-            {/* O PATCH de modelo NÃO carrega o tipo (o contrato do backend só aceita
-                name/description/status/schema/components), então o seletor mostra o tipo atual
-                sem prometer troca — ligá-lo é trabalho do PR-02c, junto do backend. */}
+            {/* PR-02c: seletor LIGADO — o PATCH passou a aceitar `type` (validator + os dois
+                repositórios; P-CHK-PATCH-SEM-TYPE resolvida). A troca entra no rascunho e vai no
+                próximo Salvar, como qualquer outra edição. */}
             <select
               className="ckb-ed-type"
               value={draft.type}
               aria-label="Tipo do modelo"
-              title="A alteração do tipo chega em breve"
-              disabled
+              disabled={!canUpdate || visibility.editingFrozen}
+              onChange={(event) => applyDraft({ ...draft, type: event.target.value as ChecklistEditorDraft["type"] })}
             >
               {CHECKLIST_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -429,6 +603,26 @@ export function ChecklistEditorPage({
           </div>
 
           <div className="ckb-ed-head-actions">
+            {/* PR-02c — promessa da ata do PR-02a: tirar de circulação um modelo é capacidade REAL
+                do backend e o lugar definitivo dela é o editor. Mesmo gate e mesma chamada da
+                lista (`updateTenantChecklist({ status })`). */}
+            {visibility.save ? (
+              <button
+                type="button"
+                className="ckb-ed-btn"
+                title={statusActionLabel}
+                aria-label={statusActionLabel}
+                onClick={() => void handleToggleStatus()}
+                disabled={saving}
+              >
+                {checklist.status === "inactive" ? (
+                  <RotateCcw size={15} aria-hidden="true" />
+                ) : (
+                  <Ban size={15} aria-hidden="true" />
+                )}
+                {statusActionLabel}
+              </button>
+            ) : null}
             {/* Junta PR-02b: controle parado marcado com o MESMO token de "parado" do protótipo
                 (pill "Em breve" #F3E8FF/#7E22CE), em vez de um cinza de disabled que não existe
                 em estado nenhum do desenho. */}
@@ -451,10 +645,17 @@ export function ChecklistEditorPage({
               </button>
             ) : null}
             {canPublish ? (
+              // Travado NÃO usa `disabled`: o protótipo mantém o botão clicável em cinza e o clique
+              // EXPLICA o bloqueio (botão desabilitado não recebe foco nem dá retorno nenhum).
               <button
                 type="button"
-                className="ckb-ed-btn ckb-ed-btn--publish"
-                title="Publicar e disponibilizar no aplicativo"
+                className={
+                  publishState.locked
+                    ? "ckb-ed-btn ckb-ed-btn--publish ckb-ed-btn--publish-locked"
+                    : "ckb-ed-btn ckb-ed-btn--publish"
+                }
+                title={publishState.title}
+                aria-disabled={publishState.locked}
                 onClick={() => void handlePublish()}
                 disabled={saving}
               >
@@ -482,14 +683,25 @@ export function ChecklistEditorPage({
               </button>
             ))}
           </div>
+          {/* Navegação PROGRAMÁTICA do próprio editor: passa pela MESMA guarda de saída suja
+              (a interceptação de clique só pega âncoras, e este controle é um botão). */}
           {visibility.runsLink ? (
-            <button type="button" className="ckb-ed-runs-link" onClick={() => navigate(CHECKLIST_RUNS_PATH)}>
+            <button type="button" className="ckb-ed-runs-link" onClick={() => guardedNavigate(CHECKLIST_RUNS_PATH)}>
               <ExternalLink size={14} aria-hidden="true" />
               Ver execuções deste modelo
             </button>
           ) : null}
         </div>
       </header>
+
+      {/* Bloqueio de publicação (protótipo): faixa âmbar logo abaixo do header, com a MESMA
+          mensagem que o Publicar carrega no title e dispara no clique. */}
+      {publishState.message ? (
+        <div className="ckb-ed-blockbar" role="status">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>{publishState.message}</span>
+        </div>
+      ) : null}
 
       {!canUpdate ? (
         <div className="ckb-readonly-banner ckb-ed-readonly-banner">
@@ -589,7 +801,7 @@ export function ChecklistEditorPage({
           </section>
 
           {visibility.inspector ? (
-            <EditorInspector
+            <ChecklistFieldInspector
               frozen={visibility.editingFrozen}
               component={selectedComponent}
               onChangeLabel={(label) => selectedComponent && applyDraft(updateEditorComponent(draft, selectedComponent.id, { label }))}
@@ -597,6 +809,9 @@ export function ChecklistEditorPage({
               onToggleRequired={() =>
                 selectedComponent &&
                 applyDraft(updateEditorComponent(draft, selectedComponent.id, { required: !selectedComponent.required }))
+              }
+              onConfigChange={(change: ChecklistConfigChange) =>
+                selectedComponent && applyDraft(applyChecklistConfigChange(draft, selectedComponent.id, change))
               }
             />
           ) : null}
@@ -607,13 +822,23 @@ export function ChecklistEditorPage({
 
       {confirmExit ? (
         <ExitConfirmDialog
-          onCancel={() => setConfirmExit(false)}
+          onCancel={() => {
+            setConfirmExit(false);
+            setPendingExitPath(null);
+          }}
           onSaveAndExit={() => void handleSaveAndExit()}
           onDiscard={() => {
+            const destination = pendingExitPath;
             setConfirmExit(false);
-            goToList();
+            setPendingExitPath(null);
+            setDirty(false);
+            leaveEditor(destination);
           }}
         />
+      ) : null}
+
+      {conflict ? (
+        <ConcurrentEditDialog onReload={handleReloadFromConflict} onOverwrite={() => void handleOverwriteConflict()} />
       ) : null}
 
       <ChecklistToast toast={toast} />
@@ -783,112 +1008,6 @@ function FieldActionButton({
 }
 
 /**
- * Inspector 336px — SÓ o básico neste PR (pergunta, ajuda e obrigatoriedade). As configurações
- * TIPADAS por tipo de campo (opções da escolha, mín./máx. de fotos, avarias…) são o PR-02c.
- */
-function EditorInspector({
-  component,
-  onChangeLabel,
-  onChangeHelp,
-  onToggleRequired,
-  frozen = false,
-}: {
-  readonly component: ChecklistEditorComponent | null;
-  readonly onChangeLabel: (label: string) => void;
-  readonly onChangeHelp: (help: string) => void;
-  readonly onToggleRequired: () => void;
-  /** Congela a edição enquanto o modelo está sendo gravado (junta PR-02b, ALTA). */
-  readonly frozen?: boolean;
-}) {
-  const tile = component ? resolveChecklistComponentTile(component.type) : null;
-  const TileIcon = tile?.Icon;
-
-  return (
-    <section className="ckb-ed-col">
-      <div className="ckb-ed-col-head ckb-ed-col-head--stack">
-        <div>
-          <div className="ckb-ed-col-title">{component ? "Configurações do campo" : "Configurações"}</div>
-          <div className="ckb-ed-col-sub">
-            {component ? "O que o técnico vê e o que é obrigatório" : "Selecione um campo no formulário"}
-          </div>
-        </div>
-      </div>
-      <div className="ckb-ed-insp-body">
-        {!component ? (
-          <div className="ckb-ed-insp-empty">
-            <div className="ckb-ed-insp-empty-tile" aria-hidden="true">
-              <HelpCircle size={22} />
-            </div>
-            <div className="ckb-ed-insp-empty-title">Nenhum campo selecionado</div>
-            <p className="ckb-ed-insp-empty-sub">
-              Clique em um campo do formulário para configurar o texto da pergunta, obrigatoriedade e regras.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="ckb-ed-insp-card">
-              <span className="ckb-ed-insp-tile" style={{ background: tile!.bg, color: tile!.fg }} aria-hidden="true">
-                {TileIcon ? <TileIcon size={16} /> : null}
-              </span>
-              <span>
-                <span className="ckb-ed-insp-type">{resolveChecklistComponentTypeLabel(component.type, component.type)}</span>
-                <span className="ckb-ed-insp-desc">
-                  {resolveChecklistComponentTypeDescription(component.type, "")}
-                </span>
-              </span>
-            </div>
-
-            <div className="ckb-ed-group">
-              <label className="ckb-ed-label" htmlFor="ckb-insp-label">
-                Pergunta exibida ao técnico
-              </label>
-              <input
-                id="ckb-insp-label"
-                className="ckb-ed-input"
-                value={component.label}
-                placeholder="Ex.: Fotos do veículo na coleta"
-                readOnly={frozen}
-                onChange={(event) => onChangeLabel(event.target.value)}
-              />
-            </div>
-
-            <div className="ckb-ed-group">
-              <label className="ckb-ed-label" htmlFor="ckb-insp-help">
-                Texto de ajuda <span className="ckb-ed-label-soft">(opcional)</span>
-              </label>
-              <textarea
-                id="ckb-insp-help"
-                className="ckb-ed-textarea"
-                value={componentHelpText(component)}
-                placeholder="Instrução curta que aparece abaixo da pergunta no aplicativo"
-                readOnly={frozen}
-                onChange={(event) => onChangeHelp(event.target.value)}
-              />
-            </div>
-
-            <button
-              type="button"
-              role="switch"
-              aria-checked={component.required}
-              className={component.required ? "ckb-ed-toggle ckb-ed-toggle--on" : "ckb-ed-toggle"}
-              onClick={onToggleRequired}
-            >
-              <span className="ckb-ed-switch" aria-hidden="true">
-                <span className="ckb-ed-switch-knob" />
-              </span>
-              <span>
-                <span className="ckb-ed-toggle-title">Resposta obrigatória</span>
-                <span className="ckb-ed-toggle-sub">O técnico não conclui o checklist sem preencher</span>
-              </span>
-            </button>
-          </>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/**
  * Aba Aplicabilidade — ESTÁTICA e assumidamente "Em breve" (D-007: as duas linhas são exemplo
  * ilustrativo inerte, nunca dado real da organização). A aplicabilidade de verdade é a
  * sub-sequência do PR-04 (D-CHK-P1-APPLICABILITY).
@@ -1023,6 +1142,50 @@ export function ExitConfirmDialog({
           </button>
           <button type="button" className="ckb-ed-modal-btn ckb-ed-modal-btn--danger" onClick={onDiscard}>
             Descartar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * P-CHK-PATCH-SEM-LOCK — mitigação de última-gravação-vence SEM mudar o contrato: o editor relê o
+ * modelo antes de gravar e, se ele mudou desde a carga, entrega a decisão ao usuário em vez de
+ * apagar o trabalho alheio em silêncio. Exportado porque a cópia é o contrato desta guarda (o
+ * estado que a abre depende de rede + interação, que o SSR não executa).
+ *
+ * NÃO é optimistic locking de verdade (o `If-Match`/versão no contrato é proposta para junta): a
+ * janela entre a releitura e o PATCH continua existindo, apenas encolhe de "a sessão inteira de
+ * edição" para "o tempo de uma requisição".
+ */
+export function ConcurrentEditDialog({
+  onReload,
+  onOverwrite,
+}: {
+  readonly onReload: () => void;
+  readonly onOverwrite: () => void;
+}) {
+  return (
+    <div className="ckb-ed-modal-overlay">
+      <div className="ckb-ed-modal" role="dialog" aria-modal="true" aria-labelledby="ckb-conflict-title">
+        <div className="ckb-ed-modal-tile" aria-hidden="true">
+          <AlertTriangle size={22} />
+        </div>
+        <div className="ckb-ed-modal-title" id="ckb-conflict-title">
+          Outra pessoa alterou este modelo
+        </div>
+        <p className="ckb-ed-modal-text">
+          Este modelo foi alterado por outra pessoa depois que você o abriu. Recarregar traz a versão mais recente e
+          descarta as suas alterações não salvas; sobrescrever mantém as suas e substitui as dela.
+        </p>
+        <div className="ckb-ed-modal-actions">
+          {/* Foco na saída CONSERVADORA: recarregar não destrói o trabalho de quem já salvou. */}
+          <button type="button" className="ckb-ed-modal-btn" autoFocus onClick={onReload}>
+            Recarregar o modelo
+          </button>
+          <button type="button" className="ckb-ed-modal-btn ckb-ed-modal-btn--danger" onClick={onOverwrite}>
+            Sobrescrever mesmo assim
           </button>
         </div>
       </div>

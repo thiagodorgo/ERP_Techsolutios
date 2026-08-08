@@ -138,12 +138,34 @@ const WRITE_PERMISSIONS = [
   "checklist_runs:read",
 ] as const;
 
+/** Modelo de 1 campo do tipo pedido — base dos 10 casos do inspector tipado (PR-02c). */
+function modeloComCampo(type: string, config: Record<string, unknown> = {}, label = "Campo em teste"): AnyChecklist {
+  return {
+    ...MODELO,
+    schema: { sections: ["Formulário"] },
+    components: [
+      {
+        id: "cmp-tipado",
+        componentKey: "campo_tipado",
+        type,
+        label,
+        required: false,
+        orderIndex: 0,
+        config: { sectionIndex: 0, ...config },
+        validationRules: {},
+        visibilityRules: {},
+      },
+    ],
+  } as unknown as AnyChecklist;
+}
+
 async function renderEditor(
   permissions: readonly string[],
   options: {
     readonly checklist?: AnyChecklist;
     readonly catalog?: readonly AnyCatalogItem[];
     readonly tab?: "estrutura" | "aplicabilidade";
+    readonly selectedComponentKey?: string;
   } = {},
 ): Promise<string> {
   process.env.VITE_USE_MOCKS = "true";
@@ -173,6 +195,7 @@ async function renderEditor(
                     initialChecklist={options.checklist ?? MODELO}
                     initialComponents={options.catalog ?? CATALOGO}
                     initialTab={options.tab}
+                    initialSelectedComponentKey={options.selectedComponentKey}
                   />
                 }
               />
@@ -199,17 +222,19 @@ test("editor: header verbatim do protótipo (voltar, nome, tipo, situação, alt
   // Situação + pill de pendência (updatedAt > publishedAt no payload real).
   assert.match(html, /Publicado/);
   assert.match(html, /Alterações não publicadas/);
-  // Ações do header — Salvar ligado; Pré-visualizar/Publicar existem na composição, DESABILITADOS.
+  // Ações do header — Salvar/Publicar ligados; só Pré-visualizar (PR-02d) segue parado.
   assert.match(html, /Salvar/);
   assert.match(html, /Pré-visualizar/);
   assert.match(html, /Publicar/);
-  // Junta PR-02b: Publicar foi LIGADO (o endpoint já existia — deixá-lo desabilitado removia
-  // capacidade real). Pré-visualizar (PR-02d) e o tipo (backend descarta no PATCH, P-CHK-PATCH-SEM-TYPE)
-  // seguem parados, marcados com o selo "Em breve" do protótipo em vez de um cinza inventado.
   assert.match(html, /title="Publicar e disponibilizar no aplicativo"/);
   assert.match(html, /ckb-ed-soon-pill/);
   assert.match(html, /title="Pré-visualização chega em breve"/);
-  assert.match(html, /title="A alteração do tipo chega em breve"/);
+  // PR-02c: o seletor de TIPO ficou LIGADO (o PATCH passou a aceitar `type`) — nada de "Em breve"
+  // nele, e o <select> não pode voltar desabilitado.
+  assert.doesNotMatch(html, /title="A alteração do tipo chega em breve"/);
+  assert.match(html, /<select class="ckb-ed-type" aria-label="Tipo do modelo">/);
+  // PR-02c: Inativar reposto no editor (promessa da ata do PR-02a).
+  assert.match(html, /aria-label="Inativar modelo"/);
   // Abas + link de execuções (gate próprio checklist_runs:read).
   assert.match(html, /Estrutura do formulário/);
   assert.match(html, /Aplicabilidade/);
@@ -290,6 +315,8 @@ test("editor (somente-leitura): banner verbatim, ZERO escrita — sem paleta, se
   assert.doesNotMatch(html, /Nova seção/);
   assert.doesNotMatch(html, /Mover para cima|Mover para baixo|Duplicar campo|Remover campo/);
   assert.doesNotMatch(html, /Publicar/);
+  // PR-02c: a ação de situação (Inativar/Reativar) é escrita — não aparece para quem só lê.
+  assert.doesNotMatch(html, /Inativar modelo|Reativar modelo/);
   // O inspector inteiro não monta (consulta pura — mesma decisão da junta do PR-02a para a ponte).
   assert.doesNotMatch(html, /Configurações do campo|Nenhum campo selecionado|ckb-ed-toggle/);
   assert.doesNotMatch(html, /Pergunta exibida ao técnico|Texto de ajuda/);
@@ -541,4 +568,397 @@ test("criação pela paleta usa o rótulo PT-BR do mapa local (nunca a chave cru
   const field = created.draft.components[0]!;
   assert.equal(field.label, "Observação");
   assert.doesNotMatch(field.label, /Observacao/);
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// CHECKLIST P1 PR-02c — inspector TIPADO (10 casos), guard-rails de publicação, tipo ligado,
+// guarda de concorrência e Inativar/Reativar no editor.
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Um caso por TIPO de campo: o inspector precisa montar o formulário CERTO — e só ele. Cada caso
+ * declara o que TEM de aparecer e o que NÃO pode aparecer (senão "renderiza tudo sempre" passaria).
+ */
+const CASOS_INSPECTOR: readonly {
+  readonly tipo: string;
+  readonly config?: Record<string, unknown>;
+  readonly presentes: readonly RegExp[];
+  readonly ausentes?: readonly RegExp[];
+  /** Frases com interpolação (o SSR do React separa `{valor}` com `<!-- -->`): conferidas no TEXTO. */
+  readonly visiveis?: readonly RegExp[];
+}[] = [
+  {
+    tipo: "single_choice",
+    config: { options: ["Sim", "Não"] },
+    presentes: [
+      /Adicionar opção/,
+      /Deixe as respostas mais comuns no topo — em campo, com luva, cada toque conta\./,
+      /aria-label="Texto da opção 1"/,
+      /aria-label="Subir a opção 2"/,
+      /aria-label="Remover a opção 1"/,
+    ],
+    // "Mínimo de seleções" é exclusivo da múltipla escolha.
+    ausentes: [/Mínimo de seleções/, /Mínimo de fotos/],
+  },
+  {
+    tipo: "multi_choice",
+    config: { options: ["Estepe"], minSelected: 2 },
+    presentes: [/Adicionar opção/, /Mínimo de seleções/, /id="ckb-insp-minsel"/, /value="2"/],
+    ausentes: [/Máximo de fotos/],
+  },
+  {
+    // Escolha SEM opções: o aviso âmbar do protótipo, verbatim.
+    tipo: "single_choice",
+    config: { options: [] },
+    presentes: [
+      /Adicione ao menos 1 opção — sem opções este campo impede a publicação do modelo\./,
+      /ckb-ed-insp-warn/,
+    ],
+  },
+  {
+    tipo: "photo_upload",
+    config: { minPhotos: 4, maxPhotos: 8 },
+    presentes: [/Mínimo de fotos/, /Máximo de fotos/],
+    visiveis: [/O aplicativo mostra 4 espaços de foto e só libera a conclusão quando todos estiverem preenchidos\./],
+    ausentes: [/Adicionar opção/, /Tipos de avaria/],
+  },
+  {
+    tipo: "vehicle_selector",
+    config: { vehicleTypes: ["car", "truck"] },
+    presentes: [
+      /Tipos de veículo aceitos/,
+      /Carro/,
+      /Moto/,
+      /Caminhão/,
+      /Utilitário/,
+      /Imagem de referência da vistoria/,
+      /Silhueta padrão por tipo de veículo/,
+      /Enviar imagem própria — em breve/,
+    ],
+    ausentes: [/Tipos de avaria que o técnico pode marcar/],
+  },
+  {
+    tipo: "damage_map",
+    config: { markerTypes: ["scratch"], requireDescription: true },
+    presentes: [
+      /Tipos de avaria que o técnico pode marcar/,
+      /Risco/,
+      /Amassado/,
+      /Quebrado/,
+      /Faltante/,
+      /Outro/,
+      /Exigir descrição em cada avaria/,
+      /Protege a organização em disputas sobre o estado do veículo/,
+    ],
+    ausentes: [/Tipos de veículo aceitos/],
+  },
+  {
+    tipo: "observation",
+    config: { multiline: true, maxLength: 300 },
+    presentes: [/Texto longo/, /Campo com várias linhas em vez de uma só/, /Limite de caracteres/, /id="ckb-insp-maxlen"/],
+    ausentes: [/Adicionar opção/],
+  },
+  {
+    tipo: "signature",
+    config: { requireName: true },
+    presentes: [/Exigir nome de quem assina/, /Nome completo registrado junto da assinatura/],
+    ausentes: [/Exigir observação na ciência/],
+  },
+  {
+    tipo: "acknowledgement",
+    config: {},
+    presentes: [/Exigir observação na ciência/, /Quem dá ciência precisa justificar por escrito/],
+    ausentes: [/Exigir nome de quem assina/],
+  },
+  {
+    tipo: "before_after",
+    config: {},
+    presentes: [/Exigir os dois estágios/, /Antes e depois precisam ser registrados/],
+    ausentes: [/Comparar com/],
+  },
+  {
+    tipo: "comparison",
+    config: { compareWith: "related_delivery" },
+    presentes: [
+      /Comparar com/,
+      /Vistoria de coleta relacionada/,
+      /Vistoria de entrega relacionada/,
+      /O aplicativo mostra lado a lado as fotos e avarias da vistoria escolhida\./,
+    ],
+    ausentes: [/Exigir os dois estágios/],
+  },
+];
+
+for (const caso of CASOS_INSPECTOR) {
+  const rotuloDoCaso =
+    caso.tipo === "single_choice" && (caso.config?.options as unknown[] | undefined)?.length === 0
+      ? "escolha SEM opções (aviso âmbar)"
+      : caso.tipo;
+
+  test(`inspector tipado: ${rotuloDoCaso} monta o formulário certo — e só ele`, async () => {
+    const html = await renderEditor(WRITE_PERMISSIONS, {
+      checklist: modeloComCampo(caso.tipo, caso.config),
+      selectedComponentKey: "campo_tipado",
+    });
+
+    // Cabeçalho da seção tipada + o básico continuam presentes em todos os casos.
+    assert.match(html, /ckb-ed-insp-section/);
+    assert.match(html, /Pergunta exibida ao técnico/);
+    assert.match(html, /Resposta obrigatória/);
+
+    for (const presente of caso.presentes) assert.match(html, presente);
+    for (const ausente of caso.ausentes ?? []) assert.doesNotMatch(html, ausente);
+
+    // §3 — nenhuma chave técnica de tipo/opção chega ao texto que o usuário lê.
+    const texto = visibleText(html).replace(/\s+/g, " ");
+    for (const visivel of caso.visiveis ?? []) assert.match(texto, visivel);
+    assert.doesNotMatch(texto, /single_choice|multi_choice|photo_upload|vehicle_selector|damage_map|before_after/);
+    assert.doesNotMatch(texto, /related_collection|related_delivery|markerTypes|minPhotos/);
+  });
+}
+
+test("blockers de publicação: 0 campos · 1 escolha vazia · N escolhas vazias · rascunho válido", async () => {
+  const { checklistPublishBlockers, checklistSaveBlockers, publishButtonState } = await import(
+    "../src/modules/checklists/checklist-editor.model"
+  );
+
+  const base = { name: "M", description: "", type: "towing_collection" as const, sections: ["S"] };
+  const escolha = (id: string, label: string, options: string[]) => ({
+    id,
+    componentKey: `k-${id}`,
+    type: "single_choice" as const,
+    label,
+    required: false,
+    config: { sectionIndex: 0, options },
+    validationRules: {},
+    visibilityRules: {},
+  });
+
+  // (a) 0 campos
+  const vazio = { ...base, components: [] };
+  assert.deepEqual([...checklistPublishBlockers(vazio)], ["Adicione ao menos 1 campo ao formulário para publicar."]);
+
+  // (b) 1 campo de escolha sem opções — com o RÓTULO do campo entre aspas curvas.
+  const umaVazia = { ...base, components: [escolha("a", "Cor do veículo", [])] };
+  assert.deepEqual(
+    [...checklistPublishBlockers(umaVazia)],
+    ["O campo “Cor do veículo” está sem opções — adicione ao menos 1 para publicar."],
+  );
+
+  // (c) N campos de escolha sem opções
+  const duasVazias = { ...base, components: [escolha("a", "Cor", []), escolha("b", "Combustível", [])] };
+  assert.deepEqual(
+    [...checklistPublishBlockers(duasVazias)],
+    ["2 campos de escolha estão sem opções — adicione ao menos 1 opção em cada."],
+  );
+
+  // Opção só com espaços NÃO conta (o backend exige texto não-vazio).
+  const soEspaco = { ...base, components: [escolha("a", "Cor", ["   "])] };
+  assert.equal(checklistPublishBlockers(soEspaco).length, 1);
+
+  // (d) rascunho válido — nenhum bloqueio, e o botão fica livre com o title do protótipo.
+  const valido = { ...base, components: [escolha("a", "Cor", ["Preto", "Prata"])] };
+  assert.deepEqual([...checklistPublishBlockers(valido)], []);
+  assert.deepEqual(publishButtonState(checklistPublishBlockers(valido)), {
+    locked: false,
+    title: "Publicar e disponibilizar no aplicativo",
+    message: null,
+  });
+  const travado = publishButtonState(checklistPublishBlockers(umaVazia));
+  assert.equal(travado.locked, true);
+  assert.equal(travado.title, "O campo “Cor do veículo” está sem opções — adicione ao menos 1 para publicar.");
+
+  // Espelho do BACKEND: as MESMAS condições são 400 no PATCH (`components.min(1)` e o superRefine
+  // de `config.options`), por isso existem bloqueios de GRAVAÇÃO — com cópia do próprio momento.
+  assert.equal(checklistSaveBlockers(vazio).length, 1);
+  assert.match(checklistSaveBlockers(vazio)[0], /para salvar/);
+  assert.match(checklistSaveBlockers(umaVazia)[0], /está sem opções — adicione ao menos 1 para salvar\./);
+  assert.deepEqual([...checklistSaveBlockers(valido)], []);
+});
+
+test("editor: Publicar TRAVADO mostra a faixa âmbar e carrega a mensagem no title (nunca `disabled`)", async () => {
+  const semOpcoes = modeloComCampo("single_choice", { options: [] }, "Cor do veículo");
+  const html = await renderEditor(WRITE_PERMISSIONS, { checklist: semOpcoes });
+
+  // Faixa de bloqueio (protótipo) + a MESMA mensagem no title do botão.
+  assert.match(html, /ckb-ed-blockbar/);
+  assert.match(html, /O campo “Cor do veículo” está sem opções — adicione ao menos 1 para publicar\./);
+  assert.match(html, /class="ckb-ed-btn ckb-ed-btn--publish ckb-ed-btn--publish-locked"/);
+  assert.match(html, /title="O campo “Cor do veículo” está sem opções — adicione ao menos 1 para publicar\."/);
+  assert.match(html, /aria-disabled="true"/);
+  // O botão continua clicável de propósito: o clique explica o bloqueio (botão `disabled` não
+  // recebe foco nem dá retorno nenhum ao leitor de tela).
+  assert.doesNotMatch(html, /ckb-ed-btn--publish-locked[^>]*disabled=""/);
+
+  // Rascunho válido: nada de faixa e o title volta ao do protótipo.
+  const valido = modeloComCampo("single_choice", { options: ["Preto", "Prata"] }, "Cor do veículo");
+  const htmlValido = await renderEditor(WRITE_PERMISSIONS, { checklist: valido });
+  assert.doesNotMatch(htmlValido, /ckb-ed-blockbar/);
+  assert.match(htmlValido, /title="Publicar e disponibilizar no aplicativo"/);
+  assert.doesNotMatch(htmlValido, /ckb-ed-btn--publish-locked/);
+});
+
+test("escritas no config são puras e clampadas (opções, flags com default, números e chips)", async () => {
+  const { applyChecklistConfigChange, componentFlagConfig, componentListConfig, componentNumberConfig, componentOptions } =
+    await import("../src/modules/checklists/checklist-editor.model");
+
+  const draft = {
+    name: "M",
+    description: "",
+    type: "custom" as const,
+    sections: ["S"],
+    components: [
+      {
+        id: "x",
+        componentKey: "k-x",
+        type: "multi_choice" as const,
+        label: "Itens",
+        required: false,
+        config: { sectionIndex: 0, options: ["A", "B"] },
+        validationRules: {},
+        visibilityRules: {},
+      },
+    ],
+  };
+  const config = (next: typeof draft) => next.components[0]!;
+
+  // Opções: adicionar entra com o rótulo acentuado do protótipo.
+  assert.deepEqual([...componentOptions(config(applyChecklistConfigChange(draft, "x", { kind: "option_add" })))], [
+    "A",
+    "B",
+    "Nova opção",
+  ]);
+  // Renomear/mover/remover, sem mutar o rascunho original (pureza).
+  assert.deepEqual(
+    [...componentOptions(config(applyChecklistConfigChange(draft, "x", { kind: "option_rename", index: 0, text: "Estepe" })))],
+    ["Estepe", "B"],
+  );
+  assert.deepEqual(
+    [...componentOptions(config(applyChecklistConfigChange(draft, "x", { kind: "option_move", index: 1, direction: "up" })))],
+    ["B", "A"],
+  );
+  // Na borda, mover é no-op (não estoura nem duplica).
+  assert.deepEqual(
+    [...componentOptions(config(applyChecklistConfigChange(draft, "x", { kind: "option_move", index: 0, direction: "up" })))],
+    ["A", "B"],
+  );
+  assert.deepEqual(
+    [...componentOptions(config(applyChecklistConfigChange(draft, "x", { kind: "option_remove", index: 0 })))],
+    ["B"],
+  );
+  assert.deepEqual([...componentOptions(draft.components[0])], ["A", "B"], "o rascunho de entrada não pode ser mutado");
+
+  // Números: piso respeitado e texto/vazio NUNCA viram NaN (que persistiria como null no JSON).
+  const comFoto = { ...draft, components: [{ ...draft.components[0], type: "photo_upload" as const }] };
+  assert.equal(
+    componentNumberConfig(config(applyChecklistConfigChange(comFoto, "x", { kind: "number", key: "maxPhotos", raw: "0", min: 1 })), "maxPhotos", 1, 1),
+    1,
+  );
+  assert.equal(
+    componentNumberConfig(config(applyChecklistConfigChange(comFoto, "x", { kind: "number", key: "minPhotos", raw: "", min: 0 })), "minPhotos", 9, 0),
+    0,
+  );
+  assert.equal(
+    componentNumberConfig(config(applyChecklistConfigChange(comFoto, "x", { kind: "number", key: "minPhotos", raw: "abc", min: 0 })), "minPhotos", 9, 0),
+    0,
+  );
+
+  // Flags: `multiline`/`requireBothStages` nascem LIGADAS; as demais, desligadas (protótipo).
+  const obs = { ...draft, components: [{ ...draft.components[0], type: "observation" as const, config: { sectionIndex: 0 } }] };
+  assert.equal(componentFlagConfig(obs.components[0], "multiline", true), true);
+  assert.equal(
+    componentFlagConfig(config(applyChecklistConfigChange(obs, "x", { kind: "flag", key: "multiline", defaultOn: true })), "multiline", true),
+    false,
+  );
+  assert.equal(componentFlagConfig(obs.components[0], "requireName", false), false);
+  assert.equal(
+    componentFlagConfig(config(applyChecklistConfigChange(obs, "x", { kind: "flag", key: "requireName", defaultOn: false })), "requireName", false),
+    true,
+  );
+
+  // Chips: alternam a chave dentro da lista (nunca duplicam nem perdem as outras).
+  const veic = {
+    ...draft,
+    components: [{ ...draft.components[0], type: "vehicle_selector" as const, config: { sectionIndex: 0, vehicleTypes: ["car"] } }],
+  };
+  const comMoto = applyChecklistConfigChange(veic, "x", { kind: "list_toggle", key: "vehicleTypes", value: "motorcycle" });
+  assert.deepEqual([...componentListConfig(config(comMoto), "vehicleTypes")], ["car", "motorcycle"]);
+  const semCarro = applyChecklistConfigChange(comMoto, "x", { kind: "list_toggle", key: "vehicleTypes", value: "car" });
+  assert.deepEqual([...componentListConfig(config(semCarro), "vehicleTypes")], ["motorcycle"]);
+
+  // Select: grava a CHAVE (é ela que o aplicativo lê), não o rótulo.
+  const comp = { ...draft, components: [{ ...draft.components[0], type: "comparison" as const, config: { sectionIndex: 0 } }] };
+  const trocado = applyChecklistConfigChange(comp, "x", { kind: "select", key: "compareWith", value: "related_delivery" });
+  assert.equal(config(trocado).config.compareWith, "related_delivery");
+
+  // Campo inexistente: no-op (nunca cria componente fantasma).
+  assert.equal(applyChecklistConfigChange(draft, "nao-existe", { kind: "option_add" }), draft);
+});
+
+test("o config tipado sobrevive ao PATCH (round-trip pelo payload real do editor)", async () => {
+  const { applyChecklistConfigChange, buildUpdateInputFromEditorDraft, createEditorDraftFromChecklist } = await import(
+    "../src/modules/checklists/checklist-editor.model"
+  );
+
+  const modelo = modeloComCampo("multi_choice", { options: ["A"], minSelected: 1 }, "Itens do veículo");
+  let draft = createEditorDraftFromChecklist(modelo);
+  const id = draft.components[0]!.id;
+
+  draft = applyChecklistConfigChange(draft, id, { kind: "option_add" });
+  draft = applyChecklistConfigChange(draft, id, { kind: "number", key: "minSelected", raw: "2", min: 0 });
+
+  const input = buildUpdateInputFromEditorDraft(draft, modelo.schema);
+  const enviado = input.components![0]!;
+  assert.deepEqual(enviado.config.options, ["A", "Nova opção"]);
+  assert.equal(enviado.config.minSelected, 2);
+  // A âncora de seção continua junto — o config tipado não atropela a convenção do PR-02b.
+  assert.equal(enviado.config.sectionIndex, 0);
+});
+
+test("opções semeadas pela paleta são PT-BR (o catálogo do backend manda 'Opcao 1' sem acento)", async () => {
+  const { resolveChecklistComponentDefaultConfig } = await import("../src/modules/checklists/checklist.constants");
+
+  // Semente crua do backend → substituída (essas strings são as RESPOSTAS que o técnico lê no app).
+  assert.deepEqual(resolveChecklistComponentDefaultConfig("single_choice", { options: ["Opcao 1", "Opcao 2"] }), {
+    options: ["Opção 1", "Opção 2"],
+  });
+  assert.deepEqual(resolveChecklistComponentDefaultConfig("multi_choice", { options: [], minSelected: 0 }), {
+    options: ["Opção 1", "Opção 2"],
+    minSelected: 0,
+  });
+  // Opções já escritas pela organização passam VERBATIM (o editor não reescreve conteúdo do cliente).
+  assert.deepEqual(resolveChecklistComponentDefaultConfig("single_choice", { options: ["Sim", "Não"] }), {
+    options: ["Sim", "Não"],
+  });
+  // Tipo sem opções não é tocado.
+  assert.deepEqual(resolveChecklistComponentDefaultConfig("photo_upload", { minPhotos: 1 }), { minPhotos: 1 });
+});
+
+test("guarda de edição concorrente: cópia e as 2 saídas (P-CHK-PATCH-SEM-LOCK)", async () => {
+  const { ConcurrentEditDialog } = await import("../src/modules/checklists/pages/ChecklistEditorPage");
+
+  const html = renderToString(<ConcurrentEditDialog onReload={() => {}} onOverwrite={() => {}} />);
+
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /aria-modal="true"/);
+  assert.match(html, /Outra pessoa alterou este modelo/);
+  assert.match(
+    html,
+    /Este modelo foi alterado por outra pessoa depois que você o abriu\. Recarregar traz a versão mais recente e descarta as suas alterações não salvas; sobrescrever mantém as suas e substitui as dela\./,
+  );
+  assert.match(html, /Recarregar o modelo/);
+  assert.match(html, /Sobrescrever mesmo assim/);
+  // O foco entra pela saída CONSERVADORA (recarregar não destrói o trabalho de quem já salvou).
+  assert.match(html, /autofocus=""[^>]*>Recarregar o modelo</);
+  // Sobrescrever é a ação destrutiva — vestida como tal.
+  assert.match(html, /ckb-ed-modal-btn--danger[^>]*>Sobrescrever mesmo assim</);
+});
+
+test("editor: Reativar aparece no lugar de Inativar quando o modelo está inativo", async () => {
+  const inativo = { ...MODELO, status: "inactive" } as unknown as AnyChecklist;
+  const html = await renderEditor(WRITE_PERMISSIONS, { checklist: inativo });
+
+  assert.match(html, /aria-label="Reativar modelo"/);
+  assert.doesNotMatch(html, /aria-label="Inativar modelo"/);
+  assert.match(html, /Inativo/);
 });

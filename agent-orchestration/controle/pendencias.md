@@ -1576,7 +1576,17 @@ como editável.
 - **Correção real:** incluir `type` no DTO de update + escrita nos dois repositórios + teste de contrato
   (PATCH muda o tipo e o `schema.type` acompanha). Alvo: **CHK P1 PR-02c** (que já toca publicação e
   inspector tipado), com a suíte backend na bateria.
-- status: ABERTA.
+- **RESOLVIDA no CHK P1 PR-02c** (aguardando merge). `UpdateChecklistTemplateInput` ganhou `type?: ChecklistType`,
+  `parseUpdateChecklistTemplateDto` aceita `type: checklistTypeSchema.optional()`, `InMemoryChecklistRepository`
+  grava `type: data.type ?? template.type` e o repositório Prisma grava `...(data.type ? { type: data.type } : {})`
+  (a coluna `type` já existia em `checklist_templates` — **sem migration**). Provado por execução, não por leitura:
+  sonda parser+repositório (`created towing_collection` → parser devolve `technical_evidence` → repo grava → releitura
+  confirma → PATCH sem `type` é no-op) **e** teste REST novo em `tests/checklist-routes.test.ts`
+  ("PATCH grava `type` (round-trip) e rejeita tipo inválido": PATCH 200 com o tipo novo, GET independente confirma a
+  persistência, ausência é no-op, valor fora do enum → 400). O seletor de tipo do editor foi LIGADO no mesmo PR.
+  `schema.type` **não** existe como campo derivado (o `buildSchema` do repositório só reescreve `components`), então
+  nada a acompanhar ali.
+- status: RESOLVIDA (PR-02c, pendente de merge).
 
 ## P-CHK-PATCH-SEM-LOCK (2026-08-07) — PATCH de checklist é last-write-wins sem guarda de versão (MÉDIA)
 
@@ -1585,4 +1595,48 @@ o mesmo modelo → a última gravação apaga a outra em silêncio. Existia ante
 muitas edições antes do save) **multiplica a janela**. Correção real (optimistic locking com `If-Match`/version
 no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: recarregar antes de gravar e, se
 `updatedAt` mudou desde a carga, confirmar ("Outra pessoa alterou este modelo — Recarregar / Sobrescrever").
+- **MITIGADA no CHK P1 PR-02c** (aguardando merge), **não resolvida**. O editor relê o modelo antes de cada PATCH e,
+  se `updatedAt` mudou desde a carga, abre `ConcurrentEditDialog` ("Recarregar o modelo" / "Sobrescrever mesmo assim",
+  foco na saída conservadora). Sobrescrever usa o `schema` RECÉM-lido como base, para não derrubar chaves de schema
+  gravadas pela outra pessoa. A releitura é **best-effort**: se falhar (rede), a gravação segue — uma checagem opcional
+  que falha não pode tirar do usuário a capacidade de salvar.
+  **A janela continua existindo**, só encolheu de "a sessão inteira de edição" para "o tempo de uma requisição": duas
+  gravações dentro dessa janela ainda são last-write-wins, e a mitigação é 100% cliente (outro cliente da API não a tem).
+  **Correção real (proposta para junta, NÃO feita aqui):** optimistic locking no contrato — `PATCH` aceitando
+  `If-Match`/`expectedUpdatedAt` (ou `version`) e o repositório fazendo `UPDATE ... WHERE updated_at = $expected`,
+  devolvendo **409** quando não casar. Muda o contrato REST público e afeta todo consumidor do PATCH (web + qualquer
+  automação), por isso exige junta antes de ser implementado.
+- status: ABERTA (mitigada no cliente; correção de contrato pendente de junta).
+
+## P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA, honestidade de UI)
+
+Achado da junta do PR-02c (critico + cognicao-visual, convergentes). Os chips "Tipos de veículo aceitos"
+(`config.vehicleTypes`) e "Tipos de avaria" (`config.markerTypes`) — e mais ~7 chaves do inspector tipado —
+são gravados no template mas **nenhum consumidor os lê**: nem o DTO de render, nem o app Flutter, nem o
+snapshot do despacho. O operador configura, salva, e a configuração não muda nada no campo.
+
+Meu diagnóstico inicial era outro (achei que desmarcar tudo geraria campo irrenderizável); a junta corrigiu:
+o campo renderiza igual **com ou sem** os chips, porque a chave é ignorada. É pior de um jeito diferente —
+não quebra, mas mente sobre ter efeito.
+
+- **Caminhos possíveis (decidir no PR-04 ou numa fatia própria):** (a) plumbar a leitura de ponta a ponta
+  (DTO de render → `checklist_remote_api.dart` → renderizadores), alinhando o vocabulário das chaves ao que o
+  app já entende; ou (b) marcar visualmente os controles sem consumidor com o selo "Em breve" que o próprio
+  protótipo usa, até a plumbagem existir. **Meio-termo não serve**: hoje o controle parece funcional.
+- Não corrigido no PR-02c porque a plumbagem cruza backend + Flutter e o inspector já entrega valor com as
+  chaves que SÃO lidas (opções de escolha, obrigatoriedade, ajuda).
 - status: ABERTA.
+
+## P-CHK-INATIVAR-COM-RUN-ATIVA (2026-08-08) — inativar um modelo derruba quem já está no campo (MÉDIA)
+
+Achado da junta do PR-02c. Inativar um modelo com vistorias `in_progress` deixa a run viva, mas o formulário
+passa a responder 409 no aplicativo — o técnico fica com uma vistoria que não consegue mais preencher nem
+concluir. A ação existe na lista (PR-02a) e foi reposta no editor (PR-02b); o gate de consequência não.
+
+- **Correção proposta:** antes de inativar, consultar runs `in_progress` do modelo e (a) exigir confirmação
+  NOMEANDO o impacto ("N vistorias em andamento perdem o formulário no aplicativo") ou (b) manter
+  render/execução liberados para runs JÁ criadas, inativando apenas para novas ordens — que é o
+  comportamento que o nome "Inativo — fora das novas ordens" já promete na tela.
+  A opção (b) é a mais correta e exige decisão de backend (o `render` passa a considerar a run, não só o
+  status do template).
+- status: ABERTA (candidata ao PR-03, que trata imutabilidade/ciclo de vida da run).

@@ -1911,3 +1911,32 @@ em silêncio. Todos corrigidos, mais 8 MÉDIAs.
 
 **Contagens (execução real, após rebase no hotfix):** smoke **1059→1073**; backend 2.110 e Flutter 839
 carregados. Blocos **140→141**.
+
+## 2026-08-08 — CHK-P1-PR-02C (PR pendente)
+
+**Inspector tipado** do builder: os 10 formulários por tipo de campo (opções de escolha com reordenar e
+remover, mínimo e máximo de fotos, tipos de veículo e de avaria, limite de caracteres, exigências de
+assinatura e ciência), travas de publicação, `type` gravado no PATCH, Publicar ligado e Inativar/Reativar
+no editor.
+
+**A junta rodou com o banco vivo — e foi a mais produtiva da série.** Os dois revisores reprovaram, e o que
+encontraram vale registrar:
+
+- Descobriram que o **banco recusava três tipos de campo** entregues no PR-01 — a feature nunca funcionou em
+  produção. Virou o hotfix #341.
+- **Salvar rotacionava o identificador de todos os campos.** Como a resposta do técnico aponta para esse
+  identificador com restrição de integridade, uma vistoria preenchida offline seria **recusada para sempre**
+  ao sincronizar. Medido contra o banco: salvar só o *nome* do modelo já trocava tudo. Agora a
+  reconciliação é por chave estável, nos dois repositórios, com teste que trava a regressão.
+- **As travas da tela não espelhavam o servidor**: seis payloads passavam na interface e batiam em erro 400.
+  Corrigido e provado por um teste de paridade que roda cada payload contra o validador real e exige a mesma
+  decisão dos dois lados.
+
+Também: erro cru de banco traduzido para mensagem de negócio, e a troca de tipo em modelo publicado passou a
+constar na auditoria.
+
+**Três achados ficaram registrados sem correção** — inclusive um em que a junta corrigiu meu próprio
+diagnóstico: os chips do inspector não quebram nada, apenas gravam configuração que ninguém lê.
+
+**Contagens (execução real):** smoke **1073→1091**; backend **2110→2114**; testes contra o Postgres **5/5**.
+Blocos **141→142**.

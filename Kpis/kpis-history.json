@@ -2035,11 +2035,23 @@
     "snapshot_date": "2026-08-08",
     "version": "CHK-P1-PR-02B",
     "pr": 340,
-    "merge_commit": null,
+    "merge_commit": "aff48fb",
     "flutter_tests": "839/839",
     "backend_tests": "2110/2110",
     "frontend_smoke_tests": "1073/1073",
     "blocks_completed": 141,
-    "description": "CHECKLIST P1 PR-02b: MODO EDITOR do builder fiel ao protótipo do dono — sub-rota com deep-link, header (nome inline-editável, tipo, pills, dirty, Salvar/Publicar), paleta por clique, canvas com SEÇÕES NOMEADAS (mover sem cruzar seção/duplicar/remover), inspector básico, modal 'Sair sem salvar?', aba Aplicabilidade estática. Ponte antiga morta + 5 componentes órfãos removidos. Convenção de seções PROVADA rodando parser+repositório REAIS (revelou que chave no topo do componente e `type` são descartados pelo PATCH → P-CHK-PATCH-SEM-TYPE, fechada no PR-02c). JUNTA (cognicao-visual REPROVADO + critico-adversarial CONDICIONADO, refutação por achado): 4 ALTA — (1) align-items:start jogava o HEADER com Salvar/dirty/abas para FORA da tela ao rolar o formulário; (2) adicionar campo gravava o rótulo CRU do catálogo como A PERGUNTA QUE O TÉCNICO LÊ no app; (3) Publicar ficou INALCANÇÁVEL, removendo capacidade real com o endpoint funcionando; (4) perda SILENCIOSA de trabalho ao editar durante o save. + 8 MÉDIA (reset na troca de organização, erro honesto por status, beforeunload, remover seção vazia com reindexação, testes dos mutadores, selo 'Em breve', payload sem components obsoleto, anel de foco). Rebaseado sobre o hotfix #341: smoke 1059→1073 (execução real); backend/flutter carregados; blocks 140→141."
+    "description": "CHECKLIST P1 PR-02b: MODO EDITOR do builder fiel ao protótipo do dono — sub-rota com deep-link, header (nome inline-editável, tipo, pills, dirty, Salvar/Publicar), paleta por clique, canvas com SEÇÕES NOMEADAS (mover sem cruzar seção/duplicar/remover), inspector básico, modal 'Sair sem salvar?', aba Aplicabilidade estática. Ponte antiga morta + 5 componentes órfãos removidos. Convenção de seções PROVADA rodando parser+repositório REAIS (revelou que chave no topo do componente e `type` são descartados pelo PATCH → P-CHK-PATCH-SEM-TYPE, fechada no PR-02c). JUNTA (cognicao-visual REPROVADO + critico-adversarial CONDICIONADO, refutação por achado): 4 ALTA — (1) align-items:start jogava o HEADER com Salvar/dirty/abas para FORA da tela ao rolar o formulário; (2) adicionar campo gravava o rótulo CRU do catálogo como A PERGUNTA QUE O TÉCNICO LÊ no app; (3) Publicar ficou INALCANÇÁVEL, removendo capacidade real com o endpoint funcionando; (4) perda SILENCIOSA de trabalho ao editar durante o save. + 8 MÉDIA (reset na troca de organização, erro honesto por status, beforeunload, remover seção vazia com reindexação, testes dos mutadores, selo 'Em breve', payload sem components obsoleto, anel de foco). Rebaseado sobre o hotfix #341: smoke 1059→1073 (execução real); backend/flutter carregados; blocks 140→141.",
+    "approved_head": "aff48fb"
+  },
+  {
+    "snapshot_date": "2026-08-08",
+    "version": "CHK-P1-PR-02C",
+    "pr": null,
+    "merge_commit": null,
+    "flutter_tests": "839/839",
+    "backend_tests": "2114/2114",
+    "frontend_smoke_tests": "1091/1091",
+    "blocks_completed": 142,
+    "description": "CHECKLIST P1 PR-02c: inspector TIPADO (10 formulários por tipo de campo), guard-rails de publicação, `type` no PATCH (fecha P-CHK-PATCH-SEM-TYPE), Publicar ligado, Inativar/Reativar no editor. A JUNTA RODOU COM O POSTGRES VIVO e reprovou nos dois revisores — foi a rodada mais produtiva da série: (a) gerou o HOTFIX #341 ao descobrir que o CHECK do banco recusava single_choice/multi_choice/signature, provando que a feature do PR-01 (#330, já mergeado) NUNCA funcionou em modo prisma; (b) ALTA: updateTemplate apagava+recriava todos os componentes, ROTACIONANDO os UUIDs a cada Salvar — como checklist_run_answers.component_id tem FK Restrict, a resposta de um técnico offline era recusada PARA SEMPRE e um modelo já respondido nem podia ser salvo (P2003 cru). Medido contra o banco: salvar só o NOME já trocava os ids. Corrigido com reconciliação por component_key nos DOIS repositórios + guard DB-gated que trava a regressão; (c) ALTA: as travas da tela não espelhavam o validator (o backend usa `every` e exige rótulo não-vazio) — 6 payloads passavam na UI e batiam em 400. Corrigido e provado por TESTE DE PARIDADE que roda 7 payloads contra o validator REAL exigindo a mesma decisão dos dois lados; (d) P2003 cru traduzido para 409 CHECKLIST_COMPONENT_IN_USE com mensagem de negócio; (e) troca de `type` em modelo publicado agora vai para a auditoria (typeFrom/typeTo/typeChangedWhilePublished). Registrados e NÃO corrigidos aqui: P-CHK-CHIPS-SEM-CONSUMIDOR (o inspector grava ~9 chaves que nenhum consumidor lê — a junta corrigiu meu diagnóstico inicial), P-CHK-INATIVAR-COM-RUN-ATIVA e P-CHK-PATCH-SEM-LOCK. smoke 1073→1091; backend 2110→2114; DB-gated 5/5; blocks 141→142. Backfill #340: merge aff48fb."
   }
 ]

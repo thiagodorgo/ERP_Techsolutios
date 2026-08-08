@@ -112,12 +112,32 @@ export class ChecklistService {
     checklistId: string,
     input: UpdateChecklistTemplateInput,
   ): Promise<ChecklistTemplate> {
-    const template = await this.repository.updateTemplate({
-      ...input,
-      tenantId: actor.tenantId,
-      checklistId,
-      actorUserId: actor.userId,
-    });
+    // CHECKLIST P1 PR-02c (junta): remover um campo JÁ RESPONDIDO esbarra na FK `Restrict` de
+    // `checklist_run_answers.component_id` e o Prisma sobe P2003 cru — que chegava ao tenant admin
+    // como texto de banco no toast. O Restrict está CERTO (a resposta do técnico não pode ficar
+    // órfã); o que faltava era traduzir a recusa para linguagem de negócio.
+    // Estado anterior lido ANTES da gravação: sem ele a auditoria não sabe dizer o que mudou.
+    const previous = await this.repository.getTemplate(actor.tenantId, checklistId);
+
+    let template: ChecklistTemplate | null;
+    try {
+      template = await this.repository.updateTemplate({
+        ...input,
+        tenantId: actor.tenantId,
+        checklistId,
+        actorUserId: actor.userId,
+      });
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ChecklistError(
+          409,
+          "CHECKLIST_COMPONENT_IN_USE",
+          "component_has_answers",
+          "Um dos campos removidos já foi respondido em uma vistoria. Ele não pode ser excluído — mantenha o campo no formulário (você pode deixá-lo opcional) ou conclua as vistoriais em andamento antes.",
+        );
+      }
+      throw error;
+    }
 
     if (!template) {
       throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
@@ -126,6 +146,17 @@ export class ChecklistService {
     await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.templateUpdated, "checklist_template", template.id, {
       status: template.status,
       version: template.version,
+      // Junta PR-02c (ALTA do dba): trocar o `type` de um modelo PUBLICADO muda o significado de
+      // uma versão já congelada — o snapshot do despacho e as vistorias em andamento apontam para
+      // (modelo, versão). A troca continua permitida (é metadado, sem efeito de runtime), mas
+      // deixa de ser invisível: fica na trilha de auditoria, com destaque quando é em publicado.
+      ...(previous && input.type && input.type !== previous.type
+        ? {
+            typeFrom: previous.type,
+            typeTo: input.type,
+            typeChangedWhilePublished: previous.status === "published",
+          }
+        : {}),
     });
 
     return template;
@@ -652,3 +683,14 @@ export type ChecklistRunDetailsDto = {
   readonly markers: readonly ChecklistMarker[];
   readonly acknowledgements: readonly ChecklistAcknowledgement[];
 };
+
+/**
+ * Violação de chave estrangeira do Postgres (23503 / Prisma P2003). Detecta pelo CÓDIGO, não pela
+ * mensagem — texto de erro muda entre versões, código não. Usado para traduzir a recusa de apagar
+ * um componente já respondido em erro de negócio (409), em vez de vazar SQL para a tela.
+ */
+function isForeignKeyViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code = (error as { code?: unknown }).code;
+  return code === "P2003" || code === "23503";
+}

@@ -235,3 +235,34 @@ ligar exige backend, PR-02c) e `P-CHK-PATCH-SEM-LOCK` (last-write-wins sem guard
 correção no 02c).
 
 **Bateria:** check verde · smoke **1052→1066** · build ✓ · `git diff --check` limpo.
+
+### PR-02c — inspector tipado + publicação + correções de backend — JUNTA: dba e crítico REPROVARAM → corrigido (2026-08-08)
+
+**Entrega:** inspector TIPADO (10 formulários por tipo de campo), guard-rails de publicação, `type` no PATCH
+(fecha `P-CHK-PATCH-SEM-TYPE`), Publicar ligado com travas, Inativar/Reativar no editor.
+
+**A junta rodou com o Postgres VIVO** — e foi decisiva. Ambos os revisores reprovaram.
+
+**🔴 Achado que gerou HOTFIX SEPARADO (#341, merge `32e22c7`):** o CHECK de `checklist_template_components`
+só aceitava 7 tipos. O PR-01 (#330, **já mergeado**) adicionou `single_choice`/`multi_choice`/`signature` ao
+enum e ao catálogo **sem migração** — em modo `prisma` a feature dava **HTTP 400 com SQL cru**. Ou seja: o que
+o #330 entregou **nunca funcionou em produção**. Reproduzido ponta a ponta, corrigido com migração aditiva e
+blindado com teste DB-gated **provado por mutação**. Detalhes em `P-CHK-COMPONENT-TYPE-CHECK`.
+
+**Achados corrigidos NESTE PR:**
+
+| Sev | Achado | Correção |
+|---|---|---|
+| ALTA | `updateTemplate` apagava e recriava TODOS os componentes: cada Salvar **rotacionava os UUIDs**. Como `checklist_run_answers.component_id` tem FK `Restrict`, a resposta de um técnico offline era **recusada para sempre**, e um modelo já respondido nem podia ser salvo (P2003 cru). **Medido**: salvar só o NOME já trocava os ids | reconciliação por `component_key` nos **dois** repositórios (Prisma e memória): chave que fica → UPDATE no lugar (id preservado); chave nova → CREATE; chave removida → DELETE. Guard DB-gated novo trava a regressão |
+| ALTA | Travas da tela **não** espelhavam o validator: 6 payloads passavam na UI e batiam em 400 (o backend usa `every` — UMA opção em branco derruba tudo — e exige rótulo não-vazio) | condição alinhada + blockers de rótulo e de nome do modelo; **teste de paridade** roda os 7 payloads contra o validator REAL e exige a mesma decisão dos dois lados |
+| MÉDIA | P2003 cru vazava para o toast ao remover campo já respondido | traduzido para **409 `CHECKLIST_COMPONENT_IN_USE`** com mensagem de negócio (detecção por CÓDIGO, não por texto de erro) |
+| ALTA(dba) | Trocar `type` de modelo PUBLICADO alterava o significado de uma versão congelada, **sem registro** | a troca continua permitida (é metadado, sem efeito de runtime — confirmado pelo crítico), mas agora vai para a **auditoria** com `typeFrom`/`typeTo`/`typeChangedWhilePublished` |
+
+**Registrados, NÃO corrigidos aqui (honestidade §A6):**
+- `P-CHK-CHIPS-SEM-CONSUMIDOR` — os chips de veículo/avaria e ~7 chaves do inspector gravam configuração que
+  **nenhum consumidor lê**. Meu diagnóstico inicial estava errado (achei que geraria campo irrenderizável); a
+  junta corrigiu: o campo renderiza igual, a chave é ignorada. Plumbar cruza backend + Flutter → PR-04.
+- `P-CHK-INATIVAR-COM-RUN-ATIVA` — inativar derruba quem está no campo (run viva, formulário em 409) → PR-03.
+- `P-CHK-PATCH-SEM-LOCK` — last-write-wins segue sem guarda de versão no backend; mitigação de cliente existe.
+
+**Bateria:** frontend check verde · smoke **1091/1091** · backend **2114/2114** (4 shards) · DB-gated **5/5**.

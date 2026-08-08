@@ -4709,13 +4709,18 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
   border-color: #2563eb;
   color: #2563eb;
 }
+/* Junta PR-02c (ALTA, medido em Edge): com `flex-wrap: wrap` o indicador "Alterações não salvas"
+   descia para uma 2ª linha assim que a 4ª ação (Inativar) entrou no header — empurrando abas,
+   faixa de bloqueio e as 3 colunas 27px para baixo. No protótipo o bloco de identidade NÃO quebra:
+   o nome encolhe. */
 .ckb-ed-ident {
   min-width: 0;
   flex: 1;
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 .ckb-ed-name {
   font-size: 19px;
@@ -4796,11 +4801,38 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
   border-color: #93c5fd;
   color: #2563eb;
 }
+/* PR-02c: o Publicar LIVRE é o primário azul do protótipo (pubBg #2563EB / pubFg #fff). O cinza
+   herdado do PR-02b era, no desenho do dono, o estado TRAVADO — a tela vestia o botão de bloqueado
+   mesmo quando o modelo estava pronto para publicar. */
 .ckb-ed-btn--publish {
   padding: 9px 16px;
-  background: #e2e8f0;
+  background: #2563eb;
   border-color: transparent;
+  color: #fff;
+}
+.ckb-ed-btn--publish:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: transparent;
+  color: #fff;
+}
+.ckb-ed-btn--publish-locked,
+.ckb-ed-btn--publish-locked:hover:not(:disabled) {
+  background: #e2e8f0;
   color: #94a3b8;
+  cursor: not-allowed;
+}
+/* Faixa de bloqueio de publicação (protótipo: #FFFBEB / borda #FDE68A / texto #92400E). */
+.ckb-ed-blockbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 .ckb-ed-error-actions {
   display: flex;
@@ -5355,6 +5387,216 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
   color: #64748b;
   margin-top: 1px;
 }
+.ckb-ed-toggle--flush {
+  margin-bottom: 0;
+}
+.ckb-ed-toggle:disabled {
+  cursor: default;
+}
+
+/* ── PR-02c · Configurações TIPADAS do campo (protótipo, bloco "config tipada") ── */
+.ckb-ed-insp-section {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+.ckb-ed-insp-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+.ckb-ed-insp-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  margin-bottom: 11px;
+  color: #92400e;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.ckb-ed-insp-warn svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ckb-ed-insp-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.ckb-ed-insp-row-item {
+  flex: 1;
+  min-width: 0;
+}
+.ckb-ed-group--tight {
+  margin: 14px 0 0;
+}
+.ckb-ed-input--num-sm {
+  width: 110px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.ckb-ed-input--num-md {
+  width: 130px;
+}
+.ckb-ed-select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #fff;
+  cursor: pointer;
+}
+.ckb-ed-select:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+/* Opções da escolha única/múltipla */
+.ckb-ed-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ckb-ed-opt-grip {
+  color: #cbd5e1;
+  display: flex;
+  flex-shrink: 0;
+}
+.ckb-ed-opt-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: #0f172a;
+}
+.ckb-ed-opt-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ckb-ed-opt-btn:hover:not(:disabled) {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+.ckb-ed-opt-btn--danger:hover:not(:disabled) {
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.ckb-ed-opt-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ckb-ed-opt-add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px;
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2563eb;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.ckb-ed-opt-add:hover:not(:disabled) {
+  border-color: #2563eb;
+  background: #f8fafc;
+}
+.ckb-ed-opt-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+/* Chips-toggle (tipos de veículo / tipos de avaria) */
+.ckb-ed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.ckb-ed-chip-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+}
+.ckb-ed-chip-toggle--on {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+.ckb-ed-chip-toggle--damage.ckb-ed-chip-toggle--on {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #dc2626;
+}
+.ckb-ed-chip-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+/* Slot da imagem de referência da vistoria (PR-07) — inerte e assumidamente futuro. */
+.ckb-ed-insp-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.ckb-ed-insp-slot-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-insp-slot-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ckb-ed-insp-slot-sub {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
 
 /* ── Aba Aplicabilidade (estática) ── */
 .ckb-ed-aplic {
@@ -5628,6 +5870,9 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
 .ckb-ed-field-main:focus-visible,
 .ckb-ed-field-btn:focus-visible,
 .ckb-ed-toggle:focus-visible,
+.ckb-ed-opt-btn:focus-visible,
+.ckb-ed-opt-add:focus-visible,
+.ckb-ed-chip-toggle:focus-visible,
 .ckb-ed-modal-btn:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -6879,6 +7124,9 @@ button.opmap-os--atd {
 .ckb-ed-name:focus-visible,
 .ckb-ed-section-title:focus-visible,
 .ckb-ed-input:focus-visible,
+.ckb-ed-opt-input:focus-visible,
+.ckb-ed-select:focus-visible,
+.ckb-ed-type:focus-visible,
 .ckb-ed-textarea:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 1px;
@@ -6890,3 +7138,11 @@ button.opmap-os--atd {
   align-items: center;
   gap: 6px;
 }
+
+
+/* Junta PR-02c: gaps exatos do protótipo no inspector. */
+.ckb-ed-toggle--tight { margin-bottom: 12px; }
+.ckb-ed-insp-row + .ckb-ed-insp-hint { margin-top: 0; }
+
+/* O seletor de tipo foi LIGADO neste PR — o cursor precisa dizer isso. */
+.ckb-ed-type { cursor: pointer; }

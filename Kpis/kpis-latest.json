@@ -1,16 +1,16 @@
 {
   "snapshot_date": "2026-08-04",
-  "version": "CHK-P1-PR-02B",
+  "version": "CHK-P1-PR-02C",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-02b — MODO EDITOR do builder no desenho do dono: sub-rota /administrator/checklists/:id com deep-link, header (nome inline-editável, tipo, pills, dirty, Salvar/Publicar), paleta que adiciona por clique, canvas com SEÇÕES NOMEADAS (mover sem cruzar seção/duplicar/remover), inspector básico, modal 'Sair sem salvar?', aba Aplicabilidade estática. Ponte antiga morta + 5 componentes órfãos removidos. Convenção de seções (schema.sections + config.sectionIndex/help) PROVADA rodando parser+repositório reais — a prova revelou que chave no topo do componente e o campo `type` são DESCARTADOS pelo PATCH (P-CHK-PATCH-SEM-TYPE). JUNTA: cognicao-visual REPROVADO + critico-adversarial CONDICIONADO, com 4 ALTA corrigidos (header saindo da tela ao rolar; rótulo CRU do catálogo virando a pergunta que o técnico lê; Publicar inalcançável com o endpoint funcionando; perda SILENCIOSA de trabalho ao editar durante o save) + 8 MÉDIA.",
-    "title": "CHECKLIST P1 PR-02b — editor do builder (casca + canvas + seções)",
-    "pr": 340,
+    "block": "CHECKLIST P1 PR-02c — inspector TIPADO (10 formulários por tipo: opções de escolha com reordenar/remover, mín/máx de fotos, chips de veículo/avaria, limite de caracteres, toggles de assinatura/ciência/antes-depois, select de comparação), guard-rails de publicação espelhando o validator, `type` gravado no PATCH (fecha P-CHK-PATCH-SEM-TYPE), Publicar ligado com travas, Inativar/Reativar no editor. JUNTA COM POSTGRES VIVO reprovou nos dois revisores e foi decisiva: gerou o hotfix #341 (o CHECK do banco recusava os 3 tipos do PR-01 — feature nunca funcionou em produção) e apontou 2 ALTA corrigidos aqui: (1) updateTemplate rotacionava os UUIDs a cada save, fazendo a resposta de técnico offline ser recusada PARA SEMPRE pela FK Restrict — agora reconcilia por component_key nos dois repositórios, com guard DB-gated; (2) as travas da tela não espelhavam o validator (6 payloads passavam e batiam em 400) — corrigido e provado por teste de PARIDADE contra o validator real. Mais: P2003 cru traduzido para 409 de negócio e auditoria da troca de tipo em modelo publicado.",
+    "title": "CHECKLIST P1 PR-02c — inspector tipado + integridade do modelo",
+    "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Editor do builder no protótipo do dono; junta pegou 4 ALTA (header fora da tela, rótulo cru como pergunta do técnico, Publicar removido, perda silenciosa no save) — todos corrigidos.",
+    "summary": "Inspector tipado; a junta com banco vivo achou perda de trabalho de campo (ids rotacionando) e divergência UI×validator — ambos corrigidos e blindados por teste.",
     "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
@@ -18,19 +18,19 @@
       "value": 839,
       "total": 839,
       "display": "839/839",
-      "note": "PR não toca mobile — carrega 839/839 (§C3.3)."
+      "note": "PR-02c não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1073,
-      "total": 1073,
-      "display": "1073/1073",
-      "note": "PR-02b sobre a base pós-mapa: +14 testes do editor (10 do dev + 3 dos mutadores exigidos pela junta + 1 do deep-link na lista). 1059→1073, execução real após rebase em main."
+      "value": 1091,
+      "total": 1091,
+      "display": "1091/1091",
+      "note": "PR-02c: +18 testes do inspector tipado e dos blockers. 1073→1091, execução real."
     },
     "backend_tests": {
-      "value": 2110,
-      "total": 2110,
-      "display": "2110/2110",
-      "note": "PR-02b é frontend-only; o backend recebeu o hotfix do CHECK no #341 (migração aditiva + blindagem DB-gated 4/4). Contagem carregada (§C3.3)."
+      "value": 2114,
+      "total": 2114,
+      "display": "2114/2114",
+      "note": "PR-02c: +4 (paridade blockers×validator 1, identidade de componente DB-gated 1, type no PATCH 2). 2110→2114, execução real em 4 shards; DB-gated 5/5 contra o Postgres."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 141,
-      "display": "141",
-      "note": "CHK P1 PR-02b (editor do builder). Sobre 140 (#341 hotfix)."
+      "value": 142,
+      "display": "142",
+      "note": "CHK P1 PR-02c (inspector tipado + integridade). Sobre 141 do #340."
     },
     "mobile_backend_contracts": {
       "value": 18,

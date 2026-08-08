@@ -275,6 +275,244 @@ export function editorSectionCount(itemCount: number): string {
   return `${itemCount}${itemCount === 1 ? " campo" : " campos"}`;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// CHECKLIST P1 PR-02c — CONFIGURAÇÕES TIPADAS do campo (protótipo, bloco "config tipada").
+// Leitura e escrita de `config` como funções PURAS: o inspector só renderiza e despacha.
+// Os defaults replicam o protótipo (`cfg.x || fallback`), inclusive as duas flags que nascem
+// LIGADAS (`multiline` e `requireBothStages` são "on" a menos que o config diga `false`).
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+
+type ConfigHolder = { readonly config: ChecklistJsonRecord };
+
+/** `config.options` como lista de textos (qualquer outra coisa vira lista vazia — nada de lixo na tela). */
+export function componentOptions(component: ConfigHolder): readonly string[] {
+  const raw = component.config.options;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((option): option is string => typeof option === "string");
+}
+
+/** Número do config com piso — ausente/NaN/texto cai no fallback (nunca grava NaN, que viraria `null` no JSON). */
+export function componentNumberConfig(component: ConfigHolder, key: string, fallback: number, min: number): number {
+  const raw = component.config[key];
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return fallback;
+  return Math.max(min, Math.trunc(raw));
+}
+
+/**
+ * Flag do config com o default do protótipo. `defaultOn` reproduz `cfg.multiline !== false`
+ * (nasce ligada) vs `!!cfg.requireDescription` (nasce desligada).
+ */
+export function componentFlagConfig(component: ConfigHolder, key: string, defaultOn: boolean): boolean {
+  const raw = component.config[key];
+  if (typeof raw === "boolean") return raw;
+  return defaultOn;
+}
+
+/** Lista de chaves marcadas (tipos de veículo / tipos de avaria) — só textos. */
+export function componentListConfig(component: ConfigHolder, key: string): readonly string[] {
+  const raw = component.config[key];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((item): item is string => typeof item === "string");
+}
+
+/** Texto de um select do config (valor fora da lista permitida cai no fallback). */
+export function componentChoiceConfig(
+  component: ConfigHolder,
+  key: string,
+  allowed: readonly string[],
+  fallback: string,
+): string {
+  const raw = component.config[key];
+  return typeof raw === "string" && allowed.includes(raw) ? raw : fallback;
+}
+
+/** Texto do botão "Adicionar opção" do protótipo (a opção nasce com este rótulo, acentuado). */
+export const CHECKLIST_NEW_OPTION_LABEL = "Nova opção";
+
+/**
+ * Toda escrita no `config` passa por um ÚNICO ponto tipado — o inspector não conhece a forma do
+ * `config`, só despacha a intenção. Facilita o teste (uma função pura por caso) e impede que a
+ * tela invente chave nova sem passar por aqui.
+ */
+export type ChecklistConfigChange =
+  | { readonly kind: "option_add" }
+  | { readonly kind: "option_rename"; readonly index: number; readonly text: string }
+  | { readonly kind: "option_move"; readonly index: number; readonly direction: "up" | "down" }
+  | { readonly kind: "option_remove"; readonly index: number }
+  | { readonly kind: "flag"; readonly key: string; readonly defaultOn: boolean }
+  | { readonly kind: "number"; readonly key: string; readonly raw: string; readonly min: number }
+  | { readonly kind: "list_toggle"; readonly key: string; readonly value: string }
+  | { readonly kind: "select"; readonly key: string; readonly value: string };
+
+export function applyChecklistConfigChange(
+  draft: ChecklistEditorDraft,
+  componentId: string,
+  change: ChecklistConfigChange,
+): ChecklistEditorDraft {
+  const component = draft.components.find((item) => item.id === componentId);
+  if (!component) return draft;
+
+  const config = nextConfigFor(component, change);
+  return {
+    ...draft,
+    components: draft.components.map((item) => (item.id === componentId ? { ...item, config } : item)),
+  };
+}
+
+function nextConfigFor(component: ChecklistEditorComponent, change: ChecklistConfigChange): ChecklistJsonRecord {
+  const config = component.config;
+
+  switch (change.kind) {
+    case "option_add":
+      return { ...config, options: [...componentOptions(component), CHECKLIST_NEW_OPTION_LABEL] };
+    case "option_rename": {
+      const options = [...componentOptions(component)];
+      if (change.index < 0 || change.index >= options.length) return config;
+      options[change.index] = change.text;
+      return { ...config, options };
+    }
+    case "option_move": {
+      const options = [...componentOptions(component)];
+      const target = change.direction === "up" ? change.index - 1 : change.index + 1;
+      if (change.index < 0 || change.index >= options.length || target < 0 || target >= options.length) return config;
+      const moved = options[change.index];
+      options[change.index] = options[target];
+      options[target] = moved;
+      return { ...config, options };
+    }
+    case "option_remove": {
+      const options = componentOptions(component).filter((_, index) => index !== change.index);
+      return { ...config, options };
+    }
+    case "flag":
+      return { ...config, [change.key]: !componentFlagConfig(component, change.key, change.defaultOn) };
+    case "number": {
+      // Campo numérico vazio ou com texto não vira NaN: cai no piso (o protótipo faz o mesmo com `|| '0'`).
+      const parsed = Number.parseInt(change.raw, 10);
+      const value = Number.isFinite(parsed) ? Math.max(change.min, parsed) : change.min;
+      return { ...config, [change.key]: value };
+    }
+    case "list_toggle": {
+      const current = componentListConfig(component, change.key);
+      const next = current.includes(change.value)
+        ? current.filter((item) => item !== change.value)
+        : [...current, change.value];
+      return { ...config, [change.key]: next };
+    }
+    case "select":
+      return { ...config, [change.key]: change.value };
+    default:
+      return config;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// GUARD-RAILS DE PUBLICAÇÃO (protótipo, `blockers()`) — espelhando o validator do BACKEND.
+//
+// FATO medido em `src/modules/checklists/checklist.validator.ts` (não inferido):
+//  · `components: z.array(componentSchema).min(1)` → PATCH com 0 campos é REJEITADO (400);
+//  · `superRefine` por tipo → `single_choice`/`multi_choice` exigem `config.options` como lista
+//    NÃO-VAZIA de textos não-vazios; senão o PATCH inteiro é REJEITADO (400).
+//
+// DIVERGÊNCIA CONSCIENTE (registrada na ata): o protótipo trata as duas condições como bloqueio
+// só de PUBLICAÇÃO ("sem opções este campo impede a publicação"), sugerindo que o rascunho seria
+// salvável. O backend é mais estrito e rejeita já no SALVAR. Como §A1 põe regra de negócio acima
+// do pixel e o guard existe para o campo não ficar irrenderizável no aplicativo, a tela espelha o
+// backend: mesma condição, cópia própria para cada momento — em vez de deixar o usuário bater
+// num 400 cru depois de configurar o formulário inteiro.
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Junta PR-02c (ALTA): a condição anterior era "NENHUMA opção preenchida", mas o validator do
+ * backend usa `every` — UMA opção em branco no meio da lista já derruba o PATCH inteiro com 400.
+ * Seis payloads passavam na tela e batiam no servidor. A condição agora é a MESMA do validator.
+ */
+function choiceComponentsWithoutOptions(draft: ChecklistEditorDraft): readonly ChecklistEditorComponent[] {
+  return draft.components.filter((component) => {
+    if (component.type !== "single_choice" && component.type !== "multi_choice") return false;
+    const options = componentOptions(component);
+    return options.length === 0 || options.some((option) => option.trim().length === 0);
+  });
+}
+
+/** `label: z.string().trim().min(1)` no validator — rótulo vazio é 400, não "campo sem nome". */
+function componentsWithoutLabel(draft: ChecklistEditorDraft): readonly ChecklistEditorComponent[] {
+  return draft.components.filter((component) => component.label.trim().length === 0);
+}
+
+/** Bloqueios de PUBLICAÇÃO — cópia verbatim do protótipo (banner âmbar + title do Publicar + toast). */
+export function checklistPublishBlockers(draft: ChecklistEditorDraft): readonly string[] {
+  const blockers: string[] = [];
+
+  if (draft.components.length === 0) {
+    blockers.push("Adicione ao menos 1 campo ao formulário para publicar.");
+  }
+
+  const withoutOptions = choiceComponentsWithoutOptions(draft);
+  if (withoutOptions.length === 1) {
+    blockers.push(`O campo “${withoutOptions[0].label || "sem nome"}” está sem opções — adicione ao menos 1 para publicar.`);
+  } else if (withoutOptions.length > 1) {
+    blockers.push(`${withoutOptions.length} campos de escolha estão sem opções — adicione ao menos 1 opção em cada.`);
+  }
+
+  // Junta PR-02c: o validator exige rótulo não-vazio; sem este bloqueio o usuário só descobria no 400.
+  const withoutLabel = componentsWithoutLabel(draft);
+  if (withoutLabel.length === 1) {
+    blockers.push("Um campo está sem a pergunta exibida ao técnico — preencha para publicar.");
+  } else if (withoutLabel.length > 1) {
+    blockers.push(`${withoutLabel.length} campos estão sem a pergunta exibida ao técnico — preencha cada um para publicar.`);
+  }
+
+  return blockers;
+}
+
+/**
+ * Bloqueios de GRAVAÇÃO — as MESMAS condições que o `parseUpdateChecklistTemplateDto` rejeita com
+ * 400. Existe separado porque a cópia muda de momento ("para salvar" ≠ "para publicar"): sem isto
+ * o usuário perdia o clique num erro de validação cru vindo do servidor.
+ */
+export function checklistSaveBlockers(draft: ChecklistEditorDraft): readonly string[] {
+  const blockers: string[] = [];
+
+  if (draft.components.length === 0) {
+    blockers.push("Adicione ao menos 1 campo ao formulário para salvar — o modelo não pode ficar vazio.");
+  }
+
+  const withoutOptions = choiceComponentsWithoutOptions(draft);
+  if (withoutOptions.length === 1) {
+    blockers.push(`O campo “${withoutOptions[0].label || "sem nome"}” está sem opções — adicione ao menos 1 para salvar.`);
+  } else if (withoutOptions.length > 1) {
+    blockers.push(`${withoutOptions.length} campos de escolha estão sem opções — adicione ao menos 1 opção em cada para salvar.`);
+  }
+
+  const withoutLabel = componentsWithoutLabel(draft);
+  if (withoutLabel.length === 1) {
+    blockers.push("Um campo está sem a pergunta exibida ao técnico — preencha para salvar.");
+  } else if (withoutLabel.length > 1) {
+    blockers.push(`${withoutLabel.length} campos estão sem a pergunta exibida ao técnico — preencha cada um para salvar.`);
+  }
+
+  if (draft.name.trim().length === 0) {
+    blockers.push("Dê um nome ao modelo para salvar.");
+  }
+
+  return blockers;
+}
+
+/** Estado do botão Publicar (protótipo: travado é CINZA e clicável — o clique explica o porquê). */
+export function publishButtonState(blockers: readonly string[]): {
+  readonly locked: boolean;
+  readonly title: string;
+  readonly message: string | null;
+} {
+  const first = blockers[0] ?? null;
+  return {
+    locked: first !== null,
+    title: first ?? "Publicar e disponibilizar no aplicativo",
+    message: first,
+  };
+}
+
 /** Chips do card de campo — port fiel do chipsFor do protótipo (mesmos textos e tons). */
 export function editorFieldChips(component: {
   readonly type: string;
@@ -288,7 +526,9 @@ export function editorFieldChips(component: {
     chips.push({ text: `mín. ${min} fotos`, bg: "#F0FDF4", fg: "#15803D" });
   }
   if (component.type === "single_choice" || component.type === "multi_choice") {
-    const count = Array.isArray(config.options) ? config.options.length : 0;
+    // PR-02c: a contagem do chip usa a MESMA leitura dos blockers (só textos não-vazios) — senão o
+    // card diria "2 opções" enquanto o banner de publicação diria "sem opções" para o mesmo campo.
+    const count = componentOptions(component).filter((option) => option.trim().length > 0).length;
     chips.push(
       count > 0
         ? { text: `${count} opções`, bg: "#F0F9FF", fg: "#0369A1" }

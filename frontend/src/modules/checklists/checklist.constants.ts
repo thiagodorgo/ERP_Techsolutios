@@ -1,4 +1,5 @@
 import type {
+  ChecklistJsonRecord,
   ChecklistRunStatus,
   TenantChecklistComponentType,
   TenantChecklistStatus,
@@ -70,6 +71,28 @@ export const checklistComponentTypeDescription: Record<TenantChecklistComponentT
   signature: "Assinatura do cliente ou responsável",
 };
 
+// CHECKLIST P1 PR-02c — rótulos dos chips-toggle das configurações tipadas (protótipo: VEH e MARK).
+// A CHAVE é o que persiste em `config` (o aplicativo lê a chave); o rótulo é só o que se lê na tela.
+export const checklistVehicleTypeLabel: Record<string, string> = {
+  car: "Carro",
+  motorcycle: "Moto",
+  truck: "Caminhão",
+  van: "Utilitário",
+};
+
+export const checklistDamageMarkerLabel: Record<string, string> = {
+  scratch: "Risco",
+  dent: "Amassado",
+  broken: "Quebrado",
+  missing: "Faltante",
+  other: "Outro",
+};
+
+export const checklistComparisonSourceLabel: Record<string, string> = {
+  related_collection: "Vistoria de coleta relacionada",
+  related_delivery: "Vistoria de entrega relacionada",
+};
+
 /**
  * NUNCA renderizar o rótulo cru do catálogo do backend (ele devolve sem acento): o mapa local
  * manda; tipo desconhecido cai no rótulo enviado pelo backend (fallback honesto — nunca a chave).
@@ -80,4 +103,25 @@ export function resolveChecklistComponentTypeLabel(type: string, backendLabel: s
 
 export function resolveChecklistComponentTypeDescription(type: string, backendDescription: string): string {
   return (checklistComponentTypeDescription as Record<string, string | undefined>)[type] ?? backendDescription;
+}
+
+/**
+ * PR-02c — mesma lição da junta do PR-02b (rótulo cru do backend virando a pergunta que o técnico
+ * lê), agora nas OPÇÕES: o catálogo do backend semeia `options: ["Opcao 1", "Opcao 2"]` SEM acento,
+ * e essas strings são exatamente as respostas que o técnico lê e escolhe no aplicativo — ficariam
+ * persistidas erradas. O editor semeia as opções em PT-BR; o resto do `defaultConfig` passa
+ * verbatim (o backend continua sendo o dono da forma do config).
+ */
+export const CHECKLIST_SEED_OPTIONS: readonly string[] = ["Opção 1", "Opção 2"];
+
+export function resolveChecklistComponentDefaultConfig(
+  type: string,
+  backendDefaultConfig: ChecklistJsonRecord,
+): ChecklistJsonRecord {
+  if (type !== "single_choice" && type !== "multi_choice") return backendDefaultConfig;
+
+  const seeded = Array.isArray(backendDefaultConfig.options) ? backendDefaultConfig.options : [];
+  const hasAccentedSeed = seeded.length > 0 && seeded.every((option) => typeof option === "string" && !/^Opcao\s/.test(option));
+
+  return hasAccentedSeed ? backendDefaultConfig : { ...backendDefaultConfig, options: [...CHECKLIST_SEED_OPTIONS] };
 }
