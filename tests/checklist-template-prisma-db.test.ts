@@ -120,6 +120,66 @@ if (!connectionString) {
     }
   });
 
+  // CHECKLIST P1 PR-02c (achado ALTA do critico-adversarial): `updateTemplate` apagava e recriava
+  // TODOS os componentes a cada Salvar, ROTACIONANDO os UUIDs. Medido contra o Postgres: salvar só
+  // o NOME já trocava o `id` de todos os campos.
+  //
+  // Por que perdia trabalho de campo: `checklist_run_answers.component_id` referencia o componente
+  // com `onDelete: Restrict`. O técnico offline que respondeu com o id ANTIGO tinha a resposta
+  // recusada para sempre ao sincronizar — e um modelo já respondido nem podia ser salvo (P2003 cru).
+  //
+  // A reconciliação passou a ser por `component_key`. Este teste trava a regressão.
+  test("updateTemplate PRESERVA o id dos componentes que continuam (reconciliação por component_key)", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const ctx = await seedTenant(client);
+    try {
+      const created = await repo.createTemplate({
+        tenantId: ctx.tenantId,
+        actorUserId: ctx.userId,
+        name: "Identidade estável",
+        type: "custom",
+        schema: {},
+        components: [
+          { componentKey: "obs_1", type: "observation", label: "Observação", required: false, config: {}, validationRules: {}, visibilityRules: {} },
+          { componentKey: "foto_1", type: "photo_upload", label: "Fotos", required: true, config: {}, validationRules: {}, visibilityRules: {} },
+        ],
+      });
+      const idPorChave = new Map(created.components.map((component) => [component.componentKey, component.id]));
+
+      // Salva mudando rótulo e ordem, e REMOVENDO um campo — o que fica precisa manter o id.
+      const updated = await repo.updateTemplate({
+        tenantId: ctx.tenantId,
+        checklistId: created.id,
+        actorUserId: ctx.userId,
+        name: "Identidade estável v2",
+        components: [
+          { componentKey: "obs_1", type: "observation", label: "Observação do técnico", required: true, orderIndex: 0, config: { help: "texto" }, validationRules: {}, visibilityRules: {} },
+          { componentKey: "assin_1", type: "signature", label: "Assinatura", required: true, orderIndex: 1, config: {}, validationRules: {}, visibilityRules: {} },
+        ],
+      });
+
+      const obs = updated?.components.find((component) => component.componentKey === "obs_1");
+      assert.ok(obs, "o campo que continua tem de sobreviver");
+      assert.equal(
+        obs?.id,
+        idPorChave.get("obs_1"),
+        "REGRESSÃO: o id do componente rotacionou no save — resposta de técnico offline seria recusada para sempre",
+      );
+      // O rótulo e a config novos foram gravados no MESMO registro (update no lugar, não recriação).
+      assert.equal(obs?.label, "Observação do técnico");
+      assert.equal(obs?.required, true);
+
+      // Campo removido some; campo novo entra com id próprio.
+      assert.equal(updated?.components.some((component) => component.componentKey === "foto_1"), false);
+      const assinatura = updated?.components.find((component) => component.componentKey === "assin_1");
+      assert.ok(assinatura, "campo novo é criado");
+      assert.notEqual(assinatura?.id, idPorChave.get("foto_1"));
+    } finally {
+      await teardown(client, ctx.tenantId);
+      await client.$disconnect();
+    }
+  });
+
   // HOTFIX P-CHK-COMPONENT-TYPE-CHECK (achado ALTA do dba-guardião, junta do PR-02c).
   // O PR-01 (#330) acrescentou `single_choice`, `multi_choice` e `signature` ao enum TS e ao
   // catálogo servido à paleta SEM migração — o CHECK do banco continuou aceitando só os 7 tipos

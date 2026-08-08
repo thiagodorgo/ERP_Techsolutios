@@ -359,6 +359,67 @@ test("checklist P1: escolha exige config.options; assinatura e opções válidas
   });
 });
 
+// CHECKLIST P1 PR-02c (P-CHK-PATCH-SEM-TYPE) — antes deste bloco o PATCH DESCARTAVA `type` em silencio
+// (o `z.object` do parser nao o listava e nenhum dos dois repositorios gravava a coluna). O teste prova o
+// round-trip pelo caminho REST completo: PATCH devolve o novo tipo E o GET seguinte confirma que persistiu
+// (nao e so o eco da resposta). Tipo invalido segue 400; PATCH sem `type` nao mexe no tipo.
+test("checklist P1 PR-02c: PATCH grava `type` (round-trip) e rejeita tipo invalido", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+
+    const created = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+      method: "POST",
+      headers,
+      body: {
+        name: "Modelo que muda de tipo",
+        type: "towing_collection",
+        schema: { sections: ["Formulario"] },
+        components: [{ componentKey: "fotos", type: "photo_upload", label: "Fotos", required: true, config: { minPhotos: 2 } }],
+      },
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.type, "towing_collection");
+    const checklistId = created.body.data.id as string;
+
+    // 1) PATCH com `type` novo → resposta ja traz o tipo trocado.
+    const patched = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}`, {
+      method: "PATCH",
+      headers,
+      body: {
+        type: "technical_evidence",
+        name: "Modelo que mudou de tipo",
+        schema: { sections: ["Formulario"] },
+        components: [{ componentKey: "fotos", type: "photo_upload", label: "Fotos", required: true, config: { minPhotos: 2 } }],
+      },
+    });
+    assert.equal(patched.status, 200);
+    assert.equal(patched.body.data.type, "technical_evidence");
+    assert.equal(patched.body.data.name, "Modelo que mudou de tipo");
+
+    // 2) GET independente → o tipo PERSISTIU (prova que nao foi so eco da resposta).
+    const reloaded = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}`, { headers });
+    assert.equal(reloaded.status, 200);
+    assert.equal(reloaded.body.data.type, "technical_evidence");
+
+    // 3) PATCH SEM `type` nao mexe no tipo (ausente = no-op, nao volta ao default).
+    const semTipo = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}`, {
+      method: "PATCH",
+      headers,
+      body: { name: "So o nome mudou" },
+    });
+    assert.equal(semTipo.status, 200);
+    assert.equal(semTipo.body.data.type, "technical_evidence");
+
+    // 4) Tipo fora do enum → 400 (o parser nao virou porta aberta).
+    const invalido = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}`, {
+      method: "PATCH",
+      headers,
+      body: { type: "nao_existe" },
+    });
+    assert.equal(invalido.status, 400);
+  });
+});
+
 async function createAndPublishChecklist(
   baseUrl: string,
   tenant: Tenant,

@@ -166,16 +166,26 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     }
 
     const now = new Date();
+    // CHECKLIST P1 PR-02c (ALTA da junta) — PRESERVA a identidade do componente, espelhando o
+    // repositório Prisma: quem mantém o `componentKey` mantém o `id`. Antes, cada save gerava id
+    // novo para TODOS, e no caminho real isso fazia a resposta de um técnico offline (que aponta
+    // para o id antigo, com FK Restrict) ser recusada para sempre.
     const components = data.components
-      ? data.components.map((component, index) =>
-          createComponent(data.tenantId, template.id, component, index, now),
-        )
+      ? data.components.map((component, index) => {
+          const rebuilt = createComponent(data.tenantId, template.id, component, index, now);
+          const previous = template.components.find(
+            (current) => current.componentKey === rebuilt.componentKey,
+          );
+          return previous ? { ...rebuilt, id: previous.id, createdAt: previous.createdAt } : rebuilt;
+        })
       : [...template.components];
     const status = data.status ?? template.status;
     const updated: ChecklistTemplate = {
       ...template,
       name: data.name ?? template.name,
       description: data.description === null ? undefined : data.description ?? template.description,
+      // CHECKLIST P1 PR-02c (P-CHK-PATCH-SEM-TYPE) — o tipo agora e gravado; ausente = mantem.
+      type: data.type ?? template.type,
       status,
       schema: buildSchema(data.schema ?? template.schema, components),
       updatedBy: data.actorUserId,

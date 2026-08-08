@@ -70,6 +70,11 @@ export type CreateChecklistTemplateInput = {
 export type UpdateChecklistTemplateInput = {
   readonly name?: string;
   readonly description?: string | null;
+  // CHECKLIST P1 PR-02c (P-CHK-PATCH-SEM-TYPE) — `type` passa a ser aceito no PATCH. Antes o
+  // `z.object` do parser o DESCARTAVA em silencio e nenhum dos dois repositorios gravava a coluna:
+  // qualquer UI que oferecesse a troca de tipo mentia (o usuario escolhia, salvava, e o valor
+  // voltava ao anterior). A coluna `type` ja existe em `checklist_templates` — sem migration.
+  readonly type?: ChecklistType;
   readonly status?: ChecklistStatus;
   readonly schema?: JsonRecord;
   readonly components?: readonly ChecklistComponentInput[];
@@ -157,6 +162,8 @@ export function parseUpdateChecklistTemplateDto(body: Record<string, unknown>): 
   const parsed = z.object({
     name: z.string().trim().min(1).optional(),
     description: z.union([z.string().trim().min(1), z.null()]).optional(),
+    // PR-02c — mesmo enum do create (tipo invalido continua 400; ausente continua no-op).
+    type: checklistTypeSchema.optional(),
     status: checklistStatusSchema.optional(),
     schema: jsonRecordSchema.optional(),
     components: z.array(componentSchema).min(1).optional(),
