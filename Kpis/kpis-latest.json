@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-02d — PRÉ-VISUALIZAÇÃO no frame de telefone (modal 1080px + dock 392px), render dos 10 tipos a partir do rascunho REAL, card 'Resumo do modelo' com 4 estatísticas derivadas, banner de bloqueio/sucesso e Publicar dentro do modal. FECHA o editor do builder (02a lista #337 → 02b editor #340 → 02c inspector #342 → 02d prévia). JUNTA: cognicao-visual REPROVADO (renderizou em Edge real e mediu) + critico-adversarial CONDICIONADO. 3 ALTA corrigidos: (1) a prévia MENTIA — prometia 'renderização fiel do aplicativo' e desenhava 9 configurações que o app não honra; a cópia passou a dizer o que a tela é; (2) com o dock aberto, TODA gravação quebrava o layout porque a grade dependia do estado de save; (3) o CTA primário era inerte (hover anulado por seletor que repetia os valores) e 'publicando' era invisível. + focus trap com furo no Esc, contradição de espaços de foto e concordância.",
     "title": "CHECKLIST P1 PR-02d — pré-visualização no telefone (fecha o editor)",
-    "pr": null,
+    "pr": 343,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
