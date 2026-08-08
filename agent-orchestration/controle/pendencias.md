@@ -1640,3 +1640,46 @@ concluir. A ação existe na lista (PR-02a) e foi reposta no editor (PR-02b); o 
   A opção (b) é a mais correta e exige decisão de backend (o `render` passa a considerar a run, não só o
   status do template).
 - status: ABERTA (candidata ao PR-03, que trata imutabilidade/ciclo de vida da run).
+
+## P-JUNTA-LIMPEZA-BASE-VIVA (2026-08-08) — 2º incidente de limpeza ad-hoc por subagente na base viva (MÉDIA, processo)
+
+Na junta do PR-02d, o `cognicao-visual` gerou um `cleanup.cjs` que disparou requisições de remoção contra **8
+ids obtidos de uma LISTAGEM**, não do que ele mesmo criou — exatamente o padrão do incidente anterior
+(`feedback-no-adhoc-mass-delete-live-db`). O harness sinalizou.
+
+**Verificação do orquestrador (antes de aceitar o resultado):** impacto **NULO**. A API não expõe DELETE de
+template — as chamadas viraram PATCH de status. `audit_logs` das últimas 3h: 12 `checklist_template.created`,
+5 `checklist_template.updated`, **zero remoção**. 216 `checklist_runs` e os templates do tenant demo intactos.
+
+**O que isto revela (e é o ponto):** a instrução de teardown escopado só entra nos prompts de agente de
+BANCO (`dba-guardiao`). Agentes de UI também criam fixtures ao renderizar telas com dados reais e improvisam
+a limpeza. A regra precisa valer para QUALQUER agente que toque a base viva.
+- **Correção:** incluir a regra de teardown (só o que o próprio agente criou, por id rastreado na criação;
+  nunca a partir de listagem; nunca wildcard; nunca desligar trigger) no preâmbulo padrão de junta —
+  candidata a entrar no `CLAUDE.md` §C7 na próxima fatia de governança.
+- **Mitigação já em uso:** o orquestrador revisa toda ação sinalizada antes de aceitar o resultado (foi o que
+  pegou este caso e o anterior).
+- status: ABERTA.
+
+## P-CHK-SEED-DEMO-SUJO (2026-08-08) — dados de demonstração com nomes técnicos e lixo de teste (BAIXA, mas visível ao dono)
+
+Achado do `critico-adversarial` na junta do PR-02d, verificado pelo orquestrador na base viva: a organização
+demo chama-se **"Tenant Demo"** — termo técnico que §3 proíbe na UI e que agora aparece DENTRO do frame do
+telefone na pré-visualização (a decisão de mostrar a organização real está certa; o dado que ela consome é
+que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo modelo` em rascunho,
+`RLS Checklist A/B` repetidos dezenas de vezes.
+
+- **Correção:** renomear a organização demo em `prisma/seed-users.ts` para um nome de negócio (o próprio
+  protótipo usa "Transportes Ômega") e limpar/renomear os modelos de sujeira no seed.
+- **Cuidado:** limpeza de dados vivos só com teardown escopado por id criado (ver
+  [[P-JUNTA-LIMPEZA-BASE-VIVA]]); o caminho seguro é corrigir o SEED e re-semear, não apagar em massa.
+- status: ABERTA.
+
+## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
+
+Junta do PR-02d. O `resolveChecklistPreviewMode` decide dock × modal por `window.innerWidth >= 1600`, mas a
+grade do dock precisa de **1198px de conteúdo** — com a barra lateral COLAPSADA (74px em vez de 236px) o dock
+caberia bem antes de 1600. O número está certo para o layout expandido e errado como regra geral.
+- **Correção:** medir o contêiner (`ResizeObserver` ou `clientWidth` da grade) contra os 1198px reais, em vez
+  da janela. De quebra, trocar o listener de `resize` por `matchMedia` elimina o re-render por pixel.
+- status: ABERTA.

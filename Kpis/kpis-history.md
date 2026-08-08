@@ -1940,3 +1940,21 @@ diagnóstico: os chips do inspector não quebram nada, apenas gravam configuraç
 
 **Contagens (execução real):** smoke **1073→1091**; backend **2110→2114**; testes contra o Postgres **5/5**.
 Blocos **141→142**.
+
+## 2026-08-08 — CHK-P1-PR-02D (PR pendente) — **fecha o editor do builder**
+
+**Pré-visualização no frame de telefone**: modal grande e, em telas largas, uma quarta coluna encaixada no
+editor. Os 10 tipos de campo renderizam a partir do rascunho real, com resumo do modelo e Publicar ali mesmo.
+Com isso o builder fica completo — lista, editor, inspector tipado e prévia.
+
+**A junta reprovou no pixel** (desta vez renderizando e medindo em navegador real, como exigido) e o achado
+mais importante não foi de pixel: **a prévia mentia**. Ela prometia "renderização fiel do formulário no
+aplicativo" enquanto desenhava nove configurações que o app de campo **não honra** — inclusive um tipo
+inteiro. A correção não foi maquiar: a tela passou a dizer o que ela realmente é, *"como o formulário fica
+montado"*, e a pendência da plumbagem continua aberta e visível.
+
+Também: com a prévia encaixada, **toda gravação quebrava o layout** (o painel do telefone saltava de linha,
+medido em ~84ms mesmo sem latência), e o botão principal de publicar era **inerte ao mouse** — um seletor de
+hover que repetia os próprios valores, anulando o feedback, a quarenta pixels de outro botão que funcionava.
+
+**Contagens (execução real):** smoke **1091→1108**; backend 2.114 e Flutter 839 carregados. Blocos **142→143**.

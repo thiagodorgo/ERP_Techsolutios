@@ -222,13 +222,17 @@ test("editor: header verbatim do protótipo (voltar, nome, tipo, situação, alt
   // Situação + pill de pendência (updatedAt > publishedAt no payload real).
   assert.match(html, /Publicado/);
   assert.match(html, /Alterações não publicadas/);
-  // Ações do header — Salvar/Publicar ligados; só Pré-visualizar (PR-02d) segue parado.
+  // Ações do header — Salvar/Publicar/Pré-visualizar TODAS ligadas (o PR-02d fechou a última).
   assert.match(html, /Salvar/);
   assert.match(html, /Pré-visualizar/);
   assert.match(html, /Publicar/);
   assert.match(html, /title="Publicar e disponibilizar no aplicativo"/);
-  assert.match(html, /ckb-ed-soon-pill/);
-  assert.match(html, /title="Pré-visualização chega em breve"/);
+  // PR-02d: o selo "Em breve" e o `disabled` SAÍRAM do Pré-visualizar (a capacidade existe agora).
+  // O selo continua vivo só onde a capacidade REALMENTE falta — a aba Aplicabilidade (PR-04).
+  assert.doesNotMatch(html, /title="Pré-visualização chega em breve"/);
+  assert.doesNotMatch(html, /ckb-ed-soon-pill/);
+  assert.match(html, /title="Ver como o técnico verá no aplicativo"/);
+  assert.match(html, /aria-expanded="false"/);
   // PR-02c: o seletor de TIPO ficou LIGADO (o PATCH passou a aceitar `type`) — nada de "Em breve"
   // nele, e o <select> não pode voltar desabilitado.
   assert.doesNotMatch(html, /title="A alteração do tipo chega em breve"/);

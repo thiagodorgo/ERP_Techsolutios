@@ -58,6 +58,8 @@ import {
   updateEditorComponent,
 } from "../checklist-editor.model";
 import type { ChecklistConfigChange, ChecklistEditorComponent, ChecklistEditorDraft } from "../checklist-editor.model";
+import { resolveChecklistPreviewMode } from "../checklist-preview.model";
+import type { ChecklistPreviewMode } from "../checklist-preview.model";
 import {
   getTenantChecklist,
   listTenantChecklistComponents,
@@ -66,6 +68,7 @@ import {
 } from "../checklist.service";
 import { CHECKLIST_STATUS_TONE, resolveChecklistComponentTile } from "../checklist-tiles";
 import { ChecklistFieldInspector } from "../components/ChecklistFieldInspector";
+import { ChecklistPreviewDock, ChecklistPreviewModal } from "../components/ChecklistPreview";
 import { ChecklistToast, useChecklistToast } from "../components/ChecklistToast";
 import type { TenantChecklist, TenantChecklistComponentCatalogItem, TenantChecklistStatus } from "../types";
 
@@ -80,8 +83,10 @@ import type { TenantChecklist, TenantChecklistComponentCatalogItem, TenantCheckl
 // `type` — P-CHK-PATCH-SEM-TYPE), guarda de saída suja para QUALQUER link interno, confirmação de
 // edição concorrente (P-CHK-PATCH-SEM-LOCK) e a ação de Inativar/Reativar no editor.
 //
-// FORA DESTE PR (não fingir que existe): a pré-visualização em frame de telefone é o PR-02d — o
-// botão existe na composição do header, DESABILITADO e marcado "Em breve".
+// PR-02d FECHA o editor: a PRÉ-VISUALIZAÇÃO em frame de telefone (`ChecklistPreview`), no modal do
+// protótipo ou como 4ª coluna (dock) quando a janela comporta — decisão automática e única, em
+// `resolveChecklistPreviewMode`. O selo "Em breve" saiu do botão Pré-visualizar (segue apenas onde
+// a capacidade REALMENTE não existe: as regras de aplicabilidade, que são o PR-04).
 
 export const CHECKLIST_LIST_PATH = "/administrator/checklists";
 const CHECKLIST_RUNS_PATH = "/operations/checklists";
@@ -132,6 +137,16 @@ export function editorActionVisibility(input: {
   };
 }
 
+/**
+ * Largura da janela como FATO ou `null` — nunca um número inventado. No render de servidor (e nos
+ * smokes) `window.innerWidth` não existe; `null` cai no modal, que não depende de espaço na grade.
+ */
+function readViewportWidth(): number | null {
+  if (typeof window === "undefined") return null;
+  const width = (window as { innerWidth?: unknown }).innerWidth;
+  return typeof width === "number" && Number.isFinite(width) ? width : null;
+}
+
 /** Mensagem honesta por causa real: indisponível ≠ sem permissão ≠ falha de rede. */
 export function resolveEditorLoadError(error: unknown): string {
   const status = error instanceof ApiError ? error.status : undefined;
@@ -148,12 +163,18 @@ export function ChecklistEditorPage({
   initialComponents,
   initialTab,
   initialSelectedComponentKey,
+  initialPreviewOpen,
+  initialPreviewMode,
 }: {
   readonly initialChecklist?: TenantChecklist;
   readonly initialComponents?: readonly TenantChecklistComponentCatalogItem[];
   readonly initialTab?: EditorTab;
   /** Costura de teste: seleciona o campo pela CHAVE (o id é regenerado pelo backend a cada PATCH). */
   readonly initialSelectedComponentKey?: string;
+  /** Costura de teste (PR-02d): abre a pré-visualização já no 1º render (SSR não roda clique). */
+  readonly initialPreviewOpen?: boolean;
+  /** Costura de teste: força modal × dock (em produção quem decide é a largura da janela). */
+  readonly initialPreviewMode?: ChecklistPreviewMode;
 } = {}) {
   const { checklistId } = useParams<{ checklistId: string }>();
   const { session } = useAuth();
@@ -182,6 +203,9 @@ export function ChecklistEditorPage({
       : null,
   );
   const [tab, setTab] = useState<EditorTab>(initialTab ?? "estrutura");
+  const [previewOpen, setPreviewOpen] = useState(Boolean(initialPreviewOpen));
+  /** Largura da janela — só ela decide modal × dock (ver `resolveChecklistPreviewMode`). */
+  const [viewportWidth, setViewportWidth] = useState<number | null>(readViewportWidth());
   const [dirty, setDirty] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   /** Para onde o usuário tentou ir com o rascunho sujo — `null` = a lista de modelos (botão Voltar). */
@@ -202,6 +226,16 @@ export function ChecklistEditorPage({
     setDirty(false);
     void loadEditor();
   }, [apiContext, checklistId]);
+
+  // PR-02d: a pré-visualização acompanha a janela — quem abriu o dock num monitor largo e reduz a
+  // janela vê a MESMA prévia virar modal, em vez de espremer o formulário até o ilegível.
+  useEffect(() => {
+    function onResize() {
+      setViewportWidth(readViewportWidth());
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // Junta PR-02b (MÉDIA): a guarda de saída suja cobria só o botão Voltar. F5/fechar aba é a
   // saída mais barata de cobrir e a mais fácil de acontecer sem querer.
@@ -447,6 +481,8 @@ export function ChecklistEditorPage({
       setChecklist(published);
       setDraft(createEditorDraftFromChecklist(published));
       setDirty(false);
+      // Protótipo: publicar FECHA a pré-visualização (a conferência acabou; o toast confirma).
+      setPreviewOpen(false);
       showToast("Modelo publicado — já está disponível no aplicativo para as próximas ordens.", "ok");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Falha ao publicar o modelo.", "warn");
@@ -551,6 +587,37 @@ export function ChecklistEditorPage({
   const publishBlockers = checklistPublishBlockers(draft);
   const publishState = publishButtonState(publishBlockers);
   const statusActionLabel = checklist.status === "inactive" ? "Reativar modelo" : "Inativar modelo";
+  // PR-02d — modal × dock: decisão ÚNICA e automática (largura da janela + aba ativa). O botão é
+  // um só; não existe um segundo controle pedindo ao usuário que administre o layout.
+  const previewMode: ChecklistPreviewMode =
+    initialPreviewMode ?? resolveChecklistPreviewMode({ viewportWidth, onStructureTab: tab === "estrutura" });
+  const showPreviewDock = previewOpen && previewMode === "dock";
+  const showPreviewModal = previewOpen && previewMode === "modal";
+
+  /**
+   * O dock é uma COLUNA da aba Estrutura. Trocar de aba com ele aberto o transformaria num modal
+   * saltando por cima da aba que o usuário acabou de abrir — então ele simplesmente fecha. O modal,
+   * esse, é deliberadamente sobreposto e continua válido em qualquer aba (como no protótipo).
+   */
+  function handleTabChange(next: EditorTab) {
+    if (next !== "estrutura" && previewMode === "dock") setPreviewOpen(false);
+    setTab(next);
+  }
+  // §2.8/§3: o telefone mostra o nome da organização ATIVA da sessão — nunca id, nunca "tenant".
+  const organizationName = activeContext?.tenantName ?? null;
+  // Junta PR-02d (ALTA, medido em Edge): a classe usava `visibility.palette`, que carrega o `busy`
+  // do save. Durante a gravação a paleta DESMONTAVA e o template de colunas deixava de bater com o
+  // número de filhos — com o dock aberto, o painel do telefone saltava para uma 2ª linha de 1050px
+  // a cada Salvar. LAYOUT é decidido por PERMISSÃO (quem não edita não tem paleta/inspector);
+  // estado transitório de gravação NUNCA muda a grade.
+  const layoutReadonly = !canUpdate;
+  const structureGridClass = [
+    "ckb-ed-grid",
+    layoutReadonly ? "ckb-ed-grid--readonly" : "",
+    showPreviewDock ? "ckb-ed-grid--preview" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="ckb-ed">
@@ -623,16 +690,18 @@ export function ChecklistEditorPage({
                 {statusActionLabel}
               </button>
             ) : null}
-            {/* Junta PR-02b: controle parado marcado com o MESMO token de "parado" do protótipo
-                (pill "Em breve" #F3E8FF/#7E22CE), em vez de um cinza de disabled que não existe
-                em estado nenhum do desenho. */}
-            <span className="ckb-ed-stopped">
-              <button type="button" className="ckb-ed-btn" title="Pré-visualização chega em breve" disabled>
-                <Smartphone size={15} aria-hidden="true" />
-                Pré-visualizar
-              </button>
-              <span className="ckb-ed-soon-pill">Em breve</span>
-            </span>
+            {/* PR-02d: o botão LIGOU (o selo "Em breve" da junta do PR-02b saiu com ele). Um único
+                controle: a pré-visualização abre como dock ou modal conforme a janela comporta. */}
+            <button
+              type="button"
+              className={previewOpen ? "ckb-ed-btn ckb-ed-btn--preview-on" : "ckb-ed-btn"}
+              title="Ver como o técnico verá no aplicativo"
+              aria-expanded={previewOpen}
+              onClick={() => setPreviewOpen((open) => !open)}
+            >
+              <Smartphone size={15} aria-hidden="true" />
+              Pré-visualizar
+            </button>
             {visibility.save ? (
               <button
                 type="button"
@@ -677,7 +746,7 @@ export function ChecklistEditorPage({
                 aria-selected={tab === item.id}
                 aria-controls={`ckb-panel-${item.id}`}
                 className={tab === item.id ? "ckb-ed-tab ckb-ed-tab--active" : "ckb-ed-tab"}
-                onClick={() => setTab(item.id)}
+                onClick={() => handleTabChange(item.id)}
               >
                 {item.label}
               </button>
@@ -716,13 +785,15 @@ export function ChecklistEditorPage({
       ) : null}
 
       {tab === "estrutura" ? (
-        <div
-          className={visibility.palette ? "ckb-ed-grid" : "ckb-ed-grid ckb-ed-grid--readonly"}
-          role="tabpanel"
-          id="ckb-panel-estrutura"
-          aria-labelledby="ckb-tab-estrutura"
-        >
-          {visibility.palette ? <EditorPalette catalog={catalog} onAdd={handleAddField} /> : null}
+        <div className={structureGridClass} role="tabpanel" id="ckb-panel-estrutura" aria-labelledby="ckb-tab-estrutura">
+          {canUpdate ? (
+            <EditorPalette
+              catalog={catalog}
+              onAdd={handleAddField}
+              collapsed={showPreviewDock}
+              frozen={visibility.editingFrozen}
+            />
+          ) : null}
 
           <section className="ckb-ed-col">
             <div className="ckb-ed-col-head">
@@ -815,10 +886,28 @@ export function ChecklistEditorPage({
               }
             />
           ) : null}
+
+          {showPreviewDock ? (
+            <ChecklistPreviewDock draft={draft} organizationName={organizationName} onClose={() => setPreviewOpen(false)} />
+          ) : null}
         </div>
       ) : (
         <ApplicabilityTab />
       )}
+
+      {showPreviewModal ? (
+        <ChecklistPreviewModal
+          draft={draft}
+          organizationName={organizationName}
+          blockers={publishBlockers}
+          canPublish={canPublish}
+          publishTitle={publishState.title}
+          publishLocked={publishState.locked}
+          publishBusy={saving}
+          onClose={() => setPreviewOpen(false)}
+          onPublish={() => void handlePublish()}
+        />
+      ) : null}
 
       {confirmExit ? (
         <ExitConfirmDialog
@@ -846,22 +935,34 @@ export function ChecklistEditorPage({
   );
 }
 
-/** Paleta 264px — clique adiciona ao formulário (o protótipo não faz arrastar-e-soltar aqui). */
+/**
+ * Paleta 264px — clique adiciona ao formulário (o protótipo não faz arrastar-e-soltar aqui).
+ * PR-02d: com a pré-visualização em dock ela COLAPSA para 76px de ícones (`palFull` do protótipo);
+ * o rótulo continua acessível pelo `title`/`aria-label` de cada botão, nunca só pela cor do tile.
+ */
 function EditorPalette({
   catalog,
   onAdd,
+  collapsed = false,
+  frozen = false,
 }: {
   readonly catalog: readonly TenantChecklistComponentCatalogItem[];
   readonly onAdd: (item: TenantChecklistComponentCatalogItem) => void;
+  readonly collapsed?: boolean;
+  /** Junta PR-02d: durante a gravação a paleta fica MONTADA e desabilitada — desmontá-la mudava
+   *  a contagem de filhos da grade e quebrava o layout (o dock saltava de linha a cada Salvar). */
+  readonly frozen?: boolean;
 }) {
   return (
-    <section className="ckb-ed-col">
-      <div className="ckb-ed-col-head ckb-ed-col-head--stack">
-        <div>
-          <div className="ckb-ed-col-title">Campos disponíveis</div>
-          <div className="ckb-ed-col-sub">Clique para adicionar ao formulário</div>
+    <section className={collapsed ? "ckb-ed-col ckb-ed-col--compact" : "ckb-ed-col"}>
+      {collapsed ? null : (
+        <div className="ckb-ed-col-head ckb-ed-col-head--stack">
+          <div>
+            <div className="ckb-ed-col-title">Campos disponíveis</div>
+            <div className="ckb-ed-col-sub">Clique para adicionar ao formulário</div>
+          </div>
         </div>
-      </div>
+      )}
       <div className="ckb-ed-palette-body">
         {catalog.map((item) => {
           // §3 — o catálogo do backend devolve rótulo/descrição sem acento; a UI usa SEMPRE o
@@ -874,21 +975,26 @@ function EditorPalette({
             <button
               key={item.type}
               type="button"
-              className="ckb-ed-pal-item"
+              className={collapsed ? "ckb-ed-pal-item ckb-ed-pal-item--compact" : "ckb-ed-pal-item"}
               title={`${label} — ${description}`}
               aria-label={`Adicionar campo ${label}`}
+              disabled={frozen}
               onClick={() => onAdd(item)}
             >
               <span className="ckb-ed-pal-tile" style={{ background: tile.bg, color: tile.fg }} aria-hidden="true">
                 <TileIcon size={16} />
               </span>
-              <span className="ckb-ed-pal-text">
-                <span className="ckb-ed-pal-label">{label}</span>
-                <span className="ckb-ed-pal-desc">{description}</span>
-              </span>
-              <span className="ckb-ed-pal-plus" aria-hidden="true">
-                <Plus size={12} />
-              </span>
+              {collapsed ? null : (
+                <>
+                  <span className="ckb-ed-pal-text">
+                    <span className="ckb-ed-pal-label">{label}</span>
+                    <span className="ckb-ed-pal-desc">{description}</span>
+                  </span>
+                  <span className="ckb-ed-pal-plus" aria-hidden="true">
+                    <Plus size={12} />
+                  </span>
+                </>
+              )}
             </button>
           );
         })}
