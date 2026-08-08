@@ -1885,3 +1885,29 @@ componentes órfãos fora, e2e do mapa reescrita para a tela real com teste que 
 
 **Contagens (execução real):** smoke **1052→1059**; backend **2110/2110**; Flutter 839/839 (§C3.3).
 Blocos **138→139**. Backfill #338: merge `70dbfde`.
+
+## 2026-08-08 — CHK-P1-HOTFIX-TYPE-CHECK (#341, merge 32e22c7)
+
+**Bug vivo na `main` desde o #330, encontrado pela junta e reproduzido ponta a ponta.** O PR-01 acrescentou
+"Escolha única", "Múltipla escolha" e "Assinatura" ao código e ao catálogo **sem migração** — o banco
+continuou recusando os três. No modo de produção, criar um checklist com qualquer um deles devolvia HTTP 400
+com a mensagem crua do Postgres. **A feature entregue no #330 nunca funcionou fora do modo memória.**
+
+Passou despercebido porque toda a suíte de checklist roda em memória: 6/6 verdes que nunca tocam a
+restrição do banco. A migração é aditiva; a blindagem percorre os 10 tipos contra o Postgres real e foi
+**provada por mutação** (com a restrição revertida, o guard reprova). O runbook de reversão ficou no
+cabeçalho — inclusive o detalhe de que uma reversão malsucedida deixa a tabela sem restrição.
+
+## 2026-08-08 — CHK-P1-PR-02B (PR #340)
+
+**Modo editor do builder**, fiel ao protótipo do dono: sub-rota com deep-link, header com nome e tipo,
+paleta, canvas com **seções nomeadas**, inspector básico, modal "Sair sem salvar?" e a aba Aplicabilidade
+estática. A ponte antiga saiu e 5 componentes órfãos foram removidos.
+
+A junta reprovou no pixel e condicionou no crítico, com 4 achados ALTA: o cabeçalho saía da tela ao rolar;
+adicionar um campo gravava o rótulo **cru** do backend como a pergunta que o técnico lê no aplicativo;
+**Publicar ficou inalcançável** com o endpoint funcionando; e editar durante o salvamento perdia trabalho
+em silêncio. Todos corrigidos, mais 8 MÉDIAs.
+
+**Contagens (execução real, após rebase no hotfix):** smoke **1059→1073**; backend 2.110 e Flutter 839
+carregados. Blocos **140→141**.
