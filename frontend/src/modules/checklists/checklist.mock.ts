@@ -139,6 +139,11 @@ export async function listMockTenantChecklists(): Promise<TenantChecklist[]> {
   return checklists.filter((checklist) => checklist.status !== "archived");
 }
 
+export async function getMockTenantChecklist(checklistId: string): Promise<TenantChecklist> {
+  await wait();
+  return findChecklist(checklistId);
+}
+
 export async function listMockTenantChecklistComponents(): Promise<TenantChecklistComponentCatalogItem[]> {
   await wait();
   return mockChecklistComponents;

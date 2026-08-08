@@ -2011,11 +2011,35 @@
     "snapshot_date": "2026-08-06",
     "version": "MAPA-PIXEL-PR2",
     "pr": 339,
-    "merge_commit": null,
+    "merge_commit": "31609b8",
     "flutter_tests": "839/839",
     "backend_tests": "2110/2110",
     "frontend_smoke_tests": "1059/1059",
     "blocks_completed": 139,
-    "description": "J-MAPAS-10 PR-2: paridade do espelho GoogleMapsCanvas (avatar/losango/pulso/label/rotas tracejadas/memória da visão/pan com padding emulado/popup React/hover+clique/zero câmera automática — as 3 diretivas do dono valem no caminho Google) + faxina (focus-city removido com anotação SUPERSEDED no kb-mapas §(f); OperationsDispatchActionsPanel e OperationsMapStatusBadge órfãos removidos; e2e do mapa reescrita p/ tela real + teste de faxina proibindo âncoras mortas). Divergências DECLARADAS: cartografia Google ≠ token-set claro (mapId ignora styles JS); moldura da InfoWindow é do Google; padding emulado só no panTarget; idle≠moveend (1º evento descartado p/ savenote não mentir). Opt-in VITE_MAPS_PROVIDER=google MANTIDO: Dynamic Maps é SKU tarifado (US$7/1000 pós-10k) vs OpenFreeMap US$0 — preferir pela mera presença de chave ligaria serviço pago sem junta (§C7.1). JUNTA (avaliador-mapas) REPROVOU ciclo 1 com ALTA provada em harness runtime (React 19 real): ref callback INLINE re-invoca a cada re-render → o canvas estalava a câmera do operador de volta à visão inicial a cada polling/hover e salvava a visão errada por cima da memória. Corrigido: guard de aplicação única (initialCameraAppliedRef) + guard de fonte no teste 10. smoke 1052→1059; backend 2110/2110; blocks 138→139. Backfill #338: merge 70dbfde."
+    "description": "J-MAPAS-10 PR-2: paridade do espelho GoogleMapsCanvas (avatar/losango/pulso/label/rotas tracejadas/memória da visão/pan com padding emulado/popup React/hover+clique/zero câmera automática — as 3 diretivas do dono valem no caminho Google) + faxina (focus-city removido com anotação SUPERSEDED no kb-mapas §(f); OperationsDispatchActionsPanel e OperationsMapStatusBadge órfãos removidos; e2e do mapa reescrita p/ tela real + teste de faxina proibindo âncoras mortas). Divergências DECLARADAS: cartografia Google ≠ token-set claro (mapId ignora styles JS); moldura da InfoWindow é do Google; padding emulado só no panTarget; idle≠moveend (1º evento descartado p/ savenote não mentir). Opt-in VITE_MAPS_PROVIDER=google MANTIDO: Dynamic Maps é SKU tarifado (US$7/1000 pós-10k) vs OpenFreeMap US$0 — preferir pela mera presença de chave ligaria serviço pago sem junta (§C7.1). JUNTA (avaliador-mapas) REPROVOU ciclo 1 com ALTA provada em harness runtime (React 19 real): ref callback INLINE re-invoca a cada re-render → o canvas estalava a câmera do operador de volta à visão inicial a cada polling/hover e salvava a visão errada por cima da memória. Corrigido: guard de aplicação única (initialCameraAppliedRef) + guard de fonte no teste 10. smoke 1052→1059; backend 2110/2110; blocks 138→139. Backfill #338: merge 70dbfde.",
+    "approved_head": "31609b8"
+  },
+  {
+    "snapshot_date": "2026-08-08",
+    "version": "CHK-P1-HOTFIX-TYPE-CHECK",
+    "pr": 341,
+    "merge_commit": "32e22c7",
+    "approved_head": "32e22c7",
+    "flutter_tests": "839/839",
+    "backend_tests": "2110/2110",
+    "frontend_smoke_tests": "1059/1059",
+    "blocks_completed": 140,
+    "description": "HOTFIX P-CHK-COMPONENT-TYPE-CHECK: o PR-01 (#330, já mergeado) acrescentou single_choice/multi_choice/signature ao enum TS e ao catálogo servido à paleta SEM migração — o CHECK checklist_template_components_type_check continuou aceitando só 7 tipos. Em CORE_SAAS_PERSISTENCE=prisma (modo REAL) criar um modelo com escolha ou assinatura estourava 23514 e devolvia HTTP 400 com a mensagem CRUA do Postgres ao tenant admin: a feature entregue no #330 NUNCA funcionou fora do modo memória. Achado ALTA do agente-dba-guardiao (junta do PR-02c), reproduzido ponta a ponta pelo orquestrador contra a API viva (3 tipos: 400 antes, 201 depois). Por que ninguém viu: tests/checklist-routes.test.ts força memory, então 6/6 verdes nunca tocam a constraint; e o teste DB-gated que nasceu da MESMA classe de bug exercitava só 2 tipos antigos. Correção: migração ADITIVA 20260859000000 (alarga para os 10 tipos, nenhuma linha reescrita) + BLINDAGEM no teste DB-gated percorrendo CHECKLIST_COMPONENT_TYPES, PROVADA POR MUTAÇÃO (CHECK revertido aos 7 → not ok 4; com a migração → 4/4). Runbook de rollback documentado: o DOWN falha se existirem linhas dos tipos novos e, como o DROP vem antes do ADD, uma reversão malsucedida deixa a tabela SEM constraint. Testes DB-gated 4/4; demais contagens carregadas (§C3.3)."
+  },
+  {
+    "snapshot_date": "2026-08-08",
+    "version": "CHK-P1-PR-02B",
+    "pr": 340,
+    "merge_commit": null,
+    "flutter_tests": "839/839",
+    "backend_tests": "2110/2110",
+    "frontend_smoke_tests": "1073/1073",
+    "blocks_completed": 141,
+    "description": "CHECKLIST P1 PR-02b: MODO EDITOR do builder fiel ao protótipo do dono — sub-rota com deep-link, header (nome inline-editável, tipo, pills, dirty, Salvar/Publicar), paleta por clique, canvas com SEÇÕES NOMEADAS (mover sem cruzar seção/duplicar/remover), inspector básico, modal 'Sair sem salvar?', aba Aplicabilidade estática. Ponte antiga morta + 5 componentes órfãos removidos. Convenção de seções PROVADA rodando parser+repositório REAIS (revelou que chave no topo do componente e `type` são descartados pelo PATCH → P-CHK-PATCH-SEM-TYPE, fechada no PR-02c). JUNTA (cognicao-visual REPROVADO + critico-adversarial CONDICIONADO, refutação por achado): 4 ALTA — (1) align-items:start jogava o HEADER com Salvar/dirty/abas para FORA da tela ao rolar o formulário; (2) adicionar campo gravava o rótulo CRU do catálogo como A PERGUNTA QUE O TÉCNICO LÊ no app; (3) Publicar ficou INALCANÇÁVEL, removendo capacidade real com o endpoint funcionando; (4) perda SILENCIOSA de trabalho ao editar durante o save. + 8 MÉDIA (reset na troca de organização, erro honesto por status, beforeunload, remover seção vazia com reindexação, testes dos mutadores, selo 'Em breve', payload sem components obsoleto, anel de foco). Rebaseado sobre o hotfix #341: smoke 1059→1073 (execução real); backend/flutter carregados; blocks 140→141."
   }
 ]

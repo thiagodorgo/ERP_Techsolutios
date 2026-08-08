@@ -1,6 +1,7 @@
 import { isMockMode } from "../../config/env";
 import {
   createTenantChecklistFromApi,
+  getTenantChecklistFromApi,
   listTenantChecklistComponentsFromApi,
   listTenantChecklistsFromApi,
   publishTenantChecklistFromApi,
@@ -8,6 +9,7 @@ import {
 } from "./checklist.adapter";
 import {
   createMockTenantChecklist,
+  getMockTenantChecklist,
   listMockTenantChecklistComponents,
   listMockTenantChecklists,
   publishMockTenantChecklist,
@@ -24,6 +26,12 @@ import type {
 export function listTenantChecklists(context: ChecklistApiContext): Promise<TenantChecklist[]> {
   if (isMockMode()) return listMockTenantChecklists();
   return listTenantChecklistsFromApi(context);
+}
+
+/** CHECKLIST P1 PR-02b — carga do editor por deep-link (um modelo, sem depender da lista). */
+export function getTenantChecklist(context: ChecklistApiContext, checklistId: string): Promise<TenantChecklist> {
+  if (isMockMode()) return getMockTenantChecklist(checklistId);
+  return getTenantChecklistFromApi(context, checklistId);
 }
 
 export function listTenantChecklistComponents(context: ChecklistApiContext): Promise<TenantChecklistComponentCatalogItem[]> {
