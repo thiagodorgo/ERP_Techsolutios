@@ -119,6 +119,48 @@ if (!connectionString) {
       await client.$disconnect();
     }
   });
+
+  // HOTFIX P-CHK-COMPONENT-TYPE-CHECK (achado ALTA do dba-guardião, junta do PR-02c).
+  // O PR-01 (#330) acrescentou `single_choice`, `multi_choice` e `signature` ao enum TS e ao
+  // catálogo servido à paleta SEM migração — o CHECK do banco continuou aceitando só os 7 tipos
+  // originais. Em `CORE_SAAS_PERSISTENCE=prisma` (o modo REAL), criar um modelo com qualquer um
+  // dos três estourava 23514 e devolvia HTTP 400 com a mensagem CRUA do Postgres ao tenant admin.
+  // A suíte inteira roda em `memory`, então os 6/6 verdes NUNCA tocavam a constraint.
+  //
+  // Este teste é a BLINDAGEM: exercita os 10 tipos do catálogo contra o Postgres de verdade.
+  // Sem ele, o próximo tipo novo repete exatamente o mesmo bug.
+  test("CHECK do banco aceita os 10 tipos do catálogo (blindagem do enum × constraint)", async () => {
+    const { client, repo } = await bootstrap(connectionString);
+    const ctx = await seedTenant(client);
+    try {
+      const { CHECKLIST_COMPONENT_TYPES } = await import("../src/modules/checklists/checklist.types.js");
+
+      for (const type of CHECKLIST_COMPONENT_TYPES) {
+        // Escolha exige `config.options` não-vazio no validator; o repositório não valida, mas
+        // manter o payload realista evita falso-positivo quando a validação descer para cá.
+        const config =
+          type === "single_choice" || type === "multi_choice" ? { options: ["Sim", "Não"] } : {};
+
+        const created = await repo.createTemplate({
+          tenantId: ctx.tenantId,
+          actorUserId: ctx.userId,
+          name: `Constraint check ${type}`,
+          type: "custom",
+          schema: {},
+          components: [{ type, label: `Campo ${type}`, required: false, config, validationRules: {}, visibilityRules: {} }],
+        });
+
+        assert.equal(
+          created.components[0]?.type,
+          type,
+          `o tipo "${type}" existe no catálogo mas o CHECK do banco o recusa — falta migração estendendo checklist_template_components_type_check`,
+        );
+      }
+    } finally {
+      await teardown(client, ctx.tenantId);
+      await client.$disconnect();
+    }
+  });
 }
 
 // ── infra ────────────────────────────────────────────────────────────────────
