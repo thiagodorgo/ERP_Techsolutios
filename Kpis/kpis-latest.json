@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-02c — inspector TIPADO (10 formulários por tipo: opções de escolha com reordenar/remover, mín/máx de fotos, chips de veículo/avaria, limite de caracteres, toggles de assinatura/ciência/antes-depois, select de comparação), guard-rails de publicação espelhando o validator, `type` gravado no PATCH (fecha P-CHK-PATCH-SEM-TYPE), Publicar ligado com travas, Inativar/Reativar no editor. JUNTA COM POSTGRES VIVO reprovou nos dois revisores e foi decisiva: gerou o hotfix #341 (o CHECK do banco recusava os 3 tipos do PR-01 — feature nunca funcionou em produção) e apontou 2 ALTA corrigidos aqui: (1) updateTemplate rotacionava os UUIDs a cada save, fazendo a resposta de técnico offline ser recusada PARA SEMPRE pela FK Restrict — agora reconcilia por component_key nos dois repositórios, com guard DB-gated; (2) as travas da tela não espelhavam o validator (6 payloads passavam e batiam em 400) — corrigido e provado por teste de PARIDADE contra o validator real. Mais: P2003 cru traduzido para 409 de negócio e auditoria da troca de tipo em modelo publicado.",
     "title": "CHECKLIST P1 PR-02c — inspector tipado + integridade do modelo",
-    "pr": null,
+    "pr": 342,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
