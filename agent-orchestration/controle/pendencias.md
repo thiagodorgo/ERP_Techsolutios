@@ -1530,3 +1530,34 @@ de checklist (app caía nos seeds); a trilha de OS precisa do mesmo tratamento: 
 sem fallback de seed; seeds só em modo demo EXPLÍCITO e rotulado. Candidata ao **PR-08 (reconciliação
 mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
 - status: ABERTA.
+
+## P-CHK-COMPONENT-TYPE-CHECK (2026-08-08) — CHECK do banco recusava os 3 tipos do PR-01 — **RESOLVIDO (hotfix)**
+
+Achado ALTA do `agente-dba-guardiao` na junta do CHECKLIST P1 PR-02c, **reproduzido pelo orquestrador ponta a
+ponta** contra a API viva. O PR-01 (#330, JÁ MERGEADO) acrescentou `single_choice`, `multi_choice` e
+`signature` ao enum TS e ao catálogo servido à paleta do builder **sem migração**. O CHECK
+`checklist_template_components_type_check` (migração 20260607000000) continuava restringindo a 7 valores.
+
+**Sintoma real em `CORE_SAAS_PERSISTENCE=prisma` (modo de produção):**
+`POST /api/v1/tenant/checklists` com componente de escolha/assinatura → **HTTP 400** com a mensagem CRUA do
+Postgres (`violates check constraint ...`) no corpo e no toast do editor. Ou seja: a feature entregue no
+#330 **nunca funcionou fora do modo memória**.
+
+**Por que passou despercebido:** `tests/checklist-routes.test.ts:472` força `CORE_SAAS_PERSISTENCE=memory` —
+a suíte fecha 6/6 verde sem NUNCA tocar a constraint. Agravante: `tests/checklist-template-prisma-db.test.ts`
+nasceu desta mesma classe de bug (P-CHK-TEMPLATE-PRISMA-V7) e exercitava só 2 tipos antigos.
+
+**Correção:** migração ADITIVA `20260859000000_extend_checklist_component_type_check` (alarga para os 10
+tipos; nenhuma linha reescrita, validação instantânea) — mesmo padrão da já-mergeada
+`20260858000000_extend_field_dispatch_event_type_check`.
+
+**Blindagem contra recorrência:** o teste DB-gated ganhou um caso que percorre `CHECKLIST_COMPONENT_TYPES` e
+cria um template para CADA tipo contra o Postgres real. **Provado por mutação:** com o CHECK revertido aos 7
+tipos o guard REPROVA (`not ok 4`), e volta a passar com a migração — não é teatro.
+
+**Runbook de rollback (verificado na base local):** o DOWN só é seguro enquanto não existirem linhas com os 3
+tipos novos. Com elas presentes, o `ADD CONSTRAINT` falha com *"is violated by some row"* — remova ou
+converta as linhas ANTES de reverter. (Confirmado ao vivo: o DOWN falhou porque havia templates de prova;
+atenção que o DROP ocorre ANTES do ADD, então uma reversão malsucedida deixa a tabela SEM constraint até o
+operador recriá-la.)
+- status: **RESOLVIDO** (migração + blindagem no PR de hotfix).
