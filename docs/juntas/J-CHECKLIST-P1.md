@@ -266,3 +266,31 @@ blindado com teste DB-gated **provado por mutação**. Detalhes em `P-CHK-COMPON
 - `P-CHK-PATCH-SEM-LOCK` — last-write-wins segue sem guarda de versão no backend; mitigação de cliente existe.
 
 **Bateria:** frontend check verde · smoke **1091/1091** · backend **2114/2114** (4 shards) · DB-gated **5/5**.
+
+### PR-02d — pré-visualização no telefone — JUNTA: pixel REPROVOU, crítico CONDICIONOU → corrigido (2026-08-08)
+
+**Entrega:** modal 1080px + dock de 392px com frame de telefone, render dos 10 tipos a partir do rascunho
+REAL, card "Resumo do modelo" com 4 estatísticas derivadas, banner de bloqueio/sucesso e Publicar no modal.
+**FECHA o editor do builder** (02a lista → 02b editor → 02c inspector → 02d prévia).
+
+**Achados corrigidos:**
+
+| Sev | Achado | Correção |
+|---|---|---|
+| **ALTA** (crítico) | **A prévia MENTIA**: a cópia prometia "renderização fiel do formulário no aplicativo" e desenhava 9 configurações que o app **não honra** (`P-CHK-CHIPS-SEM-CONSUMIDOR`) | a tela passou a dizer o que ela é: **"Como o formulário fica montado"** + "uma simulação da ordem e do conteúdo dos campos — **não uma cópia do visual do aplicativo**". Sem plumbagem falsa; a pendência segue aberta para o PR-04 |
+| **ALTA** (pixel) | Com o dock aberto, **toda gravação quebrava o layout**: a grade usava `visibility.palette` (que carrega o `busy` do save), a paleta desmontava e o painel do telefone saltava para uma 2ª linha de 1050px. Medido em Edge: reproduz em ~84ms mesmo sem latência | LAYOUT decidido por **permissão** (`!canUpdate`), nunca por estado transitório; a paleta fica **montada e congelada** durante o save (como o inspector já era) |
+| **ALTA** (pixel) | CTA primário "Publicar modelo" **inerte**: o seletor `:hover` repetia os mesmos valores, anulando o feedback — enquanto o "Publicar" do cabeçalho, a 40px, escurecia normalmente. E "publicando" era invisível | hover `#1D4ED8` (o do protótipo), `:disabled` com a convenção do repo (opacidade + cursor), transição de .15s e rótulo **"Publicando…"** |
+| **MÉDIA** | Focus trap com furo: com o foco fora do diálogo o **Esc não fechava** — usuário preso tendo de achar o ✕ com o mouse | listener no `document`, com remoção no cleanup |
+| **MÉDIA** | Prévia contradizia o inspector: telefone com 2 quadros de foto e legenda dizendo "máximo 1" | os espaços respeitam o mesmo teto que a legenda anuncia |
+| **BAIXA** | "1 campos no formulário", "1 seções" | concordância nos 4 cartões |
+
+**Registrados, não corrigidos:** `P-CHK-SEED-DEMO-SUJO` (a organização demo chama-se "Tenant Demo" — termo
+técnico aparecendo dentro do telefone; corrigir no SEED, não apagando dado vivo) e
+`P-CHK-PREVIEW-DOCK-LIMIAR` (1600px é constante, não medição do contêiner).
+
+**Incidente de processo:** o revisor de pixel improvisou limpeza na base viva a partir de uma LISTAGEM —
+2º caso do mesmo padrão. Impacto **nulo** (verificado: a API não expõe DELETE, virou PATCH de status; zero
+remoção na auditoria), mas gerou `P-JUNTA-LIMPEZA-BASE-VIVA`: a regra de teardown escopado precisa valer
+para QUALQUER agente que toque a base, não só os de banco.
+
+**Bateria:** check verde · smoke **1091→1108** · build ✓ · `git diff --check` limpo.
