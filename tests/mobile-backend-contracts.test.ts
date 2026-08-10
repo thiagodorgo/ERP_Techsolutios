@@ -781,9 +781,64 @@ test("mobile checklist action sync: escrita tardia em vistoria CONCLUÍDA vira c
     assert.equal(lateSync.body.data.summary.already_applied, 1);
     for (const conflict of lateSync.body.data.conflicts) {
       assert.equal(conflict.conflict.conflict_type, "checklist_run_locked");
-      assert.equal(conflict.conflict.next_action, "refresh_checklist_run_and_retry");
+      // A trava é PERMANENTE: nenhum refresh muda o status e todo retry devolve o mesmo 409. Mandar "atualize e
+      // tente de novo" prendia a ação reciclando na fila para sempre. A orientação é terminal e nomeia o
+      // caminho real — reabrir, que é permissão de GESTÃO (o técnico só pede).
+      assert.equal(conflict.conflict.next_action, "stop_retrying_and_request_run_reopen");
+      assert.equal(conflict.conflict.retriable, false);
       assert.equal(conflict.error.code, "CHECKLIST_RUN_LOCKED");
     }
+
+    // Junta PR-03 (2ª rodada, mutação A2 do verificador): o LADO RETRIÁVEL não tinha nenhuma asserção —
+    // transformar todo conflito em terminal passava verde. `run.create` contra modelo INATIVADO é 409
+    // transitório de verdade (o operador pode reativar o modelo; repetir depois FAZ sentido): tem que
+    // sair retriable com a orientação de atualizar, nunca a terminal de reabertura.
+    const inactivate = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.checklistId}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "inactive" },
+    });
+    assert.equal(inactivate.status, 200);
+
+    const retriableSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: {
+        actions: [
+          {
+            client_action_id: "checklist-retriable-create",
+            type: "checklist.run_create",
+            local_created_at: "2026-06-14T13:20:00.000Z",
+            payload: { checklist_id: checklist.checklistId, local_run_id: "local-retriable-1" },
+          },
+        ],
+      },
+    });
+    assert.equal(retriableSync.status, 200);
+    const retriable = retriableSync.body.data.conflicts?.find(
+      (item: { client_action_id: string }) => item.client_action_id === "checklist-retriable-create",
+    );
+    assert.ok(retriable, `esperava conflito retriável, veio: ${JSON.stringify(retriableSync.body.data)}`);
+    assert.equal(retriable.conflict.conflict_type, "checklist_not_published");
+    assert.equal(retriable.conflict.retriable, true);
+    assert.equal(retriable.conflict.next_action, "refresh_checklist_run_and_retry");
+    assert.equal(retriable.conflict.rejected_content, undefined);
+
+    // O conteúdo recusado volta no corpo: o app tem o que MOSTRAR ao técnico em vez de descartar em silêncio.
+    const lateAnswer = lateSync.body.data.conflicts.find(
+      (item: { client_action_id: string }) => item.client_action_id === "checklist-late-answer",
+    );
+    assert.equal(lateAnswer.conflict.rejected_content.action_type, "checklist.item_answer");
+    assert.equal(lateAnswer.conflict.rejected_content.component_id, checklist.componentId);
+    assert.equal(lateAnswer.conflict.rejected_content.value, "Resposta que subiu depois da conclusao.");
+    assert.equal(lateAnswer.conflict.rejected_content.captured_at, "2026-06-14T13:00:00.000Z");
+
+    const lateMarker = lateSync.body.data.conflicts.find(
+      (item: { client_action_id: string }) => item.client_action_id === "checklist-late-marker",
+    );
+    assert.equal(lateMarker.conflict.rejected_content.action_type, "checklist.marker_create");
+    assert.equal(lateMarker.conflict.rejected_content.marker_type, "scratch");
+
     assert.equal(lateSync.body.data.already_applied[0].client_action_id, "checklist-late-complete");
     assertNoStackTrace(lateSync.body);
 
@@ -791,6 +846,90 @@ test("mobile checklist action sync: escrita tardia em vistoria CONCLUÍDA vira c
     const after = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${checklist.runId}/comparison`, { headers });
     assert.equal(after.body.data.run.status, "completed");
     assert.equal(after.body.data.markers.length, 0);
+  });
+});
+
+// CHECKLIST P1 PR-03 (junta, MÉDIA-5) — a FOTO DA AVARIA é o caso mais caro da escrita tardia: o contrato manda
+// o binário subir DEPOIS do sync JSON (a ação `attachment.attach` só devolve o endpoint). Se a conclusão sobe
+// antes da foto, o upload multipart bate na mesma trava e responde 409 para sempre. Devolver "aceito, suba aqui"
+// nesse estado é uma promessa falsa que termina com a foto presa na fila local, sem ninguém saber.
+test("mobile checklist action sync: foto tardia em vistoria CONCLUÍDA é recusada no sync, com o descritor do que não entrou", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const checklist = await createChecklistRunForSync(baseUrl, seed, headers);
+
+    const complete = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${checklist.runId}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+    assert.equal(complete.status, 200);
+
+    const lateSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "checklist-late-photo-batch",
+        actions: [
+          {
+            client_action_id: "checklist-late-photo",
+            type: "checklist_attachment.attach",
+            local_created_at: "2026-06-14T13:10:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              local_att_id: "local-att-avaria-1",
+              component_id: checklist.componentId,
+              file_name: "avaria-porta-esquerda.jpg",
+              mime_type: "image/jpeg",
+            },
+          },
+          {
+            client_action_id: "checklist-late-signature",
+            type: "checklist.item_answer",
+            local_created_at: "2026-06-14T13:11:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              value: "data:image/png;base64,DRIVER-SIGNATURE",
+            },
+          },
+        ],
+      },
+    });
+
+    assert.equal(lateSync.status, 200);
+    assert.equal(lateSync.body.data.summary.accepted, 0);
+    assert.equal(lateSync.body.data.summary.conflicts, 2);
+
+    const photo = lateSync.body.data.conflicts.find(
+      (item: { client_action_id: string }) => item.client_action_id === "checklist-late-photo",
+    );
+    // Nenhum endpoint de upload é prometido para uma vistoria travada.
+    assert.equal(photo.attachment, undefined);
+    assert.equal(photo.conflict.conflict_type, "checklist_run_locked");
+    assert.equal(photo.conflict.next_action, "stop_retrying_and_request_run_reopen");
+    assert.equal(photo.conflict.retriable, false);
+    // O técnico consegue ver QUAL foto não entrou (nome e id local do arquivo no aparelho).
+    assert.equal(photo.conflict.rejected_content.action_type, "checklist.attachment_attach");
+    assert.equal(photo.conflict.rejected_content.file_name, "avaria-porta-esquerda.jpg");
+    assert.equal(photo.conflict.rejected_content.local_att_id, "local-att-avaria-1");
+    assert.equal(photo.conflict.rejected_content.component_id, checklist.componentId);
+
+    // §2.8 — assinatura/foto em base64 NÃO voltam no descritor (o app já tem o original); a omissão é declarada
+    // em vez de o campo simplesmente sumir, senão o app leria "item sem resposta".
+    const signature = lateSync.body.data.conflicts.find(
+      (item: { client_action_id: string }) => item.client_action_id === "checklist-late-signature",
+    );
+    assert.equal(signature.conflict.rejected_content.value, undefined);
+    assert.equal(signature.conflict.rejected_content.value_omitted, "binary_content");
+    // Junta PR-03 (2ª rodada, sonda do verificador): a asserção anterior olhava SÓ o rejected_content —
+    // e o base64 voltava inteiro pelo campo AO LADO (`conflict.local.payload.value`). A varredura agora
+    // cobre o CONFLITO INTEIRO: redigir um campo e vazar pelo vizinho é a mesma violação.
+    assert.equal(JSON.stringify(signature.conflict).includes("base64"), false);
+    assert.equal(signature.conflict.local.payload.value, undefined);
+    assert.equal(signature.conflict.local.payload.value_omitted, "binary_content");
+    assert.equal(JSON.stringify(photo.conflict).includes("base64"), false);
+    assertNoStackTrace(lateSync.body);
   });
 });
 
@@ -983,6 +1122,19 @@ test("mobile checklist sync: guincheiro SEM create preenche o ciclo contra uma r
           position_label: "Porta dianteira esquerda",
         },
       },
+      // Anexo com a vistoria ainda ABERTA (mesma razão do ciclo completo: assinada, ela não recebe binário).
+      {
+        client_action_id: "gnc-attachment",
+        type: "checklist_attachment.attach",
+        local_created_at: "2026-07-31T14:02:30.000Z",
+        payload: {
+          run_id: serverRunId,
+          local_att_id: "local-att-gnc-1",
+          field_id: componentId,
+          file_name: "avaria.jpg",
+          mime_type: "image/jpeg",
+        },
+      },
       {
         client_action_id: "gnc-divergence",
         type: "checklist_divergence.create",
@@ -1000,18 +1152,6 @@ test("mobile checklist sync: guincheiro SEM create preenche o ciclo contra uma r
         payload: {
           run_id: serverRunId,
           message: "Motorista ciente da avaria registrada.",
-        },
-      },
-      {
-        client_action_id: "gnc-attachment",
-        type: "checklist_attachment.attach",
-        local_created_at: "2026-07-31T14:05:00.000Z",
-        payload: {
-          run_id: serverRunId,
-          local_att_id: "local-att-gnc-1",
-          field_id: componentId,
-          file_name: "avaria.jpg",
-          mime_type: "image/jpeg",
         },
       },
       {
@@ -1091,11 +1231,24 @@ test("mobile checklist sync is durably idempotent across a simulated restart wit
     assert.equal(replaySync.status, 200);
     assert.equal(replaySync.body.data.summary.received, 7);
     // Pós-restart, sem o receipt in-memory: run/answer/marker/divergence/ack/complete resolvem para
-    // already_applied pela idempotência DURÁVEL; attachment.attach é metadado noop (accepted, nunca duplica).
+    // already_applied pela idempotência DURÁVEL. O attachment.attach NÃO pode mais ser "accepted": a vistoria
+    // já está assinada e o binário não tem como entrar — devolver o endpoint de upload seria mandar o app
+    // subir uma foto que o multipart recusa. Vira conflito TERMINAL, com o descritor do arquivo.
     assert.equal(replaySync.body.data.summary.already_applied, 6);
-    assert.equal(replaySync.body.data.summary.accepted, 1);
+    assert.equal(replaySync.body.data.summary.accepted, 0);
     assert.equal(replaySync.body.data.summary.rejected, 0);
-    assert.equal(replaySync.body.data.summary.conflicts, 0);
+    assert.equal(replaySync.body.data.summary.conflicts, 1);
+
+    const replayAttachment = findSyncResult(replaySync.body, "cyc-attachment");
+    assert.equal(replayAttachment.bucket, "conflicts");
+    const replayConflict = replayAttachment.result?.conflict as {
+      next_action: string;
+      retriable: boolean;
+      rejected_content: { file_name: string };
+    };
+    assert.equal(replayConflict.next_action, "stop_retrying_and_request_run_reopen");
+    assert.equal(replayConflict.retriable, false);
+    assert.equal(replayConflict.rejected_content.file_name, "avaria.jpg");
 
     const replayRunCreate = findSyncResult(replaySync.body, "cyc-run-create");
     assert.equal(replayRunCreate.bucket, "already_applied");
@@ -1114,6 +1267,125 @@ test("mobile checklist sync is durably idempotent across a simulated restart wit
     assert.equal(comparison.body.data.answers.length, 1);
     assertNoStackTrace(replaySync.body);
   });
+});
+
+// CHECKLIST P1 PR-03 (junta, ALTA §2.8) — `POST /api/v1/mobile/checklist-runs/:runId/reopen` é superfície do
+// aplicativo de campo, e o `sendRouteError` devolve QUALQUER `Error` solto como HTTP 400 com `error.message`
+// literal. A mensagem do Prisma carrega caminho absoluto do servidor, trecho da query e nomes de coluna
+// internas (inclusive `tenant_id`). Antes, só o `create` estava protegido: a trava `FOR UPDATE`, o getRun, a
+// busca do modelo e os dois `createMany` corriam nus. Aqui cada ponto do método falha uma vez.
+test("reabertura de vistoria: NENHUM ponto do método vaza detalhe interno do banco no corpo", async () => {
+  const { PrismaChecklistRepository, RlsPrismaChecklistRepository } = await import(
+    "../src/modules/checklists/checklist-prisma.repository.js"
+  );
+
+  const leakyMessage =
+    "Invalid `prisma.checklistRun.createMany()` invocation in /srv/erp-techsolutions/src/modules/checklists/" +
+    'checklist-prisma.repository.ts:744:52 — column "tenant_id" of relation "checklist_run_answers"';
+  const assertSanitized = (error: unknown, expectedReason: string, expectedStatus: number): true => {
+    const failure = error as { statusCode: number; reason: string; message: string };
+    assert.equal(failure.statusCode, expectedStatus);
+    assert.equal(failure.reason, expectedReason);
+    assert.equal(failure.message.includes("/srv/"), false);
+    assert.equal(failure.message.includes("tenant_id"), false);
+    assert.equal(failure.message.includes("prisma."), false);
+    assert.equal(failure.message.includes("P2028"), false);
+    return true;
+  };
+
+  const failurePoints = ["lock", "get_run", "template", "create", "copy_answers", "copy_markers"] as const;
+
+  for (const at of failurePoints) {
+    // P2028: timeout dos 5s da transação interativa sob contenção da trava — a falha MAIS provável aqui, e a
+    // única classificada como transitória (a resposta pode convidar a repetir sem mentir).
+    const transient = Object.assign(new Error(leakyMessage), { code: "P2028" });
+    const transientRepository = new PrismaChecklistRepository(
+      buildReopenPrismaStub({ at, error: transient }) as never,
+    );
+
+    await assert.rejects(
+      transientRepository.reopenRun(REOPEN_STUB_INPUT),
+      (error: unknown) => assertSanitized(error, "checklist_run_reopen_unavailable", 503),
+      `ponto sem sanitização (transitório): ${at}`,
+    );
+
+    // Falha DETERMINÍSTICA (violação de NOT NULL): repetir devolve o mesmo erro; a resposta não pode convidar
+    // a tentar de novo — seria a mesma orientação impossível que a junta reprovou no sync.
+    const deterministic = Object.assign(new Error(leakyMessage), { code: "P2010", meta: { code: "23502" } });
+    const deterministicRepository = new PrismaChecklistRepository(
+      buildReopenPrismaStub({ at, error: deterministic }) as never,
+    );
+
+    await assert.rejects(
+      deterministicRepository.reopenRun(REOPEN_STUB_INPUT),
+      (error: unknown) => assertSanitized(error, "checklist_run_reopen_failed", 500),
+      `ponto sem sanitização (determinístico): ${at}`,
+    );
+
+    // Junta PR-03 (2ª rodada, mutação G do verificador): P2010 é "erro cru embrulhado" — o código de
+    // VERDADE está em meta.code. 40001 (falha de serialização, esperável sob o FOR UPDATE concorrente)
+    // é transitório e tem que sair 503, não 500. Antes deste caso, remover a leitura de meta.code
+    // passava verde: o P2010 do caso acima já era determinístico sozinho.
+    const wrappedTransient = Object.assign(new Error(leakyMessage), { code: "P2010", meta: { code: "40001" } });
+    const wrappedTransientRepository = new PrismaChecklistRepository(
+      buildReopenPrismaStub({ at, error: wrappedTransient }) as never,
+    );
+
+    await assert.rejects(
+      wrappedTransientRepository.reopenRun(REOPEN_STUB_INPUT),
+      (error: unknown) => assertSanitized(error, "checklist_run_reopen_unavailable", 503),
+      `ponto sem sanitização (transitório embrulhado em P2010): ${at}`,
+    );
+  }
+
+  // As recusas de NEGÓCIO não podem ser engolidas pelo catch genérico: elas são o único motivo que o gestor
+  // consegue resolver sozinho.
+  const archived = new PrismaChecklistRepository(
+    buildReopenPrismaStub({ templateStatus: "archived" }) as never,
+  );
+  await assert.rejects(archived.reopenRun(REOPEN_STUB_INPUT), (error: unknown) => {
+    const failure = error as { statusCode: number; code: string };
+    assert.equal(failure.statusCode, 409);
+    assert.equal(failure.code, "CHECKLIST_TEMPLATE_ARCHIVED");
+    return true;
+  });
+
+  const notCompleted = new PrismaChecklistRepository(
+    buildReopenPrismaStub({ lockedStatus: "in_progress" }) as never,
+  );
+  await assert.rejects(notCompleted.reopenRun(REOPEN_STUB_INPUT), (error: unknown) => {
+    const failure = error as { statusCode: number; code: string };
+    assert.equal(failure.statusCode, 409);
+    assert.equal(failure.code, "CHECKLIST_RUN_NOT_COMPLETED");
+    return true;
+  });
+
+  // Reabertura concorrente: a colisão no unique (tenant_id, reopened_from_run_id) continua virando recusa de
+  // negócio, não 500 nem erro cru.
+  const duplicate = new PrismaChecklistRepository(
+    buildReopenPrismaStub({ at: "create", error: Object.assign(new Error(leakyMessage), { code: "P2002" }) }) as never,
+  );
+  await assert.rejects(duplicate.reopenRun(REOPEN_STUB_INPUT), (error: unknown) => {
+    const failure = error as { statusCode: number; code: string };
+    assert.equal(failure.statusCode, 409);
+    assert.equal(failure.code, "CHECKLIST_RUN_ALREADY_REOPENED");
+    return true;
+  });
+
+  // Segunda rede: o timeout da transação interativa estoura no `$transaction` do wrapper RLS — FORA do método
+  // já protegido. Sem ela, a falha mais provável de todas escaparia crua para o HTTP.
+  const wrapperFailure = Object.assign(new Error(leakyMessage), { code: "P2028" });
+  const rlsRepository = new RlsPrismaChecklistRepository({
+    $transaction: async () => {
+      throw wrapperFailure;
+    },
+  } as never);
+
+  await assert.rejects(
+    rlsRepository.reopenRun(REOPEN_STUB_INPUT),
+    (error: unknown) => assertSanitized(error, "checklist_run_reopen_unavailable", 503),
+    "a transação do wrapper RLS ficou sem rede",
+  );
 });
 
 test("mobile checklist sync enforces per-action permission for run.create", async () => {
@@ -1989,6 +2261,7 @@ async function createChecklistRunForSync(
 
   return {
     runId: run.body.data.id as string,
+    checklistId: publish.body.data.id as string,
     componentId: publish.body.data.components[0].id as string,
     tenantId: seed.tenantA.id,
   };
@@ -2088,6 +2361,24 @@ function fullChecklistCycleActions(localRunId: string, templateId: string, compo
         position_label: "Porta dianteira esquerda",
       },
     },
+    // A foto da avaria é anexada com a vistoria ABERTA (é assim no campo: fotografa junto com a marcação).
+    // Anexar DEPOIS da conclusão não é mais "aceito com upload pendente" — a vistoria assinada não recebe
+    // binário, e prometer o endpoint seria mandar o app subir uma foto que o multipart recusa (ver o teste da
+    // foto tardia).
+    {
+      client_action_id: "cyc-attachment",
+      type: "checklist_attachment.attach",
+      local_created_at: "2026-07-31T12:02:30.000Z",
+      payload: {
+        local_run_id: localRunId,
+        local_att_id: "local-att-1",
+        field_id: componentId,
+        file_name: "avaria.jpg",
+        mime_type: "image/jpeg",
+        size_bytes: 245000,
+        checksum: "abc123",
+      },
+    },
     {
       client_action_id: "cyc-divergence",
       type: "checklist_divergence.create",
@@ -2108,20 +2399,6 @@ function fullChecklistCycleActions(localRunId: string, templateId: string, compo
       },
     },
     {
-      client_action_id: "cyc-attachment",
-      type: "checklist_attachment.attach",
-      local_created_at: "2026-07-31T12:05:00.000Z",
-      payload: {
-        local_run_id: localRunId,
-        local_att_id: "local-att-1",
-        field_id: componentId,
-        file_name: "avaria.jpg",
-        mime_type: "image/jpeg",
-        size_bytes: 245000,
-        checksum: "abc123",
-      },
-    },
-    {
       client_action_id: "cyc-complete",
       type: "checklist_run.complete",
       local_created_at: "2026-07-31T12:06:00.000Z",
@@ -2132,6 +2409,127 @@ function fullChecklistCycleActions(localRunId: string, templateId: string, compo
       },
     },
   ];
+}
+
+// Stub do cliente Prisma para a reabertura: nenhum banco envolvido, só a capacidade de FALHAR num ponto
+// escolhido do método. É o que permite provar que cada linha está coberta — a suíte com repositório em memória
+// nunca exercita o caminho onde o erro cru do Prisma nasce.
+const REOPEN_STUB_TENANT_ID = "11111111-1111-4111-8111-111111111111";
+const REOPEN_STUB_RUN_ID = "22222222-2222-4222-8222-222222222222";
+const REOPEN_STUB_ACTOR_ID = "33333333-3333-4333-8333-333333333333";
+const REOPEN_STUB_INPUT = {
+  tenantId: REOPEN_STUB_TENANT_ID,
+  runId: REOPEN_STUB_RUN_ID,
+  actorUserId: REOPEN_STUB_ACTOR_ID,
+  reason: "Cliente contestou a avaria registrada.",
+};
+
+function buildReopenPrismaStub(options: {
+  readonly at?: "lock" | "get_run" | "template" | "create" | "copy_answers" | "copy_markers";
+  readonly error?: unknown;
+  readonly lockedStatus?: string;
+  readonly templateStatus?: string;
+}) {
+  const now = new Date("2026-08-01T10:00:00.000Z");
+  const status = options.lockedStatus ?? "completed";
+  const failAt = (point: string): void => {
+    if (options.at === point) {
+      throw options.error;
+    }
+  };
+
+  const runRecord = {
+    id: REOPEN_STUB_RUN_ID,
+    tenant_id: REOPEN_STUB_TENANT_ID,
+    template_id: "44444444-4444-4444-8444-444444444444",
+    template_version: 3,
+    related_entity_type: "work_order",
+    related_entity_id: "55555555-5555-4555-8555-555555555555",
+    client_run_key: null,
+    reopened_from_run_id: null,
+    reopen_reason: null,
+    status,
+    started_by: REOPEN_STUB_ACTOR_ID,
+    completed_by: REOPEN_STUB_ACTOR_ID,
+    started_at: now,
+    completed_at: now,
+    created_at: now,
+    updated_at: now,
+  };
+
+  return {
+    $queryRaw: async () => {
+      failAt("lock");
+      return [{ status }];
+    },
+    checklistTemplate: {
+      findFirst: async () => {
+        failAt("template");
+        return { status: options.templateStatus ?? "published" };
+      },
+    },
+    checklistRun: {
+      findFirst: async () => {
+        failAt("get_run");
+        return {
+          ...runRecord,
+          answers: [
+            {
+              id: "66666666-6666-4666-8666-666666666666",
+              tenant_id: REOPEN_STUB_TENANT_ID,
+              run_id: REOPEN_STUB_RUN_ID,
+              component_id: "77777777-7777-4777-8777-777777777777",
+              value: "Sem avarias na coleta.",
+              metadata: {},
+              created_at: now,
+              updated_at: now,
+            },
+          ],
+          markers: [
+            {
+              id: "88888888-8888-4888-8888-888888888888",
+              tenant_id: REOPEN_STUB_TENANT_ID,
+              run_id: REOPEN_STUB_RUN_ID,
+              component_id: "77777777-7777-4777-8777-777777777777",
+              x: 12,
+              y: 34,
+              marker_type: "scratch",
+              description: "Porta dianteira esquerda",
+              metadata: {},
+              created_by: REOPEN_STUB_ACTOR_ID,
+              created_at: now,
+            },
+          ],
+          attachments: [],
+          acknowledgements: [],
+        };
+      },
+      create: async () => {
+        failAt("create");
+        return {
+          ...runRecord,
+          id: "99999999-9999-4999-8999-999999999999",
+          reopened_from_run_id: REOPEN_STUB_RUN_ID,
+          reopen_reason: REOPEN_STUB_INPUT.reason,
+          status: "in_progress",
+          completed_by: null,
+          completed_at: null,
+        };
+      },
+    },
+    checklistRunAnswer: {
+      createMany: async () => {
+        failAt("copy_answers");
+        return { count: 1 };
+      },
+    },
+    checklistMarker: {
+      createMany: async () => {
+        failAt("copy_markers");
+        return { count: 1 };
+      },
+    },
+  };
 }
 
 function seedCoreSaas(service: CoreSaasRegistry): SeedData {

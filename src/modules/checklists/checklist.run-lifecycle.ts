@@ -28,7 +28,15 @@ export const CHECKLIST_RUN_ACTIVE_STATUSES = ["in_progress", "pending_acknowledg
 
 // Só uma vistoria CONCLUÍDA (assinada) é reabrível. `cancelled` não se reabre: a vistoria cancelada não é
 // prova de nada — o caminho é criar uma vistoria nova pela ordem de serviço.
-export const CHECKLIST_RUN_REOPENABLE_STATUSES = ["completed", "completed_with_divergence"] as const;
+export const CHECKLIST_RUN_REOPENABLE_STATUSES = [
+  "completed",
+  "completed_with_divergence",
+  // Junta PR-03 (2ª rodada): `pending_acknowledgement` é PÓS-ASSINATURA (a conclusão com divergência produz
+  // esse estado; só a ciência o leva a `completed_with_divergence`). Com o conteúdo congelado ali — e é o que
+  // a trava abaixo passou a fazer —, uma vistoria travada esperando ciência ficaria SEM NENHUMA saída: não
+  // edita e não reabre. Reabrir é a saída.
+  "pending_acknowledgement",
+] as const;
 
 export function isChecklistRunTerminal(status: ChecklistRunStatus): boolean {
   return (CHECKLIST_RUN_TERMINAL_STATUSES as readonly string[]).includes(status);
@@ -60,6 +68,58 @@ export function assertChecklistRunMutable(run: { readonly status: ChecklistRunSt
       "Esta vistoria já foi concluída e assinada — ela é a prova do estado do veículo e não pode mais ser alterada. Para corrigir, reabra a vistoria: uma nova versão é criada e a original fica preservada no histórico.",
     );
   }
+}
+
+/**
+ * Junta PR-03 (2ª rodada, ALTA do critico-adversarial provado por execução) — A TRAVA GROSSA NÃO BASTAVA.
+ *
+ * `assertChecklistRunMutable` só barra estado TERMINAL, e `pending_acknowledgement` não é terminal. Mas ele é
+ * **pós-assinatura**: nasce da CONCLUSÃO com divergência (`completeRun(hasDivergence)`) ou do registro de
+ * divergência, e só a ciência do cliente o leva a `completed_with_divergence`. Enquanto isso, TODA escrita de
+ * campo continuava passando — o próprio guincheiro (que tem `checklist_runs:update` e NÃO tem
+ * `checklist_runs:reopen`) reescrevia a resposta, acrescentava marcador e trocava a observação da avaria,
+ * sem versão nova, sem motivo registrado e sem trilha de reabertura. Era o caminho MAIS sensível
+ * juridicamente — o da avaria contestada — e o único que a tese "vistoria concluída é prova" não cobria.
+ *
+ * Por isso a trava é DUPLA:
+ *   · `assertChecklistRunMutable` — escrita EM GERAL (o que a ciência ainda precisa fazer);
+ *   · `assertChecklistRunFieldWritable` — escrita de CONTEÚDO DE CAMPO (resposta, marcação, anexo,
+ *     divergência, conclusão), que morre no instante da assinatura.
+ */
+export function assertChecklistRunFieldWritable(run: { readonly status: ChecklistRunStatus }): void {
+  assertChecklistRunMutable(run);
+
+  if (run.status === "pending_acknowledgement") {
+    throw new ChecklistError(
+      409,
+      "CHECKLIST_RUN_LOCKED",
+      "checklist_run_locked",
+      "Esta vistoria já foi concluída e aguarda a ciência do cliente sobre a divergência — o conteúdo não pode " +
+        "mais ser alterado. Para corrigir, reabra a vistoria: uma nova versão é criada e a original fica " +
+        "preservada no histórico.",
+    );
+  }
+}
+
+/**
+ * A ciência é o ÚNICO caminho que ainda escreve numa vistoria `pending_acknowledgement` — e ela conclui o
+ * ciclo levando a run a `completed_with_divergence`. Esta guarda existe para que o repositório distinga esse
+ * salto legítimo de um `completeRun` de campo tentando concluir de novo o que já foi assinado.
+ */
+export function assertChecklistRunCompletionTarget(
+  current: ChecklistRunStatus,
+  next: ChecklistRunStatus,
+): void {
+  if (current !== "pending_acknowledgement") return;
+  if (next === "completed_with_divergence") return;
+
+  throw new ChecklistError(
+    409,
+    "CHECKLIST_RUN_LOCKED",
+    "checklist_run_locked",
+    "Esta vistoria já foi concluída e aguarda a ciência do cliente. O que falta é registrar a ciência; para " +
+      "corrigir o conteúdo, reabra a vistoria.",
+  );
 }
 
 /**
@@ -148,8 +208,15 @@ export function checklistRunTemplateArchivedError(): ChecklistError {
 
 /**
  * Reabertura duplicada: duas correções paralelas da MESMA vistoria concluída deixariam a cadeia de versões
- * ambígua (qual é a vigente?). O banco barra pelo índice parcial único; aqui a recusa vira linguagem de
- * negócio nos dois repositórios.
+ * ambígua (qual é a vigente?). O banco barra pelo unique `(tenant_id, reopened_from_run_id)`.
+ *
+ * Junta PR-03, 2ª rodada (BAIXA): este comentário chamava aquele índice de "parcial", e ele NÃO é (medido:
+ * `indpred` é NULL). Quem faz um índice único COMUM servir de trava é o Postgres tratar cada NULL como
+ * DISTINTO dos demais: as milhares de vistorias nunca reabertas carregam `reopened_from_run_id` NULL e
+ * convivem no mesmo índice sem colidir, enquanto duas reaberturas da MESMA origem colidem. Descrever a
+ * trava errado é o tipo de coisa que faz alguém "corrigir" o índice depois e derrubar a garantia.
+ *
+ * Aqui a recusa vira linguagem de negócio nos dois repositórios.
  */
 export function checklistRunAlreadyReopenedError(): ChecklistError {
   return new ChecklistError(

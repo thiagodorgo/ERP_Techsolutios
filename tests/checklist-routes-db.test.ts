@@ -175,7 +175,30 @@ if (!connectionString) {
         body: { status: "in_progress", answers: [] },
       });
       assert.equal(rebaixar.status, 409);
-      assert.equal(rebaixar.body.error.reason, "run_status_transition_not_allowed");
+      // Junta PR-03 (2ª rodada): a recusa que chega primeiro é a de CONTEÚDO — a vistoria já está assinada
+      // e esperando a ciência, então nem o estado nem o conteúdo se mexem.
+      assert.equal(rebaixar.body.error.reason, "checklist_run_locked");
+
+      // Reescrever a prova sem reabrir: recusado, e o registro continua como foi assinado.
+      const reescrever = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${comDivergencia.id}`, {
+        method: "PATCH",
+        headers,
+        body: { answers: [{ componentId: checklist.observationId, value: "Veiculo sem avarias." }] },
+      });
+      assert.equal(reescrever.status, 409);
+      assert.equal(reescrever.body.error.reason, "checklist_run_locked");
+
+      const prova = await requestJson(
+        baseUrl,
+        `/api/v1/mobile/checklist-runs/${comDivergencia.id}/comparison`,
+        { headers },
+      );
+      assert.equal(prova.body.data.run.status, "pending_acknowledgement");
+      assert.equal(
+        prova.body.data.answers.some((answer: { value: string }) => answer.value === "Veiculo sem avarias."),
+        false,
+        "a prova assinada foi reescrita sem reabertura",
+      );
 
       // (b) Modelo arquivado não recebe versão nova por reabertura (nasceria em limbo: o app de campo
       // só lista modelo publicado).

@@ -125,6 +125,24 @@ Regras obrigatorias:
 - transicao de status invalida retorna conflito `invalid_status_transition`.
 - payload invalido, tipo nao suportado ou permissao por acao ausente retorna rejeicao/erro estruturado sem stack trace.
 
+Conflitos (versao 2026-08-10.chk-p1-pr03 — CHK P1 PR-03, ciclo de vida da vistoria):
+
+- todo conflito carrega `retriable` (boolean) e `next_action`:
+  - `retriable: true` + `next_action: "refresh_checklist_run_and_retry"` — condicao transitoria (ex.:
+    `checklist_not_published` de modelo inativado que pode ser reativado); a acao PODE voltar a fila.
+  - `retriable: false` + `next_action: "stop_retrying_and_request_run_reopen"` — condicao PERMANENTE
+    (`checklist_run_locked`: a vistoria foi concluida/assinada); a acao SAI da fila. Repetir devolveria o
+    mesmo 409 para sempre — a correcao agora e reabrir a vistoria, permissao de GESTAO (o tecnico pede ao
+    gestor; o app nao tenta de novo).
+- conflito terminal carrega `rejected_content`: o descritor do que NAO entrou (tipo da acao, componente,
+  texto ate 240 caracteres, nome/id local de arquivo) para o app MOSTRAR ao tecnico em vez de descartar em
+  silencio. Assinatura/foto em data-URI NUNCA voltam (§2.8): o campo sai e a omissao e declarada
+  (`value_omitted: "binary_content"`); o mesmo teto vale para os campos de texto do descritor e para o
+  `local` do conflito.
+- `checklist_attachment.attach` contra vistoria travada deixou de responder `accepted` com
+  `upload_endpoint` (que o upload multipart posterior transformava em 409 tardio): responde conflito
+  terminal imediato, sem prometer endpoint que nao sera honrado.
+
 ### POST /api/v1/mobile/sync/checklist-actions
 
 - Permissao: varia por acao de checklist; `checklist.item_answer` e `checklist.item_note` exigem `checklist_runs:update`, `checklist.complete` exige `checklist_runs:complete`.
@@ -171,7 +189,7 @@ Resposta:
   "data": {
     "contract": {
       "name": "mobile_checklist_actions_sync",
-      "version": "2026-06-14.b098c",
+      "version": "2026-08-10.chk-p1-pr03",
       "status": "partial"
     },
     "client_batch_id": "checklist-batch-local-1",

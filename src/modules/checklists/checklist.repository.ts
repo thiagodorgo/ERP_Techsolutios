@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
 import {
+  assertChecklistRunCompletionTarget,
+  assertChecklistRunFieldWritable,
   assertChecklistRunMutable,
   assertChecklistRunReopenable,
   assertChecklistRunStatusTransition,
@@ -366,7 +368,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
 
     // CHECKLIST P1 PR-03 — trava de imutabilidade também NO REPOSITÓRIO (defesa em profundidade): quem chamar
     // daqui direto, sem passar pelo serviço, esbarra na mesma recusa 409.
-    assertChecklistRunMutable(existing);
+    assertChecklistRunFieldWritable(existing);
     assertChecklistRunStatusTransition(data.status);
 
     const now = new Date();
@@ -391,6 +393,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
 
     // Concluir duas vezes (ou concluir o que já está concluído/cancelado) é mutação de run terminal.
     assertChecklistRunMutable(existing);
+    assertChecklistRunCompletionTarget(existing.status, status);
 
     const now = new Date();
     const updated: ChecklistRun = {
@@ -512,7 +515,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       return null;
     }
 
-    assertChecklistRunMutable(run);
+    assertChecklistRunFieldWritable(run);
 
     const attachment: ChecklistAttachment = {
       id: randomUUID(),
@@ -545,7 +548,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       return null;
     }
 
-    assertChecklistRunMutable(run);
+    assertChecklistRunFieldWritable(run);
 
     const marker: ChecklistMarker = {
       id: randomUUID(),

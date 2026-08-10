@@ -201,8 +201,11 @@ export type ProcessCreateFieldError = {
 };
 
 // Ω-VID PR-08 — resumo ESTREITO de uma ChecklistRun vinculada ao processo (aba "Checklist do Guincho" do dossiê).
-// §allowlist: espelha EXATAMENTE o DTO backend toChecklistRunSummaryListDto — sem hash-chain, sem tenant_id, sem PII;
-// só o metadado que o guincheiro já enxerga. Consome o AUTO-link criado na criação do processo (PR-05).
+// §allowlist: espelha o SUBCONJUNTO do DTO backend toChecklistRunSummaryListDto que a aba consome hoje — sem
+// hash-chain, sem tenant_id, sem PII. Desde o CHK P1 PR-03 o DTO emite TAMBÉM `reopenedFromRunId`/
+// `supersededByRunId`/`currentRunId` (versionamento por reabertura), ainda NÃO consumidos aqui: a aba não
+// marca "versão substituída" nem aponta a vigente — pendência P-CHK-DOSSIE-VERSAO-NA-UI (fecha no PR-05).
+// Consome o AUTO-link criado na criação do processo (PR-05 dos Pátios).
 export type ChecklistRunStatus =
   | "in_progress"
   | "completed"

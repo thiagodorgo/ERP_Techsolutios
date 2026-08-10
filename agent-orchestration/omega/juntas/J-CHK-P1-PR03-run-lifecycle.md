@@ -5,7 +5,10 @@
 - **Data:** 2026-08-08 → 2026-08-10
 - **Composição (5, §C7.1):** `planejador-mestre` · `critico-adversarial` · `agente-dba-guardiao` ·
   `coordenador-de-acessos` · `validador-mestre`
-- **Veredito:** **APROVADO_CONDICIONADO** → condições cumpridas nesta entrega (abaixo, uma a uma).
+- **Veredito da 1ª rodada:** **APROVADO_CONDICIONADO** → condições cumpridas (abaixo, uma a uma).
+- **Veredito da 2ª rodada (2026-08-10):** **REPROVADO** pelo `critico-adversarial` ·
+  **APROVADO_CONDICIONADO** pelo `agente-dba-guardiao` → **PR reprovado**, correções em curso
+  (§"2ª rodada" no fim desta ata).
 
 ---
 
@@ -60,9 +63,9 @@ negócio. O teste contra o Postgres afirma que a resposta de conflito **não con
 
 | # | Achado | Correção |
 |---|---|---|
-| 1 | check-then-act sem trava: entre "li que está concluída" e "criei a versão", outra transação podia **cancelar** a vistoria (o índice parcial único só barra reabertura dupla) | `SELECT ... FOR UPDATE` na linha, dentro da mesma transação RLS |
+| 1 | check-then-act sem trava: entre "li que está concluída" e "criei a versão", outra transação podia **cancelar** a vistoria (o índice único — não-parcial; NULLs são distintos — só barra reabertura dupla) | `SELECT ... FOR UPDATE` na linha, dentro da mesma transação RLS |
 | 2 | reabrir vistoria de **modelo arquivado** criava versão em limbo (o app de campo só lista modelo publicado) | recusa 409 `checklist_template_archived`, com caminho de saída; paridade nos dois repositórios |
-| 3 | `pending_acknowledgement` por porta dos fundos | coberto pela allowlist (ALTA 2) |
+| 3 | `pending_acknowledgement` por porta dos fundos | **este registro estava ERRADO** — ver §"Correção de registro" abaixo |
 | 4 | o **dossiê do veículo** mostrava a versão SUBSTITUÍDA como se fosse a vigente (o vínculo aponta para a original) | `supersededByRunId`/`reopenedFromRunId` no resumo do dossiê; histórico preservado, verdade dita |
 
 ---
@@ -125,7 +128,86 @@ mudanças deste PR revertidas). Varredura final fora da transação RLS + uma re
 
 ---
 
-## Bateria (execução real)
+---
+
+# 2ª rodada da junta (2026-08-10)
+
+| Agente | Veredito |
+|---|---|
+| `critico-adversarial` | **REPROVADO** |
+| `agente-dba-guardiao` | **APROVADO_CONDICIONADO** |
+| `coordenador-de-acessos` | **APROVADO_CONDICIONADO** (auditoria com login real dos 9 papéis num banco isolado) |
+
+## Correção de registro (§A2) — a MÉDIA #3 estava consolidada como uma crença FALSA
+
+A tabela de MÉDIA acima registrava o item #3 (`pending_acknowledgement` por porta dos fundos) como
+*"coberto pela allowlist (ALTA 2)"*. **Não estava.** O §A2 proíbe consolidar em silêncio, então o registro
+fica aqui, inteiro:
+
+- **O que a allowlist realmente cobria:** só a **transição de STATUS** pelo PATCH. `assertChecklistRunStatusTransition`
+  impede *chegar* a `pending_acknowledgement` por edição de rascunho — e nada além disso.
+- **O que continuava aberto:** o **CONTEÚDO** da vistoria já em `pending_acknowledgement`. Respostas,
+  marcadores de avaria, observações e anexos passavam livres, porque a única trava de escrita
+  (`assertChecklistRunMutable`) barra apenas estado **terminal**, e `pending_acknowledgement` não é terminal.
+  Consequência real: o **próprio guincheiro** — que tem `checklist_runs:update` e **não** tem
+  `checklist_runs:reopen` — reescrevia a resposta e acrescentava marcador **depois de concluir e assinar**,
+  sem versão nova, sem motivo registrado e sem trilha de reabertura. Justamente o caminho da **avaria
+  contestada**, o mais sensível juridicamente.
+- **Como isso passou batido:** o teste que "provava" a cobertura olhava o **STATUS** (a transição recusada) e
+  nunca o **CONTEÚDO** (a resposta gravada depois da assinatura). Verde legítimo sobre a pergunta errada. Na
+  2ª rodada o `critico-adversarial` **provou por EXECUÇÃO**, não por leitura: rodou a escrita e ela foi aceita.
+- **Como foi fechado:** travas **separadas** em `src/modules/checklists/checklist.run-lifecycle.ts` —
+  `assertChecklistRunFieldWritable` congela o conteúdo em `pending_acknowledgement`, enquanto a **ciência**
+  continua passando (é ela que fecha o ciclo, levando a run a `completed_with_divergence`), com
+  `assertChecklistRunCompletionTarget` distinguindo esse salto legítimo de um `completeRun` repetido. E
+  `pending_acknowledgement` **virou reabrível**: com o conteúdo congelado, sem isso a vistoria ficaria sem
+  saída nenhuma — não edita e não reabre.
+
+**Lição registrada:** teste que afirma cobertura precisa exercer o **efeito** (o dado gravado), não o
+**rótulo** (o status recusado). E ata não recebe "coberto por X" sem que alguém tenha executado o ataque.
+
+## Achados da 2ª rodada e destino
+
+| Severidade | Achado | Destino |
+|---|---|---|
+| **ALTA** (`critico-adversarial`, provado por execução) | conteúdo de vistoria **pós-assinatura** editável em `pending_acknowledgement` (MÉDIA #3 mal registrada) | **CORRIGIDO** — trava dupla + `pending_acknowledgement` reabrível (acima) |
+| **BAIXA / A1** | dossiê do veículo resolvia a substituição em **um salto só**: com v1→v2→v3 apontava a v2, já substituída, enquanto a vigente era a v3 | **CORRIGIDO no backend** — cadeia percorrida até o fim + campo `currentRunId`; paridade memória/Prisma; teste de 3 versões e de ciclo. **UI em aberto** (`P-CHK-DOSSIE-VERSAO-NA-UI`): a aba do dossiê ainda não consome os 3 campos |
+| **BAIXA / A1** | consulta de substituições rodava **com lista vazia** (`in: []` → `1=0` no Prisma): round-trip desperdiçado em todo dossiê sem checklist | **CORRIGIDO** — retorno cedo; teste conta as consultas e exige zero |
+| **BAIXA / A1** | comentário em `checklist.run-lifecycle.ts` chamava de "índice parcial único" o que **não é parcial** (medido: `indpred` é NULL) — o que trava a reabertura dupla é o NULL ser **distinto** em índice único no Postgres | **CORRIGIDO** — só o comentário; nenhuma lógica tocada |
+| — | esta ata registrava a MÉDIA #3 como coberta (crença falsa) | **CORRIGIDO** — §"Correção de registro" acima (§A2) |
+
+**Atribuição:** a ALTA é do `critico-adversarial`, provada por execução. Os três itens menores chegaram às
+frentes de correção como "BAIXA do `critico-adversarial` e A1 do `agente-dba-guardiao`" **sem o desmembramento
+item a item** — ficam registrados em conjunto para não inventar autoria (§A6: fato ≠ hipótese).
+
+## Demais achados da 2ª rodada (todos com destino)
+
+| Origem | Achado | Destino |
+|---|---|---|
+| `agente-dba-guardiao` **B1 (ALTA)** + `coordenador-de-acessos` M2 | as migrações de grant (`20260861`/`20260862`) fazem `INSERT ... SELECT FROM roles` — em base NOVA (`roles` vazia) viram **no-op silencioso**, ficam marcadas como aplicadas e **nunca mais rodam**; o bug ressuscitaria na primeira base de produção limpa | **CORRIGIDO** — provisionamento CONVERGENTE (`npm run db:provision-rbac`, idempotente, roda no deploy DEPOIS do migrate; `scripts/provision-rbac.ts` + passo em `deploy-production.yml` + drill `scripts/rbac-provision-drill.sh` provando reprodução do bug, convergência, idempotência, isolamento do papel de organização e zero dado de demonstração) |
+| `coordenador-de-acessos` **A1 (ALTA, provado por HTTP 201)** | o guard de paridade era **unidirecional**: grant fora de banda no banco (ex.: Suporte com `checklist_runs:reopen`) passava verde — e o papel reabria prova jurídica de verdade | **CORRIGIDO** — direção banco→catálogo no guard; provado por mutação (remover o laço deixa a deriva real de dev passar) |
+| `coordenador-de-acessos` **A2 (ALTA)** | papel do catálogo **ausente** no banco era filtrado da asserção — o cenário em que a `20260862` não faz nada ficava invisível | **CORRIGIDO** — papel global ausente reprova; `platform_admin` é a única isenção, comentada |
+| `critico-adversarial` ALTA-2/ALTA-3 | o guard era **tautológico** no job semeado (compara o catálogo com uma tabela escrita a partir dele) e a sentinela `roles`-vazia era **poluível** pelos testes paralelos (vermelho intermitente em PR alheio) | **CORRIGIDO** — guard ESTÁTICO novo (`tests/permission-catalog-migration-parity.test.ts`: toda chave nova exige migração; fronteira histórica de 189 chaves CONGELADA — só encolhe) + gate explícito `RBAC_DB_PARITY=1` só no job `backend-postgres` |
+| `critico-adversarial` ALTA-4 | a correção da **cobrança dobrada** não tinha teste — invariante financeira pendurada num booleano que um refactor apaga em silêncio | **CORRIGIDO** — `tests/cloud-usage-checklist-reopen.test.ts` (4 testes: quantidade 0, payload legado conta 1, produtor carimba, chave `:reopened`); provado por 4 mutações, inclusive no PRODUTOR |
+| verificador da frente mobile (**BLOQUEANTE §2.8, provado por sonda**) | a redação do conflito cobria só o `rejected_content` — a assinatura em **base64 voltava inteira** por `conflict.local.payload.value` | **CORRIGIDO** — redação em `sanitizeActionForConflict` (nunca em `normalizePayload`, que alimenta o fingerprint de idempotência) + teto nos campos de texto vizinhos + asserção sobre o conflito INTEIRO; provado por mutação |
+| `critico-adversarial` MÉDIA-5 | o sync devolvia `next_action` de retry para condição **permanente** (`checklist_run_locked`) — ação reciclando na fila para sempre; a foto da avaria ficava sem entrada | **CORRIGIDO** — orientação terminal `stop_retrying_and_request_run_reopen` + `rejected_content` com o que não entrou; lado retriável também coberto por teste (mutação A2) |
+| `critico-adversarial` MÉDIA-6 + `agente-dba-guardiao` D2 | `console.error` despejava o erro cru no stdout (fora do logger, ignorando LOG_LEVEL) e a sanitização cobria 1 statement de 6 — P2028/40001 vazavam caminho absoluto como HTTP 400 | **CORRIGIDO** — método inteiro protegido, recusas de negócio preservadas, transitório (503) separado de determinístico (500), logger estruturado; caso P2010+meta.code coberto por teste |
+| `coordenador-de-acessos` M3 | as migrações de grant não filtravam `tenant_id IS NULL` — numa instalação com papel de organização homônimo, alargariam papel do cliente | **MITIGADO com registro** — migração aplicada é imutável; exposição analisada (base nova roda os grants antes de existir organização); a retirada `20260863` e o provisionamento já filtram; padrão registrado no cabeçalho da `20260863` |
+| `coordenador-de-acessos` B2 | a linha nova da `RBAC_MATRIX.md` tinha **3 afirmações falsas** (status `superseded` inexistente; `checklist_runs:cancel` inexistente; "índice parcial") | **CORRIGIDO** — linha reescrita contra o estado medido do banco |
+| `coordenador-de-acessos` M6 | com o grant reconciliado, `field_technician` lê por id qualquer vistoria da organização (escopo é a organização, não o autor) | **REGISTRADO na RBAC_MATRIX** — é o que o catálogo declara; restringir por propriedade = mudança de escopo (pendência) |
+| verificador da frente do dossiê | o espelho do frontend (`processes.types.ts`) ficou defasado **por causa deste PR** (3 campos novos do DTO não consumidos) — a aba do dossiê ainda não marca "versão substituída" | **PENDÊNCIA REGISTRADA** — `P-CHK-DOSSIE-VERSAO-NA-UI` em `controle/pendencias.md`; backend diz a verdade, a UI consome no PR-05 (histórico) |
+| deriva pega pelo guard novo | `manager`/`technician` globais com `checklist_runs:create` no banco que a decisão D-CHK-DISPATCH-CREATE (#320) retirou do catálogo — faltou o DELETE | **CORRIGIDO** — migração de retirada `20260863000000` (escopada a `tenant_id IS NULL`); o guard bidirecional volta verde |
+
+**Escopo deste registro:** ele cobre os achados que chegaram documentados às frentes de correção desta rodada.
+Se a 2ª rodada levantou mais itens, o destino deles **está em andamento** e entra aqui quando a frente
+correspondente fechar — nenhum achado é dado como resolvido sem prova.
+
+**Bateria da 2ª rodada:** cada frente de correção reporta a sua (as correções rodaram **em paralelo** no mesmo
+repositório). A consolidação vale quando todas fecharem; a tabela abaixo é da **1ª rodada**.
+
+---
+
+## Bateria da 1ª rodada (execução real)
 
 | Gate | Resultado |
 |---|---|

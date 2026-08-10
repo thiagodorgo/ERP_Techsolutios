@@ -103,6 +103,12 @@ jobs:
       JWT_SECRET: dev-only-change-me
       JWT_EXPIRES_IN: 15m
       LOG_LEVEL: silent
+      # ATIVA a paridade catálogo × banco SÓ aqui. `tests/permission-catalog-db-parity.test.ts` exige
+      # um banco provisionado (migrate + seed, passo abaixo) e se declara pulado sem esta variável.
+      # A versão anterior tentava DEDUZIR o provisionamento olhando se a tabela `roles` estava vazia —
+      # sentinela que o paralelismo do `npm test` polui (várias suítes criam papéis), fazendo o teste
+      # rodar contra um banco não semeado e reprovar o job `backend` de PRs sem relação com RBAC.
+      RBAC_DB_PARITY: "1"
 
     services:
       postgres:
@@ -158,6 +164,7 @@ jobs:
           set -o pipefail
           SUITES="tests/checklist-routes-db.test.ts"
           SUITES="$SUITES tests/permission-catalog-db-parity.test.ts"
+          SUITES="$SUITES tests/permission-catalog-migration-parity.test.ts"
           SUITES="$SUITES tests/checklist-template-prisma-db.test.ts"
           SUITES="$SUITES tests/checklist-run-lifecycle-db.test.ts"
           SUITES="$SUITES tests/checklist-run-create-concurrency-db.test.ts"

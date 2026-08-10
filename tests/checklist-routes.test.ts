@@ -550,22 +550,32 @@ test("checklist P1 PR-03: PATCH não REBAIXA a vistoria nem apaga a divergência
     assert.equal(divergence.body.data.run.status, "pending_acknowledgement");
 
     // PORTA 1 — rebaixar para "em andamento" apagaria a pendência de ciência: a divergência sumiria da
-    // prova sem ninguém ter dado ciência dela.
+    // prova sem ninguém ter dado ciência dela. Recusado pela trava de CONTEÚDO, que é mais forte e
+    // dispara antes da allowlist de estado (a vistoria já está assinada).
     const downgrade = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
       method: "PATCH",
       headers,
       body: { status: "in_progress", answers: [] },
     });
     assert.equal(downgrade.status, 409);
-    assert.equal(downgrade.body.error.reason, "run_status_transition_not_allowed");
+    assert.equal(downgrade.body.error.reason, "checklist_run_locked");
 
     // A divergência continua de pé.
     const afterDowngrade = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
     assert.equal(afterDowngrade.body.data.run.status, "pending_acknowledgement");
 
     // PORTA 2 — carimbar "aguardando ciência" numa vistoria comum criaria a pendência sem divergência
-    // nenhuma por trás (o estado nasce da conclusão, não da edição do rascunho).
+    // nenhuma por trás (o estado nasce da conclusão, não da edição do rascunho). Aqui a vistoria está
+    // VIVA, então quem recusa é a allowlist de estado.
     const other = await createRun(baseUrl, headers, checklist.id);
+
+    const rebaixarViva = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${other.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "in_progress", answers: [] },
+    });
+    assert.equal(rebaixarViva.status, 409);
+    assert.equal(rebaixarViva.body.error.reason, "run_status_transition_not_allowed");
     const fakePending = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${other.id}`, {
       method: "PATCH",
       headers,
@@ -585,6 +595,108 @@ test("checklist P1 PR-03: PATCH não REBAIXA a vistoria nem apaga a divergência
     });
     assert.equal(cancel.status, 200);
     assert.equal(cancel.body.data.run.status, "cancelled");
+  });
+});
+
+// Junta PR-03 (2a rodada, ALTA do critico-adversarial PROVADO POR EXECUCAO): a trava anterior so olhava
+// estado TERMINAL, e "aguardando ciencia" nao e terminal — embora seja POS-ASSINATURA. O proprio guincheiro
+// (que tem `checklist_runs:update` e NAO tem `checklist_runs:reopen`) reescrevia a resposta e acrescentava
+// marcador de avaria depois de concluir, sem versao nova e sem motivo registrado. Este teste assere o
+// CONTEUDO — o teste anterior so olhava o status e por isso nao via o buraco.
+test("checklist P1 PR-03: vistoria que aguarda ciencia tem o CONTEUDO congelado (nao so o status)", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Para-choque amassado na chegada." }] },
+    });
+
+    // Conclusao COM divergencia: a vistoria esta assinada e espera a ciencia do cliente.
+    const concluida = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: true, observation: "Avaria encontrada na chegada." },
+    });
+    assert.equal(concluida.status, 200);
+    assert.equal(concluida.body.data.run.status, "pending_acknowledgement");
+
+    // O ataque: reescrever a prova sem reabrir.
+    const reescrever = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Veiculo sem avarias." }] },
+    });
+    const marcarDepois = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/markers`, {
+      method: "POST",
+      headers,
+      body: { componentId: checklist.damageId, x: 0.5, y: 0.5, markerType: "scratch" },
+    });
+    const anexarDepois = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/attachments`, {
+      method: "POST",
+      headers,
+      body: {
+        componentId: checklist.photoId,
+        fileUrl: "https://storage.example/checklists/tardia.jpg",
+        fileName: "tardia.jpg",
+        mimeType: "image/jpeg",
+      },
+    });
+
+    for (const resposta of [reescrever, marcarDepois, anexarDepois]) {
+      assert.equal(resposta.status, 409);
+      assert.equal(resposta.body.error.reason, "checklist_run_locked");
+    }
+
+    // E a prova continua EXATAMENTE como foi assinada — esta e a asercao que faltava.
+    const prova = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(prova.body.data.run.status, "pending_acknowledgement");
+    assert.equal(prova.body.data.answers[0].value, "Para-choque amassado na chegada.");
+    assert.equal(prova.body.data.markers.length, 0);
+    assert.equal(prova.body.data.attachments.length, 0);
+
+    // A CIENCIA continua passando — e o unico caminho que ainda escreve, e fecha o ciclo.
+    const ciencia = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/acknowledgement`, {
+      method: "POST",
+      headers,
+      body: { message: "Ciente da avaria." },
+    });
+    assert.equal(ciencia.status, 201);
+
+    const fechada = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(fechada.body.data.run.status, "completed_with_divergence");
+  });
+});
+
+// Consequencia obrigatoria da trava acima: sem reabertura, a vistoria travada esperando ciencia ficaria
+// SEM NENHUMA saida — nao edita e nao reabre. Reabrir e a saida.
+test("checklist P1 PR-03: vistoria aguardando ciencia PODE ser reaberta (senao nao teria saida)", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: true, observation: "Avaria registrada por engano." },
+    });
+
+    const reaberta = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers,
+      body: { reason: "Divergencia lancada no veiculo errado." },
+    });
+    assert.equal(reaberta.status, 201);
+    assert.equal(reaberta.body.data.run.reopenedFromRunId, run.id);
+    assert.equal(reaberta.body.data.run.status, "in_progress");
+
+    // A original continua registrada como estava — nada foi apagado.
+    const original = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(original.body.data.run.status, "pending_acknowledgement");
   });
 });
 

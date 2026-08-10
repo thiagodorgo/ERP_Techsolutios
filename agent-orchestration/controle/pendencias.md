@@ -1721,3 +1721,50 @@ permanente** `tests/permission-catalog-db-parity.test.ts`, que compara `PERMISSI
 permissão do técnico, permissão de reabertura) da **mesma família** — código declara, banco não sabe, teste
 roda em memória. Vale avaliar rodar um subconjunto das suítes de rota contra o Postgres no CI.
 - status: **RESOLVIDO** (migrações + guard); o item de CI fica como proposta ao dono.
+
+## P-RBAC-PROVISIONAMENTO-CONVERGENTE (2026-08-08) — migração de dados de RBAC era no-op SILENCIOSO em base nova (ALTA) — **RESOLVIDO**
+
+Achado **B1/ALTA** do `agente-dba-guardiao` na junta que reprovou o PR #344. Complementa (e corrige o alcance
+de) `P-RBAC-CATALOGO-NAO-CHEGA-AO-BANCO`, cujo "RESOLVIDO com guard" valia **só para base já povoada**.
+
+**O mecanismo:** `20260861000000` e `20260862000000` fazem `INSERT ... SELECT FROM roles WHERE key IN (...)`.
+**Nenhuma migração cria papel** — `roles` só nascia de `prisma/seed.ts`, que produção **nunca** roda
+(`deploy-production.yml` tinha só `prisma migrate deploy`, "SEM db:seed"). Numa base de produção **NOVA** o
+SELECT casa **zero linhas**, o `INSERT 0` é sucesso, a migração vai para `_prisma_migrations` e **nunca mais
+roda**. Quando os papéis nascessem, `checklist_runs:reopen` seguiria sem concessão e o técnico de campo sem
+checklist — o bug que o PR dizia ter consertado, ressuscitado. O job de CI novo não detectava porque semeia
+logo depois do migrate.
+
+**Correção (decisão registrada em `docs/deployment.md`):** provisionamento **convergente** em vez de migração
+de tiro único — `scripts/provision-rbac.ts` (`npm run db:provision-rbac`), rodando no CD **depois** do
+`migrate deploy` e **antes** do app subir. Aditivo (nunca apaga concessão; divergência é relatada),
+idempotente (`pg_advisory_xact_lock` + diff lido na mesma transação — o `UNIQUE (key, tenant_id)` não protege
+papel global porque dois `NULL` são distintos no PostgreSQL), sem dado de demonstração (não importa o seed) e
+com reconferência pós-gravação. Prova reexecutável: `bash scripts/rbac-provision-drill.sh` (banco descartável
+`erp_provision_drill`, criado e apagado) — reproduz `roles` vazia, converge, mede a 2ª execução como no-op.
+- status: **RESOLVIDO**.
+
+## P-RBAC-PROVISION-DESCRICOES (2026-08-08) — descrição curada das permissões duplicada no seed (BAIXA)
+
+O texto humano de cada permissão vive no mapa `permissionDescriptions` de `prisma/seed.ts`, que
+`scripts/provision-rbac.ts` **não pode importar** (importar o seed o executa, e o seed cria a organização de
+demonstração). Permissão criada pelo provisionamento nasce com a descrição genérica `Permissão <chave>.` — a
+mesma que o próprio seed usa como fallback. Sem impacto no RBAC efetivo (nenhuma rota lê
+`permissions.description`), mas é duplicação de fonte de verdade esperando divergir.
+- **Correção:** extrair o mapa para um módulo compartilhado (ex.: `src/modules/core-saas/permissions/`) e
+  fazer seed **e** provisionamento lerem de lá. Fora do escopo desta frente (não podia tocar `prisma/seed.ts`).
+- status: ABERTA.
+
+## P-CHK-DOSSIE-VERSAO-NA-UI (2026-08-10 — junta do CHK P1 PR-03, 2ª rodada)
+
+O backend do dossiê do veículo passou a dizer a verdade sobre vistoria reaberta: o resumo da aba
+"Checklist do Guincho" emite `reopenedFromRunId`, `supersededByRunId` e `currentRunId` (cadeia percorrida
+até a versão vigente, com guarda de ciclo). **A UI ainda não consome nenhum dos três** —
+`frontend/src/modules/patios/processes/processes.types.ts` e `processes.adapter.ts` descartam os campos, e a
+aba lista a vistoria substituída com chip `completed`, sem marcação de "versão substituída" e sem caminho
+para a vigente. O operador que abrir o dossiê de um processo com vistoria reaberta vê a tela idêntica à de
+antes do PR-03.
+
+**Fechar no CHK P1 PR-05 (histórico):** 3 campos no tipo espelho + 3 linhas em `adaptChecklistRun` + chip
+"versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
+hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.

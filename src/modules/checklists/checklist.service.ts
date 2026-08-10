@@ -21,6 +21,7 @@ import type {
 } from "./checklist.types.js";
 import { ChecklistError } from "./checklist.types.js";
 import {
+  assertChecklistRunFieldWritable,
   assertChecklistRunMutable,
   assertChecklistRunStatusTransition,
 } from "./checklist.run-lifecycle.js";
@@ -328,7 +329,7 @@ export class ChecklistService {
     // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — a vistoria concluída é a prova do estado do veículo:
     // nenhuma escrita passa. Corrigir = reabrir (nova versão). O repositório repete a trava (defesa em
     // profundidade); aqui ela vale para QUALQUER repositório, inclusive os de teste.
-    assertChecklistRunMutable((await this.getRun(actor, runId)).run);
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
     assertChecklistRunStatusTransition(input.status);
 
     const run = await this.repository.updateRun({
@@ -468,7 +469,7 @@ export class ChecklistService {
   }
 
   async createMarker(actor: ActorContext, runId: string, input: CreateChecklistMarkerInput): Promise<ChecklistMarker> {
-    assertChecklistRunMutable((await this.getRun(actor, runId)).run);
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
 
     const marker = await this.repository.createMarker(actor.tenantId, runId, actor.userId, input);
 
@@ -494,7 +495,7 @@ export class ChecklistService {
     }
 
     // Concluir de novo o que já está concluído (ou cancelado) é mutação de prova assinada → 409.
-    assertChecklistRunMutable((await this.getRun(actor, runId)).run);
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
 
     const status = input.hasDivergence ? "pending_acknowledgement" : "completed";
     const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, status);
@@ -623,7 +624,7 @@ export class ChecklistService {
     // P0a — anexo de divergência só é criado quando há fileUrl (caminho REST). O sync do mobile registra a
     // divergência SEM arquivo (componente + observação): pula a criação de anexo para NUNCA gerar "anexo
     // fantasma" (schema exige file_url NOT NULL) e apenas marca a run como pending_acknowledgement.
-    assertChecklistRunMutable((await this.getRun(actor, runId)).run);
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
 
     let attachment: ChecklistAttachment | null = null;
 
@@ -745,7 +746,7 @@ export class ChecklistService {
   private async assertRunComponent(actor: ActorContext, runId: string, componentId: string): Promise<void> {
     const details = await this.getRun(actor, runId);
 
-    assertChecklistRunMutable(details.run);
+    assertChecklistRunFieldWritable(details.run);
 
     const template = await this.repository.getTemplate(actor.tenantId, details.run.templateId);
     const componentBelongsToRun = template?.components.some((component) => component.id === componentId) ?? false;

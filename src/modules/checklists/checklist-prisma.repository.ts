@@ -1,10 +1,14 @@
 import type { PrismaClient } from "@prisma/client";
+import pino from "pino";
 
+import { env } from "../../config/env.js";
 import { withTenantRls } from "../../database/rls.js";
 import { EnterpriseAuditLogService } from "../core-saas/audit/audit-log.service.js";
 import type { AuditLogWriter } from "../core-saas/audit/audit-log.service.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
 import {
+  assertChecklistRunCompletionTarget,
+  assertChecklistRunFieldWritable,
   assertChecklistRunMutable,
   assertChecklistRunReopenable,
   assertChecklistRunStatusTransition,
@@ -43,6 +47,10 @@ import type {
   CreateChecklistAttachmentInput,
   CreateChecklistMarkerInput,
 } from "./checklist.validator.js";
+
+// Logger do projeto (mesmo padrão de charging/impound). `console.error` ignorava LOG_LEVEL — no CI, que roda
+// com LOG_LEVEL=silent, o erro cru do Prisma ia para o stdout do job assim mesmo.
+const logger = pino({ level: env.LOG_LEVEL });
 
 type PrismaModelDelegate = {
   findMany(args?: unknown): Promise<unknown[]>;
@@ -582,7 +590,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
 
     // CHECKLIST P1 PR-03 — trava de imutabilidade no repositório REAL (defesa em profundidade). Antes desta
     // linha, um PATCH numa vistoria já concluída regravava as respostas por cima da prova assinada.
-    assertChecklistRunMutable(existing.run);
+    assertChecklistRunFieldWritable(existing.run);
     assertChecklistRunStatusTransition(data.status);
 
     for (const answer of data.answers) {
@@ -636,6 +644,9 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     }
 
     assertChecklistRunMutable(existing.run);
+    // Junta PR-03 (2ª rodada): de `pending_acknowledgement` só existe UM salto — a ciência levando a
+    // `completed_with_divergence`. Concluir de novo por fora é reescrever prova assinada.
+    assertChecklistRunCompletionTarget(existing.run.status, status);
 
     await this.client.checklistRun.update({
       where: {
@@ -658,10 +669,33 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   // nenhum: nasce uma NOVA run vinculada por `reopened_from_run_id`, herdando modelo/versão, vínculo com a
   // OS/custódia, respostas e marcações. Roda dentro da MESMA transação RLS do wrapper (atomicidade: ou a nova
   // versão nasce completa, ou nada). `client_run_key` fica NULL (chave de idempotência de UMA criação do app).
+  //
+  // CORREÇÃO DE COMENTÁRIO (junta PR-03, 2ª rodada — medido no banco): o índice anti-dupla-reabertura
+  // `checklist_runs_tenant_id_reopened_from_run_id_key` NÃO é parcial (`indpred` é NULL) — os comentários que
+  // diziam "índice parcial único" estavam errados. Ele é um UNIQUE comum sobre (tenant_id,
+  // reopened_from_run_id), e o invariante só funciona porque no Postgres NULLs são DISTINTOS num índice único:
+  // as vistorias ORIGINAIS (reopened_from_run_id NULL, a esmagadora maioria) não colidem entre si. Quem ler
+  // "parcial" pode tentar "consertar" com NULLS NOT DISTINCT — e aí TODAS as vistorias originais da mesma
+  // organização passam a colidir em NULL, matando a criação de vistoria. Não adicione NULLS NOT DISTINCT aqui.
+  //
+  // Junta PR-03 (2ª rodada, ALTA §2.8) — a proteção cobre o MÉTODO INTEIRO, não só o `create`.
+  // Antes, o `FOR UPDATE`, o `getRun`, a busca do modelo e os dois `createMany` corriam nus: um P2028 (timeout
+  // dos 5s da transação interativa sob contenção da trava) ou um 40001 no meio da cópia subia cru até o
+  // `sendRouteError`, que devolve qualquer `Error` como HTTP 400 com `error.message` LITERAL — caminho absoluto
+  // do servidor, nomes de coluna internas e trecho da query no corpo, ainda por cima classificados como erro do
+  // cliente. As recusas de NEGÓCIO continuam passando intactas (ver `sanitizeReopenFailure`).
   async reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null> {
+    try {
+      return await this.reopenRunWithinTransaction(data);
+    } catch (error) {
+      throw sanitizeReopenFailure(error, data.runId);
+    }
+  }
+
+  private async reopenRunWithinTransaction(data: ReopenRunData): Promise<ReopenRunResult | null> {
     // Junta PR-03 (MÉDIA — check-then-act): a leitura e a criação da nova versão eram dois passos sem
     // trava. Entre "li que está concluída" e "criei a versão", outra transação podia CANCELAR a vistoria —
-    // e a versão nascia pendurada numa prova cancelada (o índice parcial único só barra reabertura DUPLA,
+    // e a versão nascia pendurada numa prova cancelada (o índice único só barra reabertura DUPLA,
     // não a corrida com o cancelamento). `FOR UPDATE` segura a linha até o fim desta transação RLS.
     const locked = await this.client.$queryRaw<Array<{ status: string }>>`
       SELECT status
@@ -695,43 +729,23 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       throw checklistRunTemplateArchivedError();
     }
 
-    let record: unknown;
-
-    try {
-      record = await this.client.checklistRun.create({
-        data: {
-          tenant_id: data.tenantId,
-          template_id: previous.run.templateId,
-          template_version: previous.run.templateVersion,
-          related_entity_type: previous.run.relatedEntityType ?? null,
-          related_entity_id: previous.run.relatedEntityId ?? null,
-          client_run_key: null,
-          reopened_from_run_id: previous.run.id,
-          reopen_reason: data.reason,
-          status: "in_progress",
-          started_by: data.actorUserId,
-        },
-      });
-    } catch (error) {
-      // Índice parcial único (tenant_id, reopened_from_run_id): duas reaberturas concorrentes da MESMA
-      // vistoria — a perdedora vira recusa de negócio, não erro cru de banco. Nada mais é consultado depois
-      // do erro (a transação já está abortada), só o throw.
-      if (isUniqueViolation(error)) {
-        throw checklistRunAlreadyReopenedError();
-      }
-      // Junta PR-03 (ALTA, §2.8): qualquer outro erro do Prisma subia CRU até a resposta HTTP —
-      // com CAMINHO ABSOLUTO do servidor, trecho do código gerado e nomes de coluna internas
-      // (inclusive `tenant_id`) no corpo que o cliente recebe. O detalhe fica no log do servidor;
-      // o cliente recebe linguagem de negócio.
-      // eslint-disable-next-line no-console
-      console.error("[checklist.reopenRun] falha inesperada ao criar a nova versão da vistoria", error);
-      throw new ChecklistError(
-        500,
-        "CHECKLIST_RUN_REOPEN_FAILED",
-        "checklist_run_reopen_failed",
-        "Não foi possível reabrir a vistoria agora. Tente novamente; se persistir, acione o suporte.",
-      );
-    }
+    // A colisão no unique (tenant_id, reopened_from_run_id) — duas reaberturas concorrentes da MESMA vistoria —
+    // vira recusa de negócio no `sanitizeReopenFailure`, que é quem classifica TODA falha deste método. Nada
+    // mais é consultado depois de um erro aqui (a transação já está abortada).
+    const record = await this.client.checklistRun.create({
+      data: {
+        tenant_id: data.tenantId,
+        template_id: previous.run.templateId,
+        template_version: previous.run.templateVersion,
+        related_entity_type: previous.run.relatedEntityType ?? null,
+        related_entity_id: previous.run.relatedEntityId ?? null,
+        client_run_key: null,
+        reopened_from_run_id: previous.run.id,
+        reopen_reason: data.reason,
+        status: "in_progress",
+        started_by: data.actorUserId,
+      },
+    });
 
     const run = mapRunRecord(record);
 
@@ -797,7 +811,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       return null;
     }
 
-    assertChecklistRunMutable(run.run);
+    assertChecklistRunFieldWritable(run.run);
 
     const record = await this.client.checklistAttachment.create({
       data: {
@@ -828,7 +842,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       return null;
     }
 
-    assertChecklistRunMutable(run.run);
+    assertChecklistRunFieldWritable(run.run);
 
     const record = await this.client.checklistMarker.create({
       data: {
@@ -966,8 +980,16 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     return this.withTenant(tenantId, (repository) => repository.completeRun(tenantId, runId, actorUserId, status));
   }
 
-  reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null> {
-    return this.withTenant(data.tenantId, (repository) => repository.reopenRun(data));
+  // Segunda rede, no MESMO nível do `$transaction`: o timeout da transação interativa e o rollback por
+  // serialização estouram no wrapper, FORA do método já protegido. Sem isto, justamente a falha mais provável
+  // (contenção na trava `FOR UPDATE`) escaparia crua para o `sendRouteError` — que a devolveria como HTTP 400
+  // com a mensagem literal do Prisma. Recusa de negócio (ChecklistError) atravessa intacta; não há log duplo.
+  async reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null> {
+    try {
+      return await this.withTenant(data.tenantId, (repository) => repository.reopenRun(data));
+    } catch (error) {
+      throw sanitizeReopenFailure(error, data.runId);
+    }
   }
 
   hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
@@ -1022,14 +1044,118 @@ export async function createPrismaChecklistRepository(): Promise<ChecklistReposi
 }
 
 /**
+ * Classificador ÚNICO das falhas da reabertura. Existe para que nenhuma linha do método fique nua: o
+ * `sendRouteError` transforma qualquer `Error` solto em HTTP 400 com `error.message` literal, e a mensagem do
+ * Prisma carrega caminho absoluto do servidor, nomes de coluna internas e trecho da query.
+ *
+ * A ordem importa:
+ *   1. recusa de NEGÓCIO (`ChecklistError`) passa intacta — engolir "modelo arquivado" ou "já reaberta" num
+ *      500 genérico esconderia do gestor o único motivo que ele consegue resolver sozinho;
+ *   2. colisão no unique da reabertura vira a recusa de negócio correspondente;
+ *   3. o resto é falha de infraestrutura, e aí a resposta separa TRANSITÓRIO de DETERMINÍSTICO: mandar repetir
+ *      o que nunca vai passar é o mesmo erro de orientação impossível que a junta reprovou no sync.
+ */
+function sanitizeReopenFailure(error: unknown, runId: string): unknown {
+  if (error instanceof ChecklistError) {
+    return error;
+  }
+
+  if (isUniqueViolation(error)) {
+    return checklistRunAlreadyReopenedError();
+  }
+
+  const transient = isTransientDatabaseFailure(error);
+
+  // Campos estruturados: o objeto de erro CRU nunca entra no log (é ele que carrega caminho e query).
+  logger.error(
+    { runId, code: databaseErrorCodes(error).join("/") || "unknown", reason: errorReason(error), transient },
+    "checklist.reopen-run: falha de banco sanitizada antes de responder ao cliente",
+  );
+
+  return transient
+    ? new ChecklistError(
+        503,
+        "CHECKLIST_RUN_REOPEN_UNAVAILABLE",
+        "checklist_run_reopen_unavailable",
+        "A vistoria não pôde ser reaberta agora porque o sistema estava ocupado. Tente novamente em alguns instantes.",
+      )
+    : new ChecklistError(
+        500,
+        "CHECKLIST_RUN_REOPEN_FAILED",
+        "checklist_run_reopen_failed",
+        "Não foi possível reabrir a vistoria. Repetir a operação não resolve; acione o suporte informando esta vistoria.",
+      );
+}
+
+/**
+ * Falha que o TEMPO resolve: contenção (a trava `FOR UPDATE` é o ponto mais provável), serialização, deadlock,
+ * timeout da transação interativa e queda de conexão. Só nestes casos a resposta convida a repetir.
+ * Detecta pelo CÓDIGO, nunca pela mensagem — texto muda entre versões, código não.
+ */
+function isTransientDatabaseFailure(error: unknown): boolean {
+  const transientCodes = new Set([
+    "P1001", // não alcançou o banco
+    "P1002", // timeout de conexão
+    "P1008", // timeout da operação
+    "P1017", // servidor fechou a conexão
+    "P2024", // esgotou o pool esperando conexão
+    "P2028", // transação interativa expirada/encerrada
+    "P2034", // write conflict / deadlock (o wrapper Prisma do 40001/40P01)
+    "40001", // serialization_failure
+    "40P01", // deadlock_detected
+    "55P03", // lock_not_available
+    "57014", // query_canceled (statement_timeout)
+    "53300", // too_many_connections
+    "08000",
+    "08003",
+    "08006", // connection_exception
+  ]);
+
+  return databaseErrorCodes(error).some((code) => transientCodes.has(code));
+}
+
+/**
+ * Códigos candidatos de um erro de banco. Dois níveis porque o Prisma embrulha a falha do driver: uma query
+ * crua ($queryRaw, como o `FOR UPDATE` daqui) chega como P2010 com o SQLSTATE real em `meta.code`.
+ */
+function databaseErrorCodes(error: unknown): readonly string[] {
+  if (typeof error !== "object" || error === null) return [];
+
+  const codes: string[] = [];
+  const code = (error as { code?: unknown }).code;
+
+  if (typeof code === "string") codes.push(code);
+
+  const meta = (error as { meta?: unknown }).meta;
+
+  if (typeof meta === "object" && meta !== null) {
+    const metaCode = (meta as { code?: unknown }).code;
+
+    if (typeof metaCode === "string") codes.push(metaCode);
+  }
+
+  return codes;
+}
+
+/**
+ * Motivo REDIGIDO para o log (mesmo helper de charging/impound): nome/`reason` do erro, nunca a mensagem —
+ * é ela que carrega o caminho absoluto e o trecho da query.
+ */
+function errorReason(error: unknown): string {
+  if (error && typeof error === "object" && "reason" in error) {
+    return String((error as { reason?: unknown }).reason ?? "error");
+  }
+  if (error instanceof Error) return error.name;
+  return "error";
+}
+
+/**
  * Violação de índice único do Postgres (23505 / Prisma P2002). Detecta pelo CÓDIGO, nunca pela mensagem —
  * texto muda entre versões, código não. Usado na reabertura para transformar a corrida entre duas reaberturas
  * da MESMA vistoria numa recusa de negócio (409) em vez de erro cru de banco.
  */
 function isUniqueViolation(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
-  const code = (error as { code?: unknown }).code;
-  return code === "P2002" || code === "23505";
+  return databaseErrorCodes(error).some((code) => code === "P2002" || code === "23505");
 }
 
 function mapTemplateRecord(record: unknown): ChecklistTemplate {
