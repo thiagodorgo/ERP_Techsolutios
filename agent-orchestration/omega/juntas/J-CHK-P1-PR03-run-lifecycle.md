@@ -7,8 +7,15 @@
   `coordenador-de-acessos` · `validador-mestre`
 - **Veredito da 1ª rodada:** **APROVADO_CONDICIONADO** → condições cumpridas (abaixo, uma a uma).
 - **Veredito da 2ª rodada (2026-08-10):** **REPROVADO** pelo `critico-adversarial` ·
-  **APROVADO_CONDICIONADO** pelo `agente-dba-guardiao` → **PR reprovado**, correções em curso
+  **APROVADO_CONDICIONADO** pelo `agente-dba-guardiao` e pelo `coordenador-de-acessos` → correções
+  aplicadas em 5 frentes particionadas, cada uma com verificação adversarial própria
   (§"2ª rodada" no fim desta ata).
+- **Veredito da 3ª rodada (2026-08-10, reversão):** **APROVADO** pelo `critico-adversarial` — refez o
+  próprio PoC (14/14) e TODAS as mutações no HEAD: trava de conteúdo, guard estático (fronteira 189),
+  gate `RBAC_DB_PARITY`, 4 testes da cobrança (mutação no produtor inclusive), §2.8 do sync e
+  sanitização de método inteiro. Condições do `agente-dba-guardiao` (provisionamento convergente +
+  guard bidirecional) e do `coordenador-de-acessos` (direção banco→catálogo + papel ausente reprova)
+  cumpridas e provadas por mutação/drill. **Verde da junta = merge (§C7.1).**
 
 ---
 
