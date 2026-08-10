@@ -35,7 +35,7 @@ if (!connectionString) {
     try {
       const { PERMISSION_CATALOG } = await import("../src/modules/core-saas/permissions/catalog.js");
       const rows: Array<{ key: string }> = await client.$queryRawUnsafe("select key from permissions");
-      if (await bancoNaoProvisionado(rows.length)) return;
+      if (await bancoNaoProvisionado(client)) return;
       const noBanco = new Set(rows.map((row) => row.key));
 
       const ausentes = PERMISSION_CATALOG.filter((permission) => !noBanco.has(permission));
@@ -63,7 +63,7 @@ if (!connectionString) {
            join roles r on r.id = rp.role_id
            join permissions p on p.id = rp.permission_id`,
       );
-      if (await bancoNaoProvisionado(rows.length)) return;
+      if (await bancoNaoProvisionado(client)) return;
 
       const noBanco = new Map<string, Set<string>>();
       for (const row of rows) {
@@ -98,17 +98,27 @@ if (!connectionString) {
 }
 
 /**
- * Banco MIGRADO mas NÃO PROVISIONADO (sem `prisma db seed`) não é o alvo deste guard: `permissions`/
- * `role_permissions` nascem vazias e o teste acusaria "tudo ausente" — ruído, não achado. O CI garante
- * que este caminho não vira verde-cego: o job `backend-postgres` roda o seed ANTES e **falha se qualquer
- * teste do subconjunto for pulado** (`# skipped 0`). Fora dele, o skip é declarado em voz alta.
+ * Banco MIGRADO mas NÃO PROVISIONADO (sem `prisma db seed`) não é o alvo deste guard: sem papéis não existe
+ * RBAC nenhum para comparar, e o teste acusaria "tudo ausente" — ruído, não achado.
+ *
+ * O SINAL é a tabela `roles` VAZIA, não `permissions` vazia: as migrações de DADOS deste repositório inserem
+ * algumas permissões (`20260861000000`), então `permissions` fica não-vazia mesmo num banco só migrado — foi
+ * exatamente assim que a primeira versão desta checagem passou batido e o job `backend` (migrate sem seed)
+ * abriu vermelho listando o catálogo inteiro. Papéis, por outro lado, só nascem do seed.
+ *
+ * Isto NÃO abre porta para verde-cego: o job `backend-postgres` do CI roda o seed ANTES e **derruba o job se
+ * qualquer teste do subconjunto for pulado** (`# skipped 0`). Fora dele, o pulo é declarado em voz alta.
  */
-async function bancoNaoProvisionado(linhas: number): Promise<boolean> {
-  if (linhas > 0) return false;
+async function bancoNaoProvisionado(client: {
+  $queryRawUnsafe(query: string): Promise<Array<{ n: bigint | number }>>;
+}): Promise<boolean> {
+  const [linha] = await client.$queryRawUnsafe("select count(*)::int as n from roles");
+  if (Number(linha?.n ?? 0) > 0) return false;
   // eslint-disable-next-line no-console
   console.warn(
-    "[paridade catálogo × banco] PULADO: banco migrado porém sem provisionamento (`npm run db:seed`). " +
-      "Este guard só tem sentido contra o estado real de papéis/permissões.",
+    "[paridade catálogo × banco] PULADO: banco migrado porém sem provisionamento (`npm run db:seed` — a tabela " +
+      "`roles` está vazia). Este guard só tem sentido contra o estado real de papéis/permissões; o job " +
+      "backend-postgres do CI semeia e proíbe pulo.",
   );
   return true;
 }
