@@ -89,6 +89,11 @@ export type ChecklistRun = {
   // P0a — chave durável de idempotência do replay de criação de run pelo mobile (local_run_id). Interno:
   // NÃO é exposto pelo toChecklistRunDto (sem valor para a UI e mantém a superfície pública enxuta).
   readonly clientRunKey?: string;
+  // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — vínculo de VERSÃO: quando esta run nasceu da reabertura de
+  // uma vistoria concluída, guarda o id da run anterior (mesma organização) e o motivo declarado pelo gestor.
+  // A vistoria original NUNCA é editada — a correção vira versão nova, encadeada por este campo.
+  readonly reopenedFromRunId?: string;
+  readonly reopenReason?: string;
   readonly status: ChecklistRunStatus;
   readonly startedBy?: string;
   readonly completedBy?: string;

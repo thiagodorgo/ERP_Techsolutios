@@ -1639,7 +1639,13 @@ concluir. A ação existe na lista (PR-02a) e foi reposta no editor (PR-02b); o 
   comportamento que o nome "Inativo — fora das novas ordens" já promete na tela.
   A opção (b) é a mais correta e exige decisão de backend (o `render` passa a considerar a run, não só o
   status do template).
-- status: ABERTA (candidata ao PR-03, que trata imutabilidade/ciclo de vida da run).
+- status: **RESOLVIDA no CHECKLIST P1 PR-03 pela opção (b)**. `renderChecklist` deixou de olhar só o status do
+  modelo: quando ele está `inactive` (não arquivado) e existe vistoria VIVA (`in_progress`/
+  `pending_acknowledgement`) do modelo na organização, o formulário continua sendo servido — quem já está no
+  campo preenche e conclui normalmente. O bloqueio real ficou onde o nome da ação promete: `createRun`
+  continua exigindo modelo `published` (nenhuma vistoria NOVA nasce de modelo inativo) e o modelo sai de
+  `/mobile/checklists/available`. Sem vistoria viva, o `render` volta a recusar (409 `checklist_not_published`).
+  Provado em `tests/checklist-routes.test.ts` (rota) e `tests/checklist-run-lifecycle-db.test.ts` (Postgres real).
 
 ## P-JUNTA-LIMPEZA-BASE-VIVA (2026-08-08) — 2º incidente de limpeza ad-hoc por subagente na base viva (MÉDIA, processo)
 
@@ -1683,3 +1689,35 @@ caberia bem antes de 1600. O número está certo para o layout expandido e errad
 - **Correção:** medir o contêiner (`ResizeObserver` ou `clientWidth` da grade) contra os 1198px reais, em vez
   da janela. De quebra, trocar o listener de `resize` por `matchMedia` elimina o re-render por pixel.
 - status: ABERTA.
+
+## P-RBAC-CATALOGO-NAO-CHEGA-AO-BANCO (2026-08-08) — permissão declarada em código nasce MORTA em produção (ALTA sistêmica) — **RESOLVIDO com guard**
+
+Achado ALTA **unânime** (dba + acessos + crítico) na junta do PR-03, e **a mesma classe do hotfix #341**.
+
+**O mecanismo:** em `CORE_SAAS_PERSISTENCE=prisma` (o modo REAL), o gate das rotas resolve permissões da
+tabela **persistida** `role_permissions` (`PersistentAuthorizationService`), não do catálogo em código. O
+catálogo só chega ao banco por `prisma/seed.ts` — e `deploy-production.yml` roda **apenas**
+`prisma migrate deploy` ("SEM db:seed — produção NUNCA semeia"). Toda permissão adicionada só ao código
+**nasce morta**: 403 para todos os papéis, inclusive `tenant_admin`/`super_admin`.
+
+**Agravante — split-brain:** o corpo do **login** anuncia a permissão (lê o catálogo) enquanto `/me` e o
+middleware não a têm (leem o banco). A interface habilita o botão; a API recusa.
+
+**O que estava quebrado na `main` (medido, não inferido):**
+- `checklist_runs:reopen` (a entrega deste PR): 403 para todos.
+- **`field_technician` sem NENHUMA permissão de checklist** — o usuário CENTRAL do produto.
+  `GET /mobile/checklists/available` → **403**; o login prometia `read/update/complete/acknowledge`.
+  Causa: `field_technician` e `technician` são papéis **distintos** e os grants estavam só no segundo.
+- `impound:read`/`charging:read` faltando em `operator`, `field_technician` e `auditor`.
+
+**Por que nenhum teste pegava:** as suítes de rota forçam `CORE_SAAS_PERSISTENCE=memory`, onde o middleware
+persistente faz short-circuit e lê o catálogo em código. Verde com a rota inoperante no modo real.
+
+**Correção:** migrações de dados aditivas e idempotentes (`20260861000000`, `20260862000000`) + **guard
+permanente** `tests/permission-catalog-db-parity.test.ts`, que compara `PERMISSION_CATALOG` e
+`ROLE_PERMISSIONS` com as tabelas e falha na divergência. Foi o guard que encontrou o caso do técnico.
+
+**Padrão que se repete e merece decisão do dono:** três bugs graves em dois dias (CHECK de tipo #341,
+permissão do técnico, permissão de reabertura) da **mesma família** — código declara, banco não sabe, teste
+roda em memória. Vale avaliar rodar um subconjunto das suítes de rota contra o Postgres no CI.
+- status: **RESOLVIDO** (migrações + guard); o item de CI fica como proposta ao dono.

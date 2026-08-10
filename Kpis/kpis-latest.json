@@ -1,16 +1,16 @@
 {
-  "snapshot_date": "2026-08-04",
-  "version": "CHK-P1-PR-02D",
+  "snapshot_date": "2026-08-10",
+  "version": "CHK-P1-PR-03",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-02d — PRÉ-VISUALIZAÇÃO no frame de telefone (modal 1080px + dock 392px), render dos 10 tipos a partir do rascunho REAL, card 'Resumo do modelo' com 4 estatísticas derivadas, banner de bloqueio/sucesso e Publicar dentro do modal. FECHA o editor do builder (02a lista #337 → 02b editor #340 → 02c inspector #342 → 02d prévia). JUNTA: cognicao-visual REPROVADO (renderizou em Edge real e mediu) + critico-adversarial CONDICIONADO. 3 ALTA corrigidos: (1) a prévia MENTIA — prometia 'renderização fiel do aplicativo' e desenhava 9 configurações que o app não honra; a cópia passou a dizer o que a tela é; (2) com o dock aberto, TODA gravação quebrava o layout porque a grade dependia do estado de save; (3) o CTA primário era inerte (hover anulado por seletor que repetia os valores) e 'publicando' era invisível. + focus trap com furo no Esc, contradição de espaços de foto e concordância.",
-    "title": "CHECKLIST P1 PR-02d — pré-visualização no telefone (fecha o editor)",
-    "pr": 343,
+    "block": "CHECKLIST P1 PR-03 — ciclo de vida da vistoria (D-CHK-P1-RUN-LIFECYCLE): a vistoria CONCLUÍDA vira prova IMUTÁVEL e corrigir passa a ser REABRIR — nova versão vinculada (reopened_from_run_id + motivo obrigatório), a original preservada, 1-a-1 por índice parcial único e FK RESTRICT. Permissão própria checklist_runs:reopen (gestão + admins; o guincheiro não destrava a própria assinatura). JUNTA: 3 ALTA + 4 MÉDIA fechados — cobrança DOBRADA na reabertura (checklist_run.completed é métrica faturada; a versão reaberta agora registra quantidade 0), PATCH virou ALLOWLIST (rebaixar apagava a divergência da prova; pending_acknowledgement era porta dos fundos para estado terminal sem assinatura), vazamento §2.8 (erro cru do Prisma com caminho absoluto do servidor), trava de linha na reabertura, modelo ARQUIVADO não gera mais versão em limbo, e o dossiê do veículo deixou de mostrar a versão SUBSTITUÍDA como se fosse a vigente. ACHADO SISTÊMICO: em produção o gate lê a TABELA role_permissions — permissão nova só no código nasce MORTA (deploy roda só migrate deploy); 2 migrações de dados idempotentes + guard de paridade catálogo×banco. CI: job NOVO backend-postgres roda um subconjunto de rota contra o PostgreSQL provisionado, com guard anti-verde-cego que derruba o job se qualquer teste PULAR.",
+    "title": "CHECKLIST P1 PR-03 — vistoria concluída é prova: reabrir cria nova versão",
+    "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Prévia no telefone fecha o builder; a junta pegou uma promessa falsa de fidelidade, quebra de layout em toda gravação e um CTA sem feedback — todos corrigidos.",
+    "summary": "Concluir trava a vistoria; corrigir vira reabertura versionada. A junta pegou cobrança dobrada, duas portas de estado no PATCH e vazamento de erro cru — e o guard novo de paridade catálogo×banco expôs que o técnico de campo estava sem nenhuma permissão de checklist no banco.",
     "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
@@ -18,19 +18,19 @@
       "value": 839,
       "total": 839,
       "display": "839/839",
-      "note": "PR-02d não toca mobile — carrega 839/839 (§C3.3)."
+      "note": "PR-03 não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1108,
-      "total": 1108,
-      "display": "1108/1108",
-      "note": "PR-02d: +17 testes da prévia (arquivo novo checklists-preview.smoke.test.tsx). 1091→1108, execução real."
+      "value": 1112,
+      "total": 1112,
+      "display": "1112/1112",
+      "note": "PR-03: +4 no runtime do checklist (trava da vistoria concluída). 1108→1112, execução real."
     },
     "backend_tests": {
-      "value": 2114,
-      "total": 2114,
-      "display": "2114/2114",
-      "note": "PR-02d é frontend-only — carrega 2114/2114 (§C3.3); nenhum arquivo de backend tocado."
+      "value": 2135,
+      "total": 2141,
+      "display": "2135/2141",
+      "note": "PR-03: +21 testes reais (checklist-routes +2 provando a allowlist e o modelo arquivado; checklist-routes-db NOVO com 4 exercícios de rota CONTRA o Postgres; permission-catalog-db-parity NOVO com 2; checklist-run-lifecycle-db NOVO; impound-checklist-link +1 do dossiê). 2114→2135 de 2141; os 6 pulos são os DB-gated de sempre, que o novo job backend-postgres executa de verdade no CI."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 143,
-      "display": "143",
-      "note": "CHK P1 PR-02d (prévia; fecha o editor do builder). Sobre 142 do #342."
+      "value": 144,
+      "display": "144",
+      "note": "CHK P1 PR-03 (ciclo de vida da vistoria + reabertura versionada). Sobre 143 do #343."
     },
     "mobile_backend_contracts": {
       "value": 18,

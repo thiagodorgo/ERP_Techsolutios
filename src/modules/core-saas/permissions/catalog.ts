@@ -239,6 +239,12 @@ export const PERMISSION_CATALOG = [
   "checklist_runs:update",
   "checklist_runs:complete",
   "checklist_runs:acknowledge",
+  // CHECKLIST P1 PR-03 (D-CHK-P1-REOPEN-RBAC) — REABRIR vistoria concluída: a run terminal NÃO é editada,
+  // nasce uma NOVA versão vinculada + auditoria. Permissão SEPARADA de `checklist_runs:update` de propósito —
+  // o campo (field_technician/technician) tem `update` e não pode destravar a própria assinatura. Distribuição:
+  // super_admin/platform_admin (catálogo integral), tenant_admin (herança, filtro não-`platform:`) e manager
+  // (gestão da operação). NÃO operator/field_dispatcher/finance/inventory/auditor/viewer/support.
+  "checklist_runs:reopen",
   // Ω4C PR-12 (D-Ω4C-TELE-PERM) — LEITURA do console de Telemetria (Acessos/Quilometragem/Rastreamento/
   // Recusas/Dispositivos do AutEM Mobile). Concedida a gestão/despacho/auditoria: tenant_admin [auto, filtro
   // não-`platform:`], manager, field_dispatcher, auditor (+ super/platform admins). NÃO field_technician
@@ -455,6 +461,9 @@ export const ROLE_PERMISSIONS = {
     "checklist_runs:update",
     "checklist_runs:complete",
     "checklist_runs:acknowledge",
+    // CHECKLIST P1 PR-03 (D-CHK-P1-REOPEN-RBAC) — o GESTOR reabre a vistoria concluída (nova versão auditada).
+    // É o único papel não-admin com a permissão: quem preenche no campo não destrava a própria assinatura.
+    "checklist_runs:reopen",
   ],
   technician: [
     "dashboard:read",

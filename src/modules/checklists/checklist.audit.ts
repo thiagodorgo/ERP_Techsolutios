@@ -7,6 +7,9 @@ export const CHECKLIST_AUDIT_ACTIONS = {
   runUpdated: "checklist_run.updated",
   attachmentUploaded: "checklist_run.attachment_uploaded",
   runCompleted: "checklist_run.completed",
+  // CHECKLIST P1 PR-03 — reabertura de vistoria concluída (nova versão vinculada). Quem, quando e de qual
+  // vistoria: a trilha é obrigatória porque o ato mexe na prova jurídica do estado do veículo.
+  runReopened: "checklist_run.reopened",
   runDivergenceRegistered: "checklist_run.divergence_reported",
   runAcknowledged: "checklist_run.acknowledgement_created",
 } as const;

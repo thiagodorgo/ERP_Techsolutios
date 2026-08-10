@@ -715,6 +715,13 @@ model ChecklistRun {
   // colide no unique → o caller busca a existente). NULL para runs criadas pela web/despacho (NULLs distintos
   // no Postgres, então nenhuma colisão entre runs sem chave). Nunca sai no DTO público.
   client_run_key      String?
+  // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — cadeia de VERSÕES da vistoria. A run concluída é imutável
+  // (prova jurídica do estado do veículo); corrigir cria uma NOVA run apontando para a anterior por
+  // `reopened_from_run_id`, com o motivo declarado pelo gestor. Os dois campos andam juntos (CHECK
+  // biconditional na migração 20260860000000) e o unique [tenant_id, reopened_from_run_id] impede duas
+  // reaberturas da MESMA vistoria (NULLs distintos: as originais não colidem entre si).
+  reopened_from_run_id String?                   @db.Uuid
+  reopen_reason        String?
   status              String                     @default("in_progress")
   started_by          String?                    @db.Uuid
   completed_by        String?                    @db.Uuid
@@ -728,6 +735,10 @@ model ChecklistRun {
   markers             ChecklistMarker[]
   template            ChecklistTemplate          @relation(fields: [tenant_id, template_id], references: [tenant_id, id], onDelete: Restrict)
   tenant              Tenant                     @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  // CHECKLIST P1 PR-03 — auto-relação tenant-first: a versão anterior nunca some por baixo da nova (Restrict)
+  // e o vínculo NÃO atravessa organização (a FK carrega o tenant_id).
+  reopened_from       ChecklistRun?              @relation("ChecklistRunReopen", fields: [tenant_id, reopened_from_run_id], references: [tenant_id, id], onDelete: Restrict)
+  reopened_into       ChecklistRun[]             @relation("ChecklistRunReopen")
   // Ω-VID PR-04 — vínculo (N:N via junção) a ImpoundProcess (dossiê do veículo). Um ChecklistRun pode estar
   // ligado a no máximo 1 processo por desenho de produto hoje, mas a junção fica aberta a N:N (unique composto
   // evita duplicidade do MESMO par; nada impede duas linhas para runs/processos diferentes).
@@ -737,6 +748,9 @@ model ChecklistRun {
   // P0a — idempotência durável do replay de `checklist.run_create` (mobile). NULLs distintos: runs sem
   // client_run_key (web/despacho) não colidem entre si.
   @@unique([tenant_id, client_run_key])
+  // CHECKLIST P1 PR-03 — anti-dupla-reabertura: uma vistoria concluída gera no máximo UMA versão seguinte
+  // (senão a cadeia fica ambígua). NULLs distintos ⇒ vistorias originais não colidem entre si.
+  @@unique([tenant_id, reopened_from_run_id])
   @@index([tenant_id])
   @@index([tenant_id, status])
   @@index([tenant_id, template_id])

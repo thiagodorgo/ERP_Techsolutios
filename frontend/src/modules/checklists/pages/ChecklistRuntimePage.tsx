@@ -6,6 +6,7 @@ import { StickyActionBar } from "../../../components/erp";
 import { Alert, Button, ErrorState, Skeleton } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
+import { describeChecklistRunLock } from "../checklist-run-lock";
 import {
   acknowledgeRun,
   addMarker,
@@ -102,7 +103,11 @@ export function ChecklistRuntimePage() {
     return <ErrorState title="Checklist invalido" detail="Informe um checklist publicado para iniciar execucao." />;
   }
 
-  const completed = run?.status === "completed" || run?.status === "completed_with_divergence";
+  // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — vistoria concluída/cancelada é somente leitura. A tela
+  // precisa dizer o PORQUÊ, não só desabilitar o botão: o backend responde 409 e o técnico ficaria olhando
+  // para um formulário mudo. A cópia vive em `checklist-run-lock` (a tela de execuções do PR-05 usa a mesma).
+  const lock = describeChecklistRunLock(run?.status);
+  const locked = lock !== null;
   const progress = schema ? calculateChecklistRuntimeProgress(schema, answers, attachments, markers) : null;
 
   async function handleSave(): Promise<boolean> {
@@ -254,6 +259,12 @@ export function ChecklistRuntimePage() {
           {message}
         </Alert>
       ) : null}
+      {lock ? (
+        <Alert title={lock.title} tone="info">
+          {lock.notice}
+          {run?.reopenReason ? ` Motivo da última reabertura: ${run.reopenReason}` : ""}
+        </Alert>
+      ) : null}
 
       {schema && progress ? (
         <section className="checklist-runtime-progress" aria-label="Progresso de preenchimento">
@@ -289,7 +300,7 @@ export function ChecklistRuntimePage() {
             comparisonLoading={comparisonLoading}
             validationErrors={validationErrors}
             saving={saving}
-            completed={completed}
+            completed={locked}
             onAnswerChange={handleAnswerChange}
             onSave={handleSave}
             onAttachmentUploaded={(attachment) => {
@@ -315,10 +326,10 @@ export function ChecklistRuntimePage() {
 
       {schema && run ? (
         <StickyActionBar>
-          <Button type="button" variant="secondary" onClick={handleSave} disabled={saving || completed}>
+          <Button type="button" variant="secondary" onClick={handleSave} disabled={saving || locked}>
             {saving ? "Salvando..." : "Salvar rascunho"}
           </Button>
-          <Button type="button" onClick={handleComplete} disabled={completing || completed}>
+          <Button type="button" onClick={handleComplete} disabled={completing || locked}>
             <CheckCircle2 size={16} />
             {completing ? "Concluindo..." : "Concluir checklist"}
           </Button>

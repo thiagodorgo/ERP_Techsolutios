@@ -50,7 +50,17 @@ export class InMemoryImpoundChecklistLinkRepository implements ImpoundChecklistL
       .filter((link) => link.tenantId === tenantId && link.processId === processId)
       .map((link) => this.runs.get(`${tenantId}:${link.checklistRunId}`))
       .filter((run): run is ChecklistRunSummary => run !== undefined)
+      // Paridade com o repositório Prisma (junta PR-03): a versão que substituiu a original é resolvida
+      // aqui também — o dossiê nunca apresenta a substituída como se fosse a vigente.
+      .map((run) => ({ ...run, supersededByRunId: this.substituidaPor(tenantId, run.id) }))
       .sort((left, right) => right.startedAt.getTime() - left.startedAt.getTime());
+  }
+
+  private substituidaPor(tenantId: string, runId: string): string | undefined {
+    for (const run of this.runs.values()) {
+      if (run.tenantId === tenantId && run.reopenedFromRunId === runId) return run.id;
+    }
+    return undefined;
   }
 
   // Helpers SÓ de teste — este módulo não depende do repositório real de impound/checklists.

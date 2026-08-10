@@ -167,6 +167,19 @@ export function createChecklistRouter(
     }),
   );
 
+  // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE + D-CHK-P1-REOPEN-RBAC) — reabrir vistoria CONCLUÍDA cria uma
+  // NOVA versão vinculada (a original nunca é editada). Gate PRÓPRIO `checklist_runs:reopen`: gestão + admins.
+  // Deliberadamente NÃO reusa `checklist_runs:update`, que o campo tem — o guincheiro não destrava a própria
+  // assinatura. Continua no namespace /mobile/checklist-runs porque é onde vive TODA a superfície de execução
+  // (o console web consome as mesmas rotas); a renomeação do namespace é dívida conhecida, não deste PR.
+  router.post(
+    "/mobile/checklist-runs/:runId/reopen",
+    requireChecklistPermission(CHECKLIST_PERMISSIONS.reopenRuns),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reopenChecklistRun(request));
+    }),
+  );
+
   router.get(
     "/mobile/checklist-runs/:runId/comparison",
     requireChecklistPermission(CHECKLIST_PERMISSIONS.readRuns),

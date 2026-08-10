@@ -24,6 +24,9 @@ export function toChecklistRunSummaryListDto(runs: readonly ChecklistRunSummary[
       relatedEntityId: run.relatedEntityId ?? null,
       startedAt: run.startedAt.toISOString(),
       completedAt: run.completedAt ? run.completedAt.toISOString() : null,
+      // A UI marca "versão substituída" sem precisar adivinhar pelo status.
+      reopenedFromRunId: run.reopenedFromRunId ?? null,
+      supersededByRunId: run.supersededByRunId ?? null,
     })),
   };
 }

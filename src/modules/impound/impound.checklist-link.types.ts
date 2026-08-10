@@ -39,6 +39,12 @@ export type ChecklistRunSummary = {
   readonly relatedEntityId?: string;
   readonly startedAt: Date;
   readonly completedAt?: Date;
+  // CHECKLIST P1 PR-03 (junta, MÉDIA) — o vínculo do dossiê aponta para a vistoria ORIGINAL. Quando ela é
+  // reaberta, a versão vigente é OUTRA run, e o dossiê mostrava a substituída como se fosse a atual —
+  // numa aba que é prova do estado do veículo. Estes dois campos dizem a verdade sobre a versão:
+  // de onde ela veio e por quem foi substituída. §allowlist: são ids de vistoria do próprio tenant.
+  readonly reopenedFromRunId?: string;
+  readonly supersededByRunId?: string;
 };
 
 export class ImpoundChecklistLinkError extends Error {

@@ -1004,6 +1004,32 @@ auditoria do coordenador-de-acessos (que aprovou o gate ANTES desta extensão). 
 altera a existente. Espelha a disciplina append-only já usada na custódia (hash-chain) e no extrato financeiro.
 Registrado ANTES de codar o P1 (§A5 — decisão material vai para arquivo, não fica só no chat).
 
+## D-CHK-P1-REOPEN-RBAC (2026-08-08) — Quem reabre uma vistoria concluída (CHECKLIST P1 PR-03)
+
+**Decisão de implementação** de `D-CHK-P1-RUN-LIFECYCLE` (a decisão do dono, acima, não nomeava o papel).
+
+**Permissão NOVA `checklist_runs:reopen`** — deliberadamente NÃO reusa `checklist_runs:update`. O campo
+(`field_technician`, `technician`) tem `update` para RESPONDER a vistoria; se a reabertura pendurasse em
+`update`, quem assinou destravaria a própria assinatura, esvaziando a imutabilidade que a decisão do dono
+criou. Distribuição: `super_admin`/`platform_admin` (catálogo integral), `tenant_admin` (herança, filtro
+não-`platform:`) e **`manager`** (gestão da operação). NÃO: operator, field_dispatcher, technician,
+field_technician, finance, inventory, auditor, viewer, support. Precedente direto no repo:
+`financial_period:reopen` — reabrir o que já foi fechado é sempre permissão à parte da de operar.
+
+**Consequências gravadas junto (mesma fatia):**
+- A reabertura NUNCA edita a run concluída: nasce uma nova run com `reopened_from_run_id` + `reopen_reason`
+  (migração aditiva `20260860000000`, com CHECK biconditional, anti-auto-referência, FK composta tenant-first
+  RESTRICT e unique `(tenant_id, reopened_from_run_id)` = anti-dupla-reabertura). Motivo é OBRIGATÓRIO.
+- Evento de domínio **`checklist_run.reopened`** (novo), NUNCA `checklist_run.created`: este último alimenta a
+  métrica FATURADA `checklist_runs_count`, e cobrar de novo pela correção seria cobrar duas vezes o mesmo
+  trabalho de campo.
+- `PATCH /mobile/checklist-runs/:runId` deixou de aceitar `status: completed*` (409
+  `run_completion_requires_complete`): concluir carrega assinatura, `completed_at/by`, auditoria e evento —
+  não pode acontecer pela edição de rascunho. O PATCH continua podendo `cancelled`.
+- **OPS (auto-FK RESTRICT):** `checklist_runs` passou a referenciar a si mesma. Remoções em massa por
+  organização precisam apagar as VERSÕES REABERTAS antes das originais — o RESTRICT é verificado linha a
+  linha, não no fim do comando.
+
 ## D-CHK-P1-APPLICABILITY (2026-08-03) — Modelo de aplicabilidade de checklist (CHECKLIST P1, PR-04)
 
 **Decisões do dono** (ratificadas após ataque adversarial do `critico-adversarial`, que ancorou o desenho no

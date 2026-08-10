@@ -721,6 +721,79 @@ test("mobile checklist action sync accepts, deduplicates, rejects and reports co
   });
 });
 
+// CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — o campo é onde a escrita TARDIA acontece: o guincheiro
+// conclui, o telefone fica sem sinal e uma ação antiga sobe depois. Com a vistoria travada, essa ação NÃO
+// pode ser aceita (reescreveria prova assinada) nem derrubar o lote inteiro: vira CONFLITO por ação, com
+// instrução de atualizar a vistoria — o app já sabe tratar `conflict`.
+test("mobile checklist action sync: escrita tardia em vistoria CONCLUÍDA vira conflito por ação, não perda nem 500", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const checklist = await createChecklistRunForSync(baseUrl, seed, headers);
+
+    const complete = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${checklist.runId}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+    assert.equal(complete.status, 200);
+    assert.equal(complete.body.data.run.status, "completed");
+
+    const lateSync = await requestJson(baseUrl, "/api/v1/mobile/sync/checklist-actions", {
+      method: "POST",
+      headers,
+      body: {
+        client_batch_id: "checklist-late-batch",
+        actions: [
+          {
+            client_action_id: "checklist-late-answer",
+            type: "checklist.item_answer",
+            local_created_at: "2026-06-14T13:00:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              value: "Resposta que subiu depois da conclusao.",
+            },
+          },
+          {
+            client_action_id: "checklist-late-marker",
+            type: "checklist.marker_create",
+            local_created_at: "2026-06-14T13:01:00.000Z",
+            payload: {
+              run_id: checklist.runId,
+              component_id: checklist.componentId,
+              marker_type: "scratch",
+            },
+          },
+          {
+            // Reenviar a CONCLUSÃO continua idempotente (already_applied), não vira conflito.
+            client_action_id: "checklist-late-complete",
+            type: "checklist.complete",
+            local_created_at: "2026-06-14T13:02:00.000Z",
+            payload: { run_id: checklist.runId, has_divergence: false },
+          },
+        ],
+      },
+    });
+
+    assert.equal(lateSync.status, 200);
+    assert.equal(lateSync.body.data.summary.accepted, 0);
+    assert.equal(lateSync.body.data.summary.conflicts, 2);
+    assert.equal(lateSync.body.data.summary.already_applied, 1);
+    for (const conflict of lateSync.body.data.conflicts) {
+      assert.equal(conflict.conflict.conflict_type, "checklist_run_locked");
+      assert.equal(conflict.conflict.next_action, "refresh_checklist_run_and_retry");
+      assert.equal(conflict.error.code, "CHECKLIST_RUN_LOCKED");
+    }
+    assert.equal(lateSync.body.data.already_applied[0].client_action_id, "checklist-late-complete");
+    assertNoStackTrace(lateSync.body);
+
+    // A vistoria concluída continua exatamente como estava.
+    const after = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${checklist.runId}/comparison`, { headers });
+    assert.equal(after.body.data.run.status, "completed");
+    assert.equal(after.body.data.markers.length, 0);
+  });
+});
+
 test("mobile checklist action sync validates envelope, actor context, permissions and tenant spoofing", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");

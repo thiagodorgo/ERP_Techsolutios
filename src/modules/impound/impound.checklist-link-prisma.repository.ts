@@ -50,7 +50,24 @@ export class PrismaImpoundChecklistLinkRepository implements ImpoundChecklistLin
       include: { run: { include: { template: { select: { name: true } } } } },
       orderBy: { created_at: "desc" },
     });
-    return links.map((link) => mapRun(link.run, link.run.template?.name));
+
+    // CHECKLIST P1 PR-03 (junta, MÉDIA): o vínculo aponta para a vistoria ORIGINAL — reabrir cria outra run,
+    // e sem esta consulta o dossiê apresentaria a versão SUBSTITUÍDA como se fosse a vigente. Uma leitura
+    // extra, estreita (só o par de ids), resolve para todas as linhas de uma vez.
+    const substituicoes = await this.client.checklistRun.findMany({
+      where: {
+        tenant_id: tenantId,
+        reopened_from_run_id: { in: links.map((link) => link.run.id) },
+      },
+      select: { id: true, reopened_from_run_id: true },
+    });
+    const substituidaPor = new Map<string, string>(
+      substituicoes
+        .filter((linha) => linha.reopened_from_run_id !== null)
+        .map((linha) => [linha.reopened_from_run_id as string, linha.id]),
+    );
+
+    return links.map((link) => mapRun(link.run, link.run.template?.name, substituidaPor.get(link.run.id)));
   }
 }
 
@@ -114,8 +131,10 @@ function mapRun(
     readonly related_entity_id: string | null;
     readonly started_at: Date;
     readonly completed_at: Date | null;
+    readonly reopened_from_run_id?: string | null;
   },
   templateName?: string,
+  supersededByRunId?: string,
 ): ChecklistRunSummary {
   return {
     id: record.id,
@@ -124,6 +143,8 @@ function mapRun(
     templateName: templateName ?? undefined,
     templateVersion: record.template_version,
     status: record.status,
+    reopenedFromRunId: record.reopened_from_run_id ?? undefined,
+    supersededByRunId,
     relatedEntityType: record.related_entity_type ?? undefined,
     relatedEntityId: record.related_entity_id ?? undefined,
     startedAt: record.started_at,

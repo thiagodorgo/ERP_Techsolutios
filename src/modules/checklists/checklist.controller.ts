@@ -25,6 +25,7 @@ import {
   parseCreateChecklistRunDto,
   parseCreateChecklistTemplateDto,
   parseRegisterDivergenceDto,
+  parseReopenChecklistRunDto,
   parseUpdateChecklistRunDto,
   parseUpdateChecklistTemplateDto,
 } from "./checklist.validator.js";
@@ -261,6 +262,27 @@ export class ChecklistController {
 
     return {
       data: toRunDetailsDto(details),
+    };
+  }
+
+  // CHECKLIST P1 PR-03 — reabre a vistoria concluída criando a NOVA versão vinculada. 201 (nasceu recurso
+  // novo), com o id da versão anterior no corpo para a tela oferecer o histórico.
+  async reopenChecklistRun(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.reopenRun(
+      actor,
+      readRouteParam(request.params.runId),
+      parseReopenChecklistRunDto(request.body as Record<string, unknown>),
+    );
+
+    return {
+      status: 201,
+      body: {
+        data: {
+          ...toRunDetailsDto(result.run),
+          previousRunId: result.previousRunId,
+        },
+      },
     };
   }
 

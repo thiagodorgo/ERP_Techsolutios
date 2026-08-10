@@ -224,6 +224,10 @@ export type ChecklistRun = {
   type?: TenantChecklistType;
   relatedEntityType?: string | null;
   relatedEntityId?: string | null;
+  // CHECKLIST P1 PR-03 — quando esta vistoria nasceu da reabertura de uma concluída, aponta para a versão
+  // anterior e traz o motivo declarado na reabertura.
+  reopenedFromRunId?: string | null;
+  reopenReason?: string | null;
   status: ChecklistRunStatus;
   startedBy?: string | null;
   completedBy?: string | null;

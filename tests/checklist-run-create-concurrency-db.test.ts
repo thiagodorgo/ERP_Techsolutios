@@ -277,7 +277,20 @@ async function teardown(ctx: BootstrapContext, tenantId: string): Promise<void> 
       }
       await tx.user.deleteMany({ where: { tenant_id: tenantId } });
     });
-    await client.tenant.deleteMany({ where: { id: tenantId } });
+    // ACHADO (subconjunto de rota contra o Postgres): o registro de consumo é BEST-EFFORT e
+    // fire-and-forget — ele podia aterrissar DEPOIS do delete acima, e aí a exclusão do tenant batia na
+    // FK `cloud_usage_events_tenant_id_fkey` e derrubava o teardown (falha intermitente que só aparece
+    // com o cloud-usage ativo). A varredura final roda FORA da transação RLS, logo antes do tenant, com
+    // uma repetição para absorver a gravação atrasada.
+    for (let tentativa = 0; tentativa < 2; tentativa += 1) {
+      await client.$executeRawUnsafe("delete from cloud_usage_events where tenant_id = $1::uuid", tenantId);
+      try {
+        await client.tenant.deleteMany({ where: { id: tenantId } });
+        break;
+      } catch (error) {
+        if (tentativa === 1) throw error;
+      }
+    }
   } finally {
     await client.$disconnect();
   }

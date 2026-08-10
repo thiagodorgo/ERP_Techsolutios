@@ -4,6 +4,15 @@ import { withTenantRls } from "../../database/rls.js";
 import { EnterpriseAuditLogService } from "../core-saas/audit/audit-log.service.js";
 import type { AuditLogWriter } from "../core-saas/audit/audit-log.service.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
+import {
+  assertChecklistRunMutable,
+  assertChecklistRunReopenable,
+  assertChecklistRunStatusTransition,
+  checklistRunAlreadyReopenedError,
+  checklistRunTemplateArchivedError,
+  CHECKLIST_RUN_ACTIVE_STATUSES,
+} from "./checklist.run-lifecycle.js";
+import { ChecklistError } from "./checklist.types.js";
 import type {
   ChecklistAcknowledgement,
   ChecklistAttachment,
@@ -23,6 +32,8 @@ import type {
   CreateRunData,
   CreateRunResult,
   CreateTemplateData,
+  ReopenRunData,
+  ReopenRunResult,
   RepositoryRunDetails,
   UpdateRunData,
   UpdateTemplateData,
@@ -569,6 +580,11 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    // CHECKLIST P1 PR-03 — trava de imutabilidade no repositório REAL (defesa em profundidade). Antes desta
+    // linha, um PATCH numa vistoria já concluída regravava as respostas por cima da prova assinada.
+    assertChecklistRunMutable(existing.run);
+    assertChecklistRunStatusTransition(data.status);
+
     for (const answer of data.answers) {
       const current = existing.answers.find((item) => item.componentId === answer.componentId);
 
@@ -619,6 +635,8 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    assertChecklistRunMutable(existing.run);
+
     await this.client.checklistRun.update({
       where: {
         tenant_id_id: {
@@ -636,6 +654,137 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     return this.getRun(tenantId, runId);
   }
 
+  // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — reabertura APPEND-ONLY. A run concluída não recebe UPDATE
+  // nenhum: nasce uma NOVA run vinculada por `reopened_from_run_id`, herdando modelo/versão, vínculo com a
+  // OS/custódia, respostas e marcações. Roda dentro da MESMA transação RLS do wrapper (atomicidade: ou a nova
+  // versão nasce completa, ou nada). `client_run_key` fica NULL (chave de idempotência de UMA criação do app).
+  async reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null> {
+    // Junta PR-03 (MÉDIA — check-then-act): a leitura e a criação da nova versão eram dois passos sem
+    // trava. Entre "li que está concluída" e "criei a versão", outra transação podia CANCELAR a vistoria —
+    // e a versão nascia pendurada numa prova cancelada (o índice parcial único só barra reabertura DUPLA,
+    // não a corrida com o cancelamento). `FOR UPDATE` segura a linha até o fim desta transação RLS.
+    const locked = await this.client.$queryRaw<Array<{ status: string }>>`
+      SELECT status
+        FROM checklist_runs
+       WHERE tenant_id = ${data.tenantId}::uuid
+         AND id = ${data.runId}::uuid
+       FOR UPDATE
+    `;
+
+    if (locked.length === 0) {
+      return null;
+    }
+
+    const previous = await this.getRun(data.tenantId, data.runId);
+
+    if (!previous) {
+      return null;
+    }
+
+    // A situação que vale é a lida SOB TRAVA (a de `getRun` foi lida na mesma transação, mas o assert
+    // precisa apontar para a linha que está efetivamente segurada).
+    assertChecklistRunReopenable({ status: locked[0]!.status as ChecklistRunStatus });
+
+    // Junta PR-03 (MÉDIA): modelo arquivado não recebe novo preenchimento — nem por reabertura.
+    const template = (await this.client.checklistTemplate.findFirst({
+      where: { tenant_id: data.tenantId, id: previous.run.templateId, deleted_at: null },
+      select: { status: true },
+    })) as { status?: string } | null;
+
+    if (!template || template.status === "archived") {
+      throw checklistRunTemplateArchivedError();
+    }
+
+    let record: unknown;
+
+    try {
+      record = await this.client.checklistRun.create({
+        data: {
+          tenant_id: data.tenantId,
+          template_id: previous.run.templateId,
+          template_version: previous.run.templateVersion,
+          related_entity_type: previous.run.relatedEntityType ?? null,
+          related_entity_id: previous.run.relatedEntityId ?? null,
+          client_run_key: null,
+          reopened_from_run_id: previous.run.id,
+          reopen_reason: data.reason,
+          status: "in_progress",
+          started_by: data.actorUserId,
+        },
+      });
+    } catch (error) {
+      // Índice parcial único (tenant_id, reopened_from_run_id): duas reaberturas concorrentes da MESMA
+      // vistoria — a perdedora vira recusa de negócio, não erro cru de banco. Nada mais é consultado depois
+      // do erro (a transação já está abortada), só o throw.
+      if (isUniqueViolation(error)) {
+        throw checklistRunAlreadyReopenedError();
+      }
+      // Junta PR-03 (ALTA, §2.8): qualquer outro erro do Prisma subia CRU até a resposta HTTP —
+      // com CAMINHO ABSOLUTO do servidor, trecho do código gerado e nomes de coluna internas
+      // (inclusive `tenant_id`) no corpo que o cliente recebe. O detalhe fica no log do servidor;
+      // o cliente recebe linguagem de negócio.
+      // eslint-disable-next-line no-console
+      console.error("[checklist.reopenRun] falha inesperada ao criar a nova versão da vistoria", error);
+      throw new ChecklistError(
+        500,
+        "CHECKLIST_RUN_REOPEN_FAILED",
+        "checklist_run_reopen_failed",
+        "Não foi possível reabrir a vistoria agora. Tente novamente; se persistir, acione o suporte.",
+      );
+    }
+
+    const run = mapRunRecord(record);
+
+    if (previous.answers.length > 0) {
+      await this.client.checklistRunAnswer.createMany({
+        data: previous.answers.map((answer) => ({
+          tenant_id: data.tenantId,
+          run_id: run.id,
+          component_id: answer.componentId,
+          value: answer.value,
+          metadata: answer.metadata,
+        })),
+      });
+    }
+
+    if (previous.markers.length > 0) {
+      await this.client.checklistMarker.createMany({
+        data: previous.markers.map((marker) => ({
+          tenant_id: data.tenantId,
+          run_id: run.id,
+          component_id: marker.componentId,
+          x: marker.x,
+          y: marker.y,
+          marker_type: marker.markerType,
+          description: marker.description ?? null,
+          metadata: marker.metadata,
+          created_by: data.actorUserId,
+        })),
+      });
+    }
+
+    return {
+      run,
+      previous: previous.run,
+      copiedAnswers: previous.answers.length,
+      copiedMarkers: previous.markers.length,
+    };
+  }
+
+  async hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
+    const record = await this.client.checklistRun.findFirst({
+      where: {
+        tenant_id: tenantId,
+        template_id: templateId,
+        status: {
+          in: [...CHECKLIST_RUN_ACTIVE_STATUSES],
+        },
+      },
+    });
+
+    return record !== null;
+  }
+
   async createAttachment(
     tenantId: string,
     runId: string,
@@ -647,6 +796,8 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     if (!run) {
       return null;
     }
+
+    assertChecklistRunMutable(run.run);
 
     const record = await this.client.checklistAttachment.create({
       data: {
@@ -677,6 +828,8 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    assertChecklistRunMutable(run.run);
+
     const record = await this.client.checklistMarker.create({
       data: {
         tenant_id: tenantId,
@@ -705,6 +858,8 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     if (!run) {
       return null;
     }
+
+    assertChecklistRunMutable(run.run);
 
     const record = await this.client.checklistAcknowledgement.create({
       data: {
@@ -811,6 +966,14 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     return this.withTenant(tenantId, (repository) => repository.completeRun(tenantId, runId, actorUserId, status));
   }
 
+  reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null> {
+    return this.withTenant(data.tenantId, (repository) => repository.reopenRun(data));
+  }
+
+  hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
+    return this.withTenant(tenantId, (repository) => repository.hasActiveRunsForTemplate(tenantId, templateId));
+  }
+
   createAttachment(
     tenantId: string,
     runId: string,
@@ -856,6 +1019,17 @@ export async function createPrismaChecklistRepository(): Promise<ChecklistReposi
   const { prisma } = await import("../../database/prisma.js");
 
   return new RlsPrismaChecklistRepository(prisma);
+}
+
+/**
+ * Violação de índice único do Postgres (23505 / Prisma P2002). Detecta pelo CÓDIGO, nunca pela mensagem —
+ * texto muda entre versões, código não. Usado na reabertura para transformar a corrida entre duas reaberturas
+ * da MESMA vistoria numa recusa de negócio (409) em vez de erro cru de banco.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code = (error as { code?: unknown }).code;
+  return code === "P2002" || code === "23505";
 }
 
 function mapTemplateRecord(record: unknown): ChecklistTemplate {
@@ -939,6 +1113,8 @@ function mapRunRecord(record: unknown): ChecklistRun {
     related_entity_type: string | null;
     related_entity_id: string | null;
     client_run_key?: string | null;
+    reopened_from_run_id?: string | null;
+    reopen_reason?: string | null;
     status: ChecklistRunStatus;
     started_by: string | null;
     completed_by: string | null;
@@ -956,6 +1132,8 @@ function mapRunRecord(record: unknown): ChecklistRun {
     relatedEntityType: value.related_entity_type ?? undefined,
     relatedEntityId: value.related_entity_id ?? undefined,
     clientRunKey: value.client_run_key ?? undefined,
+    reopenedFromRunId: value.reopened_from_run_id ?? undefined,
+    reopenReason: value.reopen_reason ?? undefined,
     status: value.status,
     startedBy: value.started_by ?? undefined,
     completedBy: value.completed_by ?? undefined,

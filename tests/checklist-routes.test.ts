@@ -420,6 +420,459 @@ test("checklist P1 PR-02c: PATCH grava `type` (round-trip) e rejeita tipo invali
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+// CHECKLIST P1 PR-03 — ciclo de vida da execução (D-CHK-P1-RUN-LIFECYCLE): a vistoria trava ao concluir,
+// reabrir cria uma NOVA versão auditada, e inativar um modelo NÃO derruba quem já está no campo.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+test("checklist P1 PR-03: vistoria CONCLUÍDA fica imutável — toda mutação responde 409", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    // Preenche e conclui normalmente (o caminho legítimo continua 200).
+    const draft = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Veiculo em ordem." }] },
+    });
+    assert.equal(draft.status, 200);
+
+    const complete = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+    assert.equal(complete.status, 200);
+    assert.equal(complete.body.data.run.status, "completed");
+
+    // A partir daqui, NENHUM caminho de escrita passa.
+    const patchAfter = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Tentativa de reescrever a prova." }] },
+    });
+    const attachmentAfter = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/attachments`, {
+      method: "POST",
+      headers,
+      body: {
+        componentId: checklist.photoId,
+        fileUrl: "https://storage.example/checklists/tardia.jpg",
+        fileName: "tardia.jpg",
+        mimeType: "image/jpeg",
+      },
+    });
+    const markerAfter = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/markers`, {
+      method: "POST",
+      headers,
+      body: { componentId: checklist.damageId, x: 0.1, y: 0.2, markerType: "scratch" },
+    });
+    const completeAfter = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+    const divergenceAfter = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/divergence`, {
+      method: "POST",
+      headers,
+      body: {
+        componentId: checklist.photoId,
+        fileUrl: "https://storage.example/checklists/divergencia-tardia.jpg",
+        observation: "Divergencia tardia.",
+      },
+    });
+    const acknowledgementAfter = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/acknowledgement`, {
+      method: "POST",
+      headers,
+      body: { message: "Ciente." },
+    });
+
+    for (const response of [patchAfter, attachmentAfter, markerAfter, completeAfter, divergenceAfter]) {
+      assert.equal(response.status, 409);
+      assert.equal(response.body.error.reason, "checklist_run_locked");
+    }
+    // A ciência tem recusa PRÓPRIA (não há divergência pendente nesta run) — mas também é 409, nunca 200.
+    assert.equal(acknowledgementAfter.status, 409);
+
+    // E a prova continua intacta: nada foi gravado por cima.
+    const reloaded = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(reloaded.status, 200);
+    assert.equal(reloaded.body.data.run.status, "completed");
+    assert.equal(reloaded.body.data.answers.length, 1);
+    assert.equal(reloaded.body.data.answers[0].value, "Veiculo em ordem.");
+    assert.equal(reloaded.body.data.attachments.length, 0);
+    assert.equal(reloaded.body.data.markers.length, 0);
+  });
+});
+
+test("checklist P1 PR-03: PATCH não conclui a vistoria pela porta dos fundos", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    // Concluir carrega assinatura, `completedAt/completedBy`, auditoria e evento de domínio: o PATCH de
+    // rascunho não pode cravar `completed` sem nada disso.
+    const sneaky = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "completed", answers: [] },
+    });
+    assert.equal(sneaky.status, 409);
+    assert.equal(sneaky.body.error.reason, "run_completion_requires_complete");
+
+    const still = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(still.body.data.run.status, "in_progress");
+  });
+});
+
+// Junta PR-03 (ALTA do critico-adversarial): a guarda do PATCH era BLOCKLIST — barrava as duas conclusões
+// e deixava DUAS portas abertas. Este teste prova as duas fechadas pela ALLOWLIST.
+test("checklist P1 PR-03: PATCH não REBAIXA a vistoria nem apaga a divergência da prova", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    // Divergência registrada: a vistoria vai para "aguardando ciência" — este é o estado que protege a
+    // organização (o cliente ainda precisa dar ciência do dano encontrado).
+    const divergence = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/divergence`, {
+      method: "POST",
+      headers,
+      body: {
+        componentId: checklist.photoId,
+        fileUrl: "https://storage.example/checklists/avaria.jpg",
+        observation: "Para-choque amassado na chegada.",
+      },
+    });
+    assert.equal(divergence.status, 200);
+    assert.equal(divergence.body.data.run.status, "pending_acknowledgement");
+
+    // PORTA 1 — rebaixar para "em andamento" apagaria a pendência de ciência: a divergência sumiria da
+    // prova sem ninguém ter dado ciência dela.
+    const downgrade = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "in_progress", answers: [] },
+    });
+    assert.equal(downgrade.status, 409);
+    assert.equal(downgrade.body.error.reason, "run_status_transition_not_allowed");
+
+    // A divergência continua de pé.
+    const afterDowngrade = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(afterDowngrade.body.data.run.status, "pending_acknowledgement");
+
+    // PORTA 2 — carimbar "aguardando ciência" numa vistoria comum criaria a pendência sem divergência
+    // nenhuma por trás (o estado nasce da conclusão, não da edição do rascunho).
+    const other = await createRun(baseUrl, headers, checklist.id);
+    const fakePending = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${other.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "pending_acknowledgement", answers: [] },
+    });
+    assert.equal(fakePending.status, 409);
+    assert.equal(fakePending.body.error.reason, "run_acknowledgement_requires_action");
+
+    const untouched = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${other.id}/comparison`, { headers });
+    assert.equal(untouched.body.data.run.status, "in_progress");
+
+    // E o caminho legítimo (cancelar pela edição) segue aberto — a allowlist não fechou a porta certa.
+    const cancel = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${other.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "cancelled", answers: [] },
+    });
+    assert.equal(cancel.status, 200);
+    assert.equal(cancel.body.data.run.status, "cancelled");
+  });
+});
+
+test("checklist P1 PR-03: reabrir vistoria de modelo ARQUIVADO é recusado (versão em limbo)", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+
+    // A organização aposenta o modelo DEPOIS da vistoria concluída.
+    const archive = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "archived" },
+    });
+    assert.equal(archive.status, 200);
+
+    // Reabrir criaria uma versão que o app de campo nem listaria (só serve modelo publicado): recusa com
+    // linguagem de negócio e caminho de saída, não uma run órfã.
+    const reopen = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers,
+      body: { reason: "Corrigir a quilometragem registrada." },
+    });
+    assert.equal(reopen.status, 409);
+    assert.equal(reopen.body.error.reason, "checklist_template_archived");
+  });
+});
+
+test("checklist P1 PR-03: reabrir cria NOVA versão vinculada e preserva a vistoria original", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id, {
+      relatedEntityType: "work_order",
+      relatedEntityId: "os_reabertura",
+    });
+
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Primeira leitura." }] },
+    });
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/markers`, {
+      method: "POST",
+      headers,
+      body: { componentId: checklist.damageId, x: 0.4, y: 0.6, markerType: "dent", description: "Amassado na porta" },
+    });
+
+    // Em andamento não se reabre: é só continuar preenchendo.
+    const tooEarly = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers,
+      body: { reason: "Ainda nem concluiu, mas quero reabrir." },
+    });
+    assert.equal(tooEarly.status, 409);
+    assert.equal(tooEarly.body.error.reason, "checklist_run_not_completed");
+
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+
+    // Motivo é obrigatório — reabrir prova assinada não é ato anônimo.
+    const noReason = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers,
+      body: {},
+    });
+    assert.equal(noReason.status, 400);
+
+    const reopened = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers,
+      body: { reason: "Foto do para-choque saiu tremida; refazer o registro." },
+    });
+    assert.equal(reopened.status, 201);
+    assert.equal(reopened.body.data.run.status, "in_progress");
+    assert.equal(reopened.body.data.run.reopenedFromRunId, run.id);
+    assert.equal(reopened.body.data.previousRunId, run.id);
+    assert.notEqual(reopened.body.data.run.id, run.id);
+    // Herda o vínculo com a ordem de serviço e o trabalho já feito (não se redigita a vistoria).
+    assert.equal(reopened.body.data.run.relatedEntityId, "os_reabertura");
+    assert.equal(reopened.body.data.answers.length, 1);
+    assert.equal(reopened.body.data.answers[0].value, "Primeira leitura.");
+    assert.equal(reopened.body.data.markers.length, 1);
+    assert.equal(reopened.body.data.markers[0].description, "Amassado na porta");
+
+    // A vistoria original continua concluída e íntegra.
+    const original = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/comparison`, { headers });
+    assert.equal(original.body.data.run.status, "completed");
+    assert.equal(original.body.data.answers.length, 1);
+
+    // A nova versão aceita escrita normalmente.
+    const writeOnNew = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${reopened.body.data.run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Leitura corrigida." }] },
+    });
+    assert.equal(writeOnNew.status, 200);
+
+    // Reabrir DE NOVO a mesma vistoria concluída deixaria a cadeia de versões ambígua.
+    const twice = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers,
+      body: { reason: "Segunda reabertura concorrente da mesma vistoria." },
+    });
+    assert.equal(twice.status, 409);
+    assert.equal(twice.body.error.reason, "checklist_run_already_reopened");
+  });
+});
+
+test("checklist P1 PR-03: reabrir é permissão de GESTÃO — campo e despacho recebem 403", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const adminHeaders = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, adminHeaders, checklist.id);
+    await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: { hasDivergence: false },
+    });
+
+    // O guincheiro TEM `checklist_runs:update` (responde a vistoria) e mesmo assim não destrava a própria
+    // assinatura: reabrir é gate PRÓPRIO.
+    const fieldReopen = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.operatorA, "field_technician"),
+      body: { reason: "Quero corrigir a vistoria que eu mesmo assinei." },
+    });
+    assert.equal(fieldReopen.status, 403);
+    assert.equal(fieldReopen.body.error.reason, "permission_required");
+
+    const operatorReopen = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+      body: { reason: "Despacho tentando reabrir a vistoria." },
+    });
+    assert.equal(operatorReopen.status, 403);
+
+    // Outra organização não enxerga a vistoria: 404 (nunca 403 — 403 confirmaria que ela existe).
+    const crossTenant = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantB, seed.adminB),
+      body: { reason: "Reabrindo vistoria de outra organizacao." },
+    });
+    assert.equal(crossTenant.status, 404);
+    assert.equal(crossTenant.body.error.reason, "checklist_run_not_found");
+
+    // O gestor reabre.
+    const managerReopen = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.supervisorA, "manager"),
+      body: { reason: "Gestor corrigindo o registro apos conferencia." },
+    });
+    assert.equal(managerReopen.status, 201);
+    assert.equal(managerReopen.body.data.run.reopenedFromRunId, run.id);
+  });
+});
+
+// P-CHK-INATIVAR-COM-RUN-ATIVA (opção "b" da pendência) — inativar tira o modelo das NOVAS ordens, mas quem
+// já está com a vistoria aberta no aplicativo continua conseguindo carregar o formulário e concluir.
+test("checklist P1 PR-03: modelo INATIVADO continua servindo quem já está no campo, mas sai das novas ordens", async () => {
+  await withChecklistApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA);
+    const checklist = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    const run = await createRun(baseUrl, headers, checklist.id);
+
+    const inactivate = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "inactive" },
+    });
+    assert.equal(inactivate.status, 200);
+    assert.equal(inactivate.body.data.status, "inactive");
+
+    // 1) O formulário da vistoria EM ANDAMENTO continua sendo servido.
+    const render = await requestJson(baseUrl, `/api/v1/mobile/checklists/${checklist.id}/render`, { headers });
+    assert.equal(render.status, 200);
+    assert.equal(render.body.data.components.length, 4);
+
+    // 2) O técnico continua preenchendo e CONCLUI (não fica preso com uma vistoria morta na mão).
+    const answer = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}`, {
+      method: "PATCH",
+      headers,
+      body: { answers: [{ componentId: checklist.observationId, value: "Concluida apos a inativacao." }] },
+    });
+    assert.equal(answer.status, 200);
+
+    const complete = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/complete`, {
+      method: "POST",
+      headers,
+      body: { hasDivergence: false },
+    });
+    assert.equal(complete.status, 200);
+    assert.equal(complete.body.data.run.status, "completed");
+
+    // 3) Mas NENHUMA vistoria nova nasce do modelo inativo — é o que "fora das novas ordens" promete.
+    const newRun = await requestJson(baseUrl, "/api/v1/mobile/checklist-runs", {
+      method: "POST",
+      headers,
+      body: { checklistId: checklist.id },
+    });
+    assert.equal(newRun.status, 409);
+    assert.equal(newRun.body.error.reason, "checklist_not_published");
+
+    // 4) E ele some da lista de modelos disponíveis para o aplicativo.
+    const available = await requestJson(baseUrl, "/api/v1/mobile/checklists/available", { headers });
+    assert.equal(available.status, 200);
+    assert.equal(
+      available.body.items.some((item: { id: string }) => item.id === checklist.id),
+      false,
+    );
+
+    // 5) Sem NENHUMA vistoria viva, o modelo inativo volta a recusar o render (nada a servir).
+    const semRunAtiva = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
+    await requestJson(baseUrl, `/api/v1/tenant/checklists/${semRunAtiva.id}`, {
+      method: "PATCH",
+      headers,
+      body: { status: "inactive" },
+    });
+    const renderSemRun = await requestJson(baseUrl, `/api/v1/mobile/checklists/${semRunAtiva.id}/render`, { headers });
+    assert.equal(renderSemRun.status, 409);
+    assert.equal(renderSemRun.body.error.reason, "checklist_not_published");
+  });
+});
+
+// Modelo de campo completo (observação + foto + avaria + ciência) usado pelos testes do PR-03.
+async function createFieldChecklist(
+  baseUrl: string,
+  tenant: Tenant,
+  user: User,
+): Promise<{ id: string; observationId: string; photoId: string; damageId: string }> {
+  const created = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
+    method: "POST",
+    headers: authHeaders(tenant, user),
+    body: {
+      name: `Vistoria de campo ${Math.random().toString(16).slice(2)}`,
+      type: "towing_collection",
+      schema: {},
+      components: [
+        { componentKey: "obs", type: "observation", label: "Observacao", required: false },
+        { componentKey: "fotos", type: "photo_upload", label: "Fotos", required: false },
+        { componentKey: "avarias", type: "damage_map", label: "Avarias", required: false },
+        { componentKey: "ciencia", type: "acknowledgement", label: "Ciencia", required: false },
+      ],
+    },
+  });
+  assert.equal(created.status, 201);
+
+  const published = await requestJson(baseUrl, `/api/v1/tenant/checklists/${created.body.data.id}/publish`, {
+    method: "POST",
+    headers: authHeaders(tenant, user),
+  });
+  assert.equal(published.status, 200);
+
+  return {
+    id: published.body.data.id as string,
+    observationId: findComponentId(published.body.data, "observation"),
+    photoId: findComponentId(published.body.data, "photo_upload"),
+    damageId: findComponentId(published.body.data, "damage_map"),
+  };
+}
+
+async function createRun(
+  baseUrl: string,
+  headers: Record<string, string>,
+  checklistId: string,
+  extra: Record<string, unknown> = {},
+): Promise<{ id: string }> {
+  const created = await requestJson(baseUrl, "/api/v1/mobile/checklist-runs", {
+    method: "POST",
+    headers,
+    body: { checklistId, ...extra },
+  });
+
+  assert.equal(created.status, 201);
+
+  return { id: created.body.data.id as string };
+}
+
 async function createAndPublishChecklist(
   baseUrl: string,
   tenant: Tenant,

@@ -137,6 +137,12 @@ export type RegisterDivergenceInput = {
   readonly metadata: JsonRecord;
 };
 
+// CHECKLIST P1 PR-03 — reabrir vistoria concluída EXIGE motivo declarado. É o que a auditoria mostra depois
+// ("por que a prova foi reaberta"); sem ele a reabertura vira ato anônimo sobre documento assinado.
+export type ReopenChecklistRunInput = {
+  readonly reason: string;
+};
+
 export type CreateChecklistAcknowledgementInput = {
   readonly message: string;
   readonly observation?: string;
@@ -250,6 +256,13 @@ export function parseRegisterDivergenceDto(body: Record<string, unknown>): Regis
     fileName: z.string().trim().min(1).optional(),
     mimeType: z.string().trim().min(1).optional(),
     metadata: jsonRecordSchema,
+  }).parse(body);
+}
+
+export function parseReopenChecklistRunDto(body: Record<string, unknown>): ReopenChecklistRunInput {
+  // Mínimo de 5 caracteres: "ok"/"x" não é justificativa. Teto de 500 evita despejo de texto na auditoria.
+  return z.object({
+    reason: z.string().trim().min(5).max(500),
   }).parse(body);
 }
 

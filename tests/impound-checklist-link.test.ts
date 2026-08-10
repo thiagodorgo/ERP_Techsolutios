@@ -60,6 +60,49 @@ test("link: fluxo feliz — vincula MANUAL, aparece em listChecklistRuns", async
   assert.equal(runs[0].templateName, "Vistoria de recolhimento");
 });
 
+// CHECKLIST P1 PR-03 (junta, MÉDIA) — o vínculo do dossiê aponta para a vistoria ORIGINAL. Reabrir cria
+// OUTRA run; sem marcação, a aba "Checklist do Guincho" mostrava a versão SUBSTITUÍDA como se fosse a
+// vigente — numa tela que é prova do estado do veículo.
+test("dossiê: vistoria reaberta marca a original como SUBSTITUÍDA e aponta a versão vigente", async () => {
+  const { service, repository } = setup();
+  const tenantActor = actor();
+  const processId = randomUUID();
+  const originalId = randomUUID();
+  const novaVersaoId = randomUUID();
+  const templateId = randomUUID();
+
+  repository.registerProcessForTests(tenantActor.tenantId, processId);
+  repository.registerChecklistRunForTests({
+    id: originalId,
+    tenantId: tenantActor.tenantId,
+    templateId,
+    templateName: "Vistoria de recolhimento",
+    templateVersion: 1,
+    status: "completed",
+    startedAt: new Date("2026-08-01T10:00:00.000Z"),
+    completedAt: new Date("2026-08-01T10:30:00.000Z"),
+  });
+  // A versão nova nasce da reabertura da original (é o que o repositório de checklists grava).
+  repository.registerChecklistRunForTests({
+    id: novaVersaoId,
+    tenantId: tenantActor.tenantId,
+    templateId,
+    templateName: "Vistoria de recolhimento",
+    templateVersion: 1,
+    status: "in_progress",
+    startedAt: new Date("2026-08-02T09:00:00.000Z"),
+    reopenedFromRunId: originalId,
+  });
+
+  await service.linkChecklistRun(tenantActor, processId, { checklistRunId: originalId });
+
+  const runs = await service.listChecklistRuns(tenantActor, processId);
+  const original = runs.find((run) => run.id === originalId);
+  assert.ok(original, "a vistoria original deve continuar no dossiê (histórico preservado)");
+  assert.equal(original.supersededByRunId, novaVersaoId, "a original precisa apontar a versão que a substituiu");
+  assert.equal(original.reopenedFromRunId, undefined, "a original não veio de reabertura nenhuma");
+});
+
 test("DTO: toChecklistRunSummaryListDto expõe templateName (null quando ausente) e NUNCA tenant_id (§allowlist)", async () => {
   const { toChecklistRunSummaryListDto } = await import("../src/modules/impound/impound.checklist-link.dto.js");
   const startedAt = new Date("2026-07-20T10:00:00.000Z");
