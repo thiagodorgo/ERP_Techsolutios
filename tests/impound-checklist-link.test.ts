@@ -60,6 +60,249 @@ test("link: fluxo feliz — vincula MANUAL, aparece em listChecklistRuns", async
   assert.equal(runs[0].templateName, "Vistoria de recolhimento");
 });
 
+// CHECKLIST P1 PR-03 (junta, MÉDIA) — o vínculo do dossiê aponta para a vistoria ORIGINAL. Reabrir cria
+// OUTRA run; sem marcação, a aba "Checklist do Guincho" mostrava a versão SUBSTITUÍDA como se fosse a
+// vigente — numa tela que é prova do estado do veículo.
+test("dossiê: vistoria reaberta marca a original como SUBSTITUÍDA e aponta a versão vigente", async () => {
+  const { service, repository } = setup();
+  const tenantActor = actor();
+  const processId = randomUUID();
+  const originalId = randomUUID();
+  const novaVersaoId = randomUUID();
+  const templateId = randomUUID();
+
+  repository.registerProcessForTests(tenantActor.tenantId, processId);
+  repository.registerChecklistRunForTests({
+    id: originalId,
+    tenantId: tenantActor.tenantId,
+    templateId,
+    templateName: "Vistoria de recolhimento",
+    templateVersion: 1,
+    status: "completed",
+    startedAt: new Date("2026-08-01T10:00:00.000Z"),
+    completedAt: new Date("2026-08-01T10:30:00.000Z"),
+  });
+  // A versão nova nasce da reabertura da original (é o que o repositório de checklists grava).
+  repository.registerChecklistRunForTests({
+    id: novaVersaoId,
+    tenantId: tenantActor.tenantId,
+    templateId,
+    templateName: "Vistoria de recolhimento",
+    templateVersion: 1,
+    status: "in_progress",
+    startedAt: new Date("2026-08-02T09:00:00.000Z"),
+    reopenedFromRunId: originalId,
+  });
+
+  await service.linkChecklistRun(tenantActor, processId, { checklistRunId: originalId });
+
+  const runs = await service.listChecklistRuns(tenantActor, processId);
+  const original = runs.find((run) => run.id === originalId);
+  assert.ok(original, "a vistoria original deve continuar no dossiê (histórico preservado)");
+  assert.equal(original.supersededByRunId, novaVersaoId, "a original precisa apontar a versão que a substituiu");
+  assert.equal(original.reopenedFromRunId, undefined, "a original não veio de reabertura nenhuma");
+  assert.equal(original.currentRunId, novaVersaoId, "com um salto só, a vigente É o sucessor imediato");
+});
+
+// Junta PR-03, 2ª rodada (BAIXA do critico-adversarial) — CADEIA DE UM SALTO SÓ.
+// A resolução parava no sucessor IMEDIATO. Na SEGUNDA correção da mesma vistoria (v1→v2→v3 — cenário real,
+// exercido em tests/checklist-run-lifecycle-db.test.ts) o dossiê vinculado à v1 apontava a v2, que já tinha
+// sido substituída: mandava quem investiga o estado do veículo para uma versão que não vale mais.
+test("dossiê: cadeia de 3 versões — a original aponta o sucessor IMEDIATO (v2) e a VIGENTE do fim da cadeia (v3)", async () => {
+  const { service, repository } = setup();
+  const tenantActor = actor();
+  const processId = randomUUID();
+  const templateId = randomUUID();
+  const v1 = randomUUID();
+  const v2 = randomUUID();
+  const v3 = randomUUID();
+
+  repository.registerProcessForTests(tenantActor.tenantId, processId);
+  for (const [indice, versao] of [
+    { id: v1, reopenedFromRunId: undefined, status: "completed" },
+    { id: v2, reopenedFromRunId: v1, status: "completed" },
+    { id: v3, reopenedFromRunId: v2, status: "in_progress" },
+  ].entries()) {
+    repository.registerChecklistRunForTests({
+      id: versao.id,
+      tenantId: tenantActor.tenantId,
+      templateId,
+      templateName: "Vistoria de recolhimento",
+      templateVersion: 1,
+      status: versao.status,
+      startedAt: new Date(Date.UTC(2026, 7, 1 + indice, 10)),
+      reopenedFromRunId: versao.reopenedFromRunId,
+    });
+  }
+
+  // O dossiê é vinculado à ORIGINAL — é sempre ela que o vínculo aponta; a reabertura não move o elo.
+  await service.linkChecklistRun(tenantActor, processId, { checklistRunId: v1 });
+
+  const runs = await service.listChecklistRuns(tenantActor, processId);
+  const original = runs.find((run) => run.id === v1);
+  assert.ok(original, "a original continua no dossiê (histórico preservado)");
+  assert.equal(original.supersededByRunId, v2, "sucessor IMEDIATO da v1 é a v2 — o campo diz o que o nome promete");
+  assert.equal(original.currentRunId, v3, "a versão que VALE hoje é a v3, no fim da cadeia — não a v2");
+});
+
+// O CHECK do banco (migração 20260860000000) só proíbe a auto-referência A→A; A→B→A não é barrado por
+// constraint nenhuma. Sem a guarda de visitados o percurso gira para sempre e a aba do dossiê nunca carrega.
+// AVISO a quem mexer aqui: medido por mutação — removida a guarda, este teste NÃO falha, ele PENDURA a suíte
+// inteira (o percurso é síncrono, trava o event loop, e o `timeout` do node:test não consegue interromper).
+// É por isso que a guarda mora no código e não no teste: em produção o sintoma seria a requisição do dossiê
+// nunca respondendo, com o processo Node parado junto.
+test("dossiê: ciclo A→B→A na cadeia não trava a leitura (o percurso termina sempre)", async () => {
+  const { service, repository } = setup();
+  const tenantActor = actor();
+  const processId = randomUUID();
+  const templateId = randomUUID();
+  const runA = randomUUID();
+  const runB = randomUUID();
+
+  repository.registerProcessForTests(tenantActor.tenantId, processId);
+  repository.registerChecklistRunForTests({
+    id: runA,
+    tenantId: tenantActor.tenantId,
+    templateId,
+    templateVersion: 1,
+    status: "completed",
+    startedAt: new Date("2026-08-01T10:00:00.000Z"),
+    reopenedFromRunId: runB,
+  });
+  repository.registerChecklistRunForTests({
+    id: runB,
+    tenantId: tenantActor.tenantId,
+    templateId,
+    templateVersion: 1,
+    status: "completed",
+    startedAt: new Date("2026-08-02T10:00:00.000Z"),
+    reopenedFromRunId: runA,
+  });
+
+  await service.linkChecklistRun(tenantActor, processId, { checklistRunId: runA });
+
+  const runs = await service.listChecklistRuns(tenantActor, processId);
+  const vinculada = runs.find((run) => run.id === runA);
+  assert.ok(vinculada, "a vistoria vinculada continua listada mesmo com a cadeia corrompida");
+  // D-007: não inventamos uma "vigente" que não existe — devolvemos o último id REAL alcançado no ciclo.
+  assert.equal(vinculada.currentRunId, runB, "o percurso para no id já visitado e devolve o último real");
+});
+
+// ── paridade do repositório Prisma (sem banco: cliente de mentira que CONTA as consultas) ──────────────
+// A cadeia e o retorno cedo vivem nos DOIS repositórios. O de memória é exercido acima; aqui o de Prisma é
+// exercido de verdade (a classe real), com um cliente falso que registra cada consulta de substituição —
+// é assim que o desperdício de round-trip vira asserção em vez de promessa.
+
+type FakeRunRecord = {
+  readonly id: string;
+  readonly tenant_id: string;
+  readonly template_id: string;
+  readonly template_version: number;
+  readonly status: string;
+  readonly related_entity_type: string | null;
+  readonly related_entity_id: string | null;
+  readonly started_at: Date;
+  readonly completed_at: Date | null;
+  readonly reopened_from_run_id: string | null;
+  readonly template: { readonly name: string } | null;
+};
+
+function fakeRunRecord(tenantId: string, id: string, reopenedFrom: string | null, startedAt: Date): FakeRunRecord {
+  return {
+    id,
+    tenant_id: tenantId,
+    template_id: "template-1",
+    template_version: 1,
+    status: "completed",
+    related_entity_type: null,
+    related_entity_id: null,
+    started_at: startedAt,
+    completed_at: null,
+    reopened_from_run_id: reopenedFrom,
+    template: { name: "Vistoria de recolhimento" },
+  };
+}
+
+function fakePrismaClient(runs: readonly FakeRunRecord[], linkedRunIds: readonly string[]) {
+  const chainQueries: string[][] = [];
+  const client = {
+    impoundProcessChecklistLink: {
+      findMany: async () => linkedRunIds.map((runId) => ({ run: runs.find((run) => run.id === runId)! })),
+    },
+    checklistRun: {
+      findMany: async (args: { where: { tenant_id: string; reopened_from_run_id: { in: string[] } } }) => {
+        const alvo = args.where.reopened_from_run_id.in;
+        chainQueries.push([...alvo]);
+        return runs
+          .filter(
+            (run) =>
+              run.tenant_id === args.where.tenant_id &&
+              run.reopened_from_run_id !== null &&
+              alvo.includes(run.reopened_from_run_id),
+          )
+          .map((run) => ({ id: run.id, reopened_from_run_id: run.reopened_from_run_id }));
+      },
+    },
+  };
+  return { client, chainQueries };
+}
+
+async function prismaRepositoryWith(runs: readonly FakeRunRecord[], linkedRunIds: readonly string[]) {
+  const { PrismaImpoundChecklistLinkRepository } = await import("../src/modules/impound/impound.checklist-link-prisma.repository.js");
+  const { client, chainQueries } = fakePrismaClient(runs, linkedRunIds);
+  type ClienteAceito = ConstructorParameters<typeof PrismaImpoundChecklistLinkRepository>[0];
+  return { repository: new PrismaImpoundChecklistLinkRepository(client as unknown as ClienteAceito), chainQueries };
+}
+
+test("Prisma: cadeia de 3 versões resolvida por NÍVEL — a v1 aponta v2 (imediata) e v3 (vigente)", async () => {
+  const tenantId = randomUUID();
+  const [v1, v2, v3] = [randomUUID(), randomUUID(), randomUUID()];
+  const runs = [
+    fakeRunRecord(tenantId, v1, null, new Date("2026-08-01T10:00:00.000Z")),
+    fakeRunRecord(tenantId, v2, v1, new Date("2026-08-02T10:00:00.000Z")),
+    fakeRunRecord(tenantId, v3, v2, new Date("2026-08-03T10:00:00.000Z")),
+  ];
+  const { repository, chainQueries } = await prismaRepositoryWith(runs, [v1]);
+
+  const listadas = await repository.listChecklistRunsForProcess(tenantId, randomUUID());
+  assert.equal(listadas.length, 1);
+  assert.equal(listadas[0].supersededByRunId, v2, "sucessor imediato");
+  assert.equal(listadas[0].currentRunId, v3, "vigente no fim da cadeia");
+  // O custo é por PROFUNDIDADE, não por linha: [v1] → [v2] → [v3] (a última volta não acha sucessor e para).
+  assert.deepEqual(chainQueries, [[v1], [v2], [v3]], "uma consulta por salto da cadeia, em lote");
+});
+
+// Junta PR-03, 2ª rodada (A1 do agente-dba-guardiao): processo sem vínculo nenhum disparava a consulta de
+// substituições com `in: []` — o Prisma traduz para `1=0`, então não quebrava; só queimava um round-trip em
+// todo dossiê sem checklist, que é a maioria deles.
+test("Prisma: processo SEM vínculo não dispara a consulta de substituições (nenhum round-trip à toa)", async () => {
+  const tenantId = randomUUID();
+  const { repository, chainQueries } = await prismaRepositoryWith([], []);
+
+  const listadas = await repository.listChecklistRunsForProcess(tenantId, randomUUID());
+  assert.deepEqual(listadas, [], "sem vínculo, o dossiê lista vazio");
+  assert.deepEqual(chainQueries, [], "sem vínculo não há cadeia a percorrer — zero consultas extras");
+});
+
+// SEM `{ timeout }`: o timeout de node:test vive na fila de macrotasks, e um laço que só espera
+// promises já resolvidas mata essa fila — o timer nunca dispara e o arquivo PENDURA (medido: com as
+// guardas removidas, os testes seguintes nunca rodaram e só um timeout externo matou o processo).
+// A proteção real é a guarda `visited` no código, provada pelo teste; o timeout aqui seria decoração
+// que faz o leitor acreditar numa rede que não existe.
+test("Prisma: ciclo A→B→A não pendura o laço de níveis", async () => {
+  const tenantId = randomUUID();
+  const [runA, runB] = [randomUUID(), randomUUID()];
+  const runs = [
+    fakeRunRecord(tenantId, runA, runB, new Date("2026-08-01T10:00:00.000Z")),
+    fakeRunRecord(tenantId, runB, runA, new Date("2026-08-02T10:00:00.000Z")),
+  ];
+  const { repository, chainQueries } = await prismaRepositoryWith(runs, [runA]);
+
+  const listadas = await repository.listChecklistRunsForProcess(tenantId, randomUUID());
+  assert.equal(listadas[0].currentRunId, runB, "para no id já visitado, sem inventar uma vigente");
+  assert.deepEqual(chainQueries, [[runA], [runB]], "cada id entra na fronteira UMA vez — o laço fecha");
+});
+
 test("DTO: toChecklistRunSummaryListDto expõe templateName (null quando ausente) e NUNCA tenant_id (§allowlist)", async () => {
   const { toChecklistRunSummaryListDto } = await import("../src/modules/impound/impound.checklist-link.dto.js");
   const startedAt = new Date("2026-07-20T10:00:00.000Z");

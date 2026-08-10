@@ -5,6 +5,10 @@ export const DOMAIN_EVENT_NAMES = [
   "checklist_run.completed",
   "checklist_run.attachment_uploaded",
   "checklist_run.attachment_downloaded",
+  // CHECKLIST P1 PR-03 — reabertura de vistoria concluída (nasce uma NOVA versão vinculada). Evento PRÓPRIO,
+  // deliberadamente NÃO `checklist_run.created`: aquele alimenta a métrica FATURADA `checklist_runs_count`
+  // (cloud-usage.events) e cobrar de novo pela correção seria cobrar duas vezes o mesmo trabalho de campo.
+  "checklist_run.reopened",
   "checklist_run.divergence_reported",
   "checklist_run.acknowledgement_created",
   "notification.requested",

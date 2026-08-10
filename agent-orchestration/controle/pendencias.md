@@ -1639,7 +1639,13 @@ concluir. A ação existe na lista (PR-02a) e foi reposta no editor (PR-02b); o 
   comportamento que o nome "Inativo — fora das novas ordens" já promete na tela.
   A opção (b) é a mais correta e exige decisão de backend (o `render` passa a considerar a run, não só o
   status do template).
-- status: ABERTA (candidata ao PR-03, que trata imutabilidade/ciclo de vida da run).
+- status: **RESOLVIDA no CHECKLIST P1 PR-03 pela opção (b)**. `renderChecklist` deixou de olhar só o status do
+  modelo: quando ele está `inactive` (não arquivado) e existe vistoria VIVA (`in_progress`/
+  `pending_acknowledgement`) do modelo na organização, o formulário continua sendo servido — quem já está no
+  campo preenche e conclui normalmente. O bloqueio real ficou onde o nome da ação promete: `createRun`
+  continua exigindo modelo `published` (nenhuma vistoria NOVA nasce de modelo inativo) e o modelo sai de
+  `/mobile/checklists/available`. Sem vistoria viva, o `render` volta a recusar (409 `checklist_not_published`).
+  Provado em `tests/checklist-routes.test.ts` (rota) e `tests/checklist-run-lifecycle-db.test.ts` (Postgres real).
 
 ## P-JUNTA-LIMPEZA-BASE-VIVA (2026-08-08) — 2º incidente de limpeza ad-hoc por subagente na base viva (MÉDIA, processo)
 
@@ -1683,3 +1689,82 @@ caberia bem antes de 1600. O número está certo para o layout expandido e errad
 - **Correção:** medir o contêiner (`ResizeObserver` ou `clientWidth` da grade) contra os 1198px reais, em vez
   da janela. De quebra, trocar o listener de `resize` por `matchMedia` elimina o re-render por pixel.
 - status: ABERTA.
+
+## P-RBAC-CATALOGO-NAO-CHEGA-AO-BANCO (2026-08-08) — permissão declarada em código nasce MORTA em produção (ALTA sistêmica) — **RESOLVIDO com guard**
+
+Achado ALTA **unânime** (dba + acessos + crítico) na junta do PR-03, e **a mesma classe do hotfix #341**.
+
+**O mecanismo:** em `CORE_SAAS_PERSISTENCE=prisma` (o modo REAL), o gate das rotas resolve permissões da
+tabela **persistida** `role_permissions` (`PersistentAuthorizationService`), não do catálogo em código. O
+catálogo só chega ao banco por `prisma/seed.ts` — e `deploy-production.yml` roda **apenas**
+`prisma migrate deploy` ("SEM db:seed — produção NUNCA semeia"). Toda permissão adicionada só ao código
+**nasce morta**: 403 para todos os papéis, inclusive `tenant_admin`/`super_admin`.
+
+**Agravante — split-brain:** o corpo do **login** anuncia a permissão (lê o catálogo) enquanto `/me` e o
+middleware não a têm (leem o banco). A interface habilita o botão; a API recusa.
+
+**O que estava quebrado na `main` (medido, não inferido):**
+- `checklist_runs:reopen` (a entrega deste PR): 403 para todos.
+- **`field_technician` sem NENHUMA permissão de checklist** — o usuário CENTRAL do produto.
+  `GET /mobile/checklists/available` → **403**; o login prometia `read/update/complete/acknowledge`.
+  Causa: `field_technician` e `technician` são papéis **distintos** e os grants estavam só no segundo.
+- `impound:read`/`charging:read` faltando em `operator`, `field_technician` e `auditor`.
+
+**Por que nenhum teste pegava:** as suítes de rota forçam `CORE_SAAS_PERSISTENCE=memory`, onde o middleware
+persistente faz short-circuit e lê o catálogo em código. Verde com a rota inoperante no modo real.
+
+**Correção:** migrações de dados aditivas e idempotentes (`20260861000000`, `20260862000000`) + **guard
+permanente** `tests/permission-catalog-db-parity.test.ts`, que compara `PERMISSION_CATALOG` e
+`ROLE_PERMISSIONS` com as tabelas e falha na divergência. Foi o guard que encontrou o caso do técnico.
+
+**Padrão que se repete e merece decisão do dono:** três bugs graves em dois dias (CHECK de tipo #341,
+permissão do técnico, permissão de reabertura) da **mesma família** — código declara, banco não sabe, teste
+roda em memória. Vale avaliar rodar um subconjunto das suítes de rota contra o Postgres no CI.
+- status: **RESOLVIDO** (migrações + guard); o item de CI fica como proposta ao dono.
+
+## P-RBAC-PROVISIONAMENTO-CONVERGENTE (2026-08-08) — migração de dados de RBAC era no-op SILENCIOSO em base nova (ALTA) — **RESOLVIDO**
+
+Achado **B1/ALTA** do `agente-dba-guardiao` na junta que reprovou o PR #344. Complementa (e corrige o alcance
+de) `P-RBAC-CATALOGO-NAO-CHEGA-AO-BANCO`, cujo "RESOLVIDO com guard" valia **só para base já povoada**.
+
+**O mecanismo:** `20260861000000` e `20260862000000` fazem `INSERT ... SELECT FROM roles WHERE key IN (...)`.
+**Nenhuma migração cria papel** — `roles` só nascia de `prisma/seed.ts`, que produção **nunca** roda
+(`deploy-production.yml` tinha só `prisma migrate deploy`, "SEM db:seed"). Numa base de produção **NOVA** o
+SELECT casa **zero linhas**, o `INSERT 0` é sucesso, a migração vai para `_prisma_migrations` e **nunca mais
+roda**. Quando os papéis nascessem, `checklist_runs:reopen` seguiria sem concessão e o técnico de campo sem
+checklist — o bug que o PR dizia ter consertado, ressuscitado. O job de CI novo não detectava porque semeia
+logo depois do migrate.
+
+**Correção (decisão registrada em `docs/deployment.md`):** provisionamento **convergente** em vez de migração
+de tiro único — `scripts/provision-rbac.ts` (`npm run db:provision-rbac`), rodando no CD **depois** do
+`migrate deploy` e **antes** do app subir. Aditivo (nunca apaga concessão; divergência é relatada),
+idempotente (`pg_advisory_xact_lock` + diff lido na mesma transação — o `UNIQUE (key, tenant_id)` não protege
+papel global porque dois `NULL` são distintos no PostgreSQL), sem dado de demonstração (não importa o seed) e
+com reconferência pós-gravação. Prova reexecutável: `bash scripts/rbac-provision-drill.sh` (banco descartável
+`erp_provision_drill`, criado e apagado) — reproduz `roles` vazia, converge, mede a 2ª execução como no-op.
+- status: **RESOLVIDO**.
+
+## P-RBAC-PROVISION-DESCRICOES (2026-08-08) — descrição curada das permissões duplicada no seed (BAIXA)
+
+O texto humano de cada permissão vive no mapa `permissionDescriptions` de `prisma/seed.ts`, que
+`scripts/provision-rbac.ts` **não pode importar** (importar o seed o executa, e o seed cria a organização de
+demonstração). Permissão criada pelo provisionamento nasce com a descrição genérica `Permissão <chave>.` — a
+mesma que o próprio seed usa como fallback. Sem impacto no RBAC efetivo (nenhuma rota lê
+`permissions.description`), mas é duplicação de fonte de verdade esperando divergir.
+- **Correção:** extrair o mapa para um módulo compartilhado (ex.: `src/modules/core-saas/permissions/`) e
+  fazer seed **e** provisionamento lerem de lá. Fora do escopo desta frente (não podia tocar `prisma/seed.ts`).
+- status: ABERTA.
+
+## P-CHK-DOSSIE-VERSAO-NA-UI (2026-08-10 — junta do CHK P1 PR-03, 2ª rodada)
+
+O backend do dossiê do veículo passou a dizer a verdade sobre vistoria reaberta: o resumo da aba
+"Checklist do Guincho" emite `reopenedFromRunId`, `supersededByRunId` e `currentRunId` (cadeia percorrida
+até a versão vigente, com guarda de ciclo). **A UI ainda não consome nenhum dos três** —
+`frontend/src/modules/patios/processes/processes.types.ts` e `processes.adapter.ts` descartam os campos, e a
+aba lista a vistoria substituída com chip `completed`, sem marcação de "versão substituída" e sem caminho
+para a vigente. O operador que abrir o dossiê de um processo com vistoria reaberta vê a tela idêntica à de
+antes do PR-03.
+
+**Fechar no CHK P1 PR-05 (histórico):** 3 campos no tipo espelho + 3 linhas em `adaptChecklistRun` + chip
+"versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
+hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.

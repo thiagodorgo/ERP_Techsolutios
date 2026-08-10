@@ -40,3 +40,6 @@ experiments/frontend-v2/test-results/
 
 # Documentos binários de planejamento (podem conter endpoints/credenciais de infra — nunca versionar; segredo só via GitHub Secrets)
 *.docx
+
+# Saída TAP do subconjunto de rota contra o Postgres (job backend-postgres do CI)
+postgres-subset.tap

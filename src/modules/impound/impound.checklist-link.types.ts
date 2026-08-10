@@ -39,6 +39,23 @@ export type ChecklistRunSummary = {
   readonly relatedEntityId?: string;
   readonly startedAt: Date;
   readonly completedAt?: Date;
+  // CHECKLIST P1 PR-03 (junta, MÉDIA) — o vínculo do dossiê aponta para a vistoria ORIGINAL. Quando ela é
+  // reaberta, a versão que vale passa a ser OUTRA run, e o dossiê mostrava a substituída como se fosse a
+  // atual — numa aba que é prova do estado do veículo.
+  //
+  // Junta PR-03, 2ª rodada (BAIXA do critico-adversarial): o comentário anterior prometia aqui "a verdade
+  // sobre a versão vigente" com UM SALTO SÓ — e isso é falso a partir da segunda correção da mesma vistoria
+  // (v1→v2→v3): o dossiê apontaria a v2, que já não vale. São TRÊS fatos distintos e cada nome entrega
+  // exatamente o que diz:
+  //   · `reopenedFromRunId` — de onde ESTA versão nasceu (um salto para trás);
+  //   · `supersededByRunId` — quem substituiu ESTA versão (o sucessor IMEDIATO, um salto para frente);
+  //   · `currentRunId` — o FIM da cadeia: a versão que vale hoje. Em v1→v2→v3, a v1 tem
+  //     `supersededByRunId = v2` e `currentRunId = v3`. Ambos ficam `undefined` na própria vigente
+  //     (ninguém a substituiu — não há para onde mandar quem abre o dossiê).
+  // §allowlist: são ids de vistoria do próprio tenant.
+  readonly reopenedFromRunId?: string;
+  readonly supersededByRunId?: string;
+  readonly currentRunId?: string;
 };
 
 export class ImpoundChecklistLinkError extends Error {

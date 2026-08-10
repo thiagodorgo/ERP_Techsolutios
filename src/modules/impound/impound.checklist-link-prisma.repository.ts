@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
-import type { ImpoundChecklistLinkRepository } from "./impound.checklist-link.repository.js";
+import { resolveCurrentRunId, type ImpoundChecklistLinkRepository } from "./impound.checklist-link.repository.js";
 import type { ChecklistLinkSource, ChecklistRunSummary, CreateChecklistLinkInput, ImpoundProcessChecklistLink } from "./impound.checklist-link.types.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
@@ -50,7 +50,70 @@ export class PrismaImpoundChecklistLinkRepository implements ImpoundChecklistLin
       include: { run: { include: { template: { select: { name: true } } } } },
       orderBy: { created_at: "desc" },
     });
-    return links.map((link) => mapRun(link.run, link.run.template?.name));
+
+    // Junta PR-03, 2ª rodada (A1 do agente-dba-guardiao): a versão anterior disparava a consulta de
+    // substituições com `in: []` — o Prisma traduz para `1=0`, que não quebra, só queima um round-trip em
+    // todo dossiê sem checklist, que é a maioria deles. Quem garante o zero hoje é a fronteira vazia do
+    // percurso abaixo; este retorno diz o mesmo mais cedo e mais perto de quem lê — um processo sem vínculo
+    // termina no primeiro SELECT, sem montar mapa nenhum.
+    if (links.length === 0) return [];
+
+    const supersededBy = await this.loadSupersessionChain(
+      tenantId,
+      links.map((link) => link.run.id),
+    );
+
+    return links.map((link) =>
+      mapRun(link.run, link.run.template?.name, supersededBy.get(link.run.id), resolveCurrentRunId(supersededBy, link.run.id)),
+    );
+  }
+
+  /**
+   * CHECKLIST P1 PR-03 (junta, MÉDIA): o vínculo aponta para a vistoria ORIGINAL — reabrir cria outra run,
+   * e sem estas leituras o dossiê apresentaria a versão SUBSTITUÍDA como se fosse a vigente.
+   *
+   * Junta PR-03, 2ª rodada (BAIXA do critico-adversarial): a versão anterior resolvia UM salto e parava. A
+   * segunda correção da mesma vistoria (v1→v2→v3) já a derrubava — o dossiê apontava a v2, que também já
+   * tinha sido substituída. Percorremos a cadeia inteira.
+   *
+   * O custo real é por PROFUNDIDADE, não por linha: cada volta avança TODAS as vistorias do processo um
+   * salto de uma vez. Dossiê sem reabertura nenhuma = 1 consulta (o mesmo de antes); v1→v2→v3 = 3. Como
+   * reabrir é excepcional (exige `checklist_runs:reopen` e motivo escrito), a cadeia é rasa na prática — foi
+   * o que dispensou o CTE recursivo em SQL cru, que custaria perder a tipagem do Prisma e escrever o filtro
+   * de organização à mão dentro da transação RLS.
+   *
+   * O laço termina sempre, inclusive num ciclo A→B→A — que o banco NÃO barra (o CHECK só proíbe A→A). São
+   * duas guardas com papéis diferentes, medidos por mutação:
+   *   · `supersededBy.has(origin)` — o primeiro sucessor de uma origem vence e nunca é reescrito. É esta que
+   *     FECHA o laço: reencontrando um trecho já mapeado, a volta seguinte não produz fronteira nova;
+   *   · `visited` — impede que um id volte à fronteira. Sem ela o laço ainda termina, só que gastando uma
+   *     consulta a mais (no ciclo A→B→A: 3 em vez de 2).
+   */
+  private async loadSupersessionChain(tenantId: string, rootRunIds: readonly string[]): Promise<Map<string, string>> {
+    const supersededBy = new Map<string, string>();
+    const visited = new Set<string>(rootRunIds);
+    let frontier = [...visited];
+
+    while (frontier.length > 0) {
+      // Leitura estreita: só o par de ids, nunca o conteúdo da vistoria (§allowlist).
+      const successors = await this.client.checklistRun.findMany({
+        where: { tenant_id: tenantId, reopened_from_run_id: { in: frontier } },
+        select: { id: true, reopened_from_run_id: true },
+      });
+
+      const nextFrontier: string[] = [];
+      for (const successor of successors) {
+        const origin = successor.reopened_from_run_id;
+        if (origin === null || supersededBy.has(origin)) continue;
+        supersededBy.set(origin, successor.id);
+        if (visited.has(successor.id)) continue;
+        visited.add(successor.id);
+        nextFrontier.push(successor.id);
+      }
+      frontier = nextFrontier;
+    }
+
+    return supersededBy;
   }
 }
 
@@ -114,8 +177,11 @@ function mapRun(
     readonly related_entity_id: string | null;
     readonly started_at: Date;
     readonly completed_at: Date | null;
+    readonly reopened_from_run_id?: string | null;
   },
   templateName?: string,
+  supersededByRunId?: string,
+  currentRunId?: string,
 ): ChecklistRunSummary {
   return {
     id: record.id,
@@ -124,6 +190,9 @@ function mapRun(
     templateName: templateName ?? undefined,
     templateVersion: record.template_version,
     status: record.status,
+    reopenedFromRunId: record.reopened_from_run_id ?? undefined,
+    supersededByRunId,
+    currentRunId,
     relatedEntityType: record.related_entity_type ?? undefined,
     relatedEntityId: record.related_entity_id ?? undefined,
     startedAt: record.started_at,

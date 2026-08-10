@@ -21,6 +21,11 @@ import type {
 } from "./checklist.types.js";
 import { ChecklistError } from "./checklist.types.js";
 import {
+  assertChecklistRunFieldWritable,
+  assertChecklistRunMutable,
+  assertChecklistRunStatusTransition,
+} from "./checklist.run-lifecycle.js";
+import {
   InMemoryChecklistRepository,
   type ChecklistRepository,
   type RepositoryRunDetails,
@@ -33,6 +38,7 @@ import type {
   CreateChecklistRunInput,
   CreateChecklistTemplateInput,
   RegisterDivergenceInput,
+  ReopenChecklistRunInput,
   UpdateChecklistRunInput,
   UpdateChecklistTemplateInput,
 } from "./checklist.validator.js";
@@ -193,11 +199,22 @@ export class ChecklistService {
     return template;
   }
 
+  // P-CHK-INATIVAR-COM-RUN-ATIVA (achado da junta do PR-02c) — inativar um modelo NÃO pode derrubar quem já
+  // está no meio da vistoria. "Inativo" promete na própria tela "fora das NOVAS ordens": o formulário continua
+  // sendo servido enquanto existir vistoria VIVA daquele modelo na organização, e o bloqueio real fica em
+  // `createRun` (nenhuma vistoria NOVA nasce de modelo inativo). Rascunho e arquivado seguem recusados.
   async renderChecklist(actor: ActorContext, checklistId: string): Promise<ChecklistRenderSchema> {
     const template = await this.getTemplate(actor, checklistId);
 
     if (template.status !== "published") {
-      throw new ChecklistError(409, "CHECKLIST_NOT_PUBLISHED", "checklist_not_published", "Checklist must be published before execution.");
+      const servesActiveRun =
+        template.status === "inactive" &&
+        !template.deletedAt &&
+        (await this.repository.hasActiveRunsForTemplate(actor.tenantId, template.id));
+
+      if (!servesActiveRun) {
+        throw new ChecklistError(409, "CHECKLIST_NOT_PUBLISHED", "checklist_not_published", "Checklist must be published before execution.");
+      }
     }
 
     return {
@@ -309,6 +326,12 @@ export class ChecklistService {
   }
 
   async updateRun(actor: ActorContext, runId: string, input: UpdateChecklistRunInput): Promise<RepositoryRunDetails> {
+    // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — a vistoria concluída é a prova do estado do veículo:
+    // nenhuma escrita passa. Corrigir = reabrir (nova versão). O repositório repete a trava (defesa em
+    // profundidade); aqui ela vale para QUALQUER repositório, inclusive os de teste.
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+    assertChecklistRunStatusTransition(input.status);
+
     const run = await this.repository.updateRun({
       tenantId: actor.tenantId,
       runId,
@@ -446,6 +469,8 @@ export class ChecklistService {
   }
 
   async createMarker(actor: ActorContext, runId: string, input: CreateChecklistMarkerInput): Promise<ChecklistMarker> {
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+
     const marker = await this.repository.createMarker(actor.tenantId, runId, actor.userId, input);
 
     if (!marker) {
@@ -469,6 +494,9 @@ export class ChecklistService {
       throw new ChecklistError(422, "DIVERGENCE_OBSERVATION_REQUIRED", "divergence_observation_required", "Divergence requires an observation.");
     }
 
+    // Concluir de novo o que já está concluído (ou cancelado) é mutação de prova assinada → 409.
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+
     const status = input.hasDivergence ? "pending_acknowledgement" : "completed";
     const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, status);
 
@@ -481,6 +509,14 @@ export class ChecklistService {
       hasDivergence: input.hasDivergence,
     });
 
+    // Junta PR-03 (ALTA do critico-adversarial) — a premissa original estava ERRADA. Quem alimenta
+    // a base de rateio FATURADA não é só `checklist_run.created`: `checklist_run.completed` é
+    // metric-key de cobrança em cloud-usage.events e entra em `basisMetricKeys` do rateio
+    // (cloud-cost-allocation.rules). Sem marcar a origem, CONCLUIR a vistoria reaberta contaria
+    // como trabalho novo e DOBRARIA a base — cobrando o cliente pela correção de um erro nosso.
+    // A conclusão da reabertura vai marcada; quem soma decide sem adivinhar.
+    const isReopenedRun = Boolean(run.run.reopenedFromRunId);
+
     await publishDomainEvent(
       "checklist_run.completed",
       {
@@ -488,6 +524,8 @@ export class ChecklistService {
         templateId: run.run.templateId,
         status: run.run.status,
         hasDivergence: input.hasDivergence,
+        isReopenedRun,
+        ...(isReopenedRun ? { reopenedFromRunId: run.run.reopenedFromRunId } : {}),
       },
       {
         tenantId: actor.tenantId,
@@ -496,6 +534,69 @@ export class ChecklistService {
     );
 
     return run;
+  }
+
+  /**
+   * CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — REABRIR uma vistoria concluída.
+   *
+   * A vistoria concluída NUNCA é editada: nasce uma NOVA versão vinculada à anterior, herdando modelo/versão,
+   * o vínculo com a OS/custódia, as respostas e as marcações de avaria. A original continua íntegra e legível
+   * (é a prova do estado do veículo naquele momento) e a trilha de auditoria registra QUEM reabriu, QUANDO e
+   * a partir de QUAL vistoria — com o motivo declarado.
+   *
+   * Gate de permissão: `checklist_runs:reopen` (gestão + admins). Ver checklist.permissions.ts.
+   *
+   * FATURAMENTO: publica `checklist_run.reopened`, NUNCA `checklist_run.created` — este último alimenta a
+   * métrica FATURADA `checklist_runs_count` (cloud-usage.events), e cobrar de novo pela correção de uma
+   * vistoria seria cobrar duas vezes o mesmo trabalho de campo.
+   */
+  async reopenRun(
+    actor: ActorContext,
+    runId: string,
+    input: ReopenChecklistRunInput,
+  ): Promise<{
+    readonly run: RepositoryRunDetails;
+    readonly previousRunId: string;
+  }> {
+    const result = await this.repository.reopenRun({
+      tenantId: actor.tenantId,
+      runId,
+      actorUserId: actor.userId,
+      reason: input.reason,
+    });
+
+    if (!result) {
+      throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
+    }
+
+    await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.runReopened, "checklist_run", result.run.id, {
+      previousRunId: result.previous.id,
+      previousStatus: result.previous.status,
+      templateId: result.run.templateId,
+      templateVersion: result.run.templateVersion,
+      reason: input.reason,
+      copiedAnswers: result.copiedAnswers,
+      copiedMarkers: result.copiedMarkers,
+    });
+
+    await publishDomainEvent(
+      "checklist_run.reopened",
+      {
+        runId: result.run.id,
+        previousRunId: result.previous.id,
+        templateId: result.run.templateId,
+        status: result.run.status,
+      },
+      {
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+      },
+    );
+
+    return {
+      run: await this.getRun(actor, result.run.id),
+      previousRunId: result.previous.id,
+    };
   }
 
   async getComparison(actor: ActorContext, runId: string) {
@@ -523,6 +624,8 @@ export class ChecklistService {
     // P0a — anexo de divergência só é criado quando há fileUrl (caminho REST). O sync do mobile registra a
     // divergência SEM arquivo (componente + observação): pula a criação de anexo para NUNCA gerar "anexo
     // fantasma" (schema exige file_url NOT NULL) e apenas marca a run como pending_acknowledgement.
+    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+
     let attachment: ChecklistAttachment | null = null;
 
     if (input.fileUrl) {
@@ -637,8 +740,14 @@ export class ChecklistService {
     });
   }
 
+  // Pré-condição comum das escritas de anexo: a run existe no tenant, AINDA aceita escrita (PR-03) e o campo
+  // pertence ao modelo dela. A ordem importa no caminho multipart: a trava roda ANTES de gravar o binário —
+  // vistoria travada nunca chega a escrever arquivo no armazenamento.
   private async assertRunComponent(actor: ActorContext, runId: string, componentId: string): Promise<void> {
     const details = await this.getRun(actor, runId);
+
+    assertChecklistRunFieldWritable(details.run);
+
     const template = await this.repository.getTemplate(actor.tenantId, details.run.templateId);
     const componentBelongsToRun = template?.components.some((component) => component.id === componentId) ?? false;
 

@@ -137,6 +137,10 @@ export function toChecklistRunDto(run: ChecklistRun) {
     templateVersion: run.templateVersion,
     relatedEntityType: run.relatedEntityType ?? null,
     relatedEntityId: run.relatedEntityId ?? null,
+    // CHECKLIST P1 PR-03 — cadeia de versões da vistoria. A tela mostra "esta é uma reabertura" e permite
+    // abrir a versão anterior; o motivo é o texto que o gestor declarou ao reabrir (sem termo técnico).
+    reopenedFromRunId: run.reopenedFromRunId ?? null,
+    reopenReason: run.reopenReason ?? null,
     status: run.status,
     startedBy: run.startedBy ?? null,
     completedBy: run.completedBy ?? null,

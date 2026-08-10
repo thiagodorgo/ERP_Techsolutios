@@ -146,8 +146,15 @@ export function sanitizeCloudUsageMetadata(metadata: Record<string, unknown> | u
   return compactRecord(sanitizeRecord(metadata));
 }
 
+// A medição é BEST-EFFORT e fire-and-forget por desenho: cobrar não pode travar nem derrubar a operação de
+// negócio. O efeito colateral é que a gravação aterrissa DEPOIS de quem a disparou já ter respondido — e um
+// teardown de teste que apaga o tenant no mesmo instante bate na FK `cloud_usage_events_tenant_id_fkey`
+// (aconteceu de verdade, e a "correção" por repetição não resolve: a corrida continua aberta entre as
+// tentativas). Guardar a corrente de escritas em voo permite ESPERAR por elas de forma determinística.
+let gravacoesEmVoo: Promise<unknown> = Promise.resolve();
+
 export function recordCloudUsageBestEffort(input: RecordUsageEventInput, logger: Pick<Console, "warn"> = console): void {
-  createDefaultCloudUsageService()
+  const trabalho = createDefaultCloudUsageService()
     .then((service) => service.recordUsageEvent(input))
     .catch((error: unknown) => {
       logger.warn(
@@ -159,6 +166,21 @@ export function recordCloudUsageBestEffort(input: RecordUsageEventInput, logger:
         "Cloud usage metering failed in best-effort mode.",
       );
     });
+
+  // A cadeia nunca rejeita (o catch acima absorve): encadear com o mesmo `trabalho` nos dois ramos mantém a
+  // fila viva mesmo se algum dia um erro escapar.
+  gravacoesEmVoo = gravacoesEmVoo.then(
+    () => trabalho,
+    () => trabalho,
+  );
+}
+
+/**
+ * Espera as gravações de consumo em voo. É para TEARDOWN DE TESTE contra banco real — nunca para o caminho de
+ * produção, que continua sem esperar por cobrança (é o ponto de ser best-effort).
+ */
+export async function drainCloudUsageBestEffortForTests(): Promise<void> {
+  await gravacoesEmVoo;
 }
 
 export function isCloudUsageMetricKey(value: string): value is CloudUsageMetricKey {

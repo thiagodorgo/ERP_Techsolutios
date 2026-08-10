@@ -44,7 +44,9 @@ App e banco **distintos** do staging, no **Fly.io/gru**. Config-as-code JA no re
 - **CD `.github/workflows/deploy-production.yml`** — `workflow_dispatch` (nao dispara sozinho), GATED por
   `vars.PROD_DEPLOY_ENABLED == 'true'`, `environment: production`, `concurrency: deploy-production`. **Promocao por
   IMAGEM** (`flyctl deploy --image ghcr.io/<owner>/erp-backend:<promote_sha>` — o MESMO artefato validado em
-  staging pelo SHA; nao rebuilda). Migrate `deploy` forward-only da pipeline; **sem `db:seed`**. Smoke de produção
+  staging pelo SHA; nao rebuilda). Migrate `deploy` forward-only da pipeline; **sem `db:seed`**; em seguida
+  **provisionamento de RBAC** (`npm run db:provision-rbac` — aditivo, idempotente, sem dado de demonstração; ver
+  secao dedicada abaixo). Smoke de produção
   (`scripts/smoke-production.mjs`): readiness + prova de CORS restritivo + login opcional (usuario de smoke real).
 - **Trava dupla** (nao usa required-reviewers humano; tres selos maquinaveis no CD): **(a)** ata de go-live
   junta-5 unanime **por SHA** (`agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-<sha>.md`, nomeando o
@@ -57,6 +59,65 @@ App e banco **distintos** do staging, no **Fly.io/gru**. Config-as-code JA no re
 **Secrets** via **GitHub Environment `production`** (`FLY_API_TOKEN`, `PROD_DATABASE_URL`, `PROD_API_URL`,
 opcional `PROD_SMOKE_EMAIL`/`PROD_SMOKE_PASSWORD`) + **Fly secrets do app** (`DATABASE_URL`, `REDIS_URL`,
 `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`). Nenhum versionado.
+
+#### Provisionamento de RBAC — papéis, permissões e concessões (passo do CD)
+
+**Por que existe.** O gate das rotas resolve permissão da tabela **`role_permissions`** (banco), não do catálogo em
+código. Só que **nenhuma migração cria papel**: `roles` nasce vazia e só era povoada por `prisma/seed.ts` — que
+produção **nunca** roda. As migrações de dados de RBAC (`20260861000000`, `20260862000000`) fazem
+`INSERT ... SELECT FROM roles WHERE key IN (...)`: numa base **nova** elas casam **zero linhas**, "aplicam" com
+sucesso, são gravadas em `_prisma_migrations` e **nunca mais rodam**. Quando os papéis finalmente nascessem,
+`checklist_runs:reopen` continuaria sem concessão e o **técnico de campo** continuaria sem checklist nenhum — em
+silêncio. (Achado B1/ALTA do `agente-dba-guardiao` na junta do CHECKLIST P1 PR-03.)
+
+**Decisão (script convergente, não migração).** Duas opções foram avaliadas:
+
+- **(i) script dedicado `npm run db:provision-rbac`, executado a cada deploy — ESCOLHIDA.** É **convergente**:
+  reconcilia o banco com o catálogo em código toda vez que roda, então uma permissão/papel/concessão adicionada
+  em qualquer PR futuro chega ao banco **sem depender de alguém lembrar de escrever a migração de dados**.
+  Reusa a mesma fonte de verdade do seed (`src/modules/core-saas/permissions/catalog.ts`) **sem** reusar o seed:
+  `prisma/seed.ts` cria a organização "demo", filial, admins com senha e trilha de auditoria — inaceitável em
+  produção — e por isso o script **não o importa** (importar o seed o **executa**).
+- **(ii) migração que também criasse os papéis do sistema.** Rejeitada: migração é **tiro único**. Resolveria a
+  base nova de hoje e reabriria exatamente o mesmo buraco no próximo papel/permissão do catálogo; e a migração já
+  aplicada numa base existente nunca corrigiria uma divergência posterior.
+
+**Contrato do passo (é o que o torna seguro na fronteira de produção):**
+
+- **Aditivo** — cria o que falta em `permissions`, `roles` (papéis de sistema, `tenant_id NULL`) e
+  `role_permissions`. **Nunca apaga nem reescreve concessão**: concessão presente no banco fora do catálogo é
+  **relatada** no log, jamais removida (revogar acesso é ato deliberado, não efeito colateral de deploy).
+  **Consequência a assumir:** tirar uma permissão de um papel no catálogo **não** a retira do banco — quem
+  precisa revogar entrega uma migração de revogação explícita (com o `DELETE` no runbook, como as migrações
+  `20260861`/`20260862` já documentam o próprio rollback). O provisionamento converge o que FALTA, não o que sobra.
+- **Idempotente** — a 2ª execução não cria nada. Papel de sistema é diferenciado por leitura + `pg_advisory_xact_lock`
+  (o `UNIQUE (key, tenant_id)` **não** protege papel global: no PostgreSQL dois `NULL` são distintos, então sem o
+  lock duas execuções simultâneas criariam papéis duplicados).
+- **Não semeia demonstração** — nenhuma organização, usuário ou credencial. A guarda `assertSeedAllowed` continua
+  valendo para o seed.
+- **Não falha por divergência esperada** — sai diferente de zero só em erro real (conexão/escrita) ou se, **depois
+  de gravar**, a reconferência mostrar que o catálogo não convergiu (aí publicar seria entregar rota respondendo
+  403 para todos os papéis).
+- **Degradação declarada (D-007):** permissão criada por este script nasce com descrição genérica
+  (`Permissão <chave>.`), porque o texto curado vive no mapa de `prisma/seed.ts` (não importável). Descrição é
+  texto interno — nenhuma rota lê `permissions.description` — e o RBAC efetivo não degrada. Unificação pendente:
+  **P-RBAC-PROVISION-DESCRICOES**.
+
+**Como rodar (fora do CD):**
+
+```bash
+npm run db:provision-rbac -- --dry-run   # só relata o que faria; não escreve
+npm run db:provision-rbac                # aplica (aditivo/idempotente)
+bash scripts/rbac-provision-drill.sh     # drill: banco DESCARTÁVEL erp_provision_drill, criado e apagado
+```
+
+O drill é a prova reexecutável: sobe um banco novo, roda **só** `prisma migrate deploy` (reproduzindo `roles`
+vazia e as migrações de grant como no-op), provisiona, confere os grants que a junta cobrou
+(`checklist_runs:reopen` e o checklist do `field_technician`), roda de novo para medir a idempotência e confirma
+que **nenhuma** organização/usuário foi criada. Ele nunca escreve no banco de trabalho.
+
+> **Staging** roda `db:seed:demo` (seed + `seed-users`), que já povoa papéis e concessões — por isso o passo não
+> foi adicionado lá. Quando/se o seed demo sair do staging, o provisionamento passa a ser necessário lá também.
 
 #### Runbook A — rollback ensaiavel (forward-only, P-007)
 
@@ -80,10 +141,14 @@ Produção **nunca** roda `db:seed`/`db:seed:demo` (guarda `assertSeedAllowed` +
 bootstrap do 1o tenant/administrador de plataforma real e uma acao de **ativacao** contra o banco vivo de
 produção (exige o DB provisionado), NAO um passo deste PR. Requisitos:
 
-1. E um **bootstrap dedicado e idempotente** (tenant de sistema + role `super_admin` + platform admin +
-   credencial), exigindo `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` — **nunca** o seed demo. O script de
+1. E um **bootstrap dedicado e idempotente** (tenant de sistema + platform admin + credencial), exigindo
+   `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` — **nunca** o seed demo. O script de
    bootstrap idempotente e verificado contra um banco prod-like e entregue na ativacao (follow-up
    **P-SAN-PROD-BOOTSTRAP**; o seed atual so cria o tenant demo, inadequado para produção).
+   **A parte de RBAC saiu deste follow-up:** papéis (inclusive `super_admin`), permissões e concessões já são
+   provisionados pelo passo do CD (secao "Provisionamento de RBAC"). Resta ao bootstrap **só** a organização real,
+   o usuário administrador e a credencial dele — o vínculo usuário↔papel (`user_role_assignments`) é dado de
+   organização e **nunca** é criado pelo provisionamento.
 2. Se o bootstrap precisar rodar com `NODE_ENV=production`, usar o escape hatch **one-shot** `ALLOW_PROD_SEED=1`
    **inline no unico comando** e **remove-lo em seguida** — NUNCA persistir a variavel no `[env]` do toml nem
    como secret fixo (senao reabre o seed demo no mesmo ambiente).

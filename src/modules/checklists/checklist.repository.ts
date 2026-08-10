@@ -1,6 +1,16 @@
 import { randomUUID } from "node:crypto";
 
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
+import {
+  assertChecklistRunCompletionTarget,
+  assertChecklistRunFieldWritable,
+  assertChecklistRunMutable,
+  assertChecklistRunReopenable,
+  assertChecklistRunStatusTransition,
+  checklistRunAlreadyReopenedError,
+  checklistRunTemplateArchivedError,
+  CHECKLIST_RUN_ACTIVE_STATUSES,
+} from "./checklist.run-lifecycle.js";
 import type {
   ChecklistAcknowledgement,
   ChecklistAttachment,
@@ -46,6 +56,25 @@ export type UpdateRunData = {
   readonly answers: readonly UpsertChecklistAnswerInput[];
 };
 
+// CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — reabertura de vistoria concluída. A run terminal NÃO é tocada:
+// nasce uma NOVA run vinculada (`reopenedFromRunId`) com as respostas e as marcações de avaria copiadas, para
+// o gestor/técnico corrigir sem redigitar. Anexos NÃO são copiados de propósito: duas linhas apontando para a
+// MESMA chave de armazenamento tornariam a exclusão de uma capaz de cegar a outra (o binário original segue
+// preservado e legível na versão anterior).
+export type ReopenRunData = {
+  readonly tenantId: string;
+  readonly runId: string;
+  readonly actorUserId: string;
+  readonly reason: string;
+};
+
+export type ReopenRunResult = {
+  readonly run: ChecklistRun;
+  readonly previous: ChecklistRun;
+  readonly copiedAnswers: number;
+  readonly copiedMarkers: number;
+};
+
 export type RepositoryRunDetails = {
   readonly run: ChecklistRun;
   readonly answers: readonly ChecklistRunAnswer[];
@@ -88,6 +117,14 @@ export interface ChecklistRepository {
   ): Promise<readonly ChecklistRun[]>;
   updateRun(data: UpdateRunData): Promise<RepositoryRunDetails | null>;
   completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null>;
+  // CHECKLIST P1 PR-03 — cria a NOVA versão da vistoria a partir de uma run concluída (append-only). Devolve
+  // null quando a run não existe no tenant (isolamento: nunca vaza existência); lança 409 quando a run não é
+  // reabrível ou já foi reaberta.
+  reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null>;
+  // CHECKLIST P1 PR-03 (P-CHK-INATIVAR-COM-RUN-ATIVA) — existe vistoria VIVA (in_progress/pending_acknowledgement)
+  // deste modelo? É o que permite o `render` continuar servindo o formulário de um modelo INATIVADO para quem
+  // já está no meio da vistoria, sem reabrir o modelo para NOVAS ordens.
+  hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean>;
   createAttachment(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistAttachmentInput): Promise<ChecklistAttachment | null>;
   createMarker(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistMarkerInput): Promise<ChecklistMarker | null>;
   createAcknowledgement(
@@ -329,6 +366,11 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    // CHECKLIST P1 PR-03 — trava de imutabilidade também NO REPOSITÓRIO (defesa em profundidade): quem chamar
+    // daqui direto, sem passar pelo serviço, esbarra na mesma recusa 409.
+    assertChecklistRunFieldWritable(existing);
+    assertChecklistRunStatusTransition(data.status);
+
     const now = new Date();
     const updated: ChecklistRun = {
       ...existing,
@@ -349,6 +391,10 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    // Concluir duas vezes (ou concluir o que já está concluído/cancelado) é mutação de run terminal.
+    assertChecklistRunMutable(existing);
+    assertChecklistRunCompletionTarget(existing.status, status);
+
     const now = new Date();
     const updated: ChecklistRun = {
       ...existing,
@@ -363,6 +409,100 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     return this.buildRunDetails(updated);
   }
 
+  // CHECKLIST P1 PR-03 — reabertura append-only: a run concluída fica intacta e uma NOVA run nasce vinculada a
+  // ela, herdando modelo/versão, vínculo com a OS/custódia, respostas e marcações. `clientRunKey` NÃO é
+  // herdado (é a chave de idempotência do app para AQUELA criação; herdá-la colidiria no unique).
+  async reopenRun(data: ReopenRunData): Promise<ReopenRunResult | null> {
+    const previous = this.runs.get(data.runId);
+
+    if (!previous || previous.tenantId !== data.tenantId) {
+      return null;
+    }
+
+    assertChecklistRunReopenable(previous);
+
+    // Junta PR-03 (MÉDIA): paridade com o repositório Prisma — modelo arquivado não aceita novo
+    // preenchimento nem por reabertura (a versão nasceria em limbo: o app de campo só lista publicados).
+    const template = this.templates.get(previous.templateId);
+
+    if (!template || template.tenantId !== data.tenantId || template.status === "archived") {
+      throw checklistRunTemplateArchivedError();
+    }
+
+    const alreadyReopened = [...this.runs.values()].some(
+      (run) => run.tenantId === data.tenantId && run.reopenedFromRunId === previous.id,
+    );
+
+    if (alreadyReopened) {
+      throw checklistRunAlreadyReopenedError();
+    }
+
+    const now = new Date();
+    const run: ChecklistRun = {
+      id: randomUUID(),
+      tenantId: data.tenantId,
+      templateId: previous.templateId,
+      templateVersion: previous.templateVersion,
+      relatedEntityType: previous.relatedEntityType,
+      relatedEntityId: previous.relatedEntityId,
+      reopenedFromRunId: previous.id,
+      reopenReason: data.reason,
+      status: "in_progress",
+      startedBy: data.actorUserId,
+      startedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.runs.set(run.id, run);
+
+    const copiedAnswers = [...this.answers.values()].filter(
+      (answer) => answer.tenantId === data.tenantId && answer.runId === previous.id,
+    );
+
+    for (const answer of copiedAnswers) {
+      const record: ChecklistRunAnswer = {
+        ...answer,
+        id: randomUUID(),
+        runId: run.id,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.answers.set(record.id, record);
+    }
+
+    const copiedMarkers = [...this.markers.values()].filter(
+      (marker) => marker.tenantId === data.tenantId && marker.runId === previous.id,
+    );
+
+    for (const marker of copiedMarkers) {
+      const record: ChecklistMarker = {
+        ...marker,
+        id: randomUUID(),
+        runId: run.id,
+        createdBy: data.actorUserId,
+        createdAt: now,
+      };
+      this.markers.set(record.id, record);
+    }
+
+    return {
+      run,
+      previous,
+      copiedAnswers: copiedAnswers.length,
+      copiedMarkers: copiedMarkers.length,
+    };
+  }
+
+  async hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
+    return [...this.runs.values()].some(
+      (run) =>
+        run.tenantId === tenantId &&
+        run.templateId === templateId &&
+        (CHECKLIST_RUN_ACTIVE_STATUSES as readonly string[]).includes(run.status),
+    );
+  }
+
   async createAttachment(
     tenantId: string,
     runId: string,
@@ -374,6 +514,8 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     if (!run || run.tenantId !== tenantId || !this.componentBelongsToRun(tenantId, run, data.componentId)) {
       return null;
     }
+
+    assertChecklistRunFieldWritable(run);
 
     const attachment: ChecklistAttachment = {
       id: randomUUID(),
@@ -406,6 +548,8 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       return null;
     }
 
+    assertChecklistRunFieldWritable(run);
+
     const marker: ChecklistMarker = {
       id: randomUUID(),
       tenantId,
@@ -436,6 +580,10 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     if (!run || run.tenantId !== tenantId) {
       return null;
     }
+
+    // A ciência só existe sobre uma run em `pending_acknowledgement` (não-terminal); numa run já fechada ela
+    // seria escrita nova sobre prova assinada.
+    assertChecklistRunMutable(run);
 
     const acknowledgement: ChecklistAcknowledgement = {
       id: randomUUID(),

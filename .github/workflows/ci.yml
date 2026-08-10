@@ -83,6 +83,104 @@ jobs:
       - name: Build
         run: npm run build
 
+  # CHECK P1 PR-03 — SUBCONJUNTO DE ROTA CONTRA O POSTGRES (autorização do dono).
+  #
+  # POR QUE ESTE JOB EXISTE: o job `backend` roda a suíte inteira em `CORE_SAAS_PERSISTENCE=memory`,
+  # onde o gate lê o catálogo EM CÓDIGO e o repositório é um `Map`. Divergência entre o que o código
+  # declara e o que o BANCO aceita passa verde — foram três bugs graves da mesma família em dois dias
+  # (CHECK de tipo desatualizado no #341; `checklist_runs:reopen` morta em produção; `field_technician`
+  # sem permissão de checklist na tabela). Aqui o banco é PROVISIONADO (migrate + seed, como um ambiente
+  # de verdade) e um subconjunto curado roda em `prisma`, batendo no Postgres por HTTP.
+  #
+  # O seed roda SÓ neste job, num banco descartável do runner — o job `backend` continua com o banco
+  # migrado e vazio, sem mudança de comportamento para as demais suítes.
+  backend-postgres:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public
+      REDIS_URL: redis://localhost:6379
+      CORE_SAAS_PERSISTENCE: prisma
+      JWT_SECRET: dev-only-change-me
+      JWT_EXPIRES_IN: 15m
+      LOG_LEVEL: silent
+      # ATIVA a paridade catálogo × banco SÓ aqui. `tests/permission-catalog-db-parity.test.ts` exige
+      # um banco provisionado (migrate + seed, passo abaixo) e se declara pulado sem esta variável.
+      # A versão anterior tentava DEDUZIR o provisionamento olhando se a tabela `roles` estava vazia —
+      # sentinela que o paralelismo do `npm test` polui (várias suítes criam papéis), fazendo o teste
+      # rodar contra um banco não semeado e reprovar o job `backend` de PRs sem relação com RBAC.
+      RBAC_DB_PARITY: "1"
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: erp_techsolutions
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d erp_techsolutions"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Apply migrations (Prisma)
+        run: npx prisma migrate deploy
+
+      # PROVISIONAMENTO: papéis/permissões vivem em TABELA. Sem o seed, `role_permissions` nasce vazia e
+      # o guard de paridade não teria contra o que comparar (ele se declara pulado — e o passo seguinte
+      # transforma esse pulo em falha).
+      - name: Provision database (seed)
+        run: npm run db:seed
+
+      - name: Route suites against PostgreSQL
+        run: |
+          set -o pipefail
+          SUITES="tests/checklist-routes-db.test.ts"
+          SUITES="$SUITES tests/permission-catalog-db-parity.test.ts"
+          SUITES="$SUITES tests/permission-catalog-migration-parity.test.ts"
+          SUITES="$SUITES tests/checklist-template-prisma-db.test.ts"
+          SUITES="$SUITES tests/checklist-run-lifecycle-db.test.ts"
+          SUITES="$SUITES tests/checklist-run-create-concurrency-db.test.ts"
+          SUITES="$SUITES tests/persistent-rbac-middleware.test.ts"
+          node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
+
+      # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
+      # aqui significaria "verde" sem ter exercido nada — o exato modo de falha que deixou os três bugs
+      # passarem. Qualquer teste pulado derruba o job.
+      - name: Fail on skipped tests (green-blind guard)
+        run: |
+          skipped=$(grep -E '^# skipped ' postgres-subset.tap | awk '{print $3}')
+          echo "testes pulados: ${skipped:-desconhecido}"
+          test -n "$skipped" || { echo "não consegui ler a contagem de pulos — tratando como falha"; exit 1; }
+          test "$skipped" -eq 0 || { echo "suíte contra o Postgres PULOU $skipped teste(s) — gate seria verde-cego"; exit 1; }
+
   frontend:
     runs-on: ubuntu-latest
 
@@ -185,7 +283,7 @@ jobs:
   # com a tag do commit APENAS em push na main. Usa GITHUB_TOKEN (sem conta/segredo externo).
   docker:
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, backend-postgres, frontend]
     permissions:
       contents: read
       packages: write

@@ -277,6 +277,13 @@ async function teardown(ctx: BootstrapContext, tenantId: string): Promise<void> 
       }
       await tx.user.deleteMany({ where: { tenant_id: tenantId } });
     });
+    // ACHADO (subconjunto de rota contra o Postgres): o registro de consumo é BEST-EFFORT e
+    // fire-and-forget — ele aterrissava DEPOIS do delete acima e a exclusão do tenant batia na FK
+    // `cloud_usage_events_tenant_id_fkey`. Repetir a exclusão NÃO resolve (a corrida continua aberta entre
+    // as tentativas — provado no CI). O determinístico é ESPERAR as gravações em voo e só então limpar.
+    const { drainCloudUsageBestEffortForTests } = await import("../src/modules/cloud-usage/cloud-usage.service.js");
+    await drainCloudUsageBestEffortForTests();
+    await client.$executeRawUnsafe("delete from cloud_usage_events where tenant_id = $1::uuid", tenantId);
     await client.tenant.deleteMany({ where: { id: tenantId } });
   } finally {
     await client.$disconnect();

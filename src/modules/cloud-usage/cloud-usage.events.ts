@@ -18,12 +18,20 @@ export function recordCloudUsageForDomainEvent(event: DomainEventEnvelope): void
   };
 
   if (event.name === "checklist_run.completed") {
+    // Junta PR-03 (ALTA): a CONCLUSÃO é metric-key faturada e entra na base de rateio
+    // (`cloud-cost-allocation.rules` → basisMetricKeys). Uma vistoria REABERTA é a correção de um
+    // trabalho já cobrado, não trabalho novo — contá-la de novo dobraria a base e cobraria o
+    // cliente pelo conserto. A reabertura é registrada com quantidade ZERO: some na trilha (o
+    // auditor vê que houve), sem somar na conta.
+    const isReopenedRun = event.payload.isReopenedRun === true;
+
     recordCloudUsageBestEffort({
       ...base,
       sourceType: "checklist_run",
       metricKey: "checklist_run.completed",
-      quantity: 1,
+      quantity: isReopenedRun ? 0 : 1,
       unit: "count",
+      ...(isReopenedRun ? { idempotencyKey: `${event.id}:checklist_run.completed:reopened` } : {}),
     });
   }
 

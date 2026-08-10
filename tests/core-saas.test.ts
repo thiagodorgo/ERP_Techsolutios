@@ -208,6 +208,7 @@ const expectedPermissionCatalog = [
   "checklist_runs:update",
   "checklist_runs:complete",
   "checklist_runs:acknowledge",
+  "checklist_runs:reopen",
   "telemetry:read",
   "authority_credentials:manage",
   "platform:vehicle-identity-unmerge:manage",
@@ -406,6 +407,26 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:update"), true);
   assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:complete"), true);
   assert.equal(ROLE_PERMISSIONS.operator.includes("checklist_runs:acknowledge"), false);
+
+  // CHECKLIST P1 PR-03 (D-CHK-P1-REOPEN-RBAC) — REABRIR vistoria concluída (nova versão auditada) é ato de
+  // GESTÃO sobre prova jurídica: gestão + admins têm; quem preenche no campo (e o despacho) NÃO tem — senão o
+  // próprio autor destravaria a assinatura que acabou de dar.
+  for (const role of ["tenant_admin", "super_admin", "platform_admin", "manager"] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:reopen"), true);
+  }
+  for (const role of [
+    "operator",
+    "field_technician",
+    "technician",
+    "field_dispatcher",
+    "finance",
+    "inventory",
+    "auditor",
+    "viewer",
+    "support",
+  ] as const) {
+    assert.equal(ROLE_PERMISSIONS[role].includes("checklist_runs:reopen"), false);
+  }
 
   // Ω5P PR-18a (D-Ω5P-AUTH-03) — `authority_credentials:manage` (provisionar a credencial da autoridade do
   // authority-portal) = SÓ tenant_admin + super_admin + platform_admin (herança do catálogo, sem lista explícita).

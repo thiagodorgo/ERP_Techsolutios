@@ -1,5 +1,6 @@
 # Ω-INFRA-3 — CD de PRODUÇÃO (Fly.io/gru). PROMOÇÃO por artefato (mesma imagem GHCR validada em
-# staging pelo MESMO SHA) → migrate (forward-only, sem seed) → deploy api+web → smoke de produção.
+# staging pelo MESMO SHA) → migrate (forward-only, sem seed) → provisionamento de RBAC (aditivo e
+# idempotente, NUNCA seed) → deploy api+web → smoke de produção.
 #
 # INERTE até a ativação. Duas barreiras:
 #   1) GATE: só roda com a repo variable PROD_DEPLOY_ENABLED == 'true' (até lá nunca dispara).
@@ -133,6 +134,25 @@ jobs:
       # vetor de pipeline; a guarda assertSeedAllowed cobre o container/manual).
       - name: Apply migrations (production DB)
         run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+
+      # RBAC DEPOIS do migrate e ANTES do app subir (achado B1/ALTA da junta do CHECKLIST P1 PR-03).
+      # `migrate deploy` NÃO cria papel: nenhuma migração insere em `roles`, e produção nunca semeia.
+      # Numa base NOVA as migrações de dados de RBAC (`INSERT ... SELECT FROM roles WHERE key IN ...`)
+      # casam ZERO linhas, ficam marcadas como aplicadas e nunca mais rodam — o técnico de campo
+      # nasceria sem checklist e `checklist_runs:reopen` sem concessão, PARA SEMPRE. Migração é tiro
+      # único; este passo CONVERGE o RBAC com o catálogo em código a cada deploy.
+      # É ADITIVO (nunca apaga concessão — divergência é relatada, não removida), IDEMPOTENTE (2ª
+      # execução não cria nada) e NÃO semeia dado de demonstração (não é o seed; a guarda
+      # `assertSeedAllowed` segue valendo). Falha só em erro real de escrita/conexão — nunca por
+      # divergência esperada. Drill da prova: `bash scripts/rbac-provision-drill.sh`.
+      # O `prisma generate` é necessário porque a CLI/pipeline não herda o client gerado da imagem
+      # runtime slim (mesmo motivo do migrate rodar aqui, e não dentro do container).
+      - name: Provision RBAC (papéis + permissões + concessões — aditivo e idempotente)
+        run: |
+          npx prisma generate
+          npm run db:provision-rbac
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
 

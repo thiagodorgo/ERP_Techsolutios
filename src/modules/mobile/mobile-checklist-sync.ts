@@ -7,6 +7,7 @@ import {
   ChecklistError,
   type ChecklistRunAnswer,
 } from "../checklists/checklist.types.js";
+import { assertChecklistRunFieldWritable } from "../checklists/checklist.run-lifecycle.js";
 import {
   createDefaultChecklistService,
   type ChecklistService,
@@ -116,6 +117,14 @@ type MobileChecklistActionResult = {
     readonly local: RawRecord;
     readonly remote?: RawRecord;
     readonly next_action: string;
+    // `false` = a condição NÃO muda com o tempo; repetir devolve o MESMO 409 para sempre. É o sinal PARA o app
+    // tirar a ação da fila sem decorar quais strings de `next_action` são terminais — hoje o Flutter ainda não
+    // o lê (conflitos já saem da fila pelo status `conflict`); o campo existe para o PR-08 consumir sem nova
+    // mudança de contrato.
+    readonly retriable: boolean;
+    // O que o técnico preencheu e NÃO entrou — só nas recusas definitivas, para o app MOSTRAR em vez de
+    // descartar em silêncio.
+    readonly rejected_content?: RawRecord;
   };
 };
 
@@ -127,7 +136,7 @@ type MobileChecklistSyncReceipt = {
 export type MobileChecklistSyncResponse = {
   readonly contract: {
     readonly name: "mobile_checklist_actions_sync";
-    readonly version: "2026-07-31.p0a";
+    readonly version: "2026-08-10.chk-p1-pr03";
     readonly status: "partial";
   };
   readonly client_batch_id: string | null;
@@ -156,6 +165,33 @@ const GATE_PERMISSIONS: readonly ChecklistRunPermission[] = [
 ];
 
 const CHECKLIST_ATTACHMENT_UPLOAD_ENDPOINT = "/api/v1/mobile/checklist-runs/{runId}/attachments";
+
+// CHECKLIST P1 PR-03 (junta, MÉDIA-5) — orientação de conflito por REASON, separando o que o tempo resolve do
+// que o tempo NÃO resolve.
+//
+// `refresh_..._and_retry` só faz sentido quando o servidor pode mudar de ideia. Numa vistoria travada
+// (concluída/assinada) a condição é PERMANENTE: atualizar a vistoria devolve o mesmo `completed`, e o próximo
+// retry devolve o mesmo 409 — a ação recicla na fila do aparelho para sempre. No campo isso apaga trabalho
+// real: o guincheiro sem sinal responde o item, marca a avaria e conclui; a conclusão sobe primeiro e o resto
+// vira conflito eterno. No ANEXO é pior — o contrato manda o binário subir DEPOIS do sync JSON, então a FOTO
+// DA AVARIA nunca mais entra.
+//
+// Por isso a orientação aqui é TERMINAL: a ação SAI da fila (`retriable:false`), o conteúdo recusado volta no
+// corpo para o app mostrar ao técnico, e o nome diz o caminho REAL — reabrir exige `checklist_runs:reopen`
+// (gestão); o técnico não destrava a própria assinatura, ele PEDE a reabertura.
+const TERMINAL_CONFLICT_NEXT_ACTIONS: Readonly<Record<string, string>> = {
+  checklist_run_locked: "stop_retrying_and_request_run_reopen",
+  // Vistoria cancelada não se reabre (não é prova de nada): o caminho é abrir outra pela ordem de serviço.
+  checklist_run_cancelled: "stop_retrying_and_start_new_run",
+};
+
+// Conflito de estado que o servidor AINDA pode resolver (ex.: a run vira `pending_acknowledgement` quando a
+// divergência da fila subir): aqui atualizar e repetir continua sendo a instrução certa.
+const RETRIABLE_CONFLICT_NEXT_ACTION = "refresh_checklist_run_and_retry";
+
+// Texto longo/binário não volta no `rejected_content`: o app JÁ tem o conteúdo local, e devolver assinatura ou
+// foto em base64 seria trafegar binário numa resposta pública (§2.8). A omissão é DECLARADA (D-007).
+const REJECTED_VALUE_MAX_LENGTH = 240;
 
 export async function syncMobileChecklistActions(
   actor: AuthenticatedActor | undefined,
@@ -216,7 +252,7 @@ export async function syncMobileChecklistActions(
   return {
     contract: {
       name: "mobile_checklist_actions_sync",
-      version: "2026-07-31.p0a",
+      version: "2026-08-10.chk-p1-pr03",
       status: "partial",
     },
     client_batch_id: request.client_batch_id,
@@ -538,6 +574,16 @@ async function handleAttachmentAttach(
 ): Promise<MobileChecklistActionResult> {
   const runId = await resolveRunId(service, actor, action);
   const details = await service.getRun(actor, runId);
+
+  // CHECKLIST P1 PR-03 (junta, MÉDIA-5) — a recusa da foto acontece AQUI, não lá no upload. Esta ação não
+  // grava nada: ela PROMETE um endpoint para o binário subir depois, e numa vistoria travada essa promessa é
+  // falsa (o multipart aplica a mesma trava e responde 409 permanente). O que este lado GARANTE: o sync deixa
+  // de prometer endpoint que não honra, e o conflito volta terminal com o descritor da foto. O que este lado
+  // NÃO faz sozinho: o app Flutter de hoje sobe o multipart sem ler esta orientação (o upload segue pela fila
+  // própria e cai em UPLOAD_CONFLICT) — a economia de bateria só existe quando mobile/** consumir
+  // `retriable`/`next_action` (registrado em pendencias.md como fronteira do PR-08).
+  assertChecklistRunFieldWritable(details.run);
+
   const componentId = parseRequiredString(readComponentId(action), "component_id");
   const localAttId = parseOptionalString(action.payload.local_att_id) ?? undefined;
   const fileName = parseOptionalString(action.payload.file_name) ?? undefined;
@@ -711,6 +757,8 @@ function actionErrorResult(
   error: unknown,
 ): MobileChecklistActionResult {
   if (isConflictError(error)) {
+    const terminalNextAction = TERMINAL_CONFLICT_NEXT_ACTIONS[error.reason];
+
     return {
       client_action_id: action.client_action_id,
       type: action.type,
@@ -720,7 +768,9 @@ function actionErrorResult(
         conflict_type: error.reason,
         server_id: readRunId(action),
         local: sanitizeActionForConflict(action),
-        next_action: "refresh_checklist_run_and_retry",
+        next_action: terminalNextAction ?? RETRIABLE_CONFLICT_NEXT_ACTION,
+        retriable: terminalNextAction === undefined,
+        ...(terminalNextAction ? { rejected_content: describeRejectedContent(action) } : {}),
       },
       error: {
         code: error.code,
@@ -778,6 +828,10 @@ function buildIdempotencyConflict(
         checklist_run_id: existingResult.checklist_run_id,
       },
       next_action: "drop_duplicate_or_create_new_client_action_id",
+      // Reenviar o MESMO client_action_id com payload diferente colide sempre (o recibo não muda): repetir só
+      // gastaria bateria. A saída já está no `next_action` — descartar a duplicata ou emitir um id novo.
+      retriable: false,
+      rejected_content: describeRejectedContent(action),
     },
     error: {
       code: "MOBILE_SYNC_CONFLICT",
@@ -877,10 +931,82 @@ function readRunId(action: MobileChecklistAction): string | undefined {
   );
 }
 
+// O que o técnico preencheu e o servidor recusou EM DEFINITIVO, em campos de negócio. Sem isto o app fica com
+// uma ação morta na fila e nada para mostrar: a resposta, a avaria ou a foto somem sem ninguém ver — que é
+// exatamente o desfecho que a trava de imutabilidade deveria evitar, não causar.
+// §2.8: só conteúdo de negócio do PRÓPRIO aparelho — nada de file_url, chave de storage, binário ou tenant.
+function describeRejectedContent(action: MobileChecklistAction): RawRecord {
+  const payload = action.payload;
+  const content: RawRecord = {
+    action_type: ACTION_TYPE_ALIASES[action.type] ?? action.type,
+    captured_at: action.local_created_at,
+    ...describeRejectedValue(payload.value),
+  };
+
+  const fields: ReadonlyArray<readonly [string, unknown]> = [
+    ["component_id", readComponentId(action)],
+    ["note", payload.note],
+    ["observation", payload.observation],
+    ["message", payload.message],
+    ["marker_type", payload.marker_type ?? payload.type],
+    ["description", payload.description ?? payload.position_label ?? payload.label],
+    ["file_name", payload.file_name],
+    ["local_att_id", payload.local_att_id],
+  ];
+
+  for (const [field, raw] of fields) {
+    const text = parseOptionalString(raw);
+
+    if (text) {
+      // O mesmo teto (e a mesma recusa de data-URI) do `value`: um binário colado em `note` ou
+      // `observation` sairia inteiro por aqui — a redação de um campo não pode vazar pelo vizinho.
+      const descrito = describeRejectedValue(text);
+      if ("value" in descrito) {
+        content[field] = descrito.value;
+      } else {
+        content[`${field}_omitted`] = descrito.value_omitted;
+      }
+    }
+  }
+
+  return content;
+}
+
+// Assinatura e foto chegam como data URI base64 no `value`. Devolvê-las seria trafegar binário de volta sem
+// necessidade (o app tem o original em disco); então o valor sai e a AUSÊNCIA é declarada — nunca omitida em
+// silêncio, que faria o app concluir que o item estava vazio.
+function describeRejectedValue(value: unknown): RawRecord {
+  if (value === undefined || value === null) {
+    return {};
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return { value };
+  }
+
+  if (typeof value === "string") {
+    if (value.startsWith("data:")) {
+      return { value_omitted: "binary_content" };
+    }
+
+    return value.length > REJECTED_VALUE_MAX_LENGTH
+      ? { value_omitted: "text_too_long" }
+      : { value };
+  }
+
+  return { value_omitted: "structured_value" };
+}
+
 function sanitizeActionForConflict(action: MobileChecklistAction): RawRecord {
+  // Junta PR-03 (2ª rodada, §2.8 PROVADO POR SONDA): `normalizePayload` só remove tenant_id — a
+  // assinatura/foto em data-URI base64 voltava INTEIRA por `local.payload.value`, ao lado do
+  // `rejected_content` cuidadosamente redigido. A redação acontece AQUI, nunca em `normalizePayload`:
+  // aquele helper é compartilhado com `fingerprintAction`, e mudar o fingerprint invalidaria a
+  // idempotência de toda fila em voo (cada replay viraria `idempotency_payload_mismatch` falso).
+  const { value, ...rest } = action.payload;
   return {
     type: action.type,
-    payload: normalizePayload(action.payload),
+    payload: { ...normalizePayload(rest), ...describeRejectedValue(value) },
     local_created_at: action.local_created_at,
   };
 }
