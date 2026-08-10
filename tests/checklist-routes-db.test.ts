@@ -360,6 +360,10 @@ async function withPostgresChecklistApi(
     // Teardown ESCOPADO ao tenant descartável desta execução (nunca `delete` por wildcard em base viva —
     // P-JUNTA-LIMPEZA-BASE-VIVA). A ordem respeita as FKs RESTRICT do domínio.
     if (tenantId) {
+      // O registro de consumo é best-effort/fire-and-forget: sem esperar as gravações em voo, a exclusão do
+      // tenant abaixo corre contra elas e bate na FK `cloud_usage_events_tenant_id_fkey`.
+      const { drainCloudUsageBestEffortForTests } = await import("../src/modules/cloud-usage/cloud-usage.service.js");
+      await drainCloudUsageBestEffortForTests();
       await client.$executeRawUnsafe("delete from checklist_run_answers where tenant_id = $1::uuid", tenantId);
       await client.$executeRawUnsafe("delete from checklist_markers where tenant_id = $1::uuid", tenantId);
       await client.$executeRawUnsafe("delete from checklist_attachments where tenant_id = $1::uuid", tenantId);
