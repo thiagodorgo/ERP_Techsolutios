@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-03 — ciclo de vida da vistoria (D-CHK-P1-RUN-LIFECYCLE): a vistoria CONCLUÍDA vira prova IMUTÁVEL e corrigir passa a ser REABRIR — nova versão vinculada (reopened_from_run_id + motivo obrigatório), a original preservada, 1-a-1 por índice parcial único e FK RESTRICT. Permissão própria checklist_runs:reopen (gestão + admins; o guincheiro não destrava a própria assinatura). JUNTA: 3 ALTA + 4 MÉDIA fechados — cobrança DOBRADA na reabertura (checklist_run.completed é métrica faturada; a versão reaberta agora registra quantidade 0), PATCH virou ALLOWLIST (rebaixar apagava a divergência da prova; pending_acknowledgement era porta dos fundos para estado terminal sem assinatura), vazamento §2.8 (erro cru do Prisma com caminho absoluto do servidor), trava de linha na reabertura, modelo ARQUIVADO não gera mais versão em limbo, e o dossiê do veículo deixou de mostrar a versão SUBSTITUÍDA como se fosse a vigente. ACHADO SISTÊMICO: em produção o gate lê a TABELA role_permissions — permissão nova só no código nasce MORTA (deploy roda só migrate deploy); 2 migrações de dados idempotentes + guard de paridade catálogo×banco. CI: job NOVO backend-postgres roda um subconjunto de rota contra o PostgreSQL provisionado, com guard anti-verde-cego que derruba o job se qualquer teste PULAR.",
     "title": "CHECKLIST P1 PR-03 — vistoria concluída é prova: reabrir cria nova versão",
-    "pr": null,
+    "pr": 344,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
