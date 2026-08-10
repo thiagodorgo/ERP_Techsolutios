@@ -2070,7 +2070,7 @@
     "snapshot_date": "2026-08-10",
     "version": "CHK-P1-PR-03",
     "pr": 344,
-    "merge_commit": null,
+    "merge_commit": "287bda36ed5713188b638844f239daaaff150c77",
     "flutter_tests": "839/839",
     "backend_tests": "2149/2157",
     "frontend_smoke_tests": "1112/1112",

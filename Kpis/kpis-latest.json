@@ -7,11 +7,11 @@
     "block": "CHECKLIST P1 PR-03 — ciclo de vida da vistoria (D-CHK-P1-RUN-LIFECYCLE): a vistoria CONCLUÍDA vira prova IMUTÁVEL e corrigir passa a ser REABRIR — nova versão vinculada (reopened_from_run_id + motivo obrigatório), a original preservada, 1-a-1 por índice parcial único e FK RESTRICT. Permissão própria checklist_runs:reopen (gestão + admins; o guincheiro não destrava a própria assinatura). JUNTA: 3 ALTA + 4 MÉDIA fechados — cobrança DOBRADA na reabertura (checklist_run.completed é métrica faturada; a versão reaberta agora registra quantidade 0), PATCH virou ALLOWLIST (rebaixar apagava a divergência da prova; pending_acknowledgement era porta dos fundos para estado terminal sem assinatura), vazamento §2.8 (erro cru do Prisma com caminho absoluto do servidor), trava de linha na reabertura, modelo ARQUIVADO não gera mais versão em limbo, e o dossiê do veículo deixou de mostrar a versão SUBSTITUÍDA como se fosse a vigente. ACHADO SISTÊMICO: em produção o gate lê a TABELA role_permissions — permissão nova só no código nasce MORTA (deploy roda só migrate deploy); 2 migrações de dados idempotentes + guard de paridade catálogo×banco. CI: job NOVO backend-postgres roda um subconjunto de rota contra o PostgreSQL provisionado, com guard anti-verde-cego que derruba o job se qualquer teste PULAR. 2ª RODADA DA JUNTA (REPROVADO→corrigido): conteúdo pós-assinatura era editável pelo próprio guincheiro (provado por execução) → trava dupla assertChecklistRunFieldWritable + pending_acknowledgement reabrível; guard de paridade era tautológico/unidirecional → direção banco→catálogo + guard ESTÁTICO catálogo×migrações com fronteira congelada (189) + gate RBAC_DB_PARITY; migrações de grant eram no-op em base nova → provisionamento convergente (npm run db:provision-rbac) no deploy + drill com prova de isolamento; cobrança da reabertura ganhou 4 testes (4 mutações, inclusive no produtor); §2.8: base64 da assinatura vazava pelo conflict.local → redigido e provado por mutação; deriva real removida (manager/technician com checklist_runs:create que o #320 retirou — migração 20260863).",
     "title": "CHECKLIST P1 PR-03 — vistoria concluída é prova: reabrir cria nova versão",
     "pr": 344,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "287bda36ed5713188b638844f239daaaff150c77",
+    "approved_head": "287bda36ed5713188b638844f239daaaff150c77",
     "status": "published_per_pr",
     "summary": "Concluir trava a vistoria (conteúdo inclusive — 2ª rodada pegou o guincheiro reescrevendo a prova assinada); corrigir vira reabertura versionada que não dobra a fatura; e o RBAC agora converge do catálogo para o banco em todo deploy, com guards que falham de verdade.",
-    "status_label": "Entregue (aguardando merge do PR corrente)"
+    "status_label": "Publicado (mergeado na main)"
   },
   "metrics": {
     "flutter_tests": {
