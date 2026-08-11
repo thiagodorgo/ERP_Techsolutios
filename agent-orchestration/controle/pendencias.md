@@ -1768,3 +1768,45 @@ antes do PR-03.
 **Fechar no CHK P1 PR-05 (histórico):** 3 campos no tipo espelho + 3 linhas em `adaptChecklistRun` + chip
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
+
+## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **BLOQUEIA A PR-04b**
+
+`MobileChecklistRunKind` no app só conhece `collection|delivery`, e `fromApiValue` colapsa **qualquer valor
+desconhecido em `collection`** (`mobile/flutter_app/lib/features/checklists/domain/checklist_models.dart:80-84`,
+o `_ =>` do switch). Verificado por leitura direta.
+
+**A consequência não é cosmética.** `getRunByKind` devolve `.firstOrNull`
+(`.../data/checklist_repository.dart:428-433`) e alimenta a tela de comparação, que confronta coleta × entrega
+(`.../ui/checklist_comparison_screen.dart:48-54`). Duas vistorias classificadas como `collection` na mesma
+ordem tornam esse `firstOrNull` **não-determinístico**: a comparação pode confrontar a ENTREGA contra a
+vistoria errada e produzir **divergência falsa** — que dispara a ciência do cliente e vira prova jurídica do
+estado do veículo. Prova fabricada por colapso de enum.
+
+**Por que não explode hoje:** nenhuma fase `generic` chega ao app (a aplicabilidade nasceu inerte na PR-04a), e
+a semântica de FALLBACK decidida pela junta torna `generic` e fase concreta **mutuamente exclusivos por ordem
+de serviço** — o resolvedor sozinho não produz a colisão. Ela volta a ser alcançável por outros caminhos
+(vínculo manual do operador na PR-04b somado ao `work_orders.checklist_id` legado).
+
+**Fechar ANTES de a PR-04b ligar o sticky:** (a) `role` viaja na run do backend até o app; (b) o enum Flutter
+ganha `generic` (e o que mais o eixo `role` tiver); (c) `fromApiValue` deixa de colapsar desconhecido — valor
+não reconhecido é erro explícito ou um `unknown` que a comparação RECUSA, nunca um palpite; (d)
+`getRunByKind` deixa de usar `firstOrNull` sobre conjunto ambíguo.
+- status: ABERTA — pré-requisito de merge da PR-04b, não item de backlog.
+
+## P-CHK-CUSTODIA-AUTOLINK-SEM-FILTRO (2026-08-10 — junta do CHK P1 PR-04, achado A3 do `critico-adversarial`) — **BLOQUEIA A PR-04b**
+
+O AUTO-link do dossiê do veículo varre **todas** as vistorias da ordem de serviço, sem filtro de tipo ou fase,
+para dentro do dossiê jurídico (`src/modules/impound/impound-prisma.repository.ts:196-205`: `findMany` por
+`related_entity_id` + `createLink` para cada uma), na mesma transação da abertura de custódia.
+
+A aplicabilidade é um **multiplicador de vistorias por ordem** (hoje ~1 via `work_orders.checklist_id`; com o
+sticky da PR-04b, até 2). No dia em que a PR-04b ligar, **todo processo de custódia passa a receber 2 vínculos
+AUTO** em vez de 1 — incluindo uma vistoria que pode não ter relação nenhuma com a custódia, dentro de um
+arquivo que é prova jurídica. Ninguém decidiu isso.
+
+O ponto 3 da `D-CHK-P1-APPLICABILITY` diz que a custódia está DENTRO do escopo e manda **não duplicar o
+caminho** do AUTO-link — este é exatamente o lado que o plano original não olhou.
+
+**Fechar ANTES da PR-04b:** decidir se `autoLinkChecklistRuns` passa a filtrar por fase/tipo ou continua
+varrendo tudo, com voto de junta registrado. A PR-04a não é afetada (nasce inerte).
+- status: ABERTA — pré-requisito de merge da PR-04b.

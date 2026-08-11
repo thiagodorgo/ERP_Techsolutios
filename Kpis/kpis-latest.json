@@ -1,36 +1,36 @@
 {
   "snapshot_date": "2026-08-10",
-  "version": "CHK-P1-PR-03",
+  "version": "CHK-P1-PR-04A",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-03 — ciclo de vida da vistoria (D-CHK-P1-RUN-LIFECYCLE): a vistoria CONCLUÍDA vira prova IMUTÁVEL e corrigir passa a ser REABRIR — nova versão vinculada (reopened_from_run_id + motivo obrigatório), a original preservada, 1-a-1 por índice parcial único e FK RESTRICT. Permissão própria checklist_runs:reopen (gestão + admins; o guincheiro não destrava a própria assinatura). JUNTA: 3 ALTA + 4 MÉDIA fechados — cobrança DOBRADA na reabertura (checklist_run.completed é métrica faturada; a versão reaberta agora registra quantidade 0), PATCH virou ALLOWLIST (rebaixar apagava a divergência da prova; pending_acknowledgement era porta dos fundos para estado terminal sem assinatura), vazamento §2.8 (erro cru do Prisma com caminho absoluto do servidor), trava de linha na reabertura, modelo ARQUIVADO não gera mais versão em limbo, e o dossiê do veículo deixou de mostrar a versão SUBSTITUÍDA como se fosse a vigente. ACHADO SISTÊMICO: em produção o gate lê a TABELA role_permissions — permissão nova só no código nasce MORTA (deploy roda só migrate deploy); 2 migrações de dados idempotentes + guard de paridade catálogo×banco. CI: job NOVO backend-postgres roda um subconjunto de rota contra o PostgreSQL provisionado, com guard anti-verde-cego que derruba o job se qualquer teste PULAR. 2ª RODADA DA JUNTA (REPROVADO→corrigido): conteúdo pós-assinatura era editável pelo próprio guincheiro (provado por execução) → trava dupla assertChecklistRunFieldWritable + pending_acknowledgement reabrível; guard de paridade era tautológico/unidirecional → direção banco→catálogo + guard ESTÁTICO catálogo×migrações com fronteira congelada (189) + gate RBAC_DB_PARITY; migrações de grant eram no-op em base nova → provisionamento convergente (npm run db:provision-rbac) no deploy + drill com prova de isolamento; cobrança da reabertura ganhou 4 testes (4 mutações, inclusive no produtor); §2.8: base64 da assinatura vazava pelo conflict.local → redigido e provado por mutação; deriva real removida (manager/technician com checklist_runs:create que o #320 retirou — migração 20260863).",
-    "title": "CHECKLIST P1 PR-03 — vistoria concluída é prova: reabrir cria nova versão",
-    "pr": 344,
-    "merge_commit": "287bda36ed5713188b638844f239daaaff150c77",
-    "approved_head": "287bda36ed5713188b638844f239daaaff150c77",
+    "block": "CHECKLIST P1 PR-04a — FUNDAÇÃO da aplicabilidade de vistoria, nascendo INERTE e sem superfície HTTP. Tabela nova com índice único parcial por bucket usando NULLS NOT DISTINCT (o coração do determinismo: sem a cláusula, N regras curinga conviveriam e ficaria indefinido qual vistoria o técnico receberia), 3 CHECKs, FKs tenant-first RESTRICT e RLS. Resolução pura compartilhada entre memória e Prisma. DUAS SEMÂNTICAS DECIDIDAS POR JUNTA porque são sticky na criação da ordem e sem backfill: `generic` é FALLBACK (2×1) e CLIENTE vence SERVIÇO (3×0) — neste a junta derrubou o plano, que citava o precedente do Tariff para contrariá-lo. Plano atacado antes do código; 3 frentes com verificação adversarial depois, que pegaram ramo §2.8 sem cobertura, módulo Prisma avaliado no boot, comentário com causalidade falsa e um byte NUL que escondia o arquivo do diff.",
+    "title": "CHECKLIST P1 PR-04a — fundação da aplicabilidade (inerte, com a semântica decidida por junta)",
+    "pr": 345,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Concluir trava a vistoria (conteúdo inclusive — 2ª rodada pegou o guincheiro reescrevendo a prova assinada); corrigir vira reabertura versionada que não dobra a fatura; e o RBAC agora converge do catálogo para o banco em todo deploy, com guards que falham de verdade.",
-    "status_label": "Publicado (mergeado na main)"
+    "summary": "A vistoria certa para a ordem certa: modelo e resolução prontos e provados contra o banco real, sem ligar nada ainda. As duas decisões que mudariam prova jurídica foram para a junta, não para o meu palpite.",
+    "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
     "flutter_tests": {
       "value": 839,
       "total": 839,
       "display": "839/839",
-      "note": "PR-03 não toca mobile — carrega 839/839 (§C3.3)."
+      "note": "PR-04a não toca mobile — carrega 839/839 (§C3.3)."
     },
     "frontend_smoke_tests": {
       "value": 1112,
       "total": 1112,
       "display": "1112/1112",
-      "note": "PR-03: +4 no runtime do checklist (trava da vistoria concluída). 1108→1112, execução real."
+      "note": "PR-04a é backend-only — carrega 1112/1112 (§C3.3)."
     },
     "backend_tests": {
-      "value": 2149,
-      "total": 2157,
-      "display": "2149/2157",
-      "note": "PR-03 pós-2ª rodada da junta: 2135→2149 de 2157. +16 sobre o snapshot anterior: trava de conteúdo pós-assinatura (checklist-routes +2), cobrança da reabertura (cloud-usage-checklist-reopen NOVO, 4), guard estático catálogo×migrações (permission-catalog-migration-parity NOVO, 3), caso P2010+meta.code e lado retriável do sync (mobile-backend-contracts), dossiê cadeia de 3 versões (impound-checklist-link +5). Os 8 pulos são declarados: 6 DB-gated de sempre + 2 do guard de paridade fora do gate RBAC_DB_PARITY (o job backend-postgres roda os dois com 0 pulos)."
+      "value": 2209,
+      "total": 2217,
+      "display": "2209/2217",
+      "note": "PR-04a: +58 testes reais (resolução pura 14, repositório em memória 20, estrutura contra o PostgreSQL real 11, repositório Prisma contra o PostgreSQL real 13). 2149→2209 de 2217; os 8 pulos são os declarados (6 DB-gated + 2 do guard de paridade fora do gate RBAC_DB_PARITY). Subconjunto do job backend-postgres: 24→48, 0 pulos."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 144,
-      "display": "144",
-      "note": "CHK P1 PR-03 (ciclo de vida da vistoria + reabertura versionada). Sobre 143 do #343."
+      "value": 145,
+      "display": "145",
+      "note": "CHK P1 PR-04a (fundação da aplicabilidade). Sobre 144 do #344."
     },
     "mobile_backend_contracts": {
       "value": 18,
