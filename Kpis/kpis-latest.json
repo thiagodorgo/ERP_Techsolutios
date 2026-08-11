@@ -7,11 +7,11 @@
     "block": "CHECKLIST P1 PR-04a — FUNDAÇÃO da aplicabilidade de vistoria, nascendo INERTE e sem superfície HTTP. Tabela nova com índice único parcial por bucket usando NULLS NOT DISTINCT (o coração do determinismo: sem a cláusula, N regras curinga conviveriam e ficaria indefinido qual vistoria o técnico receberia), 3 CHECKs, FKs tenant-first RESTRICT e RLS. Resolução pura compartilhada entre memória e Prisma. DUAS SEMÂNTICAS DECIDIDAS POR JUNTA porque são sticky na criação da ordem e sem backfill: `generic` é FALLBACK (2×1) e CLIENTE vence SERVIÇO (3×0) — neste a junta derrubou o plano, que citava o precedente do Tariff para contrariá-lo. Plano atacado antes do código; 3 frentes com verificação adversarial depois, que pegaram ramo §2.8 sem cobertura, módulo Prisma avaliado no boot, comentário com causalidade falsa e um byte NUL que escondia o arquivo do diff.",
     "title": "CHECKLIST P1 PR-04a — fundação da aplicabilidade (inerte, com a semântica decidida por junta)",
     "pr": 345,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "3a3a5098d5eb3a985cc18c2a89d960d10b56d5de",
+    "approved_head": "3a3a5098d5eb3a985cc18c2a89d960d10b56d5de",
     "status": "published_per_pr",
     "summary": "A vistoria certa para a ordem certa: modelo e resolução prontos e provados contra o banco real, sem ligar nada ainda. As duas decisões que mudariam prova jurídica foram para a junta, não para o meu palpite.",
-    "status_label": "Entregue (aguardando merge do PR corrente)"
+    "status_label": "Publicado (mergeado na main)"
   },
   "metrics": {
     "flutter_tests": {
