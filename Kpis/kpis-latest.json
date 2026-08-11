@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-04a — FUNDAÇÃO da aplicabilidade de vistoria, nascendo INERTE e sem superfície HTTP. Tabela nova com índice único parcial por bucket usando NULLS NOT DISTINCT (o coração do determinismo: sem a cláusula, N regras curinga conviveriam e ficaria indefinido qual vistoria o técnico receberia), 3 CHECKs, FKs tenant-first RESTRICT e RLS. Resolução pura compartilhada entre memória e Prisma. DUAS SEMÂNTICAS DECIDIDAS POR JUNTA porque são sticky na criação da ordem e sem backfill: `generic` é FALLBACK (2×1) e CLIENTE vence SERVIÇO (3×0) — neste a junta derrubou o plano, que citava o precedente do Tariff para contrariá-lo. Plano atacado antes do código; 3 frentes com verificação adversarial depois, que pegaram ramo §2.8 sem cobertura, módulo Prisma avaliado no boot, comentário com causalidade falsa e um byte NUL que escondia o arquivo do diff.",
     "title": "CHECKLIST P1 PR-04a — fundação da aplicabilidade (inerte, com a semântica decidida por junta)",
-    "pr": null,
+    "pr": 345,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",

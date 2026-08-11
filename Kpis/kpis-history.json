@@ -2080,7 +2080,7 @@
   {
     "snapshot_date": "2026-08-10",
     "version": "CHK-P1-PR-04A",
-    "pr": null,
+    "pr": 345,
     "merge_commit": null,
     "flutter_tests": "839/839",
     "backend_tests": "2209/2217",
