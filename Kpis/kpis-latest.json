@@ -7,11 +7,11 @@
     "block": "CHECKLIST P1 PR-04b — fatia PURAMENTE DEFENSIVA: fecha os dois bloqueadores do sticky da aplicabilidade. Fase estrita no app (fim do palpite 'coleta' que podia fabricar divergência falsa em prova jurídica; 15 testes, mutação derruba 8; Flutter 839→854 sem regressão) + AUTO-link da custódia decidido por junta com desempate verificado no código (2×1×1: varredura mantida — filtrar por tipo quebraria retrocompat e usaria o eixo errado), com teste no Postgres provando que todos os tipos entram no dossiê e duas pendências herdeiras registradas.",
     "title": "CHECKLIST P1 PR-04b — os dois bloqueadores fechados (um por código, um por decisão registrada)",
     "pr": 346,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "f4ef511d7d7dcc3d78481b8b5ed10f4584af015c",
+    "approved_head": "f4ef511d7d7dcc3d78481b8b5ed10f4584af015c",
     "status": "published_per_pr",
     "summary": "A comparação coleta×entrega deixou de chutar (recusa honesta no lugar de divergência fabricada), e a varredura do dossiê virou decisão de junta registrada em vez de comportamento que ninguém decidiu.",
-    "status_label": "Entregue (aguardando merge do PR corrente)"
+    "status_label": "Publicado (mergeado na main)"
   },
   "metrics": {
     "flutter_tests": {
