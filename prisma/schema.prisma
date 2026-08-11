@@ -114,6 +114,7 @@ model Tenant {
   user_role_assignments         UserRoleAssignment[]
   users                         User[]
 
+  checklist_applicability_rules ChecklistApplicabilityRule[]
   @@map("tenants")
 }
 
@@ -664,6 +665,7 @@ model ChecklistTemplate {
   components   ChecklistTemplateComponent[]
   runs         ChecklistRun[]
   work_orders  WorkOrder[]
+  applicability_rules ChecklistApplicabilityRule[]
   tenant       Tenant                       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
@@ -671,6 +673,37 @@ model ChecklistTemplate {
   @@index([tenant_id, status])
   @@index([tenant_id, type])
   @@map("checklist_templates")
+}
+
+// CHECKLIST P1 PR-04a (D-CHK-P1-APPLICABILITY) — qual modelo de vistoria se aplica a qual ordem de serviço.
+// Eixos: serviço concreto OU tipo de serviço (mutuamente exclusivos, CHECK no SQL), cliente e FASE (`role`).
+// NULL é VALOR de negócio ("vale para qualquer"), não ausência — por isso o índice de bucket usa
+// NULLS NOT DISTINCT, o oposto do índice de reabertura de vistoria. Índice parcial + NULLS NOT DISTINCT +
+// os 3 CHECKs vivem só no SQL da migração 20260864000000 (o Prisma não os expressa).
+// NASCE INERTE: nenhum consumidor nesta fatia; o vínculo com a OS é a PR-04b.
+model ChecklistApplicabilityRule {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String            @db.Uuid
+  template_id        String            @db.Uuid
+  service_catalog_id String?           @db.Uuid
+  service_type       String?
+  customer_id        String?           @db.Uuid
+  role               String            @default("generic")
+  is_active          Boolean           @default(true)
+  notes              String?
+  created_by         String?           @db.Uuid
+  updated_by         String?           @db.Uuid
+  created_at         DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at         DateTime?         @db.Timestamptz(6)
+  tenant             Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  template           ChecklistTemplate @relation(fields: [tenant_id, template_id], references: [tenant_id, id], onDelete: Restrict)
+  service_catalog    ServiceCatalog?   @relation(fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
+  customer           Customer?         @relation(fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@index([tenant_id])
+  @@index([tenant_id, template_id])
+  @@map("checklist_applicability_rules")
 }
 
 model ChecklistTemplateComponent {
@@ -883,6 +916,7 @@ model Customer {
   work_orders WorkOrder[] @relation("WorkOrderCustomer")
   tariffs     Tariff[]    @relation("TariffCustomer")
 
+  checklist_applicability_rules ChecklistApplicabilityRule[]
   @@unique([tenant_id, id])
   @@unique([tenant_id, document])
   @@index([tenant_id, is_active])
@@ -1414,6 +1448,7 @@ model ServiceCatalog {
   custody_profile            JurisdictionProfile? @relation("ServiceCatalogCustodyProfile", fields: [tenant_id, custody_profile_id], references: [tenant_id, id], onDelete: Restrict)
   daily_jurisdiction_profiles JurisdictionProfile[] @relation("JurisdictionProfileDailyService") // Ω5P PR-07 — serviço-tarifa "diária" de perfis
 
+  checklist_applicability_rules ChecklistApplicabilityRule[]
   @@unique([tenant_id, id])
   @@unique([tenant_id, name])
   @@index([tenant_id, is_active])

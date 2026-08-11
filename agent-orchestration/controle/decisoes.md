@@ -1128,3 +1128,63 @@ sidebar deixe de fora desta correção"**. Prioridade máxima. Plano da Junta de
 license (carto.com/basemaps, verificado 2026-08-06) — adotá-lo seria serviço pago novo (junta-5 + PD).
 Nenhuma dependência nova (Leaflet rejeitado). Junta-5 + PD **não disparam**; junta normal (≥3).
 Execução: PR-1 (MapLibre default completo) → PR-2 (espelho Google + faxina). Próximo: dev-mapas.
+
+---
+
+## D-CHK-P1-APPLICABILITY-SEMANTICA (2026-08-10) — as duas semânticas da aplicabilidade, e a PR-04 fatiada em 04a/04b/04c
+
+**Complementa (não substitui) a `D-CHK-P1-APPLICABILITY`.** Aquela decisão é do dono e cravou 4 pontos;
+esta registra o que ela **não fechava sem ambiguidade** e que foi a **voto de junta** (§C7.1, 3 agentes:
+`planejador-mestre` · `critico-adversarial` · `coordenador-de-acessos`), mais a mudança de sequência
+acertada com o dono durante a execução. Ata completa, com o voto vencido e os argumentos:
+`agent-orchestration/omega/juntas/J-CHK-P1-PR04-aplicabilidade.md`.
+
+**Por que foi a voto antes do código:** o vínculo é **STICKY na criação da ordem de serviço** e **sem
+backfill** (a própria decisão do dono põe re-resolução fora de escopo). Errar congela a vistoria errada
+naquela ordem **para sempre** — ela é preenchida em campo, assinada e vira prova jurídica (PR-03).
+
+1. **`generic` é FALLBACK, não parcela que soma (2×1).** Só entra se NENHUMA fase concreta
+   (coleta/entrega) casou para aquela ordem. Votos: `planejador-mestre` e `critico-adversarial`
+   FALLBACK; `coordenador-de-acessos` IRMÃO (vencido). Razões: cada vistoria a mais é **trabalho real do
+   guincheiro em campo**; vistorias sobrepostas pedindo as mesmas fotos produzem "tudo OK" em série e
+   **degradam o valor probatório de todas**; e a assimetria do arrependimento — FALLBACK→soma é aditivo
+   depois, soma→FALLBACK seria **retroativo** sobre ordens com vistoria já assinada e imutável.
+   **Custo aceito (do voto vencido, registrado §A2):** ação à distância no tempo — o genérico para de se
+   aplicar porque alguém criou uma regra de fase semanas depois, sem ninguém editar a regra genérica.
+   **Mitigação que entrou por causa desse voto:** a resolução devolve `shadowed` (toda regra que casava e
+   perdeu, o genérico preterido inclusive) — sem esse rastro, "o operador ajusta no envio" seria ficção.
+2. **CLIENTE vence SERVIÇO na precedência (3×0, unânime).** Ordem total: **(cliente nomeado > cliente
+   qualquer) → (serviço concreto > tipo > qualquer) → `createdAt` desc → `id` asc.** Razões: o primeiro
+   critério de desempate de `pickApplicableTariff` (`src/modules/tariffs/tariff.repository.ts:158`) — o
+   precedente que a decisão do dono manda ancorar — **já é o cliente**, e o plano original citava o
+   precedente para contrariá-lo; a frase do dono *"serviço concreto > tipo > any(NULL)"* é ordem **dentro
+   do eixo de serviço**, não ranking entre eixos, e **sobrevive intacta como segunda chave** (nenhuma
+   palavra dele é descartada); e a assimetria do erro — cliente-domina coleta prova A MAIS, serviço-domina
+   deixa **o cliente que pagou pela exigência sem a prova contratada**, irrecuperável (não se re-vistoria
+   veículo já entregue).
+3. **A PR-04 vira três fatias** (acertado com o dono): **04a** fundação **INERTE, sem superfície HTTP**
+   (banco + domínio + resolução) → **04b** fecha os 2 bloqueadores → **04c** CRUD + vínculo N:N + sticky +
+   ajuste do operador **tudo junto**, o recurso ligando inteiro. Motivo: publicar tela de regra antes do
+   consumidor é **configurar e nada acontecer** — a doença já registrada em `P-CHK-CHIPS-SEM-CONSUMIDOR`.
+   Por isso a 04a não tem serviço, controller, rota nem permissão nova, e nada em `src/` importa o módulo.
+4. **`custody_yard` NÃO foi reservado no CHECK** (fases aceitas: `collection`/`delivery`/`generic`). O
+   ponto 3 da decisão do dono deixa em aberto se a custódia de pátio é valor do eixo `role` ou um
+   discriminador próprio; reservar agora congelaria a escolha do eixo antes da decisão. Estender é aditivo.
+5. **Pré-requisitos de merge da PR-04b** (não são backlog): `P-CHK-FLUTTER-KIND-COLAPSA` (o enum do app
+   colapsa fase desconhecida em `collection` e pode fazer a tela de comparação produzir **divergência
+   falsa**) e `P-CHK-CUSTODIA-AUTOLINK-SEM-FILTRO` (o AUTO-link do dossiê varre todas as vistorias da
+   ordem, sem filtro, para dentro de prova jurídica — a aplicabilidade multiplica vistorias por ordem).
+6. **`API_CONTRACTS.md` não foi alterado, de propósito:** a fatia não cria, altera nem remove endpoint —
+   a superfície REST fica byte-idêntica e o índice de contratos continua exato. Documentar ali uma
+   capacidade sem endpoint plantaria no documento o mesmo engano ("parece que existe") que esta fatia foi
+   desenhada para evitar. Entra na 04c, com rota de verdade.
+
+**Provas da 04a (execução real medida em 2026-08-10, com as frentes ainda rodando em paralelo):** resolução
+pura **14/14**; repositório em memória **20/20**; estrutura contra o PostgreSQL real **11/11** (cada caso em
+transação com ROLLBACK); repositório Prisma contra o PostgreSQL real **11/11**; `npm run check` verde. A
+guarda de bucket foi provada por **MUTAÇÃO reexecutada de primeira mão**: com `NULLS NOT DISTINCT` a 2ª
+regra curinga do mesmo bucket colide; trocando o índice pelo **padrão do PostgreSQL**, ela **não** colide e
+**duas regras curinga passam a conviver no mesmo bucket** (a ambiguidade que o índice existe para impedir) —
+mutação feita dentro de transação com ROLLBACK, com o índice real reconferido depois. A suíte de **estrutura**
+entrou no job `backend-postgres`; a do **repositório Prisma** ainda **não** entrou (registrado como item em
+aberto na ata — sem isso ela vira pulo em CI e o Postgres não é exercido para o repositório).
