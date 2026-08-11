@@ -339,5 +339,13 @@
     "mergeCommit": null,
     "approvedHead": null,
     "status": "published_per_pr"
+  },
+  {
+    "snapshot_date": "2026-08-11",
+    "version": "CHK-P1-PR-04B",
+    "flutter_tests": "854/854",
+    "flutter_modules": "17/17",
+    "blocks_completed": 146,
+    "description": "CHK P1 PR-04b (lado Flutter) — fase ESTRITA da vistoria: enum com `unknown`; fim do colapso de valor desconhecido em 'coleta' (fabricava divergência falsa na comparação — prova jurídica); `fromLegacyApiValue` preserva os 3 fluxos legados; `getRunByKind` recusa ambiguidade; comparação recusa fase não identificada com mensagem honesta; Drift protege fase conhecida. +15 testes (b123, mutação derruba 8). 835→854/854 (o intervalo inclui os 4 do PR-B FIX-JUNTA reconciliados). Fecha P-CHK-FLUTTER-KIND-COLAPSA, pré-requisito do sticky da aplicabilidade."
   }
 ]

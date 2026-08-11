@@ -1,24 +1,24 @@
 {
-  "snapshot_date": "2026-08-10",
-  "version": "CHK-P1-PR-04A",
+  "snapshot_date": "2026-08-11",
+  "version": "CHK-P1-PR-04B",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-04a — FUNDAÇÃO da aplicabilidade de vistoria, nascendo INERTE e sem superfície HTTP. Tabela nova com índice único parcial por bucket usando NULLS NOT DISTINCT (o coração do determinismo: sem a cláusula, N regras curinga conviveriam e ficaria indefinido qual vistoria o técnico receberia), 3 CHECKs, FKs tenant-first RESTRICT e RLS. Resolução pura compartilhada entre memória e Prisma. DUAS SEMÂNTICAS DECIDIDAS POR JUNTA porque são sticky na criação da ordem e sem backfill: `generic` é FALLBACK (2×1) e CLIENTE vence SERVIÇO (3×0) — neste a junta derrubou o plano, que citava o precedente do Tariff para contrariá-lo. Plano atacado antes do código; 3 frentes com verificação adversarial depois, que pegaram ramo §2.8 sem cobertura, módulo Prisma avaliado no boot, comentário com causalidade falsa e um byte NUL que escondia o arquivo do diff.",
-    "title": "CHECKLIST P1 PR-04a — fundação da aplicabilidade (inerte, com a semântica decidida por junta)",
-    "pr": 345,
-    "merge_commit": "3a3a5098d5eb3a985cc18c2a89d960d10b56d5de",
-    "approved_head": "3a3a5098d5eb3a985cc18c2a89d960d10b56d5de",
+    "block": "CHECKLIST P1 PR-04b — fatia PURAMENTE DEFENSIVA: fecha os dois bloqueadores do sticky da aplicabilidade. Fase estrita no app (fim do palpite 'coleta' que podia fabricar divergência falsa em prova jurídica; 15 testes, mutação derruba 8; Flutter 839→854 sem regressão) + AUTO-link da custódia decidido por junta com desempate verificado no código (2×1×1: varredura mantida — filtrar por tipo quebraria retrocompat e usaria o eixo errado), com teste no Postgres provando que todos os tipos entram no dossiê e duas pendências herdeiras registradas.",
+    "title": "CHECKLIST P1 PR-04b — os dois bloqueadores fechados (um por código, um por decisão registrada)",
+    "pr": 346,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "A vistoria certa para a ordem certa: modelo e resolução prontos e provados contra o banco real, sem ligar nada ainda. As duas decisões que mudariam prova jurídica foram para a junta, não para o meu palpite.",
-    "status_label": "Publicado (mergeado na main)"
+    "summary": "A comparação coleta×entrega deixou de chutar (recusa honesta no lugar de divergência fabricada), e a varredura do dossiê virou decisão de junta registrada em vez de comportamento que ninguém decidiu.",
+    "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 839,
-      "total": 839,
-      "display": "839/839",
-      "note": "PR-04a não toca mobile — carrega 839/839 (§C3.3)."
+      "value": 854,
+      "total": 854,
+      "display": "854/854",
+      "note": "PR-04b: +15 do guard de fase estrita (b123). 839→854, execução real; mutação derruba 8."
     },
     "frontend_smoke_tests": {
       "value": 1112,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 145,
-      "display": "145",
-      "note": "CHK P1 PR-04a (fundação da aplicabilidade). Sobre 144 do #344."
+      "value": 146,
+      "display": "146",
+      "note": "CHK P1 PR-04b (bloqueadores defensivos). Sobre 145 do #345."
     },
     "mobile_backend_contracts": {
       "value": 18,

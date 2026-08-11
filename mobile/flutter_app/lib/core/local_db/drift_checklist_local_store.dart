@@ -111,6 +111,26 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
 
   @override
   Future<void> saveRun(MobileChecklistRun run) async {
+    // A fase (kind) decide o pareamento coleta × entrega da comparação, que
+    // produz o resumo de divergências — prova jurídica do estado do veículo.
+    // `unknown` é "não sei", não uma fase: gravá-lo por cima do valor já
+    // persistido destruiria informação (fase conhecida OU valor futuro cru
+    // que uma versão mais nova do app saberá ler). Por isso, quando a run em
+    // memória chega como `unknown` e a linha já existe, preserva-se o valor
+    // cru do banco (P-CHK-FLUTTER-KIND-COLAPSA).
+    var kindToPersist = run.kind.apiValue;
+    if (run.kind == MobileChecklistRunKind.unknown) {
+      final existing = await _db
+          .customSelect(
+            'SELECT kind FROM checklist_runs WHERE local_id = ? LIMIT 1',
+            variables: [Variable<String>(run.localId)],
+          )
+          .get();
+      if (existing.isNotEmpty) {
+        final raw = existing.first.readNullable<String>('kind');
+        if (raw != null && raw.isNotEmpty) kindToPersist = raw;
+      }
+    }
     await _db.customInsert(
       'INSERT OR REPLACE INTO checklist_runs '
       '(local_id, server_id, tenant_id, checklist_id, work_order_id, '
@@ -130,7 +150,7 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
         Variable<int>(run.completedAt?.millisecondsSinceEpoch),
         Variable<String>(run.syncStatus.name),
         Variable<String>(json.encode(_answersToJson(run.answers))),
-        Variable<String>(run.kind.apiValue),
+        Variable<String>(kindToPersist),
       ],
     );
   }
@@ -321,6 +341,11 @@ class DriftChecklistLocalStore implements ChecklistLocalStore {
           : null,
       syncStatus: SyncStatus.values.byName(row.read<String>('sync_status')),
       answers: _answersFromJson(answersJson),
+      // Mapeamento ESTRITO de propósito: um valor futuro gravado por uma
+      // versão mais nova do app (ex.: fase do eixo `role`) vira `unknown` —
+      // nunca crasha nem colapsa em coleta. A coluna é NOT NULL DEFAULT
+      // 'collection' (migração v8), então as linhas legadas continuam lendo
+      // coleta explicitamente (P-CHK-FLUTTER-KIND-COLAPSA).
       kind: MobileChecklistRunKind.fromApiValue(
         row.readNullable<String>('kind'),
       ),

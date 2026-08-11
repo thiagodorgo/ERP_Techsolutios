@@ -187,6 +187,16 @@ export class PrismaImpoundRepository implements ImpoundRepository {
   // Ω-VID PR-05 — vincula (AUTO) todos os ChecklistRun da OS (related_entity_type='work_order',
   // related_entity_id=<serviceOrderId> — o índice já existe) ao processo recém-aberto. Idempotente pelo upsert
   // na unique (tenant, process, run); tenant-escopado (RLS + WHERE tenant_id) ⇒ nunca linka run de outro tenant.
+  // SEM FILTRO DE TIPO/FASE, DE PROPÓSITO (CHK P1 PR-04b — junta J-CHK-P1-PR04B-autolink, opção A; fecha
+  // P-CHK-CUSTODIA-AUTOLINK-SEM-FILTRO): a fase da vistoria vive na REGRA de aplicabilidade (`role`), não em
+  // checklist_templates.type — filtrar pelo tipo do modelo seria construir no eixo errado e excluiria do dossiê a
+  // única prova do estado do veículo quando a organização usa modelo `custom`/`technical_evidence` na coleta
+  // (work_orders.checklist_id aceita QUALQUER tipo hoje; filtrar quebraria OSs existentes). Vistoria FALTANDO em
+  // prova jurídica é estritamente pior que vistoria sobrando: o elo é NAVEGACIONAL (fora da cadeia de hash) e o
+  // erro de sobra é aditivo/curável (filtro pela fase REAL quando a run ganhar proveniência — PR-04c), enquanto
+  // dossiê incompleto em litígio não tem conserto retroativo. Este caminho só ADICIONA vínculo — nunca remove
+  // (o re-tick do sweep não flapa). Guard de regressão + prova por mutação:
+  // tests/impound-checklist-link-autolink.test.ts.
   // TRADE-OFF INTENCIONAL (BAIXA da junta PR-05): este AUTO-link (elo NAVEGACIONAL) roda na MESMA tx da abertura
   // de custódia (efeito LEGAL) — uma falha aqui reverte a abertura inteira. É deliberado: preferimos ATOMICIDADE/
   // ZERO-ÓRFÃO (nunca um link pendurado sem processo, nem processo sem o link esperado) à disponibilidade do

@@ -190,7 +190,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => ChecklistRunScreen(
           checklistId: state.pathParameters['checklistId']!,
           workOrderId: state.uri.queryParameters['workOrderId'] ?? '',
-          kind: MobileChecklistRunKind.fromApiValue(
+          // As navegações do guincheiro (OS/execução/checklists disponíveis)
+          // nunca passam `?kind=` — ausência é legado legítimo e significa
+          // coleta. Valor PRESENTE mas não reconhecido vira `unknown`, nunca
+          // um palpite de coleta (P-CHK-FLUTTER-KIND-COLAPSA).
+          kind: MobileChecklistRunKind.fromLegacyApiValue(
             state.uri.queryParameters['kind'],
           ),
         ),
@@ -366,7 +370,9 @@ final appRouter = GoRouter(
       builder: (context, state) => ChecklistRunScreen(
         checklistId: state.pathParameters['checklistId']!,
         workOrderId: state.uri.queryParameters['workOrderId'] ?? '',
-        kind: MobileChecklistRunKind.fromApiValue(
+        // Ausência de `?kind=` é legado legítimo (= coleta); valor presente
+        // e não reconhecido vira `unknown` (P-CHK-FLUTTER-KIND-COLAPSA).
+        kind: MobileChecklistRunKind.fromLegacyApiValue(
           state.uri.queryParameters['kind'],
         ),
       ),

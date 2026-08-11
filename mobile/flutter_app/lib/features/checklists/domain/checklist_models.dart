@@ -65,22 +65,48 @@ enum MobileChecklistRunStatus {
 /// Distingue os dois runs de uma mesma OS de guincho (prefixos `c_`/`e_`).
 enum MobileChecklistRunKind {
   collection,
-  delivery;
+  delivery,
+
+  /// Fase que ESTA versão do app não reconhece (valor futuro do backend —
+  /// ex.: o eixo `role` da aplicabilidade, `generic`). Existe para que valor
+  /// desconhecido NUNCA colapse em coleta: o resumo de divergências
+  /// coleta × entrega vira prova jurídica do estado do veículo, e duas runs
+  /// classificadas por palpite como coleta tornariam a escolha da run
+  /// não-determinística — divergência FABRICADA (P-CHK-FLUTTER-KIND-COLAPSA).
+  unknown;
 
   String get apiValue => switch (this) {
     MobileChecklistRunKind.collection => 'collection',
     MobileChecklistRunKind.delivery => 'delivery',
+    // Marcador local de "não reconhecido". Nunca é enviado ao backend como
+    // fase real, e a persistência local nunca o grava por cima de uma fase
+    // conhecida (guarda em DriftChecklistLocalStore.saveRun).
+    MobileChecklistRunKind.unknown => 'unknown',
   };
 
   String get label => switch (this) {
     MobileChecklistRunKind.collection => 'Coleta',
     MobileChecklistRunKind.delivery => 'Entrega',
+    MobileChecklistRunKind.unknown => 'Fase não identificada',
   };
 
+  /// Mapeia APENAS os valores conhecidos; qualquer outro — inclusive null —
+  /// vira [unknown], nunca um palpite de coleta (P-CHK-FLUTTER-KIND-COLAPSA).
+  /// Fluxos legados em que a AUSÊNCIA do valor é legítima (rota de run sem
+  /// `?kind=`) usam [fromLegacyApiValue].
   static MobileChecklistRunKind fromApiValue(String? v) => switch (v) {
+    'collection' => MobileChecklistRunKind.collection,
     'delivery' => MobileChecklistRunKind.delivery,
-    _ => MobileChecklistRunKind.collection,
+    _ => MobileChecklistRunKind.unknown,
   };
+
+  /// Uso EXCLUSIVO dos pontos onde `null` é legado legítimo: as navegações
+  /// antigas do guincheiro (OS → checklist) nunca passaram `?kind=` porque a
+  /// coleta era a única fase que existia — ausência do parâmetro preserva o
+  /// comportamento histórico (coleta). Valor PRESENTE mas não reconhecido
+  /// segue a regra estrita e vira [unknown].
+  static MobileChecklistRunKind fromLegacyApiValue(String? v) =>
+      v == null ? MobileChecklistRunKind.collection : fromApiValue(v);
 }
 
 class MobileChecklistFieldOption {
