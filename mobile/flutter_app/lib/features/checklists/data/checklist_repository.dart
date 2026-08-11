@@ -63,6 +63,30 @@ class ChecklistRunResolution {
       status == ChecklistRunResolutionStatus.awaitingDispatch;
 }
 
+/// Resultado do diagnóstico de fase de [ChecklistRepository.lookupRunByKind].
+/// Separa "fase inexistente" de "fase ambígua" para que a tela de comparação
+/// recuse com mensagem honesta em vez de esconder a ambiguidade atrás de um
+/// null genérico (P-CHK-FLUTTER-KIND-COLAPSA).
+class ChecklistRunKindLookup {
+  const ChecklistRunKindLookup({
+    required this.run,
+    required this.isAmbiguous,
+    required this.hasUnknownKindRun,
+  });
+
+  /// A run da fase pedida quando existe EXATAMENTE uma; null caso contrário.
+  final MobileChecklistRun? run;
+
+  /// `true` quando a OS tem MAIS de uma run da fase pedida — escolher uma em
+  /// silêncio poderia confrontar a run errada na comparação.
+  final bool isAmbiguous;
+
+  /// `true` quando a OS tem alguma run cuja fase esta versão do app não
+  /// reconhece ([MobileChecklistRunKind.unknown]) — o pareamento
+  /// coleta × entrega deixa de ser confiável.
+  final bool hasUnknownKindRun;
+}
+
 class ChecklistRepository extends ChangeNotifier {
   ChecklistRepository({
     required BootstrapSession session,
@@ -424,14 +448,56 @@ class ChecklistRepository extends ChangeNotifier {
     return (serverId != null && serverId.isNotEmpty) ? serverId : null;
   }
 
-  /// Retorna o run de uma fase específica (coleta/entrega) da OS, se houver.
-  Future<MobileChecklistRun?> getRunByKind({
+  /// Diagnóstico da fase (coleta/entrega) na OS. Distingue "não existe" de
+  /// "mais de uma run da MESMA fase" (ambiguidade real) e expõe se a OS tem
+  /// run de fase não identificada — a comparação coleta × entrega produz o
+  /// resumo de divergências que vira prova jurídica do estado do veículo,
+  /// então aqui nunca se devolve palpite (P-CHK-FLUTTER-KIND-COLAPSA).
+  Future<ChecklistRunKindLookup> lookupRunByKind({
     required String workOrderId,
     required MobileChecklistRunKind kind,
   }) async {
     final runs = await _localStore.loadRunsForWorkOrder(workOrderId);
-    return runs.where((r) => r.kind == kind).firstOrNull;
+    final hasUnknownKindRun = runs.any(
+      (r) => r.kind == MobileChecklistRunKind.unknown,
+    );
+    // `unknown` não é uma fase — é a ausência de identificação. Não casa com
+    // coleta, com entrega, nem consigo mesmo: duas runs "unknown" podem ser
+    // fases DIFERENTES que esta versão do app não sabe distinguir.
+    if (kind == MobileChecklistRunKind.unknown) {
+      return ChecklistRunKindLookup(
+        run: null,
+        isAmbiguous: false,
+        hasUnknownKindRun: hasUnknownKindRun,
+      );
+    }
+    final matches = runs.where((r) => r.kind == kind).toList();
+    // Mais de uma run da mesma fase conhecida (ex.: vínculo manual do
+    // operador somado ao checklist legado da OS) é ambiguidade real:
+    // escolher em silêncio poderia confrontar a entrega contra a run errada
+    // e fabricar divergência. Devolve "ambíguo" e a UI recusa comparar.
+    if (matches.length > 1) {
+      return ChecklistRunKindLookup(
+        run: null,
+        isAmbiguous: true,
+        hasUnknownKindRun: hasUnknownKindRun,
+      );
+    }
+    return ChecklistRunKindLookup(
+      run: matches.firstOrNull,
+      isAmbiguous: false,
+      hasUnknownKindRun: hasUnknownKindRun,
+    );
   }
+
+  /// Retorna o run de uma fase específica (coleta/entrega) da OS, se houver
+  /// EXATAMENTE um. Devolve null quando a fase não existe, quando é ambígua
+  /// (>1 run da mesma fase) ou quando `kind` é [MobileChecklistRunKind.unknown]
+  /// — nunca um palpite por ordem de inserção.
+  Future<MobileChecklistRun?> getRunByKind({
+    required String workOrderId,
+    required MobileChecklistRunKind kind,
+  }) async => (await lookupRunByKind(workOrderId: workOrderId, kind: kind)).run;
 
   /// Registra divergências entre coleta e entrega e enfileira para sync.
   /// A divergência é um FLAG de estado da run no backend (component_id +

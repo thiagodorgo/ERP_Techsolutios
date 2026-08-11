@@ -1769,7 +1769,7 @@ antes do PR-03.
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
 
-## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **BLOQUEIA A PR-04b**
+## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
 
 `MobileChecklistRunKind` no app só conhece `collection|delivery`, e `fromApiValue` colapsa **qualquer valor
 desconhecido em `collection`** (`mobile/flutter_app/lib/features/checklists/domain/checklist_models.dart:80-84`,
@@ -1809,4 +1809,45 @@ caminho** do AUTO-link — este é exatamente o lado que o plano original não o
 
 **Fechar ANTES da PR-04b:** decidir se `autoLinkChecklistRuns` passa a filtrar por fase/tipo ou continua
 varrendo tudo, com voto de junta registrado. A PR-04a não é afetada (nasce inerte).
-- status: ABERTA — pré-requisito de merge da PR-04b.
+- status: **DECIDIDA (2026-08-11, junta `J-CHK-P1-PR04B-autolink`, 2×1×1: VARREDURA MANTIDA — SEM
+  filtro).** Registro honesto: a pendência **não** foi "resolvida com filtro" — a decisão foi **manter**
+  o AUTO-link varrendo todas as vistorias da OS. Empate 1×1×1 na 1ª rodada (C `coordenador-de-acessos` ×
+  B `agente-dba-guardiao` × A `critico-adversarial`) desfeito pelo `validador-mestre` pela A, com dois
+  fatos verificados no código: (i) nada acopla `role` a `checklist_templates.type` (migração
+  `20260864000000` + módulo de aplicabilidade) — o tipo do modelo é o eixo ERRADO para inferir fase;
+  (ii) `work_orders.checklist_id`/`checklist.validator.ts` não restringem tipo — filtrar mudaria
+  comportamento de OSs existentes (run única `custom`/`technical_evidence` auto-linkada hoje deixaria de
+  entrar), o que é DESQUALIFICADOR numa fatia puramente defensiva. O que os votos vencidos têm de
+  verdadeiro virou pendência: `P-CHK-AUTOLINK-FASE-REAL` e `P-IMPOUND-LINK-SEM-UNLINK` (abaixo). Ata:
+  `agent-orchestration/omega/juntas/J-CHK-P1-PR04B-autolink.md`.
+
+## P-CHK-AUTOLINK-FASE-REAL (2026-08-11 — junta `J-CHK-P1-PR04B-autolink`, nascida da decisão 2×1×1)
+
+A junta manteve o AUTO-link da custódia varrendo **todas** as vistorias da OS, sem filtro (opção A),
+porque o único eixo disponível hoje — `checklist_templates.type` — é o eixo **errado**: a fase da
+vistoria vive na REGRA de aplicabilidade (`role`), e nada acopla `role` a tipo de modelo (verificado na
+migração `20260864000000` e no módulo de aplicabilidade — uma regra `role=collection` pode apontar para
+template `custom`). A preocupação legítima dos votos vencidos (ruído em dossiê jurídico, lido por
+auditor/autoridade) **não foi refutada** — foi deferida para o eixo certo.
+
+**Fechar quando a run ganhar proveniência de fase (PR-04c):** a junta revisita o filtro do AUTO-link
+**pelo eixo real** (a fase com que a run nasceu, viajando na própria run — não inferida do tipo do
+modelo). **Compromisso registrado na ata: qualquer filtro futuro é ADITIVO, NUNCA RETROATIVO** — passa a
+valer para vínculos novos; nenhum vínculo AUTO já criado é removido do dossiê (dossiê jurídico não perde
+história; ver `P-IMPOUND-LINK-SEM-UNLINK`).
+- status: ABERTA (alvo: PR-04c ou posterior, quando a proveniência de fase existir na run; não bloqueia
+  a PR-04b).
+
+## P-IMPOUND-LINK-SEM-UNLINK (2026-08-11 — junta `J-CHK-P1-PR04B-autolink`, fato comum aos 3 votos)
+
+**Não existe UNLINK de vistoria no dossiê de custódia** — verificado de forma independente pelos três
+votantes (grep por unlink/deleteLink/removeLink em `src/modules/impound` → zero). O vínculo (AUTO ou
+MANUAL) é **porta de mão única**: o que entra no dossiê, nenhum papel consegue tirar. Foi essa
+assimetria que carregou os votos B e C (erro de sobra é irreversível; erro de falta é corrigível em 1
+ação pela rota manual); a decisão pela A a converte em pendência explícita em vez de deixá-la implícita.
+
+**Remédio futuro é MARCAÇÃO ADITIVA, não exclusão:** curadoria/anotação sobre o vínculo (ex.: "não
+pertinente à custódia", com autor e data, visível na aba do dossiê), preservando o histórico do artefato
+jurídico — **nunca** delete de link. Compromisso da ata: aditivo, nunca retroativo.
+- status: ABERTA (não bloqueia a PR-04b; priorizar quando houver demanda de curadoria do dossiê — e
+  obrigatoriamente junto de qualquer revisita ao filtro em `P-CHK-AUTOLINK-FASE-REAL`).

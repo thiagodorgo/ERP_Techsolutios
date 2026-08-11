@@ -45,15 +45,42 @@ class _ChecklistComparisonScreenState
     if (schema == null) {
       throw StateError('Schema nao encontrado: ${widget.checklistId}');
     }
-    final collection = await repo.getRunByKind(
+    final collectionLookup = await repo.lookupRunByKind(
       workOrderId: widget.workOrderId,
       kind: MobileChecklistRunKind.collection,
     );
-    final delivery = await repo.getRunByKind(
+    final deliveryLookup = await repo.lookupRunByKind(
       workOrderId: widget.workOrderId,
       kind: MobileChecklistRunKind.delivery,
     );
-    final divergences = (collection != null && delivery != null)
+    // O resumo de divergências vira prova jurídica do estado do veículo.
+    // Com fase ambígua (>1 vistoria da mesma fase) ou com vistoria de fase
+    // não identificada na OS (que pode SER uma coleta/entrega que esta
+    // versão do app não sabe ler), qualquer pareamento seria palpite — e
+    // palpite aqui fabrica divergência falsa. A tela RECUSA comparar
+    // (P-CHK-FLUTTER-KIND-COLAPSA).
+    final String? refusalMessage;
+    if (collectionLookup.isAmbiguous) {
+      refusalMessage =
+          'Não foi possível identificar qual vistoria é a de coleta. '
+          'Abra cada vistoria individualmente.';
+    } else if (deliveryLookup.isAmbiguous) {
+      refusalMessage =
+          'Não foi possível identificar qual vistoria é a de entrega. '
+          'Abra cada vistoria individualmente.';
+    } else if (collectionLookup.hasUnknownKindRun) {
+      refusalMessage =
+          'Esta ordem de serviço tem uma vistoria cuja fase não pôde ser '
+          'identificada. Atualize o aplicativo ou abra cada vistoria '
+          'individualmente.';
+    } else {
+      refusalMessage = null;
+    }
+    final collection = collectionLookup.run;
+    final delivery = deliveryLookup.run;
+    final canCompare =
+        refusalMessage == null && collection != null && delivery != null;
+    final divergences = canCompare
         ? compareChecklistRuns(
             schema: schema,
             collection: collection,
@@ -61,8 +88,9 @@ class _ChecklistComparisonScreenState
           )
         : <ChecklistDivergence>[];
     return _ComparisonData(
-      hasBothRuns: collection != null && delivery != null,
-      deliveryRunId: delivery?.localId,
+      hasBothRuns: canCompare,
+      refusalMessage: refusalMessage,
+      deliveryRunId: canCompare ? delivery.localId : null,
       divergences: divergences,
     );
   }
@@ -110,6 +138,18 @@ class _ChecklistComparisonScreenState
   }
 
   Widget _body(BuildContext context, _ComparisonData data) {
+    // Recusa honesta ANTES do estado "faltam vistorias": com ambiguidade,
+    // dizer "é necessário ter coleta e entrega" mentiria — as vistorias
+    // existem; o que falta é certeza de qual é qual.
+    final refusal = data.refusalMessage;
+    if (refusal != null) {
+      return EmptyState(
+        key: const Key('comparison-refused'),
+        icon: Icons.help_outline,
+        title: 'Não foi possível comparar',
+        message: refusal,
+      );
+    }
     if (!data.hasBothRuns) {
       return const EmptyState(
         icon: Icons.compare_arrows_outlined,
@@ -142,7 +182,7 @@ class _ChecklistComparisonScreenState
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          '${data.divergences.length} divergencia(s) encontrada(s)',
+          '${data.divergences.length} divergência(s) encontrada(s)',
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: 8),
@@ -214,10 +254,16 @@ class _ComparisonData {
   const _ComparisonData({
     required this.hasBothRuns,
     required this.divergences,
+    this.refusalMessage,
     this.deliveryRunId,
   });
 
   final bool hasBothRuns;
+
+  /// Não-nulo quando a comparação foi RECUSADA (fase ambígua ou vistoria de
+  /// fase não identificada na OS) — a UI mostra a mensagem em vez de parear
+  /// vistorias por palpite (P-CHK-FLUTTER-KIND-COLAPSA).
+  final String? refusalMessage;
   final String? deliveryRunId;
   final List<ChecklistDivergence> divergences;
 }
