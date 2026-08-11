@@ -6,7 +6,7 @@
   "release": {
     "block": "CHECKLIST P1 PR-04b — fatia PURAMENTE DEFENSIVA: fecha os dois bloqueadores do sticky da aplicabilidade. Fase estrita no app (fim do palpite 'coleta' que podia fabricar divergência falsa em prova jurídica; 15 testes, mutação derruba 8; Flutter 839→854 sem regressão) + AUTO-link da custódia decidido por junta com desempate verificado no código (2×1×1: varredura mantida — filtrar por tipo quebraria retrocompat e usaria o eixo errado), com teste no Postgres provando que todos os tipos entram no dossiê e duas pendências herdeiras registradas.",
     "title": "CHECKLIST P1 PR-04b — os dois bloqueadores fechados (um por código, um por decisão registrada)",
-    "pr": null,
+    "pr": 346,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",

@@ -6,7 +6,7 @@
   "release": {
     "block": "CHK-P1-PR-04B",
     "title": "PR-04b Flutter — fase estrita: fim do palpite 'coleta' que fabricava divergência falsa",
-    "pr": null,
+    "pr": 346,
     "mergeCommit": null,
     "approvedHead": null,
     "branch": "feat/chk-p1-pr04b-bloqueadores",
