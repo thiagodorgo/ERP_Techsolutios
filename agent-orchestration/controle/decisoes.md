@@ -1188,3 +1188,35 @@ regra curinga do mesmo bucket colide; trocando o índice pelo **padrão do Postg
 mutação feita dentro de transação com ROLLBACK, com o índice real reconferido depois. A suíte de **estrutura**
 entrou no job `backend-postgres`; a do **repositório Prisma** ainda **não** entrou (registrado como item em
 aberto na ata — sem isso ela vira pulo em CI e o Postgres não é exercido para o repositório).
+
+---
+
+## D-PLANEJADOR-MODELO-FABLE (2026-08-11) — o `planejador-mestre` roda em Fable, obrigatório na revalidação
+
+**Decisão do dono (verbatim):** *"o planejador deve usar o fable por default, quando ha correção de codigo e o
+fluxo volta para o planejador, na validação desse codigo o fable é o modelo obrigatorio"*.
+
+**O que fica valendo.** O papel `planejador-mestre` executa em **Fable por padrão**, independente do modelo da
+sessão. E quando a junta reprova, o código é corrigido e o fluxo **volta para ele** — o replanejamento do
+protocolo de dificuldade (§C7.4) e a **validação do código corrigido** — o Fable é **obrigatório**, não
+preferência.
+
+**Por que o ponto de revalidação é o crítico.** É onde um plano fraco reintroduz o defeito que a junta acabou
+de pegar, e este bloco já viu isso: no PR-04a o plano propôs "serviço domina cliente" **citando o precedente
+do Tariff para contrariá-lo** — o primeiro critério de `pickApplicableTariff` é justamente o cliente. Só a
+junta pegou; o plano teria congelado a vistoria errada em toda ordem de serviço, sticky e sem backfill.
+
+**Onde a regra vive (para não depender de quem invoca lembrar):**
+- `.claude/agents/planejador-mestre.md` — frontmatter `model: fable` + nota no corpo. Vale para toda chamada
+  de `Agent`/`Workflow` que use `subagent_type: planejador-mestre`.
+- `.agents/agents/planejador-mestre.md` — espelho Codex (§D-INTEROP-CLAUDE-CODEX).
+- `CLAUDE.md` §C7.6 e `AGENTS.md` §C7.6 — a regra comum, espelhada no mesmo commit.
+
+**Correção de raiz junto:** `scripts/sync-agent-agents.mjs` **apagava** a linha `model:` ao espelhar (ela era
+tratada como "linha Claude-específica", junto de `tools:`). Isso foi observado na primeira aplicação desta
+decisão: o espelho nasceu sem a regra. `tools:` continua saindo (é mecanismo sem equivalente no Codex), mas
+`model:` **é regra de execução do papel** e agora sobrevive à sincronização — senão o contrato se perderia em
+silêncio a cada `sync`.
+
+**Exceção única:** indisponibilidade do modelo. Nesse caso a junta segue com o modelo disponível e o desvio
+vira **nota explícita na ata** — nunca silêncio.
