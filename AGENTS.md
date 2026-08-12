@@ -348,6 +348,17 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    decisão de junta + PD. Rodadas específicas podem somar uma parada temporária, ex.: falta de credencial/
    pagamento/domínio externo na trilha de infra — ver D-SAN-AUTONOMIA em `controle/decisoes.md`.)
 
+6. **Modelo do `planejador-mestre` (decisão do dono, 2026-08-11 — `D-PLANEJADOR-MODELO-FABLE`).** O
+   `planejador-mestre` roda em **Fable por padrão**. E, quando houve **correção de código e o fluxo volta
+   para ele** — o replanejamento do protocolo de dificuldade (§C7.4) e a **validação do código corrigido** —
+   o **Fable é OBRIGATÓRIO**, não preferência: é o passo em que um plano fraco reintroduz o defeito que a
+   junta acabou de pegar, e este bloco já viu isso acontecer (o plano do PR-04a citava o precedente do
+   Tariff para contrariá-lo, e só a junta pegou). Fixado no frontmatter `model:` de
+   `.claude/agents/planejador-mestre.md` (e no espelho `.agents/agents/`), para valer **independente do
+   modelo da sessão**; quem invoca não precisa lembrar. Chamada de `Agent`/`Workflow` que passe `model`
+   diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
+   vira nota no registro da junta.
+
 ---
 
 ## 8. GitHub Flow & governança de commits

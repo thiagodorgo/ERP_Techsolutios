@@ -7,7 +7,7 @@
 // agentes são definições do Claude Code (`.claude/agents/*.md`). Este script os espelha para
 // `.agents/agents/*.md` num formato que o Codex consome: MESMO corpo (o system-prompt do papel,
 // VERBATIM — os poderes de VETO/adversarial não podem sofrer drift), frontmatter portátil (name +
-// description; as linhas Claude-específicas `tools:`/`model:` saem) e um PREÂMBULO de orientação Codex.
+// description + `model:` quando o papel o fixa; só `tools:` sai) e um PREÂMBULO de orientação Codex.
 // Se o Codex não puder criar subagentes isolados, ele EMULA o papel adotando o arquivo como seu
 // system-prompt e registra o voto na ata (docs/juntas/). Sem symlink. NÃO toca código do ERP.
 //
@@ -45,10 +45,14 @@ function transform(name, rawInput) {
   }
   const fm = m[1];
   const body = m[2].replace(/^\n+/, '');
-  // remove linhas Claude-específicas (tools:/model:), mantém name/description/o resto
+  // Remove `tools:` — a lista de ferramentas é mecanismo do Claude Code e não tem equivalente no Codex.
+  // PRESERVA `model:`: ele não é detalhe de ferramenta, é REGRA DE EXECUÇÃO do papel. O `planejador-mestre`
+  // roda em Fable por contrato (D-PLANEJADOR-MODELO-FABLE), obrigatoriamente na revalidação de código
+  // corrigido; se a sincronização apagasse a linha, o espelho Codex perderia a regra EM SILÊNCIO a cada
+  // execução — foi exatamente o que aconteceu na primeira tentativa de aplicar a decisão.
   const cleanedFm = fm
     .split('\n')
-    .filter((line) => !/^\s*(tools|model)\s*:/.test(line))
+    .filter((line) => !/^\s*tools\s*:/.test(line))
     .join('\n')
     .trim();
   return `---\n${cleanedFm}\n---\n\n${PREAMBLE(name)}\n\n${body}`.replace(/\n+$/, '\n');
