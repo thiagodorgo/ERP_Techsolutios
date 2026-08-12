@@ -1,0 +1,6 @@
+Exit code: 0
+Wall time: 167.6 seconds
+Output:
+Analyzing flutter_app...                                        
+No issues found! (ran in 159.3s)
+

@@ -1,0 +1,28 @@
+# Ω6R — censo instrumentado de endpoints
+
+- Arquivos de rota Express encontrados: 70
+- Chamadas literais `router.get|post|put|patch|delete`: 403
+- Ocorrências de marcadores de auth/authz no código: 479
+- Ocorrências de marcadores amplos de parsing/validação no backend/frontend: 2.111
+
+## Método e limite
+
+O total 403 é uma contagem lexical reprodutível por `rg` em `*.routes.ts|*.router.ts`. Auth e validação não são inferíveis pela proximidade textual porque grande parte é aplicada por `router.use`, controllers e validators compartilhados; por isso, esta varredura não atribui falsamente percentuais “verificados”. A classificação endpoint a endpoint é responsabilidade da matriz transversal A2/A5 e só entra no KPI final após leitura manual.
+
+## Amostra inicial
+
+```text
+src/modules/branches/branch.routes.ts:31 GET
+src/modules/branches/branch.routes.ts:39 POST
+src/modules/branches/branch.routes.ts:47 GET
+src/modules/branches/branch.routes.ts:55 PATCH
+src/modules/authority/authority-portal.routes.ts:29 POST
+src/modules/authority/authority-portal.routes.ts:33 POST
+src/modules/authority/authority-portal.routes.ts:38 POST
+src/modules/authority/authority-portal.routes.ts:43 GET
+src/modules/authority/authority-portal.routes.ts:48 POST
+src/modules/authority/authority-credential.routes.ts:32 GET
+src/modules/authority/authority-credential.routes.ts:39 POST
+src/modules/dashboard/dashboard.routes.ts:29 GET
+src/modules/field-location/field-location.routes.ts:31 POST
+```
