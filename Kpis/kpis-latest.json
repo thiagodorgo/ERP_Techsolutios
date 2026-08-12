@@ -7,11 +7,11 @@
     "block": "FIX B-127 — a linha do tempo remota da ordem de serviço no app NUNCA funcionou: 5 incompatibilidades independentes com o backend (envelope, nomes de campo, tenant que o DTO corretamente não emite, vocabulário de tipo, e um catch silencioso que escondia tudo caindo no histórico local). Achado do critico-adversarial ao revisar o plano do PR-04c; era pré-requisito dele, porque o plano prometia visibilidade em campo por um canal que não chegava.",
     "title": "FIX B-127 — a linha do tempo do app volta a mostrar o que o servidor registrou",
     "pr": 351,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "7e60b90455b14cdea92c0e1708639ce6c3101638",
+    "approved_head": "7e60b90455b14cdea92c0e1708639ce6c3101638",
     "status": "published_per_pr",
     "summary": "Cinco defeitos empilhados faziam a tela parecer saudável exibindo um histórico truncado. Agora o que o servidor registra chega ao técnico — e quando não chegar, o app avisa em vez de fingir.",
-    "status_label": "Entregue (aguardando merge do PR corrente)"
+    "status_label": "Publicado (mergeado na main)"
   },
   "metrics": {
     "flutter_tests": {
