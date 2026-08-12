@@ -14,7 +14,7 @@ os percentuais mobile quando uma entrega mexe em Flutter/mobile.
 3. `mvp_demo`/`mvp_vendavel` so mudam quando o PR mover escopo, com 1 linha de justificativa no history.
 4. Blocos `B-xxxK`/`B-xxxF` deixam de ser etapa obrigatoria (podem virar resumo de marco). Os campos `pr`,
    `merge_commit`, `approved_head` referem-se ao **PR corrente**; `status: "published_per_pr"`.
-5. Se a entrega mexeu em Flutter/mobile, atualizar `mobile/flutter_app/Kpis/*` **e** refletir em `Kpis/*`;
+5. Se a entrega mexeu em Flutter/mobile, a métrica `flutter_tests` entra aqui mesmo — o painel é único desde 2026-08-12 (`D-KPI-DUPLA-REVOGADA`);
    fora do mobile, so `Kpis/*`; nos dois, ambos. Se existir `index.html`, atualizar tambem o HTML.
 
 ## Política de limpeza pós-validação
@@ -26,11 +26,11 @@ Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geracao d
 Existem dois conjuntos de KPIs:
 
 - `Kpis/`: KPIs gerais/raiz do projeto.
-- `mobile/flutter_app/Kpis/`: KPIs especificos do app Flutter.
+- (histórico) `mobile/flutter_app/Kpis/`: painel próprio do app Flutter, APAGADO em 2026-08-12 — manter dois em paridade manual só multiplicava o risco de divergirem.
 
 Regras obrigatorias:
 
-- Mexeu no Flutter/mobile: atualizar `mobile/flutter_app/Kpis/*` e refletir os
+- Mexeu no Flutter/mobile: atualizar `Kpis/*` (painel único) e refletir os
   percentuais mobile em `Kpis/*`.
 - Mexeu fora do mobile: atualizar `Kpis/*`.
 - Mexeu nos dois: atualizar os dois conjuntos.

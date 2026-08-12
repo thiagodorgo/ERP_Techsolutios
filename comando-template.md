@@ -75,7 +75,7 @@
 - `<caminho/exato/**>`
 - `<outro/caminho/arquivo.ts>`
 - `agent-orchestration/**`  <!-- registro do bloco -->
-- `Kpis/**` <!-- + `mobile/flutter_app/Kpis/**` se o PR tocar mobile (§C3.2) -->
+- `Kpis/**` <!-- painel ÚNICO: a política dupla foi revogada em 2026-08-12 (§C3.2) -->
 
 ## Escopo PROIBIDO
 
@@ -121,7 +121,6 @@ npm test
 npm run build
 node --test --import tsx tests/<contrato>.test.ts
 node --check Kpis/app.js
-node --check mobile/flutter_app/Kpis/app.js
 git diff --check
 ```
 
@@ -152,10 +151,10 @@ git diff --check
 
 <!-- Política KPI-POR-PR permanente (D-KPI-PER-PR): todo PR que altere código/teste/escopo
      ATUALIZA os KPIs NO MESMO PR, com contagem de EXECUÇÃO REAL (nunca copiada do bloco
-     anterior). Toca mobile → atualizar TAMBÉM mobile/flutter_app/Kpis/*. -->
+     anterior). Toca mobile → a métrica flutter_tests vive no MESMO painel. -->
 
 - Atualizar: `Kpis/kpis-latest.json` · `Kpis/kpis-history.*` (append) · `Kpis/index.html`.
-- Se o PR toca Flutter/mobile: atualizar **também** `mobile/flutter_app/Kpis/*` (política dupla).
+- Se o PR toca Flutter/mobile: a métrica `flutter_tests` entra em `Kpis/*` — painel único (§C3.2).
 - Contagens reais deste PR: backend `<n>` · smoke `<n>` · flutter `<n>` · blocks `<n>`.
 - `mvp_demo`/`mvp_vendavel` só mudam se o PR **mover escopo** (+1 linha de justificativa no history).
 - `status: "published_per_pr"`; `pr` preenchido após `gh pr create`;
@@ -270,7 +269,6 @@ npm test
 npm run build
 node --test --import tsx tests/work-orders.test.ts
 node --check Kpis/app.js
-node --check mobile/flutter_app/Kpis/app.js
 git diff --check
 ```
 

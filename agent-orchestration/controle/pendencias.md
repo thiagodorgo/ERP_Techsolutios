@@ -1851,3 +1851,22 @@ pertinente à custódia", com autor e data, visível na aba do dossiê), preserv
 jurídico — **nunca** delete de link. Compromisso da ata: aditivo, nunca retroativo.
 - status: ABERTA (não bloqueia a PR-04b; priorizar quando houver demanda de curadoria do dossiê — e
   obrigatoriamente junto de qualquer revisita ao filtro em `P-CHK-AUTOLINK-FASE-REAL`).
+
+## P-WORKTREE-INTEROP-ORFAO (2026-08-12 — achado do `porteiro-pos-merge` no gate do #351)
+
+Existe um worktree em `C:/tmp/ERP_Techsolutios-agent-interoperability` na branch
+`chore/agent-interoperability`, que **já está mergeada na `main`** (`git branch --merged origin/main` a
+lista) — mas ele tem **20 arquivos com alterações NÃO commitadas** (411 inserções / 123 remoções), incluindo
+`.claude/skills/erp-techsolutions-code-auditor/**`, `agent-orchestration/codex/log-execucao.md` e
+`agent-orchestration/docs/status-geral.md`. O commit da ponta é de junho (`f7219ab`, PR #270).
+
+**Não removi de propósito.** A limpeza §C5 apaga branch mergeada, e o reflexo seria remover o worktree junto
+— mas ele não é resíduo: é trabalho vivo de alguém. Horas antes, nesta mesma sessão, restaurei por reflexo 7
+arquivos que o dono tinha apagado deliberadamente; a guarda do `post-merge-cleanup.sh` nasceu dessa lição e
+diz literalmente *"não reverta por reflexo"*. Vale aqui também: apagar um worktree com 20 arquivos alterados
+seria a mesma falha, com prejuízo maior.
+
+**Fechar:** o dono decide — (a) commitar/aproveitar o que está lá (o conteúdo parece ser evolução da skill de
+auditoria e dos registros de orquestração), ou (b) descartar conscientemente e então
+`git worktree remove` + `git branch -d chore/agent-interoperability`.
+- status: ABERTA — aguarda decisão do dono; ocupa espaço em disco mas NÃO bloqueia nada.

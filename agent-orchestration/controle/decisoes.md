@@ -1065,6 +1065,15 @@ no comando de cada sub-PR. Ver ata `docs/juntas/J-CHECKLIST-P1.md`.
 
 **FORA de escopo confirmado:** re-resolução/backfill de OSs já criadas; `priority` como eixo primário.
 
+**NOTA DE SUPERSEDER (2026-08-12, junta `J-CHK-P1-PR04C-identidade-da-juncao`, 3×0 unânime).** Esta decisão
+**não** trata do eixo de deduplicação do resultado da resolução. O #345 implementou dedup por **modelo**
+(`templateId`) como "proteção anti-duplicata" — escolha de implementação **sem decisão por trás**, que
+tornava impossível "o mesmo formulário na coleta E na entrega". Esse par é o caso de uso central do app: a
+tela de comparação carrega UM schema e confronta as duas execuções, e o resumo de divergências é prova
+jurídica. A junta corrigiu o eixo para **FASE**: a mesma vistoria nunca é pedida duas vezes no mesmo momento
+(o que a proteção queria), mas coleta+entrega do mesmo modelo passam a ser possíveis. A identidade da junção
+(PR-04c) é `(tenant_id, work_order_id, checklist_id, role)`. Nada mais desta decisão muda.
+
 ---
 
 ## D-KPI-INDEX-PAINEL (2026-08-04) — o `Kpis/index.html` é o ARTEFATO PRINCIPAL de acompanhamento, não os JSON

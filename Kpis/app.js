@@ -224,10 +224,9 @@ const dashboardData = {
       "domain": "KPIs mobile",
       "status": "concluido",
       "endpoints": [
-        "mobile/flutter_app/Kpis/kpis-latest.json",
-        "mobile/flutter_app/Kpis/index.html"
+        "Kpis/kpis-latest.json"
       ],
-      "detail": "Fonte dos percentuais Flutter/mobile: 764/764, 96%, 78%, 49 blocos."
+      "detail": "Historico: ate 2026-08-12 os numeros do Flutter viviam num painel proprio (mobile/flutter_app/Kpis/), apagado pela D-KPI-DUPLA-REVOGADA. A metrica flutter_tests passou a viver no painel unico."
     },
     {
       "domain": "KPIs raiz",
@@ -382,7 +381,7 @@ const dashboardData = {
     {
       "date": "2026-06-17",
       "title": "B-152F",
-      "detail": "Kpis/ raiz sincronizado com mobile/flutter_app/Kpis/ apos B-105; politica de KPIs duplos documentada."
+      "detail": "Registro historico: na epoca do B-105 havia dois paineis em paridade manual. A politica dupla foi revogada em 2026-08-12 (D-KPI-DUPLA-REVOGADA) e o painel passou a ser um so."
     },
     {
       "date": "2026-06-15",
