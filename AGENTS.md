@@ -256,6 +256,14 @@ validação** e **rastreabilidade**. Tipos:
 6. **Junta do PR valida** (inclusive os números de KPI). Verde da junta = merge (autonomia por juntas,
    §C7); o humano audita a posteriori pelo history.
 7. **Registrar** decisão/estado em `agent-orchestration/`.
+8. **PORTEIRO PÓS-MERGE — o gate do próximo start (decisão do dono, 2026-08-12, `D-PORTEIRO-POS-MERGE`).**
+   Concluído o merge, nasce o agente `porteiro-pos-merge` (Fable por contrato). Ele **revalida** o que foi
+   entregue — promessa do PR × diff real, contagens **reexecutadas** (não copiadas), KPI com `merge_commit`/
+   `approved_head` preenchidos, ata da junta, pendências abertas/fechadas conferidas por amostragem, limpeza
+   §C5, e se alguma pendência que **BLOQUEIA** o próximo alvo continua aberta. Só então **autoriza o início
+   da próxima demanda** (`LIBERADO` / `LIBERADO COM RESSALVA` / `BLOQUEADO`), e morre até o próximo merge.
+   **Sem parecer dele, nenhum bloco novo começa** — antes disso, quem entregava era quem atestava a própria
+   entrega e já emendava no bloco seguinte.
 
 ## C3. Política de KPI por PR (permanente) — **revoga a política pós-avaliação humana (2026-07-13, D-KPI-PER-PR)**
 

@@ -1249,3 +1249,32 @@ rastreado e diz explicitamente para **não reverter por reflexo** — pode ser d
 
 **Histórico preservado (§A5):** os comandos `B-1xx`, atas e snapshots antigos que citam o painel mobile
 **não** foram reescritos — são registro do que era verdade na época.
+
+---
+
+## D-PORTEIRO-POS-MERGE (2026-08-12) — nenhum bloco novo começa sem parecer independente do merge anterior
+
+**Decisão do dono (verbatim):** *"no merge de um pr, antes de começar outra demanda, crie um agente com fable
+que vai verificar o que foi entregue, verificar os testes, com tudo certo vai dá start na proxima demanda, o
+angente vai nascer na conclusao de um merger, vai revalidar e entao dá start na proxima demanda e vai dormir
+ate o proximo merge"*.
+
+**O buraco que ele fecha.** Até aqui, **quem entrega é quem atesta a própria entrega** e emenda direto no
+bloco seguinte. Esse auto-atestado já deixou passar, nesta mesma rodada: número de KPI que ninguém
+reexecutou, promessa no corpo do PR que o código não cumpria (reprovação de plano por isso **duas vezes**),
+pendência bloqueante esquecida, limpeza pós-merge não feita, e arquivo rastreado sumindo em silêncio.
+
+**Como funciona.** O agente `porteiro-pos-merge` **nasce na conclusão de cada merge**, roda em **Fable**
+(frontmatter `model:`, vale sem quem invoca lembrar), audita os 8 pontos do seu papel — merge íntegro ·
+promessa × diff · contagens **reexecutadas** · KPI fechado (§C3.5) · ata da junta (§C7.1) · pendências ·
+limpeza (§C5) · pré-requisitos do próximo alvo — e termina com **uma** linha: `LIBERADO` /
+`LIBERADO COM RESSALVA` / `BLOQUEADO`. Depois disso, morre até o próximo merge.
+
+**Poder real:** se uma pendência marcada como **BLOQUEIA** o próximo PR-alvo continua aberta, o start é
+**negado**. É o que diferencia pendência *registrada* de pendência *respeitada*.
+
+**Ele não conserta nada.** Audita e decide o start; consertar é de quem entrega. E não aceita relato de
+terceiro: sem comando executado não há parecer — se algo não pôde ser rodado, isso entra escrito, em vez de
+virar presunção de que passou.
+
+Ciclo de vida atualizado em `CLAUDE.md`/`AGENTS.md` §C2.8 (regra de espelhamento, mesmo commit).
