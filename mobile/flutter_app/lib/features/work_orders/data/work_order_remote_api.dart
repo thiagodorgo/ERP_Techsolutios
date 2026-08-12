@@ -278,7 +278,8 @@ WorkOrderTimelineEventType _eventTypeFromApi(String? valor) => switch (valor) {
   'work_order_service_started' => WorkOrderTimelineEventType.serviceStarted,
   'work_order_paused' => WorkOrderTimelineEventType.paused,
   'work_order_resumed' => WorkOrderTimelineEventType.resumed,
-  'work_order_approval_requested' => WorkOrderTimelineEventType.approvalRequested,
+  'work_order_approval_requested' =>
+    WorkOrderTimelineEventType.approvalRequested,
   'work_order_approval_granted' => WorkOrderTimelineEventType.approvalGranted,
   'work_order_approval_denied' => WorkOrderTimelineEventType.approvalDenied,
   'work_order_completed' => WorkOrderTimelineEventType.completed,

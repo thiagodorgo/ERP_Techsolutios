@@ -122,59 +122,73 @@ void main() {
       expect(primeiro.actorUserId, 'user-7');
     });
 
-    test('3. a ausência de `tenant_id` no corpo NÃO derruba o parser (§2.8)', () async {
-      // O DTO não emite identificador de organização — e não deve. O parser antigo fazia
-      // `json['tenant_id'] as String` e estourava justamente quando a resposta estava correta.
-      final api = _apiCom(_respostaDoBackend());
+    test(
+      '3. a ausência de `tenant_id` no corpo NÃO derruba o parser (§2.8)',
+      () async {
+        // O DTO não emite identificador de organização — e não deve. O parser antigo fazia
+        // `json['tenant_id'] as String` e estourava justamente quando a resposta estava correta.
+        final api = _apiCom(_respostaDoBackend());
 
-      final eventos = await api.fetchTimeline('wo-99');
+        final eventos = await api.fetchTimeline('wo-99');
 
-      expect(eventos, hasLength(3));
-      expect(eventos.first.tenantId, isEmpty, reason: 'o tenant vem da sessão, não do corpo');
-    });
+        expect(eventos, hasLength(3));
+        expect(
+          eventos.first.tenantId,
+          isEmpty,
+          reason: 'o tenant vem da sessão, não do corpo',
+        );
+      },
+    );
 
-    test('4. o vocabulário do backend vira o tipo do app — nem tudo é "Observacao"', () async {
-      final api = _apiCom(_respostaDoBackend());
+    test(
+      '4. o vocabulário do backend vira o tipo do app — nem tudo é "Observacao"',
+      () async {
+        final api = _apiCom(_respostaDoBackend());
 
-      final eventos = await api.fetchTimeline('wo-99');
+        final eventos = await api.fetchTimeline('wo-99');
 
-      // Antes, os três caíam em `note` porque `enum.name` nunca casava com `work_order_*`.
-      expect(eventos[0].eventType, WorkOrderTimelineEventType.created);
-      expect(eventos[1].eventType, WorkOrderTimelineEventType.assigned);
-      expect(eventos[2].eventType, WorkOrderTimelineEventType.note);
+        // Antes, os três caíam em `note` porque `enum.name` nunca casava com `work_order_*`.
+        expect(eventos[0].eventType, WorkOrderTimelineEventType.created);
+        expect(eventos[1].eventType, WorkOrderTimelineEventType.assigned);
+        expect(eventos[2].eventType, WorkOrderTimelineEventType.note);
 
-      // E o rótulo do card deixa de mentir.
-      expect(eventos[0].eventType.label, 'Criada');
-      expect(eventos[1].eventType.label, 'Atribuida');
-    });
+        // E o rótulo do card deixa de mentir.
+        expect(eventos[0].eventType.label, 'Criada');
+        expect(eventos[1].eventType.label, 'Atribuida');
+      },
+    );
 
-    test('5. a transição de status é preservada, e tipo desconhecido não vira palpite', () async {
-      final api = _apiCom({
-        'data': [
-          {
-            'id': 'evt-x',
-            'workOrderId': 'wo-99',
-            'eventType': 'work_order_evento_do_futuro',
-            'fromStatus': 'inService',
-            'toStatus': 'status_que_o_app_nao_conhece',
-            'message': 'Algo que o backend passou a registrar depois desta versão do app',
-            'createdAt': '2026-08-12T11:00:00.000Z',
-          },
-        ],
-      });
+    test(
+      '5. a transição de status é preservada, e tipo desconhecido não vira palpite',
+      () async {
+        final api = _apiCom({
+          'data': [
+            {
+              'id': 'evt-x',
+              'workOrderId': 'wo-99',
+              'eventType': 'work_order_evento_do_futuro',
+              'fromStatus': 'inService',
+              'toStatus': 'status_que_o_app_nao_conhece',
+              'message':
+                  'Algo que o backend passou a registrar depois desta versão do app',
+              'createdAt': '2026-08-12T11:00:00.000Z',
+            },
+          ],
+        });
 
-      final eventos = await api.fetchTimeline('wo-99');
+        final eventos = await api.fetchTimeline('wo-99');
 
-      // Tipo desconhecido cai em `note` DE PROPÓSITO: um evento novo no backend não pode derrubar a
-      // tela do guincheiro, e o texto real viaja em `message`.
-      expect(eventos.single.eventType, WorkOrderTimelineEventType.note);
-      expect(eventos.single.note, contains('backend passou a registrar'));
+        // Tipo desconhecido cai em `note` DE PROPÓSITO: um evento novo no backend não pode derrubar a
+        // tela do guincheiro, e o texto real viaja em `message`.
+        expect(eventos.single.eventType, WorkOrderTimelineEventType.note);
+        expect(eventos.single.note, contains('backend passou a registrar'));
 
-      // Status conhecido é convertido; desconhecido vira null — nunca um palpite, porque status errado
-      // na linha do tempo é registro falso.
-      expect(eventos.single.fromStatus, WorkOrderStatus.inService);
-      expect(eventos.single.toStatus, isNull);
-    });
+        // Status conhecido é convertido; desconhecido vira null — nunca um palpite, porque status errado
+        // na linha do tempo é registro falso.
+        expect(eventos.single.fromStatus, WorkOrderStatus.inService);
+        expect(eventos.single.toStatus, isNull);
+      },
+    );
 
     test('6. corpo sem `data` devolve lista vazia sem estourar', () async {
       final api = _apiCom(<String, dynamic>{});
