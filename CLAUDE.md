@@ -288,6 +288,15 @@ cada merge (script pronto em `scripts/post-merge-cleanup.sh`):
 4. **Scratchpad da sessão** e temporários de teste soltos (nunca arquivos rastreados nem os untracked
    permitidos — ex.: 3 PNGs de marca, `.env` local, `.claude/skills/*`).
 
+**Limpeza PROFUNDA de caches de ferramenta (disco chegou a 100%, 2026-08-12).** Build artifacts do repositório
+não são o que enche o disco — os caches de ferramenta são. Medido nesta máquina: `~/.gradle/caches` 4,0 GB ·
+`AppData/Local/Android/Sdk` 7,1 GB · disco virtual do Docker 21,8 GB · npm cache 0,6 GB. Rodar
+`DEEP_CLEAN=1 bash scripts/post-merge-cleanup.sh` a cada poucos merges (ou quando o livre cair de ~10 GB):
+libera gradle/npm/docker sem tocar em `node_modules`, `.env` nem rastreado. Recuperou **4,85 GB** na primeira
+execução. **Armadilha do Docker no Windows:** `docker image prune` libera espaço DENTRO da VM, mas o
+`ext4.vhdx` **não encolhe** — compactar exige `wsl --shutdown`, que derruba PostgreSQL/Redis; por isso fica
+fora do automático e vira decisão do dono na hora.
+
 **Nunca** apagar: arquivos rastreados, `node_modules`/`.pnpm-store` (reinstalar custa caro), `.env`
 real, os untracked explicitamente permitidos. Em dúvida, `git status`/`git clean -nxd` (dry-run) antes.
 A limpeza é **reportada em 1 linha** no fechamento do bloco (o que foi removido), nunca silenciosa.
