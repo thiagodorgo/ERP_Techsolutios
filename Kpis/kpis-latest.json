@@ -6,7 +6,7 @@
   "release": {
     "block": "FIX B-127 — a linha do tempo remota da ordem de serviço no app NUNCA funcionou: 5 incompatibilidades independentes com o backend (envelope, nomes de campo, tenant que o DTO corretamente não emite, vocabulário de tipo, e um catch silencioso que escondia tudo caindo no histórico local). Achado do critico-adversarial ao revisar o plano do PR-04c; era pré-requisito dele, porque o plano prometia visibilidade em campo por um canal que não chegava.",
     "title": "FIX B-127 — a linha do tempo do app volta a mostrar o que o servidor registrou",
-    "pr": null,
+    "pr": 351,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
