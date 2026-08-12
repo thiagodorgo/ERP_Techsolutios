@@ -58,6 +58,43 @@ fi
 # 3) Referências remotas mortas
 git remote prune origin >/dev/null 2>&1 || true
 
+# 3b) CACHES DE FERRAMENTA — o que mais cresce e ninguém vê (disco do dono chegou a 100% com 2,1 GB livres).
+# Tudo aqui é REGENERÁVEL: volta sozinho no próximo build, ao custo de um download. NUNCA toca node_modules
+# (reinstalar custa caro, §C5), .env, nem arquivo rastreado.
+if [ "${DEEP_CLEAN:-0}" = "1" ]; then
+  echo "-- limpeza profunda de caches de ferramenta (DEEP_CLEAN=1)"
+  # Gradle: `caches/` é puro cache de dependência/transformação do Android. `wrapper/` e `jdks/` FICAM,
+  # senão o próximo build refaz o setup inteiro em vez de só re-baixar dependência.
+  rm -rf "$HOME/.gradle/caches" "$HOME/.gradle/.tmp" 2>/dev/null || true
+  # npm: o _cacache é reconstruído sob demanda.
+  npm cache clean --force >/dev/null 2>&1 || true
+  # Docker: imagens órfãs e volumes sem dono. NÃO derruba container em execução.
+  docker image prune -af >/dev/null 2>&1 || true
+  docker volume prune -f >/dev/null 2>&1 || true
+  echo "   caches de gradle/npm/docker liberados"
+  # NOTA sobre o Docker no Windows: `image prune` libera espaço DENTRO da VM, mas o disco virtual
+  # (AppData\Local\Docker\wsl, ~20 GB) NÃO encolhe sozinho. Compactar exige parar o Docker:
+  #   wsl --shutdown && Optimize-VHD -Path <ext4.vhdx> -Mode Full   (ou diskpart compact vdisk)
+  # Fica FORA do automático de propósito: derruba o PostgreSQL/Redis do ambiente de trabalho.
+fi
+
+# 3c) GUARDA DE INTEGRIDADE — nenhuma limpeza pode apagar arquivo RASTREADO (§C5).
+# Nasceu de um alarme falso instrutivo (2026-08-12): vi 7 arquivos rastreados apagados na árvore, presumi
+# acidente da limpeza de disco e restaurei — mas quem os apagou foi o DONO, de propósito (o painel de KPI
+# do Flutter foi descontinuado, D-KPI-DUPLA-REVOGADA), e a minha "correção" desfez a decisão dele.
+# A lição vale nos dois sentidos: remoção de arquivo rastreado nunca deve passar despercebida, e também
+# nunca deve ser revertida por reflexo. O script AVISA e mostra o caminho; quem decide é quem lê.
+apagados=$(git status --porcelain 2>/dev/null | grep -c '^ D' || true)
+if [ "${apagados:-0}" -gt 0 ]; then
+  echo ""
+  echo "!! ATENÇÃO: $apagados arquivo(s) RASTREADO(S) apagados na árvore de trabalho."
+  git status --porcelain | grep '^ D' | sed 's/^ D /   apagado: /'
+  echo "   Este script não remove rastreado. Se foi acidente:  git checkout -- <caminho>"
+  echo "   Se foi INTENCIONAL, registre a remoção:              git rm -r <caminho>  (+ commit)"
+  echo "   Não reverta por reflexo — pode ser decisão de quem apagou."
+  echo ""
+fi
+
 # 4) Relatório
 after=$(du -sh .git 2>/dev/null | cut -f1 || echo "?")
 echo "-- removidos: ${removed[*]:-(build artifacts ausentes)}"
