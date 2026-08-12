@@ -589,6 +589,41 @@ Nenhuma hipótese registrada até o momento.
 
 Nenhuma dívida registrada até o momento.
 
+### [Ω6R-DIV-001] Outbox de custódia não possui dispatcher nem Inbox
+- Estado: observado na Fase 2; não é achado novo porque a migration declara explicitamente a entrega futura.
+- Local: `prisma/migrations/20260853000000_add_impound_outbox_events/migration.sql:12-19`
+- Direção: implementar dispatcher com lease/retry e consumidor idempotente antes de depender de efeitos externos do Outbox.
+
+### [Ω6R-DIV-002] Lint raiz não executa ESLint
+- Estado: observado na Fase 1/A5.
+- Local: `package.json` (`lint` delega a `npm run check`).
+- Direção: configurar lint real e transformar supressões React Hooks em regras verificáveis; sem classificar estilo como defeito de produto.
+
+### [Ω6R-DIV-003] Dependências possuem avisos sem exploit produtivo confirmado
+- Estado: 15 avisos nos quatro workspaces; 0 com caminho produtivo confirmado.
+- Local: `01_VARREDURAS/06_npm_audit_root.json.txt` a `09_npm_audit_authority_portal.json.txt`.
+- Direção: atualizar em bloco próprio de supply chain, validando regressões; não tratar CVE transitivo de build como P0.
+
+## Checagem de consistência da Fase 4
+
+- Executada em 2026-08-11.
+- Achados no Markdown: 29; IDs únicos: 29.
+- Linhas válidas no JSONL: 29; IDs JSONL fora do Markdown: 0.
+- IDs únicos citados em `02_MODULOS/` + `03_TRANSVERSAIS/`: 29.
+- Achados sem relatório: 0; citações órfãs: 0; superseded: 0.
+- Fechamento: 100% consistente (registro ↔ JSONL ↔ relatórios).
+
+## Atualizações por votação — Fase 4
+
+- Ω6R-SEC-002: P0 mantido por 5×0.
+- Ω6R-DAT-001: P0 mantido por 5×0.
+- Ω6R-DIN-005: P0 mantido por 5×0.
+- Ω6R-DIN-006: P0 mantido por 5×0.
+- Ω6R-DIN-007: P0 mantido por 3×2; A3/A4 defenderam P1 porque não há mutação direta do ledger.
+- Ω6R-DAT-002: P0 mantido por 5×0.
+- Ω6R-DAT-003: P0 mantido por 5×0.
+- Veredito: REPROVADO PARA PRODUÇÃO por 5×0. O Relator não votou.
+
 ## Checagem de consistência da Fase 4
 
 Pendente.

@@ -1,6 +1,6 @@
 # Ω6R — Matriz de revisão
 
-Fonte da verdade de retomada. Estados: ✅ pendente · ✅ em curso · ✅ concluído.
+Fonte da verdade de retomada. Estados históricos: ⬜ pendente · 🔶 em curso · ✅ concluído.
 
 | Unidade auditável | A1 | A2 | A3 | A4 | A5 |
 |---|---:|---:|---:|---:|---:|
