@@ -1,24 +1,24 @@
 {
-  "snapshot_date": "2026-08-11",
-  "version": "CHK-P1-PR-04B",
+  "snapshot_date": "2026-08-12",
+  "version": "FIX-TIMELINE-REMOTA",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-04b — fatia PURAMENTE DEFENSIVA: fecha os dois bloqueadores do sticky da aplicabilidade. Fase estrita no app (fim do palpite 'coleta' que podia fabricar divergência falsa em prova jurídica; 15 testes, mutação derruba 8; Flutter 839→854 sem regressão) + AUTO-link da custódia decidido por junta com desempate verificado no código (2×1×1: varredura mantida — filtrar por tipo quebraria retrocompat e usaria o eixo errado), com teste no Postgres provando que todos os tipos entram no dossiê e duas pendências herdeiras registradas.",
-    "title": "CHECKLIST P1 PR-04b — os dois bloqueadores fechados (um por código, um por decisão registrada)",
-    "pr": 346,
-    "merge_commit": "f4ef511d7d7dcc3d78481b8b5ed10f4584af015c",
-    "approved_head": "f4ef511d7d7dcc3d78481b8b5ed10f4584af015c",
+    "block": "FIX B-127 — a linha do tempo remota da ordem de serviço no app NUNCA funcionou: 5 incompatibilidades independentes com o backend (envelope, nomes de campo, tenant que o DTO corretamente não emite, vocabulário de tipo, e um catch silencioso que escondia tudo caindo no histórico local). Achado do critico-adversarial ao revisar o plano do PR-04c; era pré-requisito dele, porque o plano prometia visibilidade em campo por um canal que não chegava.",
+    "title": "FIX B-127 — a linha do tempo do app volta a mostrar o que o servidor registrou",
+    "pr": 351,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "A comparação coleta×entrega deixou de chutar (recusa honesta no lugar de divergência fabricada), e a varredura do dossiê virou decisão de junta registrada em vez de comportamento que ninguém decidiu.",
-    "status_label": "Publicado (mergeado na main)"
+    "summary": "Cinco defeitos empilhados faziam a tela parecer saudável exibindo um histórico truncado. Agora o que o servidor registra chega ao técnico — e quando não chegar, o app avisa em vez de fingir.",
+    "status_label": "Entregue (aguardando merge do PR corrente)"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 854,
-      "total": 854,
-      "display": "854/854",
-      "note": "PR-04b: +15 do guard de fase estrita (b123). 839→854, execução real; mutação derruba 8."
+      "value": 860,
+      "total": 860,
+      "display": "860/860",
+      "note": "FIX B-127: +6 do guard da linha do tempo remota (b127). 854→860, execução real; 2 mutações derrubam."
     },
     "frontend_smoke_tests": {
       "value": 1112,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 146,
-      "display": "146",
-      "note": "CHK P1 PR-04b (bloqueadores defensivos). Sobre 145 do #345."
+      "value": 147,
+      "display": "147",
+      "note": "FIX B-127 (linha do tempo remota). Sobre 146."
     },
     "mobile_backend_contracts": {
       "value": 18,

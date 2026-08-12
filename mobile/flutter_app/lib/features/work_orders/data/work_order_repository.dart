@@ -504,6 +504,15 @@ class WorkOrderRepository extends ChangeNotifier {
   /// historico real (GET /work-orders/:id/timeline). Em falha de rede/timeout
   /// ou 404/403 (ApiError), cai de forma segura para o cache local — sem
   /// quebrar a tela e sem stack trace.
+  /// Registra que a linha do tempo remota falhou e o app caiu para o histórico local.
+  /// Só identificador e motivo seguro — nunca corpo de resposta, token ou caminho (§2.8).
+  void _avisarFalhaDeTimeline(String serverId, String motivoSeguro) {
+    debugPrint(
+      '[work-orders] linha do tempo remota indisponível para $serverId '
+      '($motivoSeguro) — exibindo o histórico local, que pode estar incompleto.',
+    );
+  }
+
   Future<List<WorkOrderTimelineEvent>> loadTimeline(String localId) async {
     final remote = _remoteApi;
     if (remote != null) {
@@ -518,10 +527,14 @@ class WorkOrderRepository extends ChangeNotifier {
         try {
           final events = await remote.fetchTimeline(serverId);
           if (events.isNotEmpty) return events;
-        } on ApiError {
-          // Falha segura — mantem o historico local.
-        } catch (_) {
-          // Qualquer outra falha inesperada tambem cai para o local.
+        } on ApiError catch (e) {
+          // Falha segura — mantém o histórico local. Mas NÃO em silêncio: este `catch` escondeu por
+          // completo o fato de a linha do tempo remota nunca ter funcionado (envelope, nomes de campo
+          // e vocabulário de tipo divergiam do backend). A tela parecia saudável exibindo um histórico
+          // truncado. O aviso usa a mensagem SEGURA do erro (§2.8: sem token, caminho ou payload).
+          _avisarFalhaDeTimeline(serverId, e.safeMessage);
+        } catch (e) {
+          _avisarFalhaDeTimeline(serverId, e.runtimeType.toString());
         }
       }
     }
