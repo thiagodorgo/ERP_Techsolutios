@@ -8,13 +8,13 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 | Categoria | Próximo número |
 |---|---:|
-| SEC | 002 |
+| SEC | 005 |
 | TEN | 002 |
-| DIN | 006 |
-| DAT | 002 |
-| PERF | 001 |
-| ARQ | 001 |
-| QUA | 001 |
+| DIN | 010 |
+| DAT | 004 |
+| PERF | 004 |
+| ARQ | 005 |
+| QUA | 006 |
 | LGPD | 001 |
 | DEP | 001 |
 | HIP | 001 |
@@ -189,6 +189,397 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Impacto: Um deploy que omita a variável — e o manifesto `docker-compose.prod.yml` atual — inicia verde, aceita alterações de usuários, papéis e outros agregados mantidos pelos adapters em memória e perde tudo ao reiniciar. O banco estar disponível não impede a perda silenciosa.
 - Correção sugerida: Fazer o schema falhar quando `NODE_ENV=production` e a persistência não for `prisma`; restringir o default `memory` a dev/test e corrigir o compose de validação produtiva. Adicionar probe que confirme persistência real, não apenas processo vivo.
 - Teste recomendado: `production` sem flag e `production+memory` devem abortar antes de `listen`; smoke no compose grava dado, reinicia a API e comprova leitura do mesmo registro.
+
+### [Ω6R-SEC-002] Técnico de campo pode alterar OS alheia e decidir aprovações do tenant
+- Severidade: P0        Confiança: 1.00
+- Categoria: SEC
+- Módulo: work-orders / approvals / RBAC        Lente: A2
+- Local: `src/modules/core-saas/permissions/catalog.ts:784-820`, `src/modules/work-orders/work-order.routes.ts:70-83`, `src/modules/work-orders/work-order.routes.ts:110-123`, `src/modules/work-orders/work-order.service.ts:759-804`, `src/modules/work-orders/approval.service.ts:61-97`, `RBAC_MATRIX.md:44-46`, `RBAC_MATRIX.md:66`, `APPROVAL_LIMITS.md:38-52`
+- Descrição: `field_technician` recebe as permissões gerais de update/status, e as rotas não impõem escopo por OS atribuída. As decisões de aprovação reutilizam `work_orders:update` e o service não verifica papel, alçada, propriedade ou segregação de função.
+- Evidência:
+  ```ts
+  router.post(
+    "/approvals/:approvalId/approve",
+    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await approvalController.approve(request));
+    }),
+  );
+  ```
+- Impacto: Um técnico pode mudar estado ou conteúdo de OS atribuída a outro técnico e aprovar/rejeitar solicitações tenant-wide, inclusive com consequência financeira/operacional. Isso contorna autorização por objeto, alçada e SoD definidas nas fontes de verdade.
+- Correção sugerida: Aplicar guards object-scoped no service/repositório para papéis de campo (`assigned_user_id`/equipe) e criar política/permissão dedicada de aprovação que valide ator, alçada, tipo e segregação. A consulta e o write devem compartilhar o mesmo predicado.
+- Teste recomendado: Técnico A tenta alterar/status da OS de B e aprovar uma solicitação; ambos retornam 403. Gestor autorizado dentro da alçada consegue decidir, e o próprio solicitante não aprova quando a política proíbe.
+
+### [Ω6R-ARQ-001] Fila Redis perde jobs após retirada destrutiva
+- Severidade: P1        Confiança: 0.99
+- Categoria: ARQ
+- Módulo: infra/jobs        Lente: A1
+- Local: `src/infra/jobs/job.queue.ts:54-77`, `src/infra/jobs/job.worker.ts:24-41`
+- Descrição: `dequeue` executa `LPOP` antes de registrar atomicamente o job numa área de processamento. Não existe lease, visibility timeout, processing list ou reclaim para recuperar trabalho de worker morto.
+- Evidência:
+  ```ts
+  const jobId = await this.redis.command("LPOP", this.pendingKey);
+  if (typeof jobId !== "string") return null;
+  const envelope = await this.getJob(jobId);
+  if (!envelope) return null;
+  const processing = {
+    ...envelope,
+    status: "processing" as const,
+    updatedAt: now.toISOString(),
+  };
+  await this.save(processing);
+  ```
+- Impacto: Crash entre o `LPOP` e o `save`, ou durante o handler, remove definitivamente notificações, reconciliações de custódia, diárias e fanout de eventos da fila.
+- Correção sugerida: Usar Redis Streams com consumer groups ou claim atômico pending→processing, lease/visibility timeout e reclaim. Tornar também a gravação do envelope e a publicação na fila atômicas.
+- Teste recomendado: Matar o worker imediatamente após dequeue e durante o handler; outro worker deve recuperar o mesmo job após o lease, sem perda nem execução simultânea.
+
+### [Ω6R-ARQ-002] Cada inicialização multiplica cadeias de jobs recorrentes
+- Severidade: P1        Confiança: 0.98
+- Categoria: ARQ
+- Módulo: infra/jobs        Lente: A1
+- Local: `src/server.ts:15-39`, `src/modules/charging/charge.jobs.ts:10-23`, `src/infra/jobs/job.queue.ts:20-49`
+- Descrição: Toda inicialização enfileira uma nova instância de cada sweep com UUID aleatório, e cada handler sempre cria seu sucessor. Não há chave de schedule, deduplicação, líder ou lease global.
+- Evidência:
+  ```ts
+  startWorker();
+  await enqueueInitialScheduledNotificationScan();
+  await enqueueInitialImpoundReconcileScan();
+  await enqueueInitialChargingAccrueScan();
+  await enqueueInitialImpoundNotifyDueScan();
+  ```
+- Impacto: Rolling restarts e múltiplas réplicas criam cadeias imortais adicionais; o número de sweeps cresce com o histórico de startups, elevando carga e amplificando efeitos não perfeitamente idempotentes.
+- Correção sugerida: Chave determinística por schedule com `SET NX`/lease e renovação, leader election ou scheduler único. O sucessor deve manter a identidade lógica da agenda.
+- Teste recomendado: Iniciar duas réplicas e reiniciá-las; em várias janelas, deve ocorrer exatamente um sweep de cada nome por intervalo.
+
+### [Ω6R-ARQ-003] SSE operacional é local ao processo e perde eventos entre réplicas
+- Severidade: P1        Confiança: 0.98
+- Categoria: ARQ
+- Módulo: field-ops-realtime        Lente: A1
+- Local: `src/modules/field-ops-realtime/field-ops-realtime.broker.ts:24-54`, `src/infra/events/domain-event.publisher.ts:59-80`, `src/modules/field-dispatch/field-ops-event-fanout.jobs.ts:5-14`
+- Descrição: Assinantes e deduplicação vivem em `Map` local. O publisher e o consumidor do job publicam somente no broker da réplica que executa cada trecho, sem broadcast ou replay distribuído.
+- Evidência:
+  ```ts
+  export class FieldOpsRealtimeBroker {
+    private readonly subscribersByTenant = new Map<string, Set<FieldOpsRealtimeSubscriber>>();
+    private readonly recentEventIds: string[] = [];
+    private readonly recentEventIdSet = new Set<string>();
+  ```
+- Impacto: Cliente conectado à réplica B não recebe mutação executada em A quando o fanout roda em A ou C. O mapa de despacho pode ficar silenciosamente desatualizado até refresh manual.
+- Correção sugerida: Distribuir os eventos por Pub/Sub/Streams para todas as réplicas ou usar gateway SSE único; preservar ID, cursor e `Last-Event-ID` para replay.
+- Teste recomendado: Cliente SSE em B, mutação em A e worker em C; B deve receber o evento uma vez e recuperá-lo após reconexão.
+
+### [Ω6R-ARQ-004] Despacho e timeline obrigatória são gravados em transações distintas
+- Severidade: P1        Confiança: 0.99
+- Categoria: ARQ
+- Módulo: field-dispatch        Lente: A1
+- Local: `src/modules/field-dispatch/field-dispatch.service.ts:138-161`, `src/modules/field-dispatch/field-dispatch-prisma.repository.ts:150-174`
+- Descrição: O agregado de despacho é criado e depois o evento de timeline é persistido por outro método `withTenantRls`, portanto outra transação. A criação não possui chave de ação durável para retry.
+- Evidência:
+  ```ts
+  const dispatch = await this.repository.create({
+    tenantId: actor.tenantId,
+    workOrderId,
+    operatorUserId,
+    status,
+    // ...
+  });
+  await this.repository.createEvent({
+  ```
+- Impacto: Falha entre writes deixa despacho sem evento probatório; retry pode criar outro despacho. Mudança de status e reatribuição repetem a fronteira estado→evento separada.
+- Correção sugerida: Comandos `create/changeStatus/reassignWithEvent` numa transação tenant-scoped compartilhada e `client_action_id`/chave única na criação.
+- Teste recomendado: Injetar falha no insert do evento e exigir rollback do despacho; replay da mesma chave resulta em um agregado e um evento.
+
+### [Ω6R-DIN-006] Manifests deixam workers financeiros e legais desativados
+- Severidade: P0        Confiança: 1.00
+- Categoria: DIN
+- Módulo: jobs / charging / impound / notifications        Lente: A1
+- Local: `src/config/env.ts:28-33`, `src/server.ts:15-39`, `fly.production.toml:29-35`, `fly.staging.toml:22-28`
+- Descrição: `JOBS_WORKER_ENABLED` usa `false` por padrão e os manifests reais de staging/produção não definem a flag. Assim, o runtime não inicia reconciliação OS→custódia, acumulação de diárias, notificações agendadas ou marcos legais.
+- Evidência:
+  ```ts
+  async function startJobWorkerIfEnabled(): Promise<void> {
+    if (!env.JOBS_WORKER_ENABLED || env.CORE_SAAS_PERSISTENCE !== "prisma") {
+      return;
+    }
+  ```
+- Impacto: Diárias cobradas deixam de ser materializadas, OS concluídas não abrem/corrigem custódia pelo sweep e prazos/notificações legais não são emitidos. Há perda financeira e de estado operacional/regulatório sem erro de startup.
+- Correção sugerida: Habilitar explicitamente worker dedicado em staging/produção e falhar readiness/gate de deploy sem heartbeat recente. Separar processo web do worker e monitorar cada schedule crítico.
+- Teste recomendado: Smoke pós-deploy verifica heartbeat recente e prova reconciliação de OS, materialização de diária e emissão de notificação; manifesto sem worker deve falhar o gate.
+
+### [Ω6R-PERF-001] Worker sobrepõe ticks sem limite e não impõe timeout aos handlers
+- Severidade: P1        Confiança: 0.99
+- Categoria: PERF
+- Módulo: infra/jobs        Lente: A4
+- Local: `src/infra/jobs/job.worker.ts:24-78`, `src/infra/jobs/job.worker.ts:81-90`
+- Descrição: O `setInterval` dispara `processNextJob()` sem aguardar o tick anterior, e handlers não possuem deadline ou cancelamento. Qualquer execução acima de 1 segundo cria sobreposição; handler travado permanece ocupando recursos indefinidamente.
+- Evidência:
+  ```ts
+  this.timer = setInterval(() => {
+    this.processNextJob().catch((error: unknown) => {
+      this.logger.error({ error }, "Job worker tick failed.");
+    });
+  }, pollIntervalMs);
+  ```
+- Impacto: Banco/Redis lentos ou integrações travadas acumulam Promises e jobs concorrentes sem controle, ampliando conexões, memória e pressão sobre caminhos financeiros e legais.
+- Correção sugerida: Loop autoagendado que só inicia após conclusão, semaphore de concorrência explícita e timeout/cancelamento por tipo de job; heartbeat deve distinguir running/stuck.
+- Teste recomendado: Handler bloqueado por barreira durante vários intervalos não inicia execuções acima do limite; ao vencer timeout, job segue a política de retry/reclaim.
+
+### [Ω6R-PERF-002] Polling web acumula requisições sem timeout e aceita respostas fora de ordem
+- Severidade: P1        Confiança: 0.98
+- Categoria: PERF
+- Módulo: frontend / API client        Lente: A4
+- Local: `frontend/src/hooks/useAutoRefresh.ts:26-41`, `frontend/src/services/api/client.ts:118-140`
+- Descrição: O hook dispara a Promise de refresh sem trava in-flight em intervalo fixo, e o cliente usa `fetch` sem `AbortSignal` ou deadline. O padrão aparece em 54 arquivos/53 consumidores.
+- Evidência:
+  ```ts
+  const tick = () => {
+    if (pauseWhenHidden && typeof document !== "undefined" && document.hidden) return;
+    void savedRefresh.current(true);
+  };
+  const id = window.setInterval(tick, intervalMs);
+  ```
+- Impacto: Backend lento por mais de 30s acumula requests por tela; respostas antigas podem chegar depois das novas e sobrescrever estado atual, além de multiplicar carga durante degradação.
+- Correção sugerida: Coalescer/trava por refresh, cancelar a requisição anterior ou descartar resultado por generation ID e aplicar timeout central com `AbortController` no cliente.
+- Teste recomendado: Fazer requests demorarem mais que dois intervalos e resolver fora de ordem; deve existir no máximo uma chamada ativa e o estado final deve vir da geração mais recente.
+
+### [Ω6R-PERF-003] Pipeline público de imagens bloqueia e pressiona a API autenticada
+- Severidade: P1        Confiança: 0.98
+- Categoria: PERF
+- Módulo: owner-portal / runtime        Lente: A4
+- Local: `src/modules/owner-portal/owner-portal.photo-pipeline.ts:57-103`, `src/modules/owner-portal/image-header-guard.ts:9-16`, `src/modules/owner-portal/photo-concurrency-guard.ts:1-43`, `src/server.ts:43-65`, `package.json:35-47`
+- Descrição: Jimp decodifica, redimensiona, imprime e codifica imagens no mesmo processo Node que serve a API ERP. O teto admite 40 milhões de pixels e três pipelines concorrentes; o timeout só deixa de esperar, sem interromper CPU ou liberar memória.
+- Evidência:
+  ```ts
+  const image = await Jimp.read(sourceBuffer);
+  const { width, height } = image.bitmap;
+  const longestSide = Math.max(width, height);
+  if (longestSide > PHOTO_MAX_LONGEST_SIDE_PX) {
+    const scale = PHOTO_MAX_LONGEST_SIDE_PX / longestSide;
+    image.resize({ w: targetWidth, h: targetHeight });
+  }
+  ```
+- Impacto: Três imagens válidas no teto podem exigir cerca de 480 MB apenas para RGBA, além de overhead/cópias, e bloquear o event loop. Uma superfície pública degrada login, pagamentos e operações autenticadas no mesmo processo.
+- Correção sugerida: Isolar decode/resize/encode em worker thread ou processo com limites de memória/CPU e cancelamento real; reduzir teto conforme necessidade do produto e separar o portal do processo ERP.
+- Teste recomendado: Carga com três imagens no limite mede RSS e p99 de `/health`/rota autenticada; limites devem ser preservados e timeout deve encerrar o trabalho, não só a resposta.
+
+### [Ω6R-QUA-001] Replay de despesas mobile é construído sem autenticação
+- Severidade: P1        Confiança: 0.99
+- Categoria: QUA
+- Módulo: mobile-flutter / expense-management        Lente: A5
+- Local: `mobile/flutter_app/lib/core/sync/sync_providers.dart:51`, `mobile/flutter_app/lib/core/sync/sync_providers.dart:109-119`, `mobile/flutter_app/lib/core/auth/auth_notifier.dart:152-160`, `mobile/flutter_app/lib/core/network/http_client.dart:33-47`, `src/modules/expense-management/expense-management.routes.ts:110-115`
+- Descrição: O provider de replay RDV usa `apiConfigProvider`, que sempre retorna configuração sem token, em vez do provider autenticado usado pelos demais syncs. O cliente só envia `Authorization` quando há token, enquanto o endpoint exige contexto e permissão.
+- Evidência:
+  ```dart
+  final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>((ref) {
+    final config = ref.watch(apiConfigProvider);
+    return DioExpenseSyncBatchApi(createExpenseHttpClient(config));
+  });
+  ```
+- Impacto: Toda ação offline de despesa tenta replay sem Bearer, recebe 401/403 e permanece pendente/falhando. RDV criado em campo não converge para o ERP.
+- Correção sugerida: Usar `authenticatedApiConfigProvider`, retornar implementação pending quando não autenticado e usar o cliente com refresh/logout compartilhado.
+- Teste recomendado: ProviderContainer com sessão intercepta POST de sync e exige Bearer; 401 provoca refresh e um retry, e sessão ausente não consome a fila.
+
+### [Ω6R-QUA-002] Mobile de estoque implementa contrato paralelo e não possui replay
+- Severidade: P1        Confiança: 0.99
+- Categoria: QUA
+- Módulo: mobile-flutter / mobile-inventory / inventory        Lente: A5
+- Local: `mobile/flutter_app/lib/features/inventory/data/inventory_repository.dart:92-105`, `mobile/flutter_app/lib/features/inventory/data/inventory_repository.dart:147-159`, `mobile/flutter_app/lib/core/sync/sync_providers.dart:114-119`, `mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart:90-118`, `src/modules/mobile/mobile-inventory-sync.ts:98-105`, `src/modules/mobile/mobile-inventory-sync.ts:288-305`
+- Descrição: Flutter enfileira `inventory_entry.create`, `inventory_exit.create` e `work_order_material.add`, mas o backend só aceita `inventory.reserve|consume|shortage_report`. O coordenador não chama replay de estoque e o backend usa Maps em memória separados do agregado Prisma.
+- Evidência:
+  ```ts
+  const supportedActionTypes: readonly InventoryActionType[] = [
+    "inventory.reserve",
+    "inventory.consume",
+    "inventory.shortage_report",
+  ];
+  ```
+- Impacto: Entradas, baixas e materiais ficam apenas no aparelho e pendentes indefinidamente; mesmo um replay adicionado hoje seria rejeitado e não alteraria o estoque real. Operação e inventário exibem saldos divergentes.
+- Correção sugerida: Definir contrato canônico único, plumbá-lo no Flutter e backend Prisma, criar replay dedicado no coordinator e remover catálogo/saldo demonstrativo em memória do caminho produtivo.
+- Teste recomendado: Fixture de contrato para cada ação, replay pelo coordinator e consulta do mesmo estoque Prisma; reiniciar backend e provar persistência/idempotência.
+
+### [Ω6R-DIN-007] Resumo de custo ignora silenciosamente itens após o limite 10.000
+- Severidade: P0        Confiança: 1.00
+- Categoria: DIN
+- Módulo: cloud-costs        Lente: A4
+- Local: `src/modules/cloud-costs/aws-cur.service.ts:85-100`, `src/modules/cloud-costs/aws-cur.service.ts:184-191`, `src/modules/cloud-costs/aws-cur-prisma.repository.ts:136-157`
+- Descrição: O resumo soma em memória o retorno de `listLineItems`, mas normaliza silenciosamente a consulta para `limit: 10_000`. O repositório aplica esse valor em `take`, portanto custos posteriores jamais entram no total.
+- Evidência:
+  ```ts
+  return {
+    ...filters,
+    periodEnd: filters.periodEnd ?? now,
+    periodStart: filters.periodStart ?? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+    limit: 10_000,
+  };
+  ```
+- Impacto: Qualquer período AWS com mais de 10 mil line items tem custo total e rateio subestimados. O erro movimenta cobrança entre organizações sem aviso de truncamento.
+- Correção sugerida: Calcular `SUM/GROUP BY` no banco sobre todo o filtro; limite pertence somente ao endpoint detalhado/paginado. Expor precisão decimal do banco até a borda.
+- Teste recomendado: Inserir 10.001 itens com valor relevante no último; resumo, agrupamento e posterior rateio devem incluí-lo integralmente.
+
+### [Ω6R-QUA-003] Testes financeiros críticos exercem apenas adapters em memória
+- Severidade: P1        Confiança: 0.99
+- Categoria: QUA
+- Módulo: financial-entries / cheques / period-close / expenses        Lente: A5
+- Local: `tests/financial-entries.test.ts:53-59`, `tests/financial-entries.test.ts:436-439`, `tests/cheques.test.ts:59-65`, `tests/cheques.test.ts:453-466`, `tests/financial-period-closes.test.ts:49-59`, `tests/expense-management-routes.test.ts:182-204`
+- Descrição: As suítes financeiras instanciam repositórios Memory, e uma delas declara explicitamente que Prisma não é exercido. Mutex/Maps mascaram as fronteiras de transação, constraints e interleavings que originam os P0 desta rodada.
+- Evidência:
+  ```ts
+  function setup() {
+    resetAll();
+    return {
+      entries: createMemoryFinancialEntryService(),
+      accounts: createMemoryFinancialAccountService(),
+      titles: createMemoryFinancialTitleService(),
+    };
+  }
+  ```
+- Impacto: Pay/reverse, cheque, fechamento e sync de despesas podem passar verdes apesar de falharem em PostgreSQL sob concorrência e fault injection. O CI não filtra as regressões financeiras mais caras.
+- Correção sugerida: Suíte DB-gated obrigatória com Prisma/PostgreSQL, duas conexões e barreiras determinísticas para os fluxos críticos; verificar invariantes finais diretamente no banco.
+- Teste recomendado: Corridas pay/reverse, clear/bounce, close×writer e expense effect×receipt com falha entre writes; assertar contagens/saldos/status/receipts reais.
+
+### [Ω6R-DIN-008] Escritores podem confirmar dinheiro depois do snapshot de período fechado
+- Severidade: P0        Confiança: 1.00
+- Categoria: DIN
+- Módulo: financial-period-closes / financial writers        Lente: A3
+- Local: `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:49-52`, `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:77-89`, `src/modules/financial-titles/financial-title.service.ts:338-344`
+- Descrição: O fechamento usa advisory lock por tenant/período, mas os caminhos de escrita apenas consultam se o período está aberto em outra transação e não adquirem o mesmo lock. Um writer já aprovado pode commitar depois do snapshot e do status fechado.
+- Evidência:
+  ```ts
+  // Um advisory lock em (tenant,period) serializa fechamentos concorrentes; a proteção completa
+  // contra read-skew de writers exige o mesmo lock no write-path (P-Ω4-6-CLOSE-RACE — fora deste bloco). O
+  // controle compensatório REAL é a re-derivação material (D1), que flagra um título vazado a posteriori.
+  ```
+- Impacto: O período fechado contém lançamentos/títulos que não aparecem no snapshot assinado, alterando saldo, conciliação e relatórios depois do fechamento.
+- Correção sugerida: Todos os writes financeiros adquirem o mesmo advisory lock e revalidam o período dentro da transação que grava. Close e write devem serializar pelo mesmo recurso.
+- Teste recomendado: Pausar writer após open-check, fechar período e retomá-lo; ele deve falhar ou integrar snapshot, jamais commitar fora dele.
+
+### [Ω6R-DIN-009] Receipt de despesas é persistido depois do efeito monetário e não vincula usuário/payload
+- Severidade: P0        Confiança: 1.00
+- Categoria: DIN
+- Módulo: expense-management        Lente: A3
+- Local: `src/modules/expense-management/expense-management.service.ts:155-193`, `src/modules/expense-management/expense-management-prisma.repository.ts:150-177`, `src/modules/expense-management/expense-management-prisma.repository.ts:238-278`, `prisma/schema.prisma:2696-2713`
+- Descrição: O sync consulta receipt, executa a ação e só depois cria receipt em outra transação. A chave é apenas tenant+`client_action_id`, sem usuário ou fingerprint do payload.
+- Evidência:
+  ```ts
+  const existing = await this.repository.findMobileActionReceipt({ tenantId: actor.tenantId, clientActionId });
+  // ...
+  const resultRef = await this.processSyncAction(actor, type, payload);
+  await this.repository.createMobileActionReceipt({
+    tenantId: actor.tenantId,
+    clientActionId,
+    actorUserId: actor.userId,
+  ```
+- Impacto: Crash ou concorrência após o efeito repete item/relatório/valor; dois usuários podem colidir na mesma chave e payload divergente pode receber replay indevido. Há duplicação e atribuição errada de dinheiro.
+- Correção sugerida: Claim durável `processing` por tenant+usuário+ação com hash do payload, ou efeito e receipt na mesma transação. Replays com fingerprint diferente devem ser conflito.
+- Teste recomendado: Crash effect→receipt, duas chamadas concorrentes, dois usuários com mesma chave e mesma chave/payload diferente; exatamente um efeito correto deve persistir.
+
+### [Ω6R-DAT-002] Saldo de estoque usa check-then-insert sem serialização
+- Severidade: P0        Confiança: 0.99
+- Categoria: DAT
+- Módulo: inventory        Lente: A3
+- Local: `src/modules/inventory/inventory-prisma.repository.ts:199-236`, `src/modules/inventory/inventory-prisma.repository.ts:410-426`, `prisma/migrations/20260828000000_add_stock_custody_ledger/migration.sql:74-81`
+- Descrição: A transação calcula o saldo agregado, valida e insere o movimento sem bloquear uma linha/lock lógico do item+custódia. Reversão também verifica existência antes de inserir, sem unicidade ativa sobre o movimento revertido.
+- Evidência:
+  ```ts
+  const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, input.itemId, custody);
+  if (wouldOverdraw(custodySaldoBefore, input.quantidadeSinalizada)) {
+    throw insufficientBalanceError(custodySaldoBefore);
+  }
+  return this.insertMovement({ ...input, custody });
+  ```
+- Impacto: Com saldo 10, duas saídas de 8 podem observar 10 e persistir -16; duas reversões podem compensar o mesmo movimento duas vezes. O estoque e a custódia ficam corrompidos.
+- Correção sugerida: Serializar `(tenant,item,custody)` com balance row/`FOR UPDATE`, advisory lock ou CAS e criar unicidade para reversão ativa.
+- Teste recomendado: Vinte retiradas concorrentes e N reversões no PostgreSQL; saldo nunca negativo e exatamente uma compensação por origem.
+
+### [Ω6R-DAT-003] Fechamento de contagem cíclica pode duplicar ajustes e ficar parcial
+- Severidade: P0        Confiança: 1.00
+- Categoria: DAT
+- Módulo: inventory / cycle-count        Lente: A3
+- Local: `src/modules/inventory/cycle-count.service.ts:137-218`, `src/modules/inventory/cycle-count-prisma.repository.ts:100-119`
+- Descrição: A sessão e ajustes existentes são lidos antes do loop; cada `createMovement` commita em transação própria e o fechamento ocorre só ao final. Dois fechamentos podem observar ausência e criar os mesmos ajustes, e falha intermediária deixa aplicação parcial.
+- Evidência:
+  ```ts
+  // se um fechamento anterior falhou no meio do laço, ajustes
+  // ja podem ter sido gravados para alguns itens (cada createMovement commita na
+  // propria transacao). Um novo "Fechar" NAO pode duplicar esses ajustes
+  const existingAdjustments = await this.inventory.listMovements({
+  ```
+- Impacto: Variações de inventário são aplicadas duas vezes sob corrida, ou apenas para parte dos itens após falha. Saldos e valor de estoque ficam incorretos.
+- Correção sugerida: Uma transação com `FOR UPDATE` da sessão, status condicional e unicidade `(tenant,cycle_count,item)`; todos os movimentos e fechamento fazem commit/rollback juntos.
+- Teste recomendado: N closes concorrentes e falha no item intermediário; um ajuste por item, vencedor único e rollback integral.
+
+### [Ω6R-QUA-004] Cliente Flutter de OS viola envelope, casing e payload do backend
+- Severidade: P1        Confiança: 0.99
+- Categoria: QUA
+- Módulo: mobile-flutter / work-orders        Lente: A5
+- Local: `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:93-152`, `src/modules/work-orders/work-order.controller.ts:52-58`, `src/modules/work-orders/work-order.routes.ts:262-266`, `src/modules/work-orders/work-order.dto.ts:15-24`, `src/modules/work-orders/work-order.service.ts:1079-1088`, `mobile/flutter_app/test/features/b099_real_work_orders_pull_test.dart:209-238`
+- Descrição: Backend responde `{data: DTO}` em camelCase, mas detalhe/status entregam o envelope ao parser snake_case e timeline espera uma lista na raiz. Assign envia `user_id`, campo que o service não lê.
+- Evidência:
+  ```dart
+  final resp = await _dio.get<Map<String, dynamic>>(
+    WorkOrderApiEndpoints.workOrder(workOrderId),
+  );
+  return _workOrderFromJson(resp.data!);
+  ```
+- Impacto: Timeline remota falha e volta silenciosamente ao cache; detalhe, status e assign quebram quando exercidos. O teste existente não chama Dio/parser real e produz falso verde.
+- Correção sugerida: Normalizador único do envelope/camelCase, payload conforme contrato e fixtures compartilhadas derivadas das respostas reais do backend.
+- Teste recomendado: MockAdapter executa `DioWorkOrderRemoteApi` em list/detail/status/timeline/assign com respostas reais e valida requests/respostas ponta a ponta.
+
+### [Ω6R-QUA-005] Seleção multi-SKU retorna antes de persistir a fila offline
+- Severidade: P1        Confiança: 0.98
+- Categoria: QUA
+- Módulo: mobile-flutter / prestador        Lente: A5
+- Local: `mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart:117-136`, `mobile/flutter_app/lib/core/sync/sync_queue_repository.dart:4-33`, `mobile/flutter_app/lib/core/local_db/drift_sync_action_store.dart:28-55`
+- Descrição: `selection.forEach` dispara `enqueue`, que é assíncrono, sem `await`, e o método retorna sucesso antes da durabilidade. Cada enqueue faz load-all/save-all, portanto SKUs concorrentes também podem sobrescrever a fila.
+- Evidência:
+  ```dart
+  selection.forEach((sku, qty) {
+    if (qty <= 0) return;
+    final action = _actionFactory.create(
+      // ...
+    );
+    _syncQueue.enqueue(action);
+  });
+  ```
+- Impacto: Crash logo após confirmar materiais perde ações; seleção de vários materiais pode persistir só parte deles, divergindo consumo da OS e estoque.
+- Correção sugerida: `for...in` com `await` ou `enqueueAll` atômico numa transação Drift; retornar apenas após commit da fila.
+- Teste recomendado: Três SKUs com store atrasado e restart imediato após retorno; as três ações devem existir após reabrir o banco.
+
+### [Ω6R-SEC-003] Lockout de login é caminho morto e permite tentativas ilimitadas
+- Severidade: P1        Confiança: 1.00
+- Categoria: SEC
+- Módulo: auth        Lente: A2
+- Local: `src/modules/auth/services/local-auth-login.service.ts:113-141`, `src/modules/auth/repositories/local-auth-credential.repository.ts:101-112`, `src/modules/auth/routes/auth.routes.ts:53-91`
+- Descrição: Login consulta `locked_until`, mas senha incorreta apenas incrementa contador; não existe threshold nem gravação de lock. A rota pública também não aplica rate limit.
+- Evidência:
+  ```ts
+  if (!passwordMatches) {
+    await this.credentials.incrementFailedAttempts(credential.id, tenantId);
+    await this.recordLoginFailure(tenantId, email, "invalid_credentials", auditContext);
+    return { ok: false, reason: "invalid_credentials" };
+  }
+  ```
+- Impacto: Ataque de força bruta/credential stuffing pode tentar senhas indefinidamente; resposta 423 é inalcançável pelo fluxo normal.
+- Correção sugerida: Operação atômica que incrementa, aplica threshold/janela e `locked_until`; rate limit por conta/IP e reset somente em sucesso.
+- Teste recomendado: N falhas concorrentes armam lock persistente; senha correta durante TTL retorna 423 e funciona após expiração.
+
+### [Ω6R-SEC-004] Uploads produtivos usam scanner no-op e confiam no MIME declarado
+- Severidade: P1        Confiança: 0.99
+- Categoria: SEC
+- Módulo: evidence / attachments / mobile        Lente: A2
+- Local: `src/modules/evidence/evidence-storage.ts:46-53`, `src/modules/mobile/mobile-evidence-upload.ts:52-54`, `src/modules/attachments/attachment.storage.ts:52-61`, `src/modules/attachments/attachment.storage.ts:90-105`, `src/modules/attachments/attachment.routes.ts:71-83`
+- Descrição: O scanner padrão sempre devolve `clean`; não há wiring produtivo alternativo. Multipart aceita MIME fornecido pelo cliente e download é `inline` com o mesmo MIME persistido.
+- Evidência:
+  ```ts
+  export class NoopEvidenceScanner implements EvidenceScanner {
+    async scan(): Promise<EvidenceScanResult> {
+      return { status: "clean" };
+    }
+  }
+  ```
+- Impacto: Usuário autenticado armazena bytes hostis rotulados como imagem/PDF e o sistema os entrega inline a outros usuários, ampliando malware e active-content.
+- Correção sugerida: Scanner obrigatório e fail-closed em produção, validação por magic bytes/decoder e quarentena; download como attachment quando inline não for necessário.
+- Teste recomendado: EICAR/mock infected, MIME divergente e scanner indisponível não criam blob/linha nem permitem download.
 
 ## Hipóteses a confirmar
 
