@@ -72,15 +72,13 @@
     }
   },
   "policy": {
-    "dual_kpis": true,
-    "mobile_source": "mobile/flutter_app/Kpis/",
-    "root_reflection": "Kpis/",
+    "dual_kpis": false,
+    "root_reflection": "Kpis/ (painel ÚNICO)",
     "rules": [
-      "Mexeu no Flutter/mobile: atualizar mobile/flutter_app/Kpis/* e refletir percentuais mobile em Kpis/*.",
-      "Mexeu fora do mobile: atualizar Kpis/*.",
-      "Mexeu nos dois: atualizar os dois conjuntos.",
-      "Se existir index.html: atualizar tambem o HTML.",
-      "KPI por PR (D-KPI-PER-PR, 2026-07-13): todo PR que altere codigo/teste/escopo atualiza os KPIs no proprio PR com contagem de execucao real; a junta do PR valida (a politica pos-avaliacao humana foi REVOGADA)."
+      "Painel ÚNICO: `Kpis/`. A política dupla foi REVOGADA pelo dono em 2026-08-12 (D-KPI-DUPLA-REVOGADA) e o `mobile/flutter_app/Kpis/` foi apagado — manter dois painéis em paridade manual multiplicava trabalho e risco de divergirem.",
+      "Todo PR que altere código/teste/escopo atualiza `Kpis/*` no próprio PR, com contagem de execução REAL (D-KPI-PER-PR); a junta do PR valida os números.",
+      "PR que toque Flutter atualiza a métrica `flutter_tests` aqui — não há segundo conjunto.",
+      "O ARTEFATO PRINCIPAL é o `Kpis/index.html` (D-KPI-INDEX-PAINEL); os JSON são a fonte de dados e o painel hidrata deles em runtime."
     ]
   },
   "notes": [

@@ -277,7 +277,11 @@ validação** e **rastreabilidade**. Tipos:
      correspondente no painel — número novo sem lugar no painel é entrega incompleta.
    - Guard permanente: `tests/kpi-dashboard-charts.test.ts` executa o `app.js` de verdade e falha se o painel
      defasar do último snapshot, se algum gráfico sumir ou se a seção mentir sem dado.
-2. PR que toque **Flutter/mobile** atualiza **também** `mobile/flutter_app/Kpis/*` (política dupla mantida).
+2. **Política dupla REVOGADA (decisão do dono, 2026-08-12 — `D-KPI-DUPLA-REVOGADA`).** O painel de KPI do
+   Flutter (`mobile/flutter_app/Kpis/`) foi **apagado**: existia UM painel por trilha, e manter dois em
+   paridade manual só multiplicava o trabalho e o risco de divergirem. **O painel é UM: `Kpis/`.** PR que
+   toque Flutter/mobile atualiza `Kpis/*` como qualquer outro, com a métrica `flutter_tests` de execução
+   real — nada de segundo conjunto.
 3. Contagens de teste **do que o PR exerceu** vêm de **execução real no PR** — nunca copiadas do bloco
    anterior. Métricas de trilhas que o PR **não tocou** (ex.: mobile num PR web-only) carregam o último valor
    oficial **com nota explícita** no history.
@@ -287,16 +291,16 @@ validação** e **rastreabilidade**. Tipos:
    **`merge_commit`/`approved_head` são `null` na autoria** (só existem pós-merge) e recebem **backfill
    pós-merge** (com a reconciliação de PR#/hash no bloco seguinte); `pr` é preenchido após `gh pr create`.
    `null` nesses campos na autoria **não bloqueia** (a regra antiga de bloqueio por `null` foi revogada).
-6. A **validação dos números é da junta do PR**. Mexeu nos **dois** (mobile+backend) → atualizar ambos;
-   fora do mobile → só `Kpis/*`. Se existir `index.html` de KPI → atualizar o HTML também.
+6. A **validação dos números é da junta do PR**. Todo PR atualiza `Kpis/*` — não há mais segundo conjunto
+   (§C3.2). O `Kpis/index.html` é o artefato principal e hidrata dos JSON.
 
 ## C4. Disciplina de escopo (por bloco)
 
 Todo comando declara **escopo permitido** e **escopo proibido** com caminhos exatos. Fora de
 autorização explícita, **não** tocar: `prisma/**`, `migrations/**`, `infra/**`, `.env`,
 lockfiles JS, `pubspec.yaml/lock`, Figma. **KPIs deixaram de ser escopo proibido de feature (D-KPI-PER-PR):**
-todo PR que altere código/teste/escopo **DEVE atualizar** `Kpis/*` (e `mobile/flutter_app/Kpis/*` quando tocar
-mobile) **no próprio PR** — ver §C3.
+todo PR que altere código/teste/escopo **DEVE atualizar** `Kpis/*` **no próprio PR** — ver §C3 (o painel é
+UM só desde `D-KPI-DUPLA-REVOGADA`).
 
 ## C5. Limpeza pós-validação e **pós-merge** (permanente)
 
@@ -408,7 +412,7 @@ anteriores → `flutter test --reporter compact` → `cd ../..`.
 
 **Backend/raiz** — `npm run check` · `npm run lint` · `npm test` · `npm run build` ·
 `node --test --import tsx tests/<contrato>.test.ts` · `node --check Kpis/app.js` ·
-`node --check mobile/flutter_app/Kpis/app.js` · `git diff --check`.
+`git diff --check`.
 
 **Frontend** — `npm --prefix frontend run check` · `npm --prefix frontend run build`
 (+ `test:smoke` quando existir).
