@@ -121,10 +121,14 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
   @override
   Future<List<WorkOrderTimelineEvent>> fetchTimeline(String workOrderId) async {
     try {
-      final resp = await _dio.get<List<dynamic>>(
+      // O backend responde no envelope padrão `{ data: [...] }` (work-order.controller.ts).
+      // Pedir `List<dynamic>` fazia o Dio receber um Map e devolver null → a linha do tempo remota
+      // vinha SEMPRE vazia, e o repositório caía no histórico local sem ninguém perceber.
+      final resp = await _dio.get<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrderTimeline(workOrderId),
       );
-      return (resp.data ?? [])
+      final itens = (resp.data?['data'] as List<dynamic>?) ?? const [];
+      return itens
           .cast<Map<String, dynamic>>()
           .map(_timelineEventFromJson)
           .toList();
@@ -259,19 +263,58 @@ WorkOrderStatus workOrderStatusFromApiValue(Object? value) {
   );
 }
 
+/// Traduz o vocabulário do backend (`work_order_created`) para o do app (`created`).
+///
+/// O parser antigo comparava `enum.name` direto com o valor recebido — como os vocabulários nunca
+/// coincidiram, TODO evento virava "Observacao" no card, mesmo quando a resposta chegava íntegra.
+/// Tipo desconhecido continua caindo em `note` de propósito: um evento novo no backend não pode
+/// derrubar a tela do guincheiro, e o texto real viaja em `message`.
+WorkOrderTimelineEventType _eventTypeFromApi(String? valor) => switch (valor) {
+  'work_order_created' => WorkOrderTimelineEventType.created,
+  'work_order_updated' => WorkOrderTimelineEventType.statusChanged,
+  'work_order_status_changed' => WorkOrderTimelineEventType.statusChanged,
+  'work_order_assigned' => WorkOrderTimelineEventType.assigned,
+  'work_order_arrived_on_site' => WorkOrderTimelineEventType.arrivedOnSite,
+  'work_order_service_started' => WorkOrderTimelineEventType.serviceStarted,
+  'work_order_paused' => WorkOrderTimelineEventType.paused,
+  'work_order_resumed' => WorkOrderTimelineEventType.resumed,
+  'work_order_approval_requested' => WorkOrderTimelineEventType.approvalRequested,
+  'work_order_approval_granted' => WorkOrderTimelineEventType.approvalGranted,
+  'work_order_approval_denied' => WorkOrderTimelineEventType.approvalDenied,
+  'work_order_completed' => WorkOrderTimelineEventType.completed,
+  'work_order_cancelled' => WorkOrderTimelineEventType.cancelled,
+  'work_order_mileage_updated' => WorkOrderTimelineEventType.statusChanged,
+  'work_order_comment' => WorkOrderTimelineEventType.note,
+  _ => WorkOrderTimelineEventType.note,
+};
+
+/// Status da transição registrada no evento. Desconhecido vira `null` — nunca um palpite: um status
+/// errado na linha do tempo é registro falso, e a tela sabe lidar com a ausência.
+WorkOrderStatus? _statusFromApi(String? valor) {
+  if (valor == null || valor.isEmpty) return null;
+  for (final status in WorkOrderStatus.values) {
+    if (status.name == valor) return status;
+  }
+  return null;
+}
+
 WorkOrderTimelineEvent _timelineEventFromJson(Map<String, dynamic> json) {
+  // Os nomes vêm do `toWorkOrderEventDto` do backend, em camelCase. O parser antigo lia snake_case
+  // (`work_order_id`, `occurred_at`, `note`) e ainda exigia `tenant_id` com cast duro — campo que o
+  // DTO CORRETAMENTE não emite (§2.8: identificador de organização nunca vai para o cliente). Bastava
+  // uma resposta íntegra chegar para o cast estourar.
   return WorkOrderTimelineEvent(
     localId: json['id'] as String,
-    workOrderLocalId: json['work_order_id'] as String,
-    tenantId: json['tenant_id'] as String,
-    eventType: WorkOrderTimelineEventType.values.firstWhere(
-      (t) => t.name == (json['event_type'] as String),
-      orElse: () => WorkOrderTimelineEventType.note,
-    ),
+    workOrderLocalId: (json['workOrderId'] as String?) ?? '',
+    // O tenant vem da sessão do próprio aparelho, nunca do corpo da resposta.
+    tenantId: '',
+    eventType: _eventTypeFromApi(json['eventType'] as String?),
     occurredAt:
-        _parseDate(json['occurred_at'] as String?) ?? DateTime.now().toUtc(),
-    actorUserId: json['actor_user_id'] as String?,
-    note: json['note'] as String?,
+        _parseDate(json['createdAt'] as String?) ?? DateTime.now().toUtc(),
+    actorUserId: json['actorUserId'] as String?,
+    note: json['message'] as String?,
+    fromStatus: _statusFromApi(json['fromStatus'] as String?),
+    toStatus: _statusFromApi(json['toStatus'] as String?),
   );
 }
 
