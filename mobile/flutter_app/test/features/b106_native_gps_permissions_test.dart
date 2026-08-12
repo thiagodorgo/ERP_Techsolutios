@@ -351,15 +351,15 @@ void main() {
     });
 
     test('20. KPIs mantem B-106 no historico e latest pode avancar', () {
+      // D-KPI-DUPLA-REVOGADA (2026-08-12, decisao do dono): o painel de KPI do Flutter
+      // (mobile/flutter_app/Kpis/) foi APAGADO — o painel e UM so, o da raiz. Este teste
+      // afirmava os dois; agora afirma apenas o painel unico, que continua carregando a
+      // historia do B-106 (a historia nao se perde quando o espelho morre).
       final historyFiles = [
-        File('Kpis/kpis-history.json').readAsStringSync(),
         File('../../Kpis/kpis-history.json').readAsStringSync(),
-        File('Kpis/kpis-history.md').readAsStringSync(),
         File('../../Kpis/kpis-history.md').readAsStringSync(),
       ];
       final latestJsonFiles = [
-        jsonDecode(File('Kpis/kpis-latest.json').readAsStringSync())
-            as Map<String, dynamic>,
         jsonDecode(File('../../Kpis/kpis-latest.json').readAsStringSync())
             as Map<String, dynamic>,
       ];
@@ -408,10 +408,9 @@ void main() {
         return status;
       }).toList();
 
-      // Paridade estrita (version/block/status identicos raiz x mobile) NAO e mais exigida sob
-      // KPI-por-PR: um PR de um lado so (ex.: web/backend) faz a raiz avancar enquanto o mobile
-      // segue no ultimo marco. Basta cada arquivo estar bem-formado e com status valido.
-      expect(latestStatuses, hasLength(2));
+      // Sob D-KPI-DUPLA-REVOGADA nao existe mais paridade raiz x mobile a verificar — ha um
+      // unico painel. Basta ele estar bem-formado e com status valido.
+      expect(latestStatuses, hasLength(1));
     });
   });
 }

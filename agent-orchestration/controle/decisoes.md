@@ -1220,3 +1220,32 @@ silêncio a cada `sync`.
 
 **Exceção única:** indisponibilidade do modelo. Nesse caso a junta segue com o modelo disponível e o desvio
 vira **nota explícita na ata** — nunca silêncio.
+---
+
+## D-KPI-DUPLA-REVOGADA (2026-08-12) — o painel de KPI é UM só; o do Flutter foi descontinuado
+
+**Decisão do dono (verbatim):** *"apaguei, nao é mais necessario o kpis flutter"*.
+
+**O que muda.** `mobile/flutter_app/Kpis/` deixa de existir. A **política dupla** de KPI (§C3.2 na redação
+anterior: "PR que toque Flutter/mobile atualiza também `mobile/flutter_app/Kpis/*`") está **REVOGADA**. O
+painel é **`Kpis/`**, único, e a métrica `flutter_tests` vive nele como qualquer outra.
+
+**Por que faz sentido.** Dois painéis exigiam paridade manual de `version`/`block` a cada PR que tocasse
+mobile — trabalho dobrado cujo único produto era a chance de divergirem. A trilha Flutter nunca precisou de
+painel próprio: ela é uma linha do painel do projeto.
+
+**O que foi ajustado no mesmo trabalho** (regra de espelhamento — `CLAUDE.md` e `AGENTS.md` juntos):
+- §C3.2 — a política dupla vira a revogação, com o porquê.
+- §C3.6 — sai o "mexeu nos dois → atualizar ambos".
+- §C4 — o escopo obrigatório de KPI deixa de citar o caminho mobile.
+- §9 (bateria) — sai o `node --check mobile/flutter_app/Kpis/app.js`, que agora apontaria para nada.
+- `Kpis/kpis-latest.json` → `policy.dual_kpis = false` e as regras reescritas.
+
+**Registro honesto de um erro meu no meio disto.** Vi os 7 arquivos apagados na árvore, presumi acidente da
+limpeza de disco e **restaurei com `git checkout --`** — desfazendo a decisão do dono sem perguntar. O dono
+corrigiu. A guarda que eu tinha acabado de escrever no `scripts/post-merge-cleanup.sh` também contava essa
+história errada (afirmava acidente como fato) e foi reescrita: ela agora **avisa** sobre remoção de arquivo
+rastreado e diz explicitamente para **não reverter por reflexo** — pode ser decisão de quem apagou.
+
+**Histórico preservado (§A5):** os comandos `B-1xx`, atas e snapshots antigos que citam o painel mobile
+**não** foram reescritos — são registro do que era verdade na época.
