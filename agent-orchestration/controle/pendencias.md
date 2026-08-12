@@ -1852,7 +1852,29 @@ jurídico — **nunca** delete de link. Compromisso da ata: aditivo, nunca retro
 - status: ABERTA (não bloqueia a PR-04b; priorizar quando houver demanda de curadoria do dossiê — e
   obrigatoriamente junto de qualquer revisita ao filtro em `P-CHK-AUTOLINK-FASE-REAL`).
 
-## P-WORKTREE-INTEROP-ORFAO (2026-08-12 — achado do `porteiro-pos-merge` no gate do #351)
+## P-WORKTREE-INTEROP-ORFAO (2026-08-12) — **RESOLVIDA no mesmo dia: DESCARTADA por decisão do dono**
+
+**Desfecho:** o dono mandou descartar. `git worktree remove --force` + `git branch -D` + remoção do
+diretório do disco. Livre em C: subiu para **29,3 GB**.
+
+**Por que descartar era o certo (inventário feito ANTES):** era o bloco **B-153 (interoperabilidade
+Claude Code ↔ Codex)**, rascunho de JUNHO (ponta `f7219ab`, PR #270) parado enquanto a MESMA ideia era
+implementada e mergeada por outro caminho — `.agents/` (#303, #304), adaptadores Codex das skills (#305) e
+a decisão `D-INTEROP-CLAUDE-CODEX` viva no `CLAUDE.md`/`AGENTS.md`. Suas modificações em `CLAUDE.md`,
+`AGENTS.md` e `Kpis/*` eram de uma versão do projeto **~80 PRs atrás**: aplicá-las hoje reverteria tudo que
+veio depois. O que não existia na main eram só artefatos daquele rascunho
+(`docs/agent-interoperability.md`, `skills-manifest.json`, `D-AGENT-INTEROP.md`, o comando do bloco) —
+documentação de uma proposta substituída por outra já entregue.
+
+**A lição, e por isso esta pendência fica registrada em vez de apagada:** o reflexo da limpeza §C5 teria
+removido o worktree junto com a branch mergeada, **sem ninguém olhar os 20 arquivos alterados dentro**.
+Registrar e perguntar custou uma pergunta; teria custado trabalho real se o conteúdo fosse vivo — como foi
+o caso, no MESMO dia, dos 7 arquivos de KPI que restaurei por reflexo e que o dono tinha apagado de
+propósito. **Inventariar antes de apagar** é a regra que sobrou dos dois episódios.
+
+### Registro original (mantido para rastreabilidade)
+
+## P-WORKTREE-INTEROP-ORFAO — registro original (achado do `porteiro-pos-merge` no gate do #351)
 
 Existe um worktree em `C:/tmp/ERP_Techsolutios-agent-interoperability` na branch
 `chore/agent-interoperability`, que **já está mergeada na `main`** (`git branch --merged origin/main` a
