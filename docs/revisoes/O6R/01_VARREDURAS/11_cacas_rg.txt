@@ -1,0 +1,78 @@
+# Ω6R — caças instrumentadas (rg)
+
+Data: 2026-08-11
+Escopo: `src`, `frontend/src`, `mobile/flutter_app/lib`, `owner-portal-pwa/src`, `authority-portal-pwa/src`.
+Exclusões: testes, `node_modules`, `dist`, `build`.
+Nota: contagens são pistas lexicais; homônimos em comentários/Dart foram preservados e não são achados.
+
+## Contagens
+
+- `findMany|updateMany|deleteMany|count|aggregate`: 242
+- `$queryRaw|$executeRaw`: 72
+- `$transaction(` literal: 5 (wrappers tenant-scoped ocultam transações adicionais)
+- `client_action_id|clientActionId`: 404
+- logging com PII na mesma linha: 0
+- marcadores amplos de auth: 450
+- marcadores amplos de validação: 241
+- `any` lexical: 38; `any` TypeScript explícito confirmado: 1
+- `@ts-ignore|@ts-expect-error`: 0
+- `TODO|FIXME|HACK` lexical: 46; tokens literais confirmados: 13, majoritariamente “TODO” em português dentro de comentários
+- `Promise.all(`: 118
+- segredo literal por padrão lexical: 0
+- `process.env.` fora da centralização: 6
+
+## Amostras — queries Prisma (30/242)
+
+```text
+src/modules/cheques/cheque-prisma.repository.ts:50 findMany
+src/modules/cheques/cheque-prisma.repository.ts:56 count
+src/modules/checklists/checklist-prisma.repository.ts:84 findMany
+src/modules/checklists/checklist-prisma.repository.ts:107 findMany
+src/modules/checklists/checklist-prisma.repository.ts:229 deleteMany
+src/modules/yard/yard-prisma.repository.ts:63 findMany
+src/modules/yard/yard-prisma.repository.ts:64 count
+src/modules/work-orders/work-order-prisma.repository.ts:35 count
+src/modules/work-orders/work-order-prisma.repository.ts:140 findMany
+src/modules/work-orders/work-order-prisma.repository.ts:149 count
+src/modules/charging/charge.accrual.service.ts:19 tenant.findMany
+src/modules/charging/charge-prisma.repository.ts:43 findMany
+src/modules/charging/charge-prisma.repository.ts:51 aggregate
+src/modules/work-order-timeseries/work-order-timeseries-prisma.repository.ts:22 findMany
+src/modules/work-order-financials/work-order-financial-prisma.repository.ts:45 findMany
+```
+
+## Amostras — SQL bruto (20/72)
+
+```text
+src/routes/health.routes.ts:65 $queryRawUnsafe("SELECT 1")
+src/database/rls.ts:15 $executeRaw tagged set_config
+src/modules/charging/charge-prisma.repository.ts:65,115,148,156,180,215,252,283 tagged queries
+src/modules/checklists/checklist-prisma.repository.ts:452,700 tagged queries
+src/modules/authority/authority-removal.repository.ts:56,155,182 tagged queries
+src/modules/authority/authority-release-approval.repository.ts:144,163,183,204,221 tagged queries
+src/modules/yard/yard-prisma.repository.ts:289 tagged query
+```
+
+## Amostras — `Promise.all` (15/118)
+
+```text
+src/server.ts:25
+src/routes/health.routes.ts:32
+src/modules/yard/yard-prisma.repository.ts:62
+src/modules/work-orders/work-order.service.ts:594
+src/modules/work-orders/work-order-prisma.repository.ts:139
+src/modules/insurance-policies/insurance-policy-prisma.repository.ts:50
+src/modules/expense-management/expense-management-prisma.repository.ts:28,47
+src/modules/commissions/commission.service.ts:358,369,373
+frontend/src/modules/work-orders/useWorkOrderDetail.ts:36
+frontend/src/modules/work-orders/useRegistryLinkOptions.ts:81
+frontend/src/modules/checklists/pages/ChecklistEditorPage.tsx:308
+frontend/src/modules/checklists/pages/TenantChecklistsPage.tsx:209
+```
+
+## Pistas priorizadas para inspeção manual
+
+1. 72 ocorrências de SQL bruto: conferir parametrização, tenant e locks.
+2. Baixa contagem literal de `$transaction` não mede os wrappers `withTenantRls`; cruzar multi-write por serviço com fronteiras reais dos repositórios.
+3. `client_action_id` é abundante, mas a ausência deve ser procurada por fluxo monetário, não por contagem global.
+4. Censo de `any` corrigido para sintaxe TypeScript: apenas `src/modules/core-saas/services/prisma-core-saas.service.ts:307`.

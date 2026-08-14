@@ -1,0 +1,12 @@
+# Ω6R — resumo dos audits de dependências
+
+As saídas JSON integrais estão nos arquivos `06` a `10` desta pasta. Versões/caminhos foram conferidos no lockfile por A2.
+
+| Workspace | Low | Moderate | High | Critical | Total |
+|---|---:|---:|---:|---:|---:|
+| raiz | 2 | 4 | 2 | 0 | 8 |
+| frontend | 0 | 1 | 4 | 0 | 5 |
+| owner portal | 0 | 0 | 1 | 0 | 1 |
+| authority portal | 0 | 0 | 1 | 0 | 1 |
+
+Triagem de caminho real: os high da raiz (`hono`, `fast-uri`) estão sob Prisma CLI; Vite/PostCSS/nanoid são build/dev. React Router é runtime no browser, mas a busca de destinos externos controláveis não confirmou a precondição do advisory. Nos portais, nanoid é transitivo de desenvolvimento. Resultado desta fase: 0 vulnerabilidades com caminho de exploração em produção confirmado; atualização fica como dívida observada até nova evidência.
