@@ -191,11 +191,19 @@ export const envSchema = z.object({
   // requisição) em dev/test; em PRODUÇÃO o gate abaixo exige allowlist explícita sem curinga.
   CORS_ORIGIN: z.string().trim().default(""),
   CORE_SAAS_PERSISTENCE: z.enum(["memory", "prisma"]).default("memory"),
-  // B-O6R-05 (Ω6R-DAT-001) — a URL do Postgres passa a ser CAMPO VALIDADO do schema. Antes ela só era lida
-  // direto de `process.env` em `src/database/prisma.ts`, então o boot em produção podia aceitar
-  // CORE_SAAS_PERSISTENCE=prisma com a URL vazia e só quebrar no primeiro acesso ao banco. Default "" (e não
-  // `.optional()`) porque dev/test em modo memory legitimamente não têm banco: o gate de produção abaixo é
-  // que a torna obrigatória. `src/database/prisma.ts` segue lendo `process.env` — nenhum consumidor muda.
+  // B-O6R-05 (Ω6R-DAT-001) — a URL do Postgres entra no schema para que o gate de produção possa EXIGIR SUA
+  // PRESENÇA. Antes ela só era lida direto de `process.env` em `src/database/prisma.ts`, então o boot em
+  // produção aceitava CORE_SAAS_PERSISTENCE=prisma com a URL vazia e só quebrava no primeiro acesso ao banco.
+  //
+  // O QUE ESTE CAMPO **NÃO** FAZ, dito porque a junta do PR pediu (ressalva do `agente-dba-guardiao`): ele
+  // valida apenas **presença não-vazia** — não a forma da URL nem o host. Em produção, `DATABASE_URL=x` ou uma
+  // URL apontando para o loopback do contêiner PASSAM no boot. É assimetria consciente com o `REDIS_URL`
+  // vizinho, que recebe forma **e** endereço: o P0 aqui era a perda SILENCIOSA de identidade, e essa fecha com
+  // presença (o G1 impede memória, o gate abaixo impede vazio); URL malformada quebra alto no primeiro acesso,
+  // que é ruído, não perda de dado. Fechar a assimetria é `P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST`.
+  //
+  // Default "" (e não `.optional()`) porque dev/test em modo memory legitimamente não têm banco.
+  // `src/database/prisma.ts` segue lendo `process.env` — nenhum consumidor muda.
   DATABASE_URL: z.string().trim().default(""),
   // Ω4C PR-04 (D-Ω4C-NOTIF-SCHEDULER) — liga o worker in-process (job.worker.ts). Default DESLIGADO: com false o
   // loop de jobs NÃO sobe (CI/testes que importam app.ts nunca disparam o scheduler). Só com true ∧

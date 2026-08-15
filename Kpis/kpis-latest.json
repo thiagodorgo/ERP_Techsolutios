@@ -6,12 +6,12 @@
   "release": {
     "block": "B-O6R-05 — fix/production-runtime-gates: os dois primeiros P0 da auditoria O6R viram gate de boot.",
     "title": "B-O6R-05 — producao nao sobe mais sem persistir e sem worker",
-    "pr": null,
+    "pr": 353,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
     "summary": "Producao podia subir guardando organizacoes e permissoes so na memoria, e o worker de jobs nunca subia. Os dois eram default silencioso, sem gate. Agora o processo recusa o boot, o worker tem sinal de vida honesto (um tick que falha nao conta como vivo) e o smoke de conteiner prova write-restart-read dentro da CI.",
-    "status_label": "Em revisao (PR nao aberto)"
+    "status_label": "Em revisão (PR #353)"
   },
   "metrics": {
     "flutter_tests": {

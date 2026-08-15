@@ -2624,3 +2624,33 @@ como teste** (o caso nomeia a pendência), justamente para a afirmação não po
 
 - **Correção, se um dia valer:** resolução no boot, com o custo declarado (falha de DNS passa a impedir o boot).
 - status: ABERTA (limitação conhecida e declarada, não defeito silencioso).
+
+## P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST (2026-08-15 — junta do PR #353, ressalva do `agente-dba-guardiao`)
+
+O B-O6R-05 nasceu para fechar a assimetria "banco blindado, Redis aberto" e **entregou o inverso**: o `REDIS_URL`
+recebeu validação **estrutural** (forma de URL) **e semântica** (recusa de qualquer notação que resolva para
+loopback), enquanto o `DATABASE_URL` recebeu só **presença não-vazia**.
+
+Medido pela cadeira, em produção plenamente válida: `DATABASE_URL=nao-e-url`, `DATABASE_URL=x` e até
+`DATABASE_URL=redis://localhost:6379` **passam no boot**.
+
+**Por que não bloqueou o merge:** o P0 era a perda **silenciosa** de identidade, e essa está fechada — um gate
+impede memória, o outro impede vazio. URL malformada quebra **alto** no primeiro acesso ao banco, que é ruído,
+não perda de dado. E o plano §2.2 especificou este gate como "presente e não-vazia": o código faz o que o plano
+diz — **não é superdeclaração**.
+
+**Correção:** exigir do `DATABASE_URL` em produção a mesma disciplina do Redis — forma de URL e recusa de host
+de loopback. Um Postgres de produção apontado para o loopback do próprio contêiner é **o mesmo dano** que o do
+Redis: some no restart, que é literalmente o `Ω6R-DAT-001` entrando por outra porta.
+- **Alvo:** B-O6R-08. status: ABERTA.
+- Já feito neste PR: o comentário do campo em `src/config/env.ts` foi reescrito para declarar o que ele **não**
+  faz, a pedido da junta — a frase anterior prometia mais rigor do que as duas linhas seguintes entregavam.
+
+## P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353)
+
+O Redis de desenvolvimento desta máquina carrega **42.393 chaves de payload de fila** (`erp:jobs:data:*`) de
+suítes antigas, presentes antes de qualquer execução da rodada. Não é resíduo de bloco nenhum e não afeta
+veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é payload de fila, não dado de domínio.
+- **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
+  explícito e contagem antes/depois, nunca por curinga solto.
+- status: ABERTA.
