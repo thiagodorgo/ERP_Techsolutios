@@ -43,8 +43,14 @@ primary_region = "gru"
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  # Staging pode escalar a zero fora de uso (custo); produção NÃO (min_machines_running >= 1 no PR6).
-  min_machines_running = 0
+  # B-O6R-05 / D-O6R-B05-STAGING-MAQUINA-FIXA — o dono autorizou o custo em 2026-08-15.
+  #
+  # Escalar a zero era barato e SILENCIOSAMENTE ERRADO: com a máquina dormindo, o worker de jobs não roda,
+  # então diárias de pátio, reconciliação de custódia e notificações legais NÃO acontecem em staging. Isso
+  # torna o staging inútil justamente para o que o Ω6R-DIN-006 acabou de consertar — o ambiente diria "verde"
+  # sem nunca ter executado um job. `auto_stop_machines` continua "stop" de propósito: com o mínimo em 1, o
+  # provedor derruba só as máquinas EXCEDENTES e mantém uma de pé.
+  min_machines_running = 1
 
   # Liveness RASO (sem I/O de dependência — blip de banco não derruba a máquina em cascata).
   [[http_service.checks]]

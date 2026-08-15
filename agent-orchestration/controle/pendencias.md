@@ -2154,7 +2154,10 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
-- status: ABERTA — 2 P0 + 1 P1.
+- status: **FECHADA (2026-08-15, PR #353 `a8901ff`)** — os dois P0 viraram gate de boot:
+  produção recusa subir com o agregado core-saas em memória, sem banco, sem worker e com Redis apontando
+  para host local. O texto acima descreve o estado **anterior** ao PR e fica como registro histórico; a
+  `main` de hoje já não o reproduz. Ata: `omega/juntas/J-O6R-B05-PR353-merge.md` (3×0, sem veto).
 
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 
@@ -2542,8 +2545,9 @@ que rodaram `npm test` — e, dessas, apenas as que leram o resultado através d
 verde. Nenhum número publicado é retirado por causa disto.
 
 **Efeito colateral revelado na primeira execução honesta.** Com o runner novo, `npm test` passou a executar de
-verdade nesta máquina. Medição final do bloco, na configuração da CI (`CORE_SAAS_PERSISTENCE=memory`):
-**231 arquivos · 2413 testes · 2404 pass · 0 fail · 9 skip · exit 0**.
+verdade nesta máquina. Medição na configuração da CI (`CORE_SAAS_PERSISTENCE=memory`) no momento deste fechamento:
+**2413 testes · 2404 pass**. A contagem **final do bloco**, depois dos ciclos de correção que somaram testes,
+é **231 arquivos · 2438 testes · 2429 pass · 0 fail · 9 skip · exit 0** — é ela que está no KPI.
 
 **E na configuração que o `.env` desta máquina impõe (`prisma`), a mesma suíte dá 89 falhas.** Não é regressão
 deste bloco — provado por A/B: os mesmos arquivos falham com e sem as mudanças daqui (89 e 89), e passam
@@ -2566,8 +2570,11 @@ que o consumidor vai ler.
 O staging escala a zero (`fly.staging.toml`: paradas automáticas ligadas, mínimo de máquinas em execução = 0).
 **Máquina dormindo ⇒ o worker não roda**, então as varreduras periódicas não acontecem em staging mesmo depois
 deste bloco ligar o gate. Subir o mínimo para 1 **custa dinheiro do dono** — nada foi alterado.
-- **Decisão:** do **dono**, não da junta. Registrada com a limitação declarada em vez de mexer em silêncio.
-- status: ABERTA (aguarda decisão de custo).
+- **Decisão:** do **dono**, não da junta.
+- status: **RESOLVIDA (2026-08-15)** — o dono **autorizou o custo** e a máquina fixa foi ligada
+  (`min_machines_running = 1`), em PR próprio e isolado. Registro: `D-O6R-B05-STAGING-MAQUINA-FIXA`
+  em `decisoes.md`. Nota: com os gates do B-O6R-05, a máquina **só sobe com os segredos postos** —
+  ligar o mínimo não provisiona segredo, e isso segue sendo ação humana.
 
 ## P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO (2026-08-15 — bloco B-O6R-05)
 
