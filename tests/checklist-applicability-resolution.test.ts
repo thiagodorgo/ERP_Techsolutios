@@ -111,16 +111,40 @@ test("junta D1: coleta e entrega convivem — o teto por ordem é uma vistoria P
   );
 });
 
-test("junta D1: o MESMO modelo em duas fases sai UMA vez (senão a junção da PR-04b duplicaria a vistoria)", () => {
+// SUPERSEDED pela junta do PR-04c (3×0, unânime) — este teste afirmava o OPOSTO do que o domínio precisa.
+//
+// A versão original travava "o mesmo modelo em duas fases" em nome de anti-duplicata. Só que esse par é o
+// CASO DE USO CENTRAL do aplicativo: a mesma "Vistoria do Veículo" preenchida na coleta e na entrega, e a
+// comparação entre as duas é a prova jurídica do estado do veículo — a tela carrega UM schema e confronta as
+// duas execuções. Com o dedup por modelo, a entrega nunca existia, e a alternativa (duplicar o formulário em
+// dois modelos) tinha a armadilha de eles divergirem com o tempo, os campos deixarem de casar e a comparação
+// passar a produzir divergências vazias ou falsas, em silêncio.
+//
+// A deduplicação passou para o eixo FASE: preserva o que a proteção queria (a mesma vistoria nunca é pedida
+// duas vezes NA MESMA FASE) sem proibir coleta+entrega.
+test("junta PR-04c: o MESMO modelo PODE servir coleta e entrega — é o par que alimenta a comparação", () => {
   const coleta = regra({ role: "collection", templateId: "T1" });
   const entrega = regra({ role: "delivery", templateId: "T1" });
 
   const { matches, shadowed } = resolveChecklistApplicability([coleta, entrega], {}, PUBLICADOS);
 
-  assert.equal(matches.length, 1, "a mesma vistoria não pode ser pedida duas vezes na mesma ordem");
-  assert.equal(matches[0].templateId, "T1");
-  assert.equal(matches[0].role, "collection", "a primeira fase vence; a segunda vira sombreamento");
-  assert.equal(shadowed.some((item) => item.ruleId === entrega.id), true);
+  assert.equal(matches.length, 2, "coleta e entrega do mesmo formulário são DUAS vistorias na ordem");
+  assert.deepEqual(matches.map((m) => m.role), ["collection", "delivery"]);
+  assert.deepEqual(matches.map((m) => m.templateId), ["T1", "T1"]);
+  assert.equal(shadowed.length, 0, "nenhuma das duas é preterida");
+});
+
+test("junta PR-04c: duas regras para a MESMA fase continuam recusando a duplicata", () => {
+  // O que a proteção original realmente queria: uma ordem nunca pede a mesma vistoria duas vezes no mesmo
+  // momento. Isso segue valendo — só o eixo mudou.
+  const antiga = regra({ role: "collection", templateId: "T1", createdAt: new Date("2026-01-01T00:00:00.000Z") });
+  const nova = regra({ role: "collection", templateId: "T2", createdAt: new Date("2026-06-01T00:00:00.000Z") });
+
+  const { matches, shadowed } = resolveChecklistApplicability([antiga, nova], {}, PUBLICADOS);
+
+  assert.equal(matches.length, 1, "uma fase, uma vistoria");
+  assert.equal(matches[0].templateId, "T2", "a mais recente vence pela ordem total");
+  assert.equal(shadowed.some((item) => item.ruleId === antiga.id), true);
 });
 
 // ── DECISÃO 2 DA JUNTA: CLIENTE vence SERVIÇO ──────────────────────────────────────────────────

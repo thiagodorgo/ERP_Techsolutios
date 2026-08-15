@@ -22,9 +22,26 @@ import type {
 import {
   duplicateWorkOrderError,
   formatWorkOrderCode,
+  mirrorColumnsFromInputs,
+  mirrorColumnsFromLinks,
   type CreateWorkOrderEventInput,
   type WorkOrderRepository,
 } from "./work-order.repository.js";
+import {
+  assertChecklistRemovalHasActor,
+  liveChecklistLinks,
+  pickPrimaryChecklistLink,
+  sortChecklistLinks,
+  syntheticChecklistSet,
+  workOrderChecklistDuplicateError,
+  type ApplyWorkOrderChecklistsInput,
+  type ApplyWorkOrderChecklistsResult,
+  type FreezeChecklistLinkSnapshotsInput,
+  type WorkOrderChecklistLink,
+  type WorkOrderChecklistLinkInput,
+  type WorkOrderChecklistRole,
+  type WorkOrderChecklistSource,
+} from "./work-order-checklists.types.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -75,6 +92,11 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
   }
 
   private async insert(input: CreateWorkOrderInput): Promise<WorkOrder> {
+    // CHECKLIST P1 PR-04c-A — ESPELHO na origem: com junção no create, `checklist_id`/`checklist_snapshot` são
+    // DERIVADOS da linha primária, nunca do corpo. Ordem + N linhas ficam na MESMA transação porque todo
+    // caminho público entra por `RlsPrismaWorkOrderRepository`, que envolve a chamada inteira em
+    // `withTenantRls` (uma transação interativa) — o mesmo mecanismo que já dá o contexto de RLS.
+    const mirror = input.checklists ? mirrorColumnsFromInputs(input.checklists) : undefined;
     const workOrder = await this.client.workOrder.create({
       data: {
         tenant_id: input.tenantId,
@@ -102,7 +124,17 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         status: input.status ?? "open",
         assigned_operator_id: input.assignedOperatorId ?? null,
         assigned_user_id: input.assignedUserId ?? null,
-        checklist_id: input.checklistId ?? null,
+        checklist_id: (mirror ? mirror.checklistId : input.checklistId) ?? null,
+        // Sem junção, `checklist_snapshot` continua NÃO sendo escrito no create — comportamento de hoje,
+        // preservado de propósito (o snapshot nasce no freeze do despacho). Com junção, o espelho da primária
+        // vale desde o primeiro instante, senão a cópia de uma ordem já despachada nasceria sem o formulário
+        // congelado que ela acabou de herdar.
+        ...(mirror
+          ? {
+              checklist_snapshot:
+                mirror.checklistSnapshot === null ? Prisma.DbNull : (mirror.checklistSnapshot as Prisma.InputJsonValue),
+            }
+          : {}),
         customer_id: input.customerId ?? null,
         vehicle_id: input.vehicleId ?? null,
         team_id: input.teamId ?? null,
@@ -119,7 +151,193 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
       },
     });
 
+    for (const link of input.checklists ?? []) {
+      await this.insertChecklistLink(input.tenantId, workOrder.id, link, link.orderIndex);
+    }
+
     return mapWorkOrderRecord(workOrder);
+  }
+
+  // CHECKLIST P1 PR-04c-A — a junção é lida e escrita por SQL explícito (e não por delegate gerado) por dois
+  // motivos: o unique é PARCIAL (`WHERE removed_at IS NULL`) e a remoção é soft, duas coisas que o schema do
+  // Prisma não expressa; e o mesmo SQL cabe dentro da transação interativa que o `withTenantRls` já abre.
+  async listChecklists(
+    tenantId: string,
+    workOrderId: string,
+    options?: { readonly includeRemoved?: boolean },
+  ): Promise<readonly WorkOrderChecklistLink[]> {
+    const records = options?.includeRemoved
+      ? await this.client.$queryRaw<readonly ChecklistLinkRecord[]>`
+          SELECT ${Prisma.raw(CHECKLIST_LINK_COLUMNS)}
+            FROM work_order_checklists
+           WHERE tenant_id = ${tenantId}::uuid AND work_order_id = ${workOrderId}::uuid
+        `
+      : await this.client.$queryRaw<readonly ChecklistLinkRecord[]>`
+          SELECT ${Prisma.raw(CHECKLIST_LINK_COLUMNS)}
+            FROM work_order_checklists
+           WHERE tenant_id = ${tenantId}::uuid AND work_order_id = ${workOrderId}::uuid AND removed_at IS NULL
+        `;
+
+    const links = records.map(mapChecklistLinkRecord);
+
+    return options?.includeRemoved ? sortChecklistLinks(links) : liveChecklistLinks(links);
+  }
+
+  // CHECKLIST P1 PR-04c (BLOQ 1 da verificação) — congela o formulário POR LINHA (paridade literal com o
+  // repositório em memória). O `WHERE` carrega a IDENTIDADE inteira da junção — organização, ordem, modelo e
+  // FASE — mais `removed_at IS NULL`: sem a fase, congelar a entrega carimbaria também a coleta do mesmo
+  // modelo; sem o predicado de vida, uma linha retirada entre a leitura do despacho e este carimbo voltaria a
+  // carregar formulário. Nenhuma linha casada ⇒ zero updates, sem erro (contrato da interface).
+  //
+  // O espelho `work_orders.checklist_snapshot` NÃO é tocado aqui: ele reproduz a PRIMÁRIA, que é congelada por
+  // `freezeChecklistSnapshot` na mesma escrita da coluna. Dois caminhos disputando a mesma coluna no mesmo
+  // despacho é exatamente como o espelho dessincronizaria.
+  async freezeChecklistLinkSnapshots(input: FreezeChecklistLinkSnapshotsInput): Promise<void> {
+    for (const entry of input.entries) {
+      await this.client.$executeRaw`
+        UPDATE work_order_checklists
+           SET checklist_snapshot = ${entry.snapshot === null ? null : JSON.stringify(entry.snapshot)}::jsonb,
+               updated_at = now()
+         WHERE tenant_id = ${input.tenantId}::uuid
+           AND work_order_id = ${input.workOrderId}::uuid
+           AND checklist_id = ${entry.checklistId}::uuid
+           AND role = ${entry.role}
+           AND removed_at IS NULL
+      `;
+    }
+  }
+
+  async applyChecklists(
+    input: ApplyWorkOrderChecklistsInput,
+  ): Promise<ApplyWorkOrderChecklistsResult<WorkOrder> | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+
+    let live = [...(await this.listChecklists(input.tenantId, input.workOrderId))];
+
+    // ALTA 6 — PROMOÇÃO PREGUIÇOSA (paridade literal com o repositório em memória). A PRIMEIRA escrita de
+    // junção numa ordem que tem `checklist_id` e junção vazia materializa a linha legada ANTES, na mesma
+    // transação. NÃO é o backfill proibido (que seria uma migração varrendo a tabela inteira): é POR-ORDEM e
+    // DISPARADA POR ESCRITA. Sem ela, acrescentar uma vistoria numa ordem antiga apagaria a vistoria que ela
+    // já tinha, junto com o vínculo de uma run possivelmente já respondida.
+    let promoted: WorkOrderChecklistLink | undefined;
+    if (live.length === 0 && current.checklistId) {
+      const [legacy] = syntheticChecklistSet(current);
+      if (legacy) {
+        promoted = await this.insertChecklistLink(
+          input.tenantId,
+          input.workOrderId,
+          { ...legacy, addedBy: input.actorUserId },
+          0,
+        );
+        live = [promoted];
+      }
+    }
+
+    // BLOQ 3 — base calculada ANTES das remoções: a linha acrescentada nunca vira primária enquanto uma linha
+    // anterior viver, mesmo que a primária seja retirada na mesma chamada.
+    const base = input.appendAfterExisting ? live.reduce((max, link) => Math.max(max, link.orderIndex), -1) + 1 : 0;
+
+    const removalTargets = input.removeAll
+      ? live.map((link) => ({ checklistId: link.checklistId, role: link.role, reason: input.removeAllReason }))
+      : input.remove ?? [];
+
+    const removed: WorkOrderChecklistLink[] = [];
+    // O CHECK `(removed_at IS NULL) = (removed_by IS NULL)` do banco recusaria a remoção sem autor com um erro
+    // cru de constraint; aqui ela vira erro de negócio antes de chegar lá.
+    if (removalTargets.length > 0) assertChecklistRemovalHasActor(input.actorUserId);
+    for (const target of removalTargets) {
+      const records = await this.client.$queryRaw<readonly ChecklistLinkRecord[]>`
+        UPDATE work_order_checklists
+           SET removed_at = now(),
+               removed_by = ${input.actorUserId ?? null}::uuid,
+               removed_reason = ${target.reason ?? null},
+               updated_at = now()
+         WHERE tenant_id = ${input.tenantId}::uuid
+           AND work_order_id = ${input.workOrderId}::uuid
+           AND checklist_id = ${target.checklistId}::uuid
+           AND role = ${target.role}
+           AND removed_at IS NULL
+        RETURNING ${Prisma.raw(CHECKLIST_LINK_COLUMNS)}
+      `;
+      const record = records[0];
+      if (!record) continue;
+      const link = mapChecklistLinkRecord(record);
+      live = live.filter((existing) => existing.id !== link.id);
+      removed.push(link);
+    }
+
+    const added: WorkOrderChecklistLink[] = [];
+    for (const link of input.add ?? []) {
+      added.push(await this.insertChecklistLink(input.tenantId, input.workOrderId, link, base + link.orderIndex));
+    }
+    live.push(...added);
+
+    const links = liveChecklistLinks(live);
+    const workOrder = await this.writeChecklistMirror(input, links);
+
+    return { workOrder: workOrder ?? current, links, removed, added, promoted };
+  }
+
+  // O ESPELHO, sempre na mesma transação da escrita da junção — a invariante que impede o despacho de congelar
+  // o formulário errado. Conjunto vivo vazio ⇒ as duas colunas ficam nulas.
+  private async writeChecklistMirror(
+    input: ApplyWorkOrderChecklistsInput,
+    links: readonly WorkOrderChecklistLink[],
+  ): Promise<WorkOrder | undefined> {
+    const mirror = mirrorColumnsFromLinks(links);
+    const updated = await this.client.workOrder.updateManyAndReturn({
+      where: { tenant_id: input.tenantId, id: input.workOrderId },
+      data: {
+        checklist_id: mirror.checklistId ?? null,
+        checklist_snapshot:
+          mirror.checklistSnapshot === null ? Prisma.DbNull : (mirror.checklistSnapshot as Prisma.InputJsonValue),
+        ...(input.actorUserId ? { updated_by: input.actorUserId } : {}),
+      },
+    });
+
+    return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
+  }
+
+  private async insertChecklistLink(
+    tenantId: string,
+    workOrderId: string,
+    link: WorkOrderChecklistLinkInput,
+    orderIndex: number,
+  ): Promise<WorkOrderChecklistLink> {
+    try {
+      const records = await this.client.$queryRaw<readonly ChecklistLinkRecord[]>`
+        INSERT INTO work_order_checklists (
+          tenant_id, work_order_id, checklist_id, role, checklist_source, rule_id, order_index,
+          checklist_snapshot, added_by
+        ) VALUES (
+          ${tenantId}::uuid,
+          ${workOrderId}::uuid,
+          ${link.checklistId}::uuid,
+          ${link.role},
+          ${link.source},
+          ${link.ruleId ?? null}::uuid,
+          ${orderIndex}::int,
+          ${link.checklistSnapshot === undefined || link.checklistSnapshot === null ? null : JSON.stringify(link.checklistSnapshot)}::jsonb,
+          ${link.addedBy ?? null}::uuid
+        )
+        RETURNING ${Prisma.raw(CHECKLIST_LINK_COLUMNS)}
+      `;
+      const record = records[0];
+      if (!record) {
+        throw new Error("work order checklist insert returned no row");
+      }
+
+      return mapChecklistLinkRecord(record);
+    } catch (error) {
+      // O unique parcial `(tenant_id, work_order_id, checklist_id, role) WHERE removed_at IS NULL` é a
+      // autoridade final: traduzido para o MESMO 409 em PT-BR que o serviço já devolve no pré-check, para a
+      // corrida entre dois ajustes simultâneos não vazar erro cru de driver (§2.8).
+      if (isChecklistLinkUniqueViolation(error)) {
+        throw workOrderChecklistDuplicateError();
+      }
+      throw error;
+    }
   }
 
   // Ω3F-6 — pre-check tenant-scoped da idempotência do duplicate (o unique parcial é a rede contra corrida).
@@ -254,6 +472,19 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
 
   // Ω3-c — grava (sobrescreve) o snapshot JSON na OS. where tenant_id+id; RETURNING vazio → undefined.
   async freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined> {
+    // CHECKLIST P1 PR-04c-A — o freeze congela a LINHA PRIMÁRIA junto com a coluna da ordem. O espelho é "a
+    // coluna reproduz a primária": congelar só a coluna faria o próximo ajuste do operador recalcular o
+    // espelho a partir de uma linha com snapshot nulo e APAGAR o formulário que o despacho prometeu ao campo.
+    const primary = pickPrimaryChecklistLink(await this.listChecklists(input.tenantId, input.workOrderId));
+    if (primary) {
+      await this.client.$executeRaw`
+        UPDATE work_order_checklists
+           SET checklist_snapshot = ${input.checklistSnapshot === null ? null : JSON.stringify(input.checklistSnapshot)}::jsonb,
+               updated_at = now()
+         WHERE tenant_id = ${input.tenantId}::uuid AND id = ${primary.id}::uuid
+      `;
+    }
+
     const updated = await this.client.workOrder.updateManyAndReturn({
       where: { tenant_id: input.tenantId, id: input.workOrderId },
       data: {
@@ -387,6 +618,35 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   update(input: UpdateWorkOrderInput): Promise<WorkOrder | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).update(input));
+  }
+
+  listChecklists(
+    tenantId: string,
+    workOrderId: string,
+    options?: { readonly includeRemoved?: boolean },
+  ): Promise<readonly WorkOrderChecklistLink[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).listChecklists(tenantId, workOrderId, options),
+    );
+  }
+
+  // CHECKLIST P1 PR-04c-A — promoção + remoções + adições + espelho numa transação SÓ (a do `withTenantRls`).
+  // Uma falha no meio não deixa a ordem apontando para uma vistoria que o conjunto não tem.
+  applyChecklists(
+    input: ApplyWorkOrderChecklistsInput,
+  ): Promise<ApplyWorkOrderChecklistsResult<WorkOrder> | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).applyChecklists(input),
+    );
+  }
+
+  // CHECKLIST P1 PR-04c — o freeze POR LINHA do despacho, sob RLS como todo o resto. As N linhas vão na MESMA
+  // transação: um despacho não pode congelar a vistoria da coleta e deixar a da entrega sem formulário porque
+  // a conexão caiu no meio — o campo receberia um conjunto pela metade.
+  freezeChecklistLinkSnapshots(input: FreezeChecklistLinkSnapshotsInput): Promise<void> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).freezeChecklistLinkSnapshots(input),
+    );
   }
 
   updateGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined> {
@@ -568,6 +828,79 @@ function mapWorkOrderRecord(record: {
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
+}
+
+// CHECKLIST P1 PR-04c-A — colunas da junção, numa constante só: o SELECT, o RETURNING do INSERT e o RETURNING
+// do UPDATE devolvem exatamente a mesma forma, então o mapeador nunca recebe um registro pela metade.
+const CHECKLIST_LINK_COLUMNS = [
+  "id",
+  "tenant_id",
+  "work_order_id",
+  "checklist_id",
+  "role",
+  "checklist_source",
+  "rule_id",
+  "order_index",
+  "checklist_snapshot",
+  "added_by",
+  "removed_at",
+  "removed_by",
+  "removed_reason",
+  "created_at",
+  "updated_at",
+].join(", ");
+
+type ChecklistLinkRecord = {
+  readonly id: string;
+  readonly tenant_id: string;
+  readonly work_order_id: string;
+  readonly checklist_id: string;
+  readonly role: string;
+  readonly checklist_source: string;
+  readonly rule_id: string | null;
+  readonly order_index: number;
+  readonly checklist_snapshot: unknown;
+  readonly added_by: string | null;
+  readonly removed_at: Date | null;
+  readonly removed_by: string | null;
+  readonly removed_reason: string | null;
+  readonly created_at: Date;
+  readonly updated_at: Date;
+};
+
+function mapChecklistLinkRecord(record: ChecklistLinkRecord): WorkOrderChecklistLink {
+  return {
+    id: record.id,
+    tenantId: record.tenant_id,
+    workOrderId: record.work_order_id,
+    checklistId: record.checklist_id,
+    // `role` e `checklist_source` são TEXT com CHECK no banco (o CHECK é a autoridade, como em status/priority):
+    // o cast reflete o contrato validado na escrita, que é o único caminho de gravação.
+    role: record.role as WorkOrderChecklistRole,
+    source: record.checklist_source as WorkOrderChecklistSource,
+    ruleId: record.rule_id ?? undefined,
+    orderIndex: Number(record.order_index),
+    checklistSnapshot: (record.checklist_snapshot as Record<string, unknown> | null) ?? null,
+    addedBy: record.added_by ?? undefined,
+    removedAt: record.removed_at ?? undefined,
+    removedBy: record.removed_by ?? undefined,
+    removedReason: record.removed_reason ?? undefined,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  };
+}
+
+// O SQL cru não passa pelo tradutor P2002 do Prisma: a violação chega como erro do driver com `code` 23505
+// (unique_violation). Só interessa quando o alvo é o unique da junção — qualquer outra sobe crua.
+function isChecklistLinkUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const message = "message" in error && typeof error.message === "string" ? error.message : "";
+  const code = "code" in error ? String((error as { readonly code?: unknown }).code) : "";
+
+  return (
+    (code === "23505" || code === "P2002" || message.includes("23505")) &&
+    (message.includes("work_order_checklists") || message.includes("work_order_checklists_unique"))
+  );
 }
 
 function mapWorkOrderEventRecord(record: {

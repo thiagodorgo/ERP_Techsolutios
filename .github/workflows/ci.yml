@@ -167,6 +167,8 @@ jobs:
           SUITES="$SUITES tests/permission-catalog-migration-parity.test.ts"
           SUITES="$SUITES tests/checklist-applicability-schema-db.test.ts"
           SUITES="$SUITES tests/checklist-applicability-prisma-db.test.ts"
+          SUITES="$SUITES tests/work-order-checklists-junction-schema-db.test.ts"
+          SUITES="$SUITES tests/checklist-run-role-db.test.ts"
           SUITES="$SUITES tests/impound-checklist-link-autolink.test.ts"
           SUITES="$SUITES tests/checklist-template-prisma-db.test.ts"
           SUITES="$SUITES tests/checklist-run-lifecycle-db.test.ts"

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { WorkOrderChecklistSetPort } from "../src/modules/field-dispatch/field-dispatch.service.js";
+
 test("field dispatch service cria, lista, muda status, reatribui e isola tenants", async () => {
   process.env.CORE_SAAS_PERSISTENCE = "memory";
   const [
@@ -167,6 +169,14 @@ test("field dispatch é FAIL-OPEN + auditado quando o provisioner da run do chec
     async (input) => {
       notifications.push(input as unknown as Record<string, unknown>);
     },
+    // CHECKLIST P1 PR-04c — o porto do conjunto de vistorias virou parâmetro OBRIGATÓRIO (montar o despacho
+    // sem ele fazia a produção ler toda ordem pela visão sintética). Este caso é sobre a FALHA de provisão numa
+    // ordem sem junção, então o dublê é inerte: conjunto vazio, nenhuma escrita.
+    inertChecklistSetPort(),
+    // A leitura "esta vistoria foi ao campo?" é INALCANÇÁVEL neste caso: o resolvedor acima devolve snapshot
+    // não-nulo sempre, e o laço que pergunta só roda para linha com snapshot nulo. `false` aqui é a resposta
+    // literal (nenhuma execução existe — o provisioner estoura), não um atalho para calar o laço.
+    async () => false,
   );
 
   try {
@@ -251,6 +261,9 @@ test("field dispatch reassign REPROVISIONA a run e recupera quando a provisao in
     async (input) => {
       notifications.push(input as unknown as Record<string, unknown>);
     },
+    inertChecklistSetPort(),
+    // Idem: snapshot sempre não-nulo ⇒ o laço da vistoria ausente não roda neste caso.
+    async () => false,
   );
 
   try {
@@ -289,6 +302,22 @@ test("field dispatch reassign REPROVISIONA a run e recupera quando a provisao in
     resetWorkOrderRuntimeForTests();
   }
 });
+
+// CHECKLIST P1 PR-04c — dublê INERTE do porto do conjunto: a ordem destes dois casos não tem junção (nasce só
+// com o `checklistId` legado), então "vazio + nenhuma escrita" é o estado real, não uma simplificação. O
+// comportamento do conjunto tem suíte própria (`field-dispatch-multi-checklist`, `field-dispatch-checklist-set-port`).
+//
+// BAIXA 6 (ciclo 2 da revisão) — TIPADO DE VERDADE, sem `as never`. O `as never` anulava a checagem: verbo novo
+// em `WorkOrderChecklistSetPort` não quebrava este dublê, e é exatamente a garantia que o parâmetro obrigatório
+// do construtor existe para dar (compor sem o conjunto tem de ser erro de compilação, não dano silencioso).
+function inertChecklistSetPort(): WorkOrderChecklistSetPort {
+  return {
+    load: async () => [],
+    freeze: async () => {},
+    recordDeferred: async () => {},
+    recordMissingAtDispatch: async () => {},
+  };
+}
 
 function actor(tenantId: string, userId: string) {
   return {

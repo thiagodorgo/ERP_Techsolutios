@@ -1,36 +1,36 @@
 {
-  "snapshot_date": "2026-08-12",
-  "version": "FIX-TIMELINE-REMOTA",
+  "snapshot_date": "2026-08-14",
+  "version": "CHK-P1-PR04C-A",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "FIX B-127 — a linha do tempo remota da ordem de serviço no app NUNCA funcionou: 5 incompatibilidades independentes com o backend (envelope, nomes de campo, tenant que o DTO corretamente não emite, vocabulário de tipo, e um catch silencioso que escondia tudo caindo no histórico local). Achado do critico-adversarial ao revisar o plano do PR-04c; era pré-requisito dele, porque o plano prometia visibilidade em campo por um canal que não chegava.",
-    "title": "FIX B-127 — a linha do tempo do app volta a mostrar o que o servidor registrou",
-    "pr": 351,
-    "merge_commit": "7e60b90455b14cdea92c0e1708639ce6c3101638",
-    "approved_head": "7e60b90455b14cdea92c0e1708639ce6c3101638",
+    "block": "CHECKLIST P1 PR-04c-A — a ordem de serviço passa a ter um CONJUNTO de vistorias (junção N:N work_order_checklists), a aplicabilidade resolve de ponta a ponta, e o despacho congela o formulário por linha. Três ciclos de reprovação adversarial: o gate da rota nova era contornável pelo PATCH da ordem (técnico apagava a vistoria de entrega); requisição RECUSADA já tinha destruído o conjunto; o porto do conjunto não estava ligado em nenhuma raiz de composição de produção; o re-despacho APAGAVA o formulário congelado quando o modelo saía de circulação; e o create afirmava ao guincheiro que uma vistoria não foi enviada quando ela foi.",
+    "title": "CHK P1 PR-04c-A — o conjunto de vistorias da ordem, com a prova por linha",
+    "pr": 352,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Cinco defeitos empilhados faziam a tela parecer saudável exibindo um histórico truncado. Agora o que o servidor registra chega ao técnico — e quando não chegar, o app avisa em vez de fingir.",
-    "status_label": "Publicado (mergeado na main)"
+    "summary": "A ordem deixa de ter UMA vistoria e passa a ter um conjunto com fase e proveniência. O formulário congelado por linha é a prova do que foi prometido ao campo, e o congelamento virou monotônico: nunca zera o que já congelou. A tela da ordem parou de dizer Vinculado para uma ordem com duas vistorias.",
+    "status_label": "Em revisão (PR #352)"
   },
   "metrics": {
     "flutter_tests": {
       "value": 860,
       "total": 860,
       "display": "860/860",
-      "note": "FIX B-127: +6 do guard da linha do tempo remota (b127). 854→860, execução real; 2 mutações derrubam."
+      "note": "PR-04c-A não toca mobile: carrega 860/860, o último valor oficial (§C3.3)."
     },
     "frontend_smoke_tests": {
-      "value": 1112,
-      "total": 1112,
-      "display": "1112/1112",
-      "note": "PR-04a é backend-only — carrega 1112/1112 (§C3.3)."
+      "value": 1125,
+      "total": 1125,
+      "display": "1125/1125",
+      "note": "PR-04c-A: 1112→1125 em execução real — a célula Checklist da ordem passou a listar o conjunto (rótulo + fase + origem), incluindo o caso da ordem legada renderizado ponta a ponta a partir do payload cru."
     },
     "backend_tests": {
-      "value": 2209,
-      "total": 2217,
-      "display": "2209/2217",
-      "note": "PR-04a: +58 testes reais (resolução pura 14, repositório em memória 20, estrutura contra o PostgreSQL real 11, repositório Prisma contra o PostgreSQL real 13). 2149→2209 de 2217; os 8 pulos são os declarados (6 DB-gated + 2 do guard de paridade fora do gate RBAC_DB_PARITY). Subconjunto do job backend-postgres: 24→48, 0 pulos."
+      "value": 2290,
+      "total": 2298,
+      "display": "2290/2298",
+      "note": "PR-04c-A: 2209→2290 de 2298 em execução real. QUATRO ciclos de reprovação adversarial; o último trocou a INFERÊNCIA por LEITURA — o laço de auditoria do create perguntava \"dá para criar?\" quando queria saber \"esta vistoria foi ao campo?\", e a resposta certa é um verbo read-only (hasChecklistRun) com fallback à chave legada. Os 8 pulos são os declarados. Suítes -db contra o PostgreSQL vivo: 85/85, 0 pulos, resíduo zero na base (junção 0, execuções 216 todas com role NULL, 236 organizações — idêntico ao baseline lido ANTES)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 147,
-      "display": "147",
-      "note": "FIX B-127 (linha do tempo remota). Sobre 146."
+      "value": 148,
+      "display": "148",
+      "note": "CHK P1 PR-04c-A. Sobre 147."
     },
     "mobile_backend_contracts": {
       "value": 18,

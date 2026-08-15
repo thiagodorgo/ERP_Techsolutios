@@ -1,7 +1,17 @@
 # Ω6R — Inventário e ranking de risco
 
 Data-base: 2026-08-11  
-HEAD auditado: `8edfe51a40e2add6d2928f1d54ba631516fe417d`  
+HEAD auditado: `eca453b6e1f6df2f548d1a14e32f4bb88e18f1bf` (PR #348 na `main`).
+
+> **Correção de baseline (reconciliação pós-merge, 2026-08-14).** Até aqui o HEAD auditado era
+> `8edfe51a40e2add6d2928f1d54ba631516fe417d`, head **pré-squash** da branch do mesmo PR #348. Esse hash
+> sobrevive como objeto solto no clone de quem trabalhou na branch, mas **não é alcançável a partir da `main`**:
+> `git merge-base --is-ancestor 8edfe51a origin/main` retorna falso e `git branch -a --contains 8edfe51a` não
+> devolve nada — ou seja, ninguém conseguia reproduzir a baseline a partir de um clone limpo. Os dois commits
+> apontam para a **mesma árvore**, `0250459fd466afd0d07e1933aba8010f96b9a722`, e `git diff 8edfe51a eca453b` é
+> vazio: a troca é de identificador, não de conteúdo, e **nenhum número deste inventário muda**. O hash antigo
+> fica registrado de propósito, para que a correspondência entre os dois seja auditável em vez de sumir.
+
 Método de LOC: linhas físicas dos arquivos-fonte; dependências, builds e artefatos ignorados foram excluídos.  
 Método inicial de endpoints: ocorrências sintáticas de `.get/.post/.put/.patch/.delete(`; a Fase 1 valida o censo rota a rota.
 

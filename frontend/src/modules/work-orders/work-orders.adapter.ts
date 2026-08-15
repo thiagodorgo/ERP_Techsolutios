@@ -1,4 +1,7 @@
 import type {
+  WorkOrderChecklistLink,
+  WorkOrderChecklistRole,
+  WorkOrderChecklistSource,
   WorkOrderDetail,
   WorkOrderEvent,
   WorkOrderFinancialCancellationDecision,
@@ -57,6 +60,33 @@ const priorityLabels: Record<WorkOrderPriority, string> = {
   medium: "Media",
   high: "Alta",
   urgent: "Urgente",
+};
+
+// CHECKLIST P1 PR-04c-A · §3 — a UI nunca lê a chave técnica. Os rótulos são os do protótipo do dono
+// ("Vistoria de coleta", card "Checklists vinculados" — docs/claude-code-handoff/ERP Web.dc.html:1944-1945);
+// a etapa genérica é "geral" porque é a vistoria que vale para a ordem inteira, sem etapa declarada.
+const checklistRoleLabels: Record<WorkOrderChecklistRole, string> = {
+  collection: "Vistoria de coleta",
+  delivery: "Vistoria de entrega",
+  generic: "Vistoria geral",
+};
+
+// Proveniência em linguagem de negócio — e o rótulo diz SÓ o que o dado prova.
+//
+// `resolved` é afirmação segura: o banco carrega o CHECK biconditional
+// `(checklist_source = 'resolved') = (rule_id IS NOT NULL)`, então existe uma regra registrada por trás da
+// linha e ela pode ser apontada.
+//
+// `manual` NÃO é "alguém escolheu à mão" — é o BALDE DO RESTO. A definição do domínio o diz com todas as
+// letras (src/modules/work-orders/work-order-checklists.types.ts): override no create/update, ajuste do
+// operador, cópia do duplicate — e, além disso, a VISÃO SINTÉTICA de toda ordem anterior ao 04c (sem backfill,
+// promoção preguiçosa: `role: "generic", source: "manual"`), que é o estado de TODA ordem que existe hoje.
+// Duplicar uma OS também carimba `manual` em cada linha copiada, inclusive nas que eram `resolved`.
+// O único fato comum a esses casos é a AUSÊNCIA de regra registrada; autoria humana não está entre eles.
+// Este chip é lido no dossiê que o §12.1 invoca — escrever "adicionada manualmente" ali seria fabricar autoria.
+const checklistSourceLabels: Record<WorkOrderChecklistSource, string> = {
+  resolved: "definida por regra",
+  manual: "sem regra registrada",
 };
 
 export function adaptWorkOrdersResponse(response: unknown, source: WorkOrdersData["source"] = "api", fallbackReason?: string): WorkOrdersData {
@@ -130,6 +160,42 @@ export function getWorkOrderStatusLabel(status: WorkOrderStatus): string {
 
 export function getWorkOrderPriorityLabel(priority: WorkOrderPriority): string {
   return priorityLabels[priority];
+}
+
+/**
+ * CHECKLIST P1 PR-04c-A — rótulo de uma linha do conjunto de vistorias.
+ *
+ * Etapa desconhecida (ou ausente) devolve "Vistoria", sem adjetivo: o DTO não manda o nome do modelo, então
+ * inventar um nome — ou chutar uma etapa — seria fabricar prova (D-007). A tela mostra a linha assim e
+ * declara, ao lado, que a etapa não veio.
+ */
+export function getWorkOrderChecklistRoleLabel(role: WorkOrderChecklistRole | null | undefined): string {
+  return role ? checklistRoleLabels[role] : "Vistoria";
+}
+
+/** Origem da linha. `null` quando o servidor não informou — a tela simplesmente não mostra o chip. */
+export function getWorkOrderChecklistSourceLabel(source: WorkOrderChecklistSource | null | undefined): string | null {
+  return source ? checklistSourceLabels[source] : null;
+}
+
+/**
+ * CHECKLIST P1 PR-04c-A — chave de lista (React `key`) de uma linha do conjunto de vistorias.
+ *
+ * O DTO da junção NÃO manda o id da linha (`toWorkOrderChecklistDto` expõe modelo/etapa/origem/fila), então a
+ * tela não tem chave primária para usar — compõe a que dá. A identidade do domínio é `(modelo, etapa)`, única
+ * entre as linhas VIVAS por índice parcial no banco; só que a tela normaliza para `null` toda etapa que ESTE
+ * build não conhece, e o eixo VAI crescer (`custody_field`/`custody_yard` já foram nomeados pelo dono). Duas
+ * linhas do MESMO modelo em duas etapas novas colidiriam numa chave feita só de `(modelo, etapa)`.
+ *
+ * Por isso a POSIÇÃO na lista entra na chave quando — e só quando — a etapa não é conhecida: é o que resta de
+ * único ali, e o caso de etapa conhecida continua com chave estável, independente da posição. `orderIndex`
+ * sozinho não resolveria: o banco não o declara único entre as linhas vivas (só `(modelo, etapa)` é).
+ */
+export function getWorkOrderChecklistLinkKey(
+  link: Pick<WorkOrderChecklistLink, "checklistId" | "role">,
+  position: number,
+): string {
+  return link.role ? `${link.checklistId}:${link.role}` : `${link.checklistId}:sem-etapa#${position}`;
 }
 
 export function getWorkOrderStatusTone(status: WorkOrderStatus) {
@@ -265,7 +331,55 @@ function adaptWorkOrderItem(input: unknown): WorkOrderDetail | null {
     mileageSource: readNullableString(item, ["mileageSource", "mileage_source"]),
     mileageCorrectedAt: readNullableString(item, ["mileageCorrectedAt", "mileage_corrected_at"]),
     checklistSnapshot: item.checklistSnapshot ?? item.checklist_snapshot ?? null,
+    // CHECKLIST P1 PR-04c-A — conjunto de vistorias (aditivo; só o detalhe manda a chave).
+    checklists: adaptWorkOrderChecklistSet(item.checklists ?? item.work_order_checklists),
   };
+}
+
+/**
+ * CHECKLIST P1 PR-04c-A — lê o conjunto de vistorias do detalhe da OS.
+ *
+ * D-007, e é a regra inteira desta função: **chave ausente ≠ conjunto vazio**. Ausente devolve `undefined`
+ * (o servidor não informou → a tela cai no campo legado `checklistId`); um array vazio de verdade devolve
+ * `[]`. Colapsar os dois casos em `[]` faria uma ordem antiga, ainda não promovida na junção, aparecer como
+ * "sem vistoria" — que é exatamente o sumiço silencioso que este bloco existe para acabar.
+ *
+ * Linha com etapa/origem fora do vocabulário conhecido NÃO é descartada: o eixo de etapas vai crescer, e uma
+ * vistoria gravada no banco não pode desaparecer da tela porque este build não conhece a palavra. Ela entra
+ * com `role: null`/`source: null` e a UI declara a ausência. Só cai a linha sem `checklistId` — sem o modelo
+ * não há vistoria nenhuma para representar.
+ */
+export function adaptWorkOrderChecklistSet(input: unknown): WorkOrderChecklistLink[] | undefined {
+  const items = readArray(input);
+  if (!items) return undefined;
+
+  return items
+    .map((entry): WorkOrderChecklistLink | null => {
+      const record = readRecord(entry);
+      if (!record) return null;
+      const checklistId = readString(record, ["checklistId", "checklist_id"]);
+      if (!checklistId) return null;
+
+      return {
+        checklistId,
+        role: normalizeChecklistRole(readString(record, ["role"])),
+        source: normalizeChecklistSource(readString(record, ["source", "checklistSource", "checklist_source"])),
+        ruleId: readNullableString(record, ["ruleId", "rule_id"]),
+        orderIndex: readNumber(record, ["orderIndex", "order_index"]) ?? 0,
+      };
+    })
+    .filter((link): link is WorkOrderChecklistLink => link !== null)
+    .sort((left, right) => left.orderIndex - right.orderIndex);
+}
+
+function normalizeChecklistRole(value: string | undefined): WorkOrderChecklistRole | null {
+  if (value === "collection" || value === "delivery" || value === "generic") return value;
+  return null;
+}
+
+function normalizeChecklistSource(value: string | undefined): WorkOrderChecklistSource | null {
+  if (value === "resolved" || value === "manual") return value;
+  return null;
 }
 
 // C2 (Detalhe de OS enriquecido): interpreta o objeto `links` do detalhe.

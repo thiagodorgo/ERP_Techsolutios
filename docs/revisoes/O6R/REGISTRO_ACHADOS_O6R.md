@@ -11,7 +11,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 | SEC | 005 |
 | TEN | 002 |
 | DIN | 010 |
-| DAT | 004 |
+| DAT | 005 |
 | PERF | 004 |
 | ARQ | 005 |
 | QUA | 006 |
@@ -510,10 +510,18 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-QUA-004] Cliente Flutter de OS viola envelope, casing e payload do backend
 - Severidade: P1        Confiança: 0.99
+- Status: **parcialmente superado** — verificado em `origin/main` `e80430a` (2026-08-14). O componente
+  **timeline** caiu com o PR #351 (`7e60b90`, B-127): `fetchTimeline` passou a pedir `Map<String, dynamic>` e a
+  desembrulhar `resp.data?['data']` (`work_order_remote_api.dart:122-138`). Os demais componentes **continuam
+  abertos**: `fetchWorkOrder` (`:94-103`) e `updateWorkOrderStatus` (`:105-119`) ainda entregam o envelope
+  inteiro a `_workOrderFromJson`, que lê chaves snake_case na **raiz** (`:223-234`), e `assignWorkOrder`
+  (`:141-160`) ainda envia `'user_id'` (`:151`) enquanto o service lê `body.operatorId ?? body.userId`
+  (`work-order.service.ts:1087`) — nenhum dos dois casa, então o assign falha em 400. O achado **não** pode ser
+  fechado.
 - Categoria: QUA
 - Módulo: mobile-flutter / work-orders        Lente: A5
-- Local: `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:93-152`, `src/modules/work-orders/work-order.controller.ts:52-58`, `src/modules/work-orders/work-order.routes.ts:262-266`, `src/modules/work-orders/work-order.dto.ts:15-24`, `src/modules/work-orders/work-order.service.ts:1079-1088`, `mobile/flutter_app/test/features/b099_real_work_orders_pull_test.dart:209-238`
-- Descrição: Backend responde `{data: DTO}` em camelCase, mas detalhe/status entregam o envelope ao parser snake_case e timeline espera uma lista na raiz. Assign envia `user_id`, campo que o service não lê.
+- Local (faixas rebaseadas sobre a `main` pós-#351): `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:94-119`, `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:141-160`, `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:223-234`, `src/modules/work-orders/work-order.controller.ts:52-58`, `src/modules/work-orders/work-order.routes.ts:262-266`, `src/modules/work-orders/work-order.dto.ts:15-24`, `src/modules/work-orders/work-order.service.ts:1079-1088`, `mobile/flutter_app/test/features/b099_real_work_orders_pull_test.dart:209-238`
+- Descrição: Backend responde `{data: DTO}` em camelCase, mas detalhe/status entregam o envelope ao parser snake_case e timeline espera uma lista na raiz. Assign envia `user_id`, campo que o service não lê. (Componente timeline corrigido pelo #351; ver Status.)
 - Evidência:
   ```dart
   final resp = await _dio.get<Map<String, dynamic>>(
@@ -581,13 +589,37 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Correção sugerida: Scanner obrigatório e fail-closed em produção, validação por magic bytes/decoder e quarentena; download como attachment quando inline não for necessário.
 - Teste recomendado: EICAR/mock infected, MIME divergente e scanner indisponível não criam blob/linha nem permitem download.
 
+### [Ω6R-DAT-004] Editar o perfil normativo re-tempera custódias em curso e a auditoria não registra o que mudou
+- Severidade: P1        Confiança: 0.95
+- Categoria: DAT
+- Módulo: jurisdiction / charging        Lente: A3
+- Origem: registrado na **reconciliação pós-merge de 2026-08-14**, quando o módulo `jurisdiction` foi de fato revisado (a matriz o marcava ✅ sem relatório). **Não passou pela votação de severidade da J-6R.**
+- Local: `src/modules/jurisdiction/jurisdiction.service.ts:76-98`, `src/modules/jurisdiction/jurisdiction-prisma.repository.ts:63-89`, `src/modules/jurisdiction/jurisdiction.controller.ts:45-59`, `src/modules/charging/charge-prisma.repository.ts:226-231`, `src/modules/charging/charge.accrual.ts:159-164`, `src/modules/charging/charge.service.ts:131-134`, `src/modules/auction/auction.eligibility.ts:16-44`, `src/modules/jurisdiction/jurisdiction.defaults.ts:36-39`, `prisma/schema.prisma:2937-2956`
+- Descrição: O `PATCH` do perfil normativo altera `scope`, prazos legais, `daily_model`, `daily_cap` e `release_requirements` **in place**, sem versão, sem data de vigência e sem qualquer guarda para perfis já referenciados. `ImpoundProcess.profile_id` é NOT NULL com FK `RESTRICT`, e o motor de diárias resolve o teto lendo o perfil **vivo** no instante do cálculo, não o regime vigente em `entered_at`. O comentário canônico declara que o teto do Tema 124 é intertemporal "por DATA DE ENTRADA", mas nada no código vincula o processo à sua data de entrada: `TEMA_124_LEGACY_CAP` é exportado e nunca consumido fora do teste. Em paralelo, a auditoria da edição grava apenas `{scope, active}` — não o campo alterado, nem o valor anterior, nem o novo.
+- Evidência:
+  ```ts
+  // charge-prisma.repository.ts:226-231 — o teto vem do perfil ATUAL, não do vigente em entered_at
+  SELECT ip.entered_at, ip.frozen_at, COALESCE(y.timezone, 'America/Sao_Paulo') AS timezone,
+         jp.scope, jp.daily_model, jp.daily_cap, jp.daily_service_catalog_id
+  FROM impound_processes ip
+  JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
+  // jurisdiction.controller.ts:50-57 — a auditoria da edição não diz o que mudou
+  metadata: { scope: profile.scope, active: profile.active },
+  ```
+- Impacto: Um `PATCH` autorizado (`jurisdiction:update`, que gestão e administradores possuem) re-tempera todas as custódias em curso ligadas ao perfil. Elevar o teto de `THIRTY_DAYS_LEGACY` para `SIX_MONTHS`/`UNLIMITED`, ou trocar `ROLLING_24H` por `CALENDAR`, muda o valor devido de bens que entraram sob o regime anterior — e nessa direção não há compensação: `charging` só detecta e estorna a **sobre**-acumulação (`reconciliationPending`/`overAccruedDailies` em `charge.service.ts:131-134`, estorno no settle), nunca a sub-acumulação. Como o registro não guarda de/para, a organização não consegue reconstruir sob qual regime cada diária foi cobrada — que é exatamente a prova exigida para sustentar uma cobrança de estada contestada. Mitigações reais, que limitam o alcance e por isso a severidade é P1 e não P0: o gate de leilão impõe piso federal de 60 dias com `max(profileDays, 60)` e exige `OWNER_INITIAL` satisfeita independentemente do perfil (`auction.eligibility.ts:16-44`), fechando a direção "encurtar o relógio para leiloar antes".
+- Correção sugerida: Carimbar no processo o snapshot normativo vigente em `entered_at` (ou versionar o perfil e referenciar a versão a partir de `impound_processes`), fazendo os motores lerem o regime do processo em vez do perfil corrente; e auditar a edição campo a campo, com valor anterior e novo, sem PII (os campos são todos numéricos/enums, então cabem na allowlist do §2.8).
+- Teste recomendado: Custódia com `entered_at` sob `THIRTY_DAYS_LEGACY`; `PATCH` do perfil para `SIX_MONTHS`; o extrato da custódia antiga mantém `capCount = 30` enquanto uma custódia nova nasce com o teto novo; e o registro de auditoria da edição contém o campo alterado com valor anterior e novo.
+
 ## Hipóteses a confirmar
 
 Nenhuma hipótese registrada até o momento.
 
 ## Dívida observada
 
-Nenhuma dívida registrada até o momento.
+Três dívidas registradas (`Ω6R-DIV-001`, `-002`, `-003`), detalhadas abaixo. Nenhuma delas é achado: são
+lacunas conhecidas e declaradas, sem defeito executável comprovado nesta rodada. (Até 2026-08-14 esta linha
+dizia "Nenhuma dívida registrada até o momento" logo acima das três entradas — contradição corrigida na
+reconciliação pós-merge, sem alterar as dívidas em si.)
 
 ### [Ω6R-DIV-001] Outbox de custódia não possui dispatcher nem Inbox
 - Estado: observado na Fase 2; não é achado novo porque a migration declara explicitamente a entrega futura.
@@ -624,6 +656,17 @@ Nenhuma dívida registrada até o momento.
 - Ω6R-DAT-003: P0 mantido por 5×0.
 - Veredito: REPROVADO PARA PRODUÇÃO por 5×0. O Relator não votou.
 
-## Checagem de consistência da Fase 4
+## Checagem de consistência da Fase 5 — reconciliação pós-merge
 
-Pendente.
+> Esta seção substitui a segunda ocorrência de "Checagem de consistência da Fase 4", que dizia apenas
+> "Pendente" e contradizia a checagem homônima acima (fechada em 100%). A checagem da Fase 4 permanece
+> intacta como registro do que a J-6R votou; esta registra o estado **depois** do merge do #347.
+
+- Executada em 2026-08-14 sobre `origin/main` `e80430a`.
+- Achados no Markdown: 30; IDs únicos: 30. Linhas válidas no JSONL: 30; IDs JSONL fora do Markdown: 0.
+- Delta desde a Fase 4: **+1** — `Ω6R-DAT-004` (P1), registrado ao revisar de fato o módulo `jurisdiction`,
+  que a matriz marcava ✅ nas cinco lentes sem relatório correspondente. Não foi votado pela J-6R.
+- Superação: **1 parcial** — `Ω6R-QUA-004` teve o componente *timeline* corrigido pelo PR #351 (`7e60b90`);
+  detalhe, status e assign seguem abertos. Nenhum achado foi fechado.
+- Relatórios de módulo: 70/70 (era 69/70; `02_MODULOS/jurisdiction.md` criado nesta reconciliação).
+- Achados sem relatório: 0; citações órfãs: 0.

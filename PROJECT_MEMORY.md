@@ -153,7 +153,7 @@ Arquitetura (transversais, extraídos de `CLAUDE.md`, `decisoes.md` e do código
 
 Política **KPI-por-PR** (D-KPI-PER-PR): todo PR que altere código/teste/escopo atualiza `Kpis/*` no
 próprio PR com **contagem de execução real**; PR que toca Flutter/mobile atualiza também
-`mobile/flutter_app/Kpis/*`. `merge_commit`/`approved_head` nascem `null` na autoria e recebem
+`Kpis/*` (painel ÚNICO — a política dupla foi revogada em 2026-08-12, `D-KPI-DUPLA-REVOGADA`, e o painel do Flutter foi apagado). `merge_commit`/`approved_head` nascem `null` na autoria e recebem
 **backfill pós-merge**. A **junta do PR valida os números**; o humano audita pelo history.
 
 ---
@@ -167,7 +167,7 @@ Este resumo é conveniência. **A autoridade está no repo:**
 - `agent-orchestration/codex/` e `agent-orchestration/omega/` — comandos, logs, juntas e relatórios de rodada.
 - `docs/juntas/` — atas por rodada (`J-OMEGA4C.md`, `J-OMEGA5P.md`).
 - `docs/rodadas/omega5p/` — `ESTUDO_SIGPRV_PATIOS.md`, `FASE0_RECON.md`, `PLANO_OMEGA5P.md`.
-- `Kpis/` (raiz) e `mobile/flutter_app/Kpis/` — `kpis-latest.json`, `kpis-history.json`, `index.html`.
+- `Kpis/` — `kpis-latest.json`, `kpis-history.json`, `index.html` (painel ÚNICO desde 2026-08-12).
 - Fontes de verdade de produto/UI: `PRODUCT_CONTEXT.md`, `RBAC_MATRIX.md`, `APPROVAL_LIMITS.md`,
   `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md`, `screen-refs/`, `docs/`.
 

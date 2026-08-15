@@ -1065,6 +1065,15 @@ no comando de cada sub-PR. Ver ata `docs/juntas/J-CHECKLIST-P1.md`.
 
 **FORA de escopo confirmado:** re-resolução/backfill de OSs já criadas; `priority` como eixo primário.
 
+**NOTA DE SUPERSEDER (2026-08-12, junta `J-CHK-P1-PR04C-identidade-da-juncao`, 3×0 unânime).** Esta decisão
+**não** trata do eixo de deduplicação do resultado da resolução. O #345 implementou dedup por **modelo**
+(`templateId`) como "proteção anti-duplicata" — escolha de implementação **sem decisão por trás**, que
+tornava impossível "o mesmo formulário na coleta E na entrega". Esse par é o caso de uso central do app: a
+tela de comparação carrega UM schema e confronta as duas execuções, e o resumo de divergências é prova
+jurídica. A junta corrigiu o eixo para **FASE**: a mesma vistoria nunca é pedida duas vezes no mesmo momento
+(o que a proteção queria), mas coleta+entrega do mesmo modelo passam a ser possíveis. A identidade da junção
+(PR-04c) é `(tenant_id, work_order_id, checklist_id, role)`. Nada mais desta decisão muda.
+
 ---
 
 ## D-KPI-INDEX-PAINEL (2026-08-04) — o `Kpis/index.html` é o ARTEFATO PRINCIPAL de acompanhamento, não os JSON
@@ -1249,3 +1258,129 @@ rastreado e diz explicitamente para **não reverter por reflexo** — pode ser d
 
 **Histórico preservado (§A5):** os comandos `B-1xx`, atas e snapshots antigos que citam o painel mobile
 **não** foram reescritos — são registro do que era verdade na época.
+
+---
+
+## D-PORTEIRO-POS-MERGE (2026-08-12) — nenhum bloco novo começa sem parecer independente do merge anterior
+
+**Decisão do dono (verbatim):** *"no merge de um pr, antes de começar outra demanda, crie um agente com fable
+que vai verificar o que foi entregue, verificar os testes, com tudo certo vai dá start na proxima demanda, o
+angente vai nascer na conclusao de um merger, vai revalidar e entao dá start na proxima demanda e vai dormir
+ate o proximo merge"*.
+
+**O buraco que ele fecha.** Até aqui, **quem entrega é quem atesta a própria entrega** e emenda direto no
+bloco seguinte. Esse auto-atestado já deixou passar, nesta mesma rodada: número de KPI que ninguém
+reexecutou, promessa no corpo do PR que o código não cumpria (reprovação de plano por isso **duas vezes**),
+pendência bloqueante esquecida, limpeza pós-merge não feita, e arquivo rastreado sumindo em silêncio.
+
+**Como funciona.** O agente `porteiro-pos-merge` **nasce na conclusão de cada merge**, roda em **Fable**
+(frontmatter `model:`, vale sem quem invoca lembrar), audita os 8 pontos do seu papel — merge íntegro ·
+promessa × diff · contagens **reexecutadas** · KPI fechado (§C3.5) · ata da junta (§C7.1) · pendências ·
+limpeza (§C5) · pré-requisitos do próximo alvo — e termina com **uma** linha: `LIBERADO` /
+`LIBERADO COM RESSALVA` / `BLOQUEADO`. Depois disso, morre até o próximo merge.
+
+**Poder real:** se uma pendência marcada como **BLOQUEIA** o próximo PR-alvo continua aberta, o start é
+**negado**. É o que diferencia pendência *registrada* de pendência *respeitada*.
+
+**Ele não conserta nada.** Audita e decide o start; consertar é de quem entrega. E não aceita relato de
+terceiro: sem comando executado não há parecer — se algo não pôde ser rodado, isso entra escrito, em vez de
+virar presunção de que passou.
+
+Ciclo de vida atualizado em `CLAUDE.md`/`AGENTS.md` §C2.8 (regra de espelhamento, mesmo commit).
+
+---
+
+## D-O6R-REGISTRO-NO-BACKLOG (2026-08-14) — os 29 achados da auditoria Ω6R passam a existir no controle operacional
+
+**O que foi decidido.** Os **29 achados** da auditoria total **Ω6R** (15 P0 + 14 P1), até então existentes
+apenas em `docs/revisoes/O6R/`, foram registrados em `agent-orchestration/controle/pendencias.md` como
+pendências operacionais — agrupados nos **11 blocos de correção** do `PLANO_O6R.md`
+(`P-O6R-B01`..`P-O6R-B11`), com o índice em `P-O6R-BACKLOG` e **cada achado com sub-entrada própria pelo ID
+original** (`### Ω6R-XXX-NNN`), localizável por `grep`.
+
+**O problema que isso resolve.** A auditoria mergeou na `main` pelo PR **#347** (`e80430a`), com veredito de
+junta **J-6R: REPROVADO PARA PRODUÇÃO, 5×0**. Medido antes deste registro: `grep O6R` em `pendencias.md` e
+`decisoes.md` na `main` devolvia **0 ocorrências nos dois arquivos**. Ou seja: o planejador que abrisse o
+controle operacional para escolher o próximo bloco **não veria** escalada de privilégio de organização para
+plataforma (`Ω6R-SEC-001`), tomada de conta por e-mail homônimo (`Ω6R-TEN-001`), o compose de produção com
+persistência em memória (`Ω6R-DAT-001`) nem o worker que nunca sobe em produção (`Ω6R-DIN-006`). O documento
+de revisão é **relatório**; o que dirige a execução do próximo bloco é o `controle/`.
+
+**Fundamento no contrato.** §A5 — "tudo materialmente relevante … vai para arquivo/estrutura operacional, não
+fica só no chat nem só no corpo do PR"; um veredito de reprovação para produção com 15 P0 é o caso extremo de
+"materialmente relevante". §A6 — "registrar decisões e pendências em `controle/`" e "não esconder conflitos".
+A diferença prática é entre pendência **registrada** e pendência **respeitada**: só a segunda chega ao
+porteiro pós-merge (§C2.8), que precisa responder "alguma pendência que BLOQUEIA o próximo alvo continua
+aberta?" — pergunta impossível de responder olhando um diretório de revisão que o `controle/` não referencia.
+
+**O bloqueio ficou explícito, achado a achado.** A deliberação da J-6R (`docs/revisoes/O6R/ATA_J6R.md:47`)
+bloqueia *"deploy produtivo e features nos módulos atingidos até concluir os blocos P0 do `PLANO_O6R.md`; P1
+vem antes de nova feature no módulo correspondente"*. Cada entrada carrega o campo **Bloqueia**, com destaque
+para as trilhas que têm trabalho em fila **hoje**, verificado e não presumido:
+- `Ω6R-DIN-005` (checklists/cloud-usage) — a trilha **CHECKLIST P1 está em execução agora** (árvore de
+  trabalho na branch `feat/chk-p1-pr04c-a-aplicabilidade-ligada`, pendências `P-CHK-*` abertas mirando
+  PR-04c/PR-05). Agravante registrado: a aplicabilidade é multiplicador de vistorias por ordem, e é
+  exatamente a unidade faturável que o achado deixa cair em silêncio.
+- `Ω6R-SEC-002` (work-orders/approvals/RBAC) — aprovar/rejeitar usam a mesma permissão de editar OS, que o
+  técnico tem; a própria trilha de checklist grava no caminho de criação de OS (vínculo sticky).
+- `Ω6R-ARQ-004` (field-dispatch) — `P-Ω3F7B-MAPA-ETAPA` (ABERTA) põe em fila justamente o snapshot por etapa
+  **do despacho**, o agregado que pode nascer sem evento de linha do tempo.
+- `Ω6R-QUA-001/002/004/005` (mobile) — `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO` (ambas ABERTAS)
+  já apontam para o **PR-08 (reconciliação mobile)**.
+
+**O que esta decisão NÃO faz (§A2).** Não resolve, não fecha, não reprioriza e não contesta nenhum achado;
+não altera `docs/revisoes/O6R/**` (escopo de outra frente); não altera código, teste nem KPI. Severidade e
+bloco vieram transcritos do `achados.jsonl`/`PLANO_O6R.md`, inclusive a **divergência preservada** em
+`Ω6R-DIN-007` (P0 por 3×2; A3 e A4 defenderam P1).
+
+**Verificação de primeira mão, e seus limites (§A6 — fato × hipótese).** As **29 âncoras arquivo:linha** foram
+abertas e lidas na `main` (`e80430a`) antes de serem transcritas, e o código encontrado confirma a descrição do
+achado no ponto citado — os 15 P0 e os 14 P1. Isso é fato registrado como fato. Três coisas **não** foram
+verificadas e estão escritas como não-verificadas nas próprias entradas: (a) se a correção proposta por cada
+bloco é a correta; (b) o esforço estimado; (c) o alcance de cada achado além da linha citada. Um ponto isolado
+ficou explicitamente marcado como não reconferido: no `Ω6R-QUA-004`, se o backend lê o campo `user_id` que o
+app envia no *assign*.
+
+**Defasagem registrada junto:** `Ω6R-QUA-004` nasce no backlog **já parcialmente superado** — o componente
+"timeline" foi corrigido pelo PR **#351** (`7e60b90`), conferido diretamente em
+`mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:122-138` na `main`. Os outros dois
+componentes seguem ativos. O registro em `docs/revisoes/O6R/` ainda marca o achado como `ativo` e superados = 0;
+corrigir **aquele** registro é de outra frente, e esta entrada não o toca — apenas não repete o erro.
+
+---
+
+## D-O6R-RASCUNHOS-DEFERIDOS-AO-HUMANO (2026-08-14) — os rascunhos D-001..D-004 do Ω6R são PAUTA ABERTA, não decisão vigente
+
+**Registro de fronteira, para que ninguém confunda proposta com norma.**
+
+A ata da J-6R encerra com (`docs/revisoes/O6R/ATA_J6R.md:47`, verbatim): *"O humano delibera os rascunhos
+arquiteturais D-001..D-004."* Ou seja: os quatro documentos abaixo **não foram decididos por junta, não foram
+aprovados pelo dono e não valem como norma**. Eles são **pauta aberta** aguardando deliberação humana — e
+mudam fundações do sistema, o que é precisamente o motivo de a junta os ter deferido em vez de votá-los.
+
+| Arquivo (em `docs/revisoes/O6R/`) | Tema proposto | Motivado por | Estado |
+|---|---|---|---|
+| `D-001-identidade-global-tenancy.md` | subject global do IdP separado de `User`/membership tenant-scoped; e-mail deixa de ser chave de autorização; papel global só por operação de plataforma com SoD | Ω6R-SEC-001, TEN-001 | **PROPOSTA — não deliberada** |
+| `D-002-uow-outbox.md` | Unit of Work tenant-scoped (uma `$transaction` por comando multi-write) + Outbox/Inbox por event ID/fingerprint | Ω6R-DIN-001/003/005/008/009, ARQ-004 | **PROPOSTA — não deliberada** |
+| `D-003-jobs-duraveis.md` | Redis com claim atômico/Streams, lease, reclaim, DLQ, schedule singleton e worker em processo separado | Ω6R-ARQ-001/002, PERF-001 | **PROPOSTA — não deliberada** |
+| `D-004-contratos-clientes.md` | fixture versionada de envelope por endpoint mobile crítico; teste contra o cliente Dio concreto; sync só confirma após persistência + confirmação remota | Ω6R-QUA-001/002/004/005 | **PROPOSTA — não deliberada** |
+
+Os quatro trazem `Status: proposta` no próprio cabeçalho (verificado na `main`, `e80430a`).
+
+**AVISO DE COLISÃO DE NOMES — leia antes de citar "D-001".** Este arquivo (`controle/decisoes.md`) **já tem**
+decisões suas chamadas `D-001`, `D-002`, `D-003` e `D-004`, do começo do projeto (estrutura documental v1;
+repositório organizado pelo estado real do GitHub; baseline de backend consolidada; rodada Fase 2 com
+auto-merge) — essas **são decisões aplicadas** e **não têm relação nenhuma** com os rascunhos do Ω6R. São
+séries homônimas de universos diferentes. Regra para daqui em diante: os rascunhos da auditoria **só podem ser
+citados com o prefixo da rodada e o caminho** — `Ω6R D-002 (docs/revisoes/O6R/D-002-uow-outbox.md)` — nunca
+como "D-002" solto. Um `D-00N` sem qualificação neste arquivo é a decisão histórica do projeto.
+
+**Consequência operacional.** Enquanto o dono não deliberar, nenhum bloco pode invocar `Ω6R D-001..D-004` como
+autoridade para reestruturar identidade, transação, jobs ou contratos de cliente. Os blocos
+`B-O6R-01`..`B-O6R-11` do `PLANO_O6R.md` (registrados em `pendencias.md` como `P-O6R-B01`..`P-O6R-B11`) são o
+**caminho de correção aprovado pela junta**; os rascunhos são a **discussão arquitetural de fundo** que o
+humano ainda vai abrir. Quem confundir os dois estará reestruturando fundação com base num documento que diz
+"proposta" na primeira linha.
+
+**Fronteira desta entrada (§A2):** ela **registra o deferimento**, não delibera nada, não recomenda aceitar nem
+recusar e não classifica nenhum dos quatro como bom ou ruim.

@@ -2,6 +2,9 @@
 
 Fonte da verdade de retomada. Estados históricos: ⬜ pendente · 🔶 em curso · ✅ concluído.
 
+São **70 unidades auditáveis**: 65 módulos backend (exatamente os diretórios de `src/modules`) + 5 unidades de
+cliente/infra. ✅ só é legítimo com relatório correspondente em `02_MODULOS/`; ver o log de retomada.
+
 | Unidade auditável | A1 | A2 | A3 | A4 | A5 |
 |---|---:|---:|---:|---:|---:|
 | attachments | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -91,4 +94,5 @@ Fonte da verdade de retomada. Estados históricos: ⬜ pendente · 🔶 em curso
 ## Log de retomada
 
 - 2026-08-11: Fase 0 iniciada; A1–A3 em curso. A4–A5 aguardam slot.
-- 2026-08-11: Fases 1–3 concluídas; cinco lentes finalizaram varredura/censo integral e leitura profunda estratificada por risco. Todas as 69 unidades e oito transversais possuem relatório; achados ativos permanecem no registro central.
+- 2026-08-11: Fases 1–3 concluídas; cinco lentes finalizaram varredura/censo integral e leitura profunda estratificada por risco. Oito transversais e **69 das 70** unidades possuem relatório; achados ativos permanecem no registro central. (A entrada original dizia "todas as 69 unidades"; a matriz tem 70 linhas e `jurisdiction` não tinha relatório — corrigido em 2026-08-14.)
+- 2026-08-14 (reconciliação pós-merge): `jurisdiction` estava ✅ nas cinco lentes **sem** `02_MODULOS/jurisdiction.md` e sem que nenhum dos 29 achados citasse `src/modules/jurisdiction` — cobertura afirmada, não sustentada. O módulo foi revisado de fato sobre `origin/main` `e80430a`, o relatório foi criado e a revisão produziu `Ω6R-DAT-004` (P1, não votado pela J-6R). Os ✅ da linha passam a ter lastro; relatórios agora são 70/70.

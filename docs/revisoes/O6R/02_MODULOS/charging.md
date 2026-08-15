@@ -7,6 +7,7 @@ A1 arquitetura ✅ · A2 segurança/tenancy/LGPD ✅ · A3 dados/concorrência/d
 ## Achados do registro central
 
 - [Ω6R-DIN-006](../REGISTRO_ACHADOS_O6R.md#ω6r-din-006) — entrada completa, evidência e correção no registro append-only.
+- [Ω6R-DAT-004](../REGISTRO_ACHADOS_O6R.md#ω6r-dat-004) — originado na revisão de `jurisdiction` (reconciliação pós-merge de 2026-08-14) e alcança este módulo: `loadAccrualContext` resolve `daily_model`/`daily_cap` do perfil **corrente**, não do regime vigente em `entered_at`. Entrada completa no registro.
 
 ## Fluxos traçados
 

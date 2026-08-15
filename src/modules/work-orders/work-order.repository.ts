@@ -17,10 +17,42 @@ import type {
   WorkOrderStatus,
 } from "./work-order.types.js";
 import { WorkOrderError } from "./work-order.types.js";
+import {
+  assertChecklistRemovalHasActor,
+  liveChecklistLinks,
+  pickPrimaryChecklistLink,
+  sortChecklistLinks,
+  syntheticChecklistSet,
+  workOrderChecklistDuplicateError,
+  type ApplyWorkOrderChecklistsInput,
+  type ApplyWorkOrderChecklistsResult,
+  type FreezeChecklistLinkSnapshotsInput,
+  type WorkOrderChecklistLink,
+  type WorkOrderChecklistLinkInput,
+} from "./work-order-checklists.types.js";
 
 export interface WorkOrderRepository {
   nextCode(tenantId: string): Promise<string>;
   create(input: CreateWorkOrderInput): Promise<WorkOrder>;
+  // CHECKLIST P1 PR-04c-A — a junção `work_order_checklists`. Por padrão devolve só as linhas VIVAS
+  // (`removed_at IS NULL`), já ordenadas: a primeira é a PRIMÁRIA (a que o espelho legado reproduz).
+  listChecklists(
+    tenantId: string,
+    workOrderId: string,
+    options?: { readonly includeRemoved?: boolean },
+  ): Promise<readonly WorkOrderChecklistLink[]>;
+  // CHECKLIST P1 PR-04c-A — ÚNICA porta de escrita da junção depois do create. Faz, numa transação só:
+  // (1) a PROMOÇÃO PREGUIÇOSA da linha legada, (2) as remoções soft, (3) as adições e (4) o recálculo do
+  // espelho `work_orders.checklist_id`/`checklist_snapshot`. Ter uma porta só é o que impede o espelho de
+  // dessincronizar — um caminho de escrita que esquecesse o recálculo faria o despacho congelar o formulário
+  // errado. `undefined` quando a ordem não existe no tenant (o serviço traduz para 404).
+  applyChecklists(input: ApplyWorkOrderChecklistsInput): Promise<ApplyWorkOrderChecklistsResult<WorkOrder> | undefined>;
+  // CHECKLIST P1 PR-04c (BLOQ 1 da verificação) — congela o formulário POR LINHA nas vistorias que NÃO são a
+  // primária (a primária vai por `freezeChecklistSnapshot`, junto com o espelho da ordem). É a escrita que o
+  // porto do conjunto (`WorkOrderChecklistSetPort.freeze`) usa no despacho. Linha que não existir mais (retirada
+  // entre a leitura e o freeze) é IGNORADA em silêncio de propósito: o despacho decide sobre o conjunto que LEU,
+  // e ressuscitar uma linha removida para carimbá-la inventaria estado.
+  freezeChecklistLinkSnapshots(input: FreezeChecklistLinkSnapshotsInput): Promise<void>;
   list(input: ListWorkOrdersInput): Promise<ListWorkOrdersResult>;
   findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined>;
   // Ω3F-6 (D-Ω3F-6-DUPLICATE) — pre-check da idempotência do duplicate. TENANT-SCOPED: a chave do
@@ -54,6 +86,11 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   private readonly workOrders = new Map<string, WorkOrder>();
   private readonly events = new Map<string, WorkOrderEvent>();
   private readonly assignments = new Map<string, WorkOrderAssignment>();
+  // CHECKLIST P1 PR-04c-A — a junção em memória. Espelha o unique PARCIAL do Postgres
+  // `(tenant_id, work_order_id, checklist_id, role) WHERE removed_at IS NULL`: um par vivo repetido estoura
+  // aqui com o MESMO 409 que o banco produz, senão um bug de serviço passaria verde em memória e só apareceria
+  // em produção.
+  private readonly checklistLinks = new Map<string, WorkOrderChecklistLink>();
 
   async nextCode(tenantId: string): Promise<string> {
     let sequence = [...this.workOrders.values()].filter((workOrder) => workOrder.tenantId === tenantId).length + 1;
@@ -75,17 +112,163 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     }
 
     const now = new Date();
+    // CHECKLIST P1 PR-04c-A — `checklists` é a JUNÇÃO, não coluna da ordem: sai do spread para não virar campo
+    // fantasma no registro em memória (o Prisma o descartaria de qualquer forma).
+    const { checklists, ...columns } = input;
+    const workOrderId = randomUUID();
+    const links = checklists
+      ? checklists.map((link) => this.buildLink(input.tenantId, workOrderId, link, link.orderIndex, now))
+      : [];
+    assertUniqueChecklistPairs(links);
     const workOrder: WorkOrder = {
-      ...input,
-      id: randomUUID(),
+      ...columns,
+      id: workOrderId,
       status: input.status ?? "open",
+      // ESPELHO na origem: quando o create traz a junção, `checklist_id`/`checklist_snapshot` são DERIVADOS da
+      // linha primária — nunca do corpo. Sem junção (caminho legado/sistema), os campos do input valem como
+      // sempre valeram.
+      ...(checklists ? mirrorColumnsFromLinks(links) : {}),
       createdAt: now,
       updatedAt: now,
     };
 
     this.workOrders.set(workOrder.id, workOrder);
+    for (const link of links) {
+      this.checklistLinks.set(link.id, link);
+    }
 
     return workOrder;
+  }
+
+  async listChecklists(
+    tenantId: string,
+    workOrderId: string,
+    options?: { readonly includeRemoved?: boolean },
+  ): Promise<readonly WorkOrderChecklistLink[]> {
+    const all = [...this.checklistLinks.values()].filter(
+      (link) => link.tenantId === tenantId && link.workOrderId === workOrderId,
+    );
+
+    return options?.includeRemoved ? sortChecklistLinks(all) : liveChecklistLinks(all);
+  }
+
+  // CHECKLIST P1 PR-04c (BLOQ 1 da verificação) — congela o formulário POR LINHA. Alvo = o par `(modelo,
+  // etapa)` VIVO; linha inexistente (nunca existiu, ou foi retirada entre a leitura do despacho e este
+  // carimbo) é IGNORADA em silêncio, como o contrato da interface declara: o despacho decide sobre o conjunto
+  // que LEU, e ressuscitar uma linha removida para carimbá-la inventaria estado que ninguém pediu.
+  //
+  // Não passa pelo espelho de propósito: a coluna `work_orders.checklist_snapshot` reproduz a PRIMÁRIA, e a
+  // primária é congelada por `freezeChecklistSnapshot` (que grava a coluna e a linha na mesma escrita). Se
+  // este método também mexesse no espelho, dois caminhos disputariam a mesma coluna no mesmo despacho.
+  async freezeChecklistLinkSnapshots(input: FreezeChecklistLinkSnapshotsInput): Promise<void> {
+    if (input.entries.length === 0) return;
+
+    const now = new Date();
+    const live = await this.listChecklists(input.tenantId, input.workOrderId);
+
+    for (const entry of input.entries) {
+      const match = live.find((link) => link.checklistId === entry.checklistId && link.role === entry.role);
+      if (!match) continue;
+
+      this.checklistLinks.set(match.id, { ...match, checklistSnapshot: entry.snapshot, updatedAt: now });
+    }
+  }
+
+  async applyChecklists(
+    input: ApplyWorkOrderChecklistsInput,
+  ): Promise<ApplyWorkOrderChecklistsResult<WorkOrder> | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+
+    const now = new Date();
+    let live = [...(await this.listChecklists(input.tenantId, input.workOrderId))];
+
+    // ALTA 6 — PROMOÇÃO PREGUIÇOSA. A PRIMEIRA escrita de junção numa ordem que tem `checklist_id` e junção
+    // vazia materializa a linha legada ANTES, na mesma transação (`manual`, `rule_id=NULL`, `role='generic'`,
+    // `order_index=0`, snapshot copiado). Isto NÃO é o backfill que o dono proibiu — aquele é uma MIGRAÇÃO
+    // varrendo a tabela inteira; esta é promoção POR-ORDEM, DISPARADA POR ESCRITA, e só acontece na ordem que
+    // alguém tocou. Sem ela: ordem antiga com T, o operador acrescenta U no envio, a junção vira [U], o espelho
+    // re-aponta e T DESAPARECE — inclusive com vistoria já respondida pendurada numa ordem que não a referencia
+    // mais.
+    let promoted: WorkOrderChecklistLink | undefined;
+    if (live.length === 0 && current.checklistId) {
+      const [legacy] = syntheticChecklistSet(current);
+      if (legacy) {
+        promoted = this.buildLink(input.tenantId, input.workOrderId, { ...legacy, addedBy: input.actorUserId }, 0, now);
+        this.checklistLinks.set(promoted.id, promoted);
+        live = [promoted];
+      }
+    }
+
+    // BLOQ 3 — a base do `order_index` das adições é calculada ANTES das remoções: mesmo que o operador retire
+    // a primária na mesma chamada, a linha nova não salta para a frente da fila que o despacho congelou.
+    const base = input.appendAfterExisting ? live.reduce((max, link) => Math.max(max, link.orderIndex), -1) + 1 : 0;
+
+    const removalTargets = input.removeAll
+      ? live.map((link) => ({ checklistId: link.checklistId, role: link.role, reason: input.removeAllReason }))
+      : input.remove ?? [];
+
+    const removed: WorkOrderChecklistLink[] = [];
+    if (removalTargets.length > 0) assertChecklistRemovalHasActor(input.actorUserId);
+    for (const target of removalTargets) {
+      const match = live.find((link) => link.checklistId === target.checklistId && link.role === target.role);
+      if (!match) continue;
+      const updated: WorkOrderChecklistLink = {
+        ...match,
+        removedAt: now,
+        removedBy: input.actorUserId,
+        removedReason: target.reason,
+        updatedAt: now,
+      };
+      this.checklistLinks.set(updated.id, updated);
+      live = live.filter((link) => link.id !== match.id);
+      removed.push(updated);
+    }
+
+    const added: WorkOrderChecklistLink[] = [];
+    for (const link of input.add ?? []) {
+      if (live.some((existing) => existing.checklistId === link.checklistId && existing.role === link.role)) {
+        throw workOrderChecklistDuplicateError();
+      }
+      const created = this.buildLink(input.tenantId, input.workOrderId, link, base + link.orderIndex, now);
+      this.checklistLinks.set(created.id, created);
+      live.push(created);
+      added.push(created);
+    }
+
+    const links = liveChecklistLinks(live);
+    const workOrder: WorkOrder = {
+      ...current,
+      ...mirrorColumnsFromLinks(links),
+      updatedBy: input.actorUserId ?? current.updatedBy,
+      updatedAt: now,
+    };
+    this.workOrders.set(workOrder.id, workOrder);
+
+    return { workOrder, links, removed, added, promoted };
+  }
+
+  private buildLink(
+    tenantId: string,
+    workOrderId: string,
+    input: WorkOrderChecklistLinkInput,
+    orderIndex: number,
+    now: Date,
+  ): WorkOrderChecklistLink {
+    return {
+      id: randomUUID(),
+      tenantId,
+      workOrderId,
+      checklistId: input.checklistId,
+      role: input.role,
+      source: input.source,
+      ruleId: input.ruleId,
+      orderIndex,
+      checklistSnapshot: input.checklistSnapshot ?? null,
+      addedBy: input.addedBy,
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 
   async findByClientActionId(tenantId: string, clientActionId: string): Promise<WorkOrder | undefined> {
@@ -176,11 +359,21 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     const current = await this.findById(input.tenantId, input.workOrderId);
     if (!current) return undefined;
 
+    const now = new Date();
+    // CHECKLIST P1 PR-04c-A — o freeze grava o snapshot NA LINHA PRIMÁRIA também, na mesma escrita. O espelho
+    // é "a coluna da ordem reproduz a primária": se só a coluna fosse congelada, o próximo ajuste do operador
+    // recalcularia o espelho a partir de uma linha com snapshot NULL e APAGARIA o formulário congelado — a
+    // ordem iria a campo sem o que o despacho prometeu.
+    const primary = pickPrimaryChecklistLink(await this.listChecklists(input.tenantId, input.workOrderId));
+    if (primary) {
+      this.checklistLinks.set(primary.id, { ...primary, checklistSnapshot: input.checklistSnapshot, updatedAt: now });
+    }
+
     const updated: WorkOrder = {
       ...current,
       checklistSnapshot: input.checklistSnapshot,
       updatedBy: input.actorUserId ?? current.updatedBy,
-      updatedAt: new Date(),
+      updatedAt: now,
     };
     this.workOrders.set(updated.id, updated);
 
@@ -279,6 +472,7 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     this.workOrders.clear();
     this.events.clear();
     this.assignments.clear();
+    this.checklistLinks.clear();
   }
 
   private sortedWorkOrders(): WorkOrder[] {
@@ -288,6 +482,57 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
 
 export function formatWorkOrderCode(sequence: number): string {
   return `OS-${String(sequence).padStart(6, "0")}`;
+}
+
+/**
+ * CHECKLIST P1 PR-04c-A — O ESPELHO, num lugar só. `work_orders.checklist_id` e `checklist_snapshot` passam a
+ * ser PROJEÇÃO da linha primária: o app de campo, o despacho, o dossiê de custódia e as integrações antigas
+ * continuam lendo as duas colunas exatamente como hoje, e elas nunca contradizem a junção.
+ * Conjunto vivo vazio ⇒ as duas colunas ficam vazias (é a ordem sem vistoria de hoje, estado legítimo).
+ *
+ * Compartilhada pelo repositório em memória e pelo Prisma DE PROPÓSITO: derivar o espelho de dois jeitos é
+ * como uma ordem congelaria vistorias diferentes conforme o modo de persistência.
+ */
+export function mirrorColumnsFromLinks(links: readonly WorkOrderChecklistLink[]): {
+  readonly checklistId: string | undefined;
+  readonly checklistSnapshot: Record<string, unknown> | null;
+} {
+  const primary = pickPrimaryChecklistLink(links);
+
+  return {
+    checklistId: primary?.checklistId,
+    checklistSnapshot: primary?.checklistSnapshot ?? null,
+  };
+}
+
+/**
+ * Mesma projeção do espelho, a partir das ENTRADAS (o create ainda não tem linhas gravadas). Empate de
+ * `order_index` resolve pela ordem do payload — a fila que o operador declarou.
+ */
+export function mirrorColumnsFromInputs(inputs: readonly WorkOrderChecklistLinkInput[]): {
+  readonly checklistId: string | undefined;
+  readonly checklistSnapshot: Record<string, unknown> | null;
+} {
+  const primary = [...inputs].sort((left, right) => left.orderIndex - right.orderIndex)[0];
+
+  return {
+    checklistId: primary?.checklistId,
+    checklistSnapshot: primary?.checklistSnapshot ?? null,
+  };
+}
+
+/**
+ * CHECKLIST P1 PR-04c-A — a identidade viva da junção inclui a FASE. Duas linhas do MESMO modelo na MESMA fase
+ * tornariam indefinida qual vistoria o técnico recebe; o mesmo modelo em fases DIFERENTES é o caso de uso
+ * central (coleta × entrega) e passa. Espelha o unique parcial do banco na borda de escrita em memória.
+ */
+export function assertUniqueChecklistPairs(links: readonly WorkOrderChecklistLink[]): void {
+  const seen = new Set<string>();
+  for (const link of links) {
+    const key = `${link.checklistId}:${link.role}`;
+    if (seen.has(key)) throw workOrderChecklistDuplicateError();
+    seen.add(key);
+  }
 }
 
 // Ω5P PR-18b — título/descrição WHITE-LABEL da OS de remoção originada pela autoridade. Carregam a PLACA (para o

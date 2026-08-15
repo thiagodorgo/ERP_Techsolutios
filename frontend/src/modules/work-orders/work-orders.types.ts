@@ -56,6 +56,32 @@ export type WorkOrderListItem = {
   readonly updatedAt?: string;
 };
 
+// CHECKLIST P1 PR-04c-A — a ordem de serviço passa a carregar um CONJUNTO de vistorias, não uma só.
+// Estes tipos espelham o DTO da junção (`toWorkOrderChecklistDto`): modelo, etapa, proveniência e posição
+// na fila. O DTO NÃO manda o nome do modelo, então a tela NÃO tem como escrever um nome — e não inventa
+// nenhum (D-007); o rótulo que ela mostra é derivado da etapa, que o DTO manda de verdade.
+//
+// Valores TÉCNICOS: só payload/adapter, NUNCA texto de UI (§3) — os rótulos de negócio moram em
+// `work-orders.adapter.ts` (getWorkOrderChecklistRoleLabel / getWorkOrderChecklistSourceLabel).
+export type WorkOrderChecklistRole = "collection" | "delivery" | "generic";
+
+export type WorkOrderChecklistSource = "resolved" | "manual";
+
+export type WorkOrderChecklistLink = {
+  /** Id do MODELO de vistoria. Nunca renderizado (UUID não é rótulo). */
+  readonly checklistId: string;
+  /**
+   * Etapa da vistoria dentro da ordem. `null` quando o servidor manda uma etapa que ESTE build ainda não
+   * conhece — o vocabulário vai crescer (custódia já foi nomeada pelo dono), e uma vistoria que existe no
+   * banco não pode sumir da tela por causa de uma palavra nova. Ela aparece sem etapa, dizendo isso.
+   */
+  readonly role: WorkOrderChecklistRole | null;
+  /** Proveniência: regra de aplicabilidade × escolha manual. `null` quando o servidor não informou. */
+  readonly source: WorkOrderChecklistSource | null;
+  readonly ruleId?: string | null;
+  readonly orderIndex: number;
+};
+
 // C2 (Detalhe de OS enriquecido): vínculos resolvidos que o backend anexa ao
 // GET /work-orders/:id. Cada campo é null quando a FK está ausente/irresolúvel.
 export type WorkOrderLinkedCustomer = {
@@ -107,6 +133,12 @@ export type WorkOrderDetail = WorkOrderListItem & {
   // Ω3F-7a — molde de checklist congelado que o técnico preencheu no app (JSON opaco).
   // `null`/ausente quando nenhum checklist foi preenchido. Renderizado de forma defensiva na aba Mobile.
   readonly checklistSnapshot?: unknown;
+  // CHECKLIST P1 PR-04c-A — conjunto de vistorias da ordem (chave `checklists` do DTO de detalhe).
+  // ADITIVO, como `links`: só o caminho de detalhe manda a chave. `undefined` significa "o servidor NÃO
+  // informou" (backend anterior ao 04c, DTO de lista, sync) — NÃO significa "esta ordem não tem vistoria".
+  // Quem lê cai, nesse caso, no campo legado `checklistId`, que é a mesma precedência do backend
+  // (`effectiveChecklistSet`: junção viva → visão sintética da ordem legada → vazio).
+  readonly checklists?: readonly WorkOrderChecklistLink[];
 };
 
 // Ω3F-7b — correção de quilometragem pela BASE (PATCH /work-orders/:id/mileage). Ambos opcionais,

@@ -110,7 +110,7 @@ Muitos comandos trazem a linha explícita "Limpar artefatos Flutter/Node após a
 
 Atualize `Kpis/kpis-latest.json`, `Kpis/kpis-history.*` (append) e `Kpis/index.html` **com
 contagem de execução real** deste PR (§3). Se o PR tocar mobile/Flutter, atualize **também**
-`mobile/flutter_app/Kpis/*`. Depois: `git push -u origin feat/<area>-<bloco>` → `gh pr create`.
+`Kpis/*` (painel ÚNICO — D-KPI-DUPLA-REVOGADA). Depois: `git push -u origin feat/<area>-<bloco>` → `gh pr create`.
 
 > **Exemplo (do `Ω5P PR-17`, `kpis-latest.json`).** `backend_tests` foi de **1862 → 1871** (+9,
 > execução real dos 8+1 testes do owner-portal), `frontend_smoke` **937 inalterado** (com nota
@@ -151,7 +151,7 @@ que torna o bloco **auditável a posteriori** pelo dono, sem depender do chat ne
 
 1. **Todo PR** que altere **código, teste ou escopo** atualiza, **no mesmo PR**:
    `Kpis/kpis-latest.json` + `Kpis/kpis-history.*` (append) + `Kpis/index.html`.
-2. PR que toque **Flutter/mobile** atualiza **também** `mobile/flutter_app/Kpis/*` (política dupla).
+2. **Política dupla REVOGADA** (2026-08-12, `D-KPI-DUPLA-REVOGADA`): o painel do Flutter foi apagado. PR que toque mobile atualiza `Kpis/*` como qualquer outro, com `flutter_tests` de execução real.
 3. Contagens de teste **do que o PR exerceu** vêm de **execução real no PR** — nunca copiadas do
    bloco anterior. Métricas de trilhas que o PR **não tocou** carregam o último valor oficial **com
    nota explícita** no history.
@@ -196,7 +196,7 @@ e a nota de backfill. Formato observado no repo:
 **(c) `Kpis/index.html`** — o painel **hidrata em runtime** de `kpis-latest.json`/`kpis-history.json`
 (fonte de verdade por PR), então não defasa; o valor hardcoded no `app.js` é só **fallback
 `file://`**. Ainda assim, `node --check Kpis/app.js` faz parte da bateria (§6). Se o PR tocar
-mobile, repita o trio em `mobile/flutter_app/Kpis/*`.
+mobile, o trio é o mesmo — o painel é um só.
 
 ### Backfill pós-merge de `merge_commit` / `approved_head`
 
@@ -217,7 +217,7 @@ autorização explícita, **não** tocar: `prisma/**`, `migrations/**`, `infra/*
 JS, `pubspec.yaml`/`pubspec.lock`, Figma.
 
 > **Exceção permanente (D-KPI-PER-PR):** KPIs **deixaram de ser escopo proibido** de feature. Todo
-> PR que altere código/teste/escopo **DEVE** atualizar `Kpis/*` (e `mobile/flutter_app/Kpis/*` se
+> PR que altere código/teste/escopo **DEVE** atualizar `Kpis/*` (painel único; a política dupla foi revogada — antes se pedia também o painel mobile, se
 > tocar mobile) **no próprio PR** (§3).
 
 ### Exemplo de bloco com escopo declarado (`B-107`)
@@ -356,7 +356,6 @@ npm run build
 node --test --import tsx tests/<contrato>.test.ts                     # contrato(s) do bloco
 node --test --import tsx tests/mobile-backend-contracts.test.ts tests/core-saas-contract.test.ts
 node --check Kpis/app.js
-node --check mobile/flutter_app/Kpis/app.js                           # se o PR tocar mobile
 git diff --check
 ```
 
@@ -376,7 +375,6 @@ npm --prefix frontend run test:smoke        # quando existir
 
 ```bash
 node --check Kpis/app.js
-node --check mobile/flutter_app/Kpis/app.js
 rg "<marcador-do-bloco>" Kpis/ docs/                # confirma os marcadores do bloco
 git diff --check
 ```
@@ -492,7 +490,7 @@ campo opcional, sem tocar no fluxo de OS.
 - src/modules/vehicles/**  (service, routes, DTO)
 - frontend/src/pages/VehiclesPage.tsx, frontend/src/features/vehicles/**
 - tests/vehicles.test.ts, tests/vehicles-frontend-contract.test.ts
-- Kpis/*  e (se tocar mobile) mobile/flutter_app/Kpis/*   ← D-KPI-PER-PR
+- Kpis/*   ← D-KPI-PER-PR (painel único desde D-KPI-DUPLA-REVOGADA)
 
 ## Escopo proibido
 - prisma/** e migrations/**  → SEM migração (coluna já existe; se não existir, PARAR e pedir junta+dba-guardiao)

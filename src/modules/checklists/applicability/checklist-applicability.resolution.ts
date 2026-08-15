@@ -152,16 +152,29 @@ export function resolveChecklistApplicability(
   if (concretas.length > 0 && generica) sombreadas.push(generica);
 
   const matches: ChecklistApplicabilityMatch[] = [];
-  const modelosJaIncluidos = new Set<string>();
+  const fasesJaIncluidas = new Set<ChecklistApplicabilityRole>();
 
   for (const rule of aplicadas) {
-    if (modelosJaIncluidos.has(rule.templateId)) {
-      // Duas fases apontando para o MESMO modelo: a fase mais específica já entrou; a segunda vira
-      // sombreamento em vez de duplicata.
+    // JUNTA DO PR-04c (3×0, unânime) — A DEDUPLICAÇÃO É POR **FASE**, NÃO POR MODELO.
+    //
+    // A versão anterior (#345) deduplicava por `templateId`, o que tornava IMPOSSÍVEL o caso de uso
+    // central do aplicativo: o MESMO formulário preenchido na coleta E na entrega. Duas regras
+    // (`coleta → T`, `entrega → T`) — a configuração natural de quem tem um único modelo de vistoria —
+    // produziam UMA vistoria só, e a entrega nunca existia. É justamente esse par que alimenta a tela
+    // de comparação, que carrega UM schema e confronta as duas execuções: o resumo de divergências que
+    // vira prova jurídica do estado do veículo.
+    //
+    // A alternativa que sobrava era duplicar o formulário em dois modelos — com a armadilha de eles
+    // divergirem com o tempo, os campos deixarem de casar e a comparação passar a produzir
+    // divergências vazias ou falsas, em silêncio.
+    //
+    // Deduplicar por fase preserva o que a proteção original queria (a mesma vistoria nunca é pedida
+    // duas vezes NA MESMA FASE) sem proibir o par coleta+entrega.
+    if (fasesJaIncluidas.has(rule.role)) {
       sombreadas.push(rule);
       continue;
     }
-    modelosJaIncluidos.add(rule.templateId);
+    fasesJaIncluidas.add(rule.role);
     matches.push({ role: rule.role, templateId: rule.templateId, ruleId: rule.id });
   }
 

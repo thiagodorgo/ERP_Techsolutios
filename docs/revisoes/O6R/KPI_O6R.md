@@ -2,20 +2,26 @@
 
 Números reais da rodada; limitações são explícitas.
 
+> **Reconciliação pós-merge (2026-08-14).** Os números de cobertura abaixo estavam errados por uma unidade e
+> a diferença não era de arredondamento: a matriz tem **70** unidades, não 69, e a que faltava — `jurisdiction`
+> — aparecia ✅ nas cinco lentes **sem relatório e sem um único achado citando o módulo**. Em vez de apagar a
+> linha, o módulo foi revisado de fato (`02_MODULOS/jurisdiction.md`), o que produziu `Ω6R-DAT-004`. Os
+> contadores refletem o estado depois disso.
+
 ## Cobertura
 
-- Unidades revisadas: 69/69 = **100%** por cinco lentes (censo estrutural integral + leitura profunda estratificada).
-- Módulos backend: 65/65; clientes/infra: 4/4.
+- Unidades revisadas: 70/70 = **100%** por cinco lentes (censo estrutural integral + leitura profunda estratificada). Até 2026-08-14 este KPI dizia 69/69: contava as unidades com relatório, não as da matriz.
+- Módulos backend: 65/65 (exatamente os diretórios de `src/modules`); clientes/infra: 5/5 — `frontend-web`, `mobile-flutter`, `portal-owner-pwa`, `portal-authority-pwa`, `infra-jobs-scripts`. O "4/4" anterior omitia uma das cinco.
 - Auditorias transversais: 8/8 = **100%**.
-- Matriz: 345/345 células módulo×lente ✅.
-- Arquivos diretamente nomeados nos inventários de leitura das lentes: mínimo verificável 143 únicos; 143/2.741 arquivos rastreados = **5,2%**. Código também foi censado por `rg` integralmente; não se converteu censo em “arquivo lido”.
+- Matriz: 350/350 células módulo×lente ✅ (70 × 5). O "345/345" anterior era 69 × 5.
+- Arquivos diretamente nomeados nos inventários de leitura das lentes: mínimo verificável 143 únicos na Fase 2, mais os 10 arquivos de `src/modules/jurisdiction` nomeados na reconciliação → piso de 153; 153/2.741 arquivos rastreados = **5,6%**. O conjunto exato dos 143 não é reproduzível a partir dos documentos publicados (os relatórios de módulo citam `src/modules/<mod>/**`, não arquivo a arquivo), então o número é um piso declarado, não uma lista auditável. Código também foi censado por `rg` integralmente; não se converteu censo em “arquivo lido”.
 
 ## Achados
 
 | Severidade | Total |
 |---|---:|
 | P0 | 15 |
-| P1 | 14 |
+| P1 | 15 |
 | P2 | 0 |
 | P3 | 0 (0%; teto 10% respeitado) |
 
@@ -25,9 +31,12 @@ Números reais da rodada; limitações são explícitas.
 | QUA | 5 |
 | ARQ | 4 |
 | SEC | 4 |
-| DAT | 3 |
+| DAT | 4 |
 | PERF | 3 |
 | TEN | 1 |
+
+Total: **30**. A J-6R votou sobre **29**; `Ω6R-DAT-004` (P1, `jurisdiction`/`charging`) entrou na reconciliação
+pós-merge e **não passou pela votação de severidade da junta**.
 
 ## Densidade — cinco módulos críticos
 
@@ -58,5 +67,9 @@ Números reais da rodada; limitações são explícitas.
 
 ## Consistência documental
 
-- Registro Markdown: 29; JSONL: 29; IDs citados: 29.
-- Consistência: **100%**; órfãos 0; achados sem relatório 0; superseded 0.
+- Registro Markdown: 30; JSONL: 30; IDs citados: 30.
+- Consistência: **100%**; órfãos 0; achados sem relatório 0.
+- Superseded: **1 parcial** — `Ω6R-QUA-004` teve o componente *timeline* corrigido pelo PR #351 (`7e60b90`),
+  verificado em `origin/main` `e80430a`; detalhe, status e assign seguem abertos, então o achado permanece
+  ativo. O "superseded: 0" anterior era verdadeiro na Fase 4 e ficou defasado quando o #351 mergeou.
+- Relatórios de módulo: 70/70 (`02_MODULOS/jurisdiction.md` criado na reconciliação de 2026-08-14).
