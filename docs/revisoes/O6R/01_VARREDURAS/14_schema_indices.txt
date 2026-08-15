@@ -1,0 +1,10 @@
+# Ω6R — baseline Prisma e índices declarados
+
+- `prisma validate`: verde (saída integral em `05_prisma_validate.txt`).
+- Modelos: 110.
+- Declarações `@@index`: 310.
+- Declarações `@@unique`: 137.
+- Queries Prisma de seleção/agregação/mutação em código produtivo: 242 pistas lexicais.
+- SQL bruto: 72 pistas para A2/A3.
+
+A mera existência de índice não prova aderência aos padrões de acesso. A4 cruza listagens, filtros, ordenações e paginação com schema/migrations; A2/A3 verificam RLS, locks, constraints e escopo de tenant.
