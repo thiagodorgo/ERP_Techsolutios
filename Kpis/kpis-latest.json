@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-08-14",
-  "version": "CHK-P1-PR04C-A",
+  "snapshot_date": "2026-08-15",
+  "version": "B-O6R-05",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "CHECKLIST P1 PR-04c-A — a ordem de serviço passa a ter um CONJUNTO de vistorias (junção N:N work_order_checklists), a aplicabilidade resolve de ponta a ponta, e o despacho congela o formulário por linha. Três ciclos de reprovação adversarial: o gate da rota nova era contornável pelo PATCH da ordem (técnico apagava a vistoria de entrega); requisição RECUSADA já tinha destruído o conjunto; o porto do conjunto não estava ligado em nenhuma raiz de composição de produção; o re-despacho APAGAVA o formulário congelado quando o modelo saía de circulação; e o create afirmava ao guincheiro que uma vistoria não foi enviada quando ela foi.",
-    "title": "CHK P1 PR-04c-A — o conjunto de vistorias da ordem, com a prova por linha",
-    "pr": 352,
+    "block": "B-O6R-05 — fix/production-runtime-gates: os dois primeiros P0 da auditoria O6R viram gate de boot.",
+    "title": "B-O6R-05 — producao nao sobe mais sem persistir e sem worker",
+    "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "A ordem deixa de ter UMA vistoria e passa a ter um conjunto com fase e proveniência. O formulário congelado por linha é a prova do que foi prometido ao campo, e o congelamento virou monotônico: nunca zera o que já congelou. A tela da ordem parou de dizer Vinculado para uma ordem com duas vistorias.",
-    "status_label": "Em revisão (PR #352)"
+    "summary": "Producao podia subir guardando organizacoes e permissoes so na memoria, e o worker de jobs nunca subia. Os dois eram default silencioso, sem gate. Agora o processo recusa o boot, o worker tem sinal de vida honesto (um tick que falha nao conta como vivo) e o smoke de conteiner prova write-restart-read dentro da CI.",
+    "status_label": "Em revisao (PR nao aberto)"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "PR-04c-A: 1112→1125 em execução real — a célula Checklist da ordem passou a listar o conjunto (rótulo + fase + origem), incluindo o caso da ordem legada renderizado ponta a ponta a partir do payload cru."
     },
     "backend_tests": {
-      "value": 2290,
-      "total": 2298,
-      "display": "2290/2298",
-      "note": "PR-04c-A: 2209→2290 de 2298 em execução real. QUATRO ciclos de reprovação adversarial; o último trocou a INFERÊNCIA por LEITURA — o laço de auditoria do create perguntava \"dá para criar?\" quando queria saber \"esta vistoria foi ao campo?\", e a resposta certa é um verbo read-only (hasChecklistRun) com fallback à chave legada. Os 8 pulos são os declarados. Suítes -db contra o PostgreSQL vivo: 85/85, 0 pulos, resíduo zero na base (junção 0, execuções 216 todas com role NULL, 236 organizações — idêntico ao baseline lido ANTES)."
+      "value": 2429,
+      "total": 2438,
+      "display": "2429/2438",
+      "note": "B-O6R-05: 2290→2429 de 2438 em execucao real, pela primeira vez com o npm test EXECUTANDO de verdade nesta plataforma (o glob nao era expandido e a suite nao rodava). Os 9 pulos sao os declarados. Suites -db contra o PostgreSQL vivo com DATABASE_URL exportada como a CI faz: 0 pulos, residuo zero (236 organizacoes, 0 auditoria orfa, 0 linhas de juncao, chave de heartbeat ausente)."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -56,9 +56,9 @@
       "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
     },
     "blocks_completed": {
-      "value": 148,
-      "display": "148",
-      "note": "CHK P1 PR-04c-A. Sobre 147."
+      "value": 149,
+      "display": "149",
+      "note": "B-O6R-05 (gates de runtime de producao). Sobre 148."
     },
     "mobile_backend_contracts": {
       "value": 18,

@@ -34,6 +34,13 @@ const PROD_BASE = {
   PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
+  // B-O6R-05 — gates de RUNTIME de produção (Ω6R-DAT-001 + Ω6R-DIN-006). Esta fixture é usada por dois
+  // testes que afirmam SUCESSO (o `parse` do B1 e o self-host do R11), então precisa satisfazê-los: sem isto
+  // o `envSchema.parse` abaixo LANÇA e o caso do provedor próprio passaria a medir a rejeição errada.
+  CORE_SAAS_PERSISTENCE: "prisma",
+  DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
+  JOBS_WORKER_ENABLED: "true",
+  REDIS_URL: "redis://redis.interno.exemplo.com:6379",
 };
 
 test("B1: GEOCODING_ENABLED=false realmente desliga (não coage para true)", () => {
@@ -60,6 +67,21 @@ test("R11: produção + geocoding ligado + provedor PRÓPRIO (self-host) → sch
     NOMINATIM_BASE_URL: "https://geo.interno.exemplo.com/search",
   });
   assert.equal(result.success, true);
+});
+
+// Regressão B-O6R-05: `booleanFlag` é compartilhada por GEOCODING_ENABLED e JOBS_WORKER_ENABLED. Trocá-la por
+// `z.coerce.boolean()` religaria o geocoding com a string "false" (B1) E faria o gate do worker aceitar
+// exatamente o ambiente que ele existe para barrar. Um teste, os dois efeitos — para que a troca não passe.
+test("regressão: o parse estrito de booleanFlag vale para o geocoding E para o worker de jobs", () => {
+  // B1: "false" não vira true no geocoding.
+  assert.equal(envSchema.parse({ ...PROD_BASE, GEOCODING_ENABLED: "false" }).GEOCODING_ENABLED, false);
+
+  // Ω6R-DIN-006: "false" também não vira true no worker — e em produção isso REPROVA o boot.
+  const workerDesligado = envSchema.safeParse({ ...PROD_BASE, JOBS_WORKER_ENABLED: "false" });
+  assert.equal(workerDesligado.success, false);
+  if (!workerDesligado.success) {
+    assert.ok(workerDesligado.error.issues.some((issue) => issue.path.includes("JOBS_WORKER_ENABLED")));
+  }
 });
 
 test("R11: desenvolvimento + Nominatim público ligado → permitido (só prod é barrado)", () => {

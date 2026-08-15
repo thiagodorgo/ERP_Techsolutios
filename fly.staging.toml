@@ -10,6 +10,14 @@
 #                           (abaixo) faz o gate do env.ts EXIGIR allowlist sem '*' — sem ela o boot FALHA de
 #                           propósito (fail-closed). Ex.: https://erp-techsolutions-web-staging.fly.dev
 #                           (regra geral: TODO ambiente com NODE_ENV=production, staging incluso, exige CORS_ORIGIN.)
+#   PORTAL_SESSION_SECRET → segredo PRÓPRIO da sessão do owner-portal (≠ JWT_SECRET do ERP)
+#   PORTAL_AUTHORITY_SESSION_SECRET → segredo PRÓPRIO da sessão do authority-portal (≠ ERP e ≠ owner)
+#   PORTAL_LOG_SECRET     → segredo do HMAC do PortalAccessLog (≠ JWT_REFRESH_SECRET)
+#   PORTAL_TENANT_ID      → binding de organização do deploy do portal. NÃO é segredo, mas é o id de uma
+#                           organização real: fica fora do repositório por §2.8.
+#   PORTAL_CORS_ORIGIN    → allowlist https:// da origem do portal público (mesma disciplina do CORS_ORIGIN).
+# B-O6R-05 (Ω6R-DAT-001/DIN-006): os cinco PORTAL_* acima existiam no env.ts desde o Ω5P mas NÃO estavam
+# nesta lista — quem provisionasse staging por ela teria o boot reprovado por 5 issues.
 # Rollback do provisionamento: `fly apps destroy erp-techsolutions-api-staging` (app inteiro) ou
 # `fly releases -c fly.staging.toml` + `fly deploy --image <imagem anterior do GHCR>` (só código).
 
@@ -22,8 +30,11 @@ primary_region = "gru"
 [env]
   NODE_ENV = "production"
   PORT = "3000"
-  # Persistência real em staging (o compose local-prod usa memory; aqui é o caminho prisma de verdade).
+  # Persistência real (B-O6R-05: o gate G1 do env.ts agora EXIGE "prisma" em todo NODE_ENV=production —
+  # o compose local-prod, que usava `memory`, foi corrigido no mesmo bloco).
   CORE_SAAS_PERSISTENCE = "prisma"
+  # B-O6R-05 (Ω6R-DIN-006) — sem esta flag o worker de jobs nunca sobe e nada é materializado. Gate G3.
+  JOBS_WORKER_ENABLED = "true"
   JWT_EXPIRES_IN = "15m"
   LOG_LEVEL = "info"
 

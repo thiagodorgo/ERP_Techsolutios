@@ -20,6 +20,13 @@ const PROD_BASE = {
   PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
+  // B-O6R-05 — os gates de RUNTIME de produção (Ω6R-DAT-001 + Ω6R-DIN-006): persistência prisma, banco
+  // declarado, worker de jobs ligado e Redis fora do loopback. Esta fixture afirma parse com SUCESSO em
+  // alguns casos, então precisa satisfazê-los — senão o teste do CORS mediria a rejeição errada.
+  CORE_SAAS_PERSISTENCE: "prisma",
+  DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
+  JOBS_WORKER_ENABLED: "true",
+  REDIS_URL: "redis://redis.interno.exemplo.com:6379",
 };
 
 test("produção SEM CORS_ORIGIN (vazio) → schema REJEITA (fail-closed)", () => {
@@ -76,6 +83,30 @@ test("regressão: produção sem JWT_SECRET continua REJEITANDO", () => {
   assert.equal(result.success, false);
   if (!result.success) {
     assert.ok(result.error.issues.some((issue) => issue.path.includes("JWT_SECRET")));
+  }
+});
+
+// Regressão B-O6R-05: os gates de runtime NÃO afrouxaram o gate do CORS, e o gate do CORS não encobre os de
+// runtime. As duas direções, porque o risco de somar gate a um `superRefine` é justamente uma condição nova
+// mascarar a antiga (ou a antiga passar a ser a única que dispara).
+test("regressão: o gate do CORS e os gates de runtime disparam de forma INDEPENDENTE", () => {
+  // CORS inválido com TODOS os gates de runtime satisfeitos → ainda é o CORS que reprova.
+  const corsRuim = envSchema.safeParse({ ...PROD_BASE, CORS_ORIGIN: "*" });
+  assert.equal(corsRuim.success, false);
+  if (!corsRuim.success) {
+    assert.ok(corsRuim.error.issues.some((issue) => issue.path.includes("CORS_ORIGIN")));
+  }
+
+  // CORS válido com o agregado core-saas em memória → reprova pela persistência, não pelo CORS.
+  const memoria = envSchema.safeParse({
+    ...PROD_BASE,
+    CORS_ORIGIN: "https://app.exemplo.com",
+    CORE_SAAS_PERSISTENCE: "memory",
+  });
+  assert.equal(memoria.success, false);
+  if (!memoria.success) {
+    assert.ok(memoria.error.issues.some((issue) => issue.path.includes("CORE_SAAS_PERSISTENCE")));
+    assert.ok(!memoria.error.issues.some((issue) => issue.path.includes("CORS_ORIGIN")));
   }
 });
 

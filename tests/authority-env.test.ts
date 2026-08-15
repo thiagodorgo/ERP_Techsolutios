@@ -17,6 +17,12 @@ const PROD_OK = {
   PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
+  // B-O6R-05 — gates de RUNTIME de produção (Ω6R-DAT-001 + Ω6R-DIN-006). O baseline VÁLIDO precisa
+  // satisfazê-los; sem isso o `baseline` abaixo falharia e os `rejectsOn` ficariam vacuamente verdadeiros.
+  CORE_SAAS_PERSISTENCE: "prisma",
+  DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
+  JOBS_WORKER_ENABLED: "true",
+  REDIS_URL: "redis://redis.interno.exemplo.com:6379",
 };
 
 function rejectsOn(overrides: Record<string, unknown>, path: string): void {
@@ -59,4 +65,14 @@ test("desenvolvimento sem PORTAL_AUTHORITY_SESSION_SECRET → schema ACEITA (só
 // Regressão: o gate novo NÃO afrouxou os gates existentes do owner nem do core.
 test("regressão: produção sem PORTAL_SESSION_SECRET continua REJEITANDO mesmo com o authority válido", () => {
   rejectsOn({ PORTAL_SESSION_SECRET: undefined }, "PORTAL_SESSION_SECRET");
+});
+
+// Regressão B-O6R-05: o isolamento authority×owner×ERP é verificado por IGUALDADE de secrets; os gates de
+// runtime são verificados por outra coisa inteiramente. Provar que continuam independentes evita que um
+// afrouxamento futuro num deles passe despercebido por o outro estar reprovando no lugar.
+test("regressão: o isolamento do authority e os gates de runtime disparam de forma INDEPENDENTE", () => {
+  // Runtime quebrado, isolamento intacto → reprova pelo Redis no loopback.
+  rejectsOn({ REDIS_URL: "redis://localhost:6379" }, "REDIS_URL");
+  // Runtime intacto, isolamento quebrado → continua reprovando pelo authority.
+  rejectsOn({ PORTAL_AUTHORITY_SESSION_SECRET: PROD_OK.PORTAL_SESSION_SECRET }, "PORTAL_AUTHORITY_SESSION_SECRET");
 });
