@@ -2476,3 +2476,29 @@ que esta mesma fatia consertou do outro lado, e que ninguém somaria seis meses 
   chega ao app de campo. Por isso não bloqueou o merge.
 - **Correção:** o `create` passa a normalizar, como o `reassign`.
 - status: ABERTA.
+
+## P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS (2026-08-15 — porteiro pós-merge do #352)
+
+`package.json:19` define `"test": "node --test --import tsx tests/*.test.ts"`. **No Windows o shell não expande o
+glob**, `node --test` não encontra nada, e **o processo sai com código 0**. Reproduzido nesta máquina:
+
+```
+> node --test --import tsx tests/*.test.ts
+Could not find 'C:\...\ERP_Techsolutios\tests\*.test.ts'
+EXIT=0
+```
+
+**O dano:** `npm test` é o comando da bateria §9 e da DoD §10. Toda execução local que confiou nele foi **verde
+sem rodar um único teste** — a classe exata de "verde que não exercita nada" que o veto de especialidade do
+`agente-ci-doutor` existe para matar (§C7). Na CI (`ubuntu-latest`) o glob expande e a suíte roda de verdade, e é
+por isso que o defeito sobreviveu: o único lugar onde ele aparece é a máquina do dono.
+
+Descoberto pelo porteiro do #352 ao **reexecutar** as contagens em vez de copiá-las — que é literalmente a razão
+de o papel existir.
+
+- **Correção:** trocar o script por uma forma que funcione nos dois sistemas **sem dependência nova** (o próprio
+  `node --test` aceita diretório desde o Node 20; ou um runner mínimo em `scripts/`), **somada a um guard que
+  falhe quando a suíte executar zero testes** — sem o guard, a próxima variação do mesmo defeito passa de novo.
+- **Alvo:** **B-O6R-05** (`fix/production-runtime-gates`), por ser o bloco de gates e por já carregar as
+  correções de bateria da junta `J-O6R-B05`.
+- status: ABERTA.
