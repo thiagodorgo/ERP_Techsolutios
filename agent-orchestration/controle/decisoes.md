@@ -1384,3 +1384,22 @@ humano ainda vai abrir. Quem confundir os dois estará reestruturando fundação
 
 **Fronteira desta entrada (§A2):** ela **registra o deferimento**, não delibera nada, não recomenda aceitar nem
 recusar e não classifica nenhum dos quatro como bom ou ruim.
+
+## D-O6R-B05-WORKER-INCONDICIONAL (2026-08-15 — bloco B-O6R-05, correção C4 da junta `J-O6R-B05`)
+
+A ata do plano mandou **decidir e justificar** entre duas alternativas para o `Ω6R-DIN-006` (o worker de jobs
+nunca sobe em produção). Decisão: **em produção, o worker é obrigatório e ponto** — a flag "outro processo roda
+o worker" **não entra neste bloco**.
+
+**Por quê, medido:** **não existe processo worker dedicado neste repositório hoje** — nenhum entrypoint além de
+`src/server.ts`, nenhum script de worker em `package.json`. Uma flag declarando "outro processo cuida disso"
+seria satisfazível **só no nome**, com zero prova no boot — exatamente o padrão que este mesmo plano recusou na
+válvula de persistência, exigindo cinco itens de contenção para admiti-la. Declarar não é cumprir.
+
+**Consequências:** o gate do worker fica sem ramo alternativo; o estado "esperado externo" sai do contrato do
+endpoint de saúde; e o ramo que leria o sinal de vida no Redis não é entregue aqui. A **escrita** do sinal é
+entregue e testada — é o contrato que o **B-O6R-08** vai consumir quando trouxer o processo dedicado, e é lá que
+a flag nasce, **junto do processo que a torna verificável**. Se precisar de válvula, recebe lá a mesma
+disciplina de cinco itens.
+
+Pendência correlata: `P-O6R-B05-WORKER-EXTERNO-DIFERIDO`.

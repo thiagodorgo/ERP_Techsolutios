@@ -14,6 +14,16 @@
 #                           mas é específico do ambiente: o gate do env.ts rejeita vazio/'*'. Por isso
 #                           NÃO é definido aqui (fail-closed): sem allowlist real o boot em produção
 #                           falha de propósito, em vez de degradar silenciosamente para "*".
+#   PORTAL_SESSION_SECRET → segredo PRÓPRIO da sessão do owner-portal (≠ JWT_SECRET do ERP)
+#   PORTAL_AUTHORITY_SESSION_SECRET → segredo PRÓPRIO da sessão do authority-portal (≠ ERP e ≠ owner)
+#   PORTAL_LOG_SECRET     → segredo do HMAC do PortalAccessLog (≠ JWT_REFRESH_SECRET)
+#   PORTAL_TENANT_ID      → binding de organização do deploy do portal. NÃO é segredo, mas é o id de uma
+#                           organização REAL: fica fora do repositório por §2.8 (nada de tenant_id
+#                           versionado), como CORS_ORIGIN fica por fail-closed.
+#   PORTAL_CORS_ORIGIN    → allowlist https:// da origem do portal público. Mesma disciplina do
+#                           CORS_ORIGIN: omitida aqui de propósito, o gate rejeita vazio/'*'.
+# B-O6R-05 (Ω6R-DAT-001/DIN-006): os cinco PORTAL_* acima existiam no env.ts desde o Ω5P mas NÃO estavam
+# neste cabeçalho — quem ativasse o ambiente por esta lista teria o boot reprovado por 5 issues.
 # Rollback (ver Runbook A em docs/deployment.md §Produção): `fly releases -c fly.production.toml` +
 # `fly deploy --config fly.production.toml --image ghcr.io/<owner>/erp-backend:<sha-anterior>`
 # (o pull do GHCR privado exige registry auth configurada no Fly — item do dossiê de ativação).
@@ -30,9 +40,14 @@ primary_region = "gru"
   NODE_ENV = "production"
   PORT = "3000"
   CORE_SAAS_PERSISTENCE = "prisma"
+  # B-O6R-05 (Ω6R-DIN-006) — o worker in-process nunca subia: nenhum manifesto declarava esta flag e o
+  # default do schema é `false`. Sem ela, diária de pátio, reconciliação de custódia e notificação legal
+  # não são materializadas. Agora o gate G3 do env.ts a EXIGE em produção — o boot reprova se faltar.
+  JOBS_WORKER_ENABLED = "true"
   JWT_EXPIRES_IN = "15m"
   LOG_LEVEL = "info"
   # CORS_ORIGIN é intencionalmente OMITIDO (fail-closed) — ver cabeçalho. Setar na ativação, sem '*'.
+  # PORTAL_CORS_ORIGIN e PORTAL_TENANT_ID também ficam FORA daqui — ver cabeçalho (nomes, nunca valores).
 
 [http_service]
   internal_port = 3000

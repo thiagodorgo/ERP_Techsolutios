@@ -3,48 +3,20 @@ import pino from "pino";
 import { createApp } from "./app.js";
 import { createPortalApp } from "./portal-app.js";
 import { env } from "./config/env.js";
+import { startJobWorkerIfEnabled } from "./infra/jobs/job-worker.bootstrap.js";
 import { createCoreSaasService } from "./modules/core-saas/index.js";
 
 const logger = pino({ level: env.LOG_LEVEL });
 
-// Ω4C PR-04 (D-Ω4C-NOTIF-SCHEDULER) — sobe o worker in-process (setInterval → dequeue → registry) SÓ com a flag
-// JOBS_WORKER_ENABLED ligada ∧ persistence=prisma, e enfileira o 1º `notifications.scan-due` (que se re-enfileira
-// a cada 60s). Guardado AQUI (server.main), não em app.ts → CI/testes que importam app.ts NUNCA sobem o loop.
-// Ligar a flag também drena a fila de jobs de evento pré-existente (notification-dispatch) — comportamento
-// LATENTE do worker compartilhado, ativado deliberadamente (D-007 v), não é regressão.
-async function startJobWorkerIfEnabled(): Promise<void> {
-  if (!env.JOBS_WORKER_ENABLED || env.CORE_SAAS_PERSISTENCE !== "prisma") {
-    return;
-  }
-  const [
-    { startWorker },
-    { enqueueInitialScheduledNotificationScan },
-    { enqueueInitialImpoundReconcileScan },
-    { enqueueInitialChargingAccrueScan },
-    { enqueueInitialImpoundNotifyDueScan },
-  ] = await Promise.all([
-    import("./infra/jobs/job.worker.js"),
-    import("./modules/notifications/scheduled-notification.jobs.js"),
-    import("./modules/impound/impound.jobs.js"),
-    import("./modules/charging/charge.jobs.js"),
-    import("./modules/impound/impound.notifications.jobs.js"),
-  ]);
-  startWorker();
-  await enqueueInitialScheduledNotificationScan();
-  // Ω5P PR-06 — 1º tick do SWEEP de reconciliação OS→custódia (auto-reenfileirante 60s). Gated pela mesma flag.
-  await enqueueInitialImpoundReconcileScan();
-  // Ω5P PR-07 — 1º tick do SWEEP do motor de diárias I4 (auto-reenfileirante 1h). Gated pela mesma flag.
-  await enqueueInitialChargingAccrueScan();
-  // Ω5P PR-09 — 1º tick do SWEEP da trilha de notificações legais I6 (auto-reenfileirante 1h). Gated pela mesma flag.
-  await enqueueInitialImpoundNotifyDueScan();
-  logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
-}
+// Ω6R-DIN-006 — o bootstrap do worker de jobs mora em `src/infra/jobs/job-worker.bootstrap.ts`.
+// Aqui ele era inalcançável por teste (função não exportada num módulo que executa `main()` ao ser
+// importado). Os imports dinâmicos continuam lá dentro: quem importa `app.ts` não puxa o worker.
 
 async function main(): Promise<void> {
   const coreSaasRuntime = await createCoreSaasService();
   const app = createApp(coreSaasRuntime);
 
-  await startJobWorkerIfEnabled();
+  await startJobWorkerIfEnabled({ logger });
 
   app.listen(env.PORT, () => {
     logger.info(

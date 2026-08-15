@@ -44,20 +44,38 @@ services:
       args:
         APP_VERSION: ${APP_VERSION:-0.1.0}
         GIT_COMMIT: ${GIT_COMMIT:-local}
+    # B-O6R-05 — tag parametrizada: `docker compose build` publica a imagem sob este nome, então o job
+    # `docker` da CI reusa o MESMO artefato que acabou de buildar em vez de rebuildar para o smoke.
+    image: ${API_IMAGE:-erp-techsolutions-api:local}
     environment:
       NODE_ENV: production
       PORT: 3000
-      CORE_SAAS_PERSISTENCE: memory
+      # B-O6R-05 (Ω6R-DAT-001) — era `memory`: o agregado core-saas (organizações, usuários, papéis/vínculos
+      # e a auditoria desse agregado) vivia na RAM e sumia a cada restart, num arquivo cujo NODE_ENV é
+      # `production`. O gate G1 do env.ts agora reprova o boot nessa configuração.
+      CORE_SAAS_PERSISTENCE: prisma
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/erp_techsolutions?schema=public
       REDIS_URL: redis://redis:6379
+      # B-O6R-05 (Ω6R-DIN-006) — sem esta flag o worker in-process NUNCA subia: diária de pátio, reconciliação
+      # de custódia e notificação legal não eram materializadas. O gate G3 agora a exige em produção.
+      JOBS_WORKER_ENABLED: "true"
       # Placeholders de VALIDAÇÃO local-prod (mesma classe do POSTGRES_PASSWORD acima) — NÃO são segredos
       # de produção. Produção injeta via GitHub Environments/secrets do provedor (PR5/6). Literais (sem ${})
       # de propósito: evitam que o docker compose interpole a JWT_SECRET do .env de dev, que é um dev-secret
-      # bloqueado pelo gate de produção do env.ts.
+      # bloqueado pelo gate de produção do env.ts. DISTINTOS entre si de propósito: os gates de isolamento do
+      # env.ts reprovam secret de portal igual ao do ERP (e authority igual ao owner).
       JWT_SECRET: local-prod-validation-placeholder-not-a-secret
       JWT_REFRESH_SECRET: local-prod-validation-refresh-placeholder-not-a-secret
       JWT_EXPIRES_IN: 15m
       CORS_ORIGIN: http://localhost:8080
+      # B-O6R-05 — os 5 PORTAL_* faltavam por inteiro: o parse falhava com 5 issues e o serviço `api` saía
+      # com erro ANTES do listen (e, sem `restart:`, ficava parado). Ou seja: este arquivo não subia.
+      PORTAL_SESSION_SECRET: local-prod-validation-portal-session-not-a-secret
+      PORTAL_LOG_SECRET: local-prod-validation-portal-log-not-a-secret
+      PORTAL_AUTHORITY_SESSION_SECRET: local-prod-validation-portal-authority-session-not-a-secret
+      # UUID nulo de propósito: binding de validação local, jamais o id de uma organização real (§2.8).
+      PORTAL_TENANT_ID: 00000000-0000-0000-0000-000000000000
+      PORTAL_CORS_ORIGIN: http://localhost:8080
     ports:
       - "${API_PORT:-3000}:3000"
     depends_on:

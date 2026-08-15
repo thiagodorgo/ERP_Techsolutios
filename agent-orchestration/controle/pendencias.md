@@ -2501,4 +2501,156 @@ de o papel existir.
   falhe quando a suíte executar zero testes** — sem o guard, a próxima variação do mesmo defeito passa de novo.
 - **Alvo:** **B-O6R-05** (`fix/production-runtime-gates`), por ser o bloco de gates e por já carregar as
   correções de bateria da junta `J-O6R-B05`.
+- status: **FECHADA** em 2026-08-15 pela Frente C do **B-O6R-05** — ver o fechamento abaixo.
+
+### Fechamento (B-O6R-05, Frente C — 2026-08-15)
+
+**Correção entregue.** `package.json:19` passa a invocar `scripts/run-backend-tests.mjs` (novo, **zero dependência
+nova** — §C7). O runner expande `tests/*.test.ts` com `fs.readdirSync` **em JS**, ordena (determinismo), e passa a
+**lista explícita** ao `node --test` — a mesma forma que a CI já usa no subconjunto contra o Postgres, e que
+funciona nos dois sistemas porque não depende de shell nenhum. Guards, ambos **monotônicos** (só transformam
+verde em vermelho, nunca o contrário): (1) zero arquivo casado ⇒ falha alto; (2) TAP sem `# tests`, ou com
+`# tests 0` ⇒ falha alto. Guard novo em `tests/npm-test-runner-guard.test.ts` — **13 testes**: nove sobre as
+funções puras, e **quatro que executam a própria `main()` do runner** por processo filho, contra fixtures
+isoladas num diretório temporário (nunca `tests/`, então **não há recursão**). Os quatro existem porque um
+crítico mediu que, sem eles, quatro mutações na `main()` sobreviviam à suíte inteira — inclusive trocar a
+propagação do código de saída, o que deixaria a CI verde com a suíte vermelha.
+
+**A armadilha que esta própria pendência sugeria foi verificada e RECUSADA.** "O próprio `node --test` aceita
+diretório desde o Node 20" **não resolve**: no Node 20 os padrões default de descoberta do test runner **não
+incluem `.ts`**, então o diretório resolveria para zero arquivo — o mesmo verde vazio com outra roupa. Por isso a
+lista explícita.
+
+**CORREÇÃO DO REGISTRO — o `EXIT=0` acima está errado.** Reexecutado nesta máquina (Node v20.19.5), o comando
+antigo sai com **código 1**, não 0:
+
+```
+$ npm test ; echo "EXIT=$?"          -> EXIT=1     (medição direta)
+$ npm test 2>&1 | tail -3 ; echo "EXIT=$?"  -> EXIT=0     (medição ATRAVÉS DE PIPE)
+```
+
+O `0` registrado veio de `$?` estar lendo o código de saída do **`tail`**, não o do `npm`. O defeito de fundo é
+real e permanece integralmente — **nenhum teste era executado** —, mas ele era **barulhento**, não silencioso:
+quem lesse o código de saída diretamente veria vermelho. Quem medisse através de um pipe (`| tail`, `| head`,
+`| grep`) veria zero e leria como verde. Essa distinção **estreita o dano** e vale registrar em vez de deixar a
+frase mais assustadora no arquivo.
+
+**Dano histórico, delimitado com honestidade.** As contagens oficiais de KPI vêm de **execução em CI**
+(ubuntu, onde o glob expande) e de **invocações com arquivos explícitos** (`node --test --import tsx tests/x.test.ts`),
+que nunca passaram por este defeito. O que o comando quebrado contaminou foram **baterias locais desta máquina**
+que rodaram `npm test` — e, dessas, apenas as que leram o resultado através de um pipe puderam confundi-lo com
+verde. Nenhum número publicado é retirado por causa disto.
+
+**Efeito colateral revelado na primeira execução honesta.** Com o runner novo, `npm test` passou a executar de
+verdade nesta máquina. Medição final do bloco, na configuração da CI (`CORE_SAAS_PERSISTENCE=memory`):
+**231 arquivos · 2413 testes · 2404 pass · 0 fail · 9 skip · exit 0**.
+
+**E na configuração que o `.env` desta máquina impõe (`prisma`), a mesma suíte dá 89 falhas.** Não é regressão
+deste bloco — provado por A/B: os mesmos arquivos falham com e sem as mudanças daqui (89 e 89), e passam
+(86/86) quando a persistência é forçada para memória. A CI não tem `.env`, então cai no default de memória e o
+job fica verde. Ou seja: **a suíte não suporta a configuração que o `.env` do dono impõe**, e isso era invisível
+enquanto o `npm test` não rodava. Registrado em pendência própria — ver `P-SUITE-NAO-SUPORTA-ENV-PRISMA`.
+
+## P-O6R-B05-WORKER-EXTERNO-DIFERIDO (2026-08-15 — bloco B-O6R-05, decisão C4)
+
+A flag "outro processo roda o worker", o ramo que **lê** o sinal de vida no Redis e a topologia de processo
+separado ficaram **fora** do B-O6R-05 por `D-O6R-B05-WORKER-INCONDICIONAL`: sem um processo worker dedicado no
+repositório, a flag seria satisfazível só no nome. A **escrita** do sinal foi entregue e testada — é o contrato
+que o consumidor vai ler.
+- **Correção:** entregar a flag **junto** do processo que a torna verificável, com prova no boot ou a disciplina
+  de cinco itens de contenção.
+- **Alvo:** B-O6R-08 (`fix/durable-jobs-realtime`). status: ABERTA.
+
+## P-O6R-B05-STAGING-SCALE-ZERO (2026-08-15 — bloco B-O6R-05, questão Q5)
+
+O staging escala a zero (`fly.staging.toml`: paradas automáticas ligadas, mínimo de máquinas em execução = 0).
+**Máquina dormindo ⇒ o worker não roda**, então as varreduras periódicas não acontecem em staging mesmo depois
+deste bloco ligar o gate. Subir o mínimo para 1 **custa dinheiro do dono** — nada foi alterado.
+- **Decisão:** do **dono**, não da junta. Registrada com a limitação declarada em vez de mexer em silêncio.
+- status: ABERTA (aguarda decisão de custo).
+
+## P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO (2026-08-15 — bloco B-O6R-05)
+
+O sinal de vida do worker prova que **o laço completou um ciclo recentemente, incluindo a ida à fila** — não
+prova que um job **conclui**. Um handler travado deixa o laço girando e o sinal fresco.
+- **Correção:** prazo por job e limite de concorrência (achado `Ω6R-PERF-001`). **Alvo:** B-O6R-08.
+- status: ABERTA. O limite está declarado no corpo da resposta do endpoint (`measures`), para o monitor não
+  afirmar mais do que mede.
+
+## P-O6R-B05-README-ATIVACAO (2026-08-15 — bloco B-O6R-05)
+
+Os cabeçalhos dos manifestos do provedor enumeravam os segredos exigidos na ativação **sem nenhuma variável do
+portal público** — quem seguisse as instruções do próprio arquivo receberia um processo que sai com erro antes
+de escutar a porta. Este bloco completou os cabeçalhos com os **nomes**. Falta o dossiê de hand-off humano
+(`docs/deployment.md`, seção de ativação) **herdar a mesma lista corrigida**, para não divergir de novo.
+- **Alvo:** hand-off de ativação. status: ABERTA.
+
+## P-SUITE-NAO-SUPORTA-ENV-PRISMA (2026-08-15 — bloco B-O6R-05, revelado ao consertar o `npm test`)
+
+Com o `npm test` finalmente executando de verdade, apareceu um fato que estava escondido: **a suíte falha 89
+testes quando a persistência é `prisma`**, que é exatamente o que o `.env` desta máquina impõe. Na configuração
+da CI (sem `.env`, default `memory`) a mesma suíte dá **2413 testes, 0 falhas**.
+
+**Não é regressão de bloco nenhum** — provado por A/B durante o B-O6R-05: os mesmos arquivos falham com e sem as
+mudanças do bloco (89 e 89), e passam (86/86) com a persistência forçada para memória.
+
+**Por que importa.** O dono roda a bateria na máquina dele, com o `.env` dele. Até agora o `npm test` não
+executava nada, então a divergência nunca apareceu; a partir de agora ela aparece como 89 vermelhos toda vez, e
+quem não souber disso vai caçar um defeito que não existe — ou, pior, vai aprender a ignorar vermelho.
+
+- **Correção:** decidir e implementar uma das duas — (a) os testes que exigem memória passam a forçá-la de forma
+  hermética (o `process.env` dentro do arquivo chega tarde: os imports estáticos são hasteados e o `env.ts` já
+  congelou o snapshot; então é `--import` de um preload, ou o runner exporta a variável), ou (b) a suíte passa a
+  suportar as duas configurações de verdade, e a CI passa a rodar **as duas**. A opção (b) é a que fecharia o
+  ponto cego estrutural: hoje **nenhuma** execução verde exercita o caminho de persistência real fora das
+  suítes de banco dedicadas.
+- **Nota:** enquanto isso, a bateria local honesta é `CORE_SAAS_PERSISTENCE=memory npm test` — e isso precisa
+  estar escrito onde as pessoas leem, não só aqui.
+- status: ABERTA.
+
+## P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05)
+
+O gate que recusa Redis apontando para host local decide por **endereço**, não por literal: normaliza o
+hostname e recusa qualquer notação que resolva numericamente para o bloco de loopback inteiro ou para o
+endereço não-especificado — incluindo as formas curtas, octais, hexadecimais, o ponto final da raiz e o IPv4
+mapeado em IPv6. Duas famílias ficam **de fora**, e isto está declarado no comentário do predicado **e cravado
+como teste** (o caso nomeia a pendência), justamente para a afirmação não poder divergir do código outra vez:
+
+1. **Host que só se revela local na resolução de nome** — alias de `hosts` e DNS curinga do tipo que devolve um
+   endereço de loopback. Fechar exigiria resolver DNS **no boot**, o que troca um gate determinístico por um que
+   depende da rede no momento de subir.
+2. **IPv4 embutido sob prefixo diferente do mapeado comum** (traduzido e o prefixo de NAT64). Nenhum desses
+   chega a destino sem um tradutor na frente.
+
+- **Correção, se um dia valer:** resolução no boot, com o custo declarado (falha de DNS passa a impedir o boot).
+- status: ABERTA (limitação conhecida e declarada, não defeito silencioso).
+
+## P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST (2026-08-15 — junta do PR #353, ressalva do `agente-dba-guardiao`)
+
+O B-O6R-05 nasceu para fechar a assimetria "banco blindado, Redis aberto" e **entregou o inverso**: o `REDIS_URL`
+recebeu validação **estrutural** (forma de URL) **e semântica** (recusa de qualquer notação que resolva para
+loopback), enquanto o `DATABASE_URL` recebeu só **presença não-vazia**.
+
+Medido pela cadeira, em produção plenamente válida: `DATABASE_URL=nao-e-url`, `DATABASE_URL=x` e até
+`DATABASE_URL=redis://localhost:6379` **passam no boot**.
+
+**Por que não bloqueou o merge:** o P0 era a perda **silenciosa** de identidade, e essa está fechada — um gate
+impede memória, o outro impede vazio. URL malformada quebra **alto** no primeiro acesso ao banco, que é ruído,
+não perda de dado. E o plano §2.2 especificou este gate como "presente e não-vazia": o código faz o que o plano
+diz — **não é superdeclaração**.
+
+**Correção:** exigir do `DATABASE_URL` em produção a mesma disciplina do Redis — forma de URL e recusa de host
+de loopback. Um Postgres de produção apontado para o loopback do próprio contêiner é **o mesmo dano** que o do
+Redis: some no restart, que é literalmente o `Ω6R-DAT-001` entrando por outra porta.
+- **Alvo:** B-O6R-08. status: ABERTA.
+- Já feito neste PR: o comentário do campo em `src/config/env.ts` foi reescrito para declarar o que ele **não**
+  faz, a pedido da junta — a frase anterior prometia mais rigor do que as duas linhas seguintes entregavam.
+
+## P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353)
+
+O Redis de desenvolvimento desta máquina carrega **42.393 chaves de payload de fila** (`erp:jobs:data:*`) de
+suítes antigas, presentes antes de qualquer execução da rodada. Não é resíduo de bloco nenhum e não afeta
+veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é payload de fila, não dado de domínio.
+- **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
+  explícito e contagem antes/depois, nunca por curinga solto.
 - status: ABERTA.

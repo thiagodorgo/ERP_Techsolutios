@@ -4,6 +4,12 @@
 # nem multi-PoP); alerta = notificação nativa do GitHub no run vermelho (sem on-call/ACK/escalonamento);
 # o schedule auto-desabilita após 60d sem atividade no repo — CONFIRMAR vivo no dossiê de ativação.
 # Upgrade documentado (não adotado): Better Stack FREE (10 monitores/30s + status page) — junta-5 + LGPD.
+#
+# B-O6R-05 (Ω6R-DIN-006) — probe OPCIONAL do worker de jobs. A URL vem de repo variable
+# (`*_WORKER_HEALTH_URL`) e NUNCA é impressa pelo script — nem o host (veto secops #4). Enquanto a
+# variable não existir, o GitHub injeta string vazia, o script trata como ausente e o comportamento é
+# IDÊNTICO ao de hoje: nenhuma requisição extra, nenhuma linha extra de log, mesmo código de saída.
+# Nada aqui ATIVA ambiente algum: os jobs seguem gated pelas mesmas `*_HEALTH_URL` de sempre.
 
 name: uptime-check
 
@@ -32,6 +38,8 @@ jobs:
         run: node scripts/uptime-check.mjs
         env:
           HEALTH_URL: ${{ vars.STAGING_HEALTH_URL }}
+          # Vazia enquanto a variable não existir ⇒ probe do worker não roda (comportamento de hoje).
+          WORKER_HEALTH_URL: ${{ vars.STAGING_WORKER_HEALTH_URL }}
 
   production:
     if: vars.PROD_HEALTH_URL != ''
@@ -45,3 +53,5 @@ jobs:
         run: node scripts/uptime-check.mjs
         env:
           HEALTH_URL: ${{ vars.PROD_HEALTH_URL }}
+          # Vazia enquanto a variable não existir ⇒ probe do worker não roda (comportamento de hoje).
+          WORKER_HEALTH_URL: ${{ vars.PROD_WORKER_HEALTH_URL }}

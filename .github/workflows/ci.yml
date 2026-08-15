@@ -174,6 +174,10 @@ jobs:
           SUITES="$SUITES tests/checklist-run-lifecycle-db.test.ts"
           SUITES="$SUITES tests/checklist-run-create-concurrency-db.test.ts"
           SUITES="$SUITES tests/persistent-rbac-middleware.test.ts"
+          # B-O6R-05 (Ω6R-DAT-001) — as metades prisma deste arquivo AUTO-PULAM sem DATABASE_URL, e é o
+          # guard de zero pulos do passo seguinte que as pune se pularem. É aqui, contra o Postgres de
+          # verdade, que "gravou numa instância, leu em outra" deixa de ser afirmação e vira execução.
+          SUITES="$SUITES tests/core-saas-persistence-restart-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
@@ -286,6 +290,12 @@ jobs:
 
   # Ω-INFRA-1: builda a imagem do backend (valida o Dockerfile em todo PR) e publica no GHCR
   # com a tag do commit APENAS em push na main. Usa GITHUB_TOKEN (sem conta/segredo externo).
+  #
+  # B-O6R-05 (Q6 — decisão da junta CONTRA o planejador, que queria o smoke manual): este job passa a
+  # RODAR o artefato que acabou de buildar. Buildar a imagem prova que o Dockerfile compila; só subir o
+  # stack prova que o processo BOOTA — e é no boot que moram os dois P0 deste bloco (o agregado core-saas
+  # em memória e o worker de jobs que nunca sobe). Um crítico registrou que a única linha que liga o
+  # worker ao boot não tinha cobertura nenhuma; este passo é uma das duas provas dela.
   docker:
     runs-on: ubuntu-latest
     needs: [backend, backend-postgres, frontend]
@@ -295,6 +305,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # O smoke de contêiner é um .mjs sem dependência; o runner já traz `node`, mas fixar a versão
+      # aqui deixa este job com o mesmo Node dos demais em vez do que o runner escolher.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -320,3 +337,46 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # B-O6R-05 — o passo acima deixa a imagem no cache do buildx, não no daemon local: sem `load` não
+      # existe imagem para o compose usar. Este passo REAPROVEITA as camadas (cache-from: gha, cache-to
+      # ausente de propósito — nada novo a exportar) e só paga o custo de materializar a imagem no
+      # daemon, para o smoke rodar contra o ARTEFATO DESTE COMMIT — nunca contra um rebuild diferente.
+      - name: Load backend image into the local daemon (for the container smoke)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: erp-techsolutions-api:ci-smoke
+          build-args: |
+            APP_VERSION=${{ github.sha }}
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha
+
+      # O estágio `builder` é o que o serviço `migrate` do compose usa (prisma migrate deploy). Sem esta
+      # pré-carga o compose rebuildaria o estágio inteiro no `up`; com ela, o compose encontra a imagem
+      # com o nome default do projeto (<projeto>-<serviço>) e não builda nada. É otimização pura: se o
+      # nome não bater em alguma versão do compose, ele simplesmente builda — o smoke não muda de veredito.
+      - name: Load builder image for the compose migrate service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: builder
+          push: false
+          load: true
+          tags: erp-o6r-smoke-migrate:latest
+          cache-from: type=gha
+
+      # A PROVA DE CAMPO (§9): sobe o compose de produção, exige readiness COM o bloco do worker,
+      # exige `/health/worker` dizendo "up" NO CORPO, grava uma organização, reinicia a api, prova que
+      # o processo é outro, relê a organização e exige que ela tenha sobrevivido — e derruba tudo com
+      # `-v`. Se este smoke passar com o worker desligado, ele não serve: por isso só `up` lido no
+      # corpo é aceito (`not_expected` responde HTTP 200). O script recusa rodar contra qualquer alvo
+      # cujo JWT_SECRET não seja o placeholder rotulado de validação local.
+      - name: Container smoke — write → restart → read (persistência + worker)
+        run: node scripts/smoke-compose-persistence.mjs
+        env:
+          API_IMAGE: erp-techsolutions-api:ci-smoke
+          API_PORT: "3101"
+          SMOKE_COMPOSE_BUILD: "0"

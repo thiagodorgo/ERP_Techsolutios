@@ -76,7 +76,42 @@ montado em **`/portal/v1/owner/*`** (`app.use("/portal/v1/owner", createOwnerPor
 | Método | Caminho | Autorização | Descrição |
 |---|---|---|---|
 | GET | `/api/v1/health` | Pública | Liveness — processo de pé (sem I/O de dependência). |
-| GET | `/api/v1/health/ready` | Pública | Readiness — ping real em Postgres + Redis; `503` se algum down (só up/down + latência, sem host/credencial). |
+| GET | `/api/v1/health/ready` | Pública | Readiness — ping real em Postgres + Redis; `503` se algum down (só up/down + latência, sem host/credencial). Desde o B-O6R-05 o corpo traz também `checks.worker` (`status`/`ageSeconds`) — **reportado, nunca contado**: o veredito `200`/`503` continua sendo só Postgres ∧ Redis. |
+| GET | `/api/v1/health/worker` | Pública | **`worker_health@2026-08-15.b-o6r-05`** — saúde do **laço** do worker de jobs, respondida a partir do estado **deste processo** (nunca do Redis). |
+
+#### `GET /api/v1/health/worker` — contrato `worker_health@2026-08-15.b-o6r-05`
+
+Nasce no **B-O6R-05** para fechar o `Ω6R-DIN-006` (o worker de jobs nunca subia: sem ele, diária de
+pátio, reconciliação de custódia e notificação legal não eram materializadas — e nada no sistema
+declarava isso).
+
+**O que este endpoint prova:** o laço completou um tick recentemente, **incluindo a ida à fila**.
+**O que ele NÃO prova:** que os jobs terminam, nem que um handler travou (`Ω6R-PERF-001` → B-O6R-08).
+
+| `status` | Quando | HTTP |
+|---|---|---|
+| `up` | último tick resolvido há menos de 60s | `200` |
+| `starting` | worker esperado, sem tick fresco, processo com menos de 90s de vida | `200` |
+| `stale` | worker esperado, sem tick fresco, processo além da carência | `503` |
+| `not_expected` | ninguém prometeu worker neste processo (`expected:"none"`) | `200` |
+
+```json
+200 { "status":"up", "expected":"local", "service":"erp-techsolutions-api",
+      "ageSeconds":8, "measures":"worker_loop_tick", "timestamp":"2026-08-15T12:00:00.000Z" }
+503 { "status":"stale", "expected":"local", "service":"erp-techsolutions-api", "ageSeconds":null,
+      "measures":"worker_loop_tick", "timestamp":"2026-08-15T12:00:00.000Z" }
+```
+
+**Corpo mínimo por decisão (§2.8).** Sem `version`/`commit`, sem instante do último sinal, sem
+identidade de instância, sem host, sem profundidade de fila, sem nome de job — a superfície é pública
+e não autenticada. `measures` existe para o corpo **declarar o que está medindo**: se alguém trocar a
+medida sem trocar o contrato, o campo denuncia.
+
+**Armadilha para quem consome (vale para probe, smoke e monitor):** `starting` e `not_expected`
+respondem **HTTP 200**. Ler só o status HTTP dá verde justamente no processo que subiu **sem** worker.
+Quem valida deploy **lê o corpo** e só aceita `up` — é o que fazem `scripts/smoke-production.mjs`,
+`scripts/smoke-staging.mjs`, `scripts/smoke-compose-persistence.mjs` e a probe opcional de
+`scripts/uptime-check.mjs`.
 
 ---
 

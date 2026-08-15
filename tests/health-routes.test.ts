@@ -71,6 +71,39 @@ test("/health/ready faz checagem profunda (ping Postgres+Redis) sem vazar dado s
   });
 });
 
+// B-O6R-05 (Ω6R-DIN-006) — ADITIVO. Os dois testes acima ficam intocados; o readiness ganhou o
+// campo `checks.worker` no corpo e o veredito 200/503 continua sendo só Postgres ∧ Redis (Q2).
+// O comportamento completo dos quatro estados vive em `tests/worker-heartbeat.test.ts`.
+test("/health/ready reporta checks.worker sem mudar o veredito, e /health/worker existe", async () => {
+  await withApi(async (baseUrl) => {
+    const readyResponse = await fetch(`${baseUrl}/api/v1/health/ready`);
+    const readyBody = (await readyResponse.json()) as {
+      checks: {
+        postgres: { status: string };
+        redis: { status: string };
+        worker: { status: string; ageSeconds: number | null };
+      };
+    };
+
+    assert.deepEqual(Object.keys(readyBody.checks).sort(), ["postgres", "redis", "worker"]);
+    // Este processo importa só `app.ts` — ninguém prometeu worker aqui.
+    assert.equal(readyBody.checks.worker.status, "not_expected");
+    assert.equal(readyBody.checks.worker.ageSeconds, null);
+
+    const ready = readyBody.checks.postgres.status === "up" && readyBody.checks.redis.status === "up";
+    assert.equal(readyResponse.status, ready ? 200 : 503);
+
+    const workerResponse = await fetch(`${baseUrl}/api/v1/health/worker`);
+    const workerBody = (await workerResponse.json()) as Record<string, unknown>;
+
+    assert.equal(workerResponse.status, 200);
+    assert.equal(workerBody.status, "not_expected");
+    assert.equal(workerBody.expected, "none");
+    assert.equal(workerBody.service, "erp-techsolutions-api");
+    assert.equal(workerBody.measures, "worker_loop_tick");
+  });
+});
+
 async function closeServer(server: Server): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));

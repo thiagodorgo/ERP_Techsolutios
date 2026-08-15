@@ -14,6 +14,7 @@ export class JobWorker {
   private readonly registry: JobRegistry;
   private readonly logger: Pick<Console, "info" | "warn" | "error">;
   private timer: NodeJS.Timeout | undefined;
+  private lastSuccessfulTickAtValue: Date | undefined;
 
   constructor(options: JobWorkerOptions = {}) {
     this.queue = options.queue ?? getDefaultJobQueue();
@@ -21,7 +22,29 @@ export class JobWorker {
     this.logger = options.logger ?? console;
   }
 
+  /**
+   * Ω6R-DIN-006 — instante do último tick que RESOLVEU (com job ou com fila vazia). É o sinal que
+   * o `/health/worker` lê. `undefined` = o laço ainda não completou nenhum tick.
+   */
+  get lastSuccessfulTickAt(): Date | undefined {
+    return this.lastSuccessfulTickAtValue;
+  }
+
+  /**
+   * O carimbo mora AQUI, depois de `runTick()` resolver — e NÃO no topo do callback do
+   * `setInterval`. A diferença é o ponto: um tick que REJEITA (Redis fora ⇒ `dequeue` lança) não
+   * pode contar como vivo. Marcado no topo, o worker inútil responderia "up"; marcado aqui, o
+   * sinal envelhece e vira `stale`, que é a verdade.
+   */
   async processNextJob(): Promise<boolean> {
+    const processed = await this.runTick();
+
+    this.lastSuccessfulTickAtValue = new Date();
+
+    return processed;
+  }
+
+  private async runTick(): Promise<boolean> {
     const job = await this.queue.dequeue();
 
     if (!job) {

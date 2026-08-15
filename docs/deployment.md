@@ -18,9 +18,10 @@ JA no repo (o provisionamento vivo e hand-off — ver "Fronteira de provisioname
   nginx** (`frontend/nginx.conf.template` + envsubst nativo do entrypoint) — validado local: envsubst renderiza o
   upstream e o nginx serve a SPA. (No Fly, `.flycast` resolve pela DNS interna mesmo com 0 maquinas ativas.)
 - **CD `.github/workflows/deploy-staging.yml`**: push na `main` → `prisma migrate deploy` → `db:seed:demo` (SO
-  staging) → `flyctl deploy` (api + web) → **smoke** (`scripts/smoke-staging.mjs`: `/health/ready` 200 + login
-  demo + `GET /me`). **Smoke vermelho = deploy invalido.** O job e **GATED**: so roda com a repo variable
-  `STAGING_DEPLOY_ENABLED == 'true'` — ate o humano provisionar, e SKIPPED e a `main` fica verde.
+  staging) → `flyctl deploy` (api + web) → **smoke** (`scripts/smoke-staging.mjs`: `/health/ready` 200 +
+  **`/health/worker` com `up` lido no corpo** + login demo + `GET /me`). **Smoke vermelho = deploy invalido.**
+  O job e **GATED**: so roda com a repo variable `STAGING_DEPLOY_ENABLED == 'true'` — ate o humano
+  provisionar, e SKIPPED e a `main` fica verde.
 
 **Ativacao (hand-off humano — dossie):** criar conta Fly + `fly apps create` dos 2 apps + Postgres/Redis
 gerenciados + preencher o **GitHub Environment `staging`** com os secrets `FLY_API_TOKEN`, `STAGING_DATABASE_URL`,
@@ -47,7 +48,8 @@ App e banco **distintos** do staging, no **Fly.io/gru**. Config-as-code JA no re
   staging pelo SHA; nao rebuilda). Migrate `deploy` forward-only da pipeline; **sem `db:seed`**; em seguida
   **provisionamento de RBAC** (`npm run db:provision-rbac` — aditivo, idempotente, sem dado de demonstração; ver
   secao dedicada abaixo). Smoke de produção
-  (`scripts/smoke-production.mjs`): readiness + prova de CORS restritivo + login opcional (usuario de smoke real).
+  (`scripts/smoke-production.mjs`): readiness + **worker de jobs `up`** (polling do corpo de `/health/worker`)
+  + prova de CORS restritivo + login opcional (usuario de smoke real).
 - **Trava dupla** (nao usa required-reviewers humano; tres selos maquinaveis no CD): **(a)** ata de go-live
   junta-5 unanime **por SHA** (`agent-orchestration/omega/juntas/J-SAN-PROD-GOLIVE-<sha>.md`, nomeando o
   `promote_sha`) registrada ANTES; **(b)** smoke de staging **verde no mesmo SHA** (o CD checa a EXECUCAO real do
@@ -58,7 +60,24 @@ App e banco **distintos** do staging, no **Fly.io/gru**. Config-as-code JA no re
 
 **Secrets** via **GitHub Environment `production`** (`FLY_API_TOKEN`, `PROD_DATABASE_URL`, `PROD_API_URL`,
 opcional `PROD_SMOKE_EMAIL`/`PROD_SMOKE_PASSWORD`) + **Fly secrets do app** (`DATABASE_URL`, `REDIS_URL`,
-`JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`). Nenhum versionado.
+`JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`, e os 5 `PORTAL_*`: `PORTAL_SESSION_SECRET`,
+`PORTAL_LOG_SECRET`, `PORTAL_AUTHORITY_SESSION_SECRET`, `PORTAL_TENANT_ID`, `PORTAL_CORS_ORIGIN`).
+Nenhum versionado — os cabecalhos dos `fly.*.toml` trazem so os **nomes**.
+
+**O que o boot passa a EXIGIR em producao (B-O6R-05 — gates fail-closed do `env.ts`).** Alem do
+`CORS_ORIGIN` sem curinga que ja existia:
+
+| Gate | Exigencia em `NODE_ENV=production` | Achado que fecha |
+|---|---|---|
+| G1 | `CORE_SAAS_PERSISTENCE=prisma` | `Ω6R-DAT-001` — organizacoes, usuarios, papeis/vinculos e a auditoria desse agregado viviam na RAM |
+| G2 | `DATABASE_URL` presente e nao-vazia | `Ω6R-DAT-001` — o caminho prisma sem banco so quebrava no 1o acesso |
+| G3 | `JOBS_WORKER_ENABLED=true` | `Ω6R-DIN-006` — o worker de jobs nunca subia |
+| G5 | `REDIS_URL` presente e **fora** de localhost/127.0.0.1 | fila e sinal de vida presos dentro do contêiner |
+
+**Consequencia operacional, sem eufemismo:** configuracao incompleta **nao degrada — ela reprova o boot**,
+com mensagem nomeando o achado, **antes do `listen`**. Um deploy assim nao fica "meio de pe": a maquina nao
+passa no healthcheck. E o inverso do que existia antes deste bloco, em que o processo subia feliz e perdia
+dado em silencio.
 
 #### Provisionamento de RBAC — papéis, permissões e concessões (passo do CD)
 
@@ -171,6 +190,10 @@ e escrita para o vencedor no PR 5.
 - **CI publica no GHCR** — o job `docker` do `ci.yml` builda a imagem do backend em TODO PR (valida o Dockerfile)
   e **publica no GHCR** (`ghcr.io/<owner>/erp-backend:<sha>` + `:latest`) **apenas em push na `main`**, via
   `GITHUB_TOKEN` (sem conta/segredo externo).
+- **CI RODA a imagem (B-O6R-05, Q6)** — o mesmo job carrega o artefato recem-buildado no daemon local e executa
+  `scripts/smoke-compose-persistence.mjs`. Buildar prova que o Dockerfile compila; **so subir prova que o processo
+  BOOTA** — e e no boot que moravam os dois P0 deste bloco (agregado core-saas em memoria; worker de jobs que
+  nunca subia). Ver "Smoke de contêiner" abaixo.
 
 ### Validacao local-prod (nao e o deploy do provedor)
 
@@ -180,14 +203,56 @@ runtime) + `web` (nginx). Valida o stack containerizado ponta a ponta:
 ```bash
 # porta do host configuravel (evita conflito com um dev server em :3000)
 API_PORT=3001 docker compose -f docker-compose.prod.yml up -d --build
-curl -s http://localhost:3001/api/v1/health/ready      # 200 {"status":"ready", checks: pg/redis up}
+curl -s http://localhost:3001/api/v1/health/ready      # 200 {"status":"ready", checks: pg/redis/worker}
+curl -s http://localhost:3001/api/v1/health/worker     # 200 {"status":"up", "measures":"worker_loop_tick"}
 curl -s http://localhost:8080/                          # SPA (nginx)
 curl -s http://localhost:8080/api/v1/health             # proxy nginx -> backend
 docker compose -f docker-compose.prod.yml down -v
 ```
 
-Os `JWT_SECRET`/`JWT_REFRESH_SECRET`/`POSTGRES_PASSWORD` no compose.prod sao **placeholders de validacao local**,
-NAO segredos de producao.
+Os `JWT_SECRET`/`JWT_REFRESH_SECRET`/`POSTGRES_PASSWORD`/`PORTAL_*` no compose.prod sao **placeholders de
+validacao local**, NAO segredos de producao.
+
+#### Smoke de contêiner — `write → restart → read` (B-O6R-05, §9)
+
+`scripts/smoke-compose-persistence.mjs` automatiza a validação acima e vai **além dela**: em vez de perguntar
+"o stack responde?", pergunta **"o que este processo grava sobrevive a ele?"** — que é o dano do `Ω6R-DAT-001`
+(o agregado core-saas em memória perdia organizações, usuários, papéis e a auditoria desse agregado a cada
+reinício) — e **"o worker de jobs realmente subiu?"** (`Ω6R-DIN-006`).
+
+```bash
+node scripts/smoke-compose-persistence.mjs          # builda, prova, e derruba com -v ao final
+API_PORT=3111 node scripts/smoke-compose-persistence.mjs
+API_IMAGE=erp-techsolutions-api:ci-smoke SMOKE_COMPOSE_BUILD=0 node scripts/smoke-compose-persistence.mjs
+```
+
+A sequência, e o defeito que cada passo mata:
+
+| # | Passo | Mata |
+|---|---|---|
+| 1 | sobe `docker-compose.prod.yml` (projeto isolado `erp-o6r-smoke`, só `api` + dependências) | o arquivo que **não subia** (5 `PORTAL_*` faltando) |
+| 2 | `/health/ready` 200 **com o bloco `checks.worker` no corpo** | remover o `checks.worker` do readiness |
+| 3 | `/health/worker` com `status:"up"` **lido no corpo** | worker desligado; asserir só o status HTTP |
+| 4 | grava uma organização pelo agregado core-saas, dentro do contêiner | — |
+| 5 | `restart` da `api` + prova de que o contêiner é **outro** | pular o restart |
+| 6 | relê a organização por HTTP e ela **ainda existe** | `CORE_SAAS_PERSISTENCE=memory` |
+| 7 | `/health/worker` volta a `up` no processo **novo** | worker que só sobe "na primeira vez" |
+| 8 | `down -v` **sempre**, inclusive em falha (§C5) | volume sujo sobrevivendo à rodada |
+
+**Se este smoke passar com o worker desligado, ele não serve.** Por isso o passo 3 só aceita `up` lido no
+corpo: `starting` e `not_expected` respondem **HTTP 200**, e `not_expected` é exatamente o processo que subiu
+**sem** worker.
+
+**Trava de segurança (veto secops #7).** O script assina o token de leitura com o `JWT_SECRET` do compose e
+**recusa executar** se esse segredo não for o placeholder rotulado `local-prod-validation-…-not-a-secret`; o
+alvo HTTP é sempre loopback e não vem de variável. As duas coisas juntas o tornam inutilizável contra um
+ambiente real **por construção**. O token nunca é impresso, o id da organização de validação não vai para o
+log, e toda saída de subprocesso passa por redação de URIs com credencial (uma falha do Prisma cita a
+connection string inteira).
+
+**Na CI:** roda no job `docker` do `ci.yml` (decisão Q6 da junta), contra a **imagem recém-buildada** deste
+commit — carregada no daemon local com `cache-from: type=gha`, sem rebuild. O `web` não sobe: o smoke é do
+backend, e buildar o frontend ali custaria minutos sem provar nada deste bloco.
 
 ### Fronteira de provisionamento (hand-off humano — D-SAN-AUTONOMIA)
 
@@ -391,6 +456,17 @@ pg_restore -h <host> -U <admin> -d erp_restore -j4 restore.dump
 - **`.github/workflows/uptime-check.yml`** — cron `*/5`, dois jobs (staging/prod) gated por
   `vars.STAGING_HEALTH_URL`/`vars.PROD_HEALTH_URL` != ''. Roda `scripts/uptime-check.mjs` (GET `/health`;
   status != 200/timeout = down → run vermelho → **notificacao nativa do GitHub**).
+- **Probe do worker de jobs (B-O6R-05, OPCIONAL e INERTE por padrao).** Se — e somente se — existir a
+  repo variable `STAGING_WORKER_HEALTH_URL`/`PROD_WORKER_HEALTH_URL`, o mesmo script faz uma segunda
+  probe em `/health/worker`. **Sem a variable o comportamento e o de hoje, byte a byte:** nenhuma
+  requisicao extra, nenhuma linha extra de log, mesmo codigo de saida (provado por execucao comparada
+  contra a versao anterior do script). A probe **le o CORPO** e so aceita `status:"up"` — `starting` e
+  `not_expected` respondem **HTTP 200**, e `not_expected` e justamente o processo que subiu **sem**
+  worker (`Ω6R-DIN-006`): olhar o status HTTP daria verde exatamente nele. **A URL vem da variable e
+  NUNCA e impressa — nem o host** (o rotulo no log e a palavra fixa `worker`).
+- **Falso positivo conhecido, declarado em vez de escondido:** uma probe que caia nos ~90s seguintes a
+  um deploy pode ler `starting` e alertar. A janela e coberta pelo smoke pos-deploy (que faz polling de
+  ate 120s antes de validar o deploy) e pela execucao seguinte do cron, 5 min depois.
 - **Limitacoes aceitas p/ MVP (dossie de ativacao):** o schedule do Actions atrasa/pula sob carga (NAO e
   sub-minuto nem multi-PoP); o alerta nativo NAO tem on-call/ACK/escalonamento; o schedule **auto-desabilita
   apos 60d** sem atividade no repo (confirmar vivo). O custo US$0 do cron depende de o repo ser **PUBLICO**

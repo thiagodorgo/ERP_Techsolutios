@@ -21,6 +21,12 @@ const PROD_OK = {
   PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
   PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
+  // B-O6R-05 — gates de RUNTIME de produção (Ω6R-DAT-001 + Ω6R-DIN-006). O baseline VÁLIDO precisa
+  // satisfazê-los; sem isso o `baseline` abaixo falharia e os 9 `rejectsOn` ficariam vacuamente verdadeiros.
+  CORE_SAAS_PERSISTENCE: "prisma",
+  DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
+  JOBS_WORKER_ENABLED: "true",
+  REDIS_URL: "redis://redis.interno.exemplo.com:6379",
 };
 
 function rejectsOn(overrides: Record<string, unknown>, path: string): void {
@@ -89,4 +95,13 @@ test("desenvolvimento sem NENHUM PORTAL_* → schema ACEITA (só produção é b
 // Regressão: os gates do portal NÃO afrouxaram os gates existentes do core.
 test("regressão: produção sem JWT_SECRET continua REJEITANDO mesmo com PORTAL_* válidos", () => {
   rejectsOn({ JWT_SECRET: undefined }, "JWT_SECRET");
+});
+
+// Regressão B-O6R-05: os gates de runtime entraram no MESMO superRefine dos gates do portal. Um não pode
+// encobrir o outro — com todos os PORTAL_* válidos, o agregado em memória e o worker desligado continuam
+// reprovando por conta própria; e com os gates de runtime satisfeitos, o portal continua fail-closed.
+test("regressão: os gates do portal e os gates de runtime disparam de forma INDEPENDENTE", () => {
+  rejectsOn({ CORE_SAAS_PERSISTENCE: "memory" }, "CORE_SAAS_PERSISTENCE");
+  rejectsOn({ JOBS_WORKER_ENABLED: "false" }, "JOBS_WORKER_ENABLED");
+  rejectsOn({ PORTAL_LOG_SECRET: undefined }, "PORTAL_LOG_SECRET");
 });
