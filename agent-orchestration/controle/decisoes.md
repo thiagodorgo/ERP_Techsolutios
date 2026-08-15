@@ -1403,3 +1403,26 @@ a flag nasce, **junto do processo que a torna verificável**. Se precisar de vá
 disciplina de cinco itens.
 
 Pendência correlata: `P-O6R-B05-WORKER-EXTERNO-DIFERIDO`.
+
+## D-O6R-B05-STAGING-MAQUINA-FIXA (2026-08-15 — **decisão do dono**, autorizada explicitamente)
+
+**O dono autorizou o custo** de manter uma máquina fixa em execução no staging (`fly.staging.toml`,
+`min_machines_running` de 0 para 1). Registrado aqui porque **mensagem de orquestrador não é consentimento do
+dono** (§A1/§A5): a autorização precisa existir no repositório, não só no histórico de conversa — senão o
+próximo agente lê "aguarda decisão de custo" e ou trava, ou decide sozinho o que não lhe cabe.
+
+**O problema que ela resolve.** Escalar a zero era barato e **silenciosamente errado**: máquina dormindo ⇒ o
+worker de jobs não roda ⇒ diárias de pátio, reconciliação de custódia e notificações legais **não acontecem** em
+staging. O ambiente diria "verde" sem nunca ter executado um job — inutilizando o staging exatamente para o que
+o `Ω6R-DIN-006` acabou de consertar. A pendência `P-O6R-B05-STAGING-SCALE-ZERO` a registrou como limitação
+declarada, sem alterar nada, porque **custo é decisão do dono, não da junta**.
+
+**Escopo da decisão:** só o staging, só o mínimo de máquinas. `auto_stop_machines` continua `"stop"` — com o
+mínimo em 1, o provedor derruba apenas as excedentes. Produção **não** é tocada, e o **bloqueio de deploy
+produtivo da J-6R segue integral**: nada aqui ativa ambiente nenhum.
+
+**Consequência que o dono precisa saber, e que o porteiro do #353 levantou:** com os gates do B-O6R-05
+vigentes, a máquina de staging **só sobe se os segredos estiverem postos no aplicativo** — chaves de token,
+origem de CORS, as cinco variáveis do portal público, a URL do banco e uma URL de Redis que não seja local. Sem
+elas o boot **reprova por desenho**, que é o comportamento correto e é o ponto do bloco. Subir o mínimo para 1
+**não** provisiona segredo nenhum: isso continua sendo ação humana, com credenciais que só o dono tem.
