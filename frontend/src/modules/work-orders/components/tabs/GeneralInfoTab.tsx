@@ -3,9 +3,11 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { Chip } from "../../../../components/ui";
 import { approveOperationalApproval, listPendingApprovals, rejectOperationalApproval } from "../../approval.service";
 import { entityTypeLabel } from "../../approval.types";
 import type { OperationalApproval } from "../../approval.types";
+import { getWorkOrderChecklistLinkKey, getWorkOrderChecklistRoleLabel, getWorkOrderChecklistSourceLabel } from "../../work-orders.adapter";
 import { WorkOrderRegistryLinksCard } from "../WorkOrderRegistryLinksCard";
 import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatus } from "../../work-orders.types";
 
@@ -15,6 +17,10 @@ import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatu
 
 const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14 };
 const cellLabel: CSSProperties = { fontSize: 11.5, color: "#94A3B8", fontWeight: 600, marginBottom: 4 };
+// Densidade da célula (§11): mesmo corpo do InfoCell — o conjunto de vistorias não abre um bloco novo,
+// ocupa a célula que já existia com o mesmo peso/tamanho de texto.
+const cellValue: CSSProperties = { fontSize: 14, fontWeight: 700, color: "#0F172A" };
+const cellHint: CSSProperties = { fontSize: 11.5, color: "#94A3B8", marginTop: 3, fontWeight: 600 };
 
 const STATUS_META: Record<WorkOrderStatus, { label: string; bg: string; color: string }> = {
   open: { label: "Aberta", bg: "#F1F5F9", color: "#475569" },
@@ -43,7 +49,63 @@ function InfoCell({ label, value, valueColor }: { label: string; value: string; 
   return (
     <div style={{ padding: 16 }}>
       <div style={cellLabel}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: valueColor ?? "#0F172A" }}>{value}</div>
+      <div style={{ ...cellValue, color: valueColor ?? cellValue.color }}>{value}</div>
+    </div>
+  );
+}
+
+/**
+ * CHECKLIST P1 PR-04c-A — a célula de checklist para de mentir sobre o conjunto.
+ *
+ * Antes: `workOrder.checklistId ? "Vinculado" : "—"` — singular e binário. Com a junção viva, uma ordem com
+ * DUAS vistorias dizia "Vinculado": meia-verdade num campo que alimenta prova jurídica (o dossiê de custódia
+ * vincula as vistorias da ordem). A célula passa a mostrar o CONJUNTO, uma linha por vistoria, com a etapa e
+ * a origem de cada uma.
+ *
+ * PRECEDÊNCIA — PARECIDA com a do backend, mas NÃO a mesma, e a diferença é o que este comentário existe para
+ * não deixar passar:
+ *  · backend (`effectiveChecklistSet`): junção viva → VISÃO SINTÉTICA da ordem legada (uma linha derivada do
+ *    campo antigo, com `role: "generic"`) → vazio;
+ *  · tela: conjunto recebido no payload → campo legado `checklistId` → vazio.
+ * O segundo termo difere. E o `GET /work-orders/:id` real SEMPRE manda a chave `checklists`: o detalhe passa
+ * por `checklistSetOf`, e a visão sintética existe justamente para o consumidor nunca ver a chave ausente.
+ * Logo o fallback abaixo NÃO é o caminho da "ordem legada" — ela chega aqui já como uma linha do conjunto. Ele
+ * é o degrade para PAYLOAD QUE NÃO INFORMA o conjunto: servidor anterior ao 04c, DTO de lista, sync.
+ *
+ * D-007 (degrade honesto) nos três casos:
+ *  (a) nenhuma vistoria → "—", como sempre foi;
+ *  (b) payload sem o conjunto, só com o campo legado → continua dizendo "Vinculado" (o que se sabe) e declara
+ *      "Etapa não informada" (o que NÃO se sabe). Nunca uma etapa chutada;
+ *  (c) 2+ vistorias → todas aparecem, cada uma com etapa e origem.
+ * O DTO não manda o nome do modelo, então nenhum nome é escrito aqui — o rótulo vem da etapa, que o DTO manda.
+ */
+function ChecklistSetCell({ workOrder }: { workOrder: WorkOrderDetail }) {
+  const links = workOrder.checklists ?? [];
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={cellLabel}>Checklists</div>
+      {links.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          {links.map((link, index) => {
+            const origem = getWorkOrderChecklistSourceLabel(link.source);
+            return (
+              <div key={getWorkOrderChecklistLinkKey(link, index)} style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                <span style={cellValue}>{getWorkOrderChecklistRoleLabel(link.role)}</span>
+                {origem ? <Chip tone={link.source === "resolved" ? "info" : "default"}>{origem}</Chip> : null}
+                {link.role ? null : <span style={{ ...cellHint, marginTop: 0 }}>Etapa não informada</span>}
+              </div>
+            );
+          })}
+        </div>
+      ) : workOrder.checklistId ? (
+        <>
+          <div style={cellValue}>Vinculado</div>
+          <div style={cellHint}>Etapa não informada</div>
+        </>
+      ) : (
+        <div style={cellValue}>—</div>
+      )}
     </div>
   );
 }
@@ -79,7 +141,7 @@ export function GeneralInfoTab({
             <div style={{ borderRight: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Técnico" value={workOrder.assignedOperatorId ? "Atribuída" : "A atribuir"} /></div>
             <div style={{ borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Agenda" value={fmtDate(workOrder.scheduledFor)} /></div>
             <div style={{ borderRight: "1px solid #F1F5F9" }}><InfoCell label="Criada em" value={fmtDate(workOrder.createdAt)} /></div>
-            <div><InfoCell label="Checklist" value={workOrder.checklistId ? "Vinculado" : "—"} /></div>
+            <div><ChecklistSetCell workOrder={workOrder} /></div>
           </div>
         </div>
 

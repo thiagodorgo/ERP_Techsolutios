@@ -1892,3 +1892,587 @@ seria a mesma falha, com prejuízo maior.
 auditoria e dos registros de orquestração), ou (b) descartar conscientemente e então
 `git worktree remove` + `git branch -d chore/agent-interoperability`.
 - status: ABERTA — aguarda decisão do dono; ocupa espaço em disco mas NÃO bloqueia nada.
+
+## P-O6R-BACKLOG (2026-08-14) — os 29 achados da auditoria Ω6R entram no controle operacional (ÍNDICE)
+
+A auditoria total **Ω6R** (PR #347, commit `e80430a`, 115 arquivos, só documentação) produziu **29 achados
+(15 P0 + 14 P1)** e a junta **J-6R** votou **REPROVADO PARA PRODUÇÃO, 5×0**. Até este registro, tudo isso
+vivia **apenas** em `docs/revisoes/O6R/` — `grep O6R` em `pendencias.md` e `decisoes.md` na `main` (`e80430a`)
+devolvia **0 ocorrências**. Quem abrisse o controle operacional para planejar o próximo bloco não veria
+escalada de privilégio, tomada de conta por e-mail homônimo nem produção configurada com persistência em
+memória. Registro sem respeito operacional é registro morto (§A5/§A6) — daí esta entrada. Decisão que a
+motiva: `D-O6R-REGISTRO-NO-BACKLOG` em `decisoes.md`.
+
+**Deliberação da J-6R, verbatim** (`docs/revisoes/O6R/ATA_J6R.md:47`):
+> "Bloquear deploy produtivo e features nos módulos atingidos até concluir os blocos P0 do `PLANO_O6R.md`;
+> P1 vem antes de nova feature no módulo correspondente. O humano delibera os rascunhos arquiteturais
+> D-001..D-004."
+
+**Como ler estas entradas.** Os 29 achados foram agrupados nos **11 blocos de correção** do
+`docs/revisoes/O6R/PLANO_O6R.md` (`P-O6R-B01`..`P-O6R-B11`, abaixo, na ordem vinculante do plano) — 29
+entradas soltas afogariam o arquivo. **Nenhum achado desapareceu na agregação:** cada um tem sub-entrada
+própria com o ID original (`### Ω6R-XXX-NNN`), localizável por `grep`.
+
+**Fato × hipótese (§A6) — o que este registro verificou.** Cada uma das 29 âncoras arquivo:linha abaixo foi
+**aberta e lida na `main` (`e80430a`)** por quem escreveu esta entrada, e o código encontrado **confirma a
+descrição do achado** no ponto citado. O que NÃO foi verificado aqui, e portanto não é afirmado: se a correção
+proposta pelo plano é a correta, o esforço estimado, e o alcance completo de cada achado além da linha citada.
+**Este registro NÃO decide, NÃO fecha e NÃO reprioriza nada (§A2)** — transcreve severidade e bloco.
+
+| Achado | Sev | Módulo | Bloco | Bloqueia trilha? |
+|---|:--:|---|:--:|---|
+| Ω6R-SEC-001 | P0 | core-saas / auth / platform | B-O6R-01 | SIM — RBAC/plataforma/auth |
+| Ω6R-TEN-001 | P0 | auth / core-saas | B-O6R-01 | SIM — auth/multi-org |
+| Ω6R-DIN-001 | P0 | financial-entries / financial-titles | B-O6R-02 | SIM — financeiro |
+| Ω6R-DIN-002 | P0 | financial-entries / financial-titles | B-O6R-02 | SIM — financeiro |
+| Ω6R-DIN-003 | P0 | cheques / financial-entries | B-O6R-02 | SIM — financeiro |
+| Ω6R-DIN-004 | P0 | financial-titles | B-O6R-02 | SIM — financeiro |
+| Ω6R-DIN-008 | P0 | financial-period-closes | B-O6R-02 | SIM — financeiro |
+| Ω6R-QUA-003 | P1 | suítes financeiras | B-O6R-02 | SIM — financeiro (P1 antes de feature) |
+| Ω6R-DIN-009 | P0 | expense-management | B-O6R-03 | SIM — despesas/RDV |
+| Ω6R-QUA-001 | P1 | mobile-flutter / expense-management | B-O6R-03 | SIM — mobile (PR-08) |
+| Ω6R-DAT-002 | P0 | inventory | B-O6R-04 | SIM — estoque |
+| Ω6R-DAT-003 | P0 | inventory / cycle-count | B-O6R-04 | SIM — estoque |
+| Ω6R-QUA-002 | P1 | mobile-flutter / mobile-inventory | B-O6R-04 | SIM — estoque + mobile (PR-08) |
+| Ω6R-DAT-001 | P0 | config / core-saas / runtime | B-O6R-05 | SIM — **deploy produtivo** |
+| Ω6R-DIN-006 | P0 | jobs / charging / impound / notifications | B-O6R-05 | SIM — **deploy produtivo** |
+| Ω6R-DIN-005 | P0 | checklists / cloud-usage / cost-allocation | B-O6R-06 | **SIM — trilha CHECKLIST P1, em execução** |
+| Ω6R-DIN-007 | P0 | cloud-costs | B-O6R-06 | SIM — cloud billing |
+| Ω6R-SEC-002 | P0 | work-orders / approvals / RBAC | B-O6R-07 | **SIM — OS/aprovações/RBAC** |
+| Ω6R-SEC-003 | P1 | auth | B-O6R-07 | SIM — auth (P1 antes de feature) |
+| Ω6R-SEC-004 | P1 | evidence / attachments / mobile | B-O6R-07 | SIM — evidências/anexos |
+| Ω6R-ARQ-001 | P1 | infra/jobs | B-O6R-08 | SIM — jobs |
+| Ω6R-ARQ-002 | P1 | infra/jobs | B-O6R-08 | SIM — jobs |
+| Ω6R-ARQ-003 | P1 | field-ops-realtime | B-O6R-08 | SIM — tempo real de campo |
+| Ω6R-PERF-001 | P1 | infra/jobs | B-O6R-08 | SIM — jobs |
+| Ω6R-ARQ-004 | P1 | field-dispatch | B-O6R-09 | **SIM — despacho/Mapa** |
+| Ω6R-PERF-002 | P1 | frontend / API client | B-O6R-10 | SIM — web (transversal) |
+| Ω6R-PERF-003 | P1 | owner-portal / runtime | B-O6R-10 | SIM — portal do proprietário |
+| Ω6R-QUA-004 | P1 | mobile-flutter / work-orders | B-O6R-11 | SIM — mobile (PARCIALMENTE SUPERADO, ver entrada) |
+| Ω6R-QUA-005 | P1 | mobile-flutter / prestador | B-O6R-11 | SIM — mobile (PR-08) |
+
+**O bloqueio de deploy produtivo é global, não por módulo:** os 15 P0 juntos sustentam o veredito 5×0, e dois
+deles (`Ω6R-DAT-001`, `Ω6R-DIN-006`) são do próprio ato de subir em produção.
+
+**Onde estão as fontes:** `docs/revisoes/O6R/REGISTRO_ACHADOS_O6R.md` (os 29 em prosa) ·
+`docs/revisoes/O6R/achados.jsonl` (os mesmos 29 com `local`/`evidencia`/`teste`) ·
+`docs/revisoes/O6R/PLANO_O6R.md` (os 11 blocos, dependências e gates transversais) ·
+`docs/revisoes/O6R/PROMPTS_CORRECAO/BLOCO_NN_*.md` (um prompt por bloco) · `docs/revisoes/O6R/ATA_J6R.md`.
+- status: ABERTA (índice; nenhum achado fecha aqui — cada bloco `P-O6R-BNN` abaixo é que fecha os seus).
+
+## P-O6R-B01 (2026-08-14) — `fix/identity-authority` — Ω6R-SEC-001 + Ω6R-TEN-001 (2 P0) — **BLOQUEIA auth/RBAC/plataforma**
+
+Bloco 1 do `PLANO_O6R.md` (sem dependência; é dependência de 02, 03, 04, 07 e 11). Aceite exigido pelo plano:
+`tenant_admin` não atribui papel global; subject global + membership; E2E de homônimo e de promoção.
+
+### Ω6R-SEC-001 (P0 · core-saas / auth / platform) — escalada de organização para plataforma
+
+**Dano concreto:** quem tem `users.manage` numa organização atribui **qualquer papel do enum, `super_admin`
+inclusive** — e passa a enxergar, alterar e suspender **outras organizações**.
+
+**Verificado na `main` (fato):** `src/modules/core-saas/services/prisma-core-saas.service.ts:284-295` —
+`validateUserRole` chama `isValidRole(role)`, ou seja, pergunta se o papel **existe**, nunca se o **ator pode
+concedê-lo**. `src/modules/core-saas/permissions/catalog.ts:301-303` — `tenant_admin` recebe *tudo que não
+começa com `platform:`*, o que inclui `users.manage`. `src/modules/core-saas/repositories/role.repository.ts:35-50`
+— `findByKeyForTenant` casa `tenant_id: null` (papel global) **ou** o do tenant. Rota tenant-scoped:
+`src/modules/core-saas/routes/users.routes.ts:53-69`; guard que aceita `super_admin`:
+`src/modules/platform/platform-permissions.ts:29-57`.
+
+**Bloqueia:** qualquer feature nova em RBAC, gestão de usuários/papéis, plataforma e auth — inclusive as
+frentes de permissão que já têm histórico próprio aqui (`P-RBAC-CATALOGO-NAO-CHEGA-AO-BANCO`,
+`P-RBAC-PROVISIONAMENTO-CONVERGENTE`): mexer no provisionamento de papéis sem fechar este achado é ampliar a
+superfície do bypass.
+
+### Ω6R-TEN-001 (P0 · auth / core-saas) — tomada de conta por e-mail homônimo entre organizações
+
+**Dano concreto:** duas pessoas **diferentes** com o mesmo e-mail em organizações diferentes viram a **mesma
+identidade**: quem autentica em B troca para A e assina token como o `User` de A, sem nunca provar vínculo
+com A.
+
+**Verificado na `main` (fato):** `src/modules/auth/routes/auth.routes.ts:257-271` — a troca de organização faz
+`service.listTenantsForUserEmail(payload.email)`, procura o tenant pedido nesse resultado e emite
+`issueAccessToken({ user_id: match.user.id, tenant_id: match.tenant.id, ... })`. A correlação é **o e-mail do
+JWT**, não um subject global. `src/modules/core-saas/services/prisma-core-saas.service.ts:301-313` faz o
+`findMany` por e-mail; `prisma/schema.prisma:142-187` deixa `User` único apenas por (tenant, e-mail) —
+homônimo em organizações distintas é legal no modelo.
+
+**Bloqueia:** feature em auth, seleção/troca de organização e onboarding multi-org.
+- status: ABERTA — **P0, bloqueia deploy produtivo e features nos módulos acima** (J-6R). Rascunho arquitetural
+  correlato: `docs/revisoes/O6R/D-001-identidade-global-tenancy.md`, **pauta do dono, não decisão** (ver
+  `D-O6R-RASCUNHOS-DEFERIDOS-AO-HUMANO`).
+
+## P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-003 (P1) — **BLOQUEIA o financeiro**
+
+Bloco 2 do plano (depende do B01). Aceite: Unit of Work tenant-scoped, locks, e pay/reverse/cheque/title/close
+exercitados em **PostgreSQL concorrente** — não em adapter de memória.
+
+**Reconciliação com o que este arquivo já registrava:** quatro destes achados **já tinham pendência antiga**
+sob outro nome, aberta e citada no próprio código — `P-Ω4-4-LIQUID-ATOMIC` (DIN-001), `P-Ω4-4-EDGES` (DIN-002),
+`P-Ω4-6-CLOSE-RACE` (DIN-008) e `P-021` (DAT-003, bloco 04). A auditoria não os "descobriu": ela os
+**reclassificou como P0 e os juntou num bloco**. Registrar aqui não duplica trabalho — dá a eles a severidade e
+o dono (bloco) que não tinham.
+
+### Ω6R-DIN-001 (P0 · financial-entries / financial-titles) — pagamento concorrente infla o saldo da conta
+
+**Dano concreto:** duas confirmações simultâneas sem `client_action_id` criam **dois lançamentos**; o segundo
+`applyPayment` recusa por overpayment, mas o lançamento já persistiu — o título fica certo e **o saldo da conta
+fica inflado**.
+
+**Verificado na `main` (fato):** `src/modules/financial-entries/financial-entry.service.ts:277-282` — o próprio
+comentário do serviço descreve a corrida e aponta o ideal (`entry.create` + `applyPayment` na mesma
+`$transaction`); o `applyPayment` só é chamado **depois** do `create`.
+
+### Ω6R-DIN-002 (P0 · financial-entries / financial-titles) — estorno devolve o dinheiro e deixa o título quitado
+
+**Dano concreto:** estornar a liquidação reverte o caixa, mas **`paid_amount` e status do título não voltam** —
+o recebível/obrigação continua quitado. Cobrança, aging, conciliação e fechamento passam a mentir.
+
+**Verificado na `main` (fato):** `src/modules/financial-entries/financial-entry.service.ts:158-162` — comentário
+do método `reverse` declara que o estorno **não** reverte `paid_amount` do título e que o contra-lançamento
+nasce **sem `title_id`**.
+
+### Ω6R-DIN-003 (P0 · cheques / financial-entries) — compensação de cheque em três etapas, rollback best-effort
+
+**Dano concreto:** crash entre postar o lançamento e vinculá-lo ao cheque deixa **movimentação financeira
+órfã**; o retry duplica.
+
+**Verificado na `main` (fato):** `src/modules/cheques/cheque.service.ts:170-186` — `postEntry` em `try`, e no
+`catch` a volta de estado é `.catch(() => {})` (best-effort, explicitado no comentário); o
+`attachClearingEntry` acontece **depois** do lançamento já persistido, fora de qualquer transação comum.
+
+### Ω6R-DIN-004 (P0 · financial-titles) — título pode virar "pago além do valor" ou sumir com pagamento
+
+**Dano concreto:** PATCH aceita reduzir `amount` para abaixo do `paid_amount`, e o DELETE lógico não barra
+título com movimento — o título sai das consultas ativas deixando lançamentos para trás.
+
+**Verificado na `main` (fato):** `src/modules/financial-titles/financial-title.service.ts:226-243` — `amount` é
+editável e a chamada ao repositório **não compara com `paid_amount`**; o comentário lista `amount` entre os
+editáveis. Delete lógico em `:317-325`; `prisma/schema.prisma:1762-1767` **comenta** a desigualdade sem CHECK.
+
+### Ω6R-DIN-008 (P0 · financial-period-closes) — writer entra em período já fechado
+
+**Dano concreto:** o fechamento serializa **fechamentos** entre si, mas os writers só fazem um "período aberto?"
+solto — um pagamento em voo commita **depois** do snapshot e entra num período fechado.
+
+**Verificado na `main` (fato):**
+`src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:49-52` — comentário admite,
+com todas as letras, que a proteção completa exige o **mesmo advisory lock no write-path**, e que o controle
+compensatório é apenas re-derivação *a posteriori*. Writer correlato: `financial-title.service.ts:338-344`.
+
+### Ω6R-QUA-003 (P1 · suítes financeiras) — os P0 acima passam verdes no CI
+
+**Dano concreto:** as suítes financeiras montam adapters **Memory**; nenhum dos P0 de atomicidade é exercido
+contra PostgreSQL concorrente. **Verde no CI não é evidência de atomicidade** — e foi exatamente isso que
+deixou os quatro achados envelhecerem como pendência de baixa pressão.
+
+**Verificado na `main` (fato):** `tests/financial-entries.test.ts:53-59` — `setup()` cria
+`createMemoryFinancialEntryService/AccountService/TitleService`; `tests/financial-entries.test.ts:436-439` — o
+próprio comentário diz que "a suíte roda só em memory … o caminho Prisma da conciliação não é exercido sem
+banco". Vizinhas na mesma condição: `tests/cheques.test.ts:59-65`, `tests/financial-period-closes.test.ts:49-59`,
+`tests/expense-management-routes.test.ts:182-204`. Correlato já registrado: `P-SUITE-ENV-PERSISTENCE`.
+
+**Bloqueia (todos os seis):** feature nova em financeiro (lançamentos, títulos, cheques, fechamento,
+conciliação, faturamento). O P1 `Ω6R-QUA-003` vem **antes** de nova feature financeira, por deliberação da
+J-6R — não depois.
+- status: ABERTA — 5 P0 + 1 P1. Rascunho arquitetural correlato: `docs/revisoes/O6R/D-002-uow-outbox.md`
+  (**pauta do dono, não decisão**).
+
+## P-O6R-B03 (2026-08-14) — `fix/expense-sync-atomic` — Ω6R-DIN-009 (P0) + QUA-001 (P1) — **BLOQUEIA despesas/RDV e mobile**
+
+Bloco 3 do plano (depende do B01). Aceite: efeito + recibo atômicos com fingerprint; Flutter autenticado;
+provas de crash, corrida e refresh de token.
+
+### Ω6R-DIN-009 (P0 · expense-management) — replay de despesa duplica valor
+
+**Dano concreto:** o efeito é aplicado **antes** do recibo, em transações separadas, e a chave de idempotência
+não inclui usuário nem fingerprint do payload — crash entre os dois faz o replay **pagar duas vezes**, e
+payloads divergentes com o mesmo `client_action_id` colidem em silêncio.
+
+**Verificado na `main` (fato):** `src/modules/expense-management/expense-management.service.ts:169-190` — a
+ordem é `findMobileActionReceipt` → `processSyncAction` → `createMobileActionReceipt`; a chave consultada é
+`{ tenantId, clientActionId }`, **sem `actorUserId`** (que existe no registro, mas só é gravado depois) e sem
+hash do payload. Transações separadas por método:
+`expense-management-prisma.repository.ts:238-278`; modelo em `prisma/schema.prisma:2696-2713`.
+
+### Ω6R-QUA-001 (P1 · mobile-flutter / expense-management) — a fila de RDV nunca converge
+
+**Dano concreto:** o replay da fila de despesas sobe **sem token**: as ações offline do técnico batem em
+401/403 e ficam presas na fila para sempre.
+
+**Verificado na `main` (fato):** `mobile/flutter_app/lib/core/sync/sync_providers.dart:51` —
+`final apiConfigProvider = Provider<ApiConfig>((ref) => const ApiConfig());` (config **const**, sem sessão), e
+`:109-119` — `syncBatchApiProvider` lê justamente esse provider para construir o cliente do replay. O endpoint
+exige permissão (`src/modules/expense-management/expense-management.routes.ts:110-115`) e o cliente HTTP só
+manda `Bearer` se houver token (`mobile/flutter_app/lib/core/network/http_client.dart:33-47`).
+
+**Bloqueia:** feature em despesas/RDV/comissões e a fatia mobile correspondente. `Ω6R-QUA-001` entra na
+mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SEEDS` e
+`P-MOBILE-BANNER-INTEGRACAO` (ambas ABERTAS) — quem abrir o PR-08 fecha este achado junto ou explica por quê.
+- status: ABERTA — 1 P0 + 1 P1.
+
+## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
+
+Bloco 4 do plano (depende do B01). Aceite: lock/CAS de saldo, fechamento único de contagem, contrato mobile
+persistido em Prisma e sobrevivência a restart.
+
+### Ω6R-DAT-002 (P0 · inventory) — saldo negativo por saída concorrente
+
+**Dano concreto:** a saída lê o saldo, valida e insere **sem lock nem CAS**: saídas simultâneas do mesmo item
+furam o guarda de não-negativo, e a reversão (check → insert, sem unicidade) **duplica a compensação**.
+
+**Verificado na `main` (fato):** `src/modules/inventory/inventory-prisma.repository.ts:214-236` —
+`saldoOfCustody` (agregado), depois `wouldOverdraw`, depois `insertMovement`, tudo dentro da transação RLS mas
+**sem travar a linha de saldo**; o comentário confirma que o guarda roda sobre um agregado. Reversão em
+`:410-426`; migração da custódia em
+`prisma/migrations/20260828000000_add_stock_custody_ledger/migration.sql:74-81`.
+
+### Ω6R-DAT-003 (P0 · inventory / cycle-count) — fechamento de contagem duplica ajuste
+
+**Dano concreto:** cada ajuste do fechamento **commita em transação própria**; a sessão não é travada e não há
+unicidade (sessão, item) — dois fechamentos concorrentes duplicam ajuste, e a falha no meio deixa contagem
+parcial (o remendo atual é *pular o que já gravou*, não impedir).
+
+**Verificado na `main` (fato):** `src/modules/inventory/cycle-count.service.ts:150-158` — o comentário de
+idempotência declara que "cada `createMovement` commita na própria transação" e que um fechamento anterior pode
+ter falhado no meio do laço; a mitigação é ler `listMovements` da sessão **antes** do laço e pular. Fechamento
+só no fim (`:207`); repositório em `cycle-count-prisma.repository.ts:100-119`. Pendência antiga correlata neste
+arquivo: `P-021`.
+
+### Ω6R-QUA-002 (P1 · mobile-flutter / mobile-inventory / inventory) — movimento de estoque do app não existe para o backend
+
+**Dano concreto:** o app enfileira um tipo de ação que o backend **não aceita**; mesmo que chegasse, o
+coordinator de auto-sync não replaya estoque, e o backend guarda o estado num `Map` de processo separado do
+Prisma. O estoque do campo diverge do real e **nada acusa**.
+
+**Verificado na `main` (fato):**
+`mobile/flutter_app/lib/features/inventory/data/inventory_repository.dart:92-105` — enfileira
+`InventorySyncActionTypes.entryCreate`; `src/modules/mobile/mobile-inventory-sync.ts:101-105` —
+`supportedActionTypes` = `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`, e o estado vive
+em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
+`mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart:90-118`.
+
+**Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
+mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
+se surgir.
+- status: ABERTA — 2 P0 + 1 P1.
+
+## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
+
+Bloco 5 do plano (**sem dependência** — é o único par que pode começar em paralelo ao B01; é dependência do
+B06, B08 e B10). Aceite: produção exige Prisma **e** worker; heartbeat/gate; smoke de persistência real no
+compose/fly.
+
+### Ω6R-DAT-001 (P0 · config / core-saas / runtime) — produção configurada para perder os dados no restart
+
+**Dano concreto:** o serviço sobe **saudável**, aceita escrita e **perde usuários, papéis e tudo que os
+adapters mantêm** no primeiro restart — com PostgreSQL disponível ao lado.
+
+**Verificado na `main` (fato):** `docker-compose.prod.yml:48-50` traz, na **mesma estrofe `environment`**,
+`NODE_ENV: production` e `CORE_SAAS_PERSISTENCE: memory`. `src/config/env.ts:28` define
+`CORE_SAAS_PERSISTENCE: z.enum(["memory","prisma"]).default("memory")` — **memória é o default**. O gate de
+produção (`src/config/env.ts:112-208`, o mesmo que exige allowlist de CORS) **não menciona a variável**.
+Runtime que instancia o adapter em RAM: `src/modules/core-saas/core-saas-runtime.ts:6-16`.
+**Nota honesta:** `fly.production.toml` **está correto** (`CORE_SAAS_PERSISTENCE = "prisma"`, verificado) — o
+defeito é o compose produtivo somado à ausência de gate; o gate é o que impede o próximo manifesto de errar.
+
+### Ω6R-DIN-006 (P0 · jobs / charging / impound / notifications) — o worker nunca sobe em produção
+
+**Dano concreto:** diárias de pátio, reconciliação OS↔custódia e a trilha de notificações legais **nunca são
+materializadas**, e o boot não acusa erro nenhum — o sistema fica em silêncio deixando de cobrar e de notificar.
+
+**Verificado na `main` (fato):** `src/config/env.ts:33` — `JOBS_WORKER_ENABLED: booleanFlag(false)` (default
+DESLIGADO). `src/server.ts:16` — `if (!env.JOBS_WORKER_ENABLED || env.CORE_SAAS_PERSISTENCE !== "prisma") return;`,
+e logo abaixo (`:21-24` e `:33-39`) os **quatro** ticks iniciais que ficam de fora: `notifications.scan-due`,
+reconciliação de custódia, diárias de cobrança e notificações legais devidas. `grep JOBS_WORKER_ENABLED` em
+`fly.production.toml`, `fly.staging.toml` e `docker-compose.prod.yml` na `main` = **0 ocorrências nos três**.
+
+**Bloqueia:** **o deploy produtivo em si** (é a razão material do 5×0) e qualquer feature que dependa de sweep
+— cobrança por diária, notificação agendada, reconciliação de custódia.
+- status: ABERTA — 2 P0. Rascunho arquitetural correlato: `docs/revisoes/O6R/D-003-jobs-duraveis.md`
+  (**pauta do dono, não decisão**).
+
+## P-O6R-B06 (2026-08-14) — `fix/billing-durability` — Ω6R-DIN-005 + Ω6R-DIN-007 (2 P0) — **BLOQUEIA a trilha CHECKLIST P1 (em execução AGORA) e o cloud billing**
+
+Bloco 6 do plano (depende do B02 e do B05). Aceite: Outbox/Inbox para a medição de uso; SUM/GROUP BY sem
+truncamento; fault injection e o caso das 10.001 linhas.
+
+### Ω6R-DIN-005 (P0 · checklists / cloud-usage / cloud-cost-allocation) — vistoria concluída que ninguém fatura
+
+**Dano concreto:** a vistoria é confirmada ao usuário e a **unidade faturável correspondente pode simplesmente
+não existir**: a gravação da métrica é best-effort e engole a falha num `.catch()` com um `warn`. Como o replay
+idempotente devolve `created:false` e **não republica**, o subfaturamento é **permanente e irreparável por
+retry** — e `checklist_runs_count` é insumo direto do rateio de custo.
+
+**Verificado na `main` (fato):** `src/modules/cloud-usage/cloud-usage.service.ts:156-168` —
+`recordCloudUsageBestEffort` encadeia `.then(service.recordUsageEvent).catch(...)`, e o `catch` apenas
+`logger.warn(...)`; o comentário acima (`:149-153`) declara o desenho "BEST-EFFORT e fire-and-forget".
+Publicação fora da transação: `src/infra/events/domain-event.publisher.ts:48-60`. Gatilho que só publica quando
+`created`: `src/modules/checklists/checklist.service.ts:247-269`. Consumo no rateio:
+`src/modules/cloud-cost-allocation/cloud-cost-allocation.rules.ts:61-66`.
+
+**BLOQUEIA — e este é o caso mais urgente da lista.** A trilha **CHECKLIST P1 está em execução neste
+repositório neste momento** (árvore de trabalho na branch `feat/chk-p1-pr04c-a-aplicabilidade-ligada`, com
+pendências `P-CHK-*` abertas mirando PR-04c/PR-05 — verificado). Pela deliberação da J-6R, **feature nova em
+`checklists` está bloqueada** até o bloco P0 que fecha este achado. Pior: a `D-CHK-P1-APPLICABILITY` faz da
+aplicabilidade um **multiplicador de vistorias por ordem de serviço** — ligar o sticky **multiplica o volume
+de unidades faturáveis que este achado deixa cair**. Porteiro do próximo merge: este campo é para você.
+
+### Ω6R-DIN-007 (P0 · cloud-costs) — custo de nuvem truncado em 10.000 linhas, sem aviso
+
+**Dano concreto:** o resumo soma **no processo** apenas as linhas que voltaram sob um teto **cravado** de
+10.000: períodos maiores produzem custo e rateio **subestimados** — e o número é base de cobrança.
+
+**Verificado na `main` (fato):** `src/modules/cloud-costs/aws-cur.service.ts:190` — dentro de
+`normalizeSummaryFilters`, `limit: 10_000` literal; `sumCosts` (`:194-196`) reduz **só o array retornado**.
+Repositório aplica o `take`: `aws-cur-prisma.repository.ts:136-157`.
+
+**Divergência preservada (§A2):** a J-6R manteve P0 por **3×2** — A3 (dados) e A4 (performance) defenderam P1,
+por o erro subestimar relatório/rateio sem mutar o ledger; a maioria manteve P0 porque o valor **é base de
+cobrança** e o truncamento é determinístico. Registrado como P0, com a divergência à vista
+(`docs/revisoes/O6R/ATA_J6R.md`, seção "Severidades contestadas").
+
+**Bloqueia:** feature em cloud billing / cobrança de nuvem / rateio de custo.
+- status: ABERTA — 2 P0.
+
+## P-O6R-B07 (2026-08-14) — `fix/authorization-and-uploads` — Ω6R-SEC-002 (P0) + SEC-003, SEC-004 (2 P1) — **BLOQUEIA OS/aprovações/RBAC, auth e anexos**
+
+Bloco 7 do plano (depende do B01). Aceite: escopo por objeto e SoD, lockout atômico, scanner fail-closed com
+magic bytes.
+
+### Ω6R-SEC-002 (P0 · work-orders / approvals / RBAC) — o técnico aprova a própria ordem
+
+**Dano concreto:** **aprovar e rejeitar** uma aprovação usam **a mesma permissão de editar OS**
+(`work_orders:update`), que o técnico de campo tem. Resultado: técnico **decide aprovação tenant-wide** e
+altera OS que não é dele — sem escopo por objeto, sem alçada, sem segregação de funções.
+
+**Verificado na `main` (fato):** `src/modules/work-orders/work-order.routes.ts:70-83` —
+`POST /approvals/:approvalId/approve` e `.../reject` montados com
+`requirePermission(WORK_ORDER_PERMISSIONS.update)`, **exatamente** a mesma guarda do
+`PATCH /work-orders/:workOrderId` (`:110-116`). Concessão ao técnico:
+`src/modules/core-saas/permissions/catalog.ts:784-820`. Services que filtram só por tenant/id/estado:
+`work-order.service.ts:759-804` e `approval.service.ts:61-97`. Contraste documental:
+`RBAC_MATRIX.md:44-46,66` e `APPROVAL_LIMITS.md:38-52`.
+
+**Bloqueia:** feature nova em ordens de serviço, aprovações e RBAC. **Atenção do porteiro:** a trilha
+CHECKLIST P1 grava no caminho de **criação de ordem de serviço** (vínculo sticky, `D-CHK-P1-APPLICABILITY-SEMANTICA`
+ponto 3) — qualquer fatia que amplie superfície de OS/aprovação cai neste bloqueio, não só as fatias que se
+declaram "de OS". Pendências de OS já abertas aqui e afetadas pela mesma trava: `P-013`, `P-WO-LIST-TECH-NAME`.
+
+### Ω6R-SEC-003 (P1 · auth) — o bloqueio de conta não existe; o 423 é caminho morto
+
+**Dano concreto:** força bruta e credential stuffing **ilimitados**: o login lê `locked_until`, mas o caminho
+de falha só incrementa um contador — nada escreve o lock, não há threshold nem rate-limit.
+
+**Verificado na `main` (fato):** `src/modules/auth/services/local-auth-login.service.ts:124-137` — há
+`if (credential.locked_until && ... ) return { ok:false, reason:"locked" }`, e no ramo de senha errada apenas
+`await this.credentials.incrementFailedAttempts(credential.id, tenantId)` seguido do retorno
+`invalid_credentials`; **nenhuma comparação com limite, nenhuma escrita de `locked_until`**. Repositório sem
+escrita do lock: `local-auth-credential.repository.ts:101-112`. Rota: `auth.routes.ts:53-91`.
+
+### Ω6R-SEC-004 (P1 · evidence / attachments / mobile) — scanner que sempre diz "limpo", MIME do cliente, download inline
+
+**Dano concreto:** bytes hostis podem ser **armazenados e entregues inline** ao usuário: o scanner default
+devolve `clean` sempre, o MIME vem do cliente e o download usa esse MIME em `inline`.
+
+**Verificado na `main` (fato):** `src/modules/evidence/evidence-storage.ts:50-53` —
+`class NoopEvidenceScanner { async scan() { return { status: "clean" }; } }`. Usos do default:
+`src/modules/mobile/mobile-evidence-upload.ts:52-54` e `src/modules/attachments/attachment.storage.ts:52-61`;
+MIME vindo do cliente e download em `attachment.storage.ts:90-105` + `attachment.routes.ts:71-83`.
+
+**Bloqueia:** feature em auth (SEC-003) e em evidências/anexos/upload mobile (SEC-004) — P1 antes de feature no
+módulo, por deliberação.
+- status: ABERTA — 1 P0 + 2 P1.
+
+## P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1) — **BLOQUEIA jobs e tempo real de campo**
+
+Bloco 8 do plano (depende do B05). Aceite: lease/reclaim, schedule singleton, concorrência com deadline,
+broadcast/replay de SSE.
+
+### Ω6R-ARQ-001 (P1 · infra/jobs) — job perdido para sempre no crash
+
+**Dano concreto:** matar o worker entre o `LPOP` e o fim do handler **perde o job definitivamente** —
+notificação legal, reconciliação, diária. Não há lease, lista de processing nem reclaim.
+
+**Verificado na `main` (fato):** `src/infra/jobs/job.queue.ts:57-75` — `dequeue` faz
+`LPOP this.pendingKey` (remoção **destrutiva**) e só **depois** grava o envelope com `status: "processing"`;
+entre as duas linhas não existe registro durável. Worker: `job.worker.ts:24-41`.
+
+### Ω6R-ARQ-002 (P1 · infra/jobs) — cada restart multiplica as varreduras
+
+**Dano concreto:** restarts e réplicas **multiplicam cadeias de sweep** indefinidamente: não há deduplicação
+por nome nem eleição de líder.
+
+**Verificado na `main` (fato):** `src/modules/charging/charge.jobs.ts:14-16` — o handler re-enfileira no
+`finally`, **sempre** ("mesmo se a varredura falhar"), e `enqueueInitialChargingAccrueScan` (`:22-23`) enfileira
+outro tick a cada boot; `src/server.ts:32-39` chama **quatro** desses `enqueueInitial*`; `job.queue.ts:20-49`
+gera ID novo a cada enqueue.
+
+### Ω6R-ARQ-003 (P1 · field-ops-realtime) — atualização de campo some entre réplicas
+
+**Dano concreto:** cliente conectado em **outra réplica** perde a atualização operacional **em silêncio** —
+sem replay, sem cursor, sem `Last-Event-ID`.
+
+**Verificado na `main` (fato):** `src/modules/field-ops-realtime/field-ops-realtime.broker.ts:25-27` —
+`subscribersByTenant`, `recentEventIds` e `recentEventIdSet` são estruturas **do processo**; `publish` (`:42-48`)
+entrega apenas a `this.subscribersByTenant.get(...)` local.
+
+### Ω6R-PERF-001 (P1 · infra/jobs) — worker sem trava de tick nem deadline
+
+**Dano concreto:** job lento ou travado **acumula concorrência, conexões e memória** nos fluxos críticos, sem
+timeout nem cancelamento.
+
+**Verificado na `main` (fato):** `src/infra/jobs/job.worker.ts:86-90` —
+`this.timer = setInterval(() => { this.processNextJob().catch(...) }, pollIntervalMs)`: a Promise não é
+aguardada e **não há guarda de in-flight**; handlers (`:24-78`) rodam sem deadline.
+
+**Bloqueia:** feature em jobs/agendamento e no tempo real de campo (SSE/mapa ao vivo).
+- status: ABERTA — 4 P1. Rascunho arquitetural correlato: `docs/revisoes/O6R/D-003-jobs-duraveis.md`
+  (**pauta do dono, não decisão**).
+
+## P-O6R-B09 (2026-08-14) — `fix/dispatch-atomic-timeline` — Ω6R-ARQ-004 (P1) — **BLOQUEIA field-dispatch e a trilha do Mapa**
+
+Bloco 9 do plano (depende do B08). Aceite: despacho + evento atômicos e idempotentes, com fault injection.
+
+### Ω6R-ARQ-004 (P1 · field-dispatch) — despacho sem linha do tempo, ou despacho em dobro
+
+**Dano concreto:** o despacho e o **evento obrigatório** de timeline são gravados por **dois métodos com
+transação própria**: falha no segundo deixa o agregado **sem história**, e o retry, por não haver chave
+idempotente, **cria um segundo despacho**.
+
+**Verificado na `main` (fato):** `src/modules/field-dispatch/field-dispatch.service.ts:138-161` —
+`await this.repository.create({...})` e, em seguida, `await this.repository.createEvent({...})`: duas chamadas
+independentes, sem transação comum e sem `client_action_id`. Wrapper que abre transação por método:
+`field-dispatch-prisma.repository.ts:150-174`.
+
+**Bloqueia:** feature em despacho de campo — **inclusive a trilha do Mapa**: a pendência `P-Ω3F7B-MAPA-ETAPA`
+(ABERTA, verificada) tem como ação da Junta de Mapas *"definir a fonte — snapshot de `FieldOperatorLocation`
+por etapa do despacho"*, ou seja, trabalho em fila que grava/lê exatamente o agregado defeituoso. Construir
+histórico por etapa sobre um agregado que pode nascer sem evento é construir sobre buraco.
+- status: ABERTA — 1 P1.
+
+## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
+
+Bloco 10 do plano (depende do B05). Aceite: single-flight/Abort no cliente; pipeline de imagem isolado; testes
+de p99/RSS/out-of-order.
+
+### Ω6R-PERF-002 (P1 · frontend / API client) — polling empilha requisição e a resposta velha vence
+
+**Dano concreto:** sob lentidão, as requisições de auto-refresh **empilham** e uma resposta antiga pode
+**sobrescrever** o estado novo na tela do operador — sem trava in-flight, sem timeout, sem cancelamento.
+
+**Verificado na `main` (fato):** `frontend/src/hooks/useAutoRefresh.ts:34-40` — o tick faz
+`void savedRefresh.current(true)` (Promise ignorada) dentro de um `window.setInterval` de intervalo fixo;
+`frontend/src/services/api/client.ts:118-140` — os `fetch` não recebem `signal`/timeout. O achado registra 54
+arquivos consumidores desse padrão (contagem da auditoria, **não reconferida aqui**).
+
+### Ω6R-PERF-003 (P1 · owner-portal / runtime) — o portal público derruba o ERP junto
+
+**Dano concreto:** a superfície **pública** decodifica imagens de até 40 milhões de pixels, **três em
+paralelo**, no **mesmo processo** do ERP; o timeout de 4s desiste de esperar mas **não cancela** a CPU já em
+curso — rotas autenticadas travam junto.
+
+**Verificado na `main` (fato):** `src/modules/owner-portal/image-header-guard.ts:14` —
+`MAX_DECODED_PIXELS = 40_000_000`; `src/modules/owner-portal/photo-concurrency-guard.ts:12` —
+`PHOTO_PIPELINE_MAX_CONCURRENCY = 3`, com o comentário declarando que "o timeout de 4000ms **NÃO cancela**
+trabalho síncrono já em curso"; pipeline em `owner-portal.photo-pipeline.ts:57-103`; um único processo em
+`src/server.ts:43-65`. **Nota honesta:** as defesas existentes (header-guard e semáforo) são **anteriores** e
+foram exigidas por junta-5 unânime (Ω5P PR-17b) — o achado Ω6R não as ignora, ele diz que **não bastam
+enquanto o pipeline dividir processo com o ERP**.
+
+**Bloqueia:** feature no portal do proprietário e mudanças transversais do cliente web de dados.
+- status: ABERTA — 2 P1.
+
+## P-O6R-B11 (2026-08-14) — `fix/mobile-work-order-contracts` — Ω6R-QUA-004, QUA-005 (2 P1) — **BLOQUEIA mobile (PR-08)**
+
+Bloco 11 do plano (depende do B01). Aceite: envelope/casing/payload reais, `enqueueAll` durável, testes
+Dio/Drift/restart.
+
+### Ω6R-QUA-004 (P1 · mobile-flutter / work-orders) — **PARCIALMENTE SUPERADO pelo PR #351** (1 de 3 componentes)
+
+**Estado hoje, conferido de primeira mão na `main` (`e80430a`) — não herdado de relato:**
+
+- **Componente "timeline" — CORRIGIDO.** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:122-138`
+  hoje pede `Map<String,dynamic>` e lê `resp.data?['data'] as List<dynamic>?`, com comentário explicando que
+  pedir `List<dynamic>` fazia o Dio devolver `null` e a linha do tempo remota vir **sempre vazia**. Entregue
+  pelo PR **#351** (`7e60b90`, "fix(mobile): a linha do tempo remota da ordem de serviço nunca funcionou (B-127)").
+- **Componente "envelope/casing" — ATIVO.** `:99`, `:115` e `:156` seguem chamando
+  `_workOrderFromJson(resp.data!)` nos caminhos de **detalhe**, **status** e **assign** — passando o envelope
+  `{ data: {...} }` inteiro ao parser, enquanto o backend serializa em camelCase
+  (`src/modules/work-orders/work-order.dto.ts:15-24`, `customerName` etc.) dentro de `{ data }`
+  (`work-order.controller.ts:52-58`).
+- **Componente "assign envia campo não lido" — PARCIALMENTE VERIFICADO.** Confirmei que o app envia
+  `{'user_id': userId, ...}` (`:146-153`). **Não** reconferi se o service do backend lê esse nome — o
+  controller apenas repassa `request.body` (`work-order.controller.ts:165-169`). Fica como **não-verificado
+  por mim**; a afirmação original está em `achados.jsonl` (`Ω6R-QUA-004`, com âncora
+  `work-order.service.ts:1079-1088`).
+
+**Consequência para o registro:** `REGISTRO_ACHADOS_O6R.md` e `achados.jsonl` ainda marcam este achado como
+`ativo` e o `KPI_O6R.md` declara superados = 0. **Este arquivo não é o dono daquele registro** e não o altera
+(escopo: `controle/`). O achado permanece **ABERTO com escopo reduzido**: fecha com os dois componentes
+restantes, não com os três.
+
+### Ω6R-QUA-005 (P1 · mobile-flutter / prestador) — material lançado em campo some no restart
+
+**Dano concreto:** o método retorna **antes** de a fila estar gravada, e cada `enqueue` faz
+read-modify-write da fila inteira: crash logo após o retorno perde ações, e vários SKUs em sequência podem
+**sobrescrever** uns aos outros.
+
+**Verificado na `main` (fato):** `mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart:121-133` —
+`selection.forEach((sku, qty) { ... _syncQueue.enqueue(action); });` — `forEach` **não aguarda** a Future
+(contraste imediato: o laço logo acima, `for (final material in merged) await ...`, aguarda). Fila com
+read-modify-write: `mobile/flutter_app/lib/core/sync/sync_queue_repository.dart:26-33` e
+`core/local_db/drift_sync_action_store.dart:28-55`.
+
+**Bloqueia:** feature no app de campo (OS mobile, prestador). Junta-se à fila do **PR-08 (reconciliação
+mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, ambas ABERTAS.
+- status: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.
+  Rascunho arquitetural correlato: `docs/revisoes/O6R/D-004-contratos-clientes.md` (**pauta do dono, não
+  decisão**).
+
+## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
+
+`npm run check` é `tsc -p tsconfig.json --noEmit`, e o `include` do `tsconfig.json` é `["src/**/*.ts"]`:
+**os arquivos de `tests/` nunca são typecheckados**. Confirmado por injeção deliberada — um
+`const ERRO: number = "isto e uma string";` em `tests/field-dispatch.test.ts` sai com **exit 0**.
+
+**O dano concreto** (foi assim que o achado nasceu): um dublê de teste pode divergir do porto que ele
+finge implementar sem quebrar build nenhum. No ciclo 2 desta fatia, um dublê usava `as never` para
+escapar da checagem — e o parâmetro obrigatório do construtor, criado justamente para que compor sem
+porto virasse **erro de compilação**, não alcançava o dublê. A correção em `src/` é real; o que não
+está guardado é o lado do teste, e é ali que a divergência aparece primeiro.
+
+- **Correção:** um segundo projeto de typecheck cobrindo `tests/**` (ex.: `tsconfig.tests.json` com
+  `include: ["src/**/*.ts", "tests/**/*.ts"]`, `noEmit`), somado à bateria §9 e ao job `backend` do CI.
+  Fora do escopo desta fatia: mexer no `tsconfig` da raiz muda o contrato de build de todo o repo e
+  merece bloco próprio, com a junta olhando quantos erros latentes existem hoje em `tests/`.
+- status: ABERTA.
+
+## P-CHK-DEFERRED-SEM-LEITURA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A)
+
+O ciclo 4 fechou o ponto cego do laço de vistorias ausentes trocando inferência por **leitura**
+(`hasChecklistRun`). O ramo **vizinho** — o das vistorias *diferidas* — continua afirmando na timeline da
+**ORDEM** (a que o app de campo baixa) que a vistoria *"ainda não foi enviada ao técnico"* **sem fazer a mesma
+pergunta**. É exatamente a classe de defeito que acabou de custar dois ciclos, uma linha acima no mesmo arquivo.
+
+**Hoje é inalcançável, e foi verificado** (não presumido): `appendAfterExisting: true` em `adjustChecklists` e em
+`rewriteChecklistSet` impede que uma adição desloque linha que já tem execução, e `assertChecklistNotDispatched`
+barra retirar linha com execução. As duas travas juntas garantem que uma linha diferida nunca tem execução viva.
+
+- **O que reabre:** qualquer porta futura que **insira antes** de linha existente ou **reordene** `order_index`.
+  Quem mexer nisso reabre a classe inteira, e o sintoma é um documento de prova afirmando o oposto do que
+  aconteceu.
+- **Correção quando reabrir (ou preventivamente):** o ramo diferido faz a mesma pergunta read-only antes de
+  declarar.
+- status: ABERTA (latente).
+
+## P-CHK-CREATE-RAZAO-NAO-NORMALIZADA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A)
+
+O `reassign` **normaliza** a razão da falha de provisão (`normalizeChecklistProvisionReason`); o `create` usa a
+classificação crua. Sob despublicação dentro da janela do despacho, a timeline do DESPACHO recebe
+`checklist_not_published` enquanto o caminho irmão grava `template_not_published` — o "um fato, dois códigos"
+que esta mesma fatia consertou do outro lado, e que ninguém somaria seis meses depois.
+
+- **Alcance:** pré-existente, janela estreita, e **só** na timeline do despacho (a tela do escritório) — não
+  chega ao app de campo. Por isso não bloqueou o merge.
+- **Correção:** o `create` passa a normalizar, como o `reassign`.
+- status: ABERTA.

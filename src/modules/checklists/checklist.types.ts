@@ -1,3 +1,18 @@
+import type { ChecklistApplicabilityRole } from "./applicability/checklist-applicability.types.js";
+
+/**
+ * CHECKLIST P1 PR-04c (§5.4 do plano — MÉDIA 10) — a FASE com que a vistoria NASCEU, viajando na própria run.
+ *
+ * FONTE ÚNICA do vocabulário: é literalmente o mesmo tipo de `CHECKLIST_APPLICABILITY_ROLES`. Não há uma
+ * segunda lista para sair de sincronia — estender a fase (o dono já antecipou `custody_field`/`custody_yard`)
+ * é 1 linha na união TS + 1 migração que refaz os 3 CHECKs (regra, junção, run); o guard de paridade
+ * CHECK×união reprova quem estender só um lado.
+ *
+ * `import type` de propósito: é apagado na compilação, então NÃO cria aresta de runtime entre este arquivo e o
+ * subdiretório de aplicabilidade (que, por sua vez, importa `ChecklistError` daqui em runtime).
+ */
+export type ChecklistRunRole = ChecklistApplicabilityRole;
+
 export const CHECKLIST_TYPES = [
   "towing_collection",
   "towing_delivery",
@@ -94,6 +109,17 @@ export type ChecklistRun = {
   // A vistoria original NUNCA é editada — a correção vira versão nova, encadeada por este campo.
   readonly reopenedFromRunId?: string;
   readonly reopenReason?: string;
+  // CHECKLIST P1 PR-04c (§9) — a FASE com que esta vistoria nasceu (coleta/entrega/genérica), carimbada pelo
+  // despacho a partir da linha da junção. `undefined` nas runs anteriores a esta fatia e nas criadas à mão
+  // (web/mobile), que não nascem de uma linha de aplicabilidade.
+  //
+  // ELA NÃO É EXPOSTA PELO `toChecklistRunDto` NESTA FATIA — e isso é decisão, não esquecimento: o enum do app
+  // (`MobileChecklistRunKind`) conhece só `collection|delivery` e manda todo o resto para `unknown`, e uma run
+  // `unknown` faz a tela de comparação RECUSAR comparar com "Atualize o aplicativo". Expor `generic` (a
+  // configuração default) ou `null` (100% das ordens em voo no dia do deploy) travaria a comparação da
+  // organização inteira num app que já está atualizado. O guard de ausência vive em
+  // `tests/field-dispatch-multi-checklist.test.ts` e lista as 5 exigências para expor.
+  readonly role?: ChecklistRunRole;
   readonly status: ChecklistRunStatus;
   readonly startedBy?: string;
   readonly completedBy?: string;

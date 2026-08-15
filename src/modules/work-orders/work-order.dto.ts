@@ -5,14 +5,39 @@ import type {
   WorkOrderLinks,
   WorkOrderMapStartPoints,
 } from "./work-order.types.js";
+import type { WorkOrderChecklistRole, WorkOrderChecklistSource } from "./work-order-checklists.types.js";
+
+/**
+ * CHECKLIST P1 PR-04c-A — a projeção pública de uma linha do conjunto de vistorias.
+ *
+ * §2.8 (allowlist): sai o que a operação precisa para entender e ajustar o conjunto — modelo, etapa,
+ * proveniência e posição na fila. NÃO sai o snapshot da linha (payload pesado; o congelado da primária já vive
+ * em `checklistSnapshot`), nem `tenant_id`, nem quem adicionou/removeu.
+ */
+export type WorkOrderChecklistView = {
+  readonly checklistId: string;
+  readonly role: WorkOrderChecklistRole;
+  readonly source: WorkOrderChecklistSource;
+  readonly ruleId?: string;
+  readonly orderIndex: number;
+};
 
 /**
  * Serializes a work order. On the single-detail path (`GET /:id`) the caller
  * passes the resolved cadastro summaries, which are exposed under `links`. Every
  * other path (list, create, update, status, assign, mobile sync) omits the
  * argument, so the response keeps its pre-C2 shape with no `links` key.
+ *
+ * CHECKLIST P1 PR-04c-A — `checklists` é ADITIVO e segue a mesma disciplina de `links`: quem não passa o
+ * argumento não ganha a chave, e `checklistId`/`checklistSnapshot` continuam exatamente onde estavam, com o
+ * mesmo significado (a vistoria primária). É o que mantém o app de campo e as integrações antigas intactos —
+ * o parser do aplicativo lê chaves nomeadas e ignora as demais.
  */
-export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
+export function toWorkOrderDto(
+  workOrder: WorkOrder,
+  links?: WorkOrderLinks,
+  checklists?: readonly WorkOrderChecklistView[],
+) {
   return {
     id: workOrder.id,
     code: workOrder.code,
@@ -79,6 +104,17 @@ export function toWorkOrderDto(workOrder: WorkOrder, links?: WorkOrderLinks) {
     createdAt: workOrder.createdAt.toISOString(),
     updatedAt: workOrder.updatedAt.toISOString(),
     ...(links === undefined ? {} : { links }),
+    ...(checklists === undefined ? {} : { checklists: checklists.map(toWorkOrderChecklistDto) }),
+  };
+}
+
+export function toWorkOrderChecklistDto(link: WorkOrderChecklistView) {
+  return {
+    checklistId: link.checklistId,
+    role: link.role,
+    source: link.source,
+    ruleId: link.ruleId ?? null,
+    orderIndex: link.orderIndex,
   };
 }
 

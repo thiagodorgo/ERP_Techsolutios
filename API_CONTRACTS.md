@@ -172,6 +172,7 @@ colidir com o router base.
 | GET | `/work-orders/:workOrderId` | `work_orders:read` | Detalhe da OS. |
 | PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. |
 | PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. |
+| PATCH | `/work-orders/:workOrderId/checklists` | `field_dispatch:create` | Ajusta o **conjunto de vistorias** da OS antes do envio ao técnico (§3.5.1). |
 | PATCH | `/work-orders/:workOrderId/mileage` | `work_orders:mileage_correct` | Correção de quilometragem. |
 | POST | `/work-orders/:workOrderId/cancel` | `work_orders:cancel` | Cancela OS (integridade atômica/terminal-guard). |
 | POST | `/work-orders/:workOrderId/duplicate` | `work_orders:create` | Duplica OS. |
@@ -187,6 +188,51 @@ colidir com o router base.
 | GET | `/approvals/pending` · `/approvals/:approvalId` | `work_orders:read` | Aprovações pendentes / detalhe (alçadas). |
 | POST | `/approvals/:approvalId/approve` · `/reject` | `work_orders:update` | Aprova/rejeita alçada. |
 | GET | `/operations/work-orders-timeseries` | `work_orders:read` | Série temporal de OS por dia (zero-fill, fuso America/Sao_Paulo). |
+
+#### 3.5.1 Conjunto de vistorias da OS (CHECKLIST P1 PR-04c-A)
+
+A OS deixou de carregar **uma** vistoria e passa a carregar um **conjunto** (`work_order_checklists`). A
+identidade viva de cada linha é `(organização, ordem, modelo, **etapa**)`: o mesmo modelo pode servir a coleta
+**e** a entrega da mesma ordem — é esse par que a tela de comparação do app confronta.
+
+**Retrocompatibilidade (aditiva).** `checklistId` e `checklistSnapshot` continuam no payload, com o mesmo
+significado, agora como **espelho da linha primária** (a de menor `orderIndex`; `null` quando o conjunto vivo é
+vazio). Nenhum consumidor atual precisa mudar.
+
+`GET /work-orders/:id` e o `PATCH /work-orders/:id/checklists` acrescentam a chave `checklists[]`:
+
+```json
+{ "checklists": [ { "checklistId": "…", "role": "collection", "source": "resolved", "ruleId": "…", "orderIndex": 0 } ] }
+```
+
+`role` ∈ `collection | delivery | generic` · `source` ∈ `resolved` (uma regra de aplicabilidade escolheu) |
+`manual` (alguém escolheu à mão). §2.8: o DTO **não** expõe o snapshot por linha, nem `tenant_id`, nem autor.
+
+**Criação (`POST /work-orders`) — tri-state, resolvido UMA vez e congelado (sticky):**
+
+| Corpo | Efeito |
+|---|---|
+| sem `checklists` e sem `checklistId` | **resolve** pelas regras e congela o resultado |
+| `"checklists": null` ou `[]` | ordem deliberadamente **sem** vistoria |
+| `"checklists": [{ "checklistId": "…", "role": "delivery" }]` | override **manual** (modelo precisa estar publicado → 400) |
+| `"checklistId": "…"` (campo antigo) | override manual de um elemento |
+| `checklists` **e** `checklistId` juntos | **400** `checklist_set_conflict` |
+
+**`PATCH /work-orders/:id`** — o conjunto tem **porta única**: a chave `checklists` (lista, `[]` ou `null`)
+devolve **sempre 409** `checklist_set_requires_endpoint`, apontando o endpoint dedicado — o update genérico roda
+sob `work_orders:update` (permissão que o técnico de campo tem) e aceitar o conjunto por aqui anularia o gate
+`field_dispatch:create` do endpoint de vistorias. `checklists` ausente **não toca** o conjunto; trocar cliente ou
+serviço **nunca** re-resolve. O campo antigo `checklistId` devolve **409** `checklist_set_requires_endpoint`
+quando a ordem tem 2+ vistorias vivas (um id não expressa um conjunto, e sobrescrever apagaria a segunda em
+silêncio); com ≤1 ele reescreve a primária, como sempre fez. Update **recusado** por validação (400/422) não
+altera o conjunto nem gera evento — a escrita da junção só acontece depois de o corpo inteiro validar.
+
+**`PATCH /work-orders/:id/checklists`** — `{ "add": [{ "checklistId", "role"? }], "remove": [{ "checklistId",
+"role", "reason", "confirmCustomerScoped"? }] }`. Retirar exige **etapa** e **motivo**. Erros: 400
+`checklist_not_published` · 409 `duplicate_checklist_phase` · 409 `checklist_already_dispatched` (vistoria já
+enviada ao técnico — o caminho é a reabertura) · 409 `checklist_customer_scoped_confirmation_required` (a
+vistoria veio de regra com cliente nomeado) · 409 `work_order_terminal` · 404 `checklist_link_not_found`.
+Remoção é **soft** (guarda quem/quando/por quê) e vira evento na timeline da OS, visível ao técnico.
 
 ### 3.6 Operação de Campo / Despacho
 

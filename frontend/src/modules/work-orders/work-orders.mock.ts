@@ -132,6 +132,13 @@ export function getMockWorkOrderDetail(workOrderId: string): WorkOrderDetail {
     ...base,
     customerDocument: "00.000.000/0001-00",
     checklistId: "chk_towing_collection",
+    // CHECKLIST P1 PR-04c-A — conjunto de vistorias (ilustrativo em modo mock/fallback, como `links`).
+    // Duas linhas de propósito: é justamente o caso que a célula binária de antes mentia ("Vinculado"),
+    // e o espelho legado `checklistId` continua sendo o da PRIMÁRIA (a de coleta, orderIndex 0).
+    checklists: [
+      { checklistId: "chk_towing_collection", role: "collection", source: "resolved", ruleId: "rule_towing_collection", orderIndex: 0 },
+      { checklistId: "chk_towing_delivery", role: "delivery", source: "manual", ruleId: null, orderIndex: 1 },
+    ],
     startedAt: "2026-06-09T12:20:00.000Z",
     arrivedAt: "2026-06-09T12:50:00.000Z",
     createdBy: "usr-ops-01",

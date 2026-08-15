@@ -38,6 +38,8 @@ import {
   assertNonEmptyString,
   assertStatusTransition,
   optionalString,
+  parseChecklistAdjustment,
+  parseChecklistSetSelection,
   parseFinancialCancellationDecision,
   parseLimit,
   parseOffset,
@@ -51,7 +53,28 @@ import {
   parseServiceDetails,
   parseWorkOrderPriority,
   parseWorkOrderStatus,
+  WORK_ORDER_STATUS_TRANSITIONS,
+  type ChecklistAdjustmentRemoval,
+  type ChecklistSelectionItem,
+  type ChecklistSetSelection,
 } from "./work-order.validators.js";
+import {
+  effectiveChecklistSet,
+  liveChecklistLinks,
+  syntheticChecklistSet,
+  workOrderChecklistAlreadyDispatchedError,
+  workOrderChecklistCustomerScopedConfirmationError,
+  workOrderChecklistDuplicateError,
+  workOrderChecklistLinkNotFoundError,
+  workOrderChecklistNotPublishedError,
+  workOrderChecklistSetRequiresEndpointError,
+  workOrderChecklistTerminalError,
+  type FreezeChecklistLinkSnapshotsInput,
+  type WorkOrderChecklistLink,
+  type WorkOrderChecklistLinkInput,
+  type WorkOrderChecklistRole,
+} from "./work-order-checklists.types.js";
+import type { ChecklistApplicabilityMatch } from "../checklists/applicability/checklist-applicability.resolution.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -112,7 +135,41 @@ export type WorkOrderReferenceResolvers = {
   ) => Promise<{ readonly latitude: number; readonly longitude: number; readonly capturedAt: Date } | null>;
   // Ω3F-8b — bases disponíveis = POIs de categoria "base" (Ω2-d; zero migration). Tenant-scoped.
   readonly listMapBases?: (actor: WorkOrderActorContext) => Promise<readonly WorkOrderMapBase[]>;
+  // CHECKLIST P1 PR-04c-A — o porto da APLICABILIDADE. Dada a ordem que está nascendo (serviço, tipo e
+  // cliente), quais modelos de vistoria se aplicam? Roda UMA vez, na criação, e o resultado é congelado
+  // (sticky). AUSENTE nesta fatia por desenho: entre o 04c-A e o 04c-B não existe chave de permissão nem rota
+  // que crie uma regra, então o conjunto resolvido é vazio POR CONSTRUÇÃO — não por promessa de que ninguém
+  // usaria a API. O 04c-B liga este porto na raiz de composição.
+  readonly resolveApplicableChecklists?: (
+    actor: WorkOrderActorContext,
+    context: { readonly serviceCatalogId?: string; readonly serviceType?: string; readonly customerId?: string },
+  ) => Promise<readonly ChecklistApplicabilityMatch[]>;
+  // CHECKLIST P1 PR-04c-A — devolve os ids que NÃO são modelo publicado desta organização (lista vazia = todos
+  // publicados). Nunca se manda a campo um formulário que a organização não publicou — a mesma disciplina do
+  // freeze do despacho, agora na porta de entrada.
+  readonly assertChecklistsPublished?: (
+    actor: WorkOrderActorContext,
+    checklistIds: readonly string[],
+  ) => Promise<readonly string[]>;
+  // CHECKLIST P1 PR-04c-A (§10.2.5) — esta vistoria já foi ENVIADA ao técnico (run provisionada no despacho)?
+  // Se já foi, a linha não é retirada: a vistoria pode estar sendo respondida em campo, às vezes offline, e é
+  // prova. Consulta as DUAS chaves de idempotência (a com fase e a legada) — ver a raiz de composição.
+  readonly hasProvisionedChecklistRun?: (
+    actor: WorkOrderActorContext,
+    input: { readonly workOrderId: string; readonly checklistId: string; readonly role: WorkOrderChecklistRole },
+  ) => Promise<boolean>;
+  // CHECKLIST P1 PR-04c-A (§10.2.9) — a regra que produziu esta linha nomeia um CLIENTE? Só o booleano
+  // atravessa a fronteira: o id do cliente NUNCA entra em auditoria/metadata (§2.8).
+  readonly isApplicabilityRuleCustomerScoped?: (
+    actor: WorkOrderActorContext,
+    ruleId: string,
+  ) => Promise<boolean>;
+  // CHECKLIST P1 PR-04c-A — rótulo do modelo, para a linha da timeline que o guincheiro lê ("Vistoria X
+  // retirada..."). `null` quando não resolve; a mensagem então omite o rótulo em vez de inventá-lo (D-007).
+  readonly resolveChecklistLabel?: (actor: WorkOrderActorContext, checklistId: string) => Promise<string | null>;
 };
+
+type ServiceCatalogTypeInfo = { readonly serviceType: string | null; readonly requiresDestination: boolean } | null;
 
 export class WorkOrderService {
   constructor(
@@ -367,6 +424,9 @@ export class WorkOrderService {
     const vehicleId = parseOptionalUuid(body.vehicle_id ?? body.vehicleId, "vehicleId");
     const teamId = parseOptionalUuid(body.team_id ?? body.teamId, "teamId");
     const serviceCatalogId = parseOptionalUuid(body.service_catalog_id ?? body.serviceCatalogId, "serviceCatalogId");
+    // CHECKLIST P1 PR-04c-A — tri-state do conjunto de vistorias, lido cedo para o 400 de corpo contraditório
+    // (conjunto novo + campo antigo juntos) acontecer antes de qualquer efeito.
+    const checklistSelection = parseChecklistSetSelection(body);
 
     // Validate every provided reference against the acting tenant. A missing or
     // cross-tenant id resolves to "not found" and is rejected with a 400.
@@ -383,7 +443,10 @@ export class WorkOrderService {
 
     // Ω3F-2a — reboque exige destino: bloqueia o create quando o tipo do catálogo pede destino e nenhum
     // campo de destino veio no corpo. Antes do nextCode/create para não consumir número de OS.
-    await this.assertDestinationForType(actor, serviceCatalogId, hasDestination(destination));
+    // CHECKLIST P1 PR-04c-A — o tipo do catálogo é resolvido UMA vez e serve a dois usos: a regra de destino e
+    // o eixo `serviceType` da aplicabilidade (a ordem não tem essa coluna; quem chama a resolução deriva).
+    const serviceTypeInfo = await this.resolveServiceCatalogTypeInfo(actor, serviceCatalogId);
+    await this.assertDestinationForType(actor, serviceCatalogId, hasDestination(destination), serviceTypeInfo);
 
     // Ω3F-3b (#4, spec §1.2) — quando a OS vincula cliente E serviço, o tipo precisa ter tarifa vigente
     // na tabela do cliente. Antes do nextCode/create para não consumir número de OS. Ω3F-4b: o approve→cria
@@ -391,6 +454,18 @@ export class WorkOrderService {
     if (!options?.skipApplicableTariffCheck) {
       await this.assertServiceHasApplicableTariff(actor, serviceCatalogId, customerId);
     }
+
+    // CHECKLIST P1 PR-04c-A — O STICKY. O conjunto de vistorias é resolvido AQUI, uma única vez, e gravado com
+    // a ordem na mesma transação. Depois disso NADA re-resolve: trocar o cliente ou o serviço da ordem não
+    // muda as vistorias (ponto 4 da decisão do dono), porque uma ordem em campo — às vezes com vistoria já
+    // assinada — não pode mudar de exigência por baixo de quem está trabalhando nela.
+    // Fica DEPOIS das validações que recusam e ANTES do nextCode, pela mesma razão que o arquivo já documenta
+    // duas vezes: validação que recusa não consome número de ordem de serviço.
+    const checklists = await this.resolveChecklistSetForCreate(actor, checklistSelection, {
+      serviceCatalogId,
+      serviceType: serviceTypeInfo?.serviceType ?? undefined,
+      customerId,
+    });
 
     const code = await this.repository.nextCode(actor.tenantId);
     const workOrder = await this.repository.create({
@@ -417,7 +492,10 @@ export class WorkOrderService {
       destinationLongitude: destination.destinationLongitude,
       serviceDetails,
       priority: parseWorkOrderPriority(body.priority),
-      checklistId: parseOptionalUuid(body.checklistId, "checklistId"),
+      // CHECKLIST P1 PR-04c-A — `checklist_id` deixou de ser escrito pelo corpo: vira ESPELHO da linha
+      // primária da junção, derivado no repositório. Uma coluna com dois escritores é como o espelho
+      // dessincronizaria e o despacho congelaria o formulário errado.
+      checklists,
       customerId,
       vehicleId,
       teamId,
@@ -445,6 +523,93 @@ export class WorkOrderService {
     });
 
     return workOrder;
+  }
+
+  /**
+   * CHECKLIST P1 PR-04c-A — o conjunto de vistorias da ordem NOVA, pelo tri-state:
+   *
+   *  · `absent`   ⇒ RESOLVE pelas regras (proveniência `resolved` + a regra que explica cada linha);
+   *  · `legacy`   ⇒ uma linha `manual` a partir do campo antigo `checklistId`;
+   *  · `explicit` ⇒ override manual declarado (lista vazia = ordem deliberadamente sem vistoria).
+   *
+   * A publicação do modelo é exigida no override EXPLÍCITO e no que a regra devolve (a resolução já filtra por
+   * publicados). O campo ANTIGO `checklistId` segue sem essa exigência — é o comportamento de hoje, e apertá-lo
+   * aqui mudaria, sem aviso, o contrato de integrações e de ordens já em voo. Está registrado como resíduo,
+   * não como esquecimento.
+   */
+  private async resolveChecklistSetForCreate(
+    actor: WorkOrderActorContext,
+    selection: ChecklistSetSelection,
+    context: { readonly serviceCatalogId?: string; readonly serviceType?: string; readonly customerId?: string },
+  ): Promise<readonly WorkOrderChecklistLinkInput[]> {
+    if (selection.kind === "legacy") {
+      return [
+        {
+          checklistId: selection.checklistId,
+          role: "generic",
+          source: "manual",
+          orderIndex: 0,
+          addedBy: actor.userId,
+        },
+      ];
+    }
+
+    if (selection.kind === "explicit") {
+      assertNoRepeatedChecklistPhase(selection.items);
+      await this.assertChecklistsArePublished(actor, selection.items.map((item) => item.checklistId));
+
+      return selection.items.map((item, index) => ({
+        checklistId: item.checklistId,
+        role: item.role,
+        source: "manual" as const,
+        orderIndex: index,
+        addedBy: actor.userId,
+      }));
+    }
+
+    const resolver = this.references.resolveApplicableChecklists;
+    if (!resolver) return [];
+
+    const matches = await resolver(actor, context);
+
+    return matches.map((match, index) => ({
+      checklistId: match.templateId,
+      role: match.role,
+      // PROVENIÊNCIA: a regra que venceu fica gravada na linha. É o que explica, meses depois, por que aquela
+      // ordem recebeu aquela vistoria — e o CHECK biconditional do banco impede `resolved` sem regra.
+      source: "resolved" as const,
+      ruleId: match.ruleId,
+      orderIndex: index,
+      addedBy: actor.userId,
+    }));
+  }
+
+  private async assertChecklistsArePublished(
+    actor: WorkOrderActorContext,
+    checklistIds: readonly string[],
+  ): Promise<void> {
+    if (checklistIds.length === 0) return;
+
+    const resolver = this.references.assertChecklistsPublished;
+    if (!resolver) return;
+
+    const invalid = await resolver(actor, [...new Set(checklistIds)]);
+    if (invalid.length > 0) {
+      throw workOrderChecklistNotPublishedError();
+    }
+  }
+
+  /** O conjunto EFETIVO da ordem (junção viva ou a visão sintética da ordem legada) — leitura única do domínio. */
+  async listChecklistSet(actor: WorkOrderActorContext, workOrderId: string) {
+    const workOrder = await this.get(actor, workOrderId);
+
+    return this.checklistSetOf(actor, workOrder);
+  }
+
+  private async checklistSetOf(actor: WorkOrderActorContext, workOrder: WorkOrder) {
+    const links = await this.repository.listChecklists(actor.tenantId, workOrder.id);
+
+    return effectiveChecklistSet(workOrder, links);
   }
 
   private async resolveCustomerSnapshot(
@@ -519,15 +684,32 @@ export class WorkOrderService {
   // Ω3F-2a — regra "reboque exige destino": se o catálogo referenciado marca requires_destination e a OS
   // não carrega destino, rejeita com 422 destination_required. No-op quando não há catálogo, o resolver não
   // está ligado, ou o id não resolve (tenant-scoped: cross-tenant → null → sem regra de tipo aplicável).
+  // CHECKLIST P1 PR-04c-A — lookup único do tipo do catálogo (tenant-scoped; null quando não resolve).
+  private async resolveServiceCatalogTypeInfo(
+    actor: WorkOrderActorContext,
+    serviceCatalogId: string | undefined,
+  ): Promise<ServiceCatalogTypeInfo> {
+    if (!serviceCatalogId) return null;
+
+    const resolver = this.references.resolveServiceCatalogTypeInfo;
+
+    return resolver ? await resolver(actor, serviceCatalogId) : null;
+  }
+
   private async assertDestinationForType(
     actor: WorkOrderActorContext,
     serviceCatalogId: string | undefined,
     hasDestinationValue: boolean,
+    // CHECKLIST P1 PR-04c-A — `undefined` = ainda não resolvido (o update segue resolvendo aqui); qualquer
+    // outro valor (inclusive `null`) é o resultado JÁ resolvido pelo chamador — uma chamada, dois usos.
+    preResolvedTypeInfo?: ServiceCatalogTypeInfo,
   ): Promise<void> {
     if (!serviceCatalogId) return;
 
-    const resolver = this.references.resolveServiceCatalogTypeInfo;
-    const typeInfo = resolver ? await resolver(actor, serviceCatalogId) : null;
+    const typeInfo =
+      preResolvedTypeInfo === undefined
+        ? await this.resolveServiceCatalogTypeInfo(actor, serviceCatalogId)
+        : preResolvedTypeInfo;
     if (typeInfo?.requiresDestination && !hasDestinationValue) {
       throw new WorkOrderError(
         422,
@@ -580,14 +762,14 @@ export class WorkOrderService {
    * its small summary. Kept separate from get() so the list and the internal
    * get() callers (update/status/assign/timeline) stay cheap and unchanged.
    */
-  async getWithLinks(
-    actor: WorkOrderActorContext,
-    workOrderId: string,
-  ): Promise<{ readonly workOrder: WorkOrder; readonly links: WorkOrderLinks }> {
+  async getWithLinks(actor: WorkOrderActorContext, workOrderId: string) {
     const workOrder = await this.get(actor, workOrderId);
     const links = await this.resolveLinks(actor, workOrder);
+    // CHECKLIST P1 PR-04c-A — o detalhe passa a carregar o CONJUNTO. A web dizia "Vinculado" para uma ordem com
+    // duas vistorias; meia-verdade sobre prova é o mesmo que mentira.
+    const checklists = await this.checklistSetOf(actor, workOrder);
 
-    return { workOrder, links };
+    return { workOrder, links, checklists };
   }
 
   private async resolveLinks(actor: WorkOrderActorContext, workOrder: WorkOrder): Promise<WorkOrderLinks> {
@@ -609,6 +791,17 @@ export class WorkOrderService {
     // Ω3F-2a — reusa o current (tipo IMUTÁVEL pós-create): a regra de destino no update lê o
     // service_catalog_id PERSISTIDO, nunca um do corpo (update não aceita troca de tipo).
     const current = await this.get(actor, workOrderId);
+
+    // CHECKLIST P1 PR-04c-A — o conjunto de vistorias no UPDATE.
+    //
+    // O que NÃO acontece aqui, e é o coração do sticky: mudar `customerId` ou `serviceCatalogId` NUNCA
+    // re-resolve as vistorias (ponto 4 da decisão do dono, verbatim). Não há chamada à resolução neste método —
+    // de propósito, e é isto que a suíte prova.
+    //
+    // O parse é PURO (nenhuma escrita): fica cedo para o 400 de corpo contraditório continuar acontecendo antes
+    // de qualquer efeito. A APLICAÇÃO da seleção fica lá embaixo, depois de TODAS as validações (P3 da
+    // verificação): validação que recusa não pode acontecer com a junção já reescrita.
+    const checklistSelection = parseChecklistSetSelection(body);
 
     const destination = this.parseDestination(body);
     const serviceDetails = parseServiceDetails(body.service_details ?? body.serviceDetails);
@@ -647,12 +840,21 @@ export class WorkOrderService {
       destinationLongitude: destination.destinationLongitude,
       serviceDetails,
       priority: body.priority === undefined ? undefined : parseWorkOrderPriority(body.priority),
-      checklistId: parseOptionalUuid(body.checklistId, "checklistId"),
+      // CHECKLIST P1 PR-04c-A — `checklist_id` NÃO é mais escrito por aqui: quem o escreve é o recálculo do
+      // espelho, dentro da transação que mexeu na junção (acima). Dois escritores da mesma coluna é como o
+      // espelho e o conjunto passariam a discordar.
       scheduledFor: parseOptionalDate(body.scheduledFor, "scheduledFor"),
       // M-7 (J-MAPAS-8) — prazo de SLA pela trilha de update padrão (espelho de scheduledFor).
       slaDueAt: parseOptionalDate(body.slaDueAt, "slaDueAt"),
       updatedBy: actor.userId,
     };
+
+    // P3 da verificação (perda de dados em requisição RECUSADA) — a escrita da junção roda SÓ AQUI, depois de o
+    // corpo INTEIRO ter validado (título, prioridade, datas, coordenadas, destino). Antes, um update com
+    // prioridade inválida devolvia 400 já tendo destruído o conjunto: o cliente lia "nada mudou" e a vistoria
+    // tinha sumido. Antes deste PR tudo viajava numa transação só; a ordem das linhas é o que restaura isso.
+    await this.applyChecklistSelectionOnUpdate(actor, current, checklistSelection);
+
     const updated = await this.repository.update(input);
 
     if (!updated) {
@@ -672,6 +874,299 @@ export class WorkOrderService {
     });
 
     return updated;
+  }
+
+  /**
+   * CHECKLIST P1 PR-04c-A (corrigido pela verificação — P1 BLOQUEANTE) — o conjunto no UPDATE:
+   *
+   *  · `absent`   ⇒ junção INTOCADA (o sticky vive aqui: nada re-resolve);
+   *  · `legacy`   ⇒ ALTA 7a. Com 2+ vistorias vivas devolve 409 e manda usar o endpoint de vistorias: um id só
+   *                 não expressa um conjunto, e deixá-lo passar apagaria a segunda vistoria em silêncio — o
+   *                 sumiço que a revisão adversarial mediu. Com ≤1 (que é o caso de 100% das ordens de hoje) o
+   *                 campo antigo REESCREVE a primária, preservando integralmente o comportamento atual;
+   *  · `explicit` ⇒ 409 SEMPRE. O update genérico roda sob `work_orders:update` — permissão que o técnico de
+   *                 campo TEM — enquanto a rota dedicada exige `field_dispatch:create` exatamente para quem
+   *                 está em campo não redefinir a própria prova. A verificação provou por HTTP que aceitar
+   *                 `checklists[]` aqui anulava esse gate: o guincheiro apagava a vistoria de entrega (a que
+   *                 alimenta a comparação coleta×entrega, prova jurídica do estado do veículo) e zerava o
+   *                 conjunto com `checklists: null` — sem a trava da exigência contratada e sem motivo. Porta
+   *                 única: o conjunto explícito vive SÓ na criação e no endpoint de vistorias.
+   */
+  private async applyChecklistSelectionOnUpdate(
+    actor: WorkOrderActorContext,
+    current: WorkOrder,
+    selection: ChecklistSetSelection,
+  ): Promise<void> {
+    if (selection.kind === "absent") return;
+
+    if (selection.kind === "explicit") {
+      // 409 SEMPRE, com o mesmo status/código/razão do campo legado com 2+ linhas. Mensagem PRÓPRIA porque a da
+      // fábrica afirma "esta ordem tem mais de uma vistoria", e esta porta fecha independentemente do tamanho do
+      // conjunto — afirmar a condição errada seria mentir para quem lê o erro.
+      throw new WorkOrderError(
+        409,
+        "WORK_ORDER_CHECKLIST_SET_REQUIRES_ENDPOINT",
+        "checklist_set_requires_endpoint",
+        "Para alterar as vistorias desta ordem de serviço, use o endpoint de vistorias.",
+      );
+    }
+
+    const links = await this.repository.listChecklists(actor.tenantId, current.id);
+    const effective = effectiveChecklistSet(current, links);
+
+    if (effective.length >= 2) {
+      throw workOrderChecklistSetRequiresEndpointError();
+    }
+
+    // O campo antigo NÃO ganha a trava de vistoria-já-enviada nem a exigência de modelo publicado: hoje ele
+    // troca o checklist de uma ordem já despachada (há teste mergeado que exerce exatamente isso) e aceita
+    // qualquer id. Apertar por aqui quebraria integrações e ordens em voo sem que ninguém tivesse pedido —
+    // o lugar do rigor é o endpoint novo, que nasce com ele. Resíduo registrado, não esquecido.
+    await this.rewriteChecklistSet(actor, current, [{ checklistId: selection.checklistId, role: "generic" }], effective, {
+      enforceRunGuard: false,
+    });
+  }
+
+  /**
+   * Leva o conjunto vivo ao estado declarado por DIFERENÇA, não por "apaga tudo e regrava".
+   *
+   * A linha que continua no conjunto é PRESERVADA — com a regra que a explica, o `order_index` e o snapshot
+   * congelado. Regravá-la transformaria uma vistoria `resolved` em `manual`, apagaria a proveniência e jogaria
+   * fora o formulário que o despacho congelou, tudo isso sem nenhum ganho.
+   *
+   * P1 da verificação — com a porta `explicit` do update fechada, o ÚNICO chamador hoje é o campo legado
+   * `checklistId` (`desired` de UMA linha, `enforceRunGuard: false`). Os ramos de limpeza e do run-guard ficam:
+   * são o contrato completo da reescrita, e é neles que qualquer porta futura de substituição já encontra as
+   * travas prontas em vez de reinventá-las sem elas.
+   */
+  private async rewriteChecklistSet(
+    actor: WorkOrderActorContext,
+    current: WorkOrder,
+    desired: readonly ChecklistSelectionItem[],
+    effective: readonly { readonly checklistId: string; readonly role: WorkOrderChecklistRole; readonly ruleId?: string }[],
+    options: { readonly enforceRunGuard: boolean },
+  ): Promise<void> {
+    const desiredKeys = new Set(desired.map((item) => checklistPhaseKey(item)));
+    const removals = effective.filter((line) => !desiredKeys.has(checklistPhaseKey(line)));
+    const additions = desired.filter(
+      (item) => !effective.some((line) => checklistPhaseKey(line) === checklistPhaseKey(item)),
+    );
+
+    if (removals.length === 0 && additions.length === 0) return;
+
+    if (options.enforceRunGuard) {
+      for (const line of removals) {
+        await this.assertChecklistNotDispatched(actor, current.id, line);
+      }
+    }
+
+    const clearing = desired.length === 0;
+    const result = await this.repository.applyChecklists({
+      tenantId: actor.tenantId,
+      workOrderId: current.id,
+      actorUserId: actor.userId,
+      removeAll: clearing,
+      remove: clearing ? undefined : removals.map((line) => ({ checklistId: line.checklistId, role: line.role })),
+      add: additions.map((item, index) => ({
+        checklistId: item.checklistId,
+        role: item.role,
+        source: "manual" as const,
+        orderIndex: index,
+        addedBy: actor.userId,
+      })),
+      appendAfterExisting: true,
+    });
+
+    if (!result) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    await this.recordChecklistSetEvents(actor, result, { cleared: clearing });
+  }
+
+  /**
+   * CHECKLIST P1 PR-04c-A (§10) — O AJUSTE DO OPERADOR, antes de a ordem ir a campo.
+   *
+   * É a válvula humana do sticky: a regra decide, e quem despacha corrige o caso concreto. O que ele pode:
+   * acrescentar vistoria publicada e retirar vistoria — INCLUSIVE a que veio de regra (é o pedido do dono).
+   * O que ele não pode: retirar vistoria já enviada ao técnico (409 — ela pode estar sendo respondida em campo
+   * e é prova; o caminho é a reabertura), mexer em ordem já encerrada, duplicar o par modelo+etapa, ou retirar
+   * sem motivo. Toda retirada vira linha na timeline que o guincheiro vê.
+   */
+  async adjustChecklists(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord) {
+    const current = await this.get(actor, workOrderId);
+
+    // §10.2.6 — ordem encerrada (concluída/cancelada/recusada) não ajusta vistoria: o conjunto dela já é
+    // histórico, e histórico não se reescreve.
+    if (WORK_ORDER_STATUS_TRANSITIONS[current.status].length === 0) {
+      throw workOrderChecklistTerminalError();
+    }
+
+    const { add, remove } = parseChecklistAdjustment(body);
+    assertNoRepeatedChecklistPhase(add);
+
+    const links = await this.repository.listChecklists(actor.tenantId, current.id);
+    const effective = effectiveChecklistSet(current, links);
+    const removalKeys = new Set(remove.map((item) => checklistPhaseKey(item)));
+
+    // Duplicata só conta contra as linhas que SOBREVIVEM a esta chamada: trocar a etapa de uma vistoria
+    // (retirar coleta + incluir entrega do mesmo modelo) é um ajuste legítimo numa requisição só.
+    for (const item of add) {
+      const key = checklistPhaseKey(item);
+      if (effective.some((line) => checklistPhaseKey(line) === key) && !removalKeys.has(key)) {
+        throw workOrderChecklistDuplicateError();
+      }
+    }
+    await this.assertChecklistsArePublished(actor, add.map((item) => item.checklistId));
+
+    const customerScopedKeys = new Set<string>();
+    for (const item of remove) {
+      const line = effective.find((candidate) => checklistPhaseKey(candidate) === checklistPhaseKey(item));
+      if (!line) {
+        throw workOrderChecklistLinkNotFoundError();
+      }
+      await this.assertChecklistNotDispatched(actor, current.id, line);
+      if (await this.isCustomerScopedRemoval(actor, line, item)) {
+        customerScopedKeys.add(checklistPhaseKey(line));
+      }
+    }
+
+    const result = await this.repository.applyChecklists({
+      tenantId: actor.tenantId,
+      workOrderId: current.id,
+      actorUserId: actor.userId,
+      remove: remove.map((item) => ({ checklistId: item.checklistId, role: item.role, reason: item.reason })),
+      add: add.map((item, index) => ({
+        checklistId: item.checklistId,
+        role: item.role,
+        source: "manual" as const,
+        orderIndex: index,
+        addedBy: actor.userId,
+      })),
+      // BLOQ 3 — a vistoria acrescentada entra no FIM da fila: ela nunca desloca a primária que o despacho
+      // congelou, então o campo nunca recebe um formulário que o freeze não viu.
+      appendAfterExisting: true,
+    });
+
+    if (!result) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    await this.recordChecklistSetEvents(actor, result, { cleared: false, customerScopedKeys });
+
+    return {
+      workOrder: result.workOrder,
+      checklists: effectiveChecklistSet(result.workOrder, result.links),
+      removed: result.removed,
+      added: result.added,
+    };
+  }
+
+  // §10.2.5 — pré-check da vistoria já ENVIADA ao técnico. Sem o porto montado a trava não existe (degrada
+  // como as demais referências opcionais) — e é por isso que a suíte a exercita com o porto ligado.
+  private async assertChecklistNotDispatched(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    line: { readonly checklistId: string; readonly role: WorkOrderChecklistRole },
+  ): Promise<void> {
+    const resolver = this.references.hasProvisionedChecklistRun;
+    if (!resolver) return;
+
+    if (await resolver(actor, { workOrderId, checklistId: line.checklistId, role: line.role })) {
+      throw workOrderChecklistAlreadyDispatchedError();
+    }
+  }
+
+  // §10.2.9 (ALTA 8) — vistoria exigida pelo CONTRATO de um cliente nomeado só sai com confirmação distinta.
+  // Devolve se a linha é de escopo-cliente, para a auditoria registrar o FATO (`ruleCustomerScoped: true`) sem
+  // jamais carregar o id do cliente (§2.8).
+  private async isCustomerScopedRemoval(
+    actor: WorkOrderActorContext,
+    line: { readonly ruleId?: string },
+    removal: ChecklistAdjustmentRemoval,
+  ): Promise<boolean> {
+    if (!line.ruleId) return false;
+
+    const resolver = this.references.isApplicabilityRuleCustomerScoped;
+    if (!resolver) return false;
+
+    const customerScoped = await resolver(actor, line.ruleId);
+    if (customerScoped && !removal.confirmCustomerScoped) {
+      throw workOrderChecklistCustomerScopedConfirmationError();
+    }
+
+    return customerScoped;
+  }
+
+  /**
+   * A HISTÓRIA do conjunto, na timeline da própria ordem — e ela chega ao guincheiro sem uma linha de Dart: o
+   * app busca a timeline remota e já renderiza a mensagem. Sem isto, "o operador ajusta no envio" seria uma
+   * promessa que o campo não tem como auditar.
+   *
+   * §2.8 — a metadata carrega só o que a operação precisa (modelo, etapa, proveniência, rótulo). NUNCA
+   * `tenant_id`, nunca o snapshot, e nunca o id do cliente da regra: dele vai apenas o FATO de a exigência ser
+   * contratual (`ruleCustomerScoped`).
+   */
+  private async recordChecklistSetEvents(
+    actor: WorkOrderActorContext,
+    result: { readonly workOrder: WorkOrder; readonly removed: readonly WorkOrderChecklistLink[]; readonly added: readonly WorkOrderChecklistLink[] },
+    options: { readonly cleared: boolean; readonly customerScopedKeys?: ReadonlySet<string> },
+  ): Promise<void> {
+    if (options.cleared && result.removed.length > 0) {
+      await this.repository.createEvent({
+        tenantId: actor.tenantId,
+        workOrderId: result.workOrder.id,
+        eventType: "work_order_checklists_cleared",
+        actorUserId: actor.userId,
+        message: "As vistorias desta ordem de serviço foram retiradas.",
+        metadata: { removedCount: result.removed.length },
+      });
+      return;
+    }
+
+    for (const link of result.added) {
+      const label = await this.resolveChecklistLabel(actor, link.checklistId);
+      await this.repository.createEvent({
+        tenantId: actor.tenantId,
+        workOrderId: result.workOrder.id,
+        eventType: "work_order_checklist_added",
+        actorUserId: actor.userId,
+        message: label
+          ? `Vistoria "${label}" incluída nesta ordem de serviço.`
+          : "Uma vistoria foi incluída nesta ordem de serviço.",
+        metadata: checklistEventMetadata(link, label, false),
+      });
+    }
+
+    for (const link of result.removed) {
+      const label = await this.resolveChecklistLabel(actor, link.checklistId);
+      const customerScoped = options.customerScopedKeys?.has(checklistPhaseKey(link)) ?? false;
+      const subject = label ? `Vistoria "${label}"` : "Uma vistoria";
+      await this.repository.createEvent({
+        tenantId: actor.tenantId,
+        workOrderId: result.workOrder.id,
+        eventType: "work_order_checklist_removed",
+        actorUserId: actor.userId,
+        // O motivo entra na MENSAGEM (texto que o operador digitou, visível na timeline sob RBAC) — mesmo
+        // tratamento que o cancelamento da ordem já dá ao motivo. A auditoria da requisição não o carrega.
+        message: link.removedReason
+          ? `${subject} foi retirada desta ordem de serviço pelo escritório. Motivo: ${link.removedReason}`
+          : `${subject} foi retirada desta ordem de serviço pelo escritório.`,
+        metadata: checklistEventMetadata(link, label, customerScoped),
+      });
+    }
+  }
+
+  private async resolveChecklistLabel(actor: WorkOrderActorContext, checklistId: string): Promise<string | null> {
+    const resolver = this.references.resolveChecklistLabel;
+    if (!resolver) return null;
+
+    try {
+      return await resolver(actor, checklistId);
+    } catch {
+      // Rótulo é enfeite da mensagem; nunca pode derrubar o ajuste nem inventar um nome (D-007).
+      return null;
+    }
   }
 
   /**
@@ -975,6 +1470,16 @@ export class WorkOrderService {
     // validações do create (#4 tarifa vigente, destino por tipo, viatura em manutenção, refs) NÃO se
     // aplicam — correto por construção, porque a fonte JÁ passou por elas e uma cópia não pode falhar
     // por uma tarifa que venceu ou uma viatura que entrou em manutenção depois.
+    // ALTA 7b (o defeito REAL, medido) — como o duplicate não passa pelo `create`, a cópia nascia com
+    // `checklist_id` e ZERO linha de junção: uma ordem-fonte com duas vistorias produzia uma cópia com UMA, a
+    // etapa virava genérica e toda a proveniência sumia — em silêncio, no caminho feliz. A cópia leva agora o
+    // CONJUNTO VIVO da origem, explicitamente.
+    //
+    // As cópias saem `manual` com `rule_id` nulo: marcá-las `resolved` apontando a regra original faria a
+    // proveniência afirmar um ato de resolução que não aconteceu. E `copy_checklist=false` produz conjunto
+    // VAZIO — "não copiar a vistoria" nunca pode virar "resolver uma vistoria nova".
+    const checklists = copyChecklist ? await this.copyChecklistSetFrom(actor, source) : [];
+
     const code = await this.repository.nextCode(actor.tenantId);
     const workOrder = await this.repository.create({
       tenantId: actor.tenantId,
@@ -1011,7 +1516,9 @@ export class WorkOrderService {
       teamId: source.teamId,
       serviceCatalogId: source.serviceCatalogId,
       // Checklist: opt-in. Template + snapshot congelado andam JUNTOS — herdar o id sem o snapshot (ou
-      // vice-versa) produziria uma OS cujo checklist exibido não é o que o despacho congelou.
+      // vice-versa) produziria uma OS cujo checklist exibido não é o que o despacho congelou. As duas colunas
+      // são DERIVADAS da linha primária do conjunto copiado (espelho); ficam aqui só como intenção explícita.
+      checklists,
       checklistId: copyChecklist ? source.checklistId : undefined,
       checklistSnapshot: copyChecklist ? source.checklistSnapshot : null,
       // NOVO ciclo: sem agendamento, sem atribuição, sem desfecho da fonte (cancelled_at/
@@ -1043,6 +1550,31 @@ export class WorkOrderService {
     });
 
     return workOrder;
+  }
+
+  /**
+   * ALTA 7b — o conjunto que a cópia herda: as linhas VIVAS da origem (ou a visão sintética, quando a origem é
+   * uma ordem legada sem junção). `role` e `order_index` são preservados — a fila de vistorias da cópia é a
+   * mesma da origem — e o snapshot congelado de cada linha vai junto, porque o modelo pode ter sido editado ou
+   * despublicado desde então e a cópia herda o plano da origem, não o catálogo de hoje.
+   */
+  private async copyChecklistSetFrom(
+    actor: WorkOrderActorContext,
+    source: WorkOrder,
+  ): Promise<readonly WorkOrderChecklistLinkInput[]> {
+    const live = liveChecklistLinks(await this.repository.listChecklists(actor.tenantId, source.id));
+    if (live.length === 0) {
+      return syntheticChecklistSet(source).map((link) => ({ ...link, addedBy: actor.userId }));
+    }
+
+    return live.map((link) => ({
+      checklistId: link.checklistId,
+      role: link.role,
+      source: "manual" as const,
+      orderIndex: link.orderIndex,
+      checklistSnapshot: link.checklistSnapshot ?? null,
+      addedBy: actor.userId,
+    }));
   }
 
   // D-Ω3F-6-DUPLICATE (`copy_comments`) — copia os comentários ATIVOS (o repositório já exclui os
@@ -1148,6 +1680,135 @@ export class WorkOrderService {
     }
     return updated;
   }
+
+  // ─────────── CHECKLIST P1 PR-04c (§7) — o que o DESPACHO precisa da ordem de serviço ───────────
+  //
+  // Estes quatro membros são a superfície que `WorkOrderChecklistSetPort` (field-dispatch) consome. Ficam
+  // JUNTOS e no fim da classe de propósito: são efeito de domínio do despacho, não a seleção de vistorias da
+  // ordem (que vive lá em cima, na criação/ajuste). Ligar o porto a eles é o que transforma "o despacho
+  // congela TODAS as vistorias vivas" de comentário em fato.
+
+  /**
+   * As linhas VIVAS da junção, CRUAS — com `checklistSnapshot`, já ordenadas (a primeira é a primária).
+   *
+   * POR QUE NÃO `listChecklistSet`: aquele devolve o conjunto EFETIVO (`effectiveChecklistSet`), que DESCARTA o
+   * `checklistSnapshot` e materializa a ordem legada como uma linha genérica. O despacho precisa exatamente da
+   * distinção que aquela leitura apaga — "linha de junção que o congelamento nunca viu" (não vai a campo,
+   * guard do BLOQ 3) contra "ordem anterior ao conjunto, sem linha nenhuma" (resolve ao vivo, e é isso que faz
+   * do reassign um caminho real de recuperação). Servir o conjunto efetivo ao despacho apagaria a diferença:
+   * trancaria a recuperação das ordens antigas E mandaria a campo formulário que ninguém congelou.
+   *
+   * SEM ator, e de propósito: é leitura de um efeito de domínio JÁ autorizado na rota do despacho
+   * (`field_dispatch:create`) — o padrão NÃO-amplificador que a junta fixou. Continua tenant-scoped: a
+   * organização é parâmetro explícito, nunca deduzida.
+   */
+  listChecklistLinks(tenantId: string, workOrderId: string): Promise<readonly WorkOrderChecklistLink[]> {
+    return this.repository.listChecklists(tenantId, workOrderId);
+  }
+
+  /**
+   * Congela o formulário das linhas que NÃO são a primária (a primária vai por `freezeChecklistSnapshot`, que
+   * grava a coluna-espelho e a linha na mesma escrita). Linha que não existe mais é ignorada — ver o contrato
+   * no repositório.
+   */
+  async freezeChecklistLinkSnapshots(input: FreezeChecklistLinkSnapshotsInput): Promise<void> {
+    await this.repository.freezeChecklistLinkSnapshots(input);
+  }
+
+  /**
+   * §7.3 — a contrapartida de provisionar SÓ a primária: a vistoria que ficou para depois vira linha na
+   * história da ORDEM. É `work_order_events`, e não a timeline do despacho, porque é a timeline da ordem que o
+   * aplicativo de campo lê (`GET /work-orders/:id/timeline`) — escrever aqui é escrever na tela do guincheiro,
+   * sem uma linha de Dart. Diferir em silêncio seria efeito sem superfície, a doença que esta fatia existe para
+   * não repetir.
+   */
+  async recordChecklistDeferredAtDispatch(input: DispatchChecklistOutcomeInput): Promise<void> {
+    await this.recordDispatchChecklistOutcome("work_order_checklist_run_deferred", input);
+  }
+
+  /**
+   * §7.5 (ALTA 9) — a VISTORIA PROMETIDA QUE NÃO FOI: o modelo foi arquivado ou despublicado entre a criação da
+   * ordem e o despacho, e não há formulário para congelar. Antes desta fatia era um `if` que simplesmente não
+   * entrava — a vistoria sumia sem nenhuma linha, e ninguém descobria até o litígio.
+   *
+   * O despacho também registra a falha na SUA timeline + notificação (isso serve o escritório). Este evento é o
+   * outro lado: é o que chega a quem está com o veículo na mão.
+   */
+  async recordChecklistMissingAtDispatch(input: DispatchChecklistOutcomeInput): Promise<void> {
+    await this.recordDispatchChecklistOutcome("work_order_checklist_missing_at_dispatch", input);
+  }
+
+  private async recordDispatchChecklistOutcome(
+    eventType: "work_order_checklist_run_deferred" | "work_order_checklist_missing_at_dispatch",
+    input: DispatchChecklistOutcomeInput,
+  ): Promise<void> {
+    const actor: WorkOrderActorContext = {
+      tenantId: input.tenantId,
+      userId: input.actorUserId,
+      roles: [],
+      permissions: [],
+    };
+    const label = await this.resolveChecklistLabel(actor, input.checklistId);
+
+    // A PROVENIÊNCIA vem da junção, não do porto. O despacho conhece modelo e etapa (é o que decide se a
+    // vistoria vai a campo); `source`/`ruleId` são a explicação de POR QUE aquela vistoria estava prometida, e
+    // essa resposta é da linha. Custa uma leitura indexada por evento — o preço de não fazer o porto carregar
+    // campos que ele não usa para decidir nada. Ordem legada (sem junção) sai com os dois nulos, que é a
+    // verdade: nenhuma regra a explicou.
+    const link = (await this.repository.listChecklists(input.tenantId, input.workOrderId)).find(
+      (candidate) => candidate.checklistId === input.checklistId && candidate.role === input.role,
+    );
+
+    await this.repository.createEvent({
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      eventType,
+      actorUserId: input.actorUserId,
+      message:
+        eventType === "work_order_checklist_run_deferred"
+          ? `${checklistPhaseSubject(label, input.role)} foi registrada nesta ordem de serviço e ainda não foi enviada ao técnico.`
+          : `${checklistPhaseSubject(label, input.role)} não foi enviada ao técnico: o modelo não está publicado.`,
+      // §2.8 — allowlist estrita: modelo, rótulo, etapa e proveniência. NUNCA a organização, nunca o
+      // formulário congelado, nunca o id do cliente da regra.
+      metadata: {
+        checklistId: input.checklistId,
+        checklistLabel: label,
+        role: input.role,
+        source: link?.source ?? null,
+        ruleId: link?.ruleId ?? null,
+      },
+    });
+  }
+}
+
+/** O alvo de um evento de conjunto emitido pelo DESPACHO: a organização, a ordem, o modelo e a etapa. */
+export type DispatchChecklistOutcomeInput = {
+  readonly tenantId: string;
+  readonly actorUserId: string;
+  readonly workOrderId: string;
+  readonly checklistId: string;
+  readonly role: WorkOrderChecklistRole;
+};
+
+/**
+ * §3 — a etapa em PT-BR de negócio. O vocabulário técnico (`collection`/`delivery`/`generic`) é da coluna e do
+ * contrato; o que chega à tela do guincheiro é "da coleta"/"da entrega". `generic` não vira texto nenhum: ela
+ * significa "vale para a ordem toda", e nomear isso na frase só confundiria quem lê.
+ *
+ * `Record` completo (e não um `switch` com default) para a extensão do eixo que o dono já anunciou
+ * (`custody_field`/`custody_yard`) parar a compilação aqui em vez de sair silenciosamente sem rótulo.
+ */
+const CHECKLIST_PHASE_LABELS: Record<WorkOrderChecklistRole, string> = {
+  collection: "da coleta",
+  delivery: "da entrega",
+  generic: "",
+};
+
+function checklistPhaseSubject(label: string | null, role: WorkOrderChecklistRole): string {
+  const named = label ? `A vistoria "${label}"` : "Uma vistoria";
+  const phase = CHECKLIST_PHASE_LABELS[role];
+
+  return phase ? `${named} ${phase}` : named;
 }
 
 const memoryRepository = new InMemoryWorkOrderRepository();
@@ -1258,6 +1919,59 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         return null;
       }
     },
+    // CHECKLIST P1 PR-04c-A — portos do conjunto de vistorias. DYNAMIC import de propósito: field-dispatch já
+    // importa work-orders estaticamente e o módulo de checklists é vizinho dessa aresta; um import estático
+    // aqui amarraria os três num nó difícil de desfazer (mesmo padrão de zeroFinancialItems/copyComments).
+    //
+    // `resolveApplicableChecklists` NÃO é montado aqui: entre o 04c-A e o 04c-B não existe rota nem permissão
+    // que crie uma regra, então o conjunto resolvido é vazio POR CONSTRUÇÃO. O 04c-B liga o porto junto da tela.
+    assertChecklistsPublished: async (actor, checklistIds) => {
+      const { createDefaultChecklistService } = await import("../checklists/checklist.service.js");
+      const service = await createDefaultChecklistService();
+      const published = new Set((await service.listAvailableTemplates(actor)).map((template) => template.id));
+
+      return checklistIds.filter((checklistId) => !published.has(checklistId));
+    },
+    // §10.2.5 — a vistoria já foi enviada ao técnico? Consulta as DUAS chaves de idempotência do
+    // provisionamento: a nova (com etapa) e a LEGADA (ordens anteriores ao 04c, cuja run nasceu sem etapa na
+    // chave). Perguntar só pela nova daria "não enviada" para toda ordem em voo — e o operador retiraria uma
+    // vistoria que o guincheiro já está respondendo.
+    // O FORMATO das chaves é o do provisionador do despacho (field-dispatch); ele é repetido aqui, e não
+    // importado, porque field-dispatch importa work-orders — importar de volta fecharia o ciclo. O par de
+    // formatos está fixado em teste dos dois lados.
+    hasProvisionedChecklistRun: async (actor, { workOrderId, checklistId, role }) => {
+      try {
+        const { createDefaultChecklistService } = await import("../checklists/checklist.service.js");
+        const service = await createDefaultChecklistService();
+        const keys = [`dispatch:${workOrderId}:${checklistId}:${role}`, `dispatch:${workOrderId}:${checklistId}`];
+        for (const key of keys) {
+          if (await service.findRunByClientKey(actor, key)) return true;
+        }
+
+        return false;
+      } catch {
+        // Falha de leitura NÃO pode virar "pode remover": a trava existe para proteger prova. Sem resposta
+        // confiável, o ajuste é recusado (fail-closed) — o oposto do fail-open do provisionamento, porque aqui
+        // o erro destrói informação em vez de adiar trabalho.
+        return true;
+      }
+    },
+    // §10.2.9 — `isApplicabilityRuleCustomerScoped` fica DESLIGADO nesta fatia, e não por esquecimento: sem
+    // rota que crie regra, nenhuma linha pode nascer `resolved`, logo nenhuma linha tem `rule_id` e não há o
+    // que perguntar. A trava e o carimbo `ruleCustomerScoped` já existem no serviço e são exercitados na suíte
+    // com o porto injetado; o 04c-B liga o porto real junto do CRUD de regras.
+    // Rótulo do modelo para a linha da timeline. null quando não resolve — a mensagem omite o nome em vez de
+    // inventar um (D-007).
+    resolveChecklistLabel: async (actor, checklistId) => {
+      try {
+        const { createDefaultChecklistService } = await import("../checklists/checklist.service.js");
+        const service = await createDefaultChecklistService();
+
+        return (await service.getTemplate(actor, checklistId)).name;
+      } catch {
+        return null;
+      }
+    },
     // Ω3F-8b — bases = POIs de categoria "base" (Ω2-d; zero migration). Reusa PoiService (mesmo singleton
     // que a rota /pois). Falha → lista vazia (o mapa degrada sem quebrar).
     listMapBases: async (actor) => {
@@ -1353,6 +2067,41 @@ async function createPrismaWorkOrderService(): Promise<WorkOrderService> {
 
   // Ω1b-2 — só o serviço Prisma recebe o geocoder real (gated por GEOCODING_ENABLED, default noop).
   return new WorkOrderService(repository, createDefaultReferenceResolvers(), createDefaultGeocoder());
+}
+
+// CHECKLIST P1 PR-04c-A — a chave de identidade da linha, num lugar só: MODELO + ETAPA. `(ordem, modelo)`
+// deixou de identificar uma linha quando a junta decidiu que o mesmo formulário pode servir coleta E entrega.
+function checklistPhaseKey(line: { readonly checklistId: string; readonly role: WorkOrderChecklistRole }): string {
+  return `${line.checklistId}:${line.role}`;
+}
+
+// Duas linhas do MESMO modelo na MESMA etapa tornariam indefinida qual vistoria o técnico recebe — é o que o
+// unique parcial do banco impede, recusado aqui na borda com mensagem de negócio em vez de erro de driver.
+function assertNoRepeatedChecklistPhase(items: readonly ChecklistSelectionItem[]): void {
+  const seen = new Set<string>();
+  for (const item of items) {
+    const key = checklistPhaseKey(item);
+    if (seen.has(key)) throw workOrderChecklistDuplicateError();
+    seen.add(key);
+  }
+}
+
+// §2.8 (allowlist) — a metadata do evento carrega o que a operação precisa para entender a linha do tempo:
+// modelo, etapa, proveniência e rótulo. NUNCA tenant_id, nunca o snapshot, e do escopo-cliente vai só o FATO
+// (`ruleCustomerScoped`), jamais o id do cliente.
+function checklistEventMetadata(
+  link: WorkOrderChecklistLink,
+  label: string | null,
+  customerScoped: boolean,
+): Record<string, unknown> {
+  return {
+    checklistId: link.checklistId,
+    checklistLabel: label,
+    role: link.role,
+    source: link.source,
+    ruleId: link.ruleId ?? null,
+    ...(customerScoped ? { ruleCustomerScoped: true } : {}),
+  };
 }
 
 // Ω3F-2a — destino normalizado do corpo (campos opcionais; espelho da origem).

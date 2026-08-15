@@ -1,4 +1,7 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
+// `import type` (apagado na compilação) — work-order-checklists.types.ts importa o WorkOrderError daqui, e um
+// import de VALOR fecharia o ciclo em runtime.
+import type { WorkOrderChecklistLinkInput } from "./work-order-checklists.types.js";
 
 export const WORK_ORDER_STATUSES = [
   "open",
@@ -33,6 +36,18 @@ export const WORK_ORDER_EVENTS = [
   "work_order_completed",
   // Ω3F-7a — quilometragem (km) da OS atualizada (app preenche / base corrige). Audit trail de sistema.
   "work_order_mileage_updated",
+  // CHECKLIST P1 PR-04c-A — o CONJUNTO de vistorias da ordem tem história própria, e ela chega ao guincheiro
+  // SEM uma linha de Dart: `loadTimeline` do app busca a timeline REMOTA da ordem e o cartão já renderiza a
+  // `message`. Escrever aqui É escrever na tela do campo — que é o que impede "o operador ajusta no envio" de
+  // ser uma promessa que o campo não pode auditar.
+  // `work_order_events.event_type` não tem CHECK no banco (medido nas migrações) — nenhuma migração aqui.
+  "work_order_checklist_added",
+  "work_order_checklist_removed",
+  "work_order_checklists_cleared",
+  // Emitidos pelo DESPACHO (§7.5 do plano): a vistoria não-primária fica registrada mas só vai a campo na
+  // fatia do app; e o modelo despublicado entre a criação e o despacho deixa de sumir em silêncio.
+  "work_order_checklist_run_deferred",
+  "work_order_checklist_missing_at_dispatch",
   // Ω3-b (LEGADO, D-Ω3F-5-COMMENT) — o comentário NÃO é mais gravado como evento (virou o agregado
   // WorkOrderComment). Este membro fica só para os eventos `work_order_comment` HISTÓRICOS já
   // persistidos (inertes, sem backfill) e para o filtro P-034 do dashboard, que segue os excluindo.
@@ -210,6 +225,13 @@ export type CreateWorkOrderInput = Omit<
   "id" | "status" | "createdAt" | "updatedAt"
 > & {
   readonly status?: WorkOrderStatus;
+  /**
+   * CHECKLIST P1 PR-04c-A — o CONJUNTO de vistorias resolvido/declarado na CRIAÇÃO (sticky). Gravado na mesma
+   * transação da ordem; `checklist_id`/`checklist_snapshot` passam a ser DERIVADOS da linha primária.
+   * `undefined` = caminho legado (nenhuma linha de junção; as colunas do input valem como sempre valeram).
+   * `[]` = conjunto deliberadamente vazio (ordem sem vistoria — estado legítimo).
+   */
+  readonly checklists?: readonly WorkOrderChecklistLinkInput[];
 };
 
 // Ω5P PR-18b — entrada do método SYSTEM-only que ORIGINA a OS de remoção a partir da solicitação da autoridade

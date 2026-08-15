@@ -115,6 +115,7 @@ model Tenant {
   users                         User[]
 
   checklist_applicability_rules ChecklistApplicabilityRule[]
+  work_order_checklists         WorkOrderChecklist[]
   @@map("tenants")
 }
 
@@ -174,6 +175,11 @@ model User {
   updated_work_orders              WorkOrder[]             @relation("WorkOrderUpdatedBy")
   work_order_assignments           WorkOrderAssignment[]   @relation("WorkOrderAssignmentUser")
   work_order_events                WorkOrderEvent[]        @relation("WorkOrderEventActor")
+  // CHECKLIST P1 PR-04c-A — quem acrescentou e quem RETIROU vistoria do conjunto de uma ordem. As duas
+  // relações são RESTRICT: apagar o usuário que retirou a vistoria apagaria a resposta para "quem tirou isto
+  // do conjunto, e por quê" — a pergunta de uma disputa sobre o veículo.
+  work_order_checklists_added      WorkOrderChecklist[]    @relation("WorkOrderChecklistAddedBy")
+  work_order_checklists_removed    WorkOrderChecklist[]    @relation("WorkOrderChecklistRemovedBy")
   custody_events                   CustodyEvent[]          @relation("CustodyEventActor")
   role_assignments                 UserRoleAssignment[]
   led_teams                        Team[]                  @relation("TeamLeader")
@@ -666,6 +672,9 @@ model ChecklistTemplate {
   runs         ChecklistRun[]
   work_orders  WorkOrder[]
   applicability_rules ChecklistApplicabilityRule[]
+  // CHECKLIST P1 PR-04c-A — back-relation da junção: as ordens de serviço que carregam ESTE modelo. Convive
+  // com `work_orders` acima (o vínculo singular legado), que segue existindo como espelho da linha primária.
+  work_order_checklists WorkOrderChecklist[]
   tenant       Tenant                       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
@@ -700,10 +709,75 @@ model ChecklistApplicabilityRule {
   template           ChecklistTemplate @relation(fields: [tenant_id, template_id], references: [tenant_id, id], onDelete: Restrict)
   service_catalog    ServiceCatalog?   @relation(fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
   customer           Customer?         @relation(fields: [tenant_id, customer_id], references: [tenant_id, id], onDelete: Restrict)
+  // CHECKLIST P1 PR-04c-A — back-relation da junção: as linhas de vistoria que ESTA regra resolveu.
+  work_order_checklists WorkOrderChecklist[]
 
+  // CHECKLIST P1 PR-04c-A — habilita a FK composta tenant-first da junção → regra. Sem este unique o
+  // PostgreSQL RECUSA a FK em (tenant_id, rule_id), e a única alternativa (FK simples em `rule_id`) deixaria
+  // a linha de uma organização citar a regra de OUTRA. Aditivo puro: `id` é PK, o par já é único hoje.
+  @@unique([tenant_id, id])
   @@index([tenant_id])
   @@index([tenant_id, template_id])
   @@map("checklist_applicability_rules")
+}
+
+// CHECKLIST P1 PR-04c-A (D-CHK-P1-APPLICABILITY-BINDING) — a ordem de serviço carrega um CONJUNTO de vistorias.
+//
+// A IDENTIDADE INCLUI A FASE (junta do PR-04c, 3×0): (tenant_id, work_order_id, checklist_id, role). O mesmo
+// formulário PODE servir coleta E entrega na mesma ordem — é esse par que alimenta a tela de comparação, cujo
+// resumo de divergências é prova jurídica do estado do veículo. O índice que garante isso é ÚNICO PARCIAL
+// (WHERE removed_at IS NULL) e vive SÓ no SQL da migração 20260865000000: o Prisma não expressa índice parcial
+// (mesma situação de `checklist_applicability_rules_bucket_key`). Os 4 CHECKs (fase, origem, proveniência
+// biconditional e remoção biconditional) também vivem só lá.
+//
+// ESPELHO: a linha viva de menor `order_index` é a PRIMÁRIA, e `work_orders.checklist_id`/`checklist_snapshot`
+// reproduzem exatamente ela — é o que todo consumidor de hoje continua lendo.
+model WorkOrderChecklist {
+  id                 String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String                      @db.Uuid
+  work_order_id      String                      @db.Uuid
+  /// O MODELO de vistoria (template) — mesmo conceito de `work_orders.checklist_id`, agora em N linhas.
+  checklist_id       String                      @db.Uuid
+  /// FASE. NOT NULL com default porque `generic` é VALOR ("vale para a ordem toda"), não ausência de dado — e
+  /// é isso que mantém duas linhas `generic` do mesmo modelo COLIDINDO no índice de identidade (NULLs seriam
+  /// distintos entre si no Postgres, e a mesma vistoria entraria N vezes na mesma ordem).
+  role               String                      @default("generic")
+  /// `resolved` (uma regra decidiu) | `manual` (uma pessoa escolheu). É por LINHA: acrescentar uma vistoria à
+  /// mão não transforma as resolvidas em manuais. CHECK biconditional com `rule_id` na migração.
+  checklist_source   String
+  rule_id            String?                     @db.Uuid
+  /// Desempate da primária. Linha acrescentada recebe `max+1` e por isso NUNCA vira primária enquanto uma
+  /// linha anterior viver — é o que impede uma adição pós-despacho de trocar, por baixo, o formulário que o
+  /// despacho já congelou e prometeu ao técnico.
+  order_index        Int                         @default(0)
+  /// Cópia imutável do modelo no instante do despacho (freeze Ω3-c), POR LINHA. NULL antes do despacho; o
+  /// provisionamento recusa linha com snapshot NULL — mandar a campo formulário que o freeze nunca viu
+  /// quebraria a garantia inteira.
+  checklist_snapshot Json?
+  added_by           String?                     @db.Uuid
+  /// Remoção SOFT: "por que esta vistoria não aconteceu" é a pergunta de uma disputa sobre o veículo, e um
+  /// DELETE apaga a resposta. Os três campos andam juntos (CHECK biconditional entre `removed_at` e
+  /// `removed_by`), e a linha removida LIBERA o par no índice parcial, permitindo re-adicionar.
+  removed_at         DateTime?                   @db.Timestamptz(6)
+  removed_by         String?                     @db.Uuid
+  removed_reason     String?
+  created_at         DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+
+  tenant             Tenant                      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  /// CASCADE: esta tabela é filha da ordem de serviço (mesmo tratamento de `work_order_events`) — junção órfã
+  /// de ordem não significa nada. Todas as demais são RESTRICT: apagar modelo, regra ou usuário que ainda
+  /// explica uma vistoria viva é erro de integridade, não cascata silenciosa que muda o formulário que o
+  /// guincheiro preenche.
+  work_order         WorkOrder                   @relation(fields: [tenant_id, work_order_id], references: [tenant_id, id], onDelete: Cascade)
+  checklist          ChecklistTemplate           @relation(fields: [tenant_id, checklist_id], references: [tenant_id, id], onDelete: Restrict)
+  rule               ChecklistApplicabilityRule? @relation(fields: [tenant_id, rule_id], references: [tenant_id, id], onDelete: Restrict)
+  added_by_user      User?                       @relation("WorkOrderChecklistAddedBy", fields: [tenant_id, added_by], references: [tenant_id, id], onDelete: Restrict)
+  removed_by_user    User?                       @relation("WorkOrderChecklistRemovedBy", fields: [tenant_id, removed_by], references: [tenant_id, id], onDelete: Restrict)
+
+  @@index([tenant_id, work_order_id])
+  @@index([tenant_id, rule_id])
+  @@map("work_order_checklists")
 }
 
 model ChecklistTemplateComponent {
@@ -755,6 +829,17 @@ model ChecklistRun {
   // reaberturas da MESMA vistoria (NULLs distintos: as originais não colidem entre si).
   reopened_from_run_id String?                   @db.Uuid
   reopen_reason        String?
+  // CHECKLIST P1 PR-04c-A (D-CHK-P1-APPLICABILITY-BINDING) — a FASE com que a vistoria NASCEU (coleta,
+  // entrega ou genérica), carimbada no provisionamento a partir da linha da junção. Coluna, e não derivação
+  // da junção, por três razões: a junção é soft-removível (derivar mudaria retroativamente a fase de uma
+  // vistoria já concluída, que é prova imutável — D-CHK-P1-RUN-LIFECYCLE); existem vistorias SEM linha de
+  // junção (as legadas e as criadas offline pelo aplicativo); e a fase precisa ser o que a vistoria era
+  // quando nasceu, não o que a configuração diz hoje. NULL é ACEITÁVEL POR DESENHO: sem backfill, toda
+  // vistoria anterior a este bloco fica NULL, e carimbar `generic` nelas seria afirmar uma fase que ninguém
+  // resolveu (D-007). NÃO SAI NO DTO nesta fatia — o enum do aplicativo não conhece `generic`, colapsaria em
+  // `unknown` e a tela de comparação recusaria comparar. CHECK do vocabulário (com `IS NULL OR`) na migração
+  // 20260866000000; fonte única do conjunto: `CHECKLIST_APPLICABILITY_ROLES`.
+  role                String?
   status              String                     @default("in_progress")
   started_by          String?                    @db.Uuid
   completed_by        String?                    @db.Uuid
@@ -2244,6 +2329,10 @@ model WorkOrder {
   team                            Team?                 @relation("WorkOrderTeam", fields: [tenant_id, team_id], references: [tenant_id, id], onDelete: Restrict)
   service_catalog                 ServiceCatalog?       @relation("WorkOrderServiceCatalog", fields: [tenant_id, service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
   created_by_user                 User?                 @relation("WorkOrderCreatedBy", fields: [tenant_id, created_by], references: [tenant_id, id], onDelete: Restrict)
+  // CHECKLIST P1 PR-04c-A — o CONJUNTO de vistorias desta ordem (junção N:N com fase). O `checklist` singular
+  // acima NÃO some: continua sendo o espelho da linha PRIMÁRIA, que é o que todo consumidor de hoje
+  // (aplicativo de campo, despacho, dossiê de custódia, web) lê.
+  checklists                      WorkOrderChecklist[]
   events                          WorkOrderEvent[]
   // Ω5P PR-05 — back-relation one-to-MANY (não 1:1): a idempotência "≤ 1 processo por OS" (D-Ω5P-RECON-B) é
   // enforçada pelo índice PARCIAL único (tenant_id, service_order_id) WHERE NOT NULL (raw-only na migração,

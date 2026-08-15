@@ -24,6 +24,7 @@ import type {
   ChecklistMarker,
   ChecklistRun,
   ChecklistRunAnswer,
+  ChecklistRunRole,
   ChecklistRunStatus,
   ChecklistStatus,
   ChecklistTemplate,
@@ -448,7 +449,9 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   ): Promise<CreateRunResult> {
     // Colunas com default no banco (id, status, started_at, created_at, updated_at) são omitidas — o Postgres
     // preenche. NOT NULL sem default (tenant_id, template_id, template_version, started_by) e as opcionais
-    // (related_entity_*, client_run_key) vão explícitas. `status` fixa 'in_progress' (paridade com o `create`).
+    // (related_entity_*, client_run_key, role) vão explícitas. `status` fixa 'in_progress' (paridade com o
+    // `create`). `role` (CHECKLIST P1 PR-04c) só chega por este caminho: quem cria run à mão pela web/mobile
+    // não declara fase, e o parser REST nem lê o campo.
     const inserted = await this.client.$queryRaw<unknown[]>`
       INSERT INTO checklist_runs (
         tenant_id,
@@ -457,6 +460,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         related_entity_type,
         related_entity_id,
         client_run_key,
+        role,
         status,
         started_by
       )
@@ -467,6 +471,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         ${data.relatedEntityType ?? null},
         ${data.relatedEntityId ?? null},
         ${clientRunKey},
+        ${data.role ?? null},
         'in_progress',
         ${data.actorUserId}::uuid
       )
@@ -479,6 +484,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         related_entity_type,
         related_entity_id,
         client_run_key,
+        role,
         status,
         started_by,
         completed_by,
@@ -530,6 +536,28 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     });
 
     return record ? mapRunRecord(record) : null;
+  }
+
+  // CHECKLIST P1 PR-04c (§8) — carimbo de fase da ADOÇÃO, em UMA sentença atômica.
+  //
+  // O `WHERE role IS NULL` é a trava, e ela mora no BANCO de propósito: não há leitura-decisão-escrita, então
+  // dois despachos concorrentes da mesma ordem não conseguem, entre eles, sobrescrever uma fase já gravada. É
+  // também o motivo de não haver dependência de o `role` voltar nas leituras tipadas do Prisma — a decisão de
+  // carimbar é do Postgres, não deste processo.
+  //
+  // `tenant_id` na cláusula (além da RLS): isolamento explícito, no padrão dos demais métodos deste arquivo.
+  async stampRunRole(tenantId: string, runId: string, role: ChecklistRunRole): Promise<boolean> {
+    const updated = await this.client.$queryRaw<unknown[]>`
+      UPDATE checklist_runs
+         SET role = ${role},
+             updated_at = now()
+       WHERE tenant_id = ${tenantId}::uuid
+         AND id = ${runId}::uuid
+         AND role IS NULL
+      RETURNING id
+    `;
+
+    return updated.length > 0;
   }
 
   async listRuns(tenantId: string): Promise<readonly ChecklistRun[]> {
@@ -962,6 +990,10 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     return this.withTenant(tenantId, (repository) => repository.getRunByClientKey(tenantId, clientRunKey));
   }
 
+  stampRunRole(tenantId: string, runId: string, role: ChecklistRunRole): Promise<boolean> {
+    return this.withTenant(tenantId, (repository) => repository.stampRunRole(tenantId, runId, role));
+  }
+
   listRunsByRelatedEntity(
     tenantId: string,
     relatedEntityType: string,
@@ -1241,6 +1273,10 @@ function mapRunRecord(record: unknown): ChecklistRun {
     client_run_key?: string | null;
     reopened_from_run_id?: string | null;
     reopen_reason?: string | null;
+    // CHECKLIST P1 PR-04c — opcional na FORMA porque nem toda leitura seleciona a coluna (o RETURNING do
+    // insert com chave a traz; um `findFirst` a traz se o modelo Prisma a declarar). Ausente ⇒ `undefined`,
+    // que é o mesmo que "vistoria sem fase" — nunca uma fase inventada (D-007).
+    role?: ChecklistRunRole | null;
     status: ChecklistRunStatus;
     started_by: string | null;
     completed_by: string | null;
@@ -1260,6 +1296,7 @@ function mapRunRecord(record: unknown): ChecklistRun {
     clientRunKey: value.client_run_key ?? undefined,
     reopenedFromRunId: value.reopened_from_run_id ?? undefined,
     reopenReason: value.reopen_reason ?? undefined,
+    role: value.role ?? undefined,
     status: value.status,
     startedBy: value.started_by ?? undefined,
     completedBy: value.completed_by ?? undefined,

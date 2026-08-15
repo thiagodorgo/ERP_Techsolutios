@@ -7,6 +7,14 @@ import {
   type WorkOrderStatus,
   WorkOrderError,
 } from "./work-order.types.js";
+import {
+  WORK_ORDER_CHECKLIST_ROLES,
+  isWorkOrderChecklistRole,
+  workOrderChecklistAdjustmentEmptyError,
+  workOrderChecklistReasonRequiredError,
+  workOrderChecklistSetConflictError,
+  type WorkOrderChecklistRole,
+} from "./work-order-checklists.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -192,6 +200,186 @@ export function parseOptionalUuid(value: unknown, field: string): string | undef
   if (value === undefined || value === null || value === "") return undefined;
 
   return parseRequiredUuid(value, field);
+}
+
+// ---------- CHECKLIST P1 PR-04c-A — o conjunto de vistorias da ordem ----------
+
+export type ChecklistSelectionItem = {
+  readonly checklistId: string;
+  readonly role: WorkOrderChecklistRole;
+};
+
+/**
+ * TRI-STATE do campo `checklists`, e é ele que faz o vínculo ser STICKY de verdade:
+ *
+ *  · `absent`   — o corpo não fala de vistoria. Na CRIAÇÃO isso significa RESOLVER (a regra decide, uma vez, e
+ *                 congela). No UPDATE significa NÃO TOCAR — trocar o cliente ou o serviço de uma ordem NUNCA
+ *                 re-resolve o conjunto (ponto 4 da decisão do dono).
+ *  · `legacy`   — veio só o campo antigo `checklistId` (uma vistoria só). Continua valendo, agora gravando uma
+ *                 linha `manual` de um elemento.
+ *  · `explicit` — veio `checklists`, inclusive `null`/`[]` para LIMPAR deliberadamente. Não existia caminho REST
+ *                 para esvaziar a vistoria de uma ordem; passa a existir, e o esvaziamento é auditado.
+ *
+ * Os dois campos juntos são RECUSADOS (400) em vez de um vencer em silêncio: um id só não consegue expressar um
+ * conjunto, e adivinhar a intenção é como uma segunda vistoria sumiria sem ninguém notar.
+ */
+export type ChecklistSetSelection =
+  | { readonly kind: "absent" }
+  | { readonly kind: "legacy"; readonly checklistId: string }
+  | { readonly kind: "explicit"; readonly items: readonly ChecklistSelectionItem[] };
+
+export function parseWorkOrderChecklistRole(value: unknown, field = "role"): WorkOrderChecklistRole {
+  if (value === undefined || value === null || value === "") return "generic";
+  const normalized = typeof value === "string" ? value.trim() : "";
+
+  if (isWorkOrderChecklistRole(normalized)) return normalized;
+
+  throw new WorkOrderError(
+    400,
+    "WORK_ORDER_INVALID",
+    "invalid_checklist_role",
+    `${field} deve ser uma destas etapas: ${WORK_ORDER_CHECKLIST_ROLES.join(", ")}.`,
+  );
+}
+
+export function parseChecklistSetSelection(body: Record<string, unknown>): ChecklistSetSelection {
+  const hasSetKey = "checklists" in body;
+  const legacyChecklistId = parseOptionalUuid(body.checklistId ?? body.checklist_id, "checklistId");
+
+  if (hasSetKey && legacyChecklistId) {
+    throw workOrderChecklistSetConflictError();
+  }
+
+  if (!hasSetKey) {
+    return legacyChecklistId ? { kind: "legacy", checklistId: legacyChecklistId } : { kind: "absent" };
+  }
+
+  const raw = body.checklists;
+  // `null` é a LIMPEZA deliberada — mesma semântica de `[]`. Não confundir com ausência (que resolve/não toca).
+  if (raw === null) return { kind: "explicit", items: [] };
+
+  if (!Array.isArray(raw)) {
+    throw new WorkOrderError(
+      400,
+      "WORK_ORDER_INVALID",
+      "invalid_checklist_set",
+      "checklists deve ser uma lista de vistorias (ou null para deixar a ordem sem vistoria).",
+    );
+  }
+
+  return { kind: "explicit", items: raw.map((entry) => parseChecklistSelectionItem(entry)) };
+}
+
+function parseChecklistSelectionItem(entry: unknown): ChecklistSelectionItem {
+  // Aceita o id cru (lista de ids) e o objeto com etapa — o corpo mais simples continua válido.
+  if (typeof entry === "string") {
+    return { checklistId: parseRequiredUuid(entry, "checklistId"), role: "generic" };
+  }
+
+  if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+    throw new WorkOrderError(
+      400,
+      "WORK_ORDER_INVALID",
+      "invalid_checklist_set",
+      "Cada vistoria deve informar o modelo e, opcionalmente, a etapa.",
+    );
+  }
+
+  const record = entry as Record<string, unknown>;
+
+  return {
+    checklistId: parseRequiredUuid(record.checklistId ?? record.checklist_id, "checklistId"),
+    role: parseWorkOrderChecklistRole(record.role),
+  };
+}
+
+/**
+ * O AJUSTE DO OPERADOR (`PATCH /work-orders/:id/checklists`) — o que ele pode mexer antes de a ordem ir a campo.
+ *
+ * A etapa é OBRIGATÓRIA no `remove`: com a identidade da junção incluindo a fase, `(ordem, modelo)` deixou de
+ * apontar uma linha só, e adivinhar qual retirar poderia apagar a vistoria de entrega no lugar da de coleta.
+ * O motivo também é obrigatório: POR QUE uma vistoria não aconteceu é exatamente o que uma disputa sobre o
+ * veículo vai perguntar, e é o que o delete físico faria sumir.
+ */
+export type ChecklistAdjustmentRemoval = {
+  readonly checklistId: string;
+  readonly role: WorkOrderChecklistRole;
+  readonly reason: string;
+  /** §10.2.9 — confirmação DISTINTA, exigida quando a linha veio de uma regra com cliente nomeado. */
+  readonly confirmCustomerScoped: boolean;
+};
+
+export type ChecklistAdjustmentInput = {
+  readonly add: readonly ChecklistSelectionItem[];
+  readonly remove: readonly ChecklistAdjustmentRemoval[];
+};
+
+export function parseChecklistAdjustment(body: Record<string, unknown>): ChecklistAdjustmentInput {
+  const add = parseAdjustmentList(body.add, "add").map((entry) => parseChecklistSelectionItem(entry));
+  const remove = parseAdjustmentList(body.remove, "remove").map((entry) => parseChecklistRemoval(entry));
+
+  if (add.length === 0 && remove.length === 0) {
+    throw workOrderChecklistAdjustmentEmptyError();
+  }
+
+  return { add, remove };
+}
+
+function parseAdjustmentList(value: unknown, field: string): readonly unknown[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new WorkOrderError(400, "WORK_ORDER_INVALID", "invalid_checklist_adjustment", `${field} deve ser uma lista.`);
+  }
+
+  return value;
+}
+
+function parseChecklistRemoval(entry: unknown): ChecklistAdjustmentRemoval {
+  if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+    throw new WorkOrderError(
+      400,
+      "WORK_ORDER_INVALID",
+      "invalid_checklist_adjustment",
+      "Cada vistoria a retirar deve informar o modelo, a etapa e o motivo.",
+    );
+  }
+
+  const record = entry as Record<string, unknown>;
+  const reason = optionalString(record.reason);
+  if (!reason) {
+    throw workOrderChecklistReasonRequiredError();
+  }
+  if (reason.length > 500) {
+    throw new WorkOrderError(
+      422,
+      "WORK_ORDER_UNPROCESSABLE",
+      "checklist_removal_reason_too_long",
+      "O motivo deve ter no máximo 500 caracteres.",
+    );
+  }
+
+  return {
+    checklistId: parseRequiredUuid(record.checklistId ?? record.checklist_id, "checklistId"),
+    // Sem default aqui (ao contrário da adição): retirar a linha errada é destrutivo e não se desfaz sozinho.
+    role: parseWorkOrderChecklistRole(requiredRoleValue(record), "role"),
+    reason,
+    confirmCustomerScoped:
+      record.confirmCustomerScoped === true || record.confirm_customer_scoped === true,
+  };
+}
+
+function requiredRoleValue(record: Record<string, unknown>): unknown {
+  const raw = record.role;
+  if (raw === undefined || raw === null || raw === "") {
+    throw new WorkOrderError(
+      400,
+      "WORK_ORDER_INVALID",
+      "checklist_role_required",
+      "Informe a etapa da vistoria que será retirada.",
+    );
+  }
+
+  return raw;
 }
 
 export function parseLimit(value: unknown): number {

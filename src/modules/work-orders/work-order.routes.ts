@@ -35,6 +35,14 @@ export const WORK_ORDER_PERMISSIONS = {
   delete: "work_orders:delete",
   comment: "work_orders:comment",
   mileageCorrect: "work_orders:mileage_correct",
+  // CHECKLIST P1 PR-04c-A (§10.3) — o ajuste do conjunto de vistorias reusa a permissão de ENVIAR ao técnico,
+  // sem inventar chave nova: o conjunto de atores que despacham (manager, field_dispatcher, tenant_admin por
+  // herança e os dois admins) é exatamente quem a decisão do dono descreve para "o operador define no envio".
+  // NÃO é `work_orders:update`, que o técnico de campo tem — quem está em campo não redefine a própria prova.
+  // TENSÃO REGISTRADA (§A2), submetida à junta: `RBAC_MATRIX.md` dá escrita de MODELO de checklist só ao
+  // tenant_admin. A leitura aqui é que aquela linha governa o CADASTRO do modelo, não a composição operacional
+  // de uma ordem — inferência de desenho, não fato, e por isso está escrita e não escondida.
+  checklistAdjust: "field_dispatch:create",
 } as const;
 
 export function createWorkOrderRouter(
@@ -134,6 +142,19 @@ export function createWorkOrderRouter(
     requirePermission(WORK_ORDER_PERMISSIONS.mileageCorrect),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.setMileage(request));
+    }),
+  );
+
+  // CHECKLIST P1 PR-04c-A (§10.1) — ajusta o CONJUNTO de vistorias da ordem antes do envio ao técnico.
+  // Rota PRÓPRIA, e não um campo no corpo do POST de despacho: embutir ali acoplaria o ajuste ao sucesso do
+  // despacho, faria o create rodar duas transações de domínio na sequência já delicada freeze→provisão→create
+  // e tornaria o ajuste não-auditável isoladamente. O fluxo é: ler a ordem → ajustar as vistorias → despachar,
+  // que congela o estado daquele instante.
+  router.patch(
+    "/work-orders/:workOrderId/checklists",
+    requirePermission(WORK_ORDER_PERMISSIONS.checklistAdjust),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.adjustChecklists(request));
     }),
   );
 

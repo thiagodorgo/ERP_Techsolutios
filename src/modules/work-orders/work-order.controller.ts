@@ -51,10 +51,40 @@ export class WorkOrderController {
 
   async get(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const { workOrder, links } = await service.getWithLinks(actor, readRouteParam(request.params.workOrderId));
+    const { workOrder, links, checklists } = await service.getWithLinks(actor, readRouteParam(request.params.workOrderId));
 
     return {
-      data: toWorkOrderDto(workOrder, links),
+      data: toWorkOrderDto(workOrder, links, checklists),
+    };
+  }
+
+  /**
+   * CHECKLIST P1 PR-04c-A (§10) — o AJUSTE do conjunto de vistorias antes do envio ao técnico.
+   *
+   * Gate: `field_dispatch:create` (na rota). Quem despacha é quem decide o que vai a campo — reusar a
+   * permissão que já governa o envio evita inventar chave nova para o mesmo ato operacional. A auditoria
+   * registra o QUE mudou; §2.8: o motivo digitado fica na timeline da ordem (sob RBAC), não na auditoria, e o
+   * id do cliente da regra nunca sai — só o fato `ruleCustomerScoped`.
+   */
+  async adjustChecklists(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.adjustChecklists(actor, readRouteParam(request.params.workOrderId), request.body ?? {});
+
+    await recordRequestAuditBestEffort(request, {
+      action: "work_order.checklists_adjusted",
+      resourceType: "work_order",
+      resourceId: result.workOrder.id,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        code: result.workOrder.code,
+        added: result.added.map((link) => ({ checklistId: link.checklistId, role: link.role })),
+        removed: result.removed.map((link) => ({ checklistId: link.checklistId, role: link.role, source: link.source })),
+      },
+    });
+
+    return {
+      data: toWorkOrderDto(result.workOrder, undefined, result.checklists),
     };
   }
 

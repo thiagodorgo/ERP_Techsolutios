@@ -17,6 +17,7 @@ import type {
   ChecklistMarker,
   ChecklistRun,
   ChecklistRunAnswer,
+  ChecklistRunRole,
   ChecklistRunStatus,
   ChecklistStatus,
   ChecklistTemplate,
@@ -47,6 +48,10 @@ export type UpdateTemplateData = UpdateChecklistTemplateInput & {
 export type CreateRunData = CreateChecklistRunInput & {
   readonly tenantId: string;
   readonly actorUserId: string;
+  // CHECKLIST P1 PR-04c (§9) — fase da linha de junção que originou esta run. INTERNA: o parser REST
+  // (`parseCreateChecklistRunDto`) não a lê, então nenhum cliente consegue declarar a própria fase; só o
+  // despacho a carimba, a partir do conjunto de vistorias da ordem.
+  readonly role?: ChecklistRunRole;
 };
 
 export type UpdateRunData = {
@@ -108,6 +113,14 @@ export interface ChecklistRepository {
   getRun(tenantId: string, runId: string): Promise<RepositoryRunDetails | null>;
   // P0a — lookup durável por chave de idempotência do mobile (local_run_id). tenant-scoped.
   getRunByClientKey(tenantId: string, clientRunKey: string): Promise<ChecklistRun | null>;
+  // CHECKLIST P1 PR-04c (§8) — carimba a FASE numa run que já existe, SÓ quando ela ainda não tem fase.
+  // É o que a ADOÇÃO da run de chave legada faz: a vistoria em voo ganha proveniência de fase sem nascer de
+  // novo (nascer de novo custaria uma unidade FATURADA e uma segunda run vazia na mesma ordem).
+  //
+  // Nunca sobrescreve uma fase já carimbada: a fase é a proveniência de NASCIMENTO da vistoria, e uma run
+  // concluída é prova imutável — reescrevê-la mudaria retroativamente o que já foi assinado. Devolve `true`
+  // quando carimbou de fato (a run existia no tenant e estava sem fase).
+  stampRunRole(tenantId: string, runId: string, role: ChecklistRunRole): Promise<boolean>;
   // D-CHK-DISPATCH-CREATE — lista as runs de uma entidade relacionada (ex.: work_order) para o guincheiro baixar
   // o server_run_id da OS despachada. tenant-scoped (cross-tenant → lista vazia, nunca vaza existência).
   listRunsByRelatedEntity(
@@ -307,6 +320,8 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       relatedEntityType: data.relatedEntityType,
       relatedEntityId: data.relatedEntityId,
       clientRunKey: data.clientRunKey,
+      // CHECKLIST P1 PR-04c (§9) — a fase com que a vistoria nasce; ausente quando a run não vem do despacho.
+      role: data.role,
       status: "in_progress",
       startedBy: data.actorUserId,
       startedAt: now,
@@ -326,6 +341,19 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
         (run) => run.tenantId === tenantId && run.clientRunKey === clientRunKey,
       ) ?? null
     );
+  }
+
+  async stampRunRole(tenantId: string, runId: string, role: ChecklistRunRole): Promise<boolean> {
+    const run = this.runs.get(runId);
+
+    // `run.role != null` também barra o re-carimbo: espelha o `WHERE role IS NULL` do Postgres (a fase é
+    // proveniência de nascimento, nunca reescrita).
+    if (!run || run.tenantId !== tenantId || run.role != null) {
+      return false;
+    }
+
+    this.runs.set(runId, { ...run, role, updatedAt: new Date() });
+    return true;
   }
 
   async listRunsByRelatedEntity(

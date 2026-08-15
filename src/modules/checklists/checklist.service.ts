@@ -16,6 +16,7 @@ import type {
   ChecklistMarker,
   ChecklistRun,
   ChecklistRunAnswer,
+  ChecklistRunRole,
   ChecklistTemplate,
   ChecklistTemplateComponent,
 } from "./checklist.types.js";
@@ -228,7 +229,14 @@ export class ChecklistService {
     };
   }
 
-  async createRun(actor: ActorContext, input: CreateChecklistRunInput): Promise<ChecklistRun> {
+  // CHECKLIST P1 PR-04c (§9) — o `role` entra pela ASSINATURA do serviço, não pelo parser: `CreateChecklistRunInput`
+  // (o que o REST sabe montar) segue sem fase, e o campo extra só é preenchível por quem chama o serviço de
+  // dentro do processo — hoje, apenas o provisionamento do despacho. Nenhum corpo HTTP consegue declarar em que
+  // fase a vistoria nasceu.
+  async createRun(
+    actor: ActorContext,
+    input: CreateChecklistRunInput & { readonly role?: ChecklistRunRole },
+  ): Promise<ChecklistRun> {
     const template = await this.getTemplate(actor, input.checklistId);
 
     if (template.status !== "published") {
@@ -291,6 +299,14 @@ export class ChecklistService {
   // do lote (answer/marker/divergence/ack/attachment) usam para referenciar a run recém-criada. tenant-scoped.
   findRunByClientKey(actor: ActorContext, clientRunKey: string): Promise<ChecklistRun | null> {
     return this.repository.getRunByClientKey(actor.tenantId, clientRunKey);
+  }
+
+  // CHECKLIST P1 PR-04c (§8) — ADOÇÃO da run em voo: carimba a fase numa vistoria que já existe, sem criar
+  // nada e sem publicar `checklist_run.created`. Publicar aqui seria justamente o defeito que a adoção existe
+  // para evitar: a métrica FATURADA `checklist_runs_count` deduplica por `event.id`, então cada emissão nova é
+  // uma unidade cobrada nova — e nenhuma vistoria nasceu.
+  stampRunRole(actor: ActorContext, runId: string, role: ChecklistRunRole): Promise<boolean> {
+    return this.repository.stampRunRole(actor.tenantId, runId, role);
   }
 
   // D-CHK-DISPATCH-CREATE — o guincheiro baixa a(s) run(s) pré-criada(s) da OS despachada pelo server_run_id.

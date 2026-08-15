@@ -1,3 +1,4 @@
+import type { ChecklistRunRole } from "../checklists/checklist.types.js";
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 
 export const FIELD_DISPATCH_STATUSES = [
@@ -123,6 +124,36 @@ export type ReassignFieldDispatchInput = {
   readonly observation?: string;
   readonly reason?: string;
   readonly actorUserId?: string;
+};
+
+// CHECKLIST P1 PR-04c (§7 do plano) — uma vistoria do CONJUNTO da ordem de serviço, na visão do despacho.
+//
+// A ordem deixou de ter "o checklist" (singular) e passou a ter um conjunto: a mesma ordem pode carregar a
+// vistoria da coleta e a da entrega — inclusive do MESMO modelo, que é o par que alimenta a tela de comparação
+// do app (um schema, duas execuções, um resumo de divergências que vira prova do estado do veículo).
+//
+// É uma PROJEÇÃO da linha de junção (`WorkOrderChecklistLink`), não uma cópia: o despacho só precisa de o que
+// decide se a vistoria vai a campo. `import type` do vocabulário de fase é apagado na compilação, então este
+// módulo continua SEM aresta de runtime com `checklists`.
+export type DispatchChecklistLine = {
+  readonly checklistId: string;
+  /** A FASE desta linha. Faz parte da identidade da junção — o mesmo modelo pode servir coleta E entrega. */
+  readonly role: ChecklistRunRole;
+  /** Menor primeiro; a linha de menor índice é a PRIMÁRIA (a que espelha `work_orders.checklist_id`). */
+  readonly orderIndex: number;
+  /**
+   * `true` quando a linha veio da JUNÇÃO; `false` quando é a visão sintética da ordem antiga (§5.3), que não
+   * tem linha gravada nenhuma. A distinção não é cosmética: ela decide o significado de um snapshot ausente —
+   * numa linha de junção, ausente quer dizer "o freeze nunca passou por aqui" (e a vistoria não pode ir a
+   * campo); na visão sintética, quer dizer apenas "esta ordem é anterior ao conjunto".
+   */
+  readonly fromJunction: boolean;
+  /**
+   * O formulário CONGELADO desta linha. `null` numa linha de junção significa que o freeze nunca a viu — ela
+   * NUNCA vira execução, porque mandar a campo um formulário que o congelamento não enxergou quebra a garantia
+   * Ω3-c (E1/E3) de que o técnico responde a versão publicada no instante do despacho.
+   */
+  readonly frozenSnapshot: Record<string, unknown> | null;
 };
 
 export class FieldDispatchError extends Error {
