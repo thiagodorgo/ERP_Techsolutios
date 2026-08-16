@@ -25,6 +25,26 @@
 // conforme stdout seja TTY (`spec`) ou não (`tap`). Um guard que lê a saída não pode ter o formato
 // dessa saída decidido pelo terminal de quem chamou.
 //
+// MODO DE PERSISTÊNCIA — por que o runner resolve isto (2026-08-16, dívida `P-SUITE-NAO-SUPORTA-ENV-PRISMA`)
+// `src/config/env.ts` carrega o `.env` do repositório e CONGELA o snapshot no import. Como o ESM hasteia
+// imports estáticos, os arquivos de teste que escrevem `process.env.CORE_SAAS_PERSISTENCE = "memory"` no
+// próprio corpo chegam TARDE: quando a linha executa, a configuração já congelou no que o `.env` disser. O
+// `.env` desta máquina diz `prisma` (o dev server serve o banco real ao dono, deliberadamente), então a suíte
+// ia ao Postgres procurar fixtures que só existem em memória — 90 falhas em 16 arquivos, nenhuma delas defeito
+// (os IDs de fixture, `ten_000001`, nem são UUIDs: o driver os rejeita).
+//
+// Na CI isso não acontece porque o job `backend` EXPORTA `CORE_SAAS_PERSISTENCE: memory`, e variável já
+// presente no ambiente vence o `.env` (dotenv não sobrepõe). A correção é fazer a bateria local ser a mesma:
+// o runner resolve o modo e o passa no `env` do processo FILHO.
+//
+//   - variável NÃO exportada  -> o runner define `memory` (exatamente o que a CI faz)
+//   - variável exportada      -> o runner RESPEITA o valor e não sobrescreve (rodar em `prisma` de propósito
+//                                é requisito; `CORE_SAAS_PERSISTENCE=prisma npm test` continua fazendo as 90
+//                                falhas voltarem, e isso é correto)
+//
+// O modo resolvido é DECLARADO em uma linha, com a procedência. Silêncio aqui repetiria a classe de defeito
+// que este arquivo existe para matar: ele nasceu porque o `npm test` não executava nada — e não dizia.
+//
 // COSTURA DE TESTE (B-O6R-05 / frente D). Sem argumento, `main()` roda a suíte real — é o que o
 // `npm test` faz. COM argumento, roda o alvo indicado (diretório ou arquivo). Isso existe porque a
 // `main()` — a expansão de verdade, o spawn, a leitura do TAP e, sobretudo, a PROPAGAÇÃO DO CÓDIGO
@@ -41,6 +61,47 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const TEST_SUFFIX = ".test.ts";
+
+const PERSISTENCE_VAR = "CORE_SAAS_PERSISTENCE";
+
+/** O default da CI (job `backend`) e o default do `env.ts`. O runner não inventa um terceiro. */
+const PERSISTENCE_FALLBACK = "memory";
+
+/**
+ * Decide em que modo de persistência a suíte vai rodar, e de ONDE essa decisão veio.
+ *
+ * Ambiente vence, sempre: exportar `CORE_SAAS_PERSISTENCE` é como se pede uma execução deliberada em
+ * `prisma` (ou qualquer outro valor — validar o valor é papel do `env.ts`, não deste runner; um valor
+ * inválido tem de quebrar ALTO lá, não ser silenciosamente trocado aqui).
+ *
+ * Valor ausente OU vazio conta como "não exportado": repassar string vazia ao filho não respeitaria escolha
+ * nenhuma — só faria o `env.ts` recusar o enum e derrubar a suíte inteira com um erro que não é sobre teste.
+ *
+ * @returns {{ mode: string, origin: "ambiente" | "runner" }}
+ */
+export function resolvePersistenceMode(sourceEnv = process.env) {
+  const exported = sourceEnv[PERSISTENCE_VAR];
+
+  if (typeof exported === "string" && exported.trim() !== "") {
+    return { mode: exported, origin: "ambiente" };
+  }
+
+  return { mode: PERSISTENCE_FALLBACK, origin: "runner" };
+}
+
+/**
+ * A linha de declaração. Diz o modo E a procedência — "memory" sozinho não distingue "o dono pediu" de "o
+ * runner decidiu por ele", e é justamente essa diferença que explica por que a bateria local e a CI
+ * concordam.
+ */
+export function describePersistenceMode({ mode, origin }) {
+  const procedencia =
+    origin === "ambiente"
+      ? "herdado do ambiente (exportado por quem chamou; o runner não sobrescreve)"
+      : "padrão do runner (nada exportado no ambiente — o `.env` não decide a bateria; mesma configuração do job `backend` da CI)";
+
+  return `[run-backend-tests] ${PERSISTENCE_VAR}=${mode} — ${procedencia}`;
+}
 
 /**
  * Expande o diretório de testes em uma lista ORDENADA e determinística de caminhos.
@@ -172,6 +233,11 @@ function main(argv = process.argv.slice(2)) {
   const repoRoot = fileURLToPath(new URL("..", import.meta.url));
   const testsDir = path.join(repoRoot, "tests");
 
+  // Declarado ANTES de qualquer outra coisa: mesmo quando a expansão aborta, quem leu a saída sabe em que
+  // configuração a bateria ia rodar.
+  const persistence = resolvePersistenceMode(process.env);
+  console.error(describePersistenceMode(persistence));
+
   let files;
   try {
     files = resolveTestTargets(argv, testsDir).map((file) => shortenPath(repoRoot, file));
@@ -197,7 +263,10 @@ function main(argv = process.argv.slice(2)) {
       // `shell: false` (default) é deliberado: sem shell, não há glob para expandir nem limite de
       // 8191 caracteres do cmd.exe.
       stdio: ["inherit", "pipe", "inherit"],
-      env: process.env,
+      // O modo vai no ambiente do FILHO, não em `process.env` deste processo: é lá que o `env.ts` congela o
+      // snapshot, e é lá que ele precisa chegar ANTES do primeiro import. Presente no ambiente, o dotenv não
+      // sobrepõe — o `.env` deixa de sequestrar a suíte.
+      env: { ...process.env, [PERSISTENCE_VAR]: persistence.mode },
     },
   );
 

@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-08-15",
-  "version": "B-O6R-05",
+  "snapshot_date": "2026-08-16",
+  "version": "FIX-RUNNER-MODO",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-O6R-05 — fix/production-runtime-gates: os dois primeiros P0 da auditoria O6R viram gate de boot.",
-    "title": "B-O6R-05 — producao nao sobe mais sem persistir e sem worker",
-    "pr": 353,
-    "merge_commit": "a8901ffe40558efef28dccaefb551155987da485",
-    "approved_head": "1ae7b80",
+    "block": "FIX runner — a bateria local passa a ser igual a da CI, e diz em que modo rodou.",
+    "title": "FIX — npm test resolve e declara o modo de persistencia",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Producao podia subir guardando organizacoes e permissoes so na memoria, e o worker de jobs nunca subia. Os dois eram default silencioso, sem gate. Agora o processo recusa o boot, o worker tem sinal de vida honesto (um tick que falha nao conta como vivo) e o smoke de conteiner prova write-restart-read dentro da CI.",
-    "status_label": "Mergeado (PR #353)"
+    "summary": "O .env do repositorio fixa persistencia real; a CI exporta memoria. Resultado: 90 vermelhos falsos so na maquina do dono, e o risco de alguem aprender a ignorar vermelho. O runner passa a resolver o modo e a DECLARA-LO em uma linha — silencio aqui repetiria a classe de defeito que este arquivo existe para matar.",
+    "status_label": "Em revisao (PR nao aberto)"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,10 +27,10 @@
       "note": "PR-04c-A: 1112→1125 em execução real — a célula Checklist da ordem passou a listar o conjunto (rótulo + fase + origem), incluindo o caso da ordem legada renderizado ponta a ponta a partir do payload cru."
     },
     "backend_tests": {
-      "value": 2429,
-      "total": 2438,
-      "display": "2429/2438",
-      "note": "B-O6R-05: 2290→2429 de 2438 em execucao real, pela primeira vez com o npm test EXECUTANDO de verdade nesta plataforma (o glob nao era expandido e a suite nao rodava). Os 9 pulos sao os declarados. Suites -db contra o PostgreSQL vivo com DATABASE_URL exportada como a CI faz: 0 pulos, residuo zero (236 organizacoes, 0 auditoria orfa, 0 linhas de juncao, chave de heartbeat ausente)."
+      "value": 2437,
+      "total": 2446,
+      "display": "2437/2446",
+      "note": "FIX runner: o npm test passou a RESOLVER e DECLARAR o modo de persistencia. Antes, o .env do repo (que fixa prisma) sequestrava a suite local e 90 testes falhavam por fixture-de-memoria contra banco real — nenhum deles defeito. Agora o runner define memory quando a variavel nao vem exportada (o mesmo que a CI faz) e imprime o modo e a procedencia. Exportar prisma de proposito continua funcionando. +8 testes no guard do runner."
     },
     "backend_contract_tests_focused": {
       "value": 21,

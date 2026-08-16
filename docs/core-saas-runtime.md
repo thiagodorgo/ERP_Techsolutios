@@ -58,6 +58,17 @@ node --test --import tsx tests/core-saas-prisma.test.ts
 
 O teste Prisma depende de `DATABASE_URL` apontando para um PostgreSQL local migrado.
 
+**Modo de persistencia na bateria (2026-08-16).** `npm test` resolve `CORE_SAAS_PERSISTENCE` sozinho: define
+`memory` quando nada vem exportado (o mesmo do job `backend` da CI) e **respeita** o valor quando ele vem
+exportado. O modo resolvido e a procedencia aparecem na primeira linha da saida. Nao exporte a variavel na
+bateria normal; exporte `CORE_SAAS_PERSISTENCE=prisma` so para rodar em `prisma` de proposito — nesse modo a
+suite acusa falhas conhecidas, que **nao sao defeito** (ver `P-SUITE-NAO-SUPORTA-ENV-PRISMA` em
+`agent-orchestration/controle/pendencias.md`).
+
+Ressalva: a invocacao **direta** por arquivo (`node --test --import tsx tests/x.test.ts`) nao passa pelo runner,
+entao ela herda o `CORE_SAAS_PERSISTENCE` do `.env` do repositorio. Para um arquivo so, prefira
+`npm test -- tests/x.test.ts`, que resolve o modo do mesmo jeito.
+
 ## Iniciar servidor em memory
 
 ```powershell

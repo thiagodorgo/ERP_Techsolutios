@@ -44,7 +44,8 @@ git push origin chore/local-dev-infra
 - `npm run build`
 - `npm --prefix frontend run test:smoke`
 - `npm run test:e2e` quando a mudanca tocar login, RBAC, navegacao, W02A, W03 ou fluxo autenticado.
-- `node --test --import tsx tests/job-queue.test.ts` e `node --test --import tsx tests/domain-events.test.ts` quando a mudanca tocar Redis, jobs ou eventos.
+- `node --test --import tsx tests/job-queue.test.ts` e `node --test --import tsx tests/domain-events.test.ts` quando a mudanca tocar Redis, jobs ou eventos. Invocacao direta como essa **nao** passa pelo runner e herda o `CORE_SAAS_PERSISTENCE` do `.env`; `npm test -- tests/<arquivo>.test.ts` resolve o modo igual a bateria completa.
+- `npm test` resolve o modo de persistencia sozinho (`memory` quando nada vem exportado, respeitando o valor exportado) e **declara** o modo na primeira linha. Nao exporte `CORE_SAAS_PERSISTENCE=memory` — o workaround antigo morreu (`P-SUITE-NAO-SUPORTA-ENV-PRISMA`).
 - O E2E local depende do seed idempotente (`npm run db:seed`) para `admin.demo@example.com` e `platform.admin@erp.local`; as senhas documentadas em `.env.example` sao apenas valores de desenvolvimento.
 - Documentacao atualizada.
 - Sem `.env` real.
