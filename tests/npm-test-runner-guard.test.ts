@@ -6,7 +6,12 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { expandTestFiles, parseTapSummary } from "../scripts/run-backend-tests.mjs";
+import {
+  describePersistenceMode,
+  expandTestFiles,
+  parseTapSummary,
+  resolvePersistenceMode,
+} from "../scripts/run-backend-tests.mjs";
 
 // B-O6R-05 / N1 — guard do runner da suíte (`P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS`).
 //
@@ -26,6 +31,13 @@ import { expandTestFiles, parseTapSummary } from "../scripts/run-backend-tests.m
 // saída virar `0`; (3) a `main()` deixar de chamar o leitor de TAP; (4) a `main()` deixar de chamar
 // a expansão. Com qualquer uma delas o job `backend` da CI (que roda `npm test`) ficaria VERDE com
 // a suíte VERMELHA — a mesma classe de defeito que este runner nasceu para matar, uma camada acima.
+//
+// TERCEIRA FRENTE (2026-08-16, `P-SUITE-NAO-SUPORTA-ENV-PRISMA`): o MODO DE PERSISTÊNCIA que o runner
+// entrega ao processo filho. O `.env` desta máquina impõe `prisma`, o `env.ts` congela esse snapshot no
+// import, e a suíte — desenhada para memória — ia ao Postgres procurar fixture que não existe lá: 90
+// falsos vermelhos. A CI nunca viu isso porque EXPORTA `memory`. Os casos abaixo aferem o modo de dentro
+// da fixture, isto é, do processo que de fato roda o teste: declarar um modo na saída e passar outro ao
+// filho é a mentira que este arquivo não pode deixar passar.
 //
 // LIMITE DECLARADO (D-007): estes testes provam os guards e a propagação do código de saída contra
 // fixtures. A contagem oficial da suíte real continua vindo da execução da bateria, que vai no PR.
@@ -170,6 +182,66 @@ test("parseTapSummary: ignora linhas indentadas e usa o sumário final", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Modo de persistência — funções PURAS (`P-SUITE-NAO-SUPORTA-ENV-PRISMA`)
+//
+// O runner resolve `CORE_SAAS_PERSISTENCE` e o passa no ambiente do processo filho porque o `env.ts`
+// congela o snapshot do `.env` NO IMPORT: escrever `process.env` dentro do arquivo de teste chega tarde
+// (o ESM hasteia os imports estáticos). Sem isto, o `.env` desta máquina (`prisma`) sequestra a suíte e
+// produz 90 falhas que não são defeito — enquanto a CI, que EXPORTA `memory`, fica verde.
+// ---------------------------------------------------------------------------
+
+test("resolvePersistenceMode: variável ausente ⇒ o runner assume `memory` (o mesmo da CI)", () => {
+  assert.deepEqual(resolvePersistenceMode({}), { mode: "memory", origin: "runner" });
+});
+
+test("resolvePersistenceMode: variável exportada ⇒ RESPEITADA, inclusive `prisma`", () => {
+  // Rodar a suíte em `prisma` de propósito é requisito: é assim que se vê o estado real da dívida.
+  assert.deepEqual(resolvePersistenceMode({ CORE_SAAS_PERSISTENCE: "prisma" }), {
+    mode: "prisma",
+    origin: "ambiente",
+  });
+  assert.deepEqual(resolvePersistenceMode({ CORE_SAAS_PERSISTENCE: "memory" }), {
+    mode: "memory",
+    origin: "ambiente",
+  });
+});
+
+test("resolvePersistenceMode: valor desconhecido é REPASSADO, não corrigido em silêncio", () => {
+  // Quem valida o valor é o `env.ts` (enum Zod), e ele tem de quebrar ALTO. Um runner que trocasse
+  // `banana` por `memory` transformaria um erro de digitação numa execução que mente sobre o próprio modo.
+  assert.deepEqual(resolvePersistenceMode({ CORE_SAAS_PERSISTENCE: "banana" }), {
+    mode: "banana",
+    origin: "ambiente",
+  });
+});
+
+test("resolvePersistenceMode: valor vazio conta como NÃO exportado", () => {
+  // Repassar string vazia não respeitaria escolha nenhuma: derrubaria o enum do `env.ts` e a suíte
+  // inteira morreria com um erro que não é sobre teste.
+  assert.deepEqual(resolvePersistenceMode({ CORE_SAAS_PERSISTENCE: "" }), {
+    mode: "memory",
+    origin: "runner",
+  });
+  assert.deepEqual(resolvePersistenceMode({ CORE_SAAS_PERSISTENCE: "   " }), {
+    mode: "memory",
+    origin: "runner",
+  });
+});
+
+test("describePersistenceMode: a linha diz o modo E a procedência (as duas são distinguíveis)", () => {
+  const doRunner = describePersistenceMode({ mode: "memory", origin: "runner" });
+  const doAmbiente = describePersistenceMode({ mode: "prisma", origin: "ambiente" });
+
+  assert.match(doRunner, /CORE_SAAS_PERSISTENCE=memory/);
+  assert.match(doRunner, /padrão do runner/i);
+  assert.doesNotMatch(doRunner, /herdado do ambiente/i);
+
+  assert.match(doAmbiente, /CORE_SAAS_PERSISTENCE=prisma/);
+  assert.match(doAmbiente, /herdado do ambiente/i);
+  assert.doesNotMatch(doAmbiente, /padrão do runner/i);
+});
+
+// ---------------------------------------------------------------------------
 // A `main()` — o caminho LIGADO, executado de verdade contra fixtures isoladas
 // ---------------------------------------------------------------------------
 
@@ -205,8 +277,18 @@ type RunnerRun = { readonly status: number | null; readonly stdout: string; read
  * `tests/persistent-rbac-middleware.test.ts`. Só assim a `main()` é exercitada: o código de saída
  * do processo é o produto que interessa, e ele não existe dentro deste processo.
  */
-function runRunner(target: string, overrides: Record<string, string> = {}): RunnerRun {
+function runRunner(target: string, overrides: Record<string, string | undefined> = {}): RunnerRun {
   const env: NodeJS.ProcessEnv = { ...process.env, ...overrides };
+
+  // Override com `undefined` REMOVE a variável do ambiente do filho. É o único jeito de testar o ramo
+  // "não veio exportada": quando esta própria suíte roda sob o runner, `CORE_SAAS_PERSISTENCE` JÁ está
+  // no ambiente (posta pelo runner de fora) — herdá-la faria o caso testar o ramo errado e passar por
+  // acidente.
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === undefined) {
+      delete env[key];
+    }
+  }
 
   // `NODE_TEST_CONTEXT` é posto pelo test runner no ambiente de CADA arquivo de teste. Herdada, ela
   // faz o `node --test` de dentro do runner se julgar um processo-filho do runner de fora e PULAR
@@ -292,5 +374,70 @@ test("main(): `node --test` que sai 0 SEM emitir sumário ⇒ o runner recusa o 
 
     assert.notEqual(run.status, 0, `o runner aceitou uma execução que não rodou teste nenhum: ${run.stderr}`);
     assert.match(run.stderr, /não consegui ler "# tests"/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Modo de persistência — o caminho LIGADO: o que o PROCESSO FILHO recebe de verdade
+//
+// A fixture afere `process.env.CORE_SAAS_PERSISTENCE` de dentro do processo de teste. É a única prova
+// que interessa: declarar o modo na saída e passar outro (ou nenhum) ao filho seria exatamente o tipo de
+// mentira que este arquivo existe para impedir.
+// ---------------------------------------------------------------------------
+
+/** Fixture que só passa se o modo que CHEGOU ao processo filho for o esperado. */
+function fixtureQueAfereModo(esperado: string): string[] {
+  return [
+    'import test from "node:test";',
+    'import assert from "node:assert/strict";',
+    'test("fixture: o modo de persistência chegou ao processo filho", () => {',
+    `  assert.equal(process.env.CORE_SAAS_PERSISTENCE, ${JSON.stringify(esperado)});`,
+    "});",
+  ];
+}
+
+test("main(): SEM a variável no ambiente ⇒ o filho recebe `memory` e o runner DECLARA o padrão", () => {
+  // MUTAÇÕES QUE ESTE CASO MATA: (1) o runner deixar de resolver o modo e voltar a `env: process.env` —
+  // o filho não receberia nada e a fixture reprovaria; (2) o runner resolver e não DECLARAR — a linha
+  // sumiria da saída. Este é o caso do dono: `.env` com `prisma`, nada exportado, `npm test` verde.
+  withTempDir((dir) => {
+    writeFixture(dir, "modo.test.ts", fixtureQueAfereModo("memory"));
+
+    const run = runRunner(dir, { CORE_SAAS_PERSISTENCE: undefined });
+
+    assert.equal(run.status, 0, `o filho não recebeu \`memory\`: ${run.stdout || run.stderr}`);
+    assert.match(run.stderr, /CORE_SAAS_PERSISTENCE=memory/, "o modo resolvido tem de ser declarado");
+    assert.match(run.stderr, /padrão do runner/i, "a linha tem de dizer que a decisão foi do runner");
+    assert.doesNotMatch(run.stderr, /herdado do ambiente/i);
+  });
+});
+
+test("main(): com `prisma` EXPORTADO ⇒ o runner respeita e declara que veio do ambiente", () => {
+  // MUTAÇÃO QUE ESTE CASO MATA: trocar "respeita o exportado" por "força sempre memory". Rodar a suíte
+  // em `prisma` de propósito é requisito — é como se mede a dívida `P-SUITE-NAO-SUPORTA-ENV-PRISMA`.
+  withTempDir((dir) => {
+    writeFixture(dir, "modo.test.ts", fixtureQueAfereModo("prisma"));
+
+    const run = runRunner(dir, { CORE_SAAS_PERSISTENCE: "prisma" });
+
+    assert.equal(run.status, 0, `o runner sobrescreveu o modo exportado: ${run.stdout || run.stderr}`);
+    assert.match(run.stderr, /CORE_SAAS_PERSISTENCE=prisma/);
+    assert.match(run.stderr, /herdado do ambiente/i);
+    assert.doesNotMatch(run.stderr, /padrão do runner/i);
+  });
+});
+
+test("main(): com `memory` EXPORTADO (o arranjo da CI) ⇒ declara HERDADO, não padrão do runner", () => {
+  // Sem este caso, "declarar sempre `padrão do runner`" sobreviveria quando o valor exportado coincide
+  // com o fallback — e a linha passaria a mentir sobre a procedência justamente na configuração da CI.
+  withTempDir((dir) => {
+    writeFixture(dir, "modo.test.ts", fixtureQueAfereModo("memory"));
+
+    const run = runRunner(dir, { CORE_SAAS_PERSISTENCE: "memory" });
+
+    assert.equal(run.status, 0, `${run.stdout || run.stderr}`);
+    assert.match(run.stderr, /CORE_SAAS_PERSISTENCE=memory/);
+    assert.match(run.stderr, /herdado do ambiente/i);
+    assert.doesNotMatch(run.stderr, /padrão do runner/i);
   });
 });

@@ -1490,21 +1490,29 @@ cascata, 88 falhas em 4 shards). Como `dotenv` NÃO sobrescreve variável já ex
 `CORE_SAAS_PERSISTENCE=memory` no shell restaura o arranjo verde (DB-gated continuam exercendo o Postgres via
 `DATABASE_URL` do `.env`; os 6 skips clássicos de auth continuam skips).
 
-- **Como rodar a suíte local (Windows/Git Bash):** `export CORE_SAAS_PERSISTENCE=memory` antes de
-  `node --test --import tsx tests/*.test.ts` (o `npm test` no cmd não expande o glob — rodar do Git Bash).
+- **Como rodar a suíte local — ATUALIZADO (2026-08-16):** `npm test`, e nada mais. Os dois workarounds que
+  estavam aqui morreram: o glob passou a ser expandido em JS pelo `scripts/run-backend-tests.mjs`
+  (`P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS`), e o mesmo runner agora resolve `CORE_SAAS_PERSISTENCE` e o passa ao
+  processo filho — `memory` quando nada vem exportado, respeitando o valor quando vem, declarando a procedência
+  em uma linha (`P-SUITE-NAO-SUPORTA-ENV-PRISMA`). **Não exporte a variável na bateria normal**; exporte-a só
+  para rodar em `prisma` de propósito. ~~`export CORE_SAAS_PERSISTENCE=memory` antes de
+  `node --test --import tsx tests/*.test.ts`~~.
 - **Sintoma-armadilha:** `tests/professional-statements.test.ts` tinha o assert de setup FORA do try/finally —
   quando o setup falhava o server ficava aberto, o processo não saía e o runner PENDURAVA a suíte por horas
   (parecia "suíte travada", era teste sem cleanup). Corrigido na rodada do painel (setup dentro do try).
-- **Correção definitiva (aberta):** ou o runner/`npm test` fixa `CORE_SAAS_PERSISTENCE=memory` (ex.: script
-  `cross-env`), ou os testes de rota setam o env em um `--import` que rode ANTES de qualquer import estático.
-  Decidir num bloco próprio; NÃO mudar `env.ts` às pressas (56 usos fail-closed dependem do congelamento).
+- **Correção definitiva — FEITA (2026-08-16):** foi a primeira das duas opções, sem dependência nova (nada de
+  `cross-env`): o runner resolve o modo e o injeta no `env` do processo filho, antes de qualquer import. O
+  `env.ts` **não foi tocado** — os usos fail-closed que dependem do congelamento seguem intactos. Detalhe,
+  classificação das falhas e o que continua aberto: `P-SUITE-NAO-SUPORTA-ENV-PRISMA`.
 - **Adendo (mesma triagem):** as rodadas seguintes degradaram para 277→752 falhas por um SEGUNDO fator, auto-infligido:
   uma sonda de bisseção criou `junction` de `node_modules` dentro de um worktree temporário e o
   `git worktree remove --force` ATRAVESSOU a junction e apagou pacotes reais (`@aws-sdk/*`, `.prisma/client`).
   Recuperado com `npm install` + `npx prisma generate`. **LIÇÃO permanente: nunca criar junction/symlink de
   `node_modules` dentro de árvore que o git possa remover; usar cópia ou `--install-links`, e remover a junction
   ANTES de qualquer `worktree remove`.**
-- status: ABERTA (workaround documentado; suíte verde reproduzida com o env exportado).
+- status: **RESOLVIDA (2026-08-16)** — o workaround virou comportamento do runner; a bateria local é `npm test`.
+  O que a correção **não** resolve (a suíte, em `prisma`, morrer na fixture antes do caminho real) está declarado
+  em `P-SUITE-NAO-SUPORTA-ENV-PRISMA`.
 
 ## P-MOBILE-BANNER-INTEGRACAO (2026-08-06) — banner "Integração remota ainda não ativa" é ESTÁTICO e mente (MÉDIA, UX/honestidade)
 
@@ -2605,15 +2613,55 @@ mudanças do bloco (89 e 89), e passam (86/86) com a persistência forçada para
 executava nada, então a divergência nunca apareceu; a partir de agora ela aparece como 89 vermelhos toda vez, e
 quem não souber disso vai caçar um defeito que não existe — ou, pior, vai aprender a ignorar vermelho.
 
-- **Correção:** decidir e implementar uma das duas — (a) os testes que exigem memória passam a forçá-la de forma
-  hermética (o `process.env` dentro do arquivo chega tarde: os imports estáticos são hasteados e o `env.ts` já
-  congelou o snapshot; então é `--import` de um preload, ou o runner exporta a variável), ou (b) a suíte passa a
-  suportar as duas configurações de verdade, e a CI passa a rodar **as duas**. A opção (b) é a que fecharia o
-  ponto cego estrutural: hoje **nenhuma** execução verde exercita o caminho de persistência real fora das
-  suítes de banco dedicadas.
-- **Nota:** enquanto isso, a bateria local honesta é `CORE_SAAS_PERSISTENCE=memory npm test` — e isso precisa
-  estar escrito onde as pessoas leem, não só aqui.
-- status: ABERTA.
+### Classificação das falhas (2026-08-16, medida na branch `fix/runner-modo-declarado`, base `main` @ `56c84d6`)
+
+Agrupadas por assinatura de erro, **todas** — não por amostra. Nenhuma é defeito:
+
+| Classe | Quantas | O que é |
+|---|---|---|
+| Fixture semeada em memória × runtime resolvido em `prisma` | ~86 | Causa raiz única e mecânica: `src/config/env.ts` carrega o `.env` e **congela o snapshot no import**; o ESM hasteia os imports estáticos, então os arquivos que escrevem `process.env.CORE_SAAS_PERSISTENCE = "memory"` no próprio corpo chegam **tarde**. O serviço vai ao Postgres real procurar fixture que só existe em memória: "Work order was not found", 400/500 em rota e — o mais revelador — `invalid input syntax for type uuid: "ten_000001"`, porque os IDs de fixture **nem são UUIDs**. Teste **desenhado para memória** que o ambiente sequestrou, não teste "que precisaria de banco". |
+| Meta-testes do default do env (`core-saas-runtime.test.ts`) | 3 | Afirmam "defaults to memory when unset" lendo o ambiente da máquina. Falham porque o `.env` daqui define `prisma`. Mesma família: suposição de ambiente. |
+| Poluição entre suítes | 0 | As falhas reproduzem igual em arquivo isolado. |
+| Defeito real de produção escondido | 0 encontrado | Nenhuma das assinaturas tem cara de defeito do caminho prisma (coluna errada, enum divergente, constraint disparando em dado válido). **Limite declarado abaixo.** |
+
+Medição desta rodada, com a correção aplicada: `CORE_SAAS_PERSISTENCE=prisma npm test` → **231 arquivos · 2446
+testes · 2348 pass · 89 fail · 9 skip · exit 1**, concentradas em **15 arquivos** (`work-order-mileage` e
+`financial-entries` 40 cada; `work-order-invoicing` e `professional-statements` 24; `mobile-checklists-available`
+20; `inventory-abc` e `actor-aware-routes` 12; `telemetry` e `service-quote-approve` 7; `work-order-map` e
+`work-order-cancel-duplicate` 6; `work-order-checklists-sticky` 5; `work-order-financials` e `core-saas-runtime` 3;
+`aws-cur-cost-import` 1). O dossiê que embasou o bloco mediu **90 em 16 arquivos** na mesma base — a contagem
+oscila em ±1 entre execuções (a pendência nasceu registrando 89). **A classe é idêntica; o número exato não é
+estável e não deve ser citado como se fosse.**
+
+**Correção entregue (2026-08-16, branch `fix/runner-modo-declarado`) — recomendação (c) do dossiê.**
+`scripts/run-backend-tests.mjs` (que já é o `npm test`) passou a **resolver o modo de persistência e a passá-lo no
+`env` do processo FILHO**, que é onde o `env.ts` congela o snapshot:
+- variável **não exportada** → o runner define `memory`, exatamente o que o job `backend` da CI faz;
+- variável **exportada** (qualquer valor, inclusive `prisma`) → o runner **respeita** e não sobrescreve;
+- valor **vazio** conta como não exportada (repassar string vazia só derrubaria o enum do `env.ts`);
+- o modo resolvido é **declarado em uma linha**, com a procedência (`herdado do ambiente` × `padrão do runner`) —
+  silêncio aqui repetiria a classe de defeito que o runner existe para matar (`P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS`
+  nasceu porque o `npm test` não executava nada **e não dizia**).
+
+Coberto por `tests/npm-test-runner-guard.test.ts` (5 casos puros + 3 que executam a `main()` por processo filho e
+aferem `process.env.CORE_SAAS_PERSISTENCE` **de dentro da fixture** — declarar um modo e passar outro é a mentira
+que o guard não deixa passar). Provado por 5 mutações, todas derrubadas.
+
+**Medições da entrega:** `npm test` sem exportar nada → **231 arquivos · 2446 testes · 2437 pass · 0 fail · 9 skip
+· exit 0**. Suítes de banco (as 13 do job `backend-postgres` + as demais `*-db*`, 17 arquivos) com `DATABASE_URL`
+exportada → **100/100, 0 pulos**, tanto no modo resolvido pelo runner quanto com `prisma` exportado.
+
+- status: **RESOLVIDA quanto ao dano imediato** — o dono não vê mais 89/90 vermelhos falsos, e a bateria local
+  passou a ser a mesma da CI nas duas plataformas, sem depender de ninguém lembrar de exportar variável.
+- **O que CONTINUA ABERTO, com honestidade:** esta correção **não prova que o caminho de persistência real está
+  correto**. Ela prova que aquelas falhas não são defeito — e nada além disso. Naquele modo a suíte **morre na
+  fixture antes de chegar ao caminho real**: o que ela exercita é o driver rejeitando `ten_000001`, não a query da
+  rota. Quem prova o caminho real são as **suítes dedicadas de banco** (`*-db*` e o job `backend-postgres`), e
+  fechar o ponto cego estrutural (`Ω6R-DAT-001`) segue sendo **crescer o subconjunto curado que roda contra o
+  Postgres, módulo a módulo** — não rodar a mesma suíte duas vezes com variáveis diferentes, que não mede nada
+  novo. Os 15 arquivos acima continuam **não-herméticos** (imports estáticos de `src/`): hermetizá-los
+  oportunisticamente, quando cada um for tocado por outro motivo, é o resíduo — o dano vivo era a bateria, e esse
+  fechou.
 
 ## P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05)
 
