@@ -15,6 +15,19 @@ Regra: 1 bloco = 1 branch = 1 PR. Ordem abaixo é vinculante por dependência; P
 | 9 | B-O6R-09 `fix/dispatch-atomic-timeline` | ARQ-004 | despacho+evento atômicos e idempotentes; fault injection | 8 | M |
 | 10 | B-O6R-10 `fix/client-load-shedding` | PERF-002, PERF-003 | single-flight/Abort; pipeline imagem isolado; testes p99/RSS/out-of-order | 5 | G |
 | 11 | B-O6R-11 `fix/mobile-work-order-contracts` | QUA-004, QUA-005 | envelope/casing/payload real; enqueueAll durável; testes Dio/Drift/restart | 1 | M |
+| 12 | B-O6R-12 `fix/jurisdiction-profile-versioning` | DAT-004 | perfil normativo versionado ou snapshot carimbado em `entered_at`; motor de diárias lê o regime do processo, não o perfil vivo; auditoria campo a campo com valor anterior/novo | — | M |
+
+> **Adendo de 2026-08-16 — a linha 12 foi acrescentada depois da J-6R.** Este plano é de 2026-08-11 e
+> fechava os 29 achados então conhecidos. O `Ω6R-DAT-004` nasceu na reconciliação de 2026-08-14, ao revisar
+> de fato o módulo `jurisdiction` — que a matriz marcava ✅ nas cinco lentes **sem relatório correspondente**.
+> Ele não foi votado pela J-6R e, até 2026-08-16, **não tinha bloco de correção**: era um achado aberto que o
+> cronograma não cobria. A lacuna foi encontrada pelo guard `tests/kpi-achados-paridade.test.ts`, escrito ao
+> repaginar o painel de KPI, na sua **primeira execução**.
+>
+> O que esta linha tem e não tem: o **escopo** é o do achado registrado; o **critério de aceite** acima é
+> **provisório**, escrito por quem fechou a lacuna e **não** ratificado por junta. A junta do próprio bloco o
+> revisa antes da primeira linha de código, como todo bloco. A severidade (P1) segue como registrada, também
+> sem voto — reclassificá-la exigiria junta.
 
 ## Gates transversais
 

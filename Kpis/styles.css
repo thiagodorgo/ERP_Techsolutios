@@ -1,547 +1,1272 @@
+/* =========================================================================
+   Painel de KPIs — ERP TechSolutions (operação de campo, guincho e pátios)
+   Reescrito do zero em 2026-08-16 (branch feat/kpis-repaginado).
+
+   Linguagem visual: asfalto e aço — neutros frios, acento azul-aço (o navy
+   do próprio produto), numerais em monoespaçada (telemetria de operação) e
+   faixa de sinalização 135° reservada ao que está BLOQUEADO ou crítico.
+
+   Duas dimensões de cor, separadas por contrato:
+   - marca/séries: --brand e --series-* (validadas p/ daltonismo, skill dataviz)
+   - semântica:    --ok / --warn / --crit (bom · atenção · crítico)
+
+   Tema: paleta COMPLETA em :root (claro); o bloco @media (prefers-color-scheme:
+   dark) redefine SÓ os tokens. Nenhuma cor nasce dentro do media query.
+   ========================================================================= */
+
 :root {
   color-scheme: light;
-  --bg: #f5f7fa;
-  --panel: #ffffff;
-  --panel-strong: #f9fbfd;
-  --ink: #1d2733;
-  --muted: #647386;
-  --line: #d9e1ea;
-  --brand: #146c94;
-  --success: #2f7d32;
-  --partial: #b66a00;
-  --planned: #637083;
-  --risk: #b3261e;
-  --shadow: 0 18px 50px rgba(27, 39, 51, 0.08);
-  /* D-KPI-INDEX-PAINEL — tokens dos gráficos (achado F6 da junta: a 1ª versão cravava 11 hexes
-     de OUTRO design system, deixando três azuis diferentes na mesma dobra). Derivados da paleta
-     do painel; consumidos via var() dentro do SVG inline, sem quebrar o zero-dependência. */
-  --chart-1: var(--brand);
-  --chart-2: var(--success);
-  --chart-3: #7a4bbf;
-  --chart-4: #2a8fbd;
-  --chart-grid: var(--line);
-  --chart-axis: var(--muted);
-  --chart-value: var(--ink);
-  --chart-bar: var(--planned);
+
+  /* superfícies */
+  --bg-page: #eef1f2;
+  --bg-panel: #fbfcfc;
+  --bg-inset: #f2f4f5;
+  --bg-masthead: #14273f;          /* navy do produto — igual nos dois temas */
+  --ink-masthead: #f2f6fa;
+  --ink-masthead-2: #b9c7d6;
+  --border: rgba(23, 29, 36, 0.13);
+  --border-strong: rgba(23, 29, 36, 0.26);
+  --shadow: 0 1px 2px rgba(20, 30, 40, 0.06), 0 8px 24px rgba(20, 30, 40, 0.06);
+
+  /* tinta */
+  --ink: #171d24;
+  --ink-2: #48525c;
+  --ink-3: #656f78;          /* medido: 4,99 no painel · 4,51 na página · 4,64 no inset */
+  --grid: #e2e6e8;
+  --axis: #c2c9cd;
+
+  /* marca (azul-aço) */
+  --brand: #1c5cab;
+  --brand-strong: #104281;
+  --brand-soft: #e4edf8;
+
+  /* séries dos gráficos (3 slots validados: claro #fbfcfc) */
+  --series-backend: #2a78d6;
+  --series-web: #eb6834;
+  --series-campo: #17986a;   /* medido: 3,56 no painel (era 2,74 — abaixo do piso de objeto gráfico) */
+
+  /* Tinta sobre a marca. Antes era #ffffff fixo, e a marca INVERTE com o tema: no escuro dava
+     2,99:1 no chip de filtro selecionado. Agora o par acompanha o tema, e os dois lados medem. */
+  --on-brand: #ffffff;       /* medido: 6,63:1 sobre --brand claro */
+  --on-ok: #ffffff;          /* --ok não inverte; o par fica estável nos dois temas */
+
+  /* Acento do masthead. O masthead é navy nos DOIS temas — não inverte — então seu acento também
+     não pode inverter. Usar --brand-strong aqui dava 1,52:1 no tema claro. Definido só aqui. */
+  --masthead-accent: #86b6ef; /* medido: 7,15:1 no claro · 8,20:1 no escuro, mesmo valor */
+  --on-masthead-ok: #bfe8bf;  /* selo de dados vivos — medido 11,14:1 · 12,78:1 */
+  --on-masthead-warn: #f6d792; /* selo de cópia congelada — medido 10,82:1 · 12,40:1 */
+
+  /* semântica — separada da marca */
+  --ok: #0ca30c;
+  --ok-text: #006300;
+  --ok-soft: #e3f3e3;
+  --warn: #fab219;
+  --warn-text: #8a5c00;
+  --warn-soft: #fdf1d7;
+  --crit: #d03b3b;
+  --crit-text: #a92c2c;
+  --crit-soft: #fbe7e7;
+
+  /* tipografia */
+  --font-ui: system-ui, "Segoe UI", -apple-system, "Helvetica Neue", sans-serif;
+  --font-data: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
 }
 
-* { box-sizing: border-box; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
 
-/* A folha do UA define `[hidden]{display:none}`, mas QUALQUER regra de autor com `display`
-   (aqui, `.section-grid--tight{display:block}`) vence por ORIGEM, não por especificidade.
-   Sem esta linha o atributo `hidden` do `#charts-section` era decorativo e o painel mostrava
-   4 caixas vazias em file:// — achado B1/ALTA-1 da junta. */
-[hidden] { display: none !important; }
+    --bg-page: #0e1114;
+    --bg-panel: #171c21;
+    --bg-inset: #12171b;
+    --bg-masthead: #101b2b;
+    --ink-masthead: #eef3f8;
+    --ink-masthead-2: #9fb0c1;
+    --border: rgba(228, 237, 244, 0.13);
+    --border-strong: rgba(228, 237, 244, 0.28);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
 
-/* Conteúdo só para leitor de tela (tabelas que descrevem os gráficos — F11). */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+    --ink: #ecf1f4;
+    --ink-2: #adb8c1;
+    --ink-3: #7e8992;
+    --grid: #232a30;
+    --axis: #3a434b;
+
+    --brand: #5598e7;
+    --brand-strong: #86b6ef;
+    --brand-soft: #152639;
+    --on-brand: #08131f;     /* medido: 6,26:1 sobre --brand escuro (o branco dava 2,99:1) */
+
+    /* séries re-escalonadas p/ superfície escura (#171c21) — mesma ordem */
+    --series-backend: #3987e5;
+    --series-web: #d95926;
+    --series-campo: #199e70;
+
+    --ok: #0ca30c;
+    --ok-text: #3dbb3d;
+    --ok-soft: #10240f;
+    --warn: #fab219;
+    --warn-text: #fab219;
+    --warn-soft: #2b2208;
+    --crit: #d03b3b;
+    --crit-text: #e05c5c;
+    --crit-soft: #331416;
+  }
+}
+
+/* O atributo hidden manda SEMPRE — nenhuma regra de layout de autor pode
+   vencê-lo (já houve painel mostrando 4 caixas vazias por causa disso). */
+[hidden] {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ base */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
-  background: linear-gradient(180deg, #edf4f7 0, rgba(237, 244, 247, 0) 340px), var(--bg);
+  background: var(--bg-page);
   color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
 }
 
-.dashboard-shell {
-  width: min(1440px, 100%);
+code,
+.num {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--brand);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- masthead */
+
+.masthead {
+  background: var(--bg-masthead);
+  color: var(--ink-masthead);
+  border-bottom: 3px solid var(--brand);
+}
+
+.masthead-inner {
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 28px 20px 22px;
 }
 
-.hero,
-.panel,
-.kpi-card {
-  border: 1px solid var(--line);
-  background: var(--panel);
+.masthead .kicker {
+  color: var(--ink-masthead-2);
+}
+
+.masthead h1 {
+  margin: 4px 0 6px;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.masthead-meta {
+  margin: 0;
+  color: var(--ink-masthead-2);
+  font-size: 13.5px;
+}
+
+.masthead-meta .num {
+  color: var(--ink-masthead);
+}
+
+.data-mode {
+  display: inline-block;
+  margin: 14px 0 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.data-mode--live {
+  background: rgba(12, 163, 12, 0.16);
+  border-color: rgba(12, 163, 12, 0.45);
+  color: var(--on-masthead-ok);
+}
+
+.data-mode--frozen {
+  background: rgba(250, 178, 25, 0.14);
+  border-color: rgba(250, 178, 25, 0.5);
+  color: var(--on-masthead-warn);
+}
+
+.site-nav {
+  margin: 16px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 13px;
+}
+
+.site-nav a {
+  color: var(--ink-masthead-2);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding: 2px 0;
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  color: var(--ink-masthead);
+  /* O masthead não inverte com o tema; --brand-strong inverte. Usar um sobre o outro dava 1,52:1
+     no tema claro — foco de teclado praticamente invisível. */
+  border-bottom-color: var(--masthead-accent);
+}
+
+/* ------------------------------------------------------------- layout */
+
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 8px 20px 48px;
+}
+
+.section {
+  margin-top: 40px;
+}
+
+.section-head {
+  margin-bottom: 16px;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.section-head h2 {
+  margin: 2px 0 4px;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.section-head .section-sub {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  max-width: 70ch;
+}
+
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   box-shadow: var(--shadow);
 }
 
-.hero {
+/* --------------------------------------------- 1. onde o projeto está */
+
+.dual {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
-  gap: 28px;
-  align-items: end;
-  margin-bottom: 22px;
-  padding: 30px;
-  border-radius: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
 }
 
-.eyebrow {
-  margin: 0 0 8px;
-  color: var(--brand);
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-h1, h2, h3, p { margin-top: 0; }
-
-h1 {
-  margin-bottom: 12px;
-  font-size: clamp(2.1rem, 5vw, 4.6rem);
-  line-height: 0.98;
-  letter-spacing: 0;
-}
-
-h2 {
-  margin-bottom: 0;
-  font-size: 1.05rem;
-  letter-spacing: 0;
-}
-
-h3 {
-  margin-bottom: 6px;
-  font-size: 0.96rem;
-  letter-spacing: 0;
-}
-
-.hero-summary {
-  max-width: 820px;
-  margin-bottom: 0;
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-.hero-meta {
-  display: grid;
+.state-card {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  margin: 0;
 }
 
-.hero-meta div {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel-strong);
+.state-card .kicker {
+  margin-bottom: 2px;
 }
 
-dt {
-  color: var(--muted);
-  font-size: 0.78rem;
+.state-card--readiness {
+  position: relative;
+  overflow: hidden;
+}
+
+/* faixa de sinalização: reservada ao que está bloqueado/crítico */
+.hazard-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--crit) 0 10px,
+    transparent 10px 20px
+  );
+  opacity: 0.85;
+}
+
+.state-value {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 44px;
   font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink);
 }
 
-dd {
-  margin: 0;
-  font-size: 0.88rem;
+.state-verdict {
+  font-size: 25px;
   font-weight: 800;
-  text-align: right;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--crit-text);
 }
 
-.section-grid {
+.state-label {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.state-caveat {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* Ressalva do segundo percentual: fica logo abaixo dele, dentro do mesmo compartimento, um pouco
+   menor porque o número que ela qualifica também é secundário. */
+.state-caveat--second {
+  font-size: 12.5px;
+  margin-top: -2px;
+}
+
+.state-second {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+
+.state-source {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.tag--crit {
+  background: var(--crit-soft);
+  color: var(--crit-text);
+  border-color: var(--crit);
+}
+
+.tag--ok {
+  background: var(--ok-soft);
+  color: var(--ok-text);
+  border-color: var(--ok);
+}
+
+.tag--warn {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  border-color: var(--warn);
+}
+
+.tag--neutral {
+  background: var(--bg-inset);
+  color: var(--ink-2);
+  border-color: var(--border);
+}
+
+.tag--brand {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+/* barras de progresso (escopo e fechamento de achados) */
+.meter {
+  margin-top: 2px;
+}
+
+.meter-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-bottom: 5px;
+}
+
+.meter-line .num {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.meter-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+  background: var(--brand);
+}
+
+.meter-fill--ok {
+  background: var(--ok);
+}
+
+.closed-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.closed-list li {
+  padding: 2px 0;
+}
+
+.closed-list .num {
+  color: var(--ok-text);
+  font-weight: 600;
+}
+
+/* fita de métricas */
+.kpi-strip {
+  margin-top: 16px;
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.75fr);
-  gap: 18px;
-  margin-bottom: 18px;
-}
-
-.section-grid--tight { display: block; }
-.section-heading { margin-bottom: 16px; }
-
-.panel {
-  min-width: 0;
-  padding: 22px;
-  border-radius: 8px;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
 
 .kpi-card {
-  min-height: 132px;
-  padding: 18px;
-  border-radius: 8px;
+  padding: 14px 16px;
 }
 
-.kpi-card__label {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.kpi-card__value {
-  margin: 10px 0 8px;
-  font-size: 1.82rem;
-  font-weight: 850;
-}
-
-.kpi-card__note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.86rem;
-  line-height: 1.45;
-}
-
-.timeline,
-.contract-map {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.timeline {
-  grid-template-columns: repeat(5, minmax(130px, 1fr));
-}
-
-.timeline-item,
-.contract-card,
-.status-row,
-.risk-item,
-.next-item,
-.history-item,
-.validation-item,
-.estimate-card,
-.progress-item {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel-strong);
-}
-
-.timeline-item {
-  position: relative;
-  min-height: 168px;
-  padding: 16px;
-}
-
-.timeline-item::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto auto 16px;
-  width: 34px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--planned);
-}
-
-.timeline-item h3 { margin-top: 16px; }
-
-.timeline-item p,
-.contract-card p,
-.status-row p,
-.risk-item p,
-.next-item p,
-.history-item p,
-.estimate-card p {
-  margin-bottom: 0;
-  color: var(--muted);
-  font-size: 0.86rem;
-  line-height: 1.45;
-}
-
-.timeline-item[data-status="concluido"]::before,
-.status-badge[data-status="concluido"],
-.progress-bar[data-status="concluido"] span { background: var(--success); }
-
-.timeline-item[data-status="parcial"]::before,
-.status-badge[data-status="parcial"],
-.progress-bar[data-status="parcial"] span { background: var(--partial); }
-
-.timeline-item[data-status="planejado"]::before,
-.status-badge[data-status="planejado"],
-.progress-bar[data-status="planejado"] span { background: var(--planned); }
-
-.timeline-item[data-status="risco"]::before,
-.status-badge[data-status="risco"],
-.progress-bar[data-status="risco"] span { background: var(--risk); }
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.progress-list,
-.stacked-list,
-.validation-list,
-.estimate-list,
-.risk-list,
-.next-list,
-.history-list {
-  display: grid;
-  gap: 10px;
-}
-
-.progress-item,
-.status-row,
-.risk-item,
-.next-item,
-.history-item,
-.validation-item,
-.estimate-card,
-.contract-card {
-  padding: 14px;
-}
-
-.progress-top,
-.contract-card header,
-.status-row header,
-.risk-item header,
-.next-item header,
-.history-item header,
-.validation-item {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.progress-top {
-  margin-bottom: 10px;
-  font-size: 0.88rem;
-  font-weight: 800;
-}
-
-.progress-bar {
-  height: 10px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e4ebf2;
-}
-
-.progress-bar span {
+.kpi-card .num {
   display: block;
-  height: 100%;
-  border-radius: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
 }
 
-.contract-card { min-height: 170px; }
+.kpi-card .kpi-label {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
 
-.contract-card ul {
+.kpi-secondary {
   margin: 12px 0 0;
-  padding-left: 18px;
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
-.validation-item strong { font-size: 0.88rem; }
-.validation-item span {
-  color: var(--success);
-  font-size: 0.78rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.estimate-card strong {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 1.32rem;
-}
-
-.risk-item[data-severity="alto"] { border-left: 5px solid var(--risk); }
-.risk-item[data-severity="medio"] { border-left: 5px solid var(--partial); }
-.risk-item[data-severity="baixo"] { border-left: 5px solid var(--brand); }
-.history-panel { margin-bottom: 0; }
-
-/* D-KPI-INDEX-PAINEL — painel visual (SVG inline, zero dependência). O index.html é o
-   artefato principal de acompanhamento: os gráficos leem kpis-history.json em runtime. */
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.chart-panel--wide { grid-column: 1 / -1; }
-
-.chart-panel { padding: 20px 22px 14px; }
-
-.chart-head {
+  padding: 0;
+  list-style: none;
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  justify-content: space-between;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  gap: 8px;
+  font-size: 12.5px;
 }
 
-.chart-head h2 {
-  margin: 0 0 4px;
-  font-size: 1rem;
-  font-weight: 800;
+.kpi-secondary li {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--ink-2);
 }
 
-.chart-sub {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.8rem;
+.kpi-secondary .num {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------- 2. gráficos */
+
+.chart-card {
+  margin: 0 0 16px;
+  padding: 16px 18px 12px;
+}
+
+.chart-card figcaption strong {
+  display: block;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.chart-card figcaption span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.chart-row .chart-card {
+  margin-bottom: 0;
+}
+
+.chart {
+  margin-top: 10px;
+  overflow-x: auto; /* no telefone o gráfico rola no próprio contêiner */
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#chart-tests svg {
+  min-width: 620px;
+}
+
+#chart-blocks svg,
+#chart-velocity svg {
+  min-width: 300px;
 }
 
 .chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 6px 18px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
 }
 
-.chart-legend__item {
+.chart-legend .key {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
 }
 
-.chart-legend__item i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+.chart-legend .key i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
 }
 
-.chart-legend__item b {
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.86rem;
-  font-weight: 850;
+.key-backend i { background: var(--series-backend); }
+.key-web i { background: var(--series-web); }
+.key-campo i { background: var(--series-campo); }
+
+/* marcas SVG — cores sempre via token */
+.stroke-backend { stroke: var(--series-backend); }
+.stroke-web { stroke: var(--series-web); }
+.stroke-campo { stroke: var(--series-campo); }
+.stroke-brand { stroke: var(--brand); }
+.fill-backend { fill: var(--series-backend); }
+.fill-web { fill: var(--series-web); }
+.fill-campo { fill: var(--series-campo); }
+.fill-brand { fill: var(--brand); }
+
+.chart .grid-line {
+  stroke: var(--grid);
+  stroke-width: 1;
 }
 
-/* Aviso honesto quando os gráficos não podem ser lidos (file://). O JS o esconde ao hidratar. */
-.charts-offline-note {
-  margin: 0 0 18px;
-  padding: 14px 18px;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
-  background: var(--panel-strong);
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.5;
+.chart .axis-line {
+  stroke: var(--axis);
+  stroke-width: 1;
 }
 
-.charts-offline-note code {
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(20, 108, 148, 0.08);
-  color: var(--brand);
-  font-size: 0.95em;
+/* Semana sem medição: faixa cinza translúcida, na cor da grade. Sem regra própria o <rect> nasce
+   com preenchimento PRETO e vira uma barra enorme — pior do que o zero que ela substituiu, porque
+   se lê como o maior valor do gráfico. (Este comentário já disse "hachurada, atrás da grade";
+   nenhuma das duas coisas a regra faz — o desenho é chapado e vem depois da grade no SVG.) */
+.chart .week-gap {
+  fill: var(--grid);
+  opacity: 0.55;
 }
 
-/* Small multiples da cobertura de testes: uma faixa por trilha, cada uma com escala própria. */
-.chart-multi + .chart-multi {
-  margin-top: 4px;
+/* Barra que mede uma janela maior que uma semana: mesma cor, tratamento mais leve, para não competir
+   com as barras que cobrem uma semana só. */
+.chart .bar--spans-gap {
+  opacity: 0.72;
+}
+
+/* Semana ainda em curso: mais apagada ainda. Sem isto, um balde de um dia encerra a série com a
+   mesma gramática de uma semana cheia e se lê como colapso de ritmo. */
+.chart .bar--parcial {
+  opacity: 0.5;
+}
+
+/* Barras horizontais do gráfico de rodadas: o rótulo é texto, e vertical colidiria com onze
+   categorias. */
+.chart .bar-h {
+  fill: var(--brand);
+}
+
+.chart .row-label {
+  fill: var(--ink-2);
+}
+
+/* Quebra de medida: a régua marca onde a métrica mudou o que mede, e a linha da série é
+   interrompida ali. Tracejada e discreta de propósito — é uma ressalva do gráfico, não um alerta. */
+.chart .break-rule {
+  stroke: var(--axis);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.85;
+}
+
+.chart-note {
+  margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--line);
+  border-top: 1px dashed var(--border);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
 }
 
-.chart-multi__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.chart-note p {
+  margin: 0 0 6px;
+}
+
+.chart-note ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.chart-note b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.chart text {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  fill: var(--ink-3);
+}
+
+.chart .end-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.chart .end-label .lbl {
+  font-weight: 600;
+  fill: var(--ink-2);
+}
+
+.chart .bar-label {
+  fill: var(--ink-2);
+}
+
+.chart circle.pt {
+  stroke: var(--bg-panel);
+  stroke-width: 1;
+}
+
+.chart circle.pt:hover {
+  r: 4.5;
+}
+
+/* As barras são emitidas como <path class="bar">, não <rect> — `rect.bar` nunca casou com nada. */
+.chart path.bar:hover,
+.chart circle.pt:hover {
+  opacity: 0.82;
+}
+
+.nodata {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.offline-note {
+  max-width: 1080px;
+  margin: 24px auto 0;
+  padding: 12px 16px;
+  border: 1px solid var(--warn);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+
+/* --------------------------------------------------- 3. conclusão */
+
+.conclusion {
+  padding: 20px 22px;
+  border-left: 4px solid var(--brand);
+  font-size: 15.5px;
+  max-width: 100%;
+}
+
+.conclusion p {
+  margin: 0;
+  max-width: 78ch;
+}
+
+/* ----------------------------------------------- 4. últimas demandas */
+
+.recent-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
   gap: 12px;
 }
 
-.chart-multi__label {
-  display: inline-flex;
+.recent-item {
+  padding: 16px 18px;
+}
+
+.recent-meta {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 800;
+  font-size: 12.5px;
+  color: var(--ink-3);
 }
 
-.chart-multi__label i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+.recent-item h3 {
+  margin: 8px 0 6px;
+  font-size: 16px;
+  line-height: 1.3;
 }
 
-.chart-multi__value {
-  color: var(--ink);
-  font-size: 1.05rem;
-  font-weight: 850;
-  font-variant-numeric: tabular-nums;
+.recent-item .resumo {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  max-width: 90ch;
 }
 
-.chart-multi__value small {
-  margin-left: 8px;
-  color: var(--success);
-  font-size: 0.72rem;
+.recent-facts {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.recent-facts li {
+  border-radius: 999px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-inset);
+  color: var(--ink-2);
+}
+
+.recent-facts li.fact-fecha {
+  background: var(--ok-soft);
+  border-color: var(--ok);
+  color: var(--ok-text);
+}
+
+.recent-facts li.fact-descoberto {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.recent-facts li.fact-ciclos {
+  background: var(--warn-soft);
+  border-color: var(--warn);
+  color: var(--warn-text);
   font-weight: 700;
 }
 
-.chart-axis-range {
-  /* Dentro do canvas rolável, com a MESMA largura do SVG — rola junto e nunca desalinha (M1-c2). */
-  width: 1320px;
-  margin: 2px auto 0;
+.section-footnote {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  max-width: 80ch;
+}
+
+/* ------------------------------------------------------ 5. achados */
+
+.findings-lead {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 80ch;
+}
+
+.findings-lead .num {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.filters {
   display: flex;
-  justify-content: space-between;
-  padding: 0 16px 0 44px;
-  color: var(--muted);
-  font-size: 0.72rem;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
-.chart-canvas {
-  margin-top: 10px;
-  /* O gráfico ROLA em vez de encolher. Deixar o SVG escalar com o contêiner fazia a mesma
-     `font-size="11"` renderizar a 17,2px numa coluna e 5,2px noutra (achado B3b da junta):
-     a hierarquia tipográfica invertia e o rótulo sumia. Largura fixa = 1 unidade de viewBox
-     é sempre 1px de tela, em qualquer viewport. */
-  overflow-x: auto;
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 }
 
-.chart-svg {
-  display: block;
-  height: auto;
+.filter-group-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: 2px;
+}
+
+.filter-btn {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-panel);
+  color: var(--ink-2);
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.filter-btn[aria-pressed="true"] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+  font-weight: 700;
+}
+
+.filter-btn:focus-visible,
+.filter-select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.filter-select {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-panel);
+  color: var(--ink);
+  max-width: 100%;
+}
+
+.findings-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.finding {
+  padding: 14px 16px;
+}
+
+.finding--p0 {
+  border-left: 4px solid var(--crit);
+}
+
+.finding--p1 {
+  border-left: 4px solid var(--warn);
+}
+
+.finding-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.finding-top code {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.finding-mod {
+  color: var(--ink-3);
+}
+
+.finding .resumo {
+  margin: 8px 0 6px;
+  font-size: 14px;
+  color: var(--ink);
+  max-width: 90ch;
+}
+
+.finding-state {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.finding-state--corrigido { color: var(--ok-text); }
+.finding-state--parcial { color: var(--brand); }
+.finding-state--plano { color: var(--brand); }
+.finding-state--adiado { color: var(--warn-text); }
+.finding-state--sembloco { color: var(--crit-text); }
+
+.findings-empty {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+/* --------------------------------------------------- 6. cronograma */
+
+.roadmap-progress {
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.roadmap-order {
+  margin: 14px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.roadmap-order .order-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: 4px;
+}
+
+.order-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: var(--bg-panel);
+  color: var(--ink-2);
+  font-family: var(--font-data);
+  font-size: 12px;
+}
+
+.order-step--done {
+  background: var(--ok-soft);
+  border-color: var(--ok);
+  color: var(--ok-text);
+}
+
+.order-step--next {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+  font-weight: 700;
+}
+
+.order-arrow {
+  color: var(--ink-3);
+}
+
+.roadmap-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.roadmap-block {
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+}
+
+.chk {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 2px;
+  color: transparent;
+  background: var(--bg-inset);
+}
+
+.chk--done {
+  background: var(--ok);
+  border-color: var(--ok);
+  /* --ok é o mesmo nos dois temas, então o branco aqui não muda de par junto com o tema. */
+  color: var(--on-ok);
+}
+
+.chk--plano {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.roadmap-block h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.roadmap-block h3 code {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.roadmap-block .nota {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  max-width: 85ch;
+}
+
+.roadmap-facts {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.roadmap-facts li {
+  border: 1px solid var(--border);
+  background: var(--bg-inset);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--ink-2);
+}
+
+.roadmap-facts li code {
+  font-size: 11.5px;
+  color: inherit;
+}
+
+.roadmap-facts li.fact-dep {
+  background: var(--bg-panel);
+  border-style: dashed;
+}
+
+/* trilha represada — moldura com faixa de sinalização */
+.blocked-track {
+  margin-top: 16px;
+  padding: 16px 18px 16px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.blocked-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--warn) 0 10px,
+    transparent 10px 20px
+  );
+}
+
+.blocked-track h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.blocked-track p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  max-width: 85ch;
+}
+
+.blocked-track ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.blocked-track ul li {
+  color: var(--ink-2);
+}
+
+.blocked-track ul li code {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+/* -------------------------------------------------------- rodapé */
+
+footer {
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+  background: var(--bg-inset);
+}
+
+.footer-inner {
+  max-width: 1080px;
   margin: 0 auto;
-  overflow: visible;
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
+  padding: 20px;
+  font-size: 12px;
+  color: var(--ink-3);
 }
 
-.chart-panel--wide .chart-svg { width: 1320px; }
-.chart-panel:not(.chart-panel--wide) .chart-svg { width: 620px; }
-
-@media (max-width: 1180px) {
-  .kpi-grid,
-  .contract-map,
-  .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* F5 — os painéis estreitos já ficavam ilegíveis a partir daqui (o viewBox encolhe a fonte
-     junto), então colapsam no MESMO breakpoint do resto do painel, não só em 860px. */
-  .chart-grid { grid-template-columns: 1fr; }
+.footer-inner p {
+  margin: 4px 0;
+  max-width: 100ch;
 }
+
+.noscript-note {
+  max-width: 1080px;
+  margin: 24px auto;
+  padding: 14px 18px;
+  border: 1px solid var(--crit);
+  background: var(--crit-soft);
+  color: var(--crit-text);
+  border-radius: 10px;
+}
+
+/* ------------------------------------------------------ responsivo */
 
 @media (max-width: 860px) {
-  .dashboard-shell { padding: 16px; }
-  .hero,
-  .section-grid { grid-template-columns: 1fr; }
-  .hero { padding: 22px; }
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
 }
 
-
-@media (max-width: 560px) {
-  .kpi-grid,
-  .contract-map,
-  .timeline { grid-template-columns: 1fr; }
-  .hero-meta div,
-  .validation-item {
-    grid-template-columns: 1fr;
-    text-align: left;
+/* Alvo de toque de 44px onde o apontador é o DEDO. O critério é o ponteiro, não a largura: um
+   tablet largo também é tocado. Vale para os chips de filtro, o seletor de módulo e os links do
+   menu — os únicos alvos interativos desta página. */
+@media (pointer: coarse) {
+  .filter-btn,
+  .filter-select {
+    min-height: 44px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 13.5px;
   }
-  dd { text-align: left; }
+
+  .site-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (max-width: 720px) {
+  .dual {
+    grid-template-columns: 1fr;
+  }
+
+  .masthead h1 {
+    font-size: 24px;
+  }
+
+  .state-value {
+    font-size: 38px;
+  }
+
+  .state-verdict {
+    font-size: 21px;
+  }
+
+  .section {
+    margin-top: 32px;
+  }
+}
+
+@media (max-width: 420px) {
+  .kpi-strip {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .kpi-card .num {
+    font-size: 21px;
+  }
+
+  main {
+    padding: 4px 14px 40px;
+  }
+
+  .masthead-inner {
+    padding: 22px 14px 18px;
+  }
 }

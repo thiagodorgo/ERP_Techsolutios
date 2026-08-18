@@ -3,676 +3,169 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ERP Techsolutions - KPI Dashboard</title>
+    <title>ERP TechSolutions — Painel do projeto</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="dashboard-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Painel permanente de acompanhamento</p>
-          <h1 id="project-title">ERP Techsolutions</h1>
-          <p id="project-summary" class="hero-summary"></p>
-        </div>
-        <dl class="hero-meta" aria-label="Metadados do painel">
-          <div><dt>Versao</dt><dd id="dashboard-version">-</dd></div>
-          <div><dt>Atualizado</dt><dd id="last-updated">-</dd></div>
-          <div><dt>Fonte</dt><dd id="source-branch">-</dd></div>
-        </dl>
-      </header>
+    <header class="masthead">
+      <div class="masthead-inner">
+        <p class="kicker">ERP TechSolutions · Operação de campo, guincho e pátios</p>
+        <h1>Painel do projeto</h1>
+        <p class="masthead-meta" id="meta-line">Carregando o snapshot…</p>
+        <p class="data-mode" id="data-mode" hidden></p>
+        <!-- Cada link nasce escondido e só aparece quando a seção correspondente aparece.
+             Um menu que anuncia seis seções enquanto o painel escondeu três por falta de dado leva
+             o leitor a âncoras mortas — e sugere que existe conteúdo que não existe. -->
+        <nav class="site-nav" aria-label="Seções do painel">
+          <a href="#state-section" data-nav-for="state-section" hidden>Onde estamos</a>
+          <a href="#charts-section" data-nav-for="charts-section" hidden>Desempenho</a>
+          <a href="#conclusion-section" data-nav-for="conclusion-section" hidden>Conclusão</a>
+          <a href="#recent-section" data-nav-for="recent-section" hidden>Últimas demandas</a>
+          <a href="#findings-section" data-nav-for="findings-section" hidden>Achados</a>
+          <a href="#roadmap-section" data-nav-for="roadmap-section" hidden>Cronograma</a>
+        </nav>
+      </div>
+    </header>
 
-      <!-- D-KPI-INDEX-PAINEL — os números de manchete abrem o painel (achado F7 da junta: eles
-           viviam a 8,3 telas de rolagem, atrás do changelog por PR). -->
-      <section class="section-grid section-grid--tight" aria-label="Números do projeto">
-        <div class="section-heading">
-          <p class="eyebrow">Status executivo</p>
-          <h2>Onde o projeto está</h2>
+    <main>
+      <!-- 1. As duas dimensões, com o mesmo peso -->
+      <section class="section" id="state-section" hidden aria-labelledby="state-title">
+        <header class="section-head">
+          <p class="kicker">Situação</p>
+          <h2 id="state-title">Onde o projeto está</h2>
+          <p class="section-sub">
+            Duas medidas independentes, lado a lado: quanto do escopo já foi construído
+            e se o que existe está pronto para entrar em produção.
+          </p>
+        </header>
+        <div class="dual">
+          <article class="card state-card" id="card-scope" aria-label="Escopo entregue"></article>
+          <article class="card state-card state-card--readiness" id="card-readiness" aria-label="Prontidão para produção"></article>
         </div>
-        <div id="kpi-cards" class="kpi-grid"></div>
+        <div class="kpi-strip" id="kpi-cards"></div>
+        <ul class="kpi-secondary" id="kpi-secondary"></ul>
       </section>
 
-      <!-- Painel visual (D-KPI-INDEX-PAINEL) — gráficos SVG inline, zero dependência (PD-004),
-           hidratados em runtime de kpis-history.json. Sem servidor (file://) a seção se esconde
-           e o aviso abaixo explica o porquê — o painel nunca desenha série que não tem (D-007). -->
-      <p id="charts-offline-note" class="charts-offline-note">
-        A visão gráfica lê <code>kpis-history.json</code> em runtime. Abra o painel por um servidor
-        (<code>npx serve Kpis</code>) para vê-la — em <code>file://</code> o navegador bloqueia a leitura e o
-        painel prefere não desenhar nada a desenhar uma curva que não mediu.
-      </p>
-      <section id="charts-section" class="section-grid section-grid--tight" aria-label="Evolução do projeto" hidden>
-        <div class="section-heading">
-          <p class="eyebrow">Visão gráfica</p>
-          <h2>Evolução do projeto</h2>
+      <!-- 2. Gráficos: nascem escondidos; só aparecem com o histórico real -->
+      <section class="section" id="charts-section" hidden aria-labelledby="charts-title">
+        <header class="section-head">
+          <p class="kicker">Desempenho</p>
+          <h2 id="charts-title">A curva de construção</h2>
+          <p class="section-sub">
+            Cada ponto é o valor <em>publicado</em> naquela entrega. Quando uma entrega não
+            mexe numa trilha, ela republica o último valor oficial — então trecho plano pode
+            ser valor carregado, não medição nova. Lacuna de medição fica de fora: nada aqui
+            é interpolado nem completado com zero.
+          </p>
+        </header>
+        <figure class="card chart-card">
+          <figcaption>
+            <strong>Testes automatizados ao longo do tempo</strong>
+            <span>Quantidade de testes que passam, por trilha. Não é percentual de cobertura de código.</span>
+          </figcaption>
+          <div class="chart" id="chart-tests"></div>
+        </figure>
+        <div class="chart-row">
+          <figure class="card chart-card">
+            <figcaption>
+              <strong>Blocos entregues</strong>
+              <span>Total acumulado de blocos de trabalho concluídos.</span>
+            </figcaption>
+            <div class="chart" id="chart-blocks"></div>
+          </figure>
+          <figure class="card chart-card">
+            <figcaption>
+              <strong>Blocos entregues por semana</strong>
+              <span>Diferença do acumulado entre medições. Semana sem medição não vira zero.</span>
+            </figcaption>
+            <div class="chart" id="chart-velocity"></div>
+          </figure>
         </div>
-
-        <div class="chart-grid">
-          <article class="panel chart-panel chart-panel--wide">
-            <div class="chart-head">
-              <div>
-                <h3>Cobertura de testes ao longo das entregas</h3>
-                <p class="chart-sub">
-                  Contagem real por PR. Cada trilha tem escala própria — o gráfico mostra a
-                  <strong>forma</strong> do crescimento; o número à direita mostra o nível.
-                  Trecho tracejado = período sem medição daquela trilha (não é interpolação).
-                </p>
-              </div>
-            </div>
-            <div id="chart-tests" class="chart-canvas"></div>
-          </article>
-
-          <article class="panel chart-panel">
-            <div class="chart-head">
-              <div>
-                <h3>Blocos entregues</h3>
-                <p class="chart-sub">Acumulado de fatias concluídas</p>
-              </div>
-            </div>
-            <div id="chart-blocks" class="chart-canvas"></div>
-          </article>
-
-          <article class="panel chart-panel">
-            <div class="chart-head">
-              <div>
-                <h3>Entregas por rodada</h3>
-                <p class="chart-sub">
-                  Snapshots por rodada <strong>desde 19/07/2026</strong>, quando o registro por PR passou a ser
-                  contínuo. As rodadas anteriores ficam de fora de propósito: cabiam num único registro
-                  consolidado e a barra não seria comparável.
-                </p>
-              </div>
-            </div>
-            <div id="chart-rounds" class="chart-canvas"></div>
-          </article>
-
-          <article class="panel chart-panel chart-panel--wide">
-            <div class="chart-head">
-              <div>
-                <h3>Ritmo de entrega</h3>
-                <p class="chart-sub">
-                  Testes adicionados nas 24 últimas entregas — mede o esforço de <em>prova</em> de cada fatia.
-                  Barra âmbar para baixo = a contagem caiu (nunca zeramos uma queda em silêncio).
-                </p>
-              </div>
-            </div>
-            <div id="chart-velocity" class="chart-canvas"></div>
-          </article>
-        </div>
+        <figure class="card chart-card">
+          <figcaption>
+            <strong>Entregas por rodada de trabalho</strong>
+            <span>Quantas entregas cada frente publicou.</span>
+          </figcaption>
+          <div class="chart" id="chart-rounds"></div>
+        </figure>
       </section>
+      <p class="offline-note" id="charts-offline-note" hidden></p>
 
-      <section class="section-grid section-grid--tight" aria-label="Entregas por PR">
-        <div class="section-heading">
-          <p class="eyebrow">Registro cronológico</p>
-          <h2>Entregas por PR</h2>
-        </div>
-        <article class="panel panel--wide" aria-label="Resumo FIX-NAV-MENU-PLATFORM-JWT">
-          <h2>NAV-MENU-PLATFORM · JWT e Prisma reconciliados</h2>
-          <p>
-              <strong>Correção de acesso (2026-07-29):</strong> o menu Platform sob JWT real
-            deixava de responder quando a persistência Prisma estava ativa, porque o
-            pseudo-tenant <code>platform</code> era enviado a consultas que exigem UUID.
-            Somente o router de navegação ativa esse contexto do plano de controle; os
-            demais consumidores continuam fail-closed, tenants reais preservam o RBAC
-            persistente e <code>platform</code> não habilita itens tenant-only. O teste
-            protegido passou <strong>7/7</strong> no Prisma real; backend completo
-              <strong>1900/1906</strong> (0 falhas, 6 skips), frontend smoke
-            <strong>937/937</strong>, Flutter <strong>807/807</strong> e
-              <code>blocks_completed=111</code>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE detalhe organizacao real">
-          <h2>WS-SCALE · Detalhe da Organização — dados reais por organização</h2>
-          <p>
-            <strong>Dados reais (2026-07-21):</strong> o <strong>Detalhe da Organização</strong> mostrava sempre a mesma
-            organização fictícia ("Techsolutions BH") e <strong>ignorava qual organização você abriu</strong>. Agora ele lê a
-            organização da URL e busca os <strong>dados reais</strong> dela: nome, situação, data de criação, os
-            <strong>usuários</strong> (nome/e-mail/perfil) e os <strong>módulos</strong> contratados. <strong>Isolamento:</strong>
-            a lista de usuários de cada organização é lida no escopo daquela organização, a tela é exclusiva do Admin da
-            Plataforma, e organização inexistente mostra "Organização não encontrada". <strong>Honestidade:</strong> receita,
-            uptime e saúde do sistema por organização <strong>não têm fonte</strong> e foram omitidos (selo honesto no lugar).
-            Time (dev backend + dev frontend → juntas): <strong>analizador + coordenador de acessos + cognição-visual APROVADO</strong>.
-            <strong>backend +7 · smoke 643→650</strong>. Sem migração. <em>Fecha o grupo de telas de Plataforma do WS-SCALE.</em>
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE saude plataforma honesta">
-          <h2>WS-SCALE · Saúde do Sistema (plataforma) — parada honesta</h2>
-          <p>
-            <strong>Correção de integridade (2026-07-20):</strong> a tela de <strong>Saúde do Sistema</strong> mostrava
-            telemetria de infraestrutura <strong>toda inventada</strong> (latência 128 ms, 99,98% de uptime, "Redis Degradado" e
-            mais 5 serviços). Não existe camada de <strong>observabilidade</strong> medindo isso ainda, então a tela foi
-            reescrita como uma <strong>parada honesta</strong> ("Monitoramento em preparação"), <strong>sem número inventado</strong>,
-            explicando que os indicadores de infra chegam com a ativação da infraestrutura cloud. Também corrigimos o título de
-            "Health do Sistema" para <strong>"Saúde do Sistema"</strong> (interface sem termo técnico em inglês).
-            <strong>smoke 641→643</strong> (+2). Fecha o grupo de telas de Plataforma do WS-SCALE (Visão Geral já usa dado real;
-            monitoramento real fica para a trilha de infra).
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE plataforma real">
-          <h2>WS-SCALE · Visão Geral da Plataforma — números reais (isolamento provado)</h2>
-          <p>
-            <strong>Dados reais (2026-07-20):</strong> a <strong>Visão Geral da Plataforma</strong> fabricava tudo (48
-            organizações, 2.184 usuários, R$ 312k de MRR, 99,98% de uptime) — no front <em>e</em> no backend. Agora um
-            <strong>agregado real</strong> conta as organizações e os usuários de verdade. <strong>Isolamento (multi-tenant):</strong>
-            a contagem de usuários de cada organização roda dentro do escopo daquela organização (nunca uma consulta que cruza
-            organizações), o endpoint é <strong>exclusivo do Admin da Plataforma</strong>, e um usuário comum recebe "acesso não
-            permitido" — a junta de acessos aprovou sem ressalva. <strong>Honestidade:</strong> receita (MRR), uptime e o feed de
-            atividade <strong>não têm fonte real ainda</strong>, então foram <strong>omitidos</strong> (um selo honesto entra no
-            lugar), nunca um número inventado. Time (dev backend + dev frontend → juntas): <strong>analizador + coordenador de
-            acessos + cognição-visual APROVADO</strong>. <strong>backend +6 · smoke 635→641</strong>. Sem migração. (A tela de
-            "Saúde" da plataforma é o próximo passo — vira parada honesta, pois é telemetria de infra ainda inexistente.)
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE operadores real">
-          <h2>WS-SCALE · Operadores de Campo — lista real (sem coordenada exposta)</h2>
-          <p>
-            <strong>Dados reais (2026-07-20):</strong> a tela <strong>Operadores de Campo</strong> também
-            <strong>fabricava</strong> a equipe ("Carla Mendes · 8 em campo"). Agora ela usa a
-            <strong>mesma fonte real do Mapa</strong> (localização/status dos operadores), mostrando por operador: equipe, OS
-            atual, <strong>quando foi a última posição</strong> ("há X min") e o status. <strong>Privacidade (LGPD):</strong> a
-            lista <strong>nunca mostra a coordenada</strong> — só o frescor da posição; um teste garante que latitude/longitude
-            jamais vazam. Os contadores no topo são honestos (repartem os operadores pelos status reais). O botão
-            "Convidar operador" (que não fazia nada) foi <strong>removido</strong>. Time (dev → junta): <strong>analizador +
-            avaliador de mapas + cognição-visual APROVADO</strong>. <strong>smoke 631→635</strong> (+4). Sem backend novo, sem migração.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE auditoria real">
-          <h2>WS-SCALE · Auditoria da organização — ligada ao registro real</h2>
-          <p>
-            <strong>Dados reais (2026-07-20):</strong> a tela de <strong>Auditoria</strong> também <strong>fabricava</strong>
-            eventos ("Carla Mendes concluiu OS-2891") e números ("312 eventos"). Agora ela lê o <strong>registro de auditoria
-            real</strong> da organização (o backend já existia). Mostra só o que aconteceu de verdade, com contadores honestos
-            (eventos carregados, atores e ações distintas, evento mais recente) e os estados certos para
-            <strong>carregando</strong>, <strong>sem eventos</strong>, <strong>erro</strong> e <strong>acesso não permitido</strong>.
-            <strong>Privacidade:</strong> o identificador interno da organização nunca é exposto na tela (§2.8). Exportar CSV usa
-            só os eventos reais. Time (dev → junta): <strong>analizador + cognição-visual + coordenador-de-acessos APROVADO</strong>.
-            <strong>smoke 626→631</strong> (+5). Sem backend novo, sem migração.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE invoices NF-e honesto">
-          <h2>WS-SCALE · Faturas (NF-e) — parada fiscal honesta (correção de integridade)</h2>
-          <p>
-            <strong>Correção de integridade (2026-07-20):</strong> a tela <strong>Faturas</strong>
-            <strong>fabricava</strong> notas fiscais — empresas, valores ("R$ 24.800") e contadores ("128 emitidas")
-            <strong>todos inventados</strong>. Isso viola a regra do projeto de <strong>nunca fabricar dado</strong> (D-007/§2.8).
-            A tela foi reescrita como uma <strong>parada honesta</strong>: a emissão de NF-e exige integração fiscal externa
-            (certificado digital + SEFAZ) e fica disponível <strong>após a ativação cloud</strong>. Agora ela explica isso com
-            clareza, <strong>sem nenhum número inventado</strong>, com o botão "Emitir NF-e" desabilitado e um atalho para as
-            <strong>Cobranças reais</strong> (visível só para quem tem permissão). Aqui a regra de <strong>não fabricar vence a
-            fidelidade ao protótipo</strong>. Time (dev → junta): <strong>cognição-visual + coordenador-de-acessos APROVADO</strong>.
-            <strong>smoke 624→626</strong> (+2). <em>Obs.: a parte de RBAC (destravar Pedidos/Relatórios) aguarda autorização
-            explícita do dono — registrada como pendência.</em>
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-CARDS-CHARTS-F2 fan-out restante">
-          <h2>WS-CARDS-CHARTS-F2 (fan-out · parte 2) — Estoque, Remunerações e Frota</h2>
-          <p>
-            <strong>Fan-out restante (2026-07-20):</strong> mais <strong>22 cards</strong> passaram a abrir pop-up temático em 6
-            telas de <strong>dado real</strong> — Estoque, Remunerações, Multas, Abastecimento, Seguros e Danos. Como fora do
-            Dashboard <strong>não existe série temporal real</strong>, os pop-ups mostram o <strong>detalhamento honesto</strong>
-            (composição/explicação) e <strong>nenhum gráfico inventado</strong>. <strong>Decisão honesta (D-007):</strong> as
-            telas de <strong>Plataforma</strong> (Visão Geral, Saúde, Detalhe da Organização) e <strong>Manutenção</strong> foram
-            <strong>deixadas de fora</strong> — hoje seus números são de exemplo (sem fonte real); torná-los clicáveis criaria
-            pop-ups sobre dados decorativos. Ficam para quando tiverem backend real (registrado como pendência). <strong>Acesso:</strong>
-            atalhos dos pop-ups (compras, cobranças, pagamentos) só aparecem para quem pode abrir a tela de destino. Time (dev →
-            junta): <strong>analizador + cognição-visual + coordenador-de-acessos APROVADO</strong>. <strong>smoke 615→624</strong>
-            (+9). Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-CARDS-CHARTS-F2 fan-out">
-          <h2>WS-CARDS-CHARTS-F2 (fan-out) — cards clicáveis com pop-up temático</h2>
-          <p>
-            <strong>Fan-out de cards clicáveis (2026-07-20):</strong> <strong>20 cards</strong> de número/KPI que antes eram
-            estáticos agora <strong>abrem um pop-up temático</strong> ao clicar, em 3 telas operacionais: <strong>Dashboard</strong>
-            (9 KPIs — "Concluídas" e "OS hoje" mostram a <strong>tendência diária real</strong> quando o dado vem do servidor,
-            senão uma explicação honesta), <strong>Ordens de Serviço</strong> (4 cards com a composição por situação) e
-            <strong>Despachos</strong> (7 cards com o detalhamento por status). <strong>Honesto (D-007):</strong> todo número do
-            pop-up vem de dado <strong>já carregado na tela</strong> — nada é somado nem inventado. <strong>Acesso:</strong> quem
-            não pode ver ordens não dispara busca nem vê botão para telas que não pode abrir (a série só é buscada com permissão;
-            cada atalho respeita a permissão exata da rota). Time (dev → junta): <strong>analizador + cognição-visual +
-            coordenador-de-acessos APROVADO</strong> (duas condições de acesso sanadas). <strong>smoke 602→615</strong> (+13).
-            Backend/Flutter/MVP <strong>inalterados</strong>. Próximo: mesmas melhorias em Estoque, Remunerações, frota e plataforma.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-CARDS-CHARTS-F2 frontend">
-          <h2>WS-CARDS-CHARTS-F2 (frontend) — gráfico temporal real no Dashboard</h2>
-          <p>
-            <strong>Gráfico temporal (2026-07-20):</strong> o Dashboard Operacional ganhou um card
-            <strong>"Volume de ordens de serviço"</strong> (últimos 30 dias) que consome o agregado real
-            <code>/operations/work-orders-timeseries</code> (#245) — três séries diárias: <strong>Abertas</strong> (azul),
-            <strong>Concluídas</strong> (verde) e <strong>Canceladas</strong> (vermelho), com o gráfico SVG de zero-dependência.
-            <strong>Honesto (D-007):</strong> o front nunca soma nem inventa ponto — só plota o que o backend devolve; período
-            vazio mostra "Sem ordens no período". <strong>Acesso (§7):</strong> quem não tem permissão de ver OS nem dispara a
-            busca (pré-cheque) e vê "Acesso não permitido"; um 403 do backend cai no mesmo estado honesto, sem quebrar o resto do
-            Dashboard. Rótulos de data <strong>dd/mm</strong> sem erro de fuso. Time (dev → junta): <strong>analizador APROVADO +
-            cognição-visual APROVADO</strong> (fiel aos painéis irmãos) <strong>+ coordenador-de-acessos APROVADO</strong> (cadeia
-            papel→permissão→UI, backend é a autoridade). <strong>smoke 597→602</strong> (+5). Backend/Flutter/MVP
-            <strong>inalterados</strong>. Próximo: fan-out dos cards clicáveis nas demais telas.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA alocação">
-          <h2>WS-MAPA alocação de técnico — FECHA o feedback do Mapa (D/E)</h2>
-          <p>
-            <strong>WS-MAPA alocação (2026-07-19):</strong> a feature que fecha o feedback do dono. No painel de
-            <strong>chamados</strong>, clicar abre o detalhe + <strong>"Alocar técnico"</strong> com a lista ranqueada e os
-            filtros (disponível / mais próximo por distância real / maior índice de conclusão, vindo do agregado backend). No
-            painel de <strong>técnicos</strong>, cada linha mostra o status, o <em>hover</em> traz status/frescor (sem vazar
-            coordenada) e realça o pin, e o clique abre o popup com o seletor de chamado, a <strong>distância "~X km (linha reta)"</strong>
-            e o <strong>tempo "~Y min (estimado, sem trânsito)"</strong> — honesto, com aviso, <strong>nunca um ETA de chegada
-            inventado</strong>. A alocação é <strong>real</strong> (via o endpoint de despacho existente). Índice sem OS → "—"
-            (nunca 0% falso); LGPD (zero lat/lng no HTML). Só quem tem permissão de despacho aloca (duplo-gate). Time (dev →
-            analizador → aprovador → coordenador-de-acessos → cognição-visual): <strong>3 APROVADO + 1 APROVADO_CONDICIONADO</strong>;
-            condições sanadas. <strong>smoke 581→597</strong> (baseline de mapa 112→128). Sem provider/SKU (US$ 0). ETA por rota real
-            fica para a Fase 2 (com PD). Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA polish">
-          <h2>WS-MAPA polish — fullscreen nativo + legenda única + rail-pílula (feedback do dono)</h2>
-          <p>
-            <strong>WS-MAPA polish (2026-07-19):</strong> ajustes pedidos pelo dono na tela. <strong>(A)</strong> Legenda
-            <strong>única</strong> colada na base — removido o bloco redundante ("Atual"/"Localização antiga") do canvas Google.
-            <strong>(C)</strong> O "Maximizar" customizado (que ele achou tosco) foi <strong>removido</strong> em favor do
-            <strong>fullscreen NATIVO</strong> do provedor, no canto inferior direito (MapLibre + Google, regra do espelho).
-            <strong>(B)</strong> O rail <strong>colapsado</strong> deixou de ser uma faixa que roubava o mapa e virou uma
-            <strong>pílula fina</strong> (44px) no topo — não interfere mais. Executado com o <strong>time novo</strong>
-            (planejador-sênior-master-chefe + pesquisadores web → dev → analizador → aprovador): analizador e cognição-visual
-            <strong>APROVADO</strong>, aprovador <strong>APROVADO_CONDICIONADO</strong> (condição do KB sanada). Sem
-            provider/SKU/backend (US$ 0). <strong>smoke 581/581 e mapa 112/112 inalterados</strong> (testes de layout reescritos).
-            Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-5 Fase 1 fechada">
-          <h2>WS-MAPA M-5 — alerta de OS nova · FASE 1 do redesign FECHADA</h2>
-          <p>
-            <strong>WS-MAPA M-5 (2026-07-19):</strong> requisito 3 do dono — <strong>alerta visual ao chegar OS nova</strong>.
-            O hook <code>useNewWorkOrderAlert</code> compara os chamados entre atualizações e, ao detectar um novo, dispara em
-            3 camadas: <strong>toast</strong> discreto (anunciado por leitor de tela, sem coordenada), <strong>realce no badge</strong>
-            do painel de chamados e <strong>pulso no pin novo</strong> no mapa (na cor da prioridade — urgente segue vermelho,
-            os demais na própria cor, sem "mentir urgência"). Com <strong>proteção contra "spam de alerta"</strong> (não alerta ao
-            abrir a tela; deduplica; teto por ciclo; toast some sozinho) e respeito a <em>reduce-motion</em>.
-            <strong>avaliador-mapas APROVADO_CONDICIONADO</strong> (8/8 itens de veto + anti-spam/LGPD/a11y todos verificados).
-            <strong>smoke 565→581</strong> (baseline de mapa 96→112, meta ≥110 atingida).
-            <strong>Fase 1 do redesign do Mapa FECHADA</strong> — os 6 requisitos do dono cobertos (chamados+SLA, técnicos,
-            alerta, mapa dominante, maximizar+4º quadrante, legenda no rodapé); resta só a Fase 2 (SLA real no backend).
-            Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-4">
-          <h2>WS-MAPA M-4 — fila de chamados que chegam (prioridade + SLA honesto)</h2>
-          <p>
-            <strong>WS-MAPA M-4 (2026-07-19):</strong> requisito 1 do dono. O painel esquerdo deixou de ser placeholder e mostra
-            a <strong>fila real de chamados</strong> (OS abertas): código/cliente + <strong>chip de prioridade</strong> + um
-            <strong>indicador de SLA honesto</strong> — "Agendado para {data}" ou "Aberto há {tempo}", <strong>nunca "vence em"</strong>
-            (o SLA real com prazo vem na Fase 2). Ordenada por prioridade → agenda/abertura; cada item é clicável (seleciona e
-            centra no mapa); contagem no badge do painel colapsado; chamado <strong>sem GPS</strong> entra marcado honestamente
-            (a projeção não carrega coordenada — LGPD). Painel de chamados reaberto por padrão. <strong>avaliador-mapas
-            APROVADO_CONDICIONADO</strong> (SLA honesto / LGPD / ordenação — tudo verificado). <strong>smoke 551→565</strong>
-            (baseline de mapa 82→96). O maximizar + 4º quadrante já veio no redesign de layout → <strong>falta só o alerta de OS
-            nova (M-5)</strong> para fechar a Fase 1. Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-3">
-          <h2>WS-MAPA M-3 — técnicos com realce de disponibilidade</h2>
-          <p>
-            <strong>WS-MAPA M-3 (2026-07-19):</strong> requisito 2 do dono ("onde e como estão os técnicos"). Realce de
-            <strong>disponibilidade</strong> nos dois canvases (fonte única <code>isRingAvailable</code>): no mapa, o anel do
-            técnico disponível ganha destaque; no rail de técnicos, uma <strong>barra por status</strong>
-            (<code>getStatusColor</code>) — cara de console de alocação. <code>isRingAvailable</code> <strong>não realça posição
-            velha</strong> (available + envelhecido → não destaca — honestidade). Terminologia reconciliada para
-            <strong>"Técnicos de Campo"</strong>. Fecha a pendência do enquadramento do mapa Google (re-<code>fitBounds</code> no
-            resize → zero pin sob o vidro). Legenda-rodapé (M-2) segue byte-a-byte idêntica nos dois canvases.
-            <strong>avaliador-mapas APROVADO_CONDICIONADO</strong> (8/8 itens de veto; residual de terminologia no subtítulo →
-            follow-up). <strong>smoke 540→551</strong> (baseline de mapa 67→82). Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA layout redesign">
-          <h2>WS-MAPA — redesign de layout (mapa-herói full-bleed) · feedback do dono</h2>
-          <p>
-            <strong>WS-MAPA layout (2026-07-19, URGENTE):</strong> o dono apontou que o grid de 3 colunas do M-1 <strong>espremeu
-            a largura do mapa</strong>. Junta de layout com <strong>3 pesquisas web</strong> (PD-005:
-            Samsara/Onfleet/ServiceTitan/Uber/fleet-UX 2024-2026) + síntese: sistemas reais <strong>não usam 3 colunas</strong>.
-            Decisão: <strong>mapa full-bleed</strong> (100% da largura útil × altura generosa) + painéis viram <strong>overlays de
-            vidro navy</strong> (chamados esq. / técnicos dir., colapsáveis) — não colunas que roubam largura;
-            <strong>Maximizar</strong> = mapa cheio + card de vidro no <strong>4º quadrante</strong>; <code>resize()</code> ~220ms +
-            <code>setPadding</code> nos dois canvases (senão o mapa fica cinza / pins sob os overlays). Default abre
-            <strong>técnicos (dado real)</strong> p/ a demo. Junta <strong>avaliador-mapas + cognição-visual APROVADO_CONDICIONADO</strong>
-            (mapa domina mais que o próprio protótipo; vidro navy coeso; contraste/a11y sólidos); condições sanadas. Supersede o
-            grid do M-1. <strong>smoke 536→540</strong>. Sem provider/SKU/backend (US$ 0). Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-2">
-          <h2>WS-MAPA M-2 — rodapé de legenda unificado</h2>
-          <p>
-            <strong>WS-MAPA M-2 (2026-07-19):</strong> segundo bloco do redesign do Mapa (J-MAPAS-6). Atende o
-            <strong>requisito 6 do dono</strong> ("as legendas se unam e fiquem no rodapé do mapa"): novo
-            <code>OperationsMapLegendFooter</code> (fonte <strong>única</strong> <code>MAP_LEGEND_ITEMS</code>, cor só de
-            <code>item.color</code>, zero hex solto); a <code>&lt;ul&gt;</code> flutuante foi <strong>removida dos dois
-            canvases</strong> (MapLibre + Google) e ambos consomem o mesmo rodapé ancorado à base (o mapa encolhe, não
-            sobrepõe). <strong>Paridade do espelho provada byte-a-byte</strong>; o clamp de altura 2× do M-1 permanece intacto;
-            o rodapé já acompanha o futuro modo maximizado (M-6). <strong>avaliador-mapas APROVADO</strong> (8/8 itens de veto).
-            <strong>smoke 530→536</strong> (baseline de mapa 61→67). Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-MAPA M-1">
-          <h2>WS-MAPA M-1 — fundação do console de alocação (redesign do Mapa Operacional)</h2>
-          <p>
-            <strong>WS-MAPA M-1 (2026-07-19):</strong> início do redesign do <strong>Mapa Operacional</strong> (plano
-            <strong>J-MAPAS-6</strong>, Junta de Mapas: planejador → dev → avaliador). <strong>Fundação de layout</strong>:
-            grid de <strong>3 colunas</strong> [chamados que chegam | mapa | técnicos] no lugar do layout de 2 colunas; a
-            <strong>altura do mapa foi dobrada</strong> (<code>clamp(760px,82vh,960px)</code>) nos dois canvases (MapLibre +
-            Google — regra do espelho); a coluna de técnicos reusa <code>OperationsOperatorList</code>; a coluna de chamados é
-            um <strong>placeholder honesto</strong> (a lista real chega no M-4 — <strong>não fabrica</strong> OS/prioridade/SLA).
-            Sem provider novo, sem SKU pago (<strong>US$ 0</strong>) → sem junta-5. <strong>avaliador-mapas APROVADO</strong>
-            (7/7 itens de veto: LGPD zero-coordenada, paridade do espelho, fidelidade §11). <strong>smoke 524→530</strong>
-            (baseline de mapa 55→61). Próximos: M-2 legenda unificada → M-3 técnicos → M-4 chamados+SLA → M-5 alerta → M-6
-            maximizar; Fase 2 (M-7) = SLA real (migração aditiva). Backend/Flutter/MVP <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-UI-CARDS-CHARTS-F1">
-          <h2>WS-UI-CARDS+CHARTS Fase 1 — cards clicáveis + gráfico temporal SVG (zero-dep)</h2>
-          <p>
-            <strong>WS-UI-CARDS+CHARTS Fase 1 (2026-07-19):</strong> por ordem do dono (cards estáticos → clicáveis com
-            <strong>pop-up sobre o tema</strong>; telas de KPI → <strong>gráficos temporais</strong>). Decisão PD-004
-            (pesquisa web ≥5 fontes): gráfico = <strong>SVG inline zero-dependência</strong> — não adicionou lib (Recharts só
-            sob demanda futura). Novos primitivos: <code>&lt;TrendChart&gt;</code> (SVG viewBox unitless +
-            <code>non-scaling-stroke</code> = responsivo sem lib; linha/área/barra; multi-série; tooltip nativo; cor por token;
-            suporta valores negativos após fix da junta) e a camada de pop-up <code>&lt;KpiDetailModal&gt;</code>
-            <strong>a11y-completa</strong> (focus trap, Esc, backdrop, retorno de foco, aria-labelledby) +
-            <code>&lt;ClickableKpiCard&gt;</code>. O corpo do pop-up é ditado pelo <strong>dado REAL</strong>
-            (<code>chart | breakdown | explain</code>) — <strong>nunca fabrica série</strong>; fonte mock/fallback suprime o
-            gráfico (D-007). <strong>Flagship financeiro</strong>: fluxo de caixa migrado para <code>&lt;TrendChart&gt;</code>
-            (tokens dedicados de série, cor do protótipo preservada — D-CHART-SERIE-TOKENS) e os 4 cards viraram clicáveis com
-            breakdown real (aberto/vencido/em disputa). Junta <strong>1 APROVADO + 2 APROVADO_CONDICIONADO</strong>; condições
-            sanadas. <strong>smoke 516→524</strong> (+8). Backend/Flutter/MVP <strong>inalterados</strong> (sem backend novo).
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-RBAC-GATING-CHECKLISTS">
-          <h2>WS-RBAC-GATING-CHECKLISTS — esconder ações de escrita de papéis de leitura</h2>
-          <p>
-            <strong>WS-RBAC-GATING-CHECKLISTS (2026-07-19):</strong> revisão RBAC ator-por-ator (mandato do dono: "existe telas
-            que tem todas as opções para perfis"). As <strong>2 telas reais de checklist</strong> deixam de expor botões de
-            <strong>escrita</strong> a papéis de leitura: <code>TenantChecklistsPage</code> gateia "Novo checklist"
-            (<code>tenant_checklists:create</code>), "Publicar" (<code>publish</code>), "Ativar/Inativar" + "Salvar builder"
-            (<code>update</code>); <code>ChecklistRunsPage</code> gateia "Iniciar execução" (<code>checklist_runs:create</code>).
-            Padrão <code>usePermissions</code> + <code>can()</code> + render condicional; o <strong>backend é a autoridade final</strong>
-            (403 real, §2.4) — a UI só molda. As 3 telas-casca <em>mock</em> ficam para WS-SCALE-8TELAS (gate-on-wiring). Junta
-            <strong>coordenador-de-acessos APROVADO + validador APROVADO_CONDICIONADO + cognição-visual APROVADO</strong>;
-            condições sanadas (gate de "Salvar builder" afinado p/ update, rodapé do builder some p/ leitura, 3 pendências
-            registradas). <strong>smoke 514→516</strong> (+2 de render provando o botão oculto p/ leitura e visível p/ create).
-            Backend/Flutter/MVP/blocos <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-UI-REFRESH">
-          <h2>WS-UI-REFRESH (UI transversal) — auto-refresh substitui o botão "Atualizar"</h2>
-          <p>
-            <strong>WS-UI-REFRESH (2026-07-19):</strong> por ordem do dono ("que não exista mais o botão de atualizar
-            pois o sistema faz isso automático"), REMOVIDO o botão manual <strong>"Atualizar"</strong> de <strong>30 telas</strong>
-            e ligado <strong>auto-refresh em segundo plano</strong>. Novo hook <code>useAutoRefresh</code> (setInterval 30s via
-            ref — sem recriar timer/sem leak; pausa quando a aba está oculta; espelha o padrão-ouro do mapa operacional); ~28
-            hooks de dados ganharam <strong>"background mode"</strong> (<code>refresh(background)</code> usa <code>isRefreshing</code>
-            em vez de <code>loading</code> → auto-refresh <strong>sem flicker</strong> de skeleton). O mapa mantém seu polling+SSE
-            nativo (sem duplo polling). Fan-out por 8 batches de módulo (workflow) + trio da OS e Dashboard à parte;
-            <code>RefreshCw</code> preservado onde reusado no botão de erro "Tentar novamente". Junta <strong>2 APROVADO + 1
-            APROVADO_CONDICIONADO</strong> (0 bloqueia); condições sanadas. Frontend-only: <strong>tsc verde</strong>,
-            <strong>build verde</strong>, <strong>smoke 514/514</strong> (3 smoke ajustados sem enfraquecer assertivas),
-            <code>approval-frontend-contract</code> 1/1. Backend/Flutter/MVP/blocos <strong>inalterados</strong>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo WS-SCALE-COMISSAO">
-          <h2>WS-SCALE-COMISSAO (Onda 1 Scale) — comissões honram a decisão de cancelamento da OS</h2>
-          <p>
-            <strong>WS-SCALE-COMISSAO (2026-07-19):</strong> as comissões passam a consumir
-            <code>work_orders.financial_cancellation_decision</code> (resolve parcial <strong>P-Ω3F6-COMISSAO</strong>).
-            Chokepoint de <strong>elegibilidade</strong> na criação do <em>basis event</em> de OS: o novo
-            <code>work-order-cancellation.gate.ts</code> lê o estado da OS <strong>dentro da tx <code>withTenantRls</code></strong>
-            (RLS satisfeito, atômico, idempotência-primeiro) e a regra <strong>pura</strong>
-            <code>evaluateWorkOrderCommissionEligibility</code> marca o evento —
-            <strong>zero/keep_unpaid → ineligible</strong> (suprime), <strong>NULL/ausente em OS cancelada → pending_review</strong>
-            (segura, J-Ω3F-6A), <strong>keep/não-cancelada → elegível</strong>. Contrato = <strong>201 + status persistido</strong>
-            (fila de revisão via <code>GET /commissions/basis-events?status=</code>), não 422 — retry-safe e auditável. O
-            <strong>ataque de desenho 3-lentes</strong> (idempotência/RLS/contrato) pegou <strong>3 furos críticos ANTES do código</strong>
-            (fail-open por RLS fora de contexto; flip 201↔422 no replay; null-vs-keep), todos fechados pela realocação do gate
-            para dentro do repositório. Resta o <strong>dual-gate</strong> na engine de cálculo (P-Ω3F6-COMISSAO-REVERSAL, latente —
-            nenhuma engine paga hoje). Execução real da branch: <strong>backend 1248→1259</strong> (0 fail no CI / 6 skip DB-gated;
-            1265 total; +11 desta fatia = 7 unidades da regra pura + 4 integração HTTP, 0 regressão provada por baseline em stash),
-            <strong>smoke 514</strong>, Flutter
-            <strong>764/764</strong> e <strong>MVP 99%/88%</strong> <strong>inalterados</strong> (backend-only; sem migration/schema/permissão).
-            <code>merge_commit</code>/<code>approved_head</code> null na autoria (backfill pós-merge).
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo Ω4 PÓS-FASE 1">
-          <h2>Ω4 (RODADA — PÓS-FASE 1) — Financeiro do tenant completo + reconciliação KPI</h2>
-          <p>
-            <strong>Ω4 PÓS-FASE 1 (2026-07-18, reconciliação D-Ω4-KPI-RELATORIO):</strong> o
-            <strong>Financeiro do tenant ×1,5</strong> em <strong>8 agregados</strong> — Ω4-1 <strong>Contas</strong>,
-            Ω4-2 <strong>Título AR/AP</strong> (Decimal(12,2), <strong>CHOKEPOINT</strong> de fechamento em toda
-            escrita) + telas Cobranças/Pagamentos, Ω4-3 <strong>Faturamento OS→Título</strong> (anti-refaturamento
-            idempotente), Ω4-4 <strong>Caixa/Extrato + liquidação</strong> (saldo somado no backend, estorno por
-            contra-lançamento), Ω4-5 <strong>Conciliação bancária</strong> (reconcile EXENTO do chokepoint), Ω4-6
-            <strong>Fechamento de período/trava retroativa</strong> (close atômico + snapshot congelado), Ω4-7
-            <strong>Cheque</strong> (mutex por flip condicional; compensa via chokepoint; bounce = contra-lançamento
-            novo; gate de dinheiro), Ω4-8 <strong>Dashboard financeiro real</strong> (agregado backend
-            <code>GET /financial-summary</code> que RESOLVE P-Ω4-2B-KPI-AGREGADO + front que nunca soma). Cada
-            agregado por <strong>junta adversarial</strong> (ataque de DESENHO em workflow ANTES de codar nos de
-            maior risco) + pós-análise efêmera; as juntas caçaram <strong>3 ALTA no desenho do cheque</strong>,
-            cashFlow ancorado no mês UTC no Ω4-8a e competência fora de faixa no #218 <strong>antes do merge</strong>.
-            A rodada <strong>deferiu a atualização de KPI de todos os PRs #206–#225</strong> para esta reconciliação
-            única. Execução real ao fim da PÓS-FASE 1: <strong>backend 989→1242</strong> (0 fail / 6 skip DB-gated;
-            1248 total), <strong>smoke web 486→514</strong>, Flutter <strong>764/764</strong> e módulos
-            <strong>17/17</strong> <strong>inalterados</strong> (Ω4 web/backend-only), <strong>MVP demo 99%</strong>,
-            <strong>MVP vendável 88%</strong> (+1/+5 por escopo) e <strong>66 blocos entregues</strong> (+8
-            agregados-feature Ω4-1..8). <code>pr: 226</code>; <code>merge_commit</code>/<code>approved_head</code>
-            null na autoria (backfill pós-merge). Relatório: <code>agent-orchestration/omega/RELATORIO-OMEGA4.md</code>.
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo Ω3F Fase 1">
-          <h2>Ω3F (RODADA — Fase 1) — hub operacional da OS ponta a ponta + reconciliação KPI</h2>
-          <p>
-            <strong>Ω3F Fase 1 (2026-07-17, reconciliação D-Ω3F-KPI-RELATORIO):</strong> do
-            <strong>Ω3F-1 ao Ω3F-9</strong> o hub do Detalhe de OS ganhou revelação progressiva (C2)
-            das abas <strong>Financeiro</strong> (×1,5, preço congelado anti-refaturamento),
-            <strong>Orçamento</strong> (congela preço + aprovar→cria OS idempotente + compartilhar),
-            <strong>Comentários + Anexos</strong> (UserNameResolver, sem UUID cru),
-            <strong>Cancelar/Duplicar/Imprimir</strong> (decisão financeira no cancel, sem porta dos
-            fundos), <strong>Quilometragem</strong> (app preenche/base corrige, permissão dedicada),
-            <strong>Mobile</strong>, <strong>Logs</strong> (auditoria por OS) e <strong>Mapa</strong>
-            (haversine US$0, sem SKU pago, LGPD read-minimizado); fechando a Fase 1, as
-            <strong>Ações de linha</strong> na lista de OS (dar andamento forward-only, revogar envio
-            via <code>field_dispatch:cancel</code>, badge de atraso derivado). Cada bloco passou por
-            <strong>junta adversarial</strong> (fid-avaliador + agentes-veto) e pós-análise efêmera.
-            A rodada <strong>deferiu a atualização de KPI de todos os PRs #184–#204</strong> para esta
-            reconciliação única. Números de execução real ao fim da Fase 1: <strong>backend 989/989</strong>
-            (0 fail / 6 skip DB-gated que rodam no CI), <strong>smoke web 486/486</strong>,
-            Flutter <strong>764/764</strong> e módulos Flutter <strong>17/17</strong>
-            <strong>inalterados</strong> (Ω3F foi web/backend-only; política dupla: mobile carrega),
-            <strong>MVP demo 98%</strong>, <strong>MVP vendável 83%</strong> (+2/+5 por escopo) e
-            <strong>58 blocos entregues</strong> (+9 blocos-feature do Ω3F). <code>pr: 204</code>;
-            <code>merge_commit</code>/<code>approved_head</code> null na autoria (backfill pós-merge).
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-4">
-          <h2>Ω-INFRA-4 — backup + restore comprovado + observabilidade (FECHA o saneamento)</h2>
-          <p>
-            <strong>Ω-INFRA-4 (2026-07-14, PR7 — último do saneamento):</strong> backup + observabilidade
-            config-as-code inerte. <code>backup-database.mjs</code> (<code>pg_dump -Fc</code> → valida
-            <code>pg_restore -l</code> → <code>PutObject</code> bucket dedicado <strong>SSE</strong> → retenção
-            30d segura; creds via <code>PG*</code> env, nunca argv) + <code>backup-database.yml</code> GATED
-            (Environment <code>backup</code>) + <code>uptime-check</code> (cron <code>*/5</code>). PD-INFRA-2:
-            <strong>Fly-native US$0</strong> (gru/BR) + Actions cron; Better Stack/Axiom = upgrades não adotados.
-            <strong>DRILL DE RESTORE COMPROVADO AO VIVO</strong>: script real → MinIO(SSE) → download byte-exato →
-            <code>pg_restore</code> EXIT=0 ~3,6s → integridade exata (9/16/<strong>62 policies RLS</strong>/71) +
-            isolamento por tenant sob role <strong>não-superuser</strong> (1 tenant visível). RPO≤24h + PITR=hand-off.
-            Design-junta dba/critico/secops <strong>APROVADO_CONDICIONADO 3/3</strong>, condições provadas no drill.
-            <code>migration_needed=false</code>. <strong>+16 testes backend</strong>, suíte 0 fail. Backfill do
-            Ω-INFRA-3 (#182 / 4a2db09).
-          </p>
-        </article>
-        <article class="panel panel--wide" aria-label="Resumo Ω-INFRA-3">
-          <h2>Ω-INFRA-3 — produção config-as-code + fixes CORS/seed (Fly.io/gru)</h2>
-          <p>
-            <strong>Ω-INFRA-3 (2026-07-14, PR6 do saneamento):</strong> produção config-as-code
-            + 2 fixes de código real. <strong>FIX P-SAN-CORS</strong> — <code>env.ts</code> ganha
-            <code>CORS_ORIGIN</code> + gate que rejeita vazio/<code>*</code> em produção
-            (<strong>fail-closed</strong>); <code>app.ts</code> usa allowlist por ambiente.
-            <strong>FIX P-SAN-SEED-GUARD</strong> — <code>assertSeedAllowed</code> estrito nos 3 seeds
-            (<code>'false'</code>/<code>'0'</code> não desarmam). <code>fly.production.toml</code> api+web
-            (<code>min≥1</code>, <code>force_https</code>, sem seed) + <code>deploy-production.yml</code>
-            <strong>GATED</strong> (<code>workflow_dispatch</code>, <strong>promoção por imagem</strong>
-            <code>ghcr…:&lt;sha&gt;</code>, <strong>trava dupla</strong>: ata go-live por SHA +
-            smoke-staging-verde-mesmo-SHA real + rollback ensaiado) + <code>smoke-production.mjs</code>
-            (readiness + CORS restritivo) + Runbooks A/B. Design-junta (planejador-mestre + critico ·
-            devops · secops) <strong>APROVADO_CONDICIONADO 3/3</strong>; condições dobradas.
-            <code>migration_needed=false</code>. <strong>+15 testes backend</strong>, suíte 0 fail.
-            <strong>O merge NÃO é go-live</strong> — config inerte; go-live = hand-off humano.
-            Backfill do Ω-INFRA-2 (#181 / b772103).
-          </p>
-          <p>
-            <strong>Ω-GOV (2026-07-13):</strong> politica KPI-por-PR (D-KPI-PER-PR)
-            substitui a publicacao pos-avaliacao humana. No Ω-GOV o backend media
-            768/768 (suite backend INTEIRA no gate do CI; Ω-INFRA-1 +2 health-routes; antes
-            15/15 media so core-saas). <strong>Reconciliacao Ω3F / Fase 1 (2026-07-17,
-            D-Ω3F-KPI-RELATORIO)</strong> — valores atuais de execucao real:
-            <strong>backend 989/989</strong> (0 fail / 6 skip DB-gated que rodam no CI),
-            <strong>smoke web 486/486</strong> (real; +108 no Ω3F), Flutter 764/764 e modulos
-            Flutter 17/17 inalterados (Ω3F web/backend-only; mobile carrega), contratos mobile
-            18/18, contratos mobile + Core SaaS 21/21, <strong>MVP demo 98%</strong>,
-            <strong>MVP vendavel 83%</strong> e <strong>58 blocos entregues</strong>.
-          </p>
-          <p>
-            B-124 (web-only): o Dashboard web passou a compor 4 fontes reais em
-            paralelo — GET /work-orders + GET /operations/dispatches +
-            GET /field-locations/latest + GET /notifications/unread-count
-            (+ GET /approvals/pending) — com 8 KPIs derivados, fila critica
-            combinada (SLA vencido &gt; prioridade &gt; operador sem sinal &gt;
-            aprovacao pendente &gt; OS sem operador), despachos ativos, status de
-            campo real (regra stale de 15 min reutilizada do
-            operations-map.adapter), alertas acionaveis e eventos derivados das
-            listas carregadas (sem timeline por OS). Fallback por fonte com
-            rotulos Dados demonstrativos/Fallback local; nenhum arquivo
-            mobile/backend alterado.
-          </p>
-          <p>
-            B-123 (visual-only): 7 telas/areas do fluxo de OS mobile alinhadas
-            ao prototipo aprovado — lista de OS, detalhe/check-in, execucao,
-            checklists da OS, execucao de checklist, evidencias e
-            sincronizacao/fila offline — com estados semanticos por tokens
-            centrais e sem dado tecnico cru; nenhum repository/service/
-            contrato/sync/model/provider alterado.
-          </p>
-          <p>
-            B-122: Perfil do operador recriado fiel ao prototipo aprovado
-            (screen-refs/mobile/perfil.png) — sem token, modo de autenticacao,
-            permissoes cruas ou IDs na UI; auditoria das telas MVP registrada.
-          </p>
-          <p>
-            Web MVP ligado aos endpoints reais: lista/detalhe de OS com timeline,
-            Dashboard composto de work-orders + notifications, Aprovacao
-            operacional no detalhe (motivo obrigatorio na reprovacao, RBAC) e
-            navegacao MVP-only via GET /navigation/menu.
-          </p>
-          <p>
-            Hardening mobile: timeline real no detalhe/check-in com fallback
-            local seguro, auto-sync montado no app root com ordem segura,
-            adapter de checklist tolerando fields e components (tipo
-            desconhecido mostra mensagem segura) e base URL por
-            --dart-define=API_BASE_URL.
-          </p>
-          <p>
-            Limitacoes: S3/presigned real, DB/Redis receipt, antivirus real,
-            download protegido final, retencao definitiva e Settings web sem
-            backend dedicado. (Dashboard web sem dispatches/field-locations foi
-            resolvido no B-124.)
-          </p>
-          <p>
-            Politica de KPI (D-KPI-DUPLA-REVOGADA, 2026-08-12): o painel e UM
-            so. Todo PR que altere codigo, teste ou escopo atualiza Kpis/* no
-            proprio PR, com contagem de execucao real — inclusive a metrica
-            flutter_tests. A politica de paineis duplos foi revogada: manter
-            dois em paridade manual so multiplicava o risco de divergirem.
-          </p>
-          <p>
-            Política permanente de KPIs pós-avaliação humana: PRs de feature não
-            devem atualizar arquivos de KPI; devem reportar KPIs propostos apenas
-            no relatório final. KPIs só devem ser publicados após avaliação
-            humana, merge e gate, em bloco documental/KPI separado.
-          </p>
-        </article>
-      </section>
-
-      <section class="section-grid" aria-label="Progresso por contrato">
-        <div class="panel panel--wide">
-          <div class="section-heading">
-            <p class="eyebrow">B-098 ate B-105</p>
-            <h2>Linha do tempo de contratos mobile/backend</h2>
-          </div>
-          <div id="timeline" class="timeline"></div>
-        </div>
-        <aside class="panel">
-          <div class="section-heading">
-            <p class="eyebrow">Cobertura</p>
-            <h2>Progresso por contrato</h2>
-          </div>
-          <div id="contract-progress" class="progress-list"></div>
-        </aside>
-      </section>
-
-      <section class="section-grid" aria-label="Mapa de contratos e dominios">
-        <div class="panel panel--wide">
-          <div class="section-heading">
-            <p class="eyebrow">Mapa operacional</p>
-            <h2>Contratos mobile/backend</h2>
-          </div>
-          <div id="contract-map" class="contract-map"></div>
-        </div>
-        <aside class="panel">
-          <div class="section-heading">
-            <p class="eyebrow">Dominios</p>
-            <h2>Status por dominio</h2>
-          </div>
-          <div id="domain-status" class="stacked-list"></div>
-        </aside>
-      </section>
-
-      <section class="section-grid" aria-label="Validacoes e previsoes">
-        <div class="panel">
-          <div class="section-heading">
-            <p class="eyebrow">Qualidade</p>
-            <h2>Validacoes conhecidas</h2>
-          </div>
-          <div id="validation-list" class="validation-list"></div>
-        </div>
-        <div class="panel">
-          <div class="section-heading">
-            <p class="eyebrow">Planejamento</p>
-            <h2>Estimativas</h2>
-          </div>
-          <div id="estimate-list" class="estimate-list"></div>
+      <!-- 3. Conclusão derivada dos dados -->
+      <section class="section" id="conclusion-section" hidden aria-labelledby="conclusion-title">
+        <header class="section-head">
+          <p class="kicker">Leitura</p>
+          <h2 id="conclusion-title">Conclusão</h2>
+        </header>
+        <div class="card conclusion">
+          <p id="conclusion-text"></p>
         </div>
       </section>
 
-      <section class="section-grid" aria-label="Riscos e proximos blocos">
-        <div class="panel">
-          <div class="section-heading">
-            <p class="eyebrow">Controle</p>
-            <h2>Riscos e lacunas</h2>
-          </div>
-          <div id="risk-list" class="risk-list"></div>
-        </div>
-        <div class="panel">
-          <div class="section-heading">
-            <p class="eyebrow">Sequencia sugerida</p>
-            <h2>Proximos blocos</h2>
-          </div>
-          <div id="next-blocks" class="next-list"></div>
-        </div>
+      <!-- 4. Últimas demandas -->
+      <section class="section" id="recent-section" hidden aria-labelledby="recent-title">
+        <header class="section-head">
+          <p class="kicker">Movimento</p>
+          <h2 id="recent-title">Últimas demandas</h2>
+          <p class="section-sub">
+            O que entrou, o que cada entrega fechou e o que ela descobriu.
+          </p>
+        </header>
+        <ol class="recent-list" id="recent-list"></ol>
+        <p class="section-footnote">
+          Ciclos de reprovação são a revisão adversarial barrando uma entrega até ela
+          ficar certa — cada ciclo registrado é um defeito que não chegou ao produto.
+        </p>
       </section>
 
-      <section class="panel history-panel" aria-label="Historico resumido">
-        <div class="section-heading">
-          <p class="eyebrow">Historico</p>
-          <h2>Execucoes registradas</h2>
-        </div>
-        <div id="history-summary" class="history-list"></div>
+      <!-- 5. Achados da auditoria -->
+      <section class="section" id="findings-section" hidden aria-labelledby="findings-title">
+        <header class="section-head">
+          <p class="kicker">Auditoria</p>
+          <h2 id="findings-title">Achados: encontrados, corrigidos e adiados</h2>
+          <p class="section-sub">
+            Auditoria adversarial encomendada pelo próprio time — sem incidente que a
+            forçasse. Cada achado tem módulo, evidência e bloco de correção.
+          </p>
+        </header>
+        <p class="findings-lead" id="findings-lead"></p>
+        <div class="filters" id="findings-filters"></div>
+        <!-- O resultado do filtro precisa ser ANUNCIADO: sem isto, quem usa leitor de tela clica
+             num chip e nada muda audivelmente, porque a lista trocou fora do foco. -->
+        <p class="sr-only" id="findings-status" role="status" aria-live="polite"></p>
+        <ul class="findings-list" id="findings-list"></ul>
+        <p class="findings-empty" id="findings-empty" hidden>
+          Nenhum achado corresponde aos filtros escolhidos.
+        </p>
+      </section>
+
+      <!-- 6. Cronograma com checklist -->
+      <section class="section" id="roadmap-section" hidden aria-labelledby="roadmap-title">
+        <header class="section-head">
+          <p class="kicker">Plano</p>
+          <h2 id="roadmap-title">Cronograma de correção</h2>
+          <p class="section-sub">
+            Os blocos de correção, com estado, dependências e os achados que cada um
+            fecha. Quem libera a produção é uma junta, não um contador.
+          </p>
+        </header>
+        <div class="card roadmap-progress" id="roadmap-progress"></div>
+        <div class="roadmap-order" id="roadmap-order"></div>
+        <ol class="roadmap-list" id="roadmap-list"></ol>
+        <aside class="card blocked-track" id="roadmap-blocked" hidden aria-label="Trilha represada"></aside>
       </section>
     </main>
+
+    <footer>
+      <div class="footer-inner" id="footer-sources"></div>
+    </footer>
+
+    <noscript>
+      <p class="noscript-note">
+        Este painel lê os arquivos de KPI com JavaScript. Sem JavaScript não há dado
+        para mostrar — e o painel prefere não mostrar nada a inventar.
+      </p>
+    </noscript>
 
     <script src="./app.js"></script>
   </body>

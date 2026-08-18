@@ -206,3 +206,60 @@ dispositivo fisico.
 - Blocos entregues: 36.
 
 Limitacoes mantidas: Sem background tracking, Sem stream continuo, Sem timer, Sem envio silencioso, Geofencing pendente, Roteirizacao pendente, Provider externo de mapa pendente, se aprovado, Approval real pendente, Conflitos manuais avancados pendentes, Hardening final de evidencias/storage pendente, Piloto Android real ainda precisa validacao em dispositivo fisico.
+
+## Contrato do painel (reescrito em 2026-08-17)
+
+`index.html` + `app.js` + `styles.css` foram refeitos do zero. Quem for mexer precisa saber destas regras —
+todas têm teste que falha se forem quebradas.
+
+### De onde vem cada coisa
+
+O painel **hidrata em tempo de execução** de `kpis-latest.json` e `kpis-history.json`. Nenhum número mora no
+HTML ou no JS. Além das chaves antigas, o `kpis-latest.json` carrega cinco blocos escritos para esta página:
+
+| Bloco | O que é | Fonte de verdade |
+|---|---|---|
+| `production_readiness` | veredito de produção, contagem de achados por severidade, lista dos fechados | `docs/revisoes/O6R/achados.jsonl` |
+| `findings` | os 30 achados, com resumo em linguagem de negócio | idem |
+| `roadmap` | os 12 blocos de correção, ordem vinculante, trilha represada | `docs/revisoes/O6R/PLANO_O6R.md` |
+| `recent` | últimas entregas: o que cada uma fechou e o que descobriu | `git log main` + atas das juntas |
+| `series_breaks` | pontos em que a métrica **mudou o que mede** | descrição do próprio registro no history |
+
+Cada um carrega `as_of` e `source`. Quem acrescentar uma dimensão nova entrega **no mesmo PR** o lugar dela no
+painel — número novo sem lugar no painel é entrega incompleta (§C3).
+
+### As regras que têm guarda
+
+1. **Nada de dado inventado (D-007).** Dado ausente é seção escondida ou **buraco na série** — nunca zero, nunca
+   estimativa, nunca interpolação. `|| 0` num ponto de série fabrica um pico; foi assim que nasceu uma barra
+   falsa de +969 numa versão antiga.
+2. **Quebra de medida é declarada, não inferida.** Duas vezes a métrica mudou o que mede (13/07: backend
+   15→766, console web 44→378). Ligá-las por linha contínua afirmaria um crescimento que não houve. As quebras
+   vivem em `series_breaks` e são localizadas pela **transição** (`de` → `para`), não pela data — várias
+   entregas dividem o mesmo `snapshot_date`. Inferir a quebra pelo tamanho do salto puniria crescimento real.
+3. **A cópia congelada é gerada, nunca digitada.** Por `file://` o navegador bloqueia a leitura dos JSON, e o
+   painel cai numa cópia embutida, **rotulada na tela** como congelada. Ela é produzida por
+   `node scripts/kpi-freeze.mjs` e comparada pelo guard: editou o JSON, rode o script e faça commit dos dois
+   juntos. `node scripts/kpi-freeze.mjs --check` verifica sem escrever.
+4. **`[hidden]` manda sempre.** O `styles.css` declara `[hidden]{display:none !important}` de propósito — já
+   houve regra de layout vencendo o `hidden` do navegador e a seção aparecendo vazia.
+5. **Zero dependência.** Nenhum recurso externo em nenhum dos três arquivos: sem CDN, sem fonte por URL, sem
+   `<img src>`. Os gráficos são SVG inline escrito à mão (PD-004).
+6. **`buildChartSeries(history)` é pura e global.** É o que permite ao guard recomputar a série e comparar
+   ponto a ponto. Pontos ausentes ficam `null` **no array** (não removidos), senão o alinhamento com as datas
+   quebra. Se você mudar a assinatura, atualize `tests/kpi-dashboard-charts.test.ts` junto.
+
+### Os três guards
+
+- `tests/kpi-dashboard-contraste.test.ts` (6) — mede contraste nos dois temas, exige que nenhuma cor nasça
+  dentro de um bloco de tema, proíbe cor literal fora dos tokens e cobra regra de CSS para toda classe de
+  marca SVG que o `app.js` emite. Este último existe porque um `<rect class="week-gap">` sem regra nasceu
+  **preto** e virou a maior barra do gráfico.
+- `tests/kpi-dashboard-charts.test.ts` (16) — executa o `app.js` de verdade num sandbox. A 1ª versão deste
+  guard era **teatro**: um crítico trocou as três séries por retas sintéticas e tudo passou verde, porque só
+  checava "tem `<svg>`". Hoje ele amarra a curva ao JSON e prova o inverso também — **mutar o histórico tem de
+  mover a curva**.
+- `tests/kpi-achados-paridade.test.ts` (5) — exige que `achados.jsonl`, o painel e o cronograma contem a mesma
+  história. Achou um achado crítico órfão (sem bloco de correção) na primeira execução. Também trava a saída
+  fácil: **zerar o contador de críticos não libera produção** — trocar o veredito exige junta nova registrada
+  em `fonte_veredito`.

@@ -1,36 +1,36 @@
 {
-  "snapshot_date": "2026-08-16",
-  "version": "FIX-RUNNER-MODO",
+  "snapshot_date": "2026-08-17",
+  "version": "KPI-PAINEL-REPAGINADO",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "FIX runner — a bateria local passa a ser igual a da CI, e diz em que modo rodou.",
-    "title": "FIX — npm test resolve e declara o modo de persistencia",
+    "block": "Painel de KPI repaginado do zero + reconciliação da auditoria Ω6R.",
+    "title": "Painel repaginado — o que o projeto entregou, o que a auditoria achou, e o que falta",
     "pr": null,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O .env do repositorio fixa persistencia real; a CI exporta memoria. Resultado: 90 vermelhos falsos so na maquina do dono, e o risco de alguem aprender a ignorar vermelho. O runner passa a resolver o modo e a DECLARA-LO em uma linha — silencio aqui repetiria a classe de defeito que este arquivo existe para matar.",
-    "status_label": "Em revisao (PR nao aberto)"
+    "summary": "O painel é o artefato que o dono abre e mostra. Repaginado do zero: as duas dimensões lado a lado, gráficos, conclusão derivada, os 30 achados e o cronograma. O trabalho achou três defeitos — a linha do gráfico cruzando duas mudanças de medida, um achado crítico órfão sem bloco de correção, e o registro da auditoria defasado do JSONL.",
+    "status_label": "Em revisão (PR não aberto)"
   },
   "metrics": {
     "flutter_tests": {
       "value": 860,
       "total": 860,
       "display": "860/860",
-      "note": "PR-04c-A não toca mobile: carrega 860/860, o último valor oficial (§C3.3)."
+      "note": "Este PR não toca o app de campo: carrega 860/860, o último valor oficial (§C3.3)."
     },
     "frontend_smoke_tests": {
       "value": 1125,
       "total": 1125,
       "display": "1125/1125",
-      "note": "PR-04c-A: 1112→1125 em execução real — a célula Checklist da ordem passou a listar o conjunto (rótulo + fase + origem), incluindo o caso da ordem legada renderizado ponta a ponta a partir do payload cru."
+      "note": "Este PR não toca o console web: carrega 1125/1125, o último valor oficial (§C3.3)."
     },
     "backend_tests": {
-      "value": 2437,
-      "total": 2446,
-      "display": "2437/2446",
-      "note": "FIX runner: o npm test passou a RESOLVER e DECLARAR o modo de persistencia. Antes, o .env do repo (que fixa prisma) sequestrava a suite local e 90 testes falhavam por fixture-de-memoria contra banco real — nenhum deles defeito. Agora o runner define memory quando a variavel nao vem exportada (o mesmo que a CI faz) e imprime o modo e a procedencia. Exportar prisma de proposito continua funcionando. +8 testes no guard do runner."
+      "value": 2458,
+      "total": 2467,
+      "display": "2458/2467",
+      "note": "Execução real: 2437/2446 → 2458/2467 (+21). Vinte e um testes novos, cada um nascido de um defeito real desta entrega: 5 de paridade entre o registro da auditoria e o painel, 10 de gráfico e 6 de tema. Três rodadas adversariais acharam quatro instâncias da mesma classe de defeito — todas nascidas em correções, nenhuma no código original."
     },
     "backend_contract_tests_focused": {
       "value": 21,
@@ -47,18 +47,22 @@
       "value": 99,
       "unit": "%",
       "display": "99%",
-      "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana."
+      "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana.",
+      "label": "Escopo demonstrável entregue",
+      "caveat": "Também estimado, pela mesma régua."
     },
     "mvp_vendavel": {
       "value": 88,
       "unit": "%",
       "display": "88%",
-      "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana."
+      "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana.",
+      "label": "Escopo do produto vendável entregue",
+      "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
     },
     "blocks_completed": {
-      "value": 149,
-      "display": "149",
-      "note": "B-O6R-05 (gates de runtime de producao). Sobre 148."
+      "value": 150,
+      "display": "150",
+      "note": "Painel de KPI repaginado + reconciliação da auditoria Ω6R. Sobre 149."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -112,5 +116,560 @@
     "Retencao definitiva pendente",
     "Settings web sem backend dedicado (lacuna documentada)",
     "Piloto Android real ainda precisa validacao em dispositivo fisico"
-  ]
+  ],
+  "production_readiness": {
+    "veredito": "REPROVADO PARA PRODUÇÃO",
+    "fonte_veredito": "Junta J-6R, 5×0 — docs/revisoes/O6R/ATA_J6R.md",
+    "data_veredito": "2026-08-12",
+    "deploy_bloqueado": true,
+    "p0_total": 15,
+    "p0_fechados": 2,
+    "p0_abertos": 13,
+    "p1_total": 15,
+    "p1_fechados": 0,
+    "p1_abertos": 15,
+    "fechados": [
+      {
+        "id": "Ω6R-DAT-001",
+        "por": "B-O6R-05 (PR #353, a8901ff)",
+        "em": "2026-08-15"
+      },
+      {
+        "id": "Ω6R-DIN-006",
+        "por": "B-O6R-05 (PR #353, a8901ff)",
+        "em": "2026-08-15"
+      }
+    ],
+    "as_of": "2026-08-17",
+    "source": "docs/revisoes/O6R/achados.jsonl"
+  },
+  "findings": {
+    "as_of": "2026-08-17",
+    "source": "docs/revisoes/O6R/achados.jsonl",
+    "itens": [
+      {
+        "id": "Ω6R-DIN-001",
+        "severidade": "P0",
+        "modulo": "financial-entries / financial-titles",
+        "status": "ativo",
+        "resumo": "Pagamento de título: o lançamento é gravado antes de aplicar ao título; duas requisições ao mesmo tempo podem pagar duas vezes.",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-002",
+        "severidade": "P0",
+        "modulo": "financial-entries / financial-titles",
+        "status": "ativo",
+        "resumo": "Estorno lança a contrapartida contábil mas não devolve o valor pago nem o status do título — o título fica pago sem estar.",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-003",
+        "severidade": "P0",
+        "modulo": "cheques / financial-entries",
+        "status": "ativo",
+        "resumo": "Cheque: estado, lançamento e vínculo são gravados em etapas separadas; falha no meio deixa o cheque inconsistente.",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-004",
+        "severidade": "P0",
+        "modulo": "financial-titles",
+        "status": "ativo",
+        "resumo": "Dá para reduzir o valor de um título abaixo do que já foi pago, e apagar título já pago.",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-005",
+        "severidade": "P0",
+        "modulo": "checklists / cloud-usage / cloud-cost-allocation",
+        "status": "ativo",
+        "resumo": "A métrica que gera cobrança é gravada em melhor-esforço: se falhar, o consumo some e nunca é recuperado.",
+        "bloco": "B-O6R-06"
+      },
+      {
+        "id": "Ω6R-SEC-001",
+        "severidade": "P0",
+        "modulo": "core-saas / auth / platform",
+        "status": "ativo",
+        "resumo": "Quem administra uma organização consegue se promover a administrador da plataforma e passar a ler, alterar e suspender TODAS as outras.",
+        "bloco": "B-O6R-01"
+      },
+      {
+        "id": "Ω6R-TEN-001",
+        "severidade": "P0",
+        "modulo": "auth / core-saas",
+        "status": "ativo",
+        "resumo": "Duas pessoas com o mesmo e-mail em organizações diferentes: uma assume a conta da outra, sem saber a senha.",
+        "bloco": "B-O6R-01"
+      },
+      {
+        "id": "Ω6R-DAT-001",
+        "severidade": "P0",
+        "modulo": "config / core-saas / runtime",
+        "status": "fechado",
+        "resumo": "Produção podia subir guardando organizações, usuários e permissões só na memória, perdendo tudo no primeiro reinício.",
+        "bloco": "B-O6R-05"
+      },
+      {
+        "id": "Ω6R-SEC-002",
+        "severidade": "P0",
+        "modulo": "work-orders / approvals / RBAC",
+        "status": "ativo",
+        "resumo": "O técnico de campo pode aprovar a própria ordem de serviço — a mesma permissão serve para editar e para aprovar.",
+        "bloco": "B-O6R-07"
+      },
+      {
+        "id": "Ω6R-ARQ-001",
+        "severidade": "P1",
+        "modulo": "infra/jobs",
+        "status": "ativo",
+        "resumo": "A fila de tarefas retira o item antes de garantir que alguém vai processá-lo: se o processo cair, a tarefa some.",
+        "bloco": "B-O6R-08"
+      },
+      {
+        "id": "Ω6R-ARQ-002",
+        "severidade": "P1",
+        "modulo": "infra/jobs",
+        "status": "ativo",
+        "resumo": "Cada reinício semeia agendamentos novos sem deduplicar — as tarefas periódicas se multiplicam.",
+        "bloco": "B-O6R-08"
+      },
+      {
+        "id": "Ω6R-ARQ-003",
+        "severidade": "P1",
+        "modulo": "field-ops-realtime",
+        "status": "ativo",
+        "resumo": "As atualizações em tempo real vivem na memória de um processo só; com mais de uma máquina, parte dos usuários não recebe.",
+        "bloco": "B-O6R-08"
+      },
+      {
+        "id": "Ω6R-ARQ-004",
+        "severidade": "P1",
+        "modulo": "field-dispatch",
+        "status": "ativo",
+        "resumo": "Despacho e o evento que o registra são gravados separados: falha no meio deixa despacho sem rastro.",
+        "bloco": "B-O6R-09"
+      },
+      {
+        "id": "Ω6R-DIN-006",
+        "severidade": "P0",
+        "modulo": "jobs / charging / impound / notifications",
+        "status": "fechado",
+        "resumo": "O executor de tarefas de fundo nunca subia em produção: diárias de pátio, reconciliação de custódia e notificações legais não aconteciam.",
+        "bloco": "B-O6R-05"
+      },
+      {
+        "id": "Ω6R-PERF-001",
+        "severidade": "P1",
+        "modulo": "infra/jobs",
+        "status": "ativo",
+        "resumo": "O executor inicia uma tarefa sem esperar a anterior e não tem prazo máximo — uma tarefa travada trava a fila.",
+        "bloco": "B-O6R-08"
+      },
+      {
+        "id": "Ω6R-PERF-002",
+        "severidade": "P1",
+        "modulo": "frontend / API client",
+        "status": "ativo",
+        "resumo": "A tela recarrega sem travar chamadas em andamento e sem tempo limite; conexão ruim empilha requisições.",
+        "bloco": "B-O6R-10"
+      },
+      {
+        "id": "Ω6R-PERF-003",
+        "severidade": "P1",
+        "modulo": "owner-portal / runtime",
+        "status": "ativo",
+        "resumo": "Processamento de imagem grande roda no mesmo processo do sistema; três simultâneas podem derrubar a resposta.",
+        "bloco": "B-O6R-10"
+      },
+      {
+        "id": "Ω6R-QUA-001",
+        "severidade": "P1",
+        "modulo": "mobile-flutter / expense-management",
+        "status": "ativo",
+        "resumo": "O aplicativo reenvia despesas sem credencial, num endereço que exige permissão — o reenvio falha calado.",
+        "bloco": "B-O6R-03"
+      },
+      {
+        "id": "Ω6R-QUA-002",
+        "severidade": "P1",
+        "modulo": "mobile-flutter / mobile-inventory / inventory",
+        "status": "ativo",
+        "resumo": "Estoque no aplicativo enfileira tipos incompatíveis e não tem reenvio — movimentação feita offline pode se perder.",
+        "bloco": "B-O6R-04"
+      },
+      {
+        "id": "Ω6R-DIN-007",
+        "severidade": "P0",
+        "modulo": "cloud-costs",
+        "status": "ativo",
+        "resumo": "O resumo de custos de nuvem soma apenas as primeiras 10.000 linhas, em silêncio — acima disso o total fica errado.",
+        "bloco": "B-O6R-06"
+      },
+      {
+        "id": "Ω6R-QUA-003",
+        "severidade": "P1",
+        "modulo": "financial-entries / cheques / period-close / expenses",
+        "status": "ativo",
+        "resumo": "Os testes financeiros usam banco de mentira: atomicidade e concorrência nunca foram exercitadas.",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-008",
+        "severidade": "P0",
+        "modulo": "financial-period-closes / financial writers",
+        "status": "ativo",
+        "resumo": "O fechamento de período usa trava, mas quem escreve não a respeita: dá para lançar depois do período fechado.",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-009",
+        "severidade": "P0",
+        "modulo": "expense-management",
+        "status": "ativo",
+        "resumo": "Sincronização de despesa grava o efeito antes do comprovante, em transações separadas; falha no meio deixa despesa sem comprovante.",
+        "bloco": "B-O6R-03"
+      },
+      {
+        "id": "Ω6R-DAT-002",
+        "severidade": "P0",
+        "modulo": "inventory",
+        "status": "ativo",
+        "resumo": "Saldo de estoque: duas movimentações simultâneas do mesmo item não se serializam — o saldo pode ficar errado.",
+        "bloco": "B-O6R-04"
+      },
+      {
+        "id": "Ω6R-DAT-003",
+        "severidade": "P0",
+        "modulo": "inventory / cycle-count",
+        "status": "ativo",
+        "resumo": "Contagem de inventário: cada ajuste do fechamento grava separado, sem travar a sessão — fechamento concorrente corrompe a contagem.",
+        "bloco": "B-O6R-04"
+      },
+      {
+        "id": "Ω6R-QUA-004",
+        "severidade": "P1",
+        "modulo": "mobile-flutter / work-orders",
+        "status": "parcialmente_superado",
+        "resumo": "O aplicativo lia a resposta da ordem de serviço no formato errado; a linha do tempo remota nunca funcionou.",
+        "bloco": "B-O6R-11"
+      },
+      {
+        "id": "Ω6R-QUA-005",
+        "severidade": "P1",
+        "modulo": "mobile-flutter / prestador",
+        "status": "ativo",
+        "resumo": "O aplicativo enfileira sem esperar a gravação e reescreve a fila inteira a cada item.",
+        "bloco": "B-O6R-11"
+      },
+      {
+        "id": "Ω6R-SEC-003",
+        "severidade": "P1",
+        "modulo": "auth",
+        "status": "ativo",
+        "resumo": "Senha errada não trava a conta: o contador sobe, mas nada nunca bloqueia — tentativa infinita.",
+        "bloco": "B-O6R-07"
+      },
+      {
+        "id": "Ω6R-SEC-004",
+        "severidade": "P1",
+        "modulo": "evidence / attachments / mobile",
+        "status": "ativo",
+        "resumo": "O antivírus de anexo devolve “limpo” por padrão e o tipo do arquivo vem do cliente; anexo malicioso abre no navegador.",
+        "bloco": "B-O6R-07"
+      },
+      {
+        "id": "Ω6R-DAT-004",
+        "severidade": "P1",
+        "modulo": "jurisdiction / charging",
+        "status": "ativo",
+        "resumo": "Editar o perfil normativo re-tempera custódias em curso, sem versão nem vigência, e a auditoria não registra o que mudou.",
+        "bloco": "B-O6R-12"
+      }
+    ]
+  },
+  "roadmap": {
+    "as_of": "2026-08-17",
+    "source": "docs/revisoes/O6R/PLANO_O6R.md + agent-orchestration/omega/juntas/J-CHK-04C-EMENDA-deliberacao-j6r.md",
+    "ordem_vinculante": [
+      "B-O6R-05",
+      "B-O6R-01",
+      "B-O6R-02",
+      "B-O6R-07",
+      "B-O6R-06"
+    ],
+    "blocos": [
+      {
+        "id": "B-O6R-01",
+        "titulo": "Identidade e autoridade",
+        "achados": [
+          "Ω6R-SEC-001",
+          "Ω6R-TEN-001"
+        ],
+        "dep": [],
+        "estado": "plano_aprovado",
+        "nota": "Plano aprovado por junta 5×0 após 5 rodadas e 6 versões. É o próximo a implementar."
+      },
+      {
+        "id": "B-O6R-02",
+        "titulo": "Atomicidade do financeiro",
+        "achados": [
+          "Ω6R-DIN-001",
+          "Ω6R-DIN-002",
+          "Ω6R-DIN-003",
+          "Ω6R-DIN-004",
+          "Ω6R-DIN-008",
+          "Ω6R-QUA-003"
+        ],
+        "dep": [
+          "B-O6R-01"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-03",
+        "titulo": "Sincronização de despesas",
+        "achados": [
+          "Ω6R-DIN-009",
+          "Ω6R-QUA-001"
+        ],
+        "dep": [
+          "B-O6R-01"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-04",
+        "titulo": "Consistência de estoque",
+        "achados": [
+          "Ω6R-DAT-002",
+          "Ω6R-DAT-003",
+          "Ω6R-QUA-002"
+        ],
+        "dep": [
+          "B-O6R-01"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-05",
+        "titulo": "Portões de runtime de produção",
+        "achados": [
+          "Ω6R-DAT-001",
+          "Ω6R-DIN-006"
+        ],
+        "dep": [],
+        "estado": "concluido",
+        "pr": 353,
+        "nota": "Mergeado em 2026-08-15. Junta do PR 3×0, sem veto."
+      },
+      {
+        "id": "B-O6R-06",
+        "titulo": "Durabilidade do faturamento",
+        "achados": [
+          "Ω6R-DIN-005",
+          "Ω6R-DIN-007"
+        ],
+        "dep": [
+          "B-O6R-02",
+          "B-O6R-05"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-07",
+        "titulo": "Autorização e anexos",
+        "achados": [
+          "Ω6R-SEC-002",
+          "Ω6R-SEC-003",
+          "Ω6R-SEC-004"
+        ],
+        "dep": [
+          "B-O6R-01"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-08",
+        "titulo": "Tarefas duráveis e tempo real",
+        "achados": [
+          "Ω6R-ARQ-001",
+          "Ω6R-ARQ-002",
+          "Ω6R-ARQ-003",
+          "Ω6R-PERF-001"
+        ],
+        "dep": [
+          "B-O6R-05"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-09",
+        "titulo": "Despacho atômico",
+        "achados": [
+          "Ω6R-ARQ-004"
+        ],
+        "dep": [
+          "B-O6R-08"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-10",
+        "titulo": "Proteção de carga no cliente",
+        "achados": [
+          "Ω6R-PERF-002",
+          "Ω6R-PERF-003"
+        ],
+        "dep": [
+          "B-O6R-05"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-11",
+        "titulo": "Contratos do aplicativo de campo",
+        "achados": [
+          "Ω6R-QUA-004",
+          "Ω6R-QUA-005"
+        ],
+        "dep": [
+          "B-O6R-01"
+        ],
+        "estado": "a_fazer"
+      },
+      {
+        "id": "B-O6R-12",
+        "titulo": "Versão do perfil normativo",
+        "achados": [
+          "Ω6R-DAT-004"
+        ],
+        "dep": [],
+        "estado": "a_fazer",
+        "nota": "Acrescentado ao plano em 2026-08-16. O achado nasceu depois da junta da auditoria e ficou sem bloco de correção — a lacuna foi encontrada pelo guard de paridade, na primeira execução. Critério de aceite provisório, a ser ratificado pela junta do próprio bloco."
+      }
+    ],
+    "trilha_bloqueada": {
+      "titulo": "Trilha de vistorias",
+      "itens": [
+        {
+          "id": "CHK-04c-B",
+          "titulo": "Aba de aplicabilidade e ajuste no envio"
+        },
+        {
+          "id": "CHK-05a",
+          "titulo": "Versão da vistoria no dossiê do veículo"
+        },
+        {
+          "id": "CHK-06",
+          "titulo": "Impressão da vistoria"
+        }
+      ],
+      "bloqueada_por": [
+        "B-O6R-06",
+        "B-O6R-07"
+      ],
+      "fonte": "A deliberação da junta veda features nos módulos atingidos enquanto houver achado crítico aberto neles."
+    }
+  },
+  "recent": {
+    "as_of": "2026-08-17",
+    "source": "git log main + agent-orchestration/omega/juntas/",
+    "itens": [
+      {
+        "pr": 355,
+        "data": "2026-08-16",
+        "tipo": "correcao",
+        "titulo": "A bateria de testes local passa a ser igual à da integração contínua",
+        "resumo": "O arquivo de ambiente do repositório fixava banco real e sequestrava a bateria local: 90 vermelhos falsos só na máquina do dono, e nenhum deles era defeito. O risco maior não era o vermelho — era alguém aprender a ignorá-lo. Agora o executor resolve o modo e o declara em uma linha.",
+        "fecha": [],
+        "descobertos": [],
+        "ciclos_de_reprovacao": 0
+      },
+      {
+        "pr": 354,
+        "data": "2026-08-15",
+        "tipo": "infraestrutura",
+        "titulo": "O ambiente de homologação deixa de dormir",
+        "resumo": "Escalar a zero era barato e silenciosamente errado: com a máquina dormindo, as tarefas de fundo não rodam — diárias de pátio, reconciliação de custódia e notificações legais não aconteceriam. O ambiente diria “verde” sem nunca ter executado uma tarefa. Custo autorizado pelo dono.",
+        "fecha": [],
+        "descobertos": [],
+        "ciclos_de_reprovacao": 0
+      },
+      {
+        "pr": 353,
+        "data": "2026-08-15",
+        "tipo": "correcao_critica",
+        "titulo": "Produção não sobe mais sem persistir e sem executor de tarefas",
+        "resumo": "Dois dos quinze achados críticos, fechados com portões que reprovam a subida em vez de avisar. Provisionar homologação pela lista antiga teria o boot reprovado por cinco itens que existiam no código e não estavam documentados.",
+        "fecha": [
+          "Ω6R-DAT-001",
+          "Ω6R-DIN-006"
+        ],
+        "descobertos": [],
+        "ciclos_de_reprovacao": 0
+      },
+      {
+        "pr": 352,
+        "data": "2026-08-15",
+        "tipo": "feature",
+        "titulo": "A ordem de serviço passa a ter um conjunto de vistorias",
+        "resumo": "Quatro ciclos de reprovação adversarial antes de passar. O terceiro ciclo inverteu o erro do segundo em vez de corrigir a raiz, e o comentário do código afirmava uma garantia que o código não dava. A quarta versão parou de inferir e passou a perguntar.",
+        "fecha": [],
+        "descobertos": [
+          "Vistoria pendente não é lida na expedição",
+          "Razão de recusa não normalizada na criação",
+          "Verde vazio da bateria no Windows"
+        ],
+        "ciclos_de_reprovacao": 4
+      },
+      {
+        "pr": 347,
+        "data": "2026-08-14",
+        "tipo": "auditoria",
+        "titulo": "Auditoria adversarial total — 30 achados catalogados",
+        "resumo": "Auditoria encomendada pelo próprio time, não por incidente. Veredito da junta: reprovado para produção, 5×0. Quinze achados críticos, quinze relevantes, cada um com módulo, evidência e bloco de correção.",
+        "fecha": [],
+        "descobertos": [
+          "30 achados (15 críticos, 15 relevantes)"
+        ],
+        "ciclos_de_reprovacao": 0
+      },
+      {
+        "pr": 351,
+        "data": "2026-08-12",
+        "tipo": "correcao",
+        "titulo": "A linha do tempo remota da ordem de serviço nunca funcionou",
+        "resumo": "O aplicativo de campo lia a resposta num formato que o servidor nunca enviou. Passava nos testes porque os testes usavam o formato errado dos dois lados. Fechou o componente da linha do tempo; detalhe, status e atribuição do mesmo achado seguem abertos — o achado é PARCIALMENTE superado, não fechado.",
+        "fecha": [],
+        "descobertos": [],
+        "ciclos_de_reprovacao": 0,
+        "superado_parcialmente": [
+          "Ω6R-QUA-004"
+        ]
+      }
+    ]
+  },
+  "series_breaks": {
+    "as_of": "2026-08-17",
+    "source": "Kpis/kpis-history.json — os dois casos estão descritos no campo description do próprio registro",
+    "nota": "Pontos em que a RÉGUA mudou: ou a métrica passou a medir outra coisa, ou ficou sem ser relida enquanto o trabalho acontecia. Nos dois casos, ligar os lados com uma linha contínua afirmaria um crescimento de um dia que não houve. Declarado aqui, e não inferido por tamanho do salto, porque salto grande também pode ser trabalho real de verdade.",
+    "itens": [
+      {
+        "serie": "backend_tests",
+        "data": "2026-07-13",
+        "de": 15,
+        "para": 766,
+        "motivo": "A medida passou a contar a suíte de backend INTEIRA. Antes contava só o núcleo do sistema — os outros 100 arquivos de teste já existiam e não entravam na conta."
+      },
+      {
+        "serie": "frontend_smoke_tests",
+        "data": "2026-07-13",
+        "de": 44,
+        "para": 378,
+        "motivo": "O 44 era a contagem completa e real em 05/07 — a suíte do console web tinha 5 arquivos. Entre 05/07 e 13/07 nenhuma entrega releu a métrica: quatro registros repetiram o 44 enquanto a suíte crescia para 62 arquivos. O 378 é a releitura. O salto é trabalho real que a régua só registrou no fim."
+      }
+    ]
+  }
 }

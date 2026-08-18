@@ -9,6 +9,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
+    "up": "node scripts/up.mjs",
     "dev": "tsx watch src/server.ts",
     "web:dev": "npm --prefix frontend run dev",
     "web:build": "npm --prefix frontend run build",
@@ -29,7 +30,8 @@
     "db:studio": "prisma studio",
     "db:backup": "node scripts/backup-database.mjs",
     "db:restore-drill": "bash scripts/restore-drill.sh",
-    "lint": "npm run check"
+    "lint": "npm run check",
+    "kpis:serve": "node scripts/kpi-serve.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1063.0",
