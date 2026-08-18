@@ -1519,3 +1519,27 @@ dono escrita (runbook em `docs/deployment.md`).
 `super_admin` na organização demo (`plataforma.demo@example.com`, `platform.admin@erp.local`,
 `platform@demo.com`) — todos com cara de seed histórico. NENHUM foi revogado (revogação de assignment
 sem junta é proibida pelo §9); linha registrada para a junta decidir.
+
+**ERRATA (2026-08-18, ciclo 2 do B-O6R-01 — apensada, nunca reescrita; §A2). Duas afirmações acima
+foram desmentidas por execução (R-B-O6R-01-ciclo1):**
+
+1. **B-1 — a prova citada não existia.** O parágrafo da TERCEIRA ARMADILHA acima afirma que o caminho
+   de decisão do gancho é *"provado sob role efêmera NOSUPERUSER (onde a trilha lê zero) em
+   `tests/auth-identity-revocation-db.test.ts`"*. Em `8371c07` essa prova **não existia**: aquele
+   arquivo não cria role efêmera — o serviço rodava como `postgres` (`rolsuper`, `rolbypassrls`) e a
+   trilha lia 217 linhas, não zero. O mecanismo estava certo (o achador o provou por experimento
+   próprio), mas a prova alegada e a guarda de regressão não existiam. **A prova passou a existir na
+   fatia 2 do ciclo 2 (`954324d`)**: caso *"gancho da troca de senha SOB role real (B-1): decide por
+   attached_via com a trilha lendo ZERO"*, em `tests/auth-identity-role-real-db.test.ts` — braço (a)
+   `religacao` desvincula + revoga, braço (b) `backfill` não desvincula + revoga, e `count(*)` da
+   trilha **pela conexão efêmera = 0**, como guarda de regressão.
+2. **M-1 — "contorno único, só superusuário" prometia mais do que o trigger impõe.** A descrição da
+   trilha acima ecoa o header da migração `20260868000000`: contorno único =
+   `session_replication_role=replica`, só superusuário. Executado (caracterização em
+   `tests/auth-identity-link-events-db.test.ts`, ciclo 2): **o DONO da tabela, mesmo NOSUPERUSER,
+   desliga o trigger com `ALTER TABLE … DISABLE TRIGGER`** — e na topologia em que quem migra é quem
+   serve, a aplicação nasce dona e pode desligar o próprio trigger. A inviolabilidade da trilha é da
+   **topologia dono ≠ app** (discriminante `pg_class.relowner` no runbook `docs/deployment.md` §3.8,
+   passo 6, medido na ativação), não do trigger. O header da migração recebeu a mesma enumeração
+   honesta (edição só-comentário; `migrate deploy` no dev não recusou — nada ressincronizado), e o
+   guard 10c (`tests/auth-invariant-guards.test.ts`) trava `DISABLE TRIGGER` em `src/**` (baseline 0).

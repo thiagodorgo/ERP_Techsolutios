@@ -113,8 +113,10 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   app.use(logger);
   app.use("/api/v1", healthRouter);
   // B-O6R-01 — vínculos de identidade (/auth/identity-links). Router PRÓPRIO, montado ANTES do
-  // auth router (paths não colidem; o middleware JWT dele fica restrito a /identity-links, então
-  // /login, /refresh e /logout seguem byte-idênticos). git add src/app.ts, senão CI route_not_found.
+  // auth router. O alcance REAL desta montagem (R-ciclo1, B-8): paths não colidem e o middleware
+  // JWT fica restrito a /identity-links — a montagem não intercepta /login, /refresh e /logout.
+  // O que essas rotas mudaram neste bloco (claim identity_id, gravações do primeiro login
+  // pós-migração) mudou nelas, em auth.routes.ts. git add src/app.ts, senão CI route_not_found.
   app.use("/api/v1/auth", createIdentityLinkRouter(options.getIdentityLinkService));
   app.use("/api/v1/auth", createAuthRouter({ getCoreSaasService: () => Promise.resolve(service) }));
   // Ω-GATE: a rota de plataforma vem ANTES do me-router. O me-router monta no prefixo largo

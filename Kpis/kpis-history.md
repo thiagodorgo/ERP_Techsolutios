@@ -2056,3 +2056,25 @@ conserto com a mesma confiança que produziu o erro. Nenhuma releitura pega isso
 **Contagens (execução real):** backend **2437/2446 → 2458/2467** (+21 testes, cada um nascido de um defeito
 real: 5 de paridade da auditoria, 10 de gráfico, 6 de tema); console web 1.125 e app de campo 860 carregados
 (§C3.3 — o PR não os toca). Blocos **149→150**.
+
+## 2026-08-18 — B-O6R-01 (PR pendente) — ciclo 2: o número volta a reproduzir
+
+O ciclo 1 do B-O6R-01 publicou `backend 2547/2556 · fail 0` — e a reexecução independente do orquestrador
+devolveu `2542/2552 · fail 1 · exit 1` (achado **B-6** do `R-B-O6R-01-ciclo1`). Não era ruído: o arnês `-db`
+criava roles/grants em paralelo disputando linhas de catálogo do Postgres (`XX000 tuple concurrently
+updated`, ~25%), o arquivo abortava e a suíte rodava **menos testes reportando um total plausível**. (O
+registro do ciclo 1 nesta série entrou só no JSON, sem seção neste arquivo — declarado aqui em vez de
+corrigido em silêncio.)
+
+O ciclo 2 corrigiu em 3 fatias (mesma branch): **fatia 1** — `ROLE_AUTHORITY` como fonte única fail-closed
+por construção (papel novo sem classificação = `TS1360`, não compila) + o caminho Prisma com teste que
+morre (drill: sem o guard, `PATCH self→super_admin` devolvia 200 e persistia); **fatia 2** —
+`pg_advisory_xact_lock` no arnês + sweep de 18 roles órfãs + a prova da terceira armadilha sob role efêmera
+`NOSUPERUSER`; **fatia 3** — honestidade dos artefatos (caracterização M-1: o DONO `NOSUPERUSER` desliga o
+trigger append-only; erratas em `decisoes.md`; validação de borda 400/404 sem erro cru do Postgres; guard
+10c; pendências `P-O6R-B01-ROLE-LITERAIS` e `P-O6R-B01-ROUTE-ERROR-LEAK`).
+
+Números deste snapshot, todos de execução real desta árvore: `npm test` **2557/2567 · fail 0 · 10 pulos
+declarados**; batch `-db` na forma exata do job `backend-postgres` **145/145 · 0 pulos · contagem idêntica
+em 3 execuções** (fatia 2: 16 execuções idênticas com 142, antes dos 3 casos novos). Flutter `864/864` e
+smoke web `1126/1126` **carregados** (trilhas não tocadas — §C3.3).

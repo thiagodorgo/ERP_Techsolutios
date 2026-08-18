@@ -7,9 +7,11 @@ import test from "node:test";
 import {
   cleanupIdentityFixture,
   closeServer,
+  createEphemeralRole,
   createOrgWithUser,
   getBaseUrl,
   requestJson,
+  withRoleCatalogLock,
 } from "./helpers/auth-identity-fixture.js";
 
 const connectionString = process.env.DATABASE_URL;
@@ -167,6 +169,88 @@ if (!connectionString) {
       }
 
       await cleanupIdentityFixture(adminClient, tenantIds);
+      await adminClient.$disconnect();
+    }
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // Caracterização do M-1 (R-B-O6R-01-ciclo1): o header da migração dizia "contorno único, só
+  // superusuário" — e a execução desmente. O DONO da tabela, mesmo NOSUPERUSER, desliga o trigger
+  // append-only com ALTER TABLE … DISABLE TRIGGER. Este teste PINA esse resíduo numa tabela-
+  // rascunho com a MESMA trigger function da trilha real (as tabelas reais não são tocadas): a
+  // inviolabilidade da trilha é da TOPOLOGIA dono ≠ app, não do trigger. Guard 10c
+  // (auth-invariant-guards) trava DISABLE TRIGGER fora daqui: baseline 0 em src/**.
+  // ---------------------------------------------------------------------------------------------
+  test("caracterização M-1: o DONO NOSUPERUSER desliga o trigger append-only com ALTER TABLE … DISABLE TRIGGER", async () => {
+    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([
+      import("@prisma/adapter-pg"),
+      import("@prisma/client"),
+    ]);
+
+    const adminClient = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    const scratchTable = `o6r_b01_scratch_m1_${Date.now()}`;
+    const scratchTrigger = `${scratchTable}_block_mutation`;
+    let role: Awaited<ReturnType<typeof createEphemeralRole>> | undefined;
+
+    try {
+      role = await createEphemeralRole(adminClient, connectionString);
+
+      // DDL de catálogo (CREATE TABLE + OWNER TO escreve pg_class/pg_shdepend) entra no MESMO
+      // lock do arnês — a fatia 2 serializou os escritores de catálogo por causa do XX000.
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(`CREATE TABLE "${scratchTable}" (id int PRIMARY KEY)`);
+        await tx.$executeRawUnsafe(
+          `CREATE TRIGGER "${scratchTrigger}" BEFORE UPDATE OR DELETE ON "${scratchTable}"
+           FOR EACH ROW EXECUTE FUNCTION auth_identity_link_events_block_mutation()`,
+        );
+        await tx.$executeRawUnsafe(`INSERT INTO "${scratchTable}" (id) VALUES (1), (2)`);
+        await tx.$executeRawUnsafe(`ALTER TABLE "${scratchTable}" OWNER TO "${role!.roleName}"`);
+      });
+
+      // A conexão que vai desligar o trigger é comprovadamente NOSUPERUSER e sem BYPASSRLS.
+      const [who] = await role.client.$queryRaw<
+        Array<{ rolsuper: boolean; rolbypassrls: boolean }>
+      >`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`;
+
+      assert.equal(who?.rolsuper, false, "a caracterização só vale sob NOSUPERUSER");
+      assert.equal(who?.rolbypassrls, false, "a caracterização só vale sem BYPASSRLS");
+
+      // Com o trigger habilitado, o DELETE estoura — o mesmo comportamento da trilha real.
+      await assert.rejects(
+        role.client.$executeRawUnsafe(`DELETE FROM "${scratchTable}" WHERE id = 1`),
+        /append-only|23001/,
+        "baseline: trigger habilitado bloqueia DELETE para o dono também",
+      );
+
+      // O DONO desliga o trigger — sem superusuário, sem session_replication_role — e o DELETE passa.
+      await role.client.$executeRawUnsafe(
+        `ALTER TABLE "${scratchTable}" DISABLE TRIGGER "${scratchTrigger}"`,
+      );
+
+      const deleted = await role.client.$executeRawUnsafe(
+        `DELETE FROM "${scratchTable}" WHERE id = 1`,
+      );
+
+      assert.equal(deleted, 1, "com o trigger desligado pelo dono, o DELETE passa");
+
+      // Re-habilita e a trava volta a valer — o desligamento não é permanente nem destrutivo.
+      await role.client.$executeRawUnsafe(
+        `ALTER TABLE "${scratchTable}" ENABLE TRIGGER "${scratchTrigger}"`,
+      );
+      await assert.rejects(
+        role.client.$executeRawUnsafe(`DELETE FROM "${scratchTable}" WHERE id = 2`),
+        /append-only|23001/,
+        "re-habilitado, o trigger volta a bloquear",
+      );
+    } finally {
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(`DROP TABLE IF EXISTS "${scratchTable}"`);
+      });
+
+      if (role) {
+        await role.drop();
+      }
+
       await adminClient.$disconnect();
     }
   });

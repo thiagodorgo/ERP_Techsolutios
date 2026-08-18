@@ -10,33 +10,33 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R).",
-    "status_label": "PR aberto — em revisão"
+    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c).",
+    "status_label": "ciclo 2 de correção entregue — aguardando junta do PR"
   },
   "metrics": {
     "flutter_tests": {
       "value": 864,
       "total": 864,
       "display": "864/864",
-      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado."
+      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado. [Ciclo 2: valor CARREGADO — a trilha Flutter não foi tocada pela correção; sem reexecução nesta fatia (§C3.3).]"
     },
     "frontend_smoke_tests": {
       "value": 1126,
       "total": 1126,
       "display": "1126/1126",
-      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico."
+      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclo 2: valor CARREGADO — a trilha web não foi tocada pela correção; sem reexecução nesta fatia (§C3.3).]"
     },
     "backend_tests": {
-      "value": 2547,
-      "total": 2556,
-      "display": "2547/2556",
-      "note": "Execução real: 2458/2467 → 2547/2556 (+89; 9 pulos históricos de suites -db sem env específico). Superfície de identidade/autoridade: 27 casos → 109 (82 novos — meta do plano era ≥54): guards de padrão (9), SEC-001 (7), login anônimo unitário (10) e e2e (5), prontidão/health (5), lockout armado (8), religação/TEN-001 (14), revogação I3 (7), role EFÊMERA NOSUPERUSER (8), backfill nas duas configurações (4), trilha (3), função elevada (8), varredura por valor (1)."
+      "value": 2557,
+      "total": 2567,
+      "display": "2557/2567",
+      "note": "Execução real do ciclo 2 (fatia 3, árvore desta entrega): 2557/2567 · fail 0 · 10 pulos declarados (os 9 históricos de suítes -db sem env específico + core-saas-role-authority-db, que na bateria local memory se declara pulada e roda no job backend-postgres sob o guard de zero pulos). O número do ciclo 1 (2547/2556 · fail 0) NÃO reproduzia — achado B-6 do R-B-O6R-01-ciclo1: a reexecução independente deu 2542/2552 · fail 1 · exit 1 (corrida de catálogo no arnês -db, A-1; corrigida na fatia 2 com pg_advisory_xact_lock + sweep de 18 roles órfãs). Batch -db na forma exata do job backend-postgres: 145/145 · 0 pulos · contagem idêntica em 3 execuções nesta fatia (na fatia 2: 16 execuções idênticas com 142, antes dos 3 casos novos desta fatia)."
     },
     "backend_contract_tests_focused": {
-      "value": 89,
-      "total": 89,
-      "display": "89/89",
-      "note": "Bateria focada do B-O6R-01 (execução real, casos-folha): 39 no grupo memory + 50 no grupo -db (role efêmera NOSUPERUSER — a única configuração em que o RLS existe)."
+      "value": 88,
+      "total": 88,
+      "display": "88/88",
+      "note": "Bateria focada do B-O6R-01 REMEDIDA no ciclo 2 (execução real, casos-folha, composição declarada): 22 no grupo memory (auth-invariant-guards com o guard 10c + core-saas-role-authority, sob CORE_SAAS_PERSISTENCE=memory, a forma do runner) + 66 no grupo -db (os 9 arquivos do bloco listados no job backend-postgres, role efêmera NOSUPERUSER — 2 execuções com contagem idêntica). Substitui o 89/89 do ciclo 1, cuja composição de arquivos não estava declarada e antecedia as suítes novas do ciclo 2."
     },
     "flutter_modules": {
       "value": 17,

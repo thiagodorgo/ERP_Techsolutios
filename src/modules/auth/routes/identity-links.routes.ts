@@ -34,7 +34,9 @@ export function createIdentityLinkRouter(
   const router = Router();
 
   // O middleware fica restrito a /identity-links para não interceptar rotas irmãs do prefixo
-  // /api/v1/auth (login/refresh/logout seguem byte-idênticos).
+  // /api/v1/auth. O alcance desta linha é só a MONTAGEM (R-ciclo1, B-8): login/refresh/logout
+  // não passam por este router — o que mudou NELES neste bloco (claim identity_id no token,
+  // gravações do primeiro login pós-migração) vive em auth.routes.ts, não aqui.
   router.use("/identity-links", attachAuthenticatedActor());
 
   router.get(
@@ -138,6 +140,21 @@ export function createIdentityLinkRouter(
             code: "UNAUTHORIZED",
             reason: "reauthentication_required",
             message: "Password reauthentication is required.",
+          },
+        });
+        return;
+      }
+
+      // B-7 (ciclo 2): a forma valida AQUI, antes de tocar o banco — sem isto o valor cru
+      // alcançava o GUC e um cast ::uuid no serviço, e o fallback de sendRouteError devolvia a
+      // mensagem do Postgres no corpo público (a classe inteira do fallback é a pendência
+      // P-O6R-B01-ROUTE-ERROR-LEAK; esta rota fecha só a própria borda).
+      if (reauthTenantId !== undefined && !UUID_PATTERN.test(reauthTenantId)) {
+        response.status(400).json({
+          error: {
+            code: "BAD_REQUEST",
+            reason: "invalid_payload",
+            message: "reauthTenantId must be a UUID.",
           },
         });
         return;

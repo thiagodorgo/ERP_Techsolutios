@@ -12,8 +12,10 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 //   - teardown ESCOPADO aos ids do próprio teste (nunca curinga; houve incidente de mass-delete);
 //     a trilha append-only é limpa NA CONEXÃO PRIVILEGIADA com SET LOCAL
 //     session_replication_role='replica' DENTRO da transação (o idioma dos moldes 20260836/47) —
-//     jamais ALTER TABLE … DISABLE TRIGGER. Em modo replica a checagem de FK também não roda:
-//     a ordem eventos→links→identities abaixo é DISCIPLINA do autor, não imposição do banco.
+//     jamais ALTER TABLE … DISABLE TRIGGER. DENTRO dessa transação em modo replica a checagem de
+//     FK também não roda — SÓ ali a ordem é disciplina do autor. Os deletes de links→identities
+//     rodam FORA dela, onde a FK RESTRICT (links.identity_id → identities) IMPÕE a ordem
+//     (R-ciclo1, B-9: a frase anterior generalizava a disciplina para o teardown inteiro).
 // -----------------------------------------------------------------------------------------------
 
 export type EphemeralRole = {

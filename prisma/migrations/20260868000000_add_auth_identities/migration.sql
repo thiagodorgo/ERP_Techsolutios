@@ -37,9 +37,16 @@
 --     chave de junção entre organizações. RLS não vincula superusuário; quem vincula superusuário
 --     é o TRIGGER (UPDATE/DELETE por linha + TRUNCATE por statement — o de TRUNCATE é além do
 --     molde 20260847, declarado: TRUNCATE não dispara trigger de linha e exige só o privilégio
---     TRUNCATE, não superusuário). Contorno único de manutenção/teardown:
---     session_replication_role=replica (só superusuário) — o trigger não dispara em modo replica
---     (molde: 20260847000000:24 e :75-76; 20260836000000:151-153).
+--     TRUNCATE, não superusuário). CONTORNOS CONHECIDOS do trigger — enumeração honesta
+--     (R-B-O6R-01-ciclo1, M-1/M-2; a frase anterior dizia "contorno único, só superusuário" e a
+--     execução desmente — caracterizado em tests/auth-identity-link-events-db.test.ts):
+--       (a) session_replication_role=replica (só superusuário) — o trigger não dispara em modo
+--           replica (molde: 20260847000000:24 e :75-76; 20260836000000:151-153);
+--       (b) o DONO da tabela, mesmo NOSUPERUSER, desliga o trigger com ALTER TABLE … DISABLE
+--           TRIGGER — e na topologia em que quem migra é quem serve, a aplicação nasce DONA e
+--           pode desligar o próprio trigger. A inviolabilidade da trilha é da TOPOLOGIA
+--           dono ≠ app (discriminante: pg_class.relowner das três tabelas ≠ role da aplicação,
+--           medido na ativação — runbook docs/deployment.md §3.8, passo 6), não do trigger.
 --
 -- TRÊS DEPENDÊNCIAS DE PRIVILÉGIO, NOMEADAS — cada uma com canal de detecção MEDIDO (§0/§3.2.3):
 --   (1) DONO da função auth_login_candidates: SECURITY DEFINER lê users/tenants/credenciais sob
@@ -120,8 +127,10 @@ ALTER TABLE "auth_identity_link_events"
 -- TRIGGER append-only da trilha — vincula QUALQUER role, inclusive superusuário. Molde:
 -- custody_events_block_mutation (20260836000000:162-164) + portal_access_logs_block_mutation
 -- (20260847000000:85-87). DESVIO A FAVOR, declarado (§3.1): BEFORE TRUNCATE FOR EACH STATEMENT —
--- TRUNCATE não dispara trigger de linha e exige só o privilégio TRUNCATE; sem ele, "contorno
--- único" seria impreciso. Contorno único: session_replication_role=replica (só superusuário).
+-- TRUNCATE não dispara trigger de linha e exige só o privilégio TRUNCATE; sem ele, TRUNCATE
+-- apagaria a trilha sem tocar a trava. CONTORNOS (M-1 — enumeração honesta no header acima):
+-- (a) session_replication_role=replica (só superusuário); (b) o DONO da tabela, mesmo
+-- NOSUPERUSER, via ALTER TABLE … DISABLE TRIGGER — a inviolabilidade é da topologia dono ≠ app.
 CREATE OR REPLACE FUNCTION auth_identity_link_events_block_mutation() RETURNS trigger
   LANGUAGE plpgsql AS $$
 BEGIN

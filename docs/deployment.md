@@ -475,8 +475,13 @@ Passos, na ordem:
 6. **Discriminantes pós-ativação** (o canal do backfill em ambiente — o `prisma migrate deploy` DESCARTA
    warnings [medido]; o RAISE WARNING vai ao log do SERVIDOR): usuários sem vínculo = 0 · eventos
    `'backfill'` == vínculos · identidades órfãs = 0 · dono efetivo da função (`pg_proc.proowner`) com
-   `rolsuper`/`rolbypassrls` · **membros da role dona = 0 (`pg_auth_members`) — medido, não presumido**.
-   Saída registrada na ata de ativação.
+   `rolsuper`/`rolbypassrls` · **membros da role dona = 0 (`pg_auth_members`) — medido, não presumido** ·
+   **dono efetivo das TRÊS tabelas de identidade (`pg_class.relowner` de `auth_identities`,
+   `auth_identity_links`, `auth_identity_link_events`) ≠ role da aplicação — medido na ativação.**
+   Este último é o que sustenta o append-only da trilha (M-1, ciclo 2 do B-O6R-01): o DONO da tabela,
+   mesmo NOSUPERUSER, desliga o trigger com `ALTER TABLE … DISABLE TRIGGER`; se quem migra é quem
+   serve, a aplicação nasce dona e a trilha deixa de ser prova — a inviolabilidade é da topologia
+   dono ≠ app, não do trigger. Saída registrada na ata de ativação.
 7. **Smoke do caminho anônimo:** `POST /api/v1/auth/login` sem `tenantId` com uma credencial válida → 200.
 
 **PROIBIÇÃO:** `GRANT <role_dona> TO <role_da_app>` — **NUNCA**: daria à app `SET ROLE` para uma role com

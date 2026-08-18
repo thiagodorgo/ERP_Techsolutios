@@ -7,9 +7,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // -----------------------------------------------------------------------------------------------
-// B-O6R-01 (§7 do plano) — os 9 GUARDS DE PADRÃO. Cada guard trava, por varredura mecânica, um
-// invariante que a prosa sozinha não segura. Baselines medidos na autoria deste bloco; um match
-// novo fora da allowlist é regressão do invariante, não "ruído do guard".
+// B-O6R-01 (§7 do plano) — os 9 GUARDS DE PADRÃO do plano v6, mais o guard 10c do ciclo 2 (M-1;
+// os guards 10a/10b vivem em tests/core-saas-role-authority.test.ts). Cada guard trava, por
+// varredura mecânica, um invariante que a prosa sozinha não segura. Baselines medidos na autoria;
+// um match novo fora da allowlist é regressão do invariante, não "ruído do guard".
 // -----------------------------------------------------------------------------------------------
 
 const repoRoot = path.resolve(__dirname, "..");
@@ -232,4 +233,14 @@ test("guard 9 — forma do setter: 2º argumento identificador nu; e rls.ts impo
     false,
     "rls.ts não pode importar o homônimo de core-saas.types.ts",
   );
+});
+
+test("guard 10c — DISABLE TRIGGER não aparece em src/** (baseline 0; o DONO desligaria o append-only sem superusuário)", () => {
+  // M-1 (R-B-O6R-01-ciclo1): o dono da tabela, mesmo NOSUPERUSER, desliga o trigger da trilha
+  // com ALTER TABLE … DISABLE TRIGGER — caracterizado por execução em
+  // tests/auth-identity-link-events-db.test.ts. Na topologia em que a aplicação é dona das
+  // tabelas, uma linha dessas em código de aplicação apagaria a prova do C3. Baseline: 0.
+  const matches = findMatches(srcFiles, /DISABLE\s+TRIGGER/i);
+
+  assert.deepEqual(matches, [], "DISABLE TRIGGER em src/** desligaria a trilha append-only (M-1)");
 });

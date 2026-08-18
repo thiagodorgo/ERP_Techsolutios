@@ -314,6 +314,45 @@ if (!connectionString) {
         assert.equal(legacy.status, 401, "header legado nunca constrói o ator dos fluxos de identidade (V2)");
       });
 
+      await t.test(":id malformado → 404 uniforme com alheio/inexistente, sem erro cru do Postgres no corpo (B-7)", async () => {
+        // id malformado não pode existir — 404 igual ao alheio, senão a forma vira oráculo.
+        const malformed = await requestJson(baseUrl, "/api/v1/auth/identity-links/not-a-uuid", {
+          method: "DELETE",
+          headers: authA,
+          body: { password: orgA.password },
+        });
+
+        assert.equal(malformed.status, 404);
+        assert.equal(malformed.body.error?.reason, "identity_link_not_found");
+        assert.doesNotMatch(
+          JSON.stringify(malformed.body),
+          /Raw query failed|SQLSTATE|22P02|invalid input syntax/i,
+          "o corpo público não pode carregar erro cru do Postgres",
+        );
+      });
+
+      await t.test("reauthTenantId malformado → 400 invalid_payload ANTES do banco, sem erro cru do Postgres (B-7)", async () => {
+        // Antes do ciclo 2 o valor cru alcançava o GUC e um cast ::uuid, e o corpo público
+        // devolvia a mensagem do Postgres (fallback do sendRouteError — P-O6R-B01-ROUTE-ERROR-LEAK).
+        const malformed = await requestJson(
+          baseUrl,
+          "/api/v1/auth/identity-links/11111111-1111-4111-8111-111111111111",
+          {
+            method: "DELETE",
+            headers: authA,
+            body: { password: orgA.password, reauthTenantId: "not-a-uuid" },
+          },
+        );
+
+        assert.equal(malformed.status, 400);
+        assert.equal(malformed.body.error?.reason, "invalid_payload");
+        assert.doesNotMatch(
+          JSON.stringify(malformed.body),
+          /Raw query failed|SQLSTATE|22P02|invalid input syntax/i,
+          "o corpo público não pode carregar erro cru do Postgres",
+        );
+      });
+
       await t.test("único vínculo → 200 already_standalone e as sessões do par ficam INTACTAS (revoked_at NULO)", async () => {
         // O ator A agora só tem o vínculo de A. Sessão viva do par A:
         const sessionsALive = await adminClient.authSession.count({

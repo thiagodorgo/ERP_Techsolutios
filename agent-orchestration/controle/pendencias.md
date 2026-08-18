@@ -2788,3 +2788,32 @@ veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é paylo
 - **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
   explícito e contagem antes/depois, nunca por curinga solto.
 - status: ABERTA.
+
+## P-O6R-B01-ROLE-LITERAIS (2026-08-18 — ciclo 2 do B-O6R-01, plano §9)
+
+A fatia 1 do ciclo 2 fez do `ROLE_AUTHORITY` (em `src/modules/core-saas/permissions/catalog.ts`) a fonte
+única de "qual papel é de plataforma", com guard 10a travando literais em `src/modules/platform/**`
+(baseline 0). Ficaram **de fora, de propósito**, literais de papel de plataforma em 4 arquivos de
+**feature** — medidos na fatia 3:
+
+- `src/modules/fines/fine.types.ts`
+- `src/modules/navigation/navigation.service.ts`
+- `src/modules/notifications/fleet-alerts.runner.ts`
+- `src/modules/notifications/notification.recipient-resolver.ts`
+
+**Por que não fechou no ciclo:** esses literais não são o gate de autoridade (o gate é o
+`assertAssignableRole` do serviço, agora testado no caminho Prisma); mexer em 4 features fora do foco de um
+ciclo de correção é risco sem prova nova. **Correção, quando vier:** importar as constantes derivadas do
+`ROLE_AUTHORITY` (ou classificar via mapa), com o guard 10a estendendo a fronteira arquivo a arquivo.
+- status: ABERTA.
+
+## P-O6R-B01-ROUTE-ERROR-LEAK (2026-08-18 — ciclo 2 do B-O6R-01, plano §9; achado B-7 do R-ciclo1)
+
+O fallback de `sendRouteError` (`src/modules/core-saas/routes/http.ts`) devolve `error.message` **cru** no
+corpo público (`400 invalid_request`) para qualquer `Error` que não seja `CoreSaasError`/`RouteError` — foi
+por aí que a mensagem do Postgres (`Raw query failed. Code … invalid input syntax for type uuid`) vazou no
+DELETE de vínculo com `reauthTenantId` malformado. O ciclo 2 fechou **só a borda da rota do bloco**
+(validação de forma antes do banco em `identity-links.routes.ts`, com teste que reprova corpo com erro cru);
+a **classe** — dezenas de módulos passam pelo mesmo fallback — é bloco próprio: mudar o fallback altera o
+contrato de erro de todas as rotas de uma vez e precisa de plano e junta próprios.
+- status: ABERTA.
