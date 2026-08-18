@@ -251,3 +251,38 @@ como sobra pelo `--check`. Ou ficam no topo, ou o script ganha recursão: é dec
 
 **Achado colateral, de outro dono:** `.agents/agents/README.md` já estava defasado antes deste ciclo — diz
 "24 papéis" e lista 5 papéis `omega5p-*` que não têm mais arquivo.
+
+---
+
+# Verificação independente da FATIA 1 do ciclo 2 (orquestrador)
+
+**A afirmação central da fatia foi reexecutada, não aceita.** Mutação aplicada ao arquivo real
+(`catalog.ts`, papel novo em `STANDARD_ROLES` sem entrada no `ROLE_AUTHORITY`), medida, e revertida por
+cópia com `md5sum` conferido nas duas pontas:
+
+```
+src/modules/core-saas/permissions/catalog.ts(336,12): error TS1360:
+  Property 'papel_novo_nao_classificado_…' is missing in type … but required in
+  type Record<… , "tenant" | "platform">
+>>> EXIT DO CHECK: 2
+```
+
+**Antes** (adendo ao B-2): papel novo sem classificação **compilava** e nascia **atribuível por tenant**.
+**Depois:** não compila. **Fail-open → fail-closed, provado por execução nas duas direções.**
+
+## Achado do drill 4, que a junta precisa ver
+
+Comentando os dois `assertAssignableRole` do caminho **Prisma**, o `PATCH` de si mesmo para `super_admin`
+**retorna 200 e PERSISTE o assignment de plataforma** — não é 403 nem erro: a escalada **completa**.
+
+O motivo é estrutural: o repositório resolve papéis de catálogo pela **linha de sistema**
+(`tenant_id: null`, `role.repository.ts:42-49`), então nada abaixo do serviço barra. **O guard do serviço é a
+única barreira no caminho de produção** — e era exatamente esse guard que, até o ciclo 1, **nenhum teste
+exercitava** (achado B-4).
+
+## Nota de método do próprio desenvolvedor
+
+Ele registrou que tropeçou uma vez no artefato `… | tail` devolvendo o exit code do `tail` — o **mesmo** erro
+que este relatório já registra duas vezes contra o orquestrador. Remediu antes de aceitar o número. Três
+ocorrências do mesmo erro de medição, por dois agentes diferentes, é sinal de que o idioma é uma armadilha do
+ambiente, não descuido individual.
