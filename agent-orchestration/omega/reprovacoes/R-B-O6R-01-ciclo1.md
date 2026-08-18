@@ -187,3 +187,67 @@ desenvolvedor do ciclo 1 **não** é quem vai corrigir o ciclo 2.
 Qualquer plano de correção escrito a partir de `decisoes.md` herdaria a premissa falsa de que a armadilha está
 provada. **Por isso o planejador do ciclo 2 recebe este relatório — não o `decisoes.md`** — e a primeira tarefa
 dele é decidir o que fazer com a afirmação falsa: removê-la, ou torná-la verdadeira criando a prova que falta.
+
+---
+
+# Adendo ao B-2 · o MECANISMO exato, provado por compilação
+
+Achado pela `agente-fabrica` ao calibrar a cadeira `guardiao-fail-closed`, e **confirmado por execução**.
+
+O comentário em `src/modules/core-saas/permissions/catalog.ts:321-323` afirma:
+
+> *"Guard de exaustividade — NÍVEL 1 (compile-time): todo Role é PlatformRole ou TenantAssignableRole, sem
+> sobra e sem interseção. Um papel novo que não caia em exatamente um dos dois lados **quebra o BUILD** aqui
+> (nunca compila 'papel sem classificação')."*
+
+**É impossível que quebre.** Duas linhas acima (`:318`):
+
+```ts
+export type TenantAssignableRole = Exclude<Role, PlatformRole>;
+```
+
+Logo `PlatformRole | TenantAssignableRole` **é** `Role` — por definição de `Exclude`, não por verificação. O
+tipo condicional `_RolePartitionIsExhaustive` é **sempre** `true`, para qualquer catálogo de papéis. Não existe
+"papel sem classificação": todo papel não declarado em `PLATFORM_ROLES` cai automaticamente do lado
+**atribuível por tenant**.
+
+**Prova executada** (reprodução mínima, `tsc --noEmit --strict`, papel novo sem classificação):
+
+```
+type Role = "tenant_admin" | "manager" | "platform_admin" | "PAPEL_NOVO_NAO_CLASSIFICADO";
+type PlatformRole = "platform_admin";                    // ninguém classificou o papel novo
+type TenantAssignableRole = Exclude<Role, PlatformRole>;
+… guard idêntico ao de catalog.ts …
+const cai: TenantAssignableRole = "PAPEL_NOVO_NAO_CLASSIFICADO";
+
+EXIT: 0  → compilou. O guard não reprovou, e o papel novo nasce ATRIBUÍVEL.
+```
+
+**E o "nível 2" é a mesma tautologia numa segunda camada:** `tests/core-saas-role-authority.test.ts:27-42`
+compara a união com `DEFAULT_ROLES`, do qual `TENANT_ASSIGNABLE_ROLES` foi derivada por `.filter`. Comparar
+uma derivação com a sua própria origem não testa nada.
+
+**Os dois "níveis" de guard são um só, e nenhum dos dois é guard.** É o comentário de segurança afirmando o
+resultado que a execução não produz — a mesma classe, agora no ponto que fecha o `Ω6R-SEC-001`.
+
+---
+
+# Cadeiras criadas no ciclo 1 (§C7.4)
+
+| Cadeira | Julga | Veta |
+|---|---|---|
+| **`inspetor-de-arnes-concorrente`** | suíte que cria objeto global sob paralelismo; mede N≥10 repetições **no arranjo exato da CI**, nomeia o objeto de catálogo disputado, conta o lixo com privilégio | denominador variável (alta gravidade **mesmo com `fail 0`**); "transitório" sem contagem; órfão com privilégio; teste que alega role restrita sem prová-la |
+| **`guardiao-fail-closed`** | uma pergunta só: **membro novo não classificado nasce negado ou permitido?** Por tautologia, **mutação** e autoridade única (busca pelo *valor literal*, não pelo nome do símbolo) | default permissivo; guard tautológico; autoridade duplicada sem mecanismo executável; *"fechado por construção"* sem mutação que prove |
+
+As duas nasceram **sem `Write`/`Edit`** de propósito: a ausência de ferramenta de escrita é o reforço
+estrutural da `D-JUNTA-SEPARACAO-DE-PAPEIS`. O corpo de cada uma diz, com exemplos do que elas **não** podem
+dizer: *"Propriedade é achado. Patch é contaminação."* Espelho verificado — `sync-agent-agents.mjs --check`
+devolve **OK, 22 agentes, espelho consistente**.
+
+**Divergência registrada (§A2, não consolidada em silêncio):** as duas ficaram na **raiz** de
+`.claude/agents/`, e não em `especialistas/` como a descrição da `agente-fabrica` prevê, porque
+`sync-agent-agents.mjs:66` só lê o topo — em subpasta não seriam espelhadas, e um espelho manual seria acusado
+como sobra pelo `--check`. Ou ficam no topo, ou o script ganha recursão: é decisão de outro bloco.
+
+**Achado colateral, de outro dono:** `.agents/agents/README.md` já estava defasado antes deste ciclo — diz
+"24 papéis" e lista 5 papéis `omega5p-*` que não têm mais arquivo.
