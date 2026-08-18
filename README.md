@@ -2,6 +2,33 @@
 
 ERP Techsolutions e um SaaS ERP operacional de campo, multi-tenant e orientado por modulos para empresas que executam servicos externos, controlam equipes, viaturas, estoque, financeiro operacional e indicadores em tempo real.
 
+## Subir o ambiente
+
+Um comando sobe **tudo junto** — banco, cache, backend, console web e o painel de KPI:
+
+```bash
+npm run up
+```
+
+| | Endereço | O que é |
+|---|---|---|
+| Backend | http://127.0.0.1:3000/api/v1/health | API REST `/api/v1` |
+| Console web | http://127.0.0.1:5173/ | portal React |
+| **Painel de KPI** | **http://127.0.0.1:8899/** | onde o projeto está: progresso, gráficos, achados da auditoria e cronograma |
+
+`Ctrl+C` encerra tudo junto. Se o banco já estiver de pé, `npm run up -- --sem-docker` pula o compose.
+
+### Só o painel de KPI
+
+```bash
+npm run kpis:serve          # http://127.0.0.1:8899/  (ou `npm run kpis:serve -- 9000`)
+```
+
+O painel **precisa ser servido** para mostrar dados vivos. Aberto por `file://`, o navegador bloqueia a
+leitura dos JSON e a página cai numa cópia congelada — que funciona e **se anuncia como congelada** na tela,
+mas mostra o snapshot do último merge e **não desenha gráfico** (a série exige o histórico, que ele não
+conseguiu ler). Contrato completo do painel em [`Kpis/README.md`](Kpis/README.md).
+
 ## Estado atual do repositorio
 
 - Base documental oficial v1 incorporada em `docs/`

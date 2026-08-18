@@ -1426,3 +1426,53 @@ vigentes, a máquina de staging **só sobe se os segredos estiverem postos no ap
 origem de CORS, as cinco variáveis do portal público, a URL do banco e uma URL de Redis que não seja local. Sem
 elas o boot **reprova por desenho**, que é o comportamento correto e é o ponto do bloco. Subir o mínimo para 1
 **não** provisiona segredo nenhum: isso continua sendo ação humana, com credenciais que só o dono tem.
+
+## D-JUNTA-SEPARACAO-DE-PAPEIS (2026-08-17 — **decisão do dono**)
+
+**Quem acha o defeito NÃO conserta.** A partir daqui, o ciclo de reprovação separa três papéis, em três
+agentes distintos:
+
+| Papel | Faz | **Não** faz |
+|---|---|---|
+| **Quem acha** | reporta o defeito, a evidência executada e **o motivo** | não propõe correção, não escreve código |
+| **Quem planeja** | escreve o plano da correção a partir do relatório | não implementa |
+| **Quem desenvolve** | implementa o plano | não julga se o achado é válido |
+
+E, **a cada reprovação**, antes de recompor a junta, três perguntas obrigatórias, respondidas por escrito na
+ata do ciclo:
+
+1. **A composição da junta é adequada** ao defeito que apareceu, ou faltou uma cadeira com a competência que
+   o achado exige?
+2. **Quem achou o defeito é quem o consertou?** Se sim, o ciclo está contaminado e a correção volta para
+   revisão por outro agente.
+3. **O planejador está usando dado podre?** — plano escrito sobre premissa não medida, sobre a versão errada
+   de um arquivo, ou sobre afirmação herdada de um artefato que ninguém verificou.
+
+**O problema que isto resolve, medido neste repositório.** Na repaginação do painel de KPI (2026-08-17), três
+rodadas adversariais acharam **quatro instâncias da mesma classe de defeito** — *"um artefato afirma um
+resultado que a execução não produz"* — e **as quatro nasceram em correções, nenhuma no código original**.
+A causa não é desatenção: **quem conserta acabou de convencer a si mesmo de qual é o problema, e escreve o
+conserto com a mesma confiança que produziu o erro.** Casos concretos:
+
+- a correção do "88% é estimativa" deixou o 99% sem ressalva **no mesmo cartão**, criando uma assimetria pior
+  do que o defeito original — e o teste escrito para impedir isso passava verde, porque a asserção era global
+  e a outra métrica a satisfazia sozinha;
+- a correção do gráfico de ritmo trocou um zero falso por um retângulo sem regra de CSS, que o navegador
+  pintou de preto e virou a **maior barra do gráfico**;
+- a correção seguinte afirmava *"semana ainda em curso"* — um fato sobre o relógio — num cálculo cujo próprio
+  comentário declarava que **se recusa a consultar o relógio**.
+
+Nenhuma das três foi pega por releitura. **Só execução pega**, e só por um agente que não escreveu a correção.
+
+**Consequências operacionais:**
+
+- O `critico-adversarial` e as demais cadeiras de auditoria passam a devolver **achado + evidência + motivo**,
+  e explicitamente **não** a correção. Sugerir correção contamina o julgamento de quem vai planejá-la — e já
+  produziu, nesta mesma rodada, uma correção proposta cuja metade estava errada e teria introduzido defeito.
+- O `planejador-mestre` recebe o relatório do achador, não o do implementador. Ele roda em **Fable** por
+  contrato quando o fluxo volta para replanejamento (`D-PLANEJADOR-MODELO-FABLE`) — regra mantida.
+- A implementação é de um terceiro agente, que **não vota** sobre a validade do achado.
+- A ata do ciclo (`omega/reprovacoes/R-<entrega>-<ciclo>.md`) passa a registrar **quem ocupou cada um dos três
+  papéis**, e as respostas às três perguntas acima. Ata sem essa separação declarada = ciclo inválido.
+- Esta regra **não** substitui a §C7.4 (a `agente-fabrica` cria especialistas nos ciclos 1–2); ela diz **como**
+  os papéis se distribuem dentro de cada ciclo.

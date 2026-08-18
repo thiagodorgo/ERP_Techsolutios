@@ -1958,3 +1958,101 @@ medido em ~84ms mesmo sem latência), e o botão principal de publicar era **ine
 hover que repetia os próprios valores, anulando o feedback, a quarenta pixels de outro botão que funcionava.
 
 **Contagens (execução real):** smoke **1091→1108**; backend 2.114 e Flutter 839 carregados. Blocos **142→143**.
+
+## 2026-08-17 — KPI-PAINEL-REPAGINADO (PR pendente) — **o painel refeito do zero, e três defeitos que ele achou**
+
+O dono pediu o painel repaginado para mostrar a investidores: gráficos de desempenho e conclusão, as últimas
+demandas, os bugs achados/adiados/corrigidos, o progresso atual e o cronograma completo com checklist. Os três
+arquivos (`index.html`, `app.js`, `styles.css`) foram **reescritos do zero**; os JSON são indeléveis e só
+receberam acréscimo.
+
+**O gráfico contava duas continuidades falsas.** A série do backend salta de 15 para 766 em 13/07, e a do
+console web de 44 para 378 no mesmo dia. Nenhum dos dois foi crescimento: o próprio histórico registra que a
+medida do backend **passou a contar a suíte inteira** (antes só o núcleo) e que o 44 do console **estava
+congelado** desde uma entrega anterior. Ligados por linha contínua, diziam a um investidor "51× em um dia".
+Agora a série **quebra** ali, com régua tracejada e a explicação sob o gráfico. A quebra é declarada como dado
+(`series_breaks`) e localizada pela **transição** — a primeira versão usava a data e caiu na linha errada,
+porque cinco entregas dividem o dia 13/07. Quem pegou foi o guard.
+
+**Um achado crítico da auditoria estava órfão.** O `Ω6R-DAT-004` nasceu na reconciliação de 14/08, depois do
+plano de correção (11/08), e **nenhum bloco o corrigia** — aberto e invisível para quem lesse o plano. Virou
+o `B-O6R-12`, marcado como adendo pós-junta, com critério de aceite **provisório** até a junta do bloco.
+Encontrado pelo guard de paridade, na primeira execução.
+
+**O registro da auditoria estava defasado** do próprio JSONL: dizia 29 ativos enquanto os dois achados fechados
+pelo #353 já tinham rastro. Reconciliado, com a Fase 6 registrada.
+
+**Dois mecanismos, para nenhum dos três voltar por disciplina esquecida:**
+`tests/kpi-achados-paridade.test.ts` exige que registro, painel e cronograma contem a mesma história — e trava
+a saída fácil: zerar o contador de críticos **não** libera produção, trocar o veredito exige junta nova
+registrada. E `scripts/kpi-freeze.mjs` gera a cópia congelada do modo `file://`, que o guard compara — editar o
+JSON e esquecer de reinjetar falha na bateria, em vez de o painel mostrar número velho.
+
+O guard dos gráficos foi reescrito para o painel novo: **6 → 11 testes**, com os seis invariantes antigos
+preservados e cinco novos (mutação do histórico move a curva; paridade da cópia congelada; quebra desenhada;
+semana vazia é zero verdadeiro; histórico ilegível não derruba a página).
+
+O **88%** manteve o número e ganhou rótulo e ressalva: mede **escopo entregue**, não prontidão. A prontidão é a
+outra dimensão, e está **reprovada** — 13 dos 15 achados críticos seguem abertos.
+
+### A revisão adversarial pegou duas regressões desta própria reconstrução
+
+Com o painel pronto, seis lentes independentes o atacaram: **37 achados levantados, 19 confirmados** por
+céticos que tentaram derrubá-los. Os dois piores eram meus.
+
+**O 88% é declarado ESTIMATIVA na fonte, e a reconstrução tirou essa ressalva da tela.** O painel anterior
+mostrava *"Percentual estimado, sujeito a revisão humana"* como texto visível — provado executando as duas
+versões lado a lado. A reconstrução moveu a frase para um campo que a tela não lê **e**, no mesmo movimento,
+promoveu o número de um cartão de 14px entre seis para a **manchete de 44px com barra de progresso**. Um
+palpite ganhou a gramática visual de *"2 de 15 achados críticos corrigidos"*, que é contagem real — numa
+página feita para investidor.
+
+**O gráfico de "ritmo de entrega" contava snapshots publicados, não entregas.** Desenhava **zero na semana
+em que 45 PRs mergearam** (as rodadas daquele período adiaram a publicação de KPI de todos os seus PRs para
+um snapshot único) e **42 numa semana de 15 entregas**. Errava nas duas direções, sob o título "Desempenho".
+E o teste que eu havia escrito para proteger este gráfico afirmava, com todas as letras, que aquele zero era
+*"VERDADEIRO"* — a mesma classe de defeito que este projeto persegue há rodadas, cometida dentro da própria
+defesa. Trocado pelo **delta do acumulado de blocos**, que é medição real; semana sem medição vira faixa, não
+zero, e barra que acumula um intervalo leva asterisco.
+
+**Consertar reintroduziu a mesma classe duas vezes.** O texto novo do `caveat` trazia uma cláusula presa ao
+estado (*"está reprovada até os achados críticos fecharem"*), e a faixa que substituiu o zero falso nasceu
+**sem regra de CSS** — o navegador a pintou de preto e ela virou a maior barra do gráfico, pior do que o
+defeito original. Nenhuma leitura pegou; os testes pegaram.
+
+**Dois achados que o cético havia refutado estavam certos.** Medidos em vez de discutidos: a série do app de
+campo ficava em **2,74:1** (piso de 3:1 para objeto gráfico) e o alvo de toque em **31px** (a DoD exige 44).
+Ambos corrigidos.
+
+### Terceira passada: a quarta ocorrência estava dentro da correção da segunda
+
+Rodada estreita, só sobre o que a segunda correção tocou, com a instrução de achar a quarta instância. Achou.
+
+**"Semana ainda em curso" é afirmação sobre o relógio, produzida por um cálculo que se recusa a olhar o
+relógio.** O comentário do próprio código declarava a recusa, com bom motivo: usar o relógio faria a marca
+aparecer e sumir sozinha conforme o dia em que alguém abrisse a página, e nenhum teste poderia prová-la. O
+texto então afirmava o fato de que a decisão abriu mão de saber. Hoje é verdadeiro por coincidência —
+truncando o histórico **real** antes da lacuna de 17 dias de junho, o painel afirma *"ainda em curso"* sobre
+uma semana encerrada havia 12 dias, e o gatilho dispara em **35 de 35** cortes reais de publicação.
+
+O que decidiu foi a **direção do erro**: ele adula. Converte *"faz duas semanas que ninguém publica KPI"* em
+*"a semana mal começou, a barra pequena é normal"* — numa página que o investidor abre na agenda dele.
+
+Mais duas na mesma frase: `diasMedidos` era o span de dias de calendário desde a segunda-feira, não a
+contagem de dias com medição (na semana de 15/06 o rótulo dizia 4 e havia snapshot em 3); e a marca só olhava
+a **última** semana, quando a **primeira** é igualmente recortada pela borda da série. Corrigido para afirmar
+apenas cobertura de janela, com as datas que a produziram, nas duas pontas, sem relógio.
+
+**E faltava um gráfico.** O `CLAUDE.md` §C3.0 exige quatro; havia três. Portado o *entregas por rodada* do
+painel anterior em vez de reinventado, com as duas ressalvas que ele já carregava e que agora aparecem na
+tela: a rodada é lida do **nome da versão** (não é campo declarado) e o gráfico **corta em 19/07/2026**,
+quando o registro virou contínuo — antes disso uma rodada inteira cabia num snapshot.
+
+**Três rodadas, quatro instâncias da mesma classe, todas nascidas em correções — nenhuma no código
+original.** A lição, que não estava escrita em lugar nenhum: revisar o código é metade do trabalho; revisar a
+correção é a outra metade. Quem conserta acabou de convencer a si mesmo de qual é o problema e escreve o
+conserto com a mesma confiança que produziu o erro. Nenhuma releitura pega isso — só execução pega.
+
+**Contagens (execução real):** backend **2437/2446 → 2458/2467** (+21 testes, cada um nascido de um defeito
+real: 5 de paridade da auditoria, 10 de gráfico, 6 de tema); console web 1.125 e app de campo 860 carregados
+(§C3.3 — o PR não os toca). Blocos **149→150**.

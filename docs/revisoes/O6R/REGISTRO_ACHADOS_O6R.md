@@ -174,6 +174,11 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DAT-001] Produção pode iniciar silenciosamente com persistência volátil
 - Severidade: P0        Confiança: 1.00
+- Status: **fechado** em 2026-08-15 pelo B-O6R-05 (PR #353, `a8901ff`). O gate **G1** do `env.ts` passou a
+  **exigir** `CORE_SAAS_PERSISTENCE=prisma` em todo `NODE_ENV=production` — o boot é **reprovado**, não
+  avisado. O `docker-compose.prod.yml`, que fixava `memory`, foi corrigido no mesmo bloco. O achado não é
+  mais alcançável por nenhum dos caminhos de implantação: manifests de staging e produção declaram `prisma`
+  explicitamente, e o gate os cobre mesmo que não declarassem.
 - Categoria: DAT
 - Módulo: config / core-saas / runtime        Lente: A1
 - Local: `src/config/env.ts:21-34`, `src/config/env.ts:112-208`, `src/modules/core-saas/core-saas-runtime.ts:6-16`, `docker-compose.prod.yml:41-52`
@@ -291,6 +296,12 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-006] Manifests deixam workers financeiros e legais desativados
 - Severidade: P0        Confiança: 1.00
+- Status: **fechado** em 2026-08-15 pelo B-O6R-05 (PR #353, `a8901ff`). O gate **G3** do `env.ts` exige
+  `JOBS_WORKER_ENABLED=true` em produção, e os manifests de staging e produção passaram a declará-la.
+  Fechado com uma correção que o próprio achado não previa: em staging a máquina **escalava a zero**, e com
+  ela dormindo o worker não roda — o ambiente diria "verde" sem nunca ter executado uma tarefa. O
+  `min_machines_running = 1` (PR #354, custo autorizado pelo dono em 2026-08-15) é parte do fechamento, não
+  um extra: sem ele o gate estaria satisfeito e o efeito, ausente.
 - Categoria: DIN
 - Módulo: jobs / charging / impound / notifications        Lente: A1
 - Local: `src/config/env.ts:28-33`, `src/server.ts:15-39`, `fly.production.toml:29-35`, `fly.staging.toml:22-28`
@@ -670,3 +681,27 @@ reconciliação pós-merge, sem alterar as dívidas em si.)
   detalhe, status e assign seguem abertos. Nenhum achado foi fechado.
 - Relatórios de módulo: 70/70 (era 69/70; `02_MODULOS/jurisdiction.md` criado nesta reconciliação).
 - Achados sem relatório: 0; citações órfãs: 0.
+
+## Checagem de consistência da Fase 6 — primeiros fechamentos
+
+- Executada em 2026-08-16 sobre `main` `d0cdada`.
+- Achados no Markdown: 30; IDs únicos: 30. Linhas válidas no JSONL: 30; IDs JSONL fora do Markdown: 0.
+- Delta desde a Fase 5: **nenhum achado novo**. O que mudou foi **estado**, não população.
+- **Primeiros fechamentos da auditoria: 2.** `Ω6R-DAT-001` e `Ω6R-DIN-006`, ambos P0, ambos pelo B-O6R-05
+  (PR #353, `a8901ff`), com o complemento do PR #354 no segundo. Registrados aqui e no JSONL com
+  `fechado_em`, `fechado_por` e evidência.
+- Distribuição resultante: **P0 15 (2 fechados, 13 abertos) · P1 15 (0 fechados, 15 abertos)** —
+  1 dos abertos é o parcialmente superado `Ω6R-QUA-004`.
+- **O veredito da J-6R segue integral:** REPROVADO PARA PRODUÇÃO. Fechar 2 de 15 P0 não move o veredito, e
+  esta seção existe para que o número de fechados nunca seja lido como progresso de liberação.
+- Backfill executado ao repaginar o painel de KPI: antes desta seção, o registro dizia 29 ativos enquanto o
+  painel já contaria 2 fechados. A divergência foi encontrada pelo próprio trabalho do painel.
+- **Achado órfão fechado: `Ω6R-DAT-004` não tinha bloco de correção.** O `PLANO_O6R.md` é de 2026-08-11 e
+  cobria os 29 achados de então; o DAT-004 entrou na Fase 5 (2026-08-14) e ficou de fora do cronograma —
+  aberto, e invisível para quem lesse o plano. Fechado com a linha 12 (`B-O6R-12`), marcada no plano como
+  adendo pós-junta e com critério de aceite **provisório**.
+- **Mecanismo permanente:** `tests/kpi-achados-paridade.test.ts` passa a exigir, na bateria, que
+  JSONL ↔ painel ↔ registro contem a mesma história — contagem por severidade, estado de cada achado, rastro
+  de quem fechou, e **todo achado aberto coberto por um bloco do cronograma**. Foi ele que encontrou o órfão,
+  na primeira execução. Antes disso, os três artefatos eram mantidos em paridade **à mão**, e já haviam
+  divergido duas vezes nesta mesma seção.

@@ -337,6 +337,21 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    CRIA 1–2 especialistas sob medida** para o problema (entram na junta seguinte e votam); ciclo 3 = crítico
    reabre a premissa + pesquisa ≥5 fontes (teto 6 agentes); ciclos 4–5 = junta ampliada replaneja a fatia.
    **Parada + dossiê ao humano SOMENTE** após o ciclo 5 falho, **ou** nas paradas imediatas irredutíveis.
+
+4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
+   `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
+   **quem acha** reporta defeito + evidência executada + **motivo** (e *não* propõe correção); **quem planeja**
+   escreve o plano a partir desse relatório; **quem desenvolve** implementa o plano (e não julga a validade do
+   achado). A ata do ciclo registra **quem ocupou cada papel** — ata sem isso = ciclo inválido.
+   **A cada reprovação**, antes de recompor a junta, responder por escrito na ata: (a) a **composição** cobre a
+   competência que o achado exige? (b) **quem achou é quem consertou?** — se sim, o ciclo está contaminado e a
+   correção volta para outro agente; (c) o **planejador está usando dado podre** (premissa não medida, versão
+   errada do arquivo, afirmação herdada e não verificada)?
+   **Por que:** na repaginação do painel de KPI, três rodadas adversariais acharam **quatro** instâncias da
+   mesma classe de defeito e **as quatro nasceram em correções, nenhuma no código original** — quem conserta
+   acabou de convencer a si mesmo de qual é o problema e escreve o conserto com a mesma confiança que produziu
+   o erro. Releitura não pega; só execução por um agente que não escreveu a correção pega.
+
 5. **Paradas imediatas irredutíveis (lista encolhida):** { migration destrutiva; exposição de segredo; ação
    irreversível em produção sem junta unânime prévia }. (A antiga parada por "integração externa" saiu — vira
    decisão de junta + PD. Rodadas específicas podem somar uma parada temporária, ex.: falta de credencial/
