@@ -2148,7 +2148,7 @@
   {
     "snapshot_date": "2026-08-17",
     "version": "KPI-PAINEL-REPAGINADO",
-    "pr": null,
+    "pr": 356,
     "merge_commit": null,
     "flutter_tests": "860/860",
     "backend_tests": "2458/2467",
