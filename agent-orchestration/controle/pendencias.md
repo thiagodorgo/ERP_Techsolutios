@@ -1916,9 +1916,18 @@ motiva: `D-O6R-REGISTRO-NO-BACKLOG` em `decisoes.md`.
 > P1 vem antes de nova feature no módulo correspondente. O humano delibera os rascunhos arquiteturais
 > D-001..D-004."
 
-**Como ler estas entradas.** Os 29 achados foram agrupados nos **11 blocos de correção** do
-`docs/revisoes/O6R/PLANO_O6R.md` (`P-O6R-B01`..`P-O6R-B11`, abaixo, na ordem vinculante do plano) — 29
-entradas soltas afogariam o arquivo. **Nenhum achado desapareceu na agregação:** cada um tem sub-entrada
+> **Emenda de 2026-08-18 (porteiro pós-merge do #356).** Este cabeçalho diz **29 achados / 11 blocos** e
+> descreve o estado de 14/08. Desde então: a reconciliação da **Fase 5** acrescentou o `Ω6R-DAT-004`
+> (**30 achados**, 15 P0 + 15 P1), e a repaginação do painel (PR #356) descobriu que esse achado estava
+> **aberto e sem bloco de correção** — o plano é de 11/08 e ele nasceu em 14/08. Virou o **`B-O6R-12`**
+> (`P-O6R-B12`, abaixo), levando o plano a **12 blocos**. Os números do parágrafo acima ficam como registro
+> do que se sabia naquela data; **o estado corrente é 30 achados em 12 blocos**, e quem manda são
+> `docs/revisoes/O6R/achados.jsonl` e o guard `tests/kpi-achados-paridade.test.ts`, que falha se registro,
+> painel e cronograma divergirem.
+
+**Como ler estas entradas.** Os achados foram agrupados nos **blocos de correção** do
+`docs/revisoes/O6R/PLANO_O6R.md` (`P-O6R-B01`..`P-O6R-B12`, abaixo, na ordem vinculante do plano) — uma
+entrada solta por achado afogaria o arquivo. **Nenhum achado desapareceu na agregação:** cada um tem sub-entrada
 própria com o ID original (`### Ω6R-XXX-NNN`), localizável por `grep`.
 
 **Fato × hipótese (§A6) — o que este registro verificou.** Cada uma das 29 âncoras arquivo:linha abaixo foi
@@ -2166,6 +2175,36 @@ se surgir.
   produção recusa subir com o agregado core-saas em memória, sem banco, sem worker e com Redis apontando
   para host local. O texto acima descreve o estado **anterior** ao PR e fica como registro histórico; a
   `main` de hoje já não o reproduz. Ata: `omega/juntas/J-O6R-B05-PR353-merge.md` (3×0, sem veto).
+
+## P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — **achado ÓRFÃO, sem bloco até hoje**
+
+**Estado:** ABERTO · **Dono:** próximo agente que puxar a trilha `jurisdiction`/`impound` · **PR-alvo:** ainda
+não aberto · **Bloqueia:** nada (não é pré-requisito de outro bloco) · **É bloqueado por:** nada.
+
+**Por que esta entrada nasceu depois de todas as outras.** O `PLANO_O6R.md` é de **2026-08-11** e cobria os 29
+achados então conhecidos. O `Ω6R-DAT-004` entrou na **reconciliação da Fase 5** (2026-08-14), ao revisar de
+fato o módulo `jurisdiction` — que a matriz marcava ✅ nas cinco lentes **sem relatório correspondente**. Ele
+não foi votado pela J-6R e, até **2026-08-17**, **não tinha bloco de correção**: um achado aberto que o
+cronograma não cobria, invisível para quem lesse o plano.
+
+**Quem encontrou:** o guard `tests/kpi-achados-paridade.test.ts`, escrito ao repaginar o painel de KPI, **na
+primeira execução** — ele exige que todo achado aberto esteja coberto por um bloco. Antes dele, registro,
+painel e cronograma eram mantidos em paridade **à mão**, e já haviam divergido duas vezes.
+
+### Ω6R-DAT-004 — editar o perfil normativo re-tempera custódias em curso, e a auditoria não registra o quê
+
+`PATCH` do perfil normativo altera escopo, prazos legais, modelo e teto de diária e requisitos de liberação
+**in place**, sem versão e sem data de vigência, inclusive para perfis já referenciados por processos vivos. O
+motor de diárias resolve o teto lendo o perfil **corrente** no instante do cálculo, não o regime vigente na
+entrada do veículo — enquanto o comentário canônico declara que o teto é intertemporal "por DATA DE ENTRADA".
+A auditoria da edição grava apenas `{scope, active}`: não o campo alterado, nem o valor anterior, nem o novo.
+
+**Aceite provisório** (escrito por quem fechou a lacuna, **não ratificado por junta** — a junta do próprio
+bloco o revisa antes da primeira linha de código): carimbar no processo o snapshot normativo vigente na
+entrada, ou versionar o perfil e referenciar a versão; motores lêem o regime **do processo**, não o perfil
+corrente; auditoria campo a campo com valor anterior e novo (todos numéricos/enums, cabem na allowlist §2.8).
+
+**Severidade P1 mantida como registrada** — reclassificar exigiria junta.
 
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 

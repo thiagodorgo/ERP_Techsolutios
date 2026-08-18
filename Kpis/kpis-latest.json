@@ -7,11 +7,11 @@
     "block": "Painel de KPI repaginado do zero + reconciliação da auditoria Ω6R.",
     "title": "Painel repaginado — o que o projeto entregou, o que a auditoria achou, e o que falta",
     "pr": 356,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "1e248b1",
+    "approved_head": "1e248b1",
     "status": "published_per_pr",
     "summary": "O painel é o artefato que o dono abre e mostra. Repaginado do zero: as duas dimensões lado a lado, gráficos, conclusão derivada, os 30 achados e o cronograma. O trabalho achou três defeitos — a linha do gráfico cruzando duas mudanças de medida, um achado crítico órfão sem bloco de correção, e o registro da auditoria defasado do JSONL.",
-    "status_label": "PR #356 aberto — em revisão"
+    "status_label": "Mergeado em 18/08/2026 (PR #356)"
   },
   "metrics": {
     "flutter_tests": {
