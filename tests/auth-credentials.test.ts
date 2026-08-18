@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   AuthCredentialError,
+  LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS,
+  LOGIN_LOCKOUT_MINUTES,
   LocalAuthCredentialService,
   hashPassword,
   normalizeCredentialEmail,
@@ -101,6 +103,47 @@ test("normalizeCredentialEmail trims and lowercases email", () => {
   assert.equal(normalizeCredentialEmail("  Admin.Demo@Example.COM "), "admin.demo@example.com");
 });
 
+// B-O6R-01 (§6.4.1) — o lockout DIRECIONADO é real: a 5ª falha grava locked_until e a tentativa
+// seguinte — mesmo com a senha CERTA — devolve "locked" até a janela expirar.
+test("verifyCredential arma o lockout na 5ª falha e recusa até a senha certa durante a janela", async () => {
+  const repository = new InMemoryCredentialRepository();
+  const service = new LocalAuthCredentialService(repository, {
+    async findByIdForTenant(userId, tenantId) {
+      return { id: userId, tenant_id: tenantId, email: "lock@example.com" };
+    },
+  });
+
+  await service.createCredentialForUser({
+    tenant_id: "tenant-lock",
+    user_id: "user-lock",
+    email: "lock@example.com",
+    password: "SenhaCerta123!",
+  });
+
+  for (let attempt = 1; attempt <= LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS; attempt += 1) {
+    const result = await service.verifyCredential({
+      tenant_id: "tenant-lock",
+      email: "lock@example.com",
+      password: "SenhaErrada123!",
+    });
+
+    assert.equal(result.ok, false);
+  }
+
+  const lockedWithRightPassword = await service.verifyCredential({
+    tenant_id: "tenant-lock",
+    email: "lock@example.com",
+    password: "SenhaCerta123!",
+  });
+
+  assert.equal(lockedWithRightPassword.ok, false);
+  assert.equal(
+    lockedWithRightPassword.ok === false ? lockedWithRightPassword.reason : null,
+    "locked",
+    "a 5ª falha ARMOU o lockout — a senha certa não entra durante a janela",
+  );
+});
+
 type CredentialRecord = {
   readonly id: string;
   readonly tenant_id: string;
@@ -177,11 +220,46 @@ class InMemoryCredentialRepository {
     return this.credential;
   }
 
-  async incrementFailedAttempts(): Promise<void> {}
+  // B-O6R-01 (§6.4.1) — o dublê ESPELHA o repositório real: o incremento ARMA o lockout na 5ª
+  // falha (LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS). Antes o no-op aqui deixava a suíte verde com o
+  // lockout decorativo; agora estas asserções exercitam o lockout armado de verdade.
+  async incrementFailedAttempts(id: string, tenantId: string): Promise<void> {
+    if (!this.credential || this.credential.id !== id || this.credential.tenant_id !== tenantId) {
+      return;
+    }
 
-  async resetFailedAttempts(): Promise<void> {}
+    const failedAttempts = this.credential.failed_attempts + 1;
 
-  async markSuccessfulLogin(): Promise<void> {}
+    this.credential = {
+      ...this.credential,
+      failed_attempts: failedAttempts,
+      locked_until:
+        failedAttempts >= LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS
+          ? new Date(Date.now() + LOGIN_LOCKOUT_MINUTES * 60 * 1000)
+          : this.credential.locked_until,
+    };
+  }
+
+  async resetFailedAttempts(id: string, tenantId: string): Promise<void> {
+    if (!this.credential || this.credential.id !== id || this.credential.tenant_id !== tenantId) {
+      return;
+    }
+
+    this.credential = { ...this.credential, failed_attempts: 0, locked_until: null };
+  }
+
+  async markSuccessfulLogin(id: string, tenantId: string): Promise<void> {
+    if (!this.credential || this.credential.id !== id || this.credential.tenant_id !== tenantId) {
+      return;
+    }
+
+    this.credential = {
+      ...this.credential,
+      failed_attempts: 0,
+      locked_until: null,
+      last_login_at: new Date(),
+    };
+  }
 }
 
 function createRecord(data: CredentialData): CredentialRecord {

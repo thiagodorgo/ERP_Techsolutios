@@ -116,6 +116,7 @@ model Tenant {
 
   checklist_applicability_rules ChecklistApplicabilityRule[]
   work_order_checklists         WorkOrderChecklist[]
+  auth_identity_links           AuthIdentityLink[]
   @@map("tenants")
 }
 
@@ -185,12 +186,73 @@ model User {
   led_teams                        Team[]                  @relation("TeamLeader")
   team_memberships                 TeamMember[]            @relation("TeamMemberUser")
   operator_profile                 OperatorProfile?
+  auth_identity_links              AuthIdentityLink[]
   tenant                           Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, email])
   @@index([tenant_id])
   @@map("users")
+}
+
+// B-O6R-01 (Ω6R-TEN-001) — identidade GLOBAL de autenticação. Uma identidade agrupa os vínculos
+// (tenant_id, user_id) que a MESMA pessoa provou por credencial — o e-mail NUNCA decide (I1).
+// Sem PII, sem updated_at: a linha é um id opaco + data de criação. id GERADO NA APLICAÇÃO e
+// INSERT SEM RETURNING (§3.1 do plano): a política de SELECT só enxerga a identidade do GUC
+// corrente, e o RETURNING do create() do Prisma avalia a política de SELECT — create()/upsert()
+// nesta tabela são proibidos (guard de padrão em tests/auth-invariant-guards.test.ts).
+model AuthIdentity {
+  id         String             @id @db.Uuid
+  created_at DateTime           @default(now()) @db.Timestamptz(6)
+  links      AuthIdentityLink[]
+
+  @@map("auth_identities")
+}
+
+// B-O6R-01 — vínculo EXPLÍCITO identidade↔conta. Só o vínculo autoriza a troca de organização
+// (fail-closed: sem vínculo na organização pedida = 403, jamais fallback por e-mail).
+// `attached_via` é o modo de chegada ATUAL do vínculo à identidade corrente ('backfill' |
+// 'religacao' | 'desvinculo') — estado corrente, NÃO história (a história vive nos eventos).
+// É o que o gancho da troca de senha lê sob o braço de tenant — legível sob a role real da
+// aplicação, ao contrário da trilha, que é ilegível de propósito (terceira armadilha, §4 da ata
+// J-O6R-B01: opção A — proveniência na linha; a trilha permanece INSERT-only sem SELECT).
+model AuthIdentityLink {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identity_id  String       @db.Uuid
+  tenant_id    String       @db.Uuid
+  user_id      String       @db.Uuid
+  attached_via String
+  created_at   DateTime     @default(now()) @db.Timestamptz(6)
+  identity     AuthIdentity @relation(fields: [identity_id], references: [id], onDelete: Restrict)
+  tenant       Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [tenant_id, user_id], references: [tenant_id, id], onDelete: Cascade)
+
+  @@unique([tenant_id, user_id])
+  @@unique([identity_id, tenant_id])
+  @@index([tenant_id])
+  @@map("auth_identity_links")
+}
+
+// B-O6R-01 — trilha append-only, REGISTRO DE PLATAFORMA (fecha o C3): nenhuma operação da
+// aplicação apaga o registro de que uma religação existiu. SEM FKs de propósito — a trilha
+// sobrevive ao vínculo, ao usuário e à identidade. Imutável por trigger (UPDATE/DELETE/TRUNCATE,
+// vincula qualquer role) e ilegível sob role sem BYPASSRLS (RLS FORCE, única política = INSERT).
+// INSERT sem RETURNING obrigatório (mesma razão do AuthIdentity — guard de padrão).
+model AuthIdentityLinkEvent {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  link_id          String   @db.Uuid
+  from_identity_id String?  @db.Uuid
+  to_identity_id   String   @db.Uuid
+  event            String
+  tenant_id        String   @db.Uuid
+  user_id          String   @db.Uuid
+  actor_tenant_id  String?  @db.Uuid
+  actor_user_id    String?  @db.Uuid
+  occurred_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([link_id, occurred_at])
+  @@index([tenant_id, user_id])
+  @@map("auth_identity_link_events")
 }
 
 model LocalAuthCredential {

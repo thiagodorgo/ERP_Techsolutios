@@ -4,10 +4,16 @@ import { getAuthSessionService, getLocalAuthLoginService } from "../auth-runtime
 import {
   getAccessTokenExpiresInSeconds,
   signAccessToken,
-  verifyAccessToken,
 } from "../services/jwt.service.js";
+import { AnonymousLoginService } from "../services/anonymous-login.service.js";
+import {
+  attachAuthenticatedActor,
+  getAuthenticatedActor,
+} from "../middleware/authenticated-actor.middleware.js";
 import type { AuthSessionService } from "../services/auth-session.service.js";
-import type { LocalAuthLoginService } from "../services/local-auth-login.service.js";
+import type { LocalAuthLoginService, AnonymousCandidateResult } from "../services/local-auth-login.service.js";
+import type { LocalAuthLoginResult } from "../types/auth.types.js";
+import type { verifyPassword } from "../services/password.service.js";
 import type { ICoreSaasService } from "../../core-saas/services/core-saas-service.interface.js";
 import { ROLE_PERMISSIONS, resolvePermissionsForRoles, type Role } from "../../core-saas/permissions/catalog.js";
 
@@ -25,6 +31,9 @@ type AuthRouterOptions = {
   readonly signAccessToken?: typeof signAccessToken;
   readonly getAccessTokenExpiresInSeconds?: typeof getAccessTokenExpiresInSeconds;
   readonly getCoreSaasService?: () => Promise<ICoreSaasService>;
+  // B-O6R-01 (§6) — serviço do login sem organização; injetável nos testes (espião do contador
+  // de scrypt, relógio, sleep). O default compõe o core-saas + o serviço de login reais.
+  readonly getAnonymousLoginService?: () => Promise<AnonymousLoginService>;
 };
 
 type LoginRequestBody = {
@@ -50,6 +59,37 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
     options.getAccessTokenExpiresInSeconds ?? getAccessTokenExpiresInSeconds;
   const resolveCoreSaasService = options.getCoreSaasService;
 
+  // B-O6R-01 (§6) — o serviço anônimo é cacheado por router: o balde por e-mail vive entre
+  // requisições. Sem core-saas configurado não há fonte de candidatos → o login sem tenantId
+  // responde 400 (abaixo).
+  let defaultAnonymousLoginService: AnonymousLoginService | undefined;
+  const resolveAnonymousLoginService =
+    options.getAnonymousLoginService ??
+    (async (): Promise<AnonymousLoginService> => {
+      if (!defaultAnonymousLoginService) {
+        const coreSaasService = await resolveCoreSaasService!();
+        const loginService = await resolveLoginService();
+
+        defaultAnonymousLoginService = new AnonymousLoginService({
+          listCandidates: (email) => coreSaasService.listLoginCandidates(email),
+          verifyCandidate: (
+            tenantId: string,
+            email: string,
+            password: string,
+            verifyPasswordFn: typeof verifyPassword,
+          ): Promise<AnonymousCandidateResult> =>
+            loginService.verifyAnonymousCandidate(
+              { tenant_id: tenantId, email, password },
+              verifyPasswordFn,
+            ),
+          finalizeSuccess: (tenantId, credentialId, user, roleCount, auditContext) =>
+            loginService.finalizeAnonymousLogin(tenantId, credentialId, user, roleCount, auditContext),
+        });
+      }
+
+      return defaultAnonymousLoginService;
+    });
+
   router.post("/login", async (request, response) => {
     try {
       const parsedBody = parseLoginRequestBody(request.body);
@@ -65,30 +105,84 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
       }
 
       let resolvedTenantId = parsedBody.tenantId;
-      if (!resolvedTenantId && resolveCoreSaasService) {
-        const svc = await resolveCoreSaasService();
-        const memberships = await svc.listTenantsForUserEmail(parsedBody.email);
-        if (memberships.length === 0) {
-          response.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid credentials." } });
+      let loginResult: LocalAuthLoginResult;
+
+      if (!resolvedTenantId) {
+        // B-O6R-01 (§6.2) — login SEM organização (Forma B): o e-mail nunca decide (I1); a
+        // credencial decide, sob balde por e-mail, teto de candidatos e piso de latência. O
+        // antigo fallback por listTenantsForUserEmail (Ω6R-TEN-001) foi removido.
+        if (!resolveCoreSaasService) {
+          response.status(400).json({ error: { code: "BAD_REQUEST", message: "tenantId is required." } });
           return;
         }
-        resolvedTenantId = memberships[0].tenant.id;
-      }
-      if (!resolvedTenantId) {
-        response.status(400).json({ error: { code: "BAD_REQUEST", message: "tenantId is required." } });
-        return;
-      }
 
-      const loginService = await resolveLoginService();
-      const loginResult = await loginService.authenticateLocalCredential({
-        tenant_id: resolvedTenantId,
-        email: parsedBody.email,
-        password: parsedBody.password,
-        request_id: readRequestId(request),
-        correlation_id: readHeader(request.headers["x-correlation-id"]) ?? readRequestId(request),
-        ip_address: request.ip,
-        user_agent: readHeader(request.headers["user-agent"]),
-      });
+        const anonymousLoginService = await resolveAnonymousLoginService();
+        const outcome = await anonymousLoginService.attempt({
+          email: parsedBody.email,
+          password: parsedBody.password,
+          ipAddress: request.ip,
+          userAgent: readHeader(request.headers["user-agent"]),
+        });
+
+        if (outcome.kind === "rate_limited") {
+          response.status(429).json({
+            error: {
+              code: "RATE_LIMITED",
+              message: "Too many attempts. Try again later.",
+            },
+          });
+          return;
+        }
+
+        if (outcome.kind === "tenant_id_required") {
+          response.status(400).json({
+            error: {
+              code: "TENANT_ID_REQUIRED",
+              message: "tenantId is required for this email.",
+            },
+          });
+          return;
+        }
+
+        if (outcome.kind === "invalid") {
+          // 401 UNIFORME — o mesmo corpo do login direcionado, inclusive com candidato em lock
+          // (o 423 não existe no caminho anônimo).
+          response.status(401).json({
+            error: {
+              code: "INVALID_CREDENTIALS",
+              message: "Invalid credentials.",
+            },
+          });
+          return;
+        }
+
+        if (outcome.kind === "selection_required") {
+          // SOMENTE as organizações PROVADAS pela credencial.
+          response.status(409).json({
+            error: {
+              code: "TENANT_SELECTION_REQUIRED",
+              message: "Credential matches more than one organization. Choose one.",
+              tenants: outcome.tenants,
+            },
+          });
+          return;
+        }
+
+        resolvedTenantId = outcome.tenantId;
+        loginResult = outcome.login;
+      } else {
+        const loginService = await resolveLoginService();
+
+        loginResult = await loginService.authenticateLocalCredential({
+          tenant_id: resolvedTenantId,
+          email: parsedBody.email,
+          password: parsedBody.password,
+          request_id: readRequestId(request),
+          correlation_id: readHeader(request.headers["x-correlation-id"]) ?? readRequestId(request),
+          ip_address: request.ip,
+          user_agent: readHeader(request.headers["user-agent"]),
+        });
+      }
 
       if (!loginResult.ok) {
         if (loginResult.reason === "locked") {
@@ -110,11 +204,29 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
+      // B-O6R-01 (§3.5) — claim identity_id (dica de roteamento; nunca fonte de GUC/
+      // autorização). Falha na resolução = claim omitido: o token sem claim resolve por par.
+      let identityId: string | null = null;
+
+      if (resolveCoreSaasService) {
+        try {
+          identityId = await (
+            await resolveCoreSaasService()
+          ).resolveIdentityForUser({
+            tenantId: loginResult.user.tenant_id,
+            userId: loginResult.user.id,
+          });
+        } catch {
+          identityId = null;
+        }
+      }
+
       const accessToken = await issueAccessToken({
         user_id: loginResult.user.id,
         tenant_id: loginResult.user.tenant_id,
         email: loginResult.user.email,
         roles: loginResult.roles.map((role) => role.key),
+        ...(identityId ? { identity_id: identityId } : {}),
       });
       const session = await (
         await resolveSessionService()
@@ -213,7 +325,10 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
     }
   });
 
-  router.post("/active-tenant", async (request, response) => {
+  // B-O6R-01 (Ω6R-TEN-001, §6.5) — a troca de organização passa a decidir pelo VÍNCULO
+  // explícito, nunca pelo e-mail. O ator vem do middleware JWT (o único lugar que constrói
+  // AuthenticatedActor); header legado não alcança este fluxo.
+  router.post("/active-tenant", attachAuthenticatedActor(), async (request, response) => {
     if (!resolveCoreSaasService) {
       response.status(501).json({
         error: { code: "NOT_IMPLEMENTED", message: "active-tenant not configured." },
@@ -221,23 +336,11 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
       return;
     }
 
-    const authHeader = readHeader(request.headers["authorization"]);
-    const token = authHeader ? parseBearerToken(authHeader) : null;
+    const actor = getAuthenticatedActor(request);
 
-    if (!token) {
+    if (!actor) {
       response.status(401).json({
         error: { code: "UNAUTHORIZED", message: "Bearer token required." },
-      });
-      return;
-    }
-
-    let payload: Awaited<ReturnType<typeof verifyAccessToken>>;
-
-    try {
-      payload = await verifyAccessToken(token);
-    } catch {
-      response.status(401).json({
-        error: { code: "INVALID_TOKEN", message: "Invalid or expired access token." },
       });
       return;
     }
@@ -254,8 +357,9 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
 
     try {
       const service = await resolveCoreSaasService();
-      const memberships = await service.listTenantsForUserEmail(payload.email);
-      const match = memberships.find((m) => m.tenant.id === requestedTenantId);
+      // Fail-closed (§3.4): ausência de vínculo na organização pedida = 403 — jamais fallback
+      // por e-mail. Usuário inativo e organização suspensa também resolvem para null.
+      const match = await service.findMembershipForIdentity(actor, requestedTenantId);
 
       if (!match) {
         response.status(403).json({
@@ -264,11 +368,23 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         return;
       }
 
+      let identityId: string | null = null;
+
+      try {
+        identityId = await service.resolveIdentityForUser({
+          tenantId: match.tenant.id,
+          userId: match.user.id,
+        });
+      } catch {
+        identityId = null;
+      }
+
       const accessToken = await issueAccessToken({
         user_id: match.user.id,
         tenant_id: match.tenant.id,
         email: match.user.email,
         roles: [...match.user.roles],
+        ...(identityId ? { identity_id: identityId } : {}),
       });
       const session = await (
         await resolveSessionService()
@@ -412,14 +528,4 @@ function isBasicEmail(email: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function parseBearerToken(authorizationHeader: string): string | null {
-  const [scheme, token, ...extraParts] = authorizationHeader.split(/\s+/);
-
-  if (scheme?.toLowerCase() !== "bearer" || !token || extraParts.length > 0) {
-    return null;
-  }
-
-  return token;
 }

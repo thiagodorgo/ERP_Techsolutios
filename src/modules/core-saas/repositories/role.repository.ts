@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../../../database/prisma.js";
+import { isValidRole } from "../permissions/catalog.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -32,7 +33,22 @@ export class RoleRepository {
     });
   }
 
+  // B-O6R-01 (Ω6R-SEC-001, DEFESA EM PROFUNDIDADE — não conserto de bug): key de SISTEMA
+  // (catálogo) resolve SOMENTE a linha global (tenant_id IS NULL). Sem isto o comportamento já
+  // era o mesmo — `tenant_id DESC` = NULLS FIRST no Postgres, o papel global já vence (correção
+  // do secops ao próprio parecer da rodada 1, ata J-O6R-B01) — mas a ordenação deixava a
+  // resolução dependente de um detalhe de ordenação; agora um clone tenant-scoped de papel de
+  // sistema nunca é o resolvido, por construção.
   findByKeyForTenant(key: string, tenantId: string) {
+    if (isValidRole(key)) {
+      return this.client.role.findFirst({
+        where: {
+          key,
+          tenant_id: null,
+        },
+      });
+    }
+
     return this.client.role.findFirst({
       where: {
         key,

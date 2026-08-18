@@ -122,19 +122,27 @@ Quem valida deploy **lê o corpo** e só aceita `up` — é o que fazem `scripts
 
 ### 3.1 Autenticação & Sessão
 
-Fontes: `src/modules/auth/routes/auth.routes.ts`, `me.routes.ts`, `session-admin.routes.ts`.
+Fontes: `src/modules/auth/routes/auth.routes.ts`, `identity-links.routes.ts`, `me.routes.ts`,
+`session-admin.routes.ts`. Contrato de identidade versionado: `auth_identity_links@2026-08-18.o6r-b01`.
 
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
-| POST | `/auth/login` | Pública | Autentica credencial local (org + email + senha); emite access+refresh token, sessão e permissões efetivas. `423` se conta bloqueada. |
-| POST | `/auth/refresh` | Posse do refresh token | Renova o access token a partir do refresh token. |
-| POST | `/auth/active-tenant` | Bearer válido | Troca a organização ativa em cenário multi-org (reemite tokens para a org escolhida). |
+| POST | `/auth/login` | Pública | Autentica credencial local; emite access+refresh token, sessão e permissões efetivas. **Com `tenantId`**: fluxo direcionado (byte-idêntico ao histórico; `423` se conta bloqueada). **Sem `tenantId`** (B-O6R-01): a CREDENCIAL decide — o e-mail só seleciona candidatos internos; `200` com exatamente 1 organização provada · `409 TENANT_SELECTION_REQUIRED` com **somente as organizações provadas** (`error.tenants[{id,name}]`) · `400 TENANT_ID_REQUIRED` quando o e-mail existe em mais de 3 organizações (zero verificações de senha) · `429 RATE_LIMITED` no balde por e-mail (10/15min) · `401` uniforme em todo o resto — **inclusive conta bloqueada** (o `423` não existe no caminho anônimo). Piso de latência constante em todos os desfechos. |
+| POST | `/auth/refresh` | Posse do refresh token | Renova o access token a partir do refresh token. Relê o vínculo do par e inclui o claim `identity_id` (dica; nunca fonte de autorização). |
+| POST | `/auth/active-tenant` | Bearer válido | Troca a organização ativa. **Decide pelo VÍNCULO explícito de identidade, nunca pelo e-mail** (Ω6R-TEN-001): sem vínculo na organização pedida → `403` (fail-closed); usuário inativo/organização suspensa → `403`. |
 | POST | `/auth/logout` | Posse do refresh token | Revoga a sessão (idempotente). |
+| GET | `/auth/identity-links` | Bearer válido (JWT; header legado → 401) | Vínculos da própria identidade: `[{id, tenant{id,name,status}, attached_via, created_at}]` — **nunca** `identity_id`. |
+| POST | `/auth/identity-links` | Bearer válido (JWT) | **Religação** (B-O6R-01 §5): prova a credencial de OUTRA organização (`{tenantId, email, password}`) e move **exatamente** o vínculo da organização provada para a identidade do ator. `201` movido · `200 already_linked` · `401` credencial (conta como tentativa direcionada) · `423` conta alvo bloqueada · `403` organização suspensa · `409 IDENTITY_LINK_CONFLICT` (pré-check E corrida 23505). |
+| DELETE | `/auth/identity-links/:id` | Bearer válido (JWT) + reautenticação por senha | **Desvínculo em autosserviço.** Reautentica com a senha de **qualquer organização vinculada que tenha credencial — jamais a da organização do vínculo removido** (`{password, reauthTenantId?}`; inelegível → `403 reauth_credential_unavailable`). `200 {status:"removed", revoked_sessions}` · `200 already_standalone` (único vínculo; sessões intactas) · `401` sem/errada reautenticação · `404` vínculo alheio/inexistente. **Janela do I3, declarada:** a remoção revoga NA MESMA transação todas as sessões do par do vínculo removido — **a renovação (refresh) e as rotas de identidade morrem na hora; o access token em voo sobrevive até `JWT_EXPIRES_IN` (15 min)**. A UI não pode prometer "acesso revogado" imediato. |
 | GET | `/me` | Autenticado | Perfil do usuário + organização + papéis + permissões efetivas do ator. |
-| GET | `/me/tenants` | Autenticado | Organizações às quais o usuário (por e-mail) pertence. |
+| GET | `/me/tenants` | Autenticado (JWT) | Organizações **vinculadas à identidade** do ator (vínculo explícito; nunca correlação por e-mail). Normaliza preguiçosamente o par do token. |
 | GET | `/sessions` | `sessions:read` | Sessões ativas da organização (filtrável por usuário). |
 | GET | `/sessions/access-history` | `audit.read` | Histórico de acessos (último login por usuário). |
 | POST | `/sessions/:id/revoke` | `sessions:revoke` | Revogação administrativa de sessão (idempotente; cross-tenant → 404). |
+
+`GET /health/ready` (superfície de infra, §2) ganhou o campo **`login_without_org: "active"|"inactive"`**
+no topo do corpo, **fora de `checks`** — reportado, nunca contado no veredito 200/503; a causa de um
+`inactive` vive só em log estruturado do servidor (runbook de ativação: `docs/deployment.md`).
 
 ### 3.2 Núcleo SaaS / Administração da organização
 

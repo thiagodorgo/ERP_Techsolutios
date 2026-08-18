@@ -1,42 +1,42 @@
 {
-  "snapshot_date": "2026-08-17",
-  "version": "KPI-PAINEL-REPAGINADO",
+  "snapshot_date": "2026-08-18",
+  "version": "B-O6R-01-IDENTIDADE-AUTORIDADE",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Painel de KPI repaginado do zero + reconciliação da auditoria Ω6R.",
-    "title": "Painel repaginado — o que o projeto entregou, o que a auditoria achou, e o que falta",
-    "pr": 356,
-    "merge_commit": "1e248b1",
-    "approved_head": "1e248b1",
+    "block": "B-O6R-01 — identidade e autoridade (Ω6R-SEC-001 + Ω6R-TEN-001).",
+    "title": "Identidade global + allowlist de papéis — os dois piores achados da auditoria, fechados",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O painel é o artefato que o dono abre e mostra. Repaginado do zero: as duas dimensões lado a lado, gráficos, conclusão derivada, os 30 achados e o cronograma. O trabalho achou três defeitos — a linha do gráfico cruzando duas mudanças de medida, um achado crítico órfão sem bloco de correção, e o registro da auditoria defasado do JSONL.",
-    "status_label": "Mergeado em 18/08/2026 (PR #356)"
+    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R).",
+    "status_label": "PR aberto — em revisão"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 860,
-      "total": 860,
-      "display": "860/860",
-      "note": "Este PR não toca o app de campo: carrega 860/860, o último valor oficial (§C3.3)."
+      "value": 864,
+      "total": 864,
+      "display": "864/864",
+      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado."
     },
     "frontend_smoke_tests": {
-      "value": 1125,
-      "total": 1125,
-      "display": "1125/1125",
-      "note": "Este PR não toca o console web: carrega 1125/1125, o último valor oficial (§C3.3)."
+      "value": 1126,
+      "total": 1126,
+      "display": "1126/1126",
+      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico."
     },
     "backend_tests": {
-      "value": 2458,
-      "total": 2467,
-      "display": "2458/2467",
-      "note": "Execução real: 2437/2446 → 2458/2467 (+21). Vinte e um testes novos, cada um nascido de um defeito real desta entrega: 5 de paridade entre o registro da auditoria e o painel, 10 de gráfico e 6 de tema. Três rodadas adversariais acharam quatro instâncias da mesma classe de defeito — todas nascidas em correções, nenhuma no código original."
+      "value": 2547,
+      "total": 2556,
+      "display": "2547/2556",
+      "note": "Execução real: 2458/2467 → 2547/2556 (+89; 9 pulos históricos de suites -db sem env específico). Superfície de identidade/autoridade: 27 casos → 109 (82 novos — meta do plano era ≥54): guards de padrão (9), SEC-001 (7), login anônimo unitário (10) e e2e (5), prontidão/health (5), lockout armado (8), religação/TEN-001 (14), revogação I3 (7), role EFÊMERA NOSUPERUSER (8), backfill nas duas configurações (4), trilha (3), função elevada (8), varredura por valor (1)."
     },
     "backend_contract_tests_focused": {
-      "value": 21,
-      "total": 21,
-      "display": "21/21",
-      "note": "subset especifico carregado do ultimo valor oficial; pode ser maior (nao re-baseado nesta reconciliacao)."
+      "value": 89,
+      "total": 89,
+      "display": "89/89",
+      "note": "Bateria focada do B-O6R-01 (execução real, casos-folha): 39 no grupo memory + 50 no grupo -db (role efêmera NOSUPERUSER — a única configuração em que o RLS existe)."
     },
     "flutter_modules": {
       "value": 17,
@@ -60,9 +60,9 @@
       "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
     },
     "blocks_completed": {
-      "value": 150,
-      "display": "150",
-      "note": "Painel de KPI repaginado + reconciliação da auditoria Ω6R. Sobre 149."
+      "value": 151,
+      "display": "151",
+      "note": "B-O6R-01 entregue (identidade e autoridade)."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -123,8 +123,8 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 15,
-    "p0_fechados": 2,
-    "p0_abertos": 13,
+    "p0_fechados": 4,
+    "p0_abertos": 11,
     "p1_total": 15,
     "p1_fechados": 0,
     "p1_abertos": 15,
@@ -138,9 +138,19 @@
         "id": "Ω6R-DIN-006",
         "por": "B-O6R-05 (PR #353, a8901ff)",
         "em": "2026-08-15"
+      },
+      {
+        "id": "Ω6R-SEC-001",
+        "por": "B-O6R-01 (PR na autoria; backfill pós-merge)",
+        "em": "2026-08-18"
+      },
+      {
+        "id": "Ω6R-TEN-001",
+        "por": "B-O6R-01 (PR na autoria; backfill pós-merge)",
+        "em": "2026-08-18"
       }
     ],
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-18",
     "source": "docs/revisoes/O6R/achados.jsonl"
   },
   "findings": {
@@ -191,7 +201,7 @@
         "id": "Ω6R-SEC-001",
         "severidade": "P0",
         "modulo": "core-saas / auth / platform",
-        "status": "ativo",
+        "status": "fechado",
         "resumo": "Quem administra uma organização consegue se promover a administrador da plataforma e passar a ler, alterar e suspender TODAS as outras.",
         "bloco": "B-O6R-01"
       },
@@ -199,7 +209,7 @@
         "id": "Ω6R-TEN-001",
         "severidade": "P0",
         "modulo": "auth / core-saas",
-        "status": "ativo",
+        "status": "fechado",
         "resumo": "Duas pessoas com o mesmo e-mail em organizações diferentes: uma assume a conta da outra, sem saber a senha.",
         "bloco": "B-O6R-01"
       },
@@ -408,8 +418,8 @@
           "Ω6R-TEN-001"
         ],
         "dep": [],
-        "estado": "plano_aprovado",
-        "nota": "Plano aprovado por junta 5×0 após 5 rodadas e 6 versões. É o próximo a implementar."
+        "estado": "concluido",
+        "nota": "Entregue: identidade global + allowlist de papéis + login sem organização + religação/desvínculo com revogação real. Fecha SEC-001 e TEN-001 (críticos 2→4 de 15). Deploy segue bloqueado (J-6R)."
       },
       {
         "id": "B-O6R-02",
@@ -574,9 +584,22 @@
     }
   },
   "recent": {
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-18",
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
+      {
+        "pr": null,
+        "data": "2026-08-18",
+        "tipo": "seguranca",
+        "titulo": "Identidade global: o e-mail deixa de decidir quem você é",
+        "resumo": "Fecha os dois piores achados da auditoria: administrador de organização não se promove mais a plataforma (allowlist fechada por construção) e a troca de organização passa a exigir VÍNCULO provado por credencial — homônimos deixam de virar a mesma pessoa. Login sem organização refeito (a senha decide), religação e desvínculo em autosserviço com revogação real de sessões, trilha append-only ilegível por organização e a luz login_without_org no readiness. Transações centrais provadas sob role NÃO-superusuário — a única configuração em que o isolamento existe.",
+        "fecha": [
+          "Ω6R-SEC-001",
+          "Ω6R-TEN-001"
+        ],
+        "descobertos": [],
+        "ciclos_de_reprovacao": 0
+      },
       {
         "pr": 355,
         "data": "2026-08-16",

@@ -293,6 +293,76 @@ export const DEFAULT_ROLES = [...STANDARD_ROLES, ...LEGACY_ROLES] as const;
 
 export type Role = (typeof DEFAULT_ROLES)[number];
 
+// -----------------------------------------------------------------------------------------------
+// B-O6R-01 (Ω6R-SEC-001) — allowlist FECHADA POR CONSTRUÇÃO de papéis atribuíveis por tenant.
+// O defeito: `users.manage` numa organização atribuía `super_admin`/`platform_admin` — papéis de
+// PLATAFORMA — e o portador passava a operar /api/v1/platform/* contra todas as organizações
+// (platform-permissions.ts concede plataforma pela PRESENÇA do papel). O filtro que parecia
+// proteger (TENANT_ADMIN_PERMISSIONS) bloqueia as permissões "platform:", não o papel.
+// O conserto: papéis de plataforma NUNCA são atribuíveis pelos fluxos de tenant. A fronteira
+// legítima de provisionamento de plataforma é o seed (prisma/seed-users.ts, escrita direta no
+// banco) e uma futura rota de plataforma (pendência P-O6R-B01-PROMOCAO-PLATAFORMA) — nunca
+// POST/PATCH /users.
+// -----------------------------------------------------------------------------------------------
+
+export const PLATFORM_ROLES = ["super_admin", "platform_admin"] as const;
+
+export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
+// Derivada por EXCLUSÃO do catálogo — papel novo em DEFAULT_ROLES cai automaticamente aqui, a
+// menos que seja declarado em PLATFORM_ROLES. A allowlist nunca fica para trás do catálogo.
+export const TENANT_ASSIGNABLE_ROLES = DEFAULT_ROLES.filter(
+  (role): role is TenantAssignableRole => !(PLATFORM_ROLES as readonly string[]).includes(role),
+);
+
+export type TenantAssignableRole = Exclude<Role, PlatformRole>;
+
+// Guard de exaustividade — NÍVEL 1 (compile-time): todo Role é PlatformRole ou
+// TenantAssignableRole, sem sobra e sem interseção. Um papel novo que não caia em exatamente um
+// dos dois lados quebra o BUILD aqui (nunca compila "papel sem classificação").
+type _RolePartitionIsExhaustive = [
+  PlatformRole | TenantAssignableRole,
+] extends [Role]
+  ? Role extends PlatformRole | TenantAssignableRole
+    ? true
+    : never
+  : never;
+const _rolePartitionIsExhaustive: _RolePartitionIsExhaustive = true;
+void _rolePartitionIsExhaustive;
+
+const platformRoleSet = new Set<string>(PLATFORM_ROLES);
+const tenantAssignableRoleSet = new Set<string>(TENANT_ASSIGNABLE_ROLES);
+
+export function isPlatformRole(role: string): role is PlatformRole {
+  return platformRoleSet.has(normalizeRole(role));
+}
+
+export function isTenantAssignableRole(role: string): role is TenantAssignableRole {
+  return tenantAssignableRoleSet.has(normalizeRole(role));
+}
+
+export class RoleNotAssignableError extends Error {
+  readonly statusCode = 403;
+  readonly code = "FORBIDDEN";
+  readonly reason = "role_not_assignable";
+
+  constructor(role: string) {
+    super(`Role is not assignable by tenant flows: ${role}`);
+    this.name = "RoleNotAssignableError";
+  }
+}
+
+// O validador dos QUATRO pontos divergentes (create/update × prisma/memória) e do escritor sem
+// rota (store.assignRoleToUser). Papel fora do catálogo continua sendo 400 (invalid_role) nos
+// validadores chamadores; papel de PLATAFORMA vira 403 role_not_assignable AQUI.
+export function assertAssignableRole(role: Role): Role {
+  if (!tenantAssignableRoleSet.has(role)) {
+    throw new RoleNotAssignableError(role);
+  }
+
+  return role;
+}
+
 export type RoleDefinition = {
   readonly role: Role;
   readonly permissions: readonly Permission[];

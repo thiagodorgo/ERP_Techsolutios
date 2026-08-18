@@ -1476,3 +1476,46 @@ Nenhuma das três foi pega por releitura. **Só execução pega**, e só por um 
   papéis**, e as respostas às três perguntas acima. Ata sem essa separação declarada = ciclo inválido.
 - Esta regra **não** substitui a §C7.4 (a `agente-fabrica` cria especialistas nos ciclos 1–2); ela diz **como**
   os papéis se distribuem dentro de cada ciclo.
+
+## D-O6R-B01-IDENTIDADE-GLOBAL (2026-08-18 — B-O6R-01, plano v6 aprovado 5×0 em J-O6R-B01)
+
+**O modelo de identidade global entrou em vigor.** Três artefatos novos (migração aditiva
+`20260868000000_add_auth_identities`): `auth_identities` (id opaco, sem PII), `auth_identity_links`
+(vínculo explícito identidade↔conta, FK composta ao par `(tenant_id, user_id)`, política RLS de dois
+braços — tenant OR identidade) e `auth_identity_link_events` (trilha append-only, registro de
+plataforma: trigger em UPDATE/DELETE/TRUNCATE vincula qualquer role; única política RLS = INSERT —
+ilegível sob qualquer role sem BYPASSRLS). Invariantes I1/I2/I3 do plano: o e-mail nunca decide entre
+organizações; a religação move exatamente um vínculo (o da organização provada); revogar revoga a
+RENOVAÇÃO na mesma transação (janela do access de 15 min declarada no contrato).
+
+**Deliberações do dono honradas (não reabertas):** identidade global aprovada · religação NESTE bloco ·
+login sem organização fecha (Forma B: balde por e-mail + teto 3 + sequencial + piso 400ms + 401
+uniforme; parâmetros propostos ao §12.2 da junta do PR).
+
+**TERCEIRA ARMADILHA (§4 da ata J-O6R-B01) — OPÇÃO ESCOLHIDA: A (proveniência na linha).**
+O gancho da troca de senha decide por `auth_identity_links.attached_via`
+(`'backfill'|'religacao'|'desvinculo'` — estado corrente do vínculo, mantido nas mesmas transações que
+escrevem a trilha), lido sob o braço de TENANT — legível sob a role real da aplicação. A trilha
+permanece INSERT-only sem política de SELECT. A opção B (política de SELECT na trilha) foi recusada
+porque exporia os uuids de identidade (from/to) ao contexto de tenant — exatamente o correlator que o
+bloco põe em quarentena — e dispararia o gatilho (d) de reabertura da arbitragem do C6. O caminho de
+decisão do gancho é provado sob role efêmera NOSUPERUSER (onde a trilha lê zero) em
+`tests/auth-identity-revocation-db.test.ts` — a decisão comprovadamente NÃO depende de ler a trilha.
+
+**§12.9 (auditoria da origem no move) — ADOTADO como o v6 propõe:** o move grava linha de auditoria na
+organização provada com `actor_scope="linked_identity"`, actorId nulo e zero identificadores
+estrangeiros (varredura por valor cobre). Registrado para ratificação da junta do PR — se preferir o
+silêncio do v5, é remover uma linha, por decisão registrada.
+
+**Registros do §13 que o PR carrega:** as quatro superfícies (função elevada · braço de identidade ·
+auth_identities · `/health/ready` com booleano sem causa) · o critério reutilizável (§13.2) · a
+alternativa recusada (exigir organização no login — deliberação de produto do dono) · honestidade do
+RLS (ilegível vale sob role sem BYPASSRLS; quem vincula superusuário é o trigger) · os "primeiros" do
+bloco (primeiro SECURITY DEFINER · primeiro REVOKE em migração · primeiro bloco DO $$ · primeiro
+BEFORE TRUNCATE — todos declarados no header da migração) · ativação como ato humano com a exceção do
+dono escrita (runbook em `docs/deployment.md`).
+
+**Achado da consulta read-only do §4 (para a junta — §12.1):** a base de dev local tem 3 assignments de
+`super_admin` na organização demo (`plataforma.demo@example.com`, `platform.admin@erp.local`,
+`platform@demo.com`) — todos com cara de seed histórico. NENHUM foi revogado (revogação de assignment
+sem junta é proibida pelo §9); linha registrada para a junta decidir.

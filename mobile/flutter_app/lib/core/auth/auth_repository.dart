@@ -127,6 +127,42 @@ class LocalDevAuthRepository implements AuthRepository {
 
 // ── Dio / remote implementation ───────────────────────────────────────────────
 
+// B-O6R-01 — mapeamento MÍNIMO dos códigos novos do login sem organização (§6.2 do plano):
+// 409 TENANT_SELECTION_REQUIRED (a senha vale em mais de uma organização — escolher uma),
+// 400 TENANT_ID_REQUIRED (e-mail em muitas organizações — informar a organização) e
+// 429 RATE_LIMITED (balde por e-mail estourou). Qualquer outro caso cai no mapDioError
+// existente, byte-idêntico. Cópia SEM termo técnico ("organização", nunca "tenant").
+ApiError mapLoginError(DioException e) {
+  final status = e.response?.statusCode;
+  final data = e.response?.data;
+  final errorCode = data is Map<String, dynamic>
+      ? ((data['error'] as Map<String, dynamic>?)?['code'] as String?)
+      : null;
+
+  if (status == 409 && errorCode == 'TENANT_SELECTION_REQUIRED') {
+    return const ApiConflictError(
+      'Sua senha vale em mais de uma organizacao. Selecione a organizacao para entrar.',
+    );
+  }
+
+  if (status == 400 && errorCode == 'TENANT_ID_REQUIRED') {
+    return const ApiServerError(
+      statusCode: 400,
+      safeMessage:
+          'Este e-mail existe em mais de uma organizacao. Selecione a organizacao para entrar.',
+    );
+  }
+
+  if (status == 429) {
+    return const ApiServerError(
+      statusCode: 429,
+      safeMessage: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+    );
+  }
+
+  return mapDioError(e);
+}
+
 class DioAuthRepository implements AuthRepository {
   DioAuthRepository({required Dio client, required AuthTokenStorage storage})
     : _client = client,
@@ -156,7 +192,7 @@ class DioAuthRepository implements AuthRepository {
       await _storage.saveSession(session);
       return session;
     } on DioException catch (e) {
-      throw mapDioError(e);
+      throw mapLoginError(e);
     }
   }
 

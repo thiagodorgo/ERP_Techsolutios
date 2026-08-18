@@ -10,7 +10,7 @@ import {
   UserRepository,
   UserRoleRepository,
 } from "../repositories/index.js";
-import { isValidRole, validateRole, type Role } from "../permissions/catalog.js";
+import { assertAssignableRole, isValidRole, validateRole, type Role } from "../permissions/catalog.js";
 import type {
   AuditEvent,
   CreateTenantInput,
@@ -129,6 +129,15 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           branch_id: input.branchIds?.[0] ?? null,
         });
       }
+
+      // Step 2b (B-O6R-01 §3.4): identidade global + vínculo explícito + evento 'backfill' na
+      // MESMA transação da criação do usuário. O create() do vínculo é seguro aqui porque o
+      // store roda dentro de withTenantRls (GUC de tenant posto quando o RETURNING é avaliado);
+      // os INSERTs de identidade e de evento vão pelo caminho SEM RETURNING (§3.1).
+      const { normalizePairIdentity } = await import(
+        "../../auth/services/identity-resolver.js"
+      );
+      await normalizePairIdentity(tx, input.tenantId, user.id);
 
       // Step 3: resolve actor within the same transaction (sees the user created above)
       const actorId = isUuid(input.actorUserId ?? "")
@@ -269,6 +278,10 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
     readonly role: Role;
     readonly branchId?: string | null;
   }): Promise<void> {
+    // B-O6R-01 (Ω6R-SEC-001) — o ESCRITOR SEM ROTA também valida a allowlist: nenhum caminho de
+    // código atribui papel de plataforma por fluxo de tenant, com ou sem rota na frente.
+    assertAssignableRole(input.role);
+
     await withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
       const txRoles = new RoleRepository(tx);
       const txUserRoles = new UserRoleRepository(tx);

@@ -1,14 +1,19 @@
+import type { Prisma } from "@prisma/client";
+
 import {
+  LocalAuthCredentialRepository,
   normalizeCredentialEmail,
   type CreateLocalAuthCredentialData,
 } from "../repositories/local-auth-credential.repository.js";
 import {
   AuthCredentialError,
+  type AuthenticatedActor,
   type CreateLocalCredentialInput,
   type LocalCredentialPublic,
   type VerifyLocalCredentialInput,
   type VerifyLocalCredentialResult,
 } from "../types/auth.types.js";
+import type { PasswordChangeHookResult } from "./identity-link.service.js";
 import { hashPassword, verifyPassword } from "./password.service.js";
 
 type LocalAuthCredentialRecord = LocalCredentialPublic & {
@@ -118,6 +123,42 @@ export class LocalAuthCredentialService {
       tenant_id: credential.tenant_id,
       user_id: credential.user_id,
     };
+  }
+
+  // B-O6R-01 (§5.5 do plano) — o GANCHO da troca de senha, ARMADO E INERTE: não existe rota de
+  // troca/reset neste bloco (pendência P-O6R-B01-TROCA-SENHA; o RESET, sem ator autenticado,
+  // REABRE o contrato do setter em junta — não pode chamar setIdentityRlsContext). O que este
+  // método FAZ: valida a senha nova, e delega ao serviço de identidade UMA transação que aplica
+  // o UPDATE da senha, desvincula o par se o vínculo chegou por 'religacao' (lido de
+  // auth_identity_links.attached_via — nunca da trilha) e a identidade tem 2+ vínculos, e revoga
+  // TODAS as sessões do par em qualquer troca (§5.5 a+b). O ator vem de JWT real
+  // (getAuthenticatedActor) — o teste o obtém por login, jamais fabricando o literal.
+  async changePasswordWithIdentityHook(
+    actor: AuthenticatedActor,
+    newPassword: string,
+    identityHook: {
+      handlePasswordChange(
+        hookActor: AuthenticatedActor,
+        applyPasswordUpdate?: (tx: Prisma.TransactionClient) => Promise<void>,
+      ): Promise<PasswordChangeHookResult>;
+    },
+  ): Promise<PasswordChangeHookResult> {
+    const user = await this.users.findByIdForTenant(actor.userId, actor.tenantId);
+
+    if (!user) {
+      throw new AuthCredentialError("User not found for tenant.");
+    }
+
+    validateLocalPassword(newPassword, normalizeCredentialEmail(user.email));
+
+    const password = await hashPassword(newPassword);
+
+    return identityHook.handlePasswordChange(actor, async (tx) => {
+      await new LocalAuthCredentialRepository(tx).updatePassword(actor.userId, actor.tenantId, {
+        password_hash: password.password_hash,
+        password_algorithm: password.password_algorithm,
+      });
+    });
   }
 
   private async buildCredentialData(

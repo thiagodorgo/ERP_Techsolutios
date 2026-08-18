@@ -69,7 +69,18 @@ export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthS
   });
 
   if (!response.ok) {
-    throw new Error(readLoginErrorMessage(response.status));
+    // B-O6R-01 — o login sem organização ganhou códigos novos (409 TENANT_SELECTION_REQUIRED,
+    // 400 TENANT_ID_REQUIRED, 429 RATE_LIMITED); o corpo de erro carrega o código que distingue
+    // os dois 400. Falha na leitura do corpo → mapeamento só por status.
+    let errorCode: string | undefined;
+
+    try {
+      errorCode = ((await response.json()) as { error?: { code?: string } }).error?.code;
+    } catch {
+      errorCode = undefined;
+    }
+
+    throw new Error(readLoginErrorMessage(response.status, errorCode));
   }
 
   const payload = (await response.json()) as LoginApiResponse;
@@ -175,7 +186,21 @@ function mapTokenUpdate(payload: LoginApiResponse | RefreshApiResponse): AuthTok
   };
 }
 
-function readLoginErrorMessage(status: number): string {
+export function readLoginErrorMessage(status: number, errorCode?: string): string {
+  // B-O6R-01 — códigos do login sem organização (§6.2): a UI fala "organização", nunca termo
+  // técnico (§3 do CLAUDE.md).
+  if (status === 400 && errorCode === "TENANT_ID_REQUIRED") {
+    return "Este e-mail existe em mais de uma organização. Selecione a organização para entrar.";
+  }
+
+  if (status === 409) {
+    return "Sua senha vale em mais de uma organização. Selecione a organização para entrar.";
+  }
+
+  if (status === 429) {
+    return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+  }
+
   if (status === 400) {
     return "Revise tenant, e-mail e senha.";
   }

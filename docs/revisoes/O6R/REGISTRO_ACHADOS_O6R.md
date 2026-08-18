@@ -128,6 +128,16 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-SEC-001] Administrador de organização pode se promover a administrador global
 - Severidade: P0        Confiança: 1.00
+- Status: **fechado** em 2026-08-18 pelo B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge).
+  Allowlist **fechada por construção**: `PLATFORM_ROLES`/`TENANT_ASSIGNABLE_ROLES` derivadas do catálogo
+  com guard de exaustividade em dois níveis (tipo que não compila papel sem classificação + teste de
+  partição), `assertAssignableRole` nos **quatro** pontos de validação (create/update × prisma/memória)
+  e no escritor sem rota `store.assignRoleToUser` — papel de plataforma → **403 role_not_assignable**;
+  papel inválido → **400** (era Error cru); `findByKeyForTenant` resolve key de sistema **só na linha
+  global** (defesa em profundidade, não conserto — o global já vencia por `DESC`/NULLS FIRST). A
+  fronteira legítima de provisionamento de plataforma segue sendo o seed (escrita direta) e a futura
+  rota de plataforma (pendência `P-O6R-B01-PROMOCAO-PLATAFORMA`). Prova ponta a ponta: o token do
+  `tenant_admin` que tentou a escalada segue 403 em `/api/v1/platform/*`.
 - Categoria: SEC
 - Módulo: core-saas / auth / platform        Lente: A2
 - Local: `src/modules/core-saas/routes/users.routes.ts:53-69`, `src/modules/core-saas/permissions/catalog.ts:301-307`, `src/modules/core-saas/services/prisma-core-saas.service.ts:199-214`, `src/modules/core-saas/services/prisma-core-saas.service.ts:284-295`, `src/modules/core-saas/repositories/role.repository.ts:35-50`, `prisma/seed.ts:252-280`, `src/modules/auth/routes/auth.routes.ts:255-272`, `src/modules/platform/platform-permissions.ts:29-57`
@@ -151,6 +161,17 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-TEN-001] Troca de organização por e-mail permite assumir conta homônima de outro tenant
 - Severidade: P0        Confiança: 0.99
+- Status: **fechado** em 2026-08-18 pelo B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge).
+  Identidade global (`auth_identities`) + vínculo explícito (`auth_identity_links`, FK composta ao par
+  `(tenant_id, user_id)`) + trilha append-only ilegível por organização. `listTenantsForUserEmail` foi
+  **removida** (guard de padrão trava o retorno); `active-tenant`, `/me/tenants` e o bootstrap mobile
+  decidem pelo **vínculo** (sem vínculo → 403, fail-closed; usuário inativo/organização suspensa →
+  403). O login sem organização atravessa a única `SECURITY DEFINER` do repositório com teto interno —
+  o e-mail só seleciona candidatos internos e a **credencial decide** (I1). A religação move
+  **exatamente um** vínculo (o da organização provada) e o desvínculo revoga as sessões do par na
+  mesma transação (I3; janela do access de 15 min declarada no contrato). Repro do achado virou teste:
+  homônimo sem vínculo → `active-tenant` 403 (tests/auth-identity-links-db.test.ts), com as transações
+  centrais provadas sob role efêmera NOSUPERUSER (tests/auth-identity-role-real-db.test.ts).
 - Categoria: TEN
 - Módulo: auth / core-saas        Lente: A2
 - Local: `src/modules/auth/routes/auth.routes.ts:245-272`, `src/modules/core-saas/services/prisma-core-saas.service.ts:301-313`, `prisma/schema.prisma:142-187`
@@ -692,7 +713,9 @@ reconciliação pós-merge, sem alterar as dívidas em si.)
   `fechado_em`, `fechado_por` e evidência.
 - Distribuição resultante: **P0 15 (2 fechados, 13 abertos) · P1 15 (0 fechados, 15 abertos)** —
   1 dos abertos é o parcialmente superado `Ω6R-QUA-004`.
-- **O veredito da J-6R segue integral:** REPROVADO PARA PRODUÇÃO. Fechar 2 de 15 P0 não move o veredito, e
+- **Atualização 2026-08-18 (B-O6R-01):** `Ω6R-SEC-001` e `Ω6R-TEN-001` fechados (seções acima e JSONL,
+  com rastro). Distribuição passa a **P0 15 (4 fechados, 11 abertos) · P1 15 (0 fechados, 15 abertos)**.
+- **O veredito da J-6R segue integral:** REPROVADO PARA PRODUÇÃO. Fechar 4 de 15 P0 não move o veredito, e
   esta seção existe para que o número de fechados nunca seja lido como progresso de liberação.
 - Backfill executado ao repaginar o painel de KPI: antes desta seção, o registro dizia 29 ativos enquanto o
   painel já contaria 2 fechados. A divergência foi encontrada pelo próprio trabalho do painel.

@@ -94,6 +94,9 @@ export type SignAccessTokenInput = {
   readonly tenant_id: string;
   readonly email: string;
   readonly roles: readonly string[];
+  // B-O6R-01 (§3.5) — claim de identidade global: DICA de roteamento/telemetria, NUNCA fonte do
+  // GUC nem de autorização. Opcional: token em voo sem o claim resolve por (tenant_id, sub).
+  readonly identity_id?: string;
 };
 
 export type SignRefreshTokenInput = {
@@ -112,6 +115,8 @@ export type AuthenticatedTokenPayload = {
   readonly exp: number;
   readonly iss?: string;
   readonly aud?: string;
+  // B-O6R-01 (§3.5) — dica de identidade; ausência é válida (token antigo em voo).
+  readonly identity_id?: string;
 };
 
 export type RefreshTokenPayload = {

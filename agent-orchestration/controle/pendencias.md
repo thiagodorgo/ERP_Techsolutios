@@ -2014,9 +2014,49 @@ JWT**, não um subject global. `src/modules/core-saas/services/prisma-core-saas.
 homônimo em organizações distintas é legal no modelo.
 
 **Bloqueia:** feature em auth, seleção/troca de organização e onboarding multi-org.
-- status: ABERTA — **P0, bloqueia deploy produtivo e features nos módulos acima** (J-6R). Rascunho arquitetural
-  correlato: `docs/revisoes/O6R/D-001-identidade-global-tenancy.md`, **pauta do dono, não decisão** (ver
-  `D-O6R-RASCUNHOS-DEFERIDOS-AO-HUMANO`).
+- status: **FECHADA (2026-08-18 — B-O6R-01, PR na autoria; nº/hash no backfill pós-merge).** Entregue conforme
+  o plano v6 aprovado 5×0 (`agent-orchestration/omega/planos/B-O6R-01-plano-v6-aprovado.md`): allowlist fechada
+  por construção + 403 `role_not_assignable` nos 4 pontos e no escritor sem rota (SEC-001); identidade global +
+  vínculo explícito + trilha append-only + login sem organização pela função elevada + religação/desvínculo com
+  revogação real de sessões do par (TEN-001). Aceite provado: `tenant_admin` não atribui papel global
+  (ponta a ponta com a rota de plataforma seguindo 403); E2E de homônimo (403 sem vínculo) e de promoção.
+  **Terceira armadilha (§4 da ata J-O6R-B01) resolvida pela OPÇÃO A** — proveniência na linha do vínculo
+  (`auth_identity_links.attached_via`), trilha segue ilegível; declarada no corpo do PR. **Não move o veredito
+  da J-6R** (deploy segue bloqueado; críticos 4/15 fechados). Pendências derivadas do bloco: ver a seção
+  `P-O6R-B01-*` (§11 do plano) abaixo.
+
+## Pendências derivadas do B-O6R-01 (§11 do plano v6 — gravadas neste PR, 2026-08-18)
+
+- **`P-O6R-B01-UI-VINCULO-ORG`** — telas de vínculo de identidade (listar/religar/desvincular) no console e no
+  app. **Carrega a janela do I3:** a revogação corta a RENOVAÇÃO e as rotas de identidade; o access token em
+  voo sobrevive até 15 min — a tela **não pode prometer** "acesso revogado" imediato (contrato do DELETE em
+  `API_CONTRACTS.md`). status: ABERTA.
+- **`P-O6R-B01-RATE-LIMIT-IP`** (→ B-O6R-07) — fecho por IP/distribuído do canal anônimo. Residuais nomeados:
+  enumeração pelo `400 TENANT_ID_REQUIRED` (revela "e-mail em >3 organizações"), amplificação distribuída,
+  rotação de e-mails (o balde por e-mail não a fecha — idêntico ao login de hoje, não regride). status: ABERTA.
+- **`P-O6R-B01-TROCA-SENHA`** — rota de troca de senha (o gancho §5.5 nasce ARMADO e inerte;
+  `changePasswordWithIdentityHook` + `IdentityLinkService.handlePasswordChange`). **Colisão declarada
+  (crítico higiene 5): o fluxo de RESET de senha, por definição sem ator autenticado, não pode chamar o setter
+  do §3.7 — implementá-lo REABRE o contrato do setter em junta.** status: ABERTA.
+- **`P-O6R-B01-REAUTH-SEM-CREDENCIAL`** (S7) — identidade sem credencial elegível fora da organização do
+  vínculo removido recebe `403 REAUTH_CREDENTIAL_UNAVAILABLE` e fica sem caminho de autosserviço; desenhar o
+  caminho assistido. status: ABERTA.
+- **`P-O6R-B01-PROMOCAO-PLATAFORMA`** — a promoção legítima a papel de plataforma ficou SEM rota (a fronteira
+  hoje é o seed); desenhar a operação de plataforma com SoD e auditoria própria. status: ABERTA.
+- **`P-O6R-B01-CONFLITO-VINCULO`** — UX do `409 IDENTITY_LINK_CONFLICT` (ator já tem vínculo na organização
+  provada): hoje o chamador precisa desvincular antes; avaliar fluxo guiado. status: ABERTA.
+- **`P-O6R-B01-LOGIN-ORG-SUSPENSA`** — login DIRETO em organização suspensa segue funcionando
+  (`tenant.repository.ts` sem filtro de status — comportamento de hoje, não regredido; a RELIGAÇÃO já recusa).
+  status: ABERTA.
+- **`P-O6R-B01-IDENTIDADE-ORFA`** — identidades vazias (origem de religação) não são apagadas pela aplicação
+  (sem política de UPDATE/DELETE); higiene exige privilégio e junta. status: ABERTA.
+- **`P-O6R-B01-INDICE-EMAIL-NORMALIZADO`** — índice funcional para a igualdade normalizada da função elevada;
+  aditivo, bloco futuro com medição. status: ABERTA.
+- **`P-O6R-B01-SMOKE-TENANT-ID-WORKFLOWS`** (devops 4) — mapear `SMOKE_TENANT_ID` nos steps dos workflows de
+  deploy, SE a junta um dia preferir o smoke direcionado ao canário; até lá vale a ordem de ativação do §6.1
+  (função elevada ANTES de `STAGING_DEPLOY_ENABLED`). status: ABERTA.
+- **`P-O6R-B01-IDP-SUBJECT`** — amarrar a identidade global ao `sub` do IdP (Cognito) quando a autenticação de
+  produção entrar; hoje a identidade nasce dos vínculos provados por credencial local. status: ABERTA.
 
 ## P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-003 (P1) — **BLOQUEIA o financeiro**
 

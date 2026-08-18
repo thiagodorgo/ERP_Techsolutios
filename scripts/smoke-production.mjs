@@ -118,9 +118,17 @@ await step("CORS restritivo (origem proibida NÃO é refletida)", async () => {
 if (SMOKE_EMAIL && SMOKE_PASSWORD) {
   let accessToken = "";
   await step("POST /api/v1/auth/login (usuário de smoke real)", async () => {
+    // B-O6R-01 — sem SMOKE_TENANT_ID o login atravessa o caminho SEM organização (o canário
+    // em-ambiente da função elevada — runbook docs/deployment.md). A env é suporte de smoke
+    // MANUAL; os workflows não a mapeiam, e defini-la DESLIGA o único canário do caminho anônimo.
+    const smokeTenantId = (process.env.SMOKE_TENANT_ID ?? "").trim();
     const { status, body } = await fetchJson("/api/v1/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email: SMOKE_EMAIL, password: SMOKE_PASSWORD }),
+      body: JSON.stringify({
+        email: SMOKE_EMAIL,
+        password: SMOKE_PASSWORD,
+        ...(smokeTenantId ? { tenantId: smokeTenantId } : {}),
+      }),
     });
     if (status !== 200) throw new Error(`esperado 200, veio ${status}`);
     accessToken = body?.data?.access_token ?? body?.data?.accessToken ?? "";

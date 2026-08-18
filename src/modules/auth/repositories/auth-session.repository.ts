@@ -103,6 +103,25 @@ export class AuthSessionRepository {
     });
   }
 
+  // B-O6R-01 (I3, §5.4 do plano) — revoga TODAS as sessões ATIVAS do par (tenant_id, user_id),
+  // espelho de revokeByIdForTenant acima (D-Ω4C-SESS-REVOKE-REAL): updateMany marcando
+  // revoked_at — nada é apagado; a contagem de linhas de sessão não muda. O count devolvido é a
+  // prova de efeito (vai para a metadata de auditoria do desvínculo). ATENÇÃO DE GUC (dba 1):
+  // auth_sessions está sob RLS de tenant — sob role real, a transação chamadora precisa estar
+  // com o GUC de tenant NA ORGANIZAÇÃO DO PAR, senão o updateMany atualiza ZERO linhas SEM ERRO.
+  revokeAllActiveByUserForTenant(userId: string, tenantId: string) {
+    return this.client.authSession.updateMany({
+      where: {
+        tenant_id: tenantId,
+        user_id: userId,
+        revoked_at: null,
+      },
+      data: {
+        revoked_at: new Date(),
+      },
+    });
+  }
+
   rotateRefreshToken(sessionId: string, tenantId: string, refreshTokenHash: string, expiresAt: Date) {
     return this.client.authSession.updateMany({
       where: {

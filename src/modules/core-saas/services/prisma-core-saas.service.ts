@@ -1,4 +1,5 @@
 import {
+  assertAssignableRole,
   getRolePermissions,
   isValidRole,
   listRoleDefinitions,
@@ -16,12 +17,15 @@ import {
   type CreateTenantInput,
   type CreateUserInput,
   type ListTenantOptions,
+  type LoginCandidate,
   type Tenant,
   type TenantMembership,
   type UpdateUserInput,
   type User,
   type UserStatus,
 } from "../types/core-saas.types.js";
+import type { AuthenticatedActor as AuthJwtActor } from "../../auth/types/auth.types.js";
+import { IdentityLinkRepository } from "../../auth/repositories/identity-link.repository.js";
 
 export class PrismaCoreSaasService {
   constructor(private readonly store: AsyncCoreSaasStore = new PrismaCoreSaasStore()) {}
@@ -137,7 +141,11 @@ export class PrismaCoreSaasService {
       );
     }
 
-    const roles = uniqueRoles(input.roles.map((role) => this.validateRole(role)));
+    // B-O6R-01 (Ω6R-SEC-001) — ponto de validação do CREATE (prisma): allowlist fechada por
+    // construção. Papel de plataforma → 403 role_not_assignable, antes de tocar o store.
+    const roles = uniqueRoles(
+      input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
+    );
     const user = await this.store.createUser({
       ...input,
       name,
@@ -273,15 +281,11 @@ export class PrismaCoreSaasService {
     return isValidRole(role);
   }
 
+  // B-O6R-01 (Ω6R-SEC-001, "500→400 de carona") — papel fora do catálogo era Error cru; vira
+  // CoreSaasError 400 invalid_role. A allowlist de atribuição NÃO vive aqui: este método também
+  // serve getRoleDefinition (leitura de papel de plataforma é legítima). Quem barra a ATRIBUIÇÃO
+  // é assertAssignableRole nos caminhos de create/update (abaixo).
   validateRole(role: string): Role {
-    try {
-      return validateRole(role);
-    } catch {
-      throw new Error(`Invalid role: ${role}`);
-    }
-  }
-
-  private validateUserRole(role: string): Role {
     if (!isValidRole(role)) {
       throw new CoreSaasError(
         400,
@@ -294,32 +298,186 @@ export class PrismaCoreSaasService {
     return validateRole(role);
   }
 
+  // B-O6R-01 (Ω6R-SEC-001) — ponto de validação do UPDATE (prisma): mesma allowlist do create.
+  // Papel de plataforma → 403 role_not_assignable (o vetor real do achado era o PATCH self).
+  private validateUserRole(role: string): Role {
+    if (!isValidRole(role)) {
+      throw new CoreSaasError(
+        400,
+        "BAD_REQUEST",
+        "invalid_role",
+        `Invalid role: ${role}`,
+      );
+    }
+
+    return assertAssignableRole(validateRole(role));
+  }
+
   roleHasPermission(role: Role, permission: Permission): boolean {
     return getRolePermissions(role).includes(permission);
   }
 
-  async listTenantsForUserEmail(email: string): Promise<TenantMembership[]> {
-    // Cross-tenant query: intentionally bypasses RLS to list all orgs for a user's own email.
-    const { prisma } = await import("../../../database/prisma.js");
-    const normalizedEmail = email.trim().toLowerCase();
+  // B-O6R-01 (Ω6R-TEN-001) — `listTenantsForUserEmail` foi REMOVIDA (correlacionava contas pelo
+  // e-mail e emitia acesso sem prova de vínculo). Os quatro consumidores migraram para os
+  // métodos de identidade abaixo. A leitura pré-autenticação atravessa a função elevada
+  // `auth_login_candidates` (a única entrada cross-tenant por e-mail — §6.3 do plano).
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const users: any[] = await (prisma as any).user.findMany({
-      where: { email: normalizedEmail, status: "active" },
-      include: {
-        tenant: true,
-        role_assignments: { include: { role: true } },
-      },
+  async listLoginCandidates(email: string): Promise<LoginCandidate[]> {
+    const [{ prisma }, { listLoginCandidatesViaFunction }] = await Promise.all([
+      import("../../../database/prisma.js"),
+      import("../../auth/repositories/login-candidates.repository.js"),
+    ]);
+    const rows = await listLoginCandidatesViaFunction(prisma, email);
+
+    return rows.map((row) => ({ tenantId: row.tenant_id, userId: row.user_id }));
+  }
+
+  async listTenantsForIdentity(actor: AuthJwtActor): Promise<TenantMembership[]> {
+    const [{ prisma }, { setIdentityRlsContext, setTenantRlsContext }, { normalizePairIdentity }] =
+      await Promise.all([
+        import("../../../database/prisma.js"),
+        import("../../../database/rls.js"),
+        import("../../auth/services/identity-resolver.js"),
+      ]);
+
+    // UMA ÚNICA transação (§3.6): o braço de identidade lê os próprios vínculos e o GUC de
+    // tenant é TROCADO DENTRO da mesma transação para reler status por organização. Nunca
+    // withTenantRls aninhado (não há transação aninhada em Prisma).
+    return prisma.$transaction(async (tx) => {
+      let identityId = await setIdentityRlsContext(tx, actor);
+
+      if (!identityId) {
+        // §3.4 — normalização preguiçosa do par do token (escrita em caminho de leitura,
+        // declarado: não roda em réplica de leitura; hoje não há réplica).
+        await normalizePairIdentity(tx, actor.tenantId, actor.userId);
+        identityId = await setIdentityRlsContext(tx, actor);
+      }
+
+      if (!identityId) {
+        return [];
+      }
+
+      const links = await new IdentityLinkRepository(tx).listByIdentity(identityId);
+      const memberships: TenantMembership[] = [];
+
+      for (const link of links) {
+        await setTenantRlsContext(tx, link.tenant_id);
+
+        // Replica os dois filtros do consumidor antigo (status de usuário e de organização) —
+        // provados por testes em tests/auth-identity-links-db.test.ts (§7, grupo TEN-001).
+        const user = await tx.user.findFirst({
+          where: {
+            id: link.user_id,
+            tenant_id: link.tenant_id,
+            status: "active",
+          },
+          include: {
+            role_assignments: { include: { role: true } },
+          },
+        });
+
+        if (!user) {
+          continue;
+        }
+
+        // `tenants` não tem RLS (nenhum ENABLE ROW LEVEL SECURITY de tenants em migração).
+        const tenant = await tx.tenant.findFirst({ where: { id: link.tenant_id } });
+
+        if (!tenant || tenant.status !== "active") {
+          continue;
+        }
+
+        memberships.push({
+          tenant: mapTenantFromPrisma(tenant),
+          user: mapUserFromPrisma(user as Parameters<typeof mapUserFromPrisma>[0]),
+        });
+      }
+
+      return memberships;
     });
+  }
 
-    return users
-      .filter((u: { tenant: { status: string } }) => u.tenant.status === "active")
-      .map((u: { tenant: unknown; [key: string]: unknown }) => ({
-        tenant: mapTenantFromPrisma(u.tenant as Parameters<typeof mapTenantFromPrisma>[0]),
-        user: mapUserFromPrisma(
-          u as unknown as Parameters<typeof mapUserFromPrisma>[0],
-        ),
-      }));
+  async findMembershipForIdentity(
+    actor: AuthJwtActor,
+    requestedTenantId: string,
+  ): Promise<TenantMembership | null> {
+    const [{ prisma }, { setTenantRlsContext }, { resolveIdentityIdForPair, normalizePairIdentity }] =
+      await Promise.all([
+        import("../../../database/prisma.js"),
+        import("../../../database/rls.js"),
+        import("../../auth/services/identity-resolver.js"),
+      ]);
+
+    // §6.5 — SEM GUC de identidade (S2): resolve a identidade do ator por (tenant ativo, sub)
+    // sob o braço de tenant, depois lê o vínculo da organização pedida sob o braço de tenant DA
+    // ORGANIZAÇÃO PEDIDA, filtrando pela identidade em VARIÁVEL. O identity_id nunca sai do
+    // processo (varredura por valor cobre esta rota — §5.7).
+    return prisma.$transaction(async (tx) => {
+      await setTenantRlsContext(tx, actor.tenantId);
+
+      let identityId = await resolveIdentityIdForPair(tx, actor.tenantId, actor.userId);
+
+      if (!identityId) {
+        // C8 — normaliza SOMENTE o par do token corrente; jamais o usuário da organização pedida.
+        identityId = await normalizePairIdentity(tx, actor.tenantId, actor.userId);
+      }
+
+      if (!identityId) {
+        return null;
+      }
+
+      await setTenantRlsContext(tx, requestedTenantId);
+
+      const link = await new IdentityLinkRepository(tx).findByIdentityAndTenant(
+        identityId,
+        requestedTenantId,
+      );
+
+      if (!link) {
+        return null;
+      }
+
+      const user = await tx.user.findFirst({
+        where: {
+          id: link.user_id,
+          tenant_id: link.tenant_id,
+          status: "active",
+        },
+        include: {
+          role_assignments: { include: { role: true } },
+        },
+      });
+
+      if (!user) {
+        return null;
+      }
+
+      const tenant = await tx.tenant.findFirst({ where: { id: link.tenant_id } });
+
+      if (!tenant || tenant.status !== "active") {
+        return null;
+      }
+
+      return {
+        tenant: mapTenantFromPrisma(tenant),
+        user: mapUserFromPrisma(user as Parameters<typeof mapUserFromPrisma>[0]),
+      };
+    });
+  }
+
+  async resolveIdentityForUser(actor: {
+    readonly tenantId: string;
+    readonly userId: string;
+  }): Promise<string | null> {
+    const [{ prisma }, { withTenantRls }, { normalizePairIdentity }] = await Promise.all([
+      import("../../../database/prisma.js"),
+      import("../../../database/rls.js"),
+      import("../../auth/services/identity-resolver.js"),
+    ]);
+
+    return withTenantRls(prisma, actor.tenantId, (tx) =>
+      normalizePairIdentity(tx, actor.tenantId, actor.userId),
+    );
   }
 
   async getAuditEventsForTenant(tenantId: string): Promise<AuditEvent[]> {

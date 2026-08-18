@@ -75,6 +75,13 @@ export type TenantMembership = {
   readonly user: User;
 };
 
+// B-O6R-01 — candidato INTERNO do login sem organização: só o par (tenant, usuário). A lista
+// nunca atravessa a borda da API; quem decide é a credencial (I1).
+export type LoginCandidate = {
+  readonly tenantId: string;
+  readonly userId: string;
+};
+
 export class CoreSaasError extends Error {
   constructor(
     readonly statusCode: number,

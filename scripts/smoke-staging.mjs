@@ -87,9 +87,18 @@ await step("GET /api/v1/health/ready (readiness profunda)", async () => {
 await step("GET /api/v1/health/worker (polling até o CORPO dizer up)", pollWorkerUp);
 
 await step("POST /api/v1/auth/login (login demo)", async () => {
+  // B-O6R-01 — SEM SMOKE_TENANT_ID este login atravessa o caminho SEM organização (a função
+  // elevada): é o canário em-ambiente da ativação (runbook docs/deployment.md). A env é suporte
+  // de smoke MANUAL do operador — os workflows NÃO a mapeiam nos steps; DEFINI-LA DESLIGA O
+  // ÚNICO CANÁRIO do caminho anônimo (escolha consciente, nunca herdada).
+  const smokeTenantId = (process.env.SMOKE_TENANT_ID ?? "").trim();
   const { status, body } = await fetchJson("/api/v1/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+    body: JSON.stringify({
+      email: EMAIL,
+      password: PASSWORD,
+      ...(smokeTenantId ? { tenantId: smokeTenantId } : {}),
+    }),
   });
   if (status !== 200) throw new Error(`esperado 200, veio ${status}`);
   accessToken = body?.data?.access_token ?? body?.data?.accessToken ?? "";
