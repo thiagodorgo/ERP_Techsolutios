@@ -279,7 +279,9 @@ export const STANDARD_ROLES = [
   "viewer",
 ] as const;
 
-const LEGACY_ROLES = [
+// Exportado no ciclo 2 do B-O6R-01 SÓ para o snapshot de contrato (tests/core-saas-role-authority);
+// o VALOR é o mesmo desde a origem — exportar não muda um byte do que os consumidores recebem.
+export const LEGACY_ROLES = [
   "platform_admin",
   "operator",
   "finance",
@@ -305,30 +307,56 @@ export type Role = (typeof DEFAULT_ROLES)[number];
 // POST/PATCH /users.
 // -----------------------------------------------------------------------------------------------
 
-export const PLATFORM_ROLES = ["super_admin", "platform_admin"] as const;
+// -----------------------------------------------------------------------------------------------
+// Ciclo 2 (R-B-O6R-01-ciclo1, B-2 + B-3) — FONTE ÚNICA de autoridade, derivação por INCLUSÃO.
+// A decisão "este papel é de plataforma ou de tenant?" é tomada UMA vez, aqui, papel a papel.
+// Não existe default: papel novo em DEFAULT_ROLES sem entrada neste mapa é chave faltante no
+// `satisfies Record<Role, …>` e o `npm run check` reprova (drill 2 do ciclo 2 executa essa
+// mutação e anexa o vermelho). O guard anterior (`_RolePartitionIsExhaustive`) foi APAGADO:
+// com `TenantAssignableRole = Exclude<Role, PlatformRole>` a partição era verdadeira por
+// definição e aquele tipo não tinha estado capaz de reprovar nada (adendo ao B-2, provado por
+// compilação no relatório do ciclo 1).
+// -----------------------------------------------------------------------------------------------
 
-export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+export const ROLE_AUTHORITY = {
+  super_admin: "platform",
+  tenant_admin: "tenant",
+  manager: "tenant",
+  field_dispatcher: "tenant",
+  technician: "tenant",
+  viewer: "tenant",
+  platform_admin: "platform",
+  operator: "tenant",
+  finance: "tenant",
+  inventory: "tenant",
+  field_technician: "tenant",
+  auditor: "tenant",
+  support: "tenant",
+} as const satisfies Record<Role, "platform" | "tenant">;
 
-// Derivada por EXCLUSÃO do catálogo — papel novo em DEFAULT_ROLES cai automaticamente aqui, a
-// menos que seja declarado em PLATFORM_ROLES. A allowlist nunca fica para trás do catálogo.
-export const TENANT_ASSIGNABLE_ROLES = DEFAULT_ROLES.filter(
-  (role): role is TenantAssignableRole => !(PLATFORM_ROLES as readonly string[]).includes(role),
+export type RoleAuthority = (typeof ROLE_AUTHORITY)[Role];
+
+// Os tipos derivam por mapped type DA MESMA FONTE — nunca por Exclude de um literal paralelo.
+export type PlatformRole = {
+  [K in Role]: (typeof ROLE_AUTHORITY)[K] extends "platform" ? K : never;
+}[Role];
+
+export type TenantAssignableRole = {
+  [K in Role]: (typeof ROLE_AUTHORITY)[K] extends "tenant" ? K : never;
+}[Role];
+
+// Os DOIS conjuntos derivam por INCLUSÃO do mapa, na ordem de DEFAULT_ROLES — mesmo conteúdo e
+// mesma ordem que os consumidores de deploy (seed/provision-rbac) sempre observaram; o snapshot
+// em tests/fixtures/role-catalog-contract.snapshot.json pina isso. Se um papel escapasse do
+// `satisfies` sem classificação, ele cairia FORA dos dois conjuntos: assertAssignableRole o
+// negaria (403) e o teste de partição ficaria vermelho — a omissão nunca vira permissão.
+export const PLATFORM_ROLES: readonly PlatformRole[] = DEFAULT_ROLES.filter(
+  (role): role is PlatformRole => ROLE_AUTHORITY[role] === "platform",
 );
 
-export type TenantAssignableRole = Exclude<Role, PlatformRole>;
-
-// Guard de exaustividade — NÍVEL 1 (compile-time): todo Role é PlatformRole ou
-// TenantAssignableRole, sem sobra e sem interseção. Um papel novo que não caia em exatamente um
-// dos dois lados quebra o BUILD aqui (nunca compila "papel sem classificação").
-type _RolePartitionIsExhaustive = [
-  PlatformRole | TenantAssignableRole,
-] extends [Role]
-  ? Role extends PlatformRole | TenantAssignableRole
-    ? true
-    : never
-  : never;
-const _rolePartitionIsExhaustive: _RolePartitionIsExhaustive = true;
-void _rolePartitionIsExhaustive;
+export const TENANT_ASSIGNABLE_ROLES: readonly TenantAssignableRole[] = DEFAULT_ROLES.filter(
+  (role): role is TenantAssignableRole => ROLE_AUTHORITY[role] === "tenant",
+);
 
 const platformRoleSet = new Set<string>(PLATFORM_ROLES);
 const tenantAssignableRoleSet = new Set<string>(TENANT_ASSIGNABLE_ROLES);

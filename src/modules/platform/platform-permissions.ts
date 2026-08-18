@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { resolveRequestActor } from "../auth/middleware/authenticated-actor.middleware.js";
+import { PLATFORM_ROLES } from "../core-saas/permissions/catalog.js";
 
 export const PLATFORM_PERMISSIONS = [
   "platform:cloud-charge-rules:read",
@@ -26,7 +27,10 @@ export const PLATFORM_PERMISSIONS = [
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];
 
 const platformPermissionSet = new Set<string>(PLATFORM_PERMISSIONS);
-const platformRoles = new Set(["super_admin", "platform_admin"]);
+// Ciclo 2 (R-B-O6R-01-ciclo1, B-3) — a autoridade sobre "qual papel é de plataforma" tem UMA
+// fonte: ROLE_AUTHORITY, via PLATFORM_ROLES do catálogo. O literal independente que vivia aqui
+// foi apagado; o guard 10a (tests/core-saas-role-authority.test.ts) reprova se ele voltar.
+const platformRoles = new Set<string>(PLATFORM_ROLES);
 
 export function requirePlatformPermission(permission: PlatformPermission) {
   return (request: Request, response: Response, next: NextFunction): void => {

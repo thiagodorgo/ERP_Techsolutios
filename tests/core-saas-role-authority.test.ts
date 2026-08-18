@@ -1,16 +1,25 @@
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { signAccessToken } from "../src/modules/auth/index.js";
 import {
   DEFAULT_ROLES,
+  LEGACY_ROLES,
   PLATFORM_ROLES,
+  ROLE_AUTHORITY,
+  ROLE_PERMISSIONS,
+  STANDARD_ROLES,
   TENANT_ASSIGNABLE_ROLES,
   RoleNotAssignableError,
   assertAssignableRole,
+  isPlatformRole,
 } from "../src/modules/core-saas/permissions/catalog.js";
+import { requirePlatformPermission } from "../src/modules/platform/platform-permissions.js";
 import { CoreSaasRegistry } from "../src/modules/core-saas/services/core-saas.service.js";
 import { MemoryCoreSaasAdapter } from "../src/modules/core-saas/services/memory-core-saas.adapter.js";
 import { PrismaCoreSaasStore } from "../src/modules/core-saas/store/prisma-core-saas.store.js";
@@ -24,9 +33,20 @@ import { CoreSaasError } from "../src/modules/core-saas/types/core-saas.types.js
 // concede plataforma pela presença do papel). Cada teste nomeia o vetor que fecha.
 // -----------------------------------------------------------------------------------------------
 
-test("guard de exaustividade (nível runtime): PLATFORM ∪ TENANT_ASSIGNABLE == DEFAULT_ROLES, sem interseção", () => {
-  // O nível 1 é o tipo (_RolePartitionIsExhaustive em catalog.ts — papel novo sem classificação
-  // não compila). Este é o nível 2: os VALORES particionam o catálogo exatamente.
+// -----------------------------------------------------------------------------------------------
+// Ciclo 2 (R-B-O6R-01-ciclo1, B-2/B-3 + adendo) — o que cada camada PROVA, sem afirmar mais:
+//   · compile-time: o `satisfies Record<Role, …>` do ROLE_AUTHORITY reprova papel sem
+//     classificação (fixtures em src/modules/core-saas/permissions/catalog.type-check.ts;
+//     provado por mutação no drill 2 do ciclo 2).
+//   · runtime: os conjuntos derivam por INCLUSÃO do mapa — os testes abaixo os comparam com
+//     LITERAIS INDEPENDENTES (aqui e no snapshot), nunca com a própria origem da derivação
+//     (a tautologia que o adendo ao B-2 reprovou).
+// -----------------------------------------------------------------------------------------------
+
+test("partição em runtime: PLATFORM ∪ TENANT_ASSIGNABLE == DEFAULT_ROLES, sem interseção", () => {
+  // Com a derivação por INCLUSÃO, este teste ganhou um estado capaz de reprovar: um papel que
+  // escapasse do `satisfies` sem classificação cai FORA dos dois conjuntos e a união fica menor
+  // que o catálogo — vermelho aqui. (Na derivação por exclusão do ciclo 1 isso era impossível.)
   const union = new Set<string>([...PLATFORM_ROLES, ...TENANT_ASSIGNABLE_ROLES]);
 
   assert.deepEqual([...union].sort(), [...DEFAULT_ROLES].sort());
@@ -40,6 +60,159 @@ test("guard de exaustividade (nível runtime): PLATFORM ∪ TENANT_ASSIGNABLE ==
     );
   }
 });
+
+// Literais INDEPENDENTES do catálogo: é contra ELES (não contra a derivação) que a classificação
+// é comparada. Mudou a classificação de um papel no ROLE_AUTHORITY? Este teste fica vermelho e a
+// mudança precisa ser deliberada — aqui e no snapshot.
+const PAPEIS_DE_PLATAFORMA_ESPERADOS: readonly string[] = ["super_admin", "platform_admin"];
+
+test("classificação pinada a literais independentes: autoridade E comportamento por papel", () => {
+  assert.equal(DEFAULT_ROLES.length, 13, "o catálogo tem 13 papéis; papel novo exige decisão explícita aqui");
+
+  for (const role of DEFAULT_ROLES) {
+    const esperadoPlataforma = PAPEIS_DE_PLATAFORMA_ESPERADOS.includes(role);
+
+    assert.equal(
+      ROLE_AUTHORITY[role],
+      esperadoPlataforma ? "platform" : "tenant",
+      `classificação de ${role} divergiu do literal esperado`,
+    );
+
+    if (esperadoPlataforma) {
+      assert.throws(() => assertAssignableRole(role), RoleNotAssignableError);
+    } else {
+      assert.equal(assertAssignableRole(role), role);
+    }
+  }
+});
+
+test("contrato do consumidor de deploy: snapshot dos valores exportados (conteúdo E ordem)", () => {
+  // Baseline capturada da árvore INTOCADA (ff26ac1), antes da refatoração do ciclo 2 — a
+  // derivação por inclusão tem que reproduzir byte a byte o que seed/provision-rbac já liam.
+  const snapshot = JSON.parse(
+    readFileSync(new URL("./fixtures/role-catalog-contract.snapshot.json", import.meta.url), "utf8"),
+  ) as {
+    STANDARD_ROLES: string[];
+    LEGACY_ROLES: string[];
+    DEFAULT_ROLES: string[];
+    PLATFORM_ROLES: string[];
+    TENANT_ASSIGNABLE_ROLES: string[];
+    ROLE_PERMISSIONS_KEY_ORDER: string[];
+    ROLE_PERMISSIONS: Record<string, string[]>;
+  };
+
+  // deepEqual de array é sensível à ORDEM — é isso que pina "mesmo conteúdo e mesma ordem".
+  assert.deepEqual([...STANDARD_ROLES], snapshot.STANDARD_ROLES);
+  assert.deepEqual([...LEGACY_ROLES], snapshot.LEGACY_ROLES);
+  assert.deepEqual([...DEFAULT_ROLES], snapshot.DEFAULT_ROLES);
+  assert.deepEqual([...PLATFORM_ROLES], snapshot.PLATFORM_ROLES);
+  assert.deepEqual([...TENANT_ASSIGNABLE_ROLES], snapshot.TENANT_ASSIGNABLE_ROLES);
+  assert.deepEqual(Object.keys(ROLE_PERMISSIONS), snapshot.ROLE_PERMISSIONS_KEY_ORDER);
+  assert.deepEqual(JSON.parse(JSON.stringify(ROLE_PERMISSIONS)), snapshot.ROLE_PERMISSIONS);
+});
+
+test("concordância middleware × catálogo: a decisão de plataforma é a MESMA para os 13 papéis", () => {
+  // A superfície REAL do middleware (requirePlatformPermission), papel a papel, contra o
+  // catálogo. Se alguém reintroduzir um literal independente em platform-permissions.ts que
+  // DIVIRJA do ROLE_AUTHORITY, é aqui que fica vermelho (drill 3 do ciclo 2 prova por mutação).
+  for (const role of DEFAULT_ROLES) {
+    const middlewareConcede = middlewareGrantsPlatformAccess(role);
+    const catalogoDiz = isPlatformRole(role);
+
+    assert.equal(
+      middlewareConcede,
+      catalogoDiz,
+      `divergência para ${role}: middleware=${middlewareConcede}, catálogo=${catalogoDiz}`,
+    );
+    assert.equal(catalogoDiz, ROLE_AUTHORITY[role] === "platform");
+    assert.equal(middlewareConcede, PAPEIS_DE_PLATAFORMA_ESPERADOS.includes(role));
+  }
+});
+
+test("guard 10a — zero literais de papel de plataforma em src/modules/platform/**", () => {
+  // Tripwire TEXTUAL contra a volta da autoridade duplicada (B-3): nenhum arquivo do módulo de
+  // plataforma pode conter papel de plataforma entre aspas (simples ou duplas). A lista de
+  // literais proibidos deriva de PLATFORM_ROLES — papel de plataforma novo entra sozinho no
+  // guard. A prova COMPORTAMENTAL é a concordância acima; este guard pega inclusive a duplicata
+  // byte-idêntica, que a concordância (por ser idêntica) nunca veria.
+  const platformDir = fileURLToPath(new URL("../src/modules/platform/", import.meta.url));
+  const offenders: string[] = [];
+
+  for (const entry of readdirSync(platformDir, { recursive: true, encoding: "utf8" })) {
+    if (!entry.endsWith(".ts")) {
+      continue;
+    }
+
+    const source = readFileSync(join(platformDir, entry), "utf8");
+
+    for (const role of PLATFORM_ROLES) {
+      for (const literal of [`"${role}"`, `'${role}'`]) {
+        if (source.includes(literal)) {
+          offenders.push(`${entry}: ${literal}`);
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    "decisão de plataforma por literal fora do catálogo — a fonte única é ROLE_AUTHORITY (importar PLATFORM_ROLES)",
+  );
+});
+
+test("guard 10b — o `as const satisfies Record<Role, …>` do ROLE_AUTHORITY não pode sumir", () => {
+  // É o `satisfies` que transforma "papel novo sem classificação" em erro de COMPILAÇÃO. Sem
+  // ele, o mapa continua compilando e o fail-closed degrada para as camadas de runtime. Este
+  // guard reprova a remoção silenciosa.
+  const source = readFileSync(
+    new URL("../src/modules/core-saas/permissions/catalog.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /export const ROLE_AUTHORITY = \{[\s\S]+?\} as const satisfies Record<Role, "platform" \| "tenant">;/,
+    "ROLE_AUTHORITY perdeu o `as const satisfies Record<Role, \"platform\" | \"tenant\">`",
+  );
+});
+
+function middlewareGrantsPlatformAccess(role: string): boolean {
+  const handler = requirePlatformPermission("platform:tenants:read");
+  let granted = false;
+  let statusCode = 0;
+
+  const request = {
+    actor: {
+      userId: "11111111-1111-4111-8111-111111111111",
+      tenantId: "22222222-2222-4222-8222-222222222222",
+      email: "concordancia@example.com",
+      roles: [role],
+      authType: "jwt",
+    },
+  } as unknown as Parameters<typeof handler>[0];
+
+  const response = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json() {
+      return this;
+    },
+  } as unknown as Parameters<typeof handler>[1];
+
+  handler(request, response, () => {
+    granted = true;
+  });
+
+  assert.ok(
+    granted || statusCode === 403,
+    `o middleware nem concedeu nem negou para ${role} — o harness não exerceu a decisão`,
+  );
+
+  return granted;
+}
 
 test("allowlist não gananciosa: todo papel NÃO-plataforma segue atribuível", () => {
   for (const role of TENANT_ASSIGNABLE_ROLES) {
