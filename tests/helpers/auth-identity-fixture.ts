@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-01 — arnês compartilhado das suítes -db de identidade. Regras do §7 que ele materializa:
@@ -22,6 +22,77 @@ export type EphemeralRole = {
   drop(): Promise<void>;
 };
 
+// -----------------------------------------------------------------------------------------------
+// B-O6R-01 ciclo 2 (R-B-O6R-01-ciclo1, A-1/B-5) — determinismo do catálogo de roles.
+//
+// CREATE ROLE/GRANT/DROP escrevem em linhas COMPARTILHADAS do catálogo do Postgres (`pg_authid`,
+// `pg_auth_members`, `pg_default_acl`). `node --test` roda os arquivos de teste em PARALELO — em
+// processos distintos —, e quatro suítes do batch -db escrevem catálogo ao mesmo tempo; a disputa
+// produz `XX000: tuple concurrently updated` (~25% medido no ciclo 1), o arquivo aborta e a suíte
+// roda MENOS testes reportando um total plausível. Por isso toda a sequência de catálogo roda numa
+// transação com `pg_advisory_xact_lock` — lock DO SERVIDOR, porque o paralelismo é entre processos
+// e um mutex em JS não alcançaria. A constante é DISTINTA da de provisioning (medida:
+// `scripts/provision-rbac.ts:67` usa `20260863`): os dois fluxos não disputam a mesma fila.
+// Timeout da transação EXPLÍCITO: com os quatro escritores enfileirando no lock, o default de 5s
+// do Prisma viraria um flake novo.
+// -----------------------------------------------------------------------------------------------
+const ROLE_CATALOG_ADVISORY_LOCK = 20268801n;
+const ROLE_CATALOG_TX_OPTIONS = { maxWait: 30_000, timeout: 30_000 } as const;
+
+// Idade a partir da qual uma role `o6r_b01_*` deixada para trás é considerada órfã (o timestamp
+// embutido no nome é o `Date.now()` da criação). 60 min: nenhuma execução legítima do batch vive
+// tanto; roles da execução corrente nunca são alcançadas.
+const ORPHAN_ROLE_MAX_AGE_MS = 60 * 60 * 1000;
+
+export async function withRoleCatalogLock<T>(
+  adminClient: PrismaClient,
+  run: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  return adminClient.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ROLE_CATALOG_ADVISORY_LOCK}::bigint)`;
+
+    return run(tx);
+  }, ROLE_CATALOG_TX_OPTIONS);
+}
+
+// Sweep de órfãs, SEMPRE dentro do lock de catálogo: exclusivamente roles do prefixo do PRÓPRIO
+// arnês (`o6r_b01_`) cujo timestamp embutido no nome seja mais velho que 60 min. É teardown do
+// próprio namespace — nunca curinga além disso (este repositório já teve incidente de mass-delete
+// na base viva). O que for dropado é reportado no stderr para ficar anexável ao relatório.
+async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<string[]> {
+  const rows = await tx.$queryRaw<Array<{ rolname: string }>>`
+    SELECT rolname FROM pg_roles WHERE rolname LIKE 'o6r_b01_%' ORDER BY rolname
+  `;
+  const cutoff = Date.now() - ORPHAN_ROLE_MAX_AGE_MS;
+  const orphans = rows
+    .map((row) => row.rolname)
+    .filter((name) => {
+      const match = /^o6r_b01_(\d+)_[0-9a-f]+$/.exec(name);
+
+      if (!match) {
+        return false;
+      }
+
+      const createdAt = Number(match[1]);
+
+      return Number.isFinite(createdAt) && createdAt < cutoff;
+    });
+
+  for (const orphan of orphans) {
+    await tx.$executeRawUnsafe(`DROP OWNED BY "${orphan}"`);
+    await tx.$executeRawUnsafe(`DROP ROLE "${orphan}"`);
+  }
+
+  if (orphans.length > 0) {
+    process.stderr.write(
+      `[o6r-arnes] sweep dropou ${orphans.length} role(s) órfã(s) o6r_b01_* (> 60 min):\n` +
+        orphans.map((name) => `[o6r-arnes]   ${name}\n`).join(""),
+    );
+  }
+
+  return orphans;
+}
+
 export async function createEphemeralRole(
   adminClient: PrismaClient,
   connectionString: string,
@@ -32,16 +103,19 @@ export async function createEphemeralRole(
   const roleName = `o6r_b01_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const rolePassword = `o6r-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  await adminClient.$executeRawUnsafe(
-    `CREATE ROLE "${roleName}" LOGIN PASSWORD '${rolePassword.replace(/'/g, "''")}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
-  );
-  await adminClient.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
-  await adminClient.$executeRawUnsafe(
-    `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`,
-  );
-  await adminClient.$executeRawUnsafe(
-    `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`,
-  );
+  await withRoleCatalogLock(adminClient, async (tx) => {
+    await sweepOrphanEphemeralRoles(tx);
+    await tx.$executeRawUnsafe(
+      `CREATE ROLE "${roleName}" LOGIN PASSWORD '${rolePassword.replace(/'/g, "''")}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
+    );
+    await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
+    await tx.$executeRawUnsafe(
+      `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`,
+    );
+    await tx.$executeRawUnsafe(
+      `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`,
+    );
+  });
 
   const client = new PrismaClient({
     adapter: new PrismaPg({
@@ -54,8 +128,10 @@ export async function createEphemeralRole(
     client,
     async drop(): Promise<void> {
       await client.$disconnect();
-      await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`DROP ROLE "${roleName}"`);
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
+        await tx.$executeRawUnsafe(`DROP ROLE "${roleName}"`);
+      });
     },
   };
 }

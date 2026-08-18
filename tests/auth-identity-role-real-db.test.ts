@@ -15,6 +15,46 @@ import {
 
 const connectionString = process.env.DATABASE_URL;
 
+// Ator REAL construído pelo middleware attachAuthenticatedActor (o único lugar que constrói
+// AuthenticatedActor): sobe um mini-app, faz uma requisição com o Bearer e captura request.actor
+// — nada de literal fabricado (guard 6 / crítico higiene 5). Mesmo idioma da revocation-db.
+async function actorFromToken(
+  accessToken: string,
+): Promise<import("../src/modules/auth/types/auth.types.js").AuthenticatedActor> {
+  const [{ default: express }, { attachAuthenticatedActor, getAuthenticatedActor }] =
+    await Promise.all([import("express"), import("../src/modules/auth/index.js")]);
+
+  const captured: Array<import("../src/modules/auth/types/auth.types.js").AuthenticatedActor> = [];
+  const app = express();
+
+  app.get("/whoami", attachAuthenticatedActor(), (request, response) => {
+    const actor = getAuthenticatedActor(request);
+
+    if (actor) {
+      captured.push(actor);
+    }
+
+    response.json({ ok: true });
+  });
+
+  const server = app.listen(0);
+
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+
+  const { port } = server.address() as { port: number };
+
+  await fetch(`http://127.0.0.1:${port}/whoami`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  await new Promise<void>((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve())),
+  );
+
+  assert.equal(captured.length, 1, "o middleware precisa ter construído o ator");
+
+  return captured[0];
+}
+
 // -----------------------------------------------------------------------------------------------
 // B-O6R-01 — o grupo do dba 1 (BLOQUEANTE): as transações que MUDAM dados rodando sob ROLE REAL
 // (efêmera NOSUPERUSER — o único arranjo em que o RLS existe; sob a conexão `postgres` da CI
@@ -328,6 +368,196 @@ if (!connectionString) {
         `;
 
         assert.equal(inserted?.id, identityId, "o caminho sem RETURNING gravou de verdade");
+      });
+
+      await t.test("gancho da troca de senha SOB role real (B-1): decide por attached_via com a trilha lendo ZERO", async () => {
+        // A prova da TERCEIRA ARMADILHA (R-B-O6R-01-ciclo1, B-1): o gancho desvincula/preserva a
+        // partir de `auth_identity_links.attached_via` — NUNCA da trilha append-only, que sob a
+        // role real é ILEGÍVEL (RLS sem política de SELECT). O teste do gancho que já existia
+        // (revocation-db) roda no Prisma compartilhado como `postgres`, onde a trilha É legível —
+        // lá uma regressão que passasse a decidir pela trilha continuaria verde. AQUI o serviço
+        // roda na conexão efêmera NOSUPERUSER: se o gancho voltar a depender de leitura
+        // privilegiada, o braço (a) falha — a armadilha não reabre em silêncio.
+        const hookEmail = `rr-gancho-${suffix}@example.com`;
+        const orgHome = await createOrgWithUser(adminClient, {
+          name: `RR Casa ${suffix}`,
+          slug: `rr-casa-${suffix}`,
+          email: hookEmail,
+          password: "SenhaCasa123!",
+        });
+        const orgAway = await createOrgWithUser(adminClient, {
+          name: `RR Religada ${suffix}`,
+          slug: `rr-religada-${suffix}`,
+          email: hookEmail,
+          password: "SenhaAway123!",
+        });
+
+        tenantIds.push(orgHome.tenantId, orgAway.tenantId);
+
+        const loginHome = await requestJson(baseUrl, "/api/v1/auth/login", {
+          method: "POST",
+          body: { tenantId: orgHome.tenantId, email: hookEmail, password: orgHome.password },
+        });
+
+        assert.equal(loginHome.status, 200);
+
+        const relink = await requestJson(baseUrl, "/api/v1/auth/identity-links", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${(loginHome.body.data as { access_token: string }).access_token}`,
+          },
+          body: { tenantId: orgAway.tenantId, email: hookEmail, password: orgAway.password },
+        });
+
+        assert.equal(relink.status, 201);
+
+        // A assimetria que faz deste caso uma GUARDA: a trilha, pela conexão efêmera, lê ZERO —
+        // enquanto a privilegiada já lê a linha que a religação acabou de gravar. Qualquer fonte
+        // de decisão do gancho baseada na trilha leria zero aqui e erraria o braço (a).
+        const [trailByEphemeral] = await ephemeral.client.$queryRaw<Array<{ count: number }>>`
+          SELECT count(*)::int AS count FROM auth_identity_link_events
+        `;
+        const [religacaoVisible] = await adminClient.$queryRaw<Array<{ count: number }>>`
+          SELECT count(*)::int AS count FROM auth_identity_link_events
+          WHERE tenant_id = ${orgAway.tenantId}::uuid
+            AND user_id = ${orgAway.userId}::uuid
+            AND event = 'religacao'
+        `;
+
+        assert.equal(trailByEphemeral?.count, 0, "sob a role real a trilha lê ZERO — a fonte proibida da terceira armadilha");
+        assert.equal(religacaoVisible?.count, 1, "o contraste: com privilégio a religação está na trilha — o zero acima é RLS, não vazio");
+
+        // O ator vem do MIDDLEWARE REAL (JWT → getAuthenticatedActor); o gancho é DIRIGIDO pelo
+        // serviço da role efêmera (roleRealService) — a transação inteira roda NOSUPERUSER.
+        const { LocalAuthCredentialRepository, LocalAuthCredentialService } = await import(
+          "../src/modules/auth/index.js"
+        );
+        const credentialService = new LocalAuthCredentialService(
+          new LocalAuthCredentialRepository(adminClient),
+          {
+            findByIdForTenant: (userId: string, tenantId: string) =>
+              adminClient.user.findFirst({
+                where: { id: userId, tenant_id: tenantId },
+                select: { id: true, tenant_id: true, email: true },
+              }),
+          },
+        );
+
+        // Braço (b) — vínculo de CASA ('backfill'), com a identidade AINDA em 2 vínculos: a troca
+        // de senha NÃO desvincula, mas revoga as sessões do par.
+        const actorHome = await actorFromToken(
+          (loginHome.body.data as { access_token: string }).access_token,
+        );
+        const liveHomeBefore = await adminClient.authSession.count({
+          where: { tenant_id: orgHome.tenantId, user_id: orgHome.userId, revoked_at: null },
+        });
+
+        assert.equal(liveHomeBefore >= 1, true);
+
+        const armB = await credentialService.changePasswordWithIdentityHook(
+          actorHome,
+          "SenhaCasaNova123!",
+          roleRealService,
+        );
+
+        assert.equal(armB.unlinked, false, "vínculo 'backfill' não desvincula, MESMO com a identidade em 2 vínculos");
+        assert.equal(armB.revokedSessions, liveHomeBefore, "toda troca revoga as sessões do par — e conta certo");
+
+        const liveHomeAfter = await adminClient.authSession.count({
+          where: { tenant_id: orgHome.tenantId, user_id: orgHome.userId, revoked_at: null },
+        });
+
+        assert.equal(liveHomeAfter, 0);
+
+        const [homeLink] = await adminClient.$queryRaw<Array<{ identity_id: string; attached_via: string }>>`
+          SELECT identity_id, attached_via FROM auth_identity_links
+          WHERE tenant_id = ${orgHome.tenantId}::uuid AND user_id = ${orgHome.userId}::uuid
+        `;
+        const [awayLink] = await adminClient.$queryRaw<Array<{ identity_id: string; attached_via: string }>>`
+          SELECT identity_id, attached_via FROM auth_identity_links
+          WHERE tenant_id = ${orgAway.tenantId}::uuid AND user_id = ${orgAway.userId}::uuid
+        `;
+
+        assert.equal(homeLink?.attached_via, "backfill");
+        assert.equal(awayLink?.attached_via, "religacao");
+        assert.equal(awayLink?.identity_id, homeLink?.identity_id, "o braço (b) não pode ter mexido nos vínculos");
+
+        // A senha NOVA vale — o UPDATE da credencial aconteceu DE VERDADE sob a role efêmera
+        // (um UPDATE zerado em silêncio pelo RLS devolveria 401 aqui).
+        const reLoginHome = await requestJson(baseUrl, "/api/v1/auth/login", {
+          method: "POST",
+          body: { tenantId: orgHome.tenantId, email: hookEmail, password: "SenhaCasaNova123!" },
+        });
+
+        assert.equal(reLoginHome.status, 200);
+
+        // Braço (a) — vínculo 'religacao' + identidade com 2 vínculos: a troca de senha DESVINCULA
+        // e revoga as sessões do par na MESMA transação.
+        await requestJson(baseUrl, "/api/v1/auth/login", {
+          method: "POST",
+          body: { tenantId: orgAway.tenantId, email: hookEmail, password: orgAway.password },
+        });
+
+        const loginAway = await requestJson(baseUrl, "/api/v1/auth/login", {
+          method: "POST",
+          body: { tenantId: orgAway.tenantId, email: hookEmail, password: orgAway.password },
+        });
+
+        assert.equal(loginAway.status, 200);
+
+        const actorAway = await actorFromToken(
+          (loginAway.body.data as { access_token: string }).access_token,
+        );
+        const liveAwayBefore = await adminClient.authSession.count({
+          where: { tenant_id: orgAway.tenantId, user_id: orgAway.userId, revoked_at: null },
+        });
+
+        assert.equal(liveAwayBefore >= 2, true);
+
+        const armA = await credentialService.changePasswordWithIdentityHook(
+          actorAway,
+          "SenhaAwayNova123!",
+          roleRealService,
+        );
+
+        assert.equal(armA.unlinked, true, "vínculo 'religacao' com 2+ vínculos desvincula na troca de senha");
+        assert.equal(armA.revokedSessions, liveAwayBefore, "as sessões do par desvinculado morrem na mesma transação");
+
+        const liveAwayAfter = await adminClient.authSession.count({
+          where: { tenant_id: orgAway.tenantId, user_id: orgAway.userId, revoked_at: null },
+        });
+
+        assert.equal(liveAwayAfter, 0);
+
+        const [awayLinkAfter] = await adminClient.$queryRaw<Array<{ identity_id: string; attached_via: string }>>`
+          SELECT identity_id, attached_via FROM auth_identity_links
+          WHERE tenant_id = ${orgAway.tenantId}::uuid AND user_id = ${orgAway.userId}::uuid
+        `;
+
+        assert.equal(awayLinkAfter?.attached_via, "desvinculo");
+        assert.notEqual(awayLinkAfter?.identity_id, homeLink?.identity_id, "o par desvinculado ganhou identidade própria");
+
+        const reLoginAway = await requestJson(baseUrl, "/api/v1/auth/login", {
+          method: "POST",
+          body: { tenantId: orgAway.tenantId, email: hookEmail, password: "SenhaAwayNova123!" },
+        });
+
+        assert.equal(reLoginAway.status, 200, "a troca de senha e o desvínculo aconteceram na MESMA transação");
+
+        // E DEPOIS dos dois braços a trilha segue ilegível pela conexão efêmera — enquanto a
+        // privilegiada, escopada ao par deste caso, ganhou o evento 'desvinculo'.
+        const [trailByEphemeralAfter] = await ephemeral.client.$queryRaw<Array<{ count: number }>>`
+          SELECT count(*)::int AS count FROM auth_identity_link_events
+        `;
+        const [desvinculoVisible] = await adminClient.$queryRaw<Array<{ count: number }>>`
+          SELECT count(*)::int AS count FROM auth_identity_link_events
+          WHERE tenant_id = ${orgAway.tenantId}::uuid
+            AND user_id = ${orgAway.userId}::uuid
+            AND event = 'desvinculo'
+        `;
+
+        assert.equal(trailByEphemeralAfter?.count, 0, "o gancho decidiu certo SEM conseguir ler a trilha — é esta a prova");
+        assert.equal(desvinculoVisible?.count, 1, "o desvínculo do braço (a) está na trilha, lido só com privilégio");
       });
     } finally {
       if (server) {

@@ -3,6 +3,8 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { withRoleCatalogLock } from "./helpers/auth-identity-fixture.js";
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -23,16 +25,21 @@ if (!connectionString) {
     const roleName = `rls_test_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     const rolePassword = `rls-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-    await adminClient.$executeRawUnsafe(
-      `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
-    );
-    await adminClient.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
-    await adminClient.$executeRawUnsafe(
-      `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`,
-    );
-    await adminClient.$executeRawUnsafe(
-      `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`,
-    );
+    // B-O6R-01 ciclo 2 (A-1/B-5): este arquivo é o QUARTO escritor de catálogo do batch -db —
+    // CREATE ROLE/GRANT disputam pg_authid/pg_auth_members sob o paralelismo do node --test.
+    // Toma o MESMO advisory lock do arnês de identidade (helper exportado); os grants não mudam.
+    await withRoleCatalogLock(adminClient, async (tx) => {
+      await tx.$executeRawUnsafe(
+        `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
+      );
+      await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
+      await tx.$executeRawUnsafe(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`,
+      );
+      await tx.$executeRawUnsafe(
+        `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`,
+      );
+    });
 
     const client = new PrismaClient({
       adapter: new PrismaPg({
@@ -3136,8 +3143,12 @@ if (!connectionString) {
         },
       });
       await client.$disconnect();
-      await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
+      // Teardown da role no MESMO lock de catálogo (DROP OWNED/DROP ROLE também escrevem
+      // pg_authid/pg_auth_members e disputariam com os outros escritores do batch).
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
+        await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
+      });
       await adminClient.$disconnect();
     }
   });
