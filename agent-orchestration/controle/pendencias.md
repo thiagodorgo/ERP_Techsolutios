@@ -2057,6 +2057,29 @@ homônimo em organizações distintas é legal no modelo.
   (função elevada ANTES de `STAGING_DEPLOY_ENABLED`). status: ABERTA.
 - **`P-O6R-B01-IDP-SUBJECT`** — amarrar a identidade global ao `sub` do IdP (Cognito) quando a autenticação de
   produção entrar; hoje a identidade nasce dos vínculos provados por credencial local. status: ABERTA.
+- **`P-O6R-B01-TRILHA-ORFA-LIMPEZA`** (ciclo 3, C5 — 2026-08-19) — a trilha `auth_identity_link_events` da
+  base do dono carrega **231 linhas órfãs de origem** (medido em 2026-08-19 antes do F1: 231 de 508, todas
+  `event='backfill'`, apontando para organização que não existe mais) — despejadas pelo backfill SEM escopo
+  que as execuções do próprio bloco rodaram até o ciclo 2. **O canal do backfill está fechado** (C1: sentença
+  escopada + tripwire; a sonda F4 mediu 0 instantes com terceiro no conjunto-alvo em 713 amostras durante o
+  F1). **Mas a medição F4 do ciclo 3 deu delta +12 (231 → 243 nas 12 execuções, ≈1 por iteração)** — o
+  condicional do C5 disparou, e a ATRIBUIÇÃO está fechada com evidência (execução isolada por suíte):
+  o produtor residual é `tests/core-saas-role-authority-db.test.ts` (+1 órfã por execução, sozinha; as demais
+  candidatas, 0). Mecanismo: a suíte assina JWT direto e dirige POST/PATCH `/users` autenticado sob
+  `CORE_SAAS_PERSISTENCE=prisma`; o caminho de produção normaliza PREGUIÇOSAMENTE o par do token
+  (`normalizePairIdentity`, §3.4 — por desenho) criando vínculo + evento de nascimento; o teardown da suíte
+  apaga o tenant sem conhecer a trilha → evento órfão indelével. **NOTA DE PREMISSA**: o plano do ciclo 3
+  previa este delta como "suíte irmã que não conhece a trilha" e prescrevia transferência ao bloco irmão —
+  mas a suíte medida NASCEU NESTE BLOCO (ciclo 2, B-4). O desenvolvedor do ciclo 3 NÃO remendou (o plano
+  proíbe conserto improvisado neste ramo) e NÃO decidiu o destino: cabe à junta escolher entre (a) o teardown
+  da suíte adotar o idioma escopado do arnês (`cleanupIdentityFixture`) — o que toca a trilha e exige a
+  bênção da junta pela garantia declarada — ou (b) transferir a `P-O6R-ARNES-ISOLAMENTO`. Evidência
+  espelhada lá. **As existentes FICAM** (244 no ato deste registro: 231 de origem + 12 do F1 + 1 da execução
+  de atribuição; o número cresce ≈1 por execução da suíte contra a base viva até a junta decidir o destino):
+  alcançá-las exige contornar o trigger append-only — a quebra de garantia que o próprio bloco declara
+  inviolável — e isso é **decisão de junta com privilégio** (higiene na base viva, mesma classe de
+  `P-O6R-B01-IDENTIDADE-ORFA`), nunca linha de teardown. A CI **não é afetada**: o banco do job nasce limpo
+  a cada execução. status: ABERTA.
 
 ## P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-003 (P1) — **BLOQUEIA o financeiro**
 
@@ -2867,3 +2890,22 @@ vermelha pelo mesmo motivo nas três formas · **P8** *"verde em N execuções"*
 declarados · **P9** o plano não afirma propriedade que a entrega não tem.
 
 Enunciadas na íntegra em `agent-orchestration/omega/reprovacoes/R-B-O6R-01-ciclo3-premissa.md`.
+
+### Evidência do condicional C5 do ciclo 3 (2026-08-19) — o produtor residual da trilha órfã, ATRIBUÍDO
+
+A medição F4 do ciclo 3 (contador de órfãs antes/depois de 12 execuções F1 na forma exata do job
+`backend-postgres`) deu **delta +12 (231 → 243, ≈1 por iteração)** — MESMO com o backfill escopado (C1) e a
+sonda medindo **0 instantes** com terceiro no conjunto-alvo (713 amostras). Atribuição por execução isolada:
+**`tests/core-saas-role-authority-db.test.ts`** sozinha produz **+1 órfã por execução**
+(`persistent-rbac-middleware` e `checklist-routes-db`: 0). Mecanismo: JWT assinado direto + POST/PATCH
+`/users` autenticado sob `CORE_SAAS_PERSISTENCE=prisma` → o caminho de produção normaliza preguiçosamente o
+par do token (`normalizePairIdentity`, §3.4 — comportamento de produção por desenho) criando vínculo +
+evento de nascimento na trilha; o teardown da suíte apaga o tenant sem conhecer a trilha → evento órfão
+indelével.
+
+**Nota de premissa, sem maquiagem:** o plano do ciclo 3 prescrevia para este ramo "atribuição e
+transferência para cá", assumindo o produtor como *suíte irmã que não conhece a trilha* — mas a suíte medida
+**nasceu no próprio B-O6R-01** (ciclo 2, B-4). O desenvolvedor do ciclo 3 registrou a evidência nas duas
+pontas (aqui e em `P-O6R-B01-TRILHA-ORFA-LIMPEZA`) e **não remendou nem decidiu o destino** — a escolha
+entre (a) teardown da suíte adotar o idioma escopado do arnês (`cleanupIdentityFixture`) ou (b) tratar aqui
+junto do arranjo é da junta.

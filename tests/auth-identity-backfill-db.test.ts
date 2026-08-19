@@ -17,10 +17,63 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // -----------------------------------------------------------------------------------------------
 // B-O6R-01 — grupo identidade/backfill (§7): o SQL do backfill é EXTRAÍDO DA MIGRAÇÃO REAL
 // (entre os marcadores BACKFILL:BEGIN/END) e reexecutado NAS DUAS configurações (V-DEVOPS-1/
-// dba 2): privilegiada (cobre a base) e role efêmera NOSUPERUSER (lê ZERO, cria ZERO — a ponta
-// silenciosa do §3.2.3 como ASSERÇÃO, não surpresa). Nenhuma detecção depende do output do
-// migrate (que descarta warnings — medido pelas duas cadeiras).
+// dba 2): privilegiada e role efêmera NOSUPERUSER (lê ZERO, cria ZERO — a ponta silenciosa do
+// §3.2.3 como ASSERÇÃO, não surpresa). Nenhuma detecção depende do output do migrate (que
+// descarta warnings — medido pelas duas cadeiras).
+//
+// CICLO 3 (plano B-O6R-01-ciclo3, C1 — a escolha escopada do P2, com a perda declarada):
+// esta suíte roda num LOTE PARALELO contra um banco compartilhado, e a sentença verbatim da
+// migração escreve para TODO usuário da base sem vínculo — enquanto 22 suítes irmãs criam e
+// apagam usuários (23503/23505 medidos no veto do ciclo 2, e 231 eventos órfãos INDELÉVEIS na
+// trilha append-only da base do dono). Por isso a suíte executa a sentença ESCOPADA aos tenants
+// da própria fixture (scopeBackfillSql, abaixo — fail-closed dos dois lados: âncora ausente
+// reprova, e a ida-e-volta prova que remover a cláusula devolve o verbatim byte-idêntico).
+//
+// O QUE SE PERDE, SEM MAQUIAGEM: a suíte deixa de executar o SQL byte-idêntico da migração.
+// Essa prova volta para onde sempre foi legítima — o `prisma migrate deploy` da CI, que roda o
+// verbatim numa base recém-criada onde ele é estruturalmente o ÚNICO escritor. Aqui ficam as
+// propriedades da sentença: por-usuário (jamais por e-mail), idempotência do NOT EXISTS, evento
+// na mesma cadeia, a ponta silenciosa — e o TRIPWIRE do terceiro simulado, que fica vermelho se
+// alguém voltar a rodar o statement sem escopo.
 // -----------------------------------------------------------------------------------------------
+
+// Âncora textual EXATA no WHERE do CTE `missing` do verbatim extraído (linhas re-unidas com \n).
+const BACKFILL_SCOPE_ANCHOR = "\n  WHERE NOT EXISTS (";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Injeta UMA cláusula de escopo por âncora textual exata. Fail-closed dos dois lados:
+//   1. âncora ausente (a migração mudou de forma) → assert reprova — o teste NUNCA degrada para
+//      rodar sem escopo em silêncio;
+//   2. ida-e-volta — removida a cláusula injetada, o texto volta byte-idêntico ao verbatim.
+function scopeBackfillSql(verbatim: string, tenantIds: readonly string[]): string {
+  assert.ok(tenantIds.length > 0, "escopo vazio: a sentença escopada exige ao menos um tenant");
+
+  for (const tenantId of tenantIds) {
+    assert.match(tenantId, UUID_PATTERN, "escopo aceita apenas UUIDs (fail-closed contra injeção)");
+  }
+
+  assert.equal(
+    verbatim.split(BACKFILL_SCOPE_ANCHOR).length - 1,
+    1,
+    "a âncora do WHERE do CTE missing precisa existir EXATAMENTE uma vez no verbatim — se a migração mudou de forma, este teste reprova em vez de rodar sem escopo",
+  );
+
+  const scopeClause = `\n  WHERE u.tenant_id = ANY('{${tenantIds.join(",")}}'::uuid[])\n    AND NOT EXISTS (`;
+  const scoped = verbatim.replace(BACKFILL_SCOPE_ANCHOR, scopeClause);
+
+  assert.equal(
+    scoped.split(scopeClause).length - 1,
+    1,
+    "a cláusula injetada precisa aparecer exatamente uma vez no texto escopado",
+  );
+  assert.equal(
+    scoped.replace(scopeClause, BACKFILL_SCOPE_ANCHOR),
+    verbatim,
+    "ida-e-volta: removida a cláusula de escopo, o texto tem de voltar byte-idêntico ao verbatim",
+  );
+
+  return scoped;
+}
 
 function extractBackfillSql(): string {
   const migration = readFileSync(
@@ -62,6 +115,9 @@ if (!connectionString) {
     const ephemeral = await createEphemeralRole(adminClient, connectionString);
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const tenantIds: string[] = [];
+    // Tenants do tripwire: entram no TEARDOWN, nunca no escopo de um backfill — e nunca em
+    // `tenantIds`, cujas asserções finais exigem zero usuário sem vínculo.
+    const tripwireTenantIds: string[] = [];
     const backfillSql = extractBackfillSql();
 
     try {
@@ -84,8 +140,24 @@ if (!connectionString) {
         data: { tenant_id: tenantB.id, name: "BF B", email },
       });
 
-      await t.test("configuração PRIVILEGIADA: cobre a base; homônimos nascem em identidades DISTINTAS", async () => {
-        await adminClient.$executeRawUnsafe(backfillSql);
+      // TERCEIRO SIMULADO (tripwire do C1): tenant+usuário sem vínculo que NUNCA entra na lista
+      // de escopo — o papel das 22 suítes irmãs, reproduzido de forma determinística. Vai para o
+      // teardown (lista própria), mas jamais para um scopeBackfillSql.
+      const tripwireTenant = await adminClient.tenant.create({
+        data: { name: `BF Terceiro ${suffix}`, slug: `bf-terceiro-${suffix}` },
+      });
+      const tripwireUser = await adminClient.user.create({
+        data: {
+          tenant_id: tripwireTenant.id,
+          name: "BF Terceiro",
+          email: `bf-terceiro-${suffix}@example.com`,
+        },
+      });
+
+      tripwireTenantIds.push(tripwireTenant.id);
+
+      await t.test("configuração PRIVILEGIADA, sentença ESCOPADA: homônimos nascem em identidades DISTINTAS", async () => {
+        await adminClient.$executeRawUnsafe(scopeBackfillSql(backfillSql, [tenantA.id, tenantB.id]));
 
         const links = await adminClient.$queryRaw<
           Array<{ user_id: string; identity_id: string; attached_via: string }>
@@ -123,7 +195,7 @@ if (!connectionString) {
       await t.test("idempotência: reexecutar cria ZERO — inclusive zero eventos novos", async () => {
         const eventsBefore = await countEvents(adminClient, [tenantA.id, tenantB.id]);
 
-        await adminClient.$executeRawUnsafe(backfillSql);
+        await adminClient.$executeRawUnsafe(scopeBackfillSql(backfillSql, [tenantA.id, tenantB.id]));
 
         const links = await adminClient.authIdentityLink.count({
           where: { tenant_id: { in: [tenantA.id, tenantB.id] } },
@@ -148,7 +220,7 @@ if (!connectionString) {
 
         // …e o backfill rodando SEM privilégio: FORCE RLS sem GUC lê zero usuários → verde
         // criando NADA. É exatamente o que aconteceria num migrate com role sem BYPASSRLS.
-        await ephemeral.client.$executeRawUnsafe(backfillSql);
+        await ephemeral.client.$executeRawUnsafe(scopeBackfillSql(backfillSql, [tenantC.id]));
 
         const links = await adminClient.authIdentityLink.count({
           where: { tenant_id: tenantC.id, user_id: userC.id },
@@ -157,7 +229,7 @@ if (!connectionString) {
         assert.equal(links, 0, "a role sem privilégio termina VERDE tendo criado nada — detectável só pelos discriminantes");
 
         // Fecho: a configuração privilegiada cobre o que a silenciosa deixou.
-        await adminClient.$executeRawUnsafe(backfillSql);
+        await adminClient.$executeRawUnsafe(scopeBackfillSql(backfillSql, [tenantC.id]));
 
         const linksAfter = await adminClient.authIdentityLink.count({
           where: { tenant_id: tenantC.id, user_id: userC.id },
@@ -213,8 +285,21 @@ if (!connectionString) {
 
         void userB;
       });
+
+      await t.test("TRIPWIRE do terceiro simulado: fora da lista de escopo, continua SEM vínculo e SEM evento após todas as execuções", async () => {
+        // Determinístico — dispensa concorrência e dispensa vermelho ocasional: se qualquer
+        // execução acima tivesse rodado o verbatim (sem escopo), o terceiro já estaria vinculado
+        // e com evento indelével. É a guarda de regressão do C1 (drill A a prova mutando).
+        const links = await adminClient.authIdentityLink.count({
+          where: { tenant_id: tripwireTenant.id, user_id: tripwireUser.id },
+        });
+        const events = await countEvents(adminClient, [tripwireTenant.id]);
+
+        assert.equal(links, 0, "o terceiro simulado NUNCA entra no conjunto-alvo da sentença escopada");
+        assert.equal(events, 0, "zero evento para o terceiro: a trilha append-only não recebe escrita fora de escopo");
+      });
     } finally {
-      await cleanupIdentityFixture(adminClient, tenantIds);
+      await cleanupIdentityFixture(adminClient, [...tenantIds, ...tripwireTenantIds]);
       await ephemeral.drop();
       await adminClient.$disconnect();
     }

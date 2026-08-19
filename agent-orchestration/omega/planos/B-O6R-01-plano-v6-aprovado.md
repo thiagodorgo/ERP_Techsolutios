@@ -405,3 +405,28 @@ node --check Kpis/app.js && git diff --check
 | **Deliberações do dono** | Religação neste bloco; login sem organização fecha; identidade global. **Nenhuma reaberta.** |
 
 *Regra desta rodada, cumprida: nenhuma frase nova sobre ambiente, ferramenta ou pipeline sem medição ou rótulo. Âncoras do v6 relidas por leitura direta na `main` `56c84d6` em 2026-08-16 (árvore limpa). Baselines dos guards medidos nesta releitura: `set_config` em `src/` = 1 (`rls.ts:15`) · `authType: "jwt"` em `src/` = 2 (`authenticated-actor.middleware.ts:43` + `auth.types.ts:135`) · `session_replication_role` em `src/` = 0 · `GRANT` / `SECURITY DEFINER` / `RAISE WARNING|NOTICE` / `DO $$` em `prisma/migrations/**` = 0 · `app_user` = 1 ocorrência (`docs/deployment.md:447`, prosa) · 30 arquivos de `tests/` com `session_replication_role`.*
+
+---
+
+## ERRATA (apensada — ciclo 3, C6/P9, 2026-08-19; zero linhas removidas acima)
+
+**A frase da linha 277 deste plano, verbatim:**
+
+> **CI:** as suítes novas rodam **nos dois jobs** (§7); no `backend-postgres` entram na lista `SUITES` **junto com `tests/rls-tenant-isolation.test.ts`** (hoje ausente da lista — `ci.yml:165-181`), sob o guard de zero pulos (`:186-191`). O teardown das append-only usa `SET LOCAL session_replication_role='replica'` **na conexão privilegiada** (§7) — nenhuma suíte muda catálogo.
+
+**Ao pé da letra, a oração final — "nenhuma suíte muda catálogo" — é FALSA.** O próprio §7 deste plano exige
+role efêmera `NOSUPERUSER` para as suítes -db — e role efêmera **só existe mudando catálogo** (`CREATE ROLE`/
+concessões/`DROP` escrevem `pg_authid`/`pg_auth_members`/`pg_default_acl`). O plano proibiu `DISABLE TRIGGER`
+citando exatamente "catálogo global + paralelismo do `npm test`" e, na mesma página, afirmou a propriedade
+contrária. **Foi essa frase que o desenvolvedor do ciclo 2 tinha diante de si ao escrever "quatro escritores"
+no comentário do arnês** — a enumeração errada que deixou o quinto escritor fora do lock (o `XX000` que o
+orquestrador provou na junta do ciclo 2). A cadeia causal está exposta em
+`agent-orchestration/omega/reprovacoes/R-B-O6R-01-ciclo3-premissa.md`.
+
+**A frase substituta, enunciando só o que C2+C3 do ciclo 3 produzem:** as suítes deste bloco **mudam catálogo,
+sim** — toda sequência de escrita passa pelo arnês (`withRoleCatalogLock`,
+`tests/helpers/auth-identity-fixture.ts`, que enumera os escritores reais: quem toma o lock e quem é anterior
+ao bloco), e um escritor novo fora dessa fila fica **vermelho** no ratchet
+`tests/db-catalog-write-guard.test.ts` (allowlist congelada por arquivo e por contagem; alcance lexical
+declarado). Isolamento real de catálogo entre suítes é arranjo — e é o bloco irmão
+(`P-O6R-ARNES-ISOLAMENTO`), não uma propriedade que este plano possa afirmar.

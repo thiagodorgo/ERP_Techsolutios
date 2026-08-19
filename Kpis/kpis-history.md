@@ -2078,3 +2078,52 @@ Números deste snapshot, todos de execução real desta árvore: `npm test` **25
 declarados**; batch `-db` na forma exata do job `backend-postgres` **145/145 · 0 pulos · contagem idêntica
 em 3 execuções** (fatia 2: 16 execuções idênticas com 142, antes dos 3 casos novos). Flutter `864/864` e
 smoke web `1126/1126` **carregados** (trilhas não tocadas — §C3.3).
+
+## 2026-08-19 — B-O6R-01 (PR pendente) — ciclo 3: o escopo entra na sentença, e a medição decide o resto
+
+O ciclo 2 morreu por *"verde onde ninguém mediu"*: o batch `-db` era vermelho em 4 de 12 na forma exata do
+job `backend-postgres`, por duas causas que o próprio bloco introduziu — o backfill da suíte rodando a
+sentença da migração **sem escopo sobre a base inteira** (23503/23505 contra 22 suítes irmãs) e o **quinto
+escritor de catálogo** fora do advisory lock (`XX000`). O crítico do ciclo 3 reabriu a premissa: o defeito é
+de **arranjo**, todo lock é workaround, e o orquestrador dividiu a entrega — fica no bloco só o que ele
+criou (`R-B-O6R-01-ciclo3-premissa.md`).
+
+O que o ciclo 3 entregou (plano `B-O6R-01-ciclo3-correcao-v1.md`, C1–C6): **C1** — `scopeBackfillSql`
+injeta a cláusula de escopo por âncora textual exata, fail-closed dos dois lados (âncora ausente → reprova;
+ida-e-volta → byte-idêntico ao verbatim), com **tripwire do terceiro simulado**; a prova do verbatim volta
+ao `prisma migrate deploy` da CI, onde ele é estruturalmente o único escritor (perda declarada). **C2** — a
+sequência de catálogo do "dois lados do DONO" virou `createCloneOwnerProbe` no arnês, inteira dentro de
+`withRoleCatalogLock`, com prova de fila (waiter em `pg_locks` + conclusão só após o release) e a
+enumeração REAL dos escritores no comentário (correção vinculante nº 4). **C3** — ratchet lexical
+`db-catalog-write-guard` com allowlist congelada por arquivo e contagem (alcance declarado: maiúsculas;
+concatenação escapa). **C4** — o varredor cobre as duas famílias do arnês; as 5 órfãs legadas
+`o6r_clone_owner_` foram recolhidas na primeira execução. **C5** — as 231 linhas órfãs da trilha FICAM
+(`P-O6R-B01-TRILHA-ORFA-LIMPEZA`; alcançá-las contorna o append-only → junta com privilégio). **C6** —
+errata apensada ao plano v6: a frase "nenhuma suíte muda catálogo" é falsa ao pé da letra, e foi ela que o
+dev do ciclo 2 tinha diante de si ao escrever "quatro escritores".
+
+**Os 4 drills, todos vermelhos quando mutados e revertidos byte-idênticos:** A (verbatim no lugar do
+escopado → tripwire `1 !== 0`) · B (arquivo fora da allowlist → vermelho; um GRANT a mais em arquivo
+congelado → `contagem 6 difere da congelada 5`) · C (helper sem o lock → `true !== false`, o helper
+concluiu antes do release) · D (regex do sweep revertida → órfã sintética viva, `1 !== 0`).
+
+**A prova, com N e forma declarados (§6):** F1 — **12/12 exit 0** na forma exata do job (`env:` completo,
+`db:seed` a cada iteração, `pipefail`, exit de `PIPESTATUS[0]`), denominador **148 idêntico nas 12** (145 do
+ciclo 2 + 3 casos novos), `grep XX000|23503|23505|40P01` = **0 nos 12 taps**, 0 pulos. F2 — suíte inteira
+3×, memory, sem seed: **2562/2572 · fail 0 · 10 pulos declarados**, denominador idêntico (smoke da segunda
+forma, não prova de paridade). F4 — sonda somente-leitura sobre o SELECT **escopado** durante o F1: **713
+amostras, 0 instantes com linha de terceiro** no conjunto-alvo (contra 38,9% no arranjo vetado). Ambiente
+declarado: `availableParallelism()=8`, teto efetivo do `node --test` = 7 (P1 fica fora do bloco).
+
+**O que a medição contrariou no plano, dito sem maquiagem:** o contador de órfãs deu **231 → 243 (+12, ≈1
+por iteração)** — o condicional do C5 disparou. A atribuição, fechada por execução isolada, aponta
+`core-saas-role-authority-db` — suíte **do próprio bloco** (ciclo 2/B-4), não a "suíte irmã" que o plano
+presumia: o JWT direto + PATCH/POST `/users` sob `prisma` aciona a normalização preguiçosa (§3.4, por
+desenho), e o teardown apaga o tenant sem conhecer a trilha. Evidência registrada nas duas pendências
+(`P-O6R-B01-TRILHA-ORFA-LIMPEZA` + `P-O6R-ARNES-ISOLAMENTO`) **sem remendo** — o plano proíbe conserto
+improvisado neste ramo, e a escolha do destino é da junta. F3 (CI no PR) não roda neste ciclo: sem PR, por
+instrução do orquestrador.
+
+Números deste snapshot, todos de execução real desta árvore: `npm test` **2562/2572 · fail 0 · 10 pulos**;
+bateria focada **92/92** (22 memory + 69 `-db` + 1 ratchet, contagem idêntica em 2 execuções). Flutter
+`864/864` e smoke web `1126/1126` **carregados** (trilhas não tocadas — §C3.3).

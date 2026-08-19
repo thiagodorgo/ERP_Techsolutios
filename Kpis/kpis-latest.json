@@ -1,6 +1,6 @@
 {
-  "snapshot_date": "2026-08-18",
-  "version": "B-O6R-01-IDENTIDADE-AUTORIDADE",
+  "snapshot_date": "2026-08-19",
+  "version": "B-O6R-01-CICLO3-CORRECAO",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
@@ -10,33 +10,33 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c).",
-    "status_label": "ciclo 2 de correção entregue — aguardando junta do PR"
+    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c). Ciclo 3 (correção pós-veto J-O6R-B01-ciclo2 + premissa reaberta R-ciclo3): o backfill da suíte ganhou ESCOPO (sentença escopada fail-closed com ida-e-volta byte-idêntica + tripwire do terceiro simulado; a prova do verbatim volta ao migrate deploy da CI, perda declarada), o quinto escritor de catálogo entrou no lock (createCloneOwnerProbe no arnês + prova de fila em pg_locks), ratchet lexical de escrita de catálogo (allowlist congelada por arquivo e contagem), varredor cobrindo as duas famílias do arnês (5 órfãs legadas recolhidas), errata apensada ao plano v6 (P9) e pendência P-O6R-B01-TRILHA-ORFA-LIMPEZA (231 linhas órfãs FICAM; destino é junta). F1 12/12 verde na forma exata do job (denominador 148 idêntico, zero XX000/23503/23505/40P01); F4: 0 instantes com terceiro no alvo e atribuição do delta residual (+12) a core-saas-role-authority-db, registrada sem remendo (decisão de destino é da junta).",
+    "status_label": "ciclo 3 de correção entregue — aguardando junta do PR"
   },
   "metrics": {
     "flutter_tests": {
       "value": 864,
       "total": 864,
       "display": "864/864",
-      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado. [Ciclo 2: valor CARREGADO — a trilha Flutter não foi tocada pela correção; sem reexecução nesta fatia (§C3.3).]"
+      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado. [Ciclos 2 e 3: valor CARREGADO — a trilha Flutter não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "frontend_smoke_tests": {
       "value": 1126,
       "total": 1126,
       "display": "1126/1126",
-      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclo 2: valor CARREGADO — a trilha web não foi tocada pela correção; sem reexecução nesta fatia (§C3.3).]"
+      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "backend_tests": {
-      "value": 2557,
-      "total": 2567,
-      "display": "2557/2567",
-      "note": "Execução real do ciclo 2 (fatia 3, árvore desta entrega): 2557/2567 · fail 0 · 10 pulos declarados (os 9 históricos de suítes -db sem env específico + core-saas-role-authority-db, que na bateria local memory se declara pulada e roda no job backend-postgres sob o guard de zero pulos). O número do ciclo 1 (2547/2556 · fail 0) NÃO reproduzia — achado B-6 do R-B-O6R-01-ciclo1: a reexecução independente deu 2542/2552 · fail 1 · exit 1 (corrida de catálogo no arnês -db, A-1; corrigida na fatia 2 com pg_advisory_xact_lock + sweep de 18 roles órfãs). Batch -db na forma exata do job backend-postgres: 145/145 · 0 pulos · contagem idêntica em 3 execuções nesta fatia (na fatia 2: 16 execuções idênticas com 142, antes dos 3 casos novos desta fatia)."
+      "value": 2562,
+      "total": 2572,
+      "display": "2562/2572",
+      "note": "Execução real do ciclo 3 (F2, árvore desta entrega): 2562/2572 · fail 0 · 10 pulos declarados (os mesmos do ciclo 2) · denominador IDÊNTICO em 3 execuções. +5 sobre o ciclo 2 (2557/2567): tripwire do terceiro simulado (backfill), prova de fila do quinto escritor + órfã sintética do varredor (fn-db), ratchet db-catalog-write-guard, e 1 guard de KPI que entrou na branch entre os ciclos (8492587). Batch -db na forma EXATA do job backend-postgres (env completo + db:seed a cada iteração + exit de PIPESTATUS[0]): 12/12 exit 0 · 148/148 idêntico nas 12 · grep XX000|23503|23505|40P01 = 0 nos 12 taps · 0 pulos. Ambiente declarado: availableParallelism=8, teto efetivo do node --test = 7 (P1 — declarado, não consertado)."
     },
     "backend_contract_tests_focused": {
-      "value": 88,
-      "total": 88,
-      "display": "88/88",
-      "note": "Bateria focada do B-O6R-01 REMEDIDA no ciclo 2 (execução real, casos-folha, composição declarada): 22 no grupo memory (auth-invariant-guards com o guard 10c + core-saas-role-authority, sob CORE_SAAS_PERSISTENCE=memory, a forma do runner) + 66 no grupo -db (os 9 arquivos do bloco listados no job backend-postgres, role efêmera NOSUPERUSER — 2 execuções com contagem idêntica). Substitui o 89/89 do ciclo 1, cuja composição de arquivos não estava declarada e antecedia as suítes novas do ciclo 2."
+      "value": 92,
+      "total": 92,
+      "display": "92/92",
+      "note": "Bateria focada do B-O6R-01 REMEDIDA no ciclo 3 (execução real, casos-folha, composição declarada): 22 no grupo memory (auth-invariant-guards + core-saas-role-authority, sob CORE_SAAS_PERSISTENCE=memory, a forma do runner) + 69 no grupo -db (os 9 arquivos do bloco listados no job backend-postgres — 66 do ciclo 2 + tripwire do backfill, prova de fila e órfã sintética do ciclo 3) + 1 do ratchet novo db-catalog-write-guard (estático). Contagem idêntica em 2 execuções. Substitui o 88/88 do ciclo 2 pela mesma régua: casos novos entram na composição, declarados."
     },
     "flutter_modules": {
       "value": 17,

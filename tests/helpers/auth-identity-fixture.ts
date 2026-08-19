@@ -29,22 +29,54 @@ export type EphemeralRole = {
 //
 // CREATE ROLE/GRANT/DROP escrevem em linhas COMPARTILHADAS do catálogo do Postgres (`pg_authid`,
 // `pg_auth_members`, `pg_default_acl`). `node --test` roda os arquivos de teste em PARALELO — em
-// processos distintos —, e quatro suítes do batch -db escrevem catálogo ao mesmo tempo; a disputa
-// produz `XX000: tuple concurrently updated` (~25% medido no ciclo 1), o arquivo aborta e a suíte
-// roda MENOS testes reportando um total plausível. Por isso toda a sequência de catálogo roda numa
-// transação com `pg_advisory_xact_lock` — lock DO SERVIDOR, porque o paralelismo é entre processos
-// e um mutex em JS não alcançaria. A constante é DISTINTA da de provisioning (medida:
-// `scripts/provision-rbac.ts:67` usa `20260863`): os dois fluxos não disputam a mesma fila.
-// Timeout da transação EXPLÍCITO: com os quatro escritores enfileirando no lock, o default de 5s
-// do Prisma viraria um flake novo.
+// processos distintos —, e a disputa produz `XX000: tuple concurrently updated` (~25% medido no
+// ciclo 1), o arquivo aborta e a suíte roda MENOS testes reportando um total plausível. Por isso
+// toda a sequência de catálogo roda numa transação com `pg_advisory_xact_lock` — lock DO
+// SERVIDOR, porque o paralelismo é entre processos e um mutex em JS não alcançaria. A constante é
+// DISTINTA da de provisioning (medida: `scripts/provision-rbac.ts:67` usa `20260863`): os dois
+// fluxos não disputam a mesma fila. Timeout da transação EXPLÍCITO: com os escritores
+// enfileirando no lock, o default de 5s do Prisma viraria um flake novo.
+//
+// QUEM ESCREVE CATÁLOGO NESTE REPOSITÓRIO (enumeração real — ciclo 3, correção vinculante nº 4 da
+// junta J-O6R-B01-ciclo2; a frase anterior dizia "quatro suítes" e a execução tinha CINCO):
+//
+//   Tomam ESTE lock (todos via este arnês ou importando `withRoleCatalogLock`):
+//     1. este helper — `createEphemeralRole`/`drop` + o sweep de órfãs (usado por
+//        auth-identity-backfill-db, auth-identity-link-events-db, auth-identity-role-real-db e
+//        auth-login-candidates-fn-db);
+//     2. `tests/rls-tenant-isolation.test.ts` (CREATE ROLE/grants da role `rls_test_*`);
+//     3. `tests/auth-identity-link-events-db.test.ts` (DDL da tabela-rascunho M-1 + OWNER TO);
+//     4. `createCloneOwnerProbe` (abaixo) — o QUINTO escritor, a sequência do subteste "dois
+//        lados do DONO" que rodava FORA do lock no ciclo 2 (`XX000` provado pelo orquestrador) e
+//        foi movida para cá no ciclo 3.
+//
+//   NÃO tomam o lock e são ANTERIORES ao bloco (fora do batch -db do job backend-postgres; o
+//   destino deles é o bloco irmão — `P-O6R-ARNES-ISOLAMENTO` em agent-orchestration/controle/
+//   pendencias.md): `tests/audit-security.test.ts` (prefixo audit_rls_),
+//   `tests/impound-process-checklist-link-schema.test.ts` (vid_link_rls_) e
+//   `tests/vehicle-identity-schema.test.ts` (vid_rls_test_).
+//
+//   Detector de escritor NOVO: `tests/db-catalog-write-guard.test.ts` — ratchet lexical com
+//   allowlist congelada por arquivo e por contagem; suíte nova com escrita de catálogo fica
+//   vermelha em vez de entrar despercebida.
 // -----------------------------------------------------------------------------------------------
-const ROLE_CATALOG_ADVISORY_LOCK = 20268801n;
+export const ROLE_CATALOG_ADVISORY_LOCK = 20268801n;
 const ROLE_CATALOG_TX_OPTIONS = { maxWait: 30_000, timeout: 30_000 } as const;
 
-// Idade a partir da qual uma role `o6r_b01_*` deixada para trás é considerada órfã (o timestamp
-// embutido no nome é o `Date.now()` da criação). 60 min: nenhuma execução legítima do batch vive
-// tanto; roles da execução corrente nunca são alcançadas.
+// Idade a partir da qual uma role do namespace do arnês deixada para trás é considerada órfã (o
+// timestamp embutido no nome é o `Date.now()` da criação). 60 min: nenhuma execução legítima do
+// batch vive tanto; roles da execução corrente nunca são alcançadas. P5 por desenho: role deixada
+// por SIGKILL é recolhida pela PRÓXIMA execução — o varredor não depende de teardown do processo
+// que morreu.
 const ORPHAN_ROLE_MAX_AGE_MS = 60 * 60 * 1000;
+
+// As DUAS famílias de role que o próprio arnês cria (ciclo 3, C4): `o6r_b01_` (role efêmera de
+// conexão) e `o6r_clone_owner_` (dona do clone da função elevada — `createCloneOwnerProbe`).
+// O grupo de sufixo é OPCIONAL porque as 5 órfãs legadas do ciclo 2 nasceram sem ele
+// (`o6r_clone_owner_<timestamp>`); as novas sempre o carregam. Prefixos ALHEIOS (`rls_test_`,
+// `audit_rls_`, `vid_link_rls_`, `vid_rls_test_`) NÃO são tocados: são do bloco irmão
+// (P-O6R-ARNES-ISOLAMENTO), e varrê-los daqui seria o improviso que a decisão de escopo proíbe.
+const ORPHAN_ROLE_NAME_PATTERN = /^o6r_(?:b01|clone_owner)_(\d+)(?:_[0-9a-f]+)?$/;
 
 export async function withRoleCatalogLock<T>(
   adminClient: PrismaClient,
@@ -57,19 +89,22 @@ export async function withRoleCatalogLock<T>(
   }, ROLE_CATALOG_TX_OPTIONS);
 }
 
-// Sweep de órfãs, SEMPRE dentro do lock de catálogo: exclusivamente roles do prefixo do PRÓPRIO
-// arnês (`o6r_b01_`) cujo timestamp embutido no nome seja mais velho que 60 min. É teardown do
-// próprio namespace — nunca curinga além disso (este repositório já teve incidente de mass-delete
-// na base viva). O que for dropado é reportado no stderr para ficar anexável ao relatório.
+// Sweep de órfãs, SEMPRE dentro do lock de catálogo: EXCLUSIVAMENTE as duas famílias do PRÓPRIO
+// arnês (`o6r_b01_%` e `o6r_clone_owner_%`) cujo timestamp embutido no nome seja mais velho que
+// 60 min. É teardown do próprio namespace — nunca curinga além disso (este repositório já teve
+// incidente de mass-delete na base viva). O que for dropado é reportado no stderr para ficar
+// anexável ao relatório.
 async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<string[]> {
   const rows = await tx.$queryRaw<Array<{ rolname: string }>>`
-    SELECT rolname FROM pg_roles WHERE rolname LIKE 'o6r_b01_%' ORDER BY rolname
+    SELECT rolname FROM pg_roles
+    WHERE rolname LIKE 'o6r_b01_%' OR rolname LIKE 'o6r_clone_owner_%'
+    ORDER BY rolname
   `;
   const cutoff = Date.now() - ORPHAN_ROLE_MAX_AGE_MS;
   const orphans = rows
     .map((row) => row.rolname)
     .filter((name) => {
-      const match = /^o6r_b01_(\d+)_[0-9a-f]+$/.exec(name);
+      const match = ORPHAN_ROLE_NAME_PATTERN.exec(name);
 
       if (!match) {
         return false;
@@ -87,7 +122,7 @@ async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<
 
   if (orphans.length > 0) {
     process.stderr.write(
-      `[o6r-arnes] sweep dropou ${orphans.length} role(s) órfã(s) o6r_b01_* (> 60 min):\n` +
+      `[o6r-arnes] sweep dropou ${orphans.length} role(s) órfã(s) o6r_b01_*/o6r_clone_owner_* (> 60 min):\n` +
         orphans.map((name) => `[o6r-arnes]   ${name}\n`).join(""),
     );
   }
@@ -136,6 +171,114 @@ export async function createEphemeralRole(
       });
     },
   };
+}
+
+export type CloneOwnerProbe = {
+  readonly roleName: string;
+  readonly functionName: string;
+  drop(): Promise<void>;
+};
+
+// -----------------------------------------------------------------------------------------------
+// Ciclo 3, C2 — o QUINTO escritor entra no lock. A sequência de catálogo do subteste "dois lados
+// do DONO" (CREATE ROLE dona NOSUPERUSER/NOBYPASSRLS + leitura concedida + clone SECURITY DEFINER
+// da função elevada + troca de dono) rodava na própria suíte, FORA do lock — o `XX000` residual
+// que o orquestrador provou na junta do ciclo 2. Aqui ela roda INTEIRA dentro de
+// `withRoleCatalogLock`, com teardown no mesmo lock e nome com sufixo aleatório (o ciclo 2
+// nomeava só com o timestamp e nenhum varredor conhecia o prefixo — 5 órfãs
+// `o6r_clone_owner_<timestamp>` ficaram vivas na base do dono; a família entrou no sweep, C4).
+// O clone reproduz o corpo da função elevada SEM os atributos de privilégio do original — é o
+// lado que a sonda sozinha não distingue: dono sem BYPASSRLS executa sem erro e o FORCE RLS
+// filtra tudo.
+// -----------------------------------------------------------------------------------------------
+export async function createCloneOwnerProbe(adminClient: PrismaClient): Promise<CloneOwnerProbe> {
+  const suffix = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const roleName = `o6r_clone_owner_${suffix}`;
+  const functionName = `o6r_clone_probe_${suffix}`;
+
+  await withRoleCatalogLock(adminClient, async (tx) => {
+    await tx.$executeRawUnsafe(`CREATE ROLE "${roleName}" NOLOGIN NOSUPERUSER NOBYPASSRLS`);
+    await tx.$executeRawUnsafe(
+      `GRANT SELECT ON public.users, public.local_auth_credentials, public.tenants TO "${roleName}"`,
+    );
+    await tx.$executeRawUnsafe(`
+      CREATE FUNCTION public.${functionName}(p_email text)
+      RETURNS TABLE (tenant_id uuid, user_id uuid)
+      LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+      AS $probe$
+        SELECT u.tenant_id, u.id
+        FROM public.users u
+        JOIN public.tenants t ON t.id = u.tenant_id
+        JOIN public.local_auth_credentials c ON c.tenant_id = u.tenant_id AND c.user_id = u.id
+        WHERE btrim(lower(p_email)) <> ''
+          AND u.email = btrim(lower(p_email))
+          AND u.status = 'active'
+          AND t.status = 'active'
+        ORDER BY u.tenant_id
+        LIMIT 4
+      $probe$;
+    `);
+    await tx.$executeRawUnsafe(
+      `ALTER FUNCTION public.${functionName}(text) OWNER TO "${roleName}"`,
+    );
+  });
+
+  return {
+    roleName,
+    functionName,
+    async drop(): Promise<void> {
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(`DROP FUNCTION IF EXISTS public.${functionName}(text)`);
+        await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
+        await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
+      });
+    },
+  };
+}
+
+// -----------------------------------------------------------------------------------------------
+// Instrumentação de PROVA do sweep (ciclo 3, C4 + drill D): cria uma role órfã SINTÉTICA — nome
+// com timestamp retrodatado além do corte de 60 min — para o teste afirmar que o varredor a
+// recolhe. Fail-closed: só nomeia dentro das duas famílias do próprio arnês; o drop de limpeza só
+// aceita nomes que casem o padrão do namespace (nunca alcança prefixo alheio).
+// -----------------------------------------------------------------------------------------------
+export async function createSyntheticOrphanRole(
+  adminClient: PrismaClient,
+  family: "o6r_b01" | "o6r_clone_owner",
+  ageMs: number,
+): Promise<string> {
+  const roleName = `${family}_${Date.now() - ageMs}_${Math.random().toString(16).slice(2)}`;
+
+  await withRoleCatalogLock(adminClient, async (tx) => {
+    await tx.$executeRawUnsafe(`CREATE ROLE "${roleName}" NOLOGIN NOSUPERUSER NOBYPASSRLS`);
+  });
+
+  return roleName;
+}
+
+export async function dropSyntheticOrphanRole(
+  adminClient: PrismaClient,
+  roleName: string,
+): Promise<void> {
+  assert.match(
+    roleName,
+    ORPHAN_ROLE_NAME_PATTERN,
+    "o drop de limpeza só aceita roles do namespace do próprio arnês",
+  );
+
+  await withRoleCatalogLock(adminClient, async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ rolname: string }>>`
+      SELECT rolname FROM pg_roles WHERE rolname = ${roleName}
+    `;
+
+    // Caso verde: o sweep já a recolheu — nada a fazer (DROP OWNED exigiria a role viva).
+    if (rows.length === 0) {
+      return;
+    }
+
+    await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
+    await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
+  });
 }
 
 export function buildConnectionStringForRole(

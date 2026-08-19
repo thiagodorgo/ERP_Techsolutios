@@ -5,8 +5,13 @@ import test from "node:test";
 
 import {
   cleanupIdentityFixture,
+  createCloneOwnerProbe,
   createEphemeralRole,
   createOrgWithUser,
+  createSyntheticOrphanRole,
+  dropSyntheticOrphanRole,
+  ROLE_CATALOG_ADVISORY_LOCK,
+  type CloneOwnerProbe,
 } from "./helpers/auth-identity-fixture.js";
 
 const connectionString = process.env.DATABASE_URL;
@@ -16,6 +21,12 @@ const connectionString = process.env.DATABASE_URL;
 // SECURITY DEFINER do repositório, seus filtros, seu teto interno, os dois lados do DONO e o
 // classificador da sonda exercido SOB a role efêmera (a única configuração em que o 42501
 // existe — sob a conexão `postgres` da CI ele seria inalcançável).
+//
+// CICLO 3 (C2): TODA sequência de catálogo saiu deste arquivo para o arnês
+// (`createCloneOwnerProbe`, inteira dentro do lock de catálogo) — este arquivo era o QUINTO
+// escritor, fora do lock (`XX000` provado na junta do ciclo 2). A condição é verificável pelo
+// ratchet `tests/db-catalog-write-guard.test.ts`: este arquivo fica FORA da allowlist, com zero
+// palavra-chave de escrita de catálogo.
 // -----------------------------------------------------------------------------------------------
 
 if (!connectionString) {
@@ -36,7 +47,7 @@ if (!connectionString) {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const tenantIds: string[] = [];
     const email = `fn-${suffix}@example.com`;
-    let cloneOwnerRole: string | undefined;
+    let cloneProbe: CloneOwnerProbe | undefined;
 
     try {
       // 5 organizações com o MESMO e-mail (uma acima do teto+1) + 1 inativa + 1 sem credencial.
@@ -142,8 +153,8 @@ if (!connectionString) {
         );
       });
 
-      await t.test("EXECUTE revogado: a role efêmera recebe 42501 (o SQLSTATE sobrevive até o chamador)", async () => {
-        // REVOKE ALL FROM PUBLIC na migração + nenhum GRANT: a role efêmera NÃO tem EXECUTE.
+      await t.test("EXECUTE ausente: a role efêmera recebe 42501 (o SQLSTATE sobrevive até o chamador)", async () => {
+        // A migração retira EXECUTE de PUBLIC e nunca o concede a ninguém: a role efêmera NÃO tem EXECUTE.
         await assert.rejects(
           listLoginCandidatesViaFunction(ephemeral.client, email),
           (error: unknown) => {
@@ -178,41 +189,17 @@ if (!connectionString) {
         assert.equal(outcome, "active", "dono superusuário (dev/CI): sonda limpa + catálogo com bypass");
       });
 
-      await t.test("dois lados do DONO: clone com dono NOSUPERUSER + GRANT SELECT retorna SEM exceção e ZERO linhas (RLS filtrando)", async () => {
+      await t.test("dois lados do DONO: clone com dono NOSUPERUSER e leitura concedida retorna SEM exceção e ZERO linhas (RLS filtrando)", async () => {
         // O lado que a sonda sozinha NÃO distingue (especialista C): dono sem BYPASSRLS executa
         // sem erro e o FORCE RLS filtra tudo — todo login anônimo morreria em 401 com sonda
-        // limpa. É a razão de 'active' ser CONJUNÇÃO.
-        cloneOwnerRole = `o6r_clone_owner_${Date.now()}`;
-        await adminClient.$executeRawUnsafe(
-          `CREATE ROLE "${cloneOwnerRole}" NOLOGIN NOSUPERUSER NOBYPASSRLS`,
-        );
-        await adminClient.$executeRawUnsafe(
-          `GRANT SELECT ON public.users, public.local_auth_credentials, public.tenants TO "${cloneOwnerRole}"`,
-        );
-        await adminClient.$executeRawUnsafe(`
-          CREATE FUNCTION public.auth_login_candidates_owner_probe_clone(p_email text)
-          RETURNS TABLE (tenant_id uuid, user_id uuid)
-          LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
-          AS $probe$
-            SELECT u.tenant_id, u.id
-            FROM public.users u
-            JOIN public.tenants t ON t.id = u.tenant_id
-            JOIN public.local_auth_credentials c ON c.tenant_id = u.tenant_id AND c.user_id = u.id
-            WHERE btrim(lower(p_email)) <> ''
-              AND u.email = btrim(lower(p_email))
-              AND u.status = 'active'
-              AND t.status = 'active'
-            ORDER BY u.tenant_id
-            LIMIT 4
-          $probe$;
-        `);
-        await adminClient.$executeRawUnsafe(
-          `ALTER FUNCTION public.auth_login_candidates_owner_probe_clone(text) OWNER TO "${cloneOwnerRole}"`,
-        );
+        // limpa. É a razão de 'active' ser CONJUNÇÃO. A sequência de catálogo inteira vive no
+        // arnês, dentro do lock (ciclo 3, C2 — este arquivo era o quinto escritor, fora dele).
+        cloneProbe = await createCloneOwnerProbe(adminClient);
 
-        const rows = await adminClient.$queryRaw<unknown[]>`
-          SELECT * FROM public.auth_login_candidates_owner_probe_clone(${email})
-        `;
+        const rows = await adminClient.$queryRawUnsafe<unknown[]>(
+          `SELECT * FROM public.${cloneProbe.functionName}($1)`,
+          email,
+        );
 
         assert.deepEqual(
           rows,
@@ -220,13 +207,122 @@ if (!connectionString) {
           "dono sem BYPASSRLS: sem exceção e ZERO linhas para um e-mail que EXISTE em 5 organizações",
         );
       });
-    } finally {
-      if (cloneOwnerRole) {
-        await adminClient.$executeRawUnsafe(
-          `DROP FUNCTION IF EXISTS public.auth_login_candidates_owner_probe_clone(text)`,
+
+      await t.test("prova de FILA do quinto escritor: com o lock tomado por conexão auxiliar, o helper enfileira (waiter em pg_locks) e só conclui após o release", async () => {
+        // A introspecção de pg_locks é determinística; o TEMPO até o waiter aparecer não é — o
+        // valor probatório real está no drill C (helper sem o lock → esta prova fica vermelha).
+        // A asserção FORTE é `resolvedWhileHeld === false`: atribuição direta ao helper, imune a
+        // waiter de suíte irmã por coincidência de janela.
+        const lockClassId = Number(ROLE_CATALOG_ADVISORY_LOCK >> 32n);
+        const lockObjId = Number(ROLE_CATALOG_ADVISORY_LOCK & 0xffffffffn);
+        let released = false;
+        let resolvedWhileHeld = false;
+        let releaseHold: () => void = () => {};
+        const holdUntil = new Promise<void>((resolve) => {
+          releaseHold = resolve;
+        });
+        let holderHasLock: () => void = () => {};
+        const holderLockAcquired = new Promise<void>((resolve) => {
+          holderHasLock = resolve;
+        });
+
+        // Conexão auxiliar toma o lock do arnês numa transação aberta…
+        const holder = adminClient.$transaction(
+          async (tx) => {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ROLE_CATALOG_ADVISORY_LOCK}::bigint)`;
+            holderHasLock();
+            await holdUntil;
+          },
+          { maxWait: 30_000, timeout: 30_000 },
         );
-        await adminClient.$executeRawUnsafe(`DROP OWNED BY "${cloneOwnerRole}"`);
-        await adminClient.$executeRawUnsafe(`DROP ROLE IF EXISTS "${cloneOwnerRole}"`);
+
+        await holderLockAcquired;
+
+        // …o helper dispara em paralelo (tem de ENFILEIRAR, não concluir)…
+        const probePromise = createCloneOwnerProbe(adminClient).then((probe) => {
+          if (!released) {
+            resolvedWhileHeld = true;
+          }
+
+          return probe;
+        });
+
+        // …e o teste procura o waiter em pg_locks (granted = false na fila do advisory lock).
+        let waiterSeen = false;
+        const deadline = Date.now() + 15_000;
+
+        while (Date.now() < deadline && !waiterSeen && !resolvedWhileHeld) {
+          const waiters = await adminClient.$queryRaw<Array<{ pid: number }>>`
+            SELECT pid FROM pg_locks
+            WHERE locktype = 'advisory'
+              AND classid = ${lockClassId}::oid
+              AND objid = ${lockObjId}::oid
+              AND objsubid = 1
+              AND granted = false
+          `;
+
+          if (waiters.length > 0) {
+            waiterSeen = true;
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+        }
+
+        released = true;
+        releaseHold();
+        await holder;
+
+        const probe = await probePromise;
+
+        try {
+          assert.equal(
+            resolvedWhileHeld,
+            false,
+            "o helper só pode concluir DEPOIS do release — concluir antes significa que ele não tomou o lock",
+          );
+          assert.equal(
+            waiterSeen,
+            true,
+            "o helper tem de aparecer como waiter (granted = false) enquanto a auxiliar segura o lock",
+          );
+        } finally {
+          await probe.drop();
+        }
+      });
+
+      await t.test("varredor do arnês: órfã sintética o6r_clone_owner_ além do corte de 60 min é recolhida pela próxima criação de role", async () => {
+        // C4/drill D: a família o6r_clone_owner_ nasceu neste arquivo (ciclo 2, nome fixo, sem
+        // varredor — 5 órfãs vivas na base do dono). A órfã sintética retrodatada prova que o
+        // sweep agora a alcança; drill D reverte a regex para só o6r_b01_ e isto fica vermelho.
+        const orphanName = await createSyntheticOrphanRole(
+          adminClient,
+          "o6r_clone_owner",
+          2 * 60 * 60 * 1000,
+        );
+
+        try {
+          const sweeper = await createEphemeralRole(adminClient, connectionString);
+
+          try {
+            const rows = await adminClient.$queryRaw<Array<{ rolname: string }>>`
+              SELECT rolname FROM pg_roles WHERE rolname = ${orphanName}
+            `;
+
+            assert.equal(
+              rows.length,
+              0,
+              "o sweep cobre as DUAS famílias que o próprio arnês cria (o6r_b01_ e o6r_clone_owner_)",
+            );
+          } finally {
+            await sweeper.drop();
+          }
+        } finally {
+          await dropSyntheticOrphanRole(adminClient, orphanName);
+        }
+      });
+    } finally {
+      if (cloneProbe) {
+        await cloneProbe.drop();
       }
 
       await cleanupIdentityFixture(adminClient, tenantIds);
