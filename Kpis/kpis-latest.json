@@ -1,42 +1,42 @@
 {
-  "snapshot_date": "2026-08-17",
-  "version": "KPI-PAINEL-REPAGINADO",
+  "snapshot_date": "2026-08-19",
+  "version": "B-O6R-01-CICLO3-CORRECAO",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "Painel de KPI repaginado do zero + reconciliação da auditoria Ω6R.",
-    "title": "Painel repaginado — o que o projeto entregou, o que a auditoria achou, e o que falta",
-    "pr": 356,
+    "block": "B-O6R-01 — identidade e autoridade (Ω6R-SEC-001 + Ω6R-TEN-001).",
+    "title": "Identidade global + allowlist de papéis — os dois piores achados da auditoria, fechados",
+    "pr": 357,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O painel é o artefato que o dono abre e mostra. Repaginado do zero: as duas dimensões lado a lado, gráficos, conclusão derivada, os 30 achados e o cronograma. O trabalho achou três defeitos — a linha do gráfico cruzando duas mudanças de medida, um achado crítico órfão sem bloco de correção, e o registro da auditoria defasado do JSONL.",
-    "status_label": "PR #356 aberto — em revisão"
+    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c). Ciclo 3 (correção pós-veto J-O6R-B01-ciclo2 + premissa reaberta R-ciclo3): o backfill da suíte ganhou ESCOPO (sentença escopada fail-closed com ida-e-volta byte-idêntica + tripwire do terceiro simulado; a prova do verbatim volta ao migrate deploy da CI, perda declarada), o quinto escritor de catálogo entrou no lock (createCloneOwnerProbe no arnês + prova de fila em pg_locks), ratchet lexical de escrita de catálogo (allowlist congelada por arquivo e contagem), varredor cobrindo as duas famílias do arnês (5 órfãs legadas recolhidas), errata apensada ao plano v6 (P9) e pendência P-O6R-B01-TRILHA-ORFA-LIMPEZA (231 linhas órfãs FICAM; destino é junta). F1 12/12 verde na forma exata do job (denominador 148 idêntico, zero XX000/23503/23505/40P01); F4: 0 instantes com terceiro no alvo e atribuição do delta residual (+12) a core-saas-role-authority-db, registrada sem remendo (decisão de destino é da junta).",
+    "status_label": "PR #357 aberto — em revisão"
   },
   "metrics": {
     "flutter_tests": {
-      "value": 860,
-      "total": 860,
-      "display": "860/860",
-      "note": "Este PR não toca o app de campo: carrega 860/860, o último valor oficial (§C3.3)."
+      "value": 864,
+      "total": 864,
+      "display": "864/864",
+      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado. [Ciclos 2 e 3: valor CARREGADO — a trilha Flutter não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "frontend_smoke_tests": {
-      "value": 1125,
-      "total": 1125,
-      "display": "1125/1125",
-      "note": "Este PR não toca o console web: carrega 1125/1125, o último valor oficial (§C3.3)."
+      "value": 1126,
+      "total": 1126,
+      "display": "1126/1126",
+      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "backend_tests": {
-      "value": 2458,
-      "total": 2467,
-      "display": "2458/2467",
-      "note": "Execução real: 2437/2446 → 2458/2467 (+21). Vinte e um testes novos, cada um nascido de um defeito real desta entrega: 5 de paridade entre o registro da auditoria e o painel, 10 de gráfico e 6 de tema. Três rodadas adversariais acharam quatro instâncias da mesma classe de defeito — todas nascidas em correções, nenhuma no código original."
+      "value": 2562,
+      "total": 2572,
+      "display": "2562/2572",
+      "note": "Execução real do ciclo 3 (F2, árvore desta entrega): 2562/2572 · fail 0 · 10 pulos declarados (os mesmos do ciclo 2) · denominador IDÊNTICO em 3 execuções. +5 sobre o ciclo 2 (2557/2567): tripwire do terceiro simulado (backfill), prova de fila do quinto escritor + órfã sintética do varredor (fn-db), ratchet db-catalog-write-guard, e 1 guard de KPI que entrou na branch entre os ciclos (8492587). Batch -db na forma EXATA do job backend-postgres (env completo + db:seed a cada iteração + exit de PIPESTATUS[0]): 12/12 exit 0 · 148/148 idêntico nas 12 · grep XX000|23503|23505|40P01 = 0 nos 12 taps · 0 pulos. Ambiente declarado: availableParallelism=8, teto efetivo do node --test = 7 (P1 — declarado, não consertado)."
     },
     "backend_contract_tests_focused": {
-      "value": 21,
-      "total": 21,
-      "display": "21/21",
-      "note": "subset especifico carregado do ultimo valor oficial; pode ser maior (nao re-baseado nesta reconciliacao)."
+      "value": 92,
+      "total": 92,
+      "display": "92/92",
+      "note": "Bateria focada do B-O6R-01 REMEDIDA no ciclo 3 (execução real, casos-folha, composição declarada): 22 no grupo memory (auth-invariant-guards + core-saas-role-authority, sob CORE_SAAS_PERSISTENCE=memory, a forma do runner) + 69 no grupo -db (os 9 arquivos do bloco listados no job backend-postgres — 66 do ciclo 2 + tripwire do backfill, prova de fila e órfã sintética do ciclo 3) + 1 do ratchet novo db-catalog-write-guard (estático). Contagem idêntica em 2 execuções. Substitui o 88/88 do ciclo 2 pela mesma régua: casos novos entram na composição, declarados."
     },
     "flutter_modules": {
       "value": 17,
@@ -60,9 +60,9 @@
       "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
     },
     "blocks_completed": {
-      "value": 150,
-      "display": "150",
-      "note": "Painel de KPI repaginado + reconciliação da auditoria Ω6R. Sobre 149."
+      "value": 151,
+      "display": "151",
+      "note": "B-O6R-01 entregue (identidade e autoridade)."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -140,8 +140,23 @@
         "em": "2026-08-15"
       }
     ],
-    "as_of": "2026-08-17",
-    "source": "docs/revisoes/O6R/achados.jsonl"
+    "as_of": "2026-08-18",
+    "source": "docs/revisoes/O6R/achados.jsonl",
+    "aguardando_merge": [
+      {
+        "id": "Ω6R-SEC-001",
+        "severidade": "P0",
+        "por": "B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge)",
+        "em": "2026-08-18"
+      },
+      {
+        "id": "Ω6R-TEN-001",
+        "severidade": "P0",
+        "por": "B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge)",
+        "em": "2026-08-18"
+      }
+    ],
+    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
   },
   "findings": {
     "as_of": "2026-08-17",
@@ -191,7 +206,7 @@
         "id": "Ω6R-SEC-001",
         "severidade": "P0",
         "modulo": "core-saas / auth / platform",
-        "status": "ativo",
+        "status": "fechado",
         "resumo": "Quem administra uma organização consegue se promover a administrador da plataforma e passar a ler, alterar e suspender TODAS as outras.",
         "bloco": "B-O6R-01"
       },
@@ -199,7 +214,7 @@
         "id": "Ω6R-TEN-001",
         "severidade": "P0",
         "modulo": "auth / core-saas",
-        "status": "ativo",
+        "status": "fechado",
         "resumo": "Duas pessoas com o mesmo e-mail em organizações diferentes: uma assume a conta da outra, sem saber a senha.",
         "bloco": "B-O6R-01"
       },
@@ -408,8 +423,8 @@
           "Ω6R-TEN-001"
         ],
         "dep": [],
-        "estado": "plano_aprovado",
-        "nota": "Plano aprovado por junta 5×0 após 5 rodadas e 6 versões. É o próximo a implementar."
+        "estado": "concluido",
+        "nota": "Entregue: identidade global + allowlist de papéis + login sem organização + religação/desvínculo com revogação real. Fecha SEC-001 e TEN-001 (críticos 2→4 de 15). Deploy segue bloqueado (J-6R)."
       },
       {
         "id": "B-O6R-02",
@@ -574,9 +589,22 @@
     }
   },
   "recent": {
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-18",
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
+      {
+        "pr": null,
+        "data": "2026-08-18",
+        "tipo": "seguranca",
+        "titulo": "Identidade global: o e-mail deixa de decidir quem você é",
+        "resumo": "Fecha os dois piores achados da auditoria: administrador de organização não se promove mais a plataforma (allowlist fechada por construção) e a troca de organização passa a exigir VÍNCULO provado por credencial — homônimos deixam de virar a mesma pessoa. Login sem organização refeito (a senha decide), religação e desvínculo em autosserviço com revogação real de sessões, trilha append-only ilegível por organização e a luz login_without_org no readiness. Transações centrais provadas sob role NÃO-superusuário — a única configuração em que o isolamento existe.",
+        "fecha": [
+          "Ω6R-SEC-001",
+          "Ω6R-TEN-001"
+        ],
+        "descobertos": [],
+        "ciclos_de_reprovacao": 0
+      },
       {
         "pr": 355,
         "data": "2026-08-16",

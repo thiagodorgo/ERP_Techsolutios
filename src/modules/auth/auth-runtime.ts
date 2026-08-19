@@ -31,19 +31,34 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
     import("./services/local-auth-login.service.js"),
   ]);
 
+  const buildService = (tx: Parameters<Parameters<typeof withTenantRls>[2]>[0]) =>
+    new LocalAuthLoginService(
+      new LocalAuthCredentialRepository(tx),
+      new TenantRepository(tx),
+      new UserRepository(tx),
+      new UserRoleRepository(tx),
+      new AuditLogRepository(tx),
+    );
+
   return {
     authenticateLocalCredential(input) {
-      return withTenantRls(prisma, input.tenant_id, async (tx) => {
-        const service = new LocalAuthLoginService(
-          new LocalAuthCredentialRepository(tx),
-          new TenantRepository(tx),
-          new UserRepository(tx),
-          new UserRoleRepository(tx),
-          new AuditLogRepository(tx),
-        );
-
-        return service.authenticateLocalCredential(input);
-      });
+      return withTenantRls(prisma, input.tenant_id, async (tx) =>
+        buildService(tx).authenticateLocalCredential(input),
+      );
+    },
+    // B-O6R-01 — verificação anônima de UM candidato, na organização do candidato (withTenantRls
+    // por candidato, §6.2). Sem efeito colateral em falha (§6.4.3).
+    verifyAnonymousCandidate(input, verifyPasswordFn) {
+      return withTenantRls(prisma, input.tenant_id, async (tx) =>
+        buildService(tx).verifyAnonymousCandidate(input, verifyPasswordFn),
+      );
+    },
+    // B-O6R-01 — finalização do sucesso anônimo único (contadores + auditoria na organização
+    // que autenticou).
+    finalizeAnonymousLogin(tenantId, credentialId, user, roleCount, auditContext) {
+      return withTenantRls(prisma, tenantId, async (tx) =>
+        buildService(tx).finalizeAnonymousLogin(tenantId, credentialId, user, roleCount, auditContext),
+      );
     },
   } as LocalAuthLoginService;
 }

@@ -210,11 +210,25 @@ export class AuthSessionService {
       });
       const roleKeys = mapRoleKeys(roles);
       const accessTokenExpiresIn = getAccessTokenExpiresInSeconds();
+      // B-O6R-01 (§3.5) — o refresh é o segundo assinador: relê o vínculo do PAR (tenant GUC já
+      // posto pela transação) e inclui o claim identity_id como DICA. Falha na leitura (ex.:
+      // arnês de teste sem $queryRaw) = claim omitido — o token sem claim resolve por par.
+      let identityId: string | null = null;
+
+      try {
+        const { resolveIdentityIdForPair } = await import("./identity-resolver.js");
+
+        identityId = await resolveIdentityIdForPair(tx, payload.tenant_id, payload.user_id);
+      } catch {
+        identityId = null;
+      }
+
       const accessToken = await signAccessToken({
         user_id: user.id,
         tenant_id: user.tenant_id,
         email: user.email,
         roles: roleKeys,
+        ...(identityId ? { identity_id: identityId } : {}),
       });
       const refreshTokenExpiresIn = getRefreshTokenExpiresInSeconds();
       const refreshTokenExpiresAt = new Date(Date.now() + refreshTokenExpiresIn * 1000);

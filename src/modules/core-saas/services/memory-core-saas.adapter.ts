@@ -5,11 +5,13 @@ import type {
   CreateTenantInput,
   CreateUserInput,
   ListTenantOptions,
+  LoginCandidate,
   Tenant,
   TenantMembership,
   UpdateUserInput,
   User,
 } from "../types/core-saas.types.js";
+import type { AuthenticatedActor as AuthJwtActor } from "../../auth/types/auth.types.js";
 import { CoreSaasRegistry } from "./core-saas.service.js";
 import type { ICoreSaasService } from "./core-saas-service.interface.js";
 
@@ -52,8 +54,26 @@ export class MemoryCoreSaasAdapter implements ICoreSaasService {
     return this.registry.getRoleDefinition(role);
   }
 
-  async listTenantsForUserEmail(email: string): Promise<TenantMembership[]> {
-    return this.registry.listTenantsForUserEmail(email);
+  async listLoginCandidates(email: string): Promise<LoginCandidate[]> {
+    return this.registry.listLoginCandidates(email);
+  }
+
+  async listTenantsForIdentity(actor: AuthJwtActor): Promise<TenantMembership[]> {
+    return this.registry.listTenantsForIdentity(actor);
+  }
+
+  async findMembershipForIdentity(
+    actor: AuthJwtActor,
+    requestedTenantId: string,
+  ): Promise<TenantMembership | null> {
+    return this.registry.findMembershipForIdentity(actor, requestedTenantId);
+  }
+
+  async resolveIdentityForUser(actor: {
+    readonly tenantId: string;
+    readonly userId: string;
+  }): Promise<string | null> {
+    return this.registry.resolveIdentityForUser(actor);
   }
 
   async getAuditEventsForTenant(tenantId: string): Promise<AuditEvent[]> {

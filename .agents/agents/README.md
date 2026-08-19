@@ -71,6 +71,8 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 | `master-teste-telas-rotas` | **VETO** | Prova cada tela ponta a ponta. |
 | `cognicao-visual` | **VETO** | Fidelidade §11 / anti-tela-morta (antes e depois de criar tela). |
 | `agente-ci-doutor` | veto no gate | Triagem de CI/testes vermelhos por causa raiz (nunca skipa teste). |
+| `inspetor-de-arnes-concorrente` | **VETO** | Corrida de catálogo do Postgres em arnês de teste (role/schema sob paralelismo), denominador que varia, lixo com privilégio. **Achador/votante: não escreve a correção.** |
+| `guardiao-fail-closed` | **VETO** | Enumeração de segurança fail-closed — prova POR MUTAÇÃO se o membro não previsto nasce permitido e se a omissão quebra o build. **Achador/votante: não escreve a correção.** |
 
 ### Segurança / banco / infra / custo
 | Papel | Poder | Função |

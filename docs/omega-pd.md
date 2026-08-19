@@ -359,3 +359,175 @@ Rodada Ω5P · Fase 5 (PR-18a) · **RESOLVIDO — NÃO dispara junta-5** (node:c
 **Achado/decisão:** **SIM — `crypto.scrypt` do node:crypto (built-in) com parâmetros OWASP.** scrypt é KDF de custo de memória, recomendado pela OWASP como alternativa quando argon2id não está disponível. Parâmetros: **N=2^17, r=8, p=1, keylen=32** (OWASP Password Storage Cheat Sheet). **GOTCHA crítico:** N=2^17·r=8 ≈ 128 MB excede o `maxmem` default (~32 MB) do Node → passar `maxmem` explícito ≥256 MB, senão o scrypt lança. Salt 16B por-hash (`randomBytes`); formato self-describing `scrypt$N$r$p$<saltB64>$<hashB64>`; verificação em TEMPO CONSTANTE (`timingSafeEqual` sobre os 32B derivados). argon2id seria o ideal, mas scrypt é o substituto zero-dep aprovado — o provedor gerenciado/argon2 fica para Ω6 se o dono quiser (aí junta-5 + dep). Registrado em D-Ω5P-AUTH-02.
 
 Fontes: OWASP Password Storage Cheat Sheet (scrypt N=2^17/r=8/p=1) — cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html e github.com/OWASP/CheatSheetSeries (Password_Storage_Cheat_Sheet.md) ; comparativo Argon2/bcrypt/scrypt/PBKDF2 — guptadeepak.com/the-complete-guide-to-password-hashing ; node:crypto scrypt docs (maxmem default).
+
+---
+
+## PD-O6R-B01-ISOLAMENTO — estado da arte do isolamento de suites paralelas contra PostgreSQL (2026-08-18)
+
+Rodada Ω6R · B-O6R-01 · **ciclo 3 (§C7.4): reabertura de premissa pelo crítico.** Pesquisa ≥5 fontes exigida
+pela regra da dúvida (§C7.3) — registrada **antes** da conclusão. Dois ciclos trataram o problema como
+sincronização (o ciclo 2 acrescentou `pg_advisory_xact_lock`; a junta vetou porque o lock não alcança todo
+escritor). A pergunta que ninguém fez: **suítes que criam role, escrevem catálogo e rodam um statement sem
+cláusula de escopo deveriam estar num lote paralelo contra UM banco compartilhado?**
+
+### 1. O que eu MEDI (execução própria, nesta máquina, 2026-08-18/19)
+
+Ambiente: Windows 11, Node **20.19.5**, `os.availableParallelism() = 8`, PostgreSQL **16.14** (contêiner
+local), base de desenvolvimento do dono (294 organizações, 274 usuários, 81 roles não-sistema). Forma
+reproduzida: bloco `env:` do job `backend-postgres`, `pipefail` + `tee`, exit lido de `PIPESTATUS[0]`.
+
+**M1 · `node --test` roda ARQUIVOS em paralelo, e o teto é o hardware.** 6 arquivos-fixture de 1,5 s →
+6 PIDs distintos, todos iniciados dentro de 74 ms, `duration_ms 2252`. Com 24 arquivos: 4 ondas, teto
+**7 = `availableParallelism() - 1`**. O teto **não está fixado** em `.github/workflows/ci.yml` nem em
+`scripts/run-backend-tests.mjs`. (A doc do Node descreve o default `false` da API `run()`; o **CLI não segue
+isso** — medido, não lido.)
+
+**M2 · Não reproduzi o vermelho: 12/12 VERDE** no lote dos 23, denominador constante em **145** (bate com o
+da cadeira). A cadeira mediu 4/12 vermelho; o orquestrador, 1/4. **Verde é ausência de evidência** — isto não
+refuta o veto. Prova outra coisa: o mesmo commit, na mesma forma, dá 4/12 numa medição e 0/12 noutra.
+
+**M3 · A prova determinística, que dispensa vermelho.** Sonda **somente-leitura** executando APENAS o SELECT
+do CTE `missing` do backfill (sem os INSERTs), amostrando a 15 ms, classificando o alvo por dono:
+
+| arranjo | amostras | instantes com linha de TERCEIRO | pico | donos atingidos |
+|---|---|---|---|---|
+| lote dos 23 (job `backend-postgres`) | 6659 | **2589 — 38,9 %** | 22 linhas, **100 % de terceiros** | `anon-*`, `org-b-*`, `role-authority-db-*` |
+| suíte inteira, 246 arquivos (job `backend`) | 9206 | **934 — 10,1 %** | 16 linhas, **100 % de terceiros** | ≥8 suítes: `rls-tenant-*`, `checklist-db-*`, `anon-*`, `sess-*`, `notif-*`, `chg-*`, `chk-run-conc-*`, `chk-lifecycle-*` |
+
+"Escreve fora do próprio escopo" deixa de ser inferência sobre um vermelho ocasional: **é o conjunto-alvo do
+statement, medido.**
+
+**M4 · O dano não é flake — é permanente e monotônico.** `auth_identity_link_events` na base do dono:
+**508 linhas, 231 (45,5 %) apontam para organização que não existe mais, e as 231 são `event='backfill'`** —
+zero de `religacao`/`desvinculo`. Na janela de 1 h que contém as 12 rodadas: **12 linhas criadas, 12 órfãs
+(100 %)** ⇒ ≈1 linha indelével por rodada. A tabela é append-only por trigger (UPDATE/DELETE/TRUNCATE):
+**nenhum teardown conserta, por desenho.** O artefato que o bloco criou para ser inviolável está 45 %
+preenchido por escrita fora de escopo.
+
+**M5 · TERCEIRA causa, independente, que ninguém mediu — e que é ANTERIOR ao B-O6R-01.**
+`tests/checklist-applicability-prisma-db.test.ts:355/373` executa
+`ALTER TABLE checklist_applicability_rules RENAME COLUMN notes TO notes_tmp` (e de volta) — DDL sobre tabela
+**compartilhada**, dentro do lote dos 23, enquanto `checklist-applicability-schema-db.test.ts` e
+`work-order-checklists-junction-schema-db.test.ts` (**mesmo lote**) usam essa tabela. Sonda somente-leitura
+durante o lote: 19081 amostras, **6 janelas em que a coluna `notes` NÃO EXISTIA, de 17 a 20 ms cada**
+(`42703 undefined_column` para quem cair nelas), ≈1 janela por rodada. Um lote de 4 arquivos com as suítes
+vizinhas deu **10/10 verde** — de novo, verde não é ausência de perigo.
+
+**M6 · O "quinto escritor de catálogo" são SEIS prefixos, e o varredor conhece UM.**
+
+| prefixo de role | arquivo que cria | toma o lock? | varrido? | órfãs vivas na base do dono |
+|---|---|---|---|---|
+| `o6r_b01_` | `tests/helpers/auth-identity-fixture.ts` | **sim** | **sim** | 0 |
+| `o6r_clone_owner_` | `tests/auth-login-candidates-fn-db.test.ts` | não | não | 5 |
+| `rls_test_` | `tests/rls-tenant-isolation.test.ts` | **sim** | não | **68, todas com LOGIN, até 460 privilégios de tabela** |
+| `audit_rls_` | `tests/audit-security.test.ts` | não | não | 0 |
+| `vid_link_rls_` | `tests/impound-process-checklist-link-schema.test.ts` | não | não | 1, com LOGIN, 460 privilégios |
+| `vid_rls_test_` | `tests/vehicle-identity-schema.test.ts` | não | não | 0 |
+
+Mais DDL de catálogo não-role: `CREATE TABLE`/`CREATE TRIGGER`/`ALTER TABLE … OWNER TO`
+(`auth-identity-link-events-db`, **dentro** do lock) · `CREATE FUNCTION`/`ALTER FUNCTION … OWNER TO`
+(`auth-login-candidates-fn-db`, **fora**) · `ALTER TABLE … RENAME COLUMN` sobre tabela compartilhada
+(`checklist-applicability-prisma-db`, **fora**). Total na base do dono: **81 roles não-sistema, 74 com LOGIN**.
+
+**M7 · A superfície real.** 246 arquivos `*.test.ts`; **66 tocam `DATABASE_URL`**; **22 escrevem
+`public.users`** — a tabela que o backfill varre — dos quais **11 estão no lote dos 23 e 11 estão FORA dele**,
+encontrando o backfill **apenas no job `backend`**; **49 escrevem `public.tenants`**.
+
+**M8 · O job `backend` também roda o backfill, e ninguém o mediu.**
+`CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/auth-identity-backfill-db.test.ts` →
+**5 testes, 0 pulados**. A suíte só se auto-pula por ausência de `DATABASE_URL`, e o job `backend` a define
+(`ci.yml:15`). Consequência: **toda suíte `-db` roda DUAS vezes por CI**, em dois arranjos diferentes — um
+semeado (`backend-postgres`), outro não (`backend`) — e dois ciclos mediram só um.
+
+**M9 · As TRÊS formas divergem em variáveis load-bearing.** `npm test` local: 2567 testes, pass 2557,
+fail 0, skipped 10, exit 0, 224,9 s. Diferenças medidas: (a) `backend-postgres` roda `db:seed`, `backend` não,
+o local não; (b) a base do dono carrega 294 organizações / 274 usuários / 81 roles acumuladas — a da CI nasce
+vazia a cada job; (c) o teto de arquivos simultâneos é `availableParallelism()-1`, **7 aqui**, não medido no
+runner da CI. **Taxa de flake medida numa forma não transfere para as outras.**
+
+**M10 · A casa já pagou por este arranjo, e remendou.** `ci.yml:106-111` registra por escrito: a variável
+`RBAC_DB_PARITY` existe porque a versão anterior "tentava DEDUZIR o provisionamento olhando se a tabela
+`roles` estava vazia — sentinela que o paralelismo do `npm test` polui (várias suítes criam papéis)". Mesmo
+arranjo, mesma classe, resposta anterior = variável de ambiente.
+
+**M11 · O plano vinculante se contradiz — e é daí que a caçada nasceu.** `B-O6R-01-plano-v6-aprovado.md` §7
+manda role efêmera `NOSUPERUSER` (que **só existe mudando catálogo**), proíbe "jamais
+`ALTER TABLE … DISABLE TRIGGER` (ACCESS EXCLUSIVE + catálogo global + paralelismo do `npm test`)" — e a seção
+de CI (linha 277) afirma **"nenhuma suíte muda catálogo"**. A entrega muda catálogo em 6 prefixos de role
++ tabela + trigger + função, e `auth-identity-link-events-db.test.ts:227` usa o
+`ALTER TABLE … DISABLE TRIGGER` proibido (sobre tabela scratch própria — a letra da regra é violada; o perigo
+que ela nomeava, não). **O plano previu este modo de falha na própria frase que o proibiu.**
+
+### 2. O estado da arte (pesquisa, ≥5 fontes) — o que cada técnica custa e o que ela NÃO resolve
+
+| técnica | custo | **não** resolve |
+|---|---|---|
+| **Transação + ROLLBACK por teste** | o mais barato; sem re-seed | dado **commitado**, segunda **conexão** (a role efêmera é outra conexão), DDL, trigger de statement, concorrência real — ou seja, **nada** do que este bloco prova |
+| **Schema por worker** (`search_path`) | barato; migrações por schema | roles (`pg_authid` é de **cluster**), advisory locks de cluster, e statement com nome qualificado — o backfill diz `public.users` **literalmente** |
+| **Banco por worker** (mesmo cluster) | migrações × N, ou template | **roles continuam globais ao cluster** — resolve 23503/23505, não resolve o `XX000` de `CREATE ROLE`/`GRANT` |
+| **Template database** (`CREATE DATABASE … TEMPLATE`) | torna o anterior barato (migra 1×) | **nenhuma sessão pode estar conectada ao template durante a cópia** (doc oficial); roles seguem globais |
+| **Cluster/contêiner efêmero por worker** | ~3 s de arranque por worker + imagem | é o **único** que isola `pg_authid`; não isola nada se os workers compartilharem cluster |
+| **`pg_advisory_lock`** | ~zero | **não alcança quem não o toma.** Tom Lane o chama de *workaround*: "you could consider using an application-managed advisory lock" — a saída que ele prefere é não haver escritores concorrentes do mesmo objeto |
+
+**Por que o Postgres se comporta assim (fonte primária):** "You can't corrupt the database with concurrent
+updates on such a row, you'll just get a 'tuple concurrently updated' error from all but the first-to-arrive
+update" — o catálogo de objetos representados por **uma linha** (roles, funções) **não tem locking de DDL**;
+é decisão de projeto, não bug, e não há versão do Postgres em que isto deixe de valer.
+
+**Conclusão da pesquisa:** **nenhuma técnica isolada cobre as três classes deste lote** — (i) linhas de
+tabela, (ii) catálogo de role, que é de **cluster**, (iii) esquema de tabela compartilhada. A indústria
+combina banco/cluster por worker para os dados **com** ausência (ou serialização explícita) de escrita em
+objeto de cluster. **Acrescentar mais um lock nunca fecha a classe, porque a classe é "escritor que não sabe
+que deveria tomar o lock" — e ela cresce a cada suíte nova.**
+
+### 3. O que eu NÃO medi (e por quê)
+
+- **A CI.** Não rodei nenhum job. Não sei `availableParallelism()` do runner, nem a taxa de vermelho lá, nem
+  o tempo dos jobs. Tudo acima é desta máquina.
+- **`npm run db:seed`.** A cadeira rodou; eu não, para não escrever na base do dono além do que os próprios
+  testes escrevem. Minha forma difere da dela **neste ponto** — declarado, não escondido.
+- **Vermelho.** 0/12 no lote dos 23, 0/1 na suíte inteira, 0/10 no lote de 4. **Nenhum** `XX000`/`23503`/
+  `23505` hoje.
+- **Custo real das alternativas neste repositório.** Só li o custo que a literatura reporta; não instrumentei
+  banco-por-worker nem contêiner efêmero aqui.
+- **Conexão efetiva dos 66 arquivos.** A classificação (22 escritores de `users`, 49 de `tenants`) é por
+  padrão de código, não por execução instrumentada.
+- **Origem das 68 roles `rls_test_`** (aborto × execução antiga) — não discriminei.
+
+### 4. Fontes
+
+1. Tom Lane, pgsql-general — *'tuple concurrently updated' error when granting permissions*:
+   postgresql.org/message-id/3473.1393693757%40sss.pgh.pa.us (catálogo de linha única sem locking de DDL;
+   advisory lock como workaround; group role como saída melhor).
+2. Thread completa do mesmo defeito em `GRANT`/`REVOKE` concorrentes:
+   postgresql.org/message-id/CAFoTioX5gRjxf927ysQTRarP0rQOk4Wkp1exAtLDiqMK0Pg2jw%40mail.gmail.com e
+   postgresql.org/message-id/20150624155128.GW4797%40alap3.anarazel.de (9.2.13, mesma classe).
+3. PostgreSQL 16 — *Template Databases*: postgresql.org/docs/16/manage-ag-templatedbs.html
+   ("no other sessions can be connected to the source database while it is being copied").
+4. Node.js — *Test runner*: nodejs.org/api/test.html (`concurrency: true` ⇒ `os.availableParallelism() - 1`
+   arquivos em paralelo; **o default do CLI foi medido aqui, não lido**).
+5. WebbyLab — *Parallel, Isolated Jest-Enhanced Testing (III): test isolation methods*:
+   webbylab.com/blog/pijet-parallel-isolated-jest-enhanced-testing-part-iii-test-isolation-methods/
+   (comparativo rollback × schema-por-worker × banco-por-worker).
+6. `parallel_tests` (Rails/Ruby) — github.com/grosser/parallel_tests: **1 banco por processo** via
+   `TEST_ENV_NUMBER`; é o default da indústria quando o teste precisa de dado commitado.
+7. Testcontainers para Postgres em Node — qaskills.sh/blog/testcontainers-postgres-node-guide e
+   baeldung.com/spring-boot-testcontainers-integration-test (~3 s de arranque; um contêiner **por worker**,
+   chaveado pelo worker id; contêiner por teste é inviável).
+8. Selim B. — *Speedy Prisma and PostgreSQL Integration Tests*: selimb.hashnode.dev/speedy-prisma-pg-tests
+   (template database para baratear banco-por-worker com Prisma).
+9. Sebastián Chikán — *Jest integration tests in parallel using isolated SQL schemas*:
+   medium.com/@sebastinchikn/how-to-run-jest-integration-tests-in-parallel-using-isolated-sql-schemas-f4c5e534030a
+   (limites do isolamento por schema).
+
+### 5. Veredito de premissa
+
+**O defeito é de ARRANJO, não dos dois arquivos.** Provas: o alvo do statement global contém linha de
+terceiro em 10–39 % dos instantes (M3); a poluição é irreversível por desenho (M4); existe uma terceira
+causa, anterior ao bloco, do mesmo formato (M5); os escritores de catálogo são seis e o mecanismo alcança
+dois (M6); metade dos concorrentes só encontra o backfill num job que ninguém mediu (M7/M8); e a casa já
+remendou esta mesma classe uma vez (M10). Enquanto o lote for "todo mundo contra um banco só", cada suíte
+nova é um escritor a mais que precisa **lembrar** de tomar um lock — e é isso que não escala.
+
+**Escolha de arranjo é de quem planeja** (`D-JUNTA-SEPARACAO-DE-PAPEIS`): esta PD registra o custo e o limite
+de cada opção, não elege uma.

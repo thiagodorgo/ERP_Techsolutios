@@ -67,7 +67,13 @@ export function createMobileRouter(service: ICoreSaasService): Router {
         service.getUserForTenant(actor.userId, actor.tenantId),
         listExpenseCategoriesForBootstrap(actor),
       ]);
-      const memberships = await service.listTenantsForUserEmail(user.email);
+      // B-O6R-01 (Ω6R-TEN-001) — available_tenants vem dos VÍNCULOS da identidade do ator JWT,
+      // nunca da correlação por e-mail. Requisição por header legado (dev/test) não alcança o
+      // fluxo de identidade (§3.7): fail-closed para a organização corrente apenas.
+      const jwtActor = request.actor;
+      const memberships = jwtActor
+        ? await service.listTenantsForIdentity(jwtActor)
+        : [{ tenant, user }];
       const serverTime = new Date();
       const expiresAt = new Date(serverTime.getTime() + BOOTSTRAP_TTL_SECONDS * 1000);
       const featureFlags = buildFeatureFlags(tenant.modules, actor);

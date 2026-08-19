@@ -1,5 +1,6 @@
 import {
   DEFAULT_ROLES,
+  assertAssignableRole,
   getRolePermissions,
   isValidRole,
   listRoleDefinitions,
@@ -15,20 +16,49 @@ import {
   type CreateTenantInput,
   type CreateUserInput,
   type ListTenantOptions,
+  type LoginCandidate,
   type Tenant,
   type TenantMembership,
   type UpdateUserInput,
   type User,
 } from "../types/core-saas.types.js";
+import { MAX_LOGIN_CANDIDATES } from "../../auth/anonymous-login.constants.js";
 import {
   InMemoryCoreSaasStore,
   type CoreSaasStore,
 } from "../store/core-saas.store.js";
 
+// B-O6R-01 — modelo de identidade em memória (espelho do prisma: auth_identities +
+// auth_identity_links + trilha). `attachedVia` espelha a coluna `attached_via` (opção A da
+// terceira armadilha — proveniência na linha do vínculo).
+type MemoryIdentityLink = {
+  readonly id: string;
+  identityId: string;
+  readonly tenantId: string;
+  readonly userId: string;
+  attachedVia: "backfill" | "religacao" | "desvinculo";
+  readonly createdAt: Date;
+};
+
+type MemoryIdentityLinkEvent = {
+  readonly id: string;
+  readonly linkId: string;
+  readonly fromIdentityId: string | null;
+  readonly toIdentityId: string;
+  readonly event: "backfill" | "religacao" | "desvinculo";
+  readonly tenantId: string;
+  readonly userId: string;
+  readonly occurredAt: Date;
+};
+
 export class CoreSaasRegistry {
   private tenantSequence = 0;
   private userSequence = 0;
   private auditSequence = 0;
+  private identitySequence = 0;
+  private readonly identities = new Map<string, { readonly id: string; readonly createdAt: Date }>();
+  private readonly identityLinksByPair = new Map<string, MemoryIdentityLink>();
+  private readonly identityLinkEvents: MemoryIdentityLinkEvent[] = [];
 
   constructor(private readonly store: CoreSaasStore = new InMemoryCoreSaasStore()) {}
 
@@ -37,6 +67,10 @@ export class CoreSaasRegistry {
     this.tenantSequence = 0;
     this.userSequence = 0;
     this.auditSequence = 0;
+    this.identitySequence = 0;
+    this.identities.clear();
+    this.identityLinksByPair.clear();
+    this.identityLinkEvents.length = 0;
   }
 
   createTenant(input: CreateTenantInput, actor?: AuthenticatedActor): Tenant {
@@ -156,7 +190,11 @@ export class CoreSaasRegistry {
       );
     }
 
-    const roles = uniqueRoles(input.roles.map((role) => this.validateRole(role)));
+    // B-O6R-01 (Ω6R-SEC-001) — ponto de validação do CREATE (memória): a MESMA allowlist do
+    // caminho prisma. Papel de plataforma → 403 role_not_assignable.
+    const roles = uniqueRoles(
+      input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
+    );
 
     const user: User = {
       id: nextId("usr", ++this.userSequence),
@@ -170,6 +208,10 @@ export class CoreSaasRegistry {
     };
 
     const savedUser = this.store.saveUser(user);
+
+    // B-O6R-01 (§3.4) — criação de usuário cria identidade + vínculo + evento 'backfill' na
+    // mesma operação (espelho do caminho prisma).
+    this.ensureIdentityLinkForPair(savedUser.tenantId, savedUser.id);
 
     this.recordAudit({
       action: "user.created",
@@ -285,14 +327,147 @@ export class CoreSaasRegistry {
     return this.listUsersByTenant(tenantId);
   }
 
-  listTenantsForUserEmail(email: string): TenantMembership[] {
-    const users = this.store.listUsersByEmail(email.trim().toLowerCase());
+  // B-O6R-01 (Ω6R-TEN-001) — `listTenantsForUserEmail` foi REMOVIDA também aqui: o e-mail nunca
+  // decide entre organizações (I1). Os métodos abaixo espelham o caminho prisma.
 
-    return users.flatMap((user) => {
-      const tenant = this.store.findTenantById(user.tenantId);
+  // Leitura pré-autenticação (login sem organização). O teto é o mesmo da função elevada
+  // (MAX_LOGIN_CANDIDATES + 1 = a linha sentinela do teto). A memória não modela credenciais —
+  // o filtro "credencial existente" é do caminho prisma; aqui a senha decide no passo seguinte.
+  listLoginCandidates(email: string): LoginCandidate[] {
+    const normalizedEmail = email.trim().toLowerCase();
 
-      return tenant ? [{ tenant, user }] : [];
+    if (!normalizedEmail) {
+      return [];
+    }
+
+    return this.store
+      .listUsersByEmail(normalizedEmail)
+      .filter((user) => {
+        if (user.status !== "active") {
+          return false;
+        }
+
+        const tenant = this.store.findTenantById(user.tenantId);
+
+        return tenant?.status === "active";
+      })
+      .sort((a, b) => a.tenantId.localeCompare(b.tenantId))
+      .slice(0, MAX_LOGIN_CANDIDATES + 1)
+      .map((user) => ({ tenantId: user.tenantId, userId: user.id }));
+  }
+
+  // Normalização preguiçosa do par (tenant, user) — cria identidade + vínculo + evento
+  // 'backfill' quando o par ainda não tem vínculo. Par inexistente → null (fail-closed).
+  resolveIdentityForUser(actor: { readonly tenantId: string; readonly userId: string }): string | null {
+    const user = this.store.findUserById(actor.userId);
+
+    if (!user || user.tenantId !== actor.tenantId) {
+      return null;
+    }
+
+    return this.ensureIdentityLinkForPair(actor.tenantId, actor.userId);
+  }
+
+  listTenantsForIdentity(actor: { readonly tenantId: string; readonly userId: string }): TenantMembership[] {
+    const identityId = this.resolveIdentityForUser(actor);
+
+    if (!identityId) {
+      return [];
+    }
+
+    const memberships: TenantMembership[] = [];
+
+    for (const link of this.identityLinksByPair.values()) {
+      if (link.identityId !== identityId) {
+        continue;
+      }
+
+      const user = this.store.findUserById(link.userId);
+
+      if (!user || user.status !== "active") {
+        continue;
+      }
+
+      const tenant = this.store.findTenantById(link.tenantId);
+
+      if (!tenant || tenant.status !== "active") {
+        continue;
+      }
+
+      memberships.push({ tenant, user });
+    }
+
+    return memberships.sort((a, b) => a.tenant.id.localeCompare(b.tenant.id));
+  }
+
+  findMembershipForIdentity(
+    actor: { readonly tenantId: string; readonly userId: string },
+    requestedTenantId: string,
+  ): TenantMembership | null {
+    // C8 — normaliza SOMENTE o par do token corrente; jamais o usuário da organização pedida.
+    const identityId = this.resolveIdentityForUser(actor);
+
+    if (!identityId) {
+      return null;
+    }
+
+    const link =
+      [...this.identityLinksByPair.values()].find(
+        (candidate) =>
+          candidate.tenantId === requestedTenantId && candidate.identityId === identityId,
+      ) ?? null;
+
+    if (!link) {
+      return null;
+    }
+
+    const user = this.store.findUserById(link.userId);
+
+    if (!user || user.status !== "active") {
+      return null;
+    }
+
+    const tenant = this.store.findTenantById(link.tenantId);
+
+    if (!tenant || tenant.status !== "active") {
+      return null;
+    }
+
+    return { tenant, user };
+  }
+
+  private ensureIdentityLinkForPair(tenantId: string, userId: string): string {
+    const key = pairKey(tenantId, userId);
+    const existing = this.identityLinksByPair.get(key);
+
+    if (existing) {
+      return existing.identityId;
+    }
+
+    const identityId = nextId("idn", ++this.identitySequence);
+    const link: MemoryIdentityLink = {
+      id: nextId("lnk", this.identitySequence),
+      identityId,
+      tenantId,
+      userId,
+      attachedVia: "backfill",
+      createdAt: new Date(),
+    };
+
+    this.identities.set(identityId, { id: identityId, createdAt: new Date() });
+    this.identityLinksByPair.set(key, link);
+    this.identityLinkEvents.push({
+      id: nextId("evt", this.identityLinkEvents.length + 1),
+      linkId: link.id,
+      fromIdentityId: null,
+      toIdentityId: identityId,
+      event: "backfill",
+      tenantId,
+      userId,
+      occurredAt: new Date(),
     });
+
+    return identityId;
   }
 
   getUserForTenant(userId: string, tenantId: string): User {
@@ -328,15 +503,10 @@ export class CoreSaasRegistry {
     return isValidRole(role);
   }
 
+  // B-O6R-01 (Ω6R-SEC-001, "500→400 de carona") — papel fora do catálogo vira CoreSaasError 400
+  // invalid_role (era Error cru). A allowlist de atribuição não vive aqui (getRoleDefinition lê
+  // papéis de plataforma legitimamente); vive nos caminhos de create/update.
   validateRole(role: string): Role {
-    try {
-      return validateRole(role);
-    } catch {
-      throw new Error(`Invalid role: ${role}`);
-    }
-  }
-
-  private validateUserRole(role: string): Role {
     if (!isValidRole(role)) {
       throw new CoreSaasError(
         400,
@@ -347,6 +517,20 @@ export class CoreSaasRegistry {
     }
 
     return validateRole(role);
+  }
+
+  // B-O6R-01 (Ω6R-SEC-001) — ponto de validação do UPDATE (memória): mesma allowlist do create.
+  private validateUserRole(role: string): Role {
+    if (!isValidRole(role)) {
+      throw new CoreSaasError(
+        400,
+        "BAD_REQUEST",
+        "invalid_role",
+        `Invalid role: ${role}`,
+      );
+    }
+
+    return assertAssignableRole(validateRole(role));
   }
 
   roleHasPermission(role: Role, permission: Permission): boolean {
@@ -410,4 +594,8 @@ function isEmail(email: string): boolean {
 
 function nextId(prefix: string, sequence: number): string {
   return `${prefix}_${sequence.toString().padStart(6, "0")}`;
+}
+
+function pairKey(tenantId: string, userId: string): string {
+  return `${tenantId}::${userId}`;
 }

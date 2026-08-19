@@ -1916,9 +1916,18 @@ motiva: `D-O6R-REGISTRO-NO-BACKLOG` em `decisoes.md`.
 > P1 vem antes de nova feature no módulo correspondente. O humano delibera os rascunhos arquiteturais
 > D-001..D-004."
 
-**Como ler estas entradas.** Os 29 achados foram agrupados nos **11 blocos de correção** do
-`docs/revisoes/O6R/PLANO_O6R.md` (`P-O6R-B01`..`P-O6R-B11`, abaixo, na ordem vinculante do plano) — 29
-entradas soltas afogariam o arquivo. **Nenhum achado desapareceu na agregação:** cada um tem sub-entrada
+> **Emenda de 2026-08-18 (porteiro pós-merge do #356).** Este cabeçalho diz **29 achados / 11 blocos** e
+> descreve o estado de 14/08. Desde então: a reconciliação da **Fase 5** acrescentou o `Ω6R-DAT-004`
+> (**30 achados**, 15 P0 + 15 P1), e a repaginação do painel (PR #356) descobriu que esse achado estava
+> **aberto e sem bloco de correção** — o plano é de 11/08 e ele nasceu em 14/08. Virou o **`B-O6R-12`**
+> (`P-O6R-B12`, abaixo), levando o plano a **12 blocos**. Os números do parágrafo acima ficam como registro
+> do que se sabia naquela data; **o estado corrente é 30 achados em 12 blocos**, e quem manda são
+> `docs/revisoes/O6R/achados.jsonl` e o guard `tests/kpi-achados-paridade.test.ts`, que falha se registro,
+> painel e cronograma divergirem.
+
+**Como ler estas entradas.** Os achados foram agrupados nos **blocos de correção** do
+`docs/revisoes/O6R/PLANO_O6R.md` (`P-O6R-B01`..`P-O6R-B12`, abaixo, na ordem vinculante do plano) — uma
+entrada solta por achado afogaria o arquivo. **Nenhum achado desapareceu na agregação:** cada um tem sub-entrada
 própria com o ID original (`### Ω6R-XXX-NNN`), localizável por `grep`.
 
 **Fato × hipótese (§A6) — o que este registro verificou.** Cada uma das 29 âncoras arquivo:linha abaixo foi
@@ -2005,9 +2014,72 @@ JWT**, não um subject global. `src/modules/core-saas/services/prisma-core-saas.
 homônimo em organizações distintas é legal no modelo.
 
 **Bloqueia:** feature em auth, seleção/troca de organização e onboarding multi-org.
-- status: ABERTA — **P0, bloqueia deploy produtivo e features nos módulos acima** (J-6R). Rascunho arquitetural
-  correlato: `docs/revisoes/O6R/D-001-identidade-global-tenancy.md`, **pauta do dono, não decisão** (ver
-  `D-O6R-RASCUNHOS-DEFERIDOS-AO-HUMANO`).
+- status: **FECHADA (2026-08-18 — B-O6R-01, PR na autoria; nº/hash no backfill pós-merge).** Entregue conforme
+  o plano v6 aprovado 5×0 (`agent-orchestration/omega/planos/B-O6R-01-plano-v6-aprovado.md`): allowlist fechada
+  por construção + 403 `role_not_assignable` nos 4 pontos e no escritor sem rota (SEC-001); identidade global +
+  vínculo explícito + trilha append-only + login sem organização pela função elevada + religação/desvínculo com
+  revogação real de sessões do par (TEN-001). Aceite provado: `tenant_admin` não atribui papel global
+  (ponta a ponta com a rota de plataforma seguindo 403); E2E de homônimo (403 sem vínculo) e de promoção.
+  **Terceira armadilha (§4 da ata J-O6R-B01) resolvida pela OPÇÃO A** — proveniência na linha do vínculo
+  (`auth_identity_links.attached_via`), trilha segue ilegível; declarada no corpo do PR. **Não move o veredito
+  da J-6R** (deploy segue bloqueado; críticos 4/15 fechados). Pendências derivadas do bloco: ver a seção
+  `P-O6R-B01-*` (§11 do plano) abaixo.
+
+## Pendências derivadas do B-O6R-01 (§11 do plano v6 — gravadas neste PR, 2026-08-18)
+
+- **`P-O6R-B01-UI-VINCULO-ORG`** — telas de vínculo de identidade (listar/religar/desvincular) no console e no
+  app. **Carrega a janela do I3:** a revogação corta a RENOVAÇÃO e as rotas de identidade; o access token em
+  voo sobrevive até 15 min — a tela **não pode prometer** "acesso revogado" imediato (contrato do DELETE em
+  `API_CONTRACTS.md`). status: ABERTA.
+- **`P-O6R-B01-RATE-LIMIT-IP`** (→ B-O6R-07) — fecho por IP/distribuído do canal anônimo. Residuais nomeados:
+  enumeração pelo `400 TENANT_ID_REQUIRED` (revela "e-mail em >3 organizações"), amplificação distribuída,
+  rotação de e-mails (o balde por e-mail não a fecha — idêntico ao login de hoje, não regride). status: ABERTA.
+- **`P-O6R-B01-TROCA-SENHA`** — rota de troca de senha (o gancho §5.5 nasce ARMADO e inerte;
+  `changePasswordWithIdentityHook` + `IdentityLinkService.handlePasswordChange`). **Colisão declarada
+  (crítico higiene 5): o fluxo de RESET de senha, por definição sem ator autenticado, não pode chamar o setter
+  do §3.7 — implementá-lo REABRE o contrato do setter em junta.** status: ABERTA.
+- **`P-O6R-B01-REAUTH-SEM-CREDENCIAL`** (S7) — identidade sem credencial elegível fora da organização do
+  vínculo removido recebe `403 REAUTH_CREDENTIAL_UNAVAILABLE` e fica sem caminho de autosserviço; desenhar o
+  caminho assistido. status: ABERTA.
+- **`P-O6R-B01-PROMOCAO-PLATAFORMA`** — a promoção legítima a papel de plataforma ficou SEM rota (a fronteira
+  hoje é o seed); desenhar a operação de plataforma com SoD e auditoria própria. status: ABERTA.
+- **`P-O6R-B01-CONFLITO-VINCULO`** — UX do `409 IDENTITY_LINK_CONFLICT` (ator já tem vínculo na organização
+  provada): hoje o chamador precisa desvincular antes; avaliar fluxo guiado. status: ABERTA.
+- **`P-O6R-B01-LOGIN-ORG-SUSPENSA`** — login DIRETO em organização suspensa segue funcionando
+  (`tenant.repository.ts` sem filtro de status — comportamento de hoje, não regredido; a RELIGAÇÃO já recusa).
+  status: ABERTA.
+- **`P-O6R-B01-IDENTIDADE-ORFA`** — identidades vazias (origem de religação) não são apagadas pela aplicação
+  (sem política de UPDATE/DELETE); higiene exige privilégio e junta. status: ABERTA.
+- **`P-O6R-B01-INDICE-EMAIL-NORMALIZADO`** — índice funcional para a igualdade normalizada da função elevada;
+  aditivo, bloco futuro com medição. status: ABERTA.
+- **`P-O6R-B01-SMOKE-TENANT-ID-WORKFLOWS`** (devops 4) — mapear `SMOKE_TENANT_ID` nos steps dos workflows de
+  deploy, SE a junta um dia preferir o smoke direcionado ao canário; até lá vale a ordem de ativação do §6.1
+  (função elevada ANTES de `STAGING_DEPLOY_ENABLED`). status: ABERTA.
+- **`P-O6R-B01-IDP-SUBJECT`** — amarrar a identidade global ao `sub` do IdP (Cognito) quando a autenticação de
+  produção entrar; hoje a identidade nasce dos vínculos provados por credencial local. status: ABERTA.
+- **`P-O6R-B01-TRILHA-ORFA-LIMPEZA`** (ciclo 3, C5 — 2026-08-19) — a trilha `auth_identity_link_events` da
+  base do dono carrega **231 linhas órfãs de origem** (medido em 2026-08-19 antes do F1: 231 de 508, todas
+  `event='backfill'`, apontando para organização que não existe mais) — despejadas pelo backfill SEM escopo
+  que as execuções do próprio bloco rodaram até o ciclo 2. **O canal do backfill está fechado** (C1: sentença
+  escopada + tripwire; a sonda F4 mediu 0 instantes com terceiro no conjunto-alvo em 713 amostras durante o
+  F1). **Mas a medição F4 do ciclo 3 deu delta +12 (231 → 243 nas 12 execuções, ≈1 por iteração)** — o
+  condicional do C5 disparou, e a ATRIBUIÇÃO está fechada com evidência (execução isolada por suíte):
+  o produtor residual é `tests/core-saas-role-authority-db.test.ts` (+1 órfã por execução, sozinha; as demais
+  candidatas, 0). Mecanismo: a suíte assina JWT direto e dirige POST/PATCH `/users` autenticado sob
+  `CORE_SAAS_PERSISTENCE=prisma`; o caminho de produção normaliza PREGUIÇOSAMENTE o par do token
+  (`normalizePairIdentity`, §3.4 — por desenho) criando vínculo + evento de nascimento; o teardown da suíte
+  apaga o tenant sem conhecer a trilha → evento órfão indelével. **NOTA DE PREMISSA**: o plano do ciclo 3
+  previa este delta como "suíte irmã que não conhece a trilha" e prescrevia transferência ao bloco irmão —
+  mas a suíte medida NASCEU NESTE BLOCO (ciclo 2, B-4). O desenvolvedor do ciclo 3 NÃO remendou (o plano
+  proíbe conserto improvisado neste ramo) e NÃO decidiu o destino: cabe à junta escolher entre (a) o teardown
+  da suíte adotar o idioma escopado do arnês (`cleanupIdentityFixture`) — o que toca a trilha e exige a
+  bênção da junta pela garantia declarada — ou (b) transferir a `P-O6R-ARNES-ISOLAMENTO`. Evidência
+  espelhada lá. **As existentes FICAM** (244 no ato deste registro: 231 de origem + 12 do F1 + 1 da execução
+  de atribuição; o número cresce ≈1 por execução da suíte contra a base viva até a junta decidir o destino):
+  alcançá-las exige contornar o trigger append-only — a quebra de garantia que o próprio bloco declara
+  inviolável — e isso é **decisão de junta com privilégio** (higiene na base viva, mesma classe de
+  `P-O6R-B01-IDENTIDADE-ORFA`), nunca linha de teardown. A CI **não é afetada**: o banco do job nasce limpo
+  a cada execução. status: ABERTA.
 
 ## P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-003 (P1) — **BLOQUEIA o financeiro**
 
@@ -2166,6 +2238,36 @@ se surgir.
   produção recusa subir com o agregado core-saas em memória, sem banco, sem worker e com Redis apontando
   para host local. O texto acima descreve o estado **anterior** ao PR e fica como registro histórico; a
   `main` de hoje já não o reproduz. Ata: `omega/juntas/J-O6R-B05-PR353-merge.md` (3×0, sem veto).
+
+## P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — **achado ÓRFÃO, sem bloco até hoje**
+
+**Estado:** ABERTO · **Dono:** próximo agente que puxar a trilha `jurisdiction`/`impound` · **PR-alvo:** ainda
+não aberto · **Bloqueia:** nada (não é pré-requisito de outro bloco) · **É bloqueado por:** nada.
+
+**Por que esta entrada nasceu depois de todas as outras.** O `PLANO_O6R.md` é de **2026-08-11** e cobria os 29
+achados então conhecidos. O `Ω6R-DAT-004` entrou na **reconciliação da Fase 5** (2026-08-14), ao revisar de
+fato o módulo `jurisdiction` — que a matriz marcava ✅ nas cinco lentes **sem relatório correspondente**. Ele
+não foi votado pela J-6R e, até **2026-08-17**, **não tinha bloco de correção**: um achado aberto que o
+cronograma não cobria, invisível para quem lesse o plano.
+
+**Quem encontrou:** o guard `tests/kpi-achados-paridade.test.ts`, escrito ao repaginar o painel de KPI, **na
+primeira execução** — ele exige que todo achado aberto esteja coberto por um bloco. Antes dele, registro,
+painel e cronograma eram mantidos em paridade **à mão**, e já haviam divergido duas vezes.
+
+### Ω6R-DAT-004 — editar o perfil normativo re-tempera custódias em curso, e a auditoria não registra o quê
+
+`PATCH` do perfil normativo altera escopo, prazos legais, modelo e teto de diária e requisitos de liberação
+**in place**, sem versão e sem data de vigência, inclusive para perfis já referenciados por processos vivos. O
+motor de diárias resolve o teto lendo o perfil **corrente** no instante do cálculo, não o regime vigente na
+entrada do veículo — enquanto o comentário canônico declara que o teto é intertemporal "por DATA DE ENTRADA".
+A auditoria da edição grava apenas `{scope, active}`: não o campo alterado, nem o valor anterior, nem o novo.
+
+**Aceite provisório** (escrito por quem fechou a lacuna, **não ratificado por junta** — a junta do próprio
+bloco o revisa antes da primeira linha de código): carimbar no processo o snapshot normativo vigente na
+entrada, ou versionar o perfil e referenciar a versão; motores lêem o regime **do processo**, não o perfil
+corrente; auditoria campo a campo com valor anterior e novo (todos numéricos/enums, cabem na allowlist §2.8).
+
+**Severidade P1 mantida como registrada** — reclassificar exigiria junta.
 
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 
@@ -2709,3 +2811,163 @@ veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é paylo
 - **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
   explícito e contagem antes/depois, nunca por curinga solto.
 - status: ABERTA.
+
+## P-O6R-B01-ROLE-LITERAIS (2026-08-18 — ciclo 2 do B-O6R-01, plano §9)
+
+A fatia 1 do ciclo 2 fez do `ROLE_AUTHORITY` (em `src/modules/core-saas/permissions/catalog.ts`) a fonte
+única de "qual papel é de plataforma", com guard 10a travando literais em `src/modules/platform/**`
+(baseline 0). Ficaram **de fora, de propósito**, literais de papel de plataforma em 4 arquivos de
+**feature** — medidos na fatia 3:
+
+- `src/modules/fines/fine.types.ts`
+- `src/modules/navigation/navigation.service.ts`
+- `src/modules/notifications/fleet-alerts.runner.ts`
+- `src/modules/notifications/notification.recipient-resolver.ts`
+
+**Por que não fechou no ciclo:** esses literais não são o gate de autoridade (o gate é o
+`assertAssignableRole` do serviço, agora testado no caminho Prisma); mexer em 4 features fora do foco de um
+ciclo de correção é risco sem prova nova. **Correção, quando vier:** importar as constantes derivadas do
+`ROLE_AUTHORITY` (ou classificar via mapa), com o guard 10a estendendo a fronteira arquivo a arquivo.
+- status: ABERTA.
+
+## P-O6R-B01-ROUTE-ERROR-LEAK (2026-08-18 — ciclo 2 do B-O6R-01, plano §9; achado B-7 do R-ciclo1)
+
+O fallback de `sendRouteError` (`src/modules/core-saas/routes/http.ts`) devolve `error.message` **cru** no
+corpo público (`400 invalid_request`) para qualquer `Error` que não seja `CoreSaasError`/`RouteError` — foi
+por aí que a mensagem do Postgres (`Raw query failed. Code … invalid input syntax for type uuid`) vazou no
+DELETE de vínculo com `reauthTenantId` malformado. O ciclo 2 fechou **só a borda da rota do bloco**
+(validação de forma antes do banco em `identity-links.routes.ts`, com teste que reprova corpo com erro cru);
+a **classe** — dezenas de módulos passam pelo mesmo fallback — é bloco próprio: mudar o fallback altera o
+contrato de erro de todas as rotas de uma vez e precisa de plano e junta próprios.
+- status: ABERTA.
+
+## P-O6R-ARNES-ISOLAMENTO (2026-08-18) — o arranjo do lote de testes contra Postgres, **anterior ao B-O6R-01**
+
+**Estado:** ABERTO · **Dono:** bloco próprio, ainda não aberto · **Bloqueia:** nada diretamente — mas mantém a
+CI instável e **envenena tabela append-only a cada execução**.
+
+**Por que é bloco próprio e não parte do B-O6R-01** (decisão de escopo registrada em
+`agent-orchestration/omega/reprovacoes/R-B-O6R-01-ciclo3-premissa.md`): atinge **seis suítes de quatro trilhas
+diferentes**, tem defeito **anterior** ao bloco, e **já reincidiu uma vez** — o `ci.yml:106-111` documenta,
+por escrito, que a variável `RBAC_DB_PARITY` existe porque a versão anterior deduzia o provisionamento por
+uma sentinela *"que o paralelismo do npm test polui (várias suítes criam papéis)"*. Mesmo arranjo, mesma
+classe, e a resposta de então foi uma variável de ambiente.
+
+### O que fica aqui (o que o B-O6R-01 **não** criou)
+
+- **`ALTER TABLE … RENAME COLUMN` sobre tabela compartilhada dentro do lote** —
+  `tests/checklist-applicability-prisma-db.test.ts:355/373`, com duas suítes irmãs do **mesmo lote** usando a
+  tabela. Medido por sonda somente-leitura: 19.081 amostras, **6 janelas de 17–20 ms por rodada em que a
+  coluna não existia** (`42703 undefined_column` para quem cair nelas).
+- **Cinco prefixos de role sem varredor:** `rls_test_` (**68 órfãs vivas, todas com LOGIN**), `audit_rls_`,
+  `vid_link_rls_`, `vid_rls_test_`. Total medido na base do dono: **81 roles não-sistema, 74 com LOGIN, até
+  460 privilégios de tabela cada.**
+- **Grau de paralelismo não declarado** — `node --test` roda `availableParallelism() - 1` arquivos (7 nesta
+  máquina), e nem o `ci.yml` nem o `scripts/run-backend-tests.mjs` o fixam. Logo **nenhuma taxa medida numa
+  máquina é afirmável sobre outra**.
+- **Divergência entre as três formas de execução** — job `backend`, job `backend-postgres` e `npm test` local:
+  só uma roda `db:seed`, e a base local carrega detrito (294 organizações, 274 usuários, 81 roles) que a da CI
+  não tem. Foi essa divergência que fez o mesmo lote medir **12/12 verde** para um agente e **4/12 vermelho**
+  para outro — nenhum dos dois número errado; o arranjo é que não tem veredito.
+
+### Entrada de pesquisa
+
+`docs/omega-pd.md` → **`PD-O6R-B01-ISOLAMENTO`** (9 fontes, 3 primárias). Conclusão que este bloco herda:
+**nenhuma técnica isolada cobre as três classes** deste lote — linhas de tabela, catálogo de **cluster**
+(role, função) e esquema de tabela compartilhada. Transação-com-rollback não serve ao que se prova aqui;
+schema-por-worker não isola `pg_authid`; banco-por-worker resolve `23503`/`23505` e **não** resolve o `XX000`.
+Só cluster/contêiner por worker isola catálogo — e o advisory lock é, na fonte primária, um *workaround* que
+falha exatamente por **quem não sabe que deveria tomá-lo**.
+
+### As propriedades exigidas
+
+**P1** paralelismo declarado, não função do hardware · **P2** statement sem escopo roda sozinho, ou não é o
+statement que se prova · **P3** objeto de cluster exige mecanismo único entre **todas** as criadoras — hoje
+**nada fica vermelho** quando uma suíte nova escreve catálogo fora do lock · **P4** nenhuma suíte altera
+esquema de tabela compartilhada durante o lote · **P5** varredor cobre todo prefixo, **inclusive quando o
+processo morre** · **P6** escrita fora de escopo não pode ser irreversível · **P7** a prova é verde ou
+vermelha pelo mesmo motivo nas três formas · **P8** *"verde em N execuções"* não é prova sem N e forma
+declarados · **P9** o plano não afirma propriedade que a entrega não tem.
+
+Enunciadas na íntegra em `agent-orchestration/omega/reprovacoes/R-B-O6R-01-ciclo3-premissa.md`.
+
+### Evidência do condicional C5 do ciclo 3 (2026-08-19) — o produtor residual da trilha órfã, ATRIBUÍDO
+
+A medição F4 do ciclo 3 (contador de órfãs antes/depois de 12 execuções F1 na forma exata do job
+`backend-postgres`) deu **delta +12 (231 → 243, ≈1 por iteração)** — MESMO com o backfill escopado (C1) e a
+sonda medindo **0 instantes** com terceiro no conjunto-alvo (713 amostras). Atribuição por execução isolada:
+**`tests/core-saas-role-authority-db.test.ts`** sozinha produz **+1 órfã por execução**
+(`persistent-rbac-middleware` e `checklist-routes-db`: 0). Mecanismo: JWT assinado direto + POST/PATCH
+`/users` autenticado sob `CORE_SAAS_PERSISTENCE=prisma` → o caminho de produção normaliza preguiçosamente o
+par do token (`normalizePairIdentity`, §3.4 — comportamento de produção por desenho) criando vínculo +
+evento de nascimento na trilha; o teardown da suíte apaga o tenant sem conhecer a trilha → evento órfão
+indelével.
+
+**Nota de premissa, sem maquiagem:** o plano do ciclo 3 prescrevia para este ramo "atribuição e
+transferência para cá", assumindo o produtor como *suíte irmã que não conhece a trilha* — mas a suíte medida
+**nasceu no próprio B-O6R-01** (ciclo 2, B-4). O desenvolvedor do ciclo 3 registrou a evidência nas duas
+pontas (aqui e em `P-O6R-B01-TRILHA-ORFA-LIMPEZA`) e **não remendou nem decidiu o destino** — a escolha
+entre (a) teardown da suíte adotar o idioma escopado do arnês (`cleanupIdentityFixture`) ou (b) tratar aqui
+junto do arranjo é da junta.
+
+## P-O6R-B01-ANONIMO-SEM-LOCKOUT (2026-08-19) — **ALTA** · o caminho anônimo não arma o lockout nem deixa rastro
+
+**Achado por:** `agente-secops`, junta do ciclo 3, **medido em banco real**: 12 tentativas anônimas com senha
+errada **não** avançam o contador de bloqueio e **não** produzem linha de auditoria.
+
+**Por que importa:** o login sem organização (Forma B, §6 do plano v6) é superfície **deste bloco**. O caminho
+com organização arma o lockout; o anônimo não. Quem souber o e-mail tem tentativas ilimitadas por um caminho
+que não deixa rastro — e o `Ω6R-SEC-003` (*"senha errada não trava a conta"*) é um achado **aberto** da
+auditoria, no `B-O6R-07`.
+
+**Não bloqueou o merge** porque a própria cadeira que o achou votou `APROVADO_COM_CORREÇÕES` sem veto: o
+caminho anônimo tem piso de latência e balde por e-mail, e o achado é **soma** ao `SEC-003`, não regressão.
+**Dono natural:** `B-O6R-07` (autorização e anexos), que já fecha o `SEC-003`.
+
+## P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída
+
+**Achado por:** `agente-secops`, medido: depois da religação, o titular da conta **provada** perde acesso
+direto à própria organização e **não tem caminho** para romper o vínculo que não dependa de credencial de
+outra organização da identidade.
+
+**A propriedade que falta:** *"o titular da conta provada numa religação precisa de caminho para romper o
+vínculo que NÃO dependa de credencial de outra organização."*
+
+**Não bloqueou** porque a religação exige prova de credencial para acontecer — não é tomada de conta; é
+ergonomia de saída. Mas é assimetria real, e o `§5.3` do plano v6 declarava bidirecionalidade que a execução
+não entrega inteira.
+
+## P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de candidatos é invisível
+
+**Achado por:** `agente-secops`: `logError` do `AnonymousLoginService` é **código morto** — declarado em
+`anonymous-login.service.ts:77`, usado em `:131-135`, e **nenhum** consumidor o lê.
+
+**A propriedade que falta:** *"a falha da fonte de candidatos do login sem organização tem de ser OBSERVÁVEL
+na composição que roda em produção"* — log, métrica ou alarme. Sem isso, a sonda de prontidão pode dizer
+`inactive` e ninguém saber por quê.
+
+## P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)**
+
+O escopo registrado no ciclo 2 citava só o `DELETE`. A junta do ciclo 3 **mediu o `GET` da mesma rota**
+devolvendo a mensagem **crua do Postgres** no corpo público (`400` com `Raw query failed…`). O escopo real é
+a rota inteira, e a causa é o fallback de `sendRouteError` (`http.ts:51-60`), compartilhado por dezenas de
+módulos — o que mantém a decisão de tratá-lo como bloco próprio.
+
+## P-O6R-ARNES-ISOLAMENTO — **EMENDAS medidas pela junta do ciclo 3**
+
+Acrescentar ao registro existente, com evidência executada:
+
+- **O paralelismo do runner é 1, não 7.** `ubuntu-latest` tem 2 vCPU e `node --test` usa
+  `availableParallelism() - 1`. **Todas** as medições de contenção desta trilha foram feitas com 7 workers.
+  A garantia de serialização é exercida onde o lote é **mais denso** e **não** é exercida na CI, que é onde
+  ela é afirmada. Isto reforça `P1` e muda o peso das medições: elas são conservadoras, não representativas.
+- **O aborto deixa dados, não só roles.** `SIGKILL` aos 6 s deixou **26 organizações órfãs**, ainda presentes
+  após duas rodadas completas. E a base já trazia 8 organizações `fn-*` de um aborto anterior à sessão. O
+  varredor cobre **roles**; **dados de fixture não têm caminho de remoção nenhum**.
+- **O denominador não é asserido em lugar nenhum.** O job afere apenas `skipped == 0`. Medido: **60 contra 65
+  testes no mesmo comando** num arranjo denso — um arquivo abortado subtrai casos e nada declara isso como
+  falha própria. É o modo de falha do ciclo 1, ainda sem guarda estrutural.
+- **A fila do lock tem teto medido.** A ~2× a contenção do job, o arranjo reprova em 35–41 s contra orçamento
+  de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
+  espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
+  de 1 titular do lock.

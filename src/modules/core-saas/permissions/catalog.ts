@@ -279,7 +279,9 @@ export const STANDARD_ROLES = [
   "viewer",
 ] as const;
 
-const LEGACY_ROLES = [
+// Exportado no ciclo 2 do B-O6R-01 SÓ para o snapshot de contrato (tests/core-saas-role-authority);
+// o VALOR é o mesmo desde a origem — exportar não muda um byte do que os consumidores recebem.
+export const LEGACY_ROLES = [
   "platform_admin",
   "operator",
   "finance",
@@ -292,6 +294,102 @@ const LEGACY_ROLES = [
 export const DEFAULT_ROLES = [...STANDARD_ROLES, ...LEGACY_ROLES] as const;
 
 export type Role = (typeof DEFAULT_ROLES)[number];
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-01 (Ω6R-SEC-001) — allowlist FECHADA POR CONSTRUÇÃO de papéis atribuíveis por tenant.
+// O defeito: `users.manage` numa organização atribuía `super_admin`/`platform_admin` — papéis de
+// PLATAFORMA — e o portador passava a operar /api/v1/platform/* contra todas as organizações
+// (platform-permissions.ts concede plataforma pela PRESENÇA do papel). O filtro que parecia
+// proteger (TENANT_ADMIN_PERMISSIONS) bloqueia as permissões "platform:", não o papel.
+// O conserto: papéis de plataforma NUNCA são atribuíveis pelos fluxos de tenant. A fronteira
+// legítima de provisionamento de plataforma é o seed (prisma/seed-users.ts, escrita direta no
+// banco) e uma futura rota de plataforma (pendência P-O6R-B01-PROMOCAO-PLATAFORMA) — nunca
+// POST/PATCH /users.
+// -----------------------------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------------------------
+// Ciclo 2 (R-B-O6R-01-ciclo1, B-2 + B-3) — FONTE ÚNICA de autoridade, derivação por INCLUSÃO.
+// A decisão "este papel é de plataforma ou de tenant?" é tomada UMA vez, aqui, papel a papel.
+// Não existe default: papel novo em DEFAULT_ROLES sem entrada neste mapa é chave faltante no
+// `satisfies Record<Role, …>` e o `npm run check` reprova (drill 2 do ciclo 2 executa essa
+// mutação e anexa o vermelho). O guard anterior (`_RolePartitionIsExhaustive`) foi APAGADO:
+// com `TenantAssignableRole = Exclude<Role, PlatformRole>` a partição era verdadeira por
+// definição e aquele tipo não tinha estado capaz de reprovar nada (adendo ao B-2, provado por
+// compilação no relatório do ciclo 1).
+// -----------------------------------------------------------------------------------------------
+
+export const ROLE_AUTHORITY = {
+  super_admin: "platform",
+  tenant_admin: "tenant",
+  manager: "tenant",
+  field_dispatcher: "tenant",
+  technician: "tenant",
+  viewer: "tenant",
+  platform_admin: "platform",
+  operator: "tenant",
+  finance: "tenant",
+  inventory: "tenant",
+  field_technician: "tenant",
+  auditor: "tenant",
+  support: "tenant",
+} as const satisfies Record<Role, "platform" | "tenant">;
+
+export type RoleAuthority = (typeof ROLE_AUTHORITY)[Role];
+
+// Os tipos derivam por mapped type DA MESMA FONTE — nunca por Exclude de um literal paralelo.
+export type PlatformRole = {
+  [K in Role]: (typeof ROLE_AUTHORITY)[K] extends "platform" ? K : never;
+}[Role];
+
+export type TenantAssignableRole = {
+  [K in Role]: (typeof ROLE_AUTHORITY)[K] extends "tenant" ? K : never;
+}[Role];
+
+// Os DOIS conjuntos derivam por INCLUSÃO do mapa, na ordem de DEFAULT_ROLES — mesmo conteúdo e
+// mesma ordem que os consumidores de deploy (seed/provision-rbac) sempre observaram; o snapshot
+// em tests/fixtures/role-catalog-contract.snapshot.json pina isso. Se um papel escapasse do
+// `satisfies` sem classificação, ele cairia FORA dos dois conjuntos: assertAssignableRole o
+// negaria (403) e o teste de partição ficaria vermelho — a omissão nunca vira permissão.
+export const PLATFORM_ROLES: readonly PlatformRole[] = DEFAULT_ROLES.filter(
+  (role): role is PlatformRole => ROLE_AUTHORITY[role] === "platform",
+);
+
+export const TENANT_ASSIGNABLE_ROLES: readonly TenantAssignableRole[] = DEFAULT_ROLES.filter(
+  (role): role is TenantAssignableRole => ROLE_AUTHORITY[role] === "tenant",
+);
+
+const platformRoleSet = new Set<string>(PLATFORM_ROLES);
+const tenantAssignableRoleSet = new Set<string>(TENANT_ASSIGNABLE_ROLES);
+
+export function isPlatformRole(role: string): role is PlatformRole {
+  return platformRoleSet.has(normalizeRole(role));
+}
+
+export function isTenantAssignableRole(role: string): role is TenantAssignableRole {
+  return tenantAssignableRoleSet.has(normalizeRole(role));
+}
+
+export class RoleNotAssignableError extends Error {
+  readonly statusCode = 403;
+  readonly code = "FORBIDDEN";
+  readonly reason = "role_not_assignable";
+
+  constructor(role: string) {
+    super(`Role is not assignable by tenant flows: ${role}`);
+    this.name = "RoleNotAssignableError";
+  }
+}
+
+// O validador dos QUATRO pontos divergentes (create/update × prisma/memória) e do escritor sem
+// rota (store.assignRoleToUser). Papel fora do catálogo continua sendo 400 (invalid_role) nos
+// validadores chamadores; papel de PLATAFORMA vira 403 role_not_assignable AQUI.
+export function assertAssignableRole(role: Role): Role {
+  if (!tenantAssignableRoleSet.has(role)) {
+    throw new RoleNotAssignableError(role);
+  }
+
+  return role;
+}
 
 export type RoleDefinition = {
   readonly role: Role;

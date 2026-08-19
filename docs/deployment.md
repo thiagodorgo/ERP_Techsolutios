@@ -446,6 +446,56 @@ pg_restore -h <host> -U <admin> -d erp_restore -j4 restore.dump
   por faixa de tamanho no provedor gerenciado (restore e super-linear com indices).
 - **Em PRODUCAO o app conecta com role NAO-superuser** (o `app_user`, sem BYPASSRLS) — nunca `postgres` —, senao
   o `FORCE ROW LEVEL SECURITY` e ignorado e o isolamento por tenant nao vale. Confirmar na ativacao.
+
+### Runbook de ativação do login sem organização (B-O6R-01, §3.8 do plano) — ATO HUMANO
+
+A migração `20260868000000_add_auth_identities` cria a única `SECURITY DEFINER` do repositório
+(`public.auth_login_candidates`) com `REVOKE ALL FROM PUBLIC` e **nenhum GRANT** — a ativação é um ato
+humano deste runbook, **com a exceção do dono escrita**: se a role do `migrate deploy` for a MESMA que
+serve a aplicação, ela nasce DONA da função (EXECUTE implícito de dono — `REVOKE FROM PUBLIC` não o
+alcança) e o caminho nasce **ATIVO sem ato humano**. Quem responde é a sonda (`/health/ready` →
+`login_without_org`), não este texto.
+
+Passos, na ordem:
+
+0. **Descobrir a role da aplicação PELA CONEXÃO DO PRÓPRIO APP** (`SELECT current_user` via o
+   `DATABASE_URL` dos secrets do provedor). O nome `app_user` acima é convenção em prosa, não fato
+   (`inert_no_execute` no log de boot com o GRANT feito = alvo errado).
+1. **Conferir `GET /health/ready` ANTES de conceder.** `login_without_org` já `active` = ativação por
+   coincidência de credencial (a app é dona da função): decidir explicitamente — manter (registrado em
+   ata) ou reverter com `ALTER FUNCTION public.auth_login_candidates(text) OWNER TO <role_dona>`
+   (`REVOKE` **não** desfaz privilégio de dono).
+2. **Criar a role dona dedicada:** `CREATE ROLE <role_dona> NOLOGIN BYPASSRLS;` — **SEM MEMBROS**. Ela é
+   um objeto de privilégio novo: BYPASSRLS + SELECT nas fontes.
+3. `ALTER FUNCTION public.auth_login_candidates(text) OWNER TO <role_dona>;` (quem executa o comando
+   precisa ser membro da role destino).
+4. `GRANT SELECT ON public.users, public.local_auth_credentials, public.tenants TO <role_dona>;`
+5. `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO <role do passo 0>;` → **restart** →
+   conferir `/health/ready` (`login_without_org: "active"`).
+6. **Discriminantes pós-ativação** (o canal do backfill em ambiente — o `prisma migrate deploy` DESCARTA
+   warnings [medido]; o RAISE WARNING vai ao log do SERVIDOR): usuários sem vínculo = 0 · eventos
+   `'backfill'` == vínculos · identidades órfãs = 0 · dono efetivo da função (`pg_proc.proowner`) com
+   `rolsuper`/`rolbypassrls` · **membros da role dona = 0 (`pg_auth_members`) — medido, não presumido** ·
+   **dono efetivo das TRÊS tabelas de identidade (`pg_class.relowner` de `auth_identities`,
+   `auth_identity_links`, `auth_identity_link_events`) ≠ role da aplicação — medido na ativação.**
+   Este último é o que sustenta o append-only da trilha (M-1, ciclo 2 do B-O6R-01): o DONO da tabela,
+   mesmo NOSUPERUSER, desliga o trigger com `ALTER TABLE … DISABLE TRIGGER`; se quem migra é quem
+   serve, a aplicação nasce dona e a trilha deixa de ser prova — a inviolabilidade é da topologia
+   dono ≠ app, não do trigger. Saída registrada na ata de ativação.
+7. **Smoke do caminho anônimo:** `POST /api/v1/auth/login` sem `tenantId` com uma credencial válida → 200.
+
+**PROIBIÇÃO:** `GRANT <role_dona> TO <role_da_app>` — **NUNCA**: daria à app `SET ROLE` para uma role com
+BYPASSRLS e SELECT nas fontes — as 62+ políticas FORCE contornadas de uma vez (é o "nunca dar BYPASSRLS
+ao app_user" pela porta dos fundos). O discriminante do passo 6 o mede.
+
+**Ordem de ativação de staging (§6.1 do plano):** o smoke de staging faz login **sem `tenantId`** e
+"vermelho = deploy inválido"; staging verde é pré-requisito da trava de produção ⇒ **a função elevada é
+ativada (este runbook) ANTES de `STAGING_DEPLOY_ENABLED`**. Não é escolha por env — é sequência.
+`SMOKE_TENANT_ID` nos scripts de smoke é ferramenta de smoke MANUAL do operador (os steps dos workflows
+não mapeiam a env — inalcançável nos pipelines); **defini-la desliga o único canário em-ambiente do
+caminho anônimo** — escolha consciente, nunca herdada. Semântica da luz: desfechos definitivos são
+instantâneo de boot (mudança pós-boot exige restart; "reinicie e confira"); desfechos transitórios
+(banco fora no arranque) re-avaliam a cada leitura do `/health/ready` (intervalo mínimo 60s).
 - **RPO/RTO:** RPO **<= 24h** com o dump diario (perda maxima de 1 dia). Para **RPO sub-24h**, ATIVAR o
   **PITR/WAL nativo** do Postgres gerenciado (R2 do D-INFRA-PROVIDER) — trilha de hand-off separada. O dump S3 e a
   copia **portavel/off-provider**; o PITR e a copia de **baixo RPO**. A missao exige AMBOS. **RPO<=24h e decisao

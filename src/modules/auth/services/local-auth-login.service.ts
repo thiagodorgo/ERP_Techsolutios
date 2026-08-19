@@ -6,6 +6,7 @@ import {
   type LocalAuthLoginInput,
   type LocalAuthLoginResult,
   type LocalAuthLoginRole,
+  type LocalAuthLoginUser,
 } from "../types/auth.types.js";
 import { verifyPassword } from "./password.service.js";
 
@@ -64,6 +65,21 @@ type UserRoleRepositoryLike = {
 };
 
 type TenantContextRunner = <T>(tenantId: string, work: () => Promise<T>) => Promise<T>;
+
+// Resultado da verificação anônima de um candidato (interno; `credential_id` alimenta só a
+// finalização — nunca sai da borda do serviço).
+export type AnonymousCandidateResult =
+  | {
+      readonly ok: true;
+      readonly credential_id: string;
+      readonly user: LocalAuthLoginUser;
+      readonly tenant: { readonly id: string; readonly name: string };
+      readonly roles: readonly LocalAuthLoginRole[];
+    }
+  | {
+      readonly ok: false;
+      readonly reason: "invalid_credentials" | "locked" | "inactive";
+    };
 type LocalAuthAuditContext = Pick<
   EnterpriseAuditLogInput,
   "requestId" | "correlationId" | "ipAddress" | "userAgent"
@@ -188,6 +204,94 @@ export class LocalAuthLoginService {
       },
       roles: mapLoginRoles(roles),
     };
+  }
+
+  // B-O6R-01 (§6.2/§6.4 do plano) — verificação de UM candidato do caminho anônimo, SEM efeito
+  // colateral: falha anônima não incrementa contador de candidato nem audita em N organizações
+  // (§6.4.3). Candidato em lock → reason "locked", que o caminho anônimo achata em 401 uniforme
+  // (o 423 não existe no caminho anônimo). O scrypt é executado pela função INJETADA (espião do
+  // contador nos testes — §6.4.4).
+  async verifyAnonymousCandidate(
+    input: Pick<LocalAuthLoginInput, "tenant_id" | "email" | "password">,
+    verifyPasswordFn: typeof verifyPassword = verifyPassword,
+  ): Promise<AnonymousCandidateResult> {
+    const tenantId = input.tenant_id.trim();
+    const email = normalizeCredentialEmail(input.email);
+    const tenant = await this.tenants.findById(tenantId);
+
+    if (!tenant) {
+      return { ok: false, reason: "invalid_credentials" };
+    }
+
+    const credential = await this.credentials.findByEmailForTenant(email, tenantId);
+
+    if (!credential) {
+      return { ok: false, reason: "invalid_credentials" };
+    }
+
+    if (credential.locked_until && credential.locked_until > new Date()) {
+      return { ok: false, reason: "locked" };
+    }
+
+    const passwordMatches = await verifyPasswordFn(input.password, credential.password_hash);
+
+    if (!passwordMatches) {
+      return { ok: false, reason: "invalid_credentials" };
+    }
+
+    const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
+
+    if (!user || user.status !== "active") {
+      return { ok: false, reason: "inactive" };
+    }
+
+    const roles = await this.userRoles.listByUserForTenant(user.id, tenantId);
+
+    return {
+      ok: true,
+      credential_id: credential.id,
+      user: {
+        id: user.id,
+        tenant_id: user.tenant_id,
+        email: user.email,
+        name: user.name,
+        status: user.status,
+      },
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+      },
+      roles: mapLoginRoles(roles),
+    };
+  }
+
+  // B-O6R-01 — finalização do sucesso anônimo ÚNICO: zera contadores e audita NA ORGANIZAÇÃO
+  // QUE AUTENTICOU (§6.4.3). Sem scrypt aqui — a verificação já aconteceu.
+  async finalizeAnonymousLogin(
+    tenantId: string,
+    credentialId: string,
+    user: { readonly id: string; readonly email: string },
+    roleCount: number,
+    auditContext: LocalAuthAuditContext,
+  ): Promise<void> {
+    await this.credentials.markSuccessfulLogin(credentialId, tenantId);
+    await new EnterpriseAuditLogService(this.auditLogs).record({
+      tenantId,
+      actorId: user.id,
+      actorType: "user",
+      actorEmail: user.email,
+      action: "auth.login.success",
+      resourceType: "auth_session",
+      resourceId: user.id,
+      outcome: "success",
+      severity: "info",
+      ...auditContext,
+      metadata: {
+        email: normalizeCredentialEmail(user.email),
+        roleCount,
+        loginMode: "without_org",
+      },
+    });
   }
 
   private async recordLoginFailure(

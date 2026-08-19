@@ -33,6 +33,8 @@ export async function signAccessToken(
     email: input.email,
     roles: [...input.roles],
     type: "access",
+    // B-O6R-01 (§3.5) — claim opcional de identidade (dica; nunca fonte de GUC/autorização).
+    ...(input.identity_id ? { identity_id: input.identity_id } : {}),
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setSubject(input.user_id)
@@ -149,6 +151,7 @@ function parseAccessTokenPayload(payload: JWTPayload): AuthenticatedTokenPayload
     exp: payload.exp,
     iss: typeof payload.iss === "string" ? payload.iss : undefined,
     aud: typeof payload.aud === "string" ? payload.aud : undefined,
+    identity_id: typeof payload.identity_id === "string" ? payload.identity_id : undefined,
   };
 }
 

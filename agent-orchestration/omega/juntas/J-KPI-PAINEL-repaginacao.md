@@ -197,3 +197,32 @@ Ambos corrigidos. Registrado porque *"o cético refutou"* não é evidência: me
   quando isso acontece. Seria fácil "corrigir" o 88% para baixo agora que a auditoria existe — seria inventar
   uma medida sem base. O que mudou foi **dizer o que ele mede**, ao lado da dimensão que faltava.
 - **Não aprovou o critério de aceite do `B-O6R-12`** — ele é provisório, e a junta daquele bloco o revisa.
+
+---
+
+## 8. ERRATA — a **quinta** instância da classe, e ela está nesta ata
+
+> **Apensada, não reescrita.** Corrigir o texto acima em silêncio apagaria a evidência de que isto aconteceu,
+> que é justamente o que esta ata existe para registrar. O erro fica; a correção vem depois dele.
+
+Achada pelo **porteiro pós-merge do #356**, que reexecutou as contagens em vez de copiá-las.
+
+| Onde | Esta ata afirmava | A execução produz |
+|---|---|---|
+| §1 | backend `2437/2446 → 2457/2466` | **`2437/2446 → 2458/2467`** |
+| §1 | `+20 testes` | **`+21`** |
+| §6 | `26 testes` no total dos guards | **`27`** |
+| §6 | `kpi-dashboard-charts.test.ts` **(15)** | **(16)** |
+
+**Como aconteceu, e por que importa:** a terceira rodada adversarial acrescentou um teste (o guard do gráfico
+de rodadas), e os totais desta ata não foram reconciliados depois. O PR, os KPIs e o `Kpis/README.md` carregam
+os números certos — **só o registro da junta ficou para trás**.
+
+É a **quinta** instância de *"um artefato afirma um resultado que a execução não produz"* nesta entrega, e —
+como as quatro anteriores — **nasceu de uma correção**. A diferença é o alvo: desta vez a afirmação falsa está
+no documento que cataloga a própria classe. Isso não enfraquece o registro; **fortalece a lição do §3c**, e
+mostra que o mecanismo funcionou: a instância foi pega por **quem reexecuta**, não por quem escreve.
+
+**Consequência operacional, para os próximos blocos:** número em ata é **contagem**, e contagem se reexecuta
+como qualquer outra. Ata escrita antes da última rodada de correção precisa ser **reconciliada depois dela** —
+ou não escrever o número até o fim.

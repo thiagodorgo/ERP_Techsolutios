@@ -178,6 +178,24 @@ jobs:
           # guard de zero pulos do passo seguinte que as pune se pularem. É aqui, contra o Postgres de
           # verdade, que "gravou numa instância, leu em outra" deixa de ser afirmação e vira execução.
           SUITES="$SUITES tests/core-saas-persistence-restart-db.test.ts"
+          # B-O6R-01 ciclo 2 (R-B-O6R-01-ciclo1, B-4) — os DOIS pontos de validação do caminho PRISMA
+          # (create/update de /users) provados por HTTP contra o Postgres: escalada de papel → 403,
+          # controle positivo com manager, e banco sem assignment de plataforma depois do 403.
+          SUITES="$SUITES tests/core-saas-role-authority-db.test.ts"
+          # B-O6R-01 (Ω6R-SEC-001 + Ω6R-TEN-001) — identidade global: religação/desvínculo/normalização
+          # sob role EFÊMERA NOSUPERUSER (o único arranjo em que o RLS existe), backfill nas duas
+          # configurações, trilha append-only, função elevada e login sem organização de ponta a ponta.
+          SUITES="$SUITES tests/auth-identity-links-db.test.ts"
+          SUITES="$SUITES tests/auth-identity-revocation-db.test.ts"
+          SUITES="$SUITES tests/auth-identity-role-real-db.test.ts"
+          SUITES="$SUITES tests/auth-identity-backfill-db.test.ts"
+          SUITES="$SUITES tests/auth-identity-link-events-db.test.ts"
+          SUITES="$SUITES tests/auth-login-candidates-fn-db.test.ts"
+          SUITES="$SUITES tests/auth-login-anonymous-db.test.ts"
+          SUITES="$SUITES tests/auth-identity-exposure-scan.test.ts"
+          # §8 do plano: rls-tenant-isolation entra na lista (estava ausente — rodava só no job backend,
+          # onde se declara pulada sem DATABASE_URL; aqui o guard de zero pulos a pune se pular).
+          SUITES="$SUITES tests/rls-tenant-isolation.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

@@ -7,6 +7,7 @@ import { env } from "./config/env.js";
 import {
   attachAuthenticatedActor,
   createAuthRouter,
+  createIdentityLinkRouter,
   createMeRouter,
   createSessionAdminRouter,
 } from "./modules/auth/index.js";
@@ -74,8 +75,24 @@ import { createVehicleRouter } from "./modules/vehicles/index.js";
 import { createWorkOrderRouter } from "./modules/work-orders/index.js";
 import { healthRouter } from "./routes/health.routes.js";
 
-export function createApp(service: ICoreSaasService): Express {
+// B-O6R-01 — opções de composição do app. `getIdentityLinkService` existe para a suíte sob ROLE
+// REAL (§7, grupo do dba 1): o PrismaClient conectado como a role efêmera NOSUPERUSER é injetado
+// no serviço de identidade e ESTE app o serve — a única configuração em que o RLS das transações
+// centrais existe de verdade.
+export type CreateAppOptions = {
+  readonly getIdentityLinkService?: Parameters<typeof createIdentityLinkRouter>[0];
+};
+
+export function createApp(service: ICoreSaasService, options: CreateAppOptions = {}): Express {
   const app = express();
+  // B-O6R-01 (§3.8) — sonda BEST-EFFORT do login sem organização: assíncrona, não aguardada,
+  // captura total; jamais no caminho do arranque (src/server.ts fica INTOCADO — main().catch
+  // derruba o processo, e esta sonda nunca chega lá).
+  void import("./modules/auth/services/login-readiness.js")
+    .then(({ triggerLoginReadinessProbe }) => triggerLoginReadinessProbe())
+    .catch(() => {
+      // Falha ao carregar/disparar a sonda nunca afeta o boot; a luz fica no default fail-closed.
+    });
   // Ω3F-5b (veto §11.2 da cognicao) — resolver de NOME do usuário, composto AQUI (onde o core service já
   // está injetado) e passado aos routers que exibem autoria. Assim o DTO emite authorName/uploadedByName e
   // a UI mostra o NOME, nunca o UUID. Tenant-scoped; falha → null (rótulo neutro no front).
@@ -95,6 +112,12 @@ export function createApp(service: ICoreSaasService): Express {
 
   app.use(logger);
   app.use("/api/v1", healthRouter);
+  // B-O6R-01 — vínculos de identidade (/auth/identity-links). Router PRÓPRIO, montado ANTES do
+  // auth router. O alcance REAL desta montagem (R-ciclo1, B-8): paths não colidem e o middleware
+  // JWT fica restrito a /identity-links — a montagem não intercepta /login, /refresh e /logout.
+  // O que essas rotas mudaram neste bloco (claim identity_id, gravações do primeiro login
+  // pós-migração) mudou nelas, em auth.routes.ts. git add src/app.ts, senão CI route_not_found.
+  app.use("/api/v1/auth", createIdentityLinkRouter(options.getIdentityLinkService));
   app.use("/api/v1/auth", createAuthRouter({ getCoreSaasService: () => Promise.resolve(service) }));
   // Ω-GATE: a rota de plataforma vem ANTES do me-router. O me-router monta no prefixo largo
   // "/api/v1" e aplica tenantContextMiddleware no topo; em produção isso interceptaria

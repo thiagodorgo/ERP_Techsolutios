@@ -26,26 +26,46 @@ healthRouter.get("/health", (_request, response) => {
 });
 
 // Readiness — checagem PROFUNDA real: faz ping em Postgres e Redis. 200 se todos "up";
-// 503 se qualquer dependência estiver "down". Usada pelo smoke pós-deploy e pelo uptime check.
-// Nunca expõe dado sensível (sem URL/credencial/host — só up/down + latência).
+// 503 se qualquer dependência estiver "down". Nunca expõe dado sensível (sem URL/credencial/
+// host — só up/down + latência).
 healthRouter.get("/health/ready", async (_request, response) => {
   const [postgres, redis, worker] = await Promise.all([checkPostgres(), checkRedis(), checkWorker()]);
   const checks = { postgres, redis, worker };
   // Ω6R-DIN-006 (Q2) — o worker é REPORTADO, nunca CONTADO. O veredito 200/503 continua sendo só
-  // Postgres ∧ Redis. Motivo concreto: `fly.production.toml:55-61` tira do balanceamento quem
-  // responde 503, e `:40-45` roda com `min_machines_running=1` — somar o worker aqui converteria
+  // Postgres ∧ Redis. Motivo concreto: `fly.production.toml:70-76` tira do balanceamento quem
+  // responde 503, e `:60` roda com `min_machines_running=1` — somar o worker aqui converteria
   // "os jobs pararam" em "a API caiu inteira". A falha do worker aparece no smoke de deploy, no
   // cron de uptime e em `GET /health/worker` sob demanda.
   const ready = postgres.status === "up" && redis.status === "up";
+  // B-O6R-01 (§3.8) — o booleano do login sem organização é REPORTADO, nunca CONTADO: vive FORA
+  // de `checks` (o teste do conjunto exato de checks fica intocado) e NÃO entra no veredito
+  // 200/503 — este bloco cria, de propósito, uma janela longa de "inactive" (entre o migrate e
+  // o GRANT humano); contá-lo converteria "o login anônimo não foi ativado" em "a API caiu".
+  // A leitura re-dispara a sonda quando o desfecho é transitório (reavaliação preguiçosa).
+  // A CAUSA nunca aparece neste corpo — só em log estruturado do próprio módulo da sonda.
+  const loginWithoutOrg = await readLoginWithoutOrgStatus();
 
   response.status(ready ? 200 : 503).json({
     status: ready ? "ready" : "not_ready",
+    login_without_org: loginWithoutOrg,
     service: SERVICE_NAME,
     ...buildInfo(),
     timestamp: new Date().toISOString(),
     checks,
   });
 });
+
+// Leitura best-effort do booleano da sonda — nunca lança (o readiness não pode cair porque a
+// leitura da luz falhou).
+async function readLoginWithoutOrgStatus(): Promise<"active" | "inactive"> {
+  try {
+    const { getLoginWithoutOrgStatus } = await import("../modules/auth/services/login-readiness.js");
+
+    return getLoginWithoutOrgStatus();
+  } catch {
+    return "inactive";
+  }
+}
 
 // Ω6R-DIN-006 — saúde do LAÇO do worker de jobs, respondida a partir do ESTADO DESTE PROCESSO e
 // nunca do Redis (veto secops #3): a pergunta é "este processo está girando o laço?", e consultar

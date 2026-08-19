@@ -1,5 +1,10 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+import {
+  LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS,
+  LOGIN_LOCKOUT_MINUTES,
+} from "../anonymous-login.constants.js";
+
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 export type CreateLocalAuthCredentialData = {
@@ -98,18 +103,22 @@ export class LocalAuthCredentialRepository {
     });
   }
 
+  // B-O6R-01 (§6.4.1 do plano) — o contador direcionado ARMA o lockout de verdade, num ÚNICO
+  // UPDATE atômico (sem read-modify-write: duas falhas concorrentes não perdem incremento):
+  // incrementa failed_attempts e, quando o total alcança LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS (5),
+  // grava locked_until = now() + 15 min. Antes deste bloco o incremento existia mas
+  // locked_until nunca era escrito — o lockout era decorativo.
   incrementFailedAttempts(id: string, tenantId: string) {
-    return this.client.localAuthCredential.updateMany({
-      where: {
-        id,
-        tenant_id: tenantId,
-      },
-      data: {
-        failed_attempts: {
-          increment: 1,
-        },
-      },
-    });
+    return this.client.$executeRaw`
+      UPDATE local_auth_credentials
+      SET failed_attempts = failed_attempts + 1,
+          locked_until = CASE
+            WHEN failed_attempts + 1 >= ${LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS}
+              THEN now() + make_interval(mins => ${LOGIN_LOCKOUT_MINUTES})
+            ELSE locked_until
+          END
+      WHERE id = ${id}::uuid AND tenant_id = ${tenantId}::uuid
+    `;
   }
 
   resetFailedAttempts(id: string, tenantId: string) {

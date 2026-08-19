@@ -84,7 +84,10 @@ export function createMeRouter(service: ICoreSaasService): Router {
         return;
       }
 
-      const memberships = await service.listTenantsForUserEmail(actor.email);
+      // B-O6R-01 (Ω6R-TEN-001) — a listagem passa a vir dos VÍNCULOS da identidade do ator
+      // (JWT), nunca da correlação por e-mail. Normaliza preguiçosamente o par do token (§3.4 —
+      // escrita em caminho de leitura, declarado).
+      const memberships = await service.listTenantsForIdentity(actor);
 
       response.json({
         data: memberships.map((m) => ({
