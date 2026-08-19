@@ -2817,3 +2817,53 @@ DELETE de vínculo com `reauthTenantId` malformado. O ciclo 2 fechou **só a bor
 a **classe** — dezenas de módulos passam pelo mesmo fallback — é bloco próprio: mudar o fallback altera o
 contrato de erro de todas as rotas de uma vez e precisa de plano e junta próprios.
 - status: ABERTA.
+
+## P-O6R-ARNES-ISOLAMENTO (2026-08-18) — o arranjo do lote de testes contra Postgres, **anterior ao B-O6R-01**
+
+**Estado:** ABERTO · **Dono:** bloco próprio, ainda não aberto · **Bloqueia:** nada diretamente — mas mantém a
+CI instável e **envenena tabela append-only a cada execução**.
+
+**Por que é bloco próprio e não parte do B-O6R-01** (decisão de escopo registrada em
+`agent-orchestration/omega/reprovacoes/R-B-O6R-01-ciclo3-premissa.md`): atinge **seis suítes de quatro trilhas
+diferentes**, tem defeito **anterior** ao bloco, e **já reincidiu uma vez** — o `ci.yml:106-111` documenta,
+por escrito, que a variável `RBAC_DB_PARITY` existe porque a versão anterior deduzia o provisionamento por
+uma sentinela *"que o paralelismo do npm test polui (várias suítes criam papéis)"*. Mesmo arranjo, mesma
+classe, e a resposta de então foi uma variável de ambiente.
+
+### O que fica aqui (o que o B-O6R-01 **não** criou)
+
+- **`ALTER TABLE … RENAME COLUMN` sobre tabela compartilhada dentro do lote** —
+  `tests/checklist-applicability-prisma-db.test.ts:355/373`, com duas suítes irmãs do **mesmo lote** usando a
+  tabela. Medido por sonda somente-leitura: 19.081 amostras, **6 janelas de 17–20 ms por rodada em que a
+  coluna não existia** (`42703 undefined_column` para quem cair nelas).
+- **Cinco prefixos de role sem varredor:** `rls_test_` (**68 órfãs vivas, todas com LOGIN**), `audit_rls_`,
+  `vid_link_rls_`, `vid_rls_test_`. Total medido na base do dono: **81 roles não-sistema, 74 com LOGIN, até
+  460 privilégios de tabela cada.**
+- **Grau de paralelismo não declarado** — `node --test` roda `availableParallelism() - 1` arquivos (7 nesta
+  máquina), e nem o `ci.yml` nem o `scripts/run-backend-tests.mjs` o fixam. Logo **nenhuma taxa medida numa
+  máquina é afirmável sobre outra**.
+- **Divergência entre as três formas de execução** — job `backend`, job `backend-postgres` e `npm test` local:
+  só uma roda `db:seed`, e a base local carrega detrito (294 organizações, 274 usuários, 81 roles) que a da CI
+  não tem. Foi essa divergência que fez o mesmo lote medir **12/12 verde** para um agente e **4/12 vermelho**
+  para outro — nenhum dos dois número errado; o arranjo é que não tem veredito.
+
+### Entrada de pesquisa
+
+`docs/omega-pd.md` → **`PD-O6R-B01-ISOLAMENTO`** (9 fontes, 3 primárias). Conclusão que este bloco herda:
+**nenhuma técnica isolada cobre as três classes** deste lote — linhas de tabela, catálogo de **cluster**
+(role, função) e esquema de tabela compartilhada. Transação-com-rollback não serve ao que se prova aqui;
+schema-por-worker não isola `pg_authid`; banco-por-worker resolve `23503`/`23505` e **não** resolve o `XX000`.
+Só cluster/contêiner por worker isola catálogo — e o advisory lock é, na fonte primária, um *workaround* que
+falha exatamente por **quem não sabe que deveria tomá-lo**.
+
+### As propriedades exigidas
+
+**P1** paralelismo declarado, não função do hardware · **P2** statement sem escopo roda sozinho, ou não é o
+statement que se prova · **P3** objeto de cluster exige mecanismo único entre **todas** as criadoras — hoje
+**nada fica vermelho** quando uma suíte nova escreve catálogo fora do lock · **P4** nenhuma suíte altera
+esquema de tabela compartilhada durante o lote · **P5** varredor cobre todo prefixo, **inclusive quando o
+processo morre** · **P6** escrita fora de escopo não pode ser irreversível · **P7** a prova é verde ou
+vermelha pelo mesmo motivo nas três formas · **P8** *"verde em N execuções"* não é prova sem N e forma
+declarados · **P9** o plano não afirma propriedade que a entrega não tem.
+
+Enunciadas na íntegra em `agent-orchestration/omega/reprovacoes/R-B-O6R-01-ciclo3-premissa.md`.
