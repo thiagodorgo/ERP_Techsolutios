@@ -27,9 +27,16 @@ import { fileURLToPath } from "node:url";
 //   - os padrões são CASE-SENSITIVE em maiúsculas — a forma em que TODO SQL de catálogo deste
 //     repositório está escrito. O vocabulário de domínio em minúsculas ("revoke de sessão",
 //     "grant de permissão") não é escrita de catálogo e fica fora, mantendo a lista curta.
-//   - SQL montado por concatenação/minúsculas ESCAPA do detector. Se isso acontecer, a classe só
-//     fecha com o isolamento por arranjo do bloco irmão; enquanto não acontece, o ratchet cumpre:
-//     nenhum escritor novo entra despercebido.
+//   - TRÊS ESCAPES MEDIDOS pela junta do ciclo 3, executados, não hipotéticos:
+//       (a) SQL montado por concatenação ou em minúsculas — `create role`, `"CREATE " + "ROLE"`,
+//           `["GRANT","SELECT"].join(" ")` — passa VERDE;
+//       (b) a varredura só enxerga `.ts`: escritor novo em `.mjs`/`.js`/`.mts` não é visto;
+//       (c) a trava é de contagem TOTAL por arquivo — dentro de um arquivo já na allowlist, trocar
+//           um `GRANT` por um `CREATE ROLE` preserva o total e não é detectado.
+//     Logo o ratchet NÃO garante que "nenhum escritor novo entra despercebido" — ele garante que
+//     nenhum escritor novo entra despercebido **pela grafia que este repositório usa hoje**, que é
+//     maiúscula e literal em 100% das ocorrências medidas. A classe só fecha de verdade com o
+//     isolamento por arranjo do bloco irmão (`P-O6R-ARNES-ISOLAMENTO`).
 //   - DDL de ESQUEMA (CREATE/ALTER TABLE…) NÃO entra: essa classe é o P4, que saiu do bloco por
 //     decisão de escopo — o guard não pode anexá-la de volta.
 // -----------------------------------------------------------------------------------------------

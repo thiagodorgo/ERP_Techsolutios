@@ -66,8 +66,10 @@ const ROLE_CATALOG_TX_OPTIONS = { maxWait: 30_000, timeout: 30_000 } as const;
 // Idade a partir da qual uma role do namespace do arnês deixada para trás é considerada órfã (o
 // timestamp embutido no nome é o `Date.now()` da criação). 60 min: nenhuma execução legítima do
 // batch vive tanto; roles da execução corrente nunca são alcançadas. P5 por desenho: role deixada
-// por SIGKILL é recolhida pela PRÓXIMA execução — o varredor não depende de teardown do processo
-// que morreu.
+// por SIGKILL é recolhida pela próxima execução **que ocorra depois do corte de 60 min** — não pela
+// próxima execução, sem mais. Medido pela junta do ciclo 3: uma role com LOGIN e escrita em 115
+// tabelas sobreviveu a duas rodadas completas do lote, porque as duas ocorreram dentro da janela.
+// O varredor não depende do teardown do processo que morreu; depende do relógio.
 const ORPHAN_ROLE_MAX_AGE_MS = 60 * 60 * 1000;
 
 // As DUAS famílias de role que o próprio arnês cria (ciclo 3, C4): `o6r_b01_` (role efêmera de

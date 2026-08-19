@@ -2909,3 +2909,65 @@ transferência para cá", assumindo o produtor como *suíte irmã que não conhe
 pontas (aqui e em `P-O6R-B01-TRILHA-ORFA-LIMPEZA`) e **não remendou nem decidiu o destino** — a escolha
 entre (a) teardown da suíte adotar o idioma escopado do arnês (`cleanupIdentityFixture`) ou (b) tratar aqui
 junto do arranjo é da junta.
+
+## P-O6R-B01-ANONIMO-SEM-LOCKOUT (2026-08-19) — **ALTA** · o caminho anônimo não arma o lockout nem deixa rastro
+
+**Achado por:** `agente-secops`, junta do ciclo 3, **medido em banco real**: 12 tentativas anônimas com senha
+errada **não** avançam o contador de bloqueio e **não** produzem linha de auditoria.
+
+**Por que importa:** o login sem organização (Forma B, §6 do plano v6) é superfície **deste bloco**. O caminho
+com organização arma o lockout; o anônimo não. Quem souber o e-mail tem tentativas ilimitadas por um caminho
+que não deixa rastro — e o `Ω6R-SEC-003` (*"senha errada não trava a conta"*) é um achado **aberto** da
+auditoria, no `B-O6R-07`.
+
+**Não bloqueou o merge** porque a própria cadeira que o achou votou `APROVADO_COM_CORREÇÕES` sem veto: o
+caminho anônimo tem piso de latência e balde por e-mail, e o achado é **soma** ao `SEC-003`, não regressão.
+**Dono natural:** `B-O6R-07` (autorização e anexos), que já fecha o `SEC-003`.
+
+## P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída
+
+**Achado por:** `agente-secops`, medido: depois da religação, o titular da conta **provada** perde acesso
+direto à própria organização e **não tem caminho** para romper o vínculo que não dependa de credencial de
+outra organização da identidade.
+
+**A propriedade que falta:** *"o titular da conta provada numa religação precisa de caminho para romper o
+vínculo que NÃO dependa de credencial de outra organização."*
+
+**Não bloqueou** porque a religação exige prova de credencial para acontecer — não é tomada de conta; é
+ergonomia de saída. Mas é assimetria real, e o `§5.3` do plano v6 declarava bidirecionalidade que a execução
+não entrega inteira.
+
+## P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de candidatos é invisível
+
+**Achado por:** `agente-secops`: `logError` do `AnonymousLoginService` é **código morto** — declarado em
+`anonymous-login.service.ts:77`, usado em `:131-135`, e **nenhum** consumidor o lê.
+
+**A propriedade que falta:** *"a falha da fonte de candidatos do login sem organização tem de ser OBSERVÁVEL
+na composição que roda em produção"* — log, métrica ou alarme. Sem isso, a sonda de prontidão pode dizer
+`inactive` e ninguém saber por quê.
+
+## P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)**
+
+O escopo registrado no ciclo 2 citava só o `DELETE`. A junta do ciclo 3 **mediu o `GET` da mesma rota**
+devolvendo a mensagem **crua do Postgres** no corpo público (`400` com `Raw query failed…`). O escopo real é
+a rota inteira, e a causa é o fallback de `sendRouteError` (`http.ts:51-60`), compartilhado por dezenas de
+módulos — o que mantém a decisão de tratá-lo como bloco próprio.
+
+## P-O6R-ARNES-ISOLAMENTO — **EMENDAS medidas pela junta do ciclo 3**
+
+Acrescentar ao registro existente, com evidência executada:
+
+- **O paralelismo do runner é 1, não 7.** `ubuntu-latest` tem 2 vCPU e `node --test` usa
+  `availableParallelism() - 1`. **Todas** as medições de contenção desta trilha foram feitas com 7 workers.
+  A garantia de serialização é exercida onde o lote é **mais denso** e **não** é exercida na CI, que é onde
+  ela é afirmada. Isto reforça `P1` e muda o peso das medições: elas são conservadoras, não representativas.
+- **O aborto deixa dados, não só roles.** `SIGKILL` aos 6 s deixou **26 organizações órfãs**, ainda presentes
+  após duas rodadas completas. E a base já trazia 8 organizações `fn-*` de um aborto anterior à sessão. O
+  varredor cobre **roles**; **dados de fixture não têm caminho de remoção nenhum**.
+- **O denominador não é asserido em lugar nenhum.** O job afere apenas `skipped == 0`. Medido: **60 contra 65
+  testes no mesmo comando** num arranjo denso — um arquivo abortado subtrai casos e nada declara isso como
+  falha própria. É o modo de falha do ciclo 1, ainda sem guarda estrutural.
+- **A fila do lock tem teto medido.** A ~2× a contenção do job, o arranjo reprova em 35–41 s contra orçamento
+  de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
+  espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
+  de 1 titular do lock.
