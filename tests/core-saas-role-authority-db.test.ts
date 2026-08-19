@@ -17,14 +17,20 @@ import { PLATFORM_ROLES } from "../src/modules/core-saas/permissions/catalog.js"
 // Espelho de `core-saas-persistence-restart-db.test.ts` na disciplina:
 //   · AUTO-SKIP sem DATABASE_URL — e o guard de zero pulos do job `backend-postgres` (ci.yml)
 //     pune o pulo lá, onde o banco existe;
-//   · serviço prisma construído DIRETAMENTE (nunca `createCoreSaasService()`, que obedeceria a
-//     CORE_SAAS_PERSISTENCE e devolveria memória no job `backend`);
+//   · com DATABASE_URL presente, a suíte FIXA `CORE_SAAS_PERSISTENCE=prisma` em runtime, antes
+//     de qualquer import da aplicação (convenção escrita no ci.yml; molde de
+//     `checklist-routes-db.test.ts:266`). Uma suíte que prova o caminho de persistência real
+//     não pode executar com internals de memória (middleware de permissão resolvendo do
+//     catálogo em vez da tabela) — nem passando, nem falhando: ou fixa o modo, ou pula
+//     (R-B-O6R-01-ci-vermelha, CI-1);
+//   · serviço prisma construído DIRETAMENTE (nunca `createCoreSaasService()`) — reforço sobre o
+//     modo fixado acima;
 //   · teardown ESCOPADO aos ids desta execução, em ordem de FK — nunca curinga em base viva.
 //
-// Autorização nas DUAS configurações da CI: o ator (tenant_admin) recebe linhas em
-// `role_permissions` (o middleware persistente do job postgres resolve da TABELA — molde de
-// `checklist-routes-db.test.ts`); no job `backend` (memory) o fallback de catálogo resolve dos
-// papéis do token. O JWT é assinado direto (mesmo molde), papel `tenant_admin`.
+// Autorização: com o modo fixado em prisma, o middleware persistente resolve permissões da
+// TABELA `role_permissions` nas DUAS configurações da CI — por isso o ator (tenant_admin)
+// recebe as linhas de permissão abaixo (molde de `checklist-routes-db.test.ts`). O JWT é
+// assinado direto (mesmo molde), papel `tenant_admin`.
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -36,6 +42,10 @@ if (!connectionString) {
 } else {
   test("SEC-001 no caminho prisma: escalada de papel → 403 e banco intacto; papel de tenant segue fluindo", async (t) => {
     process.env.LOG_LEVEL = "silent";
+    // ANTES de qualquer import da aplicação (os imports abaixo são dinâmicos e é o primeiro
+    // deles que congela src/config/env.ts): esta suíte prova o caminho prisma, então ela mesma
+    // estabelece o modo — o job `backend` da CI roda em CORE_SAAS_PERSISTENCE=memory.
+    process.env.CORE_SAAS_PERSISTENCE = "prisma";
     process.env.JWT_SECRET = "dev-only-change-me";
     process.env.JWT_EXPIRES_IN = "15m";
 
@@ -61,6 +71,7 @@ if (!connectionString) {
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     let server: Server | undefined;
     let tenantId: string | undefined;
+    let createdGlobalManagerRoleId: string | undefined;
 
     try {
       const tenant = await client.tenant.create({
@@ -80,12 +91,28 @@ if (!connectionString) {
       const papelAdmin = await client.role.create({
         data: { tenant_id: tenant.id, key: "tenant_admin", name: `Admin ${suffix}`, scope: "tenant" },
       });
-      // O controle positivo PRECISA do papel-alvo existir no tenant: o store resolve o papel por
-      // `findByKeyForTenant` e recusa papel sem linha — o 201 do manager prova que o 403 dos
-      // papéis de plataforma vem da ALLOWLIST, não de "papel inexistente no tenant".
-      await client.role.create({
-        data: { tenant_id: tenant.id, key: "manager", name: `Gestão ${suffix}`, scope: "tenant" },
+      // O controle positivo PRECISA da linha GLOBAL do papel-alvo (tenant_id IS NULL): para key
+      // de catálogo, `findByKeyForTenant` resolve SOMENTE a linha global (defesa Ω6R-SEC-001 em
+      // role.repository.ts — um clone tenant-scoped de papel de sistema nunca é o resolvido).
+      // O job `backend` da CI roda com o banco migrado e SEM seed — era daí que vinha o 400 do
+      // controle positivo na CI do #357 (medido: sem esta linha a falha é idêntica em memory e
+      // em prisma). Esta suíte cria a linha SÓ quando falta, e o teardown remove SÓ o que ela
+      // criou — numa base seedada (backend-postgres, dev local) a linha pré-existe e fica
+      // intocada. O 201 do manager prova que o 403 dos papéis de plataforma vem da ALLOWLIST,
+      // não de "papel inexistente".
+      const managerGlobal = await client.role.findFirst({
+        where: { key: "manager", tenant_id: null },
+        select: { id: true },
       });
+
+      if (!managerGlobal) {
+        createdGlobalManagerRoleId = (
+          await client.role.create({
+            data: { key: "manager", name: "Manager", scope: "system" },
+            select: { id: true },
+          })
+        ).id;
+      }
 
       // No job `backend-postgres` (CORE_SAAS_PERSISTENCE=prisma) o middleware persistente IGNORA
       // os papéis do token e resolve permissões da tabela `role_permissions` — sem estas linhas,
@@ -219,6 +246,14 @@ if (!connectionString) {
           0,
           "teardown deixou organização para trás",
         );
+      }
+
+      // A linha global de `manager` só é removida se ESTA execução a criou (banco sem seed);
+      // os assignments que a referenciavam são deste tenant e já caíram acima.
+      if (createdGlobalManagerRoleId) {
+        await client.role.deleteMany({
+          where: { id: createdGlobalManagerRoleId, tenant_id: null },
+        });
       }
 
       await client.$disconnect();

@@ -23,37 +23,49 @@ DioException _badResponse(int status, Map<String, Object?> body) {
 }
 
 void main() {
-  test('409 TENANT_SELECTION_REQUIRED vira conflito com copia de organizacao', () {
-    final error = mapLoginError(
-      _badResponse(409, {
-        'error': {'code': 'TENANT_SELECTION_REQUIRED', 'message': 'choose one'},
-      }),
-    );
+  test(
+    '409 TENANT_SELECTION_REQUIRED vira conflito com copia de organizacao',
+    () {
+      final error = mapLoginError(
+        _badResponse(409, {
+          'error': {
+            'code': 'TENANT_SELECTION_REQUIRED',
+            'message': 'choose one',
+          },
+        }),
+      );
 
-    expect(error, isA<ApiConflictError>());
-    expect(error.safeMessage.contains('organizacao'), isTrue);
-    expect(error.safeMessage.toLowerCase().contains('tenant'), isFalse);
-  });
+      expect(error, isA<ApiConflictError>());
+      expect(error.safeMessage.contains('organizacao'), isTrue);
+      expect(error.safeMessage.toLowerCase().contains('tenant'), isFalse);
+    },
+  );
 
-  test('400 TENANT_ID_REQUIRED pede a organizacao (distinto do 400 generico)', () {
-    final error = mapLoginError(
-      _badResponse(400, {
-        'error': {'code': 'TENANT_ID_REQUIRED', 'message': 'tenantId is required'},
-      }),
-    );
+  test(
+    '400 TENANT_ID_REQUIRED pede a organizacao (distinto do 400 generico)',
+    () {
+      final error = mapLoginError(
+        _badResponse(400, {
+          'error': {
+            'code': 'TENANT_ID_REQUIRED',
+            'message': 'tenantId is required',
+          },
+        }),
+      );
 
-    expect(error, isA<ApiServerError>());
-    expect((error as ApiServerError).statusCode, 400);
-    expect(error.safeMessage.contains('organizacao'), isTrue);
+      expect(error, isA<ApiServerError>());
+      expect((error as ApiServerError).statusCode, 400);
+      expect(error.safeMessage.contains('organizacao'), isTrue);
 
-    final genericBadRequest = mapLoginError(
-      _badResponse(400, {
-        'error': {'code': 'BAD_REQUEST', 'message': 'email must be valid.'},
-      }),
-    );
+      final genericBadRequest = mapLoginError(
+        _badResponse(400, {
+          'error': {'code': 'BAD_REQUEST', 'message': 'email must be valid.'},
+        }),
+      );
 
-    expect(genericBadRequest.safeMessage == error.safeMessage, isFalse);
-  });
+      expect(genericBadRequest.safeMessage == error.safeMessage, isFalse);
+    },
+  );
 
   test('429 RATE_LIMITED vira mensagem de espera', () {
     final error = mapLoginError(
@@ -67,13 +79,19 @@ void main() {
     expect(error.safeMessage.contains('tentativas'), isTrue);
   });
 
-  test('401 segue no mapeamento existente (uniforme, sem vazamento de corpo)', () {
-    final error = mapLoginError(
-      _badResponse(401, {
-        'error': {'code': 'INVALID_CREDENTIALS', 'message': 'Invalid credentials.'},
-      }),
-    );
+  test(
+    '401 segue no mapeamento existente (uniforme, sem vazamento de corpo)',
+    () {
+      final error = mapLoginError(
+        _badResponse(401, {
+          'error': {
+            'code': 'INVALID_CREDENTIALS',
+            'message': 'Invalid credentials.',
+          },
+        }),
+      );
 
-    expect(error, isA<ApiUnauthorizedError>());
-  });
+      expect(error, isA<ApiUnauthorizedError>());
+    },
+  );
 }

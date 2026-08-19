@@ -156,7 +156,8 @@ ApiError mapLoginError(DioException e) {
   if (status == 429) {
     return const ApiServerError(
       statusCode: 429,
-      safeMessage: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+      safeMessage:
+          'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
     );
   }
 
