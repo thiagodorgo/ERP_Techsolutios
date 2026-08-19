@@ -123,8 +123,8 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 15,
-    "p0_fechados": 4,
-    "p0_abertos": 11,
+    "p0_fechados": 2,
+    "p0_abertos": 13,
     "p1_total": 15,
     "p1_fechados": 0,
     "p1_abertos": 15,
@@ -138,20 +138,25 @@
         "id": "Ω6R-DIN-006",
         "por": "B-O6R-05 (PR #353, a8901ff)",
         "em": "2026-08-15"
-      },
+      }
+    ],
+    "as_of": "2026-08-18",
+    "source": "docs/revisoes/O6R/achados.jsonl",
+    "aguardando_merge": [
       {
         "id": "Ω6R-SEC-001",
-        "por": "B-O6R-01 (PR na autoria; backfill pós-merge)",
+        "severidade": "P0",
+        "por": "B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge)",
         "em": "2026-08-18"
       },
       {
         "id": "Ω6R-TEN-001",
-        "por": "B-O6R-01 (PR na autoria; backfill pós-merge)",
+        "severidade": "P0",
+        "por": "B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge)",
         "em": "2026-08-18"
       }
     ],
-    "as_of": "2026-08-18",
-    "source": "docs/revisoes/O6R/achados.jsonl"
+    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
   },
   "findings": {
     "as_of": "2026-08-17",

@@ -15,7 +15,17 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
-type Achado = { id: string; severidade: string; status: string; modulo?: string };
+type Achado = {
+  id: string;
+  severidade: string;
+  status: string;
+  modulo?: string;
+  // O rastro do fechamento faz parte do contrato: é ele que distingue "corrigido na main" de
+  // "corrigido na autoria, aguardando merge". Deixá-lo fora do tipo obrigava a um cast a cada uso.
+  fechado_por?: string;
+  fechado_em?: string;
+  evidencia_fechamento?: string;
+};
 
 const ACHADOS: Achado[] = readFileSync(`${ROOT}docs/revisoes/O6R/achados.jsonl`, "utf8")
   .split("\n")
@@ -30,7 +40,13 @@ const LATEST = JSON.parse(readFileSync(`${ROOT}Kpis/kpis-latest.json`, "utf8")) 
 
 const REGISTRO = readFileSync(`${ROOT}docs/revisoes/O6R/REGISTRO_ACHADOS_O6R.md`, "utf8");
 
+// "Fechado" tem DUAS acepções, e confundi-las foi o defeito que o guard de merge pegou:
+//   - fechado NA AUTORIA: o conserto existe numa branch, e a junta ainda pode reprová-lo (reprovou);
+//   - fechado NA MAIN: o conserto está mergeado, com hash rastreável.
+// O painel publica só o segundo. O registro carrega os dois, com o rastro dizendo qual é qual.
+const temHashDeMerge = (por: unknown) => /[0-9a-f]{7,40}/.test(String(por ?? ""));
 const fechado = (a: { status: string }) => a.status === "fechado";
+const fechadoNaMain = (a: { status: string; fechado_por?: unknown }) => a.status === "fechado" && temHashDeMerge(a.fechado_por);
 const bySev = (sev: string) => ACHADOS.filter((a) => a.severidade === sev);
 
 test("auditoria: o painel publica exatamente a contagem do registro de achados", () => {
@@ -40,12 +56,15 @@ test("auditoria: o painel publica exatamente a contagem do registro de achados",
   const p0 = bySev("P0");
   const p1 = bySev("P1");
 
+  const p0Main = p0.filter(fechadoNaMain).length;
+  const p1Main = p1.filter(fechadoNaMain).length;
+
   assert.equal(pr.p0_total, p0.length, "p0_total divergiu do achados.jsonl");
-  assert.equal(pr.p0_fechados, p0.filter(fechado).length, "p0_fechados divergiu do achados.jsonl");
-  assert.equal(pr.p0_abertos, p0.length - p0.filter(fechado).length, "p0_abertos não fecha com total − fechados");
+  assert.equal(pr.p0_fechados, p0Main, "p0_fechados tem de contar só o que está na main");
+  assert.equal(pr.p0_abertos, p0.length - p0Main, "p0_abertos não fecha com total − corrigidos na main");
   assert.equal(pr.p1_total, p1.length, "p1_total divergiu do achados.jsonl");
-  assert.equal(pr.p1_fechados, p1.filter(fechado).length, "p1_fechados divergiu do achados.jsonl");
-  assert.equal(pr.p1_abertos, p1.length - p1.filter(fechado).length, "p1_abertos não fecha com total − fechados");
+  assert.equal(pr.p1_fechados, p1Main, "p1_fechados tem de contar só o que está na main");
+  assert.equal(pr.p1_abertos, p1.length - p1Main, "p1_abertos não fecha com total − corrigidos na main");
 
   // Toda severidade do registro tem de estar contabilizada em algum balde. Um `P2` novo hoje
   // sumiria da tela sem ninguém perceber.
@@ -88,8 +107,10 @@ test("auditoria: todo achado fechado carrega rastro — quem fechou e quando", (
     assert.match(secao, /- Status: \*\*fechado\*\*/, `${a.id}: fechado no JSONL e o registro em Markdown não diz isso`);
   }
 
+  // O painel espelha os corrigidos NA MAIN; os da autoria vivem em `aguardando_merge` (teste próprio).
+  const naMain = raw.filter((r) => fechadoNaMain(r as { status: string; fechado_por?: unknown }));
   const espelhados = LATEST.production_readiness?.fechados as ReadonlyArray<{ id: string }> | undefined;
-  assert.equal(espelhados?.length ?? -1, fechados.length, "a lista de fechados do painel divergiu do registro");
+  assert.equal(espelhados?.length ?? -1, naMain.length, "a lista de corrigidos do painel divergiu do registro");
 });
 
 test("auditoria: o veredito só some da tela quando não houver mais crítico aberto", () => {
@@ -132,4 +153,56 @@ test("auditoria: o cronograma cobre todo achado aberto, e nenhum bloco promete a
     });
     assert.deepEqual(pendentes, [], `${b.id} está marcado como concluído mas seus achados ${pendentes.join(", ")} seguem abertos`);
   }
+});
+
+test("auditoria: achado fechado SEM merge não conta como corrigido no painel", () => {
+  // O painel é a página que o dono mostra a investidor. "4 de 15 achados críticos corrigidos" tem de
+  // significar quatro achados cujo conserto está NA `main` — não quatro cujo conserto está numa branch
+  // que a junta ainda pode reprovar.
+  //
+  // Este guard nasceu de um caso vivo: o B-O6R-01 marcou SEC-001 e TEN-001 como fechados na autoria
+  // (a convenção §C3.5, honesta: o nº do PR e o hash vêm no backfill pós-merge) — e então a junta do
+  // ciclo 2 VETOU o bloco. Se o veto virasse abandono, o registro continuaria dizendo "fechado" para
+  // dois achados críticos que ninguém consertou na `main`, e o painel continuaria publicando o número.
+  // Nada no guard anterior olhava estado de merge.
+  const raw = readFileSync(`${ROOT}docs/revisoes/O6R/achados.jsonl`, "utf8")
+    .split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l) as Record<string, unknown>);
+
+  const temHashDeMerge = (por: unknown) => /\b[0-9a-f]{7,40}\b/.test(String(por ?? ""));
+  const fechadosComMerge = raw.filter((a) => a.status === "fechado" && temHashDeMerge(a.fechado_por));
+  const fechadosNaAutoria = raw.filter((a) => a.status === "fechado" && !temHashDeMerge(a.fechado_por));
+
+  const pr = LATEST.production_readiness as Record<string, unknown>;
+  const sev = (id: string) => raw.find((a) => a.id === id)?.severidade;
+
+  // O contador publicado conta SÓ o que está na main.
+  assert.equal(
+    pr.p0_fechados,
+    fechadosComMerge.filter((a) => a.severidade === "P0").length,
+    `p0_fechados publica ${pr.p0_fechados}, mas só ${fechadosComMerge.filter((a) => a.severidade === "P0").length} achados críticos têm conserto na main. ` +
+      `Fechados na autoria (aguardando merge): ${fechadosNaAutoria.map((a) => a.id).join(", ") || "nenhum"}.`,
+  );
+  assert.equal(
+    pr.p1_fechados,
+    fechadosComMerge.filter((a) => a.severidade === "P1").length,
+    "p1_fechados conta achado sem conserto na main",
+  );
+
+  // E os que aguardam merge têm de aparecer — como pendentes, nunca sumidos e nunca como corrigidos.
+  const aguardando = (pr.aguardando_merge as ReadonlyArray<{ id: string }> | undefined) ?? [];
+  assert.deepEqual(
+    aguardando.map((a) => a.id).sort(),
+    fechadosNaAutoria.map((a) => String(a.id)).sort(),
+    "production_readiness.aguardando_merge tem de listar exatamente os achados fechados na autoria",
+  );
+
+  // A lista de `fechados` do painel é só a dos mergeados — senão o investidor lê promessa como entrega.
+  const listados = (pr.fechados as ReadonlyArray<{ id: string }> | undefined) ?? [];
+  for (const f of listados) {
+    assert.ok(
+      temHashDeMerge(raw.find((a) => a.id === f.id)?.fechado_por),
+      `${f.id} aparece na lista de corrigidos do painel sem hash de merge — é promessa, não entrega`,
+    );
+  }
+  void sev;
 });
