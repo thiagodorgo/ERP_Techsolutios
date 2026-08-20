@@ -4,9 +4,17 @@ import {
   createMemoryFinancialTitleService,
   deriveCompetencia,
   getMemoryFinancialPeriodCloseRepositoryForTests,
+  overpaymentError,
+  titleAlreadyPaidError,
+  titleCancelledError,
+  titleNotFoundError,
   type FinancialPeriodCloseRepository,
   type FinancialTitleService,
 } from "../financial-titles/index.js";
+import {
+  createDefaultFinancialUnitOfWork,
+  type FinancialUowResolver,
+} from "../financial-uow/index.js";
 import {
   InMemoryFinancialEntryRepository,
   accountInactiveError,
@@ -17,6 +25,7 @@ import {
   entryNotFoundError,
   invalidAccountReferenceError,
   periodClosedError,
+  titleRestoreConflictError,
   type AccountReader,
   type FinancialAccountRef,
   type FinancialEntryRepository,
@@ -63,6 +72,9 @@ export class FinancialEntryService {
     private readonly periodCloseRepository: FinancialPeriodCloseRepository,
     private readonly accountReader: AccountReader,
     private readonly resolveTitleService: FinancialTitleServiceResolver,
+    // B-O6R-02 F3/F4 — porta de Unit of Work dos fluxos multi-write (payTitle/reverse). Default = o
+    // resolver por env (memória fora de produção; Prisma = transação real com trava de período).
+    private readonly resolveUow: FinancialUowResolver = createDefaultFinancialUnitOfWork,
   ) {}
 
   async list(actor: FinancialEntryActorContext, query: RawRecord): Promise<ListFinancialEntryResult> {
@@ -155,11 +167,15 @@ export class FinancialEntryService {
     return removed;
   }
 
-  // ESTORNO (P-Ω4-ESTORNO) — cria um CONTRA-lançamento (direção invertida, mesmo amount, reversal_of =
-  // original) na MESMA conta. NÃO faz UPDATE destrutivo do original. competencia = corrente (server now)
-  // → passa pelo chokepoint. Estornar o mesmo 2× → 409 already_reversed (idempotência por reversal_of).
-  // NB: se o original for uma liquidação (title_id setado), o estorno NÃO reverte paid_amount do título
-  // (concern do Ω4-5+; registrado em P-Ω4-4-EDGES) — o contra-lançamento nasce sem title_id.
+  // ESTORNO (P-Ω4-ESTORNO + B-O6R-02 F4, Ω6R-DIN-002) — cria um CONTRA-lançamento (direção invertida,
+  // mesmo amount, reversal_of = original) na MESMA conta, e, se o original for uma LIQUIDAÇÃO
+  // (title_id setado), DEVOLVE o pagamento ao título NA MESMA transação (restorePaymentGuarded:
+  // paid_amount decrementa e o status recalcula — `= 0 → open`, parcial → partially_paid). NÃO faz
+  // UPDATE destrutivo do original. competencia = corrente (server now) → chokepoint + trava SHARED
+  // in-tx. Estornar o mesmo 2× → 409 already_reversed, INCLUSIVE concorrente: dentro da unidade o
+  // original é lido com FOR UPDATE — o 2º estorno bloqueia nesse row lock e o re-check de reversão
+  // ativa (na mesma tx) o mata; o índice parcial financial_entries_reversal_of_active_key é backstop.
+  // O contra-lançamento nasce SEM title_id (não duplica contagem da liquidação).
   async reverse(actor: FinancialEntryActorContext, financialEntryId: string): Promise<FinancialEntry> {
     const original = await this.getWritable(actor, financialEntryId);
     // Ω4-5 (fecha P-Ω4-4-REVERSE-MUTABLE): estornar um lançamento CONCILIADO exige desconciliar antes → 422
@@ -170,6 +186,7 @@ export class FinancialEntryService {
     if (original.reversalOf != null) {
       throw reversalPairImmutableError();
     }
+    // FAST-FAIL (precedência de erros preservada); a defesa que decide é o re-check DENTRO da unidade.
     if (await this.repository.findActiveReversalOf(actor.tenantId, original.id)) {
       throw alreadyReversedError();
     }
@@ -178,20 +195,53 @@ export class FinancialEntryService {
     const competencia = deriveCompetencia(occurredAt);
     await this.assertPeriodOpen(actor.tenantId, competencia);
 
-    return this.repository.create({
-      tenantId: actor.tenantId,
-      accountId: original.accountId,
-      direction: original.direction === "in" ? "out" : "in",
-      amount: original.amount,
-      currency: original.currency,
-      paymentMethod: original.paymentMethod,
-      category: original.category,
-      occurredAt,
-      competencia,
-      description: `Estorno de ${original.id}`,
-      reversalOf: original.id,
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      // Ordem global de locks: advisory de período ANTES de qualquer row lock (regra do lar único).
+      await ctx.assertPeriodOpenShared(competencia, periodClosedError);
+
+      // FOR UPDATE do ORIGINAL: serializa estornos concorrentes do mesmo lançamento. A tupla travada
+      // é a fonte estável dos re-checks e dos valores copiados para a contrapartida.
+      const locked = await ctx.entries.findByIdForUpdate(actor.tenantId, original.id);
+      if (!locked || locked.deletedAt != null) {
+        throw entryNotFoundError();
+      }
+      this.assertMutable(locked);
+      // Re-check DENTRO da tx: quem perdeu a corrida acorda aqui vendo a contrapartida commitada → 409.
+      if (await ctx.entries.findActiveReversalOf(actor.tenantId, locked.id)) {
+        throw alreadyReversedError();
+      }
+
+      const counter = await ctx.entries.create({
+        tenantId: actor.tenantId,
+        accountId: locked.accountId,
+        direction: locked.direction === "in" ? "out" : "in",
+        amount: locked.amount,
+        currency: locked.currency,
+        paymentMethod: locked.paymentMethod,
+        category: locked.category,
+        occurredAt,
+        competencia,
+        description: `Estorno de ${locked.id}`,
+        reversalOf: locked.id,
+        createdBy: actor.userId,
+        updatedBy: actor.userId,
+      });
+
+      // DIN-002 — a devolução do pagamento vive NA MESMA unidade da contrapartida: ou commitam juntas
+      // ou morrem juntas. Restore falhou (título deletado/estado legado) → fail-closed: aborta tudo.
+      if (locked.titleId != null) {
+        const restored = await ctx.titles.restorePaymentGuarded({
+          tenantId: actor.tenantId,
+          financialTitleId: locked.titleId,
+          amount: locked.amount,
+          updatedBy: actor.userId,
+        });
+        if (!restored) {
+          throw titleRestoreConflictError();
+        }
+      }
+      return counter;
     });
   }
 
@@ -231,10 +281,15 @@ export class FinancialEntryService {
     return updated;
   }
 
-  // LIQUIDAÇÃO (o gancho Ω4-4 → Título): cria um lançamento de caixa contra o título e dirige paid_amount/
-  // status via applyPayment (WRITE-PATH do título). Orquestra o módulo de títulos por resolver injetado
-  // (evita ciclo). Ordem: valida título/conta/moeda/overpayment ANTES → cria o lançamento (idempotência
-  // via client_action_id: replay → 409 ANTES de mutar o título) → aplica o pagamento ao título.
+  // LIQUIDAÇÃO (Ω4-4 → Título; B-O6R-02 F3, Ω6R-DIN-001 — fecha P-Ω4-4-LIQUID-ATOMIC) — TUDO-OU-NADA:
+  // trava SHARED do período + re-check + lançamento + CAS do título numa ÚNICA unidade (porta UoW).
+  // O que fecha a corrida sem client_action_id é o PAR: (a) o UPDATE do título é CONDICIONAL
+  // (`paid_amount + X <= amount AND status NOT IN ('paid','cancelled')`) — a 2ª transação bloqueia no
+  // row lock da vencedora e re-avalia o predicado contra a tupla NOVA → 0 linhas; (b) o lançamento do
+  // perdedor vive NA MESMA transação → o 422 aborta e ele morre junto. Não existe estado intermediário
+  // commitável. A idempotência permanece: P2002 do client_action_id DENTRO da transação → aborta →
+  // 409 duplicate_payment ANTES de qualquer mutação do título. Pré-checks fora da tx são FAST-FAIL
+  // (precedência de erros preservada); o FOR UPDATE entra SÓ na classificação do CAS que casou 0 linhas.
   async payTitle(actor: FinancialEntryActorContext, financialTitleId: string, body: RawRecord): Promise<FinancialEntry> {
     const amount = parseAmount(body.amount);
     const account = await this.resolveActiveAccount(actor.tenantId, parseRequiredUuid(body.account_id ?? body.accountId, "accountId"));
@@ -246,7 +301,7 @@ export class FinancialEntryService {
 
     const titleService = await this.resolveTitleService();
     const titleActor = this.toTitleActor(actor);
-    // 404 (inexistente/deletado/cross-tenant); cancelado → 422; já pago → 422; overpayment → 422.
+    // FAST-FAIL: 404 (inexistente/deletado/cross-tenant); cancelado → 422; já pago → 422; overpayment → 422.
     const title = await titleService.assertPayable(titleActor, parseRequiredUuid(financialTitleId, "financialTitleId"), amount);
 
     // moeda do lançamento = moeda da conta = moeda do título (single-currency por conta/título no v1).
@@ -258,29 +313,68 @@ export class FinancialEntryService {
 
     await this.assertPeriodOpen(actor.tenantId, competencia);
 
-    const entry = await this.repository.create({
-      tenantId: actor.tenantId,
-      accountId: account.id,
-      titleId: title.id,
-      direction,
-      amount,
-      currency: account.currency,
-      paymentMethod,
-      occurredAt,
-      competencia,
-      description,
-      clientActionId,
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-    });
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      // Ordem global de locks: advisory de período ANTES de qualquer row lock (regra do lar único).
+      await ctx.assertPeriodOpenShared(competencia, periodClosedError);
 
-    // Só DEPOIS do lançamento criado (idempotência já resolvida no create) muta o título. applyPayment
-    // RE-valida guardPayable antes de gravar (o título NUNCA é sobre-pago). Ressalva: numa corrida real de 2
-    // pagamentos SEM client_action_id, ambos criam lançamento e o 2º applyPayment recusa (422 overpayment)
-    // com o lançamento já persistido → saldo da CONTA inflado (título consistente). Ver P-Ω4-4-LIQUID-ATOMIC
-    // (ideal: entry.create + applyPayment na mesma $transaction). Com client_action_id o replay dá 409 antes.
-    await titleService.applyPayment(titleActor, title.id, amount);
-    return entry;
+      // Lançamento PRIMEIRO: o replay do client_action_id estoura P2002 → 409 AQUI, com o título
+      // ainda intocado (e a transação inteira desfeita).
+      const entry = await ctx.entries.create({
+        tenantId: actor.tenantId,
+        accountId: account.id,
+        titleId: title.id,
+        direction,
+        amount,
+        currency: account.currency,
+        paymentMethod,
+        occurredAt,
+        competencia,
+        description,
+        clientActionId,
+        createdBy: actor.userId,
+        updatedBy: actor.userId,
+      });
+
+      // O CAS que decide a corrida. 0 linhas → classifica com leitura ESTÁVEL (FOR UPDATE) e aborta —
+      // o lançamento acima morre no rollback (zero órfão, saldo da conta íntegro).
+      const paid = await ctx.titles.applyPaymentGuarded({
+        tenantId: actor.tenantId,
+        financialTitleId: title.id,
+        amount,
+        updatedBy: actor.userId,
+      });
+      if (paid) {
+        return entry;
+      }
+
+      const locked = await ctx.titles.findByIdForUpdate(actor.tenantId, title.id);
+      if (!locked || locked.deletedAt != null) {
+        throw titleNotFoundError();
+      }
+      if (locked.status === "cancelled") {
+        throw titleCancelledError();
+      }
+      if (locked.status === "paid") {
+        throw titleAlreadyPaidError();
+      }
+      if (roundMoney(locked.paidAmount + amount) > locked.amount) {
+        throw overpaymentError();
+      }
+      // Janela raríssima: entre o CAS 0-linhas e o FOR UPDATE alguém abriu espaço (ex.: estorno
+      // reabriu o título). Com o row lock seguro, o retry é determinístico — e se ainda assim falhar,
+      // fail-closed em overpayment (nunca commita lançamento sem o título mutado junto).
+      const retried = await ctx.titles.applyPaymentGuarded({
+        tenantId: actor.tenantId,
+        financialTitleId: title.id,
+        amount,
+        updatedBy: actor.userId,
+      });
+      if (!retried) {
+        throw overpaymentError();
+      }
+      return entry;
+    });
   }
 
   // Saldo/Extrato: opening_balance + Σ(in ativos) − Σ(out ativos), SOMADO no backend (front nunca soma).

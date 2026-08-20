@@ -170,6 +170,21 @@ export class InMemoryChequeRepository implements ChequeRepository {
     this.cheques.clear();
   }
 
+  // B-O6R-02 F5 — par snapshot/restore do UNDO-LOG do runner de memória (financial-uow). Dublê honesto:
+  // NÃO é evidência de atomicidade (a prova real é a suíte -db contra Postgres); existe só para o
+  // rollback dos fluxos multi-write do cheque (clear/bounce) manter as provas de memória vivas.
+  // Escopo por tenant, cópia rasa por linha (linhas tratadas como imutáveis — sempre `set` de objeto novo).
+  snapshotTenantForUow(tenantId: string): Cheque[] {
+    return [...this.cheques.values()].filter((cheque) => cheque.tenantId === tenantId).map((cheque) => ({ ...cheque }));
+  }
+
+  restoreTenantForUow(tenantId: string, rows: readonly Cheque[]): void {
+    for (const [id, cheque] of [...this.cheques]) {
+      if (cheque.tenantId === tenantId) this.cheques.delete(id);
+    }
+    for (const row of rows) this.cheques.set(row.id, { ...row });
+  }
+
   private attachEntry(
     tenantId: string,
     chequeId: string,

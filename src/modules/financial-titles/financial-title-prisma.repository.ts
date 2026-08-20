@@ -7,6 +7,7 @@ import type {
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
+  GuardedTitlePaymentInput,
   ListFinancialTitleInput,
   ListFinancialTitleResult,
   UpdateFinancialTitleInput,
@@ -149,6 +150,68 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
     });
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
+
+  // B-O6R-02 F3 — SELECT ... FOR UPDATE: trava a linha na transação corrente e devolve a tupla
+  // ESTÁVEL (ninguém mais a muda até o commit/rollback). Usado SÓ onde a classificação de erro
+  // precisa de leitura estável — o write-path em si é o CAS abaixo. Retorna mesmo deletado (o
+  // chamador decide 404), simétrico ao findById.
+  async findByIdForUpdate(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM financial_titles
+      WHERE tenant_id = ${tenantId}::uuid AND id = ${financialTitleId}::uuid
+      FOR UPDATE
+    `;
+    if (rows.length === 0) return undefined;
+    return this.findById(tenantId, financialTitleId);
+  }
+
+  // B-O6R-02 F3 (Ω6R-DIN-001) — o CAS que fecha a corrida da liquidação: UPDATE condicional com o
+  // predicado `paid_amount + X <= amount AND status NOT IN ('paid','cancelled')` NO WHERE. A 2ª
+  // transação bloqueia no row lock da vencedora e, ao destravar, RE-AVALIA o predicado contra a
+  // tupla nova (READ COMMITTED / EvalPlanQual) → casa 0 linhas → undefined. O delta é castado a
+  // numeric(12,2) ANTES da aritmética (float8 cru poderia fazer 0.1+0.2 estourar o predicado do
+  // pagamento exato). SET referencia os valores ANTIGOS das colunas (semântica do UPDATE) — o CASE
+  // do status deriva do mesmo paid_amount pré-update do predicado. updated_at manual (SQL cru não
+  // passa pelo @updatedAt do Prisma).
+  async applyPaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const updatedCount = await this.client.$executeRaw`
+      UPDATE financial_titles
+         SET paid_amount = paid_amount + (${input.amount})::numeric(12,2),
+             status = CASE WHEN paid_amount + (${input.amount})::numeric(12,2) >= amount THEN 'paid' ELSE 'partially_paid' END,
+             updated_by = COALESCE(${input.updatedBy ?? null}::uuid, updated_by),
+             updated_at = now()
+       WHERE tenant_id = ${input.tenantId}::uuid
+         AND id = ${input.financialTitleId}::uuid
+         AND deleted_at IS NULL
+         AND status NOT IN ('paid', 'cancelled')
+         AND paid_amount + (${input.amount})::numeric(12,2) <= amount
+    `;
+    if (updatedCount === 0) return undefined;
+    return this.findById(input.tenantId, input.financialTitleId);
+  }
+
+  // B-O6R-02 F4 (Ω6R-DIN-002) — o CAS do estorno: devolve o pagamento (`paid_amount - X`) e recalcula
+  // o status (`= 0 → open`, parcial → partially_paid) num único UPDATE condicional. O predicado
+  // `status IN ('paid','partially_paid')` é seguro porque a máquina de status não tem aresta
+  // partially_paid/paid → cancelled (título com pagamento nunca é cancelado); `paid_amount - X >= 0`
+  // espelha o CHECK do banco (backstop da migração 20260869000000). 0 linhas → undefined → o chamador
+  // aborta a unidade inteira (a contrapartida NUNCA commita sem o título restaurado).
+  async restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const updatedCount = await this.client.$executeRaw`
+      UPDATE financial_titles
+         SET paid_amount = paid_amount - (${input.amount})::numeric(12,2),
+             status = CASE WHEN paid_amount - (${input.amount})::numeric(12,2) <= 0 THEN 'open' ELSE 'partially_paid' END,
+             updated_by = COALESCE(${input.updatedBy ?? null}::uuid, updated_by),
+             updated_at = now()
+       WHERE tenant_id = ${input.tenantId}::uuid
+         AND id = ${input.financialTitleId}::uuid
+         AND deleted_at IS NULL
+         AND status IN ('paid', 'partially_paid')
+         AND paid_amount - (${input.amount})::numeric(12,2) >= 0
+    `;
+    if (updatedCount === 0) return undefined;
+    return this.findById(input.tenantId, input.financialTitleId);
+  }
 }
 
 export class PrismaFinancialPeriodCloseRepository implements FinancialPeriodCloseRepository {
@@ -232,8 +295,22 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
     // SEM guard de período AQUI (deliberado, §12.1 do plano B-O6R-02): liquidar título de competência
     // já fechada segue permitido — o snapshot é foto point-in-time. O DIN-008 da liquidação é guardado
     // pelo LANÇAMENTO de caixa (competência de occurred_at), no repositório de financial-entries.
-    // A atomicidade lançamento+applyPayment é o DIN-001 (F3 deste bloco, fatia seguinte).
+    // A atomicidade lançamento+applyPayment é o DIN-001 (F3 deste bloco — payTitle usa a porta UoW,
+    // onde entra o CAS applyPaymentGuarded; este applyPayment absoluto permanece para o InMemory/legado).
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).applyPayment(input));
+  }
+  // B-O6R-02 F3/F4 — standalone as três operações abrem a própria transação (o FOR UPDATE solto vale
+  // só até o commit imediato; o uso REAL delas é via a porta UoW, onde `tx` é a transação da unidade).
+  findByIdForUpdate(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findByIdForUpdate(tenantId, financialTitleId));
+  }
+  applyPaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    // Mesma isenção de período do applyPayment (§12.1): o CAS é sobre o TÍTULO; a competência guardada
+    // é a do lançamento de caixa, na mesma unidade (payTitle → assertPeriodOpenShared).
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).applyPaymentGuarded(input));
+  }
+  restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).restorePaymentGuarded(input));
   }
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, tenantId, async (tx) => {

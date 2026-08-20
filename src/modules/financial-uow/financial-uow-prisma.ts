@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { PrismaChequeRepository } from "../cheques/cheque-prisma.repository.js";
 import { PrismaFinancialEntryRepository } from "../financial-entries/financial-entry-prisma.repository.js";
 import {
   PrismaFinancialTitleRepository,
@@ -22,6 +23,7 @@ export class PrismaFinancialUnitOfWork implements FinancialUnitOfWork {
       const ctx: FinancialUowContext = {
         titles: new PrismaFinancialTitleRepository(tx),
         entries: new PrismaFinancialEntryRepository(tx),
+        cheques: new PrismaChequeRepository(tx),
         assertPeriodOpenShared: (period, onClosed) => assertPeriodOpenSharedInTx(tx, tenantId, period, onClosed),
       };
       return work(ctx);

@@ -19,8 +19,14 @@ export interface FinancialEntryRepository {
   // Conciliação bancária (Ω4-5): grava reconciled + os 4 metadados. Lançamento deletado → undefined (→404).
   reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined>;
   // Estorno já feito? (existe contra-lançamento ATIVO apontando este original) — sustenta a idempotência
-  // do estorno (a rede real no Prisma é a mesma consulta; não há índice único porque reversal_of é app-level).
+  // do estorno. B-O6R-02: a rede de banco passou a existir — índice único PARCIAL
+  // financial_entries_reversal_of_active_key (migração 20260869000000), backstop do FOR UPDATE do estorno.
   findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined>;
+  // B-O6R-02 F4 (Ω6R-DIN-002) — SELECT ... FOR UPDATE do lançamento ORIGINAL dentro da transação do
+  // estorno: serializa estornos concorrentes do mesmo original (o 2º bloqueia aqui e o re-check de
+  // reversão ativa, DENTRO da tx, o mata com 409 — inclusive concorrente). No InMemory é findById
+  // (o mutex por tenant do runner de memória já serializa a unidade inteira).
+  findByIdForUpdate(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined>;
   // Saldo/Extrato: soma dos lançamentos ATIVOS da conta por direção (deletados EXCLUÍDOS).
   sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }>;
   reset?(): void;
@@ -82,6 +88,20 @@ export function duplicatePaymentError(): FinancialEntryError {
 // Estornar o MESMO lançamento 2× → 409 (idempotência por reversal_of).
 export function alreadyReversedError(): FinancialEntryError {
   return new FinancialEntryError(409, "FINANCIAL_ENTRY_CONFLICT", "already_reversed", "This financial entry has already been reversed.");
+}
+
+// B-O6R-02 F4 — fail-closed do estorno de LIQUIDAÇÃO: o restore GUARDADO do título casou 0 linhas
+// (título soft-deletado com pagamento — buraco DIN-004 até a F6 fechar o DELETE — ou paid_amount
+// insuficiente por estado legado). Commitar só a contrapartida recriaria o DIN-002 (caixa devolvido,
+// título ainda pago) → a unidade INTEIRA desfaz. Inalcançável nos fluxos íntegros; decisão desta
+// fatia reportada no fechamento (o plano não nomeava o erro deste ramo).
+export function titleRestoreConflictError(): FinancialEntryError {
+  return new FinancialEntryError(
+    409,
+    "FINANCIAL_ENTRY_CONFLICT",
+    "title_restore_conflict",
+    "The linked financial title could not be restored; the reversal was aborted.",
+  );
 }
 
 // Ω4-4 pós-análise (A1/B1) — um lançamento que faz parte de um PAR de estorno (o original já estornado OU o
@@ -201,6 +221,12 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
     return [...this.entries.values()].find(
       (entry) => entry.tenantId === tenantId && entry.reversalOf === originalEntryId && entry.deletedAt == null,
     );
+  }
+
+  // B-O6R-02 F4 — no InMemory a leitura travada é o próprio findById (mutex por tenant do runner de
+  // memória serializa a unidade; não há tupla mudando por baixo).
+  async findByIdForUpdate(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined> {
+    return this.findById(tenantId, financialEntryId);
   }
 
   // Ω4-6 — leitura ESTREITA por competência (lançamentos ATIVOS do tenant) que alimenta o snapshot de

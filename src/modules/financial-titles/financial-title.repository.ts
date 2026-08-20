@@ -5,12 +5,13 @@ import type {
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
+  GuardedTitlePaymentInput,
   ListFinancialTitleInput,
   ListFinancialTitleResult,
   UpdateFinancialTitleInput,
 } from "./financial-title.types.js";
 import { FinancialTitleError } from "./financial-title.types.js";
-import { isTitleOverdue } from "./financial-title.validators.js";
+import { isTitleOverdue, roundMoney } from "./financial-title.validators.js";
 
 export interface FinancialTitleRepository {
   create(input: CreateFinancialTitleInput): Promise<FinancialTitle>;
@@ -28,6 +29,22 @@ export interface FinancialTitleRepository {
   // Ω4-4 — WRITE-PATH da liquidação: paid_amount + status juntos (contorna a máquina de status).
   applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined>;
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined>;
+  // B-O6R-02 F3 (Ω6R-DIN-001) — leitura ESTÁVEL para CLASSIFICAR o erro quando o CAS casa 0 linhas
+  // (distinguir 404 / title_cancelled / title_already_paid / overpayment sobre a tupla travada).
+  // No Prisma é SELECT ... FOR UPDATE dentro da transação corrente; no InMemory é findById (o mutex
+  // por tenant do runner de memória já serializa a unidade inteira).
+  findByIdForUpdate(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined>;
+  // B-O6R-02 F3 (Ω6R-DIN-001) — liquidação GUARDADA (CAS): incrementa paid_amount e deriva o status
+  // ('paid' quando quita, senão 'partially_paid') num ÚNICO UPDATE condicional
+  // (`status NOT IN ('paid','cancelled') AND paid_amount + X <= amount`). O perdedor da corrida
+  // re-avalia o predicado contra a tupla nova e recebe undefined — DENTRO da mesma transação do
+  // lançamento, o 422 do chamador aborta e o lançamento morre junto (zero órfão).
+  applyPaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined>;
+  // B-O6R-02 F4 (Ω6R-DIN-002) — estorno GUARDADO (CAS): decrementa paid_amount e recalcula o status
+  // (`= 0 → open`, `0 < x < amount → partially_paid`) num ÚNICO UPDATE condicional
+  // (`status IN ('paid','partially_paid') AND paid_amount - X >= 0`). undefined = título não
+  // restaurável (deletado/estado legado) — o chamador aborta a unidade inteira (fail-closed).
+  restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined>;
   reset?(): void;
 }
 
@@ -270,6 +287,54 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
       ...current,
       paidAmount: input.paidAmount,
       status: input.status,
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.titles.set(updated.id, updated);
+    return updated;
+  }
+
+  // B-O6R-02 F3 — no InMemory a leitura "estável" é o próprio findById: o mutex por tenant do runner
+  // de memória (financial-uow) serializa a unidade inteira, então não existe tupla mudando por baixo.
+  async findByIdForUpdate(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined> {
+    return this.findById(tenantId, financialTitleId);
+  }
+
+  // B-O6R-02 F3 — CAS da liquidação (espelho do UPDATE condicional do Prisma): o predicado inteiro é
+  // avaliado SINCRONAMENTE contra a linha atual (sem await entre leitura e escrita) e o não-casamento
+  // devolve undefined — mesma semântica de "0 linhas" do Postgres.
+  async applyPaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const current = this.titles.get(input.financialTitleId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (current.status === "paid" || current.status === "cancelled") return undefined;
+    const newPaid = roundMoney(current.paidAmount + input.amount);
+    if (newPaid > current.amount) return undefined;
+
+    const updated: FinancialTitle = {
+      ...current,
+      paidAmount: newPaid,
+      status: newPaid >= current.amount ? "paid" : "partially_paid",
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.titles.set(updated.id, updated);
+    return updated;
+  }
+
+  // B-O6R-02 F4 — CAS do estorno (espelho do UPDATE condicional do Prisma): só título com pagamento
+  // (paid/partially_paid — a máquina de status garante que cancelled nunca tem paid_amount > 0) e com
+  // saldo suficiente para devolver; `= 0 → open`, parcial → partially_paid.
+  async restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const current = this.titles.get(input.financialTitleId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (current.status !== "paid" && current.status !== "partially_paid") return undefined;
+    const newPaid = roundMoney(current.paidAmount - input.amount);
+    if (newPaid < 0) return undefined;
+
+    const updated: FinancialTitle = {
+      ...current,
+      paidAmount: newPaid,
+      status: newPaid <= 0 ? "open" : "partially_paid",
       ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
       updatedAt: new Date(),
     };

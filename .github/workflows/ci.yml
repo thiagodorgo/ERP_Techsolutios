@@ -201,6 +201,15 @@ jobs:
           # espera writer em voo e o snapshot o inclui (G11). A suíte fixa CORE_SAAS_PERSISTENCE=prisma
           # ela mesma e asserta o modo (lição do #357).
           SUITES="$SUITES tests/financial-period-close-write-race-db.test.ts"
+          # B-O6R-02 F3–F5 (Ω6R-DIN-001/002/003 / QUA-003) — pagamento, estorno e cheque em transação
+          # ÚNICA, provados com duas conexões e barreira determinística (fila de lock observada em
+          # pg_stat_activity): G1/G2 perdedor 422 sem lançamento órfão + replay 409 sem mutação;
+          # G3/G3b/G4 estorno devolve o pagamento e a dupla reversão morre no FOR UPDATE + re-check;
+          # G5/G6 cheque intacto sob falha real e mutex 409 com invariante cleared ⇔ entry. Cada
+          # suíte fixa CORE_SAAS_PERSISTENCE=prisma ela mesma e asserta o modo (lição do #357).
+          SUITES="$SUITES tests/financial-pay-title-atomic-db.test.ts"
+          SUITES="$SUITES tests/financial-entry-reverse-restore-db.test.ts"
+          SUITES="$SUITES tests/cheque-clear-bounce-atomic-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

@@ -160,6 +160,19 @@ export type ApplyTitlePaymentInput = {
   readonly updatedBy?: string;
 };
 
+// B-O6R-02 F3/F4 (Ω6R-DIN-001/002) — entrada dos write-paths GUARDADOS (CAS) da liquidação e do
+// estorno. `amount` é DELTA (não absoluto): o repositório aplica `paid_amount ± amount` com o
+// predicado NO PRÓPRIO UPDATE (`paid_amount + X <= amount` / `paid_amount - X >= 0` + status
+// liquidável/restaurável). É o predicado no WHERE que fecha a corrida: a 2ª transação bloqueia no
+// row lock da vencedora e, ao destravar, re-avalia contra a TUPLA NOVA (READ COMMITTED/EvalPlanQual)
+// → casa 0 linhas → undefined (o chamador classifica o erro com leitura FOR UPDATE e aborta a tx).
+export type GuardedTitlePaymentInput = {
+  readonly tenantId: string;
+  readonly financialTitleId: string;
+  readonly amount: number;
+  readonly updatedBy?: string;
+};
+
 export type ListFinancialTitleInput = {
   readonly tenantId: string;
   readonly includeDeleted: boolean;

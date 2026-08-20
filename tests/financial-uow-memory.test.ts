@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 
 import {
+  getMemoryChequeRepositoryForTests,
+  resetChequeRuntimeForTests,
+} from "../src/modules/cheques/cheque.service.js";
+import {
   getMemoryFinancialEntryRepositoryForTests,
   resetFinancialEntryRuntimeForTests,
 } from "../src/modules/financial-entries/financial-entry.service.js";
@@ -25,10 +29,12 @@ import { createMemoryFinancialUnitOfWork } from "../src/modules/financial-uow/fi
 function freshUow() {
   resetFinancialTitleRuntimeForTests();
   resetFinancialEntryRuntimeForTests();
+  resetChequeRuntimeForTests();
   const titles = getMemoryFinancialTitleRepositoryForTests();
   const entries = getMemoryFinancialEntryRepositoryForTests();
+  const cheques = getMemoryChequeRepositoryForTests();
   const periodCloses = getMemoryFinancialPeriodCloseRepositoryForTests();
-  return { uow: createMemoryFinancialUnitOfWork({ titles, entries, periodCloses }), titles, entries, periodCloses };
+  return { uow: createMemoryFinancialUnitOfWork({ titles, entries, cheques, periodCloses }), titles, entries, cheques, periodCloses };
 }
 
 function titleInput(tenantId: string) {
@@ -77,6 +83,35 @@ test("undo-log: work que lança DEPOIS de escrever desfaz a escrita (título e l
   assert.equal(survivingTitles.items[0].id, preExisting.id, "a linha pré-existente sobrevive intacta");
   const survivingEntries = await entries.list({ tenantId, includeDeleted: true, limit: 50, offset: 0 });
   assert.equal(survivingEntries.total, 0, "o lançamento criado dentro da unidade que falhou não pode sobreviver");
+});
+
+// B-O6R-02 F5 — o undo-log cobre também o CHEQUE (a unidade do clear/bounce muda status do cheque +
+// cria lançamento; a falha tem de devolver o cheque ao estado anterior, como o rollback do Postgres faz).
+test("undo-log do cheque: work que lança depois da transição devolve o cheque ao estado anterior", async () => {
+  const { uow, cheques } = freshUow();
+  const tenantId = randomUUID();
+  const cheque = await cheques.create({
+    tenantId,
+    accountId: randomUUID(),
+    direction: "received",
+    chequeNumber: "000777",
+    bank: "Banco UoW",
+    amount: 50,
+    currency: "BRL",
+  });
+  const deposited = await cheques.transition({ tenantId, chequeId: cheque.id, fromStatus: "registered", toStatus: "deposited" });
+  assert.equal(deposited?.status, "deposited");
+
+  await assert.rejects(
+    uow.run(tenantId, async (ctx) => {
+      const reserved = await ctx.cheques.transition({ tenantId, chequeId: cheque.id, fromStatus: "deposited", toStatus: "cleared" });
+      assert.equal(reserved?.status, "cleared");
+      throw new Error("falha depois da transição");
+    }),
+    /falha depois da transição/,
+  );
+
+  assert.equal((await cheques.findById(tenantId, cheque.id))?.status, "deposited", "o cheque volta ao estado anterior");
 });
 
 test("undo-log é tenant-escopado: falha do tenant A não toca as linhas do tenant B", async () => {

@@ -1,5 +1,9 @@
 import { env } from "../../config/env.js";
 import type {
+  ChequeRepository,
+  InMemoryChequeRepository,
+} from "../cheques/cheque.repository.js";
+import type {
   FinancialEntryRepository,
   InMemoryFinancialEntryRepository,
 } from "../financial-entries/financial-entry.repository.js";
@@ -13,8 +17,8 @@ import type {
 // B-O6R-02 (Ω6R-DIN-001..004/008) — PORTA de Unit of Work do financeiro.
 //
 // Contrato: `run(tenantId, work)` executa `work` como UMA unidade tenant-scoped. Tudo que o `work`
-// escrever pelos repositórios do contexto commita JUNTO ou morre JUNTO — não existe estado
-// intermediário commitável. `assertPeriodOpenShared` toma a trava de período em modo SHARED e
+// escrever pelos repositórios do contexto (titles/entries/cheques) commita JUNTO ou morre JUNTO —
+// não existe estado intermediário commitável. `assertPeriodOpenShared` toma a trava de período em modo SHARED e
 // re-valida isPeriodClosed DENTRO da mesma unidade (DIN-008); período fechado → lança o erro da
 // fábrica do chamador (título e lançamento têm códigos próprios) → a unidade inteira desfaz.
 //
@@ -31,6 +35,9 @@ import type {
 export interface FinancialUowContext {
   readonly titles: FinancialTitleRepository;
   readonly entries: FinancialEntryRepository;
+  // B-O6R-02 F5 (Ω6R-DIN-003) — cheques na MESMA unidade: clear/bounce fazem transição (CAS) +
+  // lançamento + vínculo juntos; falha → o cheque volta ao estado anterior PELO BANCO (rollback).
+  readonly cheques: ChequeRepository;
   /**
    * DIN-008 — trava SHARED de (tenant, period) + re-check de isPeriodClosed DENTRO da unidade.
    * Período fechado → lança `onClosed(period)` e a unidade inteira desfaz.
@@ -42,9 +49,13 @@ export interface FinancialUnitOfWork {
   run<T>(tenantId: string, work: (ctx: FinancialUowContext) => Promise<T>): Promise<T>;
 }
 
+// Resolver da porta (mesmo idioma dos service-resolvers dos módulos financeiros).
+export type FinancialUowResolver = () => Promise<FinancialUnitOfWork>;
+
 export type MemoryFinancialUowDeps = {
   readonly titles: InMemoryFinancialTitleRepository;
   readonly entries: InMemoryFinancialEntryRepository;
+  readonly cheques: InMemoryChequeRepository;
   readonly periodCloses: FinancialPeriodCloseRepository;
 };
 
@@ -59,11 +70,13 @@ export class MemoryFinancialUnitOfWork implements FinancialUnitOfWork {
       const undoLog: Array<() => void> = [
         ((rows) => () => this.deps.titles.restoreTenantForUow(tenantId, rows))(this.deps.titles.snapshotTenantForUow(tenantId)),
         ((rows) => () => this.deps.entries.restoreTenantForUow(tenantId, rows))(this.deps.entries.snapshotTenantForUow(tenantId)),
+        ((rows) => () => this.deps.cheques.restoreTenantForUow(tenantId, rows))(this.deps.cheques.snapshotTenantForUow(tenantId)),
       ];
 
       const ctx: FinancialUowContext = {
         titles: this.deps.titles,
         entries: this.deps.entries,
+        cheques: this.deps.cheques,
         assertPeriodOpenShared: async (period, onClosed) => {
           // Memória não tem advisory lock — o mutex por tenant JÁ serializa a unidade inteira; aqui
           // fica só o re-check (a semântica observável do DIN-008: fechado → erro → unidade desfaz).
@@ -122,13 +135,15 @@ export function resetFinancialUowRuntimeForTests(): void {
 
 async function createFinancialUnitOfWork(): Promise<FinancialUnitOfWork> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
-    const [titleModule, entryModule] = await Promise.all([
+    const [titleModule, entryModule, chequeModule] = await Promise.all([
       import("../financial-titles/financial-title.service.js"),
       import("../financial-entries/financial-entry.service.js"),
+      import("../cheques/cheque.service.js"),
     ]);
     return createMemoryFinancialUnitOfWork({
       titles: titleModule.getMemoryFinancialTitleRepositoryForTests(),
       entries: entryModule.getMemoryFinancialEntryRepositoryForTests(),
+      cheques: chequeModule.getMemoryChequeRepositoryForTests(),
       periodCloses: titleModule.getMemoryFinancialPeriodCloseRepositoryForTests(),
     });
   }

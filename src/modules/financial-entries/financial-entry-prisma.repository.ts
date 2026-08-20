@@ -108,6 +108,19 @@ export class PrismaFinancialEntryRepository implements FinancialEntryRepository 
     return record ? mapRecord(record) : undefined;
   }
 
+  // B-O6R-02 F4 — SELECT ... FOR UPDATE do lançamento (na transação corrente): o 2º estorno do mesmo
+  // original bloqueia AQUI, e o re-check de reversão ativa dentro da tx decide 409 sobre estado
+  // commitado estável. Retorna mesmo deletado (o chamador decide 404), simétrico ao findById.
+  async findByIdForUpdate(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined> {
+    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM financial_entries
+      WHERE tenant_id = ${tenantId}::uuid AND id = ${financialEntryId}::uuid
+      FOR UPDATE
+    `;
+    if (rows.length === 0) return undefined;
+    return this.findById(tenantId, financialEntryId);
+  }
+
   async sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }> {
     const grouped = await this.client.financialEntry.groupBy({
       by: ["direction"],
@@ -183,6 +196,11 @@ export class RlsPrismaFinancialEntryRepository implements FinancialEntryReposito
   }
   findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).findActiveReversalOf(tenantId, originalEntryId));
+  }
+  // B-O6R-02 F4 — standalone abre a própria transação (o lock vale só até o commit imediato); o uso
+  // REAL é via a porta UoW, onde `tx` é a transação da unidade do estorno.
+  findByIdForUpdate(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).findByIdForUpdate(tenantId, financialEntryId));
   }
   sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).sumByAccount(tenantId, accountId));

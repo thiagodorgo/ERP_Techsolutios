@@ -433,6 +433,83 @@ test("ESTORNO de lançamento inexistente/cross-tenant → 404", async () => {
   );
 });
 
+// ---------------------------------------------------------------- estorno de LIQUIDAÇÃO (B-O6R-02 F4, Ω6R-DIN-002)
+// O estorno de um lançamento de liquidação passou a DEVOLVER o pagamento ao título NA MESMA unidade:
+// paid_amount decrementa e o status recalcula (total → open; parcial → partially_paid). Antes, o caixa
+// era revertido e o título continuava pago — as duas verdades incompatíveis do achado.
+
+test("ESTORNO de liquidação TOTAL devolve o pagamento: paid_amount volta a 0 e o título REABRE (open)", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 250 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 250, account_id: account.id, payment_method: "pix" });
+  assert.equal((await titles.get(ctx, title.id)).status, "paid");
+
+  const contra = await entries.reverse(ctx, payment.id);
+  assert.equal(contra.reversalOf, payment.id);
+  assert.equal(contra.direction, "out");
+  // A contrapartida nasce SEM title_id (não duplica a contagem da liquidação).
+  assert.equal(contra.titleId, undefined);
+
+  const refreshed = await titles.get(ctx, title.id);
+  assert.equal(refreshed.paidAmount, 0, "o pagamento devolvido tem de sair do título");
+  assert.equal(refreshed.status, "open", "título totalmente devolvido reabre");
+});
+
+test("ESTORNO de liquidação PARCIAL: título volta a partially_paid com o paid_amount decrementado", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+  const second = await entries.payTitle(ctx, title.id, { amount: 60, account_id: account.id, payment_method: "pix" });
+  assert.equal((await titles.get(ctx, title.id)).status, "paid");
+
+  await entries.reverse(ctx, second.id);
+  const refreshed = await titles.get(ctx, title.id);
+  assert.equal(refreshed.paidAmount, 40, "só o pagamento estornado sai do título");
+  assert.equal(refreshed.status, "partially_paid");
+});
+
+test("ESTORNO de liquidação: 2º estorno → 409 already_reversed e o título NÃO decrementa de novo", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 100, account_id: account.id, payment_method: "pix" });
+  await entries.reverse(ctx, payment.id);
+
+  await assert.rejects(
+    () => entries.reverse(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 409, "already_reversed"),
+  );
+  const refreshed = await titles.get(ctx, title.id);
+  assert.equal(refreshed.paidAmount, 0, "um único decremento — nunca duplo");
+  assert.equal(refreshed.status, "open");
+  // Exatamente 1 contrapartida ativa apontando o original.
+  assert.equal(
+    (await entries.list(ctx, {})).items.filter((item) => item.reversalOf === payment.id).length,
+    1,
+  );
+});
+
+test("ESTORNO de liquidação com título DELETADO (buraco DIN-004 até a F6) → 409 fail-closed e NADA commita", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+  await titles.delete(ctx, title.id); // hoje o DELETE ainda não barra título com pagamento (fatia 3)
+
+  await assert.rejects(
+    () => entries.reverse(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 409, "title_restore_conflict"),
+  );
+  // Fail-closed: a contrapartida NÃO pode sobreviver sem o título restaurado (senão DIN-002 renasce).
+  assert.equal((await entries.list(ctx, {})).items.filter((item) => item.reversalOf === payment.id).length, 0);
+});
+
 // ---------------------------------------------------------------- conciliação (reconcile) [Ω4-5]
 // Paridade InMemory×Prisma é ESTRUTURAL (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
 // (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma da conciliação não é exercido sem banco, idêntico a
