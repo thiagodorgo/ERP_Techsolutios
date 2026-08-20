@@ -156,7 +156,7 @@
     "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
   },
   "findings": {
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-19",
     "source": "docs/revisoes/O6R/achados.jsonl",
     "itens": [
       {

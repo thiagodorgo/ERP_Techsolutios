@@ -2933,6 +2933,11 @@ outra organização da identidade.
 **A propriedade que falta:** *"o titular da conta provada numa religação precisa de caminho para romper o
 vínculo que NÃO dependa de credencial de outra organização."*
 
+**Dono:** `B-O6R-07` (autorização e anexos) — atribuído em 2026-08-19 por ressalva 2 do porteiro pós-merge do
+#357, que apontou esta entrada como órfã. O bloco 07 já mexe na superfície de autorização e no
+`Ω6R-SEC-002`/`SEC-003`, e a via de saída da religação é decisão de autorização, não de identidade.
+**PR-alvo:** o do `B-O6R-07`, ainda não aberto.
+
 **Não bloqueou** porque a religação exige prova de credencial para acontecer — não é tomada de conta; é
 ergonomia de saída. Mas é assimetria real, e o `§5.3` do plano v6 declarava bidirecionalidade que a execução
 não entrega inteira.
@@ -2945,6 +2950,11 @@ não entrega inteira.
 **A propriedade que falta:** *"a falha da fonte de candidatos do login sem organização tem de ser OBSERVÁVEL
 na composição que roda em produção"* — log, métrica ou alarme. Sem isso, a sonda de prontidão pode dizer
 `inactive` e ninguém saber por quê.
+
+**Dono:** `B-O6R-08` (tarefas duráveis e tempo real) — atribuído em 2026-08-19 por ressalva 2 do porteiro
+pós-merge do #357. É o bloco que traz o processo dedicado e o canal de observabilidade que hoje não existe;
+consertar o `logError` sem consumidor seria mover o problema, não fechá-lo.
+**PR-alvo:** o do `B-O6R-08`, ainda não aberto.
 
 ## P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)**
 
