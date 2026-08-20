@@ -7,11 +7,11 @@
     "block": "B-O6R-01 — identidade e autoridade (Ω6R-SEC-001 + Ω6R-TEN-001).",
     "title": "Identidade global + allowlist de papéis — os dois piores achados da auditoria, fechados",
     "pr": 357,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "0a39824",
+    "approved_head": "0a39824",
     "status": "published_per_pr",
     "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c). Ciclo 3 (correção pós-veto J-O6R-B01-ciclo2 + premissa reaberta R-ciclo3): o backfill da suíte ganhou ESCOPO (sentença escopada fail-closed com ida-e-volta byte-idêntica + tripwire do terceiro simulado; a prova do verbatim volta ao migrate deploy da CI, perda declarada), o quinto escritor de catálogo entrou no lock (createCloneOwnerProbe no arnês + prova de fila em pg_locks), ratchet lexical de escrita de catálogo (allowlist congelada por arquivo e contagem), varredor cobrindo as duas famílias do arnês (5 órfãs legadas recolhidas), errata apensada ao plano v6 (P9) e pendência P-O6R-B01-TRILHA-ORFA-LIMPEZA (231 linhas órfãs FICAM; destino é junta). F1 12/12 verde na forma exata do job (denominador 148 idêntico, zero XX000/23503/23505/40P01); F4: 0 instantes com terceiro no alvo e atribuição do delta residual (+12) a core-saas-role-authority-db, registrada sem remendo (decisão de destino é da junta).",
-    "status_label": "PR #357 aberto — em revisão"
+    "status_label": "Mergeado em 19/08/2026 (PR #357)"
   },
   "metrics": {
     "flutter_tests": {
@@ -123,12 +123,22 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 15,
-    "p0_fechados": 2,
-    "p0_abertos": 13,
+    "p0_fechados": 4,
+    "p0_abertos": 11,
     "p1_total": 15,
     "p1_fechados": 0,
     "p1_abertos": 15,
     "fechados": [
+      {
+        "id": "Ω6R-SEC-001",
+        "por": "B-O6R-01 (PR #357, 0a39824)",
+        "em": "2026-08-19"
+      },
+      {
+        "id": "Ω6R-TEN-001",
+        "por": "B-O6R-01 (PR #357, 0a39824)",
+        "em": "2026-08-19"
+      },
       {
         "id": "Ω6R-DAT-001",
         "por": "B-O6R-05 (PR #353, a8901ff)",
@@ -140,22 +150,9 @@
         "em": "2026-08-15"
       }
     ],
-    "as_of": "2026-08-18",
+    "as_of": "2026-08-19",
     "source": "docs/revisoes/O6R/achados.jsonl",
-    "aguardando_merge": [
-      {
-        "id": "Ω6R-SEC-001",
-        "severidade": "P0",
-        "por": "B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge)",
-        "em": "2026-08-18"
-      },
-      {
-        "id": "Ω6R-TEN-001",
-        "severidade": "P0",
-        "por": "B-O6R-01 (PR na autoria; nº e hash no backfill pós-merge)",
-        "em": "2026-08-18"
-      }
-    ],
+    "aguardando_merge": [],
     "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
   },
   "findings": {
@@ -405,7 +402,7 @@
     ]
   },
   "roadmap": {
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-19",
     "source": "docs/revisoes/O6R/PLANO_O6R.md + agent-orchestration/omega/juntas/J-CHK-04C-EMENDA-deliberacao-j6r.md",
     "ordem_vinculante": [
       "B-O6R-05",
@@ -424,7 +421,8 @@
         ],
         "dep": [],
         "estado": "concluido",
-        "nota": "Entregue: identidade global + allowlist de papéis + login sem organização + religação/desvínculo com revogação real. Fecha SEC-001 e TEN-001 (críticos 2→4 de 15). Deploy segue bloqueado (J-6R)."
+        "nota": "Mergeado em 2026-08-19. TRÊS ciclos: 1 reprovado (6 bloqueantes), 2 vetado (batch 33% vermelho na forma do job), 3 aprovado 5×0 sem veto. Dez instâncias de \"o artefato afirma o que a execução não produz\", todas nascidas em correções.",
+        "pr": 357
       },
       {
         "id": "B-O6R-02",
