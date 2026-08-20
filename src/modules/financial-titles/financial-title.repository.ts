@@ -31,6 +31,11 @@ export interface FinancialTitleRepository {
   reset?(): void;
 }
 
+// M2 (Ω4-6) — LAR ÚNICO do conjunto de status que BLOQUEIA escrita: {closing, closed}. Os dois
+// isPeriodClosed (InMemory abaixo e Prisma em financial-title-prisma.repository.ts) e o re-check
+// in-tx do DIN-008 (B-O6R-02) leem DESTA constante — a mesma verdade nunca vive em dois literais.
+export const PERIOD_WRITE_BLOCKING_STATUSES = ["closing", "closed"] as const;
+
 // CHOKEPOINT (D-Ω4-A3) — fonte da verdade do fechamento de período. Ω4-6 povoa a tabela (fechar/reabrir);
 // a fiação é REAL: toda escrita de título/lançamento consulta isPeriodClosed.
 export interface FinancialPeriodCloseRepository {
@@ -291,6 +296,21 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     this.titles.clear();
   }
 
+  // B-O6R-02 — par snapshot/restore do UNDO-LOG do runner de memória (financial-uow). Dublê honesto:
+  // NÃO é evidência de atomicidade (a prova real é a suíte -db contra Postgres); existe só para o
+  // rollback dos fluxos multi-write manter as provas de memória vivas. Escopo por tenant, cópia rasa
+  // por linha (as linhas são tratadas como imutáveis pelos writers InMemory — sempre `set` de objeto novo).
+  snapshotTenantForUow(tenantId: string): FinancialTitle[] {
+    return [...this.titles.values()].filter((title) => title.tenantId === tenantId).map((title) => ({ ...title }));
+  }
+
+  restoreTenantForUow(tenantId: string, rows: readonly FinancialTitle[]): void {
+    for (const [id, title] of [...this.titles]) {
+      if (title.tenantId === tenantId) this.titles.delete(id);
+    }
+    for (const row of rows) this.titles.set(row.id, { ...row });
+  }
+
   private sorted(): FinancialTitle[] {
     // Desempate por id quando created_at empata (mesmo ms): paginação determinística e paridade com o
     // Postgres (que sem desempate devolve ordem arbitrária). Espelha o InMemory do Ω4-1.
@@ -309,7 +329,7 @@ export class InMemoryFinancialPeriodCloseRepository implements FinancialPeriodCl
   // (financial-entry.service.ts) → fica exento por construção mesmo com o período fechado.
   async isPeriodClosed(tenantId: string, period: string): Promise<boolean> {
     const row = this.closes.get(closeKey(tenantId, period));
-    return row != null && (row.status === "closed" || row.status === "closing");
+    return row != null && (PERIOD_WRITE_BLOCKING_STATUSES as readonly string[]).includes(row.status);
   }
 
   // Helper (testes + fiação do Ω4-6): registra SÓ o status de fechamento de uma competência do tenant (upsert).

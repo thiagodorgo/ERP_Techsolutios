@@ -226,6 +226,21 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
     this.entries.clear();
   }
 
+  // B-O6R-02 — par snapshot/restore do UNDO-LOG do runner de memória (financial-uow). Dublê honesto:
+  // NÃO é evidência de atomicidade (a prova real é a suíte -db contra Postgres); existe só para o
+  // rollback dos fluxos multi-write manter as provas de memória vivas. Escopo por tenant, cópia rasa
+  // por linha (as linhas são tratadas como imutáveis pelos writers InMemory — sempre `set` de objeto novo).
+  snapshotTenantForUow(tenantId: string): FinancialEntry[] {
+    return [...this.entries.values()].filter((entry) => entry.tenantId === tenantId).map((entry) => ({ ...entry }));
+  }
+
+  restoreTenantForUow(tenantId: string, rows: readonly FinancialEntry[]): void {
+    for (const [id, entry] of [...this.entries]) {
+      if (entry.tenantId === tenantId) this.entries.delete(id);
+    }
+    for (const row of rows) this.entries.set(row.id, { ...row });
+  }
+
   private findActiveByClientAction(tenantId: string, titleId: string, clientActionId: string): boolean {
     return [...this.entries.values()].some(
       (entry) =>

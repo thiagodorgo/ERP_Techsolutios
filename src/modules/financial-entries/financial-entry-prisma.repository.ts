@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { assertPeriodOpenSharedInTx } from "../financial-titles/financial-title-prisma.repository.js";
 import type {
   CreateFinancialEntryInput,
   FinancialEntry,
@@ -12,6 +13,7 @@ import type {
 import {
   duplicatePaymentError,
   invalidAccountReferenceError,
+  periodClosedError,
   type AccountReader,
   type FinancialAccountRef,
   type FinancialEntryRepository,
@@ -138,7 +140,13 @@ export class RlsPrismaFinancialEntryRepository implements FinancialEntryReposito
   constructor(private readonly prismaClient: PrismaClient) {}
 
   create(input: CreateFinancialEntryInput): Promise<FinancialEntry> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialEntryRepository(tx).create(input));
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      // B-O6R-02 (Ω6R-DIN-008) — trava SHARED + re-check do período DENTRO da tx que grava. Cobre o
+      // lançamento avulso, o contra-lançamento do estorno E o lançamento da liquidação (payTitle),
+      // sem tocar os corpos de payTitle/reverse (F3/F4). O pré-check do serviço permanece (fast-fail).
+      await assertPeriodOpenSharedInTx(tx, input.tenantId, input.competencia, periodClosedError);
+      return new PrismaFinancialEntryRepository(tx).create(input);
+    });
   }
   list(input: ListFinancialEntryInput): Promise<ListFinancialEntryResult> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialEntryRepository(tx).list(input));
@@ -147,12 +155,30 @@ export class RlsPrismaFinancialEntryRepository implements FinancialEntryReposito
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).findById(tenantId, financialEntryId));
   }
   update(input: UpdateFinancialEntryInput): Promise<FinancialEntry | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialEntryRepository(tx).update(input));
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const repository = new PrismaFinancialEntryRepository(tx);
+      const current = await repository.findById(input.tenantId, input.financialEntryId);
+      if (current && current.deletedAt == null) {
+        // DIN-008 — a competência da mutação é a da PRÓPRIA linha (imutável pós-create), lida na mesma tx.
+        await assertPeriodOpenSharedInTx(tx, input.tenantId, current.competencia, periodClosedError);
+      }
+      // Inexistente/deletado NÃO trava período: o update casa 0 linhas → undefined → 404 no serviço.
+      return repository.update(input);
+    });
   }
   softDelete(tenantId: string, financialEntryId: string, deletedBy?: string): Promise<FinancialEntry | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).softDelete(tenantId, financialEntryId, deletedBy));
+    return withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      const repository = new PrismaFinancialEntryRepository(tx);
+      const current = await repository.findById(tenantId, financialEntryId);
+      if (current && current.deletedAt == null) {
+        await assertPeriodOpenSharedInTx(tx, tenantId, current.competencia, periodClosedError);
+      }
+      return repository.softDelete(tenantId, financialEntryId, deletedBy);
+    });
   }
   reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined> {
+    // SEM guard de período (deliberado): conciliação é META-DADO e não atravessa o chokepoint
+    // (D-Ω4-5-RECONCILE-META) — o extrato chega DEPOIS do fechamento; gate-á-la congelaria a conciliação.
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialEntryRepository(tx).reconcile(input));
   }
   findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined> {

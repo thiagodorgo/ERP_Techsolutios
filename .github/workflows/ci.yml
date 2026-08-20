@@ -196,6 +196,11 @@ jobs:
           # §8 do plano: rls-tenant-isolation entra na lista (estava ausente — rodava só no job backend,
           # onde se declara pulada sem DATABASE_URL; aqui o guard de zero pulos a pune se pular).
           SUITES="$SUITES tests/rls-tenant-isolation.test.ts"
+          # B-O6R-02 (Ω6R-DIN-008 / QUA-003) — close × writer com barreira sob Postgres real: o writer
+          # bloqueia na trava SHARED de período e re-valida DENTRO da tx que grava (G10), e o close
+          # espera writer em voo e o snapshot o inclui (G11). A suíte fixa CORE_SAAS_PERSISTENCE=prisma
+          # ela mesma e asserta o modo (lição do #357).
+          SUITES="$SUITES tests/financial-period-close-write-race-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

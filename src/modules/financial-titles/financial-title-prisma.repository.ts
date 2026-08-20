@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+import { acquirePeriodLockShared } from "../../database/financial-period-lock.js";
 import { withTenantRls } from "../../database/rls.js";
 import type {
   ApplyTitlePaymentInput,
@@ -12,7 +13,9 @@ import type {
 } from "./financial-title.types.js";
 import { FinancialTitleError } from "./financial-title.types.js";
 import {
+  PERIOD_WRITE_BLOCKING_STATUSES,
   invalidAccountReferenceError,
+  periodClosedError,
   sourceAlreadyLaunchedError,
   workOrderAlreadyInvoicedError,
   type FinancialPeriodCloseRepository,
@@ -155,10 +158,29 @@ export class PrismaFinancialPeriodCloseRepository implements FinancialPeriodClos
     // M2 (Ω4-6) — {closing, closed} bloqueiam a escrita; {open, reopened} liberam. reconcile não atravessa o
     // chokepoint → exento por construção.
     const record = await this.client.financialPeriodClose.findFirst({
-      where: { tenant_id: tenantId, period, status: { in: ["closing", "closed"] } },
+      where: { tenant_id: tenantId, period, status: { in: [...PERIOD_WRITE_BLOCKING_STATUSES] } },
       select: { id: true },
     });
     return record != null;
+  }
+}
+
+// B-O6R-02 (Ω6R-DIN-008) — guard IN-TX: toma a trava de período SHARED e re-valida isPeriodClosed
+// DENTRO da MESMA transação que vai gravar. Antes deste bloco o writer só consultava o chokepoint
+// NOUTRA transação (assertPeriodOpen do serviço) e podia commitar DEPOIS do snapshot do fechamento.
+// O pré-check do serviço PERMANECE (fast-fail + precedência de erros preservada); este guard é a
+// defesa que decide de verdade, na transação da escrita. SHARED, não exclusivo: writers do mesmo
+// mês não serializam entre si (quem os serializa é o row lock da linha); o exclusivo é do close.
+// O erro 422 é do CHAMADOR (título e lançamento têm códigos próprios) — vem por fábrica.
+export async function assertPeriodOpenSharedInTx(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  period: string,
+  onClosed: (period: string) => Error,
+): Promise<void> {
+  await acquirePeriodLockShared(tx, tenantId, period);
+  if (await new PrismaFinancialPeriodCloseRepository(tx).isPeriodClosed(tenantId, period)) {
+    throw onClosed(period);
   }
 }
 
@@ -166,7 +188,11 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
   constructor(private readonly prismaClient: PrismaClient) {}
 
   create(input: CreateFinancialTitleInput): Promise<FinancialTitle> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).create(input));
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      // DIN-008 — a competência da escrita vem do input (derivada server-side no serviço).
+      await assertPeriodOpenSharedInTx(tx, input.tenantId, input.competencia, periodClosedError);
+      return new PrismaFinancialTitleRepository(tx).create(input);
+    });
   }
   list(input: ListFinancialTitleInput): Promise<ListFinancialTitleResult> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).list(input));
@@ -181,16 +207,43 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findActiveBySource(tenantId, sourceType, sourceId, direction));
   }
   update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).update(input));
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const repository = new PrismaFinancialTitleRepository(tx);
+      const current = await repository.findById(input.tenantId, input.financialTitleId);
+      if (current && current.deletedAt == null) {
+        // DIN-008 — a competência da mutação é a da PRÓPRIA linha (imutável pós-create), lida na mesma tx.
+        await assertPeriodOpenSharedInTx(tx, input.tenantId, current.competencia, periodClosedError);
+      }
+      // Inexistente/deletado NÃO trava período: o update casa 0 linhas → undefined → 404 no serviço.
+      return repository.update(input);
+    });
   }
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).changeStatus(input));
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const repository = new PrismaFinancialTitleRepository(tx);
+      const current = await repository.findById(input.tenantId, input.financialTitleId);
+      if (current && current.deletedAt == null) {
+        await assertPeriodOpenSharedInTx(tx, input.tenantId, current.competencia, periodClosedError);
+      }
+      return repository.changeStatus(input);
+    });
   }
   applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    // SEM guard de período AQUI (deliberado, §12.1 do plano B-O6R-02): liquidar título de competência
+    // já fechada segue permitido — o snapshot é foto point-in-time. O DIN-008 da liquidação é guardado
+    // pelo LANÇAMENTO de caixa (competência de occurred_at), no repositório de financial-entries.
+    // A atomicidade lançamento+applyPayment é o DIN-001 (F3 deste bloco, fatia seguinte).
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).applyPayment(input));
   }
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).softDelete(tenantId, financialTitleId, deletedBy));
+    return withTenantRls(this.prismaClient, tenantId, async (tx) => {
+      const repository = new PrismaFinancialTitleRepository(tx);
+      const current = await repository.findById(tenantId, financialTitleId);
+      if (current && current.deletedAt == null) {
+        await assertPeriodOpenSharedInTx(tx, tenantId, current.competencia, periodClosedError);
+      }
+      return repository.softDelete(tenantId, financialTitleId, deletedBy);
+    });
   }
 }
 

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+import { acquirePeriodLockExclusive } from "../../database/financial-period-lock.js";
 import { withTenantRls } from "../../database/rls.js";
 import type {
   CloseEvaluator,
@@ -47,9 +48,10 @@ function mapRecord(record: PeriodCloseRecord): FinancialPeriodClose {
 }
 
 // Prisma store — o CLOSE lê títulos+lançamentos da competência E escreve a linha na MESMA withTenantRls tx
-// (atômico). Um advisory lock em (tenant,period) serializa fechamentos concorrentes; a proteção completa
-// contra read-skew de writers exige o mesmo lock no write-path (P-Ω4-6-CLOSE-RACE — fora deste bloco). O
-// controle compensatório REAL é a re-derivação material (D1), que flagra um título vazado a posteriori.
+// (atômico). A trava de período (tenant,period) vem do LAR ÚNICO src/database/financial-period-lock.ts:
+// aqui o modo EXCLUSIVO (serializa close×close e close×writer). Desde o B-O6R-02 (Ω6R-DIN-008) o
+// write-path toma a MESMA chave em modo SHARED e re-valida o período DENTRO da tx que grava — o
+// read-skew de P-Ω4-6-CLOSE-RACE está fechado; a re-derivação material (D1) segue como controle.
 export class PrismaFinancialPeriodCloseStore implements FinancialPeriodCloseStore {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -76,7 +78,7 @@ export class PrismaFinancialPeriodCloseStore implements FinancialPeriodCloseStor
 
   async close(tenantId: string, period: string, evaluate: CloseEvaluator): Promise<{ readonly record: FinancialPeriodClose; readonly meta: CloseMeta }> {
     return withTenantRls(this.prisma, tenantId, async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${tenantId}:${period}`}))`;
+      await acquirePeriodLockExclusive(tx, tenantId, period);
       const existingRecord = await tx.financialPeriodClose.findFirst({ where: { tenant_id: tenantId, period } });
       const { titles, entries } = await this.readCompetencia(tx, tenantId, period);
       const evaluation = evaluate({ existing: existingRecord ? mapRecord(existingRecord) : undefined, titles, entries }); // pode lançar → rollback
@@ -92,7 +94,7 @@ export class PrismaFinancialPeriodCloseStore implements FinancialPeriodCloseStor
 
   async reopen(tenantId: string, period: string, evaluate: ReopenEvaluator): Promise<FinancialPeriodClose> {
     return withTenantRls(this.prisma, tenantId, async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${tenantId}:${period}`}))`;
+      await acquirePeriodLockExclusive(tx, tenantId, period);
       const existingRecord = await tx.financialPeriodClose.findFirst({ where: { tenant_id: tenantId, period } });
       const write = evaluate({ existing: existingRecord ? mapRecord(existingRecord) : undefined }); // lança 422 se não-fechado
       const saved = await tx.financialPeriodClose.update({
