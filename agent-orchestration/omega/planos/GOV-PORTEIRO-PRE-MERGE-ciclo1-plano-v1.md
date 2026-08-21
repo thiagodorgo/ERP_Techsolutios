@@ -198,3 +198,62 @@ lockfiles, `src/**`, `frontend/**`, `mobile/**`, `portals/**`, deploy workflows 
   parar imediatamente se segredo aparecer ou drill puder mergear em `main`.
 - DoD: dez achados; bateria+mutations+drills verdes; PR/CI no head; junta 5/5; ruleset antes do merge;
   parecer Sol/ultra externo; merge CAS; fechamento distinto; limpeza reportada.
+
+## 9. Emenda vinculante — evidência da suíte cheia local (CI-Doutor, ciclo 1)
+
+Data: 2026-08-21
+
+Achador independente: `/root/analista_flake_governanca` (CI-Doutor; não corrige, não planeja e não vota).
+
+Planejador desta emenda: `/root/planejador_flake_governanca` (não implementa, não revisa e não vota).
+
+### 9.1 Fatos que não podem ser reescritos
+
+1. O denominador oficial desta árvore é **2583 testes**.
+2. A primeira execução cheia local terminou vermelha, com **2578 pass e 1 fail**. Ela é evidência histórica:
+   não pode desaparecer, ser reclassificada como verde nem ser usada como valor do KPI corrente.
+3. Há três execuções cheias posteriores verdes, todas com o mesmo denominador **2583**. Elas reduzem a
+   evidência de defeito determinístico, mas não apagam a rodada vermelha.
+4. A causa da rodada vermelha permanece **indeterminada**, porque o TAP integral daquela execução não foi
+   preservado. Não há evidência suficiente para atribuir a falha ao produto, ao teste ou ao ambiente.
+
+### 9.2 Decisão mínima
+
+**Nenhuma mudança de código, teste, runner ou novo script está autorizada por este achado.**
+`scripts/run-backend-tests.mjs` já força `--test-reporter=tap` e propaga o exit code real; a lacuna foi a não
+preservação da saída integral. A correção deste achado é exclusivamente procedural e documental.
+
+Em toda execução local relevante da suíte cheia a partir desta emenda:
+
+1. capturar stdout+stderr integrais em um arquivo TAP **novo por execução**, sem sobrescrever a tentativa
+   anterior, e preservar o exit code de `npm test`;
+2. registrar no relatório da entrega: head exato, comando, ambiente de persistência declarado pelo runner,
+   `tests/pass/fail/skipped/todo/cancelled`, exit code, caminho/identificador do TAP e SHA-256 do arquivo;
+3. nunca disparar retry automático ou uma nova tentativa antes de registrar a anterior; uma nova execução é
+   evidência adicional, não substituição;
+4. não versionar o TAP volumoso no repositório. Mantê-lo fora da árvore de trabalho até a revisão, e removê-lo
+   somente na limpeza autorizada depois que hash, sumário e conclusão estiverem persistidos.
+
+Não é necessário criar comando novo: o chamador redireciona a saída integral já emitida por `npm test` para
+arquivo único, preserva `$LASTEXITCODE` e calcula o SHA-256. Qualquer proposta de helper futuro exige novo
+achado e novo plano; este ciclo não autoriza path de código adicional.
+
+### 9.3 KPI e critério de liberação
+
+- O KPI backend corrente deriva **somente da última execução cheia válida**, lendo do TAP dessa execução
+  `pass` como valor e `tests` como total. Não se faz média, soma, escolha do melhor resultado nem conversão da
+  rodada vermelha em KPI.
+- O history/nota do KPI precisa declarar explicitamente: primeira rodada `2583 tests / 2578 pass / 1 fail`,
+  TAP integral não preservado e causa indeterminada; três rodadas posteriores verdes com denominador 2583;
+  e qual delas, identificada por hash, sustenta o KPI publicado.
+- Antes da candidatura ao porteiro, o **CI remoto precisa estar verde no head exato** do PR. Verde local,
+  ainda que repetido, não substitui CI remoto nem autoriza merge.
+- Se reaparecer a assinatura `2583 tests / 1 fail`, ou se o TAP novo revelar repetição do mesmo teste/stack,
+  o fluxo reabre a reprovação antes da junta/porteiro. O TAP integral passa a ser a evidência do achador; não
+  se permite novo retry até classificação independente.
+
+### 9.4 Proibições
+
+Esta emenda não autoriza retry cego, mascaramento, `skip`/quarentena, relaxamento de asserção, aumento de
+timeout, mudança de concorrência/ordem, alteração funcional ou ampliação da allowlist. Sem TAP da rodada
+vermelha, qualquer uma dessas ações seria correção sem causa medida e contaminação do ciclo.

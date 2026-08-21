@@ -4,7 +4,7 @@ Data: 2026-08-21
 
 Entrega reprovada: commit `f3ba01becc3912c385b9ccee5adc512c5074ffa2`
 
-Status do ciclo: **REPROVAÇÃO REGISTRADA — aguarda planejamento independente**
+Status do ciclo: **REPROVAÇÃO REGISTRADA — emenda procedural planejada; aguarda validação independente**
 
 ## Alçadas e identidades
 
@@ -18,6 +18,8 @@ Status do ciclo: **REPROVAÇÃO REGISTRADA — aguarda planejamento independente
 | Achador/revisor 3 | `/root/validador_governanca` | Banach | Validação independente, read-only; **REPROVADO**. |
 | Fábrica do ciclo 1 | `/root/fabrica_governanca_c1` | agente isolado | Apenas cria especialistas e consolida evidência; não planeja, corrige, revisa nem vota. |
 | Planejamento do ciclo 1 | `/root/planejador_governanca_c1c` | agente isolado | Plano: `agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md`. |
+| Achador da instabilidade da suíte | `/root/analista_flake_governanca` | CI-Doutor isolado | Mediu a divergência entre a primeira full vermelha e três full verdes; não corrige, não planeja nem vota. |
+| Planejamento da emenda de evidência | `/root/planejador_flake_governanca` | agente isolado | Planeja somente captura/proveniência da full suite; não implementa, revisa nem vota. |
 
 ## Evidências consolidadas dos achadores
 
@@ -131,3 +133,28 @@ Definições permanentes em `.claude/agents/especialistas/`, com papéis espelha
 
 Este registro não contém decisão de arquitetura nem plano de correção. O próximo passo do protocolo exige
 um planejador novo, distinto de todas as alçadas acima; a implementação exige outro agente também distinto.
+
+## Achado adicional do CI-Doutor — suíte cheia local sem TAP preservado
+
+### Evidência e motivo
+
+- Denominador oficial da árvore: **2583 testes**.
+- Primeira execução cheia local: **2578 pass / 1 fail**. O TAP integral não foi preservado.
+- Três execuções cheias posteriores: verdes, todas com denominador **2583**.
+- A primeira rodada vermelha não pode sumir nem virar KPI. Os verdes posteriores mostram ausência de
+  reprodução determinística nas tentativas medidas, mas não identificam a causa da falha original.
+- Sem TAP integral não há nome, stack e contexto suficientes para distinguir bug, teste instável ou ambiente;
+  portanto, a causa permanece **indeterminada** e nenhuma correção funcional é justificável.
+
+### Plano vinculante
+
+A emenda está no §9 de
+`agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md`.
+
+- **Código novo: não necessário e não autorizado.** O runner existente já emite TAP e propaga o exit code.
+- Toda full local relevante passa a ter TAP integral único, exit code, sumário, head e SHA-256 registrados.
+- KPI usa somente a última full válida, com nota explícita da primeira vermelha e das três verdes posteriores.
+- CI remoto verde no head exato é obrigatório antes do porteiro.
+- Reaparecimento de `2583 tests / 1 fail`, ou do mesmo teste/stack quando houver TAP, reabre o ciclo antes de
+  qualquer retry adicional.
+- Retry cego, mascaramento, skip, mudança funcional e ampliação de escopo permanecem proibidos.
