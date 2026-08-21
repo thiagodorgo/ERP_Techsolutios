@@ -17,6 +17,7 @@ Status do ciclo: **REPROVAÇÃO REGISTRADA — aguarda planejamento independente
 | Achador/revisor 2 | `/root/critico_governanca` | Erdos | Crítica adversarial independente, read-only; **REPROVADO**. |
 | Achador/revisor 3 | `/root/validador_governanca` | Banach | Validação independente, read-only; **REPROVADO**. |
 | Fábrica do ciclo 1 | `/root/fabrica_governanca_c1` | agente isolado | Apenas cria especialistas e consolida evidência; não planeja, corrige, revisa nem vota. |
+| Planejamento do ciclo 1 | `/root/planejador_governanca_c1c` | agente isolado | Plano: `agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md`. |
 
 ## Evidências consolidadas dos achadores
 
