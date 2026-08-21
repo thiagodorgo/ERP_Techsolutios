@@ -6,21 +6,33 @@ import test from "node:test";
 
 import {
   createMemoryFinancialAccountService,
+  getMemoryFinancialAccountRepositoryForTests,
   resetFinancialAccountRuntimeForTests,
 } from "../src/modules/financial-accounts/financial-account.service.js";
+import { getMemoryChequeRepositoryForTests } from "../src/modules/cheques/index.js";
 import {
   createMemoryFinancialTitleService,
   deriveCompetencia,
   getMemoryFinancialPeriodCloseRepositoryForTests,
+  getMemoryFinancialTitleRepositoryForTests,
   resetFinancialTitleRuntimeForTests,
 } from "../src/modules/financial-titles/index.js";
 import {
   FinancialEntryError,
+  FinancialEntryService,
   createMemoryFinancialEntryService,
+  getMemoryFinancialEntryRepositoryForTests,
   parseOccurredAt,
   resetFinancialEntryRuntimeForTests,
+  type AccountReader,
   type FinancialEntryActorContext,
 } from "../src/modules/financial-entries/index.js";
+import {
+  createMemoryFinancialUnitOfWork,
+  type FinancialUnitOfWork,
+  type FinancialUowContext,
+  type FinancialUowResolver,
+} from "../src/modules/financial-uow/index.js";
 import type { Tenant } from "../src/modules/core-saas/types/core-saas.types.js";
 
 // A liquidação delega os guards de ESTADO do título ao módulo de títulos → esses erros são
@@ -494,20 +506,71 @@ test("ESTORNO de liquidação: 2º estorno → 409 already_reversed e o título 
   );
 });
 
-test("ESTORNO de liquidação com título DELETADO (buraco DIN-004 até a F6) → 409 fail-closed e NADA commita", async () => {
+test("ESTORNO de liquidação com restore rejeitado → 409 fail-closed e NADA commita", async () => {
   const { entries, accounts, titles } = setup();
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const title = await titles.create(ctx, receivableBody({ amount: 100 }));
   const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
-  await titles.delete(ctx, title.id); // hoje o DELETE ainda não barra título com pagamento (fatia 3)
+  const titleBefore = await titles.get(ctx, title.id);
+  const originalBefore = await entries.get(ctx, payment.id);
+
+  const memoryUow = createMemoryFinancialUnitOfWork({
+    titles: getMemoryFinancialTitleRepositoryForTests(),
+    entries: getMemoryFinancialEntryRepositoryForTests(),
+    cheques: getMemoryChequeRepositoryForTests(),
+    periodCloses: getMemoryFinancialPeriodCloseRepositoryForTests(),
+  });
+  const faultUow: FinancialUnitOfWork = {
+    async run<T>(tenantId: string, work: (uowCtx: FinancialUowContext) => Promise<T>): Promise<T> {
+      return memoryUow.run(tenantId, async (uowCtx) => {
+        const faultTitles = new Proxy(uowCtx.titles, {
+          get(target, property, receiver) {
+            if (property === "restorePaymentGuarded") {
+              return async () => undefined;
+            }
+            const member = Reflect.get(target, property, receiver);
+            return typeof member === "function" ? member.bind(target) : member;
+          },
+        });
+        return work({ ...uowCtx, titles: faultTitles });
+      });
+    },
+  };
+  const resolveFaultUow: FinancialUowResolver = async () => faultUow;
+  const accountReader: AccountReader = {
+    async findAccount(tenantId, accountId) {
+      const found = await getMemoryFinancialAccountRepositoryForTests().findById(tenantId, accountId);
+      if (!found) return undefined;
+      return {
+        id: found.id,
+        currency: found.currency,
+        isActive: found.isActive,
+        openingBalance: found.openingBalance,
+      };
+    },
+  };
+  const entriesWithRestoreFault = new FinancialEntryService(
+    getMemoryFinancialEntryRepositoryForTests(),
+    getMemoryFinancialPeriodCloseRepositoryForTests(),
+    accountReader,
+    () => Promise.resolve(createMemoryFinancialTitleService()),
+    resolveFaultUow,
+  );
 
   await assert.rejects(
-    () => entries.reverse(ctx, payment.id),
+    () => entriesWithRestoreFault.reverse(ctx, payment.id),
     (e: unknown) => isDomainError(e, 409, "title_restore_conflict"),
   );
   // Fail-closed: a contrapartida NÃO pode sobreviver sem o título restaurado (senão DIN-002 renasce).
   assert.equal((await entries.list(ctx, {})).items.filter((item) => item.reversalOf === payment.id).length, 0);
+  const titleAfter = await titles.get(ctx, title.id);
+  assert.equal(titleAfter.deletedAt, undefined, "o título continua ativo");
+  assert.equal(titleAfter.paidAmount, titleBefore.paidAmount, "paid_amount volta ao valor anterior");
+  assert.equal(titleAfter.status, titleBefore.status, "o status do título não muda");
+  const originalAfter = await entries.get(ctx, payment.id);
+  assert.equal(originalAfter.deletedAt, undefined, "o lançamento original continua ativo");
+  assert.deepEqual(originalAfter, originalBefore, "o lançamento original continua inalterado");
 });
 
 // ---------------------------------------------------------------- conciliação (reconcile) [Ω4-5]

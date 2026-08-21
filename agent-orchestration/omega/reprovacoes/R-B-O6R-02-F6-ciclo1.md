@@ -11,7 +11,7 @@
 | Quem achou | `/root/dev_f6` | Registrou a falha durante a bateria de autoria; não pode planejar, corrigir nem votar este achado |
 | Agente-fábrica | `/root/fabrica_f6_ciclo1` | Criou a cadeira especializada; não planeja, não corrige e não revisa o código |
 | Quem planejou | `/root/planejador_f6_ciclo1` | Planejou somente a correção documental; não implementa, não revisa/vota nem atua como porteiro |
-| Quem corrigirá | **A designar** | Deve ser outro agente novo, distinto do achador, da fábrica, do planejador e dos revisores/votantes |
+| Quem corrigirá | `/root/dev_f6_ciclo1` | Desenvolvedor novo, distinto do achador, da fábrica, do planejador e dos revisores/votantes; implementa somente o plano vigente e não revisa nem vota |
 | Especialista/revisor | `/root/inspetor_fixture_f6` (`inspetor-fixtures-financeiras-legadas`) | Executou a inspeção e vetou; não planeja nem corrige |
 
 O planejamento foi concluído. O ciclo não pode avançar para correção enquanto o novo desenvolvedor ainda
