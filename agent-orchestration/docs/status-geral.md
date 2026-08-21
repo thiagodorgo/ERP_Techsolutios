@@ -1,5 +1,29 @@
 # Status Geral
 
+## Atualização 2026-08-20 — B-O6R-02 F6 em `aguardando_merge`
+
+### Status
+
+A autoria das seis fatias de atomicidade financeira está concluída na branch
+`feat/o6r-b02-financial-uow`. Não houve push/PR/merge: o gate `G-A109FD7-PUBLICADO` permanece aberto e exige
+publicar separadamente as ressalvas do porteiro #357 antes de atualizar esta branch e reexecutar a bateria.
+
+### Entregue na autoria
+
+- UoW tenant-scoped para pagamento, estorno e cheque; writers e fechamento compartilham a trava de período.
+- PATCH/DELETE de título com CAS no PostgreSQL, status derivado no mesmo UPDATE e erros
+  `amount_below_paid`/`title_has_payments` sem vazamento cross-tenant.
+- Cinco suítes DB-gated no CI: 32 testes top-level G1–G12, zero skip.
+- Ciclo 1 corrigiu isoladamente a fixture de `title_restore_conflict` no commit `b8ec196`, sem porta de teste.
+
+### Validação de autoria
+
+- Backend final: **2617/2627**, 0 fail, 10 pulos DB-gated declarados.
+- Focados: **178/178**; PostgreSQL: **32/32**; lote com seed: **10/10**, denominador 32 idêntico.
+- D4/D5/D8: vermelho 12/14 durante cada mutação, verde 14/14 após restauração; D9 preservado no ciclo 1.
+- Backend build e frontend check verdes. Flutter/smoke web carregados, pois as trilhas não foram tocadas.
+- Seis achados permanecem `aguardando_merge`; deploy segue bloqueado pela J-6R.
+
 ## Atualização 2026-07-29 — FIX-NAV-MENU-PLATFORM-JWT
 
 ### Status

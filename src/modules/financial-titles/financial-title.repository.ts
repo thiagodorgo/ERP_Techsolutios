@@ -5,10 +5,12 @@ import type {
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
+  DeleteFinancialTitleResult,
   GuardedTitlePaymentInput,
   ListFinancialTitleInput,
   ListFinancialTitleResult,
   UpdateFinancialTitleInput,
+  UpdateFinancialTitleResult,
 } from "./financial-title.types.js";
 import { FinancialTitleError } from "./financial-title.types.js";
 import { isTitleOverdue, roundMoney } from "./financial-title.validators.js";
@@ -24,11 +26,11 @@ export interface FinancialTitleRepository {
   // source_id)+direção. Sustenta o PRE-CHECK de idempotência do lançamento por origem E o badge derivado
   // (findActiveBySource no GET). A rede real é o índice parcial financial_titles_source_direction_active_key.
   findActiveBySource(tenantId: string, sourceType: string, sourceId: string, direction: string): Promise<FinancialTitle | undefined>;
-  update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined>;
+  update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult>;
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined>;
   // Ω4-4 — WRITE-PATH da liquidação: paid_amount + status juntos (contorna a máquina de status).
   applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined>;
-  softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined>;
+  softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult>;
   // B-O6R-02 F3 (Ω6R-DIN-001) — leitura ESTÁVEL para CLASSIFICAR o erro quando o CAS casa 0 linhas
   // (distinguir 404 / title_cancelled / title_already_paid / overpayment sobre a tupla travada).
   // No Prisma é SELECT ... FOR UPDATE dentro da transação corrente; no InMemory é findById (o mutex
@@ -113,6 +115,24 @@ export function titleAlreadyPaidError(): FinancialTitleError {
 
 export function overpaymentError(): FinancialTitleError {
   return new FinancialTitleError(422, "FINANCIAL_TITLE_UNPROCESSABLE", "overpayment", "Payment amount exceeds the outstanding balance of the title.");
+}
+
+export function amountBelowPaidError(): FinancialTitleError {
+  return new FinancialTitleError(
+    422,
+    "FINANCIAL_TITLE_UNPROCESSABLE",
+    "amount_below_paid",
+    "The title amount cannot be lower than the amount already paid.",
+  );
+}
+
+export function titleHasPaymentsError(): FinancialTitleError {
+  return new FinancialTitleError(
+    422,
+    "FINANCIAL_TITLE_UNPROCESSABLE",
+    "title_has_payments",
+    "A financial title with payments must be reversed before it can be deleted.",
+  );
 }
 
 // Ω4-3 (D-Ω4-C2) — rede do índice PARCIAL de idempotência: um 2º título ATIVO para a mesma OS+direção.
@@ -240,10 +260,13 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     return title?.tenantId === tenantId ? title : undefined;
   }
 
-  async update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
+  async update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult> {
     const current = await this.findById(input.tenantId, input.financialTitleId);
     // PATCH em título deletado → trata como inexistente (→404), simétrico ao re-delete (lição M1 do Ω4-1).
-    if (!current || current.deletedAt != null) return undefined;
+    if (!current || current.deletedAt != null) return { outcome: "not_found" };
+    if (input.amount !== undefined && current.paidAmount > input.amount) {
+      return { outcome: "amount_below_paid" };
+    }
 
     const updated: FinancialTitle = {
       ...current,
@@ -257,10 +280,13 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
         accountId: input.accountId,
         updatedBy: input.updatedBy,
       }),
+      ...(input.amount !== undefined && current.paidAmount > 0
+        ? { status: current.paidAmount === input.amount ? "paid" : "partially_paid" }
+        : {}),
       updatedAt: new Date(),
     };
     this.titles.set(updated.id, updated);
-    return updated;
+    return { outcome: "updated", title: updated };
   }
 
   async changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined> {
@@ -342,10 +368,11 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     return updated;
   }
 
-  async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
+  async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult> {
     const current = await this.findById(tenantId, financialTitleId);
     // Já deletado → trata como inexistente (re-delete → 404).
-    if (!current || current.deletedAt != null) return undefined;
+    if (!current || current.deletedAt != null) return { outcome: "not_found" };
+    if (current.paidAmount > 0) return { outcome: "title_has_payments" };
 
     const removed: FinancialTitle = {
       ...current,
@@ -354,7 +381,7 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
       deletedAt: new Date(),
     };
     this.titles.set(removed.id, removed);
-    return removed;
+    return { outcome: "deleted", title: removed };
   }
 
   reset(): void {

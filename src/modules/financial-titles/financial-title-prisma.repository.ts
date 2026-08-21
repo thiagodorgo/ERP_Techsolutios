@@ -6,11 +6,13 @@ import type {
   ApplyTitlePaymentInput,
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
+  DeleteFinancialTitleResult,
   FinancialTitle,
   GuardedTitlePaymentInput,
   ListFinancialTitleInput,
   ListFinancialTitleResult,
   UpdateFinancialTitleInput,
+  UpdateFinancialTitleResult,
 } from "./financial-title.types.js";
 import { FinancialTitleError } from "./financial-title.types.js";
 import {
@@ -103,23 +105,42 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
     return record ? mapRecord(record) : undefined;
   }
 
-  async update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
+  async update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult> {
     try {
-      const updated = await this.client.financialTitle.updateManyAndReturn({
-        // deleted_at:null → PATCH em título deletado casa 0 linhas → 404 (simétrico ao softDelete).
-        where: { tenant_id: input.tenantId, id: input.financialTitleId, deleted_at: null },
-        data: compactRecord({
-          party_name: input.partyName,
-          document: nullable(input.document),
-          category: nullable(input.category),
-          description: nullable(input.description),
-          amount: input.amount,
-          due_date: input.dueDate,
-          account_id: nullable(input.accountId),
-          updated_by: nullable(input.updatedBy),
-        }),
-      });
-      return updated[0] ? mapRecord(updated[0]) : undefined;
+      // DIN-004 — um UNICO UPDATE composto. O predicado monetario e o CASE de status leem a
+      // mesma versao da tupla que o PostgreSQL efetivamente atualiza depois de qualquer espera
+      // por row lock (EvalPlanQual). Nenhum campo lateral pode escapar se o CAS falhar.
+      const updatedCount = await this.client.$executeRaw`
+        UPDATE financial_titles
+           SET party_name = CASE WHEN ${input.partyName !== undefined} THEN ${input.partyName ?? null} ELSE party_name END,
+               document = CASE WHEN ${input.document !== undefined} THEN ${input.document ?? null} ELSE document END,
+               category = CASE WHEN ${input.category !== undefined} THEN ${input.category ?? null} ELSE category END,
+               description = CASE WHEN ${input.description !== undefined} THEN ${input.description ?? null} ELSE description END,
+               amount = CASE WHEN ${input.amount !== undefined} THEN ${input.amount ?? null}::numeric(12,2) ELSE amount END,
+               status = CASE
+                 WHEN ${input.amount !== undefined} AND paid_amount > 0
+                   THEN CASE WHEN paid_amount = ${input.amount ?? null}::numeric(12,2) THEN 'paid' ELSE 'partially_paid' END
+                 ELSE status
+               END,
+               due_date = CASE WHEN ${input.dueDate !== undefined} THEN ${input.dueDate ?? null}::timestamptz ELSE due_date END,
+               account_id = CASE WHEN ${input.accountId !== undefined} THEN ${input.accountId ?? null}::uuid ELSE account_id END,
+               updated_by = COALESCE(${input.updatedBy ?? null}::uuid, updated_by),
+               updated_at = now()
+         WHERE tenant_id = ${input.tenantId}::uuid
+           AND id = ${input.financialTitleId}::uuid
+           AND deleted_at IS NULL
+           AND (${input.amount === undefined} OR paid_amount <= ${input.amount ?? null}::numeric(12,2))
+      `;
+      if (updatedCount > 0) {
+        const title = await this.findById(input.tenantId, input.financialTitleId);
+        if (!title) throw new Error("financial title PATCH updated a row that cannot be re-read");
+        return { outcome: "updated", title };
+      }
+
+      const current = await this.findByIdForUpdate(input.tenantId, input.financialTitleId);
+      if (!current || current.deletedAt != null) return { outcome: "not_found" };
+      if (input.amount !== undefined && current.paidAmount > input.amount) return { outcome: "amount_below_paid" };
+      throw new Error("financial title PATCH CAS matched zero rows without a classified cause");
     } catch (error) {
       throw translatePersistenceError(error);
     }
@@ -142,13 +163,29 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
 
-  async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
+  async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult> {
     // Delete LÓGICO: carimba deleted_at; a row persiste mas some dos reads (deleted_at:null → re-delete 404).
-    const updated = await this.client.financialTitle.updateManyAndReturn({
-      where: { tenant_id: tenantId, id: financialTitleId, deleted_at: null },
-      data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),
-    });
-    return updated[0] ? mapRecord(updated[0]) : undefined;
+    // DIN-004: paid_amount=0 vive no proprio CAS (D8 prova que nao e guard de fachada no service).
+    const updatedCount = await this.client.$executeRaw`
+      UPDATE financial_titles
+         SET deleted_at = now(),
+             updated_by = COALESCE(${deletedBy ?? null}::uuid, updated_by),
+             updated_at = now()
+       WHERE tenant_id = ${tenantId}::uuid
+         AND id = ${financialTitleId}::uuid
+         AND deleted_at IS NULL
+         AND paid_amount = 0
+    `;
+    if (updatedCount > 0) {
+      const title = await this.findById(tenantId, financialTitleId);
+      if (!title) throw new Error("financial title DELETE updated a row that cannot be re-read");
+      return { outcome: "deleted", title };
+    }
+
+    const current = await this.findByIdForUpdate(tenantId, financialTitleId);
+    if (!current || current.deletedAt != null) return { outcome: "not_found" };
+    if (current.paidAmount > 0) return { outcome: "title_has_payments" };
+    throw new Error("financial title DELETE CAS matched zero rows without a classified cause");
   }
 
   // B-O6R-02 F3 — SELECT ... FOR UPDATE: trava a linha na transação corrente e devolve a tupla
@@ -269,7 +306,7 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
   findActiveBySource(tenantId: string, sourceType: string, sourceId: string, direction: string): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialTitleRepository(tx).findActiveBySource(tenantId, sourceType, sourceId, direction));
   }
-  update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
+  update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult> {
     return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
       const repository = new PrismaFinancialTitleRepository(tx);
       const current = await repository.findById(input.tenantId, input.financialTitleId);
@@ -312,7 +349,7 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
   restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).restorePaymentGuarded(input));
   }
-  softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
+  softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult> {
     return withTenantRls(this.prismaClient, tenantId, async (tx) => {
       const repository = new PrismaFinancialTitleRepository(tx);
       const current = await repository.findById(tenantId, financialTitleId);

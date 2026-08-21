@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-08-19",
-  "version": "B-O6R-01-CICLO3-CORRECAO",
+  "snapshot_date": "2026-08-20",
+  "version": "B-O6R-02-F6-AUTORIA",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-O6R-01 — identidade e autoridade (Ω6R-SEC-001 + Ω6R-TEN-001).",
-    "title": "Identidade global + allowlist de papéis — os dois piores achados da auditoria, fechados",
-    "pr": 357,
-    "merge_commit": "0a39824",
-    "approved_head": "0a39824",
+    "block": "B-O6R-02 — atomicidade financeira (Ω6R-DIN-001..004/008 + Ω6R-QUA-003).",
+    "title": "Pagamento, estorno, cheque, títulos e fechamento sob transação e concorrência PostgreSQL",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c). Ciclo 3 (correção pós-veto J-O6R-B01-ciclo2 + premissa reaberta R-ciclo3): o backfill da suíte ganhou ESCOPO (sentença escopada fail-closed com ida-e-volta byte-idêntica + tripwire do terceiro simulado; a prova do verbatim volta ao migrate deploy da CI, perda declarada), o quinto escritor de catálogo entrou no lock (createCloneOwnerProbe no arnês + prova de fila em pg_locks), ratchet lexical de escrita de catálogo (allowlist congelada por arquivo e contagem), varredor cobrindo as duas famílias do arnês (5 órfãs legadas recolhidas), errata apensada ao plano v6 (P9) e pendência P-O6R-B01-TRILHA-ORFA-LIMPEZA (231 linhas órfãs FICAM; destino é junta). F1 12/12 verde na forma exata do job (denominador 148 idêntico, zero XX000/23503/23505/40P01); F4: 0 instantes com terceiro no alvo e atribuição do delta residual (+12) a core-saas-role-authority-db, registrada sem remendo (decisão de destino é da junta).",
-    "status_label": "Mergeado em 19/08/2026 (PR #357)"
+    "summary": "Autoria F6 concluída, ainda sem PR/merge por causa do gate G-A109FD7-PUBLICADO. Pagamento, estorno e cheque usam UoW única; PATCH/DELETE de título usam CAS tenant-scoped e status derivado no mesmo UPDATE; fechamento e writers compartilham a trava de competência. Cinco suítes PostgreSQL somam 32/32 casos, zero skip, em lote 10/10 com seed por iteração; D4/D5/D8 ficaram vermelhos sob mutação e verdes após restauração. Os seis achados estão em aguardando_merge e não contam como corrigidos na main. Deploy segue bloqueado pela J-6R.",
+    "status_label": "Autoria em 20/08/2026 — aguardando gate, PR, junta e merge"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,16 +27,16 @@
       "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "backend_tests": {
-      "value": 2562,
-      "total": 2572,
-      "display": "2562/2572",
-      "note": "Execução real do ciclo 3 (F2, árvore desta entrega): 2562/2572 · fail 0 · 10 pulos declarados (os mesmos do ciclo 2) · denominador IDÊNTICO em 3 execuções. +5 sobre o ciclo 2 (2557/2567): tripwire do terceiro simulado (backfill), prova de fila do quinto escritor + órfã sintética do varredor (fn-db), ratchet db-catalog-write-guard, e 1 guard de KPI que entrou na branch entre os ciclos (8492587). Batch -db na forma EXATA do job backend-postgres (env completo + db:seed a cada iteração + exit de PIPESTATUS[0]): 12/12 exit 0 · 148/148 idêntico nas 12 · grep XX000|23503|23505|40P01 = 0 nos 12 taps · 0 pulos. Ambiente declarado: availableParallelism=8, teto efetivo do node --test = 7 (P1 — declarado, não consertado)."
+      "value": 2617,
+      "total": 2627,
+      "display": "2617/2627",
+      "note": "Execução real final da autoria B-O6R-02 F6 após consolidar KPI e a correção isolada b8ec196: 2627 total · 2617 pass · 0 fail · 10 pulos DB-gated declarados no runner memory. A execução pré-consolidação teve 2622 total/2610 pass/2 fail porque dois guards de KPI falharam antes de declarar cinco casos dependentes; não foi usada como número final. Cinco suítes PostgreSQL: 32/32, 0 fail/skip, isoladas 4+6+4+4+14 e juntas 32; lote na forma do job com db:seed a cada iteração: 10/10, denominador 32 idêntico, zero skip e zero XX000/23503/23505/40P01. D4/D5/D8: cada mutação produziu 12 pass/2 fail e a restauração voltou a 14/14."
     },
     "backend_contract_tests_focused": {
-      "value": 92,
-      "total": 92,
-      "display": "92/92",
-      "note": "Bateria focada do B-O6R-01 REMEDIDA no ciclo 3 (execução real, casos-folha, composição declarada): 22 no grupo memory (auth-invariant-guards + core-saas-role-authority, sob CORE_SAAS_PERSISTENCE=memory, a forma do runner) + 69 no grupo -db (os 9 arquivos do bloco listados no job backend-postgres — 66 do ciclo 2 + tripwire do backfill, prova de fila e órfã sintética do ciclo 3) + 1 do ratchet novo db-catalog-write-guard (estático). Contagem idêntica em 2 execuções. Substitui o 88/88 do ciclo 2 pela mesma régua: casos novos entram na composição, declarados."
+      "value": 178,
+      "total": 178,
+      "display": "178/178",
+      "note": "Bateria focada remendida na árvore final: financial-titles memória+rotas 79/79; financial-entries (inclui o ramo fail-closed title_restore_conflict corrigido no ciclo 1) 67/67; cinco suítes PostgreSQL 32/32. Composição declarada 79+67+32=178, zero fail/skip nos grupos focados."
     },
     "flutter_modules": {
       "value": 17,
@@ -62,7 +62,7 @@
     "blocks_completed": {
       "value": 151,
       "display": "151",
-      "note": "B-O6R-01 entregue (identidade e autoridade)."
+      "note": "151 blocos mergeados. B-O6R-02 está em autoria/aguardando_merge e só incrementa após entrar na main."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -156,14 +156,14 @@
     "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
   },
   "findings": {
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-20",
     "source": "docs/revisoes/O6R/achados.jsonl",
     "itens": [
       {
         "id": "Ω6R-DIN-001",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Pagamento de título: o lançamento é gravado antes de aplicar ao título; duas requisições ao mesmo tempo podem pagar duas vezes.",
         "bloco": "B-O6R-02"
       },
@@ -171,7 +171,7 @@
         "id": "Ω6R-DIN-002",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Estorno lança a contrapartida contábil mas não devolve o valor pago nem o status do título — o título fica pago sem estar.",
         "bloco": "B-O6R-02"
       },
@@ -179,7 +179,7 @@
         "id": "Ω6R-DIN-003",
         "severidade": "P0",
         "modulo": "cheques / financial-entries",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Cheque: estado, lançamento e vínculo são gravados em etapas separadas; falha no meio deixa o cheque inconsistente.",
         "bloco": "B-O6R-02"
       },
@@ -187,7 +187,7 @@
         "id": "Ω6R-DIN-004",
         "severidade": "P0",
         "modulo": "financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Dá para reduzir o valor de um título abaixo do que já foi pago, e apagar título já pago.",
         "bloco": "B-O6R-02"
       },
@@ -323,7 +323,7 @@
         "id": "Ω6R-QUA-003",
         "severidade": "P1",
         "modulo": "financial-entries / cheques / period-close / expenses",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Os testes financeiros usam banco de mentira: atomicidade e concorrência nunca foram exercitadas.",
         "bloco": "B-O6R-02"
       },
@@ -331,7 +331,7 @@
         "id": "Ω6R-DIN-008",
         "severidade": "P0",
         "modulo": "financial-period-closes / financial writers",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "O fechamento de período usa trava, mas quem escreve não a respeita: dá para lançar depois do período fechado.",
         "bloco": "B-O6R-02"
       },

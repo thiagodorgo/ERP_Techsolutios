@@ -383,6 +383,19 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 | POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
 
+**Invariantes de mutação de título (`financial_title_mutation@2026-08-20.b-o6r-02-f6`):**
+
+- `PATCH /financial-titles/:id` é CAS tenant-scoped. Se `amount < paidAmount`, retorna `422`
+  `FINANCIAL_TITLE_UNPROCESSABLE` com `reason: "amount_below_paid"`, sem persistir nenhum outro campo
+  do PATCH composto. Se `paidAmount > 0`, o mesmo `UPDATE` deriva `status`: igualdade → `paid`;
+  valor maior que o pago → `partially_paid`. Sem `amount`, preserva o status.
+- `DELETE /financial-titles/:id` é soft-delete CAS tenant-scoped e só casa `paidAmount = 0`. Título
+  com pagamento retorna `422 FINANCIAL_TITLE_UNPROCESSABLE`, `reason: "title_has_payments"`.
+- Precedência pública: autenticação/RBAC → posse (`404 title_not_found`) → competência fechada
+  (`422 period_closed`) → invariante financeira. Assim, outro tenant nunca descobre valor pago ou
+  estado de fechamento. Nenhum erro inclui `tenant_id`, PII ou detalhe SQL.
+- O banco mantém `0 <= paid_amount <= amount`; violação SQL direta falha com SQLSTATE `23514`.
+
 ### 3.12 Custódia / Pátios de Recolhimento (SIGPRV — Ω5P)
 
 Fontes: `yard/`, `jurisdiction/`, `tariffs/`, `impound/`, `charging/`, `release/`, `auction/`.

@@ -3732,3 +3732,29 @@ novo), `listAllPendingApprovals` no approval.service e testes frontend.
 - Docs: matriz docs/api-screen-endpoints.md (Dashboard -> enriched/integrated
   B-124, lacuna 1 fechada), status-geral e este log.
 - KPIs NAO alterados (C3) — B-124K depois da avaliacao humana.
+
+---
+
+## 2026-08-20 — B-O6R-02 F6 autoria finalizada, aguardando gate de publicação
+
+### Implementado
+
+- Finalização do PATCH/DELETE CAS de títulos e consolidação das cinco suítes PostgreSQL da atomicidade
+  financeira. O ciclo 1 da fixture `title_restore_conflict` permanece isolado no commit `b8ec196`.
+- Alçadas separadas: planejadores, desenvolvedores, inspetor e futuros revisores/porteiro são identidades
+  distintas. Este registro é de autoria; não contém voto próprio.
+
+### Validação executada
+
+- `npm run check`, `npm run lint`, `npm run build` e `npm --prefix frontend run check`: verdes.
+- Runner backend final: 2627 total, 2617 pass, 0 fail, 10 skips DB-gated.
+- Focados: 178/178; cinco suítes DB isoladas 4+6+4+4+14 e juntas 32/32, zero skip.
+- Batch 10/10 com `db:seed` em toda iteração, denominador 32 idêntico e zero SQLSTATE proibido.
+- D4/D5/D8 vermelhos 12/14 sob mutação e verdes 14/14 restaurados. D9 herdado de `b8ec196`.
+- KPI atualizado em `aguardando_merge`; seis achados não contam como fechados na main.
+
+### Gate
+
+Sem push, PR ou merge. `G-A109FD7-PUBLICADO` continua bloqueando publicação até o follow-up do porteiro
+#357 entrar na main, esta branch ser atualizada e a bateria ser reexecutada. Depois seguem junta, CI/merge,
+backfill e porteiro pós-merge.

@@ -210,6 +210,9 @@ jobs:
           SUITES="$SUITES tests/financial-pay-title-atomic-db.test.ts"
           SUITES="$SUITES tests/financial-entry-reverse-restore-db.test.ts"
           SUITES="$SUITES tests/cheque-clear-bounce-atomic-db.test.ts"
+          # B-O6R-02 F6 (Ω6R-DIN-001..004/008 / QUA-003) — CAS de PATCH/DELETE,
+          # status derivado no mesmo UPDATE, precedência de período/404 e CHECK 23514 (G7-G9).
+          SUITES="$SUITES tests/financial-title-invariants-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

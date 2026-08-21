@@ -24,6 +24,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-001] Pagamento concorrente pode criar lançamento órfão e inflar o saldo
 - Severidade: P0        Confiança: 0.99
+- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:261-282`, `src/modules/financial-titles/financial-title-prisma.repository.ts:132-138`
@@ -45,6 +46,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-002] Estorno de lançamento não reabre nem reduz o valor pago do título
 - Severidade: P0        Confiança: 0.98
+- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:158-195`
@@ -63,6 +65,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-003] Compensação e devolução de cheque podem deixar lançamento financeiro órfão
 - Severidade: P0        Confiança: 0.97
+- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: cheques / financial-entries        Lente: A3
 - Local: `src/modules/cheques/cheque.service.ts:152-184`, `src/modules/cheques/cheque.service.ts:187-231`
@@ -87,6 +90,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-004] Título pago aceita valor inferior ao liquidado e exclusão lógica
 - Severidade: P0        Confiança: 0.99
+- Status: **aguardando_merge** — CAS de PATCH/DELETE e cobertura G7–G9 implementados; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-titles        Lente: A3
 - Local: `src/modules/financial-titles/financial-title.service.ts:218-243`, `src/modules/financial-titles/financial-title.service.ts:317-325`, `src/modules/financial-titles/financial-title-prisma.repository.ts:102-118`, `prisma/schema.prisma:1762-1767`
@@ -450,6 +454,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-QUA-003] Testes financeiros críticos exercem apenas adapters em memória
 - Severidade: P1        Confiança: 0.99
+- Status: **aguardando_merge** — cinco suítes PostgreSQL somam 32 casos top-level; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: QUA
 - Módulo: financial-entries / cheques / period-close / expenses        Lente: A5
 - Local: `tests/financial-entries.test.ts:53-59`, `tests/financial-entries.test.ts:436-439`, `tests/cheques.test.ts:59-65`, `tests/cheques.test.ts:453-466`, `tests/financial-period-closes.test.ts:49-59`, `tests/expense-management-routes.test.ts:182-204`
@@ -471,6 +476,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-008] Escritores podem confirmar dinheiro depois do snapshot de período fechado
 - Severidade: P0        Confiança: 1.00
+- Status: **aguardando_merge** — write-path financeiro e PATCH compartilham a trava de competência; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-period-closes / financial writers        Lente: A3
 - Local: `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:49-52`, `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:77-89`, `src/modules/financial-titles/financial-title.service.ts:338-344`

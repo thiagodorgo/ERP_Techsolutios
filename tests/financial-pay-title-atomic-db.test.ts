@@ -161,6 +161,68 @@ if (!connectionString) {
       await teardown(h);
     }
   });
+
+  test("G1 — vencedor quita; perdedor concorrente sai title_already_paid e não deixa órfão", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g1-paid");
+      const occurredAt = new Date();
+      const period = h.deriveCompetencia(occurredAt);
+      let release!: () => void;
+      const mayCommit = new Promise<void>((resolve) => { release = resolve; });
+      let ready!: () => void;
+      const locked = new Promise<void>((resolve) => { ready = resolve; });
+      const winner = client.$transaction(async (tx) => {
+        await h.setTenantRlsContext(tx, seed.tenantId);
+        await h.acquirePeriodLockShared(tx, seed.tenantId, period);
+        await new h.PrismaFinancialEntryRepository(tx).create({
+          tenantId: seed.tenantId, accountId: seed.accountId, titleId: seed.titleId, direction: "in",
+          amount: 100, currency: "BRL", paymentMethod: "pix", occurredAt, competencia: period,
+          createdBy: seed.userId, updatedBy: seed.userId,
+        });
+        const applied = await new h.PrismaFinancialTitleRepository(tx).applyPaymentGuarded({
+          tenantId: seed.tenantId, financialTitleId: seed.titleId, amount: 100, updatedBy: seed.userId,
+        });
+        assert.equal(applied?.status, "paid");
+        ready();
+        await mayCommit;
+      }, { timeout: 30000, maxWait: 10000 });
+      await locked;
+      const loser = h.entryService.payTitle(seed.actor, seed.titleId, {
+        account_id: seed.accountId, amount: 1, payment_method: "pix", occurred_at: occurredAt.toISOString(),
+      });
+      await waitForBlockedStatement(client, "financial_titles", "perdedor bloqueado atrás da quitação");
+      release();
+      await winner;
+      await assert.rejects(loser, (error: unknown) => isDomainError(error, 422, "title_already_paid"));
+      assert.equal(await client.financialEntry.count({ where: { tenant_id: seed.tenantId } }), 1);
+      const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
+      assert.equal(Number(title?.paid_amount), 100);
+      assert.equal(title?.status, "paid");
+    } finally { await teardown(h); }
+  });
+
+  test("G2 — duas requisições concorrentes com a mesma chave produzem uma única mutação", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g2-concurrent");
+      const key = randomUUID();
+      const body = { account_id: seed.accountId, amount: 40, payment_method: "pix", client_action_id: key };
+      const results = await Promise.allSettled([
+        h.entryService.payTitle(seed.actor, seed.titleId, body),
+        h.entryService.payTitle(seed.actor, seed.titleId, body),
+      ]);
+      assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+      const rejected = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      assert.ok(rejected);
+      assert.equal(isDomainError(rejected.reason, 409, "duplicate_payment"), true);
+      assert.equal(await client.financialEntry.count({ where: { tenant_id: seed.tenantId } }), 1);
+      const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
+      assert.equal(Number(title?.paid_amount), 40);
+    } finally { await teardown(h); }
+  });
 }
 
 // ---------- harness ----------

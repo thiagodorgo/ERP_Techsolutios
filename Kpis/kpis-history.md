@@ -2127,3 +2127,29 @@ instrução do orquestrador.
 Números deste snapshot, todos de execução real desta árvore: `npm test` **2562/2572 · fail 0 · 10 pulos**;
 bateria focada **92/92** (22 memory + 69 `-db` + 1 ratchet, contagem idêntica em 2 execuções). Flutter
 `864/864` e smoke web `1126/1126` **carregados** (trilhas não tocadas — §C3.3).
+
+## 2026-08-20 - B-O6R-02 F6 — autoria de atomicidade financeira
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | 2617 / 2627 (0 fail, 10 pulos DB-gated declarados) |
+| Focados | 178 / 178 (79 títulos + 67 lançamentos + 32 PostgreSQL) |
+| Flutter | 864 / 864 — carregado, trilha não tocada |
+| Frontend Smoke | 1126 / 1126 — carregado, trilha não tocada |
+| Blocos mergeados | 151 — B-O6R-02 ainda não entrou na main |
+
+Autoria funcional concluída em seis fatias: UoW de pagamento/estorno/cheque, trava compartilhada de
+competência e CAS tenant-scoped de PATCH/DELETE de título. A nova regra deriva `paid`/`partially_paid` no
+mesmo `UPDATE`, bloqueia nominal abaixo do pago e exige estorno antes do delete lógico. Os seis achados
+`DIN-001..004`, `DIN-008` e `QUA-003` estão em **aguardando_merge**; não contam como corrigidos na main.
+
+Prova PostgreSQL real: cinco suítes isoladas **4+6+4+4+14**, juntas **32/32**, zero fail/skip. Lote na forma
+do job `backend-postgres`: **10/10**, `db:seed` em toda iteração, denominador 32 idêntico e zero ocorrências
+de `XX000|23503|23505|40P01`. Drills D4/D5/D8 ficaram **12 pass/2 fail** sob mutação e voltaram a **14/14**
+após restauração; D9 foi comprovado no ciclo 1 e preservado no commit isolado `b8ec196`.
+
+`pr`, `merge_commit` e `approved_head` permanecem `null`. O gate `G-A109FD7-PUBLICADO` bloqueia push/PR do
+B-O6R-02 até o follow-up do porteiro #357 entrar na main e esta bateria ser reexecutada. Deploy segue
+bloqueado pela J-6R; `mvp_demo`/`mvp_vendavel` permanecem inalterados.

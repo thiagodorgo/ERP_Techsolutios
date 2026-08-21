@@ -196,6 +196,74 @@ if (!connectionString) {
       await teardown(h);
     }
   });
+
+  test("G10 — close na frente bloqueia PATCH real; após fechar retorna period_closed e não altera título", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g10-patch");
+      const period = h.deriveCompetencia(new Date());
+      const lockKey = `${seed.tenantId}:${period}`;
+      let release!: () => void;
+      let signalHeld!: () => void;
+      const held = new Promise<void>((resolveHeld) => { signalHeld = resolveHeld; });
+      const holder = client.$transaction(async (tx) => {
+          await h.setTenantRlsContext(tx, seed.tenantId);
+          await h.acquirePeriodLockExclusive(tx, seed.tenantId, period);
+          signalHeld();
+          await new Promise<void>((resolve) => { release = resolve; });
+        }, { timeout: 30000, maxWait: 10000 });
+      await held;
+      const close = h.closeService.close(seed.actor, period, {});
+      await waitForAdvisoryWaiters(client, lockKey, 1, "close antes do PATCH");
+      const patch = fetch(`${seed.baseUrl}/api/v1/financial-titles/${seed.titleId}`, {
+        method: "PATCH", headers: { ...seed.headers, "content-type": "application/json" },
+        body: JSON.stringify({ amount: 90, party_name: "Não persiste" }),
+      });
+      await waitForAdvisoryWaiters(client, lockKey, 2, "PATCH atrás do close");
+      release!();
+      await holder;
+      await close;
+      const response = await patch;
+      assert.equal(response.status, 422);
+      assert.equal(((await response.json()) as { error: { reason: string } }).error.reason, "period_closed");
+      const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
+      assert.equal(Number(title?.amount), 100);
+      assert.notEqual(title?.party_name, "Não persiste");
+    } finally { await teardown(h); }
+  });
+
+  test("G11 — PATCH/shared na frente faz o close esperar e o snapshot inclui o novo nominal", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g11-patch");
+      const period = h.deriveCompetencia(new Date());
+      const lockKey = `${seed.tenantId}:${period}`;
+      let release!: () => void;
+      let ready!: () => void;
+      const writerReady = new Promise<void>((resolve) => { ready = resolve; });
+      const writer = client.$transaction(async (tx) => {
+        await h.setTenantRlsContext(tx, seed.tenantId);
+        await h.acquirePeriodLockShared(tx, seed.tenantId, period);
+        const result = await new h.PrismaFinancialTitleRepository(tx).update({
+          tenantId: seed.tenantId, financialTitleId: seed.titleId, amount: 90, updatedBy: seed.userId,
+        });
+        assert.equal(result.outcome, "updated");
+        ready();
+        await new Promise<void>((resolve) => { release = resolve; });
+      }, { timeout: 30000, maxWait: 10000 });
+      await writerReady;
+      const close = h.closeService.close(seed.actor, period, {});
+      await waitForAdvisoryWaiters(client, lockKey, 1, "close esperando PATCH/shared");
+      release!();
+      await writer;
+      await close;
+      const material = await loadSnapshotMaterial(h, seed.tenantId, period);
+      assert.equal(material.snapshot.titles.receivable.sumAmount, 90);
+      assert.deepEqual(material.snapshot, material.rederived);
+    } finally { await teardown(h); }
+  });
 }
 
 // ---------- harness ----------
@@ -213,6 +281,7 @@ async function bootstrap(connection: string) {
     { FinancialPeriodCloseService },
     { PrismaFinancialPeriodCloseStore },
     { computeMaterialSnapshot },
+    { PrismaFinancialTitleRepository },
   ] = await Promise.all([
     import("@prisma/adapter-pg"),
     import("@prisma/client"),
@@ -223,6 +292,7 @@ async function bootstrap(connection: string) {
     import("../src/modules/financial-period-closes/financial-period-close.service.js"),
     import("../src/modules/financial-period-closes/financial-period-close-prisma.repository.js"),
     import("../src/modules/financial-period-closes/financial-period-close.snapshot.js"),
+    import("../src/modules/financial-titles/financial-title-prisma.repository.js"),
   ]);
 
   // ASSERT DO MODO (lição do #357): esta suíte só é prova no caminho prisma. Se a fixação lá em cima
@@ -234,7 +304,13 @@ async function bootstrap(connection: string) {
     "assert do modo: a suíte fixa CORE_SAAS_PERSISTENCE=prisma ela mesma; rodar em memory é verde-cego",
   );
 
-  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  // A suíte roda no mesmo processo concorrente das demais provas DB no job. O timeout maior é
+  // somente do cliente descartável de teste: impede que contenção legítima entre arquivos transforme
+  // a espera deliberada da barreira em expiração de 5 s da interactive transaction.
+  const client = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: connection }),
+    transactionOptions: { maxWait: 10000, timeout: 30000 },
+  });
   const closeService = new FinancialPeriodCloseService(new PrismaFinancialPeriodCloseStore(client));
 
   return {
@@ -246,6 +322,7 @@ async function bootstrap(connection: string) {
     withTenantRls,
     acquirePeriodLockExclusive,
     acquirePeriodLockShared,
+    PrismaFinancialTitleRepository,
     servers: [] as Server[],
     tenantIds: [] as string[],
   };
@@ -264,6 +341,7 @@ async function seedTenant(h: Harness, tag: string) {
     { AuditLogRepository, RoleRepository, TenantRepository, UserRepository, UserRoleRepository },
     { signAccessToken },
     { FINANCIAL_ENTRY_PERMISSIONS },
+    { FINANCIAL_TITLE_PERMISSIONS },
   ] = await Promise.all([
     import("../src/app.js"),
     import("../src/modules/core-saas/services/prisma-core-saas.service.js"),
@@ -271,6 +349,7 @@ async function seedTenant(h: Harness, tag: string) {
     import("../src/modules/core-saas/repositories/index.js"),
     import("../src/modules/auth/index.js"),
     import("../src/modules/financial-entries/financial-entry.routes.js"),
+    import("../src/modules/financial-titles/financial-title.routes.js"),
   ]);
 
   const marca = `${tag}-${suffix()}`;
@@ -295,6 +374,12 @@ async function seedTenant(h: Harness, tag: string) {
     create: { key: FINANCIAL_ENTRY_PERMISSIONS.create, description: `Permissão ${FINANCIAL_ENTRY_PERMISSIONS.create}` },
   });
   await client.rolePermission.create({ data: { role_id: papel.id, permission_id: permission.id } });
+  const titlePermission = await client.permission.upsert({
+    where: { key: FINANCIAL_TITLE_PERMISSIONS.update },
+    update: {},
+    create: { key: FINANCIAL_TITLE_PERMISSIONS.update, description: `Permissão ${FINANCIAL_TITLE_PERMISSIONS.update}` },
+  });
+  await client.rolePermission.create({ data: { role_id: papel.id, permission_id: titlePermission.id } });
   await client.userRoleAssignment.create({
     data: { tenant_id: tenant.id, user_id: user.id, role_id: papel.id },
   });

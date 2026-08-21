@@ -129,6 +129,96 @@ test("PATCH /:id/status com transição inválida (open→paid) → 422 invalid_
   });
 });
 
+test("DIN-004 HTTP: PATCH composto abaixo do pago → 422 amount_below_paid", async () => {
+  await withFinancialTitleApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, "finance");
+    const account = await requestJson(baseUrl, "/api/v1/financial-accounts", {
+      method: "POST",
+      headers,
+      body: { name: `Caixa ${randomUUID()}` },
+    });
+    const created = await requestJson(baseUrl, "/api/v1/financial-titles", {
+      method: "POST",
+      headers,
+      body: { direction: "receivable", party_type: "customer", party_name: "Antes", description: "Original", amount: 100, due_date: "2026-08-10" },
+    });
+    await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}/pay`, {
+      method: "POST",
+      headers,
+      body: { account_id: account.body.data.id, amount: 80, payment_method: "pix" },
+    });
+    const response = await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}`, {
+      method: "PATCH",
+      headers,
+      body: { amount: 50, party_name: "Depois", description: "Alterada" },
+    });
+    assert.equal(response.status, 422);
+    assert.equal(response.body.error.code, "FINANCIAL_TITLE_UNPROCESSABLE");
+    assert.equal(response.body.error.reason, "amount_below_paid");
+  });
+});
+
+test("DIN-004 HTTP: PATCH abaixo do pago permanece atômico e não altera campos laterais", async () => {
+  await withFinancialTitleApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, "finance");
+    const account = await requestJson(baseUrl, "/api/v1/financial-accounts", { method: "POST", headers, body: { name: `Conta ${randomUUID()}` } });
+    const created = await requestJson(baseUrl, "/api/v1/financial-titles", {
+      method: "POST", headers,
+      body: { direction: "receivable", party_type: "customer", party_name: "Imutável", amount: 100, due_date: "2026-08-10" },
+    });
+    await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}/pay`, {
+      method: "POST", headers, body: { account_id: account.body.data.id, amount: 70, payment_method: "pix" },
+    });
+    await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}`, {
+      method: "PATCH", headers, body: { amount: 60, party_name: "Não persiste" },
+    });
+    const fetched = await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}`, { headers });
+    assert.equal(fetched.body.data.amount, 100);
+    assert.equal(fetched.body.data.partyName, "Imutável");
+  });
+});
+
+test("DIN-004 HTTP: DELETE com pagamento → 422 title_has_payments", async () => {
+  await withFinancialTitleApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, "finance");
+    const account = await requestJson(baseUrl, "/api/v1/financial-accounts", { method: "POST", headers, body: { name: `Conta ${randomUUID()}` } });
+    const created = await requestJson(baseUrl, "/api/v1/financial-titles", {
+      method: "POST", headers,
+      body: { direction: "receivable", party_type: "customer", party_name: "Pago", amount: 100, due_date: "2026-08-10" },
+    });
+    await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}/pay`, {
+      method: "POST", headers, body: { account_id: account.body.data.id, amount: 25, payment_method: "pix" },
+    });
+    const response = await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}`, { method: "DELETE", headers });
+    assert.equal(response.status, 422);
+    assert.equal(response.body.error.code, "FINANCIAL_TITLE_UNPROCESSABLE");
+    assert.equal(response.body.error.reason, "title_has_payments");
+  });
+});
+
+test("DIN-004 HTTP: PATCH e DELETE cross-tenant retornam 404 antes da regra financeira", async () => {
+  await withFinancialTitleApi(async ({ baseUrl, seed }) => {
+    const ownerHeaders = authHeaders(seed.tenantA, "finance");
+    const intruderHeaders = authHeaders(seed.tenantB, "finance");
+    const account = await requestJson(baseUrl, "/api/v1/financial-accounts", { method: "POST", headers: ownerHeaders, body: { name: `Conta ${randomUUID()}` } });
+    const created = await requestJson(baseUrl, "/api/v1/financial-titles", {
+      method: "POST", headers: ownerHeaders,
+      body: { direction: "receivable", party_type: "customer", party_name: "Tenant A", amount: 100, due_date: "2026-08-10" },
+    });
+    await requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}/pay`, {
+      method: "POST", headers: ownerHeaders, body: { account_id: account.body.data.id, amount: 80, payment_method: "pix" },
+    });
+    for (const request of [
+      requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}`, { method: "PATCH", headers: intruderHeaders, body: { amount: 50 } }),
+      requestJson(baseUrl, `/api/v1/financial-titles/${created.body.data.id}`, { method: "DELETE", headers: intruderHeaders }),
+    ]) {
+      const response = await request;
+      assert.equal(response.status, 404);
+      assert.equal(response.body.error.reason, "title_not_found");
+    }
+  });
+});
+
 test("account_id: válido → 201; inexistente → 400 invalid_account_reference", async () => {
   await withFinancialTitleApi(async ({ baseUrl, seed }) => {
     const account = await requestJson(baseUrl, "/api/v1/financial-accounts", {

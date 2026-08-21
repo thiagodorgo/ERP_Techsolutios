@@ -76,7 +76,7 @@ if (!connectionString) {
     }
   });
 
-  test("G3b — estorno de liquidação PARCIAL: título volta a partially_paid com o paid_amount decrementado", async () => {
+  test("G12 (histórico G3b) — estornar a última parcela deixa a primeira e status partially_paid", async () => {
     const h = await bootstrap(connectionString);
     const { client } = h;
     try {
@@ -195,6 +195,71 @@ if (!connectionString) {
     } finally {
       await teardown(h);
     }
+  });
+
+  test("G3 — falha injetada após contrapartida e antes do restore faz rollback de ambos", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g3-fault", 100);
+      const payment = await h.entryService.payTitle(seed.actor, seed.titleId, {
+        account_id: seed.accountId, amount: 100, payment_method: "pix",
+      });
+      await assert.rejects(client.$transaction(async (tx) => {
+        await h.setTenantRlsContext(tx, seed.tenantId);
+        const period = h.deriveCompetencia(new Date());
+        await h.acquirePeriodLockShared(tx, seed.tenantId, period);
+        const repo = new h.PrismaFinancialEntryRepository(tx);
+        const locked = await repo.findByIdForUpdate(seed.tenantId, payment.id);
+        assert.ok(locked);
+        await repo.create({
+          tenantId: seed.tenantId, accountId: seed.accountId, direction: "out", amount: 100,
+          currency: "BRL", paymentMethod: "pix", occurredAt: new Date(), competencia: period,
+          reversalOf: payment.id, createdBy: seed.userId, updatedBy: seed.userId,
+        });
+        throw new Error("fault_after_counter_before_restore");
+      }), /fault_after_counter_before_restore/);
+      assert.equal(await client.financialEntry.count({ where: { tenant_id: seed.tenantId, reversal_of: payment.id } }), 0);
+      const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
+      assert.equal(Number(title?.paid_amount), 100);
+      assert.equal(title?.status, "paid");
+    } finally { await teardown(h); }
+  });
+
+  test("G4 — dupla reversão de uma parcela entre múltiplos pagamentos restaura uma única vez", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g4-partial", 100);
+      const first = await h.entryService.payTitle(seed.actor, seed.titleId, { account_id: seed.accountId, amount: 40, payment_method: "pix" });
+      await h.entryService.payTitle(seed.actor, seed.titleId, { account_id: seed.accountId, amount: 60, payment_method: "pix" });
+      const results = await Promise.allSettled([
+        h.entryService.reverse(seed.actor, first.id),
+        h.entryService.reverse(seed.actor, first.id),
+      ]);
+      assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+      const rejected = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      assert.ok(rejected);
+      assert.equal(isDomainError(rejected.reason, 409, "already_reversed"), true);
+      assert.equal(await client.financialEntry.count({ where: { tenant_id: seed.tenantId, reversal_of: first.id } }), 1);
+      const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
+      assert.equal(Number(title?.paid_amount), 60);
+      assert.equal(title?.status, "partially_paid");
+    } finally { await teardown(h); }
+  });
+
+  test("G12 (histórico G3b) — estornar a primeira parcela deixa a última e status partially_paid", async () => {
+    const h = await bootstrap(connectionString);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g12-first", 100);
+      const first = await h.entryService.payTitle(seed.actor, seed.titleId, { account_id: seed.accountId, amount: 40, payment_method: "pix" });
+      await h.entryService.payTitle(seed.actor, seed.titleId, { account_id: seed.accountId, amount: 60, payment_method: "pix" });
+      await h.entryService.reverse(seed.actor, first.id);
+      const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
+      assert.equal(Number(title?.paid_amount), 60);
+      assert.equal(title?.status, "partially_paid");
+    } finally { await teardown(h); }
   });
 }
 

@@ -142,6 +142,19 @@ export type UpdateFinancialTitleInput = {
   readonly updatedBy?: string;
 };
 
+// B-O6R-02 F6 (DIN-004) — resultado discriminado dos CAS de PATCH/DELETE. A classificacao
+// pertence ao repositorio porque precisa acontecer dentro da mesma transacao e, no Prisma,
+// sob SELECT ... FOR UPDATE depois de um UPDATE que casou zero linhas.
+export type UpdateFinancialTitleResult =
+  | { readonly outcome: "updated"; readonly title: FinancialTitle }
+  | { readonly outcome: "not_found" }
+  | { readonly outcome: "amount_below_paid" };
+
+export type DeleteFinancialTitleResult =
+  | { readonly outcome: "deleted"; readonly title: FinancialTitle }
+  | { readonly outcome: "not_found" }
+  | { readonly outcome: "title_has_payments" };
+
 export type ChangeFinancialTitleStatusInput = {
   readonly tenantId: string;
   readonly financialTitleId: string;

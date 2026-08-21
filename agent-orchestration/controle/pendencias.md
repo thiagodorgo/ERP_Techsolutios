@@ -2104,6 +2104,16 @@ silencioso de `a109fd7` no PR financeiro é proibido. **status: ABERTA — BLOQU
 Bloco 2 do plano (depende do B01). Aceite: Unit of Work tenant-scoped, locks, e pay/reverse/cheque/title/close
 exercitados em **PostgreSQL concorrente** — não em adapter de memória.
 
+**Estado de autoria em 2026-08-20:** implementação F1–F6 e ciclo 1 concluídos na branch
+`feat/o6r-b02-financial-uow`; os seis achados estão em `aguardando_merge`, nunca fechados sem hash. Bateria
+final: runner memory 2617/2627 (0 fail, 10 pulos DB-gated), focados 178/178, cinco suítes PostgreSQL 32/32
+com zero skip, lote 10/10 com seed por iteração e denominador 32 idêntico, D4/D5/D8 vermelhos sob mutação e
+verdes após restauração. Evidência: `agent-orchestration/omega/task-history/T-O6R-B02-F6.md`.
+
+**A pendência permanece ABERTA e bloqueante.** Antes do push/PR, `G-A109FD7-PUBLICADO` exige o follow-up do
+porteiro #357 mergeado na main, atualização desta branch e reexecução integral. Depois ainda faltam junta
+independente, CI/merge, backfill dos hashes e porteiro pós-merge. Deploy continua bloqueado pela J-6R.
+
 **Reconciliação com o que este arquivo já registrava:** quatro destes achados **já tinham pendência antiga**
 sob outro nome, aberta e citada no próprio código — `P-Ω4-4-LIQUID-ATOMIC` (DIN-001), `P-Ω4-4-EDGES` (DIN-002),
 `P-Ω4-6-CLOSE-RACE` (DIN-008) e `P-021` (DAT-003, bloco 04). A auditoria não os "descobriu": ela os
