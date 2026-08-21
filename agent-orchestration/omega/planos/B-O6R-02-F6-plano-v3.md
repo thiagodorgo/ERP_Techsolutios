@@ -402,3 +402,19 @@ irreversivel em producao sem junta unanime sao paradas imediatas.
 - [ ] achados, pendencias e KPI honestos/em paridade; deploy continua bloqueado;
 - [ ] junta independente sem veto, merge, backfill e limpeza;
 - [ ] porteiro novo e independente emite parecer antes do proximo bloco.
+
+## 18. Emenda historica — ciclo 1 da fixture de `title_restore_conflict`
+
+Durante a bateria de autoria, a nova protecao DIN-004 tornou invalida a preparacao de um caso legado: o teste
+tentava excluir publicamente um titulo pago para entao provar `title_restore_conflict`. A rota agora barra
+corretamente essa exclusao antes do estorno. O fato, a execucao independente e as alcadas estao preservados em
+`../reprovacoes/R-B-O6R-02-F6-ciclo1.md`; a correcao vinculante esta em
+`B-O6R-02-F6-ciclo1-plano.md`.
+
+Esta emenda **nao substitui nem apaga o v3**. Ela altera somente a allowlist da secao 7 para autorizar:
+
+- `tests/financial-entries.test.ts` — exclusivamente para substituir a fixture proibida por fault injection
+  local via `FinancialUowResolver` ja suportado pelo construtor; sem chamada a DELETE de titulo pago.
+
+Nenhum `src/**` adicional e autorizado para a correcao; mutacao temporaria do drill D9 deve ser restaurada e
+nunca commitada. D4/D5/D8 e toda a bateria do v3 continuam obrigatorios; D9 soma-se a eles.

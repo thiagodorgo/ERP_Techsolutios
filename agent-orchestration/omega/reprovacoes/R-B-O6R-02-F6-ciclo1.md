@@ -10,12 +10,12 @@
 |---|---|---|
 | Quem achou | `/root/dev_f6` | Registrou a falha durante a bateria de autoria; não pode planejar, corrigir nem votar este achado |
 | Agente-fábrica | `/root/fabrica_f6_ciclo1` | Criou a cadeira especializada; não planeja, não corrige e não revisa o código |
-| Quem planejará | **A designar** | Deve ser agente novo e distinto de `/root/dev_f6`, `/root/fabrica_f6_ciclo1` e dos revisores/votantes |
+| Quem planejou | `/root/planejador_f6_ciclo1` | Planejou somente a correção documental; não implementa, não revisa/vota nem atua como porteiro |
 | Quem corrigirá | **A designar** | Deve ser outro agente novo, distinto do achador, da fábrica, do planejador e dos revisores/votantes |
-| Especialista/revisor | Definição `inspetor-fixtures-financeiras-legadas`; instância a designar | Somente acha/verifica e vota; não planeja nem corrige |
+| Especialista/revisor | `/root/inspetor_fixture_f6` (`inspetor-fixtures-financeiras-legadas`) | Executou a inspeção e vetou; não planeja nem corrige |
 
-O ciclo não pode avançar para planejamento, correção ou votação enquanto as instâncias ainda “a designar”
-não forem nomeadas de forma compatível com a separação acima.
+O planejamento foi concluído. O ciclo não pode avançar para correção enquanto o novo desenvolvedor ainda
+“a designar” não for nomeado de forma compatível com a separação acima.
 
 ## Evidência bruta recebida
 
@@ -37,10 +37,10 @@ acima. A reexecução e a qualificação técnica pertencem às alçadas indepen
 
 ### (a) A composição cobre a competência que o achado exige?
 
-**SIM quanto à cadeira técnica que faltava:** foi criada uma definição especializada em compatibilidade e
-regressão de fixtures financeiras, com prova simultânea de `title_has_payments` e `title_restore_conflict`.
-A composição operacional do ciclo ainda está **incompleta**, pois planejador, corretor e instância revisora
-permanecem a designar; isso é gate explícito, não autorização para acumular papéis.
+**SIM quanto às competências de achado, inspeção e planejamento:** `/root/inspetor_fixture_f6` mediu a
+compatibilidade das fixtures e `/root/planejador_f6_ciclo1` consolidou o plano. A composição operacional do
+ciclo ainda está **incompleta**, pois o novo desenvolvedor e os demais revisores/votantes permanecem a
+designar; isso é gate explícito, não autorização para acumular papéis.
 
 ### (b) Quem achou é quem consertou?
 
@@ -49,9 +49,10 @@ permanece a designar e deverá ser distinto de todas as alçadas anteriores.
 
 ### (c) O planejador está usando dado podre?
 
-**NÃO AVALIÁVEL AINDA:** não existe planejador designado neste ciclo. O futuro planejador deverá medir a
-premissa no HEAD corrente e distinguir evidência reexecutada de afirmação herdada; até isso ocorrer, o relato
-acima permanece fato bruto atribuído ao achador, não premissa técnica ratificada.
+**NÃO.** O planejador usou a execução independente de `/root/inspetor_fixture_f6`: routes 15/15 provaram
+`title_has_payments`; `financial-entries.test.ts` teve 66/67 e parou no DELETE 422 antes de alcançar
+`entries.reverse`. A inspeção do HEAD confirmou a porta de UoW injetável e o ramo
+`title_restore_conflict`; números herdados não foram convertidos em aprovação.
 
 ## Especialista criado
 
@@ -65,6 +66,21 @@ acima permanece fato bruto atribuído ao achador, não premissa técnica ratific
 
 ## Estado do ciclo
 
-**ABERTO — aguardando novo planejador, novo desenvolvedor da correção e instância revisora independentes.**
+### Parecer executado do inspetor
+
+- `npm test -- tests/financial-titles-routes.test.ts`: 15/15, zero fail/skip, exit 0; DELETE público pago
+  respondeu `422 FINANCIAL_TITLE_UNPROCESSABLE/title_has_payments`.
+- `npm test -- tests/financial-entries.test.ts`: 67 total, 66 pass, 1 fail, zero skip, exit 1; o cenário
+  falhou em `titles.delete` antes de chamar `entries.reverse` e não alcançou `title_restore_conflict`.
+- Não foi encontrada porta de teste/env no diff.
+- Veredito: **VOTO CONTRA — `title_restore_conflict` não alcançado**.
+
+### Plano de correção
+
+Vigente em
+[`B-O6R-02-F6-ciclo1-plano.md`](../planos/B-O6R-02-F6-ciclo1-plano.md): usar somente a injeção de UoW já
+suportada pelo desenho para um fault double local ao teste, sem excluir título pago e sem tocar produção.
+
+**PLANEJADO — aguardando novo desenvolvedor da correção e revisores/votantes independentes.**
 
 Não houve alteração de código funcional, teste, KPI, push, PR ou merge nesta alçada.

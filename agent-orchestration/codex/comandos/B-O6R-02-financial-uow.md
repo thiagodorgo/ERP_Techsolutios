@@ -8,6 +8,9 @@
 > importar silenciosamente seus arquivos de auth/KPI no PR financeiro.
 > **Plano F6 vigente:** `agent-orchestration/omega/planos/B-O6R-02-F6-plano-v3.md`; o v2 foi reprovado pelo
 > crítico antes de qualquer código e permanece apenas como histórico.
+> **Correção F6/ciclo 1 vigente:** `agent-orchestration/omega/planos/B-O6R-02-F6-ciclo1-plano.md`; autoriza
+> somente `tests/financial-entries.test.ts` para provar `title_restore_conflict` por injeção na UoW já
+> suportada, sem usar DELETE público de título pago e sem alterar `src/**`.
 > **Gate `G-A109FD7-PUBLICADO`:** o desenvolvimento F6 pode prosseguir pelo parecer `LIBERADO COM RESSALVA`,
 > mas push/abertura do PR B-O6R-02 e merge ficam bloqueados até o PR dedicado de `a109fd7`, sua junta/CI,
 > merge na `main`, atualização desta branch, prova de ancestralidade e reexecução da bateria — contrato exato
