@@ -2057,6 +2057,24 @@ homônimo em organizações distintas é legal no modelo.
   (função elevada ANTES de `STAGING_DEPLOY_ENABLED`). status: ABERTA.
 - **`P-O6R-B01-IDP-SUBJECT`** — amarrar a identidade global ao `sub` do IdP (Cognito) quando a autenticação de
   produção entrar; hoje a identidade nasce dos vínculos provados por credencial local. status: ABERTA.
+
+### P-O6R-B01-PORTEIRO-357-A109FD7 (2026-08-20) — ressalvas implementadas localmente, ainda não publicadas
+
+O commit `a109fd7` (`chore/ressalvas-porteiro-357`) declara fechar quatro ressalvas do porteiro do PR #357,
+mas a medição de 2026-08-20 mostrou que ele está apenas em branch local, não é ancestral da `main` nem de
+`feat/o6r-b02-financial-uow` e não possui PR. Portanto, as ressalvas **não estão fechadas na linha publicada**.
+
+**Artefato de destino exato:** PR dedicado com head `chore/ressalvas-porteiro-357`, sem misturar o diff
+financeiro, mais ata independente em
+`agent-orchestration/omega/juntas/J-O6R-B01-PORTEIRO-357-RESSALVAS.md`.
+
+**Gate `G-A109FD7-PUBLICADO`:** bloqueia push/abertura do PR B-O6R-02 e seu merge até: CI e junta verdes; PR
+dedicado mergeado na `main`; número, `headRefOid` e `mergeCommit.oid` registrados aqui; branch B-O6R-02
+atualizada; `git merge-base --is-ancestor <merge_commit> HEAD` com exit 0; e bateria/contagens B-O6R-02
+reexecutadas depois da atualização. Evidência: `gh pr view <PR> --json
+number,state,mergedAt,headRefOid,mergeCommit,url` + ancestralidade no task-history. O parecer anterior
+`LIBERADO COM RESSALVA` permite desenvolver a F6; não permite publicar B-O6R-02 sem este gate. Cherry-pick
+silencioso de `a109fd7` no PR financeiro é proibido. **status: ABERTA — BLOQUEIA PUBLICAÇÃO B-O6R-02.**
 - **`P-O6R-B01-TRILHA-ORFA-LIMPEZA`** (ciclo 3, C5 — 2026-08-19) — a trilha `auth_identity_link_events` da
   base do dono carrega **231 linhas órfãs de origem** (medido em 2026-08-19 antes do F1: 231 de 508, todas
   `event='backfill'`, apontando para organização que não existe mais) — despejadas pelo backfill SEM escopo

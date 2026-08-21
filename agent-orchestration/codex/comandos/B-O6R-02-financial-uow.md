@@ -2,7 +2,16 @@
 
 > **Branch:** `feat/o6r-b02-financial-uow` · **1 bloco = 1 PR**
 > **Dependência:** `B-O6R-01` — **satisfeita e mergeada** (#357, `0a39824`).
-> **Porteiro do #357:** `LIBERADO COM RESSALVA`, ressalvas **todas fechadas** em `a109fd7`.
+> **Porteiro do #357:** `LIBERADO COM RESSALVA`. O backfill #358 está na `main`; o follow-up `a109fd7`,
+> antes descrito como fechamento de todas as ressalvas, está apenas numa branch local, sem PR e fora da
+> ancestralidade deste bloco (medição de 2026-08-20). Reconciliar em fluxo próprio antes do merge; não
+> importar silenciosamente seus arquivos de auth/KPI no PR financeiro.
+> **Plano F6 vigente:** `agent-orchestration/omega/planos/B-O6R-02-F6-plano-v3.md`; o v2 foi reprovado pelo
+> crítico antes de qualquer código e permanece apenas como histórico.
+> **Gate `G-A109FD7-PUBLICADO`:** o desenvolvimento F6 pode prosseguir pelo parecer `LIBERADO COM RESSALVA`,
+> mas push/abertura do PR B-O6R-02 e merge ficam bloqueados até o PR dedicado de `a109fd7`, sua junta/CI,
+> merge na `main`, atualização desta branch, prova de ancestralidade e reexecução da bateria — contrato exato
+> em `P-O6R-B01-PORTEIRO-357-A109FD7` e no plano F6 v3.
 
 ## O que este bloco fecha — e por que é o mais caro da auditoria
 
@@ -31,16 +40,19 @@ Este é também o item que o dono priorizou explicitamente: *"a cobertura dos m�
 contra Postgres deve cobrir todos os módulos o mais rápido possível, não podemos ficar empurrando problemas
 para mais tarde."*
 
-## SEPARAÇÃO DE PAPÉIS (`D-JUNTA-SEPARACAO-DE-PAPEIS`)
+## SEPARAÇÃO DE PAPÉIS EM TODO O FLUXO (`D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO`)
 
 | Papel | Faz | **Não** faz |
 |---|---|---|
-| **Acha** | reporta defeito + evidência **executada** + motivo | não propõe correção, não escreve código |
-| **Planeja** | plano a partir do relatório (**Fable** obrigatório no replanejamento) | não implementa |
-| **Desenvolve** | implementa o plano | não julga a validade do achado |
+| **Acha/origem** | reporta defeito + evidência **executada** + motivo | não propõe correção, não planeja, não escreve código, não vota a própria descoberta |
+| **Planeja** | plano medido a partir do relatório (**Fable** por contrato) | não implementa, não analisa/aprova, não atua como porteiro |
+| **Desenvolve** | implementa o plano e executa a bateria de autoria | não julga o próprio diff, não vota, não atua como porteiro |
+| **Analisa/revisa/vota** | reexecuta as provas e julga plano + diff em junta independente | não planejou nem implementou a entrega; cada voto é de agente/pessoa distinta |
+| **Porteiro pós-merge** | revalida promessa × merge × testes × KPI × pendências e decide o próximo start | não participou das alçadas anteriores e não corrige achado |
 
-A cada reprovação, a ata responde: a **composição** cobre o defeito? **quem achou consertou**? o planejador usa
-**dado podre**? Ata sem os três papéis nomeados = ciclo inválido.
+Plano, ata e parecer nomeiam os ocupantes. O mesmo agente/pessoa em duas alçadas incompatíveis invalida o
+fluxo; passes sequenciais com nomes diferentes não contam como independência. A cada reprovação, a ata também
+responde: a **composição** cobre o defeito? **quem achou consertou**? o planejador usa **dado podre**?
 
 ## A lição que o B-O6R-01 deixou, e que este bloco herda
 

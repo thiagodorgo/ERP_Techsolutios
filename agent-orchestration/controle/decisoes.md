@@ -1477,6 +1477,44 @@ Nenhuma das três foi pega por releitura. **Só execução pega**, e só por um 
 - Esta regra **não** substitui a §C7.4 (a `agente-fabrica` cria especialistas nos ciclos 1–2); ela diz **como**
   os papéis se distribuem dentro de cada ciclo.
 
+## D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO (2026-08-20 — **decisão do dono**; amplia `D-JUNTA-SEPARACAO-DE-PAPEIS`)
+
+**A separação não nasce na reprovação: vale desde o primeiro passo de TODA entrega.** Planejar, escrever o
+código, analisar/revisar, votar na junta e exercer o porteiro pós-merge são alçadas incompatíveis dentro da
+mesma entrega. Cada alçada é ocupada por agente/pessoa distinta; trocar o nome do papel ou fazer passes
+sequenciais no mesmo agente **não** satisfaz a separação.
+
+| Alçada | Faz | **Não** faz na mesma entrega |
+|---|---|---|
+| **Achador/origem** | registra achado + evidência executada + motivo, sem prescrever a correção | não planeja a correção, não implementa, não vota a própria descoberta |
+| **Planejador** | mede a premissa e publica o plano antes do código | não implementa, não analisa/aprova o diff, não atua como porteiro |
+| **Desenvolvedor** | implementa o plano aprovado e executa a bateria de autoria | não altera o plano em silêncio, não analisa/aprova o próprio diff, não atua como porteiro |
+| **Analistas/revisores e junta** | reexecutam provas, atacam plano/diff e votam com independência | não planejam nem implementam a entrega que julgam; cada voto pertence a agente/pessoa distinta |
+| **Porteiro pós-merge** | nasce depois do merge, reexecuta promessa × diff × testes × KPI × pendências e decide o próximo start | não participou das alçadas anteriores desta entrega e nunca conserta o que encontrar |
+
+**Consequências operacionais permanentes:**
+
+1. O plano, a ata da junta e o parecer do porteiro identificam nominalmente quem ocupou cada alçada. Se um
+   nome/agente aparecer em duas alçadas incompatíveis, o fluxo está contaminado e não avança.
+2. A junta mantém composição mínima e poderes de veto da §C7, mas seus votantes são também distintos entre si;
+   o desenvolvedor não ganha voto e o planejador não ratifica o próprio plano pela junta.
+3. Toda reprovação preserva a separação acima e continua respondendo às três perguntas da decisão de 17/08;
+   replanejamento e correção usam agentes novos e distintos do achador/revisor que reprovou.
+4. O `porteiro-pos-merge` é uma pessoa/agente novo, criado somente depois do merge. Parecer emitido por quem
+   planejou, desenvolveu, analisou ou votou o PR é inválido.
+5. A emulação de papéis por passes sequenciais do mesmo agente, antes aceita como fallback mecânico, **não vale
+   para esta separação**. Se não houver agentes/pessoas isolados suficientes, a entrega fica bloqueada até haver
+   composição independente; não se reduz a regra por conveniência da ferramenta.
+6. A decisão vale prospectivamente a partir de 2026-08-20, inclusive para entregas já em andamento nas etapas
+   ainda não executadas. Não invalida retroativamente commits anteriores, mas nenhum próximo papel pode ser
+   acumulado por quem já ocupou outra alçada na mesma entrega.
+
+**Aplicação imediata no B-O6R-02/F6:** o achado vem da auditoria Ω6R; `/root/planejador_f6` ocupa somente o
+planejamento; outro agente implementará; uma junta independente analisará/votará; depois do merge, um novo
+`porteiro-pos-merge` fará a revalidação. O modelo Fable fixado para o planejador não estava disponível no
+catálogo da sessão em 2026-08-20; a exceção de indisponibilidade prevista em `D-PLANEJADOR-MODELO-FABLE` foi
+registrada no plano F6, sem autorizar acúmulo de papéis.
+
 ## D-O6R-B01-IDENTIDADE-GLOBAL (2026-08-18 — B-O6R-01, plano v6 aprovado 5×0 em J-O6R-B01)
 
 **O modelo de identidade global entrou em vigor.** Três artefatos novos (migração aditiva
