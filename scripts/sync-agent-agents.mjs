@@ -3,13 +3,13 @@
 // Codex (.agents/agents/), como PAPÉIS portáteis de junta.
 //
 // Contexto: D-INTEROP-CLAUDE-CODEX (2026-07-28). O nível alto das rodadas vem da JUNTA de agentes
-// (planejador → dev → avaliador+secops+crítico+dba votando, com ciclos de reprovação — §C7). Esses 24
+// (planejador → dev → avaliador+secops+crítico+dba votando, com ciclos de reprovação — §C7). Esses
 // agentes são definições do Claude Code (`.claude/agents/*.md`). Este script os espelha para
 // `.agents/agents/*.md` num formato que o Codex consome: MESMO corpo (o system-prompt do papel,
 // VERBATIM — os poderes de VETO/adversarial não podem sofrer drift), frontmatter portátil (name +
-// description + `model:` quando o papel o fixa; só `tools:` sai) e um PREÂMBULO de orientação Codex.
-// Se o Codex não puder criar subagentes isolados, ele EMULA o papel adotando o arquivo como seu
-// system-prompt e registra o voto na ata (docs/juntas/). Sem symlink. NÃO toca código do ERP.
+// description + `model:` quando o papel o fixa; só `tools:` sai) e um PREÂMBULO de
+// orientação Codex. A emulação sequencial pelo mesmo agente foi revogada pela decisão do dono
+// D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO: sem agentes isolados, a entrega bloqueia. Sem symlink. NÃO toca ERP.
 //
 // Uso:
 //   node scripts/sync-agent-agents.mjs            # espelha/transforma .claude/agents/ -> .agents/agents/
@@ -23,7 +23,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, '.claude', 'agents');
 const DST = join(ROOT, '.agents', 'agents');
 const CHECK = process.argv.includes('--check');
-// arquivos do espelho que NÃO são agentes-fonte e devem ser preservados (índice/protocolo de emulação).
+// arquivos do espelho que NÃO são agentes-fonte e devem ser preservados (índice/protocolo de agentes isolados).
 const KEEP = new Set(['README.md']);
 
 const PREAMBLE = (name) =>
@@ -31,8 +31,8 @@ const PREAMBLE = (name) =>
   `> instruções abaixo como o seu system-prompt ao atuar como **${name}** na junta (§C7 do \`AGENTS.md\`).\n` +
   `> A FUNÇÃO e os poderes — inclusive **VETO**, quando o papel indicar — são idênticos aos do Claude Code.\n` +
   `> Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos \`.claude/\`, invocação de\n` +
-  `> subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este\n` +
-  `> papel num passe adversarial próprio e registre o voto na ata (\`docs/juntas/\`).`;
+  `> subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;\n` +
+  `> emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).`;
 
 /** Transforma um .claude/agents/<name>.md em conteúdo .agents/agents/<name>.md (papel Codex). */
 function transform(name, rawInput) {
@@ -46,10 +46,9 @@ function transform(name, rawInput) {
   const fm = m[1];
   const body = m[2].replace(/^\n+/, '');
   // Remove `tools:` — a lista de ferramentas é mecanismo do Claude Code e não tem equivalente no Codex.
-  // PRESERVA `model:`: ele não é detalhe de ferramenta, é REGRA DE EXECUÇÃO do papel. O `planejador-mestre`
-  // roda em Fable por contrato (D-PLANEJADOR-MODELO-FABLE), obrigatoriamente na revalidação de código
-  // corrigido; se a sincronização apagasse a linha, o espelho Codex perderia a regra EM SILÊNCIO a cada
-  // execução — foi exatamente o que aconteceu na primeira tentativa de aplicar a decisão.
+  // PRESERVA `model:`: não é detalhe de ferramenta quando fixado por decisão. O esforço `ultra` fica no
+  // corpo e deve ser passado explicitamente pelo orquestrador, pois não há schema local comprovado para
+  // `reasoning_effort:` no frontmatter. Apagar `model:` faria o espelho perder a regra em silêncio.
   const cleanedFm = fm
     .split('\n')
     .filter((line) => !/^\s*tools\s*:/.test(line))

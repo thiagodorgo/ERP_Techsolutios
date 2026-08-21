@@ -35,8 +35,8 @@
 >   deste contrato canônico. Ver `AGENTS.md` (adaptador Codex) e `scripts/sync-agent-skills.mjs`.
 > - **Agentes de junta nos dois ambientes:** os agentes especializados que dirigem as juntas (§C7)
 >   vivem em `.claude/agents/` (Claude Code) e são espelhados em `.agents/agents/` (papéis Codex, corpo
->   verbatim + protocolo de emulação em `.agents/agents/README.md`). Sincronizados por
->   `scripts/sync-agent-agents.mjs`. A junta é obrigatória nos dois; só o mecanismo muda.
+>   verbatim + protocolo de agentes isolados em `.agents/agents/README.md`). Sincronizados por
+>   `scripts/sync-agent-agents.mjs`. A junta e a separação de alçadas são obrigatórias nos dois.
 
 ---
 
@@ -225,17 +225,20 @@ validação** e **rastreabilidade**. Tipos:
 4. **Limpar artefatos** (política de limpeza pós-validação).
 5. **Atualizar os KPIs no próprio PR** (C3) com contagens de execução real e **abrir PR no GitHub**
    (branch por bloco).
-6. **Junta do PR valida** (inclusive os números de KPI). Verde da junta = merge (autonomia por juntas,
-   §C7); o humano audita a posteriori pelo history.
-7. **Registrar** decisão/estado em `agent-orchestration/`.
-8. **PORTEIRO PÓS-MERGE — o gate do próximo start (decisão do dono, 2026-08-12, `D-PORTEIRO-POS-MERGE`).**
-   Concluído o merge, nasce o agente `porteiro-pos-merge` (Fable por contrato). Ele **revalida** o que foi
-   entregue — promessa do PR × diff real, contagens **reexecutadas** (não copiadas), KPI com `merge_commit`/
-   `approved_head` preenchidos, ata da junta, pendências abertas/fechadas conferidas por amostragem, limpeza
-   §C5, e se alguma pendência que **BLOQUEIA** o próximo alvo continua aberta. Só então **autoriza o início
-   da próxima demanda** (`LIBERADO` / `LIBERADO COM RESSALVA` / `BLOQUEADO`), e morre até o próximo merge.
-   **Sem parecer dele, nenhum bloco novo começa** — antes disso, quem entregava era quem atestava a própria
-   entrega e já emendava no bloco seguinte.
+6. **Junta do PR valida** (inclusive os números de KPI) e o **CI precisa estar verde no head exato**.
+   A junta aprova tecnicamente; ela não autoriza sozinha o merge (§C7).
+7. **Registrar** decisão/estado em `agent-orchestration/` antes do gate final.
+8. **PORTEIRO PRÉ-MERGE — gate independente do merge** (decisão do dono, 2026-08-20,
+   `D-PORTEIRO-PRE-MERGE`; identificador técnico legado `porteiro-pos-merge` preservado). Depois de junta +
+   CI verdes, nasce um agente que não ocupou nenhuma alçada anterior. Ele roda em **`gpt-5.6-sol` com
+   raciocínio `ultra`**, reexecuta promessa × diff × testes × KPI × ata × pendências no **head exato** e só
+   pode autorizar com a linha literal `LIBERADO: merge do PR #<n> no head <sha>`. `LIBERADO COM RESSALVA` e
+   `BLOQUEADO` **não autorizam merge**. Qualquer commit/push que mude o head expira o parecer e exige novo
+   porteiro independente.
+9. **Merge** somente com junta registrada, CI verde e o `LIBERADO` exato do porteiro para o mesmo head.
+10. **PÓS-MERGE factual.** Outro agente, também distinto do porteiro e das alçadas anteriores, faz somente
+    backfill de `pr`/`merge_commit`/`approved_head`, reconciliação factual, limpeza e compactação §C5. Ele não
+    reabre mérito nem autoriza o merge já ocorrido. Sem esse fechamento, o próximo bloco não começa.
 
 ## C3. Política de KPI por PR (permanente) — **revoga a política pós-avaliação humana (2026-07-13, D-KPI-PER-PR)**
 
@@ -324,11 +327,12 @@ Contratos versionados por data/bloco (ex.: `mobile_evidence_file_upload@2026-06-
 
 Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprovação humana por PR.
 
-1. **Verde da junta = merge + próximo bloco.** Toda decisão que seria humana passa por **junta de agentes**
+1. **Verde da junta + CI verde = candidatura ao porteiro pré-merge.** Toda decisão que seria humana passa por **junta de agentes**
    (composição por bloco, ≥3): maioria simples nos blocos normais; **unânime com 5 agentes** nas decisões
    críticas (deploy de PRODUÇÃO, dependência nova, contratação/config de serviço externo, **chamada a serviço
    externo tarifado/pago**). Votos+justificativa
-   em `agent-orchestration/omega/juntas/J-<n>-<tema>.md`. **Junta sem registro = merge inválido.**
+   em `agent-orchestration/omega/juntas/J-<n>-<tema>.md`. **Junta sem registro = merge inválido.** Mesmo verde,
+   a junta não substitui o parecer pré-merge do porteiro no head exato (§C2.8).
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
@@ -338,11 +342,17 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    reabre a premissa + pesquisa ≥5 fontes (teto 6 agentes); ciclos 4–5 = junta ampliada replaneja a fatia.
    **Parada + dossiê ao humano SOMENTE** após o ciclo 5 falho, **ou** nas paradas imediatas irredutíveis.
 
-4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
-   `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
-   **quem acha** reporta defeito + evidência executada + **motivo** (e *não* propõe correção); **quem planeja**
-   escreve o plano a partir desse relatório; **quem desenvolve** implementa o plano (e não julga a validade do
-   achado). A ata do ciclo registra **quem ocupou cada papel** — ata sem isso = ciclo inválido.
+4-bis. **SEPARAÇÃO DE PAPÉIS EM TODO O FLUXO — ninguém atesta o próprio trabalho** (decisões do dono,
+   2026-08-17 e ampliações de 2026-08-20, `D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO`). Desde a origem de
+   **toda entrega**, achador, planejador, desenvolvedor, cada analista/revisor, cada votante, porteiro pré-merge
+   e executor pós-merge são **agentes/pessoas distintos**. Quem planeja não implementa nem aprova; quem escreve
+   não analisa/vota o próprio diff; o porteiro e o executor pós-merge não participaram de alçada anterior.
+   Passes sequenciais do mesmo agente com nomes diferentes não satisfazem a regra. Plano, ata, parecer do
+   porteiro e fechamento pós-merge registram nominalmente cada alçada; acúmulo invalida o fluxo.
+
+   **Em toda reprovação**, quem acha reporta defeito + evidência executada + **motivo**, sem prescrever a
+   correção; um novo planejador escreve o plano; outro desenvolvedor implementa; revisores independentes
+   reexecutam e votam. A ata do ciclo registra todos os ocupantes — ata sem isso = ciclo inválido.
    **A cada reprovação**, antes de recompor a junta, responder por escrito na ata: (a) a **composição** cobre a
    competência que o achado exige? (b) **quem achou é quem consertou?** — se sim, o ciclo está contaminado e a
    correção volta para outro agente; (c) o **planejador está usando dado podre** (premissa não medida, versão
@@ -357,16 +367,18 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    decisão de junta + PD. Rodadas específicas podem somar uma parada temporária, ex.: falta de credencial/
    pagamento/domínio externo na trilha de infra — ver D-SAN-AUTONOMIA em `controle/decisoes.md`.)
 
-6. **Modelo do `planejador-mestre` (decisão do dono, 2026-08-11 — `D-PLANEJADOR-MODELO-FABLE`).** O
-   `planejador-mestre` roda em **Fable por padrão**. E, quando houve **correção de código e o fluxo volta
-   para ele** — o replanejamento do protocolo de dificuldade (§C7.4) e a **validação do código corrigido** —
-   o **Fable é OBRIGATÓRIO**, não preferência: é o passo em que um plano fraco reintroduz o defeito que a
+6. **Modelo do `planejador-mestre` (decisões do dono `D-PLANEJADOR-MODELO-FABLE` e
+   `D-FABLE-PARA-GPT-5-6-SOL`).** O `planejador-mestre` roda em **`gpt-5.6-sol` com raciocínio `ultra`**. E,
+   quando houve **correção de código e o fluxo volta para ele** — o replanejamento do protocolo de dificuldade
+   (§C7.4) e a **validação do código corrigido** — o **`gpt-5.6-sol`/`ultra` é OBRIGATÓRIO**, não preferência:
+   é o passo em que um plano fraco reintroduz o defeito que a
    junta acabou de pegar, e este bloco já viu isso acontecer (o plano do PR-04a citava o precedente do
    Tariff para contrariá-lo, e só a junta pegou). Fixado no frontmatter `model:` de
    `.claude/agents/planejador-mestre.md` (e no espelho `.agents/agents/`), para valer **independente do
    modelo da sessão**; quem invoca não precisa lembrar. Chamada de `Agent`/`Workflow` que passe `model`
    diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
-   vira nota no registro da junta.
+   vira nota no registro da junta. Esta escolha é **cirúrgica**: não transforma Sol/ultra em padrão global;
+   aplica-se somente aos papéis de alto raciocínio explicitamente marcados, inclusive o porteiro pré-merge.
 
 ---
 
@@ -384,7 +396,9 @@ O repositório oficial vive no **GitHub**. **GitHub Flow**, um **bloco por PR**:
    `git push -u origin feat/<area>-<bloco>` → `gh pr create --base main --title
    "feat(mobile): criação remota de OS (B-107)" --body "…"`. No corpo: objetivo, telas, DoD,
    como testar, **KPIs atualizados no próprio PR** (§C3, contagem real) e o ID do bloco.
-5. **Merge só com CI verde** + revisão quando exigida. Prefira **squash merge** e **delete a
+5. **Merge só com CI verde + junta registrada + parecer pré-merge literal do porteiro no mesmo head**
+   (`LIBERADO: merge do PR #<n> no head <sha>`). `LIBERADO COM RESSALVA`/`BLOQUEADO` não mergeiam; novo head
+   expira o parecer. Prefira **squash merge** e **delete a
    branch**. **Logo após o merge, rode a limpeza pós-merge (§C5):** `bash scripts/post-merge-cleanup.sh`
    (ou o equivalente) — remove build artifacts, branches locais mergeadas e temporários. Disco é
    escasso; não deixe lixo para o dono varrer.
@@ -428,6 +442,9 @@ ao PR corrente**.
 - [ ] Artefatos temporários limpos (C5) **e, após o merge, limpeza pós-merge executada** (build
       artifacts + branches locais mergeadas + temporários; disco escasso — §C5).
 - [ ] PR aberto no GitHub; **KPIs atualizados no próprio PR** com contagens reais (C3).
+- [ ] Junta registrada + CI verde + porteiro pré-merge independente em Sol/ultra emitiram autorização literal
+      para o PR e head exatos; o parecer ainda não expirou por mudança de head.
+- [ ] Após o merge, executor distinto fez backfill, reconciliação factual, limpeza e compactação aplicável.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 

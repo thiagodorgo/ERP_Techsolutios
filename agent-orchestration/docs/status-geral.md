@@ -3924,3 +3924,18 @@ local" e mensagens seguras.
 Validacao local: check OK, build OK, test:smoke 44/44 (33 -> 44). Backend e
 mobile nao tocados. KPIs nao alterados (C3) — publicacao via B-124K apos
 avaliacao humana.
+
+# Atualização 2026-08-20 — governança: porteiro pré-merge independente + Sol/ultra cirúrgico
+
+- branch: `docs/governanca-porteiro-pre-merge-sol`, criada de `origin/main` limpa/atualizada;
+- decisão do dono: junta + CI verdes não autorizam sozinhos o merge; porteiro independente atua antes do
+  merge no head exato, em `gpt-5.6-sol`/`ultra`;
+- única autorização: `LIBERADO: merge do PR #<n> no head <sha>`; ressalva/bloqueio não mergeiam; novo head
+  expira o parecer;
+- pós-merge é factual e executado por outro agente distinto: backfill, reconciliação, limpeza/compactação;
+- Sol/ultra fica restrito a papéis de alto raciocínio explicitamente marcados, não como default global;
+- F6 preservada local em `feat/o6r-b02-financial-uow` (`b8ec196`, `e4e914a`), sem push/PR;
+- gate `a109fd7` continua somente na branch local `chore/ressalvas-porteiro-357` e precede a publicação F6;
+- handoff completo Codex → Claude: `agent-orchestration/codex/HANDOFF-CLAUDE-2026-08-20.md`;
+- KPI: inalterado (governança/tooling; nenhum código, teste ou escopo de produto mudou).
+- validação: espelho 22/22 consistente; TypeScript check verde; guards KPI 22/22; freeze/sintaxe/diff-check verdes.

@@ -116,9 +116,10 @@ blocks **110**.
 
 ## 4. Como ler / manter este arquivo
 
-- **Cada bloco/PR segue a Parte C do `CLAUDE.md`** — escopo cirúrgico (permitido/proibido),
-  bateria de validação exata, KPI atualizado no próprio PR (§C3), branch por bloco, merge por
-  junta de agentes com CI verde (§C7), limpeza pós-merge (§C5).
+- **Cada bloco/PR segue a Parte C do `CLAUDE.md`** — escopo cirúrgico (permitido/proibido), bateria exata,
+  KPI no próprio PR (§C3), branch por bloco, junta + CI verdes, **porteiro pré-merge independente** em
+  `gpt-5.6-sol`/`ultra` autorizando o head exato (§C7), merge e fechamento pós-merge factual por outro agente
+  (backfill, reconciliação, limpeza/compactação §C5).
 - **A fonte canônica da ordem** é a trilha viva em `agent-orchestration/` (status/controle/log) +
   `docs/juntas/` (atas e votos) + `docs/rodadas/<rodada>/` (planos) + o **git history**. Em
   divergência, **valem a trilha e o `CLAUDE.md`** — este arquivo é apenas um índice.

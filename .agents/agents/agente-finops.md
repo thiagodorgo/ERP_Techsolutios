@@ -7,8 +7,8 @@ description: Custo de provedores. Invocar nas PDs de escolha de provedor (Ω-INF
 > instruções abaixo como o seu system-prompt ao atuar como **agente-finops** na junta (§C7 do `AGENTS.md`).
 > A FUNÇÃO e os poderes — inclusive **VETO**, quando o papel indicar — são idênticos aos do Claude Code.
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
-> subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
-> papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
+> subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
+> emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
 
 # Agente FinOps — custo e escolha de provedor
 

@@ -57,7 +57,7 @@ muda só o esquema de numeração. Use o esquema da rodada corrente (ver `PROJEC
 
 ---
 
-## 2. Ciclo de vida de um bloco (as 7 etapas do C2)
+## 2. Ciclo de vida de um bloco (as 10 etapas do C2)
 
 Não pule etapas. Cada uma abaixo vem com um exemplo real/ilustrativo.
 
@@ -118,18 +118,18 @@ contagem de execução real** deste PR (§3). Se o PR tocar mobile/Flutter, atua
 > ERP"), `blocks_completed` **109 → 110**. Os campos `pr`/`merge_commit`/`approved_head` ficaram
 > **`null` na autoria** (só existem pós-merge).
 
-### Etapa 6 — A **junta** valida (verde = merge)
+### Etapa 6 — A **junta** valida e o CI fixa o head candidato
 
 A decisão que antes era humana passa por **junta de agentes** (§5). A junta valida inclusive os
-números de KPI. **Verde da junta + CI verde = merge** (autonomia por juntas, §C7). O humano é
-**informado**, não consultado por PR. **Junta sem registro = merge inválido.**
+números de KPI. **Verde da junta + CI verde = candidatura ao porteiro pré-merge**, não autorização de merge.
+O humano é **informado**, não consultado por PR. **Junta sem registro = merge inválido.**
 
 > **Exemplo (do `Ω4-3`, `J-OMEGA4-3-invoicing.md`).** Junta de 3 com poder de veto
 > (`validador-mestre` + `agente-dba-guardiao` + `coordenador-de-acessos`). Resultado: **APROVADO por
 > unanimidade (3/3)** com uma condição MÉDIA (registrar a rota no `RBAC_MATRIX.md`) que foi
 > **cumprida** antes do merge. Votos + justificativa ficaram na ata.
 
-### Etapa 7 — Registrar (decisão/estado)
+### Etapa 7 — Registrar (decisão/estado) antes do gate final
 
 Grave o resultado em `agent-orchestration/` (ata da junta, decisão, pendências) e no KPI. Isso é o
 que torna o bloco **auditável a posteriori** pelo dono, sem depender do chat nem do corpo do PR
@@ -138,6 +138,27 @@ que torna o bloco **auditável a posteriori** pelo dono, sem depender do chat ne
 > **Exemplo.** O `Ω4-3` registrou, além da ata, três pendências para blocos futuros
 > (`P-Ω4-3-TEST-HERMETIC`, `P-Ω4-3-INVOICE-ATOMIC`, `P-Ω4-3-REFATURAR-DELTA`) e o lembrete
 > "resolver `P-Ω4-COMPETENCIA-TZ` antes do Ω4-6" — rastreabilidade entre blocos.
+
+### Etapa 8 — Porteiro **pré-merge** no head exato
+
+Depois de junta registrada e CI verde, nasce um agente independente que não participou de origem,
+planejamento, desenvolvimento, análise ou voto. Ele usa **`gpt-5.6-sol` com raciocínio `ultra`** e reexecuta
+promessa × diff × bateria × KPI × ata × pendências no `headRefOid` candidato. O identificador técnico legado
+`porteiro-pos-merge` permanece apenas para não quebrar referências.
+
+A única autorização válida é `LIBERADO: merge do PR #<n> no head <sha>`. `LIBERADO COM RESSALVA` e
+`BLOQUEADO` não autorizam merge. Qualquer commit/push altera o head, expira o parecer e exige novo porteiro.
+
+### Etapa 9 — Merge do head autorizado
+
+Faça squash merge + delete branch somente se PR, SHA, junta, CI e parecer forem os mesmos registrados pelo
+porteiro. Um verde genérico ou um parecer sobre SHA anterior não serve.
+
+### Etapa 10 — Fechamento pós-merge factual por outro agente
+
+Outro agente, distinto também do porteiro, executa apenas o fechamento verificável: backfill de
+`pr`/`merge_commit`/`approved_head`, reconciliação factual, limpeza e compactação conforme §7. Ele não reabre
+mérito nem autoriza o merge já ocorrido. Sem esse fechamento, o próximo bloco não começa.
 
 ---
 
@@ -157,7 +178,8 @@ que torna o bloco **auditável a posteriori** pelo dono, sem depender do chat ne
    nota explícita** no history.
 4. `mvp_demo`/`mvp_vendavel` só mudam quando o PR **mover escopo**, com 1 linha de justificativa.
 5. `pr`, `merge_commit`, `approved_head` referem-se ao **PR corrente**; `status: "published_per_pr"`.
-   **`merge_commit`/`approved_head` são `null` na autoria** e recebem **backfill pós-merge**.
+   **`merge_commit` nasce `null` na autoria**; `approved_head` pode ser preenchido no head candidato. O agente
+   pós-merge distinto faz o backfill factual final.
 6. A **validação dos números é da junta do PR**.
 
 ### Como os três arquivos mudam num PR (exemplo real: `Ω5P PR-17`)
@@ -201,9 +223,9 @@ mobile, o trio é o mesmo — o painel é um só.
 ### Backfill pós-merge de `merge_commit` / `approved_head`
 
 Na **autoria** esses campos são `null` (o merge ainda não existe) — e isso **não bloqueia** (o
-rail antigo de bloqueio por `null` foi revogado). Depois do merge, o **bloco seguinte** faz o
-**backfill**: preenche `pr` (número real), `merge_commit` e `approved_head` do PR anterior, junto da
-reconciliação de PR#/hash.
+rail antigo de bloqueio por `null` foi revogado). Depois do merge, o **executor pós-merge distinto** faz o
+**backfill**: preenche `pr` (número real), `merge_commit` e `approved_head`, junto da reconciliação de
+PR#/hash, antes de liberar o próximo bloco.
 
 > **Exemplo.** O `kpis-latest.json` do `Ω5P PR-17` traz, no fim do `summary`: "Inclui backfill do
 > PR-16 (#301 cb3db08)" — ou seja, o PR-17 preencheu os campos de merge que o PR-16 deixara `null`.
@@ -248,14 +270,17 @@ push na main; merge sem checks verdes; **exclusão física de dados de processo 
 Norma **permanente**. Substitui, onde aplicável, a aprovação humana por PR pela aprovação de uma
 **junta de agentes**.
 
-### Composição da junta
+### Composição da junta e gate posterior
 
 - **Mínimo 3 agentes** por bloco (composição escolhida pelo risco do bloco).
 - **Maioria simples** nos blocos normais.
 - **Unânime, com 5 agentes**, nas **decisões críticas**: **deploy de PRODUÇÃO**; **dependência
   nova**; **contratação/config de serviço externo**; **chamada a serviço externo tarifado/pago**.
 - Votos + justificativa em `agent-orchestration/omega/juntas/J-<n>-<tema>.md` (ou `docs/juntas/`).
-  **Junta sem registro = merge inválido.**
+  **Junta sem registro = merge inválido.** Verde da junta não elimina o porteiro pré-merge.
+- Depois da junta + CI verde, um agente novo em `gpt-5.6-sol`/`ultra` revalida o head exato. Somente a linha
+  literal `LIBERADO: merge do PR #<n> no head <sha>` permite merge; novo head expira o parecer.
+- Planejador, desenvolvedor, cada revisor/votante, porteiro e executor pós-merge são agentes/pessoas distintos.
 - Revisores **por risco**: `agente-secops` obrigatório em PR que toque secret/env/CORS/TLS/pipeline
   ou **superfície pública**; `agente-dba-guardiao` em todo PR com **migração**;
   `coordenador-de-acessos` em PR de **RBAC/navegação**. Mapa/geo → **Junta de Mapas**.
@@ -295,8 +320,8 @@ Junta de 3 com veto: `validador-mestre` + `agente-dba-guardiao` + `coordenador-d
 |                               | Cond. MÉDIA (registrar a rota no RBAC_MATRIX) → CUMPRIDA            |
 ```
 
-**Resultado: APROVADO por unanimidade (3/3)**, condição cumprida antes do merge, pendências
-registradas. Verde da junta + CI verde → merge.
+**Resultado histórico: APROVADO por unanimidade (3/3)**, condição cumprida antes do merge, pendências
+registradas. Na regra atual, verde da junta + CI verde → porteiro pré-merge; só o `LIBERADO` literal permite merge.
 
 ### Exemplo de **REPROVAÇÃO com ciclo** (`R-omega4c-pr06-ciclo1.md`)
 
@@ -323,7 +348,7 @@ PR Ω4C PR-06 (manutenção). Junta: `omega4c-avaliador` (veto) + `agente-dba-gu
 > **Sub-nota (CI como gate empírico).** No **ciclo 2** do mesmo PR-06, o **CI** (Postgres real)
 > pegou uma FK no teardown de teste que a junta **em memória** não via (o teste era DB-gated e
 > pulava). Fix = **só teardown de teste, zero código de produto**; a aprovação de produto
-> permaneceu. Moral: a junta aprova o produto, mas o **CI verde** é condição de merge (§8).
+> permaneceu. Moral vigente: a junta aprova o produto e o **CI verde** é pré-condição do porteiro (§8).
 
 ---
 
@@ -444,8 +469,10 @@ no fechamento do bloco (o que foi removido) — nunca silenciosa.
 - [ ] **Sem termo técnico na UI** (§B3 — "Organização", nunca "Tenant"); **sem segredo/PII** em
       payload/auditoria (allowlist §B2.8 — nunca `token`/`path`/`bucket`/`storage key`/`base64`/
       binário/`tenant_id` externo).
-- [ ] **Artefatos temporários limpos** e, **após o merge, limpeza pós-merge executada** (§7).
+- [ ] **Artefatos temporários limpos** e, **após o merge, limpeza pós-merge executada** por agente distinto (§7).
 - [ ] **PR aberto no GitHub**; **KPIs atualizados no próprio PR** com contagens reais (§3).
+- [ ] **Junta registrada + CI verde + porteiro pré-merge Sol/ultra** autorizaram literalmente o PR/head exatos.
+- [ ] **Fechamento pós-merge factual** concluído por outro agente (backfill, reconciliação, limpeza/compactação).
 - [ ] **A11y:** alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência de `screen-refs/` quando existir —
       recriar, não reinterpretar; sem andaime de dev na UI.
@@ -553,7 +580,7 @@ na autoria**; `status: "published_per_pr"`.
 ### KPIs
 - `backend_tests` **1874 -> 1877** (+3 vehicles.test). `blocks_completed` **110 -> 111**.
 - `frontend_smoke_tests` 937, `flutter_tests` 807 — INALTERADOS (PR web/backend-only).
-- pr/merge_commit/approved_head = null na autoria → backfill no bloco seguinte.
+- pr/merge_commit/approved_head = null na autoria → backfill pelo executor pós-merge distinto.
 ```
 
 `Kpis/index.html` hidrata desses arquivos em runtime — nada hardcoded a editar (só o `node --check`
@@ -568,20 +595,22 @@ Junta (3): validador-mestre (veto) + coordenador-de-acessos (veto) + cognicao-vi
 - validador-mestre         → APROVADO — allowlist verificada; sem PII; sem migração; 3 testes cobrem cor opcional.
 - coordenador-de-acessos   → APROVADO — PATCH gated por vehicles:update (viewer/auditor → 403 real); cross-tenant 404.
 - cognicao-visual          → APROVADO — "Cor" em PT-BR, estados preservados, bate com screen-refs/web (VehiclesPage).
-Resultado: APROVADO por unanimidade (3/3). Verde + CI verde → merge (squash, --delete-branch).
+Resultado: APROVADO por unanimidade (3/3). Verde + CI verde → porteiro pré-merge no head exato; somente o
+`LIBERADO` literal dele → merge (squash, --delete-branch).
 ```
 
 Não houve dúvida técnica → sem PD; não é decisão crítica (sem dependência nova, sem serviço pago) →
 **junta de 3, maioria/unânime simples**, não junta-5.
 
-### 9.6 Registro + pós-merge
+### 9.6 Porteiro, merge e fechamento pós-merge
 
+- Agente porteiro novo (`gpt-5.6-sol`/`ultra`) reexecuta o head candidato e emite a autorização literal.
 - Merge por squash com `--delete-branch`.
 - `bash scripts/post-merge-cleanup.sh` → removeu `frontend/dist/`, `coverage/`, 1 branch local
   mergeada; `git remote prune origin`. **1 linha no fechamento:** "pós-merge: removidos
   frontend/dist, coverage, branch feat/vehicles-b-exemplo; .git 40M→40M".
-- **Bloco seguinte** faz o **backfill**: preenche `pr: <n>`, `merge_commit`, `approved_head` do
-  B-EXEMPLO no `kpis-latest.json`/history.
+- **Executor pós-merge distinto** faz o **backfill**: preenche `pr: <n>`, `merge_commit`, `approved_head` do
+  B-EXEMPLO no `kpis-latest.json`/history, reconcilia e fecha a limpeza antes do próximo bloco.
 
 ---
 

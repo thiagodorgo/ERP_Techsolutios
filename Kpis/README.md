@@ -14,27 +14,29 @@ os percentuais mobile quando uma entrega mexe em Flutter/mobile.
 3. `mvp_demo`/`mvp_vendavel` so mudam quando o PR mover escopo, com 1 linha de justificativa no history.
 4. Blocos `B-xxxK`/`B-xxxF` deixam de ser etapa obrigatoria (podem virar resumo de marco). Os campos `pr`,
    `merge_commit`, `approved_head` referem-se ao **PR corrente**; `status: "published_per_pr"`.
-5. Se a entrega mexeu em Flutter/mobile, a métrica `flutter_tests` entra aqui mesmo — o painel é único desde 2026-08-12 (`D-KPI-DUPLA-REVOGADA`);
-   fora do mobile, so `Kpis/*`; nos dois, ambos. Se existir `index.html`, atualizar tambem o HTML.
+5. Se a entrega mexeu em Flutter/mobile, a métrica `flutter_tests` entra aqui mesmo — o painel é único desde
+   2026-08-12 (`D-KPI-DUPLA-REVOGADA`). Em todos os casos, só o conjunto `Kpis/*` é atualizado.
+6. O porteiro pré-merge (`gpt-5.6-sol`/`ultra`) reexecuta as contagens no head exato; `merge_commit` continua
+   `null` porque o merge ainda não existe. Após o merge, **outro agente distinto** faz o backfill factual de
+   `pr`/`merge_commit`/`approved_head`, a reconciliação e a limpeza/compactação. Novo head expira o parecer.
 
 ## Política de limpeza pós-validação
 
 Todo bloco que executar testes, builds, Flutter, Node, Android, iOS ou geracao de artefatos deve limpar os artefatos temporarios ao final, sem apagar arquivos rastreados e preservando assets untracked explicitamente permitidos.
 
-## Politica de KPIs duplos
+## Histórico da política de KPIs duplos (revogada)
 
-Existem dois conjuntos de KPIs:
+Existiram dois conjuntos de KPIs:
 
 - `Kpis/`: KPIs gerais/raiz do projeto.
 - (histórico) `mobile/flutter_app/Kpis/`: painel próprio do app Flutter, APAGADO em 2026-08-12 — manter dois em paridade manual só multiplicava o risco de divergirem.
 
-Regras obrigatorias:
+Regra vigente:
 
 - Mexeu no Flutter/mobile: atualizar `Kpis/*` (painel único) e refletir os
   percentuais mobile em `Kpis/*`.
-- Mexeu fora do mobile: atualizar `Kpis/*`.
-- Mexeu nos dois: atualizar os dois conjuntos.
-- Se existir `index.html`: atualizar tambem o HTML.
+- Mexeu fora do mobile ou nas duas trilhas: atualizar somente `Kpis/*`.
+- `Kpis/index.html` continua sendo o artefato principal.
 
 ## B-124 refletido na raiz
 

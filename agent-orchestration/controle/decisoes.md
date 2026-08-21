@@ -1543,3 +1543,58 @@ foram desmentidas por execução (R-B-O6R-01-ciclo1):**
    passo 6, medido na ativação), não do trigger. O header da migração recebeu a mesma enumeração
    honesta (edição só-comentário; `migrate deploy` no dev não recusou — nada ressincronizado), e o
    guard 10c (`tests/auth-invariant-guards.test.ts`) trava `DISABLE TRIGGER` em `src/**` (baseline 0).
+
+---
+
+## D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO (2026-08-20 — decisão do dono; amplia D-JUNTA-SEPARACAO-DE-PAPEIS)
+
+**A separação vale desde a origem de toda entrega.** Achador, planejador, desenvolvedor, cada
+analista/revisor, cada votante, porteiro pré-merge e executor pós-merge são agentes/pessoas distintos.
+Planejador não implementa nem aprova; desenvolvedor não analisa/vota o próprio diff; revisores/votantes não
+planejaram nem implementaram; porteiro e executor pós-merge não participaram de alçada anterior. Passes
+sequenciais do mesmo agente com nomes diferentes não satisfazem a regra.
+
+Plano, ata, parecer e fechamento pós-merge registram nominalmente as alçadas. Acúmulo contamina o fluxo e
+impede avanço. Em reprovação, o achador informa evidência + motivo sem prescrever correção; novo planejador
+planeja; outro desenvolvedor implementa; revisores novos reexecutam e votam. Sem agentes isolados suficientes,
+a entrega bloqueia — emulação pelo mesmo agente não é alternativa.
+
+## D-FABLE-PARA-GPT-5-6-SOL (2026-08-20 — decisão do dono)
+
+**Onde a documentação ativa mandava usar Fable, o Codex passa a usar `gpt-5.6-sol`.** A alocação é
+**cirúrgica**, somente nos papéis explicitamente marcados como de alto raciocínio — hoje
+`planejador-mestre` (especialmente replanejamento/revalidação após correção) e porteiro pré-merge. Não é
+default global, não autoriza elevar todos os agentes e não muda a separação de papéis.
+
+Nos dois papéis, o nível exigido é `reasoning_effort: ultra`, passado explicitamente pelo orquestrador;
+frontmatters e espelhos registram o modelo, e o corpo registra o esforço. Não foi criada chave de frontmatter
+sem schema nem adapter `.codex/agents/*.toml`: não existe
+diretório, precedente nem schema confirmado neste repositório; inventá-lo seria configuração não verificável.
+A indisponibilidade real do modelo vira nota explícita e não autoriza um mesmo agente a acumular alçadas.
+
+Esta decisão **supersede somente a seleção de modelo** em `D-PLANEJADOR-MODELO-FABLE` e
+`D-PORTEIRO-POS-MERGE`; justificativas históricas e demais obrigações permanecem preservadas.
+
+## D-PORTEIRO-PRE-MERGE (2026-08-20 — decisão do dono; supersede a posição de D-PORTEIRO-POS-MERGE)
+
+**O porteiro move para antes do merge.** O identificador técnico `porteiro-pos-merge` permanece para não
+quebrar referências, mas sua função ativa é gate final **pré-merge**, depois de junta registrada + CI verde
+no head exato. Ele é um agente novo, independente de origem, planejamento, desenvolvimento, análise e votos,
+executado em `gpt-5.6-sol` com raciocínio `ultra`.
+
+A única autorização de merge é a linha literal:
+
+`LIBERADO: merge do PR #<n> no head <sha>`
+
+`LIBERADO COM RESSALVA` e `BLOQUEADO` **não autorizam merge**. Qualquer commit/push que altere o head expira o
+parecer e exige novo porteiro independente. O porteiro reexecuta promessa × diff × testes × KPI × ata ×
+pendências, não conserta nada e não participa do pós-merge.
+
+Depois do merge, **outro agente distinto** executa apenas o fechamento factual: backfill de
+`pr`/`merge_commit`/`approved_head`, reconciliação, limpeza e compactação aplicável. Esse executor não reabre
+mérito nem substitui retroativamente o gate. Sem fechamento pós-merge, o próximo bloco não começa.
+
+**Transição B-O6R-02/F6:** o comando e os planos v3/ciclo 1 vivem na branch
+`feat/o6r-b02-financial-uow`, não em `main`; não foram copiados para esta branch de governança. Após o merge
+desta lei, a F6 deve absorvê-la por emenda antes de PR/junta/porteiro, preservando os commits `b8ec196` e
+`e4e914a`. O gate do commit local `a109fd7` também permanece pré-requisito explícito antes de publicar a F6.

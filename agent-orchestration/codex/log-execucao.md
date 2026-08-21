@@ -3732,3 +3732,24 @@ novo), `listAllPendingApprovals` no approval.service e testes frontend.
 - Docs: matriz docs/api-screen-endpoints.md (Dashboard -> enriched/integrated
   B-124, lacuna 1 fechada), status-geral e este log.
 - KPIs NAO alterados (C3) — B-124K depois da avaliacao humana.
+
+# 2026-08-20 — Codex: continuidade F6 + nova lei do porteiro pré-merge
+
+- O dono pediu localizar onde o Claude parou e continuar. F6 preservada na branch
+  `feat/o6r-b02-financial-uow`: `b8ec196` (fixture de conflito) + `e4e914a` (invariantes PostgreSQL/KPI/trilha),
+  sem push/PR. Testes de autoria: full 2627/2617/0-fail/10-skip; focados 79+67+32; DB N=10 em 32/32.
+- Separação aplicada por agentes: planejador, desenvolvedores, achador/inspector, planejador de correção e
+  corretor distintos. Revisores/votantes e porteiro F6 ainda precisam ser agentes novos.
+- `a109fd7` foi medido fora da main, somente em `chore/ressalvas-porteiro-357`; gate próprio segue aberto.
+- Disco crítico foi monitorado: mínimo observado ~1,5 GB; cache builder Docker removido sem encolher VHDX;
+  após limpeza do dono, 11,2 GB livres ao abrir a branch documental. Compactação só no fechamento autorizado.
+- Nova instrução do dono: Fable na documentação Codex = `gpt-5.6-sol`; usar Sol/ultra apenas em ocasiões de
+  alto raciocínio, especialmente planejador-mestre e porteiro — nunca como default global.
+- Nova instrução do dono: porteiro independente passa a ser **pré-merge**. Junta+CI habilitam o gate; apenas
+  `LIBERADO: merge do PR #<n> no head <sha>` autoriza. Ressalva/bloqueio não autorizam; novo head expira.
+- Pós-merge separado: outro agente executa backfill/reconciliação/limpeza/compactação e não reabre mérito.
+- Branch desta lei: `docs/governanca-porteiro-pre-merge-sol`, a partir de `origin/main` limpa/atualizada.
+- Registro detalhado para Claude: `agent-orchestration/codex/HANDOFF-CLAUDE-2026-08-20.md`.
+- KPI/blocks: inalterados; mudança apenas de governança/tooling, conforme precedentes Ω-GOV/INTEROP.
+- Validação desta autoria documental: `sync-agent-agents --check` OK (22 espelhos), `git diff --check` OK,
+  sintaxe dos scripts OK, `kpi-freeze --check` em dia, `npm run check` OK e guards KPI **22/22**.

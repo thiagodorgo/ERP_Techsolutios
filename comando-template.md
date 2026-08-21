@@ -162,7 +162,7 @@ git diff --check
 
 ## Junta (§C7)
 
-<!-- Verde da junta = merge (autonomia por juntas). Composição por bloco, ≥3 agentes; registro
+<!-- Verde da junta + CI verde habilitam o porteiro pré-merge; não autorizam sozinhos o merge. Composição por bloco, ≥3 agentes; registro
      obrigatório em agent-orchestration/omega/juntas/J-<n>-<tema>.md — junta sem registro = merge
      inválido. Dúvida → agente-pesquisador-web (≥3 fontes) + PD em docs/omega-pd.md ANTES de decidir. -->
 
@@ -180,6 +180,17 @@ git diff --check
   - toca **tela** → `cognicao-visual` (veta tela morta) + `master-teste-telas-rotas`.
 - **Registro da junta:** `agent-orchestration/omega/juntas/J-<n>-<tema>.md` (votos + justificativa).
 
+## Porteiro pré-merge e fechamento pós-merge
+
+- Depois de junta registrada + CI verde, criar **novo agente independente** em `gpt-5.6-sol` com raciocínio
+  `ultra`; ele não pode ter sido achador, planejador, desenvolvedor, revisor ou votante desta entrega.
+- Parecer amarrado ao PR/head: somente `LIBERADO: merge do PR #<n> no head <sha>` autoriza merge.
+  `LIBERADO COM RESSALVA` e `BLOQUEADO` não autorizam; qualquer novo head expira o parecer.
+- Após o merge, **outro agente distinto** executa somente backfill factual, reconciliação, limpeza e
+  compactação aplicável. Sem esse fechamento, o próximo bloco não começa.
+- Registrar nominalmente: origem `<agente>` · planejamento `<agente>` · desenvolvimento `<agente>` ·
+  revisores/votantes `<agentes distintos>` · porteiro `<agente>` · executor pós-merge `<agente>`.
+
 ## Definition of Done (§10)
 
 - [ ] Escopo respeitado (nada fora do permitido; nada do proibido tocado).
@@ -190,6 +201,8 @@ git diff --check
 - [ ] Artefatos temporários limpos (C5) **e, após o merge, limpeza pós-merge executada**
       (`bash scripts/post-merge-cleanup.sh`).
 - [ ] PR aberto no GitHub; **KPIs atualizados no próprio PR** com contagens reais (C3).
+- [ ] Junta registrada + CI verde + porteiro pré-merge independente autorizaram literalmente o PR/head exatos.
+- [ ] Fechamento pós-merge factual concluído por outro agente (backfill, reconciliação, limpeza/compactação).
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] Fidelidade visual (§11): bate com a referência em `screen-refs/` (quando existir).
 
