@@ -23,14 +23,14 @@
         "do_not_enforce_on_create": false,
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
-          { "context": "backend", "integration_id": null },
-          { "context": "backend-postgres", "integration_id": null },
-          { "context": "frontend", "integration_id": null },
-          { "context": "owner-portal", "integration_id": null },
-          { "context": "authority-portal", "integration_id": null },
-          { "context": "flutter", "integration_id": null },
-          { "context": "docker", "integration_id": null },
-          { "context": "erp/porteiro-pre-merge", "integration_id": null }
+          { "context": "backend", "integration_id": 15368 },
+          { "context": "backend-postgres", "integration_id": 15368 },
+          { "context": "frontend", "integration_id": 15368 },
+          { "context": "owner-portal", "integration_id": 15368 },
+          { "context": "authority-portal", "integration_id": 15368 },
+          { "context": "flutter", "integration_id": 15368 },
+          { "context": "docker", "integration_id": 15368 },
+          { "context": "erp/porteiro-pre-merge", "integration_id": 15368 }
         ]
       }
     }

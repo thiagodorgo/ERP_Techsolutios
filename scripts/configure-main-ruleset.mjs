@@ -3,24 +3,30 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { validateJunta, juntaIdentities, aplicaSeABranchDefault } from './porteiro-pre-merge.mjs';
+import { validateJunta, juntaIdentities, aplicaSeABranchDefault, APP_GITHUB_ACTIONS } from './porteiro-pre-merge.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const arg=(n,d)=>{const i=process.argv.indexOf(n);return i>=0?process.argv[i+1]:d;};
 const fail=(m)=>{throw new Error(m);};
 const nonEmpty=(v)=>typeof v==='string'&&v.trim()!=='';
+const CONTEXT_PORTEIRO='erp/porteiro-pre-merge';
 const gh=(a,input=undefined)=>JSON.parse(execFileSync('gh',a,{cwd:ROOT,input,encoding:'utf8',stdio:['pipe','pipe','pipe']}));
 const canonical=(v)=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const hash=(v)=>createHash('sha256').update(JSON.stringify(canonical(v))).digest('hex');
 const template=()=>JSON.parse(readFileSync(arg('--template',`${ROOT}.github/rulesets/main.template.json`),'utf8'));
 
-function assertDesired(desired){
+export function assertDesired(desired){
   if(desired.enforcement!=='active'||desired.target!=='branch')fail('ruleset precisa estar active/branch');
   if(!aplicaSeABranchDefault(desired,'main'))fail('ruleset desejado nao se aplica a branch default (conditions.ref_name)');
   if((desired.bypass_actors||[]).length)fail('bypass_actors precisa ser vazio');
   const status=desired.rules.find(r=>r.type==='required_status_checks')?.parameters;
   if(!status?.strict_required_status_checks_policy)fail('strict precisa ser true');
   for(const c of status.required_status_checks||[])if(!Number.isInteger(c.integration_id)||c.integration_id<=0)fail(`fonte confiável não resolvida: ${c.context}`);
+  // Pin nativo (PD-GOV-PORTEIRO-APPID, opcao D): o proprio GitHub passa a recusar check de outra
+  // fonte, fora do alcance deste script. O contexto do porteiro tem de estar pinado no app id fixado.
+  const porteiro=(status.required_status_checks||[]).find(c=>c.context===CONTEXT_PORTEIRO);
+  if(!porteiro)fail(`ruleset desejado não requer ${CONTEXT_PORTEIRO}`);
+  if(porteiro.integration_id!==APP_GITHUB_ACTIONS.id)fail(`fonte do ${CONTEXT_PORTEIRO} tem de ser o app id fixado pela PD-GOV-PORTEIRO-APPID (${APP_GITHUB_ACTIONS.id}), não ${porteiro.integration_id}`);
   for(const t of ['deletion','non_fast_forward','pull_request'])if(!desired.rules.some(r=>r.type===t))fail(`regra obrigatória ausente: ${t}`);
 }
 export function assertJuntaCritica(j,executor){
@@ -33,6 +39,19 @@ export function assertJuntaCritica(j,executor){
   return true;
 }
 function assertJunta(path,executor){ return assertJuntaCritica(JSON.parse(readFileSync(path,'utf8')),executor); }
+// O plan() NAO resolve mais o integration_id observando o que apareceu verde: ele CONFERE que o
+// observado bate com o que o template ja fixa. Divergencia e VETO, nao re-resolucao — senao bastaria
+// um check verde de outra fonte para o proprio plano reescrever o pin e legitimar a fonte errada.
+export function conferirFontesFixadas(required,observed){
+  for(const item of required){
+    if(!Number.isInteger(item.integration_id)||item.integration_id<=0)fail(`VETO: template sem integration_id fixado para ${item.context}`);
+    const verdes=(observed||[]).filter(x=>x.context===item.context&&x.success);
+    if(!verdes.length)fail(`VETO: contexto requerido sem check verde observado: ${item.context}`);
+    const divergentes=[...new Set(verdes.map(x=>x.appId))].filter(id=>id!==item.integration_id);
+    if(divergentes.length)fail(`VETO: fonte observada diverge do id fixado em ${item.context}: ${divergentes.join(',')} != ${item.integration_id}`);
+  }
+  return true;
+}
 function sources(repo,head){
   const runs=gh(['api',`repos/${repo}/commits/${head}/check-runs?filter=latest&per_page=100`]).check_runs||[];
   const statuses=gh(['api',`repos/${repo}/commits/${head}/status`]).statuses||[];
@@ -41,7 +60,7 @@ function sources(repo,head){
 async function plan(){
   const repo=gh(['repo','view','--json','nameWithOwner']).nameWithOwner; const head=arg('--head'); if(!/^[0-9a-f]{40}$/.test(head||''))fail('--head SHA40 obrigatório');
   const desired=template(); const observed=sources(repo,head); const req=desired.rules.find(r=>r.type==='required_status_checks').parameters.required_status_checks;
-  for(const item of req){const matches=observed.filter(x=>x.context===item.context&&x.success&&Number.isInteger(x.appId)&&x.appId>0);const ids=[...new Set(matches.map(x=>x.appId))];if(ids.length!==1)fail(`VETO: fonte confiável única não comprovada para ${item.context}`);item.integration_id=ids[0];}
+  conferirFontesFixadas(req,observed);
   assertDesired(desired); const existing=gh(['api',`repos/${repo}/rulesets?includes_parents=true`]);
   const preState=existing.map(r=>gh(['api',`repos/${repo}/rulesets/${r.id}?includes_parents=true`]));
   const output={schema:'erp-main-ruleset-plan:v1',repo,head,desired,desiredSha256:hash(desired),preState,preStateSha256:hash(preState)};

@@ -14,6 +14,50 @@ const KPI_LATEST_PATH = 'Kpis/kpis-latest.json';
 // Vereditos que NAO autorizam merge. Existem para deixar RASTRO EXTERNO do "nao".
 const VEREDITOS_NEGATIVOS = ['BLOQUEADO', 'RESSALVA'];
 
+// PD-GOV-PORTEIRO-APPID (docs/omega-pd.md, 2026-08-22 — 14 fontes, 4 primarias).
+// `GET https://api.github.com/apps/github-actions` responde SEM autenticacao com:
+//   id 15368 · slug github-actions · owner.login github / owner.id 9919 · created_at 2018-07-30.
+// Id GLOBAL do host: identico em orgs distintas (medido em actions/checkout e microsoft/vscode;
+// Azure Pipelines aparece como 9426 no mesmo payload). O objeto `app` NAO existe no corpo do
+// POST /check-runs — so na resposta, preenchido pelo servidor a partir do token.
+// RESSALVA DECLARADA PELA PD: nenhuma fonte oficial promete estabilidade contratual desse numero;
+// ele e observavel, nao documentado como constante. Por isso existe o override — que TAMBEM prova.
+// LIMITE QUE MUDA A LEITURA: isto prova "foi o GitHub Actions", NAO prova "foi o job do porteiro".
+// Qualquer workflow deste repositorio com `checks: write` produz check-run com o mesmo app id; o
+// vetor de workflow acrescentado/alterado e fechado pela escalada de superficie de governanca.
+export const APP_GITHUB_ACTIONS = { id: 15368, slug: 'github-actions', ownerId: 9919 };
+
+// Cross-check triplo sobre o objeto `app` da RESPOSTA do check-run. `owner.id` em vez de
+// `owner.login` porque login e renomeavel e o id nao. Divergencia em qualquer campo = fail-closed.
+export function assertFonteConfiavel(app, expectedAppId) {
+  if (!Number.isInteger(expectedAppId) || expectedAppId <= 0) fail('fonte confiável esperada não resolvida');
+  if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: fonte do status não comprovada');
+  if (app.id !== expectedAppId) fail(`status criado por app id ${app.id ?? 'ausente'}; fonte confiável esperada é ${expectedAppId}`);
+  if (app.slug !== APP_GITHUB_ACTIONS.slug) fail(`status criado por app slug ${app.slug ?? 'ausente'}; fonte confiável esperada é ${APP_GITHUB_ACTIONS.slug}`);
+  if (app.owner?.id !== APP_GITHUB_ACTIONS.ownerId) fail(`status criado por owner.id ${app.owner?.id ?? 'ausente'}; fonte confiável esperada é ${APP_GITHUB_ACTIONS.ownerId}`);
+  return true;
+}
+
+// Caminho rapido: o literal do YAML tem de bater com o pin do codigo — dois lugares que se conferem.
+// Caminho de override (existe SO para o cenario "o GitHub mudou o id"): o valor overridado tambem
+// prova contra o REGISTRO GLOBAL do app antes de ser aceito. OVERRIDE QUE NAO PROVA = VERMELHO.
+// O override nao pode ser canal de afrouxamento silencioso.
+export function resolveExpectedAppId({ literal, override, registro }) {
+  const lit = Number(literal);
+  if (!Number.isInteger(lit) || lit <= 0) fail('ERP_PORTEIRO_EXPECTED_APP_ID positivo é obrigatório; fonte não comprovada');
+  if (!nonEmpty(override === undefined || override === null ? '' : String(override))) {
+    if (lit !== APP_GITHUB_ACTIONS.id) fail(`ERP_PORTEIRO_EXPECTED_APP_ID (${lit}) diverge do app id fixado pela PD-GOV-PORTEIRO-APPID (${APP_GITHUB_ACTIONS.id})`);
+    return lit;
+  }
+  const ov = Number(override);
+  if (!Number.isInteger(ov) || ov <= 0) fail('ERP_PORTEIRO_APP_ID_OVERRIDE precisa ser inteiro positivo');
+  if (!registro || typeof registro !== 'object' || Array.isArray(registro)) fail('override sem o registro global do app: prova ausente');
+  if (registro.slug !== APP_GITHUB_ACTIONS.slug) fail(`registro global consultado não é ${APP_GITHUB_ACTIONS.slug}: override não provado`);
+  if (registro.owner?.id !== APP_GITHUB_ACTIONS.ownerId) fail(`registro global com owner.id ${registro.owner?.id ?? 'ausente'}: override não provado`);
+  if (registro.id !== ov) fail(`override ${ov} não confere com o registro global do app (${registro.id ?? 'ausente'}): override que não prova é vermelho`);
+  return ov;
+}
+
 export function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((k) => [k, canonical(value[k])]));
@@ -258,8 +302,10 @@ async function publishCommand() {
   const snapshot = JSON.parse(readFileSync(arg('--snapshot'), 'utf8'));
   const attestation = JSON.parse(readFileSync(arg('--attestation'), 'utf8'));
   verifyAttestation(snapshot, attestation);
-  const expectedApp = Number(process.env.ERP_PORTEIRO_EXPECTED_APP_ID || 0);
-  if (!Number.isInteger(expectedApp) || expectedApp <= 0) fail('ERP_PORTEIRO_EXPECTED_APP_ID positivo é obrigatório; fonte não comprovada');
+  const override = process.env.ERP_PORTEIRO_APP_ID_OVERRIDE;
+  // O registro global so e consultado quando ha override — o caminho rapido nao acrescenta rede.
+  const registro = nonEmpty(override || '') ? gh(['api', '/apps/github-actions']) : null;
+  const expectedApp = resolveExpectedAppId({ literal: process.env.ERP_PORTEIRO_EXPECTED_APP_ID, override, registro });
   const before = buildSnapshot(await liveState(snapshot.pr));
   if (JSON.stringify(before) !== JSON.stringify(snapshot)) fail('snapshot remoto mudou antes da publicação');
   const persisted = { ...attestation, snapshot };
@@ -269,13 +315,14 @@ async function publishCommand() {
   if (JSON.stringify(after) !== JSON.stringify(snapshot)) fail('snapshot remoto mudou depois do comentário; status não publicado');
   const checkInput = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'success', details_url:comment.html_url, output:{ title:`LIBERADO PR #${snapshot.pr}`, summary:`Head ${snapshot.head.oid} autorizado pelo porteiro independente.` } });
   const status = gh(['api','-X','POST',`repos/${snapshot.repo}/check-runs`,'--input','-'], checkInput);
-  const sourceId = status.app?.id ?? null;
-  if (sourceId !== expectedApp) {
-    const failure = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'failure', details_url:comment.html_url, output:{title:'Fonte não confiável',summary:'O app criador não corresponde à fonte esperada.'} });
+  try {
+    assertFonteConfiavel(status.app, expectedApp);
+  } catch (e) {
+    const failure = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'failure', details_url:comment.html_url, output:{title:'Fonte não confiável',summary:e.message} });
     gh(['api','-X','POST',`repos/${snapshot.repo}/check-runs`,'--input','-'], failure);
-    fail('status criado por fonte diferente da fonte confiável esperada');
+    fail(e.message);
   }
-  console.log(JSON.stringify({ ok: true, pr: snapshot.pr, head: snapshot.head.oid, permalink: comment.html_url, sourceAppId: sourceId }));
+  console.log(JSON.stringify({ ok: true, pr: snapshot.pr, head: snapshot.head.oid, permalink: comment.html_url, sourceAppId: status.app.id, sourceSlug: status.app.slug }));
 }
 
 export function checkAllowlist(changed, manifest) {

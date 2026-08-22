@@ -44,14 +44,27 @@ jobs:
           # Fonte confiável do check `erp/porteiro-pre-merge`: app id do GitHub Actions.
           # VALOR FIXADO — nunca derivado do próprio run. Derivar do check-run recém-criado torna a
           # comparação tautológica (compara a fonte consigo mesma) e o gate deixa de provar a fonte.
-          # PENDENTE DE PD (>=3 fontes, §C7.3): enquanto vazio, o publish RECUSA (fail-closed) e o
-          # bootstrap do ruleset segue vetado pelo plano v1 §F3.2. NÃO preencher por chute.
-          ERP_PORTEIRO_EXPECTED_APP_ID: ''
+          #
+          # EVIDÊNCIA (PD-GOV-PORTEIRO-APPID, docs/omega-pd.md — 14 fontes, 4 primárias):
+          #   endpoint : GET https://api.github.com/apps/github-actions  (público, sem autenticação)
+          #   consulta : 2026-08-22
+          #   resposta : id 15368 · slug github-actions · owner.login github / owner.id 9919
+          #              created_at 2018-07-30T09:30:17Z
+          #   escopo   : id GLOBAL do host — idêntico em orgs distintas (actions/checkout e
+          #              microsoft/vscode); Azure Pipelines aparece como 9426 no mesmo payload.
+          #   ressalva : nenhuma fonte oficial promete estabilidade contratual desse número.
+          # O script cruza id + slug + owner.id na resposta do check-run e falha fechado em qualquer
+          # divergência. Se o GitHub trocar o id, use o override abaixo — que TAMBÉM tem de provar
+          # contra o registro global do app. Override que não prova é vermelho, nunca afrouxamento.
+          ERP_PORTEIRO_EXPECTED_APP_ID: '15368'
+          # Escape documentado. Vem de repository/organization variable — NUNCA de `steps`, `needs`
+          # ou de qualquer saída do próprio run. Vazio = caminho rápido pelo literal acima.
+          ERP_PORTEIRO_APP_ID_OVERRIDE: ${{ vars.ERP_PORTEIRO_APP_ID_OVERRIDE }}
         run: |
           set -euo pipefail
           test "$(printf '%s' "$PR_NUMBER" | tr -cd '0-9')" = "$PR_NUMBER"
           if [ -z "${ERP_PORTEIRO_EXPECTED_APP_ID}" ]; then
-            echo "ERP_PORTEIRO_EXPECTED_APP_ID nao esta fixado: a PD do app id (>=3 fontes, §C7.3) esta pendente." >&2
+            echo "ERP_PORTEIRO_EXPECTED_APP_ID nao esta fixado (PD-GOV-PORTEIRO-APPID)." >&2
             echo "O gate falha FECHADO: nenhum status de liberacao e publicado." >&2
             exit 1
           fi
