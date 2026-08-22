@@ -41,9 +41,25 @@ jobs:
           PR_NUMBER: ${{ inputs.pr }}
           ATTESTATION_JSON: ${{ inputs.attestation_json }}
           REPO: ${{ github.repository }}
-          # Fonte confiável do check `erp/porteiro-pre-merge`: app id do GitHub Actions.
+          # App id do GitHub Actions, usado para publicar o check `erp/porteiro-pre-merge`.
+          #
+          # O QUE ESTE PIN PROVA — e só isto: que o check-run foi CRIADO PELO APP GitHub Actions.
+          # O QUE ELE NÃO PROVA: que foi criado por ESTE workflow. `permissions: checks: write` é
+          # declarado POR WORKFLOW, não por repositório, então um check homônimo publicado por outro
+          # workflow do próprio repositório carrega exatamente a mesma identidade de app.
+          # E não há como desempatar depois: PD-GOV-PORTEIRO-PROVENIENCIA (docs/omega-pd.md, 24
+          # respostas reais da API) mediu que a cadeia check-run -> check-suite -> workflow run
+          # devolve DADO FALSO para check criado por `POST /check-runs` — que é o que este job faz.
+          # Caso medido: check-run de 2026-08-01 resolvendo a um run encerrado em 2026-06-16. Causa:
+          # `POST /check-runs` não aceita `check_suite_id` e o GitHub associa por repo + SHA.
+          # Derivar `path` por essa cadeia está VETADO na lei — nem como verificação best-effort.
+          # MITIGAÇÕES do resíduo, que é declarado ABERTO: (a) a escalada por superfície de
+          # governança — diff que toque `.github/workflows/**` exige junta crítica 5/5, então
+          # workflow acrescentado ou alterado não entra com junta simples; (b) a reexecução do
+          # porteiro sobre o diff, com o conteúdo da atestação e o permalink conferidos.
+          #
           # VALOR FIXADO — nunca derivado do próprio run. Derivar do check-run recém-criado torna a
-          # comparação tautológica (compara a fonte consigo mesma) e o gate deixa de provar a fonte.
+          # comparação tautológica: compara a identidade do app consigo mesma e não afere nada.
           #
           # EVIDÊNCIA (PD-GOV-PORTEIRO-APPID, docs/omega-pd.md — 14 fontes, 4 primárias):
           #   endpoint : GET https://api.github.com/apps/github-actions  (público, sem autenticação)

@@ -136,3 +136,69 @@ test('D-5 — a paginação da API de files não trunca: workflow na página 2 c
 test('D-5 — rename PARA FORA da superfície é pego por previous_filename',()=>{const paths=coletarPaths((p:number)=>(p===1?[{filename:'docs/antigo.yml',previous_filename:'.github/workflows/x.yml'}]:[]));assert.deepEqual(paths,['.github/workflows/x.yml','docs/antigo.yml']);assert.throws(()=>buildSnapshot(comFiles(paths)),/exige junta crítica 5\/5/);});
 
 test('D-5 — ESTE PR toca a superfície inteira e por isso exige 5/5',()=>{const meus=['.github/workflows/porteiro-pre-merge.yml','.github/rulesets/main.template.json','scripts/porteiro-pre-merge.mjs','scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs','tests/porteiro-pre-merge-governance.test.ts','CLAUDE.md','AGENTS.md'];assert.equal(pathsDeGovernanca(meus).length,meus.length);assert.throws(()=>buildSnapshot(comFiles(meus)),/exige junta crítica 5\/5/);assert.equal(buildSnapshot(comFiles(meus,criticaOk())).governanceSurface.length,meus.length);});
+
+// ---------------------------------------------------------------------------
+// PROVENIENCIA — a prosa embutida não pode afirmar prova que o mecanismo não entrega.
+// PD-GOV-PORTEIRO-PROVENIENCIA (docs/omega-pd.md, 24 respostas reais da API): a cadeia
+// check-run -> check-suite -> workflow run devolve DADO FALSO para check criado por
+// `POST /check-runs`. Guard executável — senão a redação corrigida é prosa sem enforcement,
+// que é exatamente a classe de defeito deste ciclo em superfície menor.
+// ---------------------------------------------------------------------------
+
+// Achata a continuação de comentário (YAML `#` ou JS `//`) para que frase quebrada em duas linhas
+// continue casando — senão o guard vira refém da largura da coluna. Normaliza CRLF antes: a árvore
+// do dono é CRLF fora das quatro pastas espelhadas, e um `\r` residual quebraria toda asserção.
+const achata=(texto:string,marca:'#'|'//')=>texto
+  .replace(/\r\n?/g,'\n')
+  .replace(marca==='#'?/\n[ \t]*#[ \t]?/g:/\n[ \t]*\/\/[ \t]?/g,' ');
+
+export function guardProvenienciaWorkflow(y:string){
+  const t=achata(y,'#');
+  if(/Fonte confiável do check/i.test(t))throw new Error('a prosa afirma "fonte confiável do check": o pin prova apenas que foi o app GitHub Actions');
+  if(/o gate deixa de provar a fonte/i.test(t))throw new Error('a prosa afirma que o gate prova a fonte do check');
+  const exigidos:[RegExp,string][]=[
+    [/PD-GOV-PORTEIRO-PROVENIENCIA/,'não aponta para PD-GOV-PORTEIRO-PROVENIENCIA'],
+    [/CRIADO PELO APP GitHub Actions/,'não declara o que o pin prova'],
+    [/NÃO PROVA/,'não declara o que o pin NÃO prova'],
+    [/declarado POR WORKFLOW, não por repositório/,'não explica que checks: write é por workflow'],
+    [/DADO FALSO/,'não registra que a cadeia devolve dado falso'],
+    [/VETADO/,'não registra o veto à derivação por check-suite'],
+    [/escalada por superfície de governança/i,'não nomeia a mitigação da escalada'],
+    [/reexecução do porteiro sobre o diff/,'não nomeia a mitigação da reexecução sobre o diff'],
+  ];
+  for(const [re,erro] of exigidos)if(!re.test(t))throw new Error(`a prosa ${erro}`);
+  return true;
+}
+
+test('PROVENIENCIA — o comentário do workflow declara o que o pin prova e o que NÃO prova',()=>{
+  const y=readFileSync('.github/workflows/porteiro-pre-merge.yml','utf8');
+  assert.equal(guardProvenienciaWorkflow(y),true);
+  // As mutações são aplicadas ao texto JÁ ACHATADO: as frases exigidas vivem quebradas em duas
+  // linhas de comentário, então mutar o texto cru seria no-op e a prova não provaria nada.
+  // achata() é idempotente, então o guard aceita a entrada achatada do mesmo jeito.
+  const t=achata(y,'#');
+  assert.equal(guardProvenienciaWorkflow(t),true);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace('App id do GitHub Actions, usado para publicar o check','Fonte confiável do check')),/fonte confiável do check/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace(/PD-GOV-PORTEIRO-PROVENIENCIA/g,'PD-QUALQUER')),/não aponta para PD-GOV-PORTEIRO-PROVENIENCIA/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace('declarado POR WORKFLOW, não por repositório','declarado no repositório')),/checks: write é por workflow/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace(/DADO FALSO/g,'dado')),/dado falso/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace(/VETADO/g,'possível')),/veto à derivação por check-suite/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace(/escalada por superfície de governança/gi,'escalada')),/mitigação da escalada/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace(/reexecução do porteiro sobre o diff/g,'a revisão')),/reexecução sobre o diff/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace('CRIADO PELO APP GitHub Actions','criado')),/não declara o que o pin prova/);
+  assert.throws(()=>guardProvenienciaWorkflow(t.replace(/NÃO PROVA/g,'não garante')),/não declara o que o pin NÃO prova/);
+});
+
+test('PROVENIENCIA — o comentário do código carrega o mesmo limite e a derivação vetada não entrou',()=>{
+  const m=achata(readFileSync('scripts/porteiro-pre-merge.mjs','utf8'),'//');
+  assert.match(m,/NAO prova "foi o job do porteiro"/);
+  assert.match(m,/PD-GOV-PORTEIRO-PROVENIENCIA/);
+  assert.match(m,/DADO FALSO/);
+  assert.match(m,/VETADO na lei/);
+  assert.match(m,/condicao necessaria, nunca suficiente/);
+  assert.match(m,/declarado POR WORKFLOW, nao por repositorio/);
+  // A derivação por check-suite está VETADA na lei: nem como verificação best-effort.
+  assert.doesNotMatch(m,/check_suite_id/);
+  assert.doesNotMatch(m,/actions\/jobs\//);
+  assert.doesNotMatch(m,/actions\/runs\//);
+});

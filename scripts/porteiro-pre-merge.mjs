@@ -22,9 +22,14 @@ const VEREDITOS_NEGATIVOS = ['BLOQUEADO', 'RESSALVA'];
 // POST /check-runs — so na resposta, preenchido pelo servidor a partir do token.
 // RESSALVA DECLARADA PELA PD: nenhuma fonte oficial promete estabilidade contratual desse numero;
 // ele e observavel, nao documentado como constante. Por isso existe o override — que TAMBEM prova.
-// LIMITE QUE MUDA A LEITURA: isto prova "foi o GitHub Actions", NAO prova "foi o job do porteiro".
-// Qualquer workflow deste repositorio com `checks: write` produz check-run com o mesmo app id; o
-// vetor de workflow acrescentado/alterado e fechado pela escalada de superficie de governanca.
+// LIMITE QUE MUDA A LEITURA: isto prova "foi o app GitHub Actions", NAO prova "foi o job do
+// porteiro". `permissions: checks: write` e declarado POR WORKFLOW, nao por repositorio, entao um
+// check homonimo publicado por outro workflow DESTE repositorio carrega a mesma identidade de app.
+// E nao da para desempatar depois: PD-GOV-PORTEIRO-PROVENIENCIA (docs/omega-pd.md, 24 respostas
+// reais da API) mediu que a cadeia check-run -> check-suite -> workflow run devolve DADO FALSO para
+// check criado por `POST /check-runs`. Derivar `path` por ela esta VETADO na lei. O residuo fica
+// ABERTO e e mitigado pela escalada de superficie de governanca (abaixo) e pela reexecucao do
+// porteiro sobre o diff.
 export const APP_GITHUB_ACTIONS = { id: 15368, slug: 'github-actions', ownerId: 9919 };
 
 // ---------------------------------------------------------------------------
@@ -70,6 +75,8 @@ export function coletarPaths(fetchPage, porPagina = 100) {
 
 // Cross-check triplo sobre o objeto `app` da RESPOSTA do check-run. `owner.id` em vez de
 // `owner.login` porque login e renomeavel e o id nao. Divergencia em qualquer campo = fail-closed.
+// LEIA O NOME COM CUIDADO: "fonte confiavel" aqui e a IDENTIDADE DE APP exigida — condicao
+// necessaria, nunca suficiente. Passar neste cross-check nao diz qual workflow publicou o check.
 export function assertFonteConfiavel(app, expectedAppId) {
   if (!Number.isInteger(expectedAppId) || expectedAppId <= 0) fail('fonte confiável esperada não resolvida');
   if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: fonte do status não comprovada');
