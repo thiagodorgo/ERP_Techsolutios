@@ -1,4 +1,16 @@
 # Manifesto exato do PR de governança (C1-010). Um path por linha; diretórios/globs não são aceitos.
+#
+# CICLO 2 (2026-08-22). O nome do arquivo continua `…-ciclo1-…` porque `package.json` o referencia e
+# renomeá-lo trocaria o path do próprio manifesto; o CONTEÚDO cobre os ciclos 1 e 2. As sete adições
+# abaixo são consequência direta do plano vinculante do ciclo 2
+# (`GOV-PORTEIRO-PRE-MERGE-ciclo2-plano-v1.md`) — nenhuma é escopo novo:
+#   .gitattributes .............................. veredito D-2 (o planejador autorizou a adição)
+#   .github/workflows/ci.yml .................... F-B (step nomeado de governança no job requerido)
+#   scripts/sync-agent-skills.mjs ............... F-A (mesma regra anti-deleção-silenciosa)
+#   agent-orchestration/controle/pendencias.md .. D-2 item 4 (P-EOL-POLITICA-GLOBAL)
+#   …/planos/…-ciclo2-plano-v1.md ............... o plano do ciclo (§C7.4)
+#   …/reprovacoes/R-…-ciclo2.md ................. o dossiê dos achadores (§C7.4)
+#   docs/omega-pd.md ............................ PD-GOV-PORTEIRO-APPID, exigida por F-D e §C7.3
 .agents/agents/README.md
 .agents/agents/agente-ci-doutor.md
 .agents/agents/agente-dba-guardiao.md
@@ -32,7 +44,9 @@
 .claude/agents/planejador-mestre.md
 .claude/agents/porteiro-pos-merge.md
 .claude/skills/erp-techsolutions-code-auditor/references/codex-pr-workflow.md
+.gitattributes
 .github/rulesets/main.template.json
+.github/workflows/ci.yml
 .github/workflows/porteiro-pre-merge.yml
 AGENTS.md
 BUILD_ORDER.md
@@ -48,14 +62,18 @@ agent-orchestration/codex/HANDOFF-CLAUDE-2026-08-20.md
 agent-orchestration/codex/comandos/B-O6R-01-identity-authority.md
 agent-orchestration/codex/log-execucao.md
 agent-orchestration/controle/decisoes.md
+agent-orchestration/controle/pendencias.md
 agent-orchestration/docs/status-geral.md
 agent-orchestration/omega/lista-saneamento.md
 agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-allowlist.txt
 agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md
+agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo2-plano-v1.md
 agent-orchestration/omega/prompt-rodada-saneamento-infra.md
 agent-orchestration/omega/reprovacoes/R-GOV-PORTEIRO-PRE-MERGE-ciclo1.md
+agent-orchestration/omega/reprovacoes/R-GOV-PORTEIRO-PRE-MERGE-ciclo2.md
 comando-template.md
 docs/claude-code-handoff/README.md
+docs/omega-pd.md
 package.json
 scripts/configure-main-ruleset.mjs
 scripts/kpi-release.mjs
@@ -63,6 +81,7 @@ scripts/merge-authorized-pr.mjs
 scripts/porteiro-pre-merge.mjs
 scripts/post-merge-finalize.mjs
 scripts/sync-agent-agents.mjs
+scripts/sync-agent-skills.mjs
 tests/agent-model-routing.test.ts
 tests/kpi-release-tooling.test.ts
 tests/porteiro-pre-merge-governance.test.ts
