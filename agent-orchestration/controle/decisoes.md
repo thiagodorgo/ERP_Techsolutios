@@ -1598,3 +1598,12 @@ mérito nem substitui retroativamente o gate. Sem fechamento pós-merge, o próx
 `feat/o6r-b02-financial-uow`, não em `main`; não foram copiados para esta branch de governança. Após o merge
 desta lei, a F6 deve absorvê-la por emenda antes de PR/junta/porteiro, preservando os commits `b8ec196` e
 `e4e914a`. O gate do commit local `a109fd7` também permanece pré-requisito explícito antes de publicar a F6.
+
+### Emenda executável do ciclo 1 (2026-08-21)
+
+O contrato passa a ter enforcement versionado: snapshot `erp-porteiro-snapshot:v1`, junta e parecer em
+comentários externos, check requerido `erp/porteiro-pre-merge` criado por GitHub App comprovada, ruleset
+ativo/strict sem bypass e merge com compare-and-swap do head. O workflow de `pull_request_target` não faz
+checkout nem executa código do candidato. Configuração remota só ocorre após junta crítica 5/5 e por executor
+distinto; se a fonte confiável não puder ser ligada ao contexto requerido, o configurador emite VETO antes do
+apply. `approved_head` e `merge_commit` ficam nulos na autoria e só são projetados após fechamento externo.

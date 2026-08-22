@@ -3939,3 +3939,12 @@ avaliacao humana.
 - handoff completo Codex → Claude: `agent-orchestration/codex/HANDOFF-CLAUDE-2026-08-20.md`;
 - KPI: inalterado (governança/tooling; nenhum código, teste ou escopo de produto mudou).
 - validação: espelho 22/22 consistente; TypeScript check verde; guards KPI 22/22; freeze/sintaxe/diff-check verdes.
+
+# Atualização 2026-08-21 — ciclo 1 do enforcement pré-merge (autoria em validação)
+
+- Desenvolvedor independente: `/root/dev_governanca_c1`; plano: `GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md`.
+- Implementados workflow de invalidação/publicação por GitHub App, ruleset template strict/no-bypass,
+  snapshot/atestado externo, merge CAS, executor pós-merge e escritor KPI author/backfill.
+- **Nenhuma configuração remota aplicada:** fonte esperada, junta crítica 5/5 e executor de bootstrap ainda
+  pertencem às alçadas posteriores. Fonte não comprovável produz VETO, não fallback.
+- Testes focados e mutações locais: ver handoff/log desta branch. Junta/CI/porteiro ainda pendentes.

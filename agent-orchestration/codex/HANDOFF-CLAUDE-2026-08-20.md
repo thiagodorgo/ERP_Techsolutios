@@ -76,7 +76,21 @@ pré-merge no head exato, merge e fechamento pós-merge) antes de atualizar a F6
   `LIBERADO: merge do PR #<n> no head <sha>`. Ressalva/bloqueio não permitem merge; novo head expira.
 - Pós-merge: outro agente distinto faz somente backfill, reconciliação factual, limpeza e compactação.
 - Não foi criado `.codex/agents/*.toml`: não existe precedente/schema local confirmado.
-- Mudança é governança/tooling, não código/teste/escopo de produto; KPI e `blocks_completed` ficam inalterados.
+- A correção do ciclo 1 passou a incluir tooling/testes executáveis; por §C3, publica snapshot KPI próprio.
+  `blocks_completed` permanece inalterado porque não move escopo de produto.
+
+## Ciclo 1 executável — autoria Codex em 2026-08-21
+
+- Achadores: Kant/Erdos/Banach; fábrica e planejador independentes registrados na reprovação; desenvolvedor:
+  `/root/dev_governanca_c1`. Nenhum deles pode ser porteiro ou executor pós-merge desta entrega.
+- Claude usa `model: fable`; o sync traduz apenas planejador/porteiro para Codex Sol/ultra e exige recibo da
+  invocação. Executor pós-merge não herda override.
+- `porteiro-pre-merge.mjs` congela repo/PR/head/base/body/checks/ruleset/junta; publish persiste comentário e
+  cria check por GitHub App só após duas releituras idênticas. Workflow invalida head/body/base/checks.
+- `main.template.json` + configurador plan/apply/rollback implementam active/strict/no-bypass e VETO se a
+  fonte confiável não for observável. **Não foi aplicado remotamente nesta autoria.**
+- Merge único por `merge-authorized-pr.mjs` (CAS); pós-merge/finalização e KPI têm executores separados.
+- Manifesto/guard de allowlist bloqueia path fora do escopo. Testes de mutação discriminam as dez classes.
 
 ## Validação desta autoria
 

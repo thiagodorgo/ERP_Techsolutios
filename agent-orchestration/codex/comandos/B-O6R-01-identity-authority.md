@@ -94,4 +94,5 @@ efêmera `NOSUPERUSER`** — é o único arranjo em que o RLS existe; asserçõe
 - [ ] KPIs atualizados no próprio PR, contagem real (§C3) · ata da junta registrada
 - [ ] `achados.jsonl` e `REGISTRO_ACHADOS_O6R.md` com `SEC-001` e `TEN-001` **fechados, com rastro** —
       o guard `tests/kpi-achados-paridade.test.ts` **falha** se os três artefatos divergirem
-- [ ] Limpeza §C5 · porteiro pós-merge antes do bloco seguinte
+- [ ] **SUPERSEDIDO:** o porteiro agora é pré-merge; junta+CI → atestado/status externo no head exato → merge
+      CAS → executor pós-merge distinto para backfill/limpeza (`D-PORTEIRO-PRE-MERGE`).

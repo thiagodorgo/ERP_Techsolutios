@@ -3753,3 +3753,14 @@ novo), `listAllPendingApprovals` no approval.service e testes frontend.
 - KPI/blocks: inalterados; mudança apenas de governança/tooling, conforme precedentes Ω-GOV/INTEROP.
 - Validação desta autoria documental: `sync-agent-agents --check` OK (22 espelhos), `git diff --check` OK,
   sintaxe dos scripts OK, `kpi-freeze --check` em dia, `npm run check` OK e guards KPI **22/22**.
+
+# 2026-08-21 — Codex: ciclo 1 do enforcement do porteiro pré-merge
+
+- Alçada: desenvolvimento exclusivo `/root/dev_governanca_c1`, seguindo plano de
+  `/root/planejador_governanca_c1c`; não publicou/configurou remoto, não votou e não fez merge.
+- Entrega: roteamento Fable→Sol/ultra cirúrgico com recibo; snapshot/atestado/check externo; workflow de
+  invalidação seguro; ruleset plan/apply/rollback fail-closed; merge CAS; finalizador pós-merge; KPI tooling;
+  superfícies antigas supersedidas; manifesto de allowlist.
+- Segurança: zero token em log; `pull_request_target` sem checkout/código do head; permissões mínimas;
+  `bypass_actors=[]`; fonte GitHub App positiva/única obrigatória antes do apply.
+- Validação e contagens finais serão anexadas neste mesmo registro após a bateria completa.

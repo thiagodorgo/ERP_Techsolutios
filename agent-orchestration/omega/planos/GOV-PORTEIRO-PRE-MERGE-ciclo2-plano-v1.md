@@ -452,3 +452,72 @@ governança e a reexecução do porteiro sobre o diff, com ponteiro para a pend�
 
 **Nota para a ata:** os guards de bloco marcado da F-F **cercam essa redação como as demais** — reintroduzir
 "fonte GitHub App comprovada" sem as qualificações fica **vermelho no guard de prosa**, não só em revisão.
+
+---
+
+# ADENDO III — vereditos D-6, D-7 e D-8, após a sonda de proveniência (2026-08-22)
+
+> Motivados por `PD-GOV-PORTEIRO-PROVENIENCIA` (`docs/omega-pd.md`, commit `a1fa21d`), pesquisada por alçada
+> separada, com **24 respostas reais da API do GitHub**. Decididos pelo **planejador**.
+
+## D-6 — a variante fraca do §C2.8: RATIFICADA
+
+**Não é concessão, é a única redação verdadeira.** A cadeia check-run para check-suite para workflow run foi
+**medida devolvendo dado falso**: um run de 16/06 "criando" um check-run de 01/08. Prosa que afirmasse a
+vinculação seria a classe de defeito deste ciclo escrita pela nossa própria mão — agora **com conhecimento
+prévio**, o que é pior do que o erro original.
+
+A variante fraca sai como especificado no D-5(b): mantém (1) app comprovado por id, slug e owner, e fixado no
+ruleset; e (3) permalink mais conteúdo do atestado. Declara o resíduo por escrito, com ponteiro para a PD e
+para as mitigações — escalada crítica de governança e reexecução do porteiro sobre o diff.
+
+## D-7 — a opção A: VETADA NA LEI, não só no plano
+
+A opção A (derivar `path` via check-suite) é **pior que ausência de controle**: é **proveniência fabricada
+pela plataforma**. Um campo que às vezes aponta workflow inocente transforma auditoria em **difamação de
+evidência**, e "controle que acerta às vezes" é exatamente o teatro que este ciclo mata.
+
+O veto entra no texto do §C2.8, **dentro do bloco cercado da F-F**, nesta forma:
+
+> A resolução de proveniência via check-suite é **VETADA** como mecanismo de verificação
+> (`PD-GOV-PORTEIRO-PROVENIENCIA`, 2026-08-22: a API associa por repo+SHA e devolve atribuição falsa para
+> `POST /check-runs`); reabrir exige **nova PD com medição que contradiga a atual**.
+
+**O ponto é o cercado.** Ficando dentro do bloco, remover ou "melhorar" o veto num ciclo futuro fica
+**vermelho no guard de prosa** — que é o que impede o bem-intencionado de reintroduzir isso daqui a três
+meses. Prova por mutação: apagar o veto, vermelho.
+
+**Rótulo obrigatório para a ata:** a inferência "vence a check-suite de menor id" é **hipótese 2/2 não
+documentada**. Entra rotulada como hipótese, **nunca** como fato.
+
+## D-8 — a opção B: BLOCO PRÓPRIO, fora deste ciclo. Não entra nem como fatia
+
+Três razões, em ordem de peso:
+
+1. **Pergunta aberta material e decisiva, não medida:** qual check-run o branch protection considera vencedor
+   entre dois homônimos no mesmo SHA. Se um `POST` hostil puder sombrear o check-de-job, a opção B despenca de
+   "cadeia inforjável" para "cadeia inforjável que perde para o forjador". Implementar antes de medir seria
+   construir sobre premissa não conferida — a pergunta (c) do §C7.4-bis.
+2. **Não testada ponta a ponta e muda o desenho do publish** — e a lição nomeada deste projeto é que defeitos
+   nascem em correções escritas por quem acabou de se convencer da solução, em fim de ciclo grande, com o dev
+   do gate já carregando D-4 e a escalada.
+3. **O resíduo está limitado pelos controles que já entram:** workflow hostil precisa primeiro EXISTIR na
+   árvore, e diff em `.github/workflows/**` passou a exigir junta crítica 5/5. Homônimo hostil pressupõe
+   workflow malicioso já mergeado — que o mesmo gate barra, indutivamente.
+
+Registrado como `P-GOV-CHECK-COMO-JOB` em `agent-orchestration/controle/pendencias.md`, com a forma
+vinculante: **fatia 1 é drill de medição** em repo/branch descartável; **fatia 2 só existe se a medição
+sustentar**.
+
+## As duas menores
+
+**Comentário do YAML — corrigir agora, pelo dev que já está com o D-4** (mesmo arquivo, evita colisão de
+fatias). O pin prova **"criado pelo app GitHub Actions"**, não "fonte confiável do check"; homônimo de outro
+workflow do próprio repo compartilha a identidade; ponteiro para a PD e para as mitigações. **Comentário
+afirmando prova que o mecanismo não entrega é a mesma classe de defeito em superfície menor — não fica.**
+
+**Opção D como reabertura condicionada — APROVADA.** Registrada como `P-GOV-REABERTURA-RULESET-ORG`. Migração
+para organização em Enterprise Cloud implica que a regra de ruleset `workflows` (`path`, `ref`, `sha`) resolve
+a vinculação **na plataforma**; então reabrir a PD e, se confirmada, a variante forte volta por emenda com o
+guard atualizado. É a **única rota conhecida** para a afirmação forte voltar a ser verdadeira — deixá-la
+mapeada evita que alguém tente a rota vetada.

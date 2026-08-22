@@ -3037,3 +3037,54 @@ exigida ou vira **auto-revisão** (teatro — a mesma classe de defeito que este
 | **Adotar com trava real** | ninguém mergeia sem o dono revisar aquele caminho | fim da autonomia nesse caminho; PRs esperam o dono |
 
 **Enquanto pendente:** vale o estado atual — escalada 5/5 mais o resíduo declarado por escrito no §C2.8.
+
+---
+
+## P-GOV-CHECK-COMO-JOB — publicar o check do porteiro como JOB, não por POST (2026-08-22)
+
+**Origem:** veredito D-8 do planejador do ciclo 2, motivado por `PD-GOV-PORTEIRO-PROVENIENCIA`.
+**Bloco próprio, fora do ciclo 2** — não entra nem como fatia.
+
+**O problema.** O `porteiro-pre-merge.yml` publica o check requerido por `POST /check-runs` de dentro de um
+job. Nesse modo a proveniência **não é observável**: a API associa o check-run ao check-suite por repo+SHA, e
+a cadeia devolve **atribuição falsa** (caso medido: check-run de 01/08 resolvendo a um run encerrado em
+16/06). Logo, o gate não consegue provar que o check veio do workflow do porteiro.
+
+**O caminho medido que resolveria.** Publicar o check **como job** (`jobs.<id>.name: erp/porteiro-pre-merge`):
+aí `check_run.id` **é** o `job_id`, e a cadeia `/actions/jobs/{id}` -> `run.path` + `run.head_branch` +
+`run.event` é 100% server-side e inforjável.
+
+**Por que NÃO entrou no ciclo 2** (as três razões do planejador, em ordem de peso):
+
+1. **Pergunta aberta material e decisiva, não medida:** qual check-run o branch protection considera vencedor
+   quando há **dois com o mesmo `name` no mesmo SHA**. Se um `POST` hostil puder sombrear o check-de-job, a
+   opção despenca de "cadeia inforjável" para "cadeia inforjável que perde para o forjador". Implementar antes
+   de medir seria construir sobre premissa não conferida — a pergunta (c) do §C7.4-bis.
+2. **Não testada ponta a ponta e muda o desenho do publish** — e a lição nomeada deste projeto é que defeitos
+   nascem em correções escritas por quem acabou de se convencer da solução, em fim de ciclo grande.
+3. **O resíduo já está limitado pelos controles que entraram:** workflow hostil precisa primeiro EXISTIR na
+   árvore, e diff em `.github/workflows/**` passou a exigir junta crítica 5/5. Homônimo hostil pressupõe
+   workflow malicioso já mergeado — que o mesmo gate barra, indutivamente.
+
+**Forma do bloco futuro (vinculante):**
+
+- **Fatia 1 — DRILL DE MEDIÇÃO**, em repo/branch descartável: responder à pergunta do vencedor homônimo e
+  validar ponta a ponta o check-como-job.
+- **Fatia 2 — só se a medição sustentar:** publish como job **mais** varredura obrigatória de **todos** os
+  check-runs daquele `name` no SHA, exigindo que **cada um** resolva por `/actions/jobs/` ao `path` esperado,
+  falhando fechado em `404`, `steps: []` ou `runner_name: null`.
+
+**Sem a fatia 1 medida, a fatia 2 não existe.**
+
+## P-GOV-REABERTURA-RULESET-ORG — reabertura condicionada da proveniência (2026-08-22)
+
+**Aprovado no D-8.** A regra de ruleset **`workflows`** (`repository_id` + `path` + `ref` + `sha`) resolve a
+vinculação **na própria plataforma**, com a versão do workflow travada. Hoje é **indisponível**: exige ruleset
+de **organização** em **GitHub Enterprise Cloud**, e este repositório é de conta pessoal (`owner.type: User`).
+
+**Gatilho de reabertura:** migração para organização em Enterprise Cloud. Nesse caso, reabrir
+`PD-GOV-PORTEIRO-PROVENIENCIA` e, se confirmada, a **variante forte** do §C2.8 volta por emenda, com o guard
+de prosa atualizado.
+
+**Por que fica mapeado:** é a única rota conhecida para a afirmação forte voltar a ser verdadeira. Deixá-la
+escrita evita que alguém tente a rota **vetada** (derivar proveniência via check-suite) achando que ajuda.

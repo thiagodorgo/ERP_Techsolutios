@@ -1,7 +1,9 @@
 # RODADA SANEAMENTO + Ω-INFRA — lista de execução
 
 Fonte de verdade: `agent-orchestration/omega/prompt-rodada-saneamento-infra.md` (reler a cada bloco).
-Governança: autonomia por juntas (verde da junta = merge + próximo); protocolo de dificuldade (fábrica cria
+Governança histórica **SUPERSEDIDA** quanto ao merge: verde da junta + CI = candidatura ao porteiro pré-merge;
+somente status `erp/porteiro-pre-merge` no head exato autoriza merge CAS, e o pós-merge factual libera o próximo.
+Permanece o protocolo de dificuldade (fábrica cria
 agentes antes de parar); paradas irredutíveis: migration destrutiva, exposição de segredo, ação irreversível
 em produção sem junta unânime, **e a fronteira de provisionamento cloud** (conta/pagamento/domínio/secrets =
 handoff humano — ratificada em J-SAN-0).

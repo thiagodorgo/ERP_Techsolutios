@@ -10,8 +10,9 @@ paralelo ao Ω3** e não toca em feature de produto.
 ## POLÍTICA DE AUTONOMIA POR JUNTAS (norma desta rodada — e a gravar como permanente no PR 2)
 
 1. A rodada executa de ponta a ponta **sem espera de aprovação humana entre PRs**.
-2. Cada PR termina com uma **JUNTA de agentes** (composição definida por bloco, ≥3). **Sinal
-   verde da junta = merge + início imediato do bloco seguinte.** Maioria simples nos blocos
+2. **SUPERSEDIDO por `D-PORTEIRO-PRE-MERGE`:** cada PR termina com uma **JUNTA de agentes** (composição
+   definida por bloco, ≥3). Verde da junta + CI apenas habilitam o porteiro pré-merge externo; merge exige
+   `LIBERADO` literal no head exato e o bloco seguinte espera o executor pós-merge. Maioria simples nos blocos
    normais; **unânime com 5 agentes** nas decisões críticas: deploy de PRODUÇÃO, dependência
    nova, contratação/configuração de serviço externo (provedor de deploy, logs, uptime).
 3. Votos + justificativas registrados em `agent-orchestration/omega/juntas/J-SAN-<n>-<tema>.md`,
