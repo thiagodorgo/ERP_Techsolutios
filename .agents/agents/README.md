@@ -40,8 +40,16 @@ Fluxo obrigatório:
 8. **Pós-merge factual** — outro agente distinto faz backfill, reconciliação, limpeza e compactação. Não vota.
 
 Nos dois papéis cirúrgicos (`planejador-mestre` e `porteiro-pos-merge`), a invocação Codex usa
-`fork_turns: "none"`, `model: "gpt-5.6-sol"` e `reasoning_effort: "ultra"` explicitamente. O artefato
-registra o recibo `agent_id · role · runtime · model · reasoning_effort`; frontmatter sozinho não é recibo.
+`fork_turns: "none"`, `model: "gpt-5.6-sol"` e `reasoning_effort: "ultra"` explicitamente — no Claude Code os
+mesmos papéis nascem de `model: fable`, que é a origem deste espelho. O artefato registra a **declaração de
+invocação** `agent_id · role · runtime · model · reasoning_effort`.
+
+**Nem o frontmatter nem o campo de atestado são prova; são declaração obrigatória.** São auto-escritos, e
+qual modelo de fato executou é inverificável de dentro do processo — falseá-los é violação nomeada da decisão
+do dono, detectável só a posteriori. A prova conferível do porteiro é outra: `commands` (lista de
+`{cmd, exitCode}`) e `evidence.kpiLatestBlobSha`, batido pelo gate contra o blob real do head. O porteiro é
+**staffado no Codex** e **não tem exceção de indisponibilidade**: sem Codex/Sol o fluxo bloqueia (a exceção
+"vira nota na ata" pertence só ao `planejador-mestre`).
 
 > **Regra da dúvida (§C7.3):** qualquer incerteza → adote `agente-pesquisador-web` (≥3 fontes) e registre
 > a PD em `docs/omega-pd.md` **antes** de decidir. Dúvida sem pesquisa = veto.

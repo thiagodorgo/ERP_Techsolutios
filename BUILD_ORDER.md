@@ -117,9 +117,19 @@ blocks **110**.
 ## 4. Como ler / manter este arquivo
 
 - **Cada bloco/PR segue a Parte C do `CLAUDE.md`** — escopo cirúrgico (permitido/proibido), bateria exata,
-  KPI no próprio PR (§C3), branch por bloco, junta + CI verdes, **porteiro pré-merge independente** em
-  `gpt-5.6-sol`/`ultra` autorizando o head exato (§C7), merge e fechamento pós-merge factual por outro agente
+  KPI no próprio PR (§C3), branch por bloco, junta + CI verdes, **porteiro pré-merge independente**
+  autorizando o head exato (§C7), merge e fechamento pós-merge factual por outro agente
   (backfill, reconciliação, limpeza/compactação §C5).
+  <!-- interop:modelo:v1 -->
+  O porteiro é **staffado no Codex** (`model: gpt-5.6-sol` + `reasoning_effort: ultra` passados na invocação);
+  no **Claude Code** o mesmo papel nasce de `model: fable` em `.claude/agents/`, que serve só como origem do
+  espelho. Modelo declarado é **declaração de invocação**, não prova. Detalhe em `CLAUDE.md` §C2.8/§C7.6.
+  <!-- /interop:modelo:v1 -->
+  Desde `GOV-PORTEIRO-PRE-MERGE`, o check requerido é `erp/porteiro-pre-merge`; ruleset ativo/strict sem
+  bypass e merge CAS são pré-condições. O check só vale se criado pelo app **GitHub Actions** (identidade
+  conferida contra o registro global e fixada no ruleset via `integration_id`) e apontando ao permalink do
+  atestado — o app id **não** distingue workflows do próprio repositório, resíduo coberto pela escalada
+  crítica por superfície de governança (§C7.4-bis).
 - **A fonte canônica da ordem** é a trilha viva em `agent-orchestration/` (status/controle/log) +
   `docs/juntas/` (atas e votos) + `docs/rodadas/<rodada>/` (planos) + o **git history**. Em
   divergência, **valem a trilha e o `CLAUDE.md`** — este arquivo é apenas um índice.

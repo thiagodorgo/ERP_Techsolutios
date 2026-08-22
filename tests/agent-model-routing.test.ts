@@ -45,7 +45,7 @@ test('Claude usa Fable e Codex recebe Sol/ultra somente nos dois papéis cirúrg
     const claude=readFileSync(`.claude/agents/${role}.md`,'utf8');const codex=readFileSync(`.agents/agents/${role}.md`,'utf8');
     assert.match(claude,/^model: fable$/m);assert.doesNotMatch(claude,/^model: gpt-5\.6-sol$/m);
     assert.match(codex,/^model: gpt-5\.6-sol$/m);assert.match(codex,/^reasoning_effort: ultra$/m);
-    assert.match(codex,/fork_turns: "none"/);assert.match(codex,/recibo/);
+    assert.match(codex,/fork_turns: "none"/);assert.match(codex,/declaração de invocação/);
   }
   const ultra=mdFiles('.agents/agents').filter((rel)=>/^reasoning_effort: ultra$/m.test(readFileSync(join('.agents/agents',rel),'utf8')));
   assert.deepEqual(ultra,['planejador-mestre.md','porteiro-pos-merge.md']);
@@ -197,4 +197,190 @@ test('D-1 — a exigência vale para TODO papel do espelho, subpastas incluídas
     assert.equal(r.status, 1, 'especialista em subpasta fora do índice tem de reprovar');
     assert.match(r.stderr, /especialistas\/guardiao-enforcement-github-porteiro\.md/);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+// ===== F-F (CR-1) — prosa por ferramenta, cercada por guard executável =====
+//
+// O defeito: prosa BYTE-IDÊNTICA nos dois contratos prescrevendo o identificador Codex
+// (`gpt-5.6-sol`) também para o Claude Code, e CLAUDE.md afirmando que o frontmatter fixa Sol quando
+// o frontmatter fixa `fable` (quem fixa Sol é o espelho). Correção só de texto é a classe mais
+// fraca; por isso o texto passa a viver dentro de blocos marcados e o cercado é executável.
+//
+// DESENHO DO GUARD: cada verificação é uma função `(root) => violações[]`, chamada (a) sobre a
+// árvore REAL — a asserção que vale — e (b) sobre uma cópia temporária mutada — a prova de que o
+// vermelho existe. Sem variável de ambiente e sem chave de desligar: o root é parâmetro de função,
+// e o caso real sempre passa `'.'`.
+//
+// EXCLUSÕES DOCUMENTADAS (§A5 — história não se reescreve):
+//   1. IDs de decisão do dono (`D-FABLE-PARA-GPT-5-6-SOL`): nome próprio, não prescrição de modelo.
+//      Não casam com o alvo (`gpt-5.6-sol` exige o ponto literal), e renomeá-los reescreveria a
+//      decisão registrada.
+//   2. Arquivos de REGISTRO HISTÓRICO — `agent-orchestration/controle/decisoes.md`, atas de junta,
+//      dossiês de reprovação, log de execução. A lista abaixo é FECHADA e cobre só documento
+//      normativo VIVO: é o que a lei manda seguir hoje.
+const DOCS_NORMATIVOS = [
+  'CLAUDE.md',
+  'AGENTS.md',
+  'EXECUTION_MODEL.md',
+  'comando-template.md',
+  'BUILD_ORDER.md',
+  'docs/claude-code-handoff/README.md',
+];
+const CONTRATOS = ['CLAUDE.md', 'AGENTS.md'];
+const ALVO_MODELO = /gpt-5\.6-sol|Sol\/ultra/g;
+const BLOCO = /<!-- interop:modelo:v1 -->([\s\S]*?)<!-- \/interop:modelo:v1 -->/g;
+
+const lerDoc = (root, doc) => readFileSync(join(root, doc), 'utf8').replace(/\r\n/g, '\n');
+
+function blocosMarcados(texto) {
+  const out = [];
+  for (const m of texto.matchAll(BLOCO)) out.push({ inicio: m.index, fim: m.index + m[0].length, corpo: m[1] });
+  return out;
+}
+
+/** Toda ocorrência de identificador de modelo Codex tem de estar dentro de um bloco marcado. */
+function violacoesDeCerco(root) {
+  const v = [];
+  for (const doc of DOCS_NORMATIVOS) {
+    const texto = lerDoc(root, doc);
+    const blocos = blocosMarcados(texto);
+    if (blocos.length === 0) { v.push(`${doc}: nenhum bloco <!-- interop:modelo:v1 -->`); continue; }
+    const ocorrencias = [...texto.matchAll(ALVO_MODELO)];
+    if (ocorrencias.length === 0) v.push(`${doc}: bloco marcado sem nenhum identificador de modelo`);
+    for (const occ of ocorrencias) {
+      if (blocos.some((b) => occ.index >= b.inicio && occ.index < b.fim)) continue;
+      v.push(`${doc}:${texto.slice(0, occ.index).split('\n').length} — "${occ[0]}" fora de bloco marcado`);
+    }
+  }
+  return v;
+}
+
+/** Todo bloco marcado nomeia OS DOIS lados: Claude/fable e Codex/gpt-5.6-sol. */
+function violacoesDeDoisLados(root) {
+  const v = [];
+  for (const doc of DOCS_NORMATIVOS) {
+    for (const [i, bloco] of blocosMarcados(lerDoc(root, doc)).entries()) {
+      for (const exigido of ['fable', 'gpt-5.6-sol', 'Claude', 'Codex']) {
+        if (!bloco.corpo.includes(exigido)) v.push(`${doc}: bloco #${i + 1} não nomeia "${exigido}"`);
+      }
+    }
+  }
+  return v;
+}
+
+/** A lista de mecanismos de interop dos DOIS contratos inclui o item "modelo por papel". */
+function violacoesDaListaDeInterop(root) {
+  return CONTRATOS
+    .filter((doc) => !/- \*\*Modelo por papel — mecanismo específico de cada ferramenta\.\*\*/.test(lerDoc(root, doc)))
+    .map((doc) => `${doc}: a lista de mecanismos por ferramenta não tem o item "modelo por papel"`);
+}
+
+// Instrução expressa do planejador (PD-GOV-PORTEIRO-APPID, 2026-08-22): `app.id` prova "veio do
+// GitHub Actions", NÃO "veio do job do porteiro" — qualquer workflow do repositório com
+// `checks: write` compartilha a identidade. A frase "publicado por fonte GitHub App comprovada"
+// EXCEDE o mecanismo mesmo com o pin implementado. Reintroduzi-la tem de ficar VERMELHO aqui, não
+// só em revisão: este ciclo inteiro existe porque prosa afirmou o que a execução não produzia.
+function violacoesDeFonteComprovada(root) {
+  return DOCS_NORMATIVOS
+    .filter((doc) => /fonte\s+GitHub\s+App\s+(não\s+)?comprov/i.test(lerDoc(root, doc)))
+    .map((doc) => `${doc}: alegação de fonte "comprovada" excede o que o app id prova (PD-GOV-PORTEIRO-APPID)`);
+}
+
+/** Cópia temporária SÓ dos documentos normativos, para as mutações. A árvore real nunca é tocada. */
+function docsFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'erp-gov-docs-'));
+  for (const doc of DOCS_NORMATIVOS) {
+    mkdirSync(join(root, doc.includes('/') ? doc.slice(0, doc.lastIndexOf('/')) : '.'), { recursive: true });
+    cpSync(doc, join(root, doc));
+  }
+  return root;
+}
+const anexa = (root, doc, texto) => appendFileSync(join(root, doc), `\n${texto}\n`);
+
+test('F-F — nos 6 documentos vivos, todo identificador de modelo Codex vive em bloco marcado', () => {
+  assert.deepEqual(violacoesDeCerco('.'), []);
+  assert.deepEqual(violacoesDeDoisLados('.'), []);
+});
+
+test('F-F — mutação: reintroduzir a frase "Ele roda em gpt-5.6-sol" fora do bloco fica VERMELHO', () => {
+  const root = docsFixture();
+  try {
+    assert.deepEqual(violacoesDeCerco(root), [], 'fixture deveria nascer verde');
+    anexa(root, 'CLAUDE.md', 'Ele roda em `gpt-5.6-sol` com raciocínio `ultra`.');
+    const v = violacoesDeCerco(root);
+    assert.equal(v.length, 1, `esperava exatamente 1 violação, veio: ${JSON.stringify(v)}`);
+    assert.match(v[0], /^CLAUDE\.md:\d+ — "gpt-5\.6-sol" fora de bloco marcado$/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — mutação: bloco marcado sem o lado Claude fica VERMELHO', () => {
+  const root = docsFixture();
+  try {
+    assert.deepEqual(violacoesDeDoisLados(root), [], 'fixture deveria nascer verde');
+    anexa(root, 'BUILD_ORDER.md', '<!-- interop:modelo:v1 -->\nCodex: `gpt-5.6-sol` com `ultra`.\n<!-- /interop:modelo:v1 -->');
+    assert.deepEqual(violacoesDeDoisLados(root), [
+      'BUILD_ORDER.md: bloco #2 não nomeia "fable"',
+      'BUILD_ORDER.md: bloco #2 não nomeia "Claude"',
+    ]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — mutação: apagar o item "modelo por papel" da lista de interop fica VERMELHO', () => {
+  assert.deepEqual(violacoesDaListaDeInterop('.'), []);
+  const root = docsFixture();
+  try {
+    const alvo = join(root, 'AGENTS.md');
+    writeFileSync(alvo, readFileSync(alvo, 'utf8')
+      .replace('- **Modelo por papel — mecanismo específico de cada ferramenta.**', '- **Modelo.**'));
+    assert.deepEqual(violacoesDaListaDeInterop(root), [
+      'AGENTS.md: a lista de mecanismos por ferramenta não tem o item "modelo por papel"',
+    ]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — mutação: realegar "fonte GitHub App comprovada" fica VERMELHO', () => {
+  assert.deepEqual(violacoesDeFonteComprovada('.'), []);
+  const root = docsFixture();
+  try {
+    anexa(root, 'CLAUDE.md', 'O check requerido é publicado por fonte GitHub App comprovada e aponta ao permalink.');
+    assert.deepEqual(violacoesDeFonteComprovada(root), [
+      'CLAUDE.md: alegação de fonte "comprovada" excede o que o app id prova (PD-GOV-PORTEIRO-APPID)',
+    ]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — os contratos NÃO afirmam que o frontmatter do Claude Code fixa o modelo do Codex', () => {
+  for (const doc of CONTRATOS) {
+    const texto = lerDoc('.', doc);
+    assert.match(texto, /frontmatter `model:` de\s+`\.claude\/agents\/planejador-mestre\.md` fixa \*\*`fable`\*\*/,
+      `${doc}: §C7.6 precisa dizer que o frontmatter do Claude Code fixa fable`);
+    assert.match(texto, /quem fixa\s+\*\*`gpt-5\.6-sol` \+ `reasoning_effort: ultra`\*\* é o \*\*espelho\*\*/,
+      `${doc}: §C7.6 precisa dizer que quem fixa Sol/ultra é o espelho`);
+  }
+});
+
+test('F-F — §C2.8 e §C7.4-bis nomeiam o resíduo do app id e o limite do cruzamento de alçadas', () => {
+  for (const doc of CONTRATOS) {
+    const texto = lerDoc('.', doc);
+    assert.match(texto, /PD-GOV-PORTEIRO-APPID/, `${doc}: o §C2.8 não cita a PD do app id`);
+    assert.match(texto, /não distingue workflows do próprio repositório/,
+      `${doc}: o resíduo do app id precisa estar NOMEADO no texto`);
+    assert.match(texto, /Escalada por superfície de governança/,
+      `${doc}: o controle compensatório do resíduo (escalada crítica) sumiu do §C7.4-bis`);
+    assert.match(texto, /não pega pseudônimo/,
+      `${doc}: o §C7.4-bis precisa admitir que o gate pega colisão e omissão, não pseudônimo`);
+  }
+});
+
+test('F-F — a prosa do papel e do índice chama os campos de DECLARAÇÃO, nunca de recibo/prova', () => {
+  for (const doc of ['.claude/agents/porteiro-pos-merge.md', '.agents/agents/porteiro-pos-merge.md', '.agents/agents/README.md']) {
+    const texto = lerDoc('.', doc);
+    // `\s+` porque a prosa é markdown quebrado em 110 colunas: a expressão pode cair entre linhas.
+    assert.match(texto, /declaração\s+de\s+invocação/i, `${doc}: os campos precisam ser nomeados "declaração de invocação"`);
+    // "recibo" só é aceito quando NEGADO ("não recibo", "nem ... são prova").
+    for (const m of texto.matchAll(/recibo/gi)) {
+      const janela = texto.slice(Math.max(0, m.index - 40), m.index + 10);
+      assert.match(janela, /não|nem|Nem/, `${doc}: "recibo" usado de forma afirmativa em "${janela.trim()}"`);
+    }
+  }
 });

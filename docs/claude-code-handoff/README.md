@@ -8,7 +8,14 @@ oficial (**Node.js + TypeScript** backend · **React** em `frontend/` · **Flutt
 2. Abra o **`CLAUDE.md`** — é o **contrato de execução** (governança que espelha o `AGENTS.md`, guia de implementação e o modelo de blocos).
 3. Leia **`PROJECT_MEMORY.md`** (estado real: blocos B-076→B-109, stack, contratos, KPIs) e `EXECUTION_MODEL.md` (a **lógica de execução por blocos** que vinha do Codex); use `comando-template.md` para criar cada comando. Consulte `API_CONTRACTS.md` e `BUILD_ORDER.md`.
 4. Peça ao Claude Code para começar pela **Fase 0** e depois **Fase 1 (MVP Mobile)** — **um bloco por vez**.
-5. Trabalho em **GitHub Flow**: 1 bloco = 1 branch → **PR no GitHub** → CI verde → merge (ver `CLAUDE.md` §8). KPIs **só após avaliação humana**, em bloco separado (ver `EXECUTION_MODEL.md` §4).
+5. **SUPERSEDIDO:** a sequência antiga “CI verde → merge” e KPI posterior não é mais ativa. Contrato vigente:
+   1 bloco = 1 branch/PR → KPI no próprio PR → junta → CI → porteiro pré-merge externo → merge CAS →
+   executor pós-merge distinto. Ver `CLAUDE.md` C2/C7 e `EXECUTION_MODEL.md` §§2–3.
+   <!-- interop:modelo:v1 -->
+   O porteiro pré-merge é **staffado no Codex** (`model: gpt-5.6-sol`, `reasoning_effort: ultra`). No
+   **Claude Code** o papel existe em `.claude/agents/` com `model: fable` **apenas como origem do espelho**
+   `.agents/agents/`. Modelo é **declaração de invocação**, nunca prova de execução.
+   <!-- /interop:modelo:v1 -->
 
 ## Conteúdo
 | Arquivo | O que é |

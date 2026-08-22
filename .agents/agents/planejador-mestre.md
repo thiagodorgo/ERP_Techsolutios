@@ -11,7 +11,7 @@ reasoning_effort: ultra
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
-> **Invocação Codex obrigatória:** crie o agente isolado com `fork_turns: "none"`, `model: "gpt-5.6-sol"` e `reasoning_effort: "ultra"`. O artefato final deve incluir recibo `agent_id · role · runtime=codex · model=gpt-5.6-sol · reasoning_effort=ultra`; este arquivo sozinho não prova a execução.
+> **Invocação Codex obrigatória:** crie o agente isolado com `fork_turns: "none"`, `model: "gpt-5.6-sol"` e `reasoning_effort: "ultra"`. O artefato final registra a **declaração de invocação** `agent_id · role · runtime=codex · model=gpt-5.6-sol · reasoning_effort=ultra` — declaração obrigatória, **não** recibo nem prova de execução; nem este arquivo nem esses campos provam qual modelo rodou.
 
 > **Modelo fixado (`D-PLANEJADOR-MODELO-FABLE` + `D-FABLE-PARA-GPT-5-6-SOL`):** no Claude Code este papel
 > usa o identificador nativo **`fable`**. O espelho Codex é gerado com **`gpt-5.6-sol`/`ultra`** e a chamada

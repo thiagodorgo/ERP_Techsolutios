@@ -182,8 +182,15 @@ git diff --check
 
 ## Porteiro pré-merge e fechamento pós-merge
 
-- Depois de junta registrada + CI verde, criar **novo agente independente** em `gpt-5.6-sol` com raciocínio
-  `ultra`; ele não pode ter sido achador, planejador, desenvolvedor, revisor ou votante desta entrega.
+- Depois de junta registrada + CI verde, criar **novo agente independente** para o porteiro pré-merge; ele
+  não pode ter sido achador, planejador, desenvolvedor, revisor ou votante desta entrega.
+<!-- interop:modelo:v1 -->
+- **Staffing e modelo do porteiro (mecanismo por ferramenta):** o papel é **staffado no Codex** — a invocação
+  passa `model: gpt-5.6-sol` e `reasoning_effort: ultra` explicitamente. No **Claude Code** o arquivo do papel
+  declara `model: fable` e serve **apenas como origem do espelho** `.agents/agents/`; o Claude Code não emite
+  atestado válido para este papel. Sem Codex disponível, o fluxo **bloqueia** — não há exceção de
+  indisponibilidade aqui. Modelo declarado é **declaração de invocação**, nunca prova de execução.
+<!-- /interop:modelo:v1 -->
 - Parecer amarrado ao PR/head: somente `LIBERADO: merge do PR #<n> no head <sha>` autoriza merge.
   `LIBERADO COM RESSALVA` e `BLOQUEADO` não autorizam; qualquer novo head expira o parecer.
 - Após o merge, **outro agente distinto** executa somente backfill factual, reconciliação, limpeza e
@@ -297,8 +304,8 @@ git diff --check
 
 ## Junta (§C7)
 
-- Regra: maioria simples. Composição: `planejador-mestre` · `saas-multi-tenant (isolamento)` ·
-  `coordenador-de-acessos` (VETO, toca RBAC/rota) · `validador-mestre`.
+- Regra: maioria simples. Composição: `revisor-multi-tenant` (isolamento) ·
+  `coordenador-de-acessos` (VETO, toca RBAC/rota) · `validador-mestre`. O planejador não vota.
 - Registro: `agent-orchestration/omega/juntas/J-201-cancel-os.md`.
 
 ## Definition of Done (§10)

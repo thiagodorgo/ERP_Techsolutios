@@ -37,6 +37,14 @@
 >   vivem em `.claude/agents/` (Claude Code) e são espelhados em `.agents/agents/` (papéis Codex, corpo
 >   verbatim + protocolo de agentes isolados em `.agents/agents/README.md`). Sincronizados por
 >   `scripts/sync-agent-agents.mjs`. A junta e a separação de alçadas são obrigatórias nos dois.
+> <!-- interop:modelo:v1 -->
+> - **Modelo por papel — mecanismo específico de cada ferramenta.** Os dois papéis de alto raciocínio
+>   (`planejador-mestre` e o porteiro pré-merge) têm **identificador de modelo diferente em cada lado**:
+>   no **Claude Code** é **`fable`**, declarado no frontmatter `model:` dos arquivos de `.claude/agents/`;
+>   no **Codex** é **`gpt-5.6-sol`** com `reasoning_effort: ultra`, gravados no espelho `.agents/agents/`
+>   por `scripts/sync-agent-agents.mjs` e repassados explicitamente na invocação. Não é a mesma string nos
+>   dois contratos, e nenhum dos dois vira padrão global. Detalhe em §C7.6; staffing do porteiro em §C2.8.
+> <!-- /interop:modelo:v1 -->
 
 ---
 
@@ -230,15 +238,49 @@ validação** e **rastreabilidade**. Tipos:
 7. **Registrar** decisão/estado em `agent-orchestration/` antes do gate final.
 8. **PORTEIRO PRÉ-MERGE — gate independente do merge** (decisão do dono, 2026-08-20,
    `D-PORTEIRO-PRE-MERGE`; identificador técnico legado `porteiro-pos-merge` preservado). Depois de junta +
-   CI verdes, nasce um agente que não ocupou nenhuma alçada anterior. Ele roda em **`gpt-5.6-sol` com
-   raciocínio `ultra`**, reexecuta promessa × diff × testes × KPI × ata × pendências no **head exato** e só
-   pode autorizar com a linha literal `LIBERADO: merge do PR #<n> no head <sha>`. `LIBERADO COM RESSALVA` e
-   `BLOQUEADO` **não autorizam merge**. Qualquer commit/push que mude o head expira o parecer e exige novo
-   porteiro independente.
+   CI verdes, nasce um agente que não ocupou nenhuma alçada anterior. Ele reexecuta promessa × diff × testes ×
+   KPI × ata × pendências no **head exato** e só pode autorizar com a linha literal
+   `LIBERADO: merge do PR #<n> no head <sha>`. `LIBERADO COM RESSALVA` e `BLOQUEADO` **não autorizam merge** —
+   e deixam **rastro externo** (`publish --verdict BLOQUEADO|RESSALVA` publica comentário marcado + check-run
+   `failure`). Qualquer commit/push que mude o head expira o parecer e exige novo porteiro independente.
+   <!-- interop:modelo:v1 -->
+   **Staffing e modelo (mecanismo por ferramenta).** O porteiro é **staffado no Codex**: a invocação passa
+   explicitamente `model: gpt-5.6-sol` e `reasoning_effort: ultra`. O **Claude Code** não emite atestado válido
+   para este papel **por desenho** — o frontmatter `model: fable` de `.claude/agents/porteiro-pos-merge.md`
+   existe porque esse arquivo é a **origem do espelho**, não porque autorize um porteiro Claude. **Não há
+   exceção de indisponibilidade aqui:** sem Codex/Sol o fluxo fica **bloqueado** (a exceção "vira nota na ata"
+   pertence só ao `planejador-mestre`, §C7.6).
+   Os campos `runtime`/`model`/`reasoningEffort` do atestado são **declaração de invocação obrigatória — não
+   são recibo nem prova**: são auto-escritos, e qual modelo de fato executou é **inverificável de dentro do
+   processo**. Falseá-los é violação nomeada da decisão do dono, detectável só a posteriori. A prova conferível
+   do atestado é outra: `commands` (lista de `{cmd, exitCode}`, cada `cmd` não vazia e todo `exitCode` igual a
+   `0`) e `evidence.kpiLatestBlobSha`, que o gate confere contra o blob real de `Kpis/kpis-latest.json` **no
+   head** — um porteiro que não olhou o head não tem como produzi-lo.
+   <!-- /interop:modelo:v1 -->
+   O parecer canônico é comentário externo `erp-porteiro-attestation:v1`. A independência **não** é mais
+   auto-declarada: `independentOf` saiu do schema, e o cruzamento usa `junta.identities` do snapshot. A junta
+   precisa nomear `origin`, `planner` e `developer` (strings não vazias), declarar `fabrica` (`null` permitido)
+   e o booleano `critical`; `critical: true` exige **5 votantes distintos e unânimes**. O snapshot v1 congela
+   repo/PR/head/base/body/checks/ruleset/junta e ainda `defaultBranch`, `junta.identities` e
+   `evidence.kpiLatestBlobSha`.
+   **O que o check requerido prova — e o que não prova.** `erp/porteiro-pre-merge` só vale quando (1) criado
+   pelo app **GitHub Actions**, identidade conferida contra o registro global (`id 15368`, `slug
+   github-actions`, `owner 9919` — `PD-GOV-PORTEIRO-APPID`) e fixada no ruleset de `main` via
+   `integration_id`, de modo que **o próprio GitHub** recusa fonte diversa; e (2) apontando ao permalink do
+   atestado, cujo conteúdo amarra snapshot e evidência de reexecução.
+   **Resíduo aberto, declarado:** o app id **não distingue workflows do próprio repositório** — qualquer
+   workflow com `checks: write` compartilha essa identidade, e a vinculação ao workflow do porteiro **não é
+   provada mecanicamente**. Mitigam-na a escalada crítica por superfície de governança (§C7.4-bis) e a
+   reexecução do porteiro sobre o diff. Pendência registrada em `agent-orchestration/controle/`.
+   `main` usa ruleset ativo/strict **aplicável à branch default**, com as regras `pull_request`, `deletion` e
+   `non_fast_forward` e sem bypass; merge só por `scripts/merge-authorized-pr.mjs` com compare-and-swap do
+   head. Mudança de qualquer campo invalida.
 9. **Merge** somente com junta registrada, CI verde e o `LIBERADO` exato do porteiro para o mesmo head.
 10. **PÓS-MERGE factual.** Outro agente, também distinto do porteiro e das alçadas anteriores, faz somente
     backfill de `pr`/`merge_commit`/`approved_head`, reconciliação factual, limpeza e compactação §C5. Ele não
     reabre mérito nem autoriza o merge já ocorrido. Sem esse fechamento, o próximo bloco não começa.
+    O fechamento externo usa `erp-post-merge-finalization:v1`; a projeção KPI versionada ocorre por
+    `scripts/kpi-release.mjs` como primeira operação do próximo PR autorizado, sem incrementar bloco factual.
 
 ## C3. Política de KPI por PR (permanente) — **revoga a política pós-avaliação humana (2026-07-13, D-KPI-PER-PR)**
 
@@ -362,23 +404,44 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    acabou de convencer a si mesmo de qual é o problema e escreve o conserto com a mesma confiança que produziu
    o erro. Releitura não pega; só execução por um agente que não escreveu a correção pega.
 
+   **Limite mecânico admitido — a ata é o controle compensatório.** O gate executável cruza as identidades
+   declaradas em `junta.identities` e pega **colisão** (mesmo nome em alçadas incompatíveis) e **omissão**
+   (alçada obrigatória vazia). Ele **não pega pseudônimo**: o mesmo agente reaparecendo com outro nome
+   continua fora do alcance mecânico. Por isso a ata registra **nominalmente** cada ocupante — e por isso o
+   contrato para de sugerir que o gate cobre isso.
+
+   **Escalada por superfície de governança.** O snapshot lista os paths do diff do PR e **exige
+   `junta.critical === true`** quando o diff toca `.github/workflows/**`, `.github/rulesets/**`,
+   `.gitattributes`, os scripts do gate/sync, os testes de governança, `CLAUDE.md`/`AGENTS.md` ou
+   `.claude/agents/**`/`.agents/agents/**`. `critical: true` implica **5 votantes distintos e unânimes**
+   (§C7.1). É o controle compensatório do resíduo do §C2.8: quem consegue alterar o workflow que publica o
+   check requerido tem de passar por junta crítica. **Consequência para o próprio PR desta governança:** ele
+   toca a superfície inteira, logo **exige junta crítica 5/5** — não há caminho de maioria simples para ele.
+
 5. **Paradas imediatas irredutíveis (lista encolhida):** { migration destrutiva; exposição de segredo; ação
    irreversível em produção sem junta unânime prévia }. (A antiga parada por "integração externa" saiu — vira
    decisão de junta + PD. Rodadas específicas podem somar uma parada temporária, ex.: falta de credencial/
    pagamento/domínio externo na trilha de infra — ver D-SAN-AUTONOMIA em `controle/decisoes.md`.)
 
 6. **Modelo do `planejador-mestre` (decisões do dono `D-PLANEJADOR-MODELO-FABLE` e
-   `D-FABLE-PARA-GPT-5-6-SOL`).** O `planejador-mestre` roda em **`gpt-5.6-sol` com raciocínio `ultra`**. E,
-   quando houve **correção de código e o fluxo volta para ele** — o replanejamento do protocolo de dificuldade
-   (§C7.4) e a **validação do código corrigido** — o **`gpt-5.6-sol`/`ultra` é OBRIGATÓRIO**, não preferência:
-   é o passo em que um plano fraco reintroduz o defeito que a
-   junta acabou de pegar, e este bloco já viu isso acontecer (o plano do PR-04a citava o precedente do
-   Tariff para contrariá-lo, e só a junta pegou). Fixado no frontmatter `model:` de
-   `.claude/agents/planejador-mestre.md` (e no espelho `.agents/agents/`), para valer **independente do
-   modelo da sessão**; quem invoca não precisa lembrar. Chamada de `Agent`/`Workflow` que passe `model`
-   diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
-   vira nota no registro da junta. Esta escolha é **cirúrgica**: não transforma Sol/ultra em padrão global;
-   aplica-se somente aos papéis de alto raciocínio explicitamente marcados, inclusive o porteiro pré-merge.
+   `D-FABLE-PARA-GPT-5-6-SOL`).**
+   <!-- interop:modelo:v1 -->
+   O papel é de **alto raciocínio nas duas ferramentas, com identificador próprio de cada uma**: no **Claude
+   Code** ele roda em **`fable`**; no **Codex**, em **`gpt-5.6-sol`** com raciocínio **`ultra`**. E, quando
+   houve **correção de código e o fluxo volta para ele** — o replanejamento do protocolo de dificuldade
+   (§C7.4) e a **validação do código corrigido** — o alto raciocínio é **OBRIGATÓRIO**, não preferência: é o
+   passo em que um plano fraco reintroduz o defeito que a junta acabou de pegar, e este bloco já viu isso
+   acontecer (o plano do PR-04a citava o precedente do Tariff para contrariá-lo, e só a junta pegou).
+   **Onde cada valor está fixado — e onde NÃO está:** o frontmatter `model:` de
+   `.claude/agents/planejador-mestre.md` fixa **`fable`**, porque é o arquivo do Claude Code; quem fixa
+   **`gpt-5.6-sol` + `reasoning_effort: ultra`** é o **espelho** `.agents/agents/planejador-mestre.md`,
+   gerado a partir dele por `scripts/sync-agent-agents.mjs`. Os dois valem **independente do modelo da
+   sessão**; quem invoca não precisa lembrar. Chamada de `Agent`/`Workflow` que passe `model` diferente para
+   esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que vira nota no
+   registro da junta, e **essa exceção é só deste papel**: o porteiro pré-merge não a tem (§C2.8). Esta
+   escolha é **cirúrgica**: não transforma alto raciocínio em padrão global; aplica-se somente aos papéis
+   explicitamente marcados — `planejador-mestre` e o porteiro pré-merge.
+   <!-- /interop:modelo:v1 -->
 
 ---
 
@@ -442,8 +505,8 @@ ao PR corrente**.
 - [ ] Artefatos temporários limpos (C5) **e, após o merge, limpeza pós-merge executada** (build
       artifacts + branches locais mergeadas + temporários; disco escasso — §C5).
 - [ ] PR aberto no GitHub; **KPIs atualizados no próprio PR** com contagens reais (C3).
-- [ ] Junta registrada + CI verde + porteiro pré-merge independente em Sol/ultra emitiram autorização literal
-      para o PR e head exatos; o parecer ainda não expirou por mudança de head.
+- [ ] Junta registrada + CI verde + porteiro pré-merge independente (staffing e modelo em §C2.8) emitiram
+      autorização literal para o PR e head exatos; o parecer ainda não expirou por mudança de head.
 - [ ] Após o merge, executor distinto fez backfill, reconciliação factual, limpeza e compactação aplicável.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.

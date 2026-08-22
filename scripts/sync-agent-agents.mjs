@@ -101,10 +101,14 @@ export function transform(rel, rawInput) {
              (/^\s*model\s*:/m.test(cleanedFm) && !/^model:\s*inherit\s*$/m.test(cleanedFm))) {
     throw new Error(`[agents-sync] ${name}: override de alto raciocínio fora da allowlist`);
   }
+  // F-F/F-E: o bloco abaixo é DECLARAÇÃO DE INVOCAÇÃO, não recibo. Qual modelo de fato executou é
+  // inverificável de dentro do processo; chamar isso de "recibo"/"prova" era o teatro que o ciclo 2
+  // veio matar. O texto diz o que é: obrigação declarada, detectável só a posteriori se falseada.
   const receipt = CODEX_HIGH_REASONING.has(name)
     ? `\n> **Invocação Codex obrigatória:** crie o agente isolado com \`fork_turns: "none"\`, ` +
-      `\`model: "gpt-5.6-sol"\` e \`reasoning_effort: "ultra"\`. O artefato final deve incluir recibo ` +
-      `\`agent_id · role · runtime=codex · model=gpt-5.6-sol · reasoning_effort=ultra\`; este arquivo sozinho não prova a execução.\n`
+      `\`model: "gpt-5.6-sol"\` e \`reasoning_effort: "ultra"\`. O artefato final registra a **declaração de invocação** ` +
+      `\`agent_id · role · runtime=codex · model=gpt-5.6-sol · reasoning_effort=ultra\` — declaração obrigatória, ` +
+      `**não** recibo nem prova de execução; nem este arquivo nem esses campos provam qual modelo rodou.\n`
     : '';
   // D-3 (ciclo 2): SEPARADOR DO PREÂMBULO. O preâmbulo é a moldura normativa ("poderes idênticos,
   // emulação inválida"); sem linha em branco entre ele e o corpo, o primeiro parágrafo do papel — em

@@ -142,12 +142,29 @@ que torna o bloco **auditável a posteriori** pelo dono, sem depender do chat ne
 ### Etapa 8 — Porteiro **pré-merge** no head exato
 
 Depois de junta registrada e CI verde, nasce um agente independente que não participou de origem,
-planejamento, desenvolvimento, análise ou voto. Ele usa **`gpt-5.6-sol` com raciocínio `ultra`** e reexecuta
-promessa × diff × bateria × KPI × ata × pendências no `headRefOid` candidato. O identificador técnico legado
-`porteiro-pos-merge` permanece apenas para não quebrar referências.
+planejamento, desenvolvimento, análise ou voto. Ele reexecuta promessa × diff × bateria × KPI × ata ×
+pendências no `headRefOid` candidato. O identificador técnico legado `porteiro-pos-merge` permanece apenas
+para não quebrar referências.
+
+<!-- interop:modelo:v1 -->
+**Staffing e modelo (mecanismo por ferramenta).** O papel é **staffado no Codex**: a invocação passa
+explicitamente `model: gpt-5.6-sol` e `reasoning_effort: ultra`. No **Claude Code** o mesmo papel existe em
+`.claude/agents/porteiro-pos-merge.md` com `model: fable` **apenas como origem do espelho** `.agents/agents/`
+— o Claude Code não emite atestado válido para este papel, por desenho. **Sem exceção de indisponibilidade:**
+sem Codex/Sol o fluxo bloqueia (a exceção "vira nota na ata" pertence só ao `planejador-mestre`).
+Os campos `runtime`/`model`/`reasoningEffort` do atestado são **declaração de invocação, não recibo nem
+prova** — auto-escritos, obrigatórios por decisão do dono, detectáveis só a posteriori se falseados. O que o
+gate confere é `commands` (`{cmd, exitCode}`) e `evidence.kpiLatestBlobSha` contra o blob do head.
+<!-- /interop:modelo:v1 -->
 
 A única autorização válida é `LIBERADO: merge do PR #<n> no head <sha>`. `LIBERADO COM RESSALVA` e
 `BLOQUEADO` não autorizam merge. Qualquer commit/push altera o head, expira o parecer e exige novo porteiro.
+
+O gate é técnico: snapshot `erp-porteiro-snapshot:v1`, comentário externo
+`erp-porteiro-attestation:v1`, check requerido `erp/porteiro-pre-merge` por GitHub App comprovado, ruleset
+ativo/strict sem bypass e merge CAS por `scripts/merge-authorized-pr.mjs`. O workflow de invalidação jamais
+executa código do head sob `pull_request_target`. Fonte confiável invisível ou não vinculável = VETO antes do
+bootstrap, nunca degradação para status forjável.
 
 ### Etapa 9 — Merge do head autorizado
 
@@ -178,8 +195,8 @@ mérito nem autoriza o merge já ocorrido. Sem esse fechamento, o próximo bloco
    nota explícita** no history.
 4. `mvp_demo`/`mvp_vendavel` só mudam quando o PR **mover escopo**, com 1 linha de justificativa.
 5. `pr`, `merge_commit`, `approved_head` referem-se ao **PR corrente**; `status: "published_per_pr"`.
-   **`merge_commit` nasce `null` na autoria**; `approved_head` pode ser preenchido no head candidato. O agente
-   pós-merge distinto faz o backfill factual final.
+   **`merge_commit` e `approved_head` nascem `null` na autoria**. O parecer externo congela o head sem
+   circularidade; só o executor pós-merge distinto projeta os dois campos factuais.
 6. A **validação dos números é da junta do PR**.
 
 ### Como os três arquivos mudam num PR (exemplo real: `Ω5P PR-17`)
@@ -278,8 +295,13 @@ Norma **permanente**. Substitui, onde aplicável, a aprovação humana por PR pe
   nova**; **contratação/config de serviço externo**; **chamada a serviço externo tarifado/pago**.
 - Votos + justificativa em `agent-orchestration/omega/juntas/J-<n>-<tema>.md` (ou `docs/juntas/`).
   **Junta sem registro = merge inválido.** Verde da junta não elimina o porteiro pré-merge.
-- Depois da junta + CI verde, um agente novo em `gpt-5.6-sol`/`ultra` revalida o head exato. Somente a linha
-  literal `LIBERADO: merge do PR #<n> no head <sha>` permite merge; novo head expira o parecer.
+- Depois da junta + CI verde, um agente novo e independente (staffing/modelo na Etapa 8) revalida o head
+  exato. Somente a linha literal `LIBERADO: merge do PR #<n> no head <sha>` permite merge; novo head expira
+  o parecer.
+- **Decisão crítica também por superfície:** diff que toque `.github/workflows/**`, `.github/rulesets/**`,
+  `.gitattributes`, os scripts do gate/sync, os testes de governança, `CLAUDE.md`/`AGENTS.md` ou
+  `.claude/agents/**`/`.agents/agents/**` exige `junta.critical === true` — ou seja, **5 votantes distintos
+  e unânimes**, verificado pelo snapshot.
 - Planejador, desenvolvedor, cada revisor/votante, porteiro e executor pós-merge são agentes/pessoas distintos.
 - Revisores **por risco**: `agente-secops` obrigatório em PR que toque secret/env/CORS/TLS/pipeline
   ou **superfície pública**; `agente-dba-guardiao` em todo PR com **migração**;
@@ -471,7 +493,8 @@ no fechamento do bloco (o que foi removido) — nunca silenciosa.
       binário/`tenant_id` externo).
 - [ ] **Artefatos temporários limpos** e, **após o merge, limpeza pós-merge executada** por agente distinto (§7).
 - [ ] **PR aberto no GitHub**; **KPIs atualizados no próprio PR** com contagens reais (§3).
-- [ ] **Junta registrada + CI verde + porteiro pré-merge Sol/ultra** autorizaram literalmente o PR/head exatos.
+- [ ] **Junta registrada + CI verde + porteiro pré-merge independente** autorizaram literalmente o PR/head
+      exatos (staffing e modelo do porteiro na Etapa 8).
 - [ ] **Fechamento pós-merge factual** concluído por outro agente (backfill, reconciliação, limpeza/compactação).
 - [ ] **A11y:** alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência de `screen-refs/` quando existir —
@@ -487,7 +510,8 @@ ID · PR # · merge commit · approved head · gate · status
 
 - **status** = `published_per_pr` (política vigente) — o histórico anterior usa
   `published_after_human_approval` (não replicar em bloco novo).
-- **merge commit / approved head** = `null` na autoria; **backfill pós-merge** no bloco seguinte.
+- **merge commit / approved head** = `null` na autoria; **backfill pelo executor pós-merge**. A projeção
+  versionada entra como primeira operação do próximo PR autorizado e não conta bloco novo.
 - **Contratos** versionados por data/bloco: ex.
   `mobile_evidence_file_upload@2026-06-18.b108`.
 
@@ -539,7 +563,8 @@ git diff --check
 
 ## Rastreabilidade
 - ID: B-EXEMPLO · gate: junta de 3 · status: published_per_pr
-- KPI no próprio PR (contagem real); merge_commit/approved_head = null na autoria (backfill no bloco seguinte).
+- KPI no próprio PR (contagem real); merge_commit/approved_head = null na autoria (executor pós-merge externo;
+  projeção versionada como primeira operação do próximo PR autorizado).
 ```
 
 ### 9.2 Implementação (resumo)
@@ -604,7 +629,8 @@ Não houve dúvida técnica → sem PD; não é decisão crítica (sem dependên
 
 ### 9.6 Porteiro, merge e fechamento pós-merge
 
-- Agente porteiro novo (`gpt-5.6-sol`/`ultra`) reexecuta o head candidato e emite a autorização literal.
+- Agente porteiro novo e independente (staffing/modelo na Etapa 8) reexecuta o head candidato e emite a
+  autorização literal.
 - Merge por squash com `--delete-branch`.
 - `bash scripts/post-merge-cleanup.sh` → removeu `frontend/dist/`, `coverage/`, 1 branch local
   mergeada; `git remote prune origin`. **1 linha no fechamento:** "pós-merge: removidos
