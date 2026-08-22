@@ -162,3 +162,39 @@ test('D-3 — nenhum dos 25 espelhos reais tem o corpo colado no preâmbulo', ()
     });
   assert.deepEqual(offenders, [], 'espelho com corpo absorvido pela moldura normativa');
 });
+
+// --- D-1: guard BIDIRECIONAL do índice do espelho (veredito do planejador, adendo do plano) ---
+// A direção "papel citado existe?" já era coberta. A metade que faltava é a que aconteceu de
+// verdade: o `executor-pos-merge` sumiu do índice por OMISSÃO. Corrigir só o texto do README seria
+// correção sem caminho vermelho — a classe mais fraca pela regra permanente.
+
+test('D-1 — índice que OMITE um papel real do espelho fica VERMELHO (defeito histórico)', () => {
+  const root = fixture();
+  const readme = join(root, '.agents/agents/README.md');
+  try {
+    assert.equal(run(root, 'sync-agent-agents.mjs', '--check').status, 0, 'fixture deveria nascer verde');
+    const semLinha = readFileSync(readme, 'utf8')
+      .split('\n')
+      .filter((l) => !l.startsWith('| `executor-pos-merge`'))
+      .join('\n');
+    writeFileSync(readme, semLinha);
+    const r = run(root, 'sync-agent-agents.mjs', '--check');
+    assert.equal(r.status, 1, 'papel real ausente do índice tem de reprovar');
+    assert.match(r.stderr, /NÃO cita o papel `executor-pos-merge`/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('D-1 — a exigência vale para TODO papel do espelho, subpastas incluídas', () => {
+  const root = fixture();
+  const readme = join(root, '.agents/agents/README.md');
+  try {
+    const semEspecialista = readFileSync(readme, 'utf8')
+      .split('\n')
+      .filter((l) => !l.startsWith('| `guardiao-enforcement-github-porteiro`'))
+      .join('\n');
+    writeFileSync(readme, semEspecialista);
+    const r = run(root, 'sync-agent-agents.mjs', '--check');
+    assert.equal(r.status, 1, 'especialista em subpasta fora do índice tem de reprovar');
+    assert.match(r.stderr, /especialistas\/guardiao-enforcement-github-porteiro\.md/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

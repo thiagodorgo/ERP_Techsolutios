@@ -18,8 +18,11 @@
 //   2. SEM DELEÇÃO SILENCIOSA. Nenhum modo apaga arquivo do espelho. Arquivo só-espelho (fora de
 //      origem ∪ KEEP) é ERRO RUIDOSO: o script lista, sai !=0 e NÃO escreve nada; a divergência é
 //      registrada em `agent-orchestration/controle/` por §A2 (achados 13/28).
-//   3. ÍNDICE NORMATIVO CONFERIDO. O `--check` exige o `README.md` do espelho e cruza a tabela de
-//      papéis dele com os arquivos reais — papel citado que não existe fica vermelho (achados 23/38).
+//   3. ÍNDICE NORMATIVO CONFERIDO NAS DUAS DIREÇÕES. O `--check` exige o `README.md` do espelho e
+//      cruza a tabela de papéis dele com os arquivos reais: papel CITADO que não existe fica vermelho
+//      (achados 23/38) e — desde o veredito D-1 do ciclo 2 — papel que EXISTE no espelho e não está
+//      citado também fica vermelho. A metade que faltava é a que aconteceu de verdade: o
+//      `executor-pos-merge` sumiu do índice por OMISSÃO, não por citação fantasma.
 //
 // Uso:
 //   node scripts/sync-agent-agents.mjs            # espelha/transforma .claude/agents/ -> .agents/agents/
@@ -165,6 +168,15 @@ if (CHECK) {
     }
     for (const role of [...cited].sort()) {
       if (!real.has(role)) drift.push(`.agents/agents/README.md cita papel inexistente: \`${role}\` (nenhum arquivo em .claude/agents/**)`);
+    }
+    // DIREÇÃO INVERSA (D-1). Correção de texto sem caminho vermelho é a classe mais fraca: sem esta
+    // metade, apagar do índice a linha de um papel real continua VERDE — foi exatamente o que
+    // aconteceu com o `executor-pos-merge`. Todo `.md` do espelho (recursivo, exceto o próprio
+    // README) tem de estar citado na tabela.
+    for (const rel of dstFiles) {
+      if (KEEP.has(rel)) continue;
+      const role = roleOf(rel);
+      if (!cited.has(role)) drift.push(`.agents/agents/README.md NÃO cita o papel \`${role}\` (existe em .agents/agents/${rel}) — índice normativo incompleto por omissão`);
     }
   }
   if (drift.length === 0) {
