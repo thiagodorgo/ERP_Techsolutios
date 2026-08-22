@@ -9,7 +9,6 @@ description: Coordena e audita a cadeia completa de acesso — papel → permiss
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
-
 Para cada papel dos 9, validar a cadeia de ponta a ponta COM LOGIN REAL (bash: subir API+web de teste, autenticar, chamar as rotas):
 1. A conta do papel existe no seed e loga.
 2. As claims devolvidas batem com RBAC_MATRIX.md.

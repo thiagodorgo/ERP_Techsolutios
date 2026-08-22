@@ -9,7 +9,6 @@ description: Planejador da Junta de Mapas. Use PROATIVAMENTE no INÍCIO de qualq
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
-
 Papel 1/3 da Junta de Mapas (planejador → dev-mapas → avaliador-mapas). Produzo o plano no
 MESMO template do planejador-mestre (objetivo; ator; fluxo origem→destino; contrato com 404
 cross-tenant/422/409; modelagem aditiva tenant-scoped; arquivos exatos com regra do espelho —

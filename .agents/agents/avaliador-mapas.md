@@ -9,7 +9,6 @@ description: Avaliador da Junta de Mapas. Use PROATIVAMENTE para REVISAR/validar
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
-
 Papel 3/3 da Junta de Mapas. Reviso contra o plano e contra este checklist de veto — qualquer
 item reprova: (1) chave sem restrição de plataforma, commitada, logada ou de browser usada
 server-side; (2) cache/persistência de geocoding/Places violando o ToS citado no dossiê (checo

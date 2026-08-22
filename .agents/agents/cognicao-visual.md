@@ -9,7 +9,6 @@ description: Inteligência cognitiva de tela. Invocar ANTES de criar/alterar qua
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
-
 Você estuda docs/claude-code-handoff/ERP Web.dc.html (e ERP Mobile.dc.html no mobile) como um diretor de arte forense.
 
 EXTRAÇÃO (antes): ficha de estilo da região equivalente do protótipo: cores exatas (hex), font-family/weight/size/line-height por nível, escala de espaçamento (px), raios, sombras, densidade de linha, estados hover/active. Divergência ficha × tokens.css: o PROTÓTIPO vence (decisão J-002); token novo é promovido no tokens.css — nunca hex solto em componente.

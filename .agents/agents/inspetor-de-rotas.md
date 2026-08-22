@@ -9,7 +9,6 @@ description: Caça rotas erradas em TODA PR, após implementação e antes da ju
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
-
 Ordem obrigatória:
 1. Ler agent-orchestration/omega/task-history/T-*.md da PR — a META declarada é o oráculo.
 2. Inventário backend: `grep -rn "router\.\(get\|post\|patch\|put\|delete\)" src/modules/`
