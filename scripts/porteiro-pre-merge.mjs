@@ -27,6 +27,47 @@ const VEREDITOS_NEGATIVOS = ['BLOQUEADO', 'RESSALVA'];
 // vetor de workflow acrescentado/alterado e fechado pela escalada de superficie de governanca.
 export const APP_GITHUB_ACTIONS = { id: 15368, slug: 'github-actions', ownerId: 9919 };
 
+// ---------------------------------------------------------------------------
+// SUPERFICIE DE GOVERNANCA — escalada obrigatoria para junta critica 5/5.
+//
+// Motivo (achado central da PD-GOV-PORTEIRO-APPID): `app.id === 15368` prova "foi o GitHub
+// Actions", NAO prova "foi o job do porteiro". Qualquer workflow DESTE repositorio com
+// `checks: write` publica check-run com o mesmo app id. O pin fecha PAT/usuario, app de terceiro e
+// outra integracao; nao fecha workflow acrescentado ou alterado dentro do proprio repositorio.
+//
+// O controle que fecha o vetor principal e de processo, e mecanico: diff que toque a superficie
+// abaixo so passa com `junta.critical === true` (5 votantes distintos e unanimes, ja conferido por
+// validateJunta). Como TODO merge passa por este gate, workflow malicioso nao entra por fora.
+const SCRIPTS_GATE = [
+  'scripts/porteiro-pre-merge.mjs', 'scripts/merge-authorized-pr.mjs', 'scripts/post-merge-finalize.mjs',
+  'scripts/configure-main-ruleset.mjs', 'scripts/sync-agent-agents.mjs', 'scripts/sync-agent-skills.mjs',
+];
+const TESTES_GOVERNANCA = ['tests/porteiro-pre-merge-governance.test.ts', 'tests/agent-model-routing.test.ts'];
+const PREFIXOS_GOVERNANCA = ['.github/workflows/', '.github/rulesets/', '.claude/agents/', '.agents/agents/'];
+const ARQUIVOS_GOVERNANCA = new Set(['.gitattributes', 'CLAUDE.md', 'AGENTS.md', ...SCRIPTS_GATE, ...TESTES_GOVERNANCA]);
+
+export function pathsDeGovernanca(files) {
+  const hit = (p) => ARQUIVOS_GOVERNANCA.has(p) || PREFIXOS_GOVERNANCA.some((x) => p.startsWith(x));
+  return [...new Set((files || []).filter((p) => nonEmpty(p) && hit(p)))].sort();
+}
+
+// A API de files do PR e PAGINADA. Truncar abriria exatamente o buraco que a escalada fecha:
+// bastaria empurrar o workflow para a pagina 2. Coleta ate a pagina incompleta e inclui
+// `previous_filename` — rename PARA FORA da superficie tambem tem de contar.
+export function coletarPaths(fetchPage, porPagina = 100) {
+  const paths = [];
+  for (let page = 1; page <= 300; page += 1) {
+    const lote = fetchPage(page);
+    if (!Array.isArray(lote)) fail('resposta inesperada da API de files do PR');
+    for (const f of lote) {
+      if (nonEmpty(f?.filename)) paths.push(f.filename);
+      if (nonEmpty(f?.previous_filename)) paths.push(f.previous_filename);
+    }
+    if (lote.length < porPagina) return [...new Set(paths)].sort();
+  }
+  return fail('paginação de files do PR excedeu o limite seguro');
+}
+
 // Cross-check triplo sobre o objeto `app` da RESPOSTA do check-run. `owner.id` em vez de
 // `owner.login` porque login e renomeavel e o id nao. Divergencia em qualquer campo = fail-closed.
 export function assertFonteConfiavel(app, expectedAppId) {
@@ -183,6 +224,13 @@ export function buildSnapshot(state) {
   }
   const rulesets = canonical((state.rulesets || []).filter((r) => r.enforcement === 'active'));
   const junta = validateJunta(state.junta);
+  // Escalada por superficie de governanca (D-5). A lista de paths entra no snapshot: mudar o diff
+  // invalida a autorizacao, do mesmo jeito que mudar o head invalida.
+  if (!Array.isArray(state.files)) fail('lista de paths do diff do PR é obrigatória no estado observado');
+  if (state.files.some((p) => !nonEmpty(p))) fail('path vazio na lista de arquivos do PR');
+  const files = [...new Set(state.files)].sort();
+  const governanceSurface = pathsDeGovernanca(files);
+  if (governanceSurface.length && junta.critical !== true) fail(`diff toca a superfície de governança e exige junta crítica 5/5 (critical:true): ${governanceSurface.join(', ')}`);
   const snapshot = {
     schema: 'erp-porteiro-snapshot:v1', repo: state.repo, defaultBranch: state.defaultBranch, pr: pr.number,
     head: { ref: pr.head.ref, oid: pr.head.sha }, base: { ref: pr.base.ref, oid: pr.base.sha },
@@ -190,6 +238,7 @@ export function buildSnapshot(state) {
     ruleset: { ids: rulesets.map((r) => r.id), sha256: digest(rulesets) },
     junta: { sha256: digest(junta), identities: juntaIdentities(junta), blobOid: state.juntaBlobOid || null },
     evidence: { kpiLatestBlobSha: state.kpiLatestBlobSha },
+    files, governanceSurface,
   };
   return { ...snapshot, snapshotSha256: digest(snapshot) };
 }
@@ -253,6 +302,9 @@ export function buildNegativeVerdict({ verdict, repo, pr, head, agentId, reason 
   };
 }
 
+export const fetchPrFiles = (repo, prNumber) =>
+  coletarPaths((page) => gh(['api', `repos/${repo}/pulls/${prNumber}/files?per_page=100&page=${page}`]));
+
 async function liveState(prNumber) {
   const { repo, defaultBranch } = repoContext();
   const pr = gh(['api', `repos/${repo}/pulls/${prNumber}`]);
@@ -265,11 +317,12 @@ async function liveState(prNumber) {
     ...statuses.map((s) => ({ context: s.context, appId: s.creator?.type === 'Bot' ? s.creator?.id ?? null : null, conclusion: s.state === 'success' ? 'success' : s.state, detailsUrl: s.target_url })),
   ];
   const kpiLatestBlobSha = gh(['api', `repos/${repo}/contents/${KPI_LATEST_PATH}?ref=${pr.head.sha}`]).sha;
+  const files = fetchPrFiles(repo, prNumber);
   const comments = gh(['api', `repos/${repo}/issues/${prNumber}/comments?per_page=100`]);
   const juntaComment = [...comments].reverse().find((c) => String(c.body).includes('erp-junta-attestation:v1'));
   if (!juntaComment) fail('comentário externo da junta ausente');
   return {
-    repo, defaultBranch, kpiLatestBlobSha,
+    repo, defaultBranch, kpiLatestBlobSha, files,
     pr: { number: pr.number, state: pr.state, draft: pr.draft, body: pr.body || '', head: { ref: pr.head.ref, sha: pr.head.sha }, base: { ref: pr.base.ref, sha: pr.base.sha } },
     rulesets, checks, junta: parseAttestationBody(juntaComment.body), juntaBlobOid: arg('--junta-blob'), comments,
   };

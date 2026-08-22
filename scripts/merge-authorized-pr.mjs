@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildSnapshot, verifyAttestation, assertIndependent } from './porteiro-pre-merge.mjs';
+import { buildSnapshot, verifyAttestation, assertIndependent, fetchPrFiles } from './porteiro-pre-merge.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const CONTEXT = 'erp/porteiro-pre-merge';
@@ -48,8 +48,9 @@ async function main() {
     ...statuses.map((s) => ({ context:s.context, appId:s.creator?.id ?? null, conclusion:s.state === 'success' ? 'success' : s.state, detailsUrl:s.target_url })),
   ];
   const kpiLatestBlobSha = gh(['api',`repos/${repo}/contents/Kpis/kpis-latest.json?ref=${expectedHead}`]).sha;
+  const files = fetchPrFiles(repo, prNumber);
   const junta = parseMarked(comments, 'erp-junta-attestation:v1').payload;
-  const currentSnapshot = buildSnapshot({ repo, defaultBranch, kpiLatestBlobSha, pr:{ number:pr.number,state:pr.state,draft:pr.draft,body:pr.body||'',head:{ref:pr.head.ref,sha:pr.head.sha},base:{ref:pr.base.ref,sha:pr.base.sha}}, rulesets, checks, junta, juntaBlobOid:snapshot.junta.blobOid });
+  const currentSnapshot = buildSnapshot({ repo, defaultBranch, kpiLatestBlobSha, files, pr:{ number:pr.number,state:pr.state,draft:pr.draft,body:pr.body||'',head:{ref:pr.head.ref,sha:pr.head.sha},base:{ref:pr.base.ref,sha:pr.base.sha}}, rulesets, checks, junta, juntaBlobOid:snapshot.junta.blobOid });
   const porterRun=(checksRaw.check_runs||[]).find(c=>c.name===CONTEXT);
   const status=porterRun?{context:CONTEXT,state:porterRun.conclusion,target_url:porterRun.details_url}:null;
   assertMergeCandidate({ snapshot, currentSnapshot, attestation, status, comment, expectedHead, mergeAgentId });

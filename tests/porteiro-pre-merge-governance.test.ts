@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict,assertFonteConfiavel,resolveExpectedAppId,APP_GITHUB_ACTIONS } from '../scripts/porteiro-pre-merge.mjs';
+import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict,assertFonteConfiavel,resolveExpectedAppId,pathsDeGovernanca,coletarPaths,APP_GITHUB_ACTIONS } from '../scripts/porteiro-pre-merge.mjs';
 import { assertMergeCandidate } from '../scripts/merge-authorized-pr.mjs';
 import { validateFinalization } from '../scripts/post-merge-finalize.mjs';
 import { assertJuntaCritica,assertDesired,conferirFontesFixadas } from '../scripts/configure-main-ruleset.mjs';
@@ -14,7 +14,7 @@ const ruleset=():any=>({id:1,name:'main',target:'branch',enforcement:'active',by
 const junta=():any=>({marker:'erp-junta-attestation:v1',result:'APROVADO',critical:false,fabrica:null,origin:'owner',planner:'planner',developer:'dev',
   votes:[{agentId:'r1',vote:'APROVADO'},{agentId:'r2',vote:'APROVADO'},{agentId:'r3',vote:'APROVADO'}]});
 const KPI='1'.repeat(40);
-const state=():any=>({repo:'acme/erp',defaultBranch:'main',kpiLatestBlobSha:KPI,
+const state=():any=>({repo:'acme/erp',defaultBranch:'main',kpiLatestBlobSha:KPI,files:['src/app.ts','README.md'],
   pr:{number:9,state:'open',draft:false,body:'escopo',head:{ref:'feat/x',sha:H},base:{ref:'main',sha:B}},
   rulesets:[ruleset()],checks:[{context:'ci',appId:10,conclusion:'success',detailsUrl:'https://ci'}],junta:junta(),juntaBlobOid:'c'.repeat(40)});
 const att=(s:any):any=>({schema:'erp-porteiro-attestation:v1',verdict:`LIBERADO: merge do PR #9 no head ${H}`,repo:'acme/erp',pr:9,head:H,snapshotSha256:s.snapshotSha256,
@@ -115,3 +115,24 @@ test('D-4 — o template pina 15368 nos oito contextos e assertDesired veta o po
 test('D-4 — plan() CONFERE o observado contra o fixado; divergência é VETO, não re-resolução',()=>{const req=[{context:'ci',integration_id:15368}];assert.equal(conferirFontesFixadas(req,[{context:'ci',appId:15368,success:true}]),true);assert.equal(req[0].integration_id,15368,'o pin do template não pode ser reescrito');assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:15368}],[{context:'ci',appId:99,success:true}]),/VETO: fonte observada diverge do id fixado/);assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:15368}],[{context:'ci',appId:15368,success:false}]),/VETO: contexto requerido sem check verde/);assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:null}],[{context:'ci',appId:15368,success:true}]),/VETO: template sem integration_id fixado/);assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:15368}],[]),/sem check verde observado/);});
 
 test('D-4 — o workflow fixa o literal e o override vem de vars, nunca do próprio run',()=>{const y=readFileSync('.github/workflows/porteiro-pre-merge.yml','utf8');assert.match(y,/ERP_PORTEIRO_EXPECTED_APP_ID:\s*'15368'/);assert.match(y,/ERP_PORTEIRO_APP_ID_OVERRIDE:\s*\$\{\{\s*vars\.ERP_PORTEIRO_APP_ID_OVERRIDE\s*\}\}/);assert.doesNotMatch(y,/ERP_PORTEIRO_APP_ID_OVERRIDE:\s*\$\{\{\s*(steps|needs|jobs|env)\./);assert.match(y,/api\.github\.com\/apps\/github-actions/);assert.match(y,/2026-08-22/);assert.match(y,/owner\.id 9919/);});
+
+// ---------------------------------------------------------------------------
+// D-5(a).1 — escalada por superfície de governança
+// ---------------------------------------------------------------------------
+
+const criticaOk=():any=>({...junta(),critical:true,votes:['r1','r2','r3','r4','r5'].map((a)=>({agentId:a,vote:'APROVADO'}))});
+const comFiles=(files:string[],j?:any):any=>{const x=state();x.files=files;if(j)x.junta=j;return x;};
+
+test('D-5 — diff que toca a superfície de governança exige junta crítica 5/5',()=>{for(const p of ['.github/workflows/x.yml','.github/rulesets/main.template.json','.gitattributes','scripts/porteiro-pre-merge.mjs','scripts/sync-agent-agents.mjs','scripts/sync-agent-skills.mjs','tests/porteiro-pre-merge-governance.test.ts','tests/agent-model-routing.test.ts','CLAUDE.md','AGENTS.md','.claude/agents/porteiro-pos-merge.md','.agents/agents/especialistas/x.md'])assert.throws(()=>buildSnapshot(comFiles([p])),/exige junta crítica 5\/5/,`${p} deveria escalar`);const s=buildSnapshot(comFiles(['.github/workflows/x.yml'],criticaOk()));assert.deepEqual(s.governanceSurface,['.github/workflows/x.yml']);});
+
+test('D-5 — diff fora da superfície não escala e a superfície entra no snapshot',()=>{const s=buildSnapshot(comFiles(['src/app.ts','frontend/src/x.tsx','docs/y.md','Kpis/kpis-latest.json','scripts/kpi-release.mjs']));assert.deepEqual(s.governanceSurface,[]);assert.deepEqual(s.files,['Kpis/kpis-latest.json','docs/y.md','frontend/src/x.tsx','scripts/kpi-release.mjs','src/app.ts']);assert.notEqual(buildSnapshot(comFiles(['src/app.ts'])).snapshotSha256,buildSnapshot(comFiles(['src/outro.ts'])).snapshotSha256);});
+
+test('D-5 — a lista de paths é obrigatória e não aceita entrada vazia',()=>{const semFiles=state();delete semFiles.files;assert.throws(()=>buildSnapshot(semFiles),/lista de paths do diff do PR é obrigatória/);assert.throws(()=>buildSnapshot(comFiles(['src/app.ts',''])),/path vazio/);const naoLista=state();naoLista.files='src/app.ts';assert.throws(()=>buildSnapshot(naoLista),/lista de paths/);});
+
+test('D-5 — pathsDeGovernanca cobre os sete grupos nomeados e não sobra-cobre',()=>{assert.deepEqual(pathsDeGovernanca(['.github/workflows/ci.yml','src/app.ts']),['.github/workflows/ci.yml']);assert.deepEqual(pathsDeGovernanca(['scripts/kpi-release.mjs','scripts/up.mjs','tests/core-saas.test.ts','docs/CLAUDE.md','frontend/AGENTS.md']),[]);assert.equal(pathsDeGovernanca(['.agents/agents/README.md','.claude/agents/x.md']).length,2);assert.equal(pathsDeGovernanca(['scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs']).length,3);});
+
+test('D-5 — a paginação da API de files não trunca: workflow na página 2 continua sendo pego',()=>{const pagina1=Array.from({length:100},(_,i)=>({filename:`src/f${i}.ts`}));const pagina2=[{filename:'.github/workflows/backdoor.yml'}];const paths=coletarPaths((p:number)=>(p===1?pagina1:pagina2));assert.equal(paths.length,101);assert.ok(paths.includes('.github/workflows/backdoor.yml'));assert.throws(()=>buildSnapshot(comFiles(paths)),/exige junta crítica 5\/5/);assert.deepEqual(coletarPaths(()=>[]),[]);assert.throws(()=>coletarPaths(()=>({} as any)),/resposta inesperada/);assert.throws(()=>coletarPaths(()=>Array.from({length:100},(_,i)=>({filename:`s${i}.ts`}))),/excedeu o limite seguro/);});
+
+test('D-5 — rename PARA FORA da superfície é pego por previous_filename',()=>{const paths=coletarPaths((p:number)=>(p===1?[{filename:'docs/antigo.yml',previous_filename:'.github/workflows/x.yml'}]:[]));assert.deepEqual(paths,['.github/workflows/x.yml','docs/antigo.yml']);assert.throws(()=>buildSnapshot(comFiles(paths)),/exige junta crítica 5\/5/);});
+
+test('D-5 — ESTE PR toca a superfície inteira e por isso exige 5/5',()=>{const meus=['.github/workflows/porteiro-pre-merge.yml','.github/rulesets/main.template.json','scripts/porteiro-pre-merge.mjs','scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs','tests/porteiro-pre-merge-governance.test.ts','CLAUDE.md','AGENTS.md'];assert.equal(pathsDeGovernanca(meus).length,meus.length);assert.throws(()=>buildSnapshot(comFiles(meus)),/exige junta crítica 5\/5/);assert.equal(buildSnapshot(comFiles(meus,criticaOk())).governanceSurface.length,meus.length);});
