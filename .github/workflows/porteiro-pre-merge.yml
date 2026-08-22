@@ -41,17 +41,26 @@ jobs:
           PR_NUMBER: ${{ inputs.pr }}
           ATTESTATION_JSON: ${{ inputs.attestation_json }}
           REPO: ${{ github.repository }}
+          # Fonte confiável do check `erp/porteiro-pre-merge`: app id do GitHub Actions.
+          # VALOR FIXADO — nunca derivado do próprio run. Derivar do check-run recém-criado torna a
+          # comparação tautológica (compara a fonte consigo mesma) e o gate deixa de provar a fonte.
+          # PENDENTE DE PD (>=3 fontes, §C7.3): enquanto vazio, o publish RECUSA (fail-closed) e o
+          # bootstrap do ruleset segue vetado pelo plano v1 §F3.2. NÃO preencher por chute.
+          ERP_PORTEIRO_EXPECTED_APP_ID: ''
         run: |
           set -euo pipefail
           test "$(printf '%s' "$PR_NUMBER" | tr -cd '0-9')" = "$PR_NUMBER"
+          if [ -z "${ERP_PORTEIRO_EXPECTED_APP_ID}" ]; then
+            echo "ERP_PORTEIRO_EXPECTED_APP_ID nao esta fixado: a PD do app id (>=3 fontes, §C7.3) esta pendente." >&2
+            echo "O gate falha FECHADO: nenhum status de liberacao e publicado." >&2
+            exit 1
+          fi
           node scripts/porteiro-pre-merge.mjs snapshot --pr "$PR_NUMBER" > snapshot.json
           printf '%s' "$ATTESTATION_JSON" > attestation.json
           head_sha=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('snapshot.json')).head.oid)")
-          bootstrap=$(jq -nc --arg sha "$head_sha" '{name:"erp/porteiro-pre-merge",head_sha:$sha,status:"in_progress",output:{title:"Validação em curso",summary:"Revalidando snapshot e atestado independente."}}' | \
-            gh api -X POST "repos/$REPO/check-runs" --input -)
-          source_id=$(printf '%s' "$bootstrap" | jq -er '.app.id')
-          ERP_PORTEIRO_EXPECTED_APP_ID="$source_id" \
-            node scripts/porteiro-pre-merge.mjs publish --snapshot snapshot.json --attestation attestation.json
+          jq -nc --arg sha "$head_sha" '{name:"erp/porteiro-pre-merge",head_sha:$sha,status:"in_progress",output:{title:"Validação em curso",summary:"Revalidando snapshot e atestado independente."}}' | \
+            gh api -X POST "repos/$REPO/check-runs" --input - > /dev/null
+          node scripts/porteiro-pre-merge.mjs publish --snapshot snapshot.json --attestation attestation.json
   invalidate-pr-event:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest

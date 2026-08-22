@@ -19,18 +19,50 @@ const fail = (message) => { throw new Error(message); };
 const nonEmpty = (value) => typeof value === 'string' && value.trim() !== '';
 const arg = (name, fallback = undefined) => { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] : fallback; };
 const gh = (args, input = undefined) => JSON.parse(execFileSync('gh', args, { cwd: ROOT, input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
-const repoFromGh = () => gh(['repo', 'view', '--json', 'nameWithOwner']).nameWithOwner;
+export const repoContext = () => {
+  const info = gh(['repo', 'view', '--json', 'nameWithOwner,defaultBranchRef']);
+  const repo = info.nameWithOwner;
+  const defaultBranch = info.defaultBranchRef?.name;
+  if (!nonEmpty(repo) || !nonEmpty(defaultBranch)) fail('repositório ou branch default não resolvidos pelo GitHub');
+  return { repo, defaultBranch };
+};
 
-function requiredChecks(rulesets) {
+// Regras que o ruleset da branch default PRECISA conter para que "main usa ruleset ativo/strict"
+// signifique alguma coisa. Sem `pull_request` não há PR obrigatório; sem `deletion`/
+// `non_fast_forward` a branch pode ser apagada ou reescrita por trás do gate.
+const REGRAS_OBRIGATORIAS = ['pull_request', 'deletion', 'non_fast_forward'];
+
+// Um ruleset só governa a branch default se for de branch E a incluir explicitamente. Ruleset
+// apontado para outra branch (ou que exclua a default) é DESCARTADO — nunca satisfaz o gate.
+export function aplicaSeABranchDefault(ruleset, defaultBranch) {
+  if (ruleset?.target !== 'branch') return false;
+  const refs = [`refs/heads/${defaultBranch}`, '~DEFAULT_BRANCH'];
+  const include = ruleset?.conditions?.ref_name?.include;
+  const exclude = ruleset?.conditions?.ref_name?.exclude || [];
+  if (!Array.isArray(include) || !include.some((x) => refs.includes(x))) return false;
+  if (Array.isArray(exclude) && exclude.some((x) => refs.includes(x))) return false;
+  return true;
+}
+
+function requiredChecks(rulesets, defaultBranch) {
+  if (!nonEmpty(defaultBranch)) fail('branch default do repositório é obrigatória para conferir o ruleset');
   const active = rulesets.filter((r) => r.enforcement === 'active');
   const bypass = active.flatMap((r) => r.bypass_actors || []);
   if (bypass.length) fail('ruleset ativo contém bypass actor');
+  const applicable = active.filter((r) => aplicaSeABranchDefault(r, defaultBranch));
+  if (!applicable.length) fail(`nenhum ruleset ativo se aplica à branch default (${defaultBranch})`);
+  const types = new Set(applicable.flatMap((r) => (r.rules || []).map((x) => x.type)));
+  for (const t of REGRAS_OBRIGATORIAS) if (!types.has(t)) fail(`ruleset da branch default não exige a regra obrigatória: ${t}`);
   const required = [];
   let strict = false;
-  for (const ruleset of active) for (const rule of ruleset.rules || []) {
+  for (const ruleset of applicable) for (const rule of ruleset.rules || []) {
     if (rule.type !== 'required_status_checks') continue;
     strict ||= rule.parameters?.strict_required_status_checks_policy === true;
-    for (const item of rule.parameters?.required_status_checks || []) required.push({ context: item.context, appId: item.integration_id ?? null });
+    for (const item of rule.parameters?.required_status_checks || []) {
+      // integration_id ausente/null era curinga: qualquer fonte verde satisfazia o check requerido.
+      if (!Number.isInteger(item.integration_id) || item.integration_id <= 0) fail(`check requerido sem fonte confiável resolvida (integration_id): ${item.context}`);
+      required.push({ context: item.context, appId: item.integration_id });
+    }
   }
   if (!strict) fail('ruleset não exige atualização estrita da base');
   if (!required.some((r) => r.context === CONTEXT)) fail(`ruleset não requer ${CONTEXT}`);
@@ -85,18 +117,23 @@ export function buildSnapshot(state) {
   if (!pr || pr.state !== 'open' || pr.draft) fail('PR precisa estar aberto e fora de draft');
   if (pr.base?.ref !== 'main') fail('base do PR precisa ser main');
   if (!SHA40.test(pr.head?.sha || '') || !SHA40.test(pr.base?.sha || '')) fail('head/base precisam ser SHA completo');
-  const required = requiredChecks(state.rulesets || []);
+  // O ruleset conferido tem de ser o da branch que o PR mergeia. Se a default do repositório não
+  // for a base do PR, o ruleset "da default" não protege nada aqui — fail-closed.
+  if (!nonEmpty(state.defaultBranch)) fail('branch default do repositório é obrigatória no estado observado');
+  if (state.defaultBranch !== pr.base.ref) fail(`branch default (${state.defaultBranch}) não é a base do PR (${pr.base.ref})`);
+  const required = requiredChecks(state.rulesets || [], state.defaultBranch);
   const checks = (state.checks || []).filter((c) => c.context !== CONTEXT).map((c) => ({
     context: c.context, appId: c.appId ?? null, conclusion: c.conclusion, detailsUrl: c.detailsUrl || null,
   })).sort((a, b) => `${a.context}:${a.appId}`.localeCompare(`${b.context}:${b.appId}`));
   for (const req of required.filter((r) => r.context !== CONTEXT)) {
-    const match = checks.find((c) => c.context === req.context && (req.appId == null || c.appId === req.appId));
+    // Matching ESTRITO: null nunca e curinga (req.appId ja foi validado como inteiro positivo).
+    const match = checks.find((c) => c.context === req.context && c.appId === req.appId);
     if (!match || match.conclusion !== 'success') fail(`check requerido não verde ou com fonte errada: ${req.context}`);
   }
   const rulesets = canonical((state.rulesets || []).filter((r) => r.enforcement === 'active'));
   const junta = validateJunta(state.junta);
   const snapshot = {
-    schema: 'erp-porteiro-snapshot:v1', repo: state.repo, pr: pr.number,
+    schema: 'erp-porteiro-snapshot:v1', repo: state.repo, defaultBranch: state.defaultBranch, pr: pr.number,
     head: { ref: pr.head.ref, oid: pr.head.sha }, base: { ref: pr.base.ref, oid: pr.base.sha },
     bodySha256: digest(pr.body || ''), checks, requiredChecks: required,
     ruleset: { ids: rulesets.map((r) => r.id), sha256: digest(rulesets) },
@@ -128,7 +165,7 @@ export function verifyAttestation(snapshot, attestation) {
 }
 
 async function liveState(prNumber) {
-  const repo = repoFromGh();
+  const { repo, defaultBranch } = repoContext();
   const pr = gh(['api', `repos/${repo}/pulls/${prNumber}`]);
   const rulesetSummaries = gh(['api', `repos/${repo}/rulesets?includes_parents=true`]);
   const rulesets = rulesetSummaries.map((r) => gh(['api', `repos/${repo}/rulesets/${r.id}?includes_parents=true`]));
@@ -142,7 +179,8 @@ async function liveState(prNumber) {
   const juntaComment = [...comments].reverse().find((c) => String(c.body).includes('erp-junta-attestation:v1'));
   if (!juntaComment) fail('comentário externo da junta ausente');
   return {
-    repo, pr: { number: pr.number, state: pr.state, draft: pr.draft, body: pr.body || '', head: { ref: pr.head.ref, sha: pr.head.sha }, base: { ref: pr.base.ref, sha: pr.base.sha } },
+    repo, defaultBranch,
+    pr: { number: pr.number, state: pr.state, draft: pr.draft, body: pr.body || '', head: { ref: pr.head.ref, sha: pr.head.sha }, base: { ref: pr.base.ref, sha: pr.base.sha } },
     rulesets, checks, junta: parseAttestationBody(juntaComment.body), juntaBlobOid: arg('--junta-blob'), comments,
   };
 }

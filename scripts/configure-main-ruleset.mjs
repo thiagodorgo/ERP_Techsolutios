@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { validateJunta, juntaIdentities } from './porteiro-pre-merge.mjs';
+import { validateJunta, juntaIdentities, aplicaSeABranchDefault } from './porteiro-pre-merge.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const arg=(n,d)=>{const i=process.argv.indexOf(n);return i>=0?process.argv[i+1]:d;};
@@ -16,6 +16,7 @@ const template=()=>JSON.parse(readFileSync(arg('--template',`${ROOT}.github/rule
 
 function assertDesired(desired){
   if(desired.enforcement!=='active'||desired.target!=='branch')fail('ruleset precisa estar active/branch');
+  if(!aplicaSeABranchDefault(desired,'main'))fail('ruleset desejado nao se aplica a branch default (conditions.ref_name)');
   if((desired.bypass_actors||[]).length)fail('bypass_actors precisa ser vazio');
   const status=desired.rules.find(r=>r.type==='required_status_checks')?.parameters;
   if(!status?.strict_required_status_checks_policy)fail('strict precisa ser true');
