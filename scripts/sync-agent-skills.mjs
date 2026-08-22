@@ -12,8 +12,14 @@
 //
 // Regra: a ORIGEM é `.claude/skills/`; o ESPELHO é `.agents/skills/`. Alterou a skill num lado,
 // rode este script (ou replique manualmente) para manter os dois em dia.
+//
+// GARANTIA (ciclo 2 da reprovação GOV-PORTEIRO-PRE-MERGE — F-A, achado 28): NENHUM modo apaga
+// arquivo do espelho. A versão anterior fazia `rmSync(DST, {recursive:true})` no modo cópia e
+// destruía conteúdo só-Codex em silêncio, reportando sucesso — o oposto da regra "a sincronização
+// não apaga decisões nem regras em silêncio" (§A2). Agora arquivo só-espelho é ERRO RUIDOSO: o
+// script lista, sai !=0 e NÃO escreve nada; a divergência é registrada em `agent-orchestration/controle/`.
 
-import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -71,7 +77,7 @@ if (CHECK) {
     if (readFileSync(join(SRC, rel)) .toString() !== readFileSync(join(DST, rel)).toString())
       drift.push(`DIVERGE: .agents/skills/${rel}`);
   }
-  for (const rel of dstFiles) if (!srcSet.has(rel)) drift.push(`SOBRA no espelho (não existe na origem): .agents/skills/${rel}`);
+  for (const rel of dstFiles) if (!srcSet.has(rel)) drift.push(`SOBRA no espelho (não existe na origem): .agents/skills/${rel} — NÃO foi apagado; registre em agent-orchestration/controle/ (§A2)`);
 
   const skills = new Set(srcFiles.map((p) => p.split(/[\\/]/)[0]));
   if (drift.length === 0 && problems.length === 0) {
@@ -90,7 +96,16 @@ if (problems.length > 0) {
   console.error(`[skills-sync] corrija o frontmatter antes de espelhar.`);
   process.exit(1);
 }
-if (existsSync(DST)) rmSync(DST, { recursive: true, force: true });
+// Fail-closed ANTES de qualquer escrita: nada é apagado e nada é gravado enquanto existir arquivo
+// só-espelho. Quem decide o destino dele é o registro em controle/ (§A2), não o script.
+const srcSetWrite = new Set(srcFiles);
+const orphans = listFiles(DST).sort().filter((rel) => !srcSetWrite.has(rel));
+if (orphans.length > 0) {
+  for (const rel of orphans) console.error(`[skills-sync] SÓ NO ESPELHO (não existe na origem): .agents/skills/${rel}`);
+  console.error('[skills-sync] recusado: o sync NÃO apaga arquivo do espelho. Traga o arquivo para .claude/skills/ ou');
+  console.error('[skills-sync] registre a divergência em agent-orchestration/controle/ (§A2) antes de removê-lo à mão.');
+  process.exit(1);
+}
 mkdirSync(DST, { recursive: true });
 for (const rel of srcFiles) {
   const to = join(DST, rel);

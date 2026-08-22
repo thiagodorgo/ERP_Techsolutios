@@ -20,7 +20,7 @@ incompatíveis. Sem agentes isolados suficientes, a entrega bloqueia; trocar o n
 
 Fluxo obrigatório:
 
-1. **Planejar** — adote `planejador-mestre` (ou `omega5p-planejador` na rodada de Pátios) e publique o
+1. **Planejar** — adote `planejador-mestre` e publique o
    plano curto **antes de qualquer código** (em `docs/juntas/`). Nenhuma linha de código sem plano.
 2. **Atacar o plano** — adote `critico-adversarial` e tente derrubar o plano (borda/concorrência/
    multi-tenant/RBAC/erro/premissa). O que sobreviver vira requisito explícito.
@@ -39,6 +39,10 @@ Fluxo obrigatório:
    `LIBERADO: merge do PR #<n> no head <sha>` autoriza; ressalva/bloqueio não autorizam; novo head expira.
 8. **Pós-merge factual** — outro agente distinto faz backfill, reconciliação, limpeza e compactação. Não vota.
 
+Nos dois papéis cirúrgicos (`planejador-mestre` e `porteiro-pos-merge`), a invocação Codex usa
+`fork_turns: "none"`, `model: "gpt-5.6-sol"` e `reasoning_effort: "ultra"` explicitamente. O artefato
+registra o recibo `agent_id · role · runtime · model · reasoning_effort`; frontmatter sozinho não é recibo.
+
 > **Regra da dúvida (§C7.3):** qualquer incerteza → adote `agente-pesquisador-web` (≥3 fontes) e registre
 > a PD em `docs/omega-pd.md` **antes** de decidir. Dúvida sem pesquisa = veto.
 
@@ -48,16 +52,12 @@ Fluxo obrigatório:
 | Papel | Função |
 |---|---|
 | `planejador-mestre` | O plano obrigatório antes de qualquer código; `gpt-5.6-sol`/`ultra` por regra específica. |
-| `omega5p-planejador` | Planejador da rodada Ω5P (Pátios/SIGPRV) — publica plano curto por PR. |
 | `planejador-mapas` | Planejador da Junta de Mapas (geo/tiles/rotas/geocoding). |
 | `estrategista` | Ordem e agrupamento das entregas por dependência e risco. |
 
 ### Implementar (devs)
 | Papel | Função |
 |---|---|
-| `omega5p-dev-backend` | Backend Node/TS/Express/Prisma das fatias Ω5P. |
-| `omega5p-dev-frontend` | Console React/Vite do operador (`/patios`). |
-| `omega5p-dev-portal` | Superfícies PÚBLICAS isoladas (PWAs/BFFs) — foco em segurança. |
 | `dev-mapas` | Implementação de mapa/geo (React/backend/Flutter). |
 | `frontend-pixel-master` | Frontend pixel-perfect a partir de referência visual. |
 
@@ -65,7 +65,6 @@ Fluxo obrigatório:
 | Papel | Poder | Função |
 |---|---|---|
 | `validador-mestre` | **VETO** | Validação avançada final do diff × plano × regras. |
-| `omega5p-avaliador` | **VETO** | Avaliador bloqueante da rodada Ω5P (Seção 10 + invariantes I1-I10). |
 | `avaliador-mapas` | **VETO** | Revisa qualquer diff de mapa/geo antes do merge. |
 | `critico-adversarial` | ataque | Ataca o plano antes do código; reabre a premissa nos ciclos 4–5. |
 | `coordenador-de-acessos` | **VETO** | Cadeia completa de acesso (papel→permissão→menu→rota→backend), RBAC, SoD. |
@@ -76,6 +75,18 @@ Fluxo obrigatório:
 | `inspetor-de-arnes-concorrente` | **VETO** | Corrida de catálogo do Postgres em arnês de teste (role/schema sob paralelismo), denominador que varia, lixo com privilégio. **Achador/votante: não escreve a correção.** |
 | `guardiao-fail-closed` | **VETO** | Enumeração de segurança fail-closed — prova POR MUTAÇÃO se o membro não previsto nasce permitido e se a omissão quebra o build. **Achador/votante: não escreve a correção.** |
 | `porteiro-pos-merge` | **VETO pré-merge** | Nome técnico legado; agente independente Sol/ultra que autoriza somente o PR/head exatos. |
+
+### Especialistas do protocolo de reprovação (`especialistas/`)
+Criados pela `agente-fabrica` nos ciclos 1–2 (§C7.4) e espelhados na subpasta `especialistas/` dos dois lados.
+| Papel | Poder | Função |
+|---|---|---|
+| `guardiao-enforcement-github-porteiro` | **VETO** | Prova, sem alterar estado, se a autorização do porteiro é condição técnica não contornável do merge para o PR e os SHAs exatos. **Achador/votante: não escreve a correção.** |
+| `guardiao-interoperabilidade-modelos-claude-codex` | **VETO** | Prova se modelo e esforço são válidos e efetivamente aplicados nos dois ambientes, sem virar padrão global. **Achador/votante: não escreve a correção.** |
+
+### Fechamento pós-merge (não vota)
+| Papel | Função |
+|---|---|
+| `executor-pos-merge` | Backfill de `pr`/`merge_commit`/`approved_head`, reconciliação factual, limpeza §C5 e compactação, depois do merge confirmado (§C2.10). Não reabre mérito e não autoriza nada. |
 
 ### Segurança / banco / infra / custo
 | Papel | Poder | Função |
