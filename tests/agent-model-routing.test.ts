@@ -384,3 +384,63 @@ test('F-F — a prosa do papel e do índice chama os campos de DECLARAÇÃO, nun
     }
   }
 });
+
+// ===== D-2 — política de EOL escopada + guard de CR (veredito do planejador, adendo do plano) =====
+//
+// O `--check` do espelho compara BYTE A BYTE — é essa a propriedade que faz a mutação "aprove
+// sempre" ficar vermelha. Sem política de materialização declarada, o MESMO conteúdo fica verde num
+// arranjo e vermelho noutro. Afrouxar o comparador para tolerar EOL reintroduziria divergência
+// invisível justamente onde a propriedade é "qualquer byte fica vermelho"; a correção ataca a causa
+// (`.gitattributes` escopado) e o guard abaixo torna a propriedade INDEPENDENTE da materialização.
+// A política de EOL do repositório inteiro segue pendente: `P-EOL-POLITICA-GLOBAL`.
+const ARVORES_ESPELHADAS = ['.claude/agents', '.agents/agents', '.claude/skills', '.agents/skills'];
+
+/** Todos os arquivos (qualquer extensão) sob `base`, em caminho relativo posix e ordenados. */
+function todosOsArquivos(base) {
+  const out = [];
+  for (const e of readdirSync(base, { withFileTypes: true })) {
+    if (e.isDirectory()) out.push(...todosOsArquivos(join(base, e.name)).map((p) => `${e.name}/${p}`));
+    else out.push(e.name);
+  }
+  return out.sort();
+}
+
+/** Arquivos das quatro árvores espelhadas que contêm byte CR (0x0D). */
+function arquivosComCR(root) {
+  const out = [];
+  for (const arvore of ARVORES_ESPELHADAS) {
+    const base = join(root, arvore);
+    if (!existsSync(base)) continue;
+    for (const rel of todosOsArquivos(base)) {
+      if (readFileSync(join(base, rel)).includes(0x0d)) out.push(`${arvore}/${rel}`);
+    }
+  }
+  return out;
+}
+
+test('D-2 — `.gitattributes` declara `text eol=lf` para as quatro árvores espelhadas', () => {
+  const attrs = readFileSync('.gitattributes', 'utf8').replace(/\r\n/g, '\n');
+  for (const arvore of ARVORES_ESPELHADAS) {
+    assert.match(attrs, new RegExp(`^${arvore.replace(/\./g, '\\.')}/\\*\\*\\s+text eol=lf$`, 'm'),
+      `.gitattributes não fixa "text eol=lf" para ${arvore}/**`);
+  }
+  // A pendência global tem de continuar NOMEADA: o escopo é declarado, não escondido.
+  assert.match(attrs, /P-EOL-POLITICA-GLOBAL/);
+});
+
+test('D-2 — nenhum arquivo das quatro árvores espelhadas contém byte CR', () => {
+  assert.deepEqual(arquivosComCR('.'), []);
+});
+
+test('D-2 — mutação: um CRLF num espelho fica VERMELHO, seja qual for a materialização', () => {
+  const root = fixture(true);
+  try {
+    assert.deepEqual(arquivosComCR(root), [], 'fixture deveria nascer sem CR');
+    const alvo = join(root, '.agents/agents/validador-mestre.md');
+    writeFileSync(alvo, readFileSync(alvo, 'utf8').replace(/\n/g, '\r\n'));
+    assert.deepEqual(arquivosComCR(root), ['.agents/agents/validador-mestre.md']);
+    // E o comparador byte a byte do espelho continua fazendo o seu trabalho sobre o mesmo arquivo.
+    const r = run(root, 'sync-agent-agents.mjs', '--check');
+    assert.equal(r.status, 1, 'espelho materializado com CRLF tem de reprovar o --check');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

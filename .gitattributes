@@ -1,0 +1,24 @@
+# Política de fim de linha ESCOPADA às quatro árvores espelhadas.
+#
+# Origem: veredito D-2 do planejador no ciclo 2 da reprovação GOV-PORTEIRO-PRE-MERGE
+# (`agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo2-plano-v1.md`, adendo).
+#
+# Por quê: o `--check` de `scripts/sync-agent-agents.mjs` compara os espelhos BYTE A BYTE — é essa a
+# propriedade que faz uma mutação de "aprove sempre" ficar vermelha. Sem política de materialização
+# declarada, o MESMO conteúdo fica verde num arranjo e vermelho noutro (medido: blob cru -> verde;
+# `git archive` com `core.autocrlf=true` -> divergente). Afrouxar o comparador para tolerar EOL
+# reintroduziria divergência invisível no exato lugar cuja propriedade é "qualquer byte fica
+# vermelho". A correção ataca a CAUSA — a política indeclarada — e não o medidor.
+#
+# O guard que fecha o laço é executável: `tests/agent-model-routing.test.ts` afirma que nenhum
+# arquivo destas árvores contém byte CR, com prova por mutação em fixture. Sem ele, este arquivo
+# seria mais uma afirmação sem execução.
+#
+# ESCOPO: só as quatro árvores abaixo. A política de EOL do repositório INTEIRO segue PENDENTE —
+# `P-EOL-POLITICA-GLOBAL` em `agent-orchestration/controle/pendencias.md`, com o risco declarado.
+# Renormalizar globalmente tocaria centenas de arquivos fora desta governança e não passaria no
+# guard de allowlist.
+.claude/agents/**  text eol=lf
+.agents/agents/**  text eol=lf
+.claude/skills/**  text eol=lf
+.agents/skills/**  text eol=lf
