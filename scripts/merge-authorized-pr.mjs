@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildSnapshot, verifyAttestation } from './porteiro-pre-merge.mjs';
+import { buildSnapshot, verifyAttestation, assertIndependent } from './porteiro-pre-merge.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const CONTEXT = 'erp/porteiro-pre-merge';
@@ -21,7 +21,8 @@ export function assertMergeCandidate({ snapshot, currentSnapshot, attestation, s
   verifyAttestation(snapshot, attestation);
   if (!status || status.context !== CONTEXT || status.state !== 'success') fail('status requerido não está verde');
   if (status.target_url !== comment.html_url) fail('status não aponta para o permalink do atestado');
-  if (!mergeAgentId || mergeAgentId === attestation.agentId || attestation.independentOf?.includes(mergeAgentId)) fail('executor de merge não é independente');
+  if (mergeAgentId === attestation.agentId) fail('executor de merge não é independente: mesma identidade do porteiro');
+  assertIndependent(snapshot, mergeAgentId, 'executor do merge');
   return true;
 }
 

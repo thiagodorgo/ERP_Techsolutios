@@ -3,10 +3,12 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { validateJunta, juntaIdentities } from './porteiro-pre-merge.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const arg=(n,d)=>{const i=process.argv.indexOf(n);return i>=0?process.argv[i+1]:d;};
 const fail=(m)=>{throw new Error(m);};
+const nonEmpty=(v)=>typeof v==='string'&&v.trim()!=='';
 const gh=(a,input=undefined)=>JSON.parse(execFileSync('gh',a,{cwd:ROOT,input,encoding:'utf8',stdio:['pipe','pipe','pipe']}));
 const canonical=(v)=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const hash=(v)=>createHash('sha256').update(JSON.stringify(canonical(v))).digest('hex');
@@ -20,11 +22,16 @@ function assertDesired(desired){
   for(const c of status.required_status_checks||[])if(!Number.isInteger(c.integration_id)||c.integration_id<=0)fail(`fonte confiável não resolvida: ${c.context}`);
   for(const t of ['deletion','non_fast_forward','pull_request'])if(!desired.rules.some(r=>r.type===t))fail(`regra obrigatória ausente: ${t}`);
 }
-function assertJunta(path,executor){
-  const j=JSON.parse(readFileSync(path,'utf8')); const voters=(j.votes||[]).filter(v=>v.vote==='APROVADO').map(v=>v.agentId);
-  if(j.marker!=='erp-junta-attestation:v1'||j.result!=='APROVADO'||voters.length!==5||new Set(voters).size!==5)fail('apply/rollback exige junta crítica unânime 5/5');
-  const roles=[j.origin,j.planner,j.developer,...voters,executor].filter(Boolean); if(new Set(roles).size!==roles.length)fail('executor/bootstrap acumulou alçada');
+export function assertJuntaCritica(j,executor){
+  validateJunta(j);
+  if(j.critical!==true)fail('bootstrap do ruleset é decisão crítica: a junta precisa declarar critical:true');
+  if(j.votes.length!==5)fail('apply/rollback exige junta crítica unânime 5/5');
+  if(!nonEmpty(executor))fail('--executor (identidade do bootstrap) é obrigatório');
+  const roles=[...juntaIdentities(j).map(x=>x.agentId),executor];
+  if(new Set(roles).size!==roles.length)fail('executor/bootstrap acumulou alçada');
+  return true;
 }
+function assertJunta(path,executor){ return assertJuntaCritica(JSON.parse(readFileSync(path,'utf8')),executor); }
 function sources(repo,head){
   const runs=gh(['api',`repos/${repo}/commits/${head}/check-runs?filter=latest&per_page=100`]).check_runs||[];
   const statuses=gh(['api',`repos/${repo}/commits/${head}/status`]).statuses||[];
@@ -52,4 +59,6 @@ async function rollback(){
   for(const prior of p.preState){const payload={...prior};for(const k of ['id','node_id','source_type','source','created_at','updated_at','_links'])delete payload[k];gh(['api','-X','POST',`repos/${p.repo}/rulesets`,'--input','-'],JSON.stringify(payload));}
   const reread=gh(['api',`repos/${p.repo}/rulesets?includes_parents=true`]);if(hash(reread)!==p.preStateSha256)fail('rollback não reproduziu pre-state; main permanece bloqueada');console.log('rollback: pre-state restaurado e relido');
 }
-const cmd=process.argv[2];Promise.resolve(cmd==='plan'?plan():cmd==='apply'?apply():cmd==='rollback'?rollback():fail('comando: plan|apply|rollback')).catch(e=>{console.error(`configure-main-ruleset: ${e.message}`);process.exitCode=1;});
+// Só despacha quando executado direto: importar o módulo (teste/guard) não pode disparar CLI.
+const direct=process.argv[1]&&fileURLToPath(import.meta.url)===fileURLToPath(new URL(`file:///${process.argv[1].replace(/\\/g,'/')}`));
+if(direct){const cmd=process.argv[2];Promise.resolve(cmd==='plan'?plan():cmd==='apply'?apply():cmd==='rollback'?rollback():fail('comando: plan|apply|rollback')).catch(e=>{console.error(`configure-main-ruleset: ${e.message}`);process.exitCode=1;});}

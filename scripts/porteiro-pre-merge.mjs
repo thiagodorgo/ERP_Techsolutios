@@ -16,6 +16,7 @@ export function canonical(value) {
 }
 export const digest = (value) => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(canonical(value))).digest('hex');
 const fail = (message) => { throw new Error(message); };
+const nonEmpty = (value) => typeof value === 'string' && value.trim() !== '';
 const arg = (name, fallback = undefined) => { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] : fallback; };
 const gh = (args, input = undefined) => JSON.parse(execFileSync('gh', args, { cwd: ROOT, input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }));
 const repoFromGh = () => gh(['repo', 'view', '--json', 'nameWithOwner']).nameWithOwner;
@@ -36,14 +37,47 @@ function requiredChecks(rulesets) {
   return required.sort((a, b) => `${a.context}:${a.appId}`.localeCompare(`${b.context}:${b.appId}`));
 }
 
-function validateJunta(junta) {
+// Conjunto canônico de alçadas ocupadas pela junta. NÃO usa `.filter(Boolean)`: alçada omitida é
+// erro (validateJunta), nunca colisão apagada em silêncio. Esta lista vai para o snapshot e é a
+// única fonte de verdade de independência — o porteiro deixou de declarar a própria independência.
+export function juntaIdentities(junta) {
+  const entries = [
+    ['origin', junta?.origin], ['planner', junta?.planner], ['developer', junta?.developer],
+    ...(junta?.fabrica ? [['fabrica', junta.fabrica]] : []),
+    ...(Array.isArray(junta?.votes) ? junta.votes.map((v, i) => [`vote:${String(i).padStart(2, '0')}`, v?.agentId]) : []),
+  ];
+  return entries
+    .map(([role, agentId]) => ({ role, agentId: typeof agentId === 'string' ? agentId : null }))
+    .sort((a, b) => `${a.role} ${a.agentId}`.localeCompare(`${b.role} ${b.agentId}`));
+}
+
+export function validateJunta(junta) {
   if (!junta || junta.marker !== 'erp-junta-attestation:v1') fail('junta externa v1 ausente');
   if (junta.result !== 'APROVADO') fail('junta não aprovada');
+  for (const role of ['origin', 'planner', 'developer']) {
+    if (!nonEmpty(junta[role])) fail(`alçada obrigatória da junta ausente ou vazia: ${role}`);
+  }
+  if (!Object.prototype.hasOwnProperty.call(junta, 'fabrica')) fail('campo fabrica obrigatório na junta (null quando não houve fábrica)');
+  if (junta.fabrica !== null && !nonEmpty(junta.fabrica)) fail('fabrica precisa ser null ou identidade não vazia');
+  if (typeof junta.critical !== 'boolean') fail('campo critical booleano é obrigatório na junta');
   if (!Array.isArray(junta.votes) || junta.votes.length < 3) fail('junta tem menos de três votos');
-  if (junta.votes.some((v) => v.vote !== 'APROVADO' || !v.agentId)) fail('voto ausente ou não aprovado');
-  const all = [junta.origin, junta.planner, junta.developer, ...junta.votes.map((v) => v.agentId)].filter(Boolean);
-  if (new Set(all).size !== all.length) fail('identidade repetida em alçadas incompatíveis da junta');
+  if (junta.votes.some((v) => !v || v.vote !== 'APROVADO' || !nonEmpty(v.agentId))) fail('voto ausente ou não aprovado');
+  if (junta.critical && junta.votes.length < 5) fail('decisão crítica exige cinco votantes distintos e unânimes');
+  const ids = juntaIdentities(junta).map((x) => x.agentId);
+  if (ids.some((x) => !nonEmpty(x))) fail('identidade vazia em alçada da junta');
+  if (new Set(ids).size !== ids.length) fail('identidade repetida em alçadas incompatíveis da junta');
   return canonical(junta);
+}
+
+// Limite admitido por escrito: identidades são DECLARADAS. Este cruzamento pega colisão e omissão;
+// NÃO pega pseudônimo (o mesmo agente reaparecendo com outro nome). A ata é o controle compensatório.
+export function assertIndependent(snapshot, agentId, papel) {
+  const identities = snapshot?.junta?.identities;
+  if (!Array.isArray(identities) || identities.length === 0) fail('snapshot sem as identidades canônicas da junta');
+  if (!nonEmpty(agentId)) fail(`${papel} sem identidade declarada`);
+  const collision = identities.find((x) => x.agentId === agentId);
+  if (collision) fail(`${papel} ocupou a alçada ${collision.role} da junta; independência não comprovada`);
+  return true;
 }
 
 export function buildSnapshot(state) {
@@ -66,7 +100,7 @@ export function buildSnapshot(state) {
     head: { ref: pr.head.ref, oid: pr.head.sha }, base: { ref: pr.base.ref, oid: pr.base.sha },
     bodySha256: digest(pr.body || ''), checks, requiredChecks: required,
     ruleset: { ids: rulesets.map((r) => r.id), sha256: digest(rulesets) },
-    junta: { sha256: digest(junta), blobOid: state.juntaBlobOid || null },
+    junta: { sha256: digest(junta), identities: juntaIdentities(junta), blobOid: state.juntaBlobOid || null },
   };
   return { ...snapshot, snapshotSha256: digest(snapshot) };
 }
@@ -78,16 +112,17 @@ function parseAttestationBody(body) {
 }
 
 export function verifyAttestation(snapshot, attestation) {
-  const allowed = ['schema','verdict','repo','pr','head','snapshotSha256','agentId','role','runtime','model','reasoningEffort','independentOf','commands','snapshot'];
-  const unknown = Object.keys(attestation).filter((k) => !allowed.includes(k));
-  if (unknown.length) fail(`campo desconhecido no atestado: ${unknown.join(',')}`);
   const literal = `LIBERADO: merge do PR #${snapshot.pr} no head ${snapshot.head.oid}`;
   if (attestation.schema !== 'erp-porteiro-attestation:v1' || attestation.verdict !== literal) fail('veredito não é a liberação literal exata');
+  // `independentOf` saiu do schema: era a lista que o próprio porteiro escrevia sobre si mesmo.
+  const allowed = ['schema','verdict','repo','pr','head','snapshotSha256','agentId','role','runtime','model','reasoningEffort','commands','snapshot'];
+  const unknown = Object.keys(attestation).filter((k) => !allowed.includes(k));
+  if (unknown.length) fail(`campo desconhecido no atestado: ${unknown.join(',')}`);
   if (attestation.repo !== snapshot.repo || attestation.pr !== snapshot.pr || attestation.head !== snapshot.head.oid) fail('atestado não pertence ao PR/head/repo');
   if (attestation.snapshotSha256 !== snapshot.snapshotSha256) fail('atestado pertence a snapshot diferente');
   if (!SHA40.test(attestation.head)) fail('SHA abreviado não é aceito');
   if (attestation.role !== 'porteiro-pos-merge' || attestation.runtime !== 'codex' || attestation.model !== 'gpt-5.6-sol' || attestation.reasoningEffort !== 'ultra') fail('recibo Codex Sol/ultra inválido');
-  if (!attestation.agentId || !Array.isArray(attestation.independentOf) || attestation.independentOf.includes(attestation.agentId)) fail('independência do porteiro não comprovada');
+  assertIndependent(snapshot, attestation.agentId, 'porteiro pré-merge');
   if (!Array.isArray(attestation.commands) || attestation.commands.length === 0) fail('atestado sem comandos reexecutados');
   return true;
 }
