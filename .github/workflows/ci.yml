@@ -77,6 +77,16 @@ jobs:
       - name: TypeScript check
         run: npm run check
 
+      # GOVERNANÇA (ciclo 2 da reprovação GOV-PORTEIRO-PRE-MERGE — F-B). Step NOMEADO dentro de um
+      # job JÁ REQUERIDO (não cria contexto novo). O único enforcement das leis de junta/espelho
+      # dependia de `rg` (ausente na máquina do dono) e não tinha step próprio na CI: quebrava com
+      # ENOENT e ninguém via. Tudo aqui roda em Node puro + o que o package.json declara.
+      - name: Governança (roteamento de modelo, espelhos Claude/Codex)
+        run: |
+          npm run governance:check
+          node scripts/sync-agent-agents.mjs --check
+          node scripts/sync-agent-skills.mjs --check
+
       - name: Tests
         run: npm test
 
