@@ -8,6 +8,11 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const MARKER = 'erp-porteiro-attestation:v1';
 const CONTEXT = 'erp/porteiro-pre-merge';
 const SHA40 = /^[0-9a-f]{40}$/;
+// Evidencia de reexecucao conferivel: o blob deste arquivo NO HEAD. O gate confere o digest contra
+// o blob real via API — um porteiro que nao olhou o head nao tem como produzi-lo por conta propria.
+const KPI_LATEST_PATH = 'Kpis/kpis-latest.json';
+// Vereditos que NAO autorizam merge. Existem para deixar RASTRO EXTERNO do "nao".
+const VEREDITOS_NEGATIVOS = ['BLOQUEADO', 'RESSALVA'];
 
 export function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -121,6 +126,8 @@ export function buildSnapshot(state) {
   // for a base do PR, o ruleset "da default" não protege nada aqui — fail-closed.
   if (!nonEmpty(state.defaultBranch)) fail('branch default do repositório é obrigatória no estado observado');
   if (state.defaultBranch !== pr.base.ref) fail(`branch default (${state.defaultBranch}) não é a base do PR (${pr.base.ref})`);
+  // Evidência de reexecução: sem o blob do head não há o que o atestado possa provar.
+  if (!SHA40.test(state.kpiLatestBlobSha || '')) fail(`blob SHA de ${KPI_LATEST_PATH} no head é obrigatório no estado observado`);
   const required = requiredChecks(state.rulesets || [], state.defaultBranch);
   const checks = (state.checks || []).filter((c) => c.context !== CONTEXT).map((c) => ({
     context: c.context, appId: c.appId ?? null, conclusion: c.conclusion, detailsUrl: c.detailsUrl || null,
@@ -138,6 +145,7 @@ export function buildSnapshot(state) {
     bodySha256: digest(pr.body || ''), checks, requiredChecks: required,
     ruleset: { ids: rulesets.map((r) => r.id), sha256: digest(rulesets) },
     junta: { sha256: digest(junta), identities: juntaIdentities(junta), blobOid: state.juntaBlobOid || null },
+    evidence: { kpiLatestBlobSha: state.kpiLatestBlobSha },
   };
   return { ...snapshot, snapshotSha256: digest(snapshot) };
 }
@@ -152,16 +160,53 @@ export function verifyAttestation(snapshot, attestation) {
   const literal = `LIBERADO: merge do PR #${snapshot.pr} no head ${snapshot.head.oid}`;
   if (attestation.schema !== 'erp-porteiro-attestation:v1' || attestation.verdict !== literal) fail('veredito não é a liberação literal exata');
   // `independentOf` saiu do schema: era a lista que o próprio porteiro escrevia sobre si mesmo.
-  const allowed = ['schema','verdict','repo','pr','head','snapshotSha256','agentId','role','runtime','model','reasoningEffort','commands','snapshot'];
+  const allowed = ['schema','verdict','repo','pr','head','snapshotSha256','agentId','role','runtime','model','reasoningEffort','commands','evidence','snapshot'];
   const unknown = Object.keys(attestation).filter((k) => !allowed.includes(k));
   if (unknown.length) fail(`campo desconhecido no atestado: ${unknown.join(',')}`);
   if (attestation.repo !== snapshot.repo || attestation.pr !== snapshot.pr || attestation.head !== snapshot.head.oid) fail('atestado não pertence ao PR/head/repo');
   if (attestation.snapshotSha256 !== snapshot.snapshotSha256) fail('atestado pertence a snapshot diferente');
   if (!SHA40.test(attestation.head)) fail('SHA abreviado não é aceito');
-  if (attestation.role !== 'porteiro-pos-merge' || attestation.runtime !== 'codex' || attestation.model !== 'gpt-5.6-sol' || attestation.reasoningEffort !== 'ultra') fail('recibo Codex Sol/ultra inválido');
+  // DECLARACAO DE INVOCACAO — nao e recibo nem prova. Estes tres campos sao auto-escritos e a
+  // decisao do dono (D-PORTEIRO-PRE-MERGE) os torna obrigatorios com estes valores exatos.
+  // Falsear a declaracao e violacao nomeada da decisao do dono, detectavel so a posteriori.
+  // A PROVA conferivel deste atestado e outra: `evidence` + `commands`, logo abaixo.
+  if (attestation.role !== 'porteiro-pos-merge' || attestation.runtime !== 'codex' || attestation.model !== 'gpt-5.6-sol' || attestation.reasoningEffort !== 'ultra') fail('declaração de invocação fora da decisão do dono (D-PORTEIRO-PRE-MERGE)');
   assertIndependent(snapshot, attestation.agentId, 'porteiro pré-merge');
   if (!Array.isArray(attestation.commands) || attestation.commands.length === 0) fail('atestado sem comandos reexecutados');
+  for (const c of attestation.commands) {
+    if (!c || typeof c !== 'object' || Array.isArray(c)) fail('cada comando reexecutado precisa ser um objeto {cmd, exitCode}');
+    const extra = Object.keys(c).filter((k) => !['cmd', 'exitCode'].includes(k));
+    if (extra.length) fail(`campo desconhecido em comando reexecutado: ${extra.join(',')}`);
+    if (!nonEmpty(c.cmd)) fail('comando reexecutado sem `cmd`');
+    if (c.exitCode !== 0) fail(`comando reexecutado não terminou em 0: ${c.cmd} (exitCode ${c.exitCode})`);
+  }
+  const esperado = snapshot?.evidence?.kpiLatestBlobSha;
+  if (!SHA40.test(esperado || '')) fail(`snapshot sem o digest de ${KPI_LATEST_PATH} no head`);
+  const evidence = attestation.evidence;
+  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) fail('atestado sem evidência de reexecução conferível');
+  const sobra = Object.keys(evidence).filter((k) => k !== 'kpiLatestBlobSha');
+  if (sobra.length) fail(`campo desconhecido em evidence: ${sobra.join(',')}`);
+  if (evidence.kpiLatestBlobSha !== esperado) fail(`evidência de reexecução divergente do head: ${KPI_LATEST_PATH}`);
   return true;
+}
+
+// Veredicto negativo: mesmo marcador do atestado, para SOMBREAR qualquer liberacao anterior no PR
+// (o consumidor le sempre o ULTIMO comentario marcado). `verifyAttestation` o recusa por desenho.
+export function buildNegativeVerdict({ verdict, repo, pr, head, agentId, reason }) {
+  if (!VEREDITOS_NEGATIVOS.includes(verdict)) fail(`--verdict aceita apenas ${VEREDITOS_NEGATIVOS.join('|')}`);
+  if (!nonEmpty(repo)) fail('repositório é obrigatório no veredicto negativo');
+  if (!Number.isInteger(pr) || pr <= 0) fail('--pr inteiro positivo é obrigatório');
+  if (!SHA40.test(head || '')) fail('--head SHA40 completo é obrigatório');
+  if (!nonEmpty(agentId)) fail('--agent (identidade do porteiro) é obrigatório');
+  if (!nonEmpty(reason)) fail('--reason é obrigatório: veredicto negativo precisa nomear a propriedade violada');
+  const literal = verdict === 'BLOQUEADO'
+    ? `BLOQUEADO: merge do PR #${pr} no head ${head}`
+    : `LIBERADO COM RESSALVA: merge do PR #${pr} no head ${head}`;
+  return {
+    schema: 'erp-porteiro-attestation:v1', verdict: literal, autoriza: false,
+    repo, pr, head, agentId, role: 'porteiro-pos-merge',
+    runtime: 'codex', model: 'gpt-5.6-sol', reasoningEffort: 'ultra', reason,
+  };
 }
 
 async function liveState(prNumber) {
@@ -175,11 +220,12 @@ async function liveState(prNumber) {
     ...(checksRaw.check_runs || []).map((c) => ({ context: c.name, appId: c.app?.id ?? null, conclusion: c.conclusion, detailsUrl: c.html_url })),
     ...statuses.map((s) => ({ context: s.context, appId: s.creator?.type === 'Bot' ? s.creator?.id ?? null : null, conclusion: s.state === 'success' ? 'success' : s.state, detailsUrl: s.target_url })),
   ];
+  const kpiLatestBlobSha = gh(['api', `repos/${repo}/contents/${KPI_LATEST_PATH}?ref=${pr.head.sha}`]).sha;
   const comments = gh(['api', `repos/${repo}/issues/${prNumber}/comments?per_page=100`]);
   const juntaComment = [...comments].reverse().find((c) => String(c.body).includes('erp-junta-attestation:v1'));
   if (!juntaComment) fail('comentário externo da junta ausente');
   return {
-    repo, defaultBranch,
+    repo, defaultBranch, kpiLatestBlobSha,
     pr: { number: pr.number, state: pr.state, draft: pr.draft, body: pr.body || '', head: { ref: pr.head.ref, sha: pr.head.sha }, base: { ref: pr.base.ref, sha: pr.base.sha } },
     rulesets, checks, junta: parseAttestationBody(juntaComment.body), juntaBlobOid: arg('--junta-blob'), comments,
   };
@@ -191,7 +237,23 @@ async function snapshotCommand() {
   process.stdout.write(`${JSON.stringify(buildSnapshot(state), null, 2)}\n`);
 }
 
+// `publish --verdict BLOQUEADO|RESSALVA`: veredicto negativo deixa rastro EXTERNO (comentario
+// marcado + check-run `failure`). Nao exige app id esperado: um `failure` nunca autoriza nada.
+async function publishNegativeCommand(verdict) {
+  if (arg('--state')) fail('publish não aceita fixture');
+  const { repo } = repoContext();
+  const payload = buildNegativeVerdict({ verdict, repo, pr: Number(arg('--pr')), head: arg('--head'), agentId: arg('--agent'), reason: arg('--reason') });
+  const body = `${MARKER}
+${JSON.stringify(payload)}`;
+  const comment = gh(['api', '-X', 'POST', `repos/${repo}/issues/${payload.pr}/comments`, '-f', `body=${body}`]);
+  const checkInput = JSON.stringify({ name: CONTEXT, head_sha: payload.head, status: 'completed', conclusion: 'failure', details_url: comment.html_url, output: { title: `${verdict} PR #${payload.pr}`, summary: payload.reason } });
+  gh(['api', '-X', 'POST', `repos/${repo}/check-runs`, '--input', '-'], checkInput);
+  console.log(JSON.stringify({ ok: true, verdict, autoriza: false, pr: payload.pr, head: payload.head, permalink: comment.html_url }));
+}
+
 async function publishCommand() {
+  const negativo = arg('--verdict');
+  if (negativo !== undefined) return publishNegativeCommand(negativo);
   if (arg('--state')) fail('publish não aceita fixture');
   const snapshot = JSON.parse(readFileSync(arg('--snapshot'), 'utf8'));
   const attestation = JSON.parse(readFileSync(arg('--attestation'), 'utf8'));
@@ -234,5 +296,5 @@ if (direct) {
   const command = process.argv[2];
   Promise.resolve(command === 'snapshot' ? snapshotCommand() : command === 'verify' ? (() => {
     const s = JSON.parse(readFileSync(arg('--snapshot'), 'utf8')); const a = JSON.parse(readFileSync(arg('--attestation'), 'utf8')); verifyAttestation(s,a); console.log('attestation: OK');
-  })() : command === 'publish' ? publishCommand() : command === 'guard-allowlist' ? allowlistCommand() : fail('comando: snapshot|verify|publish|guard-allowlist')).catch((e) => { console.error(`porteiro-pre-merge: ${e.message}`); process.exitCode = 1; });
+  })() : command === 'publish' ? publishCommand() : command === 'guard-allowlist' ? allowlistCommand() : fail('comando: snapshot|verify|publish [--verdict BLOQUEADO|RESSALVA]|guard-allowlist')).catch((e) => { console.error(`porteiro-pre-merge: ${e.message}`); process.exitCode = 1; });
 }

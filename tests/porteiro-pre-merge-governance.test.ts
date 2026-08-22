@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault } from '../scripts/porteiro-pre-merge.mjs';
+import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict } from '../scripts/porteiro-pre-merge.mjs';
 import { assertMergeCandidate } from '../scripts/merge-authorized-pr.mjs';
 import { validateFinalization } from '../scripts/post-merge-finalize.mjs';
 import { assertJuntaCritica } from '../scripts/configure-main-ruleset.mjs';
@@ -13,11 +13,12 @@ const ruleset=():any=>({id:1,name:'main',target:'branch',enforcement:'active',by
     {type:'required_status_checks',parameters:{strict_required_status_checks_policy:true,required_status_checks:[{context:'ci',integration_id:10},{context:'erp/porteiro-pre-merge',integration_id:20}]}}]});
 const junta=():any=>({marker:'erp-junta-attestation:v1',result:'APROVADO',critical:false,fabrica:null,origin:'owner',planner:'planner',developer:'dev',
   votes:[{agentId:'r1',vote:'APROVADO'},{agentId:'r2',vote:'APROVADO'},{agentId:'r3',vote:'APROVADO'}]});
-const state=():any=>({repo:'acme/erp',defaultBranch:'main',
+const KPI='1'.repeat(40);
+const state=():any=>({repo:'acme/erp',defaultBranch:'main',kpiLatestBlobSha:KPI,
   pr:{number:9,state:'open',draft:false,body:'escopo',head:{ref:'feat/x',sha:H},base:{ref:'main',sha:B}},
   rulesets:[ruleset()],checks:[{context:'ci',appId:10,conclusion:'success',detailsUrl:'https://ci'}],junta:junta(),juntaBlobOid:'c'.repeat(40)});
 const att=(s:any):any=>({schema:'erp-porteiro-attestation:v1',verdict:`LIBERADO: merge do PR #9 no head ${H}`,repo:'acme/erp',pr:9,head:H,snapshotSha256:s.snapshotSha256,
-  agentId:'porter',role:'porteiro-pos-merge',runtime:'codex',model:'gpt-5.6-sol',reasoningEffort:'ultra',commands:['npm test']});
+  agentId:'porter',role:'porteiro-pos-merge',runtime:'codex',model:'gpt-5.6-sol',reasoningEffort:'ultra',commands:[{cmd:'npm test',exitCode:0}],evidence:{kpiLatestBlobSha:KPI}});
 const mergedPr=():any=>({number:9,merged:true,merge_commit_sha:'f'.repeat(40),base:{ref:'main'},head:{sha:H}});
 const cas=(s:any,a:any,mergeAgentId:string)=>{const c={html_url:'https://gh/comment/1'};
   return assertMergeCandidate({snapshot:s,currentSnapshot:s,attestation:a,status:{context:'erp/porteiro-pre-merge',state:'success',target_url:c.html_url},comment:c,expectedHead:H,mergeAgentId});};
@@ -73,3 +74,21 @@ test('F-D mut.4 — appId nunca é curinga: check verde de outra fonte não sati
 test('F-D mut.5 — o workflow NÃO deriva a fonte esperada do próprio run',()=>{const y=readFileSync('.github/workflows/porteiro-pre-merge.yml','utf8');assert.doesNotMatch(y,/source_id\s*=/);assert.doesNotMatch(y,/\.app\.id/);assert.doesNotMatch(y,/ERP_PORTEIRO_EXPECTED_APP_ID\s*[:=]\s*"?\$/);assert.match(y,/ERP_PORTEIRO_EXPECTED_APP_ID:\s*(''|\d+)\s*$/m);assert.match(y,/PENDENTE DE PD/);assert.match(y,/if \[ -z "\$\{ERP_PORTEIRO_EXPECTED_APP_ID\}" \]/);assert.match(y,/falha FECHADO/);});
 
 test('F-D — branch default é obrigatória, tem de ser a base do PR e o template se aplica a ela',()=>{const semDefault=state();delete semDefault.defaultBranch;assert.throws(()=>buildSnapshot(semDefault),/branch default do repositório é obrigatória/);const outra=state();outra.defaultBranch='develop';assert.throws(()=>buildSnapshot(outra),/não é a base do PR/);assert.equal(buildSnapshot(state()).defaultBranch,'main');const tpl=JSON.parse(readFileSync('.github/rulesets/main.template.json','utf8'));assert.equal(aplicaSeABranchDefault(tpl,'main'),true);for(const tipo of ['pull_request','deletion','non_fast_forward'])assert.ok(tpl.rules.some((r:any)=>r.type===tipo),`template sem regra ${tipo}`);});
+
+// ---------------------------------------------------------------------------
+// F-E — atestado sem teatro: nenhum campo auto-escrito é tratado como prova
+// ---------------------------------------------------------------------------
+
+test('F-E mut.1 — EXPLOIT DO CICLO: LIBERADO forjado por `node -e`, sem evidência do head, é VERMELHO',()=>{const s=buildSnapshot(state());const forjado:any={schema:'erp-porteiro-attestation:v1',verdict:`LIBERADO: merge do PR #9 no head ${H}`,repo:'acme/erp',pr:9,head:H,snapshotSha256:s.snapshotSha256,agentId:'forjador',role:'porteiro-pos-merge',runtime:'codex',model:'gpt-5.6-sol',reasoningEffort:'ultra',commands:[{cmd:'fingi que rodei',exitCode:0}]};assert.throws(()=>verifyAttestation(s,forjado),/sem evidência de reexecução conferível/);const comIndependentOf:any={...forjado,independentOf:[]};assert.throws(()=>verifyAttestation(s,comIndependentOf),/campo desconhecido/);});
+
+test('F-E mut.2 — evidence divergente do blob do head não libera',()=>{const s=buildSnapshot(state());for(const v of ['9'.repeat(40),KPI.slice(0,12),'',null,undefined])assert.throws(()=>verifyAttestation(s,{...att(s),evidence:{kpiLatestBlobSha:v}}),/evidência de reexecução|divergente/);assert.throws(()=>verifyAttestation(s,{...att(s),evidence:{kpiLatestBlobSha:KPI,extra:1}}),/campo desconhecido em evidence/);const semNoSnapshot=buildSnapshot(state());delete semNoSnapshot.evidence;assert.throws(()=>verifyAttestation(semNoSnapshot,att(semNoSnapshot)),/snapshot sem o digest/);const semNoEstado=state();delete semNoEstado.kpiLatestBlobSha;assert.throws(()=>buildSnapshot(semNoEstado),/blob SHA de Kpis\/kpis-latest\.json/);});
+
+test('F-E mut.3 — comando sem cmd ou com exitCode diferente de 0 não libera',()=>{const s=buildSnapshot(state());for(const cmds of [[''],['npm test'],[{cmd:'npm test',exitCode:1}],[{cmd:'',exitCode:0}],[{cmd:'   ',exitCode:0}],[{exitCode:0}],[{cmd:'npm test'}],[{cmd:'npm test',exitCode:'0'}],[{cmd:'npm test',exitCode:0,fake:true}],[]])assert.throws(()=>verifyAttestation(s,{...att(s),commands:cmds}));assert.equal(verifyAttestation(s,{...att(s),commands:[{cmd:'npm test',exitCode:0},{cmd:'npm run check',exitCode:0}]}),true);});
+
+test('F-E — os três campos de declaração de invocação são obrigatórios e a mensagem NÃO os chama de prova',()=>{const s=buildSnapshot(state());for(const patch of [{runtime:'claude-code'},{model:'fable'},{reasoningEffort:'high'},{role:'planejador-mestre'}])assert.throws(()=>verifyAttestation(s,{...att(s),...patch}),/declaração de invocação fora da decisão do dono \(D-PORTEIRO-PRE-MERGE\)/);const fonte=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');assert.doesNotMatch(fonte,/recibo Codex/i,'a mensagem do gate nao pode chamar os campos declarados de recibo');assert.doesNotMatch(fonte,/fail\('[^']*recib/i,'nenhuma mensagem de erro pode nomear campo auto-escrito como recibo/prova');assert.match(fonte,/DECLARACAO DE INVOCACAO — nao e recibo nem prova/);});
+
+test('F-E — veredicto negativo deixa rastro externo e nunca autoriza',()=>{const s=buildSnapshot(state());for(const verdict of ['BLOQUEADO','RESSALVA']){const p=buildNegativeVerdict({verdict,repo:'acme/erp',pr:9,head:H,agentId:'porter',reason:'evidência do head divergente'});assert.equal(p.autoriza,false);assert.equal(p.schema,'erp-porteiro-attestation:v1');assert.match(p.verdict,verdict==='BLOQUEADO'?/^BLOQUEADO: merge do PR #9 no head /:/^LIBERADO COM RESSALVA: merge do PR #9 no head /);assert.throws(()=>verifyAttestation(s,p as any),/veredito não é a liberação literal exata/);}
+for(const bad of [{verdict:'LIBERADO'},{verdict:''},{pr:0},{head:H.slice(0,12)},{agentId:''},{reason:''}])assert.throws(()=>buildNegativeVerdict({verdict:'BLOQUEADO',repo:'acme/erp',pr:9,head:H,agentId:'porter',reason:'x',...bad} as any));
+const y=readFileSync('.github/workflows/porteiro-pre-merge.yml','utf8');assert.doesNotMatch(y,/conclusion:"success"/);});
+
+test('F-E — republicar até dar verde não passa: o status precisa apontar para o ÚLTIMO atestado',()=>{const s=buildSnapshot(state()),a=att(s);const antigo={html_url:'https://gh/comment/1'},atual={html_url:'https://gh/comment/2'};const status={context:'erp/porteiro-pre-merge',state:'success',target_url:antigo.html_url};assert.throws(()=>assertMergeCandidate({snapshot:s,currentSnapshot:s,attestation:a,status,comment:atual,expectedHead:H,mergeAgentId:'merger'}),/permalink/);assert.throws(()=>assertMergeCandidate({snapshot:s,currentSnapshot:s,attestation:a,status:{...status,state:'failure',target_url:atual.html_url},comment:atual,expectedHead:H,mergeAgentId:'merger'}),/status requerido não está verde/);const bloqueio=buildNegativeVerdict({verdict:'BLOQUEADO',repo:'acme/erp',pr:9,head:H,agentId:'porter2',reason:'regressão'});assert.throws(()=>assertMergeCandidate({snapshot:s,currentSnapshot:s,attestation:bloqueio as any,status:{...status,target_url:atual.html_url},comment:atual,expectedHead:H,mergeAgentId:'merger'}),/liberação literal exata/);});
