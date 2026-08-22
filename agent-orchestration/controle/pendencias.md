@@ -3002,3 +3002,38 @@ de arquivos fora do escopo desta governança e não passa no guard de allowlist.
 fica dependente de como a árvore foi materializada — verde num arranjo, vermelho noutro, pelo mesmo conteúdo.
 Foi assim que este defeito apareceu. O guard do ciclo 2 protege as quatro árvores espelhadas; o resto do
 repositório segue exposto.
+
+---
+
+## P-GOV-CODEOWNERS-WORKFLOWS — revisão obrigatória em `.github/workflows/` (2026-08-22) — DECISÃO DO DONO
+
+**Origem:** veredito D-5(a).4 do planejador do ciclo 2 da governança. O planejador **recusou decidir** e
+encaminhou ao dono, com o motivo abaixo. Não é decisão de agente.
+
+**O problema que este controle fecharia.** A `PD-GOV-PORTEIRO-APPID` estabeleceu que `check.app.id === 15368`
+prova "foi publicado pelo GitHub Actions" e **não** "foi publicado pelo job do porteiro": qualquer workflow do
+próprio repositório com permissão `checks: write` produz check-run com o mesmo app id. O pin fecha
+PAT/usuário, app de terceiro e outra integração; **não fecha um workflow acrescentado ou alterado dentro do
+próprio repositório**.
+
+**O que já fecha esse vetor sem decisão humana** (implementado neste ciclo): a **escalada por superfície de
+governança** — diff que toque `.github/workflows/**`, `.github/rulesets/**`, `.gitattributes`, os scripts do
+gate/sync, os testes de governança, os dois contratos ou as duas árvores de agente passa a exigir **junta
+crítica 5/5**. Como todo merge passa pelo mesmo gate, workflow malicioso não entra "por fora".
+
+**O que o CODEOWNERS acrescentaria:** revisão humana obrigatória por PR nesse caminho, no GitHub.
+
+**Por que o planejador não decidiu.** Isso **reintroduz gate humano por PR** num fluxo que o dono definiu como
+"informado, não consultado" (§C7.2, `D-SAN-AUTONOMIA`). E num repositório de **um humano só**, a revisão
+exigida ou vira **auto-revisão** (teatro — a mesma classe de defeito que este ciclo existe para matar) ou
+**trava o fluxo autônomo**.
+
+**As opções, para o dono:**
+
+| Opção | O que acontece | Custo |
+|---|---|---|
+| **Não adotar** (estado atual) | a escalada 5/5 cobre o vetor; o resíduo fica declarado na lei e nesta pendência | resíduo aberto, mitigado |
+| **Adotar com auto-aprovação** | CODEOWNERS aponta para o próprio dono, que aprova os próprios PRs | **teatro**: cumpre a letra, não produz garantia |
+| **Adotar com trava real** | ninguém mergeia sem o dono revisar aquele caminho | fim da autonomia nesse caminho; PRs esperam o dono |
+
+**Enquanto pendente:** vale o estado atual — escalada 5/5 mais o resíduo declarado por escrito no §C2.8.

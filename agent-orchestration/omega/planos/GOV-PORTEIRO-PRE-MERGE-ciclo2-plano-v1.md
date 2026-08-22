@@ -380,3 +380,75 @@ D-2 e D-3 **regeneram os espelhos**. Executar na F-F **depois** que F-C/F-E term
 de papel (`porteiro-pos-merge.md`, `agente-fabrica.md`), para o espelho regenerar **uma vez só**. Ambos antes
 da varredura de satélites e do voto da junta, como já previsto. Meta de testes inalterada (M >= 22); os três
 guards novos contam para ela.
+
+---
+
+# ADENDO II — vereditos D-4 e D-5, após o fechamento da PD do app id (2026-08-22)
+
+> Motivados por `PD-GOV-PORTEIRO-APPID` (`docs/omega-pd.md`), pesquisada por alçada separada.
+> Decididos pelo **planejador**. Implementados por devs distintos. Nenhuma alçada se acumulou.
+
+## D-4 — app id: opção C + D aprovada, com duas amarras
+
+A opção B (resolver em runtime) fica **rejeitada** — não por tautologia (não é: a fonte seria o registro global
+do app, não o check recém-criado), mas por acrescentar chamada de rede e ponto de falha **sem ganho** sobre o
+cross-check triplo.
+
+**Amarra 1 — o override não pode ser canal de afrouxamento silencioso.** Caminho rápido: literal 15368 mais
+cross-check de slug e owner.id, fail-closed em qualquer divergência. Caminho de override (existe só para o
+cenário "o GitHub mudou o id"): o valor overridado **também** precisa passar prova contra o registro global
+antes de ser aceito. **Override que não prova = vermelho.**
+
+**Amarra 2 — o pin nativo mata o resto da resolução-por-observação.** O template do ruleset fixa
+`integration_id: 15368` nos oito contextos, e o `plan()` do configure muda de **"resolver observando"** para
+**"conferir que o observado é igual ao fixado"** — divergência = **VETO**, não re-resolução.
+
+**Mutações:** override com id errado, publish vermelho; `integration_id` nulo ou diferente de 15368 no contexto
+do porteiro, plan vermelho; resposta com slug certo e owner.id errado, vermelho.
+
+## D-5(a) — o resíduo do app id: quatro controles, dois entram, um condicional, um vai ao dono
+
+**1. Escalada por superfície de governança — ENTRA.** O snapshot lista os paths do diff do PR (API de files,
+**paginada**). Diff que toque `.github/workflows/**`, `.github/rulesets/**`, `.gitattributes`, os seis scripts
+do gate/sync, os testes de governança, os dois contratos ou as duas árvores de agente **exige
+`junta.critical === true`** (5/5). Fecha mecanicamente o vetor principal: workflow acrescentado ou alterado no
+próprio PR candidato deixa de passar com junta simples. É indutivo — todo merge passa pelo mesmo gate, então
+workflow malicioso não entra "por fora" em ciclo nenhum. **Mutação:** PR tocando um workflow com
+`critical:false`, snapshot vermelho.
+
+**2. Proveniência do check-run — CONDICIONADA a PD-sonda**, mesmo padrão do app id. O que fecharia "foi o
+**workflow do porteiro** rodando de main" é vincular o check-run ao seu workflow run (check-suite para run
+para path). Se a sonda confirmar com pelo menos 3 fontes, o executor do merge e o publish verificam e a
+divergência é vermelha. Se **não** confirmar, vira pendência com risco declarado e a prosa fica na variante
+fraca. **A F-F não bloqueia nesta sonda** — ela só decide qual redação entra.
+
+**3. Verificação de conteúdo e permalink — JÁ ESTÁ** (F-E: evidência conferível, target_url apontando ao
+permalink do último atestado). Nada a decidir.
+
+**4. CODEOWNERS / revisão obrigatória em `.github/workflows/` — PENDÊNCIA, DECISÃO DO DONO.** Reintroduz gate
+humano por PR num fluxo definido como "informado, não consultado" (§C7.2), e num repo de um humano só a
+revisão exigida ou vira **auto-revisão (teatro)** ou **trava o fluxo**. Registrada em
+`agent-orchestration/controle/pendencias.md` como `P-GOV-CODEOWNERS-WORKFLOWS`, com as três opções e o custo
+de cada uma.
+
+## D-5(b) — a redação honesta do §C2.8
+
+A frase "publicado por fonte GitHub App comprovada" **excede o mecanismo mesmo depois do pin** e **sai**.
+
+**Princípio vinculante:** uma oração por camada, cada uma afirmando **só o que a sua verificação prova**, e o
+**resíduo nomeado no próprio texto**. Este ciclo inteiro existe porque prosa afirmou o que a execução não
+produzia — a lei não pode repetir isso na própria emenda.
+
+**Variante forte** (só se a sonda do item 2 confirmar): (1) criado pelo app GitHub Actions, identidade
+conferida contra o registro global e fixada no ruleset por integration_id; (2) vinculado por check-suite a uma
+execução do workflow confiável disparada de main; (3) apontando ao permalink do atestado. Mais a frase: "o app
+id sozinho não distingue workflows do próprio repositório".
+
+**Variante fraca** (o que entra hoje): mantém (1) e (3), **remove (2) e declara o resíduo por escrito** — a
+vinculação ao workflow do porteiro **não é provada mecanicamente**; mitigam-na a escalada crítica de
+governança e a reexecução do porteiro sobre o diff, com ponteiro para a pendência.
+
+**Em nenhuma hipótese** a prosa volta a dizer "fonte comprovada" sem qualificar **o que** está comprovado.
+
+**Nota para a ata:** os guards de bloco marcado da F-F **cercam essa redação como as demais** — reintroduzir
+"fonte GitHub App comprovada" sem as qualificações fica **vermelho no guard de prosa**, não só em revisão.

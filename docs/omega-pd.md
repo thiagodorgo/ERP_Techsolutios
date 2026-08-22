@@ -531,3 +531,94 @@ nova é um escritor a mais que precisa **lembrar** de tomar um lock — e é iss
 
 **Escolha de arranjo é de quem planeja** (`D-JUNTA-SEPARACAO-DE-PAPEIS`): esta PD registra o custo e o limite
 de cada opção, não elege uma.
+
+---
+
+## PD-GOV-PORTEIRO-APPID — O app id do GitHub Actions é estável e público? (2026-08-22)
+
+Rodada GOV-PORTEIRO · gate `erp/porteiro-pre-merge` · pesquisa `agente-pesquisador-web`, 14 fontes, sendo
+**4 primárias** (respostas da própria API do GitHub, consultadas em 2026-08-22) + 9 docs oficiais.
+**Não dispara junta-5** (nenhum serviço externo/pago, nenhuma dependência nova).
+
+### Resposta curta
+
+**SIM, dá para fixar — com ressalva.** Em github.com o app "GitHub Actions" tem `id = 15368`,
+`slug = github-actions`, `owner = github` (id 9919), e esse id é **o mesmo em qualquer repositório/organização**
+(verificado em dois orgs distintos). Porém **nenhuma fonte oficial promete estabilidade contratual desse
+número** — ele é observável, não documentado como constante. E o pin de `app.id` prova "veio do GitHub
+Actions", **não** prova "veio do job do porteiro".
+
+### Fatos, com fonte
+
+1. **FATO — o id existe e é público.** `GET https://api.github.com/apps/github-actions` **sem autenticação**
+   devolve `id: 15368` · `slug: "github-actions"` · `node_id: "MDM6QXBwMTUzNjg="` · `owner.login: "github"` /
+   `owner.id: 9919` · `created_at: 2018-07-30T09:30:17Z`.
+2. **FATO — o endpoint é público.** A doc de `GET /apps/{app_slug}` não lista exigência de JWT (ao contrário de
+   vizinhos na mesma página) e a chamada anônima retornou 200.
+3. **FATO — o id é o mesmo entre repos e orgs.** `actions/checkout` e `microsoft/vscode` (orgs diferentes):
+   ambos com `app.id 15368` para checks de workflow, enquanto o Azure Pipelines aparece como `9426`. Id
+   **global do host**, não por repo/org/installation. `dependabot` -> `29110` (apps distintos, ids distintos).
+4. **FATO — quatro identificadores distintos.** `app.id` **15368** != `app.slug` `github-actions` != usuário-bot
+   `github-actions[bot]` (**user id 41898282**) != **installation id** (varia por repo — inútil para pin) !=
+   **client id**. A confusão 15368 x 41898282 é frequente em fórum.
+5. **FATO — check-run só pode ser criado por GitHub App**, e o `GITHUB_TOKEN` é o token de instalação do app do
+   Actions. Docs: *"To create a check run, you must use a GitHub App"* e *"The GITHUB_TOKEN secret is a GitHub
+   App installation access token"*.
+6. **FATO — `app` não é forjável no payload.** No `POST /repos/{owner}/{repo}/check-runs` o objeto `app` não
+   está entre os parâmetros de corpo; só existe na **resposta**, preenchido pelo servidor a partir do token.
+7. **FATO — o próprio GitHub usa esse número como "fonte esperada".** Branch protection
+   (`required_status_checks.checks[].app_id`) e rulesets (`required_status_checks[].integration_id`). A UI
+   reporta *"Required status check was not set by the expected GitHub App."* A abordagem do gate espelha o
+   desenho nativo da plataforma.
+8. **FATO — `node_id` é pior que `id` como pin.** É base64 derivado do id e o formato de global node ID está em
+   migração anunciada pelo GitHub. **Instável por política.**
+9. **FATO — fork PR não consegue publicar check** (permissões rebaixadas a read-only).
+10. **INFERÊNCIA (não confirmada) — GHES tem id diferente.** Cada instância registra os próprios apps e ids são
+    sequenciais por instância. Irrelevante aqui (este repo é github.com), relevante para não hard-codar sem escape.
+
+### O que ficou SEM confirmação (declarado, não escondido)
+
+- **Nenhuma página oficial documenta 15368 como constante.** É observável pela API, não é promessa pública de
+  estabilidade. "Estável desde 2018" é inferência do `created_at` + observação atual, não garantia contratual.
+- **Não verificado em GHES** nem em GitHub Enterprise Cloud com data residency (`*.ghe.com`).
+- **Não medido** um check-run criado com `GITHUB_TOKEN` **neste** repositório; a atribuição a 15368 vem dos
+  fatos 3+5+6 combinados, não de medição local.
+
+### LIMITAÇÃO DE SEGURANÇA QUE MUDA A LEITURA DO CONTROLE
+
+`app.id === 15368` prova **"foi publicado pelo GitHub Actions"**, e **não** **"foi publicado pelo job do
+porteiro"**. Qualquer workflow do próprio repositório com `checks: write` produz check-runs com o mesmo app id.
+
+O pin **fecha**: PAT/usuário (já impossível pelo fato 5), app de terceiro instalado no repo, outra integração.
+O pin **não fecha**: um workflow adicionado ou alterado dentro do próprio repositório.
+
+Esse resíduo exige outro controle — CODEOWNERS em `.github/workflows/`, ruleset exigindo revisão para esse
+caminho, e a verificação do **conteúdo** da atestação `erp-porteiro-attestation:v1` + permalink.
+
+### Recomendação técnica (o pesquisador recomenda; quem decide é o planejador e a junta)
+
+| Opção | O que faz | Ganho | Custo/risco |
+|---|---|---|---|
+| **A — fixar `15368`** | constante no YAML | zero rede, determinístico, auditável | constante mágica; se mudasse, gate **falha fechado** (seguro) |
+| **B — resolver em runtime** | `GET /apps/github-actions` e comparar | sem constante; portátil p/ GHES; **não é tautologia** (a fonte é o registro global, não o check) | chamada extra + rate limit + ponto de falha |
+| **C — híbrido (recomendado)** | literal `15368` + override por variable + verificação cruzada `slug === 'github-actions' && owner.id === 9919`, fail-closed em divergência | resiste a rename de org (login muda, `owner.id` não) e a id trocado | mais código |
+| **D — pin na plataforma (camada extra)** | ruleset de `main` com `required_status_checks[].integration_id = 15368` | **o próprio GitHub** recusa merge de check de outra fonte — fora do alcance do script | editar `.github/rulesets/` |
+
+**Forjabilidade comparada:** `app.id` e `app.slug` são **igualmente inforjáveis** (server-side, ausentes do
+corpo, slug único por host). `id` é imutável; `slug` muda em rename mas é portátil entre hosts. `node_id` é o
+pior. `owner.login` é renomeável — usar `owner.id` (9919).
+
+**Recomendação do pesquisador: C + D**, com o número comentado no YAML junto da evidência datada, fail-closed
+preservado.
+
+### Fontes
+
+**Primárias (API do GitHub, 2026-08-22):** `api.github.com/apps/github-actions` · `.../repos/actions/checkout/commits/main/check-runs` ·
+`.../repos/microsoft/vscode/commits/main/check-runs` · `.../apps/dependabot`.
+
+**Docs oficiais:** REST apps · REST checks/runs · Actions `github_token` · branch-protection · REST repos/rules ·
+troubleshooting required status checks · GitHub Apps em GHES · workflow syntax · os dois posts de migração de
+global node ID.
+
+**Secundária:** community discussion #175332 (set/2025, sem resposta oficial) — documenta a confusão corrente
+entre o user id do bot e o app id.
