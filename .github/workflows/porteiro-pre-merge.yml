@@ -1,0 +1,96 @@
+name: porteiro-pre-merge-invalidation
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number already audited by an independent porter
+        required: true
+        type: string
+      attestation_json:
+        description: Canonical erp-porteiro-attestation:v1 JSON (no secrets)
+        required: true
+        type: string
+  pull_request_target:
+    types: [synchronize, edited, reopened, converted_to_draft, ready_for_review]
+    branches: [main]
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  publish-independent-attestation:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout trusted gate implementation from main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Rebuild snapshot and publish status from the trusted GitHub Actions app
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr }}
+          ATTESTATION_JSON: ${{ inputs.attestation_json }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "$(printf '%s' "$PR_NUMBER" | tr -cd '0-9')" = "$PR_NUMBER"
+          node scripts/porteiro-pre-merge.mjs snapshot --pr "$PR_NUMBER" > snapshot.json
+          printf '%s' "$ATTESTATION_JSON" > attestation.json
+          head_sha=$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('snapshot.json')).head.oid)")
+          bootstrap=$(jq -nc --arg sha "$head_sha" '{name:"erp/porteiro-pre-merge",head_sha:$sha,status:"in_progress",output:{title:"Validação em curso",summary:"Revalidando snapshot e atestado independente."}}' | \
+            gh api -X POST "repos/$REPO/check-runs" --input -)
+          source_id=$(printf '%s' "$bootstrap" | jq -er '.app.id')
+          ERP_PORTEIRO_EXPECTED_APP_ID="$source_id" \
+            node scripts/porteiro-pre-merge.mjs publish --snapshot snapshot.json --attestation attestation.json
+  invalidate-pr-event:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      # Segurança: pull_request_target usa SOMENTE metadados do evento. Não há checkout, execução de
+      # script do candidato, interpolação de body/head ref em shell nem acesso a segredo externo.
+      - name: Invalidate changed candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          jq -nc --arg sha "$HEAD_SHA" '{name:"erp/porteiro-pre-merge",head_sha:$sha,status:"completed",conclusion:"failure",output:{title:"Autorização expirada",summary:"Candidato mudou; novo snapshot e novo porteiro são obrigatórios."}}' | \
+            gh api -X POST "repos/$REPO/check-runs" --input -
+
+  invalidate-check-set:
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invalidate whenever the required check set changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          jq -nc --arg sha "$HEAD_SHA" '{name:"erp/porteiro-pre-merge",head_sha:$sha,status:"completed",conclusion:"failure",output:{title:"Autorização expirada",summary:"Checks foram reavaliados; novo porteiro é obrigatório."}}' | \
+            gh api -X POST "repos/$REPO/check-runs" --input -
+
+  invalidate-base-change:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invalidate every open PR after main moves
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --jq '.[].head.sha' | while read -r sha; do
+            test -n "$sha" || continue
+            jq -nc --arg sha "$sha" '{name:"erp/porteiro-pre-merge",head_sha:$sha,status:"completed",conclusion:"failure",output:{title:"Autorização expirada",summary:"Base main mudou; novo snapshot e novo porteiro são obrigatórios."}}' | \
+              gh api -X POST "repos/$REPO/check-runs" --input -
+          done
