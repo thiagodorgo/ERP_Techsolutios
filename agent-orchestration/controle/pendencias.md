@@ -2971,3 +2971,34 @@ Acrescentar ao registro existente, com evidência executada:
   de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
   espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
   de 1 titular do lock.
+
+---
+
+## P-EOL-POLITICA-GLOBAL — line endings mistos sem política declarada (2026-08-21)
+
+**Origem:** decisão D-2 do planejador do ciclo 2 da governança (`GOV-PORTEIRO-PRE-MERGE-ciclo2-plano-v1.md`,
+adendo). Aberta porque a correção completa sai do escopo de allowlist daquela entrega.
+
+**Fato medido (coordenador, 2026-08-21):**
+
+- `git cat-file -p HEAD:.agents/agents/validador-mestre.md | grep -c $'\r'` -> **108** linhas com CR **no blob**;
+  `.claude/agents/validador-mestre.md` -> **103**. Os blobs deste repositório **não** são uniformemente LF.
+- **Não existe `.gitattributes`** na raiz.
+- Checkout simulado com blobs crus (equivalente ao runner Linux): `sync-agent-agents.mjs --check` -> **verde**,
+  25 agentes.
+- `git archive HEAD` nesta máquina (`core.autocrlf=true`): o mesmo `--check` -> **divergente**.
+
+**Tensão registrada sem harmonizar** (instrução expressa do planejador): as duas simulações discordam, e a
+decisão D-2 não depende de resolvê-la — o `.gitattributes` escopado + o guard "nenhum byte CR nas árvores
+espelhadas" tornam a propriedade independente de como a árvore foi materializada.
+
+**O que a entrega do ciclo 2 resolve:** só as quatro árvores espelhadas (`.claude/agents/**`,
+`.agents/agents/**`, `.claude/skills/**`, `.agents/skills/**`), com `text eol=lf` + guard executável.
+
+**O que fica pendente:** a política de EOL do **repositório inteiro**. Renormalizar globalmente toca centenas
+de arquivos fora do escopo desta governança e não passa no guard de allowlist.
+
+**Risco declarado enquanto pendente:** qualquer guard futuro que compare bytes entre dois arquivos rastreados
+fica dependente de como a árvore foi materializada — verde num arranjo, vermelho noutro, pelo mesmo conteúdo.
+Foi assim que este defeito apareceu. O guard do ciclo 2 protege as quatro árvores espelhadas; o resto do
+repositório segue exposto.

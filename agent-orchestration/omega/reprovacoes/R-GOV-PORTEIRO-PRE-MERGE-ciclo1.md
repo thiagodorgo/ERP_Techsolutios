@@ -18,6 +18,7 @@ Status do ciclo: **REPROVAÇÃO REGISTRADA — emenda procedural planejada; agua
 | Achador/revisor 3 | `/root/validador_governanca` | Banach | Validação independente, read-only; **REPROVADO**. |
 | Fábrica do ciclo 1 | `/root/fabrica_governanca_c1` | agente isolado | Apenas cria especialistas e consolida evidência; não planeja, corrige, revisa nem vota. |
 | Planejamento do ciclo 1 | `/root/planejador_governanca_c1c` | agente isolado | Plano: `agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md`. |
+| Desenvolvimento do ciclo 1 | `/root/dev_governanca_c1` | agente isolado | Implementa exclusivamente a allowlist do plano; não revisa, vota, publica, configura remoto, faz merge ou pós-merge. |
 | Achador da instabilidade da suíte | `/root/analista_flake_governanca` | CI-Doutor isolado | Mediu a divergência entre a primeira full vermelha e três full verdes; não corrige, não planeja nem vota. |
 | Planejamento da emenda de evidência | `/root/planejador_flake_governanca` | agente isolado | Planeja somente captura/proveniência da full suite; não implementa, revisa nem vota. |
 
@@ -131,8 +132,8 @@ Definições permanentes em `.claude/agents/especialistas/`, com papéis espelha
 
 ## Limite desta atuação
 
-Este registro não contém decisão de arquitetura nem plano de correção. O próximo passo do protocolo exige
-um planejador novo, distinto de todas as alçadas acima; a implementação exige outro agente também distinto.
+O plano independente foi produzido e a implementação pertenceu a `/root/dev_governanca_c1`. O próximo passo
+é revisão/junta crítica por agentes novos. Este desenvolvedor não vota nem atesta o próprio diff.
 
 ## Achado adicional do CI-Doutor — suíte cheia local sem TAP preservado
 
