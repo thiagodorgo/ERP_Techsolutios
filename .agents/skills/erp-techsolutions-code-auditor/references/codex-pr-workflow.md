@@ -1,5 +1,9 @@
 # Codex PR Workflow para ERP Techsolutions
 
+> **SUPERSEDIDO (gate pós-merge):** qualquer instrução abaixo que situe o gate somente depois do merge é
+> histórica. O fluxo ativo está em `CLAUDE.md` C2/C7: junta+CI → porteiro pré-merge externo no head exato →
+> merge CAS → executor pós-merge factual distinto.
+
 Use este arquivo ao criar prompts para codex, revisar relatórios de codex ou definir gates.
 
 ## 1. Tipos de prompt

@@ -17,8 +17,12 @@ os percentuais mobile quando uma entrega mexe em Flutter/mobile.
 5. Se a entrega mexeu em Flutter/mobile, a métrica `flutter_tests` entra aqui mesmo — o painel é único desde
    2026-08-12 (`D-KPI-DUPLA-REVOGADA`). Em todos os casos, só o conjunto `Kpis/*` é atualizado.
 6. O porteiro pré-merge (`gpt-5.6-sol`/`ultra`) reexecuta as contagens no head exato; `merge_commit` continua
-   `null` porque o merge ainda não existe. Após o merge, **outro agente distinto** faz o backfill factual de
+   `null` e `approved_head` também continua `null` para não criar circularidade. Após o merge, **outro agente distinto** faz o backfill factual de
    `pr`/`merge_commit`/`approved_head`, a reconciliação e a limpeza/compactação. Novo head expira o parecer.
+7. O único escritor suportado é `scripts/kpi-release.mjs`: `author` atualiza latest + append JSON/MD +
+   fallback com números executados; `backfill --from-pr` aceita apenas atestado e fechamento externos válidos.
+   A projeção versionada ocorre como primeira operação do próximo PR autorizado; PR factual não incrementa
+   `blocks_completed` e não cria backfill recursivo sobre si.
 
 ## Política de limpeza pós-validação
 

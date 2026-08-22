@@ -32,6 +32,8 @@
     "db:restore-drill": "bash scripts/restore-drill.sh",
     "lint": "npm run check",
     "kpis:serve": "node scripts/kpi-serve.mjs"
+    ,"governance:check": "node --test --import tsx tests/agent-model-routing.test.ts tests/porteiro-pre-merge-governance.test.ts tests/kpi-release-tooling.test.ts"
+    ,"governance:allowlist": "node scripts/porteiro-pre-merge.mjs guard-allowlist --base origin/main --manifest agent-orchestration/omega/planos/GOV-PORTEIRO-PRE-MERGE-ciclo1-allowlist.txt"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1063.0",
