@@ -622,3 +622,137 @@ global node ID.
 
 **Secundária:** community discussion #175332 (set/2025, sem resposta oficial) — documenta a confusão corrente
 entre o user id do bot e o app id.
+
+---
+
+## PD-GOV-PORTEIRO-PROVENIENCIA — Dado um check-run, dá para provar QUAL workflow o produziu? (2026-08-22)
+
+Rodada GOV-PORTEIRO · gate `erp/porteiro-pre-merge` · sonda irmã de `PD-GOV-PORTEIRO-APPID`, que deixou o
+resíduo: `app.id === 15368` prova "veio do GitHub Actions", **não** "veio do job do porteiro".
+Pesquisa `agente-pesquisador-web`: **24 respostas reais da API do GitHub** (primárias, anônimas em repos
+públicos, 2026-08-22) + 9 docs oficiais + 3 fóruns com resposta de staff/mantenedor.
+**Não dispara junta-5** (nenhum serviço externo/pago, nenhuma dependência nova).
+
+### Resposta curta
+
+**PARCIALMENTE — e, para o modo que ESTE projeto usa, NÃO.**
+
+- **Check-run gerado automaticamente por um JOB do Actions: SIM, é provável.** `check_run.id` **é** o
+  `job_id`; `/actions/jobs/{id}` devolve `run_id`; `/actions/runs/{run_id}` devolve `path`. Tudo server-side.
+- **Check-run criado por chamada explícita a `POST /check-runs` de dentro de um job — que é exatamente o que
+  o `porteiro-pre-merge.yml` faz: NÃO.** A cadeia *responde*, mas **responde errado**. Caso real medido: o
+  `path` derivado aponta para um workflow que terminou **46 dias antes** de o check-run existir. Não é
+  ausência de dado — é dado **FALSO**, que é pior: um gate que confiasse nele leria um workflow inocente
+  como se fosse a origem.
+- **A ref também não prova o que se quer:** `head_branch` num PR é a branch **do PR** (e o repo pode ser um
+  **fork**), nunca `main`; e `path` identifica o **caminho** do YAML, jamais o **conteúdo** executado.
+
+**Veredito para a lei: entra a redação que declara o resíduo ABERTO.** A vinculação "check requerido para
+`.github/workflows/porteiro-pre-merge.yml` a partir de `main`" **não é provável mecanicamente** pela REST API
+no desenho atual.
+
+### Fatos decisivos
+
+1. **FATO — o check-suite não conhece o workflow.** `GET /check-suites/{id}` devolve 19 campos; **nenhum**
+   referencia workflow, workflow run ou path. Medido em duas suites de repos distintos.
+2. **FATO — o elo só existe na direção inversa.** `GET /actions/runs?check_suite_id=N` devolve o run, que
+   traz `path` e `workflow_id`.
+3. **FATO — `path` nem sempre é YAML.** Existem runs com `path: dynamic/dependabot/dependabot-updates`. O
+   próprio ERP tem dois `dynamic/*` do Copilot. Comparação literal de `path` precisa tolerar isso sem abrir.
+4. **FATO — não se pode escolher o check-suite, e o GitHub sabe há 6 anos.** `POST /check-runs` não aceita
+   `check_suite_id`. Staff do GitHub (2020-06-26, community #24616) confirmou que não é possível associar um
+   check run a um check suite específico usando o GITHUB_TOKEN do Actions. Discussão segue **aberta**, com
+   comentários em 2026.
+5. **FATO — a regra oficial é repo+SHA, não workflow.** O guia da Checks API diz que o GitHub adiciona
+   automaticamente novos check runs ao check suite correto **com base no repositório e no SHA do check run**.
+   O workflow não entra na regra.
+6. **FATO DECISIVO, MEDIDO — a atribuição está comprovadamente ERRADA num caso real.**
+   Repo `EnricoMi/publish-unit-test-result-action`: o check-run 91360943795, com `started_at` e
+   `completed_at` em **2026-08-01T10:59:37Z**, pertence à suite 74334974445, que resolve ao run 27613450493,
+   cujo `path` é **`.github/workflows/check-action-typing.yml`** e cujo `updated_at` é
+   **2026-06-16T11:12:29Z**. Um run encerrado em 16/06 não pode ter criado um check-run em 01/08 — **46 dias
+   depois**.
+7. **FATO — o defeito contamina `/actions/runs/{id}/jobs`.** Esse mesmo run devolve `total_count: 24`: **1**
+   job real (6 steps, runner nomeado) + **23** pseudo-jobs com `runner_name: null` e `steps: []`, com
+   timestamps de outro mês. A lista de jobs de um run é **poluída por check-runs de terceiros**.
+8. **FATO — às vezes acerta, e isso é o pior cenário.** Noutro repo a cadeia resolveu **corretamente**. No
+   mesmo SHA havia **duas suites do mesmo app**, e o resultado dependeu de qual foi criada antes.
+   **Controle que acerta às vezes não é controle.**
+9. **INFERÊNCIA (2/2 nos casos medidos, não documentada) — a suite escolhida parece ser a de MENOR id** (a
+   mais antiga) daquele app naquele SHA. Nenhuma doc descreve o critério. **Pode mudar sem aviso.**
+10. **FATO — sintoma independente, rotulado pelo próprio ecossistema.** `dorny/test-reporter` issue #67,
+    label **`github-limitation`**: relatório criado pelo workflow `main.yaml` apareceu sob `lint-yaml`.
+
+### Forjabilidade — a resposta à pergunta explícita da sonda
+
+11. **FATO — o nome do check é parâmetro de corpo.** `POST /check-runs` aceita `name`, `details_url`,
+    `external_id`, `output.*` — **todos controlados por quem chama**. Renomear um check para
+    `erp/porteiro-pre-merge` a partir de **outro** workflow do próprio repo é trivial: basta
+    `permissions: checks: write`, que é declarado **por workflow**, não por repositório.
+12. **FATO — e o `path` associado NÃO denunciaria a origem.** Por dois motivos medidos: (a) pelo fato 6, o
+    `path` derivado pode apontar um workflow qualquer; (b) pelo fato 9, um check-run hostil no mesmo SHA cai
+    na **mesma suite mais antiga** que o legítimo — podendo **herdar a proveniência do workflow certo**.
+    A ambiguidade é **bidirecional**: o legítimo pode parecer vir do errado, e o hostil pode parecer vir do
+    certo.
+13. **FATO — o que É server-side e discrimina os dois tipos:** check-run de JOB tem `id` igual ao `job_id`,
+    `html_url` com `/actions/runs/N/job/M`, `steps` preenchidos e `runner_name` nomeado. Criado por `POST`
+    tem `html_url` sem `/actions/`, `steps: []`, `runner_name: null`, e `details_url` e `external_id` livres.
+
+### Medições no PRÓPRIO repositório-alvo
+
+14. **FATO — `porteiro-pre-merge.yml` ainda NÃO está em `main`.** `GET /actions/workflows` devolve 7
+    workflows (`ci`, `deploy-production`, `deploy-staging`, `backup-database`, `uptime-check` e dois
+    `dynamic/*`). Coerente com o arquivo estar untracked.
+15. **FATO — este repo já fabrica MUITAS check-suites por SHA, que é exatamente a condição de ambiguidade.**
+    No head da `main`, o cron de `uptime-check.yml` gerou **8 check-suites distintas do app 15368 sobre o
+    MESMO SHA** em cerca de duas horas e meia. Ao todo, `/commits/main/check-runs` devolve
+    **`total_count: 255`**.
+16. **INFERÊNCIA (não medida — o workflow não existe em main) — a previsão concreta.** Quando o job de
+    publicação rodar o `POST`, o check `erp/porteiro-pre-merge` será absorvido pela check-suite **mais
+    antiga** do app 15368 naquele head. Num head de PR isso tende a ser a suite do **`ci.yml`**, e o `path`
+    derivado diria `.github/workflows/ci.yml`. Só medição pós-implantação confirma.
+17. **FATO — o gancho nativo que resolveria existe e está fora de alcance.** A regra de ruleset `workflows`
+    aceita `repository_id` mais `path`, `ref` e `sha` — **exatamente** a amarração desejada, com versão
+    travada. Mas é regra de ruleset de **organização**, em **GitHub Enterprise Cloud**, e este repo é de
+    **conta pessoal** (`owner.type: User`). **Indisponível hoje.**
+
+### O que ficou SEM confirmação (declarado, não escondido)
+
+- **Não foi medido o próprio `erp/porteiro-pre-merge`** — o workflow não está em `main`. O fato 16 é previsão.
+- **A regra "suite de menor id" é INFERÊNCIA** (2 casos concordantes mais o padrão relatado nos fóruns).
+  Nenhuma doc oficial descreve o critério de seleção.
+- **GraphQL não foi medido** (exige token). `CheckSuite.workflowRun` existe no schema, mas lê a **mesma**
+  associação suite para run, logo herda o defeito.
+- **Não foi testado publicar um check-run hostil homônimo** para ver qual o branch protection considera
+  vencedor quando há dois com o mesmo `name` no mesmo SHA. É a pergunta seguinte, e é **material** para a
+  opção B.
+- **Não verificado em GHES nem em GitHub Enterprise Cloud com data residency.**
+
+### Recomendação técnica (o pesquisador recomenda; quem decide é o planejador e a junta)
+
+| Opção | O que amarraria | Prova a origem? | Custo / limite medido |
+|---|---|---|---|
+| **A — derivar `path` via check_suite para run** | nada de confiável | **NÃO** — medido **errado** (fato 6) | **pior que não ter**: cria falso positivo e pode incriminar ou absolver o workflow trocado |
+| **B — publicar o check como JOB** (abandonar o `POST`) | `check_run.id` igual ao `job_id`, e daí para o run | **SIM** para o check legítimo — cadeia 100% server-side | exige reescrever o publish; **não impede** um `POST` homônimo concorrente; **não testado ponta a ponta** |
+| **C — CODEOWNERS mais ruleset em `.github/workflows/`** | quem pode alterar ou criar workflow | preventivo, não probatório | já indicado pela PD irmã; barato; não detecta nada em runtime |
+| **D — ruleset de org `workflows`** | o workflow exato, pela plataforma, com versão travada | **SIM** (fora do alcance de script) | **indisponível**: exige org mais Enterprise Cloud |
+| **E — assinar o conteúdo do atestado** | integridade e autoria do parecer | complementar | exige segredo ou chave; ortogonal a esta PD |
+
+**Ordem recomendada pelo pesquisador:**
+
+1. **Adotar a redação que declara o resíduo ABERTO.** É a única sustentada pelos fatos. Afirmar a vinculação
+   seria afirmar algo **medido como falso**.
+2. **Não implementar a opção A em hipótese alguma** — nem como "verificação extra best-effort". Um campo que
+   às vezes acerta e às vezes aponta um workflow inocente é **ruído com aparência de prova**, exatamente a
+   classe de defeito que a §C7.4-bis manda pegar por execução, não por releitura.
+3. **Fechar C**: é o controle que a PD irmã já apontava e ataca a única porta real.
+4. **Levar B ao planejador como fatia própria**, com a pergunta em aberto anexada (qual check-run vence
+   quando há dois com o mesmo `name` no mesmo SHA).
+5. **Registrar D como reabertura condicionada:** se o repositório migrar para uma organização em Enterprise
+   Cloud, a regra `workflows` resolve na plataforma e esta PD deve ser reaberta.
+
+### Correção factual pendente no YAML
+
+O comentário embutido em `.github/workflows/porteiro-pre-merge.yml` diz que fixar `15368` prova "fonte
+confiável do check". Pelos fatos 11 e 12, **precisa de ressalva**: o pin prova o **app**, e o `path`
+associado **não** denuncia um workflow homônimo hostil.
