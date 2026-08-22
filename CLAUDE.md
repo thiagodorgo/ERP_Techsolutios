@@ -263,6 +263,7 @@ validação** e **rastreabilidade**. Tipos:
    e o booleano `critical`; `critical: true` exige **5 votantes distintos e unânimes**. O snapshot v1 congela
    repo/PR/head/base/body/checks/ruleset/junta e ainda `defaultBranch`, `junta.identities` e
    `evidence.kpiLatestBlobSha`.
+   <!-- gov:proveniencia:v1 -->
    **O que o check requerido prova — e o que não prova.** `erp/porteiro-pre-merge` só vale quando (1) criado
    pelo app **GitHub Actions**, identidade conferida contra o registro global (`id 15368`, `slug
    github-actions`, `owner 9919` — `PD-GOV-PORTEIRO-APPID`) e fixada no ruleset de `main` via
@@ -271,7 +272,15 @@ validação** e **rastreabilidade**. Tipos:
    **Resíduo aberto, declarado:** o app id **não distingue workflows do próprio repositório** — qualquer
    workflow com `checks: write` compartilha essa identidade, e a vinculação ao workflow do porteiro **não é
    provada mecanicamente**. Mitigam-na a escalada crítica por superfície de governança (§C7.4-bis) e a
-   reexecução do porteiro sobre o diff. Pendência registrada em `agent-orchestration/controle/`.
+   reexecução do porteiro sobre o diff. Pendência: `P-GOV-CODEOWNERS-WORKFLOWS` em
+   `agent-orchestration/controle/pendencias.md`.
+   **VETO permanente.** A resolução de proveniência via **check-suite** é **VETADA** como mecanismo de
+   verificação (`PD-GOV-PORTEIRO-PROVENIENCIA`, 2026-08-22: a API associa por repo+SHA e devolve atribuição
+   **falsa** para `POST /check-runs` — medido, um check-run de 2026-08-01 resolvendo a um workflow run
+   encerrado 46 dias antes). Reabrir exige **nova PD com medição que contradiga a atual**. O motivo de o veto
+   ser explícito: proveniência fabricada pela plataforma é **pior que a ausência de controle** — um campo que
+   às vezes aponta um workflow inocente transforma auditoria em difamação de evidência.
+   <!-- /gov:proveniencia:v1 -->
    `main` usa ruleset ativo/strict **aplicável à branch default**, com as regras `pull_request`, `deletion` e
    `non_fast_forward` e sem bypass; merge só por `scripts/merge-authorized-pr.mjs` com compare-and-swap do
    head. Mudança de qualquer campo invalida.

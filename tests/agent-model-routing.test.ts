@@ -444,3 +444,69 @@ test('D-2 — mutação: um CRLF num espelho fica VERMELHO, seja qual for a mate
     assert.equal(r.status, 1, 'espelho materializado com CRLF tem de reprovar o --check');
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+// ===== F-F/proveniência — o VETO da check-suite vive dentro de bloco cercado =====
+//
+// `PD-GOV-PORTEIRO-PROVENIENCIA` (2026-08-22) mediu a cadeia check-run -> check-suite -> workflow
+// run devolvendo dado FALSO: um check-run de 2026-08-01 resolvendo a um workflow run encerrado 46
+// dias antes. Afirmar essa vinculação na lei seria a classe de defeito deste ciclo escrita pela
+// nossa própria mão, agora com conhecimento prévio — por isso a lei VETA o mecanismo.
+//
+// O cercado é o ponto: remover ou "melhorar" o veto num ciclo futuro fica VERMELHO aqui, não só em
+// revisão. É o que impede o bem-intencionado de reintroduzir a resolução por check-suite daqui a
+// três meses achando que está ajudando.
+const BLOCO_PROVENIENCIA = /<!-- gov:proveniencia:v1 -->([\s\S]*?)<!-- \/gov:proveniencia:v1 -->/g;
+const EXIGIDO_NO_VETO = [
+  'PD-GOV-PORTEIRO-APPID',                    // o que o app id prova
+  'não distingue workflows do próprio repositório', // o resíduo, nomeado
+  'P-GOV-CODEOWNERS-WORKFLOWS',               // a pendência que o resíduo abriu
+  'VETADA',                                   // o veto, literal
+  'PD-GOV-PORTEIRO-PROVENIENCIA',             // a medição que o sustenta
+  'nova PD com medição que contradiga a atual', // a única porta de reabertura
+];
+
+function violacoesDoVetoDeProveniencia(root) {
+  const v = [];
+  for (const doc of CONTRATOS) {
+    const blocos = [...lerDoc(root, doc).matchAll(BLOCO_PROVENIENCIA)].map((m) => m[1]);
+    if (blocos.length !== 1) { v.push(`${doc}: esperava 1 bloco <!-- gov:proveniencia:v1 -->, achei ${blocos.length}`); continue; }
+    for (const exigido of EXIGIDO_NO_VETO) {
+      if (!blocos[0].includes(exigido)) v.push(`${doc}: o bloco de proveniência não contém "${exigido}"`);
+    }
+  }
+  return v;
+}
+
+test('F-F — o veto da resolução por check-suite está cercado nos dois contratos', () => {
+  assert.deepEqual(violacoesDoVetoDeProveniencia('.'), []);
+});
+
+test('F-F — mutação: apagar o VETO de proveniência fica VERMELHO', () => {
+  const root = docsFixture();
+  try {
+    assert.deepEqual(violacoesDoVetoDeProveniencia(root), [], 'fixture deveria nascer verde');
+    const alvo = join(root, 'CLAUDE.md');
+    const texto = readFileSync(alvo, 'utf8').replace(/\r\n/g, '\n');
+    const inicio = texto.indexOf('   **VETO permanente.**');
+    const fim = texto.indexOf('   <!-- /gov:proveniencia:v1 -->');
+    assert.ok(inicio > 0 && fim > inicio, 'não localizei o parágrafo do veto para mutar');
+    writeFileSync(alvo, texto.slice(0, inicio) + texto.slice(fim));
+    assert.deepEqual(violacoesDoVetoDeProveniencia(root), [
+      'CLAUDE.md: o bloco de proveniência não contém "VETADA"',
+      'CLAUDE.md: o bloco de proveniência não contém "PD-GOV-PORTEIRO-PROVENIENCIA"',
+      'CLAUDE.md: o bloco de proveniência não contém "nova PD com medição que contradiga a atual"',
+    ]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — mutação: remover o cercado do veto (só os marcadores) fica VERMELHO', () => {
+  const root = docsFixture();
+  try {
+    const alvo = join(root, 'AGENTS.md');
+    writeFileSync(alvo, readFileSync(alvo, 'utf8')
+      .replace('<!-- gov:proveniencia:v1 -->', '').replace('<!-- /gov:proveniencia:v1 -->', ''));
+    assert.deepEqual(violacoesDoVetoDeProveniencia(root), [
+      'AGENTS.md: esperava 1 bloco <!-- gov:proveniencia:v1 -->, achei 0',
+    ]);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
