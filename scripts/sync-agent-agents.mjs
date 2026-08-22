@@ -77,7 +77,7 @@ export function transform(rel, rawInput) {
   // frontmatter entre o 1o '---' e o próximo '---'
   const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!m) {
-    // sem frontmatter: só prepende o preâmbulo
+    // sem frontmatter: só prepende o preâmbulo (mesma moldura: linha em branco antes do corpo — D-3)
     return `${PREAMBLE(rel)}\n\n${raw.trimStart()}`;
   }
   const fm = m[1];
@@ -103,7 +103,13 @@ export function transform(rel, rawInput) {
       `\`model: "gpt-5.6-sol"\` e \`reasoning_effort: "ultra"\`. O artefato final deve incluir recibo ` +
       `\`agent_id · role · runtime=codex · model=gpt-5.6-sol · reasoning_effort=ultra\`; este arquivo sozinho não prova a execução.\n`
     : '';
-  return `---\n${cleanedFm}\n---\n\n${PREAMBLE(rel)}${receipt}\n${body}`.replace(/\n+$/, '\n');
+  // D-3 (ciclo 2): SEPARADOR DO PREÂMBULO. O preâmbulo é a moldura normativa ("poderes idênticos,
+  // emulação inválida"); sem linha em branco entre ele e o corpo, o primeiro parágrafo do papel — em
+  // geral a DEFINIÇÃO do papel — vira continuação preguiçosa do blockquote e some dentro da moldura.
+  // A assimetria era o defeito: este caminho usava `\n` enquanto o caminho sem frontmatter já usava
+  // `\n\n`. Normalizar aqui vale para TODOS os caminhos do transform (com ou sem declaração).
+  const preambulo = `${PREAMBLE(rel)}${receipt}`.replace(/\n+$/, '');
+  return `---\n${cleanedFm}\n---\n\n${preambulo}\n\n${body}`.replace(/\n+$/, '\n');
 }
 
 /**

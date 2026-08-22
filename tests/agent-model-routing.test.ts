@@ -122,3 +122,43 @@ test('o sync de skills NÃO apaga a árvore do espelho nem conteúdo só-Codex',
     assert.match(r.stderr,/agent-orchestration\/controle\//);
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
+
+// --- D-3: separador do preâmbulo (veredito do planejador, adendo do plano do ciclo 2) ---
+// O preâmbulo é a MOLDURA normativa ("poderes idênticos, emulação sequencial inválida"). Sem linha
+// em branco entre ele e o corpo, o primeiro parágrafo do papel — em geral a DEFINIÇÃO do papel —
+// vira continuação preguiçosa do blockquote. Nasceu num delta de correção do ciclo 1: o caminho com
+// frontmatter usava `\n` e o caminho sem frontmatter já usava `\n\n`; a assimetria era o defeito.
+
+/** Índice da última linha do blockquote de preâmbulo que abre o arquivo do espelho. */
+function fimDoPreambulo(linhas: string[]): number {
+  const inicio = linhas.findIndex((l) => l.startsWith('> '));
+  assert.ok(inicio >= 0, 'espelho sem preâmbulo de blockquote');
+  let i = inicio;
+  while (i + 1 < linhas.length && linhas[i + 1].startsWith('>')) i += 1;
+  return i;
+}
+
+test('D-3 — o preâmbulo nunca absorve o corpo: linha em branco nos TRÊS caminhos do transform()', () => {
+  const casos: Array<[string, string, string]> = [
+    // [rel, entrada, primeira linha esperada do corpo]
+    ['estrategista.md', '---\nname: estrategista\ndescription: x\n---\n\nDefine a ordem das entregas.\n', 'Define a ordem das entregas.'],
+    ['porteiro-pos-merge.md', '---\nname: porteiro-pos-merge\ndescription: x\nmodel: fable\n---\n\nVocê é o porteiro pré-merge.\n', 'Você é o porteiro pré-merge.'],
+    ['especialistas/sem-frontmatter.md', 'Papel escrito sem frontmatter.\n', 'Papel escrito sem frontmatter.'],
+  ];
+  for (const [rel, entrada, primeira] of casos) {
+    const linhas = transform(rel, entrada).split('\n');
+    const fim = fimDoPreambulo(linhas);
+    assert.equal(linhas[fim + 1], '', `${rel}: falta a linha em branco entre preâmbulo e corpo`);
+    assert.equal(linhas[fim + 2], primeira, `${rel}: o corpo não começa logo após a linha em branco`);
+  }
+});
+
+test('D-3 — nenhum dos 25 espelhos reais tem o corpo colado no preâmbulo', () => {
+  const offenders = mdFiles('.agents/agents')
+    .filter((rel) => rel !== 'README.md')
+    .filter((rel) => {
+      const linhas = readFileSync(join('.agents/agents', rel), 'utf8').split('\n');
+      return linhas[fimDoPreambulo(linhas) + 1] !== '';
+    });
+  assert.deepEqual(offenders, [], 'espelho com corpo absorvido pela moldura normativa');
+});

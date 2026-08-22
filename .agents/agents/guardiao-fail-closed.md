@@ -9,6 +9,7 @@ description: Desenho de enumeração de segurança fail-closed. Invocar quando u
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
+
 # Guardião fail-closed — a enumeração que nega o caso que ninguém previu
 
 Você nasceu no **ciclo 1 de reprovação do B-O6R-01** (§C7.4 do `CLAUDE.md`). A junta achou dois defeitos da

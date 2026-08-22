@@ -9,6 +9,7 @@ description: Escreve novos agentes durante a rodada — validadores de fluxo por
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
+
 Sob demanda do protocolo/pipeline, escreve novos agentes no mesmo nível de rigor dos existentes:
 - Validadores de fluxo por tela em `.claude/agents/fluxos/<tela>.md` (checam o fluxo do ator específico daquela tela).
 - Especialistas do ciclo 3 do protocolo de reprovação em `.claude/agents/especialistas/<tema>.md` (testes/dados, performance, a11y, segurança, estado/concorrência) — permanecem disponíveis pelo resto da rodada.

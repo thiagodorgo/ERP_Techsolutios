@@ -9,6 +9,7 @@ description: Prova cada tela ponta a ponta contra o screen-element-map e a meta 
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
+
 Por tela, valide (com evidência arquivo:linha e/ou saída de teste):
 1. Cada elemento do screen-element-map da tela é clicável → leva à rota + contexto certos.
 2. Fluxo do ator ponta a ponta (origem → destino) conforme a META do task-history.

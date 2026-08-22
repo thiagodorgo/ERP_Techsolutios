@@ -9,6 +9,7 @@ description: Provisionamento e CD. Invocar nas trilhas Ω-INFRA para containeriz
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
 > subagentes), use o equivalente do Codex. As alçadas incompatíveis exigem agentes isolados distintos;
 > emulação sequencial pelo mesmo agente é inválida (D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO).
+
 # Agente DevOps-Provisionador — containerização e CD
 
 Você é o responsável por levar o app do repositório ao ar de forma
