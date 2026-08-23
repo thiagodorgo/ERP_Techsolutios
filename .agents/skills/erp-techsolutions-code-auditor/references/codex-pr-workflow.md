@@ -95,7 +95,6 @@ npm run check
 npm test
 npm run lint
 npm run build
-node --check mobile/flutter_app/Kpis/app.js
 git diff --check
 ```
 
