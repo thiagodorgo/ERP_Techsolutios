@@ -70,7 +70,7 @@ test('F-D mut.1 — ruleset ativo apontado para OUTRA branch não satisfaz o gat
 
 test('F-D mut.2 — faltando pull_request, deletion ou non_fast_forward o gate fecha',()=>{for(const tipo of ['pull_request','deletion','non_fast_forward']){const x=state();x.rulesets[0].rules=x.rulesets[0].rules.filter((r:any)=>r.type!==tipo);assert.throws(()=>buildSnapshot(x),new RegExp(`regra obrigatória: ${tipo}`));}});
 
-test('F-D mut.3 — required check com integration_id não-positivo é fonte não resolvida',()=>{for(const v of [null,undefined,0,-1,'10',1.5]){const x=state();const p=x.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters;if(v===undefined)delete p.required_status_checks[0].integration_id;else p.required_status_checks[0].integration_id=v;assert.throws(()=>buildSnapshot(x),/sem fonte confiável resolvida \(integration_id\): ci/);}});
+test('F-D mut.3 — required check com integration_id não-positivo é fonte não resolvida',()=>{for(const v of [null,undefined,0,-1,'10',1.5]){const x=state();const p=x.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters;if(v===undefined)delete p.required_status_checks[0].integration_id;else p.required_status_checks[0].integration_id=v;assert.throws(()=>buildSnapshot(x),/sem app criador fixado \(integration_id\): ci/);}});
 
 test('F-D mut.4 — appId nunca é curinga: check verde de outra fonte não satisfaz o requerido',()=>{const x=state();x.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks[0].integration_id=null;x.checks[0].appId=99;assert.throws(()=>buildSnapshot(x),/integration_id/);const y=state();y.checks[0].appId=99;assert.throws(()=>buildSnapshot(y),/fonte errada: ci/);const z=state();z.checks[0].appId=null;assert.throws(()=>buildSnapshot(z),/fonte errada: ci/);});
 
@@ -105,7 +105,7 @@ const registro=(over:any={}):any=>({id:15368,slug:'github-actions',owner:{login:
 const reqDoTpl=(d:any)=>d.rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks;
 const tplPinado=():any=>{const d=JSON.parse(readFileSync('.github/rulesets/main.template.json','utf8'));for(const c of reqDoTpl(d))c.integration_id=APP_GITHUB_ACTIONS.id;return d;};
 
-test('D-4 — o pin vem da PD e o cross-check é triplo: id, slug e owner.id',()=>{assert.deepEqual(APP_GITHUB_ACTIONS,{id:15368,slug:'github-actions',ownerId:9919});assert.equal(assertCriadoPeloAppGitHubActions(app(),15368),true);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({id:9426}),15368),/app id 9426/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({slug:'azure-pipelines'}),15368),/app slug azure-pipelines/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'github',id:1}}),15368),/owner\.id 1/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:undefined}),15368),/owner\.id ausente/);assert.throws(()=>assertCriadoPeloAppGitHubActions(undefined,15368),/sem objeto/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app(),0),/não resolvida/);});
+test('D-4 — o pin vem da PD e o cross-check é triplo: id, slug e owner.id',()=>{assert.deepEqual(APP_GITHUB_ACTIONS,{id:15368,slug:'github-actions',ownerId:9919});assert.equal(assertCriadoPeloAppGitHubActions(app(),15368),true);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({id:9426}),15368),/app id 9426/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({slug:'azure-pipelines'}),15368),/app slug azure-pipelines/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'github',id:1}}),15368),/owner\.id 1/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:undefined}),15368),/owner\.id ausente/);assert.throws(()=>assertCriadoPeloAppGitHubActions(undefined,15368),/sem objeto/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app(),0),/app criador esperado não resolvido/);});
 
 test('D-4 — owner.id em vez de owner.login: rename de org não afrouxa o gate',()=>{assert.equal(assertCriadoPeloAppGitHubActions(app({owner:{login:'github-renomeado',id:9919}}),15368),true);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'github',id:9426}}),15368),/owner\.id 9426/);});
 
@@ -113,7 +113,7 @@ test('D-4 — caminho rápido: o literal do YAML tem de bater com o pin do códi
 
 test('D-4 — OVERRIDE QUE NÃO PROVA É VERMELHO: nunca é canal de afrouxamento silencioso',()=>{assert.equal(resolveExpectedAppId({literal:'15368',override:'15368',registro:registro()}),15368);assert.equal(resolveExpectedAppId({literal:'15368',override:'777',registro:registro({id:777})}),777);assert.throws(()=>resolveExpectedAppId({literal:'15368',override:'999999',registro:registro()}),/não confere com o registro global/);assert.throws(()=>resolveExpectedAppId({literal:'15368',override:'999999',registro:null}),/sem o registro global/);assert.throws(()=>resolveExpectedAppId({literal:'15368',override:'777',registro:registro({id:777,slug:'impostor'})}),/não é github-actions/);assert.throws(()=>resolveExpectedAppId({literal:'15368',override:'777',registro:registro({id:777,owner:{login:'github',id:1}})}),/owner\.id 1/);for(const o of ['0','-5','abc'])assert.throws(()=>resolveExpectedAppId({literal:'15368',override:o,registro:registro()}),/inteiro positivo/);});
 
-test('D-4 — o template pina 15368 nos oito contextos e assertDesired veta o porteiro fora do pin',()=>{const tpl=JSON.parse(readFileSync('.github/rulesets/main.template.json','utf8'));const req=reqDoTpl(tpl);assert.equal(req.length,8);for(const c of req)assert.equal(c.integration_id,APP_GITHUB_ACTIONS.id,`${c.context} sem pin`);assert.equal(assertDesired(tpl),undefined);const diferente=tplPinado();reqDoTpl(diferente).find((c:any)=>c.context==='erp/porteiro-pre-merge').integration_id=9426;assert.throws(()=>assertDesired(diferente),/tem de ser o app id fixado pela PD-GOV-PORTEIRO-APPID \(15368\), não 9426/);const nulo=tplPinado();reqDoTpl(nulo).find((c:any)=>c.context==='erp/porteiro-pre-merge').integration_id=null;assert.throws(()=>assertDesired(nulo),/fonte confiável não resolvida/);const ausente=tplPinado();const r=reqDoTpl(ausente);r.splice(r.findIndex((c:any)=>c.context==='erp/porteiro-pre-merge'),1);assert.throws(()=>assertDesired(ausente),/não requer erp\/porteiro-pre-merge/);});
+test('D-4 — o template pina 15368 nos oito contextos e assertDesired veta o porteiro fora do pin',()=>{const tpl=JSON.parse(readFileSync('.github/rulesets/main.template.json','utf8'));const req=reqDoTpl(tpl);assert.equal(req.length,8);for(const c of req)assert.equal(c.integration_id,APP_GITHUB_ACTIONS.id,`${c.context} sem pin`);assert.equal(assertDesired(tpl),undefined);const diferente=tplPinado();reqDoTpl(diferente).find((c:any)=>c.context==='erp/porteiro-pre-merge').integration_id=9426;assert.throws(()=>assertDesired(diferente),/tem de ser o app id fixado pela PD-GOV-PORTEIRO-APPID \(15368\), não 9426/);const nulo=tplPinado();reqDoTpl(nulo).find((c:any)=>c.context==='erp/porteiro-pre-merge').integration_id=null;assert.throws(()=>assertDesired(nulo),/app criador não fixado/);const ausente=tplPinado();const r=reqDoTpl(ausente);r.splice(r.findIndex((c:any)=>c.context==='erp/porteiro-pre-merge'),1);assert.throws(()=>assertDesired(ausente),/não requer erp\/porteiro-pre-merge/);});
 
 test('D-4 — plan() CONFERE o observado contra o fixado; divergência é VETO, não re-resolução',()=>{const req=[{context:'ci',integration_id:15368}];assert.equal(conferirFontesFixadas(req,[{context:'ci',appId:15368,success:true}]),true);assert.equal(req[0].integration_id,15368,'o pin do template não pode ser reescrito');assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:15368}],[{context:'ci',appId:99,success:true}]),/VETO: fonte observada diverge do id fixado/);assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:15368}],[{context:'ci',appId:15368,success:false}]),/VETO: contexto requerido sem check verde/);assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:null}],[{context:'ci',appId:15368,success:true}]),/VETO: template sem integration_id fixado/);assert.throws(()=>conferirFontesFixadas([{context:'ci',integration_id:15368}],[]),/sem check verde observado/);});
 
@@ -315,10 +315,15 @@ test('D-10 — cerca: a normalização inline não reaparece nos outros dois scr
 // ---------------------------------------------------------------------------
 
 const NOME_QUE_PROMETE_DEMAIS=new RegExp(['Fonte','Confi','[aá]vel'].join(''));
+// S-2 — a cerca do D-11 cobria só a tabela de símbolos. A MENSAGEM DE ERRO é o que o operador lê
+// quando o gate dispara: superfície mais visível que o identificador, e estava com o mesmo overclaim
+// em seis lugares. A cerca passa a cobrir as duas formas nos scripts do gate.
+const STRING_QUE_PROMETE_DEMAIS=new RegExp(['fonte','[ \\t]+','confi','[aá]vel'].join(''),'i');
 const SCRIPTS_DO_GATE=['scripts/porteiro-pre-merge.mjs','scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs','scripts/sync-agent-agents.mjs','scripts/sync-agent-skills.mjs'];
 
 export function guardNomeDoGate(src:string){
   if(NOME_QUE_PROMETE_DEMAIS.test(src))throw new Error('identificador que afirma "fonte confiável": a execução prova apenas que o check foi criado pelo app GitHub Actions');
+  if(STRING_QUE_PROMETE_DEMAIS.test(src))throw new Error('mensagem que afirma "fonte confiável": a execução prova apenas que o check foi criado pelo app GitHub Actions');
   return true;
 }
 
@@ -336,6 +341,23 @@ test('D-11 — cerca: o identificador que promete demais não volta aos scripts 
   for(const alvo of SCRIPTS_DO_GATE)assert.equal(guardNomeDoGate(readFileSync(alvo,'utf8')),true,`${alvo}`);
   // A cerca não é vaga: reintroduzir o nome, em fixture na memória, fica VERMELHO.
   const reintroduzido=readFileSync('scripts/porteiro-pre-merge.mjs','utf8').replace(/assertCriadoPeloAppGitHubActions/g,['assert','Fonte','Confiavel'].join(''));
-  assert.throws(()=>guardNomeDoGate(reintroduzido),/fonte confiável/);
-  assert.throws(()=>guardNomeDoGate(['assert','Fonte','Confiável'].join('')),/fonte confiável/);
+  assert.throws(()=>guardNomeDoGate(reintroduzido),/identificador que afirma/);
+  assert.throws(()=>guardNomeDoGate(['assert','Fonte','Confiável'].join('')),/identificador que afirma/);
+});
+
+test('S-2 — cerca: a mensagem de erro que promete demais também não volta aos scripts do gate',()=>{
+  // A forma em string é o que o operador lê. Os seis scripts do gate passam limpos hoje.
+  for(const alvo of SCRIPTS_DO_GATE)assert.equal(guardNomeDoGate(readFileSync(alvo,'utf8')),true,`${alvo}`);
+  // E a cerca não é vaga: reintroduzir a mensagem, em fixture na memória, fica VERMELHO.
+  const real=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
+  for(const volta of [
+    real.replace('app criador esperado não resolvido',['fonte',' ','confiável',' esperada não resolvida'].join('')),
+    real.replace('app criador esperado é GitHub Actions (id ',['fonte',' ','confiável',' esperada é '].join('')),
+    real.replace('check requerido sem app criador fixado',['check requerido sem ','fonte',' ','confiável',' resolvida'].join('')),
+    ['fail("','Fonte','  ','Confiavel','")'].join(''),
+  ])assert.throws(()=>guardNomeDoGate(volta),/mensagem que afirma/);
+  // As mensagens novas nomeiam o que se prova, e continuam nomeando a propriedade violada.
+  assert.throws(()=>assertCriadoPeloAppGitHubActions(app({id:9426}),15368),/app criador esperado é GitHub Actions \(id 15368\)/);
+  assert.throws(()=>assertCriadoPeloAppGitHubActions(app({slug:'x'}),15368),/app criador esperado é GitHub Actions \(slug github-actions\)/);
+  assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'g',id:1}}),15368),/app criador esperado é GitHub Actions \(owner\.id 9919\)/);
 });

@@ -21,7 +21,7 @@ export function assertDesired(desired){
   if((desired.bypass_actors||[]).length)fail('bypass_actors precisa ser vazio');
   const status=desired.rules.find(r=>r.type==='required_status_checks')?.parameters;
   if(!status?.strict_required_status_checks_policy)fail('strict precisa ser true');
-  for(const c of status.required_status_checks||[])if(!Number.isInteger(c.integration_id)||c.integration_id<=0)fail(`fonte confiável não resolvida: ${c.context}`);
+  for(const c of status.required_status_checks||[])if(!Number.isInteger(c.integration_id)||c.integration_id<=0)fail(`app criador não fixado: ${c.context}`);
   // Pin nativo (PD-GOV-PORTEIRO-APPID, opcao D): o proprio GitHub passa a recusar check de outra
   // fonte, fora do alcance deste script. O contexto do porteiro tem de estar pinado no app id fixado.
   const porteiro=(status.required_status_checks||[]).find(c=>c.context===CONTEXT_PORTEIRO);

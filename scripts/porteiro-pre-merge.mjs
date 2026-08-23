@@ -76,17 +76,22 @@ export function coletarPaths(fetchPage, porPagina = 100) {
 // Cross-check triplo sobre o objeto `app` da RESPOSTA do check-run. `owner.id` em vez de
 // `owner.login` porque login e renomeavel e o id nao. Divergencia em qualquer campo = fail-closed.
 // O NOME DIZ O QUE A EXECUCAO PROVA, e so isso: que o check foi CRIADO PELO APP GitHub Actions,
-// com id, slug e owner.id conferidos (D-11). O nome anterior prometia "fonte confiavel" do check —
-// propriedade que a execucao NAO produz; num ciclo cujo tema e "artefato que afirma o que a
+// com id, slug e owner.id conferidos (D-11). O nome anterior prometia que a origem do check estava
+// COMPROVADA — propriedade que a execucao NAO produz; num ciclo cujo tema e "artefato que afirma o que a
 // execucao nao entrega", a tabela de simbolos nao podia ser a excecao. E condicao necessaria,
 // nunca suficiente: passar neste cross-check nao diz QUAL workflow publicou o check. Ver
 // PD-GOV-PORTEIRO-APPID e PD-GOV-PORTEIRO-PROVENIENCIA (docs/omega-pd.md).
 export function assertCriadoPeloAppGitHubActions(app, expectedAppId) {
-  if (!Number.isInteger(expectedAppId) || expectedAppId <= 0) fail('fonte confiável esperada não resolvida');
-  if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: fonte do status não comprovada');
-  if (app.id !== expectedAppId) fail(`status criado por app id ${app.id ?? 'ausente'}; fonte confiável esperada é ${expectedAppId}`);
-  if (app.slug !== APP_GITHUB_ACTIONS.slug) fail(`status criado por app slug ${app.slug ?? 'ausente'}; fonte confiável esperada é ${APP_GITHUB_ACTIONS.slug}`);
-  if (app.owner?.id !== APP_GITHUB_ACTIONS.ownerId) fail(`status criado por owner.id ${app.owner?.id ?? 'ausente'}; fonte confiável esperada é ${APP_GITHUB_ACTIONS.ownerId}`);
+  // As mensagens nomeiam O QUE SE PROVA — "app criador" — em vez de alegar origem comprovada (S-2).
+  // Mensagem de erro e o que o operador le quando o gate dispara: e a superficie MAIS visivel do
+  // overclaim, nao a menos. A cerca cobre as duas formas, identificador e string, e varre o arquivo
+  // INTEIRO — por isso nem comentario daqui usa o termo proibido, nem para explicar que ele saiu.
+  // Ver D-11 e a cerca em tests/porteiro-pre-merge-governance.test.ts.
+  if (!Number.isInteger(expectedAppId) || expectedAppId <= 0) fail('app criador esperado não resolvido');
+  if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: app criador não comprovado');
+  if (app.id !== expectedAppId) fail(`status criado por app id ${app.id ?? 'ausente'}; app criador esperado é GitHub Actions (id ${expectedAppId})`);
+  if (app.slug !== APP_GITHUB_ACTIONS.slug) fail(`status criado por app slug ${app.slug ?? 'ausente'}; app criador esperado é GitHub Actions (slug ${APP_GITHUB_ACTIONS.slug})`);
+  if (app.owner?.id !== APP_GITHUB_ACTIONS.ownerId) fail(`status criado por owner.id ${app.owner?.id ?? 'ausente'}; app criador esperado é GitHub Actions (owner.id ${APP_GITHUB_ACTIONS.ownerId})`);
   return true;
 }
 
@@ -188,7 +193,7 @@ function requiredChecks(rulesets, defaultBranch) {
     strict ||= rule.parameters?.strict_required_status_checks_policy === true;
     for (const item of rule.parameters?.required_status_checks || []) {
       // integration_id ausente/null era curinga: qualquer fonte verde satisfazia o check requerido.
-      if (!Number.isInteger(item.integration_id) || item.integration_id <= 0) fail(`check requerido sem fonte confiável resolvida (integration_id): ${item.context}`);
+      if (!Number.isInteger(item.integration_id) || item.integration_id <= 0) fail(`check requerido sem app criador fixado (integration_id): ${item.context}`);
       required.push({ context: item.context, appId: item.integration_id });
     }
   }
