@@ -50,9 +50,9 @@ test('F-C mut.3 — critical:true exige cinco votantes distintos e unânimes',()
 
 test('F-C mut.4 — critical ausente ou não-booleano é fail-closed',()=>{for(const v of [undefined,'true',1,null]){const x=state();if(v===undefined)delete x.junta.critical;else x.junta.critical=v;assert.throws(()=>buildSnapshot(x),/critical booleano/);}});
 
-test('F-C mut.5 — porteiro com a identidade de uma alçada da junta não libera',()=>{const s=buildSnapshot(state());for(const id of ['owner','planner','dev','r1','r2','r3'])assert.throws(()=>verifyAttestation(s,{...att(s),agentId:id}),/independência não comprovada/);assert.throws(()=>verifyAttestation(s,{...att(s),agentId:''}),/identidade/);});
+test('F-C mut.5 — porteiro com a identidade de uma alçada da junta não libera',()=>{const s=buildSnapshot(state());for(const id of ['owner','planner','dev','r1','r2','r3'])assert.throws(()=>verifyAttestation(s,{...att(s),agentId:id}),/identidades declaradas colidem/);assert.throws(()=>verifyAttestation(s,{...att(s),agentId:''}),/identidade/);});
 
-test('F-C mut.6 — executor do merge igual a votante ou ao porteiro não mergeia',()=>{const s=buildSnapshot(state()),a=att(s);for(const id of ['owner','planner','dev','r1','r2','r3'])assert.throws(()=>cas(s,a,id),/independência não comprovada/);assert.throws(()=>cas(s,a,'porter'),/mesma identidade do porteiro/);assert.throws(()=>cas(s,a,''),/independente|identidade/);assert.equal(cas(s,a,'merger'),true);});
+test('F-C mut.6 — executor do merge igual a votante ou ao porteiro não mergeia',()=>{const s=buildSnapshot(state()),a=att(s);for(const id of ['owner','planner','dev','r1','r2','r3'])assert.throws(()=>cas(s,a,id),/identidades declaradas colidem/);assert.throws(()=>cas(s,a,'porter'),/mesma identidade do porteiro/);assert.throws(()=>cas(s,a,''),/independente|identidade/);assert.equal(cas(s,a,'merger'),true);});
 
 test('F-C mut.7 — executor pós-merge acumulando alçada (nomeada OU omitida) é vermelho',()=>{const s=buildSnapshot(state()),a=persistido(s);assert.equal(validateFinalization({pr:mergedPr(),attestation:a,executorId:'closer',mergeExecutorId:'merger',junta:junta()}).mergeCommit,'f'.repeat(40));assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'owner',mergeExecutorId:'merger',junta:junta()}),/acumulou alçada/);const omitido=junta();delete omitido.origin;assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'owner',mergeExecutorId:'merger',junta:omitido}),/origin/);assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'',mergeExecutorId:'merger',junta:junta()}),/sem identidade/);});
 
@@ -235,7 +235,7 @@ test('D-9 mut.2 — LIBERADO de OUTRO snapshot, ou sem a evidência do head, nã
   assert.throws(()=>fecha({...att(s),snapshot:b}),/atestado pertence a snapshot diferente/);
   assert.throws(()=>fecha(persistido(s,{evidence:{kpiLatestBlobSha:'9'.repeat(40)}})),/evidência de reexecução divergente/);
   assert.throws(()=>fecha(persistido(s,{commands:[{cmd:'npm test',exitCode:1}]})),/não terminou em 0/);
-  assert.throws(()=>fecha(persistido(s,{agentId:'planner'})),/independência não comprovada/);
+  assert.throws(()=>fecha(persistido(s,{agentId:'planner'})),/identidades declaradas colidem/);
   assert.throws(()=>fecha(persistido(s,{runtime:'claude-code'})),/declaração de invocação/);
   // Controle: o atestado íntegro continua fechando.
   assert.equal(fecha(persistido(s)).approvedHead,H);
@@ -361,11 +361,25 @@ const NOME_QUE_PROMETE_DEMAIS=new RegExp(['Fonte','Confi','[aá]vel'].join(''));
 // igualdade de id/slug/owner do app criador. Negar confiabilidade excede a medição tanto quanto
 // afirmá-la — por isso a cerca é indiferente à polaridade.
 const VEREDITO_DE_CONFIABILIDADE=new RegExp(['confi','[aá]','ve(?:l|is)'].join(''),'i');
+// S-6 — a mesma classe sobreviveu num SEGUNDO vocabulário. `fail('... fonte não comprovada')` parece
+// honesto: afirma ausência de prova, e o fail é justamente por isso. O defeito está na PROMESSA
+// IMPLÍCITA — a mensagem diz que, com o env configurado, a fonte ESTARIA comprovada, e o D-5 mediu
+// que não estaria. O pin prova "app GitHub Actions", nunca "fonte". É a alegação do satélite 1
+// escondida num condicional, e por isso a cerca é indiferente à polaridade aqui também.
+//
+// MEDIDO nos 6 scripts do gate antes de escrever esta cerca: 5 ocorrências de `comprovad`, e
+// ZERO delas descritivas — as cinco eram veredito de prova. Duas eram resíduo da própria correção
+// do S-2, que trocou o vocabulário de "confiável" por "comprovada" sem sair da classe. Não há aqui
+// o caso que o CONTROLE-A protegeu em `fonte` (substantivo de uso legítimo abundante), então a
+// cerca não precisa de exceção — precisa de ÂNCORA, para o "zero" não virar cláusula vazia se
+// alguém reescrever o padrão amanhã. A âncora é o vocabulário descritivo que substituiu o veredito.
+const VEREDITO_DE_PROVA=new RegExp(['comprovad','[oa]s?'].join(''),'i');
 const SCRIPTS_DO_GATE=['scripts/porteiro-pre-merge.mjs','scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs','scripts/sync-agent-agents.mjs','scripts/sync-agent-skills.mjs'];
 
 export function guardNomeDoGate(src:string){
   if(NOME_QUE_PROMETE_DEMAIS.test(src))throw new Error('identificador que afirma "fonte confiável": a execução prova apenas que o check foi criado pelo app GitHub Actions');
   if(VEREDITO_DE_CONFIABILIDADE.test(src))throw new Error('veredito de confiabilidade em texto do gate: a execução mede desencontro de app criador (id/slug/owner), não confiança — vale para a forma afirmada E para a negada');
+  if(VEREDITO_DE_PROVA.test(src))throw new Error('veredito de prova em texto do gate: a execução compara campos (app criador, identidades declaradas), não comprova — a forma negada carrega a mesma promessa implícita e cai junto');
   return true;
 }
 
@@ -451,4 +465,44 @@ test('S-5 — cerca: veredito de confiabilidade não volta, NEM na forma negada'
   const ocorrenciasDeFonte=SCRIPTS_DO_GATE
     .reduce((n,alvo)=>n+(readFileSync(alvo,'utf8').match(/fonte/gi)||[]).length,0);
   assert.ok(ocorrenciasDeFonte>=10,`esperava uso legítimo abundante do substantivo, achei ${ocorrenciasDeFonte}`);
+});
+
+test('S-6 — cerca: veredito de PROVA não volta, NEM na forma negada',()=>{
+  // Os seis scripts do gate passam limpos hoje, com a cerca já ancorada nas duas polaridades.
+  for(const alvo of SCRIPTS_DO_GATE)assert.equal(guardNomeDoGate(readFileSync(alvo,'utf8')),true,`${alvo}`);
+  const real=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
+  const negado=['fonte n','ã','o comprovad','a'].join('');
+  // A MUTAÇÃO DO CICLO: exatamente a string que estava viva em `c5f0368`, que as cercas do S-2 e do
+  // S-5 deixavam passar porque nenhuma das duas olhava este vocabulário. Vermelha agora.
+  assert.throws(()=>guardNomeDoGate(real.replace('app criador esperado não configurado',negado)),/veredito de prova/);
+  // E as variações que um autor bem-intencionado produziria sem perceber — as duas polaridades.
+  for(const volta of [
+    ['fail("origem n','ã','o comprovad','a","'].join(''),                    // outro substantivo, negado
+    ['fail("origem comprovad','a","'].join(''),                              // forma AFIRMADA
+    ['fail("fontes n','ã','o comprovad','as","'].join(''),                   // plural
+    ['fail("app criador comprovad','o","'].join(''),                         // masculino, afirmado
+    ['// independ','ê','ncia n','ã','o comprovad','a neste caminho'].join(''), // em comentário
+    ['fail("FONTE N','Ã','O COMPROVAD','A","'].join(''),                     // caixa alta
+  ])assert.throws(()=>guardNomeDoGate(volta),/veredito de prova/,`deveria pegar: ${volta}`);
+  // LIMITE DA CERCA: ela não persegue o vocabulário DESCRITIVO que nomeia o que a execução mede.
+  // Descrever desencontro medido é descrição, não veredito — e tem de continuar passando.
+  for(const legitimo of [
+    "fail('resposta sem objeto `app`: não há app criador para conferir')",
+    "fail('ERP_PORTEIRO_EXPECTED_APP_ID positivo é obrigatório; app criador esperado não configurado')",
+    'fail(`${papel} ocupou a alçada ${collision.role} da junta; identidades declaradas colidem`)',
+    'fail(`check requerido não verde ou com fonte errada: ${req.context}`)',
+    '// o gate compara IDENTIDADES DECLARADAS e pega colisão e omissão, não pseudônimo',
+    '// com id, slug e owner.id conferidos (D-11)',
+  ])assert.equal(guardNomeDoGate(legitimo),true,`não pode pegar: ${legitimo}`);
+  // ÂNCORA 1 — a premissa da cerca é medida, não afirmada: ZERO usos do veredito hoje. Sem esta
+  // linha, "não há uso legítimo a proteger" seria alegação sobre o próprio guard, que é a classe
+  // que este ciclo persegue.
+  const veredito=SCRIPTS_DO_GATE
+    .reduce((n,alvo)=>n+(readFileSync(alvo,'utf8').match(/comprovad[oa]s?/gi)||[]).length,0);
+  assert.equal(veredito,0,`veredito de prova vivo em script do gate: ${veredito} ocorrência(s)`);
+  // ÂNCORA 2 — e o limite não é vácuo: o vocabulário descritivo que substituiu o veredito é
+  // abundante. Se alguém reescrever o padrão amanhã e esvaziar a lista acima, esta linha cai.
+  const descritivo=SCRIPTS_DO_GATE
+    .reduce((n,alvo)=>n+(readFileSync(alvo,'utf8').match(/confer/gi)||[]).length,0);
+  assert.ok(descritivo>=10,`esperava uso descritivo abundante, achei ${descritivo}`);
 });

@@ -76,19 +76,20 @@ export function coletarPaths(fetchPage, porPagina = 100) {
 // Cross-check triplo sobre o objeto `app` da RESPOSTA do check-run. `owner.id` em vez de
 // `owner.login` porque login e renomeavel e o id nao. Divergencia em qualquer campo = fail-closed.
 // O NOME DIZ O QUE A EXECUCAO PROVA, e so isso: que o check foi CRIADO PELO APP GitHub Actions,
-// com id, slug e owner.id conferidos (D-11). O nome anterior prometia que a origem do check estava
-// COMPROVADA — propriedade que a execucao NAO produz; num ciclo cujo tema e "artefato que afirma o que a
+// com id, slug e owner.id conferidos (D-11). O nome anterior emitia um VEREDITO sobre a origem do
+// check — propriedade que a execucao NAO produz; num ciclo cujo tema e "artefato que afirma o que a
 // execucao nao entrega", a tabela de simbolos nao podia ser a excecao. E condicao necessaria,
 // nunca suficiente: passar neste cross-check nao diz QUAL workflow publicou o check. Ver
 // PD-GOV-PORTEIRO-APPID e PD-GOV-PORTEIRO-PROVENIENCIA (docs/omega-pd.md).
 export function assertCriadoPeloAppGitHubActions(app, expectedAppId) {
-  // As mensagens nomeiam O QUE SE PROVA — "app criador" — em vez de alegar origem comprovada (S-2).
+  // As mensagens nomeiam O QUE SE MEDE — igualdade de app criador — em vez de emitir veredito sobre
+  // a origem (S-2/S-6). Nem "origem provada" nem "origem nao provada": a execucao compara campos.
   // Mensagem de erro e o que o operador le quando o gate dispara: e a superficie MAIS visivel do
   // overclaim, nao a menos. A cerca cobre as duas formas, identificador e string, e varre o arquivo
   // INTEIRO — por isso nem comentario daqui usa o termo proibido, nem para explicar que ele saiu.
   // Ver D-11 e a cerca em tests/porteiro-pre-merge-governance.test.ts.
   if (!Number.isInteger(expectedAppId) || expectedAppId <= 0) fail('app criador esperado não resolvido');
-  if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: app criador não comprovado');
+  if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: não há app criador para conferir');
   if (app.id !== expectedAppId) fail(`status criado por app id ${app.id ?? 'ausente'}; app criador esperado é GitHub Actions (id ${expectedAppId})`);
   if (app.slug !== APP_GITHUB_ACTIONS.slug) fail(`status criado por app slug ${app.slug ?? 'ausente'}; app criador esperado é GitHub Actions (slug ${APP_GITHUB_ACTIONS.slug})`);
   if (app.owner?.id !== APP_GITHUB_ACTIONS.ownerId) fail(`status criado por owner.id ${app.owner?.id ?? 'ausente'}; app criador esperado é GitHub Actions (owner.id ${APP_GITHUB_ACTIONS.ownerId})`);
@@ -101,7 +102,11 @@ export function assertCriadoPeloAppGitHubActions(app, expectedAppId) {
 // O override nao pode ser canal de afrouxamento silencioso.
 export function resolveExpectedAppId({ literal, override, registro }) {
   const lit = Number(literal);
-  if (!Number.isInteger(lit) || lit <= 0) fail('ERP_PORTEIRO_EXPECTED_APP_ID positivo é obrigatório; fonte não comprovada');
+  // S-6: a forma NEGADA carregava a mesma promessa implicita. Negar a prova da fonte afirma, por
+  // tras, que com o env preenchido a fonte TERIA prova — e o D-5 mediu que nao teria: o pin
+  // estabelece "app GitHub Actions", nunca "fonte". E a alegacao do satelite 1 escondida num
+  // condicional. A mensagem nomeia a CONFIGURACAO ausente, nao a prova ausente.
+  if (!Number.isInteger(lit) || lit <= 0) fail('ERP_PORTEIRO_EXPECTED_APP_ID positivo é obrigatório; app criador esperado não configurado');
   if (!nonEmpty(override === undefined || override === null ? '' : String(override))) {
     if (lit !== APP_GITHUB_ACTIONS.id) fail(`ERP_PORTEIRO_EXPECTED_APP_ID (${lit}) diverge do app id fixado pela PD-GOV-PORTEIRO-APPID (${APP_GITHUB_ACTIONS.id})`);
     return lit;
@@ -251,7 +256,10 @@ export function assertIndependent(snapshot, agentId, papel) {
   if (!Array.isArray(identities) || identities.length === 0) fail('snapshot sem as identidades canônicas da junta');
   if (!nonEmpty(agentId)) fail(`${papel} sem identidade declarada`);
   const collision = identities.find((x) => x.agentId === agentId);
-  if (collision) fail(`${papel} ocupou a alçada ${collision.role} da junta; independência não comprovada`);
+  // S-6: negar a prova da independencia excedia a medicao na direcao oposta. O gate compara
+  // IDENTIDADES DECLARADAS e pega colisão e omissão — não pseudônimo (limite já escrito na F-C).
+  // A mensagem nomeia a colisão medida, que é o que a execução de fato encontrou.
+  if (collision) fail(`${papel} ocupou a alçada ${collision.role} da junta; identidades declaradas colidem`);
   return true;
 }
 
