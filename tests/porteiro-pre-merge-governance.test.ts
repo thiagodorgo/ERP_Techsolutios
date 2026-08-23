@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict,assertFonteConfiavel,resolveExpectedAppId,pathsDeGovernanca,coletarPaths,APP_GITHUB_ACTIONS } from '../scripts/porteiro-pre-merge.mjs';
+import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict,assertFonteConfiavel,resolveExpectedAppId,pathsDeGovernanca,coletarPaths,normalizarChecks,APP_GITHUB_ACTIONS } from '../scripts/porteiro-pre-merge.mjs';
 import { assertMergeCandidate } from '../scripts/merge-authorized-pr.mjs';
 import { validateFinalization } from '../scripts/post-merge-finalize.mjs';
 import { assertJuntaCritica,assertDesired,conferirFontesFixadas } from '../scripts/configure-main-ruleset.mjs';
@@ -247,4 +247,58 @@ test('D-9 — o fechamento REUSA verifyAttestation; nunca uma segunda cópia da 
   assert.match(src,/verifyAttestation\(snapshot,attestation\)/);
   // Cópia local do literal do veredito é como a divergência do D-10 nasceu: fica vermelho aqui.
   assert.doesNotMatch(src,/LIBERADO: merge do PR/,'o literal do veredito não pode ser reescrito no fechamento');
+});
+
+// ---------------------------------------------------------------------------
+// D-10 — a normalização de check-runs/statuses é UMA função, não três cópias.
+// Medido antes da correção: as três cópias já tinham divergido — duas derivavam o `appId` do autor
+// do commit status cru, a do porteiro aplicava o condicional de Bot. O mesmo status normalizado de
+// dois jeitos produz snapshot diferente e o compare-and-swap do merge acusa "snapshot ... mudou"
+// sem que nada tenha mudado. Fail-closed (nunca abriu gate), mas falso-vermelho recorrente no CAS
+// ensina o operador a desconfiar do gate e a re-rodar até passar — degradação real. A forma da
+// correção importa mais que o valor: igualar as três linhas deixaria a divergência voltar.
+// ---------------------------------------------------------------------------
+
+const APP_ACTIONS=15368;      // `github-actions` — id de APP, o que o ruleset fixa em integration_id
+const USUARIO_BOT=41898282;   // `github-actions[bot]` — id de USUÁRIO-bot, o que um status carrega
+
+test('D-10 — a função única normaliza check-runs e statuses com o condicional de Bot',()=>{
+  assert.deepEqual(normalizarChecks(
+    [{name:'ci',app:{id:APP_ACTIONS},conclusion:'success',html_url:'https://run'},{name:'sem-app',conclusion:'failure'}],
+    [{context:'legado',state:'success',target_url:'https://st',creator:{type:'Bot',id:USUARIO_BOT}},
+     {context:'humano',state:'pending',target_url:null,creator:{type:'User',id:777}},
+     {context:'sem-autor',state:'success'}],
+  ),[
+    {context:'ci',appId:APP_ACTIONS,conclusion:'success',detailsUrl:'https://run'},
+    {context:'sem-app',appId:null,conclusion:'failure',detailsUrl:null},
+    {context:'legado',appId:USUARIO_BOT,conclusion:'success',detailsUrl:'https://st'},
+    {context:'humano',appId:null,conclusion:'pending',detailsUrl:null},
+    {context:'sem-autor',appId:null,conclusion:'success',detailsUrl:null},
+  ]);
+  assert.deepEqual(normalizarChecks(undefined,undefined),[]);
+});
+
+test('D-10 — id de USUÁRIO-bot num status nunca satisfaz check requerido pinado em id de APP',()=>{
+  // Erro de categoria nomeado no ponto: 41898282 é usuário, 15368 é app. O fail-closed é intencional.
+  const x=state();
+  x.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks[0].integration_id=APP_ACTIONS;
+  x.checks=normalizarChecks([],[{context:'ci',state:'success',target_url:'u',creator:{type:'Bot',id:USUARIO_BOT}}]);
+  assert.throws(()=>buildSnapshot(x),/fonte errada: ci/);
+  // E o mesmo contexto vindo do app certo (check-run) satisfaz — o gate não é surdo, é estrito.
+  const ok=state();
+  ok.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks[0].integration_id=APP_ACTIONS;
+  ok.checks=normalizarChecks([{name:'ci',app:{id:APP_ACTIONS},conclusion:'success',html_url:'u'}],[]);
+  assert.equal(buildSnapshot(ok).snapshotSha256.length,64);
+});
+
+test('D-10 — cerca: a normalização inline não reaparece nos outros dois scripts do gate',()=>{
+  const unica=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
+  assert.match(unica,/export function normalizarChecks\(/);
+  assert.equal((unica.match(/creator\?\.type/g)||[]).length,1,'a decisão por tipo de autor vive num lugar só');
+  for(const alvo of ['scripts/merge-authorized-pr.mjs','scripts/configure-main-ruleset.mjs']){
+    const src=readFileSync(alvo,'utf8');
+    assert.doesNotMatch(src,/creator/,`${alvo}: derivar appId do autor do status voltou a ser inline`);
+    assert.doesNotMatch(src,/statuses\.map\(/,`${alvo}: mapeador inline de statuses voltou a existir`);
+    assert.match(src,/normalizarChecks/,`${alvo}: não consome a normalização única`);
+  }
 });

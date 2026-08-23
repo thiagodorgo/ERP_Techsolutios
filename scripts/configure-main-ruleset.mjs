@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { validateJunta, juntaIdentities, aplicaSeABranchDefault, APP_GITHUB_ACTIONS } from './porteiro-pre-merge.mjs';
+import { validateJunta, juntaIdentities, aplicaSeABranchDefault, APP_GITHUB_ACTIONS, normalizarChecks } from './porteiro-pre-merge.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const arg=(n,d)=>{const i=process.argv.indexOf(n);return i>=0?process.argv[i+1]:d;};
@@ -52,10 +52,13 @@ export function conferirFontesFixadas(required,observed){
   }
   return true;
 }
+// MESMA normalizacao do snapshot (D-10): o `plan()` tem de observar a fonte exatamente como o
+// porteiro observa, senao o VETO por divergencia dispara — ou deixa de disparar — por causa da
+// copia, e nao do estado real do GitHub. `success` e derivado do `conclusion` canonico.
 function sources(repo,head){
   const runs=gh(['api',`repos/${repo}/commits/${head}/check-runs?filter=latest&per_page=100`]).check_runs||[];
   const statuses=gh(['api',`repos/${repo}/commits/${head}/status`]).statuses||[];
-  return [...runs.map(x=>({context:x.name,appId:x.app?.id??null,success:x.conclusion==='success'})),...statuses.map(x=>({context:x.context,appId:x.creator?.id??null,success:x.state==='success'}))];
+  return normalizarChecks(runs,statuses).map(c=>({context:c.context,appId:c.appId,success:c.conclusion==='success'}));
 }
 async function plan(){
   const repo=gh(['repo','view','--json','nameWithOwner']).nameWithOwner; const head=arg('--head'); if(!/^[0-9a-f]{40}$/.test(head||''))fail('--head SHA40 obrigatório');

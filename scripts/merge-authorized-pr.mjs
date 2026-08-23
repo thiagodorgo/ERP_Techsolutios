@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildSnapshot, verifyAttestation, assertIndependent, fetchPrFiles } from './porteiro-pre-merge.mjs';
+import { buildSnapshot, verifyAttestation, assertIndependent, fetchPrFiles, normalizarChecks } from './porteiro-pre-merge.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const CONTEXT = 'erp/porteiro-pre-merge';
@@ -43,10 +43,10 @@ async function main() {
   const rulesets = rulesetSummaries.map((r) => gh(['api',`repos/${repo}/rulesets/${r.id}?includes_parents=true`]));
   const checksRaw = gh(['api',`repos/${repo}/commits/${expectedHead}/check-runs?filter=latest&per_page=100`]);
   const statuses = gh(['api',`repos/${repo}/commits/${expectedHead}/status`]).statuses || [];
-  const checks = [
-    ...(checksRaw.check_runs || []).map((c) => ({ context:c.name, appId:c.app?.id ?? null, conclusion:c.conclusion, detailsUrl:c.html_url })),
-    ...statuses.map((s) => ({ context:s.context, appId:s.creator?.id ?? null, conclusion:s.state === 'success' ? 'success' : s.state, detailsUrl:s.target_url })),
-  ];
+  // MESMA normalizacao do snapshot (D-10). A copia inline que vivia aqui derivava o `appId` do
+  // autor do commit status cru, enquanto o porteiro aplicava o condicional de Bot: o mesmo status
+  // virava `appId` diferente nos dois lados e o compare-and-swap acusava mudanca inexistente.
+  const checks = normalizarChecks(checksRaw.check_runs, statuses);
   const kpiLatestBlobSha = gh(['api',`repos/${repo}/contents/Kpis/kpis-latest.json?ref=${expectedHead}`]).sha;
   const files = fetchPrFiles(repo, prNumber);
   const junta = parseMarked(comments, 'erp-junta-attestation:v1').payload;

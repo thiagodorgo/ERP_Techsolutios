@@ -124,6 +124,33 @@ export const repoContext = () => {
   return { repo, defaultBranch };
 };
 
+// ---------------------------------------------------------------------------
+// NORMALIZACAO UNICA de check-runs + commit statuses (D-10).
+//
+// Existia em TRES copias — `liveState` aqui, `merge-authorized-pr.mjs` e
+// `configure-main-ruleset.mjs:sources` — e as copias JA TINHAM DIVERGIDO: duas usavam
+// `creator.id` cru, esta usava o condicional de Bot. O mesmo commit status normalizado de dois
+// jeitos produz snapshot diferente, e o compare-and-swap do merge acusa "snapshot ... mudou" sem
+// que nada tenha mudado. O defeito era fail-closed (falso-vermelho, nunca gate aberto) — mas
+// falso-vermelho recorrente no CAS ENSINA O OPERADOR A DESCONFIAR DO GATE e a re-rodar ate passar,
+// e isso e degradacao real. Por isso a correcao e UMA funcao exportada, nao tres linhas iguais:
+// igualar as copias deixaria a divergencia voltar no ciclo seguinte, porque a causa-raiz e a
+// triplicacao, nao o valor.
+//
+// ERRO DE CATEGORIA que a unificacao corrige: `creator.id` de um commit status e id de
+// USUARIO-bot (`github-actions[bot]` = 41898282), enquanto o `integration_id` do ruleset e id de
+// APP (`github-actions` = 15368). Sao entidades distintas em numeracoes distintas; escrever o id
+// de usuario no campo `appId` compara maca com laranja. A consequencia e INTENCIONAL e
+// fail-closed: um commit status nunca satisfaz um check requerido com `integration_id` fixado —
+// o matching de `buildSnapshot` exige igualdade estrita e o pin do template e sempre id de app.
+// Criador que nao e Bot nem chega a candidato: vira `null`, e `null` nunca e curinga.
+export function normalizarChecks(checkRuns, statuses) {
+  return [
+    ...(checkRuns || []).map((c) => ({ context: c.name, appId: c.app?.id ?? null, conclusion: c.conclusion, detailsUrl: c.html_url ?? null })),
+    ...(statuses || []).map((s) => ({ context: s.context, appId: s.creator?.type === 'Bot' ? s.creator?.id ?? null : null, conclusion: s.state === 'success' ? 'success' : s.state, detailsUrl: s.target_url ?? null })),
+  ];
+}
+
 // Regras que o ruleset da branch default PRECISA conter para que "main usa ruleset ativo/strict"
 // signifique alguma coisa. Sem `pull_request` não há PR obrigatório; sem `deletion`/
 // `non_fast_forward` a branch pode ser apagada ou reescrita por trás do gate.
@@ -319,10 +346,7 @@ async function liveState(prNumber) {
   const rulesets = rulesetSummaries.map((r) => gh(['api', `repos/${repo}/rulesets/${r.id}?includes_parents=true`]));
   const checksRaw = gh(['api', `repos/${repo}/commits/${pr.head.sha}/check-runs?filter=latest&per_page=100`]);
   const statuses = gh(['api', `repos/${repo}/commits/${pr.head.sha}/status`]).statuses || [];
-  const checks = [
-    ...(checksRaw.check_runs || []).map((c) => ({ context: c.name, appId: c.app?.id ?? null, conclusion: c.conclusion, detailsUrl: c.html_url })),
-    ...statuses.map((s) => ({ context: s.context, appId: s.creator?.type === 'Bot' ? s.creator?.id ?? null : null, conclusion: s.state === 'success' ? 'success' : s.state, detailsUrl: s.target_url })),
-  ];
+  const checks = normalizarChecks(checksRaw.check_runs, statuses);
   const kpiLatestBlobSha = gh(['api', `repos/${repo}/contents/${KPI_LATEST_PATH}?ref=${pr.head.sha}`]).sha;
   const files = fetchPrFiles(repo, prNumber);
   const comments = gh(['api', `repos/${repo}/issues/${prNumber}/comments?per_page=100`]);
