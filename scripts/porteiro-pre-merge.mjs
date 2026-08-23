@@ -75,9 +75,13 @@ export function coletarPaths(fetchPage, porPagina = 100) {
 
 // Cross-check triplo sobre o objeto `app` da RESPOSTA do check-run. `owner.id` em vez de
 // `owner.login` porque login e renomeavel e o id nao. Divergencia em qualquer campo = fail-closed.
-// LEIA O NOME COM CUIDADO: "fonte confiavel" aqui e a IDENTIDADE DE APP exigida — condicao
-// necessaria, nunca suficiente. Passar neste cross-check nao diz qual workflow publicou o check.
-export function assertFonteConfiavel(app, expectedAppId) {
+// O NOME DIZ O QUE A EXECUCAO PROVA, e so isso: que o check foi CRIADO PELO APP GitHub Actions,
+// com id, slug e owner.id conferidos (D-11). O nome anterior prometia "fonte confiavel" do check —
+// propriedade que a execucao NAO produz; num ciclo cujo tema e "artefato que afirma o que a
+// execucao nao entrega", a tabela de simbolos nao podia ser a excecao. E condicao necessaria,
+// nunca suficiente: passar neste cross-check nao diz QUAL workflow publicou o check. Ver
+// PD-GOV-PORTEIRO-APPID e PD-GOV-PORTEIRO-PROVENIENCIA (docs/omega-pd.md).
+export function assertCriadoPeloAppGitHubActions(app, expectedAppId) {
   if (!Number.isInteger(expectedAppId) || expectedAppId <= 0) fail('fonte confiável esperada não resolvida');
   if (!app || typeof app !== 'object' || Array.isArray(app)) fail('resposta sem objeto `app`: fonte do status não comprovada');
   if (app.id !== expectedAppId) fail(`status criado por app id ${app.id ?? 'ausente'}; fonte confiável esperada é ${expectedAppId}`);
@@ -400,7 +404,7 @@ async function publishCommand() {
   const checkInput = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'success', details_url:comment.html_url, output:{ title:`LIBERADO PR #${snapshot.pr}`, summary:`Head ${snapshot.head.oid} autorizado pelo porteiro independente.` } });
   const status = gh(['api','-X','POST',`repos/${snapshot.repo}/check-runs`,'--input','-'], checkInput);
   try {
-    assertFonteConfiavel(status.app, expectedApp);
+    assertCriadoPeloAppGitHubActions(status.app, expectedApp);
   } catch (e) {
     const failure = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'failure', details_url:comment.html_url, output:{title:'Fonte não confiável',summary:e.message} });
     gh(['api','-X','POST',`repos/${snapshot.repo}/check-runs`,'--input','-'], failure);

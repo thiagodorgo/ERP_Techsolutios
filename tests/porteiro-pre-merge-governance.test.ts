@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict,assertFonteConfiavel,resolveExpectedAppId,pathsDeGovernanca,coletarPaths,normalizarChecks,APP_GITHUB_ACTIONS } from '../scripts/porteiro-pre-merge.mjs';
+import { buildSnapshot,verifyAttestation,checkAllowlist,validateJunta,juntaIdentities,aplicaSeABranchDefault,buildNegativeVerdict,assertCriadoPeloAppGitHubActions,resolveExpectedAppId,pathsDeGovernanca,coletarPaths,normalizarChecks,APP_GITHUB_ACTIONS } from '../scripts/porteiro-pre-merge.mjs';
 import { assertMergeCandidate } from '../scripts/merge-authorized-pr.mjs';
 import { validateFinalization } from '../scripts/post-merge-finalize.mjs';
 import { assertJuntaCritica,assertDesired,conferirFontesFixadas } from '../scripts/configure-main-ruleset.mjs';
@@ -105,9 +105,9 @@ const registro=(over:any={}):any=>({id:15368,slug:'github-actions',owner:{login:
 const reqDoTpl=(d:any)=>d.rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks;
 const tplPinado=():any=>{const d=JSON.parse(readFileSync('.github/rulesets/main.template.json','utf8'));for(const c of reqDoTpl(d))c.integration_id=APP_GITHUB_ACTIONS.id;return d;};
 
-test('D-4 — o pin vem da PD e o cross-check é triplo: id, slug e owner.id',()=>{assert.deepEqual(APP_GITHUB_ACTIONS,{id:15368,slug:'github-actions',ownerId:9919});assert.equal(assertFonteConfiavel(app(),15368),true);assert.throws(()=>assertFonteConfiavel(app({id:9426}),15368),/app id 9426/);assert.throws(()=>assertFonteConfiavel(app({slug:'azure-pipelines'}),15368),/app slug azure-pipelines/);assert.throws(()=>assertFonteConfiavel(app({owner:{login:'github',id:1}}),15368),/owner\.id 1/);assert.throws(()=>assertFonteConfiavel(app({owner:undefined}),15368),/owner\.id ausente/);assert.throws(()=>assertFonteConfiavel(undefined,15368),/sem objeto/);assert.throws(()=>assertFonteConfiavel(app(),0),/não resolvida/);});
+test('D-4 — o pin vem da PD e o cross-check é triplo: id, slug e owner.id',()=>{assert.deepEqual(APP_GITHUB_ACTIONS,{id:15368,slug:'github-actions',ownerId:9919});assert.equal(assertCriadoPeloAppGitHubActions(app(),15368),true);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({id:9426}),15368),/app id 9426/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({slug:'azure-pipelines'}),15368),/app slug azure-pipelines/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'github',id:1}}),15368),/owner\.id 1/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:undefined}),15368),/owner\.id ausente/);assert.throws(()=>assertCriadoPeloAppGitHubActions(undefined,15368),/sem objeto/);assert.throws(()=>assertCriadoPeloAppGitHubActions(app(),0),/não resolvida/);});
 
-test('D-4 — owner.id em vez de owner.login: rename de org não afrouxa o gate',()=>{assert.equal(assertFonteConfiavel(app({owner:{login:'github-renomeado',id:9919}}),15368),true);assert.throws(()=>assertFonteConfiavel(app({owner:{login:'github',id:9426}}),15368),/owner\.id 9426/);});
+test('D-4 — owner.id em vez de owner.login: rename de org não afrouxa o gate',()=>{assert.equal(assertCriadoPeloAppGitHubActions(app({owner:{login:'github-renomeado',id:9919}}),15368),true);assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'github',id:9426}}),15368),/owner\.id 9426/);});
 
 test('D-4 — caminho rápido: o literal do YAML tem de bater com o pin do código',()=>{assert.equal(resolveExpectedAppId({literal:'15368',override:'',registro:null}),15368);assert.throws(()=>resolveExpectedAppId({literal:'999999',override:'',registro:null}),/diverge do app id fixado pela PD-GOV-PORTEIRO-APPID/);for(const l of ['',null,undefined,'0','-1','abc','15368.5'])assert.throws(()=>resolveExpectedAppId({literal:l,override:'',registro:null}),/positivo é obrigatório/);});
 
@@ -301,4 +301,41 @@ test('D-10 — cerca: a normalização inline não reaparece nos outros dois scr
     assert.doesNotMatch(src,/statuses\.map\(/,`${alvo}: mapeador inline de statuses voltou a existir`);
     assert.match(src,/normalizarChecks/,`${alvo}: não consome a normalização única`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// D-11 — o identificador não pode prometer mais do que a execução prova.
+// O nome antigo afirmava "fonte confiável" do check; a execução prova apenas que o check foi
+// criado pelo app GitHub Actions (id, slug e owner.id) — condição necessária, nunca suficiente.
+// Num ciclo cujo tema é "artefato que afirma o que a execução não produz", a própria tabela de
+// símbolos não podia ser a exceção.
+//
+// O token proibido é montado por CONCATENAÇÃO de propósito: escrito por extenso, este arquivo (e
+// qualquer futura varredura que o inclua) passaria a conter o nome que o guard proíbe.
+// ---------------------------------------------------------------------------
+
+const NOME_QUE_PROMETE_DEMAIS=new RegExp(['Fonte','Confi','[aá]vel'].join(''));
+const SCRIPTS_DO_GATE=['scripts/porteiro-pre-merge.mjs','scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs','scripts/sync-agent-agents.mjs','scripts/sync-agent-skills.mjs'];
+
+export function guardNomeDoGate(src:string){
+  if(NOME_QUE_PROMETE_DEMAIS.test(src))throw new Error('identificador que afirma "fonte confiável": a execução prova apenas que o check foi criado pelo app GitHub Actions');
+  return true;
+}
+
+test('D-11 — o nome da função diz o que a execução prova: app + GitHub Actions',()=>{
+  assert.equal(assertCriadoPeloAppGitHubActions(app(),15368),true);
+  const fonte=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
+  assert.match(fonte,/export function assertCriadoPeloAppGitHubActions\(/);
+  const m=achata(fonte,'//');
+  assert.match(m,/condicao necessaria,\s*nunca suficiente/,'o docstring perdeu o limite "necessária, nunca suficiente"');
+  assert.match(m,/PD-GOV-PORTEIRO-APPID/);
+  assert.match(m,/PD-GOV-PORTEIRO-PROVENIENCIA/);
+});
+
+test('D-11 — cerca: o identificador que promete demais não volta aos scripts do gate',()=>{
+  for(const alvo of SCRIPTS_DO_GATE)assert.equal(guardNomeDoGate(readFileSync(alvo,'utf8')),true,`${alvo}`);
+  // A cerca não é vaga: reintroduzir o nome, em fixture na memória, fica VERMELHO.
+  const reintroduzido=readFileSync('scripts/porteiro-pre-merge.mjs','utf8').replace(/assertCriadoPeloAppGitHubActions/g,['assert','Fonte','Confiavel'].join(''));
+  assert.throws(()=>guardNomeDoGate(reintroduzido),/fonte confiável/);
+  assert.throws(()=>guardNomeDoGate(['assert','Fonte','Confiável'].join('')),/fonte confiável/);
 });
