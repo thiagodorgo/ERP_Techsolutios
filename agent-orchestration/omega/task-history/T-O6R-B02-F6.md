@@ -1,10 +1,10 @@
 # T-O6R-B02/F6 — autoria e bateria final
 
-**Data:** 2026-08-20  
-**Branch:** `feat/o6r-b02-financial-uow`  
-**Estado:** `aguardando_merge`  
-**PR / merge / approved head:** `null / null / null`  
-**Gate de publicação:** `G-A109FD7-PUBLICADO` aberto; nenhum push/PR ocorreu nesta autoria.
+- **Data:** 2026-08-20
+- **Branch:** `feat/o6r-b02-financial-uow`
+- **Estado:** `aguardando_merge`
+- **PR / merge / approved head:** `null / null / null`
+- **Gate de publicação:** `G-A109FD7-PUBLICADO` aberto; nenhum push/PR ocorreu nesta autoria.
 
 ## Alçadas
 

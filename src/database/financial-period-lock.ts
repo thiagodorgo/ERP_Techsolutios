@@ -13,8 +13,18 @@ import type { Prisma } from "@prisma/client";
 //     pagar dois títulos do mesmo mês não enfileira — quem serializa writers entre si é o row lock
 //     da própria linha. Mas shared CONFLITA com o exclusivo do close: o writer que chega com o
 //     close em curso ESPERA e re-valida isPeriodClosed DENTRO da própria transação (422 se fechou);
-//     o close que chega com um writer em voo ESPERA o commit dele e o snapshot o INCLUI. Nunca
-//     existe commit de writer DEPOIS do snapshot da mesma competência.
+//     o close que chega com um writer em voo ESPERA o commit dele e o snapshot o INCLUI.
+//
+// O ALCANCE EXATO DA GARANTIA (M2, ciclo 2 · C4 — o texto anterior prometia mais do que o código
+// entrega). A garantia é: nunca existe commit de writer DEPOIS do snapshot da competência CUJA
+// TRAVA ELE TOMOU. E cada writer toma a trava de UMA competência — a do LANÇAMENTO que está
+// gravando (server-now no estorno/cheque; `occurred_at` na liquidação), nunca a do título envolvido.
+// Decisão explícita e registrada (§12.1 do plano do bloco): `payTitle` de um título de competência X
+// com lançamento em Y toma a trava de Y, não a de X. Fechar X, portanto, não serializa contra esse
+// pagamento — o que o fechamento de X protege é o conjunto de linhas de X no snapshot dele, e o
+// `paid_amount` do título é mutado dentro da unidade do lançamento de Y. Resíduo declarado, não
+// defeito silencioso: quem quiser a trava das DUAS competências precisa tomá-las em ordem total
+// (senão inverte a ordem global de locks e volta o deadlock que esta seção existe para evitar).
 //
 // Ordem global de locks: advisory SEMPRE antes de row locks (os chamadores tomam a trava antes de
 // qualquer INSERT/UPDATE) → sem inversão de ordem, sem deadlock entre close e writers.

@@ -114,6 +114,81 @@ test("undo-log do cheque: work que lança depois da transição devolve o cheque
   assert.equal((await cheques.findById(tenantId, cheque.id))?.status, "deposited", "o cheque volta ao estado anterior");
 });
 
+// M1 (ciclo 2 · C4) — O TESTE DISCRIMINANTE do journal. Achado menor da J-B-O6R-02-ciclo1: o
+// rollback restaurava o SNAPSHOT DO TENANT INTEIRO, então escrita commitada FORA da unidade,
+// enquanto ela estava em voo, era DESTRUÍDA — e o comentário na fonte afirmava que o mutex "faz as
+// vezes da trava", o que para este caso é falso (o mutex serializa unidades, não impede escrita
+// direta no repositório). Só memória, mas o job `backend` roda em memória.
+//
+// Este caso é o que separa "desfaz o que a unidade escreveu" de "volta o tenant no tempo": ele fica
+// VERMELHO com snapshot-restore integral (drill D13) e verde com o journal.
+test("[M1] rollback desfaz SÓ o que a unidade escreveu: linha criada FORA dela, durante o voo, sobrevive", async () => {
+  const { uow, titles, entries } = freshUow();
+  const tenantId = randomUUID();
+  const preExisting = await titles.create(titleInput(tenantId));
+
+  let forasteiroId = "";
+  await assert.rejects(
+    uow.run(tenantId, async (ctx) => {
+      // A unidade escreve o SEU título...
+      const dentro = await ctx.titles.create(titleInput(tenantId));
+      assert.ok(dentro.id);
+
+      // ...e, no meio do voo, alguém commita direto no repositório (fora da unidade). É o que as
+      // próprias suítes fazem ao preparar fixture, e o que o snapshot integral apagava.
+      const forasteiro = await titles.create(titleInput(tenantId));
+      forasteiroId = forasteiro.id;
+      const outroLancamento = await entries.create({
+        tenantId,
+        accountId: randomUUID(),
+        direction: "in",
+        amount: 12,
+        currency: "BRL",
+        paymentMethod: "pix",
+        occurredAt: new Date(),
+        competencia: "2026-01",
+      });
+      assert.ok(outroLancamento.id);
+
+      throw new Error("falha depois da escrita alheia");
+    }),
+    /falha depois da escrita alheia/,
+  );
+
+  const sobreviventes = await titles.list({ tenantId, includeDeleted: true, limit: 50, offset: 0 });
+  const ids = sobreviventes.items.map((item) => item.id).sort();
+  assert.deepEqual(
+    ids,
+    [preExisting.id, forasteiroId].sort(),
+    "sobrevivem a linha pré-existente E a escrita alheia; morre SÓ o que a unidade criou",
+  );
+  assert.equal(
+    (await entries.list({ tenantId, includeDeleted: true, limit: 50, offset: 0 })).total,
+    1,
+    "o lançamento escrito fora da unidade também sobrevive ao rollback dela",
+  );
+});
+
+test("[M1] rollback devolve a before-image de linha PRÉ-EXISTENTE que a unidade mutou", async () => {
+  const { uow, titles } = freshUow();
+  const tenantId = randomUUID();
+  const alvo = await titles.create(titleInput(tenantId));
+
+  await assert.rejects(
+    uow.run(tenantId, async (ctx) => {
+      const pago = await ctx.titles.applyPaymentGuarded({ tenantId, financialTitleId: alvo.id, amount: 30 });
+      assert.ok(pago, "o CAS tem de casar dentro da unidade");
+      assert.equal(pago.paidAmount, 30);
+      throw new Error("falha depois de mutar linha pré-existente");
+    }),
+    /falha depois de mutar linha pré-existente/,
+  );
+
+  const depois = await titles.findById(tenantId, alvo.id);
+  assert.equal(depois?.paidAmount, 0, "a mutação da unidade desfaz — o journal guarda a before-image");
+  assert.equal(depois?.status, "open");
+});
+
 test("undo-log é tenant-escopado: falha do tenant A não toca as linhas do tenant B", async () => {
   const { uow, titles } = freshUow();
   const tenantA = randomUUID();
