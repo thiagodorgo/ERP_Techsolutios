@@ -90,6 +90,7 @@ Criados pela `agente-fabrica` nos ciclos 1–2 (§C7.4) e espelhados na subpasta
 |---|---|---|
 | `guardiao-enforcement-github-porteiro` | **VETO** | Prova, sem alterar estado, se a autorização do porteiro é condição técnica não contornável do merge para o PR e os SHAs exatos. **Achador/votante: não escreve a correção.** |
 | `guardiao-interoperabilidade-modelos-claude-codex` | **VETO** | Prova se modelo e esforço são válidos e efetivamente aplicados nos dois ambientes, sem virar padrão global. **Achador/votante: não escreve a correção.** |
+| `guardiao-anti-teatro-de-atestado` | **VETO** | Vota EXECUTANDO as mutações nomeadas do plano em fixture temporária — nunca por releitura de diff. Prova que cada guard fica vermelho, que não estava vermelho antes e que a cerca (não a string) carrega o peso. **Achador/votante: não escreve a correção.** |
 
 ### Fechamento pós-merge (não vota)
 | Papel | Função |

@@ -11,6 +11,13 @@
 #   …/planos/…-ciclo2-plano-v1.md ............... o plano do ciclo (§C7.4)
 #   …/reprovacoes/R-…-ciclo2.md ................. o dossiê dos achadores (§C7.4)
 #   docs/omega-pd.md ............................ PD-GOV-PORTEIRO-APPID, exigida por F-D e §C7.3
+#
+# As duas adições seguintes são o especialista que o §7 do plano do ciclo 2 MANDA a `agente-fabrica` criar
+# (§C7.4: nos ciclos 1–2 a fábrica cria especialistas sob medida, que entram na junta seguinte e votam).
+# Não é escopo novo: o path é nomeado pelo próprio plano. O lado `.agents/` é gerado por
+# `scripts/sync-agent-agents.mjs` e sem ele o `--check` do espelho fica vermelho por omissão (veredito D-1):
+#   .claude/agents/especialistas/guardiao-anti-teatro-de-atestado.md .. §7 do plano do ciclo 2
+#   .agents/agents/especialistas/guardiao-anti-teatro-de-atestado.md .. espelho gerado do anterior (F-A/D-1)
 .agents/agents/README.md
 .agents/agents/agente-ci-doutor.md
 .agents/agents/agente-dba-guardiao.md
@@ -24,6 +31,7 @@
 .agents/agents/coordenador-de-acessos.md
 .agents/agents/critico-adversarial.md
 .agents/agents/dev-mapas.md
+.agents/agents/especialistas/guardiao-anti-teatro-de-atestado.md
 .agents/agents/especialistas/guardiao-enforcement-github-porteiro.md
 .agents/agents/especialistas/guardiao-interoperabilidade-modelos-claude-codex.md
 .agents/agents/estrategista.md
@@ -38,6 +46,7 @@
 .agents/agents/porteiro-pos-merge.md
 .agents/agents/validador-mestre.md
 .agents/skills/erp-techsolutions-code-auditor/references/codex-pr-workflow.md
+.claude/agents/especialistas/guardiao-anti-teatro-de-atestado.md
 .claude/agents/especialistas/guardiao-enforcement-github-porteiro.md
 .claude/agents/especialistas/guardiao-interoperabilidade-modelos-claude-codex.md
 .claude/agents/executor-pos-merge.md
