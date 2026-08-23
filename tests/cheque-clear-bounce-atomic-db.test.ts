@@ -3,7 +3,19 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  captureSettled,
+  expectAllFulfilled,
+  expectRejected,
+  waitForOwnBlockedStatement,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
+
 const connectionString = process.env.DATABASE_URL;
+// Nome único desta suíte (um processo por arquivo no `node --test`) — escopo da barreira (B-5).
+const applicationName = buildApplicationName("cheque-clear-bounce");
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-02 F5 (Ω6R-DIN-003 / QUA-003) — clear/bounce do CHEQUE em transação única, sob Postgres
@@ -39,8 +51,12 @@ if (!connectionString) {
   process.env.CORE_SAAS_PERSISTENCE = "prisma";
   process.env.LOG_LEVEL = "silent";
 
+  // B-5 (ciclo 2 · C3): tag da suíte na URL antes de `src/database/prisma.ts` lê-la no import.
+  const connection = withApplicationName(connectionString, applicationName);
+  process.env.DATABASE_URL = connection;
+
   test("G5 — período fechado DE VERDADE: clear → 422 period_closed, cheque intacto em 'deposited', ZERO lançamento", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g5a");
@@ -73,7 +89,7 @@ if (!connectionString) {
   });
 
   test("G5 — bounce-após-clear com período fechado: 422, cheque intacto em 'cleared', vínculo preservado, ZERO contra-lançamento", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g5b");
@@ -109,7 +125,7 @@ if (!connectionString) {
   });
 
   test("G6 — clear × clear com barreira: perdedor bloqueia no cheque e sai 409; invariante cleared ⇔ cleared_entry_id ⇔ entry existe", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g6a");
@@ -121,17 +137,26 @@ if (!connectionString) {
       // PERDEDOR REAL — o clear do produto. O pré-check vê 'deposited' (o flip do vencedor está
       // uncommitted → invisível) e ele BLOQUEIA no row lock do cheque, dentro da transição CAS.
       let loserSettled = false;
-      const loserPromise = h.chequeService.clear(seed.actor, chequeId).finally(() => {
+      const loserOutcome = captureSettled(h.chequeService.clear(seed.actor, chequeId)).then((outcome) => {
         loserSettled = true;
+        return outcome;
       });
-      await waitForBlockedStatement(client, "cheques", "perdedor bloqueado na transição CAS do cheque");
+      await waitForOwnBlockedStatement(client, {
+        applicationName,
+        fragment: "cheques",
+        label: "perdedor bloqueado na transição CAS do cheque",
+      });
       assert.equal(loserSettled, false, "o perdedor TEM de estar bloqueado no row lock do cheque");
 
       winner.release();
-      await winner.tx;
+      expectAllFulfilled([await winner.outcome], "transação do clear vencedor");
 
       // Ao destravar, o CAS re-avaliado vê status='cleared' ≠ 'deposited' → 0 linhas → 409.
-      await assert.rejects(loserPromise, (error: unknown) => isDomainError(error, 409, "transition_conflict"));
+      assert.equal(
+        isDomainError(expectRejected(await loserOutcome, "clear perdedor"), 409, "transition_conflict"),
+        true,
+        "o clear perdedor tem de morrer com 409 transition_conflict",
+      );
 
       await assertClearedInvariant(client, tenantId, chequeId, winner.entryId);
     } finally {
@@ -140,7 +165,7 @@ if (!connectionString) {
   });
 
   test("G6 — clear × bounce com barreira: o bounce que perde a corrida sai 409 e não posta nada", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g6b");
@@ -152,16 +177,25 @@ if (!connectionString) {
       // PERDEDOR REAL — bounce. O pré-check vê 'deposited' → ramo SEM dinheiro (CAS deposited→bounced),
       // que bloqueia no mesmo row lock e, ao destravar, casa 0 linhas → 409.
       let loserSettled = false;
-      const loserPromise = h.chequeService.bounce(seed.actor, chequeId, { reason: "sem fundos" }).finally(() => {
+      const loserOutcome = captureSettled(h.chequeService.bounce(seed.actor, chequeId, { reason: "sem fundos" })).then((outcome) => {
         loserSettled = true;
+        return outcome;
       });
-      await waitForBlockedStatement(client, "cheques", "bounce perdedor bloqueado na transição CAS");
+      await waitForOwnBlockedStatement(client, {
+        applicationName,
+        fragment: "cheques",
+        label: "bounce perdedor bloqueado na transição CAS",
+      });
       assert.equal(loserSettled, false, "o bounce TEM de estar bloqueado no row lock do cheque");
 
       winner.release();
-      await winner.tx;
+      expectAllFulfilled([await winner.outcome], "transação do clear vencedor");
 
-      await assert.rejects(loserPromise, (error: unknown) => isDomainError(error, 409, "transition_conflict"));
+      assert.equal(
+        isDomainError(expectRejected(await loserOutcome, "bounce perdedor"), 409, "transition_conflict"),
+        true,
+        "o bounce perdedor tem de morrer com 409 transition_conflict",
+      );
 
       const cheque = await assertClearedInvariant(client, tenantId, chequeId, winner.entryId);
       assert.equal(cheque.bounce_entry_id, null, "o bounce perdedor não pode ter postado nada");
@@ -213,6 +247,8 @@ async function bootstrap(connection: string) {
   );
 
   const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  // A tag TEM de ter chegado ao backend: barreira escopada que nunca casa nada é cegueira nova.
+  await assertApplicationNamePropagated(client, applicationName);
   const chequeService = await createDefaultChequeService();
   const closeService = new FinancialPeriodCloseService(new PrismaFinancialPeriodCloseStore(client));
 
@@ -343,8 +379,11 @@ async function holdWinningClear(h: Harness, seed: Seed) {
     },
     { timeout: 30000, maxWait: 10000 },
   );
+  // CAPTURA-LIQUIDADA (C3.1) ANTES do primeiro `await`: a transação do vencedor é segurada pelos
+  // testes por vários `await`s, e sem handler anexado aqui uma rejeição vira `unhandledRejection`.
+  const outcome = captureSettled(tx);
   const entryId = await ready;
-  return { tx, release, entryId };
+  return { outcome, release, entryId };
 }
 
 // Invariante do F5: cleared ⇔ cleared_entry_id preenchido ⇔ o lançamento vinculado EXISTE — e a
@@ -378,30 +417,9 @@ function isDomainError(error: unknown, statusCode: number, reason: string): bool
   );
 }
 
-// Barreira DETERMINÍSTICA por pg_stat_activity (pid distinto, esperando Lock, texto tocando a
-// tabela) — o vermelho dos drills vem das ASSERÇÕES de estado, nunca de timeout de barreira.
-async function waitForBlockedStatement(
-  client: { $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
-  tableFragment: string,
-  label: string,
-): Promise<void> {
-  const deadline = Date.now() + 15000;
-  for (;;) {
-    const rows = (await client.$queryRaw`
-      SELECT count(*)::int AS waiting
-      FROM pg_stat_activity
-      WHERE pid <> pg_backend_pid()
-        AND wait_event_type = 'Lock'
-        AND state = 'active'
-        AND query ILIKE ${`%${tableFragment}%`}
-    `) as Array<{ waiting: number }>;
-    if ((rows[0]?.waiting ?? 0) >= 1) return;
-    if (Date.now() > deadline) {
-      assert.fail(`timeout (15s) esperando statement bloqueado em ${tableFragment} — ${label}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-}
+// A barreira DETERMINÍSTICA mudou de casa: `tests/helpers/pg-barrier.ts`, agora ESCOPADA por
+// `application_name` (B-5) — a versão cluster-wide daqui aceitava statement bloqueado de qualquer
+// suíte do lote. O vermelho dos drills segue vindo das ASSERÇÕES de estado, nunca de timeout.
 
 // Teardown ESCOPADO aos tenants descartáveis desta execução, em ordem de FK.
 async function teardown(h: Harness): Promise<void> {

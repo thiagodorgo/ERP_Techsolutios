@@ -3,7 +3,19 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  captureSettled,
+  expectAllFulfilled,
+  expectRejected,
+  waitForOwnBlockedStatement,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
+
 const connectionString = process.env.DATABASE_URL;
+// Nome único desta suíte (um processo por arquivo no `node --test`) — escopo da barreira.
+const applicationName = buildApplicationName("reverse-restore");
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-02 F4 (Ω6R-DIN-002 / QUA-003) — o ESTORNO devolve o pagamento, sob Postgres REAL, duas
@@ -27,6 +39,11 @@ const connectionString = process.env.DATABASE_URL;
 // A LIÇÃO DO #357: a suíte FIXA CORE_SAAS_PERSISTENCE=prisma ela mesma, ANTES de importar a
 // aplicação, e o bootstrap ASSERTA o modo (drill D7: remover a fixação = vermelho no assert).
 //
+// A LIÇÃO DO CICLO 1 (B-5, ciclo 2 · C3): esta era a suíte que derrubava o lote na forma do job, com
+// `unhandledRejection` no G4 — a promessa do perdedor podia liquidar ANTES de o teste anexar o
+// handler. Agora o handler é anexado NA CRIAÇÃO (`captureSettled`), e a barreira só aceita statement
+// bloqueado das conexões DESTA suíte (`application_name` carimbado na DATABASE_URL, abaixo).
+//
 // Disciplina: tenant descartável por teste, asserções ESCOPADAS aos ids do próprio teste, teardown
 // escopado em ordem de FK — nenhuma sentença sobre a base inteira.
 // -----------------------------------------------------------------------------------------------
@@ -40,8 +57,13 @@ if (!connectionString) {
   process.env.CORE_SAAS_PERSISTENCE = "prisma";
   process.env.LOG_LEVEL = "silent";
 
+  // Mesmo ponto, mesma razão: a tag da suíte tem de estar na URL ANTES de `src/database/prisma.ts`
+  // ser importado (ele lê process.env.DATABASE_URL no import). Um processo por arquivo → tag por suíte.
+  const connection = withApplicationName(connectionString, applicationName);
+  process.env.DATABASE_URL = connection;
+
   test("G3 — estorno de liquidação TOTAL: contrapartida sem title_id + paid_amount devolvido + título REABERTO, atômico", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g3", 250);
@@ -77,7 +99,7 @@ if (!connectionString) {
   });
 
   test("G12 (histórico G3b) — estornar a última parcela deixa a primeira e status partially_paid", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g3b", 100);
@@ -101,7 +123,7 @@ if (!connectionString) {
   });
 
   test("G4 — dupla reversão com barreira: perdedor bloqueia no FOR UPDATE do original e sai 409 already_reversed; exatamente 1 contrapartida, decremento ÚNICO", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g4", 100);
@@ -163,24 +185,37 @@ if (!connectionString) {
         },
         { timeout: 30000, maxWait: 10000 },
       );
+      // CAPTURA-LIQUIDADA (C3.1): handler anexado AGORA, no mesmo tique da criação — a promessa é
+      // segurada através de vários `await`s abaixo, e sem isto uma rejeição no meio do caminho vira
+      // `unhandledRejection` e derruba o PROCESSO inteiro do lote.
+      const winnerOutcome = captureSettled(winnerTx);
       await winnerReady;
 
       // PERDEDOR REAL — o reverse do produto. O pré-check de reversão ativa MISSA (a contrapartida do
       // vencedor está uncommitted → invisível) e ele BLOQUEIA no FOR UPDATE do original, dentro da tx.
       let loserSettled = false;
-      const loserPromise = h.entryService.reverse(seed.actor, payment.id).finally(() => {
+      const loserOutcome = captureSettled(h.entryService.reverse(seed.actor, payment.id)).then((outcome) => {
         loserSettled = true;
+        return outcome;
       });
-      await waitForBlockedStatement(client, "financial_entries", "perdedor bloqueado no FOR UPDATE do original");
+      await waitForOwnBlockedStatement(client, {
+        applicationName,
+        fragment: "financial_entries",
+        label: "perdedor bloqueado no FOR UPDATE do original",
+      });
       assert.equal(loserSettled, false, "o perdedor TEM de estar bloqueado no row lock do original");
 
       releaseWinner();
-      await winnerTx;
+      expectAllFulfilled([await winnerOutcome], "transação do vencedor");
 
       // Ao destravar, o re-check DENTRO da transação vê a contrapartida commitada → 409 already_reversed.
       // (Razão EXATA importa: se o FOR UPDATE/re-check sumirem — drill D2b — quem mata é o ÍNDICE
       // parcial, com outra razão, e esta asserção fica vermelha.)
-      await assert.rejects(loserPromise, (error: unknown) => isDomainError(error, 409, "already_reversed"));
+      assert.equal(
+        isDomainError(expectRejected(await loserOutcome, "perdedor do estorno duplo"), 409, "already_reversed"),
+        true,
+        "o perdedor tem de morrer com 409 already_reversed — a razão exata é o que distingue o re-check do backstop do índice",
+      );
 
       // Exatamente 1 contrapartida ativa; decremento ÚNICO (paid_amount 0, nunca negativo/duplo).
       assert.equal(
@@ -198,7 +233,7 @@ if (!connectionString) {
   });
 
   test("G3 — falha injetada após contrapartida e antes do restore faz rollback de ambos", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g3-fault", 100);
@@ -227,7 +262,7 @@ if (!connectionString) {
   });
 
   test("G4 — dupla reversão de uma parcela entre múltiplos pagamentos restaura uma única vez", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g4-partial", 100);
@@ -249,7 +284,7 @@ if (!connectionString) {
   });
 
   test("G12 (histórico G3b) — estornar a primeira parcela deixa a última e status partially_paid", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g12-first", 100);
@@ -298,6 +333,9 @@ async function bootstrap(connection: string) {
   );
 
   const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  // A tag TEM de ter chegado ao backend: uma barreira escopada que nunca casa nada ficaria "verde"
+  // por não esperar, e o teste voltaria a ser cego (agora do outro lado).
+  await assertApplicationNamePropagated(client, applicationName);
   const entryService = await createDefaultFinancialEntryService();
 
   return {
@@ -371,31 +409,10 @@ function isDomainError(error: unknown, statusCode: number, reason: string): bool
   );
 }
 
-// Barreira DETERMINÍSTICA por pg_stat_activity (pid distinto, esperando Lock, texto tocando a
-// tabela). Cobre o caminho íntegro (SELECT ... FOR UPDATE bloqueado) E os mutantes dos drills
-// (INSERT bloqueado no unique parcial) — o vermelho dos drills vem das ASSERÇÕES, não da barreira.
-async function waitForBlockedStatement(
-  client: { $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
-  tableFragment: string,
-  label: string,
-): Promise<void> {
-  const deadline = Date.now() + 15000;
-  for (;;) {
-    const rows = (await client.$queryRaw`
-      SELECT count(*)::int AS waiting
-      FROM pg_stat_activity
-      WHERE pid <> pg_backend_pid()
-        AND wait_event_type = 'Lock'
-        AND state = 'active'
-        AND query ILIKE ${`%${tableFragment}%`}
-    `) as Array<{ waiting: number }>;
-    if ((rows[0]?.waiting ?? 0) >= 1) return;
-    if (Date.now() > deadline) {
-      assert.fail(`timeout (15s) esperando statement bloqueado em ${tableFragment} — ${label}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-}
+// A barreira DETERMINÍSTICA mudou de casa: `tests/helpers/pg-barrier.ts`, agora ESCOPADA por
+// `application_name` (B-5). A versão cluster-wide que vivia aqui aceitava statement bloqueado de
+// QUALQUER suíte do lote. Cobre o caminho íntegro (SELECT ... FOR UPDATE bloqueado) E os mutantes
+// dos drills (INSERT bloqueado no unique parcial) — o vermelho dos drills vem das ASSERÇÕES.
 
 // Teardown ESCOPADO aos tenants descartáveis desta execução, em ordem de FK.
 async function teardown(h: Harness): Promise<void> {

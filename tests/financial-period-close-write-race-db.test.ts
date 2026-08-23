@@ -5,7 +5,18 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  captureSettled,
+  expectAllFulfilled,
+  waitForOwnAdvisoryWaiters,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
+
 const connectionString = process.env.DATABASE_URL;
+// Nome unico desta suite (um processo por arquivo no `node --test`) - escopo da barreira (B-5).
+const applicationName = buildApplicationName("period-close-write-race");
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-02 (Ω6R-DIN-008 / QUA-003) — a corrida CLOSE × WRITER sob Postgres REAL, duas conexões e
@@ -44,8 +55,14 @@ if (!connectionString) {
   process.env.JWT_SECRET ??= "dev-only-change-me";
   process.env.JWT_EXPIRES_IN ??= "15m";
 
+  // B-5 (ciclo 2 · C3): esta suite ja observava a FILA do proprio advisory (o padrao certo), mas
+  // `hashtext` colide entre pares (tenant,period) distintos e a fila e do cluster. A tag fecha
+  // tambem essa porta, e entra na URL ANTES de `src/database/prisma.ts` le-la no import.
+  const connection = withApplicationName(connectionString, applicationName);
+  process.env.DATABASE_URL = connection;
+
   test("G10 — close na frente: writer bloqueia na trava, sai 422 period_closed e o snapshot == re-derivação (zero vazado)", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g10");
@@ -74,26 +91,29 @@ if (!connectionString) {
         },
         { timeout: 30000, maxWait: 10000 },
       );
+      // CAPTURA-LIQUIDADA (C3.1): handler no mesmo tique da criacao — a promessa e segurada por
+      // varios `await`s abaixo, e sem isto uma rejeicao vira `unhandledRejection` e mata o processo.
+      const holderOutcome = captureSettled(holder);
       await held;
 
       // O CLOSE REAL (service + store de produção) entra na fila do exclusivo.
       let closeSettled = false;
-      const closePromise = h.closeService
-        .close(seed.actor, period, {})
-        .finally(() => {
-          closeSettled = true;
-        });
+      const closeOutcome = captureSettled(h.closeService.close(seed.actor, period, {})).then((outcome) => {
+        closeSettled = true;
+        return outcome;
+      });
       await waitForAdvisoryWaiters(client, lockKey, 1, "close na fila do exclusivo");
 
       // O WRITER REAL — payTitle por HTTP com JWT real — passa os pré-checks (o período AINDA não está
       // fechado) e BLOQUEIA na trava SHARED, atrás do exclusivo do close (fila do Postgres).
       let writerSettled = false;
-      const writerPromise = fetch(`${seed.baseUrl}/api/v1/financial-titles/${titleId}/pay`, {
+      const writerOutcome = captureSettled(fetch(`${seed.baseUrl}/api/v1/financial-titles/${titleId}/pay`, {
         method: "POST",
         headers: { ...headers, "content-type": "application/json" },
         body: JSON.stringify({ account_id: accountId, amount: 40, payment_method: "pix", occurred_at: occurredAt.toISOString() }),
-      }).finally(() => {
+      })).then((outcome) => {
         writerSettled = true;
+        return outcome;
       });
       await waitForAdvisoryWaiters(client, lockKey, 2, "writer na fila, atrás do close");
 
@@ -103,14 +123,18 @@ if (!connectionString) {
       assert.equal(writerSettled, false, "o writer TEM de estar bloqueado na trava de período");
 
       releaseHold();
-      await holder;
+      expectAllFulfilled([await holderOutcome], "transacao que segura o exclusivo");
 
       // Ordem obrigatória: o close commita PRIMEIRO; o writer acorda, re-valida DENTRO da própria
       // transação, vê o período fechado e morre 422 — com rollback do lançamento.
-      const closeResult = await closePromise;
+      const closeSettledOutcome = await closeOutcome;
+      expectAllFulfilled([closeSettledOutcome], "close real");
+      const closeResult = (closeSettledOutcome as { status: "fulfilled"; value: { record: { status: string } } }).value;
       assert.equal(closeResult.record.status, "closed");
 
-      const writerResponse = await writerPromise;
+      const writerSettledOutcome = await writerOutcome;
+      expectAllFulfilled([writerSettledOutcome], "writer real por HTTP");
+      const writerResponse = (writerSettledOutcome as { status: "fulfilled"; value: Response }).value;
       assert.equal(writerResponse.status, 422, "o writer que acordou num período fechado sai 422");
       const writerBody = (await writerResponse.json()) as { error: { reason: string } };
       assert.equal(writerBody.error.reason, "period_closed");
@@ -136,7 +160,7 @@ if (!connectionString) {
   });
 
   test("G11 — shared na frente: o close ESPERA o writer em voo e o snapshot INCLUI o commit dele", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g11");
@@ -169,24 +193,25 @@ if (!connectionString) {
         },
         { timeout: 30000, maxWait: 10000 },
       );
+      const writerTxOutcome = captureSettled(writerTx);
       await writerHolding;
 
       // O close REAL chega com o writer em voo → o exclusivo conflita com o shared → ESPERA.
       let closeSettled = false;
-      const closePromise = h.closeService
-        .close(seed.actor, period, {})
-        .finally(() => {
-          closeSettled = true;
-        });
+      const closeOutcome = captureSettled(h.closeService.close(seed.actor, period, {})).then((outcome) => {
+        closeSettled = true;
+        return outcome;
+      });
       await waitForAdvisoryWaiters(client, lockKey, 1, "close esperando o shared do writer");
       assert.equal(closeSettled, false, "o close TEM de esperar o writer em voo — nunca fotografar por baixo dele");
 
       // Libera o writer → commit do lançamento + soltura do shared → o close prossegue e o snapshot
       // INCLUI o commit do writer.
       releaseWriter();
-      await writerTx;
-      const closeResult = await closePromise;
-      assert.equal(closeResult.record.status, "closed");
+      expectAllFulfilled([await writerTxOutcome], "writer em voo");
+      const closeSettledOutcome = await closeOutcome;
+      expectAllFulfilled([closeSettledOutcome], "close real");
+      assert.equal((closeSettledOutcome as { status: "fulfilled"; value: { record: { status: string } } }).value.record.status, "closed");
 
       const material = await loadSnapshotMaterial(h, tenantId, period);
       assert.equal(material.snapshot.entries.in.count, 1, "o snapshot inclui o lançamento commitado do writer");
@@ -198,7 +223,7 @@ if (!connectionString) {
   });
 
   test("G10 — close na frente bloqueia PATCH real; após fechar retorna period_closed e não altera título", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g10-patch");
@@ -213,18 +238,21 @@ if (!connectionString) {
           signalHeld();
           await new Promise<void>((resolve) => { release = resolve; });
         }, { timeout: 30000, maxWait: 10000 });
+      const holderOutcome = captureSettled(holder);
       await held;
-      const close = h.closeService.close(seed.actor, period, {});
+      const close = captureSettled(h.closeService.close(seed.actor, period, {}));
       await waitForAdvisoryWaiters(client, lockKey, 1, "close antes do PATCH");
-      const patch = fetch(`${seed.baseUrl}/api/v1/financial-titles/${seed.titleId}`, {
+      const patch = captureSettled(fetch(`${seed.baseUrl}/api/v1/financial-titles/${seed.titleId}`, {
         method: "PATCH", headers: { ...seed.headers, "content-type": "application/json" },
         body: JSON.stringify({ amount: 90, party_name: "Não persiste" }),
-      });
+      }));
       await waitForAdvisoryWaiters(client, lockKey, 2, "PATCH atrás do close");
       release!();
-      await holder;
-      await close;
-      const response = await patch;
+      expectAllFulfilled([await holderOutcome], "transacao que segura o exclusivo");
+      expectAllFulfilled([await close], "close real");
+      const patchOutcome = await patch;
+      expectAllFulfilled([patchOutcome], "PATCH real por HTTP");
+      const response = (patchOutcome as { status: "fulfilled"; value: Response }).value;
       assert.equal(response.status, 422);
       assert.equal(((await response.json()) as { error: { reason: string } }).error.reason, "period_closed");
       const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
@@ -234,7 +262,7 @@ if (!connectionString) {
   });
 
   test("G11 — PATCH/shared na frente faz o close esperar e o snapshot inclui o novo nominal", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g11-patch");
@@ -253,12 +281,13 @@ if (!connectionString) {
         ready();
         await new Promise<void>((resolve) => { release = resolve; });
       }, { timeout: 30000, maxWait: 10000 });
+      const writerOutcome = captureSettled(writer);
       await writerReady;
-      const close = h.closeService.close(seed.actor, period, {});
+      const close = captureSettled(h.closeService.close(seed.actor, period, {}));
       await waitForAdvisoryWaiters(client, lockKey, 1, "close esperando PATCH/shared");
       release!();
-      await writer;
-      await close;
+      expectAllFulfilled([await writerOutcome], "PATCH/shared em voo");
+      expectAllFulfilled([await close], "close real");
       const material = await loadSnapshotMaterial(h, seed.tenantId, period);
       assert.equal(material.snapshot.titles.receivable.sumAmount, 90);
       assert.deepEqual(material.snapshot, material.rederived);
@@ -311,6 +340,8 @@ async function bootstrap(connection: string) {
     adapter: new PrismaPg({ connectionString: connection }),
     transactionOptions: { maxWait: 10000, timeout: 30000 },
   });
+  // A tag TEM de ter chegado ao backend: barreira escopada que nunca casa nada é cegueira nova.
+  await assertApplicationNamePropagated(client, applicationName);
   const closeService = new FinancialPeriodCloseService(new PrismaFinancialPeriodCloseStore(client));
 
   return {
@@ -368,17 +399,15 @@ async function seedTenant(h: Harness, tag: string) {
   const papel = await client.role.create({
     data: { tenant_id: tenant.id, key: "manager", name: `Gestão ${marca}`, scope: "tenant" },
   });
-  const permission = await client.permission.upsert({
-    where: { key: FINANCIAL_ENTRY_PERMISSIONS.create },
-    update: {},
-    create: { key: FINANCIAL_ENTRY_PERMISSIONS.create, description: `Permissão ${FINANCIAL_ENTRY_PERMISSIONS.create}` },
-  });
+  // A tabela `permissions` e GLOBAL (sem tenant_id). Duas suites do lote faziam upsert nas MESMAS
+  // linhas em paralelo — a classe `XX000 tuple concurrently updated` registrada em
+  // P-O6R-ARNES-ISOLAMENTO. As duas chaves ja vivem no catalogo do seed (`prisma/seed.ts`), entao
+  // aqui so se LE; faltando, a mensagem diz exatamente o que rodar.
+  const permission = await client.permission.findUnique({ where: { key: FINANCIAL_ENTRY_PERMISSIONS.create } });
+  assert.ok(permission, `permissao ${FINANCIAL_ENTRY_PERMISSIONS.create} ausente do catalogo — rode npm run db:seed`);
   await client.rolePermission.create({ data: { role_id: papel.id, permission_id: permission.id } });
-  const titlePermission = await client.permission.upsert({
-    where: { key: FINANCIAL_TITLE_PERMISSIONS.update },
-    update: {},
-    create: { key: FINANCIAL_TITLE_PERMISSIONS.update, description: `Permissão ${FINANCIAL_TITLE_PERMISSIONS.update}` },
-  });
+  const titlePermission = await client.permission.findUnique({ where: { key: FINANCIAL_TITLE_PERMISSIONS.update } });
+  assert.ok(titlePermission, `permissao ${FINANCIAL_TITLE_PERMISSIONS.update} ausente do catalogo — rode npm run db:seed`);
   await client.rolePermission.create({ data: { role_id: papel.id, permission_id: titlePermission.id } });
   await client.userRoleAssignment.create({
     data: { tenant_id: tenant.id, user_id: user.id, role_id: papel.id },
@@ -444,31 +473,16 @@ async function seedTenant(h: Harness, tag: string) {
 }
 
 // Barreira DETERMINÍSTICA: observa a FILA do advisory lock em pg_locks (granted=false na chave
-// hashtext(tenant:period), int8 → classid=32 bits altos, objid=32 baixos, objsubid=1) em vez de
-// sleep cego. `minWaiters` atingido = quem tinha de bloquear ESTÁ bloqueado.
+// hashtext(tenant:period)) — o padrão que esta suíte já fazia certo. O ciclo 2 acrescenta o escopo
+// por `application_name` (helper único em tests/helpers/pg-barrier.ts): a fila é do CLUSTER e
+// `hashtext` colide entre pares distintos, então sem escopo um waiter alheio contaria como meu.
 async function waitForAdvisoryWaiters(
   client: { $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
   lockKey: string,
   minWaiters: number,
   label: string,
 ): Promise<void> {
-  const deadline = Date.now() + 15000;
-  for (;;) {
-    const rows = (await client.$queryRaw`
-      SELECT count(*)::int AS waiting
-      FROM pg_locks
-      WHERE locktype = 'advisory'
-        AND granted = false
-        AND objsubid = 1
-        AND classid::bigint = ((hashtext(${lockKey})::bigint >> 32) & 4294967295)
-        AND objid::bigint = (hashtext(${lockKey})::bigint & 4294967295)
-    `) as Array<{ waiting: number }>;
-    if ((rows[0]?.waiting ?? 0) >= minWaiters) return;
-    if (Date.now() > deadline) {
-      assert.fail(`timeout (15s) esperando ${minWaiters} waiter(s) na trava de período — ${label}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
+  await waitForOwnAdvisoryWaiters(client, { applicationName, lockKey, minWaiters, label });
 }
 
 // Snapshot material CONGELADO na linha do fechamento × RE-DERIVAÇÃO das linhas vivas da competência

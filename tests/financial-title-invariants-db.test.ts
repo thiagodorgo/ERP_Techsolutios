@@ -5,7 +5,19 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  captureSettled,
+  expectAllFulfilled,
+  expectRejected,
+  waitForOwnBlockedStatement,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
+
 const connectionString = process.env.DATABASE_URL;
+// Nome unico desta suite (um processo por arquivo no `node --test`) - escopo da barreira (B-5).
+const applicationName = buildApplicationName("title-invariants");
 
 if (!connectionString) {
   test("Invariantes de título exigem DATABASE_URL e PostgreSQL migrado", {
@@ -16,6 +28,10 @@ if (!connectionString) {
   process.env.LOG_LEVEL = "silent";
   process.env.JWT_SECRET ??= "dev-only-change-me";
   process.env.JWT_EXPIRES_IN ??= "15m";
+
+  // B-5 (ciclo 2 · C3): a tag da suite entra na URL ANTES de `src/database/prisma.ts` le-la no
+  // import. Sem escopo, a barreira aceitava statement bloqueado de qualquer suite do lote.
+  process.env.DATABASE_URL = withApplicationName(connectionString, applicationName);
 
   test("G7 — PATCH composto abaixo do pago retorna amount_below_paid e preserva projeção completa", async () => {
     await withHarness("g7-composto", async (h, s) => {
@@ -44,12 +60,14 @@ if (!connectionString) {
         ready.resolve();
         await release.promise;
       }, { timeout: 30000, maxWait: 10000 });
+      // CAPTURA-LIQUIDADA (C3.1): handler no mesmo tique da criacao — a promessa atravessa `await`s.
+      const winnerOutcome = captureSettled(winner);
       await ready.promise;
-      const patch = h.titleService.update(s.actor, s.titleId, { amount: 50, party_name: "Não persiste" });
+      const patch = captureSettled(h.titleService.update(s.actor, s.titleId, { amount: 50, party_name: "Não persiste" }));
       await waitBlocked(h.client, "financial_titles");
       release.resolve();
-      await winner;
-      await assert.rejects(patch, (error: unknown) => domain(error, 422, "amount_below_paid"));
+      expectAllFulfilled([await winnerOutcome], "pagamento vencedor");
+      assert.equal(domain(expectRejected(await patch, "PATCH atras do pagamento"), 422, "amount_below_paid"), true);
       const row = await projection(h, s);
       assert.equal(row.amount, "100.00");
       assert.equal(row.party_name, s.partyName);
@@ -70,14 +88,15 @@ if (!connectionString) {
         ready.resolve();
         await release.promise;
       }, { timeout: 30000, maxWait: 10000 });
+      const patchOutcome = captureSettled(patchTx);
       await ready.promise;
-      const payment = h.entryService.payTitle(s.actor, s.titleId, {
+      const payment = captureSettled(h.entryService.payTitle(s.actor, s.titleId, {
         account_id: s.accountId, amount: 95, payment_method: "pix",
-      });
+      }));
       await waitBlocked(h.client, "financial_titles");
       release.resolve();
-      await patchTx;
-      await assert.rejects(payment, (error: unknown) => domain(error, 422, "overpayment"));
+      expectAllFulfilled([await patchOutcome], "PATCH vencedor");
+      assert.equal(domain(expectRejected(await payment, "pagamento atras do PATCH"), 422, "overpayment"), true);
       assert.equal(await h.client.financialEntry.count({ where: { tenant_id: s.tenantId } }), 0);
       assert.equal((await projection(h, s)).amount, "90.00");
     });
@@ -159,12 +178,13 @@ if (!connectionString) {
         ready.resolve();
         await release.promise;
       }, { timeout: 30000, maxWait: 10000 });
+      const paymentOutcome = captureSettled(payment);
       await ready.promise;
-      const deletion = h.titleService.delete(s.actor, s.titleId);
+      const deletion = captureSettled(h.titleService.delete(s.actor, s.titleId));
       await waitBlocked(h.client, "financial_titles");
       release.resolve();
-      await payment;
-      await assert.rejects(deletion, (error: unknown) => domain(error, 422, "title_has_payments"));
+      expectAllFulfilled([await paymentOutcome], "pagamento em voo");
+      assert.equal(domain(expectRejected(await deletion, "DELETE atras do pagamento"), 422, "title_has_payments"), true);
       assert.equal((await projection(h, s)).deleted_at, null);
     });
   });
@@ -226,6 +246,8 @@ async function bootstrap(connection: string) {
   ]);
   assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma");
   const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  // A tag TEM de ter chegado ao backend: barreira escopada que nunca casa nada é cegueira nova.
+  await assertApplicationNamePropagated(client, applicationName);
   return {
     client, withTenantRls, setTenantRlsContext, acquirePeriodLockShared,
     deriveCompetencia: titles.deriveCompetencia,
@@ -237,7 +259,7 @@ async function bootstrap(connection: string) {
 }
 
 async function withHarness(tag: string, work: (h: Harness, seed: Seed) => Promise<void>) {
-  const h = await bootstrap(connectionString!);
+  const h = await bootstrap(process.env.DATABASE_URL!);
   try { await work(h, await seedTenant(h, tag)); } finally { await teardown(h); }
 }
 
@@ -281,7 +303,11 @@ async function startApi(h: Harness, seed: Seed) {
     import("../src/modules/core-saas/repositories/index.js"), import("../src/modules/auth/index.js"), import("../src/modules/financial-titles/financial-title.routes.js"),
   ]);
   const role = await h.client.role.create({ data: { tenant_id: seed.tenantId, key: "finance", name: `Finance ${seed.tenantId}`, scope: "tenant" } });
-  const permission = await h.client.permission.upsert({ where: { key: FINANCIAL_TITLE_PERMISSIONS.update }, update: {}, create: { key: FINANCIAL_TITLE_PERMISSIONS.update, description: `Permissão ${FINANCIAL_TITLE_PERMISSIONS.update}` } });
+  // A tabela `permissions` e GLOBAL (sem tenant_id): duas suites do lote faziam upsert na MESMA
+  // linha em paralelo — classe `XX000 tuple concurrently updated`. A chave vem do CATALOGO DO SEED
+  // (`prisma/seed.ts`), entao aqui so se LE; faltando, a mensagem diz o que fazer.
+  const permission = await h.client.permission.findUnique({ where: { key: FINANCIAL_TITLE_PERMISSIONS.update } });
+  assert.ok(permission, `permissao ${FINANCIAL_TITLE_PERMISSIONS.update} ausente do catalogo — rode npm run db:seed`);
   await h.client.rolePermission.create({ data: { role_id: role.id, permission_id: permission.id } });
   await h.client.userRoleAssignment.create({ data: { tenant_id: seed.tenantId, user_id: seed.userId, role_id: role.id } });
   const service = new PrismaCoreSaasService(new PrismaCoreSaasStore(h.client, new repositories.TenantRepository(h.client), new repositories.UserRepository(h.client), new repositories.RoleRepository(h.client), new repositories.UserRoleRepository(h.client), new repositories.AuditLogRepository(h.client)));
@@ -310,14 +336,10 @@ function sqlState(error: unknown): string | undefined {
   return match?.[0] ?? candidate.code;
 }
 
+// A barreira agora e ESCOPADA por `application_name` (B-5): so satisfaz com statement bloqueado das
+// conexoes DESTA suite. A versao cluster-wide que vivia aqui aceitava a fila de qualquer suite.
 async function waitBlocked(client: Harness["client"], fragment: string) {
-  const deadline = Date.now() + 15000;
-  while (Date.now() <= deadline) {
-    const rows = await client.$queryRaw<Array<{ waiting: number }>>`SELECT count(*)::int AS waiting FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND wait_event_type='Lock' AND state='active' AND query ILIKE ${`%${fragment}%`}`;
-    if ((rows[0]?.waiting ?? 0) > 0) return;
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-  assert.fail(`timeout esperando lock em ${fragment}`);
+  await waitForOwnBlockedStatement(client, { applicationName, fragment, label: `lock em ${fragment}` });
 }
 
 async function teardown(h: Harness) {

@@ -213,6 +213,12 @@ jobs:
           # B-O6R-02 F6 (Ω6R-DIN-001..004/008 / QUA-003) — CAS de PATCH/DELETE,
           # status derivado no mesmo UPDATE, precedência de período/404 e CHECK 23514 (G7-G9).
           SUITES="$SUITES tests/financial-title-invariants-db.test.ts"
+          # B-O6R-02 ciclo 2 · C3 (B-5 da J-B-O6R-02-ciclo1) — CONTROLE NEGATIVO da barreira das
+          # suítes acima. Elas esperavam por statement bloqueado consultando pg_stat_activity
+          # CLUSTER-WIDE, e este job roda os arquivos em PROCESSOS PARALELOS: um backend alheio
+          # bloqueado satisfazia a espera. Agora a barreira é escopada por application_name, e esta
+          # suíte prova as duas metades — bloqueio próprio satisfaz; decoy alheio real NÃO satisfaz.
+          SUITES="$SUITES tests/pg-barrier-scoped-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

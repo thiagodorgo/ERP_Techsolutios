@@ -4,7 +4,19 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  captureSettled,
+  expectAllFulfilled,
+  expectRejected,
+  waitForOwnBlockedStatement,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
+
 const connectionString = process.env.DATABASE_URL;
+// Nome único desta suíte (um processo por arquivo no `node --test`) — escopo da barreira (B-5).
+const applicationName = buildApplicationName("pay-title-atomic");
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-02 F3 (Ω6R-DIN-001 / QUA-003) — payTitle ATÔMICO sob Postgres REAL, duas conexões e
@@ -43,8 +55,14 @@ if (!connectionString) {
   process.env.CORE_SAAS_PERSISTENCE = "prisma";
   process.env.LOG_LEVEL = "silent";
 
+  // B-5 (ciclo 2 · C3): a tag da suíte entra na URL no MESMO ponto e pela mesma razão — antes de
+  // `src/database/prisma.ts` ler process.env.DATABASE_URL no import. A barreira passa a só aceitar
+  // statement bloqueado das conexões DESTA suíte, nunca de outra do lote.
+  const connection = withApplicationName(connectionString, applicationName);
+  process.env.DATABASE_URL = connection;
+
   test("G1 — corrida sem chave: perdedor bloqueia no título, sai 422 overpayment e ZERO lançamento órfão", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g1");
@@ -94,30 +112,42 @@ if (!connectionString) {
         },
         { timeout: 30000, maxWait: 10000 },
       );
+      // CAPTURA-LIQUIDADA (C3.1): handler no mesmo tique da criação — a promessa atravessa vários
+      // `await`s abaixo e, sem isto, uma rejeição no meio vira `unhandledRejection` e mata o processo.
+      const winnerOutcome = captureSettled(winnerTx);
       await winnerReady;
 
       // PERDEDOR REAL — o payTitle do produto. Passa os pré-checks (o commit do vencedor ainda não
       // existe em READ COMMITTED), cria o lançamento NA transação e BLOQUEIA no CAS do título.
       let loserSettled = false;
-      const loserPromise = h.entryService
-        .payTitle(seed.actor, titleId, {
+      const loserOutcome = captureSettled(
+        h.entryService.payTitle(seed.actor, titleId, {
           account_id: accountId,
           amount: 60,
           payment_method: "pix",
           occurred_at: occurredAt.toISOString(),
-        })
-        .finally(() => {
-          loserSettled = true;
-        });
-      await waitForBlockedStatement(client, "financial_titles", "perdedor bloqueado no CAS do título");
+        }),
+      ).then((outcome) => {
+        loserSettled = true;
+        return outcome;
+      });
+      await waitForOwnBlockedStatement(client, {
+        applicationName,
+        fragment: "financial_titles",
+        label: "perdedor bloqueado no CAS do título",
+      });
       assert.equal(loserSettled, false, "o perdedor TEM de estar bloqueado no row lock do título — nunca commitado");
 
       releaseWinner();
-      await winnerTx;
+      expectAllFulfilled([await winnerOutcome], "transação do vencedor");
 
       // O perdedor acorda, o predicado re-avaliado contra a tupla nova casa 0 linhas, a classificação
       // (FOR UPDATE) decide overpayment e o 422 aborta a transação — o lançamento dele morre junto.
-      await assert.rejects(loserPromise, (error: unknown) => isDomainError(error, 422, "overpayment"));
+      assert.equal(
+        isDomainError(expectRejected(await loserOutcome, "perdedor da corrida sem chave"), 422, "overpayment"),
+        true,
+        "o perdedor tem de morrer com 422 overpayment — a razão exata é o que prova que quem o matou foi o CAS",
+      );
 
       // ZERO órfão — escopado ao tenant descartável deste teste.
       const survivingEntries = await client.financialEntry.findMany({ where: { tenant_id: tenantId } });
@@ -135,7 +165,7 @@ if (!connectionString) {
   });
 
   test("G2 — replay do client_action_id → 409 duplicate_payment ANTES de qualquer mutação do título", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g2");
@@ -163,7 +193,7 @@ if (!connectionString) {
   });
 
   test("G1 — vencedor quita; perdedor concorrente sai title_already_paid e não deixa órfão", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g1-paid");
@@ -188,14 +218,23 @@ if (!connectionString) {
         ready();
         await mayCommit;
       }, { timeout: 30000, maxWait: 10000 });
+      const winnerOutcome = captureSettled(winner);
       await locked;
-      const loser = h.entryService.payTitle(seed.actor, seed.titleId, {
+      const loserOutcome = captureSettled(h.entryService.payTitle(seed.actor, seed.titleId, {
         account_id: seed.accountId, amount: 1, payment_method: "pix", occurred_at: occurredAt.toISOString(),
+      }));
+      await waitForOwnBlockedStatement(client, {
+        applicationName,
+        fragment: "financial_titles",
+        label: "perdedor bloqueado atrás da quitação",
       });
-      await waitForBlockedStatement(client, "financial_titles", "perdedor bloqueado atrás da quitação");
       release();
-      await winner;
-      await assert.rejects(loser, (error: unknown) => isDomainError(error, 422, "title_already_paid"));
+      expectAllFulfilled([await winnerOutcome], "transação que quita o título");
+      assert.equal(
+        isDomainError(expectRejected(await loserOutcome, "perdedor atrás da quitação"), 422, "title_already_paid"),
+        true,
+        "o perdedor tem de morrer com 422 title_already_paid",
+      );
       assert.equal(await client.financialEntry.count({ where: { tenant_id: seed.tenantId } }), 1);
       const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
       assert.equal(Number(title?.paid_amount), 100);
@@ -204,7 +243,7 @@ if (!connectionString) {
   });
 
   test("G2 — duas requisições concorrentes com a mesma chave produzem uma única mutação", async () => {
-    const h = await bootstrap(connectionString);
+    const h = await bootstrap(connection);
     const { client } = h;
     try {
       const seed = await seedTenant(h, "g2-concurrent");
@@ -261,6 +300,8 @@ async function bootstrap(connection: string) {
   );
 
   const client = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  // A tag TEM de ter chegado ao backend: barreira escopada que nunca casa nada é cegueira nova.
+  await assertApplicationNamePropagated(client, applicationName);
   const entryService = await createDefaultFinancialEntryService();
 
   return {
@@ -334,32 +375,11 @@ function isDomainError(error: unknown, statusCode: number, reason: string): bool
   );
 }
 
-// Barreira DETERMINÍSTICA por pg_stat_activity: um statement de OUTRO backend (pid distinto),
-// esperando LOCK, cujo texto toca a tabela-alvo. Cobre o caminho íntegro (UPDATE do CAS bloqueado no
-// row lock) E os mutantes dos drills (INSERT bloqueado em unique, CAS fora da tx) — o vermelho dos
-// drills vem das ASSERÇÕES de estado, nunca de timeout de barreira.
-async function waitForBlockedStatement(
-  client: { $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
-  tableFragment: string,
-  label: string,
-): Promise<void> {
-  const deadline = Date.now() + 15000;
-  for (;;) {
-    const rows = (await client.$queryRaw`
-      SELECT count(*)::int AS waiting
-      FROM pg_stat_activity
-      WHERE pid <> pg_backend_pid()
-        AND wait_event_type = 'Lock'
-        AND state = 'active'
-        AND query ILIKE ${`%${tableFragment}%`}
-    `) as Array<{ waiting: number }>;
-    if ((rows[0]?.waiting ?? 0) >= 1) return;
-    if (Date.now() > deadline) {
-      assert.fail(`timeout (15s) esperando statement bloqueado em ${tableFragment} — ${label}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-}
+// A barreira DETERMINÍSTICA mudou de casa: `tests/helpers/pg-barrier.ts`, agora ESCOPADA por
+// `application_name` (B-5). A versão cluster-wide que vivia aqui aceitava statement bloqueado de
+// qualquer suíte do lote — e o job roda 29 arquivos em paralelo. Ela segue cobrindo o caminho
+// íntegro (UPDATE do CAS bloqueado no row lock) E os mutantes dos drills (INSERT bloqueado em
+// unique, CAS fora da tx): o vermelho dos drills vem das ASSERÇÕES de estado, nunca de timeout.
 
 // Teardown ESCOPADO aos tenants descartáveis desta execução, em ordem de FK — nunca sentença sobre a
 // base inteira (P-JUNTA-LIMPEZA-BASE-VIVA).
