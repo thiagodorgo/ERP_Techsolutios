@@ -20,6 +20,9 @@ const state=():any=>({repo:'acme/erp',defaultBranch:'main',kpiLatestBlobSha:KPI,
 const att=(s:any):any=>({schema:'erp-porteiro-attestation:v1',verdict:`LIBERADO: merge do PR #9 no head ${H}`,repo:'acme/erp',pr:9,head:H,snapshotSha256:s.snapshotSha256,
   agentId:'porter',role:'porteiro-pos-merge',runtime:'codex',model:'gpt-5.6-sol',reasoningEffort:'ultra',commands:[{cmd:'npm test',exitCode:0}],evidence:{kpiLatestBlobSha:KPI}});
 const mergedPr=():any=>({number:9,merged:true,merge_commit_sha:'f'.repeat(40),base:{ref:'main'},head:{sha:H}});
+// O atestado COMO ELE EXISTE no comentário publicado: `publish` persiste `{...attestation, snapshot}`.
+// É essa forma que o merge CAS e o fechamento pós-merge leem — atestado sem snapshot não é conferível.
+const persistido=(s:any,over:any={}):any=>({...att(s),snapshot:s,...over});
 const cas=(s:any,a:any,mergeAgentId:string)=>{const c={html_url:'https://gh/comment/1'};
   return assertMergeCandidate({snapshot:s,currentSnapshot:s,attestation:a,status:{context:'erp/porteiro-pre-merge',state:'success',target_url:c.html_url},comment:c,expectedHead:H,mergeAgentId});};
 
@@ -51,7 +54,7 @@ test('F-C mut.5 — porteiro com a identidade de uma alçada da junta não liber
 
 test('F-C mut.6 — executor do merge igual a votante ou ao porteiro não mergeia',()=>{const s=buildSnapshot(state()),a=att(s);for(const id of ['owner','planner','dev','r1','r2','r3'])assert.throws(()=>cas(s,a,id),/independência não comprovada/);assert.throws(()=>cas(s,a,'porter'),/mesma identidade do porteiro/);assert.throws(()=>cas(s,a,''),/independente|identidade/);assert.equal(cas(s,a,'merger'),true);});
 
-test('F-C mut.7 — executor pós-merge acumulando alçada (nomeada OU omitida) é vermelho',()=>{const s=buildSnapshot(state()),a=att(s);assert.equal(validateFinalization({pr:mergedPr(),attestation:a,executorId:'closer',mergeExecutorId:'merger',junta:junta()}).mergeCommit,'f'.repeat(40));assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'owner',mergeExecutorId:'merger',junta:junta()}),/acumulou alçada/);const omitido=junta();delete omitido.origin;assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'owner',mergeExecutorId:'merger',junta:omitido}),/origin/);assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'',mergeExecutorId:'merger',junta:junta()}),/sem identidade/);});
+test('F-C mut.7 — executor pós-merge acumulando alçada (nomeada OU omitida) é vermelho',()=>{const s=buildSnapshot(state()),a=persistido(s);assert.equal(validateFinalization({pr:mergedPr(),attestation:a,executorId:'closer',mergeExecutorId:'merger',junta:junta()}).mergeCommit,'f'.repeat(40));assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'owner',mergeExecutorId:'merger',junta:junta()}),/acumulou alçada/);const omitido=junta();delete omitido.origin;assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'owner',mergeExecutorId:'merger',junta:omitido}),/origin/);assert.throws(()=>validateFinalization({pr:mergedPr(),attestation:a,executorId:'',mergeExecutorId:'merger',junta:junta()}),/sem identidade/);});
 
 test('F-C mut.8 — fabrica é chave obrigatória e entra no conjunto de colisão',()=>{const semChave=state();delete semChave.junta.fabrica;assert.throws(()=>buildSnapshot(semChave),/fabrica obrigatório/);const colide=state();colide.junta.fabrica='r1';assert.throws(()=>buildSnapshot(colide),/repetida/);const vazia=state();vazia.junta.fabrica='';assert.throws(()=>buildSnapshot(vazia),/fabrica precisa ser null/);const ok=state();ok.junta.fabrica='fabrica-2';assert.ok(buildSnapshot(ok).junta.identities.some((x:any)=>x.role==='fabrica'&&x.agentId==='fabrica-2'));});
 
@@ -201,4 +204,47 @@ test('PROVENIENCIA — o comentário do código carrega o mesmo limite e a deriv
   assert.doesNotMatch(m,/check_suite_id/);
   assert.doesNotMatch(m,/actions\/jobs\//);
   assert.doesNotMatch(m,/actions\/runs\//);
+});
+
+// ---------------------------------------------------------------------------
+// D-9 — o fechamento pós-merge confere o VEREDITO, não só `head`/`pr`.
+// Antes desta correção, um atestado BLOQUEADO satisfazia `validateFinalization`: o pós-merge
+// "fecharia" um merge que o porteiro tinha barrado. O veredicto negativo PERSISTIDO nasceu na F-E
+// desta mesma entrega e usa o MESMO marcador da liberação — publicado depois, ele SOMBREIA o
+// LIBERADO para todo leitor que pega o último comentário marcado. Medido antes da correção: os
+// quatro casos abaixo passavam VERDES.
+// ---------------------------------------------------------------------------
+
+const negativo=(verdict:'BLOQUEADO'|'RESSALVA',over:any={}):any=>({...buildNegativeVerdict({verdict,repo:'acme/erp',pr:9,head:H,agentId:'porter',reason:'evidência do head divergente'}),...over});
+const fecha=(attestation:any,over:any={})=>validateFinalization({pr:mergedPr(),attestation,executorId:'closer',mergeExecutorId:'merger',junta:junta(),...over});
+
+test('D-9 mut.1 — atestado BLOQUEADO ou COM RESSALVA não fecha o pós-merge',()=>{
+  const s=buildSnapshot(state());
+  // Como o veredicto negativo é realmente publicado (sem snapshot embutido).
+  assert.throws(()=>fecha(negativo('BLOQUEADO')),/snapshot canônico/);
+  assert.throws(()=>fecha(negativo('RESSALVA')),/snapshot canônico/);
+  // E acolchoado com um snapshot íntegro, que é o caso difícil: só o VEREDITO o denuncia.
+  assert.throws(()=>fecha(negativo('BLOQUEADO',{snapshot:s})),/veredito não é a liberação literal exata/);
+  assert.throws(()=>fecha(negativo('RESSALVA',{snapshot:s})),/veredito não é a liberação literal exata/);
+});
+
+test('D-9 mut.2 — LIBERADO de OUTRO snapshot, ou sem a evidência do head, não fecha',()=>{
+  const s=buildSnapshot(state());
+  const outro=state();outro.pr.body='outro corpo';const b=buildSnapshot(outro);
+  assert.notEqual(s.snapshotSha256,b.snapshotSha256);
+  assert.throws(()=>fecha({...att(s),snapshot:b}),/atestado pertence a snapshot diferente/);
+  assert.throws(()=>fecha(persistido(s,{evidence:{kpiLatestBlobSha:'9'.repeat(40)}})),/evidência de reexecução divergente/);
+  assert.throws(()=>fecha(persistido(s,{commands:[{cmd:'npm test',exitCode:1}]})),/não terminou em 0/);
+  assert.throws(()=>fecha(persistido(s,{agentId:'planner'})),/independência não comprovada/);
+  assert.throws(()=>fecha(persistido(s,{runtime:'claude-code'})),/declaração de invocação/);
+  // Controle: o atestado íntegro continua fechando.
+  assert.equal(fecha(persistido(s)).approvedHead,H);
+});
+
+test('D-9 — o fechamento REUSA verifyAttestation; nunca uma segunda cópia da regra',()=>{
+  const src=readFileSync('scripts/post-merge-finalize.mjs','utf8');
+  assert.match(src,/import\s*\{[^}]*\bverifyAttestation\b[^}]*\}\s*from\s*'\.\/porteiro-pre-merge\.mjs'/);
+  assert.match(src,/verifyAttestation\(snapshot,attestation\)/);
+  // Cópia local do literal do veredito é como a divergência do D-10 nasceu: fica vermelho aqui.
+  assert.doesNotMatch(src,/LIBERADO: merge do PR/,'o literal do veredito não pode ser reescrito no fechamento');
 });
