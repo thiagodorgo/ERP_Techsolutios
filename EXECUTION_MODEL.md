@@ -434,7 +434,7 @@ npm --prefix frontend run test:smoke        # quando existir
 
 ```bash
 node --check Kpis/app.js
-rg "<marcador-do-bloco>" Kpis/ docs/                # confirma os marcadores do bloco
+git grep "<marcador-do-bloco>" -- Kpis/ docs/       # confirma os marcadores do bloco
 git diff --check
 ```
 
