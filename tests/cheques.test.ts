@@ -22,6 +22,7 @@ import {
   toChequeDto,
   type ChequeActorContext,
 } from "../src/modules/cheques/index.js";
+import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
 
 // Erros de domínio renderizam idêntico via HTTP (statusCode+reason); o clear/bounce compõem com o serviço de
 // lançamentos → um period_closed do chokepoint chega como FinancialEntryError. Checagem class-agnostic.
@@ -71,6 +72,22 @@ async function activeAccount(
   overrides: Record<string, unknown> = {},
 ) {
   return accounts.create(ctx, { name: `Caixa ${randomUUID()}`, ...overrides });
+}
+
+// Os lançamentos VIVOS vinculados ao cheque, pelas DUAS pontas — a entrada do invariante de EFEITO.
+// Deletado NÃO entra: incluí-lo mascararia exatamente o defeito que o helper existe para pegar.
+async function liveChequeEntries(
+  entries: ReturnType<typeof createMemoryFinancialEntryService>,
+  ctx: ChequeActorContext,
+  chequeId: string,
+  cheques: ReturnType<typeof createMemoryChequeService>,
+) {
+  const cheque = await cheques.get(ctx, chequeId);
+  const linked = [cheque.clearedEntryId, cheque.bounceEntryId].filter((id): id is string => id != null);
+  const all = await entries.list(ctx, {});
+  return all.items
+    .filter((entry) => linked.includes(entry.id) && entry.deletedAt == null)
+    .map((entry) => ({ direction: entry.direction, amount: entry.amount }));
 }
 
 function chequeBody(accountId: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -424,6 +441,111 @@ test("bounce cleared→bounced FUNCIONA mesmo com o lançamento de compensação
   assert.equal(bounced.status, "bounced");
   const balance = await entries.balance(ctx, account.id);
   assert.equal(balance.balance, 0);
+});
+
+// ------------------------------- lançamento de cheque só se desfaz pelo cheque (ciclo 2 · C2)
+// P3 — lançamento referenciado por cleared_entry_id ou bounce_entry_id não é deletável nem estornável
+//      pela superfície de lançamentos; em QUALQUER ordem de chamadas,
+//      net(lançamentos vivos do cheque) ∈ { +valor (cleared), 0 (bounced), sem lançamento (demais) }.
+// O ataque da junta (Ω6R-DIN-011), reproduzido e agora RECUSADO: clear +100 → reverse do lançamento
+// de compensação → o cheque continuava 'cleared' → bounce postava −100. 200 num cheque de 100.
+
+test("[C2/P3] ATAQUE da junta: reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_immutable; net = +valor, nunca −valor", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  const cleared = await cheques.clear(ctx, cheque.id);
+  assert.equal((await entries.balance(ctx, account.id)).balance, 100);
+
+  // (1) a porta dos lançamentos RECUSA — era ela que abria a devolução em dobro.
+  await assert.rejects(
+    () => entries.reverse(ctx, cleared.clearedEntryId!),
+    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
+  );
+  // (2) e o cheque continua compensado, com o dinheiro parado onde estava.
+  assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 100, "o estorno recusado não pode ter mexido no caixa");
+  expectChequeLedgerCoherent({
+    status: "cleared",
+    direction: "received",
+    amount: 100,
+    entries: await liveChequeEntries(entries, ctx, cheque.id, cheques),
+    label: "após o reverse recusado",
+  });
+
+  // (3) o ÚNICO caminho que desfaz é o bounce — e ele leva a líquido ZERO, jamais a −100.
+  const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+  assert.equal(bounced.status, "bounced");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 0, "líquido ZERO — no defeito dava −100");
+  expectChequeLedgerCoherent({
+    status: "bounced",
+    direction: "received",
+    amount: 100,
+    entries: await liveChequeEntries(entries, ctx, cheque.id, cheques),
+    label: "após o bounce",
+  });
+});
+
+test("[C2/P3] DELETE do lançamento de COMPENSAÇÃO → 422 cheque_entry_immutable; cheque e caixa intactos", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 250 }));
+  await cheques.deposit(ctx, cheque.id);
+  const cleared = await cheques.clear(ctx, cheque.id);
+
+  await assert.rejects(
+    () => entries.delete(ctx, cleared.clearedEntryId!),
+    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
+  );
+  assert.equal((await entries.get(ctx, cleared.clearedEntryId!)).deletedAt, undefined);
+  assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 250);
+});
+
+test("[C2/P3] o CONTRA-lançamento do bounce também é imutável: reverse e delete → 422; net segue ZERO", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  await cheques.clear(ctx, cheque.id);
+  const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+
+  // Sem este guard, estornar o contra-lançamento devolveria o cheque devolvido ao caixa: +100 outra vez.
+  await assert.rejects(
+    () => entries.reverse(ctx, bounced.bounceEntryId!),
+    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
+  );
+  await assert.rejects(
+    () => entries.delete(ctx, bounced.bounceEntryId!),
+    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
+  );
+  assert.equal((await entries.balance(ctx, account.id)).balance, 0, "o cheque devolvido tem de continuar valendo ZERO");
+  expectChequeLedgerCoherent({
+    status: "bounced",
+    direction: "received",
+    amount: 100,
+    entries: await liveChequeEntries(entries, ctx, cheque.id, cheques),
+    label: "contra-lançamento protegido",
+  });
+});
+
+test("[C2] o guard é ESTREITO: lançamento avulso na mesma conta segue estornável e deletável", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  await cheques.clear(ctx, cheque.id);
+
+  const avulso = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 15, payment_method: "pix" });
+  const contra = await entries.reverse(ctx, avulso.id);
+  assert.equal(contra.reversalOf, avulso.id, "o guard do cheque não pode virar parede sobre lançamento alheio");
+  const outro = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 5, payment_method: "pix" });
+  assert.notEqual((await entries.delete(ctx, outro.id)).deletedAt, undefined);
 });
 
 test("bounce de 'registered'/'cancelled' → 422 invalid_transition", async () => {

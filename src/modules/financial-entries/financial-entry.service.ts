@@ -16,10 +16,15 @@ import {
   type FinancialUowResolver,
 } from "../financial-uow/index.js";
 import {
+  createDefaultChequeLinkReader,
+  type ChequeLinkReaderResolver,
+} from "../cheques/cheque-link-reader.js";
+import {
   InMemoryFinancialEntryRepository,
   accountInactiveError,
   accountNotFoundError,
   alreadyReversedError,
+  chequeEntryImmutableError,
   reversalPairImmutableError,
   currencyMismatchError,
   entryNotFoundError,
@@ -76,6 +81,10 @@ export class FinancialEntryService {
     // B-O6R-02 F3/F4 — porta de Unit of Work dos fluxos multi-write (payTitle/reverse). Default = o
     // resolver por env (memória fora de produção; Prisma = transação real com trava de período).
     private readonly resolveUow: FinancialUowResolver = createDefaultFinancialUnitOfWork,
+    // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — leitura do vínculo cheque → lançamento, usada pelos
+    // guards de `delete`/`reverse`. É o SEXTO parâmetro de propósito: a ordem dos cinco acima não
+    // muda (a fixture do ciclo 1 posiciona o resolver da UoW na 5ª posição).
+    private readonly resolveChequeLinkReader: ChequeLinkReaderResolver = createDefaultChequeLinkReader,
   ) {}
 
   async list(actor: FinancialEntryActorContext, query: RawRecord): Promise<ListFinancialEntryResult> {
@@ -168,6 +177,8 @@ export class FinancialEntryService {
     if (current.titleId != null) {
       throw settlementEntryImmutableError();
     }
+    // C2 (Ω6R-DIN-011): idem para movimento de CHEQUE — quem desfaz é o `bounce`, nunca esta porta.
+    await this.assertNotChequeLinked(actor.tenantId, current.id);
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
 
     const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
@@ -196,6 +207,13 @@ export class FinancialEntryService {
     if (original.reversalOf != null) {
       throw reversalPairImmutableError();
     }
+    // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — lançamento de CHEQUE não se estorna por esta porta. Era
+    // aqui que nascia a devolução em dobro: o estorno da compensação era aceito, o cheque continuava
+    // `cleared`, e o `bounce` seguinte postava o contra-lançamento — 200 num cheque de 100. Desfazer
+    // movimento de cheque é exclusividade da máquina de estados dele. Precedência do reverse:
+    // 404 → entry_reconciled → reversal_pair_immutable → AQUI → already_reversed → period_closed
+    // (a IDENTIDADE do lançamento decide antes da HISTÓRIA dele).
+    await this.assertNotChequeLinked(actor.tenantId, original.id);
     // FAST-FAIL (precedência de erros preservada); a defesa que decide é o re-check DENTRO da unidade.
     if (await this.repository.findActiveReversalOf(actor.tenantId, original.id)) {
       throw alreadyReversedError();
@@ -432,6 +450,17 @@ export class FinancialEntryService {
   private assertMutable(entry: FinancialEntry): void {
     if (entry.reconciled) {
       throw new FinancialEntryError(422, "FINANCIAL_ENTRY_UNPROCESSABLE", "entry_reconciled", "A reconciled financial entry is immutable.");
+    }
+  }
+
+  // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — o lançamento pertence à máquina de estados de um cheque?
+  // Vale para as DUAS pontas (`cleared_entry_id` e `bounce_entry_id`). O pre-check é livre de corrida
+  // por construção: os vínculos nascem com o lançamento (clear/bounce criam e vinculam na mesma
+  // unidade) e nenhuma API os move depois.
+  private async assertNotChequeLinked(tenantId: string, financialEntryId: string): Promise<void> {
+    const chequeLinks = await this.resolveChequeLinkReader();
+    if (await chequeLinks.findActiveByLinkedEntry(tenantId, financialEntryId)) {
+      throw chequeEntryImmutableError();
     }
   }
 

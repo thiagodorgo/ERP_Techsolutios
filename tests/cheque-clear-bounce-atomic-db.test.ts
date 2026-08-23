@@ -12,6 +12,7 @@ import {
   waitForOwnBlockedStatement,
   withApplicationName,
 } from "./helpers/pg-barrier.js";
+import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
 
 const connectionString = process.env.DATABASE_URL;
 // Nome único desta suíte (um processo por arquivo no `node --test`) — escopo da barreira (B-5).
@@ -124,6 +125,56 @@ if (!connectionString) {
     }
   });
 
+  // [C2/P3 · Ω6R-DIN-011] O ATAQUE DA JUNTA, sob Postgres real, agora RECUSADO. Medido em e4e914a:
+  //   cheque +100 compensado -> reverse do lancamento: PERMITIDO -> bounce: PERMITIDO
+  //     | saldo clear=100 reverse=0 bounce=-100 | cheque.status=bounced
+  // 200 devolvidos num cheque de 100. A asserção que importa é o NET dos lançamentos vivos, não a
+  // existência da linha: no defeito a linha existia e o dinheiro já tinha voltado.
+  test("G14 — ataque: reverse/delete do lançamento de compensação → 422 cheque_entry_immutable; net = +100 e o bounce leva a 0, nunca −100", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g14-ataque");
+      const { tenantId, chequeId, accountId } = seed;
+      await h.chequeService.deposit(seed.actor, chequeId);
+      const cleared = await h.chequeService.clear(seed.actor, chequeId);
+      assert.ok(cleared.clearedEntryId);
+      assert.equal((await h.entryService.balance(seed.actor, accountId)).balance, 1500);
+
+      // (1) as DUAS portas da superfície de lançamentos recusam.
+      await assert.rejects(
+        h.entryService.reverse(seed.actor, cleared.clearedEntryId!),
+        (error: unknown) => isDomainError(error, 422, "cheque_entry_immutable"),
+      );
+      await assert.rejects(
+        h.entryService.delete(seed.actor, cleared.clearedEntryId!),
+        (error: unknown) => isDomainError(error, 422, "cheque_entry_immutable"),
+      );
+
+      // (2) o cheque não saiu de 'cleared' e o razão continua valendo +1500 (era 0 depois do reverse).
+      const afterAttack = await expectChequeLedger(h.client, tenantId, chequeId, "depois do ataque recusado");
+      assert.equal(afterAttack.status, "cleared");
+      assert.equal(
+        await client.financialEntry.count({ where: { tenant_id: tenantId, deleted_at: null } }),
+        1,
+        "nenhuma contrapartida pode ter sido criada, e a compensação não pode ter sido apagada",
+      );
+      assert.equal((await h.entryService.balance(seed.actor, accountId)).balance, 1500);
+
+      // (3) a máquina de estados é a única porta — e ela leva a ZERO.
+      const bounced = await h.chequeService.bounce(seed.actor, chequeId, { reason: "sem fundos" });
+      assert.equal(bounced.status, "bounced");
+      await expectChequeLedger(h.client, tenantId, chequeId, "depois do bounce");
+      assert.equal(
+        (await h.entryService.balance(seed.actor, accountId)).balance,
+        0,
+        "líquido ZERO — no head reprovado esta linha valia −1500 (devolução em dobro)",
+      );
+    } finally {
+      await teardown(h);
+    }
+  });
+
   test("G6 — clear × clear com barreira: perdedor bloqueia no cheque e sai 409; invariante cleared ⇔ cleared_entry_id ⇔ entry existe", async () => {
     const h = await bootstrap(connection);
     const { client } = h;
@@ -223,6 +274,7 @@ async function bootstrap(connection: string) {
     { PrismaChequeRepository },
     { PrismaFinancialEntryRepository },
     { createDefaultChequeService },
+    { createDefaultFinancialEntryService },
     { FinancialPeriodCloseService },
     { PrismaFinancialPeriodCloseStore },
   ] = await Promise.all([
@@ -235,6 +287,7 @@ async function bootstrap(connection: string) {
     import("../src/modules/cheques/cheque-prisma.repository.js"),
     import("../src/modules/financial-entries/financial-entry-prisma.repository.js"),
     import("../src/modules/cheques/cheque.service.js"),
+    import("../src/modules/financial-entries/financial-entry.service.js"),
     import("../src/modules/financial-period-closes/financial-period-close.service.js"),
     import("../src/modules/financial-period-closes/financial-period-close-prisma.repository.js"),
   ]);
@@ -250,11 +303,15 @@ async function bootstrap(connection: string) {
   // A tag TEM de ter chegado ao backend: barreira escopada que nunca casa nada é cegueira nova.
   await assertApplicationNamePropagated(client, applicationName);
   const chequeService = await createDefaultChequeService();
+  // C2 — o ataque do G14 vem pela superficie de LANCAMENTOS (reverse/delete), entao ela precisa
+  // estar no arnes: e exatamente a porta que desfazia o dinheiro do cheque por fora da maquina.
+  const entryService = await createDefaultFinancialEntryService();
   const closeService = new FinancialPeriodCloseService(new PrismaFinancialPeriodCloseStore(client));
 
   return {
     client,
     chequeService,
+    entryService,
     closeService,
     deriveCompetencia,
     setTenantRlsContext,
@@ -405,6 +462,28 @@ async function assertClearedInvariant(
     1,
     "exatamente UMA compensação postada",
   );
+  // B-O6R-02 ciclo 2 · C2 — EXISTÊNCIA não basta, e foi essa a raiz que a junta nomeou no B-3: o
+  // ataque deixava a linha viva e o dinheiro já devolvido. A partir daqui o invariante é de EFEITO.
+  await expectChequeLedger(client, tenantId, chequeId, "invariante do clear vencedor");
+  return cheque;
+}
+
+// Carrega os lançamentos VIVOS vinculados ao cheque (as DUAS pontas) e assere o líquido contra o
+// status. `deleted_at: null` é o ponto: um lançamento apagado não sustenta dinheiro nenhum.
+async function expectChequeLedger(client: Harness["client"], tenantId: string, chequeId: string, label: string) {
+  const cheque = await client.cheque.findFirst({ where: { tenant_id: tenantId, id: chequeId } });
+  assert.ok(cheque, `${label}: o cheque tem de existir`);
+  const linkedIds = [cheque.cleared_entry_id, cheque.bounce_entry_id].filter((id): id is string => id != null);
+  const rows = linkedIds.length
+    ? await client.financialEntry.findMany({ where: { tenant_id: tenantId, id: { in: linkedIds }, deleted_at: null } })
+    : [];
+  expectChequeLedgerCoherent({
+    status: cheque.status,
+    direction: cheque.direction,
+    amount: Number(cheque.amount),
+    entries: rows.map((row) => ({ direction: row.direction, amount: Number(row.amount) })),
+    label,
+  });
   return cheque;
 }
 

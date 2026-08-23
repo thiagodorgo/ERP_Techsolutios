@@ -1100,6 +1100,66 @@ test("[rota][C1] DELETE /financial-entries/:id de LIQUIDAÇÃO → 422 settlemen
   });
 });
 
+// [C2/P3 · Ω6R-DIN-011] O ataque da junta ponta a ponta POR HTTP, que é como ele foi medido: cheque
+// de +100 compensado → reverse do lançamento de compensação → bounce. Dava 200 devolvidos num cheque
+// de 100. A recusa tem de acontecer na ROTA, não só no serviço.
+test("[rota][C2] reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_immutable; bounce leva a líquido ZERO, nunca −100", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA, { opening_balance: 0 });
+    const headers = authHeaders(seed.tenantA, "finance");
+
+    const cheque = await requestJson(baseUrl, "/api/v1/cheques", {
+      method: "POST",
+      headers,
+      body: { direction: "received", cheque_number: "000999", bank: "Banco Ataque", amount: 100, account_id: account.id },
+    });
+    assert.equal(cheque.status, 201);
+    const chequeId = cheque.body.data.id as string;
+    assert.equal((await requestJson(baseUrl, `/api/v1/cheques/${chequeId}/deposit`, { method: "POST", headers })).status, 200);
+    const cleared = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}/clear`, { method: "POST", headers });
+    assert.equal(cleared.status, 200);
+    const clearingEntryId = cleared.body.data.clearedEntryId as string;
+    assert.ok(clearingEntryId);
+
+    const balanceAfterClear = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers });
+    assert.equal(balanceAfterClear.body.data.balance, 100);
+
+    // O ATAQUE: era 201 no head e4e914a.
+    const reversed = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}/reverse`, { method: "POST", headers });
+    assert.equal(reversed.status, 422, "estornar a compensação por fora da máquina do cheque era ACEITO — é o Ω6R-DIN-011");
+    assert.equal(reversed.body.error.reason, "cheque_entry_immutable");
+    assert.equal(reversed.body.error.tenantId, undefined, "§2.8: erro não vaza tenant");
+
+    // O DELETE da mesma linha é a outra porta, e recusa igual.
+    const deleted = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}`, { method: "DELETE", headers });
+    assert.equal(deleted.status, 422);
+    assert.equal(deleted.body.error.reason, "cheque_entry_immutable");
+
+    // O cheque não se moveu, e o caixa também não.
+    const stillCleared = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}`, { headers });
+    assert.equal(stillCleared.body.data.status, "cleared");
+    assert.equal(
+      (await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers })).body.data.balance,
+      100,
+      "as recusas não podem ter devolvido nada",
+    );
+
+    // E a única porta que desfaz leva a ZERO — no defeito, esta linha dava −100.
+    const bounced = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}/bounce`, {
+      method: "POST",
+      headers,
+      body: { reason: "sem fundos" },
+    });
+    assert.equal(bounced.status, 200);
+    assert.equal(bounced.body.data.status, "bounced");
+    assert.equal(
+      (await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers })).body.data.balance,
+      0,
+      "líquido ZERO: 200 devolvidos num cheque de 100 era o achado",
+    );
+  });
+});
+
 test("[rota] PATCH /financial-entries/:id/reconcile finance → 200; DTO §2.8 (sem tenant_id)", async () => {
   await withFinancialEntryApi(async ({ baseUrl, seed }) => {
     const account = await createAccount(baseUrl, seed.tenantA);

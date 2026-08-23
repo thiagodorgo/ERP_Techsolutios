@@ -24,6 +24,11 @@ export interface ChequeRepository {
   attachClearingEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined>;
   // Vincula o contra-lançamento ao cheque JÁ em 'bounced' (2º passo do bounce-após-clear).
   attachBounceEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined>;
+  // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — cheque ATIVO que REFERENCIA este lançamento, por qualquer
+  // das duas pontas (cleared_entry_id OU bounce_entry_id). É a leitura que sustenta o guard da
+  // superfície de LANÇAMENTOS: sem ela, `delete`/`reverse` nunca souberam que o lançamento pertencia
+  // à máquina de estados de um cheque, e desfaziam o dinheiro por fora dela (devolução em dobro).
+  findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined>;
   reset?(): void;
 }
 
@@ -164,6 +169,16 @@ export class InMemoryChequeRepository implements ChequeRepository {
 
   async attachBounceEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined> {
     return this.attachEntry(tenantId, chequeId, "bounced", { bounceEntryId: entryId }, updatedBy);
+  }
+
+  // B-O6R-02 ciclo 2 · C2 — paridade estrita com o Prisma (OR nas duas pontas, cheque não deletado).
+  async findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
+    return [...this.cheques.values()].find(
+      (cheque) =>
+        cheque.tenantId === tenantId &&
+        cheque.deletedAt == null &&
+        (cheque.clearedEntryId === entryId || cheque.bounceEntryId === entryId),
+    );
   }
 
   reset(): void {

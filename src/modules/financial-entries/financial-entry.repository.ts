@@ -135,6 +135,26 @@ export function settlementEntryImmutableError(): FinancialEntryError {
   );
 }
 
+// B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — MOVIMENTO DE CHEQUE SÓ SE DESFAZ PELA MÁQUINA DO CHEQUE.
+//
+// Medido pela junta: cheque de +100 compensado → `reverse` do lançamento de compensação ACEITO → o
+// cheque continuava `cleared` → `bounce` legal postava o contra-lançamento. Saldo: clear=100,
+// reverse=0, bounce=−100. **200 devolvidos num cheque de 100**, com o estado do cheque divergindo do
+// razão. Duas portas desfaziam o mesmo dinheiro e não se falavam.
+//
+// Vale para as DUAS pontas do vínculo (`cleared_entry_id` e `bounce_entry_id`) e para as DUAS
+// operações da superfície de lançamentos (`delete` e `reverse`): desfazer um movimento de cheque é
+// exclusividade do `bounce`, que posta um contra-lançamento NOVO — preservando a conciliação do
+// lançamento compensado e a história no razão.
+export function chequeEntryImmutableError(): FinancialEntryError {
+  return new FinancialEntryError(
+    422,
+    "FINANCIAL_ENTRY_UNPROCESSABLE",
+    "cheque_entry_immutable",
+    "An entry linked to a cheque cannot be deleted or reversed; use the cheque bounce flow instead.",
+  );
+}
+
 export class InMemoryFinancialEntryRepository implements FinancialEntryRepository {
   private readonly entries = new Map<string, FinancialEntry>();
 

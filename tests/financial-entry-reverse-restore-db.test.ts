@@ -12,6 +12,7 @@ import {
   waitForOwnBlockedStatement,
   withApplicationName,
 } from "./helpers/pg-barrier.js";
+import { expectTitleLedgerCoherent } from "./helpers/financial-ledger.js";
 
 const connectionString = process.env.DATABASE_URL;
 // Nome único desta suíte (um processo por arquivo no `node --test`) — escopo da barreira.
@@ -93,6 +94,8 @@ if (!connectionString) {
       assert.equal(restored.status, "open", "título totalmente devolvido REABRE");
       // Só a liquidação original conta contra o título.
       assert.equal(await client.financialEntry.count({ where: { tenant_id: tenantId, title_id: titleId } }), 1);
+      // E o paid_amount tem de ser SUSTENTADO pelo razão, não só bater com um número esperado.
+      await expectTitleLedger(client, tenantId, titleId, "G3 — estorno total");
     } finally {
       await teardown(h);
     }
@@ -117,6 +120,7 @@ if (!connectionString) {
       assert.ok(partial);
       assert.equal(Number(partial.paid_amount), 40, "só o pagamento estornado sai do título");
       assert.equal(partial.status, "partially_paid");
+      await expectTitleLedger(client, tenantId, titleId, "G12 — estorno da última parcela");
     } finally {
       await teardown(h);
     }
@@ -227,6 +231,7 @@ if (!connectionString) {
       assert.ok(title);
       assert.equal(Number(title.paid_amount), 0, "decremento ÚNICO — o perdedor não pode ter devolvido de novo");
       assert.equal(title.status, "open");
+      await expectTitleLedger(client, tenantId, titleId, "G4 — dupla reversão com barreira");
     } finally {
       await teardown(h);
     }
@@ -280,6 +285,7 @@ if (!connectionString) {
       const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
       assert.equal(Number(title?.paid_amount), 60);
       assert.equal(title?.status, "partially_paid");
+      await expectTitleLedger(client, seed.tenantId, seed.titleId, "estorno de UMA parcela entre várias");
     } finally { await teardown(h); }
   });
 
@@ -332,6 +338,7 @@ if (!connectionString) {
       const title = await client.financialTitle.findUnique({ where: { id: seed.titleId } });
       assert.equal(Number(title?.paid_amount), 60);
       assert.equal(title?.status, "partially_paid");
+      await expectTitleLedger(client, seed.tenantId, seed.titleId, "estorno de UMA parcela entre várias");
     } finally { await teardown(h); }
   });
 }
@@ -451,6 +458,30 @@ function isDomainError(error: unknown, statusCode: number, reason: string): bool
 // `application_name` (B-5). A versão cluster-wide que vivia aqui aceitava statement bloqueado de
 // QUALQUER suíte do lote. Cobre o caminho íntegro (SELECT ... FOR UPDATE bloqueado) E os mutantes
 // dos drills (INSERT bloqueado no unique parcial) — o vermelho dos drills vem das ASSERÇÕES.
+
+// B-O6R-02 ciclo 2 · C2 — INVARIANTE DE EFEITO do titulo: paid_amount tem de ser SUSTENTADO pelo
+// razao (liquidacoes vivas menos contrapartidas vivas). A suite do ciclo 1 conferia paid_amount
+// contra um numero esperado escrito a mao, e isso passa mesmo quando o razao ja discorda dele — que
+// e a forma do Ω6R-DIN-002/010. Aqui o esperado e DERIVADO das linhas.
+async function expectTitleLedger(client: Harness["client"], tenantId: string, titleId: string, label: string) {
+  const title = await client.financialTitle.findFirst({ where: { tenant_id: tenantId, id: titleId } });
+  assert.ok(title, `${label}: o titulo tem de existir`);
+  const settlements = await client.financialEntry.findMany({
+    where: { tenant_id: tenantId, title_id: titleId, deleted_at: null },
+  });
+  const settlementIds = settlements.map((row) => row.id);
+  const counterEntries = settlementIds.length
+    ? await client.financialEntry.findMany({
+        where: { tenant_id: tenantId, reversal_of: { in: settlementIds }, deleted_at: null },
+      })
+    : [];
+  expectTitleLedgerCoherent({
+    paidAmount: Number(title.paid_amount),
+    settlements: settlements.map((row) => ({ id: row.id, amount: Number(row.amount) })),
+    counterEntries: counterEntries.map((row) => ({ reversalOf: row.reversal_of!, amount: Number(row.amount) })),
+    label,
+  });
+}
 
 // Teardown ESCOPADO aos tenants descartáveis desta execução, em ordem de FK.
 async function teardown(h: Harness): Promise<void> {

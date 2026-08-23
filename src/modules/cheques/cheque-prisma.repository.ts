@@ -110,6 +110,19 @@ export class PrismaChequeRepository implements ChequeRepository {
     return this.attachEntry(tenantId, chequeId, "bounced", { bounce_entry_id: entryId }, updatedBy);
   }
 
+  // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — cheque ATIVO que referencia este lançamento por qualquer
+  // das duas pontas. tenant_id explícito (além da RLS) e deleted_at IS NULL, como os vizinhos.
+  async findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
+    const record = await this.client.cheque.findFirst({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: null,
+        OR: [{ cleared_entry_id: entryId }, { bounce_entry_id: entryId }],
+      },
+    });
+    return record ? mapRecord(record) : undefined;
+  }
+
   private async attachEntry(
     tenantId: string,
     chequeId: string,
@@ -151,6 +164,9 @@ export class RlsPrismaChequeRepository implements ChequeRepository {
   }
   attachBounceEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).attachBounceEntry(tenantId, chequeId, entryId, updatedBy));
+  }
+  findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).findActiveByLinkedEntry(tenantId, entryId));
   }
 }
 
