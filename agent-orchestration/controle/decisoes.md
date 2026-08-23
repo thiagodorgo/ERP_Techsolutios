@@ -1607,3 +1607,23 @@ ativo/strict sem bypass e merge com compare-and-swap do head. O workflow de `pul
 checkout nem executa código do candidato. Configuração remota só ocorre após junta crítica 5/5 e por executor
 distinto; se a fonte confiável não puder ser ligada ao contexto requerido, o configurador emite VETO antes do
 apply. `approved_head` e `merge_commit` ficam nulos na autoria e só são projetados após fechamento externo.
+
+### Divergência de espelho resolvida — §A4.3 "só avance após aprovação" (2026-08-22)
+
+**Registro obrigatório por §A2 (nada de consolidação silenciosa).** A varredura de satélites do ciclo 2
+achou divergência entre os dois contratos espelhados no item 3 do §A4: `CLAUDE.md` dizia "**só avance após
+aprovação**, exatamente como o Codex fazia" e `AGENTS.md` dizia "**só avance após aprovação** (junta —
+§C7)". O canônico (`D-INTEROP-CLAUDE-CODEX`) era o lado **pobre**.
+
+**Classificação:** o qualificador `(junta — §C7)` é **regra comum**, não mecanismo de ferramenta — quem
+aprova por PR é a mesma junta nas duas ferramentas. Logo, **harmoniza**. O que continua legitimamente
+diferente é só a metade-espelho de cada contrato ("como o Codex fazia" × "no mesmo protocolo que o Claude
+Code segue"), que é a referência de cada texto à outra ferramenta.
+
+**Resolução:** o `CLAUDE.md` recebe o qualificador e ambos passam a nomear o regime vigente. O defeito não
+era apenas de precisão: "aprovação" sem qualificar apontava para o regime **revogado** de aprovação humana
+por PR (`D-SAN-AUTONOMIA`, `D-KPI-PER-PR` — o humano é informado, não consultado, §C7.2).
+
+**Sem guard**, por instrução expressa do planejador na rodada satélite: espalhar guard frágil para
+acompanhar divergência de redação é modo de falha próprio. O enforcement continua sendo esta regra de
+resolução (§A2) mais a obrigação de alterar os dois espelhos no mesmo trabalho.

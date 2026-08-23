@@ -101,7 +101,9 @@ blocos** (Parte C). O Codex opera a partir **deste** `AGENTS.md` (espelho) + o `
    `agent-orchestration/claude/`) — **nunca apague** o que a outra ferramenta deixou;
    rastreabilidade **entre agentes/ferramentas** é regra.
 3. **Valide bloco a bloco** e **só avance após aprovação** (junta — §C7), exatamente no mesmo
-   protocolo que o Claude Code segue.
+   protocolo que o Claude Code segue. A qualificação é obrigatória: desde `D-SAN-AUTONOMIA` a
+   aprovação por PR é da **junta de agentes** + CI verde + porteiro pré-merge; o humano é
+   **informado, não consultado** (§C7.2). "Aprovação" sem qualificar apontava para o regime revogado.
 
 ## A5. Fases e persistência
 

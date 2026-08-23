@@ -92,7 +92,10 @@ blocos** (Parte C):
    (`comando-template.md`). Se preferir isolar o histórico por agente, crie
    `agent-orchestration/claude/` espelhando a convenção — **nunca apague** o que o Codex deixou;
    rastreabilidade **entre agentes** é regra.
-3. **Valide bloco a bloco** e **só avance após aprovação**, exatamente como o Codex fazia.
+3. **Valide bloco a bloco** e **só avance após aprovação** (junta — §C7), exatamente como o Codex
+   fazia. A qualificação é obrigatória: desde `D-SAN-AUTONOMIA` a aprovação por PR é da **junta de
+   agentes** + CI verde + porteiro pré-merge; o humano é **informado, não consultado** (§C7.2).
+   "Aprovação" sem qualificar apontava para o regime revogado.
 
 ## A5. Fases e persistência
 
