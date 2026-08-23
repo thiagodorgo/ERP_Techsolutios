@@ -521,3 +521,80 @@ para organização em Enterprise Cloud implica que a regra de ruleset `workflows
 a vinculação **na plataforma**; então reabrir a PD e, se confirmada, a variante forte volta por emenda com o
 guard atualizado. É a **única rota conhecida** para a afirmação forte voltar a ser verdadeira — deixá-la
 mapeada evita que alguém tente a rota vetada.
+
+---
+
+# ADENDO IV — vereditos D-9, D-10 e D-11: a fatia residual (2026-08-22)
+
+> Os três defeitos foram **reportados pelos devs que os acharam e NÃO consertados** (§C7.4-bis). Decididos
+> pelo **planejador**. A fatia residual é implementada por um **quarto** desenvolvedor, que não reportou
+> nenhum dos três. Nenhuma alçada se acumulou.
+>
+> Os três **entram neste ciclo**. O argumento real em contrário era "o ciclo já está grande"; cada veredito
+> abaixo o enfrenta explicitamente.
+
+## D-9 — `validateFinalization` tem de conferir o VEREDITO: ENTRA
+
+**O defeito.** O fechamento pós-merge confere `head` e `pr`, mas **não** o veredito do atestado. Um atestado
+**BLOQUEADO** satisfaria o fechamento — o pós-merge "fecharia" um merge que o porteiro tinha barrado.
+
+**Por que entra, e é o ponto:** antes deste ciclo, atestado `BLOQUEADO` **nem existia** como artefato
+persistido. A fatia F-E o criou (publish de veredicto negativo), e o fechamento lê **o último** comentário com
+o marcador. Nós criamos, neste ciclo, o objeto exato que o buraco engole — deixá-lo aberto **não é pendência
+de melhoria, é regressão de coerência interna da própria entrega**.
+
+**Mecanismo:** `validateFinalization` reusa `verifyAttestation` (já exportada) sobre o atestado que leu —
+veredito literal `LIBERADO` e vínculo com `snapshotSha256`, `pr` e `head`.
+
+**Mutações:** fechamento com atestado `BLOQUEADO`, vermelho (hoje verde — é o defeito); atestado `LIBERADO`
+de **outro** snapshot, vermelho.
+
+## D-10 — UMA função compartilhada, não três cópias iguais: ENTRA
+
+**O defeito.** `porteiro-pre-merge.mjs:liveState` usa `creator.type === 'Bot' ? id : null`;
+`merge-authorized-pr.mjs` e `configure-main-ruleset.mjs:sources` usam `creator.id`. Mismatch espúrio no CAS.
+
+**A forma importa mais que o conserto.** Igualar as três linhas hoje deixa a divergência voltar amanhã: a
+causa-raiz é a **triplicação**. A normalização de checks e statuses vira **função exportada única** no
+`porteiro-pre-merge.mjs` — que os outros dois já importam — e os três a consomem.
+
+**Erro de categoria a corrigir, não só inconsistência:** `creator.id` de um status é **id de usuário-bot, não
+id de app**. O `github-actions[bot]` é o **usuário 41898282**; o app é **15368**. Usar `creator.id` cru como
+`appId` é erro de categoria. Documentar no ponto: **status de commit nunca satisfaz check requerido com
+`integration_id` fixado**, e isso é fail-closed intencional.
+
+**Mutações:** a função única alimentada com criador Bot e não-Bot; **mais** asserção textual de que o padrão
+inline `creator.id` não reaparece nos outros dois arquivos.
+
+**Nota honesta para a ata:** o defeito era **fail-closed** — mismatch espúrio, nunca gate aberto. Mas
+falso-vermelho recorrente no CAS é vetor de degradação real, **porque ensina o operador a desconfiar do gate
+e re-rodar até passar**.
+
+## D-11 — renomear `assertFonteConfiavel`: AGORA
+
+**O defeito.** O identificador afirma "fonte confiável"; a execução prova apenas "é o app do GitHub Actions".
+
+**Por que o argumento do dev não sobrevive à medição.** Ele alegou "API pública já commitada". Mas **nada
+disto existe em `main`** e **nenhum consumidor externo existe** — a "API pública" são os próprios arquivos da
+allowlist, e o rename é mecânico dentro deles.
+
+**E o custo de manter é o pior possível simbolicamente:** o ciclo cujo tema é *"artefato que afirma o que a
+execução não produz"* entregaria, na **própria tabela de símbolos**, um identificador que afirma "fonte
+confiável".
+
+**Mecanismo:** nome que diga o que prova (`assertAppOrigemGitHubActions` ou equivalente que nomeie app e
+Actions; a escolha exata é do dev), mantendo no docstring o *"condição necessária, nunca suficiente"* e o
+ponteiro para as PDs.
+
+**Cerca contra reincidência:** asserção de que o identificador `FonteConfiavel` **não existe mais** nos
+scripts do gate — reintroduzir o nome que promete demais fica vermelho, no mesmo estilo dos guards de prosa.
+
+**Alçada:** o dev que manteve e reportou o nome **não** renomeia.
+
+## Empacotamento e sequência
+
+Uma **fatia residual única**, implementada por dev que não reportou nenhum dos três achados, com as mutações
+acima entrando na bateria (`governance:check` cresce de 72 para cerca de 76 ou mais).
+
+**A junta é convocada depois de:** fatia residual verde **e** resultado da varredura satélite. Os três
+achados e a separação achador/consertador entram **nominalmente** na ata (§4-bis).
