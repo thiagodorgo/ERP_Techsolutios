@@ -164,8 +164,12 @@ produzir"*. Refez com o texto exato.
 provável** — não confirmado — à medição de bytes CR que o orquestrador fez e não conseguiu reproduzir nem
 explicar. O guard do D-2 torna a propriedade independente da materialização, que é a correção certa.
 
-**Divergência factual sobre o próprio enunciado:** o orquestrador informou 40 commits; dois votantes mediram
-**44**. A contagem do orquestrador estava defasada.
+**Divergência factual sobre o próprio enunciado, e a correção dela.** O orquestrador informou 40 commits; dois
+votantes mediram **44**. Remedido depois: **40 desde `b444906`** (o commit em que a branch de governança
+começou) e **44 desde `origin/main`**. **Nenhum dos dois estava errado** — contavam bases diferentes, e nenhum
+dos dois declarou qual base usava. A primeira redação desta ata registrou a divergência como erro do
+orquestrador; era erro da própria ata. Fica a regra: **contagem de commits declara a base**, pela mesma razão
+que afirmação de estado declara o commit em que foi medida.
 
 ## O que a junta NÃO conseguiu medir
 
