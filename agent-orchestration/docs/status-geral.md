@@ -3925,7 +3925,7 @@ Validacao local: check OK, build OK, test:smoke 44/44 (33 -> 44). Backend e
 mobile nao tocados. KPIs nao alterados (C3) — publicacao via B-124K apos
 avaliacao humana.
 
-# Atualização 2026-08-20 — governança: porteiro pré-merge independente + Sol/ultra cirúrgico
+## Atualização 2026-08-20 — governança: porteiro pré-merge independente + Sol/ultra cirúrgico
 
 - branch: `docs/governanca-porteiro-pre-merge-sol`, criada de `origin/main` limpa/atualizada;
 - decisão do dono: junta + CI verdes não autorizam sozinhos o merge; porteiro independente atua antes do
@@ -3940,7 +3940,7 @@ avaliacao humana.
 - KPI: inalterado (governança/tooling; nenhum código, teste ou escopo de produto mudou).
 - validação: espelho 22/22 consistente; TypeScript check verde; guards KPI 22/22; freeze/sintaxe/diff-check verdes.
 
-# Atualização 2026-08-21 — ciclo 1 do enforcement pré-merge (autoria em validação)
+## Atualização 2026-08-21 — ciclo 1 do enforcement pré-merge (autoria em validação)
 
 - Desenvolvedor independente: `/root/dev_governanca_c1`; plano: `GOV-PORTEIRO-PRE-MERGE-ciclo1-plano-v1.md`.
 - Implementados workflow de invalidação/publicação por GitHub App, ruleset template strict/no-bypass,
