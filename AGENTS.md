@@ -525,7 +525,8 @@ anteriores → `flutter test --reporter compact` → `cd ../..`.
 **Frontend** — `npm --prefix frontend run check` · `npm --prefix frontend run build`
 (+ `test:smoke` quando existir).
 
-**KPI/documental** — `node --check` dos `app.js` de KPI · `rg` confirmando marcadores do bloco ·
+**KPI/documental** — `node --check Kpis/app.js` (o painel é **UM** — `D-KPI-DUPLA-REVOGADA`; não há
+segundo `app.js` de KPI) · `rg` confirmando marcadores do bloco ·
 `git diff --check`. Na política **KPI-por-PR** (§C3), `merge_commit`/`approved_head` do PR corrente
 **são `null` na autoria** (só existem pós-merge) e recebem **backfill pós-merge** (junto da reconciliação de
 PR#/hash no bloco seguinte) — o antigo check que falhava em `null` de PR/merge/approved head **não se aplica
