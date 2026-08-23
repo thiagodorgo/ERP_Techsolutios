@@ -261,8 +261,10 @@ test('D-9 — o fechamento REUSA verifyAttestation; nunca uma segunda cópia da 
 
 const APP_ACTIONS=15368;      // `github-actions` — id de APP, o que o ruleset fixa em integration_id
 const USUARIO_BOT=41898282;   // `github-actions[bot]` — id de USUÁRIO-bot, o que um status carrega
+// Descarta linhas de comentário: usado só onde a propriedade é sobre o CÓDIGO, não sobre a prosa.
+const semComentarios=(src:string)=>src.split(/\r?\n/).filter((l)=>!/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
 
-test('D-10 — a função única normaliza check-runs e statuses com o condicional de Bot',()=>{
+test('D-10/S-4 — a função única normaliza check-runs, e todo commit status sai com appId null',()=>{
   assert.deepEqual(normalizarChecks(
     [{name:'ci',app:{id:APP_ACTIONS},conclusion:'success',html_url:'https://run'},{name:'sem-app',conclusion:'failure'}],
     [{context:'legado',state:'success',target_url:'https://st',creator:{type:'Bot',id:USUARIO_BOT}},
@@ -271,19 +273,28 @@ test('D-10 — a função única normaliza check-runs e statuses com o condicion
   ),[
     {context:'ci',appId:APP_ACTIONS,conclusion:'success',detailsUrl:'https://run'},
     {context:'sem-app',appId:null,conclusion:'failure',detailsUrl:null},
-    {context:'legado',appId:USUARIO_BOT,conclusion:'success',detailsUrl:'https://st'},
+    // S-4: o Bot deixou de carregar `creator.id`. A API de statuses não expõe identidade de app.
+    {context:'legado',appId:null,conclusion:'success',detailsUrl:'https://st'},
     {context:'humano',appId:null,conclusion:'pending',detailsUrl:null},
     {context:'sem-autor',appId:null,conclusion:'success',detailsUrl:null},
   ]);
   assert.deepEqual(normalizarChecks(undefined,undefined),[]);
 });
 
-test('D-10 — id de USUÁRIO-bot num status nunca satisfaz check requerido pinado em id de APP',()=>{
-  // Erro de categoria nomeado no ponto: 41898282 é usuário, 15368 é app. O fail-closed é intencional.
-  const x=state();
-  x.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks[0].integration_id=APP_ACTIONS;
-  x.checks=normalizarChecks([],[{context:'ci',state:'success',target_url:'u',creator:{type:'Bot',id:USUARIO_BOT}}]);
-  assert.throws(()=>buildSnapshot(x),/fonte errada: ci/);
+test('S-4 — status de Bot com id IGUAL ao integration_id fixado não satisfaz o check requerido',()=>{
+  // O caso que decide. Antes do S-4 o `appId` do status carregava `creator.id`: pinar o contexto no
+  // id do usuário-bot fazia os números casarem e o status SATISFAZIA o check (medido: exit 0).
+  // A documentação do D-10 já afirmava que isso era impossível — afirmação que a execução não
+  // garantia. Com `appId: null` não há número para casar, e `null` nunca é curinga.
+  for(const pin of [USUARIO_BOT,APP_ACTIONS]){
+    const x=state();
+    x.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks[0].integration_id=pin;
+    x.checks=normalizarChecks([],[{context:'ci',state:'success',target_url:'u',creator:{type:'Bot',id:pin}}]);
+    assert.throws(()=>buildSnapshot(x),/fonte errada: ci/,`pin ${pin}: status de Bot não pode satisfazer`);
+  }
+  // Nenhum criador produz appId: nem Bot, nem User, nem status sem autor.
+  for(const criador of [{type:'Bot',id:USUARIO_BOT},{type:'Bot',id:APP_ACTIONS},{type:'User',id:777},undefined])
+    assert.equal(normalizarChecks([],[{context:'c',state:'success',target_url:'u',creator:criador}])[0].appId,null,`criador ${JSON.stringify(criador)}`);
   // E o mesmo contexto vindo do app certo (check-run) satisfaz — o gate não é surdo, é estrito.
   const ok=state();
   ok.rulesets[0].rules.find((r:any)=>r.type==='required_status_checks').parameters.required_status_checks[0].integration_id=APP_ACTIONS;
@@ -294,10 +305,25 @@ test('D-10 — id de USUÁRIO-bot num status nunca satisfaz check requerido pina
 test('D-10 — cerca: a normalização inline não reaparece nos outros dois scripts do gate',()=>{
   const unica=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
   assert.match(unica,/export function normalizarChecks\(/);
-  assert.equal((unica.match(/creator\?\.type/g)||[]).length,1,'a decisão por tipo de autor vive num lugar só');
+  // S-4 endureceu a cerca: antes ela tolerava UMA ocorrência de `creator?.type` (a decisão por tipo
+  // de autor vivia num lugar só). Agora NENHUM script do gate deriva `appId` do autor do status —
+  // a API de statuses não expõe identidade de app, então não há de onde derivar.
+  //
+  // ESTA cerca ignora comentário; a do S-2 varre o arquivo inteiro. A diferença é de propósito, não
+  // de conveniência: lá o token proibido é uma ALEGAÇÃO ("fonte confiável"), e alegação em prosa é
+  // exatamente o defeito deste ciclo — banir em todo lugar é o certo. Aqui o token é um NOME DE
+  // CAMPO da API, e nomeá-lo para explicar por que não se deriva dele é uso legítimo. A propriedade
+  // é sobre o que o CÓDIGO faz.
+  for(const alvo of SCRIPTS_DO_GATE){
+    const src=semComentarios(readFileSync(alvo,'utf8'));
+    assert.doesNotMatch(src,/creator\s*[?.[]/,`${alvo}: derivar appId do autor do status voltou`);
+  }
+  // A cerca não é vaga: reintroduzir a derivação em CÓDIGO, em fixture na memória, fica vermelha.
+  const volta=unica.replace('appId: null, conclusion: s.state','appId: s.creator?.id ?? null, conclusion: s.state');
+  assert.notEqual(volta,unica,'a mutação de controle precisa alterar o arquivo');
+  assert.match(semComentarios(volta),/creator\s*[?.[]/,'a mutação de controle reintroduz a derivação e a cerca a vê');
   for(const alvo of ['scripts/merge-authorized-pr.mjs','scripts/configure-main-ruleset.mjs']){
     const src=readFileSync(alvo,'utf8');
-    assert.doesNotMatch(src,/creator/,`${alvo}: derivar appId do autor do status voltou a ser inline`);
     assert.doesNotMatch(src,/statuses\.map\(/,`${alvo}: mapeador inline de statuses voltou a existir`);
     assert.match(src,/normalizarChecks/,`${alvo}: não consome a normalização única`);
   }

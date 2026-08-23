@@ -146,17 +146,27 @@ export const repoContext = () => {
 // igualar as copias deixaria a divergencia voltar no ciclo seguinte, porque a causa-raiz e a
 // triplicacao, nao o valor.
 //
-// ERRO DE CATEGORIA que a unificacao corrige: `creator.id` de um commit status e id de
-// USUARIO-bot (`github-actions[bot]` = 41898282), enquanto o `integration_id` do ruleset e id de
-// APP (`github-actions` = 15368). Sao entidades distintas em numeracoes distintas; escrever o id
-// de usuario no campo `appId` compara maca com laranja. A consequencia e INTENCIONAL e
-// fail-closed: um commit status nunca satisfaz um check requerido com `integration_id` fixado —
-// o matching de `buildSnapshot` exige igualdade estrita e o pin do template e sempre id de app.
-// Criador que nao e Bot nem chega a candidato: vira `null`, e `null` nunca e curinga.
+// `appId` de commit status e SEMPRE `null` (S-4, autocorrecao do planejador sobre o proprio D-10).
+//
+// ERRO DE CATEGORIA: `creator.id` de um commit status e id de USUARIO-bot
+// (`github-actions[bot]` = 41898282), enquanto `integration_id` do ruleset e id de APP
+// (`github-actions` = 15368). Sao entidades distintas, em numeracoes distintas. A API de statuses
+// NAO EXPOE identidade de app: escrever id de usuario num campo chamado `appId` e a categoria
+// errada, e a disjuncao entre as duas numeracoes e OBSERVADA, nao garantida.
+//
+// O D-10 ja AFIRMAVA que "status nunca satisfaz check com integration_id fixado" — mas o codigo
+// deixava um criador Bot carregar um numero que PODERIA casar com o pin. Documentacao afirmando o
+// que a execucao nao garante, dentro do proprio gate: a classe de defeito deste ciclo. Medido antes
+// da correcao: ruleset pinando `ci` em 41898282 + commit status desse bot => o status SATISFAZIA o
+// check requerido (exit 0). Com `null`, nao ha numero para casar e `null` nunca e curinga — a
+// afirmacao passa a ser garantida pela execucao, nao so escrita.
+//
+// Consequencia intencional e fail-closed: nenhum commit status satisfaz check requerido pinado.
+// Contexto/conclusao/detailsUrl continuam registrados, para o snapshot seguir enxergando o status.
 export function normalizarChecks(checkRuns, statuses) {
   return [
     ...(checkRuns || []).map((c) => ({ context: c.name, appId: c.app?.id ?? null, conclusion: c.conclusion, detailsUrl: c.html_url ?? null })),
-    ...(statuses || []).map((s) => ({ context: s.context, appId: s.creator?.type === 'Bot' ? s.creator?.id ?? null : null, conclusion: s.state === 'success' ? 'success' : s.state, detailsUrl: s.target_url ?? null })),
+    ...(statuses || []).map((s) => ({ context: s.context, appId: null, conclusion: s.state === 'success' ? 'success' : s.state, detailsUrl: s.target_url ?? null })),
   ];
 }
 
