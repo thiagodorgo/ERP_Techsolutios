@@ -1601,12 +1601,24 @@ desta lei, a F6 deve absorvê-la por emenda antes de PR/junta/porteiro, preserva
 
 ### Emenda executável do ciclo 1 (2026-08-21)
 
-O contrato passa a ter enforcement versionado: snapshot `erp-porteiro-snapshot:v1`, junta e parecer em
-comentários externos, check requerido `erp/porteiro-pre-merge` criado por GitHub App comprovada, ruleset
-ativo/strict sem bypass e merge com compare-and-swap do head. O workflow de `pull_request_target` não faz
-checkout nem executa código do candidato. Configuração remota só ocorre após junta crítica 5/5 e por executor
-distinto; se a fonte confiável não puder ser ligada ao contexto requerido, o configurador emite VETO antes do
-apply. `approved_head` e `merge_commit` ficam nulos na autoria e só são projetados após fechamento externo.
+O contrato passa a ter enforcement versionado. **A norma vive no `CLAUDE.md` §C2.8 — este registro resume e
+aponta, não reafirma alegação de prova.** Em resumo: snapshot `erp-porteiro-snapshot:v1`, junta e parecer em
+comentários externos, check requerido `erp/porteiro-pre-merge`, ruleset ativo/strict sem bypass e merge com
+compare-and-swap do head. O workflow de `pull_request_target` não faz checkout nem executa código do
+candidato. Configuração remota só ocorre após junta crítica 5/5 e por executor distinto; se o app criador
+esperado não puder ser ligado ao contexto requerido, o configurador emite VETO antes do apply.
+`approved_head` e `merge_commit` ficam nulos na autoria e só são projetados após fechamento externo.
+
+**Correção de autoria (ciclo 2, antes do merge).** A redação original desta emenda dizia que o check é
+"criado por **GitHub App comprovada**" — alegação que o ciclo 2 mediu e derrubou. O que a execução prova é
+mais fraco e está nomeado assim no contrato: **o app criador é conferido por `id` + `slug` + `owner.id` e
+fixado no `integration_id` do ruleset**. Isso prova que o check veio do app GitHub Actions, e **não** que
+veio do job do porteiro — `permissions: checks: write` é declarado por workflow, não por repositório. O
+resíduo e o veto correspondentes estão em `PD-GOV-PORTEIRO-APPID` e `PD-GOV-PORTEIRO-PROVENIENCIA`
+(`docs/omega-pd.md`); a mitigação é a escalada por superfície de governança. Esta emenda foi **redigida
+nesta branch e não mergeou**: corrigir o próprio diff antes do merge é revisão de autoria, não reescrita de
+história (§A5 protege história consolidada). Deixá-la mergear como estava produziria o pior arranjo —
+norma viva contradizendo a lei e **blindada do guard pela exclusão criada para proteger história**.
 
 ### Divergência de espelho resolvida — §A4.3 "só avance após aprovação" (2026-08-22)
 
@@ -1627,3 +1639,26 @@ por PR (`D-SAN-AUTONOMIA`, `D-KPI-PER-PR` — o humano é informado, não consul
 **Sem guard**, por instrução expressa do planejador na rodada satélite: espalhar guard frágil para
 acompanhar divergência de redação é modo de falha próprio. O enforcement continua sendo esta regra de
 resolução (§A2) mais a obrigação de alterar os dois espelhos no mesmo trabalho.
+
+### Princípio de registro — entrada de decisão resume e aponta, não reafirma prova (ciclo 2, 2026-08-22)
+
+**Regra:** *entrada nova de decisão não reafirma alegação de prova; resume e aponta ao contrato.* Norma mora
+no contrato (`CLAUDE.md`, espelhado no `AGENTS.md`); `decisoes.md` registra **que** se decidiu, **quando** e
+**por quê**, e aponta para o §. Quando um registro reescreve a alegação com as próprias palavras, ele vira
+uma segunda norma — que envelhece sozinha e passa a contradizer a primeira.
+
+**De onde veio.** A "Emenda executável do ciclo 1" afirmava check "criado por GitHub App comprovada". O
+ciclo 2 derrubou essa alegação no contrato e nos scripts, mas o registro continuaria repetindo-a — e
+`decisoes.md` está **fora** do guard de prosa por ser arquivo de registro, exclusão criada para proteger
+história (§A5). O resultado seria norma viva contraditória e blindada exatamente pelo mecanismo que existe
+para proteger o passado.
+
+**Limitação declarada, sem esconder.** Este princípio **não tem caminho vermelho**. A exclusão de arquivos
+de registro **permanece** — entradas antigas citam legitimamente frases antigas, e reescrevê-las seria a
+reescrita de história que a §A5 proíbe. Logo, reincidência futura de norma-em-registro não fica vermelha:
+o controle é este princípio, aplicado por quem redige e conferido por quem revisa. Registrado aqui para ser
+citável, não para fingir enforcement que não existe.
+
+**Fronteira que este ciclo usou:** emenda **redigida na branch e ainda não mergeada** é rascunho de autoria
+corrente — corrigi-la é revisão do próprio diff. Entrada **já mergeada** é história: não se reescreve;
+corrige-se por entrada nova que supersede.
