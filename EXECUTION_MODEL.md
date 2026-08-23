@@ -161,10 +161,22 @@ A única autorização válida é `LIBERADO: merge do PR #<n> no head <sha>`. `L
 `BLOQUEADO` não autorizam merge. Qualquer commit/push altera o head, expira o parecer e exige novo porteiro.
 
 O gate é técnico: snapshot `erp-porteiro-snapshot:v1`, comentário externo
-`erp-porteiro-attestation:v1`, check requerido `erp/porteiro-pre-merge` por GitHub App comprovado, ruleset
-ativo/strict sem bypass e merge CAS por `scripts/merge-authorized-pr.mjs`. O workflow de invalidação jamais
-executa código do head sob `pull_request_target`. Fonte confiável invisível ou não vinculável = VETO antes do
-bootstrap, nunca degradação para status forjável.
+`erp-porteiro-attestation:v1`, check requerido `erp/porteiro-pre-merge`, ruleset ativo/strict sem bypass e
+merge CAS por `scripts/merge-authorized-pr.mjs`. O workflow de invalidação jamais executa código do head sob
+`pull_request_target`.
+
+<!-- gov:appid:v1 -->
+**O que a identidade do check prova — e o que não prova.** O `erp/porteiro-pre-merge` só vale quando (1)
+criado pelo app **GitHub Actions**, identidade conferida contra o registro global (`id 15368`, `slug
+github-actions`, `owner 9919` — `PD-GOV-PORTEIRO-APPID`) e fixada no ruleset de `main` via `integration_id`,
+de modo que o próprio GitHub recuse fonte diversa; e (2) apontando ao permalink do atestado, cujo conteúdo
+amarra snapshot e evidência de reexecução. **Resíduo aberto, declarado:** o app id **não distingue workflows
+do próprio repositório** — qualquer workflow deste repo com `checks: write` carrega a mesma identidade, e a
+vinculação ao workflow do porteiro **não é provada mecanicamente** (a cadeia por check-suite devolve dado
+falso e está **VETADA** — `PD-GOV-PORTEIRO-PROVENIENCIA`). Mitigam o resíduo a escalada crítica por
+superfície de governança e a reexecução do porteiro sobre o diff. Identidade de app invisível ou divergente
+do pin = **VETO antes do bootstrap**, nunca degradação para status forjável.
+<!-- /gov:appid:v1 -->
 
 ### Etapa 9 — Merge do head autorizado
 

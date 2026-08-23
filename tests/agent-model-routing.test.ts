@@ -277,13 +277,44 @@ function violacoesDaListaDeInterop(root) {
 
 // Instrução expressa do planejador (PD-GOV-PORTEIRO-APPID, 2026-08-22): `app.id` prova "veio do
 // GitHub Actions", NÃO "veio do job do porteiro" — qualquer workflow do repositório com
-// `checks: write` compartilha a identidade. A frase "publicado por fonte GitHub App comprovada"
-// EXCEDE o mecanismo mesmo com o pin implementado. Reintroduzi-la tem de ficar VERMELHO aqui, não
-// só em revisão: este ciclo inteiro existe porque prosa afirmou o que a execução não produzia.
-function violacoesDeFonteComprovada(root) {
-  return DOCS_NORMATIVOS
-    .filter((doc) => /fonte\s+GitHub\s+App\s+(não\s+)?comprov/i.test(lerDoc(root, doc)))
-    .map((doc) => `${doc}: alegação de fonte "comprovada" excede o que o app id prova (PD-GOV-PORTEIRO-APPID)`);
+// `checks: write` compartilha a identidade. Alegar "GitHub App comprovado" EXCEDE o mecanismo mesmo
+// com o pin implementado, e o D-5(b) é literal: "em nenhuma hipótese a prosa volta a dizer 'fonte
+// comprovada' sem qualificar o que está comprovado".
+//
+// BYPASS MEDIDO — por que o padrão endureceu. A versão anterior exigia a palavra `fonte` COLADA
+// (`/fonte\s+GitHub\s+App\s+(não\s+)?comprov/i`) e a redação "check requerido ... por GitHub App
+// comprovado" passou por baixo dela, em `EXECUTION_MODEL.md`, introduzida na F-F DESTA MESMA branch
+// (`git log -S` -> 1bf3a46) — no mesmo trabalho cuja mensagem de commit declarava estar REMOVENDO a
+// alegação. Guard que só pega a formulação que o autor lembrou de proibir não é guard.
+//
+// O alvo passa a ser a alegação em qualquer flexão e com quebra de linha no meio (a prosa é
+// markdown em ~110 colunas), e a ÚNICA forma legal de mantê-la é dentro de bloco cercado
+// `gov:appid:v1` que QUALIFIQUE o que está comprovado — mesmo mecanismo dos blocos `interop`.
+const ALVO_APP_COMPROVADO = /GitHub\s+App\s+(?:n[ãa]o\s+)?comprovad\w*/gi;
+const BLOCO_APPID = /<!-- gov:appid:v1 -->([\s\S]*?)<!-- \/gov:appid:v1 -->/g;
+const QUALIFICACAO_APPID = [
+  'não distingue workflows do próprio repositório', // o resíduo, nomeado no próprio texto
+  'PD-GOV-PORTEIRO-APPID',                          // o que o app id prova
+  'PD-GOV-PORTEIRO-PROVENIENCIA',                   // por que a vinculação não é provável
+];
+
+function violacoesDeAppComprovado(root) {
+  const v = new Set();
+  for (const doc of DOCS_NORMATIVOS) {
+    const texto = lerDoc(root, doc);
+    const blocos = [...texto.matchAll(BLOCO_APPID)].map((m) => ({ inicio: m.index, fim: m.index + m[0].length, corpo: m[1] }));
+    for (const occ of texto.matchAll(ALVO_APP_COMPROVADO)) {
+      const dentro = blocos.find((b) => occ.index >= b.inicio && occ.index < b.fim);
+      if (!dentro) {
+        v.add(`${doc}:${texto.slice(0, occ.index).split('\n').length} — alegação "${occ[0].replace(/\s+/g, ' ')}" fora de bloco gov:appid:v1 qualificado`);
+        continue;
+      }
+      for (const q of QUALIFICACAO_APPID) {
+        if (!dentro.corpo.includes(q)) v.add(`${doc}: bloco gov:appid:v1 alega "comprovado" sem a qualificação "${q}"`);
+      }
+    }
+  }
+  return [...v];
 }
 
 /** Cópia temporária SÓ dos documentos normativos, para as mutações. A árvore real nunca é tocada. */
@@ -338,15 +369,45 @@ test('F-F — mutação: apagar o item "modelo por papel" da lista de interop fi
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('F-F — mutação: realegar "fonte GitHub App comprovada" fica VERMELHO', () => {
-  assert.deepEqual(violacoesDeFonteComprovada('.'), []);
+test('F-F — mutação: O BYPASS MEDIDO — "por GitHub App comprovado" sem a palavra "fonte" fica VERMELHO', () => {
+  assert.deepEqual(violacoesDeAppComprovado('.'), []);
+  const root = docsFixture();
+  try {
+    // Literalmente a redação que entrou em EXECUTION_MODEL.md na F-F desta branch (1bf3a46) e
+    // atravessou o guard antigo, que exigia a palavra `fonte` colada.
+    anexa(root, 'EXECUTION_MODEL.md', 'check requerido `erp/porteiro-pre-merge` por GitHub App comprovado, ruleset ativo/strict.');
+    const v = violacoesDeAppComprovado(root);
+    assert.equal(v.length, 1, `esperava exatamente 1 violação, veio: ${JSON.stringify(v)}`);
+    assert.match(v[0], /^EXECUTION_MODEL\.md:\d+ — alegação "GitHub App comprovado" fora de bloco gov:appid:v1 qualificado$/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — mutação: a formulação antiga e a alegação quebrada em duas linhas seguem cobertas', () => {
   const root = docsFixture();
   try {
     anexa(root, 'CLAUDE.md', 'O check requerido é publicado por fonte GitHub App comprovada e aponta ao permalink.');
-    assert.deepEqual(violacoesDeFonteComprovada(root), [
-      'CLAUDE.md: alegação de fonte "comprovada" excede o que o app id prova (PD-GOV-PORTEIRO-APPID)',
-    ]);
+    anexa(root, 'AGENTS.md', 'O check requerido é publicado por fonte GitHub\nApp não comprovada até o bootstrap.');
+    const v = violacoesDeAppComprovado(root).sort();
+    assert.equal(v.length, 2, `esperava 2 violações, veio: ${JSON.stringify(v)}`);
+    assert.match(v[0], /^AGENTS\.md:\d+ — alegação "GitHub App não comprovada" fora de bloco gov:appid:v1 qualificado$/);
+    assert.match(v[1], /^CLAUDE\.md:\d+ — alegação "GitHub App comprovada" fora de bloco gov:appid:v1 qualificado$/);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('F-F — mutação: bloco gov:appid:v1 que alega "comprovado" sem qualificar fica VERMELHO', () => {
+  const semQualificacao = docsFixture();
+  try {
+    anexa(semQualificacao, 'BUILD_ORDER.md', '<!-- gov:appid:v1 -->\nCheck publicado por GitHub App comprovado.\n<!-- /gov:appid:v1 -->');
+    assert.deepEqual(violacoesDeAppComprovado(semQualificacao),
+      QUALIFICACAO_APPID.map((q) => `BUILD_ORDER.md: bloco gov:appid:v1 alega "comprovado" sem a qualificação "${q}"`));
+  } finally { rmSync(semQualificacao, { recursive: true, force: true }); }
+  // O cercado não proíbe a palavra: proíbe a palavra SEM o resíduo declarado ao lado dela.
+  const qualificado = docsFixture();
+  try {
+    anexa(qualificado, 'BUILD_ORDER.md',
+      `<!-- gov:appid:v1 -->\nCheck publicado por GitHub App comprovado — o app id ${QUALIFICACAO_APPID[0]}\n(${QUALIFICACAO_APPID[1]}, ${QUALIFICACAO_APPID[2]}).\n<!-- /gov:appid:v1 -->`);
+    assert.deepEqual(violacoesDeAppComprovado(qualificado), []);
+  } finally { rmSync(qualificado, { recursive: true, force: true }); }
 });
 
 test('F-F — os contratos NÃO afirmam que o frontmatter do Claude Code fixa o modelo do Codex', () => {
