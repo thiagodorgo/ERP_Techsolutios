@@ -1581,3 +1581,37 @@ foram desmentidas por execução (R-B-O6R-01-ciclo1):**
    passo 6, medido na ativação), não do trigger. O header da migração recebeu a mesma enumeração
    honesta (edição só-comentário; `migrate deploy` no dev não recusou — nada ressincronizado), e o
    guard 10c (`tests/auth-invariant-guards.test.ts`) trava `DISABLE TRIGGER` em `src/**` (baseline 0).
+
+## D-CONTRATOS-FORA-DO-PR-FINANCEIRO — o §C7.4-bis foi reescrito em DUAS branches (registro §A2)
+
+- status: **registrada, NÃO consolidada** (é exatamente isso que o §A2 exige antes de qualquer consolidação)
+- origem: bloqueante **B-4** da junta `J-B-O6R-02-ciclo1`; execução do ciclo 2 do `B-O6R-02` (2026-08-22)
+- impacto: `CLAUDE.md`, `AGENTS.md`, escopo do PR do `B-O6R-02`
+
+**O fato.** O head `e4e914a` do `feat/o6r-b02-financial-uow` carregava 19 linhas alteradas em cada um dos
+dois contratos, reescrevendo o **§C7.4-bis**. A branch `docs/governanca-porteiro-pre-merge-sol` reescreve
+**o mesmo parágrafo** com texto **materialmente diferente** — há frase normativa que existe só numa versão e
+frase que existe só na outra (ex.: a versão financeira fala em "porteiro pós-merge" e acrescenta que a
+indisponibilidade de agentes isolados bloqueia a entrega; a de governança fala em "porteiro pré-merge" e
+"executor pós-merge"). **Quem mergear por último apagaria a do outro em silêncio** — a consolidação que o
+§A2 proíbe. Agravante: era o PR **financeiro** alterando o contrato de governança **que rege a junta que o
+julga**.
+
+**A decisão deste ciclo.** Os dois arquivos **saem do PR financeiro** e voltam byte a byte ao `origin/main`
+(conteúdo obtido por `git show origin/main:<arquivo>`; nada de `git checkout`, vedado nesta rodada). Prova:
+`git diff origin/main...HEAD -- CLAUDE.md AGENTS.md` **vazio**. O PR financeiro não carrega contrato.
+
+**O que este registro NÃO faz.** Não escolhe um dos dois textos, não funde os dois, não declara qual está
+certo. **O texto normativo pertence à trilha de governança** (`docs/governanca-porteiro-pre-merge-sol`), que
+tem alçadas próprias para isso; a reconciliação de conteúdo é trabalho dela, nomeadamente. Enquanto não
+ocorrer, vale o que está no `origin/main`.
+
+**Excursões de escopo do bloco, ratificadas e agora DECLARADAS** (a junta apontou que existiam sem estar
+nomeadas):
+
+1. `src/database/financial-period-lock.ts` — excursão **planejada** (nomeada no plano v1 §D3). O achado da
+   junta sobre ela é de **declaração**, não de mérito: o comentário prometia mais que a garantia, e o M2 do
+   ciclo 2 o estreitou.
+2. `.claude/agents/especialistas/inspetor-fixtures-financeiras-legadas.md` e o espelho em `.agents/agents/` —
+   artefato **legítimo do §C7.4** (a `agente-fabrica` cria 1–2 especialistas sob medida nos ciclos 1–2), que
+   não estava declarado no comando. Fica declarado aqui.

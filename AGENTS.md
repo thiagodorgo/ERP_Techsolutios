@@ -366,20 +366,11 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    crítico reabre a premissa + pesquisa ≥5 fontes (teto 6 agentes); ciclos 4–5 = junta ampliada replaneja a
    fatia. **Parada + dossiê ao humano SOMENTE** após o ciclo 5 falho, **ou** nas paradas imediatas irredutíveis.
 
-4-bis. **SEPARAÇÃO DE PAPÉIS EM TODO O FLUXO — ninguém atesta o próprio trabalho** (decisões do dono,
-   2026-08-17 e ampliação de 2026-08-20, `D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO`). Desde o início de
-   **toda entrega**, achador/origem, planejador, desenvolvedor, analistas/revisores e votantes da junta, e
-   porteiro pós-merge são **agentes/pessoas distintos**. Quem planeja não implementa nem aprova; quem escreve
-   código não analisa/vota o próprio diff; quem analisa/vota não planejou nem implementou; o porteiro não
-   participou de nenhuma alçada anterior. Passes sequenciais do mesmo agente com nomes de papel diferentes
-   **não satisfazem** a regra. Plano, ata e parecer do porteiro registram nominalmente cada alçada; acúmulo
-   invalida o fluxo. A indisponibilidade de agentes isolados bloqueia a entrega — não autoriza emulação pelo
-   mesmo agente.
-
-   **Em toda reprovação**, a mesma separação continua: **quem acha** reporta defeito + evidência executada +
-   **motivo** (e *não* propõe correção); um **novo planejador** escreve o plano; outro **desenvolvedor** o
-   implementa; revisores independentes reexecutam e votam. A ata do ciclo registra todos os ocupantes — ata
-   sem isso = ciclo inválido.
+4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
+   `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
+   **quem acha** reporta defeito + evidência executada + **motivo** (e *não* propõe correção); **quem planeja**
+   escreve o plano a partir desse relatório; **quem desenvolve** implementa o plano (e não julga a validade do
+   achado). A ata do ciclo registra **quem ocupou cada papel** — ata sem isso = ciclo inválido.
    **A cada reprovação**, antes de recompor a junta, responder por escrito na ata: (a) a **composição** cobre a
    competência que o achado exige? (b) **quem achou é quem consertou?** — se sim, o ciclo está contaminado e a
    correção volta para outro agente; (c) o **planejador está usando dado podre** (premissa não medida, versão
