@@ -3186,3 +3186,84 @@ não 54; o item 7 do `Kpis/README.md` **está commitado** em `af3646f`, não é 
 **crase = identificador, sem crase = função**, e os 10 identificadores em crase existem todos.
 
 Achado corrigido por cético é o protocolo funcionando.
+
+---
+
+## P-GOV-POLARIDADE-CERCA-IRMA — buraco de polaridade sem instância viva (2026-08-23)
+
+**Origem:** achado do dev da fatia S-5, reportado sem consertar (§C7.4-bis). Veredito S-7 do planejador do
+ciclo 2: **pendência, não fatia.**
+
+**O defeito.** `guardProvenienciaWorkflow` (`tests/porteiro-pre-merge-governance.test.ts`) proíbe, na prosa do
+workflow, apenas a forma **afirmativa e exata** `/Fonte confiável do check/i`. A forma **negada** — ou a
+afirmativa sem "do check" — passaria. É idêntico ao defeito que o S-5 fechou na cerca irmã.
+
+**Por que NÃO entrou na entrega — e a tensão entre dois princípios, registrada porque vai voltar.**
+
+O S-5 ensinou: **"cerca nova testa a forma negada da alegação que proíbe"**.
+O anti-sprawl diz: **"cerca não se amplia sem instância"**.
+
+O que decide entre os dois é a **instância viva**:
+
+- no **S-5** havia uma string real (`'Fonte não confiável'`) passando pelo buraco, na superfície de maior
+  visibilidade (UI do GitHub);
+- no **S-7**, medição do dev e do coordenador, independentes: **zero ocorrências** de `confi[aá]ve(l|is)` em
+  `.github/**`, nos seis documentos normativos e em `.claude/agents/**`.
+
+**Backstop mecânico:** a alegação que esta cerca protege tem defesa de código — o `porteiro-pre-merge.mjs`
+**recusa** as rotas de API vetadas pelo D-7 (`check_suite_id`, `actions/jobs/`, `actions/runs/`),
+independentemente do que a prosa diga.
+
+**Fórmula do veredito:** lacuna de polaridade + zero instância + backstop mecânico = **pendência registrada**.
+
+**Nota de oportunidade:** se ciclo futuro tocar aqueles arquivos, a correção de polaridade **pega carona**.
+Não justifica fatia própria.
+
+**Se a junta discordar, é exatamente o tipo de julgamento que ela existe para fazer.**
+
+---
+
+## REGRA DE PARADA DE AUTORIA (norma de processo, 2026-08-23)
+
+**Fixada pelo planejador do ciclo 2 da governança, a partir de uma pergunta do coordenador. Vale para os
+próximos ciclos, não só para este.**
+
+> **A partir da convocação da junta, achado novo NÃO gera fatia de autoria — vira insumo da junta**, que o
+> julga junto com o resto. Se a junta reprovar, ciclo seguinte com plano e alçadas próprios, como o protocolo
+> §C7.4 já desenha.
+>
+> **Única exceção que reabre autoria pré-junta:** bloqueante de segurança com **exploit vivo**.
+
+### O fundamento — por que isto não é preguiça
+
+Depois que a implementação principal do ciclo 2 fechou, houve **cinco rodadas** de "mais um item". Cada uma
+achou algo **real**, e cada correção revelou a próxima — comportamento esperado ao instalar cerca nova numa
+superfície que nunca teve.
+
+Mas cada rodada achou coisa da **mesma família**, e isso é **assinatura de ponto cego compartilhado**: este
+contexto de orquestração acha o que ele **consegue** ver. O que resta só sai com **reexecução por um contexto
+que não escreveu nada disto** — que é a definição da junta.
+
+**Continuar refinando na autoria não é diligência: é deslocar revisão para dentro da autoria**, e a §C7.4-bis
+chama isso de contaminação **mesmo quando cada item individual é real e barato**.
+
+### Práticas de cerca que o ciclo 2 deixa como precedente
+
+1. **A cerca carrega o peso, não a troca da string.** Provado pela mutação MUT-S5-3: devolver o texto
+   defeituoso **e** enfraquecer a cerca ao padrão antigo deixa o guard **verde**. Corrigir texto sem endurecer
+   a cerca é conserto cosmético.
+2. **Cerca nova testa a forma negada** da alegação que proíbe. O buraco do S-5 tinha o tamanho de um "não".
+3. **Limite de cerca com âncora numérica.** A cerca persegue as formas que afirmam confiabilidade
+   (`confiável`/`não confiável`), **não o substantivo "fonte"** — que os seis scripts do gate usam **17 vezes**
+   legitimamente. O teste afirma `ocorrenciasDeFonte >= 10` para que o limite **não vire cláusula vazia** se
+   alguém reescrever o padrão amanhã.
+4. **Cerca que caça substantivo comum vira guard frágil** — modo de falha próprio, e a razão pela qual guards
+   foram **negados** aos satélites cosméticos deste ciclo.
+
+### Disciplina de relatório
+
+**Afirmação de estado referencia o commit em que foi medida** — "verde em `<sha>`", não "verde" atemporal.
+
+**Motivo medido:** um relatório desta rodada afirmou que um defeito *"segue aberto"* quando outro dev já o
+havia fechado; o achado foi **herdado do próprio contexto e repetido sem remedir**. Datar a medição mata essa
+classe de erro na releitura. Recomendação de ata, **não guard**.
