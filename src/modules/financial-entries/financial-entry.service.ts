@@ -25,6 +25,7 @@ import {
   entryNotFoundError,
   invalidAccountReferenceError,
   periodClosedError,
+  settlementEntryImmutableError,
   titleRestoreConflictError,
   type AccountReader,
   type FinancialAccountRef,
@@ -157,6 +158,15 @@ export class FinancialEntryService {
     // contra-lançamento ativo → saldo desbalanceado; deletar o próprio contra-lançamento desfaria o estorno.
     if (current.reversalOf != null || (await this.repository.findActiveReversalOf(actor.tenantId, current.id))) {
       throw reversalPairImmutableError();
+    }
+    // B-O6R-02 ciclo 2 · C1 (Ω6R-DIN-010) — LIQUIDAÇÃO não se apaga: só se ESTORNA. Apagar devolvia o
+    // caixa e deixava o título com paid_amount intacto (e sem rota de saída, porque o CAS de
+    // softDelete do título exige paid_amount = 0). O `reverse` é a única porta que devolve o
+    // pagamento ao título NA MESMA unidade, com contrapartida e trilha no razão. Precedência:
+    // 404 → entry_reconciled → reversal_pair_immutable → AQUI → cheque_entry_immutable → period_closed
+    // (a identidade do lançamento decide antes da história dele).
+    if (current.titleId != null) {
+      throw settlementEntryImmutableError();
     }
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
 

@@ -111,6 +111,30 @@ export function reversalPairImmutableError(): FinancialEntryError {
   return new FinancialEntryError(422, "FINANCIAL_ENTRY_UNPROCESSABLE", "reversal_pair_immutable", "An entry that is part of a reversal pair cannot be deleted or reversed.");
 }
 
+// B-O6R-02 ciclo 2 · C1 (Ω6R-DIN-010, reabre Ω6R-DIN-002) — LANÇAMENTO DE LIQUIDAÇÃO NÃO SE APAGA.
+//
+// A REGRA, que o `reversal_pair_immutable` acima já praticava e este erro estende: **lançamento
+// vinculado a um agregado só se desfaz pelo fluxo do agregado**. O `delete` apagava o lançamento com
+// `title_id` e o título ficava com `paid_amount` intacto — o caixa voltava, o título seguia quitado
+// (o impacto declarado do DIN-002, agora pela outra porta), e o título resultante ainda ficava SEM
+// ROTA DE SAÍDA, porque o CAS de softDelete do título exige `paid_amount = 0`.
+//
+// A cura NÃO é ensinar o `delete` a devolver: seria uma SEGUNDA semântica de desfazer (a classe do
+// DIN-011), e apagaria o movimento sem contrapartida — o razão perderia a história (§2.8). O `reverse`
+// já é a ÚNICA porta que devolve com contrapartida e trilha, na mesma unidade. Aqui só se RECUSA, e a
+// mensagem aponta o remédio.
+//
+// Livre de corrida POR CONSTRUÇÃO: `title_id` é fixado no NASCIMENTO (payTitle cria o lançamento já
+// com ele) e nenhuma API o muta depois — o pre-check no serviço lê um vínculo que ninguém move.
+export function settlementEntryImmutableError(): FinancialEntryError {
+  return new FinancialEntryError(
+    422,
+    "FINANCIAL_ENTRY_UNPROCESSABLE",
+    "settlement_entry_immutable",
+    "A settlement entry cannot be deleted; reverse it instead so the payment returns to the title.",
+  );
+}
+
 export class InMemoryFinancialEntryRepository implements FinancialEntryRepository {
   private readonly entries = new Map<string, FinancialEntry>();
 

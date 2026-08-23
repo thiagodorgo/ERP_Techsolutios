@@ -283,6 +283,44 @@ if (!connectionString) {
     } finally { await teardown(h); }
   });
 
+  // [C1/P1 · Ω6R-DIN-010] A RECUSA sob Postgres real. O `reverse` logo acima devolve; a junta mostrou
+  // que o `delete` do MESMO lançamento continuava aceito, apagando o caixa e deixando o título pago.
+  // Agora recusa — e a prova é o estado do BANCO depois da recusa, não só o código de erro.
+  test("G13 — DELETE de lançamento de LIQUIDAÇÃO → 422 settlement_entry_immutable; linha e título INTACTOS no banco", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g13-delete", 100);
+      const payment = await h.entryService.payTitle(seed.actor, seed.titleId, {
+        account_id: seed.accountId, amount: 40, payment_method: "pix",
+      });
+
+      await assert.rejects(
+        h.entryService.delete(seed.actor, payment.id),
+        (error: unknown) => isDomainError(error, 422, "settlement_entry_immutable"),
+      );
+
+      const row = await client.financialEntry.findFirst({ where: { tenant_id: seed.tenantId, id: payment.id } });
+      assert.ok(row, "a liquidação continua existindo");
+      assert.equal(row.deleted_at, null, "a recusa não pode ter carimbado deleted_at (era isso que sumia com o caixa)");
+      assert.equal(row.title_id, seed.titleId);
+      const title = await client.financialTitle.findFirst({ where: { tenant_id: seed.tenantId, id: seed.titleId } });
+      assert.ok(title);
+      assert.equal(Number(title.paid_amount), 40, "nem para mais nem para menos: recusa não move dinheiro");
+      assert.equal(title.status, "partially_paid");
+
+      // E o lançamento AVULSO segue deletável — o guard é estreito, não uma parede sobre o delete.
+      const avulso = await h.entryService.create(seed.actor, {
+        account_id: seed.accountId, direction: "in", amount: 7, payment_method: "pix",
+      });
+      await h.entryService.delete(seed.actor, avulso.id);
+      const avulsoRow = await client.financialEntry.findFirst({ where: { tenant_id: seed.tenantId, id: avulso.id } });
+      assert.notEqual(avulsoRow?.deleted_at, null, "avulso continua deletável");
+    } finally {
+      await teardown(h);
+    }
+  });
+
   test("G12 (histórico G3b) — estornar a primeira parcela deixa a última e status partially_paid", async () => {
     const h = await bootstrap(connection);
     const { client } = h;

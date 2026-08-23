@@ -220,6 +220,45 @@ if (!connectionString) {
     });
   });
 
+  // [C1/P2 · Ω6R-DIN-010] A ROTA DE SAÍDA, ponta a ponta contra o Postgres. Este é o teste que prova
+  // que o estado irreversível deixou de ser ALCANÇÁVEL — não que ele é tratado, mas que não existe:
+  // no head e4e914a a sequência abaixo terminava com um título paid=40 que nem se apagava
+  // (422 title_has_payments) nem se estornava (404 entry_not_found, porque o lançamento fora apagado).
+  test("G13 — rota de saída: DELETE do lançamento recusado, reverse devolve, e o título volta a ser apagável", async () => {
+    await withHarness("g13-exit-route", async (h, s) => {
+      const payment = await h.entryService.payTitle(s.actor, s.titleId, {
+        account_id: s.accountId, amount: 40, payment_method: "pix",
+      });
+
+      // (1) o caminho que apagava o dinheiro agora RECUSA — e a linha fica intacta no banco.
+      await assert.rejects(
+        h.entryService.delete(s.actor, payment.id),
+        (error: unknown) => domain(error, 422, "settlement_entry_immutable"),
+      );
+      const entryRow = await h.client.financialEntry.findFirst({ where: { tenant_id: s.tenantId, id: payment.id } });
+      assert.ok(entryRow);
+      assert.equal(entryRow.deleted_at, null, "a recusa não pode ter carimbado deleted_at");
+      assert.equal(entryRow.title_id, s.titleId);
+      assert.equal((await projection(h, s)).paid_amount, "40.00", "o título não se move numa recusa");
+
+      // (2) com pagamento vivo, apagar o título segue (corretamente) recusado.
+      await assert.rejects(
+        h.titleService.delete(s.actor, s.titleId),
+        (error: unknown) => domain(error, 422, "title_has_payments"),
+      );
+
+      // (3) a única porta que desfaz devolve o pagamento na MESMA unidade.
+      await h.entryService.reverse(s.actor, payment.id);
+      const reopened = await projection(h, s);
+      assert.equal(reopened.paid_amount, "0.00");
+      assert.equal(reopened.status, "open");
+
+      // (4) e a saída existe: o título volta a ser removível.
+      await h.titleService.delete(s.actor, s.titleId);
+      assert.notEqual((await projection(h, s)).deleted_at, null, "com paid_amount = 0 o DELETE do título passa");
+    });
+  });
+
   test("G9 — CHECK catalogado rejeita paid_amount negativo (23514)", async () => {
     await withHarness("g9-negative", async (h, s) => {
       const constraints = await h.client.$queryRaw<Array<{ conname: string; validated: boolean }>>`

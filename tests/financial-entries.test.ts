@@ -573,6 +573,100 @@ test("ESTORNO de liquidação com restore rejeitado → 409 fail-closed e NADA c
   assert.deepEqual(originalAfter, originalBefore, "o lançamento original continua inalterado");
 });
 
+// ------------------------------------------- delete de LIQUIDAÇÃO recusa (B-O6R-02 ciclo 2 · C1)
+// P1 — desfazer o caixa de uma liquidação devolve o pagamento ao título na MESMA unidade (reverse)
+//      ou é RECUSADO (delete → 422), em TODO caminho da API que desfaz.
+// P2 — nenhuma sequência de chamadas deixa título com paid_amount > 0 sem lançamento vivo que o
+//      sustente, e todo título alcançável pela API tem ROTA DE SAÍDA.
+// O defeito (Ω6R-DIN-010, medido em e4e914a): DELETE do lançamento de liquidação era ACEITO — o caixa
+// voltava, o título ficava paid=40, e depois nem se apagava (422 title_has_payments) nem se estornava
+// (404 entry_not_found). Um estado sem saída, criado por uma chamada HTTP com a permissão de quem paga.
+
+test("[C1/P1] DELETE de lançamento de LIQUIDAÇÃO → 422 settlement_entry_immutable; título e lançamento INTACTOS", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+  const balanceBefore = await entries.balance(ctx, account.id);
+
+  await assert.rejects(
+    () => entries.delete(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 422, "settlement_entry_immutable"),
+  );
+
+  // Nada se moveu: nem o lançamento, nem o título, nem o caixa.
+  const entryAfter = await entries.get(ctx, payment.id);
+  assert.equal(entryAfter.deletedAt, undefined, "o lançamento de liquidação continua vivo");
+  assert.equal(entryAfter.titleId, title.id);
+  const titleAfter = await titles.get(ctx, title.id);
+  assert.equal(titleAfter.paidAmount, 40, "o título não pode perder nem ganhar pagamento numa recusa");
+  assert.equal(titleAfter.status, "partially_paid");
+  assert.deepEqual(await entries.balance(ctx, account.id), balanceBefore, "o saldo da conta não se move");
+});
+
+test("[C1/P2] ROTA DE SAÍDA: pay → delete RECUSADO → reverse → paid=0/open → delete do TÍTULO aceito", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+
+  // (1) o caminho errado é recusado — e é aqui que o estado sem saída deixava de ser alcançável.
+  await assert.rejects(
+    () => entries.delete(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 422, "settlement_entry_immutable"),
+  );
+  // (2) enquanto o título tem pagamento, apagá-lo continua (corretamente) recusado.
+  await assert.rejects(
+    () => titles.delete(ctx, title.id),
+    (e: unknown) => isDomainError(e, 422, "title_has_payments"),
+  );
+  // (3) a ÚNICA porta que desfaz: o estorno devolve o pagamento na mesma unidade.
+  await entries.reverse(ctx, payment.id);
+  const reopened = await titles.get(ctx, title.id);
+  assert.equal(reopened.paidAmount, 0);
+  assert.equal(reopened.status, "open");
+  // (4) e então o título volta a ser apagável — a saída existe, ponta a ponta.
+  const removed = await titles.delete(ctx, title.id);
+  assert.notEqual(removed.deletedAt, undefined, "com paid_amount = 0 o título volta a ser removível");
+});
+
+test("[C1] precedência do DELETE: entry_reconciled e reversal_pair_immutable vêm ANTES de settlement_entry_immutable", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+
+  // Liquidação CONCILIADA: a imutabilidade da conciliação decide primeiro.
+  const titleA = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const conciliada = await entries.payTitle(ctx, titleA.id, { amount: 10, account_id: account.id, payment_method: "pix" });
+  await entries.reconcile(ctx, conciliada.id, { reconciled: true });
+  await assert.rejects(
+    () => entries.delete(ctx, conciliada.id),
+    (e: unknown) => isDomainError(e, 422, "entry_reconciled"),
+  );
+
+  // Liquidação JÁ ESTORNADA: o par de estorno decide antes da liquidação.
+  const titleB = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const estornada = await entries.payTitle(ctx, titleB.id, { amount: 10, account_id: account.id, payment_method: "pix" });
+  await entries.reverse(ctx, estornada.id);
+  await assert.rejects(
+    () => entries.delete(ctx, estornada.id),
+    (e: unknown) => isDomainError(e, 422, "reversal_pair_immutable"),
+  );
+});
+
+test("[C1] o guard é ESTREITO: lançamento AVULSO (sem title_id) continua deletável", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const avulso = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 30, payment_method: "pix" });
+
+  const removed = await entries.delete(ctx, avulso.id);
+  assert.notEqual(removed.deletedAt, undefined, "o delete de avulso não pode ser vítima colateral do guard");
+  assert.equal((await entries.list(ctx, {})).total, 0);
+});
+
 // ---------------------------------------------------------------- conciliação (reconcile) [Ω4-5]
 // Paridade InMemory×Prisma é ESTRUTURAL (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
 // (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma da conciliação não é exercido sem banco, idêntico a
@@ -967,6 +1061,42 @@ test("[rota] estorno: POST /financial-entries/:id/reverse → 201 contra-lançam
     assert.equal(reversed.status, 201);
     assert.equal(reversed.body.data.direction, "out");
     assert.equal(reversed.body.data.reversalOf, entry.body.data.id);
+  });
+});
+
+// [C1/P1] O achado da junta era uma CHAMADA HTTP, com a mesma permissão de quem paga — a prova tem
+// de ser HTTP também, com envelope e reason exatos (o serviço podia recusar e a rota traduzir errado).
+test("[rota][C1] DELETE /financial-entries/:id de LIQUIDAÇÃO → 422 settlement_entry_immutable; título e caixa intactos", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA, { opening_balance: 0 });
+    const title = await createTitle(baseUrl, seed.tenantA, { amount: 100 });
+    const pay = await requestJson(baseUrl, `/api/v1/financial-titles/${title.id}/pay`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { amount: 40, account_id: account.id, payment_method: "pix" },
+    });
+    assert.equal(pay.status, 201);
+
+    const removed = await requestJson(baseUrl, `/api/v1/financial-entries/${pay.body.data.id}`, {
+      method: "DELETE",
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(removed.status, 422, "o DELETE da liquidação era 200 no head e4e914a — é o achado Ω6R-DIN-010");
+    assert.equal(removed.body.error.reason, "settlement_entry_immutable");
+    assert.match(String(removed.body.error.message), /reverse/i, "a mensagem tem de apontar o remédio");
+    assert.equal(removed.body.error.tenantId, undefined, "§2.8: erro não vaza tenant");
+    assert.equal(removed.body.error.tenant_id, undefined);
+
+    // O caixa NÃO voltou (era 40 → 0 no defeito) e o título segue com o pagamento.
+    const balance = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, {
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(balance.body.data.balance, 40, "o saldo tem de continuar 40 — o dinheiro não some pela recusa");
+    const refreshed = await requestJson(baseUrl, `/api/v1/financial-titles/${title.id}`, {
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(refreshed.body.data.paidAmount, 40);
+    assert.equal(refreshed.body.data.status, "partially_paid");
   });
 });
 
