@@ -88,6 +88,24 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 | `agente-pesquisador-web` | Pesquisa exclusiva na net sob dúvida (não escreve código) — regra da dúvida §C7.3. |
 | `agente-fabrica` | Cria novos agentes/especialistas sob medida durante o protocolo de reprovação (ciclos 1–2). |
 
+## Especialistas do protocolo de reprovação (§C7.4) — subpasta `especialistas/`
+
+Criados pela `agente-fabrica` nos ciclos 1–2 de uma reprovação, **sob medida para o defeito que reprovou**.
+**Entram na junta seguinte e votam**, e permanecem disponíveis pelo resto da rodada. Todos nascem **sem
+ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do §C7.4-bis: quem acha não conserta.
+
+| Papel | Poder | Nasceu em | Função |
+|---|---|---|---|
+| `inspetor-fixtures-financeiras-legadas` | **VETO** | B-O6R-02/F6, ciclo 1 | Fixture legada × invariante nova: prova **por execução** que `title_restore_conflict` continua discriminando sem afrouxar `DIN-004`/`title_has_payments`. **Achador/votante: não planeja, não corrige.** |
+| `especialista-maquinas-de-desfazer` | **VETO** | B-O6R-02, ciclo 2 | Enumera **todas** as portas da API que desfazem o mesmo efeito monetário/de estado e prova que **concordam**; caça estado alcançável **sem rota de saída** (guard que fecha a saída sem fechar a entrada); exige invariante de **efeito líquido**, nunca de existência de linha; executa os drills de mutação em fixture. **Achador/votante: não escreve a correção.** |
+| `especialista-arnes-postgres-node` | **VETO** | B-O6R-02, ciclo 2 | Valida o **arranjo** de cada medição (comando, env — inclusive `DATABASE_URL` —, N e forma do job) antes do número; ataca barreira de teste com **decoy**; enumera promessa que pode rejeitar **sem handler**; mede vazamento de catálogo e de dado antes/depois, inclusive em lote **abortado**. Piso: **15/15 na forma exata do job — não se arredonda.** **Achador/votante: não escreve a correção.** |
+
+> **Divergência registrada (§A2), não consolidada em silêncio:** neste head, `scripts/sync-agent-agents.mjs:66`
+> lê **apenas o topo** de `.claude/agents/` e o `--check` varre **apenas o topo** de `.agents/agents/` — os
+> arquivos de `especialistas/` não são espelhados nem cobertos pelo guard. O espelho desta subpasta depende da
+> versão **recursiva** do script, que vive na trilha de governança. Enquanto as duas versões não convergirem, o
+> espelho de `especialistas/` **não é garantido pelo `--check`**: conferir à mão antes da junta.
+
 ## Composição típica da junta por tipo de PR
 - **Feature normal:** planejador → crítico → dev → `validador-mestre` (VETO) + `inspetor-de-rotas` + `coordenador-de-acessos` (se toca acesso) + `cognicao-visual` (se toca tela).
 - **Dinheiro / alienação / invariante financeiro:** **`critico-adversarial` OBRIGATÓRIO** (tolerância zero) + avaliador (VETO).
