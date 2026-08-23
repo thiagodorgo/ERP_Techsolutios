@@ -255,17 +255,22 @@ painel — número novo sem lugar no painel é entrega incompleta (§C3).
    ponto a ponto. Pontos ausentes ficam `null` **no array** (não removidos), senão o alinhamento com as datas
    quebra. Se você mudar a assinatura, atualize `tests/kpi-dashboard-charts.test.ts` junto.
 
-### Os três guards
+### Os guards do painel
 
-- `tests/kpi-dashboard-contraste.test.ts` (6) — mede contraste nos dois temas, exige que nenhuma cor nasça
+> **Sem contador cravado aqui de propósito.** Prosa com contagem de testes envelhece sozinha: a linha do
+> `kpi-achados-paridade` dizia `(5)` enquanto a execução dava **6/6**, e ninguém percebeu porque nada
+> reexecuta a prosa. Quantos testes cada guard tem é resposta da **bateria**, não deste texto —
+> `node --test --import tsx tests/kpi-dashboard-contraste.test.ts` (idem para os outros dois).
+
+- `tests/kpi-dashboard-contraste.test.ts` — mede contraste nos dois temas, exige que nenhuma cor nasça
   dentro de um bloco de tema, proíbe cor literal fora dos tokens e cobra regra de CSS para toda classe de
   marca SVG que o `app.js` emite. Este último existe porque um `<rect class="week-gap">` sem regra nasceu
   **preto** e virou a maior barra do gráfico.
-- `tests/kpi-dashboard-charts.test.ts` (16) — executa o `app.js` de verdade num sandbox. A 1ª versão deste
+- `tests/kpi-dashboard-charts.test.ts` — executa o `app.js` de verdade num sandbox. A 1ª versão deste
   guard era **teatro**: um crítico trocou as três séries por retas sintéticas e tudo passou verde, porque só
   checava "tem `<svg>`". Hoje ele amarra a curva ao JSON e prova o inverso também — **mutar o histórico tem de
   mover a curva**.
-- `tests/kpi-achados-paridade.test.ts` (5) — exige que `achados.jsonl`, o painel e o cronograma contem a mesma
+- `tests/kpi-achados-paridade.test.ts` — exige que `achados.jsonl`, o painel e o cronograma contem a mesma
   história. Achou um achado crítico órfão (sem bloco de correção) na primeira execução. Também trava a saída
   fácil: **zerar o contador de críticos não libera produção** — trocar o veredito exige junta nova registrada
   em `fonte_veredito`.
