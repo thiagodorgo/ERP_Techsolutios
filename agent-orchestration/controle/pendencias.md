@@ -3088,3 +3088,101 @@ de prosa atualizado.
 
 **Por que fica mapeado:** é a única rota conhecida para a afirmação forte voltar a ser verdadeira. Deixá-la
 escrita evita que alguém tente a rota **vetada** (derivar proveniência via check-suite) achando que ajuda.
+
+---
+
+## P-GOV-SATELITE-2026-08-22 — dívida documental da varredura satélite (4 itens)
+
+**Origem:** varredura satélite do ciclo 2 da governança (plano §5), refeita porque a dimensão perdeu todos os
+céticos num limite de sessão. Arranjo: **2 achadores sem ferramenta de escrita + 2 céticos independentes**,
+11 achados, **4 refutados**. Veredito de escopo do planejador: seis itens entraram na entrega; estes quatro
+ficam pendentes.
+
+**Critério do planejador, registrado:** entra o que (a) nasceu nesta branch, (b) contradiz regra estabelecida
+neste ciclo, ou (c) é instrução falso-vermelha em arquivo que a allowlist já cobre. Vira pendência o que é
+dívida anterior fora da superfície de governança.
+
+**Nenhum dos quatro toca a autorização de merge.** Todos são staleness documental de falso-vermelho ou de
+leitura; nenhum produz falso-verde.
+
+### 1. `PROJECT_MEMORY.md` defasado — PRIORIDADE ENTRE OS QUATRO
+
+Declara **62 módulos**; `ls src/modules | wc -l` dá **65**. Snapshot declarado 2026-07-28.
+
+**Agravante que justifica a prioridade:** o `CLAUDE.md` manda lê-lo **antes de cada bloco**. Contador defasado
+ali é exatamente o **"dado podre"** da pergunta (c) do §C7.4-bis — a pergunta que a ata é obrigada a responder
+a cada reprovação.
+
+**Recomendação registrada:** a correção futura **remove contagens exatas** em favor de ponteiros
+(`ls src/modules`), pelo mesmo princípio aplicado ao item 6 da fatia residual — *prosa com contador envelhece
+sozinha*.
+
+### 2. `docs/claude-code-handoff/` sem banner além do README
+
+`BUILD_ORDER.md`, `comando-template.md` e `PROJECT_MEMORY.md` do pacote carregam a política de KPI revogada
+sem banner, desde 2026-07-13. `decisoes.md:407` determina banner para o glob `docs/claude-code-handoff/*`.
+
+**O que o cético derrubou, e fica registrado para não reaparecer inflado:** o ponteiro "§C7" **não** está
+quebrado (o par de ponteiros resolve na raiz, e o pacote marca raiz com barra); a obrigação de
+`decisoes.md:407` é cláusula de propagação **da política de KPI**, logo "só na dimensão KPI" nos 2 arquivos
+que têm banner é **cumprimento**; os irmãos estavam **fora da allowlist** da entrega, então o dev não podia
+consertá-los; e o **roteamento vivo** para os arquivos de governança do pacote é **zero** — todas as
+referências vivas apontam para assets de design.
+
+**Gravidade final: baixa.** Dívida anterior, fora da allowlist corrente, sem roteamento vivo.
+
+### 3. `status-geral.md` — buraco de cobertura e ordenação do rodapé
+
+Entre 2026-07-29 (topo) e 2026-08-20 o arquivo não registra nada; são **50** PRs (#309–#358), **não 54** como
+o achador reportou — correção do cético.
+
+**A premissa da "convenção mais-novo-no-topo" foi DERRUBADA:** o arquivo tem **22 inversões** dentro do próprio
+bloco H2 (14,8% dos pares em ordem crescente), e a convenção **nunca foi escrita** em lugar nenhum.
+
+**Compensatórios medidos:** `Kpis/kpis-history.json` tem 48 entradas cobrindo a mesma janela (registro por PR
+obrigatório por §C3); `decisoes.md` carrega `D-PORTEIRO-PRE-MERGE`; `pendencias.md` está corrente. A lei do
+porteiro mora em `CLAUDE.md` §C2.8/§C7 (prioridade 2), não neste log (prioridade 4).
+
+**Destino:** trabalho de **reconciliação factual** — pertence ao executor pós-merge, não a esta entrega.
+(O nível `#` das duas entradas novas **entrou** na fatia residual, por ter nascido nesta branch.)
+
+### 4. `controle/tarefas.md` × `decisoes.md` — metade mantida
+
+`tarefas.md:8` declara em aberto "validar stack final do backend" — que `decisoes.md` D-002/D-003 fecharam e
+que o `CLAUDE.md` §A2 lista entre os **conflitos resolvidos, não reabrir**. Arquivo com commit único de
+**2026-05-10**, nunca mais tocado.
+
+**Metade REFUTADA pelo cético:** `:9` "implementar core SaaS do MVP" **não cai** — `mvp_vendavel` está em 88%
+e o deploy segue bloqueado por J-6R. A caixa desmarcada é defensável.
+
+**Compensatórios medidos:** `CLAUDE.md` §A2 (prioridade 2) corrige o leitor antes de ele chegar a
+`agent-orchestration/` (prioridade 4); `grep -rn "tarefas\.md"` no repo devolve **zero** referências de
+entrada — o ledger vivo é `pendencias.md`; e §A4.1 nomeia o que ler de `controle/`: *"estado, decisões,
+pendências"* — não "tarefas".
+
+**Destino:** reconciliação factual, mesmo do item 3.
+
+---
+
+### Registro de método, para a ata
+
+**Uma generalização foi retratada.** O coordenador afirmou, com base nos dois achadores, que *"guard verde não
+é evidência de superfície limpa"*. O segundo cético **derrubou a generalização**: os guards deste repositório
+**declaram o próprio escopo por escrito** — o plano nomeia os seis `DOCS_NORMATIVOS`, e a docstring do sync diz
+*"menções em prosa não contam — o índice normativo é a tabela"*. Guard com escopo declarado é **guard
+escopado**, não teatro.
+
+**Consequência prática decidida pelo planejador:** **nenhuma obrigação nova de guard** deriva daquela
+generalização. O único endurecimento autorizado é o do `EXECUTION_MODEL.md`, onde houve **bypass real e
+medido** do padrão. Endurecer guard para acompanhar typo é espalhamento de guard frágil — modo de falha
+próprio.
+
+**E o desenho se validou:** foi justamente o fato de os guards declararem o próprio escopo que permitiu ao
+cético distinguir **defeito** de **leitura errada**.
+
+**Três correções factuais dos céticos sobre os achadores**, registradas para não se perderem: são **50** PRs e
+não 54; o item 7 do `Kpis/README.md` **está commitado** em `af3646f`, não é adição solta; e `avaliador` em
+`.agents/agents/README.md:115` é **substantivo de função**, não papel inexistente — a convenção do arquivo é
+**crase = identificador, sem crase = função**, e os 10 identificadores em crase existem todos.
+
+Achado corrigido por cético é o protocolo funcionando.
