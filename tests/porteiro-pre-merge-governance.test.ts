@@ -344,12 +344,28 @@ const NOME_QUE_PROMETE_DEMAIS=new RegExp(['Fonte','Confi','[aá]vel'].join(''));
 // S-2 — a cerca do D-11 cobria só a tabela de símbolos. A MENSAGEM DE ERRO é o que o operador lê
 // quando o gate dispara: superfície mais visível que o identificador, e estava com o mesmo overclaim
 // em seis lugares. A cerca passa a cobrir as duas formas nos scripts do gate.
-const STRING_QUE_PROMETE_DEMAIS=new RegExp(['fonte','[ \\t]+','confi','[aá]vel'].join(''),'i');
+// S-5 — a cerca do S-2 exigia `fonte` COLADA em `confiável`, e a forma NEGADA passou por baixo dela:
+// `output.title: 'Fonte não confiável'` sobreviveu à cerca recém-instalada, na superfície de MAIOR
+// visibilidade do gate (esse título aparece na UI do GitHub). Buraco do tamanho de um "não",
+// justamente onde mais aparece.
+//
+// A âncora passa a ser o ADJETIVO DE CONFIABILIDADE, em qualquer polaridade — e NÃO o substantivo
+// "fonte". Isso é decisão do planejador, e é o que torna a cerca robusta sem ficar frágil:
+//   · qualquer palavra interposta ("não", "pouco", "totalmente") deixa de ser rota de fuga, porque
+//     a cerca não depende mais de adjacência com um prefixo;
+//   · "fonte" continua LIVRE, e tem de continuar: os 6 scripts do gate usam o substantivo 17 vezes
+//     de forma legítima e descritiva — `fonte errada`, `fonte observada diverge`, `agentes-fonte`,
+//     `fonte da verdade`, `14 fontes`. Cerca que caça substantivo comum é guard frágil, modo de
+//     falha próprio.
+// A classe que este ciclo mata é o VEREDITO DE CONFIANÇA que a execução não produz; o gate mede
+// igualdade de id/slug/owner do app criador. Negar confiabilidade excede a medição tanto quanto
+// afirmá-la — por isso a cerca é indiferente à polaridade.
+const VEREDITO_DE_CONFIABILIDADE=new RegExp(['confi','[aá]','ve(?:l|is)'].join(''),'i');
 const SCRIPTS_DO_GATE=['scripts/porteiro-pre-merge.mjs','scripts/merge-authorized-pr.mjs','scripts/post-merge-finalize.mjs','scripts/configure-main-ruleset.mjs','scripts/sync-agent-agents.mjs','scripts/sync-agent-skills.mjs'];
 
 export function guardNomeDoGate(src:string){
   if(NOME_QUE_PROMETE_DEMAIS.test(src))throw new Error('identificador que afirma "fonte confiável": a execução prova apenas que o check foi criado pelo app GitHub Actions');
-  if(STRING_QUE_PROMETE_DEMAIS.test(src))throw new Error('mensagem que afirma "fonte confiável": a execução prova apenas que o check foi criado pelo app GitHub Actions');
+  if(VEREDITO_DE_CONFIABILIDADE.test(src))throw new Error('veredito de confiabilidade em texto do gate: a execução mede desencontro de app criador (id/slug/owner), não confiança — vale para a forma afirmada E para a negada');
   return true;
 }
 
@@ -381,9 +397,58 @@ test('S-2 — cerca: a mensagem de erro que promete demais também não volta ao
     real.replace('app criador esperado é GitHub Actions (id ',['fonte',' ','confiável',' esperada é '].join('')),
     real.replace('check requerido sem app criador fixado',['check requerido sem ','fonte',' ','confiável',' resolvida'].join('')),
     ['fail("','Fonte','  ','Confiavel','")'].join(''),
-  ])assert.throws(()=>guardNomeDoGate(volta),/mensagem que afirma/);
+  ])assert.throws(()=>guardNomeDoGate(volta),/veredito de confiabilidade/);
   // As mensagens novas nomeiam o que se prova, e continuam nomeando a propriedade violada.
   assert.throws(()=>assertCriadoPeloAppGitHubActions(app({id:9426}),15368),/app criador esperado é GitHub Actions \(id 15368\)/);
   assert.throws(()=>assertCriadoPeloAppGitHubActions(app({slug:'x'}),15368),/app criador esperado é GitHub Actions \(slug github-actions\)/);
   assert.throws(()=>assertCriadoPeloAppGitHubActions(app({owner:{login:'g',id:1}}),15368),/app criador esperado é GitHub Actions \(owner\.id 9919\)/);
+});
+
+// ---------------------------------------------------------------------------
+// S-5 — o título do check-run de falha, e o buraco do tamanho de um "não".
+//
+// `output.title` é a superfície de MAIOR visibilidade do gate: aparece na UI do GitHub, é o que
+// mais gente lê. Ele dizia "Fonte não confiável" — veredito de confiança sobre um app que o gate
+// apenas mediu ser DIFERENTE do fixado. E a forma negada atravessou a cerca do S-2, instalada
+// poucos commits antes, porque aquela cerca exigia `fonte` colada em `confiável`.
+// ---------------------------------------------------------------------------
+
+test('S-5 — o título do check-run de falha nomeia o desencontro medido, não confiança',()=>{
+  const fonte=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
+  assert.match(fonte,/title:'App criador inesperado'/,'o título tem de nomear o desencontro medido');
+  // O caminho de falha continua existindo e continua publicando `failure` com o permalink.
+  assert.match(fonte,/conclusion:'failure'[^}]*output:\{title:'App criador inesperado',summary:e\.message\}/);
+});
+
+test('S-5 — cerca: veredito de confiabilidade não volta, NEM na forma negada',()=>{
+  // Os seis scripts do gate passam limpos hoje, com a cerca já ancorada no adjetivo.
+  for(const alvo of SCRIPTS_DO_GATE)assert.equal(guardNomeDoGate(readFileSync(alvo,'utf8')),true,`${alvo}`);
+  const real=readFileSync('scripts/porteiro-pre-merge.mjs','utf8');
+  const negado=['Fonte n','ã','o confi','á','vel'].join('');
+  // A MUTAÇÃO DO CICLO: exatamente a string que estava viva em `db3c97d` e que a cerca do S-2
+  // deixava passar. Vermelha agora.
+  assert.throws(()=>guardNomeDoGate(real.replace('App criador inesperado',negado)),/veredito de confiabilidade/);
+  // E as variações que um autor bem-intencionado produziria sem perceber.
+  for(const volta of [
+    ['title:"','Fonte  n','ã','o   confi','á','vel','"'].join(''),          // espaçamento livre
+    ['title:"','fonte nao confiavel','"'].join(''),                          // sem acento nenhum
+    ['title:"','origem n','ã','o confi','á','vel','"'].join(''),             // outro substantivo
+    ['title:"','check pouco confi','á','vel','"'].join(''),                  // outro qualificador
+    ['// fontes n','ã','o confi','á','veis neste caminho'].join(''),         // plural, em comentário
+  ])assert.throws(()=>guardNomeDoGate(volta),/veredito de confiabilidade/,`deveria pegar: ${volta}`);
+  // LIMITE DA CERCA (decisão do planejador): ela NÃO persegue o substantivo "fonte". Descrição de
+  // desencontro medido é descrição, não alegação de prova — e tem de continuar passando.
+  for(const legitimo of [
+    'fail(`check requerido não verde ou com fonte errada: ${req.context}`)',
+    'fail(`VETO: fonte observada diverge do id fixado em ${item.context}`)',
+    '// arquivos do espelho que NÃO são agentes-fonte e devem ser preservados',
+    '// O CLAUDE.md é a fonte da verdade; as skills devem',
+    '// PD-GOV-PORTEIRO-APPID (docs/omega-pd.md, 2026-08-22 — 14 fontes, 4 primarias).',
+    '// falso-vermelho recorrente no CAS ENSINA O OPERADOR A DESCONFIAR DO GATE',
+    "'scripts/configure-main-ruleset.mjs'",
+  ])assert.equal(guardNomeDoGate(legitimo),true,`não pode pegar: ${legitimo}`);
+  // Prova de que o limite não é vácuo: o substantivo aparece MUITO nos scripts do gate hoje.
+  const ocorrenciasDeFonte=SCRIPTS_DO_GATE
+    .reduce((n,alvo)=>n+(readFileSync(alvo,'utf8').match(/fonte/gi)||[]).length,0);
+  assert.ok(ocorrenciasDeFonte>=10,`esperava uso legítimo abundante do substantivo, achei ${ocorrenciasDeFonte}`);
 });

@@ -421,7 +421,11 @@ async function publishCommand() {
   try {
     assertCriadoPeloAppGitHubActions(status.app, expectedApp);
   } catch (e) {
-    const failure = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'failure', details_url:comment.html_url, output:{title:'Fonte não confiável',summary:e.message} });
+    // S-5 — o titulo nomeia o DESENCONTRO MEDIDO, nao um veredito de confianca. O que o cross-check
+    // acima verifica e igualdade de id/slug/owner do app criador; um app diferente do fixado e um
+    // desencontro, nao uma acusacao de ma-fe. E este titulo aparece na UI do GitHub: e a superficie
+    // de MAIOR visibilidade do gate, a que mais gente le.
+    const failure = JSON.stringify({ name:CONTEXT, head_sha:snapshot.head.oid, status:'completed', conclusion:'failure', details_url:comment.html_url, output:{title:'App criador inesperado',summary:e.message} });
     gh(['api','-X','POST',`repos/${snapshot.repo}/check-runs`,'--input','-'], failure);
     fail(e.message);
   }
