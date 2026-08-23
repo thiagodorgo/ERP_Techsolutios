@@ -327,6 +327,34 @@ if (!connectionString) {
     }
   });
 
+  // [C1] PRECEDÊNCIA sob Postgres. A ordem dos guards é contrato de API (o cliente distingue os
+  // casos pelo `reason`), e prová-la só em memória deixa o caminho Prisma sem cobertura — que é a
+  // classe do Ω6R-QUA-003. `entry_reconciled` vem ANTES de `settlement_entry_immutable`: a
+  // imutabilidade da conciliação decide antes da identidade de liquidação.
+  test("G16 — precedência do DELETE sob Postgres: liquidação CONCILIADA sai entry_reconciled, não settlement_entry_immutable", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g16-precedencia", 100);
+      const payment = await h.entryService.payTitle(seed.actor, seed.titleId, {
+        account_id: seed.accountId, amount: 25, payment_method: "pix",
+      });
+      await h.entryService.reconcile(seed.actor, payment.id, { reconciled: true });
+
+      await assert.rejects(
+        h.entryService.delete(seed.actor, payment.id),
+        (error: unknown) => isDomainError(error, 422, "entry_reconciled"),
+      );
+
+      const row = await client.financialEntry.findFirst({ where: { tenant_id: seed.tenantId, id: payment.id } });
+      assert.equal(row?.deleted_at, null);
+      assert.equal(row?.reconciled, true);
+      await expectTitleLedger(client, seed.tenantId, seed.titleId, "G16 — precedência");
+    } finally {
+      await teardown(h);
+    }
+  });
+
   test("G12 (histórico G3b) — estornar a primeira parcela deixa a última e status partially_paid", async () => {
     const h = await bootstrap(connection);
     const { client } = h;

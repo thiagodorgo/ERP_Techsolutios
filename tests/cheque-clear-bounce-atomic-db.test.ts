@@ -175,6 +175,49 @@ if (!connectionString) {
     }
   });
 
+  // [C2/P3] A TERCEIRA PERNA do invariante — `net(...) ∈ { ±valor (cleared), 0 (bounced), SEM
+  // LANÇAMENTO (demais) }`. As duas primeiras já são exercidas (G6/G14); esta não era exercida por
+  // teste nenhum, e um ramo de helper que ninguém executa é um ramo que ninguém sabe se funciona.
+  // Cobre também o bounce SEM clear (deposited→bounced), que não move caixa.
+  test("G15 — cheque que nunca compensou não tem lançamento vinculado: registered, deposited, bounce-sem-clear e cancelled valem ZERO", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "g15-sem-caixa");
+      const { tenantId, chequeId, accountId } = seed;
+
+      await expectChequeLedger(client, tenantId, chequeId, "recém-registrado");
+      await h.chequeService.deposit(seed.actor, chequeId);
+      await expectChequeLedger(client, tenantId, chequeId, "depositado (ainda não compensou)");
+
+      // deposited→bounced: devolvido sem NUNCA ter compensado — zero lançamento, não um par que se anula.
+      const bounced = await h.chequeService.bounce(seed.actor, chequeId, { reason: "sem fundos" });
+      assert.equal(bounced.status, "bounced");
+      assert.equal(bounced.bounceEntryId, undefined, "bounce sem clear não posta contra-lançamento");
+      await expectChequeLedger(client, tenantId, chequeId, "devolvido sem ter compensado");
+      assert.equal(
+        await client.financialEntry.count({ where: { tenant_id: tenantId, deleted_at: null } }),
+        0,
+        "nenhum caixa foi movido em todo o ciclo",
+      );
+      assert.equal((await h.entryService.balance(seed.actor, accountId)).balance, 0);
+
+      // E o outro terminal sem dinheiro: registered→cancelled.
+      const outro = await h.chequeService.create(seed.actor, {
+        direction: "received",
+        cheque_number: "000555",
+        bank: "Banco G15",
+        amount: 900,
+        account_id: accountId,
+      });
+      const cancelado = await h.chequeService.cancel(seed.actor, outro.id);
+      assert.equal(cancelado.status, "cancelled");
+      await expectChequeLedger(client, tenantId, outro.id, "cancelado");
+    } finally {
+      await teardown(h);
+    }
+  });
+
   test("G6 — clear × clear com barreira: perdedor bloqueia no cheque e sai 409; invariante cleared ⇔ cleared_entry_id ⇔ entry existe", async () => {
     const h = await bootstrap(connection);
     const { client } = h;

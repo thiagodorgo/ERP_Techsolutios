@@ -2153,3 +2153,52 @@ após restauração; D9 foi comprovado no ciclo 1 e preservado no commit isolado
 `pr`, `merge_commit` e `approved_head` permanecem `null`. O gate `G-A109FD7-PUBLICADO` bloqueia push/PR do
 B-O6R-02 até o follow-up do porteiro #357 entrar na main e esta bateria ser reexecutada. Deploy segue
 bloqueado pela J-6R; `mvp_demo`/`mvp_vendavel` permanecem inalterados.
+
+## 2026-08-22 - B-O6R-02 ciclo 2 — os quatro bloqueantes da junta 5/5
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | 2636 / 2646 (0 fail, 10 pulos DB-gated) |
+| Focados | 240 / 240 (79 titulos + 73 lancamentos + 41 cheques + 8 UoW + 39 PostgreSQL) |
+| Flutter | 864 / 864 — carregado, trilha nao tocada |
+| Frontend Smoke | 1126 / 1126 — carregado, trilha nao tocada |
+| Blocos mergeados | 151 — B-O6R-02 ainda nao entrou na main |
+
+A junta `J-B-O6R-02-ciclo1` reprovou 2x3 e nomeou quatro bloqueantes. Os quatro fecharam:
+
+- **B-1/B-2** — apagar o lancamento de uma LIQUIDACAO era aceito: o caixa voltava e o titulo continuava com
+  `paid_amount`, sem rota de saida (delete 422 `title_has_payments`, reverse 404). Agora o `delete` RECUSA
+  (422 `settlement_entry_immutable`); desfazer e so pelo `reverse`, que devolve na mesma unidade. A regra:
+  lancamento vinculado a um agregado so se desfaz pelo fluxo do agregado.
+- **B-3** — o lancamento de compensacao de cheque podia ser estornado por fora da maquina de estados, e o
+  `bounce` seguinte devolvia outra vez: **200 num cheque de 100**. Agora 422 `cheque_entry_immutable` nas
+  duas portas, e a invariante nos testes virou de EFEITO (net do razao), nao de existencia de linha — era
+  exatamente por ai que o ataque passava.
+- **B-5** — as barreiras eram cluster-wide num job que roda 29 arquivos em processos paralelos, e promessas
+  seguradas por `await`s podiam rejeitar sem handler. Agora a barreira e escopada por `application_name`,
+  com controle negativo permanente por decoy, e o handler e anexado na criacao.
+- **B-4** — `CLAUDE.md` e `AGENTS.md` sairam do PR e voltaram ao `origin/main`; a divergencia do §C7.4-bis
+  entre as duas branches ficou REGISTRADA em `decisoes.md`, sem consolidacao silenciosa (§A2).
+
+Prova no arranjo que a junta cobrou: **lote na forma exata do job**, 29 arquivos num unico `node --test`,
+`db:seed` antes, `pipefail`, denominador publicado por iteracao — **15/15 verde**, denominador constante
+**187**, zero skip e zero `unhandledRejection|XX000|23505|40P01`. No ciclo 1 esse mesmo arranjo dava 1 falha
+em 15. Suites PostgreSQL isoladas: 4+8+6+15+4+2 = **39**, zero skip.
+
+Drills D10-D14, cada um com baseline verde, mutacao vermelha com exit code anexado e restauracao conferida
+por md5: D10 (guard de liquidacao) 3/72 e 2/22 vermelhos; D11 e D12 (guard de cheque no `reverse` e no
+`delete`) 2/41, 1/73 e 1/5; D13 (undo-log volta a snapshot integral) 1/8; D14 (barreira volta a cluster-wide)
+1/2. Todos voltaram ao verde apos restauracao, sem residuo no `git diff`.
+
+Diagnostico §9.6, que alimenta `P-O6R-ARNES-ISOLAMENTO` **sem concluir causa**: `npm test` COM `DATABASE_URL`
+3/3 verde; SEM `DATABASE_URL` 3/3 vermelho, com causa nomeada e **pre-existente**
+(`tests/core-saas-role-authority.test.ts` cai no carregamento porque importa o caminho Prisma sem sentinela
+de auto-skip). A classe `XX000` do ciclo 1 **nao reproduziu**, e este registro nao a atribui a nenhuma das
+duas condicoes.
+
+`Ω6R-DIN-002` foi reaberto pelo B-1; `Ω6R-DIN-010` e `Ω6R-DIN-011` nasceram da junta. Os tres estao
+corrigidos na autoria e em **aguardando_merge** — nenhum conta como corrigido na main. `pr`, `merge_commit` e
+`approved_head` seguem `null`; `mvp_demo`/`mvp_vendavel` intocados. Deploy segue bloqueado pela J-6R e o gate
+`G-A109FD7-PUBLICADO` continua bloqueando push/PR/merge.

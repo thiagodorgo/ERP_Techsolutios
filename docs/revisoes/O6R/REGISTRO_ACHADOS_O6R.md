@@ -46,7 +46,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-002] Estorno de lançamento não reabre nem reduz o valor pago do título
 - Severidade: P0        Confiança: 0.98
-- Status: **ativo** — REABERTO em 2026-08-22 pela junta `J-B-O6R-02-ciclo1` (bloqueante B-1). O `reverse` passou a devolver, mas o `DELETE` do MESMO lançamento de liquidação continuava aceito no head `e4e914a`: o caixa voltava e o título ficava com `paid_amount` intacto — o impacto declarado deste achado seguia alcançável por HTTP, pela outra porta. O caminho do delete está registrado em detalhe como `Ω6R-DIN-010`; os dois só voltam a `aguardando_merge` juntos.
+- Status: **aguardando_merge** — foi REABERTO em 2026-08-22 pela junta `J-B-O6R-02-ciclo1` (bloqueante B-1) e o ciclo 2 o consertou em autoria; volta a `aguardando_merge` (conserto escrito, NÃO na main). O `reverse` passou a devolver, mas o `DELETE` do MESMO lançamento de liquidação continuava aceito no head `e4e914a`: o caixa voltava e o título ficava com `paid_amount` intacto — o impacto declarado deste achado seguia alcançável por HTTP, pela outra porta. O caminho do delete está registrado em detalhe como `Ω6R-DIN-010`; os dois só voltam a `aguardando_merge` juntos.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:158-195`
@@ -650,7 +650,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-010] DELETE de lançamento de liquidação apaga o caixa, mantém o título pago e cria estado sem rota de saída
 - Severidade: P0        Confiança: 1.00
-- Status: **ativo** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueantes B-1 e B-2), medido por execução no head `e4e914a`. Registrado por agente distinto de quem o achou e de quem o corrige (§C7.4-bis).
+- Status: **aguardando_merge** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueantes B-1 e B-2), medido por execução no head `e4e914a`; corrigido em autoria no ciclo 2 (C1), NÃO na main. Registrado por agente distinto de quem o achou e de quem o corrige (§C7.4-bis).
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:153-168`, `src/modules/financial-titles/financial-title-prisma.repository.ts:166-178`
@@ -670,7 +670,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-011] Cheque devolve em dobro: o lançamento de compensação se desfaz por fora da máquina de estados
 - Severidade: P0        Confiança: 1.00
-- Status: **ativo** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueante B-3), medido por execução no head `e4e914a`. Cruza com `Ω6R-DIN-003`: aquele nomeia a atomicidade de clear/bounce (corrigida e provada por ataque); este é o defeito **distinto** de duas portas desfazerem o mesmo dinheiro. Nada merge com este aberto.
+- Status: **aguardando_merge** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueante B-3), medido por execução no head `e4e914a`; corrigido em autoria no ciclo 2 (C2), NÃO na main. Cruza com `Ω6R-DIN-003`: aquele nomeia a atomicidade de clear/bounce (corrigida e provada por ataque); este é o defeito **distinto** de duas portas desfazerem o mesmo dinheiro. Nada merge com este aberto.
 - Categoria: DIN
 - Módulo: cheques / financial-entries        Lente: A3
 - Local: `src/modules/cheques/cheque.service.ts:164-235`, `src/modules/financial-entries/financial-entry.service.ts:153-246`

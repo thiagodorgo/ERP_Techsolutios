@@ -10,8 +10,8 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "Autoria F6 concluída, ainda sem PR/merge por causa do gate G-A109FD7-PUBLICADO. Pagamento, estorno e cheque usam UoW única; PATCH/DELETE de título usam CAS tenant-scoped e status derivado no mesmo UPDATE; fechamento e writers compartilham a trava de competência. Cinco suítes PostgreSQL somam 32/32 casos, zero skip, em lote 10/10 com seed por iteração; D4/D5/D8 ficaram vermelhos sob mutação e verdes após restauração. Os seis achados estão em aguardando_merge e não contam como corrigidos na main. Deploy segue bloqueado pela J-6R.",
-    "status_label": "Autoria em 20/08/2026 — aguardando gate, PR, junta e merge"
+    "summary": "CICLO 2, após a junta 5/5 REPROVAR o ciclo 1 (J-B-O6R-02-ciclo1). Os quatro bloqueantes foram fechados: (B-1/B-2) apagar o lançamento de uma liquidação era aceito — o caixa sumia e o título continuava pago, sem rota de saída; agora RECUSA (422 settlement_entry_immutable) e desfazer é só pelo reverse, que devolve na mesma unidade. (B-3) o lançamento de compensação de cheque podia ser estornado por fora da máquina de estados e o bounce seguinte devolvia de novo — 200 num cheque de 100; agora recusa (422 cheque_entry_immutable) nas duas portas, e a invariante nos testes passa a ser de EFEITO (net do razão), não de existência de linha. (B-5) as barreiras das suítes eram cluster-wide num job que roda 29 arquivos em paralelo, e promessas seguradas por awaits podiam rejeitar sem handler; agora a barreira é escopada por application_name, com controle negativo permanente por decoy, e o handler é anexado na criação. (B-4) CLAUDE.md e AGENTS.md saíram do PR e voltaram ao origin/main, com a divergência do §C7.4-bis registrada em decisoes.md sem consolidação silenciosa. Dois achados NOVOS nasceram e foram corrigidos na autoria: Ω6R-DIN-010 e Ω6R-DIN-011; Ω6R-DIN-002 foi reaberto e voltou a aguardando_merge. Nenhum conta como corrigido na main. Deploy segue bloqueado pela J-6R.",
+    "status_label": "Ciclo 2 em 22/08/2026 — aguardando gate, PR, junta e merge"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,16 +27,16 @@
       "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "backend_tests": {
-      "value": 2617,
-      "total": 2627,
-      "display": "2617/2627",
-      "note": "Execução real final da autoria B-O6R-02 F6 após consolidar KPI e a correção isolada b8ec196: 2627 total · 2617 pass · 0 fail · 10 pulos DB-gated declarados no runner memory. A execução pré-consolidação teve 2622 total/2610 pass/2 fail porque dois guards de KPI falharam antes de declarar cinco casos dependentes; não foi usada como número final. Cinco suítes PostgreSQL: 32/32, 0 fail/skip, isoladas 4+6+4+4+14 e juntas 32; lote na forma do job com db:seed a cada iteração: 10/10, denominador 32 idêntico, zero skip e zero XX000/23503/23505/40P01. D4/D5/D8: cada mutação produziu 12 pass/2 fail e a restauração voltou a 14/14."
+      "value": 2636,
+      "total": 2646,
+      "display": "2636/2646",
+      "note": "Execução real do CICLO 2 do B-O6R-02 (arranjo declarado: `npm test` pelo runner oficial, que injeta CORE_SAAS_PERSISTENCE=memory; DATABASE_URL presente via .env; N=3, resultado idêntico nas três): 2646 total · 2636 pass · 0 fail · 10 pulos DB-gated. Era 2627/2617/10 no ciclo 1 — os +19 casos são os 17 novos do ciclo 2 mais 2 que fecham lacunas de cobertura dos helpers. Suítes PostgreSQL passaram de 5 para 6 arquivos (entrou o controle negativo da barreira) e de 32 para 39 casos, zero skip, isoladas 4+8+6+15+4+2. LOTE NA FORMA EXATA DO JOB (29 arquivos, um único node --test, db:seed antes, pipefail): 15/15 VERDE, denominador constante 187 em todas as iterações, zero skip e zero unhandledRejection/XX000/23505/40P01 — no ciclo 1 esse mesmo arranjo dava 1 falha em 15. Drills D10–D14: cada mutação ficou vermelha com exit 1 e a restauração (conferida por md5) voltou ao verde."
     },
     "backend_contract_tests_focused": {
-      "value": 178,
-      "total": 178,
-      "display": "178/178",
-      "note": "Bateria focada remendida na árvore final: financial-titles memória+rotas 79/79; financial-entries (inclui o ramo fail-closed title_restore_conflict corrigido no ciclo 1) 67/67; cinco suítes PostgreSQL 32/32. Composição declarada 79+67+32=178, zero fail/skip nos grupos focados."
+      "value": 240,
+      "total": 240,
+      "display": "240/240",
+      "note": "Bateria focada do ciclo 2, composição DECLARADA e ampliada: financial-titles memória+rotas 64+15=79; financial-entries 73; cheques 41; dublê de UoW em memória 8; seis suítes PostgreSQL 39. Total 79+73+41+8+39=240, zero fail/skip. A composição do ciclo 1 era 79+67+32=178 e NÃO é comparável linha a linha: a mesma composição de então daria 79+73+39=191 hoje, e o ciclo 2 passa a incluir cheques e o dublê de UoW porque o C2 e o M1 mexeram exatamente neles."
     },
     "flutter_modules": {
       "value": 17,
@@ -171,7 +171,7 @@
         "id": "Ω6R-DIN-002",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Estorno lança a contrapartida contábil mas não devolve o valor pago nem o status do título — o título fica pago sem estar. Reaberto: o DELETE do mesmo lançamento continuava aceito.",
         "bloco": "B-O6R-02"
       },
@@ -403,7 +403,7 @@
         "id": "Ω6R-DIN-010",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Apagar o lançamento de uma liquidação some com o caixa e deixa o título pago — e sem rota de saída: nem se apaga nem se estorna.",
         "bloco": "B-O6R-02"
       },
@@ -411,7 +411,7 @@
         "id": "Ω6R-DIN-011",
         "severidade": "P0",
         "modulo": "cheques / financial-entries",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Cheque devolve em dobro: dá para estornar o lançamento de compensação por fora e ainda devolver o cheque — 200 num cheque de 100.",
         "bloco": "B-O6R-02"
       }

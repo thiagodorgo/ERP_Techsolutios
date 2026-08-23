@@ -2999,3 +2999,95 @@ Acrescentar ao registro existente, com evidência executada:
   de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
   espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
   de 1 titular do lock.
+
+## P-O6R-ARNES-ISOLAMENTO — **EMENDAS do ciclo 2 do B-O6R-02 (2026-08-22)**
+
+Duas causas do lote instável **saíram** desta pendência e foram corrigidas no ciclo 2 (C3), com controle
+negativo permanente — deixam de ser dívida:
+
+1. **Barreira cluster-wide.** Quatro suítes `-db` esperavam statement bloqueado consultando
+   `pg_stat_activity` sem escopo, num job que roda 29 arquivos em processos paralelos. Agora cada suíte
+   carimba `application_name=o6r-<slug>-<pid>` na `DATABASE_URL` e a barreira só conta as próprias conexões
+   (`tests/helpers/pg-barrier.ts`), com `tests/pg-barrier-scoped-db.test.ts` provando por decoy que bloqueio
+   alheio **não** satisfaz.
+2. **Promessa sem handler.** A promessa do perdedor podia liquidar antes de o teste anexar o handler —
+   `unhandledRejection` derrubava o processo. `captureSettled` anexa o handler na criação.
+
+**O que CONTINUA aberto nesta pendência, e o que o ciclo 2 acrescenta de dado:**
+
+- **Teardown em ABORTO.** Matar o lote no meio segue deixando fixture (a junta do ciclo 1 mediu 2 tenants,
+  2 títulos, 2 contas e 2 usuários após um kill aos 7 s). O teardown escopado das suítes só roda no caminho
+  feliz e no `finally` — um `SIGKILL` não tem `finally`. **Vedado resolver por varredura wildcard na base
+  viva** (diretriz do dono após o incidente de mass-delete): a limpeza tem de ser escopada aos ids da própria
+  execução, e higiene da base viva é decisão de junta com privilégio, nunca linha de teardown.
+- **Escrita em linha GLOBAL.** As duas suítes que faziam `permission.upsert` na mesma linha de `permissions`
+  (tabela sem `tenant_id`) passaram a só LER, com assert apontando `npm run db:seed`. Era uma fonte concreta
+  de `XX000 tuple concurrently updated`; se a classe reaparecer, **não é mais por este caminho**.
+- **A TENSÃO DE MEDIÇÃO segue sem veredito, e o ciclo 2 se proíbe de inventar a causa.** No ciclo 1, um
+  revisor mediu `npm test` **vermelho 3/3** (suítes pré-existentes, não-financeiras, `XX000`) enquanto o
+  orquestrador e outros dois mediram **verde**. O par diagnóstico que faltava foi medido no fechamento do
+  ciclo 2 e está abaixo como **dado**. Nenhum dos números do ciclo 1 vira "o errado".
+
+### O PAR DISCRIMINANTE, medido no ciclo 2 (§9.6 do plano) — head `7ba441a` + árvore de consolidação
+
+Arranjo declarado por inteiro: `npm test` (runner oficial `scripts/run-backend-tests.mjs`, que injeta
+`CORE_SAAS_PERSISTENCE=memory` quando a variável não vem exportada), máquina do dono, Postgres e Redis de
+pé, N=3 por condição, nada mais rodando em paralelo.
+
+| Condição | exit | tests | pass | fail | skipped |
+|---|---|---:|---:|---:|---:|
+| **A** — `DATABASE_URL` PRESENTE (vem do `.env`) | 0 (3/3) | 2646 | 2636 | 0 | 10 |
+| **B** — `DATABASE_URL` AUSENTE (`DOTENV_CONFIG_PATH` → `.env` vazio) | 1 (3/3) | 2391 | 2327 | 1 | 63 |
+
+**Nota metodológica que importa:** "exportada × não exportada" **não é** um par discriminante em processo —
+o `dotenv` não sobrescreve variável já presente, então nos dois casos ela termina SETADA. Para a condição B
+existir de fato foi preciso remover a FONTE (dotenv apontado para um arquivo vazio), não apenas o export.
+
+**O que o par mostra, e só isso:**
+
+1. Na condição A, a instabilidade do ciclo 1 **não reproduziu**: 3/3 verde, `fail 0`, e **zero** ocorrência de
+   `XX000` / `40P01` / `unhandledRejection` nas três saídas. Isso **não** desmente a medição vermelha do
+   revisor do ciclo 1 — é outra execução, noutra árvore, noutro momento; é dado ao lado, não veredito.
+2. Na condição B o vermelho é **determinístico e tem causa nomeada**, e ela **não é** a classe `XX000`:
+   `tests/core-saas-role-authority.test.ts` cai no carregamento com
+   `Error: DATABASE_URL is required to initialize Prisma Client.` (`src/database/prisma.ts:12`). O arquivo
+   importa o caminho Prisma **incondicionalmente** — diferente das suítes `-db`, que têm sentinela de
+   auto-skip. Reproduzido isolado pelo runner oficial: com `DATABASE_URL` → 12/12 verde; sem → 1 falha de
+   carregamento. **Defeito pré-existente e fora do escopo do B-O6R-02** (nem o teste nem
+   `src/database/prisma.ts` foram tocados pelo bloco): reportado, não corrigido.
+3. Consequência prática para quem for medir: nesta máquina **a forma publicável é a condição A**. Declarar
+   "`npm test` sem `DATABASE_URL`" como baseline produz um vermelho que nada tem a ver com o que se mede.
+
+**O que este par NÃO conclui:** nada sobre a origem do `XX000 tuple concurrently updated` do ciclo 1. A
+causa segue **não determinada**, e este registro não a atribui a nenhuma das duas condições.
+
+status: ABERTA (reduzida).
+
+## P-O6R-B02-INDISPUTE-RESTORE (2026-08-22) — estorno devolve `in_dispute` para `open`
+
+Achado menor da `J-B-O6R-02-ciclo1`. Um título em **disputa**, pago e depois estornado, volta para `open`: o
+`restorePaymentGuarded` recalcula o status a partir do `paid_amount` (`= 0 → open`, parcial →
+`partially_paid`) e não tem como saber que o estado anterior era `in_dispute`.
+
+**Por que NÃO foi corrigido neste ciclo.** Preservar o estado anterior exige (a) **coluna aditiva** que guarde
+o status pré-liquidação — e o plano do ciclo 2 é explícito: nenhuma migration nova, nenhuma coluna, nenhum
+índice — e (b) **regra de negócio** que ninguém decidiu: um título em disputa que recebe pagamento continua
+em disputa? o estorno reabre a disputa ou a encerra? São perguntas de domínio, não de implementação.
+
+Encaminhamento: **decisão do dono/junta** antes de qualquer código. status: ABERTA.
+
+## P-O6R-B02-CHEQUE-UNCLEAR (2026-08-22) — não existe des-compensar um cheque compensado por engano
+
+Consequência **declarada** do guard `cheque_entry_immutable` (C2 do ciclo 2, fecha `Ω6R-DIN-011`). Com a regra
+"movimento de cheque só se desfaz pela máquina de estados do cheque", some o único caminho que existia para
+desfazer um `clear` — o `reverse` do lançamento de compensação. E era justamente esse caminho que devolvia
+dinheiro em dobro, então tirá-lo é a correção, não o defeito.
+
+**O caso bancário real está coberto:** cheque compensado que depois volta do banco é `bounce`
+(`cleared → bounced`), que posta contra-lançamento e leva o líquido a zero. O que NÃO tem porta é o **erro de
+operação** — compensar o cheque errado. Hoje a saída é operacional (lançamento avulso de ajuste, que fica no
+razão com trilha), não uma transição de estado.
+
+Encaminhamento: se o dono/junta quiserem uma transição `cleared → deposited` (des-compensar), ela precisa de
+desenho próprio — quem pode, com que trilha, e o que acontece com a conciliação do lançamento compensado.
+Registrado para não virar surpresa em produção. status: ABERTA.
