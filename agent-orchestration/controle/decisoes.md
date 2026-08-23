@@ -1615,3 +1615,35 @@ nomeadas):
 2. `.claude/agents/especialistas/inspetor-fixtures-financeiras-legadas.md` e o espelho em `.agents/agents/` —
    artefato **legítimo do §C7.4** (a `agente-fabrica` cria 1–2 especialistas sob medida nos ciclos 1–2), que
    não estava declarado no comando. Fica declarado aqui.
+
+---
+
+## D-INSTANCIA-NOVA-COM-AUDITORIA — instância nova do mesmo papel conta como agente novo, se auditar (2026-08-23)
+
+**Decisão do dono**, respondendo a uma ambiguidade que estava **aberta e registrada**: um achador da rodada de
+governança perguntou se *"dois agentes do MESMO subagent_type em fases diferentes da mesma entrega são agentes
+distintos"*, e a §C7.4-bis só dizia que *"passes sequenciais do mesmo agente com nomes diferentes não
+satisfazem a regra"* — o que não resolvia o caso da instância nova.
+
+**A regra:** uma **instância nova** do mesmo tipo de agente **conta como agente novo** para a §C7.4-bis —
+**desde que**, quando substituir uma alçada cujo trabalho foi reprovado, sua **primeira tarefa seja auditar por
+execução as afirmações do artefato anterior**, antes de escrever qualquer coisa nova.
+
+**Por quê.** Instância nova não tem memória do trabalho anterior, então não tem o que defender — que é o
+mecanismo que a regra protege. Mas contexto limpo sozinho não basta: o artefato reprovado **continua na
+árvore**, e o novo ocupante vai lê-lo como insumo. Sem auditoria explícita, ele herda a afirmação falsa em vez
+de a derrubar — que é exatamente a pergunta (c) do §C7.4-bis (*"o planejador está usando dado podre?"*)
+acontecendo por omissão.
+
+**O caso que originou a decisão.** O plano do ciclo 2 do B-O6R-02 afirmou, no §7, que sob o drill D11 *"o helper
+de efeito acusa `net = −100`"*. A junta mediu: **não acusa nada** — o único vermelho vem de uma asserção de
+recusa, não de efeito. A correção inteira foi construída sobre essa afirmação **não executada e falsa**, e o
+planejador que a escreveu tem um resultado próprio a defender.
+
+**Consequência operacional.** Quem invoca a instância nova **declara no briefing** quais afirmações do artefato
+anterior precisam ser auditadas por execução, e a instância **reporta o resultado da auditoria antes do
+produto**. Auditoria que não roda não conta — é a mesma regra de sempre.
+
+**O que NÃO muda:** a proibição de acúmulo continua integral. Quem achou não planeja nem implementa; quem
+planejou não implementa nem vota; votante de um ciclo é inelegível para as alçadas do ciclo seguinte. Esta
+decisão trata **só** de identidade de agente, não de acúmulo de papel.
