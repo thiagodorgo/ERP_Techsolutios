@@ -5,6 +5,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import { ensurePermission } from "./helpers/db-permissions.js";
 import {
   assertApplicationNamePropagated,
   buildApplicationName,
@@ -342,11 +343,12 @@ async function startApi(h: Harness, seed: Seed) {
     import("../src/modules/core-saas/repositories/index.js"), import("../src/modules/auth/index.js"), import("../src/modules/financial-titles/financial-title.routes.js"),
   ]);
   const role = await h.client.role.create({ data: { tenant_id: seed.tenantId, key: "finance", name: `Finance ${seed.tenantId}`, scope: "tenant" } });
-  // A tabela `permissions` e GLOBAL (sem tenant_id): duas suites do lote faziam upsert na MESMA
-  // linha em paralelo — classe `XX000 tuple concurrently updated`. A chave vem do CATALOGO DO SEED
-  // (`prisma/seed.ts`), entao aqui so se LE; faltando, a mensagem diz o que fazer.
-  const permission = await h.client.permission.findUnique({ where: { key: FINANCIAL_TITLE_PERMISSIONS.update } });
-  assert.ok(permission, `permissao ${FINANCIAL_TITLE_PERMISSIONS.update} ausente do catalogo — rode npm run db:seed`);
+  // B-O6R-02 ciclo 3 · C4 (P8) — a tabela `permissions` e GLOBAL (sem tenant_id). O `upsert` de
+  // antes ESCREVIA mesmo com a linha presente (classe `XX000 tuple concurrently updated`); o
+  // `findUnique`+assert que o substituiu passou a EXIGIR seed, e o job `backend` da CI nao seeda —
+  // era o B-3. `ensurePermission` fecha as duas: le primeiro (zero escrita em regime seeded) e so
+  // cria o que faltar, sem nunca sobrescrever catalogo.
+  const permission = await ensurePermission(h.client, FINANCIAL_TITLE_PERMISSIONS.update);
   await h.client.rolePermission.create({ data: { role_id: role.id, permission_id: permission.id } });
   await h.client.userRoleAssignment.create({ data: { tenant_id: seed.tenantId, user_id: seed.userId, role_id: role.id } });
   const service = new PrismaCoreSaasService(new PrismaCoreSaasStore(h.client, new repositories.TenantRepository(h.client), new repositories.UserRepository(h.client), new repositories.RoleRepository(h.client), new repositories.UserRoleRepository(h.client), new repositories.AuditLogRepository(h.client)));

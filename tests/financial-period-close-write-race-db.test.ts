@@ -5,6 +5,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import { ensurePermission, TEST_PROVISIONED_DESCRIPTION } from "./helpers/db-permissions.js";
 import {
   assertApplicationNamePropagated,
   buildApplicationName,
@@ -293,6 +294,68 @@ if (!connectionString) {
       assert.deepEqual(material.snapshot, material.rederived);
     } finally { await teardown(h); }
   });
+
+  // ------------------------------------------------------------------ B-O6R-02 ciclo 3 · C4 (P8)
+  // A pré-condição de catálogo é da SUÍTE, não do job — e as duas propriedades que fazem isso ser
+  // seguro na tabela GLOBAL `permissions` são provadas aqui, não prometidas em comentário.
+
+  test("P8 — ensurePermission é IDEMPOTENTE e NÃO sobrescreve linha existente (zero escrita em regime seeded)", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    // Chave sintética desta execução: a prova precisa do ramo CREATE, que só existe se a linha
+    // faltar — em banco seeded nenhuma chave real cairia nele.
+    const key = `o6r_c3_probe_idem:${suffix()}`;
+    try {
+      const created = await ensurePermission(client, key);
+      assert.equal(created.key, key);
+      assert.equal(
+        (await client.permission.findUnique({ where: { key } }))?.description,
+        TEST_PROVISIONED_DESCRIPTION,
+        "linha nascida de teste é rotulada como tal",
+      );
+
+      // Sem clobber: mexemos na descrição como o seed oficial faria, e o helper NÃO pode desfazer.
+      const oficial = "descricao do catalogo oficial";
+      await client.permission.update({ where: { key }, data: { description: oficial } });
+
+      // Idempotência: N chamadas = 1 chamada. Nem cria linha nova, nem altera a existente.
+      const again = await ensurePermission(client, key);
+      const third = await ensurePermission(client, key);
+      assert.equal(again.id, created.id, "a mesma linha é devolvida, nunca uma nova");
+      assert.equal(third.id, created.id);
+      assert.equal(
+        (await client.permission.findUnique({ where: { key } }))?.description,
+        oficial,
+        "ensurePermission NUNCA sobrescreve catálogo — se a linha existe, ela é a verdade",
+      );
+      assert.equal(await client.permission.count({ where: { key } }), 1, "exatamente UMA linha para a chave");
+    } finally {
+      await client.permission.deleteMany({ where: { key } });
+      await teardown(h);
+    }
+  });
+
+  test("P8 — corrida create × create na MESMA chave: o índice único arbitra, ninguém explode, sobra UMA linha", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    const key = `o6r_c3_probe_race:${suffix()}`;
+    try {
+      // O caminho que o job `backend` percorre quando duas suítes do lote provisionam a mesma chave
+      // ausente ao mesmo tempo. Quem perde recebe P2002, relê e segue — sem `upsert`, logo sem o
+      // `XX000 tuple concurrently updated` que o ciclo 2 fechou (e sem reabri-lo).
+      const [a, b, c] = await Promise.all([
+        ensurePermission(client, key),
+        ensurePermission(client, key),
+        ensurePermission(client, key),
+      ]);
+      assert.equal(a.id, b.id, "os três concorrentes convergem para a linha do vencedor");
+      assert.equal(b.id, c.id);
+      assert.equal(await client.permission.count({ where: { key } }), 1, "a corrida não pode deixar duas linhas");
+    } finally {
+      await client.permission.deleteMany({ where: { key } });
+      await teardown(h);
+    }
+  });
 }
 
 // ---------- harness ----------
@@ -399,15 +462,14 @@ async function seedTenant(h: Harness, tag: string) {
   const papel = await client.role.create({
     data: { tenant_id: tenant.id, key: "manager", name: `Gestão ${marca}`, scope: "tenant" },
   });
-  // A tabela `permissions` e GLOBAL (sem tenant_id). Duas suites do lote faziam upsert nas MESMAS
-  // linhas em paralelo — a classe `XX000 tuple concurrently updated` registrada em
-  // P-O6R-ARNES-ISOLAMENTO. As duas chaves ja vivem no catalogo do seed (`prisma/seed.ts`), entao
-  // aqui so se LE; faltando, a mensagem diz exatamente o que rodar.
-  const permission = await client.permission.findUnique({ where: { key: FINANCIAL_ENTRY_PERMISSIONS.create } });
-  assert.ok(permission, `permissao ${FINANCIAL_ENTRY_PERMISSIONS.create} ausente do catalogo — rode npm run db:seed`);
+  // B-O6R-02 ciclo 3 · C4 (P8) — a tabela `permissions` e GLOBAL (sem tenant_id). O `upsert` de
+  // antes ESCREVIA mesmo com a linha presente (classe `XX000 tuple concurrently updated`,
+  // P-O6R-ARNES-ISOLAMENTO); o `findUnique`+assert que o substituiu passou a EXIGIR seed, e o job
+  // `backend` da CI nao seeda — era o B-3. `ensurePermission` fecha as duas: le primeiro (zero
+  // escrita em regime seeded) e so cria o que faltar, sem nunca sobrescrever catalogo.
+  const permission = await ensurePermission(client, FINANCIAL_ENTRY_PERMISSIONS.create);
   await client.rolePermission.create({ data: { role_id: papel.id, permission_id: permission.id } });
-  const titlePermission = await client.permission.findUnique({ where: { key: FINANCIAL_TITLE_PERMISSIONS.update } });
-  assert.ok(titlePermission, `permissao ${FINANCIAL_TITLE_PERMISSIONS.update} ausente do catalogo — rode npm run db:seed`);
+  const titlePermission = await ensurePermission(client, FINANCIAL_TITLE_PERMISSIONS.update);
   await client.rolePermission.create({ data: { role_id: papel.id, permission_id: titlePermission.id } });
   await client.userRoleAssignment.create({
     data: { tenant_id: tenant.id, user_id: user.id, role_id: papel.id },
