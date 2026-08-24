@@ -396,6 +396,29 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
   estado de fechamento. Nenhum erro inclui `tenant_id`, PII ou detalhe SQL.
 - O banco mantém `0 <= paid_amount <= amount`; violação SQL direta falha com SQLSTATE `23514`.
 
+**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-08-24.b-o6r-02-c3`):**
+
+A regra única das duas rotas: **lançamento vinculado a um agregado só se desfaz PELO FLUXO DO
+AGREGADO.** `DELETE /financial-entries/:id` e `POST /financial-entries/:id/reverse` recusam com
+`422 FINANCIAL_ENTRY_UNPROCESSABLE` e um `reason` que nomeia o dono do vínculo:
+
+| `reason` | Quando | Rota de saída correta |
+|---|---|---|
+| `reversal_pair_immutable` | O lançamento é contrapartida de estorno, ou (no `DELETE`) já foi estornado. | Nenhuma: o par é indivisível. |
+| `settlement_entry_immutable` | O lançamento liquida um título (`title_id` preenchido) e a rota é `DELETE`. | `POST /:id/reverse` — devolve o pagamento ao título na MESMA unidade. |
+| `cheque_entry_immutable` | O lançamento é ponta de um cheque ativo (`cleared_entry_id` ou `bounce_entry_id`), em qualquer das duas rotas. | `POST /cheques/:id/bounce` — a máquina de estados do cheque. |
+
+**Precedência pública, por rota** (a IDENTIDADE do lançamento decide antes da HISTÓRIA dele; um
+tenant estranho recebe `404` antes de qualquer regra financeira):
+
+- `DELETE`: `404 entry_not_found` → `422 entry_reconciled` → `422 reversal_pair_immutable` →
+  `422 settlement_entry_immutable` → `422 cheque_entry_immutable` → `422 period_closed`.
+- `reverse`: `404 entry_not_found` → `422 entry_reconciled` → `422 reversal_pair_immutable` →
+  `422 cheque_entry_immutable` → `409 already_reversed` → `422 period_closed`.
+
+`reverse` de uma liquidação é **permitido** — é o fluxo do agregado título, e devolve o pagamento na
+mesma unidade da contrapartida. Nenhum destes erros inclui `tenant_id`, PII nem detalhe SQL.
+
 ### 3.12 Custódia / Pátios de Recolhimento (SIGPRV — Ω5P)
 
 Fontes: `yard/`, `jurisdiction/`, `tariffs/`, `impound/`, `charging/`, `release/`, `auction/`.

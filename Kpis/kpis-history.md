@@ -2202,3 +2202,68 @@ duas condicoes.
 corrigidos na autoria e em **aguardando_merge** — nenhum conta como corrigido na main. `pr`, `merge_commit` e
 `approved_head` seguem `null`; `mvp_demo`/`mvp_vendavel` intocados. Deploy segue bloqueado pela J-6R e o gate
 `G-A109FD7-PUBLICADO` continua bloqueando push/PR/merge.
+
+## 2026-08-24 - B-O6R-02 ciclo 3 — as quatro PROPRIEDADES, nao mais os exemplares
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | 2717 / 2719 (0 fail, 2 pulos) — forma canonica 3: banco descartavel SO-MIGRADO, sem seed |
+| Backend, mesmo arranjo ANTES do ciclo | 2651 / 2659 com **6 fail** — as seis eram o B-3 |
+| Focados | 277 / 277 (64 titulos + 73 lancamentos + 45 cheques + 12 helper de razao + 3 censo + 35 harness do journal + 45 PostgreSQL) |
+| Lote na forma exata do job | 15 / 15 verde, denominador constante **193**, zero sujeira |
+| Flutter | 864 / 864 — carregado, trilha nao tocada |
+| Frontend Smoke | 1126 / 1126 — carregado, trilha nao tocada |
+| Blocos mergeados | 151 — B-O6R-02 ainda nao entrou na main |
+
+A junta `J-B-O6R-02-ciclo2` reprovou 3x2 com uma frase que governa este ciclo inteiro: **"os defeitos do
+ciclo 1 estao fechados; a CLASSE que os gerou, nao."** O ciclo 1 fechou o B-2 acrescentando o membro que
+faltava a uma lista escrita a mao — e por isso o ciclo 2 reprovou pelo mesmo motivo. Aqui mudam as
+propriedades; os patches sao consequencia.
+
+- **P6 (fecha B-1)** — o invariante de efeito do cheque passa a somar o **fecho por estorno** dos lancamentos
+  vivos alcancaveis a partir das pontas, e a selecao acontece DENTRO do helper. A raiz nao era a formula, era
+  a **fronteira de confianca**: a contrapartida do estorno nasce SEM vinculo com o cheque (liga-se ao original
+  por `reversal_of`), entao nenhum dos dois carregadores a enxergava e o helper somava so a compensacao —
+  +100, o valor esperado, verde perfeito sobre metade do razao. As tres copias do carregador (memoria, HTTP e
+  Postgres) pararam de selecionar e passaram a asserir a propria promessa de completude; os checkpoints de
+  ataque foram re-armados com **captura liquidada**, porque era o `assert.rejects` que abortava o caso antes
+  de o helper chegar a rodar. Suite nova do PROPRIO helper (12 casos sinteticos), que o ciclo 2 nunca teve.
+- **P5 (fecha B-2)** — vinculo de agregado fail-closed **por construcao**, e em `src/` por restricao MEDIDA:
+  `npm run check` so compila `src/**`, logo um `satisfies` escrito em arquivo de teste nao e conferido por
+  build nenhum. Classificacao total dos campos do lancamento e do cheque; politicas celula a celula por dono
+  x rota, sem `else`; ordens de precedencia como dado com igualdade de uniao; **fonte unica** das duas pontas
+  do cheque consumida pelas DUAS copias de repositorio (o literal escrito a mao morreu dos dois lados); censo
+  do schema por texto, fail-closed nas duas bocas.
+- **P7** — os tres contratos de repositorio ganham mapa `write`/`read`/`test_reset` exaustivo pelo compilador,
+  e a classificacao passa a ser julgada **por execucao**: cada membro e exercido dentro de uma unidade que
+  ABORTA, e o estado dos tres repositorios tem de voltar identico. 30 membros exercidos + 3 `test_reset`
+  asseverados ausentes do contexto.
+- **P8 (fecha B-3)** — a pre-condicao de catalogo volta ao padrao da casa (auto-provisionar, idempotente e sem
+  clobber, sem reabrir a classe `XX000` do upsert), e o job `backend` **permanece seedless de proposito**,
+  porque e o detector permanente: qualquer suite futura que volte a assumir catalogo pronto fica vermelha no
+  primeiro PR que rodar CI.
+
+Drills **D15-D20**, cada um com baseline verde medido, mutacao vermelha com exit code anexado e restauracao
+conferida por **md5**. O controle mais forte e o do D15: o helper ANTIGO (md5 `88ede9ef597a272e35b7a18178858a1c`),
+sobre o **mesmo estado** e na **mesma execucao**, fica VERDE nos dois checkpoints do D11 enquanto o novo fica
+VERMELHO — a cegueira do B-1 reproduzida e fechada lado a lado. **D10/D11/D12 re-executados** sobre o codigo
+refatorado, para provar que o refactor de enumeracao nao afrouxou guard nenhum.
+
+**Achado de medicao desta rodada, corrigido pelo proprio autor antes da junta:** `node --test <arquivo
+inexistente> <arquivos validos>` sai com **exit 0 e descarta o inexistente em silencio**. Por isso um
+contraste do D19a publicado durante a autoria estava errado — nao incluia `financial-uow-memory.test.ts`. A
+medicao corrigida esta no `log-execucao`: as suites pre-existentes sao cegas a `titles.restorePaymentGuarded`
+(190/190 verde sob a mutacao, que e exatamente o membro do ataque do ciclo 2) mas **nao** a
+`cheques.transition`, que ja tinha guarda.
+
+Ressalva de arranjo registrada **sem conclusao causal**: no worktree isolado nao existe `.env`, entao
+`DATABASE_URL` esta genuinamente ausente e `npm test` na forma canonica 1 da 2445/2381/**1 fail**/63 skip. A
+falha e `tests/core-saas-role-authority.test.ts`, que quebra no LOAD do modulo porque `src/database/prisma.ts`
+exige a variavel — **pre-existente** (medida identica no head da branch antes de qualquer alteracao deste
+ciclo) e ja registrada em `P-O6R-ARNES-ISOLAMENTO` pelo ciclo 2.
+
+Nenhum achado muda de status: a junta 5/5 do ciclo 3 ainda **nao ocorreu**. `pr`, `merge_commit` e
+`approved_head` seguem `null`; `mvp_demo`/`mvp_vendavel` intocados; `blocks_completed` inalterado. Deploy segue
+bloqueado pela J-6R e o gate `G-A109FD7-PUBLICADO` continua bloqueando push/PR/merge.

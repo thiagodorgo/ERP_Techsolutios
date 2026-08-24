@@ -1,6 +1,62 @@
 # Status Geral
 
+## Atualização 2026-08-24 — B-O6R-02 ciclo 3: as QUATRO propriedades implementadas
+
+### Status
+
+Ciclo 3 na branch `feat/o6r-b02-financial-uow`. Não houve push/PR/merge: o gate
+`G-A109FD7-PUBLICADO` permanece aberto. A junta 5/5 do ciclo 3 ainda não ocorreu — nenhum achado muda de
+status até ela ficar verde.
+
+O eixo do ciclo é a frase do votante que reprovou o ciclo 2: **"os defeitos do ciclo 1 estão fechados; a
+classe que os gerou, não."** O ciclo 1 fechou o B-2 acrescentando o membro que faltava a uma lista escrita à
+mão, e por isso o ciclo 2 reprovou pelo mesmo motivo. Este ciclo muda as propriedades, não os exemplares.
+
+### Entregue na autoria (por propriedade)
+
+- **P6 (fecha B-1)** — o invariante de efeito do cheque soma o **fecho por estorno** dos lançamentos vivos
+  alcançáveis pelas pontas, e a seleção acontece DENTRO do helper. A raiz era a fronteira de confiança: a
+  contrapartida do estorno nasce sem vínculo com o cheque, então nenhum dos dois carregadores a via, e o
+  helper somava metade do razão dando verde. As três cópias do carregador (memória, HTTP, Postgres) pararam
+  de selecionar e passaram a asserir a própria promessa de completude. Suíte nova do PRÓPRIO helper, que o
+  ciclo 2 nunca teve.
+- **P5 (fecha B-2)** — vínculo de agregado fail-closed **por construção**, em `src/` (restrição medida:
+  `npm run check` só compila `src/**`, então cerca escrita em teste não é conferida por build nenhum).
+  Classificação total dos campos, políticas célula a célula por dono × rota, ordens de precedência como dado
+  com igualdade de união, fonte única das duas pontas do cheque consumida pelas duas cópias, e censo do
+  schema (texto, fail-closed nas duas bocas).
+- **P7 (fecha o correlato ALTA do B-2)** — os três contratos de repositório têm mapa de classificação
+  `write`/`read`/`test_reset` com exaustividade pelo compilador, e a classificação é julgada por **harness
+  empírico**: cada membro é exercido dentro de uma unidade que aborta, e o estado tem de voltar idêntico.
+- **P8 (fecha B-3)** — a pré-condição de catálogo volta ao padrão da casa (auto-provisionar, idempotente e
+  sem clobber), e o job `backend` **permanece seedless de propósito**, porque é o detector permanente.
+
+### Validação de autoria (N e FORMA declarados; exit code por variável, nunca por pipe)
+
+- `npm run check` · `npm run lint` · `npm run build` · `npm --prefix frontend run check`: **exit 0**.
+- **Forma canônica 3** (o arranjo do job `backend`: banco descartável, `prisma migrate deploy`, SEM seed,
+  `DATABASE_URL`/`REDIS_URL`/`CORE_SAAS_PERSISTENCE=memory` exportados), medida no MESMO arranjo antes e
+  depois: **antes 2659 · 2651 pass · 6 fail · 2 skip** (as 6 falhas eram o B-3, todas "ausente do catalogo")
+  → **depois 2719 · 2717 pass · 0 fail · 2 skip**. Delta +60 casos novos, +66 pass, −6 fail.
+- Drills **D15–D20** e **D10/D11/D12 re-executados sobre o código refatorado**: cada mutação vermelha com
+  exit registrado, cada restauração conferida por **md5**, e cada uma com controle provando que não estava
+  vermelha antes.
+- Ressalva de arranjo, registrada sem conclusão causal: no worktree isolado não existe `.env`, então
+  `DATABASE_URL` está genuinamente ausente e `tests/core-saas-role-authority.test.ts` falha no load do módulo
+  (`src/database/prisma.ts` exige a variável). É **pré-existente** — medida idêntica no head da branch antes
+  de qualquer alteração deste ciclo — e desaparece assim que `DATABASE_URL` existe (forma canônica 3, exit 0).
+
+### O que NÃO mudou de status
+
+Os achados (`DIN-002/010/011` e irmãos) seguem exatamente como estavam: nada muda até a junta 5/5 do ciclo 3
+ficar verde. Deploy segue bloqueado pela J-6R. O gate `G-A109FD7-PUBLICADO` segue bloqueando push/PR/merge.
+
 ## Atualização 2026-08-20 — B-O6R-02 F6 em `aguardando_merge`
+
+> **SUPERADA (reconciliação do ciclo 3, 2026-08-24).** Os números desta seção são os do **ciclo 1**, que a
+> junta 5/5 **REPROVOU** (`J-B-O6R-02-ciclo1`), e seguiram publicados aqui como se fossem o estado da branch —
+> achado da ata do ciclo 2. Ficam preservados como registro histórico (rastreabilidade entre agentes é regra,
+> §A4/§A6); o estado corrente é a seção de 2026-08-24 acima.
 
 ### Status
 

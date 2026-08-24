@@ -1,6 +1,6 @@
 {
-  "snapshot_date": "2026-08-20",
-  "version": "B-O6R-02-F6-AUTORIA",
+  "snapshot_date": "2026-08-24",
+  "version": "B-O6R-02-CICLO3-AUTORIA",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
@@ -10,8 +10,8 @@
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "CICLO 2, após a junta 5/5 REPROVAR o ciclo 1 (J-B-O6R-02-ciclo1). Os quatro bloqueantes foram fechados: (B-1/B-2) apagar o lançamento de uma liquidação era aceito — o caixa sumia e o título continuava pago, sem rota de saída; agora RECUSA (422 settlement_entry_immutable) e desfazer é só pelo reverse, que devolve na mesma unidade. (B-3) o lançamento de compensação de cheque podia ser estornado por fora da máquina de estados e o bounce seguinte devolvia de novo — 200 num cheque de 100; agora recusa (422 cheque_entry_immutable) nas duas portas, e a invariante nos testes passa a ser de EFEITO (net do razão), não de existência de linha. (B-5) as barreiras das suítes eram cluster-wide num job que roda 29 arquivos em paralelo, e promessas seguradas por awaits podiam rejeitar sem handler; agora a barreira é escopada por application_name, com controle negativo permanente por decoy, e o handler é anexado na criação. (B-4) CLAUDE.md e AGENTS.md saíram do PR e voltaram ao origin/main, com a divergência do §C7.4-bis registrada em decisoes.md sem consolidação silenciosa. Dois achados NOVOS nasceram e foram corrigidos na autoria: Ω6R-DIN-010 e Ω6R-DIN-011; Ω6R-DIN-002 foi reaberto e voltou a aguardando_merge. Nenhum conta como corrigido na main. Deploy segue bloqueado pela J-6R.",
-    "status_label": "Ciclo 2 em 22/08/2026 — aguardando gate, PR, junta e merge"
+    "summary": "CICLO 3, apos a junta 5/5 REPROVAR o ciclo 2 (J-B-O6R-02-ciclo2). O eixo e a frase do votante: \"os defeitos do ciclo 1 estao fechados; a CLASSE que os gerou, nao\". O ciclo 1 fechou o B-2 acrescentando o membro que faltava a uma lista escrita a mao, e por isso o ciclo 2 reprovou pelo mesmo motivo. Este ciclo muda quatro PROPRIEDADES, nao exemplares. (P6, fecha B-1) o invariante de efeito do cheque passa a somar o FECHO POR ESTORNO dos lancamentos vivos alcancaveis pelas pontas, com a selecao DENTRO do helper: a raiz nao era a formula, era a fronteira de confianca — a contrapartida do estorno nasce sem vinculo com o cheque, entao nenhum dos dois carregadores a via e o helper somava metade do razao dando verde. As tres copias do carregador (memoria, HTTP, Postgres) pararam de selecionar e asserem a propria promessa de completude; os checkpoints de ataque foram re-armados com captura liquidada (o razao e julgado ANTES do desfecho — era o assert.rejects que abortava o caso antes de o helper rodar). (P5, fecha B-2) vinculo de agregado fail-closed POR CONSTRUCAO, e em `src/` por restricao MEDIDA (`npm run check` so compila src/**, logo cerca escrita em teste nao e conferida por build nenhum): classificacao total dos campos, politicas celula a celula por dono x rota sem `else`, ordens de precedencia como dado com igualdade de uniao, fonte unica das duas pontas do cheque consumida pelas DUAS copias de repositorio, e censo do schema por texto com fail-closed nas duas bocas. (P7) os tres contratos de repositorio ganham mapa write/read/test_reset exaustivo pelo compilador, e a classificacao passa a ser julgada POR EXECUCAO: cada membro e exercido dentro de uma unidade que aborta e o estado tem de voltar identico. (P8, fecha B-3) a pre-condicao de catalogo volta ao padrao da casa (auto-provisionar idempotente e sem clobber, sem reabrir a classe XX000 do upsert), e o job `backend` PERMANECE seedless de proposito porque e o detector permanente. Nenhum achado muda de status: a junta 5/5 do ciclo 3 ainda nao ocorreu. Deploy segue bloqueado pela J-6R e o gate G-A109FD7-PUBLICADO continua bloqueando push/PR/merge.",
+    "status_label": "Ciclo 3 em 24/08/2026 — aguardando gate, PR, junta e merge"
   },
   "metrics": {
     "flutter_tests": {
@@ -27,16 +27,16 @@
       "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).]"
     },
     "backend_tests": {
-      "value": 2636,
-      "total": 2646,
-      "display": "2636/2646",
-      "note": "Execução real do CICLO 2 do B-O6R-02 (arranjo declarado: `npm test` pelo runner oficial, que injeta CORE_SAAS_PERSISTENCE=memory; DATABASE_URL presente via .env; N=3, resultado idêntico nas três): 2646 total · 2636 pass · 0 fail · 10 pulos DB-gated. Era 2627/2617/10 no ciclo 1 — os +19 casos são os 17 novos do ciclo 2 mais 2 que fecham lacunas de cobertura dos helpers. Suítes PostgreSQL passaram de 5 para 6 arquivos (entrou o controle negativo da barreira) e de 32 para 39 casos, zero skip, isoladas 4+8+6+15+4+2. LOTE NA FORMA EXATA DO JOB (29 arquivos, um único node --test, db:seed antes, pipefail): 15/15 VERDE, denominador constante 187 em todas as iterações, zero skip e zero unhandledRejection/XX000/23505/40P01 — no ciclo 1 esse mesmo arranjo dava 1 falha em 15. Drills D10–D14: cada mutação ficou vermelha com exit 1 e a restauração (conferida por md5) voltou ao verde."
+      "value": 2717,
+      "total": 2719,
+      "display": "2717/2719",
+      "note": "Execucao real do CICLO 3, FORMA CANONICA 3 declarada (o arranjo do job `backend` da CI): banco PostgreSQL DESCARTAVEL recem-criado, `npx prisma migrate deploy`, SEM seed, e DATABASE_URL/REDIS_URL/CORE_SAAS_PERSISTENCE=memory exportados; exit code lido de variavel, nunca de pipe. Resultado: 2719 total, 2717 pass, 0 fail, 2 skip. O MESMO arranjo, medido no head da branch ANTES das correcoes deste ciclo, dava 2659 total / 2651 pass / 6 FAIL / 2 skip — as 6 falhas eram o B-3 (todas 'ausente do catalogo'). Delta: +60 casos novos, +66 pass, -6 fail. Os +60 sao exatamente 12 (suite nova do helper de razao) + 3 (censo do schema) + 35 (harness de classificacao do journal) + 4 (tabela por ponta em memoria) + 4 (tabela por ponta em Postgres) + 2 (casos do ensurePermission). NAO comparavel linha a linha com os 2646 do ciclo 2: aquele numero foi medido com DATABASE_URL vindo do .env, apontando para o banco de desenvolvimento (seeded, com dados), e com 10 pulos DB-gated; este e um banco descartavel so-migrado com 2 pulos. A comparacao que vale e a de mesmo arranjo, acima. FORMA CANONICA 1 (`npm test` SEM DATABASE_URL): 2445 total, 2381 pass, 1 fail, 63 skip. A falha e `tests/core-saas-role-authority.test.ts`, que quebra no LOAD do modulo porque `src/database/prisma.ts` exige a variavel — PRE-EXISTENTE (medida identica no head da branch antes de qualquer alteracao deste ciclo) e ja registrada em P-O6R-ARNES-ISOLAMENTO pelo proprio ciclo 2. Registrada como arranjo, SEM conclusao causal. FORMA CANONICA 2 — o lote na forma EXATA do job roteado da CI: `npm run db:seed` antes, um UNICO `node --test --import tsx` sobre a lista SUITES completa (29 arquivos), contra banco PostgreSQL descartavel SEEDED, N=15 iteracoes, exit code por variavel. Resultado: 15/15 verdes, denominador CONSTANTE 193 em todas as 15 iteracoes (193 = os 187 do ciclo 2 + os 4 casos novos da tabela por ponta em Postgres + os 2 do ensurePermission), 191 pass e 2 skip estaveis, e ZERO ocorrencia de unhandledRejection/XX000/23505/40P01 em qualquer iteracao. Suite isolada continua valendo como diagnostico, mas nao como evidencia de estabilidade."
     },
     "backend_contract_tests_focused": {
-      "value": 240,
-      "total": 240,
-      "display": "240/240",
-      "note": "Bateria focada do ciclo 2, composição DECLARADA e ampliada: financial-titles memória+rotas 64+15=79; financial-entries 73; cheques 41; dublê de UoW em memória 8; seis suítes PostgreSQL 39. Total 79+73+41+8+39=240, zero fail/skip. A composição do ciclo 1 era 79+67+32=178 e NÃO é comparável linha a linha: a mesma composição de então daria 79+73+39=191 hoje, e o ciclo 2 passa a incluir cheques e o dublê de UoW porque o C2 e o M1 mexeram exatamente neles."
+      "value": 277,
+      "total": 277,
+      "display": "277/277",
+      "note": "Bateria focada do ciclo 3, composicao DECLARADA e medida ARQUIVO A ARQUIVO (isolado, exit por variavel): memoria = financial-titles 64 + financial-entries 73 + cheques 45 + financial-ledger-helper 12 (NOVA) + financial-entry-link-census 3 (NOVA) + financial-uow-journal-classification 35 (NOVA) = 232; Postgres = cheque-clear-bounce-atomic 10 + financial-entry-reverse-restore 8 + financial-pay-title-atomic 4 + financial-period-close-write-race 6 + financial-title-invariants 15 + pg-barrier-scoped 2 = 45. Total 232+45 = 277, zero fail, zero skip. NAO comparavel linha a linha com os 240 do ciclo 2: a composicao mudou (entram as tres suites novas; sai o duble de UoW de memoria, que o ciclo 3 nao tocou). ACHADO DE MEDICAO desta rodada, registrado porque muda como se le numero de suite neste repositorio: `node --test <arquivo inexistente> <arquivos validos>` sai com exit 0 e DESCARTA o inexistente EM SILENCIO — foi medindo arquivo a arquivo que se descobriu que `tests/financial-uow.test.ts` nao existe (o certo e `financial-uow-memory.test.ts`) e que ele vinha sendo silenciosamente ignorado. A correcao do numero afetado esta no log-execucao."
     },
     "flutter_modules": {
       "value": 17,
@@ -153,7 +153,7 @@
     "as_of": "2026-08-19",
     "source": "docs/revisoes/O6R/achados.jsonl",
     "aguardando_merge": [],
-    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
+    "nota_aguardando": "Conserto escrito e em revisao, ainda NAO na main. Nao conta como corrigido: a junta ainda pode reprovar — e reprovou os ciclos 1 E 2 deste bloco. O ciclo 3 ainda nao foi a junta."
   },
   "findings": {
     "as_of": "2026-08-20",
@@ -696,7 +696,7 @@
     ]
   },
   "series_breaks": {
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-24",
     "source": "Kpis/kpis-history.json — os dois casos estão descritos no campo description do próprio registro",
     "nota": "Pontos em que a RÉGUA mudou: ou a métrica passou a medir outra coisa, ou ficou sem ser relida enquanto o trabalho acontecia. Nos dois casos, ligar os lados com uma linha contínua afirmaria um crescimento de um dia que não houve. Declarado aqui, e não inferido por tamanho do salto, porque salto grande também pode ser trabalho real de verdade.",
     "itens": [
@@ -713,6 +713,13 @@
         "de": 44,
         "para": 378,
         "motivo": "O 44 era a contagem completa e real em 05/07 — a suíte do console web tinha 5 arquivos. Entre 05/07 e 13/07 nenhuma entrega releu a métrica: quatro registros repetiram o 44 enquanto a suíte crescia para 62 arquivos. O 378 é a releitura. O salto é trabalho real que a régua só registrou no fim."
+      },
+      {
+        "serie": "backend_tests",
+        "data": "2026-08-24",
+        "de": 2636,
+        "para": 2717,
+        "motivo": "A REGUA do arranjo mudou. Ate o ciclo 2 o numero vinha de `npm test` com DATABASE_URL do .env apontando para o banco de desenvolvimento (seeded, com dados) e 10 pulos DB-gated. No ciclo 3 ele vem da FORMA CANONICA 3 — banco descartavel so-migrado, sem seed, que e o arranjo do job `backend` da CI — com 2 pulos. Ligar os dois lados com uma linha continua afirmaria um crescimento que em parte e mudanca de arranjo. O crescimento REAL, medido no MESMO arranjo antes e depois do ciclo, e 2651 -> 2717 aprovados (+60 casos no denominador, de 2659 para 2719), e as 6 falhas do arranjo anterior foram a zero."
       }
     ]
   }

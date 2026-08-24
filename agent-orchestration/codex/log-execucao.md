@@ -3735,7 +3735,101 @@ novo), `listAllPendingApprovals` no approval.service e testes frontend.
 
 ---
 
+## 2026-08-24 — B-O6R-02 ciclo 3: as quatro propriedades (P5–P8), autoria
+
+### Papel e alçada
+
+Registro de AUTORIA do desenvolvedor do ciclo 3. Não escrevi o plano, não achei os defeitos e não voto
+(§C7.4-bis: quem acha não conserta, quem planeja não desenvolve). O plano seguido é
+`B-O6R-02-ciclo3-plano.md`; a junta 5/5 do ciclo 3 ainda não ocorreu.
+
+### Implementado (por propriedade, não por arquivo)
+
+- **P6** — invariante de efeito do cheque passa a somar o **fecho por estorno** dos lançamentos vivos
+  alcançáveis pelas pontas, com a seleção DENTRO do helper. As três cópias do carregador (memória, HTTP,
+  Postgres) pararam de selecionar e asserem a própria promessa de completude do razão. Checkpoints de ataque
+  re-armados com **captura liquidada** (o razão é julgado antes do desfecho — era o `assert.rejects` que
+  abortava o caso antes do helper rodar). Suíte nova do próprio helper: 12 casos sintéticos.
+- **P5** — vínculo de agregado fail-closed **por construção**, em `src/` (medido: `npm run check` só compila
+  `src/**`; cerca em arquivo de teste não é conferida por build). Classificação total dos campos do
+  lançamento e do cheque; políticas célula a célula por dono × rota, sem `else`; ordens de precedência como
+  dado, com igualdade de união; fonte única das duas pontas consumida pelas DUAS cópias de repositório;
+  censo do schema por texto, fail-closed nas duas bocas; tabela de testes por ponta × rota × arranjo,
+  derivada da fonte única.
+- **P7** — mapas de classificação `write`/`read`/`test_reset` dos três contratos, exaustivos pelo compilador,
+  mais harness que julga a classificação POR EXECUÇÃO (membro exercido dentro de unidade que aborta; estado
+  tem de voltar idêntico). 30 membros write/read + 3 `test_reset` asseverados ausentes do contexto.
+- **P8** — `ensurePermission`: lê primeiro (zero escrita em regime seeded, preservando o ganho do ciclo 2),
+  cria só o que falta, trata P2002 relendo, **nunca** faz update. O job `backend` permanece SEM seed de
+  propósito: é o detector permanente.
+
+### Validação executada (N e FORMA declarados; exit code por variável, nunca por pipe)
+
+- `npm run check` · `npm run lint` · `npm run build` · `npm --prefix frontend run check`: **exit 0**.
+- **Forma canônica 3** (arranjo do job `backend`: banco descartável, `migrate deploy`, SEM seed,
+  `DATABASE_URL`/`REDIS_URL`/`CORE_SAAS_PERSISTENCE=memory` exportados), medida no MESMO arranjo antes e
+  depois: **2659 · 2651 pass · 6 fail · 2 skip** → **2719 · 2717 pass · 0 fail · 2 skip**.
+- **Forma canônica 1** (`npm test` sem `DATABASE_URL`; no worktree isolado não há `.env`, logo a variável está
+  genuinamente ausente): 2445 · 2381 pass · **1 fail** · 63 skip. A falha é
+  `tests/core-saas-role-authority.test.ts`, que quebra no LOAD do módulo porque `src/database/prisma.ts` exige
+  `DATABASE_URL`. **Pré-existente**: medida idêntica (1 fail, mesmo arquivo) no head da branch antes de
+  qualquer alteração deste ciclo. Registrada como arranjo, **sem conclusão causal** (§9.10).
+- **Drills D15–D20**, cada um com baseline verde medido antes, vermelho com exit registrado, restauração
+  conferida por **md5** e controle provando que a mutação não estava vermelha antes. O D15 carrega o
+  controle mais forte: o helper ANTIGO (md5 `88ede9ef597a272e35b7a18178858a1c`), sobre o MESMO estado e na
+  MESMA execução, fica VERDE nos dois checkpoints do D11 enquanto o novo fica VERMELHO.
+- **D10/D11/D12 re-executados sobre o código refatorado** (as células de política são a nova casa dos
+  guards): controle 182/182 verde antes de cada um; cada mutação matou os casos certos; restauração por md5.
+
+### CORREÇÃO DE MEDIÇÃO — o contraste do D19a publicado no commit `48c2102` estava errado
+
+Corrijo aqui, antes da junta, um número que eu mesmo publiquei. A regra do ciclo é que nenhuma afirmação
+sobre comportamento vale sem execução; esta foi executada, mas a execução media MENOS do que eu disse que
+media. Corrigir em silêncio seria repetir a classe de defeito do ciclo 2.
+
+**O erro:** passei `tests/financial-uow.test.ts` na lista de arquivos do `node --test`. **Esse arquivo não
+existe** — o correto é `tests/financial-uow-memory.test.ts`. Medido:
+
+- `node --test <arquivo inexistente>` **sozinho** → exit 1, `Could not find 'tests/financial-uow.test.ts'`.
+- `node --test <arquivo inexistente> <arquivos válidos>` → **exit 0, sem uma linha de aviso**: o arquivo é
+  descartado em silêncio e a suíte roda só com o resto.
+
+Logo, o contraste do D19a **nunca incluiu a suíte de memória da UoW** — justamente a que exercita o journal.
+Quem expôs isso foi a medição de composição POR ARQUIVO (§6 do plano, "N por arquivo"), na linha
+`[memoria] financial-uow: exit=1 tests= pass= fail= skip=`. (O repositório já conhece esta classe: o
+`scripts/run-backend-tests.mjs` existe porque `npm test` podia "passar" sem executar nada, e guarda contra
+"zero arquivo casado". A armadilha me pegou por fora do runner, chamando `node --test` direto.)
+
+**O que eu afirmei em `48c2102`:** *"suítes PRE-EXISTENTES sem o harness: exit=0, 182/182 VERDE — a mesma
+cegueira que a junta mediu como 203/203"*. Errado em dois pontos: o denominador não incluía a suíte da UoW,
+e a conclusão não se sustenta para uma das duas mutações.
+
+**Medição correta** (controle 190/190 verde antes de cada mutação; restore conferido por md5
+`b596b1300ce386cebe7e0131150c993a`):
+
+| Mutação (delegação pura) | Suítes PRÉ-EXISTENTES | Harness novo (P7) |
+|---|---|---|
+| `titles.restorePaymentGuarded` **sozinha** | **exit 0 — 190/190 VERDE (cegas)** | exit 1, nomeando `[P7][titles.restorePaymentGuarded]` |
+| `cheques.transition` | **exit 1 — 1 falha** ("undo-log do cheque: work que lança depois da transição devolve o cheque ao estado anterior") | exit 1, nomeando `[P7][cheques.transition]` |
+
+**A conclusão que sobrevive, mais precisa que a original:** a cegueira das suítes pré-existentes é
+específica de `titles.restorePaymentGuarded` — exatamente o membro que a junta do ciclo 2 usou no ataque, e
+exatamente o membro cuja des-journalização produzia verde total. `cheques.transition` já tinha guarda em
+`financial-uow-memory.test.ts`, e eu não deveria ter dito que não tinha. O harness do P7 pega **os dois**,
+nomeando cada membro, sem depender de alguém ter lembrado de escrever um caso por mutador — ele itera os
+mapas classificados em `src/`. Todos os demais números de `48c2102` permanecem válidos.
+
+### Gate
+
+Sem push, PR ou merge. `G-A109FD7-PUBLICADO` continua bloqueando publicação. Nenhum achado muda de status
+até a junta 5/5 do ciclo 3 ficar verde.
+
 ## 2026-08-20 — B-O6R-02 F6 autoria finalizada, aguardando gate de publicação
+
+> **SUPERADA (reconciliação do ciclo 3, 2026-08-24).** Os números abaixo (2617/2627, focados 178/178, lote
+> 10/10, D4/D5/D8) são os do **ciclo 1**, REPROVADO pela junta 5/5 `J-B-O6R-02-ciclo1`, e seguiram publicados
+> como se descrevessem a branch — achado da ata do ciclo 2. Preservados como histórico; o estado corrente é a
+> entrada de 2026-08-24 acima.
 
 ### Implementado
 
