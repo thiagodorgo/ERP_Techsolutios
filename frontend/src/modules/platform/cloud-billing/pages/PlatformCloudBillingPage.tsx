@@ -106,7 +106,8 @@ export function PlatformCloudBillingPage() {
         {KPIS.map((k) => (
           <div key={k.label} style={card}>
             <div style={{ fontSize: 11.5, color: "#94A3B8", fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.4px", marginBottom: 6 }}>{k.value}</div>
+            {/* tabular-nums: dígitos de largura fixa alinham os 8 KPIs da grade 4×2 entre si. */}
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.4px", marginBottom: 6, fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 11.5, color: k.noteColor }}>{k.note}</span>
               <span style={badge(k.badgeBg, k.badgeColor)}>{k.badge}</span>

@@ -13,8 +13,9 @@ import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
 import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
 import { runAdvance, runRevokeConfirm, runRevokeDiscovery, type RevokeTarget } from "../work-orders-row.handlers";
 import { isWorkOrderDelayed, WORK_ORDER_STATUS_LABEL } from "../work-orders-row.logic";
+import { PRIORITY_TONE, WORK_ORDER_PRIORITY_LABEL, WORK_ORDER_STATUS_TONE } from "../work-orders-tone";
 import { useWorkOrders } from "../useWorkOrders";
-import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus, WorkOrdersFilters } from "../work-orders.types";
+import type { WorkOrderListItem, WorkOrderStatus, WorkOrdersFilters } from "../work-orders.types";
 
 // "Ordens de Serviço" (lista) — PR-B TELAS PADRONIZADAS. Reproduz o bloco `sc_os` do protótipo
 // "ERP Web - Telas Padronizadas.dc.html" com os DADOS REAIS do módulo (useWorkOrders + adapters).
@@ -28,38 +29,12 @@ import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus, WorkOrdersF
 //  · "atualizado há X min" do design omitido: o hook não expõe timestamp real de atualização.
 //  · "Concluídas hoje" do design → "Concluídas" no total da lista (sem recorte diário real).
 
-// Cor por status; o RÓTULO vem da fonte única WORK_ORDER_STATUS_LABEL (work-orders-row.logic) — sem
-// duas verdades de rótulo (condição fid J-Ω3F-9). Tons do design (sc_os): Aberta EFF6FF/2563EB ·
-// Em campo DCFCE7/15803D · risco FEE2E2/B91C1C · Concluída F1F5F9/475569; status reais fora do
-// design usam a família semântica mais próxima (pausada → âmbar).
-const STATUS_TONE: Record<WorkOrderStatus, { bg: string; fg: string }> = {
-  open: { bg: "#EFF6FF", fg: "#2563EB" },
-  assigned: { bg: "#EFF6FF", fg: "#2563EB" },
-  accepted: { bg: "#EFF6FF", fg: "#2563EB" },
-  on_route: { bg: "#DCFCE7", fg: "#15803D" },
-  on_site: { bg: "#DCFCE7", fg: "#15803D" },
-  in_progress: { bg: "#DCFCE7", fg: "#15803D" },
-  paused: { bg: "#FEF3C7", fg: "#B45309" },
-  completed: { bg: "#F1F5F9", fg: "#475569" },
-  cancelled: { bg: "#FEE2E2", fg: "#B91C1C" },
-  rejected: { bg: "#FEE2E2", fg: "#B91C1C" },
-};
-
-const PRIORITY_LABEL: Record<WorkOrderPriority, string> = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-  urgent: "Urgente",
-};
-
-// Dot + cor do texto de prioridade (design: Alta DC2626/B91C1C · Média F59E0B/B45309 · Baixa
-// 94A3B8/64748B). "Urgente" não existe no design → família vermelha (a mais próxima), rótulo real.
-const PRIORITY_TONE: Record<WorkOrderPriority, { dot: string; fg: string }> = {
-  low: { dot: "#94A3B8", fg: "#64748B" },
-  medium: { dot: "#F59E0B", fg: "#B45309" },
-  high: { dot: "#DC2626", fg: "#B91C1C" },
-  urgent: { dot: "#DC2626", fg: "#B91C1C" },
-};
+// Cor por status/prioridade e RÓTULO de prioridade vêm da fonte única `work-orders-tone` — esta página
+// mantinha a sua PRÓPRIA tabela e o detalhe (GeneralInfoTab) mantinha OUTRA, divergente em 8 dos 10
+// status e com a prioridade INVERTIDA. Esta paleta (a do protótipo `sc_os`) foi promovida a canônica lá;
+// aqui não sobra tabela nenhuma. O rótulo de STATUS segue em WORK_ORDER_STATUS_LABEL (row.logic).
+const STATUS_TONE = WORK_ORDER_STATUS_TONE;
+const PRIORITY_LABEL = WORK_ORDER_PRIORITY_LABEL;
 
 const isFinalStatus = (s: WorkOrderStatus) => s === "completed" || s === "cancelled" || s === "rejected";
 const isFieldStatus = (s: WorkOrderStatus) => s === "on_route" || s === "on_site" || s === "in_progress" || s === "paused";

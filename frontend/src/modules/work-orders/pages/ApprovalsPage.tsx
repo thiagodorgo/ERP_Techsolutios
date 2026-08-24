@@ -9,6 +9,7 @@ import { approveOperationalApproval, rejectOperationalApproval } from "../approv
 import { entityTypeLabel } from "../approval.types";
 import type { ApprovalApiContext, OperationalApproval, OperationalApprovalStatus } from "../approval.types";
 import { useApprovalsQueue, type ApprovalsQueueSource } from "../useApprovalsQueue";
+import { TONE } from "../work-orders-tone";
 
 // "Fila de Aprovações" (sc_approvals) — Onda 1. Consome a fonte REAL (GET /api/v1/approvals/pending via
 // useApprovalsQueue). D-007: SÓ os campos reais do DTO (id, tipo, status, pendência, solicitante-UUID,
@@ -35,10 +36,13 @@ const btn = (bg: string, color: string, border?: string): CSSProperties => ({
   gap: 7,
 });
 
+// AUDITORIA VISUAL — os tons vêm da paleta semântica única (`work-orders-tone`); esta fila mantinha uma
+// terceira variante dos mesmos três estados (âmbar #D97706, verde #059669, vermelho #DC2626), diferente
+// tanto da lista de OS quanto do detalhe.
 const STATUS_CHIP: Record<OperationalApprovalStatus, { text: string; bg: string; color: string }> = {
-  pending_approval: { text: "Aguardando decisão", bg: "#FFFBEB", color: "#D97706" },
-  approved: { text: "Aprovada", bg: "#ECFDF5", color: "#059669" },
-  rejected: { text: "Reprovada", bg: "#FEF2F2", color: "#DC2626" },
+  pending_approval: { text: "Aguardando decisão", bg: TONE.warning.bg, color: TONE.warning.fg },
+  approved: { text: "Aprovada", bg: TONE.success.bg, color: TONE.success.fg },
+  rejected: { text: "Reprovada", bg: TONE.critical.bg, color: TONE.critical.fg },
 };
 
 // Escala de duração PT-BR (minutos → horas → dias). Local ao módulo para não acoplar a fila ao pacote de
@@ -69,9 +73,9 @@ export function formatPendingAge(requestedAt: string, now: Date = new Date()): {
 }
 
 const AGE_COLOR: Record<PendingAgeTone, { bg: string; color: string }> = {
-  normal: { bg: "#F1F5F9", color: "#475569" },
-  warn: { bg: "#FFFBEB", color: "#D97706" },
-  alert: { bg: "#FEF2F2", color: "#DC2626" },
+  normal: { bg: TONE.neutral.bg, color: TONE.neutral.fg },
+  warn: { bg: TONE.warning.bg, color: TONE.warning.fg },
+  alert: { bg: TONE.critical.bg, color: TONE.critical.fg },
 };
 
 function fmtRequestedAt(iso: string): string {

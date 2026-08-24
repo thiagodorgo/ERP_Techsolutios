@@ -21,6 +21,7 @@ import type {
   ServiceQuotesApiContext,
 } from "../../../registry/service-quotes/service-quotes.types";
 import { ApiError } from "../../../../services/api/client";
+import { TONE } from "../../work-orders-tone";
 
 // Ω3F-4c — aba "Orçamento" do Hub da OS (espelho do FinancialTab). Lista os orçamentos DA OS (filtro por
 // work_order_id), cada um com número/situação/validade/total (do BACKEND, o front nunca soma) e suas
@@ -33,11 +34,13 @@ const td: CSSProperties = { fontSize: 12.5, color: "#0F172A", padding: "9px 12px
 const primaryBtn: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 10, fontSize: 12.5, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" };
 const ghostBtn: CSSProperties = { ...primaryBtn, background: "#fff", color: "#2563EB", border: "1px solid #BFDBFE" };
 
+// AUDITORIA VISUAL — os tons vêm da paleta semântica única (`work-orders-tone`), a mesma do chip de status
+// da lista/detalhe da OS. Antes, `success` e `danger` daqui eram um quarto par de verdes/vermelhos.
 const TONE_STYLE: Record<string, { color: string; background: string }> = {
-  info: { color: "#2563EB", background: "#EFF6FF" },
-  success: { color: "#16A34A", background: "#F0FDF4" },
-  danger: { color: "#DC2626", background: "#FEF2F2" },
-  default: { color: "#475569", background: "#F1F5F9" },
+  info: { color: TONE.info.fg, background: TONE.info.bg },
+  success: { color: TONE.success.fg, background: TONE.success.bg },
+  danger: { color: TONE.critical.fg, background: TONE.critical.bg },
+  default: { color: TONE.neutral.fg, background: TONE.neutral.bg },
 };
 
 function messageForError(err: unknown, fallback: string): string {

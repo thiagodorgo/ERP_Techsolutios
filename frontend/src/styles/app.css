@@ -42,6 +42,14 @@
   line-height: 1.5;
 }
 
+/* AUDITORIA VISUAL — o subtítulo do cabeçalho não declarava `font-size` e HERDAVA 16px do body, enquanto as
+   telas canônicas do padrão usam 13px (`.pat-page-header__subtitle`). Lado a lado no mesmo app, dezenas de
+   telas exibiam um subtítulo visivelmente maior que as canônicas. Escopado ao `.page-heading` de propósito:
+   o `.auth-brand p` do login é uma chamada de marca, não um subtítulo de página, e mantém o corpo maior. */
+.page-heading p {
+  font-size: 13px;
+}
+
 .auth-panel .auth-brand p {
   color: #dce8f4;
 }
@@ -397,6 +405,9 @@
   border-radius: var(--radius-6);
   padding: 0 var(--space-14, 0.875rem);
   cursor: pointer;
+  /* AUDITORIA VISUAL — o botão não declarava `font-size` e HERDAVA 16px do body, contra os 12,5px do
+     `.pat-btn--primary` canônico. Em qualquer tela onde os dois convivem, o mesmo botão tinha dois pesos. */
+  font-size: 12.5px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -430,7 +441,9 @@
 .ui-button--sm {
   min-height: 32px;
   padding: 0 var(--space-10);
-  font-size: var(--text-sm);
+  /* Com a base do `.ui-button` corrigida para 12,5px, o antigo `--text-sm` (14px) deixaria a variante
+     "pequena" MAIOR que a padrão. O degrau abaixo da base é o `--text-xs` (12px). */
+  font-size: var(--text-xs);
 }
 
 .ui-field {
@@ -2119,9 +2132,25 @@
   gap: var(--space-10);
 }
 
+/* AUDITORIA VISUAL — o KPI não tinha CAIXA: a regra declarava só `display/gap`, sem fundo, borda, padding
+   ou raio. O wrapper `.kpi-card-clickable` já aplicava raio 14 + sombra no hover, então o usuário via uma
+   SOMBRA FLUTUANDO EM VOLTA DE NADA. Caixa alinhada ao `.pat-kpi` canônico (fff / 1px #E2E8F0 / 15px 16px),
+   com raio 14 para casar com o do wrapper clicável. Atinge todas as telas que usam este KPI. */
 .work-orders-kpi {
   display: grid;
   gap: var(--space-6);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 15px 16px;
+}
+
+/* Quando o KPI JÁ está dentro de um `<Card>` (Despachos), a caixa do card é a única — sem caixa-em-caixa. */
+.ui-card .work-orders-kpi {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
 }
 
 .work-orders-kpi svg {

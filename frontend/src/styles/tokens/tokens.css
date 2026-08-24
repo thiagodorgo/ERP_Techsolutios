@@ -48,6 +48,10 @@
   --border-subtle: #d8e1ea;
   --border-strong: #9fb0bf;
   --border-critical: #dc6a60;
+  /* AUDITORIA VISUAL — `--border` era REFERENCIADO e NUNCA DEFINIDO: `border: 1px solid var(--border)`
+     é uma declaração ATÔMICA, então o token vazio invalidava a borda INTEIRA (os cards da Conferência de
+     Remunerações ficavam sem contorno). Alias explícito do papel neutro já existente — não é cor nova. */
+  --border: var(--border-subtle);
   --text-primary: #17212c;
   --text-secondary: #526273;
   --text-muted: #718196;
@@ -58,6 +62,9 @@
   --space-8: 0.5rem;
   --space-10: 0.625rem;
   --space-12: 0.75rem;
+  /* AUDITORIA VISUAL — degrau de 14px da escala 4pt, referenciado (padding do .ui-button, margens da
+     Conferência/Filtro de Remunerações) e nunca definido: onde faltava o fallback, o espaço colapsava a 0. */
+  --space-14: 0.875rem;
   --space-16: 1rem;
   --space-20: 1.25rem;
   --space-24: 1.5rem;
@@ -65,6 +72,10 @@
   --radius-4: 4px;
   --radius-6: 6px;
   --radius-8: 8px;
+  /* AUDITORIA VISUAL — `--radius-md` era consumido com DOIS fallbacks diferentes (`, 8px` no TagFormModal;
+     `, 10px` no TrackMapCanvas/RastreamentoPage): o mesmo nome pintava dois raios. Definido como o degrau
+     da escala (8px) — não se inventa um 10px que não existe na escala. */
+  --radius-md: var(--radius-8);
   --shadow-surface: 0 1px 2px rgb(18 26 34 / 8%);
   --shadow-overlay: 0 16px 40px rgb(18 26 34 / 22%);
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -74,7 +85,11 @@
   --text-md: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
-  --text-title: 1.5rem;
+  /* AUDITORIA VISUAL — degrau seguinte da escala (xs→sm→md→lg→xl→2xl), referenciado SEM fallback em
+     `.work-orders-kpi strong`: o token vazio derrubava a declaração e o NÚMERO do KPI caía para o tamanho
+     do texto comum (~16px) em 7 telas. `--text-title` é o papel e aponta para o mesmo degrau — um literal só. */
+  --text-2xl: 1.5rem;
+  --text-title: var(--text-2xl);
   --layout-sidebar: 248px;
   --layout-topbar: 64px;
   --breakpoint-main: 768px;

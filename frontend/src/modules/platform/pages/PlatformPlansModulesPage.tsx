@@ -43,7 +43,8 @@ export function PlatformPlansModulesPage() {
               <div style={{ fontSize: 16, fontWeight: 800 }}>{p.name}</div>
               <span style={{ background: p.chipBg, color: p.chipColor, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>{p.chip}</span>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>{p.price}</div>
+            {/* tabular-nums: os preços dos planos ficam lado a lado — dígito de largura fixa alinha a coluna. */}
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px", fontVariantNumeric: "tabular-nums" }}>{p.price}</div>
             <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 6 }}>{p.mods} · {p.tenants}</div>
           </div>
         ))}

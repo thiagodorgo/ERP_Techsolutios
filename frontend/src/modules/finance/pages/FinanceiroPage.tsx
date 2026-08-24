@@ -151,7 +151,8 @@ export function FinanceiroPage() {
               <div style={{ width: 38, height: 38, borderRadius: 10, background: k.tone.iconBg, color: k.tone.iconColor, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
                 <k.Icon size={20} />
               </div>
-              <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", whiteSpace: "nowrap" }}>{loading ? "—" : k.value}</div>
+              {/* tabular-nums: KPI de dinheiro que atualiza sozinho — sem largura fixa de dígito o valor "dança". */}
+              <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.5px", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{loading ? "—" : k.value}</div>
               <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 1 }}>{k.label}</div>
               <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 5 }}>{loading ? "carregando…" : k.sub}</div>
             </div>

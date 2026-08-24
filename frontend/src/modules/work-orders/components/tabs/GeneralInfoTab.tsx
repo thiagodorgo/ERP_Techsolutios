@@ -9,7 +9,9 @@ import { entityTypeLabel } from "../../approval.types";
 import type { OperationalApproval } from "../../approval.types";
 import { getWorkOrderChecklistLinkKey, getWorkOrderChecklistRoleLabel, getWorkOrderChecklistSourceLabel } from "../../work-orders.adapter";
 import { WorkOrderRegistryLinksCard } from "../WorkOrderRegistryLinksCard";
-import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatus } from "../../work-orders.types";
+import { WORK_ORDER_STATUS_LABEL } from "../../work-orders-row.logic";
+import { PRIORITY_TONE, TONE, WORK_ORDER_PRIORITY_LABEL, WORK_ORDER_STATUS_TONE } from "../../work-orders-tone";
+import type { WorkOrderDetail, WorkOrderEvent } from "../../work-orders.types";
 
 // Ω3F-1 — aba "Informações gerais" do Hub da OS. Migra INTEGRAL o corpo da página de detalhe viva
 // (status/cliente-endereço/cadastros vinculados/histórico/aprovação operacional) — não os componentes
@@ -22,20 +24,11 @@ const cellLabel: CSSProperties = { fontSize: 11.5, color: "#94A3B8", fontWeight:
 const cellValue: CSSProperties = { fontSize: 14, fontWeight: 700, color: "#0F172A" };
 const cellHint: CSSProperties = { fontSize: 11.5, color: "#94A3B8", marginTop: 3, fontWeight: 600 };
 
-const STATUS_META: Record<WorkOrderStatus, { label: string; bg: string; color: string }> = {
-  open: { label: "Aberta", bg: "#F1F5F9", color: "#475569" },
-  assigned: { label: "Atribuída", bg: "#EFF6FF", color: "#2563EB" },
-  accepted: { label: "Aceita", bg: "#EFF6FF", color: "#2563EB" },
-  on_route: { label: "Em rota", bg: "#EFF6FF", color: "#2563EB" },
-  on_site: { label: "No local", bg: "#ECFDF5", color: "#059669" },
-  in_progress: { label: "Em atendimento", bg: "#FFFBEB", color: "#D97706" },
-  paused: { label: "Pausada", bg: "#FFFBEB", color: "#D97706" },
-  completed: { label: "Concluída", bg: "#ECFDF5", color: "#059669" },
-  cancelled: { label: "Cancelada", bg: "#FEF2F2", color: "#DC2626" },
-  rejected: { label: "Recusada", bg: "#FEF2F2", color: "#DC2626" },
-};
-const PRIORITY_LABEL: Record<WorkOrderPriority, string> = { low: "Baixa", medium: "Média", high: "Alta", urgent: "Urgente" };
-const PRIORITY_COLOR: Record<WorkOrderPriority, string> = { low: "#059669", medium: "#2563EB", high: "#D97706", urgent: "#DC2626" };
+// AUDITORIA VISUAL — esta aba mantinha um STATUS_META/PRIORITY_COLOR PRÓPRIOS que divergiam da lista em
+// 8 dos 10 status, e a prioridade estava INVERTIDA (baixa=verde, média=azul, alta=âmbar) contra a escala
+// ascendente da lista (baixa=cinza, média=âmbar, alta=vermelha). A mesma OS trocava de cor a um clique de
+// distância. Rótulo e cor agora vêm das fontes únicas; nenhuma tabela local sobreviveu.
+const PRIORITY_LABEL = WORK_ORDER_PRIORITY_LABEL;
 
 export function fmtDate(iso?: string | null): string {
   if (!iso) return "—";
@@ -122,7 +115,8 @@ export function GeneralInfoTab({
   canDecide: boolean;
 }) {
   const navigate = useNavigate();
-  const sm = STATUS_META[workOrder.status];
+  const statusTone = WORK_ORDER_STATUS_TONE[workOrder.status];
+  const statusLabel = WORK_ORDER_STATUS_LABEL[workOrder.status];
   const initials = (workOrder.customerName ?? "OS").slice(0, 2).toUpperCase();
 
   return (
@@ -134,10 +128,10 @@ export function GeneralInfoTab({
             <div style={{ borderRight: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}>
               <div style={{ padding: 16 }}>
                 <div style={cellLabel}>Status</div>
-                <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: sm.bg, color: sm.color }}>{sm.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: statusTone.bg, color: statusTone.fg }}>{statusLabel}</span>
               </div>
             </div>
-            <div style={{ borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Prioridade" value={PRIORITY_LABEL[workOrder.priority]} valueColor={PRIORITY_COLOR[workOrder.priority]} /></div>
+            <div style={{ borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Prioridade" value={PRIORITY_LABEL[workOrder.priority]} valueColor={PRIORITY_TONE[workOrder.priority].fg} /></div>
             <div style={{ borderRight: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Técnico" value={workOrder.assignedOperatorId ? "Atribuída" : "A atribuir"} /></div>
             <div style={{ borderBottom: "1px solid #F1F5F9" }}><InfoCell label="Agenda" value={fmtDate(workOrder.scheduledFor)} /></div>
             <div style={{ borderRight: "1px solid #F1F5F9" }}><InfoCell label="Criada em" value={fmtDate(workOrder.createdAt)} /></div>
@@ -260,17 +254,18 @@ function ApprovalPanel({
     setSubmitting(false);
   }
 
+  // Mesmo chip de aprovação da fila (ApprovalsPage): tom vem da paleta semântica única, não de hex local.
   const statusChip = (() => {
-    if (!approval || approval.status === "pending_approval") return { text: "Aguardando decisão", bg: "#FFFBEB", color: "#D97706" };
-    if (approval.status === "approved") return { text: "Aprovada", bg: "#ECFDF5", color: "#059669" };
-    return { text: "Reprovada", bg: "#FEF2F2", color: "#DC2626" };
+    if (!approval || approval.status === "pending_approval") return { text: "Aguardando decisão", ...TONE.warning };
+    if (approval.status === "approved") return { text: "Aprovada", ...TONE.success };
+    return { text: "Reprovada", ...TONE.critical };
   })();
 
   return (
     <div style={{ ...card, padding: 20, alignSelf: "flex-start" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <div style={{ fontSize: 15, fontWeight: 800 }}>Aprovação operacional</div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: statusChip.bg, color: statusChip.color }}>{statusChip.text}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: statusChip.bg, color: statusChip.fg }}>{statusChip.text}</span>
       </div>
       <div style={{ fontSize: 12.5, color: "#64748B", marginBottom: 16, lineHeight: 1.45 }}>Decisão sobre a execução desta OS antes de liberar o faturamento.</div>
 

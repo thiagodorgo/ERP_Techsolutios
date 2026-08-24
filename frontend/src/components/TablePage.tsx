@@ -86,7 +86,8 @@ export function TablePage({ title, subtitle, actionLabel, onAction, kpis, column
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
         {kpis.map((k) => (
           <div key={k.label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 15 }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: k.color ?? "#0F172A", whiteSpace: "nowrap" }}>{k.value}</div>
+            {/* tabular-nums: sem ele os dígitos têm larguras diferentes e o número "dança" na coluna a cada refresh. */}
+            <div style={{ fontSize: 22, fontWeight: 800, color: k.color ?? "#0F172A", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
             <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>{k.label}</div>
           </div>
         ))}

@@ -105,10 +105,10 @@ export function getServiceStatusOptionLabel(status: string | null | undefined): 
   return SERVICE_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? "Disponível";
 }
 
-export function formatBRL(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
+// AUDITORIA VISUAL — `formatBRL` era o formatador de dinheiro DE FATO do portal inteiro (9 módulos o
+// reexportavam daqui), mas não pertence ao catálogo de serviços: virou `lib/money.ts`. Este reexport
+// mantém intactos todos os imports existentes — inclusive os que chegam pela cadeia de reexports.
+export { formatBRL } from "../../../lib/money";
 
 export function formatDuration(minutes: number | null | undefined): string {
   if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) return "—";
