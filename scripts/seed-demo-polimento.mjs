@@ -48,6 +48,33 @@ async function main() {
     else console.log("[polimento] acentuação dos pátios já em dia.");
   }
 
+  // 3. Resíduo de teste visível nos DOIS clientes: o template 'HACKEADO' v99 estava
+  // PUBLICADO — aparecia na lista do builder na web E no /mobile/checklists/available
+  // do técnico. Os cinco 'Novo modelo' em rascunho poluíam o builder. Soft-delete
+  // (deleted_at), reversível com --reverter; nenhuma linha é apagada.
+  const alvo = "name = 'HACKEADO' or name = 'Novo modelo'";
+  if (reverter) {
+    const r = await client.query("update checklist_templates set deleted_at = null where tenant_id = (select id from tenants where slug='demo') and (" + alvo + ") and deleted_at is not null");
+    if (r.rowCount) console.log('[polimento] templates de teste restaurados: ' + r.rowCount);
+  } else {
+    const r = await client.query("update checklist_templates set deleted_at = now() where tenant_id = (select id from tenants where slug='demo') and (" + alvo + ") and deleted_at is null");
+    if (r.rowCount) console.log('[polimento] templates de teste ocultados (soft-delete): ' + r.rowCount);
+    else console.log('[polimento] nenhum template de teste visível — nada a fazer.');
+  }
+
+  // 4. RENOMEIA_TEMPLATES: os dois publicados restantes carregavam jargao de teste
+  // no NOME ('E2E', 'Omega3c') — visivel no app e no builder. Rotulo, nao chave:
+  // runs referenciam template_id, entao renomear e seguro e reversivel.
+  const RENOMES = [
+    ['E2E Coleta obrigatoria', 'Checklist de Coleta — Guincho'],
+    ['Inspecao Guincho Omega3c', 'Inspeção do Guincho — Saída'],
+  ];
+  for (const [antigo, novo] of RENOMES) {
+    const de = reverter ? novo : antigo, para = reverter ? antigo : novo;
+    const r = await client.query("update checklist_templates set name = $1 where tenant_id = (select id from tenants where slug='demo') and name = $2", [para, de]);
+    if (r.rowCount) console.log('[polimento] template: "' + de + '" → "' + para + '"');
+  }
+
   const { rows: final } = await client.query(
     `select t.name as org, (select string_agg(y.name, ' · ' order by y.name) from yards y where y.tenant_id = t.id) as patios
        from tenants t where t.slug = 'demo'`,
