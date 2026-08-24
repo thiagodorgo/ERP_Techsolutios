@@ -35,6 +35,10 @@ const ROTAS_PADRAO = [
   "/work-orders",
   "/operations/dispatches",
   "/work-orders/3d748a21-63c9-4fcc-9836-e53d15ddb8bf",
+  // A aba Financeiro da OS pede /work-orders/:id/financial-items — sem visitar a
+  // aba, o video cai no envelope vazio e a narracao diz "o banco tem zero itens"
+  // quando o que aconteceu foi "o snapshot nao tem esse endereco".
+  "/work-orders/3d748a21-63c9-4fcc-9836-e53d15ddb8bf?aba=financeiro",
   // Fluxo 2 — o checklist
   "/operations/checklists",
   "/administrator/checklists",

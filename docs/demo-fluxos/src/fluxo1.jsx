@@ -163,19 +163,26 @@ function CartaoOS({ os, aceso }) {
   );
 }
 
-/** Chips de estado do topo da lista — ativo em azul sólido (_FilterChip). */
-function ChipsFiltro() {
+/** Chips de estado do topo da lista — ativo em azul sólido (_FilterChip).
+ *
+ *  O chip aceso tem que corresponder ao que está DEBAIXO dele. A tela mostra as
+ *  4 ordens ativas do recorte; com "Todas" aceso ela estaria prometendo as 17,
+ *  incluindo as 11 concluídas — o app com ERP_AUTH_MODE=remote traz todas. */
+function ChipsFiltro({ aceso = "Todas" }) {
   return (
     <div style={{ display: "flex", gap: 8, padding: "9px 15px 2px" }}>
-      {["Todas", "Agendadas", "Em campo", "Concluídas"].map((g, i) => (
-        <span key={g} style={{
-          fontSize: 10.5, fontWeight: 700, padding: "5px 11px", borderRadius: 999,
-          background: i === 0 ? "#2563eb" : "#fff",
-          color: i === 0 ? "#fff" : "#64748b",
-          border: `1px solid ${i === 0 ? "#2563eb" : "#e2e8f0"}`,
-          whiteSpace: "nowrap",
-        }}>{g}</span>
-      ))}
+      {["Todas", "Agendadas", "Em campo", "Concluídas"].map((g) => {
+        const on = g === aceso;
+        return (
+          <span key={g} style={{
+            fontSize: 10.5, fontWeight: 700, padding: "5px 11px", borderRadius: 999,
+            background: on ? "#2563eb" : "#fff",
+            color: on ? "#fff" : "#64748b",
+            border: `1px solid ${on ? "#2563eb" : "#e2e8f0"}`,
+            whiteSpace: "nowrap",
+          }}>{g}</span>
+        );
+      })}
     </div>
   );
 }
@@ -203,7 +210,7 @@ function AppFilaVazia() {
   return (
     <>
       <AppCab claro titulo="Ordens de Serviço" />
-      <ChipsFiltro />
+      <ChipsFiltro aceso="Em campo" />
       <BuscaEPrioridade />
       <div className="app-corpo app-corpo--liso" style={{ justifyContent: "center", alignItems: "center", gap: 12 }}>
         <Wrench size={34} color="#2563eb" />
@@ -228,7 +235,7 @@ function AppFilaCarregando({ t }) {
       <div className="app-progresso">
         <div className="app-progresso-barra" style={{ width: `${p * 100}%` }} />
       </div>
-      <ChipsFiltro />
+      <ChipsFiltro aceso="Em campo" />
       <BuscaEPrioridade />
       <div className="app-corpo app-corpo--liso" style={{ justifyContent: "center", alignItems: "center", gap: 12 }}>
         <CloudUpload size={30} color="#cbd5e1" style={{ transform: "rotate(180deg)" }} />
@@ -246,7 +253,7 @@ function AppFila() {
       <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", padding: "5px 15px", fontSize: 10.5, color: "#64748b" }}>
         <RefreshCw size={12} color="#059669" /> Atualizado as 09:41
       </div>
-      <ChipsFiltro />
+      <ChipsFiltro aceso="Em campo" />
       <BuscaEPrioridade />
       <div className="app-corpo app-corpo--liso" style={{ gap: 10, paddingTop: 6 }}>
         {dados.os_ativas.map((o) => (
@@ -443,7 +450,7 @@ function AppSync({ t }) {
         </div>
 
         <div className="app-cartao" style={{ padding: 0 }}>
-          <Ficha Icone={Clock} titulo="Work Order Status Change" sub={`${OS.code} · 24/08 09:41`}
+          <Ficha Icone={Clock} titulo="Work Order Status Update" sub={`${OS.code} · 24/08 09:41`}
             direita={enviados
               ? <Pill tom="done">Sincronizado</Pill>
               : <Pill tom="warning">{subindo ? "Sincronizando" : "Pendente"}</Pill>} ultima />
@@ -486,7 +493,7 @@ const fluxo = {
   abertura: {
     ate: 6,
     eyebrow: "FLUXO 01 · CONSOLE → CAMPO → CONSOLE",
-    titulo: "Uma ordem sai do escritório, chega à rua, e o estado volta sozinho",
+    titulo: "O escritório despacha, a rua executa, e o estado volta sozinho",
     texto: "O console à esquerda deste vídeo não é um desenho do produto: é o produto, montado do mesmo código que roda em operação, com os dados gravados do banco. À direita, o aplicativo do técnico, recriado do código do app de campo.",
   },
 
@@ -527,17 +534,17 @@ const fluxo = {
     { t: 0, superficie: "titulo", narracao: "", tec: "" },
     {
       t: 6, superficie: "web",
-      narracao: `O painel abre com o estado real da operação: ${TOTAL_OS} ordens no total, ${EM_CAMPO} equipes em campo agora, ${CONCLUIDAS} já concluídas.`,
+      narracao: `O painel abre com o estado real da operação: ${EM_CAMPO} ordens em campo agora, ${ATRASADAS} com agenda vencida, ${CONCLUIDAS} concluídas.`,
       tec: `GET /api/v1/dashboard/summary · byStatus{open ${n("open")} · assigned ${n("assigned")} · on_route ${n("on_route")} · on_site ${n("on_site")} · in_progress ${n("in_progress")} · completed ${CONCLUIDAS}}`,
     },
     {
       t: 13, superficie: "web",
-      narracao: `E abre também com o que dói: ${ATRASADAS} agendas vencidas, em vermelho, com o alerta no topo da tela.`,
-      tec: "overdue = scheduled_for < agora E status não terminal · o alerta é do produto, não do vídeo",
+      narracao: `E abre também com o que dói: ${ATRASADAS} agendas vencidas, em vermelho, com o selo "agir agora".`,
+      tec: "overdue = scheduled_for < agora E status não terminal · o selo é do produto, não do vídeo",
     },
     {
       t: 20, superficie: "web",
-      narracao: `A fila é a mesma que a operação usa todo dia. Aqui, "abertas" conta tudo que ainda não fechou: ${NAO_FINAIS}. No painel eram ${ABERTAS_PAINEL} — dois recortes do mesmo banco, e o vídeo prefere explicar a esconder.`,
+      narracao: `A fila é a mesma que a operação usa todo dia. Aqui, "abertas" conta tudo que ainda não fechou: ${NAO_FINAIS}. No painel eram ${ABERTAS_PAINEL} — dois recortes do mesmo banco.`,
       tec: `lista: abertas = não-finais (${NAO_FINAIS}) · painel: open+assigned+accepted (${ABERTAS_PAINEL}) · ${TOTAL_OS} ordens no contador`,
     },
     {
@@ -552,7 +559,7 @@ const fluxo = {
     },
     {
       t: 47, superficie: "web",
-      narracao: "E uma honestidade, porque investidor merece o mapa inteiro: criar o despacho amarra a ordem ao operador, mas ainda não carimba o técnico na própria ordem. Essa ponta está aberta.",
+      narracao: "Criar o despacho amarra a ordem ao operador — mas ainda não carimba o técnico na própria ordem. Essa ponta está aberta.",
       tec: "POST /work-orders/:id/assign existe no servidor · nenhuma tela do frontend o chama — na fila a coluna TÉCNICO mostra \"Atribuir\", e aqui a coluna OPERADOR mostra o identificador cru",
     },
     {

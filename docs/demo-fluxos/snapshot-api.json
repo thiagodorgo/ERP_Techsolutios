@@ -1,5 +1,5 @@
 {
-  "gravado_em": "2026-08-24T04:10:35.998Z",
+  "gravado_em": "2026-08-24T09:29:31.878Z",
   "origem": "http://localhost:5173 contra a API em :3000",
   "como_regravar": "node scripts/demo-fluxos/gravar-snapshot.mjs",
   "rotas": [
@@ -7,6 +7,7 @@
     "/work-orders",
     "/operations/dispatches",
     "/work-orders/3d748a21-63c9-4fcc-9836-e53d15ddb8bf",
+    "/work-orders/3d748a21-63c9-4fcc-9836-e53d15ddb8bf?aba=financeiro",
     "/operations/checklists",
     "/administrator/checklists",
     "/administrator/checklists/97986f53-5e44-4689-b165-a87ff29a451e",
@@ -29,9 +30,9 @@
     "accessToken": "video-sem-token",
     "refreshToken": "video-sem-token",
     "tokenType": "Bearer",
-    "expiresAt": "2026-08-24T04:24:21.627Z",
-    "refreshExpiresAt": "2026-08-31T04:09:21.604Z",
-    "sessionId": "1a331629-ce6e-4472-9cfb-039af9f67dd2",
+    "expiresAt": "2026-08-24T09:43:15.528Z",
+    "refreshExpiresAt": "2026-08-31T09:28:15.505Z",
+    "sessionId": "eea76165-0d3c-44df-860f-f7c5760f85a3",
     "tenant": {
       "id": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
       "name": "Guinchos Paraná"
@@ -244,7 +245,7 @@
     }
   },
   "armazenamento": {
-    "erp-techsolutions.auth-session": "{\"provider\":\"local-jwt\",\"accessToken\":\"video-sem-token\",\"refreshToken\":\"video-sem-token\",\"tokenType\":\"Bearer\",\"expiresAt\":\"2026-08-24T04:24:21.627Z\",\"refreshExpiresAt\":\"2026-08-31T04:09:21.604Z\",\"sessionId\":\"1a331629-ce6e-4472-9cfb-039af9f67dd2\",\"tenant\":{\"id\":\"a79aedf2-44c8-478f-a6ce-cf6248a16f2b\",\"name\":\"Guinchos Paraná\"},\"user\":{\"id\":\"040a04e3-f47f-4765-873d-90b364dd55f6\",\"name\":\"Admin Demo\",\"email\":\"admin.demo@example.com\",\"cognitoSubject\":\"local:040a04e3-f47f-4765-873d-90b364dd55f6\",\"roles\":[\"Administrador\"],\"backendRoles\":[\"tenant_admin\"],\"permissions\":[\"dashboard:view\",\"tenant.manage\",\"tenant:manage\",\"users.manage\",\"users:read\",\"users.read\",\"roles.manage\",\"audit.read\",\"audit:view\",\"audit:read\",\"dashboard:read\",\"tenant_settings:read\",\"tenant_settings:update\",\"work_orders:read\",\"work_orders:create\",\"work_orders:update\",\"work_orders:assign\",\"work_orders:status\",\"work_orders:cancel\",\"work_orders:delete\",\"work_orders:comment\",\"work_orders:mileage_correct\",\"customers:read\",\"customers:create\",\"customers:update\",\"vehicles:read\",\"vehicles:create\",\"vehicles:update\",\"teams:read\",\"teams:create\",\"teams:update\",\"service_catalog:read\",\"price_tables:read\",\"branches:read\",\"suppliers:read\",\"operator_profiles:read\",\"tags:read\",\"pois:read\",\"tariffs:read\",\"yard:read\",\"jurisdiction:read\",\"impound:read\",\"charging:read\",\"service_quotes:read\",\"work_order_financials:read\",\"financial_accounts:read\",\"financial_titles:read\",\"professional_statements:read\",\"financial_entries:read\",\"cheques:read\",\"service_catalog:create\",\"price_tables:create\",\"branches:create\",\"suppliers:create\",\"operator_profiles:create\",\"tags:create\",\"pois:create\",\"tariffs:create\",\"yard:create\",\"jurisdiction:create\",\"impound:create\",\"charging:create\",\"charging:settle\",\"service_quotes:create\",\"work_order_financials:create\",\"financial_accounts:create\",\"financial_titles:create\",\"professional_statements:create\",\"financial_entries:create\",\"cheques:create\",\"service_catalog:update\",\"price_tables:update\",\"branches:update\",\"suppliers:update\",\"operator_profiles:update\",\"tags:update\",\"pois:update\",\"tariffs:update\",\"yard:update\",\"jurisdiction:update\",\"impound:update\",\"impound:transition\",\"impound:inspect\",\"impound:allocate\",\"impound:notify\",\"release:process\",\"release:approve\",\"auction:appraise\",\"vehicle_identity:merge\",\"service_quotes:update\",\"service_quotes:approve\",\"work_order_financials:update\",\"financial_accounts:update\",\"financial_titles:update\",\"professional_statements:update\",\"financial_entries:update\",\"cheques:update\",\"financial_period:read\",\"financial_period:close\",\"financial_period:reopen\",\"fuel_logs:read\",\"fuel_logs:create\",\"fuel_logs:update\",\"maintenance_orders:read\",\"maintenance_orders:create\",\"maintenance_orders:update\",\"fines:read\",\"fines:create\",\"fines:update\",\"insurance_policies:read\",\"insurance_policies:create\",\"insurance_policies:update\",\"damages:read\",\"damages:create\",\"damages:update\",\"inventory_items:read\",\"inventory_items:create\",\"inventory_items:update\",\"stock_movements:read\",\"stock_movements:create\",\"cycle_counts:read\",\"cycle_counts:create\",\"purchase_orders:read\",\"purchase_orders:create\",\"field_location:read\",\"field_location:send\",\"field_location:history\",\"field_operator:read\",\"field_operator:action\",\"field_dispatch:read\",\"field_dispatch:create\",\"field_dispatch:update\",\"field_dispatch:cancel\",\"field_dispatch:reassign\",\"logistics:read\",\"logistics_routes:read\",\"billing:read\",\"invoices:read\",\"payments:read\",\"reports:read\",\"commissions:read\",\"commissions:read_own\",\"commissions:manage_policy\",\"commissions:calculate\",\"commissions:approve\",\"commissions:adjust\",\"commissions:settle\",\"commissions:audit\",\"expense_report:read\",\"expense_report:read_own\",\"expense_report:create\",\"expense_report:update\",\"expense_report:submit\",\"expense_report:approve_manager\",\"expense_report:approve_finance\",\"expense_report:return\",\"expense_report:reject\",\"expense_report:pay\",\"expense_policy:read\",\"expense_policy:manage\",\"expense_receipt:attach\",\"expense_sync:write\",\"expense_audit:read\",\"os.manage\",\"work-orders:view\",\"work-orders:create\",\"work-orders:update\",\"logistics:dispatch\",\"os.read\",\"inventory.manage\",\"inventory.read\",\"finance.manage\",\"finance.read\",\"finance:read\",\"notifications:read\",\"notifications:update\",\"notifications:create\",\"sessions:read\",\"sessions:revoke\",\"tenant_checklists:read\",\"tenant_checklists:create\",\"tenant_checklists:update\",\"tenant_checklists:publish\",\"checklist_runs:read\",\"checklist_runs:create\",\"checklist_runs:update\",\"checklist_runs:complete\",\"checklist_runs:acknowledge\",\"checklist_runs:reopen\",\"telemetry:read\",\"authority_credentials:manage\"],\"status\":\"active\"}}",
+    "erp-techsolutions.auth-session": "{\"provider\":\"local-jwt\",\"accessToken\":\"video-sem-token\",\"refreshToken\":\"video-sem-token\",\"tokenType\":\"Bearer\",\"expiresAt\":\"2026-08-24T09:43:15.528Z\",\"refreshExpiresAt\":\"2026-08-31T09:28:15.505Z\",\"sessionId\":\"eea76165-0d3c-44df-860f-f7c5760f85a3\",\"tenant\":{\"id\":\"a79aedf2-44c8-478f-a6ce-cf6248a16f2b\",\"name\":\"Guinchos Paraná\"},\"user\":{\"id\":\"040a04e3-f47f-4765-873d-90b364dd55f6\",\"name\":\"Admin Demo\",\"email\":\"admin.demo@example.com\",\"cognitoSubject\":\"local:040a04e3-f47f-4765-873d-90b364dd55f6\",\"roles\":[\"Administrador\"],\"backendRoles\":[\"tenant_admin\"],\"permissions\":[\"dashboard:view\",\"tenant.manage\",\"tenant:manage\",\"users.manage\",\"users:read\",\"users.read\",\"roles.manage\",\"audit.read\",\"audit:view\",\"audit:read\",\"dashboard:read\",\"tenant_settings:read\",\"tenant_settings:update\",\"work_orders:read\",\"work_orders:create\",\"work_orders:update\",\"work_orders:assign\",\"work_orders:status\",\"work_orders:cancel\",\"work_orders:delete\",\"work_orders:comment\",\"work_orders:mileage_correct\",\"customers:read\",\"customers:create\",\"customers:update\",\"vehicles:read\",\"vehicles:create\",\"vehicles:update\",\"teams:read\",\"teams:create\",\"teams:update\",\"service_catalog:read\",\"price_tables:read\",\"branches:read\",\"suppliers:read\",\"operator_profiles:read\",\"tags:read\",\"pois:read\",\"tariffs:read\",\"yard:read\",\"jurisdiction:read\",\"impound:read\",\"charging:read\",\"service_quotes:read\",\"work_order_financials:read\",\"financial_accounts:read\",\"financial_titles:read\",\"professional_statements:read\",\"financial_entries:read\",\"cheques:read\",\"service_catalog:create\",\"price_tables:create\",\"branches:create\",\"suppliers:create\",\"operator_profiles:create\",\"tags:create\",\"pois:create\",\"tariffs:create\",\"yard:create\",\"jurisdiction:create\",\"impound:create\",\"charging:create\",\"charging:settle\",\"service_quotes:create\",\"work_order_financials:create\",\"financial_accounts:create\",\"financial_titles:create\",\"professional_statements:create\",\"financial_entries:create\",\"cheques:create\",\"service_catalog:update\",\"price_tables:update\",\"branches:update\",\"suppliers:update\",\"operator_profiles:update\",\"tags:update\",\"pois:update\",\"tariffs:update\",\"yard:update\",\"jurisdiction:update\",\"impound:update\",\"impound:transition\",\"impound:inspect\",\"impound:allocate\",\"impound:notify\",\"release:process\",\"release:approve\",\"auction:appraise\",\"vehicle_identity:merge\",\"service_quotes:update\",\"service_quotes:approve\",\"work_order_financials:update\",\"financial_accounts:update\",\"financial_titles:update\",\"professional_statements:update\",\"financial_entries:update\",\"cheques:update\",\"financial_period:read\",\"financial_period:close\",\"financial_period:reopen\",\"fuel_logs:read\",\"fuel_logs:create\",\"fuel_logs:update\",\"maintenance_orders:read\",\"maintenance_orders:create\",\"maintenance_orders:update\",\"fines:read\",\"fines:create\",\"fines:update\",\"insurance_policies:read\",\"insurance_policies:create\",\"insurance_policies:update\",\"damages:read\",\"damages:create\",\"damages:update\",\"inventory_items:read\",\"inventory_items:create\",\"inventory_items:update\",\"stock_movements:read\",\"stock_movements:create\",\"cycle_counts:read\",\"cycle_counts:create\",\"purchase_orders:read\",\"purchase_orders:create\",\"field_location:read\",\"field_location:send\",\"field_location:history\",\"field_operator:read\",\"field_operator:action\",\"field_dispatch:read\",\"field_dispatch:create\",\"field_dispatch:update\",\"field_dispatch:cancel\",\"field_dispatch:reassign\",\"logistics:read\",\"logistics_routes:read\",\"billing:read\",\"invoices:read\",\"payments:read\",\"reports:read\",\"commissions:read\",\"commissions:read_own\",\"commissions:manage_policy\",\"commissions:calculate\",\"commissions:approve\",\"commissions:adjust\",\"commissions:settle\",\"commissions:audit\",\"expense_report:read\",\"expense_report:read_own\",\"expense_report:create\",\"expense_report:update\",\"expense_report:submit\",\"expense_report:approve_manager\",\"expense_report:approve_finance\",\"expense_report:return\",\"expense_report:reject\",\"expense_report:pay\",\"expense_policy:read\",\"expense_policy:manage\",\"expense_receipt:attach\",\"expense_sync:write\",\"expense_audit:read\",\"os.manage\",\"work-orders:view\",\"work-orders:create\",\"work-orders:update\",\"logistics:dispatch\",\"os.read\",\"inventory.manage\",\"inventory.read\",\"finance.manage\",\"finance.read\",\"finance:read\",\"notifications:read\",\"notifications:update\",\"notifications:create\",\"sessions:read\",\"sessions:revoke\",\"tenant_checklists:read\",\"tenant_checklists:create\",\"tenant_checklists:update\",\"tenant_checklists:publish\",\"checklist_runs:read\",\"checklist_runs:create\",\"checklist_runs:update\",\"checklist_runs:complete\",\"checklist_runs:acknowledge\",\"checklist_runs:reopen\",\"telemetry:read\",\"authority_credentials:manage\"],\"status\":\"active\"}}",
     "erp-techsolutions.active-context": "{\"tenantId\":\"a79aedf2-44c8-478f-a6ce-cf6248a16f2b\",\"tenantName\":\"Guinchos Paraná\",\"tenantStatus\":\"active\",\"branchId\":\"a79aedf2-44c8-478f-a6ce-cf6248a16f2b\",\"branchName\":\"Guinchos Paraná\",\"role\":\"Administrador\",\"permissions\":[\"dashboard:view\",\"tenant.manage\",\"tenant:manage\",\"users.manage\",\"users:read\",\"users.read\",\"roles.manage\",\"audit.read\",\"audit:view\",\"os.manage\",\"work_orders:read\",\"work_orders:create\",\"work_orders:update\",\"work_orders:assign\",\"work_orders:status\",\"work_orders:cancel\",\"work-orders:view\",\"work-orders:create\",\"work-orders:update\",\"logistics:dispatch\",\"os.read\",\"inventory.manage\",\"inventory.read\",\"finance.manage\",\"finance.read\",\"tenant_checklists:read\",\"tenant_checklists:create\",\"tenant_checklists:update\",\"tenant_checklists:publish\",\"checklist_runs:read\",\"checklist_runs:create\",\"checklist_runs:update\",\"checklist_runs:complete\",\"checklist_runs:acknowledge\",\"notifications:read\",\"notifications:update\"],\"enabledModules\":[\"dashboard\",\"work-orders\",\"logistics\",\"users\",\"tenant-admin\",\"tenant_checklist\",\"notifications\"],\"scope\":\"tenant\"}"
   },
   "respostas": {
@@ -904,7 +905,7 @@
           }
         ],
         "metadata": {
-          "generatedAt": "2026-08-24T04:10:19.068Z",
+          "generatedAt": "2026-08-24T09:29:28.832Z",
           "groups": [
             "tenant",
             "operations",
@@ -1110,10 +1111,10 @@
             "overdue": 4
           },
           "registry": {
-            "customers": 2,
+            "customers": 9,
             "vehicles": 3,
             "teams": 2,
-            "services": 3
+            "services": 19
           },
           "criticalWorkOrders": [
             {
@@ -2222,7 +2223,7 @@
             "team": null,
             "serviceCatalog": {
               "id": "93d006e2-d4d8-4e67-9578-b62da42a01d2",
-              "name": "Servico A1 1783874676",
+              "name": "(descontinuado) Servico A1 1783874676",
               "basePrice": null
             }
           },
@@ -2234,6 +2235,14 @@
       "status": 200,
       "corpo": {
         "data": []
+      }
+    },
+    "GET /api/v1/work-orders/3d748a21-63c9-4fcc-9836-e53d15ddb8bf/financial-items": {
+      "status": 200,
+      "corpo": {
+        "items": [],
+        "totalAmount": 0,
+        "currency": "BRL"
       }
     },
     "GET /api/v1/mobile/checklists/available": {
@@ -2486,7 +2495,7 @@
         "meta": {
           "source": "backend",
           "count": 3,
-          "generated_at": "2026-08-24T04:09:40.906Z"
+          "generated_at": "2026-08-24T09:28:37.773Z"
         }
       }
     },
@@ -4436,14 +4445,1128 @@
         }
       }
     },
+    "GET /api/v1/yards?limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "branchId": "159a0208-0dad-48d5-945b-0f2ef396d73f",
+            "name": "Pátio Norte",
+            "address": "Av. das Indústrias, 4200 — Curitiba/PR",
+            "capacityHint": 40,
+            "timezone": "America/Sao_Paulo",
+            "active": true,
+            "createdAt": "2026-08-24T00:11:29.907Z"
+          },
+          {
+            "id": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "branchId": "159a0208-0dad-48d5-945b-0f2ef396d73f",
+            "name": "Pátio Central",
+            "address": "R. Barão do Rio Branco, 118 — Curitiba/PR",
+            "capacityHint": 24,
+            "timezone": "America/Sao_Paulo",
+            "active": true,
+            "createdAt": "2026-08-24T00:11:29.907Z"
+          },
+          {
+            "id": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "branchId": "159a0208-0dad-48d5-945b-0f2ef396d73f",
+            "name": "Pátio Oeste",
+            "address": "Rod. BR-277, km 18 — Campo Largo/PR",
+            "capacityHint": 30,
+            "timezone": "America/Sao_Paulo",
+            "active": true,
+            "createdAt": "2026-08-24T00:11:29.907Z"
+          },
+          {
+            "id": "66ad1cc6-1b33-46ba-b2af-569f1910cb0c",
+            "branchId": null,
+            "name": "Pátio Sul",
+            "address": "parana",
+            "capacityHint": 1100,
+            "timezone": "America/Sao_Paulo",
+            "active": true,
+            "createdAt": "2026-07-27T02:03:49.737Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 4
+        }
+      }
+    },
+    "GET /api/v1/impound-processes?limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "861380e5-0ca7-4a7d-b863-0d6e8843245d",
+            "vehiclePlate": "AAA6A82",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-08-19T00:11:30.340Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-19T00:11:30.340Z"
+          },
+          {
+            "id": "76fedff2-8abb-4947-ae92-0972173ee557",
+            "vehiclePlate": "AAA2A64",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED_FOR_REPAIR",
+            "statusLabel": "Liberado para reparo",
+            "enteredAt": "2026-08-17T00:11:30.485Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-17T00:11:30.485Z"
+          },
+          {
+            "id": "516b2052-5e50-485a-bc1c-688cdd939fad",
+            "vehiclePlate": "BHN1D37",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "IN_REMOVAL",
+            "statusLabel": "Em remoção",
+            "enteredAt": "2026-08-14T00:11:30.196Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-14T00:11:30.196Z"
+          },
+          {
+            "id": "88038d72-0aa5-4a89-a4e1-f68ac43241e0",
+            "vehiclePlate": "BHN7D19",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-08-12T00:11:30.346Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-12T00:11:30.346Z"
+          },
+          {
+            "id": "5b91a101-e948-464e-8d2c-f334673df1cf",
+            "vehiclePlate": "BHN3D91",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_ELIGIBLE",
+            "statusLabel": "Elegível a leilão",
+            "enteredAt": "2026-08-10T00:11:30.487Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-10T00:11:30.487Z"
+          },
+          {
+            "id": "35724eac-c478-497e-8ba0-9f5aaa7c0548",
+            "vehiclePlate": "COA2G64",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "IN_REMOVAL",
+            "statusLabel": "Em remoção",
+            "enteredAt": "2026-08-07T00:11:30.201Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-07T00:11:30.201Z"
+          },
+          {
+            "id": "582f5bd9-3577-444b-b323-8553a84ff483",
+            "vehiclePlate": "COA8G46",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-08-05T00:11:30.352Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-05T00:11:30.352Z"
+          },
+          {
+            "id": "12dbfc11-13b6-4868-b608-52f1678f52a6",
+            "vehiclePlate": "CRS3F33",
+            "vehicleUnidentified": false,
+            "yardId": "66ad1cc6-1b33-46ba-b2af-569f1910cb0c",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-08-04T01:15:12.476Z",
+            "frozenAt": null,
+            "originAuthority": "PM",
+            "custodySeqHead": 15,
+            "createdAt": "2026-08-04T01:10:13.210Z"
+          },
+          {
+            "id": "2e2d9fe7-dd5e-4fff-9029-32fdcdfd25db",
+            "vehiclePlate": "COA4G28",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_ELIGIBLE",
+            "statusLabel": "Elegível a leilão",
+            "enteredAt": "2026-08-03T00:11:30.493Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-08-03T00:11:30.493Z"
+          },
+          {
+            "id": "412acf31-17dd-4211-bb68-b15fde82631c",
+            "vehiclePlate": "DVN3J91",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "IN_REMOVAL",
+            "statusLabel": "Em remoção",
+            "enteredAt": "2026-07-31T00:11:30.204Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-31T00:11:30.204Z"
+          },
+          {
+            "id": "7fd9f7a8-ce2b-4127-9ba7-56c44b8dacba",
+            "vehiclePlate": "DVN9J73",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-07-29T00:11:30.358Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-29T00:11:30.358Z"
+          },
+          {
+            "id": "1d22571e-ffcb-424e-9f90-662fa59923ca",
+            "vehiclePlate": "DVN5J55",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_ELIGIBLE",
+            "statusLabel": "Elegível a leilão",
+            "enteredAt": "2026-07-27T00:11:30.499Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-27T00:11:30.499Z"
+          },
+          {
+            "id": "bba148ab-5913-445b-bdd6-5c1fd1545660",
+            "vehiclePlate": "ECA4M28",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "IN_REMOVAL",
+            "statusLabel": "Em remoção",
+            "enteredAt": "2026-07-24T00:11:30.207Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-24T00:11:30.207Z"
+          },
+          {
+            "id": "1106e9f3-9625-4ee4-a7e6-44cbcf555bd5",
+            "vehiclePlate": "ECA0M00",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-07-22T00:11:30.364Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-22T00:11:30.364Z"
+          },
+          {
+            "id": "705d0025-834e-4287-896d-bb3be992db25",
+            "vehiclePlate": "ECA6M82",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_ELIGIBLE",
+            "statusLabel": "Elegível a leilão",
+            "enteredAt": "2026-07-20T00:11:30.503Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-20T00:11:30.503Z"
+          },
+          {
+            "id": "d96fe516-1fe7-4c97-9fa3-3db83166a112",
+            "vehiclePlate": "FJN5P55",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-07-17T00:11:30.210Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-17T00:11:30.210Z"
+          },
+          {
+            "id": "86b674c1-a782-44d3-a555-96a1224a91e2",
+            "vehiclePlate": "FJN1P37",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-07-15T00:11:30.369Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-15T00:11:30.369Z"
+          },
+          {
+            "id": "cefe55bb-ffd6-46b3-8f33-7558532df1fa",
+            "vehiclePlate": "FJN7P19",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_ELIGIBLE",
+            "statusLabel": "Elegível a leilão",
+            "enteredAt": "2026-07-13T00:11:30.509Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-13T00:11:30.509Z"
+          },
+          {
+            "id": "db7380e8-4631-4fd1-a71e-2c75da47aa5b",
+            "vehiclePlate": "GQA6S82",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-07-10T00:11:30.217Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-10T00:11:30.217Z"
+          },
+          {
+            "id": "b4557f55-1b9e-4df8-ac24-8dca53173b47",
+            "vehiclePlate": "GQA2S64",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-07-08T00:11:30.375Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-08T00:11:30.375Z"
+          },
+          {
+            "id": "f9978f33-6b6b-44d0-b385-2e986c6c863c",
+            "vehiclePlate": "GQA8S46",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_PREP",
+            "statusLabel": "Em preparação de leilão",
+            "enteredAt": "2026-07-06T00:11:30.514Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-06T00:11:30.514Z"
+          },
+          {
+            "id": "72a58e4e-09a7-45bb-9feb-d7ea2dfa4f12",
+            "vehiclePlate": "HXN7V19",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-07-03T00:11:30.224Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-03T00:11:30.224Z"
+          },
+          {
+            "id": "a9971b7c-75ba-4c84-b939-93286e28aa74",
+            "vehiclePlate": "HXN3V91",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-07-01T00:11:30.381Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-07-01T00:11:30.381Z"
+          },
+          {
+            "id": "452221ed-daf5-4ee4-8b0c-e5ec87685fbb",
+            "vehiclePlate": "HXN9V73",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_PREP",
+            "statusLabel": "Em preparação de leilão",
+            "enteredAt": "2026-06-29T00:11:30.519Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-29T00:11:30.519Z"
+          },
+          {
+            "id": "350fb2b1-e5e8-4908-9463-00556b3f6dea",
+            "vehiclePlate": "IEA8Y46",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-06-26T00:11:30.231Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-26T00:11:30.231Z"
+          },
+          {
+            "id": "42888c21-5f30-4742-b607-42cdfff8e70c",
+            "vehiclePlate": "IEA4Y28",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-06-24T00:11:30.386Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-24T00:11:30.386Z"
+          },
+          {
+            "id": "668f86e4-3eab-451e-9cbd-9f1539855606",
+            "vehiclePlate": "IEA0Y00",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_PREP",
+            "statusLabel": "Em preparação de leilão",
+            "enteredAt": "2026-06-22T00:11:30.521Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-22T00:11:30.521Z"
+          },
+          {
+            "id": "d96bf4dc-2d31-4349-9074-999cd91a0833",
+            "vehiclePlate": "JLN9B73",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-06-19T00:11:30.237Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-19T00:11:30.237Z"
+          },
+          {
+            "id": "8b6ea220-4cc6-400e-8db9-bb8409bdc936",
+            "vehiclePlate": "JLN5B55",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-06-17T00:11:30.392Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-17T00:11:30.392Z"
+          },
+          {
+            "id": "8f0e3cc4-2f8a-4f42-a75e-297a77b92239",
+            "vehiclePlate": "JLN1B37",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "LOTTED",
+            "statusLabel": "Loteado",
+            "enteredAt": "2026-06-15T00:11:30.524Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-15T00:11:30.524Z"
+          },
+          {
+            "id": "eda2c9fc-a858-4719-995e-72345bbcfa1f",
+            "vehiclePlate": "KSA0E00",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RECEPTION",
+            "statusLabel": "Recepção",
+            "enteredAt": "2026-06-12T00:11:30.244Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-12T00:11:30.244Z"
+          },
+          {
+            "id": "7f041fca-4df0-4751-bed9-5c96cbf7c2be",
+            "vehiclePlate": "KSA6E82",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-06-10T00:11:30.397Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-10T00:11:30.397Z"
+          },
+          {
+            "id": "dbcb9c1e-8bee-4250-a2ce-2cf30920ac85",
+            "vehiclePlate": "KSA2E64",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "LOTTED",
+            "statusLabel": "Loteado",
+            "enteredAt": "2026-06-08T00:11:30.526Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-08T00:11:30.526Z"
+          },
+          {
+            "id": "3264086d-3c58-4fb3-9080-2e2961e7cab9",
+            "vehiclePlate": "LZN1H37",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-06-05T00:11:30.251Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-05T00:11:30.251Z"
+          },
+          {
+            "id": "d17d9271-f1d8-4634-b69f-1a46001e1d8b",
+            "vehiclePlate": "LZN7H19",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-06-03T00:11:30.402Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-03T00:11:30.402Z"
+          },
+          {
+            "id": "559b9d37-6a1e-4a52-a0c5-381c9eedbe3f",
+            "vehiclePlate": "LZN3H91",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-06-01T00:11:30.529Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-06-01T00:11:30.529Z"
+          },
+          {
+            "id": "a30ed469-98d3-409a-bb8e-f566a7ba4c2c",
+            "vehiclePlate": "MGA2K64",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-05-29T00:11:30.258Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-29T00:11:30.258Z"
+          },
+          {
+            "id": "75f63cb3-3a12-4f12-acf7-115d5bb6da01",
+            "vehiclePlate": "MGA8K46",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-05-27T00:11:30.408Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-27T00:11:30.408Z"
+          },
+          {
+            "id": "87a057b7-0de4-4b32-8248-a2dcd6f4e9d4",
+            "vehiclePlate": "MGA4K28",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-05-25T00:11:30.531Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-25T00:11:30.531Z"
+          },
+          {
+            "id": "b0de8c23-b5c1-4abd-be1e-a140fe85478e",
+            "vehiclePlate": "NNN3N91",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-05-22T00:11:30.264Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-22T00:11:30.264Z"
+          },
+          {
+            "id": "65997deb-f75a-43d8-9d44-93539ace913e",
+            "vehiclePlate": "NNN9N73",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "JUDICIAL_HOLD",
+            "statusLabel": "Bloqueio judicial",
+            "enteredAt": "2026-05-20T00:11:30.413Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-20T00:11:30.413Z"
+          },
+          {
+            "id": "dd416e91-778a-4074-82c5-72b510c66501",
+            "vehiclePlate": "NNN5N55",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-05-18T00:11:30.534Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-18T00:11:30.534Z"
+          },
+          {
+            "id": "b564b53b-904e-49e0-8d49-18a8ba935ac7",
+            "vehiclePlate": "OUA4Q28",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-05-15T00:11:30.270Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-15T00:11:30.270Z"
+          },
+          {
+            "id": "d06a774d-f107-4439-8f41-ed2cce515999",
+            "vehiclePlate": "OUA0Q00",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "JUDICIAL_HOLD",
+            "statusLabel": "Bloqueio judicial",
+            "enteredAt": "2026-05-13T00:11:30.419Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-13T00:11:30.419Z"
+          },
+          {
+            "id": "462a1da7-7ce7-474f-8908-14aa581781fd",
+            "vehiclePlate": "OUA6Q82",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-05-11T00:11:30.537Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-11T00:11:30.537Z"
+          },
+          {
+            "id": "295bdf1c-968f-4cc6-9f6b-565d86942c05",
+            "vehiclePlate": "PBN5T55",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-05-08T00:11:30.277Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-08T00:11:30.277Z"
+          },
+          {
+            "id": "71e480ea-8d9a-46d0-8f20-f503b59f3b35",
+            "vehiclePlate": "PBN1T37",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "JUDICIAL_HOLD",
+            "statusLabel": "Bloqueio judicial",
+            "enteredAt": "2026-05-06T00:11:30.424Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-06T00:11:30.424Z"
+          },
+          {
+            "id": "20f1a199-5373-4643-b59b-07eea4e305b7",
+            "vehiclePlate": "PBN7T19",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-05-04T00:11:30.540Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-04T00:11:30.540Z"
+          },
+          {
+            "id": "3736263b-f83c-42f8-9d52-acbd683486dd",
+            "vehiclePlate": "QIA6W82",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-05-01T00:11:30.283Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-05-01T00:11:30.283Z"
+          },
+          {
+            "id": "080b5b98-2c37-4c17-8941-072d12629d8c",
+            "vehiclePlate": "QIA2W64",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "JUDICIAL_HOLD",
+            "statusLabel": "Bloqueio judicial",
+            "enteredAt": "2026-04-29T00:11:30.431Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-29T00:11:30.431Z"
+          },
+          {
+            "id": "851acb76-0e7a-4189-8bb1-0f4876634399",
+            "vehiclePlate": "QIA8W46",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-04-27T00:11:30.543Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-27T00:11:30.543Z"
+          },
+          {
+            "id": "4fd66447-2558-417e-a684-5ab1fd0fc29e",
+            "vehiclePlate": "RPN7Z19",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-04-24T00:11:30.289Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-24T00:11:30.289Z"
+          },
+          {
+            "id": "92de47c8-55fd-4351-92f0-06cc83eb40f2",
+            "vehiclePlate": "RPN3Z91",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "JUDICIAL_HOLD",
+            "statusLabel": "Bloqueio judicial",
+            "enteredAt": "2026-04-22T00:11:30.437Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-22T00:11:30.437Z"
+          },
+          {
+            "id": "094261e6-cbd9-4e7a-99d9-71fd23a1adec",
+            "vehiclePlate": "RPN9Z73",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-04-20T00:11:30.546Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-20T00:11:30.546Z"
+          },
+          {
+            "id": "1533c225-0519-4180-8343-5a8d5fe5cceb",
+            "vehiclePlate": "SWA8C46",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-04-17T00:11:30.294Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-17T00:11:30.294Z"
+          },
+          {
+            "id": "9a43373e-3eda-421a-b662-787e5721cd41",
+            "vehiclePlate": "SWA4C28",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-04-15T00:11:30.442Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-15T00:11:30.442Z"
+          },
+          {
+            "id": "df9fb7bc-26cd-4d44-b237-09e4dd429832",
+            "vehiclePlate": "SWA0C00",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-04-13T00:11:30.548Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-13T00:11:30.548Z"
+          },
+          {
+            "id": "1b9a2d1b-cf65-4070-83f6-8168165806c5",
+            "vehiclePlate": "TDN9F73",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-04-10T00:11:30.300Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-10T00:11:30.300Z"
+          },
+          {
+            "id": "5e834eb2-0a9d-489b-b9b8-56bcef7ff316",
+            "vehiclePlate": "TDN5F55",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-04-08T00:11:30.447Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-08T00:11:30.447Z"
+          },
+          {
+            "id": "c361ead6-7a57-47cd-a0d6-e018b54a7df4",
+            "vehiclePlate": "TDN1F37",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED",
+            "statusLabel": "Liberado",
+            "enteredAt": "2026-04-06T00:11:30.551Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-06T00:11:30.551Z"
+          },
+          {
+            "id": "deb4cad0-cbb4-49d4-bb95-bb3e52319731",
+            "vehiclePlate": "UKA0I00",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-04-03T00:11:30.306Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-03T00:11:30.306Z"
+          },
+          {
+            "id": "e4415437-e8df-40e3-8b27-08e08f42c5b3",
+            "vehiclePlate": "UKA6I82",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-04-01T00:11:30.451Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-04-01T00:11:30.451Z"
+          },
+          {
+            "id": "63d04a2d-1f7b-4a2c-b44c-a08c70746342",
+            "vehiclePlate": "UKA2I64",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_CLOSED",
+            "statusLabel": "Leilão encerrado",
+            "enteredAt": "2026-03-30T00:11:30.553Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-30T00:11:30.553Z"
+          },
+          {
+            "id": "3b69aeba-d071-4bc8-8277-880027f7580a",
+            "vehiclePlate": "VRN1L37",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-03-27T00:11:30.311Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-27T00:11:30.311Z"
+          },
+          {
+            "id": "1a0601c9-b9ea-44e4-a77d-b74eb2858b60",
+            "vehiclePlate": "VRN7L19",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-03-25T00:11:30.456Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-25T00:11:30.456Z"
+          },
+          {
+            "id": "a98b39d9-5c64-49e0-b961-767241efad29",
+            "vehiclePlate": "VRN3L91",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_CLOSED",
+            "statusLabel": "Leilão encerrado",
+            "enteredAt": "2026-03-23T00:11:30.555Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-23T00:11:30.555Z"
+          },
+          {
+            "id": "0f6febce-41a3-4c63-aa8b-727d312d15c3",
+            "vehiclePlate": "WYA2O64",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-03-20T00:11:30.317Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-20T00:11:30.317Z"
+          },
+          {
+            "id": "8f0c66a8-0462-43fb-8095-d8e65b20291f",
+            "vehiclePlate": "WYA8O46",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-03-18T00:11:30.465Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-18T00:11:30.465Z"
+          },
+          {
+            "id": "78495a2b-ad7e-4593-b8cd-ccd4bc8ed280",
+            "vehiclePlate": "WYA4O28",
+            "vehicleUnidentified": false,
+            "yardId": "e32505d8-ae46-4260-ab39-59ca494dd168",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "AUCTION_CLOSED",
+            "statusLabel": "Leilão encerrado",
+            "enteredAt": "2026-03-16T00:11:30.556Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-16T00:11:30.556Z"
+          },
+          {
+            "id": "2cb67e46-8df5-49e2-89e0-5819ecb74a3f",
+            "vehiclePlate": "XFN3R91",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-03-13T00:11:30.322Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-13T00:11:30.322Z"
+          },
+          {
+            "id": "888b6da8-8fd8-4a9d-9768-8aaac4138377",
+            "vehiclePlate": "XFN9R73",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-03-11T00:11:30.472Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-11T00:11:30.472Z"
+          },
+          {
+            "id": "9f33187c-452d-4572-9a4e-2d0c40ec739e",
+            "vehiclePlate": "YMA4U28",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-03-06T00:11:30.328Z",
+            "frozenAt": null,
+            "originAuthority": "PRF",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-06T00:11:30.328Z"
+          },
+          {
+            "id": "2b741014-8fd9-4386-9dea-21c25b48bcf9",
+            "vehiclePlate": "YMA0U00",
+            "vehicleUnidentified": false,
+            "yardId": "bc7791b3-4ee3-4cd2-8fe8-2f758cec5657",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASE_IN_PROGRESS",
+            "statusLabel": "Liberação em andamento",
+            "enteredAt": "2026-03-04T00:11:30.478Z",
+            "frozenAt": null,
+            "originAuthority": "Guarda Municipal",
+            "custodySeqHead": 12,
+            "createdAt": "2026-03-04T00:11:30.478Z"
+          },
+          {
+            "id": "4d88c2ba-ec14-4d18-89aa-ec9518ff2b79",
+            "vehiclePlate": "ZTN5X55",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "ACTIVE_CUSTODY",
+            "statusLabel": "Custódia ativa",
+            "enteredAt": "2026-02-27T00:11:30.334Z",
+            "frozenAt": null,
+            "originAuthority": "Polícia Militar",
+            "custodySeqHead": 12,
+            "createdAt": "2026-02-27T00:11:30.334Z"
+          },
+          {
+            "id": "c31e591e-348f-4062-970d-86b4b746ef9b",
+            "vehiclePlate": "ZTN1X37",
+            "vehicleUnidentified": false,
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "profileId": "6f6d2074-199a-472f-b66a-66dcaa96e38d",
+            "status": "RELEASED_FOR_REPAIR",
+            "statusLabel": "Liberado para reparo",
+            "enteredAt": "2026-02-25T00:11:30.482Z",
+            "frozenAt": null,
+            "originAuthority": "DETRAN/PR",
+            "custodySeqHead": 12,
+            "createdAt": "2026-02-25T00:11:30.482Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 75
+        }
+      }
+    },
     "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9": {
       "status": 200,
       "corpo": {
         "data": {
           "id": "3264086d-3c58-4fb3-9080-2e2961e7cab9",
           "vehiclePlate": "LZN1H37",
-          "vehicleChassis": null,
-          "vehicleRenavam": null,
+          "vehicleChassis": "N9ZXFTU0G6K1PR4V6",
+          "vehicleRenavam": "65790545505",
           "vehicleBrand": "Volkswagen",
           "vehicleModel": "Gol",
           "vehicleColor": "Azul",
@@ -4459,32 +5582,16 @@
           "originAuthority": "DETRAN/PR",
           "originAgentName": "Agente 111",
           "authorityCaseNumber": "PROC-2011",
-          "incidentReportNumber": "demo-painel-0011",
+          "incidentReportNumber": "BO-2026-105617",
           "legalBasis": "Art. 271 do CTB — remoção por infração",
           "serviceOrderId": null,
-          "custodySeqHead": 0,
-          "custodyHashHead": null,
+          "custodySeqHead": 12,
+          "custodyHashHead": "5e9927813604333db59d31d24f659381983e4dbbbd6a8e41ba82bf3ba281cced",
           "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
           "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
           "createdAt": "2026-06-05T00:11:30.251Z",
-          "updatedAt": "2026-06-05T00:11:30.251Z"
+          "updatedAt": "2026-08-24T06:54:42.731Z"
         }
-      }
-    },
-    "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/custody-history": {
-      "status": 200,
-      "corpo": {
-        "items": [
-          {
-            "id": "3264086d-3c58-4fb3-9080-2e2961e7cab9",
-            "vehiclePlate": "LZN1H37",
-            "vehicleUnidentified": false,
-            "status": "ACTIVE_CUSTODY",
-            "enteredAt": "2026-06-05T00:11:30.251Z",
-            "yardName": "Pátio Norte",
-            "isCurrent": true
-          }
-        ]
       }
     },
     "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/checklist-runs": {
@@ -4508,6 +5615,22 @@
         ]
       }
     },
+    "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/custody-history": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "3264086d-3c58-4fb3-9080-2e2961e7cab9",
+            "vehiclePlate": "LZN1H37",
+            "vehicleUnidentified": false,
+            "status": "ACTIVE_CUSTODY",
+            "enteredAt": "2026-06-05T00:11:30.251Z",
+            "yardName": "Pátio Norte",
+            "isCurrent": true
+          }
+        ]
+      }
+    },
     "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/charges/statement": {
       "status": 200,
       "corpo": {
@@ -4524,9 +5647,195 @@
           "nAccrue": 82,
           "capReached": false
         },
-        "asOf": "2026-08-24T04:10:00.636Z",
+        "asOf": "2026-08-24T09:28:56.727Z",
         "reconciliationPending": false,
         "overAccruedDailies": 0
+      }
+    },
+    "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/events": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "1da82be3-637b-4a9c-9265-5b32713c9803",
+            "seq": 1,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "FRONT",
+              "attachmentId": "fa9b27d7-f132-4ee4-b1d8-86b9f7ab587b"
+            },
+            "occurredAt": "2026-08-24T06:54:39.979Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "ac1a1ac429f5028d8b29cb4a5f01b68fd5ec1f54ca1e4f1991a69115e01bbd76",
+            "hash": "7d51e91f9961712940e3853be87142c84d30fa1c08aa3622707da882d299815c",
+            "createdAt": "2026-08-24T06:54:39.984Z"
+          },
+          {
+            "id": "acc7fd55-13da-4440-a40c-a60c1b4099d6",
+            "seq": 2,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "REAR",
+              "attachmentId": "60b2297d-1426-4319-89d6-6fadcd690146"
+            },
+            "occurredAt": "2026-08-24T06:54:40.216Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "7d51e91f9961712940e3853be87142c84d30fa1c08aa3622707da882d299815c",
+            "hash": "8d800f11b35e51ddcdab33ebd26a7dd7bbef62a0137ae604f315f2a74a87c217",
+            "createdAt": "2026-08-24T06:54:40.222Z"
+          },
+          {
+            "id": "d5b9a99d-5fc2-4c2b-a40c-8607dd1d73ad",
+            "seq": 3,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "LEFT",
+              "attachmentId": "aebc3c22-2c0c-484a-bbbb-35e7860124db"
+            },
+            "occurredAt": "2026-08-24T06:54:40.465Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "8d800f11b35e51ddcdab33ebd26a7dd7bbef62a0137ae604f315f2a74a87c217",
+            "hash": "6ca4dd6c1f7766c591915012f6167536867427224ac12892d771aeb15630f684",
+            "createdAt": "2026-08-24T06:54:40.470Z"
+          },
+          {
+            "id": "f2d595f8-47cc-46b4-8f8d-f31e3e6fac17",
+            "seq": 4,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "RIGHT",
+              "attachmentId": "e532c82f-3f21-400f-93af-257abc1a415f"
+            },
+            "occurredAt": "2026-08-24T06:54:40.709Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "6ca4dd6c1f7766c591915012f6167536867427224ac12892d771aeb15630f684",
+            "hash": "e0ad03886c15969e1a796d3978c029ab4a62a98b743b561a3611890cc7327640",
+            "createdAt": "2026-08-24T06:54:40.716Z"
+          },
+          {
+            "id": "2e970d3b-a66d-4c99-b9db-97625a0e3180",
+            "seq": 5,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "ROOF",
+              "attachmentId": "a74439ab-b209-4a75-b586-35ba354ebe3b"
+            },
+            "occurredAt": "2026-08-24T06:54:40.949Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "e0ad03886c15969e1a796d3978c029ab4a62a98b743b561a3611890cc7327640",
+            "hash": "6a1b4bf8a634ebbc689eb33966ee1d6c88e92c3c21dcedd55d883efd34d5642d",
+            "createdAt": "2026-08-24T06:54:40.954Z"
+          },
+          {
+            "id": "c616e807-346b-4462-8f7d-82964a289035",
+            "seq": 6,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "DASH_PANEL",
+              "attachmentId": "a5bf3d76-00d5-43f7-8961-6495d67a8489"
+            },
+            "occurredAt": "2026-08-24T06:54:41.275Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "6a1b4bf8a634ebbc689eb33966ee1d6c88e92c3c21dcedd55d883efd34d5642d",
+            "hash": "60f12d34d5cffef3275d26beb3b1fe33d1aa692ddcb70e34662fad5f9773b418",
+            "createdAt": "2026-08-24T06:54:41.281Z"
+          },
+          {
+            "id": "3dcd29a9-eb57-48c3-9e1b-d494fc6ddcdd",
+            "seq": 7,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "ENGINE",
+              "attachmentId": "d4f78a4e-6df1-45fa-8a86-3a51182d4ae4"
+            },
+            "occurredAt": "2026-08-24T06:54:41.519Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "60f12d34d5cffef3275d26beb3b1fe33d1aa692ddcb70e34662fad5f9773b418",
+            "hash": "27bce40f31e5916095be1b9d3c39d14dfb9a03c846d5f81d52163a05ecbdcf4b",
+            "createdAt": "2026-08-24T06:54:41.523Z"
+          },
+          {
+            "id": "da5a9169-ec11-4fa6-803b-840524b3e122",
+            "seq": 8,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "CHASSIS_ID",
+              "attachmentId": "0401863b-dad5-4f60-b0e0-f7941a16bcb1"
+            },
+            "occurredAt": "2026-08-24T06:54:41.738Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "27bce40f31e5916095be1b9d3c39d14dfb9a03c846d5f81d52163a05ecbdcf4b",
+            "hash": "12835394670a520ebc1d3e7810a4503086327173d331e2324e3a83022b7cc4a9",
+            "createdAt": "2026-08-24T06:54:41.743Z"
+          },
+          {
+            "id": "11cbb034-27b7-4833-897a-6877ebda8568",
+            "seq": 9,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "ODOMETER",
+              "attachmentId": "0bfc5e0c-16e1-40fe-8463-e8a1aa0243eb"
+            },
+            "occurredAt": "2026-08-24T06:54:41.990Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "12835394670a520ebc1d3e7810a4503086327173d331e2324e3a83022b7cc4a9",
+            "hash": "9ab889219456d0b1eba76b5df3206fccbfcb3ed415ae5de849c01b81cdd8b10a",
+            "createdAt": "2026-08-24T06:54:41.996Z"
+          },
+          {
+            "id": "67e7efc9-6fdf-4ca5-a380-5dd058e2cb99",
+            "seq": 10,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "INNER_OBJECTS",
+              "attachmentId": "ebd1e68b-c0ec-4498-ad00-c4cfc72e14ba"
+            },
+            "occurredAt": "2026-08-24T06:54:42.270Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "9ab889219456d0b1eba76b5df3206fccbfcb3ed415ae5de849c01b81cdd8b10a",
+            "hash": "94095d1cdd073a5ff668230fce13d0f8d6d784755c0302053dd616d30c4622aa",
+            "createdAt": "2026-08-24T06:54:42.275Z"
+          },
+          {
+            "id": "38abf593-d62b-4395-bcaa-c10248cc69b1",
+            "seq": 11,
+            "type": "PHOTO_SET",
+            "typeLabel": "Conjunto fotográfico",
+            "payload": {
+              "set": "DAMAGES",
+              "attachmentId": "2e319123-d143-453e-a8d1-4a2497659bdf"
+            },
+            "occurredAt": "2026-08-24T06:54:42.498Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "94095d1cdd073a5ff668230fce13d0f8d6d784755c0302053dd616d30c4622aa",
+            "hash": "f4295b3c968761c33865519fb45f0480a702ce32e68129c6773e707b8290e894",
+            "createdAt": "2026-08-24T06:54:42.503Z"
+          },
+          {
+            "id": "f6020aee-8cd1-4139-a8b5-3e4af1ed4333",
+            "seq": 12,
+            "type": "INSPECTION",
+            "typeLabel": "Vistoria",
+            "payload": {
+              "inspectionId": "784bac69-f9c4-429a-bbe7-f89f36f0f7fd"
+            },
+            "occurredAt": "2026-08-24T06:54:42.725Z",
+            "actorId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "prevHash": "f4295b3c968761c33865519fb45f0480a702ce32e68129c6773e707b8290e894",
+            "hash": "5e9927813604333db59d31d24f659381983e4dbbbd6a8e41ba82bf3ba281cced",
+            "createdAt": "2026-08-24T06:54:42.729Z"
+          }
+        ]
       }
     },
     "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/verify": {
@@ -4534,16 +5843,10 @@
       "corpo": {
         "processId": "3264086d-3c58-4fb3-9080-2e2961e7cab9",
         "valid": true,
-        "eventCount": 0,
-        "headHash": null,
+        "eventCount": 12,
+        "headHash": "5e9927813604333db59d31d24f659381983e4dbbbd6a8e41ba82bf3ba281cced",
         "brokenAt": null,
-        "checkedAt": "2026-08-24T04:10:00.700Z"
-      }
-    },
-    "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/events": {
-      "status": 200,
-      "corpo": {
-        "items": []
+        "checkedAt": "2026-08-24T09:28:56.777Z"
       }
     },
     "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/inspection": {
@@ -4560,19 +5863,97 @@
           "internalObjects": "Documentos no porta-luvas",
           "missingEquipment": "Triângulo ausente",
           "odometerKm": "18761.7",
-          "observations": "Vistoria de entrada conforme Res. CONTRAN 1025/2026. [DEMO-DOSSIE]",
+          "observations": "Vistoria de entrada conforme Res. CONTRAN 1025/2026.",
           "signerName": "Juliana Prado",
           "signatureStatus": "signed",
           "signatureStatusLabel": "signed",
           "signedAt": "2026-06-05T00:11:30.251Z",
-          "completedAt": "2026-06-05T00:11:30.251Z",
-          "completedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
+          "completedAt": "2026-08-24T06:54:42.725Z",
+          "completedBy": "040a04e3-f47f-4765-873d-90b364dd55f6",
           "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
-          "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
+          "updatedBy": "040a04e3-f47f-4765-873d-90b364dd55f6",
           "createdAt": "2026-06-05T00:11:30.251Z",
-          "updatedAt": "2026-06-05T00:11:30.251Z"
+          "updatedAt": "2026-08-24T06:54:42.727Z"
         },
-        "photos": [],
+        "photos": [
+          {
+            "id": "fa9b27d7-f132-4ee4-b1d8-86b9f7ab587b",
+            "set": "FRONT",
+            "fileUrl": "/demo/vistoria/sedan-front.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:39.981Z"
+          },
+          {
+            "id": "60b2297d-1426-4319-89d6-6fadcd690146",
+            "set": "REAR",
+            "fileUrl": "/demo/vistoria/sedan-back.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:40.220Z"
+          },
+          {
+            "id": "aebc3c22-2c0c-484a-bbbb-35e7860124db",
+            "set": "LEFT",
+            "fileUrl": "/demo/vistoria/sedan-left.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:40.467Z"
+          },
+          {
+            "id": "e532c82f-3f21-400f-93af-257abc1a415f",
+            "set": "RIGHT",
+            "fileUrl": "/demo/vistoria/sedan-right.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:40.712Z"
+          },
+          {
+            "id": "a74439ab-b209-4a75-b586-35ba354ebe3b",
+            "set": "ROOF",
+            "fileUrl": "/demo/vistoria/sedan-front.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:40.951Z"
+          },
+          {
+            "id": "a5bf3d76-00d5-43f7-8961-6495d67a8489",
+            "set": "DASH_PANEL",
+            "fileUrl": "/demo/vistoria/sedan-front.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:41.279Z"
+          },
+          {
+            "id": "d4f78a4e-6df1-45fa-8a86-3a51182d4ae4",
+            "set": "ENGINE",
+            "fileUrl": "/demo/vistoria/sedan-front.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:41.521Z"
+          },
+          {
+            "id": "0401863b-dad5-4f60-b0e0-f7941a16bcb1",
+            "set": "CHASSIS_ID",
+            "fileUrl": "/demo/vistoria/sedan-front.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:41.741Z"
+          },
+          {
+            "id": "0bfc5e0c-16e1-40fe-8463-e8a1aa0243eb",
+            "set": "ODOMETER",
+            "fileUrl": "/demo/vistoria/sedan-front.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:41.993Z"
+          },
+          {
+            "id": "ebd1e68b-c0ec-4498-ad00-c4cfc72e14ba",
+            "set": "INNER_OBJECTS",
+            "fileUrl": "/demo/vistoria/sedan-back.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:42.272Z"
+          },
+          {
+            "id": "2e319123-d143-453e-a8d1-4a2497659bdf",
+            "set": "DAMAGES",
+            "fileUrl": "/demo/vistoria/sedan-left.png",
+            "status": "stored",
+            "createdAt": "2026-08-24T06:54:42.501Z"
+          }
+        ],
         "requiredSets": [
           "FRONT",
           "REAR",
@@ -4586,7 +5967,7 @@
           "INNER_OBJECTS",
           "DAMAGES"
         ],
-        "complete": false
+        "complete": true
       }
     },
     "GET /api/v1/impound-processes/3264086d-3c58-4fb3-9080-2e2961e7cab9/release": {
@@ -4610,45 +5991,6 @@
         },
         "attempts": [],
         "edicts": []
-      }
-    },
-    "GET /api/v1/yards/23c99fed-2ba1-48b1-92b4-4438e3e05306": {
-      "status": 200,
-      "corpo": {
-        "data": {
-          "id": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
-          "branchId": "159a0208-0dad-48d5-945b-0f2ef396d73f",
-          "name": "Pátio Norte",
-          "address": "Av. das Indústrias, 4200 — Curitiba/PR [demo-painel]",
-          "capacityHint": 40,
-          "timezone": "America/Sao_Paulo",
-          "active": true,
-          "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
-          "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
-          "createdAt": "2026-08-24T00:11:29.907Z",
-          "updatedAt": "2026-08-24T00:11:29.907Z"
-        }
-      }
-    },
-    "GET /api/v1/yards/23c99fed-2ba1-48b1-92b4-4438e3e05306/areas": {
-      "status": 200,
-      "corpo": {
-        "items": [
-          {
-            "id": "d2148d7f-bb8c-4c9a-a46d-c8215a211db8",
-            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
-            "parentId": null,
-            "kind": "BLOCK",
-            "kindLabel": "Quadra",
-            "name": "Setor A",
-            "covered": false,
-            "vehicleClass": "CAR",
-            "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
-            "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
-            "createdAt": "2026-08-24T00:11:29.907Z",
-            "updatedAt": "2026-08-24T00:11:29.907Z"
-          }
-        ]
       }
     },
     "GET /api/v1/yards/23c99fed-2ba1-48b1-92b4-4438e3e05306/occupancy": {
@@ -5217,6 +6559,45 @@
             "status": "FREE",
             "statusLabel": "Livre",
             "currentProcessId": null,
+            "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
+            "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
+            "createdAt": "2026-08-24T00:11:29.907Z",
+            "updatedAt": "2026-08-24T00:11:29.907Z"
+          }
+        ]
+      }
+    },
+    "GET /api/v1/yards/23c99fed-2ba1-48b1-92b4-4438e3e05306": {
+      "status": 200,
+      "corpo": {
+        "data": {
+          "id": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+          "branchId": "159a0208-0dad-48d5-945b-0f2ef396d73f",
+          "name": "Pátio Norte",
+          "address": "Av. das Indústrias, 4200 — Curitiba/PR",
+          "capacityHint": 40,
+          "timezone": "America/Sao_Paulo",
+          "active": true,
+          "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
+          "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
+          "createdAt": "2026-08-24T00:11:29.907Z",
+          "updatedAt": "2026-08-24T00:11:29.907Z"
+        }
+      }
+    },
+    "GET /api/v1/yards/23c99fed-2ba1-48b1-92b4-4438e3e05306/areas": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "d2148d7f-bb8c-4c9a-a46d-c8215a211db8",
+            "yardId": "23c99fed-2ba1-48b1-92b4-4438e3e05306",
+            "parentId": null,
+            "kind": "BLOCK",
+            "kindLabel": "Quadra",
+            "name": "Setor A",
+            "covered": false,
+            "vehicleClass": "CAR",
             "createdBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
             "updatedBy": "d08e2fe6-104a-4541-a262-1550ca858f00",
             "createdAt": "2026-08-24T00:11:29.907Z",
@@ -5800,6 +7181,273 @@
             "updatedAt": "2026-08-24T00:11:29.907Z"
           }
         ]
+      }
+    },
+    "GET /api/v1/price-tables?limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "9aa26ff6-a10e-4747-80cd-d0607d0377b8",
+            "name": "Tabela Sazonal — Alta Temporada",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "3fa5ae01-7704-4f20-ad8e-a074a0d2ff4b",
+            "name": "Contrato Transportadora Aurora",
+            "currency": "BRL",
+            "itemCount": 4,
+            "minUnitPrice": 5.4,
+            "maxUnitPrice": 152,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "name": "Pátio — Custódia e Diárias 2026",
+            "currency": "BRL",
+            "itemCount": 7,
+            "minUnitPrice": 18,
+            "maxUnitPrice": 168,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "name": "Guincho Pesado — Tabela Padrão 2026",
+            "currency": "BRL",
+            "itemCount": 6,
+            "minUnitPrice": 14.5,
+            "maxUnitPrice": 3400,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "name": "Guincho Leve — Tabela Padrão 2026",
+            "currency": "BRL",
+            "itemCount": 8,
+            "minUnitPrice": 6.5,
+            "maxUnitPrice": 640,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "c3f327e1-1123-48dd-988f-d22472a44786",
+            "name": "teste",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-21T23:07:11.454Z"
+          },
+          {
+            "id": "76fa868f-396f-47c0-962e-74effd8f48d2",
+            "name": "Tabela Smoke 19355",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-13T06:32:52.937Z"
+          },
+          {
+            "id": "f6954622-0dd0-4f6c-aa0e-6a73deaf3a90",
+            "name": "Tabela Reverif C2 3914",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T17:47:33.905Z"
+          },
+          {
+            "id": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "name": "Auditoria A1 1783874622",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T16:43:43.004Z"
+          },
+          {
+            "id": "9181adf0-e598-4e1a-a42f-3cb254a90dc0",
+            "name": "Tabela Smoke Tarifas",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T16:23:56.219Z"
+          },
+          {
+            "id": "46b7322c-03e4-40bc-b4f2-f4bde6d7fe33",
+            "name": "Prova 1783820763934862800",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "archived",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:46:04.382Z"
+          },
+          {
+            "id": "bd2ec1ae-962a-4207-be8c-45bc4f562aeb",
+            "name": "Editavel 1783820571713284800",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:42:52.361Z"
+          },
+          {
+            "id": "5d2ef0ed-f35a-471a-ba64-0dadb5d7b8f3",
+            "name": "Terminal 1783820569385872200",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "archived",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:42:49.997Z"
+          },
+          {
+            "id": "a9303f53-80ef-47aa-9cc0-54ea1886faed",
+            "name": "Tabela Auditoria 1783820445",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:40:46.304Z"
+          },
+          {
+            "id": "936c0f77-b166-4f15-888e-eda8347a96a7",
+            "name": "Tabela Guincho 2026",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T00:39:28.441Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 15
+        }
       }
     },
     "GET /api/v1/financial-summary": {
@@ -7808,6 +9456,1941 @@
           "limit": 100,
           "offset": 0,
           "total": 40
+        }
+      }
+    },
+    "GET /api/v1/operator-profiles?is_active=true&limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "3a10ab19-0df7-4695-aa66-cb416b38bd24",
+            "userId": "d64cdb9e-723e-43b0-b967-4a709dd865c6",
+            "fullName": "Guincheiro Prova Ciclo2",
+            "hasCnh": true,
+            "cnhCategory": "E",
+            "cnhExpiresAt": "2030-05-01T00:00:00.000Z",
+            "trackingConsent": true,
+            "trackingConsentAt": "2026-07-13T00:14:37.003Z",
+            "phone": null,
+            "isActive": true,
+            "createdAt": "2026-07-13T00:14:37.006Z"
+          },
+          {
+            "id": "77d6e9c5-3479-4e08-9f5e-6cd003651c66",
+            "userId": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "fullName": "Guincheiro Silva",
+            "hasCnh": true,
+            "cnhCategory": "E",
+            "cnhExpiresAt": "2030-05-01T00:00:00.000Z",
+            "trackingConsent": true,
+            "trackingConsentAt": "2026-07-13T00:05:14.045Z",
+            "phone": null,
+            "isActive": true,
+            "createdAt": "2026-07-13T00:05:14.048Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 2
+        }
+      }
+    },
+    "GET /api/v1/users": {
+      "status": 200,
+      "corpo": {
+        "data": [
+          {
+            "id": "040a04e3-f47f-4765-873d-90b364dd55f6",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Admin Demo",
+            "email": "admin.demo@example.com",
+            "roles": [
+              "tenant_admin"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-05-28T00:08:48.395Z"
+          },
+          {
+            "id": "078e2f32-47c4-4485-a813-c97aa1475aa4",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Platform Admin Local",
+            "email": "platform.admin@erp.local",
+            "roles": [
+              "super_admin"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-06-08T03:36:00.528Z"
+          },
+          {
+            "id": "5ea53da4-6e2a-4003-98ae-4b4d15019879",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Marina Costa (Operador)",
+            "email": "operador.demo@example.com",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T02:02:37.016Z"
+          },
+          {
+            "id": "5758ac27-00b3-437b-ba2e-581634c06db5",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Roberto Lima",
+            "email": "operador2.demo@example.com",
+            "roles": [],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T02:02:37.024Z"
+          },
+          {
+            "id": "2d524f20-4fd6-4d16-8448-5124138f081b",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Ana Plataforma (Admin Plataforma)",
+            "email": "plataforma.demo@example.com",
+            "roles": [
+              "super_admin"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:04.582Z"
+          },
+          {
+            "id": "d64cdb9e-723e-43b0-b967-4a709dd865c6",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Gustavo Reis (Gestor Operacional)",
+            "email": "gestor.demo@example.com",
+            "roles": [
+              "manager"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:05.544Z"
+          },
+          {
+            "id": "04def5c9-ce6c-4db8-b284-39e6082d196b",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Beatriz Lima (Financeiro)",
+            "email": "financeiro.demo@example.com",
+            "roles": [
+              "finance"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:06.206Z"
+          },
+          {
+            "id": "0289671c-bc37-4832-b16e-346e18661b97",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Lucas Prado (Estoque)",
+            "email": "estoque.demo@example.com",
+            "roles": [
+              "inventory"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:06.343Z"
+          },
+          {
+            "id": "d08e2fe6-104a-4541-a262-1550ca858f00",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Carla Mendes (Técnico de Campo)",
+            "email": "tecnico.demo@example.com",
+            "roles": [
+              "field_technician"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:06.564Z"
+          },
+          {
+            "id": "06b222eb-5a20-465e-bf8e-dba05ce96bda",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Rafael Souza (Auditor)",
+            "email": "auditor.demo@example.com",
+            "roles": [
+              "auditor"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:06.875Z"
+          },
+          {
+            "id": "539cd014-b3c2-453c-8ab0-4eb1fba4558a",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Paula Nunes (Suporte)",
+            "email": "suporte.demo@example.com",
+            "roles": [
+              "support"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-10T04:05:06.985Z"
+          },
+          {
+            "id": "47b89304-087d-42ce-b9f4-b5a20934e481",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Ana Beatriz Rocha",
+            "email": "tecnico1.cwb@example.com",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-14T00:32:44.228Z"
+          },
+          {
+            "id": "38ca5a94-0c37-49cc-9401-4c78aa4814f1",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Rafael Mendes",
+            "email": "tecnico2.cwb@example.com",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-14T00:32:44.308Z"
+          },
+          {
+            "id": "d99e8d69-97fb-451f-8f7d-1ada85d3eecd",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Camila Nunes",
+            "email": "tecnico3.cwb@example.com",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-14T00:32:44.367Z"
+          },
+          {
+            "id": "0e56e022-a584-4000-a9a3-9cfdf85619b8",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Diego Ferreira",
+            "email": "tecnico4.cwb@example.com",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-14T00:32:44.416Z"
+          },
+          {
+            "id": "c2267cc4-2a92-4a31-b791-b9e78042e6ec",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Admin Demo (Administrador)",
+            "email": "admin@demo.com",
+            "roles": [
+              "tenant_admin"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:51.606Z"
+          },
+          {
+            "id": "96724e75-f5d1-4035-9090-ba743c4465fa",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Rafael Souza (Auditor)",
+            "email": "auditor@demo.com",
+            "roles": [
+              "auditor"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:51.860Z"
+          },
+          {
+            "id": "96292cb7-d7fe-4830-895b-fcd4999b2977",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Diego Ramos (Operação de Despacho)",
+            "email": "despacho@demo.com",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:52.152Z"
+          },
+          {
+            "id": "812765b2-a015-4079-93f7-f85cc269b2cb",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Beatriz Lima (Financeiro)",
+            "email": "financeiro@demo.com",
+            "roles": [
+              "finance"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:52.371Z"
+          },
+          {
+            "id": "654ed7e4-00fc-4958-90df-600f7d4fadee",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Gustavo Reis (Gestor Operacional)",
+            "email": "gestor@demo.com",
+            "roles": [
+              "manager"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:52.909Z"
+          },
+          {
+            "id": "dcbcf559-34ae-4c9c-b50b-f54c70646d8d",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Marina Costa (Operador)",
+            "email": "marina.costa@techsolutions.example",
+            "roles": [
+              "operator"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:53.172Z"
+          },
+          {
+            "id": "5cdc1b94-f7b8-49f0-98a6-f95f1afa07a1",
+            "tenantId": "a79aedf2-44c8-478f-a6ce-cf6248a16f2b",
+            "name": "Ana Plataforma (Admin Plataforma)",
+            "email": "platform@demo.com",
+            "roles": [
+              "super_admin"
+            ],
+            "branchIds": [
+              "607dd312-a4bb-49d8-b127-55a1b2c37099"
+            ],
+            "status": "active",
+            "createdAt": "2026-07-15T00:11:53.984Z"
+          }
+        ]
+      }
+    },
+    "GET /api/v1/commissions/statements/summary": {
+      "status": 200,
+      "corpo": {
+        "data": {
+          "items": [],
+          "total": 0,
+          "from": null,
+          "to": null
+        }
+      }
+    },
+    "GET /api/v1/customers?is_active=true&limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "5e4fd1e6-3186-4775-a00d-7fdd60aa1183",
+            "name": "Metalúrgica Ipiranga",
+            "document": "89.012.345/0001-67",
+            "phone": "(41) 3346-7788",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "39505c97-6a8d-42d3-8771-d57143f63fcf",
+            "name": "Agropecuária Serra Azul",
+            "document": "45.678.901/0001-23",
+            "phone": "(42) 3623-7700",
+            "email": null,
+            "city": "Ponta Grossa",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "7cdbf00a-a73d-4cb3-b827-cc23e621612c",
+            "name": "Frigorífico Vale Verde",
+            "document": "56.789.012/0001-34",
+            "phone": "(41) 3675-2200",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "ad33eeaf-b548-44b2-90f1-b9755b12081e",
+            "name": "Distribuidora Pampa",
+            "document": "67.890.123/0001-45",
+            "phone": "(41) 3388-9911",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "808b2b82-fdcf-4035-8ace-5b31db0b9bde",
+            "name": "Construtora Meridiano S.A.",
+            "document": "23.456.789/0001-01",
+            "phone": "(41) 3029-5060",
+            "email": null,
+            "city": "Fazenda Rio Grande",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "dcb6c9a0-6123-4f43-82eb-0d2326986f97",
+            "name": "Log&Co Transportes",
+            "document": "34.567.890/0001-12",
+            "phone": "(41) 3072-8890",
+            "email": null,
+            "city": "São José dos Pinhais",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "be08ca8d-8baa-4223-80f0-43d12a452a36",
+            "name": "Transportadora Aurora Ltda",
+            "document": "98.765.432/0001-10",
+            "phone": "(41) 3350-4477",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "19ef7a89-4338-4256-b46c-4c87d6a1a85d",
+            "name": "Particular",
+            "document": null,
+            "phone": null,
+            "email": null,
+            "city": null,
+            "state": null,
+            "isActive": true,
+            "createdAt": "2026-08-24T01:46:12.485Z"
+          },
+          {
+            "id": "dfbacdac-7043-4b55-ae29-bc351f205fe1",
+            "name": "Indústria Alfa Ltda",
+            "document": "12.345.678/0001-90",
+            "phone": null,
+            "email": null,
+            "city": "São Paulo",
+            "state": "SP",
+            "isActive": true,
+            "createdAt": "2026-07-10T02:02:37.135Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 9
+        }
+      }
+    },
+    "GET /api/v1/service-catalog?is_active=true&limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "69362dec-4d46-432b-8bc1-00f115244747",
+            "name": "Remoção por determinação de autoridade",
+            "category": "Pátio e custódia",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 150,
+            "basePrice": 260,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "9d2bde13-cb3c-4d09-97dd-a130db0ae7ef",
+            "name": "Taxa de entrada, vistoria e liberação",
+            "category": "Pátio e custódia",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 45,
+            "basePrice": 135,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "e4d2be44-8020-424d-9e78-74ac657e43fe",
+            "name": "Reboque leve — saída urbana",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 90,
+            "basePrice": 180,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "d382fc15-c514-406f-8570-563b199bcff8",
+            "name": "Reboque leve — quilômetro urbano",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": null,
+            "basePrice": 6.5,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "0bb52f3d-1100-4bd6-b012-4511ef43d7d1",
+            "name": "Reboque leve — quilômetro em rodovia",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": null,
+            "basePrice": 8.9,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "904cfae1-6897-437f-be61-ba0b20e1a9bd",
+            "name": "Reboque pesado — saída",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 300,
+            "basePrice": 890,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "60a3c85e-e8ff-465c-b2fe-466cfd382b1b",
+            "name": "Reboque pesado — quilômetro rodado",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": null,
+            "basePrice": 14.5,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "2f4d462f-b5bf-4fbc-8828-70091d32920c",
+            "name": "Reboque de motocicleta",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 60,
+            "basePrice": 120,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "9ff4e642-dc94-4519-b7a1-3c2b4a73f53c",
+            "name": "Içamento com guincho pesado",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 180,
+            "basePrice": 640,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "3d812b8e-7f88-4fb2-822e-43e978e8b55c",
+            "name": "Desatolamento e resgate",
+            "category": "Socorro",
+            "serviceType": "socorro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 120,
+            "basePrice": 380,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "74181b15-93b1-4962-aa3d-de61b99ced34",
+            "name": "Resgate em ribanceira",
+            "category": "Socorro",
+            "serviceType": "socorro",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 360,
+            "basePrice": 3400,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "f66c31c1-7754-4a97-9b8c-2fcbe8c10de5",
+            "name": "Operação com munck",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 60,
+            "basePrice": 420,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "5c871e37-74a2-477d-b0c2-c7f92d2f9c4c",
+            "name": "Transbordo de carga",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 240,
+            "basePrice": 1250,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "8252d276-afe6-4c13-9fa4-53c2b436423e",
+            "name": "Plataforma estendida",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 240,
+            "basePrice": 1680,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "0ea8325f-da5c-4670-86d7-941ad31c12d6",
+            "name": "Hora parada e espera",
+            "category": "Adicionais",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 60,
+            "basePrice": 95,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "749f9cdd-e313-4955-9e10-1053c69de71f",
+            "name": "Adicional de horário e feriado",
+            "category": "Adicionais",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": null,
+            "basePrice": 145,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "name": "Diária de permanência em pátio",
+            "category": "Pátio e custódia",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": null,
+            "basePrice": 42,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "1d550007-8d6f-4b3c-8e38-8d4e1437863b",
+            "name": "Remoção interna entre vagas",
+            "category": "Pátio e custódia",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 20,
+            "basePrice": 55,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "6591a6c6-d622-4a1c-8302-aff60ef32d92",
+            "name": "Reboque leve — até 200 km",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 240,
+            "basePrice": 990,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:45:04.147Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 19
+        }
+      }
+    },
+    "GET /api/v1/price-tables?is_active=true&limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "3fa5ae01-7704-4f20-ad8e-a074a0d2ff4b",
+            "name": "Contrato Transportadora Aurora",
+            "currency": "BRL",
+            "itemCount": 4,
+            "minUnitPrice": 5.4,
+            "maxUnitPrice": 152,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "name": "Pátio — Custódia e Diárias 2026",
+            "currency": "BRL",
+            "itemCount": 7,
+            "minUnitPrice": 18,
+            "maxUnitPrice": 168,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "name": "Guincho Pesado — Tabela Padrão 2026",
+            "currency": "BRL",
+            "itemCount": 6,
+            "minUnitPrice": 14.5,
+            "maxUnitPrice": 3400,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "name": "Guincho Leve — Tabela Padrão 2026",
+            "currency": "BRL",
+            "itemCount": 8,
+            "minUnitPrice": 6.5,
+            "maxUnitPrice": 640,
+            "version": 1,
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "c3f327e1-1123-48dd-988f-d22472a44786",
+            "name": "teste",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-21T23:07:11.454Z"
+          },
+          {
+            "id": "76fa868f-396f-47c0-962e-74effd8f48d2",
+            "name": "Tabela Smoke 19355",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-13T06:32:52.937Z"
+          },
+          {
+            "id": "f6954622-0dd0-4f6c-aa0e-6a73deaf3a90",
+            "name": "Tabela Reverif C2 3914",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T17:47:33.905Z"
+          },
+          {
+            "id": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "name": "Auditoria A1 1783874622",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T16:43:43.004Z"
+          },
+          {
+            "id": "9181adf0-e598-4e1a-a42f-3cb254a90dc0",
+            "name": "Tabela Smoke Tarifas",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T16:23:56.219Z"
+          },
+          {
+            "id": "46b7322c-03e4-40bc-b4f2-f4bde6d7fe33",
+            "name": "Prova 1783820763934862800",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "archived",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:46:04.382Z"
+          },
+          {
+            "id": "bd2ec1ae-962a-4207-be8c-45bc4f562aeb",
+            "name": "Editavel 1783820571713284800",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:42:52.361Z"
+          },
+          {
+            "id": "5d2ef0ed-f35a-471a-ba64-0dadb5d7b8f3",
+            "name": "Terminal 1783820569385872200",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "archived",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:42:49.997Z"
+          },
+          {
+            "id": "a9303f53-80ef-47aa-9cc0-54ea1886faed",
+            "name": "Tabela Auditoria 1783820445",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T01:40:46.304Z"
+          },
+          {
+            "id": "936c0f77-b166-4f15-888e-eda8347a96a7",
+            "name": "Tabela Guincho 2026",
+            "currency": "BRL",
+            "itemCount": 0,
+            "minUnitPrice": null,
+            "maxUnitPrice": null,
+            "version": 1,
+            "validFrom": null,
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "scope": null,
+            "scopeLabel": null,
+            "vehicleCategory": null,
+            "createdAt": "2026-07-12T00:39:28.441Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 14
+        }
+      }
+    },
+    "GET /api/v1/tariffs?limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "11947da4-47dc-4fb3-8c27-574251f56b2d",
+            "name": "Diária de veículo pesado",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "customerId": null,
+            "unitPrice": 96,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "1222769b-26aa-4772-908d-4868b35c0e0c",
+            "name": "Saída de guincho — perímetro urbano",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "e4d2be44-8020-424d-9e78-74ac657e43fe",
+            "customerId": null,
+            "unitPrice": 180,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "01df7d6c-e8bb-4002-a90d-ccc970eaea7f",
+            "name": "Diária de pátio — contrato",
+            "priceTableId": "3fa5ae01-7704-4f20-ad8e-a074a0d2ff4b",
+            "serviceCatalogId": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "customerId": "be08ca8d-8baa-4223-80f0-43d12a452a36",
+            "unitPrice": 34,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "9f71e486-8023-4494-adef-83e8d9950546",
+            "name": "Quilômetro rodado — urbano",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "d382fc15-c514-406f-8570-563b199bcff8",
+            "customerId": null,
+            "unitPrice": 6.5,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "861d3128-a623-424a-a313-1b043e857e79",
+            "name": "Hora parada — contrato",
+            "priceTableId": "3fa5ae01-7704-4f20-ad8e-a074a0d2ff4b",
+            "serviceCatalogId": "0ea8325f-da5c-4670-86d7-941ad31c12d6",
+            "customerId": "be08ca8d-8baa-4223-80f0-43d12a452a36",
+            "unitPrice": 78,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "d77dd9cd-a53b-4600-ae5b-4973c3bda297",
+            "name": "Quilômetro rodado — contrato",
+            "priceTableId": "3fa5ae01-7704-4f20-ad8e-a074a0d2ff4b",
+            "serviceCatalogId": "d382fc15-c514-406f-8570-563b199bcff8",
+            "customerId": "be08ca8d-8baa-4223-80f0-43d12a452a36",
+            "unitPrice": 5.4,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "bba3d857-5d81-45f8-ad48-a020bf99e659",
+            "name": "Quilômetro rodado — rodovia",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "0bb52f3d-1100-4bd6-b012-4511ef43d7d1",
+            "customerId": null,
+            "unitPrice": 8.9,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "cda56298-36a5-4dbe-9246-40f8a302efee",
+            "name": "Quilômetro rodado — pesado",
+            "priceTableId": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "serviceCatalogId": "60a3c85e-e8ff-465c-b2fe-466cfd382b1b",
+            "customerId": null,
+            "unitPrice": 14.5,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "3fb17ff5-c5c2-4a2d-9e38-ed47d92ce501",
+            "name": "Saída de guincho pesado",
+            "priceTableId": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "serviceCatalogId": "904cfae1-6897-437f-be61-ba0b20e1a9bd",
+            "customerId": null,
+            "unitPrice": 890,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "6822d3e5-789d-4120-8252-f4abb894e99b",
+            "name": "Içamento com guincho pesado",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "9ff4e642-dc94-4519-b7a1-3c2b4a73f53c",
+            "customerId": null,
+            "unitPrice": 640,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "7f1aded9-621e-48a5-beba-3024e8954cbd",
+            "name": "Desatolamento",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "3d812b8e-7f88-4fb2-822e-43e978e8b55c",
+            "customerId": null,
+            "unitPrice": 380,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "817c0d56-ae78-4965-80bd-10c7df46e610",
+            "name": "Hora parada / espera",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "0ea8325f-da5c-4670-86d7-941ad31c12d6",
+            "customerId": null,
+            "unitPrice": 95,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "cee754b4-3dfa-4fa0-a19f-0c9252f4c5ab",
+            "name": "Serviço noturno (adicional)",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "749f9cdd-e313-4955-9e10-1053c69de71f",
+            "customerId": null,
+            "unitPrice": 120,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "c5f8bb83-ed25-4c42-8964-afe5b0295641",
+            "name": "Finais de semana e feriados (adicional)",
+            "priceTableId": "83aa0f53-eb0f-4960-b685-59e633f8f3af",
+            "serviceCatalogId": "749f9cdd-e313-4955-9e10-1053c69de71f",
+            "customerId": null,
+            "unitPrice": 145,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "a5eca750-b1a6-4e31-8c49-a5a633b864aa",
+            "name": "Saída de guincho — contrato",
+            "priceTableId": "3fa5ae01-7704-4f20-ad8e-a074a0d2ff4b",
+            "serviceCatalogId": "e4d2be44-8020-424d-9e78-74ac657e43fe",
+            "customerId": "be08ca8d-8baa-4223-80f0-43d12a452a36",
+            "unitPrice": 152,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "ac38377c-2621-4a0b-96a3-8cb3be9dcce8",
+            "name": "Remoção interna entre vagas",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "1d550007-8d6f-4b3c-8e38-8d4e1437863b",
+            "customerId": null,
+            "unitPrice": 55,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "f9b8bd4f-1b73-4ddf-bef7-e5fe15832700",
+            "name": "Taxa de liberação",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "9d2bde13-cb3c-4d09-97dd-a130db0ae7ef",
+            "customerId": null,
+            "unitPrice": 168,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "36451305-537d-41fa-a73e-2ab1688dfa86",
+            "name": "Taxa de entrada e vistoria",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "9d2bde13-cb3c-4d09-97dd-a130db0ae7ef",
+            "customerId": null,
+            "unitPrice": 135,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "ace976ed-909f-49c7-bd7f-4cbe6440a252",
+            "name": "Diária de motocicleta",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "customerId": null,
+            "unitPrice": 24,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "6d798046-e063-4aec-8b0d-f99244b53f9e",
+            "name": "Guarda em área coberta (adicional)",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "customerId": null,
+            "unitPrice": 18,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "35c525f2-05a2-46a6-8964-a1d66fdb5da9",
+            "name": "Saída de guincho — alta temporada",
+            "priceTableId": "9aa26ff6-a10e-4747-80cd-d0607d0377b8",
+            "serviceCatalogId": "e4d2be44-8020-424d-9e78-74ac657e43fe",
+            "customerId": null,
+            "unitPrice": 235,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "faab6e18-f0c4-4239-93e7-15ec41751306",
+            "name": "Quilômetro rodado — alta temporada",
+            "priceTableId": "9aa26ff6-a10e-4747-80cd-d0607d0377b8",
+            "serviceCatalogId": "d382fc15-c514-406f-8570-563b199bcff8",
+            "customerId": null,
+            "unitPrice": 9.8,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "aed80c14-3c6e-406e-8be2-563354b2f28f",
+            "name": "Resgate em ribanceira",
+            "priceTableId": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "serviceCatalogId": "74181b15-93b1-4962-aa3d-de61b99ced34",
+            "customerId": null,
+            "unitPrice": 3400,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "d68859d7-d3f2-4385-b476-d1e6f4d7383a",
+            "name": "Hora de operação com munck",
+            "priceTableId": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "serviceCatalogId": "f66c31c1-7754-4a97-9b8c-2fcbe8c10de5",
+            "customerId": null,
+            "unitPrice": 420,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "e432f1e8-ba01-4b14-8434-1479d7f6f72b",
+            "name": "Transbordo de carga",
+            "priceTableId": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "serviceCatalogId": "5c871e37-74a2-477d-b0c2-c7f92d2f9c4c",
+            "customerId": null,
+            "unitPrice": 1250,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "def5ed52-5d5e-4df8-b668-c5116ef837c8",
+            "name": "Plataforma estendida",
+            "priceTableId": "9a862628-ba9e-4c6a-9820-71cece67a2a8",
+            "serviceCatalogId": "8252d276-afe6-4c13-9fa4-53c2b436423e",
+            "customerId": null,
+            "unitPrice": 1680,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "f73e77f6-3803-480b-ae50-75ce4e050980",
+            "name": "Plantão 24h (adicional)",
+            "priceTableId": "9aa26ff6-a10e-4747-80cd-d0607d0377b8",
+            "serviceCatalogId": "749f9cdd-e313-4955-9e10-1053c69de71f",
+            "customerId": null,
+            "unitPrice": 190,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "74aced83-a1aa-4725-b0d7-a252d12501b3",
+            "name": "Diária de veículo leve",
+            "priceTableId": "297f7515-6da2-488e-b801-b9e70dd9a4e9",
+            "serviceCatalogId": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "customerId": null,
+            "unitPrice": 42,
+            "currency": "BRL",
+            "origin": "DEMO-PRECOS",
+            "validFrom": "2026-07-10T01:05:55.491Z",
+            "validTo": null,
+            "status": "published",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:05:55.491Z"
+          },
+          {
+            "id": "2b8d5219-d726-488f-8ed8-4083b75aefa8",
+            "name": "(registro de teste sem nome)",
+            "priceTableId": "76fa868f-396f-47c0-962e-74effd8f48d2",
+            "serviceCatalogId": "93d006e2-d4d8-4e67-9578-b62da42a01d2",
+            "customerId": null,
+            "unitPrice": 999,
+            "currency": "BRL",
+            "origin": "smoke",
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-13T06:32:53.462Z"
+          },
+          {
+            "id": "d754c719-695a-44f3-a96e-0487d872db7f",
+            "name": "Reverif C2 vigencia",
+            "priceTableId": "f6954622-0dd0-4f6c-aa0e-6a73deaf3a90",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 175.25,
+            "currency": "BRL",
+            "origin": "Tabela DNIT 2026 rev",
+            "validFrom": "2026-07-01T00:00:00.000Z",
+            "validTo": "2026-12-31T00:00:00.000Z",
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-12T17:47:34.363Z"
+          },
+          {
+            "id": "f767a85e-bd59-4f06-80fd-7083b8d9bf77",
+            "name": null,
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 200,
+            "currency": "BRL",
+            "origin": "validador-1783875242",
+            "validFrom": null,
+            "validTo": null,
+            "status": "active",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:54:02.856Z"
+          },
+          {
+            "id": "d9f75707-232b-46ae-85d2-20ebb3602395",
+            "name": "[auditoria inspetor - ignorar]",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": "93d006e2-d4d8-4e67-9578-b62da42a01d2",
+            "customerId": null,
+            "unitPrice": 12,
+            "currency": "BRL",
+            "origin": "insp-default",
+            "validFrom": null,
+            "validTo": null,
+            "status": "active",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:52:11.887Z"
+          },
+          {
+            "id": "4c582d8a-c34b-4d61-9c2f-30bdba7ef475",
+            "name": "[auditoria inspetor - ignorar]",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 88,
+            "currency": "BRL",
+            "origin": "dupicata",
+            "validFrom": null,
+            "validTo": null,
+            "status": "active",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:49:30.394Z"
+          },
+          {
+            "id": "715496cb-cea1-41c6-a3eb-04f9b3e419b5",
+            "name": "[auditoria inspetor - ignorar]",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 99,
+            "currency": "BRL",
+            "origin": "dup",
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:49:30.191Z"
+          },
+          {
+            "id": "7d3dcc09-360d-4acd-966c-950440a14bc8",
+            "name": "[auditoria inspetor - ignorar]",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 222,
+            "currency": "BRL",
+            "origin": "patched",
+            "validFrom": "2026-07-01T00:00:00.000Z",
+            "validTo": "2026-12-31T00:00:00.000Z",
+            "status": "active",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:49:29.514Z"
+          },
+          {
+            "id": "673d605f-232b-48cb-954c-65d77f861f9c",
+            "name": "(registro de teste sem nome)",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": "93d006e2-d4d8-4e67-9578-b62da42a01d2",
+            "customerId": "dfbacdac-7043-4b55-ae29-bc351f205fe1",
+            "unitPrice": 90,
+            "currency": "BRL",
+            "origin": "contrato-cliente",
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:45:00.798Z"
+          },
+          {
+            "id": "fedbc588-0513-48de-a48b-d7c46793dbce",
+            "name": "(registro de teste sem nome)",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": "93d006e2-d4d8-4e67-9578-b62da42a01d2",
+            "customerId": null,
+            "unitPrice": 100,
+            "currency": "BRL",
+            "origin": "tabela-padrao",
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:45:00.562Z"
+          },
+          {
+            "id": "916413b1-535f-4cbd-8410-62257e396e5b",
+            "name": "Avulsa 1783874622",
+            "priceTableId": "34d6b699-efbe-4bc1-8cf2-350168a8c4db",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 199.99,
+            "currency": "BRL",
+            "origin": "contrato-base",
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:43:43.530Z"
+          },
+          {
+            "id": "df011c37-bc05-4057-b2f5-776886158d40",
+            "name": "Sa�da padr�o",
+            "priceTableId": "9181adf0-e598-4e1a-a42f-3cb254a90dc0",
+            "serviceCatalogId": null,
+            "customerId": null,
+            "unitPrice": 199.9,
+            "currency": "BRL",
+            "origin": "tabela base",
+            "validFrom": null,
+            "validTo": null,
+            "status": "draft",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:27:40.706Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 39
+        }
+      }
+    },
+    "GET /api/v1/service-catalog?limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "69362dec-4d46-432b-8bc1-00f115244747",
+            "name": "Remoção por determinação de autoridade",
+            "category": "Pátio e custódia",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 150,
+            "basePrice": 260,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "ea9a90ee-6ae9-4dfe-89ba-c942546fdbbf",
+            "name": "Diária de permanência em pátio",
+            "category": "Pátio e custódia",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": null,
+            "basePrice": 42,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "1d550007-8d6f-4b3c-8e38-8d4e1437863b",
+            "name": "Remoção interna entre vagas",
+            "category": "Pátio e custódia",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 20,
+            "basePrice": 55,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "9d2bde13-cb3c-4d09-97dd-a130db0ae7ef",
+            "name": "Taxa de entrada, vistoria e liberação",
+            "category": "Pátio e custódia",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 45,
+            "basePrice": 135,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "e4d2be44-8020-424d-9e78-74ac657e43fe",
+            "name": "Reboque leve — saída urbana",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 90,
+            "basePrice": 180,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "d382fc15-c514-406f-8570-563b199bcff8",
+            "name": "Reboque leve — quilômetro urbano",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": null,
+            "basePrice": 6.5,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "0bb52f3d-1100-4bd6-b012-4511ef43d7d1",
+            "name": "Reboque leve — quilômetro em rodovia",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": null,
+            "basePrice": 8.9,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "904cfae1-6897-437f-be61-ba0b20e1a9bd",
+            "name": "Reboque pesado — saída",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 300,
+            "basePrice": 890,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "60a3c85e-e8ff-465c-b2fe-466cfd382b1b",
+            "name": "Reboque pesado — quilômetro rodado",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": null,
+            "basePrice": 14.5,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "2f4d462f-b5bf-4fbc-8828-70091d32920c",
+            "name": "Reboque de motocicleta",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 60,
+            "basePrice": 120,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "9ff4e642-dc94-4519-b7a1-3c2b4a73f53c",
+            "name": "Içamento com guincho pesado",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 180,
+            "basePrice": 640,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "3d812b8e-7f88-4fb2-822e-43e978e8b55c",
+            "name": "Desatolamento e resgate",
+            "category": "Socorro",
+            "serviceType": "socorro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 120,
+            "basePrice": 380,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "74181b15-93b1-4962-aa3d-de61b99ced34",
+            "name": "Resgate em ribanceira",
+            "category": "Socorro",
+            "serviceType": "socorro",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 360,
+            "basePrice": 3400,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "f66c31c1-7754-4a97-9b8c-2fcbe8c10de5",
+            "name": "Operação com munck",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 60,
+            "basePrice": 420,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "5c871e37-74a2-477d-b0c2-c7f92d2f9c4c",
+            "name": "Transbordo de carga",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 240,
+            "basePrice": 1250,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "8252d276-afe6-4c13-9fa4-53c2b436423e",
+            "name": "Plataforma estendida",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 240,
+            "basePrice": 1680,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "0ea8325f-da5c-4670-86d7-941ad31c12d6",
+            "name": "Hora parada e espera",
+            "category": "Adicionais",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 60,
+            "basePrice": 95,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "749f9cdd-e313-4955-9e10-1053c69de71f",
+            "name": "Adicional de horário e feriado",
+            "category": "Adicionais",
+            "serviceType": "outro",
+            "requiresDestination": false,
+            "estimatedDurationMinutes": null,
+            "basePrice": 145,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "6591a6c6-d622-4a1c-8302-aff60ef32d92",
+            "name": "Reboque leve — até 200 km",
+            "category": "Reboque",
+            "serviceType": "reboque",
+            "requiresDestination": true,
+            "estimatedDurationMinutes": 240,
+            "basePrice": 990,
+            "status": "active",
+            "isActive": true,
+            "createdAt": "2026-08-24T01:45:04.147Z"
+          },
+          {
+            "id": "8ea03512-5d6e-4612-85a0-5e3a882f8332",
+            "name": "(descontinuado) SemTarifa 14250",
+            "category": null,
+            "serviceType": null,
+            "requiresDestination": false,
+            "estimatedDurationMinutes": 50,
+            "basePrice": 680,
+            "status": "inactive",
+            "isActive": false,
+            "createdAt": "2026-07-13T06:32:55.665Z"
+          },
+          {
+            "id": "93d006e2-d4d8-4e67-9578-b62da42a01d2",
+            "name": "(descontinuado) Servico A1 1783874676",
+            "category": null,
+            "serviceType": null,
+            "requiresDestination": false,
+            "estimatedDurationMinutes": null,
+            "basePrice": null,
+            "status": "inactive",
+            "isActive": false,
+            "createdAt": "2026-07-12T16:44:37.334Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 21
+        }
+      }
+    },
+    "GET /api/v1/customers?limit=100": {
+      "status": 200,
+      "corpo": {
+        "items": [
+          {
+            "id": "5e4fd1e6-3186-4775-a00d-7fdd60aa1183",
+            "name": "Metalúrgica Ipiranga",
+            "document": "89.012.345/0001-67",
+            "phone": "(41) 3346-7788",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "39505c97-6a8d-42d3-8771-d57143f63fcf",
+            "name": "Agropecuária Serra Azul",
+            "document": "45.678.901/0001-23",
+            "phone": "(42) 3623-7700",
+            "email": null,
+            "city": "Ponta Grossa",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "7cdbf00a-a73d-4cb3-b827-cc23e621612c",
+            "name": "Frigorífico Vale Verde",
+            "document": "56.789.012/0001-34",
+            "phone": "(41) 3675-2200",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "ad33eeaf-b548-44b2-90f1-b9755b12081e",
+            "name": "Distribuidora Pampa",
+            "document": "67.890.123/0001-45",
+            "phone": "(41) 3388-9911",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "808b2b82-fdcf-4035-8ace-5b31db0b9bde",
+            "name": "Construtora Meridiano S.A.",
+            "document": "23.456.789/0001-01",
+            "phone": "(41) 3029-5060",
+            "email": null,
+            "city": "Fazenda Rio Grande",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "dcb6c9a0-6123-4f43-82eb-0d2326986f97",
+            "name": "Log&Co Transportes",
+            "document": "34.567.890/0001-12",
+            "phone": "(41) 3072-8890",
+            "email": null,
+            "city": "São José dos Pinhais",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T08:01:14.287Z"
+          },
+          {
+            "id": "be08ca8d-8baa-4223-80f0-43d12a452a36",
+            "name": "Transportadora Aurora Ltda",
+            "document": "98.765.432/0001-10",
+            "phone": "(41) 3350-4477",
+            "email": null,
+            "city": "Curitiba",
+            "state": "PR",
+            "isActive": true,
+            "createdAt": "2026-08-24T07:59:23.019Z"
+          },
+          {
+            "id": "19ef7a89-4338-4256-b46c-4c87d6a1a85d",
+            "name": "Particular",
+            "document": null,
+            "phone": null,
+            "email": null,
+            "city": null,
+            "state": null,
+            "isActive": true,
+            "createdAt": "2026-08-24T01:46:12.485Z"
+          },
+          {
+            "id": "dfbacdac-7043-4b55-ae29-bc351f205fe1",
+            "name": "Indústria Alfa Ltda",
+            "document": "12.345.678/0001-90",
+            "phone": null,
+            "email": null,
+            "city": "São Paulo",
+            "state": "SP",
+            "isActive": true,
+            "createdAt": "2026-07-10T02:02:37.135Z"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 9
         }
       }
     }

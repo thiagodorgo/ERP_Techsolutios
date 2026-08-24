@@ -278,7 +278,7 @@ const fluxo = {
     { t: 57, nome: "As cobranças" },
     { t: 71, nome: "O caixa" },
     { t: 79, nome: "O que se paga" },
-    { t: 87, nome: "Fecho" },
+    { t: 88, nome: "Fecho" },
   ],
 
   feixes: [
@@ -295,7 +295,7 @@ const fluxo = {
     {
       t: 14, superficie: "mobile",
       narracao:
-        "Tempo e materiais só aparecem quando existem. Aqui ainda não existem — e a tela mostra um traço, não um número de enfeite.",
+        "Tempo e materiais só aparecem quando existem. Aqui ainda não existem, e a tela mostra um traço.",
       tec: "WorkOrderConclusionSummary — service · customer · assetLabel · elapsed · materiais",
     },
     {
@@ -324,7 +324,7 @@ const fluxo = {
     {
       t: 51, superficie: "web",
       narracao:
-        "E nesta base de demonstração não há um único item lançado. A tela diz isso, em vez de somar um total que não existe.",
+        "E nesta base de demonstração não há um único item lançado — a tela diz isso, com o total zerado.",
       tec: "GET /work-orders/:id/financial-items — 0 itens no banco de demonstração",
     },
     {
@@ -344,7 +344,7 @@ const fluxo = {
     },
     {
       t: 79, superficie: "web",
-      narracao: `O outro lado usa exatamente a mesma grade: ${A_PAGAR} títulos a pagar, com fornecedor, vencimento e agendamento.`,
+      narracao: `O outro lado usa exatamente a mesma grade: ${A_PAGAR} títulos a pagar, com fornecedor, vencimento e situação.`,
       tec: `direction=payable — ${pagarAberto.qtd} em aberto · ${pagarPago.qtd} pagos · ${pagarParcial.qtd} parciais`,
     },
     { t: 87, superficie: "titulo", narracao: "", tec: "" },

@@ -20,7 +20,7 @@
        ACTIVE_CUSTODY + JUDICIAL_HOLD, e o número que aparece é 33
      · /patios/processos não aceita filtro por link, e a varredura que abre a
        custódia depende de JOBS_WORKER_ENABLED, que vem DESLIGADA
-   Por isso o vídeo termina no dossiê com a linha do tempo vazia — que é o que a
+   O vídeo termina no dossiê pela cadeia de custódia — que é o que a
    tela mostra de verdade — e não num álbum de fotos, que não existe.
    ========================================================================== */
 
@@ -50,6 +50,19 @@ const CUSTODIA = porStatus("ACTIVE_CUSTODY") + porStatus("JUDICIAL_HOLD"); // 33
    /patios/processos e /patios/patios ficam de fora de propósito — a primeira
    caiu num 400 gravado, a segunda não tem a lista de pátios no snapshot. */
 const ROTA_OS = "/work-orders";
+/* O JSON foi extraído em UTC. Imprimir a string crua faria a MESMA ordem
+   aparecer com um horário aqui e outro na fila web do fluxo 1 — medido: 03:10
+   contra 00:10. Mesma função do fluxo 1, mesmo motivo. */
+function agenda(txt) {
+  if (!txt) return "";
+  const [dm, hm] = String(txt).split(" ");
+  const [d, m] = dm.split("/").map(Number);
+  const [h, min] = (hm ?? "00:00").split(":").map(Number);
+  const dt = new Date(Date.UTC(new Date(dados.gerado_em).getUTCFullYear(), m - 1, d, h, min));
+  const p2 = (x) => String(x).padStart(2, "0");
+  return `${p2(dt.getDate())}/${p2(dt.getMonth() + 1)} ${p2(dt.getHours())}:${p2(dt.getMinutes())}`;
+}
+
 const ROTA_PAINEL = "/patios/painel";
 const ROTA_PATIO = "/patios/patios/23c99fed-2ba1-48b1-92b4-4438e3e05306";
 const ROTA_PROCESSO = "/patios/processos/3264086d-3c58-4fb3-9080-2e2961e7cab9";
@@ -94,7 +107,7 @@ function CartaoOS({ statusRotulo, statusTom }) {
         <span className="app-pill">Guincho</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 10, fontSize: 12, color: "#475569" }}>
-        <Clock size={13} color="#94a3b8" /> {OS.agendada}
+        <Clock size={13} color="#94a3b8" /> {agenda(OS.agendada)}
       </div>
     </div>
   );
@@ -364,7 +377,7 @@ const fluxo = {
     de: 90,
     eyebrow: "DO RESGATE À CUSTÓDIA",
     titulo: "Cem vagas, setenta e cinco processos, trinta e três veículos sob guarda.",
-    texto: "O console à esquerda deste vídeo é o produto: o mesmo código que roda em operação, com os dados gravados do banco. E o que ele não tem, o vídeo não fingiu ter — a linha do tempo daquele processo está vazia, e é isso que a tela diz.",
+    texto: "O console à esquerda deste vídeo é o produto: o mesmo código que roda em operação, com os dados gravados do banco. E a custódia não é uma lista de campos — é uma cadeia encadeada por hash, que o próprio sistema recomputa para dizer se ela está íntegra.",
     numeros: [
       { valor: String(PATIOS.length), rotulo: "pátios de guarda", cor: "#f59e0b" },
       { valor: String(VAGAS), rotulo: "vagas cadastradas", cor: "#3b82f6" },
@@ -401,7 +414,7 @@ const fluxo = {
     {
       t: 14, superficie: "mobile",
       narracao: "Ele confirma a chegada. O aplicativo registra um endereço de atendimento: o app de campo não conhece pátio nem vaga.",
-      tec: "work_order_detail_screen.dart · nenhuma rota de pátio entre as 26 rotas do aplicativo",
+      tec: "work_order_detail_screen.dart · nenhuma rota do app de campo é de pátio ou vaga",
     },
     {
       t: 21, superficie: "mobile",
@@ -425,7 +438,7 @@ const fluxo = {
     },
     {
       t: 47, superficie: "web",
-      narracao: `O painel dos pátios: ${VAGAS} vagas, ${OCUPADAS} ocupadas, ${PROCESSOS} processos abertos e ${CUSTODIA} veículos sob guarda.`,
+      narracao: `O painel dos pátios: ${VAGAS} vagas, ${OCUPADAS} ocupadas, ${PROCESSOS} processos de custódia e ${CUSTODIA} veículos sob guarda.`,
       tec: "GET /api/v1/patios/dashboard/summary · permissão impound:read",
     },
     {
@@ -450,7 +463,7 @@ const fluxo = {
     },
     {
       t: 82, superficie: "web",
-      narracao: "O que a tela não tem, ela não inventa: a linha do tempo deste processo está vazia, e é isso que ela mostra.",
+      narracao: "E cada passo fica encadeado: o conjunto fotográfico carrega o hash do evento anterior. Adulterar um quebra a cadeia inteira.",
       tec: "GET /impound-processes/:id/verify · o selo recomputa a cadeia de hash (I2), em vez de pedir confiança",
     },
     { t: 90, superficie: "titulo", narracao: "", tec: "" },
