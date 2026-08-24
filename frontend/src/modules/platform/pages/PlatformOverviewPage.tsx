@@ -2,7 +2,7 @@ import { Building2, Info, Users, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { Alert, EmptyState, ErrorState, Skeleton, rowClickProps } from "../../../components/ui";
 import { usePlatformOverview } from "../usePlatformOverview";
 import type { PlatformOverviewData, PlatformOverviewOrg } from "../platform-overview.types";
 
@@ -163,18 +163,17 @@ export function PlatformOverviewView({ data }: { data: PlatformOverviewData }) {
         {orgs.map((org: PlatformOverviewOrg, index) => {
           const status = statusView(org.status);
           return (
+            // Padrão "linha clicável" (2026-08-24): teclado, realce de hover, foco visível, guarda de
+            // seleção de texto e o aria-label que diz O QUE abre vêm todos do helper compartilhado —
+            // antes o nome acessível era o texto corrido da linha (nome + contagens + data).
             <div
               key={org.id}
-              onClick={() => navigate(`/platform/tenants/${org.id}`)}
               role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  navigate(`/platform/tenants/${org.id}`);
-                }
-              }}
-              style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: index === orgs.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10, cursor: "pointer" }}
+              {...rowClickProps({
+                onOpen: () => navigate(`/platform/tenants/${org.id}`),
+                label: `Abrir a organização ${org.name}`,
+              })}
+              style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: index === orgs.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10 }}
             >
               <div style={{ flex: 2.4, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", flexShrink: 0 }}>

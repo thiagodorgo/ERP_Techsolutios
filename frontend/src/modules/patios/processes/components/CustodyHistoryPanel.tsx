@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { Alert, Badge, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
+import { Alert, Badge, Button, Card, Chip, EmptyState, Skeleton, STATIC_ROW_CLASS } from "../../../../components/ui";
 import { formatDate, getStatusLabel, getStatusTone, getVehicleLabel } from "../processes.adapter";
 import type { CustodyHistoryItem } from "../processes.types";
 
@@ -68,7 +68,7 @@ export function CustodyHistoryPanel({
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id} style={item.isCurrent ? currentRow : undefined}>
+                  <tr key={item.id} className={STATIC_ROW_CLASS} style={item.isCurrent ? currentRow : undefined}>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={primaryStyle}>{getVehicleLabel({ vehiclePlate: item.vehiclePlate, vehicleUnidentified: item.vehicleUnidentified })}</span>

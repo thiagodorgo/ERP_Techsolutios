@@ -3708,6 +3708,11 @@
   padding: 12px 18px;
   align-items: center;
 }
+.pat-os-grid--sem-acao {
+  /* Papel somente-leitura: sem a faixa reservada para AÇÃO. Sem isto, 108-218px
+     de coluna fantasma sobram em toda linha (padrão de linha clicável, regra 2). */
+  grid-template-columns: 130px minmax(0, 2.2fr) 1.1fr 1fr 0.9fr;
+}
 .pat-os-grid--head {
   padding: 10px 18px;
   background: #f8fafc;
@@ -4035,7 +4040,7 @@
 /* ── TELAS PADRONIZADAS PR-D — Pátios (sc_patios). Reusa as classes pat-table, pat-kpi e pat-os-tab dos PRs A-C. ── */
 .pat-patios-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) 1.1fr 1.2fr 0.8fr 108px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) 1.1fr 1.2fr 0.8fr;
   gap: 12px;
   align-items: center;
 }
@@ -7858,4 +7863,66 @@ button.opmap-os--atd {
   .ckb-pv-modal {
     animation: none;
   }
+}
+
+/* ═══ Padrão transversal "linha clicável" (decisão do dono, 2026-08-24) ═══
+   Clicar em qualquer ponto da linha abre o objeto daquela linha. A affordance mora aqui,
+   num lugar só: cursor, realce de hover e foco visível. As classes são emitidas pelo helper
+   compartilhado em components/ui/clickable-row.
+   FAIL-HONESTO: .pat-row--static desfaz o "cursor: pointer" genérico de .ui-table tbody tr —
+   linha sem objeto para abrir não pode prometer clique nem realce. */
+.pat-row--clickable {
+  cursor: pointer;
+}
+
+.pat-row--clickable:hover {
+  background: #eef7fb;
+}
+
+.pat-row--clickable:focus-visible {
+  outline: 2px solid var(--color-core-accent);
+  outline-offset: -2px;
+}
+
+.ui-table tbody tr.pat-row--clickable:hover {
+  background: #eef7fb;
+}
+
+.ui-table tbody tr.pat-row--clickable:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-core-accent);
+}
+
+.ui-table tbody tr.pat-row--static {
+  cursor: default;
+}
+
+.ui-table tbody tr.pat-row--static:hover {
+  background: transparent;
+}
+
+/* ── Padrão "linha clicável": complementos das listas de Operações, Checklists, Usuários,
+   Plataforma e Notificações (2026-08-24) ────────────────────────────────────────────────
+   Superfície branca de cartão-linha (fila de aprovações). O branco PRECISA vir de classe: em
+   style inline ele venceria o realce de hover do padrão, e o cartão pareceria morto ao passar
+   o ponteiro. */
+.pat-row-card {
+  background: #fff;
+}
+
+/* Cartão de notificação clicável: o realce mora no article (o section.ui-card vem do
+   componente compartilhado e não recebe classe), então ele ganha o raio do cartão. */
+.notification-card.pat-row--clickable {
+  border-radius: var(--radius-8);
+}
+
+/* Modelos de checklist sem NENHUMA ação secundária visível (papel somente-leitura): a coluna
+   AÇÕES some inteira, e a grade volta a 6 colunas em vez de deixar uma faixa fantasma. */
+.ckb-grid.ckb-grid--no-actions {
+  grid-template-columns: minmax(0, 2.4fr) 1.1fr 0.9fr 0.5fr 0.8fr 0.9fr;
+}
+
+/* FAIL-HONESTO nas grades .pat-table: a linha marcada como estática (nada para abrir, ex.: quem
+   não administra usuários) também não pisca no hover — realce sem destino é promessa falsa. */
+.pat-table__row.pat-row--static:hover {
+  background: transparent;
 }

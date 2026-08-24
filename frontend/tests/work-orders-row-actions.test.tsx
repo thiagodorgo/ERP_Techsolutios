@@ -136,23 +136,24 @@ test("[B6] WorkOrderDelayBadge: renderiza 'Atrasada' (âmbar/vermelho); some qua
 
 function renderActions(status: WorkOrderStatus, permissions: string[]) {
   return renderToString(
-    <WorkOrderRowActions status={status} permissions={permissions} onOpen={() => {}} onAdvance={() => {}} onRevoke={() => {}} />,
+    <WorkOrderRowActions status={status} permissions={permissions} onAdvance={() => {}} onRevoke={() => {}} />,
   );
 }
 
 test("[C1] com work_orders:status e status avançável ⇒ botão de andamento com rótulo PT-BR do próximo", () => {
   const html = renderActions("on_route", STATUS(["work_orders:status"]));
   assert.match(html, /Dar andamento → No local/); // aria-label
-  assert.match(html, /Abrir/);
 });
 
-test("[C2] sem work_orders:status ⇒ botão de andamento AUSENTE (não só disabled)", () => {
+// Padrão "linha clicável" (2026-08-24): abrir a OS é o clique da LINHA — a célula de ação não
+// hospeda mais um "Abrir" duplicado. O gate de andamento continua sendo o que decide o resto.
+test("[C2] sem work_orders:status ⇒ botão de andamento AUSENTE (não só disabled) e nenhum 'Abrir' duplicado", () => {
   const html = renderActions("on_route", STATUS([]));
   assert.doesNotMatch(html, /Dar andamento/);
-  assert.match(html, /Abrir/); // Abrir sempre presente
+  assert.doesNotMatch(html, /Abrir/);
 });
 
-test("[C3] open/in_progress ⇒ sem andamento mesmo com permissão (só 'Abrir')", () => {
+test("[C3] open/in_progress ⇒ sem andamento mesmo com permissão", () => {
   for (const s of ["open", "in_progress"] as WorkOrderStatus[]) {
     const html = renderActions(s, STATUS(["work_orders:status"]));
     assert.doesNotMatch(html, /Dar andamento/, `${s} não avança de 1 clique`);
@@ -191,7 +192,7 @@ test("[C6] gates independentes: só andamento / só revogar / ambos / nenhum", (
 
 test("[C7] erro por-linha aparece inline sem depender de permissão", () => {
   const html = renderToString(
-    <WorkOrderRowActions status="assigned" permissions={[]} error="Não foi possível dar andamento agora." onOpen={() => {}} onAdvance={() => {}} onRevoke={() => {}} />,
+    <WorkOrderRowActions status="assigned" permissions={[]} error="Não foi possível dar andamento agora." onAdvance={() => {}} onRevoke={() => {}} />,
   );
   assert.match(html, /Não foi possível dar andamento agora\./);
 });

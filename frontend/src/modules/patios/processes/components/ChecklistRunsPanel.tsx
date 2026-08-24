@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { Alert, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
+import { Alert, Button, Card, Chip, EmptyState, Skeleton, STATIC_ROW_CLASS } from "../../../../components/ui";
 import { formatDateTime, getChecklistRunStatusLabel, getChecklistRunStatusTone } from "../processes.adapter";
 import type { ChecklistRunSummaryItem } from "../processes.types";
 
@@ -76,7 +76,7 @@ export function ChecklistRunsPanel({
               </thead>
               <tbody>
                 {runs.map((run) => (
-                  <tr key={run.id}>
+                  <tr key={run.id} className={STATIC_ROW_CLASS}>
                     <td>
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {/* Ω-VID PR-08 (junta, MÉDIA) — identidade real da linha pelo NOME do formulário; fallback ao

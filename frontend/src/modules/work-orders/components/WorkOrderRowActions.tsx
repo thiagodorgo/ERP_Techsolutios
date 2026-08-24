@@ -5,10 +5,14 @@ import { useState } from "react";
 import { advanceLabel, canAdvanceRow, canRevokeDispatch } from "../work-orders-row.logic";
 import type { WorkOrderStatus } from "../work-orders.types";
 
-// Ω3F-9 — célula de AÇÃO da linha da lista de OS: "Dar andamento → X" (forward-only) · "Abrir" · ⋮ com
+// Ω3F-9 — célula de AÇÃO da linha da lista de OS: "Dar andamento → X" (forward-only) · ⋮ com
 // "Revogar envio". Gates LIGADOS ao JSX (lição Ω3F-6: predicado testado ≠ predicado ligado — o teste monta
 // este componente e a mutação do gate quebra). Todo handler faz stopPropagation: a linha inteira navega ao
 // detalhe no clique do corpo (padrão DispatchesTable). §3/§11.2: rótulos PT-BR, sem status técnico cru.
+//
+// Padrão "linha clicável" (decisão do dono, 2026-08-24): o botão "Abrir" SAIU — clicar em qualquer ponto
+// da linha já abre o detalhe da OS. A célula sobrevive porque restam ações secundárias reais ("Dar
+// andamento" e o ⋮ "Revogar envio"), nunca para hospedar um duplicado do clique da linha.
 
 const advanceBtn = (busy: boolean): CSSProperties => ({
   display: "flex",
@@ -25,18 +29,6 @@ const advanceBtn = (busy: boolean): CSSProperties => ({
   fontFamily: "inherit",
   whiteSpace: "nowrap",
 });
-
-const openBtn: CSSProperties = {
-  padding: "5px 10px",
-  background: "#F1F5F9",
-  border: "none",
-  borderRadius: 7,
-  fontSize: 11.5,
-  fontWeight: 700,
-  color: "#2563EB",
-  cursor: "pointer",
-  fontFamily: "inherit",
-};
 
 const kebabBtn: CSSProperties = {
   display: "flex",
@@ -113,7 +105,6 @@ export function WorkOrderRowActions({
   permissions,
   busy = false,
   error,
-  onOpen,
   onAdvance,
   onRevoke,
 }: {
@@ -121,7 +112,6 @@ export function WorkOrderRowActions({
   permissions: readonly string[];
   busy?: boolean;
   error?: string | null;
-  onOpen: () => void;
   onAdvance: () => void;
   onRevoke: () => void;
 }) {
@@ -144,10 +134,6 @@ export function WorkOrderRowActions({
           <ChevronRight size={13} aria-hidden />
         </button>
       ) : null}
-
-      <button type="button" onClick={stop(onOpen)} style={openBtn}>
-        Abrir
-      </button>
 
       {showRevoke ? (
         <>

@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { rowClickProps } from "../ui/clickable-row";
 import type { DenseColumn, DenseListSort, SortDir } from "./types";
 
 // Tabela densa e ordenável — reaproveita as classes .ui-table do design system,
@@ -12,6 +13,7 @@ export function DenseTable<T>({
   sort,
   onSort,
   onRowClick,
+  rowLabel,
 }: {
   columns: readonly DenseColumn<T>[];
   rows: readonly T[];
@@ -19,6 +21,9 @@ export function DenseTable<T>({
   sort: DenseListSort | null;
   onSort: (key: string) => void;
   onRowClick?: (row: T) => void;
+  // Padrão "linha clicável": o que a linha abre (aria-label). Sem `onRowClick` a linha fica
+  // estática — nada de cursor/realce/tabIndex mentindo que dá para clicar (fail-honesto).
+  rowLabel?: (row: T) => string;
 }) {
   return (
     <div className="ui-table-wrap">
@@ -32,7 +37,7 @@ export function DenseTable<T>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={keyForRow(row)} onClick={onRowClick ? () => onRowClick(row) : undefined}>
+            <tr key={keyForRow(row)} {...rowClickProps({ onOpen: onRowClick ? () => onRowClick(row) : null, label: rowLabel?.(row) })}>
               {columns.map((column) => (
                 <td key={column.key} className={cellClassName(column)}>
                   {column.render(row)}

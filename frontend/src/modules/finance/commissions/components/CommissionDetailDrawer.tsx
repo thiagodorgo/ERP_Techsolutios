@@ -1,10 +1,11 @@
 import { ExternalLink, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { DENSE_LIST_FETCH_LIMIT } from "../../../../components/dense-list";
-import { Alert, Button, Chip, Drawer, EmptyState, Skeleton } from "../../../../components/ui";
+import { usePermissions } from "../../../../providers/PermissionProvider";
+import { Alert, Button, Chip, Drawer, EmptyState, Skeleton, rowClickProps } from "../../../../components/ui";
 import {
   describeCommissionOrigin,
   formatBRL,
@@ -54,6 +55,9 @@ export function CommissionDetailDrawer({
   readonly onClose: () => void;
 }) {
   const [state, setState] = useState<DrillState>({ items: [], total: 0, loading: true, error: null });
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+  const canOpenWorkOrder = can("work_orders:read");
 
   const load = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
@@ -124,8 +128,27 @@ export function CommissionDetailDrawer({
                 </tr>
               </thead>
               <tbody>
-                {state.items.map((calc) => (
-                  <tr key={calc.id}>
+                {state.items.map((calc) => {
+                  // Padrão "linha clicável": a linha abre o MESMO destino do link da coluna "Origem"
+                  // (a OS). FAIL-HONESTO (regra 6): comissão cuja origem não é uma OS com id não tem
+                  // objeto para abrir — fica estática, sem cursor, sem realce e sem foco.
+                  const origin = describeCommissionOrigin(calc.sourceType, calc.sourceId);
+                  // Gate de PERMISSÃO além do gate de dado: o papel `finance` — justamente o
+                  // persona desta tela — tem commissions:read e NÃO tem work_orders:read
+                  // (catalog.ts, bloco finance; RBAC_MATRIX.md:117). Sem a permissão, a rota
+                  // /work-orders/:id devolve "Acesso não autorizado" pelo PermissionGuard, e
+                  // prometer na linha o que a rota nega é affordance mentirosa (regra 6).
+                  const openable = origin.kind === "link" && canOpenWorkOrder ? origin : null;
+                  return (
+                  <tr
+                    key={calc.id}
+                    {...rowClickProps({
+                      onOpen: openable ? () => navigate(openable.href) : null,
+                      label: openable
+                        ? `Abrir ${openable.label.toLowerCase()} da comissão de ${formatCommissionDate(calc.createdAt)}`
+                        : undefined,
+                    })}
+                  >
                     <td>
                       <OriginCell sourceType={calc.sourceType} sourceId={calc.sourceId} />
                     </td>
@@ -135,7 +158,8 @@ export function CommissionDetailDrawer({
                       <Chip tone={getCommissionStatusTone(calc.status)}>{getCommissionStatusLabel(calc.status)}</Chip>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -160,7 +184,9 @@ function OriginCell({ sourceType, sourceId }: { readonly sourceType: string | nu
 
   if (origin.kind === "link") {
     return (
-      <Link to={origin.href} aria-label={`Abrir ordem de serviço ${sourceId}`}>
+      // Regra 4 do padrão "linha clicável": o link resolve o próprio clique e não dispara a linha
+      // (que abre o mesmo destino) — evita navegação dupla.
+      <Link to={origin.href} aria-label={`Abrir ordem de serviço ${sourceId}`} onClick={(event) => event.stopPropagation()}>
         <ExternalLink size={13} aria-hidden /> {origin.label}
       </Link>
     );

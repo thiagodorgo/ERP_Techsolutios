@@ -1,4 +1,4 @@
-import { Ban, Pencil, Plus, RefreshCw, RotateCcw } from "lucide-react";
+import { Ban, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -123,9 +123,6 @@ export function ViaturasPage() {
       render: (vehicle) =>
         canUpdate ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${vehicle.plate}`} onClick={() => openEdit(vehicle)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
             <Button
               type="button"
               size="sm"
@@ -216,7 +213,15 @@ export function ViaturasPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(vehicle) => vehicle.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(vehicle) => vehicle.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(vehicle) => `Abrir viatura ${vehicle.plate}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

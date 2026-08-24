@@ -1,6 +1,6 @@
-import { Archive, Check, ExternalLink } from "lucide-react";
+import { Archive, Check } from "lucide-react";
 
-import { Button, Card, Chip } from "../../../components/ui";
+import { Button, Card, Chip, rowClickProps } from "../../../components/ui";
 import type { NotificationItem } from "../notification.types";
 import { NotificationSeverityBadge } from "./NotificationSeverityBadge";
 import { NotificationStatusBadge } from "./NotificationStatusBadge";
@@ -17,10 +17,22 @@ export function NotificationCard({
   onOpen: (notification: NotificationItem) => void;
 }) {
   const canOpen = isSafeInternalActionUrl(notification.actionUrl);
+  const showMarkRead = notification.status === "unread";
+  const showArchive = notification.status !== "archived";
 
   return (
     <Card>
-      <article className={`notification-card ${notification.status === "unread" ? "is-unread" : ""}`}>
+      {/* Padrão "linha clicável" (2026-08-24): o cartão inteiro abre a notificação — era o que o botão
+          "Abrir" fazia, e ele saiu. A abertura continua passando pelo `onOpen` da página, que revalida a
+          URL do backend (nunca navegamos com o valor cru). FAIL-HONESTO: notificação sem destino interno
+          seguro não tem o que abrir e o cartão fica estático — sem cursor, realce ou foco por teclado. */}
+      <article
+        {...rowClickProps({
+          className: `notification-card ${notification.status === "unread" ? "is-unread" : ""}`,
+          onOpen: canOpen ? () => onOpen(notification) : null,
+          label: `Abrir ${notification.title}`,
+        })}
+      >
         <header>
           <div>
             <div className="notification-card__badges">
@@ -35,26 +47,22 @@ export function NotificationCard({
 
         <p>{notification.message}</p>
 
-        <footer>
-          {canOpen ? (
-            <Button type="button" variant="secondary" size="sm" onClick={() => onOpen(notification)}>
-              <ExternalLink size={15} />
-              Abrir
-            </Button>
-          ) : null}
-          {notification.status === "unread" ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => onMarkRead(notification)}>
-              <Check size={15} />
-              Marcar como lida
-            </Button>
-          ) : null}
-          {notification.status !== "archived" ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => onArchive(notification)}>
-              <Archive size={15} />
-              Arquivar
-            </Button>
-          ) : null}
-        </footer>
+        {showMarkRead || showArchive ? (
+          <footer>
+            {showMarkRead ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => onMarkRead(notification)}>
+                <Check size={15} />
+                Marcar como lida
+              </Button>
+            ) : null}
+            {showArchive ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => onArchive(notification)}>
+                <Archive size={15} />
+                Arquivar
+              </Button>
+            ) : null}
+          </footer>
+        ) : null}
       </article>
     </Card>
   );

@@ -41,7 +41,7 @@
 
 import { createRoot } from "react-dom/client";
 import {
-  ArrowLeft, Building2, Check, ChevronDown, Clock, CloudUpload, HardHat,
+  Building2, Check, ChevronDown, CircleX, Clock, CloudUpload, HardHat,
   Map, MapPin, Navigation, Phone, RefreshCw, Search, ShieldCheck, User, Wrench,
 } from "lucide-react";
 import { Filme } from "./player.jsx";
@@ -62,15 +62,26 @@ const ABERTAS_PAINEL = n("open") + n("assigned") + n("accepted");
 const NAO_FINAIS = TOTAL_OS - CONCLUIDAS - n("cancelled") - n("rejected");
 const EM_CAMPO = n("on_route") + n("on_site") + n("in_progress") + n("paused");
 
-/** "22/08 21:10" + o ano da extração → Date. Serve só para contar agenda vencida. */
+/** "22/08 21:10" + o ano da extração → instante. O JSON foi extraído em UTC. */
 const REF = new Date(dados.gerado_em);
-function quando(txt) {
+function instante(txt) {
   const [dia, hora] = txt.split(" ");
   const [d, m] = dia.split("/").map(Number);
   const [hh, mm] = hora.split(":").map(Number);
-  return new Date(REF.getFullYear(), m - 1, d, hh, mm);
+  return new Date(Date.UTC(REF.getUTCFullYear(), m - 1, d, hh, mm));
 }
-const ATRASADAS = dados.os_ativas.filter((o) => quando(o.agendada) < REF).length;
+const ATRASADAS = dados.os_ativas.filter((o) => instante(o.agendada) < REF).length;
+
+/* O console web desenha a agenda no fuso de quem abre; o app faz a mesma coisa
+   (_fmtDate lê `dt.day/month hour:minute` de um DateTime local). Reformatar aqui
+   é o que mantém as DUAS superfícies mostrando o mesmo instante — se o aparelho
+   repetisse a string UTC do JSON, o vídeo mostraria dois horários para a mesma
+   ordem, lado a lado, e essa é a mentira mais fácil de cometer sem perceber. */
+function agenda(txt) {
+  const dt = instante(txt);
+  const p = (x) => String(x).padStart(2, "0");
+  return `${p(dt.getDate())}/${p(dt.getMonth() + 1)} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
+}
 
 /** A ordem que o campo executa: é a única do snapshot que ainda não saiu. */
 const OS = dados.os_ativas.find((o) => o.status === "assigned");
@@ -143,7 +154,7 @@ function CartaoOS({ os, aceso }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, color: "#94a3b8", fontSize: 10.5 }}>
           <Clock size={11} style={{ flex: "none" }} />
-          <span>{os.agendada}</span>
+          <span>{agenda(os.agendada)}</span>
           <span style={{ flex: 1 }} />
           <Pill tom="info">Guincho</Pill>
         </div>
@@ -342,7 +353,7 @@ function AppDetalhe({ t }) {
             <Pill tom="info">Guincho</Pill>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 9, color: "#64748b", fontSize: 11.5 }}>
-            <Clock size={14} color="#94a3b8" /> {OS.agendada}
+            <Clock size={14} color="#94a3b8" /> {agenda(OS.agendada)}
           </div>
         </div>
 
@@ -356,6 +367,16 @@ function AppDetalhe({ t }) {
           <Ficha Icone={HardHat} titulo="Técnico responsável" sub="Você"
             direita={<Pill tom="done">Você</Pill>} ultima />
         </div>
+
+        {/* _CheckinActions só oferece esta saída quando a ordem está em rota. */}
+        {saiu ? (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+            padding: "8px 0 2px", color: "#dc2626", fontSize: 12.5, fontWeight: 700,
+          }}>
+            <CircleX size={15} /> Não foi possível iniciar
+          </div>
+        ) : null}
       </div>
 
       <AppBarra>
@@ -405,7 +426,10 @@ function AppSync({ t }) {
             direita={<Check size={16} color={enviados ? "#16a34a" : "#cbd5e1"} strokeWidth={3} />} ultima />
         </div>
 
-        <div className="app-btn" style={{ height: 44, borderRadius: 10, fontSize: 13.5 }}>
+        {/* O botão primário vive DENTRO da lista, não numa barra fixa —
+            sync_screen.dart:125-147. `flex:none` porque o corpo é uma coluna
+            flex e `.app-btn` cresceria até o rodapé. */}
+        <div className="app-btn" style={{ height: 44, borderRadius: 10, fontSize: 13.5, flex: "none" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <RefreshCw size={15} /> {subindo ? "Sincronizando..." : "Sincronizar agora"}
           </span>
@@ -529,7 +553,7 @@ const fluxo = {
     {
       t: 47, superficie: "web",
       narracao: "E uma honestidade, porque investidor merece o mapa inteiro: criar o despacho amarra a ordem ao operador, mas ainda não carimba o técnico na própria ordem. Essa ponta está aberta.",
-      tec: "POST /work-orders/:id/assign existe no servidor · nenhuma tela do frontend o chama — a coluna TÉCNICO ainda mostra o botão Atribuir",
+      tec: "POST /work-orders/:id/assign existe no servidor · nenhuma tela do frontend o chama — na fila a coluna TÉCNICO mostra \"Atribuir\", e aqui a coluna OPERADOR mostra o identificador cru",
     },
     {
       t: 53, superficie: "ambos",

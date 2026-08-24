@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { DENSE_LIST_FETCH_LIMIT } from "../../../../components/dense-list";
-import { Alert, Button, Card, Checkbox, Chip, EmptyState, Input, Modal, Skeleton } from "../../../../components/ui";
+import { Alert, Button, Card, Checkbox, Chip, EmptyState, Input, Modal, Skeleton, rowClickProps } from "../../../../components/ui";
 import { downloadCsv } from "../../../../lib/csv";
 import {
   buildRemuneracoesCsv,
@@ -333,7 +333,18 @@ export function ConferenciaRemuneracoesView({
               {state.items.map((calc) => {
                 const settled = isCalculationSettled(calc);
                 return (
-                  <tr key={calc.id}>
+                  // EXCEÇÃO DECLARADA ao padrão "linha clicável": esta linha é uma superfície de
+                  // SELEÇÃO — o gesto primário dela é marcar o checkbox de liquidação em lote, não
+                  // navegar. Fazer a linha navegar brigaria com a seleção, que é o que a tela existe
+                  // para fazer.
+                  //
+                  // (Correção de 2026-08-24: o comentário anterior justificava isto dizendo que "o
+                  // cálculo de remuneração não tem tela nem modal de detalhe" — FALSO, o
+                  // CommissionDetailDrawer é exatamente esse detalhe. A conclusão estava certa; o
+                  // motivo escrito, não.)
+                  //
+                  // `.pat-row--static` desfaz o `cursor: pointer` genérico de `.ui-table tbody tr`.
+                  <tr key={calc.id} {...rowClickProps({ onOpen: null })}>
                     <td>
                       <label style={checkboxCellStyle}>
                         <input

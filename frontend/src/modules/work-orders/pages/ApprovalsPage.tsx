@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
+import { Alert, EmptyState, ErrorState, Skeleton, rowClickProps } from "../../../components/ui";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { approveOperationalApproval, rejectOperationalApproval } from "../approval.service";
 import { entityTypeLabel } from "../approval.types";
@@ -138,7 +138,17 @@ export function ApprovalQueueCard({
   }
 
   return (
-    <div style={{ ...card, padding: 18, marginBottom: 13, display: "flex", alignItems: "flex-start", gap: 18, flexWrap: "wrap" }}>
+    // Padrão "linha clicável" (2026-08-24): o CARTÃO inteiro abre o detalhamento da aprovação —
+    // era exatamente o que o botão "Detalhar" fazia, e ele saiu. O branco vem da classe
+    // `pat-row-card` (fundo em style inline venceria o realce de hover do padrão).
+    <div
+      {...rowClickProps({ role: "button",
+        className: "pat-row-card",
+        onOpen: () => navigate(`/approvals/${approval.id}`),
+        label: `Abrir o detalhamento da aprovação: ${approval.pendingReason}`,
+      })}
+      style={{ ...card, background: undefined, padding: 18, marginBottom: 13, display: "flex", alignItems: "flex-start", gap: 18, flexWrap: "wrap" }}
+    >
       <div style={{ flex: 1, minWidth: 260 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
           <span style={{ background: "#F1F5F9", color: "#475569", fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 99 }}>{entityTypeLabel(approval.entityType)}</span>
@@ -150,20 +160,21 @@ export function ApprovalQueueCard({
           Solicitado por <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{approval.requestedBy}</span> · {fmtRequestedAt(approval.requestedAt)}
         </div>
         {approval.workOrderId ? (
-          <div
+          // Atalho para OUTRO objeto (a OS) — ação secundária de verdade, e por isso continua sendo um
+          // botão próprio. Virou <button> de fato: como <div> não era alcançável por teclado e, no padrão
+          // "linha clicável", só filho interativo real não dispara a abertura do cartão.
+          <button
+            type="button"
             onClick={() => navigate(`/work-orders/${approval.workOrderId}`)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "#2563EB", cursor: "pointer" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "#2563EB", cursor: "pointer", background: "none", border: "none", padding: 0, fontFamily: "inherit" }}
           >
             Abrir ordem de serviço <ArrowRight size={13} />
-          </div>
+          </button>
         ) : null}
         {error ? <div style={{ fontSize: 12.5, color: "#DC2626", fontWeight: 600, marginTop: 10 }}>{error}</div> : null}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 9, alignItems: "flex-end" }}>
-        <button type="button" onClick={() => navigate(`/approvals/${approval.id}`)} style={btn("#fff", "#334155", "1px solid #E2E8F0")}>
-          Detalhar
-        </button>
         {canDecide ? (
           rejecting ? null : (
             <div style={{ display: "flex", gap: 9 }}>

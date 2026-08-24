@@ -1,4 +1,4 @@
-import { Ban, Pencil, RefreshCw, RotateCcw, UserPlus } from "lucide-react";
+import { Ban, RefreshCw, RotateCcw, UserPlus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -109,9 +109,6 @@ export function ClientesPage() {
       render: (customer) =>
         canUpdate ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${customer.name}`} onClick={() => openEdit(customer)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
             <Button
               type="button"
               size="sm"
@@ -202,7 +199,15 @@ export function ClientesPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(customer) => customer.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(customer) => customer.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(customer) => `Abrir cliente ${customer.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

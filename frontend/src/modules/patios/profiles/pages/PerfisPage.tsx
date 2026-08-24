@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -129,20 +129,9 @@ export function PerfisPage() {
       sortValue: (profile) => getProfileActiveLabel(profile.active),
       render: (profile) => <Chip tone={getProfileActiveTone(profile.active)}>{getProfileActiveLabel(profile.active)}</Chip>,
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (profile) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar o perfil ${profile.name}`} onClick={() => void openEdit(profile)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
-    },
+    // PADRÃO "LINHA CLICÁVEL" (2026-08-24): "Editar" era a ÚNICA ação da coluna "Ações" — a coluna saiu inteira e
+    // o clique em qualquer ponto da linha abre o perfil (o mesmo `openEdit`, com o mesmo tratamento de falha).
+    // FAIL-HONESTO: sem jurisdiction:update não há o que abrir, então a linha fica estática (sem cursor/realce/foco).
   ];
 
   const dense = useDenseList<ProfileItem>({ items: scopeFiltered, columns, filter: filterProfiles, defaultSort: { key: "name", dir: "asc" } });
@@ -233,7 +222,15 @@ export function PerfisPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(profile) => profile.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(profile) => profile.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? (profile) => void openEdit(profile) : undefined}
+              rowLabel={(profile) => `Abrir o perfil normativo ${profile.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

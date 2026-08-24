@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
+import { CLICKABLE_ROW_CLASS } from "../../../../components/ui";
 import type { YardOccupancySummary } from "../dashboard.types";
 import {
   ACTION_HIT_AREA,
@@ -88,7 +89,7 @@ export function OcupacaoPorPatioCard({ occupancy }: OcupacaoPorPatioCardProps) {
               <Link
                 key={row.yardId}
                 to={`/patios/patios/${row.yardId}`}
-                className="pat-table__row"
+                className={`pat-table__row ${CLICKABLE_ROW_CLASS}`}
                 style={rowStyle}
                 aria-label={`Abrir o pátio ${row.yardName} — ${row.occupiedSpots} de ${row.totalSpots} vagas ocupadas`}
               >

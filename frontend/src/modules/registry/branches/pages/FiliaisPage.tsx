@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -95,20 +95,6 @@ export function FiliaisPage() {
       sortValue: (branch) => branch.createdAt,
       render: (branch) => formatBranchDate(branch.createdAt),
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (branch) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar filial ${branch.name}`} onClick={() => openEdit(branch)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
-    },
   ];
 
   const dense = useDenseList<BranchItem>({ items, columns, filter: filterBranches, defaultSort: { key: "name", dir: "asc" } });
@@ -178,7 +164,15 @@ export function FiliaisPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(branch) => branch.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(branch) => branch.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(branch) => `Abrir filial ${branch.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

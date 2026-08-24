@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -110,20 +110,6 @@ export function PontosInteressePage() {
       sortValue: (poi) => getPoiStatusLabel(poi.isActive),
       render: (poi) => <Chip tone={getPoiStatusTone(poi.isActive)}>{getPoiStatusLabel(poi.isActive)}</Chip>,
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (poi) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar ponto de interesse ${poi.name}`} onClick={() => openEdit(poi)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
-    },
   ];
 
   const dense = useDenseList<PoiItem>({ items, columns, filter: filterPois, defaultSort: { key: "name", dir: "asc" } });
@@ -193,7 +179,15 @@ export function PontosInteressePage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(poi) => poi.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(poi) => poi.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(poi) => `Abrir ponto de interesse ${poi.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

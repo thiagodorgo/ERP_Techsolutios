@@ -1,7 +1,7 @@
-import { AlertTriangle, Archive, ArchiveRestore, ArrowLeftRight, CheckCircle2, ClipboardList, Layers, Package, Pencil, Plus, ShoppingCart, X } from "lucide-react";
+import { AlertTriangle, Archive, ArchiveRestore, ArrowLeftRight, CheckCircle2, Layers, Package, Plus, ShoppingCart, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import type { DenseColumn } from "../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../components/dense-list";
@@ -611,6 +611,8 @@ function ItemsTab({
   readonly onEdit: (item: InventoryItem) => void;
   readonly onToggleActive: (item: InventoryItem) => void;
 }) {
+  const navigate = useNavigate();
+
   const columns: DenseColumn<InventoryItem>[] = [
     {
       key: "sku",
@@ -708,12 +710,11 @@ function ItemsTab({
       key: "actions",
       header: "Ações",
       render: (item) => (
-        <div className="work-orders-row-actions">
+        // "Editar" saiu: a LINHA inteira abre o item (padrão do dono, 2026-08-24). A coluna permanece
+        // pelo Desativar/Reativar; o clique nela é da barra de ações, nunca da linha.
+        <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
           {canUpdate ? (
             <>
-              <Button type="button" size="sm" variant="secondary" aria-label={`Editar item ${item.sku}`} onClick={() => onEdit(item)}>
-                <Pencil size={14} aria-hidden /> Editar
-              </Button>
               <Button
                 type="button"
                 size="sm"
@@ -809,7 +810,18 @@ function ItemsTab({
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(item) => item.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável: com permissão de alteração abre o modal do item (o que o botão "Editar"
+                fazia); sem ela abre a página de detalhe /inventory/:id, que é a leitura já linkada no
+                SKU. Rota existente no App.tsx — nada inventado. */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(item) => item.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? onEdit : (item) => navigate(`/inventory/${item.id}`)}
+              rowLabel={(item) => `Abrir item ${item.sku} — ${item.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}
@@ -1121,17 +1133,8 @@ function CycleCountsTab({
       sortValue: (session) => session.countedCount,
       render: (session) => `${session.countedCount.toLocaleString("pt-BR")} / ${session.totalCount.toLocaleString("pt-BR")}`,
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (session) => (
-        <div className="work-orders-row-actions">
-          <Button type="button" size="sm" variant="secondary" aria-label={`Abrir contagem de ${formatMovementDateTime(session.createdAt)}`} onClick={() => setSessionId(session.id)}>
-            <ClipboardList size={14} aria-hidden /> Abrir
-          </Button>
-        </div>
-      ),
-    },
+    // A coluna "Ações" saiu INTEIRA (cabeçalho junto): "Abrir" era a única ação da linha e virou o
+    // clique na própria linha (padrão do dono, 2026-08-24). Coluna fantasma não fica.
   ];
 
   const denseFilter = useCallback((rows: readonly CycleCount[], base: { search: string; isActive: InventoryStatusFilter }) => {
@@ -1212,7 +1215,16 @@ function CycleCountsTab({
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(session) => session.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável: abre a sessão de contagem — exatamente o que o botão "Abrir" fazia. */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(session) => session.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={(session) => setSessionId(session.id)}
+              rowLabel={(session) => `Abrir contagem de ${formatMovementDateTime(session.createdAt)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

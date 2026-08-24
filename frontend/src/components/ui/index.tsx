@@ -1,6 +1,8 @@
 import { AlertTriangle, ChevronDown, Eye, EyeOff, Info, Search, X } from "lucide-react";
 import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 
+import { rowClickProps } from "./clickable-row";
+
 type Tone = "default" | "success" | "warning" | "danger" | "info" | "pending" | "audit";
 
 export function Button({
@@ -180,11 +182,14 @@ export function Table<T>({
   rows,
   keyForRow,
   onRowClick,
+  rowLabel,
 }: {
   columns: Array<{ key: string; header: string; render: (row: T) => ReactNode }>;
   rows: T[];
   keyForRow: (row: T) => string;
   onRowClick?: (row: T) => void;
+  // O que a linha abre (aria-label). Sem `onRowClick` a linha fica estática (fail-honesto).
+  rowLabel?: (row: T) => string;
 }) {
   return (
     <div className="ui-table-wrap">
@@ -198,7 +203,13 @@ export function Table<T>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={keyForRow(row)} onClick={() => onRowClick?.(row)}>
+            <tr
+              key={keyForRow(row)}
+              {...rowClickProps({
+                onOpen: onRowClick ? () => onRowClick(row) : null,
+                label: rowLabel?.(row),
+              })}
+            >
               {columns.map((column) => (
                 <td key={column.key}>{column.render(row)}</td>
               ))}
@@ -267,3 +278,8 @@ export function SearchBar({ value, onChange, placeholder = "Buscar" }: { value: 
     </label>
   );
 }
+
+// Padrão transversal "linha clicável" (2026-08-24): re-exportado aqui para que as listas
+// importem tudo do mesmo lugar (`components/ui`). Implementação em ./clickable-row.
+export { rowClickProps, CLICKABLE_ROW_CLASS, STATIC_ROW_CLASS } from "./clickable-row";
+export type { ClickableRowProps, RowClickOptions, RowClickProps, StaticRowProps } from "./clickable-row";

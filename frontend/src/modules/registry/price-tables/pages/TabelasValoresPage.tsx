@@ -1,4 +1,4 @@
-import { Archive, Pencil, Plus, RefreshCw, Send } from "lucide-react";
+import { Archive, Plus, RefreshCw, Send } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -209,12 +209,14 @@ export function TabelasValoresPage() {
     {
       key: "actions",
       header: "Ações",
+      // A coluna PERMANECE (rascunho e publicada têm ação), mas ARQUIVADA não tem
+      // nenhuma transição de status — PRICE_TABLE_STATUS_TRANSITIONS.archived é `[]`.
+      // Como o filtro padrão da tela é "all", a linha arquivada aparece; sem o
+      // travessão a célula ficaria vazia, que é a "faixa fantasma" que a regra 2 do
+      // padrão de linha clicável proíbe (COMPONENT_LIBRARY.md).
       render: (table) =>
-        canUpdate ? (
+        canUpdate && getPriceTableStatusActions(table.status).length > 0 ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${table.name}`} onClick={() => openEdit(table)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
             {getPriceTableStatusActions(table.status).map((action) => (
               <Button
                 key={action.target}
@@ -353,7 +355,15 @@ export function TabelasValoresPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(table) => table.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(table) => table.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(table) => `Abrir tabela de valores ${table.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

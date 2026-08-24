@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -65,6 +65,8 @@ export function ProfissionaisPage() {
 
   const [editing, setEditing] = useState<OperatorProfileItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  // Abrir um profissional passa por um GET de detalhe (LGPD): a linha em abertura fica sinalizada.
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   const canCreate = can("operator_profiles:create");
   const canUpdate = can("operator_profiles:update");
@@ -88,9 +90,17 @@ export function ProfissionaisPage() {
   async function openEdit(profile: OperatorProfileItem) {
     // LGPD: a lista não traz o número da CNH. Busca o DETALHE (GET /:id) antes de abrir o modal, para o
     // formulário de edição pré-preencher a CNH sem que o número trafegue em massa na listagem.
-    const detail = await getOperatorProfile(context, profile.id).catch(() => null);
-    setEditing(detail ?? profile);
-    setModalOpen(true);
+    // Abrir a linha passa por AQUI (nunca por um atalho síncrono), senão o modal abriria sem a CNH.
+    // Como há ida à rede, a linha em abertura fica marcada e um segundo clique não dispara outro GET.
+    if (openingId) return;
+    setOpeningId(profile.id);
+    try {
+      const detail = await getOperatorProfile(context, profile.id).catch(() => null);
+      setEditing(detail ?? profile);
+      setModalOpen(true);
+    } finally {
+      setOpeningId(null);
+    }
   }
 
   function closeModal() {
@@ -104,8 +114,12 @@ export function ProfissionaisPage() {
       header: "Profissional",
       sortable: true,
       sortValue: (profile) => profile.fullName ?? "",
-      render: (profile) =>
-        profile.fullName ? <strong>{getOperatorProfileDisplayName(profile)}</strong> : <span style={mutedStyle}>—</span>,
+      render: (profile) => (
+        <span style={stackCellStyle}>
+          {profile.fullName ? <strong>{getOperatorProfileDisplayName(profile)}</strong> : <span style={mutedStyle}>—</span>}
+          {openingId === profile.id ? <span style={mutedStyle}>Abrindo…</span> : null}
+        </span>
+      ),
     },
     {
       key: "userId",
@@ -152,26 +166,6 @@ export function ProfissionaisPage() {
       sortable: true,
       sortValue: (profile) => getOperatorProfileStatusLabel(profile.isActive),
       render: (profile) => <Chip tone={getOperatorProfileStatusTone(profile.isActive)}>{getOperatorProfileStatusLabel(profile.isActive)}</Chip>,
-    },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (profile) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              aria-label={`Editar profissional ${profile.fullName ?? profile.userId}`}
-              onClick={() => openEdit(profile)}
-            >
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
     },
   ];
 
@@ -258,7 +252,15 @@ export function ProfissionaisPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(profile) => profile.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(profile) => profile.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? (profile) => void openEdit(profile) : undefined}
+              rowLabel={(profile) => `Abrir profissional ${profile.fullName ?? formatUserIdShort(profile.userId)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

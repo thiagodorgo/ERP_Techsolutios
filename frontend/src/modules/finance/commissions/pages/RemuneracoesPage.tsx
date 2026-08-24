@@ -378,26 +378,11 @@ function RemuneracoesAllView({
         sortValue: (item) => item.total,
         render: (item) => <strong>{formatBRL(item.total)}</strong>,
       },
-      {
-        key: "actions",
-        header: "Ações",
-        render: (item) => (
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            aria-label={`Ver detalhamento por OS de ${displayName(item.payeeId)}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenDetail({ id: item.payeeId, name: displayName(item.payeeId) });
-            }}
-          >
-            <Receipt size={14} aria-hidden /> Detalhar
-          </Button>
-        ),
-      },
+      // Padrão "linha clicável" (2026-08-24): a coluna "Ações" SAIU inteira. O botão "Detalhar"
+      // era a única ação dela e virou o clique na própria linha (mesma ação, mesmo destino).
+      // O link do nome do operador continua na coluna "Operador" e não dispara a linha (regra 4).
     ],
-    [displayName, onOpenDetail],
+    [displayName],
   );
 
   const summaryFilter = useMemo(() => makeSummaryFilter(resolveName), [resolveName]);
@@ -509,6 +494,7 @@ function RemuneracoesAllView({
               sort={dense.sort}
               onSort={dense.toggleSort}
               onRowClick={(item) => onOpenDetail({ id: item.payeeId, name: displayName(item.payeeId) })}
+              rowLabel={(item) => `Abrir detalhamento por OS de ${displayName(item.payeeId)}`}
             />
             <DenseListPagination
               page={dense.page}

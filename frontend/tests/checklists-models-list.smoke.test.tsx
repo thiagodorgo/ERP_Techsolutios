@@ -158,9 +158,15 @@ test("lista de modelos (somente-leitura): banner verbatim presente e ZERO botão
   assert.doesNotMatch(html, /Novo modelo/);
   assert.doesNotMatch(html, /Criar primeiro modelo/);
   // Junta PR-02a: com LINHAS REAIS na tela, nenhuma ação de escrita aparece — nem inativar,
-  // nem duplicar; o ícone de abrir é "Ver modelo". E a ponte do builder não monta sem clique.
+  // nem duplicar. E a ponte do builder não monta sem clique.
   assert.match(html, /Vistoria de coleta/);
-  assert.match(html, /Ver modelo/);
+  // Padrão "linha clicável" (2026-08-24): abrir o modelo é o clique da LINHA (aria-label diz o que abre)
+  // e o ícone de abrir/editar saiu. Aqui a coluna AÇÕES sobrevive porque ESTE papel ainda alcança as
+  // execuções — o gate `checklist_runs:read` vem da sessão. Some inteira só quando nada sobra.
+  assert.match(html, /Abrir o modelo Vistoria de coleta/);
+  assert.match(html, /pat-row--clickable/); // affordance real: cursor, realce e foco visível
+  assert.match(html, /Ver execuções deste modelo/);
+  assert.doesNotMatch(html, /Ver modelo/);
   assert.doesNotMatch(html, /Editar modelo/);
   assert.doesNotMatch(html, /Inativar modelo|Reativar modelo/);
   assert.doesNotMatch(html, /Duplicar modelo/);
@@ -180,7 +186,9 @@ test("linhas reais: resumo em PT-BR do mapa local (nunca a chave técnica), pill
   assert.match(html, /Inativo/);
   // Com escrita, as ações de linha aparecem — inclusive o caminho de tirar de circulação
   // (achado da junta: sem ele, modelo criado por engano virava lixo irremovível pela UI).
-  assert.match(html, /Editar modelo/);
+  // "Editar modelo" NÃO está entre elas: abrir o modelo é o clique da linha (padrão de 2026-08-24).
+  assert.match(html, /Abrir o modelo Vistoria de coleta/);
+  assert.doesNotMatch(html, /Editar modelo/);
   assert.match(html, /Inativar modelo/);
   assert.match(html, /Reativar modelo/);
   assert.match(html, /Duplicar modelo/);
@@ -209,17 +217,17 @@ test("primeiro paint SEM costura: skeleton — nunca o vazio-hero antes de pergu
 test("esconde-fino das ações de LINHA: cada gate decide a sua ação (leitura de execuções não herda escrita)", async () => {
   const { rowActionVisibility } = await import("../src/modules/checklists/pages/TenantChecklistsPage");
 
-  // Papel completo: edita, inativa, duplica e alcança as execuções.
+  // Padrão "linha clicável" (2026-08-24): a ação "abrir/editar" saiu daqui — abrir o modelo é o clique
+  // da linha. Restam as ações SECUNDÁRIAS, cada uma com o seu gate.
+  // Papel completo: inativa, duplica e alcança as execuções.
   assert.deepEqual(rowActionVisibility({ canUpdate: true, canWrite: true, canReadRuns: true }), {
-    open: "edit",
     toggleStatus: true,
     duplicate: true,
     runs: true,
   });
 
-  // Somente-leitura de modelos: o ícone vira "ver", ZERO ação de escrita — nem inativar, nem duplicar.
+  // Somente-leitura de modelos: ZERO ação — nem inativar, nem duplicar (a coluna inteira some).
   assert.deepEqual(rowActionVisibility({ canUpdate: false, canWrite: false, canReadRuns: false }), {
-    open: "view",
     toggleStatus: false,
     duplicate: false,
     runs: false,
@@ -227,15 +235,13 @@ test("esconde-fino das ações de LINHA: cada gate decide a sua ação (leitura 
 
   // Quem só LÊ execuções alcança a tela de acompanhamento sem ganhar nenhuma escrita.
   assert.deepEqual(rowActionVisibility({ canUpdate: false, canWrite: false, canReadRuns: true }), {
-    open: "view",
     toggleStatus: false,
     duplicate: false,
     runs: true,
   });
 
-  // Quem cria mas não atualiza: duplica (escrita), mas NÃO inativa nem edita.
+  // Quem cria mas não atualiza: duplica (escrita), mas NÃO inativa.
   const criador = rowActionVisibility({ canUpdate: false, canWrite: true, canReadRuns: false });
-  assert.equal(criador.open, "view");
   assert.equal(criador.toggleStatus, false);
   assert.equal(criador.duplicate, true);
 });

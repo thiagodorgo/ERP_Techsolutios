@@ -2,6 +2,7 @@ import { Plus, Printer, Trash2 } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import { Alert, Button, Chip, Skeleton } from "../../../../components/ui";
+import { rowClickProps } from "../../../../components/ui/clickable-row";
 import { formatCost, formatQuantity, getMaintenanceItemTypeLabel, getMaintenanceItemTypeTone } from "../maintenance-orders.adapter";
 import type { MaintenanceOrderItem, MaintenanceOrderTotals } from "../maintenance-orders.types";
 
@@ -93,7 +94,20 @@ export function MaintenanceItemsSection({
                 </tr>
               ) : (
                 items.map((item) => (
-                  <tr key={item.id}>
+                  // Linha clicável (padrão do dono, 2026-08-24): abre o mesmo modal do item que o botão
+                  // "Editar" abria. Sem permissão de edição não há o que abrir — a linha fica estática.
+                  //
+                  // `busyItemId` carrega a trava que o botão removido tinha (`disabled`): enquanto o
+                  // item está sendo EXCLUÍDO, a linha não abre o modal de um registro que sai da lista
+                  // no instante seguinte. Perder um `disabled` na migração é defeito que o compilador
+                  // não pega — o mesmo cuidado já estava em Danos (`if (openingEditId) return;`).
+                  <tr
+                    key={item.id}
+                    {...rowClickProps({
+                      onOpen: canEdit && busyItemId !== item.id ? () => onEditItem(item) : null,
+                      label: `Abrir item ${item.description || "sem descrição"}`,
+                    })}
+                  >
                     <td style={tdStyle}>{item.description || "—"}</td>
                     <td style={tdStyle}>
                       <Chip tone={getMaintenanceItemTypeTone(item.itemType)}>{getMaintenanceItemTypeLabel(item.itemType)}</Chip>
@@ -104,17 +118,9 @@ export function MaintenanceItemsSection({
                     <td style={tdRight}>{formatCost(item.lineTotal)}</td>
                     {canEdit ? (
                       <td style={tdRight}>
-                        <span style={iconBtnStyle}>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            aria-label={`Editar item ${item.description}`}
-                            disabled={busyItemId === item.id}
-                            onClick={() => onEditItem(item)}
-                          >
-                            Editar
-                          </Button>
+                        {/* "Editar" saiu (a linha abre o item); a coluna permanece pelo Excluir, que é
+                            destrutivo. O clique aqui é da barra de ações, nunca da linha. */}
+                        <span style={iconBtnStyle} onClick={(event) => event.stopPropagation()}>
                           <Button
                             type="button"
                             size="sm"

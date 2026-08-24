@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -100,6 +100,15 @@ export function TarifasPage() {
     return label ? <span>{label}</span> : <span style={mutedStyle}>—</span>;
   }
 
+  // Rótulo humano da linha (padrão "linha clicável"): origem + serviço + cliente + valor.
+  // Nunca o `id` — o aria-label antigo do botão caía no UUID cru quando a origem era vazia.
+  function describeTariff(tariff: TariffItem): string {
+    const service = tariff.serviceCatalogId ? references.serviceLabelById.get(tariff.serviceCatalogId) ?? "serviço não identificado" : "todos os serviços";
+    const customer = tariff.customerId ? references.customerLabelById.get(tariff.customerId) ?? "cliente não identificado" : "todos os clientes";
+    const origin = tariff.origin?.trim() ? `${tariff.origin} — ` : "";
+    return `${origin}${service} · ${customer} · ${formatUnitPrice(tariff.unitPrice, tariff.currency)}`;
+  }
+
   const columns: DenseColumn<TariffItem>[] = [
     {
       key: "service",
@@ -145,20 +154,6 @@ export function TarifasPage() {
       sortable: true,
       sortValue: (tariff) => getTariffActiveLabel(tariff.isActive),
       render: (tariff) => <Chip tone={getTariffActiveTone(tariff.isActive)}>{getTariffActiveLabel(tariff.isActive)}</Chip>,
-    },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (tariff) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar tarifa ${tariff.origin || tariff.id}`} onClick={() => openEdit(tariff)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
     },
   ];
 
@@ -243,7 +238,15 @@ export function TarifasPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(tariff) => tariff.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(tariff) => tariff.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(tariff) => `Abrir tarifa ${describeTariff(tariff)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

@@ -1,7 +1,7 @@
-import { ArrowRight, RefreshCw, Unlock } from "lucide-react";
+import { RefreshCw, Unlock } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import type { DenseColumn, DenseListStatusFilter } from "../../../../components/dense-list";
 import { DenseListPagination, DenseTable, DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
@@ -24,6 +24,7 @@ const countStyle: CSSProperties = { fontSize: "var(--text-sm)", color: "var(--te
 const mutedStyle: CSSProperties = { color: "var(--text-secondary)" };
 
 export function LiberacoesPage() {
+  const navigate = useNavigate();
   const { activeContext } = useTenantContext();
   const { items, pagination, loading, error, refresh } = useProcesses(STABLE_FILTERS);
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
@@ -75,17 +76,8 @@ export function LiberacoesPage() {
       sortValue: (process) => process.originAuthority,
       render: (process) => process.originAuthority || <span style={mutedStyle}>—</span>,
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (process) => (
-        <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-          <Link to={`/patios/processos/${process.id}`} className="ui-button ui-button--secondary ui-button--sm" aria-label={`Abrir o dossiê do processo ${getVehicleLabel(process)}`}>
-            <ArrowRight size={14} aria-hidden /> Abrir dossiê
-          </Link>
-        </div>
-      ),
-    },
+    // PADRÃO "LINHA CLICÁVEL" (2026-08-24): a coluna "Ações" saiu inteira — "Abrir dossiê" era a única ação e
+    // agora é o clique em qualquer ponto da linha (o painel de liberação vive no dossiê).
   ];
 
   const dense = useDenseList<ProcessListItem>({ items: releasable, columns, filter: filterAdapter, defaultSort: { key: "enteredAt", dir: "desc" } });
@@ -142,7 +134,15 @@ export function LiberacoesPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(process) => process.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(process) => process.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={(process) => navigate(`/patios/processos/${process.id}`)}
+              rowLabel={(process) => `Abrir o dossiê do processo ${getVehicleLabel(process)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

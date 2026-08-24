@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, ClipboardList, Eye, Pencil, Plus, Wrench, ShieldAlert } from "lucide-react";
+import { Archive, ArchiveRestore, CheckCircle2, ChevronDown, ClipboardList, Eye, Plus, Wrench, ShieldAlert } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -168,6 +168,14 @@ export function DanosPage() {
     [vehicleById],
   );
   const resolveWorkOrderCode = useCallback((id: string) => workOrderById.get(id)?.code, [workOrderById]);
+  // Referência humana (placa · data) do dano — usada no aria-label da linha e dos botões da linha.
+  const describeDamage = useCallback(
+    (damage: Damage) => {
+      const vehicle = vehicleById.get(damage.vehicleId);
+      return vehicle ? `${vehicle.plate} · ${formatDamageDate(damage.data)}` : formatDamageDate(damage.data);
+    },
+    [vehicleById],
+  );
 
   function openCreate() {
     setEditing(null);
@@ -333,25 +341,18 @@ export function DanosPage() {
       key: "actions",
       header: "Ações",
       render: (damage) => {
-        const vehicle = vehicleById.get(damage.vehicleId);
-        const ref = vehicle ? `${vehicle.plate} · ${formatDamageDate(damage.data)}` : formatDamageDate(damage.data);
+        // "Editar" saiu: a LINHA inteira abre o dano (padrão do dono, 2026-08-24). "Detalhes" segue aqui
+        // como ação secundária, e a coluna permanece pelo menu de situação e pelo Desativar/Reativar.
+        const ref = describeDamage(damage);
         return (
-          <div className="work-orders-row-actions">
+          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <Button type="button" size="sm" variant="secondary" aria-label={`Ver detalhes e fotos do dano ${ref}`} onClick={() => setDetail(damage)}>
               <Eye size={14} aria-hidden /> Detalhes
             </Button>
             {canUpdate ? (
               <>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={openingEditId === damage.id}
-                  aria-label={`Editar dano ${ref}`}
-                  onClick={() => void openEdit(damage)}
-                >
-                  <Pencil size={14} aria-hidden /> {openingEditId === damage.id ? "Abrindo…" : "Editar"}
-                </Button>
+                {/* A abertura da edição é assíncrona (GET do detalhe): feedback honesto enquanto carrega. */}
+                {openingEditId === damage.id ? <span style={mutedStyle}>Abrindo…</span> : null}
                 <StatusTransitionMenu damage={damage} disabled={busyId === damage.id} onPick={(transition) => void applyTransition(damage, transition)} />
                 <Button
                   type="button"
@@ -551,7 +552,27 @@ export function DanosPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(damage) => damage.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável: com permissão de alteração abre a edição (o que o botão "Editar" fazia);
+                sem ela abre o único objeto que resta — Detalhes. A linha nunca promete o que não pode.
+                A abertura da edição é assíncrona, então uma linha já em abertura não dispara de novo. */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(damage) => damage.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={
+                canUpdate
+                  ? (damage) => {
+                      if (openingEditId) return;
+                      void openEdit(damage);
+                    }
+                  : (damage) => setDetail(damage)
+              }
+              rowLabel={(damage) =>
+                canUpdate ? `Abrir dano ${describeDamage(damage)}` : `Abrir detalhes e fotos do dano ${describeDamage(damage)}`
+              }
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

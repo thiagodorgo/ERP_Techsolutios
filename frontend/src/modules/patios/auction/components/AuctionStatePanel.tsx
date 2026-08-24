@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { Badge, Card, Chip, EmptyState } from "../../../../components/ui";
+import { Badge, Card, Chip, EmptyState, STATIC_ROW_CLASS } from "../../../../components/ui";
 import { ProcessStatusChip } from "../../processes/components/ProcessStatusChip";
 import type { ImpoundStatus } from "../../processes/processes.types";
 import {
@@ -68,7 +68,7 @@ export function AuctionStatePanel({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.roundNumber}>
+                <tr key={row.roundNumber} className={STATIC_ROW_CLASS}>
                   <td style={cellStyle}>
                     <strong>{row.roundNumber}ª</strong>
                   </td>

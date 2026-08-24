@@ -2,6 +2,8 @@ import { DollarSign, Filter, Plus, Server, ShieldCheck, Users, type LucideIcon }
 import type { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { rowClickProps } from "../../../components/ui";
+
 // "Organizações" (console). Alvo: ERP Web.dc.html (sc_console).
 
 type Kpi = { icon: LucideIcon; iconBg: string; iconColor: string; risk: string; riskBg: string; riskColor: string; value: string; label: string; sub: string; subColor: string };
@@ -75,10 +77,18 @@ export function PlatformTenantsPage() {
           <span style={{ ...th, flex: 0.7 }}>MÓDULOS</span>
           <span style={{ ...th, flex: 1 }}>SAÚDE</span>
           <span style={{ ...th, flex: 1 }}>ÚLTIMO EVENTO</span>
-          <span style={{ ...th, flex: 0.6, textAlign: "right" }}>AÇÃO</span>
+          {/* A coluna AÇÃO saiu: "Ver" era a única ação e virou o clique da própria linha
+              (padrão "linha clicável", 2026-08-24) — cabeçalho e célula saíram juntos. */}
         </div>
         {ROWS.map((t) => (
-          <div key={t.id} onClick={() => navigate(`/platform/tenants/${t.id}`)} style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #F8FAFC", cursor: "pointer", gap: 8 }}>
+          <div
+            key={t.id}
+            {...rowClickProps({ role: "button",
+              onOpen: () => navigate(`/platform/tenants/${t.id}`),
+              label: `Abrir a organização ${t.name}`,
+            })}
+            style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid #F8FAFC", gap: 8 }}
+          >
             <div style={{ flex: 2, display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#2563EB" }}>{t.initials}</div>
               <div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{t.name}</div><div style={{ fontSize: 11, color: "#94A3B8" }}>{t.since}</div></div>
@@ -89,9 +99,6 @@ export function PlatformTenantsPage() {
             <span style={{ flex: 0.7, fontSize: 12.5, color: "#475569" }}>{t.mods}</span>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: t.dot, flexShrink: 0 }} /><span style={{ fontSize: 12.5, fontWeight: 600, color: t.healthColor }}>{t.health}</span></div>
             <span style={{ flex: 1, fontSize: 12, color: "#64748B" }}>{t.lastEvent}</span>
-            <div style={{ flex: 0.6, display: "flex", justifyContent: "flex-end" }}>
-              <button style={{ padding: "5px 12px", background: "#F1F5F9", border: "none", borderRadius: 7, fontSize: 12, fontWeight: 700, color: "#2563EB", cursor: "pointer", fontFamily: "inherit" }}>Ver</button>
-            </div>
           </div>
         ))}
       </div>

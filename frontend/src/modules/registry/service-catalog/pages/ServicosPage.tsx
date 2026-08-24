@@ -1,4 +1,4 @@
-import { Ban, Pencil, Plus, RefreshCw, RotateCcw } from "lucide-react";
+import { Ban, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -140,9 +140,6 @@ export function ServicosPage() {
       render: (service) =>
         canUpdate ? (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar ${service.name}`} onClick={() => openEdit(service)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
             <Button
               type="button"
               size="sm"
@@ -233,7 +230,15 @@ export function ServicosPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(service) => service.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(service) => service.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(service) => `Abrir serviço ${service.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

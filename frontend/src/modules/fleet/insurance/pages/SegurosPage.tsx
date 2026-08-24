@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, AlarmClock, Ban, CalendarClock, CheckCircle2, Pencil, Plus, RotateCcw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Archive, ArchiveRestore, AlarmClock, Ban, CalendarClock, CheckCircle2, Plus, RotateCcw, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -122,6 +122,14 @@ export function SegurosPage() {
   );
 
   const vehicleById = useMemo(() => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])), [vehicles]);
+  // Referência humana (placa · nº da apólice) — usada no aria-label da linha e dos botões da linha.
+  const describePolicy = useCallback(
+    (policy: InsurancePolicy) => {
+      const vehicle = vehicleById.get(policy.vehicleId);
+      return vehicle ? `${vehicle.plate} · ${policy.numeroApolice}` : policy.numeroApolice;
+    },
+    [vehicleById],
+  );
   const resolveVehicleName = useCallback(
     (id: string) => {
       const vehicle = vehicleById.get(id);
@@ -250,14 +258,12 @@ export function SegurosPage() {
       header: "Ações",
       render: (policy) => {
         if (!canUpdate) return <span style={countStyle}>—</span>;
-        const vehicle = vehicleById.get(policy.vehicleId);
-        const ref = vehicle ? `${vehicle.plate} · ${policy.numeroApolice}` : policy.numeroApolice;
+        // "Editar" saiu: a LINHA inteira abre a apólice (padrão do dono, 2026-08-24). A coluna permanece
+        // por Cancelar/Reativar a apólice e Desativar/Reativar o registro.
+        const ref = describePolicy(policy);
         const toggle = getInsuranceToggleAction(policy.status);
         return (
-          <div className="work-orders-row-actions">
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar apólice ${ref}`} onClick={() => openEdit(policy)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
+          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <Button
               type="button"
               size="sm"
@@ -463,7 +469,17 @@ export function SegurosPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(policy) => policy.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável: abre o mesmo modal de edição que o botão "Editar" abria. Sem permissão
+                de alteração não há o que abrir, então a linha fica estática (fail-honesto). */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(policy) => policy.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(policy) => `Abrir apólice ${describePolicy(policy)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

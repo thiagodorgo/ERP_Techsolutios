@@ -4,18 +4,16 @@ import {
   ClipboardList,
   Copy,
   ExternalLink,
-  Eye,
   Lock,
   Plus,
   RefreshCcw,
   RotateCcw,
   Search,
-  Settings,
 } from "lucide-react";
-import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { rowClickProps } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
@@ -110,9 +108,10 @@ export function rowActionVisibility(input: {
   readonly canUpdate: boolean;
   readonly canWrite: boolean;
   readonly canReadRuns: boolean;
-}): { readonly open: "edit" | "view"; readonly toggleStatus: boolean; readonly duplicate: boolean; readonly runs: boolean } {
+}): { readonly toggleStatus: boolean; readonly duplicate: boolean; readonly runs: boolean } {
   return {
-    open: input.canUpdate ? "edit" : "view",
+    // Padrão "linha clicável" (2026-08-24): não há mais ação "abrir/editar" de LINHA — abrir o modelo é
+    // o clique na própria linha. Sobram aqui só as ações secundárias, cada uma com o seu gate.
     toggleStatus: input.canUpdate,
     duplicate: input.canWrite,
     // Leitura de execuções tem gate PRÓPRIO — não herda o de escrita.
@@ -293,12 +292,13 @@ export function TenantChecklistsPage({
     }, draft);
   }
 
-  function handleRowKeyDown(event: KeyboardEvent<HTMLDivElement>, checklist: TenantChecklist) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openChecklist(checklist);
-    }
-  }
+  // Teclado (Enter/Espaço), cursor, realce, aria-label, filho interativo e guarda de seleção de texto
+  // vêm todos do helper compartilhado `rowClickProps` — esta tela deixou de manter a sua própria cópia.
+  // As ações de linha dependem só das permissões, então decidem a coluna inteira: sem NENHUMA delas,
+  // a coluna AÇÕES some com o cabeçalho junto (a grade passa a 6 colunas) — nada de coluna fantasma.
+  const rowActions = rowActionVisibility({ canUpdate, canWrite, canReadRuns });
+  const hasRowActions = rowActions.toggleStatus || rowActions.duplicate || rowActions.runs;
+  const gridClass = hasRowActions ? "ckb-grid" : "ckb-grid ckb-grid--no-actions";
 
   const showSkeleton = loading && checklists.length === 0;
   const showErrorCard = !loading && loadError !== null && checklists.length === 0;
@@ -395,14 +395,14 @@ export function TenantChecklistsPage({
               <div className="ckb-table" role="table" aria-label="Modelos de checklist">
                 {/* Junta PR-02a (BAIXA): o cabeçalho estava `aria-hidden`, escondendo MODELO/TIPO/
                     SITUAÇÃO… de leitores de tela. Agora a grade tem semântica de tabela. */}
-                <div className="ckb-grid ckb-table-head" role="row">
+                <div className={`${gridClass} ckb-table-head`} role="row">
                   <div role="columnheader">MODELO</div>
                   <div role="columnheader">TIPO</div>
                   <div role="columnheader">SITUAÇÃO</div>
                   <div role="columnheader" style={{ textAlign: "right" }}>VERSÃO</div>
                   <div role="columnheader" style={{ textAlign: "right" }}>CAMPOS</div>
                   <div role="columnheader">ATUALIZADO</div>
-                  <div role="columnheader" style={{ textAlign: "right" }}>AÇÕES</div>
+                  {hasRowActions ? <div role="columnheader" style={{ textAlign: "right" }}>AÇÕES</div> : null}
                 </div>
 
                 {filteredChecklists.map((checklist) => {
@@ -413,17 +413,15 @@ export function TenantChecklistsPage({
                   const TileIcon = tile.Icon;
                   const tone = CHECKLIST_STATUS_TONE[checklist.status];
                   const pending = hasChecklistPendingChanges(checklist);
-                  const rowActions = rowActionVisibility({ canUpdate, canWrite, canReadRuns });
-                  const openLabel = rowActions.open === "edit" ? "Editar modelo" : "Ver modelo";
                   return (
                     <div
                       key={checklist.id}
                       role="row"
-                      tabIndex={0}
-                      className="ckb-grid ckb-row"
-                      aria-label={`Abrir o modelo ${checklist.name}`}
-                      onClick={() => openChecklist(checklist)}
-                      onKeyDown={(event) => handleRowKeyDown(event, checklist)}
+                      {...rowClickProps({
+                        className: `${gridClass} ckb-row`,
+                        onOpen: () => openChecklist(checklist),
+                        label: `Abrir o modelo ${checklist.name}`,
+                      })}
                     >
                       <div className="ckb-cell-model">
                         <div className="ckb-model-tile" style={{ background: tile.bg, color: tile.fg }} aria-hidden="true">
@@ -444,19 +442,8 @@ export function TenantChecklistsPage({
                       <div className="ckb-cell-version">v{checklist.version}</div>
                       <div className="ckb-cell-count">{checklist.components.length}</div>
                       <div className="ckb-cell-updated">{formatChecklistUpdatedAt(checklist.updatedAt)}</div>
+                      {hasRowActions ? (
                       <div className="ckb-cell-actions">
-                        <button
-                          type="button"
-                          className="ckb-icon-btn"
-                          title={openLabel}
-                          aria-label={openLabel}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openChecklist(checklist);
-                          }}
-                        >
-                          {rowActions.open === "edit" ? <Settings size={15} /> : <Eye size={15} />}
-                        </button>
                         {rowActions.toggleStatus ? (
                           <button
                             type="button"
@@ -503,6 +490,7 @@ export function TenantChecklistsPage({
                           </button>
                         ) : null}
                       </div>
+                      ) : null}
                     </div>
                   );
                 })}

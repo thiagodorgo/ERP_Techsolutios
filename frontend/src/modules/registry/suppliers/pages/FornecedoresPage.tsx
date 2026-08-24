@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -93,20 +93,6 @@ export function FornecedoresPage() {
       sortValue: (supplier) => getSupplierStatusLabel(supplier.isActive),
       render: (supplier) => <Chip tone={getSupplierStatusTone(supplier.isActive)}>{getSupplierStatusLabel(supplier.isActive)}</Chip>,
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (supplier) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar fornecedor ${supplier.name}`} onClick={() => openEdit(supplier)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
-    },
   ];
 
   const dense = useDenseList<SupplierItem>({ items, columns, filter: filterSuppliers, defaultSort: { key: "name", dir: "asc" } });
@@ -176,7 +162,15 @@ export function FornecedoresPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(supplier) => supplier.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(supplier) => supplier.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(supplier) => `Abrir fornecedor ${supplier.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

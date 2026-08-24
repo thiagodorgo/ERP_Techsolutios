@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { InitialsAvatar, KpiStatCard, PageHeader } from "../../../components/patterns";
 import { ErrorState } from "../../../components/ui";
+import { rowClickProps } from "../../../components/ui/clickable-row";
 import { downloadCsv } from "../../../lib/csv";
 import {
   auditActionMeta,
@@ -378,7 +379,7 @@ export function AuditTenantPage() {
                 const meta = auditActionMeta(event.action);
                 const actor = auditActorPresentation(event.actor);
                 return (
-                  <div key={event.id} className="pat-table__row pat-audit-grid">
+                  <div key={event.id} {...rowClickProps({ onOpen: null, className: "pat-table__row pat-audit-grid" })}>
                     {/* QUANDO — hora mono (America/Sao_Paulo) */}
                     <div className="pat-mono" style={{ fontSize: 12.5, fontWeight: 700, color: "#334155" }}>
                       {formatEventTime(event.whenIso)}

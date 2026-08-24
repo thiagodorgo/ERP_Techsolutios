@@ -1,4 +1,4 @@
-import { Ban, Droplets, Fuel, Gauge, Pencil, Plus, RefreshCw, Receipt, RotateCcw } from "lucide-react";
+import { Ban, Droplets, Fuel, Gauge, Plus, RefreshCw, Receipt, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -98,6 +98,14 @@ export function AbastecimentoPage() {
   );
 
   const vehicleById = useMemo(() => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])), [vehicles]);
+  // Referência humana (placa · data) do lançamento — usada no aria-label da linha e dos botões da linha.
+  const describeLog = useCallback(
+    (log: FuelLog) => {
+      const vehicle = vehicleById.get(log.vehicleId);
+      return vehicle ? `${vehicle.plate} · ${formatFuelDate(log.fueledAt)}` : formatFuelDate(log.fueledAt);
+    },
+    [vehicleById],
+  );
   const resolveVehicleName = useCallback(
     (id: string) => {
       const vehicle = vehicleById.get(id);
@@ -231,14 +239,11 @@ export function AbastecimentoPage() {
       header: "Ações",
       render: (log) => {
         if (!canUpdate) return <span style={countStyle}>—</span>;
-        // Referência humana (placa · data) para distinguir os botões de cada linha no leitor de tela.
-        const vehicle = vehicleById.get(log.vehicleId);
-        const ref = vehicle ? `${vehicle.plate} · ${formatFuelDate(log.fueledAt)}` : formatFuelDate(log.fueledAt);
+        // "Editar" saiu: a LINHA inteira abre o lançamento (padrão do dono, 2026-08-24).
+        // A coluna permanece porque sobrou a ação secundária Desativar/Reativar.
+        const ref = describeLog(log);
         return (
           <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar lançamento ${ref}`} onClick={() => openEdit(log)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
             <Button
               type="button"
               size="sm"
@@ -407,7 +412,17 @@ export function AbastecimentoPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(log) => log.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável: abre o mesmo modal de edição que o botão "Editar" abria. Sem permissão
+                de alteração não há o que abrir, então a linha fica estática (fail-honesto). */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(log) => log.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(log) => `Abrir lançamento de abastecimento ${describeLog(log)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

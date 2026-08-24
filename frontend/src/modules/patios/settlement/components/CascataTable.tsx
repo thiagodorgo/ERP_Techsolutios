@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { Chip } from "../../../../components/ui";
+import { Chip, STATIC_ROW_CLASS } from "../../../../components/ui";
 import {
   formatMoney,
   getSettlementStatusTone,
@@ -56,7 +56,7 @@ export function CascataTable({
           </thead>
           <tbody>
             {tiers.map((tier) => (
-              <tr key={tier.id}>
+              <tr key={tier.id} className={STATIC_ROW_CLASS}>
                 <td style={cellStyle}>
                   <strong>{tier.orderSeq}º</strong>
                 </td>
@@ -73,7 +73,7 @@ export function CascataTable({
 
             {/* Resíduo OWNER_BALANCE — o que sobra do arremate após a cascata (§12). SEM valor reclamado. */}
             {ownerBalance ? (
-              <tr style={{ background: "#F8FAFC" }}>
+              <tr className={STATIC_ROW_CLASS} style={{ background: "#F8FAFC" }}>
                 <td style={cellStyle}>
                   <strong>{ownerBalance.orderSeq}º</strong>
                 </td>

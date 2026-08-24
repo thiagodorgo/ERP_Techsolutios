@@ -1,4 +1,4 @@
-import { Ban, ChevronDown, Pencil, Plus, RefreshCw, RotateCcw } from "lucide-react";
+import { Ban, ChevronDown, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -141,6 +141,14 @@ export function ManutencaoPage() {
   );
 
   const vehicleById = useMemo(() => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])), [vehicles]);
+  // Referência humana (placa · tipo) da ordem — usada no aria-label da linha e dos botões da linha.
+  const describeOrder = useCallback(
+    (order: MaintenanceOrder) => {
+      const vehicle = vehicleById.get(order.vehicleId);
+      return vehicle ? `${vehicle.plate} · ${getMaintenanceTypeLabel(order.type)}` : getMaintenanceTypeLabel(order.type);
+    },
+    [vehicleById],
+  );
   const resolveVehicleName = useCallback(
     (id: string) => {
       const vehicle = vehicleById.get(id);
@@ -296,13 +304,11 @@ export function ManutencaoPage() {
       header: "Ações",
       render: (order) => {
         if (!canUpdate) return <span style={countStyle}>—</span>;
-        const vehicle = vehicleById.get(order.vehicleId);
-        const ref = vehicle ? `${vehicle.plate} · ${getMaintenanceTypeLabel(order.type)}` : getMaintenanceTypeLabel(order.type);
+        // "Editar" saiu: a LINHA inteira abre a manutenção (padrão do dono, 2026-08-24). A coluna
+        // permanece pelo menu de situação e pelo Desativar/Reativar; o clique nela não abre a linha.
+        const ref = describeOrder(order);
         return (
-          <div className="work-orders-row-actions">
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar manutenção ${ref}`} onClick={() => openEdit(order)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
+          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <StatusTransitionMenu order={order} disabled={busyId === order.id} onPick={(transition) => void applyTransition(order, transition)} />
             <Button
               type="button"
@@ -429,7 +435,17 @@ export function ManutencaoPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(order) => order.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável (vale nas 3 abas — todas usam esta tabela): abre o mesmo modal de edição
+                que o botão "Editar" abria. Sem permissão de alteração a linha fica estática. */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(order) => order.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(order) => `Abrir manutenção ${describeOrder(order)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

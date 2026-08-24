@@ -1,4 +1,4 @@
-import { Eye, Route, UserRound } from "lucide-react";
+import { Route, UserRound } from "lucide-react";
 import { useMemo } from "react";
 
 import { Button, Card, Table } from "../../../../components/ui";
@@ -24,6 +24,10 @@ export function DispatchesTable({
   readonly onQuickStatus: (dispatch: DispatchListItem) => void;
   readonly onReassign: (dispatch: DispatchListItem) => void;
 }) {
+  // Padrão "linha clicável" (2026-08-24): clicar na linha abre o painel de detalhe do envio — o que o
+  // botão "Detalhe" fazia. A coluna "Ações" só existe se sobrar ação secundária REAL (Status/Reatribuir);
+  // sem nenhum gate, some com o cabeçalho junto — nada de coluna fantasma.
+  const hasRowActions = canChangeStatus || canCancel || canReassign;
   const columns = useMemo(
     () => [
       { key: "workOrder", header: "OS", render: (item: DispatchListItem) => <strong>{item.workOrderCode ?? item.workOrderId}</strong> },
@@ -32,29 +36,30 @@ export function DispatchesTable({
       { key: "priority", header: "Prioridade", render: (item: DispatchListItem) => <DispatchPriorityBadge priority={item.priority} /> },
       { key: "operator", header: "Operador", render: (item: DispatchListItem) => item.operatorUserId },
       { key: "created", header: "Criado em", render: (item: DispatchListItem) => formatDispatchDate(item.createdAt) },
-      {
-        key: "actions",
-        header: "Ações",
-        render: (item: DispatchListItem) => (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" onClick={() => onDetail(item)}>
-              <Eye size={14} /> Detalhe
-            </Button>
-            {canChangeStatus || canCancel ? (
-              <Button type="button" size="sm" variant="ghost" onClick={() => onQuickStatus(item)}>
-                <Route size={14} /> Status
-              </Button>
-            ) : null}
-            {canReassign ? (
-              <Button type="button" size="sm" variant="ghost" onClick={() => onReassign(item)}>
-                <UserRound size={14} /> Reatribuir
-              </Button>
-            ) : null}
-          </div>
-        ),
-      },
+      ...(hasRowActions
+        ? [
+            {
+              key: "actions",
+              header: "Ações",
+              render: (item: DispatchListItem) => (
+                <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
+                  {canChangeStatus || canCancel ? (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => onQuickStatus(item)}>
+                      <Route size={14} /> Status
+                    </Button>
+                  ) : null}
+                  {canReassign ? (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => onReassign(item)}>
+                      <UserRound size={14} /> Reatribuir
+                    </Button>
+                  ) : null}
+                </div>
+              ),
+            },
+          ]
+        : []),
     ],
-    [canCancel, canChangeStatus, canReassign, onDetail, onQuickStatus, onReassign],
+    [canCancel, canChangeStatus, canReassign, hasRowActions, onQuickStatus, onReassign],
   );
 
   return (
@@ -63,6 +68,7 @@ export function DispatchesTable({
         rows={items}
         keyForRow={(item) => item.id}
         onRowClick={onDetail}
+        rowLabel={(item) => `Abrir os detalhes do envio da OS ${item.workOrderCode ?? item.workOrderId}`}
         columns={columns}
       />
       <div className="work-orders-mobile-list dispatches-mobile-list">

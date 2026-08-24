@@ -90,6 +90,40 @@ Initial shared component library for React and Flutter, aligned with the ERP Tec
 6. tenant and role-aware navigation blocks
 7. blocked-state, retry, and escalation widgets for field execution
 
+## Clickable rows (system-wide standard)
+
+Owner decision, 2026-08-24. Applies to **every list and table in the system**, web and mobile.
+
+**The rule.** Clicking anywhere on a row opens that row's object — exactly what a redundant
+`Editar` button used to do. The `AÇÕES` column survives only if a **secondary or destructive**
+action remains (Excluir, Duplicar, Ativar/Inativar, Ver histórico, Baixar). If `Editar` was the
+only action, the whole column goes — header included. A header with no cell is a defect, not a
+cosmetic issue.
+
+**One place implements it:** `frontend/src/components/ui/clickable-row.tsx`, consumed through
+`rowClickProps({ onOpen, label, className })`. No list reimplements this logic. The helper
+resolves, in one call:
+
+- `cursor: pointer`, hover highlight, visible focus (`.pat-row--clickable` in `app.css`)
+- keyboard: `tabIndex={0}` with Enter and Space firing the same action as the click
+- `aria-label` naming what the row opens, in business PT-BR ("Abrir tarifa Quilômetro rodado")
+- clicks on interactive children (button, link, checkbox, menu, select, `[data-row-click-skip]`)
+  never reach the row — a safety net that holds even when a cell forgets `stopPropagation`
+- dragging to **select text** does not open the row (4px tolerance between mousedown and click)
+
+**Fail-honest, and this is the load-bearing half.** A row with nothing to open gets
+`.pat-row--static`: no cursor, no highlight, no `tabIndex`. Two cases qualify, and both were
+found in review rather than in theory:
+
+1. the row has no detail object at all (an audit event, a log line)
+2. the row would navigate to a route the **current role cannot see** — promising an object and
+   delivering "Acesso não autorizado" is a lie the affordance tells. Gate `onOpen` on the same
+   permission the target route requires.
+
+**Porting a row to the pattern** carries every guard the removed button had. A button that was
+`disabled` while a mutation ran must leave the row inert during that window too; the compiler
+cannot catch a lost `disabled`, and a review already caught one.
+
 ## Cross-platform rules
 - token names should map cleanly across React, Flutter, and Figma
 - semantic state names must remain identical

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { StatusPill } from "../../../../components/patterns";
+import { CLICKABLE_ROW_CLASS } from "../../../../components/ui";
 import { formatDateTime, getNotificationKindLabel, isDeadlineOverdue } from "../dashboard.adapter";
 import type { DeadlineAlert } from "../dashboard.types";
 import { ACTION_HIT_AREA, deadlineStatus } from "../dashboard.view-model";
@@ -70,7 +71,7 @@ export function PrazosCard({ alerts, now }: PrazosCardProps) {
               <Link
                 key={`${alert.processId}-${alert.kind}-${alert.dueAt}`}
                 to={`/patios/processos/${alert.processId}`}
-                className="pat-table__row"
+                className={`pat-table__row ${CLICKABLE_ROW_CLASS}`}
                 style={ROW_STYLE}
                 aria-label={`Abrir o processo com ${label.toLowerCase()} ${status.overdue ? "vencida" : "a vencer"} em ${formatDateTime(alert.dueAt)}`}
               >

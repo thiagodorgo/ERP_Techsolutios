@@ -1,10 +1,11 @@
-import { AlertTriangle, ArrowRight, Gauge, MapPin, Pencil, Plus, PowerOff, Search, Truck, Unlock } from "lucide-react";
+import { AlertTriangle, Gauge, MapPin, Plus, PowerOff, Search, Truck, Unlock } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import type { DenseColumn } from "../../../../components/dense-list";
 import { DENSE_LIST_FETCH_LIMIT, useDenseList } from "../../../../components/dense-list";
 import { KpiStatCard, PageHeader, StatusPill, TablePager } from "../../../../components/patterns";
+import { rowClickProps } from "../../../../components/ui";
 import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
@@ -16,6 +17,10 @@ import { filterYards, getYardActiveLabel } from "../yards.adapter";
 import type { YardActiveFilter, YardItem, YardsFilters } from "../yards.types";
 import { useYards } from "../useYards";
 
+// PADRÃO "LINHA CLICÁVEL" (decisão do dono, 2026-08-24) — clicar em QUALQUER ponto da linha abre o pátio
+// (rota /patios/patios/:yardId, o mesmo destino do nome). A coluna AÇÕES saiu inteira: o link "Abrir" duplicava
+// o clique na linha e o lápis "Editar" saiu do padrão — a edição continua no cabeçalho do detalhe do pátio
+// ("Editar pátio", sob yard:update). Affordance/teclado/seleção de texto ficam com `rowClickProps`.
 // TELAS PADRONIZADAS PR-D — Pátios no padrão do protótipo do dono (sc_patios).
 // Fontes REAIS: /api/v1/yards (useYards) para o cadastro + /patios/dashboard/summary (usePatiosDashboardSummary,
 // sob impound:read) para a OCUPAÇÃO por pátio, veículos em custódia e fila de liberações — é UMA requisição e o
@@ -77,15 +82,14 @@ export function PatiosPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
   const { can } = usePermissions();
+  const navigate = useNavigate();
   const { items, pagination, loading, error, refresh } = useYards(STABLE_FILTERS);
   const { summary, denied: summaryDenied } = usePatiosDashboardSummary();
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
 
-  const [editing, setEditing] = useState<YardItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const canCreate = can("yard:create");
-  const canUpdate = can("yard:update");
 
   const context = useMemo(
     () => ({
@@ -126,18 +130,11 @@ export function PatiosPage() {
   }, [summary]);
 
   function openCreate() {
-    setEditing(null);
-    setModalOpen(true);
-  }
-
-  function openEdit(yard: YardItem) {
-    setEditing(yard);
     setModalOpen(true);
   }
 
   function closeModal() {
     setModalOpen(false);
-    setEditing(null);
   }
 
   const showInvite = shouldShowInvite({ canCreate, loading, error, serverTotal, hasActiveFilters: dense.hasActiveFilters });
@@ -323,15 +320,12 @@ export function PatiosPage() {
               </div>
             );
           })}
-          <div style={{ textAlign: "right" }}>
-            AÇÕES
-          </div>
         </div>
 
         {loading && items.length === 0
           ? [0, 1, 2].map((index) => (
               <div key={index} className="pat-table__row pat-patios-grid" aria-hidden="true">
-                {Array.from({ length: 6 }).map((_, cell) => (
+                {Array.from({ length: 5 }).map((_, cell) => (
                   <div key={cell} className="pat-skel" style={{ height: 14 }} />
                 ))}
               </div>
@@ -367,7 +361,14 @@ export function PatiosPage() {
               const occupancy = occupancyByYard.get(yard.id);
               const pct = occupancy && occupancy.totalSpots > 0 ? Math.round((occupancy.occupiedSpots / occupancy.totalSpots) * 100) : null;
               return (
-                <div key={yard.id} className="pat-table__row pat-patios-grid">
+                <div
+                  key={yard.id}
+                  {...rowClickProps({
+                    onOpen: () => navigate(`/patios/patios/${yard.id}`),
+                    label: `Abrir o pátio ${yard.name}`,
+                    className: "pat-table__row pat-patios-grid",
+                  })}
+                >
                   <div className="pat-patio-name">
                     <span className="pat-patio-tile" aria-hidden="true">
                       <MapPin size={16} />
@@ -403,22 +404,6 @@ export function PatiosPage() {
                   </div>
                   <div>
                     <StatusPill label={getYardActiveLabel(yard.active)} bg={tone.bg} fg={tone.fg} dot={tone.dot} />
-                  </div>
-                  <div className="pat-row-actions">
-                    <Link to={`/patios/patios/${yard.id}`} className="pat-row-link" aria-label={`Abrir o pátio ${yard.name}`}>
-                      Abrir <ArrowRight size={12} aria-hidden="true" />
-                    </Link>
-                    {canUpdate ? (
-                      <button
-                        type="button"
-                        className="pat-icon-btn"
-                        title="Editar pátio"
-                        aria-label={`Editar o pátio ${yard.name}`}
-                        onClick={() => openEdit(yard)}
-                      >
-                        <Pencil size={14} aria-hidden="true" />
-                      </button>
-                    ) : null}
                   </div>
                 </div>
               );
@@ -457,8 +442,8 @@ export function PatiosPage() {
 
       {modalOpen ? (
         <YardFormModal
-          key={editing?.id ?? "new"}
-          yard={editing}
+          key="new"
+          yard={null}
           context={context}
           onClose={closeModal}
           onSaved={() => {

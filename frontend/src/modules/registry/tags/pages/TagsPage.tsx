@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
@@ -122,20 +122,6 @@ export function TagsPage() {
       sortValue: (tag) => getTagStatusLabel(tag.isActive),
       render: (tag) => <Chip tone={getTagStatusTone(tag.isActive)}>{getTagStatusLabel(tag.isActive)}</Chip>,
     },
-    {
-      key: "actions",
-      header: "Ações",
-      render: (tag) =>
-        canUpdate ? (
-          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar etiqueta ${tag.name}`} onClick={() => openEdit(tag)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
-          </div>
-        ) : (
-          <span style={countStyle}>—</span>
-        ),
-    },
   ];
 
   const dense = useDenseList<TagItem>({ items, columns, filter: filterTags, defaultSort: { key: "name", dir: "asc" } });
@@ -205,7 +191,15 @@ export function TagsPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(tag) => tag.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(tag) => tag.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(tag) => `Abrir etiqueta ${tag.name}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

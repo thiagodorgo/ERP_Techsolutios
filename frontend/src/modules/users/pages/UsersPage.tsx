@@ -1,10 +1,10 @@
-import { AlertTriangle, Ban, Pencil, Plus, RotateCcw, ScrollText, Search, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
+import { AlertTriangle, Ban, Plus, RotateCcw, ScrollText, Search, ShieldCheck, UserCheck, Users, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { DENSE_LIST_FETCH_LIMIT } from "../../../components/dense-list";
 import { InitialsAvatar, KpiStatCard, PageHeader, StatusPill, TablePager } from "../../../components/patterns";
-import { Button, Modal } from "../../../components/ui";
+import { Button, Modal, rowClickProps } from "../../../components/ui";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
@@ -366,7 +366,18 @@ export function UsersPage() {
             const since = relativeSince(user.createdAt, now);
             const admin = isAdminUser(user);
             return (
-              <div key={user.id} className="pat-table__row pat-users-grid">
+              // Padrão "linha clicável" (2026-08-24): a linha abre o cadastro do usuário — o mesmo modal
+              // que o lápis abria, e por isso o lápis saiu. FAIL-HONESTO: sem `users.manage` não há nada
+              // para abrir (não existe tela de detalhe de usuário), então a linha fica estática — sem
+              // cursor, sem realce, sem foco por teclado.
+              <div
+                key={user.id}
+                {...rowClickProps({ role: "button",
+                  className: "pat-table__row pat-users-grid",
+                  onOpen: canManage ? () => openEdit(user) : null,
+                  label: `Abrir o cadastro de ${user.name}`,
+                })}
+              >
                 {/* USUÁRIO — avatar de iniciais + nome + e-mail */}
                 <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
                   <InitialsAvatar name={user.name} size={34} />
@@ -406,30 +417,20 @@ export function UsersPage() {
                   {since ? <div style={{ fontSize: 11, color: "#94A3B8" }}>{since}</div> : null}
                 </div>
 
-                {/* AÇÕES — cada ícone ligado a uma ação REAL (gates preservados) */}
+                {/* AÇÕES — só o que NÃO é o clique da linha: desativar/reativar acesso e a trilha de
+                    auditoria. O lápis "Editar" saiu (padrão "linha clicável", 2026-08-24). */}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 5 }}>
                   {canManage ? (
-                    <>
-                      <button
-                        type="button"
-                        className="pat-icon-btn"
-                        title="Editar usuário"
-                        aria-label={`Editar ${user.name}`}
-                        onClick={() => openEdit(user)}
-                      >
-                        <Pencil size={14} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        className={user.status === "active" ? "pat-icon-btn pat-icon-btn--danger" : "pat-icon-btn"}
-                        disabled={busyId === user.id}
-                        title={user.status === "active" ? "Desativar acesso" : "Reativar acesso"}
-                        aria-label={user.status === "active" ? `Desativar ${user.name}` : `Reativar ${user.name}`}
-                        onClick={() => setPendingToggle(user)}
-                      >
-                        {user.status === "active" ? <Ban size={14} aria-hidden="true" /> : <RotateCcw size={14} aria-hidden="true" />}
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className={user.status === "active" ? "pat-icon-btn pat-icon-btn--danger" : "pat-icon-btn"}
+                      disabled={busyId === user.id}
+                      title={user.status === "active" ? "Desativar acesso" : "Reativar acesso"}
+                      aria-label={user.status === "active" ? `Desativar ${user.name}` : `Reativar ${user.name}`}
+                      onClick={() => setPendingToggle(user)}
+                    >
+                      {user.status === "active" ? <Ban size={14} aria-hidden="true" /> : <RotateCcw size={14} aria-hidden="true" />}
+                    </button>
                   ) : null}
                   {canSeeAudit ? (
                     <Link

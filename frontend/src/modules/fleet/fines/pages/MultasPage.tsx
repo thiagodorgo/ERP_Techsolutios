@@ -1,4 +1,4 @@
-import { AlarmClock, Ban, ChevronDown, ListChecks, Pencil, Plus, Receipt, RotateCcw } from "lucide-react";
+import { AlarmClock, Ban, ChevronDown, ListChecks, Plus, Receipt, RotateCcw } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -182,6 +182,14 @@ export function MultasPage() {
     [vehicleById],
   );
   const resolveDriverName = useCallback((id: string) => driverById.get(id), [driverById]);
+  // Referência humana (placa · nº do auto) da multa — usada no aria-label da linha e dos botões da linha.
+  const describeFine = useCallback(
+    (fine: Fine) => {
+      const vehicle = vehicleById.get(fine.vehicleId);
+      return vehicle ? `${vehicle.plate} · ${fine.numeroAuto}` : fine.numeroAuto;
+    },
+    [vehicleById],
+  );
 
   function openCreate() {
     setEditing(null);
@@ -356,13 +364,11 @@ export function MultasPage() {
       header: "Ações",
       render: (fine) => {
         if (!canUpdate) return <span style={countStyle}>—</span>;
-        const vehicle = vehicleById.get(fine.vehicleId);
-        const ref = vehicle ? `${vehicle.plate} · ${fine.numeroAuto}` : fine.numeroAuto;
+        // "Editar" saiu: a LINHA inteira abre a multa (padrão do dono, 2026-08-24). A coluna permanece
+        // pelo menu de situação e pelo Desativar/Reativar; o clique nela não abre a linha.
+        const ref = describeFine(fine);
         return (
-          <div className="work-orders-row-actions">
-            <Button type="button" size="sm" variant="secondary" aria-label={`Editar multa ${ref}`} onClick={() => openEdit(fine)}>
-              <Pencil size={14} aria-hidden /> Editar
-            </Button>
+          <div className="work-orders-row-actions" onClick={(event) => event.stopPropagation()}>
             <StatusTransitionMenu
               fine={fine}
               includeCancel={isAdmin}
@@ -556,7 +562,17 @@ export function MultasPage() {
 
         {!error && dense.total > 0 ? (
           <>
-            <DenseTable rows={dense.visibleItems} keyForRow={(fine) => fine.id} columns={columns} sort={dense.sort} onSort={dense.toggleSort} />
+            {/* Linha clicável: abre o mesmo modal de edição que o botão "Editar" abria. Sem permissão
+                de alteração não há o que abrir, então a linha fica estática (fail-honesto). */}
+            <DenseTable
+              rows={dense.visibleItems}
+              keyForRow={(fine) => fine.id}
+              columns={columns}
+              sort={dense.sort}
+              onSort={dense.toggleSort}
+              onRowClick={canUpdate ? openEdit : undefined}
+              rowLabel={(fine) => `Abrir multa ${describeFine(fine)}`}
+            />
             <DenseListPagination
               page={dense.page}
               pageSize={dense.pageSize}

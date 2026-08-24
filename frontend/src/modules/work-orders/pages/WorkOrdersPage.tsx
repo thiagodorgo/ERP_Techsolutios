@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 import { ClickableKpiCard } from "../../../components/kpi";
 import { KpiStatCard, PageHeader, StatusPill, TablePager, type KpiStatTag } from "../../../components/patterns";
+import { rowClickProps } from "../../../components/ui";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { buildWorkOrdersKpiDetails } from "../work-orders-kpi-detail";
@@ -109,6 +110,17 @@ export function WorkOrdersPage() {
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
   const { permissions } = usePermissions();
+
+  // A coluna AÇÃO existe se o PAPEL pode agir em alguma linha. Sem nenhuma destas
+  // permissões nenhuma linha jamais renderiza botão, e o cabeçalho ficaria sobre
+  // células vazias — a "faixa fantasma" que a regra 2 do padrão de linha clicável
+  // proíbe (COMPONENT_LIBRARY.md). Mesma decisão de DispatchesTable e de Modelos
+  // de Checklist: gate por permissão (papel), não por status (linha).
+  const hasRowActions =
+    permissions.includes("work_orders:status") ||
+    (permissions.includes("field_dispatch:cancel") && permissions.includes("field_dispatch:read"));
+  const gridClass = hasRowActions ? "pat-os-grid" : "pat-os-grid pat-os-grid--sem-acao";
+
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<TabKey>("all");
   const [page, setPage] = useState(0);
@@ -323,24 +335,24 @@ export function WorkOrdersPage() {
           <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>
         </div>
 
-        <div className="pat-os-grid pat-os-grid--head" aria-hidden="true">
+        <div className={`${gridClass} pat-os-grid--head`} aria-hidden="true">
           <div>CÓDIGO</div>
           <div>CLIENTE / SERVIÇO</div>
           <div>TÉCNICO</div>
           <div>AGENDA</div>
           <div>SITUAÇÃO</div>
-          <div style={{ textAlign: "right" }}>AÇÃO</div>
+          {hasRowActions ? <div style={{ textAlign: "right" }}>AÇÃO</div> : null}
         </div>
 
         {loading ? (
           [0, 1, 2, 3].map((i) => (
-            <div key={i} className="pat-os-grid" style={{ borderBottom: "1px solid #F1F5F9" }} aria-hidden="true">
+            <div key={i} className={gridClass} style={{ borderBottom: "1px solid #F1F5F9" }} aria-hidden="true">
               <div className="pat-skel" style={{ height: 12 }} />
               <div className="pat-skel" style={{ height: 12 }} />
               <div className="pat-skel" style={{ height: 12 }} />
               <div className="pat-skel" style={{ height: 12 }} />
               <div className="pat-skel" style={{ height: 12 }} />
-              <div className="pat-skel" style={{ height: 12 }} />
+              {hasRowActions ? <div className="pat-skel" style={{ height: 12 }} /> : null}
             </div>
           ))
         ) : total === 0 ? (
@@ -359,7 +371,14 @@ export function WorkOrdersPage() {
               .filter(Boolean)
               .join(" · ");
             return (
-              <div key={o.id} className="pat-os-grid pat-os-row" onClick={() => navigate(`/work-orders/${o.id}`)}>
+              <div
+                key={o.id}
+                {...rowClickProps({ role: "button",
+                  className: `${gridClass} pat-os-row`,
+                  onOpen: () => navigate(`/work-orders/${o.id}`),
+                  label: `Abrir a ordem de serviço ${o.code}`,
+                })}
+              >
                 {/* CÓDIGO — mono azul + prioridade com dot */}
                 <div>
                   <div className="pat-mono" style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{o.code}</div>
@@ -434,16 +453,18 @@ export function WorkOrdersPage() {
                   <StatusPill label={WORK_ORDER_STATUS_LABEL[o.status]} bg={st.bg} fg={st.fg} />
                 </div>
 
-                {/* AÇÃO — capacidade preservada: Dar andamento (gate) · Abrir · ⋮ Revogar envio (gate) */}
-                <WorkOrderRowActions
-                  status={o.status}
-                  permissions={permissions}
-                  busy={rowBusy[o.id] ?? false}
-                  error={rowError[o.id] ?? null}
-                  onOpen={() => navigate(`/work-orders/${o.id}`)}
-                  onAdvance={() => void handleAdvance(o)}
-                  onRevoke={() => void handleRevokeClick(o)}
-                />
+                {/* AÇÃO — só o que NÃO é o clique da linha: Dar andamento (gate) · ⋮ Revogar envio (gate).
+                    "Abrir" saiu no padrão "linha clicável" (2026-08-24) — era o duplicado do clique. */}
+                {hasRowActions ? (
+                  <WorkOrderRowActions
+                    status={o.status}
+                    permissions={permissions}
+                    busy={rowBusy[o.id] ?? false}
+                    error={rowError[o.id] ?? null}
+                    onAdvance={() => void handleAdvance(o)}
+                    onRevoke={() => void handleRevokeClick(o)}
+                  />
+                ) : null}
               </div>
             );
           })

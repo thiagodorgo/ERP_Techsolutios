@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 
-import { Alert, Badge, Button, Card, EmptyState, Skeleton } from "../../../../components/ui";
+import { Alert, Badge, Button, Card, EmptyState, Skeleton, STATIC_ROW_CLASS } from "../../../../components/ui";
 import {
   formatDateTime,
   formatMoney,
@@ -93,7 +93,7 @@ export function GuiaDebitos({
               </thead>
               <tbody>
                 {statement.lines.map((line) => (
-                  <tr key={line.id}>
+                  <tr key={line.id} className={STATIC_ROW_CLASS}>
                     <td>
                       <ChargeLineLabel line={line} model={model} />
                     </td>
