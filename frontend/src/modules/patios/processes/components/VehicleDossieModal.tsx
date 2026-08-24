@@ -364,7 +364,10 @@ export function VehicleDossieModal({ processId, onClose }: { readonly processId:
 
   return (
     <>
-      <Modal title="Dossiê do veículo" open size="lg" onClose={onClose}>
+      {/* stableHeight: o dossiê tem 8 abas de alturas muito diferentes (Visão Geral curta,
+          Vistoria com galeria longa). Sem altura fixa o modal muda de tamanho a cada troca de
+          aba e o conteúdo pula debaixo do ponteiro. */}
+      <Modal title="Dossiê do veículo" open size="lg" stableHeight onClose={onClose}>
       <VehicleDossieView
         canRead={canRead}
         loading={loading}

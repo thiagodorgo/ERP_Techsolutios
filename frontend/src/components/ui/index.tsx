@@ -126,19 +126,27 @@ export function Modal({
   onClose,
   children,
   size = "md",
+  stableHeight = false,
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   size?: "md" | "lg";
+  // Altura FIXA em vez de "cresce até 92vh". Para modal em abas: sem isto o
+  // modal encolhe na aba curta e estica na longa, e o conteúdo pula debaixo do
+  // ponteiro a cada troca de aba (pedido do dono, 2026-08-24). Só faz sentido
+  // com size="lg", que é quem tem corpo rolável próprio.
+  stableHeight?: boolean;
 }) {
   if (!open) return null;
   const isLarge = size === "lg";
   return (
     <div className="ui-overlay ui-overlay--center" role="presentation">
       <section
-        className={isLarge ? "ui-modal ui-modal--lg" : "ui-modal"}
+        className={[isLarge ? "ui-modal ui-modal--lg" : "ui-modal", stableHeight && isLarge ? "ui-modal--stable" : ""]
+          .filter(Boolean)
+          .join(" ")}
         role="dialog"
         aria-modal="true"
         aria-label={title}

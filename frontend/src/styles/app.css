@@ -649,6 +649,15 @@
   flex-direction: column;
 }
 
+/* Altura ESTÁVEL para modal em abas (dossiê do veículo). Com `max-height` o modal
+   se ajusta ao conteúdo de cada aba: encolhe na Visão Geral, estica na Vistoria
+   com galeria, e o conteúdo pula debaixo do ponteiro a cada troca. Com altura
+   fixa, o cabeçalho e a faixa de abas ficam parados e só o painel rola.
+   `min()` preserva o comportamento em tela baixa. */
+.ui-modal--lg.ui-modal--stable {
+  height: min(92vh, 900px);
+}
+
 .ui-modal--lg > header {
   flex: none;
 }
