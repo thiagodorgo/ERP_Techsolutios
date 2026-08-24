@@ -8,7 +8,7 @@ import type {
   TransitionChequeInput,
   UpdateChequeInput,
 } from "./cheque.types.js";
-import { ChequeError } from "./cheque.types.js";
+import { CHEQUE_ENTRY_LINK_FIELDS, ChequeError } from "./cheque.types.js";
 
 export interface ChequeRepository {
   create(input: CreateChequeInput): Promise<Cheque>;
@@ -171,13 +171,17 @@ export class InMemoryChequeRepository implements ChequeRepository {
     return this.attachEntry(tenantId, chequeId, "bounced", { bounceEntryId: entryId }, updatedBy);
   }
 
-  // B-O6R-02 ciclo 2 · C2 — paridade estrita com o Prisma (OR nas duas pontas, cheque não deletado).
+  // B-O6R-02 ciclo 3 · C2 (P5) — as pontas vêm da FONTE ÚNICA (`CHEQUE_ENTRY_LINK_FIELDS`), não de
+  // um literal escrito à mão. A cópia anterior (`clearedEntryId === entryId || bounceEntryId ===
+  // entryId`) e a do Prisma eram duas listas manuais que precisavam concordar: ponta nova entrava
+  // numa e não na outra, e a divergência nascia PERMITIDA. Agora ponta nova aparece nas duas no
+  // mesmo commit, porque as duas iteram o mesmo derivado.
   async findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
     return [...this.cheques.values()].find(
       (cheque) =>
         cheque.tenantId === tenantId &&
         cheque.deletedAt == null &&
-        (cheque.clearedEntryId === entryId || cheque.bounceEntryId === entryId),
+        CHEQUE_ENTRY_LINK_FIELDS.some((field) => cheque[field] === entryId),
     );
   }
 

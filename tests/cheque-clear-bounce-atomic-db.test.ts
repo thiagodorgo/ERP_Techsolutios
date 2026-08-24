@@ -13,6 +13,7 @@ import {
   withApplicationName,
 } from "./helpers/pg-barrier.js";
 import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
+import { CHEQUE_ENTRY_LINK_FIELDS } from "../src/modules/cheques/cheque.types.js";
 
 const connectionString = process.env.DATABASE_URL;
 // Nome único desta suíte (um processo por arquivo no `node --test`) — escopo da barreira (B-5).
@@ -300,7 +301,61 @@ if (!connectionString) {
       await teardown(h);
     }
   });
+
+  // ------------------------------------------- B-O6R-02 ciclo 3 · C2 (P5): TABELA POR PONTA (Postgres)
+  //
+  // O braço -db da tabela de memória: as mesmas pontas, as mesmas rotas, contra Postgres real — que
+  // é onde a cópia Prisma do vínculo vive. É esta metade que o drill D18 derruba quando alguém faz
+  // bypass da lista derivada na cópia do Prisma.
+  for (const ponta of CHEQUE_ENTRY_LINK_FIELDS) {
+    for (const rota of ["delete", "reverse"] as const) {
+      test(`[C2/P5][Postgres][ponta:${ponta}][rota:${rota}] lançamento vinculado → 422 cheque_entry_immutable`, async () => {
+        const fixture = PONTA_FIXTURES_DB[ponta];
+        assert.ok(
+          fixture,
+          `a ponta '${ponta}' está em CHEQUE_ENTRY_LINK_FIELDS e não tem fixture nesta tabela. ` +
+            "Ponta nova entra na fonte única E ganha o estado que a exercita, nos DOIS arranjos.",
+        );
+        const h = await bootstrap(connection);
+        try {
+          const seed = await seedTenant(h, `p5-${ponta.toLowerCase()}-${rota}`);
+          const entryId = await fixture(h, seed);
+          assert.ok(entryId, `${ponta}: a fixture tem de produzir o lançamento vinculado`);
+
+          const attempt = await captureAttempt(() => h.entryService[rota](seed.actor, entryId));
+          expectRefused(attempt, 422, "cheque_entry_immutable", `${rota} do lançamento da ponta ${ponta}`);
+          const row = await h.client.financialEntry.findFirst({ where: { tenant_id: seed.tenantId, id: entryId } });
+          assert.ok(row, `${ponta}: a linha continua existindo`);
+          assert.equal(row.deleted_at, null, `${ponta}: a recusa não pode ter apagado nada`);
+          await expectChequeLedger(h.client, seed.tenantId, seed.chequeId, `ponta ${ponta} após ${rota} recusado`);
+        } finally {
+          await teardown(h);
+        }
+      });
+    }
+  }
 }
+
+/**
+ * Fixtures por ponta no arranjo Postgres. FAIL-CLOSED EM RUNTIME, como a irmã de memória: ponta na
+ * fonte única e sem fixture aqui FALHA o caso, não o omite.
+ */
+const PONTA_FIXTURES_DB: Record<
+  string,
+  (h: Harness, seed: Awaited<ReturnType<typeof seedTenant>>) => Promise<string>
+> = {
+  clearedEntryId: async (h, seed) => {
+    await h.chequeService.deposit(seed.actor, seed.chequeId);
+    const cleared = await h.chequeService.clear(seed.actor, seed.chequeId);
+    return cleared.clearedEntryId!;
+  },
+  bounceEntryId: async (h, seed) => {
+    await h.chequeService.deposit(seed.actor, seed.chequeId);
+    await h.chequeService.clear(seed.actor, seed.chequeId);
+    const bounced = await h.chequeService.bounce(seed.actor, seed.chequeId, { reason: "sem fundos" });
+    return bounced.bounceEntryId!;
+  },
+};
 
 // ---------- harness ----------
 

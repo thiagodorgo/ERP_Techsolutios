@@ -20,6 +20,15 @@ import {
   type ChequeLinkReaderResolver,
 } from "../cheques/cheque-link-reader.js";
 import {
+  assertUndoOrdersCoverEveryRefusal,
+  buildUndoOwnerPolicies,
+  DELETE_UNDO_ORDER,
+  REVERSE_UNDO_ORDER,
+  type UndoOwnerId,
+  type UndoOwnerPolicyTable,
+  type UndoRoute,
+} from "./financial-entry-undo-owners.js";
+import {
   InMemoryFinancialEntryRepository,
   accountInactiveError,
   accountNotFoundError,
@@ -85,7 +94,20 @@ export class FinancialEntryService {
     // guards de `delete`/`reverse`. É o SEXTO parâmetro de propósito: a ordem dos cinco acima não
     // muda (a fixture do ciclo 1 posiciona o resolver da UoW na 5ª posição).
     private readonly resolveChequeLinkReader: ChequeLinkReaderResolver = createDefaultChequeLinkReader,
-  ) {}
+  ) {
+    // P5 — a ordem de precedência não pode encolher em silêncio: dono que RECUSA numa rota e está
+    // fora da ordem dela é uma recusa que ninguém percorre. O compilador cobre a ordem do `delete`
+    // (igualdade de união); esta chamada cobre o `reverse`, cuja ordem é subconjunto de propósito.
+    assertUndoOrdersCoverEveryRefusal(this.undoPolicies);
+  }
+
+  // A TABELA DE POLÍTICAS (C2/P5). As fábricas de erro entram aqui porque elas vivem no repositório;
+  // o módulo de donos fica sem ciclo e sem conhecer a camada de erro.
+  private readonly undoPolicies: UndoOwnerPolicyTable = buildUndoOwnerPolicies({
+    reversalPairImmutable: reversalPairImmutableError,
+    settlementEntryImmutable: settlementEntryImmutableError,
+    chequeEntryImmutable: chequeEntryImmutableError,
+  });
 
   async list(actor: FinancialEntryActorContext, query: RawRecord): Promise<ListFinancialEntryResult> {
     const input: ListFinancialEntryInput = {
@@ -163,22 +185,14 @@ export class FinancialEntryService {
   async delete(actor: FinancialEntryActorContext, financialEntryId: string): Promise<FinancialEntry> {
     const current = await this.getWritable(actor, financialEntryId);
     this.assertMutable(current);
-    // A1 (pós-análise): lançamento em PAR de estorno é imutável. Deletar o original já estornado deixaria o
-    // contra-lançamento ativo → saldo desbalanceado; deletar o próprio contra-lançamento desfaria o estorno.
-    if (current.reversalOf != null || (await this.repository.findActiveReversalOf(actor.tenantId, current.id))) {
-      throw reversalPairImmutableError();
-    }
-    // B-O6R-02 ciclo 2 · C1 (Ω6R-DIN-010) — LIQUIDAÇÃO não se apaga: só se ESTORNA. Apagar devolvia o
-    // caixa e deixava o título com paid_amount intacto (e sem rota de saída, porque o CAS de
-    // softDelete do título exige paid_amount = 0). O `reverse` é a única porta que devolve o
-    // pagamento ao título NA MESMA unidade, com contrapartida e trilha no razão. Precedência:
-    // 404 → entry_reconciled → reversal_pair_immutable → AQUI → cheque_entry_immutable → period_closed
-    // (a identidade do lançamento decide antes da história dele).
-    if (current.titleId != null) {
-      throw settlementEntryImmutableError();
-    }
-    // C2 (Ω6R-DIN-011): idem para movimento de CHEQUE — quem desfaz é o `bounce`, nunca esta porta.
-    await this.assertNotChequeLinked(actor.tenantId, current.id);
+    // B-O6R-02 ciclo 3 · C2 (P5) — os guards de VÍNCULO DE AGREGADO deixaram de ser uma sequência de
+    // ifs escrita à mão e passaram a ser a ORDEM `DELETE_UNDO_ORDER` percorrida contra a tabela de
+    // políticas. Mesmas razões, mesma precedência, mesmos códigos — o que muda é que dono novo sem
+    // política declarada não COMPILA, em vez de nascer permitido no silêncio entre dois ifs.
+    // Precedência integral desta rota (inalterada):
+    // 404 → entry_reconciled → reversal_pair_immutable → settlement_entry_immutable →
+    // cheque_entry_immutable → period_closed (a identidade do lançamento decide antes da história).
+    await this.assertUndoAllowed("delete", DELETE_UNDO_ORDER, actor, current);
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
 
     const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
@@ -203,17 +217,16 @@ export class FinancialEntryService {
     // entry_reconciled. Espelha a ordem de delete() (assertMutable ANTES do guard de par de estorno) → um
     // contra-lançamento conciliado dispara entry_reconciled com precedência sobre reversal_pair_immutable.
     this.assertMutable(original);
-    // B1 (pós-análise): não se estorna um contra-lançamento (chain infinita de re-estorno flipando o saldo).
-    if (original.reversalOf != null) {
-      throw reversalPairImmutableError();
-    }
-    // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — lançamento de CHEQUE não se estorna por esta porta. Era
-    // aqui que nascia a devolução em dobro: o estorno da compensação era aceito, o cheque continuava
-    // `cleared`, e o `bounce` seguinte postava o contra-lançamento — 200 num cheque de 100. Desfazer
-    // movimento de cheque é exclusividade da máquina de estados dele. Precedência do reverse:
-    // 404 → entry_reconciled → reversal_pair_immutable → AQUI → already_reversed → period_closed
-    // (a IDENTIDADE do lançamento decide antes da HISTÓRIA dele).
-    await this.assertNotChequeLinked(actor.tenantId, original.id);
+    // B-O6R-02 ciclo 3 · C2 (P5) — mesma tabela de políticas, ORDEM da rota `reverse`. Os detectores
+    // de `reversal_pair` são DIFERENTES por rota e continuam diferentes: o `delete` recusa o
+    // original JÁ ESTORNADO e a contrapartida; o `reverse` recusa só a contrapartida (estornar o
+    // original já estornado é `already_reversed`, 409, mais abaixo). A tabela preserva a diferença,
+    // não a unifica. E `title_settlement` é `allow` aqui — `reverse` É o fluxo do agregado título —,
+    // o que antes era a AUSÊNCIA de um if e agora é uma linha assinada.
+    // Precedência integral desta rota (inalterada):
+    // 404 → entry_reconciled → reversal_pair_immutable → cheque_entry_immutable → already_reversed
+    // → period_closed (a IDENTIDADE do lançamento decide antes da HISTÓRIA dele).
+    await this.assertUndoAllowed("reverse", REVERSE_UNDO_ORDER, actor, original);
     // FAST-FAIL (precedência de erros preservada); a defesa que decide é o re-check DENTRO da unidade.
     if (await this.repository.findActiveReversalOf(actor.tenantId, original.id)) {
       throw alreadyReversedError();
@@ -453,14 +466,54 @@ export class FinancialEntryService {
     }
   }
 
-  // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — o lançamento pertence à máquina de estados de um cheque?
-  // Vale para as DUAS pontas (`cleared_entry_id` e `bounce_entry_id`). O pre-check é livre de corrida
-  // por construção: os vínculos nascem com o lançamento (clear/bounce criam e vinculam na mesma
-  // unidade) e nenhuma API os move depois.
-  private async assertNotChequeLinked(tenantId: string, financialEntryId: string): Promise<void> {
-    const chequeLinks = await this.resolveChequeLinkReader();
-    if (await chequeLinks.findActiveByLinkedEntry(tenantId, financialEntryId)) {
-      throw chequeEntryImmutableError();
+  // ---------------------------------------------------------------------------------------------
+  // B-O6R-02 ciclo 3 · C2 (P5) — O PERCURSO DAS POLÍTICAS.
+  //
+  // Para cada dono NA ORDEM da rota: se o lançamento pertence a ele (detector), aplica a política
+  // daquela CÉLULA — `refuse` lança o erro nomeado, `allow` segue adiante. Um dono novo só chega
+  // aqui depois de ter as duas células escritas (compilador) e de estar na ordem (compilador, para
+  // `delete`; `assertUndoOrdersCoverEveryRefusal` em runtime, para o `reverse`).
+  // ---------------------------------------------------------------------------------------------
+  private async assertUndoAllowed(
+    route: UndoRoute,
+    order: readonly UndoOwnerId[],
+    actor: FinancialEntryActorContext,
+    entry: FinancialEntry,
+  ): Promise<void> {
+    for (const owner of order) {
+      if (!(await this.ownsEntry(owner, route, actor.tenantId, entry))) continue;
+      const policy = this.undoPolicies[owner][route];
+      if (policy.kind === "refuse") throw policy.error();
+    }
+  }
+
+  /**
+   * DETECTOR por dono — e, no `reversal_pair`, POR ROTA, porque as duas rotas realmente perguntam
+   * coisas diferentes (essa diferença é comportamento vigente, não acidente: unificá-la mudaria o
+   * código de erro de um caso e o refactor tem de ser 100% preservador).
+   */
+  private async ownsEntry(
+    owner: UndoOwnerId,
+    route: UndoRoute,
+    tenantId: string,
+    entry: FinancialEntry,
+  ): Promise<boolean> {
+    switch (owner) {
+      case "reversal_pair":
+        // `delete`: é contrapartida OU já foi estornado (apagar qualquer metade desbalanceia).
+        // `reverse`: só a contrapartida — estornar o original já estornado é `already_reversed` (409).
+        return route === "delete"
+          ? entry.reversalOf != null || (await this.repository.findActiveReversalOf(tenantId, entry.id)) != null
+          : entry.reversalOf != null;
+      case "title_settlement":
+        return entry.titleId != null;
+      case "cheque_link": {
+        // Livre de corrida POR CONSTRUÇÃO: os vínculos nascem com o lançamento (clear/bounce criam e
+        // vinculam na mesma unidade) e nenhuma API os move depois. As DUAS pontas são consultadas
+        // pela fonte única do `cheque.types.ts` — ver `CHEQUE_ENTRY_LINK_FIELDS`.
+        const chequeLinks = await this.resolveChequeLinkReader();
+        return (await chequeLinks.findActiveByLinkedEntry(tenantId, entry.id)) != null;
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import {
   invalidAccountReferenceError,
   type ChequeRepository,
 } from "./cheque.repository.js";
+import { CHEQUE_ENTRY_LINK_COLUMN_NAMES } from "./cheque.types.js";
 import type {
   Cheque,
   CreateChequeInput,
@@ -110,14 +111,16 @@ export class PrismaChequeRepository implements ChequeRepository {
     return this.attachEntry(tenantId, chequeId, "bounced", { bounce_entry_id: entryId }, updatedBy);
   }
 
-  // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — cheque ATIVO que referencia este lançamento por qualquer
-  // das duas pontas. tenant_id explícito (além da RLS) e deleted_at IS NULL, como os vizinhos.
+  // B-O6R-02 ciclo 3 · C2 (P5) — o `OR` é MONTADO a partir da fonte única
+  // (`CHEQUE_ENTRY_LINK_COLUMNS`), não escrito à mão. Era este literal, e o seu gêmeo na cópia de
+  // memória, que faziam duas listas manuais precisarem concordar sem nada obrigá-las a isso.
+  // tenant_id explícito (além da RLS) e deleted_at IS NULL, como os vizinhos.
   async findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
     const record = await this.client.cheque.findFirst({
       where: {
         tenant_id: tenantId,
         deleted_at: null,
-        OR: [{ cleared_entry_id: entryId }, { bounce_entry_id: entryId }],
+        OR: CHEQUE_ENTRY_LINK_COLUMN_NAMES.map((column) => ({ [column]: entryId }) as Prisma.ChequeWhereInput),
       },
     });
     return record ? mapRecord(record) : undefined;

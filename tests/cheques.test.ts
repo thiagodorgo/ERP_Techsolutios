@@ -16,6 +16,7 @@ import {
   resetFinancialEntryRuntimeForTests,
 } from "../src/modules/financial-entries/index.js";
 import {
+  CHEQUE_ENTRY_LINK_FIELDS,
   ChequeError,
   createMemoryChequeService,
   resetChequeRuntimeForTests,
@@ -606,6 +607,67 @@ test("[C2] o guard é ESTREITO: lançamento avulso na mesma conta segue estorná
   const outro = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 5, payment_method: "pix" });
   assert.notEqual((await entries.delete(ctx, outro.id)).deletedAt, undefined);
 });
+
+// ------------------------------------------------- B-O6R-02 ciclo 3 · C2 (P5): TABELA POR PONTA
+//
+// Os casos de recusa deixaram de nomear as pontas à mão e passam a ITERAR a fonte única
+// (`CHEQUE_ENTRY_LINK_FIELDS`). Consequência que é o ponto: ponta nova classificada em
+// `CHEQUE_FIELD_CLASS` ganha linhas de teste SOZINHA, nas duas rotas — ninguém precisa lembrar de
+// escrevê-las. E repositório que deixar de enxergar uma ponta (drill D18) perde a linha dela.
+
+/**
+ * Fixtures por ponta. FAIL-CLOSED EM RUNTIME: ponta presente na fonte única e ausente daqui faz o
+ * caso FALHAR, não sumir. Um teste que se cala diante de uma ponta desconhecida seria exatamente a
+ * classe de defeito que este bloco existe para fechar.
+ */
+const PONTA_FIXTURES: Record<
+  string,
+  (deps: ReturnType<typeof setup>, ctx: ChequeActorContext, accountId: string) => Promise<{ entryId: string; chequeId: string }>
+> = {
+  clearedEntryId: async ({ cheques }, ctx, accountId) => {
+    const cheque = await cheques.create(ctx, chequeBody(accountId, { amount: 100 }));
+    await cheques.deposit(ctx, cheque.id);
+    const cleared = await cheques.clear(ctx, cheque.id);
+    return { entryId: cleared.clearedEntryId!, chequeId: cheque.id };
+  },
+  bounceEntryId: async ({ cheques }, ctx, accountId) => {
+    const cheque = await cheques.create(ctx, chequeBody(accountId, { amount: 100 }));
+    await cheques.deposit(ctx, cheque.id);
+    await cheques.clear(ctx, cheque.id);
+    const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+    return { entryId: bounced.bounceEntryId!, chequeId: cheque.id };
+  },
+};
+
+for (const ponta of CHEQUE_ENTRY_LINK_FIELDS) {
+  for (const rota of ["delete", "reverse"] as const) {
+    test(`[C2/P5][memória][ponta:${ponta}][rota:${rota}] lançamento vinculado → 422 cheque_entry_immutable`, async () => {
+      const fixture = PONTA_FIXTURES[ponta];
+      assert.ok(
+        fixture,
+        `a ponta '${ponta}' está em CHEQUE_ENTRY_LINK_FIELDS e não tem fixture nesta tabela. ` +
+          "Ponta nova entra na fonte única E ganha o estado que a exercita — silenciar aqui recriaria o B-2.",
+      );
+      const deps = setup();
+      const ctx = actor();
+      const account = await activeAccount(deps.accounts, ctx);
+      const { entryId, chequeId } = await fixture(deps, ctx, account.id);
+      assert.ok(entryId, `${ponta}: a fixture tem de produzir o lançamento vinculado`);
+
+      const attempt = await capture(() => deps.entries[rota](ctx, entryId));
+      expectRefused(attempt, 422, "cheque_entry_immutable", `${rota} do lançamento da ponta ${ponta}`);
+      // A recusa não pode ter mexido em nada: a linha continua viva e o cheque no estado dele.
+      assert.equal((await deps.entries.get(ctx, entryId)).deletedAt, undefined, `${ponta}: a linha continua viva`);
+      expectChequeLedgerCoherent({
+        status: (await deps.cheques.get(ctx, chequeId)).status,
+        direction: "received",
+        amount: 100,
+        ...(await chequeLedgerInput(deps.entries, ctx, chequeId, deps.cheques, account.id)),
+        label: `ponta ${ponta} após ${rota} recusado`,
+      });
+    });
+  }
+}
 
 test("bounce de 'registered'/'cancelled' → 422 invalid_transition", async () => {
   const { cheques, accounts } = setup();
