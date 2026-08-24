@@ -531,3 +531,99 @@ nova é um escritor a mais que precisa **lembrar** de tomar um lock — e é iss
 
 **Escolha de arranjo é de quem planeja** (`D-JUNTA-SEPARACAO-DE-PAPEIS`): esta PD registra o custo e o limite
 de cada opção, não elege uma.
+
+---
+
+## PD-GOV-PORTEIRO-RECIBO — o que prova que um artefato veio de um PROCESSO, e não do autor? (2026-08-24)
+
+Rodada GOV-PORTEIRO-PRE-MERGE · **ciclo 3 do protocolo de dificuldade (§C7.4)** — reabertura de premissa
+pelo crítico, ≥5 fontes exigidas. Pesquisa: `agente-pesquisador-web`. **NÃO dispara junta-5** (nenhum serviço
+externo tarifado é decidido aqui — esta PD registra estado da arte, custo e limite).
+
+**Dúvida:** o porteiro emite um recibo JSON (runtime, modelo, identidade do agente, veredito) que um script de
+gate confere. Autor e porteiro rodam na MESMA máquina, no MESMO repositório, com o MESMO acesso a disco — e um
+achador produziu recibo válido com `node -e`, sem modelo nenhum. Existe construção que o autor NÃO consiga
+forjar?
+
+### 1. A norma já classificou este caso: SLSA Build **L1**
+
+| nível | frase normativa (verbatim) |
+|---|---|
+| Build **L1** | "Package has provenance showing how it was built. **Can be used to prevent mistakes but is trivial to bypass or forge.**" |
+| Build **L2** | "**Forging the provenance or evading verification requires an explicit 'attack', though this may be easy to perform.**" |
+| Build **L3** | "Forging the provenance (…) requires **exploiting a vulnerability that is beyond the capabilities of most adversaries**." |
+
+**Esta tabela É a distinção tripwire × muro, em fonte normativa e graduada.**
+
+A regra que o recibo viola (SLSA v1.2, build-requirements, verbatim):
+> "**Every field in the provenance MUST be generated or verified by the build platform in a trusted control
+> plane. The user-controlled build steps MUST NOT be able to inject or alter the contents.**"
+
+**Consequência, e é fato e não interpretação:** um recibo escrito por um passo que o autor controla, num disco
+que o autor controla, é **L1 por definição**. O `node -e` não é um furo do formato — é a caracterização do
+nível. Nenhum campo adicional no JSON muda isso, porque todos os campos nascem do lado controlado. **O que
+muda de nível é a MÃO que gera, não o CONTEÚDO gerado.**
+
+### 2. No GitHub, o que é muro e o que é enfeite
+
+- **Required status check com workflow no PRÓPRIO repo NÃO é muro.** Branch da mesma origem roda com secrets
+  e executa o workflow do merge commit — editável pelo autor (GitHub Security Lab, "Preventing pwn requests").
+- **A única construção que o autor com `write` não altera:** ruleset **de organização**, regra `workflows`,
+  apontando workflow em **outro repositório**, **pinado a SHA**, bypass list **vazia**.
+- **Assinatura só vale se a chave for inalcançável pelo passo atestado:** OIDC (`id-token: write`) → Fulcio,
+  e o verificador **pina `workflow_ref`**, não o formato. Isso dá **SLSA Build L2** — declarado pelo próprio
+  GitHub.
+- **Se autor e org owner forem a mesma pessoa, nenhum controle do GitHub é muro** — é o "malicious insider"
+  que o SLSA declara fora de escopo até L3.
+
+### 3. Provar que um MODELO específico respondeu: **não existe**
+
+Para API comercial fechada, hoje não há forma de provar que uma resposta veio do modelo X. AEX
+(arXiv:2603.14283, 15/03/2026): "the API boundary **still offers little direct evidence** that a returned
+output actually corresponds to the client-visible request"; TEE e fingerprinting "either remain inferential or
+**answer different questions**". ZK de inferência custa minutos por consulta e foi demonstrado em modelos
+pequenos.
+
+**Corroboração de mercado:** o GitHub, no próprio produto, **recusa que revisão de IA satisfaça o portão
+humano** — Copilot "always leaves a '**Comment**' review, not an 'Approve' review (…) **do not count toward
+required approvals**". O maior fornecedor decidiu que revisão de IA é **sinal**, não **portão**.
+
+### 4. Divergências registradas (A2 — não consolidar em silêncio)
+
+1. **"unfalsifiable" × SLSA L2.** A mesma página do GitHub diz que as attestations são "**unfalsifiable**" e
+   que entregam "SLSA Build Level 2" — e o SLSA define L2 como forjável "com um ataque explícito, que pode ser
+   fácil de executar". As duas frases não são compatíveis. **Na dúvida, vale a graduação do SLSA.**
+2. **Inferência verificável: fornecedor × academia.** Provedores TEE anunciam "prove which model ran"; o paper
+   de mar/2026 diz que TEE atesta ambiente, não a correspondência requisição↔resposta.
+3. **Bypass list.** O GitHub apresenta a regra de workflows como enforcement organizacional e documenta a
+   bypass list como recurso normal ("break the glass"). Controle com bypass povoada não é o controle que o
+   diagrama sugere.
+
+### 5. Respostas diretas
+
+**(a) É possível um gate que o autor do PR não consiga forjar?** Sim — com ressalva de raiz de confiança:
+ruleset de **organização** + workflow em repo separado pinado a SHA + assinatura OIDC + verificador que pina
+identidade. Nível atingido: **L2, não L3**. **Este repositório é de USUÁRIO, não de organização** — a regra
+`workflows` de ruleset é org/Enterprise e **não existe aqui**.
+
+**(b) Existe forma de provar que uma resposta veio de um modelo específico?** **Não**, para API comercial
+fechada. O campo `model` de qualquer recibo é autodeclaração, em qualquer formato, com qualquer assinatura —
+a assinatura prova quem escreveu o arquivo, nunca quem computou o conteúdo.
+
+**(c) Onde a fronteira de confiança tem que ficar?** Fora do escopo de escrita de quem é controlado. Faltando
+isso, o controle é L1: "can be used to prevent mistakes but is **trivial to bypass or forge**".
+
+### 6. O que esta PD NÃO faz
+
+Não escolhe arranjo e não opina sobre a implementação vigente. **Escolha de arranjo é de quem planeja**
+(`D-JUNTA-SEPARACAO-DE-PAPEIS`).
+
+### 7. Fontes
+
+SLSA v1.1 Security levels · SLSA v1.2 Build requirements · SLSA v1.0/v1.2 Threats & mitigations · GitHub Docs
+Artifact attestations · GitHub Docs OIDC reference · GitHub Security Lab "Preventing pwn requests" · GitHub
+Docs Events that trigger workflows · GitHub Blog "Enforcing code reliability by requiring workflows with
+repository rules" (11/10/2023) · GitHub Docs Available rules for rulesets · GitHub Docs Copilot code review ·
+GitHub Docs Manage environments (Prevent self-review) · GitHub Docs About protected branches · Sigstore Fulcio
+overview · in-toto Attestation Specification · arXiv:2603.14283 (AEX) · arXiv:2501.16007 (TOPLOC) ·
+NIST SP 800-53 r5 AC-5 Separation of Duties.

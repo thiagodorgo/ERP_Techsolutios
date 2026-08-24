@@ -2971,3 +2971,33 @@ Acrescentar ao registro existente, com evidência executada:
   de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
   espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
   de 1 titular do lock.
+
+---
+
+## P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24)
+
+**Medido agora**, no ciclo 3 do protocolo de dificuldade:
+
+```
+$ gh api repos/thiagodorgo/ERP_Techsolutios/rulesets
+[]
+$ gh api repos/thiagodorgo/ERP_Techsolutios/branches/main/protection
+{"message":"Branch not protected","status":"404"}
+```
+
+**Consequência:** hoje `gh pr merge --squash` funciona sem junta, sem porteiro e sem CI. Todo o aparato de
+governança dos §C7 e §C2.8 é **voluntário** — não "quase voluntário": literalmente. Cada regra do contrato
+depende de o agente escolher obedecer.
+
+Isso não invalida o contrato — invalida a leitura de que o contrato está *sendo imposto*. Onde um documento
+disser "o gate impede", hoje a frase correta é "o gate constrange quem já decidiu obedecer".
+
+**Segundo fato, do mesmo levantamento:** o repositório é de **usuário**, não de organização
+(`owner.id = MDQ6VXNlcjQyOTE1NTYz` = `04:User42915563`). A regra `workflows` de ruleset — a única construção
+que a `PD-GOV-PORTEIRO-RECIBO` identificou como não-forjável pelo autor — é **org + Enterprise** e **não
+existe** em repositório de usuário.
+
+**BLOQUEIA** qualquer afirmação de que o merge é controlado. Não bloqueia trabalho de produto.
+
+**Decisão do dono pendente** (ver `R-GOV-PORTEIRO-PRE-MERGE-ciclo3.md`): defender-se de agente **descuidado**
+ou de agente **malicioso**? A resposta muda o tamanho da entrega em uma ordem de grandeza.
