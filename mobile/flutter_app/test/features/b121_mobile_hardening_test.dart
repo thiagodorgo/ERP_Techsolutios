@@ -206,7 +206,7 @@ void main() {
             {
               'id': 'c1',
               'type': 'vehicle_selector',
-              'label': 'Veiculo',
+              'label': 'Veículo',
               'required': true,
               'orderIndex': 2,
             },

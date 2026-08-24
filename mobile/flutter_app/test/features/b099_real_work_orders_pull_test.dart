@@ -189,7 +189,7 @@ void main() {
       expect(remote.callCount, greaterThanOrEqualTo(2));
     });
 
-    test('1.5 lastPulledAt e lastPullError corretos apos sucesso', () async {
+    test('1.5 lastPulledAt e lastPullError corretos após sucesso', () async {
       final remote = _FakeRemoteApi(orders: []);
       final repo = _makeRepo(remoteApi: remote);
 
@@ -278,7 +278,7 @@ void main() {
       expect(order.priority, WorkOrderPriority.normal);
     });
 
-    test('2.5 localId assume serverId quando nao ha registro local', () async {
+    test('2.5 localId assume serverId quando não ha registro local', () async {
       final remote = _FakeRemoteApi(
         orders: [_remoteOrder(serverId: 'srv-id-test')],
       );
@@ -340,7 +340,7 @@ void main() {
       expect(repo.lastPullError, isNot(contains('ApiTimeoutError')));
     });
 
-    test('3.4 erro generico nao vaza stack trace na mensagem', () async {
+    test('3.4 erro generico não vaza stack trace na mensagem', () async {
       final remote = _FakeRemoteApi(error: Exception('internal crash'));
       final repo = _makeRepo(remoteApi: remote);
 
@@ -353,7 +353,7 @@ void main() {
       expect(repo.lastPullError, isNot(contains('internal crash')));
     });
 
-    test('3.5 apos erro, refresh() tenta novamente', () async {
+    test('3.5 após erro, refresh() tenta novamente', () async {
       var attempt = 0;
       final orders = [_remoteOrder(serverId: 'retry-1')];
       final remote = _FakeRemoteApi(
@@ -379,7 +379,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('4. Tenant isolation', () {
-    test('4.1 OS de tenant A nao aparecem para tenant B', () async {
+    test('4.1 OS de tenant A não aparecem para tenant B', () async {
       final ordersA = [
         _remoteOrder(serverId: 'a-1', tenantId: _tenantA),
         _remoteOrder(serverId: 'a-2', tenantId: _tenantA),
@@ -395,7 +395,7 @@ void main() {
       expect(repo.workOrders, isEmpty);
     });
 
-    test('4.2 OS do tenant correto aparecem apos pull', () async {
+    test('4.2 OS do tenant correto aparecem após pull', () async {
       final orders = [
         _remoteOrder(serverId: 'b-1', tenantId: _tenantB),
         _remoteOrder(serverId: 'b-2', tenantId: _tenantB),
@@ -431,7 +431,7 @@ void main() {
 
   group('5. Preservacao de mudancas locais pendentes', () {
     test(
-      '5.1 OS com SyncStatus.pending nao e sobrescrita pelo pull remoto',
+      '5.1 OS com SyncStatus.pending não e sobrescrita pelo pull remoto',
       () async {
         final localPending = WorkOrder(
           localId: 'local-pending',
@@ -541,7 +541,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('6. Modo dev/local sem remoteApi', () {
-    test('6.1 sem remoteApi, load() usa seed e nao faz pull', () async {
+    test('6.1 sem remoteApi, load() usa seed e não faz pull', () async {
       final repo = _makeRepo();
 
       await repo.load();
@@ -561,7 +561,7 @@ void main() {
       expect(repo.workOrders, isNotEmpty);
     });
 
-    test('6.3 devBootstrapSession nao quebra o repositorio', () async {
+    test('6.3 devBootstrapSession não quebra o repositorio', () async {
       const devSession = BootstrapSession(
         activeTenant: TenantContext(
           tenantId: 'tenant-demo',
@@ -583,7 +583,7 @@ void main() {
       expect(repo.workOrders, isEmpty);
     });
 
-    test('6.4 refresh() em modo local e no-op (nao trava)', () async {
+    test('6.4 refresh() em modo local e no-op (não trava)', () async {
       final repo = _makeRepo();
       await repo.load();
 

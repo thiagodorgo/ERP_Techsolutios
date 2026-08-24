@@ -68,7 +68,7 @@ class GeolocatorDeviceLocationProvider
     if (!consentAccepted) {
       return const DeviceLocationStatus(
         consentAccepted: false,
-        safeMessage: 'Aceite a captura manual antes de pedir permissao nativa.',
+        safeMessage: 'Aceite a captura manual antes de pedir permissão nativa.',
       );
     }
 
@@ -92,13 +92,13 @@ class GeolocatorDeviceLocationProvider
   Future<DeviceLocationResult> currentLocation() async {
     if (!await _consentStore.hasAcceptedManualCapture()) {
       return DeviceLocationResult.unavailable(
-        'Aceite a captura manual de localizacao antes de pedir permissao nativa.',
+        'Aceite a captura manual de localização antes de pedir permissão nativa.',
       );
     }
 
     if (!await _port.isLocationServiceEnabled()) {
       return DeviceLocationResult.unavailable(
-        'Servico de localizacao desligado. Ative a localizacao do dispositivo e tente novamente.',
+        'Serviço de localização desligado. Ative a localização do dispositivo e tente novamente.',
       );
     }
 
@@ -122,19 +122,19 @@ class GeolocatorDeviceLocationProvider
       return DeviceLocationResult.available(_fixFromPosition(position));
     } on TimeoutException {
       return DeviceLocationResult.unavailable(
-        'Tempo limite ao obter a localizacao. Tente novamente com o app aberto.',
+        'Tempo limite ao obter a localização. Tente novamente com o app aberto.',
       );
     } on geo.LocationServiceDisabledException {
       return DeviceLocationResult.unavailable(
-        'Servico de localizacao desligado. Ative a localizacao do dispositivo e tente novamente.',
+        'Serviço de localização desligado. Ative a localização do dispositivo e tente novamente.',
       );
     } on geo.PermissionDeniedException {
       return DeviceLocationResult.unavailable(
-        'Permissao de localizacao negada. Autorize o uso durante o app aberto para enviar o ponto operacional.',
+        'Permissão de localização negada. Autorize o uso durante o app aberto para enviar o ponto operacional.',
       );
     } catch (_) {
       return DeviceLocationResult.unavailable(
-        'Nao foi possivel obter a localizacao do dispositivo.',
+        'Não foi possível obter a localização do dispositivo.',
       );
     }
   }
@@ -155,11 +155,11 @@ String? _permissionUnavailable(geo.LocationPermission permission) {
   return switch (permission) {
     geo.LocationPermission.whileInUse || geo.LocationPermission.always => null,
     geo.LocationPermission.denied =>
-      'Permissao de localizacao negada. Autorize o uso durante o app aberto para enviar o ponto operacional.',
+      'Permissão de localização negada. Autorize o uso durante o app aberto para enviar o ponto operacional.',
     geo.LocationPermission.deniedForever =>
-      'Permissao de localizacao negada permanentemente. Abra as configuracoes do app para permitir uso durante o app aberto.',
+      'Permissão de localização negada permanentemente. Abra as configurações do app para permitir uso durante o app aberto.',
     geo.LocationPermission.unableToDetermine =>
-      'Nao foi possivel determinar a permissao de localizacao.',
+      'Não foi possível determinar a permissão de localização.',
   };
 }
 
@@ -175,7 +175,7 @@ String _permissionLabel(geo.LocationPermission permission) {
 
 String? _statusMessage(bool serviceEnabled, geo.LocationPermission permission) {
   if (!serviceEnabled) {
-    return 'Servico de localizacao desligado.';
+    return 'Serviço de localização desligado.';
   }
   return _permissionUnavailable(permission);
 }

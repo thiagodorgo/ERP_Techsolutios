@@ -61,7 +61,7 @@ class WorkOrderConflictResolutionService {
         final serverId = _serverIdFrom(conflicts);
         if (serverId == null) {
           throw StateError(
-            'Estado remoto insuficiente para aceitar com seguranca.',
+            'Estado remoto insuficiente para aceitar com segurança.',
           );
         }
         for (final action in conflicts) {
@@ -86,7 +86,7 @@ class WorkOrderConflictResolutionService {
           await _queue.update(
             action.copyWith(
               lastErrorCode: 'MANUAL_REVIEW_REQUIRED',
-              lastSafeError: 'Conflito mantido para revisao manual.',
+              lastSafeError: 'Conflito mantido para revisão manual.',
             ),
           );
         }

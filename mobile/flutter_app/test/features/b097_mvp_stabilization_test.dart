@@ -441,7 +441,7 @@ void main() {
         ),
       );
       expect(find.text('Sim'), findsOneWidget);
-      expect(find.text('Nao'), findsOneWidget);
+      expect(find.text('Não'), findsOneWidget);
       expect(find.text('N/A'), findsOneWidget);
     });
 
@@ -470,8 +470,8 @@ void main() {
       final q = _question(
         ChecklistQuestionType.singleChoice,
         options: [
-          const ChecklistOption(value: 'a', label: 'Opcao A'),
-          const ChecklistOption(value: 'b', label: 'Opcao B'),
+          const ChecklistOption(value: 'a', label: 'Opção A'),
+          const ChecklistOption(value: 'b', label: 'Opção B'),
         ],
       );
       await tester.pumpWidget(
@@ -485,8 +485,8 @@ void main() {
         ),
       );
       expect(find.byType(RadioGroup<String>), findsOneWidget);
-      expect(find.text('Opcao A'), findsOneWidget);
-      expect(find.text('Opcao B'), findsOneWidget);
+      expect(find.text('Opção A'), findsOneWidget);
+      expect(find.text('Opção B'), findsOneWidget);
     });
 
     testWidgets('4.5 multiChoice renders Checkboxes', (tester) async {
@@ -526,7 +526,7 @@ void main() {
         ),
       );
       expect(
-        find.textContaining('Este tipo de pergunta ainda nao e suportado'),
+        find.textContaining('Este tipo de pergunta ainda não é suportado'),
         findsOneWidget,
       );
     });
@@ -538,7 +538,7 @@ void main() {
         id: 'q-r',
         code: 'qr',
         type: ChecklistQuestionType.text,
-        label: 'Campo obrigatorio',
+        label: 'Campo obrigatório',
         required: true,
         order: 1,
       );

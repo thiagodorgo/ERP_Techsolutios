@@ -160,7 +160,7 @@ class ChecklistRepository extends ChangeNotifier {
     } catch (e) {
       _lastPullError = e is ApiError
           ? e.safeMessage
-          : 'Nao foi possivel atualizar os modelos de checklist agora.';
+          : 'Não foi possível atualizar os modelos de checklist agora.';
       _isPulling = false;
       // fall through to local cache / seed
     }
@@ -205,7 +205,7 @@ class ChecklistRepository extends ChangeNotifier {
     } catch (e) {
       _lastPullError = e is ApiError
           ? e.safeMessage
-          : 'Nao foi possivel atualizar os modelos de checklist agora.';
+          : 'Não foi possível atualizar os modelos de checklist agora.';
       _loaded = true;
       return _templates.isEmpty
           ? ChecklistPullOutcome.error
@@ -582,14 +582,14 @@ class ChecklistRepository extends ChangeNotifier {
     required MobileChecklistSchema schema,
   }) async {
     final run = await _localStore.loadRun(runId);
-    if (run == null) throw ArgumentError('Run nao encontrado: $runId');
+    if (run == null) throw ArgumentError('Run não encontrado: $runId');
 
     final pending = schema.requiredFields
         .where((f) => !(run.answers[f.id]?.hasValue ?? false))
         .toList();
     if (pending.isNotEmpty) {
       throw StateError(
-        'Campos obrigatorios pendentes: ${pending.map((f) => f.label).join(', ')}',
+        'Campos obrigatórios pendentes: ${pending.map((f) => f.label).join(', ')}',
       );
     }
 
@@ -661,7 +661,7 @@ class ChecklistRepository extends ChangeNotifier {
       throw ArgumentError.value(
         fieldId,
         'fieldId',
-        'component_id (campo do mapa de danos) e obrigatorio para registrar '
+        'component_id (campo do mapa de danos) e obrigatório para registrar '
             'um marcador — o backend rejeita marcador sem componente ancora.',
       );
     }
@@ -759,8 +759,8 @@ class ChecklistRepository extends ChangeNotifier {
     final who = trimmedName.isEmpty ? 'responsavel' : trimmedName;
     final trimmedRole = role.trim();
     return trimmedRole.isEmpty
-        ? 'Ciencia registrada por $who.'
-        : 'Ciencia registrada por $who ($trimmedRole).';
+        ? 'Ciência registrada por $who.'
+        : 'Ciência registrada por $who ($trimmedRole).';
   }
 
   Future<MobileChecklistAcknowledgement?> getAcknowledgement(String runId) =>
@@ -893,8 +893,8 @@ List<MobileChecklistTemplate> _seedTemplates(BootstrapSession session) {
     MobileChecklistTemplate(
       id: 'cl-seed-1',
       tenantId: tenantId,
-      title: 'Checklist de Instalacao',
-      description: 'Verificacao pre e pos instalacao de equipamento',
+      title: 'Checklist de Instalação',
+      description: 'Verificação pré e pós instalação de equipamento',
       isRequired: true,
       schemaVersion: 'v1',
       status: 'active',
@@ -902,8 +902,8 @@ List<MobileChecklistTemplate> _seedTemplates(BootstrapSession session) {
     MobileChecklistTemplate(
       id: 'cl-seed-2',
       tenantId: tenantId,
-      title: 'Vistoria de Veiculo',
-      description: 'Registro de condicoes do veiculo antes da saida',
+      title: 'Vistoria de Veículo',
+      description: 'Registro de condições do veículo antes da saída',
       isRequired: false,
       schemaVersion: 'v1',
       status: 'active',
@@ -917,14 +917,14 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
       id: 'schema-seed-1',
       checklistId: 'cl-seed-1',
       version: 'v1',
-      title: 'Checklist de Instalacao',
+      title: 'Checklist de Instalação',
       instructions:
-          'Preencha todos os campos obrigatorios antes de concluir o checklist.',
+          'Preencha todos os campos obrigatórios antes de concluir o checklist.',
       fields: [
         MobileChecklistField(
           id: 'f-serial',
           type: MobileChecklistFieldType.text,
-          label: 'Numero de serie do equipamento',
+          label: 'Número de série do equipamento',
           required: true,
           order: 1,
         ),
@@ -963,7 +963,7 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
           options: [
             MobileChecklistFieldOption(
               value: 'power',
-              label: 'Alimentacao eletrica',
+              label: 'Alimentação elétrica',
             ),
             MobileChecklistFieldOption(
               value: 'network',
@@ -992,7 +992,7 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
         MobileChecklistField(
           id: 'f-obs',
           type: MobileChecklistFieldType.observation,
-          label: 'Observacoes gerais',
+          label: 'Observações gerais',
           required: false,
           order: 8,
         ),
@@ -1002,12 +1002,12 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
       id: 'schema-seed-2',
       checklistId: 'cl-seed-2',
       version: 'v1',
-      title: 'Vistoria de Veiculo',
+      title: 'Vistoria de Veículo',
       fields: [
         MobileChecklistField(
           id: 'f-vehicle-type',
           type: MobileChecklistFieldType.vehicleSelector,
-          label: 'Tipo de veiculo',
+          label: 'Tipo de veículo',
           required: true,
           order: 1,
           options: [
@@ -1032,7 +1032,7 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
         MobileChecklistField(
           id: 'f-ack',
           type: MobileChecklistFieldType.acknowledgement,
-          label: 'Ciencia do motorista',
+          label: 'Ciência do motorista',
           required: false,
           order: 3,
         ),

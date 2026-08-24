@@ -333,7 +333,7 @@ void main() {
       },
     );
 
-    test('1.6 campos opcionais ausentes nao causam crash', () async {
+    test('1.6 campos opcionais ausentes não causam crash', () async {
       final api = DioChecklistRemoteApi(
         _fakeDio(
           (_) => {
@@ -458,7 +458,7 @@ void main() {
       expect(repo.lastPullError, isNull);
     });
 
-    test('2.4 load() bem-sucedido: isPulling false apos conclusao', () async {
+    test('2.4 load() bem-sucedido: isPulling false após conclusão', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('x')]),
       );
@@ -474,7 +474,7 @@ void main() {
       expect(repo.lastPullError, isNotNull);
     });
 
-    test('2.6 load() falha: isPulling false apos conclusao', () async {
+    test('2.6 load() falha: isPulling false após conclusão', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(shouldThrow: true),
       );
@@ -522,7 +522,7 @@ void main() {
     });
 
     test(
-      '2.11 load() nao chama remoto na segunda chamada (idempotente)',
+      '2.11 load() não chama remoto na segunda chamada (idempotente)',
       () async {
         final remote = _FakeChecklistRemoteApi(templates: [_tpl('x')]);
         final repo = _makeRepo(remoteApi: remote);
@@ -533,7 +533,7 @@ void main() {
     );
 
     test(
-      '2.12 tenant isolation: nao mistura templates de tenants diferentes',
+      '2.12 tenant isolation: não mistura templates de tenants diferentes',
       () async {
         final store = InMemoryChecklistLocalStore(
           templates: [
@@ -561,7 +561,7 @@ void main() {
       expect(repo.hasCache, isFalse);
     });
 
-    test('2.14 hasCache true apos load bem-sucedido', () async {
+    test('2.14 hasCache true após load bem-sucedido', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('x')]),
       );
@@ -584,7 +584,7 @@ void main() {
       expect(outcome, ChecklistPullOutcome.success);
     });
 
-    test('3.2 refresh() atualiza templates apos novo pull', () async {
+    test('3.2 refresh() atualiza templates após novo pull', () async {
       int call = 0;
       final remote = _FakeChecklistRemoteApi(templates: [_tpl('v1')]);
       final repo = _makeRepo(remoteApi: remote);
@@ -628,7 +628,7 @@ void main() {
       expect(outcome, ChecklistPullOutcome.error);
     });
 
-    test('3.5 refresh() nao chama remoto quando isPulling', () async {
+    test('3.5 refresh() não chama remoto quando isPulling', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('x')]),
       );
@@ -640,7 +640,7 @@ void main() {
       await f1;
     });
 
-    test('3.6 refresh() define lastPulledAt apos sucesso', () async {
+    test('3.6 refresh() define lastPulledAt após sucesso', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('x')]),
       );
@@ -649,7 +649,7 @@ void main() {
       expect(repo.lastPulledAt, isNotNull);
     });
 
-    test('3.7 refresh() define lastPullError apos falha', () async {
+    test('3.7 refresh() define lastPullError após falha', () async {
       final store = InMemoryChecklistLocalStore(templates: [_tpl('old')]);
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(shouldThrow: true),
@@ -660,7 +660,7 @@ void main() {
       expect(repo.lastPullError, isNotNull);
     });
 
-    test('3.8 refresh() isPulling false apos conclusao', () async {
+    test('3.8 refresh() isPulling false após conclusão', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('x')]),
       );
@@ -696,7 +696,7 @@ void main() {
     );
 
     test(
-      '4.3 ChecklistRepository com PendingBackend: isPulling false apos load',
+      '4.3 ChecklistRepository com PendingBackend: isPulling false após load',
       () async {
         final repo = _makeRepo(
           remoteApi: const PendingBackendChecklistRemoteApi(),
@@ -787,7 +787,7 @@ void main() {
       },
     );
 
-    test('6.5 ChecklistRepository notifica listeners apos load', () async {
+    test('6.5 ChecklistRepository notifica listeners após load', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('notify')]),
       );
@@ -797,7 +797,7 @@ void main() {
       expect(notified, isTrue);
     });
 
-    test('6.6 ChecklistRepository notifica listeners apos refresh', () async {
+    test('6.6 ChecklistRepository notifica listeners após refresh', () async {
       final repo = _makeRepo(
         remoteApi: _FakeChecklistRemoteApi(templates: [_tpl('notify')]),
       );

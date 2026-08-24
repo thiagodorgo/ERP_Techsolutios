@@ -81,7 +81,7 @@ class _WorkOrderExecuteScreenState
   ) async {
     await woRepo.load();
     final wo = woRepo.findById(widget.workOrderId);
-    if (wo == null) throw StateError('Ordem de servico nao encontrada.');
+    if (wo == null) throw StateError('Ordem de serviço não encontrada.');
     final runs = wo.checklistId != null
         ? await clRepo.getRunsForWorkOrder(widget.workOrderId)
         : <MobileChecklistRun>[];
@@ -113,7 +113,7 @@ class _WorkOrderExecuteScreenState
     } catch (_) {
       setState(
         () =>
-            _safeError = 'Nao foi possivel alterar o status. Tente novamente.',
+            _safeError = 'Não foi possível alterar o status. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -141,7 +141,7 @@ class _WorkOrderExecuteScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao registrar evidencia: $e')),
+          SnackBar(content: Text('Erro ao registrar evidência: $e')),
         );
       }
     }
@@ -164,7 +164,7 @@ class _WorkOrderExecuteScreenState
       setState(() => _safeError = e.safeMessage);
     } catch (_) {
       setState(
-        () => _safeError = 'Nao foi possivel concluir a OS. Tente novamente.',
+        () => _safeError = 'Não foi possível concluir a OS. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -189,6 +189,7 @@ class _WorkOrderExecuteScreenState
     if (!canStatus) {
       return ErpScaffold(
         showAppBar: false,
+        showBottomNav: false,
         body: Column(
           children: [
             MobileScreenHeader(
@@ -197,9 +198,10 @@ class _WorkOrderExecuteScreenState
             ),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acao nao autorizada',
+                title: 'Ação não autorizada',
                 message:
-                    'work_orders:status necessario para alterar o status desta OS.',
+                    'Seu perfil não permite mudar a situação desta ordem de '
+                    'serviço. Fale com a operação.',
               ),
             ),
           ],
@@ -216,6 +218,7 @@ class _WorkOrderExecuteScreenState
               : 'Erro ao carregar OS.';
           return ErpScaffold(
             showAppBar: false,
+            showBottomNav: false,
             body: Column(
               children: [
                 MobileScreenHeader(
@@ -232,6 +235,7 @@ class _WorkOrderExecuteScreenState
         if (!snapshot.hasData) {
           return const ErpScaffold(
             showAppBar: false,
+            showBottomNav: false,
             body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
@@ -246,6 +250,7 @@ class _WorkOrderExecuteScreenState
 
         return ErpScaffold(
           showAppBar: false,
+          showBottomNav: false,
           body: Column(
             children: [
               MobileScreenHeader(
@@ -265,7 +270,7 @@ class _WorkOrderExecuteScreenState
                       SyncStatusBanner(
                         status: SyncStatus.pending,
                         message:
-                            'Alteracoes locais aguardando sincronizacao com o servidor.',
+                            'Alterações locais aguardando sincronização com o servidor.',
                       ),
                     const SizedBox(height: 8),
                     Card(
@@ -307,7 +312,7 @@ class _WorkOrderExecuteScreenState
                           leading: const Icon(Icons.check_circle_outline),
                           title: Text('OS ${wo.status.label.toLowerCase()}'),
                           subtitle: const Text(
-                            'Status final — sem transicoes possiveis.',
+                            'Status final — sem transições possíveis.',
                           ),
                         ),
                       )
@@ -315,9 +320,9 @@ class _WorkOrderExecuteScreenState
                       const Card(
                         child: ListTile(
                           leading: Icon(Icons.block_outlined),
-                          title: Text('Nenhuma transicao disponivel'),
+                          title: Text('Nenhuma transição disponível'),
                           subtitle: Text(
-                            'Este status nao permite alteracoes no momento.',
+                            'Este status não permite alterações no momento.',
                           ),
                         ),
                       )
@@ -336,7 +341,7 @@ class _WorkOrderExecuteScreenState
                       ],
                       if (regularTransitions.isNotEmpty) ...[
                         Text(
-                          'Proxima acao',
+                          'Próxima ação',
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 8),
@@ -369,7 +374,7 @@ class _WorkOrderExecuteScreenState
                                 color: Theme.of(context).colorScheme.error,
                               ),
                               title: Text(
-                                'Checklist obrigatorio pendente',
+                                'Checklist obrigatório pendente',
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
@@ -377,7 +382,7 @@ class _WorkOrderExecuteScreenState
                                 ),
                               ),
                               subtitle: Text(
-                                'Conclua o checklist obrigatorio antes de finalizar a OS.',
+                                'Conclua o checklist obrigatório antes de finalizar a OS.',
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
@@ -417,7 +422,7 @@ class _WorkOrderExecuteScreenState
                     const Divider(),
                     const SizedBox(height: 8),
                     Text(
-                      'Evidencias',
+                      'Evidências',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
@@ -452,10 +457,10 @@ class _ChecklistStatusCard extends StatelessWidget {
     final isComplete = data.isChecklistComplete;
     final isStarted = data.isChecklistStarted;
     final statusLabel = isComplete
-        ? 'Concluido'
+        ? 'Concluído'
         : isStarted
         ? 'Em andamento'
-        : 'Nao iniciado';
+        : 'Não iniciado';
     final statusTone = isComplete
         ? 'success'
         : isStarted
@@ -473,7 +478,7 @@ class _ChecklistStatusCard extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.checklist_outlined),
-            title: Text('Checklist: ${data.wo.checklistId}'),
+            title: const Text('Checklist do atendimento'),
             trailing: OperationalStatusChip(
               label: statusLabel,
               status: statusTone,
@@ -696,7 +701,7 @@ class _EvidenceSection extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: isLoading ? null : onAdd,
             icon: const Icon(Icons.camera_alt_outlined),
-            label: const Text('Registrar evidencia'),
+            label: const Text('Registrar evidência'),
           ),
         ),
       ],

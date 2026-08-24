@@ -129,9 +129,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => kIsDevMode
             ? const DiagnosticsScreen()
             : const ModulePlaceholderScreen(
-                title: 'Diagnostico',
+                title: 'Diagnóstico',
                 requiredPermission: 'diagnostics:read',
-                message: 'Esta area e restrita a ambientes de desenvolvimento.',
+                message: 'Área restrita à equipe técnica da plataforma.',
               ),
       ),
       GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
@@ -251,10 +251,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/approvals',
         builder: (context, state) => const ModulePlaceholderScreen(
-          title: 'Aprovacoes',
+          title: 'Aprovações',
           requiredPermission: 'workflow:request',
           message:
-              'Fila e decisoes de aprovacao ficam estruturadas, mas sem workflow backend novo.',
+              'Acompanhe aqui as solicitações de aprovação abertas no seu '
+              'atendimento.',
         ),
       ),
     ],
@@ -309,9 +310,9 @@ final appRouter = GoRouter(
       builder: (context, state) => kIsDevMode
           ? const DiagnosticsScreen()
           : const ModulePlaceholderScreen(
-              title: 'Diagnostico',
+              title: 'Diagnóstico',
               requiredPermission: 'diagnostics:read',
-              message: 'Esta area e restrita a ambientes de desenvolvimento.',
+              message: 'Área restrita à equipe técnica da plataforma.',
             ),
     ),
     GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
@@ -429,10 +430,11 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/approvals',
       builder: (context, state) => const ModulePlaceholderScreen(
-        title: 'Aprovacoes',
+        title: 'Aprovações',
         requiredPermission: 'workflow:request',
         message:
-            'Fila e decisoes de aprovacao ficam estruturadas, mas sem workflow backend novo.',
+            'Acompanhe aqui as solicitações de aprovação abertas no seu '
+            'atendimento.',
       ),
     ),
   ],

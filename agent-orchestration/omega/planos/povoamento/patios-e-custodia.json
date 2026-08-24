@@ -1,0 +1,1248 @@
+{
+  "area": "Pátios e custódia (Ω5P/SIGPRV) — Pátios, Áreas, Vagas, Processos de custódia, Liberações, Leilões, Perfis de jurisdição, Tarifas de pátio, Painel",
+  "telas": [
+    {
+      "tela": "Pátios (lista)",
+      "rota": "/patios/patios",
+      "tabelas": [
+        "yards",
+        "yard_areas",
+        "yard_spots",
+        "branches",
+        "impound_processes (via /patios/dashboard/summary)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants",
+          "exigido_por": "banco",
+          "por_que": "FK yards_tenant_id_fkey, tenant_id NOT NULL. Tenant demo = a79aedf2-44c8-478f-a6ce-cf6248a16f2b (slug 'demo', Guinchos Paraná)."
+        },
+        {
+          "passo": 2,
+          "entidade": "branches",
+          "exigido_por": "historia",
+          "por_que": "FK composta yards_tenant_id_branch_id_fkey é NULLABLE — o banco aceita pátio sem filial. Mas o YardFormModal expõe o campo e o pátio fica fora do organograma; a filial é o que diferencia 'Pátio Central (Filial Curitiba)' de 'Pátio Regional (Filial Ponta Grossa)'."
+        },
+        {
+          "passo": 3,
+          "entidade": "yards",
+          "exigido_por": "banco",
+          "por_que": "name e address são NOT NULL; timezone NOT NULL default America/Sao_Paulo. capacity_hint é nullable — quando NULL a coluna renderiza literalmente 'não informada' (PatiosPage.tsx:396)."
+        },
+        {
+          "passo": 4,
+          "entidade": "yard_areas",
+          "exigido_por": "historia",
+          "por_que": "Sem área não há vaga; sem vaga o summary não devolve occupancy para o pátio e a coluna troca o cabeçalho de 'OCUPAÇÃO' para 'CAPACIDADE PREVISTA' (PatiosPage.tsx:310) — a tela deixa de contar ocupação e passa a contar promessa de cadastro."
+        },
+        {
+          "passo": 5,
+          "entidade": "yard_spots",
+          "exigido_por": "historia",
+          "por_que": "A barra de ocupação e o KPI 'Ocupação média' vêm de occupiedSpots/totalSpots do patios-dashboard (JOIN yard_spots→yard_areas→yards). Zero vaga = zero ocupação = KPI cai no fallback 'Sem capacidade informada'."
+        },
+        {
+          "passo": 6,
+          "entidade": "impound_processes",
+          "exigido_por": "ambos",
+          "por_que": "Banco: vaga com status='OCCUPIED' EXIGE current_process_id (CHECK yard_spots_status_process_coherence_chk) e a FK yard_spots_tenant_id_current_process_id_fkey. História: o KPI 'Veículos em custódia' é processesByPhase.CUSTODY do summary."
+        },
+        {
+          "passo": 7,
+          "entidade": "impound_releases",
+          "exigido_por": "historia",
+          "por_que": "O KPI 'Liberações pendentes' é releaseQueueDepth = COUNT(impound_releases WHERE status IN ('IN_PROGRESS','AUTHORIZED')) — NÃO conta impound_processes por status. Sem dossiê de liberação o card mostra 0 mesmo com processos em RELEASE_IN_PROGRESS."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "4 pátios (1 legado 'Pátio Sul' + 3 do seed demo-painel de 2026-08-24) · 5 áreas · 100 vagas (53 OCUPADA, 44 LIVRE, 3 BLOQUEADA) · 6 filiais no tenant, 3 pátios apontam para a mesma filial ('Filial Teste 1783892024') e 1 não aponta para nenhuma",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select y.name, y.address, y.branch_id, y.capacity_hint, count(distinct a.id) areas, count(s.id) vagas, count(s.id) filter (where s.status='OCCUPIED') ocupadas from yards y left join yard_areas a on a.yard_id=y.id left join yard_spots s on s.area_id=a.id where y.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2,3,4 order by 1\" ; e \"select status, count(*) from yard_spots where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1\" -> OCCUPIED 53 / FREE 44 / BLOCKED 3"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Marcador de seed '[demo-painel]' impresso no endereço — andaime de dev renderizado na coluna ENDEREÇO da tabela e no subtítulo do detalhe (§11.2 do CLAUDE.md proíbe)",
+          "quantos": "3 de 4 pátios",
+          "evidencia": "select name, address from yards where tenant_id='a79aedf2…' and address like '%[demo-painel]%' → 'Av. das Indústrias, 4200 — Curitiba/PR [demo-painel]', 'R. Barão do Rio Branco, 118 — Curitiba/PR [demo-painel]', 'Rod. BR-277, km 18 — Campo Largo/PR [demo-painel]'"
+        },
+        {
+          "defeito": "Pátio legado com endereço de teste: address='parana' (minúsculo, sem rua, sem número, sem cidade/UF) e sem filial",
+          "quantos": "1 pátio (Pátio Sul, id 66ad1cc6-1b33-46ba-b2af-569f1910cb0c)",
+          "evidencia": "select name,address,branch_id from yards where address='parana' → Pátio Sul | parana | NULL"
+        },
+        {
+          "defeito": "capacity_hint absurdo e contraditório com as vagas reais: 1100 vagas previstas contra 6 vagas cadastradas — a linha mostra a barra em '1 de 6 vagas · 17%' enquanto o cadastro promete 1100",
+          "quantos": "1 pátio",
+          "evidencia": "select y.capacity_hint, count(s.id) from yards y join yard_areas a on a.yard_id=y.id join yard_spots s on s.area_id=a.id where y.name='Pátio Sul' group by 1 → 1100 | 6"
+        },
+        {
+          "defeito": "Áreas com nome de rascunho em minúscula: 'lote A' e 'lote B' (as demais são 'Setor A'). Aparecem no card Áreas do detalhe e no título 'Vagas · lote A'",
+          "quantos": "2 de 5 áreas",
+          "evidencia": "select name from yard_areas where tenant_id='a79aedf2…' and name ~ '^[a-z]' → lote A, lote B"
+        },
+        {
+          "defeito": "KPI 'Liberações pendentes' desta tela mostra 0 (releaseQueueDepth lê impound_releases, que está vazia) enquanto /patios/liberacoes lista 9 processos — duas telas do mesmo módulo se contradizendo na mesma sessão",
+          "quantos": "1 KPI (0) contra 9 linhas",
+          "evidencia": "select (select count(*) from impound_releases where tenant_id='a79aedf2…' and status in ('IN_PROGRESS','AUTHORIZED')) kpi, (select count(*) from impound_processes where tenant_id='a79aedf2…' and status in ('RELEASE_IN_PROGRESS','RELEASED_FOR_REPAIR')) lista → 0 | 9"
+        },
+        {
+          "defeito": "Todos os pátios na mesma micro-região (Curitiba/Campo Largo) e ligados à mesma filial de teste — o filtro por filial e a leitura 'distribuir a custódia por unidade' não separam nada",
+          "quantos": "4 pátios / 1 filial usada de 6",
+          "evidencia": "select branch_id, count(*) from yards where tenant_id='a79aedf2…' group by 1 → 159a0208-… | 3 ; NULL | 1"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Filiais reais do Paraná para ancorar os pátios (renomear as de teste ou criar as que faltam)",
+          "quantos": "3 filiais",
+          "criterio": "Nomes de operação: 'Filial Curitiba' (code CWB), 'Filial Ponta Grossa' (code PGO), 'Filial Londrina' (code LDA). status='active'. Nunca 'Filial Teste <timestamp>'."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Pátios: limpar os marcadores de seed do endereço e substituir o pátio legado",
+          "quantos": "4 pátios ativos + 1 inativo",
+          "criterio": "Remover ' [demo-painel]' de address. Pátio Central — Rua Eng. Rebouças, 1420, Rebouças, Curitiba/PR (capacity_hint 24, filial CWB). Pátio Norte — Av. das Indústrias, 4200, CIC, Curitiba/PR (40, CWB). Pátio Oeste — Rod. BR-277, km 18, Campo Largo/PR (30, CWB). Pátio Ponta Grossa — Av. Souza Naves, 2860, Uvaranas, Ponta Grossa/PR (36, PGO). Corrigir 'Pátio Sul' → endereço real (R. Nicola Pellanda, 800, Pinhais/PR), active=false e capacity_hint=6, exercitando a aba 'Inativos'. capacity_hint SEMPRE igual ao número de vagas cadastradas."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Áreas com hierarquia e classe de veículo dentro do domínio",
+          "quantos": "12–14 áreas (3–4 por pátio)",
+          "criterio": "vehicle_class SOMENTE em {ANY, MOTORCYCLE, HEAVY} — 'CAR' NÃO existe no domínio (yard.types.ts VEHICLE_CLASSES). Usar a hierarquia via parent_id: kind='BLOCK' ('Quadra A — Leves', 'Quadra M — Motocicletas', 'Quadra P — Pesados') com filhas kind='CORRIDOR' ('Corredor A1') e netas kind='ROW' quando o pátio for grande. Pelo menos 1 área com covered=true ('Galpão Coberto — Perícia', ANY) por pátio grande, para dar sentido à tarifa 'Guarda em área coberta (adicional)'."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Vagas com código legível e classe coerente com a área-mãe",
+          "quantos": "130 vagas (24+40+30+36) além das 6 do pátio inativo",
+          "criterio": "code no padrão da área: 'A-01'…'A-24' (leves), 'M-01'…'M-12' (motos), 'P-01'…'P-06' (pesados), 'C-01'…'C-04' (cobertas). covered=true só nas vagas da área coberta. vehicle_class herdando a área. Distribuição de status alvo por pátio: 55–75% OCCUPIED, 20–40% FREE, 2–4% BLOCKED (vaga em obra/alagamento). O total de OCCUPIED tem de bater exatamente com o número de processos em guarda física."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Vagas BLOQUEADAS com motivo plausível",
+          "quantos": "4–6 vagas",
+          "criterio": "status='BLOCKED' obriga current_process_id NULL (CHECK). Concentrar numa faixa contígua de códigos por pátio (ex.: A-21 a A-24 do Pátio Norte) para ler como 'setor interditado', não como ruído aleatório."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select y.name patio, b.name filial, y.address, y.capacity_hint, count(distinct a.id) areas, count(distinct a.id) filter (where a.covered) areas_cobertas, count(s.id) vagas, count(s.id) filter (where s.status='OCCUPIED') ocup, round(100.0*count(s.id) filter (where s.status='OCCUPIED')/nullif(count(s.id),0)) pct, count(*) filter (where a.vehicle_class not in ('ANY','MOTORCYCLE','HEAVY')) classe_invalida, count(*) filter (where y.address like '%[%') marcador_de_seed from yards y left join branches b on b.id=y.branch_id left join yard_areas a on a.yard_id=y.id left join yard_spots s on s.area_id=a.id where y.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2,3,4 order by 1\" — PASSA quando: classe_invalida=0 e marcador_de_seed=0 em todas as linhas, capacity_hint = vagas em todas as linhas, pct entre 20 e 90, e areas_cobertas>=1 nos pátios grandes."
+    },
+    {
+      "tela": "Detalhe do Pátio — Áreas, Ocupação e Mapa de Vagas",
+      "rota": "/patios/patios/:yardId",
+      "tabelas": [
+        "yards",
+        "yard_areas",
+        "yard_spots",
+        "impound_processes"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "yards",
+          "exigido_por": "banco",
+          "por_que": "A página carrega getYard(:yardId); sem ele cai em 'Pátio não encontrado'."
+        },
+        {
+          "passo": 2,
+          "entidade": "yard_areas",
+          "exigido_por": "banco",
+          "por_que": "FK yard_areas_tenant_id_yard_id_fkey (yard_id NOT NULL). UNIQUE (tenant_id, yard_id, parent_id, name) — duas áreas irmãs não podem ter o mesmo nome. parent_id auto-referente monta a árvore Quadra→Corredor→Fileira que a página indenta (toTree)."
+        },
+        {
+          "passo": 3,
+          "entidade": "yard_spots",
+          "exigido_por": "banco",
+          "por_que": "FK yard_spots_tenant_id_area_id_fkey (area_id NOT NULL). UNIQUE (tenant_id, area_id, code). O card 'Vagas · <área>' só renderiza depois de a área ser selecionada; sem vaga mostra o EmptyState 'Nenhuma vaga cadastrada'."
+        },
+        {
+          "passo": 4,
+          "entidade": "impound_processes",
+          "exigido_por": "banco",
+          "por_que": "A TRAVA CENTRAL DESTE MÓDULO: CHECK yard_spots_status_process_coherence_chk — (status='OCCUPIED' AND current_process_id IS NOT NULL) OR (status<>'OCCUPIED' AND current_process_id IS NULL). Mais o índice parcial UNIQUE yard_spots_tenant_current_process_key: um processo ocupa NO MÁXIMO UMA vaga no tenant inteiro."
+        },
+        {
+          "passo": 5,
+          "entidade": "impound_processes.yard_id",
+          "exigido_por": "historia",
+          "por_que": "O OccupancyMap resolve a placa fazendo join client-side com listProcessesByYard(yardId). Se o processo que ocupa a vaga tiver yard_id de OUTRO pátio (ou NULL), o ladrilho perde a placa e vira o texto genérico 'Abrir dossiê' — vaga ocupada por veículo anônimo."
+        },
+        {
+          "passo": 6,
+          "entidade": "impound_processes.status",
+          "exigido_por": "historia",
+          "por_que": "O ladrilho imprime process.statusLabel abaixo da placa. Um processo RELEASED ou AUCTION_CLOSED ainda ocupando vaga lê como erro operacional (o veículo já saiu); um LOTTED ou AUCTION_PREP SEM vaga também mente (o veículo à espera de leilão continua fisicamente no pátio)."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "Pátio Central 24 vagas (12 OCUP/11 LIVRE/1 BLOQ) · Pátio Norte 40 (34/4/2) · Pátio Oeste 30 (6/24/0) · Pátio Sul 6 (1/5/0). 5 áreas, TODAS raiz (parent_id NULL em 5/5), NENHUMA coberta (covered=true em 0/5), 3 com vehicle_class fora do domínio. 53 vagas ocupadas e o casamento vaga↔pátio está 53/53 correto.",
+        "coerente": true,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) filter (where a.yard_id = p.yard_id) bate, count(*) filter (where a.yard_id <> p.yard_id) diverge from yard_spots s join yard_areas a on a.id=s.area_id join impound_processes p on p.id=s.current_process_id where s.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" → bate=53, diverge=0 ; e \"select count(*) filter (where parent_id is not null) filhas, count(*) filter (where covered) cobertas, count(*) filter (where vehicle_class not in ('ANY','MOTORCYCLE','HEAVY')) classe_invalida from yard_areas where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" → 0 | 0 | 3"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "vehicle_class='CAR' NÃO EXISTE no domínio (VEHICLE_CLASSES = ANY|MOTORCYCLE|HEAVY em src/modules/yard/yard.types.ts:14). O DTO faz VEHICLE_CLASS_LABELS['CAR'] → undefined e o adapter do front coage silenciosamente para 'ANY' (yards.adapter.ts:199) — a tela mostra 'Qualquer veículo' em 94 vagas semeadas como exclusivas de automóvel. O dado MENTE na tela e o modal 'Editar vaga' não salva sem trocar a classe.",
+          "quantos": "3 áreas + 94 vagas = 97 registros",
+          "evidencia": "select 'area' t, vehicle_class, count(*) from yard_areas where tenant_id='a79aedf2…' group by 2 union all select 'spot', vehicle_class, count(*) from yard_spots where tenant_id='a79aedf2…' group by 2 → area|CAR|3 ; spot|CAR|94"
+        },
+        {
+          "defeito": "Hierarquia de áreas inexistente: 5/5 áreas com parent_id NULL. A função toTree() e a indentação por profundidade da página nunca são exercitadas — o card Áreas é uma lista rasa de 1 item por pátio",
+          "quantos": "5 de 5 áreas",
+          "evidencia": "select count(*) from yard_areas where tenant_id='a79aedf2…' and parent_id is not null → 0"
+        },
+        {
+          "defeito": "Nenhuma área coberta (covered=false em 5/5) e nenhuma classe MOTORCYCLE. As tarifas 'Guarda em área coberta (adicional)' R$ 18,00/dia e 'Diária de motocicleta' R$ 24,00 existem na tabela de preços mas não têm onde pousar no pátio",
+          "quantos": "0 áreas cobertas, 0 áreas de moto",
+          "evidencia": "select count(*) filter (where covered) cobertas, count(*) filter (where vehicle_class='MOTORCYCLE') motos from yard_areas where tenant_id='a79aedf2…' → 0 | 0"
+        },
+        {
+          "defeito": "Processos em fase de leilão FORA de vaga: 2 LOTTED e 2 AUCTION_PREP sem ocupar vaga nenhuma. Loteado significa 'lote formado para o certame' — o veículo continua no pátio; a tela mostra espaço livre que na verdade está ocupado",
+          "quantos": "4 processos",
+          "evidencia": "select p.status, count(*) from impound_processes p where p.tenant_id='a79aedf2…' and p.status in ('AUCTION_PREP','LOTTED') and not exists (select 1 from yard_spots s where s.tenant_id=p.tenant_id and s.current_process_id=p.id) group by 1 → AUCTION_PREP|2 ; LOTTED|2"
+        },
+        {
+          "defeito": "Pátio Oeste com 80% de vagas livres (6 de 30 ocupadas) enquanto o Pátio Norte está a 85% (34 de 40), sem nenhuma vaga bloqueada no Oeste que explicasse a assimetria. Lido junto, sugere pátio recém-inaugurado — mas os processos do Oeste têm entrada de até 178 dias",
+          "quantos": "1 pátio",
+          "evidencia": "select y.name, count(s.id) filter (where s.status='OCCUPIED') ocup, count(s.id) tot from yards y join yard_areas a on a.yard_id=y.id join yard_spots s on s.area_id=a.id where y.tenant_id='a79aedf2…' group by 1 → Pátio Norte 34/40 ; Pátio Oeste 6/30"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Reclassificar toda vaga/área 'CAR' para o domínio válido",
+          "quantos": "3 áreas + 94 vagas",
+          "criterio": "Áreas de automóvel → vehicle_class='ANY' (é o que o rótulo 'Qualquer veículo' já promete hoje na tela) OU dividir: quadras de leves em 'ANY' e quadras 'MOTORCYCLE'/'HEAVY' separadas. A vaga herda a classe da área-mãe — nunca uma vaga MOTORCYCLE dentro de uma quadra HEAVY."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Montar a árvore de áreas em 3 níveis nos dois pátios grandes",
+          "quantos": "2 pátios × (1 BLOCK + 2 CORRIDOR + 2–4 ROW)",
+          "criterio": "BLOCK 'Quadra A — Leves' → CORRIDOR 'Corredor A1'/'Corredor A2' → ROW 'Fileira A1-1'… O nome é único entre irmãs (UNIQUE tenant+yard+parent+name), então 'Corredor A1' pode repetir sob quadras diferentes. Vagas SÓ nas folhas (ROW), para o card 'Vagas · Fileira A1-1' abrir com 8–12 ladrilhos e não com 40."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar a área coberta e a área de motos em cada pátio operante",
+          "quantos": "3 áreas cobertas + 3 áreas MOTORCYCLE",
+          "criterio": "'Galpão Coberto — Perícia e Judicial' com covered=true, vehicle_class='ANY', 4–6 vagas — destino dos processos em JUDICIAL_HOLD. 'Quadra M — Motocicletas' com vehicle_class='MOTORCYCLE', 10–14 vagas — motocicletas são a maioria das remoções reais no Paraná."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Realocar os processos em fase de leilão para vagas reais",
+          "quantos": "4 processos (2 AUCTION_PREP + 2 LOTTED)",
+          "criterio": "Concentrar os lotes numa faixa contígua de códigos do mesmo corredor ('Fileira A2-3', vagas A2-3-01…04) — é como o pátio real organiza um lote de leilão. Setar yard_spots.status='OCCUPIED' + current_process_id na MESMA operação (o CHECK exige os dois juntos)."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Reequilibrar a ocupação para uma leitura operacional",
+          "quantos": "130 vagas",
+          "criterio": "Alvo por pátio: Central 78% (âmbar), Norte 88% (vermelha, justifica o alerta), Oeste 52% (verde), Ponta Grossa 61% (âmbar). As três faixas de occupancyTone() (<60 verde, 60–85 âmbar, >85 vermelha) precisam TODAS aparecer na lista de pátios."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Bloqueios com sentido físico",
+          "quantos": "5 vagas",
+          "criterio": "Faixa contígua: Pátio Norte 'Fileira A2-4' vagas 01–03 (recapeamento) e Pátio Central 'C-04' (galpão em manutenção elétrica). status='BLOCKED' obriga current_process_id NULL."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with mapa as (select y.name patio, a.name area, a.kind, a.parent_id, a.covered, a.vehicle_class, s.status, s.current_process_id, p.status pstatus, p.vehicle_plate from yards y join yard_areas a on a.yard_id=y.id left join yard_spots s on s.area_id=a.id left join impound_processes p on p.id=s.current_process_id where y.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') select count(*) filter (where vehicle_class not in ('ANY','MOTORCYCLE','HEAVY')) classe_invalida, count(*) filter (where status='OCCUPIED' and current_process_id is null) ocupada_sem_processo, count(*) filter (where status<>'OCCUPIED' and current_process_id is not null) livre_com_processo, count(*) filter (where current_process_id is not null and vehicle_plate is null) vaga_sem_placa, count(*) filter (where current_process_id is not null and pstatus in ('RELEASED','AUCTION_CLOSED','DIRECT_RECYCLING','CLOSED')) vaga_com_veiculo_ja_saido, count(distinct area) filter (where parent_id is not null) areas_filhas, count(distinct area) filter (where covered) areas_cobertas from mapa\" — PASSA quando as cinco primeiras colunas forem 0, areas_filhas>=6 e areas_cobertas>=3. Na tela: abrir /patios/patios/<Pátio Norte>, ver a árvore indentada Quadra→Corredor→Fileira, clicar numa fileira e ver TODO ladrilho âmbar com PLACA legível (nunca 'Abrir dossiê' pelado)."
+    },
+    {
+      "tela": "Processos de custódia (lista)",
+      "rota": "/patios/processos",
+      "tabelas": [
+        "impound_processes",
+        "jurisdiction_profiles",
+        "yards",
+        "work_orders",
+        "service_catalog",
+        "third_party_vehicle_identities",
+        "custody_events",
+        "audit_logs"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "jurisdiction_profiles",
+          "exigido_por": "banco",
+          "por_que": "profile_id é NOT NULL + FK impound_processes_tenant_id_profile_id_fkey. É o perfil que carrega os prazos (owner_notif_days, notice_edict_day, auction_eligible_day), o modelo de diária e o escopo. NENHUM processo nasce sem ele."
+        },
+        {
+          "passo": 2,
+          "entidade": "service_catalog com custody_profile_id",
+          "exigido_por": "historia",
+          "por_que": "É o ÚNICO marcador de 'esta OS abre custódia' (impound.reconcile.service.ts:86: WHERE sc.custody_profile_id IS NOT NULL). Sem ele NENHUMA ordem de serviço concluída abre processo — todo processo tem de ser criado à mão e nasce sem origem."
+        },
+        {
+          "passo": 3,
+          "entidade": "work_orders (status='completed')",
+          "exigido_por": "historia",
+          "por_que": "service_order_id é nullable no banco, mas o índice parcial UNIQUE (tenant, service_order) e o fluxo openFromRemoval dizem que a OS de remoção é a origem legítima. É wo.completed_at que vira entered_at = t0 do motor de diárias (art. 21 §1º)."
+        },
+        {
+          "passo": 4,
+          "entidade": "third_party_vehicle_identities",
+          "exigido_por": "historia",
+          "por_que": "identity_id é nullable, mas é a chave que agrega as passagens do MESMO veículo. Sem ela o painel 'Histórico de Custódias' devolve só o próprio processo (impound.custody-history-prisma.repository.ts:22) — nunca existe reincidente na base."
+        },
+        {
+          "passo": 5,
+          "entidade": "impound_processes",
+          "exigido_por": "banco",
+          "por_que": "CHECK impound_processes_identity_chk: ou vehicle_unidentified=true COM unidentified_reason preenchida, ou vehicle_unidentified=false COM pelo menos um de placa/chassi/RENAVAM. CHECK impound_processes_freeze_chk: frozen_at só existe se entered_at existir."
+        },
+        {
+          "passo": 6,
+          "entidade": "yards",
+          "exigido_por": "historia",
+          "por_que": "yard_id é nullable — quando NULL a coluna PÁTIO renderiza literalmente 'Sem pátio' (ProcessosPage.tsx:98). Só faz sentido em IN_REMOVAL (veículo ainda a caminho)."
+        },
+        {
+          "passo": 7,
+          "entidade": "custody_events + audit_logs (cross-anchor)",
+          "exigido_por": "historia",
+          "por_que": "custody_seq_head/custody_hash_head são a âncora da cadeia I2. Cadeia vazia = verifyChain devolve valid=true com eventCount=0, e o dossiê estampa 'Cadeia íntegra (0 eventos) · Selo: —' — íntegro e sem história nenhuma."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "75 processos: ACTIVE_CUSTODY 28 · RELEASED 9 · RECEPTION 7 · RELEASE_IN_PROGRESS 7 · JUDICIAL_HOLD 5 · AUCTION_ELIGIBLE 5 · IN_REMOVAL 4 · AUCTION_PREP 3 · AUCTION_CLOSED 3 · LOTTED 2 · RELEASED_FOR_REPAIR 2. 75/75 com placa e pátio; 0/75 com OS de origem; 0/75 com identidade de veículo; 0/75 com chassi ou RENAVAM; 74/75 com cadeia de custódia VAZIA. 0 serviços do catálogo abrem custódia.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select status, count(*), count(yard_id) com_patio, count(entered_at) com_entrada, count(service_order_id) com_os, count(identity_id) com_identidade, count(vehicle_chassis) com_chassi, count(*) filter (where custody_seq_head=0) sem_cadeia from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1 order by 2 desc\" ; e \"select count(*) from service_catalog where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and custody_profile_id is not null\" → 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nome de agente de TESTE renderizado na UI: origin_agent_name='Agente 101'…'Agente 155'. O dossiê imprime esse valor no campo 'Órgão / agente'",
+          "quantos": "74 de 75 processos",
+          "evidencia": "select origin_agent_name from impound_processes where tenant_id='a79aedf2…' order by created_at desc limit 3 → 'Agente 126', 'Agente 152', 'Agente 101'"
+        },
+        {
+          "defeito": "Número de procedimento sintético e uniforme: authority_case_number='PROC-2001' a 'PROC-2074'. Órgãos reais do PR usam formatos distintos (BO PMPR 'BO 2026/0184532', AIT DETRAN/PR 'G02-1148372', TA da PRF). O dossiê imprime no campo 'Nº do procedimento'",
+          "quantos": "74 de 75",
+          "evidencia": "select authority_case_number from impound_processes where tenant_id='a79aedf2…' and authority_case_number like 'PROC-20%' limit 3 → PROC-2070, PROC-2021, PROC-2045 ; count = 74"
+        },
+        {
+          "defeito": "Fundamento legal ÚNICO para 74 processos: legal_basis='Art. 271 do CTB — remoção por infração'. Todo veículo entrou pelo mesmo artigo — não há abandono (art. 328), ordem judicial, embriaguez (art. 165) nem falta de licenciamento (art. 230 V)",
+          "quantos": "74 de 75",
+          "evidencia": "select legal_basis, count(*) from impound_processes where tenant_id='a79aedf2…' group by 1 → 'Art. 271 do CTB — remoção por infração'|74 ; 'CTB art. 271.'|1"
+        },
+        {
+          "defeito": "IN_REMOVAL com entered_at preenchido. entered_at (t0) só é carimbado na aresta IN_REMOVAL→RECEPÇÃO (GUARDS[IN_REMOVAL->RECEPTION] = {setEnteredAt:true}, impound.transitions.ts:519). Um veículo 'em remoção' com data de entrada no pátio há 21 dias é um estado que o motor nunca produziria — é o 'half-open' que a rotina de cura procura",
+          "quantos": "4 processos (média 21 dias, máx 31)",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and status='IN_REMOVAL' and entered_at is not null → 4"
+        },
+        {
+          "defeito": "RECEPÇÃO parada há 51 dias em média (máx 73). Recepção é a janela de horas/dias entre a chegada e a vistoria concluída — 73 dias em recepção é operacionalmente impossível",
+          "quantos": "7 processos",
+          "evidencia": "select round(avg(extract(epoch from (now()-entered_at))/86400)) media, round(max(extract(epoch from (now()-entered_at))/86400)) maxima from impound_processes where tenant_id='a79aedf2…' and status='RECEPTION' → 51 | 73"
+        },
+        {
+          "defeito": "Chassi e RENAVAM ausentes em 100% dos processos — os dois campos do card 'Identificação e origem' mostram '—' em todo dossiê. Sem chassi não há identificação pericial do veículo, que é o núcleo do auto de custódia",
+          "quantos": "75 de 75",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and vehicle_chassis is null and vehicle_renavam is null → 75"
+        },
+        {
+          "defeito": "Frota irreal: 100% automóveis, anos 2012–2015 apenas (4 anos-modelo distintos), nenhuma motocicleta e nenhum veículo pesado — enquanto as tarifas de pátio já têm linha para 'Diária de motocicleta' e 'Diária de veículo pesado'",
+          "quantos": "74 veículos em 4 anos-modelo",
+          "evidencia": "select min(vehicle_year), max(vehicle_year), count(distinct vehicle_year) from impound_processes where tenant_id='a79aedf2…' → 2012 | 2015 | 4"
+        },
+        {
+          "defeito": "Cadeia de custódia (I2) vazia: custody_seq_head=0 em 74 processos. O dossiê estampa 'Cadeia íntegra (0 eventos)' com selo '—' e a Linha do tempo mostra o EmptyState. Os portões de leilão e reciclagem leem verifyChain().valid — que passa vazio, mas não prova nada",
+          "quantos": "74 de 75 (só CRS3F33 tem 3 eventos, criado pelo app)",
+          "evidencia": "select count(*) filter (where custody_seq_head=0) from impound_processes where tenant_id='a79aedf2…' → 74 ; select count(*) from custody_events where tenant_id='a79aedf2…' → 3"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Serviços de catálogo do pátio, com o marcador que abre custódia",
+          "quantos": "5 serviços",
+          "criterio": "'Remoção por infração — veículo leve', 'Remoção por infração — motocicleta', 'Remoção de veículo pesado', 'Remoção por abandono (art. 328)', 'Remoção por ordem judicial'. Nos 5, custody_profile_id apontando para o perfil de jurisdição correspondente — é o que faz uma OS concluída abrir processo. Aposentar os 3 serviços de teste ('Servico A1 1783874676', 'SemTarifa 14250', 'Guincho ate 200km')."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Ordens de serviço de remoção concluídas, uma por processo de custódia",
+          "quantos": "~90 OS",
+          "criterio": "status='completed', service_catalog_id = um dos serviços do passo 1, completed_at = a data/hora de chegada ao pátio (vira entered_at). Distribuir ao longo de 14 meses. service_details com placa/veículo/cor para o extractVehicleHints semear a identidade."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Identidades de veículo de terceiro",
+          "quantos": "~78 identidades para ~90 processos",
+          "criterio": "plate_key normalizada (maiúsculas sem hífen), chassis de 17 posições com prefixo brasileiro coerente com a marca (9BW VW, 9BD Fiat, 9BG GM, 9BF Ford, 93Y Renault, 9C2 Honda moto, 9C6 Yamaha), renavam_key de 11 dígitos, confidence='CONFIRMED' (ou 'PROVISIONAL' nos 3–4 sem placa legível). Reusar a MESMA identidade em 8–10 pares de processos: é o reincidente que dá vida ao painel 'Histórico de Custódias'."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Frota realista do Paraná",
+          "quantos": "~90 veículos",
+          "criterio": "Mix: 45% automóvel popular (VW Gol/Voyage, Fiat Uno/Palio/Siena, Chevrolet Celta/Onix/Corsa, Ford Ka/Fiesta, Renault Sandero, Hyundai HB20), 35% motocicleta (Honda CG 125/150/160 Fan e Titan, Honda Biz, Yamaha Factor/Fazer, Shineray), 12% utilitário/picape (Fiat Strada, VW Saveiro, Chevrolet Montana), 8% pesado (VW Constellation, Mercedes-Benz Accelo, Ford Cargo). Anos 1998–2023 concentrados em 2005–2016 (o veículo removido e abandonado é velho). Cores: Prata, Branco, Preto, Cinza, Vermelho, Azul, Bordô. 3–4 processos com vehicle_unidentified=true + unidentified_reason real ('Placa e chassi suprimidos por desgaste; identificação encaminhada à perícia')."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Placas plausíveis",
+          "quantos": "~86 placas + 4 sem placa",
+          "criterio": "Mistura de formato antigo do PR (ABC-1234, faixas AAA–BEZ) para veículos até 2018 e Mercosul (ABC1D23) para os mais novos. NUNCA sequências óbvias tipo AAA1A01, AAA2A02."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Origem e fundamento legal variados",
+          "quantos": "~90 processos",
+          "criterio": "origin_authority em {'Polícia Militar do Paraná — BPTran', 'DETRAN/PR', 'Polícia Rodoviária Federal', 'Guarda Municipal de Curitiba', 'SETRAN — Superintendência de Trânsito de Curitiba', 'DER/PR'}. origin_agent_name com posto+nome brasileiro coerente com o órgão ('Sd. PM Anderson Prestes', 'Insp. Márcia Bittencourt', 'Ag. Fisc. Everton Klepa'), NUNCA 'Agente NNN'. authority_case_number no formato do órgão: PMPR 'BO 2026/0184532', DETRAN/PR 'AIT G02-1148372', PRF 'TA 2026-PR-04417', Guarda 'GM-CWB 2026/03118'. incident_report_number distinto do case_number. legal_basis distribuído: art. 271 CTB (55%), art. 328 CTB abandono (18%), art. 230 V falta de licenciamento (12%), art. 165 embriaguez (9%), 'Ordem judicial — Vara de Execuções Penais de Curitiba, autos 0001234-56.2026.8.16.0013' (6%)."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Coerência temporal entre estado e data",
+          "quantos": "~90 processos",
+          "criterio": "IN_REMOVAL: entered_at NULL (o t0 só nasce na recepção), created_at nas últimas 72h. RECEPTION: entered_at entre 4h e 6 dias atrás. ACTIVE_CUSTODY: 7 a 300 dias. JUDICIAL_HOLD: 60 a 400 dias. AUCTION_ELIGIBLE em diante: entered_at SEMPRE > 60 dias (piso do gate). RELEASED / AUCTIONED / AUCTION_CLOSED / DIRECT_RECYCLING: frozen_at preenchido na data do ato."
+        },
+        {
+          "ordem": 8,
+          "o_que": "Cadeia de custódia real, com o cross-anchor",
+          "quantos": "~380 eventos + ~380 linhas em audit_logs",
+          "criterio": "OBRIGATÓRIO: cada custody_event precisa de uma linha correspondente em audit_logs (action='impound.custody_event.appended', entity='custody_event', metadata={processId,seq,hash}) — sem ela verifyChain devolve cross_anchor_mismatch e o dossiê estampa 'ADULTERAÇÃO DETECTADA' em vermelho. O hash é sha256 do preimage prev_hash|seq|type|canonicalJson(payload)|occurred_at.toISOString()|actor_id separados por U+001E (impound.hashchain.ts:97), com genesis = genesisHash(tenantId, processId). Ordem típica: STATUS_CHANGE(RECEPTION) → INSPECTION → SPOT_ASSIGNED → STATUS_CHANGE(ACTIVE_CUSTODY) → NOTIFICATION → CHARGE_ACCRUAL → [SPOT_MOVED] → RELEASE/AUCTION_*. custody_seq_head e custody_hash_head têm de bater com o último evento (senão count_mismatch/head_mismatch). Preferir gerar via o próprio serviço (appendEvent) a escrever raw-SQL — há trigger append-only bloqueando UPDATE/DELETE em custody_events."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where service_order_id is null) sem_os, count(*) filter (where identity_id is null) sem_identidade, count(*) filter (where vehicle_chassis is null and vehicle_renavam is null) sem_chassi_nem_renavam, count(*) filter (where origin_agent_name ~ '^Agente [0-9]+$') agente_de_teste, count(*) filter (where authority_case_number like 'PROC-20%') procedimento_sintetico, count(distinct legal_basis) fundamentos_distintos, count(*) filter (where status='IN_REMOVAL' and entered_at is not null) inremoval_com_t0, count(*) filter (where status='RECEPTION' and entered_at < now()-interval '10 days') recepcao_travada, count(*) filter (where custody_seq_head=0) sem_cadeia, count(distinct vehicle_year) anos_distintos from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" — PASSA quando sem_os=0, sem_identidade=0, sem_chassi_nem_renavam<=4 (só os não identificados), agente_de_teste=0, procedimento_sintetico=0, fundamentos_distintos>=4, inremoval_com_t0=0, recepcao_travada=0, sem_cadeia=0 e anos_distintos>=15. Cross-anchor: \"select count(*) from custody_events e where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and not exists (select 1 from audit_logs a where a.tenant_id=e.tenant_id and a.action='impound.custody_event.appended' and a.metadata->>'processId'=e.process_id::text and (a.metadata->>'seq')::int=e.seq and a.metadata->>'hash'=e.hash)\" → tem de ser 0."
+    },
+    {
+      "tela": "Dossiê do processo de custódia (identidade, integridade, linha do tempo, histórico, vistoria, checklist, transições, guia de débitos)",
+      "rota": "/patios/processos/:processId",
+      "tabelas": [
+        "impound_processes",
+        "custody_events",
+        "audit_logs",
+        "impound_intake_inspections",
+        "attachments",
+        "impound_process_checklist_links",
+        "checklist_runs",
+        "process_charges",
+        "process_notifications",
+        "yard_spots",
+        "third_party_vehicle_identities",
+        "tariffs",
+        "price_tables",
+        "jurisdiction_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "impound_processes",
+          "exigido_por": "banco",
+          "por_que": "O agregado. Fora dele a página cai em 'Processo não encontrado'."
+        },
+        {
+          "passo": 2,
+          "entidade": "impound_intake_inspections",
+          "exigido_por": "ambos",
+          "por_que": "Banco: UNIQUE (tenant_id, process_id) — no máximo UMA vistoria por processo; CHECK completed_chk (completed_at exige completed_by). História: é o portão I3 — RECEPÇÃO→CUSTÓDIA ATIVA só passa com a vistoria COMPLETA (guardReceptionInspection)."
+        },
+        {
+          "passo": 3,
+          "entidade": "attachments (entity_type='impound_intake_inspection')",
+          "exigido_por": "historia",
+          "por_que": "A TRAVA ESCONDIDA: 'completa' exige hasMinimumIntakeData E hasAllRequiredPhotoSets. Com jurisdiction_profiles.required_photo_sets NULL o default é a lista FEDERAL COMPLETA de 11 conjuntos (FRONT, REAR, LEFT, RIGHT, ROOF, DASH_PANEL, ENGINE, CHASSIS_ID, ODOMETER, INNER_OBJECTS, DAMAGES). Sem foto nenhuma, TODA vistoria é INCOMPLETA e o gate I3 fecha."
+        },
+        {
+          "passo": 4,
+          "entidade": "custody_events + audit_logs",
+          "exigido_por": "historia",
+          "por_que": "Alimenta o card 'Integridade do registro' (verifyChain) e a 'Linha do tempo da custódia'. O cross-anchor em audit_logs é obrigatório: sem ele verifyChain devolve cross_anchor_mismatch e o selo fica VERMELHO ('Adulteração detectada')."
+        },
+        {
+          "passo": 5,
+          "entidade": "jurisdiction_profiles.daily_service_catalog_id → service_catalog",
+          "exigido_por": "historia",
+          "por_que": "É A CADEIA QUE O DONO CITOU. charge.service.ts:305 — sem daily_service_catalog_id o motor de diárias FALHA FECHADO ('no_daily_service_catalog'), quebra o laço e NÃO acumula nada. A Guia de débitos fica em EmptyState para sempre."
+        },
+        {
+          "passo": 6,
+          "entidade": "price_tables (published) + tariffs",
+          "exigido_por": "historia",
+          "por_que": "Segundo elo do mesmo laço: resolveTariff(serviceCatalogId, scope, date) precisa de uma price_table PUBLICADA e vigente na data da diária e de uma tariff para aquele serviço. Sem tarifa vigente na refDate o motor também falha fechado ('no_tariff_for_ref_date')."
+        },
+        {
+          "passo": 7,
+          "entidade": "process_charges",
+          "exigido_por": "banco",
+          "por_que": "CHECK daily_shape_chk: kind='DAILY' exige period_seq>=1 E ref_date. Índice UNIQUE parcial process_charges_daily_idem_key (tenant,process,period_seq) para DAILY e process_charges_removal_once_key (tenant,process) para REMOVAL — UMA remoção por processo. period_seq tem de ser contíguo 1..k (o motor pula quem já existe)."
+        },
+        {
+          "passo": 8,
+          "entidade": "process_notifications",
+          "exigido_por": "historia",
+          "por_que": "Índice UNIQUE parcial (tenant,process,kind) — um marco por tipo. CHECK issued_shape_chk: status='ISSUED' exige issued_at E channel. É o trilho I6 exigido pelo gate de leilão (OWNER_INITIAL em até owner_notif_days, COMPLEMENTARY_EDICT em notice_edict_day)."
+        },
+        {
+          "passo": 9,
+          "entidade": "checklist_runs + impound_process_checklist_links",
+          "exigido_por": "historia",
+          "por_que": "UNIQUE (tenant,process,checklist_run_id). Alimenta o painel 'Checklist do Guincho' (gate duplo impound:read + checklist_runs:read). Hoje já existem 75/75 vínculos."
+        },
+        {
+          "passo": 10,
+          "entidade": "yard_spots",
+          "exigido_por": "historia",
+          "por_que": "O card 'Local de guarda' lê a vaga atual. Sem vaga imprime '· Sem vaga alocada'; sem pátio imprime 'Ainda sem pátio definido'."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "75 vistorias (100% com completed_at, agente, hodômetro e assinante) mas 0 fotos no tenant inteiro → 75/75 INCOMPLETAS pelo predicado I3. 3 eventos de custódia num único processo. 0 encargos, 0 marcos de notificação, 0 execuções do motor de diárias (daily_accrual_runs vazia). 75/75 vínculos de checklist. 0 anexos de qualquer tipo no tenant. 1 perfil, com daily_service_catalog_id NULL.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select (select count(*) from impound_intake_inspections where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') vistorias, (select count(*) from attachments where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') anexos, (select count(*) from custody_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') eventos, (select count(*) from process_charges where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') encargos, (select count(*) from process_notifications where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') notificacoes, (select count(*) from daily_accrual_runs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') runs_diaria, (select count(*) from jurisdiction_profiles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and daily_service_catalog_id is null) perfil_sem_servico_diaria\" → 75 | 0 | 3 | 0 | 0 | 0 | 1"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "signature_status gravado FORA do domínio: 'signed' minúsculo, quando os valores válidos são SIGNED|REFUSED|ABSENT (impound.intake.types.ts:23). O DTO faz SIGNATURE_LABELS[status] ?? status (impound.intake.dto.ts:32) e a UI acaba estampando o chip com a palavra crua em INGLÊS MINÚSCULO 'signed' — e em tom neutro, porque InspectionSection compara com 'SIGNED' maiúsculo. Termo técnico na UI (§3) + o validador do backend rejeitaria o valor num PUT",
+          "quantos": "75 de 75 vistorias",
+          "evidencia": "select signature_status, count(*) from impound_intake_inspections where tenant_id='a79aedf2…' group by 1 → signed | 75"
+        },
+        {
+          "defeito": "Marcador de seed impresso no laudo: observations termina com '[DEMO-DOSSIE]' — texto renderizado no bloco Observações do dossiê",
+          "quantos": "75 de 75",
+          "evidencia": "select count(*) from impound_intake_inspections where tenant_id='a79aedf2…' and observations like '%[DEMO-DOSSIE]%' → 75"
+        },
+        {
+          "defeito": "Hodômetro absurdo: faixa de 1.800 a 19.589 km, média 9.667 km, em automóveis de 2012–2015. Um HB20 2012 com 1.800 km não existe. O campo aparece no dossiê como 'Hodômetro (km)'",
+          "quantos": "75 de 75",
+          "evidencia": "select min(odometer_km), max(odometer_km), round(avg(odometer_km)) from impound_intake_inspections where tenant_id='a79aedf2…' → 1800.0 | 19589.1 | 9667"
+        },
+        {
+          "defeito": "ZERO fotos de vistoria no tenant. Consequência dupla: (a) o dossiê mostra 'Nenhuma foto de vistoria anexada' e os 11 conjuntos obrigatórios como 'pendente'; (b) o selo diz 'Vistoria INCOMPLETA' em 75/75 — e o gate I3 diz que os 28 processos em ACTIVE_CUSTODY nunca poderiam ter chegado lá. O dado atual VIOLA a própria trava do sistema",
+          "quantos": "75 vistorias, 0 anexos, 28 processos em estado inalcançável",
+          "evidencia": "select count(*) from attachments where tenant_id='a79aedf2…' → 0 ; select count(*) from impound_processes where tenant_id='a79aedf2…' and status='ACTIVE_CUSTODY' → 28"
+        },
+        {
+          "defeito": "Guia de débitos VAZIA em 75/75 processos, alguns com 178 dias de pátio. Causa raiz: jurisdiction_profiles.daily_service_catalog_id é NULL, então o motor cai no fail-closed 'no_daily_service_catalog' antes de resolver qualquer tarifa. Um veículo com 178 dias e R$ 0,00 de débito é a contradição mais visível do módulo",
+          "quantos": "75 processos, 0 encargos, 0 execuções do motor",
+          "evidencia": "select count(*) from process_charges where tenant_id='a79aedf2…' → 0 ; select daily_service_catalog_id from jurisdiction_profiles where tenant_id='a79aedf2…' → NULL ; select count(*) from daily_accrual_runs where tenant_id='a79aedf2…' → 0"
+        },
+        {
+          "defeito": "Nenhum marco de notificação (I6): 0 linhas em process_notifications para 75 processos, sendo 50 com mais de 60 dias de pátio. O proprietário nunca foi notificado em nenhum processo — e o gate de elegibilidade a leilão exige justamente esse trilho (ownerInitialMissing / trailIncomplete)",
+          "quantos": "75 processos sem marco, 50 já passados dos 60 dias",
+          "evidencia": "select count(*) from process_notifications where tenant_id='a79aedf2…' → 0 ; select count(*) from impound_processes where tenant_id='a79aedf2…' and entered_at < now()-interval '60 days' → 50"
+        },
+        {
+          "defeito": "Assinantes e agentes de vistoria em ciclo fechado de 5 nomes que se assinam mutuamente (Carlos Menezes assina para Rafael Duarte, que assina para Marcos Vinícius…). O signer_name deveria ser o condutor/proprietário/testemunha presente ao ato (art. 14 §2º), NUNCA outro agente do pátio",
+          "quantos": "75 vistorias, 5 nomes reciclados",
+          "evidencia": "select count(distinct agent_name) agentes, count(distinct signer_name) assinantes, count(*) filter (where signer_name in (select distinct agent_name from impound_intake_inspections where tenant_id='a79aedf2…')) assinante_eh_agente from impound_intake_inspections where tenant_id='a79aedf2…' → 5 | 5 | 75"
+        },
+        {
+          "defeito": "Selo de integridade sem valor probatório: 74 dossiês estampam 'Cadeia íntegra (0 eventos) · Selo: —' (verifyChain com cadeia vazia devolve valid=true, eventCount=0, headHash=null) e a Linha do tempo mostra o EmptyState",
+          "quantos": "74 de 75",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and custody_hash_head is null → 74"
+        },
+        {
+          "defeito": "Histórico de Custódias sempre com 1 linha: identity_id NULL em 75/75 faz o repositório restringir a busca ao próprio processo. Nunca há reincidente",
+          "quantos": "75 de 75",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and identity_id is null → 75"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Fechar a cadeia da diária no perfil de jurisdição (pré-requisito de TUDO que é dinheiro)",
+          "quantos": "1 serviço-diária por perfil (3 perfis)",
+          "criterio": "Criar service_catalog 'Diária de custódia — veículo leve' (e as variantes moto/pesado) e apontar jurisdiction_profiles.daily_service_catalog_id para ele. Garantir tariff com service_catalog_id = esse serviço, dentro da price_table 'Pátio — Custódia e Diárias 2026' (status='published', valid_from='2025-01-01', anterior à entrada mais antiga). Sem isso o motor não acumula NADA."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Corrigir signature_status para o domínio",
+          "quantos": "75 vistorias",
+          "criterio": "SIGNED em ~62% (condutor presente e assinou), REFUSED em ~13% (presente e recusou — art. 14 §2º: presente = notificado ainda que recuse) e ABSENT em ~25% (ninguém no ato, típico de abandono e de remoção noturna). Nunca minúscula."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Reescrever o laudo de vistoria com dados de perícia plausíveis",
+          "quantos": "~90 vistorias",
+          "criterio": "Remover o marcador '[DEMO-DOSSIE]'. odometer_km coerente com ano e tipo: automóvel 2005–2012 entre 140.000 e 290.000 km; 2013–2018 entre 70.000 e 180.000; motocicleta entre 8.000 e 95.000; pesado entre 320.000 e 780.000. signer_name = condutor/proprietário/testemunha (nome brasileiro DIFERENTE do conjunto de agent_name); em ABSENT, signer_name NULL. agent_name = servidor do pátio com função ('Vistoriador Clériston Bueno', 'Aux. de Pátio Silvana Kruger'). observations com achado real: 'Veículo sem bateria; chave não apresentada. Objetos pessoais inventariados e lacrados no envelope 0184/2026.'"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Conjuntos fotográficos da vistoria (o que destrava o gate I3)",
+          "quantos": "~11 fotos × ~85 processos ≈ 900 anexos",
+          "criterio": "attachments com entity_type='impound_intake_inspection', entity_id = a vistoria, status='stored', deleted_at NULL, metadata={\"set\":\"FRONT\"} etc. Os 11 códigos completos nos processos que precisam estar em ACTIVE_CUSTODY ou adiante; deixar 4–6 processos em RECEPÇÃO com apenas 5–8 conjuntos, para a tela mostrar 'Vistoria incompleta' com os pendentes em âmbar — o estado incompleto também é história. §2.8: file_url é o ÚNICO link de mídia exposto; storage_key nunca sai no payload."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Encargo de REMOÇÃO (uma vez por processo)",
+          "quantos": "~90 encargos",
+          "criterio": "kind='REMOVAL', quantity=1, unit_amount espelhando a tarifa de saída de guincho da categoria (leve R$ 180,00; moto R$ 120,00; pesado R$ 890,00), total_amount = quantity × unit_amount, description 'Remoção — saída de guincho (OS <código>)'. Índice UNIQUE parcial impede a segunda. Atenção: o lançamento manual NÃO carrega tariff_id (CreateManualChargeInput não tem o campo) — a coerência com a tabela de preços é do VALOR, não de FK."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Diárias acumuladas, contíguas e com teto",
+          "quantos": "~2.900 linhas DAILY",
+          "criterio": "period_seq CONTÍGUO de 1 até n, sem buraco (o motor só cria a partir de maxExisting+1). n = min(dias decorridos pelo modelo do perfil, teto). Perfil CALENDAR conta datas-locais distintas; ROLLING_24H conta floor((asOf−t0)/24h). Teto SIX_MONTHS: parar em t0+6 meses — deixar 4–6 processos ANTIGOS batendo no teto. ref_date='YYYY-MM-DD' local do pátio. unit_amount da tarifa vigente NAQUELA data (leve 42,00 / moto 24,00 / pesado 96,00), tariff_id preenchido. Nos congelados, asOf=frozen_at (nenhuma diária depois disso)."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Encargos adicionais e um ajuste, para a guia não ser monótona",
+          "quantos": "~25 ADDITIONAL + 3 ADJUSTMENT",
+          "criterio": "ADDITIONAL: 'Guarda em área coberta' R$ 18,00/dia só nos processos alocados em vaga coberta; 'Remoção interna entre vagas' R$ 55,00 nos que tiveram SPOT_MOVED; 'Taxa de entrada e vistoria' R$ 135,00. ADJUSTMENT é o ÚNICO kind que aceita total_amount negativo (CHECK process_charges_total_amount_chk) — usar num estorno fundamentado com adjustment_of_charge_id apontando o encargo corrigido."
+        },
+        {
+          "ordem": 8,
+          "o_que": "Trilho de notificações I6",
+          "quantos": "~160 marcos",
+          "criterio": "OWNER_INITIAL com due_at = entered_at + owner_notif_days do perfil; COMPLEMENTARY_EDICT com due_at = entered_at + notice_edict_day. Distribuição: ISSUED ~70% (issued_at e channel OBRIGATÓRIOS pelo CHECK; channel em POSTAL/EDICT/IN_PERSON; recipient_ref MASCARADO — 'Proprietário — AR 0184532/PR', nunca endereço nem CPF); DUE vencido ~15% (alimenta 'Prazos vencidos' do painel); DUE futuro ~10%; WAIVED ~5% com reason fundamentado ('Proprietário falecido — certidão nos autos; dispensa art. 15 §3º'). Todo processo em fase de leilão precisa do trilho COMPLETO e com OWNER_INITIAL ISSUED — é o piso do gate."
+        },
+        {
+          "ordem": 9,
+          "o_que": "Eventos de custódia e cross-anchor por processo",
+          "quantos": "~380 eventos + ~380 linhas em audit_logs",
+          "criterio": "Ver o plano da tela de Processos, passo 8. Incluir CHARGE_ACCRUAL e NOTIFICATION nos processos que ganharam encargo/marco, para a linha do tempo contar também a história financeira."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select p.status, count(*) processos, count(*) filter (where i.signature_status not in ('SIGNED','REFUSED','ABSENT')) sig_invalida, count(*) filter (where i.observations like '%DEMO%') marcador, count(*) filter (where fotos.n = 0) sem_foto, min(fotos.n) min_conjuntos, count(*) filter (where enc.n = 0) sem_encargo, count(*) filter (where notif.n = 0) sem_notificacao, count(*) filter (where p.custody_seq_head = 0) sem_cadeia from impound_processes p left join impound_intake_inspections i on i.process_id=p.id left join lateral (select count(distinct a.metadata->>'set') n from attachments a where a.tenant_id=p.tenant_id and a.entity_type='impound_intake_inspection' and a.entity_id=i.id and a.status='stored' and a.deleted_at is null) fotos on true left join lateral (select count(*) n from process_charges c where c.tenant_id=p.tenant_id and c.process_id=p.id) enc on true left join lateral (select count(*) n from process_notifications x where x.tenant_id=p.tenant_id and x.process_id=p.id) notif on true where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1 order by 2 desc\" — PASSA quando sig_invalida=0 e marcador=0 em TODAS as linhas; sem_foto=0 e min_conjuntos=11 nas linhas de ACTIVE_CUSTODY em diante; sem_encargo=0 em tudo que tem entered_at; sem_notificacao=0 nas fases de leilão; sem_cadeia=0. Contiguidade das diárias: \"select process_id from process_charges where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and kind='DAILY' group by 1 having count(*) <> max(period_seq)\" → tem de voltar VAZIO. Na tela: abrir um dossiê de ACTIVE_CUSTODY com ~150 dias e ver selo verde com eventCount>0, os 11 conjuntos em verde, e a Guia de débitos com REMOVAL + ~150 diárias somando ~R$ 6.500."
+    },
+    {
+      "tela": "Liberações (fila) + painel de Liberação no dossiê",
+      "rota": "/patios/liberacoes",
+      "tabelas": [
+        "impound_processes",
+        "impound_releases",
+        "release_requirement_checks",
+        "release_authority_decisions",
+        "authority_credentials",
+        "process_charges",
+        "jurisdiction_profiles",
+        "yard_spots",
+        "custody_events"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "jurisdiction_profiles.release_requirements (jsonb)",
+          "exigido_por": "historia",
+          "por_que": "É o molde do checklist: cada item {code,label,required} do perfil vira uma linha de release_requirement_checks. Perfil com array vazio = liberação sem checklist = gate I5 sem exigências."
+        },
+        {
+          "passo": 2,
+          "entidade": "impound_processes em ACTIVE_CUSTODY",
+          "exigido_por": "historia",
+          "por_que": "A aresta ACTIVE_CUSTODY→RELEASE_IN_PROGRESS é a única porta da liberação padrão, e ela CONGELA (setFrozenAt=true, impound.transitions.ts:524) — a diária para de correr no ato de abrir a liberação."
+        },
+        {
+          "passo": 3,
+          "entidade": "impound_releases",
+          "exigido_por": "banco",
+          "por_que": "Índice UNIQUE parcial impound_releases_active_release_key (tenant,process) WHERE status IN ('IN_PROGRESS','AUTHORIZED') — UMA liberação ativa por processo. CHECK completed_shape_chk: status='COMPLETED' exige released_at E settled_total NOT NULL. CHECK authority_shape_chk: authority_approved_at exige authority_approved_by OU authority_credential_id."
+        },
+        {
+          "passo": 4,
+          "entidade": "release_requirement_checks",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant,release,code). CHECK satisfied_shape_chk: satisfied=true exige checked_at NOT NULL. Se um item required continuar satisfied=false, o gate devolve requirementUnmet e a liberação NÃO consuma."
+        },
+        {
+          "passo": 5,
+          "entidade": "process_charges com settled_at",
+          "exigido_por": "historia",
+          "por_que": "Flag debtsUnsettled do ReleaseConsumeGateInput (art. 271 §1º / Res. 1025 art. 24). Enquanto houver encargo sem settled_at, a consumação é recusada. Sem NENHUM encargo, a quitação é vazia e o comprovante do art. 24 imprime R$ 0,00."
+        },
+        {
+          "passo": 6,
+          "entidade": "authority_credentials OU users",
+          "exigido_por": "banco",
+          "por_que": "O CHECK aceita QUALQUER um dos dois. Para o seed, preferir authority_approved_by = um user real do tenant (evita fabricar password_hash de credencial de autoridade). release_authority_decisions, quando usada, EXIGE credential_id NOT NULL — e tem trigger append-only bloqueando UPDATE/DELETE."
+        },
+        {
+          "passo": 7,
+          "entidade": "yard_spots",
+          "exigido_por": "historia",
+          "por_que": "A consumação da liberação faz vacate: a vaga volta a FREE e current_process_id vai a NULL (o CHECK obriga os dois juntos). Um processo RELEASED que continuasse ocupando vaga seria incoerente."
+        },
+        {
+          "passo": 8,
+          "entidade": "custody_events RELEASE + SETTLEMENT",
+          "exigido_por": "historia",
+          "por_que": "O ato de quitação e o de restituição são registrados na cadeia (I2). Sem eles a linha do tempo termina em 'custódia ativa' e o veículo some sem explicação."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "18 processos em estado de liberação (7 RELEASE_IN_PROGRESS + 9 RELEASED + 2 RELEASED_FOR_REPAIR) e ZERO linhas em impound_releases, release_requirement_checks e release_authority_decisions. 0 authority_credentials. A tela lista 9 linhas (RELEASE_IN_PROGRESS + RELEASED_FOR_REPAIR) — mas abrir qualquer uma leva a um painel de liberação sem dossiê algum.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select (select count(*) from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status in ('RELEASE_IN_PROGRESS','RELEASED','RELEASED_FOR_REPAIR')) processos_em_liberacao, (select count(*) from impound_releases where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') dossies, (select count(*) from release_requirement_checks where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') checklists, (select count(*) from release_authority_decisions where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') decisoes, (select count(*) from authority_credentials where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') credenciais\" → 18 | 0 | 0 | 0 | 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "18 processos afirmam um estado de liberação sem NENHUM dossiê de liberação. Abrir o dossiê de um RELEASE_IN_PROGRESS mostra o painel no estágio 'standard' sem release carregada — quem retira, checklist, quitação e autorização todos vazios. O estado do processo e o registro do ato se contradizem",
+          "quantos": "18 processos, 0 registros",
+          "evidencia": "select p.status, count(*) from impound_processes p where p.tenant_id='a79aedf2…' and p.status in ('RELEASE_IN_PROGRESS','RELEASED','RELEASED_FOR_REPAIR') and not exists (select 1 from impound_releases r where r.tenant_id=p.tenant_id and r.process_id=p.id) group by 1 → RELEASED|9 ; RELEASE_IN_PROGRESS|7 ; RELEASED_FOR_REPAIR|2"
+        },
+        {
+          "defeito": "frozen_at NULL em 19 processos que só chegam ao estado atual por uma aresta que CONGELA (ACTIVE_CUSTODY→RELEASE_IN_PROGRESS setFrozenAt=true; LOTTED→AUCTIONED idem). Sem congelamento o motor de diárias continuaria acumulando sobre veículo já restituído e o alerta 'Reconciliação pendente' nunca dispara. Nenhum processo do tenant tem frozen_at",
+          "quantos": "19 processos (7 RELEASE_IN_PROGRESS + 9 RELEASED + 3 AUCTION_CLOSED); 0 congelados no tenant inteiro",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and frozen_at is null and status in ('RELEASE_IN_PROGRESS','RELEASED','AUCTION_CLOSED') → 19 ; select count(*) filter (where frozen_at is not null) from impound_processes where tenant_id='a79aedf2…' → 0"
+        },
+        {
+          "defeito": "9 processos RELEASED (veículo devolvido) sem settled_total e sem released_at — o CHECK impound_releases_completed_shape_chk exige os dois, mas ele mora na tabela de liberação, que está vazia. O comprovante de liberação do art. 24 é impossível de emitir",
+          "quantos": "9 processos",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and status='RELEASED' → 9 ; select count(*) from impound_releases where tenant_id='a79aedf2…' and status='COMPLETED' → 0"
+        },
+        {
+          "defeito": "O perfil define 4 exigências de liberação (OWNER_ID, OWNERSHIP_PROOF, DEBTS_SETTLED, AUTHORITY_RELEASE) e nenhuma foi jamais instanciada como linha de checklist. O card 'Gate de liberação' do dossiê não tem o que marcar",
+          "quantos": "4 exigências × 18 processos = 72 linhas ausentes",
+          "evidencia": "select jsonb_array_length(release_requirements) from jurisdiction_profiles where tenant_id='a79aedf2…' → 4 ; select count(*) from release_requirement_checks where tenant_id='a79aedf2…' → 0"
+        },
+        {
+          "defeito": "Contradição entre telas: o KPI 'Liberações pendentes' de /patios/patios e o card 'Fila de liberação' do /patios/painel leem impound_releases (0), enquanto /patios/liberacoes lista processos por status (9). Duas telas do mesmo módulo, dois números, na mesma sessão",
+          "quantos": "0 contra 9",
+          "evidencia": "select (select count(*) from impound_releases where tenant_id='a79aedf2…' and status in ('IN_PROGRESS','AUTHORIZED')) kpi_painel, (select count(*) from impound_processes where tenant_id='a79aedf2…' and status in ('RELEASE_IN_PROGRESS','RELEASED_FOR_REPAIR')) tela_liberacoes → 0 | 9"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Quitar os encargos dos processos que vão liberar (pré-condição do gate I5)",
+          "quantos": "~18 processos × todos os seus encargos",
+          "criterio": "process_charges.settled_at com a data do pagamento (1 a 3 dias ANTES do released_at) e settlement_note com o meio ('PIX — comprovante E2402…', 'Guia DETRAN/PR 0184532 quitada em 12/07/2026'). Deixar 2 processos em RELEASE_IN_PROGRESS com débito EM ABERTO de propósito — é o caso que faz o gate mostrar 'Quitação pendente' e a tela ganhar tensão."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Dossiês de liberação padrão",
+          "quantos": "16 registros (kind='STANDARD')",
+          "criterio": "9 COMPLETED (para os RELEASED), 7 em curso (4 AUTHORIZED aguardando retirada, 3 IN_PROGRESS ainda montando o dossiê). recipient_name = nome brasileiro do proprietário/procurador; recipient_document mascarado ('CPF ***.418.***-22'); recipient_relationship em OWNER (70%), ATTORNEY (20%), THIRD_PARTY (10%). Nos COMPLETED: released_at e settled_total OBRIGATÓRIOS (CHECK), settled_total = soma REAL dos process_charges daquele processo."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Saídas para reparo (art. 271 §2º / Res. 1025 art. 23 §1º)",
+          "quantos": "2 registros (kind='FOR_REPAIR')",
+          "criterio": "status='IN_PROGRESS' ou 'AUTHORIZED', repair_deadline no máximo 60 dias após released_at. ATENÇÃO: esta aresta NÃO congela (D-Ω5P-REL-07: a diária SEGUE correndo) — frozen_at desses dois fica NULL de propósito e o dossiê tem de continuar acumulando diária. Sem quitação e sem checklist (são diferidos à restituição definitiva)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Checklist de exigências instanciado a partir do perfil",
+          "quantos": "16 liberações × 4 códigos = 64 linhas",
+          "criterio": "code e label copiados EXATAMENTE do jsonb release_requirements do perfil do processo (OWNER_ID, OWNERSHIP_PROOF, DEBTS_SETTLED, AUTHORITY_RELEASE), required=true. satisfied=true com checked_at e checked_by nos COMPLETED e AUTHORIZED. Nos 3 IN_PROGRESS deixar 1–2 itens satisfied=false (checked_at NULL — o CHECK só exige checked_at quando satisfied=true) para o gate mostrar 'Exigência pendente'. note com o documento apresentado ('CNH 04185320011 conferida no ato')."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Autorização da autoridade",
+          "quantos": "13 liberações autorizadas",
+          "criterio": "authority_approved_at + authority_approved_by = um user real do tenant (evita fabricar password_hash em authority_credentials). authority_reference no formato do órgão ('Ofício 1184/2026 — BPTran/PMPR', 'Despacho DETRAN/PR 0731/2026'). Deixar as 3 IN_PROGRESS SEM autorização — o gate deve reclamar authorityMissing. Só criar release_authority_decisions se antes existir authority_credentials (credential_id é NOT NULL lá) — e essa tabela tem TRIGGER append-only, então nada de UPDATE depois."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Congelamento e liberação da vaga",
+          "quantos": "16 processos",
+          "criterio": "frozen_at = a data de ABERTURA da liberação em todos os STANDARD (nunca nos FOR_REPAIR). Nos 9 RELEASED: yard_spots.status volta a 'FREE' e current_process_id a NULL — os dois na mesma operação (CHECK). Nos 7 em curso: a vaga PERMANECE ocupada (o veículo ainda está no pátio)."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Eventos de custódia da liberação",
+          "quantos": "~32 eventos + cross-anchor",
+          "criterio": "SETTLEMENT no ato da quitação (payload com o total quitado como STRING '4235.00' — canonicalJson rejeita number fracionário) e RELEASE na consumação, seguidos de STATUS_CHANGE. Sempre com a linha correspondente em audit_logs."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select p.status, count(*) processos, count(r.id) com_dossie, count(*) filter (where p.status in ('RELEASE_IN_PROGRESS','RELEASED') and p.frozen_at is null) sem_congelamento, count(*) filter (where r.status='COMPLETED' and (r.released_at is null or r.settled_total is null)) completed_incompleta, count(*) filter (where r.id is not null and chk.n = 0) sem_checklist, count(*) filter (where r.status in ('AUTHORIZED','COMPLETED') and r.authority_approved_at is null) autorizada_sem_autoridade, count(*) filter (where p.status='RELEASED' and exists (select 1 from yard_spots s where s.tenant_id=p.tenant_id and s.current_process_id=p.id)) liberado_ainda_na_vaga, count(*) filter (where r.status='COMPLETED' and r.settled_total <> deb.total) total_divergente from impound_processes p left join impound_releases r on r.process_id=p.id left join lateral (select count(*) n from release_requirement_checks c where c.release_id=r.id) chk on true left join lateral (select coalesce(sum(c.total_amount),0) total from process_charges c where c.process_id=p.id) deb on true where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and p.status in ('RELEASE_IN_PROGRESS','RELEASED','RELEASED_FOR_REPAIR') group by 1\" — PASSA quando com_dossie = processos em todas as linhas e as seis colunas de defeito forem 0. Na tela: /patios/liberacoes deve listar 9 linhas e o KPI 'Liberações pendentes' de /patios/patios deve mostrar 7 — os dois números têm de PODER ser explicados um pelo outro."
+    },
+    {
+      "tela": "Leilões (funil) + painel de Leilão e Liquidação no dossiê",
+      "rota": "/patios/leiloes",
+      "tabelas": [
+        "impound_processes",
+        "auction_edicts",
+        "auction_attempts",
+        "settlements",
+        "settlement_allocations",
+        "process_notifications",
+        "custody_events",
+        "jurisdiction_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "jurisdiction_profiles com scope='PUBLIC_AGREEMENT'",
+          "exigido_por": "historia",
+          "por_que": "Gate AuctionEligibleGateInput.scopeNotPublic — pátio privado NÃO roda o leilão do art. 328. Um processo sob perfil PRIVATE_CONTRACT nunca entra no funil."
+        },
+        {
+          "passo": 2,
+          "entidade": "impound_processes com entered_at >= 60 dias",
+          "exigido_por": "historia",
+          "por_que": "Gate deadlineNotReached: now < enteredAt + max(auctionEligibleDay, 60)·24h. O PISO de 60 dias é fail-closed e independe do que o admin configurar no perfil."
+        },
+        {
+          "passo": 3,
+          "entidade": "process_notifications OWNER_INITIAL (ISSUED ou WAIVED) + trilho completo",
+          "exigido_por": "historia",
+          "por_que": "Gates ownerInitialMissing e trailIncomplete (I6). O OWNER_INITIAL é PISO independente do perfil — é a garantia de que o proprietário foi chamado antes de perder o bem."
+        },
+        {
+          "passo": 4,
+          "entidade": "custody_events íntegros + audit_logs",
+          "exigido_por": "historia",
+          "por_que": "Gate chainBroken = verifyChain().valid===false (I2). Vale para elegibilidade, reciclagem e venda. O cross-anchor em audit_logs é parte do verifyChain."
+        },
+        {
+          "passo": 5,
+          "entidade": "auction_edicts (rodada 1)",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE parcial auction_edicts_round_idem_key (tenant,process,round_number); CHECK round_number>=1; CHECKs de não-negatividade em appraisal_amount e min_bid_amount; business_days>=1. Gate auctionPrep: classification='CONSERVED' + appraisal_amount (avaliação sigilosa art. 28). Gate auctionLot: edital COMPLETO (edict_reference + published_at + business_days>=15) + min_bid_amount, status='LOTTED'."
+        },
+        {
+          "passo": 6,
+          "entidade": "auction_attempts",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE parcial (tenant,process,round_number); CHECK sold_amount>=0. Gate auctionSale: outcome='SOLD' + winner_ref + sold_amount >= min_bid DA RODADA LOTADA + sale_note_reference (nota do art. 34). A aresta LOTTED→AUCTIONED CONGELA (setFrozenAt=true)."
+        },
+        {
+          "passo": 7,
+          "entidade": "settlements",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE parcial settlements_process_idem_key — UMA liquidação por processo. hammer_amount NOT NULL e >=0. sold_round tem de ser a rodada realmente vendida."
+        },
+        {
+          "passo": 8,
+          "entidade": "settlement_allocations",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE parcial (tenant,settlement,order_seq); order_seq>=1; amount>=0. A ORDEM LEGAL da cascata §6º é fixa: AUCTION_COST → REMOVAL_STORAGE → VEHICLE_TAXES → PRIORITY_CREDITORS → REALIZING_AGENCY_FINES → OTHER_SNT_FINES → OTHER_DEBITS, e OWNER_BALANCE é o resíduo SEMPRE gravado (mesmo =0)."
+        },
+        {
+          "passo": 9,
+          "entidade": "auction_attempts DESERTED em 2 rodadas + edital em CADA rodada",
+          "exigido_por": "historia",
+          "por_que": "Caminho da reciclagem (AUCTION_ELIGIBLE→DIRECT_RECYCLING): gates strikesInsufficient, edictMissingForRound e edictIncompleteForRound — só recicla quem teve DOIS certames REAIS designados e desertos. É a trava que impede sucatear patrimônio de terceiro por engano."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "13 processos no funil (AUCTION_ELIGIBLE 5 · AUCTION_PREP 3 · LOTTED 2 · AUCTIONED 0 · AUCTION_CLOSED 3 · DIRECT_RECYCLING 0) e ZERO linhas em auction_edicts, auction_attempts, settlements e settlement_allocations. Nenhum processo do funil tem trilho de notificação. 7 dos 13 entraram no funil ANTES do piso de 60 dias.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select p.status, count(*), count(*) filter (where p.entered_at > now()-interval '60 days') antes_do_piso, count(e.id) editais, count(a.id) rodadas, count(s.id) liquidacoes from impound_processes p left join auction_edicts e on e.process_id=p.id left join auction_attempts a on a.process_id=p.id left join settlements s on s.process_id=p.id where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and p.status in ('AUCTION_ELIGIBLE','AUCTION_PREP','LOTTED','AUCTIONED','AUCTION_CLOSED','DIRECT_RECYCLING') group by 1\" → editais/rodadas/liquidacoes = 0 em todas as linhas; antes_do_piso soma 7"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "8 processos em AUCTION_PREP/LOTTED/AUCTION_CLOSED sem NENHUM edital. AUCTION_PREP exige um auction_edicts com classification='CONSERVED' e appraisal_amount; LOTTED exige o edital COMPLETO com min_bid. Os estados existem sem o documento que os produz — o painel de leilão do dossiê abre vazio",
+          "quantos": "8 processos, 0 editais",
+          "evidencia": "select count(*) from impound_processes p where p.tenant_id='a79aedf2…' and p.status in ('AUCTION_PREP','LOTTED','AUCTIONED','AUCTION_CLOSED') and not exists (select 1 from auction_edicts e where e.tenant_id=p.tenant_id and e.process_id=p.id) → 8"
+        },
+        {
+          "defeito": "3 processos AUCTION_CLOSED (certame encerrado, veículo vendido) sem liquidação. A cascata do §6º nunca foi distribuída, o ex-proprietário nunca teve saldo apurado, e o card 'Arrecadação de leilão' do painel soma R$ 0,00",
+          "quantos": "3 processos, 0 liquidações, 0 rateios",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and status='AUCTION_CLOSED' → 3 ; select count(*) from settlements where tenant_id='a79aedf2…' → 0 ; select count(*) from settlement_allocations where tenant_id='a79aedf2…' → 0"
+        },
+        {
+          "defeito": "7 processos entraram no funil de leilão ANTES dos 60 dias de piso — os 5 AUCTION_ELIGIBLE têm média de 28 dias de pátio. O gate deadlineNotReached recusaria essa transição hoje: o dado atual descreve um caminho que o sistema proíbe",
+          "quantos": "7 de 13 processos do funil",
+          "evidencia": "select status, count(*), round(avg(extract(epoch from (now()-entered_at))/86400)) dias_medios from impound_processes where tenant_id='a79aedf2…' and status in ('AUCTION_ELIGIBLE','AUCTION_PREP','LOTTED','AUCTION_CLOSED') and entered_at > now()-interval '60 days' group by 1 → AUCTION_ELIGIBLE dias_medios 28 (5 processos)"
+        },
+        {
+          "defeito": "Nenhum processo do funil tem trilho de notificação (I6). O gate ownerInitialMissing é PISO independente do perfil — sem OWNER_INITIAL emitido ou dispensado, nenhum desses 13 poderia ser elegível",
+          "quantos": "13 de 13",
+          "evidencia": "select count(*) from impound_processes p where p.tenant_id='a79aedf2…' and p.status in ('AUCTION_ELIGIBLE','AUCTION_PREP','LOTTED','AUCTIONED','AUCTION_CLOSED') and not exists (select 1 from process_notifications n where n.tenant_id=p.tenant_id and n.process_id=p.id) → 13"
+        },
+        {
+          "defeito": "Funil sem os dois estados que fecham a história: 0 AUCTIONED (arrematado, aguardando pagamento) e 0 DIRECT_RECYCLING. Dois dos seis cards do cabeçalho-funil mostram zero permanentemente e não filtram nada quando clicados",
+          "quantos": "2 de 6 cards do funil",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and status in ('AUCTIONED','DIRECT_RECYCLING') → 0"
+        },
+        {
+          "defeito": "frozen_at NULL nos 3 AUCTION_CLOSED. A aresta LOTTED→AUCTIONED congela (setFrozenAt=true) — um veículo já arrematado com a diária ainda correndo é um passivo crescendo sobre bem que não é mais do ex-dono",
+          "quantos": "3 processos",
+          "evidencia": "select count(*) from impound_processes where tenant_id='a79aedf2…' and status='AUCTION_CLOSED' and frozen_at is null → 3"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Reajustar as datas de entrada dos processos do funil para respeitar o piso legal",
+          "quantos": "13–16 processos",
+          "criterio": "entered_at de TODO processo em fase de leilão recuado para além de 60 dias — na prática 90 a 420 dias (o abandono real leva meses). Os AUCTION_CLOSED, os mais antigos (300–420 dias)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Completar o trilho I6 antes da elegibilidade",
+          "quantos": "16 processos × 2 marcos",
+          "criterio": "OWNER_INITIAL ISSUED com issued_at entre entered_at+3d e entered_at+10d, channel POSTAL ou EDICT, recipient_ref mascarado. COMPLEMENTARY_EDICT ISSUED com issued_at próximo de entered_at+30d, channel='EDICT'. Nos casos de proprietário não localizado, WAIVED com reason fundamentado — WAIVED também satisfaz o piso."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Editais de certame (rodada 1 e, onde houver deserção, rodada 2)",
+          "quantos": "~14 editais para 11 processos",
+          "criterio": "classification='CONSERVED' nos que vão a leilão; 'SCRAP'/'UNRECOVERABLE' nos que vão à reciclagem por inservibilidade. appraisal_amount pela tabela FIPE-plausível: automóvel popular 2008–2014 entre R$ 9.500 e R$ 32.000; motocicleta entre R$ 3.200 e R$ 11.000; pesado entre R$ 48.000 e R$ 165.000. min_bid_amount = a avaliação na rodada 1 e >= 50% dela na rodada 2 (art. 328). edict_reference 'Edital de Leilão 004/2026 — DETRAN/PR'; edict_platform 'Leiloeiro Oficial credenciado — pregão eletrônico'; auctioneer_ref 'JUCEPAR 12/2018 — Leiloeiro Oficial'; pncp_url plausível; business_days >= 15 (Lei 14.133/2021); published_at pelo menos 15 dias úteis ANTES do certame; status 'LOTTED' na rodada dos LOTTED/AUCTIONED, 'CLOSED' nos encerrados, 'DESIGNATED' nos apenas designados."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Rodadas de certame",
+          "quantos": "~12 tentativas",
+          "criterio": "3 SOLD (rodada 1 ou 2) com winner_ref ('Arrematante — CNPJ ***.418/0001-**'), sold_amount >= min_bid da rodada LOTADA e <= ~1,4× a avaliação, sale_note_reference ('Nota de Arrematação 0184/2026'). 4 DESERTED (2 processos com rodadas 1 e 2 desertas → habilitam a reciclagem por strikes). 1 NO_PAYMENT com defaulted_sale_round preenchido (art. 42 — reintegra o lote), devolvendo o processo a LOTTED e dando vida à aresta de inadimplência."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Distribuir o funil pelos SEIS estados",
+          "quantos": "16 processos no funil",
+          "criterio": "AUCTION_ELIGIBLE 5 (aguardando designação) · AUCTION_PREP 3 (avaliados) · LOTTED 3 (edital publicado, certame marcado) · AUCTIONED 2 (arrematados, aguardando pagamento — frozen_at na data do arremate) · AUCTION_CLOSED 3 (consumados) · DIRECT_RECYCLING 2 (1 por 2 deserções com edital em cada rodada, 1 por inservibilidade com classification='UNRECOVERABLE' e fundamento escrito). frozen_at OBRIGATÓRIO em AUCTIONED, AUCTION_CLOSED e DIRECT_RECYCLING."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Liquidação em cascata dos arrematados",
+          "quantos": "3 settlements + ~18 allocations",
+          "criterio": "hammer_amount = sold_amount da rodada vendida. Rateio na ORDEM LEGAL com order_seq 1..n: AUCTION_COST (custeio do leiloeiro, ~5% do martelo), REMOVAL_STORAGE (soma REAL dos process_charges do processo — remoção + diárias até o congelamento), VEHICLE_TAXES (IPVA/licenciamento em atraso, R$ 400–2.800), REALIZING_AGENCY_FINES, OTHER_SNT_FINES, OTHER_DEBITS. OWNER_BALANCE SEMPRE gravado, mesmo =0. Fazer um dos três com hammer MENOR que a soma dos créditos: shortfall_amount preenchido e owner_balance_amount=0. Nos outros dois, owner_balance>0 com owner_notify_due_at e owner_claim_expires_at coerentes, e 1 com status='BALANCE_CLAIMED' (claimed_at, claim_recipient_ref)."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Eventos de custódia do rito",
+          "quantos": "~40 eventos + cross-anchor",
+          "criterio": "AUCTION_PREP, AUCTION_LOTTED, AUCTION_SOLD, AUCTION_CLOSED e AUCTION_SETTLEMENT em cada processo, na ordem cronológica do certame. Dinheiro no payload SEMPRE como string ('12480.00') — canonicalJson lança em number fracionário."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select p.status, count(*) processos, count(*) filter (where p.entered_at > now()-interval '60 days') antes_do_piso, count(*) filter (where oi.n = 0) sem_owner_initial, count(*) filter (where p.status in ('AUCTION_PREP','LOTTED','AUCTIONED','AUCTION_CLOSED') and ed.n = 0) sem_edital, count(*) filter (where p.status in ('AUCTIONED','AUCTION_CLOSED','DIRECT_RECYCLING') and p.frozen_at is null) sem_congelamento, count(*) filter (where p.status='AUCTION_CLOSED' and st.n = 0) fechado_sem_liquidacao from impound_processes p left join lateral (select count(*) n from process_notifications x where x.process_id=p.id and x.kind='OWNER_INITIAL' and x.status in ('ISSUED','WAIVED')) oi on true left join lateral (select count(*) n from auction_edicts e where e.process_id=p.id) ed on true left join lateral (select count(*) n from settlements s where s.process_id=p.id) st on true where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and p.status in ('AUCTION_ELIGIBLE','AUCTION_PREP','LOTTED','AUCTIONED','AUCTION_CLOSED','DIRECT_RECYCLING') group by 1 order by 1\" — PASSA quando as cinco colunas de defeito forem 0 em TODAS as linhas e as 6 fases tiverem processos. Cascata: \"select s.id, s.hammer_amount, sum(a.amount) rateado, count(*) filter (where a.beneficiary_kind='OWNER_BALANCE') tem_saldo from settlements s join settlement_allocations a on a.settlement_id=s.id where s.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2\" — cada liquidação tem de ter tem_saldo=1 e rateado <= hammer_amount. Na tela: o cabeçalho-funil de /patios/leiloes tem de mostrar os SEIS cards com número > 0, e cada um filtra linhas ao ser clicado."
+    },
+    {
+      "tela": "Perfis de jurisdição",
+      "rota": "/patios/perfis",
+      "tabelas": [
+        "jurisdiction_profiles",
+        "service_catalog",
+        "tariffs",
+        "price_tables",
+        "impound_processes"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "service_catalog (serviço-diária)",
+          "exigido_por": "historia",
+          "por_que": "daily_service_catalog_id é NULLABLE no banco, mas é O ELO que o dono descreveu: sem ele o motor de diárias falha fechado ('no_daily_service_catalog', charge.service.ts:305) e NENHUM processo do perfil acumula um centavo. A coluna não aparece na PerfisPage nem no PerfilFormModal — só existe por SQL, e por isso passa despercebida."
+        },
+        {
+          "passo": 2,
+          "entidade": "price_tables (status='published')",
+          "exigido_por": "historia",
+          "por_que": "Segundo elo: resolvePublishedPriceTableIdsScoped filtra por status publicado e vigência na DATA da diária. Tabela em 'draft' não resolve nada."
+        },
+        {
+          "passo": 3,
+          "entidade": "tariffs com service_catalog_id = o serviço-diária",
+          "exigido_por": "historia",
+          "por_que": "Terceiro elo: resolveTariff(serviceCatalogId, scope, date). Sem tarifa vigente na refDate o motor também falha fechado ('no_tariff_for_ref_date'). A resolução faz passadas específico→geral e a prioridade é ESCOPO acima de CATEGORIA."
+        },
+        {
+          "passo": 4,
+          "entidade": "jurisdiction_profiles",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, name). CHECK positive_deadlines_chk: os quatro prazos (owner_notif_days, notice_edict_day, auction_eligible_day, auction_edict_business_days) TÊM de ser > 0. FK daily_service_catalog_id → service_catalog."
+        },
+        {
+          "passo": 5,
+          "entidade": "release_requirements (jsonb)",
+          "exigido_por": "historia",
+          "por_que": "Molde do checklist de liberação; cada item vira uma linha de release_requirement_checks. O perfil atual já tem os 4 códigos corretos."
+        },
+        {
+          "passo": 6,
+          "entidade": "required_photo_sets (jsonb)",
+          "exigido_por": "historia",
+          "por_que": "NULL significa o DEFAULT FEDERAL COMPLETO de 11 conjuntos (impound.intake.ts:9) — a exigência MÁXIMA. Não é editável na UI. Um perfil de contrato privado que exija 11 conjuntos fotográficos por veículo trava a operação sem que ninguém veja onde."
+        },
+        {
+          "passo": 7,
+          "entidade": "impound_processes",
+          "exigido_por": "banco",
+          "por_que": "FK impound_processes_tenant_id_profile_id_fkey com ON DELETE RESTRICT — perfil com processo vinculado não pode ser removido, só inativado."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "1 perfil de jurisdição: 'policia de transito', scope=PUBLIC_AGREEMENT, prazos 10/30/60/15, daily_model=CALENDAR, daily_cap=SIX_MONTHS, 4 exigências de liberação, required_photo_sets NULL, daily_service_catalog_id NULL, active=true. Os 75 processos apontam todos para ele.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select name, scope, owner_notif_days, notice_edict_day, auction_eligible_day, auction_edict_business_days, daily_model, daily_cap, jsonb_array_length(release_requirements) exigencias, required_photo_sets, daily_service_catalog_id, active from jurisdiction_profiles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nome do perfil em minúscula e sem acento: 'policia de transito'. É a primeira coluna da tabela de perfis e o rótulo que identifica a norma aplicada a 75 processos. Viola §11.3 (acentuação) e não nomeia norma nenhuma",
+          "quantos": "1 de 1 perfil",
+          "evidencia": "select name from jurisdiction_profiles where tenant_id='a79aedf2…' → 'policia de transito'"
+        },
+        {
+          "defeito": "daily_service_catalog_id NULL — a cadeia perfil→serviço→tarifa está ROMPIDA no primeiro elo. É a causa raiz de toda a Guia de débitos vazia do módulo. Como o campo não existe na PerfisPage nem no PerfilFormModal, nenhuma tela denuncia a falta: o perfil parece completo",
+          "quantos": "1 de 1 perfil, 75 processos afetados",
+          "evidencia": "select count(*) from jurisdiction_profiles where tenant_id='a79aedf2…' and daily_service_catalog_id is null → 1 ; select count(*) from process_charges where tenant_id='a79aedf2…' → 0"
+        },
+        {
+          "defeito": "Perfil ÚNICO para o tenant inteiro. Os dois filtros de escopo da tela ('Convênio público' e 'Contrato privado') existem e um deles nunca devolve nada. Um pátio que só opera convênio público não exercita a bifurcação de escopo — que é justamente o que decide se o rito do art. 328 corre",
+          "quantos": "1 perfil, 2 escopos previstos",
+          "evidencia": "select scope, count(*) from jurisdiction_profiles where tenant_id='a79aedf2…' group by 1 → PUBLIC_AGREEMENT | 1"
+        },
+        {
+          "defeito": "required_photo_sets NULL faz o sistema exigir os 11 conjuntos fotográficos federais — o máximo probatório — sem que isso esteja escrito em lugar visível. Combinado com 0 anexos, é o que reprova 75/75 vistorias",
+          "quantos": "1 perfil, 11 conjuntos implícitos",
+          "evidencia": "select required_photo_sets from jurisdiction_profiles where tenant_id='a79aedf2…' → NULL ; DEFAULT_REQUIRED_PHOTO_SETS = PHOTO_SET_CODES (11 códigos, impound.intake.ts:9)"
+        },
+        {
+          "defeito": "Só o modelo de diária CALENDAR está representado; ROLLING_24H (o federal da Res. 1025 art. 21 §1º) e os tetos THIRTY_DAYS_LEGACY/UNLIMITED nunca aparecem. As colunas 'Modelo de diária' e 'Teto de estada' mostram sempre o mesmo valor",
+          "quantos": "1 modelo de 2, 1 teto de 3",
+          "evidencia": "select daily_model, daily_cap, count(*) from jurisdiction_profiles where tenant_id='a79aedf2…' group by 1,2 → CALENDAR | SIX_MONTHS | 1"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Serviços-diária no catálogo (o elo que falta)",
+          "quantos": "3 serviços",
+          "criterio": "'Diária de custódia — veículo leve', 'Diária de custódia — motocicleta', 'Diária de custódia — veículo pesado'. is_active=true, category coerente. Cada um recebe custody_profile_id do perfil correspondente (fecha o laço nos dois sentidos: o serviço abre custódia e o perfil cobra por ele)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Tarifas do serviço-diária dentro da tabela de pátio publicada",
+          "quantos": "3 tarifas (uma por serviço)",
+          "criterio": "price_table_id = 'Pátio — Custódia e Diárias 2026' (status='published', valid_from='2025-01-01' — anterior à entrada mais antiga do pátio, senão o motor não resolve as diárias retroativas). service_catalog_id preenchido. unit_price: leve 42,00 / moto 24,00 / pesado 96,00 (os valores que hoje já existem como texto solto). customer_id NULL de propósito — a diária de convênio público vale para todos."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Renomear o perfil existente e completá-lo",
+          "quantos": "1 perfil",
+          "criterio": "name='Convênio DETRAN/PR — Res. CONTRAN 1025/2026'. daily_service_catalog_id apontando para 'Diária de custódia — veículo leve'. notes com a base normativa ('Convênio 018/2026 DETRAN/PR — prazos da Res. CONTRAN 1025/2026 e CTB arts. 271 e 328'). Manter as 4 exigências de liberação."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Segundo perfil, de contrato privado",
+          "quantos": "1 perfil",
+          "criterio": "name='Contrato Privado — Pátio Particular', scope='PRIVATE_CONTRACT', daily_model='ROLLING_24H', daily_cap='UNLIMITED', prazos 15/45/90/15. release_requirements enxutas (OWNER_ID + DEBTS_SETTLED — sem AUTHORITY_RELEASE, porque não há autoridade no privado). required_photo_sets reduzido explicitamente a ['FRONT','REAR','LEFT','RIGHT','ODOMETER','DAMAGES'] — mostra que o campo existe e evita exigir 11 conjuntos num pátio particular. Vincular 8–12 processos a ele (esses ficam FORA do funil de leilão pelo gate scopeNotPublic — e isso é a história correta)."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Terceiro perfil, regime intertemporal legado",
+          "quantos": "1 perfil",
+          "criterio": "name='Convênio Municipal — Regime Legado (Tema 124/STJ)', scope='PUBLIC_AGREEMENT', daily_cap='THIRTY_DAYS_LEGACY' (teto fixo de 30 diárias), daily_model='CALENDAR', prazos 10/30/60/15. Vincular 5–8 processos ANTIGOS — para o dossiê mostrar a acumulação parando em 30 diárias mesmo com 200 dias de pátio."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select jp.name perfil, jp.scope, jp.daily_model, jp.daily_cap, jp.active, sc.name servico_diaria, t.unit_price, pt.name tabela, pt.status, pt.valid_from::date, jsonb_array_length(jp.release_requirements) exigencias, coalesce(jsonb_array_length(jp.required_photo_sets), 11) conjuntos_exigidos, (select count(*) from impound_processes p where p.profile_id=jp.id) processos from jurisdiction_profiles jp left join service_catalog sc on sc.id=jp.daily_service_catalog_id left join tariffs t on t.service_catalog_id=sc.id and t.is_active left join price_tables pt on pt.id=t.price_table_id where jp.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by jp.name\" — PASSA quando: nenhum perfil tem servico_diaria NULL; toda linha tem unit_price > 0 e pt.status='published' com valid_from anterior à entrada mais antiga do pátio; existem ao menos 2 valores distintos em scope, 2 em daily_model e 2 em daily_cap; todo nome começa com maiúscula e acentuado; e a soma de processos = o total de impound_processes do tenant."
+    },
+    {
+      "tela": "Tarifas de pátio (tabelas de valores — alias do cadastro)",
+      "rota": "/patios/tarifas",
+      "tabelas": [
+        "price_tables",
+        "tariffs",
+        "service_catalog",
+        "customers",
+        "jurisdiction_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "service_catalog",
+          "exigido_por": "historia",
+          "por_que": "É O EXEMPLO LITERAL DO DONO. tariffs.service_catalog_id é NULLABLE — e é exatamente essa nulidade que faz a tela de tarifas escrever 'Todos os serviços' (TarifasPage.tsx:92). Uma tarifa sem serviço é um preço sem objeto: não resolve em nenhum motor (resolveTariff busca POR serviceCatalogId) e não conta história nenhuma na tela."
+        },
+        {
+          "passo": 2,
+          "entidade": "customers",
+          "exigido_por": "historia",
+          "por_que": "tariffs.customer_id nullable → 'Todos os clientes' (TarifasPage.tsx:98). Nulo é LEGÍTIMO na tarifa-base (a de tabela padrão), mas TEM de existir ao menos uma tarifa customer-específica para a resolução em níveis (contrato-cliente > tabela-padrão) fazer sentido."
+        },
+        {
+          "passo": 3,
+          "entidade": "price_tables",
+          "exigido_por": "banco",
+          "por_que": "price_table_id é NOT NULL na tariff, com FK e ON DELETE CASCADE. UNIQUE (tenant_id, name). scope e vehicle_category são NULLABLE — e NULL é renderizado como 'Todos'/'Todas' nas colunas Escopo e Categoria da tela."
+        },
+        {
+          "passo": 4,
+          "entidade": "price_tables.status='published' + vigência",
+          "exigido_por": "historia",
+          "por_que": "resolvePublishedPriceTableIdsScoped só enxerga tabelas publicadas e vigentes na data consultada. Uma tabela em 'draft' é invisível para o motor de diárias, para orçamentos e para a OS."
+        },
+        {
+          "passo": 5,
+          "entidade": "tariffs",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE tariffs_natural_key (tenant_id, price_table_id, service_catalog_id, customer_id) — a chave natural EXIGE a combinação; com service e customer nulos só cabe UMA tarifa curinga por tabela, o que revela que o preenchimento nulo é um desvio, não o desenho. unit_price NOT NULL."
+        },
+        {
+          "passo": 6,
+          "entidade": "jurisdiction_profiles.daily_service_catalog_id",
+          "exigido_por": "historia",
+          "por_que": "Fecha o laço: é o perfil que diz QUAL serviço do catálogo é a diária, e é por ele que a tarifa de pátio chega ao process_charges. Sem esse apontamento, as 7 tarifas de pátio existem e nunca cobram nada."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "15 tabelas de valores (7 publicadas com conteúdo real, 8 de teste/rascunho) e 39 tarifas. 35 das 39 sem serviço vinculado e 38 das 39 sem cliente. As 28 tarifas do bloco de demonstração ('DEMO-PRECOS') estão TODAS com service_catalog_id NULL e customer_id NULL. As 15 tabelas têm scope NULL e vehicle_category NULL — 15 de 15. Só 3 serviços no catálogo, os três com nome de teste. A tabela 'Pátio — Custódia e Diárias 2026' tem 7 tarifas (R$ 18,00 a R$ 168,00), nenhuma com serviço.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) filter (where origin='DEMO-PRECOS') demo, count(*) filter (where origin<>'DEMO-PRECOS') lixo, count(*) filter (where service_catalog_id is null) sem_servico, count(*) filter (where customer_id is null) sem_cliente, count(*) total from tariffs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" → 28 | 11 | 35 | 38 | 39 ; e \"select count(*) from price_tables where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and (scope is null or vehicle_category is null)\" → 15 de 15"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "O DEFEITO QUE O DONO NOMEOU, ainda de pé: 35 tarifas sem serviço e 38 sem cliente. Em /cadastros/tarifas as linhas leem 'Todos os serviços / Todos os clientes'; nenhuma delas é resolvível por resolveTariff, que busca POR serviceCatalogId",
+          "quantos": "35 de 39 sem serviço, 38 de 39 sem cliente",
+          "evidencia": "select name, unit_price, service_catalog_id, customer_id from tariffs where tenant_id='a79aedf2…' and origin='DEMO-PRECOS' limit 3 → 'Diária de veículo leve' 42.00 NULL NULL ; 'Taxa de liberação' 168.00 NULL NULL ; 'Diária de motocicleta' 24.00 NULL NULL"
+        },
+        {
+          "defeito": "15 de 15 tabelas de valores com scope NULL e vehicle_category NULL. A tela imprime 'Todos' na coluna ESCOPO e 'Todas' na coluna CATEGORIA em todas as linhas; os filtros 'Convênio público', 'Contrato privado', 'Motocicleta', 'Automóvel' e 'Caminhão / Pesado' devolvem ZERO resultados sempre",
+          "quantos": "15 de 15 tabelas, 5 filtros mortos",
+          "evidencia": "select scope, vehicle_category, count(*) from price_tables where tenant_id='a79aedf2…' group by 1,2 → NULL | NULL | 15"
+        },
+        {
+          "defeito": "Catálogo de serviços é lixo de teste puro: 'Servico A1 1783874676', 'SemTarifa 14250' e 'Guincho ate 200km' (sem acento). Não existe UM serviço que descreva o que o pátio cobra — logo não há a que vincular nenhuma tarifa",
+          "quantos": "3 de 3 serviços",
+          "evidencia": "select name from service_catalog where tenant_id='a79aedf2…' → Servico A1 1783874676 ; SemTarifa 14250 ; Guincho ate 200km"
+        },
+        {
+          "defeito": "Tabelas e tarifas de teste visíveis na tela de produção: 'Terminal 1783820569385872200', 'Prova 1783820763934862800', 'Editavel 1783820571713284800', 'Auditoria A1 1783874622', 'teste'; tarifas com nome '[auditoria inspetor - ignorar]' e origin 'dup'/'dupicata'/'patched'. Uma delas com mojibake no nome ('Sa?da padr?o')",
+          "quantos": "8 tabelas + 11 tarifas de teste",
+          "evidencia": "select name from price_tables where tenant_id='a79aedf2…' and (name ~ '[0-9]{10}' or lower(name)='teste') → 6 linhas ; select name, origin from tariffs where tenant_id='a79aedf2…' and name like '%ignorar%' → 3 linhas ; a tarifa 'Sa?da padr?o' da 'Tabela Smoke Tarifas' tem caracteres corrompidos"
+        },
+        {
+          "defeito": "Nenhuma tabela com vigência fechada nem versão >1: valid_to NULL em 15/15 e version=1 em 15/15. A coluna 'Vigência' nunca mostra um intervalo e não há o par tabela-2025-arquivada / tabela-2026-publicada que prova que a resolução por data funciona",
+          "quantos": "15 de 15",
+          "evidencia": "select count(*) filter (where valid_to is not null) com_fim, count(*) filter (where version > 1) versionadas from price_tables where tenant_id='a79aedf2…' → 0 | 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Catálogo de serviços real do pátio e do guincho",
+          "quantos": "14 serviços",
+          "criterio": "Pátio: 'Diária de custódia — veículo leve', '— motocicleta', '— veículo pesado', 'Guarda em área coberta', 'Taxa de entrada e vistoria', 'Taxa de liberação', 'Remoção interna entre vagas'. Guincho: 'Saída de guincho — perímetro urbano', 'Saída de guincho — rodovia', 'Quilômetro rodado', 'Hora parada / espera', 'Desatolamento', 'Içamento com guincho pesado', 'Resgate em ribanceira'. Aposentar (is_active=false) ou renomear os 3 de teste."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Tabelas de valores com escopo e categoria preenchidos",
+          "quantos": "8 publicadas + 2 arquivadas + 1 rascunho",
+          "criterio": "O par (scope, vehicle_category) é o que dá sentido às colunas: 'Convênio DETRAN/PR — Leves 2026' (PUBLIC_AGREEMENT, CAR), '— Motocicletas 2026' (PUBLIC_AGREEMENT, MOTORCYCLE), '— Pesados 2026' (PUBLIC_AGREEMENT, TRUCK), 'Contrato Privado — Geral 2026' (PRIVATE_CONTRACT, NULL = curinga de categoria), 'Contrato Transportadora Aurora' (PRIVATE_CONTRACT, TRUCK), 'Tabela Guincho 2026' (NULL, NULL = curinga total, para exercitar a última passada do resolvedor). valid_from 2026-01-01. As arquivadas: as mesmas de 2025 com valid_to='2025-12-31' e status='archived' — provam a resolução por data. 1 rascunho 'Tabela Sazonal — Alta Temporada 2027' invisível ao motor."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Tarifas com serviço SEMPRE vinculado",
+          "quantos": "~46 tarifas",
+          "criterio": "REGRA DURA: service_catalog_id NUNCA NULL. Faixas de mercado do Paraná 2026 — diária leve 42,00 / moto 24,00 / pesado 96,00; área coberta +18,00/dia; taxa de entrada e vistoria 135,00; taxa de liberação 168,00; remoção interna 55,00; saída urbana 180,00; saída rodovia 260,00; km rodado 6,50 urbano / 8,90 rodovia / 14,50 pesado; hora parada 95,00; desatolamento 380,00; içamento pesado 640,00; resgate em ribanceira 3.400,00. Cada tarifa dentro da tabela cujo (scope, categoria) case com o serviço."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Tarifas contratadas por cliente (o nível mais específico da resolução)",
+          "quantos": "8 tarifas",
+          "criterio": "customer_id preenchido, dentro da tabela 'Contrato Transportadora Aurora' e de um contrato novo. Preços 12–20% ABAIXO da tabela padrão do mesmo serviço — é o que um contrato de volume negocia. Exige 2–3 clientes reais no cadastro; hoje só existem 'Particular' e 'Indústria Alfa Ltda'."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Limpar o lixo de teste",
+          "quantos": "8 tabelas + 11 tarifas",
+          "criterio": "Apagar ou renomear tudo que tenha timestamp no nome, '[auditoria inspetor - ignorar]', origin em {dup, dupicata, patched, smoke, insp-default, validador-*} e o registro com nome corrompido da 'Tabela Smoke Tarifas'. ATENÇÃO: tariffs é referenciada por service_quote_items, service_quotes.source_tariff_id e work_order_financial_items com ON DELETE RESTRICT — conferir antes de apagar; onde houver vínculo, inativar (is_active=false, status='archived') em vez de excluir."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Fechar o laço com o perfil de jurisdição",
+          "quantos": "3 apontamentos",
+          "criterio": "jurisdiction_profiles.daily_service_catalog_id de cada perfil apontando para o serviço-diária da sua categoria. É o passo que transforma essas tarifas em dinheiro na Guia de débitos — sem ele todo o resto deste plano é decoração."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select pt.name tabela, pt.scope, pt.vehicle_category, pt.status, pt.valid_from::date, pt.valid_to::date, count(t.id) tarifas, count(t.service_catalog_id) com_servico, count(t.customer_id) com_cliente, min(t.unit_price), max(t.unit_price) from price_tables pt left join tariffs t on t.price_table_id=pt.id where pt.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2,3,4,5,6 order by pt.status, pt.name\" — PASSA quando: em toda linha com tarifas, com_servico = tarifas (nenhuma tarifa órfã de serviço); nenhuma tabela publicada tem scope E vehicle_category ambos NULL exceto a curinga declarada; pelo menos 1 tabela com valid_to preenchida e status='archived'; ao menos 1 linha com com_cliente > 0; e nenhum nome contendo dígito-timestamp ou 'ignorar'. Prova de ponta a ponta da cadeia: \"select jp.name, sc.name servico, t.unit_price, pt.status from jurisdiction_profiles jp join service_catalog sc on sc.id=jp.daily_service_catalog_id join tariffs t on t.service_catalog_id=sc.id join price_tables pt on pt.id=t.price_table_id where jp.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and pt.status='published'\" — tem de devolver UMA linha por perfil, com preço. Na tela: em /patios/tarifas, clicar no filtro 'Motocicleta' e ver a tabela de motos aparecer (hoje volta vazio)."
+    },
+    {
+      "tela": "Painel dos Pátios (dashboard gerencial)",
+      "rota": "/patios/painel",
+      "tabelas": [
+        "yard_spots",
+        "yard_areas",
+        "yards",
+        "impound_processes",
+        "impound_releases",
+        "process_notifications",
+        "settlement_allocations",
+        "settlements",
+        "jurisdiction_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "yard_spots via yard_areas via yards",
+          "exigido_por": "historia",
+          "por_que": "Cards 'Ocupação' e 'Ocupação por pátio': raw JOIN spot→área→pátio (o vínculo vaga→pátio NÃO é direto no schema). Um pátio sem área não aparece com vaga nenhuma."
+        },
+        {
+          "passo": 2,
+          "entidade": "impound_processes",
+          "exigido_por": "historia",
+          "por_que": "Cards 'Processos ativos' e 'Processos por fase': groupBy(status) mapeado nos 5 buckets (RECEPTION, CUSTODY, RELEASE, AUCTION, CLOSED) por PHASE_BUCKET_BY_STATUS. 'Lotes abertos' = COUNT(status='LOTTED')."
+        },
+        {
+          "passo": 3,
+          "entidade": "impound_releases",
+          "exigido_por": "historia",
+          "por_que": "Card 'Fila de liberação' = COUNT(impound_releases WHERE status IN ('IN_PROGRESS','AUTHORIZED')) — lê a TABELA DE LIBERAÇÃO, não o status do processo. Esta é a diferença que hoje produz a contradição com /patios/liberacoes."
+        },
+        {
+          "passo": 4,
+          "entidade": "process_notifications",
+          "exigido_por": "historia",
+          "por_que": "Card 'Prazos vencidos' = COUNT(status='DUE' AND due_at <= now()). Sem marco nenhum, o card mostra 0 e o gerente conclui que está tudo em dia."
+        },
+        {
+          "passo": 5,
+          "entidade": "jurisdiction_profiles com scope='PUBLIC_AGREEMENT'",
+          "exigido_por": "historia",
+          "por_que": "O card 'Prazos' só considera candidatos com entered_at NOT NULL, frozen_at NULL, status <> 'JUDICIAL_HOLD' e perfil PÚBLICO (patios-dashboard-prisma.repository.ts:126-131). Processo congelado ou sob bloqueio judicial some do alerta — de propósito."
+        },
+        {
+          "passo": 6,
+          "entidade": "settlements + settlement_allocations",
+          "exigido_por": "historia",
+          "por_que": "Card 'Arrecadação de leilão': soma por beneficiary_kind, mês corrente e total. Vazio = R$ 0,00 e o gráfico de arrecadação some."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "Ocupação 53/100 = 53% · Processos 75 distribuídos em 5 fases (RECEPTION 11, CUSTODY 33, RELEASE 9, AUCTION 10, CLOSED 12) · Fila de liberação 0 · Prazos vencidos 0 · Lotes abertos 2 · Arrecadação R$ 0,00 · Alertas de prazo: lista vazia. Dos 8 indicadores, 3 mostram zero por ausência de dado e 1 (fila) contradiz outra tela.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select (select count(*) from yard_spots where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') vagas, (select count(*) from yard_spots where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='OCCUPIED') ocupadas, (select count(*) from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') processos, (select count(*) from impound_releases where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status in ('IN_PROGRESS','AUTHORIZED')) fila_liberacao, (select count(*) from process_notifications where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='DUE' and due_at<=now()) prazos_vencidos, (select count(*) from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='LOTTED') lotes_abertos, (select coalesce(sum(amount),0) from settlement_allocations where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') arrecadacao\" → 100 | 53 | 75 | 0 | 0 | 2 | 0.00"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Três indicadores travados em zero por ausência total de dado na tabela-fonte: 'Fila de liberação' (impound_releases vazia), 'Prazos vencidos' (process_notifications vazia) e 'Arrecadação de leilão' (settlement_allocations vazia). O painel gerencial diz 'está tudo em dia e não entrou dinheiro' sobre um pátio com 53 veículos e 50 processos passados dos 60 dias",
+          "quantos": "3 de 8 indicadores",
+          "evidencia": "select (select count(*) from impound_releases where tenant_id='a79aedf2…') r, (select count(*) from process_notifications where tenant_id='a79aedf2…') n, (select count(*) from settlement_allocations where tenant_id='a79aedf2…') s → 0 | 0 | 0"
+        },
+        {
+          "defeito": "Card 'Fila de liberação' = 0 enquanto /patios/liberacoes lista 9: a mesma pergunta respondida por duas fontes diferentes (tabela de liberação × status do processo). O gerente que abre as duas telas vê o módulo se desmentir",
+          "quantos": "0 contra 9",
+          "evidencia": "select (select count(*) from impound_releases where tenant_id='a79aedf2…' and status in ('IN_PROGRESS','AUTHORIZED')) painel, (select count(*) from impound_processes where tenant_id='a79aedf2…' and status in ('RELEASE_IN_PROGRESS','RELEASED_FOR_REPAIR')) lista → 0 | 9"
+        },
+        {
+          "defeito": "Lista 'Alertas de prazo' vazia embora existam 71 candidatos elegantemente qualificados pelo filtro do repositório (entered_at NOT NULL, frozen_at NULL, status<>JUDICIAL_HOLD, perfil público) — o computeDeadlineAlerts acha os candidatos e não encontra marco nenhum para comparar",
+          "quantos": "71 candidatos, 0 alertas",
+          "evidencia": "select count(*) from impound_processes ip join jurisdiction_profiles jp on jp.id=ip.profile_id where ip.tenant_id='a79aedf2…' and ip.entered_at is not null and ip.frozen_at is null and ip.status<>'JUDICIAL_HOLD' and jp.scope='PUBLIC_AGREEMENT' → 71 ; select count(*) from process_notifications where tenant_id='a79aedf2…' → 0"
+        },
+        {
+          "defeito": "Ocupação agregada de 53% esconde a dispersão real (Norte 85%, Oeste 20%) e inclui um pátio de 6 vagas com capacidade declarada de 1100 — o gráfico 'Ocupação por pátio' fica com uma barra sem sentido",
+          "quantos": "4 pátios, 1 distorcido",
+          "evidencia": "select y.name, count(s.id) filter (where s.status='OCCUPIED') ocup, count(s.id) tot, y.capacity_hint from yards y join yard_areas a on a.yard_id=y.id join yard_spots s on s.area_id=a.id where y.tenant_id='a79aedf2…' group by 1,4 → Pátio Sul: 1 | 6 | 1100"
+        },
+        {
+          "defeito": "O bucket CLOSED concentra 12 processos (9 RELEASED + 3 AUCTION_CLOSED) sem que nenhum tenha o registro do ato de encerramento (liberação ou liquidação). O gráfico 'Processos por fase' aponta encerramentos que não existem em nenhuma tabela de ato",
+          "quantos": "12 processos",
+          "evidencia": "select count(*) from impound_processes p where p.tenant_id='a79aedf2…' and p.status in ('RELEASED','AUCTION_CLOSED') and not exists (select 1 from impound_releases r where r.process_id=p.id) and not exists (select 1 from settlements s where s.process_id=p.id) → 12"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Não semear NADA diretamente para o painel — executar os planos das telas anteriores nesta ordem: perfis/tarifas → pátios/áreas/vagas → processos → vistorias/encargos/notificações → liberações → leilões/liquidação",
+          "quantos": "0 registros próprios",
+          "criterio": "Todo número aqui é agregação de yard_spots, impound_processes, impound_releases, process_notifications e settlement_allocations. Um número 'ajustado' aqui seria uma segunda fonte de verdade — o repositório do painel declara explicitamente que nunca é isso."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Garantir que os prazos vençam de fato, para o card 'Prazos vencidos' sair do zero",
+          "quantos": "10–14 marcos DUE vencidos",
+          "criterio": "Deixar em status='DUE' com due_at no passado os marcos de processos ATIVOS (entered_at NOT NULL, frozen_at NULL, status <> JUDICIAL_HOLD, perfil PUBLIC_AGREEMENT) — só esses entram no computeDeadlineAlerts. Distribuir o atraso: 4 vencidos há 1–5 dias, 5 há 10–30, 3 há mais de 60 (os críticos)."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Garantir a leitura de arrecadação no MÊS CORRENTE",
+          "quantos": "1 liquidação recente",
+          "criterio": "O card separa currentMonthTotal de grandTotal. Ao menos uma das 3 liquidações precisa ter created_at dentro do mês vigente — senão o card mostra R$ 0,00 no mês com total histórico positivo e parece bug."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Ocupação com dispersão legível entre pátios",
+          "quantos": "4 pátios",
+          "criterio": "Como no plano da tela de Pátios: uma barra na faixa verde (<60%), duas na âmbar (60–85%) e uma na vermelha (>85%). Sem isso o gráfico 'Ocupação por pátio' é uma fileira de barras iguais."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Fases equilibradas para o gráfico não ser uma coluna só",
+          "quantos": "~95 processos",
+          "criterio": "Alvo: RECEPTION ~8% · CUSTODY ~52% · RELEASE ~11% · AUCTION ~17% · CLOSED ~12%. É o formato de um pátio em regime — a maioria em guarda, uma minoria saindo, um funil de leilão pequeno e constante."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select (select round(100.0*count(*) filter (where status='OCCUPIED')/count(*)) from yard_spots where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') ocupacao_pct, (select count(*) from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') processos, (select count(*) from impound_releases where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status in ('IN_PROGRESS','AUTHORIZED')) fila_liberacao, (select count(*) from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status in ('RELEASE_IN_PROGRESS','RELEASED_FOR_REPAIR')) fila_pela_lista, (select count(*) from process_notifications where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='DUE' and due_at<=now()) prazos_vencidos, (select count(*) from impound_processes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='LOTTED') lotes_abertos, (select coalesce(sum(amount),0) from settlement_allocations where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') arrecadacao_total, (select coalesce(sum(a.amount),0) from settlement_allocations a join settlements s on s.id=a.settlement_id where a.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and s.created_at >= date_trunc('month', now())) arrecadacao_mes\" — PASSA quando: ocupacao_pct entre 45 e 80; fila_liberacao > 0 e explicável por fila_pela_lista (a diferença tem de ser só os RELEASED_FOR_REPAIR); prazos_vencidos entre 8 e 20; lotes_abertos > 0; arrecadacao_total > 0 e arrecadacao_mes > 0. Na tela: abrir /patios/painel e conferir que NENHUM dos 5 cards mostra '0' ou 'R$ 0,00', que 'Ocupação por pátio' tem barras de alturas diferentes, que 'Processos por fase' mostra as 5 fases e que a lista 'Prazos' tem linhas."
+    }
+  ]
+}

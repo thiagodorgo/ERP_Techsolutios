@@ -319,7 +319,7 @@ class EvidenceSyncReplayService {
           status: SyncStatus.failed,
           retryCount: action.retryCount + 1,
           lastErrorCode: 'NETWORK_ERROR',
-          lastSafeError: 'Falha de conexao. Tente novamente.',
+          lastSafeError: 'Falha de conexão. Tente novamente.',
         );
         await _queue.update(next);
         failed.add(next);
@@ -346,7 +346,7 @@ class EvidenceSyncReplayService {
           status: SyncStatus.failed,
           retryCount: action.retryCount + 1,
           lastErrorCode: 'MISSING_RESULT',
-          lastSafeError: 'Evidencia sem resposta do servidor.',
+          lastSafeError: 'Evidência sem resposta do servidor.',
         );
       } else if (result.isIdempotentSuccess) {
         next = action.copyWith(
@@ -362,14 +362,14 @@ class EvidenceSyncReplayService {
         next = action.copyWith(
           status: SyncStatus.conflict,
           lastErrorCode: result.errorCode ?? 'EVIDENCE_CONFLICT',
-          lastSafeError: 'Conflito de evidencia exige decisao manual.',
+          lastSafeError: 'Conflito de evidência exige decisão manual.',
         );
       } else {
         next = action.copyWith(
           status: SyncStatus.failed,
           retryCount: action.retryCount + 1,
           lastErrorCode: result.errorCode ?? 'EVIDENCE_REJECTED',
-          lastSafeError: 'Servidor recusou os metadados da evidencia.',
+          lastSafeError: 'Servidor recusou os metadados da evidência.',
         );
       }
 

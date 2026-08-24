@@ -31,18 +31,18 @@ import 'package:go_router/go_router.dart';
 
 void main() {
   group('B-106 provider nativo controlado', () {
-    test('1. retorna unavailable se servico esta desligado', () async {
+    test('1. retorna unavailable se serviço esta desligado', () async {
       final port = _FakeGeolocatorPort(serviceEnabled: false);
       final provider = _provider(port, accepted: true);
 
       final result = await provider.currentLocation();
 
       expect(result.isAvailable, isFalse);
-      expect(result.safeMessage, contains('Servico de localizacao desligado'));
+      expect(result.safeMessage, contains('Serviço de localização desligado'));
       expect(port.currentPositionCalls, 0);
     });
 
-    test('2. denied sem opt-in interno nao pede permissao nativa', () async {
+    test('2. denied sem opt-in interno não pede permissão nativa', () async {
       final port = _FakeGeolocatorPort(
         permission: geo.LocationPermission.denied,
       );
@@ -56,7 +56,7 @@ void main() {
       expect(port.currentPositionCalls, 0);
     });
 
-    test('3. pede permissao somente apos opt-in', () async {
+    test('3. pede permissão somente após opt-in', () async {
       final port = _FakeGeolocatorPort(
         permission: geo.LocationPermission.denied,
         requestResult: geo.LocationPermission.whileInUse,
@@ -78,23 +78,23 @@ void main() {
       final result = await _provider(port, accepted: true).currentLocation();
 
       expect(result.isAvailable, isFalse);
-      expect(result.safeMessage, contains('Permissao de localizacao negada'));
+      expect(result.safeMessage, contains('Permissão de localização negada'));
       expect(result.safeMessage, isNot(contains('-23.')));
     });
 
-    test('5. deniedForever nao entra em loop de request', () async {
+    test('5. deniedForever não entra em loop de request', () async {
       final port = _FakeGeolocatorPort(
         permission: geo.LocationPermission.deniedForever,
       );
       final result = await _provider(port, accepted: true).currentLocation();
 
       expect(result.isAvailable, isFalse);
-      expect(result.safeMessage, contains('configuracoes'));
+      expect(result.safeMessage, contains('configurações'));
       expect(port.requestPermissionCalls, 0);
       expect(port.currentPositionCalls, 0);
     });
 
-    test('6. whileInUse com servico ligado chama getCurrentPosition', () async {
+    test('6. whileInUse com serviço ligado chama getCurrentPosition', () async {
       final port = _FakeGeolocatorPort(
         permission: geo.LocationPermission.whileInUse,
       );
@@ -105,7 +105,7 @@ void main() {
       expect(port.lastSettings?.timeLimit, const Duration(seconds: 12));
     });
 
-    test('7. posicao real vira FieldLocationFix', () async {
+    test('7. posição real vira FieldLocationFix', () async {
       final result = await _provider(
         _FakeGeolocatorPort(position: _position(latitude: -22, longitude: -43)),
         accepted: true,
@@ -116,7 +116,7 @@ void main() {
       expect(result.fix!.recordedAt.isUtc, isTrue);
     });
 
-    test('8. heading, speed e accuracy invalidos sao sanitizados', () async {
+    test('8. heading, speed e accuracy invalidos são sanitizados', () async {
       final result = await _provider(
         _FakeGeolocatorPort(
           position: _position(accuracy: -1, heading: 361, speed: -0.2),
@@ -141,7 +141,7 @@ void main() {
       }
     });
 
-    testWidgets('10. UI mostra politica sem background tracking', (
+    testWidgets('10. UI mostra política sem background tracking', (
       tester,
     ) async {
       await tester.pumpWidget(_cardApp());
@@ -151,7 +151,7 @@ void main() {
       expect(find.text('Aceitar captura manual'), findsOneWidget);
     });
 
-    testWidgets('11. UI nao chama provider ao abrir tela', (tester) async {
+    testWidgets('11. UI não chama provider ao abrir tela', (tester) async {
       final provider = _CountingDeviceLocationProvider(_fix());
       await tester.pumpWidget(_cardApp(deviceProvider: provider));
       await tester.pumpAndSettle();
@@ -159,20 +159,20 @@ void main() {
       expect(provider.currentLocationCalls, 0);
     });
 
-    testWidgets('12. botao Enviar localizacao agora chama provider uma vez', (
+    testWidgets('12. botao Enviar localização agora chama provider uma vez', (
       tester,
     ) async {
       final provider = _CountingDeviceLocationProvider(_fix());
       await tester.pumpWidget(_cardApp(deviceProvider: provider));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Enviar localizacao agora'));
+      await tester.tap(find.text('Enviar localização agora'));
       await tester.pumpAndSettle();
 
       expect(provider.currentLocationCalls, 1);
     });
 
-    test('13. adapter nao referencia stream nem timer', () {
+    test('13. adapter não referência stream nem timer', () {
       final source = File(
         'lib/core/location/geolocator_device_location_provider.dart',
       ).readAsStringSync();
@@ -190,7 +190,7 @@ void main() {
       }
     });
 
-    test('14. AutoSyncCoordinator continua sem captura automatica', () async {
+    test('14. AutoSyncCoordinator continua sem captura automática', () async {
       final order = <String>[];
       final location = _CountingFieldLocationSyncService(order);
       final container = ProviderContainer(
@@ -253,12 +253,12 @@ void main() {
       );
     });
 
-    test('16. permission denied nao quebra fluxo de OS', () async {
+    test('16. permission denied não quebra fluxo de OS', () async {
       final service = FieldLocationSyncService(
         store: InMemoryFieldLocationStore(),
         api: _FakeFieldLocationApi(),
         deviceLocationProvider: _UnavailableDeviceLocationProvider(
-          'Permissao de localizacao negada.',
+          'Permissão de localização negada.',
         ),
       );
 
@@ -268,11 +268,11 @@ void main() {
       );
 
       expect(result.status, FieldLocationCaptureStatus.unavailable);
-      expect(result.safeMessage, contains('Permissao'));
+      expect(result.safeMessage, contains('Permissão'));
     });
 
     test(
-      '17. permissao permanente sugere configuracoes sem vazar dados',
+      '17. permissão permanente sugere configurações sem vazar dados',
       () async {
         final provider = _provider(
           _FakeGeolocatorPort(permission: geo.LocationPermission.deniedForever),
@@ -281,7 +281,7 @@ void main() {
 
         final result = await provider.currentLocation();
 
-        expect(result.safeMessage, contains('configuracoes'));
+        expect(result.safeMessage, contains('configurações'));
         expect(result.safeMessage, isNot(contains('-23.')));
         expect(result.safeMessage, isNot(contains('tenant')));
       },
@@ -289,7 +289,7 @@ void main() {
   });
 
   group('B-106 arquivos nativos e KPIs', () {
-    test('18. AndroidManifest nao contem permissoes background', () {
+    test('18. AndroidManifest não contem permissões background', () {
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',
       ).readAsStringSync();
@@ -316,7 +316,7 @@ void main() {
       );
     });
 
-    test('19. Info.plist nao contem Always/background location', () {
+    test('19. Info.plist não contem Always/background location', () {
       final plist = File('ios/Runner/Info.plist').readAsStringSync();
 
       expect(plist, contains('NSLocationWhenInUseUsageDescription'));
@@ -350,7 +350,7 @@ void main() {
       expect(plist, isNot(contains('<string>location</string>')));
     });
 
-    test('20. KPIs mantem B-106 no historico e latest pode avancar', () {
+    test('20. KPIs mantem B-106 no histórico e latest pode avançar', () {
       // D-KPI-DUPLA-REVOGADA (2026-08-12, decisao do dono): o painel de KPI do Flutter
       // (mobile/flutter_app/Kpis/) foi APAGADO — o painel e UM so, o da raiz. Este teste
       // afirmava os dois; agora afirma apenas o painel unico, que continua carregando a
@@ -659,7 +659,7 @@ class _CountingFieldLocationSyncService extends FieldLocationSyncService {
     required WorkOrder workOrder,
   }) async {
     captureCalls++;
-    return FieldLocationCaptureResult.unavailable('captura nao esperada');
+    return FieldLocationCaptureResult.unavailable('captura não esperada');
   }
 
   @override

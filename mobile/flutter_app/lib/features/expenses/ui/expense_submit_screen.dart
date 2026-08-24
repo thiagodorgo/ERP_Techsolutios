@@ -24,14 +24,14 @@ class ExpenseSubmitScreen extends ConsumerWidget {
 
         if (report == null) {
           return ErpScaffold(
-            title: 'Submissao',
+            title: 'Submissão',
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const ErrorState(
-                    message: 'Prestação de Contas nao encontrada.',
+                    message: 'Prestação de Contas não encontrada.',
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
@@ -58,7 +58,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
         final allGreen = checks.every((c) => c.ok);
 
         return ErpScaffold(
-          title: 'Resumo de submissao',
+          title: 'Resumo de submissão',
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -71,7 +71,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Checagem de submissao',
+                  'Checagem de submissão',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -123,9 +123,9 @@ class ExpenseSubmitScreen extends ConsumerWidget {
 
     return [
       _CheckItem(
-        label: 'Relatorio preenchido',
+        label: 'Relatório preenchido',
         ok: hasTitle,
-        detail: hasTitle ? null : 'Titulo obrigatorio',
+        detail: hasTitle ? null : 'Título obrigatório',
       ),
       _CheckItem(
         label: 'Itens adicionados',
@@ -135,14 +135,14 @@ class ExpenseSubmitScreen extends ConsumerWidget {
             : 'Adicione ao menos um item',
       ),
       _CheckItem(
-        label: 'Recibos obrigatorios',
+        label: 'Recibos obrigatórios',
         ok: receiptViolations.isEmpty,
         detail: receiptViolations.isEmpty
             ? 'Todos os recibos presentes'
             : '${receiptViolations.length} recibo(s) pendente(s)',
       ),
       _CheckItem(
-        label: 'Dentro da politica',
+        label: 'Dentro da política',
         ok: limitViolations.isEmpty,
         detail: limitViolations.isEmpty
             ? 'Nenhum limite excedido'
@@ -151,7 +151,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
       _CheckItem(
         label: 'Status valido para envio',
         ok: !alreadySubmitted,
-        detail: alreadySubmitted ? 'Relatorio ja submetido' : null,
+        detail: alreadySubmitted ? 'Relatório já submetido' : null,
       ),
     ];
   }

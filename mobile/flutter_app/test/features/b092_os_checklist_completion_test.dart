@@ -27,7 +27,7 @@ const _tenantOther = 'tenant-other';
 const _session = BootstrapSession(
   activeTenant: TenantContext(
     tenantId: _tenantDemo,
-    displayName: 'Tenant Demo',
+    displayName: 'Guinchos Paraná',
   ),
   enabledModules: [],
   permissions: PermissionSet({
@@ -188,7 +188,7 @@ void main() {
             isA<StateError>().having(
               (e) => e.message,
               'message',
-              'Conclua o checklist obrigatorio antes de finalizar a OS.',
+              'Conclua o checklist obrigatório antes de finalizar a OS.',
             ),
           ),
         );
@@ -213,7 +213,7 @@ void main() {
     );
 
     test(
-      't04 — evento de timeline apos conclusao tem tipo completed',
+      't04 — evento de timeline após conclusão tem tipo completed',
       () async {
         final wo = _makeOrder(checklistId: null);
         final repo = _makeWoRepo(_session, [wo]);
@@ -300,7 +300,7 @@ void main() {
   // ── Group 2: WorkOrderExecuteScreen widget tests ──────────────────────────
   group('WorkOrderExecuteScreen', () {
     testWidgets(
-      't07 — mostra mensagem de bloqueio quando checklist nao concluido',
+      't07 — mostra mensagem de bloqueio quando checklist não concluído',
       (tester) async {
         final wo = _makeOrder(checklistId: 'cl-seed-1');
         await tester.pumpWidget(_execApp(wo: wo));
@@ -311,13 +311,13 @@ void main() {
         // Scroll down to reveal the blocking card (below transitions list)
         await tester.scrollUntilVisible(
           find.textContaining(
-            'Conclua o checklist obrigatorio antes de finalizar a OS.',
+            'Conclua o checklist obrigatório antes de finalizar a OS.',
           ),
           200.0,
         );
         expect(
           find.textContaining(
-            'Conclua o checklist obrigatorio antes de finalizar a OS.',
+            'Conclua o checklist obrigatório antes de finalizar a OS.',
           ),
           findsOneWidget,
         );
@@ -345,7 +345,7 @@ void main() {
     );
 
     testWidgets(
-      't09 — botao Concluir OS habilitado quando nao ha checklist vinculado',
+      't09 — botao Concluir OS habilitado quando não ha checklist vinculado',
       (tester) async {
         final wo = _makeOrder(checklistId: null);
         await tester.pumpWidget(_execApp(wo: wo));
@@ -355,7 +355,7 @@ void main() {
 
         // No blocking message anywhere in the tree
         expect(
-          find.textContaining('checklist obrigatorio antes de finalizar'),
+          find.textContaining('checklist obrigatório antes de finalizar'),
           findsNothing,
         );
 
@@ -371,7 +371,7 @@ void main() {
     );
 
     testWidgets(
-      't10 — botao Concluir OS habilitado quando checklist concluido',
+      't10 — botao Concluir OS habilitado quando checklist concluído',
       (tester) async {
         final wo = _makeOrder(checklistId: 'cl-seed-1');
         final completedRun = _makeRun(
@@ -392,7 +392,7 @@ void main() {
 
         // No blocking message (checklist complete)
         expect(
-          find.textContaining('checklist obrigatorio antes de finalizar'),
+          find.textContaining('checklist obrigatório antes de finalizar'),
           findsNothing,
         );
 

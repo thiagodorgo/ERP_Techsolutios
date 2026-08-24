@@ -141,7 +141,7 @@ void main() {
     );
 
     test(
-      '4. o vocabulário do backend vira o tipo do app — nem tudo é "Observacao"',
+      '4. o vocabulário do backend vira o tipo do app — nem tudo é "Observação"',
       () async {
         final api = _apiCom(_respostaDoBackend());
 
@@ -154,7 +154,7 @@ void main() {
 
         // E o rótulo do card deixa de mentir.
         expect(eventos[0].eventType.label, 'Criada');
-        expect(eventos[1].eventType.label, 'Atribuida');
+        expect(eventos[1].eventType.label, 'Atribuída');
       },
     );
 

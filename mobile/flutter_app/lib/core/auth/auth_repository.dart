@@ -38,7 +38,7 @@ class LocalDevAuthRepository implements AuthRepository {
     String? tenantId,
   }) async {
     if (email.trim().isEmpty || password.isEmpty) {
-      throw const ApiNetworkError('Email e senha sao obrigatorios.');
+      throw const ApiNetworkError('Email e senha são obrigatórios.');
     }
 
     final session = _buildDevSession(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/permissions/permission_resolver.dart';
-import '../../core/sync/sync_models.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 
@@ -36,25 +35,14 @@ class ModulePlaceholderScreen extends ConsumerWidget {
           if (session != null) TenantContextBar(session: session),
           const SizedBox(height: 8),
           if (!hasPermission)
-            PermissionBlockedState(
+            const PermissionBlockedState(
               title: 'Acesso bloqueado',
               message:
-                  'Permissao $requiredPermission nao retornou no bootstrap. O backend continua sendo autoridade final.',
+                  'Seu perfil não tem acesso a esta área. Fale com a '
+                  'administração da sua organização.',
             )
           else
-            Column(
-              children: [
-                ApprovalDecisionCard(
-                  title: '$title em preparacao',
-                  message: message,
-                ),
-                const SyncStatusBanner(
-                  status: SyncStatus.local,
-                  message:
-                      'Placeholder operacional navegavel, sem chamada backend nova.',
-                ),
-              ],
-            ),
+            ApprovalDecisionCard(title: title, message: message),
         ],
       ),
     );

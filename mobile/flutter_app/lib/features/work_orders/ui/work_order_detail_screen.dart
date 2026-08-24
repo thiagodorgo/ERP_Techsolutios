@@ -42,6 +42,7 @@ class WorkOrderDetailScreen extends ConsumerWidget {
     if (!canRead) {
       return ErpScaffold(
         showAppBar: false,
+        showBottomNav: false,
         body: Column(
           children: [
             MobileScreenHeader(
@@ -50,8 +51,10 @@ class WorkOrderDetailScreen extends ConsumerWidget {
             ),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acesso nao autorizado',
-                message: 'work_orders:read necessario para visualizar esta OS.',
+                title: 'Acesso não autorizado',
+                message:
+                    'Seu perfil não permite abrir ordens de serviço. '
+                    'Fale com a administração da sua organização.',
               ),
             ),
           ],
@@ -67,6 +70,7 @@ class WorkOrderDetailScreen extends ConsumerWidget {
         if (wo == null) {
           return ErpScaffold(
             showAppBar: false,
+            showBottomNav: false,
             body: Column(
               children: [
                 MobileScreenHeader(
@@ -75,7 +79,7 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                 ),
                 const Expanded(
                   child: ErrorState(
-                    message: 'Ordem de servico nao encontrada.',
+                    message: 'Ordem de serviço não encontrada.',
                   ),
                 ),
               ],
@@ -98,6 +102,9 @@ class WorkOrderDetailScreen extends ConsumerWidget {
 
         return ErpScaffold(
           showAppBar: false,
+          // Tela de fluxo: barra fixa de ação no lugar da navegação inferior
+          // (os-detalhe.png).
+          stickyBar: _CheckinStickyBar(wo: wo, canStatus: canStatus),
           body: Column(
             children: [
               MobileScreenHeader(
@@ -117,13 +124,13 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                       SyncStatusBanner(
                         status: SyncStatus.pending,
                         message:
-                            'Esta OS possui alteracoes locais aguardando sync.',
+                            'Esta OS possui alterações locais aguardando sync.',
                       ),
                     if (wo.syncStatus == SyncStatus.conflict) ...[
                       SyncStatusBanner(
                         status: SyncStatus.conflict,
                         message:
-                            'Conflito de sincronizacao. Seus dados locais foram preservados.',
+                            'Conflito de sincronização. Seus dados locais foram preservados.',
                       ),
                       const SizedBox(height: 8),
                       WorkOrderConflictResolutionPanel(
@@ -213,7 +220,7 @@ class _WorkOrderConflictResolutionPanelState
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Resolucao manual de conflito',
+                        'Resolução manual de conflito',
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                     ),
@@ -260,7 +267,7 @@ class _WorkOrderConflictResolutionPanelState
                           WorkOrderConflictResolution.manualReview,
                         ),
                   icon: const Icon(Icons.fact_check_outlined),
-                  label: const Text('Marcar para revisao manual'),
+                  label: const Text('Marcar para revisão manual'),
                 ),
               ],
             ),
@@ -304,7 +311,7 @@ class _WorkOrderConflictResolutionPanelState
       await widget.repository.refreshLocalState();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Decisao de conflito registrada.')),
+        const SnackBar(content: Text('Decisão de conflito registrada.')),
       );
     } on StateError catch (error) {
       if (!mounted) return;
@@ -331,7 +338,7 @@ class _WorkOrderStepper extends StatelessWidget {
     'Em rota',
     'No local',
     'Em exec.',
-    'Concluida',
+    'Concluída',
   ];
 
   int get _current => switch (status) {
@@ -519,7 +526,7 @@ class _CustomerCard extends StatelessWidget {
             ),
           ListTile(
             leading: const Icon(Icons.location_on_outlined),
-            title: const Text('Endereco de atendimento'),
+            title: const Text('Endereço de atendimento'),
             subtitle: Text(wo.serviceAddress),
             trailing: wo.latitude != null
                 ? const Icon(Icons.map_outlined, color: Colors.blue)
@@ -537,15 +544,28 @@ class _AssignmentCard extends StatelessWidget {
   final WorkOrder wo;
   final BootstrapSession session;
 
+  /// Nunca exibe o identificador interno do usuário (era um UUID cru na tela).
+  /// Mostra o nome de quem atende; quando é outra pessoa, uma descrição de
+  /// negócio, porque o app de campo não conhece o cadastro dos colegas.
+  String get _assignedLabel {
+    final assigned = wo.assignedUserId;
+    if (assigned == null || assigned.isEmpty) return 'Aguardando atribuição';
+    if (assigned == session.user.userId) {
+      final local = session.user.email.split('@').first.trim();
+      return local.isEmpty ? 'Você' : local;
+    }
+    return 'Outro técnico da equipe';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.engineering_outlined),
-        title: const Text('Tecnico atribuido'),
-        subtitle: Text(wo.assignedUserId ?? 'Nao atribuido'),
+        title: const Text('Técnico responsável'),
+        subtitle: Text(_assignedLabel),
         trailing: wo.assignedUserId == session.user.userId
-            ? const OperationalStatusChip(label: 'Voce', status: 'success')
+            ? const OperationalStatusChip(label: 'Você', status: 'success')
             : null,
       ),
     );
@@ -571,10 +591,10 @@ class _ChecklistCard extends ConsumerWidget {
           (r) => r.status == MobileChecklistRunStatus.inProgress,
         );
         final statusLabel = isComplete
-            ? 'Concluido'
+            ? 'Concluído'
             : isStarted
             ? 'Em andamento'
-            : 'Nao iniciado';
+            : 'Não iniciado';
         final statusTone = isComplete
             ? 'success'
             : isStarted
@@ -592,8 +612,16 @@ class _ChecklistCard extends ConsumerWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.checklist_outlined),
-                title: const Text('Checklist vinculado'),
-                subtitle: Text(wo.checklistId!),
+                title: const Text('Checklist do atendimento'),
+                // Antes exibia o ID cru do checklist; agora, o estado da
+                // vistoria em linguagem de negócio.
+                subtitle: Text(
+                  isComplete
+                      ? 'Vistoria concluída'
+                      : isStarted
+                      ? 'Vistoria em andamento'
+                      : 'Vistoria pendente',
+                ),
                 trailing: OperationalStatusChip(
                   label: statusLabel,
                   status: statusTone,
@@ -658,10 +686,10 @@ class _TimelineCardState extends State<_TimelineCard> {
             children: [
               ListTile(
                 leading: const Icon(Icons.timeline_outlined),
-                title: const Text('Historico'),
+                title: const Text('Histórico'),
                 subtitle: Text(
                   loading
-                      ? 'Carregando historico...'
+                      ? 'Carregando histórico...'
                       : '${events.length} evento(s)',
                 ),
               ),
@@ -715,6 +743,102 @@ class _CheckinActions extends ConsumerStatefulWidget {
 }
 
 class _CheckinActionsState extends ConsumerState<_CheckinActions> {
+  WorkOrder get _wo => widget.wo;
+
+  Future<void> _openBlockSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _BlockSheet(
+        onSubmit: (reason, note) async {
+          final repo = ref.read(workOrderRepositoryProvider);
+          await repo.reportUnableToStart(
+            localId: _wo.localId,
+            reason: reason,
+            note: note,
+          );
+          if (!mounted) return;
+          context.go('/work-orders');
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wo = _wo;
+    final isFinal = wo.status.isFinal;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // --- "Não foi possível iniciar" (só em rota) ---
+        if (!isFinal &&
+            widget.canStatus &&
+            wo.status == WorkOrderStatus.enRoute)
+          TextButton.icon(
+            key: const Key('checkin-block'),
+            onPressed: _openBlockSheet,
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Não foi possível iniciar'),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        // --- Final state ---
+        if (isFinal)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.check_circle_outline),
+              title: Text('OS ${wo.status.label.toLowerCase()}'),
+              subtitle: const Text('Nenhuma ação disponível.'),
+            ),
+          ),
+        // --- Approval ---
+        if (!isFinal && widget.canApproval) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () =>
+                context.go('/work-orders/${wo.localId}/approval-request'),
+            icon: const Icon(Icons.approval_outlined),
+            label: const Text('Solicitar aprovação'),
+          ),
+        ],
+        const SizedBox(height: 8),
+        // --- Checklist ---
+        OutlinedButton.icon(
+          onPressed: () =>
+              context.push('/work-orders/${wo.localId}/checklists'),
+          icon: const Icon(Icons.checklist_outlined),
+          label: const Text('Checklist'),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Barra fixa de ação (os-detalhe.png): "Mapa" + próximo passo do atendimento.
+//
+// No protótipo a tela de detalhe NÃO tem navegação inferior — ela é uma tela de
+// fluxo. O rodapé carrega a ação seguinte, sempre visível, sem depender de
+// rolagem.
+// ---------------------------------------------------------------------------
+
+class _CheckinStickyBar extends ConsumerStatefulWidget {
+  const _CheckinStickyBar({required this.wo, required this.canStatus});
+
+  final WorkOrder wo;
+  final bool canStatus;
+
+  @override
+  ConsumerState<_CheckinStickyBar> createState() => _CheckinStickyBarState();
+}
+
+class _CheckinStickyBarState extends ConsumerState<_CheckinStickyBar> {
   bool _loading = false;
 
   WorkOrder get _wo => widget.wo;
@@ -751,140 +875,95 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
     }
   }
 
-  Future<void> _openBlockSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _BlockSheet(
-        onSubmit: (reason, note) async {
-          final repo = ref.read(workOrderRepositoryProvider);
-          await repo.reportUnableToStart(
-            localId: _wo.localId,
-            reason: reason,
-            note: note,
-          );
-          if (!mounted) return;
-          context.go('/work-orders');
-        },
-      ),
-    );
+  Widget get _spinner => const SizedBox(
+    width: 16,
+    height: 16,
+    child: CircularProgressIndicator(strokeWidth: 2),
+  );
+
+  Widget? _primaryAction(BuildContext context) {
+    final wo = _wo;
+    if (wo.status.isFinal || !widget.canStatus) return null;
+
+    if (wo.status == WorkOrderStatus.scheduled ||
+        wo.status == WorkOrderStatus.dispatched) {
+      return FilledButton.icon(
+        key: const Key('checkin-start-route'),
+        onPressed: _loading ? null : () => _doStatus(WorkOrderStatus.enRoute),
+        icon: _loading ? _spinner : const Icon(Icons.directions_outlined),
+        label: const Text('Iniciar rota'),
+      );
+    }
+    if (wo.status == WorkOrderStatus.enRoute) {
+      return FilledButton.icon(
+        key: const Key('checkin-arrived'),
+        onPressed: _loading ? null : _openArrivalDialog,
+        icon: _loading ? _spinner : const Icon(Icons.location_on_outlined),
+        label: const Text('Cheguei ao local'),
+      );
+    }
+    if (wo.status == WorkOrderStatus.arrived) {
+      return FilledButton.icon(
+        key: const Key('checkin-start-service'),
+        onPressed: _loading
+            ? null
+            : () async {
+                await _doStatus(WorkOrderStatus.inService);
+                if (!context.mounted) return;
+                context.go('/work-orders/${wo.localId}/execute');
+              },
+        icon: _loading ? _spinner : const Icon(Icons.play_arrow_outlined),
+        label: const Text('Iniciar atendimento'),
+      );
+    }
+    if (wo.status == WorkOrderStatus.inService ||
+        wo.status == WorkOrderStatus.paused) {
+      return FilledButton.icon(
+        key: const Key('checkin-continue'),
+        onPressed: () => context.go('/work-orders/${wo.localId}/execute'),
+        icon: const Icon(Icons.play_arrow_outlined),
+        label: const Text('Continuar atendimento'),
+      );
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final wo = _wo;
-    final isFinal = wo.status.isFinal;
+    final primary = _primaryAction(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return MobileStickyBar(
       children: [
-        // --- Check-in buttons (status-aware) ---
-        if (!isFinal && widget.canStatus) ...[
-          if (wo.status == WorkOrderStatus.scheduled ||
-              wo.status == WorkOrderStatus.dispatched)
-            FilledButton.icon(
-              key: const Key('checkin-start-route'),
-              onPressed: _loading
-                  ? null
-                  : () => _doStatus(WorkOrderStatus.enRoute),
-              icon: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.directions_outlined),
-              label: const Text('Iniciar rota'),
-            ),
-          if (wo.status == WorkOrderStatus.enRoute) ...[
-            FilledButton.icon(
-              key: const Key('checkin-arrived'),
-              onPressed: _loading ? null : _openArrivalDialog,
-              icon: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.location_on_outlined),
-              label: const Text('Cheguei ao local'),
-            ),
-            const SizedBox(height: 6),
-            TextButton.icon(
-              key: const Key('checkin-block'),
-              onPressed: _loading ? null : _openBlockSheet,
-              icon: const Icon(Icons.cancel_outlined),
-              label: const Text('Nao foi possivel iniciar'),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ],
-          if (wo.status == WorkOrderStatus.arrived)
-            FilledButton.icon(
-              key: const Key('checkin-start-service'),
-              onPressed: _loading
-                  ? null
-                  : () async {
-                      await _doStatus(WorkOrderStatus.inService);
-                      if (!context.mounted) return;
-                      context.go('/work-orders/${wo.localId}/execute');
-                    },
-              icon: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.play_arrow_outlined),
-              label: const Text('Iniciar atendimento'),
-            ),
-          if (wo.status == WorkOrderStatus.inService ||
-              wo.status == WorkOrderStatus.paused)
-            FilledButton.icon(
-              key: const Key('checkin-continue'),
-              onPressed: () => context.go('/work-orders/${wo.localId}/execute'),
-              icon: const Icon(Icons.play_arrow_outlined),
-              label: const Text('Continuar atendimento'),
-            ),
-        ],
-        // --- Final state ---
-        if (isFinal)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.check_circle_outline),
-              title: Text('OS ${wo.status.label.toLowerCase()}'),
-              subtitle: const Text('Nenhuma acao disponivel.'),
-            ),
-          ),
-        // --- Approval ---
-        if (!isFinal && widget.canApproval) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
+        // O tema define `minimumSize: Size.fromHeight(44)` — largura MÍNIMA
+        // infinita. Num Row, o filho não-flexível recebe largura ilimitada e
+        // essa mínima vira `w=Infinity`, que estoura o layout e deixa a tela em
+        // branco. Largura fixa + mínima finita mantêm o botão compacto ao lado
+        // da ação principal (os-detalhe.png).
+        SizedBox(
+          width: 116,
+          child: OutlinedButton.icon(
+            key: const Key('work-order-map-action'),
             onPressed: () =>
-                context.go('/work-orders/${wo.localId}/approval-request'),
-            icon: const Icon(Icons.approval_outlined),
-            label: const Text('Solicitar aprovacao'),
+                context.push('/field-map?workOrderId=${wo.localId}'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            icon: const Icon(Icons.map_outlined, size: 18),
+            label: const Text('Mapa'),
           ),
-        ],
-        const SizedBox(height: 8),
-        // --- Checklist ---
-        OutlinedButton.icon(
-          onPressed: () =>
-              context.push('/work-orders/${wo.localId}/checklists'),
-          icon: const Icon(Icons.checklist_outlined),
-          label: const Text('Checklist'),
         ),
-        const SizedBox(height: 4),
-        // --- Map ---
-        OutlinedButton.icon(
-          key: const Key('work-order-map-action'),
-          onPressed: () => context.push('/field-map?workOrderId=${wo.localId}'),
-          icon: const Icon(Icons.map_outlined),
-          label: const Text('Mapa'),
+        const SizedBox(width: 10),
+        Expanded(
+          child:
+              primary ??
+              OutlinedButton.icon(
+                onPressed: () =>
+                    context.push('/work-orders/${wo.localId}/checklists'),
+                icon: const Icon(Icons.checklist_outlined, size: 18),
+                label: const Text('Ver checklist'),
+              ),
         ),
       ],
     );
@@ -926,10 +1005,10 @@ class _PlateDialogState extends State<_PlateDialog> {
   bool get _isGuincho => widget.wo.serviceType == WorkOrderServiceType.tow;
 
   String get _title =>
-      _isGuincho ? 'Confirmar veiculo' : 'Confirmar equipamento';
+      _isGuincho ? 'Confirmar veículo' : 'Confirmar equipamento';
   String get _subtitle => _isGuincho
-      ? 'Informe os 2 ultimos digitos da placa'
-      : 'Informe os 2 ultimos digitos do nr de serie';
+      ? 'Informe os 2 últimos dígitos da placa'
+      : 'Informe os 2 últimos dígitos do número de série';
 
   void _confirm() {
     final input = _ctrl.text.trim().toUpperCase();
@@ -1005,7 +1084,7 @@ class _PlateDialogState extends State<_PlateDialog> {
                 Expanded(
                   child: Text(
                     widget.gpsOk
-                        ? 'Localizacao confirmada · voce esta no local'
+                        ? 'Localização confirmada · você está no local'
                         : 'Ative o GPS para confirmar que chegou ao local',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: widget.gpsOk ? Colors.green.shade700 : cs.error,
@@ -1080,8 +1159,8 @@ class _PlateDialogState extends State<_PlateDialog> {
                 Expanded(
                   child: Text(
                     _isGuincho
-                        ? 'Digitos nao conferem com a placa do veiculo'
-                        : 'Digitos nao conferem com o nr de serie',
+                        ? 'Dígitos não conferem com a placa do veículo'
+                        : 'Dígitos não conferem com o número de série',
                     style: Theme.of(
                       context,
                     ).textTheme.labelSmall?.copyWith(color: cs.error),
@@ -1124,9 +1203,9 @@ class _BlockSheet extends StatefulWidget {
 class _BlockSheetState extends State<_BlockSheet> {
   static const _reasons = [
     'Cliente ausente no local',
-    'Endereco nao localizado',
-    'Veiculo inacessivel / impedimento',
-    'Condicoes de seguranca',
+    'Endereço não localizado',
+    'Veículo inacessível / impedimento',
+    'Condições de segurança',
     'Outro motivo',
   ];
 
@@ -1180,7 +1259,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Nao foi possivel iniciar',
+                      'Não foi possível iniciar',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     Text(
@@ -1278,7 +1357,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                     onChanged: (v) => setState(() => _note = v),
                     decoration: InputDecoration(
                       hintText:
-                          'Descreva o que impediu o inicio do atendimento...',
+                          'Descreva o que impediu o início do atendimento...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1329,7 +1408,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Enviar nao conclusao'),
+                        : const Text('Enviar justificativa'),
                   ),
                 ),
               ],

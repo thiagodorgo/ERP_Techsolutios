@@ -56,7 +56,7 @@ enum MobileChecklistRunStatus {
 
   String get label => switch (this) {
     MobileChecklistRunStatus.inProgress => 'Em andamento',
-    MobileChecklistRunStatus.completed => 'Concluido',
+    MobileChecklistRunStatus.completed => 'Concluído',
     MobileChecklistRunStatus.incomplete => 'Incompleto',
   };
 }
@@ -224,7 +224,7 @@ class MobileChecklistAnswer {
       observationText != null;
 
   String get displayValue {
-    if (boolValue != null) return boolValue! ? 'Sim' : 'Nao';
+    if (boolValue != null) return boolValue! ? 'Sim' : 'Não';
     if (choiceValue != null) return choiceValue!;
     if (multiChoiceValues != null) return multiChoiceValues!.join(', ');
     if (numberValue != null) return numberValue!.toString();

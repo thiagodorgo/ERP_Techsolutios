@@ -13,7 +13,7 @@ class DeviceLocationStatus {
   const DeviceLocationStatus({
     required this.consentAccepted,
     this.serviceEnabled,
-    this.permissionLabel = 'Nao verificada',
+    this.permissionLabel = 'Não verificada',
     this.safeMessage,
     this.settingsAvailable = false,
   });
@@ -41,8 +41,8 @@ class DeviceLocationResult {
       isAvailable: false,
       safeMessage:
           safeMessage ??
-          'Localizacao do dispositivo indisponivel nesta versao. '
-              'Mapa e sincronizacao preparados para o adapter GPS nativo pendente.',
+          'Localização do dispositivo indisponível nesta versão. '
+              'Mapa e sincronização preparados para o adapter GPS nativo pendente.',
     );
   }
 

@@ -180,37 +180,37 @@ class BootstrapSession extends Equatable {
 const devBootstrapSession = BootstrapSession(
   activeTenant: TenantContext(
     tenantId: 'tenant-demo',
-    displayName: 'Tenant Demo',
+    displayName: 'Guinchos Paraná',
   ),
   availableTenants: [
-    TenantContext(tenantId: 'tenant-demo', displayName: 'Tenant Demo'),
+    TenantContext(tenantId: 'tenant-demo', displayName: 'Guinchos Paraná'),
     TenantContext(
       tenantId: 'tenant-field',
-      displayName: 'Tenant Field Services',
+      displayName: 'Resgate Sul Assistência',
     ),
   ],
   enabledModules: [
     EnabledModule(
       id: 'expense_management',
-      title: 'Gestao de Despesas',
+      title: 'Gestão de Despesas',
       route: '/expenses',
       requiredPermissions: ['expense_report:read', 'expense_report:create'],
     ),
     EnabledModule(
       id: 'field_operations',
-      title: 'Operacoes de Campo',
+      title: 'Operações de Campo',
       route: '/work-orders',
       requiredPermissions: ['field_location:send'],
     ),
     EnabledModule(
       id: 'inventory',
-      title: 'Estoque do Tecnico',
+      title: 'Estoque do Técnico',
       route: '/inventory',
       requiredPermissions: ['inventory:read'],
     ),
     EnabledModule(
       id: 'approvals',
-      title: 'Aprovacoes',
+      title: 'Aprovações',
       route: '/approvals',
       requiredPermissions: ['workflow:request'],
     ),
@@ -233,13 +233,13 @@ const devBootstrapSession = BootstrapSession(
   expenseCategories: [
     ExpenseCategorySnapshot(
       id: 'fuel',
-      label: 'Combustivel',
+      label: 'Combustível',
       requiresReceipt: true,
       limit: 150,
     ),
     ExpenseCategorySnapshot(
       id: 'meal',
-      label: 'Alimentacao',
+      label: 'Alimentação',
       requiresReceipt: false,
       limit: 80,
     ),

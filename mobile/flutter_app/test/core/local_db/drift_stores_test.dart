@@ -125,7 +125,7 @@ void main() {
     });
 
     test(
-      '4. isolamento de tenant: tenant-b nao ve dados do tenant-a',
+      '4. isolamento de tenant: tenant-b não ve dados do tenant-a',
       () async {
         final reportA = _report(tenantId: 'tenant-a', localId: 'PC-a');
         final reportB = _report(tenantId: 'tenant-b', localId: 'PC-b');

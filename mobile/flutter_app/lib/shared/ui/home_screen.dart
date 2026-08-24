@@ -150,7 +150,7 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
           MobileNavyHeader(
             greeting: '${_greetingFor(today)}!',
             subtitle:
-                '${session.user.tenantRole} · ${session.activeTenant.displayName}',
+                '${tenantRoleLabel(session.user.tenantRole)} · ${session.activeTenant.displayName}',
             actions: [
               MobileHeaderIconButton(
                 icon: Icons.monitor_heart_outlined,
@@ -404,7 +404,7 @@ class _UserCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${session.user.tenantRole} · ${session.activeTenant.displayName}',
+                      '${tenantRoleLabel(session.user.tenantRole)} · ${session.activeTenant.displayName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

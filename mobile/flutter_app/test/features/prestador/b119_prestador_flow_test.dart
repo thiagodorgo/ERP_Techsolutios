@@ -99,7 +99,7 @@ void main() {
       expect(result.first.syncStatus, SyncStatus.pending);
     });
 
-    test('2. soma quantidade quando sku ja existe', () {
+    test('2. soma quantidade quando sku já existe', () {
       final current = [
         WorkOrderMaterial(
           localId: 'm1',
@@ -163,7 +163,7 @@ void main() {
       expect(add.payload.containsKey('token'), isFalse);
     });
 
-    test('5. materiais persistem no Drift apos recriar store', () async {
+    test('5. materiais persistem no Drift após recriar store', () async {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
 
@@ -218,7 +218,7 @@ void main() {
         find.byKey(const Key('stock-confirm')),
       );
       expect(btnAfter.onPressed, isNotNull);
-      expect(find.textContaining('Adicionar ao servico'), findsOneWidget);
+      expect(find.textContaining('Adicionar ao serviço'), findsOneWidget);
     });
 
     testWidgets('8. stepper incrementa quantidade selecionada', (t) async {
@@ -239,7 +239,7 @@ void main() {
 
   // ── Group 4: PrestadorServiceScreen ──────────────────────────────────────
   group('B-119 PrestadorServiceScreen', () {
-    testWidgets('9. diagnostico curto mantem Avancar desabilitado', (t) async {
+    testWidgets('9. diagnóstico curto mantem Avançar desabilitado', (t) async {
       final repo = _repo();
       await t.pumpWidget(
         _wrap(const PrestadorServiceScreen(workOrderId: _wo), repo),
@@ -255,7 +255,7 @@ void main() {
       expect(btn.onPressed, isNull);
     });
 
-    testWidgets('10. diagnostico valido avanca para execucao com materiais', (
+    testWidgets('10. diagnóstico valido avanca para execução com materiais', (
       t,
     ) async {
       final store = InMemoryPrestadorLocalStore([
@@ -278,14 +278,14 @@ void main() {
 
       await t.enterText(
         find.byKey(const Key('diagnosis-text')),
-        'Equipamento com falha na fonte de alimentacao',
+        'Equipamento com falha na fonte de alimentação',
       );
       await t.pumpAndSettle();
 
       await t.tap(find.byKey(const Key('diagnosis-next')));
       await t.pumpAndSettle();
 
-      expect(find.text('Execucao do servico'), findsOneWidget);
+      expect(find.text('Execução do serviço'), findsOneWidget);
       expect(find.byKey(const Key('material-ELE-0031')), findsOneWidget);
       expect(find.byKey(const Key('open-technician-stock')), findsOneWidget);
     });

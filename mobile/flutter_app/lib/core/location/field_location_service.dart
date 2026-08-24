@@ -81,7 +81,7 @@ class FieldLocationSyncService {
     if (!reading.isAvailable || reading.fix == null) {
       return FieldLocationCaptureResult.unavailable(
         reading.safeMessage ??
-            'Localizacao do dispositivo indisponivel nesta versao.',
+            'Localização do dispositivo indisponível nesta versão.',
       );
     }
 
@@ -157,7 +157,7 @@ class FieldLocationSyncService {
   if (error is ApiNetworkError || error is ApiTimeoutError) {
     return (
       code: 'NETWORK_ERROR',
-      safeMessage: 'Falha de conexao. Tente novamente.',
+      safeMessage: 'Falha de conexão. Tente novamente.',
     );
   }
   if (error is ApiServerError &&
@@ -170,7 +170,7 @@ class FieldLocationSyncService {
   }
   return (
     code: 'SYNC_ERROR',
-    safeMessage: 'Nao foi possivel sincronizar a localizacao.',
+    safeMessage: 'Não foi possível sincronizar a localização.',
   );
 }
 

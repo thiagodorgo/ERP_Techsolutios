@@ -166,7 +166,7 @@ class WorkOrderRepository extends ChangeNotifier {
     } catch (e) {
       _lastPullError = e is ApiError
           ? e.safeMessage
-          : 'Nao foi possivel atualizar suas ordens agora.';
+          : 'Não foi possível atualizar suas ordens agora.';
       _loaded = true;
       return _orders.isEmpty
           ? WorkOrderPullOutcome.error
@@ -350,7 +350,7 @@ class WorkOrderRepository extends ChangeNotifier {
 
     if (wo.checklistId != null && !checklistComplete) {
       throw StateError(
-        'Conclua o checklist obrigatorio antes de finalizar a OS.',
+        'Conclua o checklist obrigatório antes de finalizar a OS.',
       );
     }
 
@@ -740,51 +740,114 @@ String _messageForStatus(WorkOrderStatus status) {
   };
 }
 
+/// Carteira local de retaguarda (só aparece quando NÃO há backend remoto).
+///
+/// Regra desta demonstração: **o que o console fala, o app tem que entender.**
+/// Estes registros ESPELHAM o que a API serve hoje para o tenant de demonstração
+/// (medido em 2026-08-23 em `GET /api/v1/work-orders`): mesmos códigos, títulos,
+/// clientes e situações. Assim o modo offline conta a MESMA história que o app
+/// conectado — e não vira um segundo aplicativo.
+///
+/// Antes daqui saíam OS de manutenção predial ("Instalação de ar-condicionado",
+/// "Cliente Demo Ltda"), narrativa que não existe nem no console nem no
+/// protótipo (P-MOBILE-OS-SEEDS).
+///
+/// A agenda é ancorada em `DateTime.now()` para o "Resumo de hoje" da Home
+/// refletir a carteira do dia.
 List<WorkOrder> _seedOrders(BootstrapSession session) {
   final tenantId = session.activeTenant.tenantId;
-  final now = DateTime.utc(2026, 6, 11);
+  final today = DateTime.now();
+  DateTime at(int hour, int minute) =>
+      DateTime(today.year, today.month, today.day, hour, minute);
+
   return [
     WorkOrder(
       localId: 'wo-local-1',
       tenantId: tenantId,
-      code: 'OS-1042',
-      title: 'Instalacao de ar-condicionado',
-      customerName: 'Cliente Demo Ltda',
-      serviceAddress: 'Av. Paulista, 1000 - Sao Paulo',
-      status: WorkOrderStatus.inService,
-      priority: WorkOrderPriority.high,
+      code: 'OS-000017',
+      title: 'Remoção de veículo — colisão na BR-277',
+      customerName: 'Seguradora Horizonte',
+      serviceAddress: 'BR-277, km 82 — pista sentido litoral',
+      status: WorkOrderStatus.enRoute,
+      priority: WorkOrderPriority.critical,
+      serviceType: WorkOrderServiceType.tow,
       assignedUserId: session.user.userId,
-      scheduledAt: now,
-      startedAt: now,
+      scheduledAt: at(21, 10),
+      startedAt: at(20, 40),
       syncStatus: SyncStatus.synced,
-      createdAt: now,
-      checklistId: 'cl-seed-1',
+      createdAt: at(20, 30),
+      checklistId: 'cl-seed-2',
     ),
     WorkOrder(
       localId: 'wo-local-2',
       tenantId: tenantId,
-      code: 'OS-1043',
-      title: 'Manutencao preventiva de bomba hidraulica',
-      customerName: 'Industria Exemplo SA',
-      serviceAddress: 'Rua das Industrias, 500 - Santo Andre',
-      status: WorkOrderStatus.scheduled,
-      priority: WorkOrderPriority.normal,
-      scheduledAt: now.add(const Duration(days: 1)),
+      code: 'OS-000016',
+      title: 'Guincho leve — pane elétrica',
+      customerName: 'Transportadora Aurora Ltda',
+      serviceAddress: 'Av. das Torres, 1400 — Curitiba PR',
+      status: WorkOrderStatus.arrived,
+      priority: WorkOrderPriority.high,
+      serviceType: WorkOrderServiceType.tow,
+      assignedUserId: session.user.userId,
+      scheduledAt: at(12, 10),
+      startedAt: at(11, 45),
+      arrivedAt: at(12, 20),
       syncStatus: SyncStatus.synced,
-      createdAt: now,
+      createdAt: at(11, 30),
+      checklistId: 'cl-seed-2',
     ),
     WorkOrder(
       localId: 'wo-local-3',
       tenantId: tenantId,
-      code: 'OS-1044',
-      title: 'Reparo de painel eletrico',
-      customerName: 'Condominio Torres Verde',
-      serviceAddress: 'Rua Verde, 200 - Campinas',
-      status: WorkOrderStatus.pendingApproval,
-      priority: WorkOrderPriority.critical,
+      code: 'OS-000015',
+      title: 'Recolhimento ao pátio — determinação DETRAN',
+      customerName: 'DETRAN/PR',
+      serviceAddress: 'Rua Marechal Deodoro, 320 — Centro, Curitiba PR',
+      status: WorkOrderStatus.inService,
+      priority: WorkOrderPriority.high,
+      serviceType: WorkOrderServiceType.tow,
       assignedUserId: session.user.userId,
+      scheduledAt: at(3, 10),
+      startedAt: at(3, 25),
+      arrivedAt: at(3, 55),
       syncStatus: SyncStatus.pending,
-      createdAt: now,
+      createdAt: at(2, 40),
+      checklistId: 'cl-seed-2',
+    ),
+    WorkOrder(
+      localId: 'wo-local-4',
+      tenantId: tenantId,
+      code: 'OS-000014',
+      title: 'Transporte de maquinário — retroescavadeira',
+      customerName: 'Construtora Meridiano S.A.',
+      serviceAddress: 'Rodovia BR-116, km 110 — Fazenda Rio Grande PR',
+      status: WorkOrderStatus.dispatched,
+      priority: WorkOrderPriority.normal,
+      serviceType: WorkOrderServiceType.tow,
+      assignedUserId: session.user.userId,
+      scheduledAt: at(18, 10),
+      syncStatus: SyncStatus.synced,
+      createdAt: at(9, 15),
+      checklistId: 'cl-seed-2',
+    ),
+    WorkOrder(
+      localId: 'wo-local-5',
+      tenantId: tenantId,
+      code: 'OS-000013',
+      title: 'Remoção de veículo — estacionamento irregular',
+      customerName: 'Guarda Municipal de Curitiba',
+      serviceAddress: 'Praça Osório, 90 — Centro, Curitiba PR',
+      status: WorkOrderStatus.completed,
+      priority: WorkOrderPriority.normal,
+      serviceType: WorkOrderServiceType.tow,
+      assignedUserId: session.user.userId,
+      scheduledAt: at(9, 10),
+      startedAt: at(9, 18),
+      arrivedAt: at(9, 44),
+      completedAt: at(10, 36),
+      syncStatus: SyncStatus.synced,
+      createdAt: at(8, 5),
+      checklistId: 'cl-seed-2',
     ),
   ];
 }

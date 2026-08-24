@@ -59,7 +59,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
         context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$_selCount item(ns) adicionado(s) ao servico.'),
+            content: Text('$_selCount item(ns) adicionado(s) ao serviço.'),
           ),
         );
       }
@@ -76,7 +76,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const ErpScaffold(
-            title: 'Estoque do tecnico',
+            title: 'Estoque do técnico',
             body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
@@ -93,7 +93,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
                   .toList();
 
         return ErpScaffold(
-          title: 'Estoque do tecnico',
+          title: 'Estoque do técnico',
           body: Column(
             children: [
               Padding(
@@ -102,7 +102,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
                   key: const Key('stock-search'),
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: 'Buscar peca ou SKU...',
+                    hintText: 'Buscar peça ou SKU...',
                     prefixIcon: const Icon(Icons.search_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -115,7 +115,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
                 child: filtered.isEmpty
                     ? const EmptyState(
                         icon: Icons.inventory_2_outlined,
-                        title: 'Nenhuma peca encontrada',
+                        title: 'Nenhuma peça encontrada',
                         message: 'Ajuste a busca para localizar itens.',
                       )
                     : ListView.builder(
@@ -153,8 +153,8 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
                           : () => _confirm(all),
                       child: Text(
                         _selCount > 0
-                            ? 'Adicionar ao servico · $_selCount ${_selCount == 1 ? 'item' : 'itens'}'
-                            : 'Selecione as pecas',
+                            ? 'Adicionar ao serviço · $_selCount ${_selCount == 1 ? 'item' : 'itens'}'
+                            : 'Selecione as peças',
                       ),
                     ),
                   ),

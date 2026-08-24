@@ -386,7 +386,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Tenant Demo'), findsWidgets);
+      expect(find.textContaining('Guinchos Paraná'), findsWidgets);
     });
 
     testWidgets('t09 — does NOT show technical auth mode (B-122)', (
@@ -488,14 +488,14 @@ void main() {
     ) async {
       final expiredState = AuthState(
         status: AuthStatus.expired,
-        safeError: 'Sua sessao expirou. Faca login novamente.',
+        safeError: 'Sua sessão expirou. Faça login novamente.',
       );
 
       await tester.pumpWidget(_profileApp(authState: expiredState));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Sessao expirada'), findsOneWidget);
-      expect(find.textContaining('Sua sessao expirou'), findsOneWidget);
+      expect(find.textContaining('Sessão expirada'), findsOneWidget);
+      expect(find.textContaining('Sua sessão expirou'), findsOneWidget);
       expect(find.text('Fazer login novamente'), findsOneWidget);
       expect(find.textContaining('Bearer'), findsNothing);
     });

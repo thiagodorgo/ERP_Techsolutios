@@ -43,7 +43,7 @@ class _ChecklistComparisonScreenState
     await repo.load();
     final schema = await repo.getSchema(widget.checklistId);
     if (schema == null) {
-      throw StateError('Schema nao encontrado: ${widget.checklistId}');
+      throw StateError('Schema não encontrado: ${widget.checklistId}');
     }
     final collectionLookup = await repo.lookupRunByKind(
       workOrderId: widget.workOrderId,
@@ -118,13 +118,13 @@ class _ChecklistComparisonScreenState
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return ErpScaffold(
-            title: 'Comparacao',
+            title: 'Comparação',
             body: ErrorState(message: snapshot.error.toString()),
           );
         }
         if (!snapshot.hasData) {
           return const ErpScaffold(
-            title: 'Comparacao',
+            title: 'Comparação',
             body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
@@ -153,8 +153,8 @@ class _ChecklistComparisonScreenState
     if (!data.hasBothRuns) {
       return const EmptyState(
         icon: Icons.compare_arrows_outlined,
-        title: 'Comparacao indisponivel',
-        message: 'E necessario ter coleta e entrega concluidas para comparar.',
+        title: 'Comparação indisponível',
+        message: 'É necessário ter coleta e entrega concluídas para comparar.',
       );
     }
     if (data.divergences.isEmpty) {
@@ -226,7 +226,7 @@ class _ChecklistComparisonScreenState
             child: const ListTile(
               leading: Icon(Icons.cloud_done_outlined),
               title: Text('Divergencias registradas'),
-              subtitle: Text('Enviadas para sincronizacao.'),
+              subtitle: Text('Enviadas para sincronização.'),
             ),
           )
         else

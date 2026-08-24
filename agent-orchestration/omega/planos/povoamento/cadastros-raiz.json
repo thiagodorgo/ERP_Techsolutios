@@ -1,0 +1,1051 @@
+{
+  "area": "Cadastros-raiz (Camada 1) — Serviços, Clientes, Fornecedores, Viaturas/Frota, Equipes, Profissionais, Filiais, Tags, Pontos de Interesse — tenant demo a79aedf2-44c8-478f-a6ce-cf6248a16f2b (slug=demo, \"Guinchos Paraná\")",
+  "telas": [
+    {
+      "tela": "Serviços (Catálogo de Serviços)",
+      "rota": "/cadastros/servicos",
+      "tabelas": [
+        "service_catalog",
+        "jurisdiction_profiles (FK custody_profile_id)",
+        "tariffs (consome)",
+        "price_tables (consome)",
+        "work_orders (consome)",
+        "service_quotes (consome)",
+        "checklist_applicability_rules (consome)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK service_catalog_tenant_id_fkey -> tenants(id) ON DELETE RESTRICT. Ja existe."
+        },
+        {
+          "passo": 2,
+          "entidade": "jurisdiction_profiles (perfil normativo do patio)",
+          "exigido_por": "ambos",
+          "por_que": "FK composta service_catalog_tenant_id_custody_profile_id_fkey -> jurisdiction_profiles(tenant_id,id). Historia: e o custody_profile_id que faz uma OS concluida ABRIR processo de custodia (src/modules/impound/impound.reconcile.service.ts:86 exige sc.custody_profile_id IS NOT NULL). Sem ele o patio nunca recebe veiculo por OS."
+        },
+        {
+          "passo": 3,
+          "entidade": "service_catalog - os servicos em si",
+          "exigido_por": "historia",
+          "por_que": "E o elo que faltou nas tarifas. Cada linha precisa de category, service_type (reboque|socorro|residencial|outro), estimated_duration_minutes, base_price e status em {active,suspended,inactive}; qualquer outro status cai no fallback SILENCIOSO 'Disponivel' (service-catalog.adapter.ts:105) e a coluna Status mente sem erro."
+        },
+        {
+          "passo": 4,
+          "entidade": "jurisdiction_profiles.daily_service_catalog_id (2a fase - UPDATE)",
+          "exigido_por": "ambos",
+          "por_que": "FK jurisdiction_profiles_tenant_id_daily_service_catalog_id_fkey -> service_catalog(tenant_id,id). CICLO DE DUAS FASES: cria-se o perfil sem a diaria, depois o servico 'Diaria de patio', depois o UPDATE. Se ficar null, charge.service.ts:305 e FAIL-CLOSED: nenhuma diaria e acumulada e a cobranca do patio nao acontece."
+        },
+        {
+          "passo": 5,
+          "entidade": "price_tables + tariffs vinculadas (a jusante, mas mesma historia)",
+          "exigido_por": "historia",
+          "por_que": "tariffs.service_catalog_id e NULAVEL. Nulo -> TarifasPage.tsx:92 renderiza 'Todos os servicos'. E EXATAMENTE o defeito que o dono reclamou: 35 das 39 tarifas do demo estao assim."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "3 servicos (3 ativos). 1 com nome de teste ('Servico A1 1783874676'), 2 sem categoria, 2 sem service_type, 1 sem base_price, 1 sem duracao. 0 com custody_profile_id. 39 tarifas no tenant, apenas 4 com service_catalog_id -> 35 tarifas orfas. jurisdiction_profiles: 1 registro ('policia de transito', minusculo e sem acento) com daily_service_catalog_id = NULL.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where is_active) ativos, count(*) filter (where service_type is null) sem_tipo, count(*) filter (where base_price is null) sem_preco, count(*) filter (where custody_profile_id is not null) com_custodia, (select count(*) from tariffs t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.service_catalog_id is null) tarifas_orfas from service_catalog where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 3 | 3 | 2 | 1 | 0 | 35   ||   docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select id,name,scope,daily_model,daily_cap,active,daily_service_catalog_id from jurisdiction_profiles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 1 linha, daily_service_catalog_id vazio"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Tarifa sem servico - o defeito-mae apontado pelo dono",
+          "quantos": "35 de 39",
+          "evidencia": "select count(*) from tariffs where tenant_id='a79aedf2-...' and service_catalog_id is null => 35. Na tela, TarifasPage.tsx:92 imprime 'Todos os servicos' em cada uma. So 3 servicos existem para 39 tarifas - nao ha a quem apontar."
+        },
+        {
+          "defeito": "Nome de teste com timestamp no catalogo",
+          "quantos": "2 de 3",
+          "evidencia": "'Servico A1 1783874676' e 'SemTarifa 14250' - ambos sem categoria, sem tipo, sem acento ('Servico' sem cedilha)."
+        },
+        {
+          "defeito": "Servico sem tipo -> o form da OS nao sabe se exige destino",
+          "quantos": "2 de 3",
+          "evidencia": "service_type IS NULL em 2 linhas, requires_destination=false. O tipo dirige os campos dinamicos da OS e o 422 de destino; um reboque sem requires_destination fecha OS sem dizer para onde o veiculo foi."
+        },
+        {
+          "defeito": "Nenhum servico com custody_profile_id -> o patio e inalcancavel por OS",
+          "quantos": "0 de 3",
+          "evidencia": "count(*) filter (where custody_profile_id is not null) = 0. impound.reconcile.service.ts:86 filtra por sc.custody_profile_id IS NOT NULL; existem 75 impound_processes no demo criados por fora desse caminho - o fluxo que a tela promete nunca roda."
+        },
+        {
+          "defeito": "Perfil de jurisdicao sem servico-diaria -> cobranca de patio fail-closed",
+          "quantos": "1 de 1",
+          "evidencia": "jurisdiction_profiles.daily_service_catalog_id IS NULL. charge.service.ts:305 loga 'no_daily_service_catalog' e da break: nenhuma diaria acumula, silenciosamente."
+        },
+        {
+          "defeito": "Preco base ausente ou desconectado das tarifas",
+          "quantos": "1 sem preco; 1 com R$ 990,00 sem tarifa correspondente",
+          "evidencia": "'Servico A1 1783874676' base_price NULL -> coluna 'Preco base' mostra travessao. 'Guincho ate 200km' R$ 990,00 (sem acento em 'ate') nao bate com nenhuma das 39 tarifas."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Sanear jurisdiction_profiles: renomear 'policia de transito' para 'Convenio DETRAN/PR - Remocao por autoridade' e criar um 2o perfil 'Municipio de Curitiba - Remocao administrativa'",
+          "quantos": "2 perfis (1 renomeado + 1 novo)",
+          "criterio": "scope PUBLIC_AGREEMENT; daily_model CALENDAR; daily_cap SIX_MONTHS; active=true; acentuacao correta. daily_service_catalog_id fica NULL nesta fase (preenchido no passo 5)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Aposentar o lixo de teste do catalogo",
+          "quantos": "2 linhas",
+          "criterio": "service_catalog e RESTRICT em 5 tabelas - NAO deletar as cegas. Checar tariffs/work_orders/service_quotes/checklist_applicability_rules/jurisdiction_profiles antes; se orfao, remover; se referenciado, renomear para o servico real equivalente e completar os campos. 'Guincho ate 200km' vira 'Reboque leve - rodovia (ate 200 km)'."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar o catalogo real de uma operacao de guincho no Parana",
+          "quantos": "13 servicos",
+          "criterio": "Categoria em {Reboque, Socorro mecanico, Adicionais}. service_type em {reboque, socorro, outro} - 'residencial' nao se aplica a esta operacao. requires_destination=TRUE em todos os de categoria Reboque, FALSE nos demais. status='active' em 11, 'suspended' em 1 (sazonal), 'inactive' em 1 (descontinuado) - nunca fora desse trio. Faixas ancoradas nas tarifas que ja existem no tenant (DEMO-PRECOS vai de R$ 6,50 a R$ 890,00): Reboque leve urbano 90min/R$ 180,00 | Reboque leve rodovia 240min/R$ 320,00 | Reboque pesado caminhao-onibus 300min/R$ 890,00 | Reboque de motocicleta 60min/R$ 120,00 | Icamento com guincho pesado 180min/R$ 640,00 | Desatolamento e resgate 120min/R$ 380,00 | Socorro mecanico no local 60min/R$ 150,00 | Troca de pneu no local 45min/R$ 110,00 | Partida auxiliar e carga de bateria 30min/R$ 95,00 | Chaveiro automotivo 45min/R$ 130,00 | Pane seca com entrega de combustivel 45min/R$ 120,00 | Hora parada e espera 60min/R$ 95,00 | Quilometro rodado em plataforma 0min/R$ 6,50."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Criar os DOIS servicos do patio, com papeis distintos e exclusivos",
+          "quantos": "2 servicos",
+          "criterio": "(a) 'Remocao por determinacao de autoridade' - category 'Patio e custodia', service_type 'reboque', requires_destination=true, 150min, R$ 260,00, custody_profile_id = perfil DETRAN/PR. REGRA DURA: exatamente UM service_catalog ativo no tenant pode ter custody_profile_id - createPrismaRemovalCatalogResolver (authority-removal.repository.ts:58) faz LIMIT 2 e devolve null se houver 0 ou 2+, derrubando fail-closed a remocao por autoridade. (b) 'Diaria de permanencia em patio' - category 'Patio e custodia', service_type 'outro', requires_destination=false, sem duracao, R$ 48,00; custody_profile_id fica NULL nela."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Fechar o ciclo: UPDATE jurisdiction_profiles.daily_service_catalog_id",
+          "quantos": "2 perfis",
+          "criterio": "Apontar ambos os perfis para o id de 'Diaria de permanencia em patio'. Sem este passo a cobranca do patio continua fail-closed e nenhuma diaria acumula."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Religar as 39 tarifas existentes aos servicos - matar o 'Todos os servicos'",
+          "quantos": "39 tarifas",
+          "criterio": "Casar por nome: 'Saida de guincho - perimetro urbano'->Reboque leve urbano | 'Quilometro rodado urbano/rodovia/alta temporada'->Quilometro rodado em plataforma | 'Saida de guincho pesado'->Reboque pesado | 'Icamento com guincho pesado'->Icamento | 'Desatolamento'->Desatolamento | 'Hora parada / espera'->Hora parada | adicionais (noturno, fim de semana, plantao 24h)->ligados ao servico que modificam | diarias->Diaria de permanencia em patio. Deixar service_catalog_id NULL SOMENTE onde a tarifa e genuinamente transversal, e nesse caso minoria explicavel (alvo: no maximo 4 de 39, nao 35)."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from tariffs, T where tenant_id=t and service_catalog_id is null) tarifas_sem_servico_max_4, (select count(*) from service_catalog, T where tenant_id=t and is_active and custody_profile_id is not null) custodia_deve_ser_1, (select count(*) from jurisdiction_profiles, T where tenant_id=t and active and daily_service_catalog_id is null) perfil_sem_diaria_deve_ser_0, (select count(*) from service_catalog, T where tenant_id=t and (service_type is null or category is null or base_price is null)) servico_incompleto_deve_ser_0, (select count(*) from service_catalog, T where tenant_id=t and status not in ('active','suspended','inactive')) status_invalido_deve_ser_0, (select count(*) from service_catalog, T where tenant_id=t and name ~ '[0-9]{5,}') nome_de_teste_deve_ser_0, (select count(*) from service_catalog, T where tenant_id=t and category='Reboque' and requires_destination=false) reboque_sem_destino_deve_ser_0\" -- e na tela: abrir /cadastros/tarifas e confirmar nome real de servico (nao 'Todos os servicos') em pelo menos 35 das 39 linhas."
+    },
+    {
+      "tela": "Clientes",
+      "rota": "/cadastros/clientes",
+      "tabelas": [
+        "customers",
+        "tariffs (customer_id)",
+        "work_orders (customer_id)",
+        "service_quotes (customer_id)",
+        "checklist_applicability_rules (customer_id)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK customers_tenant_id_fkey -> tenants(id). Ja existe."
+        },
+        {
+          "passo": 2,
+          "entidade": "customers com documento unico",
+          "exigido_por": "ambos",
+          "por_que": "UNIQUE (tenant_id, document) - customers_tenant_id_document_key. NULL nao colide, entao N clientes sem documento passam pelo banco e a coluna Documento vira uma fileira de travessoes. Historia: sem CNPJ/CPF nao ha como faturar, e a tela existe para isso."
+        },
+        {
+          "passo": 3,
+          "entidade": "cidade + UF preenchidas",
+          "exigido_por": "historia",
+          "por_que": "ClientesPage.tsx:90 renderiza a coluna 'Cidade/UF' via formatCustomerLocation - vazio vira travessao. O validador exige state com EXATAMENTE 2 caracteres (customer.validators.ts parseOptionalState)."
+        },
+        {
+          "passo": 4,
+          "entidade": "telefone no formato aceito",
+          "exigido_por": "banco",
+          "por_que": "parseOptionalPhone: 8 a 20 caracteres, apenas [0-9+()espaco-]. A coluna Telefone e a 3a da tabela e hoje e 100% travessao."
+        },
+        {
+          "passo": 5,
+          "entidade": "tariffs de contrato + work_orders apontando para o cliente",
+          "exigido_por": "historia",
+          "por_que": "Um cliente que nunca aparece em OS nem em tarifa e um nome numa lista. tariffs.customer_id nulo -> 'Todos os clientes' (TarifasPage.tsx:98); hoje 38 de 39 estao assim."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "2 clientes. 1 sem documento ('Particular'), 2 sem telefone, 1 sem cidade, 0 no Parana (o unico com endereco e 'Industria Alfa Ltda' em Sao Paulo/SP). 39 tarifas, apenas 1 com customer_id. 17 work_orders, apenas 2 com customer_id.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where document is null) sem_doc, count(*) filter (where phone is null) sem_fone, count(*) filter (where city is null) sem_cidade, count(*) filter (where state='PR') no_parana from customers where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 2 | 1 | 2 | 1 | 0   ||   \"select count(*) total, count(customer_id) com_cliente from tariffs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 39 | 1   ||   \"select count(*) total, count(customer_id) from work_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 17 | 2"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Cliente-generico 'Particular' - o 'Todos os clientes' disfarcado de cadastro",
+          "quantos": "1 de 2",
+          "evidencia": "name='Particular' com document, phone, email, city e state todos NULL. E um balde, nao um cliente; nenhuma cobranca sai dele."
+        },
+        {
+          "defeito": "Base inteira fora do Parana",
+          "quantos": "2 de 2",
+          "evidencia": "count(*) filter (where state='PR') = 0. O unico endereco e Sao Paulo/SP numa operacao chamada 'Guinchos Parana'."
+        },
+        {
+          "defeito": "CNPJ de placeholder compartilhado com os fornecedores",
+          "quantos": "1 cliente + 3 fornecedores",
+          "evidencia": "'Industria Alfa Ltda' usa 12.345.678/0001-90 - o MESMO documento de 3 dos 4 fornecedores. E o CNPJ de exemplo de manual."
+        },
+        {
+          "defeito": "Nenhum telefone",
+          "quantos": "2 de 2",
+          "evidencia": "phone IS NULL em 100% das linhas -> a coluna Telefone e uma fileira de travessoes numa tela cuja funcao e contato."
+        },
+        {
+          "defeito": "Tarifa de contrato sem cliente",
+          "quantos": "38 de 39",
+          "evidencia": "Existe ate uma price_table chamada 'Contrato Transportadora Aurora', mas nenhuma tarifa aponta para o cliente contratante."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Substituir 'Particular' por clientes nomeados; manter o atendimento avulso onde ele pertence (work_orders.customer_name/customer_document, que ja existem)",
+          "quantos": "1 linha removida ou renomeada",
+          "criterio": "customers e RESTRICT em 4 tabelas - checar work_orders/tariffs/service_quotes/checklist_applicability_rules antes de remover; se referenciado, renomear para o cliente real correspondente preservando o id."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Pessoas juridicas - os grandes contratantes de guincho no Parana",
+          "quantos": "10",
+          "criterio": "Nomes ficticios mas plausiveis, nunca marca real: assistencia 24h, seguradora, transportadora, locadora, concessionaria, cooperativa agroindustrial, frigorifico, prefeitura, orgao de transito conveniado, construtora. CNPJ formatado com 18 chars (99.999.999/0001-99), TODOS distintos (UNIQUE tenant+document). Telefone comercial '(41) 3XXX-XXXX' e DDD por praca: 41 Curitiba, 42 Ponta Grossa, 43 Londrina, 44 Maringa, 45 Cascavel - 14 chars, dentro do 8..20 e do charset. city/state reais do PR (Curitiba, Sao Jose dos Pinhais, Pinhais, Campo Largo, Ponta Grossa, Londrina, Maringa, Cascavel, Paranagua, Foz do Iguacu), state SEMPRE 'PR' com 2 chars. zip_code 99999-999. address com logradouro real (Av. Comendador Franco, Rod. BR-277 km 108, Av. Candido de Abreu). is_active=true em 9 e false em 1 (contrato encerrado), para o filtro 'Inativos' ter conteudo."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Pessoas fisicas - o cliente de balcao que vira cadastro",
+          "quantos": "14",
+          "criterio": "Nomes brasileiros completos e comuns (nunca 'Cliente 1'). CPF formatado 999.999.999-99, distintos. Celular '(41) 9XXXX-XXXX' (15 chars). Cidades do PR distribuidas, nao todas Curitiba. notes so onde houver algo real a dizer (ex.: 'Atendimento pelo convenio da seguradora'), nunca lorem."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Ligar as tarifas de contrato ao cliente contratante",
+          "quantos": "as tarifas de 'Contrato Transportadora Aurora' e as de convenio",
+          "criterio": "tariffs.customer_id = o cliente PJ correspondente. As tarifas de tabela publica (DEMO-PRECOS, Guincho Leve/Pesado Padrao) ficam com customer_id NULL de proposito - 'Todos os clientes' ai e a verdade, nao um buraco. Alvo: pelo menos 6 tarifas com cliente nomeado."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Ligar as OS aos clientes",
+          "quantos": "as 17 work_orders existentes + as novas",
+          "criterio": "work_orders.customer_id preenchido em 100%, e customer_name/customer_document coerentes com a linha de customers (nunca divergindo do cadastro). Distribuicao: cerca de 70% PJ (assistencia/seguradora) e 30% PF."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from customers, T where tenant_id=t) total_deve_ser_24, (select count(*) from customers, T where tenant_id=t and (document is null or phone is null or city is null or state is null)) incompleto_deve_ser_0, (select count(*) from customers, T where tenant_id=t and state <> 'PR') fora_do_pr_deve_ser_0, (select count(*) from customers, T where tenant_id=t and length(state) <> 2) uf_invalida_deve_ser_0, (select count(*) from customers, T where tenant_id=t and phone !~ '^[0-9+() -]{8,20}$') fone_invalido_deve_ser_0, (select count(distinct document) from customers, T where tenant_id=t) documentos_distintos_deve_ser_24, (select count(*) from work_orders, T where tenant_id=t and customer_id is null) os_sem_cliente_deve_ser_0, (select count(*) from tariffs, T where tenant_id=t and customer_id is not null) tarifas_com_cliente_min_6\""
+    },
+    {
+      "tela": "Fornecedores",
+      "rota": "/cadastros/fornecedores",
+      "tabelas": [
+        "suppliers",
+        "fuel_logs (supplier_id - unico FK real)",
+        "maintenance_orders.supplier (texto livre, SEM FK)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK suppliers_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "suppliers com nome unico",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, name) - suppliers_tenant_id_name_key. O service devolve 409 duplicate_name."
+        },
+        {
+          "passo": 3,
+          "entidade": "categoria + contato preenchidos",
+          "exigido_por": "historia",
+          "por_que": "FornecedoresPage.tsx renderiza colunas 'Categoria' e 'Contato' (email ponto telefone, via formatSupplierContact). Ambas vazias hoje = duas colunas de travessao. Nem categoria nem contato sao NOT NULL no banco."
+        },
+        {
+          "passo": 4,
+          "entidade": "vehicles (para haver abastecimento a que se ligar)",
+          "exigido_por": "banco",
+          "por_que": "fuel_logs tem FK dupla: (tenant_id, vehicle_id) -> vehicles e (tenant_id, supplier_id) -> suppliers. Sem viatura nao ha abastecimento; sem abastecimento o fornecedor nao conta historia nenhuma."
+        },
+        {
+          "passo": 5,
+          "entidade": "fuel_logs com station_type='external' E supplier_id preenchido",
+          "exigido_por": "ambos",
+          "por_que": "REGRA DE NEGOCIO DURA: fuel-logs.adapter.ts:140 e o backend (422 supplier_required_for_external) proibem abastecimento externo sem fornecedor. Hoje o banco tem 5 linhas nesse estado ilegal - dado que a propria API se recusaria a criar."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "4 fornecedores. 3 com nome de teste com timestamp, 4 sem categoria, 3 sem telefone, 4 sem endereco, 2 inativos. ZERO fornecedores usados: 5 fuel_logs, todos station_type='external', todos com supplier_id NULL. maintenance_orders.supplier tem o texto 'Oficina Central', que nao existe na tabela suppliers.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where name ~ '[0-9]{6,}') lixo_teste, count(*) filter (where category is null) sem_categoria, count(*) filter (where phone is null) sem_fone, count(*) filter (where address is null) sem_endereco from suppliers where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 4 | 3 | 4 | 3 | 4   ||   \"select station_type, count(*), count(supplier_id) from fuel_logs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1\" => external | 5 | 0   ||   \"select type,status,supplier,cost from maintenance_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => preventiva/concluida/'Oficina Central'/60000.00 e corretiva/concluida/''/60000.00"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "ESTADO ILEGAL - abastecimento externo sem fornecedor",
+          "quantos": "5 de 5 fuel_logs",
+          "evidencia": "station_type='external' AND supplier_id IS NULL nas 5 linhas. O backend responde 422 supplier_required_for_external para exatamente isso; o dado no banco viola a invariante da propria aplicacao. Na tela /frota/abastecimento a coluna Fornecedor e 100% travessao."
+        },
+        {
+          "defeito": "Nome de teste com timestamp",
+          "quantos": "3 de 4",
+          "evidencia": "'Fornecedor Auditoria 1783882395', 'Fornecedor Teste 1783892058', 'Insp Fornec 1783892344'."
+        },
+        {
+          "defeito": "Nome com encoding quebrado",
+          "quantos": "1 de 4",
+          "evidencia": "'Auto Pe?as Silva' - a cedilha de 'Pecas' nao sobreviveu a gravacao."
+        },
+        {
+          "defeito": "Coluna Categoria totalmente vazia",
+          "quantos": "4 de 4",
+          "evidencia": "category IS NULL em 100%, numa tela que tem coluna dedicada a isso."
+        },
+        {
+          "defeito": "CNPJ de placeholder repetido",
+          "quantos": "3 de 4",
+          "evidencia": "12.345.678/0001-90 em tres fornecedores diferentes (suppliers nao tem unique em document, entao o banco aceitou)."
+        },
+        {
+          "defeito": "Manutencao cita fornecedor que nao existe no cadastro, com custo absurdo",
+          "quantos": "2 de 2 manutencoes",
+          "evidencia": "maintenance_orders.supplier = 'Oficina Central' (texto livre, sem FK) e nao ha nenhuma linha em suppliers com esse nome; a outra manutencao tem o campo vazio. Ambas com cost = 60000.00 - sessenta mil reais numa preventiva."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Corrigir o encoding e completar 'Auto Pecas Silva & Cia Ltda'; aposentar os 3 nomes de teste",
+          "quantos": "1 corrigido + 3 removidos",
+          "criterio": "suppliers e RESTRICT so por fuel_logs - como nenhum esta referenciado hoje, os 3 de teste podem sair. Conferir com: select s.id from suppliers s where s.tenant_id=... and not exists (select 1 from fuel_logs f where f.supplier_id=s.id)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Criar a cadeia de fornecimento real de uma frota de guinchos no Parana",
+          "quantos": "14 fornecedores",
+          "criterio": "Categorias operacionais: Combustivel (4: Posto Araucaria Diesel, Posto BR-277 Campo Largo, Posto Rodovia do Cafe Ponta Grossa, Posto Norte Pioneiro Londrina) | Oficina (3: Oficina Central Diesel Ltda - NOME IDENTICO ao texto ja gravado em maintenance_orders, Retifica Curitiba Motores, Auto Eletrica Bacacheri) | Pecas (2: Auto Pecas Silva & Cia, Hidraulicos do Guincho) | Pneus (1: Recapadora Parana Pneus) | Guincho parceiro (2: Guincho Litoral Paranagua, Guincho Oeste Cascavel, para repasse fora de area) | Servicos (2: Rastreamento Sul Telemetria, Uniformes e EPI Parana). CNPJ formatado distinto por linha (max 20 chars). Email em dominio coerente com o nome e em minuscula (o validador forca toLowerCase). Telefone '(41) 3XXX-XXXX'. address com logradouro real do PR. status='active' e is_active=true em 12; 2 inativos (contrato encerrado)."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Corrigir os 5 abastecimentos ilegais",
+          "quantos": "5 fuel_logs",
+          "criterio": "Cada fuel_log com station_type='external' recebe supplier_id de um dos 4 postos, escolhido pela praca da viatura (Curitiba -> Araucaria Diesel, BR-277 -> Campo Largo, Londrina -> Norte Pioneiro). Alternativa para 1 ou 2 linhas: virar station_type='internal' se a operacao tem bomba propria na base - ai supplier_id fica NULL legitimamente."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Ampliar o historico de abastecimento para o fornecedor ter volume",
+          "quantos": "cerca de 60 fuel_logs em 90 dias",
+          "criterio": "Diesel S10 majoritario (guinchos), gasolina nas viaturas de apoio. Litros 45 a 180 por abastecimento de guincho; preco por litro R$ 5,80 a 6,60 (diesel) e R$ 5,90 a 6,50 (gasolina) - faixa real do PR. Distribuir entre os 4 postos e as viaturas ATIVAS; datas uteis; nunca abastecer viatura inativa."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Corrigir as manutencoes",
+          "quantos": "2 existentes + cerca de 12 novas",
+          "criterio": "supplier (texto) deve casar EXATAMENTE com o name de uma linha de suppliers - e o unico elo possivel, ja que nao ha FK. cost realista: preventiva de caminhao (oleo e filtros) R$ 850 a 2.400 | corretiva do sistema hidraulico do guincho R$ 3.000 a 9.500 | retifica R$ 12.000 a 22.000. Nunca R$ 60.000,00 numa preventiva."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from fuel_logs, T where tenant_id=t and station_type='external' and supplier_id is null) abastecimento_ilegal_deve_ser_0, (select count(*) from suppliers, T where tenant_id=t and category is null) sem_categoria_deve_ser_0, (select count(*) from suppliers, T where tenant_id=t and name ~ '[0-9]{5,}') nome_de_teste_deve_ser_0, (select count(*) from suppliers s, T where s.tenant_id=t and s.category='Combustivel' and not exists (select 1 from fuel_logs f where f.supplier_id=s.id)) posto_sem_abastecimento_deve_ser_0, (select count(*) from maintenance_orders m, T where m.tenant_id=t and coalesce(m.supplier,'') <> '' and not exists (select 1 from suppliers s where s.tenant_id=t and s.name=m.supplier)) fornecedor_fantasma_deve_ser_0, (select count(*) from maintenance_orders, T where tenant_id=t and cost > 25000) custo_absurdo_deve_ser_0\""
+    },
+    {
+      "tela": "Viaturas (frota)",
+      "rota": "/cadastros/viaturas",
+      "tabelas": [
+        "vehicles",
+        "work_orders (vehicle_id)",
+        "fuel_logs",
+        "maintenance_orders",
+        "fines",
+        "insurance_policies",
+        "damages",
+        "stock_movements (custody_vehicle_id)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK vehicles_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "placa unica e no formato brasileiro",
+          "exigido_por": "ambos",
+          "por_que": "UNIQUE (tenant_id, plate). Validador parsePlate: 4 a 16 chars, apenas [A-Za-z0-9 -]. Historia: a coluna 'Placa' e a primeira e e a identidade da viatura na operacao inteira - 'FLT-0001' nao e placa de nada."
+        },
+        {
+          "passo": 3,
+          "entidade": "status em {active, maintenance, inactive}",
+          "exigido_por": "historia",
+          "por_que": "NAO ha CHECK no banco - qualquer texto entra. Mas getVehicleOperationalStatusLabel (vehicles.adapter.ts:99) faz fallback SILENCIOSO para 'Em operacao' em qualquer valor desconhecido. Um status inventado faz a coluna Status mentir sem erro nenhum."
+        },
+        {
+          "passo": 4,
+          "entidade": "tipo e ano preenchidos",
+          "exigido_por": "historia",
+          "por_que": "Colunas 'Tipo' e 'Ano' da tabela, nulaveis no banco, viram travessao. type e texto livre renderizado CRU - o valor gravado E o rotulo que o usuario le, entao precisa ser PT-BR de negocio."
+        },
+        {
+          "passo": 5,
+          "entidade": "seguro, manutencao, abastecimento e multa por viatura",
+          "exigido_por": "historia",
+          "por_que": "Uma frota que nunca abastece, nunca faz manutencao e nao tem apolice e uma lista de placas. As telas de /frota/* leem exatamente essas tabelas."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "3 viaturas, todas is_active=true e status='active'. Apenas 1 do tipo 'Guincho' (Iveco Daily 2020); as outras 2 sao 'Utilitario' (Fiat Strada 2022, VW Saveiro 2021). Placas FLT-0001/0002/0003. 17 OS no tenant, so 2 com vehicle_id. 5 abastecimentos, 2 manutencoes, 1 multa, 2 apolices, 1 avaria - espalhados irregularmente.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select plate,model,type,year,status,is_active from vehicles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by plate\" => FLT-0001 Fiat Strada Utilitario 2022 active t | FLT-0002 VW Saveiro Utilitario 2021 active t | FLT-0003 Iveco Daily Guincho 2020 active t   ||   \"select v.plate, (select count(*) from fuel_logs f where f.vehicle_id=v.id) abast, (select count(*) from maintenance_orders m where m.vehicle_id=v.id) manut, (select count(*) from fines fi where fi.vehicle_id=v.id) multas, (select count(*) from insurance_policies i where i.vehicle_id=v.id) seguros, (select count(*) from work_orders w where w.vehicle_id=v.id) os from vehicles v where v.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => FLT-0001: 2/1/0/1/1 | FLT-0002: 2/1/1/0/0 | FLT-0003: 1/0/0/1/1"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Placas que nao sao placas - codigo sequencial de planilha",
+          "quantos": "3 de 3",
+          "evidencia": "'FLT-0001','FLT-0002','FLT-0003'. Nenhuma no padrao brasileiro (ABC-1234) nem Mercosul (ABC1D23). A placa e a chave que o operador de campo digita e confere no veiculo."
+        },
+        {
+          "defeito": "Operacao de guincho com um guincho so",
+          "quantos": "1 de 3 e do tipo 'Guincho'",
+          "evidencia": "count(*) filter (where type='Guincho') = 1. As outras duas sao picapes leves. Um Fiat Strada nao reboca caminhao, e a tela promete 'cadastro central da frota'."
+        },
+        {
+          "defeito": "Nenhuma variacao de status - as abas Ativas/Inativas sao teatro",
+          "quantos": "3 de 3 em active com is_active=true",
+          "evidencia": "Nenhuma viatura em manutencao, nenhuma fora de operacao. A tela tem 3 abas de filtro e um seletor com 3 opcoes; duas nunca produzem resultado."
+        },
+        {
+          "defeito": "OS sem viatura",
+          "quantos": "15 de 17",
+          "evidencia": "select count(*) from work_orders where tenant_id='a79aedf2-...' and vehicle_id is null => 15. A OS de guincho nao diz qual guincho foi."
+        },
+        {
+          "defeito": "Viatura sem apolice de seguro",
+          "quantos": "1 de 3",
+          "evidencia": "FLT-0002 tem 0 insurance_policies e e justamente a unica com multa. Frota de guincho sem seguro em toda unidade e implausivel."
+        },
+        {
+          "defeito": "Ano da frota incoerente com o tipo",
+          "quantos": "3 de 3",
+          "evidencia": "O unico guincho e o mais velho (2020) e as picapes sao as novas - inverso do normal numa operacao cujo ativo produtivo e o guincho."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Reidentificar as 3 viaturas existentes com placa real e tipo coerente",
+          "quantos": "3",
+          "criterio": "vehicles e RESTRICT em 7 tabelas - NAO deletar; fazer UPDATE de plate/model/type/year preservando o id, para que abastecimentos, manutencoes, multas, apolices, avarias e OS ja ligados continuem apontando. Placa padrao Mercosul (3 letras + digito + letra + 2 digitos, ex.: RVC7A21), em maiuscula."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Completar a frota de uma operacao regional de guincho",
+          "quantos": "mais 11 viaturas (total 14)",
+          "criterio": "Composicao: 6 'Guincho plataforma' (Ford Cargo 816, VW Delivery 9.170, Iveco Daily 70C17, Mercedes-Benz Accelo 1016) anos 2018 a 2025 | 3 'Guincho pesado' lanca/asa-delta (Mercedes-Benz Atego 1719, VW Constellation 24.280) anos 2016 a 2022 | 2 'Socorro mecanico' (Renault Master, Fiat Fiorino) | 1 'Motorreboque' para motocicleta | 1 'Apoio operacional' (Chevrolet S10). Placas Mercosul distintas, max 16 chars, sem caractere fora de [A-Za-z0-9 -]."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Distribuir status e situacao para os filtros dizerem algo",
+          "quantos": "14",
+          "criterio": "status: 10 'active' | 2 'maintenance' (as duas com uma maintenance_order ABERTA na mesma janela - o status precisa ser CONSEQUENCIA de um fato, nao enfeite) | 2 'inactive'. is_active: 12 true e 2 false (uma vendida em 2025, outra sinistrada). NUNCA um valor de status fora do trio - o fallback silencioso da adapter faria a tela mentir."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Dar historia a cada viatura ativa",
+          "quantos": "14 viaturas com registros a jusante",
+          "criterio": "Toda viatura ativa: pelo menos 1 apolice vigente (valid_to futuro), 3 ou mais abastecimentos nos ultimos 60 dias, 1 manutencao preventiva com next_due_at futuro. 3 ou 4 viaturas com multa (art. 218 CTB excesso de velocidade em rodovia estadual, art. 181 estacionamento) com valores reais do CTB R$ 130,16 e R$ 195,23 - nunca redondos. 2 viaturas com avaria registrada. Viatura 'inactive' NAO recebe abastecimento nem OS nova."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Ligar as OS as viaturas",
+          "quantos": "as 17 existentes + as novas",
+          "criterio": "work_orders.vehicle_id preenchido em 100%, respeitando o tipo: OS de reboque pesado so em viatura 'Guincho pesado'; socorro mecanico so em 'Socorro mecanico'; nunca uma OS de icamento numa plataforma leve."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from vehicles, T where tenant_id=t) total_deve_ser_14, (select count(*) from vehicles, T where tenant_id=t and plate !~ '^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$') placa_fora_do_padrao_deve_ser_0, (select count(*) from vehicles, T where tenant_id=t and status not in ('active','maintenance','inactive')) status_invalido_deve_ser_0, (select count(distinct status) from vehicles, T where tenant_id=t) status_distintos_deve_ser_3, (select count(*) from vehicles, T where tenant_id=t and type like 'Guincho%') guinchos_min_9, (select count(*) from vehicles, T where tenant_id=t and (type is null or year is null)) incompleto_deve_ser_0, (select count(*) from work_orders, T where tenant_id=t and vehicle_id is null) os_sem_viatura_deve_ser_0, (select count(*) from vehicles v, T where v.tenant_id=t and v.is_active and not exists (select 1 from insurance_policies i where i.vehicle_id=v.id)) ativa_sem_seguro_deve_ser_0, (select count(*) from vehicles v, T where v.tenant_id=t and v.status='maintenance' and not exists (select 1 from maintenance_orders m where m.vehicle_id=v.id and m.completed_at is null)) em_manutencao_sem_os_deve_ser_0\""
+    },
+    {
+      "tela": "Equipes",
+      "rota": "/cadastros/equipes",
+      "tabelas": [
+        "teams",
+        "team_members",
+        "users (FK composta de leader e de membro)",
+        "operator_profiles (historia)",
+        "work_orders (team_id)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK teams_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "users do mesmo tenant",
+          "exigido_por": "banco",
+          "por_que": "DUAS FKs compostas: teams_tenant_id_leader_user_id_fkey -> users(tenant_id,id) e team_members_tenant_id_user_id_fkey -> users(tenant_id,id). Cross-tenant e impossivel por construcao."
+        },
+        {
+          "passo": 3,
+          "entidade": "operator_profiles para os membros de campo",
+          "exigido_por": "historia",
+          "por_que": "Nao ha FK, mas um integrante de equipe de guincho sem perfil profissional (CNH, consentimento) nao pode ser despachado nem rastreado - telemetry.service.ts:75 devolve 422 operator_profile_required. Uma equipe cujos membros nao tem perfil nao opera."
+        },
+        {
+          "passo": 4,
+          "entidade": "teams (nome unico)",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, name) - teams_tenant_id_name_key."
+        },
+        {
+          "passo": 5,
+          "entidade": "team_members com role_in_team",
+          "exigido_por": "historia",
+          "por_que": "UNIQUE (tenant_id, team_id, user_id) impede o mesmo usuario duas vezes na equipe. role_in_team e NULAVEL - e vazio faz o vinculo nao dizer quem dirige e quem auxilia. status em {active, forming, inactive}, senao o fallback de teams.adapter.ts:91 mostra 'Operacional' para qualquer coisa."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "2 equipes ('Equipe Norte', 'Equipe Sul'), ambas status='active' e is_active=true, ambas com lider e 2 membros. 4 team_members, TODOS com role_in_team NULL. Os 4 membros e os 2 lideres sao usuarios sem perfil profissional. 17 OS no tenant, apenas 1 com team_id.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select t.name, t.status, t.is_active, t.leader_user_id, (select count(*) from team_members m where m.team_id=t.id) membros from teams t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => Equipe Norte active t 5ea53da4... 2 | Equipe Sul active t 38ca5a94... 2   ||   \"select t.name equipe, u.name membro, m.role_in_team from team_members m join teams t on t.id=m.team_id join users u on u.id=m.user_id where m.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => Norte: Marina Costa (Operador) [null], Roberto Lima [null] | Sul: Ana Beatriz Rocha [null], Camila Nunes [null]   ||   \"select count(*) total, count(team_id) from work_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 17 | 1"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nome geografico generico sem geografia real",
+          "quantos": "2 de 2",
+          "evidencia": "'Equipe Norte' e 'Equipe Sul' num tenant cujas filiais sao Principal/Norte/Soft e cujos patios estao em Curitiba e Campo Largo. Norte de que? A equipe nao amarra em praca, turno nem especialidade."
+        },
+        {
+          "defeito": "Papel do integrante em branco",
+          "quantos": "4 de 4",
+          "evidencia": "role_in_team IS NULL em 100% dos team_members. O vinculo existe mas nao diz se a pessoa e motorista guincheiro, auxiliar ou lider de plantao."
+        },
+        {
+          "defeito": "Membro sem papel nenhum no sistema",
+          "quantos": "1 de 4",
+          "evidencia": "'Roberto Lima' (operador2.demo@example.com) nao tem NENHUMA linha em user_role_assignments - esta numa equipe operacional sem permissao para operar."
+        },
+        {
+          "defeito": "Nenhum integrante tem perfil profissional",
+          "quantos": "6 de 6 (4 membros + 2 lideres)",
+          "evidencia": "So existem 2 operator_profiles no tenant e ambos pertencem a admin.demo e gestor.demo - nenhum deles e membro nem lider de equipe. Equipe inteira indespachavel."
+        },
+        {
+          "defeito": "Situacao operacional sem variacao",
+          "quantos": "2 de 2",
+          "evidencia": "Ambas 'active'. O seletor tem 3 estados (Operacional / Em formacao / Desmobilizada); dois nunca aparecem."
+        },
+        {
+          "defeito": "OS sem equipe",
+          "quantos": "16 de 17",
+          "evidencia": "work_orders.team_id preenchido em 1 linha so. A equipe nao aparece em quase nenhum atendimento."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Garantir a base de pessoas antes (depende da tela Profissionais)",
+          "quantos": "cerca de 10 operator_profiles",
+          "criterio": "Nenhuma equipe e semeada antes de existirem os perfis profissionais dos seus integrantes - e a dependencia que hoje esta invertida."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Renomear as 2 equipes existentes e criar as demais por praca + turno + especialidade",
+          "quantos": "6 equipes (2 renomeadas + 4 novas)",
+          "criterio": "teams e RESTRICT por work_orders - renomear, nao deletar. Nomes: 'Plantao Curitiba - Diurno', 'Plantao Curitiba - Noturno', 'Rodovias BR-277 - Campo Largo', 'Pesados e Icamento', 'Regional Londrina', 'Regional Maringa'. Nome unico por tenant."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Distribuir status e situacao",
+          "quantos": "6",
+          "criterio": "status: 4 'active' | 1 'forming' (Regional Maringa, criada ha menos de 30 dias, com 1 membro so) | 1 'inactive' (equipe desmobilizada, is_active=false, sem membros ativos e sem OS recente). Nada fora do trio {active, forming, inactive}."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Nomear lider e montar os integrantes com papel explicito",
+          "quantos": "cerca de 18 team_members",
+          "criterio": "leader_user_id SEMPRE um usuario que TEM operator_profile ativo com CNH valida categoria D ou E. 3 a 4 integrantes por equipe ativa, 1 na 'forming', 0 na 'inactive'. role_in_team preenchido em 100%: 'Lider de plantao' (1 por equipe, o proprio lider) | 'Motorista guincheiro' (2 a 3) | 'Auxiliar de operacao' (0 a 1). Respeitar a UNIQUE (tenant, team, user): a mesma pessoa pode estar em 2 equipes diferentes (plantao e sobreaviso), nunca duas vezes na mesma."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Ligar as OS as equipes",
+          "quantos": "as 17 existentes + as novas",
+          "criterio": "work_orders.team_id em 100% das OS despachadas, coerente com a praca (OS em Londrina -> Regional Londrina) e com o horario (OS iniciada as 23h -> Plantao Noturno). Nenhuma OS na equipe desmobilizada com data posterior a desmobilizacao."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from teams, T where tenant_id=t) equipes_deve_ser_6, (select count(distinct status) from teams, T where tenant_id=t) status_distintos_deve_ser_3, (select count(*) from teams, T where tenant_id=t and status not in ('active','forming','inactive')) status_invalido_deve_ser_0, (select count(*) from team_members, T where tenant_id=t and coalesce(role_in_team,'')='') membro_sem_papel_deve_ser_0, (select count(*) from teams tt, T where tt.tenant_id=t and tt.is_active and tt.leader_user_id is null) ativa_sem_lider_deve_ser_0, (select count(*) from teams tt, T where tt.tenant_id=t and tt.is_active and not exists (select 1 from operator_profiles o where o.tenant_id=t and o.user_id=tt.leader_user_id and o.is_active)) lider_sem_perfil_deve_ser_0, (select count(*) from team_members m, T where m.tenant_id=t and not exists (select 1 from operator_profiles o where o.tenant_id=t and o.user_id=m.user_id)) membro_sem_perfil_deve_ser_0, (select count(*) from team_members m, T where m.tenant_id=t and not exists (select 1 from user_role_assignments a where a.user_id=m.user_id)) membro_sem_rbac_deve_ser_0, (select count(*) from work_orders, T where tenant_id=t and team_id is null) os_sem_equipe_deve_ser_0\""
+    },
+    {
+      "tela": "Profissionais",
+      "rota": "/cadastros/profissionais",
+      "tabelas": [
+        "operator_profiles",
+        "users (FK composta)",
+        "telemetry_events",
+        "field_operator_locations",
+        "damages.responsible_operator_profile_id",
+        "fines.responsible_operator_profile_id",
+        "professional_statement_entries",
+        "stock_movements.custody_operator_profile_id"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK operator_profiles_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "users do mesmo tenant, um por perfil",
+          "exigido_por": "banco",
+          "por_que": "FK composta operator_profiles_tenant_id_user_id_fkey -> users(tenant_id,id) ON DELETE CASCADE + UNIQUE (tenant_id, user_id). Um usuario tem no maximo um perfil profissional."
+        },
+        {
+          "passo": 3,
+          "entidade": "papel RBAC de campo no usuario",
+          "exigido_por": "historia",
+          "por_que": "Nao ha trava no banco, mas o perfil profissional descreve QUEM VAI A CAMPO. Liga-lo a um Tenant Admin ou Manager (como esta hoje) faz a tela listar a diretoria como guincheiro."
+        },
+        {
+          "passo": 4,
+          "entidade": "CNH: numero + categoria + validade",
+          "exigido_por": "historia",
+          "por_que": "Todos nulaveis no banco. A coluna 'CNH' deriva o selo de formatCnhStatus (operator-profiles.adapter.ts:126): sem CNH -> 'Sem CNH' cinza | com CNH e sem validade -> 'Sem validade' cinza | validade passada -> 'Vencida' ambar | em dia -> 'Valida ate dd/mm/aaaa' verde. Guincho exige categoria D ou E - categoria B num guincheiro e dado incoerente que a tela nao denuncia."
+        },
+        {
+          "passo": 5,
+          "entidade": "tracking_consent + tracking_consent_at",
+          "exigido_por": "historia",
+          "por_que": "LGPD. A coluna 'Rastreamento' so mostra 'Consentido em dd/mm/aaaa' quando HA carimbo; consentimento sem data vira 'Consentido' sem prova. E telemetry.service.ts so ingere posicao de quem tem perfil - sem consentimento carimbado, o Mapa Operacional fica sem operador."
+        },
+        {
+          "passo": 6,
+          "entidade": "telefone",
+          "exigido_por": "historia",
+          "por_que": "Nulavel, mas e campo de busca da propria tela ('Buscar por nome, CNH, categoria ou telefone') e o contato do despacho. 100% NULL hoje."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "2 perfis profissionais para 22 usuarios. Ambos ligados a usuarios de BACK-OFFICE (admin.demo@example.com = Tenant Admin, gestor.demo@example.com = Manager). Ambos com o MESMO cnh_number '98765432100', mesma categoria E, mesma validade 2030-05-01, ambos com consentimento, ambos sem telefone. 0 telemetry_events e 0 professional_statement_entries. As 4 pessoas que estao em equipes de campo (Marina Costa, Roberto Lima, Ana Beatriz Rocha, Camila Nunes) NAO tem perfil.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select o.full_name,o.cnh_number,o.cnh_category,o.cnh_expires_at,o.tracking_consent,o.phone,o.is_active,u.email,u.name from operator_profiles o join users u on u.id=o.user_id where o.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 'Guincheiro Prova Ciclo2'/98765432100/E/2030-05-01/t/null/gestor.demo@example.com (Gustavo Reis - Gestor Operacional) e 'Guincheiro Silva'/98765432100/E/2030-05-01/t/null/admin.demo@example.com (Admin Demo)   ||   \"select count(*) from operator_profiles o where o.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and exists (select 1 from user_role_assignments a join roles r on r.id=a.role_id where a.user_id=o.user_id and r.name in ('Tenant Admin','Manager','Finance','Auditor','Support','Super Admin'))\" => 2   ||   \"select cnh_number, count(*) from operator_profiles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1 having count(*)>1\" => 98765432100 x2"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "O guincheiro E o administrador",
+          "quantos": "2 de 2",
+          "evidencia": "'Guincheiro Silva' e o user admin.demo@example.com (Tenant Admin) e 'Guincheiro Prova Ciclo2' e gestor.demo@example.com (Manager). A tela lista a diretoria como profissional de campo."
+        },
+        {
+          "defeito": "CNH duplicada entre duas pessoas",
+          "quantos": "2 de 2 (mesmo numero)",
+          "evidencia": "cnh_number = '98765432100' nos dois perfis - numero de placeholder (sequencia decrescente), e o mesmo documento em duas pessoas distintas e impossivel na vida real. Nao ha UNIQUE no banco para barrar."
+        },
+        {
+          "defeito": "Nome com marcador de ciclo de teste",
+          "quantos": "1 de 2",
+          "evidencia": "'Guincheiro Prova Ciclo2' - nome de artefato de rodada de validacao, exibido em negrito na primeira coluna da tela."
+        },
+        {
+          "defeito": "Nenhum telefone",
+          "quantos": "2 de 2",
+          "evidencia": "phone IS NULL. E um dos campos que a propria SearchBar da tela oferece para busca."
+        },
+        {
+          "defeito": "Selo de CNH sem variacao - a coluna nunca muda de cor",
+          "quantos": "2 de 2",
+          "evidencia": "Ambos categoria E com validade 2030-05-01 -> os dois mostram 'Valida ate 01/05/2030' verde. Os estados 'Vencida' (ambar) e 'Sem CNH' (cinza) que a adapter implementa nunca aparecem."
+        },
+        {
+          "defeito": "Equipe de campo sem nenhum perfil profissional",
+          "quantos": "6 pessoas (4 membros + 2 lideres)",
+          "evidencia": "Nenhum usuario em team_members ou teams.leader_user_id tem linha em operator_profiles. Consequencia dura: telemetry.service.ts:75 devolve 422 operator_profile_required - o Mapa Operacional e o app de campo nao tem quem rastrear."
+        },
+        {
+          "defeito": "Zero telemetria e zero extrato do profissional",
+          "quantos": "0 telemetry_events, 0 professional_statement_entries",
+          "evidencia": "As duas tabelas que dependem de operator_profile_id estao vazias no tenant - as telas de Extrato do Profissional e de Quilometragem nao tem o que mostrar."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Sanear os usuarios antes: desfazer as duplicatas de e-mail e dar papel a quem nao tem",
+          "quantos": "22 users -> cerca de 18",
+          "criterio": "Ha pares duplicados (admin.demo@example.com x admin@demo.com, gestor.demo x gestor@demo.com, financeiro.demo x financeiro@demo.com, auditor.demo x auditor@demo.com, plataforma.demo x platform@demo.com, marina.costa@techsolutions.example x operador.demo). Consolidar cuidando das FKs de teams/team_members/work_orders/operator_profiles. 'Roberto Lima' precisa receber user_role_assignments (Field Technician)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Remover os 2 perfis colados em usuarios de back-office",
+          "quantos": "2",
+          "criterio": "operator_profiles e RESTRICT em damages/fines/professional_statement_entries/stock_movements e CASCADE em telemetry_events - como as quatro primeiras estao em 0 para esses perfis, a remocao e limpa. Conferir com: select o.id from operator_profiles o where o.tenant_id=... and not exists (select 1 from damages d where d.responsible_operator_profile_id=o.id) and not exists (select 1 from fines f where f.responsible_operator_profile_id=o.id) and not exists (select 1 from professional_statement_entries p where p.operator_profile_id=o.id) and not exists (select 1 from stock_movements s where s.custody_operator_profile_id=o.id)."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar os perfis dos profissionais de campo de verdade",
+          "quantos": "10 perfis",
+          "criterio": "Um por usuario de campo (Field Technician / Operator), respeitando UNIQUE (tenant_id, user_id). full_name = nome completo brasileiro coerente com users.name (nunca 'Guincheiro X'). cnh_number com 11 digitos, DISTINTOS entre si, sem sequencias obvias (nao 98765432100, nao 11111111111). cnh_category por funcao: 'E' nos 4 motoristas de guincho pesado/plataforma com reboque | 'D' nos 4 de plataforma leve | 'B' nos 2 de socorro mecanico e apoio. Telefone celular '(41) 9XXXX-XXXX', com DDD da praca (43 Londrina, 44 Maringa)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Distribuir validade da CNH para os tres selos existirem na tela",
+          "quantos": "10",
+          "criterio": "7 com validade futura escalonada entre 2027-03 e 2031-11 (selo verde 'Valida ate...') | 2 com validade JA VENCIDA (ex.: 2026-04-18 e 2025-12-02, contra a data de hoje 2026-08-24) -> selo ambar 'Vencida', e esses dois NAO podem ser lideres de equipe nem estar em OS aberta | 1 sem CNH (auxiliar de operacao que nao dirige) -> selo cinza 'Sem CNH', com cnh_number, cnh_category e cnh_expires_at todos NULL JUNTOS (nunca numero sem validade)."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Carimbar o consentimento de rastreamento com data coerente",
+          "quantos": "10",
+          "criterio": "7 com tracking_consent=true E tracking_consent_at preenchido - data SEMPRE maior ou igual ao created_at do perfil e menor ou igual a hoje, espalhada ao longo de 2026 (nao todos no mesmo instante). 3 com tracking_consent=false e tracking_consent_at NULL (nunca false com carimbo - e contradicao). is_active: 9 true e 1 false (desligado)."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Dar rastro operacional aos perfis",
+          "quantos": "telemetria e responsabilidades",
+          "criterio": "So para os 7 COM consentimento: telemetry_events e field_operator_locations com coordenadas dentro do Parana ao longo de rotas plausiveis (BR-277, BR-116 Contorno Leste, BR-376), recorded_at nos ultimos 7 dias. 2 profissionais respondendo por multa (fines.responsible_operator_profile_id) e 1 por avaria (damages) - os mesmos que aparecem nas OS correspondentes. professional_statement_entries para os motoristas com comissao no periodo fechado."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from operator_profiles, T where tenant_id=t) perfis_deve_ser_10, (select count(*) from operator_profiles, T where tenant_id=t and cnh_number is not null) com_cnh_deve_ser_9, (select count(distinct cnh_number) from operator_profiles, T where tenant_id=t and cnh_number is not null) cnh_distintas_deve_ser_9, (select count(*) from operator_profiles o, T where o.tenant_id=t and exists (select 1 from user_role_assignments a join roles r on r.id=a.role_id where a.user_id=o.user_id and r.name in ('Tenant Admin','Manager','Finance','Auditor','Support','Super Admin'))) perfil_em_backoffice_deve_ser_0, (select count(*) from operator_profiles, T where tenant_id=t and phone is null) sem_telefone_deve_ser_0, (select count(*) from operator_profiles, T where tenant_id=t and cnh_number is not null and cnh_expires_at is null) cnh_sem_validade_deve_ser_0, (select count(*) from operator_profiles, T where tenant_id=t and tracking_consent and tracking_consent_at is null) consentimento_sem_carimbo_deve_ser_0, (select count(*) from operator_profiles, T where tenant_id=t and not tracking_consent and tracking_consent_at is not null) carimbo_sem_consentimento_deve_ser_0, (select count(*) from operator_profiles, T where tenant_id=t and cnh_expires_at < now()) cnh_vencida_deve_ser_2, (select count(*) from operator_profiles, T where tenant_id=t and full_name ~* 'teste|prova|ciclo') nome_de_teste_deve_ser_0\" -- e na tela: /cadastros/profissionais deve exibir os TRES selos de CNH (verde, ambar 'Vencida', cinza 'Sem CNH') e os dois de rastreamento."
+    },
+    {
+      "tela": "Filiais",
+      "rota": "/cadastros/filiais",
+      "tabelas": [
+        "branches",
+        "users.branch_id",
+        "user_role_assignments.branch_id",
+        "yards.branch_id"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK branches_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "codigo unico por organizacao",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, code) - branches_tenant_id_code_key; code e NOT NULL. O service devolve 409 em duplicata."
+        },
+        {
+          "passo": 3,
+          "entidade": "users lotados na filial",
+          "exigido_por": "historia",
+          "por_que": "users.branch_id -> branches(id) ON DELETE SET NULL. Uma filial sem ninguem lotado nao e unidade operacional; e o branchId entra no contexto ativo da sessao (activeContext.branchId), moldando o que cada pessoa ve."
+        },
+        {
+          "passo": 4,
+          "entidade": "yards vinculados (quando a filial tem patio)",
+          "exigido_por": "banco",
+          "por_que": "FK composta yards_tenant_id_branch_id_fkey -> branches(tenant_id,id) ON DELETE RESTRICT. E a trava que impede apagar uma filial que ainda tem patio - e a razao pela qual o lixo de teste de hoje nao sai sem antes mover os patios."
+        },
+        {
+          "passo": 5,
+          "entidade": "status em {active, inactive}",
+          "exigido_por": "historia",
+          "por_que": "branches NAO tem is_active - a situacao e so o enum status (BranchFormModal.tsx:71). isBranchActive trata qualquer valor diferente de 'inactive' como ativa (branches.adapter.ts:70), entao um status inventado vira 'Ativa' silenciosamente."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "6 filiais. 3 com nome de teste com timestamp ('Filial Auditoria 1783882395' inactive, 'Filial Teste 1783892024', 'Insp Filial 1783892344'). Os 22 usuarios do tenant estao TODOS na mesma filial ('Filial Principal'/MAIN). Os 3 patios que tem filial estao na 'Filial Teste 1783892024'; um quarto patio ('Patio Sul') esta com branch_id NULL. 'Filial Norte' e 'Filial Soft' tem 0 usuarios e 0 patios.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select b.name,b.code,b.status,(select count(*) from users u where u.branch_id=b.id) usuarios,(select count(*) from yards y where y.branch_id=b.id) patios from branches b where b.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by b.code\" => Filial Auditoria 1783882395/AUD-1783882395/inactive/0/0 | Filial Teste 1783892024/F1783892024/active/0/3 | Filial Norte/FN-01/active/0/0 | Insp Filial 1783892344/INSP-1783892344/active/0/0 | Filial Principal/MAIN/active/22/0 | Filial Soft/SOFT-01/active/0/0   ||   \"select y.name, b.name filial, y.address from yards y left join branches b on b.id=y.branch_id where y.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => Patio Norte/Central/Oeste -> Filial Teste 1783892024 (enderecos com sufixo '[demo-painel]'); Patio Sul -> (null), address 'parana'"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Metade do cadastro e lixo de rodada de teste",
+          "quantos": "3 de 6",
+          "evidencia": "Nomes 'Filial Auditoria 1783882395', 'Filial Teste 1783892024', 'Insp Filial 1783892344' e codigos 'AUD-1783882395', 'F1783892024', 'INSP-1783892344' - timestamps epoch em milissegundos exibidos na coluna Codigo da tela."
+        },
+        {
+          "defeito": "Os patios reais estao pendurados numa filial de teste",
+          "quantos": "3 de 4 patios",
+          "evidencia": "Patio Norte, Patio Central e Patio Oeste (enderecos reais de Curitiba e Campo Largo) apontam para a branch 'Filial Teste 1783892024'. E a FK e RESTRICT: essa filial-lixo NAO PODE ser apagada enquanto os patios apontarem para ela."
+        },
+        {
+          "defeito": "Patio orfao de filial",
+          "quantos": "1 de 4",
+          "evidencia": "'Patio Sul' com branch_id NULL e address = 'parana' (minusculo, sem acento). A coluna e nulavel, entao o banco aceitou."
+        },
+        {
+          "defeito": "Organizacao inteira concentrada numa filial",
+          "quantos": "22 de 22 usuarios",
+          "evidencia": "users.branch_id = 607dd312... ('Filial Principal') em 100%. As outras 5 filiais tem zero pessoas - inclusive as duas de nome plausivel ('Filial Norte', 'Filial Soft'). O contexto ativo por filial nunca e exercitado."
+        },
+        {
+          "defeito": "Filial com nome de flag tecnica",
+          "quantos": "1 de 6",
+          "evidencia": "'Filial Soft' / SOFT-01 - residuo de teste de soft-delete, nao uma unidade da operacao."
+        },
+        {
+          "defeito": "Endereco de patio com marcador de seed vazando para a tela",
+          "quantos": "3 de 4 patios",
+          "evidencia": "'Av. das Industrias, 4200 - Curitiba/PR [demo-painel]' e equivalentes. O sufixo '[demo-painel]' e andaime de povoamento exibido ao usuario."
+        },
+        {
+          "defeito": "Nenhuma filial nomeada por praca",
+          "quantos": "6 de 6",
+          "evidencia": "Nenhuma cita Curitiba, Londrina, Maringa ou Cascavel, embora os patios e os enderecos do tenant estejam justamente nessas cidades."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Definir a malha de filiais real da operacao",
+          "quantos": "5 filiais",
+          "criterio": "'Curitiba - Matriz' (code CWB) | 'Campo Largo - BR-277' (CLG) | 'Londrina' (LDB) | 'Maringa' (MGA) | 'Cascavel' (CVL). Codigos curtos, em maiuscula, unicos por tenant, SEM timestamp. status='active' em 4 e 'inactive' em 1 (Cascavel, unidade em implantacao) para a aba 'Inativas' ter conteudo real. Nao existe is_active nesta tabela - a situacao e so o status."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Reaproveitar os ids em vez de recriar",
+          "quantos": "3 renomeadas + 2 novas",
+          "criterio": "'Filial Principal' (MAIN) vira 'Curitiba - Matriz' (CWB) preservando o id - os 22 usuarios ja apontam para ela. 'Filial Teste 1783892024' vira 'Campo Largo - BR-277' (CLG) preservando o id - os 3 patios ja apontam para ela e a FK RESTRICT nao deixaria apagar. 'Filial Norte' vira 'Londrina' (LDB). Criar Maringa e Cascavel."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Remover as sobras",
+          "quantos": "3 ('Filial Auditoria 1783882395', 'Insp Filial 1783892344', 'Filial Soft')",
+          "criterio": "So depois de confirmar 0 users, 0 yards e 0 user_role_assignments apontando: select b.id from branches b where b.tenant_id=... and not exists (select 1 from users u where u.branch_id=b.id) and not exists (select 1 from yards y where y.branch_id=b.id) and not exists (select 1 from user_role_assignments a where a.branch_id=b.id)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Distribuir as pessoas pelas filiais",
+          "quantos": "cerca de 18 usuarios",
+          "criterio": "Curitiba - Matriz: administracao, financeiro, despacho e cerca de 40% dos profissionais de campo. Campo Largo - BR-277: equipe de rodovia e operacao de patio. Londrina e Maringa: 2 ou 3 profissionais cada + 1 supervisor. Cascavel (inativa): 0. Ninguem lotado em filial inativa. user_role_assignments.branch_id coerente com users.branch_id."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Amarrar os patios e limpar os enderecos",
+          "quantos": "4 yards",
+          "criterio": "Patio Central e Patio Norte -> Curitiba - Matriz; Patio Oeste -> Campo Largo - BR-277; Patio Sul -> recebe branch_id (Londrina) e endereco real ('Rod. PR-445, km 12 - Londrina/PR') no lugar de 'parana'. Remover o sufixo '[demo-painel]' dos enderecos dos outros tres."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from branches, T where tenant_id=t) filiais_deve_ser_5, (select count(*) from branches, T where tenant_id=t and (name ~ '[0-9]{6,}' or code ~ '[0-9]{6,}')) lixo_de_teste_deve_ser_0, (select count(*) from branches, T where tenant_id=t and status not in ('active','inactive')) status_invalido_deve_ser_0, (select count(distinct code) from branches, T where tenant_id=t) codigos_distintos_deve_ser_5, (select count(*) from yards, T where tenant_id=t and branch_id is null) patio_sem_filial_deve_ser_0, (select count(*) from yards, T where tenant_id=t and address like '%demo-painel%') endereco_com_marcador_deve_ser_0, (select count(*) from users, T where tenant_id=t and branch_id is null) usuario_sem_filial_deve_ser_0, (select count(distinct branch_id) from users, T where tenant_id=t) filiais_com_gente_deve_ser_4, (select count(*) from branches b, T where b.tenant_id=t and b.status='active' and not exists (select 1 from users u where u.branch_id=b.id)) filial_ativa_vazia_deve_ser_0, (select count(*) from users u join branches b on b.id=u.branch_id, T where u.tenant_id=t and b.status='inactive') gente_em_filial_inativa_deve_ser_0\""
+    },
+    {
+      "tela": "Tags (Etiquetas)",
+      "rota": "/cadastros/tags",
+      "tabelas": [
+        "tags",
+        "tag_assignments",
+        "work_order_comments (unico consumidor real)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK tags_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "nome unico + cor hexadecimal",
+          "exigido_por": "ambos",
+          "por_que": "UNIQUE (tenant_id, name) - tags_tenant_id_name_key. color e nulavel no banco, mas o validador (tag.validators.ts) exige o formato ^#[0-9a-fA-F]{6}$ quando presente, e a coluna 'Cor' da tela mostra travessao sem ele. O chip colorido no comentario da OS (CommentsTab.tsx:41) cai para cinza #E2E8F0 quando a cor falta."
+        },
+        {
+          "passo": 3,
+          "entidade": "descricao",
+          "exigido_por": "historia",
+          "por_que": "Nulavel, mas e uma COLUNA da tabela da tela (TagsPage.tsx:106). Sem ela, ninguem sabe quando aplicar a etiqueta - e uma taxonomia sem criterio de uso nao e taxonomia."
+        },
+        {
+          "passo": 4,
+          "entidade": "work_orders -> work_order_comments",
+          "exigido_por": "banco",
+          "por_que": "tag_assignments tem FK (tenant_id, tag_id) -> tags e entity_id NOT NULL. O UNICO produtor de assignment no codigo e work-order-comment.service.ts (COMMENT_ENTITY_TYPE = 'work_order_comment', linha 29). Sem comentario de OS, nenhuma etiqueta pode ser aplicada."
+        },
+        {
+          "passo": 5,
+          "entidade": "tag_assignments",
+          "exigido_por": "historia",
+          "por_que": "UNIQUE (tenant_id, entity_type, entity_id, tag_id) - a mesma etiqueta nao repete no mesmo comentario. E este vinculo que transforma a lista de etiquetas em informacao operacional; a tela de Tags NAO mostra contagem de uso, entao uma etiqueta orfa parece perfeitamente saudavel ali."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "4 etiquetas; 3 com nome de teste ('QA-Tag-1783906313' inativa, 'Insp-7614', 'DupCheck-14856'). 1 sem cor, 3 sem descricao, 2 compartilhando a mesma cor. ZERO tag_assignments no banco INTEIRO (nao so no tenant) e ZERO work_order_comments no tenant. Nenhuma etiqueta foi aplicada a nada, jamais.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select t.name,t.color,t.description,t.is_active,(select count(*) from tag_assignments a where a.tag_id=t.id) usos from tags t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => Urgente/#dc2626/null/t/0 | QA-Tag-1783906313/#22c55e/'tag de teste QA'/f/0 | Insp-7614/#22c55e/null/t/0 | DupCheck-14856/null/null/t/0   ||   \"select entity_type,count(*) from tag_assignments group by 1\" => 0 linhas   ||   \"select count(*) from work_order_comments where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Etiqueta que nunca etiquetou nada - o 'Todos os servicos' desta tela",
+          "quantos": "4 de 4",
+          "evidencia": "tag_assignments esta vazia no banco inteiro (0 linhas, qualquer entity_type). A tela de Tags nao tem coluna de uso, entao as 4 linhas parecem saudaveis; o vazio so aparece no picker de etiquetas do comentario da OS."
+        },
+        {
+          "defeito": "Nomes de instrumentacao de teste",
+          "quantos": "3 de 4",
+          "evidencia": "'QA-Tag-1783906313' (com descricao literal 'tag de teste QA'), 'Insp-7614' (inspecao) e 'DupCheck-14856' (checagem de duplicata). Tres das quatro linhas sao residuo de suite."
+        },
+        {
+          "defeito": "Duas etiquetas com a mesma cor",
+          "quantos": "2 de 4",
+          "evidencia": "'QA-Tag-1783906313' e 'Insp-7614' ambas #22c55e. Cor de etiqueta serve para distinguir a distancia; repetida, nao distingue."
+        },
+        {
+          "defeito": "Coluna Descricao praticamente vazia",
+          "quantos": "3 de 4",
+          "evidencia": "description IS NULL em 3 linhas - inclusive na unica etiqueta legitima ('Urgente')."
+        },
+        {
+          "defeito": "Etiqueta sem cor",
+          "quantos": "1 de 4",
+          "evidencia": "'DupCheck-14856' com color NULL -> coluna 'Cor' mostra travessao e o chip no comentario sairia cinza sem intencao."
+        },
+        {
+          "defeito": "Nao ha comentarios de OS onde aplicar etiqueta",
+          "quantos": "0 comentarios em 17 OS",
+          "evidencia": "work_order_comments = 0. O unico caminho de uso de etiqueta no sistema esta sem materia-prima."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Remover as 3 etiquetas de teste",
+          "quantos": "3",
+          "criterio": "tags e RESTRICT por tag_assignments - como ha 0 assignments, a remocao e limpa hoje. Conferir com: select t.id from tags t where t.tenant_id=... and not exists (select 1 from tag_assignments a where a.tag_id=t.id)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Criar a taxonomia operacional de uma central de guincho",
+          "quantos": "10 etiquetas (1 mantida + 9 novas)",
+          "criterio": "Nome curto em PT-BR de negocio, unico, com descricao que diz QUANDO aplicar, e cor hex #RRGGBB DISTINTA por etiqueta, agrupada por familias: URGENCIA - 'Urgente' #DC2626 (manter, preenchendo a descricao) e 'Cliente aguardando na via' #EA580C. QUALIDADE - 'Retrabalho' #B45309, 'Reincidencia' #7C2D12, 'Elogio do cliente' #16A34A. FINANCEIRO - 'Aguardando seguradora' #2563EB, 'Cobranca em disputa' #9333EA. RISCO E CAMPO - 'Avaria constatada' #DB2777, 'Rodovia federal' #0891B2, 'Veiculo sem documentacao' #64748B. is_active=true em 9; 1 inativa (etiqueta aposentada) para a aba 'Inativas' ter conteudo."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar os comentarios de OS que sustentam as etiquetas",
+          "quantos": "cerca de 45 work_order_comments em cerca de 20 OS",
+          "criterio": "Texto de operacao real, em PT-BR, curto, escrito pelo despacho ou pelo tecnico: 'Cliente informou que o veiculo esta na faixa de acostamento da BR-277, km 108, sentido Curitiba.' | 'Seguradora autorizou a remocao; numero de sinistro no anexo.' | 'Plataforma nao coube na garagem; necessario motorreboque.' Nunca lorem, nunca 'comentario 1'. Autor = usuario coerente com a OS (despacho, tecnico atribuido, financeiro). created_at dentro da janela da OS (apos created_at, antes ou junto de completed_at)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Aplicar as etiquetas aos comentarios",
+          "quantos": "cerca de 60 tag_assignments",
+          "criterio": "entity_type='work_order_comment' (o unico que o codigo produz), entity_id = id do comentario, respeitando a UNIQUE (tenant, entity_type, entity_id, tag_id). 1 a 3 etiquetas por comentario etiquetado; cerca de 60% dos comentarios recebem ao menos uma. TODA etiqueta ATIVA precisa de pelo menos 3 usos - nenhuma etiqueta ativa pode terminar com 0. Coerencia semantica obrigatoria: 'Aguardando seguradora' so em comentario que fala de seguradora; 'Rodovia federal' so em OS cujo service_address cita BR-; 'Avaria constatada' so em OS que tenha linha em damages. A etiqueta INATIVA fica com uso historico antigo e zero novos."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from tags, T where tenant_id=t) etiquetas_deve_ser_10, (select count(*) from tags, T where tenant_id=t and name ~ '[0-9]{4,}') nome_de_teste_deve_ser_0, (select count(*) from tags, T where tenant_id=t and (color is null or color !~ '^#[0-9a-fA-F]{6}$')) cor_invalida_deve_ser_0, (select count(distinct color) from tags, T where tenant_id=t) cores_distintas_deve_ser_10, (select count(*) from tags, T where tenant_id=t and coalesce(description,'')='') sem_descricao_deve_ser_0, (select count(*) from tags tg, T where tg.tenant_id=t and tg.is_active and (select count(*) from tag_assignments a where a.tag_id=tg.id) < 3) etiqueta_ativa_pouco_usada_deve_ser_0, (select count(*) from tag_assignments, T where tenant_id=t and entity_type <> 'work_order_comment') entity_type_invalido_deve_ser_0, (select count(*) from tag_assignments a, T where a.tenant_id=t and not exists (select 1 from work_order_comments c where c.id=a.entity_id)) assignment_orfao_deve_ser_0, (select count(*) from work_order_comments, T where tenant_id=t) comentarios_min_40\" -- e na tela: abrir uma OS em /work-orders/:id, aba Comentarios, e ver os chips coloridos com nome e cor certos."
+    },
+    {
+      "tela": "Pontos de Interesse",
+      "rota": "/cadastros/pontos-interesse",
+      "tabelas": [
+        "pois",
+        "work_orders map-start-points (work-order.service.ts:1975 listMapBases)",
+        "MapTab da OS (frontend/src/modules/work-orders/components/tabs/MapTab.tsx)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "FK pois_tenant_id_fkey -> tenants(id)."
+        },
+        {
+          "passo": 2,
+          "entidade": "nome unico",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, name) - pois_tenant_id_name_key."
+        },
+        {
+          "passo": 3,
+          "entidade": "latitude e longitude NAO-SENTINELA",
+          "exigido_por": "ambos",
+          "por_que": "Ambas NOT NULL no banco. Alem disso o validador (poi.validators.ts:77 hasValidCoordinate) REJEITA o par (0,0) explicitamente como sentinela e limita abs(lat)<=90 e abs(lng)<=180. Historia: coordenada fora da area de atuacao e tecnicamente valida e operacionalmente inutil."
+        },
+        {
+          "passo": 4,
+          "entidade": "category = 'base' nos pontos que sao base operacional",
+          "exigido_por": "historia",
+          "por_que": "REGRA SEMANTICA ESCONDIDA NO CODIGO: work-order.service.ts:1981 e MapTab.tsx:121 filtram por (poi.category ?? '').trim().toLowerCase() === 'base'. So POIs ativos com essa categoria viram opcao 'Base - <nome>' no seletor de partida do mapa da OS. Categoria vazia (4 de 7 hoje) = o ponto existe e some do mapa."
+        },
+        {
+          "passo": 5,
+          "entidade": "is_active = true",
+          "exigido_por": "historia",
+          "por_que": "listMapBases chama service.list com is_active:true e ainda refiltra por poi.isActive. Ponto inativo desaparece do mapa sem aviso."
+        },
+        {
+          "passo": 6,
+          "entidade": "address preenchido",
+          "exigido_por": "historia",
+          "por_que": "Nulavel, mas e uma coluna da tela (PontosInteressePage.tsx:94). E tambem o que um humano consegue ler - a coluna 'Coordenada' e so um par de numeros."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "7 pontos, todos ativos. 5 com nome de teste ('AUDIT-POI-18946','Base Verifica 30883','DupPoi-12164','POI-24601','QA-POI-1783906368'). 4 sem categoria e 3 com category='Base'. ZERO pontos dentro do Parana - as 7 coordenadas sao de Sao Paulo capital (Av. Paulista, Praca da Se, Bela Vista). 1 sem endereco. Consequencia: as 3 'bases' que o mapa da OS oferece ficam a cerca de 400 km da operacao.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select name,category,latitude,longitude,address,is_active from pois where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by name\" => 7 linhas com latitudes entre -23.50 e -23.56 e longitudes entre -46.60 e -46.66   ||   \"select count(*) total, count(*) filter (where name ~ '[0-9]{4,}') lixo, count(*) filter (where category is null) sem_categoria, count(*) filter (where address is null) sem_endereco, count(*) filter (where latitude between -26.8 and -22.4 and longitude between -54.7 and -48.0) dentro_do_pr from pois where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" => 7 | 5 | 4 | 1 | 0   ||   \"select coalesce(category,'(null)'), count(*) from pois where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1\" => Base 3, (null) 4"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "A operacao inteira esta no estado errado",
+          "quantos": "7 de 7",
+          "evidencia": "Nenhuma coordenada dentro do bounding box do Parana (lat -26,8 a -22,4 / lon -54,7 a -48,0). Todas apontam para Sao Paulo capital - Av. Paulista 1000, Praca da Se, Av. Paulista 1578/Bela Vista - num tenant chamado 'Guinchos Parana' cujos patios ficam em Curitiba e Campo Largo."
+        },
+        {
+          "defeito": "Coordenada duplicada em pontos diferentes",
+          "quantos": "3 de 7",
+          "evidencia": "'AUDIT-POI-18946', 'POI-24601' e 'QA-POI-1783906368' compartilham -23.5505200 / -46.6333100 (a coordenada de exemplo mais copiada da internet). Tres 'lugares' distintos no mesmo metro quadrado."
+        },
+        {
+          "defeito": "Nome de instrumentacao de teste",
+          "quantos": "5 de 7",
+          "evidencia": "'AUDIT-POI-18946', 'Base Verifica 30883', 'DupPoi-12164', 'POI-24601', 'QA-POI-1783906368'. A coluna 'Ponto' e a primeira e vem em negrito."
+        },
+        {
+          "defeito": "Categoria vazia -> o ponto some do mapa da OS",
+          "quantos": "4 de 7",
+          "evidencia": "category IS NULL em 4 linhas. Como listMapBases filtra por lower(category)='base', esses 4 nunca viram opcao de partida - existem so na lista de cadastro."
+        },
+        {
+          "defeito": "As 'bases' sao bases de nada",
+          "quantos": "3 de 3 com category='Base'",
+          "evidencia": "'AUDIT-POI-18946' (Av. Paulista 1000), 'Base SP' (Centro) e 'QA-POI-1783906368' (Praca da Se). Sao as tres opcoes 'Base - ...' que o operador ve no seletor de partida do MapTab - todas em Sao Paulo."
+        },
+        {
+          "defeito": "Nenhum ponto casa com os patios que existem",
+          "quantos": "0 de 4 patios",
+          "evidencia": "Existem 4 yards (Patio Norte/Central/Oeste/Sul) com enderecos de Curitiba, Campo Largo e Londrina e nenhum POI correspondente. O destino mais frequente de um reboque nao esta no mapa."
+        },
+        {
+          "defeito": "Ponto sem endereco legivel",
+          "quantos": "1 de 7",
+          "evidencia": "'DupPoi-12164' com address NULL -> a coluna Endereco mostra travessao e sobra so o par de numeros."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Remover os pontos de teste",
+          "quantos": "5 (mais 'Base SP' se o tenant nao atender SP)",
+          "criterio": "pois nao e referenciado por FK de nenhuma tabela (o consumo e por leitura em listMapBases e no MapTab), entao a remocao e livre. Conferir apenas que nao ha POI citado por nome em texto de OS."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Criar as BASES operacionais (a categoria semanticamente especial)",
+          "quantos": "5 pontos com category='base'",
+          "criterio": "Uma por filial, com coordenada real do Parana: 'Base Curitiba - Cidade Industrial' (-25.4870, -49.3400) | 'Base Campo Largo - BR-277 km 108' (-25.4593, -49.5280) | 'Base Londrina - Gleba Palhano' (-23.3390, -51.1750) | 'Base Maringa - Zona Industrial' (-23.4360, -51.9500) | 'Base Sao Jose dos Pinhais - Aeroporto Afonso Pena' (-25.5325, -49.1758). category gravada EXATAMENTE como 'base' (o filtro faz trim+lowercase, mas gravar consistente evita surpresa). is_active=true nas 5 - base inativa some do seletor de partida. address com logradouro real."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Espelhar os patios como pontos de interesse",
+          "quantos": "4 pontos com category='Patio'",
+          "criterio": "Um POI por yard, com o MESMO nome do patio e a coordenada do endereco real que o yard ja carrega: Patio Norte (Av. das Industrias, 4200 - Curitiba), Patio Central (R. Barao do Rio Branco, 118 - Curitiba), Patio Oeste (Rod. BR-277, km 18 - Campo Largo), Patio Sul (Rod. PR-445, km 12 - Londrina). category NAO pode ser 'base' - patio nao e base de saida de guincho."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Criar os pontos de referencia que a operacao de rodovia usa",
+          "quantos": "cerca de 10 pontos",
+          "criterio": "Categorias: 'Ponto critico' (Contorno Leste BR-116 km 116 -25.4990/-49.1830 | Serra do Cadeado BR-376 km 236 -24.1830/-51.0430 | Serra do Mar BR-277 km 42 -25.4700/-48.8700) | 'Pedagio' (Praca BR-277 Campo Largo | Praca BR-376 Sao Luiz do Purunna) | 'Posto de combustivel' (os MESMOS postos cadastrados em Fornecedores, para o mapa e o fornecedor contarem a mesma historia) | 'Oficina' (Oficina Central Diesel - Curitiba) | 'Hospital' (Hospital do Trabalhador - Curitiba, referencia de acidente com vitima) | 'Guarnicao' (PRF Curitiba BR-116)."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Garantir as regras duras da coordenada",
+          "quantos": "19 pontos",
+          "criterio": "Nenhum par (0,0) - o validador rejeita explicitamente. abs(lat)<=90 e abs(lng)<=180, com 7 casas decimais como o schema numeric ja usa. TODA coordenada dentro do bounding box do Parana (lat entre -26,8 e -22,4; lon entre -54,7 e -48,0). Nenhum par repetido entre pontos distintos. 17 ativos e 2 inativos (base desativada, ponto critico resolvido) para a aba 'Inativos' ter conteudo - e nenhum dos 2 inativos pode ser categoria 'base' de filial ativa."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with T as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid t) select (select count(*) from pois, T where tenant_id=t) pontos_deve_ser_19, (select count(*) from pois, T where tenant_id=t and name ~ '[0-9]{4,}') nome_de_teste_deve_ser_0, (select count(*) from pois, T where tenant_id=t and not (latitude between -26.8 and -22.4 and longitude between -54.7 and -48.0)) fora_do_parana_deve_ser_0, (select count(*) from pois, T where tenant_id=t and latitude=0 and longitude=0) sentinela_deve_ser_0, (select count(*) from pois, T where tenant_id=t and coalesce(category,'')='') sem_categoria_deve_ser_0, (select count(*) from pois, T where tenant_id=t and coalesce(address,'')='') sem_endereco_deve_ser_0, (select count(*) from pois, T where tenant_id=t and lower(trim(category))='base' and is_active) bases_ativas_deve_ser_5, (select count(*) from (select latitude,longitude from pois, T where tenant_id=t group by 1,2 having count(*)>1) d) coordenada_duplicada_deve_ser_0, (select count(*) from yards y, T where y.tenant_id=t and not exists (select 1 from pois p where p.tenant_id=t and p.name=y.name)) patio_sem_ponto_deve_ser_0\" -- e na tela: abrir uma OS em /work-orders/:id, aba Mapa, e conferir que o seletor de partida lista 'Base - Base Curitiba - Cidade Industrial' e as outras 4 bases, todas no Parana."
+    }
+  ]
+}

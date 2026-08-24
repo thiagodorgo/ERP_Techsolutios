@@ -44,8 +44,8 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
       return ErpScaffold(
         title: 'Mapa operacional',
         body: const PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message: 'field_location:send necessario para mapa operacional.',
+          title: 'Acesso não autorizado',
+          message: 'field_location:send necessário para mapa operacional.',
         ),
       );
     }
@@ -70,7 +70,7 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
                   title: const Text('Mapa operacional simples conectado a OS'),
                   subtitle: Text(
                     workOrder == null
-                        ? 'Selecione uma OS para visualizar ponto de atendimento e ultimo fix do tecnico.'
+                        ? 'Selecione uma OS para visualizar ponto de atendimento e último fix do técnico.'
                         : '${workOrder.code} - ${workOrder.customerName}',
                   ),
                 ),
@@ -84,9 +84,9 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.info_outline),
-                    title: Text('OS nao selecionada'),
+                    title: Text('OS não selecionada'),
                     subtitle: Text(
-                      'Abra o mapa a partir de uma OS para registrar localizacao operacional.',
+                      'Abra o mapa a partir de uma OS para registrar localização operacional.',
                     ),
                   ),
                 ),
@@ -155,13 +155,13 @@ class _OperationalLocationCardState
       if (result.status == FieldLocationCaptureStatus.unavailable) {
         _safeMessage =
             result.safeMessage ??
-            'Localizacao do dispositivo indisponivel nesta versao.';
+            'Localização do dispositivo indisponível nesta versão.';
       } else {
         await service.syncTenant(widget.session.activeTenant.tenantId);
-        _safeMessage = 'Localizacao operacional enfileirada para sync.';
+        _safeMessage = 'Localização operacional enfileirada para sync.';
       }
     } catch (_) {
-      _safeMessage = 'Nao foi possivel registrar a localizacao operacional.';
+      _safeMessage = 'Não foi possível registrar a localização operacional.';
     } finally {
       if (mounted) {
         setState(() {
@@ -204,7 +204,7 @@ class _OperationalLocationCardState
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Localizacao operacional',
+                        'Localização operacional',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
@@ -238,24 +238,30 @@ class _OperationalLocationCardState
                 if (latest == null)
                   const Text('Nenhum fix operacional registrado nesta OS.')
                 else ...[
-                  Text('Ultimo fix: ${_fmtDate(latest.recordedAt)}'),
+                  Text('Último fix: ${_fmtDate(latest.recordedAt)}'),
                   if (latest.accuracyMeters != null)
                     Text(
                       'Precisao: ${latest.accuracyMeters!.toStringAsFixed(1)} m',
                     ),
                   if (latest.syncedAt != null)
-                    Text('Ultimo envio: ${_fmtDate(latest.syncedAt!)}'),
+                    Text('Último envio: ${_fmtDate(latest.syncedAt!)}'),
                   if (latest.lastSafeError != null)
-                    Text('Ultima falha: ${latest.lastSafeError}'),
+                    Text('Última falha: ${latest.lastSafeError}'),
                 ],
                 if (_safeMessage != null) ...[
                   const SizedBox(height: 8),
                   Text(_safeMessage!),
                 ],
                 const SizedBox(height: 12),
+                // Os botões do tema nascem com `minimumSize: Size.fromHeight(44)`
+                // — largura mínima INFINITA. Num Row, filho não-flexível recebe
+                // largura ilimitada e o layout estoura: este cartão aparece no
+                // DETALHE e na EXECUÇÃO da OS, e derrubava as duas telas para
+                // branco no aparelho. Ambos os botões ficam flexíveis.
                 Row(
                   children: [
                     Expanded(
+                      flex: 3,
                       child: FilledButton.icon(
                         onPressed: !_isSending && canSend ? _captureNow : null,
                         icon: _isSending
@@ -267,16 +273,22 @@ class _OperationalLocationCardState
                                 ),
                               )
                             : const Icon(Icons.my_location_outlined),
-                        label: const Text('Enviar localizacao agora'),
+                        label: const Text('Enviar localização agora'),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: () => context.push(
-                        '/field-map?workOrderId=${widget.workOrder.localId}',
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push(
+                          '/field-map?workOrderId=${widget.workOrder.localId}',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        icon: const Icon(Icons.map_outlined, size: 18),
+                        label: const Text('Abrir mapa'),
                       ),
-                      icon: const Icon(Icons.map_outlined),
-                      label: const Text('Abrir mapa'),
                     ),
                   ],
                 ),
@@ -353,7 +365,7 @@ class _LocationPrivacyStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = status;
     if (current == null) {
-      return const Text('Verificando status de localizacao...');
+      return const Text('Verificando status de localização...');
     }
 
     return Column(
@@ -370,14 +382,14 @@ class _LocationPrivacyStatus extends StatelessWidget {
               status: current.consentAccepted ? 'success' : 'warning',
             ),
             OperationalStatusChip(
-              label: 'Permissao: ${current.permissionLabel}',
+              label: 'Permissão: ${current.permissionLabel}',
               status: _permissionTone(current.permissionLabel),
             ),
             if (current.serviceEnabled != null)
               OperationalStatusChip(
                 label: current.serviceEnabled!
-                    ? 'Servico ligado'
-                    : 'Servico desligado',
+                    ? 'Serviço ligado'
+                    : 'Serviço desligado',
                 status: current.serviceEnabled! ? 'success' : 'danger',
               ),
           ],
@@ -406,7 +418,7 @@ class _LocationPrivacyStatus extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onOpenSettings,
                 icon: const Icon(Icons.settings_outlined),
-                label: const Text('Abrir configuracoes'),
+                label: const Text('Abrir configurações'),
               ),
           ],
         ),
@@ -454,7 +466,7 @@ class _OperationalMapPanel extends ConsumerWidget {
           if (latest != null)
             OperationalMapPoint(
               id: 'tech',
-              label: 'Tecnico',
+              label: 'Técnico',
               latitude: latest.latitude,
               longitude: latest.longitude,
             ),
@@ -487,7 +499,7 @@ class _OperationalMapPanel extends ConsumerWidget {
                   children: [
                     const OperationalStatusChip(label: 'OS', status: 'info'),
                     const OperationalStatusChip(
-                      label: 'Tecnico',
+                      label: 'Técnico',
                       status: 'warning',
                     ),
                     if (wo?.latitude == null || wo?.longitude == null)
@@ -497,7 +509,7 @@ class _OperationalMapPanel extends ConsumerWidget {
                       ),
                     if (latest == null)
                       const OperationalStatusChip(
-                        label: 'Sem fix do tecnico',
+                        label: 'Sem fix do técnico',
                         status: 'info',
                       ),
                   ],

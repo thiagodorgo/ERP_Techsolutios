@@ -9,7 +9,7 @@ void main() {
   group('B-109 approval state regression', () {
     test('parsing pending_approval preserva estado', () {
       final state = MobileApprovalState.fromBody(
-        _response(status: 'pending_approval', message: 'Aprovacao pendente.'),
+        _response(status: 'pending_approval', message: 'Aprovação pendente.'),
       );
 
       expect(state.status, MobileApprovalStatus.pendingApproval);
@@ -21,11 +21,11 @@ void main() {
 
     test('parsing approved preserva mensagem segura', () {
       final state = MobileApprovalState.fromBody(
-        _response(status: 'approved', message: 'Aprovacao registrada.'),
+        _response(status: 'approved', message: 'Aprovação registrada.'),
       );
 
       expect(state.status, MobileApprovalStatus.approved);
-      expect(state.safeMessage, 'Aprovacao registrada.');
+      expect(state.safeMessage, 'Aprovação registrada.');
       expect(workOrderStatusFromApiValue('approved'), WorkOrderStatus.approved);
     });
 
@@ -34,23 +34,23 @@ void main() {
         _response(
           status: 'rejected',
           message: 'Reprovacao registrada.',
-          reason: 'Foto obrigatoria ausente.',
+          reason: 'Foto obrigatória ausente.',
         ),
       );
 
       expect(state.status, MobileApprovalStatus.rejected);
       expect(state.safeMessage, 'Reprovacao registrada.');
-      expect(state.reason, 'Foto obrigatoria ausente.');
+      expect(state.reason, 'Foto obrigatória ausente.');
       expect(workOrderStatusFromApiValue('rejected'), WorkOrderStatus.rejected);
     });
 
-    test('payload de decisao usa allowlist sem tenant/token/path/binario', () {
+    test('payload de decisão usa allowlist sem tenant/token/path/binario', () {
       final payloads = [
         ApprovalDecisionPayload.approve(
-          note: 'Conferido com evidencias.',
+          note: 'Conferido com evidências.',
         ).toJson(),
         ApprovalDecisionPayload.reject(
-          reason: 'Foto obrigatoria ausente.',
+          reason: 'Foto obrigatória ausente.',
         ).toJson(),
       ];
 

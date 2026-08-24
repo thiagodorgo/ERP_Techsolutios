@@ -45,7 +45,7 @@ WorkOrder _wo({
   localId: id,
   tenantId: _tenant,
   code: 'OS-B084-$id',
-  title: title ?? 'Instalacao $id',
+  title: title ?? 'Instalação $id',
   customerName: 'Cliente B084',
   serviceAddress: 'Rua Teste, 1',
   status: status,
@@ -162,7 +162,7 @@ void main() {
       expect(find.text('Minhas OS'), findsOneWidget);
     });
 
-    testWidgets('6. lista de hoje nao aparece sem OS no dia', (tester) async {
+    testWidgets('6. lista de hoje não aparece sem OS no dia', (tester) async {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
       final seed = [
         _wo(id: 'y', scheduledAt: yesterday, status: WorkOrderStatus.scheduled),
@@ -173,7 +173,7 @@ void main() {
       expect(find.text('Minhas OS'), findsOneWidget);
     });
 
-    testWidgets('7. lista de hoje nao aparece sem scheduledAt', (tester) async {
+    testWidgets('7. lista de hoje não aparece sem scheduledAt', (tester) async {
       final seed = [_wo(id: 'z', status: WorkOrderStatus.scheduled)];
       await tester.pumpWidget(_wrapHome(seed: seed));
       await tester.pumpAndSettle();
@@ -181,7 +181,7 @@ void main() {
       expect(find.text('Minhas OS'), findsOneWidget);
     });
 
-    testWidgets('8. lista de hoje mostra no maximo 5 OS', (tester) async {
+    testWidgets('8. lista de hoje mostra no máximo 5 OS', (tester) async {
       final today = DateTime.now();
       final seed = [
         for (int i = 0; i < 7; i++)
@@ -189,7 +189,7 @@ void main() {
             id: 'wo$i',
             scheduledAt: today,
             status: WorkOrderStatus.scheduled,
-            title: 'Servico $i',
+            title: 'Serviço $i',
           ),
       ];
       await tester.pumpWidget(_wrapHome(seed: seed));
@@ -202,8 +202,8 @@ void main() {
       expect(find.text('Minhas OS'), findsOneWidget);
       // take(5) garante que apenas 5 itens entram na lista
       // Servico 5 e 6 nao estao no todayOrders, portanto nao aparecem
-      expect(find.text('Servico 5'), findsNothing);
-      expect(find.text('Servico 6'), findsNothing);
+      expect(find.text('Serviço 5'), findsNothing);
+      expect(find.text('Serviço 6'), findsNothing);
     });
 
     testWidgets('9. item da lista navega para detalhe da OS ao tocar', (
@@ -221,11 +221,11 @@ void main() {
       await tester.pump();
 
       // .last garante tap no item dentro de _TodayOsList (aparece depois no tree)
-      await tester.tap(find.text('Instalacao nav1').last);
+      await tester.tap(find.text('Instalação nav1').last);
       await tester.pumpAndSettle();
 
       // Navegou para detalhe — AppBar exibe codigo + titulo
-      expect(find.text('OS-B084-nav1 · Instalacao nav1'), findsOneWidget);
+      expect(find.text('OS-B084-nav1 · Instalação nav1'), findsOneWidget);
     });
   });
 

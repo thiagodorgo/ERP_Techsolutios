@@ -233,7 +233,7 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Verificando conexao'), findsOneWidget);
+      expect(find.textContaining('Verificando conexão'), findsOneWidget);
       expect(find.byIcon(Icons.sync_outlined), findsOneWidget);
     });
   });

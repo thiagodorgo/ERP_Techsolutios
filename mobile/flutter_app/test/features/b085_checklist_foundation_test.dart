@@ -48,8 +48,8 @@ const _sessionNoChecklist = BootstrapSession(
 const _demoTemplate = MobileChecklistTemplate(
   id: 'cl-b085-1',
   tenantId: _tenant,
-  title: 'Checklist de Instalacao',
-  description: 'Verificacao de instalacao',
+  title: 'Checklist de Instalação',
+  description: 'Verificação de instalação',
   isRequired: true,
   schemaVersion: 'v1',
   status: 'active',
@@ -59,12 +59,12 @@ const _demoSchema = MobileChecklistSchema(
   id: 'schema-b085-1',
   checklistId: 'cl-b085-1',
   version: 'v1',
-  title: 'Checklist de Instalacao',
+  title: 'Checklist de Instalação',
   fields: [
     MobileChecklistField(
       id: 'f-serial',
       type: MobileChecklistFieldType.text,
-      label: 'Numero de serie',
+      label: 'Número de série',
       required: true,
       order: 1,
     ),
@@ -96,7 +96,7 @@ const _demoSchema = MobileChecklistSchema(
     MobileChecklistField(
       id: 'f-obs',
       type: MobileChecklistFieldType.observation,
-      label: 'Observacoes gerais',
+      label: 'Observações gerais',
       required: false,
       order: 5,
     ),
@@ -112,7 +112,7 @@ WorkOrder _wo({String id = 'wo-b085-1'}) => WorkOrder(
   localId: id,
   tenantId: _tenant,
   code: 'OS-B085-$id',
-  title: 'Instalacao teste',
+  title: 'Instalação teste',
   customerName: 'Cliente B085',
   serviceAddress: 'Rua Teste, 1',
   status: WorkOrderStatus.scheduled,
@@ -233,11 +233,11 @@ Widget _wrapAck({
 
 void main() {
   group('ChecklistAvailableScreen (B-085)', () {
-    testWidgets('1. lista checklists disponiveis para a OS', (tester) async {
+    testWidgets('1. lista checklists disponíveis para a OS', (tester) async {
       await tester.pumpWidget(_wrapAvailable(store: _seededStore()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Checklist de Instalacao'), findsOneWidget);
+      expect(find.text('Checklist de Instalação'), findsOneWidget);
       expect(find.text('Iniciar'), findsOneWidget);
     });
 
@@ -249,11 +249,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Acesso nao autorizado'), findsOneWidget);
+      expect(find.text('Acesso não autorizado'), findsOneWidget);
       expect(find.text('Iniciar'), findsNothing);
     });
 
-    testWidgets('3. tela vazia quando store nao tem checklists para tenant', (
+    testWidgets('3. tela vazia quando store não tem checklists para tenant', (
       tester,
     ) async {
       // Template arquivado impede re-seeding (store nao esta vazio),
@@ -275,7 +275,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Nao foi possivel atualizar os modelos de checklist agora.'),
+        find.text('Não foi possível atualizar os modelos de checklist agora.'),
         findsOneWidget,
       );
       expect(
@@ -290,7 +290,7 @@ void main() {
       await tester.pumpWidget(_wrapRun());
       await tester.pumpAndSettle();
 
-      expect(find.text('Numero de serie'), findsOneWidget);
+      expect(find.text('Número de série'), findsOneWidget);
     });
 
     testWidgets('5. renderiza campo number', (tester) async {
@@ -308,7 +308,7 @@ void main() {
       expect(find.byType(Switch), findsOneWidget);
     });
 
-    testWidgets('7. renderiza campo singleChoice com opcoes', (tester) async {
+    testWidgets('7. renderiza campo singleChoice com opções', (tester) async {
       await tester.pumpWidget(_wrapRun());
       await tester.pumpAndSettle();
 
@@ -324,13 +324,13 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -600));
       await tester.pump();
 
-      expect(find.text('Observacoes gerais'), findsOneWidget);
+      expect(find.text('Observações gerais'), findsOneWidget);
     });
   });
 
-  group('ChecklistRunScreen — logica de conclusao (B-085)', () {
+  group('ChecklistRunScreen — logica de conclusão (B-085)', () {
     testWidgets(
-      '9. botao Concluir desabilitado quando campo obrigatorio vazio',
+      '9. botao Concluir desabilitado quando campo obrigatório vazio',
       (tester) async {
         await tester.pumpWidget(_wrapRun());
         await tester.pumpAndSettle();
@@ -347,7 +347,7 @@ void main() {
     );
 
     testWidgets(
-      '10. botao Concluir habilitado apos preencher campo obrigatorio',
+      '10. botao Concluir habilitado após preencher campo obrigatório',
       (tester) async {
         await tester.pumpWidget(_wrapRun());
         await tester.pumpAndSettle();
@@ -451,7 +451,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Confirmar ciencia'),
+        find.widgetWithText(FilledButton, 'Confirmar ciência'),
       );
       expect(btn.onPressed, isNull);
     });
@@ -469,7 +469,7 @@ void main() {
       await tester.pump();
 
       final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Confirmar ciencia'),
+        find.widgetWithText(FilledButton, 'Confirmar ciência'),
       );
       expect(btn.onPressed, isNotNull);
     });
@@ -525,7 +525,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Checklists da OS'), findsOneWidget);
-        expect(find.text('Checklist de Instalacao'), findsOneWidget);
+        expect(find.text('Checklist de Instalação'), findsOneWidget);
       },
     );
   });

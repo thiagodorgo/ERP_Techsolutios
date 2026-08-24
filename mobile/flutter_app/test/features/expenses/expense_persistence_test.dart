@@ -39,7 +39,7 @@ void main() {
         reportId: created.report.localId,
         categoryId: 'fuel',
         amount: 120,
-        city: 'Sao Paulo',
+        city: 'São Paulo',
         vendorName: 'Posto Local',
       );
       await repository.submitReport(created.report.localId);

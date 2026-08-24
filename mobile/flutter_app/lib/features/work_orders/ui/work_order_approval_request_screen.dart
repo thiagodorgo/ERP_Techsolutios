@@ -53,23 +53,23 @@ class _WorkOrderApprovalRequestScreenState
 
     if (!canUpdate) {
       return ErpScaffold(
-        title: 'Solicitar Aprovacao',
+        title: 'Solicitar Aprovação',
         body: const PermissionBlockedState(
-          title: 'Acao nao autorizada',
+          title: 'Ação não autorizada',
           message:
-              'work_orders:update necessario para solicitar aprovacao nesta OS.',
+              'work_orders:update necessário para solicitar aprovação nesta OS.',
         ),
       );
     }
 
     if (_submitted) {
       return ErpScaffold(
-        title: 'Aprovacao Solicitada',
+        title: 'Aprovação Solicitada',
         body: EmptyState(
           icon: Icons.check_circle_outline,
-          title: 'Solicitacao registrada',
+          title: 'Solicitação registrada',
           message:
-              'A solicitacao de aprovacao foi registrada localmente e sera sincronizada.',
+              'A solicitação de aprovação foi registrada localmente e será sincronizada.',
           action: FilledButton(
             onPressed: () => context.go('/work-orders/${widget.workOrderId}'),
             child: const Text('Voltar para a OS'),
@@ -85,13 +85,13 @@ class _WorkOrderApprovalRequestScreenState
 
         if (wo == null) {
           return ErpScaffold(
-            title: 'Solicitar Aprovacao',
-            body: const ErrorState(message: 'Ordem de servico nao encontrada.'),
+            title: 'Solicitar Aprovação',
+            body: const ErrorState(message: 'Ordem de serviço não encontrada.'),
           );
         }
 
         return ErpScaffold(
-          title: 'Solicitar Aprovacao · ${wo.code}',
+          title: 'Solicitar Aprovação · ${wo.code}',
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -119,7 +119,7 @@ class _WorkOrderApprovalRequestScreenState
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Motivo *',
-                  hintText: 'Descreva o motivo da solicitacao de aprovacao',
+                  hintText: 'Descreva o motivo da solicitação de aprovação',
                   border: OutlineInputBorder(),
                 ),
                 enabled: !_isLoading,
@@ -130,7 +130,7 @@ class _WorkOrderApprovalRequestScreenState
                 maxLines: 2,
                 decoration: const InputDecoration(
                   labelText: 'Impacto operacional',
-                  hintText: 'Descreva o impacto caso a aprovacao seja negada',
+                  hintText: 'Descreva o impacto caso a aprovação seja negada',
                   border: OutlineInputBorder(),
                 ),
                 enabled: !_isLoading,
@@ -146,7 +146,7 @@ class _WorkOrderApprovalRequestScreenState
                   DropdownMenuItem(value: 'low', child: Text('Baixa')),
                   DropdownMenuItem(value: 'normal', child: Text('Normal')),
                   DropdownMenuItem(value: 'high', child: Text('Alta')),
-                  DropdownMenuItem(value: 'critical', child: Text('Critica')),
+                  DropdownMenuItem(value: 'critical', child: Text('Crítica')),
                 ],
                 onChanged: _isLoading
                     ? null
@@ -158,11 +158,8 @@ class _WorkOrderApprovalRequestScreenState
                   leading: const Icon(Icons.attach_file_outlined),
                   title: const Text('Anexos'),
                   subtitle: const Text(
-                    'Upload de evidencias disponivel em bloco futuro.',
-                  ),
-                  trailing: const OperationalStatusChip(
-                    label: 'Futuro',
-                    status: 'info',
+                    'Fotos e documentos são anexados pela tela de evidências '
+                    'da ordem de serviço.',
                   ),
                 ),
               ),
@@ -178,7 +175,7 @@ class _WorkOrderApprovalRequestScreenState
                         ),
                       )
                     : const Icon(Icons.send_outlined),
-                label: const Text('Enviar solicitacao'),
+                label: const Text('Enviar solicitação'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
@@ -197,7 +194,7 @@ class _WorkOrderApprovalRequestScreenState
   Future<void> _doSubmit(WorkOrderRepository repo) async {
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
-      setState(() => _safeError = 'O motivo e obrigatorio.');
+      setState(() => _safeError = 'O motivo é obrigatório.');
       return;
     }
 
@@ -215,13 +212,13 @@ class _WorkOrderApprovalRequestScreenState
       );
       if (mounted) setState(() => _submitted = true);
     } on ArgumentError {
-      setState(() => _safeError = 'O motivo e obrigatorio.');
+      setState(() => _safeError = 'O motivo é obrigatório.');
     } on ApiError catch (e) {
       setState(() => _safeError = e.safeMessage);
     } catch (_) {
       setState(
         () => _safeError =
-            'Nao foi possivel registrar a solicitacao. Tente novamente.',
+            'Não foi possível registrar a solicitação. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

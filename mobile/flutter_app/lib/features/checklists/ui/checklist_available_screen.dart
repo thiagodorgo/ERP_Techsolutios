@@ -69,9 +69,8 @@ class _ChecklistAvailableScreenState
             ),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acesso nao autorizado',
-                message:
-                    'checklist_run:execute necessario para executar checklists.',
+                title: 'Acesso não autorizado',
+                message: 'Seu perfil não permite executar checklists em campo.',
               ),
             ),
           ],
@@ -234,7 +233,7 @@ class _TemplateCard extends StatelessWidget {
                   ),
                 ),
                 if (template.isRequired)
-                  const MobilePill(label: 'Obrigatorio', tone: PillTone.danger),
+                  const MobilePill(label: 'Obrigatório', tone: PillTone.danger),
               ],
             ),
             if (template.description != null) ...[
@@ -267,7 +266,7 @@ class _TemplateCard extends StatelessWidget {
                   ),
                   child: Text(
                     isDone
-                        ? 'Concluido'
+                        ? 'Concluído'
                         : isInProgress
                         ? 'Continuar'
                         : 'Iniciar',
@@ -402,8 +401,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               hasError
-                  ? 'Nao foi possivel atualizar os modelos de checklist agora.'
-                  : 'Nenhum checklist disponivel para esta ordem.',
+                  ? 'Não foi possível atualizar os modelos de checklist agora.'
+                  : 'Nenhum checklist disponível para esta ordem.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

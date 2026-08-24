@@ -5,24 +5,24 @@ sealed class ApiError implements Exception {
 }
 
 final class ApiNetworkError extends ApiError {
-  const ApiNetworkError([super.safeMessage = 'Sem conexao com o servidor.']);
+  const ApiNetworkError([super.safeMessage = 'Sem conexão com o servidor.']);
 }
 
 final class ApiTimeoutError extends ApiError {
   const ApiTimeoutError([
-    super.safeMessage = 'Servidor nao respondeu a tempo. Tente novamente.',
+    super.safeMessage = 'Servidor não respondeu a tempo. Tente novamente.',
   ]);
 }
 
 final class ApiUnauthorizedError extends ApiError {
   const ApiUnauthorizedError([
-    super.safeMessage = 'Sessao expirada. Faca login novamente.',
+    super.safeMessage = 'Sessão expirada. Faça login novamente.',
   ]);
 }
 
 final class ApiConflictError extends ApiError {
   const ApiConflictError([
-    super.safeMessage = 'Conflito de dados. Sincronizacao manual necessaria.',
+    super.safeMessage = 'Conflito de dados. Sincronização manual necessária.',
   ]);
 }
 
@@ -40,7 +40,7 @@ final class ApiServerError extends ApiError {
 final class ApiIntegrationUnavailableError extends ApiError {
   const ApiIntegrationUnavailableError([
     super.safeMessage =
-        'Integracao remota ainda nao disponivel. '
-        'Seus dados foram mantidos localmente e serao sincronizados quando a integracao estiver ativa.',
+        'Integração remota ainda não disponível. '
+        'Seus dados foram mantidos localmente e serão sincronizados quando a integração estiver ativa.',
   ]);
 }

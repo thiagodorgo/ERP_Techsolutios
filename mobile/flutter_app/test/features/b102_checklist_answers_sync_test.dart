@@ -78,7 +78,7 @@ SyncAction _action({
           'server_run_id': 'srv-run-123',
           'field_id': 'field-condition',
           'answered_at': '2026-06-16T12:00:00.000Z',
-          'text_value': 'Veiculo sem danos.',
+          'text_value': 'Veículo sem danos.',
         },
     status: SyncStatus.pending,
     createdAt: DateTime.utc(2026, 6, 16, 12),
@@ -125,7 +125,7 @@ void main() {
       expect(action['local_created_at'], '2026-06-16T12:00:00.000Z');
       expect(payload['run_id'], 'srv-run-123');
       expect(payload['component_id'], 'field-condition');
-      expect(payload['value'], 'Veiculo sem danos.');
+      expect(payload['value'], 'Veículo sem danos.');
       expect(metadata['source'], 'mobile_offline');
       expect(metadata['answered_at'], '2026-06-16T12:00:00.000Z');
       expect(metadata['local_run_id'], 'clrun-local-123');
@@ -267,7 +267,7 @@ void main() {
       expect(payload.containsKey('local_run_id'), isFalse);
     });
 
-    test('serializer nao usa local_run_id como payload.run_id', () {
+    test('serializer não usa local_run_id como payload.run_id', () {
       final action = _encodedSingle(
         _action(
           id: 'cl-answer-local-only',
@@ -286,7 +286,7 @@ void main() {
       expect(metadata['local_run_id'], 'clrun-local-123');
     });
 
-    test('payload nao contem tenant, token, path, base64 ou file_data', () {
+    test('payload não contem tenant, token, path, base64 ou file_data', () {
       final request = const ChecklistSyncCodec(batchIdFactory: _fixedBatchId)
           .encodeRequest([
             _action(
@@ -676,7 +676,7 @@ void main() {
       expect(result.synced.single.status, SyncStatus.synced);
     });
 
-    test('B-102 nao envia answerUpsert apenas com local_run_id', () async {
+    test('B-102 não envia answerUpsert apenas com local_run_id', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _action(
@@ -705,7 +705,7 @@ void main() {
       expect(stored.status, SyncStatus.pending);
     });
 
-    test('B-102 nao envia runComplete apenas com local_run_id', () async {
+    test('B-102 não envia runComplete apenas com local_run_id', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _action(
@@ -733,7 +733,7 @@ void main() {
       expect(stored.status, SyncStatus.pending);
     });
 
-    test('B-102 nao envia tipos checklist fora do escopo', () async {
+    test('B-102 não envia tipos checklist fora do escopo', () async {
       final queue = InMemorySyncQueueRepository();
       final unsupportedTypes = [
         ChecklistSyncActionTypes.runCreate,

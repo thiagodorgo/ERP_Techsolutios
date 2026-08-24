@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/sync/sync_models.dart';
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../../prestador/data/prestador_repository.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_conclusion.dart';
@@ -45,7 +48,7 @@ class _WorkOrderConclusionScreenState
   ) async {
     await woRepo.load();
     final wo = woRepo.findById(widget.workOrderId);
-    if (wo == null) throw StateError('Ordem de servico nao encontrada.');
+    if (wo == null) throw StateError('Ordem de serviço não encontrada.');
     final materials = await prestRepo.loadMaterials(widget.workOrderId);
     return WorkOrderConclusionSummary.fromWorkOrder(
       wo,
@@ -80,7 +83,7 @@ class _WorkOrderConclusionScreenState
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Nao foi possivel concluir. Tente novamente.');
+        setState(() => _error = 'Não foi possível concluir. Tente novamente.');
       }
     } finally {
       if (mounted) setState(() => _completing = false);
@@ -96,18 +99,23 @@ class _WorkOrderConclusionScreenState
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return ErpScaffold(
-            title: 'Conclusao',
+            title: 'Conclusão',
+            showBottomNav: false,
             body: ErrorState(message: snapshot.error.toString()),
           );
         }
         if (!snapshot.hasData) {
           return const ErpScaffold(
-            title: 'Conclusao',
+            title: 'Conclusão',
+            showBottomNav: false,
             body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
         return ErpScaffold(
-          title: 'Conclusao',
+          title: 'Conclusão',
+          // Tela de fluxo: rodapé é a ação seguinte, não a navegação
+          // (conclusao-guincho.png).
+          stickyBar: _stickyBar(context),
           body: _body(context, snapshot.data!),
         );
       },
@@ -137,7 +145,7 @@ class _WorkOrderConclusionScreenState
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Sua comissao',
+                      'Sua comissão',
                       style: TextStyle(color: scheme.onTertiaryContainer),
                     ),
                   ],
@@ -180,7 +188,7 @@ class _WorkOrderConclusionScreenState
         Card(
           child: Column(
             children: [
-              _SummaryRow(label: 'Servico', value: s.service),
+              _SummaryRow(label: 'Serviço', value: s.service),
               _SummaryRow(label: 'Cliente', value: s.customer),
               _SummaryRow(label: s.assetLabel, value: s.assetValue),
             ],
@@ -195,26 +203,44 @@ class _WorkOrderConclusionScreenState
             color: scheme.tertiaryContainer,
             child: const ListTile(
               leading: Icon(Icons.cloud_done_outlined),
-              title: Text('Atendimento concluido'),
-              subtitle: Text('Sincronizacao em segundo plano.'),
-            ),
-          )
-        else
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const Key('conclude-button'),
-              onPressed: _completing ? null : _conclude,
-              icon: _completing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check_circle_outline),
-              label: const Text('Concluir atendimento'),
+              title: Text('Atendimento concluído'),
+              subtitle: Text('Sincronização em segundo plano.'),
             ),
           ),
+      ],
+    );
+  }
+
+  /// Barra fixa de ação do rodapé (conclusao-guincho.png): "Concluir
+  /// atendimento" e, depois de concluído, "OK" de volta para a lista.
+  Widget _stickyBar(BuildContext context) {
+    return MobileStickyBar(
+      children: [
+        Expanded(
+          child: _done
+              ? FilledButton(
+                  key: const Key('conclusion-ok'),
+                  onPressed: () => context.go('/work-orders'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ErpMobileTheme.success,
+                  ),
+                  child: const Text('OK'),
+                )
+              : FilledButton.icon(
+                  key: const Key('conclude-button'),
+                  onPressed: _completing ? null : _conclude,
+                  icon: _completing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator.adaptive(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_outline),
+                  label: const Text('Concluir atendimento'),
+                ),
+        ),
       ],
     );
   }

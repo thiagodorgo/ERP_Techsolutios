@@ -50,9 +50,8 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
       return ErpScaffold(
         title: 'Nova OS',
         body: const PermissionBlockedState(
-          title: 'Sem permissao',
-          message:
-              'work_orders:create necessario para criar ordens de servico.',
+          title: 'Sem permissão',
+          message: 'Seu perfil não permite abrir novas ordens de serviço.',
         ),
       );
     }
@@ -80,11 +79,11 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
                       TextFormField(
                         controller: _titleCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Titulo *',
-                          hintText: 'Ex: Instalacao de ar-condicionado',
+                          labelText: 'Título *',
+                          hintText: 'Ex: Instalação de ar-condicionado',
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Campo obrigatorio'
+                            ? 'Campo obrigatório'
                             : null,
                       ),
                       const SizedBox(height: 12),
@@ -95,18 +94,18 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
                           hintText: 'Nome do cliente ou empresa',
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Campo obrigatorio'
+                            ? 'Campo obrigatório'
                             : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _addressCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Endereco de atendimento *',
-                          hintText: 'Rua, numero, cidade',
+                          labelText: 'Endereço de atendimento *',
+                          hintText: 'Rua, número, cidade',
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Campo obrigatorio'
+                            ? 'Campo obrigatório'
                             : null,
                       ),
                       const SizedBox(height: 12),
@@ -156,7 +155,7 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'A OS sera criada localmente e sincronizada quando houver conexao.',
+                          'A OS será criada localmente e sincronizada quando houver conexão.',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -174,7 +173,7 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.add),
-                label: const Text('Criar ordem de servico'),
+                label: const Text('Criar ordem de serviço'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(

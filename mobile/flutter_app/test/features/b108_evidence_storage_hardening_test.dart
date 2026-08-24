@@ -72,7 +72,7 @@ void main() {
     }
   });
 
-  test('B-108.3 rejected preserva evidencia local e falha segura', () async {
+  test('B-108.3 rejected preserva evidência local e falha segura', () async {
     final fixture = await _fixture(Uint8List.fromList([4, 5, 6]));
 
     final result = await EvidenceBinaryUploadService(
@@ -103,7 +103,7 @@ void main() {
     expect(await fixture.blobStore.load(fixture.blobRef), isNotNull);
   });
 
-  test('B-108.5 pending_review nao apaga blob nem marca synced', () async {
+  test('B-108.5 pending_review não apaga blob nem marca synced', () async {
     final fixture = await _fixture(Uint8List.fromList([10, 11, 12]));
 
     await EvidenceBinaryUploadService(
@@ -118,7 +118,7 @@ void main() {
     expect(await fixture.blobStore.load(fixture.blobRef), isNotNull);
   });
 
-  test('B-108.6 erro de rede preserva evidencia local', () async {
+  test('B-108.6 erro de rede preserva evidência local', () async {
     final fixture = await _fixture(Uint8List.fromList([13, 14, 15]));
 
     await EvidenceBinaryUploadService(
@@ -133,7 +133,7 @@ void main() {
     expect(await fixture.blobStore.load(fixture.blobRef), isNotNull);
   });
 
-  test('B-108.7 scanner HTTP errors usam codigos seguros', () async {
+  test('B-108.7 scanner HTTP errors usam códigos seguros', () async {
     final rejected = await _fixture(Uint8List.fromList([16, 17, 18]));
     await EvidenceBinaryUploadService(
       store: rejected.store,
@@ -158,7 +158,7 @@ void main() {
     );
   });
 
-  test('B-108.8 UI de evidencias nao referencia path/storage key', () async {
+  test('B-108.8 UI de evidências não referência path/storage key', () async {
     final source = await File(
       'lib/features/work_orders/ui/work_order_execute_screen.dart',
     ).readAsString();

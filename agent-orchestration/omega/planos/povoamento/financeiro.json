@@ -1,0 +1,1097 @@
+{
+  "area": "Financeiro",
+  "telas": [
+    {
+      "tela": "Financeiro (dashboard do tenant)",
+      "rota": "/finance",
+      "tabelas": [
+        "financial_titles",
+        "financial_entries",
+        "financial_accounts",
+        "cheques"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (slug='demo')",
+          "exigido_por": "banco",
+          "por_que": "FK financial_titles_tenant_id_fkey / financial_accounts_tenant_id_fkey / financial_entries_tenant_id_fkey. Ja existe: a79aedf2-44c8-478f-a6ce-cf6248a16f2b."
+        },
+        {
+          "passo": 2,
+          "entidade": "financial_accounts (contas ativas)",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: financial_entries.account_id e NOT NULL + FK (tenant_id,account_id). HISTORIA: o card 'Saldo em caixa' = SOMA(opening_balance + in - out) das contas; sem conta o card mostra R$ 0 / '0 contas'."
+        },
+        {
+          "passo": 3,
+          "entidade": "financial_titles com work_order_id OU descricao de contrato",
+          "exigido_por": "historia",
+          "por_que": "O painel 'Titulos recentes' mostra PARTE / VALOR / VENC / STATUS. Sem origem (work_order_id nulo em 103/103) a linha nao explica de onde veio o dinheiro; e os cards 'A receber (aberto)' e 'Inadimplencia' viram numero sem historia."
+        },
+        {
+          "passo": 4,
+          "entidade": "financial_entries com competencia derivada de occurred_at",
+          "exigido_por": "historia",
+          "por_que": "O grafico 'Fluxo de caixa - Entradas vs saidas - 6 meses' (financial-summary.compute.ts buildCashFlow) agrupa por entry.competencia. Se a competencia nao for o mes em que o dinheiro moveu, o grafico desenha barras em meses onde nao houve caixa nenhum."
+        },
+        {
+          "passo": 5,
+          "entidade": "financial_period_closes (pelo menos 1 competencia fechada)",
+          "exigido_por": "historia",
+          "por_que": "assertPeriodOpen() e o chokepoint que barra lancamento retroativo (422 period_closed). Com 0 fechamentos a trava nunca e exercida e a demo nao mostra o controle existir."
+        },
+        {
+          "passo": 6,
+          "entidade": "cheques (registered/deposited)",
+          "exigido_por": "historia",
+          "por_que": "FinancialSummary.cheques (pendingReceived/pendingIssued) e calculado no backend e hoje volta tudo 0. Nenhuma tela renderiza cheque - o dado existe so no agregado."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "103 titulos, 52 lancamentos, 3 contas, 0 cheques, 0 fechamentos de periodo. Saldo em caixa somado = R$ 391.167,55 (Caixa Operacional 63.384,90 + Itau 222.837,85 + BB 104.944,80). A receber aberto = R$ 117.660,60 em 41 titulos; vencido = R$ 21.105,00 em 14. A pagar aberto = R$ 31.845,50 em 24; vencido = R$ 6.940,00 em 8. Inadimplencia renderizada = 17,9%.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select direction, count(*) filter (where status not in ('paid','cancelled')) abertos, sum(amount-paid_amount) filter (where status not in ('paid','cancelled')) valor_aberto, count(*) filter (where status not in ('paid','cancelled') and due_date < now()) vencidos, sum(amount-paid_amount) filter (where status not in ('paid','cancelled') and due_date < now()) valor_vencido from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select a.name, a.opening_balance, coalesce(sum(e.amount) filter (where e.direction='in'),0) entradas, coalesce(sum(e.amount) filter (where e.direction='out'),0) saidas, a.opening_balance + coalesce(sum(e.amount) filter (where e.direction='in'),0) - coalesce(sum(e.amount) filter (where e.direction='out'),0) saldo from financial_accounts a left join financial_entries e on e.account_id=a.id and e.deleted_at is null where a.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by a.id,a.name,a.opening_balance\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "O grafico 'Fluxo de caixa' mente: desenha 6 barras (mar a ago/2026) mas o dinheiro so se moveu em jul e ago. A competencia do lancamento foi copiada do titulo em vez de derivada do occurred_at - o servico (financial-entry.types.ts: 'competencia e DERIVADA de occurred_at no servidor') foi contornado por escrita direta no banco.",
+          "quantos": "50 de 52 lancamentos",
+          "evidencia": "select count(*) filter (where competencia <> to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM')) from financial_entries where tenant_id='a79aedf2-...' -> 50/52. Grafico por competencia: 2026-03 entradas 41.445,00 / 2026-04 45.213,00 / 2026-05 40.281,00. Caixa REAL por mes: 2026-07 entradas 54.981,80 / 2026-08 133.789,60 - e so."
+        },
+        {
+          "defeito": "'Titulos recentes' e sorteio: os 103 titulos foram criados no MESMO minuto, entao o desempate cai no id e o painel mostra 6 linhas arbitrarias, nunca as mais recentes de verdade.",
+          "quantos": "103 de 103",
+          "evidencia": "select to_char(created_at,'YYYY-MM-DD HH24:MI'), count(*) from financial_titles where tenant_id='a79aedf2-...' group by 1 -> '2026-08-24 00:19' | 103"
+        },
+        {
+          "defeito": "O card 'Saldo em caixa' abre um pop-up dizendo 'fotografia do saldo atual', mas 2 das 3 contas nao tem agencia nem numero de conta preenchidos e o Caixa Operacional recebeu 10 lancamentos bancarios (pix/boleto/card/transfer).",
+          "quantos": "3 contas; 10 lancamentos nao-especie no Caixa",
+          "evidencia": "select id,name,kind,bank_name,agency,account_number from financial_accounts where tenant_id='a79aedf2-...' -> agency e account_number vazios em todas; select e.payment_method, a.name, count(*) ... -> cash em Banco Itau (3) e Banco do Brasil (3); pix/boleto/card/transfer em Caixa Operacional (10)."
+        },
+        {
+          "defeito": "Cheques e Fechamento de periodo estao zerados: o agregado ChequeSummary volta tudo 0 e o chokepoint assertPeriodOpen nunca dispara. A demo nao consegue mostrar nenhum controle de periodo.",
+          "quantos": "0 cheques, 0 fechamentos",
+          "evidencia": "select count(*) from cheques where tenant_id='a79aedf2-...' -> 0 ; select count(*) from financial_period_closes where tenant_id='a79aedf2-...' -> 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Completar as 3 contas financeiras existentes e acrescentar 1 conta de cartao/adquirente",
+          "quantos": "3 completadas + 1 nova = 4",
+          "criterio": "Caixa Operacional (kind=cash, sem banco/agencia - correto). Banco Itau: agencia '1622', account_number '18744-0'. Banco do Brasil: agencia '3041', account_number '27155-8'. Nova: 'Conta Recebiveis - Cartao' (kind=bank, bank_name 'Adquirente', usada so por payment_method='card'). opening_balance mantido; nenhum saldo negativo."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Regravar a competencia de TODO lancamento como to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM')",
+          "quantos": "52 existentes + todos os novos",
+          "criterio": "Invariante do servico. Sem isso o grafico de fluxo de caixa continua desenhando meses fantasma."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Espalhar occurred_at dos lancamentos por 6 competencias reais (mar a ago/2026)",
+          "quantos": "~180 lancamentos ao final",
+          "criterio": "Volume crescente e plausivel de operacao de guincho no PR: mar 18 / abr 22 / mai 26 / jun 30 / jul 34 / ago 26 (ago parcial, ate o dia 24). Entradas/mes entre R$ 55k e R$ 120k; saidas entre R$ 28k e R$ 60k; saldo mensal positivo em 5 dos 6 meses e negativo em 1 (jun, mes de manutencao pesada) - um mes ruim torna a serie cri­vel."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Roteamento metodo -> conta",
+          "quantos": "todos os lancamentos",
+          "criterio": "cash -> Caixa Operacional. pix/transfer -> Itau ou Banco do Brasil. boleto -> Itau. card -> Conta Recebiveis - Cartao. Nunca especie caindo em conta bancaria."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Fechar as competencias antigas",
+          "quantos": "3 fechamentos (2026-03, 2026-04, 2026-05) + 1 reaberto (2026-04)",
+          "criterio": "status='closed', closed_at no dia 5 do mes seguinte as 18h BRT, closed_by = usuario Financeiro (Beatriz Lima). O 2026-04 recebe reopened_at/reopened_by/reopen_reason='Nota fiscal 1.043 lancada com valor divergente - reabertura autorizada pela gestao' para exercitar o caminho de reabertura. 2026-06/07/08 ficam 'open'."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Cheques recebidos e emitidos",
+          "quantos": "9 (5 recebidos, 4 emitidos)",
+          "criterio": "3 recebidos 'registered' (pre-datados de clientes: R$ 2.400,00 / 3.850,00 / 1.180,00, due_date 15-45 dias a frente), 1 'deposited', 1 'bounced' com bounce_reason 'Insuficiencia de fundos' e bounce_entry_id apontando o contra-lancamento. Emitidos: 2 'registered' para fornecedor de pecas, 1 'cleared' com cleared_entry_id, 1 'cancelled'. bank ='Itau Unibanco'/'Banco do Brasil'/'Sicredi'; cheque_number sequencial de 6 digitos (ex.: '004812')."
+        }
+      ],
+      "como_provar": "-- 1) O grafico do dashboard tem que coincidir com o caixa real, mes a mes:\nselect competencia, sum(amount) filter (where direction='in') entradas, sum(amount) filter (where direction='out') saidas from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and deleted_at is null group by 1 order by 1;\nselect to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM') mes, sum(amount) filter (where direction='in'), sum(amount) filter (where direction='out') from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and deleted_at is null group by 1 order by 1;\n-- As duas listas precisam ser IDENTICAS e ter 6 linhas (2026-03..2026-08).\n-- 2) Zero divergencia de competencia:\nselect count(*) from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and competencia <> to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM'); -- tem que dar 0\n-- 3) Especie nunca em conta bancaria:\nselect count(*) from financial_entries e join financial_accounts a on a.id=e.account_id where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and e.payment_method='cash' and a.kind<>'cash'; -- tem que dar 0\n-- 4) Titulos recentes deixam de ser sorteio (createdAt distinto):\nselect count(distinct created_at) from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'; -- tem que ser > 50\n-- 5) NA TELA /finance: 6 barras com altura diferente, o mes de junho com saida maior que entrada, e as 6 linhas de 'Titulos recentes' sendo as de vencimento mais proximo em aberto."
+    },
+    {
+      "tela": "Cobrancas (titulos a receber)",
+      "rota": "/finance/charges",
+      "tabelas": [
+        "financial_titles",
+        "financial_entries",
+        "work_orders",
+        "customers",
+        "financial_period_closes"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "customers (cliente real, com CNPJ/CPF e cidade do PR)",
+          "exigido_por": "historia",
+          "por_que": "party_id NAO tem FK no banco (so party_name text NOT NULL) - por isso hoje da para gravar um nome que nao existe em lugar nenhum. A coluna CLIENTE da tabela e o unico elo visivel; se o nome nao bate com nenhum cadastro, o usuario clica e nao chega em lugar nenhum."
+        },
+        {
+          "passo": 2,
+          "entidade": "price_tables + tariffs (com service_catalog_id e customer_id preenchidos)",
+          "exigido_por": "historia",
+          "por_que": "E o preco que justifica o valor do titulo. Hoje 35 das 39 tarifas nao apontam servico e 38 nao apontam cliente - o mesmo defeito que o dono ja apontou em /cadastros/tarifas, e ele chega aqui como titulo com valor sem lastro."
+        },
+        {
+          "passo": 3,
+          "entidade": "work_orders com customer_id e status='completed'",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: FK financial_titles_tenant_id_work_order_id_fkey + indice UNICO parcial financial_titles_wo_direction_active_key (tenant, work_order_id, direction) WHERE deleted_at IS NULL - UM titulo a receber por OS. HISTORIA: e o atendimento que gerou a cobranca."
+        },
+        {
+          "passo": 4,
+          "entidade": "work_order_financial_items (itens da OS)",
+          "exigido_por": "historia",
+          "por_que": "O faturamento (WorkOrderFinancialService.invoice) SOMA os itens ativos ainda nao faturados; sem item retorna 422 nothing_to_invoice. Ou seja: sem item, o titulo a receber nao pode nascer pelo caminho legitimo - so por escrita direta, que e exatamente o que produziu os 103 titulos orfaos de hoje."
+        },
+        {
+          "passo": 5,
+          "entidade": "financial_accounts",
+          "exigido_por": "historia",
+          "por_que": "account_id e nulavel no banco, mas o titulo sem conta nao pode ser liquidado sem escolher a conta na hora, e o extrato por conta fica sem lastro."
+        },
+        {
+          "passo": 6,
+          "entidade": "financial_titles (direction='receivable')",
+          "exigido_por": "banco",
+          "por_que": "CHECK financial_titles_paid_amount_check (paid_amount >= 0 AND paid_amount <= amount). competencia NOT NULL e derivada de issue_date no fuso America/Sao_Paulo."
+        },
+        {
+          "passo": 7,
+          "entidade": "financial_entries (direction='in', title_id preenchido)",
+          "exigido_por": "historia",
+          "por_que": "E o que move o titulo para partially_paid/paid. A propria maquina de status proibe 'paid' como destino manual (FINANCIAL_TITLE_STATUS_TRANSITIONS: partially_paid e paid tem [] de destinos e nao sao alvos manuais) - quem paga e o lancamento."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "63 titulos a receber: 32 open, 22 paid, 9 partially_paid. ZERO scheduled, ZERO in_dispute, ZERO cancelled. Aberto R$ 117.660,60 (41 titulos, contando os parciais); vencido R$ 21.105,00 (14 titulos). KPI 'Recebidas (mes)' vai mostrar R$ 8,7k porque so 1 titulo pago tem competencia 2026-08.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select direction, status, count(*) total, count(work_order_id) com_os, count(party_id) com_party, count(account_id) com_conta, count(document) com_doc, count(service_quote_id) com_orcamento, count(source_type) com_source from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2 order by 1,2\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select t.direction, t.party_name, count(*) qtd, exists(select 1 from customers c where c.tenant_id=t.tenant_id and c.name=t.party_name) existe_em_clientes from financial_titles t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2,t.tenant_id order by 1,2\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum titulo aponta para a OS que o originou. work_order_id nulo em todos - o elo que a propria FK e o indice unico existem para proteger nunca foi usado.",
+          "quantos": "103 de 103 (63 a receber)",
+          "evidencia": "select count(work_order_id) from financial_titles where tenant_id='a79aedf2-...' -> 0. Mesma coisa para service_quote_id (0) e source_type (0)."
+        },
+        {
+          "defeito": "O nome do cliente e texto solto que nao existe no cadastro. 8 nomes distintos de cliente nos titulos, ZERO deles cadastrado em customers (que so tem 'Particular' e 'Industria Alfa Ltda').",
+          "quantos": "63 de 63 titulos a receber; 8 nomes orfaos",
+          "evidencia": "select t.party_name, exists(select 1 from customers c where c.tenant_id=t.tenant_id and c.name=t.party_name) from financial_titles t ... -> 'Agropecuaria Serra Azul' f, 'Construtora Meridiano S.A.' f, 'Distribuidora Pampa' f, 'Frigorifico Vale Verde' f, 'Log&Co Transportes' f, 'Metalurgica Ipiranga' f, 'Supermercados Bom Preco' f, 'Transportadora Aurora Ltda' f"
+        },
+        {
+          "defeito": "Numero de documento de teste na coluna DOC, que a tela renderiza em azul monoespacado como se fosse nota fiscal: 'DEMO-FIN-1001'..'DEMO-FIN-1103'.",
+          "quantos": "103 de 103",
+          "evidencia": "select count(*) from financial_titles where tenant_id='a79aedf2-...' and document like 'DEMO-%' -> 103"
+        },
+        {
+          "defeito": "Valores em progressao aritmetica e sempre em reais inteiros - nenhum centavo. Receber: 617, 754, 891, 1028, 1165, 1302 (passo 137). Pagar: 734, 823, 912, 1001, 1090, 1179 (passo 89).",
+          "quantos": "103 de 103 sem centavos",
+          "evidencia": "select count(*) filter (where amount = round(amount)) , count(*) from financial_titles where tenant_id='a79aedf2-...' -> 103|103"
+        },
+        {
+          "defeito": "Prazo de vencimento absurdo: media de 108 dias entre emissao e vencimento nas cobrancas, chegando a 206 dias. Nenhum guincho cobra a 7 meses.",
+          "quantos": "63 titulos a receber, media 108 dias",
+          "evidencia": "select direction, min(due_date::date - issue_date::date), round(avg(due_date::date - issue_date::date)), max(due_date::date - issue_date::date) from financial_titles where tenant_id='a79aedf2-...' group by 1 -> receivable 20 / 108 / 206"
+        },
+        {
+          "defeito": "Tres das cinco abas nascem vazias porque os estados nao existem: 'Em contestacao' (in_dispute=0) na tela de Cobrancas e 'Agendados' (scheduled=0) na de Pagamentos; nenhum titulo cancelado.",
+          "quantos": "0 in_dispute, 0 scheduled, 0 cancelled de 103",
+          "evidencia": "select string_agg(distinct status,', ') from financial_titles where tenant_id='a79aedf2-...' -> 'open, paid, partially_paid'"
+        },
+        {
+          "defeito": "Liquidacao parcial artificial: todo partially_paid pagou exatamente 50% (ou 40%) do valor, com um unico lancamento por titulo. Nunca ha duas parcelas.",
+          "quantos": "9 a receber + 5 a pagar; 52 lancamentos para 52 titulos liquidados (1:1)",
+          "evidencia": "select count(*) from financial_entries where tenant_id='a79aedf2-...' -> 52 ; e cada title_id aparece exatamente uma vez (0 titulos com 2+ lancamentos)"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Clientes reais no cadastro (pre-requisito do vinculo; area de Cadastros, mas o Financeiro depende)",
+          "quantos": "14 clientes",
+          "criterio": "Mistura PJ/PF de operacao no PR: 10 PJ com CNPJ formatado e cidade/UF (Curitiba, Sao Jose dos Pinhais, Araucaria, Ponta Grossa, Londrina, Maringa, Cascavel, Paranagua, Foz do Iguacu, Guarapuava) + 4 PF (particular, com CPF) - ex.: 'Transportes Rota Oeste Ltda' (Cascavel), 'Frigorifico Vale do Iguacu S.A.' (Ponta Grossa), 'Distribuidora Litoral Bebidas Ltda' (Paranagua), 'Locadora Curitiba Frotas Ltda', 'Marcelo Tavares de Souza' (PF). Nomes de empresa plausiveis e inventados - nada de 'Cliente 1' nem UUID."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Tarifas com servico E cliente preenchidos, sobre as 3 tabelas de valores serias ja existentes",
+          "quantos": "~24 tarifas coerentes",
+          "criterio": "'Guincho Leve - Tabela Padrao 2026' (saida urbana, km excedente, hora parada), 'Guincho Pesado - Tabela Padrao 2026' (saida, km excedente, munck), 'Patio - Custodia e Diarias 2026' (diaria de patio, taxa de liberacao, estadia) + 'Contrato Transportadora Aurora' com customer_id apontando o cliente do contrato. Faixas do PR: saida guincho leve R$ 280,00-450,00; km excedente R$ 4,90-7,90; guincho pesado saida R$ 1.200,00-1.850,00; diaria de patio R$ 38,00-65,00; taxa de liberacao R$ 180,00-320,00."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Ordens de servico concluidas com customer_id (limite estrutural: 1 titulo a receber por OS)",
+          "quantos": "90 OS concluidas distribuidas em mar-ago/2026",
+          "criterio": "OBRIGATORIO entender o teto: o indice UNICO financial_titles_wo_direction_active_key permite UM titulo receivable por OS. Hoje ha 17 OS e 16 sem customer_id - nao da para ter 60 titulos com origem sem ter 60 OS. Distribuir 90 OS por mes (mar 10 / abr 12 / mai 14 / jun 16 / jul 20 / ago 18), com customer_id sempre preenchido, completed_at coerente com created_at (2h a 8h depois) e cidade de atendimento no PR."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Itens financeiros nas OS concluidas (work_order_financial_items)",
+          "quantos": "~210 itens (1 a 4 por OS)",
+          "criterio": "Sempre 1 item de saida (source='tariff', tariff_id + price_table_id preenchidos) e, quando houver, km excedente (quantity = km reais, unit_amount da tarifa) e itens avulsos plausiveis (source='manual'): 'Pedagio BR-277' R$ 12,80; 'Hora parada - aguardando autoridade' R$ 95,00. total_amount = quantity * unit_amount, com centavos. invoiced_at + title_id preenchidos DEPOIS que o titulo nascer."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Titulos a receber com origem em OS",
+          "quantos": "72 (dos 90 atendimentos; 18 OS ficam sem faturar, o que tambem e realidade)",
+          "criterio": "work_order_id preenchido; party_id + party_name = o cliente da OS; amount = soma dos itens (com centavos); issue_date = dia do faturamento (0 a 3 dias apos completed_at); due_date por perfil de cliente: PF/particular a vista (0-3 dias), PJ avulso 15 dias, contrato 28 dias; competencia = to_char(issue_date at time zone 'America/Sao_Paulo','YYYY-MM'); document = 'NFS-e 2026/1043' sequencial; category = o servico principal ('Guincho leve', 'Guincho pesado', 'Diaria de patio', 'Taxa de liberacao'); account_id = conta que recebe (Itau para boleto, cartao para card, Caixa para especie); created_at ESPALHADO (nunca todos no mesmo minuto)."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Titulos a receber de faturamento mensal por contrato (legitimamente SEM OS)",
+          "quantos": "12 (2 clientes com contrato x 6 meses)",
+          "criterio": "Esses nao tem work_order_id e isso e correto - mas a description tem que dizer a historia: 'Fatura mensal jul/2026 - contrato Transportadora Rota Oeste - 34 atendimentos'. category='Contrato mensal'. amount entre R$ 8.400,00 e R$ 22.700,00, com centavos, coerente com o numero de atendimentos citado. due_date = dia 10 do mes seguinte."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Distribuicao dos estados para que as 5 abas tenham conteudo",
+          "quantos": "84 titulos a receber ao final",
+          "criterio": "open ~34 (dos quais 11 vencidos, com atraso entre 2 e 61 dias - inclui 3 com mais de 7 dias para acender o selo vermelho critico de overdueBadgeSeverity); paid ~30 espalhados nas 6 competencias (para o KPI 'Recebidas (mes)' nao ficar com 1 linha so); partially_paid ~8; scheduled ~5; in_dispute ~4 (cliente contestando diaria de patio ou km rodado - description explica); cancelled ~3 (titulo duplicado / OS cancelada). Percentuais alinhados a uma operacao saudavel: inadimplencia entre 9% e 16%."
+        },
+        {
+          "ordem": 8,
+          "o_que": "Liquidacoes reais (financial_entries) com parcelas de verdade",
+          "quantos": "~62 lancamentos de entrada",
+          "criterio": "Titulo paid = 1 ou 2 lancamentos que somam EXATAMENTE amount; partially_paid = 1 lancamento de 30% a 70% (valor quebrado, nunca 50% redondo); occurred_at entre issue_date e due_date+15 dias (parte pagando com atraso); competencia derivada do occurred_at; payment_method na proporcao real (pix 45%, boleto 25%, cartao 15%, transferencia 10%, especie 5%); description sem marcador de seed: 'Recebimento NFS-e 2026/1043 - Transportes Rota Oeste'."
+        }
+      ],
+      "como_provar": "-- 1) Nenhum titulo a receber sem origem nem sem explicacao:\nselect count(*) from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and direction='receivable' and deleted_at is null and work_order_id is null and (description is null or description not ilike '%contrato%'); -- tem que dar 0\n-- 2) Todo party_name existe no cadastro e o party_id aponta pra ele:\nselect count(*) from financial_titles t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.direction='receivable' and not exists (select 1 from customers c where c.tenant_id=t.tenant_id and c.id=t.party_id and c.name=t.party_name); -- tem que dar 0\n-- 3) O valor do titulo bate com a soma dos itens da OS:\nselect t.document, t.amount, sum(i.total_amount) itens from financial_titles t join work_order_financial_items i on i.title_id=t.id and i.deleted_at is null where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by t.id,t.document,t.amount having t.amount <> sum(i.total_amount); -- tem que voltar 0 linhas\n-- 4) paid_amount bate com os lancamentos, sempre:\nselect count(*) from financial_titles t left join (select title_id, sum(amount) pago from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and deleted_at is null group by 1) e on e.title_id=t.id where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and coalesce(e.pago,0) <> t.paid_amount; -- tem que dar 0\n-- 5) As 5 abas tem conteudo:\nselect status, count(*) from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and direction='receivable' group by 1; -- tem que aparecer open, scheduled, partially_paid, paid, in_dispute e cancelled\n-- 6) Prazo plausivel:\nselect max(due_date::date - issue_date::date) from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and direction='receivable'; -- tem que ser <= 35\n-- 7) NA TELA /finance/charges: nenhuma linha com '--' na coluna DOC, nenhum documento comecando com 'DEMO', valores com centavos, e as abas Vencidas/Em contestacao com linhas."
+    },
+    {
+      "tela": "Pagamentos (titulos a pagar)",
+      "rota": "/finance/payments",
+      "tabelas": [
+        "financial_titles",
+        "financial_entries",
+        "suppliers",
+        "fuel_logs",
+        "maintenance_orders",
+        "insurance_policies",
+        "fines"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "suppliers (fornecedor real com CNPJ e categoria)",
+          "exigido_por": "historia",
+          "por_que": "A coluna FORNECEDOR e o eixo da tela. Sem cadastro correspondente o nome e texto solto - e o cadastro atual esta poluido de nome de teste, entao nem da para escolher um fornecedor decente ao criar o titulo pelo modal."
+        },
+        {
+          "passo": 2,
+          "entidade": "fuel_logs / maintenance_orders / insurance_policies / fines (a origem da despesa)",
+          "exigido_por": "historia",
+          "por_que": "E o unico caminho legitimo de nascimento de conta a pagar por origem: POST /:id/payable (createPayableSourceRoutes) grava source_type + source_id. FINANCIAL_TITLE_SOURCE_TYPES = ['fuel_log','maintenance_order','fine','insurance_policy']. Sem a origem, o titulo a pagar nao explica que despesa ele quita."
+        },
+        {
+          "passo": 3,
+          "entidade": "financial_titles (direction='payable')",
+          "exigido_por": "banco",
+          "por_que": "Indice UNICO parcial financial_titles_source_direction_active_key (tenant, source_type, source_id, direction) WHERE deleted_at IS NULL AND source_id IS NOT NULL - UM titulo a pagar ativo por origem. Relancar exige retirar antes (removeForSource)."
+        },
+        {
+          "passo": 4,
+          "entidade": "financial_accounts",
+          "exigido_por": "historia",
+          "por_que": "account_id define de qual conta sai o dinheiro; o lancamento de saida (financial_entries.account_id) e NOT NULL de qualquer forma."
+        },
+        {
+          "passo": 5,
+          "entidade": "financial_entries (direction='out')",
+          "exigido_por": "historia",
+          "por_que": "O status 'paid' nao e alvo manual - so o lancamento leva o titulo para pago/parcial."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "40 titulos a pagar: 19 open, 16 paid, 5 partially_paid. Nenhum scheduled (a aba 'Agendados' e o KPI 'Agendados' nascem vazios). Aberto R$ 31.845,50 em 24 titulos; vencido R$ 6.940,00 em 8. Existem 5 abastecimentos, 2 ordens de manutencao, 2 apolices e 1 multa no tenant - nenhum deles lancado como conta a pagar.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select status, count(*), count(source_type) com_origem, count(party_id) com_fornecedor_id from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and direction='payable' group by 1\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select id,name,document,category,status from suppliers where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select 'fuel_logs', count(*) from fuel_logs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'maintenance_orders', count(*) from maintenance_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'insurance_policies', count(*) from insurance_policies where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'fines', count(*) from fines where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhuma conta a pagar tem origem. source_type/source_id nulos em todos - o caminho por origem (POST /:id/payable) nunca foi usado, embora existam 5 abastecimentos, 2 manutencoes, 2 apolices e 1 multa esperando lancamento.",
+          "quantos": "40 de 40",
+          "evidencia": "select count(source_type) from financial_titles where tenant_id='a79aedf2-...' and direction='payable' -> 0"
+        },
+        {
+          "defeito": "A categoria contradiz o fornecedor - a categoria foi rotacionada em ciclo, independente de quem e o fornecedor. 'Pneus & Cia' aparece 8 vezes com categoria 'Combustivel'; 'Combustiveis Planalto' 8 vezes com categoria 'Seguro'; 'Seguradora Horizonte' 8 vezes com 'Servicos de terceiros'.",
+          "quantos": "24 de 40 titulos com categoria que nao combina com o fornecedor",
+          "evidencia": "select party_name, category, count(*) from financial_titles where tenant_id='a79aedf2-...' and direction='payable' group by 1,2 -> ('Pneus & Cia','Combustivel',8), ('Combustiveis Planalto','Seguro',8), ('Seguradora Horizonte','Servicos de terceiros',8)"
+        },
+        {
+          "defeito": "Os 5 nomes de fornecedor nos titulos nao existem no cadastro de fornecedores - e o cadastro que existe e lixo de teste ('Fornecedor Auditoria 1783882395', 'Fornecedor Teste 1783892058', 'Insp Fornec 1783892344', 'Auto Pecas Silva'), tres deles com o MESMO CNPJ 12.345.678/0001-90.",
+          "quantos": "40 titulos orfaos; 4 fornecedores cadastrados, 3 de teste",
+          "evidencia": "select t.party_name, exists(select 1 from suppliers s where s.tenant_id=t.tenant_id and s.name=t.party_name) from financial_titles t where t.direction='payable' ... -> todos f ; select name,document from suppliers where tenant_id='a79aedf2-...'"
+        },
+        {
+          "defeito": "Prazo de pagamento incompativel com fornecedor de peca/combustivel: media 106 dias entre emissao e vencimento, maximo 205.",
+          "quantos": "40 titulos",
+          "evidencia": "select direction, min(due_date::date-issue_date::date), round(avg(due_date::date-issue_date::date)), max(due_date::date-issue_date::date) from financial_titles where tenant_id='a79aedf2-...' group by 1 -> payable 6 / 106 / 205"
+        },
+        {
+          "defeito": "Aba 'Agendados' e KPI 'Agendados' (roxo) sempre em R$ 0 - nenhum titulo em status scheduled, que e justamente o estado que da sentido a tela de Pagamentos.",
+          "quantos": "0 de 40",
+          "evidencia": "select count(*) from financial_titles where tenant_id='a79aedf2-...' and status='scheduled' -> 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Limpar/substituir o cadastro de fornecedores por fornecedores de operacao de guincho no PR (pre-requisito - area de Cadastros)",
+          "quantos": "10 fornecedores, com CNPJ distinto cada",
+          "criterio": "'Posto Rodovia BR-277 Combustiveis Ltda' (category='Combustivel'), 'Auto Pecas Batel Ltda' ('Pecas e insumos'), 'Retifica Diesel Araucaria' ('Manutencao de frota'), 'Pneus Contorno Norte Ltda' ('Pecas e insumos'), 'Seguradora Sul Brasil Seguros S.A.' ('Seguro de frota'), 'Guincho Parceiro Londrina ME' ('Servicos de terceiros'), 'DETRAN-PR' ('Taxas e multas'), 'Sanepar'/'Copel' ('Utilidades'), 'Imobiliaria Patio Sao Jose' ('Aluguel de patio'). CNPJ unico e formatado; nada de 'Teste'/'Auditoria'/timestamp no nome."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Despesas de origem: abastecimentos, manutencoes, apolices e multas (pre-requisito - area de Frota)",
+          "quantos": "~70 abastecimentos, 10 manutencoes, 3 apolices, 6 multas em 6 meses",
+          "criterio": "Abastecimento: diesel S-10 R$ 6,09-6,58/litro, 45-180 litros por evento, coerente com odometro crescente das 3 viaturas. Manutencao: revisao 10.000km R$ 890,00-1.640,00; troca de embreagem R$ 3.200,00-4.850,00. Apolice anual por viatura R$ 4.800,00-7.200,00 parcelada em 12. Multa: infracao media R$ 130,16 / grave R$ 195,23 (valores reais da tabela do CTB)."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Contas a pagar POR ORIGEM (source_type/source_id preenchidos)",
+          "quantos": "52 titulos (36 fuel_log, 8 maintenance_order, 3 insurance_policy, 5 fine)",
+          "criterio": "party_id + party_name = o fornecedor da despesa (posto para combustivel, retifica para manutencao, seguradora para apolice, DETRAN-PR para multa). category coerente com o fornecedor - jamais rotacionada. amount = valor da despesa, com centavos. due_date por perfil: combustivel 7 dias, pecas/manutencao 28 dias, apolice dia 10 fixo, multa na data-limite do DETRAN. document: 'NF-e 118.442' para fornecedor, 'AIT G12345678' para multa."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Contas a pagar recorrentes SEM origem (legitimo, desde que a descricao conte a historia)",
+          "quantos": "24 (aluguel do patio, energia, agua x 6 meses + folha de terceiros)",
+          "criterio": "description obrigatoria: 'Aluguel do patio Sao Jose dos Pinhais - competencia jul/2026'. category='Aluguel de patio' / 'Utilidades'. Valor estavel mes a mes com pequena variacao (aluguel fixo R$ 6.800,00; energia R$ 1.180,00-1.940,00 variando com o mes)."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Distribuicao de estados incluindo os que hoje faltam",
+          "quantos": "76 titulos a pagar ao final",
+          "criterio": "open ~28 (7 vencidos - atraso de 1 a 22 dias, o que e realista para uma operacao apertada); scheduled ~14 (agendados com due_date nos proximos 30 dias - da vida a aba e ao KPI roxo); partially_paid ~5; paid ~26 espalhados nas 6 competencias; cancelled ~3 (nota cancelada pelo fornecedor, com motivo). A pagar aberto tem que ser menor que o a receber aberto - senao a operacao esta quebrada e a demo mostra uma empresa falindo."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Lancamentos de saida",
+          "quantos": "~40 lancamentos out",
+          "criterio": "payment_method: pix 40%, boleto 35%, transferencia 15%, cartao 7%, especie 3%. occurred_at proximo ao due_date (de 3 dias antes a 5 dias depois). Sair da conta certa (boleto/pix do Itau ou BB; especie do Caixa). description: 'Pagamento NF-e 118.442 - Auto Pecas Batel'."
+        }
+      ],
+      "como_provar": "-- 1) Toda conta a pagar ou tem origem, ou tem descricao que explica:\nselect count(*) from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and direction='payable' and deleted_at is null and source_id is null and (description is null or length(trim(description))<15); -- tem que dar 0\n-- 2) O fornecedor existe e a categoria do titulo bate com a categoria do fornecedor:\nselect count(*) from financial_titles t join suppliers s on s.tenant_id=t.tenant_id and s.id=t.party_id where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.direction='payable' and t.category is distinct from s.category; -- tem que dar 0\nselect count(*) from financial_titles t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.direction='payable' and t.party_id is null; -- tem que dar 0\n-- 3) A origem existe de verdade (nao aponta pro vazio):\nselect t.source_type, count(*) from financial_titles t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.source_id is not null and not exists (select 1 from fuel_logs f where f.id=t.source_id) and not exists (select 1 from maintenance_orders m where m.id=t.source_id) and not exists (select 1 from insurance_policies i where i.id=t.source_id) and not exists (select 1 from fines fi where fi.id=t.source_id) group by 1; -- tem que voltar 0 linhas\n-- 4) A aba Agendados tem conteudo e o prazo e plausivel:\nselect status, count(*), max(due_date::date - issue_date::date) prazo_max from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and direction='payable' group by 1; -- scheduled > 0 e prazo_max <= 35\n-- 5) NA TELA /finance/payments: a aba 'Agendados' com linhas, o KPI roxo diferente de R$ 0, e a coluna FORNECEDOR com nomes que existem em /cadastros/fornecedores."
+    },
+    {
+      "tela": "Faturas (emissao de NF-e)",
+      "rota": "/finance/invoices",
+      "tabelas": [],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "Integracao fiscal externa (certificado A1/A3 + autorizacao SEFAZ)",
+          "exigido_por": "historia",
+          "por_que": "A tela e uma parada honesta declarada em codigo (InvoicesPage.tsx: 'esta tela NAO fabrica NF-e, valores nem contadores' - D-007 / CLAUDE.md secao 2.8). Nao ha tabela de nota fiscal no schema. Semear qualquer coisa aqui seria fabricar documento fiscal."
+        },
+        {
+          "passo": 2,
+          "entidade": "financial_titles a receber (o atalho 'Ver cobrancas')",
+          "exigido_por": "historia",
+          "por_que": "O unico caminho de saida da tela e o botao 'Ver cobrancas', que so aparece para quem tem financial_titles:read. Se as Cobrancas estiverem coerentes, essa tela cumpre o papel dela."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 registros - por desenho. A tela renderiza um bloco de parada fiscal (icone ShieldCheck + texto) e um botao 'Emitir NF-e' desabilitado. Nao le nenhuma tabela.",
+        "coerente": true,
+        "medido_com": "Leitura de frontend/src/modules/finance/pages/InvoicesPage.tsx (69 linhas, sem nenhuma chamada de service/API) + confirmacao de que nao existe tabela de nota fiscal: select table_name from information_schema.tables where table_schema='public' and table_name ilike '%invoice%' or table_name ilike '%nfe%' -> 0 linhas"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum. Esta e a unica tela do Financeiro que ja esta honesta: nao inventa numero, nao inventa contador, e explica a parada.",
+          "quantos": "0",
+          "evidencia": "InvoicesPage.tsx nao importa nenhum service; nao ha estado, nao ha fetch."
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "NAO SEMEAR NADA",
+          "quantos": "0",
+          "criterio": "Fabricar NF-e e falsificar documento fiscal. A unica acao possivel e garantir que /finance/charges esteja povoado, porque o botao 'Ver cobrancas' e o destino da tela - uma parada honesta que aponta para uma tela vazia vira beco sem saida."
+        }
+      ],
+      "como_provar": "-- Nao ha SQL: a prova e na tela. Abrir /finance/invoices com um perfil que tenha financial_titles:read, clicar em 'Ver cobrancas' e cair numa lista de cobrancas POVOADA (nao no estado vazio). Se /finance/charges estiver vazio, esta tela fica sem saida util.\n-- Verificacao complementar de que nada foi fabricado aqui:\nselect count(*) from information_schema.tables where table_schema='public' and (table_name ilike '%invoice%' or table_name ilike '%nfe%' or table_name ilike '%nota_fiscal%'); -- tem que continuar 0"
+    },
+    {
+      "tela": "Remuneracoes (comissoes / conferencia e liquidacao)",
+      "rota": "/finance/commissions",
+      "tabelas": [
+        "commission_policies",
+        "commission_policy_rules",
+        "commission_basis_events",
+        "commission_calculations",
+        "commission_statements",
+        "professional_statement_entries",
+        "operator_profiles",
+        "users",
+        "work_orders"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "users com papel (o payee)",
+          "exigido_por": "banco",
+          "por_que": "FK commission_calculations_tenant_id_payee_id_fkey e ..._eligible_user_id_fkey referenciam users(tenant_id,id). commission_statements.payee_id tambem tem FK e e NOT NULL."
+        },
+        {
+          "passo": 2,
+          "entidade": "operator_profiles do MESMO user_id do payee",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: professional_statement_entries.operator_profile_id e NOT NULL com FK para operator_profiles. HISTORIA/REGRA: o settle devolve 422 not_a_professional ('Um dos selecionados nao e um profissional de campo') quando o payee nao tem perfil de profissional. Hoje os 2 unicos perfis sao o Gestor e o Admin - nenhum tecnico de campo tem perfil, entao a liquidacao nao roda para ninguem que faca guincho."
+        },
+        {
+          "passo": 3,
+          "entidade": "commission_policies (status='active')",
+          "exigido_por": "banco",
+          "por_que": "FK commission_calculations_tenant_id_policy_id_fkey (NOT NULL) e commission_basis_events_tenant_id_policy_id_fkey. CHECK commission_policies_status_check limita status a draft|active|paused|archived; version > 0; created_by tem FK para users."
+        },
+        {
+          "passo": 4,
+          "entidade": "commission_policy_rules",
+          "exigido_por": "historia",
+          "por_que": "Sem regra a politica nao explica de onde saiu o percentual. CHECK rate_value >= 0. E a regra que sustenta o calculation_snapshot (jsonb NOT NULL) - snapshot vazio deixa o drawer de detalhe sem nada para mostrar."
+        },
+        {
+          "passo": 5,
+          "entidade": "work_orders concluidas (a origem do evento-base)",
+          "exigido_por": "historia",
+          "por_que": "O DTO expoe sourceType/sourceId e o drawer faz drill-down por OS ('quando a origem e OS, preferir sourceType==work_order + sourceId'). Comissao sem OS de origem nao tem o que detalhar. O gate de cancelamento (work-order-cancellation.gate.ts) tambem le o estado da OS para decidir eligible/ineligible/pending_review."
+        },
+        {
+          "passo": 6,
+          "entidade": "commission_basis_events",
+          "exigido_por": "banco",
+          "por_que": "FK commission_calculations_tenant_id_basis_event_id_fkey (NOT NULL). UNIQUE (tenant_id, idempotency_key). CHECK status IN (received|eligible|ineligible|pending_review|superseded). occurred_at NOT NULL."
+        },
+        {
+          "passo": 7,
+          "entidade": "commission_calculations",
+          "exigido_por": "banco",
+          "por_que": "CHECK amount >= 0; CHECK status IN (pending|calculated|disputed|approved|rejected|reversed); UNIQUE (tenant_id, idempotency_key)."
+        },
+        {
+          "passo": 8,
+          "entidade": "professional_statement_entries (o credito da liquidacao)",
+          "exigido_por": "historia",
+          "por_que": "E o destino do settle: settlement_ref do calculo aponta o group_id do credito no extrato. Sem ele a 'bolinha' verde de liquidado nao tem lastro e o deep-link 'Ver no extrato' cai no vazio. UNIQUE (tenant_id, group_id, installment_number)."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "ZERO em toda a cadeia: 0 politicas, 0 regras, 0 eventos-base, 0 calculos, 0 extratos de comissao, 0 lancamentos no extrato do profissional. A tela abre o modal de filtro (D-Omega4C-REM-MODAL), o usuario escolhe um profissional e periodo, e recebe EmptyState em 100% dos casos. So existem 2 operator_profiles no tenant e nenhum deles e tecnico de campo.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select 'commission_policies', count(*) from commission_policies where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'commission_policy_rules', count(*) from commission_policy_rules where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'commission_basis_events', count(*) from commission_basis_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'commission_calculations', count(*) from commission_calculations where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'commission_statements', count(*) from commission_statements where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'professional_statement_entries', count(*) from professional_statement_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select p.id, p.user_id, u.name, p.is_active from operator_profiles p left join users u on u.id=p.user_id where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "O modulo inteiro esta vazio. A tela existe, o backend existe, o fluxo de liquidacao em lote existe - e nao ha uma unica linha para conferir.",
+          "quantos": "0 de 0 em 6 tabelas",
+          "evidencia": "select count(*) from commission_calculations where tenant_id='a79aedf2-...' -> 0 (idem policies, rules, basis_events, statements, professional_statement_entries)"
+        },
+        {
+          "defeito": "Nao ha profissional de campo com perfil: os 2 operator_profiles do tenant sao o Gestor Operacional (gestor.demo) e o Admin Demo. Os tecnicos reais (Carla Mendes, Ana Beatriz Rocha, Rafael Mendes, Camila Nunes, Diego Ferreira) nao tem perfil - o select do modal de filtro so oferece gestor e admin, e o settle para qualquer um deles seria semanticamente errado.",
+          "quantos": "2 perfis, 0 deles tecnico de campo; 6 usuarios operacionais sem perfil",
+          "evidencia": "select p.user_id, u.name from operator_profiles p join users u on u.id=p.user_id where p.tenant_id='a79aedf2-...' -> 'Gustavo Reis (Gestor Operacional)', 'Admin Demo'"
+        },
+        {
+          "defeito": "So existem 17 OS no tenant e 11 concluidas - base insuficiente para gerar evento-base de comissao com variedade (por servico, por valor, por tecnico).",
+          "quantos": "11 OS concluidas",
+          "evidencia": "select status, count(*) from work_orders where tenant_id='a79aedf2-...' group by 1 -> completed 11, in_progress 2, assigned 1, on_route 1, on_site 1, open 1"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Perfil de profissional para os tecnicos de campo reais",
+          "quantos": "6 operator_profiles",
+          "criterio": "Carla Mendes, Ana Beatriz Rocha, Rafael Mendes, Camila Nunes, Diego Ferreira e Marina Costa - todos is_active=true, vinculados ao user_id que ja existe. Sem expor CNH em nenhum campo que a tela leia (secao 2.8: profissional so por nome)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Politica de comissao vigente",
+          "quantos": "2 politicas (1 active, 1 archived - a versao anterior)",
+          "criterio": "'Comissao Guincho 2026' (scope='tenant', vertical='towing', status='active', version=2, effective_from='2026-01-01', effective_to=null, created_by = usuario Financeiro). E 'Comissao Guincho 2025' (status='archived', version=1, effective_from='2025-01-01', effective_to='2025-12-31') - ter uma versao arquivada torna o versionamento visivel."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Regras da politica ativa",
+          "quantos": "4 regras",
+          "criterio": "(a) rule_type='percentage', basis_type='work_order_net_revenue', rate_type='percent', rate_value=0.080, priority=100, conditions={\"service\":\"guincho_leve\"}; (b) mesma coisa com rate_value=0.100 e conditions={\"service\":\"guincho_pesado\"}; (c) rate_type='fixed', rate_value=45.00, conditions={\"service\":\"patio_remocao\"}; (d) bonus rate_value=0.020 com conditions={\"min_atendimentos_mes\":25}, priority=50. Percentuais na faixa real do setor (8% a 12% do liquido)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Eventos-base a partir das OS concluidas",
+          "quantos": "1 por OS concluida (~90, dependendo do passo 3 de Cobrancas)",
+          "criterio": "source_type='work_order', source_id = id da OS, source_event_name='work_order.completed', idempotency_key='work_order.completed:'||id_da_OS, occurred_at = completed_at da OS, policy_id = politica ativa, payload jsonb com {servico, valor_liquido, tecnico}. Status: ~92% 'eligible'; ~5% 'ineligible' (OS cancelada com decisao zero/keep_unpaid - o gate exige isso); ~3% 'pending_review' (OS cancelada SEM decisao financeira - o caso ambiguo que o gate segura). Ter os tres estados prova que o gate existe."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Calculos de comissao",
+          "quantos": "~83 (um por evento eligible)",
+          "criterio": "payee_id + eligible_user_id = o tecnico que atendeu a OS. amount = valor liquido da OS x taxa da regra (com centavos, faixa R$ 22,40 a R$ 385,00 - nunca valor redondo, nunca acima de 15% do titulo). calculation_snapshot jsonb com {regra_aplicada, base, taxa, valor} - e o que o drawer de detalhe mostra. status: ~70% 'approved', ~20% 'calculated', ~6% 'disputed' (tecnico contestando o km), ~4% 'reversed' (OS cancelada depois). idempotency_key unica."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Liquidacao de parte das comissoes (settled_at + settlement_ref)",
+          "quantos": "~50 liquidadas, ~33 pendentes",
+          "criterio": "Liquidar so as competencias fechadas (mar/abr/mai) e metade de junho - as de julho/agosto ficam pendentes, para a 'bolinha' vermelha aparecer na conferencia. settled_at no dia 5 do mes seguinte. settlement_ref = group_id do credito no extrato."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Creditos no extrato do profissional",
+          "quantos": "~50 lancamentos (1 por comissao liquidada)",
+          "criterio": "operator_profile_id do tecnico; entry_type='commission_credit'; direction de credito; group_id = o settlement_ref; installment_number=1, installment_total=1; due_date = data do pagamento da folha (dia 5); competencia coerente; status='settled' com settled_at carimbado; source_type='commission_calculation' + source_id = id do calculo; description 'Remuneracao guincho - jun/2026 - 18 atendimentos'."
+        },
+        {
+          "ordem": 8,
+          "o_que": "Extratos consolidados por profissional/periodo",
+          "quantos": "36 (6 tecnicos x 6 meses)",
+          "criterio": "period_start = dia 1, period_end = ultimo dia do mes (CHECK period_end >= period_start). total_amount = soma EXATA dos calculos aprovados do tecnico no periodo (CHECK total_amount >= 0). status: mar/abr/mai 'settled', jun 'approved', jul 'closed', ago 'open'. UNIQUE (tenant, payee, period_start, period_end, currency) - um por mes."
+        }
+      ],
+      "como_provar": "-- 1) Todo calculo tem politica, evento-base e payee que E profissional:\nselect count(*) from commission_calculations c where c.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and (c.payee_id is null or not exists (select 1 from operator_profiles p where p.tenant_id=c.tenant_id and p.user_id=c.payee_id and p.is_active)); -- tem que dar 0\n-- 2) Todo evento-base aponta uma OS que existe:\nselect count(*) from commission_basis_events b where b.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and b.source_type='work_order' and not exists (select 1 from work_orders w where w.tenant_id=b.tenant_id and w.id::text=b.source_id); -- tem que dar 0\n-- 3) O valor da comissao e plausivel diante do faturamento da OS (nunca acima de 15%):\nselect count(*) from commission_calculations c join commission_basis_events b on b.id=c.basis_event_id join financial_titles t on t.work_order_id::text=b.source_id and t.direction='receivable' where c.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and c.amount > t.amount*0.15; -- tem que dar 0\n-- 4) Comissao liquidada tem credito no extrato, e o elo fecha nos dois sentidos:\nselect count(*) from commission_calculations c where c.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and c.settled_at is not null and not exists (select 1 from professional_statement_entries e where e.tenant_id=c.tenant_id and e.group_id=c.settlement_ref and e.source_id=c.id); -- tem que dar 0\nselect count(*) from commission_calculations where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and (settled_at is null) <> (settlement_ref is null); -- tem que dar 0\n-- 5) O extrato consolidado bate com a soma dos calculos:\nselect s.payee_id, s.period_start, s.total_amount, sum(c.amount) from commission_statements s join commission_calculations c on c.tenant_id=s.tenant_id and c.payee_id=s.payee_id and c.status='approved' and c.created_at::date between s.period_start and s.period_end where s.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by s.id,s.payee_id,s.period_start,s.total_amount having s.total_amount <> sum(c.amount); -- tem que voltar 0 linhas\n-- 6) NA TELA /finance/commissions: escolher 'Carla Mendes' e o periodo jul/2026 no modal que abre ao entrar; a conferencia tem que listar linhas com bolinha VERMELHA (pendente); trocar para mai/2026 e ver bolinhas VERDES com 'Ver no extrato' levando a /fleet/statement do mesmo profissional."
+    },
+    {
+      "tela": "Contas financeiras (caixa e bancos)",
+      "rota": "(nao tem tela)",
+      "tabelas": [
+        "financial_accounts"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants",
+          "exigido_por": "banco",
+          "por_que": "FK financial_accounts_tenant_id_fkey."
+        },
+        {
+          "passo": 2,
+          "entidade": "financial_accounts",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE parcial financial_accounts_tenant_name_active_key (tenant_id, name) WHERE is_active = true - nao da para ter duas contas ativas com o mesmo nome. kind default 'cash', currency 'BRL', opening_balance NOT NULL default 0."
+        },
+        {
+          "passo": 3,
+          "entidade": "Dados bancarios coerentes com o kind",
+          "exigido_por": "historia",
+          "por_que": "bank_name/agency/account_number sao nulaveis no banco, mas uma conta kind='bank' sem agencia nem numero nao e uma conta bancaria - e um rotulo. E a mesma classe de defeito da tarifa sem servico."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "3 contas ativas: Caixa Operacional (cash, abertura R$ 15.000,00), Banco Itau - C/C 12345-6 (bank, R$ 184.320,55), Banco do Brasil - C/C 98765-4 (bank, R$ 62.890,10). Saldo atual somado R$ 391.167,55. Nenhuma tela do frontend le esta tabela - os dados so aparecem no card 'Saldo em caixa' do /finance.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select id, name, kind, opening_balance, bank_name, agency, account_number, status, is_active from financial_accounts where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by created_at\" ; grep -rn 'financial-accounts' frontend/src --include=*.ts --include=*.tsx -> 0 ocorrencias"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "As duas contas bancarias nao tem agencia nem numero de conta - o numero esta enfiado dentro do NOME ('Banco Itau - C/C 12345-6'), e '12345-6'/'98765-4' sao numeros de exemplo classicos.",
+          "quantos": "2 de 3 contas",
+          "evidencia": "select name, bank_name, agency, account_number from financial_accounts where tenant_id='a79aedf2-...' -> agency e account_number vazios em todas as 3 linhas"
+        },
+        {
+          "defeito": "O Caixa Operacional (kind='cash') recebeu 10 lancamentos por pix, boleto, cartao e transferencia - meios que so existem em conta bancaria.",
+          "quantos": "10 de 18 lancamentos do Caixa",
+          "evidencia": "select e.payment_method, a.name, count(*) from financial_entries e join financial_accounts a on a.id=e.account_id where e.tenant_id='a79aedf2-...' group by 1,2 -> boleto/Caixa 3, card/Caixa 4, pix/Caixa 3, transfer/Caixa 4"
+        },
+        {
+          "defeito": "Nenhuma conta inativa/encerrada - o filtro is_active e o UNIQUE parcial (que so vale para ativas) nunca sao exercidos.",
+          "quantos": "0 de 3",
+          "evidencia": "select is_active, count(*) from financial_accounts where tenant_id='a79aedf2-...' group by 1 -> t | 3"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Corrigir as 3 contas existentes",
+          "quantos": "3",
+          "criterio": "Nome sem o numero embutido: 'Itau Unibanco - Conta Corrente', 'Banco do Brasil - Conta Corrente', 'Caixa Operacional'. Preencher agency/account_number com formato brasileiro plausivel e nao-sequencial (Itau ag '1622' cc '18744-0'; BB ag '3041' cc '27155-8'). bank_name preenchido so no kind='bank'. document = CNPJ do tenant."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Conta de recebiveis de cartao",
+          "quantos": "1",
+          "criterio": "'Recebiveis - Cartao' (kind='bank', bank_name 'Adquirente'), opening_balance R$ 0,00 - so recebe entradas por payment_method='card'."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Uma conta encerrada",
+          "quantos": "1",
+          "criterio": "'Sicredi - Conta Corrente (encerrada)' com is_active=false, status='inactive', opening_balance R$ 3.410,20 e nenhum lancamento apos a data de encerramento. Exercita o filtro de ativas e libera o nome para reuso pelo UNIQUE parcial."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Saldos de abertura coerentes com o porte",
+          "quantos": "5 contas ao final",
+          "criterio": "Uma operacao de guincho com 3 viaturas e 6 tecnicos: Caixa R$ 4.500,00 (troco e despesa miuda), Itau R$ 62.400,00 (principal), BB R$ 18.900,00 (secundaria), Cartao R$ 0,00. O saldo atual de cada conta tem que fechar com opening_balance + entradas - saidas, e nenhuma pode ficar negativa."
+        }
+      ],
+      "como_provar": "-- 1) Conta bancaria sem dados bancarios nao pode existir:\nselect count(*) from financial_accounts where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and kind='bank' and (bank_name is null or agency is null or account_number is null); -- tem que dar 0\n-- 2) Especie so no caixa, meio eletronico so em banco:\nselect count(*) from financial_entries e join financial_accounts a on a.id=e.account_id where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and ((e.payment_method='cash' and a.kind<>'cash') or (e.payment_method in ('pix','boleto','transfer','card') and a.kind<>'bank')); -- tem que dar 0\n-- 3) Nenhum saldo negativo e a soma bate com o card do dashboard:\nselect a.name, a.opening_balance + coalesce(sum(e.amount) filter (where e.direction='in'),0) - coalesce(sum(e.amount) filter (where e.direction='out'),0) saldo from financial_accounts a left join financial_entries e on e.account_id=a.id and e.deleted_at is null where a.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and a.is_active group by a.id,a.name,a.opening_balance order by 2; -- nenhuma linha negativa; a soma tem que ser igual ao 'Saldo em caixa' de /finance\n-- 4) Conta encerrada sem movimento posterior:\nselect count(*) from financial_entries e join financial_accounts a on a.id=e.account_id where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and a.is_active=false and e.occurred_at > a.updated_at; -- tem que dar 0"
+    },
+    {
+      "tela": "Caixa / Extrato e Conciliacao bancaria (lancamentos)",
+      "rota": "(nao tem tela)",
+      "tabelas": [
+        "financial_entries",
+        "financial_accounts",
+        "financial_titles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "financial_accounts ativa",
+          "exigido_por": "banco",
+          "por_que": "financial_entries.account_id e NOT NULL com FK (tenant_id, account_id) para financial_accounts."
+        },
+        {
+          "passo": 2,
+          "entidade": "financial_titles (quando for liquidacao)",
+          "exigido_por": "banco",
+          "por_que": "FK financial_entries_tenant_id_title_id_fkey. title_id e nulavel de proposito - lancamento avulso (tarifa bancaria, aporte, despesa miuda) nao tem titulo."
+        },
+        {
+          "passo": 3,
+          "entidade": "competencia derivada de occurred_at",
+          "exigido_por": "historia",
+          "por_que": "O contrato do modulo diz literalmente 'competencia e DERIVADA de occurred_at no servidor'. Gravar outra coisa quebra o grafico de fluxo de caixa e o KPI 'liquidado no mes'."
+        },
+        {
+          "passo": 4,
+          "entidade": "carimbo de conciliacao (reconciled_at + reconciled_by)",
+          "exigido_por": "historia",
+          "por_que": "O write-path reconcile() SEMPRE carimba reconciled_at=new Date() e reconciled_by=actor.userId quando reconciled=true. Um lancamento marcado como conciliado sem quem/quando conciliou e um estado sem autoria - e a partir dai o lancamento vira imutavel (422 entry_reconciled) sem que ninguem saiba quem travou."
+        },
+        {
+          "passo": 5,
+          "entidade": "contra-lancamento de estorno (reversal_of)",
+          "exigido_por": "historia",
+          "por_que": "UNIQUE parcial financial_entries_reversal_of_active_key garante um unico estorno ativo por lancamento. Sem nenhum estorno, o caminho de correcao do caixa nunca e demonstrado."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "52 lancamentos: 34 conciliados, 18 nao. 30 entradas / 22 saidas. Todos com title_id (0 avulsos), 0 estornos, 0 apagados, 0 divergencias registradas. Concentrados em 4 semanas (2026-07-26 a 2026-08-23) mas com competencia espalhada por mar-ago. Nenhuma tela do frontend le esta tabela.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select reconciled, count(*), count(divergence_type) com_divergencia, count(reconciliation_ref) com_ref, count(reconciled_at) com_data, count(reconciled_by) com_autor from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select count(*) filter (where title_id is null) avulsos, count(*) filter (where reversal_of is not null) estornos, count(*) filter (where deleted_at is not null) apagados from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" ; docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select count(*) filter (where competencia <> to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM')), count(*) from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "34 lancamentos marcados como conciliados SEM reconciled_at, SEM reconciled_by e SEM reconciliation_ref - estado sem carimbo de data nem autoria, e o proprio write-path do sistema nunca produz isso. So escrita direta no banco gera esse registro.",
+          "quantos": "34 de 34 conciliados",
+          "evidencia": "select count(*) from financial_entries where tenant_id='a79aedf2-...' and reconciled and (reconciled_at is null or reconciled_by is null) -> 34"
+        },
+        {
+          "defeito": "Competencia divergente do mes em que o dinheiro moveu - invariante do servico violada por escrita direta.",
+          "quantos": "50 de 52",
+          "evidencia": "select count(*) from financial_entries where tenant_id='a79aedf2-...' and competencia <> to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM') -> 50"
+        },
+        {
+          "defeito": "Marcador de seed visivel na descricao, que e o texto que apareceria no extrato: 'DEMO-FIN liquidacao - Log&Co Transportes'.",
+          "quantos": "52 de 52",
+          "evidencia": "select count(*) from financial_entries where tenant_id='a79aedf2-...' and description like 'DEMO-FIN%' -> 52"
+        },
+        {
+          "defeito": "Caixa sem vida propria: nenhum lancamento avulso (tarifa bancaria, aporte de socio, despesa miuda, transferencia entre contas), nenhum estorno, nenhuma divergencia de conciliacao. Todo lancamento e liquidacao de titulo, exatamente 1 por titulo.",
+          "quantos": "0 avulsos, 0 estornos, 0 divergencias em 52",
+          "evidencia": "select count(*) filter (where title_id is null), count(*) filter (where reversal_of is not null), count(divergence_type) from financial_entries where tenant_id='a79aedf2-...' -> 0 | 0 | 0"
+        },
+        {
+          "defeito": "Janela de caixa comprimida: todos os 52 lancamentos cabem em 4 semanas, enquanto os titulos que eles liquidam vao de marco a outubro.",
+          "quantos": "52 lancamentos entre 2026-07-26 e 2026-08-23",
+          "evidencia": "select min(occurred_at)::date, max(occurred_at)::date from financial_entries where tenant_id='a79aedf2-...' -> 2026-07-26 | 2026-08-23"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Regravar competencia = to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM') em todos os lancamentos",
+          "quantos": "todos",
+          "criterio": "Invariante nao-negociavel do modulo."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Reescrever as descricoes sem marcador de seed",
+          "quantos": "52 existentes",
+          "criterio": "Padrao: 'Recebimento NFS-e 2026/1043 - Transportes Rota Oeste' / 'Pagamento NF-e 118.442 - Auto Pecas Batel'. Nunca 'DEMO', nunca 'Teste', nunca id cru."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Espalhar o caixa por 6 competencias",
+          "quantos": "~180 lancamentos",
+          "criterio": "occurred_at coerente com o titulo (entre issue_date e due_date+15d) e distribuido pelos dias uteis - sem lancamento em domingo, concentracao nas segundas e nos dias 5, 10, 20 e 30."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Lancamentos avulsos (sem titulo)",
+          "quantos": "~34",
+          "criterio": "Tarifa bancaria mensal R$ 32,90 (out, boleto); manutencao de conta R$ 58,00; despesa miuda de caixa R$ 45,00-180,00 (lanche de equipe em plantao, chaveiro, estacionamento); aporte de socio R$ 15.000,00 em jun (o mes ruim); rendimento de aplicacao R$ 210,00-890,00. Todos com description que explica e category propria ('Tarifas bancarias', 'Despesas administrativas', 'Aporte de socio', 'Rendimentos')."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Estornos com contra-lancamento",
+          "quantos": "3 pares",
+          "criterio": "1 recebimento em duplicidade estornado (reversal_of aponta o original, amount identico, direction oposta, occurred_at 1 a 4 dias depois); 1 pagamento a fornecedor errado estornado; 1 devolucao de cheque (bounce_entry_id do cheque aponta este lancamento). description: 'Estorno - recebimento em duplicidade NFS-e 2026/1043'."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Conciliacao com carimbo completo e ressalvas",
+          "quantos": "~120 conciliados de ~180",
+          "criterio": "reconciled=true SEMPRE com reconciled_at (dia util seguinte ao occurred_at, entre 9h e 18h BRT) e reconciled_by = usuario Financeiro (Beatriz Lima). reconciliation_ref = identificador do extrato bancario ('OFX-2026-07-1622-0341'). ~8 com divergence_type='value' (centavos de tarifa descontada na liquidacao) e ~5 com divergence_type='date' (D+1 do banco). Os lancamentos de julho/agosto ficam nao-conciliados (o mes ainda esta correndo) - conciliacao 100% e irreal."
+        }
+      ],
+      "como_provar": "-- 1) Conciliado sem carimbo nao pode existir:\nselect count(*) from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and reconciled and (reconciled_at is null or reconciled_by is null or reconciliation_ref is null); -- tem que dar 0\n-- 2) E o inverso: nao-conciliado nao pode ter carimbo:\nselect count(*) from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and not reconciled and (reconciled_at is not null or reconciled_by is not null or divergence_type is not null); -- tem que dar 0\n-- 3) Competencia sempre derivada do caixa:\nselect count(*) from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and competencia <> to_char(occurred_at at time zone 'America/Sao_Paulo','YYYY-MM'); -- tem que dar 0\n-- 4) Nenhum marcador de seed na descricao:\nselect count(*) from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and (description ilike '%demo%' or description ilike '%teste%' or description ~ '[0-9a-f]{8}-[0-9a-f]{4}'); -- tem que dar 0\n-- 5) Estorno bate exatamente com o original:\nselect count(*) from financial_entries e join financial_entries o on o.id=e.reversal_of where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and (e.amount<>o.amount or e.direction=o.direction or e.account_id<>o.account_id); -- tem que dar 0\n-- 6) O caixa tem vida propria (avulsos existem):\nselect count(*) filter (where title_id is null) avulsos, count(*) filter (where reversal_of is not null) estornos, count(divergence_type) ressalvas from financial_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'; -- os tres tem que ser > 0"
+    },
+    {
+      "tela": "Fechamento de periodo (competencia)",
+      "rota": "(nao tem tela)",
+      "tabelas": [
+        "financial_period_closes",
+        "financial_titles",
+        "financial_entries"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "financial_titles e financial_entries da competencia",
+          "exigido_por": "historia",
+          "por_que": "Fechar um mes vazio nao prova nada. O snapshot (jsonb) do fechamento so tem sentido se houver movimento naquela competencia."
+        },
+        {
+          "passo": 2,
+          "entidade": "financial_period_closes",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE financial_period_closes_tenant_id_period_key (tenant_id, period) - uma linha por competencia. status default 'open'."
+        },
+        {
+          "passo": 3,
+          "entidade": "closed_at + closed_by preenchidos quando status='closed'",
+          "exigido_por": "historia",
+          "por_que": "Sao nulaveis no banco, mas um fechamento sem data e sem quem fechou e o mesmo defeito da conciliacao sem carimbo: um estado que trava lancamento retroativo (422 period_closed) sem responsavel."
+        },
+        {
+          "passo": 4,
+          "entidade": "snapshot do fechamento",
+          "exigido_por": "historia",
+          "por_que": "financial-period-close.snapshot.ts existe para congelar os numeros do mes. snapshot null num periodo fechado significa que ninguem sabe com que numeros o mes foi fechado."
+        },
+        {
+          "passo": 5,
+          "entidade": "reopened_at + reopened_by + reopen_reason (se houver reabertura)",
+          "exigido_por": "historia",
+          "por_que": "Reabertura sem motivo registrado e a pior versao do estado sem carimbo - e uma acao excepcional."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 fechamentos. Nenhuma competencia fechada, nenhuma aberta explicitamente. O chokepoint assertPeriodOpen() (chamado em createForWorkOrder, createForSource e no lancamento) nunca reprovou nada. Nenhuma tela do frontend le esta tabela - so as rotas POST /financial-periods/:period/close e /reopen existem.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select count(*) from financial_period_closes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" -> 0 ; grep -rn 'period-close|fechamento' frontend/src --include=*.tsx -> 0 ocorrencias no modulo finance"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "A trava de competencia nunca existiu na demo: 0 periodos fechados, entao qualquer titulo ou lancamento pode ser criado retroativamente em marco sem nenhuma resistencia - e foi exatamente assim que os 103 titulos de mar a out nasceram todos as 00:19 de 24/08.",
+          "quantos": "0 de 6 competencias com movimento",
+          "evidencia": "select count(*) from financial_period_closes where tenant_id='a79aedf2-...' -> 0, contra 6 competencias com titulos (2026-03 a 2026-08)"
+        },
+        {
+          "defeito": "Sem fechamento, o proprio seed prova que o controle nao esta sendo exercido - se 2026-03 estivesse fechado, os 5 titulos com competencia 2026-03 teriam sido rejeitados com 422 period_closed.",
+          "quantos": "29 titulos em competencias que deveriam estar fechadas (mar/abr/mai)",
+          "evidencia": "select competencia, count(*) from financial_titles where tenant_id='a79aedf2-...' and competencia in ('2026-03','2026-04','2026-05') group by 1 -> 2026-03: 12, 2026-04: 8, 2026-05: 9"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Fechar as competencias encerradas",
+          "quantos": "3 (2026-03, 2026-04, 2026-05)",
+          "criterio": "status='closed'; closed_at no 5o dia util do mes seguinte entre 14h e 18h BRT; closed_by = usuario Financeiro (Beatriz Lima); snapshot jsonb com os totais congelados do mes (receber aberto, pagar aberto, entradas, saidas, saldo final por conta) - calculados a partir do dado real, nunca inventados. closing_started_at alguns minutos antes do closed_at."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Reabrir uma delas com motivo",
+          "quantos": "1 (2026-04)",
+          "criterio": "reopened_at, reopened_by = tenant_admin (nao o mesmo que fechou), reopen_reason='Nota fiscal 1.043 lancada com valor divergente - reabertura autorizada pela gestao em 12/05/2026'. Depois refechar (status='closed' de novo, closed_at posterior ao reopened_at) - a sequencia temporal tem que ser coerente."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Manter as competencias correntes abertas",
+          "quantos": "3 (2026-06, 2026-07, 2026-08)",
+          "criterio": "status='open', closed_at/closed_by null. Sao os meses em que o lancamento retroativo AINDA e permitido - e o que faz a demo poder criar titulo novo sem esbarrar no chokepoint."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Garantir que nenhum dado semeado viole os fechamentos criados",
+          "quantos": "todos os titulos e lancamentos",
+          "criterio": "REGRA DE ORDEM: semear titulos e lancamentos ANTES de criar os fechamentos - senao o proprio seed reproduz a violacao que o fechamento deveria impedir. Depois de fechar, nenhuma escrita nova pode cair em 2026-03/04/05."
+        }
+      ],
+      "como_provar": "-- 1) Toda competencia com movimento tem uma linha de periodo:\nselect distinct competencia from financial_titles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and deleted_at is null except select period from financial_period_closes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'; -- tem que voltar 0 linhas\n-- 2) Fechado sem carimbo nao pode existir:\nselect count(*) from financial_period_closes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='closed' and (closed_at is null or closed_by is null or snapshot is null); -- tem que dar 0\n-- 3) Reabertura sempre com motivo e depois do fechamento:\nselect count(*) from financial_period_closes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and reopened_at is not null and (reopen_reason is null or reopened_by is null or reopened_at <= closing_started_at); -- tem que dar 0\n-- 4) O chokepoint funciona de verdade (teste vivo, pela API, nao por SQL):\n-- POST /api/v1/financial-titles com competencia derivada de issue_date='2026-03-15' tem que responder 422 period_closed.\n-- POST com issue_date='2026-08-15' tem que responder 201.\n-- 5) Nenhum registro nasceu depois do fechamento em periodo fechado:\nselect count(*) from financial_titles t join financial_period_closes p on p.tenant_id=t.tenant_id and p.period=t.competencia where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and p.status='closed' and t.created_at > p.closed_at; -- tem que dar 0"
+    },
+    {
+      "tela": "Cheques (recebidos e emitidos)",
+      "rota": "(nao tem tela)",
+      "tabelas": [
+        "cheques",
+        "financial_accounts",
+        "financial_entries"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "financial_accounts",
+          "exigido_por": "banco",
+          "por_que": "cheques.account_id e NOT NULL com FK (tenant_id, account_id) para financial_accounts."
+        },
+        {
+          "passo": 2,
+          "entidade": "financial_entries de compensacao",
+          "exigido_por": "historia",
+          "por_que": "cleared_entry_id e bounce_entry_id sao nulaveis, mas um cheque com status='cleared' sem cleared_entry_id nao moveu dinheiro nenhum - o status mente. Idem para 'bounced' sem bounce_entry_id."
+        },
+        {
+          "passo": 3,
+          "entidade": "cheques",
+          "exigido_por": "banco",
+          "por_que": "cheque_number, bank, amount e direction sao NOT NULL. status default 'registered'."
+        },
+        {
+          "passo": 4,
+          "entidade": "bounce_reason quando status='bounced'",
+          "exigido_por": "historia",
+          "por_que": "Cheque devolvido sem motivo e o mesmo defeito de estado sem carimbo. O agregado ChequeSummary do dashboard so conta registered+deposited, entao o bounced so existe para contar a historia."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 cheques. O agregado ChequeSummary do /financial-summary devolve pendingReceivedCount=0, pendingReceivedAmount=0, pendingIssuedCount=0, pendingIssuedAmount=0. Nenhuma tela do frontend le cheque - nem o dashboard /finance renderiza esse pedaco do agregado hoje.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select count(*) from cheques where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" -> 0 ; leitura de src/modules/financial-summary/financial-summary.compute.ts (isChequePending: 'registered'|'deposited') e de FinanceiroPage.tsx (nao consome data.cheques)"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Modulo inteiro vazio - o agregado calcula cheque pendente em toda requisicao do dashboard e devolve zero sempre.",
+          "quantos": "0 de 0",
+          "evidencia": "select count(*) from cheques where tenant_id='a79aedf2-...' -> 0"
+        },
+        {
+          "defeito": "Nenhuma tela consome o dado, mesmo com o backend inteiro pronto (rotas, service, validators, agregado). E dado sem destino - vale povoar so o suficiente para o agregado nao mentir por omissao, e registrar que falta a tela.",
+          "quantos": "1 modulo backend sem superficie",
+          "evidencia": "grep -rn '/cheques' frontend/src --include=*.ts --include=*.tsx -> 0 ocorrencias"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Cheques recebidos de clientes",
+          "quantos": "5",
+          "criterio": "3 'registered' pre-datados (R$ 2.400,00 / R$ 3.850,00 / R$ 1.180,00, due_date de 15 a 45 dias a frente, bank 'Itau Unibanco'/'Bradesco'/'Sicredi', cheque_number de 6 digitos nao-sequencial); 1 'deposited' aguardando compensacao; 1 'bounced' com bounce_reason='Insuficiencia de fundos (alinea 11)' e bounce_entry_id apontando o contra-lancamento real. direction de recebimento, account_id = conta bancaria."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Cheques emitidos a fornecedores",
+          "quantos": "4",
+          "criterio": "2 'registered' com due_date futuro (pagamento de pecas R$ 4.180,00 e R$ 2.640,00); 1 'cleared' com cleared_entry_id apontando o lancamento de saida que compensou; 1 'cancelled' com notes explicando ('Cheque extraviado - sustado junto ao banco em 18/06/2026')."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Coerencia entre cheque e caixa",
+          "quantos": "todos",
+          "criterio": "Cheque compensado ou devolvido SEMPRE tem lancamento correspondente, com o mesmo amount e na mesma conta. Cheque pendente NAO tem lancamento (o dinheiro ainda nao moveu) - e por isso o agregado ChequeSummary existe: e o dinheiro em transito que o saldo de caixa ainda nao mostra."
+        }
+      ],
+      "como_provar": "-- 1) Status que exige lancamento tem lancamento:\nselect count(*) from cheques where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and ((status='cleared' and cleared_entry_id is null) or (status='bounced' and (bounce_entry_id is null or bounce_reason is null))); -- tem que dar 0\n-- 2) Status pendente NAO pode ter lancamento (o dinheiro nao moveu):\nselect count(*) from cheques where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status in ('registered','deposited') and (cleared_entry_id is not null or bounce_entry_id is not null); -- tem que dar 0\n-- 3) O lancamento apontado bate em valor e conta:\nselect count(*) from cheques c join financial_entries e on e.id=coalesce(c.cleared_entry_id,c.bounce_entry_id) where c.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and (e.amount<>c.amount or e.account_id<>c.account_id); -- tem que dar 0\n-- 4) O agregado do dashboard deixa de ser zero:\nselect direction, count(*) filter (where status in ('registered','deposited')) pendentes, sum(amount) filter (where status in ('registered','deposited')) valor_pendente from cheques where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and deleted_at is null group by 1; -- as duas direcoes com pendentes > 0\n-- 5) GET /api/v1/financial-summary tem que devolver cheques.pendingReceivedCount > 0 e pendingIssuedCount > 0."
+    },
+    {
+      "tela": "Financeiro da OS (aba do detalhe da ordem de servico) - a raiz da cadeia de receita",
+      "rota": "/work-orders/:workOrderId (aba Financeiro)",
+      "tabelas": [
+        "work_order_financial_items",
+        "tariffs",
+        "price_tables",
+        "service_catalog",
+        "work_orders",
+        "financial_titles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "service_catalog com nome de servico real",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: FK de tariffs.service_catalog_id e de work_orders.service_catalog_id. HISTORIA: e o nome que aparece no item lancado."
+        },
+        {
+          "passo": 2,
+          "entidade": "price_tables",
+          "exigido_por": "banco",
+          "por_que": "FK work_order_financial_items_tenant_id_price_table_id_fkey."
+        },
+        {
+          "passo": 3,
+          "entidade": "tariffs com service_catalog_id E customer_id",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: FK work_order_financial_items_tenant_id_tariff_id_fkey. HISTORIA: a aba diz 'Servicos da tabela de valores do cliente' e o erro que ela mostra e literalmente 'verifique se ha tarifa vigente na tabela de valores deste cliente'. Tarifa sem cliente/servico faz o botao 'Lancar servico' falhar ou lancar item sem sentido."
+        },
+        {
+          "passo": 4,
+          "entidade": "work_orders com customer_id",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: FK work_order_financial_items_tenant_id_work_order_id_fkey. HISTORIA: sem cliente na OS nao ha tabela de valores do cliente para consultar."
+        },
+        {
+          "passo": 5,
+          "entidade": "work_order_financial_items",
+          "exigido_por": "banco",
+          "por_que": "total_amount, unit_amount, quantity e description NOT NULL. source default 'tariff'."
+        },
+        {
+          "passo": 6,
+          "entidade": "faturamento (invoiced_at + title_id)",
+          "exigido_por": "historia",
+          "por_que": "O faturamento carimba invoiced_at e title_id nos itens e cria o titulo a receber. Item faturado vira imutavel (422 item_invoiced). Sem esse carimbo, o titulo e o item ficam desconectados mesmo existindo os dois."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "ZERO itens financeiros em TODAS as 17 OS do tenant. 16 das 17 OS nao tem customer_id. 35 das 39 tarifas nao apontam servico e 38 das 39 nao apontam cliente. O catalogo de servicos tem 3 entradas, 2 delas com nome de teste ('Servico A1 1783874676', 'SemTarifa 14250'). Das 15 tabelas de valores, 9 tem nome de teste.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select count(*) from work_order_financial_items where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" -> 0 ; docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select count(*) total, count(service_catalog_id) com_servico, count(customer_id) com_cliente, count(price_table_id) com_tabela, count(*) filter (where is_active) ativas from tariffs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\" -> 39|4|1|39|32 ; docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select status, count(*), count(customer_id) com_cliente from work_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "A aba Financeiro de toda OS esta vazia - nenhuma OS tem um unico item. E a raiz do problema que o dono descreveu: sem item, o titulo a receber nao pode nascer pelo caminho legitimo (o invoice() devolve 422 nothing_to_invoice), e foi por isso que os 103 titulos nasceram por escrita direta, orfaos.",
+          "quantos": "0 itens em 17 OS",
+          "evidencia": "select count(*) from work_order_financial_items where tenant_id='a79aedf2-...' -> 0"
+        },
+        {
+          "defeito": "O mesmo defeito da tarifa que o dono ja apontou, na raiz: 35 das 39 tarifas sem servico e 38 sem cliente. Como a aba busca 'tarifa vigente na tabela de valores DESTE cliente', quase nenhuma tarifa e alcancavel a partir de uma OS.",
+          "quantos": "38 de 39 tarifas",
+          "evidencia": "select count(*), count(service_catalog_id), count(customer_id) from tariffs where tenant_id='a79aedf2-...' -> 39 | 4 | 1"
+        },
+        {
+          "defeito": "16 das 17 OS nao tem customer_id - sem cliente na OS, a tabela de valores do cliente nao existe e o lancamento por tarifa e impossivel.",
+          "quantos": "16 de 17",
+          "evidencia": "select count(*) - count(customer_id) from work_orders where tenant_id='a79aedf2-...' -> 16"
+        },
+        {
+          "defeito": "Nao ha botao 'Faturar' na interface: a rota POST /api/v1/work-orders/:id/invoice existe no backend (WORK_ORDER_FINANCIAL_PERMISSIONS.invoice) mas a aba so tem 'Lancar servico da tabela de valores' e 'Item avulso'. O elo OS->titulo so e alcancavel por API.",
+          "quantos": "1 endpoint sem superficie",
+          "evidencia": "grep -n 'Faturar|invoice' frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx -> so o comentario de cabecalho; nenhum botao"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Catalogo de servicos coerente com guincho e patio (pre-requisito - area de Cadastros)",
+          "quantos": "8 servicos",
+          "criterio": "'Guincho leve - saida urbana', 'Guincho leve - km excedente', 'Guincho pesado - saida', 'Guincho pesado - km excedente', 'Remocao a patio', 'Diaria de patio', 'Taxa de liberacao', 'Hora parada'. Sem timestamp no nome, sem 'Servico A1'."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Tabelas de valores com nome de negocio (as 9 de teste saem)",
+          "quantos": "5 tabelas",
+          "criterio": "Manter 'Guincho Leve - Tabela Padrao 2026', 'Guincho Pesado - Tabela Padrao 2026', 'Patio - Custodia e Diarias 2026', 'Contrato Transportadora Rota Oeste' e 'Tabela Sazonal - Alta Temporada' (inativa, para exercitar o filtro)."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Tarifas com servico e cliente preenchidos",
+          "quantos": "~24",
+          "criterio": "Cada tarifa aponta service_catalog_id e price_table_id; as da tabela de contrato apontam tambem customer_id. valid_from/valid_to coerentes (a sazonal so vale dez-fev). unit_price nas faixas do PR ja descritas em Cobrancas."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Itens financeiros nas OS",
+          "quantos": "~210 itens em 90 OS",
+          "criterio": "Toda OS concluida tem no minimo o item de saida (source='tariff', tariff_id + price_table_id preenchidos, quantity=1). ~60% tem tambem km excedente (quantity = km reais, entre 8 e 140). ~25% tem 1 item avulso (source='manual', tariff_id null): 'Pedagio BR-277' R$ 12,80 / 'Hora parada - aguardando autoridade' R$ 95,00 / 'Taxa de guarda noturna' R$ 48,00. total_amount = quantity x unit_amount, sempre com centavos."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Faturamento carimbado",
+          "quantos": "~72 OS faturadas de 90",
+          "criterio": "invoiced_at e title_id preenchidos nos itens EXATAMENTE quando o titulo a receber correspondente for criado, e nunca antes. As 18 OS restantes ficam com itens e invoiced_at null - e o estado 'pronta para faturar', que da o que fazer na demo."
+        }
+      ],
+      "como_provar": "-- 1) Toda OS concluida tem item financeiro:\nselect count(*) from work_orders w where w.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and w.status='completed' and not exists (select 1 from work_order_financial_items i where i.work_order_id=w.id and i.deleted_at is null); -- tem que dar 0\n-- 2) Item de tarifa aponta tarifa, e a tarifa aponta servico:\nselect count(*) from work_order_financial_items i where i.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and i.source='tariff' and (i.tariff_id is null or not exists (select 1 from tariffs t where t.id=i.tariff_id and t.service_catalog_id is not null)); -- tem que dar 0\n-- 3) A aritmetica do item fecha:\nselect count(*) from work_order_financial_items where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and round(quantity*unit_amount,2) <> total_amount; -- tem que dar 0\n-- 4) Carimbo de faturamento e coerente nos dois sentidos:\nselect count(*) from work_order_financial_items where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and ((invoiced_at is null) <> (title_id is null)); -- tem que dar 0\n-- 5) Toda OS tem cliente:\nselect count(*) from work_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and customer_id is null; -- tem que dar 0\n-- 6) NA TELA: abrir uma OS concluida, aba Financeiro - tem que listar 2 a 4 linhas com descricao de servico real e Total com centavos; abrir uma OS nao faturada e conferir que o 'Lancar servico da tabela de valores' abre um select COM opcoes (hoje ele erra com 'verifique se ha tarifa vigente')."
+    },
+    {
+      "tela": "Extrato do Profissional (destino da liquidacao de remuneracoes)",
+      "rota": "/fleet/statement e /fleet/statement/:operatorProfileId",
+      "tabelas": [
+        "professional_statement_entries",
+        "operator_profiles",
+        "commission_calculations",
+        "users"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "users + operator_profiles do profissional",
+          "exigido_por": "banco",
+          "por_que": "FK professional_statement_entries_operator_fkey (tenant_id, operator_profile_id) - NOT NULL. Sem perfil de profissional nao existe extrato."
+        },
+        {
+          "passo": 2,
+          "entidade": "commission_calculations liquidadas",
+          "exigido_por": "historia",
+          "por_que": "E a origem do credito: source_type='commission_calculation' + source_id = id do calculo, e o group_id do lancamento e o settlement_ref gravado no calculo. Sem isso o 'Ver no extrato' da tela de Remuneracoes cai no vazio."
+        },
+        {
+          "passo": 3,
+          "entidade": "professional_statement_entries",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, group_id, installment_number). UNIQUE parcial por origem (tenant, source_type, source_id, installment_number) WHERE deleted_at IS NULL AND source_id IS NOT NULL - garante idempotencia da liquidacao. installment_number, installment_total, due_date e competencia sao NOT NULL."
+        },
+        {
+          "passo": 4,
+          "entidade": "debitos do profissional (adiantamento, dano, multa)",
+          "exigido_por": "historia",
+          "por_que": "Extrato so com credito nao e extrato - e recibo. Os debitos vem de damages, fines e expense_advances (todos zerados ou quase, no tenant)."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 lancamentos no extrato de profissional. 2 operator_profiles (Gestor e Admin - nenhum tecnico de campo). 0 comissoes liquidadas para creditar. 0 adiantamentos de despesa. 1 dano e 1 multa no tenant, nenhum debitado a profissional.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -Atc \"select 'professional_statement_entries', count(*) from professional_statement_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'operator_profiles', count(*) from operator_profiles where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'expense_reports', count(*) from expense_reports where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'damages', count(*) from damages where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' union all select 'fines', count(*) from fines where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Extrato vazio para todo mundo, e nao ha nem para quem gerar: os unicos 2 perfis de profissional sao o Gestor Operacional e o Admin, que nao fazem atendimento.",
+          "quantos": "0 lancamentos; 2 perfis, 0 tecnicos",
+          "evidencia": "select count(*) from professional_statement_entries where tenant_id='a79aedf2-...' -> 0 ; select u.name from operator_profiles p join users u on u.id=p.user_id where p.tenant_id='a79aedf2-...' -> 'Gustavo Reis (Gestor Operacional)', 'Admin Demo'"
+        },
+        {
+          "defeito": "A ponta final da cadeia de remuneracao nao fecha: como nao ha comissao liquidada, nenhum settlement_ref existe, e o deep-link 'Ver no extrato' da conferencia nunca tem destino.",
+          "quantos": "0 de 0",
+          "evidencia": "select count(*) from commission_calculations where tenant_id='a79aedf2-...' and settled_at is not null -> 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Perfis de profissional para os 6 tecnicos (mesmo passo do plano de Remuneracoes)",
+          "quantos": "6",
+          "criterio": "Reaproveitar os users que ja existem; is_active=true."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Creditos de remuneracao vindos da liquidacao",
+          "quantos": "~50",
+          "criterio": "entry_type='commission_credit', direction de credito, group_id = settlement_ref do calculo, source_type='commission_calculation' + source_id, installment 1/1, due_date = dia 5 do mes seguinte, competencia coerente, status='settled' com settled_at. description: 'Remuneracao guincho - jun/2026 - 18 atendimentos'. amount = amount do calculo (12,2), entre R$ 22,40 e R$ 385,00."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Debitos para o extrato ter os dois lados",
+          "quantos": "~14",
+          "criterio": "3 adiantamentos de despesa de viagem (R$ 200,00-450,00, parcelados 1/1); 2 danos com responsabilidade do condutor parcelados em 3x (installment_total=3, mesmo group_id, due_dates mensais consecutivos); 4 multas de transito repassadas (R$ 130,16 e R$ 195,23, valores reais do CTB); 5 vales/adiantamentos de salario. Todos com description que explica e source_type/source_id apontando a origem real (damage, fine, expense_advance)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Saldo por profissional plausivel",
+          "quantos": "6 profissionais",
+          "criterio": "Saldo mensal liquido positivo entre R$ 380,00 e R$ 2.900,00 por tecnico (o guincheiro recebe salario por fora - o extrato aqui e so remuneracao variavel e descontos). Nenhum profissional com saldo negativo acumulado maior que R$ 600,00."
+        }
+      ],
+      "como_provar": "-- 1) Todo credito de comissao aponta um calculo que existe e esta liquidado:\nselect count(*) from professional_statement_entries e where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and e.source_type='commission_calculation' and not exists (select 1 from commission_calculations c where c.tenant_id=e.tenant_id and c.id=e.source_id and c.settled_at is not null and c.settlement_ref=e.group_id); -- tem que dar 0\n-- 2) O valor do credito bate com o valor do calculo:\nselect count(*) from professional_statement_entries e join commission_calculations c on c.id=e.source_id where e.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and round(c.amount,2) <> e.amount; -- tem que dar 0\n-- 3) Parcelamento fecha (3x tem as 3 parcelas, sem buraco):\nselect group_id, max(installment_total) previsto, count(*) existentes from professional_statement_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and deleted_at is null group by 1 having max(installment_total) <> count(*); -- tem que voltar 0 linhas\n-- 4) O extrato tem os dois lados, por profissional:\nselect p.id, u.name, count(*) filter (where e.direction='credit') creditos, count(*) filter (where e.direction='debit') debitos from operator_profiles p join users u on u.id=p.user_id left join professional_statement_entries e on e.operator_profile_id=p.id where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1,2; -- todo tecnico com creditos > 0, e pelo menos 3 deles com debitos > 0\n-- 5) NA TELA: /finance/commissions -> conferencia de 'Carla Mendes' em mai/2026 -> clicar em 'Ver no extrato' numa linha com bolinha verde -> cair em /fleet/statement/:id no lancamento certo, com o mesmo valor."
+    }
+  ]
+}

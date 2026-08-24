@@ -134,7 +134,7 @@ Widget _wrapDeliveryRun(InMemoryChecklistLocalStore store) {
 void main() {
   // ── Group 1: run kind persistido + runs distintos ────────────────────────
   group('B-118 run kind (coleta/entrega)', () {
-    test('1. kind persiste no Drift apos recriar store', () async {
+    test('1. kind persiste no Drift após recriar store', () async {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
 
@@ -198,7 +198,7 @@ void main() {
 
   // ── Group 2: comparacao coleta x entrega (pura) ──────────────────────────
   group('B-118 compareChecklistRuns', () {
-    test('4. valores iguais nao geram divergencia', () {
+    test('4. valores iguais não geram divergencia', () {
       final answers = {'f-cond': _choice('f-cond', 'ok')};
       final divs = compareChecklistRuns(
         schema: _schema,
@@ -236,7 +236,7 @@ void main() {
       expect(divs.first.deliveryValue, 'dano');
     });
 
-    test('6. campo de assinatura e ignorado na comparacao', () {
+    test('6. campo de assinatura e ignorado na comparação', () {
       final divs = compareChecklistRuns(
         schema: _schema,
         collection: _run(
@@ -293,7 +293,7 @@ void main() {
       expect(div.payload.containsKey('token'), isFalse);
     });
 
-    test('8. lista vazia nao enfileira nada', () async {
+    test('8. lista vazia não enfileira nada', () async {
       final actionStore = InMemorySyncActionStore([]);
       final repo = _repo(actionStore: actionStore);
       await repo.recordDivergences(runId: 'r', divergences: const []);

@@ -131,7 +131,7 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
 
   String _safeMessage(Object e) {
     if (e is ApiError) return e.safeMessage;
-    return 'Falha na sincronizacao. Tente novamente.';
+    return 'Falha na sincronização. Tente novamente.';
   }
 }
 

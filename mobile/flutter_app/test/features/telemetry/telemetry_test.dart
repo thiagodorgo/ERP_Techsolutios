@@ -54,7 +54,7 @@ void main() {
       expect(TelemetrySignalType.fromWire('bogus'), isNull);
     });
 
-    test('2. meia-coordenada e valores negativos sao rejeitados', () {
+    test('2. meia-coordenada e valores negativos são rejeitados', () {
       expect(
         () => _event(latitude: -23.5, longitude: null),
         throwsA(isA<TelemetryValidationError>()),
@@ -73,7 +73,7 @@ void main() {
       );
     });
 
-    test('3. capturedAt e createdAt sao normalizados para UTC', () {
+    test('3. capturedAt e createdAt são normalizados para UTC', () {
       final event = _event(
         capturedAt: DateTime.parse('2026-07-24T12:00:00-03:00'),
       );
@@ -116,7 +116,7 @@ void main() {
       expect(event['appVersion'], '1.0.0');
     });
 
-    test('6. evento sem GPS nao emite lat/lng (só heartbeat consentido)', () {
+    test('6. evento sem GPS não emite lat/lng (só heartbeat consentido)', () {
       const codec = TelemetryCodec();
       final request = codec.encodeRequest([
         _event(
@@ -248,7 +248,7 @@ void main() {
   });
 
   group('PR-13 captura foreground + consent-gate (RN-01/05)', () {
-    test('12. sem permissao field_location:send → nao captura GPS', () async {
+    test('12. sem permissão field_location:send → não captura GPS', () async {
       final store = InMemoryTelemetryLocalStore();
       final capture = _captureService(
         store: store,
@@ -460,7 +460,7 @@ void main() {
     });
 
     test(
-      '21. idempotencia: already_applied purga e nao re-enfileira',
+      '21. idempotencia: already_applied purga e não re-enfileira',
       () async {
         final store = InMemoryTelemetryLocalStore();
         await store.enqueue(
@@ -728,7 +728,7 @@ class _FakeDeviceLocationProvider implements DeviceLocationProvider {
   Future<DeviceLocationResult> currentLocation() async {
     final fix = _fix;
     if (fix == null) {
-      return DeviceLocationResult.unavailable('GPS indisponivel no teste.');
+      return DeviceLocationResult.unavailable('GPS indisponível no teste.');
     }
     return DeviceLocationResult.available(fix);
   }

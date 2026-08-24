@@ -1,0 +1,1349 @@
+{
+  "area": "Frota e Estoque",
+  "telas": [
+    {
+      "tela": "Abastecimento",
+      "rota": "/fleet/fuel",
+      "tabelas": [
+        "fuel_logs",
+        "vehicles",
+        "suppliers",
+        "inventory_items",
+        "stock_movements",
+        "work_orders"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "vehicles (viatura)",
+          "exigido_por": "ambos",
+          "por_que": "FK composta fuel_logs_tenant_id_vehicle_id_fkey (tenant_id, vehicle_id) -> vehicles RESTRICT, coluna NOT NULL. Sem viatura nao existe lancamento; e a coluna 'Viatura' e o filtro da tela sao a viatura."
+        },
+        {
+          "passo": 2,
+          "entidade": "suppliers (posto de combustivel)",
+          "exigido_por": "historia",
+          "por_que": "supplier_id e NULAVEL no banco, mas fuel-log.service.ts (RN-ABA-01) lanca 422 supplier_required_for_external quando station_type='external' e explicito. Com NULL a coluna 'Fornecedor' renderiza '—' (AbastecimentoPage.tsx: log.supplierName ? ... : '—'). E EXATAMENTE o defeito do dono: dado existe, historia nao."
+        },
+        {
+          "passo": 3,
+          "entidade": "inventory_items com is_fuel=true + saldo positivo",
+          "exigido_por": "historia",
+          "por_que": "stock_item_id e nulavel, mas o fluxo INTERNO (tanque da base) so existe se houver item is_fuel com saldo. O service exige station_type='internal' para aceitar stock_item_id (422 stock_item_not_allowed_for_external) e dispara a baixa em stock_movements (source_type='fuel_log'). Sem item is_fuel, o chip 'Posto' so tem um valor possivel."
+        },
+        {
+          "passo": 4,
+          "entidade": "2 ou mais lancamentos por viatura, com odometro crescente",
+          "exigido_por": "historia",
+          "por_que": "km/L e distanceKm sao DERIVADOS (fuel-log.efficiency.ts): o 1o lancamento de cada viatura retorna null/null. Com 1 lancamento a coluna 'km/L' fica '—' e o KPI 'km/L medio da frota' nao computa a viatura. O service tambem exige odometro monotonico por viatura (assertOdometerMonotonic)."
+        },
+        {
+          "passo": 5,
+          "entidade": "work_orders (OS de origem)",
+          "exigido_por": "historia",
+          "por_que": "work_order_id nulavel e sem FK dura. Nao quebra a tela, mas sem ele nao ha como responder 'esse diesel foi queimado em qual servico'."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "5 lancamentos (5 ativos), em 3 viaturas. 5/5 station_type='external' e 5/5 com supplier_id NULL. 0 lancamentos internal. 0 com work_order_id. 0 itens is_fuel no tenant. Apenas 2 viaturas tem >=2 lancamentos (unicas com km/L derivavel). O lancamento mais recente tem 49 dias. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select 'fuel: external SEM fornecedor' k, count(*) from fuel_logs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and station_type='external' and supplier_id is null union all select 'fuel: station_type internal', count(*) from fuel_logs where tenant_id='a79aedf2...' and station_type='internal' union all select 'fuel: sem OS', count(*) from fuel_logs where tenant_id='a79aedf2...' and work_order_id is null union all select 'fuel: viaturas com >=2 lancamentos', count(*) from (select vehicle_id from fuel_logs where tenant_id='a79aedf2...' group by 1 having count(*)>=2) x union all select 'itens is_fuel=true', count(*) from inventory_items where tenant_id='a79aedf2...' and is_fuel;\" + \"select 'dias desde o mais recente', extract(day from now()-max(fueled_at)) from fuel_logs where tenant_id='a79aedf2...';\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Lancamento marcado como posto EXTERNO sem nenhum fornecedor vinculado — a coluna 'Fornecedor' da tela mostra '—' em todas as linhas",
+          "quantos": "5 de 5 (100%)",
+          "evidencia": "select count(*) from fuel_logs where tenant_id='a79aedf2...' and station_type='external' and supplier_id is null; -> 5. AbastecimentoPage.tsx coluna 'supplier': render: (log) => (log.supplierName ? log.supplierName : <span style={mutedStyle}>—</span>)"
+        },
+        {
+          "defeito": "Esses 5 registros NAO seriam aceitos pela API de hoje: fuel-log.service.ts lanca 422 supplier_required_for_external. Entraram pelo caminho de retrocompatibilidade (station_type omitido). Dado inalcancavel pela propria tela.",
+          "quantos": "5 de 5",
+          "evidencia": "src/modules/fuel-logs/fuel-log.service.ts:347-353 throw new FuelLogError(..., 'supplier_required_for_external', ...)"
+        },
+        {
+          "defeito": "Nenhum abastecimento em tanque proprio (INTERNAL) — o chip 'Posto' so consegue exibir um valor e a baixa automatica de estoque (source_type='fuel_log') nunca acontece",
+          "quantos": "0 de 5 internal",
+          "evidencia": "select count(*) from fuel_logs where tenant_id='a79aedf2...' and station_type='internal'; -> 0. E select count(*) from inventory_items where tenant_id='a79aedf2...' and is_fuel; -> 0 (nao ha item de combustivel para consumir)"
+        },
+        {
+          "defeito": "Nenhum abastecimento ligado a uma OS",
+          "quantos": "5 de 5",
+          "evidencia": "select count(*) from fuel_logs where tenant_id='a79aedf2...' and work_order_id is null; -> 5"
+        },
+        {
+          "defeito": "So 3 viaturas no tenant, e apenas 2 com >=2 lancamentos: o KPI 'km/L medio da frota' e calculado sobre 2 viaturas e a coluna km/L fica '—' em 3 das 5 linhas",
+          "quantos": "3 viaturas / 2 com eficiencia derivavel",
+          "evidencia": "select count(*) from (select vehicle_id from fuel_logs where tenant_id='a79aedf2...' group by 1 having count(*)>=2) x; -> 2. E select count(*) from vehicles where tenant_id='a79aedf2...'; -> 3"
+        },
+        {
+          "defeito": "Dado velho: o abastecimento mais recente tem 49 dias. Todos os 5 fueled_at carregam o mesmo segundo de seed (02:02:37.15x), assinatura de script e nao de operacao",
+          "quantos": "5 de 5",
+          "evidencia": "select fueled_at from fuel_logs where tenant_id='a79aedf2...' order by 1; -> 2026-06-20 02:02:37.152 / 2026-06-25 02:02:37.161 / 2026-06-30 02:02:37.17 / 2026-07-02 02:02:37.156 / 2026-07-06 02:02:37.166"
+        },
+        {
+          "defeito": "Um unico fuel_type (diesel_s10) em toda a base — a coluna 'Combustivel' nao distingue nada",
+          "quantos": "5 de 5",
+          "evidencia": "select distinct fuel_type from fuel_logs where tenant_id='a79aedf2...'; -> diesel_s10"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "CAMADA 1 — viaturas de uma operacao de guincho no PR (pre-requisito; se ficar em 3, este modulo inteiro fica pobre)",
+          "quantos": "12 viaturas (10 ativas, 1 em manutencao, 1 baixada/inativa)",
+          "criterio": "6 guincho leve/plataforma (Iveco Daily 35S14, Mercedes-Benz Accelo 815, VW Delivery 9.170, Ford Cargo 816, Hyundai HR, Kia Bongo K-2500), 3 guincho pesado (Scania P310, MB Atego 1719, VW Constellation 24.280), 2 utilitarios de apoio (Fiat Strada, Renault Master), 1 prancha/munck. Placa no padrao Mercosul brasileiro (3 letras + digito + letra + 2 digitos), unica por tenant (UNIQUE tenant_id,plate). Ano 2016-2024. type='Guincho leve'|'Guincho pesado'|'Utilitario'|'Prancha'. Odometro-base coerente com o ano (guincho roda 45-70 mil km/ano)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "CAMADA 1 — fornecedores de combustivel, com categoria preenchida",
+          "quantos": "3 postos",
+          "criterio": "Postos reais de rota no PR: 'Posto Ipiranga BR-116 Contorno Leste', 'Auto Posto Shell Cidade Industrial', 'Posto Petrobras Rodovia do Cafe'. category='combustivel'. CNPJ distinto por fornecedor (hoje os 4 fornecedores existentes compartilham o mesmo 12.345.678/0001-90). status='active', is_active=true."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Item de estoque de combustivel para o fluxo INTERNO",
+          "quantos": "1 item + entradas de compra a granel",
+          "criterio": "sku='CMB-DIESEL-S10', name='Diesel S-10 — tanque da base', unit='L', is_fuel=true, item_type='product', min_quantity=800, max_quantity=5000, lead_time_days=3, safety_stock=400. Entradas periodicas de 5.000 L com unit_cost 6,12 (preco de compra a granel, abaixo do preco de bomba), suficientes para cobrir todos os abastecimentos internos sem saldo negativo."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Lancamentos de abastecimento",
+          "quantos": "~220 lancamentos em 120 dias (2026-04-26 a 2026-08-24), ~18 por viatura",
+          "criterio": "85% station_type='external' COM supplier_id preenchido (rodizio entre os 3 postos) — nunca external com fornecedor nulo; 15% station_type='internal' com stock_item_id=CMB-DIESEL-S10 e supplier_id NULL. fuel_type: diesel_s10 nos 10 pesados/leves, gasolina_comum e etanol nos 2 utilitarios. Litros: guincho leve 45-90 L, pesado 120-220 L, utilitario 35-50 L. Preco/L: diesel 6,05-6,45; gasolina 5,89-6,29; etanol 4,29-4,69 — total_value = litros x preco arredondado a 2 casas. Odometro ESTRITAMENTE crescente por viatura, incremento 380-1.100 km (leve), 500-1.400 km (pesado), 250-700 km (utilitario) — resulta em km/L 2,2-4,5 (pesado), 4,5-7,5 (leve), 8-12 (utilitario). fueled_at em horario comercial 06:00-21:00, minutos e segundos variados (nunca o mesmo segundo). 30% com work_order_id de uma OS completed da MESMA viatura e data proxima. 4 lancamentos com is_active=false (estorno/duplicidade) para a aba 'Inativos' ter conteudo. Pelo menos 6 lancamentos nos ultimos 7 dias para a janela padrao da tela nao vir vazia."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Baixa de estoque espelhando cada abastecimento INTERNO",
+          "quantos": "~33 movimentos (1 por lancamento internal)",
+          "criterio": "stock_movements type='saida', custodia BASE, item_id=CMB-DIESEL-S10, quantidade_sinalizada = -litros, source_type='fuel_log', source_id = id do fuel_log (o indice parcial unico stock_movements_source_active_key impede duplicata). O saldo do diesel nunca pode ficar negativo: as entradas da ordem 3 precisam preceder cronologicamente cada baixa."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'external sem fornecedor (tem que ser 0)' k, count(*) v from fuel_logs f, t where f.tenant_id=t.id and f.station_type='external' and f.supplier_id is null union all select 'internal com fornecedor (0)', count(*) from fuel_logs f, t where f.tenant_id=t.id and f.station_type='internal' and f.supplier_id is not null union all select 'internal sem item de estoque (0)', count(*) from fuel_logs f, t where f.tenant_id=t.id and f.station_type='internal' and f.stock_item_id is null union all select 'viaturas com <2 lancamentos (0)', count(*) from (select vehicle_id from fuel_logs f, t where f.tenant_id=t.id group by 1 having count(*)<2) x union all select 'odometro nao-monotonico (0)', count(*) from (select vehicle_id, odometer, lag(odometer) over (partition by vehicle_id order by fueled_at) prev from fuel_logs f, t where f.tenant_id=t.id) y where prev is not null and odometer <= prev union all select 'lancamentos nos ultimos 7 dias (>=6)', count(*) from fuel_logs f, t where f.tenant_id=t.id and fueled_at > now()-interval '7 days' union all select 'km/L fora da faixa 2..14 (0)', count(*) from (select (odometer - lag(odometer) over (partition by vehicle_id order by fueled_at))::numeric / nullif(liters,0) kmL from fuel_logs f, t where f.tenant_id=t.id) z where kmL is not null and (kmL < 2 or kmL > 14);\" — todas as linhas marcadas (0) tem que voltar 0. Na tela /fleet/fuel: a coluna Fornecedor nao pode ter nenhum '—' nas linhas com chip 'Externo', e o KPI 'km/L medio da frota' tem que citar 12 viaturas com consumo derivado."
+    },
+    {
+      "tela": "Manutencao",
+      "rota": "/fleet/maintenance",
+      "tabelas": [
+        "maintenance_orders",
+        "maintenance_order_items",
+        "vehicles",
+        "inventory_items",
+        "stock_movements",
+        "scheduled_notifications"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "vehicles (viatura)",
+          "exigido_por": "ambos",
+          "por_que": "FK composta maintenance_orders_tenant_id_vehicle_id_fkey RESTRICT, vehicle_id NOT NULL. E a coluna 'Viatura' e o filtro da tela."
+        },
+        {
+          "passo": 2,
+          "entidade": "maintenance_orders (cabecalho)",
+          "exigido_por": "banco",
+          "por_que": "maintenance_order_items_order_fkey (tenant_id, maintenance_order_id) RESTRICT — item nao existe sem ordem. E toda ordem nasce em status 'agendada' (DEFAULT_MAINTENANCE_STATUS no service); a mudanca de estado passa pela maquina de transicoes (422 em transicao invalida)."
+        },
+        {
+          "passo": 3,
+          "entidade": "maintenance_order_items (itens de servico/produto/estoque)",
+          "exigido_por": "historia",
+          "por_que": "A tela tem as colunas 'Itens' (contagem) e 'Valor Total' (soma DERIVADA server-side de unit_value x quantity — nao existe coluna). Ordem sem item mostra Itens=0 e Valor Total='—' ao lado de um Custo preenchido: a tela se contradiz sozinha."
+        },
+        {
+          "passo": 4,
+          "entidade": "inventory_items para os itens item_type='stock'",
+          "exigido_por": "ambos",
+          "por_que": "maintenance_order_items_stock_item_fkey (tenant_id, stock_item_id) RESTRICT. E a baixa automatica em stock_movements (source_type='maintenance_item') so acontece com o item vinculado."
+        },
+        {
+          "passo": 5,
+          "entidade": "cost + completed_at nas ordens concluidas",
+          "exigido_por": "historia",
+          "por_que": "maintenance-order.service.ts assertCompletionRequirements: concluir exige cost>=0 E completedAt (422 completion_requires_cost_and_date). O banco nao exige nada disso — as duas colunas sao nulaveis."
+        },
+        {
+          "passo": 6,
+          "entidade": "next_due_at nas preventivas concluidas",
+          "exigido_por": "historia",
+          "por_que": "Coluna 'Proxima' na tela + o efeito de dominio que agenda a ScheduledNotification (service linha 468: if (!resolver || order.nextDueAt === undefined) return). Nulo em todas = coluna morta e motor de notificacao que nunca dispara."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "2 ordens de manutencao (ambas ativas, ambas 'concluida'), 0 itens de manutencao, 0 ordens com next_due_at, 1 ordem com completed_at ANTES do scheduled_for, 2 ordens com custo identico de R$ 60.000,00. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select id,vehicle_id,type,status,scheduled_for,completed_at,cost,supplier,odometer,next_due_at,description from maintenance_orders where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" + \"select 'manut: itens' k, count(*) from maintenance_order_items where tenant_id='a79aedf2...' union all select 'sem next_due_at', count(*) from maintenance_orders where tenant_id='a79aedf2...' and next_due_at is null union all select 'concluida antes do agendado', count(*) from maintenance_orders where tenant_id='a79aedf2...' and completed_at is not null and scheduled_for is not null and completed_at < scheduled_for;\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Custo absurdo e repetido: R$ 60.000,00 para 'Revisao de 42.000 km — oleo, filtros e freios' e os MESMOS R$ 60.000,00 para 'Troca de embreagem'. Valor de teste digitado, nao de oficina.",
+          "quantos": "2 de 2 (100%)",
+          "evidencia": "select cost, description from maintenance_orders where tenant_id='a79aedf2...'; -> 60000.000000 | Revisao de 42.000 km — oleo, filtros e freios. / 60000.000000 | Troca de embreagem."
+        },
+        {
+          "defeito": "Nenhuma ordem tem itens: a coluna 'Itens' mostra 0 e 'Valor Total' mostra '—' em toda linha, ao lado de um Custo de R$ 60.000 — a tela se contradiz",
+          "quantos": "2 de 2 ordens sem item; 0 itens no tenant",
+          "evidencia": "select count(*) from maintenance_order_items where tenant_id='a79aedf2...'; -> 0"
+        },
+        {
+          "defeito": "Viagem no tempo: ordem concluida em 2026-07-10 03:00 mas agendada para 2026-07-13 02:02 — concluiu 3 dias ANTES de ser agendada",
+          "quantos": "1 de 2",
+          "evidencia": "select scheduled_for, completed_at from maintenance_orders where tenant_id='a79aedf2...' and completed_at < scheduled_for; -> 2026-07-13 02:02:37.178+00 | 2026-07-10 03:00:00+00"
+        },
+        {
+          "defeito": "next_due_at nulo em todas — a coluna 'Proxima' e permanentemente '—' e a ScheduledNotification de proxima manutencao nunca e agendada",
+          "quantos": "2 de 2",
+          "evidencia": "select count(*) from maintenance_orders where tenant_id='a79aedf2...' and next_due_at is null; -> 2"
+        },
+        {
+          "defeito": "Situacao unica: as duas ordens estao 'concluida'. Os estados 'agendada', 'em_execucao' e 'cancelada' e a maquina de transicoes (botoes Concluir/Cancelar) nao aparecem em nenhuma linha",
+          "quantos": "2 de 2",
+          "evidencia": "select distinct status from maintenance_orders where tenant_id='a79aedf2...'; -> concluida"
+        },
+        {
+          "defeito": "Ordem corretiva sem fornecedor e sem odometro — a linha nao diz quem fez o servico nem com quantos km",
+          "quantos": "1 de 2",
+          "evidencia": "select supplier, odometer from maintenance_orders where tenant_id='a79aedf2...' and supplier is null; -> (null) | (null)"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "CAMADA 1 — fornecedores tipo oficina, com categoria",
+          "quantos": "4 oficinas",
+          "criterio": "'Diesel Center Curitiba' (category='oficina'), 'Retifica Parana Motores' ('oficina'), 'Auto Eletrica Portao' ('oficina'), 'Implementos Rodoviarios Araucaria' ('oficina'). CNPJ distinto por fornecedor. O campo maintenance_orders.supplier e TEXTO livre (sem FK) — preencher com o MESMO nome cadastrado em suppliers, para que Manutencao e Fornecedores contem a mesma historia."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Ordens de manutencao",
+          "quantos": "46 ordens em 6 meses (2026-02-24 a 2026-09-20), 3-5 por viatura",
+          "criterio": "Tipo: 60% preventiva ('Revisao de 10.000 km — oleo, filtros e inspecao', 'Troca de oleo e filtro do motor', 'Revisao do sistema de freios', 'Alinhamento e balanceamento', 'Troca da correia dentada', 'Inspecao anual do guincho hidraulico e cabo de aco'), 40% corretiva ('Troca do conjunto de embreagem', 'Reparo da bomba hidraulica do guincho', 'Substituicao do cabo de aco rompido', 'Revisao da bomba injetora', 'Troca do alternador', 'Reparo da suspensao traseira'). Situacao: 8 agendada (scheduled_for nos proximos 30 dias, completed_at e cost NULOS), 4 em_execucao, 30 concluida, 4 cancelada. Custo: preventiva R$ 480-2.400; corretiva leve R$ 900-4.500; corretiva pesada (embreagem, injetora, guincho hidraulico) R$ 5.500-14.000 — NUNCA 60.000. completed_at SEMPRE >= scheduled_for (0 a 5 dias depois). odometer coerente com o ultimo abastecimento da MESMA viatura na mesma data (odometro monotonico compartilhado com fuel_logs). next_due_at preenchido em TODA preventiva concluida = completed_at + 90 dias. supplier = nome de uma das 4 oficinas."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Itens das ordens",
+          "quantos": "~150 itens (2 a 5 por ordem; toda ordem com >=2)",
+          "criterio": "Mix por ordem: 1-2 item_type='service' (Mao de obra mecanica 3h, Diagnostico eletronico, Sangria do sistema de freio), 1-2 item_type='stock' com stock_item_id apontando para item real do estoque (oleo 15W40, filtro de oleo, filtro de ar, pastilha de freio, cabo de aco 12mm) e 0-2 item_type='product' (peca comprada direto na oficina, sem estoque). unit_value Decimal(12,2) na faixa: servico R$ 90-180/hora; oleo R$ 28-34/L; filtro R$ 42-190; pastilha R$ 180-420; cabo de aco R$ 22-38/m. quantity 1-8 conforme o item. A soma (unit_value x quantity) de cada ordem tem que ficar dentro de 5% do cost do cabecalho — o resto e arredondamento/taxa. deleted_at NULL (nenhum item soft-deletado)."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Baixa de estoque dos itens item_type='stock'",
+          "quantos": "~55 movimentos",
+          "criterio": "stock_movements type='saida', custodia BASE, quantidade_sinalizada = -quantity do item, source_type='maintenance_item', source_id = id do maintenance_order_item, reason = 'Manutencao <placa> — <descricao curta>'. Saldo do item nunca negativo: as entradas de compra (plano do Estoque) precisam preceder cronologicamente cada baixa."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'concluida antes do agendado (0)' k, count(*) v from maintenance_orders m, t where m.tenant_id=t.id and m.completed_at < m.scheduled_for union all select 'concluida sem custo ou sem data (0)', count(*) from maintenance_orders m, t where m.tenant_id=t.id and m.status='concluida' and (m.cost is null or m.completed_at is null) union all select 'ordem sem item (0)', count(*) from maintenance_orders m, t where m.tenant_id=t.id and not exists (select 1 from maintenance_order_items i where i.tenant_id=m.tenant_id and i.maintenance_order_id=m.id and i.deleted_at is null) union all select 'preventiva concluida sem next_due_at (0)', count(*) from maintenance_orders m, t where m.tenant_id=t.id and m.type='preventiva' and m.status='concluida' and m.next_due_at is null union all select 'custo fora da faixa 300..15000 (0)', count(*) from maintenance_orders m, t where m.tenant_id=t.id and m.cost is not null and (m.cost < 300 or m.cost > 15000) union all select 'soma dos itens divergindo >5% do custo (0)', count(*) from (select m.id, m.cost, sum(i.unit_value*i.quantity) tot from maintenance_orders m, t, maintenance_order_items i where m.tenant_id=t.id and i.tenant_id=m.tenant_id and i.maintenance_order_id=m.id and i.deleted_at is null and m.cost is not null group by 1,2) x where abs(cost-tot) > cost*0.05 union all select 'situacoes distintas (>=4)', count(distinct status) from maintenance_orders m, t where m.tenant_id=t.id;\" — todas as linhas (0) tem que voltar 0 e a ultima >= 4."
+    },
+    {
+      "tela": "Multas",
+      "rota": "/fleet/fines",
+      "tabelas": [
+        "fines",
+        "vehicles",
+        "users",
+        "operator_profiles",
+        "professional_statement_entries",
+        "financial_titles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "vehicles (viatura autuada)",
+          "exigido_por": "ambos",
+          "por_que": "FK composta fines_tenant_id_vehicle_id_fkey RESTRICT, vehicle_id NOT NULL. Coluna 'Viatura' da tela."
+        },
+        {
+          "passo": 2,
+          "entidade": "users (condutor)",
+          "exigido_por": "historia",
+          "por_que": "driver_id nulavel e SEM FK dura. Coluna 'Condutor' renderiza '—' quando nulo e vira link para /users quando preenchido."
+        },
+        {
+          "passo": 3,
+          "entidade": "operator_profiles (condutor RESPONSAVEL)",
+          "exigido_por": "historia",
+          "por_que": "fines_responsible_operator_fkey (tenant_id, responsible_operator_profile_id) RESTRICT, coluna NULAVEL. Mas e ela que decide a coluna 'Disposicao': NULL = '—' (nem extrato, nem contas a pagar). Preenchida = a multa vira parcela no extrato do profissional. Sem perfil de campo real, nenhuma multa consegue ter disposicao."
+        },
+        {
+          "passo": 4,
+          "entidade": "numero_auto unico por tenant",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, numero_auto). Numero repetido = 23505 no seed."
+        },
+        {
+          "passo": 5,
+          "entidade": "professional_statement_entries (parcelas do desconto)",
+          "exigido_por": "historia",
+          "por_que": "Multa com responsavel so mostra o chip 'Lancado no extrato do condutor' se existir o grupo correspondente no extrato (source_type='fine', source_id = id da multa). Sem isso, a disposicao mente."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "1 multa no tenant. 1 com responsible_operator_profile_id NULL (Disposicao '—'). 1 com orgao 'DETRAN-SP' numa operacao do Parana. Uma unica situacao ('paga'). prazo_recurso e prazo_pagamento na MESMA data. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select id,vehicle_id,driver_id,responsible_operator_profile_id,numero_auto,data_infracao,orgao,descricao,valor,pontos,prazo_recurso,prazo_pagamento,status from fines where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" + \"select 'sem responsavel' k, count(*) from fines where tenant_id='a79aedf2...' and responsible_operator_profile_id is null union all select 'orgao fora do PR', count(*) from fines where tenant_id='a79aedf2...' and orgao not ilike '%-PR' and orgao not ilike '%paran%';\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Orgao autuador de outro estado: 'DETRAN-SP' numa operacao de guincho do Parana (as OS recentes sao todas Curitiba, Ponta Grossa, Sao Jose dos Pinhais)",
+          "quantos": "1 de 1 (100%)",
+          "evidencia": "select orgao from fines where tenant_id='a79aedf2...'; -> DETRAN-SP. Contraste: select distinct service_state from work_orders where tenant_id='a79aedf2...'; -> PR (15 OS), SP (2 OS legadas)"
+        },
+        {
+          "defeito": "Sem condutor responsavel: a coluna 'Responsavel' e a coluna 'Disposicao' mostram '—'. Nenhuma multa foi para o extrato nem para contas a pagar",
+          "quantos": "1 de 1",
+          "evidencia": "select count(*) from fines where tenant_id='a79aedf2...' and responsible_operator_profile_id is null; -> 1. MultasPage.tsx: if (!fine.responsibleOperatorProfileId) return <span style={mutedStyle}>—</span>"
+        },
+        {
+          "defeito": "Valor e pontos nao batem com o CTB para a infracao descrita: 'Avanco de sinal vermelho' e gravissima (R$ 293,47 / 7 pontos), mas esta gravada como R$ 195,23 / 4 pontos",
+          "quantos": "1 de 1",
+          "evidencia": "select descricao, valor, pontos from fines where tenant_id='a79aedf2...'; -> Avanco de sinal vermelho. | 195.230000 | 4"
+        },
+        {
+          "defeito": "Prazo de recurso e prazo de pagamento na mesma data e no mesmo segundo de seed — na pratica esses prazos sao diferentes (30 vs 60 dias)",
+          "quantos": "1 de 1",
+          "evidencia": "select prazo_recurso, prazo_pagamento from fines where tenant_id='a79aedf2...'; -> 2026-07-15 02:02:37.181+00 | 2026-07-15 02:02:37.181+00"
+        },
+        {
+          "defeito": "Situacao unica ('paga'): os chips Recebida / Em recurso / Deferida / Indeferida / Cancelada e os botoes de transicao nao aparecem em lugar nenhum; os KPIs 'em aberto' e 'vencendo' ficam zerados",
+          "quantos": "1 de 1",
+          "evidencia": "select distinct status from fines where tenant_id='a79aedf2...'; -> paga"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "CAMADA 1 — perfis de campo REAIS (pre-requisito da coluna Responsavel e da Disposicao)",
+          "quantos": "8 operator_profiles",
+          "criterio": "Ver o plano detalhado na tela 'Extrato do Profissional' (ordem 1). Resumo: perfis pendurados em usuarios com papel de campo (Field Technician/Operator) — hoje os 2 perfis existentes estao em um Manager e um Tenant Admin. CNH categoria C para guincho leve, D/E para pesado com reboque, numeros DISTINTOS (hoje os 2 perfis dividem o mesmo 98765432100)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Multas",
+          "quantos": "34 multas em 8 meses (2026-01-05 a 2026-08-20)",
+          "criterio": "orgao: DETRAN-PR (12), SETRAN Curitiba (8), PRF (5), DER-PR (4), SETRAN Sao Jose dos Pinhais (2), SETRAN Ponta Grossa (2), SETRAN Londrina (1) — nenhum orgao de fora do PR. Infracao com valor E pontos casados pelo CTB: Excesso de velocidade ate 20% R$ 130,16 / 4 pts; Excesso 20-50% R$ 195,23 / 5 pts; Excesso acima de 50% R$ 880,41 / 7 pts; Avanco de sinal vermelho R$ 293,47 / 7 pts; Estacionar em local proibido R$ 130,16 / 4 pts; Transitar em faixa exclusiva R$ 130,16 / 4 pts; Nao usar cinto R$ 195,23 / 5 pts; Celular ao volante R$ 293,47 / 7 pts; Veiculo em mau estado de conservacao R$ 195,23 / 5 pts. numero_auto no formato real 'PR' + 2 letras + 8 digitos (PRAB12345678), unico por tenant. data_infracao em dias e horarios variados (inclusive madrugada — guincho e 24h). prazo_recurso = data_infracao + 30 dias; prazo_pagamento = data_infracao + 60 dias (nunca iguais). Situacao: recebida 9, em_recurso 5, deferida 2, indeferida 3, paga 12, cancelada 3. 4 multas com prazo_pagamento nos proximos 15 dias para o KPI 'vencendo' acender."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Vinculo condutor + responsavel",
+          "quantos": "22 de 34 com responsavel; 12 sem (empresa paga)",
+          "criterio": "Nas 22: responsible_operator_profile_id = perfil do guincheiro que dirigia a viatura na data (coerente com a escala), e driver_id = o user DESSE MESMO perfil — as colunas 'Condutor' e 'Responsavel' tem que apontar para a mesma pessoa. Nas 12 restantes: responsavel NULL (autuacao por radar sem identificacao) e o titulo correspondente em financial_titles — assim a coluna Disposicao mostra os DOIS chips ('Lancado no extrato do condutor' e 'Lancado em contas a pagar'), e o '—' vira excecao explicada em vez de regra."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Parcelas no extrato das multas com responsavel",
+          "quantos": "~40 parcelas (22 grupos, 1-3 parcelas cada)",
+          "criterio": "professional_statement_entries com entry_type='fine', direction='debit', source_type='fine', source_id = id da multa, group_id por multa, installment_number/installment_total coerentes, amount = valor da multa / total de parcelas (ultima parcela absorve o centavo do arredondamento), due_date no dia 5 dos meses seguintes, competencia = to_char(due_date,'YYYY-MM'). Multas com valor <= R$ 200 em 1 parcela; acima, em 2-3."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'orgao fora do PR/PRF (0)' k, count(*) v from fines f, t where f.tenant_id=t.id and f.orgao not ilike '%PR%' and f.orgao <> 'PRF' union all select 'valor fora da tabela CTB usada (0)', count(*) from fines f, t where f.tenant_id=t.id and f.valor not in (130.16,195.23,293.47,880.41) union all select 'prazo_recurso = prazo_pagamento (0)', count(*) from fines f, t where f.tenant_id=t.id and f.prazo_recurso = f.prazo_pagamento union all select 'responsavel sem parcela no extrato (0)', count(*) from fines f, t where f.tenant_id=t.id and f.responsible_operator_profile_id is not null and not exists (select 1 from professional_statement_entries e where e.tenant_id=f.tenant_id and e.source_type='fine' and e.source_id=f.id and e.deleted_at is null) union all select 'condutor divergente do responsavel (0)', count(*) from fines f, t join operator_profiles op on op.tenant_id=f.tenant_id and op.id=f.responsible_operator_profile_id where f.tenant_id=t.id and f.driver_id is not null and f.driver_id <> op.user_id union all select 'situacoes distintas (>=5)', count(distinct status) from fines f, t where f.tenant_id=t.id union all select 'multas sem responsavel (esperado 12)', count(*) from fines f, t where f.tenant_id=t.id and f.responsible_operator_profile_id is null;\""
+    },
+    {
+      "tela": "Seguros",
+      "rota": "/fleet/insurance",
+      "tabelas": [
+        "insurance_policies",
+        "vehicles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "vehicles (viatura segurada)",
+          "exigido_por": "ambos",
+          "por_que": "FK composta insurance_policies_tenant_id_vehicle_id_fkey RESTRICT, vehicle_id NOT NULL. Coluna 'Viatura' e filtro da tela."
+        },
+        {
+          "passo": 2,
+          "entidade": "numero_apolice unico por tenant",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, numero_apolice)."
+        },
+        {
+          "passo": 3,
+          "entidade": "vigencia_inicio < vigencia_fim, com distribuicao ao redor de hoje",
+          "exigido_por": "historia",
+          "por_que": "A tela declara no subtitulo que a situacao 'vencida' e DERIVADA das datas, e tem 3 KPIs: Vigentes / A vencer / Vencidas. Se toda apolice tem vigencia_fim distante, dois desses tres cards ficam zerados para sempre."
+        },
+        {
+          "passo": 4,
+          "entidade": "cobertura de 1 apolice VIGENTE por viatura ativa",
+          "exigido_por": "historia",
+          "por_que": "Viatura ativa sem apolice e um buraco operacional: a tela nao denuncia (ela lista apolices, nao viaturas), mas o dado fica incoerente com a frota."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "2 apolices, ambas 'vigente', para 3 viaturas — 1 viatura sem nenhuma apolice. 0 apolices vencidas e 0 vencendo em 60 dias: os cards 'A vencer' e 'Vencidas' sao zero permanente. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select id,vehicle_id,seguradora,numero_apolice,vigencia_inicio,vigencia_fim,valor,cobertura,status from insurance_policies where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" + \"select 'viaturas SEM apolice' k, count(*) from vehicles v where v.tenant_id='a79aedf2...' and not exists (select 1 from insurance_policies p where p.tenant_id=v.tenant_id and p.vehicle_id=v.id);\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Lixo digitado na tela: seguradora = 'nn' e numero da apolice = '09'. Duas colunas da lista exibem literalmente isso",
+          "quantos": "1 de 2 (50%)",
+          "evidencia": "select seguradora, numero_apolice from insurance_policies where tenant_id='a79aedf2...'; -> 'Porto Seguro | AP-2026-777' e 'nn | 09'"
+        },
+        {
+          "defeito": "Viatura ativa sem nenhuma apolice — a frota tem cobertura incompleta e nada na tela explica",
+          "quantos": "1 de 3 viaturas",
+          "evidencia": "select v.plate from vehicles v where v.tenant_id='a79aedf2...' and not exists (select 1 from insurance_policies p where p.tenant_id=v.tenant_id and p.vehicle_id=v.id); -> FLT-0002"
+        },
+        {
+          "defeito": "Todas vigentes com vencimento em 2027: os KPIs 'A vencer' e 'Vencidas' sao zero permanente, e a derivacao de 'vencida' anunciada no subtitulo nunca e exercitada",
+          "quantos": "2 de 2",
+          "evidencia": "select status, vigencia_fim from insurance_policies where tenant_id='a79aedf2...'; -> vigente | 2027-03-12 e vigente | 2027-07-16"
+        },
+        {
+          "defeito": "Premio sem relacao com o veiculo: R$ 3.200 num Fiat Strada e R$ 8.090 num Iveco Daily guincho — o valor de R$ 8.090 saiu de digitacao ('8090'), nao de cotacao",
+          "quantos": "2 de 2",
+          "evidencia": "select valor, numero_apolice from insurance_policies where tenant_id='a79aedf2...'; -> 3200.000000 | AP-2026-777 e 8090.000000 | 09"
+        },
+        {
+          "defeito": "Cobertura com quebra de linha crua no meio do texto — a coluna 'Cobertura' (truncada com title) mostra o texto quebrado",
+          "quantos": "1 de 2",
+          "evidencia": "select cobertura from insurance_policies where tenant_id='a79aedf2...' and numero_apolice='09'; -> 'Compreensiva (colisao, roubo, terceiros).' + quebra de linha + 'Desastre naturais (enchente, chuva de granizo, tempestade)'"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Apolices vigentes cobrindo 100% da frota ativa",
+          "quantos": "10 apolices (1 por viatura ativa)",
+          "criterio": "seguradora entre as que operam frota no PR: Porto Seguro, Bradesco Seguros, Allianz, Tokio Marine, HDI, Sompo, Azul Seguros. numero_apolice no formato '31.20.2026.0001234' (Susep-like) ou 'AP-2026-00123' — unico por tenant, nunca com menos de 6 caracteres. Vigencia de 12 meses. Premio anual coerente com o veiculo: utilitario R$ 2.800-4.200; guincho leve R$ 6.500-11.000; guincho pesado R$ 14.000-24.000 (RCF-V de guincho e caro por causa da carga icada). cobertura em UMA linha, texto de negocio: 'Compreensiva + RCF-V (danos materiais R$ 200 mil / corporais R$ 200 mil) + APP + assistencia 24h + cobertura de carga icada'."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Distribuir as datas para acender os tres KPIs",
+          "quantos": "das 10 vigentes: 7 com vencimento > 60 dias, 3 vencendo entre 12 e 45 dias",
+          "criterio": "vigencia_fim escalonada — nao todas no mesmo mes. As 3 que vencem em breve fazem o card 'A vencer' mostrar numero real, e a lista ordenada por vigencia (defaultSort asc) coloca as urgentes no topo, que e o comportamento util da tela."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Historico: apolices VENCIDAS com a respectiva renovacao",
+          "quantos": "6 apolices vencidas (3 viaturas x 2 ciclos anteriores)",
+          "criterio": "vigencia_fim < hoje, status='vencida'. Cada uma seguida pela renovacao vigente da MESMA viatura, com a mesma seguradora ou troca de seguradora (mais realista: 1 das 3 troca). Isso da conteudo ao card 'Vencidas' e mostra a linha do tempo de renovacao da frota."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Uma apolice cancelada",
+          "quantos": "1",
+          "criterio": "Da viatura baixada/inativa, status='cancelada', is_active=false — a viatura saiu da frota e a apolice foi cancelada no meio da vigencia."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'viatura ativa sem apolice vigente (0)' k, count(*) v from vehicles v, t where v.tenant_id=t.id and v.is_active and not exists (select 1 from insurance_policies p where p.tenant_id=v.tenant_id and p.vehicle_id=v.id and p.vigencia_fim > now()) union all select 'seguradora ou apolice com <6 chars (0)', count(*) from insurance_policies p, t where p.tenant_id=t.id and (length(p.seguradora)<6 or length(p.numero_apolice)<6) union all select 'vigencia invertida (0)', count(*) from insurance_policies p, t where p.tenant_id=t.id and p.vigencia_fim <= p.vigencia_inicio union all select 'cobertura com quebra de linha (0)', count(*) from insurance_policies p, t where p.tenant_id=t.id and p.cobertura like '%'||chr(10)||'%' union all select 'vigentes (>=10)', count(*) from insurance_policies p, t where p.tenant_id=t.id and p.vigencia_fim > now() union all select 'vencendo em 60 dias (>=3)', count(*) from insurance_policies p, t where p.tenant_id=t.id and p.vigencia_fim between now() and now()+interval '60 days' union all select 'vencidas (>=6)', count(*) from insurance_policies p, t where p.tenant_id=t.id and p.vigencia_fim < now();\""
+    },
+    {
+      "tela": "Danos",
+      "rota": "/fleet/damages",
+      "tabelas": [
+        "damages",
+        "damage_attachments",
+        "vehicles",
+        "work_orders",
+        "operator_profiles",
+        "professional_statement_entries"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "vehicles (viatura envolvida)",
+          "exigido_por": "ambos",
+          "por_que": "FK composta damages_tenant_id_vehicle_id_fkey RESTRICT, vehicle_id NOT NULL."
+        },
+        {
+          "passo": 2,
+          "entidade": "work_orders (OS de origem)",
+          "exigido_por": "historia",
+          "por_que": "work_order_id nulavel, SEM FK dura. Coluna 'OS de origem' renderiza '—' quando nulo. Um dano de guincho quase sempre acontece DURANTE um servico — sem a OS, o dano nao tem contexto."
+        },
+        {
+          "passo": 3,
+          "entidade": "operator_profiles (profissional responsavel)",
+          "exigido_por": "historia",
+          "por_que": "damages_responsible_operator_fkey RESTRICT, coluna NULAVEL. E ela que decide a coluna 'Disposicao': NULL = '—'; preenchida + valor a cobrar = debito PARCELADO no extrato do profissional (source_type='damage')."
+        },
+        {
+          "passo": 4,
+          "entidade": "campos descritivos tipo/origem/objeto/identificacao_objeto",
+          "exigido_por": "historia",
+          "por_que": "Todos nulaveis no banco, mas sao o corpo do DamageDetailModal e do PrintDamageModal. Nulos = modal de detalhe e impressao saem em branco. (analise_interna existe mas NUNCA e impressa.)"
+        },
+        {
+          "passo": 5,
+          "entidade": "damage_attachments (fotos)",
+          "exigido_por": "historia",
+          "por_que": "O subtitulo da tela promete 'custos e fotos anexadas'. Dano moderado/grave sem foto e um laudo sem prova."
+        },
+        {
+          "passo": 6,
+          "entidade": "professional_statement_entries",
+          "exigido_por": "historia",
+          "por_que": "O chip 'Lancado no extrato' so e verdade se existir o grupo no extrato com source_type='damage' e source_id = id do dano."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "1 dano no tenant. descricao = '455'. custo_estimado 444,00 / custo_real 544,00. tipo, origem, objeto e identificacao_objeto TODOS nulos. Sem responsavel, sem OS de origem. 1 anexo, com nome de arquivo de export do ChatGPT. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select id,vehicle_id,work_order_id,responsible_operator_profile_id,data,gravidade,descricao,status,tipo,origem,objeto,identificacao_objeto,custo_estimado,custo_real from damages where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" + \"select id,damage_id,file_name,mime_type,size_bytes from damage_attachments where tenant_id='a79aedf2...';\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Descricao numerica: o unico dano da base tem descricao = '455'. A coluna e o modal de detalhe exibem literalmente '455'",
+          "quantos": "1 de 1 (100%)",
+          "evidencia": "select descricao from damages where tenant_id='a79aedf2...'; -> 455"
+        },
+        {
+          "defeito": "Custos digitados como teste: 444,00 estimado e 544,00 real — sequencias de tecla, nao orcamento de funilaria",
+          "quantos": "1 de 1",
+          "evidencia": "select custo_estimado, custo_real from damages where tenant_id='a79aedf2...'; -> 444.000000 | 544.000000"
+        },
+        {
+          "defeito": "Todos os campos descritivos nulos (tipo, origem, objeto, identificacao_objeto) — o DamageDetailModal e o PrintDamageModal abrem praticamente em branco",
+          "quantos": "1 de 1",
+          "evidencia": "select count(*) from damages where tenant_id='a79aedf2...' and (tipo is null or origem is null or objeto is null); -> 1"
+        },
+        {
+          "defeito": "Sem responsavel e sem OS de origem: as colunas 'Responsavel', 'Disposicao' e 'OS de origem' mostram '—' na unica linha existente",
+          "quantos": "1 de 1 em cada",
+          "evidencia": "select count(*) from damages where tenant_id='a79aedf2...' and responsible_operator_profile_id is null; -> 1 e select count(*) from damages where tenant_id='a79aedf2...' and work_order_id is null; -> 1"
+        },
+        {
+          "defeito": "Anexo com nome de arquivo que denuncia dado de teste: 'ChatGPT_Image_17_de_jun._de_2026__23_05_29__4_.png'",
+          "quantos": "1 de 1 anexo",
+          "evidencia": "select file_name from damage_attachments where tenant_id='a79aedf2...'; -> ChatGPT_Image_17_de_jun._de_2026__23_05_29__4_.png"
+        },
+        {
+          "defeito": "Uma unica gravidade ('leve') e uma unica situacao ('registrado'): os 4 KPIs da tela (Total / Registrados / Em tratativa / Resolvidos) mostram 1-1-0-0",
+          "quantos": "1 de 1",
+          "evidencia": "select gravidade, status from damages where tenant_id='a79aedf2...'; -> leve | registrado"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Danos",
+          "quantos": "24 danos em 6 meses (2026-02-24 a 2026-08-22)",
+          "criterio": "gravidade: leve 12, moderada 8, grave 4. status: registrado 7, em_tratativa 9, resolvido 8. tipo: internal 10 (dano na propria viatura), external 9 (dano no veiculo do cliente durante o reboque), both 5. origem: 'Operacao de reboque' (10), 'Manobra em patio' (5), 'Colisao em transito' (3), 'Vandalismo' (2), 'Intemperie' (2), 'Multa' (2 — valor valido do enum-app, sem FK). objeto/identificacao_objeto: external -> 'Veiculo do cliente' + placa do terceiro; internal -> 'Plataforma', 'Cabo de aco do guincho', 'Lanterna traseira', 'Para-choque dianteiro', 'Bracadeira hidraulica' + lado/numero de serie. descricao: frase de operacao real, minimo 40 caracteres, ex.: 'Risco profundo na lateral direita do veiculo do cliente ao encostar na guia durante o icamento na Av. das Torres.' analise_interna preenchida so nos moderados/graves (nunca impressa)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Custos",
+          "quantos": "24 estimados; 17 com custo real",
+          "criterio": "custo_estimado por gravidade: leve R$ 180-900; moderada R$ 900-3.200; grave R$ 3.200-7.500. custo_real preenchido apenas nos 8 resolvidos e nos 9 em_tratativa avancada, dentro de +/-30% do estimado. Os 7 'registrado' ficam sem custo_real (ainda nao orcado) — isso e '—' honesto, nao buraco."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Vinculo com OS de origem",
+          "quantos": "18 de 24",
+          "criterio": "work_order_id apontando para uma OS com status 'completed' da MESMA viatura, com a data do dano dentro da janela scheduled_for..completed_at daquela OS. Os 6 restantes (manobra em patio, vandalismo, intemperie) ficam sem OS — e isso e coerente, nao defeito."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Responsavel e desconto no extrato",
+          "quantos": "14 de 24 com responsavel",
+          "criterio": "responsible_operator_profile_id = o guincheiro que executou a OS (coerente com assigned_operator_id da OS de origem). Para cada um, criar o grupo no extrato: entry_type='damage', direction='debit', source_type='damage', source_id = id do dano, 2 a 6 parcelas, amount = (custo_real ou estimado) / parcelas, com o teto de 30% do credito de remuneracao do mes. Os 10 sem responsavel = dano de terceiro ou sem identificacao — mostram '—' de forma explicada."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Fotos anexadas",
+          "quantos": "~26 anexos (1-3 nos moderados e graves)",
+          "criterio": "file_name de operacao: 'dano-lateral-direita-01.jpg', 'cabo-aco-rompido.jpg', 'plataforma-amassada-traseira.jpg', 'veiculo-cliente-parachoque.jpg'. mime_type='image/jpeg', size_bytes 200 KB-3 MB, storage_provider='local'. NUNCA nome de export de ferramenta (ChatGPT_Image_..., Screenshot_..., download (3).png)."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'descricao curta ou numerica (0)' k, count(*) v from damages d, t where d.tenant_id=t.id and (length(d.descricao)<40 or d.descricao ~ '^[0-9]+$') union all select 'sem tipo/origem/objeto (0)', count(*) from damages d, t where d.tenant_id=t.id and (d.tipo is null or d.origem is null or d.objeto is null) union all select 'OS de origem de outra viatura (0)', count(*) from damages d, t join work_orders w on w.tenant_id=d.tenant_id and w.id=d.work_order_id where d.tenant_id=t.id and w.vehicle_id is distinct from d.vehicle_id union all select 'responsavel sem parcela no extrato (0)', count(*) from damages d, t where d.tenant_id=t.id and d.responsible_operator_profile_id is not null and not exists (select 1 from professional_statement_entries e where e.tenant_id=d.tenant_id and e.source_type='damage' and e.source_id=d.id and e.deleted_at is null) union all select 'custo_real fora de +/-30% do estimado (0)', count(*) from damages d, t where d.tenant_id=t.id and d.custo_real is not null and (d.custo_real < d.custo_estimado*0.7 or d.custo_real > d.custo_estimado*1.3) union all select 'anexo com nome de ferramenta (0)', count(*) from damage_attachments a, t where a.tenant_id=t.id and (a.file_name ilike 'ChatGPT%' or a.file_name ilike 'Screenshot%' or a.file_name ilike 'download%') union all select 'grave/moderado sem foto (0)', count(*) from damages d, t where d.tenant_id=t.id and d.gravidade in ('moderada','grave') and not exists (select 1 from damage_attachments a where a.tenant_id=d.tenant_id and a.damage_id=d.id) union all select 'gravidades distintas (3)', count(distinct gravidade) from damages d, t where d.tenant_id=t.id union all select 'situacoes distintas (3)', count(distinct status) from damages d, t where d.tenant_id=t.id;\""
+    },
+    {
+      "tela": "Extrato do Profissional",
+      "rota": "/fleet/statement e /fleet/statement/:operatorProfileId",
+      "tabelas": [
+        "professional_statement_entries",
+        "operator_profiles",
+        "users",
+        "fines",
+        "damages"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "users com papel de campo",
+          "exigido_por": "banco",
+          "por_que": "operator_profiles_tenant_id_user_id_fkey (tenant_id, user_id) CASCADE, user_id NOT NULL. UNIQUE (tenant_id, user_id) — 1 perfil por usuario."
+        },
+        {
+          "passo": 2,
+          "entidade": "operator_profiles (o profissional)",
+          "exigido_por": "banco",
+          "por_que": "professional_statement_entries_operator_fkey RESTRICT, operator_profile_id NOT NULL. E o seletor no topo da tela e alimentado por useOperatorProfiles — sem perfil, o select fica vazio e a tela mostra 'Selecione um profissional' para sempre."
+        },
+        {
+          "passo": 3,
+          "entidade": "lancamento de CREDITO (remuneracao)",
+          "exigido_por": "historia",
+          "por_que": "Saldo = Sigma credit - Sigma debit (DERIVADO server-side). Se so existirem debitos de multa/dano, o saldo de todo profissional fica negativo e o card de saldo mostra um so tom. Extrato de folha comeca por credito."
+        },
+        {
+          "passo": 4,
+          "entidade": "grupo de parcelas coerente (group_id + installment_number/total)",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, group_id, installment_number). installment_number tem que ser 1..installment_total; competencia = to_char(due_date,'YYYY-MM') derivada server-side."
+        },
+        {
+          "passo": 5,
+          "entidade": "fines/damages como origem dos debitos",
+          "exigido_por": "historia",
+          "por_que": "source_type e source_id nao tem FK nativa, mas o indice parcial unico (tenant_id, source_type, source_id, installment_number) WHERE deleted_at IS NULL blinda a idempotencia. source_id apontando para nada = debito orfao que ninguem consegue explicar na tela."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 lancamentos no extrato — a tela nunca sai do estado 'Sem lancamentos' para qualquer profissional. Apenas 2 operator_profiles no tenant, e os DOIS estao pendurados em usuarios de escritorio (Manager e Tenant Admin), com o mesmo numero de CNH e nome de teste. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) from professional_statement_entries where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" -> 0. + \"select op.full_name perfil_campo, u.name usuario, r.name papel from operator_profiles op join users u on u.id=op.user_id and u.tenant_id=op.tenant_id left join user_role_assignments ura on ura.user_id=u.id and ura.tenant_id=u.tenant_id left join roles r on r.id=ura.role_id where op.tenant_id='a79aedf2...';\" + \"select cnh_number, count(*) from operator_profiles where tenant_id='a79aedf2...' group by 1 having count(*)>1;\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Extrato completamente vazio: nenhum lancamento em nenhum profissional. A tela so consegue mostrar o estado vazio",
+          "quantos": "0 lancamentos de 0",
+          "evidencia": "select count(*) from professional_statement_entries where tenant_id='a79aedf2...'; -> 0"
+        },
+        {
+          "defeito": "Os perfis de campo estao nas pessoas erradas: 'Guincheiro Prova Ciclo2' e o perfil do usuario 'Gustavo Reis (Gestor Operacional)' (papel Manager) e 'Guincheiro Silva' e o perfil do 'Admin Demo' (papel Tenant Admin). Os 5 tecnicos/operadores reais do tenant (Ana Beatriz Rocha, Rafael Mendes, Camila Nunes, Diego Ferreira, Carla Mendes) NAO tem perfil de campo",
+          "quantos": "2 de 2 perfis errados; 5 tecnicos sem perfil",
+          "evidencia": "perfil_campo | usuario | papel -> 'Guincheiro Prova Ciclo2 | Gustavo Reis (Gestor Operacional) | Manager' e 'Guincheiro Silva | Admin Demo | Tenant Admin'"
+        },
+        {
+          "defeito": "Nome de teste no rotulo que a tela exibe: full_name = 'Guincheiro Prova Ciclo2' (o seletor de profissional e o cabecalho do extrato mostram isso)",
+          "quantos": "1 de 2",
+          "evidencia": "select full_name from operator_profiles where tenant_id='a79aedf2...'; -> Guincheiro Prova Ciclo2 / Guincheiro Silva"
+        },
+        {
+          "defeito": "Os dois perfis compartilham o MESMO numero de CNH — dois profissionais com a mesma habilitacao",
+          "quantos": "2 perfis, 1 CNH",
+          "evidencia": "select cnh_number, count(*) from operator_profiles where tenant_id='a79aedf2...' group by 1 having count(*)>1; -> 98765432100 | 2"
+        },
+        {
+          "defeito": "Telefone vazio nos dois perfis — o cadastro de profissional nao tem como contatar ninguem",
+          "quantos": "2 de 2",
+          "evidencia": "select phone from operator_profiles where tenant_id='a79aedf2...'; -> (vazio) | (vazio)"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "CAMADA 1 — corrigir/criar os perfis de campo (pre-requisito de Extrato, Telemetria, Multas, Danos e custodia de Estoque)",
+          "quantos": "8 operator_profiles ativos (+ 1 inativo, desligado)",
+          "criterio": "Um perfil por usuario com papel de campo (Field Technician / Operator). Reaproveitar os 5 tecnicos existentes (Ana Beatriz Rocha, Rafael Mendes, Camila Nunes, Diego Ferreira, Carla Mendes) e criar mais 3 usuarios de campo com nomes brasileiros comuns. Os 2 perfis atuais, pendurados em Manager/Tenant Admin, tem que sair do papel de guincheiro. full_name = nome civil completo (nunca 'Guincheiro Prova Ciclo2'). cnh_number: 11 digitos DISTINTOS por perfil. cnh_category: 'C' para operador de guincho leve (4), 'D' para pesado (2), 'E' para conjunto com reboque (2). cnh_expires_at escalonada 2026-11 a 2030 — 1 vencendo nos proximos 60 dias para o cadastro ter um alerta real. phone no formato (41) 9XXXX-XXXX (DDD de Curitiba/RMC). tracking_consent: 6 true (com tracking_consent_at) e 2 false — os 2 sem consentimento sao a prova viva do consent-gate LGPD na Telemetria."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Creditos de remuneracao mensal",
+          "quantos": "32 lancamentos (8 profissionais x 4 competencias 2026-05 a 2026-08)",
+          "criterio": "entry_type='remuneration', direction='credit', source_type='remuneration', installment_total=1, due_date no dia 5 do mes seguinte, competencia derivada, amount R$ 2.600-4.800 (salario de guincheiro + adicional noturno para quem faz turno 18:30-06:30). description do tipo 'Remuneracao 07/2026 — turno diurno'. status: parcelas com due_date passada -> 'settled' com settled_at; futuras -> 'pending'."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Creditos de produtividade por OS concluida",
+          "quantos": "~24 lancamentos",
+          "criterio": "entry_type='remuneration', direction='credit', amount R$ 180-950/mes, proporcional ao numero de OS completed atribuidas ao profissional no mes. description 'Produtividade 07/2026 — 34 atendimentos'."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Debitos de multa",
+          "quantos": "~40 parcelas (22 grupos)",
+          "criterio": "Gerados a partir das 22 multas com responsavel (ver tela Multas, ordem 4). entry_type='fine', direction='debit', source_type='fine', source_id = id da multa."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Debitos de dano",
+          "quantos": "~50 parcelas (14 grupos)",
+          "criterio": "Gerados a partir dos 14 danos com responsavel (ver tela Danos, ordem 4). entry_type='damage', direction='debit', source_type='damage', source_id = id do dano, 2-6 parcelas. Teto: a soma dos debitos de um mes nao pode passar de 30% do credito de remuneracao daquele mes para o mesmo profissional — regra de folha, e o que impede o saldo virar absurdo."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Ajustes manuais",
+          "quantos": "~8 lancamentos",
+          "criterio": "entry_type='adjustment', source_type='manual' (source_id NULL), misturando direction: debit ('Adiantamento quinzenal', 'Vale-transporte 07/2026') e credit ('Acerto de diaria — pernoite em Ponta Grossa', 'Estorno de desconto indevido'). 2-3 com status='cancelled' para a coluna Situacao mostrar os tres estados."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Fechamento do saldo",
+          "quantos": "8 saldos",
+          "criterio": "Depois de tudo lancado, o saldo (Sigma credit - Sigma debit) tem que ficar POSITIVO em 6 dos 8 profissionais (o normal da folha) e levemente NEGATIVO em 2 (dano grave parcelado) — assim o card de saldo exibe os dois tons e a coluna 'Saldo' corrente cruza o zero em alguma linha."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'perfil de campo em usuario de escritorio (0)' k, count(*)::text v from operator_profiles op, t join user_role_assignments ura on ura.tenant_id=op.tenant_id and ura.user_id=op.user_id join roles r on r.id=ura.role_id where op.tenant_id=t.id and op.is_active and r.name in ('Tenant Admin','Manager','Finance','Super Admin') union all select 'CNH duplicada (0)', count(*)::text from (select cnh_number from operator_profiles op, t where op.tenant_id=t.id group by 1 having count(*)>1) x union all select 'perfil sem telefone (0)', count(*)::text from operator_profiles op, t where op.tenant_id=t.id and coalesce(op.phone,'')='' union all select 'parcela fora de 1..total (0)', count(*)::text from professional_statement_entries e, t where e.tenant_id=t.id and (e.installment_number < 1 or e.installment_number > e.installment_total) union all select 'competencia divergente do vencimento (0)', count(*)::text from professional_statement_entries e, t where e.tenant_id=t.id and e.competencia <> to_char(e.due_date,'YYYY-MM') union all select 'debito de origem sem a entidade-fonte (0)', count(*)::text from professional_statement_entries e, t where e.tenant_id=t.id and e.source_type='fine' and not exists (select 1 from fines f where f.tenant_id=e.tenant_id and f.id=e.source_id) union all select 'profissional sem lancamento (0)', count(*)::text from operator_profiles op, t where op.tenant_id=t.id and op.is_active and not exists (select 1 from professional_statement_entries e where e.tenant_id=op.tenant_id and e.operator_profile_id=op.id and e.deleted_at is null) union all select 'saldos por profissional', string_agg(coalesce(op.full_name,'?')||'='||to_char(s.saldo,'FM999999.00'),' | ') from (select operator_profile_id, sum(case when direction='credit' then amount else -amount end) saldo from professional_statement_entries e, t where e.tenant_id=t.id and e.deleted_at is null and e.status<>'cancelled' group by 1) s join operator_profiles op on op.id=s.operator_profile_id;\" — a ultima linha tem que mostrar 8 nomes reais com a maioria positiva."
+    },
+    {
+      "tela": "Estoque (abas Itens / Movimentacoes / Contagem)",
+      "rota": "/inventory",
+      "tabelas": [
+        "inventory_items",
+        "stock_movements",
+        "cycle_counts",
+        "cycle_count_entries",
+        "work_orders",
+        "operator_profiles",
+        "vehicles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "inventory_items (item, sku unico)",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, sku). stock_movements_tenant_id_item_id_fkey RESTRICT — nao existe movimento sem item."
+        },
+        {
+          "passo": 2,
+          "entidade": "stock_movements type='entrada' com unit_cost",
+          "exigido_por": "historia",
+          "por_que": "saldo = Sigma quantidade_sinalizada (DERIVADO, R7.1 — nunca coluna) e avg_cost e a media movel recalculada na entrada (computeMovingAverage). Item sem entrada aparece com saldo 0 e custo medio 0."
+        },
+        {
+          "passo": 3,
+          "entidade": "lead_time_days + safety_stock no item",
+          "exigido_por": "historia",
+          "por_que": "computeReorderPoint retorna NULL quando leadTimeDays e desconhecido. Sem lead time, a coluna 'Ponto de pedido' e '—' em 100% das linhas e o KPI 'Precisam repor' e zero permanente. Nulavel no banco, obrigatorio para a tela contar historia."
+        },
+        {
+          "passo": 4,
+          "entidade": "consumo/saida nos ultimos 90 dias",
+          "exigido_por": "historia",
+          "por_que": "uso_medio_diario = Sigma |consumo/saida| na janela de 90 dias / 90 (REORDER_USAGE_WINDOW_DAYS). Sem saida na janela, o uso medio e 0 e o ponto de pedido cai para o safety_stock — a coluna existe mas nao significa nada."
+        },
+        {
+          "passo": 5,
+          "entidade": "consumo de 12 meses + recalculo ABC",
+          "exigido_por": "historia",
+          "por_que": "abc_class NAO e gravavel pela API (so pelo recalculo). classifyAbc devolve 'C' para todo item quando o consumo total e zero. Coluna 'Classe ABC' vazia hoje."
+        },
+        {
+          "passo": 6,
+          "entidade": "movimentos de custodia (professional/vehicle) em pares transfer_group_id",
+          "exigido_por": "historia",
+          "por_que": "stock_movements_custody_operator_fkey e _custody_vehicle_fkey RESTRICT, ambas nulaveis. Sem movimento fora da custodia BASE, o painel de custodia do detalhe mostra Qtd. Profissional = 0 e Qtd. Viatura = 0 para todo item."
+        },
+        {
+          "passo": 7,
+          "entidade": "cycle_counts + cycle_count_entries",
+          "exigido_por": "historia",
+          "por_que": "cycle_count_entries_tenant_id_cycle_count_id_fkey CASCADE. Sem nenhuma contagem, a aba 'Contagem' e um vazio permanente — um terco da tela morto."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "2 itens de estoque (ambos ativos), 3 movimentos (2 entradas + 1 consumo), 0 contagens ciclicas, 0 entradas de contagem. 2/2 itens sem lead_time_days, sem abc_class e sem max_quantity. 0 movimentos fora da custodia BASE. 0 movimentos nos ultimos 30 dias (os 3 sao de 2026-07-10). Saldos: PN-OLEO-15W40=42, PN-FILTRO-AR=30. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select 'itens sem lead_time_days' k, count(*) from inventory_items where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and lead_time_days is null union all select 'itens sem abc_class', count(*) from inventory_items where tenant_id='a79aedf2...' and abc_class is null union all select 'itens sem max_quantity', count(*) from inventory_items where tenant_id='a79aedf2...' and max_quantity is null union all select 'movimentos custody != base', count(*) from stock_movements where tenant_id='a79aedf2...' and custody_type<>'base' union all select 'cycle_counts', count(*) from cycle_counts where tenant_id='a79aedf2...';\" + \"select count(*) from stock_movements where tenant_id='a79aedf2...' and created_at > now()-interval '30 days';\" -> 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum item tem lead_time_days: a coluna 'Ponto de pedido' mostra '—' em 100% das linhas e o KPI 'Precisam repor' e zero permanente. E o mesmo defeito das 28 tarifas 'Todos os servicos' — a coluna existe, o dado nao",
+          "quantos": "2 de 2 (100%)",
+          "evidencia": "select count(*) from inventory_items where tenant_id='a79aedf2...' and lead_time_days is null; -> 2. inventory.calculations.ts computeReorderPoint: 'Returns null when leadTimeDays is unknown'"
+        },
+        {
+          "defeito": "Nenhum item classificado em ABC: a coluna 'Classe ABC' e o filtro por classe ficam vazios",
+          "quantos": "2 de 2",
+          "evidencia": "select count(*) from inventory_items where tenant_id='a79aedf2...' and abc_class is null; -> 2"
+        },
+        {
+          "defeito": "Nenhum item com estoque maximo: a coluna 'Min/Max' so mostra a metade esquerda",
+          "quantos": "2 de 2",
+          "evidencia": "select count(*) from inventory_items where tenant_id='a79aedf2...' and max_quantity is null; -> 2"
+        },
+        {
+          "defeito": "A aba 'Contagem' nunca teve conteudo: zero sessoes de contagem ciclica no tenant",
+          "quantos": "0 de 0",
+          "evidencia": "select count(*) from cycle_counts where tenant_id='a79aedf2...'; -> 0"
+        },
+        {
+          "defeito": "Todos os movimentos estao na custodia BASE: o painel de custodia do detalhe do item exibe Qtd. Profissional = 0 e Qtd. Viatura = 0, e as secoes 'Profissionais' e 'Viaturas' ficam vazias",
+          "quantos": "3 de 3",
+          "evidencia": "select count(*) from stock_movements where tenant_id='a79aedf2...' and custody_type<>'base'; -> 0"
+        },
+        {
+          "defeito": "Estoque congelado: nenhum movimento nos ultimos 30 dias (os 3 existentes sao de 2026-07-10, 45 dias atras). O KPI 'Movimentacoes no periodo' e o stat 'Movimentacoes 30d' do detalhe mostram 0",
+          "quantos": "0 de 3 movimentos recentes",
+          "evidencia": "select count(*) from stock_movements where tenant_id='a79aedf2...' and created_at > now()-interval '30 days'; -> 0"
+        },
+        {
+          "defeito": "Catalogo de 2 itens (oleo e filtro) para uma operacao de guincho: nao ha cabo de aco, cinta, corrente, pneu, bateria, cone, EPI — nada do que um guincho realmente consome. E nenhum item is_fuel, o que impede o abastecimento interno",
+          "quantos": "2 itens no total",
+          "evidencia": "select sku, name from inventory_items where tenant_id='a79aedf2...'; -> PN-OLEO-15W40 | Oleo 15W40 (litro) e PN-FILTRO-AR | Filtro de ar"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Catalogo de itens de uma operacao de guincho e patio",
+          "quantos": "42 itens (38 ativos, 4 descontinuados)",
+          "criterio": "Lubrificantes (oleo 15W40, oleo de cambio 80W90, ATF, fluido de freio DOT4, Arla 32); Filtros (ar, oleo, combustivel, separador de agua, cabine); Guincho (cabo de aco 12 mm, gancho olhal, cinta catraca 5 t, corrente 3/8\", roldana, sapata de plataforma, controle remoto do guincho); Eletrica (bateria 150 Ah, farol de LED, giroflex ambar, chicote, fusivel); Pneus (275/80 R22.5, 215/75 R17.5, 205/75 R16, camara, protetor); Freio (pastilha, lona, tambor, cuica); Consumo (estopa, desengraxante, luva, cone de sinalizacao, colete refletivo, extintor, triangulo, calco de roda); 3 itens item_type='equipment' (radio HT, tablet do app de campo, macaco jacare 20 t) SEM purchase_price/sale_price; 1 item is_fuel=true (Diesel S-10 — tanque da base). sku no padrao <FAMILIA>-<ITEM>-<ESPEC> (LUB-OLEO-15W40, GUI-CABO-12MM, PNE-275-80R225), unico por tenant. unit em un/L/kg/m/par/cx. min_quantity real por giro; max_quantity = 3 a 5 x min. lead_time_days 3-30 (peca de guincho pesado importada 21-30; consumo local 3-7). safety_stock ~= 30% do minimo. purchase_price/sale_price so nos item_type='product', com sale_price = purchase_price x 1,35 a 1,80. description preenchida em todos (o detalhe do item mostra)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Entradas de compra (que definem avg_cost)",
+          "quantos": "~110 entradas em 12 meses",
+          "criterio": "type='entrada', custodia SEMPRE base (regra do service: entrada e sempre BASE), unit_cost variando +/-12% ao longo do tempo para a media movel ficar realista. reason = 'NF <numero> — <nome do fornecedor cadastrado>'. Distribuir cronologicamente ANTES de cada consumo do mesmo item — nenhuma saida pode preceder a entrada que a cobre (wouldOverdraw = 409 no service)."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Consumos e saidas",
+          "quantos": "~130 movimentos",
+          "criterio": "type='consumo' com work_order_id de OS completed (obrigatorio para consumo, R7.2) e reason 'Atendimento <codigo da OS>'; type='saida' das baixas automaticas de abastecimento interno (source_type='fuel_log') e de itens de manutencao (source_type='maintenance_item'). Concentrar ~35 movimentos nos ultimos 30 dias para o KPI 'Movimentacoes no periodo' e o stat 'Movimentacoes 30d' do detalhe pararem de mostrar 0."
+        },
+        {
+          "ordem": 4,
+          "o_que": "Custodia: itens que saem da base e ficam com o profissional ou na viatura",
+          "quantos": "~90 movimentos em pares (transfer_group_id)",
+          "criterio": "~40 em custody_type='professional' (radio HT, tablet, colete refletivo, luva — 1 kit por guincheiro) e ~50 em custody_type='vehicle' (cabo de aco, cinta catraca, cone, extintor, triangulo, calco — 1 kit por viatura). Cada LINK e um par de movimentos irmaos com o mesmo transfer_group_id (saida da BASE + entrada na custodia). Deixar 6 UNLINKs (devolucao a base) para o fluxo inverso existir. Nenhuma custodia pode ficar com saldo negativo."
+        },
+        {
+          "ordem": 5,
+          "o_que": "Estornos",
+          "quantos": "3 movimentos",
+          "criterio": "Movimento compensatorio de sinal oposto, mesma custodia, reverses_movement_id apontando para o original e source_id NULL (fora do indice parcial de idempotencia). Motivo real: 'Estorno — item devolvido sem uso', 'Estorno — lancamento em item errado'."
+        },
+        {
+          "ordem": 6,
+          "o_que": "Contagens ciclicas",
+          "quantos": "4 sessoes",
+          "criterio": "1 aberta por abc_class='A' com entries parcialmente contadas (counted_quantity preenchido em ~60%, variance ainda NULL) — e o estado que o drawer de contagem precisa exercitar; 2 concluidas (uma classe 'B', uma geral) com variance != 0 em 15-25% das linhas e o adjustment_movement_id preenchido apontando para o ajuste real gerado; 1 cancelada. notes com texto de operacao ('Contagem mensal do almoxarifado — turno da manha')."
+        },
+        {
+          "ordem": 7,
+          "o_que": "Recalculo de classes ABC",
+          "quantos": "1 execucao, 42 itens classificados",
+          "criterio": "Rodar o recalculo DEPOIS de todo o consumo de 12 meses estar gravado (abc_class nao e gravavel pela API). Resultado esperado em distribuicao de Pareto: pneus, cabo de aco e bateria em A; filtros, oleo e pastilha em B; consumiveis em C. Deixar 6 itens abaixo do minimo e 9 abaixo do ponto de pedido, para os KPIs 'Abaixo do minimo' e 'Precisam repor' mostrarem numero real e o filtro correspondente ter resultado."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'item ativo sem lead_time_days (0)' k, count(*)::text v from inventory_items i, t where i.tenant_id=t.id and i.is_active and i.lead_time_days is null union all select 'item ativo sem abc_class (0)', count(*)::text from inventory_items i, t where i.tenant_id=t.id and i.is_active and i.abc_class is null union all select 'item ativo sem max_quantity (0)', count(*)::text from inventory_items i, t where i.tenant_id=t.id and i.is_active and i.max_quantity is null union all select 'item produto sem preco (0)', count(*)::text from inventory_items i, t where i.tenant_id=t.id and i.is_active and i.item_type='product' and (i.purchase_price is null or i.sale_price is null) union all select 'saldo negativo por item (0)', count(*)::text from (select item_id, sum(quantidade_sinalizada) s from stock_movements m, t where m.tenant_id=t.id group by 1) x where s < 0 union all select 'saldo negativo por custodia (0)', count(*)::text from (select item_id, custody_type, custody_operator_profile_id, custody_vehicle_id, sum(quantidade_sinalizada) s from stock_movements m, t where m.tenant_id=t.id group by 1,2,3,4) y where s < 0 union all select 'consumo sem OS (0)', count(*)::text from stock_movements m, t where m.tenant_id=t.id and m.type='consumo' and m.work_order_id is null union all select 'movimentos nos ultimos 30 dias (>=30)', count(*)::text from stock_movements m, t where m.tenant_id=t.id and m.created_at > now()-interval '30 days' union all select 'movimentos em custodia profissional (>=40)', count(*)::text from stock_movements m, t where m.tenant_id=t.id and m.custody_type='professional' union all select 'movimentos em custodia viatura (>=50)', count(*)::text from stock_movements m, t where m.tenant_id=t.id and m.custody_type='vehicle' union all select 'contagem concluida com variance sem ajuste (0)', count(*)::text from cycle_count_entries e, t join cycle_counts c on c.tenant_id=e.tenant_id and c.id=e.cycle_count_id where e.tenant_id=t.id and c.status='concluida' and e.variance is not null and e.variance <> 0 and e.adjustment_movement_id is null union all select 'distribuicao ABC', string_agg(abc_class||'='||n::text,' | ') from (select abc_class, count(*) n from inventory_items i, t where i.tenant_id=t.id and i.is_active group by 1) z;\""
+    },
+    {
+      "tela": "Estoque — detalhe do item (abas Resumo / Movimentacao + painel de custodia)",
+      "rota": "/inventory/:id",
+      "tabelas": [
+        "inventory_items",
+        "stock_movements",
+        "operator_profiles",
+        "vehicles",
+        "work_orders"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "inventory_items com description preenchida",
+          "exigido_por": "historia",
+          "por_que": "A aba Resumo mostra os atributos do item. description nulavel no banco; nula = bloco vazio na tela."
+        },
+        {
+          "passo": 2,
+          "entidade": "stock_movements nos ultimos 30 dias",
+          "exigido_por": "historia",
+          "por_que": "O DetailStat 'Movimentacoes 30d' conta a janela de 30 dias. Movimento antigo = 0 nesse card, com o item aparentando estar parado."
+        },
+        {
+          "passo": 3,
+          "entidade": "movimentos com custody_operator_profile_id / custody_vehicle_id",
+          "exigido_por": "historia",
+          "por_que": "O CustodySummaryPanel renderiza 4 metricas (Qtd. Base / Profissional / Viatura / Saldo global) e duas listas rotuladas (Profissionais, Viaturas). So com custodia BASE, tres das quatro metricas e as duas listas ficam vazias."
+        },
+        {
+          "passo": 4,
+          "entidade": "operator_profiles e vehicles como alvo da custodia",
+          "exigido_por": "banco",
+          "por_que": "stock_movements_custody_operator_fkey e _custody_vehicle_fkey, ambas RESTRICT e cross-tenant-safe (23503). O rotulo exibido e o nome do profissional / a placa da viatura — NUNCA CNH."
+        },
+        {
+          "passo": 5,
+          "entidade": "work_orders para os movimentos de consumo",
+          "exigido_por": "historia",
+          "por_que": "A tabela de movimentacoes do detalhe transforma work_order_id em link para /work-orders/:id com o codigo da OS. Sem OS, so um traco."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "Apenas 2 itens tem pagina de detalhe. Ambos com description NULL, 0 movimentos nos ultimos 30 dias (o mais recente e de 2026-07-10) e 0 movimentos em custodia nao-BASE. Dos 3 movimentos do tenant, so 1 tem work_order_id. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select id,sku,name,description,min_quantity,max_quantity,abc_class,avg_cost,lead_time_days,safety_stock from inventory_items where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" + \"select count(*) from stock_movements where tenant_id='a79aedf2...' and created_at > now()-interval '30 days';\" -> 0 + \"select count(*) from stock_movements where tenant_id='a79aedf2...' and work_order_id is not null;\" -> 1"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Card 'Movimentacoes 30d' zerado nos dois itens — o detalhe sugere que o estoque esta parado",
+          "quantos": "2 de 2 itens",
+          "evidencia": "select count(*) from stock_movements where tenant_id='a79aedf2...' and created_at > now()-interval '30 days'; -> 0"
+        },
+        {
+          "defeito": "Painel de custodia inteiramente zerado: Qtd. Profissional = 0, Qtd. Viatura = 0, e as secoes 'Profissionais' e 'Viaturas' sem nenhuma linha",
+          "quantos": "2 de 2 itens",
+          "evidencia": "select count(*) from stock_movements where tenant_id='a79aedf2...' and custody_type<>'base'; -> 0"
+        },
+        {
+          "defeito": "description nula nos dois itens — a aba Resumo abre sem nenhuma descricao do que e o item",
+          "quantos": "2 de 2",
+          "evidencia": "select sku, description from inventory_items where tenant_id='a79aedf2...'; -> PN-OLEO-15W40 | (null) e PN-FILTRO-AR | (null)"
+        },
+        {
+          "defeito": "Quase nenhum movimento com OS: a coluna 'OS' da aba Movimentacao mostra traco em 2 dos 3 registros",
+          "quantos": "2 de 3",
+          "evidencia": "select count(*) from stock_movements where tenant_id='a79aedf2...' and work_order_id is null; -> 2"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "description em todo item do catalogo",
+          "quantos": "42 itens",
+          "criterio": "Uma frase util de almoxarifado, com especificacao: 'Cabo de aco 6x19 alma de fibra, diametro 12 mm, carga de trabalho 1,2 t — reposicao do guincho de plataforma.' Nunca repetir o nome do item na descricao."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Garantir giro recente nos itens de maior movimento",
+          "quantos": ">=3 movimentos nos ultimos 30 dias em pelo menos 12 itens",
+          "criterio": "Concentrar consumos e entradas nas ultimas 4 semanas nos itens de classe A e B (pneu, cabo de aco, oleo, filtro, pastilha, bateria, diesel). Datas e horas variadas em dias uteis."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Kits em custodia, para o painel do detalhe deixar de ser zero",
+          "quantos": "8 kits de profissional + 10 kits de viatura",
+          "criterio": "Kit do profissional: radio HT (1), tablet do app (1), colete refletivo (1), luva (2 pares). Kit da viatura: cabo de aco (1), cinta catraca 5 t (2), cone de sinalizacao (4), extintor (1), triangulo (1), calco de roda (2). Cada LINK como par de movimentos irmaos com o mesmo transfer_group_id. Nos itens com custodia, a soma Base + Profissional + Viatura tem que fechar exatamente com o saldo global."
+        },
+        {
+          "ordem": 4,
+          "o_que": "OS nos movimentos de consumo",
+          "quantos": "100% dos consumos",
+          "criterio": "work_order_id apontando para OS completed do tenant (as 13 OS completed do PR ja existentes + as novas), com created_at do movimento dentro da janela da OS. reason citando o codigo da OS."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'item ativo sem description (0)' k, count(*)::text v from inventory_items i, t where i.tenant_id=t.id and i.is_active and coalesce(i.description,'')='' union all select 'itens com >=3 movimentos em 30d (>=12)', count(*)::text from (select item_id from stock_movements m, t where m.tenant_id=t.id and m.created_at > now()-interval '30 days' group by 1 having count(*)>=3) x union all select 'itens com custodia profissional (>=4)', count(distinct item_id)::text from stock_movements m, t where m.tenant_id=t.id and m.custody_type='professional' union all select 'itens com custodia viatura (>=6)', count(distinct item_id)::text from stock_movements m, t where m.tenant_id=t.id and m.custody_type='vehicle' union all select 'custodia nao fecha com o saldo global (0)', count(*)::text from (select item_id, sum(quantidade_sinalizada) g, sum(quantidade_sinalizada) filter (where custody_type='base') b, sum(quantidade_sinalizada) filter (where custody_type='professional') p, sum(quantidade_sinalizada) filter (where custody_type='vehicle') v from stock_movements m, t where m.tenant_id=t.id group by 1) y where g <> coalesce(b,0)+coalesce(p,0)+coalesce(v,0) union all select 'consumo sem OS (0)', count(*)::text from stock_movements m, t where m.tenant_id=t.id and m.type='consumo' and m.work_order_id is null union all select 'consumo apontando para OS inexistente (0)', count(*)::text from stock_movements m, t where m.tenant_id=t.id and m.work_order_id is not null and not exists (select 1 from work_orders w where w.tenant_id=m.tenant_id and w.id=m.work_order_id);\" — depois, abrir /inventory/<id do cabo de aco> e conferir que o painel de custodia lista placas de viatura e nomes de profissional, nunca CNH."
+    },
+    {
+      "tela": "Pedidos de Compra",
+      "rota": "/purchase-orders",
+      "tabelas": [],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "(nenhuma — a tela nao le o banco)",
+          "exigido_por": "historia",
+          "por_que": "PedidosPage.tsx renderiza um array literal ORDER_ROWS declarado no proprio .tsx. Nao existe tabela purchase_orders no schema, nao existe modulo em src/modules/ e nao existe endpoint. O componente so consulta can('purchase_orders:create') para esconder o botao — comentario no proprio arquivo: 'o gate server-side real deve existir quando o endpoint de Pedidos existir; aqui so UX'. Nao ha o que povoar: povoar esta tela e um BLOCO DE BACKEND, nao um seed."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 registros — nao ha tabela. A tela mostra 5 pedidos fixos escritos no codigo-fonte (PC-0227 a PC-0231) e o subtitulo '5 pedidos - 1 aguardando aprovacao' tambem e literal. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select count(*) from information_schema.tables where table_schema='public' and table_name like '%purchase%'\" -> 0. E: grep -n 'ORDER_ROWS' frontend/src/modules/purchase-orders/pages/PedidosPage.tsx -> const ORDER_ROWS: OrderRow[] = [ ... 5 linhas fixas ]"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Tela 100% mockada no codigo-fonte: os 5 pedidos, os valores, as datas e os chips de situacao sao um array literal no .tsx. Nenhum seed de banco muda essa tela",
+          "quantos": "5 de 5 linhas",
+          "evidencia": "frontend/src/modules/purchase-orders/pages/PedidosPage.tsx: const ORDER_ROWS: OrderRow[] = [{ code: 'PC-0231', supplier: 'Fornecedor Delta', ... }, ...]"
+        },
+        {
+          "defeito": "O conteudo fixo nao e de operacao de guincho e nem existe no tenant: 'Compressor industrial 5cv', 'Resistores SMD (lote)', 'Cabos e conectores', e fornecedores 'Fornecedor Delta', 'Beta Suprimentos', 'Eletrica Sul', 'TechParts BR' — nenhum deles esta cadastrado em suppliers",
+          "quantos": "5 pedidos / 4 fornecedores inexistentes",
+          "evidencia": "select name from suppliers where tenant_id='a79aedf2...'; -> Auto Pecas Silva, Fornecedor Auditoria 1783882395, Fornecedor Teste 1783892058, Insp Fornec 1783892344 — nenhum dos 4 nomes da tela"
+        },
+        {
+          "defeito": "O contador do cabecalho e texto fixo ('5 pedidos - 1 aguardando aprovacao'): nao acompanha nem as proprias linhas mockadas se elas mudarem",
+          "quantos": "1 de 1 subtitulo",
+          "evidencia": "PedidosPage.tsx: <div ...>5 pedidos · 1 aguardando aprovacao</div>"
+        },
+        {
+          "defeito": "A tela de Estoque manda o usuario para ca: a coluna 'Ponto de pedido' tem um botao com aria-label 'Sugerir reposicao de <SKU> em Pedidos' que leva a uma tela sem backend",
+          "quantos": "1 link vivo para tela morta",
+          "evidencia": "frontend/src/modules/inventory/pages/EstoquePage.tsx, coluna reorderPoint: aria-label={`Sugerir reposicao de ${item.sku} em Pedidos`}"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "PARADA HONESTA — nao ha povoamento possivel nesta etapa",
+          "quantos": "0 registros",
+          "criterio": "Nao existe tabela, modulo nem endpoint de pedidos de compra. Qualquer 'seed' aqui seria editar o array no .tsx, o que este trabalho nao faz (nao editamos arquivo) e que continuaria sendo dado falso. Registrar como pendencia: povoar Pedidos exige antes um bloco de backend (tabela purchase_orders + purchase_order_items + modulo + rotas /api/v1/purchase-orders + permissao purchase_orders:*, que ja e checada no front)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Quando o bloco de backend existir, a cadeia sera esta (deixada escrita para o planejamento)",
+          "quantos": "~18 pedidos",
+          "criterio": "suppliers (fornecedor, ja no plano do Abastecimento/Manutencao) -> inventory_items (o que se compra, ja no plano do Estoque) -> purchase_order (codigo PC-XXXX sequencial por tenant, data, fornecedor, situacao aguardando_aprovacao|aprovado|recebido|recusado) -> purchase_order_items (item de estoque + quantidade + preco unitario; total do cabecalho DERIVADO da soma, nunca coluna) -> recebimento gerando stock_movements type='entrada' com source_type='purchase_order'. Conteudo plausivel: 'Cabo de aco 12 mm (200 m)', 'Pneu 275/80 R22.5 (4 un)', 'Oleo 15W40 (200 L)', 'Cinta catraca 5 t (12 un)' — comprado de 'Auto Pecas Silva', 'Distribuidora Paranaense de Pecas', 'Pneus Curitiba — Recapadora'. Valores R$ 800-24.000. Os itens sugeridos pelo botao de reposicao do Estoque tem que ser os MESMOS que aparecem abaixo do ponto de pedido."
+        }
+      ],
+      "como_provar": "Hoje nao ha prova de banco possivel — a tela nao consulta o banco. A verificacao e no codigo: grep -c 'ORDER_ROWS' frontend/src/modules/purchase-orders/pages/PedidosPage.tsx (enquanto retornar > 0, a tela e mock) e docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select count(*) from information_schema.tables where table_schema='public' and table_name like 'purchase_order%'\" (enquanto retornar 0, nao existe backend). Depois do bloco de backend: 'select count(*) from purchase_orders where tenant_id=...' > 0 e 'todo pedido recebido tem entrada de estoque correspondente' = 0 divergencias."
+    },
+    {
+      "tela": "Telemetria — Quilometragem",
+      "rota": "/telemetria/quilometragem",
+      "tabelas": [
+        "telemetry_events",
+        "operator_profiles",
+        "users"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "operator_profiles (o profissional)",
+          "exigido_por": "banco",
+          "por_que": "telemetry_events_operator_fkey (tenant_id, operator_profile_id) CASCADE, coluna NOT NULL. E o filtro obrigatorio da tela: sem profissional selecionado, a tela mostra 'Selecione um profissional'."
+        },
+        {
+          "passo": 2,
+          "entidade": "tracking_consent = true no perfil",
+          "exigido_por": "historia",
+          "por_que": "RN-TELE-01 (consent-gate LGPD): telemetry.service.ts rejeita evento com GPS de perfil sem consentimento ('tracking_consent_required') e NADA de lat/lng e gravado. Sem consentimento nao ha ponto, sem ponto nao ha quilometragem."
+        },
+        {
+          "passo": 3,
+          "entidade": "eventos heartbeat com lat/lng, dentro dos ultimos 7 dias",
+          "exigido_por": "historia",
+          "por_que": "A tela usa janela de 24h por default e o backend recusa janela maior que 168h (422 window_too_large, TELEMETRY_WINDOW_MAX_HOURS). Telemetria com mais de 7 dias e INALCANCAVEL pela tela."
+        },
+        {
+          "passo": 4,
+          "entidade": "pelo menos 2 pontos elegiveis no mesmo dia",
+          "exigido_por": "historia",
+          "por_que": "sumDailyKm retorna kmTotal 0 quando ha menos de 2 pontos elegiveis. Um heartbeat por dia = 0 km honesto, mas tela inutil."
+        },
+        {
+          "passo": 5,
+          "entidade": "accuracy_m <= 100 e velocidade implicita entre pontos <= 200 km/h",
+          "exigido_por": "ambos",
+          "por_que": "CHECK telemetry_events_accuracy_chk (>=0) e _speed_chk (>=0) no banco; e no calculo, ponto com accuracy acima de 100 m e DESCARTADO do km e segmento com velocidade implicita acima de 200 km/h e ignorado. Ponto teletransportado = km que some sem explicacao."
+        },
+        {
+          "passo": 6,
+          "entidade": "client_action_id unico por (tenant, perfil)",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE telemetry_events_idem_key (tenant_id, operator_profile_id, client_action_id) — repetir = 23505 no seed."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 eventos de telemetria no tenant (0 nas ultimas 168h tambem). Apenas 2 operator_profiles, ambos de usuarios de escritorio. A tela mostra 'Selecione um profissional' e, escolhido qualquer um dos 2, 'Sem quilometragem no periodo'. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) from telemetry_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" -> 0 + \"select count(*) from telemetry_events where tenant_id='a79aedf2...' and captured_at > now()-interval '168 hours';\" -> 0 + \"select count(*) from operator_profiles where tenant_id='a79aedf2...';\" -> 2"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Tabela de telemetria vazia no tenant: as cinco telas de Telemetria (Quilometragem, Acessos, Recusas, Dispositivos, Rastreamento) so conseguem exibir o estado vazio",
+          "quantos": "0 eventos de 0",
+          "evidencia": "select count(*) from telemetry_events where tenant_id='a79aedf2...'; -> 0"
+        },
+        {
+          "defeito": "So existem 2 profissionais no seletor, e os dois sao usuarios de escritorio (Manager e Tenant Admin) fantasiados de guincheiro — a lista de escolha da tela ja comeca mentindo",
+          "quantos": "2 de 2",
+          "evidencia": "perfil_campo | usuario | papel -> 'Guincheiro Prova Ciclo2 | Gustavo Reis (Gestor Operacional) | Manager'; 'Guincheiro Silva | Admin Demo | Tenant Admin'"
+        },
+        {
+          "defeito": "Nao ha nenhum profissional SEM consentimento com atividade registrada — o consent-gate LGPD (a regra mais sensivel do modulo) nunca e demonstrado na tela",
+          "quantos": "2 de 2 perfis com tracking_consent=true e 0 eventos",
+          "evidencia": "select tracking_consent, count(*) from operator_profiles where tenant_id='a79aedf2...' group by 1; -> t | 2"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "CAMADA 1 — os 8 perfis de campo (ver Extrato, ordem 1), com 6 consentidos e 2 sem consentimento",
+          "quantos": "8 perfis",
+          "criterio": "Os 2 sem tracking_consent sao propositais: eles vao ter acessos e recusas, mas ZERO ponto de GPS — e a prova viva de que o consent-gate funciona e de que a tela nao fabrica km (D-007)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Heartbeats consentidos dos ultimos 7 dias",
+          "quantos": "~3.800 eventos (6 profissionais x 7 dias x ~90 pontos/dia)",
+          "criterio": "event_type='heartbeat', captured_at a cada 8 minutos dentro do turno (12h), received_at 5-60 s depois. Trajetos reais da Regiao Metropolitana de Curitiba: Centro -> BR-116 Contorno Leste -> Sao Jose dos Pinhais; Cidade Industrial -> Araucaria -> BR-476; Boqueirao -> Pinhais -> Colombo; e um trecho de rodovia longo (BR-277 rumo a Ponta Grossa) para o dia ter um pico de km. Passo entre pontos consecutivos 300 m a 2,5 km com delta-t de 5 a 10 min -> velocidade implicita 20-90 km/h (bem dentro do teto de 200). lat/lng dentro do bounding box do PR (aprox. lat -23,0 a -26,7; lng -48,0 a -54,6) e os CHECKs de +/-90 e +/-180 nunca violados. accuracy_m 5-35 m na maioria e ~4% dos pontos com 120-180 m (esses saem do somatorio — exercita o descarte honesto). speed_kmh coerente com o segmento. battery_pct decrescente ao longo do turno (100 -> 12). signal_type='mobile' na rua, 'wifi' na base. km/dia resultante: 90-260 km, faixa plausivel para guincho urbano/rodoviario. client_action_id unico no formato 'tel-<slug do perfil>-<epoch em ms>'."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Zero pontos de GPS para os 2 sem consentimento",
+          "quantos": "0 heartbeats com coordenada nesses 2 perfis",
+          "criterio": "Nenhum evento heartbeat com lat/lng para eles. A tela de Quilometragem tem que mostrar honestamente 'Sem quilometragem no periodo' quando esses profissionais forem selecionados — nao 0,0 km fabricado."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'GPS de perfil sem consentimento (0)' k, count(*)::text v from telemetry_events e, t join operator_profiles op on op.tenant_id=e.tenant_id and op.id=e.operator_profile_id where e.tenant_id=t.id and e.lat is not null and op.tracking_consent = false union all select 'coordenada fora do PR (0)', count(*)::text from telemetry_events e, t where e.tenant_id=t.id and e.lat is not null and (e.lat not between -26.8 and -22.4 or e.lng not between -54.7 and -47.9) union all select 'eventos fora da janela de 168h (0 na demo)', count(*)::text from telemetry_events e, t where e.tenant_id=t.id and e.captured_at < now()-interval '168 hours' union all select 'perfil-dia com <2 pontos elegiveis (0)', count(*)::text from (select operator_profile_id, date(captured_at) d, count(*) n from telemetry_events e, t where e.tenant_id=t.id and e.event_type='heartbeat' and e.lat is not null and coalesce(e.accuracy_m,0) <= 100 group by 1,2) x where n < 2 union all select 'salto de GPS >200km/h (0)', count(*)::text from (select operator_profile_id, captured_at, lat, lng, lag(captured_at) over w pt, lag(lat) over w pla, lag(lng) over w plo from telemetry_events e, t where e.tenant_id=t.id and e.event_type='heartbeat' and e.lat is not null window w as (partition by operator_profile_id order by captured_at)) y where pt is not null and extract(epoch from captured_at-pt) > 0 and (6371*acos(least(1,cos(radians(pla))*cos(radians(lat))*cos(radians(lng)-radians(plo))+sin(radians(pla))*sin(radians(lat))))) / (extract(epoch from captured_at-pt)/3600) > 200 union all select 'client_action_id duplicado (0)', count(*)::text from (select operator_profile_id, client_action_id from telemetry_events e, t where e.tenant_id=t.id group by 1,2 having count(*)>1) z;\" — depois, abrir /telemetria/quilometragem, escolher cada um dos 6 consentidos e confirmar 7 dias com km entre 90 e 260; escolher os 2 sem consentimento e confirmar o vazio honesto."
+    },
+    {
+      "tela": "Telemetria — Rastreamento",
+      "rota": "/telemetria/rastreamento",
+      "tabelas": [
+        "telemetry_events",
+        "operator_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "operator_profiles + tracking_consent=true",
+          "exigido_por": "ambos",
+          "por_que": "FK NOT NULL para o perfil; e o consent-gate e o que autoriza gravar lat/lng. Sem coordenada nao ha trajeto para tracar."
+        },
+        {
+          "passo": 2,
+          "entidade": "heartbeats CONTIGUOS no periodo, ordenados por captured_at",
+          "exigido_por": "historia",
+          "por_que": "O TrackMapCanvas desenha a linha ligando pontos consecutivos (trackGeometry.ts). Pontos esparsos ou fora de ordem geografica desenham um risco de canto a canto do mapa, nao um trajeto."
+        },
+        {
+          "passo": 3,
+          "entidade": "janela de no maximo 168h",
+          "exigido_por": "historia",
+          "por_que": "Backend recusa janela maior (422 window_too_large). Trajeto historico antigo e inalcancavel pela tela."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 eventos com coordenada no tenant. O mapa de trajeto nunca desenhou nada; a tela para em 'Selecione um profissional' e, com profissional escolhido, no vazio. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) from telemetry_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and lat is not null;\" -> 0 + \"select count(*) from field_operator_locations where tenant_id='a79aedf2...';\" -> 6"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhuma coordenada gravada: a tela de trajeto nao tem o que desenhar para nenhum profissional em nenhum periodo",
+          "quantos": "0 de 0",
+          "evidencia": "select count(*) from telemetry_events where tenant_id='a79aedf2...' and lat is not null; -> 0"
+        },
+        {
+          "defeito": "Existe uma tabela de 'ultima posicao viva' (field_operator_locations, 6 registros) que coexiste com telemetry_events sem que exista um so ponto de trajeto — o mapa operacional tem posicao, o rastreamento historico nao tem nada",
+          "quantos": "6 posicoes vivas vs 0 pontos de trajeto",
+          "evidencia": "select count(*) from field_operator_locations where tenant_id='a79aedf2...'; -> 6 contra select count(*) from telemetry_events where tenant_id='a79aedf2...'; -> 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Reusar os heartbeats do plano de Quilometragem, mas com exigencia de CONTIGUIDADE geografica",
+          "quantos": "os mesmos ~3.800 pontos",
+          "criterio": "Cada dia de cada profissional tem que ser uma polilinha coerente: base -> deslocamento -> local do atendimento -> patio -> base. Nunca dois pontos consecutivos em bairros opostos sem os pontos do meio. Rotas ancoradas em vias reais da RMC (BR-116, BR-277, BR-476, Linha Verde, Contorno Leste, Av. das Torres, Rodovia do Cafe)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Paradas visiveis no trajeto",
+          "quantos": "2-4 por dia por profissional",
+          "criterio": "Grupos de 4-8 heartbeats quase no mesmo ponto (deslocamento < 40 m) representando a espera no local do atendimento, o carregamento no patio e a parada de almoco — o trajeto ganha nos e deixa de parecer uma reta sintetica."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Um dia de rota longa por semana",
+          "quantos": "1 por profissional consentido",
+          "criterio": "Um deslocamento rodoviario (Curitiba -> Ponta Grossa pela BR-277, ou Curitiba -> Paranagua pela BR-277) com pontos a cada 8 min e velocidade implicita 70-95 km/h — a tela tem que conseguir mostrar um trajeto longo alem dos urbanos."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id), p as (select operator_profile_id, date(captured_at) d, captured_at, lat, lng, lag(lat) over w pla, lag(lng) over w plo from telemetry_events e, t where e.tenant_id=t.id and e.event_type='heartbeat' and e.lat is not null window w as (partition by operator_profile_id, date(captured_at) order by captured_at)) select 'salto >8 km entre pontos consecutivos (0)' k, count(*)::text v from p where pla is not null and 6371*acos(least(1,cos(radians(pla))*cos(radians(lat))*cos(radians(lng)-radians(plo))+sin(radians(pla))*sin(radians(lat)))) > 8 union all select 'perfil-dia com <10 pontos (0)', count(*)::text from (select operator_profile_id, d, count(*) n from p group by 1,2) x where n < 10 union all select 'dias com trajeto no periodo (>=42)', count(*)::text from (select distinct operator_profile_id, d from p) y;\" — e abrir /telemetria/rastreamento, escolher um profissional consentido e confirmar que a linha desenhada segue vias, com paradas visiveis, sem risco atravessando o mapa."
+    },
+    {
+      "tela": "Telemetria — Acessos",
+      "rota": "/telemetria/acessos",
+      "tabelas": [
+        "telemetry_events",
+        "operator_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "operator_profiles",
+          "exigido_por": "banco",
+          "por_que": "FK NOT NULL telemetry_events_operator_fkey. A coluna 'Profissional' e o filtro obrigatorio da tela."
+        },
+        {
+          "passo": 2,
+          "entidade": "eventos event_type='app_connect' e 'app_disconnect'",
+          "exigido_por": "historia",
+          "por_que": "A tela lista exatamente esses dois tipos ('Entradas e saidas do aplicativo de campo'). Nenhum outro tipo aparece aqui."
+        },
+        {
+          "passo": 3,
+          "entidade": "pares conectar/desconectar no mesmo turno",
+          "exigido_por": "historia",
+          "por_que": "Conexao sem a desconexao correspondente deixa a tela com metade dos eventos e sugere que ninguem nunca encerrou o turno."
+        },
+        {
+          "passo": 4,
+          "entidade": "eventos dentro dos ultimos 7 dias",
+          "exigido_por": "historia",
+          "por_que": "Teto de janela de 168h no backend (422 window_too_large); o default da tela e 24h."
+        },
+        {
+          "passo": 5,
+          "entidade": "acesso NAO depende de consentimento",
+          "exigido_por": "historia",
+          "por_que": "O consent-gate so bloqueia lat/lng. app_connect/app_disconnect podem e devem existir tambem para os 2 profissionais sem consentimento — e isso que mostra que a pessoa trabalha, mas nao e rastreada."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 eventos de acesso no tenant. A tela nunca listou uma linha. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select event_type, count(*) from telemetry_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' group by 1;\" -> (0 linhas) + \"select count(*) from operator_profiles where tenant_id='a79aedf2...' and tracking_consent = false;\" -> 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum registro de entrada ou saida do aplicativo: a tela de Acessos so tem estado vazio",
+          "quantos": "0 de 0",
+          "evidencia": "select count(*) from telemetry_events where tenant_id='a79aedf2...' and event_type in ('app_connect','app_disconnect'); -> 0"
+        },
+        {
+          "defeito": "Nao existe telemetria para nenhum perfil sem consentimento — logo, a distincao 'trabalha mas nao e rastreado' nao pode ser vista em lugar nenhum do produto",
+          "quantos": "0 perfis sem consentimento no tenant",
+          "evidencia": "select count(*) from operator_profiles where tenant_id='a79aedf2...' and tracking_consent = false; -> 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Pares de conexao e desconexao por turno",
+          "quantos": "~112 eventos (8 profissionais x 7 dias x 1 par)",
+          "criterio": "event_type='app_connect' no inicio e 'app_disconnect' no fim de cada turno. Escala real de guincho 24h: 4 profissionais no diurno (conecta 06:20-06:45, desconecta 18:25-18:50) e 4 no noturno (conecta 18:20-18:45, desconecta 06:25-06:50 do dia seguinte). Minutos variados — nunca todos as 08:00 em ponto. Cobre os 8 perfis, inclusive os 2 SEM consentimento (acesso nao depende de consentimento)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Reconexoes no meio do turno (queda de sinal)",
+          "quantos": "~14 pares extras",
+          "criterio": "Em ~25% dos turnos, um par extra desconecta/conecta com 3-20 min de intervalo, simulando area sem cobertura na BR — a tela ganha linhas que contam algo real em vez de um par perfeito por dia."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Folgas na escala",
+          "quantos": "2 dias sem acesso por profissional na semana",
+          "criterio": "Escala 5x2: em 2 dos 7 dias, o profissional nao conecta. A tela tem que mostrar a ausencia, nao um acesso diario mecanico."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'conexoes sem desconexao no turno (0)' k, count(*)::text v from (select operator_profile_id, count(*) filter (where event_type='app_connect') c, count(*) filter (where event_type='app_disconnect') d from telemetry_events e, t where e.tenant_id=t.id and e.event_type in ('app_connect','app_disconnect') group by 1) x where c <> d union all select 'acessos nos ultimos 7 dias (>=112)', count(*)::text from telemetry_events e, t where e.tenant_id=t.id and e.event_type in ('app_connect','app_disconnect') and e.captured_at > now()-interval '168 hours' union all select 'perfis sem consentimento COM acesso (>=2)', count(distinct e.operator_profile_id)::text from telemetry_events e, t join operator_profiles op on op.tenant_id=e.tenant_id and op.id=e.operator_profile_id where e.tenant_id=t.id and e.event_type='app_connect' and op.tracking_consent=false union all select 'horas de conexao distintas (>=6)', count(distinct extract(hour from captured_at))::text from telemetry_events e, t where e.tenant_id=t.id and e.event_type='app_connect' union all select 'perfis sem nenhuma folga na semana (0)', count(*)::text from (select operator_profile_id, count(distinct date(captured_at)) n from telemetry_events e, t where e.tenant_id=t.id and e.event_type='app_connect' group by 1) y where n >= 7;\""
+    },
+    {
+      "tela": "Telemetria — Recusas",
+      "rota": "/telemetria/recusas",
+      "tabelas": [
+        "telemetry_events",
+        "operator_profiles",
+        "work_orders"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "operator_profiles",
+          "exigido_por": "banco",
+          "por_que": "FK NOT NULL. Coluna 'Profissional' e filtro obrigatorio."
+        },
+        {
+          "passo": 2,
+          "entidade": "eventos event_type='service_refusal' com refusal_reason",
+          "exigido_por": "historia",
+          "por_que": "refusal_reason e nulavel no banco, mas a coluna 'Motivo' renderiza '—' quando nulo (RecusasPage.tsx: item.reason ? <Badge>...</Badge> : '—'). Recusa sem motivo e uma linha que nao explica nada."
+        },
+        {
+          "passo": 3,
+          "entidade": "work_orders (a OS recusada)",
+          "exigido_por": "historia",
+          "por_que": "work_order_id e nulavel e SEM FK dura em v1. A coluna 'Ordem de Servico' mostra '—' quando nulo. Sem OS, nao da para saber qual chamado foi recusado."
+        },
+        {
+          "passo": 4,
+          "entidade": "OS com operador atribuido e viatura",
+          "exigido_por": "historia",
+          "por_que": "A recusa so conta uma historia se a OS tiver a quem ser oferecida. Hoje 15 das 17 OS estao com assigned_operator_id e vehicle_id nulos."
+        },
+        {
+          "passo": 5,
+          "entidade": "janela de ate 168h",
+          "exigido_por": "historia",
+          "por_que": "Teto do backend. Recusa antiga nao aparece."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 recusas no tenant. A tela nunca listou nada. Alem disso, das 17 OS do tenant, 15 nao tem operador atribuido nem viatura — nao ha nem a quem atribuir uma recusa de forma coerente. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) from telemetry_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and event_type='service_refusal';\" -> 0 + \"select 'OS sem operador' k, count(*) from work_orders where tenant_id='a79aedf2...' and assigned_operator_id is null union all select 'OS sem viatura', count(*) from work_orders where tenant_id='a79aedf2...' and vehicle_id is null union all select 'OS fora do PR', count(*) from work_orders where tenant_id='a79aedf2...' and service_state<>'PR';\" -> 15 | 15 | 2"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhuma recusa registrada: a tela so tem estado vazio para qualquer profissional e periodo",
+          "quantos": "0 de 0",
+          "evidencia": "select count(*) from telemetry_events where tenant_id='a79aedf2...' and event_type='service_refusal'; -> 0"
+        },
+        {
+          "defeito": "As OS nao tem operador atribuido nem viatura, entao nem existe a ligacao profissional-chamado que uma recusa precisa contar",
+          "quantos": "15 de 17 OS sem operador e 15 de 17 sem viatura",
+          "evidencia": "select count(*) from work_orders where tenant_id='a79aedf2...' and assigned_operator_id is null; -> 15 e select count(*) from work_orders where tenant_id='a79aedf2...' and vehicle_id is null; -> 15"
+        },
+        {
+          "defeito": "As 2 unicas OS com operador e viatura estao em Sao Paulo, nao no Parana — recusar um chamado dessas OS ja nasceria geograficamente incoerente",
+          "quantos": "2 de 2 OS com operador",
+          "evidencia": "select code, service_city, service_state from work_orders where tenant_id='a79aedf2...' and assigned_operator_id is not null; -> OS-2026-0001 | Sao Paulo | SP e OS-2026-0002 | Sao Paulo | SP"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "CAMADA 1 — atribuir operador e viatura as OS (pre-requisito da coluna 'Ordem de Servico' e de todo o resto do modulo)",
+          "quantos": "15 OS do PR com assigned_operator_id e vehicle_id",
+          "criterio": "Distribuir as OS entre os 8 profissionais de campo, respeitando a escala (a OS tem que cair no turno em que o profissional estava conectado) e a viatura compativel com o servico (guincho pesado para caminhao, leve para automovel). Sem viatura, a OS nao liga com Abastecimento, Manutencao nem Danos."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Recusas de servico",
+          "quantos": "14 recusas em 7 dias, distribuidas entre 5 profissionais",
+          "criterio": "event_type='service_refusal', captured_at dentro do turno do profissional. refusal_reason SEMPRE preenchido, com motivo real de campo: 'Fora da area de cobertura' (3), 'Veiculo acima da capacidade da plataforma' (3), 'Sem condicoes de acesso ao local' (2), 'Fim de jornada — limite de 11h de direcao' (2), 'Viatura em manutencao' (2), 'Local sem seguranca para operar' (2). work_order_id preenchido em 12 das 14, apontando para uma OS real do tenant no mesmo dia; 2 sem OS (recusa de chamado ainda nao despachado) — o '—' vira excecao explicada. Nenhum profissional com mais de 4 recusas na semana (taxa alta demais nao e plausivel). Incluir 2 recusas de profissional SEM consentimento — recusa nao depende de GPS."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'recusa sem motivo (0)' k, count(*)::text v from telemetry_events e, t where e.tenant_id=t.id and e.event_type='service_refusal' and coalesce(e.refusal_reason,'')='' union all select 'recusa apontando para OS inexistente (0)', count(*)::text from telemetry_events e, t where e.tenant_id=t.id and e.event_type='service_refusal' and e.work_order_id is not null and not exists (select 1 from work_orders w where w.tenant_id=e.tenant_id and w.id=e.work_order_id) union all select 'recusa de OS de outro estado (0)', count(*)::text from telemetry_events e, t join work_orders w on w.tenant_id=e.tenant_id and w.id=e.work_order_id where e.tenant_id=t.id and e.event_type='service_refusal' and w.service_state <> 'PR' union all select 'profissional com >4 recusas na semana (0)', count(*)::text from (select operator_profile_id, count(*) n from telemetry_events e, t where e.tenant_id=t.id and e.event_type='service_refusal' and e.captured_at > now()-interval '168 hours' group by 1) x where n > 4 union all select 'motivos distintos (>=5)', count(distinct refusal_reason)::text from telemetry_events e, t where e.tenant_id=t.id and e.event_type='service_refusal' union all select 'OS do PR sem operador (0)', count(*)::text from work_orders w, t where w.tenant_id=t.id and w.service_state='PR' and w.assigned_operator_id is null union all select 'OS do PR sem viatura (0)', count(*)::text from work_orders w, t where w.tenant_id=t.id and w.service_state='PR' and w.vehicle_id is null;\""
+    },
+    {
+      "tela": "Telemetria — Dispositivos",
+      "rota": "/telemetria/dispositivos",
+      "tabelas": [
+        "telemetry_events",
+        "operator_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "operator_profiles",
+          "exigido_por": "banco",
+          "por_que": "FK NOT NULL telemetry_events_operator_fkey. Coluna 'Profissional'."
+        },
+        {
+          "passo": 2,
+          "entidade": "device_model preenchido nos eventos",
+          "exigido_por": "historia",
+          "por_que": "device_model e nulavel no banco, mas e ele que forma o deviceLabel — a coluna 'Dispositivo' da tela. A lista de dispositivos e DERIVADA dos eventos; sem device_model nao ha aparelho a listar."
+        },
+        {
+          "passo": 3,
+          "entidade": "app_version (e sdk_int)",
+          "exigido_por": "historia",
+          "por_que": "Coluna 'Versao do app' mostra '—' quando nulo. E a razao de existir da tela e justamente descobrir quem esta com versao velha."
+        },
+        {
+          "passo": 4,
+          "entidade": "eventos recentes (last seen)",
+          "exigido_por": "historia",
+          "por_que": "A coluna 'Ultimo acesso' e o max(captured_at) por aparelho, e a janela do backend e de no maximo 168h. Aparelho sem evento recente simplesmente nao aparece."
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 eventos, logo 0 dispositivos. Nenhum device_model, app_version ou sdk_int existe no tenant. Medido em 2026-08-24.",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(device_model) com_modelo, count(app_version) com_versao, count(sdk_int) com_sdk from telemetry_events where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" -> 0 | 0 | 0 | 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum dispositivo conhecido: a tela nao consegue listar um aparelho sequer, e a pergunta que ela existe para responder ('quem esta com o app desatualizado?') nao tem resposta",
+          "quantos": "0 de 0",
+          "evidencia": "select count(distinct device_model) from telemetry_events where tenant_id='a79aedf2...'; -> 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Carimbar aparelho e versao em TODO evento de telemetria",
+          "quantos": "~3.950 eventos (todos os heartbeats, acessos e recusas do plano)",
+          "criterio": "device_model entre aparelhos plausiveis de campo no Brasil: 'Samsung Galaxy A55 5G', 'Motorola Moto G84', 'Samsung Galaxy XCover6 Pro' (o robusto, para quem trabalha na chuva), 'Xiaomi Redmi Note 13', 'Motorola Moto G54'. app_version: 6 profissionais em '2.4.1' (atual), 1 em '2.4.0' e 1 em '2.3.8' — o contraste e o que faz a tela ter valor. sdk_int coerente com o aparelho e a versao do Android (33, 34 ou 35). O MESMO aparelho e a MESMA versao em todos os eventos do mesmo profissional no mesmo dia (o app nao troca de celular no meio do turno)."
+        },
+        {
+          "ordem": 2,
+          "o_que": "Um profissional que trocou de aparelho no meio da semana",
+          "quantos": "1 perfil com 2 aparelhos",
+          "criterio": "Ate D-4 com 'Motorola Moto G54' e de D-3 em diante com 'Samsung Galaxy A55 5G' (e app_version subindo de 2.3.8 para 2.4.1 junto). Assim a lista de dispositivos tem MAIS linhas do que profissionais, que e o comportamento real da tela."
+        },
+        {
+          "ordem": 3,
+          "o_que": "Ultimo acesso escalonado",
+          "quantos": "9 aparelhos",
+          "criterio": "O max(captured_at) por aparelho tem que variar entre 'ha 20 minutos' e 'ha 5 dias' (o aparelho aposentado, o profissional de folga). Se todos mostrarem o mesmo 'ultimo acesso', a coluna nao ordena nada."
+        }
+      ],
+      "como_provar": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"with t as (select 'a79aedf2-44c8-478f-a6ce-cf6248a16f2b'::uuid id) select 'evento sem device_model (0)' k, count(*)::text v from telemetry_events e, t where e.tenant_id=t.id and coalesce(e.device_model,'')='' union all select 'evento sem app_version (0)', count(*)::text from telemetry_events e, t where e.tenant_id=t.id and coalesce(e.app_version,'')='' union all select 'evento sem sdk_int (0)', count(*)::text from telemetry_events e, t where e.tenant_id=t.id and e.sdk_int is null union all select 'dois aparelhos no mesmo perfil-dia (0)', count(*)::text from (select operator_profile_id, date(captured_at) d, count(distinct device_model) n from telemetry_events e, t where e.tenant_id=t.id group by 1,2) x where n > 1 union all select 'pares perfil+aparelho (>=9)', count(*)::text from (select distinct operator_profile_id, device_model from telemetry_events e, t where e.tenant_id=t.id) y union all select 'versoes de app distintas (>=3)', count(distinct app_version)::text from telemetry_events e, t where e.tenant_id=t.id union all select 'ultimos acessos distintos por hora (>=5)', count(distinct date_trunc('hour', ls))::text from (select device_model, max(captured_at) ls from telemetry_events e, t where e.tenant_id=t.id group by 1) z;\" — depois abrir /telemetria/dispositivos e confirmar que ha mais linhas que profissionais, com pelo menos um em versao antiga."
+    }
+  ]
+}

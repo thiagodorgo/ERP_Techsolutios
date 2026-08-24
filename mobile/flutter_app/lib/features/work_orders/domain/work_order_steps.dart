@@ -29,14 +29,14 @@ class WorkOrderStepInfo {
 List<String> workOrderStepLabels(WorkOrderServiceType? serviceType) {
   return serviceType == WorkOrderServiceType.tow
       ? const [
-          'Inicio',
+          'Início',
           'Rota coleta',
           'Coleta',
           'Rota entrega',
           'Entrega',
-          'Conclusao',
+          'Conclusão',
         ]
-      : const ['Inicio', 'Rota', 'Atendimento', 'Conclusao'];
+      : const ['Início', 'Rota', 'Atendimento', 'Conclusão'];
 }
 
 /// Índice do passo ativo derivado do status da OS.

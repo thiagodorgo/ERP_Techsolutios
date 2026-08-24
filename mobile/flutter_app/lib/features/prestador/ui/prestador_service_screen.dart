@@ -74,7 +74,7 @@ class _PrestadorServiceScreenState
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Diagnostico tecnico',
+          'Diagnóstico técnico',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
@@ -85,14 +85,14 @@ class _PrestadorServiceScreenState
           onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
-            hintText: 'Descreva o diagnostico tecnico...',
+            hintText: 'Descreva o diagnóstico técnico...',
           ),
         ),
         const SizedBox(height: 8),
         Text(
           _diagReady
-              ? 'Diagnostico registrado · siga para a execucao'
-              : 'Descreva o diagnostico tecnico para avancar',
+              ? 'Diagnóstico registrado · siga para a execução'
+              : 'Descreva o diagnóstico técnico para avançar',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
@@ -103,7 +103,7 @@ class _PrestadorServiceScreenState
             onPressed: _diagReady
                 ? () => setState(() => _phase = _Phase.execution)
                 : null,
-            child: const Text('Avancar para execucao'),
+            child: const Text('Avançar para execução'),
           ),
         ),
       ],
@@ -122,7 +122,7 @@ class _PrestadorServiceScreenState
               onPressed: () => setState(() => _phase = _Phase.diagnosis),
             ),
             Text(
-              'Execucao do servico',
+              'Execução do serviço',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
@@ -135,7 +135,7 @@ class _PrestadorServiceScreenState
           onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
-            hintText: 'Descreva o servico executado...',
+            hintText: 'Descreva o serviço executado...',
           ),
         ),
         const SizedBox(height: 16),
@@ -149,7 +149,7 @@ class _PrestadorServiceScreenState
             child: ListTile(
               leading: Icon(Icons.inventory_2_outlined),
               title: Text('Nenhum material adicionado'),
-              subtitle: Text('Adicione pecas do estoque do tecnico.'),
+              subtitle: Text('Adicione peças do estoque do técnico.'),
             ),
           )
         else
@@ -175,7 +175,7 @@ class _PrestadorServiceScreenState
           key: const Key('open-technician-stock'),
           onPressed: _openStock,
           icon: const Icon(Icons.add_shopping_cart_outlined),
-          label: const Text('Adicionar pecas do estoque'),
+          label: const Text('Adicionar peças do estoque'),
         ),
         const SizedBox(height: 24),
         SizedBox(
@@ -186,7 +186,7 @@ class _PrestadorServiceScreenState
                 ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Atendimento pronto para conclusao.'),
+                        content: Text('Atendimento pronto para conclusão.'),
                       ),
                     );
                     context.go('/work-orders/${widget.workOrderId}/execute');

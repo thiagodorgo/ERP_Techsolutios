@@ -52,7 +52,7 @@ void main() {
   });
 
   test(
-    'B-104.2 blob store usa referencia opaca e preserva bytes localmente',
+    'B-104.2 blob store usa referência opaca e preserva bytes localmente',
     () async {
       final store = InMemoryEvidenceBlobStore();
       final bytes = Uint8List.fromList([9, 8, 7]);
@@ -201,7 +201,7 @@ void main() {
   );
 
   test(
-    'B-104.6 conflito de upload vira conflito manual sem perder evidencia',
+    'B-104.6 conflito de upload vira conflito manual sem perder evidência',
     () async {
       final store = InMemoryWorkOrderLocalStore([
         _order(serverId: 'wo-server-104'),
@@ -236,7 +236,7 @@ void main() {
     expect(EvidenceApiEndpoints.upload, '/api/v1/mobile/evidence-uploads');
   });
 
-  test('B-104.8 upgrade Drift schema 3 -> 5 nao duplica colunas', () async {
+  test('B-104.8 upgrade Drift schema 3 -> 5 não duplica colunas', () async {
     await _expectLegacyEvidenceUpgrade(fromVersion: 3);
   });
 

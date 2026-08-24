@@ -73,22 +73,22 @@ void main() {
       expect(await store.hasAcceptedManualCapture(), isFalse);
     });
 
-    testWidgets('5. GPS disponivel exibe chip Disponivel', (t) async {
+    testWidgets('5. GPS disponível exibe chip Disponível', (t) async {
       await t.pumpWidget(
         _wrap(InMemoryLocationConsentStore(accepted: true), gps: true),
       );
       await t.pumpAndSettle();
 
-      expect(find.text('Disponivel'), findsOneWidget);
+      expect(find.text('Disponível'), findsOneWidget);
     });
 
-    testWidgets('6. GPS indisponivel exibe chip Indisponivel', (t) async {
+    testWidgets('6. GPS indisponível exibe chip Indisponível', (t) async {
       await t.pumpWidget(
         _wrap(InMemoryLocationConsentStore(accepted: true), gps: false),
       );
       await t.pumpAndSettle();
 
-      expect(find.text('Indisponivel'), findsOneWidget);
+      expect(find.text('Indisponível'), findsOneWidget);
     });
   });
 }

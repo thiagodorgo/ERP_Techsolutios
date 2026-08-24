@@ -85,7 +85,7 @@ class _StockExitScreenState extends ConsumerState<StockExitScreen> {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saida de $qty ${_selectedItem!.unit} registrada.'),
+            content: Text('Saída de $qty ${_selectedItem!.unit} registrada.'),
           ),
         );
       }
@@ -116,13 +116,13 @@ class _StockExitScreenState extends ConsumerState<StockExitScreen> {
 
     if (_loading) {
       return ErpScaffold(
-        title: 'Nova Saida',
+        title: 'Nova Saída',
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return ErpScaffold(
-      title: 'Nova Saida',
+      title: 'Nova Saída',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -169,7 +169,7 @@ class _StockExitScreenState extends ConsumerState<StockExitScreen> {
                   leading: const Icon(Icons.inventory_2_outlined),
                   title: Text(_selectedItem!.name),
                   subtitle: Text(
-                    'Saldo disponivel: ${_selectedItem!.quantity} ${_selectedItem!.unit}',
+                    'Saldo disponível: ${_selectedItem!.quantity} ${_selectedItem!.unit}',
                   ),
                 ),
               ),
@@ -191,14 +191,14 @@ class _StockExitScreenState extends ConsumerState<StockExitScreen> {
               decoration: const InputDecoration(
                 labelText: 'OS vinculada',
                 border: OutlineInputBorder(),
-                hintText: 'Codigo da ordem de servico',
+                hintText: 'Código da ordem de serviço',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _notesCtrl,
               decoration: const InputDecoration(
-                labelText: 'Observacao',
+                labelText: 'Observação',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -215,7 +215,7 @@ class _StockExitScreenState extends ConsumerState<StockExitScreen> {
             FilledButton.icon(
               onPressed: _canSubmit ? () => _submit(repo) : null,
               icon: const Icon(Icons.remove_circle_outline),
-              label: Text(_submitting ? 'Registrando...' : 'Confirmar saida'),
+              label: Text(_submitting ? 'Registrando...' : 'Confirmar saída'),
             ),
           ],
         ),

@@ -23,7 +23,7 @@ extension _WoGroupX on _WoGroup {
     _WoGroup.all => 'Todas',
     _WoGroup.scheduled => 'Agendadas',
     _WoGroup.field => 'Em campo',
-    _WoGroup.done => 'Concluidas',
+    _WoGroup.done => 'Concluídas',
   };
 
   bool matches(WorkOrderStatus s) => switch (this) {
@@ -114,9 +114,10 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
             const _ListHeader(),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acesso nao autorizado',
+                title: 'Acesso não autorizado',
                 message:
-                    'Voce nao possui a permissao work_orders:read para visualizar ordens de servico.',
+                    'Seu perfil não permite ver ordens de serviço. '
+                    'Fale com a administração da sua organização.',
               ),
             ),
           ],
@@ -189,7 +190,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                       color: ErpMobileTheme.ink,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Buscar OS, cliente ou endereco...',
+                      hintText: 'Buscar OS, cliente ou endereço...',
                       hintStyle: const TextStyle(
                         color: ErpMobileTheme.inkFaint,
                         fontSize: 13.5,
@@ -284,7 +285,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                                 repo.workOrders.isEmpty)
                               EmptyState(
                                 icon: Icons.cloud_off_outlined,
-                                title: 'Nao foi possivel carregar ordens',
+                                title: 'Não foi possível carregar ordens',
                                 message: repo.lastPullError!,
                                 action: TextButton.icon(
                                   onPressed: () => repo.refresh(),
@@ -301,7 +302,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                                         _group != _WoGroup.all ||
                                         _priority != null
                                     ? 'Nenhuma OS corresponde aos filtros selecionados.'
-                                    : 'Voce ainda nao possui ordens atribuidas.',
+                                    : 'Você ainda não possui ordens atribuídas.',
                               ),
                           ],
                         )
@@ -406,7 +407,7 @@ class _ListHeader extends StatelessWidget {
         12,
       ),
       child: const Text(
-        'Ordens de Servico',
+        'Ordens de Serviço',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w800,

@@ -52,7 +52,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         await repo.clearSession();
         return const AuthState(
           status: AuthStatus.expired,
-          safeError: 'Sua sessao expirou. Faca login novamente.',
+          safeError: 'Sua sessão expirou. Faça login novamente.',
         );
       }
     }
@@ -126,7 +126,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = const AsyncValue.data(
         AuthState(
           status: AuthStatus.expired,
-          safeError: 'Sua sessao expirou. Faca login novamente.',
+          safeError: 'Sua sessão expirou. Faça login novamente.',
         ),
       );
     }

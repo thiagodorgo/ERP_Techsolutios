@@ -35,7 +35,7 @@ class _NewExpenseReportScreenState extends State<NewExpenseReportScreen> {
           TextField(
             controller: _titleController,
             decoration: const InputDecoration(
-              labelText: 'Titulo da Prestação de Contas',
+              labelText: 'Título da Prestação de Contas',
             ),
           ),
           const SizedBox(height: 12),
@@ -48,9 +48,9 @@ class _NewExpenseReportScreenState extends State<NewExpenseReportScreen> {
           const Card(
             child: ListTile(
               leading: Icon(Icons.cloud_queue_outlined),
-              title: Text('Criacao local-first'),
+              title: Text('Criação local-first'),
               subtitle: Text(
-                'Ao salvar, a Prestação de Contas fica local e uma acao expense_report.create entra na fila de sync.',
+                'Ao salvar, a Prestação de Contas fica local e uma ação expense_report.create entra na fila de sync.',
               ),
             ),
           ),

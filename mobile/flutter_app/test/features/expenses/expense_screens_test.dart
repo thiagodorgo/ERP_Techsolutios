@@ -17,12 +17,12 @@ void main() {
     await tester.pumpWidget(const _TestApp(initialLocation: '/expenses'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Gestao de Despesas'), findsOneWidget);
+    expect(find.text('Gestão de Despesas'), findsOneWidget);
     expect(
-      find.text('Prestação de Contas atendimento OS-1042'),
+      find.text('Prestação de Contas atendimento OS-2891'),
       findsOneWidget,
     );
-    expect(find.textContaining('Violacao de politica'), findsWidgets);
+    expect(find.textContaining('Violação de política'), findsWidgets);
   });
 
   testWidgets('expense detail renders totals and add item action', (
@@ -34,7 +34,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Prestação de Contas atendimento OS-1042'),
+      find.text('Prestação de Contas atendimento OS-2891'),
       findsOneWidget,
     );
     expect(find.textContaining('A receber'), findsWidgets);
@@ -52,7 +52,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Novo item'), findsOneWidget);
-    expect(find.text('Recibo anexado estruturalmente'), findsOneWidget);
+    expect(find.text('Recibo em mãos'), findsOneWidget);
     expect(find.text('Salvar item e enfileirar sync'), findsOneWidget);
   });
 

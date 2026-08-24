@@ -138,7 +138,7 @@ class TelemetrySyncService {
   if (error is ApiNetworkError || error is ApiTimeoutError) {
     return (
       code: 'NETWORK_ERROR',
-      safeMessage: 'Falha de conexao. Tente novamente.',
+      safeMessage: 'Falha de conexão. Tente novamente.',
     );
   }
   if (error is ApiServerError &&
@@ -151,6 +151,6 @@ class TelemetrySyncService {
   }
   return (
     code: 'SYNC_ERROR',
-    safeMessage: 'Nao foi possivel sincronizar a telemetria.',
+    safeMessage: 'Não foi possível sincronizar a telemetria.',
   );
 }

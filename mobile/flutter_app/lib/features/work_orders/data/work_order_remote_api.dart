@@ -203,10 +203,7 @@ WorkOrder _workOrderFromRemoteJson(
     customerPhone: strOpt('customerPhone', 'customer_phone'),
     serviceAddress: str('serviceAddress', 'service_address'),
     status: workOrderStatusFromApiValue(json['status']),
-    priority: WorkOrderPriority.values.firstWhere(
-      (p) => p.name == (json['priority'] as String?),
-      orElse: () => WorkOrderPriority.normal,
-    ),
+    priority: workOrderPriorityFromApiValue(json['priority']),
     assignedUserId: strOpt('assignedUserId', 'assigned_user_id'),
     scheduledAt: _parseDate(strOpt('scheduledFor', 'scheduled_at')),
     startedAt: _parseDate(strOpt('startedAt', 'started_at')),
@@ -232,10 +229,7 @@ WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
     customerPhone: json['customer_phone'] as String?,
     serviceAddress: json['service_address'] as String,
     status: workOrderStatusFromApiValue(json['status']),
-    priority: WorkOrderPriority.values.firstWhere(
-      (p) => p.name == (json['priority'] as String),
-      orElse: () => WorkOrderPriority.normal,
-    ),
+    priority: workOrderPriorityFromApiValue(json['priority']),
     assignedUserId: json['assigned_user_id'] as String?,
     scheduledAt: _parseDate(json['scheduled_at'] as String?),
     startedAt: _parseDate(json['started_at'] as String?),
@@ -252,14 +246,54 @@ WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
   );
 }
 
+/// Vocabulário de status do backend (`WORK_ORDER_STATUSES` em
+/// `src/modules/work-orders/work-order.types.ts`) → enum do app.
+///
+/// Os dois vocabulários NUNCA coincidiram nos estados ativos: o backend serve
+/// `on_route`/`on_site`/`in_progress`/`assigned` e o app nomeia os mesmos
+/// estados `enRoute`/`arrived`/`inService`/`dispatched`. Como o parser só
+/// comparava `enum.name`, toda ordem em andamento caía no `orElse` e aparecia
+/// no campo como **"Agendada"** — o console mostrava "Em rota" e o aparelho
+/// mostrava outra coisa para a mesma OS.
+///
+/// `accepted` entra como `dispatched`: no backend é o passo anterior a
+/// `on_route`, ou seja, aceita mas ainda sem deslocamento.
+const _statusFromBackendVocabulary = <String, WorkOrderStatus>{
+  'open': WorkOrderStatus.scheduled,
+  'assigned': WorkOrderStatus.dispatched,
+  'accepted': WorkOrderStatus.dispatched,
+  'on_route': WorkOrderStatus.enRoute,
+  'on_site': WorkOrderStatus.arrived,
+  'in_progress': WorkOrderStatus.inService,
+  'pending_approval': WorkOrderStatus.pendingApproval,
+};
+
+/// Vocabulário de prioridade do backend (`WORK_ORDER_PRIORITIES`) → enum do app.
+/// `medium`/`urgent` não existem no enum local; sem tradução, "Urgente" do
+/// console virava "Normal" no campo.
+const _priorityFromBackendVocabulary = <String, WorkOrderPriority>{
+  'medium': WorkOrderPriority.normal,
+  'urgent': WorkOrderPriority.critical,
+};
+
 WorkOrderStatus workOrderStatusFromApiValue(Object? value) {
   final normalized = value is String ? value.trim() : '';
-  if (normalized == 'pending_approval') {
-    return WorkOrderStatus.pendingApproval;
-  }
+  final translated = _statusFromBackendVocabulary[normalized];
+  if (translated != null) return translated;
+  // Cache local e DTOs legados gravam o próprio `enum.name` — segue aceito.
   return WorkOrderStatus.values.firstWhere(
     (status) => status.name == normalized,
     orElse: () => WorkOrderStatus.scheduled,
+  );
+}
+
+WorkOrderPriority workOrderPriorityFromApiValue(Object? value) {
+  final normalized = value is String ? value.trim() : '';
+  final translated = _priorityFromBackendVocabulary[normalized];
+  if (translated != null) return translated;
+  return WorkOrderPriority.values.firstWhere(
+    (priority) => priority.name == normalized,
+    orElse: () => WorkOrderPriority.normal,
   );
 }
 

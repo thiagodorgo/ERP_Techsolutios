@@ -173,7 +173,7 @@ class SyncReplayService {
           status: SyncStatus.failed,
           retryCount: a.retryCount + 1,
           lastErrorCode: 'NETWORK_ERROR',
-          lastSafeError: 'Falha de conexao. Tente novamente.',
+          lastSafeError: 'Falha de conexão. Tente novamente.',
         );
         await _queue.update(f);
         failed.add(f);
@@ -199,7 +199,7 @@ class SyncReplayService {
           status: SyncStatus.failed,
           retryCount: a.retryCount + 1,
           lastErrorCode: 'MISSING_RESULT',
-          lastSafeError: 'Acao sem resposta do servidor.',
+          lastSafeError: 'Ação sem resposta do servidor.',
         );
       } else {
         next = switch (result.status) {
@@ -215,13 +215,13 @@ class SyncReplayService {
           'conflict' => a.copyWith(
             status: SyncStatus.conflict,
             lastErrorCode: result.errorCode ?? 'CONFLICT',
-            lastSafeError: 'Conflito remoto exige decisao manual.',
+            lastSafeError: 'Conflito remoto exige decisão manual.',
           ),
           _ => a.copyWith(
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: result.errorCode ?? 'SERVER_ERROR',
-            lastSafeError: 'Erro ao processar acao. Tente novamente.',
+            lastSafeError: 'Erro ao processar ação. Tente novamente.',
           ),
         };
       }
@@ -688,7 +688,7 @@ class WorkOrderSyncReplayService {
           status: SyncStatus.failed,
           retryCount: a.retryCount + 1,
           lastErrorCode: 'NETWORK_ERROR',
-          lastSafeError: 'Falha de conexao. Tente novamente.',
+          lastSafeError: 'Falha de conexão. Tente novamente.',
         );
         await _queue.update(f);
         failed.add(f);
@@ -714,7 +714,7 @@ class WorkOrderSyncReplayService {
           status: SyncStatus.failed,
           retryCount: a.retryCount + 1,
           lastErrorCode: 'MISSING_RESULT',
-          lastSafeError: 'Acao sem resposta do servidor.',
+          lastSafeError: 'Ação sem resposta do servidor.',
         );
       } else {
         final createNeedsResultRef =
@@ -726,7 +726,7 @@ class WorkOrderSyncReplayService {
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: 'MISSING_RESULT_REF',
-            lastSafeError: 'Criacao sem identificador remoto.',
+            lastSafeError: 'Criação sem identificador remoto.',
           ),
           'processed' => a.copyWith(
             status: SyncStatus.synced,
@@ -741,7 +741,7 @@ class WorkOrderSyncReplayService {
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: 'MISSING_RESULT_REF',
-            lastSafeError: 'Criacao sem identificador remoto.',
+            lastSafeError: 'Criação sem identificador remoto.',
           ),
           'ignored' => a.copyWith(
             status: SyncStatus.synced,
@@ -755,7 +755,7 @@ class WorkOrderSyncReplayService {
           'conflict' => a.copyWith(
             status: SyncStatus.conflict,
             lastErrorCode: result.errorCode ?? 'CONFLICT',
-            lastSafeError: 'Conflito remoto exige decisao manual.',
+            lastSafeError: 'Conflito remoto exige decisão manual.',
             payload: result.resultRef != null
                 ? {...a.payload, 'result_ref': result.resultRef}
                 : a.payload,
@@ -764,13 +764,13 @@ class WorkOrderSyncReplayService {
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: result.errorCode ?? 'SERVER_FAILED',
-            lastSafeError: 'Servidor recusou a acao.',
+            lastSafeError: 'Servidor recusou a ação.',
           ),
           _ => a.copyWith(
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: result.errorCode ?? 'SERVER_ERROR',
-            lastSafeError: 'Erro ao processar acao. Tente novamente.',
+            lastSafeError: 'Erro ao processar ação. Tente novamente.',
           ),
         };
       }
@@ -1402,7 +1402,7 @@ class ChecklistSyncReplayService {
           status: SyncStatus.failed,
           retryCount: a.retryCount + 1,
           lastErrorCode: 'NETWORK_ERROR',
-          lastSafeError: 'Falha de conexao. Tente novamente.',
+          lastSafeError: 'Falha de conexão. Tente novamente.',
         );
         await _queue.update(f);
         failed.add(f);
@@ -1428,7 +1428,7 @@ class ChecklistSyncReplayService {
           status: SyncStatus.failed,
           retryCount: a.retryCount + 1,
           lastErrorCode: 'MISSING_RESULT',
-          lastSafeError: 'Acao sem resposta do servidor.',
+          lastSafeError: 'Ação sem resposta do servidor.',
         );
       } else {
         next = switch (result.status) {
@@ -1459,13 +1459,13 @@ class ChecklistSyncReplayService {
           'conflict' => a.copyWith(
             status: SyncStatus.conflict,
             lastErrorCode: result.errorCode ?? 'CONFLICT',
-            lastSafeError: 'Conflito remoto exige decisao manual.',
+            lastSafeError: 'Conflito remoto exige decisão manual.',
           ),
           'failed' => a.copyWith(
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: result.errorCode ?? 'SERVER_FAILED',
-            lastSafeError: 'Servidor recusou a acao.',
+            lastSafeError: 'Servidor recusou a ação.',
           ),
           'ignored' => a.copyWith(
             status: SyncStatus.synced,
@@ -1475,7 +1475,7 @@ class ChecklistSyncReplayService {
             status: SyncStatus.failed,
             retryCount: a.retryCount + 1,
             lastErrorCode: result.errorCode ?? 'SERVER_ERROR',
-            lastSafeError: 'Erro ao processar acao. Tente novamente.',
+            lastSafeError: 'Erro ao processar ação. Tente novamente.',
           ),
         };
       }

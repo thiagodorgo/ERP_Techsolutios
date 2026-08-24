@@ -47,7 +47,7 @@ const _itemCapacitor = InventoryItem(
   tenantId: _tenant,
   code: 'IT-001',
   name: 'Capacitor 100uF 50V',
-  category: 'Eletrico',
+  category: 'Elétrico',
   quantity: 248,
   unit: 'un.',
   minQuantity: 50,
@@ -58,7 +58,7 @@ const _itemResistor = InventoryItem(
   tenantId: _tenant,
   code: 'IT-002',
   name: 'Resistor 10kOhm',
-  category: 'Eletrico',
+  category: 'Elétrico',
   quantity: 12,
   unit: 'un.',
   minQuantity: 100,
@@ -68,8 +68,8 @@ const _itemFio = InventoryItem(
   id: 'inv-006',
   tenantId: _tenant,
   code: 'IT-006',
-  name: 'Fio eletrico 2,5mm',
-  category: 'Eletrico',
+  name: 'Fio elétrico 2,5mm',
+  category: 'Elétrico',
   quantity: 0,
   unit: 'm',
   minQuantity: 50,
@@ -209,7 +209,7 @@ Widget _wrapExit({
 
 void main() {
   group('InventoryListScreen (B-086)', () {
-    testWidgets('1. lista itens do tenant apos load', (tester) async {
+    testWidgets('1. lista itens do tenant após load', (tester) async {
       await tester.pumpWidget(_wrapList());
       await tester.pumpAndSettle();
 
@@ -217,25 +217,25 @@ void main() {
       expect(find.text('Resistor 10kOhm'), findsOneWidget);
     });
 
-    testWidgets('2. banner de itens criticos exibe contagem', (tester) async {
+    testWidgets('2. banner de itens críticos exibe contagem', (tester) async {
       await tester.pumpWidget(_wrapList());
       await tester.pumpAndSettle();
 
       // _itemResistor (12/100 → critico) e _itemFio (0/50 → zerado) = 2 criticos
-      expect(find.textContaining('itens em estoque critico'), findsOneWidget);
+      expect(find.textContaining('itens em estoque crítico'), findsOneWidget);
     });
 
-    testWidgets('3. tab Criticos exibe apenas itens criticos e zerados', (
+    testWidgets('3. tab Críticos exibe apenas itens críticos e zerados', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapList());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Criticos'));
+      await tester.tap(find.text('Críticos'));
       await tester.pumpAndSettle();
 
       expect(find.text('Resistor 10kOhm'), findsOneWidget);
-      expect(find.text('Fio eletrico 2,5mm'), findsOneWidget);
+      expect(find.text('Fio elétrico 2,5mm'), findsOneWidget);
       expect(find.text('Capacitor 100uF 50V'), findsNothing);
     });
 
@@ -245,28 +245,28 @@ void main() {
       await tester.pumpWidget(_wrapList(session: _sessionNoInventory));
       await tester.pumpAndSettle();
 
-      expect(find.text('Acesso nao autorizado'), findsOneWidget);
+      expect(find.text('Acesso não autorizado'), findsOneWidget);
       expect(find.text('Capacitor 100uF 50V'), findsNothing);
     });
 
-    testWidgets('5. botoes Entrada e Saida visiveis com inventory:write', (
+    testWidgets('5. botoes Entrada e Saída visiveis com inventory:write', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapList());
       await tester.pumpAndSettle();
 
       expect(find.text('Entrada'), findsOneWidget);
-      expect(find.text('Saida'), findsOneWidget);
+      expect(find.text('Saída'), findsOneWidget);
     });
 
-    testWidgets('6. botoes Entrada e Saida ocultos sem inventory:write', (
+    testWidgets('6. botoes Entrada e Saída ocultos sem inventory:write', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapList(session: _sessionReadOnly));
       await tester.pumpAndSettle();
 
       expect(find.text('Entrada'), findsNothing);
-      expect(find.text('Saida'), findsNothing);
+      expect(find.text('Saída'), findsNothing);
     });
   });
 
@@ -345,7 +345,7 @@ void main() {
       expect(payload.containsKey('base64'), isFalse);
     });
 
-    test('11. recordExit com saldo insuficiente lanca excecao', () async {
+    test('11. recordExit com saldo insuficiente lanca exceção', () async {
       final repo = _repo();
 
       await expectLater(
@@ -422,10 +422,10 @@ void main() {
       await tester.pumpWidget(_wrapExit());
       await tester.pumpAndSettle();
 
-      expect(find.text('Nova Saida'), findsOneWidget);
+      expect(find.text('Nova Saída'), findsOneWidget);
 
       final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Confirmar saida'),
+        find.widgetWithText(FilledButton, 'Confirmar saída'),
       );
       expect(btn.onPressed, isNull);
     });

@@ -32,8 +32,8 @@ WorkOrder _wo({String? checklistId}) => WorkOrder(
   localId: 'wo-b120',
   tenantId: _tenant,
   code: 'OS-B120',
-  title: 'Manutencao preventiva',
-  customerName: 'Industria Alfa',
+  title: 'Manutenção preventiva',
+  customerName: 'Indústria Alfa',
   serviceAddress: 'Rua B120',
   status: WorkOrderStatus.inService,
   priority: WorkOrderPriority.normal,
@@ -79,7 +79,7 @@ WorkOrderRepository _woRepo(List<WorkOrder> seed) => WorkOrderRepository(
 
 void main() {
   // ── Group 1: comissao / formatacao (pura) ────────────────────────────────
-  group('B-120 comissao', () {
+  group('B-120 comissão', () {
     test('1. computeCommissionCents aplica percentual', () {
       expect(
         computeCommissionCents(baseValueCents: 100000, ratePercent: 10),
@@ -137,7 +137,7 @@ void main() {
         ratePercent: 10,
       );
       expect(s.assetLabel, 'Equipamento');
-      expect(s.service, 'Manutencao preventiva');
+      expect(s.service, 'Manutenção preventiva');
       expect(s.materialsCount, 3);
       expect(s.commissionCents, 10000);
     });
@@ -165,14 +165,14 @@ void main() {
 
   // ── Group 4: tela de conclusao (sync silenciosa) ─────────────────────────
   group('B-120 WorkOrderConclusionScreen', () {
-    testWidgets('8. exibe comissao e resumo', (t) async {
+    testWidgets('8. exibe comissão e resumo', (t) async {
       final repo = _woRepo([_wo()]);
       await t.pumpWidget(_wrap(repo));
       await t.pumpAndSettle();
 
       expect(find.byKey(const Key('commission-card')), findsOneWidget);
-      expect(find.text('Manutencao preventiva'), findsOneWidget);
-      expect(find.text('Industria Alfa'), findsOneWidget);
+      expect(find.text('Manutenção preventiva'), findsOneWidget);
+      expect(find.text('Indústria Alfa'), findsOneWidget);
     });
 
     testWidgets('9. concluir sincroniza em segundo plano (enqueue)', (t) async {

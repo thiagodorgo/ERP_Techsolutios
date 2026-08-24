@@ -300,14 +300,14 @@ void main() {
       expect(confirmBtn.onPressed, isNull);
     });
 
-    testWidgets('8. "Nao foi possivel iniciar" visible when enRoute', (
+    testWidgets('8. "Não foi possível iniciar" visible when enRoute', (
       t,
     ) async {
       await t.pumpWidget(_wrap(wo: _makeWo(status: WorkOrderStatus.enRoute)));
       await t.pumpAndSettle();
       await _scrollUntilFound(t, find.byKey(const Key('checkin-block')));
 
-      expect(find.text('Nao foi possivel iniciar'), findsOneWidget);
+      expect(find.text('Não foi possível iniciar'), findsOneWidget);
       expect(find.byKey(const Key('checkin-block')), findsOneWidget);
     });
 
@@ -379,7 +379,7 @@ void main() {
             scrollable: find.byType(Scrollable).last,
           );
         }
-        await t.enterText(noteFinder, 'Cliente nao atendeu');
+        await t.enterText(noteFinder, 'Cliente não atendeu');
         await t.pumpAndSettle();
 
         // Scroll to submit button and verify it's now enabled

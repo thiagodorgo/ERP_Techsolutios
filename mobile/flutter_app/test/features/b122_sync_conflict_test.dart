@@ -70,7 +70,7 @@ void main() {
       expect(resolved.lastErrorCode, isNull);
     });
 
-    test('3. acao sem conflito e retornada inalterada', () {
+    test('3. ação sem conflito e retornada inalterada', () {
       final pending = _conflict('a').copyWith(status: SyncStatus.pending);
       final resolved = resolveConflictAction(pending, ConflictChoice.keepMine);
       expect(identical(resolved, pending), isTrue);
@@ -79,17 +79,17 @@ void main() {
 
   // ── Group 2: card de conflito na SyncScreen ──────────────────────────────
   group('B-122 SyncScreen conflito manual', () {
-    testWidgets('4. exibe card de conflito com as duas opcoes', (t) async {
+    testWidgets('4. exibe card de conflito com as duas opções', (t) async {
       final store = InMemorySyncActionStore([_conflict('c1')]);
       await t.pumpWidget(_wrap(store));
       await t.pumpAndSettle();
 
       expect(find.byKey(const Key('conflict-card-c1')), findsOneWidget);
-      expect(find.text('Minha versao'), findsOneWidget);
-      expect(find.text('Versao do gestor'), findsOneWidget);
+      expect(find.text('Minha versão'), findsOneWidget);
+      expect(find.text('Versão do gestor'), findsOneWidget);
     });
 
-    testWidgets('5. "Minha versao" resolve para pending e some o card', (
+    testWidgets('5. "Minha versão" resolve para pending e some o card', (
       t,
     ) async {
       final store = InMemorySyncActionStore([_conflict('c1')]);
@@ -104,7 +104,7 @@ void main() {
       expect(actions.first.status, SyncStatus.pending);
     });
 
-    testWidgets('6. "Versao do gestor" resolve para synced', (t) async {
+    testWidgets('6. "Versão do gestor" resolve para synced', (t) async {
       final store = InMemorySyncActionStore([_conflict('c1')]);
       await t.pumpWidget(_wrap(store));
       await t.pumpAndSettle();

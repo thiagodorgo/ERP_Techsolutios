@@ -68,7 +68,7 @@ class InventoryRepository extends ChangeNotifier {
     String? notes,
   }) async {
     final item = await _localStore.findItem(itemId);
-    if (item == null) throw Exception('Item nao encontrado: $itemId');
+    if (item == null) throw Exception('Item não encontrado: $itemId');
 
     final updated = item.copyWith(quantity: item.quantity + quantity);
     await _localStore.saveItem(updated);
@@ -118,10 +118,10 @@ class InventoryRepository extends ChangeNotifier {
     String? notes,
   }) async {
     final item = await _localStore.findItem(itemId);
-    if (item == null) throw Exception('Item nao encontrado: $itemId');
+    if (item == null) throw Exception('Item não encontrado: $itemId');
     if (item.quantity < quantity) {
       throw Exception(
-        'Saldo insuficiente: ${item.quantity} ${item.unit} disponivel, '
+        'Saldo insuficiente: ${item.quantity} ${item.unit} disponível, '
         '$quantity ${item.unit} solicitado',
       );
     }
@@ -172,7 +172,7 @@ class InventoryRepository extends ChangeNotifier {
         id: 'inv-001',
         code: 'IT-001',
         name: 'Capacitor 100uF 50V',
-        cat: 'Eletrico',
+        cat: 'Elétrico',
         qty: 248,
         unit: 'un.',
         min: 50,
@@ -181,7 +181,7 @@ class InventoryRepository extends ChangeNotifier {
         id: 'inv-002',
         code: 'IT-002',
         name: 'Resistor 10kOhm',
-        cat: 'Eletrico',
+        cat: 'Elétrico',
         qty: 12,
         unit: 'un.',
         min: 100,
@@ -190,7 +190,7 @@ class InventoryRepository extends ChangeNotifier {
         id: 'inv-003',
         code: 'IT-003',
         name: 'Tubo PVC 3/4"',
-        cat: 'Hidraulico',
+        cat: 'Hidráulico',
         qty: 85,
         unit: 'un.',
         min: 30,
@@ -207,7 +207,7 @@ class InventoryRepository extends ChangeNotifier {
       (
         id: 'inv-005',
         code: 'IT-005',
-        name: 'Capacete de seguranca',
+        name: 'Capacete de segurança',
         cat: 'EPI',
         qty: 32,
         unit: 'un.',
@@ -216,8 +216,8 @@ class InventoryRepository extends ChangeNotifier {
       (
         id: 'inv-006',
         code: 'IT-006',
-        name: 'Fio eletrico 2,5mm',
-        cat: 'Eletrico',
+        name: 'Fio elétrico 2,5mm',
+        cat: 'Elétrico',
         qty: 0,
         unit: 'm',
         min: 50,
@@ -226,7 +226,7 @@ class InventoryRepository extends ChangeNotifier {
         id: 'inv-007',
         code: 'IT-007',
         name: 'Disjuntor 20A',
-        cat: 'Eletrico',
+        cat: 'Elétrico',
         qty: 3,
         unit: 'un.',
         min: 20,

@@ -148,7 +148,7 @@ void main() {
       },
     );
 
-    test('7. OS local-only nao finge work_order_id remoto', () {
+    test('7. OS local-only não finge work_order_id remoto', () {
       final payload = fieldLocationPayloadForEvent(_event());
       final metadata = payload['metadata'] as Map<String, Object?>;
 
@@ -184,7 +184,7 @@ void main() {
       expect(pending.map((e) => e.localId), ['a1', 'a3']);
     });
 
-    test('9. store retorna ultimo evento por OS', () async {
+    test('9. store retorna último evento por OS', () async {
       final store = InMemoryFieldLocationStore();
       await store.save(
         _event(localId: 'older', recordedAt: DateTime.utc(2026, 6, 17, 10)),
@@ -271,7 +271,7 @@ void main() {
         api: _FakeFieldLocationApi(
           error: const ApiServerError(
             statusCode: 400,
-            safeMessage: 'Localizacao invalida.',
+            safeMessage: 'Localização inválida.',
           ),
         ),
       );
@@ -284,7 +284,7 @@ void main() {
 
       expect(loaded!.syncStatus, SyncStatus.failed);
       expect(loaded.lastErrorCode, 'VALIDATION_ERROR');
-      expect(loaded.lastSafeError, 'Localizacao invalida.');
+      expect(loaded.lastSafeError, 'Localização inválida.');
     });
 
     test('14. maxRetry e respeitado', () async {
@@ -340,7 +340,7 @@ void main() {
         ),
         const OperationalMapPoint(
           id: 'tech',
-          label: 'Tecnico',
+          label: 'Técnico',
           latitude: -23.55,
           longitude: -46.63,
         ),
@@ -366,7 +366,7 @@ void main() {
       expect(projected.single.y, 0.5);
     });
 
-    testWidgets('18. card mostra politica de captura manual', (tester) async {
+    testWidgets('18. card mostra política de captura manual', (tester) async {
       await tester.pumpWidget(
         _wrap(
           OperationalLocationCard(
@@ -382,11 +382,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Localizacao operacional'), findsOneWidget);
+      expect(find.text('Localização operacional'), findsOneWidget);
       expect(find.textContaining('Sem background tracking'), findsOneWidget);
     });
 
-    testWidgets('19. card mostra ultimo envio e botao chama service mock', (
+    testWidgets('19. card mostra último envio e botao chama service mock', (
       tester,
     ) async {
       final store = InMemoryFieldLocationStore();
@@ -412,8 +412,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Ultimo envio'), findsOneWidget);
-      await tester.tap(find.text('Enviar localizacao agora'));
+      expect(find.textContaining('Último envio'), findsOneWidget);
+      await tester.tap(find.text('Enviar localização agora'));
       await tester.pumpAndSettle();
 
       expect(service.captureCalls, 1);
@@ -456,7 +456,7 @@ void main() {
 
   group('B-105 AutoSyncCoordinator', () {
     test(
-      '22. chama location sync antes dos demais e nao bloqueia OS',
+      '22. chama location sync antes dos demais e não bloqueia OS',
       () async {
         final order = <String>[];
         final location = _CountingFieldLocationSyncService(

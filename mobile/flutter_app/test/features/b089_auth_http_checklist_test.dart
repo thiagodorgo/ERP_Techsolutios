@@ -231,7 +231,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('authenticatedApiConfigProvider — token injection (B-089)', () {
-    test('1. com sessao autenticada injeta accessToken no ApiConfig', () async {
+    test('1. com sessão autenticada injeta accessToken no ApiConfig', () async {
       final storage = InMemoryAuthTokenStorage();
       final container = ProviderContainer(
         overrides: [
@@ -252,7 +252,7 @@ void main() {
       expect(config.accessToken, isNotEmpty);
     });
 
-    test('2. sem sessao ApiConfig.accessToken e null', () {
+    test('2. sem sessão ApiConfig.accessToken e null', () {
       final container = ProviderContainer(
         overrides: [
           authTokenStorageProvider.overrideWithValue(
@@ -371,7 +371,7 @@ void main() {
               {
                 'id': 'f-text',
                 'type': 'text',
-                'label': 'Descricao',
+                'label': 'Descrição',
                 'required': true,
                 'order': 1,
               },
@@ -465,7 +465,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('DioChecklistRemoteApi — mapeamento de erros (B-089)', () {
-    test('10. erro de conexao lanca ApiNetworkError', () async {
+    test('10. erro de conexão lanca ApiNetworkError', () async {
       final dio = _fakeDio((_) => {}, shouldThrow: true);
       final api = DioChecklistRemoteApi(dio);
 
@@ -503,7 +503,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('ChecklistRepository — fallback local-first (B-089)', () {
-    test('12. load() usa templates remotos quando disponivel', () async {
+    test('12. load() usa templates remotos quando disponível', () async {
       final remoteTemplates = [_tpl('remote-cl-1'), _tpl('remote-cl-2')];
       final remoteApi = _FakeChecklistRemoteApi(
         availableTemplates: remoteTemplates,
@@ -584,7 +584,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('DioChecklistRemoteApi — payload seguro (B-089)', () {
-    test('17. createRun nao inclui token/senha/path no payload', () async {
+    test('17. createRun não inclui token/senha/path no payload', () async {
       final adapter = _FakeHttpAdapter(
         handler: (options) => {'runId': 'srv-run-safe'},
       );
@@ -616,7 +616,7 @@ void main() {
       expect(payload.containsKey('workOrderId'), isTrue);
     });
 
-    test('18. attachMetadata payload nao contem base64/path/token', () async {
+    test('18. attachMetadata payload não contem base64/path/token', () async {
       final adapter = _FakeHttpAdapter(handler: (options) => {});
       final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.transformer = SyncTransformer();

@@ -239,7 +239,7 @@ void main() {
       expect(metadata['source'], 'mobile_offline');
     });
 
-    test('work_order_id local nao vira work_order_id de backend', () {
+    test('work_order_id local não vira work_order_id de backend', () {
       final encoded = _encodedSingle(
         _action(
           id: 'wo-local-id',
@@ -255,7 +255,7 @@ void main() {
       expect(payload.containsKey('work_order_id'), isFalse);
     });
 
-    test('status assigned e serializado sem alteracao', () {
+    test('status assigned e serializado sem alteração', () {
       final encoded = _encodedSingle(_action(id: 'wo-4'));
       final payload = Map<String, Object?>.from(encoded['payload'] as Map);
       expect(payload['status'], 'assigned');
@@ -301,7 +301,7 @@ void main() {
       expect(payload['message'], 'Mobile completed work order.');
     });
 
-    test('payload nao contem tenant, token, path, base64 ou binario', () {
+    test('payload não contem tenant, token, path, base64 ou binario', () {
       final encoded = _encodedSingle(
         _action(
           id: 'wo-7',
@@ -617,7 +617,7 @@ void main() {
       expect(result.failed.single.lastErrorCode, 'VALIDATION');
     });
 
-    test('failed nao marca WorkOrder local como synced', () async {
+    test('failed não marca WorkOrder local como synced', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _action(
@@ -744,7 +744,7 @@ void main() {
     });
 
     test(
-      'statusUpdate apenas com local_id nao e enviada e fica pending',
+      'statusUpdate apenas com local_id não e enviada e fica pending',
       () async {
         final queue = InMemorySyncQueueRepository();
         await queue.enqueue(
@@ -771,7 +771,7 @@ void main() {
       },
     );
 
-    test('statusUpdate local-only nao atualiza entidade local', () async {
+    test('statusUpdate local-only não atualiza entidade local', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _action(
@@ -798,7 +798,7 @@ void main() {
       expect(stored.syncStatus, SyncStatus.pending);
     });
 
-    test('create approval e evidence nao sao enviados no B-103', () async {
+    test('create approval e evidence não são enviados no B-103', () async {
       final queue = InMemorySyncQueueRepository();
       for (final type in [
         WorkOrderSyncActionTypes.create,
@@ -823,7 +823,7 @@ void main() {
       );
     });
 
-    test('actions em conflict nao sao reenviadas', () async {
+    test('actions em conflict não são reenviadas', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _action(id: 'manual-conflict', status: SyncStatus.conflict),
@@ -839,7 +839,7 @@ void main() {
       expect(result.conflicts, isEmpty);
     });
 
-    test('WorkOrder sync nao captura checklist evidence ou expense', () async {
+    test('WorkOrder sync não captura checklist evidence ou expense', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _action(id: 'expense', type: ExpenseSyncActionTypes.reportCreate),
@@ -953,7 +953,7 @@ void main() {
     });
 
     test(
-      'completeWorkOrder enfileira server_id e mensagem de conclusao',
+      'completeWorkOrder enfileira server_id e mensagem de conclusão',
       () async {
         final queue = InMemorySyncQueueRepository();
         final store = InMemoryWorkOrderLocalStore([
@@ -979,7 +979,7 @@ void main() {
       },
     );
 
-    test('timeline local e preservada apos updateStatus', () async {
+    test('timeline local e preservada após updateStatus', () async {
       final queue = InMemorySyncQueueRepository();
       final store = InMemoryWorkOrderLocalStore([
         _workOrder(status: WorkOrderStatus.dispatched),
@@ -1004,7 +1004,7 @@ void main() {
   });
 
   group('B-103 cross-domain e autosync', () {
-    test('Expense sync nao captura action de OS', () async {
+    test('Expense sync não captura action de OS', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(_action(id: 'wo-ready'));
       await queue.enqueue(

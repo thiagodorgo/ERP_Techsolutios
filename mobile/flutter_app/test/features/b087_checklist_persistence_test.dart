@@ -68,12 +68,12 @@ const _vehicleSchema = MobileChecklistSchema(
   id: 'schema-vs-1',
   checklistId: 'cl-b087-vs',
   version: 'v1',
-  title: 'Vistoria Veiculo',
+  title: 'Vistoria Veículo',
   fields: [
     MobileChecklistField(
       id: 'f-vehicle',
       type: MobileChecklistFieldType.vehicleSelector,
-      label: 'Tipo de veiculo',
+      label: 'Tipo de veículo',
       required: false,
       order: 1,
       options: [
@@ -94,7 +94,7 @@ const _photoSchema = MobileChecklistSchema(
     MobileChecklistField(
       id: 'f-photo',
       type: MobileChecklistFieldType.photoUpload,
-      label: 'Foto da evidencia',
+      label: 'Foto da evidência',
       required: false,
       order: 1,
     ),
@@ -219,7 +219,7 @@ InMemoryChecklistLocalStore _storeWith({
 
 void main() {
   group('DriftChecklistLocalStore — persistencia (B-087)', () {
-    test('1. run persiste apos recriar store com mesmo DB', () async {
+    test('1. run persiste após recriar store com mesmo DB', () async {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
 
@@ -236,7 +236,7 @@ void main() {
       expect(loaded.status, MobileChecklistRunStatus.inProgress);
     });
 
-    test('2. respostas parciais persistem apos recriar store', () async {
+    test('2. respostas parciais persistem após recriar store', () async {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
 
@@ -319,7 +319,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('ChecklistRunScreen — multiChoice (B-087)', () {
-    testWidgets('6. multiChoice required bloqueia conclusao quando vazio', (
+    testWidgets('6. multiChoice required bloqueia conclusão quando vazio', (
       tester,
     ) async {
       final store = _storeWith(schema: _multiChoiceSchema);
@@ -337,7 +337,7 @@ void main() {
       expect(btn.onPressed, isNull);
     });
 
-    testWidgets('7. multiChoice renderiza opcoes do schema', (tester) async {
+    testWidgets('7. multiChoice renderiza opções do schema', (tester) async {
       final store = _storeWith(schema: _multiChoiceSchema);
       await tester.pumpWidget(
         _wrapRun(checklistId: 'cl-b087-mc', store: store),
@@ -349,7 +349,7 @@ void main() {
       expect(find.text('Painel'), findsOneWidget);
     });
 
-    testWidgets('8. multiChoice selecionar opcao habilita Concluir', (
+    testWidgets('8. multiChoice selecionar opção habilita Concluir', (
       tester,
     ) async {
       final store = _storeWith(schema: _multiChoiceSchema);
@@ -370,7 +370,7 @@ void main() {
       expect(btn.onPressed, isNotNull);
     });
 
-    test('9. multiChoice salva multiplas opcoes via repository', () async {
+    test('9. multiChoice salva multiplas opções via repository', () async {
       final actionStore = InMemorySyncActionStore([]);
       final queue = PersistentSyncQueueRepository(actionStore);
       final factory = SyncActionFactory();
@@ -415,7 +415,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('ChecklistRunScreen — vehicleSelector (B-087)', () {
-    testWidgets('10. vehicleSelector renderiza opcoes do schema', (
+    testWidgets('10. vehicleSelector renderiza opções do schema', (
       tester,
     ) async {
       final store = _storeWith(schema: _vehicleSchema);
@@ -487,7 +487,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('ChecklistRunScreen — photoUpload (B-087)', () {
-    testWidgets('16. photoUpload renderiza botao Adicionar evidencia', (
+    testWidgets('16. photoUpload renderiza botao Adicionar evidência', (
       tester,
     ) async {
       final store = _storeWith(schema: _photoSchema);
@@ -496,10 +496,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Adicionar evidencia'), findsOneWidget);
+      expect(find.text('Adicionar evidência'), findsOneWidget);
     });
 
-    test('17. addAttachment payload nao contem path/base64/token', () async {
+    test('17. addAttachment payload não contem path/base64/token', () async {
       final actionStore = InMemorySyncActionStore([]);
       final queue = PersistentSyncQueueRepository(actionStore);
       final factory = SyncActionFactory();

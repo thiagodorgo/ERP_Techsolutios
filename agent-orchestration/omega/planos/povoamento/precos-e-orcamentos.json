@@ -1,0 +1,614 @@
+{
+  "area": "Precos e Orcamentos (Catalogo de Servicos, Tabelas de Valores, Tarifas, Orcamentos)",
+  "telas": [
+    {
+      "tela": "Catalogo de Servicos",
+      "rota": "/cadastros/servicos (PermissionGuard service_catalog:read) — frontend/src/modules/registry/service-catalog/pages/ServicosPage.tsx",
+      "tabelas": [
+        "service_catalog"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (slug='demo' = a79aedf2-44c8-478f-a6ce-cf6248a16f2b)",
+          "exigido_por": "banco",
+          "por_que": "service_catalog.tenant_id NOT NULL -> FK service_catalog_tenant_id_fkey REFERENCES tenants(id) RESTRICT"
+        },
+        {
+          "passo": 2,
+          "entidade": "nome unico por organizacao",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, name) — dois servicos nao podem repetir nome; o seed precisa ser idempotente por nome"
+        },
+        {
+          "passo": 3,
+          "entidade": "category + service_type + requires_destination + estimated_duration_minutes + base_price preenchidos",
+          "exigido_por": "historia",
+          "por_que": "a tela renderiza 7 colunas (Nome, Categoria, Duracao, Preco base, Status, Situacao, Criado em). Com esses campos nulos, 3 das 7 colunas viram '—' (formatDuration/formatBRL/category devolvem '—'). Alem disso service_type e requires_destination dirigem o formulario da OS (#23/#24, 422 destination_required) — servico sem tipo faz a OS de reboque nascer sem exigir destino"
+        },
+        {
+          "passo": 4,
+          "entidade": "jurisdiction_profiles (para custody_profile_id)",
+          "exigido_por": "historia",
+          "por_que": "custody_profile_id e o UNICO marcador de 'esta OS abre custodia no patio' (FK composta (tenant_id, custody_profile_id) -> jurisdiction_profiles RESTRICT). Sem ele, nenhuma OS de remocao abre processo de patio e a trilha Patios fica morta"
+        },
+        {
+          "passo": 5,
+          "entidade": "o servico existir ANTES de qualquer tarifa",
+          "exigido_por": "ambos",
+          "por_que": "tariffs.service_catalog_id -> FK tariffs_tenant_id_service_catalog_id_fkey RESTRICT. E, do lado da historia, e a raiz da cadeia inteira de preco: sem servico nomeado, a Tarifa nao tem a que se referir"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "3 servicos no tenant demo (todos is_active=true, status='active'). Deles: 2 sao residuo de teste ('Servico A1 1783874676', 'SemTarifa 14250') e 1 tem nome de produto ('Guincho ate 200km', sem acento). 2 de 3 sem category, sem service_type, sem duracao e sem base_price. 0 com custody_profile_id. 0 servicos de patio, 0 de socorro, 0 de guincho pesado.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select id, name, category, service_type, requires_destination, estimated_duration_minutes, base_price, status, is_active, custody_profile_id from service_catalog where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Catalogo praticamente vazio: 3 servicos para uma operacao que ja tem 17 OS, 15 tabelas de valores e 39 tarifas",
+          "quantos": "3 de ~22 esperados",
+          "evidencia": "select count(*) from service_catalog where tenant_id='a79aedf2-...' -> 3"
+        },
+        {
+          "defeito": "Nome de teste visivel na coluna Nome (primeira coluna da tela, em negrito)",
+          "quantos": "2 de 3",
+          "evidencia": "'Servico A1 1783874676' e 'SemTarifa 14250' — ambos com timestamp epoch no nome"
+        },
+        {
+          "defeito": "Acentuacao errada em nome de produto (viola CLAUDE.md 11.3)",
+          "quantos": "1 de 3",
+          "evidencia": "'Guincho ate 200km' gravado sem acento em 'ate' e sem espaco antes de 'km'"
+        },
+        {
+          "defeito": "Colunas Categoria / Duracao / Preco base renderizam '—' porque as colunas do banco estao NULL",
+          "quantos": "2 de 3 linhas com category, service_type, duracao e base_price NULL",
+          "evidencia": "select count(*) filter (where category is null) from service_catalog where tenant_id='a79aedf2-...' -> 2"
+        },
+        {
+          "defeito": "'Categoria' usada com semantica de cliente, nao de servico",
+          "quantos": "1 de 3",
+          "evidencia": "'Guincho ate 200km' tem category='Particular' — 'Particular' e o nome de um CLIENTE cadastrado (customers.name='Particular'), nao uma familia de servico"
+        },
+        {
+          "defeito": "Nenhum servico marca abertura de custodia — a ponte OS -> Patio esta desligada",
+          "quantos": "3 de 3 com custody_profile_id NULL",
+          "evidencia": "select count(*) filter (where custody_profile_id is not null) from service_catalog where tenant_id='a79aedf2-...' -> 0, apesar de existir 1 jurisdiction_profile ativo ('policia de transito', PUBLIC_AGREEMENT)"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Remover os 2 servicos residuo de teste ('Servico A1 1783874676', 'SemTarifa 14250')",
+          "quantos": "2 servicos + 1 tarifa que os referencia + 2 orcamentos void",
+          "criterio": "ordem obrigatoria de exclusao por FK RESTRICT: service_quote_items -> service_quotes -> tariffs -> service_catalog. Apagar por id explicito, nunca por wildcard (licao feedback-no-adhoc-mass-delete-live-db)"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Corrigir 'Guincho ate 200km' em vez de apagar (esta ligado a OS-000017)",
+          "quantos": "1",
+          "criterio": "name='Reboque leve — ate 200 km' (acentuado), category='Reboque leve', service_type='reboque', requires_destination=true, estimated_duration_minutes=180, base_price coerente com a tarifa padrao do servico"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar o catalogo de REBOQUE LEVE — uma entrada por linha faturavel",
+          "quantos": "7 servicos",
+          "criterio": "'Saida de guincho — perimetro urbano', 'Quilometro rodado — urbano', 'Quilometro rodado — rodovia', 'Hora parada / espera', 'Servico noturno (adicional)', 'Finais de semana e feriados (adicional)', 'Desatolamento'. category='Reboque leve'; service_type='reboque' + requires_destination=true nos de deslocamento, 'socorro' + false nos de espera/desatolamento; duracao 30 a 180 min; base_price = o mesmo valor unitario que a tarifa padrao dessa linha tera (180,00 / 6,50 / 8,90 / 95,00 / 120,00 / 145,00 / 380,00) para as duas telas nao se contradizerem"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Criar o catalogo de REBOQUE PESADO",
+          "quantos": "7 servicos",
+          "criterio": "'Saida de guincho pesado', 'Quilometro rodado — pesado', 'Hora de operacao com munck', 'Transbordo de carga', 'Plataforma estendida', 'Resgate em ribanceira', 'Icamento com guincho pesado'. category='Reboque pesado'; duracao 120 a 480 min; base_price 890,00 / 14,50 / 420,00 / 1.250,00 / 1.680,00 / 3.400,00 / 640,00"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Criar o catalogo de PATIO E CUSTODIA",
+          "quantos": "7 servicos",
+          "criterio": "'Taxa de entrada e vistoria', 'Diaria de motocicleta', 'Diaria de veiculo leve', 'Diaria de veiculo pesado', 'Guarda em area coberta (adicional)', 'Remocao interna entre vagas', 'Taxa de liberacao'. category='Patio e custodia'; service_type='outro'; requires_destination=false; base_price 135,00 / 24,00 / 42,00 / 96,00 / 18,00 / 55,00 / 168,00"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Ligar custody_profile_id ao perfil 'policia de transito' (6f6d2074-199a-472f-b66a-66dcaa96e38d) nos servicos de remocao por autoridade",
+          "quantos": "2",
+          "criterio": "so servico de REMOCAO por determinacao de autoridade recebe custody_profile_id; servico comercial fica NULL. E o unico gatilho OS -> processo de patio do sistema"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Distribuir o status operacional para a coluna 'Status' deixar de ser constante",
+          "quantos": "~22: 19 'active', 2 'suspended', 1 'inactive'",
+          "criterio": "SERVICE_STATUS_OPTIONS = active|suspended|inactive -> 'Disponivel'|'Suspenso'|'Descontinuado'. O 'inactive' recebe tambem is_active=false para as duas dimensoes da mesma linha (Status x Situacao) nao se contradizerem"
+        }
+      ],
+      "como_provar": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where category is null) sem_categoria, count(*) filter (where service_type is null) sem_tipo, count(*) filter (where base_price is null) sem_preco_base, count(*) filter (where estimated_duration_minutes is null) sem_duracao, count(*) filter (where name ~ '[0-9]{5,}') nome_de_teste, count(distinct category) familias, count(distinct status) status_distintos from service_catalog where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" — coerente quando total>=20, sem_categoria=0, sem_tipo=0, sem_preco_base=0, sem_duracao=0, nome_de_teste=0, familias>=3, status_distintos>=2. Na tela: abrir /cadastros/servicos e conferir que nenhuma celula de Categoria/Duracao/Preco base mostra '—'."
+    },
+    {
+      "tela": "Tabela de Valores",
+      "rota": "/cadastros/tabelas-valores (PermissionGuard price_tables:read) + alias /patios/tarifas (mesma pagina, so o breadcrumb muda) — frontend/src/modules/registry/price-tables/pages/TabelasValoresPage.tsx",
+      "tabelas": [
+        "price_tables",
+        "tariffs (agregado itemCount / minUnitPrice / maxUnitPrice)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "price_tables.tenant_id NOT NULL -> FK price_tables_tenant_id_fkey RESTRICT"
+        },
+        {
+          "passo": 2,
+          "entidade": "nome unico por organizacao",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, name) — o service devolve 409 duplicate_name"
+        },
+        {
+          "passo": 3,
+          "entidade": "service_catalog povoado (tela 1)",
+          "exigido_por": "historia",
+          "por_que": "a tabela e um CONTEINER; os itens dela sao Tarifas, e Tarifa sem servico nao resolve preco nenhum (findApplicable exige service_catalog_id = X por igualdade exata)"
+        },
+        {
+          "passo": 4,
+          "entidade": "tariffs ATIVAS dentro da tabela",
+          "exigido_por": "historia",
+          "por_que": "a coluna 'Valores' e formatTariffRange(itemCount, min, max): itemCount=0 faz a celula virar '—' (o adapter recusa mostrar 'R$ 0,00'). Tabela PUBLICADA e vazia anuncia moeda e versao e nunca um numero"
+        },
+        {
+          "passo": 5,
+          "entidade": "valid_from / valid_to coerentes com o status",
+          "exigido_por": "historia",
+          "por_que": "a coluna 'Vigencia' e formatValidity: sem datas escreve 'Sem vigencia definida'. E findPublishedInBucket so devolve a tabela se a janela cobrir a data consultada — tabela com janela vencida some do motor de preco sem aviso na tela"
+        },
+        {
+          "passo": 6,
+          "entidade": "scope e vehicle_category distribuidos",
+          "exigido_por": "historia",
+          "por_que": "a tela tem 2 filtros (Escopo: Convenio publico / Contrato privado; Categoria: Motocicleta / Automovel / Caminhao). Com 100% NULL os 2 filtros existem e nao filtram nada — todas as linhas mostram 'Todos'/'Todas'"
+        },
+        {
+          "passo": 7,
+          "entidade": "NAO-sobreposicao RN-TAR-01 entre tabelas publicadas do mesmo bucket",
+          "exigido_por": "historia",
+          "por_que": "buildTariffOverlapChecker (src/modules/price-tables/price-table-resolution.ts): duas tabelas PUBLICADAS com mesmo (scope, vehicle_category), janelas sobrepostas e que compartilhem uma chave (service_catalog_id, customer_id) -> 422 tariff_overlap. O banco NAO tem essa trava (o EXCLUDE gist ficou deferido, D-O5P-TAR-04): um seed em SQL cru pode gravar um estado que a propria aplicacao recusaria criar"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "15 tabelas no tenant demo: 9 published, 4 draft, 2 archived. Itens ativos: 8 (Guincho Leve), 7 (Patio), 6 (Guincho Pesado), 4 (Contrato Aurora), 4 (Auditoria A1, draft), 1 (Smoke Tarifas), 1 (Reverif C2), 1 (Smoke 19355) e ZERO nas outras 7 — 4 delas PUBLICADAS. scope NULL em 15/15, vehicle_category NULL em 15/15, currency='BRL' e version=1 em 15/15, valid_to NULL em 15/15.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select id, name, currency, version, status, is_active, scope, vehicle_category, valid_from::date, valid_to::date, (select count(*) from tariffs t where t.price_table_id=p.id and t.is_active) itens from price_tables p where p.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by p.created_at;\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Tabela PUBLICADA com ZERO itens — a linha anuncia moeda/versao/status e nunca um valor (coluna 'Valores' = '—')",
+          "quantos": "4 de 9 publicadas",
+          "evidencia": "'Tabela Guincho 2026', 'Tabela Auditoria 1783820445', 'Editavel 1783820571713284800', 'teste'. A mais grave e 'Tabela Guincho 2026': unico nome de produto e nasceu vazia — o proprio cabecalho de scripts/seed-demo-precos.mjs registra o fato e nao o corrigiu"
+        },
+        {
+          "defeito": "Residuo de teste na coluna Nome (primeira coluna, em negrito)",
+          "quantos": "10 de 15",
+          "evidencia": "'Tabela Auditoria 1783820445', 'Terminal 1783820569385872200', 'Editavel 1783820571713284800', 'Prova 1783820763934862800', 'Tabela Smoke Tarifas', 'Auditoria A1 1783874622', 'Tabela Reverif C2 3914', 'Tabela Smoke 19355', 'teste', 'Tabela Guincho 2026'"
+        },
+        {
+          "defeito": "Filtros 'Escopo' e 'Categoria' sao decorativos: nenhum registro discrimina",
+          "quantos": "15 de 15 com scope NULL e vehicle_category NULL",
+          "evidencia": "select count(*) filter (where scope is null), count(*) filter (where vehicle_category is null) from price_tables where tenant_id='a79aedf2-...' -> 15, 15. Clicar em 'Convenio publico' ou 'Motocicleta' devolve lista vazia"
+        },
+        {
+          "defeito": "RN-TAR-01 VIOLADA no dado atual: 4 tabelas publicadas no mesmo bucket (scope NULL, categoria NULL), janelas sobrepostas (todas a partir de 2026-07-10, sem fim) e compartilhando a mesma chave (service NULL, customer NULL). A aplicacao recusaria publicar esse estado (422 tariff_overlap); o seed gravou direto em SQL e furou a guarda",
+          "quantos": "6 pares em conflito",
+          "evidencia": "consulta de pares no bucket com janela sobreposta e chave (service_catalog_id, customer_id) compartilhada -> 6 pares distintos (Leve x Pesado, Leve x Patio, Leve x Aurora, Pesado x Patio, Pesado x Aurora, Patio x Aurora), todos pela chave '|' (ambos NULL)"
+        },
+        {
+          "defeito": "Tabela em rascunho E inativa ao mesmo tempo — a linha mostra chip 'Rascunho' + chip 'Inativa', e as 3 tarifas dela tambem estao inativas (itemCount=0)",
+          "quantos": "1 ('Tabela Sazonal — Alta Temporada')",
+          "evidencia": "select name, status, is_active from price_tables where tenant_id='a79aedf2-...' and status='draft' and not is_active -> 1 linha"
+        },
+        {
+          "defeito": "Coluna 'Vigencia' escreve 'Sem vigencia definida'",
+          "quantos": "10 de 15 sem valid_from e sem valid_to; 15 de 15 sem valid_to",
+          "evidencia": "select count(*) from price_tables where tenant_id='a79aedf2-...' and valid_from is null and valid_to is null -> 10"
+        },
+        {
+          "defeito": "Coluna 'Versao' e constante — nenhuma tabela conta a historia de reajuste",
+          "quantos": "15 de 15 com version=1",
+          "evidencia": "select distinct version from price_tables where tenant_id='a79aedf2-...' -> {1}"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Apagar as 9 tabelas residuo de teste ('Tabela Auditoria 1783820445', 'Terminal ...', 'Editavel ...', 'Prova ...', 'Tabela Smoke Tarifas', 'Auditoria A1 1783874622', 'Tabela Reverif C2 3914', 'Tabela Smoke 19355', 'teste') com as 11 tarifas dentro delas",
+          "quantos": "9 tabelas + 11 tarifas",
+          "criterio": "apagar ANTES os 3 orcamentos void que apontam para 'Tabela Smoke 19355' (service_quotes.source_price_table_id e source_tariff_id sao RESTRICT); as tarifas caem por CASCADE junto da tabela. Por id explicito, nunca por wildcard"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Resolver 'Tabela Guincho 2026' (published, 0 itens, nome de produto)",
+          "quantos": "1",
+          "criterio": "recomendado ARQUIVAR (status='archived' e a unica transicao valida a partir de 'published' em PRICE_TABLE_STATUS_TRANSITIONS). Se o dono preferir mante-la publicada, ela PRECISA receber itens no mesmo passo — o defeito e a tabela publicada vazia, nao o nome"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Manter as 4 tabelas vivas no BUCKET LEGADO (scope NULL, vehicle_category NULL) e completar vigencia/versao/descricao",
+          "quantos": "4 ('Guincho Leve — Tabela Padrao 2026', 'Guincho Pesado — Tabela Padrao 2026', 'Patio — Custodia e Diarias 2026', 'Contrato Transportadora Aurora')",
+          "criterio": "ARMADILHA REAL: resolvePublishedPriceTableIds (src/modules/service-quotes/service-quote.service.ts) filtra fora TODA tabela com scope OU vehicle_category preenchidos — marcar essas 4 com escopo/categoria as tornaria invisiveis para Orcamento e para o Financeiro da OS. Elas ficam (NULL, NULL). Dados: valid_from='2026-01-01' e valid_to='2026-12-31' nas 3 padrao; a de contrato 2026-03-01..2027-02-28 (12 meses de contrato); version=2 nas 3 padrao (reajuste anual) e version=1 na de contrato; description em PT-BR dizendo a que se aplica"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Criar 2 tabelas ESCOPADAS para os filtros Escopo/Categoria deixarem de ser decorativos, em buckets distintos",
+          "quantos": "2",
+          "criterio": "(a) 'Convenio DETRAN-PR — Remocao e Deposito 2026': scope='PUBLIC_AGREEMENT', vehicle_category=NULL, published, vigencia 2026-01-01..2026-12-31, 5 itens (remocao, diarias por categoria, liberacao) com valores de tabela publica, abaixo dos privados. (b) 'Motocicletas — Tabela Reduzida 2026': scope=NULL, vehicle_category='MOTORCYCLE', published, 4 itens. Buckets diferentes = RN-TAR-01 satisfeita por construcao. Registrar que essas 2 NAO alimentam Orcamento por desenho (so o motor de diarias do patio, resolveTariff)"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Consertar 'Tabela Sazonal — Alta Temporada' para virar o exemplo vivo de rascunho",
+          "quantos": "1 tabela + 3 tarifas",
+          "criterio": "is_active=true, status='draft', vigencia 2026-12-15..2027-02-28, tarifas com is_active=true e servico vinculado. Fica no bucket (NULL,NULL) sem conflito porque a guarda RN-TAR-01 so olha tabelas PUBLICADAS. Da linha ao filtro 'Rascunho' e alvo a acao 'Publicar'"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Criar 1 tabela ARQUIVADA com historico real, para o filtro 'Arquivada' deixar de mostrar lixo",
+          "quantos": "1",
+          "criterio": "'Guincho Leve — Tabela Padrao 2025', version=1, vigencia 2025-01-01..2025-12-31, status='archived', 6 itens com valores ~8% abaixo dos de 2026 (conta a historia do reajuste). Tabela arquivada nao entra em findPublishedInBucket, logo nao dispara RN-TAR-01"
+        }
+      ],
+      "como_provar": "1) docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"with p as (select * from price_tables where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b') select (select count(*) from p) tabelas, (select count(*) from p where status='published' and not exists (select 1 from tariffs t where t.price_table_id=p.id and t.is_active)) publicada_vazia, (select count(*) from p where name ~ '[0-9]{5,}' or lower(name)='teste') nome_de_teste, (select count(*) from p where valid_from is null) sem_vigencia, (select count(distinct coalesce(scope,'~')||'/'||coalesce(vehicle_category,'~')) from p) buckets, (select count(distinct status) from p) status_distintos;\" — coerente quando publicada_vazia=0, nome_de_teste=0, sem_vigencia=0, buckets>=3, status_distintos=3. 2) Prova da RN-TAR-01 (hoje devolve 6, tem que devolver 0): \"with pub as (select id,name,scope,vehicle_category,valid_from,valid_to from price_tables where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and status='published' and is_active), k as (select distinct t.price_table_id pt, coalesce(t.service_catalog_id::text,'~')||'|'||coalesce(t.customer_id::text,'~') key from tariffs t where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.is_active) select count(distinct a.name||' X '||b.name) pares_em_conflito from pub a join pub b on a.id<b.id and coalesce(a.scope,'~')=coalesce(b.scope,'~') and coalesce(a.vehicle_category,'~')=coalesce(b.vehicle_category,'~') and coalesce(a.valid_from,'-infinity')<=coalesce(b.valid_to,'infinity') and coalesce(b.valid_from,'-infinity')<=coalesce(a.valid_to,'infinity') join k ka on ka.pt=a.id join k kb on kb.pt=b.id and kb.key=ka.key;\""
+    },
+    {
+      "tela": "Tarifas",
+      "rota": "/cadastros/tarifas (PermissionGuard tariffs:read) — frontend/src/modules/registry/tariffs/pages/TarifasPage.tsx",
+      "tabelas": [
+        "tariffs",
+        "price_tables (filtro e referencia)",
+        "service_catalog (rotulo da coluna Servico)",
+        "customers (rotulo da coluna Cliente)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "tariffs.tenant_id NOT NULL -> FK RESTRICT"
+        },
+        {
+          "passo": 2,
+          "entidade": "price_tables — a Tabela de Valores dona da tarifa",
+          "exigido_por": "banco",
+          "por_que": "tariffs.price_table_id NOT NULL -> FK composta (tenant_id, price_table_id) REFERENCES price_tables(tenant_id, id) ON DELETE CASCADE. O proprio modal avisa: 'Cadastre uma Tabela de Valores antes de criar tarifas — toda tarifa pertence a uma tabela'"
+        },
+        {
+          "passo": 3,
+          "entidade": "service_catalog — o SERVICO tarifado",
+          "exigido_por": "ambos",
+          "por_que": "BANCO: service_catalog_id e NULLABLE com FK composta RESTRICT — o banco ACEITA tarifa sem servico. HISTORIA: e aqui que mora o defeito citado pelo dono. Com NULL a tela imprime 'Todos os servicos' (TarifasPage.renderService) e, pior, a tarifa fica INERTE: PrismaTariffRepository.findApplicable filtra 'service_catalog_id: serviceCatalogId' por IGUALDADE EXATA, sem OR IS NULL. Tarifa com servico NULL nunca resolve preco, nunca congela orcamento, nunca lanca item financeiro"
+        },
+        {
+          "passo": 4,
+          "entidade": "customers — o CLIENTE, quando a tarifa e de contrato",
+          "exigido_por": "historia",
+          "por_que": "customer_id e NULLABLE (FK composta RESTRICT). NULL = tarifa padrao e a tela escreve 'Todos os clientes'. Mas uma tabela chamada 'Contrato Transportadora Aurora' com customer_id NULL em 4/4 itens e uma mentira: nao ha contrato de ninguem. E o desempate por cliente (pickApplicableTariff, leftSpecific) so existe se a tarifa de contrato carregar o customer_id"
+        },
+        {
+          "passo": 5,
+          "entidade": "price_table com status='published', is_active e janela de vigencia cobrindo a data",
+          "exigido_por": "historia",
+          "por_que": "resolvePublishedPriceTableIds / findPublishedInBucket so devolvem tabelas publicadas e ativas. Tarifa perfeita dentro de tabela em rascunho nao precifica nada — e a tela de Tarifas NAO mostra o status da tabela, so o filtro por tabela"
+        },
+        {
+          "passo": 6,
+          "entidade": "tarifa com valid_from/valid_to cobrindo a data e is_active=true",
+          "exigido_por": "historia",
+          "por_que": "findApplicable exige (valid_from IS NULL OR <= now) AND (valid_to IS NULL OR >= now) AND is_active. A coluna 'Vigencia' le exatamente esses campos (formatValidity)"
+        },
+        {
+          "passo": 7,
+          "entidade": "origin com significado de negocio",
+          "exigido_por": "banco",
+          "por_que": "origin e NOT NULL e obrigatorio no formulario ('Origem/tabela de referencia do preco. Ex.: Tabela DNIT 2026'). A tela imprime origin cru na coluna 'Origem' e ainda o usa no aria-label do botao Editar ('Editar tarifa {origin}')"
+        },
+        {
+          "passo": 8,
+          "entidade": "chave natural (tenant, price_table, service, customer) distinta",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE tariffs_natural_key. Como NULLs sao distintos no btree do Postgres, hoje 28 tarifas (NULL, NULL) convivem sem colidir — assim que os servicos forem vinculados, cada (tabela, servico, cliente) so pode aparecer UMA vez"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "39 tarifas no tenant demo (32 ativas). 35 de 39 com service_catalog_id NULL e 38 de 39 com customer_id NULL — a tela imprime 'Todos os servicos / Todos os clientes' em 35 linhas. 28 vieram de scripts/seed-demo-precos.mjs com origin='DEMO-PRECOS'; as outras 11 sao residuo de teste. Faixa 5,40 a 3.400,00. 9 sem vigencia, 4 sem nome. RESOLVEIS pelo motor de preco: EXATAMENTE 1 de 39 — e ela e residuo de teste (999,00, sem nome, servico 'Servico A1 1783874676', tabela 'Tabela Smoke 19355').",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where service_catalog_id is null) sem_servico, count(*) filter (where customer_id is null) sem_cliente, count(*) filter (where service_catalog_id is null and customer_id is null) sem_ambos, count(*) filter (where valid_from is null and valid_to is null) sem_vigencia, count(*) filter (where name is null) sem_nome, count(*) filter (where is_active) ativas, min(unit_price), max(unit_price) from tariffs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" (-> 39 | 35 | 38 | 35 | 9 | 4 | 32 | 5.40 | 3400.00) e, para a resolubilidade: \"select count(*) from tariffs t join price_tables p on p.id=t.price_table_id and p.tenant_id=t.tenant_id where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.is_active and p.status='published' and p.is_active and t.service_catalog_id is not null and (t.valid_from is null or t.valid_from<=now()) and (t.valid_to is null or t.valid_to>=now()) and (p.valid_from is null or p.valid_from<=now()) and (p.valid_to is null or p.valid_to>=now());\" -> 1"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "O DEFEITO CITADO PELO DONO: tarifa sem servico e sem cliente — a tela imprime 'Todos os servicos' / 'Todos os clientes' e a linha nao conta historia nenhuma",
+          "quantos": "35 de 39 linhas (28 do seed DEMO-PRECOS + 7 de teste)",
+          "evidencia": "select count(*) from tariffs where tenant_id='a79aedf2-...' and service_catalog_id is null and customer_id is null -> 35. Causa raiz: scripts/seed-demo-precos.mjs faz 'insert into tariffs (id, tenant_id, price_table_id, name, unit_price, currency, origin, rule, valid_from, status, is_active, ...)' — service_catalog_id e customer_id nao aparecem no INSERT"
+        },
+        {
+          "defeito": "AGRAVANTE invisivel na tela: tarifa com service_catalog_id NULL e INERTE — nunca resolve preco. Nao e cosmetico",
+          "quantos": "38 de 39 nao sao resolviveis; sobra 1, que e lixo de teste",
+          "evidencia": "src/modules/tariffs/tariff-prisma.repository.ts linha 76 — 'service_catalog_id: serviceCatalogId' no where de findApplicable, sem OR IS NULL. Consequencia: POST /api/v1/service-quotes com price_source='tariff' devolve 422 tariff_not_found_for_service para qualquer servico de negocio do tenant"
+        },
+        {
+          "defeito": "AGRAVANTE 2 — trava a criacao de OS: work-order.service.assertServiceHasApplicableTariff exige tarifa resolvivel sempre que a OS tem cliente E servico (422 'O servico selecionado nao tem tarifa vigente na tabela de valores deste cliente')",
+          "quantos": "16 de 17 OS estao sem service_catalog_id — sintoma consistente com esse bloqueio",
+          "evidencia": "select count(*) from work_orders where tenant_id='a79aedf2-...' and service_catalog_id is null -> 16; a unica OS com servico+cliente (OS-000017) usa 'Servico A1 1783874676', justamente o unico servico com tarifa resolvivel"
+        },
+        {
+          "defeito": "Marca tecnica de seed vazando na coluna de negocio 'Origem' (e no aria-label 'Editar tarifa DEMO-PRECOS' de 28 botoes) — viola CLAUDE.md 11.2 (nada de andaime de dev na UI)",
+          "quantos": "28 de 39",
+          "evidencia": "select count(*) from tariffs where tenant_id='a79aedf2-...' and origin='DEMO-PRECOS' -> 28. O helper do campo diz o esperado: 'Origem/tabela de referencia do preco. Ex.: Tabela DNIT 2026'"
+        },
+        {
+          "defeito": "Origens de teste cruas na mesma coluna",
+          "quantos": "11 de 39",
+          "evidencia": "origin in ('smoke','dup','dupicata','patched','insp-default','tabela base','contrato-base','tabela-padrao','contrato-cliente','validador-1783875242','Tabela DNIT 2026 rev')"
+        },
+        {
+          "defeito": "Nome de teste no campo name (usado na busca da tela e como descricao da linha do orcamento)",
+          "quantos": "6 de 39",
+          "evidencia": "4 linhas com name='[auditoria inspetor - ignorar]', 1 'Avulsa 1783874622', 1 'Reverif C2 vigencia'"
+        },
+        {
+          "defeito": "Encoding quebrado gravado no banco",
+          "quantos": "1",
+          "evidencia": "tariffs.name = 'Sa?da padr?o' (tabela 'Tabela Smoke Tarifas') — bytes invalidos onde deveria ler 'Saida padrao'"
+        },
+        {
+          "defeito": "Tarifa sem nome — sem coluna Nome na tela, a linha perde qualquer identidade",
+          "quantos": "4 de 39",
+          "evidencia": "select count(*) from tariffs where tenant_id='a79aedf2-...' and name is null -> 4"
+        },
+        {
+          "defeito": "A tabela 'Contrato Transportadora Aurora' existe mas o cliente 'Transportadora Aurora' NAO existe no cadastro — o contrato nao e de ninguem",
+          "quantos": "4 tarifas de contrato orfas; 0 clientes com esse nome",
+          "evidencia": "select count(*) from customers where tenant_id='a79aedf2-...' and name ilike '%aurora%' -> 0; os 2 unicos clientes do tenant sao 'Particular' (sem documento) e 'Industria Alfa Ltda'"
+        },
+        {
+          "defeito": "Coluna 'Vigencia' escreve 'Sem vigencia definida' e o campo status carrega conceito que nao e do item",
+          "quantos": "9 sem vigencia; 28 com status='published' num campo de texto livre cujo default do modulo e 'active' (publicacao e da Tabela de Valores)",
+          "evidencia": "select status, count(*) from tariffs where tenant_id='a79aedf2-...' group by 1 -> {published:28, active:11}"
+        },
+        {
+          "defeito": "Item arquivado na tabela errada",
+          "quantos": "1",
+          "evidencia": "'Icamento com guincho pesado' (R$ 640,00) esta dentro de 'Guincho Leve — Tabela Padrao 2026'"
+        },
+        {
+          "defeito": "A tela NAO tem coluna 'Nome' — com servico e cliente nulos, 28 linhas ficam visualmente identicas (mesma Origem, mesma Vigencia, mesmo chip 'Ativa'), diferindo so pelo valor",
+          "quantos": "28 linhas indistinguiveis",
+          "evidencia": "colunas de TarifasPage: Servico, Cliente, Valor unitario, Origem, Vigencia, Ativa, Acoes — 'name' so entra na busca (filterTariffs) e no aria-label de fallback"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "PRE-REQUISITO fora desta area, mas a cadeia nao fecha sem ele: cadastrar 'Transportadora Aurora Ltda' (e mais 3 PJ) em customers",
+          "quantos": "4 clientes (1 obrigatorio para esta tela)",
+          "criterio": "'Transportadora Aurora Ltda' (CNPJ plausivel, Curitiba/PR), 'Seguradora Iguacu S.A.' (Londrina/PR), 'Locadora Araucaria Ltda' (Curitiba/PR), 'DETRAN-PR — Coordenadoria de Veiculos' (Curitiba/PR). Sem o registro em customers, tariffs.customer_id nao pode ser gravado (FK RESTRICT). Coordenar com o agente da area de Clientes"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Apagar as 11 tarifas residuo de teste (e antes os 3 orcamentos void que travam a exclusao por FK RESTRICT)",
+          "quantos": "11 tarifas",
+          "criterio": "por id explicito, nunca por wildcard. Ordem: service_quote_items -> service_quotes (source_tariff_id RESTRICT) -> tariffs. Tarifas de tabelas apagadas caem por CASCADE"
+        },
+        {
+          "ordem": 3,
+          "o_que": "VINCULAR SERVICO nas 25 tarifas vivas das 4 tabelas reais — um service_catalog_id por linha, casando pelo nome que a tarifa ja tem",
+          "quantos": "25 (8 Leve + 6 Pesado + 7 Patio + 4 Aurora)",
+          "criterio": "mapeamento 1:1 pelo nome ja gravado ('Quilometro rodado — urbano' -> servico homonimo, etc). Regra dura: dentro da MESMA tabela dois itens nao podem apontar para o mesmo servico (UNIQUE tariffs_natural_key). Mover 'Icamento com guincho pesado' da tabela Leve para a Pesado"
+        },
+        {
+          "ordem": 4,
+          "o_que": "VINCULAR CLIENTE nas 4 tarifas de 'Contrato Transportadora Aurora'",
+          "quantos": "4",
+          "criterio": "customer_id = Transportadora Aurora Ltda nas 4, cada uma apontando para o MESMO servico da tarifa padrao correspondente: 'Saida de guincho — contrato' R$152,00 vs padrao R$180,00; 'Quilometro rodado — contrato' R$5,40 vs R$6,50; 'Hora parada — contrato' R$78,00 vs R$95,00; 'Diaria de patio — contrato' R$34,00 vs R$42,00. E esse par que faz pickApplicableTariff escolher o preco de contrato para a Aurora e o padrao para os demais — a historia do desconto nasce dai. Como a chave inclui o cliente ('svc|aurora' vs 'svc|'), NAO dispara RN-TAR-01"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Criar tarifas por-cliente adicionais para o desempate ter mais de um caso",
+          "quantos": "3",
+          "criterio": "'Seguradora Iguacu S.A.' com 'Saida de guincho — perimetro urbano' a R$165,00 e 'Quilometro rodado — rodovia' a R$7,90, dentro de nova tabela 'Contrato Seguradora Iguacu 2026' (published, bucket NULL/NULL, vigencia 2026-02-01..2027-01-31); + 'Locadora Araucaria' com 'Diaria de veiculo leve' a R$38,00. Chaves distintas -> sem conflito de sobreposicao"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Reescrever origin com valor de negocio",
+          "quantos": "28 (todas as DEMO-PRECOS) + as novas",
+          "criterio": "'Tabela propria 2026' nas 3 padrao; 'Contrato Aurora no 2026-014' nas 4 do contrato; 'Contrato Iguacu no 2026-031'; 'Convenio DETRAN-PR no 03/2026' nas do convenio; 'Resolucao CONTRAN 1025/2026' nas de custodia/deposito do patio. Maximo 120 caracteres, PT-BR acentuado, nunca sigla tecnica nem marca de seed"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Preencher name em toda tarifa e normalizar status",
+          "quantos": "todas (~28 finais)",
+          "criterio": "name = a descricao curta que ja existe ('Quilometro rodado — urbano') — e o texto que service-quote-item usa como descricao da linha quando o corpo nao manda description. status='active' em todas (default do modulo); 'published' e conceito da Tabela de Valores, nao do item"
+        },
+        {
+          "ordem": 8,
+          "o_que": "Preencher vigencia coerente com a tabela dona e criar vigencia encerrada para a coluna mostrar as 3 formas",
+          "quantos": "todas ganham valid_from; ~3 ganham valid_to no passado",
+          "criterio": "padrao: valid_from = valid_from da tabela dona, valid_to NULL -> 'A partir de 01/01/2026'. Reajuste: 3 tarifas de 2025 com valid_from='2025-01-01' e valid_to='2025-12-31' -> faixa fechada. Nunca valid_to < valid_from (o validador do front rejeita e o dado ficaria inconsistente com a UI)"
+        },
+        {
+          "ordem": 9,
+          "o_que": "Distribuir a situacao para o filtro Ativas/Inativas ter as duas listas",
+          "quantos": "~34 ativas, ~4 inativas",
+          "criterio": "as inativas sao as de 2025, substituidas pelo reajuste — inativa com motivo, nao inativa por acaso"
+        }
+      ],
+      "como_provar": "1) Coerencia de vinculo (o defeito do dono): docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where service_catalog_id is null) sem_servico, count(*) filter (where origin='DEMO-PRECOS' or origin ~ '[0-9]{5,}') origem_tecnica, count(*) filter (where name is null) sem_nome, count(*) filter (where customer_id is not null) por_cliente from tariffs where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" — coerente quando sem_servico=0, origem_tecnica=0, sem_nome=0, por_cliente>=6. 2) Prova de que o motor de preco enxerga (a que importa): \"select count(*) resolviveis from tariffs t join price_tables p on p.id=t.price_table_id and p.tenant_id=t.tenant_id where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.is_active and p.status='published' and p.is_active and p.scope is null and p.vehicle_category is null and t.service_catalog_id is not null and (t.valid_from is null or t.valid_from<=now()) and (t.valid_to is null or t.valid_to>=now()) and (p.valid_from is null or p.valid_from<=now()) and (p.valid_to is null or p.valid_to>=now());\" — hoje devolve 1; coerente quando >=20. 3) Prova do desconto por contrato: \"select s.name servico, max(case when t.customer_id is null then t.unit_price end) padrao, max(case when c.name ilike 'Transportadora Aurora%' then t.unit_price end) aurora from tariffs t join service_catalog s on s.id=t.service_catalog_id left join customers c on c.id=t.customer_id where t.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and t.is_active group by 1 having max(case when c.name ilike 'Transportadora Aurora%' then t.unit_price end) is not null;\" — toda linha tem que ter aurora < padrao. 4) Na tela: abrir /cadastros/tarifas e conferir que nenhuma linha mostra 'Todos os servicos', que a coluna Origem nao mostra 'DEMO-PRECOS' e que o seletor 'Tabela de Valores' troca a lista."
+    },
+    {
+      "tela": "Orcamentos (lista) + aba 'Orcamento' do Hub da OS",
+      "rota": "/operations/quotes (PermissionGuard service_quotes:read) — frontend/src/modules/registry/service-quotes/pages/OrcamentosPage.tsx; e /work-orders/:workOrderId aba Orcamento — frontend/src/modules/work-orders/components/tabs/QuoteTab.tsx",
+      "tabelas": [
+        "service_quotes",
+        "service_quote_items",
+        "service_catalog",
+        "customers",
+        "work_orders",
+        "tariffs e price_tables (proveniencia do preco congelado)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "tenants (demo)",
+          "exigido_por": "banco",
+          "por_que": "service_quotes.tenant_id NOT NULL -> FK RESTRICT"
+        },
+        {
+          "passo": 2,
+          "entidade": "service_catalog — o servico orcado",
+          "exigido_por": "banco",
+          "por_que": "service_quotes.service_catalog_id NOT NULL -> FK composta (tenant_id, service_catalog_id) RESTRICT. E a UNICA referencia obrigatoria do orcamento"
+        },
+        {
+          "passo": 3,
+          "entidade": "price_table PUBLICADA no bucket legado + tarifa vigente ligada ao servico",
+          "exigido_por": "historia",
+          "por_que": "com price_source='tariff', ServiceQuoteService.create chama resolveApplicableTariff e sem tarifa lanca 422 tariff_not_found_for_service. resolvePublishedPriceTableIds so aceita tabelas com scope IS NULL E vehicle_category IS NULL (limit 100). Sem essa cadeia so sobra o caminho 'manual' — que a tela rotula 'Manual' no chip Origem, um orcamento que confessa nao ter base de preco"
+        },
+        {
+          "passo": 4,
+          "entidade": "customers — o cliente do orcamento",
+          "exigido_por": "historia",
+          "por_que": "customer_id e NULLABLE (FK RESTRICT). Com NULL a coluna 'Cliente' imprime '—'. E o cliente participa da resolucao de preco (tarifa por-cliente vence a padrao), entao orcamento sem cliente nunca exercita o desconto de contrato"
+        },
+        {
+          "passo": 5,
+          "entidade": "work_orders — a OS a que o orcamento pertence",
+          "exigido_por": "historia",
+          "por_que": "work_order_id e NULLABLE (FK RESTRICT); NULL faz a coluna 'OS' imprimir 'Avulso'. A aba Orcamento do Hub filtra por work_order_id — orcamento sem OS nunca aparece la ('Nenhum orcamento para esta OS'). Trava do banco: UNIQUE PARCIAL service_quotes_active_natural_key (tenant_id, work_order_id, service_catalog_id) WHERE is_active AND status<>'void' — no maximo 1 orcamento vivo por (OS, servico)"
+        },
+        {
+          "passo": 6,
+          "entidade": "source_tariff_id e source_price_table_id coerentes com frozen_unit_price / frozen_currency",
+          "exigido_por": "historia",
+          "por_que": "sao proveniencia (nunca relidos para recalcular). Se frozen_unit_price nao for igual ao unit_price da tarifa apontada, o orcamento mente sobre a propria origem e o chip 'Origem: Tarifa' vira decoracao"
+        },
+        {
+          "passo": 7,
+          "entidade": "number, issued_at e valid_until",
+          "exigido_por": "historia",
+          "por_que": "o card do Hub da OS titula pelo number ('Orcamento sem numero' quando NULL) e mostra 'Validade: —' quando valid_until e NULL. E approve() lanca 422 quote_expired quando valid_until ja passou — sem validade, o estado 'vencido' nunca existe na demonstracao"
+        },
+        {
+          "passo": 8,
+          "entidade": "service_quote_items — as LINHAS do orcamento",
+          "exigido_por": "historia",
+          "por_que": "service_quote_items.service_quote_id NOT NULL -> FK RESTRICT. O QuoteTab so desenha a tabela de linhas quando ha itens; com zero, todo orcamento aparece como um total solto sem composicao. Item com source='tariff' exige tariff_id/price_table_id e usa tariff.name como descricao"
+        },
+        {
+          "passo": 9,
+          "entidade": "created_work_order_id nos aprovados",
+          "exigido_por": "historia",
+          "por_que": "e a ancora de idempotencia do approve (um orcamento gera no maximo UMA OS). Orcamento 'Aprovado' sem created_work_order_id conta historia incompleta: aprovou e nao gerou nada"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "4 orcamentos no tenant demo: 3 'void' (residuo de teste) e 1 'approved'. ZERO linhas de orcamento (service_quote_items = 0). 4 de 4 sem number, sem issued_at e sem valid_until. 2 de 4 sem customer_id. 2 de 4 com price_source='manual'. Os 2 que apontam tarifa apontam para a tabela de teste 'Tabela Smoke 19355'. 0 orcamentos em rascunho — os botoes 'Aprovar' e 'Anular' nao tem alvo e os filtros 'Rascunho'/'Rejeitado' abrem vazios.",
+        "coerente": false,
+        "medido_com": "docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select q.id, q.number, q.status, q.price_source, q.frozen_unit_price, q.quantity, q.frozen_total, q.work_order_id is not null tem_os, q.customer_id is not null tem_cli, q.source_tariff_id is not null tem_tarifa, q.valid_until, q.created_work_order_id is not null gerou_os, q.is_active from service_quotes q where q.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' order by q.created_at;\" e \"select count(*) from service_quote_items where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" -> 0"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum orcamento tem linhas — a aba Orcamento da OS mostra so um total solto, sem composicao de preco",
+          "quantos": "0 linhas para 4 orcamentos",
+          "evidencia": "select count(*) from service_quote_items where tenant_id='a79aedf2-...' -> 0; QuoteTab so renderiza a tabela Descricao/Qtd/Valor unit. quando lineItems.length > 0"
+        },
+        {
+          "defeito": "3 dos 4 orcamentos estao 'Anulado' — a lista abre praticamente morta e os filtros Rascunho/Rejeitado nao tem nenhuma linha",
+          "quantos": "3 void, 1 approved, 0 draft, 0 rejected",
+          "evidencia": "select status, count(*) from service_quotes where tenant_id='a79aedf2-...' group by 1 -> {void:3, approved:1}"
+        },
+        {
+          "defeito": "Orcamento sem numero: o card do Hub titula 'Orcamento sem numero' e a lista nao tem identificacao",
+          "quantos": "4 de 4 com number NULL",
+          "evidencia": "select count(*) filter (where number is null) from service_quotes where tenant_id='a79aedf2-...' -> 4"
+        },
+        {
+          "defeito": "Orcamento sem validade: 'Validade: —' em todos, e o estado vencido (422 quote_expired) nunca acontece na demonstracao",
+          "quantos": "4 de 4 com valid_until NULL e issued_at NULL",
+          "evidencia": "select count(*) filter (where valid_until is null), count(*) filter (where issued_at is null) from service_quotes where tenant_id='a79aedf2-...' -> 4, 4"
+        },
+        {
+          "defeito": "Coluna 'Cliente' imprime '—'",
+          "quantos": "2 de 4 com customer_id NULL",
+          "evidencia": "select count(*) filter (where customer_id is null) from service_quotes where tenant_id='a79aedf2-...' -> 2"
+        },
+        {
+          "defeito": "Metade dos orcamentos tem origem 'Manual' — o chip anuncia que nao houve base tarifaria, que e justamente o que o modulo existe para garantir",
+          "quantos": "2 de 4 com price_source='manual'",
+          "evidencia": "select price_source, count(*) from service_quotes where tenant_id='a79aedf2-...' group by 1 -> {tariff:2, manual:2}"
+        },
+        {
+          "defeito": "Proveniencia apontando para dado de teste",
+          "quantos": "2 de 2 com origem 'Tarifa'",
+          "evidencia": "select pt.name from service_quotes q join price_tables pt on pt.id=q.source_price_table_id where q.tenant_id='a79aedf2-...' -> 'Tabela Smoke 19355' (2x)"
+        },
+        {
+          "defeito": "Hoje e IMPOSSIVEL criar orcamento novo pela tela com origem 'Tarifa': nao existe tarifa resolvivel para nenhum servico de negocio",
+          "quantos": "1 unica combinacao resolveria, e e servico de teste",
+          "evidencia": "consulta de resolubilidade da tela de Tarifas -> 1, apontando 'Servico A1 1783874676'. Qualquer POST /api/v1/service-quotes com price_source='tariff' para 'Guincho ate 200km' devolve 422 tariff_not_found_for_service"
+        },
+        {
+          "defeito": "O unico orcamento aprovado nao tem rastro completo",
+          "quantos": "1",
+          "evidencia": "9987f9b8 tem created_work_order_id preenchido mas price_source='manual', number NULL, valid_until NULL e 0 linhas"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Apagar os 3 orcamentos void residuo de teste (libera tambem a exclusao da 'Tabela Smoke 19355')",
+          "quantos": "3",
+          "criterio": "por id explicito; apagar service_quote_items antes (nao ha nenhum hoje). Fazer ANTES do passo 1 do plano de Tabelas de Valores, porque source_price_table_id e source_tariff_id sao FK RESTRICT"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Completar o unico orcamento aprovado que sobra (9987f9b8) em vez de apaga-lo",
+          "quantos": "1",
+          "criterio": "number='ORC-2026-0007', issued_at = data de criacao, valid_until = issued_at + 15 dias, customer_id ja existente preservado, price_source convertido para 'tariff' apontando a tarifa real de 'Saida de guincho — perimetro urbano' com frozen_unit_price = unit_price dessa tarifa. created_work_order_id ja aponta OS real — preservar"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar orcamentos AVULSOS (sem OS) em rascunho — a porta de entrada comercial",
+          "quantos": "4",
+          "criterio": "work_order_id NULL (coluna OS mostra 'Avulso'), customer_id preenchido (Transportadora Aurora, Seguradora Iguacu, Locadora Araucaria, Industria Alfa), price_source='tariff' com source_tariff_id/source_price_table_id da tarifa que de fato resolve para aquele (servico, cliente). number 'ORC-2026-0001' a 'ORC-2026-0004', issued_at entre 05/08 e 20/08/2026, valid_until = issued_at + 15 dias. quantity plausivel pela regra da tarifa: 1 para 'por acionamento', 38 a 210 para 'por km', 1,5 a 4 para 'por hora', 3 a 22 para 'por dia'. frozen_total = round(frozen_unit_price * quantity, 2)"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Criar orcamentos LIGADOS A OS, para a aba Orcamento do Hub deixar de dizer 'Nenhum orcamento para esta OS'",
+          "quantos": "5",
+          "criterio": "work_order_id apontando 5 OS reais (OS-000010 remocao pos-colisao, OS-000011 carreta atolada, OS-000007 resgate em ribanceira, OS-000015 recolhimento DETRAN, OS-000014 transporte de maquinario), com service_catalog_id COMPATIVEL com o titulo da OS e customer_id igual ao da OS. Trava: UNIQUE PARCIAL (tenant_id, work_order_id, service_catalog_id) WHERE is_active AND status<>'void' — um orcamento vivo por (OS, servico)"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Distribuir as situacoes para os 5 chips do filtro terem lista",
+          "quantos": "10 orcamentos finais: 4 draft, 3 approved, 1 rejected, 1 void, 1 draft VENCIDO",
+          "criterio": "os 3 approved com created_work_order_id preenchido apontando OS reais e distintas (uma OS por orcamento). O 'rejected' com notes dizendo o motivo em PT-BR ('Cliente optou por guincho proprio'). O draft VENCIDO com valid_until='2026-08-10' (passado) — unico jeito de a tela exercitar o 422 quote_expired ao clicar em Aprovar. O void com is_active=false (delete logico do modulo)"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Criar as LINHAS de cada orcamento (service_quote_items) — sem isso a aba Orcamento nunca desenha a composicao",
+          "quantos": "26 a 32 linhas (2 a 4 por orcamento)",
+          "criterio": "composicao realista de guincho: 1 linha 'por acionamento' (saida) + 1 'por km' (quantity = distancia real da OS) + eventualmente 1 'por hora' (espera) + no maximo 1 linha manual por orcamento ('Pedagio BR-376 (2 pracas)' R$24,60 ou 'Estadia adicional em patio'). source='tariff' com tariff_id e price_table_id preenchidos e unit_amount = unit_price da tarifa apontada; description = o name da tarifa. total_amount = round(unit_amount*quantity,2). currency='BRL'. deleted_at NULL. client_action_id NULL (a idempotencia e do app, nao do seed)"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Fechar a aritmetica entre cabecalho e linhas",
+          "quantos": "todos os orcamentos com linhas",
+          "criterio": "frozen_total do cabecalho = soma dos total_amount das linhas nao-deletadas. O QuoteTab mostra o 'Total' do cabecalho ACIMA da tabela de linhas; se divergirem, a tela se contradiz sozinha. Para orcamento multi-item, gravar frozen_unit_price = total das linhas com quantity=1, ou ajustar a linha principal e somar o resto"
+        },
+        {
+          "ordem": 8,
+          "o_que": "Deixar share_token NULL em todos",
+          "quantos": "10",
+          "criterio": "o token e segredo (regra 2.8: nunca em payload publico nem em auditoria); quem gera e a acao Compartilhar da tela. Semear token nao acrescenta historia e cria material sensivel a toa"
+        }
+      ],
+      "como_provar": "1) Cobertura e vinculo: docker exec -i $PG psql -U postgres -d erp_techsolutions -c \"select count(*) total, count(*) filter (where number is null) sem_numero, count(*) filter (where valid_until is null) sem_validade, count(*) filter (where customer_id is null) sem_cliente, count(*) filter (where price_source='manual') manuais, count(distinct status) situacoes, count(*) filter (where status='approved' and created_work_order_id is null) aprovado_sem_os, count(*) filter (where work_order_id is not null) ligados_a_os from service_quotes where tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b';\" — coerente quando sem_numero=0, sem_validade=0, sem_cliente=0, manuais=0, situacoes>=4, aprovado_sem_os=0, ligados_a_os>=5. 2) Toda linha existe e fecha com o cabecalho (tem que devolver 0 linhas): \"select q.number, q.frozen_total cabecalho, round(sum(i.total_amount),2) linhas, count(i.id) qtd_linhas from service_quotes q left join service_quote_items i on i.service_quote_id=q.id and i.deleted_at is null where q.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and q.status<>'void' group by 1,2 having count(i.id)=0 or round(sum(i.total_amount),2) <> q.frozen_total;\" 3) Proveniencia honesta (tem que devolver 0): \"select count(*) mentirosos from service_quotes q join tariffs t on t.id=q.source_tariff_id where q.tenant_id='a79aedf2-44c8-478f-a6ce-cf6248a16f2b' and q.frozen_unit_price <> t.unit_price;\" 4) Na tela: abrir /operations/quotes, clicar nos 5 chips de Situacao (todos com linha) e abrir /work-orders/<id de OS orcada> na aba Orcamento conferindo numero, validade, total e a tabela de linhas."
+    }
+  ]
+}

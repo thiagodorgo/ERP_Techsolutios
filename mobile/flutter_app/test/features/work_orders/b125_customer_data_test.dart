@@ -163,7 +163,7 @@ void main() {
       expect(find.text('Telefone'), findsNothing);
     });
 
-    testWidgets('4. Strings vazias sao tratadas como ausentes (offline-safe)', (
+    testWidgets('4. Strings vazias são tratadas como ausentes (offline-safe)', (
       t,
     ) async {
       await t.pumpWidget(

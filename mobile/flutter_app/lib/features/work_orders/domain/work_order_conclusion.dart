@@ -28,7 +28,7 @@ enum EvidenceSyncState {
     EvidenceSyncState.stored => 'Armazenado',
     EvidenceSyncState.rejected => 'Recusado',
     EvidenceSyncState.scanFailed => 'Falha na leitura',
-    EvidenceSyncState.pendingReview => 'Em revisao',
+    EvidenceSyncState.pendingReview => 'Em revisão',
     EvidenceSyncState.networkError => 'Erro de rede',
     EvidenceSyncState.timeout => 'Tempo esgotado',
   };
@@ -115,7 +115,7 @@ class WorkOrderConclusionSummary {
     return WorkOrderConclusionSummary(
       service: wo.title,
       customer: wo.customerName,
-      assetLabel: isTow ? 'Veiculo' : 'Equipamento',
+      assetLabel: isTow ? 'Veículo' : 'Equipamento',
       assetValue: wo.code,
       materialsCount: materialsCount,
       commissionCents: computeCommissionCents(

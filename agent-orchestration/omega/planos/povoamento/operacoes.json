@@ -1,0 +1,1414 @@
+{
+  "area": "Operacoes",
+  "telas": [
+    {
+      "tela": "Ordens de Servico — lista",
+      "rota": "/work-orders (WorkOrdersPage, gate work_orders:read)",
+      "tabelas": [
+        "work_orders",
+        "users",
+        "customers",
+        "service_catalog",
+        "vehicles",
+        "teams"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "users (tecnicos e gestor de despacho, com nome limpo)",
+          "exigido_por": "ambos",
+          "por_que": "FK work_orders_tenant_id_assigned_user_id_fkey e _created_by_fkey (RESTRICT). Historia: a coluna TECNICO da lista so mostra 'Atribuido' quando assigned_operator_id existe; e os nomes de hoje carregam o papel tecnico entre parenteses ('Carla Mendes (Tecnico de Campo)'), o que viola CLAUDE.md §3 assim que qualquer tela resolver o nome"
+        },
+        {
+          "passo": 2,
+          "entidade": "customers",
+          "exigido_por": "historia",
+          "por_que": "customer_id e NULLABLE no banco, mas com ele nulo a celula CLIENTE/SERVICO renderiza o chip ambar 'Sem cliente vinculado' + botao 'Vincular' (WorkOrdersPage.tsx:378). O snapshot customer_name salva a APARENCIA na lista, mas o detalhe delata: sem customer_id o cartao 'Cadastros vinculados' perde o chip 'Vinculado ao cadastro'"
+        },
+        {
+          "passo": 3,
+          "entidade": "service_catalog",
+          "exigido_por": "historia",
+          "por_que": "service_catalog_id NULLABLE; sem ele o cartao 'Cadastros vinculados' escreve 'Sem servico vinculado' e some o preco base (WorkOrderRegistryLinksCard.tsx:88-99). E sem servico nao existe tarifa aplicavel — e o mesmo defeito das 28 tarifas orfas, um nivel acima"
+        },
+        {
+          "passo": 4,
+          "entidade": "vehicles (frota de guincho)",
+          "exigido_por": "historia",
+          "por_que": "vehicle_id NULLABLE; sem ele 'Sem viatura vinculada'. E o mapa perde os selos 'Em manutencao'/'Sem seguro' do pin (OperationsMapWorkOrder.vehicleId)"
+        },
+        {
+          "passo": 5,
+          "entidade": "teams + team_members",
+          "exigido_por": "historia",
+          "por_que": "team_id NULLABLE; sem ele 'Sem equipe vinculada'. FK teams(tenant_id,id) RESTRICT quando preenchido"
+        },
+        {
+          "passo": 6,
+          "entidade": "work_orders",
+          "exigido_por": "banco",
+          "por_que": "CHECK work_orders_status_check (open|assigned|accepted|on_route|on_site|in_progress|paused|completed|cancelled|rejected), CHECK work_orders_priority_check (low|medium|high|urgent), UNIQUE (tenant_id, code), CHECK de faixa em service_latitude/longitude"
+        },
+        {
+          "passo": 7,
+          "entidade": "work_order_events (created + uma linha por transicao)",
+          "exigido_por": "historia",
+          "por_que": "A lista deriva 'Atrasadas' de scheduled_for x status; a aba Logs do detalhe le esta tabela. Hoje 17/17 OS tem SO work_order_created com to_status='open' — uma OS 'completed' cuja unica linha de historia diz 'aberta' e uma mentira visivel"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "17 OS no tenant demo. Vinculos preenchidos: cliente 2/17, servico 1/17, viatura 2/17, equipe 1/17, checklist 2/17, coordenada 1/17, sla_due_at 0/17, quilometragem 0/17. Tecnico (assigned_user_id) 17/17, mas assigned_operator_id — a coluna que a lista realmente le para mostrar 'Atribuido' — so 2/17. Status: 11 completed, 2 in_progress, 1 assigned, 1 on_site, 1 on_route, 1 open.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select count(*) total, count(customer_id) com_cliente, count(service_catalog_id) com_servico, count(vehicle_id) com_viatura, count(team_id) com_equipe, count(assigned_operator_id) com_operator_id, count(assigned_user_id) com_user_id, count(checklist_id) com_checklist, count(service_latitude) com_coordenada, count(sla_due_at) com_sla, count(mileage_start) com_km from work_orders where tenant_id='$T'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "OS sem servico vinculado — o mesmo defeito das 28 tarifas, um nivel acima",
+          "quantos": "16 de 17",
+          "evidencia": "select code from work_orders where tenant_id='<demo>' and service_catalog_id is null; retorna OS-000003..OS-000016 + OS-2026-0001/0002. No detalhe: 'Sem servico vinculado'"
+        },
+        {
+          "defeito": "OS sem cliente no CADASTRO (so o snapshot de texto)",
+          "quantos": "15 de 17",
+          "evidencia": "customer_id null em 15 linhas, mas customer_name preenchido em 15 ('Seguradora Horizonte', 'DETRAN/PR'...). Ou seja: existem 13 clientes citados por nome que nao existem na tabela customers (que tem 2 linhas: 'Particular' e 'Industria Alfa Ltda')"
+        },
+        {
+          "defeito": "Zero eventos de mudanca de status — a linha do tempo nao acompanha o status",
+          "quantos": "17 de 17 OS",
+          "evidencia": "select count(*) from work_order_events where tenant_id='<demo>' and event_type like '%status%' => 0. Os 22 eventos existentes sao 15 work_order_created (to_status='open') e 7 work_order_comment"
+        },
+        {
+          "defeito": "Carimbos de data contradizem o proprio status (started_at so e gravado em in_progress; arrived_at em on_site)",
+          "quantos": "3 OS",
+          "evidencia": "OS-000017 status=on_route com started_at='26-08-24 00:10' (impossivel: on_route e anterior a in_progress). OS-000016 status=on_site com started_at 23:10 e arrived_at 01:10 — chegou DEPOIS de comecar. OS-000015 in_progress com arrived_at 2h apos started_at"
+        },
+        {
+          "defeito": "Cadencia mecanica: toda OS avanca exatamente de 1 em 1 hora, sempre no minuto :10",
+          "quantos": "14 de 17",
+          "evidencia": "started/arrived/completed de OS-000003 = 19:10 / 20:10 / 21:10; OS-000004 = 04:10 / 05:10 / 06:10; e assim por diante. Nenhuma operacao de guincho tem esse relogio"
+        },
+        {
+          "defeito": "Comentario com marcador de teste de PII exposto na timeline da OS",
+          "quantos": "1 (OS-000010) + 6 comentarios de teste",
+          "evidencia": "message = 'PII-MARKER-4900-cliente-telefone-secreto que NAO p...'; e ainda 'Comentario de validacao Omega3b', 'segundo comentario', 'comentario operador', 'comentario tecnico'"
+        },
+        {
+          "defeito": "Mensagens do dominio sem acentuacao (§11.3)",
+          "quantos": "todas as 15 linhas de work_order_created",
+          "evidencia": "message = 'Ordem de servico criada.' (falta o cedilha/acento). Mesmo padrao em field_dispatch_events: 'Despacho operacional criado.'"
+        },
+        {
+          "defeito": "Duas OS legadas em Sao Paulo/SP numa operacao chamada 'Guinchos Parana'",
+          "quantos": "2 (OS-2026-0001, OS-2026-0002)",
+          "evidencia": "service_city='São Paulo', service_state='SP'; OS-2026-0002 sem cliente, sem endereco, sem agenda e titulo generico 'Vistoria de frota'"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "SANEAR o legado: apagar OS-2026-0001 e OS-2026-0002 (Sao Paulo, sem vinculo) e o comentario com o marcador PII-MARKER-4900; renomear os usuarios tirando o papel do nome ('Carla Mendes (Tecnico de Campo)' -> 'Carla Mendes')",
+          "quantos": "2 OS removidas, 7 usuarios renomeados, 7 comentarios de teste removidos",
+          "criterio": "Nenhuma OS pode citar UF diferente de PR. Nome de pessoa nunca carrega o papel tecnico (CLAUDE.md §3). A remocao das 2 OS cascateia work_order_events/attachments/dispatches (ON DELETE CASCADE) — conferir antes que nenhum financial_title/impound_process aponte para elas (hoje: nenhum)"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Reescrever os 15 nomes de cliente que hoje so existem como texto (Seguradora Horizonte, DETRAN/PR, Transportadora Aurora, Log&Co, Construtora Meridiano...) como linhas REAIS em customers, e religar work_orders.customer_id",
+          "quantos": "~24 clientes (13 recuperados do snapshot + 11 novos)",
+          "criterio": "Mix realista do Parana: 6 seguradoras/assistencias (Porto Seguro, Tokio Marine, Assistencia 24h Ipiranga...), 4 orgaos (DETRAN/PR, PRF 4a Delegacia, Guarda Municipal de Curitiba, Policia Militar/PR), 10 empresas (transportadoras, frigorificos, construtoras), 4 pessoas fisicas. CNPJ/CPF com digito verificador valido, telefone com DDD real do PR (41 Curitiba, 42 Ponta Grossa, 43 Londrina, 44 Maringa, 45 Cascavel). customer_name/document/phone da OS = copia FIEL da linha do cadastro (o snapshot e a fonte da verdade do cartao de vinculos)"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Popular service_catalog com o catalogo real de uma operacao de guincho + patio e apagar as 2 linhas de teste ('Servico A1 1783874676', 'SemTarifa 14250')",
+          "quantos": "10 servicos",
+          "criterio": "Guincho leve ate 50km (R$ 280, 90min, requires_destination=true) · Guincho leve 51-200km (R$ 990, 180min, destino) · Guincho pesado/carreta (R$ 2.400, 300min, destino) · Reboque de motocicleta (R$ 180, 60min, destino) · Socorro mecanico no local (R$ 220, 60min, sem destino) · Socorro eletrico/bateria (R$ 150, 45min) · Troca de pneu (R$ 160, 45min) · Desencalhe/resgate (R$ 1.350, 240min) · Remocao a patio por determinacao de autoridade (R$ 420, 120min, destino) · Transferencia entre patios (R$ 310, 150min, destino). category em {Particular, Seguradora, Autoridade, Interno}; service_type em {reboque, socorro, remocao, transferencia}. base_price coerente com a tarifa que o agente de Cadastros vai vincular — nenhum servico pode ficar sem tarifa"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Substituir a frota FLT-0001..0003 por viaturas de guincho com placa Mercosul do Parana",
+          "quantos": "8 viaturas",
+          "criterio": "3 plataformas leves (Iveco Daily 35-150, Mercedes Accelo 815, VW Delivery 9.170), 2 guinchos pesados (Scania P310, VW Constellation 24.280 com lanca), 1 munck, 1 moto-reboque, 1 utilitario de apoio. Placas no padrao Mercosul PR (ex.: BAB1C23, BCD4E56) — nunca sequencial FLT-000N. type em {Plataforma, Guincho pesado, Munck, Moto-reboque, Apoio}; year 2018-2025; 6 active, 1 maintenance, 1 inactive (para o selo 'Em manutencao' do pin do mapa ter o que mostrar)"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Recriar as OS do periodo de demonstracao com a cadeia COMPLETA",
+          "quantos": "64 OS cobrindo os ultimos 45 dias",
+          "criterio": "Distribuicao por status espelhando uma operacao viva: 42 completed, 1 cancelled (com financial_cancellation_decision='keep' — o CHECK work_orders_cancelled_decision_check exige), 1 rejected, 6 open (fila), 4 assigned, 3 on_route, 3 on_site, 4 in_progress. TODAS com customer_id + service_catalog_id + vehicle_id + team_id + assigned_user_id + assigned_operator_id. Prioridade: 6 urgent, 14 high, 32 medium, 12 low. Cidades: 38 Curitiba/Regiao Metropolitana (Sao Jose dos Pinhais, Colombo, Araucaria, Pinhais, Fazenda Rio Grande), 8 Ponta Grossa, 6 Londrina, 5 Maringa, 4 Cascavel, 3 litoral (Guaratuba/Paranagua na BR-277 e BR-376). Coordenada REAL (service_latitude/longitude com service_geocoded_at e geocode_source='seed_manual') em TODAS as nao-terminais — hoje so 1 de 17 tem. destination_* preenchido nos servicos com requires_destination=true. mileage_start/end nas completed (faixa 12-480 km, mileage_source='app'). sla_due_at = scheduled_for + duracao estimada do servico; 4 das nao-terminais deliberadamente vencidas para o countdown do mapa mostrar 'vencido ha'"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Escrever a linha do tempo real: um work_order_event por transicao do FSM, respeitando WORK_ORDER_STATUS_TRANSITIONS (open->assigned->accepted->on_route->on_site->in_progress->completed)",
+          "quantos": "~340 eventos (created + 5 a 6 transicoes por OS concluida)",
+          "criterio": "event_type: 'work_order_created' na abertura, 'work_order_status_changed' nas intermediarias, 'work_order_completed' no fim, 'work_order_cancelled' no cancelamento. from_status/to_status coerentes com o passo anterior. actor_user_id = despachante nas 2 primeiras transicoes, tecnico nas de campo. message em PT-BR acentuado ('Ordem de servico criada.' -> 'Ordem de serviço criada.'). Os carimbos da OS derivam dos eventos, nao o contrario: arrived_at = instante do evento on_site, started_at = do in_progress, completed_at = do completed. Intervalos plausiveis e IRREGULARES: aceite 2-11min, deslocamento 14-52min (mais longo no interior), no local 8-25min, atendimento 22-95min. Nunca a cadencia de 1h no minuto :10"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Comentarios de operacao em work_order_comments (a aba Comentarios hoje tem 0 linhas)",
+          "quantos": "~70 comentarios em 34 OS",
+          "criterio": "Frases de operacao real: 'Cliente reagendou para as 14h — confirmado por telefone.', 'Veiculo com rodas travadas, foi necessario patins.', 'Acesso pela marginal; portaria libera ate as 18h.'. author_user_id alternando despachante/tecnico/gestor. created_at dentro da janela de vida da OS"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from work_orders where tenant_id='$T' and (customer_id is null or service_catalog_id is null or vehicle_id is null or team_id is null or assigned_operator_id is null)) as os_com_vinculo_faltando, (select count(*) from work_orders where tenant_id='$T' and service_state<>'PR') as os_fora_do_parana, (select count(*) from work_orders w where w.tenant_id='$T' and w.status<>'open' and not exists (select 1 from work_order_events e where e.work_order_id=w.id and e.to_status=w.status)) as os_sem_evento_do_status_atual, (select count(*) from work_orders where tenant_id='$T' and status in ('open','assigned','accepted','on_route') and started_at is not null) as started_at_antes_da_hora, (select count(*) from work_orders where tenant_id='$T' and arrived_at > started_at) as chegou_depois_de_comecar\" — os cinco numeros tem que voltar 0. Na tela: abrir /work-orders e confirmar que nenhuma linha traz o chip ambar 'Sem cliente vinculado'."
+    },
+    {
+      "tela": "Nova Ordem de Servico",
+      "rota": "/work-orders/new (WorkOrderCreatePage + WorkOrderForm, gate work_orders:create)",
+      "tabelas": [
+        "customers",
+        "vehicles",
+        "teams",
+        "service_catalog",
+        "checklist_templates",
+        "work_orders"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "customers ativos",
+          "exigido_por": "historia",
+          "por_que": "O card 'Vinculos de cadastro' e um <Select> alimentado por customers (WorkOrderForm.tsx:194-203). Com 2 linhas — uma delas chamada so 'Particular', sem documento nem telefone — o formulario nao consegue contar historia nenhuma"
+        },
+        {
+          "passo": 2,
+          "entidade": "vehicles ativos",
+          "exigido_por": "historia",
+          "por_que": "Select 'Viatura' renderiza `${plate} - ${model}` (linha 213). Com FLT-0001/0002/0003 o despachante escolhe entre tres placas ficticias, duas das quais nem sao guincho"
+        },
+        {
+          "passo": 3,
+          "entidade": "teams ativas",
+          "exigido_por": "historia",
+          "por_que": "Select 'Equipe' (linha 218). Hoje 2 equipes, e a lideranca da Equipe Sul (Rafael Mendes) nao esta entre os membros dela"
+        },
+        {
+          "passo": 4,
+          "entidade": "service_catalog ativo com base_price",
+          "exigido_por": "historia",
+          "por_que": "Select 'Servico' (linha 230). Das 3 linhas de hoje, 2 sao lixo de teste com nome gerado ('Servico A1 1783874676', 'SemTarifa 14250')"
+        },
+        {
+          "passo": 5,
+          "entidade": "checklist_templates publicados e NAO deletados",
+          "exigido_por": "historia",
+          "por_que": "A selecao de vistoria na criacao passa por assertChecklistsPublished, que consulta listAvailableTemplates (status='published' AND deleted_at IS NULL). Hoje sobram 3, todos towing_collection — nao existe um unico modelo de ENTREGA para formar o par coleta/entrega"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "Os quatro seletores oferecem: 2 clientes (1 e a palavra 'Particular', sem documento/telefone/cidade), 3 viaturas (FLT-0001/0002/0003, so 1 e guincho), 2 equipes, 3 servicos (2 sao lixo de teste). Vistorias selecionaveis: 3 modelos publicados e vivos, 0 de entrega.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select 'customers', count(*) from customers where tenant_id='$T' and is_active union all select 'vehicles', count(*) from vehicles where tenant_id='$T' and is_active union all select 'teams', count(*) from teams where tenant_id='$T' and status='active' union all select 'service_catalog', count(*) from service_catalog where tenant_id='$T' and is_active union all select 'templates_publicados_vivos', count(*) from checklist_templates where tenant_id='$T' and status='published' and deleted_at is null\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Servicos com nome gerado por teste no seletor de producao",
+          "quantos": "2 de 3",
+          "evidencia": "service_catalog.name = 'Servico A1 1783874676' (sem category, sem base_price, sem duracao) e 'SemTarifa 14250' (nome que descreve um caso de teste, nao um servico)"
+        },
+        {
+          "defeito": "Cliente sem identidade: uma linha chamada 'Particular'",
+          "quantos": "1 de 2",
+          "evidencia": "customers: name='Particular', document='', phone='', city='', state='' — o seletor oferece um cliente que nao tem como ser cobrado"
+        },
+        {
+          "defeito": "O unico servico real tem o nome sem acento",
+          "quantos": "1",
+          "evidencia": "name='Guincho ate 200km' (deveria ser 'ate' com acento — 'até'), violando §11.3"
+        },
+        {
+          "defeito": "Frota sem viatura de guincho pesado e com placas ficticias sequenciais",
+          "quantos": "3 de 3",
+          "evidencia": "FLT-0001 Fiat Strada (Utilitario), FLT-0002 VW Saveiro (Utilitario), FLT-0003 Iveco Daily (Guincho). Nenhuma placa no padrao Mercosul"
+        },
+        {
+          "defeito": "Equipe cujo lider nao e membro dela",
+          "quantos": "1 de 2",
+          "evidencia": "teams 'Equipe Sul' leader_user_id = Rafael Mendes; team_members da Equipe Sul = Ana Beatriz Rocha e Camila Nunes. Rafael nao aparece"
+        },
+        {
+          "defeito": "Nenhum modelo de vistoria de ENTREGA — o par coleta/entrega e impossivel",
+          "quantos": "0 de 3",
+          "evidencia": "select count(*) from checklist_templates where tenant_id='<demo>' and type='towing_delivery' and deleted_at is null => 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Ver ordens 2, 3 e 4 da tela 'Ordens de Servico — lista' (clientes, catalogo de servicos, frota) — sao a mesma cadeia",
+          "quantos": "24 clientes, 10 servicos, 8 viaturas",
+          "criterio": "Idem"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Reorganizar equipes por base operacional, com lideranca coerente",
+          "quantos": "5 equipes, 18 vinculos em team_members",
+          "criterio": "Equipe Curitiba Centro, Equipe Curitiba CIC, Equipe Regiao Metropolitana, Equipe Ponta Grossa, Equipe Norte Pioneiro. O leader_user_id SEMPRE tambem tem linha em team_members com role_in_team='lider'; demais membros com role_in_team em {'guincheiro','auxiliar'}. 3 a 4 pessoas por equipe"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar operator_profiles para TODOS os tecnicos de campo (hoje os 2 perfis existentes pertencem ao Admin e ao Gestor, e compartilham a mesma CNH)",
+          "quantos": "12 perfis",
+          "criterio": "cnh_number distinto e com 11 digitos por pessoa (nunca o repetido 98765432100), cnh_category em {C, D, E} (guincho pesado exige E), cnh_expires_at espalhado entre +3 e +48 meses (2 vencendo em menos de 60 dias, para a tela de frota ter alerta real), tracking_consent=true com tracking_consent_at carimbado, phone com DDD do PR, is_active=true em 11 e false em 1 (afastado)"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Publicar o par de modelos de vistoria que o dominio exige",
+          "quantos": "6 modelos publicados",
+          "criterio": "'Vistoria de Coleta — Guincho' (towing_collection) e 'Vistoria de Entrega — Guincho' (towing_delivery) formando o par comparavel; 'Vistoria de Entrada — Patio' (towing_collection, ja existe, corrigir acentos); 'Vistoria de Saida — Patio' (towing_delivery); 'Evidencia de Sinistro — Seguradora' (technical_evidence); 'Remocao por Autoridade — Termo' (custom). Cada um com 6 a 11 componentes usando o vocabulario REAL do CHECK: vehicle_selector, photo_upload (frente/traseira/lateral esquerda/lateral direita/painel/hodometro), damage_map, observation, signature, acknowledgement. Labels em PT-BR ACENTUADO — hoje ha 'Tipo de veiculo' e 'Foto obrigatoria' sem acento"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from service_catalog where tenant_id='$T' and is_active and (base_price is null or category is null or service_type is null or name ~ '[0-9]{4,}')) as servicos_incompletos_ou_de_teste, (select count(*) from customers where tenant_id='$T' and is_active and (document is null or document='' or phone is null or phone='')) as clientes_sem_identidade, (select count(*) from vehicles where tenant_id='$T' and plate like 'FLT-%') as placas_ficticias, (select count(*) from teams t where t.tenant_id='$T' and t.leader_user_id is not null and not exists (select 1 from team_members m where m.team_id=t.id and m.user_id=t.leader_user_id)) as lider_fora_da_equipe, (select count(*) from checklist_templates where tenant_id='$T' and type='towing_delivery' and status='published' and deleted_at is null) as modelos_de_entrega\" — os quatro primeiros devem voltar 0 e o ultimo >= 2. Na tela: abrir /work-orders/new e conferir que os quatro <Select> oferecem opcoes com nome de negocio."
+    },
+    {
+      "tela": "Detalhe da Ordem de Servico (hub de 9 abas)",
+      "rota": "/work-orders/:workOrderId (WorkOrderDetailPage, gate work_orders:read)",
+      "tabelas": [
+        "work_orders",
+        "work_order_events",
+        "work_order_comments",
+        "work_order_attachments",
+        "work_order_financial_items",
+        "service_quotes",
+        "service_quote_items",
+        "field_dispatches",
+        "work_order_checklists",
+        "checklist_templates",
+        "customers",
+        "vehicles",
+        "teams",
+        "service_catalog"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "work_orders com os 4 vinculos de cadastro",
+          "exigido_por": "historia",
+          "por_que": "O cartao 'Cadastros vinculados' (WorkOrderRegistryLinksCard) tem 4 linhas e cada vinculo nulo vira literalmente 'Sem cliente vinculado' / 'Sem viatura vinculada' / 'Sem equipe vinculada' / 'Sem servico vinculado'. Hoje 15 das 17 OS mostram as quatro frases de uma vez"
+        },
+        {
+          "passo": 2,
+          "entidade": "work_order_events completos",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Logs' (LogsTab). Sem evento de transicao, a aba de uma OS concluida exibe uma unica linha dizendo que ela foi aberta"
+        },
+        {
+          "passo": 3,
+          "entidade": "work_order_comments",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Comentarios' (CommentsTab) le work_order_comments — que tem ZERO linhas no tenant demo, apesar de existirem 7 eventos de tipo work_order_comment na outra tabela"
+        },
+        {
+          "passo": 4,
+          "entidade": "work_order_attachments com arquivos plausiveis",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Arquivos' (AttachmentsTab). Os 7 anexos de hoje sao PNGs de 12 a 75 bytes chamados tiny.png/pixel.png/px.png, repetidos 3x cada"
+        },
+        {
+          "passo": 5,
+          "entidade": "work_order_financial_items",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Financeiro' (gate work_order_financials:read). ZERO linhas no demo: toda OS concluida abre a aba financeira vazia, sem servico cobrado, sem km, sem pedagio"
+        },
+        {
+          "passo": 6,
+          "entidade": "service_quotes + service_quote_items",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Orcamento'. Ha 4 orcamentos e ZERO itens — orcamento sem item e exatamente o defeito da tarifa sem servico"
+        },
+        {
+          "passo": 7,
+          "entidade": "mileage_start / mileage_end / mileage_source",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Quilometragem'. 0 de 17 preenchidos; a aba abre vazia em toda OS concluida"
+        },
+        {
+          "passo": 8,
+          "entidade": "service_latitude/longitude",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Mapa' (MapTab). 1 de 17 tem coordenada — e a unica que tem esta em Sao Paulo"
+        },
+        {
+          "passo": 9,
+          "entidade": "field_dispatches da OS",
+          "exigido_por": "historia",
+          "por_que": "Aba 'Mobile' importa listDispatchesFromApi. Sem despacho, a aba nao mostra nada do aparelho do guincheiro"
+        },
+        {
+          "passo": 10,
+          "entidade": "work_order_checklists (linha viva) + checklist_snapshot",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE PARCIAL work_order_checklists_unique (tenant_id, work_order_id, checklist_id, role) WHERE removed_at IS NULL; CHECK _provenance_chk ((checklist_source='resolved') = (rule_id IS NOT NULL)); CHECK _role_chk (collection|delivery|generic); CHECK _removal_chk ((removed_at IS NULL)=(removed_by IS NULL)); FK RESTRICT para checklist_templates"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "Por OS: 0 comentarios (tabela vazia), 7 anexos de teste concentrados em 3 OS, 0 itens financeiros, 4 orcamentos com 0 itens, 0 quilometragens, 1 coordenada, 0 linhas em work_order_checklists (nas 17 OS). 2 OS tem checklist_id legado, e uma delas aponta para um modelo soft-deletado chamado 'HACKEADO'.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select 'comentarios', count(*) from work_order_comments where tenant_id='$T' union all select 'anexos', count(*) from work_order_attachments where tenant_id='$T' union all select 'itens_financeiros', count(*) from work_order_financial_items where tenant_id='$T' union all select 'orcamentos', count(*) from service_quotes where tenant_id='$T' union all select 'itens_de_orcamento', count(*) from service_quote_items where tenant_id='$T' union all select 'linhas_de_vistoria', count(*) from work_order_checklists where tenant_id='$T'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Uma OS aponta para um modelo de vistoria que e lixo de teste, soft-deletado, versao 99 e com ZERO campos",
+          "quantos": "1 (OS-000012)",
+          "evidencia": "select w.code, t.name, t.version, t.deleted_at is not null from work_orders w join checklist_templates t on t.id=w.checklist_id where w.tenant_id='<demo>' => OS-000012 | HACKEADO | 99 | t. E work_orders.checklist_snapshot e NULL: snapshotPublishedTemplate recusa template com deleted_at, entao essa vistoria nunca poderia ir a campo"
+        },
+        {
+          "defeito": "Aba Comentarios vazia em 100% das OS",
+          "quantos": "17 de 17",
+          "evidencia": "select count(*) from work_order_comments where tenant_id='<demo>' => 0"
+        },
+        {
+          "defeito": "Aba Financeiro vazia em 100% das OS, inclusive nas 11 concluidas",
+          "quantos": "17 de 17",
+          "evidencia": "select count(*) from work_order_financial_items where tenant_id='<demo>' => 0. Onze atendimentos concluidos sem uma linha do que foi cobrado"
+        },
+        {
+          "defeito": "Orcamento que existe mas nao tem item — o gemeo exato da tarifa sem servico",
+          "quantos": "4 orcamentos, 0 itens",
+          "evidencia": "service_quotes=4 e service_quote_items=0 no tenant demo"
+        },
+        {
+          "defeito": "Anexos que sao pixels de teste, duplicados",
+          "quantos": "7 arquivos em 3 OS",
+          "evidencia": "tiny.png (12 bytes) em OS-000014; pixel.png (70 bytes) 3x em OS-000016; px.png (75 bytes) 3x em OS-000015. Uma evidencia fotografica de 12 bytes nao e evidencia"
+        },
+        {
+          "defeito": "Aba Quilometragem vazia em toda OS concluida",
+          "quantos": "17 de 17",
+          "evidencia": "mileage_start, mileage_end e mileage_source todos NULL nas 17 linhas"
+        },
+        {
+          "defeito": "Aba Mapa sem coordenada",
+          "quantos": "16 de 17",
+          "evidencia": "service_latitude preenchida so em OS-2026-0001, e com valor de Sao Paulo (-23.5465, -46.6303)"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Executar o plano da tela 'Ordens de Servico — lista' (a OS coerente e pre-requisito de todas as abas)",
+          "quantos": "64 OS",
+          "criterio": "Idem"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Apagar os 7 anexos de teste e semear evidencia fotografica plausivel nas OS de campo",
+          "quantos": "~150 anexos em 46 OS",
+          "criterio": "3 a 5 por OS de coleta: frente, traseira, lateral esquerda, lateral direita e, quando ha avaria, o detalhe. file_name no padrao 'OS-000042-frente.jpg'; mime_type image/jpeg; size_bytes entre 180.000 e 3.400.000 (foto de celular real, nunca 12 bytes); status='stored'; uploaded_by = o tecnico da OS; created_at dentro da janela em campo"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Criar os itens financeiros das OS concluidas (aba Financeiro)",
+          "quantos": "~130 itens em 42 OS",
+          "criterio": "Por OS: 1 linha do servico do catalogo (valor = base_price da linha vinculada, sem inventar preco), 1 linha de km excedente quando mileage_end - mileage_start ultrapassa a franquia do servico (R$ 3,80 a R$ 6,20 por km conforme leve/pesado), e em ~30% uma linha acessoria (patins R$ 90, guincho auxiliar R$ 240, pedagio com valor real das pracas da BR-116/BR-277, hora parada R$ 110/h). Nenhum valor redondo repetido em todas as OS"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Dar itens aos orcamentos existentes e criar novos ligados a OS abertas",
+          "quantos": "12 orcamentos com 34 itens",
+          "criterio": "Todo orcamento tem no minimo 2 itens e o total dos itens BATE com o total do cabecalho. Itens saem do mesmo service_catalog da OS — orcamento nunca cita servico que nao existe no catalogo"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Preencher quilometragem nas OS que ja foram a campo",
+          "quantos": "53 OS",
+          "criterio": "mileage_start entre 18.400 e 312.000 (hodometro da viatura, coerente com o ano do veiculo e crescente entre OS consecutivas da MESMA viatura); mileage_end = start + distancia do atendimento (12 a 480 km, correlacionada com a cidade e o servico); mileage_source='app' em 45 e 'base' em 8 (com mileage_corrected_at carimbado, para a tela mostrar o caso da correcao pela base)"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Ligar cada OS a uma vistoria via work_order_checklists (a junção que hoje tem ZERO linhas)",
+          "quantos": "~92 linhas (1 a 2 por OS de guincho)",
+          "criterio": "checklist_source='manual' e rule_id=NULL OBRIGATORIAMENTE — o CHECK _provenance_chk exige o par, e o resolvedor por regra (resolveApplicableChecklists) NAO esta ligado na raiz de composicao de producao, entao nenhuma linha pode nascer 'resolved'. role='collection' na linha de coleta (order_index=0) e 'delivery' na de entrega (order_index=1) nos servicos com destino; 'generic' nos socorros no local. added_by = o despachante. checklist_snapshot = copia JSON do template publicado NO instante do despacho (linha primaria tambem espelhada em work_orders.checklist_id/checklist_snapshot). Antes disso, religar OS-000012 de 'HACKEADO' para um modelo publicado e vivo"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Comentarios em work_order_comments (ver ordem 7 da primeira tela)",
+          "quantos": "~70",
+          "criterio": "Idem"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from work_orders w where w.tenant_id='$T' and w.status='completed' and not exists (select 1 from work_order_financial_items f where f.work_order_id=w.id)) as concluida_sem_financeiro, (select count(*) from work_orders w where w.tenant_id='$T' and w.status='completed' and w.mileage_start is null) as concluida_sem_km, (select count(*) from service_quotes q where q.tenant_id='$T' and not exists (select 1 from service_quote_items i where i.quote_id=q.id)) as orcamento_sem_item, (select count(*) from work_order_attachments where tenant_id='$T' and size_bytes < 50000) as anexo_pixel_de_teste, (select count(*) from work_orders w join checklist_templates t on t.id=w.checklist_id where w.tenant_id='$T' and (t.deleted_at is not null or t.status<>'published')) as os_apontando_para_modelo_morto, (select count(*) from work_order_checklists where tenant_id='$T' and removed_at is null) as linhas_de_vistoria_vivas\" — os cinco primeiros = 0 e o ultimo >= 90. Na tela: abrir uma OS concluida e percorrer as 9 abas sem encontrar estado vazio."
+    },
+    {
+      "tela": "Despachos",
+      "rota": "/operations/dispatches (OperationsDispatchesPage, gate field_dispatch:read)",
+      "tabelas": [
+        "field_dispatches",
+        "field_dispatch_events",
+        "work_orders",
+        "users"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "users tecnicos ativos (varios)",
+          "exigido_por": "banco",
+          "por_que": "FK field_dispatches_tenant_id_operator_user_id_fkey (RESTRICT). Historia: a coluna OPERADOR da tabela renderiza item.operatorUserId CRU (DispatchesTable.tsx:33) e o filtro monta as opcoes com o mesmo valor — se o dado nao distribuir entre pessoas, a tela vira uma lista de um nome so"
+        },
+        {
+          "passo": 2,
+          "entidade": "work_orders em status de campo",
+          "exigido_por": "banco",
+          "por_que": "FK field_dispatches_tenant_id_work_order_id_fkey (CASCADE). Historia: um despacho 'assigned' cuja OS ja esta 'completed' e uma contradicao direta — e e o estado de 6 dos 8 despachos de hoje"
+        },
+        {
+          "passo": 3,
+          "entidade": "field_dispatches com os carimbos da propria fase",
+          "exigido_por": "historia",
+          "por_que": "O painel de detalhe e a aba Mobile leem accepted_at / on_route_at / arrived_at / in_service_at / completed_at. CHECK field_dispatches_status_check limita o status a draft|assigned|accepted|on_route|arrived|in_service|completed|cancelled|reassigned|failed, mas NAO exige o carimbo — e por isso os 8 despachos de hoje estao com os cinco carimbos NULOS"
+        },
+        {
+          "passo": 4,
+          "entidade": "field_dispatch_events",
+          "exigido_por": "banco",
+          "por_que": "CHECK field_dispatch_events_event_type_check (field_dispatch_created | field_dispatch_status_changed | field_dispatch_reassigned | field_dispatch_cancelled | field_dispatch_checklist_run_failed). Historia: a timeline do despacho e o que o escritorio le; hoje ela so tem 'criado' e 'cancelado'"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "8 despachos (6 assigned, 2 cancelled). ZERO despachos com qualquer carimbo de avanco. Apenas 2 tecnicos distintos receberam despacho, e 7 dos 8 foram para a mesma pessoa. 5 das 5 OS nao-terminais que estao em campo NAO tem despacho vivo nenhum. 9 eventos de despacho ao todo (7 criados + 2 cancelados).",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select status, count(*) from field_dispatches where tenant_id='$T' group by 1; select 'com_carimbo_de_avanco', count(*) from field_dispatches where tenant_id='$T' and (accepted_at is not null or on_route_at is not null or arrived_at is not null or in_service_at is not null or completed_at is not null); select 'tecnicos_distintos', count(distinct operator_user_id) from field_dispatches where tenant_id='$T'; select 'OS_em_campo_sem_despacho_vivo', count(*) from work_orders w where w.tenant_id='$T' and w.status not in ('completed','cancelled','rejected','open') and not exists (select 1 from field_dispatches d where d.work_order_id=w.id and d.status not in ('cancelled','failed','reassigned'))\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum despacho jamais avancou — o quadro esta congelado em 'Atribuido'",
+          "quantos": "8 de 8",
+          "evidencia": "accepted_at, on_route_at, arrived_at, in_service_at e completed_at sao NULL nas 8 linhas. Os cartoes de KPI da tela mostram: Total 8 | Atribuidos 6 | Em rota 0 | Em atendimento 0 | Concluidos 0 | Cancelados 2"
+        },
+        {
+          "defeito": "Despacho 'Atribuido' de uma OS que ja foi concluida ha dias",
+          "quantos": "6 de 6 despachos vivos",
+          "evidencia": "select count(*) from field_dispatches d join work_orders w on w.id=d.work_order_id where d.tenant_id='<demo>' and d.status='assigned' and w.status='completed' => 6. Ex.: OS-000003 concluida em 26-08-17, despacho ainda 'assigned' criado em 26-07-13"
+        },
+        {
+          "defeito": "Toda a operacao de campo concentrada numa unica pessoa",
+          "quantos": "7 de 8 despachos",
+          "evidencia": "operator_user_id = Carla Mendes em 7 linhas; Marina Costa em 1. Os outros 4 tecnicos cadastrados (Ana Beatriz Rocha, Rafael Mendes, Camila Nunes, Diego Ferreira) nunca receberam um despacho"
+        },
+        {
+          "defeito": "O despacho contradiz o tecnico atribuido na propria OS",
+          "quantos": "5 de 6 despachos vivos",
+          "evidencia": "select count(*) from work_orders w join field_dispatches d on d.work_order_id=w.id and d.status<>'cancelled' where w.tenant_id='<demo>' and w.assigned_user_id is distinct from d.operator_user_id => 5. Ex.: OS-000003 esta atribuida a Ana Beatriz Rocha e despachada para Carla Mendes"
+        },
+        {
+          "defeito": "As 5 OS que estao REALMENTE em campo agora nao aparecem no quadro de despachos",
+          "quantos": "5 de 5",
+          "evidencia": "OS-000014 (assigned), OS-000015 (in_progress), OS-000016 (on_site), OS-000017 (on_route) e OS-2026-0001 (in_progress) nao tem nenhuma linha viva em field_dispatches"
+        },
+        {
+          "defeito": "Motivo de cancelamento com uma unica letra",
+          "quantos": "2 de 2 cancelados",
+          "evidencia": "field_dispatches.reason = 'q' nos dois. O painel de detalhe imprime esse 'q' como justificativa do cancelamento"
+        },
+        {
+          "defeito": "Despacho sem observacao e sem metadata",
+          "quantos": "6 sem observacao, 8 sem metadata",
+          "evidencia": "count(observation) = 2 e count(*) filter (where metadata::text <> '{}') = 0"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Um despacho por OS que saiu para campo, com o operador IGUAL ao assigned_user_id da OS",
+          "quantos": "58 despachos",
+          "criterio": "operator_user_id = work_orders.assigned_user_id da mesma linha, sem excecao. created_by = o despachante (perfil Operacao de Despacho). Distribuicao entre os 12 tecnicos: nenhum com mais de 9 nem menos de 3 no periodo de 45 dias. Ordem de criacao: sempre APOS o work_order_created e ANTES do primeiro evento de campo da OS"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Fazer cada despacho percorrer a FSM ate a fase compativel com o status da OS, carimbando os instantes",
+          "quantos": "58 despachos, ~290 carimbos",
+          "criterio": "Mapeamento OS -> despacho: OS completed => despacho completed (os 5 carimbos preenchidos); in_progress => in_service (4 carimbos); on_site => arrived (3); on_route => on_route (2); assigned => assigned (nenhum, e correto). Os carimbos do despacho batem com os da OS na mesma fase (arrived_at do despacho = arrived_at da OS, in_service_at = started_at, completed_at = completed_at). Intervalos irregulares: aceite 2-11min, rota 14-52min, no local 8-25min, atendimento 22-95min"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Escrever a timeline de cada despacho em field_dispatch_events",
+          "quantos": "~250 eventos",
+          "criterio": "1 'field_dispatch_created' (to_status='assigned') + 1 'field_dispatch_status_changed' por transicao, com from_status/to_status coerentes e actor_user_id = o tecnico nas fases de campo. message em PT-BR acentuado ('Despacho operacional criado.' -> 'Despacho operacional criado.' com cedilha/acentos corretos)"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Cenarios de excecao que a tela existe para mostrar",
+          "quantos": "4 cancelados, 2 reatribuidos, 1 falhado",
+          "criterio": "Cancelados com reason de negocio REAL (nunca 'q'): 'Cliente cancelou o chamado antes do deslocamento.', 'Veiculo removido por terceiro antes da chegada.', 'Chamado duplicado — atendido pela OS-000058.', 'Condicao de seguranca na via — atendimento suspenso pela PRF.'. Reatribuidos com reason 'Tecnico com pane na viatura; repassado para a Equipe CIC.' e evento field_dispatch_reassigned. observation preenchida em ~70% dos despachos com instrucao operacional ('Portaria libera pela rua lateral ate 18h.', 'Veiculo com rodas travadas — levar patins.')"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Deixar deliberadamente 3 OS em 'assigned' sem aceite ha mais de 20 minutos",
+          "quantos": "3",
+          "criterio": "Sao o material do alerta 'sem aceite' do console; created_at entre 25 e 90 minutos atras, accepted_at NULL. Sem isso o quadro nao tem nenhuma pendencia para o despachante agir"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from field_dispatches d join work_orders w on w.id=d.work_order_id where d.tenant_id='$T' and d.status not in ('cancelled','reassigned','failed') and w.assigned_user_id is distinct from d.operator_user_id) as despacho_contradiz_a_os, (select count(*) from field_dispatches d join work_orders w on w.id=d.work_order_id where d.tenant_id='$T' and d.status='assigned' and w.status in ('completed','cancelled','rejected')) as despacho_vivo_de_os_encerrada, (select count(*) from work_orders w where w.tenant_id='$T' and w.status not in ('open','cancelled','rejected') and not exists (select 1 from field_dispatches d where d.work_order_id=w.id)) as os_de_campo_sem_despacho, (select count(*) from field_dispatches where tenant_id='$T' and status='completed' and (accepted_at is null or on_route_at is null or arrived_at is null or in_service_at is null or completed_at is null)) as concluido_sem_carimbo, (select count(*) from field_dispatches where tenant_id='$T' and status='cancelled' and length(coalesce(reason,''))<15) as motivo_de_uma_letra, (select count(distinct operator_user_id) from field_dispatches where tenant_id='$T') as tecnicos_distintos\" — os cinco primeiros = 0 e tecnicos_distintos >= 10. Na tela: /operations/dispatches deve mostrar os KPIs Em rota, Em atendimento e Concluidos com valor maior que zero."
+    },
+    {
+      "tela": "Aprovacoes (fila + detalhe)",
+      "rota": "/approvals e /approvals/:approvalId (ApprovalsPage / ApprovalDetailPage, gate work_orders:approve ou work_orders:cancel)",
+      "tabelas": [
+        "(NENHUMA — a fila e InMemoryApprovalRepository, sem tabela no Postgres)",
+        "work_orders (a OS de origem)",
+        "notifications (a notificacao da decisao)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "work_orders em status in_progress",
+          "exigido_por": "historia",
+          "por_que": "A unica origem de aprovacao no codigo e work-order.controller.ts:113-122: ao PATCH de status resultar em 'completed', o controller chama approvals.request(). Nao existe outro produtor. Sem OS pronta para concluir, a fila nunca nasce"
+        },
+        {
+          "passo": 2,
+          "entidade": "processo do backend em execucao",
+          "exigido_por": "historia",
+          "por_que": "ApprovalService e construido sobre InMemoryApprovalRepository (approval.repository.ts:20, um Map em memoria). NAO EXISTE tabela 'approvals' no banco — conferi as 118 tabelas do schema. A fila e volatil: morre a cada restart do processo e nenhum INSERT SQL a alimenta"
+        },
+        {
+          "passo": 3,
+          "entidade": "users com nome de pessoa",
+          "exigido_por": "historia",
+          "por_que": "O cartao da fila imprime 'Solicitado por {approval.requestedBy}' em fonte monoespacada (ApprovalsPage.tsx:150) — e requestedBy e o UUID cru do usuario. Enquanto o DTO nao resolver o nome, a tela mostra um UUID; e com os nomes atuais ('Gustavo Reis (Gestor Operacional)') resolveria para um rotulo com o papel tecnico dentro"
+        },
+        {
+          "passo": 4,
+          "entidade": "notifications",
+          "exigido_por": "historia",
+          "por_que": "ApprovalService.notifyDecision cria uma notificacao com actionUrl=/work-orders/{id} ao decidir. E o unico rastro DURAVEL que sobra de uma aprovacao"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 aprovacoes — e nao por falta de dado, mas porque NAO HA ONDE GUARDAR: nenhuma das 118 tabelas do banco se chama 'approvals' ou equivalente. A fila so existe na memoria do processo Node e so e alimentada por uma transicao de OS para 'completed' feita pela API na mesma execucao. Materia-prima disponivel hoje: 4 OS em status in_progress/on_site (elegiveis a concluir).",
+        "coerente": false,
+        "medido_com": "docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select count(*) from information_schema.tables where table_schema='public' and table_name ilike '%approval%'\" => retorna 1, e a unica e 'expense_approval_steps' (fluxo de despesas, outro dominio). Complemento: T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select count(*) from work_orders where tenant_id='$T' and status in ('in_progress','on_site')\" => 3"
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "A fila de aprovacoes nao e semeavel por SQL — nao existe tabela",
+          "quantos": "1 (defeito estrutural, afeta 100% da tela)",
+          "evidencia": "src/modules/work-orders/approval.repository.ts:20 — `private readonly approvals = new Map<string, OperationalApproval>()`. approval.service.ts:145 — `const memoryRepository = new InMemoryApprovalRepository()`. Nao ha PrismaApprovalRepository em src/ (grep por 'ApprovalRepository' so encontra o de authority-release, outro dominio)"
+        },
+        {
+          "defeito": "Nenhuma OS foi concluida VIA API nesta execucao do processo, entao a fila esta vazia",
+          "quantos": "0 pendencias para 11 OS concluidas",
+          "evidencia": "As 11 OS 'completed' foram gravadas direto no banco por seed anterior (nao ha nenhum work_order_events com event_type='work_order_completed'), portanto o controller nunca rodou e nunca chamou approvals.request()"
+        },
+        {
+          "defeito": "O solicitante e exibido como UUID cru",
+          "quantos": "toda linha da fila",
+          "evidencia": "ApprovalsPage.tsx:150 renderiza {approval.requestedBy} com fontFamily 'JetBrains Mono' — o DTO carrega requested_by_user_id, nao o nome"
+        },
+        {
+          "defeito": "O id da aprovacao nao e um codigo de negocio",
+          "quantos": "todas",
+          "evidencia": "approval.repository.ts:36 — id = `approval_${randomUUID().replaceAll('-','')}`. O comentario do proprio arquivo da tela (linha 16) reconhece que falta um codigo 'APR-00xx'"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "PARAR e registrar: esta tela NAO se povoa com INSERT. Levar a decisao para a junta antes de qualquer seed",
+          "quantos": "1 decisao",
+          "criterio": "Duas saidas possiveis, e a escolha e de arquitetura, nao de dado: (a) persistir a fila (nova tabela operational_approvals + PrismaApprovalRepository) — mexe em prisma/schema.prisma e migrations, escopo proibido por §C4 sem autorizacao explicita; (b) manter volatil e provisionar por CHAMADA DE API no roteiro de demonstracao. Registrar em agent-orchestration/controle/ antes de consolidar (§A2)"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Caminho (b), executavel hoje: deixar OS prontas para conclusao e provisionar a fila por PATCH na API depois que o backend subir",
+          "quantos": "6 OS em in_progress",
+          "criterio": "Semear 6 OS com status='in_progress', started_at entre 40 e 180 minutos atras, cadeia completa (cliente + servico + viatura + equipe + tecnico + vistoria concluida + itens financeiros). Depois, no roteiro de demonstracao, executar PATCH /api/v1/work-orders/{id}/status {\\\"status\\\":\\\"completed\\\"} em 4 delas — cada chamada faz nascer uma pendencia com pendingReason 'Ordem de servico concluida e pronta para validacao operacional.' e requested_by = o ator autenticado"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Garantir que o ator que conclui tem nome de pessoa (a fila imprime o solicitante)",
+          "quantos": "3 atores",
+          "criterio": "Os PATCH devem ser feitos com sessoes de tecnicos distintos (nao todos pelo Admin Demo), para a fila mostrar 3 solicitantes diferentes e o cartao 'Pendente ha X' variar entre ~5min, ~40min e ~3h — o que exercita as tres tonalidades de formatPendingAge"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Deixar 2 pendencias com desfecho ja registrado para a trilha de notificacao existir",
+          "quantos": "2",
+          "criterio": "Uma aprovada (POST /approvals/{id}/approve com note de negocio) e uma reprovada (POST /approvals/{id}/reject com reason 'Fotos de avaria ilegiveis — refazer vistoria de entrega.'). Isso deixa 2 linhas duraveis em notifications, que sobrevivem ao restart mesmo quando a fila em memoria morre"
+        }
+      ],
+      "como_provar": "Passo 1 (banco, prova do limite): docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select table_name from information_schema.tables where table_schema='public' and table_name ilike '%approval%'\" — deve retornar SOMENTE 'expense_approval_steps', confirmando que nenhum INSERT resolve esta tela. Passo 2 (materia-prima): T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select count(*) from work_orders w where w.tenant_id='$T' and w.status='in_progress' and w.customer_id is not null and w.service_catalog_id is not null and exists (select 1 from work_order_financial_items f where f.work_order_id=w.id)\" — deve retornar >= 6. Passo 3 (na tela, apos os PATCH): abrir /approvals e conferir 4 cartoes, cada um com um solicitante diferente e o botao 'Ver ordem de servico' levando a uma OS com as 9 abas cheias."
+    },
+    {
+      "tela": "Modelos de Checklist",
+      "rota": "/administrator/checklists (TenantChecklistsPage, gate tenant_checklists:read)",
+      "tabelas": [
+        "checklist_templates",
+        "checklist_template_components"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "checklist_templates",
+          "exigido_por": "banco",
+          "por_que": "CHECK checklist_templates_type_check (towing_collection|towing_delivery|technical_evidence|custom) e CHECK checklist_templates_status_check (draft|published|inactive|archived)"
+        },
+        {
+          "passo": 2,
+          "entidade": "checklist_template_components (>= 1 por modelo)",
+          "exigido_por": "historia",
+          "por_que": "A coluna CAMPOS mostra components.length e o resumo da linha e summarizeChecklistComponents(ordered) — um modelo com 0 componentes renderiza contagem 0 e resumo vazio. E o modelo 'HACKEADO' tem exatamente isso. CHECK de type restringe o componente a {vehicle_selector, damage_map, photo_upload, observation, comparison, acknowledgement, before_after, single_choice, multi_choice, signature}"
+        },
+        {
+          "passo": 3,
+          "entidade": "published_at coerente com status='published'",
+          "exigido_por": "historia",
+          "por_que": "A coluna ATUALIZADO e o selo 'Alteracoes nao publicadas' saem da comparacao entre updated_at e published_at (hasChecklistPendingChanges). Sem published_at o selo mente"
+        },
+        {
+          "passo": 4,
+          "entidade": "deleted_at NULL nos modelos que devem aparecer",
+          "exigido_por": "historia",
+          "por_que": "PrismaChecklistRepository.listTemplates (linha 84) filtra SO por status<>'archived' e NAO filtra deleted_at — entao todo modelo soft-deletado continua listado nesta tela. E o que faz 14 registros de lixo aparecerem hoje"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "18 modelos listados na tela. Desses, 14 estao soft-deletados (deleted_at preenchido) e mesmo assim aparecem; 15 tem nome de teste ('Novo modelo' x14 e 'HACKEADO'); apenas 3 sao modelos reais publicados e vivos; 0 sao do tipo entrega (towing_delivery). 37 componentes no total, dos quais so 11 pertencem a modelos vivos.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select 'listados_na_tela', count(*) from checklist_templates where tenant_id='$T' and status<>'archived'; select 'soft_deletados_ainda_listados', count(*) from checklist_templates where tenant_id='$T' and status<>'archived' and deleted_at is not null; select 'nome_de_teste', count(*) from checklist_templates where tenant_id='$T' and (name ilike 'novo modelo%' or name='HACKEADO'); select 'publicados_e_vivos', count(*) from checklist_templates where tenant_id='$T' and status='published' and deleted_at is null; select 'tipo_entrega', count(*) from checklist_templates where tenant_id='$T' and type='towing_delivery' and deleted_at is null\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "A tela lista 14 modelos apagados como se estivessem vivos (listTemplates nao filtra deleted_at)",
+          "quantos": "14 de 18",
+          "evidencia": "select name, status, deleted_at is not null from checklist_templates where tenant_id='<demo>' and status<>'archived' and deleted_at is not null => 13 linhas 'Novo modelo' + 'HACKEADO'. O card de KPI 'Rascunhos' conta 14, e 13 deles sao lixo"
+        },
+        {
+          "defeito": "Modelo com nome de ataque de teste, versao 99, publicado e com ZERO campos",
+          "quantos": "1",
+          "evidencia": "name='HACKEADO', type='technical_evidence', status='published', version=99, deleted_at preenchido, 0 componentes. E ainda esta referenciado por OS-000012.checklist_id"
+        },
+        {
+          "defeito": "Treze modelos com o nome padrao do builder, criados e abandonados",
+          "quantos": "14 (13 'Novo modelo' + 1 'Novo modelo X Y Z')",
+          "evidencia": "Todos type='towing_collection', status='draft', version=1, exatamente 2 componentes cada ('Seletor de veiculo' + 'Foto'). O 'Novo modelo X Y Z' nem soft-deletado esta — e a linha viva mais recente da lista"
+        },
+        {
+          "defeito": "Modelo com UUID fixo de teste, visivel na URL do editor",
+          "quantos": "1",
+          "evidencia": "checklist_templates.id = '11111111-2222-4333-8444-555555555555' ('Checklist de Coleta — Guincho'). A rota /administrator/checklists/11111111-2222-4333-8444-555555555555 expoe o padrao"
+        },
+        {
+          "defeito": "Rotulos de campo sem acentuacao (§11.3)",
+          "quantos": "4 de 11 componentes vivos",
+          "evidencia": "'Tipo de veiculo' (deveria ser 'veículo'), 'Foto obrigatoria' ('obrigatória'), 'Seletor de veiculo', 'Foto frontal' ok mas o modelo 'Inspeção do Guincho — Saída' tem um unico campo"
+        },
+        {
+          "defeito": "Nenhum modelo de ENTREGA — a comparacao coleta x entrega, que e prova juridica do estado do veiculo, e impossivel",
+          "quantos": "0 de 3 vivos",
+          "evidencia": "Todos os 3 modelos vivos sao type='towing_collection'"
+        },
+        {
+          "defeito": "Modelos rasos demais para uma vistoria de guincho",
+          "quantos": "2 de 3",
+          "evidencia": "'Checklist de Coleta — Guincho' tem 2 campos e 'Inspeção do Guincho — Saída' tem 1. Nenhum tem damage_map, signature ou acknowledgement — os tres componentes que sustentam a prova"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Purgar o lixo do builder: remover as 14 linhas soft-deletadas e o 'Novo modelo X Y Z'",
+          "quantos": "15 modelos + 30 componentes",
+          "criterio": "Antes de apagar, checar as FK RESTRICT: checklist_runs.template_id e work_orders.checklist_id. HACKEADO tem 0 runs mas E referenciado por OS-000012 — religar aquela OS primeiro. Os 13 'Novo modelo' tem 0 runs cada, seguros. Alternativa mais conservadora: em vez de DELETE, mover para status='archived' (a tela ja filtra archived) — preserva historico e limpa a tela na mesma escrita"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Renomear e completar os 3 modelos reais que sobram, com acentuacao correta",
+          "quantos": "3 modelos, +14 componentes",
+          "criterio": "'Checklist de Coleta — Guincho' -> 'Vistoria de Coleta — Guincho', com 9 campos: vehicle_selector 'Tipo de veículo' (required), photo_upload x5 'Foto — Frente/Traseira/Lateral esquerda/Lateral direita/Painel e hodômetro' (required), damage_map 'Mapa de avarias', observation 'Observações do técnico', signature 'Assinatura do cliente' (required). 'Inspeção do Guincho — Saída' ganha 5 campos de conferencia da viatura. 'Vistoria de Entrada — Pátio' ja tem 6 campos coerentes — so corrigir acentos e acrescentar signature + acknowledgement"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Publicar os modelos que faltam para o dominio fechar",
+          "quantos": "4 modelos novos, ~34 componentes",
+          "criterio": "'Vistoria de Entrega — Guincho' (towing_delivery, espelho campo a campo da coleta — e o par que alimenta a tela de comparacao); 'Vistoria de Saída — Pátio' (towing_delivery); 'Evidência de Sinistro — Seguradora' (technical_evidence, com before_after e comparison); 'Remoção por Autoridade — Termo' (custom, com single_choice do orgao requisitante, photo_upload da placa e signature do agente). component_key em snake_case ASCII estavel; label em PT-BR acentuado; order_index sequencial a partir de 0; required=true nas fotos e na assinatura"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Deixar 2 modelos em rascunho e 1 com alteracao nao publicada, para os 4 cards de KPI terem valor real",
+          "quantos": "3",
+          "criterio": "1 rascunho novo em elaboracao ('Vistoria de Motocicleta — Coleta') e 1 modelo inativado ('Vistoria de Coleta — Guincho v1' legado, status='inactive'). No modelo com alteracao pendente, updated_at > published_at por algumas horas — e o que acende o selo 'Alteracoes nao publicadas'. Nunca deixar o card 'Alteracoes nao publicadas' em 0 e tambem nunca em numero absurdo"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from checklist_templates where tenant_id='$T' and status<>'archived' and deleted_at is not null) as apagado_ainda_listado, (select count(*) from checklist_templates where tenant_id='$T' and status<>'archived' and (name ilike 'novo modelo%' or name='HACKEADO' or name ~ '[0-9]{4,}')) as nome_de_teste, (select count(*) from checklist_templates t where t.tenant_id='$T' and t.status='published' and t.deleted_at is null and (select count(*) from checklist_template_components c where c.template_id=t.id) < 4) as modelo_publicado_raso, (select count(*) from checklist_templates where tenant_id='$T' and status='published' and deleted_at is null and published_at is null) as publicado_sem_data, (select count(*) from checklist_template_components c join checklist_templates t on t.id=c.template_id where c.tenant_id='$T' and t.deleted_at is null and c.label ~ '(veiculo|obrigatoria|Saida|Observacoes|Traseira$)') as rotulo_sem_acento, (select count(*) from checklist_templates where tenant_id='$T' and type='towing_delivery' and status='published' and deleted_at is null) as modelos_de_entrega\" — os cinco primeiros = 0 e modelos_de_entrega >= 2. Na tela: /administrator/checklists nao pode exibir nenhuma linha chamada 'Novo modelo' nem 'HACKEADO'."
+    },
+    {
+      "tela": "Editor do modelo de checklist",
+      "rota": "/administrator/checklists/:checklistId (ChecklistEditorPage, gate tenant_checklists:read)",
+      "tabelas": [
+        "checklist_templates",
+        "checklist_template_components",
+        "checklist_run_answers"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "checklist_templates com id deep-linkavel",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, id); a rota abre por GET /tenant/checklists/:id, independente da lista"
+        },
+        {
+          "passo": 2,
+          "entidade": "checklist_template_components com component_key unico por modelo",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE (tenant_id, template_id, component_key). Reusar a chave dentro do mesmo modelo e recusado pelo banco"
+        },
+        {
+          "passo": 3,
+          "entidade": "config / validation_rules / visibility_rules",
+          "exigido_por": "banco",
+          "por_que": "As tres colunas sao JSON NOT NULL. Um seed que as deixe de fora quebra no INSERT; um seed que grave '{}' em todas deixa o editor sem nenhuma regra para mostrar"
+        },
+        {
+          "passo": 4,
+          "entidade": "checklist_run_answers (o que trava a remocao de campo)",
+          "exigido_por": "banco",
+          "por_que": "FK checklist_run_answers_tenant_id_component_id_fkey e RESTRICT. Um campo JA RESPONDIDO nao pode ser removido — o servico traduz o P2003 para linguagem de negocio. Sem resposta nenhuma, o editor nunca exercita essa trava"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "37 componentes no tenant, mas so 11 em modelos vivos, distribuidos em 4 modelos (2 + 1 + 2 + 6). 151 respostas existem, porem nenhuma delas pertence a um componente dos modelos de guincho ligados a OS — as respostas estao nas 75 execucoes de patio. config/validation_rules/visibility_rules: precisam ser inspecionados por modelo antes de reescrever.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select t.name, c.component_key, c.type, c.label, c.required, c.order_index from checklist_template_components c join checklist_templates t on t.id=c.template_id where c.tenant_id='$T' and t.deleted_at is null order by t.name, c.order_index\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Modelo publicado com um unico campo",
+          "quantos": "1",
+          "evidencia": "'Inspeção do Guincho — Saída' (v2, published) tem exatamente 1 componente: foto_frente / photo_upload / 'Foto frontal'"
+        },
+        {
+          "defeito": "Nenhum modelo usa damage_map, signature, acknowledgement, comparison ou before_after — 5 dos 10 tipos de campo do CHECK nunca foram exercitados",
+          "quantos": "0 de 11 componentes vivos",
+          "evidencia": "select distinct type from checklist_template_components c join checklist_templates t on t.id=c.template_id where c.tenant_id='<demo>' and t.deleted_at is null => apenas vehicle_selector, photo_upload, observation"
+        },
+        {
+          "defeito": "Rotulos com component_key gerado pelo builder",
+          "quantos": "2",
+          "evidencia": "'Novo modelo X Y Z' tem vehicle_selector_1 e photo_upload_2 — chaves com sufixo numerico de auto-incremento do editor"
+        },
+        {
+          "defeito": "Nenhum campo do editor esta protegido por resposta — a trava de remocao nunca aparece",
+          "quantos": "0 componentes com resposta ligada a OS",
+          "evidencia": "As 151 respostas apontam para componentes de 'Vistoria de Entrada — Pátio' e 'Checklist de Coleta — Guincho' via execucoes de patio; nenhum campo de modelo de guincho ligado a OS tem resposta"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Executar as ordens 2 e 3 da tela 'Modelos de Checklist' (os modelos completos com os 10 tipos de campo)",
+          "quantos": "7 modelos, ~55 componentes",
+          "criterio": "Idem, com atencao a: component_key em snake_case ASCII estavel e sem sufixo numerico automatico ('foto_frente', 'mapa_avarias', 'assinatura_cliente'); UNIQUE (tenant_id, template_id, component_key) respeitado"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Preencher config, validation_rules e visibility_rules com regras que valem a pena olhar no editor",
+          "quantos": "~55 componentes",
+          "criterio": "photo_upload: config {maxFiles: 4, allowGallery: false} e validation_rules {required: true, minFiles: 1}. damage_map: config com a silhueta do veiculo. single_choice: config.options com o vocabulario real ('DETRAN/PR','PRF','Guarda Municipal','Policia Militar/PR'). visibility_rules exercitando pelo menos 2 dependencias reais (o campo 'Detalhe da avaria' so aparece se 'Ha avaria' = sim). Nunca '{}' em todos"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Garantir que alguns campos ja tenham resposta, para o editor exibir a recusa de remocao em linguagem de negocio",
+          "quantos": "~18 campos protegidos",
+          "criterio": "Sao consequencia natural do plano de execucoes (tela 'Execucao de checklist'): todo campo required dos modelos de coleta usados nas OS concluidas tera checklist_run_answers apontando para ele. Deliberadamente deixar 2 campos NAO obrigatorios sem nenhuma resposta, para o editor tambem exercitar o caminho em que a remocao e permitida"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(distinct c.type) from checklist_template_components c join checklist_templates t on t.id=c.template_id where c.tenant_id='$T' and t.deleted_at is null) as tipos_de_campo_usados, (select count(*) from checklist_template_components c join checklist_templates t on t.id=c.template_id where c.tenant_id='$T' and t.deleted_at is null and c.component_key ~ '_[0-9]+$') as chaves_geradas_pelo_builder, (select count(*) from checklist_template_components c join checklist_templates t on t.id=c.template_id where c.tenant_id='$T' and t.deleted_at is null and c.config::text='{}' and c.validation_rules::text='{}' and c.visibility_rules::text='{}') as campos_sem_nenhuma_regra, (select count(distinct a.component_id) from checklist_run_answers a where a.tenant_id='$T') as campos_com_resposta\" — tipos_de_campo_usados >= 7, chaves_geradas_pelo_builder = 0, campos_sem_nenhuma_regra = 0, campos_com_resposta >= 15. Na tela: abrir o editor de 'Vistoria de Coleta — Guincho' e tentar remover um campo ja respondido — deve recusar com frase de negocio, nao com erro do banco."
+    },
+    {
+      "tela": "Checklists — execucao (lista de modelos disponiveis)",
+      "rota": "/operations/checklists (ChecklistRunsPage, gate checklist_runs:read ou :create)",
+      "tabelas": [
+        "checklist_templates",
+        "checklist_template_components"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "checklist_templates com status='published' E deleted_at IS NULL",
+          "exigido_por": "historia",
+          "por_que": "A tela chama GET /mobile/checklists/available -> listAvailableTemplates -> listPublishedTemplates, que filtra status='published' AND deleted_at IS NULL (checklist-prisma.repository.ts:107-113). Modelo em rascunho ou apagado simplesmente nao aparece aqui — ao contrario da tela de administracao"
+        },
+        {
+          "passo": 2,
+          "entidade": "checklist_template_components com order_index",
+          "exigido_por": "historia",
+          "por_que": "O cartao mostra a contagem de campos e o tipo; um modelo publicado com 1 campo vira um cartao que promete uma vistoria e entrega uma foto"
+        },
+        {
+          "passo": 3,
+          "entidade": "description do modelo",
+          "exigido_por": "historia",
+          "por_que": "O filtro de busca da tela procura em [name, description, type]. description nula reduz a busca ao nome"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "3 modelos aparecem nesta tela (os publicados e vivos): 'Checklist de Coleta — Guincho' (2 campos), 'Inspeção do Guincho — Saída' (1 campo), 'Vistoria de Entrada — Pátio' (6 campos). Todos do tipo towing_collection, ou seja, os tres cartoes exibem o MESMO rotulo 'Guincho — Coleta'.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select t.name, t.type, t.description, t.version, (select count(*) from checklist_template_components c where c.template_id=t.id) campos from checklist_templates t where t.tenant_id='$T' and t.status='published' and t.deleted_at is null order by t.name\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Os tres cartoes tem o mesmo rotulo de tipo",
+          "quantos": "3 de 3",
+          "evidencia": "type='towing_collection' nos tres -> checklistTypeLabel devolve 'Guincho — Coleta' para todos. A tela nao consegue distinguir coleta de entrega nem de evidencia"
+        },
+        {
+          "defeito": "Modelo publicado com 1 campo aparece na lista de execucao",
+          "quantos": "1",
+          "evidencia": "'Inspeção do Guincho — Saída' v2 com um unico photo_upload"
+        },
+        {
+          "defeito": "Descricao ausente nos modelos",
+          "quantos": "a verificar por modelo, mas a busca depende dela",
+          "evidencia": "description e nulavel e a tela usa item.description ?? '' no filtro — sem descricao a busca so casa pelo nome"
+        },
+        {
+          "defeito": "Nome de modelo com 'Checklist' (termo tecnico) em vez de 'Vistoria'",
+          "quantos": "1",
+          "evidencia": "'Checklist de Coleta — Guincho'. §3 pede linguagem de negocio; o protótipo do dono usa 'Vistoria'"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Executar as ordens 1 a 4 da tela 'Modelos de Checklist' — esta tela e um recorte daquela (so os publicados e vivos)",
+          "quantos": "6 modelos publicados",
+          "criterio": "Idem. Consequencia direta aqui: os cartoes passam a exibir 4 rotulos distintos (Guincho — Coleta, Guincho — Entrega, Evidencia tecnica, Personalizado)"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Escrever a description de cada modelo publicado",
+          "quantos": "6",
+          "criterio": "Uma frase que diz QUANDO usar, em linguagem de operacao: 'Aplicar antes de içar o veículo no local do chamado — registra o estado de entrada sob custódia.' / 'Aplicar na entrega ao destino ou ao pátio — compara com a vistoria de coleta.' / 'Registro fotográfico de sinistro para acionamento de seguradora.'. Nunca repetir o nome do modelo na descricao"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(distinct type) from checklist_templates where tenant_id='$T' and status='published' and deleted_at is null) as tipos_distintos_na_lista, (select count(*) from checklist_templates t where t.tenant_id='$T' and t.status='published' and t.deleted_at is null and (t.description is null or length(trim(t.description))<25)) as sem_descricao_util, (select count(*) from checklist_templates t where t.tenant_id='$T' and t.status='published' and t.deleted_at is null and (select count(*) from checklist_template_components c where c.template_id=t.id) < 4) as publicado_raso, (select count(*) from checklist_templates where tenant_id='$T' and status='published' and deleted_at is null and name ilike 'checklist%') as nome_com_termo_tecnico\" — tipos_distintos_na_lista >= 3 e os outros tres = 0. Na tela: /operations/checklists deve mostrar pelo menos 6 cartoes com rotulos de tipo diferentes entre si."
+    },
+    {
+      "tela": "Execucao de checklist (runtime)",
+      "rota": "/operations/checklists/:checklistId/run (ChecklistRuntimePage, gate checklist_runs:create)",
+      "tabelas": [
+        "checklist_runs",
+        "checklist_run_answers",
+        "checklist_attachments",
+        "checklist_markers",
+        "checklist_acknowledgements",
+        "checklist_templates"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "checklist_templates publicado e vivo",
+          "exigido_por": "banco",
+          "por_que": "FK checklist_runs_tenant_id_template_id_fkey (RESTRICT). E o /render so responde para modelo publicado"
+        },
+        {
+          "passo": 2,
+          "entidade": "checklist_runs",
+          "exigido_por": "banco",
+          "por_que": "template_version e integer NOT NULL (tem que copiar a versao do template no instante); CHECK checklist_runs_status_check (in_progress|completed|completed_with_divergence|pending_acknowledgement|cancelled); CHECK _role_chk (NULL ou collection|delivery|generic); CHECK _reopen_link_biconditional_chk ((reopened_from_run_id IS NULL) = (reopen_reason IS NULL)); UNIQUE (tenant_id, client_run_key); UNIQUE (tenant_id, reopened_from_run_id)"
+        },
+        {
+          "passo": 3,
+          "entidade": "related_entity_type='work_order' + related_entity_id",
+          "exigido_por": "historia",
+          "por_que": "AS DUAS COLUNAS SAO TEXT SEM FK — o banco aceita qualquer string. E a HISTORIA que exige o vinculo: sem ele a execucao existe mas nao pertence a nenhuma ordem, e nenhuma tela consegue ligar a vistoria ao atendimento. 98 das 173 execucoes de hoje estao exatamente assim"
+        },
+        {
+          "passo": 4,
+          "entidade": "client_run_key no formato do provisionador",
+          "exigido_por": "historia",
+          "por_que": "buildChecklistRunProvisioner (field-dispatch.service.ts:877) grava a chave `dispatch:{workOrderId}:{checklistId}:{role}`. E ESSA chave que o app consulta para saber se a vistoria ja foi enviada; sem ela o aparelho mostra 'Aguardando despacho do checklist'"
+        },
+        {
+          "passo": 5,
+          "entidade": "checklist_run_answers (uma por campo required)",
+          "exigido_por": "historia",
+          "por_que": "FK RESTRICT para component_id. Uma execucao 'completed' sem resposta nos campos obrigatorios e uma prova vazia. Hoje a media e 0,87 resposta por execucao"
+        },
+        {
+          "passo": 6,
+          "entidade": "completed_by + completed_at quando status='completed'",
+          "exigido_por": "historia",
+          "por_que": "O CHECK nao exige, mas uma vistoria concluida sem autor e sem instante nao serve como prova do estado do veiculo"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "173 execucoes no tenant demo: 97 in_progress e 76 completed. ZERO ligadas a uma ordem de servico (related_entity_type='work_order'). 75 pertencem a processos de patio (impound_process) com client_run_key no padrao 'DEMO-DOSSIE-XXXXXXX'. 98 sao orfas completas: sem related_entity, sem client_run_key, sem role, em in_progress. Nenhuma execucao tem chave no formato 'dispatch:'. Media de 0,87 resposta por execucao.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select status, count(*), count(client_run_key) com_chave, count(related_entity_id) com_entidade, count(role) com_fase, count(completed_by) com_autor from checklist_runs where tenant_id='$T' group by 1; select coalesce(related_entity_type,'(nulo)'), count(*) from checklist_runs where tenant_id='$T' group by 1; select count(*) from checklist_runs where tenant_id='$T' and client_run_key like 'dispatch:%'; select round(avg(n),2) from (select r.id, count(a.id) n from checklist_runs r left join checklist_run_answers a on a.run_id=r.id where r.tenant_id='$T' group by r.id) s\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "NENHUMA vistoria esta ligada a uma ordem de servico — o app de campo mostra 'Aguardando despacho do checklist' em toda OS",
+          "quantos": "0 de 173",
+          "evidencia": "select count(*) from checklist_runs where tenant_id='<demo>' and related_entity_type='work_order' => 0. E select count(*) ... where client_run_key like 'dispatch:%' => 0. A mensagem esta em mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart:1091"
+        },
+        {
+          "defeito": "98 execucoes orfas: sem ordem, sem processo, sem chave, sem fase, paradas em andamento",
+          "quantos": "98 de 173 (57%)",
+          "evidencia": "select count(*) from checklist_runs where tenant_id='<demo>' and related_entity_id is null and client_run_key is null => 98, todas status='in_progress'"
+        },
+        {
+          "defeito": "Execucoes praticamente sem resposta",
+          "quantos": "media 0,87 por execucao",
+          "evidencia": "151 respostas para 173 execucoes. Uma vistoria de guincho com 9 campos obrigatorios nao pode ter 1 resposta"
+        },
+        {
+          "defeito": "Zero anexos, marcadores e ciencias nas execucoes",
+          "quantos": "a confirmar por tabela, mas nenhuma execucao de OS existe para te-los",
+          "evidencia": "Nenhuma execucao esta ligada a OS, portanto nenhuma tem foto de avaria, marcador no mapa de avarias ou assinatura de ciencia associada a um atendimento"
+        },
+        {
+          "defeito": "Nenhuma execucao tem fase (role) declarada, entao a comparacao coleta x entrega e impossivel",
+          "quantos": "98 sem role; as 75 com role vem do patio",
+          "evidencia": "count(role) = 75, todas de impound_process. Nenhuma run de OS com role='collection' ou 'delivery'"
+        },
+        {
+          "defeito": "Nenhuma cadeia de reabertura exercitada",
+          "quantos": "0",
+          "evidencia": "reopened_from_run_id NULL em 173 de 173 — a correcao de vistoria (D-CHK-P1-RUN-LIFECYCLE) nunca aparece na demonstracao"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Apagar as 98 execucoes orfas em in_progress",
+          "quantos": "98 execucoes",
+          "criterio": "Sao seguras: nao tem related_entity, nao tem client_run_key, nao estao em impound_process_checklist_links. Conferir antes que nenhuma tenha answers/attachments/markers que se queira preservar (as filhas caem por CASCADE). Preservar INTACTAS as 75 do patio — sao de outra area"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Provisionar uma execucao por linha viva de work_order_checklists, com a chave EXATA do provisionador",
+          "quantos": "~92 execucoes",
+          "criterio": "client_run_key = 'dispatch:{work_order_id}:{checklist_id}:{role}' — literalmente esse formato, senao o app nao encontra e mostra 'Aguardando despacho'. related_entity_type='work_order', related_entity_id = o id da OS. template_version = a versao do template NO instante (copiar, nao referenciar). role = o mesmo da linha da junção. started_by = o tecnico da OS. started_at logo apos o arrived_at do despacho"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Distribuir os status das execucoes espelhando a fase da OS",
+          "quantos": "92",
+          "criterio": "OS completed => run 'completed' com completed_by = tecnico e completed_at = alguns minutos ANTES do completed_at da OS (a vistoria acontece durante o atendimento, nunca depois de encerrado); OS in_progress/on_site => run 'in_progress'; 6 runs 'completed_with_divergence' (avaria encontrada na entrega que nao existia na coleta); 3 'pending_acknowledgement' (aguardando ciencia do cliente). OS on_route/assigned => run 'in_progress' sem nenhuma resposta ainda"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Responder TODOS os campos obrigatorios de cada execucao concluida",
+          "quantos": "~640 respostas",
+          "criterio": "value em JSON coerente com o type do componente: vehicle_selector -> {\\\"tipo\\\":\\\"Automóvel de passeio\\\"} escolhido entre {Automóvel de passeio, Utilitário, Motocicleta, Caminhão leve, Carreta}; photo_upload -> referencia ao anexo correspondente; observation -> frase de campo ('Para-choque dianteiro com trinca de ~15cm no lado do motorista.'); damage_map -> conjunto de marcadores; signature -> assinatura do cliente com nome. metadata com o instante e a origem ('app'). Nunca a mesma resposta repetida em todas as execucoes"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Criar anexos, marcadores e ciencias das vistorias",
+          "quantos": "~330 anexos, ~48 marcadores, 12 ciencias",
+          "criterio": "checklist_attachments: 4 fotos por vistoria de coleta com file_name 'OS-000042-coleta-frente.jpg', mime image/jpeg, size 180KB a 3,4MB, created_by = o tecnico. checklist_markers: 1 a 3 por vistoria que registrou avaria, com x/y entre 0 e 1, marker_type em {risco, amassado, trinca, falta_peca}, description em PT-BR. checklist_acknowledgements nas 12 vistorias de entrega, com message de ciencia e observation quando ha ressalva"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Exercitar a cadeia de reabertura em 2 vistorias",
+          "quantos": "2 pares (4 execucoes)",
+          "criterio": "A run original fica 'completed' e intacta; a nova carrega reopened_from_run_id = id da original E reopen_reason preenchido (o CHECK biconditional exige o par). reopen_reason de negocio: 'Fotos das laterais ilegíveis — vistoria refeita a pedido da seguradora.'. Respeitar o UNIQUE (tenant_id, reopened_from_run_id): no maximo UMA reabertura por vistoria"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Formar 8 pares coleta x entrega comparaveis, com 3 divergencias reais",
+          "quantos": "8 pares",
+          "criterio": "Nas OS com servico requires_destination=true: duas linhas em work_order_checklists (role='collection' e role='delivery') e duas execucoes. Em 3 dos pares, a vistoria de entrega registra um marcador de avaria que a de coleta nao tinha — e a divergencia que a tela de comparacao existe para mostrar, e ela precisa ser REAL, nao um campo 'divergencia=true' sem lastro"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from checklist_runs where tenant_id='$T' and related_entity_type='work_order') as runs_ligadas_a_os, (select count(*) from checklist_runs where tenant_id='$T' and client_run_key like 'dispatch:%') as runs_com_chave_do_despacho, (select count(*) from checklist_runs where tenant_id='$T' and related_entity_id is null and client_run_key is null) as runs_orfas, (select count(*) from checklist_runs r where r.tenant_id='$T' and r.related_entity_type='work_order' and r.status='completed' and (select count(*) from checklist_run_answers a where a.run_id=r.id) < (select count(*) from checklist_template_components c where c.template_id=r.template_id and c.required)) as concluida_sem_responder_obrigatorios, (select count(*) from checklist_runs r where r.tenant_id='$T' and r.related_entity_type='work_order' and not exists (select 1 from work_orders w where w.id::text=r.related_entity_id and w.tenant_id=r.tenant_id)) as run_apontando_para_os_inexistente, (select count(*) from checklist_runs where tenant_id='$T' and reopened_from_run_id is not null) as reaberturas\" — runs_ligadas_a_os >= 90, runs_com_chave_do_despacho = runs_ligadas_a_os, runs_orfas = 0, concluida_sem_responder_obrigatorios = 0, run_apontando_para_os_inexistente = 0 (esta e a prova do vinculo que o banco NAO garante, por ser TEXT sem FK), reaberturas = 2. No aplicativo: abrir uma OS despachada e o checklist tem que carregar — nunca 'Aguardando despacho do checklist'."
+    },
+    {
+      "tela": "Mapa Operacional",
+      "rota": "/operations/map (OperationsMapPage, gate field_location:read)",
+      "tabelas": [
+        "field_operator_locations",
+        "users",
+        "work_orders",
+        "field_dispatches"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "users tecnicos com nome de pessoa",
+          "exigido_por": "banco",
+          "por_que": "FK field_operator_locations -> users. Historia: o DTO devolve operator.name (field-location-prisma.repository.ts:162) e o pin do mapa imprime esse nome. Com 'Marina Costa (Operador)' o mapa mostra o papel tecnico no balao"
+        },
+        {
+          "passo": 2,
+          "entidade": "operator_profiles com tracking_consent=true",
+          "exigido_por": "historia",
+          "por_que": "O tecnico so pode ser rastreado com consentimento registrado. Hoje os unicos 2 perfis pertencem ao Admin e ao Gestor, e nenhum dos 4 tecnicos que tem posicao no mapa tem perfil"
+        },
+        {
+          "passo": 3,
+          "entidade": "field_operator_locations FRESCAS",
+          "exigido_por": "historia",
+          "por_que": "FIELD_LOCATION_STALE_THRESHOLD_MS = 15 minutos (operations-map.adapter.ts:22). Posicao mais velha que isso vira isStale=true e o pin fica ambar 'desatualizado'. As 6 posicoes de hoje tem 41 dias"
+        },
+        {
+          "passo": 4,
+          "entidade": "work_orders NAO-terminais com service_latitude/longitude validas",
+          "exigido_por": "historia",
+          "por_que": "selectMappableWorkOrders descarta terminais; com coordenada valida vira PIN, sem coordenada mas com endereco vai para o painel 'Sem localizacao', e sem os dois SOME da tela. Hoje 1 pin e 4 no painel de sem-localizacao"
+        },
+        {
+          "passo": 5,
+          "entidade": "work_orders com status='open' e endereco/coordenada",
+          "exigido_por": "historia",
+          "por_que": "O painel 'Chamados recebidos' so admite status='open' (split rec/atd, J-MAPAS-10). Hoje ZERO — a unica OS aberta nao tem endereco nem coordenada, entao e descartada e a fila fica vazia"
+        },
+        {
+          "passo": 6,
+          "entidade": "field_dispatches vivos ligados aos mesmos tecnicos que tem posicao",
+          "exigido_por": "historia",
+          "por_que": "attachDispatchesToFieldLocations liga o despacho ao pin. Hoje ZERO tecnicos tem posicao E despacho vivo ao mesmo tempo — os despachos vao todos para uma pessoa que nao aparece no mapa"
+        },
+        {
+          "passo": 7,
+          "entidade": "sla_due_at nas OS abertas",
+          "exigido_por": "historia",
+          "por_que": "Com sla_due_at a fila mostra countdown REAL ('vence em 12 min' / 'vencido ha 40 min'); sem ele cai no SLA-proxy ('Aberto ha 2h'). 0 de 17 preenchidos hoje"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "6 posicoes de tecnico, TODAS stale (a mais recente tem 41 dias) e 2 delas em Sao Paulo. 1 unico pin de chamado no mapa — e ele esta em Sao Paulo (-23.5465, -46.6303), a ~400 km dos 4 tecnicos de Curitiba. 4 OS no painel 'Sem localizacao'. ZERO chamados no painel 'Recebidas'. ZERO tecnicos com posicao E despacho vivo. 0 de 17 OS com sla_due_at.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select 'pin_no_mapa', count(*) from work_orders where tenant_id='$T' and status not in ('completed','cancelled','rejected') and service_latitude is not null; select 'painel_sem_localizacao', count(*) from work_orders where tenant_id='$T' and status not in ('completed','cancelled','rejected') and service_latitude is null and coalesce(trim(service_address),'')<>''; select 'painel_recebidas', count(*) from work_orders where tenant_id='$T' and status='open' and (service_latitude is not null or coalesce(trim(service_address),'')<>''); select 'posicoes_stale', count(*) from field_operator_locations where tenant_id='$T' and recorded_at < now() - interval '15 minutes'; select 'idade_da_mais_recente', now()-max(recorded_at) from field_operator_locations where tenant_id='$T'; select 'fora_do_parana', count(*) from field_operator_locations where tenant_id='$T' and latitude > -24; select 'tecnicos_com_posicao_E_despacho_vivo', count(distinct l.operator_user_id) from field_operator_locations l join field_dispatches d on d.operator_user_id=l.operator_user_id and d.tenant_id=l.tenant_id and d.status not in ('cancelled','failed','completed') where l.tenant_id='$T'\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "100% das posicoes estao desatualizadas — todo pin do mapa nasce ambar",
+          "quantos": "6 de 6",
+          "evidencia": "now() - max(recorded_at) = 41 dias 03:35. O limiar e 15 minutos (FIELD_LOCATION_STALE_THRESHOLD_MS)"
+        },
+        {
+          "defeito": "O unico chamado com coordenada esta em Sao Paulo, numa operacao chamada 'Guinchos Parana'",
+          "quantos": "1 de 1",
+          "evidencia": "OS-2026-0001: service_latitude=-23.5465, service_longitude=-46.6303, service_city='São Paulo'. O mapa abre centrado em SP"
+        },
+        {
+          "defeito": "Dois tecnicos posicionados em Sao Paulo, a 400 km dos outros quatro",
+          "quantos": "2 de 6",
+          "evidencia": "Marina Costa (-23.5465, -46.6303) e Roberto Lima (-23.5565, -46.6373). Os outros 4 estao em Curitiba (-25.4x, -49.2x). O mapa nao consegue enquadrar os dois grupos"
+        },
+        {
+          "defeito": "O painel 'Chamados recebidos' esta permanentemente vazio",
+          "quantos": "0 chamados",
+          "evidencia": "A unica OS com status='open' (OS-2026-0002) nao tem service_address nem coordenada, entao selectMappableWorkOrders a DESCARTA — nao aparece nem como pin nem no painel de sem-localizacao"
+        },
+        {
+          "defeito": "Nenhum tecnico do mapa esta em atendimento — o pin nunca liga a um despacho",
+          "quantos": "0 de 6",
+          "evidencia": "Os 6 despachos vivos sao de Carla Mendes, que nao tem nenhuma linha em field_operator_locations. Os 4 tecnicos que tem posicao nunca receberam despacho"
+        },
+        {
+          "defeito": "Nenhuma posicao carrega o status de campo, entao todo pin cai em 'unknown'",
+          "quantos": "6 de 6",
+          "evidencia": "O DTO toFieldOperatorLocationDto nao emite 'status' e normalizeStatus(undefined) devolve 'unknown' (operations-map.adapter.ts:772-786). Os KPIs Disponiveis / Em atendimento / Em pausa ficam todos em 0"
+        },
+        {
+          "defeito": "Nenhuma OS tem prazo real — a fila nunca mostra countdown",
+          "quantos": "0 de 17",
+          "evidencia": "count(sla_due_at) = 0. A fila cai sempre no SLA-proxy 'Aberto ha X', nunca no 'vence em X' de M-7"
+        },
+        {
+          "defeito": "Precisao e bateria uniformes demais",
+          "quantos": "6 de 6",
+          "evidencia": "accuracy_meters = 9 em 4 das 6 linhas e 8/12 nas outras duas; nenhuma variacao de sinal ruim (>40m) que uma operacao real tem em rodovia"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Apagar as 2 posicoes de Sao Paulo e criar perfis de operador com consentimento para os 12 tecnicos",
+          "quantos": "2 removidas, 12 perfis",
+          "criterio": "Ver ordem 3 da tela 'Nova Ordem de Servico'. Nenhuma posicao pode existir para usuario sem operator_profiles.tracking_consent=true"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Gerar a trilha de posicoes FRESCA dos tecnicos que estao em campo agora",
+          "quantos": "14 tecnicos posicionados, ~420 pontos de historico",
+          "criterio": "A posicao MAIS RECENTE de cada tecnico tem recorded_at entre 40 segundos e 6 minutos atras (abaixo do limiar de 15 min) — senao todo pin nasce desatualizado. Coordenadas dentro do Parana: 8 na malha de Curitiba (-25.36 a -25.56 / -49.19 a -49.36), 2 na Regiao Metropolitana, 1 em Ponta Grossa (-25.09, -50.16), 1 em Londrina (-23.31, -51.16), 1 em Maringa (-23.42, -51.94), 1 em Cascavel (-24.95, -53.46). Historico das ultimas 3 horas com 1 ponto a cada 2-4 minutos, formando ROTA continua (nao teletransporte). source='mobile'. speed_meters_per_second coerente com a fase: 0 a 1,5 parado no local; 8 a 24 em deslocamento urbano; 18 a 30 em rodovia. heading_degrees coerente com o sentido do deslocamento. battery_level decrescente ao longo do turno (de 96 para 31) e 2 tecnicos abaixo de 20%. accuracy_meters variando de 4 a 38, com 2 leituras ruins (>60m) em trecho de rodovia"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Deixar 2 tecnicos DELIBERADAMENTE desatualizados",
+          "quantos": "2",
+          "criterio": "recorded_at de 25 e 90 minutos atras. Sem isso o estado 'desatualizado' do mapa nunca aparece — e ele existe justamente para o despachante notar que perdeu contato. Nunca todos frescos nem todos velhos"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Geocodificar TODAS as OS nao-terminais e as abertas",
+          "quantos": "20 OS",
+          "criterio": "service_latitude/longitude reais do endereco (BR-277 km 82 = -25.51/-49.42; Contorno Leste km 71 = -25.53/-49.19; R. XV de Novembro 964 = -25.4297/-49.2652; PR-151 km 12 = -25.02/-50.20). service_geocoded_at carimbado, service_geocode_source='seed_manual'. destination_latitude/longitude nas OS com destino. Deixar 3 OS SEM coordenada mas COM endereco, para o painel 'Sem localizacao' ter conteudo honesto — hoje ele e o unico painel que tem algo"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Encher a fila 'Chamados recebidos' com OS abertas e prazo real",
+          "quantos": "6 OS em status='open'",
+          "criterio": "Todas com endereco E coordenada em cidades do PR, prioridade distribuida (1 urgent, 2 high, 2 medium, 1 low) para a ordenacao por triagem ter o que ordenar. sla_due_at = created_at + prazo do servico: 1 ja vencida ha ~18 min (countdown vermelho 'vencido ha'), 2 vencendo em menos de 30 min (ambar, abaixo do SLA_DUE_SOON_THRESHOLD_MS), 3 folgadas. created_at espalhado nas ultimas 4 horas"
+        },
+        {
+          "ordem": 6,
+          "o_que": "Casar tecnico posicionado com despacho vivo, para o pin ligar ao atendimento",
+          "quantos": "10 pares",
+          "criterio": "Consequencia direta da ordem 1 da tela 'Despachos' (operator_user_id = assigned_user_id da OS): os 10 tecnicos com despacho vivo passam a ser exatamente os que tem posicao fresca. A distancia entre a posicao do tecnico e a coordenada da sua OS tem que ser plausivel com a fase: on_route = 3 a 25 km do destino; on_site/in_service = menos de 300 m"
+        },
+        {
+          "ordem": 7,
+          "o_que": "Preencher sla_due_at em todas as nao-terminais",
+          "quantos": "20 OS",
+          "criterio": "scheduled_for + estimated_duration_minutes do servico vinculado. 4 vencidas, 3 vencendo em menos de 30 min, o resto folgado. Nunca um prazo redondo igual para todas"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from field_operator_locations where tenant_id='$T' and latitude > -23.9) as posicao_fora_do_parana, (select count(*) from work_orders where tenant_id='$T' and status='open' and service_latitude is not null) as chamados_na_fila_recebidas, (select count(*) from work_orders where tenant_id='$T' and status not in ('completed','cancelled','rejected') and service_latitude is null and coalesce(trim(service_address),'')='') as os_invisivel_no_mapa, (select count(distinct l.operator_user_id) from field_operator_locations l where l.tenant_id='$T' and l.recorded_at > now() - interval '15 minutes') as tecnicos_com_posicao_fresca, (select count(distinct l.operator_user_id) from field_operator_locations l join field_dispatches d on d.operator_user_id=l.operator_user_id and d.tenant_id=l.tenant_id and d.status in ('accepted','on_route','arrived','in_service') where l.tenant_id='$T') as tecnicos_em_atendimento_no_mapa, (select count(*) from work_orders where tenant_id='$T' and status='open' and sla_due_at is not null) as fila_com_prazo_real, (select count(*) from field_operator_locations l where l.tenant_id='$T' and not exists (select 1 from operator_profiles p where p.user_id=l.operator_user_id and p.tenant_id=l.tenant_id and p.tracking_consent)) as posicao_sem_consentimento\" — posicao_fora_do_parana = 0, chamados_na_fila_recebidas >= 6, os_invisivel_no_mapa = 0, tecnicos_com_posicao_fresca >= 10, tecnicos_em_atendimento_no_mapa >= 8, fila_com_prazo_real >= 6, posicao_sem_consentimento = 0. Na tela: /operations/map tem que abrir enquadrado no Parana, com os tres paineis da direita (Recebidas, Em Atendimento, Tecnicos) preenchidos ao mesmo tempo."
+    },
+    {
+      "tela": "Operadores de Campo",
+      "rota": "/field-operators (FieldOperatorsPage, gate field_dispatch:read)",
+      "tabelas": [
+        "field_operator_locations",
+        "users",
+        "operator_profiles"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "field_operator_locations recentes",
+          "exigido_por": "historia",
+          "por_que": "A tela reusa getLatestFieldLocations (mesma fonte /field-locations/latest do mapa). Quem nao tem posicao NAO aparece — a lista e a projecao das posicoes, nao dos usuarios"
+        },
+        {
+          "passo": 2,
+          "entidade": "users.name limpo",
+          "exigido_por": "historia",
+          "por_que": "A coluna OPERADOR renderiza operator.name; a exportacao CSV tambem. Nome com o papel entre parenteses vaza termo tecnico (§3) para dentro de um arquivo que sai da organizacao"
+        },
+        {
+          "passo": 3,
+          "entidade": "operator_profiles com consentimento",
+          "exigido_por": "historia",
+          "por_que": "Rastrear pessoa sem consentimento registrado e o problema; os 4 tecnicos que aparecem hoje no mapa nao tem perfil nenhum"
+        },
+        {
+          "passo": 4,
+          "entidade": "work_orders com assigned_operator_id igual ao operador da posicao",
+          "exigido_por": "historia",
+          "por_que": "A coluna 'OS ATUAL' so preenche quando isWorkOrderAssignedToLocation casa assignedOperatorId/assignedUserId da OS com o operador da posicao. Como assigned_operator_id esta preenchido em apenas 2 de 17 OS, a coluna fica em '—' para praticamente todo mundo"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "6 operadores listados (os que tem posicao). Nenhum tem operator_profiles; 2 estao em Sao Paulo; 6 de 6 aparecem com status 'unknown' (o DTO nao emite status de campo), o que joga os 4 cards de KPI da tela para Disponiveis 0 / Em atendimento 0 / Em pausa 0 / Fora de operacao 6. Coluna 'OS ATUAL' vazia para todos, porque assigned_operator_id so existe em 2 das 17 OS. Coluna 'EQUIPE' vazia para todos (o DTO nao carrega teamName).",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -c \"select u.name, (p.id is not null) tem_perfil, p.tracking_consent, l.recorded_at, l.latitude, l.longitude, (select count(*) from work_orders w where w.tenant_id=l.tenant_id and w.assigned_operator_id=l.operator_user_id and w.status not in ('completed','cancelled','rejected')) as os_atual from field_operator_locations l join users u on u.id=l.operator_user_id left join operator_profiles p on p.user_id=l.operator_user_id and p.tenant_id=l.tenant_id where l.tenant_id='$T' order by l.recorded_at desc\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "Nenhum operador listado tem perfil de operador de campo",
+          "quantos": "6 de 6",
+          "evidencia": "Os unicos 2 operator_profiles do tenant pertencem a 'Admin Demo' e 'Gustavo Reis (Gestor Operacional)' — nenhum dos dois aparece na lista de posicoes"
+        },
+        {
+          "defeito": "Os dois unicos perfis existentes compartilham a MESMA CNH",
+          "quantos": "2 de 2",
+          "evidencia": "operator_profiles.cnh_number = '98765432100' nas duas linhas. Duas pessoas nao tem a mesma habilitacao"
+        },
+        {
+          "defeito": "Coluna 'OS ATUAL' vazia para toda a lista",
+          "quantos": "6 de 6",
+          "evidencia": "assigned_operator_id preenchido em 2 de 17 OS, e nenhuma dessas 2 pertence a um dos 6 operadores com posicao"
+        },
+        {
+          "defeito": "Todos os operadores caem no balde 'Fora de operacao'",
+          "quantos": "6 de 6",
+          "evidencia": "O status vem de normalizeStatus(readString(input,['status'])) e o DTO de field-location nao emite esse campo -> 'unknown'. Os 4 KPIs da tela ficam 0/0/0/6"
+        },
+        {
+          "defeito": "Nome com o papel tecnico embutido, que vaza para o CSV exportado",
+          "quantos": "2 de 6",
+          "evidencia": "'Marina Costa (Operador)' e — nos despachos — 'Carla Mendes (Tecnico de Campo)'. A funcao de exportacao monta as linhas com operator.name"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Executar as ordens 1 a 3 da tela 'Mapa Operacional' (perfis com consentimento + trilha fresca no Parana)",
+          "quantos": "12 perfis, 14 tecnicos posicionados",
+          "criterio": "Idem. Consequencia aqui: a lista sai de 6 nomes para 14, todos no PR e todos com perfil"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Preencher assigned_operator_id em TODA OS que tem tecnico (hoje so 2 de 17)",
+          "quantos": "64 OS",
+          "criterio": "assigned_operator_id = assigned_user_id da mesma linha. Sao as duas colunas que o mapa e esta tela consultam alternativamente (isWorkOrderAssignedToLocation olha as duas); deixar so uma preenchida faz a coluna 'OS ATUAL' e o pin de atendimento mentirem de formas diferentes na mesma sessao"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Corrigir os nomes dos usuarios, tirando o papel dos parenteses",
+          "quantos": "7 usuarios",
+          "criterio": "'Carla Mendes (Tecnico de Campo)' -> 'Carla Mendes'; 'Marina Costa (Operador)' -> 'Marina Costa'; 'Gustavo Reis (Gestor Operacional)' -> 'Gustavo Reis'; e assim por diante. O papel vive em user_role_assignments, nunca no nome (§3). Resolver tambem as 6 duplicatas de pessoa (Gustavo Reis, Rafael Souza, Beatriz Lima, Ana Plataforma, Marina Costa e Admin Demo aparecem duas vezes com e-mails diferentes)"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Distribuir as fases de campo entre os tecnicos para os 4 KPIs terem valor",
+          "quantos": "14 tecnicos",
+          "criterio": "Alvo pelos despachos vivos (a fonte que a tela deveria refletir): 5 sem despacho vivo (disponiveis), 6 em accepted/on_route/arrived/in_service (em atendimento), 1 com despacho pausado, 2 com posicao velha (fora de operacao). Nenhum balde pode ficar em zero e nenhum pode concentrar tudo"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from field_operator_locations l where l.tenant_id='$T' and not exists (select 1 from operator_profiles p where p.user_id=l.operator_user_id and p.tenant_id=l.tenant_id and p.tracking_consent)) as posicao_sem_perfil_consentido, (select count(*) from operator_profiles where tenant_id='$T' and cnh_number in (select cnh_number from operator_profiles where tenant_id='$T' group by cnh_number having count(*)>1)) as cnh_repetida, (select count(*) from users where tenant_id='$T' and name ~ '\\\\(') as nome_com_papel_embutido, (select count(*) from work_orders where tenant_id='$T' and assigned_user_id is not null and assigned_operator_id is null) as os_com_tecnico_mas_sem_operator_id, (select count(distinct l.operator_user_id) from field_operator_locations l join work_orders w on w.assigned_operator_id=l.operator_user_id and w.tenant_id=l.tenant_id and w.status not in ('completed','cancelled','rejected') where l.tenant_id='$T') as operadores_com_os_atual\" — os quatro primeiros = 0 e operadores_com_os_atual >= 8. Na tela: /field-operators tem que mostrar valor maior que zero em pelo menos tres dos quatro cards de KPI, e nenhuma linha com 'OS ATUAL' vazia entre os que estao em atendimento."
+    },
+    {
+      "tela": "Console de Despacho",
+      "rota": "/dispatch/console (DispatchConsolePage, gate field_dispatch:read)",
+      "tabelas": [
+        "(NENHUMA — a tela e um protótipo estático, sem leitura de banco)"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "(nenhuma)",
+          "exigido_por": "historia",
+          "por_que": "DispatchConsolePage.tsx (202 linhas) declara os dados em constantes literais no proprio arquivo: KPIS = [{n:'14', label:'Na fila'}, {n:'3', label:'SLA crítico'}, {n:'8', label:'Em atendimento'}...] alem de QueueItem[], Tech[] e Alert[] fixos. Nao ha useEffect, nao ha apiRequest, nao ha service importado — os unicos imports sao icones, react-router e usePermissions. Nenhum INSERT no banco muda um pixel desta tela"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 tabelas lidas. A tela mostra hoje, e continuara mostrando depois de qualquer seed: Na fila 14 · SLA critico 3 · Em atendimento 8 — numeros que nao existem no banco (o tenant demo tem 17 OS ao todo e ZERO na fila).",
+        "coerente": false,
+        "medido_com": "grep -n 'apiRequest\\|useEffect\\|service\\|fetch' frontend/src/modules/dispatch/pages/DispatchConsolePage.tsx => nenhuma ocorrencia. Os unicos imports (linhas 1-5) sao lucide-react, CSSProperties, useNavigate e usePermissions."
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "KPIs fabricados no codigo, que contradizem o banco",
+          "quantos": "3 cards + a fila + a lista de tecnicos",
+          "evidencia": "const KPIS = [{n:'14', label:'Na fila'}, {n:'3', label:'SLA crítico'}, {n:'8', label:'Em atendimento'}] em DispatchConsolePage.tsx. O tenant demo tem 1 OS aberta, 0 com sla_due_at e 5 em campo — nenhum dos tres numeros bate"
+        },
+        {
+          "defeito": "O console e a unica tela da area que POVOAR NAO CONSERTA — e por isso ela e a mais perigosa numa demonstracao",
+          "quantos": "1 tela inteira",
+          "evidencia": "Depois de semear 64 OS coerentes, /operations/dispatches vai mudar e /dispatch/console vai continuar dizendo 'Na fila 14'. Quem abrir as duas na mesma sessao ve o sistema se contradizer"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "NAO povoar. Registrar como pendencia de CODIGO, nao de dado, e levar a decisao a junta",
+          "quantos": "1 pendencia",
+          "criterio": "O trabalho aqui e ligar a tela as fontes reais que as telas vizinhas ja usam (useOperationsDispatches para a fila e os KPIs, getLatestFieldLocations para a coluna de tecnicos, listWorkOrders para o SLA) — e isso e escopo de bloco de feature, com PR proprio e KPI proprio (§C1/§C3). Nenhum INSERT resolve"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Enquanto o codigo nao muda: garantir que, se a tela for aberta na demonstracao, o dado real por tras nao a desminta de forma gritante",
+          "quantos": "3 numeros",
+          "criterio": "Ao dimensionar o seed das telas vizinhas, manter a ordem de grandeza proxima do que o console cravou (fila com ~6 abertas, ~3 vencendo/vencidas, ~8 em campo). Isso NAO conserta a tela — e paliativo declarado, e tem que ir por escrito no registro para ninguem confundir com correcao"
+        }
+      ],
+      "como_provar": "Prova de que nao ha o que provar no banco: grep -c 'apiRequest' frontend/src/modules/dispatch/pages/DispatchConsolePage.tsx => 0. A verificacao real e de codigo, nao de SQL: abrir /dispatch/console e /operations/dispatches lado a lado depois do povoamento — se o console continuar dizendo 'Na fila 14' enquanto a outra tela mostra outro numero, a pendencia esta confirmada e aberta. Ela so se fecha quando o console passar a derivar os KPIs de useOperationsDispatches."
+    },
+    {
+      "tela": "Provisionamento da vistoria no despacho (regra + junção)",
+      "rota": "(nao tem tela) — efeito de dominio de POST /api/v1/operations/dispatches; tabelas checklist_applicability_rules e work_order_checklists",
+      "tabelas": [
+        "checklist_applicability_rules",
+        "work_order_checklists",
+        "checklist_runs",
+        "work_orders",
+        "checklist_templates"
+      ],
+      "cadeia_obrigatoria": [
+        {
+          "passo": 1,
+          "entidade": "checklist_templates publicado e NAO deletado",
+          "exigido_por": "historia",
+          "por_que": "snapshotPublishedTemplate (checklist.service.ts:109-115) devolve null se o template nao for published ou tiver deleted_at. Null => o freeze nao acontece, a vistoria NAO vai a campo e o despacho grava 'A vistoria não foi enviada ao técnico: o modelo não está publicado.'"
+        },
+        {
+          "passo": 2,
+          "entidade": "work_order_checklists (a linha viva com a fase)",
+          "exigido_por": "banco",
+          "por_que": "UNIQUE PARCIAL work_order_checklists_unique (tenant_id, work_order_id, checklist_id, role) WHERE removed_at IS NULL — a identidade INCLUI a fase; CHECK _provenance_chk ((checklist_source='resolved') = (rule_id IS NOT NULL)); CHECK _role_chk; CHECK _removal_chk ((removed_at IS NULL)=(removed_by IS NULL)); FK RESTRICT para checklist_templates e para a regra"
+        },
+        {
+          "passo": 3,
+          "entidade": "checklist_snapshot na linha",
+          "exigido_por": "historia",
+          "por_que": "O provisionamento RECUSA linha com snapshot NULL — mandar a campo formulario que o freeze nunca viu quebra a garantia de que o tecnico responde o formulario como publicado no instante do despacho"
+        },
+        {
+          "passo": 4,
+          "entidade": "checklist_runs com a chave 'dispatch:{OS}:{modelo}:{fase}'",
+          "exigido_por": "historia",
+          "por_que": "E a chave de idempotencia que buildChecklistRunProvisioner grava e que buildChecklistRunLookup / hasProvisionedChecklistRun consultam. Fora desse formato, o sistema conclui que a vistoria NAO foi enviada"
+        },
+        {
+          "passo": 5,
+          "entidade": "checklist_applicability_rules — ATENCAO, ESTA INERTE",
+          "exigido_por": "historia",
+          "por_que": "A raiz de composicao de producao NAO monta resolveApplicableChecklists (work-order.service.ts:1926: 'não é montado aqui... o conjunto resolvido é vazio POR CONSTRUÇÃO'). Semear regra NAO faz nenhuma OS ganhar vistoria automaticamente. Enquanto o porto nao for ligado, TODA linha da junção tem que nascer checklist_source='manual' com rule_id NULL"
+        }
+      ],
+      "estado_hoje": {
+        "contagem": "0 regras de aplicabilidade. 0 linhas em work_order_checklists — nas 17 OS. 0 execucoes com chave 'dispatch:'. Resultado: nenhuma OS do tenant demo tem vistoria provisionada, e o aplicativo de campo mostra 'Aguardando despacho do checklist' em 100% dos atendimentos.",
+        "coerente": false,
+        "medido_com": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select 'regras', count(*) from checklist_applicability_rules where tenant_id='$T'; select 'linhas_de_vistoria', count(*) from work_order_checklists where tenant_id='$T'; select 'runs_com_chave_dispatch', count(*) from checklist_runs where tenant_id='$T' and client_run_key like 'dispatch:%'; select 'os_com_checklist_id_legado', count(*) from work_orders where tenant_id='$T' and checklist_id is not null; select 'os_com_snapshot_congelado', count(*) from work_orders where tenant_id='$T' and checklist_snapshot is not null\""
+      },
+      "defeitos_do_dado_atual": [
+        {
+          "defeito": "A junção que liga vistoria a ordem de servico esta completamente vazia",
+          "quantos": "0 linhas para 17 OS",
+          "evidencia": "select count(*) from work_order_checklists where tenant_id='<demo>' => 0"
+        },
+        {
+          "defeito": "Uma das 2 OS com vistoria legada aponta para um modelo soft-deletado, logo o freeze e IMPOSSIVEL para ela",
+          "quantos": "1 (OS-000012)",
+          "evidencia": "work_orders.checklist_id -> template 'HACKEADO' (deleted_at preenchido, 0 componentes) e work_orders.checklist_snapshot IS NULL. Despachar essa OS gera field_dispatch_checklist_run_failed com reason 'template_not_published'"
+        },
+        {
+          "defeito": "Nenhuma execucao nasceu de despacho",
+          "quantos": "0 de 173",
+          "evidencia": "Nenhuma linha com client_run_key no padrao 'dispatch:%'. As 75 do patio usam 'DEMO-DOSSIE-%' e as outras 98 nao tem chave"
+        },
+        {
+          "defeito": "Zero regras de aplicabilidade — e semear regra nao resolveria",
+          "quantos": "0",
+          "evidencia": "checklist_applicability_rules vazia; e work-order.service.ts:1926 documenta que resolveApplicableChecklists nao esta ligado na raiz de producao. Semear regra criaria dado que nenhum codigo le — o mesmo erro das 28 tarifas orfas, invertido"
+        }
+      ],
+      "plano_de_povoamento": [
+        {
+          "ordem": 1,
+          "o_que": "Religar OS-000012 do modelo 'HACKEADO' para um modelo publicado e vivo, e so entao purgar o HACKEADO",
+          "quantos": "1 OS, 1 modelo",
+          "criterio": "A FK work_orders_tenant_id_checklist_id_fkey e RESTRICT — apagar o template antes de religar a OS falha no banco. Trocar por 'Vistoria de Coleta — Guincho' e recarimbar checklist_snapshot com o snapshot do modelo novo"
+        },
+        {
+          "ordem": 2,
+          "o_que": "Criar as linhas de work_order_checklists de TODA OS que foi ou vai a campo",
+          "quantos": "~92 linhas em 64 OS",
+          "criterio": "OBRIGATORIAMENTE checklist_source='manual' e rule_id=NULL (o CHECK _provenance_chk exige o par, e nenhuma linha pode nascer 'resolved' enquanto o resolvedor nao estiver ligado). Servicos com requires_destination=true recebem DUAS linhas: role='collection' com order_index=0 e role='delivery' com order_index=1 — e essa dupla que forma o par comparavel. Socorro no local recebe UMA linha role='generic'. Nunca duas linhas do mesmo (modelo, fase) na mesma OS (o UNIQUE parcial recusa). added_by = o despachante"
+        },
+        {
+          "ordem": 3,
+          "o_que": "Congelar o snapshot em cada linha viva",
+          "quantos": "92 snapshots",
+          "criterio": "checklist_snapshot = copia JSON do template no formato de buildChecklistSnapshot, incluindo a versao e a lista ordenada de componentes. A linha PRIMARIA (menor order_index viva) tem que ser espelhada em work_orders.checklist_id e work_orders.checklist_snapshot — e esse espelho que todo consumidor de hoje le. Nenhuma linha de OS despachada pode ficar com snapshot NULL"
+        },
+        {
+          "ordem": 4,
+          "o_que": "Provisionar a execucao de cada linha (ver ordem 2 da tela 'Execucao de checklist')",
+          "quantos": "92 execucoes",
+          "criterio": "client_run_key exatamente 'dispatch:{work_order_id}:{checklist_id}:{role}'. Um caractere fora do formato e o sistema conclui que a vistoria nunca foi enviada"
+        },
+        {
+          "ordem": 5,
+          "o_que": "Exercitar a remocao SOFT em 2 linhas",
+          "quantos": "2",
+          "criterio": "removed_at + removed_by + removed_reason preenchidos JUNTOS (o CHECK _removal_chk exige que removed_at e removed_by andem em par). Motivo de negocio: 'Serviço mudou de reboque para socorro no local — vistoria de entrega não se aplica.'. A linha removida libera o par no indice parcial, o que permite re-adicionar depois — e o caso que prova a trava"
+        },
+        {
+          "ordem": 6,
+          "o_que": "NAO semear checklist_applicability_rules nesta rodada",
+          "quantos": "0 regras",
+          "criterio": "Regra semeada agora e dado que nenhum codigo le, e o CHECK _provenance_chk impediria uma linha 'manual' de referencia-la. Registrar em agent-orchestration/controle/ que a tabela fica vazia POR DECISAO ate a fatia que ligar resolveApplicableChecklists na raiz de producao — e nesse dia as regras entram junto com o codigo que as consome"
+        }
+      ],
+      "como_provar": "T=a79aedf2-44c8-478f-a6ce-cf6248a16f2b; docker exec -i erp-postgres psql -U postgres -d erp_techsolutions -Atc \"select (select count(*) from work_order_checklists where tenant_id='$T' and removed_at is null) as linhas_vivas, (select count(*) from work_order_checklists where tenant_id='$T' and removed_at is null and checklist_snapshot is null) as linha_viva_sem_congelamento, (select count(*) from work_order_checklists w join checklist_templates t on t.id=w.checklist_id where w.tenant_id='$T' and w.removed_at is null and (t.deleted_at is not null or t.status<>'published')) as linha_apontando_para_modelo_morto, (select count(*) from work_order_checklists where tenant_id='$T' and checklist_source='resolved') as linha_resolvida_sem_resolvedor_ligado, (select count(*) from work_order_checklists w where w.tenant_id='$T' and w.removed_at is null and not exists (select 1 from checklist_runs r where r.tenant_id=w.tenant_id and r.client_run_key='dispatch:'||w.work_order_id||':'||w.checklist_id||':'||w.role)) as linha_sem_execucao_provisionada, (select count(*) from work_orders w join work_order_checklists c on c.work_order_id=w.id and c.removed_at is null where w.tenant_id='$T' and w.checklist_id is distinct from (select c2.checklist_id from work_order_checklists c2 where c2.work_order_id=w.id and c2.removed_at is null order by c2.order_index, c2.created_at, c2.id limit 1)) as espelho_da_primaria_divergente\" — linhas_vivas >= 90 e os cinco seguintes = 0. No aplicativo de campo: abrir qualquer OS despachada e o formulário tem que carregar preenchivel."
+    }
+  ]
+}

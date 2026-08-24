@@ -67,7 +67,7 @@ Widget _wrap(
       ),
       GoRoute(
         path: '/approvals',
-        builder: (_, _) => const Scaffold(body: Text('Aprovacoes')),
+        builder: (_, _) => const Scaffold(body: Text('Aprovações')),
       ),
     ],
   );
@@ -95,19 +95,19 @@ Widget _wrap(
 }
 
 void main() {
-  group('HomeScreen — banner de aprovacoes (B-113)', () {
-    testWidgets('1. Gestor ve banner de aprovacoes', (t) async {
+  group('HomeScreen — banner de aprovações (B-113)', () {
+    testWidgets('1. Gestor ve banner de aprovações', (t) async {
       await t.pumpWidget(_wrap(_sessionManager, []));
       await t.pumpAndSettle();
 
       expect(find.text('Aprovações'), findsOneWidget);
     });
 
-    testWidgets('2. Tecnico NAO ve banner de aprovacoes', (t) async {
+    testWidgets('2. Técnico NÃO ve banner de aprovações', (t) async {
       await t.pumpWidget(_wrap(_sessionTechnician, []));
       await t.pumpAndSettle();
 
-      expect(find.text('Aprovacoes'), findsNothing);
+      expect(find.text('Aprovações'), findsNothing);
     });
 
     testWidgets('3. Banner sem pendentes exibe mensagem neutra', (t) async {
@@ -146,7 +146,7 @@ void main() {
       await t.tap(find.text('Aprovações'));
       await t.pumpAndSettle();
 
-      expect(find.text('Aprovacoes'), findsOneWidget);
+      expect(find.text('Aprovações'), findsOneWidget);
     });
   });
 }

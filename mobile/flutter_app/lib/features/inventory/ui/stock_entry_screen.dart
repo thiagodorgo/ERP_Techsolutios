@@ -208,7 +208,7 @@ class _StockEntryScreenState extends ConsumerState<StockEntryScreen> {
             TextField(
               controller: _notesCtrl,
               decoration: const InputDecoration(
-                labelText: 'Observacao',
+                labelText: 'Observação',
                 border: OutlineInputBorder(),
               ),
             ),

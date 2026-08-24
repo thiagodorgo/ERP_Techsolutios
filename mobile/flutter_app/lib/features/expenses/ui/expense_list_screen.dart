@@ -73,7 +73,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
           );
 
     return ErpScaffold(
-      title: 'Gestao de Despesas',
+      title: 'Gestão de Despesas',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: canCreate ? () => context.go('/expenses/new') : null,
         icon: const Icon(Icons.add),
@@ -114,9 +114,9 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: PermissionBlockedState(
-                    title: 'Criacao bloqueada',
+                    title: 'Criação bloqueada',
                     message:
-                        'O bootstrap atual nao possui expense_report:create.',
+                        'Seu perfil não permite abrir novas prestações de contas.',
                   ),
                 ),
               SingleChildScrollView(
@@ -147,10 +147,10 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                             icon: Icons.receipt_long_outlined,
                             title: _group == _PcGroup.all
                                 ? 'Nenhuma Prestação de Contas local'
-                                : 'Nenhum relatorio nesta categoria',
+                                : 'Nenhum relatório nesta categoria',
                             message: _group == _PcGroup.all
                                 ? 'Crie uma Prestação de Contas para iniciar a fila local-first.'
-                                : 'Nenhum relatorio corresponde ao filtro selecionado.',
+                                : 'Nenhum relatório corresponde ao filtro selecionado.',
                             action: _group == _PcGroup.all && canCreate
                                 ? FilledButton(
                                     onPressed: () =>

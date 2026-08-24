@@ -7,6 +7,27 @@ import '../../features/expenses/domain/expense_models.dart';
 import '../../features/expenses/services/expense_totals_calculator.dart';
 import '../theme/erp_mobile_theme.dart';
 
+/// Rótulo de negócio do perfil do usuário.
+///
+/// CLAUDE.md §3: a UI **nunca** exibe o nome técnico do papel
+/// (`field_technician`, `tenant_admin`…). O nome técnico fica no código e nas
+/// claims; na tela vai o rótulo em português.
+String tenantRoleLabel(String role) {
+  return switch (role.toLowerCase()) {
+    'field_technician' => 'Técnico de Campo',
+    'field_dispatcher' => 'Operação de Campo',
+    'manager' => 'Gestor Operacional',
+    'tenant_admin' => 'Administrador',
+    'platform_admin' => 'Admin Plataforma',
+    'operator' => 'Operação',
+    'finance' => 'Financeiro',
+    'inventory' => 'Estoque',
+    'auditor' => 'Auditor',
+    'support' => 'Suporte',
+    _ => 'Membro da equipe',
+  };
+}
+
 class TenantContextBar extends StatelessWidget {
   const TenantContextBar({required this.session, super.key});
 
@@ -18,7 +39,9 @@ class TenantContextBar extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.business_outlined),
         title: Text(session.activeTenant.displayName),
-        subtitle: Text('${session.user.tenantRole} · ${session.user.email}'),
+        subtitle: Text(
+          '${tenantRoleLabel(session.user.tenantRole)} · ${session.user.email}',
+        ),
         trailing: const Icon(Icons.verified_user_outlined),
       ),
     );
@@ -146,7 +169,7 @@ class ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyState(
       icon: Icons.error_outline,
-      title: 'Nao foi possivel carregar',
+      title: 'Não foi possível carregar',
       message: message,
     );
   }
@@ -161,7 +184,7 @@ class OfflineState extends StatelessWidget {
       icon: Icons.cloud_off_outlined,
       title: 'Modo offline',
       message:
-          'Os dados locais continuam disponiveis e a fila sera sincronizada depois.',
+          'Os dados locais continuam disponíveis e a fila será sincronizada depois.',
     );
   }
 }
@@ -180,12 +203,12 @@ class NetworkStatusBanner extends StatelessWidget {
       NetworkStatus.offline => (
         ErpMobileTheme.danger,
         Icons.wifi_off_outlined,
-        'Modo offline — alteracoes serao sincronizadas ao reconectar.',
+        'Modo offline — alterações serão sincronizadas ao reconectar.',
       ),
       NetworkStatus.checking => (
         ErpMobileTheme.warning,
         Icons.sync_outlined,
-        'Verificando conexao...',
+        'Verificando conexão...',
       ),
       NetworkStatus.online ||
       NetworkStatus.unknown => (Colors.transparent, Icons.wifi, ''),
@@ -239,14 +262,14 @@ class PolicyViolationBanner extends StatelessWidget {
                 Icon(Icons.policy_outlined, color: ErpMobileTheme.danger),
                 SizedBox(width: 8),
                 Text(
-                  'Violacao de politica',
+                  'Violação de política',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             for (final violation in violations)
-              Text('- ${violation.message} (${violation.code})'),
+              Text('\u2022 ${violation.message}'),
           ],
         ),
       ),
@@ -303,7 +326,7 @@ class ApprovalDecisionCard extends StatelessWidget {
         title: Text(title),
         subtitle: Text(message),
         trailing: const OperationalStatusChip(
-          label: 'Preparacao',
+          label: 'Em breve',
           status: 'info',
         ),
       ),

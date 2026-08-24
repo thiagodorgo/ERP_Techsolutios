@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
+import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
 import '../../core/sync/sync_conflict_resolver.dart';
@@ -52,7 +53,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
           // Header fiel ao prototipo (sincronizacao.png): titulo + pill de
           // conectividade Online/Offline.
           MobileScreenHeader(
-            title: 'Sincronizacao',
+            title: 'Sincronização',
             trailing: MobilePill(
               label: online ? 'Online' : 'Offline',
               tone: online ? PillTone.done : PillTone.danger,
@@ -88,9 +89,16 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                       NetworkStatusBanner(status: networkStatus),
                       const SizedBox(height: 12),
 
-                      // ── Backend-pending notice ────────────────────────────────────
-                      _BackendPendingNotice(),
-                      const SizedBox(height: 12),
+                      // ── Aviso de modo local ───────────────────────────────────────
+                      // P-MOBILE-BANNER-INTEGRACAO: este aviso era renderizado
+                      // SEMPRE e mentia — dizia que a integração remota não
+                      // existia mesmo com o bootstrap devolvendo os domínios
+                      // habilitados. Agora só aparece quando os domínios remotos
+                      // realmente não vieram habilitados na sessão.
+                      if (_isLocalOnly(session)) ...[
+                        const _LocalModeNotice(),
+                        const SizedBox(height: 12),
+                      ],
 
                       // ── Summary KPI row ───────────────────────────────────────────
                       _SummaryRow(summary: summary),
@@ -144,7 +152,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                           icon: Icons.cloud_done_outlined,
                           title: 'Fila vazia',
                           message:
-                              'Acoes de OS, Checklists, Despesas e Estoque aparecao aqui quando houver pendencias locais.',
+                              'Ações de OS, Checklists, Despesas e Estoque aparecerão aqui quando houver pendências locais.',
                         )
                       else
                         for (final entry in grouped.entries)
@@ -158,6 +166,14 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
         ],
       ),
     );
+  }
+
+  /// `true` só quando NENHUM domínio remoto veio habilitado na sessão — ou
+  /// seja, quando o aparelho está de fato trabalhando apenas com o banco local.
+  static bool _isLocalOnly(BootstrapSession? session) {
+    if (session == null) return true;
+    const remoteDomains = ['work_orders', 'checklists', 'checklist_sync'];
+    return !remoteDomains.any(session.isFeatureEnabled);
   }
 
   /// Groups actions by domain label, preserving insertion order.
@@ -212,7 +228,7 @@ class _ConflictCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${_actionLabel(action.type)} — o gestor alterou este item. '
-              'Escolha qual versao deve prevalecer.',
+              'Escolha qual versão deve prevalecer.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
@@ -224,7 +240,7 @@ class _ConflictCard extends StatelessWidget {
                   child: OutlinedButton(
                     key: Key('conflict-keep-mine-${action.clientActionId}'),
                     onPressed: onKeepMine,
-                    child: const Text('Minha versao'),
+                    child: const Text('Minha versão'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -232,7 +248,7 @@ class _ConflictCard extends StatelessWidget {
                   child: FilledButton(
                     key: Key('conflict-use-server-${action.clientActionId}'),
                     onPressed: onUseServer,
-                    child: const Text('Versao do gestor'),
+                    child: const Text('Versão do gestor'),
                   ),
                 ),
               ],
@@ -244,9 +260,13 @@ class _ConflictCard extends StatelessWidget {
   }
 }
 
-// ── Backend pending notice ───────────────────────────────────────────────────
+// ── Aviso de modo local ──────────────────────────────────────────────────────
 
-class _BackendPendingNotice extends StatelessWidget {
+/// Mostrado **somente** quando a sessão não trouxe nenhum domínio remoto
+/// habilitado (ver `_SyncScreenState._isLocalOnly`).
+class _LocalModeNotice extends StatelessWidget {
+  const _LocalModeNotice();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -266,7 +286,7 @@ class _BackendPendingNotice extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Integracao remota ainda nao ativa',
+                  'Trabalhando com os dados deste aparelho',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Colors.amber.shade900,
@@ -275,9 +295,9 @@ class _BackendPendingNotice extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'OS, Checklists e Inventario estao em modo local. '
-                  'Despesas enfileiram para sync quando a integracao for ativada. '
-                  'Seus dados estao seguros no banco local do dispositivo.',
+                  'Tudo o que você registrar fica salvo aqui e entra na fila. '
+                  'A sincronização acontece assim que o aparelho voltar a '
+                  'falar com o servidor.',
                   style: TextStyle(color: Colors.amber.shade900, fontSize: 12),
                 ),
               ],
@@ -389,8 +409,8 @@ class _AutoSyncCard extends StatelessWidget {
     final subtitle = autoSync.hasError
         ? autoSync.lastSafeError!
         : lastSync != null
-        ? 'Ultimo sync: ${_formatDate(lastSync)}'
-        : 'Aguardando reconexao para sincronizar.';
+        ? 'Último sync: ${_formatDate(lastSync)}'
+        : 'Aguardando reconexão para sincronizar.';
 
     return Card(
       child: ListTile(
@@ -604,7 +624,7 @@ String _domainLabel(String actionType) {
   }
   if (actionType.startsWith('work_order') ||
       actionType.startsWith('work-order')) {
-    return 'Ordens de Servico';
+    return 'Ordens de Serviço';
   }
   if (actionType.startsWith('inventory_')) return 'Estoque';
   return 'Outros';
@@ -613,7 +633,7 @@ String _domainLabel(String actionType) {
 IconData _domainIcon(String domain) => switch (domain) {
   'Checklists' => Icons.checklist_outlined,
   'Despesas (RDV)' => Icons.receipt_long_outlined,
-  'Ordens de Servico' => Icons.engineering_outlined,
+  'Ordens de Serviço' => Icons.engineering_outlined,
   'Estoque' => Icons.inventory_2_outlined,
   _ => Icons.sync_outlined,
 };

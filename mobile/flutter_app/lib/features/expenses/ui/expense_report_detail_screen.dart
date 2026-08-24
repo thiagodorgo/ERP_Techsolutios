@@ -33,8 +33,10 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
             title: 'Prestação de Contas',
             body: EmptyState(
               icon: Icons.search_off_outlined,
-              title: 'Prestação de Contas nao encontrada',
-              message: 'O relatorio nao existe no cache local deste tenant.',
+              title: 'Prestação de Contas não encontrada',
+              message:
+                  'Esta prestação de contas não está salva neste aparelho '
+                  'para a organização ativa.',
             ),
           );
         }
@@ -66,7 +68,7 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
                   icon: Icons.add_card_outlined,
                   title: 'Sem itens',
                   message:
-                      'Adicione uma despesa para calcular totais e politica.',
+                      'Adicione uma despesa para calcular totais e política.',
                   action: FilledButton(
                     onPressed: () =>
                         context.go('/expenses/$reportId/items/new'),
@@ -85,9 +87,10 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
                   ),
                 ),
               const ApprovalDecisionCard(
-                title: 'Aprovacao futura',
+                title: 'Aprovação',
                 message:
-                    'Manager/finance poderao devolver, rejeitar ou aprovar quando o backend workflow estiver conectado.',
+                    'Depois do envio, a gestão e o financeiro analisam esta '
+                    'prestação de contas e podem aprovar, devolver ou recusar.',
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
@@ -101,7 +104,7 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
                     ? () => context.go('/expenses/$reportId/submit')
                     : null,
                 icon: const Icon(Icons.send_outlined),
-                label: const Text('Resumo e submissao'),
+                label: const Text('Resumo e submissão'),
               ),
             ],
           ),
@@ -301,8 +304,8 @@ class _ExpenseItemCard extends StatelessWidget {
 
   String _violationLabel(String code) => switch (code) {
     'category_limit_exceeded' => 'Acima do limite',
-    'receipt_required' => 'Recibo obrigatorio',
-    _ => 'Violacao de politica',
+    'receipt_required' => 'Recibo obrigatório',
+    _ => 'Violação de política',
   };
 }
 

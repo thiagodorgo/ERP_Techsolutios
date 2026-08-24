@@ -435,7 +435,7 @@ void main() {
             'local_ack_id': 'clack-1',
             'local_run_id': 'clrun-c_1',
             'server_run_id': 'srv-run-1',
-            'message': 'Ciencia registrada por Joao (motorista).',
+            'message': 'Ciência registrada por Joao (motorista).',
             'acknowledged_by_role': 'motorista',
           },
         ),
@@ -443,7 +443,7 @@ void main() {
       final p = Map<String, Object?>.from(enc['payload'] as Map);
       expect(enc['type'], 'checklist.acknowledgement_create');
       expect(p['run_id'], 'srv-run-1');
-      expect(p['message'], 'Ciencia registrada por Joao (motorista).');
+      expect(p['message'], 'Ciência registrada por Joao (motorista).');
     });
 
     test('10. attachment => checklist.attachment_attach (só metadado)', () {

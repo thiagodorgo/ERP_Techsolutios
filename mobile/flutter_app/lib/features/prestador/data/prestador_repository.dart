@@ -79,7 +79,7 @@ class PrestadorRepository extends ChangeNotifier {
       TechnicianStockItem(
         sku: 'CON-0021',
         name: 'Conector WAGO 3 vias',
-        category: 'Conexao',
+        category: 'Conexão',
         available: 40,
         unit: 'un',
       ),

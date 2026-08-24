@@ -316,7 +316,7 @@ extension ExpenseReportStatusLabels on ExpenseReportStatus {
       ExpenseReportStatus.syncPending => 'Sync pendente',
       ExpenseReportStatus.readyToSubmit => 'Pronto',
       ExpenseReportStatus.submitted => 'Enviado',
-      ExpenseReportStatus.underReview => 'Em analise',
+      ExpenseReportStatus.underReview => 'Em análise',
       ExpenseReportStatus.returned => 'Devolvido',
       ExpenseReportStatus.approvedManager => 'Aprovado manager',
       ExpenseReportStatus.approvedFinance => 'Aprovado finance',

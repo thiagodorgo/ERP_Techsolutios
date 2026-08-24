@@ -98,7 +98,7 @@ SyncAction _statusAction({
     createdAt: DateTime.utc(2026, 6, 18, 12, 1),
     lastErrorCode: status == SyncStatus.conflict ? 'REMOTE_CONFLICT' : null,
     lastSafeError: status == SyncStatus.conflict
-        ? 'Conflito remoto exige decisao manual.'
+        ? 'Conflito remoto exige decisão manual.'
         : null,
   );
 }
@@ -143,7 +143,7 @@ void main() {
       final result = await repository.createWorkOrder(
         title: 'Criada offline',
         customerName: 'Cliente',
-        serviceAddress: 'Endereco',
+        serviceAddress: 'Endereço',
         priority: WorkOrderPriority.high,
       );
 
@@ -329,7 +329,7 @@ void main() {
         store,
       ).replayTenant(_tenantId);
 
-      expect(result.failed.single.lastSafeError, 'Servidor recusou a acao.');
+      expect(result.failed.single.lastSafeError, 'Servidor recusou a ação.');
       expect(
         (await store.loadWorkOrders()).single.syncStatus,
         SyncStatus.failed,
@@ -479,7 +479,7 @@ void main() {
       final action = (await queue.actionsForTenant(_tenantId)).single;
       expect(action.status, SyncStatus.conflict);
       expect(action.lastErrorCode, 'MANUAL_REVIEW_REQUIRED');
-      expect(action.lastSafeError, 'Conflito mantido para revisao manual.');
+      expect(action.lastSafeError, 'Conflito mantido para revisão manual.');
     });
 
     testWidgets('UI mostra badge, mensagem e ações de conflito', (
@@ -525,7 +525,7 @@ void main() {
       expect(find.text('Status local: Agendada'), findsOneWidget);
       expect(find.text('Manter local e tentar novamente'), findsOneWidget);
       expect(find.text('Aceitar estado do servidor'), findsOneWidget);
-      expect(find.text('Marcar para revisao manual'), findsOneWidget);
+      expect(find.text('Marcar para revisão manual'), findsOneWidget);
     });
 
     testWidgets('sync screen agrupa conflito de OS', (tester) async {
@@ -549,12 +549,12 @@ void main() {
       // A tela agora mostra um card de conflito com resolucao manual no topo;
       // o agrupamento por dominio permanece abaixo (rolar para revelar).
       await tester.scrollUntilVisible(
-        find.text('Ordens de Servico'),
+        find.text('Ordens de Serviço'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
 
-      expect(find.text('Ordens de Servico'), findsOneWidget);
+      expect(find.text('Ordens de Serviço'), findsOneWidget);
       expect(find.text('1 conflito(s)'), findsOneWidget);
       expect(find.text('Conflito'), findsOneWidget);
     });

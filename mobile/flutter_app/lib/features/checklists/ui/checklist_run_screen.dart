@@ -56,7 +56,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
     await repo.load();
     final schema = await repo.getSchema(widget.checklistId);
     if (schema == null) {
-      throw Exception('Schema nao encontrado: ${widget.checklistId}');
+      throw Exception('Schema não encontrado: ${widget.checklistId}');
     }
     // D-CHK-DISPATCH-CREATE — o guincheiro BAIXA a run pré-criada pelo despacho;
     // não a cria. Lista vazia = aguardando despacho.
@@ -115,7 +115,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
       if (mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Checklist concluido com sucesso.')),
+          const SnackBar(content: Text('Checklist concluído com sucesso.')),
         );
       }
     } catch (e) {
@@ -173,6 +173,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
         if (snapshot.hasError) {
           return ErpScaffold(
             showAppBar: false,
+            showBottomNav: false,
             body: Column(
               children: [
                 MobileScreenHeader(
@@ -189,6 +190,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
         if (!snapshot.hasData) {
           return const ErpScaffold(
             showAppBar: false,
+            showBottomNav: false,
             body: Center(child: CircularProgressIndicator()),
           );
         }
@@ -223,12 +225,28 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
 
         return ErpScaffold(
           showAppBar: false,
+          // Tela de fluxo: rodapé é a ação seguinte, não a navegação
+          // (checklist-coleta.png / checklist-entrega.png).
+          stickyBar: MobileStickyBar(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: _canComplete(schema) && !_completing
+                      ? () => _doComplete(repo, runId, schema)
+                      : null,
+                  child: Text(
+                    _completing ? 'Concluindo...' : 'Concluir checklist',
+                  ),
+                ),
+              ),
+            ],
+          ),
           body: Column(
             children: [
               MobileScreenHeader(
                 title: schema.title,
                 subtitle: totalRequired > 0
-                    ? 'Obrigatorios: $answeredRequired/$totalRequired'
+                    ? 'Obrigatórios: $answeredRequired/$totalRequired'
                     : null,
                 onBack: () => Navigator.of(context).maybePop(),
                 trailing: MobilePill(
@@ -239,29 +257,14 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
               if (totalRequired > 0)
                 LinearProgressIndicator(
                   value: answeredRequired / totalRequired,
-                  semanticsLabel: 'Progresso dos campos obrigatorios',
+                  semanticsLabel: 'Progresso dos campos obrigatórios',
                 ),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: fields.length + 1,
+                  itemCount: fields.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, i) {
-                    if (i == fields.length) {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: FilledButton(
-                          onPressed: _canComplete(schema) && !_completing
-                              ? () => _doComplete(repo, runId, schema)
-                              : null,
-                          child: Text(
-                            _completing
-                                ? 'Concluindo...'
-                                : 'Concluir checklist',
-                          ),
-                        ),
-                      );
-                    }
                     final field = fields[i];
                     return _FieldCard(
                       field: field,
@@ -386,7 +389,7 @@ class _FieldCard extends StatelessWidget {
         controller: ctrl,
         decoration: const InputDecoration(
           border: OutlineInputBorder(),
-          hintText: 'Digite o numero',
+          hintText: 'Digite o número',
         ),
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         onChanged: (v) => onAnswer(
@@ -398,7 +401,7 @@ class _FieldCard extends StatelessWidget {
         ),
       ),
       MobileChecklistFieldType.boolean => SwitchListTile(
-        title: Text(answer?.boolValue == true ? 'Sim' : 'Nao'),
+        title: Text(answer?.boolValue == true ? 'Sim' : 'Não'),
         value: answer?.boolValue ?? false,
         contentPadding: EdgeInsets.zero,
         onChanged: (v) => onAnswer(
@@ -456,7 +459,7 @@ class _FieldCard extends StatelessWidget {
         controller: ctrl,
         decoration: const InputDecoration(
           border: OutlineInputBorder(),
-          hintText: 'Adicione observacoes',
+          hintText: 'Adicione observações',
         ),
         maxLines: 4,
         onChanged: (v) => onAnswer(
@@ -485,7 +488,7 @@ class _FieldCard extends StatelessWidget {
           '/checklists/$checklistId/run/acknowledgement?runId=$runId',
         ),
         icon: const Icon(Icons.verified_user_outlined),
-        label: const Text('Registrar ciencia'),
+        label: const Text('Registrar ciência'),
       ),
       MobileChecklistFieldType.signature => _SignatureField(
         field: field,
@@ -572,7 +575,7 @@ class _VehicleSelectorFieldState extends State<_VehicleSelectorField> {
       children: [
         InputDecorator(
           decoration: const InputDecoration(
-            labelText: 'Tipo de veiculo',
+            labelText: 'Tipo de veículo',
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           ),
@@ -603,7 +606,7 @@ class _VehicleSelectorFieldState extends State<_VehicleSelectorField> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Vista do veiculo',
+          'Vista do veículo',
           style: Theme.of(
             context,
           ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -748,8 +751,8 @@ class _PhotoUploadFieldState extends State<_PhotoUploadField> {
             _adding
                 ? 'Registrando...'
                 : hasAtt
-                ? 'Substituir evidencia'
-                : 'Adicionar evidencia',
+                ? 'Substituir evidência'
+                : 'Adicionar evidência',
           ),
         ),
         if (hasAtt) ...[
@@ -763,7 +766,7 @@ class _PhotoUploadFieldState extends State<_PhotoUploadField> {
               ),
               const SizedBox(width: 4),
               Text(
-                'Evidencia registrada',
+                'Evidência registrada',
                 style: TextStyle(color: Colors.green.shade600, fontSize: 13),
               ),
               const SizedBox(width: 8),
@@ -1015,7 +1018,7 @@ class _PhotoRow extends StatelessWidget {
             children: [
               Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
               Text(
-                hasAttachment ? 'Evidencia registrada' : 'Sem evidencia',
+                hasAttachment ? 'Evidência registrada' : 'Sem evidência',
                 style: TextStyle(
                   color: hasAttachment ? Colors.green.shade600 : Colors.grey,
                   fontSize: 12,
@@ -1024,8 +1027,14 @@ class _PhotoRow extends StatelessWidget {
             ],
           ),
         ),
+        // Mínima FINITA: o tema usa `Size.fromHeight(44)` (largura mínima
+        // infinita), que estoura o layout em filho não-flexível de Row.
         OutlinedButton(
           onPressed: adding ? null : onTap,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+          ),
           child: Text(
             adding
                 ? '...'
@@ -1063,6 +1072,7 @@ class AwaitingDispatchView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ErpScaffold(
       showAppBar: false,
+      showBottomNav: false,
       body: Column(
         children: [
           MobileScreenHeader(

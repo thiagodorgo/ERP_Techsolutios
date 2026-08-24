@@ -7,7 +7,7 @@ enum InventoryItemStatus {
   String get label => switch (this) {
     normal => 'Normal',
     low => 'Baixo',
-    critical => 'Critico',
+    critical => 'Crítico',
     zeroed => 'Zerado',
   };
 

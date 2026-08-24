@@ -150,7 +150,7 @@ void main() {
 
   // ── Group 3: persistencia (assinatura persistida) ────────────────────────
   group('B-117 assinatura persistida', () {
-    test('7. assinatura persiste apos recriar store com mesmo DB', () async {
+    test('7. assinatura persiste após recriar store com mesmo DB', () async {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
 

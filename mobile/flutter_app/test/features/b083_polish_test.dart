@@ -58,7 +58,7 @@ WorkOrder _wo({
   localId: id,
   tenantId: _tenant,
   code: 'OS-B083-$id',
-  title: 'Instalacao $id',
+  title: 'Instalação $id',
   customerName: 'Cliente B083',
   serviceAddress: 'Rua Teste, 1',
   status: status,
@@ -162,7 +162,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('2. busca por titulo filtra resultados', (tester) async {
+    testWidgets('2. busca por título filtra resultados', (tester) async {
       await tester.pumpWidget(
         _wrapWo(
           const WorkOrderListScreen(),
@@ -210,7 +210,7 @@ void main() {
   // ── 2. WorkOrderListScreen — status tabs ────────────────────────────────
 
   group('WorkOrderListScreen — status tabs', () {
-    testWidgets('4. tabs Todas / Agendadas / Em campo / Concluidas visiveis', (
+    testWidgets('4. tabs Todas / Agendadas / Em campo / Concluídas visiveis', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapWo(const WorkOrderListScreen()));
@@ -220,7 +220,7 @@ void main() {
       expect(find.text('Todas'), findsWidgets);
       expect(find.text('Agendadas'), findsOneWidget);
       expect(find.text('Em campo'), findsOneWidget);
-      expect(find.text('Concluidas'), findsOneWidget);
+      expect(find.text('Concluídas'), findsOneWidget);
     });
 
     testWidgets('5. tab Agendadas filtra scheduled/dispatched', (tester) async {
@@ -263,7 +263,7 @@ void main() {
       expect(find.textContaining('OS-B083-sch'), findsNothing);
     });
 
-    testWidgets('7. tab Concluidas mostra completed', (tester) async {
+    testWidgets('7. tab Concluídas mostra completed', (tester) async {
       await tester.pumpWidget(
         _wrapWo(
           const WorkOrderListScreen(),
@@ -275,7 +275,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Concluidas'));
+      await tester.tap(find.text('Concluídas'));
       await tester.pump();
 
       expect(find.textContaining('OS-B083-done'), findsOneWidget);
@@ -299,7 +299,7 @@ void main() {
       expect(find.text('Em rota'), findsWidgets);
       expect(find.text('No local'), findsWidgets);
       expect(find.text('Em exec.'), findsWidgets);
-      expect(find.text('Concluida'), findsWidgets);
+      expect(find.text('Concluída'), findsWidgets);
     });
 
     testWidgets('9. botoes Checklist / Mapa presentes', (tester) async {
@@ -329,46 +329,46 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Sem permissao'), findsOneWidget);
+      expect(find.text('Sem permissão'), findsOneWidget);
     });
 
-    testWidgets('11. com permissao exibe formulario completo', (tester) async {
+    testWidgets('11. com permissão exibe formulario completo', (tester) async {
       await tester.pumpWidget(_wrapWo(const NewWorkOrderScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Titulo *'), findsOneWidget);
+      expect(find.text('Título *'), findsOneWidget);
       expect(find.text('Cliente *'), findsOneWidget);
-      expect(find.text('Endereco de atendimento *'), findsOneWidget);
+      expect(find.text('Endereço de atendimento *'), findsOneWidget);
       expect(find.text('Prioridade *'), findsOneWidget);
     });
 
-    testWidgets('12. submit sem titulo mostra erro de validacao', (
+    testWidgets('12. submit sem título mostra erro de validacao', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapWo(const NewWorkOrderScreen()));
       await tester.pumpAndSettle();
 
       // Botao fica na borda inferior — garantir visibilidade antes de tocar
-      await tester.ensureVisible(find.text('Criar ordem de servico'));
+      await tester.ensureVisible(find.text('Criar ordem de serviço'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Criar ordem de servico'));
+      await tester.tap(find.text('Criar ordem de serviço'));
       await tester.pump();
 
-      expect(find.text('Campo obrigatorio'), findsWidgets);
+      expect(find.text('Campo obrigatório'), findsWidgets);
     });
   });
 
   // ── 5. ExpenseListScreen — summary header + tabs ────────────────────────
 
   group('ExpenseListScreen — summary + tabs', () {
-    testWidgets('13. sem relatorios nao exibe summary', (tester) async {
+    testWidgets('13. sem relatórios não exibe summary', (tester) async {
       await tester.pumpWidget(_wrapExp(const ExpenseListScreen()));
       await tester.pumpAndSettle();
 
       expect(find.text('Total acumulado'), findsNothing);
     });
 
-    testWidgets('14. com relatorio exibe summary header', (tester) async {
+    testWidgets('14. com relatório exibe summary header', (tester) async {
       await tester.pumpWidget(
         _wrapExp(
           const ExpenseListScreen(),
@@ -495,7 +495,7 @@ void main() {
 
   // ── 7. ExpenseSubmitScreen — submission checklist ───────────────────────
 
-  group('ExpenseSubmitScreen — checklist de submissao', () {
+  group('ExpenseSubmitScreen — checklist de submissão', () {
     testWidgets('20. todos os itens do checklist visiveis', (tester) async {
       await tester.pumpWidget(
         _wrapExp(
@@ -510,14 +510,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Relatorio preenchido'), findsOneWidget);
+      expect(find.text('Relatório preenchido'), findsOneWidget);
       expect(find.text('Itens adicionados'), findsOneWidget);
-      expect(find.text('Recibos obrigatorios'), findsOneWidget);
-      expect(find.text('Dentro da politica'), findsOneWidget);
+      expect(find.text('Recibos obrigatórios'), findsOneWidget);
+      expect(find.text('Dentro da política'), findsOneWidget);
       expect(find.text('Status valido para envio'), findsOneWidget);
     });
 
-    testWidgets('21. relatorio sem itens bloqueia botao de submissao', (
+    testWidgets('21. relatório sem itens bloqueia botao de submissão', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -557,7 +557,7 @@ void main() {
   // ── 8. HomeScreen — greeting + next OS + RDV ────────────────────────────
 
   group('HomeScreen — melhorias B083', () {
-    testWidgets('23. saudacao usa parte do email do usuario', (tester) async {
+    testWidgets('23. saudacao usa parte do email do usuário', (tester) async {
       await tester.pumpWidget(_wrapExp(HomeScreen(session: _sessionFull)));
       await tester.pumpAndSettle();
 
@@ -565,7 +565,7 @@ void main() {
       expect(find.textContaining('tecnico'), findsWidgets);
     });
 
-    testWidgets('24. proxima OS aparece quando ha OS do tenant', (
+    testWidgets('24. próxima OS aparece quando ha OS do tenant', (
       tester,
     ) async {
       final router = GoRouter(
@@ -601,7 +601,7 @@ void main() {
       expect(find.text('Minhas OS'), findsOneWidget);
     });
 
-    testWidgets('25. RDV summary card aparece com relatorio local', (
+    testWidgets('25. RDV summary card aparece com relatório local', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -617,7 +617,7 @@ void main() {
       expect(find.text('Minhas OS'), findsOneWidget);
     });
 
-    testWidgets('26. acoes rapidas visiveis com permissoes completas', (
+    testWidgets('26. ações rapidas visiveis com permissões completas', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapExp(HomeScreen(session: _sessionFull)));
@@ -627,7 +627,7 @@ void main() {
       expect(find.text('Diagnóstico'), findsOneWidget);
     });
 
-    testWidgets('27. sem permissoes acoes rapidas nao aparecem', (
+    testWidgets('27. sem permissões ações rapidas não aparecem', (
       tester,
     ) async {
       const sessionNoPerms = BootstrapSession(
@@ -640,13 +640,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Acoes rapidas'), findsNothing);
+      expect(find.text('Ações rapidas'), findsNothing);
     });
   });
 
   // ── Unit — cálculos de totais e política ────────────────────────────────
 
-  group('Unit — totais e violacoes de politica', () {
+  group('Unit — totais e violações de política', () {
     test('28. summary RDV calcula total corretamente', () {
       final report = _report(
         id: 'u1',

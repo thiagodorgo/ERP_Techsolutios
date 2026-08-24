@@ -38,14 +38,14 @@ class ProfileScreen extends ConsumerWidget {
 
     if (bootstrapAsync.hasError) {
       return Scaffold(
-        body: ErrorState(message: 'Falha ao carregar sessao. Tente novamente.'),
+        body: ErrorState(message: 'Falha ao carregar sessão. Tente novamente.'),
       );
     }
 
     if (authState?.status == AuthStatus.expired) {
       return _ExpiredSessionView(
         safeError:
-            authState?.safeError ?? 'Sua sessao expirou. Faca login novamente.',
+            authState?.safeError ?? 'Sua sessão expirou. Faça login novamente.',
         onLoginPressed: () => ref.read(authStateProvider.notifier).logout(),
       );
     }
@@ -464,7 +464,7 @@ class _ExpiredSessionView extends StatelessWidget {
               const Icon(Icons.lock_clock_outlined, size: 48),
               const SizedBox(height: 16),
               Text(
-                'Sessao expirada',
+                'Sessão expirada',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),

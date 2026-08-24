@@ -129,7 +129,7 @@ void main() {
       expect(api.captured?.first.clientActionId, 'cl-1');
     });
 
-    test('2. nao envia actions RDV por engano', () async {
+    test('2. não envia actions RDV por engano', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(_rdvAction(id: 'rdv-1'));
 
@@ -137,7 +137,7 @@ void main() {
 
       final result = await _makeService(queue, api).replayTenant('tenant-demo');
 
-      expect(api.captured, isNull, reason: 'sendBatch nao deve ser chamado');
+      expect(api.captured, isNull, reason: 'sendBatch não deve ser chamado');
       expect(result.synced, isEmpty);
       expect(result.failed, isEmpty);
       expect(result.conflicts, isEmpty);
@@ -319,7 +319,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('ChecklistSyncReplayService — seguranca de replay (B-088)', () {
-    test('11. actions synced nao sao reenviadas', () async {
+    test('11. actions synced não são reenviadas', () async {
       final queue = InMemorySyncQueueRepository();
       final action = _checklistAction(id: 'cl-1');
       await queue.enqueue(action);
@@ -332,7 +332,7 @@ void main() {
       expect(
         api.captured,
         isNull,
-        reason: 'synced nao entra em pendingForTenant',
+        reason: 'synced não entra em pendingForTenant',
       );
       expect(result.synced, isEmpty);
       expect(result.failed, isEmpty);
@@ -360,7 +360,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('ChecklistSyncReplayService — payload seguro (B-088)', () {
-    test('13. attachment payload nao contem path/base64/token', () async {
+    test('13. attachment payload não contem path/base64/token', () async {
       final queue = InMemorySyncQueueRepository();
       await queue.enqueue(
         _checklistAction(
@@ -393,7 +393,7 @@ void main() {
     });
 
     test(
-      '14. beforeAfter payload nao contem base64 e usa IDs prefixados',
+      '14. beforeAfter payload não contem base64 e usa IDs prefixados',
       () async {
         final queue = InMemorySyncQueueRepository();
         await queue.enqueue(

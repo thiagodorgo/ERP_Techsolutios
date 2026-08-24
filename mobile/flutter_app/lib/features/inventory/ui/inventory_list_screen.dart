@@ -26,8 +26,8 @@ class InventoryListScreen extends ConsumerWidget {
       return const ErpScaffold(
         title: 'Estoque',
         body: PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message: 'inventory:read necessario para acessar o estoque.',
+          title: 'Acesso não autorizado',
+          message: 'Seu perfil não permite consultar o estoque.',
         ),
       );
     }
@@ -72,7 +72,7 @@ class InventoryListScreen extends ConsumerWidget {
                           child: OutlinedButton.icon(
                             onPressed: () => context.push('/inventory/exit'),
                             icon: const Icon(Icons.remove_circle_outline),
-                            label: const Text('Saida'),
+                            label: const Text('Saída'),
                           ),
                         ),
                       ],
@@ -94,7 +94,7 @@ class InventoryListScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '$criticalCount ${criticalCount == 1 ? 'item em' : 'itens em'} estoque critico',
+                        '$criticalCount ${criticalCount == 1 ? 'item em' : 'itens em'} estoque crítico',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onErrorContainer,
                           fontWeight: FontWeight.w600,
@@ -108,7 +108,7 @@ class InventoryListScreen extends ConsumerWidget {
                 const TabBar(
                   tabs: [
                     Tab(text: 'Todos'),
-                    Tab(text: 'Criticos'),
+                    Tab(text: 'Críticos'),
                   ],
                 ),
 

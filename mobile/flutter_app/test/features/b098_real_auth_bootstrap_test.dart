@@ -254,7 +254,7 @@ void main() {
     });
 
     test(
-      '1.8 restoreSession recupera sessao armazenada e atualiza currentSession',
+      '1.8 restoreSession recupera sessão armazenada e atualiza currentSession',
       () async {
         await storage.saveSession(fakeSession());
         final repo = DioAuthRepository(client: _fakeDio(), storage: storage);
@@ -266,7 +266,7 @@ void main() {
       },
     );
 
-    test('1.9 clearSession limpa apenas session, nao bootstrap', () async {
+    test('1.9 clearSession limpa apenas session, não bootstrap', () async {
       await storage.saveSession(fakeSession());
       await storage.saveBootstrapJson('{"v":1}');
       final repo = DioAuthRepository(client: _fakeDio(), storage: storage);
@@ -279,7 +279,7 @@ void main() {
     });
 
     test(
-      '1.10 safeMessage dos ApiErrors nao contem tokens ou caminhos privados',
+      '1.10 safeMessage dos ApiErrors não contem tokens ou caminhos privados',
       () {
         const token = 'Bearer eyJhbGciOiJIUzI1NiJ9.secret';
         final errors = [
@@ -295,7 +295,7 @@ void main() {
           expect(
             err.safeMessage.contains(token),
             isFalse,
-            reason: '${err.runtimeType}.safeMessage nao deve conter token',
+            reason: '${err.runtimeType}.safeMessage não deve conter token',
           );
           expect(err.safeMessage.toLowerCase().contains('bearer'), isFalse);
         }
@@ -375,7 +375,7 @@ void main() {
     test(
       '2.6 restoreCached retorna null e limpa storage em JSON corrompido',
       () async {
-        await storage.saveBootstrapJson('{json invalido---}');
+        await storage.saveBootstrapJson('{json inválido---}');
         final repo = DioMobileBootstrapRepository(storage);
 
         final restored = await repo.restoreCached();
@@ -421,7 +421,7 @@ void main() {
     });
 
     test(
-      '3.2 fetch(session) usa dados da sessao para user e activeTenant',
+      '3.2 fetch(session) usa dados da sessão para user e activeTenant',
       () async {
         final repo = LocalDevBootstrapRepository(storage);
         final session = fakeSession(tenantId: 'ten-customizado');
@@ -435,7 +435,7 @@ void main() {
     );
 
     test(
-      '3.3 fetchForTenant seleciona tenant correto dentre os disponiveis',
+      '3.3 fetchForTenant seleciona tenant correto dentre os disponíveis',
       () async {
         final repo = LocalDevBootstrapRepository(storage);
         final session = fakeSession();
@@ -444,7 +444,7 @@ void main() {
         final bs = await repo.fetchForTenant(session, 'tenant-field');
 
         expect(bs.activeTenant.tenantId, 'tenant-field');
-        expect(bs.activeTenant.displayName, 'Tenant Field Services');
+        expect(bs.activeTenant.displayName, 'Resgate Sul Assistência');
       },
     );
 
@@ -506,7 +506,7 @@ void main() {
       },
     );
 
-    test('4.2 build() usa bootstrap cacheado quando disponivel', () async {
+    test('4.2 build() usa bootstrap cacheado quando disponível', () async {
       final st = InMemoryAuthTokenStorage();
       await st.saveSession(fakeSession());
       // Pre-populate cache so repo.restoreCached() returns it
@@ -522,7 +522,7 @@ void main() {
       expect(bs.activeTenant.tenantId, 'ten-test');
     });
 
-    test('4.3 retry() invalida estado e re-busca bootstrap', () async {
+    test('4.3 retry() inválida estado e re-busca bootstrap', () async {
       final st = InMemoryAuthTokenStorage();
       await st.saveSession(fakeSession());
       final container = makeContainer(storage: st);
@@ -553,7 +553,7 @@ void main() {
             .switchTenant(
               const TenantContext(
                 tenantId: 'tenant-field',
-                displayName: 'Tenant Field Services',
+                displayName: 'Resgate Sul Assistência',
               ),
             );
 
@@ -584,7 +584,7 @@ void main() {
     );
 
     test(
-      '4.6 switchTenant() seta pendingTenantSelection=false apos selecao',
+      '4.6 switchTenant() seta pendingTenantSelection=false após seleção',
       () async {
         final st = InMemoryAuthTokenStorage();
         await st.saveSession(fakeSession());
@@ -599,7 +599,7 @@ void main() {
             .switchTenant(
               const TenantContext(
                 tenantId: 'tenant-demo',
-                displayName: 'Tenant Demo',
+                displayName: 'Guinchos Paraná',
               ),
             );
 
@@ -638,14 +638,14 @@ void main() {
       child: const MaterialApp(home: TenantSelectorScreen()),
     );
 
-    testWidgets('5.1 exibe titulo da tela de selecao de empresa', (t) async {
+    testWidgets('5.1 exibe título da tela de seleção de empresa', (t) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
       expect(find.text('Selecionar organização'), findsOneWidget);
     });
 
-    testWidgets('5.2 exibe todos os tenants disponiveis', (t) async {
+    testWidgets('5.2 exibe todos os tenants disponíveis', (t) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
       await t.pumpAndSettle();
 
@@ -662,7 +662,7 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
     });
 
-    testWidgets('5.4 exibe instrucao para o usuario selecionar empresa', (
+    testWidgets('5.4 exibe instrucao para o usuário selecionar empresa', (
       t,
     ) async {
       await t.pumpWidget(buildScreen(multiTenantSession()));
@@ -707,12 +707,12 @@ void main() {
     testWidgets('6.1 exibe mensagem de erro de ApiError no bootstrap', (
       t,
     ) async {
-      const error = ApiNetworkError('Sem conexao com o servidor.');
+      const error = ApiNetworkError('Sem conexão com o servidor.');
       await t.pumpWidget(buildHomeWithError(error));
       await t.pump(); // flush microtasks: AsyncNotifier.build() future rejects
       await t.pump(); // process widget rebuild with AsyncError state
 
-      expect(find.textContaining('Sem conexao'), findsOneWidget);
+      expect(find.textContaining('Sem conexão'), findsOneWidget);
     });
 
     testWidgets('6.2 exibe botao Tentar novamente no erro de bootstrap', (
@@ -726,7 +726,7 @@ void main() {
       expect(find.text('Tentar novamente'), findsOneWidget);
     });
 
-    testWidgets('6.3 erro generico nao expoe detalhe interno', (t) async {
+    testWidgets('6.3 erro generico não expoe detalhe interno', (t) async {
       await t.pumpWidget(
         buildHomeWithError(Exception('detalhe_interno_privado')),
       );

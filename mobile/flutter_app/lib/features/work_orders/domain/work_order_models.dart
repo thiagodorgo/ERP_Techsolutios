@@ -36,11 +36,11 @@ extension WorkOrderStatusX on WorkOrderStatus {
     WorkOrderStatus.arrived => 'No local',
     WorkOrderStatus.inService => 'Em atendimento',
     WorkOrderStatus.paused => 'Pausada',
-    WorkOrderStatus.pendingApproval => 'Ag. aprovacao',
-    WorkOrderStatus.completed => 'Concluida',
+    WorkOrderStatus.pendingApproval => 'Ag. aprovação',
+    WorkOrderStatus.completed => 'Concluída',
     WorkOrderStatus.approved => 'Aprovada',
     WorkOrderStatus.rejected => 'Rejeitada',
-    WorkOrderStatus.exception => 'Excecao',
+    WorkOrderStatus.exception => 'Exceção',
     WorkOrderStatus.cancelled => 'Cancelada',
   };
 
@@ -100,7 +100,7 @@ extension WorkOrderPriorityX on WorkOrderPriority {
     WorkOrderPriority.low => 'Baixa',
     WorkOrderPriority.normal => 'Normal',
     WorkOrderPriority.high => 'Alta',
-    WorkOrderPriority.critical => 'Critica',
+    WorkOrderPriority.critical => 'Crítica',
   };
 
   String get statusTone => switch (this) {
@@ -293,18 +293,18 @@ extension WorkOrderTimelineEventTypeX on WorkOrderTimelineEventType {
   String get label => switch (this) {
     WorkOrderTimelineEventType.created => 'Criada',
     WorkOrderTimelineEventType.statusChanged => 'Status alterado',
-    WorkOrderTimelineEventType.assigned => 'Atribuida',
+    WorkOrderTimelineEventType.assigned => 'Atribuída',
     WorkOrderTimelineEventType.arrivedOnSite => 'Chegada ao local',
     WorkOrderTimelineEventType.serviceStarted => 'Atendimento iniciado',
     WorkOrderTimelineEventType.paused => 'Pausada',
     WorkOrderTimelineEventType.resumed => 'Retomada',
-    WorkOrderTimelineEventType.approvalRequested => 'Aprovacao solicitada',
+    WorkOrderTimelineEventType.approvalRequested => 'Aprovação solicitada',
     WorkOrderTimelineEventType.approvalGranted => 'Aprovado',
     WorkOrderTimelineEventType.approvalDenied => 'Reprovado',
-    WorkOrderTimelineEventType.completed => 'Concluida',
+    WorkOrderTimelineEventType.completed => 'Concluída',
     WorkOrderTimelineEventType.cancelled => 'Cancelada',
-    WorkOrderTimelineEventType.exceptionRaised => 'Excecao registrada',
-    WorkOrderTimelineEventType.note => 'Observacao',
+    WorkOrderTimelineEventType.exceptionRaised => 'Exceção registrada',
+    WorkOrderTimelineEventType.note => 'Observação',
   };
 }
 

@@ -17,7 +17,7 @@ void main() {
       repo = LocalDevAuthRepository(storage: storage);
     });
 
-    test('1. login cria sessao com email e tenant_id nao vazios', () async {
+    test('1. login cria sessão com email e tenant_id não vazios', () async {
       final session = await repo.login(
         email: 'tecnico@tenant.demo',
         password: '123456',
@@ -32,7 +32,7 @@ void main() {
     });
 
     test(
-      '2. tokens sao persistidos via InMemoryAuthTokenStorage apos login',
+      '2. tokens são persistidos via InMemoryAuthTokenStorage após login',
       () async {
         await repo.login(email: 'x@demo.com', password: 'pass');
 
@@ -43,7 +43,7 @@ void main() {
       },
     );
 
-    test('3. restoreSession recupera sessao persistida do storage', () async {
+    test('3. restoreSession recupera sessão persistida do storage', () async {
       await repo.login(email: 'a@b.com', password: 'pw');
 
       final repo2 = LocalDevAuthRepository(storage: storage);
@@ -69,7 +69,7 @@ void main() {
       expect(session, isNull);
     });
 
-    test('6. sessao expirada e detectada pelo isExpired', () {
+    test('6. sessão expirada e detectada pelo isExpired', () {
       final expiredTokens = AuthTokens(
         accessToken: 'tok',
         expiresAt: DateTime(2020),
@@ -88,7 +88,7 @@ void main() {
       expect(session.isExpired, isTrue);
     });
 
-    test('7. token nao aparece em safeMessage de ApiError', () {
+    test('7. token não aparece em safeMessage de ApiError', () {
       const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.secret';
 
       const networkErr = ApiNetworkError();
@@ -129,7 +129,7 @@ void main() {
       },
     );
 
-    test('9. API client nao adiciona Authorization quando sem token', () {
+    test('9. API client não adiciona Authorization quando sem token', () {
       final client = createExpenseHttpClient(const ApiConfig());
 
       expect(client.options.headers.containsKey('Authorization'), isFalse);
@@ -163,7 +163,7 @@ void main() {
     );
 
     test(
-      '11. modo dev retorna sessao valida com qualquer email nao vazio',
+      '11. modo dev retorna sessão valida com qualquer email não vazio',
       () async {
         final s1 = await repo.login(email: 'a@a.com', password: 'pw');
         final s2 = await repo.login(email: 'b@b.com', password: 'pw');

@@ -274,7 +274,7 @@ void main() {
           payload: const {
             'local_run_id': 'clrun-e_1',
             'server_run_id': 'srv-1',
-            'message': 'Ciencia',
+            'message': 'Ciência',
           },
           createdAt: DateTime.utc(2026, 8, 1, 10, 0, 2),
         ),

@@ -27,7 +27,7 @@ class MobileApprovalState {
       status: mobileApprovalStatusFromApi(_requiredString(data, 'status')),
       safeMessage:
           _optionalString(data['safe_message']) ??
-          'A decisao operacional foi registrada.',
+          'A decisão operacional foi registrada.',
       reason: _optionalString(data['reason']),
     );
   }

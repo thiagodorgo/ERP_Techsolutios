@@ -132,7 +132,7 @@ void main() {
   );
 
   // t03: Cancelamento — picker retorna null → nenhuma evidencia criada
-  test('t03: picker cancelado (null) — nenhuma evidencia registrada', () async {
+  test('t03: picker cancelado (null) — nenhuma evidência registrada', () async {
     final fake = FakeEvidencePickerService(result: null);
 
     final result = await fake.pickImage(EvidenceCaptureSource.camera);
@@ -204,7 +204,7 @@ void main() {
 
   // t06: WorkOrderRepository.attachEvidence — salva e enfileira sync action
   test(
-    't06: attachEvidence — salva evidencia e enfileira sync action',
+    't06: attachEvidence — salva evidência e enfileira sync action',
     () async {
       final queue = InMemorySyncQueueRepository();
       final wo = _makeOrder();

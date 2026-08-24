@@ -121,7 +121,7 @@ void main() {
             'file_name': 'field-signature.png',
             'content_type': 'image/png',
             'size_bytes': 1024,
-            'signer_name': 'Responsavel local',
+            'signer_name': 'Responsável local',
           },
         ),
         _action(
@@ -152,7 +152,7 @@ void main() {
             'file_data': [1, 2, 3],
             'local_path': r'C:\private\safe.jpg',
             'path': '/private/safe.jpg',
-            'caption': 'Antes da manutencao',
+            'caption': 'Antes da manutenção',
             'gps': {'lat': -23.55, 'lng': -46.63, 'token': 'forbidden'},
           },
         ),
@@ -162,7 +162,7 @@ void main() {
       final serialized = payload.toString();
 
       expect(payload['work_order_id'], 'wo-1');
-      expect(payload['caption'], 'Antes da manutencao');
+      expect(payload['caption'], 'Antes da manutenção');
       expect(serialized, isNot(contains('tenant')));
       expect(serialized, isNot(contains('base64')));
       expect(serialized, isNot(contains('file_data')));
@@ -328,7 +328,7 @@ void main() {
 
       final first = await service.replayTenant('tenant-local-only');
       expect(first.conflicts.single.status, SyncStatus.conflict);
-      expect(first.conflicts.single.lastSafeError, contains('decisao manual'));
+      expect(first.conflicts.single.lastSafeError, contains('decisão manual'));
 
       final secondApi = _FakeEvidenceApi(_response());
       final second = await EvidenceSyncReplayService(

@@ -264,7 +264,7 @@ class _YesNoBuilder implements ChecklistQuestionWidgetBuilder {
         ),
         const SizedBox(width: 12),
         _ChoiceButton(
-          label: 'Nao',
+          label: 'Não',
           selected: current == 'no',
           color: Colors.red,
           onTap: () => onChanged(_answer(question, context, text: 'no')),
@@ -479,7 +479,7 @@ class _UnknownTypeBuilder implements ChecklistQuestionWidgetBuilder {
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              'Este tipo de pergunta ainda nao e suportado nesta versao do app.',
+              'Este tipo de pergunta ainda não é suportado nesta versão do app.',
               style: TextStyle(fontSize: 13),
             ),
           ),

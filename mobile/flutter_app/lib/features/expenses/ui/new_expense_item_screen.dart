@@ -16,7 +16,7 @@ class NewExpenseItemScreen extends StatefulWidget {
 
 class _NewExpenseItemScreenState extends State<NewExpenseItemScreen> {
   final _amountController = TextEditingController(text: '120.00');
-  final _cityController = TextEditingController(text: 'Sao Paulo');
+  final _cityController = TextEditingController(text: 'São Paulo');
   final _vendorController = TextEditingController(text: 'Fornecedor local');
   String _categoryId = 'fuel';
   bool _receiptPlaceholder = false;
@@ -77,9 +77,10 @@ class _NewExpenseItemScreenState extends State<NewExpenseItemScreen> {
                 value: _receiptPlaceholder,
                 onChanged: (value) =>
                     setState(() => _receiptPlaceholder = value),
-                title: const Text('Recibo anexado estruturalmente'),
+                title: const Text('Recibo em mãos'),
                 subtitle: const Text(
-                  'Camera, upload e OCR reais permanecem para bloco futuro.',
+                  'Marque agora e anexe a foto do comprovante na tela de '
+                  'recibos da despesa.',
                 ),
               ),
               const SizedBox(height: 20),

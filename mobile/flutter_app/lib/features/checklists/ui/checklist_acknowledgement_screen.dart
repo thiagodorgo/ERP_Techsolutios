@@ -54,7 +54,7 @@ class _ChecklistAcknowledgementScreenState
           _submitting = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ciencia registrada com sucesso.')),
+          const SnackBar(content: Text('Ciência registrada com sucesso.')),
         );
         context.pop();
       }
@@ -62,7 +62,7 @@ class _ChecklistAcknowledgementScreenState
       if (mounted) {
         setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao registrar ciencia: $e')),
+          SnackBar(content: Text('Erro ao registrar ciência: $e')),
         );
       }
     }
@@ -71,7 +71,7 @@ class _ChecklistAcknowledgementScreenState
   @override
   Widget build(BuildContext context) {
     return ErpScaffold(
-      title: 'Ciencia do responsavel',
+      title: 'Ciência do responsável',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -90,14 +90,14 @@ class _ChecklistAcknowledgementScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Declaracao de ciencia',
+                      'Declaração de ciência',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Ao confirmar, o responsavel declara estar ciente das '
-                      'informacoes registradas neste checklist e autoriza '
-                      'a conclusao do servico.',
+                      'Ao confirmar, o responsável declara estar ciente das '
+                      'informações registradas neste checklist e autoriza '
+                      'a conclusão do serviço.',
                     ),
                   ],
                 ),
@@ -107,7 +107,7 @@ class _ChecklistAcknowledgementScreenState
             TextField(
               controller: _nameCtrl,
               decoration: const InputDecoration(
-                labelText: 'Nome do responsavel *',
+                labelText: 'Nome do responsável *',
                 border: OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() {}),
@@ -116,7 +116,7 @@ class _ChecklistAcknowledgementScreenState
             TextField(
               controller: _roleCtrl,
               decoration: const InputDecoration(
-                labelText: 'Cargo / funcao',
+                labelText: 'Cargo / função',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -124,7 +124,7 @@ class _ChecklistAcknowledgementScreenState
             CheckboxListTile(
               value: _confirmed,
               title: const Text(
-                'Confirmo que li e estou ciente das informacoes acima.',
+                'Confirmo que li e estou ciente das informações acima.',
               ),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
@@ -134,7 +134,7 @@ class _ChecklistAcknowledgementScreenState
             FilledButton.icon(
               onPressed: _canSubmit ? _submit : null,
               icon: const Icon(Icons.check_circle_outline),
-              label: Text(_submitting ? 'Registrando...' : 'Confirmar ciencia'),
+              label: Text(_submitting ? 'Registrando...' : 'Confirmar ciência'),
             ),
           ],
         ),

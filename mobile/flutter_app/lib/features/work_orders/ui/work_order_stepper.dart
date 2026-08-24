@@ -27,7 +27,7 @@ class WorkOrderStepper extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Progresso da execucao',
+      label: 'Progresso da execução',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

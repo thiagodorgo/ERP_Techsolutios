@@ -130,7 +130,7 @@ Widget _wrapComparison(ChecklistLocalStore store) {
 void main() {
   // ── Group 1: fromApiValue estrito (o colapso era aqui) ───────────────────
   group('B-123 fromApiValue estrito', () {
-    test('1. valor futuro do backend NAO colapsa em coleta', () {
+    test('1. valor futuro do backend NÃO colapsa em coleta', () {
       // Ex.: fase do eixo `role` da aplicabilidade (PR-04a) que este app
       // ainda nao conhece. O colapso antigo fazia disto uma segunda "coleta".
       expect(
@@ -139,7 +139,7 @@ void main() {
       );
     });
 
-    test('2. null NAO vira coleta no caminho estrito', () {
+    test('2. null NÃO vira coleta no caminho estrito', () {
       expect(
         MobileChecklistRunKind.fromApiValue(null),
         MobileChecklistRunKind.unknown,
@@ -222,7 +222,7 @@ void main() {
       expect(lookup.hasUnknownKindRun, isTrue);
     });
 
-    test('8. run de fase futura NAO vira segunda coleta e a coleta real segue '
+    test('8. run de fase futura NÃO vira segunda coleta e a coleta real segue '
         'encontravel', () async {
       final store = _store();
       await store.saveRun(
@@ -248,7 +248,7 @@ void main() {
   });
 
   // ── Group 3: a tela de comparacao RECUSA em vez de chutar ────────────────
-  group('B-123 comparacao recusa lado ambiguo/unknown', () {
+  group('B-123 comparação recusa lado ambiguo/unknown', () {
     testWidgets('9. duas coletas -> recusa com mensagem honesta', (t) async {
       final store = _store();
       await store.saveRun(
@@ -288,7 +288,7 @@ void main() {
       expect(find.byKey(const Key('record-divergences')), findsNothing);
     });
 
-    testWidgets('10. run de fase nao identificada na OS -> recusa', (t) async {
+    testWidgets('10. run de fase não identificada na OS -> recusa', (t) async {
       final store = _store();
       await store.saveRun(
         _run(
@@ -359,7 +359,7 @@ void main() {
   // ── Group 4: Drift — unknown nao destroi informacao ──────────────────────
   group('B-123 Drift kind guard', () {
     test(
-      '12. valor futuro no banco local nao crasha nem vira coleta',
+      '12. valor futuro no banco local não crasha nem vira coleta',
       () async {
         final db = AppDatabase.openInMemory();
         addTearDown(db.close);
@@ -381,7 +381,7 @@ void main() {
     );
 
     test(
-      '13. saveRun com unknown preserva o valor cru ja persistido',
+      '13. saveRun com unknown preserva o valor cru já persistido',
       () async {
         final db = AppDatabase.openInMemory();
         addTearDown(db.close);
@@ -410,7 +410,7 @@ void main() {
       },
     );
 
-    test('14. unknown nao sobrescreve fase conhecida', () async {
+    test('14. unknown não sobrescreve fase conhecida', () async {
       final db = AppDatabase.openInMemory();
       addTearDown(db.close);
       final store = DriftChecklistLocalStore(db);

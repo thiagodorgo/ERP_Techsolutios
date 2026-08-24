@@ -125,7 +125,7 @@ void main() {
       expect(repo.workOrders.first.localId, 'wo-demo');
     });
 
-    test('4. OS de outro tenant nao aparece na lista', () async {
+    test('4. OS de outro tenant não aparece na lista', () async {
       final store = InMemoryWorkOrderLocalStore([
         _makeOrder(localId: 'wo-foreign', tenantId: _tenantOther),
       ]);
@@ -144,7 +144,7 @@ void main() {
 
   group('WorkOrderRepository — status update + sync action', () {
     test(
-      '5. updateStatus gera SyncAction com clientActionId nao vazio',
+      '5. updateStatus gera SyncAction com clientActionId não vazio',
       () async {
         final repo = _makeRepo(
           _sessionWithRead,
@@ -164,7 +164,7 @@ void main() {
       },
     );
 
-    test('6. payload de status nao contem token, path ou base64', () async {
+    test('6. payload de status não contem token, path ou base64', () async {
       final repo = _makeRepo(
         _sessionWithRead,
         seed: [_makeOrder(status: WorkOrderStatus.dispatched)],
@@ -180,17 +180,17 @@ void main() {
       expect(
         payload.contains('bearer'),
         isFalse,
-        reason: 'payload nao deve conter token Bearer',
+        reason: 'payload não deve conter token Bearer',
       );
       expect(
         payload.contains('password'),
         isFalse,
-        reason: 'payload nao deve conter senha',
+        reason: 'payload não deve conter senha',
       );
       expect(
         payload.contains('base64'),
         isFalse,
-        reason: 'payload nao deve conter base64',
+        reason: 'payload não deve conter base64',
       );
       // Must contain safe fields
       expect(result.action.payload.containsKey('local_id'), isTrue);
@@ -198,7 +198,7 @@ void main() {
       expect(result.action.payload.containsKey('occurred_at'), isTrue);
     });
 
-    test('7. transicao invalida lanca StateError', () async {
+    test('7. transição inválida lanca StateError', () async {
       final repo = _makeRepo(
         _sessionWithRead,
         seed: [_makeOrder(status: WorkOrderStatus.scheduled)],
@@ -227,7 +227,7 @@ void main() {
       expect(result.workOrder.status, WorkOrderStatus.dispatched);
     });
 
-    test('9. action enfileirada na SyncQueue apos updateStatus', () async {
+    test('9. action enfileirada na SyncQueue após updateStatus', () async {
       final queue = InMemorySyncQueueRepository();
       final repo = WorkOrderRepository(
         session: _sessionWithRead,
@@ -293,7 +293,7 @@ void main() {
 
   group('WorkOrderStatus transitions', () {
     test(
-      '12. scheduled → dispatched valido; cancelled NAO e iniciavel pelo campo (P-Ω3F6-STATUS-BYPASS)',
+      '12. scheduled → dispatched valido; cancelled NÃO e iniciavel pelo campo (P-Ω3F6-STATUS-BYPASS)',
       () {
         expect(
           WorkOrderStatus.scheduled.canTransitionTo(WorkOrderStatus.dispatched),
@@ -307,7 +307,7 @@ void main() {
       },
     );
 
-    test('13. scheduled → completed e inService sao invalidos', () {
+    test('13. scheduled → completed e inService são invalidos', () {
       expect(
         WorkOrderStatus.scheduled.canTransitionTo(WorkOrderStatus.completed),
         isFalse,
@@ -318,7 +318,7 @@ void main() {
       );
     });
 
-    test('14. inService permite multiple transicoes', () {
+    test('14. inService permite multiple transições', () {
       final allowed = WorkOrderStatus.inService.allowedTransitions;
       expect(allowed, contains(WorkOrderStatus.paused));
       expect(allowed, contains(WorkOrderStatus.completed));
@@ -326,7 +326,7 @@ void main() {
       expect(allowed, contains(WorkOrderStatus.exception));
     });
 
-    test('15. estados finais nao possuem transicoes', () {
+    test('15. estados finais não possuem transições', () {
       expect(WorkOrderStatus.completed.allowedTransitions, isEmpty);
       expect(WorkOrderStatus.approved.allowedTransitions, isEmpty);
       expect(WorkOrderStatus.cancelled.allowedTransitions, isEmpty);
@@ -388,10 +388,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Acesso nao autorizado'), findsOneWidget);
+      expect(find.text('Acesso não autorizado'), findsOneWidget);
       expect(
         find.text(
-          'work_orders:read necessario para visualizar ordens de servico.',
+          'work_orders:read necessário para visualizar ordens de serviço.',
         ),
         findsNothing,
       );
@@ -430,12 +430,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Ordens de Servico'), findsOneWidget);
+      expect(find.text('Ordens de Serviço'), findsOneWidget);
       expect(find.textContaining('OS-T-wo-vis-01'), findsOneWidget);
       expect(find.textContaining('OS-T-wo-vis-02'), findsOneWidget);
     });
 
-    testWidgets('19. OS de outro tenant nao aparece na tela', (tester) async {
+    testWidgets('19. OS de outro tenant não aparece na tela', (tester) async {
       final store = InMemoryWorkOrderLocalStore([
         _makeOrder(localId: 'wo-foreign', tenantId: _tenantOther),
       ]);
@@ -491,7 +491,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Ordens de Servico'), findsOneWidget);
+        expect(find.text('Ordens de Serviço'), findsOneWidget);
       },
     );
   });

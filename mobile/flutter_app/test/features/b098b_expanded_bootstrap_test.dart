@@ -42,7 +42,7 @@ Map<String, dynamic> _minimalBody({
   'enabledModules': [
     {
       'id': 'expense_management',
-      'title': 'Gestao de Despesas',
+      'title': 'Gestão de Despesas',
       'route': '/expenses',
       'requiredPermissions': ['expense_report:read'],
     },
@@ -55,7 +55,7 @@ Map<String, dynamic> _minimalBody({
   'expenseCategories': [
     {
       'id': 'fuel',
-      'label': 'Combustivel',
+      'label': 'Combustível',
       'requiresReceipt': true,
       'limit': 150.0,
     },
@@ -84,7 +84,7 @@ Map<String, dynamic> _expandedBody({
   List<Map<String, dynamic>> expenseCategories = const [
     {
       'id': 'fuel',
-      'name': 'Combustivel',
+      'name': 'Combustível',
       'policy': {'receiptRequired': true, 'defaultLimit': 150.0},
     },
   ],
@@ -380,7 +380,7 @@ void main() {
         final session = bootstrapSessionFromJson(_expandedBody());
         expect(session.expenseCategories.length, 1);
         expect(session.expenseCategories.first.id, 'fuel');
-        expect(session.expenseCategories.first.label, 'Combustivel');
+        expect(session.expenseCategories.first.label, 'Combustível');
         expect(session.expenseCategories.first.requiresReceipt, isTrue);
         expect(session.expenseCategories.first.limit, 150.0);
       },

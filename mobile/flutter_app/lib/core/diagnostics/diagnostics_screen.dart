@@ -21,7 +21,7 @@ class DiagnosticsScreen extends ConsumerWidget {
     final queue = ref.watch(syncQueueRepositoryProvider);
 
     return ErpScaffold(
-      title: 'Diagnostico',
+      title: 'Diagnóstico',
       body: FutureBuilder<List<SyncAction>>(
         future: session == null
             ? Future.value(const <SyncAction>[])
@@ -65,7 +65,7 @@ class DiagnosticsScreen extends ConsumerWidget {
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.business_outlined),
-                  title: const Text('Tenant ativo'),
+                  title: const Text('Organização ativa'),
                   subtitle: Text(
                     session?.activeTenant.tenantId ?? 'carregando',
                   ),
@@ -120,5 +120,5 @@ String _domainBreakdown(List<SyncAction> actions) {
   if (os > 0) parts.add('OS: $os');
   if (estoque > 0) parts.add('Estoque: $estoque');
   if (outro > 0) parts.add('Outro: $outro');
-  return parts.isEmpty ? 'Sem acoes na fila.' : parts.join(' · ');
+  return parts.isEmpty ? 'Sem ações na fila.' : parts.join(' · ');
 }

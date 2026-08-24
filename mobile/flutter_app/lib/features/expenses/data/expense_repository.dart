@@ -485,7 +485,7 @@ List<ExpenseReport> _initialReports(BootstrapSession session) {
   return [
     ExpenseReport(
       localId: 'PC-local-1',
-      title: 'Prestação de Contas atendimento OS-1042',
+      title: 'Prestação de Contas atendimento OS-2891',
       tenantId: tenantId,
       employeeId: session.user.userId,
       policyVersion: session.expensePolicy.version,
@@ -498,14 +498,14 @@ List<ExpenseReport> _initialReports(BootstrapSession session) {
           categoryId: 'fuel',
           amount: 184.90,
           date: DateTime.utc(2026, 6, 11),
-          city: 'Sao Paulo',
-          vendorName: 'Posto Demo',
+          city: 'São Paulo',
+          vendorName: 'Posto Ipiranga Augusta',
         ),
       ],
     ),
     ExpenseReport(
       localId: 'PC-local-2',
-      title: 'Prestação de Contas manutencao preventiva',
+      title: 'Prestação de Contas atendimento OS-2888',
       tenantId: tenantId,
       employeeId: session.user.userId,
       policyVersion: session.expensePolicy.version,

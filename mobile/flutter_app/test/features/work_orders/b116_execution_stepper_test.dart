@@ -94,18 +94,18 @@ void main() {
     test('1. Guincho tem 6 rotulos na ordem correta', () {
       final labels = workOrderStepLabels(WorkOrderServiceType.tow);
       expect(labels, [
-        'Inicio',
+        'Início',
         'Rota coleta',
         'Coleta',
         'Rota entrega',
         'Entrega',
-        'Conclusao',
+        'Conclusão',
       ]);
     });
 
     test('2. Prestador tem 4 rotulos na ordem correta', () {
       final labels = workOrderStepLabels(WorkOrderServiceType.provider);
-      expect(labels, ['Inicio', 'Rota', 'Atendimento', 'Conclusao']);
+      expect(labels, ['Início', 'Rota', 'Atendimento', 'Conclusão']);
     });
 
     test('3. serviceType null usa fluxo de prestador (4 passos)', () {
@@ -150,7 +150,7 @@ void main() {
       expect(steps.every((s) => s.isDone), isTrue);
     });
 
-    test('8. Passos antes do ativo sao done, depois sao todo', () {
+    test('8. Passos antes do ativo são done, depois são todo', () {
       final steps = buildWorkOrderSteps(
         WorkOrderServiceType.tow,
         WorkOrderStatus.inService, // idx 2 ativo
@@ -162,7 +162,7 @@ void main() {
       expect(steps[5].isTodo, isTrue);
     });
 
-    test('9. scheduled ativa passo Inicio (idx 0) em ambos os tipos', () {
+    test('9. scheduled ativa passo Início (idx 0) em ambos os tipos', () {
       expect(
         workOrderActiveStepIndex(
           WorkOrderServiceType.tow,
@@ -208,7 +208,7 @@ void main() {
       expect(find.text('Atendimento'), findsWidgets);
     });
 
-    testWidgets('12. Stepper widget aparece no topo da execucao', (t) async {
+    testWidgets('12. Stepper widget aparece no topo da execução', (t) async {
       await t.pumpWidget(_execApp(_wo(serviceType: WorkOrderServiceType.tow)));
       await t.pumpAndSettle();
 

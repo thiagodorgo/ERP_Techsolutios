@@ -81,7 +81,7 @@ Widget _wrap(List<WorkOrder> seed) {
 
 void main() {
   group('WorkOrderListScreen — badges tipo/sync (B-114)', () {
-    testWidgets('1. Card sem badges nao exibe Guincho nem icone de sync', (
+    testWidgets('1. Card sem badges não exibe Guincho nem icone de sync', (
       t,
     ) async {
       await t.pumpWidget(_wrap([_wo('a')]));
@@ -144,7 +144,7 @@ void main() {
       expect(find.text('Conflito'), findsOneWidget);
     });
 
-    testWidgets('7. Card com syncStatus=synced nao exibe badge de sync', (
+    testWidgets('7. Card com syncStatus=synced não exibe badge de sync', (
       t,
     ) async {
       await t.pumpWidget(_wrap([_wo('a', syncStatus: SyncStatus.synced)]));
