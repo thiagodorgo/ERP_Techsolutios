@@ -27,6 +27,21 @@ export function getPhaseBucketLabel(bucket: ProcessPhaseBucket): string {
   return PHASE_LABELS[bucket] ?? bucket;
 }
 
+// O QUE cada bucket agrega (fonte: PHASE_BUCKET_BY_STATUS em patios-dashboard.types.ts — os 14 status da FSM
+// mapeados no backend). Usado no pop-up de detalhamento de cada fase; descreve o rito, nunca o nome técnico
+// do status. White-label: "organização"/"autoridade solicitante", nunca "polícia".
+const PHASE_HINTS: Record<ProcessPhaseBucket, string> = {
+  RECEPTION: "Veículos em remoção ou em recepção no pátio — a guarda já começou, mas o processo ainda não entrou em custódia ativa.",
+  CUSTODY: "Veículos sob guarda da organização, em custódia ativa ou retidos por determinação judicial.",
+  RELEASE: "Processos com saída já autorizada — restituição ao proprietário em andamento ou veículo liberado para reparo.",
+  AUCTION: "Processos na trilha do leilão: elegíveis, em preparação, já organizados em lote ou arrematados.",
+  CLOSED: "Processos encerrados — restituídos, com leilão concluído, destinados à reciclagem direta ou arquivados.",
+};
+
+export function getPhaseBucketHint(bucket: ProcessPhaseBucket): string {
+  return PHASE_HINTS[bucket] ?? "";
+}
+
 export const ORDERED_PHASE_BUCKETS: readonly ProcessPhaseBucket[] = PROCESS_PHASE_BUCKETS;
 
 // Rótulos PT-BR dos 3 tipos de notificação/prazo (Res. 1025 arts. 15/26; Lei 14.133/2021 — impound.notifications.types.ts).
