@@ -140,9 +140,84 @@ export class MemoryFinancialUnitOfWork implements FinancialUnitOfWork {
 //
 // Por que delegação escrita à mão, e não spread nem Proxy: `{ ...repo }` sobre uma INSTÂNCIA copia
 // só as propriedades próprias — os métodos vivem no prototype e somem (lição registrada do ciclo 1).
-// Um Proxy resolveria, mas escondendo QUAIS métodos escrevem; aqui a lista é a documentação: o que
-// não aparece com `remember(...)` é leitura, e isso é verificável lendo o arquivo.
+// Um Proxy resolveria, mas escondendo QUAIS métodos escrevem.
 // -----------------------------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-02 ciclo 3 · C3 (P7) — O JOURNAL CLASSIFICADO, E A CLASSIFICAÇÃO JULGADA POR EXECUÇÃO.
+//
+// O comentário que estava aqui dizia: *"a lista é a documentação: o que não aparece com `remember`
+// é leitura, e isso é verificável lendo o arquivo"*. Uma lista que só se verifica LENDO é
+// exatamente o que o ciclo 2 provou não bastar: o ataque transformou dois mutadores journaled em
+// delegação pura e a suíte inteira ficou **203/203 VERDE**. Ninguém leu; ninguém viu.
+//
+// P7 — *todo membro dos repositórios journaled é CLASSIFICADO (write/read) em `src/`, com
+// exaustividade pelo compilador; e a classificação é julgada EMPIRICAMENTE por harness — membro que
+// muta estado e não journala, ou classificado `read` e que muta, fica vermelho.*
+//
+// Método novo em qualquer um dos três contratos e ausente do mapa correspondente é TS1360 no
+// `npm run check`. A lista deixou de ser documentação e virou CONTRATO COMPILADO.
+//
+// Os mapas são TOTAIS (sem `Exclude`): os três contratos carregam `reset?(): void` opcional
+// (test-only) e `keyof` inclui membro opcional, então `reset` é classificado explicitamente como
+// `"test_reset"` — e o harness assere que o contexto journaled NÃO o expõe. Decisão por chave, não
+// por exclusão silenciosa: um `Exclude<..., "reset">` faria a próxima chave test-only sumir do mapa
+// sem ninguém decidir nada, que é a classe de defeito deste bloco inteiro.
+//
+// CONTAGEM MEDIDA nos contratos: 13 + 10 + 10 chaves (12 + 9 + 9 membros write/read, mais o
+// `reset?` opcional de cada um) = 30 membros exercidos pelo harness + 3 `test_reset` asseverados
+// ausentes do contexto.
+// -----------------------------------------------------------------------------------------------
+
+/**
+ * O que um membro do repositório FAZ, do ponto de vista da unidade de trabalho:
+ *   · `"write"`      — muta estado; TEM de gravar before-image antes de mutar (senão o rollback mente);
+ *   · `"read"`       — não muta; delegação pura é o correto;
+ *   · `"test_reset"` — existe só para o arnês (`reset?`) e NÃO pode ser exposto pelo contexto.
+ */
+export type UowMemberKind = "write" | "read" | "test_reset";
+
+export const TITLE_REPO_KIND = {
+  create: "write",
+  update: "write",
+  changeStatus: "write",
+  applyPayment: "write",
+  applyPaymentGuarded: "write",
+  restorePaymentGuarded: "write",
+  softDelete: "write",
+  list: "read",
+  findById: "read",
+  findActiveByWorkOrder: "read",
+  findActiveBySource: "read",
+  findByIdForUpdate: "read",
+  reset: "test_reset",
+} as const satisfies Record<keyof FinancialTitleRepository, UowMemberKind>;
+
+export const ENTRY_REPO_KIND = {
+  create: "write",
+  update: "write",
+  reconcile: "write",
+  softDelete: "write",
+  list: "read",
+  findById: "read",
+  findActiveReversalOf: "read",
+  findByIdForUpdate: "read",
+  sumByAccount: "read",
+  reset: "test_reset",
+} as const satisfies Record<keyof FinancialEntryRepository, UowMemberKind>;
+
+export const CHEQUE_REPO_KIND = {
+  create: "write",
+  update: "write",
+  transition: "write",
+  softDelete: "write",
+  attachClearingEntry: "write",
+  attachBounceEntry: "write",
+  list: "read",
+  findById: "read",
+  findActiveByLinkedEntry: "read",
+  reset: "test_reset",
+} as const satisfies Record<keyof ChequeRepository, UowMemberKind>;
 
 type UowRow = { readonly id: string };
 
