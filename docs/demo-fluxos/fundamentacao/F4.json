@@ -1,0 +1,860 @@
+{
+  "fluxo": "F4 — Do serviço ao dinheiro",
+  "rotas_web": [
+    {
+      "path": "/work-orders/:workOrderId",
+      "arquivo": "frontend/src/App.tsx:784",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. Padrão `{workOrder.code} · {workOrder.title}` em WorkOrderDetailPage.tsx:73; subtítulo = customerName · serviceAddress (:74). Para a OS âncora: \"OS-000013 · Remoção de veículo — estacionamento irregular\"."
+    },
+    {
+      "path": "/work-orders/:workOrderId?aba=financeiro",
+      "arquivo": "frontend/src/modules/work-orders/tabs.config.ts:37",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO (aba visible:true, requiredPermission work_order_financials:read; o `?aba=` é resolvido em WorkOrderDetailPage.tsx:37). Card \"Itens financeiros\" (FinancialTab.tsx:187) + subtítulo :189. RESSALVA EXECUTADA: work_order_financial_items no tenant demo = 0 → a aba renderiza o vazio \"Nenhum item financeiro lançado\" (:266) e Total R$ 0,00."
+    },
+    {
+      "path": "/cadastros/tabelas-valores",
+      "arquivo": "frontend/src/App.tsx:329",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. h1 \"Tabela de Valores\" (TabelasValoresPage.tsx:248), breadcrumb \"Cadastros\" (:247, via `inPatios ? \"Pátios\" : \"Cadastros\"` em :80). RESSALVA EXECUTADA: a lista traz 15 tabelas (9 publicadas), não 5."
+    },
+    {
+      "path": "/cadastros/tarifas",
+      "arquivo": "frontend/src/App.tsx:337",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. h1 \"Tarifas\" (TarifasPage.tsx:174) + subtítulo :175. RESSALVA EXECUTADA: sem filtro a grade traz 39 tarifas do tenant (32 ativas), não 8."
+    },
+    {
+      "path": "/finance/charges",
+      "arquivo": "frontend/src/App.tsx:666",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. COPY.receivable.title=\"Cobranças\", subtitle=\"cobranças a clientes, vencimentos e adimplência\" (TitlesListView.tsx:58-59), renderizados no page header (:164-167)."
+    },
+    {
+      "path": "/finance",
+      "arquivo": "frontend/src/App.tsx:656",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. \"Financeiro\" / \"Contas a pagar e receber · fluxo de caixa\" (FinanceiroPage.tsx:133-134). Guard: financial_entries:read (fallback finance:read)."
+    },
+    {
+      "path": "/finance/payments",
+      "arquivo": "frontend/src/App.tsx:684",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. COPY.payable = \"Pagamentos\" / \"contas a pagar, agendamentos e fluxo de saída\" (TitlesListView.tsx:64-65)."
+    },
+    {
+      "path": "/finance/commissions",
+      "arquivo": "frontend/src/App.tsx:693",
+      "existe": true,
+      "titulo_na_tela": "ROTA CONFIRMADA, TELA DESCRITA ERRADA pelo fundamentador. h1 \"Remunerações\" existe nos dois ramos, mas o card \"Seu extrato de comissões\" (:195) só existe quando scope===\"own\" (:177). scope = canReadAll ? \"all\" : canReadOwn ? \"own\" : null (:70) — o ator financeiro cai em \"all\" e recebe o modal \"Conferir remunerações\", aberto de saída (filterOpen=useState(true), :83)."
+    },
+    {
+      "path": "/fleet/statement",
+      "arquivo": "frontend/src/App.tsx:503",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. \"Extrato do Profissional\" / \"Razão financeiro por profissional — lançamentos datados, parcelas e saldo corrente da folha.\" (ExtratoProfissionalPage.tsx:258-259). É a folha do profissional, NÃO o caixa. RESSALVA EXECUTADA: professional_statement_entries no demo = 0 → a tela não tem uma linha sequer."
+    },
+    {
+      "path": "/finance/invoices",
+      "arquivo": "frontend/src/App.tsx:674",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. \"Faturas\" / \"Emissão de nota fiscal eletrônica (NF-e)\" (InvoicesPage.tsx:27-28); corpo = parada honesta \"Integração fiscal necessária\" (:45); botão \"Emitir NF-e\" nasce `disabled` (:32). Não lista nenhum título."
+    },
+    {
+      "path": "/finance/extrato (ou /finance/caixa) — extrato de caixa/lançamentos",
+      "arquivo": "não há rota: frontend/src/App.tsx registra apenas /finance (656), /finance/charges (666), /finance/invoices (674), /finance/payments (684), /finance/commissions (693); appSidebarNav.ts:95-97 lista só Financeiro/Cobranças/Pagamentos",
+      "existe": false,
+      "titulo_na_tela": "—"
+    },
+    {
+      "path": "/cadastros/tabelas-valores/:priceTableId — detalhe da tabela com os 8 itens",
+      "arquivo": "não há rota: frontend/src/App.tsx:329 registra o path sem parâmetro (compare com /patios/patios/:yardId em :397 e /fleet/statement/:operatorProfileId em :511, que existem)",
+      "existe": false,
+      "titulo_na_tela": "—"
+    }
+  ],
+  "endpoints": [
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/sync/work-order-actions",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:142",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.post na :141, path na :142). Único feixe mobile→web deste fluxo. Aceita work_order.create/assign/mileage/status_change (mobile-work-order-sync.ts:213, 227, 245, 260-261); nada de comissão, valor ou título. CORREÇÃO ao fundamentador: o app grava o tipo local 'work_order.status_update' e o TRADUZ para 'work_order.status_change' no replay (sync_replay_service.dart:366), remapeando local_id/server_id→work_order_id e new_status→status (_statusPayload, :402-429) — o feixe funciona. Segunda correção: 'work_order.mileage' NÃO é replay-elegível pelo app (b107BackendWorkOrderActionTypes = create, status_update, assign — sync_replay_service.dart:580-586)."
+    },
+    {
+      "metodo": "PATCH",
+      "path": "/api/v1/work-orders/:workOrderId/status",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:127",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.patch na :126, path na :127, requirePermission WORK_ORDER_PERMISSIONS.status). Concluir NÃO minta título: `grep -rn FinancialTitle src/modules/work-orders/` = 0 ocorrências."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/price-tables",
+      "arquivo": "src/modules/price-tables/price-table.routes.ts:32",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :31, path :32). O agregado itemCount/minUnitPrice/maxUnitPrice vem de tariff.groupBy com where { tenant_id, is_active: true, price_table_id in … } (price-table-prisma.repository.ts:74-80) — conta só tarifa ATIVA. Alimenta a coluna \"Valores\"."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/tariffs",
+      "arquivo": "src/modules/tariffs/tariff.routes.ts:32",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :31, path :32). O filtro price_table_id do seletor \"Tabela de Valores\" (TarifasPage.tsx:208-212) é server-side. O DTO expõe `name` (tariff.dto.ts), mas a grade da tela NÃO tem coluna de nome nem de regra (TarifasPage.tsx:103-149: Serviço · Cliente · Valor unitário · Origem · Vigência · Ativa · Ações)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/work-orders/:workOrderId/financial-items",
+      "arquivo": "src/modules/work-order-financials/work-order-financial.routes.ts:45",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :44, path :45). Itens + total somado no backend. RESSALVA EXECUTADA: no tenant demo a tabela work_order_financial_items está VAZIA (0 linhas) — este endpoint devolve lista vazia para qualquer OS do demo."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/work-orders/:workOrderId/financial-items",
+      "arquivo": "src/modules/work-order-financials/work-order-financial.routes.ts:53",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.post :52, path :53). Modo tabela resolve a tarifa vigente e congela o valor (work-order-financial.service.ts:97-121) via createPrismaApplicableTariffResolver → tariffRepository.findApplicable (service-quote.service.ts:383-391). É o único elo real tabela-de-preço → OS na web."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/work-orders/:workOrderId/invoice",
+      "arquivo": "src/modules/work-order-financials/work-order-financial.routes.ts:78",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO no backend (router.post :77, path :78, perm WORK_ORDER_FINANCIAL_PERMISSIONS.invoice, comentário \"minta o Título a receber (idempotente por OS)\"). ÓRFÃO na web: `grep -rn invoice frontend/src` só devolve o ícone (config/icons.tsx:164), o rótulo de auditoria \"Ordem de serviço faturada\" (audit-events.presenter.ts:38), \"Fatura\" em commissions.adapter.ts:63, um comentário em tenant-settings.adapter.ts:44 e o humanizador de LogsTab.tsx:37 — nenhuma chamada. Não há botão \"Faturar\"."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/financial-titles",
+      "arquivo": "src/modules/financial-titles/financial-title.routes.ts:32",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :31, path :32). A tela busca com limit=100 (useFinancialTitles.ts:41) e soma os KPIs sobre as linhas carregadas (computeTitleKpis, financial-titles.adapter.ts:200-208). Os 63 títulos a receber do demo cabem na janela → o aviso \"Somando os N títulos carregados de M\" (TitlesListView.tsx:200) não aparece."
+    },
+    {
+      "metodo": "PATCH",
+      "path": "/api/v1/financial-titles/:financialTitleId/status",
+      "arquivo": "src/modules/financial-titles/financial-title.routes.ts:57",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.patch :56, path :57). A UI só oferece scheduled/in_dispute/open/cancelled — paid e partially_paid têm array vazio na tabela de transições do front (financial-titles.adapter.ts:18-24) e nem são tipáveis como destino."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/financial-summary",
+      "arquivo": "src/modules/financial-summary/financial-summary.routes.ts:27",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :26, path :27). isOpen = status ∉ {paid, cancelled} e openAmount = Σ(amount − paidAmount) (financial-summary.compute.ts:21-23, 33-35) → INCLUI partially_paid. totalBalance = Σ(opening + inflow − outflow) por conta (:132-135) — NÃO é a soma dos saldos de abertura."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/financial-titles/:financialTitleId/pay",
+      "arquivo": "src/modules/financial-entries/financial-entry.routes.ts:95",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO no backend (router.post :94, path :95, comentário \"LIQUIDAÇÃO — pagar/receber é LANÇAR caixa contra um título\"). ÓRFÃO: `grep -rn \"financial-entries|/pay\\b|payTitle\" frontend/src` devolve ZERO ocorrências."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/financial-entries",
+      "arquivo": "src/modules/financial-entries/financial-entry.routes.ts:32",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :31, path :32). O demo tem 52 lançamentos (executado; seed-demo-financeiro.mjs:126-141 insere um por título pago). Nenhuma tela web os lista — só entram indiretamente no gráfico \"Fluxo de caixa\" e no card \"Saldo em caixa\" de /finance."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/commissions/statements/my-summary",
+      "arquivo": "src/modules/commissions/commission.routes.ts:102",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get :101, path :102, perm COMMISSION_PERMISSIONS.readOwn, comentário \"payeeId fixado no servidor\"). MAS: só é chamado quando scope===\"own\" (RemuneracoesPage.tsx:70,85) — o ator financeiro do demo tem commissions:read e cai em \"all\". E EXECUTADO: commission_calculations = 0 no tenant demo → devolveria vazio de qualquer forma."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/commissions/settlements",
+      "arquivo": "src/modules/commissions/commission.routes.ts:112",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.post :111, path :112, perm COMMISSION_PERMISSIONS.settle). É a única \"baixa\" de dinheiro com tela na web (Conferência, RemuneracoesPage.tsx:265). RESSALVA EXECUTADA: com commission_calculations = 0 e commission_policies = 0 no demo, não há nada para liquidar."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/commissions/* (qualquer) consumido pelo app de campo",
+      "arquivo": "não existe chamada: `grep -rni \"commission|comiss\" mobile/flutter_app/lib` devolve só work_order_conclusion.dart (:50-58, :81, :90, :93, :121) e work_order_conclusion_screen.dart (:15, :130-155) — cálculo 100% local",
+      "existe": false,
+      "o_que_faz": "O app nunca lê nem grava comissão no backend."
+    }
+  ],
+  "telas_mobile": [
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/conclusao-guincho.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_conclusion_screen.dart (rota /work-orders/:workOrderId/conclusion — router.dart:164-169, path na :165)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "CONFIRMADO — cartão de comissão Key('commission-card') com rótulo 'Sua comissão' e o valor (linhas 131-164). Cor = scheme.tertiaryContainer, não um verde cravado.",
+        "CONFIRMADO — dois _StatCard lado a lado: caption 'Tempo' (:172, valor s.elapsedLabel) e caption 'Materiais' (:180). O PNG mostra 'Distância 56,3 km' + 'Tempo' — Distância NÃO existe.",
+        "CONFIRMADO — Card de resumo com exatamente três _SummaryRow: 'Serviço', 'Cliente' e s.assetLabel ('Veículo' p/ reboque, 'Equipamento' p/ prestador) (:188-196). ATENÇÃO NOVA: o valor da terceira linha é `wo.code` (work_order_conclusion.dart:119) — a linha 'Veículo' exibe o CÓDIGO DA OS, nunca placa/modelo.",
+        "CONFIRMADO — AppBar via ErpScaffold title 'Conclusão' (:102, :109, :115). O header do PNG ('Atendimento concluído', 'OS-2891 · finalizado 13/06 · 11:42', chip 'GUINCHO') não existe.",
+        "CONFIRMADO — sticky bar com FilledButton.icon 'Concluir atendimento' Key('conclude-button') (:229-242) e, só após _done, 'OK' Key('conclusion-ok') (:221-228).",
+        "CONFIRMADO — card Key('conclusion-synced') 'Atendimento concluído' / 'Sincronização em segundo plano.' (:200-209), que não está no PNG.",
+        "NOVO — a tela não conclui uma OS já concluída: _conclude() chama completeWorkOrder, que valida canTransitionTo (work_order_repository.dart:216-218) e WorkOrderStatus.completed => {} (work_order_models.dart:89-91). O erro cai num SyncStatusBanner vermelho com o texto cru 'Invalid transition: WorkOrderStatus.completed → completed' (:198-199)."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/conclusao-prestador.png",
+      "tela_flutter": "mesma tela — work_order_conclusion_screen.dart; só o rótulo do ativo muda (assetLabel = 'Equipamento' quando serviceType != tow, work_order_conclusion.dart:109/118)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "CONFIRMADO — variante prestador do mesmo layout, única diferença implementada é o assetLabel."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/comissoes.png",
+      "tela_flutter": "não há tela Flutter de comissões — `grep -rni 'comiss' mobile/flutter_app/lib` retorna só work_order_conclusion.dart e work_order_conclusion_screen.dart",
+      "existe_no_app": false,
+      "elementos_chave": [
+        "PNG aprovado existe, app não implementa.",
+        "Não usar no vídeo."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/os-detalhe.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart (rota /work-orders/:workOrderId — router.dart:146-151, path na :147); arquivo confirmado por `ls` do diretório ui/",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Contexto opcional antes da conclusão, se o vídeo precisar de um beat de entrada."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/sincronizacao.png",
+      "tela_flutter": "mobile/flutter_app/lib/shared/ui/sync_screen.dart, classe SyncScreen (:15) — rota /sync em router.dart:137. O fundamentador citou o caminho com reticências ('lib/features/...'), ou seja não abriu o arquivo; eu abri: ele NÃO está em features/, está em shared/ui/.",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Superfície real da fila offline — dá lastro visual ao beat do feixe mobile→web."
+      ]
+    }
+  ],
+  "copy_real": [
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:102/109/115 (ErpScaffold title)",
+      "texto": "Conclusão"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:148 (cartão de comissão)",
+      "texto": "Sua comissão"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:172 (stat card esquerdo)",
+      "texto": "Tempo"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:180 (stat card direito)",
+      "texto": "Materiais"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:191-193 (resumo)",
+      "texto": "Serviço / Cliente / Veículo (ou Equipamento) — o valor da 3ª linha é o CÓDIGO da OS"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:241 (sticky bar)",
+      "texto": "Concluir atendimento"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:206-207 (após concluir)",
+      "texto": "Atendimento concluído — Sincronização em segundo plano."
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:227 (sticky bar após concluir)",
+      "texto": "OK"
+    },
+    {
+      "onde": "Mobile — work_order_conclusion_screen.dart:86 (erro genérico) e :198-199 (banner de falha)",
+      "texto": "Não foi possível concluir. Tente novamente."
+    },
+    {
+      "onde": "Mobile — PNG conclusao-guincho.png (referência aprovada, NÃO implementada)",
+      "texto": "A receber 05/07 · 25% do ticket R$ 380"
+    },
+    {
+      "onde": "Mobile — PNG conclusao-guincho.png (referência aprovada, NÃO implementada)",
+      "texto": "Distância · 56,3 · km · ver trechos"
+    },
+    {
+      "onde": "Web — WorkOrderDetailPage.tsx:73 (page header da OS)",
+      "texto": "{código} · {título} — ex.: \"OS-000013 · Remoção de veículo — estacionamento irregular\""
+    },
+    {
+      "onde": "Web — tabs.config.ts:37 (aba do hub da OS)",
+      "texto": "Financeiro"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:187",
+      "texto": "Itens financeiros"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:189",
+      "texto": "Serviços da tabela de valores do cliente (valor congelado no lançamento) e itens avulsos."
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:192",
+      "texto": "Lançar da tabela"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:195",
+      "texto": "Item avulso"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:206",
+      "texto": "Lançar serviço da tabela de valores do cliente"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:222/226/229 (campos do painel de tarifa)",
+      "texto": "Serviço · Quantidade · Observação (opcional) — NÃO há campo Descrição"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:229 (nota do painel)",
+      "texto": "O valor é congelado a partir da tarifa vigente do cliente no momento do lançamento."
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:266 (estado vazio — é o que a demo mostra HOJE)",
+      "texto": "Nenhum item financeiro lançado"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:274-278 (cabeçalho da grade de itens)",
+      "texto": "Descrição · Origem · Qtd · Valor unit. · Total · Ações"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:302 (chip da coluna Origem)",
+      "texto": "Tabela / Avulso"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:338",
+      "texto": "Total"
+    },
+    {
+      "onde": "Web — FinancialTab.tsx:174 (erro real de resolução de tarifa)",
+      "texto": "Não foi possível lançar o serviço: verifique se há tarifa vigente na tabela de valores deste cliente."
+    },
+    {
+      "onde": "Banco vivo — service_catalog do tenant demo (3 linhas, executado): é o que o seletor \"Serviço\" mostra",
+      "texto": "Servico A1 1783874676 · SemTarifa 14250 · Guincho ate 200km"
+    },
+    {
+      "onde": "Web — TabelasValoresPage.tsx:248 (h1)",
+      "texto": "Tabela de Valores"
+    },
+    {
+      "onde": "Web — TabelasValoresPage.tsx:145-215 (colunas)",
+      "texto": "Nome · Moeda · Valores · Versão · Vigência · Status · Escopo · Categoria · Ativa · Ações"
+    },
+    {
+      "onde": "Web — price-tables.adapter.ts:191-205 (formatTariffRange)",
+      "texto": "8 itens · R$ 6,50 – R$ 640,00"
+    },
+    {
+      "onde": "Web — TabelasValoresPage.tsx:337 (título do card)",
+      "texto": "Tabelas cadastradas"
+    },
+    {
+      "onde": "Banco vivo — nomes reais de price_tables do demo que aparecem na MESMA lista (executado)",
+      "texto": "teste · Tabela Smoke 19355 · Tabela Smoke Tarifas · Editavel 1783820571713284800 · Prova 1783820763934862800 · Tabela Auditoria 1783820445 · Terminal 1783820569385872200 · Tabela Reverif C2 3914 · Auditoria A1 1783874622"
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:174",
+      "texto": "Tarifas"
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:175",
+      "texto": "Itens de preço das tabelas de valores — serviço, cliente, valor unitário, origem e vigência."
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:103-149 (colunas)",
+      "texto": "Serviço · Cliente · Valor unitário · Origem · Vigência · Ativa · Ações"
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:208 (rótulo do filtro)",
+      "texto": "Tabela de Valores"
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:212 (opção padrão do filtro)",
+      "texto": "Todas as tabelas"
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:92 (célula Serviço quando a tarifa não aponta serviço)",
+      "texto": "Todos os serviços"
+    },
+    {
+      "onde": "Web — TarifasPage.tsx:98 (célula Cliente quando a tarifa não aponta cliente)",
+      "texto": "Todos os clientes"
+    },
+    {
+      "onde": "Web — TitlesListView.tsx:58-59 (header de /finance/charges)",
+      "texto": "Cobranças — cobranças a clientes, vencimentos e adimplência"
+    },
+    {
+      "onde": "Web — TitlesListView.tsx:60 (botão primário)",
+      "texto": "Nova cobrança"
+    },
+    {
+      "onde": "Web — TitlesListView.tsx:76-81 (KPIs de Cobranças)",
+      "texto": "Em aberto · Vencidas · Recebidas (mês) · Em contestação"
+    },
+    {
+      "onde": "Web — TitlesListView.tsx:39-45 (abas de Cobranças)",
+      "texto": "Todas · Em aberto · Vencidas · Recebidas · Em contestação"
+    },
+    {
+      "onde": "Web — TitlesListView.tsx:222-228 (cabeçalho da tabela receivable)",
+      "texto": "COBRANÇA · CLIENTE · VALOR · VENC. · CATEGORIA · STATUS · AÇÃO"
+    },
+    {
+      "onde": "Web — TitlesListView.tsx:200 (aviso de janela parcial — NÃO aparece na demo, 63 ≤ 100)",
+      "texto": "Somando os {n} títulos carregados de {total}. Os totais podem não refletir toda a base."
+    },
+    {
+      "onde": "Web — financial-titles.adapter.ts:44-51 (chips de status)",
+      "texto": "Em aberto · Agendado · Parcial · Pago · Em contestação · Cancelado"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:133-134 (header)",
+      "texto": "Financeiro — Contas a pagar e receber · fluxo de caixa"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:73/85/97/109 (os 4 KPIs)",
+      "texto": "A receber (aberto) · A pagar (aberto) · Saldo em caixa · Inadimplência"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:167-168",
+      "texto": "Fluxo de caixa — Entradas vs saídas · 6 meses"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:191-192 (legenda do gráfico)",
+      "texto": "Entradas / Saídas"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:197",
+      "texto": "Títulos recentes"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:200-203 (cabeçalho de Títulos recentes)",
+      "texto": "PARTE · VALOR · VENC. · STATUS"
+    },
+    {
+      "onde": "Web — FinanceiroPage.tsx:113 (legenda do pop-up de Inadimplência)",
+      "texto": "Vencido ÷ em aberto (a receber)"
+    },
+    {
+      "onde": "Web — RemuneracoesPage.tsx:186-188 (header, ramo own)",
+      "texto": "Remunerações — Seu extrato de comissões por período, com detalhamento por OS."
+    },
+    {
+      "onde": "Web — RemuneracoesPage.tsx:195 (card, SÓ no ramo own)",
+      "texto": "Seu extrato de comissões"
+    },
+    {
+      "onde": "Web — RemuneracoesPage.tsx:201/205",
+      "texto": "Total no período / Comissões"
+    },
+    {
+      "onde": "Web — RemuneracoesPage.tsx:212",
+      "texto": "Ver detalhamento por OS"
+    },
+    {
+      "onde": "Web — RemuneracoesPage.tsx:216-217 (vazio — é o que o demo mostra HOJE)",
+      "texto": "Sem comissões no período — Nenhuma comissão foi calculada para você no período selecionado. Ajuste as datas para consultar outro intervalo."
+    },
+    {
+      "onde": "Web — RemuneracoesFilterModal.tsx:63-64/87/105 (o que o ator FINANCEIRO vê ao entrar)",
+      "texto": "Conferir remunerações — Selecione o período e o profissional para conferir e liquidar as remunerações. · Selecione um profissional… · Confirmar"
+    },
+    {
+      "onde": "Web — RemuneracoesPage.tsx:265 (header do ramo Conferência)",
+      "texto": "Conferência e liquidação em lote das remunerações do profissional."
+    },
+    {
+      "onde": "Web — ExtratoProfissionalPage.tsx:258-259 (header)",
+      "texto": "Extrato do Profissional — Razão financeiro por profissional — lançamentos datados, parcelas e saldo corrente da folha."
+    },
+    {
+      "onde": "Web — ExtratoProfissionalPage.tsx:147-225 (colunas)",
+      "texto": "Data · Tipo · Descrição · Parcela · Valor · Saldo · Situação · Ações"
+    },
+    {
+      "onde": "Web — InvoicesPage.tsx:36/45",
+      "texto": "Emitir NF-e (disabled) — Integração fiscal necessária"
+    },
+    {
+      "onde": "Web — appSidebarNav.ts:93-97 (itens do grupo; ATENÇÃO: :94 é Relatórios, que o fundamentador omitiu)",
+      "texto": "Remunerações · Relatórios · Financeiro · Cobranças · Pagamentos"
+    },
+    {
+      "onde": "Web — appSidebarNav.ts:87-88 (itens do grupo Cadastros)",
+      "texto": "Tabela de Valores · Tarifas"
+    }
+  ],
+  "passos_inexistentes": [
+    {
+      "passo": "Passo 1 — cartão de \"Distância\" na tela de conclusão do mobile",
+      "por_que_nao_existe": "CONFIRMADO. O modelo da conclusão não tem campo de distância: WorkOrderConclusionSummary carrega service, customer, assetLabel, assetValue, materialsCount, commissionCents e elapsed. A linha de stat cards renderiza 'Tempo' e 'Materiais'.",
+      "evidencia": "mobile/flutter_app/lib/features/work_orders/domain/work_order_conclusion.dart:74-91 (campos da classe) e ui/work_order_conclusion_screen.dart:167-185 (os dois _StatCard: caption 'Tempo' :172, caption 'Materiais' :180)"
+    },
+    {
+      "passo": "Passo 1 — o valor \"R$ 95,00\" da comissão",
+      "por_que_nao_existe": "CONFIRMADO, e agora com o número exato. A comissão é calculada DENTRO do aparelho: baseValueCents = _baseValueFor(wo.priority) e ratePercent = 10, fixos. Os únicos resultados possíveis são R$ 200,00 (critical) · R$ 150,00 (high) · R$ 100,00 (normal) · R$ 80,00 (low). R$ 95,00 é inalcançável. CORREÇÃO/PRECISÃO: para a OS âncora do roteiro (OS-000013, priority 'medium' no banco), o mapa de vocabulário traduz medium→normal, então o aparelho mostra exatamente R$ 100,00 — não 95,00 e não um valor de tabela.",
+      "evidencia": "work_order_conclusion_screen.dart:53-58 (ratePercent: 10) e :61-66 (_baseValueFor → 200000/150000/100000/80000 centavos) · work_order_conclusion.dart:52-58 (computeCommissionCents) · data/work_order_remote_api.dart:274-277 (_priorityFromBackendVocabulary: 'medium' → WorkOrderPriority.normal) · consulta executada: work_orders.priority de OS-000013 = 'medium'"
+    },
+    {
+      "passo": "Passo 1 — a legenda \"A receber 05/07 · 25% do ticket R$ 380\" e a linha \"FINALIZADO EM\" do resumo",
+      "por_que_nao_existe": "CONFIRMADO. Existem no PNG aprovado, não no código. O cartão de comissão tem só o rótulo 'Sua comissão' e o valor; o Card de resumo tem exatamente três linhas e nenhuma data de finalização.",
+      "evidencia": "work_order_conclusion_screen.dart:131-164 (cartão de comissão, sem subtítulo) e :188-196 (Card com 3 _SummaryRow); comparar com docs/claude-code-handoff/screen-refs/mobile/conclusao-guincho.png"
+    },
+    {
+      "passo": "NOVO — Passo 1 (beat t=20): apertar \"Concluir atendimento\" na OS âncora do roteiro FALHA",
+      "por_que_nao_existe": "O fundamentador engoliu isto. OS-000013 já está com status 'completed' no banco (é justamente por isso que ela está em os_concluidas_amostra). O app valida a transição antes de enfileirar, e a tabela de transições devolve conjunto VAZIO para 'completed'. O resultado na tela não é a barra 'Atendimento concluído' — é um SyncStatusBanner vermelho com o texto cru 'Invalid transition: WorkOrderStatus.completed → completed'. A única OS do tenant demo em estado que o app consegue concluir é a OS-000015 ('Recolhimento ao pátio — determinação DETRAN', status in_progress → WorkOrderStatus.inService).",
+      "evidencia": "consulta executada: select status from work_orders where code='OS-000013' → 'completed' · mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart:76-81 (inService é o único estado que permite completed) e :89-91 (completed || approved || cancelled => {}) · data/work_order_repository.dart:216-218 (throw StateError('Invalid transition: …')) · ui/work_order_conclusion_screen.dart:82-83 e :198-199 (o StateError vira banner vermelho)"
+    },
+    {
+      "passo": "NOVO — Passo 1: a linha \"Veículo\" do resumo não mostra veículo nenhum",
+      "por_que_nao_existe": "O fundamentador citou 'valor = wo.code' em elementos_chave e não puxou a consequência. O terceiro _SummaryRow tem label dinâmico ('Veículo'/'Equipamento') mas o VALOR é o código da ordem de serviço. No vídeo a linha leria 'Veículo / OS-000015'. Não há placa, modelo nem cor na tela de conclusão.",
+      "evidencia": "mobile/flutter_app/lib/features/work_orders/domain/work_order_conclusion.dart:118-119 (assetLabel: isTow ? 'Veículo' : 'Equipamento'; assetValue: wo.code) · ui/work_order_conclusion_screen.dart:193"
+    },
+    {
+      "passo": "Passos 2→4 — o dado da conclusão virar título financeiro (\"o título financeiro gerado\")",
+      "por_que_nao_existe": "CONFIRMADO E AGRAVADO. Nada no caminho mobile→backend cria título: o sync aceita só create/assign/mileage/status_change e o módulo work-orders não referencia FinancialTitle. O endpoint de faturamento existe e é órfão (nenhuma tela React o chama). AGRAVANTE EXECUTADO que o fundamentador não mediu: no tenant demo NENHUM dos 103 títulos tem work_order_id — a coluna está 100% nula. A cadeia 'serviço → título' não existe nem como dado histórico.",
+      "evidencia": "src/modules/mobile/mobile-work-order-sync.ts:213/227/245/260-261 (tipos aceitos) · `grep -rn FinancialTitle src/modules/work-orders/` = 0 · src/modules/work-order-financials/work-order-financial.routes.ts:78 (endpoint existe) · `grep -rn invoice frontend/src` = nenhuma chamada (só ícone, rótulos de log/auditoria e comentários) · consulta executada: select count(*) from financial_titles where tenant_id=demo and work_order_id is not null → 0"
+    },
+    {
+      "passo": "NOVO — Passos 4/6 (beats t=34 e t=42): a aba Financeiro da OS está VAZIA no tenant demo",
+      "por_que_nao_existe": "O fundamentador validou a tela e os endpoints e nunca perguntou se havia DADO. A tabela work_order_financial_items tem ZERO linhas no tenant demo. Em qualquer OS o card renderiza o estado vazio 'Nenhum item financeiro lançado' e o rodapé 'Total R$ 0,00'. O beat t=34 descreve uma grade com linhas (DESCRIÇÃO · ORIGEM · QTD · VALOR UNIT. · TOTAL) que não tem uma única linha para mostrar.",
+      "evidencia": "consulta executada: select count(*) from work_order_financial_items where tenant_id=(demo) → 0 · frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx:266 (texto do vazio) e :338-340 (Total sobre data.totalAmount ?? 0)"
+    },
+    {
+      "passo": "Passo 3 — uma tela mostrando as tarifas NOMEADAS (\"Saída R$ 180,00\", \"km urbano R$ 6,50\", \"hora parada R$ 95,00\")",
+      "por_que_nao_existe": "CONFIRMADO em todos os pontos, inclusive por execução. A tarifa tem coluna `name` e o DTO a expõe, mas a grade de /cadastros/tarifas não tem coluna de nome; o formatador getTariffDisplayName existe e nunca é chamado. E as 8 tarifas da 'Guincho Leve' foram semeadas sem service_catalog_id e sem customer_id: eu li as 8 linhas no banco e todas voltaram svc=null, cli=null, origin='DEMO-PRECOS'. Na tela elas aparecem como 8 linhas idênticas 'Todos os serviços / Todos os clientes / DEMO-PRECOS', distinguíveis só pelo preço.",
+      "evidencia": "frontend/src/modules/registry/tariffs/pages/TarifasPage.tsx:103-149 (7 colunas, nenhuma de nome) e :92/:98 (os textos 'Todos os serviços'/'Todos os clientes') · tariffs.adapter.ts:106 (getTariffDisplayName — `grep -rn getTariffDisplayName frontend/src` devolve só a própria definição) · scripts/seed-demo-precos.mjs:126-131 (INSERT em tariffs sem service_catalog_id/customer_id, origin = MARCA) · consulta executada nas 8 tarifas da 'Guincho Leve — Tabela Padrão 2026': todas svc=null cli=null origin='DEMO-PRECOS'"
+    },
+    {
+      "passo": "Passo 3 — \"a tabela de preços que deu origem ao valor\" (o elo tabela→comissão/OS)",
+      "por_que_nao_existe": "CONFIRMADO no resultado, MOTIVO CORRIGIDO. (a) A comissão do mobile não olha tabela alguma. (b) O elo 'Lançar da tabela' resolve por IGUALDADE EXATA de service_catalog_id, e as 8 tarifas da Guincho Leve têm o campo NULL — nunca casam. MAS a afirmação do fundamentador de que 'para qualquer serviço escolhido' aparece o erro de tarifa vigente é FALSA: eu li o catálogo do demo (3 serviços) e o único com tarifa aplicável, 'Servico A1 1783874676', resolve SIM — para a tarifa de R$ 999,00 da tabela de teste 'Tabela Smoke 19355'. Só que essa tarifa tem name=NULL e o painel da tela não envia description (os campos são Serviço, Quantidade e Observação), então o backend devolve 400 'description is required when the applicable tariff has no name'. Resumindo: dos 3 serviços, dois dão o 422 de tarifa inexistente e um dá 400 por falta de descrição. Em nenhum caminho a 'Guincho Leve — Tabela Padrão 2026' entra na conta.",
+      "evidencia": "src/modules/tariffs/tariff-prisma.repository.ts:70-82 (where { service_catalog_id: serviceCatalogId } — match exato) · src/modules/work-order-financials/work-order-financial.service.ts:97-116 (422 tariff_not_found_for_service; 400 quando tariff.name é nulo e não há description) · frontend/.../FinancialTab.tsx:218-232 (o painel só tem Serviço/Quantidade/Observação — nenhum campo Descrição) e :172-175 (mensagem exibida) · consultas executadas: service_catalog do demo = 3 linhas ('Servico A1 1783874676', 'SemTarifa 14250', 'Guincho ate 200km'); a única tarifa aplicável em tabela publicada é unit_price 999.00, name=NULL, price_table='Tabela Smoke 19355'"
+    },
+    {
+      "passo": "NOVO — Passo 3 (beat t=42): o seletor \"Serviço\" do painel lista lixo de teste, não serviços de guincho",
+      "por_que_nao_existe": "O painel popula o dropdown com listServiceCatalogFromApi(context, { isActive: 'active' }). O catálogo ativo do tenant demo tem exatamente três entradas, e as três são detrito de suíte: 'Servico A1 1783874676' (sem acento, com timestamp), 'SemTarifa 14250' e 'Guincho ate 200km' (sem acento). Filmar esse dropdown mostra nomes que violam §11.2/§11.3 do próprio contrato e não existem em nenhum PNG aprovado.",
+      "evidencia": "frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx:143-147 (listServiceCatalogFromApi) e :215-217 (<option>{s.name}</option>) · consulta executada: select id,name,is_active from service_catalog where tenant_id=(demo) → 3 linhas com esses nomes"
+    },
+    {
+      "passo": "Passo 3 — uma tela de DETALHE da tabela \"Guincho Leve — Tabela Padrão 2026\" listando os 8 itens",
+      "por_que_nao_existe": "CONFIRMADO. Não há rota de detalhe de tabela de valores: /cadastros/tabelas-valores é registrado sem parâmetro (compare com /patios/patios/:yardId e /fleet/statement/:operatorProfileId, que existem). Na lista a tabela é UMA linha e os 8 itens viram texto agregado na coluna 'Valores'. Para ver item a item é preciso trocar de tela. Também não há PNG aprovado: screen-refs/web/ tem 35 PNGs e nenhum de tabela de valores ou tarifas.",
+      "evidencia": "frontend/src/App.tsx:329 (sem :priceTableId) vs :397 e :511 (com parâmetro) · price-tables.adapter.ts:191-205 (formatTariffRange) · `ls docs/claude-code-handoff/screen-refs/web/` — 35 arquivos, sem tabelas-valores.png e sem tarifas.png"
+    },
+    {
+      "passo": "NOVO — beats t=0 e t=50: \"5 tabelas de preço publicadas\" é artefato do filtro do exportador, não o que a tela mostra",
+      "por_que_nao_existe": "O fundamentador copiou o número do dados-reais.json sem conferir a query que o produziu. O exportador filtra `pt.name like '%2026%' or pt.name like 'Contrato%'` — por isso só 5 tabelas aparecem no JSON. O tenant demo tem, de verdade, 15 tabelas de preço (9 publicadas) e 39 tarifas (32 ativas). A tela /cadastros/tabelas-valores lista as 15, e a linha 'Guincho Leve — Tabela Padrão 2026' aparece cercada de detrito de teste: 'teste', 'Tabela Smoke 19355', 'Tabela Smoke Tarifas', 'Editavel 1783820571713284800', 'Prova 1783820763934862800', 'Tabela Auditoria 1783820445', 'Terminal 1783820569385872200', 'Tabela Reverif C2 3914', 'Auditoria A1 1783874622'. O mesmo vale para /cadastros/tarifas antes de aplicar o filtro: 39 linhas.",
+      "evidencia": ".tmp-demo/export-dados.mjs:51-56 (where pt.name like '%2026%' or pt.name like 'Contrato%') · consultas executadas: select count(*) total, count(*) filter (where status='published') from price_tables where tenant_id=(demo) → {total:15, publicadas:9}; select count(*), count(*) filter (where is_active) from tariffs → {39, 32}; listagem nominal das 15 tabelas"
+    },
+    {
+      "passo": "Passo 5 — \"a receber R$ 168.795 pago\" como número de tela",
+      "por_que_nao_existe": "CONFIRMADO na conclusão, NÚMERO DO FUNDAMENTADOR CORRIGIDO. Nenhuma tela tem KPI de total recebido histórico. O card 'Recebidas (mês)' de Cobranças soma só status paid E competência igual à competência corrente. O fundamentador afirmou 'na prática esse card mostra ~R$ 0' — errado: eu executei a consulta e há 1 título pago na competência atual somando R$ 8.700,00, ou seja o card renderiza 'R$ 8,7k'. Nem R$ 0, nem R$ 168.795.",
+      "evidencia": "frontend/src/modules/finance/pages/FinanceiroPage.tsx:72-126 (os 4 KPIs, nenhum de recebido histórico) · financial-titles.adapter.ts:200-208 (settledThisMonth = status 'paid' && competencia === currentCompetencia) · consulta executada: direction=receivable, status='paid', competencia = to_char(now(),'YYYY-MM') → {n:1, total:'8,700.00'}"
+    },
+    {
+      "passo": "Passo 5 — \"22 VENCIDOS somando R$ 28.045\" numa tela de contas a receber",
+      "por_que_nao_existe": "CONFIRMADO, com o split medido. O par não é de a receber: a consulta que gerou financeiro_vencidos NÃO filtra direction (e soma amount − paid_amount, ou seja saldo, não valor de face). Eu rodei o mesmo recorte por direção: receivable = 14 títulos · R$ 21.105,00 e payable = 8 títulos · R$ 6.940,00 — 22 e R$ 28.045,00 só existem somando os dois lados. CORREÇÃO DE EVIDÊNCIA: o fundamentador apontou seed-demo-financeiro.mjs:160-166 (que é o log do seed); o JSON foi gerado por .tmp-demo/export-dados.mjs, cuja query tem o mesmo defeito.",
+      "evidencia": ".tmp-demo/export-dados.mjs:44-47 (select count(*), sum(amount-paid_amount) … status in ('open','partially_paid') and due_date < now() — sem direction) · scripts/seed-demo-financeiro.mjs:88-95 (plano: receivable/open vencido 14; payable/open vencido 8) · consulta executada com group by direction: receivable {14, '21,105.00'}, payable {8, '6,940.00'} · TitlesListView.tsx:76-81 (o KPI de Cobranças só soma receivable)"
+    },
+    {
+      "passo": "Passo 5 — \"32 em aberto\" (e R$ 87.696) no card do dashboard Financeiro",
+      "por_que_nao_existe": "CONFIRMADO, com os números exatos. O KPI 'A receber (aberto)' de /finance define aberto como status ∉ {paid, cancelled} — inclui partially_paid — e soma o REMANESCENTE. Executado: 41 títulos · R$ 117.660,60, e o card renderiza 'R$ 117,7k' (formatCompactBRL). Os 32 · R$ 87.696,00 são honestos apenas na tela Cobranças (KPI/aba 'Em aberto', que casa status === 'open' e soma o valor de face). O mesmo erro contamina 'A pagar (aberto)': não é 19 · R$ 25.783 e sim 24 títulos · R$ 31.845,50 ('R$ 31,8k').",
+      "evidencia": "src/modules/financial-summary/financial-summary.compute.ts:21-23 (isOpen) e :33-35 (remaining = amount − paidAmount) · frontend/src/modules/finance/titles/financial-titles.adapter.ts:202 (KPI 'Em aberto' de Cobranças = status === 'open') e :177-190 (formatCompactBRL) · consultas executadas: receivable aberto {n:41, remanescente:'117,660.60'}; payable aberto {n:24, remanescente:'31,845.50'}; receivable status='open' {n:32, '87,696.00'}"
+    },
+    {
+      "passo": "NOVO — beat t=81: \"Saldo em caixa\" não é a soma dos 3 saldos das contas",
+      "por_que_nao_existe": "O fundamentador colocou os 3 saldos (62.890,10 + 184.320,55 + 15.000,00 = 262.210,65) em dados_a_exibir dizendo que 'alimentam Saldo em caixa'. O backend calcula totalBalance = Σ(openingBalance + inflow − outflow) por conta. Executado: abertura 262.210,65 + entradas 188.771,40 − saídas 59.814,50 = R$ 391.167,55 → o card renderiza 'R$ 391,2k'. Filmar R$ 262,2k seria mostrar um número que a tela não produz.",
+      "evidencia": "src/modules/financial-summary/financial-summary.compute.ts:132-135 (totalBalance) e :156 (cash.totalBalance) · consulta executada: sum(opening_balance) das financial_accounts = 262.210,65; sum(amount) financial_entries direction='in' = 188.771,40; direction='out' = 59.814,50"
+    },
+    {
+      "passo": "NOVO — beat t=66: o KPI \"Em contestação\" e a aba \"Em contestação\" de Cobranças estão ZERADOS na demo",
+      "por_que_nao_existe": "O fundamentador listou os 4 KPIs e as 5 abas como copy sem verificar se todas têm conteúdo. O tenant demo não tem NENHUM título com status in_dispute — o próprio dados-reais.json denuncia (financeiro_por_situacao só traz open/paid/partially_paid nas duas direções). O quarto card mostra 'R$ 0' e a aba abre vazia. Filmar a linha dos 4 KPIs em movimento entrega um card morto.",
+      "evidencia": "consulta executada: select count(*) from financial_titles where tenant_id=(demo) and direction='receivable' and status='in_dispute' → 0 · docs/demo-fluxos/dados-reais.json → financeiro_por_situacao (6 linhas, nenhuma in_dispute) · TitlesListView.tsx:80 (inDispute) e :44 (aba)"
+    },
+    {
+      "passo": "Passo 6 — dar baixa no título pela web",
+      "por_que_nao_existe": "CONFIRMADO. A tabela de transições do front tem paid: [] e partially_paid: [], com o comentário explícito 'partially_paid/paid NÃO são destinos manuais. A UI JAMAIS os oferece'; o menu de ação só monta os destinos válidos e some quando targets está vazio. O backend TEM POST /financial-titles/:id/pay, mas `grep -rn \"financial-entries|/pay\\b|payTitle\" frontend/src` devolve ZERO ocorrências — nenhum arquivo do frontend chama.",
+      "evidencia": "frontend/src/modules/finance/titles/financial-titles.adapter.ts:15-24 (comentário + tabela) · components/TitleRowActions.tsx:107-116 (targets vazio ⇒ nenhuma ação) · src/modules/financial-entries/financial-entry.routes.ts:94-95 (o endpoint existe) · grep executado no frontend: 0 resultados"
+    },
+    {
+      "passo": "Passo 6 — \"o lançamento no extrato\" (extrato de caixa/banco) na web",
+      "por_que_nao_existe": "CONFIRMADO. Não existe rota nem item de menu de extrato/caixa: o router registra só /finance, /finance/charges, /finance/invoices, /finance/payments e /finance/commissions; a sidebar lista Financeiro, Cobranças e Pagamentos. O 'Extrato do Profissional' (/fleet/statement) é a folha do profissional (Parcela, Saldo corrente), não o caixa — e, executado, está VAZIO no demo (professional_statement_entries = 0). Os 52 lançamentos reais só aparecem agregados no gráfico Fluxo de caixa e no card Saldo em caixa.",
+      "evidencia": "frontend/src/App.tsx:656-697 · frontend/src/layouts/appSidebarNav.ts:95-97 · ExtratoProfissionalPage.tsx:258-259 · scripts/seed-demo-financeiro.mjs:126-141 · consultas executadas: financial_entries = 52; professional_statement_entries = 0"
+    },
+    {
+      "passo": "Passo 4/6 — a tela de Cobranças mostrar QUE OS gerou o título",
+      "por_que_nao_existe": "CONFIRMADO E AGRAVADO. A grade não tem coluna de OS (COBRANÇA · CLIENTE · VALOR · VENC. · CATEGORIA · STATUS · AÇÃO) e não há link de volta para a ordem. Pior: mesmo que a coluna existisse, ela viria vazia — nenhum dos 103 títulos do demo tem work_order_id preenchido.",
+      "evidencia": "src/modules/financial-titles/financial-title.dto.ts (workOrderId exposto) · frontend/src/modules/finance/titles/components/TitlesListView.tsx:222-228 (as 7 colunas) · consulta executada: financial_titles com work_order_id não nulo = 0"
+    },
+    {
+      "passo": "NOVO — beat t=89: /finance/commissions não mostra o card \"Seu extrato de comissões\" para o usuário financeiro da demo",
+      "por_que_nao_existe": "O fundamentador descreveu o ramo errado da tela. O escopo é resolvido por permissão: scope = canReadAll ? 'all' : canReadOwn ? 'own' : null. O card 'Seu extrato de comissões', com 'Total no período', 'Comissões' e 'Ver detalhamento por OS', vive DENTRO do bloco `if (scope === 'own')`. Beatriz Lima (Financeiro) — a usuária que ele mesmo indicou em dados_a_exibir — tem commissions:read, cai em scope 'all', e o que abre na cara dela é o modal 'Conferir remunerações' (filterOpen inicia em true), pedindo Período + Profissional antes de qualquer número.",
+      "evidencia": "frontend/src/modules/finance/commissions/pages/RemuneracoesPage.tsx:70 (resolução do scope) · :177 (if (scope === 'own')) · :195-212 (o card e o botão, dentro desse ramo) · :83 (const [filterOpen, setFilterOpen] = useState(true)) · :253-260 (RemuneracoesFilterModal) · components/RemuneracoesFilterModal.tsx:63-64 e :105"
+    },
+    {
+      "passo": "NOVO — beat t=89: não existe UMA comissão no tenant demo",
+      "por_que_nao_existe": "Independente do ator e do ramo da tela, não há dado. Executado: commission_calculations = 0 e commission_policies = 0. Nenhum dos seis scripts de demonstração cria comissão — `grep -rn commission scripts/*.mjs` não devolve nada; a única menção a 'commission' em seed é prisma/seed.ts:81-88, que cadastra as PERMISSÕES, não linhas de comissão. Qualquer que seja o período escolhido, a tela devolve 'Sem comissões no período — Nenhuma comissão foi calculada para você no período selecionado.' A promessa narrativa do beat ('a comissão que o técnico viu no aparelho tem, aqui, o extrato por período') é dupla: a tela está vazia E a comissão do aparelho nunca chegou a servidor nenhum.",
+      "evidencia": "consultas executadas: select count(*) from commission_calculations where tenant_id=(demo) → 0; commission_policies → 0 · `grep -rn commission scripts/*.mjs` → 0 resultados · prisma/seed.ts:81-88 (só descrições de permissão) · RemuneracoesPage.tsx:216-219 (EmptyState)"
+    },
+    {
+      "passo": "NOVO — beat t=42: OS-000013 não tem cliente cadastrado, então não existe \"a tabela de valores daquele cliente\"",
+      "por_que_nao_existe": "A narração do beat (e a copy real da tela, 'O valor é congelado a partir da tarifa vigente DO CLIENTE') pressupõe uma OS ligada a um registro de cliente. Executado: OS-000013 tem customer_id = NULL — ela carrega só o texto livre customer_name 'Guarda Municipal de Curitiba'. E isso não é exceção: das 17 OS do tenant demo, apenas 2 têm customer_id. Sem customer_id o resolvedor cai no ramo curinga (OR customer_id = null), ou seja o preço nunca é 'daquele cliente'.",
+      "evidencia": "consultas executadas: select customer_id from work_orders where code='OS-000013' → null; select count(*) n, count(customer_id) from work_orders where tenant_id=(demo) → {n:17, comcliente:2} · src/modules/tariffs/tariff-prisma.repository.ts:75 (OR: [{ customer_id: customerId ?? null }, { customer_id: null }]) · FinancialTab.tsx:229 (a copy que promete o cliente)"
+    },
+    {
+      "passo": "NOVO — três dos beats web não têm PNG de referência aprovado",
+      "por_que_nao_existe": "O fundamentador flagrou a ausência de tabelas-valores.png e tarifas.png e engoliu a terceira: screen-refs/web/ tem 35 PNGs e nenhum de Remunerações/comissões. Os beats t=50 (/cadastros/tabelas-valores), t=58 (/cadastros/tarifas) e t=89 (/finance/commissions) seriam desenhados sem alvo visual aprovado — exatamente o que o §11 do CLAUDE.md manda não fazer.",
+      "evidencia": "`ls docs/claude-code-handoff/screen-refs/web/` → apis-credenciais, aprovacao-detalhe, aprovacoes-fila, auditoria-organizacao, auditoria-plataforma, builder-checklists, checklist-execucao, checklists-operacionais, cloud-billing, cobrancas, config-organizacao, config-plataforma, console-tempo-real, dashboard-operacional, despachos, estoque-detalhe, estoque, faturas, financeiro, health-sistema, mapa-operacional, notificacoes, operadores-campo, ordens-servico, organizacao-detalhe, organizacoes, os-detalhe, pagamentos, pedidos-compra, planos-e-modulos, relatorios, rotas-logisticas, tecnicos-disponibilidade, usuarios, visao-geral-plataforma (35) — sem tabelas-valores, tarifas, remuneracoes ou comissoes"
+    }
+  ],
+  "dados_a_exibir": [
+    {
+      "rotulo": "Organização",
+      "valor": "Guinchos Paraná",
+      "origem": "dados-reais.json → organizacao — CONFERIDO"
+    },
+    {
+      "rotulo": "OS âncora do mobile (SUBSTITUI a OS-000013)",
+      "valor": "OS-000015 — \"Recolhimento ao pátio — determinação DETRAN\" · DETRAN/PR · Curitiba · status in_progress · priority high",
+      "origem": "dados-reais.json → os_ativas[2]. Trocada porque OS-000013 já está 'completed' e o app não consegue concluí-la (ver passos_inexistentes)."
+    },
+    {
+      "rotulo": "Comissão que o aparelho realmente exibe para a OS-000015",
+      "valor": "R$ 150,00 (priority high → baseValueCents 150000 × ratePercent 10)",
+      "origem": "CALCULADA DO CÓDIGO, não do JSON — work_order_conclusion_screen.dart:53-58 e :61-66 + work_order_conclusion.dart:52-58. NÃO vem de tabela de preço nem de endpoint."
+    },
+    {
+      "rotulo": "OS concluída (só como contexto na web; NÃO usar no mobile)",
+      "valor": "OS-000013 — \"Remoção de veículo — estacionamento irregular\" · Guarda Municipal de Curitiba · Curitiba · concluída 21/08 · customer_id NULO",
+      "origem": "dados-reais.json → os_concluidas_amostra[0] — CONFERIDO; customer_id nulo verificado por consulta"
+    },
+    {
+      "rotulo": "Tabela de valores do fluxo",
+      "valor": "Guincho Leve — Tabela Padrão 2026 · published · 8 itens · menor 6.50 · maior 640.00",
+      "origem": "dados-reais.json → tabelas_preco[1] — CONFERIDO"
+    },
+    {
+      "rotulo": "Coluna \"Valores\" da tabela (formato real de tela)",
+      "valor": "8 itens · R$ 6,50 – R$ 640,00",
+      "origem": "tabelas_preco[1] formatado por formatTariffRange (price-tables.adapter.ts:191-205) — CONFERIDO"
+    },
+    {
+      "rotulo": "Tarifa — km urbano",
+      "valor": "Quilômetro rodado — urbano · 6.50 · por km",
+      "origem": "dados-reais.json → tarifas_guincho_leve[0] — CONFERIDO (mas o nome NÃO aparece em tela; ver passos_inexistentes)"
+    },
+    {
+      "rotulo": "Tarifa — km rodovia",
+      "valor": "Quilômetro rodado — rodovia · 8.90 · por km",
+      "origem": "dados-reais.json → tarifas_guincho_leve[1] — CONFERIDO"
+    },
+    {
+      "rotulo": "Tarifa — hora parada",
+      "valor": "Hora parada / espera · 95.00 · por hora",
+      "origem": "dados-reais.json → tarifas_guincho_leve[2] — CONFERIDO"
+    },
+    {
+      "rotulo": "Tarifa — saída urbana",
+      "valor": "Saída de guincho — perímetro urbano · 180.00 · por acionamento",
+      "origem": "dados-reais.json → tarifas_guincho_leve[5] — CONFERIDO"
+    },
+    {
+      "rotulo": "Tarifa — içamento (teto da faixa)",
+      "valor": "Içamento com guincho pesado · 640.00 · por acionamento",
+      "origem": "dados-reais.json → tarifas_guincho_leve[7] — CONFERIDO"
+    },
+    {
+      "rotulo": "Tabelas de preço do tenant (o que a TELA mostra) — CORRIGIDO",
+      "valor": "15 tabelas cadastradas, 9 publicadas — NÃO 5. As 5 do JSON são o resultado de um filtro do exportador. A lista real inclui 'teste', 'Tabela Smoke 19355', 'Editavel 1783820571713284800' e mais 6 nomes de teste.",
+      "origem": "consulta executada no banco vivo (count + listagem nominal de price_tables); o corte de 5 vem de .tmp-demo/export-dados.mjs:51-56"
+    },
+    {
+      "rotulo": "Tarifas do tenant (o que a TELA mostra sem filtro) — CORRIGIDO",
+      "valor": "39 tarifas (32 ativas). As 8 da Guincho Leve só aparecem isoladas depois de aplicar o filtro \"Tabela de Valores\".",
+      "origem": "consulta executada: select count(*), count(*) filter (where is_active) from tariffs where tenant_id=(demo)"
+    },
+    {
+      "rotulo": "Cobranças — KPI \"Em aberto\"",
+      "valor": "32 títulos · 87.696,00 → o card renderiza \"R$ 87,7k\" e o title/tooltip traz o valor cheio",
+      "origem": "dados-reais.json → financeiro_por_situacao (receivable/open); confirmado por consulta; formatado por formatCompactBRL (financial-titles.adapter.ts:177-190)"
+    },
+    {
+      "rotulo": "Cobranças — KPI \"Vencidas\" (número honesto desta tela) — NOVO",
+      "valor": "14 títulos · 21.105,00 → \"R$ 21,1k\". NÃO usar os 22 / R$ 28.045 aqui.",
+      "origem": "consulta executada: receivable, status ∉ {paid,cancelled}, due_date < now()"
+    },
+    {
+      "rotulo": "Cobranças — KPI \"Recebidas (mês)\" — CORRIGIDO",
+      "valor": "1 título · 8.700,00 → \"R$ 8,7k\". Não é R$ 168.795 (histórico) nem ~R$ 0 (como o fundamentador afirmou).",
+      "origem": "consulta executada: receivable, status='paid', competencia = mês corrente"
+    },
+    {
+      "rotulo": "Cobranças — KPI \"Em contestação\"",
+      "valor": "0 títulos · R$ 0 — o card fica zerado e a aba abre vazia",
+      "origem": "consulta executada; corroborado por dados-reais.json → financeiro_por_situacao (nenhuma linha in_dispute)"
+    },
+    {
+      "rotulo": "Cobranças — aba \"Recebidas\" (contagem)",
+      "valor": "22 títulos · 168.795,00 — USAR SÓ como conteúdo da aba \"Recebidas\", nunca como KPI",
+      "origem": "dados-reais.json → financeiro_por_situacao (receivable/paid) — CONFERIDO"
+    },
+    {
+      "rotulo": "Cobranças — parcialmente pagos",
+      "valor": "9 títulos · 49.941,00 (chip \"Parcial\")",
+      "origem": "dados-reais.json → financeiro_por_situacao (receivable/partially_paid) — CONFERIDO"
+    },
+    {
+      "rotulo": "Financeiro — KPI \"A receber (aberto)\" — CORRIGIDO",
+      "valor": "41 títulos · 117.660,60 → \"R$ 117,7k\" (inclui partially_paid e soma o remanescente)",
+      "origem": "consulta executada; regra em financial-summary.compute.ts:21-23 e :33-35"
+    },
+    {
+      "rotulo": "Financeiro — KPI \"A pagar (aberto)\" — CORRIGIDO",
+      "valor": "24 títulos · 31.845,50 → \"R$ 31,8k\". NÃO são os 19 · R$ 25.783 do JSON (aquele recorte é status='open' puro).",
+      "origem": "consulta executada; dados-reais.json → financeiro_por_situacao (payable/open) é outro recorte"
+    },
+    {
+      "rotulo": "Financeiro — KPI \"Saldo em caixa\" — CORRIGIDO",
+      "valor": "3 contas · 391.167,55 → \"R$ 391,2k\" (abertura 262.210,65 + entradas 188.771,40 − saídas 59.814,50)",
+      "origem": "consulta executada; fórmula em financial-summary.compute.ts:132-135"
+    },
+    {
+      "rotulo": "Financeiro — KPI \"Inadimplência\"",
+      "valor": "17,9% (21.105,00 ÷ 117.660,60), com o subtítulo \"R$ 21,1k vencido\"",
+      "origem": "consultas executadas + percent() em FinanceiroPage.tsx:41-43 (toFixed(1), vírgula decimal)"
+    },
+    {
+      "rotulo": "Contas financeiras (saldos de ABERTURA — não são o card)",
+      "valor": "Banco do Brasil — C/C 98765-4: 62.890,10 · Banco Itaú — C/C 12345-6: 184.320,55 · Caixa Operacional: 15.000,00 (soma 262.210,65)",
+      "origem": "dados-reais.json → contas — CONFERIDO. Rotular como abertura: o card \"Saldo em caixa\" soma os lançamentos por cima."
+    },
+    {
+      "rotulo": "Volume total de títulos do tenant",
+      "valor": "103 títulos (63 a receber + 40 a pagar) — cabem na janela limit=100 por direção, então os KPIs de Cobranças somam a base inteira e o aviso de janela parcial não aparece",
+      "origem": "dados-reais.json → financeiro_por_situacao (soma das 6 linhas) + useFinancialTitles.ts:41 — CONFERIDO"
+    },
+    {
+      "rotulo": "Usuária financeira da demo",
+      "valor": "Beatriz Lima (Financeiro) — financeiro@demo.com. ATENÇÃO: com commissions:read ela NÃO vê o card \"Seu extrato de comissões\".",
+      "origem": "dados-reais.json → usuarios_demo — CONFERIDO; consequência de permissão em RemuneracoesPage.tsx:70/177"
+    },
+    {
+      "rotulo": "Itens financeiros de OS no tenant (base do beat t=34) — NOVO",
+      "valor": "0 (zero) — a aba Financeiro de qualquer OS da demo mostra \"Nenhum item financeiro lançado\" e Total R$ 0,00",
+      "origem": "consulta executada: select count(*) from work_order_financial_items where tenant_id=(demo)"
+    },
+    {
+      "rotulo": "Comissões no tenant (base do beat t=89) — NOVO",
+      "valor": "0 (zero) commission_calculations e 0 commission_policies",
+      "origem": "consulta executada; nenhum script de seed cria comissão"
+    },
+    {
+      "rotulo": "Títulos ligados a uma OS — NOVO",
+      "valor": "0 de 103 — nenhum financial_title do demo tem work_order_id",
+      "origem": "consulta executada: select count(*) from financial_titles where tenant_id=(demo) and work_order_id is not null"
+    }
+  ],
+  "roteiro_sugerido": [
+    {
+      "t": 0,
+      "superficie": "titulo",
+      "acao": "Cartela de abertura sobre navy: \"F4 — Do serviço ao dinheiro\". Subtítulo: \"Guinchos Paraná · 103 títulos financeiros · 63 a receber\". NÃO citar \"5 tabelas publicadas\" (são 15 tabelas / 9 publicadas no tenant).",
+      "narracao": "O quarto fluxo mostra o que acontece com o dinheiro depois que o guincho encosta o veículo.",
+      "legenda_tecnica": "tenant demo · 63 títulos a receber · 40 a pagar"
+    },
+    {
+      "t": 5,
+      "superficie": "mobile",
+      "acao": "Aparelho 390×812 entra pela esquerda na Conclusão da OS-000015 (in_progress — a única do demo que o app consegue concluir). Cartão de comissão no topo: rótulo \"Sua comissão\" e o valor R$ 150,00. Abaixo, dois cartões: \"Tempo\" (ainda \"—\", porque completedAt só nasce ao concluir) e \"Materiais\".",
+      "narracao": "O técnico fecha o atendimento no aparelho e vê, na hora, quanto aquele serviço rendeu para ele.",
+      "legenda_tecnica": "/work-orders/:id/conclusion — commission-card · cálculo LOCAL: base × 10%"
+    },
+    {
+      "t": 12,
+      "superficie": "mobile",
+      "acao": "Scroll curto até o Card de resumo: três linhas — Serviço, Cliente e Veículo. Realce na linha Cliente. NÃO inventar placa: a terceira linha traz o código da OS.",
+      "narracao": "O resumo confirma o serviço e o cliente antes de qualquer coisa sair do aparelho.",
+      "legenda_tecnica": "WorkOrderConclusionSummary — service · customer · assetLabel"
+    },
+    {
+      "t": 19,
+      "superficie": "mobile",
+      "acao": "Botão da barra fixa \"Concluir atendimento\" pulsa e é acionado; ele dá lugar ao card \"Atendimento concluído — Sincronização em segundo plano.\"",
+      "narracao": "Concluir não depende de sinal: a ação entra na fila local e sobe quando a rede voltar.",
+      "legenda_tecnica": "fila offline · idempotência = tenant + usuário + client_action_id"
+    },
+    {
+      "t": 26,
+      "superficie": "ambos",
+      "acao": "FEIXE: linha luminosa sai do aparelho, atravessa o quadro e acende a janela do navegador. Legenda técnica sobre o feixe.",
+      "narracao": "É um único canal de entrada: o app repõe a ação no servidor e o console do escritório vê a ordem mudar de estado.",
+      "legenda_tecnica": "POST /api/v1/mobile/sync/work-order-actions — work_order.status_change"
+    },
+    {
+      "t": 33,
+      "superficie": "web",
+      "acao": "Console web na OS, aba \"Financeiro\": card \"Itens financeiros\" com o subtítulo real e os botões \"Lançar da tabela\" e \"Item avulso\". FILMAR O ESTADO VAZIO HONESTO — \"Nenhum item financeiro lançado\", Total R$ 0,00 — porque o tenant demo tem zero itens. Não montar grade fictícia.",
+      "narracao": "No escritório, o dinheiro da ordem nasce aqui: cada serviço vira uma linha com o valor congelado no momento do lançamento.",
+      "legenda_tecnica": "GET /api/v1/work-orders/:id/financial-items — total somado no backend"
+    },
+    {
+      "t": 41,
+      "superficie": "web",
+      "acao": "Clique em \"Lançar da tabela\": abre o painel \"Lançar serviço da tabela de valores do cliente\" com Serviço, Quantidade e Observação, e a nota \"O valor é congelado a partir da tarifa vigente do cliente no momento do lançamento.\" NÃO abrir o seletor de Serviço (o catálogo do demo só tem nomes de teste) e NÃO apertar \"Lançar\" (todo caminho erra hoje).",
+      "narracao": "O preço não é digitado: o sistema busca a tarifa vigente da tabela daquele cliente e a congela na ordem.",
+      "legenda_tecnica": "POST /work-orders/:id/financial-items — resolveTariff(serviço × cliente × vigência)"
+    },
+    {
+      "t": 49,
+      "superficie": "web",
+      "acao": "Transição para /cadastros/tabelas-valores já com a busca escrita (\"Guincho Leve\"), para que a grade mostre a linha certa em vez das 15 tabelas com detrito de teste. Coluna Valores: \"8 itens · R$ 6,50 – R$ 640,00\"; chip de status publicado.",
+      "narracao": "A tabela que rege esse preço é um cadastro versionado, com vigência e publicação — não uma planilha solta.",
+      "legenda_tecnica": "GET /api/v1/price-tables — itemCount · minUnitPrice · maxUnitPrice"
+    },
+    {
+      "t": 57,
+      "superficie": "web",
+      "acao": "/cadastros/tarifas com o filtro \"Tabela de Valores\" JÁ aplicado (sem o filtro são 39 linhas). As 8 linhas ordenadas por Valor unitário: R$ 6,50 → R$ 640,00. Aceitar que Serviço/Cliente leem \"Todos os serviços\"/\"Todos os clientes\" — não legendar as linhas com nomes de tarifa.",
+      "narracao": "Item a item, cada valor unitário que compõe a cobrança fica auditável.",
+      "legenda_tecnica": "GET /api/v1/tariffs?price_table_id=… — 8 itens, filtro server-side"
+    },
+    {
+      "t": 65,
+      "superficie": "web",
+      "acao": "Corte para /finance/charges. Os quatro KPIs entram: \"R$ 87,7k Em aberto\", \"R$ 21,1k Vencidas\", \"R$ 8,7k Recebidas (mês)\", \"R$ 0 Em contestação\". Abaixo, as abas Todas · Em aberto · Vencidas · Recebidas · Em contestação.",
+      "narracao": "Do outro lado do balcão, a organização carrega oitenta e sete mil e seiscentos reais em trinta e dois títulos a receber, ainda em aberto.",
+      "legenda_tecnica": "GET /api/v1/financial-titles?direction=receivable&limit=100 — 32 títulos open"
+    },
+    {
+      "t": 73,
+      "superficie": "web",
+      "acao": "Clique na aba \"Vencidas\": a grade filtra para 14 linhas e as datas de VENC. viram vermelhas.",
+      "narracao": "O atraso não fica escondido numa soma: catorze títulos vencidos, cada um com cliente, valor e data.",
+      "legenda_tecnica": "COBRANÇA · CLIENTE · VALOR · VENC. · CATEGORIA · STATUS — 14 títulos · R$ 21.105,00"
+    },
+    {
+      "t": 81,
+      "superficie": "web",
+      "acao": "Transição para /finance. Os quatro cards em sequência: A receber (aberto) R$ 117,7k · 41 títulos; A pagar (aberto) R$ 31,8k · 24 títulos; Saldo em caixa R$ 391,2k · 3 contas; Inadimplência 17,9%. À esquerda \"Fluxo de caixa — Entradas vs saídas · 6 meses\"; à direita \"Títulos recentes\" (PARTE · VALOR · VENC. · STATUS).",
+      "narracao": "O painel financeiro fecha a conta da operação: o que entra, o que sai, o saldo das três contas e o percentual de inadimplência.",
+      "legenda_tecnica": "GET /api/v1/financial-summary — aberto = status ∉ {pago, cancelado}; saldo = abertura + entradas − saídas"
+    },
+    {
+      "t": 90,
+      "superficie": "web",
+      "acao": "Último corte para /finance/payments (o espelho a pagar da mesma grade), com os KPIs A pagar · Agendados · Pagos (mês) · Vencendo. SUBSTITUI o beat de Remunerações: /finance/commissions não tem dado nenhum no tenant e a tela que abre para o perfil financeiro é um modal de filtro.",
+      "narracao": "E o mesmo trilho serve o outro lado: o que a operação deve, com vencimento e agendamento, na mesma grade.",
+      "legenda_tecnica": "GET /api/v1/financial-titles?direction=payable — 24 títulos em aberto · R$ 31.845,50"
+    },
+    {
+      "t": 96,
+      "superficie": "titulo",
+      "acao": "Cartela final: \"Do serviço ao dinheiro — tabela de preço versionada, título rastreável, caixa fechado.\" Aparelho e navegador lado a lado, esmaecidos.",
+      "narracao": "Um serviço no asfalto, uma tarifa versionada e um título auditável — a mesma cadeia, do aparelho ao caixa.",
+      "legenda_tecnica": "/api/v1 · multi-tenant · backend é a autoridade de permissão"
+    }
+  ]
+}

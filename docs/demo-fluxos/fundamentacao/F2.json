@@ -1,0 +1,826 @@
+{
+  "fluxo": "F2 — O checklist que a web escreve e o campo preenche (auditado: 7 rotas web confirmadas, 17 endpoints confirmados, 2 endpoints inexistentes confirmados, 5 telas Flutter confirmadas, 25 passos inexistentes)",
+  "rotas_web": [
+    {
+      "path": "/administrator/checklists",
+      "arquivo": "frontend/src/App.tsx:741 (PermissionGuard tenant_checklists:read -> TenantChecklistsPage) — CONFERIDO na linha",
+      "existe": true,
+      "titulo_na_tela": "kicker \"ADMINISTRAÇÃO\" (TenantChecklistsPage.tsx:330) + <h1>Modelos de Checklist</h1> (linha 331) + subtítulo (332-335). ATENÇÃO: a tabela NÃO mostra só os 3 publicados — GET /tenant/checklists devolve TODO template não-arquivado (checklist-prisma.repository.ts:84-90), incluindo rascunhos e resíduo de teste"
+    },
+    {
+      "path": "/administrator/checklists/:checklistId",
+      "arquivo": "frontend/src/App.tsx:752 (PermissionGuard tenant_checklists:read -> ChecklistEditorPage) — CONFERIDO na linha",
+      "existe": true,
+      "titulo_na_tela": "O título É o nome do modelo num <input> editável (className ckb-ed-name, aria-label \"Nome do modelo\") — ChecklistEditorPage.tsx:637-643. Ao lado <select> aria-label \"Tipo do modelo\" (linhas 648-660) + pill de situação (659-661). Abas em TABS (99-102): \"Estrutura do formulário\" · \"Aplicabilidade\""
+    },
+    {
+      "path": "/operations/checklists",
+      "arquivo": "frontend/src/App.tsx:701 (PermissionGuard checklist_runs:read | checklist_runs:create -> ChecklistRunsPage) — CONFERIDO",
+      "existe": true,
+      "titulo_na_tela": "<span>OPERAÇÃO</span> + <h1>Checklists Operacionais</h1> + <p>Execução web de checklists publicados para a operação de campo.</p> — ChecklistRunsPage.tsx:72-74"
+    },
+    {
+      "path": "/operations/checklists/:checklistId/run",
+      "arquivo": "frontend/src/App.tsx:709 (PermissionGuard checklist_runs:create -> ChecklistRuntimePage) — CONFERIDO",
+      "existe": true,
+      "titulo_na_tela": "Execução WEB do checklist. CONFIRMADO: a rota não tem :runId e o efeito de montagem chama renderChecklist (ChecklistRuntimePage.tsx:69) e logo createChecklistRun (linha 70) — CRIA execução nova. Não abre a vistoria do técnico. É para cá que o botão \"Abrir checklist\" da OS navega (WorkOrderActionBar.tsx:117)"
+    },
+    {
+      "path": "/patios/patios/:yardId",
+      "arquivo": "frontend/src/App.tsx:397 (PermissionGuard yard:read -> PatioDetailPage) — CONFERIDO. Componente em frontend/src/modules/patios/yards/pages/PatioDetailPage.tsx (o fundamentador não deu o caminho)",
+      "existe": true,
+      "titulo_na_tela": "kicker \"Pátios\" + <h1>{yard.name} <Chip>situação</Chip></h1> (PatioDetailPage.tsx:213-218); subtítulo endereço + fuso (219-221). Deep-link ?dossie=<processId> abre o modal do dossiê (98-113)"
+    },
+    {
+      "path": "/patios/processos/:processId",
+      "arquivo": "frontend/src/App.tsx:413 (PermissionGuard impound:read -> ProcessoDossiePage) — CONFERIDO",
+      "existe": true,
+      "titulo_na_tela": "kicker \"Pátios · Processos\" + <h1>{getVehicleLabel(process)} <ProcessStatusChip/></h1> — ProcessoDossiePage.tsx:93-97. O modal equivalente tem título \"Dossiê do veículo\" (VehicleDossieModal.tsx:367). A aba \"Checklist do Guincho\" só entra para quem tem checklist_runs:read (VehicleDossieModal.tsx:57-60)"
+    },
+    {
+      "path": "/work-orders/:workOrderId",
+      "arquivo": "frontend/src/App.tsx:784 (PermissionGuard work_orders:read -> WorkOrderDetailPage) — CONFERIDO",
+      "existe": true,
+      "titulo_na_tela": "Hub da OS. A aba \"Mobile\" traz o card \"Checklist do atendimento\" (MobileTab.tsx:159) com subtítulo \"Molde preenchido pelo técnico no app, congelado no momento do atendimento.\" (161). CORREÇÃO GRAVE: o card lê workOrder.checklistSnapshot, que é o SNAPSHOT DO MOLDE (buildChecklistSnapshot), não as respostas"
+    },
+    {
+      "path": "/administrator/checklists/:checklistId (aba \"Aplicabilidade\")",
+      "arquivo": "frontend/src/modules/checklists/pages/ChecklistEditorPage.tsx:1121 (function ApplicabilityTab) — CONFERIDO",
+      "existe": false,
+      "titulo_na_tela": "A aba existe, o conteúdo é maquete declarada: exampleRules hardcoded (1122-1125), selo <span className=\"ckb-ed-soon-pill\">Em breve</span> (1149), cada linha com title=\"Exemplo ilustrativo — em breve\" (1152), botão \"Remover regra\" disabled (1165) e \"Adicionar regra\" disabled (1170-1173). O comentário do próprio arquivo (1116-1119) declara: \"ESTÁTICA e assumidamente Em breve (D-007)\""
+    }
+  ],
+  "endpoints": [
+    {
+      "metodo": "GET",
+      "path": "/api/v1/tenant/checklists",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:39-40 (montado por app.use(\"/api/v1\", …createChecklistRouter()) em src/app.ts:134)",
+      "existe": true,
+      "o_que_faz": "Lista os modelos. CONFIRMADO que NÃO filtra por situação: listTemplates devolve tudo que não seja archived (checklist-prisma.repository.ts:84-90). Gate CHECKLIST_PERMISSIONS.readTemplates"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/tenant/checklists/:checklistId",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:63-64",
+      "existe": true,
+      "o_que_faz": "Abre UM modelo com componentes — o que o editor carrega no deep-link"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/tenant/checklist-components",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:31-32",
+      "existe": true,
+      "o_que_faz": "Catálogo de tipos da paleta. CONFIRMADO: 10 tipos em src/modules/checklists/checklist.components.ts (vehicle_selector, damage_map, photo_upload, observation, comparison, acknowledgement, before_after, single_choice, multi_choice, signature)"
+    },
+    {
+      "metodo": "PATCH",
+      "path": "/api/v1/tenant/checklists/:checklistId",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:71-72",
+      "existe": true,
+      "o_que_faz": "Salva o rascunho. Gate updateTemplates"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/tenant/checklists/:checklistId/publish",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:87-88",
+      "existe": true,
+      "o_que_faz": "Publica e congela o schema. CONFIRMADO em checklist-prisma.repository.ts:361 — version: existing.status === \"published\" ? existing.version : existing.version + 1. Republicar a Vistoria de Entrada (já published) mantém v1"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklists/available",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:95-96",
+      "existe": true,
+      "o_que_faz": "ATENÇÃO — NÃO é por OS. controller.listAvailableMobileChecklists (checklist.controller.ts:120-122) chama service.listAvailableTemplates, que é repository.listPublishedTemplates(actor.tenantId) (checklist.service.ts:73-75). Sem nenhum filtro de workOrderId"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklists/:checklistId/render",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:103-104 -> controller 140-150 -> service renderChecklist 207-229",
+      "existe": true,
+      "o_que_faz": "O ENVELOPE do feixe. Responde { data: { id, name, description, type, version, schema, components[] } } (ChecklistRenderSchema em checklist.service.ts:52-60). O app desembrulha data (checklist_remote_api.dart:218-219) e ordena por order/orderIndex (checklist_models.dart:163-167). MAS o parser do app só lê id/type/label/description/required/order/options — `config` NÃO é desserializado (checklist_remote_api.dart:439-453)"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklist-runs?workOrderId=",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:114-115",
+      "existe": true,
+      "o_que_faz": "O guincheiro BAIXA a execução pré-criada pelo despacho. CONFIRMADO em checklist.service.ts:338 — listRunsByRelatedEntity(tenantId, \"work_order\", workOrderId): só acha runs cujo related_entity_type seja work_order. Devolve toChecklistRunDto (checklist.dto.ts:132-152): SEM respostas e SEM anexos"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:122-123",
+      "existe": true,
+      "o_que_faz": "Cria a execução. No fluxo real quem chama é o DESPACHO: buildChecklistRunProvisioner -> checklistService.createRun (field-dispatch.service.ts:896)"
+    },
+    {
+      "metodo": "PATCH",
+      "path": "/api/v1/mobile/checklist-runs/:runId",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:130-131",
+      "existe": true,
+      "o_que_faz": "Grava as respostas. Recusa escrita em vistoria concluída (assertChecklistRunFieldWritable, checklist.service.ts:348)"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs/:runId/attachments",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:138-139",
+      "existe": true,
+      "o_que_faz": "Multipart componentId + file — CONFIRMADO no cliente em checklist_attachment_upload.dart:90-97"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs/:runId/complete",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:162-163",
+      "existe": true,
+      "o_que_faz": "Conclui. Gate próprio CHECKLIST_PERMISSIONS.completeRuns"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs/:runId/markers",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:154-155",
+      "existe": true,
+      "o_que_faz": "Marcador de avaria (exige component_id de campo damage_map)"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklist-runs/:runId/attachments/:attachmentId/download",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:146-147",
+      "existe": true,
+      "o_que_faz": "Baixa o binário. CORREÇÃO do fundamentador: o único consumidor web é ChecklistAttachmentList (importado em ChecklistRuntimeField.tsx:20, usado na 253), que NÃO renderiza imagem — mostra nome/tipo/tamanho/data e dois botões que chamam o MESMO handleDownload"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs/:runId/reopen",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:175-176",
+      "existe": true,
+      "o_que_faz": "OMITIDO pelo fundamentador. Reabrir vistoria concluída cria NOVA versão vinculada; gate próprio checklist_runs:reopen (a original nunca é editada)"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklist-runs/:runId/comparison",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:183-184",
+      "existe": true,
+      "o_que_faz": "OMITIDO pelo fundamentador. Comparação coleta x entrega"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/sync/checklist-actions",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:150-151 (o path literal está na linha 151)",
+      "existe": true,
+      "o_que_faz": "O FEIXE DE VOLTA. Tipos confirmados nos DOIS lados: api_contracts.dart:108-114 (checklist_run.create / checklist_answer.upsert / checklist_run.complete / checklist_marker.create / checklist_attachment.attach) e mobile-checklist-sync.ts:56-64. Enfileirados em checklist_repository.dart:555 (answerUpsert), 613 (runComplete), 690 (markerCreate)"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/evidence-uploads",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:186-187 (path na 187)",
+      "existe": true,
+      "o_que_faz": "Evidência de OS — trilha SEPARADA da vistoria. Não é por aqui que a foto do checklist sobe"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/checklist-runs",
+      "arquivo": "src/modules/impound/impound.routes.ts:201-207 (guarda DUPLA: requirePermission(IMPOUND_PERMISSIONS.read) + requirePermission(\"checklist_runs:read\"))",
+      "existe": true,
+      "o_que_faz": "Alimenta a aba \"Checklist do Guincho\". CONFIRMADO: lê a tabela impound_process_checklist_links (impound.checklist-link-prisma.repository.ts:45-47) — só aparece o que tiver VÍNCULO. Resumo estreito (processes.types.ts:216-228): sem anexos, sem respostas"
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/impound-processes/:processId/link-checklist-run",
+      "arquivo": "src/modules/impound/impound.routes.ts:194-200",
+      "existe": true,
+      "o_que_faz": "OMITIDO pelo fundamentador e É O ELO QUE FALTA. Único gravador de vínculo no produto, sempre linkSource \"MANUAL\" (impound.checklist-link.service.ts:35). Busca em frontend/src e mobile/flutter_app/lib por \"link-checklist-run\"/\"linkChecklistRun\": ZERO ocorrências — nenhuma tela chama"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/inspection",
+      "arquivo": "src/modules/impound/impound.routes.ts:111-112",
+      "existe": true,
+      "o_que_faz": "Vistoria de Recepção do pátio COM galeria (InspectionSection.tsx:86-91 renderiza <img>). Outra entidade (impound_intake_inspections), alimentada por POST .../inspection/photos (impound.routes.ts:125-126) sob impound:inspect. Não é a vistoria do app"
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklist-runs/:runId",
+      "arquivo": "NÃO EXISTE — conferido linha a linha em checklist.routes.ts: em :runId só há PATCH (130). Os GET são a LISTA (114), o download de UM anexo (146) e a comparação (183)",
+      "existe": false,
+      "o_que_faz": "Seria o endpoint para a web abrir a vistoria preenchida no campo com respostas e anexos. Sem ele nenhuma tela web tem de onde ler"
+    },
+    {
+      "metodo": "POST/GET/PATCH/DELETE",
+      "path": "/api/v1/tenant/checklists/:checklistId/applicability-rules (ou equivalente)",
+      "arquivo": "NÃO EXISTE — ls src/modules/checklists/applicability/ devolve exatamente 4 arquivos (checklist-applicability.types.ts, .repository.ts, -prisma.repository.ts, .resolution.ts). grep \"applicability\" em checklist.routes.ts e src/app.ts: ZERO",
+      "existe": false,
+      "o_que_faz": "Seria o CRUD das regras. O motor roda na criação da OS (work-order.service.ts:568-583, source \"resolved\" + ruleId), mas nada no produto grava a regra"
+    }
+  ],
+  "telas_mobile": [
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/checklist-coleta.png (arquivo existe — conferido no ls)",
+      "tela_flutter": "mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart (rota /checklists/:checklistId/run — app/router.dart:189)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "NO APP (build conferido em 224-285): MobileScreenHeader com title = schema.title (nome do modelo) + subtitle 'Obrigatórios: X/Y' (linha 249) + trailing MobilePill com widget.kind.label (253-256)",
+        "NO APP: LinearProgressIndicator (258-261) — única barra de progresso; NENHUM stepper é importado ou construído no arquivo",
+        "NO APP: ListView.separated de _FieldCard, um por componente na ordem de schema.sortedFields (263-282)",
+        "NO APP: cada card mostra field.label + ' *' vermelho quando required (checklist_run_screen.dart:347-355)",
+        "NO APP: vehicle_selector = InputDecorator labelText 'Tipo de veículo' + DropdownButton hint 'Selecione' (574-604), rótulo 'Vista do veículo' (608-613), 4 miniaturas (616-620)",
+        "NO APP: photo_upload = OutlinedButton 'Adicionar evidência' -> 'Substituir evidência', 'Registrando...', 'Evidência registrada' + Chip('Pendente sync') (739-776)",
+        "NO APP: observation = TextField multilinha hintText 'Adicione observações' (458-471)",
+        "NO APP: damage_map = OutlinedButton.icon 'Abrir mapa de danos' que faz context.push para outra rota (473-485)",
+        "NO APP: barra fixa MobileStickyBar com FilledButton 'Concluir checklist' / 'Concluindo...' (228-241)",
+        "NO APP: AwaitingDispatchView quando runId == null (205-215; classe em 1051, textos em 1091-1100)",
+        "NO PNG (e NÃO no app): stepper de 6 fases; campos 'Placa *' e 'Odômetro *'; bloco 'Vista do veículo · vistoria 360*'; card 'Mapa de avarias' embutido com pinos numerados e legenda Amassado/Risco/Quebrado; contador 'Fotos do veículo 0/8'; botão 'Continuar'"
+      ]
+    },
+    {
+      "png": "(sem PNG dedicado — no protótipo o mapa aparece embutido em checklist-coleta.png)",
+      "tela_flutter": "mobile/flutter_app/lib/features/checklists/ui/checklist_damage_map_screen.dart (rota /checklists/:checklistId/run/damage-map — app/router.dart:210)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "ErpScaffold title: 'Mapa de danos' (linha 317) — não 'Mapa de avarias'",
+        "_VehicleViewSelector com as 4 vistas (322-326)",
+        "_VehicleImage (221-252): Padding > ClipRRect > Image.asset height 120 — SEM GestureDetector e SEM Stack de pinos. Não se toca na imagem para marcar",
+        "Lista de cards de marcador abaixo; FloatingActionButton '+' abre AlertDialog 'Registrar dano' (339)",
+        "Dropdown 'Tipo' com Dano · Desgaste · Faltando · Outro (340-343) — valores damage/wear/missing/other",
+        "DIVERGÊNCIA CONFIRMADA: o catálogo do backend usa scratch/dent/broken/missing/other (checklist.components.ts:25) e a web rotula Risco/Amassado/Quebrado/Faltante/Outro (frontend checklist.constants.ts:83-89)"
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/sincronizacao.png (arquivo existe)",
+      "tela_flutter": "mobile/flutter_app/lib/shared/ui/sync_screen.dart (rota /sync — app/router.dart:137)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "MobileScreenHeader title 'Sincronização' + MobilePill 'Online'/'Offline' (56-60)",
+        "Botão 'Sincronizar agora' / 'Sincronizando...' (141-145) — não 'Sincronizar'",
+        "_KpiChip por estado: Pendentes · Sincronizados · Erros · Conflitos (323-345)",
+        "Agrupamento por domínio via _domainLabel: 'Checklists' · 'Ordens de Serviço' · 'Despesas (RDV)' · 'Estoque' · 'Outros' (618-631)",
+        "_statusLabel: Sincronizado/Erro/Conflito/Sincronizando/Pendente/Local (596-603)",
+        "Vazio honesto: EmptyState 'Fila vazia' + 'Ações de OS, Checklists, Despesas e Estoque aparecerão aqui quando houver pendências locais.' (150-156)",
+        "Card de conflito: 'Escolha qual versão deve prevalecer.' + 'Minha versão' / 'Versão do gestor' (229-251)"
+      ]
+    },
+    {
+      "png": "(sem PNG dedicado)",
+      "tela_flutter": "mobile/flutter_app/lib/features/checklists/ui/checklist_available_screen.dart (rota /work-orders/:workOrderId/checklists — app/router.dart:183)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "MobileScreenHeader title 'Checklists da OS' (67 e 88)",
+        "ATENÇÃO: renderiza repo.activeTemplates (127) — que é _templates.where(isActive) SEM filtro por OS (checklist_repository.dart:219-220), alimentado por GET /mobile/checklists/available. O workOrderId só serve para navegar",
+        "MobilePill 'Obrigatório' quando exigido (236)",
+        "Botão por card: 'Concluído' / 'Continuar' / 'Iniciar' (269-272)",
+        "'Atualizado em <data>' (343) e, com cache, 'Mostrando modelos salvos neste aparelho.' (371)",
+        "Vazio: 'Nenhum checklist disponível para esta ordem.' (405) — a cópia promete recorte por ordem que o dado não tem",
+        "Gate: 'Acesso não autorizado' (72)"
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/os-detalhe.png (arquivo existe)",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart (rota /work-orders/:workOrderId — app/router.dart:147)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "_WorkOrderStepper montado na linha 121 (classe em 331) — ESTE é o stepper do protótipo, e ele vive aqui, não na vistoria",
+        "Rótulos em work_order_steps.dart:29-40: guincho (tow) = Início · Rota coleta · Coleta · Rota entrega · Entrega · Conclusão; prestador = Início · Rota · Atendimento · Conclusão",
+        "Botão 'Continuar checklist' (606) que leva à vistoria",
+        "Botão 'Continuar atendimento' (925)"
+      ]
+    }
+  ],
+  "copy_real": [
+    {
+      "onde": "Web · /administrator/checklists · kicker + h1 (TenantChecklistsPage.tsx:330-331)",
+      "texto": "ADMINISTRAÇÃO / Modelos de Checklist"
+    },
+    {
+      "onde": "Web · /administrator/checklists · subtítulo (TenantChecklistsPage.tsx:332-335)",
+      "texto": "Configure os checklists que a equipe de campo preenche no aplicativo — perguntas, fotos obrigatórias, mapa de avarias e assinatura do cliente."
+    },
+    {
+      "onde": "Web · /administrator/checklists · cabeçalhos da tabela (TenantChecklistsPage.tsx:398-405)",
+      "texto": "MODELO · TIPO · SITUAÇÃO · VERSÃO · CAMPOS · ATUALIZADO · AÇÕES"
+    },
+    {
+      "onde": "Web · /administrator/checklists · KPI_CARDS (TenantChecklistsPage.tsx:83-86)",
+      "texto": "Publicados / disponíveis no aplicativo · Rascunhos / ainda não publicados · Alterações não publicadas / o campo ainda usa a versão antiga · Inativos / fora das novas ordens"
+    },
+    {
+      "onde": "Web · /administrator/checklists · FILTER_OPTIONS (TenantChecklistsPage.tsx:59-65)",
+      "texto": "Todas as situações · Publicados · Rascunhos · Com alterações não publicadas · Inativos"
+    },
+    {
+      "onde": "Web · /administrator/checklists · botão primário (TenantChecklistsPage.tsx:359-363)",
+      "texto": "Novo modelo"
+    },
+    {
+      "onde": "Web · /administrator/checklists · banner sem permissão de escrita (TenantChecklistsPage.tsx:372-373)",
+      "texto": "Você está no modo somente leitura — Seu perfil permite consultar os modelos, mas não criar, editar ou publicar."
+    },
+    {
+      "onde": "Web · editor · rótulos de situação (frontend checklist.constants.ts:33-38)",
+      "texto": "Rascunho · Publicado · Inativo · Arquivado"
+    },
+    {
+      "onde": "Web · editor · rótulos de tipo (frontend checklist.constants.ts:26-31)",
+      "texto": "Guincho — Coleta · Guincho — Entrega · Evidência técnica · Personalizado"
+    },
+    {
+      "onde": "Web · editor · abas (ChecklistEditorPage.tsx:99-102)",
+      "texto": "Estrutura do formulário · Aplicabilidade"
+    },
+    {
+      "onde": "Web · editor · ações do cabeçalho (ChecklistEditorPage.tsx:589, 697-700, 712-716, 726-733)",
+      "texto": "Inativar modelo (ou Reativar modelo) · Pré-visualizar · Salvar · Publicar"
+    },
+    {
+      "onde": "Web · editor · tooltip do Pré-visualizar (ChecklistEditorPage.tsx:698)",
+      "texto": "Ver como o técnico verá no aplicativo"
+    },
+    {
+      "onde": "Web · editor · tooltip do Publicar sem bloqueio (checklist-editor.model.ts:511)",
+      "texto": "Publicar e disponibilizar no aplicativo"
+    },
+    {
+      "onde": "Web · editor · toast de sucesso após publicar (ChecklistEditorPage.tsx:486)",
+      "texto": "Modelo publicado — já está disponível no aplicativo para as próximas ordens."
+    },
+    {
+      "onde": "Web · editor · colunas da aba Estrutura (ChecklistEditorPage.tsx:801, 961-962)",
+      "texto": "O formulário · Campos disponíveis / Clique para adicionar ao formulário"
+    },
+    {
+      "onde": "Web · editor · linha de meta do canvas (checklist-editor.model.ts:267-271)",
+      "texto": "6 campos · 1 seção · versão 1"
+    },
+    {
+      "onde": "Web · editor · selos de estado do rascunho (ChecklistEditorPage.tsx:661-668)",
+      "texto": "Alterações não publicadas · Alterações não salvas"
+    },
+    {
+      "onde": "Web · editor · nomes dos 10 tipos da paleta (frontend checklist.constants.ts:47-58)",
+      "texto": "Seletor de veículo · Mapa de avarias · Foto · Observação · Comparação · Ciência · Antes e depois · Escolha única · Múltipla escolha · Assinatura"
+    },
+    {
+      "onde": "Web · editor · descrições da paleta (frontend checklist.constants.ts:61-72)",
+      "texto": "Tipo do veículo e imagem da vistoria · Coleta fotos pela câmera ou galeria · Texto livre para anotações do técnico"
+    },
+    {
+      "onde": "Web · editor · chips do card de campo (checklist-editor.model.ts:516-551) — VALORES REAIS PARA ESTE MODELO",
+      "texto": "photo_upload com config vazio → \"mín. 0 fotos\" (o default é 0, linha 525) · observation com config vazio → \"até 500 caracteres\" (default 500, linha 545)"
+    },
+    {
+      "onde": "Web · editor · card \"O que acontece ao publicar\" — mora DENTRO da aba Aplicabilidade (ChecklistEditorPage.tsx:1178-1196)",
+      "texto": "O que acontece ao publicar — Publicar congela esta versão do modelo. Ordens já despachadas continuam com a versão que receberam — nada muda para o técnico que já está em campo. / Novas ordens: Recebem a versão recém-publicada · Em andamento: Mantêm a versão recebida no despacho · Concluídas: Ficam imutáveis, com trilha de auditoria"
+    },
+    {
+      "onde": "Web · editor · pré-visualização (ChecklistPreview.tsx:28-30, 143-145, 237)",
+      "texto": "Como o formulário fica montado — \"Uma simulação da ordem e do conteúdo dos campos no aplicativo de campo — não uma cópia do visual do aplicativo. Confira antes de publicar: depois de publicado, o modelo já sai nas próximas ordens.\" / dock: Aplicativo de campo · 390 × 812"
+    },
+    {
+      "onde": "Web · editor · CTA dentro do telefone da pré-visualização (ChecklistPreview.tsx:299)",
+      "texto": "Concluir checklist"
+    },
+    {
+      "onde": "Web · editor · ações da pré-visualização (ChecklistPreview.tsx:182, 190, 205)",
+      "texto": "Modelo pronto para publicar · Continuar editando · Publicar modelo (enquanto grava: \"Publicando…\")"
+    },
+    {
+      "onde": "Web · editor · aba Aplicabilidade (ChecklistEditorPage.tsx:1135-1149)",
+      "texto": "Quando este checklist é enviado ao técnico — As regras abaixo definem em quais serviços o modelo entra automaticamente. Quem despacha a ordem ainda pode ajustar antes de enviar. / Regras de aplicação · Uma ordem pode receber mais de um checklist · [Em breve]"
+    },
+    {
+      "onde": "Web · /operations/checklists (ChecklistRunsPage.tsx:72-74)",
+      "texto": "OPERAÇÃO / Checklists Operacionais / Execução web de checklists publicados para a operação de campo."
+    },
+    {
+      "onde": "Web · dossiê do veículo · título e abas (VehicleDossieModal.tsx:46-56, 58, 367)",
+      "texto": "Dossiê do veículo — Visão Geral · Vistoria de Recepção · [Checklist do Guincho, só com checklist_runs:read] · Linha do Tempo · Histórico de Custódias · Débitos · Liberação · Leilão/Liquidação"
+    },
+    {
+      "onde": "Web · dossiê · aba Checklist do Guincho (ChecklistRunsPanel.tsx:32, 64-66, 69-74)",
+      "texto": "Checklist do guincho — \"Preenchido em campo pelo guincheiro (aplicativo). Esta é a visão de acompanhamento — somente leitura.\" Colunas: Checklist · Situação · Iniciado · Concluído"
+    },
+    {
+      "onde": "Web · dossiê · aba Checklist do Guincho, estado vazio (ChecklistRunsPanel.tsx:46-49) — PROMESSA QUE O CÓDIGO NÃO CUMPRE",
+      "texto": "Nenhum checklist do guincho vinculado — Quando o despacho gera a ordem de serviço com um checklist, o vínculo aparece aqui automaticamente. (nenhum código cria vínculo automático — ver passos_inexistentes)"
+    },
+    {
+      "onde": "Web · dossiê · aba Vistoria de Recepção (InspectionSection.tsx:38-58, 68, 86)",
+      "texto": "Vistoria completa / Vistoria incompleta · Agente da vistoria · Lataria · Pintura · Pneus · Hodômetro (km) · Objetos internos · Equipamentos ausentes · Quem assinou · Conjuntos fotográficos exigidos · Conjunto N · X fotos"
+    },
+    {
+      "onde": "Web · OS · aba Mobile (MobileTab.tsx:159, 161, 167)",
+      "texto": "Checklist do atendimento — Molde preenchido pelo técnico no app, congelado no momento do atendimento. / vazio: \"Nenhum checklist preenchido no app.\""
+    },
+    {
+      "onde": "Web · execução web · lista de anexos (ChecklistAttachmentList.tsx:19, 51-59)",
+      "texto": "Nenhuma evidencia anexada / As evidencias enviadas para a execucao aparecerao aqui. · Baixar / \"Baixando...\" · Visualizar (SEM acento no arquivo, e ambos os botões baixam)"
+    },
+    {
+      "onde": "Web · rótulos de situação de execução (frontend checklist.constants.ts:40-45)",
+      "texto": "Em andamento · Concluído · Com divergência · Pendente de ciência"
+    },
+    {
+      "onde": "Mobile · vistoria · cabeçalho e progresso (checklist_run_screen.dart:247-256)",
+      "texto": "<nome do modelo>  ·  Obrigatórios: 0/5   [pill da fase]"
+    },
+    {
+      "onde": "Mobile · vistoria · rótulos possíveis da pill de fase (checklist_models.dart:87-91)",
+      "texto": "Coleta · Entrega · Fase não identificada — NÃO existe fase de \"entrada no pátio\""
+    },
+    {
+      "onde": "Mobile · vistoria · seletor de veículo (checklist_run_screen.dart:577, 586, 609)",
+      "texto": "Tipo de veículo / Selecione / Vista do veículo"
+    },
+    {
+      "onde": "Mobile · vistoria · rótulos das 4 vistas (vehicle_asset_helper.dart:7-12)",
+      "texto": "Esquerda · Direita · Frente · Traseira"
+    },
+    {
+      "onde": "Mobile · vistoria · lista fixa de tipos que o app oferece (vehicle_asset_helper.dart:47-54)",
+      "texto": "Sedan · Picape · Van · Caminhao · Motocicleta · Onibus (sem acento no código)"
+    },
+    {
+      "onde": "Mobile · vistoria · campo de foto (checklist_run_screen.dart:748-775)",
+      "texto": "Adicionar evidência → Substituir evidência · \"Registrando...\" · \"Evidência registrada\" · chip \"Pendente sync\""
+    },
+    {
+      "onde": "Mobile · vistoria · campo de observação (checklist_run_screen.dart:461)",
+      "texto": "Adicione observações"
+    },
+    {
+      "onde": "Mobile · vistoria · barra fixa e confirmação (checklist_run_screen.dart:238, 117)",
+      "texto": "Concluir checklist / \"Concluindo...\" → snackbar \"Checklist concluído com sucesso.\""
+    },
+    {
+      "onde": "Mobile · vistoria · atalho do mapa (checklist_run_screen.dart:484)",
+      "texto": "Abrir mapa de danos"
+    },
+    {
+      "onde": "Mobile · vistoria · estado sem execução despachada (checklist_run_screen.dart:1091-1100)",
+      "texto": "Aguardando despacho do checklist — A vistoria ainda não foi liberada para esta ordem de serviço."
+    },
+    {
+      "onde": "Mobile · mapa de danos (checklist_damage_map_screen.dart:317, 339-343)",
+      "texto": "Mapa de danos / Registrar dano / Tipo: Dano · Desgaste · Faltando · Outro"
+    },
+    {
+      "onde": "Mobile · sincronização (sync_screen.dart:56, 58, 144, 324-345)",
+      "texto": "Sincronização · Online · Sincronizar agora · Pendentes · Sincronizados · Erros · Conflitos"
+    },
+    {
+      "onde": "Mobile · sincronização · domínio da fila (sync_screen.dart:620)",
+      "texto": "Checklists"
+    },
+    {
+      "onde": "Mobile · checklists da OS (checklist_available_screen.dart:67, 236, 269-272, 405)",
+      "texto": "Checklists da OS · Obrigatório · Iniciar / Continuar / Concluído · Nenhum checklist disponível para esta ordem."
+    },
+    {
+      "onde": "PNG docs/claude-code-handoff/screen-refs/web/builder-checklists.png — NÃO USAR no vídeo",
+      "texto": "Protótipo anterior: \"Builder de Checklists\", componentes \"Campo de texto · Placa\", \"Grupo de verificação · 6 itens\", \"Captura de fotos · 4 ângulos\", modelo \"Vistoria de coleta — Guincho v4\". Nenhum desses nomes existe no catálogo real de 10 tipos"
+    }
+  ],
+  "passos_inexistentes": [
+    {
+      "passo": "NOVO (o maior) — Passo 7: \"a vistoria concluída no campo APARECE no dossiê do veículo\"",
+      "por_que_nao_existe": "Não há elo automático. A aba \"Checklist do Guincho\" lê a tabela impound_process_checklist_links; o ÚNICO gravador de vínculo no produto é POST /impound-processes/:id/link-checklist-run, que sempre grava linkSource \"MANUAL\", e NENHUM cliente o chama — busca por \"link-checklist-run\" e \"linkChecklistRun\" em frontend/src e mobile/flutter_app/lib devolve ZERO ocorrências. O vínculo AUTO é declarado não-implementado no próprio código. Os vínculos que existem hoje no banco de demonstração foram inseridos por SQL direto por um script de seed, com link_source 'AUTO' — o produto nunca produziu nenhum deles. Ou seja: o estado vazio dessa aba promete \"o vínculo aparece aqui automaticamente\" e nada no código cumpre.",
+      "evidencia": "Leitura: src/modules/impound/impound.checklist-link-prisma.repository.ts:45-47 (findMany em impoundProcessChecklistLink). Único gravador: impound.checklist-link.service.ts:16-39 (linkSource: \"MANUAL\") via impound.routes.ts:194-200. AUTO não implementado: src/modules/impound/impound.checklist-link.types.ts:3-4 — \"link_source distingue AUTO (sweep, PR-05, ainda não implementado) de MANUAL (este PR)\". Origem do dado da demo: scripts/seed-demo-dossie.mjs:166-170 — insert into impound_process_checklist_links (…) values (…,'AUTO',…) executado por SQL. Promessa não cumprida: frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx:46-49"
+    },
+    {
+      "passo": "NOVO — Passo 7 (variante): mostrar a foto da vistoria em QUALQUER tela web",
+      "por_que_nao_existe": "Nenhuma superfície web do produto renderiza uma foto de checklist na tela. O componente que sabe fazer preview de imagem, ChecklistEvidencePreview, é CÓDIGO MORTO: grep em todo o frontend/src encontra apenas a própria definição — ele nunca é importado. O componente que É usado, ChecklistAttachmentList, não tem nenhum <img>: mostra nome do arquivo, tipo, tamanho e data, e os DOIS botões (\"Baixar\" e \"Visualizar\") chamam o MESMO handleDownload, que cria um <a download> e clica. Isto corrige a evidência do fundamentador, que citou ChecklistEvidencePreview em ChecklistRuntimeField.tsx:244-256 — quem está lá é o AttachmentList.",
+      "evidencia": "Código morto: grep -rn \"ChecklistEvidencePreview\" frontend/src devolve só frontend/src/modules/checklists/components/ChecklistEvidencePreview.tsx:8 (a própria declaração). Único uso real: frontend/src/modules/checklists/components/ChecklistRuntimeField.tsx:20 (import de ChecklistAttachmentList) e 253 (uso). Sem imagem: ChecklistAttachmentList.tsx:44-64 (só <strong>{fileName}</strong> + mime/bytes/data + dois Button que chamam handleDownload, 22-38)"
+    },
+    {
+      "passo": "NOVO — Passo 7 (variante 2): usar o card \"Checklist do atendimento\" da aba Mobile da OS como \"o que o técnico respondeu\"",
+      "por_que_nao_existe": "O card não mostra respostas: mostra o MOLDE congelado. workOrder.checklistSnapshot é a saída de buildChecklistSnapshot — { contract, frozen_at, template_id, template_version, template_status, template: { …items com id/label/type/required/order } }. Não há resposta nenhuma nesse objeto. Pior: parseChecklistSnapshot procura items/fields/questions/answers no TOPO do objeto, e no snapshot os items estão aninhados dentro de `template`. Então cai no ramo genérico Object.entries e renderiza como linhas as chaves internas — contract, frozen_at, template_id, template_version, template_status — com `template` degradando para \"—\" por ser objeto aninhado. Filmar esse card é filmar metadado técnico, não a vistoria.",
+      "evidencia": "Conteúdo do snapshot: src/modules/checklists/checklist.dto.ts:91-103 (buildChecklistSnapshot devolve contract/frozen_at/template_id/template_version/template_status/template). Exposição integral ao front: src/modules/work-orders/work-order.dto.ts:78 e frontend/src/modules/work-orders/work-orders.adapter.ts:333. Parser: frontend/src/modules/work-orders/components/tabs/MobileTab.tsx:70-88 (busca record.items/fields/questions/answers no topo; senão Object.entries) e coerceValue em 63-73 (objeto → \"—\")"
+    },
+    {
+      "passo": "NOVO — Passo 3→4: \"a web publica e o modelo chega a ESTA ordem\" — não há NENHUMA superfície web que ligue um modelo a uma OS",
+      "por_que_nao_existe": "O fundamentador disse que o vínculo chega \"por seleção manual no payload de criação da ordem\". Confirmei que essa porta não existe na web: a tela de criar OS não tem campo de checklist (a única ocorrência da palavra é um texto de subtítulo), e no frontend inteiro `checklistId` aparece SÓ em leitura — célula da aba Geral, botão da barra de ações e coluna da lista. Nenhum lugar escreve. Somado à aba Aplicabilidade ser maquete e ao motor de aplicabilidade não ter rota REST, a conclusão é: nem por regra nem por seleção manual o operador consegue dizer, dentro do produto, qual vistoria vai para qual atendimento.",
+      "evidencia": "Tela de criação sem campo: grep -i checklist em frontend/src/modules/work-orders/pages/WorkOrderCreatePage.tsx devolve só a linha 48 (texto \"…para despacho, checklist futuro e acompanhamento no mapa\"). Só leitura: GeneralInfoTab.tsx:94, WorkOrderActionBar.tsx:116-117, WorkOrdersPage.tsx:390, work-orders.adapter.ts:309/360-364. Tipo existe mas sem consumidor de escrita: work-orders.types.ts:233-235 (WorkOrderUpdatePayload.checklistId). Motor sem rota: src/modules/checklists/applicability/ (4 arquivos, nenhum controller/routes) consumido em src/modules/work-orders/work-order.service.ts:568-583"
+    },
+    {
+      "passo": "NOVO — Passo 6 (t=57): a tela \"Checklists da OS\" não é da OS",
+      "por_que_nao_existe": "O endpoint que a alimenta ignora a ordem de serviço: listAvailableMobileChecklists chama listAvailableTemplates, que é listPublishedTemplates(tenantId) — todos os modelos publicados da organização. E a tela renderiza repo.activeTemplates, que é apenas _templates.where(isActive), sem nenhum filtro por workOrderId (o parâmetro só serve para o botão de voltar e para a navegação). No ambiente de demonstração isso significa que a tela mostra os TRÊS modelos publicados (Checklist de Coleta — Guincho, Inspeção do Guincho — Saída, Vistoria de Entrada — Pátio) em QUALQUER ordem de serviço. O vazio ainda diz \"Nenhum checklist disponível para esta ordem\", recorte que o dado não tem.",
+      "evidencia": "src/modules/checklists/checklist.controller.ts:120-122 → src/modules/checklists/checklist.service.ts:73-75 (return this.repository.listPublishedTemplates(actor.tenantId)). Tela: mobile/flutter_app/lib/features/checklists/ui/checklist_available_screen.dart:127 (repo.activeTemplates) e mobile/flutter_app/lib/features/checklists/data/checklist_repository.dart:219-220 (_templates.where((t) => t.isActive))"
+    },
+    {
+      "passo": "NOVO — Passo 3 (t=24): o chip \"mín. 1 fotos\" nos campos de foto deste modelo",
+      "por_que_nao_existe": "Os seis componentes da Vistoria de Entrada — Pátio foram gravados com config vazio ('{}'::jsonb). O chip lê config.minPhotos e, ausente, cai no default 0. O chip real diz \"mín. 0 fotos\". (O outro chip do beat, \"até 500 caracteres\", esse SIM aparece — o default de maxLength é 500.) Filmar \"mín. 1 fotos\" é inventar a regra que o beat seguinte usa para justificar as quatro fotos obrigatórias — a obrigatoriedade vem do campo `required`, não do config.",
+      "evidencia": "Config vazio na origem: scripts/seed-demo-dossie.mjs:104-107 (insert em checklist_template_components com '{}'::jsonb em config, validation_rules e visibility_rules). Default do chip: frontend/src/modules/checklists/checklist-editor.model.ts:524-526 (const min = typeof config.minPhotos === \"number\" ? config.minPhotos : 0) e 544-546 (maxLength default 500)"
+    },
+    {
+      "passo": "NOVO — Passo 2 (t=6): \"a tabela com as três linhas reais\"",
+      "por_que_nao_existe": "A lista não é dos publicados: GET /tenant/checklists devolve todo template cujo status não seja `archived`. O dados-reais.json só extraiu os publicados (a consulta filtra por status), então os três nomes do JSON são um subconjunto do que a tela mostra. O próprio script de seed registra o que mais existe na organização de demonstração: um template \"HACKEADO\" v99 e cinco \"Novo modelo\" em rascunho. A tela vai abrir com mais de três linhas e com KPIs de rascunho diferentes de zero — a menos que o vídeo aplique o filtro \"Publicados\", que aí é honesto e deve aparecer na tela.",
+      "evidencia": "Sem filtro de status: src/modules/checklists/checklist-prisma.repository.ts:84-90 (where: { tenant_id, status: { not: \"archived\" } }) via checklist.controller.ts:46-52. Resíduo documentado: scripts/seed-demo-dossie.mjs:85-87 — \"Os que existem no tenant demo são resíduo de teste (\\\"HACKEADO\\\" v99, cinco \\\"Novo modelo\\\" em rascunho) e não servem para demonstrar.\" Extração parcial: .tmp-demo/export-dados.mjs:63-65 (select … from checklist_templates com filtro de publicados)"
+    },
+    {
+      "passo": "NOVO — as 173 execuções e as 301 fotos NÃO vieram deste fluxo, e não são alcançáveis por ele",
+      "por_que_nao_existe": "Duas coisas. (a) Proveniência: as vistorias, as respostas, as fotos, o vínculo do dossiê e a inspeção de recepção foram inseridos por SQL direto num script de seed — nenhuma delas passou pelo app, pelo despacho ou pelo endpoint de anexos. (b) Alcance: cada run foi gravada com related_entity_type = 'impound_process'. O endpoint que o app usa para baixar a vistoria filtra por related_entity 'work_order'. Logo, NENHUMA das 173 execuções pode ser aberta pelo caminho OS → Checklists da OS → vistoria que o vídeo encena. O número e a demonstração são conjuntos disjuntos.",
+      "evidencia": "Seed por SQL: scripts/seed-demo-dossie.mjs:89-93 (checklist_templates), 103-108 (componentes), 131-138 (checklist_runs com 'impound_process'), 140-152 (respostas), 153-163 (checklist_attachments), 166-170 (vínculo), 172-186 (impound_intake_inspections). Filtro do app: src/modules/checklists/checklist.service.ts:338 — listRunsByRelatedEntity(actor.tenantId, \"work_order\", workOrderId). Contagem que virou o número: .tmp-demo/export-dados.mjs:70-72 (count(*) de checklist_runs e de checklist_attachments do tenant inteiro)"
+    },
+    {
+      "passo": "NOVO — Passo 5 (t=40): clicar em \"Publicar\" e o card \"O que acontece ao publicar\" se destacar",
+      "por_que_nao_existe": "Esse card não vive na aba onde o formulário está sendo montado: ele é renderizado dentro de ApplicabilityTab, ou seja, só aparece quando o usuário troca para a aba \"Aplicabilidade\" — a mesma aba cujo conteúdo principal é a maquete com selo \"Em breve\". E clicar em Publicar não o revela: handlePublish fecha a pré-visualização e mostra um toast. Para filmar esse card é preciso mostrar a aba maquete ao lado dele.",
+      "evidencia": "Card dentro da aba: frontend/src/modules/checklists/pages/ChecklistEditorPage.tsx:1121 (function ApplicabilityTab) … 1178-1196 (o card). grep \"O que acontece ao publicar\" em frontend/src devolve UMA ocorrência, a 1179. Efeito real do clique: ChecklistEditorPage.tsx:479-491 (publishTenantChecklist → setPreviewOpen(false) → showToast)"
+    },
+    {
+      "passo": "NOVO — Passo 9 (t=90): concluir a vistoria e a tela de Sincronização entrar",
+      "por_que_nao_existe": "Concluir não leva a lugar nenhum novo: _doComplete salva as respostas, chama completeRun, executa context.pop() e mostra o snackbar — volta para a tela anterior (Checklists da OS). Não há navegação para /sync. O técnico precisa ir até a sincronização pela navegação do app. O corte é legítimo se o vídeo mostrar a navegação, não se sugerir que a tela aparece sozinha.",
+      "evidencia": "mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart:104-128 — dentro do try: saveAnswer em laço, completeRun, e então context.pop() (114) seguido de showSnackBar (115-117)"
+    },
+    {
+      "passo": "NOVO — Passo 8 (t=74): o chip \"Pendente sync\" mudando de estado no card da foto",
+      "por_que_nao_existe": "O chip é estático e incondicional: renderiza-se sempre que a resposta tem textValue, com o texto fixo 'Pendente sync'. Não existe leitura do estado real de sincronização nesse card — ele nunca vira \"Sincronizado\", nem quando a fila sobe. Quem mostra estado real é a tela de Sincronização, outra tela.",
+      "evidencia": "mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart:739 (final hasAtt = widget.answer?.textValue != null) e 774 (const Chip(label: Text('Pendente sync')) dentro do if (hasAtt)) — literal const, sem nenhuma variável de estado"
+    },
+    {
+      "passo": "NOVO — a pill de fase do cabeçalho da vistoria não sabe dizer \"entrada no pátio\"",
+      "por_que_nao_existe": "A pill mostra widget.kind.label, e o enum só tem três rótulos: Coleta, Entrega e \"Fase não identificada\". A rota não recebe ?kind=, e a ausência é tratada como coleta por legado. Então uma Vistoria de Entrada — Pátio aparece rotulada \"Coleta\". Mostrar isso é fiel ao app; chamar de \"a fase da vistoria de entrada\" na narração não é.",
+      "evidencia": "Pill: checklist_run_screen.dart:253-256 (MobilePill(label: widget.kind.label)). Rótulos: mobile/flutter_app/lib/features/checklists/domain/checklist_models.dart:87-91. Rota sem kind: mobile/flutter_app/lib/app/router.dart:189-201 (fromLegacyApiValue(queryParameters['kind']) e o comentário \"nunca passam ?kind=; ausência é legado legítimo e significa coleta\")"
+    },
+    {
+      "passo": "NOVO — o \"Tipo do modelo\" que a tela vai mostrar para a Vistoria de Entrada — Pátio é \"Guincho — Coleta\"",
+      "por_que_nao_existe": "O template foi gravado com type = 'towing_collection'. O <select> \"Tipo do modelo\" do editor renderiza checklistTypeLabel[type], que para towing_collection é \"Guincho — Coleta\". Não existe tipo de pátio/entrada no enum (só towing_collection, towing_delivery, technical_evidence, custom). O vídeo não pode narrar \"vistoria de entrada no pátio\" apontando para um seletor que diz outra coisa.",
+      "evidencia": "Gravação: scripts/seed-demo-dossie.mjs:89-93 (insert … values ($1,$2,$3,'towing_collection',…)). Rótulo: frontend/src/modules/checklists/checklist.constants.ts:26-31. Render: ChecklistEditorPage.tsx:648-660"
+    },
+    {
+      "passo": "Passo 4 — \"Mobile: o técnico abre a vistoria. Stepper.\" (um stepper de fases dentro da tela de vistoria, como no PNG)",
+      "por_que_nao_existe": "CONFIRMADO. A tela de vistoria tem cabeçalho + subtítulo \"Obrigatórios: X/Y\" + LinearProgressIndicator + a lista de campos, e nada mais. Nenhum widget de stepper é importado ou construído no arquivo. O stepper de 6 fases é de OUTRA tela — a da ordem de serviço.",
+      "evidencia": "mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart:246-262 (MobileScreenHeader com subtitle 'Obrigatórios: $answeredRequired/$totalRequired' na 249; LinearProgressIndicator na 258-261; ListView na 264). O stepper real: mobile/flutter_app/lib/features/work_orders/domain/work_order_steps.dart:29-40 (rótulos) montado em work_order_detail_screen.dart:121"
+    },
+    {
+      "passo": "Passo 4 — \"Vista do veículo · vistoria 360\" com asterisco de obrigatório",
+      "por_que_nao_existe": "CONFIRMADO. O rótulo no app é literalmente 'Vista do veículo', dentro do card do seletor de veículo — não é campo obrigatório separado, e não há texto \"vistoria 360\" em lugar nenhum do app.",
+      "evidencia": "mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart:608-613 (Text('Vista do veículo')); vehicle_asset_helper.dart:7-12 (views/viewLabels). grep \"vistoria 360\" em mobile/flutter_app/lib: nenhuma ocorrência"
+    },
+    {
+      "passo": "Passo 4 — \"Mapa de avarias com marcadores numerados e legenda (Amassado/Risco/Quebrado)\" dentro do formulário",
+      "por_que_nao_existe": "CONFIRMADO nas três partes. (a) O mapa não é embutido: é um OutlinedButton que faz context.push para outra rota. (b) Na tela de destino a imagem é Image.asset dentro de Padding > ClipRRect, sem GestureDetector e sem Stack — não se marca sobre o carro; os marcadores viram cards numa lista, sem numeração sobre a imagem, sem legenda colorida e sem contador. (c) Os tipos oferecidos são Dano/Desgaste/Faltando/Outro (valores damage/wear/missing/other), que nem coincidem com o catálogo do backend (scratch/dent/broken/missing/other) nem com os rótulos da web (Risco/Amassado/Quebrado/Faltante/Outro).",
+      "evidencia": "Botão: checklist_run_screen.dart:473-485. Rota separada: app/router.dart:209-217 + checklist_damage_map_screen.dart:317 (title: 'Mapa de danos'). Imagem inerte: checklist_damage_map_screen.dart:221-252 (classe _VehicleImage). Tipos: checklist_damage_map_screen.dart:340-343 vs src/modules/checklists/checklist.components.ts:25 vs frontend/src/modules/checklists/checklist.constants.ts:83-89"
+    },
+    {
+      "passo": "Passo 4 — mostrar o mapa de avarias NESTE fluxo, no modelo \"Vistoria de Entrada — Pátio\"",
+      "por_que_nao_existe": "CONFIRMADO. O modelo tem 6 componentes e nenhum é damage_map: 1 vehicle_selector + 4 photo_upload + 1 observation. O app renderiza exatamente os componentes que vierem no /render, na ordem do order/orderIndex, sem acrescentar nada.",
+      "evidencia": "docs/demo-fluxos/dados-reais.json → checklist_componentes (6 itens, tipos vehicle_selector/photo_upload×4/observation) e a origem deles em scripts/seed-demo-dossie.mjs:95-100. Render dirigido pelo schema: checklist_run_screen.dart:218 (schema.sortedFields) e 264-282; checklist_models.dart:163-167"
+    },
+    {
+      "passo": "Passo 4 — \"Contador 'Fotos do veículo 0/8' subindo\"",
+      "por_que_nao_existe": "CONFIRMADO. Não há contador de fotos, nem agregado nem por campo. Cada photo_upload guarda UMA evidência (a resposta é um único localId em textValue) e o botão alterna Adicionar/Substituir. Com 4 campos o teto é 4, nunca 8. E o minPhotos/maxPhotos do backend não chega ao app: o parser não desserializa `config`.",
+      "evidencia": "Uma por campo: checklist_run_screen.dart:725-733 (onAnswer com textValue: att.localId) e 739/748-757. Config ignorado: src/modules/checklists/checklist.components.ts:32-36 emite minPhotos/maxPhotos; o parser lê só id/type/label/description/required/order/options em mobile/flutter_app/lib/features/checklists/data/checklist_remote_api.dart:439-453. grep \"Fotos do veículo\" em mobile/flutter_app/lib: nenhuma ocorrência"
+    },
+    {
+      "passo": "Passo 4 (visual do PNG) — os campos \"Placa *\" e \"Odômetro *\" e o botão \"Continuar\"",
+      "por_que_nao_existe": "CONFIRMADO. O app monta os campos exclusivamente a partir do que vier no /render, e este modelo não tem campo de placa nem de odômetro. O botão da barra fixa é 'Concluir checklist' (ou 'Concluindo...').",
+      "evidencia": "dados-reais.json → checklist_componentes (sem placa e sem odômetro). Render estrito: checklist_run_screen.dart:264-282. Botão: checklist_run_screen.dart:232-240. grep 'Odômetro' em mobile/flutter_app/lib: nenhuma ocorrência"
+    },
+    {
+      "passo": "Passo 7 — \"Web: o dossiê do veículo com as fotos\"",
+      "por_que_nao_existe": "CONFIRMADO e agravado. (a) A aba \"Checklist do Guincho\" é tabela de 4 colunas — Checklist, Situação, Iniciado, Concluído — e o tipo que a alimenta não tem campo de anexo. (b) A galeria do dossiê está na aba \"Vistoria de Recepção\" e vem de OUTRA entidade (impound_intake_inspections), alimentada por POST .../inspection/photos sob impound:inspect. (c) AGRAVANTE que o fundamentador não viu: no banco de demonstração essa galeria está VAZIA — o seed insere a inspeção de recepção mas nenhuma foto de inspeção. Não há foto nenhuma para filmar em nenhuma das duas abas.",
+      "evidencia": "Tabela sem fotos: frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx:69-95; tipo em processes.types.ts:216-228. Outra entidade: InspectionSection.tsx:31/86-91 + impound.routes.ts:111-112 e 125-126. Galeria vazia na demo: grep \"inspection_photo\" em scripts/*.mjs e prisma/*.ts devolve ZERO — scripts/seed-demo-dossie.mjs:172-186 insere só impound_intake_inspections"
+    },
+    {
+      "passo": "Passo 7 (variante) — abrir na web a vistoria que o campo preencheu, com respostas e anexos",
+      "por_que_nao_existe": "CONFIRMADO. Em /mobile/checklist-runs/:runId só existe PATCH. Os GET disponíveis são a LISTA por workOrderId (que devolve toChecklistRunDto — sem respostas e sem anexos), o download de UM anexo por id e a comparação. Não há GET que devolva uma execução com suas respostas e seus anexos.",
+      "evidencia": "src/modules/checklists/checklist.routes.ts: 114 GET lista · 122 POST · 130 PATCH /:runId · 138 POST attachments · 146 GET download · 154 POST markers · 162 POST complete · 175 POST reopen · 183 GET comparison · 191 POST divergence · 199 POST acknowledgement. DTO sem respostas/anexos: src/modules/checklists/checklist.dto.ts:132-152"
+    },
+    {
+      "passo": "Premissa do passo 2 — \"o que a WEB publica é reescrito FIELMENTE no MOBILE\", no campo \"Tipo de veículo\"",
+      "por_que_nao_existe": "CONFIRMADO, e o produto documenta o vazamento com nome próprio (P-CHK-CHIPS-SEM-CONSUMIDOR). Os tipos autorados na web vivem em config.vehicleTypes; o DTO de render só promove `options` para o topo quando o componente é single_choice ou multi_choice; e o parser do app só lê j['options'] — `config` nem é desserializado. Para vehicle_selector o app não recebe opção nenhuma e cai numa lista fixa própria: Sedan · Picape · Van · Caminhao · Motocicleta · Onibus (sem acento). AGRAVANTE: neste modelo específico o config é '{}' — nem sequer há tipos autorados na web para vazar.",
+      "evidencia": "Autoria: src/modules/checklists/checklist.components.ts:15-17 (vehicleTypes ['car','motorcycle','truck','van']) e frontend checklist.constants.ts:76-81. Promoção só para escolha: src/modules/checklists/checklist.dto.ts:43-51 (toMobileChoiceOptions retorna undefined fora de single_choice/multi_choice) e 113. Parser: checklist_remote_api.dart:451. Fallback fixo: checklist_run_screen.dart:568-570 + vehicle_asset_helper.dart:47-54. Dívida declarada pelo produto: frontend/src/modules/checklists/components/ChecklistPreview.tsx:23-27"
+    },
+    {
+      "passo": "Premissa do passo 2 — usar a pré-visualização do builder como prova de que \"o mobile é a mesma tela\"",
+      "por_que_nao_existe": "CONFIRMADO. A própria tela declara o contrário, e o comentário do arquivo explica por quê: a cópia anterior prometia \"renderização fiel\" e foi trocada porque o app ainda não honra parte do que o inspector grava.",
+      "evidencia": "frontend/src/modules/checklists/components/ChecklistPreview.tsx:28-30 (PREVIEW_TITLE \"Como o formulário fica montado\" e PREVIEW_SUB \"…não uma cópia do visual do aplicativo…\"), com a justificativa em 23-27"
+    },
+    {
+      "passo": "Passo implícito entre 3 e 4 — quem decide que ESTA vistoria vai para ESTE atendimento",
+      "por_que_nao_existe": "CONFIRMADO. A aba \"Aplicabilidade\" é maquete declarada no próprio código; o motor de aplicabilidade existe e roda na criação da OS, mas a pasta tem exatamente 4 arquivos e nenhum controller ou routes — nenhum path de aplicabilidade é declarado em checklist.routes.ts nem em src/app.ts.",
+      "evidencia": "Maquete: ChecklistEditorPage.tsx:1116-1119 (comentário \"ESTÁTICA e assumidamente Em breve\"), 1122 (exampleRules), 1149 (soon-pill), 1152 (title=\"Exemplo ilustrativo — em breve\"), 1165 e 1170 (disabled). Sem rota: ls src/modules/checklists/applicability/ = 4 arquivos; grep \"applicability\" em checklist.routes.ts e src/app.ts = ZERO. Consumo interno: src/modules/work-orders/work-order.service.ts:568-583"
+    },
+    {
+      "passo": "Passo 4 — \"o técnico abre a vistoria\" (como se ele a iniciasse)",
+      "por_que_nao_existe": "CONFIRMADO. O guincheiro BAIXA a execução que o despacho criou; se não houver, a tela mostra \"Aguardando despacho do checklist\" em vez de formulário. Decisão registrada (D-CHK-DISPATCH-CREATE).",
+      "evidencia": "App baixa: checklist_run_screen.dart:60-70 (comentário + resolveRunForWorkOrder → isAwaitingDispatch → _RunData(runId: null)) e 201-215 (AwaitingDispatchView). Quem cria: src/modules/field-dispatch/field-dispatch.service.ts:875-897 (buildChecklistRunProvisioner → checklistService.createRun na 896). Rota de leitura: src/modules/checklists/checklist.routes.ts:114"
+    },
+    {
+      "passo": "Passo 1 — desenhar a tela do builder a partir do PNG aprovado",
+      "por_que_nao_existe": "CONFIRMADO. O PNG builder-checklists.png é de protótipo anterior: mostra \"Builder de Checklists\" em duas colunas com componentes \"Campo de texto · Placa\", \"Grupo de verificação · 6 itens\" e \"Captura de fotos · 4 ângulos\". No código a lista é \"Modelos de Checklist\" (KPIs + tabela) em /administrator/checklists e o editor mora em rota separada; e nenhum dos três nomes existe no catálogo real de 10 tipos.",
+      "evidencia": "Duas rotas distintas: frontend/src/App.tsx:741 e 752. Título real: TenantChecklistsPage.tsx:331. Catálogo real: frontend/src/modules/checklists/checklist.constants.ts:47-58 e src/modules/checklists/checklist.components.ts:10-… (10 tipos). O PNG existe em docs/claude-code-handoff/screen-refs/web/builder-checklists.png"
+    }
+  ],
+  "dados_a_exibir": [
+    {
+      "rotulo": "Organização",
+      "valor": "Guinchos Paraná",
+      "origem": "dados-reais.json → organizacao — CONFERIDO"
+    },
+    {
+      "rotulo": "Modelo do fluxo — nome",
+      "valor": "Vistoria de Entrada — Pátio",
+      "origem": "dados-reais.json → checklist_vistoria.name — CONFERIDO. Criado por scripts/seed-demo-dossie.mjs:89-93, não pelo builder"
+    },
+    {
+      "rotulo": "Modelo do fluxo — versão",
+      "valor": "1",
+      "origem": "dados-reais.json → checklist_vistoria.version — CONFERIDO. Republicar mantém v1 (checklist-prisma.repository.ts:361)"
+    },
+    {
+      "rotulo": "Modelo do fluxo — tipo que a tela vai mostrar",
+      "valor": "Guincho — Coleta",
+      "origem": "type='towing_collection' em scripts/seed-demo-dossie.mjs:91 + rótulo em frontend/src/modules/checklists/checklist.constants.ts:27 — NÃO está no dados-reais.json, mas é o que a tela renderiza"
+    },
+    {
+      "rotulo": "Modelos PUBLICADOS na organização (3)",
+      "valor": "Checklist de Coleta — Guincho (v1) · Inspeção do Guincho — Saída (v2) · Vistoria de Entrada — Pátio (v1)",
+      "origem": "dados-reais.json → checklists_publicados — CONFERIDO. ATENÇÃO: a tela /administrator/checklists mostra também rascunhos e inativos"
+    },
+    {
+      "rotulo": "Componente 1 (obrigatório)",
+      "valor": "Tipo de veículo · vehicle_selector · required true · order_index 0",
+      "origem": "dados-reais.json → checklist_componentes[0] — CONFERIDO"
+    },
+    {
+      "rotulo": "Componente 2 (obrigatório)",
+      "valor": "Foto — Frente · photo_upload · required true · order_index 1",
+      "origem": "dados-reais.json → checklist_componentes[1] — CONFERIDO"
+    },
+    {
+      "rotulo": "Componente 3 (obrigatório)",
+      "valor": "Foto — Traseira · photo_upload · required true · order_index 2",
+      "origem": "dados-reais.json → checklist_componentes[2] — CONFERIDO"
+    },
+    {
+      "rotulo": "Componente 4 (obrigatório)",
+      "valor": "Foto — Lateral esquerda · photo_upload · required true · order_index 3",
+      "origem": "dados-reais.json → checklist_componentes[3] — CONFERIDO"
+    },
+    {
+      "rotulo": "Componente 5 (obrigatório)",
+      "valor": "Foto — Lateral direita · photo_upload · required true · order_index 4",
+      "origem": "dados-reais.json → checklist_componentes[4] — CONFERIDO"
+    },
+    {
+      "rotulo": "Componente 6 (opcional)",
+      "valor": "Avarias e observações · observation · required false · order_index 5",
+      "origem": "dados-reais.json → checklist_componentes[5] — CONFERIDO"
+    },
+    {
+      "rotulo": "Chips reais dos cards no editor (derivados de config VAZIO)",
+      "valor": "Foto — Frente: \"mín. 0 fotos\" · Avarias e observações: \"até 500 caracteres\"",
+      "origem": "config '{}' em scripts/seed-demo-dossie.mjs:104-107 + defaults em checklist-editor.model.ts:524-526 e 544-546 — NÃO é \"mín. 1 fotos\""
+    },
+    {
+      "rotulo": "Contador de obrigatórios do app",
+      "valor": "Obrigatórios: 0/5 → 5/5",
+      "origem": "5 componentes com required=true em dados-reais.json; formato do rótulo em checklist_run_screen.dart:249 — CONFERIDO"
+    },
+    {
+      "rotulo": "Linha de meta do canvas do editor",
+      "valor": "6 campos · 1 seção · versão 1",
+      "origem": "checklist-editor.model.ts:267-271 + readSchemaSections com schema '{}' cai na seção padrão (54-60) — CONFERIDO"
+    },
+    {
+      "rotulo": "Execuções de checklist no tenant",
+      "valor": "173",
+      "origem": "dados-reais.json → dossie.runs — CONFERIDO. É count(*) de checklist_runs do tenant inteiro (.tmp-demo/export-dados.mjs:71). Foram inseridas por SQL no seed, com related_entity_type='impound_process'"
+    },
+    {
+      "rotulo": "Anexos de checklist no tenant",
+      "valor": "301",
+      "origem": "dados-reais.json → dossie.fotos — CONFERIDO. count(*) de checklist_attachments com join em checklist_runs (.tmp-demo/export-dados.mjs:72). Inseridos por SQL; nenhum passou pelo endpoint de upload"
+    },
+    {
+      "rotulo": "Pátios",
+      "valor": "Pátio Central 12/24 · Pátio Norte 34/40 · Pátio Oeste 6/30 · Pátio Sul 1/6",
+      "origem": "dados-reais.json → patios — CONFERIDO"
+    },
+    {
+      "rotulo": "Processos em custódia ativa",
+      "valor": "28",
+      "origem": "dados-reais.json → processos_por_status (ACTIVE_CUSTODY) — CONFERIDO"
+    },
+    {
+      "rotulo": "Processos em recepção",
+      "valor": "7",
+      "origem": "dados-reais.json → processos_por_status (RECEPTION) — CONFERIDO"
+    },
+    {
+      "rotulo": "OS de contexto",
+      "valor": "OS-000015 · Recolhimento ao pátio — determinação DETRAN · DETRAN/PR · R. Chile, 2050 — Rebouças, Curitiba/PR · prioridade high · status in_progress",
+      "origem": "dados-reais.json → os_ativas[2] — CONFERIDO. ATENÇÃO: nada no JSON diz que esta OS tem checklist vinculado, e nenhuma run do seed aponta para work_order"
+    },
+    {
+      "rotulo": "Usuário que publica na web",
+      "valor": "admin@demo.com — Admin Demo (Administrador)",
+      "origem": "dados-reais.json → usuarios_demo[0] — CONFERIDO"
+    },
+    {
+      "rotulo": "Usuário que despacha",
+      "valor": "despacho@demo.com — Diego Ramos (Operação de Despacho)",
+      "origem": "dados-reais.json → usuarios_demo[4] — CONFERIDO"
+    }
+  ],
+  "roteiro_sugerido": [
+    {
+      "t": 0,
+      "superficie": "titulo",
+      "acao": "Cartela navy: título do fluxo e três números subindo de zero — 3 modelos publicados, 173 execuções, 301 anexos. Rodapé em cinza: \"ambiente de demonstração\".",
+      "narracao": "A operação escreve o formulário no escritório e o campo preenche exatamente ele.",
+      "legenda_tecnica": "tenant=Guinchos Paraná · templates published=3 · checklist_runs=173 · checklist_attachments=301"
+    },
+    {
+      "t": 6,
+      "superficie": "web",
+      "acao": "Console em /administrator/checklists. Kicker ADMINISTRAÇÃO, h1 \"Modelos de Checklist\", quatro KPIs. O cursor aplica o filtro \"Publicados\" ANTES de a tabela acender — a lista sem filtro traz rascunhos também.",
+      "narracao": "Filtrando pelos publicados, três modelos estão disponíveis no aplicativo, cada um com sua versão e sua contagem de campos.",
+      "legenda_tecnica": "GET /api/v1/tenant/checklists · gate tenant_checklists:read · App.tsx:741 · a rota devolve tudo que não seja archived"
+    },
+    {
+      "t": 14,
+      "superficie": "web",
+      "acao": "Clique na linha abre /administrator/checklists/<id>. Editor: nome em input editável, seletor de tipo lendo \"Guincho — Coleta\", pill \"Publicado\". A coluna \"O formulário\" desenha os 6 cards na ordem, com asterisco nos 5 obrigatórios.",
+      "narracao": "O modelo tem seis campos: o tipo do veículo, quatro fotos obrigatórias e um espaço para avarias e observações.",
+      "legenda_tecnica": "GET /api/v1/tenant/checklists/:id · 6 componentes, orderIndex 0..5 · 5 required · type=towing_collection"
+    },
+    {
+      "t": 23,
+      "superficie": "web",
+      "acao": "Zoom na coluna direita, \"Campos disponíveis / Clique para adicionar ao formulário\", com os dez tipos da paleta. Sem zoom em chip de configuração.",
+      "narracao": "A paleta tem dez tipos de campo, e o que entra no formulário é o que vai chegar ao aplicativo — na mesma ordem.",
+      "legenda_tecnica": "GET /api/v1/tenant/checklist-components · 10 tipos · checklist.components.ts"
+    },
+    {
+      "t": 31,
+      "superficie": "web",
+      "acao": "Clique em \"Pré-visualizar\": o painel de telefone entra pela direita com \"Como o formulário fica montado\" e o subtítulo honesto abaixo, LEGÍVEL em tela. Os 6 campos na mesma ordem, terminando no CTA \"Concluir checklist\".",
+      "narracao": "Antes de publicar, a web mostra a ordem e o conteúdo que o técnico vai encontrar — e diz, na própria tela, que é a montagem, não o visual do aplicativo.",
+      "legenda_tecnica": "ChecklistPreview.tsx:28-30 — \"simulação da ordem e do conteúdo, não uma cópia do visual do aplicativo\""
+    },
+    {
+      "t": 40,
+      "superficie": "web",
+      "acao": "Clique em \"Publicar modelo\" dentro da pré-visualização; o painel fecha e o toast verde aparece. Só então o cursor troca para a aba \"Aplicabilidade\" e o card \"O que acontece ao publicar\" entra em foco — com a maquete \"Em breve\" visível ao lado, sem recorte que a esconda.",
+      "narracao": "Publicar congela esta versão: ordens novas recebem ela, as que já estão em campo mantêm a que receberam, e as concluídas ficam imutáveis. As regras de quando o modelo entra automaticamente ainda não existem — essa parte da tela está marcada como em breve.",
+      "legenda_tecnica": "POST /api/v1/tenant/checklists/:id/publish · version permanece 1 (status já era published) · ApplicabilityTab é maquete (ChecklistEditorPage.tsx:1121-1173)"
+    },
+    {
+      "t": 50,
+      "superficie": "ambos",
+      "acao": "FEIXE. A janela web recua à esquerda, o telefone entra pela direita, e entre os dois viaja o JSON do render: id, name, type, version, schema e o array components com 6 objetos (type, label, required, orderIndex).",
+      "narracao": "O que atravessa é este envelope: seis componentes com rótulo, obrigatoriedade e posição — e é a posição que garante que a ordem chegue igual.",
+      "legenda_tecnica": "GET /api/v1/mobile/checklists/:id/render → { data: { …, components[6] } } · o app ordena por orderIndex"
+    },
+    {
+      "t": 58,
+      "superficie": "mobile",
+      "acao": "Telefone: \"Checklists da OS\" mostrando os TRÊS modelos publicados da organização (não um só), com o card da Vistoria de Entrada em destaque. Toque abre a vistoria já provisionada: cabeçalho com o nome do modelo, pill de fase e \"Obrigatórios: 0/5\", barra zerada.",
+      "narracao": "No campo, essa tela lista os modelos publicados da organização; o guincheiro abre a vistoria que o despacho já preparou — ele responde, não cria. Sem despacho, a tela diz \"aguardando despacho do checklist\".",
+      "legenda_tecnica": "GET /api/v1/mobile/checklists/available (por organização, sem filtro de OS) · GET /api/v1/mobile/checklist-runs?workOrderId= (D-CHK-DISPATCH-CREATE)"
+    },
+    {
+      "t": 68,
+      "superficie": "mobile",
+      "acao": "Primeiro card: \"Tipo de veículo\" com o dropdown aberto mostrando Sedan · Picape · Van · Caminhao · Motocicleta · Onibus; abaixo \"Vista do veículo\" com as quatro miniaturas e a imagem grande da vista ativa.",
+      "narracao": "O primeiro campo é o tipo do veículo — hoje escolhido de uma lista fixa do aplicativo — e com ele o app troca a silhueta nas quatro vistas.",
+      "legenda_tecnica": "vehicle_selector · options não viajam no render para este tipo · fallback em vehicle_asset_helper.dart:47-54"
+    },
+    {
+      "t": 76,
+      "superficie": "mobile",
+      "acao": "Rolagem pelos quatro cards de foto — Frente, Traseira, Lateral esquerda, Lateral direita. A cada toque em \"Adicionar evidência\" o card ganha \"Evidência registrada\" com o chip fixo \"Pendente sync\", e o subtítulo do topo sobe 1/5 → 5/5.",
+      "narracao": "Quatro fotos obrigatórias, uma por ângulo; cada uma fica gravada no aparelho e marcada como pendente de envio.",
+      "legenda_tecnica": "POST /api/v1/mobile/checklist-runs/:runId/attachments · multipart componentId + file · uma evidência por campo"
+    },
+    {
+      "t": 86,
+      "superficie": "mobile",
+      "acao": "Último card: TextField com hint \"Adicione observações\" recebendo uma anotação curta. A barra fixa acende e \"Concluir checklist\" fica ativo.",
+      "narracao": "O último campo é livre, para o que a foto não conta — e só com os cinco obrigatórios respondidos a vistoria pode ser concluída.",
+      "legenda_tecnica": "observation · _canComplete = todos os required com valor (checklist_run_screen.dart:101-102)"
+    },
+    {
+      "t": 92,
+      "superficie": "mobile",
+      "acao": "Toque em \"Concluir checklist\", snackbar \"Checklist concluído com sucesso.\", volta para a lista; então a navegação do app abre \"Sincronização\": pill \"Online\", grupo \"Checklists\", itens saindo de Pendente para Sincronizado.",
+      "narracao": "Tudo entra numa fila local e sobe quando o aparelho volta a falar com o servidor — a vistoria não depende de sinal para ser feita.",
+      "legenda_tecnica": "POST /api/v1/mobile/sync/checklist-actions · answer.upsert · attachment.attach · run.complete · idempotência por client_action_id"
+    },
+    {
+      "t": 100,
+      "superficie": "web",
+      "acao": "Volta ao console: dossiê do veículo aberto na aba \"Checklist do Guincho\" — tabela com Checklist, Situação, Iniciado e Concluído, e a legenda cinza \"somente leitura\". Nenhuma foto na tela; o vídeo não sugere que a linha apareceu sozinha.",
+      "narracao": "Do lado do escritório, o dossiê acompanha a vistoria pelo formulário, pela versão e pelo horário de conclusão — em modo de leitura. Ligar cada vistoria ao processo de custódia, e trazer as fotos para essa tela, é o próximo passo do produto.",
+      "legenda_tecnica": "GET /api/v1/impound-processes/:id/checklist-runs · guarda dupla impound:read + checklist_runs:read · resumo sem anexos · vínculo hoje só por POST .../link-checklist-run (MANUAL), sem tela que o chame"
+    },
+    {
+      "t": 108,
+      "superficie": "titulo",
+      "acao": "Cartela final: o ciclo em quatro nós — Publicar · Despachar · Preencher · Sincronizar — e, em cinza abaixo, um quinto nó pontilhado: \"Vincular ao dossiê (em construção)\".",
+      "narracao": "Um formulário escrito uma vez, congelado por versão e devolvido do campo com trilha — e a última costura, do campo até o dossiê, é o que estamos fechando agora.",
+      "legenda_tecnica": "checklist_templates → checklist_runs → checklist_attachments → impound_process_checklist_links (vínculo AUTO não implementado)"
+    }
+  ]
+}

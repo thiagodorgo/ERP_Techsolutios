@@ -1,0 +1,434 @@
+{
+  "gerado_em": "2026-08-24T03:06:53.317Z",
+  "fonte": "banco de desenvolvimento erp_techsolutions, tenant slug=demo",
+  "organizacao": "Guinchos Paraná",
+  "os_por_status": [
+    {
+      "status": "completed",
+      "n": 11
+    },
+    {
+      "status": "in_progress",
+      "n": 2
+    },
+    {
+      "status": "assigned",
+      "n": 1
+    },
+    {
+      "status": "on_route",
+      "n": 1
+    },
+    {
+      "status": "on_site",
+      "n": 1
+    },
+    {
+      "status": "open",
+      "n": 1
+    }
+  ],
+  "os_ativas": [
+    {
+      "code": "OS-000017",
+      "title": "Remoção de veículo — colisão na BR-277",
+      "customer_name": "Seguradora Horizonte",
+      "customer_phone": "(41) 3222-8100",
+      "service_address": "BR-277, km 82 — pista sentido litoral",
+      "service_city": "Curitiba",
+      "service_state": "PR",
+      "priority": "urgent",
+      "status": "on_route",
+      "criada": "27/07 02:00",
+      "agendada": "22/08 21:10"
+    },
+    {
+      "code": "OS-000016",
+      "title": "Guincho leve — pane elétrica",
+      "customer_name": "Transportadora Aurora Ltda",
+      "customer_phone": "(41) 3350-4477",
+      "service_address": "Av. das Torres, 1840 — Jardim Botânico",
+      "service_city": "Curitiba",
+      "service_state": "PR",
+      "priority": "high",
+      "status": "on_site",
+      "criada": "13/07 16:39",
+      "agendada": "22/08 12:10"
+    },
+    {
+      "code": "OS-000015",
+      "title": "Recolhimento ao pátio — determinação DETRAN",
+      "customer_name": "DETRAN/PR",
+      "customer_phone": "(41) 3361-1212",
+      "service_address": "R. Chile, 2050 — Rebouças",
+      "service_city": "Curitiba",
+      "service_state": "PR",
+      "priority": "high",
+      "status": "in_progress",
+      "criada": "13/07 16:27",
+      "agendada": "22/08 03:10"
+    },
+    {
+      "code": "OS-000014",
+      "title": "Transporte de maquinário — retroescavadeira",
+      "customer_name": "Construtora Meridiano S.A.",
+      "customer_phone": "(41) 3029-5060",
+      "service_address": "Rod. BR-116, km 104 — canteiro sul",
+      "service_city": "Fazenda Rio Grande",
+      "service_state": "PR",
+      "priority": "medium",
+      "status": "assigned",
+      "criada": "13/07 16:15",
+      "agendada": "21/08 18:10"
+    }
+  ],
+  "os_concluidas_amostra": [
+    {
+      "code": "OS-000013",
+      "title": "Remoção de veículo — estacionamento irregular",
+      "customer_name": "Guarda Municipal de Curitiba",
+      "service_city": "Curitiba",
+      "priority": "medium",
+      "concluida": "21/08"
+    },
+    {
+      "code": "OS-000012",
+      "title": "Socorro mecânico — superaquecimento",
+      "customer_name": "Log&Co Transportes",
+      "service_city": "São José dos Pinhais",
+      "priority": "high",
+      "concluida": "21/08"
+    },
+    {
+      "code": "OS-000011",
+      "title": "Guincho pesado — carreta atolada",
+      "customer_name": "Agropecuária Serra Azul",
+      "service_city": "Ponta Grossa",
+      "priority": "urgent",
+      "concluida": "20/08"
+    },
+    {
+      "code": "OS-000010",
+      "title": "Remoção pós-colisão — perda total",
+      "customer_name": "Seguradora Horizonte",
+      "service_city": "Curitiba",
+      "priority": "high",
+      "concluida": "20/08"
+    },
+    {
+      "code": "OS-000009",
+      "title": "Transferência entre pátios — lote leilão",
+      "customer_name": "Guinchos Paraná (interno)",
+      "service_city": "Curitiba",
+      "priority": "low",
+      "concluida": "20/08"
+    }
+  ],
+  "patios": [
+    {
+      "name": "Pátio Central",
+      "vagas": 24,
+      "ocupadas": 12
+    },
+    {
+      "name": "Pátio Norte",
+      "vagas": 40,
+      "ocupadas": 34
+    },
+    {
+      "name": "Pátio Oeste",
+      "vagas": 30,
+      "ocupadas": 6
+    },
+    {
+      "name": "Pátio Sul",
+      "vagas": 6,
+      "ocupadas": 1
+    }
+  ],
+  "processos_por_status": [
+    {
+      "status": "ACTIVE_CUSTODY",
+      "n": 28
+    },
+    {
+      "status": "RELEASED",
+      "n": 9
+    },
+    {
+      "status": "RECEPTION",
+      "n": 7
+    },
+    {
+      "status": "RELEASE_IN_PROGRESS",
+      "n": 7
+    },
+    {
+      "status": "JUDICIAL_HOLD",
+      "n": 5
+    },
+    {
+      "status": "AUCTION_ELIGIBLE",
+      "n": 5
+    },
+    {
+      "status": "IN_REMOVAL",
+      "n": 4
+    },
+    {
+      "status": "AUCTION_PREP",
+      "n": 3
+    },
+    {
+      "status": "AUCTION_CLOSED",
+      "n": 3
+    },
+    {
+      "status": "LOTTED",
+      "n": 2
+    },
+    {
+      "status": "RELEASED_FOR_REPAIR",
+      "n": 2
+    }
+  ],
+  "financeiro_por_situacao": [
+    {
+      "direction": "payable",
+      "status": "open",
+      "qtd": 19,
+      "total": "25,783.00"
+    },
+    {
+      "direction": "payable",
+      "status": "paid",
+      "qtd": 16,
+      "total": "53,752.00"
+    },
+    {
+      "direction": "payable",
+      "status": "partially_paid",
+      "qtd": 5,
+      "total": "12,125.00"
+    },
+    {
+      "direction": "receivable",
+      "status": "open",
+      "qtd": 32,
+      "total": "87,696.00"
+    },
+    {
+      "direction": "receivable",
+      "status": "paid",
+      "qtd": 22,
+      "total": "168,795.00"
+    },
+    {
+      "direction": "receivable",
+      "status": "partially_paid",
+      "qtd": 9,
+      "total": "49,941.00"
+    }
+  ],
+  "financeiro_vencidos": {
+    "n": 22,
+    "saldo": "28,045.00"
+  },
+  "contas": [
+    {
+      "name": "Banco do Brasil — C/C 98765-4",
+      "kind": "bank",
+      "saldo": "62,890.10",
+      "bank_name": "Banco do Brasil"
+    },
+    {
+      "name": "Banco Itaú — C/C 12345-6",
+      "kind": "bank",
+      "saldo": "184,320.55",
+      "bank_name": "Itaú Unibanco"
+    },
+    {
+      "name": "Caixa Operacional",
+      "kind": "cash",
+      "saldo": "15,000.00",
+      "bank_name": null
+    }
+  ],
+  "tabelas_preco": [
+    {
+      "name": "Contrato Transportadora Aurora",
+      "status": "published",
+      "itens": 4,
+      "menor": "5.40",
+      "maior": "152.00"
+    },
+    {
+      "name": "Guincho Leve — Tabela Padrão 2026",
+      "status": "published",
+      "itens": 8,
+      "menor": "6.50",
+      "maior": "640.00"
+    },
+    {
+      "name": "Guincho Pesado — Tabela Padrão 2026",
+      "status": "published",
+      "itens": 6,
+      "menor": "14.50",
+      "maior": "3,400.00"
+    },
+    {
+      "name": "Pátio — Custódia e Diárias 2026",
+      "status": "published",
+      "itens": 7,
+      "menor": "18.00",
+      "maior": "168.00"
+    },
+    {
+      "name": "Tabela Guincho 2026",
+      "status": "published",
+      "itens": 0,
+      "menor": null,
+      "maior": null
+    }
+  ],
+  "tarifas_guincho_leve": [
+    {
+      "name": "Quilômetro rodado — urbano",
+      "preco": "6.50",
+      "rule": "por km"
+    },
+    {
+      "name": "Quilômetro rodado — rodovia",
+      "preco": "8.90",
+      "rule": "por km"
+    },
+    {
+      "name": "Hora parada / espera",
+      "preco": "95.00",
+      "rule": "por hora"
+    },
+    {
+      "name": "Serviço noturno (adicional)",
+      "preco": "120.00",
+      "rule": "por acionamento"
+    },
+    {
+      "name": "Finais de semana e feriados (adicional)",
+      "preco": "145.00",
+      "rule": "por acionamento"
+    },
+    {
+      "name": "Saída de guincho — perímetro urbano",
+      "preco": "180.00",
+      "rule": "por acionamento"
+    },
+    {
+      "name": "Desatolamento",
+      "preco": "380.00",
+      "rule": "por acionamento"
+    },
+    {
+      "name": "Içamento com guincho pesado",
+      "preco": "640.00",
+      "rule": "por acionamento"
+    }
+  ],
+  "checklists_publicados": [
+    {
+      "name": "Checklist de Coleta — Guincho",
+      "version": 1,
+      "status": "published"
+    },
+    {
+      "name": "Inspeção do Guincho — Saída",
+      "version": 2,
+      "status": "published"
+    },
+    {
+      "name": "Vistoria de Entrada — Pátio",
+      "version": 1,
+      "status": "published"
+    }
+  ],
+  "checklist_vistoria": {
+    "id": "97986f53-5e44-4689-b165-a87ff29a451e",
+    "name": "Vistoria de Entrada — Pátio",
+    "version": 1
+  },
+  "dossie": {
+    "runs": 173,
+    "fotos": 301
+  },
+  "usuarios_demo": [
+    {
+      "email": "admin@demo.com",
+      "name": "Admin Demo (Administrador)"
+    },
+    {
+      "email": "admin.demo@example.com",
+      "name": "Admin Demo"
+    },
+    {
+      "email": "auditor@demo.com",
+      "name": "Rafael Souza (Auditor)"
+    },
+    {
+      "email": "auditor.demo@example.com",
+      "name": "Rafael Souza (Auditor)"
+    },
+    {
+      "email": "despacho@demo.com",
+      "name": "Diego Ramos (Operação de Despacho)"
+    },
+    {
+      "email": "estoque.demo@example.com",
+      "name": "Lucas Prado (Estoque)"
+    },
+    {
+      "email": "financeiro@demo.com",
+      "name": "Beatriz Lima (Financeiro)"
+    },
+    {
+      "email": "financeiro.demo@example.com",
+      "name": "Beatriz Lima (Financeiro)"
+    }
+  ],
+  "checklist_componentes": [
+    {
+      "label": "Tipo de veículo",
+      "type": "vehicle_selector",
+      "required": true,
+      "order_index": 0
+    },
+    {
+      "label": "Foto — Frente",
+      "type": "photo_upload",
+      "required": true,
+      "order_index": 1
+    },
+    {
+      "label": "Foto — Traseira",
+      "type": "photo_upload",
+      "required": true,
+      "order_index": 2
+    },
+    {
+      "label": "Foto — Lateral esquerda",
+      "type": "photo_upload",
+      "required": true,
+      "order_index": 3
+    },
+    {
+      "label": "Foto — Lateral direita",
+      "type": "photo_upload",
+      "required": true,
+      "order_index": 4
+    },
+    {
+      "label": "Avarias e observações",
+      "type": "observation",
+      "required": false,
+      "order_index": 5
+    }
+  ]
+}

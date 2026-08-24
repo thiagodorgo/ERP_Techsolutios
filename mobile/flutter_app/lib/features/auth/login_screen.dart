@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_notifier.dart';
-import '../../core/config/app_config.dart';
 import '../../core/network/api_error.dart';
 import '../../shared/theme/erp_mobile_theme.dart';
 import 'auth_models.dart';
@@ -14,9 +14,29 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
+/// Credenciais do TECNICO de desenvolvimento, ja documentadas em
+/// docs/demo-credentials.md (senha unica de dev, com aviso explicito de nunca
+/// usar em producao). Ficam aqui so para nao ter que digitar a cada vez que o
+/// emulador sobe.
+///
+/// Guardadas por [kDebugMode]: em build de release os campos nascem VAZIOS, e a
+/// constante e removida pelo tree-shaking. Nao ha credencial em artefato de
+/// producao.
+const String _emailDevTecnico = 'tecnico.demo@example.com';
+const String _senhaDevTecnico = 'ChangeMe123!';
+
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (kDebugMode) {
+      _emailController.text = _emailDevTecnico;
+      _passwordController.text = _senhaDevTecnico;
+    }
+  }
 
   @override
   void dispose() {
@@ -84,18 +104,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ],
                   ),
-                  if (kIsDevMode) ...[
-                    const SizedBox(height: 24),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.orange.shade300),
-                        foregroundColor: Colors.orange.shade800,
-                      ),
-                      onPressed: isLoading ? null : _doDevLogin,
-                      icon: const Icon(Icons.developer_mode),
-                      label: const Text('Sessão de desenvolvimento'),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -112,17 +120,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await ref
         .read(authStateProvider.notifier)
         .login(email: email, password: password);
-  }
-
-  /// Only available when kIsDevMode is true (--dart-define=ERP_ENV=dev).
-  Future<void> _doDevLogin() async {
-    await ref
-        .read(authStateProvider.notifier)
-        .login(
-          email: 'tecnico@tenant.demo',
-          password: '123456',
-          tenantId: 'tenant-demo',
-        );
   }
 
   void _showForgotPasswordDialog() {

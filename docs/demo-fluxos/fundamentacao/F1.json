@@ -1,0 +1,680 @@
+{
+  "fluxo": "F1 — Do chamado à rua: a web despacha, o campo executa (auditado pelo cético — 15 passos inexistentes do fundamentador confirmados + 10 novos achados)",
+  "rotas_web": [
+    {
+      "path": "/dashboard",
+      "arquivo": "frontend/src/App.tsx:273",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO, com correção de caminho: a página é frontend/src/pages/DashboardPage.tsx (import direto em App.tsx:15) — NÃO modules/dashboard/pages/. Kicker \"VISÃO GERAL\" (l.355), título `${greeting()}, ${userName}` (l.356), subtítulo `Operação, SLA e cadastros · ${orgName} · ${subtitleDate(now)}` (l.357). userName = session.user.name.split(\" \")[0] (l.267) → \"Diego\". greeting() é RELÓGIO (l.54-58): Bom dia <12h, Boa tarde <18h, Boa noite."
+    },
+    {
+      "path": "/work-orders",
+      "arquivo": "frontend/src/App.tsx:768",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx:202-204 — kicker \"OPERAÇÃO\", título \"Ordens de Serviço\", subtítulo \"Atribuição, execução, SLA e rastreabilidade de cada atendimento em campo.\""
+    },
+    {
+      "path": "/work-orders/new",
+      "arquivo": "frontend/src/App.tsx:776",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. WorkOrderCreatePage.tsx:46-48 — eyebrow \"Ordens de Servico\" (sem cedilha/acento no código, l.46), h1 \"Nova OS\" (l.47), subtítulo \"Crie uma ordem operacional para despacho, checklist futuro e acompanhamento no mapa.\" (l.48)."
+    },
+    {
+      "path": "/work-orders/:workOrderId",
+      "arquivo": "frontend/src/App.tsx:784",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. modules/work-orders/pages/WorkOrderDetailPage.tsx:73 renderiza `{workOrder.code} · {workOrder.title}`; l.74 = [customerName, serviceAddress].join(\" · \"). Voltar em l.62. ATENÇÃO: existe um segundo arquivo homônimo em frontend/src/pages/WorkOrderDetailPage.tsx que NÃO é o roteado (App.tsx:37-39 importa o de modules/)."
+    },
+    {
+      "path": "/operations/dispatches",
+      "arquivo": "frontend/src/App.tsx:725",
+      "existe": true,
+      "titulo_na_tela": "CONFIRMADO. OperationsDispatchesPage.tsx:79-92 — eyebrow \"Operação\", h1 \"Despachos\" + <Chip tone=\"success\">AO VIVO</Chip> (l.85), subtítulo \"Envios em rota — origem, paradas e destino — acompanhados em tempo real.\", botão \"Novo despacho\" gateado por can(\"field_dispatch:create\")."
+    },
+    {
+      "path": "/dispatch/console",
+      "arquivo": "frontend/src/App.tsx:648",
+      "existe": true,
+      "titulo_na_tela": "ROTA CONFIRMADA, TELA IMPRESTÁVEL PARA O VÍDEO — confirmei abrindo: DispatchConsolePage.tsx:9 `const TENANT_NAME = \"Techsolutions Industrial\"`; KPIS/ALERTS/QUEUE/TECHS são literais (l.36-61); `grep -c \"useEffect|fetch(\"` no arquivo devolve 0. Zero dado de Guinchos Paraná. NÃO USAR."
+    }
+  ],
+  "endpoints": [
+    {
+      "metodo": "GET",
+      "path": "/api/v1/dashboard/summary",
+      "arquivo": "src/modules/dashboard/dashboard.routes.ts:29-31",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get l.29, path l.30, requirePermission DASHBOARD_PERMISSIONS.read l.31). Devolve workOrders{total, byStatus, createdToday, createdThisWeek, overdue} + registry + criticalWorkOrders + recentEvents. `overdue` = COUNT(scheduled_for < now AND status NOT IN [completed,cancelled,rejected]) — dashboard-prisma.repository.ts:64-70 e dashboard.types.ts:21-25."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/work-orders",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:94-100",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.get l.94, path \"/work-orders\" l.95, WORK_ORDER_PERMISSIONS.read l.96). Filtros TODOS opcionais (work-order.service.ts:397-411): status, priority, assignedOperatorId, assignedUserId, from, to, search, limit, offset. Sem query = todas as OS do tenant. É o mesmo endpoint que o app Flutter chama."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/work-orders",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:102-108",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.post l.102, path l.103, WORK_ORDER_PERMISSIONS.create l.104). O código é do servidor: work-order.repository.ts:483-485 `export function formatWorkOrderCode(sequence){ return \\`OS-${String(sequence).padStart(6,\"0\")}\\`; }`."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/work-orders/:workOrderId",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:110-116",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO. Alimenta o hub de abas. tabs.config.ts:35-46: 9 abas visible=true (Informações gerais · Financeiro · Orçamento · Comentários · Arquivos · Mobile · Quilometragem · Mapa · Logs) e 2 visible=false (Estoque l.38, Base l.44). Financeiro exige work_order_financials:read e Orçamento exige service_quotes:read — a aba aparece, o conteúdo pode virar \"acesso não permitido\"."
+    },
+    {
+      "metodo": "PATCH",
+      "path": "/api/v1/work-orders/:workOrderId/status",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:126-132",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO (router.patch l.126, path l.127, WORK_ORDER_PERMISSIONS.status l.128)."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/work-orders/:workOrderId/assign",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:186-192",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO no backend E CONFIRMADA A ORFANDADE NO FRONT: `grep -rn assignWorkOrder frontend/src` devolve UMA linha, a própria definição (work-orders.service.ts:113); `grep -rn WorkOrderAssignForm frontend/src` devolve UMA linha, a própria definição (components/WorkOrderAssignForm.tsx:6). ACHADO NOVO DO CÉTICO: mesmo que houvesse tela, este endpoint REJEITARIA a OS-000017 — work-order.service.ts:1628 chama assertStatusTransition(current.status, \"assigned\") e a OS está em on_route (forward-only)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/operations/dispatches",
+      "arquivo": "src/modules/field-dispatch/field-dispatch.routes.ts:36-42",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO. Aceita ?workOrderId= — o front monta a query em dispatches.service.ts:119 (`if (params.workOrderId) query.set(\"workOrderId\", ...)`)."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/operations/dispatches",
+      "arquivo": "src/modules/field-dispatch/field-dispatch.routes.ts:44-50",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO. field-dispatch.service.ts:219-320: valida OS e operador do tenant (assertWorkOrderBelongsToTenant l.223 / assertOperatorBelongsToTenant l.225), congela o snapshot das vistorias (l.234-280) e provisiona a execução em fail-open auditado (l.297-313). CONFIRMADO que NÃO escreve assignedOperatorId nem muda o status da OS — não há chamada a changeStatus nem a assign em todo o create."
+    },
+    {
+      "metodo": "PATCH",
+      "path": "/api/v1/operations/dispatches/:dispatchId/status",
+      "arquivo": "src/modules/field-dispatch/field-dispatch.routes.ts:69-75",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO. Status do DESPACHO, vocabulário próprio — rótulos em dashboard.adapter.ts:149-159: Rascunho · Atribuído · Aceito · Em rota · No local · Em atendimento · Concluído · Cancelado · Reatribuído · Falhou."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/bootstrap",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:45-46",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO. E confirmado que NÃO devolve ordens: mobile.routes.ts:129-135 zera todos os cursores (workOrdersCursor, checklistsCursor, expensesCursor, inventoryCursor, evidenceCursor = null)."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/sync/work-order-actions",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:141-142",
+      "existe": true,
+      "o_que_faz": "CONFIRMADO. Tradução do app conferida na fonte: sync_replay_service.dart:366 (`WorkOrderSyncActionTypes.statusUpdate => 'work_order.status_change'`) e :476 (`'enRoute' => 'on_route'`, com 'scheduled'=>'open', 'dispatched'=>'assigned', 'arrived'=>'on_site', 'inService'=>'in_progress')."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/field-assignments",
+      "arquivo": "mobile/flutter_app/lib/core/network/api_contracts.dart:27",
+      "existe": false,
+      "o_que_faz": "CONFIRMADO INEXISTENTE. A constante existe (api_contracts.dart:27 `static const mobileFieldAssignments = '/api/v1/mobile/field-assignments';`) mas `grep -rn \"field-assignments\" src/` devolve VAZIO. O router mobile monta só: bootstrap(45), sync/work-order-actions(141), sync/checklist-actions(150), inventory/availability(159), sync/inventory-actions(168), sync/evidence-actions(177), evidence-uploads(186), telemetry(197)."
+    }
+  ],
+  "telas_mobile": [
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/home.png",
+      "tela_flutter": "mobile/flutter_app/lib/shared/ui/home_screen.dart (rota '/' — app/router.dart:91)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "ARQUIVO E PNG CONFIRMADOS (abri os dois).",
+        "PNG: header navy em gradiente, \"Bom dia!\" / \"Técnica de campo · Filial BH\", DOIS ícones (balão com badge 3, sino com badge 5). CÓDIGO: MobileNavyHeader (home_screen.dart:150) com greeting '${_greetingFor(today)}!' e subtitle '${tenantRoleLabel(...)} · ${session.activeTenant.displayName}' (l.151-153) e UM só action, Diagnóstico/Icons.monitor_heart_outlined (l.154-160). Chat e sino NÃO existem.",
+        "PNG: cartão do usuário \"Juliana Reis\", pill Online, \"3 pendentes / a sincronizar\", \"Hoje 09:05 / último sync\" — nomes do protótipo, não do banco.",
+        "PNG: RESUMO DE HOJE com 3 tiles (3 OS hoje azul · 1 Concluídas verde · 2 Pendentes âmbar) e ATALHOS · OPCIONAIS (Despesas · Sincronizar · Diagnóstico) — presentes no código (l.200-254).",
+        "\"Minhas OS\" em home_screen.dart:272 e link \"Ver todas\" em l.284. CORREÇÃO AO FUNDAMENTADOR: o PNG NÃO mostra \"Ver todas\" — só o título. O link é do código.",
+        "A lista é allTenantOrders, filtrada SÓ por tenant (l.121-123) — ver passo inexistente P6.",
+        "Bottom nav de 5 itens CONFIRMADO no PNG e no código: erp_scaffold.dart:7 \"(Início · OS · Mapa · Finanças · Perfil)\", montado em l.51/59."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/os-lista.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_list_screen.dart (rota '/work-orders' — app/router.dart:138-140)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "ARQUIVO CONFIRMADO.",
+        "Header branco com \"Ordens de Serviço\" — _ListHeader, l.409-410.",
+        "Grupos de filtro CONFIRMADOS no enum _WoGroup (l.19-27): Todas · Agendadas · Em campo · Concluídas.",
+        "Busca \"Buscar OS, cliente ou endereço...\" — hintText em l.192.",
+        "FAB azul \"Nova OS\" quando canCreate — l.130-138 (`FloatingActionButton.extended(... label: Text('Nova OS'))`).",
+        "Filtro \"Prioridade:\" em dropdown (l.233-263). A faixa \"ESTADO Normal/Carregando/Vazia/Offline+cache\" do PNG é andaime do protótipo — NÃO conferi essa faixa abrindo o PNG; trato como não confirmada."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/os-detalhe.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart (rota '/work-orders/:workOrderId' — app/router.dart:146-148)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "ARQUIVO E PNG CONFIRMADOS — abri o PNG e ele bate com a descrição do fundamentador, item por item.",
+        "PNG (conferido visualmente): header BRANCO \"Detalhe da OS\" + \"Somente leitura\" + chip \"A INICIAR\"; OS-2891 azul; \"Prioridade Alta\"; chip \"Reboque · veículo avariado\"; \"Indústria Alfa / Solicitante do atendimento\"; cartão \"Veículo\" (PLACA ABC-1D** / TIPO Carro de passeio / MODELO VW Nivus 2023 / COR Prata); \"Local e agendamento\" (Av. Afonso Pena, 2000 — Centro, BH · Janela 13/06 10:00-12:00 · Distância 1,2 km · 4 min · Abrir rota); faixa âmbar \"SLA · Janela até 12:00 · 1h48 restante\"; \"Contato\"; barra fixa \"Mapa\" + \"Iniciar atendimento\".",
+        "CÓDIGO — composição REAL do ListView (l.118-165), na ordem: TenantContextBar · _WorkOrderStepper · SyncStatusBanner(pending/conflict) · _HeaderCard · _CustomerCard · _AssignmentCard · RegistryAssignmentSection · _ChecklistCard · OperationalLocationCard · _TimelineCard · _CheckinActions. NÃO HÁ cartão Veículo, NÃO HÁ \"Local e agendamento\", NÃO HÁ faixa de SLA, NÃO HÁ \"Somente leitura\" nem chip \"A INICIAR\".",
+        "Header do app: MobileScreenHeader(title:'Detalhe da OS', subtitle: wo.status.label) — l.110-113. MobileScreenHeader pinta `color: Colors.white` (mobile_kit.dart:256). O gradiente navy (mobile_kit.dart:124-127) é do MobileNavyHeader, usado só na Home.",
+        "Stepper de 5 passos CONFIRMADO no código e AUSENTE do PNG: _WorkOrderStepper._labels = ['Agendada','Em rota','No local','Em exec.','Concluída'] (l.335-341).",
+        "Barra fixa CONFIRMADA (l.878-930): \"Mapa\" (Outlined) + primário que depende do status — scheduled/dispatched → \"Iniciar rota\"; enRoute → \"Cheguei ao local\" (abre _PlateDialog); arrived → \"Iniciar atendimento\" (+ go /execute); inService/paused → \"Continuar atendimento\"."
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/sincronizacao.png",
+      "tela_flutter": "mobile/flutter_app/lib/shared/ui/sync_screen.dart (rota '/sync' — app/router.dart:137)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "ARQUIVO CONFIRMADO.",
+        "Header branco \"Sincronização\" + MobilePill Online/Offline — l.55-60.",
+        "Botão primário: label `autoSync.isRunning ? 'Sincronizando...' : 'Sincronizar agora'` — l.143-146; onPressed chama triggerManual() (l.126-130).",
+        "Banner de rede, _SummaryRow de KPIs da fila, cartão de auto-sync e grupos por domínio com cartões de conflito: presentes no arquivo."
+      ]
+    }
+  ],
+  "copy_real": [
+    {
+      "onde": "WEB · /dashboard — kicker/título/subtítulo (frontend/src/pages/DashboardPage.tsx:355-357)",
+      "texto": "VISÃO GERAL / \"{Bom dia|Boa tarde|Boa noite}, {primeiro nome}\" / \"Operação, SLA e cadastros · Guinchos Paraná · {data de hoje}\" — a saudação e a data vêm do relógio de quem abre (l.54-58 e l.62-65), NÃO do snapshot."
+    },
+    {
+      "onde": "WEB · /dashboard — ações do cabeçalho (DashboardPage.tsx:361-368)",
+      "texto": "Mapa operacional · Nova OS"
+    },
+    {
+      "onde": "WEB · /dashboard — os 5 cards de KPI efetivamente renderizados (DashboardPage.tsx:272-277 seleciona por id; adapter l.762-786)",
+      "texto": "OS abertas (aguardando início) · Em andamento (em campo agora) · Concluídas (no total) · Atrasadas (\"agenda vencida\" quando >0, \"sem atrasos\" quando 0) · OS hoje (criadas hoje). CORREÇÃO: summaryToKpis devolve NOVE kpis (os 4 extras são Clientes/Viaturas/Equipes/Serviços); a página escolhe cinco por id."
+    },
+    {
+      "onde": "WEB · /dashboard — títulos dos painéis (DashboardPage.tsx:198, 447, 489, 518, 544)",
+      "texto": "Volume de ordens de serviço · Exige ação agora · Despachos ativos · Status de campo · Últimos eventos"
+    },
+    {
+      "onde": "WEB · /dashboard — alerta automático quando há atraso (dashboard.adapter.ts:790-798)",
+      "texto": "\"{N} OS atrasadas\" / \"Agenda vencida — priorize a fila crítica.\" (severity danger) — com os dados reais este alerta APARECE (ver P20)."
+    },
+    {
+      "onde": "WEB · /work-orders — cabeçalho (WorkOrdersPage.tsx:202-204)",
+      "texto": "OPERAÇÃO / Ordens de Serviço / Atribuição, execução, SLA e rastreabilidade de cada atendimento em campo."
+    },
+    {
+      "onde": "WEB · /work-orders — KPIs da lista: são QUATRO, não três (WorkOrdersPage.tsx:227-272)",
+      "texto": "OS abertas — \"ainda não concluídas nem canceladas\" (+ selo âmbar \"{N} sem técnico\") · Em andamento — \"técnico em campo agora\" · Atrasadas — \"agenda vencida e sem conclusão\" · Concluídas — \"no total da lista\""
+    },
+    {
+      "onde": "WEB · /work-orders — abas-pílula, busca e contagem (WorkOrdersPage.tsx:42-51, 302, 322)",
+      "texto": "Todas · Sem técnico · Em campo · Concluídas — \"Buscar por código, cliente ou endereço…\" — \"{N} ordens\""
+    },
+    {
+      "onde": "WEB · /work-orders — cabeçalho da tabela (WorkOrdersPage.tsx:326-332)",
+      "texto": "CÓDIGO · CLIENTE / SERVIÇO · TÉCNICO · AGENDA · SITUAÇÃO · AÇÃO"
+    },
+    {
+      "onde": "WEB · /work-orders — célula TÉCNICO (WorkOrdersPage.tsx:399-421)",
+      "texto": "\"Atribuído\" com avatar genérico quando há assignedOperatorId (l.408) · botão \"Atribuir\" quando não há, não-final e can(field_dispatch) (l.412-420) · \"Sem técnico\" no resto (l.421)"
+    },
+    {
+      "onde": "WEB · rótulos de status da OS (work-orders-row.logic.ts:11-22)",
+      "texto": "Aberta · Atribuída · Aceita · Em rota · No local · Em atendimento · Pausada · Concluída · Cancelada · Recusada"
+    },
+    {
+      "onde": "WEB · rótulos de prioridade da OS (work-orders-tone.ts:69-74)",
+      "texto": "Baixa · Média · Alta · Urgente"
+    },
+    {
+      "onde": "WEB · /operations/dispatches — cabeçalho (OperationsDispatchesPage.tsx:79-92)",
+      "texto": "Operação / Despachos [AO VIVO] / Envios em rota — origem, paradas e destino — acompanhados em tempo real. / botão \"Novo despacho\" (l.90-92, alterna o cartão de criação)"
+    },
+    {
+      "onde": "WEB · /operations/dispatches — cards de resumo (DispatchesSummaryCards.tsx:8-16)",
+      "texto": "Total · Atribuidos · Em rota · Em atendimento · Concluidos · Cancelados · Urgentes (sem acento no código — 7 cards)"
+    },
+    {
+      "onde": "WEB · /operations/dispatches — formulário Criar despacho (DispatchCreateForm.tsx:52-63)",
+      "texto": "OS [placeholder literal \"workOrderId\"] · Operador [placeholder literal \"operatorUserId\"] · Status inicial (Atribuido / Rascunho) · Observação · botão \"Criar despacho\" / \"Criando...\""
+    },
+    {
+      "onde": "WEB · /operations/dispatches — colunas da tabela (DispatchesTable.tsx:29-37)",
+      "texto": "OS · Título · Status · Prioridade · Operador · Criado em · Ações — a coluna OS mostra `workOrderCode ?? workOrderId` (l.29); a coluna Operador mostra `item.operatorUserId` cru (l.33)"
+    },
+    {
+      "onde": "WEB · /operations/dispatches — estado vazio (OperationsDispatchesPage.tsx:124)",
+      "texto": "\"Nenhum despacho encontrado\" / \"Ajuste status, prioridade, operador ou busca por OS.\""
+    },
+    {
+      "onde": "WEB · /work-orders/:id — hero e voltar (WorkOrderDetailPage.tsx:62, 73-74)",
+      "texto": "← Voltar às ordens / \"OS-000017 · Remoção de veículo — colisão na BR-277\" / \"Seguradora Horizonte · BR-277, km 82 — pista sentido litoral\""
+    },
+    {
+      "onde": "WEB · /work-orders/:id — abas visíveis (tabs.config.ts:36-46)",
+      "texto": "Informações gerais · Financeiro · Orçamento · Comentários · Arquivos · Mobile · Quilometragem · Mapa · Logs"
+    },
+    {
+      "onde": "WEB · /work-orders/new — cabeçalho (WorkOrderCreatePage.tsx:46-48)",
+      "texto": "Ordens de Servico / Nova OS / Crie uma ordem operacional para despacho, checklist futuro e acompanhamento no mapa."
+    },
+    {
+      "onde": "MOBILE · Home — header (home_screen.dart:150-153)",
+      "texto": "\"{Bom dia|…}!\" / \"{papel} · {organização}\" — com a sessão do técnico: \"Técnico de Campo · Guinchos Paraná\""
+    },
+    {
+      "onde": "MOBILE · Home — seções e tiles (home_screen.dart:200-254)",
+      "texto": "Resumo de hoje / OS hoje · Concluídas · Pendentes // Atalhos opcionais / Despesas · Sincronizar · Diagnóstico"
+    },
+    {
+      "onde": "MOBILE · Home — seção de OS (home_screen.dart:272, 284)",
+      "texto": "Minhas OS / Ver todas"
+    },
+    {
+      "onde": "MOBILE · lista de OS (work_order_list_screen.dart:410, 22-27, 192, 137)",
+      "texto": "Ordens de Serviço / Todas · Agendadas · Em campo · Concluídas / \"Buscar OS, cliente ou endereço...\" / FAB \"Nova OS\""
+    },
+    {
+      "onde": "MOBILE · detalhe da OS — header e stepper (work_order_detail_screen.dart:110-113, 335-341)",
+      "texto": "Detalhe da OS / {rótulo do status} — stepper: Agendada · Em rota · No local · Em exec. · Concluída"
+    },
+    {
+      "onde": "MOBILE · detalhe da OS — barra fixa (work_order_detail_screen.dart:891, 899, 913, 923)",
+      "texto": "Mapa | \"Iniciar rota\" (scheduled/dispatched) → \"Cheguei ao local\" (enRoute) → \"Iniciar atendimento\" (arrived) → \"Continuar atendimento\" (inService/paused)"
+    },
+    {
+      "onde": "MOBILE · rótulos de status (work_order_models.dart:31-45)",
+      "texto": "Agendada · Despachada · Em rota · No local · Em atendimento · Pausada · Ag. aprovação · Concluída · Aprovada · Rejeitada · Exceção · Cancelada"
+    },
+    {
+      "onde": "MOBILE · rótulos de prioridade (work_order_models.dart:29 + remote_api.dart:274-277)",
+      "texto": "Baixa · Normal · Alta · Crítica — o backend manda `urgent` e o app traduz para `critical` (_priorityFromBackendVocabulary). A OS-000017 é \"Urgente\" na web e \"Crítica\" no app."
+    },
+    {
+      "onde": "MOBILE · banner de alteração local pendente (work_order_detail_screen.dart:126-128) — CORREÇÃO DE COPY",
+      "texto": "O texto REAL é \"Esta OS possui alterações locais aguardando sync.\" — o fundamentador escreveu \"…aguardando sincronização.\", que não existe no código."
+    },
+    {
+      "onde": "MOBILE · banner de conflito (work_order_detail_screen.dart:131-135)",
+      "texto": "\"Conflito de sincronização. Seus dados locais foram preservados.\""
+    },
+    {
+      "onde": "MOBILE · sincronização (sync_screen.dart:56-59, 143-146)",
+      "texto": "Sincronização [Online/Offline] / \"Sincronizar agora\" ↔ \"Sincronizando...\""
+    }
+  ],
+  "passos_inexistentes": [
+    {
+      "passo": "P1 — Passo 2 do roteiro do dono: \"cria a OS-000017\"",
+      "por_que_nao_existe": "CONFIRMADO. O número é do servidor, em sequência, no create. Encenar a criação da OS-000017 é impossível: ela já existe e já está em on_route; um create novo produziria OS-000018.",
+      "evidencia": "src/modules/work-orders/work-order.repository.ts:483-485 `export function formatWorkOrderCode(sequence: number): string { return \\`OS-${String(sequence).padStart(6, \"0\")}\\`; }`; docs/demo-fluxos/dados-reais.json → os_ativas[0].code=\"OS-000017\", status=\"on_route\"."
+    },
+    {
+      "passo": "P2 — Passo 3 (parte A): \"atribui a OS a um técnico\" — não há seletor de técnico",
+      "por_que_nao_existe": "CONFIRMADO abrindo o componente. Os dois campos-chave são <Input> de texto livre com placeholder igual ao nome técnico do campo. Nenhum dropdown, nenhuma busca por nome.",
+      "evidencia": "frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx:52 `<Input label=\"OS\" ... placeholder=\"workOrderId\" />` e :53 `<Input label=\"Operador\" ... placeholder=\"operatorUserId\" />`."
+    },
+    {
+      "passo": "P3 — Passo 3 (parte B): a tela nunca mostra o NOME do técnico",
+      "por_que_nao_existe": "CONFIRMADO nos três lugares. Em Despachos o operador é UUID cru; na lista de OS o próprio código admite no comentário que o DTO não traz o nome.",
+      "evidencia": "DispatchesTable.tsx:33 `render: (item) => item.operatorUserId`; DispatchDetailPanel.tsx:26 `<dd>{dispatch.operatorUserId}</dd>`; WorkOrdersPage.tsx:24-25 (\"O DTO de lista traz só o ID do técnico (sem nome) → célula TÉCNICO mostra 'Atribuído'\") e :408."
+    },
+    {
+      "passo": "P4 — Passo 3 (parte C): criar despacho NÃO atribui a OS",
+      "por_que_nao_existe": "CONFIRMADO lendo o create inteiro (l.219-330): ele valida OS+operador, congela snapshots e provisiona a execução — e em nenhum ponto escreve assignedOperatorId ou chama changeStatus da OS. Quem grava é o assign, órfão no front.",
+      "evidencia": "src/modules/field-dispatch/field-dispatch.service.ts:219-330; src/modules/work-orders/work-order.service.ts:1604-1652 (assign, único que grava operatorId, com assertStatusTransition em l.1628); frontend/src/modules/work-orders/work-orders.service.ts:113 (definição sem call site); components/WorkOrderAssignForm.tsx:6 (nunca importado)."
+    },
+    {
+      "passo": "P5 — Passo 4: \"FEIXE web → mobile: a OS viaja para o aparelho\"",
+      "por_que_nao_existe": "CONFIRMADO. Não há canal de empurrão: `grep -rniE \"websocket|eventsource|firebase_messaging|onesignal|\\bpush\\b\" mobile/flutter_app/lib` só devolve `context.push` de navegação. O app PUXA, com GET sem query.",
+      "evidencia": "mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:73-78 (`_dio.get(WorkOrderApiEndpoints.workOrders)` sem queryParameters); src/modules/field-ops-realtime/field-ops-realtime.routes.ts:36-39 (o SSE existe, mas é gateado por field_location:read e serve o console web)."
+    },
+    {
+      "passo": "P6 — Passo 5: \"a OS aparece em 'Minhas OS'\" — o rótulo existe, o recorte \"minhas\" não",
+      "por_que_nao_existe": "CONFIRMADO. A Home filtra só por tenant e o GET vai sem parâmetro; o backend só recorta por assignedOperatorId se a query vier. Não há endpoint de atribuições.",
+      "evidencia": "mobile/flutter_app/lib/shared/ui/home_screen.dart:121-123 `.where((o) => o.tenantId == session.activeTenant.tenantId)`; work_order_remote_api.dart:76-78; src/modules/work-orders/work-order.service.ts:402 `assignedOperatorId: parseOptionalUuid(query.assignedOperatorId, ...)`; `grep -rn \"field-assignments\" src/` → vazio."
+    },
+    {
+      "passo": "P7 — Passo 6: \"cabeçalho azul\" no detalhe da OS",
+      "por_que_nao_existe": "CONFIRMADO no código e no PNG (abri os dois). O detalhe usa MobileScreenHeader, que pinta branco; o navy em gradiente é do MobileNavyHeader, chamado só na Home.",
+      "evidencia": "mobile/flutter_app/lib/shared/ui/mobile_kit.dart:256 `color: Colors.white` (MobileScreenHeader) vs mobile_kit.dart:124-127 `colors: [ErpMobileTheme.navy, ErpMobileTheme.navy2]` (MobileNavyHeader); work_order_detail_screen.dart:110-113 usa MobileScreenHeader; home_screen.dart:150 usa MobileNavyHeader."
+    },
+    {
+      "passo": "P8 — Passo 6: \"cartão Veículo\" (PLACA/TIPO/MODELO/COR) no detalhe da OS",
+      "por_que_nao_existe": "CONFIRMADO. Abri o PNG: o cartão está lá. Abri o ListView do app: não está. A placa só aparece no diálogo de chegada, como desafio de conferência.",
+      "evidencia": "work_order_detail_screen.dart:118-165 (lista completa dos filhos: TenantContextBar, _WorkOrderStepper, SyncStatusBanner, _HeaderCard, _CustomerCard, _AssignmentCard, RegistryAssignmentSection, _ChecklistCard, OperationalLocationCard, _TimelineCard, _CheckinActions — nenhum widget de veículo); _PlateDialog em l.997 e 1149."
+    },
+    {
+      "passo": "P9 — Passo 6: \"faixa de SLA âmbar\"",
+      "por_que_nao_existe": "CONFIRMADO por execução: `grep -rn \"SLA\" mobile/flutter_app/lib` retorna VAZIO. A faixa \"Janela até 12:00 · 1h48 restante\" existe só no PNG do protótipo (que eu abri e confirmei).",
+      "evidencia": "grep executado agora sobre mobile/flutter_app/lib → zero ocorrências; frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx:22-23 (\"'SLA em risco' do design não é derivável da lista … → o slot crítico é 'Atrasadas'\")."
+    },
+    {
+      "passo": "P10 — Passo 7: \"toca 'Iniciar atendimento' → status vira 'Em rota'\"",
+      "por_que_nao_existe": "CONFIRMADO. São botões diferentes e há um passo obrigatório entre eles. 'Iniciar rota' (scheduled/dispatched) leva a enRoute; 'Cheguei ao local' (enRoute) abre o diálogo da placa; 'Iniciar atendimento' (arrived) leva a inService e navega para /execute.",
+      "evidencia": "work_order_detail_screen.dart:888-895 (scheduled/dispatched → _doStatus(enRoute), label 'Iniciar rota'); :897-904 (enRoute → _openArrivalDialog, label 'Cheguei ao local'); :905-918 (arrived → inService + context.go('/execute'), label 'Iniciar atendimento'); :861-875 (_openArrivalDialog → _PlateDialog)."
+    },
+    {
+      "passo": "P11 — Passo 8: \"FEIXE mobile → web: o status volta\" — não volta na hora",
+      "por_que_nao_existe": "CONFIRMADO linha a linha. `updateStatus` grava local, cria evento de timeline local e enfileira. Zero HTTP. A fila só sobe na TRANSIÇÃO offline→online ou no toque manual.",
+      "evidencia": "work_order_detail_screen.dart:846-859 (_doStatus só chama repo.updateStatus); work_order_repository.dart:207-262 (copyWith → syncStatus pending; _localStore.saveWorkOrder + saveTimelineEvent + _syncQueue.enqueue; nenhuma chamada de rede); auto_sync_coordinator.dart:53-57 `if (prev == NetworkStatus.offline && next == NetworkStatus.online) { _triggerSync(); }`; sync_screen.dart:124-146."
+    },
+    {
+      "passo": "P12 — Passo 9: \"a lista de OS mostra 'Em rota' ao vivo\"",
+      "por_que_nao_existe": "CONFIRMADO. É polling de 30s que PAUSA com a aba oculta; o selo AO VIVO é literal estático.",
+      "evidencia": "frontend/src/hooks/useAutoRefresh.ts:4 `export const DEFAULT_AUTO_REFRESH_MS = 30_000;` e :34-35 `if (pauseWhenHidden && ... document.hidden) return;`; WorkOrdersPage.tsx:110; OperationsDispatchesPage.tsx:85 `<Chip tone=\"success\">AO VIVO</Chip>`."
+    },
+    {
+      "passo": "P13 — Aviso transversal: /dispatch/console não pode entrar no vídeo",
+      "por_que_nao_existe": "CONFIRMADO. Rodei `grep -c \"useEffect|fetch(\"` no arquivo: 0. Todo o conteúdo é literal, com o nome de OUTRA empresa.",
+      "evidencia": "frontend/src/modules/dispatch/pages/DispatchConsolePage.tsx:9 `const TENANT_NAME = \"Techsolutions Industrial\";`; KPIS/ALERTS/QUEUE/TECHS em l.36-61."
+    },
+    {
+      "passo": "P14 — Aviso de elenco: não há técnico nomeável no snapshot aprovado",
+      "por_que_nao_existe": "CONFIRMADO no JSON: usuarios_demo tem 8 entradas, nenhuma de campo (Admin ×2, Auditor ×2, Operação de Despacho, Estoque, Financeiro ×2). REFINAMENTO DO CÉTICO: o BANCO tem técnicos — quatro, com nome — mas eles ficaram FORA do snapshot. Nomeá-los no vídeo é usar dado que a fonte aprovada não carrega.",
+      "evidencia": "docs/demo-fluxos/dados-reais.json → usuarios_demo (8 entradas conferidas uma a uma); prisma/seed-fleet.ts:58-61 cria \"Ana Beatriz Rocha\", \"Rafael Mendes\", \"Camila Nunes\", \"Diego Ferreira\" (tecnico1..4.cwb@example.com) no tenant slug=\"demo\" (l.35), com papel `operator` (l.50)."
+    },
+    {
+      "passo": "P15 — [NOVO] Beat t=13: \"a tabela monta com as QUATRO OS ativas\" — são SEIS, e o snapshot só documenta quatro",
+      "por_que_nao_existe": "Aritmética do próprio arquivo de dados: os_por_status soma 17 e traz 6 não-concluídas (open 1 + assigned 1 + on_route 1 + on_site 1 + in_progress 2). Mas os_ativas tem só 4 entradas. Faltam UMA `open` e UMA `in_progress`, sem título, cliente nem endereço no snapshot. O vídeo não consegue montar a tabela sem inventar duas linhas ou contradizer os KPIs que acabou de mostrar.",
+      "evidencia": "docs/demo-fluxos/dados-reais.json → os_por_status vs os_ativas (contei as duas listas); a tela não filtra nada por padrão — WorkOrdersPage.tsx:108 usa STABLE_FILTERS e a aba inicial é \"Todas\" (l.46)."
+    },
+    {
+      "passo": "P16 — [NOVO] As duas linhas que faltam são de OUTRA narrativa: Indústria Alfa, São Paulo — e aparecem na mesma tabela de Guinchos Paraná",
+      "por_que_nao_existe": "Reconstruí o banco pelos seeds e o total fecha exato: 15 OS da narrativa de Curitiba (OS-000003…OS-000017, scripts/seed-demo-os.mjs:32-46) + 2 OS da frota (OS-2026-0001 e OS-2026-0002), no MESMO tenant slug=\"demo\" = 17, com a distribuição idêntica à do JSON. Ou seja: a tela de \"Guinchos Paraná\" mostra \"Manutenção preventiva em campo — Indústria Alfa Ltda / São Paulo / Em atendimento / Alta\" e \"Vistoria de frota / Av. Paulista, 1578 / São Paulo / Aberta / Média\". Nenhuma das duas está em dados-reais.json.",
+      "evidencia": "prisma/seed-fleet.ts:35 (`slug: \"demo\"`), :153 (OS-2026-0001, status in_progress, customer_name \"Indústria Alfa Ltda\", service_city \"São Paulo\") e :155 (OS-2026-0002, status open, service_address \"Av. Paulista, 1578\"); scripts/seed-demo-os.mjs:31-46 (NARRATIVA com 15 codes)."
+    },
+    {
+      "passo": "P17 — [NOVO] Beat t=13: a coluna TÉCNICO da OS-000017 mostra o botão \"Atribuir\", não um técnico",
+      "por_que_nao_existe": "O seed narrativo grava `assigned_user_id` e NUNCA `assigned_operator_id` — e a célula da lista lê exatamente `assignedOperatorId`, que vem de `assigned_operator_id`. Resultado: as 4 OS de Curitiba (inclusive a OS-000017, já \"Em rota\") caem no ramo \"sem técnico\" e, como não são finais e o ator despacha, renderizam o botão azul \"Atribuir\". As ÚNICAS duas linhas que mostram \"Atribuído\" são as duas de São Paulo (P16), que têm assigned_operator_id no seed da frota. O vídeo mostraria uma OS em rota sem ninguém atribuído.",
+      "evidencia": "scripts/seed-demo-os.mjs:98 `assigned_user_id = coalesce($10, assigned_user_id),` (o UPDATE inteiro, l.93-101, não menciona assigned_operator_id); src/modules/work-orders/work-order-prisma.repository.ts:801 `assignedOperatorId: record.assigned_operator_id ?? undefined`; frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx:400 `{o.assignedOperatorId ? ... : ... <button>Atribuir</button>}`; prisma/seed-fleet.ts:153,155 (`assigned_operator_id: operator.id` / `operator2.id`)."
+    },
+    {
+      "passo": "P18 — [NOVO] Beat t=5 → t=13: o KPI \"OS abertas\" vale 2 no painel e 6 na lista — mesmo rótulo, dois números, telas seguidas",
+      "por_que_nao_existe": "São fórmulas diferentes com o mesmo nome. No /dashboard, `abertas = open + assigned + accepted` = 1+1+0 = 2. Em /work-orders, `abertas = items.filter(o => !isFinalStatus(o.status))` = TODAS as não-finais = 6. O vídeo mostra \"OS abertas 2\" e, oito segundos depois, \"OS abertas 6\", sem que nada tenha mudado no banco.",
+      "evidencia": "frontend/src/modules/dashboard/dashboard.adapter.ts:765 `const abertas = s.open + s.assigned + s.accepted;` e :762 (summaryToKpis); frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx:159 `abertas: items.filter((o) => !isFinalStatus(o.status)).length,` com isFinalStatus definido em l.39."
+    },
+    {
+      "passo": "P19 — [NOVO] O selo \"Atrasadas — sem atrasos\" que o fundamentador pôs em copy_real é FALSO com este dado: são 4 atrasadas, em vermelho",
+      "por_que_nao_existe": "`overdue` = scheduled_for < agora E status não-terminal. As quatro OS ativas de Curitiba têm `agendada` em 21-22/08 e o snapshot é de 24/08 — todas vencidas e nenhuma terminal. O seed é explícito: `scheduled_for` recebe `criada = h(20 + n*9)`, ou seja, sempre no PASSADO. Consequências na tela, todas visíveis: card \"Atrasadas 4\" com ícone/borda vermelhos e selo \"agenda vencida\", card \"Em andamento\" trocando TAG_OK por TAG_LATE, o painel \"Exige ação agora\" populado e o alerta \"4 OS atrasadas — Agenda vencida — priorize a fila crítica.\" no topo. Um vídeo para investidor não pode abrir o painel prometendo \"sem atrasos\".",
+      "evidencia": "src/modules/dashboard/dashboard-prisma.repository.ts:64-70 (`scheduled_for: { lt: now }, status: nonTerminalStatus`); src/modules/dashboard/dashboard.types.ts:21-25 (terminais = completed, cancelled, rejected); scripts/seed-demo-os.mjs:82 e :100 (`const criada = h(20 + n * 9);` … `scheduled_for = $14`); dados-reais.json → os_ativas[*].agendada (21/08 e 22/08) vs gerado_em 2026-08-24; DashboardPage.tsx:288-291 (tag LATE) e dashboard.adapter.ts:790-798 (o alerta)."
+    },
+    {
+      "passo": "P20 — [NOVO] Beat t=87: \"a coluna SITUAÇÃO troca para Em rota e o KPI Em andamento incrementa\" — nada troca e nada incrementa",
+      "por_que_nao_existe": "A OS-000017 já está `on_route` no banco desde o primeiro segundo do vídeo: no beat t=13 a coluna SITUAÇÃO já lê \"Em rota\". Não há transição a filmar. E \"Em andamento\" conta on_route+on_site+in_progress+paused — a OS já está dentro da conta, então o número não pode subir. O beat só funcionaria com uma OS em `assigned` (a OS-000014), e aí seria outra história.",
+      "evidencia": "dados-reais.json → os_ativas[0].status = \"on_route\"; frontend/src/modules/work-orders/work-orders-row.logic.ts:15 `on_route: \"Em rota\"`; dashboard.adapter.ts:766 `const andamento = s.on_route + s.on_site + s.in_progress + s.paused;`; WorkOrdersPage.tsx:160 (mesma composição via isFieldStatus, l.40)."
+    },
+    {
+      "passo": "P21 — [NOVO] Beat t=71: o botão \"Iniciar rota\" NÃO existe para a OS-000017 — nem no banco nem no aparelho",
+      "por_que_nao_existe": "'Iniciar rota' só é renderizado quando o status é scheduled ou dispatched. A OS-000017 está em on_route no backend E em WorkOrderStatus.enRoute no seed local do app. O botão que aparece de fato é \"Cheguei ao local\", e ele abre um diálogo pedindo os 2 últimos dígitos da placa antes de confirmar. Além disso, updateStatus rejeita a transição inválida com StateError.",
+      "evidencia": "work_order_detail_screen.dart:888-895 (condição scheduled||dispatched para 'Iniciar rota') e :897-904 ('Cheguei ao local' → _openArrivalDialog); mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart:767 `code: 'OS-000017'` com :771 `status: WorkOrderStatus.enRoute`; work_order_repository.dart:215-217 `if (!wo.status.canTransitionTo(newStatus)) throw StateError('Invalid transition: ...')`."
+    },
+    {
+      "passo": "P22 — [NOVO] O aparelho no build padrão NÃO fala com o backend: ele exibe um seed Dart que HARDCODA a OS-000017 — o \"mesmo dado dos dois lados\" seria uma coincidência de fixtures",
+      "por_que_nao_existe": "Este é o achado que o fundamentador chegou a tocar e não levou até o fim. O provider remoto devolve null fora de --dart-define=ERP_AUTH_MODE=remote (default 'local'), e nesse modo o repositório entra em \"seed-only\": _seedOrders() devolve uma lista Dart cujos itens são OS-000017 \"Remoção de veículo — colisão na BR-277\" / Seguradora Horizonte / BR-277 km 82, OS-000016, OS-000015, OS-000014, OS-000013. É o mesmo texto da web — vindo de OUTRO lugar. Filmar as duas telas lado a lado e narrar \"o dado atravessou\" seria encenar uma ligação que o binário padrão não tem. Prova de que são fixtures independentes: no seed do app o endereço da OS-000016 é 'Av. das Torres, 1400 — Curitiba PR'; no banco é 'Av. das Torres, 1840 — Jardim Botânico'.",
+      "evidencia": "mobile/flutter_app/lib/core/config/app_config.dart:3-7 (`defaultValue: 'local'`, kIsRemoteAuth); work_order_repository.dart:691-693 (\"Returns null in local/dev mode so WorkOrderRepository stays in seed-only mode\" + `if (!kIsRemoteAuth) return null;`); :118-121 `if (stored.isEmpty && seedIfEmpty && _remoteApi == null) { _orders = _seedOrders(_session); }`; :757-860 (_seedOrders, codes em 767/784/802/820/836); :787 vs dados-reais.json os_ativas[1].service_address."
+    },
+    {
+      "passo": "P23 — [NOVO] Beat t=22→t=30: não existe caminho de UI do DETALHE da OS para o despacho",
+      "por_que_nao_existe": "`grep -n \"dispatch|Despach\"` no WorkOrderDetailPage.tsx roteado devolve ZERO ocorrências. O único produtor do deep-link é o botão \"Atribuir\" da LISTA. Para encenar o beat, o operador teria de voltar para /work-orders e clicar ali — ou alguém digita a URL, que é andaime de demo.",
+      "evidencia": "grep executado agora sobre frontend/src/modules/work-orders/pages/WorkOrderDetailPage.tsx → nenhuma linha; frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx:414 `onClick={stop(() => navigate(\\`/operations/dispatches?workOrderId=${o.id}\\`))}` é a única origem do link."
+    },
+    {
+      "passo": "P24 — [NOVO] Beat t=30: o cartão \"Criar despacho\" NÃO abre sozinho vindo do \"Atribuir\"",
+      "por_que_nao_existe": "O estado inicial exige OS **e** operador na URL: `useState(Boolean(initialWorkOrderId && initialOperatorUserId))`. O botão \"Atribuir\" só manda ?workOrderId=. Logo o cartão chega FECHADO e alguém precisa clicar \"Novo despacho\" — e o campo Operador continua vazio, esperando um UUID digitado (P2).",
+      "evidencia": "frontend/src/modules/operations/dispatches/pages/OperationsDispatchesPage.tsx:46 `const [showCreate, setShowCreate] = useState(Boolean(initialWorkOrderId && initialOperatorUserId));` e :34-35 (leitura dos search params); WorkOrdersPage.tsx:414 (link só com workOrderId)."
+    },
+    {
+      "passo": "P25 — [NOVO] Beat t=39: \"os cards de resumo incrementam\" — chegando pelo deep-link eles não mostram os totais da organização",
+      "por_que_nao_existe": "O workOrderId da URL entra nos filtros, vai para a QUERY do backend e o resumo é calculado sobre `allItems`, que é a resposta já recortada. Ou seja: antes do create a tela mostra \"Nenhum despacho encontrado\" e os 7 cards zerados; depois mostra Total 1 / Atribuidos 1. Não é o painel da operação incrementando — é uma tela filtrada por uma OS.",
+      "evidencia": "OperationsDispatchesPage.tsx:37-42 (filters recebem workOrderId), :47 `const { items, allItems, ... } = useOperationsDispatches(filters);`, :49 `calculateDispatchesSummary(allItems)`; useOperationsDispatches.ts:35 e :50 (`allItems: data.items`, a resposta da API); dispatches.service.ts:32 e :119 `if (params.workOrderId) query.set(\"workOrderId\", params.workOrderId);`."
+    },
+    {
+      "passo": "P26 — [NOVO] Beat t=39: dizer que o despacho congelou \"o Checklist de Coleta — Guincho\" é escolher um checklist que o dado não aponta",
+      "por_que_nao_existe": "O freeze congela as vistorias LIGADAS àquela ordem (loadDispatchChecklistLines(actor, workOrder)), e dados-reais.json não diz a que checklist a OS-000017 está ligada — só lista 3 publicados e, num campo separado (`checklist_vistoria`), aponta \"Vistoria de Entrada — Pátio\". Nomear \"Checklist de Coleta — Guincho\" no vídeo é escolher checklists_publicados[0] e chamar de fato.",
+      "evidencia": "src/modules/field-dispatch/field-dispatch.service.ts:234-239 (`const lines = await this.loadDispatchChecklistLines(actor, workOrder);`); docs/demo-fluxos/dados-reais.json → checklists_publicados (3 itens, sem vínculo com OS) e checklist_vistoria (id 97986f53…, \"Vistoria de Entrada — Pátio\")."
+    },
+    {
+      "passo": "P27 — [NOVO] \"Bom dia, Diego\" e a data do subtítulo saem do relógio de quem grava, não do snapshot",
+      "por_que_nao_existe": "greeting() lê `new Date().getHours()` e subtitleDate() formata `now`. Gravar à tarde produz \"Boa tarde, Diego\"; a data será a da gravação, nunca 22/08 ou 24/08. Cravar \"Bom dia, Diego\" como copy fixa no vídeo é prometer uma tela que o produto só desenha antes do meio-dia. O app tem o mesmo comportamento (_greetingFor(today)).",
+      "evidencia": "frontend/src/pages/DashboardPage.tsx:54-58 (`const h = new Date().getHours(); if (h < 12) return \"Bom dia\"; ...`), :62-65 (subtitleDate) e :356-357; mobile/flutter_app/lib/shared/ui/home_screen.dart:151 `greeting: '${_greetingFor(today)}!'`."
+    },
+    {
+      "passo": "P28 — [NOVO] Correção de copy: o banner de sync do detalhe diz \"aguardando sync.\", não \"aguardando sincronização.\"",
+      "por_que_nao_existe": "A string do fundamentador não existe no código. A real é abreviada. Vídeo com legenda que cita copy tem de citar a copy que está na tela.",
+      "evidencia": "mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart:126-128 `message: 'Esta OS possui alterações locais aguardando sync.'`."
+    }
+  ],
+  "dados_a_exibir": [
+    {
+      "rotulo": "Organização (tenant do vídeo)",
+      "valor": "Guinchos Paraná",
+      "origem": "dados-reais.json → organizacao — CONFERIDO"
+    },
+    {
+      "rotulo": "Fonte do dado",
+      "valor": "banco de desenvolvimento erp_techsolutions, tenant slug=demo",
+      "origem": "dados-reais.json → fonte — CONFERIDO"
+    },
+    {
+      "rotulo": "Data de extração",
+      "valor": "2026-08-24T03:06:53.317Z",
+      "origem": "dados-reais.json → gerado_em — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — código",
+      "valor": "OS-000017",
+      "origem": "dados-reais.json → os_ativas[0].code — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — título",
+      "valor": "Remoção de veículo — colisão na BR-277",
+      "origem": "dados-reais.json → os_ativas[0].title — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — cliente",
+      "valor": "Seguradora Horizonte",
+      "origem": "dados-reais.json → os_ativas[0].customer_name — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — telefone do cliente",
+      "valor": "(41) 3222-8100",
+      "origem": "dados-reais.json → os_ativas[0].customer_phone — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — endereço de atendimento",
+      "valor": "BR-277, km 82 — pista sentido litoral",
+      "origem": "dados-reais.json → os_ativas[0].service_address — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — cidade/UF",
+      "valor": "Curitiba / PR",
+      "origem": "dados-reais.json → os_ativas[0].service_city + service_state — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — prioridade",
+      "valor": "urgent → \"Urgente\" na web, \"Crítica\" no app",
+      "origem": "dados-reais.json → os_ativas[0].priority; work-orders-tone.ts:73; work_order_remote_api.dart:274-277 — CONFERIDO nos três"
+    },
+    {
+      "rotulo": "OS do fluxo — status atual",
+      "valor": "on_route → \"Em rota\" nas duas superfícies (JÁ é este o estado antes do vídeo começar — ver P20/P21)",
+      "origem": "dados-reais.json → os_ativas[0].status; work-orders-row.logic.ts:15; work_order_models.dart:34 — CONFERIDO"
+    },
+    {
+      "rotulo": "OS do fluxo — criada / agendada",
+      "valor": "27/07 02:00 · agendada 22/08 21:10 (agenda VENCIDA em relação à extração de 24/08 — é o que torna a OS \"Atrasada\")",
+      "origem": "dados-reais.json → os_ativas[0].criada + agendada — CONFERIDO"
+    },
+    {
+      "rotulo": "OS vizinha (contexto)",
+      "valor": "OS-000016 · Guincho leve — pane elétrica · Transportadora Aurora Ltda · Av. das Torres, 1840 — Jardim Botânico · high · on_site",
+      "origem": "dados-reais.json → os_ativas[1] — CONFERIDO"
+    },
+    {
+      "rotulo": "OS vizinha (contexto)",
+      "valor": "OS-000015 · Recolhimento ao pátio — determinação DETRAN · DETRAN/PR · R. Chile, 2050 — Rebouças · high · in_progress",
+      "origem": "dados-reais.json → os_ativas[2] — CONFERIDO"
+    },
+    {
+      "rotulo": "OS vizinha (contexto)",
+      "valor": "OS-000014 · Transporte de maquinário — retroescavadeira · Construtora Meridiano S.A. · Rod. BR-116, km 104 — canteiro sul · Fazenda Rio Grande · medium · assigned",
+      "origem": "dados-reais.json → os_ativas[3] — CONFERIDO. É a ÚNICA OS do snapshot que poderia encenar a transição \"assigned → Em rota\""
+    },
+    {
+      "rotulo": "Distribuição de OS por status (verbatim)",
+      "valor": "completed 11 · in_progress 2 · assigned 1 · on_route 1 · on_site 1 · open 1",
+      "origem": "dados-reais.json → os_por_status — CONFERIDO"
+    },
+    {
+      "rotulo": "Total de OS da organização (derivado)",
+      "valor": "17 — e a lista mostra \"17 ordens\" no contador da toolbar",
+      "origem": "soma de os_por_status; WorkOrdersPage.tsx:322 (`{total === 1 ? \"1 ordem\" : \\`${total} ordens\\`}`)"
+    },
+    {
+      "rotulo": "[CORRIGIDO] KPI \"OS abertas\" — VALE DOIS NÚMEROS DIFERENTES",
+      "valor": "2 no /dashboard · 6 em /work-orders",
+      "origem": "dashboard.adapter.ts:765 (open+assigned+accepted) vs WorkOrdersPage.tsx:159 (todas as não-finais). Ver P18 — não use o mesmo rótulo com números diferentes em beats seguidos sem dizer que são recortes distintos"
+    },
+    {
+      "rotulo": "KPI \"Em andamento\" (derivado, igual nas duas telas)",
+      "valor": "4",
+      "origem": "on_route(1)+on_site(1)+in_progress(2)+paused(0) — dashboard.adapter.ts:766 e WorkOrdersPage.tsx:160"
+    },
+    {
+      "rotulo": "KPI \"Concluídas\" (verbatim)",
+      "valor": "11",
+      "origem": "dados-reais.json → os_por_status[completed].n; dashboard.adapter.ts:773"
+    },
+    {
+      "rotulo": "[NOVO] KPI \"Atrasadas\" — o card fica VERMELHO",
+      "valor": "4 (as quatro OS de os_ativas têm agenda em 21-22/08 e não são terminais em 24/08)",
+      "origem": "dashboard-prisma.repository.ts:64-70 aplicado a dados-reais.json → os_ativas[*].agendada vs gerado_em. Dispara também o alerta \"4 OS atrasadas\" (dashboard.adapter.ts:790-798) e o selo LATE em \"Em andamento\""
+    },
+    {
+      "rotulo": "[NOVO] Selo do card \"OS abertas\" em /work-orders",
+      "valor": "\"4 sem técnico\" (âmbar)",
+      "origem": "WorkOrdersPage.tsx:163 (semTecnico = não-finais sem assignedOperatorId) — as 4 OS de Curitiba não têm assigned_operator_id (P17)"
+    },
+    {
+      "rotulo": "[NOVO] Duas linhas da tabela que NÃO estão no snapshot",
+      "valor": "OS-2026-0001 · Manutenção preventiva em campo · Indústria Alfa Ltda · São Paulo/SP · in_progress · high — e OS-2026-0002 · Vistoria de frota · Av. Paulista, 1578 · São Paulo/SP · open · medium",
+      "origem": "prisma/seed-fleet.ts:153 e :155 (tenant slug=\"demo\", l.35). São as únicas duas com \"Atribuído\" na coluna TÉCNICO. Ver P16/P17"
+    },
+    {
+      "rotulo": "Persona da operação de despacho (web)",
+      "valor": "Diego Ramos (Operação de Despacho) — despacho@demo.com; o painel escreve só \"Diego\"",
+      "origem": "dados-reais.json → usuarios_demo[4] (índice conferido); DashboardPage.tsx:267 (`.split(\" \")[0]`)"
+    },
+    {
+      "rotulo": "[CORRIGIDO] Checklist congelado no despacho",
+      "valor": "NÃO AFIRMAR NOME. O snapshot não liga nenhum checklist à OS-000017. Publicados: \"Checklist de Coleta — Guincho\" (v1) · \"Inspeção do Guincho — Saída\" (v2) · \"Vistoria de Entrada — Pátio\" (v1)",
+      "origem": "dados-reais.json → checklists_publicados; field-dispatch.service.ts:234 congela as vistorias LIGADAS à ordem. Ver P26"
+    },
+    {
+      "rotulo": "Volume de prova acumulado (fecho do vídeo)",
+      "valor": "173 runs · 301 fotos",
+      "origem": "dados-reais.json → dossie.runs + dossie.fotos — CONFERIDO"
+    }
+  ],
+  "roteiro_sugerido": [
+    {
+      "t": 0,
+      "superficie": "titulo",
+      "acao": "Cartela navy #0D1B2A: \"Do chamado à rua\". Abaixo, a organização e três números do banco.",
+      "narracao": "Guinchos Paraná: dezessete ordens de serviço, uma operação de despacho no escritório e um técnico na estrada.",
+      "legenda_tecnica": "tenant=demo · work_orders=17 · dados-reais.json@2026-08-24T03:06:53Z"
+    },
+    {
+      "t": 5,
+      "superficie": "web",
+      "acao": "/dashboard: sidebar navy 236px, page header \"VISÃO GERAL / Bom dia, Diego\" e os CINCO cards reais — OS abertas 2 · Em andamento 4 · Concluídas 11 · Atrasadas 4 (vermelho, \"agenda vencida\") · OS hoje. O alerta \"4 OS atrasadas\" aparece no topo. Grave antes do meio-dia, senão o título vira \"Boa tarde\".",
+      "narracao": "O painel abre com o estado real, inclusive o que dói: duas ordens esperando saída, quatro equipes em campo e quatro agendas vencidas.",
+      "legenda_tecnica": "GET /api/v1/dashboard/summary — byStatus{open:1,assigned:1,on_route:1,on_site:1,in_progress:2,completed:11} · overdue=4"
+    },
+    {
+      "t": 13,
+      "superficie": "web",
+      "acao": "Clique em Ordens de Serviço. Tabela com CÓDIGO · CLIENTE / SERVIÇO · TÉCNICO · AGENDA · SITUAÇÃO · AÇÃO, contador \"17 ordens\", KPIs da lista (OS abertas 6 · Em andamento 4 · Atrasadas 4 · Concluídas 11). Enquadre as linhas de Curitiba: duas linhas são de outra praça (São Paulo) e não devem entrar no quadro.",
+      "narracao": "A fila é a mesma que a operação usa todo dia. Aqui \"abertas\" conta tudo que ainda não fechou — por isso seis, e não duas.",
+      "legenda_tecnica": "GET /api/v1/work-orders — sem filtro · lista: abertas = não-finais · painel: abertas = open+assigned+accepted"
+    },
+    {
+      "t": 22,
+      "superficie": "web",
+      "acao": "Abre /work-orders/{id} da OS-000017. Hero \"OS-000017 · Remoção de veículo — colisão na BR-277\", subtítulo \"Seguradora Horizonte · BR-277, km 82 — pista sentido litoral\", chip Urgente, menu lateral com as nove abas.",
+      "narracao": "Colisão na BR-277, quilômetro 82, sentido litoral. Cliente Seguradora Horizonte, prioridade urgente.",
+      "legenda_tecnica": "GET /api/v1/work-orders/:id — abas: Informações gerais · Financeiro · Orçamento · Comentários · Arquivos · Mobile · Quilometragem · Mapa · Logs"
+    },
+    {
+      "t": 30,
+      "superficie": "web",
+      "acao": "Volta para a lista e clica \"Atribuir\" na linha de uma OS ainda sem técnico — a OS-000014 (Construtora Meridiano, situação Atribuída). A tela de Despachos abre filtrada por essa OS, vazia. Clique em \"Novo despacho\": o campo OS já vem preenchido; o campo Operador é digitado.",
+      "narracao": "O envio nasce na própria fila: a operação escolhe a ordem sem técnico e abre o despacho já amarrado a ela.",
+      "legenda_tecnica": "navigate(/operations/dispatches?workOrderId=…) · o cartão de criação é aberto à mão (só abre sozinho com OS + operador na URL)"
+    },
+    {
+      "t": 39,
+      "superficie": "web",
+      "acao": "\"Criar despacho\". A linha entra na tabela filtrada e os cards passam a Total 1 / Atribuidos 1. Destaque para o congelamento da vistoria.",
+      "narracao": "Antes de gravar o registro, o servidor carimba o formulário de vistoria vigente e provisiona a execução: o técnico recebe exatamente o modelo daquele instante.",
+      "legenda_tecnica": "POST /api/v1/operations/dispatches {workOrderId, operatorUserId, status:\"assigned\"} — freeze→provision→create · fail-open auditado na timeline"
+    },
+    {
+      "t": 47,
+      "superficie": "web",
+      "acao": "Plano fechado na coluna TÉCNICO da linha despachada: ela continua mostrando \"Atribuir\". Um cartão de texto sobrepõe a explicação.",
+      "narracao": "Uma honestidade do produto: criar o despacho amarra a ordem ao operador, mas ainda não carimba o técnico na própria ordem. Esse fio está aberto.",
+      "legenda_tecnica": "POST /dispatches não escreve assigned_operator_id · POST /work-orders/:id/assign existe no backend e nenhuma tela web o chama"
+    },
+    {
+      "t": 55,
+      "superficie": "ambos",
+      "acao": "Divisão de tela. Web em repouso à esquerda; aparelho 390×812 acordando à direita. O feixe sai DO APARELHO para o servidor e volta trazendo a fila.",
+      "narracao": "O aparelho não espera ser chamado: quando o técnico abre o app, é ele quem busca a fila no servidor.",
+      "legenda_tecnica": "app → GET /api/v1/work-orders no load e no pull-to-refresh · não há websocket, SSE ou push no app · exige build com ERP_AUTH_MODE=remote"
+    },
+    {
+      "t": 63,
+      "superficie": "mobile",
+      "acao": "Home: header navy em gradiente, \"Bom dia!\" e \"Técnico de Campo · Guinchos Paraná\", cartão do usuário, RESUMO DE HOJE (OS hoje · Concluídas · Pendentes), atalhos, e a seção \"Minhas OS\" com os cartões da carteira.",
+      "narracao": "A ordem chega ao campo com o essencial na primeira dobra: código, serviço, cliente, endereço e horário.",
+      "legenda_tecnica": "seção \"Minhas OS\" — o recorte é por ORGANIZAÇÃO, não por técnico: o GET vai sem assignedOperatorId"
+    },
+    {
+      "t": 71,
+      "superficie": "mobile",
+      "acao": "Toca o cartão e entra no detalhe. Cabeçalho BRANCO \"Detalhe da OS\" com o status como subtítulo, stepper de cinco passos (Agendada · Em rota · No local · Em exec. · Concluída), _HeaderCard com código azul e pills, Cliente, Técnico responsável, cartão da vistoria. Sem cartão Veículo, sem faixa de SLA — nada disso foi construído.",
+      "narracao": "O detalhe mostra a linha inteira do atendimento e onde essa ordem está nela.",
+      "legenda_tecnica": "stepper espelha as transições forward-only do backend · urgent→\"Crítica\" no app, \"Urgente\" na web"
+    },
+    {
+      "t": 79,
+      "superficie": "mobile",
+      "acao": "Barra fixa: \"Mapa\" à esquerda e, para uma OS ainda não iniciada, \"Iniciar rota\" à direita. O toque acende o segundo passo do stepper, a pill vira \"Em rota\" e sobe o aviso de alteração local. (Para a OS-000017, que já está em rota, o botão real seria \"Cheguei ao local\" + conferência da placa.)",
+      "narracao": "Um toque e a ordem muda de estado — mesmo sem sinal, porque a escrita é local primeiro.",
+      "legenda_tecnica": "repo.updateStatus → store local + fila offline, zero HTTP · banner: \"Esta OS possui alterações locais aguardando sync.\""
+    },
+    {
+      "t": 87,
+      "superficie": "mobile",
+      "acao": "Tela de Sincronização: pill Online, a ação enfileirada no grupo de ordens de serviço, \"Sincronizar agora\" sendo tocado e virando \"Sincronizando...\".",
+      "narracao": "A fila sobe quando a conexão volta ou quando o técnico manda subir — e o servidor devolve aceito, rejeitado ou conflito, item por item.",
+      "legenda_tecnica": "POST /api/v1/mobile/sync/work-order-actions — type work_order.status_change · enRoute→on_route · perm work_orders:status"
+    },
+    {
+      "t": 95,
+      "superficie": "ambos",
+      "acao": "O feixe atravessa do aparelho para a web. Na tabela, a coluna SITUAÇÃO da OS que foi despachada troca para \"Em rota\" e um relógio discreto marca o ciclo. NÃO use a OS-000017 aqui: ela já estava em rota desde o primeiro plano.",
+      "narracao": "Até trinta segundos depois, sem ninguém apertar nada no escritório, a fila já mostra a ordem em rota.",
+      "legenda_tecnica": "useAutoRefresh — DEFAULT_AUTO_REFRESH_MS=30000, pausa com a aba oculta · não é stream: o selo AO VIVO é rótulo fixo"
+    },
+    {
+      "t": 103,
+      "superficie": "titulo",
+      "acao": "Cartela de fecho sobre navy: o caminho em uma linha (Painel → Ordem → Despacho → Campo → Fila) e o volume de prova acumulado.",
+      "narracao": "Do painel à rua e de volta: um único registro, atravessando escritório e campo, com prova acumulada a cada atendimento.",
+      "legenda_tecnica": "173 runs de vistoria · 301 fotos · work_orders=17 · dados-reais.json"
+    }
+  ]
+}

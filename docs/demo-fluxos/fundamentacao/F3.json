@@ -1,0 +1,778 @@
+{
+  "fluxo": "F3 — Do resgate à custódia — o pátio (versão CÉTICA: verificada arquivo por arquivo; 6 passos inexistentes do fundamentador confirmados + 7 que ele engoliu)",
+  "rotas_web": [
+    {
+      "path": "/patios/painel",
+      "arquivo": "frontend/src/App.tsx:455 (Route path) — PermissionGuard [\"impound:read\"]",
+      "existe": true,
+      "titulo_na_tela": "\"Painel gerencial\" (PainelPatiosView.tsx:51) · kicker \"PÁTIOS\" (linha 100) · subtítulo \"Ocupação, processos por fase, fila de liberação, prazos e arrecadação de leilão — visão consolidada dos pátios de recolhimento.\" (linhas 52-53). Composição REAL (linhas 179-187): faixa de 6 KPIs + OcupacaoPorPatioCard + ProcessosPorFaseCard + PrazosCard + ArrecadacaoCard. NÃO há tabela de processos."
+    },
+    {
+      "path": "/patios/patios",
+      "arquivo": "frontend/src/App.tsx:389 — PermissionGuard [\"yard:read\"]",
+      "existe": true,
+      "titulo_na_tela": "kicker \"PÁTIOS\" + título \"Pátios\" (PatiosPage.tsx:148-149) + subtítulo \"Locais de guarda da organização — endereço, capacidade, custódia e situação de cada pátio.\" (linha 150)"
+    },
+    {
+      "path": "/patios/patios/:yardId",
+      "arquivo": "frontend/src/App.tsx:397 — PermissionGuard [\"yard:read\"]",
+      "existe": true,
+      "titulo_na_tela": "<nome do pátio> + chip Ativo/Inativo (PatioDetailPage.tsx:216-218); kicker \"Pátios\" (215); subtítulo \"<endereço> · Fuso horário: <tz>\" (220). Card \"Ocupação\" com Vagas/Livres/Ocupadas/Bloqueadas (232-238). ATENÇÃO: a grade de vagas NÃO é do pátio — é da ÁREA selecionada; o card se chama \"Vagas · <área>\" (296) e só existe quando há área selecionada (295); a primeira área é auto-selecionada em 142."
+    },
+    {
+      "path": "/patios/processos",
+      "arquivo": "frontend/src/App.tsx:405 — PermissionGuard [\"impound:read\"]",
+      "existe": true,
+      "titulo_na_tela": "kicker \"Pátios\" (ProcessosPage.tsx:137) + \"Processos de custódia\" (139) + subtítulo \"Veículos sob custódia da organização — situação, pátio, data de entrada e autoridade solicitante de cada processo.\" (141)"
+    },
+    {
+      "path": "/patios/processos/:processId",
+      "arquivo": "frontend/src/App.tsx:413 — PermissionGuard [\"impound:read\"]",
+      "existe": true,
+      "titulo_na_tela": "<placa/identificação> + chip de situação (ProcessoDossiePage.tsx:96-98); kicker \"Pátios · Processos\" (94); subtítulo \"Autoridade solicitante: <origem>\" (99). Cards em coluna (125-141): Integridade do registro · Linha do tempo da custódia · Histórico de Custódias · Vistoria de recepção · Checklist do Guincho."
+    },
+    {
+      "path": "/patios/processos?status=ACTIVE_CUSTODY (lista pré-filtrada por link)",
+      "arquivo": "frontend/src/modules/patios/processes/pages/ProcessosPage.tsx:37 (const [statusFilter, setStatusFilter] = useState<ProcessStatusFilter>(\"all\")) e :1-19 (importa só Link de react-router-dom; nenhum useSearchParams, nenhum efeito lê query string)",
+      "existe": false,
+      "titulo_na_tela": "— (a rota existe, mas ignora query param; abre sempre em \"Todas as situações\")"
+    }
+  ],
+  "endpoints": [
+    {
+      "metodo": "GET",
+      "path": "/api/v1/work-orders",
+      "arquivo": "src/modules/work-orders/work-order.routes.ts:94-95 (requirePermission WORK_ORDER_PERMISSIONS.read); cliente Flutter em mobile/flutter_app/lib/core/network/api_contracts.dart:26 e work_order_repository.dart:158",
+      "existe": true,
+      "o_que_faz": "É ESTE endpoint — não o bootstrap — que enche a lista de OS do guincheiro (WorkOrderRemoteApi.fetchWorkOrders). Sem remoteApi configurado (ERP_AUTH_MODE≠remote), o repositório semeia OS de DEMO locais (work_order_repository.dart:118-128), inclusive a fixture 'Recolhimento ao pátio — determinação DETRAN' (linha 803)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/bootstrap",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:45-46",
+      "existe": true,
+      "o_que_faz": "CORREÇÃO do fundamentador: NÃO devolve OS. O corpo (linhas 80-135) tem contract, mobile_app, cache, tenant, available_tenants, user, roles, permissions, modules, feature_flags, mobile_policy, catalogs, expenseCategories, serverTime e cursores de sync todos null. Os catálogos (buildCatalogs, 327-370) são modules/permissions/expense_categories/endpoints — nenhum pátio, vaga ou OS."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklists/available",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:95-96; cliente em api_contracts.dart:82",
+      "existe": true,
+      "o_que_faz": "Lista os modelos publicados aplicáveis ao ator. É por onde a \"Vistoria de Entrada — Pátio\" (v1, publicada) chegaria ao aparelho — mas no app a tela que a consome é \"Checklists da OS\" (presa a uma work order)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/checklists/:checklistId/render",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:103-104; cliente em api_contracts.dart:85-86",
+      "existe": true,
+      "o_que_faz": "Schema renderizável do modelo, na ordem de order_index. Para a vistoria de pátio são 6 componentes: vehicle_selector + 4 photo_upload + observation."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:122-123; cliente em api_contracts.dart:87",
+      "existe": true,
+      "o_que_faz": "Cria o preenchimento (run) no servidor, sob checklist_runs:create."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs/:runId/attachments",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:138-139; cliente em api_contracts.dart:97-98 e checklist_attachment_upload.dart:19",
+      "existe": true,
+      "o_que_faz": "Sobe cada foto do checklist como anexo do run. ATENÇÃO: é a origem real das fotos de campo, mas NENHUMA tela web as exibe — o dossiê de custódia não lê anexo nenhum (ver passos_inexistentes)."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/checklist-runs/:runId/complete",
+      "arquivo": "src/modules/checklists/checklist.routes.ts:162-163; cliente em api_contracts.dart:89-90",
+      "existe": true,
+      "o_que_faz": "Conclui o run (gate checklist_runs:complete)."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/sync/checklist-actions",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:150-151; cliente em api_contracts.dart:83",
+      "existe": true,
+      "o_que_faz": "Replay da fila offline de checklist. Idempotência = tenant + usuário + client_action_id."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/sync/work-order-actions",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:141-142; cliente em api_contracts.dart:28",
+      "existe": true,
+      "o_que_faz": "Replay da fila offline da OS. É o ato que leva a OS a status='completed' — o único gatilho da abertura de custódia."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/mobile/evidence-uploads",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:186-187; cliente em api_contracts.dart:142",
+      "existe": true,
+      "o_que_faz": "Upload multipart de evidência com blob local opaco; o blob só é apagado em status=stored."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/patios/dashboard/summary",
+      "arquivo": "src/modules/patios-dashboard/patios-dashboard.routes.ts:31-32, requirePermission(PATIOS_DASHBOARD_PERMISSIONS.read) = impound:read",
+      "existe": true,
+      "o_que_faz": "Agregado único do painel: ocupação por pátio (I1), processos por fase, notificações vencidas (I6), fila de liberação, lotes abertos e arrecadação (I7). totalProcesses soma TODOS os status, inclusive encerrados (patios-dashboard-prisma.repository.ts:59-65)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/yards",
+      "arquivo": "src/modules/yard/yard.routes.ts:33-34, requirePermission(YARD_PERMISSIONS.read)",
+      "existe": true,
+      "o_que_faz": "Lista os pátios da organização — alimenta o filtro \"Pátio\" da lista de processos e a tela /patios/patios."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/yards/:yardId/occupancy",
+      "arquivo": "src/modules/yard/yard.routes.ts:62-63, requirePermission(YARD_PERMISSIONS.read)",
+      "existe": true,
+      "o_que_faz": "Resumo (total/livres/ocupadas/bloqueadas) + cada vaga com status e currentProcessId. É o que faz a vaga ocupada virar botão \"Abrir o dossiê do veículo desta vaga\" (OccupancyMap.tsx:68-70)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes",
+      "arquivo": "src/modules/impound/impound.routes.ts:57-58, requirePermission(IMPOUND_PERMISSIONS.read)",
+      "existe": true,
+      "o_que_faz": "Lista paginada. A tela carrega uma janela de 100 (DENSE_LIST_FETCH_LIMIT, frontend/src/components/dense-list/logic.ts:5) e filtra client-side — com 75 processos reais, a janela cobre a base inteira."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId",
+      "arquivo": "src/modules/impound/impound.routes.ts:71-72",
+      "existe": true,
+      "o_que_faz": "Cabeça do dossiê: identificação, autoridade solicitante, base legal, entrada no pátio, vaga atual."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/events",
+      "arquivo": "src/modules/impound/impound.routes.ts:86-87",
+      "existe": true,
+      "o_que_faz": "Linha do tempo append-only da custódia."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/verify",
+      "arquivo": "src/modules/impound/impound.routes.ts:94-95",
+      "existe": true,
+      "o_que_faz": "Recomputa a cadeia de hash (I2) → valid/eventCount/headHash. É o selo \"Cadeia íntegra (N eventos)\" (IntegritySeal.tsx:43-44)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/inspection",
+      "arquivo": "src/modules/impound/impound.routes.ts:111-112",
+      "existe": true,
+      "o_que_faz": "LÊ a vistoria de recepção. Único endpoint de vistoria com cliente — frontend/src/modules/patios/processes/processes.service.ts:84-89 (GET; 404 → null → EmptyState honesto)."
+    },
+    {
+      "metodo": "PUT",
+      "path": "/api/v1/impound-processes/:processId/inspection",
+      "arquivo": "src/modules/impound/impound.routes.ts:118-119",
+      "existe": true,
+      "o_que_faz": "GRAVA o laudo (impound:inspect). Existe e NÃO TEM CLIENTE: zero chamadas em frontend/src, zero no Flutter."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/impound-processes/:processId/inspection/photos",
+      "arquivo": "src/modules/impound/impound.routes.ts:125-126",
+      "existe": true,
+      "o_que_faz": "Anexa foto de conjunto à vistoria (impound:inspect). Sem cliente em web ou mobile."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/impound-processes/:processId/inspection/complete",
+      "arquivo": "src/modules/impound/impound.routes.ts:132-133",
+      "existe": true,
+      "o_que_faz": "Gate I3 que libera CUSTÓDIA ATIVA. Sem cliente em web ou mobile."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/impound-processes/:processId/spot",
+      "arquivo": "src/modules/impound/impound.routes.ts:141-142",
+      "existe": true,
+      "o_que_faz": "Aloca vaga de forma atômica (I1, impound:allocate). Só o web chama."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/checklist-runs",
+      "arquivo": "src/modules/impound/impound.routes.ts:201-206 — requirePermission(impound:read) ENCADEADO com requirePermission('checklist_runs:read')",
+      "existe": true,
+      "o_que_faz": "CORREÇÃO: devolve SÓ o RESUMO do run — id, templateId, templateName, templateVersion, status, relatedEntity, startedAt, completedAt (impound.checklist-link.types.ts:28-44; repositório inclui apenas run + template{name}, impound.checklist-link-prisma.repository.ts:45-52). NÃO devolve anexo, foto nem URL de download."
+    },
+    {
+      "metodo": "POST",
+      "path": "/api/v1/impound-processes/:processId/link-checklist-run",
+      "arquivo": "src/modules/impound/impound.routes.ts:194-195",
+      "existe": true,
+      "o_que_faz": "Vínculo MANUAL run↔processo (impound:update). Sem UI em web ou Flutter — só por API."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/impound-processes/:processId/custody-history",
+      "arquivo": "src/modules/impound/impound.routes.ts:213-214",
+      "existe": true,
+      "o_que_faz": "Outras passagens do MESMO veículo pela custódia (identidade resolvida server-side)."
+    },
+    {
+      "metodo": "GET",
+      "path": "/api/v1/mobile/field-assignments",
+      "arquivo": "DECLARADO no cliente Flutter (mobile/flutter_app/lib/core/network/api_contracts.dart:27) e AUSENTE do backend: grep -rn 'field-assignments' src/ → 0 ocorrências; os 8 paths de src/modules/mobile/mobile.routes.ts não o incluem",
+      "existe": false,
+      "o_que_faz": "Constante morta no app. Não use como legenda técnica: o endpoint não existe."
+    },
+    {
+      "metodo": "POST/GET",
+      "path": "/api/v1/mobile/impound-* (qualquer superfície de pátio/custódia no app de campo)",
+      "arquivo": "src/modules/mobile/mobile.routes.ts:45-198 — os 8 paths montados são bootstrap, sync/work-order-actions, sync/checklist-actions, inventory/availability, sync/inventory-actions, sync/evidence-actions, evidence-uploads, telemetry",
+      "existe": false,
+      "o_que_faz": "Não existe. Nenhum endpoint mobile de pátio, vaga, custódia ou vistoria de recepção; e grep -rn 'impound' mobile/flutter_app/lib mobile/flutter_app/test → 0 ocorrências."
+    }
+  ],
+  "telas_mobile": [
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/checkin-chegada.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart (rota /work-orders/:workOrderId — router.dart:147)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Stepper de 6 passos do guincho: Início · Rota coleta · Coleta · Rota entrega · Entrega · Conclusão (work_order_steps.dart:32-37)",
+        "Card da OS com cliente, telefone, documento e \"Endereço de atendimento\" (work_order_detail_screen.dart:505-534)",
+        "Barra fixa: botão \"Mapa\" + próximo passo (\"Iniciar rota\" 894 / \"Cheguei ao local\" 902 / \"Iniciar atendimento\" 916 / \"Continuar atendimento\" 925)",
+        "NÃO EXISTE mapa nesta tela: o app não tem NENHUMA biblioteca de mapa (grep flutter_map|maplibre|google_maps em lib/ e pubspec.yaml → 0). O botão \"Mapa\" empurra para /field-map (linha 940)",
+        "O 2º stepper da base NÃO tem os rótulos do PNG: são 'Agendada · Em rota · No local · Em exec. · Concluída' (work_order_detail_screen.dart:336-342), não 'Iniciar · Em rota · Cheguei · Serviço · Concluir'"
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/entrega-inicio.png",
+      "tela_flutter": "mesma tela (work_order_detail_screen.dart), estado avançado do stepper",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Stepper com o passo ativo derivado do status da OS",
+        "Botão de chegada rotulado \"Cheguei ao local\" (linha 902) — não \"Cheguei ao local de entrega\"",
+        "Nada nesta tela nomeia um pátio, escolhe pátio ou escolhe vaga",
+        "Sem mapa, sem rota tracejada, sem pílula \"0,8 km · 3 min\", sem selo \"Ao vivo\" — nada disso existe no app"
+      ]
+    },
+    {
+      "png": "(sem PNG dedicado) — /field-map",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart (rota /field-map — router.dart:226)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Título \"Mapa operacional\" (linhas 33/44/62)",
+        "Gate: exige field_location:send, senão \"Acesso não autorizado — field_location:send necessário para mapa operacional\" (39-49)",
+        "Cartão \"Mapa operacional simples conectado a OS\" (69)",
+        "O \"mapa\" é um CustomPaint com no MÁXIMO 2 pontos (OS + Técnico) projetados (446-472); vazio mostra \"Sem pontos para desenhar o mapa operacional.\" (476)",
+        "Sem tiles, sem rota, sem ETA"
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/checklist-entrega.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart (rota /checklists/:checklistId/run — router.dart:189)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "O cabeçalho é o NOME DO MODELO vindo do servidor (schema.title — linhas 207/247), não uma cópia fixa \"Checklist de Entrega\"",
+        "Os campos são 100% dirigidos pelo modelo: o app renderiza photo_upload, damage_map, vehicle_selector, observation, signature (checklist_models.dart:25-47)",
+        "\"Checklist concluído com sucesso.\" (linha 118)",
+        "Mapa de avarias existe, mas como TELA SEPARADA (/checklists/:checklistId/run/damage-map — router.dart:210) e só se o modelo tiver um componente damage_map",
+        "As fases de run no app são só collection/delivery/unknown (checklist_models.dart:65-90) — não existe fase \"vistoria de entrada de pátio\"",
+        "O modelo real \"Vistoria de Entrada — Pátio\" tem 6 componentes (tipo de veículo + 4 fotos + observação): não tem Placa, não tem Odômetro, não tem mapa de avarias e não tem contador \"0/8 fotos\""
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/sincronizacao.png",
+      "tela_flutter": "mobile/flutter_app/lib/shared/ui/sync_screen.dart (rota /sync — router.dart:137)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Título \"Sincronização\" (linha 56)",
+        "Botão \"Sincronizar agora\" / \"Sincronizando...\" (143-144) — não \"Sincronizar\"",
+        "Abas: Pendentes · Sincronizados · Erros · Conflitos (324, 330, 336, 342) — a 2ª aba é Sincronizados, não a ordem do PNG",
+        "Pílulas de contagem: \"N pendente(s)\", \"N erro(s)\", \"N conflito(s)\" (488-497)",
+        "Bloco de conflitos com \"Conflito · <domínio>\" e resolução manual (107, 220)",
+        "Rótulos por item: Pendente · Sincronizado · Erro · Conflito · Sincronizando (597-601). NÃO existem aqui \"Armazenado\"/\"Salvo no aparelho\" — esses vivem em work_order_execute_screen.dart:586-601"
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/conclusao-guincho.png",
+      "tela_flutter": "mobile/flutter_app/lib/features/work_orders/ui/work_order_conclusion_screen.dart (rota /work-orders/:workOrderId/conclusion — router.dart:165)",
+      "existe_no_app": true,
+      "elementos_chave": [
+        "Card \"Sua comissão\" com o valor (linhas 131-162)",
+        "DOIS cards de estatística: \"Tempo\" e \"Materiais\" (166-185) — NÃO existe card \"Distância 56,3 km · ver trechos\"",
+        "Resumo com 3 linhas: Serviço · Cliente · <rótulo do ativo> (187-195) — sem \"FINALIZADO EM\" e sem código ATD-xxxx-xxxx",
+        "Botão \"Concluir atendimento\" (241) e, depois, \"OK\" (231)",
+        "Depois de concluir: \"Atendimento concluído — Sincronização em segundo plano.\" (206-207)",
+        "Nada na conclusão pergunta ou registra em que pátio o veículo ficou"
+      ]
+    },
+    {
+      "png": "docs/claude-code-handoff/screen-refs/mobile/evidencias.png",
+      "tela_flutter": "NÃO HÁ tela dedicada. find lib -iname '*evidence*' devolve só core/evidence/{evidence_blob_store,evidence_picker,evidence_sync,evidence_upload}.dart (camada de dados). grep \"Registro de Evid\" em lib → 0 ocorrências. A captura vive embutida em checklist_run_screen.dart (abas 'Antes'/'Depois', linhas 874/881) e em work_orders/ui/work_order_execute_screen.dart",
+      "existe_no_app": false,
+      "elementos_chave": [
+        "Cabeçalho \"Registro de Evidência\" + selo \"TÉCNICO\" — inexistente",
+        "Abas Antes · Durante · Depois — o app só tem Antes/Depois, e dentro do run de checklist",
+        "Bloco \"Status das evidências\" com selo \"1 de 4 protegidas\" — inexistente como tela; os rótulos Armazenado/Enviando/Salvo no aparelho existem em work_order_execute_screen.dart:582-601"
+      ]
+    }
+  ],
+  "copy_real": [
+    {
+      "onde": "Web · /patios/painel · PageHeader — PainelPatiosView.tsx:51",
+      "texto": "Painel gerencial"
+    },
+    {
+      "onde": "Web · /patios/painel · kicker — PainelPatiosView.tsx:100",
+      "texto": "PÁTIOS"
+    },
+    {
+      "onde": "Web · /patios/painel · subtítulo — PainelPatiosView.tsx:52-53",
+      "texto": "Ocupação, processos por fase, fila de liberação, prazos e arrecadação de leilão — visão consolidada dos pátios de recolhimento."
+    },
+    {
+      "onde": "Web · /patios/painel · ações do header — PainelPatiosView.tsx:107,111,114",
+      "texto": "Atualizado às HH:MM · Atualizar · Ver processos"
+    },
+    {
+      "onde": "Web · /patios/painel · os 6 rótulos da faixa de KPI — PainelKpiBand.tsx:91,104,116,128,147,159",
+      "texto": "Ocupação · Processos ativos · Fila de liberação · Prazos vencidos · Lotes abertos · Arrecadação do mês"
+    },
+    {
+      "onde": "Web · /patios/painel · dicas dos cards — PainelKpiBand.tsx:92,105,117,129,148,160",
+      "texto": "N de N vagas · no rito de custódia · aguardando restituição · devidas sem emissão registrada · aguardando o certame · Total acumulado: R$ 0,00"
+    },
+    {
+      "onde": "Web · /patios/painel · selos dos cards — PainelKpiBand.tsx:93,106,118,131-135,149,162-164",
+      "texto": "folgada|apertada|lotada · N em custódia · na fila / sem fila · agir agora / N a tratar / em dia · em leilão / nenhum · N beneficiários / sem liquidação"
+    },
+    {
+      "onde": "Web · /patios/painel · gráfico de ocupação — OcupacaoPorPatioCard.tsx:58-59",
+      "texto": "Ocupação por pátio — Vagas ocupadas, bloqueadas e livres em cada local de guarda"
+    },
+    {
+      "onde": "Web · /patios/painel · legenda das faixas — OcupacaoPorPatioCard.tsx:40-44",
+      "texto": "Folgada (até 59%) · Apertada (60% a 85%) · Lotada (acima de 85%) · Livres · Bloqueadas"
+    },
+    {
+      "onde": "Web · /patios/painel · linha de cada pátio — OcupacaoPorPatioCard.tsx:83",
+      "texto": "34/40 ocupadas"
+    },
+    {
+      "onde": "Web · /patios/painel · rosca de fases — ProcessosPorFaseCard.tsx:81,86,123,126 (CORRIGE as linhas 226/231/271 do fundamentador)",
+      "texto": "Processos por fase — Do recolhimento ao encerramento do processo — centro: <total> / ATIVOS"
+    },
+    {
+      "onde": "Web · /patios/painel · legenda da fatia selecionada — ProcessosPorFaseCard.tsx:72",
+      "texto": "44,0% dos 75 processos ativos"
+    },
+    {
+      "onde": "Web · /patios/painel · rótulos das 5 fases — dashboard.adapter.ts:18-24",
+      "texto": "Remoção/Recepção · Custódia · Liberação · Leilão · Encerrado"
+    },
+    {
+      "onde": "Web · /patios/painel · pop-up da fase Custódia — dashboard.adapter.ts:35",
+      "texto": "Veículos sob guarda da organização, em custódia ativa ou retidos por determinação judicial."
+    },
+    {
+      "onde": "Web · /patios/painel · tabela de prazos — PrazosCard.tsx:42-43",
+      "texto": "Próximos prazos a tratar — Notificações e editais sem emissão nem dispensa registrada — os mais antigos primeiro"
+    },
+    {
+      "onde": "Web · /patios/painel · arrecadação — ArrecadacaoCard.tsx:47-48",
+      "texto": "Arrecadação de leilão por beneficiário — Distribuição dos leilões já liquidados"
+    },
+    {
+      "onde": "Web · /patios/patios · header — PatiosPage.tsx:148-150",
+      "texto": "PÁTIOS / Pátios — Locais de guarda da organização — endereço, capacidade, custódia e situação de cada pátio."
+    },
+    {
+      "onde": "Web · /patios/patios/:yardId · card de ocupação — PatioDetailPage.tsx:232-238",
+      "texto": "Ocupação — Vagas · Livres · Ocupadas · Bloqueadas"
+    },
+    {
+      "onde": "Web · /patios/patios/:yardId · card da grade de vagas — PatioDetailPage.tsx:296",
+      "texto": "Vagas · <nome da área>  (a grade é POR ÁREA, não do pátio inteiro)"
+    },
+    {
+      "onde": "Web · /patios/patios/:yardId · vaga do mapa — OccupancyMap.tsx:62-70",
+      "texto": "<código da vaga> · <situação> — botão com aria-label \"Abrir o dossiê do veículo desta vaga\""
+    },
+    {
+      "onde": "Web · /patios/processos · header — ProcessosPage.tsx:137-144",
+      "texto": "Pátios / Processos de custódia — Veículos sob custódia da organização — situação, pátio, data de entrada e autoridade solicitante de cada processo. · Buscar por placa ou autoridade…"
+    },
+    {
+      "onde": "Web · /patios/processos · colunas — ProcessosPage.tsx:81,92,99,104,111,118",
+      "texto": "Identificação · Situação · Pátio · Entrada · Autoridade solicitante · Ações"
+    },
+    {
+      "onde": "Web · /patios/processos · filtros — ProcessosPage.tsx:164,172",
+      "texto": "Todas as situações · Todos os pátios"
+    },
+    {
+      "onde": "Web · /patios/processos · rótulos de situação — processes.adapter.ts:43-56",
+      "texto": "Em remoção · Recepção · Custódia ativa · Liberação em andamento · Liberado para reparo · Liberado · Elegível a leilão · Em preparação de leilão · Loteado · Arrematado · Leilão encerrado · Reciclagem direta · Bloqueio judicial · Encerrado"
+    },
+    {
+      "onde": "Web · /patios/processos/:id · ações e cards — ProcessoDossiePage.tsx:108-136",
+      "texto": "Mover vaga · Liberar vaga · Alocar vaga · Integridade do registro · Linha do tempo da custódia · Vistoria de recepção"
+    },
+    {
+      "onde": "Web · /patios/processos/:id · card de identidade — ProcessIdentityCard.tsx:27-53",
+      "texto": "Identificação e origem — Placa · Marca / Modelo · Cor · Ano · Chassi · RENAVAM · Órgão / agente · Nº do procedimento · Nº do auto/BO · Entrada no pátio || Local de guarda — \"<pátio> · Vaga <código>\" ou \"· Sem vaga alocada\""
+    },
+    {
+      "onde": "Web · /patios/processos/:id · selo de integridade — IntegritySeal.tsx:43-44",
+      "texto": "Cadeia íntegra (N eventos) — Selo: <hash truncado>"
+    },
+    {
+      "onde": "Web · /patios/processos/:id · vistoria vazia — InspectionSection.tsx:24-25",
+      "texto": "Vistoria de recepção ainda não registrada — Quando a vistoria de entrada for lançada (estado do veículo, objetos, equipamentos e conjuntos fotográficos), ela aparece aqui."
+    },
+    {
+      "onde": "Web · /patios/processos/:id · campos da vistoria — InspectionSection.tsx:48-55,86",
+      "texto": "Agente da vistoria · Lataria · Pintura · Pneus · Hodômetro (km) · Objetos internos · Equipamentos ausentes · Quem assinou · \"Conjunto <SET> · N fotos\""
+    },
+    {
+      "onde": "Web · /patios/processos/:id · checklist do guincho, vazio — ChecklistRunsPanel.tsx:31,47-49",
+      "texto": "Checklist do guincho — \"Nenhum checklist do guincho vinculado — Quando o despacho gera a ordem de serviço com um checklist, o vínculo aparece aqui automaticamente. O guincheiro preenche em campo pelo aplicativo; esta tela apenas acompanha o preenchimento.\""
+    },
+    {
+      "onde": "Web · /patios/processos/:id · checklist do guincho, COM dados — ChecklistRunsPanel.tsx:64-65,70-73",
+      "texto": "\"Preenchido em campo pelo guincheiro (aplicativo). Esta é a visão de acompanhamento — somente leitura.\" + tabela de 4 colunas: Checklist · Situação · Iniciado · Concluído (NENHUMA foto)"
+    },
+    {
+      "onde": "Web · /patios/processos/:id · sem permissão — ChecklistRunsPanel.tsx:34-36",
+      "texto": "Sem acesso aos checklists do guincho — Você não tem permissão para consultar os checklists preenchidos em campo neste processo de custódia."
+    },
+    {
+      "onde": "Web · dossiê em modal (aberto pela vaga ocupada) · abas — VehicleDossieModal.tsx:46-56 + dossieTabsFor:61-66",
+      "texto": "Visão Geral · Vistoria de Recepção · [Checklist do Guincho — só com checklist_runs:read] · Linha do Tempo · Histórico de Custódias · Débitos · Liberação · Leilão/Liquidação"
+    },
+    {
+      "onde": "Web · modal · onde vive o selo de integridade — VehicleDossieModal.tsx:236-247",
+      "texto": "\"Integridade do registro\" + \"Linha do tempo da custódia\" ficam DENTRO da aba Linha do Tempo (não são visíveis a partir da aba Checklist)"
+    },
+    {
+      "onde": "Web · sidebar, grupo PÁTIOS — appSidebarNav.ts:167 (ordem REAL; corrige o fundamentador)",
+      "texto": "Painel · Pátios · Processos · Liberações · Leilões · Perfis Normativos · Tabela de Valores"
+    },
+    {
+      "onde": "Mobile · stepper do guincho — work_order_steps.dart:32-37",
+      "texto": "Início · Rota coleta · Coleta · Rota entrega · Entrega · Conclusão"
+    },
+    {
+      "onde": "Mobile · 2º stepper (status) — work_order_detail_screen.dart:336-342",
+      "texto": "Agendada · Em rota · No local · Em exec. · Concluída"
+    },
+    {
+      "onde": "Mobile · ações da OS — work_order_detail_screen.dart:894,902,916,925,816,942",
+      "texto": "Iniciar rota · Cheguei ao local · Iniciar atendimento · Continuar atendimento · Checklist · Mapa"
+    },
+    {
+      "onde": "Mobile · lista de checklists da OS — checklist_available_screen.dart:67,88",
+      "texto": "Checklists da OS"
+    },
+    {
+      "onde": "Mobile · mapa — work_order_operational_map_screen.dart:33,69,476",
+      "texto": "Mapa operacional · \"Mapa operacional simples conectado a OS\" · \"Sem pontos para desenhar o mapa operacional.\""
+    },
+    {
+      "onde": "Mobile · conclusão — work_order_conclusion_screen.dart:148,172,178,191-193,206-207,241",
+      "texto": "Sua comissão · Tempo · Materiais · Serviço/Cliente/<ativo> · \"Atendimento concluído — Sincronização em segundo plano.\" · Concluir atendimento"
+    },
+    {
+      "onde": "Mobile · sincronização — sync_screen.dart:56,143-144,153,324-342",
+      "texto": "Sincronização · Sincronizar agora / Sincronizando... · Fila vazia · Pendentes · Sincronizados · Erros · Conflitos"
+    },
+    {
+      "onde": "Mobile · conclusão de checklist — checklist_run_screen.dart:118",
+      "texto": "Checklist concluído com sucesso."
+    },
+    {
+      "onde": "Mobile · fases de run — checklist_models.dart:87-90",
+      "texto": "Coleta · Entrega · Fase não identificada"
+    },
+    {
+      "onde": "Banco vivo · modelo publicado — docs/demo-fluxos/dados-reais.json (checklist_vistoria)",
+      "texto": "Vistoria de Entrada — Pátio (v1, published)"
+    },
+    {
+      "onde": "Banco vivo · componentes — dados-reais.json (checklist_componentes)",
+      "texto": "Tipo de veículo · Foto — Frente · Foto — Traseira · Foto — Lateral esquerda · Foto — Lateral direita · Avarias e observações"
+    }
+  ],
+  "passos_inexistentes": [
+    {
+      "passo": "1. Mobile: o técnico chega AO PÁTIO com o veículo recolhido. [CONFIRMADO — achado do fundamentador]",
+      "por_que_nao_existe": "O app de campo não conhece \"pátio\" como conceito: nenhuma rota, tela, seleção de pátio, seleção de vaga ou chamada a endpoint de pátio/custódia. O guincheiro só marca chegada ao endereço de serviço da OS (texto livre), nunca a um yard_id.",
+      "evidencia": "grep -rn -i 'pátio|patio' mobile/flutter_app/lib --include=*.dart → 1 ocorrência, e é fixture de demo: work_orders/data/work_order_repository.dart:803 title: 'Recolhimento ao pátio — determinação DETRAN'. · grep -rn 'impound' mobile/flutter_app/lib mobile/flutter_app/test → 0. · router.dart:83-260 — 26 rotas (splash/login/tenant-select/profile/expenses/diagnostics/sync/work-orders/checklists/field-map/location/inventory/approvals); nenhuma de pátio/vaga/custódia. · src/modules/mobile/mobile.routes.ts:45-198 — 8 paths mobile no backend, nenhum de custódia."
+    },
+    {
+      "passo": "2. Mobile: vistoria de entrada como ATO DE CUSTÓDIA do processo. [CONFIRMADO — achado do fundamentador]",
+      "por_que_nao_existe": "A vistoria de recepção que alimenta o card \"Vistoria de recepção\" e destrava CUSTÓDIA ATIVA (gate I3) só se grava por PUT /inspection + POST /inspection/photos + POST /inspection/complete — e os três não têm NENHUM cliente, nem no Flutter nem no React. O frontend só faz o GET. Além disso o app classifica run em collection/delivery/unknown, e todo run nasce preso a uma OS.",
+      "evidencia": "src/modules/impound/impound.routes.ts:118-119 (PUT), :125-126 (POST photos), :132-133 (POST complete) existem. · frontend/src/modules/patios/processes/processes.service.ts:84-89 é o ÚNICO acesso a inspection no frontend, e é GET. · mobile/flutter_app/lib/features/checklists/domain/checklist_models.dart:65-90 — enum MobileChecklistRunKind {collection, delivery, unknown}. · router.dart:183 — única entrada de checklist é /work-orders/:workOrderId/checklists (ChecklistAvailableScreen, título 'Checklists da OS' — checklist_available_screen.dart:67)."
+    },
+    {
+      "passo": "3. FEIXE mobile → web na forma \"a vistoria viaja do celular para o pátio\". [CONFIRMADO — achado do fundamentador]",
+      "por_que_nao_existe": "O gatilho não é a vistoria: é a CONCLUSÃO DA OS, assíncrona. O app replaya a fila em POST /mobile/sync/work-order-actions, a OS vira status='completed'; um sweep varre as OS concluídas cujo serviço tem custody_profile_id, abre o processo (IN_REMOVAL → RECEPTION, entered_at = OS.completed_at) e, na MESMA transação, vincula os ChecklistRun daquela OS. Sem custody_profile_id no serviço do catálogo, nenhum processo nasce.",
+      "evidencia": "src/modules/impound/impound.reconcile.service.ts:79-91 — SQL: WHERE wo.status='completed' AND sc.custody_profile_id IS NOT NULL AND (ip.id IS NULL OR (ip.status='IN_REMOVAL' AND ip.entered_at IS NULL)). Comentário :63 \"A abertura de custódia é 100% CONTINGENTE a sc.custody_profile_id\". · impound-prisma.repository.ts:137-141 (update para RECEPTION com entered_at = completedAt) e :155 → autoLinkChecklistRuns; :213 linkSource:'AUTO'."
+    },
+    {
+      "passo": "3-bis. A varredura de 60 s NÃO roda por padrão — o vídeo não pode apresentá-la como automatismo garantido. [NOVO — engolido pelo fundamentador]",
+      "por_que_nao_existe": "O sweep só existe se o worker in-process estiver ligado. A flag JOBS_WORKER_ENABLED tem default FALSE e a varredura ainda exige CORE_SAAS_PERSISTENCE='prisma' — fora disso ela retorna 0 na primeira linha, sem abrir processo nenhum. Numa demo com a configuração padrão do repositório, NENHUM processo de custódia nasce sozinho: a criação seria manual (POST /impound-processes, botão \"Novo processo\").",
+      "evidencia": "src/config/env.ts:212 — JOBS_WORKER_ENABLED: booleanFlag(false). · src/modules/impound/impound.jobs.ts:5-9 — \"O worker só sobe atrás da flag JOBS_WORKER_ENABLED (default OFF) em src/server.ts → CI/testes NUNCA sobem o loop.\" · src/modules/impound/impound.reconcile.service.ts:44 — if (env.CORE_SAAS_PERSISTENCE !== 'prisma') return 0. · .env.example:63 — JOBS_WORKER_ENABLED=false."
+    },
+    {
+      "passo": "4. Web: clicar num card \"Custódia ativa\" e a tabela do painel FILTRAR. [CONFIRMADO — achado do fundamentador]",
+      "por_que_nao_existe": "Falha em três eixos. (a) Não existe card \"Custódia ativa\": os seis são Ocupação, Processos ativos, Fila de liberação, Prazos vencidos, Lotes abertos e Arrecadação do mês. (b) Clicar num card abre um POP-UP de decomposição (ClickableKpiCard → KpiDetailModal) com atalho para uma rota inteira — não filtra. (c) Não há tabela de processos no painel; e /patios/processos não aceita filtro por link.",
+      "evidencia": "PainelKpiBand.tsx:31 (PainelKpiKey = 'occupancy'|'processes'|'releaseQueue'|'overdue'|'lots'|'revenue') e rótulos em 91,104,116,128,147,159. · PainelPatiosView.tsx:196-197, verbatim: \"Todos apontam para uma rota que existe hoje — nenhuma lista filtrada é prometida antes de existir.\" · PainelPatiosView.tsx:179-187 — composição: OcupacaoPorPatioCard, ProcessosPorFaseCard, PrazosCard, ArrecadacaoCard. · ProcessosPage.tsx:37 (useState local) e :1-19 (sem useSearchParams)."
+    },
+    {
+      "passo": "5. Web: \"o dossiê do veículo com AS FOTOS DA VISTORIA\". [CONFIRMADO — achado do fundamentador]",
+      "por_que_nao_existe": "A seção \"Vistoria de recepção\" desenha fotos vindas de GET /impound-processes/:id/inspection; como nenhum cliente grava essa vistoria (passo 2), na base viva ela cai no estado vazio \"Vistoria de recepção ainda não registrada\".",
+      "evidencia": "InspectionSection.tsx:22-27 (EmptyState) e :85-96 (galeria por conjunto alimentada por view.photos). · processes.service.ts:84-89 (único acesso, GET, 404 → null)."
+    },
+    {
+      "passo": "6. Web: \"nele estão as MESMAS FOTOS que o guincheiro tirou em campo\" (o clímax do roteiro). [NOVO — o fundamentador afirmou o contrário e errou]",
+      "por_que_nao_existe": "O dossiê NUNCA mostra foto de checklist. A aba/seção \"Checklist do guincho\" é uma TABELA de 4 colunas — Checklist · Situação · Iniciado · Concluído — sem miniatura, sem link de anexo, sem contador de fotos. E não é limitação de UI: o endpoint não devolve anexo. O DTO ChecklistRunSummary tem id, templateId, templateName, templateVersion, status, relatedEntity*, startedAt, completedAt — nada de attachments; o repositório inclui só run + template{name}. Nenhum arquivo em frontend/src chama /checklist-runs nem .../attachments/:id/download (grep 'checklist-runs' em frontend/src → só permissões e rotas de /operations/checklists). Ou seja: as 301 fotos existem no banco e sobem pelo app, mas a ponte para o dossiê é um VÍNCULO (uma linha), não a imagem.",
+      "evidencia": "frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx:64-99 — <th>Checklist</th><th>Situação</th><th>Iniciado</th><th>Concluído</th> e legenda \"somente leitura\"; nenhum <img>. · frontend/src/modules/patios/processes/processes.types.ts:216-228 — ChecklistRunSummaryItem sem campo de anexo. · src/modules/impound/impound.checklist-link.types.ts:28-44 — ChecklistRunSummary idem. · src/modules/impound/impound.checklist-link-prisma.repository.ts:45-52 — include: { run: { include: { template: { select: { name: true } } } } }. · grep -rn 'attachment|foto|photo' em frontend/src/modules/patios → só a galeria da VISTORIA (adapter 260-268) e um attachmentId de release marcado \"NÃO renderizar cru\"."
+    },
+    {
+      "passo": "7. Mobile: qualquer mapa — \"mapa ao vivo\", \"rota tracejada\", pino de destino, pílula \"0,8 km · 3 min\", selo \"Ao vivo\". [NOVO — engolido; o fundamentador listou esses elementos como existentes]",
+      "por_que_nao_existe": "O app Flutter não tem NENHUMA biblioteca de mapa: grep por flutter_map|MapLibre|maplibre|google_maps em mobile/flutter_app/lib e em pubspec.yaml devolve ZERO. A tela de detalhe da OS não desenha mapa algum — tem um botão \"Mapa\" que empurra para /field-map. E /field-map é um CustomPaint caseiro que plota no máximo DOIS pontos (a OS e o último fix do técnico), sem tiles, sem rota, sem ETA, e ainda gated por field_location:send.",
+      "evidencia": "grep -rn 'flutter_map|MapLibre|maplibre|google_maps' mobile/flutter_app/lib mobile/flutter_app/pubspec.yaml → 0 ocorrências. · work_order_detail_screen.dart:939-942 — botão que faz context.push('/field-map?workOrderId=...'). · work_order_operational_map_screen.dart:39-49 (gate field_location:send), :69-72 (\"Mapa operacional simples conectado a OS\"), :446-472 (dois OperationalMapPoint + CustomPaint), :476 (\"Sem pontos para desenhar o mapa operacional.\")."
+    },
+    {
+      "passo": "8. Mobile: a tela de checklist com \"Placa\", \"Odômetro\", vistoria 360° de 4 vistas, mapa de avarias e contador \"Fotos do veículo — 0/8\" NA VISTORIA DE PÁTIO. [NOVO — engolido; a legenda do próprio beat se contradiz]",
+      "por_que_nao_existe": "A tela de run é 100% dirigida pelo modelo do servidor (título = schema.title; campos = componentes). O modelo publicado \"Vistoria de Entrada — Pátio\" tem SEIS componentes: Tipo de veículo (vehicle_selector) + 4 fotos obrigatórias + Avarias e observações (observation). Não há campo de placa, não há odômetro, não há componente damage_map e não há 8 fotos. O mapa de avarias existe no app, mas como TELA À PARTE (/checklists/:checklistId/run/damage-map) e só se o modelo trouxer um componente damage_map. O beat pedia \"6 componentes, order_index preservado\" na legenda enquanto a tela mostrava outra coisa.",
+      "evidencia": "docs/demo-fluxos/dados-reais.json · checklist_componentes (order_index 0 a 5). · checklist_run_screen.dart:207,247 (title: schema.title) — nenhum rótulo fixo de placa/odômetro. · checklist_models.dart:25-47 (tipos suportados). · mobile/flutter_app/lib/app/router.dart:210 (rota separada do damage-map)."
+    },
+    {
+      "passo": "9. Mobile: \"o aparelho já sabe o roteiro inteiro\" porque o bootstrap traz as OS atribuídas. [NOVO — o fundamentador descreveu o endpoint errado]",
+      "por_que_nao_existe": "GET /api/v1/mobile/bootstrap NÃO devolve ordem de serviço nenhuma. O corpo é contrato/cache/tenant/usuário/papéis/permissões/módulos/flags/política/catálogos/expenseCategories/serverTime + cursores de sync todos null. Quem enche a lista é GET /api/v1/work-orders; e, sem remoteApi configurado, o repositório SEMEIA OS de demonstração locais — inclusive a fixture do recolhimento ao pátio. Usar \"GET /mobile/bootstrap\" como legenda técnica da tela de OS é uma legenda falsa.",
+      "evidencia": "src/modules/mobile/mobile.routes.ts:80-135 (corpo do bootstrap) e :327-370 (buildCatalogs: modules, permissions, expense_categories, endpoints). · api_contracts.dart:26 (workOrders = '/api/v1/work-orders'). · work_order_repository.dart:118-128 (seed local quando _remoteApi == null) e :158 (fetchWorkOrders). · src/modules/work-orders/work-order.routes.ts:94-95."
+    },
+    {
+      "passo": "10. Web: \"o mapa de vagas do pátio em grade\" logo abaixo do card Ocupação. [NOVO — engolido]",
+      "por_que_nao_existe": "A grade não é do pátio: é de UMA ÁREA. A página mostra o card \"Ocupação\" (agregado do pátio), depois o card \"Áreas\", e só então um card \"Vagas · <nome da área>\" com as vagas daquela área (a primeira é auto-selecionada). Um pátio com 40 vagas repartidas em várias áreas nunca aparece inteiro numa grade só.",
+      "evidencia": "frontend/src/modules/patios/yards/pages/PatioDetailPage.tsx:232-242 (card Ocupação), :295-297 (selectedArea ? Card title={`Vagas · ${selectedArea.name}`}), :142 (auto-seleção da primeira área), :316-327 (OccupancyMap recebendo `spots` da área, carregados em :153-158 por listYardSpots(context, selectedAreaId))."
+    },
+    {
+      "passo": "11. Web (modal): \"sobe até o card Integridade do registro\" estando na aba Checklist do Guincho. [NOVO — engolido]",
+      "por_que_nao_existe": "No dossiê em MODAL as seções são exclusivas por aba: \"Integridade do registro\" e \"Linha do tempo da custódia\" só são renderizadas quando a aba ativa é `timeline`. Da aba `checklist` não se \"sobe\" para o selo — é preciso TROCAR de aba. (Na página /patios/processos/:id, sim, os cards convivem em coluna — mas o roteiro estava dentro do modal aberto pela vaga.)",
+      "evidencia": "frontend/src/modules/patios/processes/components/VehicleDossieModal.tsx:232-234 (aba checklist) e :236-247 (effectiveTab === 'timeline' ? Integridade + Linha do tempo). · ProcessoDossiePage.tsx:125-141 (na PÁGINA os cards são empilhados)."
+    },
+    {
+      "passo": "12. Mobile: na tela de Sincronização, uma foto mudando de \"Salvo no aparelho\" para \"Armazenado\". [NOVO — engolido]",
+      "por_que_nao_existe": "Esses dois rótulos são de EVIDÊNCIA e vivem na tela de execução da OS, não na fila de sincronização. A tela /sync rotula os itens como Pendente · Sincronizado · Erro · Conflito · Sincronizando, com abas Pendentes/Sincronizados/Erros/Conflitos e botão \"Sincronizar agora\". Mostrar as duas coisas na mesma tela é fundir duas superfícies.",
+      "evidencia": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:324-342 (abas), :143-144 (botão), :597-601 (rótulos de status). · work_orders/domain/work_order_conclusion.dart:26-28 e work_orders/ui/work_order_execute_screen.dart:582-601 ('Armazenado', 'Salvo no aparelho', 'Enviando')."
+    },
+    {
+      "passo": "13. Observação que não é passo, mas trairia o vídeo: \"Custódia ativa com 28 processos\" no painel. [CONFIRMADO — achado do fundamentador]",
+      "por_que_nao_existe": "O painel não expõe ACTIVE_CUSTODY isolado. O bucket \"Custódia\" agrega ACTIVE_CUSTODY + JUDICIAL_HOLD = 28 + 5 = 33, e é 33 que sai no selo \"33 em custódia\". O 28 só aparece indo a /patios/processos e escolhendo Situação = \"Custódia ativa\" no seletor. E o card \"Processos ativos\" conta TODOS os processos, inclusive encerrados: 75 — apesar de o centro da rosca dizer \"ATIVOS\".",
+      "evidencia": "src/modules/patios-dashboard/patios-dashboard.types.ts:19-33 (ACTIVE_CUSTODY→CUSTODY, JUDICIAL_HOLD→CUSTODY). · patios-dashboard-prisma.repository.ts:58-65 (totalProcesses += group._count para TODOS os grupos; openLots = LOTTED). · PainelKpiBand.tsx:80,106 (custody = summary.processesByPhase.CUSTODY; tag(`${custody} em custódia`)). · ProcessosPorFaseCard.tsx:123-126 (centro = totalProcesses + rótulo ATIVOS)."
+    },
+    {
+      "passo": "14. Legenda técnica \"GET /api/v1/mobile/field-assignments\". [NOVO — armadilha de legenda]",
+      "por_que_nao_existe": "A constante existe no cliente Flutter, mas o endpoint não existe no backend. Se o vídeo usar essa string como prova técnica, estará citando uma rota que responderia 404.",
+      "evidencia": "mobile/flutter_app/lib/core/network/api_contracts.dart:27 declara '/api/v1/mobile/field-assignments'; grep -rn 'field-assignments' src/ → 0 ocorrências; os 8 paths montados em src/modules/mobile/mobile.routes.ts não o incluem."
+    }
+  ],
+  "dados_a_exibir": [
+    {
+      "rotulo": "Organização",
+      "valor": "Guinchos Paraná",
+      "origem": "dados-reais.json · organizacao (fonte: banco de desenvolvimento, tenant slug=demo, gerado em 2026-08-24)"
+    },
+    {
+      "rotulo": "OS do fluxo",
+      "valor": "OS-000015 — \"Recolhimento ao pátio — determinação DETRAN\" · DETRAN/PR · (41) 3361-1212 · R. Chile, 2050 — Rebouças · Curitiba/PR · prioridade high · status in_progress · criada 13/07 16:27 · agendada 22/08 03:10",
+      "origem": "dados-reais.json · os_ativas[2]. RESSALVA: o status real é in_progress — a OS NÃO está concluída no banco. O beat da conclusão é reencenação, não leitura do banco."
+    },
+    {
+      "rotulo": "Pátio Norte — ocupação",
+      "valor": "34 de 40 vagas = 85,0% → faixa \"apertada\" (âmbar)",
+      "origem": "dados-reais.json · patios[1]; faixa em dashboard.view-model.ts:43-47 — >85% é lotada, ≥60% é apertada; 85 exato cai em apertada"
+    },
+    {
+      "rotulo": "Pátio Central — ocupação",
+      "valor": "12 de 24 vagas = 50% → \"folgada\" (verde)",
+      "origem": "dados-reais.json · patios[0]"
+    },
+    {
+      "rotulo": "Pátio Oeste — ocupação",
+      "valor": "6 de 30 vagas = 20% → \"folgada\" (verde)",
+      "origem": "dados-reais.json · patios[2]"
+    },
+    {
+      "rotulo": "Pátio Sul — ocupação",
+      "valor": "1 de 6 vagas ≈ 16,7% → \"folgada\" (verde)",
+      "origem": "dados-reais.json · patios[3]"
+    },
+    {
+      "rotulo": "Card \"Ocupação\" (agregado)",
+      "valor": "53% — dica \"53 de 100 vagas\" — selo \"folgada\"",
+      "origem": "soma de dados-reais.json · patios: 12+34+6+1 = 53 ocupadas de 24+40+30+6 = 100"
+    },
+    {
+      "rotulo": "Card \"Processos ativos\"",
+      "valor": "75 — selo \"33 em custódia\"",
+      "origem": "soma de processos_por_status (28+9+7+7+5+5+4+3+3+2+2 = 75); CUSTODY = ACTIVE_CUSTODY 28 + JUDICIAL_HOLD 5 = 33"
+    },
+    {
+      "rotulo": "Rosca \"Processos por fase\" — 5 fatias na ordem canônica",
+      "valor": "Remoção/Recepção 11 (14,7%) · Custódia 33 (44,0%) · Liberação 9 (12,0%) · Leilão 10 (13,3%) · Encerrado 12 (16,0%)",
+      "origem": "processos_por_status mapeado por PHASE_BUCKET_BY_STATUS (patios-dashboard.types.ts:19-33): RECEPTION = 4+7; CUSTODY = 28+5; RELEASE = 7+2; AUCTION = 5+3+2; CLOSED = 9+3. Soma 75."
+    },
+    {
+      "rotulo": "Card \"Lotes abertos\"",
+      "valor": "2 — selo \"em leilão\"",
+      "origem": "processos_por_status → LOTTED n=2 (openLots = contagem de LOTTED, patios-dashboard-prisma.repository.ts:66)"
+    },
+    {
+      "rotulo": "Cards \"Fila de liberação\" e \"Prazos vencidos\"",
+      "valor": "SEM VALOR — dados-reais.json não traz fila de liberação (impoundRelease) nem notificações vencidas (processNotification)",
+      "origem": "ausência em dados-reais.json. O vídeo NÃO pode inventar número nesses dois cards; ou os mostra neutros/zerados com o selo honesto (\"sem fila\" / \"em dia\" — PainelKpiBand.tsx:118,131-135) ou não os destaca."
+    },
+    {
+      "rotulo": "Card \"Arrecadação do mês\"",
+      "valor": "R$ 0,00 — dica \"Total acumulado: R$ 0,00\" — selo \"sem liquidação\"",
+      "origem": "dados-reais.json não traz liquidação de leilão; PainelKpiBand.tsx:159-165 (D-007: sem dado, o painel diz que não há)"
+    },
+    {
+      "rotulo": "Lista filtrada manualmente em /patios/processos",
+      "valor": "Situação = \"Custódia ativa\" → 28 registro(s)",
+      "origem": "processos_por_status[0] {ACTIVE_CUSTODY, 28}; rótulo em processes.adapter.ts:45. Cabe na janela: DENSE_LIST_FETCH_LIMIT = 100 (frontend/src/components/dense-list/logic.ts:5) e a base tem 75 processos."
+    },
+    {
+      "rotulo": "Modelo de checklist da vistoria",
+      "valor": "Vistoria de Entrada — Pátio · versão 1 · published",
+      "origem": "dados-reais.json · checklist_vistoria / checklists_publicados[2]"
+    },
+    {
+      "rotulo": "Componentes do modelo (ordem preservada, são SEIS)",
+      "valor": "Tipo de veículo (vehicle_selector, obrigatório) · Foto — Frente · Foto — Traseira · Foto — Lateral esquerda · Foto — Lateral direita (photo_upload, obrigatórias) · Avarias e observações (observation, opcional)",
+      "origem": "dados-reais.json · checklist_componentes (order_index 0 a 5). Não há placa, odômetro, damage_map nem 8 fotos."
+    },
+    {
+      "rotulo": "Volume de prova capturada em campo",
+      "valor": "173 runs · 301 fotos",
+      "origem": "dados-reais.json · dossie. DUPLA RESSALVA: (a) não são fotos de vistoria de recepção — essa não tem gravador; (b) nenhuma dessas 301 fotos aparece no dossiê web — a aba do checklist é uma tabela sem imagem."
+    },
+    {
+      "rotulo": "Tabela de preço que rege a custódia",
+      "valor": "Pátio — Custódia e Diárias 2026 · published · 7 itens · de R$ 18,00 a R$ 168,00",
+      "origem": "dados-reais.json · tabelas_preco[3]"
+    },
+    {
+      "rotulo": "Outros checklists publicados",
+      "valor": "Checklist de Coleta — Guincho (v1) · Inspeção do Guincho — Saída (v2)",
+      "origem": "dados-reais.json · checklists_publicados[0] e [1]"
+    },
+    {
+      "rotulo": "Números que o JSON NÃO garante e o vídeo não deve cravar",
+      "valor": "quantas vagas ocupadas têm currentProcessId apontando para um processo (o que faz a vaga virar botão de dossiê); quantas áreas cada pátio tem (define se a grade mostra o pátio todo); quantos eventos tem a cadeia de hash de um processo (o \"N\" do selo \"Cadeia íntegra\")",
+      "origem": "dados-reais.json não traz nenhum desses campos; nenhum arquivo do repositório permite confirmá-los sem consultar o banco. Se aparecerem na tela, devem ser lidos do ambiente na hora da gravação — nunca escritos no roteiro."
+    }
+  ],
+  "roteiro_sugerido": [
+    {
+      "t": 0,
+      "superficie": "titulo",
+      "acao": "Cartela: \"F3 — Do resgate à custódia\". Abaixo, menor: Guinchos Paraná · 4 pátios · 100 vagas · 75 processos. Fundo navy do design system.",
+      "narracao": "Um veículo recolhido por determinação de autoridade não é uma entrega: é o começo de uma guarda com prazo, valor e responsabilidade legal.",
+      "legenda_tecnica": "tenant=demo · 4 yards · 100 yard_spots · 75 impound_processes"
+    },
+    {
+      "t": 6,
+      "superficie": "mobile",
+      "acao": "Aparelho 390×812. Detalhe da OS: stepper de 6 passos (Início · Rota coleta · Coleta · Rota entrega · Entrega · Conclusão), card OS-000015 \"Recolhimento ao pátio — determinação DETRAN\", cliente DETRAN/PR, endereço de atendimento. Barra fixa com \"Mapa\" e \"Iniciar rota\". SEM mapa embutido — o app não tem biblioteca de mapa.",
+      "narracao": "O DETRAN abre a ordem, o guincheiro recebe no celular e o aparelho já mostra as seis etapas do atendimento de guincho.",
+      "legenda_tecnica": "GET /api/v1/work-orders — work-order.routes.ts:94"
+    },
+    {
+      "t": 13,
+      "superficie": "mobile",
+      "acao": "O guincheiro toca \"Cheguei ao local\" e o stepper de status avança (Em rota → No local). Legenda de rodapé lembra que o destino é o endereço de serviço da OS, texto livre.",
+      "narracao": "Ele confirma a chegada ao endereço da ordem. Repare: o aplicativo registra um endereço, não um pátio — hoje o app de campo não conhece pátio nem vaga.",
+      "legenda_tecnica": "work_order_detail_screen.dart:902 · nenhuma rota de pátio em router.dart:83-260"
+    },
+    {
+      "t": 20,
+      "superficie": "mobile",
+      "acao": "Toca \"Checklist\" → tela \"Checklists da OS\" → abre o run do modelo \"Vistoria de Entrada — Pátio (v1)\". Os SEIS componentes reais entram em ordem: Tipo de veículo, Foto Frente, Traseira, Lateral esquerda, Lateral direita, Avarias e observações. As quatro fotos vão sendo capturadas.",
+      "narracao": "Antes de largar o veículo, ele preenche a vistoria publicada pela organização: o tipo do veículo, as quatro faces e as observações de avaria.",
+      "legenda_tecnica": "GET /api/v1/mobile/checklists/:id/render — checklist.routes.ts:103 · 6 componentes por order_index"
+    },
+    {
+      "t": 29,
+      "superficie": "mobile",
+      "acao": "Corte para \"Sincronização\": abas Pendentes · Sincronizados · Erros · Conflitos, pílulas de contagem, botão \"Sincronizar agora\"; um item sai de Pendente para Sincronizado.",
+      "narracao": "Sem sinal, nada se perde: a captura vai para uma fila local e sobe depois, com idempotência por organização, usuário e identificador da ação.",
+      "legenda_tecnica": "POST /api/v1/mobile/sync/checklist-actions — mobile.routes.ts:150 · fotos por POST /mobile/checklist-runs/:runId/attachments"
+    },
+    {
+      "t": 36,
+      "superficie": "mobile",
+      "acao": "Tela de conclusão: card \"Sua comissão\", cards \"Tempo\" e \"Materiais\", resumo Serviço / Cliente / veículo, botão \"Concluir atendimento\" → faixa \"Atendimento concluído — Sincronização em segundo plano.\"",
+      "narracao": "O guincheiro conclui a ordem. É este ato — e só ele — que pode disparar a abertura da custódia na retaguarda.",
+      "legenda_tecnica": "POST /api/v1/mobile/sync/work-order-actions — mobile.routes.ts:141 · work_orders.status='completed'"
+    },
+    {
+      "t": 43,
+      "superficie": "ambos",
+      "acao": "FEIXE honesto: à esquerda o card da OS concluída; à direita um cartão de processo em branco que se preenche — situação \"Recepção\", entrada carimbada com a hora da conclusão da OS. Um relógio discreto marca a janela de até 60 s.",
+      "narracao": "Com o motor de tarefas ligado, uma varredura de sessenta segundos encontra a ordem concluída cujo serviço abre custódia e cria o processo, com a hora de entrada carimbada na conclusão da ordem — não na hora em que alguém digitou.",
+      "legenda_tecnica": "impound.reconcile-removals (60_000 ms; gated por JOBS_WORKER_ENABLED) · IN_REMOVAL → RECEPTION · entered_at = OS.completed_at — reconcile.service.ts:10,44,79-91"
+    },
+    {
+      "t": 51,
+      "superficie": "ambos",
+      "acao": "O feixe continua, mas correto: do aparelho sai uma LINHA de vínculo (não fotos) que se acopla ao processo, com selo \"AUTO\". No cartão do processo acende uma linha de tabela: nome do formulário, situação, iniciado, concluído.",
+      "narracao": "Na mesma transação, todo checklist preenchido naquela ordem é amarrado ao processo. O que viaja é o vínculo: o dossiê passa a saber que a vistoria existe e quem a preencheu.",
+      "legenda_tecnica": "autoLinkChecklistRuns · link_source='AUTO' — impound-prisma.repository.ts:155, :213"
+    },
+    {
+      "t": 58,
+      "superficie": "web",
+      "acao": "Navegador em /patios/painel. Faixa de seis cards entra escalonada: Ocupação 53% (\"53 de 100 vagas\", folgada), Processos ativos 75 (\"33 em custódia\"), Fila de liberação e Prazos vencidos com selo neutro, Lotes abertos 2 (\"em leilão\"), Arrecadação do mês R$ 0,00 (\"sem liquidação\").",
+      "narracao": "Do outro lado, o gestor abre o painel dos pátios: cem vagas, cinquenta e três ocupadas, setenta e cinco processos — e a arrecadação de leilão em zero, porque ainda não houve liquidação. O painel não inventa série.",
+      "legenda_tecnica": "GET /api/v1/patios/dashboard/summary — patios-dashboard.routes.ts:31 · gate impound:read"
+    },
+    {
+      "t": 65,
+      "superficie": "web",
+      "acao": "Foco no cartão \"Ocupação por pátio\": quatro barras empilhadas desenhando — Norte 34/40 em âmbar, Central 12/24 verde, Oeste 6/30 verde, Sul 1/6 verde. Legenda das faixas visível.",
+      "narracao": "A cor carrega informação: o Pátio Norte está a seis vagas do limite e aparece em âmbar; os outros três têm folga.",
+      "legenda_tecnica": "yard_spots.status (OCCUPIED/FREE/BLOCKED) · faixas <60% folgada · 60–85% apertada · >85% lotada — dashboard.view-model.ts:43-47"
+    },
+    {
+      "t": 72,
+      "superficie": "web",
+      "acao": "Ao lado, a rosca \"Processos por fase\" se desenha na ordem do rito: Remoção/Recepção 11 · Custódia 33 · Liberação 9 · Leilão 10 · Encerrado 12; centro mostra 75. Clique na fatia Custódia abre o pop-up com o texto da fase.",
+      "narracao": "Os quatorze estados do rito viram cinco fases de negócio — e o clique explica o que cada uma agrega, sem obrigar ninguém a decorar nome técnico.",
+      "legenda_tecnica": "PHASE_BUCKET_BY_STATUS — 14 status da FSM → 5 fases — patios-dashboard.types.ts:19"
+    },
+    {
+      "t": 79,
+      "superficie": "web",
+      "acao": "Navega para /patios/patios/<Pátio Norte>: card \"Ocupação\" (Vagas/Livres/Ocupadas/Bloqueadas), card \"Áreas\" com a primeira área já selecionada e, abaixo, o card \"Vagas · <área>\" em grade. O cursor pousa numa vaga ocupada — cadeado, código e a identificação do veículo.",
+      "narracao": "Descendo ao pátio, a ocupação vira grade: cada vaga da área com a sua situação e, na ocupada, quem está ali.",
+      "legenda_tecnica": "GET /api/v1/yards/:yardId/occupancy — yard.routes.ts:62 · grade POR ÁREA (PatioDetailPage.tsx:295-297)"
+    },
+    {
+      "t": 86,
+      "superficie": "web",
+      "acao": "Clique na vaga abre o dossiê em modal. Aba \"Visão Geral\": Identificação e origem (placa, marca/modelo, órgão/agente, nº do procedimento, entrada no pátio) + Local de guarda \"<pátio> · Vaga <código>\". Depois a aba \"Checklist do Guincho\": tabela Checklist · Situação · Iniciado · Concluído, com a legenda de somente leitura.",
+      "narracao": "A vaga abre o dossiê do veículo. E aqui aparece o elo com o campo: o dossiê registra qual vistoria foi preenchida, por qual formulário e quando foi concluída — a leitura das fotos é feita pelo aplicativo, esta tela apenas acompanha.",
+      "legenda_tecnica": "GET /impound-processes/:id/checklist-runs — gate DUPLO impound:read + checklist_runs:read — impound.routes.ts:201 · DTO sem anexo (checklist-link.types.ts:28-44)"
+    },
+    {
+      "t": 93,
+      "superficie": "web",
+      "acao": "Troca para a aba \"Linha do Tempo\": card \"Integridade do registro\" com o selo verde \"Cadeia íntegra (N eventos)\" e o hash truncado, e abaixo os eventos append-only. Fecho com a cartela do título.",
+      "narracao": "E cada evento da custódia é encadeado por hash: o sistema não pede confiança, ele reverifica a própria cadeia e mostra o selo.",
+      "legenda_tecnica": "GET /impound-processes/:id/verify — recomputa a cadeia (I2) — impound.routes.ts:94"
+    }
+  ]
+}
