@@ -627,3 +627,132 @@ repository rules" (11/10/2023) · GitHub Docs Available rules for rulesets · Gi
 GitHub Docs Manage environments (Prevent self-review) · GitHub Docs About protected branches · Sigstore Fulcio
 overview · in-toto Attestation Specification · arXiv:2603.14283 (AEX) · arXiv:2501.16007 (TOPLOC) ·
 NIST SP 800-53 r5 AC-5 Separation of Duties.
+
+
+---
+
+## PD-O6R-B02-EXAUSTIVIDADE — o que exaustividade de tipo garante, e o que só a asserção de efeito garante (2026-08-24)
+
+Rodada Ω6R · B-O6R-02 · **ciclo 3 do protocolo de dificuldade (§C7.4)** — reabertura de premissa, ≥5 fontes
+exigidas. Pesquisa: `agente-pesquisador-web`. **NÃO dispara junta-5** (nenhum serviço externo tarifado; esta PD
+registra estado da arte, custo e limite). **Não escolhe arranjo e não vota** (`D-JUNTA-SEPARACAO-DE-PAPEIS`).
+
+**Dúvida:** duas vezes a defesa contra "vínculo novo nasce permitido" foi lista de casos nomeados com
+`else → allow`, e duas vezes um membro novo passou. Exaustividade por construção fecha a classe? E a invariante
+estava afirmada como RECUSA, não como EFEITO no razão — o que a literatura diz sobre isso?
+
+### 1. Exaustividade em TypeScript — o que o `tsc` emite e o que NÃO pega (FATO)
+
+| padrão | membro FALTANDO | membro SOBRANDO | o que NÃO pega |
+|---|---|---|---|
+| `satisfies Record<Union, X>` | erro de propriedade ausente | erro **só em literal fresco** | chave extra vinda de variável/spread; valor errado dentro de `X`; qualquer coisa em runtime |
+| `const m: Record<Union, X>` | mesmo erro de chave | idem | alarga o tipo do valor e perde a inferência do literal |
+| switch com `never` | `Type 'Triangle' is not assignable to type 'never'` | n/a | **desligado por qualquer `default`/`else` absorvente** |
+
+- **Excess property check é privilégio de literal fresco** (handbook, verbatim): atribuir a uma variável antes
+  "won't undergo excess property checks".
+- **Tudo é compile-time.** Tipos são apagados; valor vindo do banco fora do union não é pego por construção
+  alguma. A analogia normativa vem do Java: a **JEP 441** registra que exaustividade de compilação quebra se o
+  enum mudar depois, e por isso a linguagem **injeta um remainder** que lança `MatchException`. **TypeScript não
+  tem remainder — não há rede em runtime.**
+- **Ramo absorvente anula a checagem**, em duas fontes verbatim: Error Prone — "if a new enum value is added,
+  that case will be silently caught up in the default case"; typescript-eslint — "a `default` would prevent the
+  `switch-exhaustiveness-check` rule from reporting on the new case not being handled".
+- **"Exhaustiveness theatre" tem censo publicado:** csharplang #2671 — *"In all but 3, the `_ =>` arm threw an
+  exception. This means the exhaustiveness checking is gaining the developer nothing"*; *"in 21 out of 24 cases
+  the strict exhaustiveness checking caused the same code to be emitted"*. **A pressão do compilador produz a
+  branch mínima que cala o erro.**
+
+**DIVERGÊNCIA registrada (A2):** Error Prone manda **remover** o `default` para o compilador voltar a reclamar;
+typescript-eslint oferece `considerDefaultExhaustiveForUnions`, que **aceita** o `default` como exaustivo. Duas
+ferramentas oficiais, orientações opostas sobre o mesmo elemento.
+
+**Interpretação (marcada como tal):** exaustividade codifica **totalidade**, nunca **política**. Quando o valor
+que cala o compilador mais rápido é o permissivo, "forçar a decisão" e "produzir a decisão errada" são o mesmo
+gesto.
+
+### 2. Recusa é interaction testing; efeito é state testing (FATO)
+
+- **SWE at Google, cap. 12** (verbatim): "interaction tests check **how** a system arrived at its result, whereas
+  usually you should care only **what** the result is". Cap. 13: interaction testing "can only validate that
+  certain functions are called as expected".
+- **Fowler, *Mocks Aren't Stubs*** (verbatim): state verification examina "the state of the SUT and its
+  collaborators after the method was exercised"; e o risco — "expectations on mockist tests can be incorrect,
+  resulting in unit tests that **run green but mask inherent errors**".
+- **O critério falsificável já existe e é executável** — Stryker (verbatim): "When all tests passed while this
+  mutant was active, the mutant survived. **You're missing a test for it.**"
+- **Ressalva honesta** (Stryker FAQ): existem **equivalent mutants** que nenhum teste pode matar. Mutation score
+  de 100% não é meta; mutante sobrevivente exige triagem, não pânico.
+
+### 3. Razão contábil: invariante, imutabilidade e estorno (FATO)
+
+- **Fowler, Accounting Transaction:** "all the entries must sum to zero, thus conserving money".
+- **Fowler, Reversal Adjustment:** o par é reversal + correção, com **vínculo explícito** (`adjustedEvent` /
+  `setReplacementEvent`), e o original é **marcado como ajustado** para "não ser ajustado duas vezes".
+- **TigerBeetle:** "Transfers in TigerBeetle are immutable"; correção por transferência nova; vínculo
+  **recomendado** por `Transfer.code` + `Transfer.user_data_128` (mesmo id na original e na corretiva). Saldo é
+  derivado dos acumulados, nunca armazenado.
+- **Modern Treasury:** a reversão é uma transação nova com o campo **`reverses_ledger_transaction_id`**; só
+  transações `posted` podem ser revertidas; **no máximo uma reversão não arquivada** por transação; "account
+  balances are **never directly modified**".
+
+**Convergência:** contra-lançamento é o padrão; `UPDATE`/`DELETE` em lançamento é o anti-padrão nos três.
+
+**DIVERGÊNCIA de grau (A2):** o **efeito líquido** (soma zero, saldo derivado) não depende do vínculo com a
+origem; mas a **conferência item-a-item**, a **proibição de estornar duas vezes** e a **reconstrução da causa**
+dependem — e os três sistemas carregam o vínculo. TigerBeetle o trata como convenção do usuário (campo
+genérico); Modern Treasury o impõe como campo de primeira classe com regra de unicidade.
+**Estorno sem vínculo nenhum não é o padrão de ninguém.**
+
+### 4. Pré-condição de fixture em CI: nada semeia sozinho (FATO)
+
+- **Prisma v7** (verbatim): "seeding is **only triggered explicitly** by running `npx prisma db seed`. Automatic
+  seeding during `prisma migrate dev` or `prisma migrate reset` has been removed." `migrate deploy` **nunca**
+  semeou. A doc **não** recomenda quem deve semear em CI — o único fato normativo é: não acontece sozinho.
+- **Guia oficial de integration testing da Prisma:** semeia em `beforeAll`, limpa em `afterAll`, e o exemplo usa
+  **`jest -i` (serial)**. Paralelismo contra o mesmo banco **não é abordado** — ausência declarada, não endosso.
+- **Corrida de provisionamento** (Prisma, verbatim): num `upsert` do client, "Prisma Client does an upsert, it
+  first checks whether that record already exists" → concorrentes não acham, todos criam, um vence, os demais
+  tomam **P2002**. Mitigações da própria doc: retry do P2002, ou upsert nativo do banco.
+- **PostgreSQL** (verbatim): "`ON CONFLICT DO UPDATE` guarantees an atomic `INSERT` or `UPDATE` outcome (…)
+  **even under high concurrency**."
+
+**DIVERGÊNCIA (A2):** a Prisma oferece *retry de P2002* como primeira linha; o PostgreSQL oferece atomicidade
+nativa que dispensa o retry. Não se contradizem, mas escolhem defaults diferentes — e a condição do
+`find`+`create` é justamente a que o banco resolve na origem.
+
+### 5. Duas implementações do mesmo contrato (FATO)
+
+- **Fowler, *Contract Test*:** rodar "a separate set of contract tests (…) that all the calls against your test
+  doubles return the same results as a call to the external service would".
+- **SWE at Google, cap. 13** (verbatim): "**A fake must have its own tests**"; e o padrão é escrever testes
+  contra a interface pública e "**running those tests against both the real implementation and the fake**".
+- **Limites (interpretação):** o contract test cobre só o que a suíte compartilhada exercita — é rede, não prova;
+  derivar as duas cópias de UMA fonte de tipos garante **forma**, não **comportamento**, e a forma some em
+  runtime (§1); censo de schema detecta membro novo, não o classifica.
+
+### 6. Respostas às três premissas que a junta do ciclo 3 julga
+
+**(a) Exaustividade por construção fecha a classe? NÃO SOZINHA.** Ela força a DECISÃO, nunca a decisão certa.
+Com ramo absorvente, nem a decisão. O censo do csharplang documenta a degeneração: escreve-se a branch mínima
+que cala o compilador. **Consequência para esta entrega:** o par que fecha a classe é
+**[exaustividade sem ramo absorvente] + [invariante afirmada como EFEITO no estado do razão, com mutante que a
+falsifica]**. Só o primeiro entrega o mesmo defeito com outra roupa.
+
+**(b) Estorno por contra-lançamento sem vínculo é o padrão? Contra-lançamento SIM; sem vínculo NÃO.** Confere-se
+o efeito líquido pelo **saldo derivado das entradas**, nunca por saldo armazenado.
+
+**(c) Fronteira do helper de invariante.** As fontes **divergem**, e a divergência fica registrada: Google diz
+que helper "can harm a test's completeness by **hiding important details**"; Fowler/state verification diz que se
+examina o estado do sistema depois do exercício. **O desempate não é preferência, é experimento:** inverta a
+guarda em produção — se a asserção não ficar vermelha, a fronteira está no lugar errado.
+
+### 7. Fontes
+
+TypeScript 4.9 release notes (`satisfies`) · TS Handbook Narrowing · TS Handbook Object Types (excess property) ·
+typescript-eslint `switch-exhaustiveness-check` · Error Prone `UnnecessaryDefaultInEnumSwitch` · csharplang #2671 ·
+JEP 441 · Stryker (mutant states / FAQ) · Fowler *Mocks Aren't Stubs* · SWE at Google cap. 12 e 13 ·
+Fowler *Contract Test* · Fowler *Accounting Transaction* · Fowler *Reversal Adjustment* · Fowler *Event Sourcing* ·
+TigerBeetle *Correcting Transfers* e *Debit/Credit* · Modern Treasury *Ledger Transaction Reversal* e
+*Enforcing Immutability* · Prisma *Seeding*, *Integration testing* e *Client reference* ·
+PostgreSQL `INSERT … ON CONFLICT`.
