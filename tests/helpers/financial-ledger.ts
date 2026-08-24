@@ -13,13 +13,43 @@ import assert from "node:assert/strict";
 // linhas já carregadas, então servem igual às provas em memória e às provas contra o Postgres.
 // -----------------------------------------------------------------------------------------------
 
-/** O mínimo para computar efeito: direção e valor de um lançamento VIVO. */
-export type LedgerEntry = {
+// -----------------------------------------------------------------------------------------------
+// B-O6R-02 ciclo 3 · C1 (P6) — A FRONTEIRA DE CONFIANÇA MUDOU DE LADO.
+//
+// O B-1 do ciclo 2, medido pela junta e re-confirmado por execução no §0.1 do plano do ciclo 3: sob
+// o estado D11 (reverse do lançamento de compensação ACEITO), o helper ficava **VERDE nos dois
+// checkpoints** — o intermediário (saldo real 0) e o final (saldo real −100). Ele não estava
+// errado na conta; ele estava somando o CONJUNTO ERRADO.
+//
+// A raiz não era a fórmula, era a FRONTEIRA: a assinatura antiga recebia `entries` = "os vivos
+// vinculados", e QUEM CARREGA filtrava. O defeito morava exatamente no que o carregador não
+// carregava — a contrapartida do estorno nasce SEM vínculo com o cheque (ela se liga ao original
+// por `reversal_of`), então nenhum dos dois loaders a via, e o helper somava só a compensação:
+// +100, o valor esperado. Verde perfeito sobre metade do razão.
+//
+// P6 — *o invariante de efeito do cheque soma o FECHO POR ESTORNO dos lançamentos vivos alcançáveis
+// a partir das pontas — e a seleção do conjunto acontece DENTRO do helper, nunca em quem carrega.*
+// A fronteira nova é mínima e declarada: o chamador só promete a COMPLETUDE do razão da conta
+// (vivos E apagados); a seleção é responsabilidade do helper, que é onde a regra mora.
+//
+// Por que o razão inteiro, e não "os vinculados + os estornos deles": porque descobrir "os estornos
+// deles" JÁ É a seleção — devolvê-la ao chamador reconstruiria a mesma fronteira que produziu o
+// defeito, só que com um nome mais comprido.
+// -----------------------------------------------------------------------------------------------
+
+/**
+ * Uma linha do razão da CONTA — vivos e apagados, sem filtro. `reversalOf` é o que costura a cadeia
+ * de estorno; `deletedAt` é o que distingue "existe" de "sustenta dinheiro".
+ */
+export type ChequeLedgerRow = {
+  readonly id: string;
   readonly direction: string;
   readonly amount: number;
+  readonly reversalOf?: string | null;
+  readonly deletedAt?: Date | null;
 };
 
-function net(entries: readonly LedgerEntry[]): number {
+function net(entries: readonly { readonly direction: string; readonly amount: number }[]): number {
   return round(entries.reduce((total, entry) => total + (entry.direction === "in" ? entry.amount : -entry.amount), 0));
 }
 
@@ -29,32 +59,77 @@ function round(value: number): number {
 }
 
 /**
- * P3 — `net(lançamentos vivos do cheque) ∈ { ±valor (cleared), 0 (bounced), sem lançamento (demais) }`,
- * com o SINAL vindo da direção do cheque: `received` compensa entrando (+), `issued` saindo (−); o
- * bounce inverte e zera.
+ * FECHO POR ESTORNO: parte das pontas do cheque e agrega, TRANSITIVAMENTE, todo lançamento cujo
+ * `reversalOf` aponte para um membro do conjunto. A travessia roda sobre o razão INTEIRO (apagado
+ * inclusive) — uma linha apagada continua sendo âncora válida de uma cadeia de estorno, e podá-la
+ * antes da hora esconderia justamente o desfazimento que o invariante existe para ver.
  *
- * `entries` são SÓ os lançamentos vivos vinculados ao cheque (as duas pontas). Passar os deletados
- * junto mascararia exatamente o defeito, então quem carrega filtra por `deleted_at IS NULL`.
+ * O filtro de vivos vem DEPOIS, na hora de somar dinheiro.
+ */
+function reversalClosure(ledger: readonly ChequeLedgerRow[], linkedIds: readonly string[]): ChequeLedgerRow[] {
+  const byId = new Map(ledger.map((row) => [row.id, row]));
+  const members = new Map<string, ChequeLedgerRow>();
+  const frontier: string[] = [];
+
+  for (const id of linkedIds) {
+    const row = byId.get(id);
+    if (row && !members.has(id)) {
+      members.set(id, row);
+      frontier.push(id);
+    }
+  }
+
+  while (frontier.length > 0) {
+    const current = frontier.pop()!;
+    for (const row of ledger) {
+      if (row.reversalOf === current && !members.has(row.id)) {
+        members.set(row.id, row);
+        frontier.push(row.id);
+      }
+    }
+  }
+
+  return [...members.values()];
+}
+
+/**
+ * P6 — `net(FECHO POR ESTORNO dos lançamentos vivos alcançáveis pelas pontas) ∈ { ±valor (cleared),
+ * 0 (bounced), sem lançamento (demais) }`, com o SINAL vindo da direção do cheque: `received`
+ * compensa entrando (+), `issued` saindo (−); o bounce inverte e zera.
+ *
+ * @param linkedIds as DUAS pontas do cheque (`cleared_entry_id`, `bounce_entry_id`), direto da linha
+ *        do cheque — só as que existem.
+ * @param ledger o razão COMPLETO da conta: vivos e apagados. Quem carrega promete completude, e nada
+ *        além disso — nenhum filtro, nenhuma seleção. Essa é a única promessa do chamador.
  */
 export function expectChequeLedgerCoherent(input: {
   readonly status: string;
   readonly direction: string;
   readonly amount: number;
-  readonly entries: readonly LedgerEntry[];
+  readonly linkedIds: readonly string[];
+  readonly ledger: readonly ChequeLedgerRow[];
   readonly label?: string;
 }): void {
   const label = input.label ?? "cheque";
   const signed = input.direction === "received" ? round(input.amount) : round(-input.amount);
-  const observed = net(input.entries);
+  const relevant = reversalClosure(input.ledger, input.linkedIds);
+  const live = relevant.filter((row) => row.deletedAt == null);
+  const observed = net(live);
 
   if (input.status === "cleared") {
     assert.equal(
       observed,
       signed,
-      `${label}: cheque 'cleared' tem de valer exatamente ${signed} em lançamentos vivos, e vale ${observed}. ` +
-        "Se deu 0, o movimento foi desfeito por fora da máquina de estados (Ω6R-DIN-011).",
+      `${label}: cheque 'cleared' tem de valer exatamente ${signed} no FECHO POR ESTORNO dos lançamentos vivos, ` +
+        `e vale ${observed}. Se deu 0, o movimento foi desfeito por fora da máquina de estados — por estorno ` +
+        "(contrapartida viva, que NÃO é vinculada ao cheque) ou por delete (Ω6R-DIN-011).",
     );
-    assert.equal(input.entries.length, 1, `${label}: 'cleared' tem exatamente UM lançamento vivo`);
+    assert.equal(
+      live.length,
+      1,
+      `${label}: 'cleared' tem exatamente UM lançamento vivo no fecho, e tem ${live.length}. ` +
+        "Mais de um = a compensação ganhou contrapartida de estorno; zero = ela foi apagada.",
+    );
     return;
   }
 
@@ -62,21 +137,23 @@ export function expectChequeLedgerCoherent(input: {
     assert.equal(
       observed,
       0,
-      `${label}: cheque 'bounced' tem de valer LÍQUIDO ZERO, e vale ${observed}. ` +
+      `${label}: cheque 'bounced' tem de valer LÍQUIDO ZERO no fecho por estorno, e vale ${observed}. ` +
         `Se deu ${round(-signed)}, o dinheiro voltou DUAS vezes — é a devolução em dobro do Ω6R-DIN-011.`,
     );
     // 0 lançamentos = devolvido sem nunca ter compensado; 2 = compensou e devolveu (par completo).
     assert.ok(
-      input.entries.length === 0 || input.entries.length === 2,
-      `${label}: 'bounced' tem 0 lançamentos (nunca compensou) ou 2 (compensou e devolveu), e tem ${input.entries.length}`,
+      live.length === 0 || live.length === 2,
+      `${label}: 'bounced' tem 0 lançamentos vivos no fecho (nunca compensou) ou 2 (compensou e devolveu), ` +
+        `e tem ${live.length}`,
     );
     return;
   }
 
   assert.equal(
-    input.entries.length,
+    live.length,
     0,
-    `${label}: cheque em '${input.status}' não move caixa — não pode ter lançamento vivo vinculado`,
+    `${label}: cheque em '${input.status}' não move caixa — não pode ter lançamento vivo no fecho por estorno ` +
+      `das suas pontas, e tem ${live.length}`,
   );
 }
 

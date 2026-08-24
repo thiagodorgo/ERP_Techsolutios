@@ -34,6 +34,7 @@ import {
   type FinancialUowResolver,
 } from "../src/modules/financial-uow/index.js";
 import type { Tenant } from "../src/modules/core-saas/types/core-saas.types.js";
+import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
 
 // A liquidação delega os guards de ESTADO do título ao módulo de títulos → esses erros são
 // FinancialTitleError (cancelado/pago/overpayment/404), enquanto conta/moeda/idempotência são
@@ -1124,19 +1125,25 @@ test("[rota][C2] reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_im
     const balanceAfterClear = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers });
     assert.equal(balanceAfterClear.body.data.balance, 100);
 
-    // O ATAQUE: era 201 no head e4e914a.
+    // O ATAQUE: era 201 no head e4e914a. As duas portas são disparadas e o desfecho fica GUARDADO —
+    // `requestJson` já é never-reject, então a captura aqui é a ORDEM: o razão fala primeiro (C1.5).
     const reversed = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}/reverse`, { method: "POST", headers });
+    const deleted = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}`, { method: "DELETE", headers });
+
+    // B-O6R-02 ciclo 3 · C1 (P6) — O RAZÃO PRIMEIRO, POR HTTP. Se o guard cair (drill D15), o
+    // vermelho vem DAQUI: o fecho por estorno enxerga a contrapartida que nenhuma ponta do cheque
+    // referencia, e um cheque 'cleared' de 100 passa a valer 0.
+    const stillCleared = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}`, { headers });
+    await expectChequeLedgerOverHttp(baseUrl, headers, account.id, stillCleared.body.data, "depois do ataque, por HTTP");
+
+    // E SÓ ENTÃO a razão de cada recusa.
     assert.equal(reversed.status, 422, "estornar a compensação por fora da máquina do cheque era ACEITO — é o Ω6R-DIN-011");
     assert.equal(reversed.body.error.reason, "cheque_entry_immutable");
     assert.equal(reversed.body.error.tenantId, undefined, "§2.8: erro não vaza tenant");
-
-    // O DELETE da mesma linha é a outra porta, e recusa igual.
-    const deleted = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}`, { method: "DELETE", headers });
     assert.equal(deleted.status, 422);
     assert.equal(deleted.body.error.reason, "cheque_entry_immutable");
 
     // O cheque não se moveu, e o caixa também não.
-    const stillCleared = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}`, { headers });
     assert.equal(stillCleared.body.data.status, "cleared");
     assert.equal(
       (await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers })).body.data.balance,
@@ -1152,6 +1159,7 @@ test("[rota][C2] reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_im
     });
     assert.equal(bounced.status, 200);
     assert.equal(bounced.body.data.status, "bounced");
+    await expectChequeLedgerOverHttp(baseUrl, headers, account.id, bounced.body.data, "depois do bounce, por HTTP");
     assert.equal(
       (await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers })).body.data.balance,
       0,
@@ -1159,6 +1167,48 @@ test("[rota][C2] reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_im
     );
   });
 });
+
+// B-O6R-02 ciclo 3 · C1 (P6) — a TERCEIRA cópia do carregador (memória, Postgres e AQUI, HTTP), e
+// pela mesma regra das outras duas: carrega o razão COMPLETO da conta e não seleciona nada.
+// O DTO expõe `active` em vez de `deleted_at` (§2.8 — deliberado), então a linha apagada chega como
+// `active: false` e vira `deletedAt` para o helper; a informação que o invariante precisa é a mesma.
+async function expectChequeLedgerOverHttp(
+  baseUrl: string,
+  headers: Record<string, string>,
+  accountId: string,
+  cheque: Record<string, unknown>,
+  label: string,
+): Promise<void> {
+  const listed = await requestJson(
+    baseUrl,
+    `/api/v1/financial-entries?account_id=${accountId}&include_deleted=true&limit=100`,
+    { headers },
+  );
+  assert.equal(listed.status, 200, `${label}: o razão tem de carregar`);
+  // A rota de LISTA responde `{ items, pagination }` direto (sem envelope `data`, ao contrário das
+  // rotas de item) — medido no controller: `return { body: toFinancialEntryListDto(result) }`.
+  const items = listed.body.items as Record<string, unknown>[];
+  assert.equal(
+    items.length,
+    listed.body.pagination.total,
+    `${label}: o razão carregado tem de ser COMPLETO (sem truncar por paginação)`,
+  );
+  const linkedIds = [cheque.clearedEntryId, cheque.bounceEntryId].filter((id): id is string => typeof id === "string");
+  expectChequeLedgerCoherent({
+    status: String(cheque.status),
+    direction: String(cheque.direction),
+    amount: Number(cheque.amount),
+    linkedIds,
+    ledger: items.map((item) => ({
+      id: String(item.id),
+      direction: String(item.direction),
+      amount: Number(item.amount),
+      reversalOf: (item.reversalOf as string | null) ?? undefined,
+      deletedAt: item.active === false ? new Date(0) : undefined,
+    })),
+    label,
+  });
+}
 
 test("[rota] PATCH /financial-entries/:id/reconcile finance → 200; DTO §2.8 (sem tenant_id)", async () => {
   await withFinancialEntryApi(async ({ baseUrl, seed }) => {

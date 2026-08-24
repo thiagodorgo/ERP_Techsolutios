@@ -141,18 +141,19 @@ if (!connectionString) {
       assert.ok(cleared.clearedEntryId);
       assert.equal((await h.entryService.balance(seed.actor, accountId)).balance, 1500);
 
-      // (1) as DUAS portas da superfície de lançamentos recusam.
-      await assert.rejects(
-        h.entryService.reverse(seed.actor, cleared.clearedEntryId!),
-        (error: unknown) => isDomainError(error, 422, "cheque_entry_immutable"),
-      );
-      await assert.rejects(
-        h.entryService.delete(seed.actor, cleared.clearedEntryId!),
-        (error: unknown) => isDomainError(error, 422, "cheque_entry_immutable"),
-      );
+      // (1) as DUAS portas da superfície de lançamentos são ATACADAS, e o desfecho é CAPTURADO —
+      //     nunca julgado antes do razão (C1.5). `assert.rejects` aqui abortava o teste no instante
+      //     da recusa, e por isso o helper de efeito nunca era exercido contra o estado pós-ataque:
+      //     o verde dele era um verde NÃO EXERCIDO, que foi como o B-1 sobreviveu ao ciclo 2.
+      const reverseAttempt = await captureAttempt(() => h.entryService.reverse(seed.actor, cleared.clearedEntryId!));
+      const deleteAttempt = await captureAttempt(() => h.entryService.delete(seed.actor, cleared.clearedEntryId!));
 
-      // (2) o cheque não saiu de 'cleared' e o razão continua valendo +1500 (era 0 depois do reverse).
+      // (2) O RAZÃO PRIMEIRO. Se o guard cair (drill D15), o vermelho vem DAQUI, do helper, com o
+      //     fecho por estorno enxergando a contrapartida que nenhuma ponta referencia.
       const afterAttack = await expectChequeLedger(h.client, tenantId, chequeId, "depois do ataque recusado");
+      // (2b) e SÓ ENTÃO a razão de cada recusa.
+      expectRefused(reverseAttempt, 422, "cheque_entry_immutable", "reverse do lançamento de compensação");
+      expectRefused(deleteAttempt, 422, "cheque_entry_immutable", "delete do lançamento de compensação");
       assert.equal(afterAttack.status, "cleared");
       assert.equal(
         await client.financialEntry.count({ where: { tenant_id: tenantId, deleted_at: null } }),
@@ -511,23 +512,62 @@ async function assertClearedInvariant(
   return cheque;
 }
 
-// Carrega os lançamentos VIVOS vinculados ao cheque (as DUAS pontas) e assere o líquido contra o
-// status. `deleted_at: null` é o ponto: um lançamento apagado não sustenta dinheiro nenhum.
+// B-O6R-02 ciclo 3 · C1 (P6) — o carregador do Postgres deixou de SELECIONAR.
+//
+// Era aqui que a cópia -db do B-1 morava: `id: { in: linkedIds }, deleted_at: null` devolvia só as
+// pontas vivas, e a contrapartida do estorno — que nasce sem vínculo com o cheque e se liga ao
+// original por `reversal_of` — nunca entrava na soma. O razão parecia +1500 com o dinheiro já
+// devolvido.
+//
+// Agora carrega o razão INTEIRO da conta do cheque (vivos E apagados, sem filtro) e entrega as
+// pontas separadas; quem seleciona o fecho por estorno é o helper.
 async function expectChequeLedger(client: Harness["client"], tenantId: string, chequeId: string, label: string) {
   const cheque = await client.cheque.findFirst({ where: { tenant_id: tenantId, id: chequeId } });
   assert.ok(cheque, `${label}: o cheque tem de existir`);
   const linkedIds = [cheque.cleared_entry_id, cheque.bounce_entry_id].filter((id): id is string => id != null);
-  const rows = linkedIds.length
-    ? await client.financialEntry.findMany({ where: { tenant_id: tenantId, id: { in: linkedIds }, deleted_at: null } })
-    : [];
+  // Razão COMPLETO da conta: sem `deleted_at`, sem `id: { in: ... }`. A única promessa deste
+  // carregador é a completude — e ela é o que o helper precisa para enxergar o desfazimento.
+  const rows = await client.financialEntry.findMany({
+    where: { tenant_id: tenantId, account_id: cheque.account_id },
+  });
   expectChequeLedgerCoherent({
     status: cheque.status,
     direction: cheque.direction,
     amount: Number(cheque.amount),
-    entries: rows.map((row) => ({ direction: row.direction, amount: Number(row.amount) })),
+    linkedIds,
+    ledger: rows.map((row) => ({
+      id: row.id,
+      direction: row.direction,
+      amount: Number(row.amount),
+      reversalOf: row.reversal_of,
+      deletedAt: row.deleted_at,
+    })),
     label,
   });
   return cheque;
+}
+
+// B-O6R-02 ciclo 3 · C1.5 — CAPTURA LIQUIDADA da tentativa de ataque: a promessa nunca rejeita, o
+// razão é julgado primeiro e sozinho, e a razão da recusa é cobrada depois.
+type Attempt = { readonly rejected: boolean; readonly error: unknown };
+
+async function captureAttempt(action: () => Promise<unknown>): Promise<Attempt> {
+  try {
+    await action();
+    return { rejected: false, error: undefined };
+  } catch (error) {
+    return { rejected: true, error };
+  }
+}
+
+function expectRefused(attempt: Attempt, statusCode: number, reason: string, what: string): void {
+  assert.ok(attempt.rejected, `${what}: a porta tinha de RECUSAR, e aceitou`);
+  assert.ok(
+    isDomainError(attempt.error, statusCode, reason),
+    `${what}: recusou pelo motivo errado — esperava ${statusCode}/${reason}, veio ${String(
+      (attempt.error as { statusCode?: unknown })?.statusCode,
+    )}/${String((attempt.error as { reason?: unknown })?.reason)}`,
+  );
 }
 
 function isDomainError(error: unknown, statusCode: number, reason: string): boolean {

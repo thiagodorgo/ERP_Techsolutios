@@ -24,6 +24,32 @@ import {
 } from "../src/modules/cheques/index.js";
 import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
 
+// B-O6R-02 ciclo 3 · C1 (P6) — CAPTURA LIQUIDADA: a tentativa de ataque NUNCA rejeita a promessa do
+// teste. `assert.rejects` aborta o caso no instante da recusa, e foi assim que o ciclo 2 se enganou:
+// com o guard no lugar, o teste morria no `rejects` e o helper de efeito nunca chegava a rodar
+// contra o estado pós-ataque — o verde do helper era um verde NÃO EXERCIDO. Capturando o desfecho,
+// o razão é julgado PRIMEIRO e SOZINHO, e só depois se cobra a razão da recusa.
+type Attempt = { readonly rejected: boolean; readonly error: unknown };
+
+async function capture(action: () => Promise<unknown>): Promise<Attempt> {
+  try {
+    await action();
+    return { rejected: false, error: undefined };
+  } catch (error) {
+    return { rejected: true, error };
+  }
+}
+
+function expectRefused(attempt: Attempt, statusCode: number, reason: string, what: string): void {
+  assert.ok(attempt.rejected, `${what}: a porta tinha de RECUSAR, e aceitou`);
+  assert.ok(
+    isDomainError(attempt.error, statusCode, reason),
+    `${what}: recusou pelo motivo errado — esperava ${statusCode}/${reason}, veio ${JSON.stringify(
+      attempt.error instanceof Error ? { statusCode: (attempt.error as { statusCode?: unknown }).statusCode, reason: (attempt.error as { reason?: unknown }).reason, message: attempt.error.message } : attempt.error,
+    )}`,
+  );
+}
+
 // Erros de domínio renderizam idêntico via HTTP (statusCode+reason); o clear/bounce compõem com o serviço de
 // lançamentos → um period_closed do chokepoint chega como FinancialEntryError. Checagem class-agnostic.
 function isDomainError(error: unknown, statusCode: number, reason: string): boolean {
@@ -74,20 +100,37 @@ async function activeAccount(
   return accounts.create(ctx, { name: `Caixa ${randomUUID()}`, ...overrides });
 }
 
-// Os lançamentos VIVOS vinculados ao cheque, pelas DUAS pontas — a entrada do invariante de EFEITO.
-// Deletado NÃO entra: incluí-lo mascararia exatamente o defeito que o helper existe para pegar.
-async function liveChequeEntries(
+// B-O6R-02 ciclo 3 · C1 (P6) — o carregador NÃO seleciona mais nada.
+//
+// A versão anterior entregava "os vivos vinculados" e era exatamente aí que o B-1 morava: a
+// contrapartida do estorno nasce SEM vínculo com o cheque, então este filtro a apagava do razão
+// antes do helper ver, e o helper somava +100 num cheque cujo dinheiro já tinha voltado.
+//
+// Agora o carregador promete UMA coisa só — a COMPLETUDE do razão da conta, vivos E apagados — e a
+// seleção do conjunto relevante (o fecho por estorno) acontece dentro do helper.
+async function chequeLedgerInput(
   entries: ReturnType<typeof createMemoryFinancialEntryService>,
   ctx: ChequeActorContext,
   chequeId: string,
   cheques: ReturnType<typeof createMemoryChequeService>,
+  accountId: string,
 ) {
   const cheque = await cheques.get(ctx, chequeId);
-  const linked = [cheque.clearedEntryId, cheque.bounceEntryId].filter((id): id is string => id != null);
-  const all = await entries.list(ctx, {});
-  return all.items
-    .filter((entry) => linked.includes(entry.id) && entry.deletedAt == null)
-    .map((entry) => ({ direction: entry.direction, amount: entry.amount }));
+  const linkedIds = [cheque.clearedEntryId, cheque.bounceEntryId].filter((id): id is string => id != null);
+  const all = await entries.list(ctx, { account_id: accountId, include_deleted: true, limit: 100 });
+  // A completude é a ÚNICA promessa deste carregador, então ela é ASSERIDA: um razão truncado pela
+  // paginação daria verde sobre metade do dinheiro — a classe de defeito exata do ciclo 2.
+  assert.equal(all.items.length, all.total, "o razão carregado tem de ser COMPLETO (sem truncar por paginação)");
+  return {
+    linkedIds,
+    ledger: all.items.map((entry) => ({
+      id: entry.id,
+      direction: entry.direction,
+      amount: entry.amount,
+      reversalOf: entry.reversalOf,
+      deletedAt: entry.deletedAt,
+    })),
+  };
 }
 
 function chequeBody(accountId: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -459,23 +502,26 @@ test("[C2/P3] ATAQUE da junta: reverse do lançamento de COMPENSAÇÃO → 422 c
   const cleared = await cheques.clear(ctx, cheque.id);
   assert.equal((await entries.balance(ctx, account.id)).balance, 100);
 
-  // (1) a porta dos lançamentos RECUSA — era ela que abria a devolução em dobro.
-  await assert.rejects(
-    () => entries.reverse(ctx, cleared.clearedEntryId!),
-    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
-  );
-  // (2) e o cheque continua compensado, com o dinheiro parado onde estava.
-  assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
-  assert.equal((await entries.balance(ctx, account.id)).balance, 100, "o estorno recusado não pode ter mexido no caixa");
+  // (1) a tentativa é CAPTURADA, não julgada — o razão fala antes do desfecho (C1.5).
+  const attempt = await capture(() => entries.reverse(ctx, cleared.clearedEntryId!));
+
+  // (2) O RAZÃO PRIMEIRO, e SOZINHO. Se o guard cair (drill D15), este checkpoint fica vermelho
+  //     pelo HELPER — com o fecho por estorno vendo a contrapartida que nenhuma ponta referencia —
+  //     independentemente do que a chamada tenha devolvido.
   expectChequeLedgerCoherent({
-    status: "cleared",
+    status: (await cheques.get(ctx, cheque.id)).status,
     direction: "received",
     amount: 100,
-    entries: await liveChequeEntries(entries, ctx, cheque.id, cheques),
-    label: "após o reverse recusado",
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de reverse",
   });
+  assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 100, "o estorno recusado não pode ter mexido no caixa");
 
-  // (3) o ÚNICO caminho que desfaz é o bounce — e ele leva a líquido ZERO, jamais a −100.
+  // (3) e SÓ ENTÃO a razão da recusa — era ela que abria a devolução em dobro.
+  expectRefused(attempt, 422, "cheque_entry_immutable", "reverse do lançamento de compensação");
+
+  // (4) o ÚNICO caminho que desfaz é o bounce — e ele leva a líquido ZERO, jamais a −100.
   const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
   assert.equal(bounced.status, "bounced");
   assert.equal((await entries.balance(ctx, account.id)).balance, 0, "líquido ZERO — no defeito dava −100");
@@ -483,7 +529,7 @@ test("[C2/P3] ATAQUE da junta: reverse do lançamento de COMPENSAÇÃO → 422 c
     status: "bounced",
     direction: "received",
     amount: 100,
-    entries: await liveChequeEntries(entries, ctx, cheque.id, cheques),
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
     label: "após o bounce",
   });
 });
@@ -496,10 +542,17 @@ test("[C2/P3] DELETE do lançamento de COMPENSAÇÃO → 422 cheque_entry_immuta
   await cheques.deposit(ctx, cheque.id);
   const cleared = await cheques.clear(ctx, cheque.id);
 
-  await assert.rejects(
-    () => entries.delete(ctx, cleared.clearedEntryId!),
-    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
-  );
+  // Captura liquidada: o razão é julgado ANTES do desfecho (C1.5). Sem o guard, o delete apaga a
+  // compensação e o fecho por estorno passa a ver ZERO linha viva num cheque 'cleared' de 250.
+  const attempt = await capture(() => entries.delete(ctx, cleared.clearedEntryId!));
+  expectChequeLedgerCoherent({
+    status: (await cheques.get(ctx, cheque.id)).status,
+    direction: "received",
+    amount: 250,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de delete",
+  });
+  expectRefused(attempt, 422, "cheque_entry_immutable", "delete do lançamento de compensação");
   assert.equal((await entries.get(ctx, cleared.clearedEntryId!)).deletedAt, undefined);
   assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
   assert.equal((await entries.balance(ctx, account.id)).balance, 250);
@@ -515,22 +568,28 @@ test("[C2/P3] o CONTRA-lançamento do bounce também é imutável: reverse e del
   const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
 
   // Sem este guard, estornar o contra-lançamento devolveria o cheque devolvido ao caixa: +100 outra vez.
-  await assert.rejects(
-    () => entries.reverse(ctx, bounced.bounceEntryId!),
-    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
-  );
-  await assert.rejects(
-    () => entries.delete(ctx, bounced.bounceEntryId!),
-    (e: unknown) => isDomainError(e, 422, "cheque_entry_immutable"),
-  );
-  assert.equal((await entries.balance(ctx, account.id)).balance, 0, "o cheque devolvido tem de continuar valendo ZERO");
+  // Captura liquidada nas DUAS portas, com o razão julgado entre elas e no fim.
+  const reverseAttempt = await capture(() => entries.reverse(ctx, bounced.bounceEntryId!));
   expectChequeLedgerCoherent({
-    status: "bounced",
+    status: (await cheques.get(ctx, cheque.id)).status,
     direction: "received",
     amount: 100,
-    entries: await liveChequeEntries(entries, ctx, cheque.id, cheques),
-    label: "contra-lançamento protegido",
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de reverse do contra-lançamento",
   });
+  expectRefused(reverseAttempt, 422, "cheque_entry_immutable", "reverse do contra-lançamento do bounce");
+
+  const deleteAttempt = await capture(() => entries.delete(ctx, bounced.bounceEntryId!));
+  expectChequeLedgerCoherent({
+    status: (await cheques.get(ctx, cheque.id)).status,
+    direction: "received",
+    amount: 100,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de delete do contra-lançamento",
+  });
+  expectRefused(deleteAttempt, 422, "cheque_entry_immutable", "delete do contra-lançamento do bounce");
+
+  assert.equal((await entries.balance(ctx, account.id)).balance, 0, "o cheque devolvido tem de continuar valendo ZERO");
 });
 
 test("[C2] o guard é ESTREITO: lançamento avulso na mesma conta segue estornável e deletável", async () => {
