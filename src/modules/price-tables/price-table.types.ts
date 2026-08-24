@@ -55,6 +55,43 @@ export type ListPriceTableResult = {
   readonly offset: number;
 };
 
+// ── Agregado dos ITENS da tabela ────────────────────────────────────────────────────────────────────────
+// A "Tabela de Valores" é um CONTÊINER: o valor vive nas Tarifas (`tariffs.price_table_id` → `price_tables.id`).
+// Sem este agregado a listagem anuncia a moeda e nunca um número — quem abre precisa navegar para outra tela
+// para saber se ali existe algum preço. O agregado é de LEITURA (nenhuma coluna nova; nenhuma migration).
+//
+// O que conta como item: tarifa com `is_active = true`. `is_active=false` É a exclusão lógica da tarifa (o
+// controller de tariffs audita `tariff.deactivated` exatamente nesse patch) — tarifa apagada NÃO entra na
+// conta nem na faixa. O campo `status` da Tariff é texto livre sem máquina de estado (RN-CAD-009), então
+// NÃO serve de filtro. A janela de vigência PRÓPRIA da tarifa também não filtra: a coluna responde
+// "o que esta tabela contém", não "o que está valendo agora" — filtrar por data faria a contagem oscilar
+// sozinha e esconderia tarifa futura já cadastrada.
+export type PriceTableTariffSummary = {
+  readonly itemCount: number;
+  readonly minUnitPrice: number | null;
+  readonly maxUnitPrice: number | null;
+};
+
+// Tabela sem tarifa ativa: contagem 0 e faixa NULA. Nunca 0,00 — "zero reais" seria um preço inventado.
+export const EMPTY_PRICE_TABLE_TARIFF_SUMMARY: PriceTableTariffSummary = {
+  itemCount: 0,
+  minUnitPrice: null,
+  maxUnitPrice: null,
+};
+
+// Linha de listagem = a tabela + o agregado dos seus itens. O campo é OBRIGATÓRIO de propósito: apagá-lo
+// quebra a compilação de quem monta a lista e do DTO, em vez de sumir calado da tela.
+export type PriceTableListItem = PriceTable & {
+  readonly tariffSummary: PriceTableTariffSummary;
+};
+
+export type ListPriceTableViewResult = {
+  readonly items: readonly PriceTableListItem[];
+  readonly total: number;
+  readonly limit: number;
+  readonly offset: number;
+};
+
 export type CreatePriceTableInput = Omit<
   PriceTable,
   "id" | "isActive" | "createdAt" | "updatedAt"

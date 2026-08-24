@@ -7,10 +7,14 @@ import type {
   PriceTable,
   PriceTableActorContext,
   ListPriceTableInput,
-  ListPriceTableResult,
+  ListPriceTableViewResult,
   UpdatePriceTableInput,
 } from "./price-table.types.js";
-import { PRICE_TABLE_STATUS_TRANSITIONS, PriceTableError } from "./price-table.types.js";
+import {
+  EMPTY_PRICE_TABLE_TARIFF_SUMMARY,
+  PRICE_TABLE_STATUS_TRANSITIONS,
+  PriceTableError,
+} from "./price-table.types.js";
 import {
   parseCurrency,
   parseLimit,
@@ -26,21 +30,31 @@ import {
   parseRequiredUuid,
   readOptionalBoolean,
 } from "./price-table.validators.js";
-import { buildTariffOverlapChecker, type TariffOverlapChecker } from "./price-table-resolution.js";
+import {
+  buildMemoryTariffSummaryAggregator,
+  buildTariffOverlapChecker,
+  type PriceTableTariffAggregator,
+  type TariffOverlapChecker,
+} from "./price-table-resolution.js";
 import { getMemoryTariffRepositoryForTests } from "../tariffs/tariff.service.js";
 
 type RawRecord = Record<string, unknown>;
 
 export class PriceTableService {
-  // Ω5P PR-03 (RN-TAR-01) — o overlapChecker é OPCIONAL: `new PriceTableService(repo)` (usos de teste legados)
-  // segue sem guarda; as factories (memory/prisma) injetam o checker → a guarda de não-sobreposição só dispara
-  // na transição draft→published. Não-amplificador (guarda read-only; só recusa com 409).
+  // Ω5P PR-03 (RN-TAR-01) — o overlapChecker é OPCIONAL: sem ele não há guarda de não-sobreposição; as
+  // factories (memory/prisma) injetam o checker → a guarda só dispara na transição draft→published.
+  // Não-amplificador (guarda read-only; só recusa com 409).
+  //
+  // `tariffAggregator` é OBRIGATÓRIO: a listagem sem agregado é justamente o defeito que esta camada existe
+  // para não repetir (tela que anuncia a moeda e nunca traz um número). Construir o serviço sem ele não
+  // compila.
   constructor(
     private readonly repository: PriceTableRepository,
+    private readonly tariffAggregator: PriceTableTariffAggregator,
     private readonly overlapChecker?: TariffOverlapChecker,
   ) {}
 
-  async list(actor: PriceTableActorContext, query: RawRecord): Promise<ListPriceTableResult> {
+  async list(actor: PriceTableActorContext, query: RawRecord): Promise<ListPriceTableViewResult> {
     const input: ListPriceTableInput = {
       tenantId: actor.tenantId,
       isActive: readOptionalBoolean(query.is_active ?? query.isActive),
@@ -49,7 +63,22 @@ export class PriceTableService {
       limit: parseLimit(query.limit),
       offset: parseOffset(query.offset),
     };
-    return this.repository.list(input);
+    const page = await this.repository.list(input);
+    // UMA agregação para a página inteira (ids da página → um GROUP BY), nunca uma por linha.
+    const summaries = await this.tariffAggregator({
+      tenantId: actor.tenantId,
+      priceTableIds: page.items.map((table) => table.id),
+    });
+    return {
+      items: page.items.map((table) => ({
+        ...table,
+        // Tabela sem tarifa ativa não aparece no GROUP BY → agregado vazio (faixa NULA, nunca "0,00").
+        tariffSummary: summaries.get(table.id) ?? EMPTY_PRICE_TABLE_TARIFF_SUMMARY,
+      })),
+      total: page.total,
+      limit: page.limit,
+      offset: page.offset,
+    };
   }
 
   async create(actor: PriceTableActorContext, body: RawRecord): Promise<PriceTable> {
@@ -173,8 +202,10 @@ let defaultServicePromise: Promise<PriceTableService> | undefined;
 
 export function createMemoryPriceTableService(): PriceTableService {
   // RN-TAR-01 — no modo memória a guarda usa os MESMOS singletons dos módulos (paridade com o Prisma).
-  const overlapChecker = buildTariffOverlapChecker(memoryRepository, getMemoryTariffRepositoryForTests());
-  return new PriceTableService(memoryRepository, overlapChecker);
+  const tariffRepository = getMemoryTariffRepositoryForTests();
+  const overlapChecker = buildTariffOverlapChecker(memoryRepository, tariffRepository);
+  const aggregator = buildMemoryTariffSummaryAggregator(tariffRepository);
+  return new PriceTableService(memoryRepository, aggregator, overlapChecker);
 }
 
 export function getMemoryPriceTableRepositoryForTests(): InMemoryPriceTableRepository {
@@ -200,5 +231,8 @@ async function createPrismaPriceTableService(): Promise<PriceTableService> {
   const repository = await createPrismaPriceTableRepository();
   const tariffRepository = await createPrismaTariffRepository();
   const overlapChecker = buildTariffOverlapChecker(repository, tariffRepository);
-  return new PriceTableService(repository, overlapChecker);
+  // No Prisma o agregado é UM `groupBy` sobre `tariffs` para os ids da página (ver o repositório).
+  const aggregator: PriceTableTariffAggregator = ({ tenantId, priceTableIds }) =>
+    repository.aggregateTariffSummaries(tenantId, priceTableIds);
+  return new PriceTableService(repository, aggregator, overlapChecker);
 }

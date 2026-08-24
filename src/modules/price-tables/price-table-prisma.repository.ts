@@ -4,6 +4,7 @@ import { withTenantRls } from "../../database/rls.js";
 import type {
   PriceTable,
   PriceTableStatus,
+  PriceTableTariffSummary,
   CreatePriceTableInput,
   ListPriceTableInput,
   ListPriceTableResult,
@@ -57,6 +58,35 @@ export class PrismaPriceTableRepository implements PriceTableRepository {
   async findById(tenantId: string, priceTableId: string): Promise<PriceTable | undefined> {
     const table = await this.client.priceTable.findFirst({ where: { tenant_id: tenantId, id: priceTableId } });
     return table ? mapPriceTableRecord(table) : undefined;
+  }
+
+  // Agregado dos ITENS da página de tabelas: UMA query `GROUP BY price_table_id` sobre `tariffs` para a
+  // página INTEIRA — não uma query por linha (N+1). O `IN (...)` recebe só os ids da página corrente
+  // (teto = `limit` da listagem), e o índice `@@index([tenant_id, price_table_id])` já serve o agrupamento.
+  // `is_active = true` filtra a exclusão lógica da tarifa (ver PriceTableTariffSummary em price-table.types).
+  async aggregateTariffSummaries(
+    tenantId: string,
+    priceTableIds: readonly string[],
+  ): Promise<Map<string, PriceTableTariffSummary>> {
+    const summaries = new Map<string, PriceTableTariffSummary>();
+    if (priceTableIds.length === 0) return summaries;
+
+    const rows = await this.client.tariff.groupBy({
+      by: ["price_table_id"],
+      where: { tenant_id: tenantId, is_active: true, price_table_id: { in: [...priceTableIds] } },
+      _count: { _all: true },
+      _min: { unit_price: true },
+      _max: { unit_price: true },
+    });
+
+    for (const row of rows) {
+      summaries.set(row.price_table_id, {
+        itemCount: row._count._all,
+        minUnitPrice: decimalToNumber(row._min.unit_price),
+        maxUnitPrice: decimalToNumber(row._max.unit_price),
+      });
+    }
+    return summaries;
   }
 
   async findPublishedInBucket(input: FindPublishedInBucketInput): Promise<PriceTable[]> {
@@ -119,6 +149,15 @@ export class RlsPrismaPriceTableRepository implements PriceTableRepository {
 
   findById(tenantId: string, priceTableId: string): Promise<PriceTable | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaPriceTableRepository(tx).findById(tenantId, priceTableId));
+  }
+
+  aggregateTariffSummaries(
+    tenantId: string,
+    priceTableIds: readonly string[],
+  ): Promise<Map<string, PriceTableTariffSummary>> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaPriceTableRepository(tx).aggregateTariffSummaries(tenantId, priceTableIds),
+    );
   }
 
   findPublishedInBucket(input: FindPublishedInBucketInput): Promise<PriceTable[]> {
@@ -187,6 +226,14 @@ function mapPriceTableRecord(record: {
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };
+}
+
+// `numeric(12,2)` chega como Prisma.Decimal (ou null quando o grupo não tem linha). Number() é a MESMA
+// conversão que o módulo de Tarifas já aplica em `unit_price` — sem ela o JSON sairia com objeto Decimal.
+function decimalToNumber(value: Prisma.Decimal | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function isUniqueViolation(error: unknown): boolean {

@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
+import { toPriceTableListDto } from "../src/modules/price-tables/price-table.dto.js";
 import {
+  PriceTableService,
   createMemoryPriceTableService,
+  getMemoryPriceTableRepositoryForTests,
   resetPriceTableRuntimeForTests,
 } from "../src/modules/price-tables/price-table.service.js";
 import { PriceTableError, type PriceTableActorContext } from "../src/modules/price-tables/price-table.types.js";
+import { createMemoryTariffService, resetTariffRuntimeForTests } from "../src/modules/tariffs/tariff.service.js";
 
 function actor(tenantId = randomUUID()): PriceTableActorContext {
   return { tenantId, userId: randomUUID(), roles: ["manager"], permissions: ["price_tables:read", "price_tables:create", "price_tables:update"] };
@@ -15,6 +21,13 @@ function actor(tenantId = randomUUID()): PriceTableActorContext {
 function service() {
   resetPriceTableRuntimeForTests();
   return createMemoryPriceTableService();
+}
+
+// Tabela de Valores + Tarifas no mesmo runtime de memória (o agregado atravessa os dois módulos).
+function servicesWithTariffs() {
+  resetPriceTableRuntimeForTests();
+  resetTariffRuntimeForTests();
+  return { pt: createMemoryPriceTableService(), tariff: createMemoryTariffService() };
 }
 
 test("cria Tabela de Valores em rascunho com defaults (currency BRL, version 1)", async () => {
@@ -120,4 +133,134 @@ test("desativação lógica via is_active=false", async () => {
   assert.equal(off.isActive, false);
   const actives = await svc.list(ctx, { is_active: true });
   assert.equal(actives.items.length, 0);
+});
+
+// ── Agregado dos ITENS na listagem ───────────────────────────────────────────────────────────────────────
+// O defeito que estes testes existem para não deixar voltar: a listagem dizia a MOEDA e nunca um NÚMERO,
+// porque o valor mora nas Tarifas e a tabela é só o contêiner. Se o agregado sumir, estes testes caem.
+
+test("listagem agrega os itens da tabela: contagem + faixa (min/max) de valor", async () => {
+  const { pt, tariff } = servicesWithTariffs();
+  const ctx = actor();
+
+  const comItens = await pt.create(ctx, { name: "Guincho 2026" });
+  const vazia = await pt.create(ctx, { name: "Ainda sem tarifa" });
+
+  for (const unitPrice of [250, 120, 3400]) {
+    await tariff.create(ctx, {
+      price_table_id: comItens.id,
+      service_catalog_id: randomUUID(),
+      unit_price: unitPrice,
+      origin: "manual",
+    });
+  }
+
+  const page = await pt.list(ctx, {});
+  const row = page.items.find((item) => item.id === comItens.id);
+  assert.ok(row, "a tabela com itens precisa estar na listagem");
+  assert.equal(row.tariffSummary.itemCount, 3);
+  assert.equal(row.tariffSummary.minUnitPrice, 120);
+  assert.equal(row.tariffSummary.maxUnitPrice, 3400);
+
+  // Tabela sem tarifa → vazio HONESTO: contagem 0 e faixa NULA. Nunca 0,00 (zero não é preço).
+  const empty = page.items.find((item) => item.id === vazia.id);
+  assert.ok(empty, "a tabela sem itens precisa estar na listagem");
+  assert.equal(empty.tariffSummary.itemCount, 0);
+  assert.equal(empty.tariffSummary.minUnitPrice, null);
+  assert.equal(empty.tariffSummary.maxUnitPrice, null);
+});
+
+test("agregado ignora tarifa APAGADA (is_active=false) na contagem e na faixa", async () => {
+  const { pt, tariff } = servicesWithTariffs();
+  const ctx = actor();
+  const table = await pt.create(ctx, { name: "Com apagada" });
+
+  await tariff.create(ctx, { price_table_id: table.id, service_catalog_id: randomUUID(), unit_price: 200, origin: "manual" });
+  const apagada = await tariff.create(ctx, {
+    price_table_id: table.id,
+    service_catalog_id: randomUUID(),
+    unit_price: 99999,
+    origin: "manual",
+  });
+  await tariff.update(ctx, apagada.id, { is_active: false });
+
+  const page = await pt.list(ctx, {});
+  const row = page.items.find((item) => item.id === table.id);
+  assert.ok(row);
+  assert.equal(row.tariffSummary.itemCount, 1, "tarifa apagada não conta");
+  assert.equal(row.tariffSummary.minUnitPrice, 200);
+  assert.equal(row.tariffSummary.maxUnitPrice, 200, "tarifa apagada não pode empurrar o teto da faixa");
+});
+
+test("agregado não vaza entre organizações (tarifa de outro tenant não conta)", async () => {
+  const { pt, tariff } = servicesWithTariffs();
+  const dono = actor();
+  const table = await pt.create(dono, { name: "Da organização A" });
+  await tariff.create(dono, { price_table_id: table.id, service_catalog_id: randomUUID(), unit_price: 500, origin: "manual" });
+
+  const intruso = actor();
+  const page = await pt.list(intruso, {});
+  assert.equal(page.items.length, 0, "a listagem de outra organização não enxerga a tabela");
+
+  const own = await pt.list(dono, {});
+  assert.equal(own.items[0]?.tariffSummary.itemCount, 1);
+});
+
+test("agregação é UMA passada para a página inteira — nunca uma consulta por linha (N+1)", async () => {
+  resetPriceTableRuntimeForTests();
+  const repository = getMemoryPriceTableRepositoryForTests();
+  const ctx = actor();
+  for (const name of ["A", "B", "C"]) {
+    await repository.create({ tenantId: ctx.tenantId, name, currency: "BRL", version: 1, status: "draft" });
+  }
+
+  let calls = 0;
+  let receivedIds: readonly string[] = [];
+  const svc = new PriceTableService(repository, async ({ priceTableIds }) => {
+    calls += 1;
+    receivedIds = priceTableIds;
+    return new Map();
+  });
+
+  const page = await svc.list(ctx, {});
+  assert.equal(page.items.length, 3);
+  assert.equal(calls, 1, "uma agregação por página, não uma por tabela");
+  assert.equal(receivedIds.length, 3, "a agregação recebe os ids da página inteira de uma vez");
+
+  // Agregador que não conhece a tabela → vazio honesto (não fabrica contagem nem faixa).
+  assert.equal(page.items[0]?.tariffSummary.itemCount, 0);
+  assert.equal(page.items[0]?.tariffSummary.minUnitPrice, null);
+});
+
+test("DTO da listagem publica itemCount/minUnitPrice/maxUnitPrice (o número chega ao cliente)", async () => {
+  const { pt, tariff } = servicesWithTariffs();
+  const ctx = actor();
+  const table = await pt.create(ctx, { name: "Publicada no DTO" });
+  await tariff.create(ctx, { price_table_id: table.id, service_catalog_id: randomUUID(), unit_price: 120, origin: "manual" });
+  await tariff.create(ctx, { price_table_id: table.id, service_catalog_id: randomUUID(), unit_price: 3400, origin: "manual" });
+
+  const dto = toPriceTableListDto(await pt.list(ctx, {}));
+  const row = dto.items[0];
+  assert.ok(row);
+  assert.equal(row.itemCount, 2);
+  assert.equal(row.minUnitPrice, 120);
+  assert.equal(row.maxUnitPrice, 3400);
+  // §allowlist — o agregado não pode arrastar identificador interno nem a organização para a resposta.
+  assert.equal(Object.hasOwn(row, "tenantId"), false);
+  assert.equal(Object.hasOwn(row, "tenant_id"), false);
+});
+
+test("caminho Prisma agrega com UM groupBy sobre tariffs (guarda estrutural anti-N+1)", () => {
+  // O modo memória não prova SQL. Esta guarda lê o repositório Prisma e exige a forma agregada:
+  // um `groupBy` filtrado por `is_active` e por `price_table_id IN (ids da página)`. Trocar isto por
+  // uma consulta por linha (o N+1 que o comando proibiu) derruba o teste.
+  const source = fs.readFileSync(
+    path.join(process.cwd(), "src/modules/price-tables/price-table-prisma.repository.ts"),
+    "utf8",
+  );
+  assert.match(source, /aggregateTariffSummaries/, "o repositório Prisma precisa expor a agregação");
+  assert.match(source, /this\.client\.tariff\.groupBy\(/, "a agregação precisa ser um groupBy sobre tariffs");
+  assert.match(source, /by:\s*\["price_table_id"\]/, "agrupado por price_table_id");
+  assert.match(source, /is_active:\s*true/, "tarifa apagada (is_active=false) não entra no agregado");
+  assert.match(source, /price_table_id:\s*\{\s*in:/, "um IN com os ids da página — não uma consulta por linha");
 });

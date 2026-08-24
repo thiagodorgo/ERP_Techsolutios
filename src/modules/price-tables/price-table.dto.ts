@@ -1,4 +1,4 @@
-import type { PriceTable, ListPriceTableResult, TariffScope } from "./price-table.types.js";
+import type { PriceTable, ListPriceTableViewResult, TariffScope } from "./price-table.types.js";
 
 // Ω5P PR-03 — labels PT-BR na fronteira do DTO (enum inglês no código; rótulo PT-BR na UI). §allowlist:
 // NUNCA expõe tenant_id.
@@ -32,12 +32,18 @@ export function toPriceTableDto(table: PriceTable) {
   };
 }
 
-export function toPriceTableListDto(result: ListPriceTableResult) {
+export function toPriceTableListDto(result: ListPriceTableViewResult) {
   return {
     items: result.items.map((table) => ({
       id: table.id,
       name: table.name,
       currency: table.currency,
+      // Agregado dos itens (Tarifas ativas desta tabela): a listagem precisa dizer QUANTO, não só em que
+      // moeda. Faixa NULA quando não há item — a UI mostra "—", nunca "R$ 0,00". §allowlist: são valores de
+      // negócio agregados, sem id, sem tenant, sem chave de storage.
+      itemCount: table.tariffSummary.itemCount,
+      minUnitPrice: table.tariffSummary.minUnitPrice,
+      maxUnitPrice: table.tariffSummary.maxUnitPrice,
       version: table.version,
       validFrom: table.validFrom?.toISOString() ?? null,
       validTo: table.validTo?.toISOString() ?? null,

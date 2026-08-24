@@ -1,3 +1,7 @@
+// Formatação de dinheiro REUSA o formatador do módulo irmão de Tarifas — é a mesma grandeza (unit_price da
+// Tarifa), com o mesmo tratamento de moeda desconhecida. Escrever um segundo formatador aqui garantiria que
+// os dois divergissem com o tempo.
+import { formatUnitPrice } from "../tariffs/tariffs.adapter";
 import type {
   PriceTableFieldError,
   PriceTableItem,
@@ -166,9 +170,39 @@ export function getPriceTableStatusActions(status: PriceTableStatus | string | n
   return PRICE_TABLE_STATUS_TRANSITIONS[current].map((target) => ({ target, label: TRANSITION_LABEL[target] }));
 }
 
+// ATENÇÃO ao nome: isto formata o CÓDIGO da moeda ("brl" → "BRL"), não um valor. Quem quer dinheiro usa
+// `formatTariffRange` (abaixo) / `formatUnitPrice` (módulo de Tarifas).
 export function formatCurrency(code: string | null | undefined): string {
   const normalized = (code ?? "").trim().toUpperCase();
   return normalized || "—";
+}
+
+// Quantidade de itens da tabela em PT-BR ("1 item" / "11 itens"). Zero → null (a linha vira "—").
+export function formatItemCount(itemCount: number | null | undefined): string | null {
+  if (itemCount === null || itemCount === undefined || !Number.isFinite(itemCount) || itemCount <= 0) return null;
+  const count = Math.trunc(itemCount);
+  return `${count} ${count === 1 ? "item" : "itens"}`;
+}
+
+// A coluna que faltava: quantos itens a tabela tem E em que faixa de valor — "11 itens · R$ 120,00 – R$ 3.400,00".
+// Regras honestas:
+//   • sem item ativo               → "—" (NUNCA "R$ 0,00": zero não é preço, é ausência de preço)
+//   • itens sem faixa conhecida    → só a contagem (o backend não mandou min/max)
+//   • faixa de um valor só (min=max) → um valor, sem travessão fingindo intervalo
+export function formatTariffRange(
+  table: Pick<PriceTableItem, "itemCount" | "minUnitPrice" | "maxUnitPrice" | "currency">,
+): string {
+  const count = formatItemCount(table.itemCount);
+  if (!count) return "—";
+
+  const min = table.minUnitPrice;
+  const max = table.maxUnitPrice;
+  if (min === null || min === undefined || max === null || max === undefined) return count;
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return count;
+
+  const low = formatUnitPrice(Math.min(min, max), table.currency);
+  const high = formatUnitPrice(Math.max(min, max), table.currency);
+  return low === high ? `${count} · ${low}` : `${count} · ${low} – ${high}`;
 }
 
 export function formatVersion(version: number | null | undefined): string {
@@ -214,6 +248,11 @@ function adaptPriceTable(input: unknown): PriceTableItem | null {
     name,
     description: readNullableString(item, ["description"]),
     currency: (readString(item, ["currency"]) ?? "BRL").toUpperCase(),
+    // Agregado dos itens. Ausente no payload → 0/null (a linha mostra "—"): a UI não inventa contagem
+    // nem faixa que o backend não afirmou.
+    itemCount: Math.max(0, Math.trunc(readNumber(item, ["itemCount", "item_count"]) ?? 0)),
+    minUnitPrice: readNullableNumber(item, ["minUnitPrice", "min_unit_price"]),
+    maxUnitPrice: readNullableNumber(item, ["maxUnitPrice", "max_unit_price"]),
     version: readNumber(item, ["version"]) ?? 1,
     validFrom: readNullableString(item, ["validFrom", "valid_from"]),
     validTo: readNullableString(item, ["validTo", "valid_to"]),
@@ -273,6 +312,10 @@ function readNumber(input: Record<string, unknown> | undefined, keys: readonly s
     if (Number.isFinite(parsed)) return parsed;
   }
   return undefined;
+}
+
+function readNullableNumber(input: Record<string, unknown>, keys: readonly string[]): number | null {
+  return readNumber(input, keys) ?? null;
 }
 
 function readBoolean(input: Record<string, unknown>, keys: readonly string[]): boolean | undefined {

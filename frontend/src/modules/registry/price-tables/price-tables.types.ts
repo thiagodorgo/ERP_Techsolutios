@@ -13,6 +13,12 @@ export type PriceTableItem = {
   readonly name: string;
   readonly description: string | null;
   readonly currency: string;
+  // Agregado dos ITENS da tabela (Tarifas ativas), vindo da listagem do backend. A "Tabela de Valores" é um
+  // contêiner: sem isto a linha anuncia a moeda e nunca um número. `itemCount: 0` + faixa NULA = tabela sem
+  // tarifa → a UI mostra "—" (nunca "R$ 0,00", que seria um preço inventado).
+  readonly itemCount: number;
+  readonly minUnitPrice: number | null;
+  readonly maxUnitPrice: number | null;
   readonly version: number;
   readonly validFrom: string | null;
   readonly validTo: string | null;

@@ -14,6 +14,7 @@ import { PriceTableFormModal } from "../components/PriceTableFormModal";
 import {
   filterPriceTables,
   formatCurrency,
+  formatTariffRange,
   formatValidity,
   formatVehicleCategory,
   formatVersion,
@@ -78,8 +79,8 @@ export function TabelasValoresPage() {
   const inPatios = pathname.startsWith("/patios");
   const breadcrumb = inPatios ? "Pátios" : "Cadastros";
   const subtitle = inPatios
-    ? "Tabelas de valores do pátio — escopo (público/privado), categoria de veículo, vigência e status de publicação."
-    : "Tabelas de valores da organização — moeda, versão, vigência e status de publicação.";
+    ? "Tabelas de valores do pátio — itens e faixa de valor, escopo (público/privado), categoria de veículo, vigência e status de publicação."
+    : "Tabelas de valores da organização — itens e faixa de valor, moeda, versão, vigência e status de publicação.";
   const { items, pagination, loading, error, refresh } = usePriceTables(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
@@ -149,6 +150,17 @@ export function TabelasValoresPage() {
   const columns: DenseColumn<PriceTableItem>[] = [
     { key: "name", header: "Nome", sortable: true, sortValue: (table) => table.name, render: (table) => <strong>{table.name}</strong> },
     { key: "currency", header: "Moeda", sortable: true, sortValue: (table) => table.currency, render: (table) => formatCurrency(table.currency) },
+    {
+      // A coluna que faltava: a tela dizia a moeda e nunca um número. Aqui aparecem os itens da tabela
+      // (Tarifas ativas) e a faixa de valor deles. Sem item → "—", nunca "R$ 0,00".
+      key: "tariffRange",
+      header: "Valores",
+      sortable: true,
+      tabular: true,
+      // Ordena pelo piso da faixa; tabela sem valor conhecido vai para o fim (-1 é menor que qualquer preço).
+      sortValue: (table) => (table.itemCount > 0 ? table.minUnitPrice ?? -1 : -1),
+      render: (table) => <strong>{formatTariffRange(table)}</strong>,
+    },
     {
       key: "version",
       header: "Versão",

@@ -1,4 +1,5 @@
 import type { PriceTableRepository } from "./price-table.repository.js";
+import type { PriceTableTariffSummary } from "./price-table.types.js";
 import type { TariffRepository } from "../tariffs/tariff.repository.js";
 
 // Ω5P PR-03 — camada de RESOLUÇÃO ESCOPADA e de NÃO-SOBREPOSIÇÃO (RN-TAR-01), PURA e sem acoplamento de
@@ -189,6 +190,56 @@ async function bucketPeers(
         serviceKeys: await serviceKeysOf(tariffRepo, tenantId, table.id),
       })),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+// (d) AGREGADO DOS ITENS — quantas tarifas ativas a tabela tem e em que faixa de valor. Mesma forma de
+// composição das demais: função pura que recebe o repositório por parâmetro (o singleton fica no *.service).
+//
+// UMA passada, nunca N+1: a implementação Prisma faz um único `groupBy` sobre `tariffs` (ver
+// `price-table-prisma.repository.ts`). Esta implementação existe para o modo MEMÓRIA e varre a coleção de
+// tarifas ativas do tenant UMA vez, agrupando em JS — o número de chamadas depende do total de tarifas
+// (paginação), NÃO do número de tabelas da página.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+export type PriceTableTariffAggregator = (input: {
+  readonly tenantId: string;
+  readonly priceTableIds: readonly string[];
+}) => Promise<ReadonlyMap<string, PriceTableTariffSummary>>;
+
+export function buildMemoryTariffSummaryAggregator(
+  tariffRepo: Pick<TariffRepository, "list">,
+): PriceTableTariffAggregator {
+  return async ({ tenantId, priceTableIds }) => {
+    const summaries = new Map<string, PriceTableTariffSummary>();
+    const wanted = new Set(priceTableIds);
+    if (wanted.size === 0) return summaries;
+
+    const pageSize = 200;
+    for (let offset = 0; ; offset += pageSize) {
+      // `isActive: true` = só tarifa VIVA (is_active=false é a exclusão lógica da tarifa).
+      const page = await tariffRepo.list({ tenantId, isActive: true, limit: pageSize, offset });
+      for (const tariff of page.items) {
+        if (!wanted.has(tariff.priceTableId)) continue;
+        if (!Number.isFinite(tariff.unitPrice)) continue;
+        const current = summaries.get(tariff.priceTableId);
+        if (!current) {
+          summaries.set(tariff.priceTableId, {
+            itemCount: 1,
+            minUnitPrice: tariff.unitPrice,
+            maxUnitPrice: tariff.unitPrice,
+          });
+          continue;
+        }
+        summaries.set(tariff.priceTableId, {
+          itemCount: current.itemCount + 1,
+          minUnitPrice: Math.min(current.minUnitPrice ?? tariff.unitPrice, tariff.unitPrice),
+          maxUnitPrice: Math.max(current.maxUnitPrice ?? tariff.unitPrice, tariff.unitPrice),
+        });
+      }
+      if (page.items.length < pageSize) break;
+    }
+    return summaries;
+  };
 }
 
 // F4 — pagina TODAS as tarifas ativas da tabela (não depende do teto de página para o invariante). Chave por
