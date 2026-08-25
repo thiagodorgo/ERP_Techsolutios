@@ -57,7 +57,16 @@ class AbortUnitOfWork extends Error {
   }
 }
 
-type Seed = { readonly titleId: string; readonly entryId: string; readonly chequeId: string; readonly accountId: string };
+type Seed = {
+  readonly titleId: string;
+  readonly entryId: string;
+  readonly chequeId: string;
+  readonly accountId: string;
+  // B-O6R-02 ciclo 4 · C3 (P7-v2) — ids que as fixtures de LEITURA precisam para PROVAR VIDA (retorno
+  // não-vazio). As PREPARES semeiam o estado casado (título por OS/fonte, estorno, cheque vinculado).
+  readonly workOrderId: string;
+  readonly sourceId: string;
+};
 
 function repos() {
   return {
@@ -129,7 +138,7 @@ async function seed(): Promise<Seed> {
     createdBy: ATOR,
     updatedBy: ATOR,
   });
-  return { titleId: title.id, entryId: entry.id, chequeId: cheque.id, accountId };
+  return { titleId: title.id, entryId: entry.id, chequeId: cheque.id, accountId, workOrderId: randomUUID(), sourceId: randomUUID() };
 }
 
 type Invoke = (ctx: FinancialUowContext, s: Seed) => Promise<unknown>;
@@ -158,6 +167,78 @@ const PREPARES: Record<string, (s: Seed) => Promise<void>> = {
     const { cheques } = repos();
     await cheques.transition({ tenantId: TENANT, chequeId: s.chequeId, fromStatus: "registered", toStatus: "deposited" });
     await cheques.transition({ tenantId: TENANT, chequeId: s.chequeId, fromStatus: "deposited", toStatus: "bounced" });
+  },
+  // B-O6R-02 ciclo 4 · C3 (P7-v2) — PROVA DE VIDA das LEITURAS: no ciclo 3 estas quatro fixtures
+  // consultavam ids aleatórios e devolviam VAZIO. Um read que sempre devolve vazio prova apenas que a
+  // função não estourou — não que ela LEU o que devia. Aqui o estado casado é semeado FORA da unidade
+  // (base repo, antes do snapshot; leitura não muta, então não há máscara), e a fixture assere o
+  // retorno NÃO-VAZIO (READ_RETURN_NONEMPTY).
+  "titles.findActiveByWorkOrder": async (s) => {
+    await repos().titles.create({
+      tenantId: TENANT,
+      direction: "receivable",
+      partyType: "customer",
+      partyName: "OS P7",
+      amount: 42,
+      currency: "BRL",
+      issueDate: new Date("2026-08-01T12:00:00.000Z"),
+      dueDate: new Date("2026-09-01T12:00:00.000Z"),
+      status: "open",
+      competencia: "2026-08",
+      workOrderId: s.workOrderId,
+      createdBy: ATOR,
+      updatedBy: ATOR,
+    });
+  },
+  "titles.findActiveBySource": async (s) => {
+    await repos().titles.create({
+      tenantId: TENANT,
+      direction: "payable",
+      partyType: "supplier",
+      partyName: "Fonte P7",
+      amount: 42,
+      currency: "BRL",
+      issueDate: new Date("2026-08-01T12:00:00.000Z"),
+      dueDate: new Date("2026-09-01T12:00:00.000Z"),
+      status: "open",
+      competencia: "2026-08",
+      sourceType: "fuel",
+      sourceId: s.sourceId,
+      createdBy: ATOR,
+      updatedBy: ATOR,
+    });
+  },
+  "entries.findActiveReversalOf": async (s) => {
+    await repos().entries.create({
+      tenantId: TENANT,
+      accountId: s.accountId,
+      direction: "out",
+      amount: 100,
+      currency: "BRL",
+      paymentMethod: "pix",
+      occurredAt: new Date("2026-08-02T12:00:00.000Z"),
+      competencia: "2026-08",
+      reversalOf: s.entryId,
+      createdBy: ATOR,
+      updatedBy: ATOR,
+    });
+  },
+  "cheques.findActiveByLinkedEntry": async (s) => {
+    const { cheques } = repos();
+    const linked = await cheques.create({
+      tenantId: TENANT,
+      accountId: s.accountId,
+      direction: "received",
+      chequeNumber: "000P7L",
+      bank: "Banco P7",
+      amount: 300,
+      currency: "BRL",
+      createdBy: ATOR,
+      updatedBy: ATOR,
+    });
+    await cheques.transition({ tenantId: TENANT, chequeId: linked.id, fromStatus: "registered", toStatus: "deposited" });
+    await cheques.transition({ tenantId: TENANT, chequeId: linked.id, fromStatus: "deposited", toStatus: "cleared" });
+    await cheques.attachClearingEntry(TENANT, linked.id, s.entryId, ATOR);
   },
 };
 
@@ -189,8 +270,8 @@ const TITLE_CALLS: Record<string, Invoke> = {
   softDelete: (ctx, s) => ctx.titles.softDelete(TENANT, s.titleId, ATOR),
   list: (ctx) => ctx.titles.list({ tenantId: TENANT, includeDeleted: true, limit: 100, offset: 0 }),
   findById: (ctx, s) => ctx.titles.findById(TENANT, s.titleId),
-  findActiveByWorkOrder: (ctx) => ctx.titles.findActiveByWorkOrder(TENANT, randomUUID(), "receivable"),
-  findActiveBySource: (ctx) => ctx.titles.findActiveBySource(TENANT, "fuel", randomUUID(), "payable"),
+  findActiveByWorkOrder: (ctx, s) => ctx.titles.findActiveByWorkOrder(TENANT, s.workOrderId, "receivable"),
+  findActiveBySource: (ctx, s) => ctx.titles.findActiveBySource(TENANT, "fuel", s.sourceId, "payable"),
   findByIdForUpdate: (ctx, s) => ctx.titles.findByIdForUpdate(TENANT, s.titleId),
 };
 
@@ -248,6 +329,34 @@ const CHEQUE_CALLS: Record<string, Invoke> = {
   findActiveByLinkedEntry: (ctx, s) => ctx.cheques.findActiveByLinkedEntry(TENANT, s.entryId),
 };
 
+// ------------------------------------------------------------------ prova de vida das LEITURAS (C3)
+
+/**
+ * B-O6R-02 ciclo 4 · C3 (P7-v2) — CRITÉRIO POR FIXTURE de "retorno não-vazio". Um `read` só prova que
+ * LEU o que devia se o retorno for não-vazio: `findById` truthy, `list` com itens, `sum` com movimento.
+ * Fixture read que legitimamente devolveria vazio TEVE O ARRANJO MUDADO (PREPARES) até devolver
+ * não-vazio — não se afrouxa o critério, arruma-se a fixture.
+ */
+const hasItems = (r: unknown): boolean => Array.isArray((r as { items?: unknown[] }).items) && (r as { items: unknown[] }).items.length > 0;
+const hasMovement = (r: unknown): boolean => Number((r as { inflow?: number }).inflow ?? 0) + Number((r as { outflow?: number }).outflow ?? 0) > 0;
+const isFound = (r: unknown): boolean => r != null;
+
+const READ_RETURN_NONEMPTY: Record<string, (result: unknown) => boolean> = {
+  "titles.list": hasItems,
+  "titles.findById": isFound,
+  "titles.findActiveByWorkOrder": isFound,
+  "titles.findActiveBySource": isFound,
+  "titles.findByIdForUpdate": isFound,
+  "entries.list": hasItems,
+  "entries.findById": isFound,
+  "entries.findActiveReversalOf": isFound,
+  "entries.findByIdForUpdate": isFound,
+  "entries.sumByAccount": hasMovement,
+  "cheques.list": hasItems,
+  "cheques.findById": isFound,
+  "cheques.findActiveByLinkedEntry": isFound,
+};
+
 // ------------------------------------------------------------------ o harness
 
 const REPOSITORIES = [
@@ -297,16 +406,44 @@ for (const repositorio of REPOSITORIES) {
       const antes = snapshotAll(TENANT);
       const uow = createMemoryFinancialUnitOfWork(repos());
 
+      // PROVA DE VIDA capturada DENTRO da unidade (C3/P7-v2): o retorno do membro e — para `write` — o
+      // snapshot DURANTE (após a mutação, antes do aborto). Sem isso o harness julga fixtures MORTAS:
+      // um write que virou no-op, ou um read que consulta id que não existe, passava por "estado
+      // idêntico" sem provar nada. Agora a fixture morta fica vermelha SOZINHA, nomeada.
+      let capturado: unknown;
+      let durante: string | undefined;
+
       await assert.rejects(
         () =>
           uow.run(TENANT, async (ctx) => {
-            await invoke(ctx, s);
+            capturado = await invoke(ctx, s);
+            if (kind === "write") {
+              durante = snapshotAll(TENANT);
+            }
             // O ABORTO: tudo que a unidade escreveu tem de desaparecer.
             throw new AbortUnitOfWork();
           }),
         (error: unknown) => error instanceof AbortUnitOfWork,
         `${repositorio.nome}.${membro}: o aborto do harness tem de sair pela unidade`,
       );
+
+      // PROVA DE VIDA — antes de o veredito write/read valer.
+      if (kind === "write") {
+        assert.notEqual(
+          durante,
+          antes,
+          `${repositorio.nome}.${membro} classificado WRITE mas NÃO MUDOU nada durante a unidade — fixture MORTA. ` +
+            "Invocou e o estado ficou idêntico: o veredito de rollback abaixo não valeria nada (no-op sempre 'reverte').",
+        );
+      } else {
+        const criterio = READ_RETURN_NONEMPTY[`${repositorio.nome}.${membro}`];
+        assert.ok(criterio, `read ${repositorio.nome}.${membro} sem critério de retorno declarado em READ_RETURN_NONEMPTY`);
+        assert.ok(
+          criterio(capturado),
+          `${repositorio.nome}.${membro} classificado READ devolveu VAZIO — fixture MORTA. ` +
+            "Um read que não encontra nada prova só que não estourou; ajuste o arranjo (PREPARES) até ler algo real.",
+        );
+      }
 
       const depois = snapshotAll(TENANT);
       assert.equal(
@@ -323,7 +460,7 @@ for (const repositorio of REPOSITORIES) {
   }
 }
 
-test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 30 membros write/read + 3 test_reset", () => {
+test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 30 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 3 test_reset", () => {
   assert.equal(exercidos, 30, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 12+9+9 = 30)`);
   assert.equal(testReset, 3, `o harness asseverou ${testReset} membros test_reset ausentes do contexto (esperado 3)`);
 });
