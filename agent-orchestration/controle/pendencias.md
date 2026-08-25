@@ -3091,3 +3091,29 @@ razão com trilha), não uma transição de estado.
 Encaminhamento: se o dono/junta quiserem uma transição `cleared → deposited` (des-compensar), ela precisa de
 desenho próprio — quem pode, com que trilha, e o que acontece com a conciliação do lançamento compensado.
 Registrado para não virar surpresa em produção. status: ABERTA.
+
+## D-DIVERGENCIA-C4-PONTA-AUSENTE (2026-08-25) — plano do ciclo 4 (C4.1) REABRE um invariante do ciclo 3
+
+**Registrada pelo desenvolvedor do ciclo 4 (§C7.4-bis: quem implementa registra a divergência plano×código,
+não a resolve por conta própria). §A2: conflito registrado ANTES da consolidação.**
+
+O plano `B-O6R-02-ciclo4-plano.md` §C4.1 manda: *"ponta DECLARADA ausente do razão é ERRO em TODOS os status
+(nunca skip silencioso)"*, e o §0.6 nomeia `reversalClosure` (financial-ledger.ts:75) como *"a mecânica exata
+do B-4"*. **Medido por mim, por execução**, o comportamento ATUAL do helper para ponta declarada + razão
+vazio: `cleared` → ACUSA (vermelho de regra "e vale 0"); `bounced`/`deposited`/`registered`/`cancelled` →
+**PASSA em silêncio** (4/5 mudos). Isso CONFIRMA o B-4.
+
+**A divergência:** existe teste committado do CICLO 3 — `tests/financial-ledger-helper.test.ts`,
+*"[P6] ponta declarada que não existe no razão não inventa membro nem quebra a travessia"* — que assere,
+com racional escrito (*"um id órfão não pode virar exceção de runtime — tem de virar o vermelho de REGRA...
+ponta sem linha no razão é ausência de dinheiro, não erro de programa"*), EXATAMENTE o oposto do C4.1: que a
+ponta ausente NÃO é erro, e sim o vermelho de regra do `cleared`. O plano do ciclo 4 **não menciona** esse
+teste ao mandar transformar a ponta ausente em erro.
+
+**Como foi resolvido (seguindo o plano, não julgando-o):** implementei o C4.1 (ponta ausente = `assert.fail`
+nomeando as duas causas, nos 5 status — ainda AssertionError, não exceção de runtime, então o espírito
+"não crash de programa" do ciclo 3 é preservado) e ATUALIZEI o teste "ponta órfã" do ciclo 3 para a nova
+regra (agora espera o erro de ponta ausente). O plano §5 lista `financial-ledger-helper.test.ts` como arquivo
+que o dev do C4 modifica, então a atualização está no escopo. **A JUNTA decide se a reabertura é aceita** —
+este registro existe para que a reversão do invariante do ciclo 3 seja consciente, com evidência, e não passe
+silenciosa. status: REGISTRADA (aguarda ata da junta do ciclo 4).

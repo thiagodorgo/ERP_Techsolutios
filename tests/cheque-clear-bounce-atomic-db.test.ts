@@ -220,6 +220,68 @@ if (!connectionString) {
     }
   });
 
+  // B-O6R-02 ciclo 4 · C4 (P6-v2) — ACOPLAMENTO carregador × helper sob Postgres (D25 committado, -db).
+  // Estado com as pontas APAGADAS: com o razão COMPLETO (o carregador -db NÃO filtra deleted_at) o helper
+  // julga certo; se o carregador voltar a filtrar deleted_at (a mutação do D25b), as pontas somem e o
+  // C4.1 EXPLODE por ponta ausente. Prova que a completude do razão -db é LOAD-BEARING.
+  test("G-C4 — cheque 'bounced' com pontas APAGADAS: expectChequeLedger passa com o razão completo; filtrar deleted_at ACUSA ponta ausente", async () => {
+    const h = await bootstrap(connection);
+    const { client } = h;
+    try {
+      const seed = await seedTenant(h, "c4-acoplamento");
+      const { tenantId, chequeId, accountId } = seed;
+      await h.chequeService.deposit(seed.actor, chequeId);
+      const cleared = await h.chequeService.clear(seed.actor, chequeId);
+      const bounced = await h.chequeService.bounce(seed.actor, chequeId, { reason: "sem fundos" });
+
+      // MANIPULAÇÃO TEST-ONLY (SQL cru, bypassa o guard cheque_entry_immutable de propósito): apaga as
+      // DUAS pontas. Não são originais com estorno vivo, então os triggers do C1 não as bloqueiam.
+      await client.$executeRawUnsafe(
+        "UPDATE financial_entries SET deleted_at = now() WHERE tenant_id = $1::uuid AND id = $2::uuid",
+        tenantId,
+        cleared.clearedEntryId!,
+      );
+      await client.$executeRawUnsafe(
+        "UPDATE financial_entries SET deleted_at = now() WHERE tenant_id = $1::uuid AND id = $2::uuid",
+        tenantId,
+        bounced.bounceEntryId!,
+      );
+
+      // (a) COM a linha (o carregador -db carrega o razão completo): 'bounced' com 0 vivo é coerente.
+      await expectChequeLedger(client, tenantId, chequeId, "pontas apagadas — razão completo (-db)");
+
+      // (b) SEM a linha (o carregador volta a filtrar deleted_at — a mutação do D25b): explode por ponta
+      //     ausente. Filtro simulado inline para o acoplamento ficar committado, não só no drill.
+      const cheque = await client.cheque.findFirst({ where: { tenant_id: tenantId, id: chequeId } });
+      assert.ok(cheque);
+      const linkedIds = [cheque.cleared_entry_id, cheque.bounce_entry_id].filter((id): id is string => id != null);
+      const rowsVivos = await client.financialEntry.findMany({
+        where: { tenant_id: tenantId, account_id: accountId, deleted_at: null },
+      });
+      assert.throws(
+        () =>
+          expectChequeLedgerCoherent({
+            status: cheque.status,
+            direction: cheque.direction,
+            amount: Number(cheque.amount),
+            linkedIds,
+            ledger: rowsVivos.map((row) => ({
+              id: row.id,
+              direction: row.direction,
+              amount: Number(row.amount),
+              reversalOf: row.reversal_of,
+              deletedAt: row.deleted_at,
+            })),
+            label: "pontas apagadas — razão filtrado (-db)",
+          }),
+        (error: unknown) => error instanceof assert.AssertionError && /ausente do razão carregado/.test((error as Error).message),
+        "carregador -db que filtra deleted_at derruba este caso: as pontas apagadas somem e a completude quebra",
+      );
+    } finally {
+      await teardown(h);
+    }
+  });
+
   test("G6 — clear × clear com barreira: perdedor bloqueia no cheque e sai 409; invariante cleared ⇔ cleared_entry_id ⇔ entry existe", async () => {
     const h = await bootstrap(connection);
     const { client } = h;

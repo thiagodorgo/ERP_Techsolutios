@@ -223,19 +223,33 @@ test("[P6] contrapartida APAGADA não ressuscita o dinheiro: o par estornado-e-a
   });
 });
 
-test("[P6] ponta declarada que não existe no razão não inventa membro nem quebra a travessia", () => {
-  // Robustez da fronteira: o chamador promete completude, mas um id órfão não pode virar exceção
-  // de runtime — tem de virar o vermelho de REGRA (cleared sem lançamento vivo vale 0, não 100).
-  expectRed(
-    {
-      status: "cleared",
-      direction: "received",
-      amount: 100,
-      linkedIds: ["entry-que-nao-existe"],
-      ledger: [],
-      label: "ponta órfã",
-    },
-    "e vale 0",
-    "ponta sem linha no razão é ausência de dinheiro, não erro de programa",
-  );
-});
+// ------------------------------------------------------------------ C4 (P6-v2): ponta ausente é ERRO
+//
+// B-O6R-02 ciclo 4 · C4 (fecha B-4). REVISÃO CONSCIENTE de um teste do ciclo 3 (registrada em
+// controle/pendencias.md — D-DIVERGENCIA-C4-PONTA-AUSENTE). No ciclo 3 este arquivo tinha o teste
+// "[P6] ponta declarada que não existe no razão não inventa membro" afirmando que a ponta ausente NÃO
+// é erro, e sim o vermelho de regra do `cleared`. Medido por execução: sob essa política, ponta
+// declarada + razão vazio PASSAVA EM SILÊNCIO em 4 dos 5 status (só `cleared` acusava). Isso é o B-4.
+//
+// A política do ciclo 4 (§C4.1): ponta declarada ausente do razão é ERRO em TODOS os status — as duas
+// causas (razão incompleto por filtro de quem carregou; ou ponta fantasma) são defeito, nunca
+// "ausência de dinheiro". Continua sendo AssertionError (não crash de runtime), então o espírito do
+// ciclo 3 ("id órfão não vira exceção de programa") é preservado; o que muda é silêncio → vermelho
+// NOMEADO, e nos 5 status, não em 1.
+
+for (const status of ["cleared", "bounced", "deposited", "registered", "cancelled"] as const) {
+  test(`[C4/P6-v2] ponta DECLARADA ausente do razão é ERRO no status '${status}' (mata o silêncio medido em 4/5)`, () => {
+    expectRed(
+      {
+        status,
+        direction: "received",
+        amount: 100,
+        linkedIds: ["entry-que-nao-existe"],
+        ledger: [], // razão vazio: quem carregou filtrou a ponta, ou é fantasma
+        label: `ponta ausente [${status}]`,
+      },
+      "ausente do razão carregado",
+      `status '${status}': ponta declarada ausente do razão tem de ser vermelho NOMEADO, não silêncio`,
+    );
+  });
+}

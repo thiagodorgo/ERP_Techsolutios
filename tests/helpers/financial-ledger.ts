@@ -73,7 +73,22 @@ function reversalClosure(ledger: readonly ChequeLedgerRow[], linkedIds: readonly
 
   for (const id of linkedIds) {
     const row = byId.get(id);
-    if (row && !members.has(id)) {
+    // B-O6R-02 ciclo 4 · C4 (P6-v2, fecha B-4) — PONTA DECLARADA AUSENTE É ERRO, nos 5 status. Até o
+    // ciclo 3 o `if (row && ...)` PULAVA em silêncio a ponta que não estava no razão; medido, isso
+    // passava em 4 dos 5 status (só `cleared` acusava, por regra). As duas causas são defeito, não
+    // "ausência de dinheiro": (a) razão INCOMPLETO — quem carregou filtrou (deleted_at, vínculo,
+    // paginação); (b) ponta FANTASMA — o cheque aponta um lançamento que não existe. Continua sendo
+    // AssertionError (não crash de runtime), então o espírito do ciclo 3 é preservado; o que muda é
+    // que a ausência vira vermelho NOMEADO em vez de silêncio. (Divergência D-DIVERGENCIA-C4-PONTA-AUSENTE
+    // registrada em controle/pendencias.md: reabre o teste "ponta órfã" do ciclo 3.)
+    assert.ok(
+      row,
+      `ponta declarada '${id}' ausente do razão carregado — e isso é DEFEITO, não ausência de dinheiro: ` +
+        "(a) razão INCOMPLETO (quem carregou filtrou deleted_at/vínculo/paginação) ou (b) ponta FANTASMA " +
+        "(o cheque aponta um lançamento que não existe). O fecho por estorno não pode partir de uma âncora " +
+        "que não está no razão.",
+    );
+    if (!members.has(id)) {
       members.set(id, row);
       frontier.push(id);
     }

@@ -13,6 +13,7 @@ import {
 } from "../src/modules/financial-titles/index.js";
 import {
   createMemoryFinancialEntryService,
+  getMemoryFinancialEntryRepositoryForTests,
   resetFinancialEntryRuntimeForTests,
 } from "../src/modules/financial-entries/index.js";
 import {
@@ -557,6 +558,55 @@ test("[C2/P3] DELETE do lançamento de COMPENSAÇÃO → 422 cheque_entry_immuta
   assert.equal((await entries.get(ctx, cleared.clearedEntryId!)).deletedAt, undefined);
   assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
   assert.equal((await entries.balance(ctx, account.id)).balance, 250);
+});
+
+// B-O6R-02 ciclo 4 · C4 (P6-v2) — ACOPLAMENTO carregador × helper (D25 committado). O que faz o drill
+// `include_deleted: true→false` MORDER para sempre: um estado committado cujo veredito DEPENDE de a
+// linha APAGADA estar no razão. Com a completude (include_deleted no chequeLedgerInput), o helper julga
+// certo; se o carregador voltar a filtrar deleted_at, as pontas somem e o C4.1 EXPLODE por ponta ausente.
+test("[C4/P6-v2][acoplamento] cheque com pontas APAGADAS: helper julga certo COM a linha no razão e ACUSA sem ela", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  const cleared = await cheques.clear(ctx, cheque.id);
+  const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+
+  // MANIPULAÇÃO TEST-ONLY (bypassa o guard cheque_entry_immutable DE PROPÓSITO, indo direto ao
+  // repositório): apaga as DUAS pontas do cheque. O cheque segue 'bounced'; as pontas viram linhas
+  // APAGADAS no razão. É o estado em que a completude do razão passa a decidir o veredito.
+  const entryRepo = getMemoryFinancialEntryRepositoryForTests();
+  await entryRepo.softDelete(ctx.tenantId, cleared.clearedEntryId!, ctx.userId);
+  await entryRepo.softDelete(ctx.tenantId, bounced.bounceEntryId!, ctx.userId);
+
+  const loaded = await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id);
+
+  // (a) COM a linha (razão COMPLETO, include_deleted): 'bounced' com 0 lançamento vivo no fecho é
+  //     coerente (0 ou 2) → o helper JULGA CERTO (verde).
+  expectChequeLedgerCoherent({
+    status: "bounced",
+    direction: "received",
+    amount: 100,
+    ...loaded,
+    label: "pontas apagadas — razão completo",
+  });
+
+  // (b) SEM a linha (o carregador volta a filtrar deleted_at — exatamente a mutação do D25): as pontas
+  //     somem do razão e o helper EXPLODE por ponta ausente (C4.1). O veredito DEPENDE da completude.
+  const filtrado = { ...loaded, ledger: loaded.ledger.filter((row) => row.deletedAt == null) };
+  assert.throws(
+    () =>
+      expectChequeLedgerCoherent({
+        status: "bounced",
+        direction: "received",
+        amount: 100,
+        ...filtrado,
+        label: "pontas apagadas — razão filtrado",
+      }),
+    (error: unknown) => error instanceof assert.AssertionError && /ausente do razão carregado/.test((error as Error).message),
+    "carregador que filtra deleted_at derruba este caso: as pontas apagadas somem e a completude quebra",
+  );
 });
 
 test("[C2/P3] o CONTRA-lançamento do bounce também é imutável: reverse e delete → 422; net segue ZERO", async () => {
