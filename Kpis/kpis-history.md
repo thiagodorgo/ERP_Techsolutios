@@ -2267,3 +2267,50 @@ ciclo) e ja registrada em `P-O6R-ARNES-ISOLAMENTO` pelo ciclo 2.
 Nenhum achado muda de status: a junta 5/5 do ciclo 3 ainda **nao ocorreu**. `pr`, `merge_commit` e
 `approved_head` seguem `null`; `mvp_demo`/`mvp_vendavel` intocados; `blocks_completed` inalterado. Deploy segue
 bloqueado pela J-6R e o gate `G-A109FD7-PUBLICADO` continua bloqueando push/PR/merge.
+
+## 2026-08-25 - B-O6R-02 CICLO 4 (fecha B-1..B-5 DE UMA VEZ, cada um pela CLASSE) — Node v20.19.5
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend (canonica 3) | 2743 / 2745 (ciclo 3 na mesma forma: 2717/2719 — +26) |
+| Focados | 300 / 300 (memoria 248 + Postgres 52) |
+| Flutter / Frontend Smoke | 864/864 · 1126/1126 (CARREGADOS — trilhas nao tocadas, §C3.3) |
+| Blocos Entregues | 151 (inalterado — so incrementa apos merge) |
+
+Ordem do dono: *"faca direito para so fazer uma vez. acabe com esses bugs."* Os CINCO bloqueantes da
+`J-B-O6R-02-ciclo3` fecham num ciclo so, cada um pela CLASSE.
+
+- **C1/P9 (B-1)** — o `delete` entra no MESMO lar do `reverse`: `uow.run` + `findByIdForUpdate` (FOR UPDATE) +
+  re-check dos vinculos SOB o lock; o perdedor da corrida recebe os MESMOS erros do controle sequencial
+  (422/404), nenhum codigo novo. E a migration ADITIVA `add_reversal_pair_atomicity` com par de triggers que
+  torna a metade orfa impossivel no banco mesmo para SQL cru (o `FOR SHARE` do trigger do estorno serializa os
+  dois caminhos no row lock do original). Suites PERMANENTES de corrida medem **as DUAS ordens de disparo** —
+  medido: a corrida fabricava **19/20** em memoria, e a Forma B (delete-first, HTTP) media **0/20**, o
+  verde-cego que obriga medir as duas ordens.
+- **C2/P5-v2 (B-2)** — os detectores de dono DERIVAM de `FINANCIAL_ENTRY_FIELD_CLASS` (`UNDO_OWNER_FIELDS`): o
+  valor da classificacao ganhou consumidor; mudar a classe de qualquer campo muda o comportamento (D22 as duas
+  direcoes).
+- **C3/P7-v2 (B-3-novo)** — o harness de classificacao so julga fixture VIVA (write prova que mutou durante a
+  unidade; read prova retorno nao-vazio).
+- **C4/P6-v2 (B-4)** — ponta declarada ausente do razao e ERRO nos 5 status (medido: passava em **4/5** em
+  silencio); um caso committado por carregador (memoria e -db) depende da linha apagada estar no razao.
+- **C5 (B-5)** — guard de skip do runner (P8) com `DATABASE_URL` presente (orcamento 2, os dois skips
+  `RBAC_DB_PARITY` nomeados); contrato re-versionado `...c4` com a concorrencia amarrada por nome as suites; e a
+  **CORRECAO da afirmacao FALSA do ciclo 3**.
+
+**Correcao (C5.2):** a nota do ciclo 3 dizia que `node --test <arquivo inexistente> <validos>` sai **exit 0** e
+descarta o inexistente em silencio. Re-medido no **Node 20.19.5** (o do `package.json` e dos 3 jobs do
+`ci.yml`): e FALSO — sai **EXIT 1** com `Could not find '...arquivo-que-nao-existe.test.ts'` e NADA roda. O exit
+0 com descarte silencioso e comportamento do **Node 22** do dev que publicou a medicao, nao do Node da CI.
+
+**Drills D21-D28** com controle, exit registrado e restauracao conferida por MD5 (D21 obriga as duas ordens; D23
+usa o drop dos triggers como controle pre-migration no mesmo cluster; D28 prova up->down->re-up + o WARNING do
+censo com orfao semeado). **Divergencia registrada** `D-DIVERGENCIA-C4-PONTA-AUSENTE` (`controle/pendencias.md`):
+o C4.1 reabre um teste do ciclo 3 que afirmava o oposto — segui o plano e registrei a divergencia com evidencia
+para a junta decidir (§C7.4-bis: quem implementa registra, nao resolve por fiat).
+
+Nenhum achado muda de status: a junta 5/5 do ciclo 4 ainda **nao ocorreu**. `pr`, `merge_commit` e
+`approved_head` seguem `null`; `mvp_demo`/`mvp_vendavel` intocados; `blocks_completed` inalterado. Deploy segue
+bloqueado pela J-6R e o gate `G-A109FD7-PUBLICADO` continua bloqueando push/PR/merge.

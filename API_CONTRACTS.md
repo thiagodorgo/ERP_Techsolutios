@@ -396,7 +396,7 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
   estado de fechamento. Nenhum erro inclui `tenant_id`, PII ou detalhe SQL.
 - O banco mantém `0 <= paid_amount <= amount`; violação SQL direta falha com SQLSTATE `23514`.
 
-**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-08-24.b-o6r-02-c3`):**
+**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-08-25.b-o6r-02-c4`):**
 
 A regra única das duas rotas: **lançamento vinculado a um agregado só se desfaz PELO FLUXO DO
 AGREGADO.** `DELETE /financial-entries/:id` e `POST /financial-entries/:id/reverse` recusam com
@@ -418,6 +418,18 @@ tenant estranho recebe `404` antes de qualquer regra financeira):
 
 `reverse` de uma liquidação é **permitido** — é o fluxo do agregado título, e devolve o pagamento na
 mesma unidade da contrapartida. Nenhum destes erros inclui `tenant_id`, PII nem detalhe SQL.
+
+**Indivisibilidade SOB CONCORRÊNCIA (B-O6R-02 ciclo 4 · Ω6R-DIN-002 concorrente).** A recusa acima não
+vale só na chamada sequencial: `DELETE` e `reverse` do MESMO par **nunca comprometem ambas** sob
+concorrência — o efeito líquido no saldo é 0, ou uma delas recusa, SEMPRE. As duas portas serializam no
+`SELECT … FOR UPDATE` do lançamento original dentro da unidade (`uow.run`), e o perdedor re-checa sob o
+lock, recebendo os MESMOS erros da tabela acima (nunca um `softDelete` cego). No banco, a **metade órfã**
+(estorno vivo apontando original apagado) é impossível **por construção**, mesmo para escritor que não
+passa pelo serviço: a migration `add_reversal_pair_atomicity` instala um par de triggers, e o `FOR SHARE`
+do trigger do estorno serializa os dois caminhos no row lock do original. Se esta invariante regredir, as
+suítes nomeadas aqui ficam vermelhas — o contrato não sobrevive sozinho: `tests/financial-entries.test.ts`
+(corrida em memória e HTTP, as DUAS ordens de disparo) e `tests/financial-entry-delete-reverse-race-db.test.ts`
+(barreira determinística + SQL cru contra os triggers, sob Postgres).
 
 ### 3.12 Custódia / Pátios de Recolhimento (SIGPRV — Ω5P)
 

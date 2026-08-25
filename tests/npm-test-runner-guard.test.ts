@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   describePersistenceMode,
+  evaluateDbSkipBudget,
   expandTestFiles,
   parseTapSummary,
   resolvePersistenceMode,
@@ -439,5 +440,60 @@ test("main(): com `memory` EXPORTADO (o arranjo da CI) ⇒ declara HERDADO, não
     assert.match(run.stderr, /CORE_SAAS_PERSISTENCE=memory/);
     assert.match(run.stderr, /herdado do ambiente/i);
     assert.doesNotMatch(run.stderr, /padrão do runner/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Guard 3 (C5.3, fecha P8) — com DATABASE_URL presente, skip acima do orçamento é uma suíte -db que
+// se auto-pulou em silêncio. Antes deste guard o pulo era CEGO: o P8 aprovado registrou essa cegueira.
+// ---------------------------------------------------------------------------
+
+// Fixtura com N testes PULADOS (skip). Pulados contam em `# skipped` mas não em `# fail`, então sem o
+// guard o runner sairia 0 — o verde silencioso que o P8 existe para pegar.
+function fixtureComPulos(n: number): string[] {
+  const linhas = ['import test from "node:test";'];
+  for (let i = 0; i < n; i++) {
+    linhas.push(`test("fixture: pula ${i}", { skip: "pulei de proposito" }, () => {});`);
+  }
+  // um teste que passa, para o TAP ter execução real (não cair no guard de "# tests 0")
+  linhas.push('import assert from "node:assert/strict";');
+  linhas.push('test("fixture: um que passa", () => { assert.ok(true); });');
+  return linhas;
+}
+
+test("evaluateDbSkipBudget: só acusa com DATABASE_URL presente E skipped acima do orçamento", () => {
+  // sem banco → guard inativo, qualquer skip passa
+  assert.equal(evaluateDbSkipBudget({ skipped: 9 }, {}).exceeded, false);
+  // com banco, dentro do orçamento (2) → ok
+  assert.equal(evaluateDbSkipBudget({ skipped: 2 }, { DATABASE_URL: "postgres://x" }).exceeded, false);
+  // com banco, acima do orçamento → acusa
+  assert.equal(evaluateDbSkipBudget({ skipped: 3 }, { DATABASE_URL: "postgres://x" }).exceeded, true);
+  // DATABASE_URL vazia conta como ausente
+  assert.equal(evaluateDbSkipBudget({ skipped: 9 }, { DATABASE_URL: "  " }).exceeded, false);
+});
+
+test("main(): suíte que PULA acima do orçamento + DATABASE_URL presente ⇒ runner VERMELHO (guard de skip)", () => {
+  // MUTAÇÃO QUE ESTE CASO MATA: remover o guard de skip (C5.3) — uma suíte -db se auto-pularia e o
+  // runner sairia 0 com o banco presente. 3 pulos > orçamento 2.
+  withTempDir((dir) => {
+    writeFixture(dir, "pulos.test.ts", fixtureComPulos(3));
+
+    const run = runRunner(dir, { DATABASE_URL: "postgres://dummy:5432/x", CORE_SAAS_PERSISTENCE: undefined });
+
+    assert.notEqual(run.status, 0, `esperava vermelho por skip acima do orçamento: ${run.stdout || run.stderr}`);
+    assert.match(run.stderr, /GUARD DE SKIP/i);
+  });
+});
+
+test("main(): os MESMOS pulos SEM DATABASE_URL ⇒ runner VERDE (o guard só vale com banco presente)", () => {
+  // Sem este controle, um guard que disparasse sempre (mesmo sem banco) passaria despercebido — e
+  // quebraria a forma canônica 1 (npm test sem DATABASE_URL), onde pular -db é o esperado.
+  withTempDir((dir) => {
+    writeFixture(dir, "pulos.test.ts", fixtureComPulos(3));
+
+    const run = runRunner(dir, { DATABASE_URL: undefined, CORE_SAAS_PERSISTENCE: undefined });
+
+    assert.equal(run.status, 0, `sem DATABASE_URL o guard de skip não pode disparar: ${run.stdout || run.stderr}`);
+    assert.doesNotMatch(run.stderr, /GUARD DE SKIP/i);
   });
 });
