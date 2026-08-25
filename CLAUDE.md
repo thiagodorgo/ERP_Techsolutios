@@ -329,6 +329,19 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    críticas (deploy de PRODUÇÃO, dependência nova, contratação/config de serviço externo, **chamada a serviço
    externo tarifado/pago**). Votos+justificativa
    em `agent-orchestration/omega/juntas/J-<n>-<tema>.md`. **Junta sem registro = merge inválido.**
+
+   **1-bis. INSPEÇÃO DE TERRENO ANTES DE TODA JUNTA — fail-closed (decisão do dono, 2026-08-24,
+   `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`
+   (Fable por contrato). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
+   viva; **worktree próprio para cada jurado que muta** e **cluster Postgres descartável por jurado** (a base
+   viva não é alvo de ninguém); insumos do briefing presentes (parecer do crítico + PD nos ciclos ≥3);
+   afirmações da ata anterior marcadas "a re-verificar" e não herdadas como fato; inelegibilidade dos papéis
+   conferida por nome; **fatia S0 executada** (espelho Codex consistente por `sync-agent-agents.mjs --check`);
+   baseline honesto medido; e plano de perda de jurado declarado. **Sem o `LIBERADO` dele a junta não
+   começa.** Por quê: três ciclos julgaram bem e falharam sempre no terreno — a contaminação entre jurados
+   "encerrada" num ciclo voltou no seguinte, a fatia S0 faltou dois ciclos seguidos, e uma premissa falsa da
+   ata anterior foi herdada como fato. O inspetor é para a junta o que o cluster descartável é para o jurado
+   de banco: a condição de o voto significar algo.
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.

@@ -1543,3 +1543,32 @@ foram desmentidas por execução (R-B-O6R-01-ciclo1):**
    passo 6, medido na ativação), não do trigger. O header da migração recebeu a mesma enumeração
    honesta (edição só-comentário; `migrate deploy` no dev não recusou — nada ressincronizado), e o
    guard 10c (`tests/auth-invariant-guards.test.ts`) trava `DISABLE TRIGGER` em `src/**` (baseline 0).
+
+---
+
+## D-INSPETOR-TERRENO-JUNTA (decisão do dono, 2026-08-24) — inspeção de terreno antes de toda junta
+
+**Contexto:** três ciclos de junta julgaram muito bem e falharam sempre no mesmo lugar — o **terreno**. A
+contaminação entre jurados foi "encerrada" para a base viva no ciclo 2 (`tenants` 320→322→321) e **voltou** no
+ciclo 3 no worktree compartilhado (`financial-entry-undo-owners.ts` mutado por um jurado, md5 `4c44ee14…` vs
+pristino, flagrado por 3 jurados independentes). A fatia S0 (espelho Codex dos especialistas) faltou **dois
+ciclos seguidos**. E o planejador do ciclo 3 herdou da ata do ciclo 2 a premissa "birth-fixed se sustenta",
+que o crítico e o dba **falsificaram por execução**. É a mesma classe de defeito que os jurados são ótimos em
+achar no código — "um defeito declarado fechado que voltou um nível acima" — acontecendo na orquestração deles.
+
+**Decisão:** nasce o agente `inspetor-de-terreno-da-junta` (`.claude/agents/`, espelhado em `.agents/agents/`),
+**Fable por contrato**, com poder de VETO sobre o **start** da junta. Ele não julga o mérito da entrega — julga
+o TABULEIRO, fail-closed (o que ele não medir vira BLOQUEADO):
+
+1. **Isolamento:** árvore do head sem mutação viva (md5 × blob); worktree próprio para cada jurado que muta;
+   cluster Postgres descartável por jurado; a base viva não é alvo de ninguém; sem resíduo de jurado anterior.
+2. **Insumos:** parecer do crítico + PD (≥5 fontes) nos ciclos ≥3; afirmações da ata anterior marcadas
+   "a re-verificar", nunca herdadas como fato.
+3. **Papéis (§C7.4-bis):** inelegibilidade conferida por nome contra as atas; composição cobre a competência
+   dos achados.
+4. **Fatia S0:** espelho Codex consistente (`node scripts/sync-agent-agents.mjs --check` verde).
+5. **Baseline honesto** medido ANTES (`npm run check` exit 0, tree limpa); **plano de perda de jurado**
+   declarado (o voto perdido do ciclo 3 — jurado morto em erro de API sem plano de quórum).
+
+**Amarração:** §C7 cláusula **1-bis** de `CLAUDE.md` e `AGENTS.md` (espelhadas) — **sem o `LIBERADO` do
+inspetor a junta não começa.** Um agente que ninguém invoca é teatro; esta cláusula é o que o torna real.
