@@ -21,11 +21,19 @@ import type { FinancialEntry, FinancialEntryError } from "./financial-entry.type
 // inspeciona. O precedente da casa já está em `src/` e provado:
 // `src/modules/core-saas/permissions/catalog.ts`.
 //
-// O LIMITE, dito aqui antes que alguém o descubra: esta construção força a DECISÃO a existir e a
-// aparecer no diff — não força a decisão a estar CERTA. Classificar de má-fé um vínculo novo como
-// `"plain"` compila. O que fecha esse resto é o par {decisão visível no diff + junta}, o mesmo par
-// que a ata aceitou como fail-closed no precedente do `catalog.ts`. Nenhuma construção conhecida
-// deste repositório faz melhor, e este arquivo não finge que faz.
+// O QUE MUDOU NO CICLO 4 (C2/P5-v2 — o fato medido, sem overclaim). Até o ciclo 3 o VALOR deste mapa
+// não tinha consumidor: `rg FINANCIAL_ENTRY_FIELD_CLASS src tests` achava só a declaração e um
+// `Object.keys` no censo — classificar um campo certo ou errado NÃO movia teste nenhum (o `ownsEntry`
+// decidia por `entry.titleId != null` / `entry.reversalOf != null` escritos à mão). Desde o ciclo 4 os
+// detectores de dono DERIVAM deste mapa (`UNDO_OWNER_FIELDS`, abaixo): desclassificar `titleId` deixa
+// o delete de uma liquidação ACEITO (testes vermelhos); classificar um campo `plain` como dono recusa
+// um lançamento que era livre (testes vermelhos). O D22 prova as duas direções.
+//
+// O RESÍDUO, dito antes que alguém o descubra: esta construção força a DECISÃO a existir, a aparecer no
+// diff E a ter efeito observável — mas não força a decisão a estar CERTA. Classificar de boa-fé um
+// campo NOVO como `"plain"` compila e passa. O que fecha esse resto é o par {decisão visível no diff +
+// junta}, o mesmo par que a ata aceitou como fail-closed no precedente do `catalog.ts`. Nenhuma
+// construção conhecida deste repositório faz melhor, e este arquivo não finge que faz.
 // -----------------------------------------------------------------------------------------------
 
 /** Identidade de cada agregado que RECLAMA um lançamento — a chave da tabela de políticas. */
@@ -85,6 +93,44 @@ export const FINANCIAL_ENTRY_FIELD_CLASS = {
  * Registrar a assimetria aqui evita que alguém "conserte" o mapa inventando um campo que não existe.
  */
 export const CHEQUE_LINK_LIVES_ON_THE_CHEQUE_SIDE = true;
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-02 ciclo 4 · C2 (P5-v2) — O VALOR DA CLASSIFICAÇÃO GANHA CONSUMIDOR.
+//
+// `UNDO_OWNER_FIELDS` é DERIVADO de `FINANCIAL_ENTRY_FIELD_CLASS` em runtime: para cada campo com
+// classe `owner:<id>`, o campo entra na lista daquele dono. É o SEGUNDO consumidor do mapa (o
+// primeiro era só `Object.keys` no censo) — e o que dá EFEITO ao valor: o detector de dono (`ownsEntry`
+// no serviço) pergunta a este mapa quem é dono, em vez de checar `entry.titleId`/`entry.reversalOf`
+// à mão. Mudar a classe de um campo muda o comportamento de delete/reverse (D22 prova as duas direções).
+//
+// A base é `UNDO_OWNER_IDS` (não um literal de 3 chaves): dono novo em `UNDO_OWNER_IDS` nasce com lista
+// vazia aqui automaticamente — nunca uma chave ausente que o `[owner]` acessaria como `undefined`.
+// `cheque_link` fica com lista VAZIA de propósito (não tem campo NO lançamento — vive nas pontas do
+// cheque); o detector dele é 100% "extra" (leitura das pontas), montado no serviço.
+// -----------------------------------------------------------------------------------------------
+export const UNDO_OWNER_FIELDS: Record<UndoOwnerId, readonly (keyof FinancialEntry)[]> = (() => {
+  const acc = Object.fromEntries(UNDO_OWNER_IDS.map((id) => [id, [] as (keyof FinancialEntry)[]])) as Record<
+    UndoOwnerId,
+    (keyof FinancialEntry)[]
+  >;
+  for (const [field, klass] of Object.entries(FINANCIAL_ENTRY_FIELD_CLASS) as [keyof FinancialEntry, FieldClass][]) {
+    if (klass !== "plain") {
+      // `owner:<id>` → `<id>`. O `id` é membro de UNDO_OWNER_IDS por construção do tipo FieldClass.
+      const ownerId = klass.slice("owner:".length) as UndoOwnerId;
+      acc[ownerId].push(field);
+    }
+  }
+  return acc;
+})();
+
+/**
+ * O lançamento é dono-de-`owner` PELO CAMPO? — a metade "de campo" do detector, derivada do mapa.
+ * `true` se qualquer campo classificado para esse dono estiver preenchido no lançamento. A outra
+ * metade (leituras que não são campo: o irmão do estorno, as pontas do cheque) é o "extra" do serviço.
+ */
+export function entryHasOwnerField(owner: UndoOwnerId, entry: FinancialEntry): boolean {
+  return UNDO_OWNER_FIELDS[owner].some((field) => entry[field] != null);
+}
 
 /** A decisão de uma rota diante de um dono: recusar (com o erro nomeado) ou permitir (com o porquê). */
 export type UndoPolicy =

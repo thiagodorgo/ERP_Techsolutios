@@ -24,6 +24,7 @@ import {
   assertUndoOrdersCoverEveryRefusal,
   buildUndoOwnerPolicies,
   DELETE_UNDO_ORDER,
+  entryHasOwnerField,
   REVERSE_UNDO_ORDER,
   type UndoOwnerId,
   type UndoOwnerPolicyTable,
@@ -94,6 +95,38 @@ interface UndoLinkReaders {
   /** Existe cheque ATIVO vinculado a este lançamento (por cleared_entry_id/bounce_entry_id)? */
   hasActiveChequeLink(tenantId: string, entryId: string): Promise<boolean>;
 }
+
+/**
+ * B-O6R-02 ciclo 4 · C2 (P5-v2) — a metade "extra" do detector: o que NÃO é campo do lançamento.
+ * Devolve `true` se um dono reclama o lançamento por uma LEITURA (não por um campo derivado de
+ * `UNDO_OWNER_FIELDS`). É comportamento vigente, não acidente: o `delete` recusa o original já
+ * estornado (o IRMÃO — contrapartida ativa), e o `cheque_link` vive nas pontas do cheque (nenhum
+ * campo no lançamento). Os leitores entram por parâmetro (pool no fast-fail; ctx.* sob o lock — C1).
+ */
+type UndoExtraDetector = (readers: UndoLinkReaders, tenantId: string, entryId: string) => Promise<boolean>;
+
+const noUndoExtra: UndoExtraDetector = async () => false;
+
+/**
+ * Tabela TOTAL célula a célula dos extras — `satisfies Record<UndoOwnerId, Record<UndoRoute, ...>>`:
+ * dono novo sem as duas células não compila. Os detectores por ROTA continuam DIFERENTES (não se
+ * unifica — §10): o `delete` do `reversal_pair` soma o irmão; o `reverse` NÃO (estornar o original já
+ * estornado é `already_reversed`, mais abaixo no serviço). O `cheque_link` usa as pontas nas duas rotas.
+ */
+const UNDO_EXTRA_DETECTORS = {
+  reversal_pair: {
+    delete: (readers, tenantId, entryId) => readers.hasActiveReversal(tenantId, entryId),
+    reverse: noUndoExtra,
+  },
+  title_settlement: {
+    delete: noUndoExtra,
+    reverse: noUndoExtra,
+  },
+  cheque_link: {
+    delete: (readers, tenantId, entryId) => readers.hasActiveChequeLink(tenantId, entryId),
+    reverse: (readers, tenantId, entryId) => readers.hasActiveChequeLink(tenantId, entryId),
+  },
+} as const satisfies Record<UndoOwnerId, Record<UndoRoute, UndoExtraDetector>>;
 
 export class FinancialEntryService {
   constructor(
@@ -561,10 +594,16 @@ export class FinancialEntryService {
   }
 
   /**
-   * DETECTOR por dono — e, no `reversal_pair`, POR ROTA, porque as duas rotas realmente perguntam
-   * coisas diferentes (essa diferença é comportamento vigente, não acidente: unificá-la mudaria o
-   * código de erro de um caso e o refactor tem de ser 100% preservador). DE ONDE se lê o vínculo vem
-   * pelo bundle `readers` (§C1: pool no fast-fail; `ctx.*` sob o lock).
+   * DETECTOR por dono, C2/P5-v2 — DUAS metades: a de CAMPO deriva de `UNDO_OWNER_FIELDS` (que por sua
+   * vez deriva de `FINANCIAL_ENTRY_FIELD_CLASS` — o valor do mapa passou a ter efeito); a EXTRA vem da
+   * tabela `UNDO_EXTRA_DETECTORS`, por rota, para o que não é campo do lançamento (o irmão do estorno,
+   * as pontas do cheque). O `entry.titleId != null` / `entry.reversalOf != null` escritos à mão MORRERAM
+   * do caminho de guarda — quem decide é o mapa. DE ONDE se lê o extra vem pelo bundle `readers`
+   * (§C1: pool no fast-fail; `ctx.*` sob o lock). Os detectores por rota continuam DIFERENTES (§10, não
+   * se unifica): a diferença mora na tabela de extras, não em `if`s à mão.
+   *
+   * Livre de corrida POR CONSTRUÇÃO no `cheque_link`: os vínculos nascem com o lançamento (clear/bounce
+   * criam e vinculam na mesma unidade) e nenhuma API os move depois — ver `CHEQUE_LINK_LIVES_ON_THE_CHEQUE_SIDE`.
    */
   private async ownsEntry(
     owner: UndoOwnerId,
@@ -573,21 +612,8 @@ export class FinancialEntryService {
     entry: FinancialEntry,
     readers: UndoLinkReaders,
   ): Promise<boolean> {
-    switch (owner) {
-      case "reversal_pair":
-        // `delete`: é contrapartida OU já foi estornado (apagar qualquer metade desbalanceia).
-        // `reverse`: só a contrapartida — estornar o original já estornado é `already_reversed` (409).
-        return route === "delete"
-          ? entry.reversalOf != null || (await readers.hasActiveReversal(tenantId, entry.id))
-          : entry.reversalOf != null;
-      case "title_settlement":
-        return entry.titleId != null;
-      case "cheque_link":
-        // Livre de corrida POR CONSTRUÇÃO: os vínculos nascem com o lançamento (clear/bounce criam e
-        // vinculam na mesma unidade) e nenhuma API os move depois. As DUAS pontas são consultadas pela
-        // fonte única do `cheque.types.ts` — ver `CHEQUE_ENTRY_LINK_FIELDS`.
-        return await readers.hasActiveChequeLink(tenantId, entry.id);
-    }
+    if (entryHasOwnerField(owner, entry)) return true;
+    return UNDO_EXTRA_DETECTORS[owner][route](readers, tenantId, entry.id);
   }
 
   private async assertPeriodOpen(tenantId: string, competencia: string): Promise<void> {
