@@ -63,7 +63,20 @@ if (!existsSync(SRC)) {
   process.exit(2);
 }
 
-const files = readdirSync(SRC).filter((f) => f.endsWith('.md')).sort();
+// Recursivo DE PROPOSITO: o listing raso ja deixou `especialistas/` fora do
+// espelho E do --check dois ciclos seguidos — o guard dizia "espelho consistente"
+// enquanto faltavam agentes. Caminhos relativos com '/', estaveis entre SOs.
+function listMd(root, prefix = '') {
+  const out = [];
+  for (const e of readdirSync(root, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${e.name}` : e.name;
+    if (e.isDirectory()) out.push(...listMd(join(root, e.name), rel));
+    else if (e.name.endsWith('.md')) out.push(rel);
+  }
+  return out.sort();
+}
+
+const files = listMd(SRC);
 if (files.length === 0) {
   console.error('[agents-sync] nenhum agente em .claude/agents');
   process.exit(2);
@@ -71,7 +84,7 @@ if (files.length === 0) {
 
 if (CHECK) {
   const drift = [];
-  const dstFiles = existsSync(DST) ? readdirSync(DST).filter((f) => f.endsWith('.md')) : [];
+  const dstFiles = existsSync(DST) ? listMd(DST) : [];
   const expected = new Set(files);
   for (const f of files) {
     const want = transform(f.replace(/\.md$/, ''), readFileSync(join(SRC, f), 'utf8'));
@@ -92,11 +105,12 @@ if (CHECK) {
 mkdirSync(DST, { recursive: true });
 const expected = new Set(files);
 // remove agentes obsoletos (não estão mais na origem), PRESERVANDO o README e outros KEEP.
-for (const f of readdirSync(DST)) {
-  if (f.endsWith('.md') && !expected.has(f) && !KEEP.has(f)) rmSync(join(DST, f), { force: true });
+for (const f of listMd(DST)) {
+  if (!expected.has(f) && !KEEP.has(f)) rmSync(join(DST, f), { force: true });
 }
 for (const f of files) {
   const out = transform(f.replace(/\.md$/, ''), readFileSync(join(SRC, f), 'utf8'));
+  mkdirSync(dirname(join(DST, f)), { recursive: true });
   writeFileSync(join(DST, f), out);
 }
 console.log(`[agents-sync] espelhados ${files.length} agentes de .claude/agents/ -> .agents/agents/ (papéis Codex; README preservado)`);
