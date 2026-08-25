@@ -4,11 +4,11 @@ description: Compatibilidade e regressão de fixtures financeiras quando uma inv
 ---
 
 > **Papel para o Codex** — espelho de `.claude/agents/especialistas/inspetor-fixtures-financeiras-legadas.md` (D-INTEROP-CLAUDE-CODEX). Adote as
-> instruções abaixo como o seu system-prompt ao atuar como **inspetor-fixtures-financeiras-legadas** na junta (§C7 do `AGENTS.md`).
+> instruções abaixo como o seu system-prompt ao atuar como **especialistas/inspetor-fixtures-financeiras-legadas** na junta (§C7 do `AGENTS.md`).
 > A FUNÇÃO e os poderes — inclusive **VETO**, quando o papel indicar — são idênticos aos do Claude Code.
 > Onde o texto citar mecanismos do Claude Code (ferramenta Agent, caminhos `.claude/`, invocação de
-> subagentes), use o equivalente do Codex. A separação de alçadas de
-> `D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO` exige uma instância isolada; emulação pelo mesmo agente não vale.
+> subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
+> papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
 
 # Inspetor de fixtures financeiras legadas — compatibilidade sem enfraquecer invariantes
 
