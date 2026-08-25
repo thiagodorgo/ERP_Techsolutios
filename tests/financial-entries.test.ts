@@ -1391,6 +1391,135 @@ test("[rota][RBAC] requisição anônima → 403", async () => {
   });
 });
 
+// ================================================================================================
+// B-O6R-02 ciclo 4 · C1 (P9, Ω6R-DIN-002 concorrente) — SUÍTE PERMANENTE de corrida delete×reverse.
+//
+// A propriedade: as portas `delete` e `reverse` do MESMO par NUNCA comprometem ambas sob concorrência —
+// o efeito líquido no saldo é 0 e o perdedor recebe o erro do controle SEQUENCIAL (422
+// reversal_pair_immutable ou 404 entry_not_found). Até o ciclo 3 o `delete` fazia softDelete solto (sem
+// lock, sem re-check) e a corrida FABRICAVA saldo — medido 19/20 em memória (serviço) e até 19/20 por
+// HTTP (§0.1 do plano). Estes testes medem as DUAS ORDENS de disparo: a Forma B do §0.1 (delete
+// primeiro, 0/20) provou que medir UMA ordem só dá verde-cego.
+//
+// A asserção é sobre EFEITO (saldo == 0 em TODAS as iterações), não sobre taxa de interleaving; qualquer
+// fabricação = vermelho, não se arredonda. N = 25 por ordem.
+// ================================================================================================
+
+const RACE_N = 25;
+const RACE_LOSER_STATUS = [422, 404];
+
+/** Cria um lançamento avulso `out amount`, roda [reverse, delete] em `order`, devolve o desfecho. */
+async function raceReverseDeleteMemory(
+  entries: ReturnType<typeof createMemoryFinancialEntryService>,
+  accounts: ReturnType<typeof createMemoryFinancialAccountService>,
+  ctx: FinancialEntryActorContext,
+  order: "reverse-first" | "delete-first",
+  amount = 100,
+) {
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, {
+    account_id: account.id,
+    direction: "out",
+    amount,
+    payment_method: "pix",
+    occurred_at: "2026-05-10T12:00:00.000Z",
+  });
+  const ops =
+    order === "reverse-first"
+      ? [entries.reverse(ctx, entry.id), entries.delete(ctx, entry.id)]
+      : [entries.delete(ctx, entry.id), entries.reverse(ctx, entry.id)];
+  const [a, b] = await Promise.allSettled(ops);
+  const balance = await entries.balance(ctx, account.id);
+  return { a, b, balance: balance.balance };
+}
+
+for (const order of ["reverse-first", "delete-first"] as const) {
+  test(`[C1/P9][memória][${order}] corrida delete×reverse: saldo líquido 0, nunca ambas, perdedor com erro do controle`, async () => {
+    for (let it = 0; it < RACE_N; it++) {
+      const { entries, accounts } = setup();
+      const ctx = actor();
+      const { a, b, balance } = await raceReverseDeleteMemory(entries, accounts, ctx, order);
+
+      const bothAccepted = a.status === "fulfilled" && b.status === "fulfilled";
+      assert.equal(bothAccepted, false, `it=${it}: as DUAS portas aceitaram — saldo fabricado`);
+      assert.equal(balance, 0, `it=${it}: saldo líquido tem de ser 0, veio ${balance}`);
+
+      const rejected = [a, b].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      assert.equal(rejected.length >= 1, true, `it=${it}: pelo menos uma porta tem de recusar`);
+      for (const r of rejected) {
+        const ok =
+          isDomainError(r.reason, 422, "reversal_pair_immutable") || isDomainError(r.reason, 404, "entry_not_found");
+        assert.equal(ok, true, `it=${it}: perdedor tem de ser 422 reversal_pair_immutable ou 404 entry_not_found`);
+      }
+    }
+  });
+}
+
+test("[C1/P9][memória] controle SEQUENCIAL: reverse então delete → 422 reversal_pair_immutable, saldo 0", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, {
+    account_id: account.id,
+    direction: "out",
+    amount: 100,
+    payment_method: "pix",
+    occurred_at: "2026-05-10T12:00:00.000Z",
+  });
+  await entries.reverse(ctx, entry.id);
+  await assert.rejects(
+    entries.delete(ctx, entry.id),
+    (error: unknown) => isDomainError(error, 422, "reversal_pair_immutable"),
+  );
+  const balance = await entries.balance(ctx, account.id);
+  assert.equal(balance.balance, 0);
+});
+
+for (const order of ["reverse-first", "delete-first"] as const) {
+  test(`[C1/P9][HTTP][${order}] corrida delete×reverse pelas rotas reais: saldo líquido 0, nunca ambas`, async () => {
+    await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+      for (let it = 0; it < RACE_N; it++) {
+        const account = await createAccount(baseUrl, seed.tenantA);
+        const created = await requestJson(baseUrl, "/api/v1/financial-entries", {
+          method: "POST",
+          headers: authHeaders(seed.tenantA, "finance"),
+          body: { account_id: account.id, direction: "out", amount: 100, payment_method: "pix" },
+        });
+        assert.equal(created.status, 201, `it=${it}: create`);
+        const id = created.body.data.id as string;
+
+        const reverse = () =>
+          requestJson(baseUrl, `/api/v1/financial-entries/${id}/reverse`, {
+            method: "POST",
+            headers: authHeaders(seed.tenantA, "finance"),
+          });
+        const del = () =>
+          requestJson(baseUrl, `/api/v1/financial-entries/${id}`, {
+            method: "DELETE",
+            headers: authHeaders(seed.tenantA, "finance"),
+          });
+        const [rev, delRes] = await Promise.all(order === "reverse-first" ? [reverse(), del()] : [del(), reverse()]);
+
+        const bothAccepted = rev.status < 300 && delRes.status < 300;
+        assert.equal(bothAccepted, false, `it=${it}: as DUAS rotas aceitaram (2xx) — saldo fabricado`);
+
+        const balance = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, {
+          headers: authHeaders(seed.tenantA, "finance"),
+        });
+        assert.equal(balance.body.data.balance, 0, `it=${it}: saldo líquido tem de ser 0`);
+
+        const loser = [rev, delRes].find((r) => r.status >= 300);
+        assert.notEqual(loser, undefined, `it=${it}: uma rota tem de recusar`);
+        assert.equal(
+          RACE_LOSER_STATUS.includes(loser!.status),
+          true,
+          `it=${it}: perdedor tem de ser 422/404, veio ${loser!.status}`,
+        );
+      }
+    });
+  });
+}
+
 // ---------------------------------------------------------------- harness (espelho de financial-titles-routes)
 
 type SeedData = { readonly tenantA: Tenant; readonly tenantB: Tenant };

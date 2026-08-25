@@ -13,6 +13,7 @@ import {
 } from "../financial-titles/index.js";
 import {
   createDefaultFinancialUnitOfWork,
+  type FinancialUowContext,
   type FinancialUowResolver,
 } from "../financial-uow/index.js";
 import {
@@ -80,6 +81,19 @@ import {
 type RawRecord = Record<string, unknown>;
 
 export type FinancialTitleServiceResolver = () => Promise<FinancialTitleService>;
+
+/**
+ * B-O6R-02 ciclo 4 · C1 (P9) — a fonte de leitura dos vínculos de agregado que os detectores de
+ * desfazimento consultam. Duas instâncias por serviço: `poolUndoReaders()` (fora da unidade, fast-fail
+ * de precedência pública) e `unitUndoReaders(ctx)` (dentro da unidade, re-check sob o FOR UPDATE). A
+ * separação existe porque o re-check da corrida delete×reverse TEM de ler da própria transação.
+ */
+interface UndoLinkReaders {
+  /** Existe contrapartida de estorno ATIVA apontando este lançamento? */
+  hasActiveReversal(tenantId: string, entryId: string): Promise<boolean>;
+  /** Existe cheque ATIVO vinculado a este lançamento (por cleared_entry_id/bounce_entry_id)? */
+  hasActiveChequeLink(tenantId: string, entryId: string): Promise<boolean>;
+}
 
 export class FinancialEntryService {
   constructor(
@@ -192,14 +206,39 @@ export class FinancialEntryService {
     // Precedência integral desta rota (inalterada):
     // 404 → entry_reconciled → reversal_pair_immutable → settlement_entry_immutable →
     // cheque_entry_immutable → period_closed (a identidade do lançamento decide antes da história).
-    await this.assertUndoAllowed("delete", DELETE_UNDO_ORDER, actor, current);
+    //
+    // B-O6R-02 ciclo 4 · C1 (P9, Ω6R-DIN-002) — FAST-FAIL fora da unidade: estes pré-checks produzem a
+    // precedência PÚBLICA de erros e leem do POOL. Nada aqui muda o contrato. A defesa que DECIDE contra
+    // a corrida delete×reverse é o re-check DENTRO da unidade, sob o FOR UPDATE (o `delete` passou a
+    // habitar o MESMO lar que o `reverse`: até o ciclo 3 ele fazia softDelete solto, sem lock nem
+    // re-check, e a corrida fabricava saldo — medido 19/20 em memória, §0.1 do plano).
+    await this.assertUndoAllowed("delete", DELETE_UNDO_ORDER, actor, current, this.poolUndoReaders());
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
 
-    const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
-    if (!removed) {
-      throw entryNotFoundError();
-    }
-    return removed;
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      // Ordem global de locks: advisory de período ANTES de qualquer row lock (regra do lar único, a
+      // MESMA do `reverse`) — sem isso o delete×reverse cruzaria a ordem de aquisição e poderia travar.
+      await ctx.assertPeriodOpenShared(current.competencia, periodClosedError);
+
+      // FOR UPDATE do próprio lançamento: o PERDEDOR da corrida acorda AQUI, no row lock. Sumiu/deletado
+      // por quem chegou antes → 404 (mesmo erro do controle sequencial), nunca um softDelete cego.
+      const locked = await ctx.entries.findByIdForUpdate(actor.tenantId, current.id);
+      if (!locked || locked.deletedAt != null) {
+        throw entryNotFoundError();
+      }
+      this.assertMutable(locked);
+      // Re-check dos vínculos SOB o lock, com os leitores da UNIDADE (nunca o pool: dentro da tx a
+      // leitura tem de ser da tx). Quem perdeu a corrida vê a contrapartida/estado commitado do
+      // vencedor e recebe os MESMOS erros do controle sequencial (422 reversal_pair_immutable / 404).
+      await this.assertUndoAllowed("delete", DELETE_UNDO_ORDER, actor, locked, this.unitUndoReaders(ctx));
+
+      const removed = await ctx.entries.softDelete(actor.tenantId, locked.id, actor.userId);
+      if (!removed) {
+        throw entryNotFoundError();
+      }
+      return removed;
+    });
   }
 
   // ESTORNO (P-Ω4-ESTORNO + B-O6R-02 F4, Ω6R-DIN-002) — cria um CONTRA-lançamento (direção invertida,
@@ -226,7 +265,7 @@ export class FinancialEntryService {
     // Precedência integral desta rota (inalterada):
     // 404 → entry_reconciled → reversal_pair_immutable → cheque_entry_immutable → already_reversed
     // → period_closed (a IDENTIDADE do lançamento decide antes da HISTÓRIA dele).
-    await this.assertUndoAllowed("reverse", REVERSE_UNDO_ORDER, actor, original);
+    await this.assertUndoAllowed("reverse", REVERSE_UNDO_ORDER, actor, original, this.poolUndoReaders());
     // FAST-FAIL (precedência de erros preservada); a defesa que decide é o re-check DENTRO da unidade.
     if (await this.repository.findActiveReversalOf(actor.tenantId, original.id)) {
       throw alreadyReversedError();
@@ -479,41 +518,75 @@ export class FinancialEntryService {
     order: readonly UndoOwnerId[],
     actor: FinancialEntryActorContext,
     entry: FinancialEntry,
+    readers: UndoLinkReaders,
   ): Promise<void> {
     for (const owner of order) {
-      if (!(await this.ownsEntry(owner, route, actor.tenantId, entry))) continue;
+      if (!(await this.ownsEntry(owner, route, actor.tenantId, entry, readers))) continue;
       const policy = this.undoPolicies[owner][route];
       if (policy.kind === "refuse") throw policy.error();
     }
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // B-O6R-02 ciclo 4 · C1 (P9) — DE ONDE o detector LÊ o vínculo é injetado.
+  //
+  // O detector de `reversal_pair`/`cheque_link` pergunta ao banco "existe contrapartida/vínculo
+  // ATIVO?". A resposta muda conforme se lê o POOL (fora da unidade, para o fast-fail de precedência
+  // pública) ou a PRÓPRIA transação (dentro da unidade, para o re-check sob o FOR UPDATE). Um re-check
+  // que lesse do pool reabriria a corrida que o lock existe para fechar — é exatamente o buraco do B-1.
+  // Por isso os leitores entram por parâmetro, e o `delete`/`reverse` escolhem a fonte certa em cada
+  // ponto (pool no fast-fail, `ctx.*` sob o lock).
+  // ---------------------------------------------------------------------------------------------
+  private poolUndoReaders(): UndoLinkReaders {
+    return {
+      hasActiveReversal: async (tenantId, entryId) =>
+        (await this.repository.findActiveReversalOf(tenantId, entryId)) != null,
+      hasActiveChequeLink: async (tenantId, entryId) => {
+        // Fonte única do vínculo cheque → lançamento (as duas pontas cleared/bounce). Fora da unidade
+        // é o reader de pool env-switched; nenhuma API move o vínculo depois do nascimento.
+        const chequeLinks = await this.resolveChequeLinkReader();
+        return (await chequeLinks.findActiveByLinkedEntry(tenantId, entryId)) != null;
+      },
+    };
+  }
+
+  private unitUndoReaders(ctx: FinancialUowContext): UndoLinkReaders {
+    return {
+      // DENTRO da tx: a leitura tem de ser da tx (estado commitado do vencedor da corrida visível sob o lock).
+      hasActiveReversal: async (tenantId, entryId) =>
+        (await ctx.entries.findActiveReversalOf(tenantId, entryId)) != null,
+      hasActiveChequeLink: async (tenantId, entryId) =>
+        (await ctx.cheques.findActiveByLinkedEntry(tenantId, entryId)) != null,
+    };
+  }
+
   /**
    * DETECTOR por dono — e, no `reversal_pair`, POR ROTA, porque as duas rotas realmente perguntam
    * coisas diferentes (essa diferença é comportamento vigente, não acidente: unificá-la mudaria o
-   * código de erro de um caso e o refactor tem de ser 100% preservador).
+   * código de erro de um caso e o refactor tem de ser 100% preservador). DE ONDE se lê o vínculo vem
+   * pelo bundle `readers` (§C1: pool no fast-fail; `ctx.*` sob o lock).
    */
   private async ownsEntry(
     owner: UndoOwnerId,
     route: UndoRoute,
     tenantId: string,
     entry: FinancialEntry,
+    readers: UndoLinkReaders,
   ): Promise<boolean> {
     switch (owner) {
       case "reversal_pair":
         // `delete`: é contrapartida OU já foi estornado (apagar qualquer metade desbalanceia).
         // `reverse`: só a contrapartida — estornar o original já estornado é `already_reversed` (409).
         return route === "delete"
-          ? entry.reversalOf != null || (await this.repository.findActiveReversalOf(tenantId, entry.id)) != null
+          ? entry.reversalOf != null || (await readers.hasActiveReversal(tenantId, entry.id))
           : entry.reversalOf != null;
       case "title_settlement":
         return entry.titleId != null;
-      case "cheque_link": {
+      case "cheque_link":
         // Livre de corrida POR CONSTRUÇÃO: os vínculos nascem com o lançamento (clear/bounce criam e
-        // vinculam na mesma unidade) e nenhuma API os move depois. As DUAS pontas são consultadas
-        // pela fonte única do `cheque.types.ts` — ver `CHEQUE_ENTRY_LINK_FIELDS`.
-        const chequeLinks = await this.resolveChequeLinkReader();
-        return (await chequeLinks.findActiveByLinkedEntry(tenantId, entry.id)) != null;
-      }
+        // vinculam na mesma unidade) e nenhuma API os move depois. As DUAS pontas são consultadas pela
+        // fonte única do `cheque.types.ts` — ver `CHEQUE_ENTRY_LINK_FIELDS`.
+        return await readers.hasActiveChequeLink(tenantId, entry.id);
     }
   }
 
