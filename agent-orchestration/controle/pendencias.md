@@ -3001,3 +3001,32 @@ existe** em repositório de usuário.
 
 **Decisão do dono pendente** (ver `R-GOV-PORTEIRO-PRE-MERGE-ciclo3.md`): defender-se de agente **descuidado**
 ou de agente **malicioso**? A resposta muda o tamanho da entrega em uma ordem de grandeza.
+
+---
+
+## P-GOV-MAIN-SEM-PROTECAO — ATUALIZAÇÃO (2026-08-25): ruleset INSTALADO
+
+O dono respondeu a pergunta do ciclo 3: **DESCUIDADO** (`D-GOV-AMEACA-DESCUIDO`). Com isso o desenho
+de tripwire foi instalado NA HORA:
+
+```
+$ gh api repos/thiagodorgo/ERP_Techsolutios/rulesets
+21453239  active  "main — PR + CI verde (tripwire, D-GOV-AMEACA-DESCUIDO)"
+
+$ gh api repos/.../rules/branches/main       # regras EFETIVAS na ref
+deletion · non_fast_forward · pull_request ·
+required_status_checks: backend · backend-postgres · frontend · flutter · docker · owner-portal · authority-portal
+```
+
+Desenho: PR obrigatório (squash; 0 aprovações — o dono é o único humano) · os 7 checks REAIS do
+`ci.yml` verdes no head atualizado (`strict`) · `integration_id` 15368 pinado · sem force-push · sem
+delete · bypass list VAZIA. O check do porteiro NÃO entrou: o workflow não existe na `main`, e exigi-lo
+bloquearia todo merge (e era o overclaim que o ciclo 3 derrubou).
+
+**Nota honesta de método:** `git push --dry-run` foi tentado como prova e descartado — dry-run não
+avalia ruleset no servidor; a prova registrada é a API de regras efetivas acima. O "morde de verdade"
+será medido no primeiro merge por PR.
+
+**RESTA da pendência:** o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits →
+encolher para tripwire declarado, tirar "prova"/"independente" do vocabulário, pin de modelo vira
+registro). Trabalho de ciclo próprio, com plano novo — não bloqueia mais nada.

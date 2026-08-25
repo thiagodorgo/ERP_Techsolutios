@@ -1572,3 +1572,35 @@ o TABULEIRO, fail-closed (o que ele não medir vira BLOQUEADO):
 
 **Amarração:** §C7 cláusula **1-bis** de `CLAUDE.md` e `AGENTS.md` (espelhadas) — **sem o `LIBERADO` do
 inspetor a junta não começa.** Um agente que ninguém invoca é teatro; esta cláusula é o que o torna real.
+
+---
+
+## D-GOV-AMEACA-DESCUIDO (decisão do dono, 2026-08-25) — o modelo de ameaça da governança é DESCUIDO
+
+**A pergunta** (aberta pelo ciclo 3 do porteiro pré-merge, `R-GOV-PORTEIRO-PRE-MERGE-ciclo3.md`): o gate
+defende contra um agente **descuidado** ou contra um agente **malicioso**? O ciclo provou que contra
+malicioso não existe solução dentro deste repositório (autor = dono das chaves, do disco, do CI e do
+ruleset; recibo local é SLSA Build L1 — "trivial to bypass or forge"; provar qual modelo respondeu não
+existe para API comercial fechada).
+
+**A resposta do dono: DESCUIDADO.**
+
+**Consequências (executáveis a partir de agora):**
+1. **O pin de modelo/runtime SAI do `verifyAttestation`** e vira registro auditável a posteriori — o
+   transcript do harness (que grava `"model":` por mensagem, escrito pelo harness e não pelo agente) no
+   lugar da string auto-escrita. O gate que exige `runtime === 'codex'` está morto: era controle de sinal
+   trocado (o honesto ficava vermelho, o forjador verde).
+2. **Segunda identidade GitHub: dispensável.** Nenhuma exigência de aprovação humana de outra conta.
+3. **A entrega da governança encolhe** para o que a plataforma sustenta mecanicamente: PR obrigatório ·
+   head congelado (strict) · CI verde do app certo · sem force-push · sem delete de `main`. O que
+   sobrevive da branch: compare-and-swap do head, normalização de checks (D-10), paginação de files,
+   `aplicaSeABranchDefault`, registro externo imutável por merge.
+4. **O vocabulário muda:** nenhum artefato diz "prova", "independente" ou "inforjável". O controle é
+   declaradamente **tripwire** — pega desvio acidental, não resiste a adversário com as chaves. (SLSA L1
+   é um nível legítimo, desde que rotulado.)
+5. **Ruleset instalado JÁ**, no desenho de tripwire (sem o check do porteiro, que não existe na `main`).
+   Editável pelo admin — aceitável contra descuido, e é o dono quem edita.
+
+**Resolve:** `P-GOV-MAIN-SEM-PROTECAO` (parcial — a instalação), o destino do bloqueante 2 do ciclo 2 da
+governança, e o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits → encolher,
+trabalho de ciclo próprio com plano novo).
