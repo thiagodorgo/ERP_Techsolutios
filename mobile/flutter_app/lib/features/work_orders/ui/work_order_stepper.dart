@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../domain/work_order_models.dart';
 import '../domain/work_order_steps.dart';
 
@@ -23,7 +24,6 @@ class WorkOrderStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = buildWorkOrderSteps(serviceType, status);
-    final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
       container: true,
@@ -35,7 +35,6 @@ class WorkOrderStepper extends StatelessWidget {
             Expanded(
               child: _StepCell(
                 step: step,
-                scheme: scheme,
                 onTap: (onStepTap != null && step.isDone)
                     ? () => onStepTap!(step)
                     : null,
@@ -48,30 +47,33 @@ class WorkOrderStepper extends StatelessWidget {
 }
 
 class _StepCell extends StatelessWidget {
-  const _StepCell({required this.step, required this.scheme, this.onTap});
+  const _StepCell({required this.step, this.onTap});
 
   final WorkOrderStepInfo step;
-  final ColorScheme scheme;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    // Tokens explícitos do protótipo (checklist-coleta.png): etapa concluída
+    // = VERDE sólido com check branco; etapa atual = azul sólido com número
+    // branco; etapas futuras = cinza claro. Não usar `scheme.tertiary`
+    // (de fromSeed(#2563EB) sai ROSA, divergindo do protótipo).
     final Color circleBg;
     final Color circleFg;
     final Color labelColor;
     switch (step.state) {
       case WorkOrderStepState.done:
-        circleBg = scheme.tertiary;
-        circleFg = scheme.onTertiary;
-        labelColor = scheme.tertiary;
+        circleBg = ErpMobileTheme.success;
+        circleFg = Colors.white;
+        labelColor = ErpMobileTheme.success;
       case WorkOrderStepState.active:
-        circleBg = scheme.primary;
-        circleFg = scheme.onPrimary;
-        labelColor = scheme.primary;
+        circleBg = ErpMobileTheme.primary;
+        circleFg = Colors.white;
+        labelColor = ErpMobileTheme.primary;
       case WorkOrderStepState.todo:
-        circleBg = scheme.surfaceContainerHighest;
-        circleFg = scheme.onSurfaceVariant;
-        labelColor = scheme.onSurfaceVariant;
+        circleBg = const Color(0xFFEEF2F7);
+        circleFg = ErpMobileTheme.inkFaint;
+        labelColor = ErpMobileTheme.inkFaint;
     }
 
     return InkWell(
