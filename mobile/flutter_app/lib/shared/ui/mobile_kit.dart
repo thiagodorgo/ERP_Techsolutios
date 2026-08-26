@@ -241,6 +241,7 @@ class MobileScreenHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onBack,
+    this.leading,
     this.trailing,
     super.key,
   });
@@ -248,6 +249,11 @@ class MobileScreenHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onBack;
+
+  /// Widget à esquerda do título quando não há botão de voltar (ex.: selo de
+  /// conclusão verde na tela de conclusão do atendimento). Ignorado se [onBack]
+  /// for informado.
+  final Widget? leading;
   final Widget? trailing;
 
   @override
@@ -265,6 +271,11 @@ class MobileScreenHeader extends StatelessWidget {
               icon: const Icon(Icons.arrow_back, color: ErpMobileTheme.ink),
               tooltip: 'Voltar',
               splashRadius: 22,
+            )
+          else if (leading != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, right: 8),
+              child: leading!,
             )
           else
             const SizedBox(width: 4),
