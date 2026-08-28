@@ -3030,3 +3030,89 @@ será medido no primeiro merge por PR.
 **RESTA da pendência:** o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits →
 encolher para tripwire declarado, tirar "prova"/"independente" do vocabulário, pin de modelo vira
 registro). Trabalho de ciclo próprio, com plano novo — não bloqueia mais nada.
+
+---
+
+## P-O6R-B02 — CICLO 4 REPROVADO 4×1 (2026-08-28) — a classe que reprova é de ARNÊS, não de dinheiro
+
+Ata `agent-orchestration/omega/juntas/J-B-O6R-02-ciclo4.md`; relatório do achador
+`agent-orchestration/omega/reprovacoes/R-B-O6R-02-ciclo4.md`; votos verbatim em `omega/juntas/votos/B-O6R-02-ciclo4/`.
+Head `12c3825`. **Fechado por execução independente:** B-1 (corrida `delete×reverse`) não fabrica dinheiro em nenhuma
+camada/ordem/intercalação — 3 cadeiras, 590+140+66 iterações, saldo 0; C2/C3/C4/C5 confirmados. **Reprova:** a cadeira
+do arnês — o número publicado da canônica 3 (`2745/2743/0/2`) é o desfecho de **7/10** rodadas (`XX000 tuple concurrently
+updated` em `CREATE ROLE`, `audit-security.test.ts:158` ×2 e `auth-identity-fixture.ts:150`), denominador **2740×2745**
+numa rodada, **2 roles órfãs com LOGIN+DML nas 115 tabelas** persistindo, +5 `auth_identities`/rodada. É a classe
+pré-existente `P-O6R-ARNES-ISOLAMENTO`, agora medida **dentro** da forma canônica com N=10.
+
+**Próximo passo (§C7.4, ciclos 4–5):** junta ampliada replaneja a fatia — plano novo (Fable), crítico e jurados com
+**identidade nova** (pool esgotado). Deliberação obrigatória por escrito: fechar a classe do arnês dentro do B-O6R-02 ou
+destacar bloco próprio e publicar o número com N e forma honestos. Parada + dossiê ao dono **só** após o ciclo 5 falho.
+
+### Pendências nomeadas pelo ciclo 4 (ajustes A1–A8 da ata; sem correção proposta)
+
+## P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU (2026-08-28 — cadeira de ataque, ajuste A1) — MÉDIA
+`API_CONTRACTS.md` l.426–428 (head `12c3825`) e o cabeçalho de `20260870000000_add_reversal_pair_atomicity` afirmam *"impossível
+por construção, mesmo para escritor que não passa pelo serviço"*. Medido: `DELETE` físico do original com estorno vivo é
+**aceito** (rows=1; `GET /financial-accounts/:id/balance` = 100, correto 0) e `UPDATE id` do original deixa a contrapartida
+pendurada (DELETE HTTP legítimo do renomeado → 200, saldo 100). Não há FK em `reversal_of`; trigger A é só BEFORE UPDATE.
+Nenhuma rota do produto faz DELETE físico (grep em `src` = 0) — é **defeito de TEXTO e de guarda ausente**, não de caminho do
+produto. Propriedade a decidir: o contrato só pode afirmar o que os triggers garantem.
+
+## P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA
+O teste `[C1/P9][db][RLS] estorno LEGÍTIMO sob o contexto RLS do app: trigger enxerga o original vivo` roda como `postgres`
+(`rolsuper=t`, `rolbypassrls=t`) no local, na CI (`ci.yml` `postgres:postgres`) e no compose — e **passou com os triggers
+derrubados** (controle DOWN: ok 6). O título afirma o que a execução não sustenta (classe do C5). A propriedade trigger×RLS
+**é verdadeira** — provada pelo jurado com role `NOBYPASSRLS` sob RLS forçada ((c1)(c2)(c4) P0001 DIN-002; (c3) legítimo comita).
+
+## P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (registro §A2)
+**D27 como enunciado no plano é insatisfazível** (remover a chamada do construtor = mutante equivalente: 87/87 verde; a
+propriedade do parecer #2 foi provada por outra via — M2 corpo do guard → exit 1; M3 estado perigoso real → 2 fails).
+**D21**: uma ordem de disparo fica verde sob a mutação (não determinística — HTTP delete-first para o dev, memória
+delete-first para o validador/ataque) enquanto o plano exige "as DUAS ordens" vermelhas; a suíte -db pega a mutação nas duas
+ordens deterministicamente. As duas divergências estavam **só no corpo dos commits** `b7de4c9`/`db5b047`; ficam registradas aqui
+e na ata para que ninguém herde "D27/D21 vermelhos como escritos" como fato.
+
+## P-O6R-B02-BATERIA-CANONICAS-1-2 (2026-08-28 — validação, ajuste A4) — MÉDIA
+O KPI do ciclo 4 publica só a canônica 3 e os focados; **canônicas 1 e 2** (§9.2, §9.6 — N≥15, denominador constante) não
+foram executadas/publicadas pelo dev. Validador mediu N=1: canônica 1 = 2465/2400/**1 fail ambiental** (`core-saas-role-authority`
+inicializa o Prisma Client após o skip sem `DATABASE_URL` — pré-existente)/64 skip; canônica 2 = 194/194, 0 skip, 0 hits
+`unhandledRejection|XX000|23505|40P01`. Falta a publicação com N e forma, não há número falso.
+
+## P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA
+`tests/financial-entry-delete-reverse-race-db.test.ts` (corrida em Postgres real, 2 ordens + SQL cru + barrier + RLS) **não
+está na lista SUITES do job `backend-postgres`** do `ci.yml` (0 hits no head; denominador da canônica 2 = 194 sem ela). Roda só
+pela canônica 3 (job `backend`) e isolada. `ci.yml` era PROIBIDO no ciclo 4 (§5) — a inclusão é pendência nomeada, não emenda.
+
+## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
+No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
+junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
+2026-08-28 nesta mesma rodada de registro).
+
+## P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA
+O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: nenhuma suíte exercita o bloco `DO` da migration
+(WARNING com órfão semeado); só o drill D28 o exerce (validador executou: WARNING nomeado com 1 órfão). Os demais componentes
+(≥6 corrida, ≥2 SQL cru) e o total (≥21) estão acima do piso.
+
+## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **ALTA para o PR** (alçada do orquestrador)
+`git archive 12c3825 .claude/agents .agents/agents scripts/sync-agent-agents.mjs` → `node scripts/sync-agent-agents.mjs --check`
+→ **ec=1, 15 DIVERGE** (12 agentes-base + 3 especialistas). Na árvore principal → OK 32. A R4 do inspetor mediu o espelho VIVO,
+não o head; o S0 do plano ("`--check` até o espelho fechar") **não fecha em `12c3825`**. `5e321ac` segue não-ancestral. A CI não
+executa o `--check` (0 hits em `ci.yml`). Fechar antes do PR/porteiro (rebase ou sync na branch), fora do dev.
+
+## P-O6R-B02-RUNNER-SUMICO-SEM-SKIP (2026-08-28 — arnês #4 / D26b) — MÉDIA (mesma classe do B-2c4)
+Suíte -db que sai limpa **sem registrar teste** (mutação `if (true) {} else if (!connectionString)`) → `npm test` **ec=0**,
+"260 arquivo(s) · 2740 teste(s) · pass 2738 · skipped 2", guard mudo. O D26 literal (auto-pulo com `skip:`) fica vermelho e
+nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
+
+## P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do arnês, N=10)
+
+- **A classe `XX000` reaparece DENTRO da forma canônica 3**, não fora dela: 3/10 rodadas do mesmo `npm test` com `DATABASE_URL`,
+  em cluster próprio onde só o jurado conectava (contenção de CPU de outras baterias na máquina, nunca o mesmo banco).
+  Produtores medidos: `tests/audit-security.test.ts:158` (CREATE ROLE, ×2) e `tests/helpers/auth-identity-fixture.ts:150`
+  (`createEphemeralRole`, via `auth-identity-backfill-db.test.ts:115`).
+- **Denominador 2740×2745** numa rodada (5 subtestes do teste 120 não correram; o arquivo abortou no `XX000` antes de os
+  registrar); o runner não tem piso de `# tests`.
+- **Roles órfãs nascem no caminho de falha do `CREATE ROLE`** e persistem com LOGIN + DML total nas 115 tabelas (2 em 10 rodadas);
+  **vazamento linear** de `auth_identities`/`auth_identity_link_events` (+5/rodada) mesmo em rodadas verdes; `permissions` 1→15 uma vez (idempotente).
+- **Aborto duro (SIGKILL) na corrida -db** deixa 1 tenant/1 user/1 conta/1 lançamento sem varredura (não contamina: slugs únicos);
+  o teardown no caminho de `assert.fail` está provado (resíduo 0).

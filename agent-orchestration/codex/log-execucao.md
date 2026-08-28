@@ -3732,3 +3732,29 @@ novo), `listAllPendingApprovals` no approval.service e testes frontend.
 - Docs: matriz docs/api-screen-endpoints.md (Dashboard -> enriched/integrated
   B-124, lacuna 1 fechada), status-geral e este log.
 - KPIs NAO alterados (C3) — B-124K depois da avaliacao humana.
+
+## 2026-08-28 - B-O6R-02 ciclo 4 (junta 5/5 REPROVADA 4x1) + fatia de fidelidade mobile [Claude Code]
+
+> Branch de registro: `demo/investidor`. Branch do bloco: `feat/o6r-b02-financial-uow` (head `12c3825`, nao tocada nesta sessao).
+
+### Executado
+- Fatia de fidelidade mobile commitada (`fbabe18`): cabecalho da home com Conversas/Notificacoes (folha inferior honesta),
+  detalhe da OS sem `TenantContextBar`. Bateria: dart format 0 changed, flutter analyze limpo, flutter test 888/888.
+- Recuperacao da junta do ciclo 4 (2 disparos mortos em 26/08): voto fail-closed de 26/08 e pareceres do inspetor
+  (passadas 1-2) persistidos em `omega/juntas/votos/B-O6R-02-ciclo4/`; 4 SUPLENTES com identidade nova criados pela
+  `agente-fabrica` (`160a87f`, espelho Codex 32=32, especialistas 9=9); briefing emendado (estado, plano de perda de jurado,
+  R1-R8, proibicao de junction, sobrevivencia, md5 x autocrlf).
+- Terreno: 4 containers `jur-c4-*` residuais removidos; `node_modules` do worktree do dev (0 entradas) e da arvore principal
+  (19 entradas) reinstalados por `npm ci` + `prisma generate`; `npm run check` exit 0 no head.
+- Inspetor de terreno, 3a passada: LIBERADO COM RESSALVA (R1-R8); voto fail-closed VALE.
+- Junta (`wf_82599285-e14`): ataque APROVADO, banco APROVADO, validador APROVADO, arnes REPROVADO; teardown confirmado.
+- Ata `J-B-O6R-02-ciclo4.md`, achador `R-B-O6R-02-ciclo4.md`, 9 pendencias nomeadas + emendas em `P-O6R-ARNES-ISOLAMENTO`.
+
+### Validacoes
+- Backend/frontend nao tocados nesta branch pelo orquestrador (so docs/agentes). KPIs NAO alterados (o bloco B-O6R-02
+  publica os seus no proprio PR; a junta reprovou o numero da canonica 3 publicado sem N).
+
+### Proximo passo
+- Ciclo 5 (teto do §C7.4): junta ampliada replaneja a fatia — `planejador-mestre` (Fable, instancia nova) a partir de
+  `R-B-O6R-02-ciclo4.md`; critico e jurados com identidade nova (pool esgotado); deliberacao por escrito: classe do arnes
+  dentro do B-O6R-02 ou bloco proprio + numero publicado com N e forma.

@@ -1,5 +1,38 @@
 # Status Geral
 
+## Atualização 2026-08-28 — B-O6R-02 (atomicidade do financeiro): junta do ciclo 4 REPROVADA 4×1 — a classe é de ARNÊS [Claude Code]
+
+### Status
+
+Branch `feat/o6r-b02-financial-uow`, head `12c3825` (35 commits sobre `6efe5ad`). **Ciclo 3** (24/08): REPROVADO
+1×3 + 1 voto perdido (ata `J-B-O6R-02-ciclo3.md`). **Ciclo 4** (28/08): REPROVADO **4 APROVADO × 1 REPROVADO**, 0 perdido
+— unanimidade exigida (ata `agent-orchestration/omega/juntas/J-B-O6R-02-ciclo4.md`; achador `omega/reprovacoes/R-B-O6R-02-ciclo4.md`).
+A junta do ciclo 4 foi disparada 2× em 26/08 (4 cadeiras caíram sem votar); em 28/08 votaram **4 suplentes com identidade
+nova** + o voto fail-closed de 26/08 aceito pelo inspetor de terreno (3 passadas: BLOQUEADO → LIBERADO COM RESSALVA → LIBERADO
+COM RESSALVA R1–R8). Próximo: **ciclo 5 = junta ampliada replaneja** (§C7.4) — plano Fable + crítico e jurados de identidade nova.
+
+### O que a junta confirmou fechado (execução independente)
+
+- **B-1 — a corrida `delete×reverse` NÃO fabrica dinheiro**: ataque 590+140 iterações (12 combinações camada×ordem×intercalação,
+  HTTP e serviço, memória e Postgres), banco 60/60 bloqueios no row lock com P0001 DIN-002 (vermelho-controle no mesmo cluster
+  com o down: 60/60 fabricados), arnês 66/66 -db + 78/78 memória/HTTP — saldo 0 em todas.
+- C2 (classificação com consumidor), C3 (prova de vida), C4 (ponta ausente = erro nos 5 status), C5 (contrato/guard de skip),
+  escopo §5 e PROIBIDO intocados, migration aditiva com D28.
+
+### O que reprovou (cadeira do arnês, canônica 3, N=10)
+
+`2745/2743/0/2` publicado sem N é o desfecho de **7/10** rodadas — `XX000 tuple concurrently updated` em `CREATE ROLE`
+(`audit-security.test.ts:158` ×2, `auth-identity-fixture.ts:150`); denominador **2740×2745**; **2 roles órfãs com LOGIN+DML**
+nas 115 tabelas persistindo; +5 `auth_identities`/rodada. Classe pré-existente `P-O6R-ARNES-ISOLAMENTO`, agora dentro da
+forma canônica. 8 ajustes viraram pendências nomeadas (`P-O6R-B02-*`, 2026-08-28), inclusive o espelho Codex que **diverge
+no head** (15 DIVERGE — alçada do orquestrador antes do PR).
+
+### Terreno (lição de 26/08)
+
+A limpeza dos worktrees órfãos apagou por dentro de uma junction o `node_modules` do worktree do dev e mutilou o da árvore
+principal; reinstalados em 28/08. Regra nova no briefing e nos suplentes: `npm ci` próprio por worktree, remoção só por
+`git worktree remove`, junction PROIBIDA.
+
 ## Atualização 2026-07-29 — FIX-NAV-MENU-PLATFORM-JWT
 
 ### Status
