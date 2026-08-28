@@ -3126,3 +3126,60 @@ nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
 - **ERRATA do rótulo (28/08):** nas linhas apontadas, `audit-security.test.ts:158` é `DROP OWNED BY` (teardown, FORA do
   `withRoleCatalogLock`) e `auth-identity-fixture.ts:150` é `GRANT USAGE ON SCHEMA public` (DENTRO do lock) — escritas em
   `pg_namespace.nspacl`/`pg_class.relacl`, não `pg_authid`. Objeto disputado a nomear por execução no ciclo 5 (ver errata da ata).
+
+---
+
+## Pendências do porteiro pós-merge do #359 (`B-O6R-ARNES`) — 2026-08-28, `LIBERADO COM RESSALVA`
+
+Parecer completo em `agent-orchestration/omega/juntas/votos/B-O6R-ARNES/00c-porteiro-pos-merge-359.md`.
+O porteiro reexecutou por conta própria: canônica 3 **2597/2595/0 fail/2 skip, ec=0, zero papel órfão**
+(`pg_roles` = 15, só built-ins + `postgres`), bateria focada **34/34**, canônica 1 com denominador **2359**
+— os números do KPI **reproduzem**. Escopo e promessas conferidos contra o diff real.
+
+### FECHADAS agora pelo orquestrador
+
+- **Branch remota `fix/o6r-arnes-catalogo-unico` apagada** (achado B): o `--delete-branch` do `gh pr merge`
+  falhou porque a branch estava presa ao worktree do dev; `git push origin --delete` executado e conferido
+  por `git ls-remote` (vazio).
+- **Trilha tornada durável** (achado D): `demo/investidor` **não existia no remoto** — 46 commits, com a ata,
+  os votos, o briefing e os planos da junta que autorizou um merge da `main` vivendo só em disco local.
+  Push executado (`a6dffcd`). **Não** abre PR e **não** move a `main`; é durabilidade da prova, não merge.
+
+## P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE (2026-08-28) — BAIXA · **Dono:** bloco de arnês seguinte
+
+Achado `pre-existente` da cadeira de catálogo na junta do `B-O6R-ARNES` (voto `01`, achado 4), sem entrada
+própria até aqui (achado E do porteiro). Nenhum dos 3 escritores movidos para o mecanismo único assevera a
+**identidade da conexão sob teste** (`SELECT current_user` / `rolsuper` / `rolbypassrls`) dentro do próprio
+teste. Consequência: um teste que se declara "sob a role X" pode estar rodando como `postgres` e ninguém
+percebe — a mesma classe do `[RLS]` que rodava como superusuário e passava com os triggers derrubados
+(`P-O6R-B02-TESTE-RLS-SUPERUSER`).
+
+## P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por execução** (candidato: bloco de arnês seguinte)
+
+Achado `pre-existente` da cadeira do runner (voto `02`, achado 2), **sem dono na ata** — o porteiro cobrou
+(achado E). `tests/authority-portal.test.ts:162` (*"hashing: scrypt round-trip … rejeita hash adulterado"*)
+falhou com `ERR_ASSERTION true !== false` em **1 de 2** rodadas da suíte inteira do jurado. Está **fora da
+classe** deste bloco (não é catálogo, não é denominador, não é teardown de papel). **Quem receber precisa
+primeiro atribuir por execução** — N≥10 isolado — antes de qualquer correção; hoje há uma medição de 1/2 e
+nada mais.
+
+## P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **Dono:** próximo PR que tocar registro
+
+Achados C e F do porteiro. Na `main` mergeada sobrevivem três frases que a execução contradiz — a **mesma
+classe** que a junta corrigiu em `0c37fa2`, na frase vizinha:
+
+1. **"piso 0 nas 3"** (canônica 1): medido no head final, o piso **dispara nomeando** um arquivo
+   (`tests/core-saas-role-authority.test.ts`, que morre no load sem registrar teste nem declarar skip). A
+   direção do erro é **a favor** da entrega — o mecanismo nomeia o morto em vez de silenciar —, mas a frase
+   está errada. Era medição anterior a `1676a5b`, que abriu os olhos do piso para dentro do repositório.
+2. **"6 arquivos"** sobrevive em `agent-orchestration/codex/log-execucao.md:38` e
+   `agent-orchestration/docs/status-geral.md:37`, contradizendo a lista dos **7** no mesmo arquivo.
+3. **`P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`** mantém **2358** (não foi alcançada pela correção de `0c37fa2`)
+   e não tem linha `Dono:`.
+
+## P-ARNES-BACKFILL-359 (2026-08-28) — MÉDIA · **Dono:** próximo PR (§C3.5)
+
+`Kpis/kpis-latest.json` e a entrada nova do `kpis-history.json` na `main` têm `pr: 359` preenchido e
+`merge_commit`/`approved_head` **`null`** — legal na autoria, dívida agora. Backfill: `merge_commit` =
+**`f081b5d`**; `approved_head` = **`d4cf978`** (o head que a junta aprovou) com nota do head final
+**`0c37fa2`** (correções de registro exigidas pela própria junta) — a ata §6 registra os dois.
