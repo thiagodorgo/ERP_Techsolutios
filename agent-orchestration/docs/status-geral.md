@@ -30,6 +30,8 @@ protegia **nem os serializados**. Na bateria barata pré-correção, 7 de 13 rod
 `XX000 tuple concurrently updated`, e as vítimas incluíam quem **tomava** o lock. O objeto disputado é
 a tupla de ACL (`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`.
 
+A **lista exata** da bateria barata, que é parte da FORMA e sem a qual o denominador 37 não é reproduzível por terceiro (achado da cadeira de catálogo na junta): `tests/audit-security.test.ts` (1) · `tests/auth-identity-backfill-db.test.ts` (6) · `tests/auth-identity-link-events-db.test.ts` (5) · `tests/auth-identity-role-real-db.test.ts` (10) · `tests/impound-process-checklist-link-schema.test.ts` (5) · `tests/rls-tenant-isolation.test.ts` (1) · `tests/vehicle-identity-schema.test.ts` (9) = **37**. São **sete** arquivos, não seis — o rótulo anterior dizia "6 arquivos escritores de catálogo" e nenhuma combinação de 6 que contenha as vítimas nomeadas fecha 37.
+
 ### Validação (forma declarada — número sem N e forma não vale)
 
 - **Bateria barata** dos 6 arquivos, Node v20.19.5, cluster descartável com 103 migrations:
@@ -39,7 +41,7 @@ a tupla de ACL (`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`.
   (snapshot de `pg_roles` + linhas nas 115 tabelas antes e depois de cada rodada): **10/10 ec=0,
   denominador idêntico nas 10, Δroles = 0 em todas e nenhuma role nova ao fim** — contra as 2 órfãs
   com LOGIN e DML em todas as tabelas medidas no ciclo 4.
-- **Canônica 1** (sem `DATABASE_URL`, N=3): ec=1 nas 3, denominador **2358 idêntico**, 58 pulos
+- **Canônica 1** (sem `DATABASE_URL`, N=3): ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
   idênticos, piso **0**. O vermelho é ambiental, **pré-existente e nomeado**
   (`tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lança no load sem
   banco); diff desse arquivo e de `src/` contra a base: vazio. Consertar é proibido aqui.

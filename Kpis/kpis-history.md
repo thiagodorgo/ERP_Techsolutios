@@ -29,7 +29,7 @@ rodavam fora do `withRoleCatalogLock` entraram. O motivo é medido, não argumen
 protegia nem os serializados**: 7 de 13 rodadas da bateria barata pré-correção ficaram vermelhas com
 `XX000 tuple concurrently updated`, e entre as vítimas estavam `rls-tenant-isolation` (3×) e
 `auth-identity-backfill-db` (1×), que **tomavam** o lock. O objeto disputado é a tupla de ACL
-(`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`. (2) **Teardown que não deixa papel vivo**:
+(`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`. A **lista exata** da bateria barata — parte da FORMA, e sem ela o denominador 37 não é reproduzível por terceiro (achado da cadeira de catálogo na junta): `audit-security` (1) · `auth-identity-backfill-db` (6) · `auth-identity-link-events-db` (5) · `auth-identity-role-real-db` (10) · `impound-process-checklist-link-schema` (5) · `rls-tenant-isolation` (1) · `vehicle-identity-schema` (9) = **37**. São **sete** arquivos, não seis: nenhuma combinação de 6 que contenha as vítimas nomeadas fecha 37. (2) **Teardown que não deixa papel vivo**:
 resiliente por statement, **ruidoso** nas falhas, com segunda tentativa da sequência inteira (a armadilha
 `2BP01`) e falha alta se a role sobreviver — mata os dois anti-padrões opostos que existiam (a sequência sem
 catch, em que a falha do primeiro engolia o segundo; e o `.catch(() => undefined)`, em que a falha sumia em
@@ -72,7 +72,7 @@ e `auth_identity_link_events` — exatamente o residual medido. Contraprova: 16 
 **0**, e a canônica 2 (lista `SUITES` do `ci.yml`, que contém `role-authority-db` mas **não** `core-saas-prisma`)
 mede exatamente **+1/+1** por rodada. Os dois arquivos estão fora da §5 deste bloco.
 
-**Canônica 1** — `npm test` **sem** `DATABASE_URL`, N=3: ec=1 nas 3, denominador **2358 idêntico**, 58 pulos
+**Canônica 1** — `npm test` **sem** `DATABASE_URL`, N=3: ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
 idênticos, piso **0** (pulo declarado não cai no piso — é o que mantém esta forma utilizável). Vermelho
 ambiental **pré-existente e nomeado**: `tests/core-saas-role-authority.test.ts` importa
 `src/database/prisma.ts`, que **lança no load** sem banco; o diff desse arquivo e de `src/` contra a base é
