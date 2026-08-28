@@ -15,6 +15,13 @@
 78b9279dcf4bed2550663780adae859b  src/modules/financial-entries/financial-entry.service.ts
 ```
 Worktree do dev (na branch, com `node_modules`): `.claude/worktrees/agent-af6ea607f3ddf8efd`.
+
+> **Terreno Windows (medido 2026-08-28, `core.autocrlf=true`): o md5 do ARQUIVO no worktree NÃO bate com o md5 do
+> blob mesmo com a árvore limpa** — o checkout grava CRLF (245 e 685 linhas terminadas em `\r`) e `git show` devolve LF.
+> Confira o pristino de um destes dois jeitos, nunca por `md5sum <arquivo>` cru:
+> `git -C <worktree> hash-object <caminho>` = `git rev-parse 12c3825:<caminho>` (blobs `e352c6c…` e `9be7caf…`),
+> ou `sed 's/\r$//' <worktree>/<caminho> | md5sum` = os md5 acima. Depois de MUTAR e restaurar, use a mesma forma.
+> Um md5 cru divergente aqui é fim de linha, não mutação — mas `git status --porcelain` sujo continua sendo mutação.
 **Se você MUTAR arquivo, crie worktree próprio** (`git worktree add`) — não meça no compartilhado.
 
 ## Composição (5 cadeiras, unanimidade, todas frescas)
