@@ -58,8 +58,10 @@ nomeados, identidade nova**, criados pela `agente-fabrica` em `.claude/agents/es
 
 **Plano de perda de jurado (declarado, item 5.1 do inspetor):** se um suplente cair por erro de infraestrutura
 sem devolver voto, o voto é registrado como PERDIDO na ata (nunca como aprovação), a identidade fica queimada e a
-`agente-fabrica` nomeia um segundo suplente com identidade nova antes de qualquer re-disparo. A junta só fecha
-com **5 votos de mérito válidos**.
+`agente-fabrica` nomeia um segundo suplente com identidade nova (`jurado-c4-suplente2-<cadeira>`) antes de qualquer
+re-disparo. **Se a `agente-fabrica` estiver indisponível, a junta PARA com o voto registrado como PERDIDO e NÃO fecha** — o
+resultado publicado é "junta incompleta: N de 5 votos válidos", nunca um placar. A junta só fecha com **5 votos de
+mérito válidos**. A cadeira fail-closed tem voto aceito pelo inspetor (3ª passada, item 6) e não precisa de suplente.
 
 ### O voto já emitido — conferível, NÃO herdado como fato pelos suplentes
 
@@ -68,9 +70,9 @@ com **5 votos de mérito válidos**.
 `agent-orchestration/omega/juntas/votos/B-O6R-02-ciclo4/01-jurado-c4-fail-closed-enumeracao.json`.
 Cabe ao `inspetor-de-terreno-da-junta` dizer se esse voto **vale** para esta composição (mesmo head, terreno
 LIBERADO COM RESSALVA na época) ou se a cadeira também precisa de suplente. Três notas desse parecer entram
-como insumo da cadeira de validação: (i) o **D27 como enunciado no plano é insatisfazível** (mutante
-equivalente; a propriedade foi provada por outra via — corpo do guard e estado perigoso real); (ii) essa
-divergência está **só no corpo do commit `b7de4c9`**, não em `pendencias.md` (§A2); (iii) a suíte cheia sem
+como insumo da cadeira de validação — **cada uma [A RE-VERIFICAR] por execução sua; nenhuma entra como fato**: (i) **[A RE-VERIFICAR]** o **D27 como enunciado no plano é insatisfazível** (mutante
+equivalente; a propriedade foi provada por outra via — corpo do guard e estado perigoso real; os drills M2/M3 do voto são reproduzíveis); (ii) **[A RE-VERIFICAR]** essa
+divergência está **só no corpo do commit `b7de4c9`**, não em `pendencias.md` (§A2); (iii) **[A RE-VERIFICAR]** a suíte cheia sem
 `DATABASE_URL` tem 1 vermelho **ambiental pré-existente** (`core-saas-role-authority` inicializa o Prisma
 Client após o skip), fora do escopo do ciclo.
 
@@ -85,6 +87,26 @@ Client após o skip), fora do escopo do ciclo.
 - **R5** as atas dos ciclos 1–2 só existem no histórico git — `git show 733d747:agent-orchestration/omega/juntas/J-B-O6R-02-ciclo1.md`
   e `git show 4cd0baa:agent-orchestration/omega/juntas/J-B-O6R-02-ciclo2.md` — para conferir inelegibilidade por nome.
 - Pareceres integrais das duas passadas do inspetor (25/08): `agent-orchestration/omega/juntas/votos/B-O6R-02-ciclo4/00a-*.md` e `00b-*.md`.
+
+
+### Ressalvas da 3ª passada do inspetor (28/08 — `LIBERADO COM RESSALVA`, R1–R8) — o que cada jurado precisa saber
+
+Parecer integral: `agent-orchestration/omega/juntas/votos/B-O6R-02-ciclo4/00c-inspetor-terreno-passada3-2026-08-28-LIBERADO-COM-RESSALVA.md`.
+- **R1** as três notas do voto fail-closed estão marcadas `[A RE-VERIFICAR]` por item (feito acima).
+- **R2** regra escrita do segundo suplente (feito acima).
+- **R3** resíduo inerte fora do head: worktree `gov-descuido` (arquivo inexistente em `12c3825`), `.tmp-demo/` na árvore
+  principal, scratchpad da sessão `dc4293a7`. **Nenhum jurado toca esses caminhos**; scratch e logs isolados por jurado.
+- **R4** letra do S0 (rebase) não cumprida; substância provada (`1aeb6e9`/`527947b` ancestrais; espelho 32=32, 9=9, blob 3=3).
+  Insumo da cadeira de validação.
+- **R5** o desenvolvedor do ciclo 4 não tem designação **nominal** em arquivo nenhum (plano §13.1); a inelegibilidade
+  dev×jurado está provada por tempo e por zero colisão de nome. **A ata precisa nomear a instância** (o orquestrador a
+  recupera do transcript: agente `general-purpose` disparado em 2026-08-25T12:15Z).
+- **R6** a proibição de junction e o `npm ci` no próprio worktree vivem no briefing — por isso **este briefing inteiro é
+  embutido no prompt de cada suplente**, além do arquivo do agente.
+- **R7** duas outras sessões Claude vivas (c1 sem confirmação escrita): cada jurado confere `hash-object` = blob e
+  `git status --porcelain` **antes e depois** de medir; divergência no "depois" = medição inválida, reportar.
+- **R8** o voto fail-closed usou junction de leitura (alvo intacto na remoção); a forma passou a ser proibida em 28/08 —
+  registro de ata, não invalida.
 
 ### PROIBIDO: junction/symlink de `node_modules` para a árvore de outrem (medido 2026-08-28)
 
