@@ -251,6 +251,22 @@ if (!connectionString) {
     }) as unknown as PrismaClient;
   }
 
+  // Limpeza de teardown que NÃO pode mascarar o erro original do teste (estamos num `finally`) e
+  // TAMBÉM não pode sumir em silêncio. `.catch(() => undefined)` aqui seria o anti-padrão que este
+  // bloco inteiro existe para matar — e não é hipótese: durante o D43 a mutação fez o padrão de
+  // nome deixar de casar, `dropSyntheticOrphanRole` lançou, um `.catch(() => undefined)` engoliu, e
+  // uma role `audit_rls_*` ficou viva no cluster sem que nada dissesse. O vaza-metro a encontrou.
+  async function limparOuGritar(acao: Promise<unknown>, contexto: string): Promise<void> {
+    try {
+      await acao;
+    } catch (error) {
+      process.stderr.write(
+        `[b-o6r-arnes] LIMPEZA FALHOU (${contexto}): ` +
+          `${error instanceof Error ? error.message : String(error)}\n`,
+      );
+    }
+  }
+
   async function roleVive(client: PrismaClient, roleName: string): Promise<boolean> {
     const rows = await client.$queryRaw<Array<{ rolname: string }>>`
       SELECT rolname FROM pg_roles WHERE rolname = ${roleName}
@@ -331,9 +347,12 @@ if (!connectionString) {
         `nenhuma falha era esperada sob o mecanismo único (N=${ITERACOES})`,
       );
     } finally {
-      await withRoleCatalogLock(esquerda, async (tx) => {
-        await tx.$executeRawUnsafe(`REVOKE USAGE ON SCHEMA public FROM "${roleGrant}"`);
-      }).catch(() => undefined);
+      await limparOuGritar(
+        withRoleCatalogLock(esquerda, async (tx) => {
+          await tx.$executeRawUnsafe(`REVOKE USAGE ON SCHEMA public FROM "${roleGrant}"`);
+        }),
+        "revoke final da sonda de barreira",
+      );
       await dropSyntheticOrphanRole(esquerda, roleAlvo);
       await dropSyntheticOrphanRole(esquerda, roleGrant);
       await esquerda.$disconnect();
@@ -418,7 +437,10 @@ if (!connectionString) {
         "a falha do 1º statement tem de estar nomeada pelo statement",
       );
     } finally {
-      await dropEphemeralRoleResilient(adminClient, efemera.roleName).catch(() => undefined);
+      await limparOuGritar(
+        dropEphemeralRoleResilient(adminClient, efemera.roleName),
+        `drop de garantia da role ${efemera.roleName}`,
+      );
       await adminClient.$disconnect();
     }
   });
@@ -461,7 +483,10 @@ if (!connectionString) {
       }
     } finally {
       for (const orfa of orfas) {
-        await dropSyntheticOrphanRole(adminClient, orfa).catch(() => undefined);
+        await limparOuGritar(
+          dropSyntheticOrphanRole(adminClient, orfa),
+          `drop da órfã sintética ${orfa}`,
+        );
       }
 
       await adminClient.$disconnect();
@@ -500,8 +525,11 @@ if (!connectionString) {
         await varredor.drop();
       }
     } finally {
-      await dropUnsweptProbeRole(adminClient, sonda).catch(() => undefined);
-      await dropSyntheticOrphanRole(adminClient, recente).catch(() => undefined);
+      await limparOuGritar(dropUnsweptProbeRole(adminClient, sonda), `drop da sonda ${sonda}`);
+      await limparOuGritar(
+        dropSyntheticOrphanRole(adminClient, recente),
+        `drop da role recente ${recente}`,
+      );
       await adminClient.$disconnect();
     }
   });
