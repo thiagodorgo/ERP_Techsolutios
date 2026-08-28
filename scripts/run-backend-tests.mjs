@@ -135,9 +135,23 @@ function normalizeTapPath(value) {
  *
  * @returns {string[]} os caminhos, na forma em que foram passados ao `node --test`
  */
-export function findSilentTestFiles(tapOutput, files) {
+export function findSilentTestFiles(tapOutput, files, repoRoot = ".") {
   const text = String(tapOutput ?? "");
-  const esperados = new Map(files.map((file) => [normalizeTapPath(file), file]));
+
+  // DUAS formas por arquivo, e é obrigatório: a que foi PASSADA ao `node --test` e a ABSOLUTA.
+  // O `node --test` nomeia o ponto de arquivo pelo caminho ABSOLUTO mesmo quando recebe um
+  // RELATIVO — e o runner encurta para relativo tudo que está dentro do repositório
+  // (`shortenPath`). Medido na canônica 1: alvo passado como `tests\core-saas-role-authority.test.ts`
+  // voltou no TAP como `C:\…\tests\core-saas-role-authority.test.ts`. Comparar só pela forma passada
+  // deixava o piso CEGO exatamente dentro de `tests/`, que é o único lugar onde ele precisa
+  // enxergar — a 1ª versão deste piso tinha esse defeito e passou verde porque a fixture do drill
+  // morava FORA do repositório, onde as duas formas coincidem.
+  const esperados = new Map();
+  for (const file of files) {
+    esperados.set(normalizeTapPath(file), file);
+    esperados.set(normalizeTapPath(path.resolve(repoRoot, file)), file);
+  }
+
   const mudos = [];
   const vistos = new Set();
 
@@ -406,7 +420,7 @@ function main(argv = process.argv.slice(2)) {
     // C-E — PISO DE DENOMINADOR, MONOTÔNICO. Vem ANTES do guard de skip de propósito: as duas
     // classes são quase disjuntas (arquivo que some não produz pulo), mas se um dia coincidirem, o
     // defeito mais específico — o arquivo NOMEADO — é o que precisa ser lido primeiro.
-    const mudos = findSilentTestFiles(tap, files);
+    const mudos = findSilentTestFiles(tap, files, repoRoot);
     if (mudos.length > 0) {
       console.error(
         `[run-backend-tests] PISO DE DENOMINADOR: ${mudos.length} arquivo(s) expandido(s) ` +

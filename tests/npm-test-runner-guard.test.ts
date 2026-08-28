@@ -557,6 +557,15 @@ test("findSilentTestFiles: só acusa ponto de topo cujo NOME é um dos arquivos 
     [],
     "nome que não está na lista de expandidos nunca acusa — teste chamado como um arquivo não é um arquivo",
   );
+
+  // A forma que o defeito da 1ª versão deixava passar: alvo RELATIVO, ponto de arquivo ABSOLUTO.
+  const absoluto = path.resolve(REPO_ROOT, "tests/mudo.test.ts");
+  const tapAbsoluto = `TAP version 13\nok 1 - ${absoluto.split("\\").join("\\\\")}\n# tests 1`;
+  assert.deepEqual(
+    findSilentTestFiles(tapAbsoluto, ["tests/mudo.test.ts"], REPO_ROOT),
+    ["tests/mudo.test.ts"],
+    "o TAP nomeia o ponto de arquivo pelo ABSOLUTO mesmo quando o alvo foi passado RELATIVO",
+  );
 });
 
 test("main(): fixture-dir com arquivo que SOME ⇒ runner VERMELHO NOMEANDO o arquivo", () => {
@@ -585,6 +594,48 @@ test("main(): fixture-dir com arquivo que SOME ⇒ runner VERMELHO NOMEANDO o ar
       /a-controle\.test\.ts/,
       "o arquivo que registrou testes não pode ser acusado junto",
     );
+  });
+});
+
+/**
+ * Fixture DENTRO do repositório, sob `test-results/` (gitignored, então nem um crash deixa sujeira
+ * rastreada). É o único arranjo que exercita o `shortenPath` do runner: alvo dentro do repo vai para
+ * o `node --test` como caminho RELATIVO, e o TAP responde nomeando o ponto de arquivo com o
+ * ABSOLUTO. Fixture em `os.tmpdir()` (fora do repo) passa e volta ABSOLUTA nos dois lados e NÃO
+ * distingue as duas formas.
+ */
+function withTempDirInRepo<T>(fn: (dir: string) => T): T {
+  const parent = path.join(REPO_ROOT, "test-results");
+  fs.mkdirSync(parent, { recursive: true });
+  const dir = fs.mkdtempSync(path.join(parent, "runner-guard-"));
+  try {
+    return fn(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test("main(): arquivo que SOME DENTRO do repositório também fica vermelho (relativo × absoluto)", () => {
+  // O DEFEITO QUE ESTE CASO MATA, e que ele PEGOU: a 1ª versão do piso comparava o nome do ponto de
+  // arquivo do TAP só com a forma que foi passada ao `node --test`. Para alvo dentro do repositório
+  // o runner passa RELATIVO e o TAP devolve ABSOLUTO — as duas nunca batiam, e o piso ficava cego
+  // justamente dentro de `tests/`. Os drills não pegaram porque a fixture deles morava em
+  // `os.tmpdir()`, fora do repo, onde as duas formas coincidem; quem pegou foi a canônica 1, ao
+  // reportar `not ok 84 - C:\…\tests\core-saas-role-authority.test.ts` para um alvo passado como
+  // `tests\core-saas-role-authority.test.ts`.
+  withTempDirInRepo((dir) => {
+    writeFixture(dir, "a-controle.test.ts", DOIS_TESTES_QUE_PASSAM);
+    writeFixture(dir, "b-some.test.ts", ARQUIVO_QUE_SOME);
+
+    const run = runRunner(dir);
+
+    assert.notEqual(
+      run.status,
+      0,
+      `arquivo mudo DENTRO do repo escapou do piso: ${run.stderr || run.stdout}`,
+    );
+    assert.match(run.stderr, /PISO DE DENOMINADOR/i);
+    assert.match(run.stderr, /b-some\.test\.ts/);
   });
 });
 
