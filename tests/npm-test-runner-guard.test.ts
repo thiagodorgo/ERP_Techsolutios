@@ -10,6 +10,7 @@ import {
   describePersistenceMode,
   evaluateDbSkipBudget,
   expandTestFiles,
+  findSilentTestFiles,
   parseTapSummary,
   resolvePersistenceMode,
 } from "../scripts/run-backend-tests.mjs";
@@ -495,5 +496,127 @@ test("main(): os MESMOS pulos SEM DATABASE_URL ⇒ runner VERDE (o guard só val
 
     assert.equal(run.status, 0, `sem DATABASE_URL o guard de skip não pode disparar: ${run.stdout || run.stderr}`);
     assert.doesNotMatch(run.stderr, /GUARD DE SKIP/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Guard 4 (B-O6R-ARNES · C-E, fecha `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` e o B-2c4) — PISO DE
+// DENOMINADOR. Arquivo expandido que termina sem registrar teste e sem declarar skip é ERRO que
+// NOMEIA o arquivo — nunca `ec=0` com um total menor e plausível.
+//
+// POR QUE POR FIXTURE-DIR, e não por asserção sobre a string do TAP: a assinatura que delata o
+// arquivo mudo (ponto top-level nomeado pelo CAMINHO, `# suites 0`) é comportamento do `node
+// --test`, não contrato nosso. Cravá-la num literal faria o guard continuar verde se o Node
+// mudasse a saída — o defeito voltaria calado. Apontando o runner para um diretório de fixture
+// real, a deriva de versão do Node deixa ESTE caso vermelho, e ele nomeia o que mudou.
+// ---------------------------------------------------------------------------
+
+/**
+ * Arquivo que carrega limpo e NÃO registra teste nenhum — a forma exata do defeito: a guarda de
+ * topo depende de uma variável que não existe, então o corpo com `test()` nunca executa.
+ */
+const ARQUIVO_QUE_SOME = [
+  'import test from "node:test";',
+  "const habilitado = process.env.FIXTURE_NUNCA_DEFINIDA === \"1\";",
+  "if (habilitado) {",
+  '  test("fixture: nunca chega aqui", () => undefined);',
+  "}",
+];
+
+/** Arquivo cujo único teste é PULADO com skip DECLARADO — registra teste, logo não é "mudo". */
+const UM_TESTE_COM_SKIP_DECLARADO = [
+  'import test from "node:test";',
+  'test("fixture: pulo declarado", { skip: "gated de proposito" }, () => {});',
+];
+
+test("findSilentTestFiles: só acusa ponto de topo cujo NOME é um dos arquivos expandidos", () => {
+  const tap = [
+    "TAP version 13",
+    "ok 1 - um teste comum que passou",
+    "ok 2 - tests/mudo.test.ts",
+    "not ok 3 - tests/quebrado.test.ts",
+    "ok 4 - tests/pulado.test.ts # SKIP gated",
+    "    ok 1 - subteste indentado nao conta",
+    "# tests 4",
+  ].join("\n");
+
+  const mudos = findSilentTestFiles(tap, [
+    "tests/mudo.test.ts",
+    "tests/quebrado.test.ts",
+    "tests/pulado.test.ts",
+    "tests/ausente.test.ts",
+  ]);
+
+  assert.deepEqual(
+    mudos,
+    ["tests/mudo.test.ts", "tests/quebrado.test.ts"],
+    "ponto com diretiva SKIP é pulo DECLARADO (fora do piso); arquivo sem ponto de arquivo registrou testes",
+  );
+  assert.deepEqual(
+    findSilentTestFiles(tap, ["tests/nada-a-ver.test.ts"]),
+    [],
+    "nome que não está na lista de expandidos nunca acusa — teste chamado como um arquivo não é um arquivo",
+  );
+});
+
+test("main(): fixture-dir com arquivo que SOME ⇒ runner VERMELHO NOMEANDO o arquivo", () => {
+  // MUTAÇÃO QUE ESTE CASO MATA: remover o piso de denominador do runner. Sem ele, este mesmo
+  // diretório sai `ec=0` com "2 arquivo(s) · 2 teste(s) · pass 2" — total menor, plausível, mudo.
+  // Foi exatamente o que o D26b mediu na canônica 3 (2740 no lugar de 2745, guard mudo).
+  withTempDir((dir) => {
+    writeFixture(dir, "a-controle.test.ts", DOIS_TESTES_QUE_PASSAM);
+    writeFixture(dir, "b-some.test.ts", ARQUIVO_QUE_SOME);
+
+    const run = runRunner(dir);
+
+    assert.notEqual(
+      run.status,
+      0,
+      `o runner aceitou um arquivo que não registrou teste: ${run.stderr || run.stdout}`,
+    );
+    assert.match(run.stderr, /PISO DE DENOMINADOR/i);
+    assert.match(
+      run.stderr,
+      /b-some\.test\.ts/,
+      "o vermelho tem de NOMEAR o arquivo — 'o total caiu' sem dizer onde não é acionável",
+    );
+    assert.doesNotMatch(
+      run.stderr,
+      /a-controle\.test\.ts/,
+      "o arquivo que registrou testes não pode ser acusado junto",
+    );
+  });
+});
+
+test("main(): fixture-dir de CONTROLE (todos registram teste) ⇒ VERDE, sem a mensagem do piso", () => {
+  // Sem este controle, um piso que disparasse sempre passaria despercebido e reprovaria a suíte
+  // inteira — trocar um falso-verde por um falso-vermelho não é conserto.
+  withTempDir((dir) => {
+    writeFixture(dir, "a-dois.test.ts", DOIS_TESTES_QUE_PASSAM);
+    writeFixture(dir, "b-um.test.ts", UM_TESTE_QUE_PASSA);
+
+    const run = runRunner(dir);
+
+    assert.equal(run.status, 0, `${run.stderr || run.stdout}`);
+    assert.doesNotMatch(run.stderr, /PISO DE DENOMINADOR/i);
+    // 2 + 1 = 3: o total tem de ser o REAL, não o número de arquivos.
+    assert.match(run.stderr, /3 teste\(s\)/);
+  });
+});
+
+test("main(): arquivo com skip DECLARADO ⇒ VERDE (é o arranjo da canônica 1, sem DATABASE_URL)", () => {
+  // O caso que protege a forma canônica 1: `npm test` SEM `DATABASE_URL` faz ~260 suítes -db
+  // pularem por `test(nome, { skip })`. Elas REGISTRAM teste, logo não são arquivos mudos. Um piso
+  // que não distinguisse "não registrou nada" de "registrou um pulo declarado" deixaria a canônica
+  // 1 permanentemente vermelha e seria revertido na primeira semana.
+  withTempDir((dir) => {
+    writeFixture(dir, "a-skip.test.ts", UM_TESTE_COM_SKIP_DECLARADO);
+    writeFixture(dir, "b-um.test.ts", UM_TESTE_QUE_PASSA);
+
+    const run = runRunner(dir, { DATABASE_URL: undefined });
+
+    assert.equal(run.status, 0, `pulo DECLARADO não pode cair no piso: ${run.stderr || run.stdout}`);
+    assert.doesNotMatch(run.stderr, /PISO DE DENOMINADOR/i);
+    assert.match(run.stderr, /skipped 1/);
   });
 });
