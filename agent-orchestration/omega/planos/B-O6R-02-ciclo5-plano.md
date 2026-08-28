@@ -243,3 +243,33 @@ Regra: `cmd > "$LOG" 2>&1; ec=$?` — exit por variável, nunca por pipe; contag
 ---
 
 **Limpeza:** criei e derrubei `plan-c5b-pg` (:55801), `plan-c5b-pg2` (:55802), `plan-c5b-redis` (:56801) — `docker rm -fv` ec=0, `docker ps -a` restam só `erp-postgres`/`erp-redis` (nunca tocados, nem leitura); logs/sondas (xx000-r01..13, catprobe, fkprobe, d26b, headcheck) ficam no scratchpad da sessão, fora do repo; worktree `plan-c5` **mantido** (ordem do orquestrador), `status --porcelain` vazio, 5/5 âncoras `hash-object` = blob de `12c3825`; nenhuma junction criada; árvore principal intocada.
+
+---
+
+## ERRATA S0 (2026-08-28, apensada — §A2) — os "15 DIVERGE" (ata, A7) e os "25 DIVERGE" (plano do c5, §0.c) são ARTEFATO DE MEDIÇÃO
+
+O orquestrador executou o S0 e mediu o oposto. Quatro medições, nesta ordem:
+
+| # | Arranjo | Resultado |
+|---|---|---|
+| 1 | `--check` no **worktree real** do head (`.claude/worktrees/agent-af6ea607f3ddf8efd`, `12c3825`, árvore limpa) | **ec=0** — "OK — 25 agentes, espelho consistente" · 0 DIVERGE |
+| 2 | `git archive 12c3825 … \| tar -x` + `--check` (o arranjo do plano) | ec=1 · **25 DIVERGE** — reproduzido |
+| 3 | Diff do arquivo do archive × gerado: **as 64 linhas** diferem; 3995 × 3931 bytes = **exatamente 1 byte/linha** | o delta é **CR** |
+| 4 | **Checkout LF puro** (`git -c core.autocrlf=false checkout 12c3825 -- …`) — o que a CI Linux recebe | **ec=0** · 0 DIVERGE · "25 agentes, espelho consistente" |
+
+Contagem de CR: **blob = 0** nos dois lados (26 arquivos do espelho e 25 fontes, todos LF; não há `.gitattributes`);
+arquivo **extraído do archive = 64 CR**. Ou seja: `git archive`+`tar` nesta máquina Windows injeta CRLF no espelho,
+o script compara com o conteúdo gerado (LF) e acusa divergência que **não existe no repositório**.
+
+**Consequência:** o **S0(i) do plano do ciclo 5 é NO-OP** — o espelho já fecha no head `12c3825`, e nenhum commit
+foi feito na branch por este motivo (head preservado). A pendência `P-O6R-B02-S0-ESPELHO-NO-HEAD` (registrada como
+ALTA) **não reproduz**: fica registrada como fechada por não-reprodução, com as quatro medições acima.
+
+**O que isto NÃO invalida:** `5e321ac` continua não sendo ancestral de `12c3825` nem de `origin/main` (medido) — a
+**letra** do S0 do ciclo 4 ("rebase sobre a base com `5e321ac`") segue inexequível, como o planejador do ciclo 5
+apurou. E a CI **não executa** `sync-agent-agents --check` (0 ocorrências em `ci.yml`), então nenhum gate depende disto.
+
+**Lição de método, para o ciclo 5 e para o inspetor:** medir o conteúdo de um commit por `git archive`+`tar` numa
+máquina com `core.autocrlf=true` **não** é medir o commit. As formas honestas são o **checkout LF puro**
+(`git -c core.autocrlf=false checkout <head> -- <caminhos>`) ou `git cat-file`/`git show` do blob. É a mesma classe
+da nota de md5 × autocrlf que já está no briefing — agora com um segundo caso, e este chegou a virar pendência ALTA.

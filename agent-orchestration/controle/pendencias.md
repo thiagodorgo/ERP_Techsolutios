@@ -3093,7 +3093,14 @@ O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: n
 (WARNING com órfão semeado); só o drill D28 o exerce (validador executou: WARNING nomeado com 1 órfão). Os demais componentes
 (≥6 corrida, ≥2 SQL cru) e o total (≥21) estão acima do piso.
 
-## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **ALTA para o PR** (alçada do orquestrador)
+## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO em 2026-08-28** (era ALTA)
+
+> **Não reproduz.** O `--check` no worktree real do head e num **checkout LF puro** (o que a CI Linux vê) dá
+> **ec=0, 0 DIVERGE, "25 agentes, espelho consistente"**. Os 15 (validador do c4) e os 25 (planejador do c5) vieram de
+> `git archive`+`tar` numa máquina com `core.autocrlf=true`, que injeta 64 CR no arquivo do espelho (blob = 0 CR nos dois
+> lados, 26+25 arquivos, sem `.gitattributes`); o script compara com o gerado (LF) e acusa divergência inexistente.
+> Errata completa, com as 4 medições, na ata do ciclo 4 e no plano do ciclo 5. **S0(i) do ciclo 5 = NO-OP.**
+> Registro original preservado abaixo (§A2 — não se reescreve):
 `git archive 12c3825 .claude/agents .agents/agents scripts/sync-agent-agents.mjs` → `node scripts/sync-agent-agents.mjs --check`
 → **ec=1, 15 DIVERGE** (12 agentes-base + 3 especialistas). Na árvore principal → OK 32. A R4 do inspetor mediu o espelho VIVO,
 não o head; o S0 do plano ("`--check` até o espelho fechar") **não fecha em `12c3825`**. `5e321ac` segue não-ancestral. A CI não
