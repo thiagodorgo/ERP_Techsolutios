@@ -1,42 +1,41 @@
 {
-  "snapshot_date": "2026-08-19",
-  "version": "B-O6R-01-CICLO3-CORRECAO",
+  "snapshot_date": "2026-08-28",
+  "version": "B-O6R-ARNES",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "B-O6R-01 — identidade e autoridade (Ω6R-SEC-001 + Ω6R-TEN-001).",
-    "title": "Identidade global + allowlist de papéis — os dois piores achados da auditoria, fechados",
-    "pr": 357,
-    "merge_commit": "0a39824",
-    "approved_head": "0a39824",
+    "block": "B-O6R-ARNES — o arnes de teste (P-O6R-ARNES-ISOLAMENTO, P3 e P5).",
+    "title": "Mecanismo unico de catalogo, teardown que nao deixa papel vivo, piso de denominador",
+    "pr": null,
+    "merge_commit": null,
+    "approved_head": null,
     "status": "published_per_pr",
-    "summary": "O e-mail deixou de decidir entre organizações (identidade global + vínculo explícito + trilha append-only; troca de organização fail-closed) e administrador de organização deixou de conseguir se promover a plataforma (allowlist fechada por construção). Login sem organização pela função elevada, religação/desvínculo com revogação real de sessões e a luz login_without_org no readiness. Críticos fechados: 2→4 de 15. O deploy segue bloqueado (J-6R). Ciclo 2 (correção pós-reprovação R-B-O6R-01-ciclo1, 3 fatias): allowlist com FONTE ÚNICA fail-closed por construção (ROLE_AUTHORITY + satisfies; papel sem classificação não compila), caminho Prisma com teste que morre, arnês -db determinístico (advisory lock + sweep de órfãs), prova da terceira armadilha sob role real, validação de borda nas rotas de vínculo (400/404 sem erro cru do Postgres) e artefatos corrigidos para afirmar só o que a execução produz (migração, API_CONTRACTS, decisoes.md com errata, guard 10c). Ciclo 3 (correção pós-veto J-O6R-B01-ciclo2 + premissa reaberta R-ciclo3): o backfill da suíte ganhou ESCOPO (sentença escopada fail-closed com ida-e-volta byte-idêntica + tripwire do terceiro simulado; a prova do verbatim volta ao migrate deploy da CI, perda declarada), o quinto escritor de catálogo entrou no lock (createCloneOwnerProbe no arnês + prova de fila em pg_locks), ratchet lexical de escrita de catálogo (allowlist congelada por arquivo e contagem), varredor cobrindo as duas famílias do arnês (5 órfãs legadas recolhidas), errata apensada ao plano v6 (P9) e pendência P-O6R-B01-TRILHA-ORFA-LIMPEZA (231 linhas órfãs FICAM; destino é junta). F1 12/12 verde na forma exata do job (denominador 148 idêntico, zero XX000/23503/23505/40P01); F4: 0 instantes com terceiro no alvo e atribuição do delta residual (+12) a core-saas-role-authority-db, registrada sem remendo (decisão de destino é da junta).",
-    "status_label": "Mergeado em 19/08/2026 (PR #357)"
+    "summary": "A classe do arnes de teste virou bloco proprio e fechou PRIMEIRO (decisao do dono, D-JUNTA-ESCOPO-E-CALIBRACAO §5): ela e ANTERIOR a todos os blocos O6R de codigo, e o financeiro havia sido reprovado no ciclo 4 por um defeito que nao criou e estava proibido de consertar. Tres entregas. (1) MECANISMO UNICO de escrita de catalogo de cluster: os tres ultimos escritores que rodavam fora do withRoleCatalogLock entraram, e a enumeracao de escritores de tests/** ja nao tem excecao. O motivo, medido e nao argumentado: serializacao PARCIAL nao protegia nem os serializados — 7 de 13 rodadas da bateria barata pre-correcao ficaram vermelhas com 'XX000 tuple concurrently updated', e as vitimas incluiam quem TOMAVA o lock; o objeto disputado e a tupla de ACL (pg_namespace.nspacl/pg_class.relacl), nao pg_authid. (2) TEARDOWN que nao deixa papel vivo: resiliente por statement, RUIDOSO nas falhas, com segunda tentativa da sequencia inteira (a armadilha 2BP01, em que o DROP ROLE falha por dependencia se o DROP OWNED nao rodou) e falha alta se a role sobreviver. Mata os dois anti-padroes OPOSTOS que existiam: a sequencia sem catch (a falha do primeiro engolia o segundo) e o .catch(() => undefined) (a falha sumia em silencio). O sweep de orfas ganhou as tres familias novas com o mesmo corte de 60 min; rls_test_ ficou FORA por decisao consciente e registrada (68 orfas legadas na base do dono — a classe do incidente de mass-delete de 26/07). (3) PISO DE DENOMINADOR no runner: arquivo expandido que termina sem registrar teste e sem declarar skip fica vermelho NOMEANDO o arquivo, em vez de sair 0 publicando um total menor e plausivel — foi assim que a canonica 3 publicou 2740 no lugar de 2745 sem avisar ninguem. Piso ESTRUTURAL, nao por contagem fixa; pulo declarado nao cai nele. Prova: bateria barata 7/13 vermelhas -> 13/13 verdes com denominador identico; canonica 3 N=10 com 10/10 ec=0, denominador identico e vaza-metro de roles ZERADO. So tests/** e scripts/**: o diff contra a base em src/, prisma/, .github/, CLAUDE.md e AGENTS.md e vazio, conferido."
   },
   "metrics": {
     "flutter_tests": {
       "value": 864,
       "total": 864,
       "display": "864/864",
-      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado. [Ciclos 2 e 3: valor CARREGADO — a trilha Flutter não foi tocada pelas correções; sem reexecução (§C3.3).]"
+      "note": "Execução real: 860/860 → 864/864 (+4): o app ganhou o mapeamento dos códigos novos do login sem organização (409/400/429 — bo6r01_login_sem_org_erros_test.dart). Na primeira rodada completa 1 teste de telemetria (PR-13, fora da superfície deste bloco) falhou sob paralelismo e passou isolado e na rodada completa seguinte — flake pré-existente, registrado. [Ciclos 2 e 3: valor CARREGADO — a trilha Flutter não foi tocada pelas correções; sem reexecução (§C3.3).] [B-O6R-ARNES: valor CARREGADO — a trilha Flutter nao foi tocada (o bloco so altera tests/** e scripts/** do backend); sem reexecucao (§C3.3). O `npm --prefix frontend run check` e o build rodaram VERDES na bateria como regressao, sem mover a contagem de smoke.]"
     },
     "frontend_smoke_tests": {
       "value": 1126,
       "total": 1126,
       "display": "1126/1126",
-      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).]"
+      "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).] [B-O6R-ARNES: valor CARREGADO — a trilha web nao foi tocada (o bloco so altera tests/** e scripts/** do backend); sem reexecucao (§C3.3). O `npm --prefix frontend run check` e o build rodaram VERDES na bateria como regressao, sem mover a contagem de smoke.]"
     },
     "backend_tests": {
-      "value": 2562,
-      "total": 2572,
-      "display": "2562/2572",
-      "note": "Execução real do ciclo 3 (F2, árvore desta entrega): 2562/2572 · fail 0 · 10 pulos declarados (os mesmos do ciclo 2) · denominador IDÊNTICO em 3 execuções. +5 sobre o ciclo 2 (2557/2567): tripwire do terceiro simulado (backfill), prova de fila do quinto escritor + órfã sintética do varredor (fn-db), ratchet db-catalog-write-guard, e 1 guard de KPI que entrou na branch entre os ciclos (8492587). Batch -db na forma EXATA do job backend-postgres (env completo + db:seed a cada iteração + exit de PIPESTATUS[0]): 12/12 exit 0 · 148/148 idêntico nas 12 · grep XX000|23503|23505|40P01 = 0 nos 12 taps · 0 pulos. Ambiente declarado: availableParallelism=8, teto efetivo do node --test = 7 (P1 — declarado, não consertado)."
+      "value": 2595,
+      "total": 2597,
+      "display": "2595/2597",
+      "note": "Execucao real desta arvore, forma CANONICA 3 declarada: `npm test` (= node scripts/run-backend-tests.mjs, 247 arquivos) com DATABASE_URL exportada para cluster descartavel proprio (postgres:16, 103 migrations), REDIS_URL proprio, CORE_SAAS_PERSISTENCE NAO exportada (o runner declara memory), Node v20.19.5, N=10 rodadas sequenciais sobre o codigo final deste PR. Resultado: 10/10 ec=0, denominador 2597 IDENTICO nas 10, pass 2595, fail 0, 2 pulos declarados (os dois de permission-catalog-db-parity, gated por RBAC_DB_PARITY). VAZA-METRO (snapshot de pg_roles + linhas nas 115 tabelas antes e depois de CADA rodada): Delta de roles = 0 em TODAS as 10 e ZERO role nova ao fim — contra 2 orfas com LOGIN e INSERT/UPDATE/DELETE em todas as tabelas (inclusive financial_entries) no ciclo 4. O residuo de linhas de +10/rodada (auth_identities +5, auth_identity_link_events +5) e PRE-EXISTENTE e fica NOMEADO, nao consertado — atribuicao COMPLETA por execucao isolada minha: tests/core-saas-prisma.test.ts = +4/+4 (2 rodadas, linear) e tests/core-saas-role-authority-db.test.ts = +1/+1 (3 rodadas, linear); a soma +5/+5 bate exatamente com o residual da canonica 3. Contraprova: os outros 16 candidatos medidos isoladamente deram 0, e a canonica 2 (lista SUITES do ci.yml, que contem role-authority-db mas NAO core-saas-prisma) mede exatamente +1/+1 por rodada. Os dois arquivos estao fora da §5 deste bloco; o destino da classe e do B-O6R-02. Comparacao com o 2562/2572 anterior NAO e limpa: aquele numero veio de outra branch e outra forma. O delta atribuivel a este PR sao +12 casos permanentes de guarda (22 -> 34)."
     },
     "backend_contract_tests_focused": {
-      "value": 92,
-      "total": 92,
-      "display": "92/92",
-      "note": "Bateria focada do B-O6R-01 REMEDIDA no ciclo 3 (execução real, casos-folha, composição declarada): 22 no grupo memory (auth-invariant-guards + core-saas-role-authority, sob CORE_SAAS_PERSISTENCE=memory, a forma do runner) + 69 no grupo -db (os 9 arquivos do bloco listados no job backend-postgres — 66 do ciclo 2 + tripwire do backfill, prova de fila e órfã sintética do ciclo 3) + 1 do ratchet novo db-catalog-write-guard (estático). Contagem idêntica em 2 execuções. Substitui o 88/88 do ciclo 2 pela mesma régua: casos novos entram na composição, declarados."
+      "value": 34,
+      "total": 34,
+      "display": "34/34",
+      "note": "Bateria focada do B-O6R-ARNES, execucao real, composicao declarada: 29 casos em tests/npm-test-runner-guard.test.ts (21 da base + 3 portados verbatim do guard de skip C5.3 + 5 do piso de denominador) + 5 em tests/db-catalog-write-guard.test.ts com DATABASE_URL presente (1 ratchet lexical + 4 casos -db novos: sonda de barreira sob o mecanismo unico, teardown resiliente com falha injetada, e as duas metades do sweep). Baseline da base era 22 (21 runner-guard + 1 ratchet); nenhum caso morreu; a meta M >= 31 do plano fica cumprida com 34. Sem DATABASE_URL os 4 casos -db nao rodam e o arquivo declara 1 pulo — declarado, nunca silencioso."
     },
     "flutter_modules": {
       "value": 17,
@@ -60,9 +59,9 @@
       "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
     },
     "blocks_completed": {
-      "value": 151,
-      "display": "151",
-      "note": "B-O6R-01 entregue (identidade e autoridade)."
+      "value": 152,
+      "display": "152",
+      "note": "B-O6R-ARNES entregue (arnes de teste: catalogo, teardown, denominador)."
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -587,9 +586,16 @@
     }
   },
   "recent": {
-    "as_of": "2026-08-18",
+    "as_of": "2026-08-28",
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
+      {
+        "pr": null,
+        "data": "2026-08-28",
+        "tipo": "qualidade",
+        "titulo": "O arnes de teste deixa de mentir sobre o proprio numero",
+        "resumo": "A suite passou a ter UM mecanismo de escrita de catalogo do Postgres — antes tres arquivos escreviam por fora e 7 de 13 rodadas ficavam vermelhas por disputa, inclusive derrubando quem respeitava o mecanismo. Agora sao 13 de 13, com o mesmo total em todas. O teardown deixou de poder abandonar usuario de banco com permissao de escrita: 10 rodadas completas terminaram com zero residuo, contra dois abandonados antes. E o runner passou a recusar o verde quando um arquivo de teste some sem avisar: em vez de publicar um total menor e plausivel, ele fica vermelho e diz QUAL arquivo sumiu."
+      },
       {
         "pr": null,
         "data": "2026-08-18",
