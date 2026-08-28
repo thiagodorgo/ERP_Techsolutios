@@ -1698,3 +1698,50 @@ re-mede numa base limpa e fecha pelo mérito que três cadeiras já aprovaram. O
 - **Descomissionamento dos especialistas de bloco** — os 14 do `B-O6R-02` não têm cláusula, ao
   contrário dos efêmeros das rodadas Ω4C e Ω5P, deletados com registro nominal em ata.
 - **`scripts/limpar-residuo-de-junta.sh` não é citado por documento nenhum** — entra no §C5.
+
+### ERRATA de `D-JUNTA-ESCOPO-E-CALIBRACAO` §6 (2026-08-28, apensada — §A2, o texto original fica) — os números estavam errados, e o quadro é melhor do que eu escrevi
+
+O §6 acima diz *"quatro versões divergentes do contrato (`decisoes.md`: **1480** linhas em
+`origin/main`, **1606** em `demo/investidor`, 1649 na branch do financeiro, 1664 na de governança)"*.
+**Duas dessas contagens estão erradas e a caracterização é imprecisa.** Medido agora, por
+`git show <ref>:<caminho> | wc -l`:
+
+| ref | `decisoes.md` | o que eu escrevi |
+|---|---|---|
+| `origin/main` (`6efe5ad`, imóvel) | **1545** | 1480 — **não corresponde a estado nenhum** da `main` |
+| `demo/investidor` (HEAD) | **1700** | 1606 — era a contagem **antes do meu próprio commit** (`1231e71^` = 1606) |
+| `feat/o6r-b02-financial-uow` (`12c3825`) | 1649 | 1649 ✓ |
+| `docs/governanca-porteiro-pre-merge-sol` (`48a75e9`) | 1664 | 1664 ✓ |
+
+**A caracterização "quatro versões do contrato" também é imprecisa, e o erro é a meu favor —
+o que o torna pior.** Medido: `CLAUDE.md`, `AGENTS.md` e `EXECUTION_MODEL.md` da branch do financeiro
+são **byte-idênticos** aos da `main` (blobs `081c4b90` e `e0f15245`) — ela **cumpriu literalmente**
+`D-CONTRATOS-FORA-DO-PR-FINANCEIRO` e não é uma versão do contrato. Divergem só a `decisoes.md` e a
+`pendencias.md` dela. O correto: **três textos de contrato** (`main` = financeiro · `demo/investidor` ·
+governança) e **quatro registros de decisão**.
+
+**Três fatos medidos que melhoram muito o quadro da reconciliação, e que o §6 não tinha:**
+
+1. **`origin/main` é o ancestral comum das três branches** (`git merge-base` de cada par = `6efe5ad`).
+   Nenhuma contém trabalho de outra: a reconciliação é de três vias com base única e limpa.
+2. **`decisoes.md` é append-only nas três branches** — `git diff origin/main <ref> -- decisoes.md |
+   grep -c '^-[^-]'` = **0** nas três. **Nenhuma decisão pré-existente foi reescrita por ninguém**, e as
+   69 decisões herdadas têm texto idêntico nas quatro. O risco de perda silenciosa é menor do que eu disse.
+3. **Só a branch de governança sobrescreve norma** (−33 linhas no `CLAUDE.md`, −37 no `AGENTS.md`, −18
+   no `EXECUTION_MODEL.md`). `demo/investidor` é 100% aditiva (1 hunk).
+
+**O que continua verdadeiro do §6, e agora com o alvo exato:** há **duas decisões com o mesmo id e
+corpos diferentes** (`D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO`, nascida na branch do financeiro em
+2026-08-20 21:38 e emendada na de governança 2h20 depois, com a emenda **descartando** as seis
+consequências numeradas do original); **duas decisões que só existem na branch do financeiro**
+(`D-CONTRATOS-FORA-DO-PR-FINANCEIRO`, `D-INSTANCIA-NOVA-COM-AUDITORIA`); **duas que só existem na de
+governança** (`D-PORTEIRO-PRE-MERGE` com 3 emendas, `D-FABLE-PARA-GPT-5-6-SOL`); e **três que só
+existem aqui** (`D-INSPETOR-TERRENO-JUNTA`, `D-GOV-AMEACA-DESCUIDO`, esta). E o porteiro segue em dois
+desenhos incompatíveis **com o mesmo `name:` de agente** — não coexistem no mesmo repositório.
+
+Inventário completo, parágrafo a parágrafo, com o risco de perda por ordem de merge:
+`agent-orchestration/omega/divergencias-do-contrato-2026-08-28.md`.
+
+**Por que esta errata existe e não uma correção silenciosa:** o §A2 proíbe consolidação silenciosa, e
+esta rodada inteira é sobre artefatos que afirmam números que a execução não produz. Eu escrevi três
+números sem re-medir e um deles não existe em estado nenhum do repositório. O texto original fica.
