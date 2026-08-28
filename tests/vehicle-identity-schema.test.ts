@@ -3,6 +3,18 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  dropEphemeralRoleResilient,
+  withRoleCatalogLock,
+} from "./helpers/auth-identity-fixture.js";
+
+// B-O6R-ARNES (2026-08-28) — este arquivo era um dos TRÊS escritores de catálogo de cluster fora do
+// mecanismo único. A sequência de catálogo da role `vid_rls_test_*` entra em `withRoleCatalogLock`;
+// o teardown deixa de usar `.catch(() => undefined)`. Aquele par de catches era o anti-padrão
+// OPOSTO ao do audit-security: em vez de a primeira falha engolir a segunda, as duas sumiam em
+// silêncio — e a role sobrevivia por dependência (`2BP01`: role com grants não dropa) sem que
+// nenhum log registrasse nada. Resiliente não é silencioso.
+
 const connectionString = process.env.DATABASE_URL;
 
 // Ω-VID PR-02 — bateria de prova viva do schema (Postgres real). DB-gated (skip sem DATABASE_URL). Cobre os 9
@@ -195,12 +207,14 @@ if (!connectionString) {
     let tenantA: { readonly id: string } | undefined;
     let tenantB: { readonly id: string } | undefined;
     try {
-      await adminClient.$executeRawUnsafe(
-        `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
-      );
-      await adminClient.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`);
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(
+          `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
+        );
+        await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
+        await tx.$executeRawUnsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`);
+        await tx.$executeRawUnsafe(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`);
+      });
 
       const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
       client = new PrismaClient({
@@ -257,8 +271,10 @@ if (!connectionString) {
       if (tenantA) await teardown(adminClient, tenantA.id, { skipDisconnect: true });
       if (tenantB) await teardown(adminClient, tenantB.id, { skipDisconnect: true });
       if (client) await client.$disconnect();
-      await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`).catch(() => undefined);
-      await adminClient.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`).catch(() => undefined);
+      // C-B: sai o par de `.catch(() => undefined)`. O teardown resiliente tenta a sequência
+      // inteira de novo enquanto a role sobreviver, COLECIONA as falhas e as reporta — e lança se
+      // a role ficar viva.
+      await dropEphemeralRoleResilient(adminClient, roleName);
       await adminClient.$disconnect();
     }
   });
