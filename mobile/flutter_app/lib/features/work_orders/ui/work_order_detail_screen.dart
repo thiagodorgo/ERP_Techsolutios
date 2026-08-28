@@ -116,8 +116,9 @@ class WorkOrderDetailScreen extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    TenantContextBar(session: session),
-                    const SizedBox(height: 8),
+                    // CLAUDE.md §3/C7 — a tela de campo NÃO expõe e-mail/claims
+                    // nem o nome técnico da organização. O contexto do
+                    // atendimento vem dos cards abaixo (OS, cliente, local).
                     _WorkOrderStepper(status: wo.status),
                     const SizedBox(height: 8),
                     if (wo.syncStatus == SyncStatus.pending)

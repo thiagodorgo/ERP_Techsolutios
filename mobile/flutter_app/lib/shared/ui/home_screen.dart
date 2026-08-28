@@ -70,6 +70,74 @@ Color _accentForTone(String tone) => switch (tone) {
 String _hhmm(DateTime dt) =>
     '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
+/// Folha inferior honesta para as ações do cabeçalho (Conversas / Notificações).
+/// Sem rota morta nem andaime de dev: mostra o estado real (vazio ou resumo).
+void _showHeaderSheet(
+  BuildContext context, {
+  required IconData icon,
+  required String title,
+  required String message,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEFF6FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: ErpMobileTheme.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: ErpMobileTheme.ink,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.4,
+                color: ErpMobileTheme.inkMuted,
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Entendi'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _HomeContent extends ConsumerStatefulWidget {
   const _HomeContent({required this.session});
 
@@ -153,9 +221,31 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                 '${tenantRoleLabel(session.user.tenantRole)} · ${session.activeTenant.displayName}',
             actions: [
               MobileHeaderIconButton(
-                icon: Icons.monitor_heart_outlined,
-                tooltip: 'Diagnóstico',
-                onPressed: () => context.go('/diagnostics'),
+                icon: Icons.chat_bubble_outline,
+                tooltip: 'Conversas',
+                onPressed: () => _showHeaderSheet(
+                  context,
+                  icon: Icons.chat_bubble_outline,
+                  title: 'Conversas',
+                  message:
+                      'Nenhuma conversa nova. As mensagens da central com a '
+                      'operação de campo aparecem aqui.',
+                ),
+              ),
+              MobileHeaderIconButton(
+                icon: Icons.notifications_none_outlined,
+                tooltip: 'Notificações',
+                badgeCount: pendingApprovalCount > 0
+                    ? pendingApprovalCount
+                    : null,
+                onPressed: () => _showHeaderSheet(
+                  context,
+                  icon: Icons.notifications_none_outlined,
+                  title: 'Notificações',
+                  message: pendingApprovalCount > 0
+                      ? '$pendingApprovalCount aprovação(ões) aguardando sua ação.'
+                      : 'Você está em dia. Novos avisos da operação aparecem aqui.',
+                ),
               ),
             ],
           ),
