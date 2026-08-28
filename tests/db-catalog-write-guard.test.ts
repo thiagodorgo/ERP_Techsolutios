@@ -308,7 +308,12 @@ if (!connectionString) {
                 ? resultado.reason.message
                 : String(resultado.reason);
 
-            falhas.push(`iteração ${i}: ${mensagem.split("\n")[0]}`);
+            // A mensagem vai INTEIRA (colapsada), nunca só a primeira linha: os erros do Prisma
+            // começam com linha vazia, e cortar ali produz "iteração 7: " — uma falha ANÔNIMA, que
+            // não distingue o `XX000` desta classe de um erro qualquer. Drill que fica vermelho sem
+            // NOMEAR o erro não prova a propriedade que diz provar (medido no D38: 39/50 falhas
+            // anônimas na primeira execução da mutação).
+            falhas.push(`iteração ${i}: ${mensagem.replace(/\s+/g, " ").trim().slice(0, 240)}`);
           }
         }
       }
