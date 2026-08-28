@@ -3116,3 +3116,6 @@ nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
   **vazamento linear** de `auth_identities`/`auth_identity_link_events` (+5/rodada) mesmo em rodadas verdes; `permissions` 1→15 uma vez (idempotente).
 - **Aborto duro (SIGKILL) na corrida -db** deixa 1 tenant/1 user/1 conta/1 lançamento sem varredura (não contamina: slugs únicos);
   o teardown no caminho de `assert.fail` está provado (resíduo 0).
+- **ERRATA do rótulo (28/08):** nas linhas apontadas, `audit-security.test.ts:158` é `DROP OWNED BY` (teardown, FORA do
+  `withRoleCatalogLock`) e `auth-identity-fixture.ts:150` é `GRANT USAGE ON SCHEMA public` (DENTRO do lock) — escritas em
+  `pg_namespace.nspacl`/`pg_class.relacl`, não `pg_authid`. Objeto disputado a nomear por execução no ciclo 5 (ver errata da ata).

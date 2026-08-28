@@ -168,3 +168,21 @@ tocado); **0** `jur-c4s-*`. `docker ps -a` → só `erp-postgres`/`erp-redis` (n
 pelos 4 suplentes DEPOIS de medir (hash-object = blob nos 3 âncoras + arquivos exercitados; `status --porcelain` vazio
 no worktree do dev e na árvore principal rastreada). Evidência bruta (logs, snapshots de catálogo, ~21 MB do arnês)
 fica no scratchpad da sessão `503c6f08`, fora do repositório.
+
+---
+
+## ERRATA (2026-08-28, apensada — §A2: nunca reescrever) — o rótulo "em `CREATE ROLE`" do B-1c4 é IMPRECISO
+
+Conferido no head `12c3825` pelo orquestrador (e antes pela `agente-fabrica`), nas linhas que o jurado do arnês apontou:
+
+- `tests/audit-security.test.ts:158` → `await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`)` — teardown, **FORA** de
+  `withRoleCatalogLock` (a suíte não importa o lock; 0 ocorrências).
+- `tests/helpers/auth-identity-fixture.ts:150` → `await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`)` — **DENTRO**
+  de `withRoleCatalogLock` (l.145).
+
+Os dois statements reescrevem `pg_namespace.nspacl` (a linha única do schema `public`) / `pg_class.relacl`, **não `pg_authid`**. O jurado
+apontou a LINHA certa e rotulou o statement por inferência ("CREATE ROLE"). A classe continua a mesma — escrita de catálogo por
+arquivos paralelos sem mecanismo único — mas o **objeto disputado tem de ser nomeado por execução** (candidato: a linha de `public`
+em `pg_namespace`), porque um plano que serialize só o `CREATE ROLE` pode estar serializando o statement errado. Também a conferir:
+o runner do head não fixa `--test-concurrency`; `ci.yml:199` canaliza o `node --test` para `tee` (exit do pipeline — `pipefail`?).
+Nada disto altera o veredito; altera o alvo do ciclo 5. Registrado como `[A RE-VERIFICAR]` para o planejador, o crítico e o jurado de arnês.

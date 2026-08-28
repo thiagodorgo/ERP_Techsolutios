@@ -40,3 +40,21 @@ inexistente · A6 censo de legado sem caso permanente · A7 espelho Codex **dive
 (a) composição adequada, e a competência que o ciclo 5 exige (arnês/catálogo Postgres sob paralelismo) está com o pool
 queimado → identidade nova pela fábrica; (b) ninguém consertou nada ainda; achadores fora do ciclo 5; (c) premissa do
 §9.11 do plano ("vermelho fora das canônicas") **caiu por execução** — o ciclo 5 herda a tabela de 10 rodadas, não "exit 0".
+
+---
+
+## ERRATA (2026-08-28, apensada — §A2: nunca reescrever) — o rótulo "em `CREATE ROLE`" do B-1c4 é IMPRECISO
+
+Conferido no head `12c3825` pelo orquestrador (e antes pela `agente-fabrica`), nas linhas que o jurado do arnês apontou:
+
+- `tests/audit-security.test.ts:158` → `await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`)` — teardown, **FORA** de
+  `withRoleCatalogLock` (a suíte não importa o lock; 0 ocorrências).
+- `tests/helpers/auth-identity-fixture.ts:150` → `await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`)` — **DENTRO**
+  de `withRoleCatalogLock` (l.145).
+
+Os dois statements reescrevem `pg_namespace.nspacl` (a linha única do schema `public`) / `pg_class.relacl`, **não `pg_authid`**. O jurado
+apontou a LINHA certa e rotulou o statement por inferência ("CREATE ROLE"). A classe continua a mesma — escrita de catálogo por
+arquivos paralelos sem mecanismo único — mas o **objeto disputado tem de ser nomeado por execução** (candidato: a linha de `public`
+em `pg_namespace`), porque um plano que serialize só o `CREATE ROLE` pode estar serializando o statement errado. Também a conferir:
+o runner do head não fixa `--test-concurrency`; `ci.yml:199` canaliza o `node --test` para `tee` (exit do pipeline — `pipefail`?).
+Nada disto altera o veredito; altera o alvo do ciclo 5. Registrado como `[A RE-VERIFICAR]` para o planejador, o crítico e o jurado de arnês.
