@@ -1604,3 +1604,97 @@ existe para API comercial fechada).
 **Resolve:** `P-GOV-MAIN-SEM-PROTECAO` (parcial — a instalação), o destino do bloqueante 2 do ciclo 2 da
 governança, e o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits → encolher,
 trabalho de ciclo próprio com plano novo).
+
+---
+
+## D-JUNTA-ESCOPO-E-CALIBRACAO (decisão do dono, 2026-08-28) — o veredito ganha escopo e a junta é calibrada por risco
+
+**Base de evidência:** `agent-orchestration/omega/auditoria-juntas-2026-08-28.md` — inventário de
+**≈ 155 juntas**, **≈ 66 ciclos de reprovação**, 11 falsos-verdes e 15 falhas do próprio esquema,
+levantados por duas varreduras independentes do repositório.
+
+**O que a auditoria estabeleceu, e que esta decisão respeita:** o esquema de juntas **paga o que
+custa no caso normal** — pegou 34 defeitos reais de produto, incluindo duplo-faturamento por falta de
+CAS, `ADJUSTMENT` negativo zerando dívida, bypass do 2º fator numa superfície pública e a corrida que
+fabricava saldo no razão. Nada disto se afrouxa. O custo está **na cauda**: 3 blocos consumiram
+**24% de todos os ciclos**, e neles o bloqueante final foi **processo/medição em 11 dos 16**.
+
+**O caso que forçou a decisão.** No ciclo 4 do `B-O6R-02` (28/08), quatro cadeiras aprovaram e uma
+reprovou. O dinheiro estava provado fechado por três cadeiras independentes; o voto que derrubou
+julgou o **número** — a bateria canônica verde em 7 de 10 execuções. E os dois produtores desse
+defeito **antecedem o bloco**: `tests/audit-security.test.ts` é de 08/06 e
+`tests/helpers/auth-identity-fixture.ts` nasceu no bloco anterior em 19/08; a branch do financeiro
+começou em 20/08. O §5 do plano **proibia** o bloco de tocar `tests/**` alheio. **O bloco foi
+reprovado por um defeito que não criou e estava proibido de consertar.**
+
+### 1. O veredito passa a ter ESCOPO
+
+Todo voto, além de `gravidade: bloqueia | ajuste | nota`, declara **`escopo`**:
+
+| escopo | significado | efeito |
+|---|---|---|
+| `dentro-do-bloco` | o achado toca o que este bloco mudou | `bloqueia` reprova, como sempre |
+| `pre-existente` | a classe do achado antecede o bloco e/ou está fora do escopo permitido dele | **não reprova**: vira **pendência nomeada com bloco dono**, e o número afetado é publicado com **N, forma e causa** |
+
+O poder de veto continua **inteiro** para o que o bloco mexeu. O jurado declara o escopo **com
+evidência de data ou origem** (quando o arquivo nasceu, qual bloco o criou); a ata registra; o
+`inspetor-de-terreno-da-junta` confere na passada seguinte. Escopo declarado sem evidência = achado
+tratado como `dentro-do-bloco`.
+
+O critério não é invenção do orquestrador: a própria cadeira do arnês escreveu que reprova *"número
+publicado sem N, não número imperfeito declarado"*.
+
+### 2. A junta é calibrada por risco — e o quórum não escrito passa a ser escrito
+
+O §C7.1 listava exaustivamente o que exige unanimidade de 5 (deploy de produção, dependência nova,
+serviço externo pago). **"Invariante financeiro" nunca esteve no `CLAUDE.md`, no `AGENTS.md` nem no
+`EXECUTION_MODEL.md`** — vivia só nos corpos dos jurados e nas atas, e foi o quórum que reprovou
+quatro ciclos seguidos. Passa a valer, escrito:
+
+- **Unanimidade de 3** quando o bloco toca **dinheiro, segurança, permissão ou perda de dado**.
+- **Maioria de 3** no resto.
+- Unanimidade de 5 permanece **só** para as decisões críticas já listadas no §C7.1 (produção,
+  dependência nova, serviço externo pago).
+- O `critico-adversarial` ataca o plano **apenas** nos blocos de invariante.
+
+**Motivo medido:** cada ciclo queima identidades — 16 inelegíveis só no `B-O6R-02`, incluindo a única
+competência que o achado do ciclo 4 exigia. A resposta do protocolo à reprovação é **escalar**, o que
+**reduz** a chance de unanimidade a cada ciclo. O bloco sozinho produziu **14 especialistas**.
+
+### 3. Duas lições de terreno viram regra
+
+- **Junction/symlink de `node_modules` entre worktrees é PROIBIDA.** Em 26/08 a remoção de um worktree
+  apagou, por dentro de uma junction, o `node_modules` do worktree do dev e mutilou o da árvore
+  principal. Cada worktree roda `npm ci` próprio; remoção só por `git worktree remove --force`.
+- **Não se mede o conteúdo de um commit com `git archive` + `tar` sob `core.autocrlf=true`** — injeta
+  CR e fabrica divergência. Foi assim que "o espelho Codex diverge no head" virou pendência ALTA (15
+  DIVERGE na ata do ciclo 4, 25 no plano do ciclo 5) e foi fechada por não-reprodução no mesmo dia.
+  Formas honestas: `git -c core.autocrlf=false checkout <head> -- <caminhos>` ou `git show` do blob.
+
+### 4. O que NÃO muda
+
+Inspetor de terreno antes da junta, separação de papéis achador ≠ planejador ≠ dev, identidade nova
+por ciclo, porteiro pós-merge, KPI por PR com contagem de execução real. Pegaram defeitos reais e não
+estão no caminho crítico. **Não** entra fatiamento obrigatório no 3º ciclo.
+
+### 5. Consequência imediata
+
+O `B-O6R-02` deixa de carregar a classe do arnês: ela vira o bloco próprio **`B-O6R-ARNES`**, que roda
+**primeiro** (é pré-requisito de confiança em qualquer número dos 10 blocos restantes). O financeiro
+re-mede numa base limpa e fecha pelo mérito que três cadeiras já aprovaram. O plano do ciclo 5 recebe
+**emenda apensada** (nunca reescrita, §A2).
+
+### 6. Pendências de contrato que esta decisão NÃO fecha, e ficam nomeadas
+
+- **Quatro versões divergentes do contrato** (`decisoes.md`: 1480 linhas em `origin/main`, 1606 em
+  `demo/investidor`, 1649 na branch do financeiro, 1664 na de governança). Reconciliação em PR
+  próprio, sem código, com `origin/main` como base — é o que `D-CONTRATOS-FORA-DO-PR-FINANCEIRO` manda.
+- **O porteiro em dois lugares** (pós-merge no texto vigente, pré-merge no da governança) — a decisão
+  que registra o conflito explicitamente não escolhe. Escolher na reconciliação.
+- **Quatro vetos permanentes** que se dizem obrigatórios em "toda PR" sem que o §C7.1 os cite, e três
+  papéis de porta com verificações sobrepostas. Definir quando cada um é obrigatório, por tipo de bloco.
+- **O que acontece depois do teto do §C7.4** — formato do dossiê, onde vive, quem escreve, o que a
+  resposta do dono destrava, se as inelegibilidades zeram.
+- **Descomissionamento dos especialistas de bloco** — os 14 do `B-O6R-02` não têm cláusula, ao
+  contrário dos efêmeros das rodadas Ω4C e Ω5P, deletados com registro nominal em ata.
+- **`scripts/limpar-residuo-de-junta.sh` não é citado por documento nenhum** — entra no §C5.
