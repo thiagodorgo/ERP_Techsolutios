@@ -64,6 +64,36 @@ const TEST_SUFFIX = ".test.ts";
 
 const PERSISTENCE_VAR = "CORE_SAAS_PERSISTENCE";
 
+// B-O6R-02 ciclo 4 · C5.3 (fecha o P8: o detector do skip era CEGO ao auto-pulo) — ORÇAMENTO DE SKIP
+// COM BANCO PRESENTE. Com `DATABASE_URL` no ambiente, as suítes `-db` DEVEM RODAR, não pular. Se o
+// número de pulados passar deste orçamento, uma suíte `-db` se auto-pulou em silêncio — exatamente o
+// buraco do P8 (o jurado que aprovou o P8 registrou a cegueira). O guard é MONOTÔNICO: só transforma
+// verde em vermelho.
+//
+// Os DOIS skips CONHECIDOS que compõem o orçamento (medidos na forma canônica 3 — DATABASE_URL
+// exportada, banco descartável migrado, `CORE_SAAS_PERSISTENCE` NÃO exportado → runner assume memory):
+//   1. tests/permission-catalog-db-parity.test.ts — "toda permissão do catálogo existe na tabela
+//      `permissions` do banco"
+//   2. tests/permission-catalog-db-parity.test.ts — "os grants do papel GLOBAL batem exatamente com
+//      ROLE_PERMISSIONS (nas duas direções)"
+// Os DOIS são gated por `RBAC_DB_PARITY != "1"` (só o job `backend-postgres` da CI liga RBAC_DB_PARITY=1);
+// eles pulam MESMO com DATABASE_URL presente, e por isso entram no orçamento. Orçamento anônimo seria o
+// mesmo buraco com outra roupa — por isso os dois estão NOMEADOS aqui.
+const SKIP_BUDGET_DB = 2;
+
+/**
+ * O guard de skip do C5.3: com `DATABASE_URL` presente, `skipped` acima do orçamento é uma suíte `-db`
+ * que se auto-pulou. Puro e exportado para o guard-do-guard (`npm-test-runner-guard.test.ts`).
+ *
+ * @returns {{ exceeded: boolean, skipped: number|null, budget: number, dbPresent: boolean }}
+ */
+export function evaluateDbSkipBudget(summary, sourceEnv = process.env, budget = SKIP_BUDGET_DB) {
+  const url = sourceEnv.DATABASE_URL;
+  const dbPresent = typeof url === "string" && url.trim() !== "";
+  const skipped = typeof summary?.skipped === "number" ? summary.skipped : null;
+  return { exceeded: dbPresent && skipped !== null && skipped > budget, skipped, budget, dbPresent };
+}
+
 /** O default da CI (job `backend`) e o default do `env.ts`. O runner não inventa um terceiro. */
 const PERSISTENCE_FALLBACK = "memory";
 
@@ -304,6 +334,18 @@ function main(argv = process.argv.slice(2)) {
 
     if (signal) {
       console.error(`[run-backend-tests] processo de teste terminado pelo sinal ${signal}`);
+    }
+
+    // C5.3 — GUARD DE SKIP COM BANCO PRESENTE (P8), MONOTÔNICO: só piora o exit, nunca o melhora.
+    const skipBudget = evaluateDbSkipBudget(summary, process.env);
+    if (skipBudget.exceeded) {
+      console.error(
+        `[run-backend-tests] GUARD DE SKIP (P8): DATABASE_URL presente e ${skipBudget.skipped} teste(s) ` +
+          `pulados > orçamento ${skipBudget.budget}. Com banco, as suítes -db têm de RODAR — um pulo a mais ` +
+          "é uma suíte -db que se auto-pulou em silêncio. Os 2 skips do orçamento estão nomeados no runner " +
+          "(permission-catalog-db-parity, gated por RBAC_DB_PARITY).",
+      );
+      process.exit(childExit === 0 ? 1 : childExit);
     }
 
     process.exit(childExit);
