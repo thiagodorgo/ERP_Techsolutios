@@ -273,3 +273,34 @@ apurou. E a CI **não executa** `sync-agent-agents --check` (0 ocorrências em `
 máquina com `core.autocrlf=true` **não** é medir o commit. As formas honestas são o **checkout LF puro**
 (`git -c core.autocrlf=false checkout <head> -- <caminhos>`) ou `git cat-file`/`git show` do blob. É a mesma classe
 da nota de md5 × autocrlf que já está no briefing — agora com um segundo caso, e este chegou a virar pendência ALTA.
+
+---
+
+## EMENDA DO ORQUESTRADOR (2026-08-28, apensada — §A2, nunca reescrita) — a opção (C) HÍBRIDA é SUPERADA pela decisão do dono
+
+Este plano deliberou por escrito entre **(A)** fechar a classe do arnês dentro do `B-O6R-02`,
+**(B)** destacar bloco próprio e publicar o número honesto, e **(C)** híbrido — e escolheu **(C)**.
+A deliberação estava correta no método e é o que tornou a decisão possível. **O dono decidiu (B)**,
+em `D-JUNTA-ESCOPO-E-CALIBRACAO` (2026-08-28), depois da auditoria do esquema de juntas
+(`agent-orchestration/omega/auditoria-juntas-2026-08-28.md`).
+
+**O que muda:**
+
+1. **A classe do arnês sai deste bloco** e vira o bloco próprio **`B-O6R-ARNES`**, que roda **primeiro**
+   — é pré-requisito de confiança em qualquer número dos 10 blocos restantes. Saem daqui: os 3
+   escritores de ACL fora do mecanismo único, o teardown resiliente, o sweep por família, o piso de
+   denominador do runner e os guards correspondentes (o §2-C6, §2-C7 e §2-C8 deste plano).
+2. **O que fica no `B-O6R-02`** é o que é dele: a FK composta `(tenant_id, reversal_of) →
+   financial_entries(tenant_id, id)` com `ON DELETE/UPDATE RESTRICT` (§2-C9 / §4 — custo já provado),
+   o caso `[RLS]` sob papel `NOBYPASSRLS` real (§2-C10), o texto do contrato dizendo só o que a
+   execução sustenta, e os registros A3–A6. O §5 encolhe na mesma medida.
+3. **O bloco re-mede numa base limpa.** Com o `B-O6R-ARNES` mergeado, a canônica 3 deixa de carregar a
+   classe pré-existente e o número que o PR publica passa a sobreviver à forma — que é exatamente o que
+   a cadeira do arnês reprovou no ciclo 4.
+4. **A junta deste bloco passa a ser de 3 unânimes** (toca dinheiro), não 7 — regra nova do §C7.1-ter.
+   O `critico-c5-adversarial` segue atacando o plano (bloco de invariante).
+5. **O S0(i) deste plano é NO-OP** e já está registrado na errata anterior: o espelho fecha no head; os
+   "25 DIVERGE" eram artefato de `git archive`+`tar` sob `core.autocrlf=true`.
+
+**O que NÃO muda:** o §0 deste plano (auditoria por execução) segue valendo integralmente e é o insumo
+que nomeou o objeto disputado — a tupla de ACL, não `pg_authid`. O `B-O6R-ARNES` herda essa medição.
