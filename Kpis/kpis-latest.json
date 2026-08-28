@@ -6,7 +6,7 @@
   "release": {
     "block": "B-O6R-ARNES — o arnes de teste (P-O6R-ARNES-ISOLAMENTO, P3 e P5).",
     "title": "Mecanismo unico de catalogo, teardown que nao deixa papel vivo, piso de denominador",
-    "pr": null,
+    "pr": 359,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
@@ -590,7 +590,7 @@
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
       {
-        "pr": null,
+        "pr": 359,
         "data": "2026-08-28",
         "tipo": "qualidade",
         "titulo": "O arnes de teste deixa de mentir sobre o proprio numero",
