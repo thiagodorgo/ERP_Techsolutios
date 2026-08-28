@@ -1,5 +1,70 @@
 # Status Geral
 
+## Atualização 2026-08-28 — B-O6R-ARNES (arnês de teste: catálogo, teardown, denominador)
+
+### Status
+
+Bloco próprio, branch `fix/o6r-arnes-catalogo-unico` sobre `origin/main` `6efe5ad`. A classe do arnês
+(`P-O6R-ARNES-ISOLAMENTO`, 2026-08-18 — **anterior** a todos os blocos O6R de código) saiu do
+`B-O6R-02` por decisão do dono (`D-JUNTA-ESCOPO-E-CALIBRACAO` §5) e rodou **primeiro**: ela é
+pré-requisito de confiança em qualquer número dos blocos restantes. O financeiro havia sido reprovado
+no ciclo 4 por um defeito que não criou e estava proibido de consertar.
+
+Escopo: **só `tests/**` e `scripts/**`** (7 arquivos). O diff contra a base em `src/`, `prisma/`,
+`.github/`, `CLAUDE.md`, `AGENTS.md`, `frontend/`, `mobile/` e lockfiles é **vazio** — item de bateria,
+não promessa.
+
+### Entregue
+
+O **mecanismo de escrita de catálogo de cluster passou a ser único**: os três últimos escritores que
+rodavam fora do `withRoleCatalogLock` entraram, e a enumeração de escritores de `tests/**` já não tem
+exceção. O **teardown de role efêmera deixou de poder deixar papel vivo** — resiliente por statement,
+ruidoso nas falhas, com segunda tentativa da sequência inteira (a armadilha `2BP01`) e falha alta se a
+role sobreviver. O **varredor de órfãs ganhou as três famílias novas** com o mesmo corte de 60 min,
+com contraprova de que não toca prefixo não registrado. E o **runner ganhou piso de denominador**:
+arquivo que termina sem registrar teste e sem declarar skip fica vermelho **nomeando o arquivo**, em
+vez de sair 0 publicando um total menor e plausível.
+
+Por que "quase todos os escritores" nunca serviu — medido, não argumentado: serialização parcial não
+protegia **nem os serializados**. Na bateria barata pré-correção, 7 de 13 rodadas ficaram vermelhas com
+`XX000 tuple concurrently updated`, e as vítimas incluíam quem **tomava** o lock. O objeto disputado é
+a tupla de ACL (`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`.
+
+A **lista exata** da bateria barata, que é parte da FORMA e sem a qual o denominador 37 não é reproduzível por terceiro (achado da cadeira de catálogo na junta): `tests/audit-security.test.ts` (1) · `tests/auth-identity-backfill-db.test.ts` (6) · `tests/auth-identity-link-events-db.test.ts` (5) · `tests/auth-identity-role-real-db.test.ts` (10) · `tests/impound-process-checklist-link-schema.test.ts` (5) · `tests/rls-tenant-isolation.test.ts` (1) · `tests/vehicle-identity-schema.test.ts` (9) = **37**. São **sete** arquivos, não seis — o rótulo anterior dizia "6 arquivos escritores de catálogo" e nenhuma combinação de 6 que contenha as vítimas nomeadas fecha 37.
+
+### Validação (forma declarada — número sem N e forma não vale)
+
+- **Bateria barata** dos 6 arquivos, Node v20.19.5, cluster descartável com 103 migrations:
+  **PRÉ 7/13 vermelhas** (+ 1 queda de denominador 37→32) → **PÓS 13/13 ec=0, 0 `XX000`, denominador
+  37 idêntico nas 13**.
+- **Canônica 3** (`npm test` com `DATABASE_URL`), **N=10** sobre o código final, com vaza-metro
+  (snapshot de `pg_roles` + linhas nas 115 tabelas antes e depois de cada rodada): **10/10 ec=0,
+  denominador idêntico nas 10, Δroles = 0 em todas e nenhuma role nova ao fim** — contra as 2 órfãs
+  com LOGIN e DML em todas as tabelas medidas no ciclo 4.
+- **Canônica 1** (sem `DATABASE_URL`, N=3): ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
+  idênticos, piso **0**. O vermelho é ambiental, **pré-existente e nomeado**
+  (`tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lança no load sem
+  banco); diff desse arquivo e de `src/` contra a base: vazio. Consertar é proibido aqui.
+- **Canônica 2** (lista `SUITES` do `ci.yml` da base, N=3): **3/3 ec=0**, denominador **148 idêntico**,
+  ruído (`unhandledRejection|XX000|23505|40P01`) **0** nas 3.
+- **Casos permanentes de guarda: 22 → 34**; nenhum morreu (meta do plano: M ≥ 31).
+- **Oito drills** (D37–D43 + D40b): baseline medido na hora, mutação, vermelho com ec registrado,
+  restore conferido por `git hash-object` = blob (nunca md5 cru, nunca `git archive`+`tar`).
+- `npm run check`/`lint`/`build`, `npm --prefix frontend run check`/`build` e `node --check Kpis/app.js`
+  todos **ec=0**.
+
+### O que este bloco aprendeu contra si mesmo
+
+Dois auto-defeitos, ambos **nascidos na correção** e nenhum no código original, ambos achados por
+**execução** e não por releitura: o `.catch(() => undefined)` renasceu nos casos novos e engoliu uma
+falha real (achado pelo vaza-metro), e o piso de denominador nasceu **cego dentro de `tests/`** porque
+os drills usavam fixture fora do repositório — o único arranjo em que o defeito não aparece (achado
+pela canônica 1). Os dois corrigidos no mesmo PR, cada um com caso permanente e drill próprio.
+Registrado em `pendencias.md` como evidência a favor da `D-JUNTA-SEPARACAO-DE-PAPEIS`.
+
+KPIs atualizados no próprio PR (§C3), com `backend_tests` de execução real; `mvp_demo`/`mvp_vendavel`
+**intocados** (nenhum escopo de produto se moveu).
+
 ## Atualização 2026-07-29 — FIX-NAV-MENU-PLATFORM-JWT
 
 ### Status

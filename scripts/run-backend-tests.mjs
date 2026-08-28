@@ -64,6 +64,117 @@ const TEST_SUFFIX = ".test.ts";
 
 const PERSISTENCE_VAR = "CORE_SAAS_PERSISTENCE";
 
+// B-O6R-02 ciclo 4 · C5.3 (fecha o P8: o detector do skip era CEGO ao auto-pulo) — ORÇAMENTO DE SKIP
+// COM BANCO PRESENTE. Com `DATABASE_URL` no ambiente, as suítes `-db` DEVEM RODAR, não pular. Se o
+// número de pulados passar deste orçamento, uma suíte `-db` se auto-pulou em silêncio — exatamente o
+// buraco do P8 (o jurado que aprovou o P8 registrou a cegueira). O guard é MONOTÔNICO: só transforma
+// verde em vermelho.
+//
+// Os DOIS skips CONHECIDOS que compõem o orçamento (medidos na forma canônica 3 — DATABASE_URL
+// exportada, banco descartável migrado, `CORE_SAAS_PERSISTENCE` NÃO exportado → runner assume memory):
+//   1. tests/permission-catalog-db-parity.test.ts — "toda permissão do catálogo existe na tabela
+//      `permissions` do banco"
+//   2. tests/permission-catalog-db-parity.test.ts — "os grants do papel GLOBAL batem exatamente com
+//      ROLE_PERMISSIONS (nas duas direções)"
+// Os DOIS são gated por `RBAC_DB_PARITY != "1"` (só o job `backend-postgres` da CI liga RBAC_DB_PARITY=1);
+// eles pulam MESMO com DATABASE_URL presente, e por isso entram no orçamento. Orçamento anônimo seria o
+// mesmo buraco com outra roupa — por isso os dois estão NOMEADOS aqui.
+const SKIP_BUDGET_DB = 2;
+
+/**
+ * O guard de skip do C5.3: com `DATABASE_URL` presente, `skipped` acima do orçamento é uma suíte `-db`
+ * que se auto-pulou. Puro e exportado para o guard-do-guard (`npm-test-runner-guard.test.ts`).
+ *
+ * @returns {{ exceeded: boolean, skipped: number|null, budget: number, dbPresent: boolean }}
+ */
+export function evaluateDbSkipBudget(summary, sourceEnv = process.env, budget = SKIP_BUDGET_DB) {
+  const url = sourceEnv.DATABASE_URL;
+  const dbPresent = typeof url === "string" && url.trim() !== "";
+  const skipped = typeof summary?.skipped === "number" ? summary.skipped : null;
+  return { exceeded: dbPresent && skipped !== null && skipped > budget, skipped, budget, dbPresent };
+}
+
+// B-O6R-ARNES · C-E (fecha `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` e o B-2c4) — PISO DE DENOMINADOR.
+//
+// O BURACO: um arquivo de teste pode ser expandido, carregado SEM ERRO e terminar sem registrar um
+// único teste — basta a guarda de topo inverter (`if (connectionString)` em vez de
+// `if (!connectionString)`), ou o arquivo abortar antes de chamar `test()`. Os testes daquele
+// arquivo simplesmente somem, `# fail` continua 0, e o runner sai 0 reportando um total MENOR e
+// perfeitamente plausível. Foi assim que a canônica 3 publicou 2740 no lugar de 2745 numa rodada e
+// ninguém foi avisado; e é a mesma classe do arquivo que aborta no `XX000`.
+//
+// A ASSINATURA QUE O DELATA (medida no Node v20.19.5, F0(b) deste bloco): quando um arquivo não
+// registra teste nenhum, o `node --test` emite para ELE um ponto TOP-LEVEL cujo NOME é o CAMINHO do
+// arquivo — `ok 2 - tests/foo.test.ts`, com `# suites 0`. Arquivo que registra testes NÃO ganha
+// ponto de arquivo: os pontos são os testes. Logo "ponto de topo cujo nome é um dos caminhos que eu
+// mandei executar" é exatamente "arquivo que não registrou nada".
+//
+// POR QUE O GUARD NÃO É POR CONTAGEM FIXA: cravar "o total tem de ser >= N" viraria um número para
+// alguém atualizar toda semana, e ficaria cego a um arquivo sumindo enquanto outro cresce. O piso é
+// ESTRUTURAL — nomeia o arquivo — e não precisa saber quantos testes o repositório tem.
+//
+// SKIP DECLARADO NÃO CAI AQUI: `test(nome, { skip })` REGISTRA um teste (e sai com a diretiva
+// `# SKIP`), então o arquivo não ganha ponto de arquivo. É o que mantém a forma canônica 1 (`npm
+// test` sem `DATABASE_URL`, onde ~260 suítes -db pulam declarando) verde. Ainda assim, pontos com
+// diretiva SKIP/TODO são explicitamente ignorados abaixo — a propriedade é "sem registrar teste E
+// sem declarar skip".
+//
+// Guard MONOTÔNICO, como os outros: só transforma verde em vermelho.
+
+/** Unifica separadores e desfaz o escape de barra invertida do TAP, para comparar caminhos. */
+function normalizeTapPath(value) {
+  return String(value)
+    .replace(/\\\\/g, "\\")
+    .split(/[\\/]/)
+    .join("/");
+}
+
+/**
+ * Arquivos expandidos que terminaram sem registrar teste — detectados pelo ponto TOP-LEVEL cujo
+ * nome é o próprio caminho do arquivo. Puro e exportado para o guard-do-guard.
+ *
+ * @returns {string[]} os caminhos, na forma em que foram passados ao `node --test`
+ */
+export function findSilentTestFiles(tapOutput, files, repoRoot = ".") {
+  const text = String(tapOutput ?? "");
+
+  // DUAS formas por arquivo, e é obrigatório: a que foi PASSADA ao `node --test` e a ABSOLUTA.
+  // O `node --test` nomeia o ponto de arquivo pelo caminho ABSOLUTO mesmo quando recebe um
+  // RELATIVO — e o runner encurta para relativo tudo que está dentro do repositório
+  // (`shortenPath`). Medido na canônica 1: alvo passado como `tests\core-saas-role-authority.test.ts`
+  // voltou no TAP como `C:\…\tests\core-saas-role-authority.test.ts`. Comparar só pela forma passada
+  // deixava o piso CEGO exatamente dentro de `tests/`, que é o único lugar onde ele precisa
+  // enxergar — a 1ª versão deste piso tinha esse defeito e passou verde porque a fixture do drill
+  // morava FORA do repositório, onde as duas formas coincidem.
+  const esperados = new Map();
+  for (const file of files) {
+    esperados.set(normalizeTapPath(file), file);
+    esperados.set(normalizeTapPath(path.resolve(repoRoot, file)), file);
+  }
+
+  const mudos = [];
+  const vistos = new Set();
+
+  // Só linhas NÃO indentadas: sub-testes vêm indentados e nunca são pontos de arquivo.
+  for (const match of text.matchAll(/^(?:not )?ok +\d+ +- +(.*)$/gm)) {
+    const bruto = match[1];
+
+    // Diretiva TAP (`# SKIP`, `# TODO`) = pulo/pendência DECLARADOS: fora do escopo deste piso.
+    if (/\s#\s*(SKIP|TODO)\b/i.test(bruto)) {
+      continue;
+    }
+
+    const nome = normalizeTapPath(bruto.trim());
+
+    if (esperados.has(nome) && !vistos.has(nome)) {
+      vistos.add(nome);
+      mudos.push(esperados.get(nome));
+    }
+  }
+
+  return mudos;
+}
+
 /** O default da CI (job `backend`) e o default do `env.ts`. O runner não inventa um terceiro. */
 const PERSISTENCE_FALLBACK = "memory";
 
@@ -304,6 +415,34 @@ function main(argv = process.argv.slice(2)) {
 
     if (signal) {
       console.error(`[run-backend-tests] processo de teste terminado pelo sinal ${signal}`);
+    }
+
+    // C-E — PISO DE DENOMINADOR, MONOTÔNICO. Vem ANTES do guard de skip de propósito: as duas
+    // classes são quase disjuntas (arquivo que some não produz pulo), mas se um dia coincidirem, o
+    // defeito mais específico — o arquivo NOMEADO — é o que precisa ser lido primeiro.
+    const mudos = findSilentTestFiles(tap, files, repoRoot);
+    if (mudos.length > 0) {
+      console.error(
+        `[run-backend-tests] PISO DE DENOMINADOR: ${mudos.length} arquivo(s) expandido(s) ` +
+          `terminaram sem registrar um único teste e sem declarar skip:\n` +
+          mudos.map((file) => `[run-backend-tests]   ${file}\n`).join("") +
+          `[run-backend-tests] O total acima (${summary.tests}) é MENOR do que a suíte de verdade e ` +
+          "não dá para saber quanto — testes que não rodaram não aparecem como falha. Sair 0 aqui é " +
+          "publicar um denominador que a execução não sustenta (P-O6R-B02-RUNNER-SUMICO-SEM-SKIP).",
+      );
+      process.exit(childExit === 0 ? 1 : childExit);
+    }
+
+    // C5.3 — GUARD DE SKIP COM BANCO PRESENTE (P8), MONOTÔNICO: só piora o exit, nunca o melhora.
+    const skipBudget = evaluateDbSkipBudget(summary, process.env);
+    if (skipBudget.exceeded) {
+      console.error(
+        `[run-backend-tests] GUARD DE SKIP (P8): DATABASE_URL presente e ${skipBudget.skipped} teste(s) ` +
+          `pulados > orçamento ${skipBudget.budget}. Com banco, as suítes -db têm de RODAR — um pulo a mais ` +
+          "é uma suíte -db que se auto-pulou em silêncio. Os 2 skips do orçamento estão nomeados no runner " +
+          "(permission-catalog-db-parity, gated por RBAC_DB_PARITY).",
+      );
+      process.exit(childExit === 0 ? 1 : childExit);
     }
 
     process.exit(childExit);

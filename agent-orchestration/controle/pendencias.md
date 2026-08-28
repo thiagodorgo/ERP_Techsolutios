@@ -2971,3 +2971,168 @@ Acrescentar ao registro existente, com evidência executada:
   de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
   espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
   de 1 titular do lock.
+
+## P-O6R-ARNES-ISOLAMENTO — **EMENDAS do bloco B-O6R-ARNES (2026-08-28)** — o bloco próprio existiu e rodou
+
+Bloco `B-O6R-ARNES`, branch `fix/o6r-arnes-catalogo-unico` sobre `origin/main` `6efe5ad`. A classe saiu do
+`B-O6R-02` por decisão do dono (`D-JUNTA-ESCOPO-E-CALIBRACAO` §5): ela é **anterior** a todos os blocos O6R de
+código, e o financeiro foi reprovado no ciclo 4 por um defeito que não criou e estava proibido de consertar.
+Registro **apensado**, nunca reescrito (§A2).
+
+### O que FECHA
+
+- **P3 — mecanismo único entre TODAS as criadoras — FECHA.** Os três escritores que rodavam fora do lock
+  (`audit-security.test.ts` / `audit_rls_`, `vehicle-identity-schema.test.ts` / `vid_rls_test_`,
+  `impound-process-checklist-link-schema.test.ts` / `vid_link_rls_`) passaram a executar **toda** a sequência
+  de catálogo dentro de `withRoleCatalogLock`, em janelas curtas. A enumeração de escritores de `tests/**` já
+  não tem exceção, e o ratchet perdeu as três razões *"fora do lock — destino: P-O6R-ARNES-ISOLAMENTO"*.
+
+  **O fato que justificou fechar a classe inteira, e não só "trazer os 3 para dentro":** serialização parcial
+  não protegia nem os serializados. Bateria barata dos 6 arquivos na base (forma declarada:
+  `node scripts/run-backend-tests.mjs` sobre `audit-security` · `auth-identity-backfill-db` ·
+  `auth-identity-links-db` · `rls-tenant-isolation` · `vehicle-identity-schema` ·
+  `impound-process-checklist-link-schema`; `DATABASE_URL`→:55950, `REDIS_URL`→:56950,
+  `CORE_SAAS_PERSISTENCE` não exportada, Node v20.19.5, cluster descartável `arnes-dev-pg` com 103
+  migrations), **N=13 PRÉ-correção: 7/13 vermelhas**, todas com `XX000 tuple concurrently updated`, e **1
+  queda de denominador (37→32)**. As vítimas incluem **quem TOMAVA o lock**: `rls-tenant-isolation` (3×) e
+  `auth-identity-backfill-db` via `createEphemeralRole` (1×) — além de `audit-security` (3×) e
+  `vehicle-identity-schema` (3×). **N=13 PÓS-correção: 13/13 ec=0, 0 `XX000`, denominador 37 IDÊNTICO nas 13.**
+
+- **P5 — varredor cobre todo prefixo — AMPLIA** (não fecha). As três famílias novas entraram em
+  `SWEPT_ROLE_FAMILIES` com o mesmo corte de 60 min e o mesmo relatório em stderr. Provado nas duas metades
+  (recolhe a órfã velha das 3 famílias; **não** toca prefixo não registrado nem timestamp novo). Continua
+  valendo o limite já declarado: o varredor depende do RELÓGIO, não do teardown de quem morreu.
+
+  **Efeito medido no vaza-metro:** 10 rodadas completas da canônica 3 terminaram com **Δroles = 0 em todas** e
+  **nenhuma role nova ao fim** — contra as **2 órfãs com LOGIN e INSERT/UPDATE/DELETE em todas as tabelas**
+  (inclusive `financial_entries`) que o ciclo 4 mediu em 10 rodadas.
+
+- **P8 — "verde em N execuções" não é prova sem N e forma — ATENDIDA NESTA TRILHA.** Todo número publicado por
+  este bloco carrega comando, forma, env, versão do Node e N. Não é o fechamento do P8 como propriedade do
+  repositório; é o cumprimento dele nesta entrega.
+
+### O que PERMANECE aberto aqui
+
+P1 (paralelismo não declarado) · P2 · P4 (DDL de esquema compartilhado — `checklist-applicability`) · P6 · P7
+(divergência entre as três formas) · teto da fila do lock (35–41 s a 2× contenção) · prefixos legados · dados
+de fixture órfãos do aborto duro (o varredor cobre **roles**; organizações/usuários deixados por `SIGKILL`
+seguem sem caminho de remoção) · `P-O6R-B02-SUITES-LIST-CI`.
+
+## P-ARNES-RLS-TEST-FORA-DO-SWEEP (2026-08-28 — B-O6R-ARNES, C-C) — MÉDIA · decisão CONSCIENTE, não esquecimento
+
+**Estado:** ABERTO · **Dono:** junta, junto do destino dos prefixos legados.
+
+A família `rls_test_` **não** entrou no varredor, embora seja a de maior volume: há **68 órfãs vivas** dessa
+família na base do dono, todas com LOGIN. Um sweep que as alcançasse seria exatamente a classe do **incidente
+de mass-delete de 26/07** caso alguém apontasse `DATABASE_URL` para a base errada — a diferença entre "limpo o
+meu lixo" e "apago 68 objetos que não sei de quem são". As cinco famílias com dono conhecido entraram
+(`o6r_b01_`, `o6r_clone_owner_`, `audit_rls_`, `vid_rls_test_`, `vid_link_rls_`); esta ficou de fora **por
+escrito**, com contraprova permanente (o caso do prefixo não registrado prova que o varredor não adivinha de
+quem é o lixo).
+
+**O que falta decidir:** se as 68 legadas são recolhidas por uma rotina única e supervisionada (fora do lote de
+teste) ou se a família entra no sweep depois de a base do dono ser limpa uma vez à mão.
+
+## P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES — **ATRIBUÍDO POR EXECUÇÃO** (2026-08-28, B-O6R-ARNES) — fora do escopo deste bloco
+
+O vaza-metro da canônica 3 mede, em toda rodada, **+5 `auth_identities` e +5 `auth_identity_link_events`** —
+o mesmo vazamento linear que o ciclo 4 registrou sem atribuição completa. **Atribuído aqui por execução
+isolada minha**, no cluster descartável, forma `node scripts/run-backend-tests.mjs <arquivo>`:
+
+| Arquivo | Δ por execução | Evidência |
+|---|---|---|
+| `tests/core-saas-prisma.test.ts` | **+4 / +4** | 2 execuções isoladas, linear (67→71→75→79) |
+| `tests/core-saas-role-authority-db.test.ts` | **+1 / +1** | 3 execuções isoladas, linear (61→62→63→64) |
+| **soma** | **+5 / +5** | **bate exatamente com o residual medido na canônica 3** |
+
+Contraprova: os outros **14** candidatos -db medidos isoladamente deram **0** (`auth-identity-backfill-db`,
+`auth-identity-links-db`, `auth-identity-revocation-db`, `auth-identity-role-real-db`,
+`auth-identity-link-events-db`, `auth-login-candidates-fn-db`, `auth-login-anonymous-db`,
+`core-saas-persistence-restart-db`, `persistent-rbac-middleware`, `auth-prisma`, `auth-login`, `auth-session`,
+`persistent-rbac-authorization`, `sessions-admin`, `authority-portal-rls`, `owner-portal-rls`). E a canônica 2
+(lista `SUITES` do `ci.yml`, que contém `core-saas-role-authority-db` mas **não** `core-saas-prisma`) mede
+exatamente **+1/+1** por rodada — o que fecha a conta pelos dois lados.
+
+**Não consertado, e por quê:** os dois arquivos estão **fora da §5** deste bloco; `core-saas-role-authority-db`
+é nominalmente PROIBIDO no plano (a atribuição é do `B-O6R-02` ciclo 5). Fica NOMEADO, com a medição pronta
+para quem receber a classe. O mecanismo já está descrito na `P-O6R-B01-TRILHA-ORFA-LIMPEZA`: o caminho de
+produção normaliza o par do token preguiçosamente (`normalizePairIdentity`, por desenho) criando vínculo +
+evento na trilha append-only, e o teardown apaga o tenant sem conhecer a trilha.
+
+## P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO, fora do escopo
+
+Canônica 1 (`npm test` **sem** `DATABASE_URL`, N=3, Node v20.19.5): **ec=1 nas 3**, denominador **2358
+IDÊNTICO nas 3**, **58 pulos declarados** idênticos, e o piso de denominador **não** disparou (0 nas 3 — o
+pulo declarado não cai nele, que é o que mantém esta forma utilizável).
+
+O vermelho é **sempre o mesmo arquivo**: `tests/core-saas-role-authority.test.ts` (sem sufixo `-db`).
+**Causa medida, não inferida:** ele importa — transitivamente — `src/database/prisma.ts`, que **lança no LOAD
+do módulo** quando `DATABASE_URL` está ausente (`Error: DATABASE_URL is required to initialize Prisma
+Client.`, `src/database/prisma.ts:12`). O arquivo não é DB-gated e não declara skip, então sem banco ele
+**quebra** em vez de pular.
+
+**Pré-existência provada:** `git diff 6efe5ad HEAD` é **vazio** para esse arquivo e **vazio** para `src/`
+inteiro. Nada neste PR o alcança. **Consertá-lo é PROIBIDO aqui** (§10.3 do plano — bloco irmão): ou ele ganha
+o gate de `DATABASE_URL` como as suítes `-db`, ou deixa de importar Prisma no load. Decisão de quem receber.
+
+## P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN (2026-08-28) — divergência do plano, registrada ANTES de consolidar (§A2)
+
+O plano (§12) mandava **fechar** `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` com este PR. **Medido:** essa pendência
+**não existe na base deste bloco**. `grep -c` em `agent-orchestration/controle/pendencias.md`: **0** em
+`origin/main` `6efe5ad` (2973 linhas) e **presente** na árvore `demo/investidor` (3128 linhas) — ela nasceu em
+28/08 na trilha de orquestração, que tem 33 commits sem PR para a main.
+
+**O que fiz, e por quê:** não fabriquei na main um registro histórico que nunca existiu lá, e não fechei em
+silêncio uma pendência ausente. A **correção** que ela pedia foi entregue e provada (C-E + D40); quem
+reconciliar a trilha `demo/investidor` com a main deve marcar a pendência como fechada **lá**, apontando para
+este PR. O defeito, não o registro, é o que importa — e o defeito está fechado.
+
+**A correção entregue:** piso de denominador no `scripts/run-backend-tests.mjs`. Arquivo expandido que termina
+sem registrar teste e **sem declarar skip** é ERRO que **NOMEIA o arquivo**. Assinatura usada (medida no Node
+v20.19.5): arquivo que não registra teste ganha um ponto TOP-LEVEL cujo NOME é o CAMINHO do arquivo, com
+`# suites 0`; arquivo com testes não ganha ponto de arquivo. Piso ESTRUTURAL, não por contagem fixa.
+
+**D40, mesma fixture e mesmo comando nas duas pontas:** ANTES (F0(b), pré-correção) `ec=0`,
+`"2 arquivo(s) · 3 teste(s) · pass 3"`, guard mudo; DEPOIS `ec=1` com `PISO DE DENOMINADOR` nomeando o
+arquivo. Pulo DECLARADO **não** cai no piso — caso permanente próprio, e a canônica 1 confirma em execução
+real (58 pulos, piso 0).
+
+## P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrada ANTES de consolidar
+
+A §5 lista `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md` e `index.html`, mas **não**
+`Kpis/app.js`. Acontece que a cópia congelada do painel (o fallback de `file://`) mora dentro do `app.js`, e o
+guard permanente `tests/kpi-dashboard-charts.test.ts` **compara as duas** — atualizar o JSON sem reinjetar
+deixa a bateria vermelha, por desenho (`D-KPI-INDEX-PAINEL`: o número nunca mora em dois lugares divergentes).
+
+**O que fiz:** rodei o gerador do próprio repositório, `node scripts/kpi-freeze.mjs` — a cópia é **gerada,
+nunca digitada**, e o diff em `app.js` fica restrito à linha `var FROZEN = …`, conferível. Não editei lógica
+do painel. `Kpis/index.html` **não** precisou mudar: ele hidrata dos JSON em runtime e este bloco não inaugura
+dimensão nova de métrica (§C3) — não mexer nele é a opção honesta, não uma omissão.
+
+## P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO (2026-08-28) — DOIS achados por execução CONTRA a própria correção
+
+Registro honesto da classe que a `D-JUNTA-SEPARACAO-DE-PAPEIS` descreve — desta vez apanhada **duas vezes**
+dentro da própria correção, e nas duas quem pegou foi **execução**, não releitura.
+
+**(1) O `.catch(() => undefined)` renasceu na correção.** Os casos -db novos nasceram com o **mesmo
+anti-padrão** que este bloco removeu de `vehicle-identity-schema` e `impound-…`. Não ficou como hipótese:
+durante o **D43** a mutação fez `ORPHAN_ROLE_NAME_PATTERN` deixar de casar `audit_rls_*`,
+`dropSyntheticOrphanRole` lançou o assert de namespace, o catch engoliu, e **uma role `audit_rls_*` ficou viva
+no cluster sem que nada dissesse**. Quem a encontrou foi o **vaza-metro**. Corrigido no mesmo PR
+(`limparOuGritar`: reporta no stderr e não mascara o erro original do `finally`); depois da correção, roles no
+cluster **antes=0 / depois=0**.
+
+**(2) O piso de denominador nasceu CEGO exatamente dentro de `tests/`** — o mais grave. A 1ª versão comparava
+o nome do ponto de arquivo do TAP **apenas** com a forma passada ao `node --test`. Para alvo dentro do
+repositório o runner encurta para **relativo** (`shortenPath`), mas o `node --test` nomeia o ponto de arquivo
+pelo **absoluto**: as duas formas nunca batiam. **Por que os drills não pegaram:** a fixture do D40 morava em
+`os.tmpdir()`, **fora** do repositório — o único arranjo em que as duas formas coincidem. O drill provava o
+mecanismo justamente onde o defeito não aparece. **Quem pegou foi a canônica 1**, ao reportar
+`not ok 84 - C:\…\tests\core-saas-role-authority.test.ts` para um alvo passado como
+`tests\core-saas-role-authority.test.ts`. Corrigido (o mapa carrega as duas formas) + **caso permanente novo
+com fixture DENTRO do repositório**, sob `test-results/` (gitignored), que é o único arranjo que exercita o
+`shortenPath`. Drill D40b: remover a forma absoluta deixa **dois** casos vermelhos.
+
+**A lição, para a ata:** um drill cuja fixture não reproduz o arranjo real prova o mecanismo, não a
+propriedade. Os dois auto-defeitos nasceram em correção, nenhum no código original — exatamente o que a
+decisão do dono prevê.
