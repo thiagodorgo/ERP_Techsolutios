@@ -26,3 +26,4 @@
 > contador** — desde ela houve 1 queda, não 2, então o redisparo imediato respeita a letra da regra.
 > Esta observação também **atualiza a hipótese F5**: não é "fable × herdado" — é **endpoint pinado ×
 > endpoint da sessão**, e a série continua decidindo.
+| 4 | jurado KPI/registro | gp (endpoint da sessão) | 3 itens | após medir a bateria do item 1, antes de escrever — **de novo o vão medir→escrever** | connection lost | item 1 remedido (bateria é barata, ~6 s); itens 2–3 do zero. Primeira queda do endpoint da sessão sob o protocolo (série: 6 conclusões / 1 queda) — o discriminador de endpoint segue válido, mas não é imunidade |
