@@ -1745,3 +1745,34 @@ Inventário completo, parágrafo a parágrafo, com o risco de perda por ordem de
 **Por que esta errata existe e não uma correção silenciosa:** o §A2 proíbe consolidação silenciosa, e
 esta rodada inteira é sobre artefatos que afirmam números que a execução não produz. Eu escrevi três
 números sem re-medir e um deles não existe em estado nenhum do repositório. O texto original fica.
+
+## D-DURABILIDADE-BRANCHES-LOCAIS (decisão do dono, 2026-08-29) — o que só existe num disco não conta como entregue
+
+**Contexto.** A sessão de 28–29/08 começou porque a máquina foi **desligada sem aviso** no meio de uma
+rodada. O levantamento pós-desligamento mediu, e o `porteiro-pos-merge` do #360 confirmou por execução
+(`git rev-list --count`, `git ls-remote`), que **82 commits viviam em três branches locais sem upstream** e
+que uma edição de três dias atrás nunca fora commitada:
+
+| O que | Tamanho | Estado antes |
+|---|---|---|
+| `feat/o6r-b02-financial-uow` | **35 commits** | sem upstream, 0 refs no origin — **é o insumo do ciclo 5 do financeiro** |
+| `docs/governanca-porteiro-pre-merge-sol` | **46 commits** | idem |
+| `chore/ressalvas-porteiro-357` | 1 commit | idem |
+| `scripts/porteiro-pre-merge.mjs` no worktree `gov-descuido` | +26/−6 | **não commitado**, vivo só no disco desde 26/08 |
+
+**Decisão.** O dono ordenou **pushar as três branches** e **commitar a edição na própria branch**. As três
+ganharam upstream; a edição virou `497d360` em `docs/governanca-porteiro-pre-merge-sol`. Medição pós-ordem:
+`git rev-list --count origin/<b>..<b>` = **0 nas quatro branches** — nada mais existe apenas neste disco.
+
+**O que isto NÃO é.** Não abre PR, não move a `main`, não muda uma linha de produto. É **durabilidade da
+prova e do insumo**, exatamente como o porteiro do #359 fez com a `demo/investidor` em 28/08 e pelo mesmo
+motivo. Reversível por `git push --delete`.
+
+**Por que virou decisão, e não rotina silenciosa.** O `porteiro-pos-merge` do #360 elevou isto a **primeiro
+ato do ciclo 5** (achado B do parecer), com um argumento que o registro deve preservar: *"obter a ordem de
+push — ou o registro da recusa — **antes** de gastar a junta ampliada sobre um insumo que um disco pode
+apagar"*. O ciclo 5 é o **teto do §C7.4**: se aquela junta reprovar, não há ciclo 6. Montar a junta mais cara
+do protocolo sobre 35 commits que existiam em cópia única seria apostar o teto num disco.
+
+**Regra que fica.** Branch de bloco em curso **ganha upstream assim que tiver commit que doa perder** — não
+se espera o PR. O push é barato e reversível; a perda não é.
