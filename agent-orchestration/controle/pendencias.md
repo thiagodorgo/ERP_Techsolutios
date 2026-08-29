@@ -3304,7 +3304,15 @@ classe** deste bloco (não é catálogo, não é denominador, não é teardown d
 primeiro atribuir por execução** — N≥10 isolado — antes de qualquer correção; hoje há uma medição de 1/2 e
 nada mais.
 
-## P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-28, este PR)**
+## P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-29, este PR — ver errata)**
+
+> **ERRATA DE FECHAMENTO (2026-08-29, achado A-1 da cadeira de KPI).** Esta pendência foi marcada `FECHADA`
+> em 28/08 **antes de estar fechada**. A frase `piso **0**` sobreviveu **viva** em `Kpis/kpis-history.md:122`
+> — no corpo da entrada do `B-O6R-ARNES`, 98 linhas **abaixo** da entrada nova que anunciava a correção, no
+> mesmo arquivo que este bloco havia editado. O bloco editou o topo do arquivo e **não varreu o corpo dele**.
+> A junta pegou; a linha foi corrigida em 29/08, com o texto antigo preservado e datado; e só **agora** a
+> pendência está de fato fechada. Registrado por inteiro porque é a própria classe que este bloco existe para
+> exterminar — declarar fechado o que a execução mostra aberto — cometida pelo bloco que a estava fechando.
 
 Achados C e F do porteiro. Na `main` mergeada sobrevivem três frases que a execução contradiz — a **mesma
 classe** que a junta corrigiu em `0c37fa2`, na frase vizinha:
@@ -3339,7 +3347,7 @@ apagada; D: trilha pushada). Este bloco fecha as **quatro** restantes:
 | Achado | O que era | Estado |
 |---|---|---|
 | **A** | backfill §C3.5 (`merge_commit`/`approved_head` = `null`) | **FECHADO** — `P-ARNES-BACKFILL-359` |
-| **C** | "piso 0" não reproduz no head final | **FECHADO** — corrigido em `log-execucao.md`, `status-geral.md` e `P-ARNES-CANONICA1` |
+| **C** | "piso 0" não reproduz no head final | **FECHADO** — corrigido em `log-execucao.md`, `status-geral.md`, `P-ARNES-CANONICA1`, na `description` do `kpis-history.json` **e em `Kpis/kpis-history.md:122`**, esta última só em 29/08, depois de a junta a achar viva (achado A-1) |
 | **E** | 2 achados `pre-existente` da ata sem entrada própria | **FECHADO** — `P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE` e `P-ARNES-AUTHORITY-PORTAL-INTERMITENTE` agora existem na `main`, com dono |
 | **F** | "6 arquivos"→7 e "2358"→2359 sem `Dono:` | **FECHADO** — as três frases corrigidas |
 
@@ -3353,8 +3361,17 @@ com 2 P0 abertos.
 
 ## P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE (2026-08-28) — divergência de processo, registrada ANTES de consolidar (§A2)
 
-**O que divergiu.** O `CLAUDE.md` §C7 diz *"nenhuma linha de código sem plano dele"* (o `planejador-mestre`).
-Este bloco (`B-O6R-REG`) foi implementado **sem** plano do `planejador-mestre`.
+**O que divergiu.** O papel do `planejador-mestre` é obrigatório antes de código: o contrato o institui no
+§C7 (`D-PLANEJADOR-MODELO-FABLE`, §C7.6) e o **corpo do agente** o enuncia na forma curta —
+`.claude/agents/planejador-mestre.md`, frontmatter: *"Escreve o plano obrigatório antes de qualquer código.
+Nenhuma linha de código sem plano dele."* Este bloco (`B-O6R-REG`) foi implementado **sem** plano dele.
+
+> **ERRATA (2026-08-29, achado REG-DIFF-1 da cadeira de diff/escopo).** A primeira redação desta pendência
+> atribuía a frase *"nenhuma linha de código sem plano dele"*, como citação verbatim, ao `CLAUDE.md` §C7 — e
+> `grep` no `CLAUDE.md` não a devolve em ponto algum: ela vive no `description` do frontmatter do agente. A
+> substância não muda (a regra existe, vincula, e foi divergida), mas **um bloco cuja tese é "o registro passa
+> a dizer o que a execução diz" não pode citar errado a fonte da regra que confessa ter violado** — e quem for
+> escrever a carve-out precisa saber onde a regra mora de fato.
 
 **Por que, dito sem maquiagem.** É um bloco de **registro**: o diff em `src/`, `prisma/`, `tests/`,
 `scripts/`, `frontend/`, `mobile/` e `.github/` é **vazio** — não há linha de código. O conteúdo é a lista
@@ -3410,3 +3427,45 @@ sem neutralizar eol sob `core.autocrlf=true` fabrica divergência. Ali foi `git 
 **Correção indicada (não aplicada aqui):** normalizar o alvo como já se normaliza a fonte — comparar
 `readFileSync(to,'utf8').replace(/\r\n/g,'\n')` com `want`. Quem receber deve provar por **mutação**: em
 checkout fresco, `--check` verde; e com um arquivo do espelho realmente adulterado, vermelho.
+
+---
+
+## P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é quem vai reusar a forma)
+
+**Achador:** orquestrador, em varredura **pós-voto** do `B-O6R-REG` (nenhum jurado a nomeou). **Escopo:
+`pre-existente`** — as duas frases já estavam na `main` em `f081b5d`, antes deste bloco. **Não corrigida
+aqui**: decidir qual lista é a certa exige **executar** a bateria em cluster descartável, o que está fora do
+escopo de um bloco com diff de código vazio; e quem acha não conserta.
+
+**O defeito.** A "bateria barata" é a **forma declarada** que torna o denominador 37 reproduzível por
+terceiro — foi criada exatamente para isso, por exigência da cadeira de catálogo na junta do `B-O6R-ARNES`.
+Existem hoje na `main` **duas listas diferentes**, ambas afirmando o **mesmo denominador 37**:
+
+| | `agent-orchestration/docs/status-geral.md` (l.33) | `agent-orchestration/controle/pendencias.md`, seção `P-O6R-ARNES-ISOLAMENTO — EMENDAS` |
+|---|---|---|
+| Rótulo | **sete** arquivos | **6 arquivos** |
+| `audit-security` | ✔ (1) | ✔ |
+| `auth-identity-backfill-db` | ✔ (6) | ✔ |
+| `auth-identity-link-events-db` | ✔ (5) | — |
+| `auth-identity-role-real-db` | ✔ (10) | — |
+| `auth-identity-links-db` | — | ✔ |
+| `impound-process-checklist-link-schema` | ✔ (5) | ✔ |
+| `rls-tenant-isolation` | ✔ (1) | ✔ |
+| `vehicle-identity-schema` | ✔ (9) | ✔ |
+| **Total declarado** | **37** | **37** |
+
+**Medido:** os quatro arquivos em disputa **existem todos** (`tests/auth-identity-links-db.test.ts`,
+`auth-identity-link-events-db.test.ts`, `auth-identity-role-real-db.test.ts`, `auth-identity-backfill-db.test.ts`)
+— não é erro de digitação de um nome inexistente. E `git show f081b5d:.../pendencias.md | grep -c` = **1**: a
+lista de 6 já estava na `main`.
+
+**Por que importa.** O `status-geral.md` afirma que *"nenhuma combinação de 6 que contenha as vítimas nomeadas
+fecha 37"*. Se isso é verdade, a lista de 6 **não pode** ter dado 37 — e ela é a forma declarada no §0.a do
+plano do ciclo 5, que é o insumo de auditoria do **próximo** bloco do financeiro. Um terceiro que tentar
+reproduzir o 37 hoje pega uma das duas listas ao acaso e não sabe qual. É a mesma classe do "piso 0", do
+"6 arquivos" e do "2358" — número publicado cuja **forma** não sobrevive à conferência —, só que aqui o
+conflito é entre **dois registros vivos**, não entre registro e execução.
+
+**Como fechar (não feito aqui):** rodar `node scripts/run-backend-tests.mjs` sobre **cada** uma das duas
+listas, em cluster descartável, N≥3, e publicar os dois denominadores com N e forma. A lista que não fechar 37
+recebe errata apensada (§A2 — o texto original fica), nomeando qual medição a produziu.

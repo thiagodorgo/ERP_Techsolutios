@@ -34,13 +34,20 @@ como ABERTO. Os dois se anulavam. **Consequência material:** quem lesse a trilh
 que os dois P0 de estoque (saldo concorrente, fechamento de contagem cíclica) estavam fechados. A contraprova
 estava no próprio `roadmap` do KPI, que sempre marcou B-04 `a_fazer` e B-05 `concluido`.
 
-**Reconciliação da trilha.** 29 registros de junta (atas, votos, briefings, planos, relatórios de achador, as
-duas auditorias) e — o que mais importa — **três decisões do dono** (`D-INSPETOR-TERRENO-JUNTA`,
+**Reconciliação da trilha.** 28 registros de junta (atas, votos, briefings, planos, relatórios de achador, as
+duas auditorias — contagem corrigida em 29/08 pelo achado A-3: o diff acrescenta 30 arquivos em `omega/`, dos
+quais 2 são artefatos do próprio bloco) e — o que mais importa — **três decisões do dono** (`D-INSPETOR-TERRENO-JUNTA`,
 `D-GOV-AMEACA-DESCUIDO`, `D-JUNTA-ESCOPO-E-CALIBRACAO`) viviam **só** na branch `demo/investidor`. Decisão do
 dono é o **topo** da hierarquia de fonte de verdade (§A1.1) e estava fora da `main`. O `decisoes.md` é
 append-only puro — conferido: a `main` é prefixo **estrito** da `demo`, então a reconciliação não sobrescreve
 nada. As nove `P-O6R-B02-*` do ciclo 4 também entraram: são o insumo do ciclo 5, e foi exatamente a ausência
 delas na `main` que fez o próprio `B-O6R-ARNES` tropeçar. Os JSON de povoamento (dados da demo) ficaram **fora**.
+
+**E a reconciliação NÃO é total** — dito aqui porque a junta cobrou (achado T-2): `P-GOV-MAIN-SEM-PROTECAO` e
+sua atualização de 25/08 (*ruleset instalado*) seguem existindo **só** na `demo/investidor`. Não é perda — a
+`main` nunca as teve —, e deixá-las é coerente com não pisar no workstream de governança que está vivo e não
+commitado no worktree `gov-descuido`. Mas quem ler a `main` hoje segue sem saber que a proteção da `main` foi
+discutida e instalada.
 
 **Cronograma.** O `docs/CRONOGRAMA.md` era de **05/08**: dizia 136 blocos, backend 2.110, e apresentava a trilha
 CHECKLIST P1 como *"rodada em curso"* — sem **uma palavra** sobre a auditoria Ω6R ou a reprovação para produção.
@@ -119,7 +126,14 @@ e `auth_identity_link_events` — exatamente o residual medido. Contraprova: 16 
 mede exatamente **+1/+1** por rodada. Os dois arquivos estão fora da §5 deste bloco.
 
 **Canônica 1** — `npm test` **sem** `DATABASE_URL`, N=3: ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
-idênticos, piso **0** (pulo declarado não cai no piso — é o que mantém esta forma utilizável). Vermelho
+idênticos. O piso de denominador **dispara 1 vez, nomeando `tests/core-saas-role-authority.test.ts`** — o
+pulo declarado **não** cai nele (os 58 passam limpos), que é o que mantém esta forma utilizável; o que cai é o
+arquivo que morre no load sem registrar teste nem declarar skip. [**CORRIGIDO em 2026-08-29 pelo bloco de
+registro `B-O6R-REG`**, achado A-1 da cadeira de KPI: o texto publicado aqui dizia "piso **0**" e sobreviveu
+**vivo** neste arquivo mesmo depois de a entrada nova, 98 linhas acima, anunciar a correção. O `B-O6R-REG`
+editou o topo deste arquivo e **não varreu o corpo dele** — e chegou a marcar a pendência
+`P-ARNES-REGISTROS-DEFASADOS-NA-MAIN` como FECHADA sem alcançar esta linha. É a própria classe que aquele
+bloco existia para exterminar, cometida por ele.] Vermelho
 ambiental **pré-existente e nomeado**: `tests/core-saas-role-authority.test.ts` importa
 `src/database/prisma.ts`, que **lança no load** sem banco; o diff desse arquivo e de `src/` contra a base é
 **vazio**, e consertá-lo é proibido aqui.

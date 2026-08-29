@@ -43,7 +43,7 @@ estava fechando vistorias, quando o deploy estava travado por 11 achados crític
 | Blocos concluídos | **152** | |
 | MVP demo | **99%** | estimativa de **escopo construído**, não de prontidão |
 | MVP vendável | **88%** | idem — ver o bloco §0 |
-| Snapshots de KPI no history | **142** | 15/06/2026 → 28/08/2026 |
+| Snapshots de KPI no history | **143** | 15/06/2026 → 28/08/2026 (inclui o snapshot deste próprio bloco) |
 
 **Último PR mergeado:** **#359** (`B-O6R-ARNES`), em 28/08. Antes dele: #358 (backfill), #357 (B-O6R-01),
 PRs #356, #355, #354 e #353 (B-O6R-05).
