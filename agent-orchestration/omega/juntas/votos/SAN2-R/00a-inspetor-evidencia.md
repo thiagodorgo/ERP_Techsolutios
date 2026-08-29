@@ -69,3 +69,63 @@ Briefing lido (`BRIEFING-SAN2-R.md`):
 
 **Veredito parcial:** VERDE com 1 ressalva (head do briefing × head julgado).
 
+
+---
+
+## Re-execução pelo sucessor (P3) — 2026-08-29
+
+Sucessor do inspetor caído (queda #1 do registro P6). Cada comando do roteiro acima foi **re-executado
+e comparado** com a saída registrada — nenhuma conclusão foi herdada sem comando.
+
+```
+$ git rev-parse HEAD
+4b547e3f65ea5bc4566a6da931dfa15ead65af11   (era edafadf no roteiro — drift antecipado pelo mandato, medido abaixo)
+
+$ git status --porcelain
+(vazio, exit 0)
+
+$ fsutil reparsepoint query node_modules
+Erro: O arquivo ou pasta não é um ponto de nova análise.  (exit=1 → diretório REAL — igual ao registrado)
+
+$ git rev-parse origin/main
+74430cc1d2e822e720a6762832ced36c3ca4baa8   (igual ao registrado)
+
+$ git diff 74430cc..edafadf --stat -- src prisma tests scripts frontend mobile .github package-lock.json
+(VAZIO, ec=0 — igual ao registrado)
+
+$ git diff 74430cc..edafadf --name-status
+(mesmos 9 arquivos, byte a byte, do roteiro)
+
+$ git log --oneline 74430cc..edafadf
+(mesmos 3 commits: edafadf · f8e84de · 9fd6ac6)
+
+$ git merge-base --is-ancestor f8e84de edafadf   → ec=0 (ancestral, igual ao registrado)
+$ git diff f8e84de..edafadf --name-status        → só BRIEFING-SAN2-R.md (igual ao registrado)
+```
+
+### Medições NOVAS do sucessor (drift de head edafadf → 4b547e3)
+
+```
+$ git log --oneline edafadf..4b547e3
+4b547e3 docs(junta): queda 1 da junta SAN2-R registrada no formato P6 — e o P1 pagou o proprio custo
+
+$ git diff edafadf..4b547e3 --name-status
+A  agent-orchestration/omega/juntas/votos/SAN2-R/00-quedas.md
+A  agent-orchestration/omega/juntas/votos/SAN2-R/00a-inspetor-evidencia.md
+(condição do mandato satisfeita: SÓ arquivos em votos/SAN2-R/)
+
+$ git merge-base --is-ancestor edafadf 4b547e3   → ec=0 (linear, sem rebase)
+
+$ git diff 74430cc..4b547e3 --stat -- src prisma tests scripts frontend mobile .github package-lock.json
+(VAZIO, ec=0 — o escopo "zero código de produto" vale TAMBÉM no head atual)
+
+$ git diff 74430cc..4b547e3 --name-status
+(os mesmos 9 arquivos do roteiro + os 2 de votos/SAN2-R/ — nada mais)
+
+$ git diff f8e84de..4b547e3 --name-status
+(briefing + 2 arquivos de votos/SAN2-R/ — delta total do head do briefing ao head atual é só registro de junta)
+```
+
+**Conclusão da re-execução:** 9/9 comandos do roteiro CONFIRMADOS; o único item divergente (HEAD) divergiu
+exatamente como o mandato antecipou, e o delta foi medido como registro de junta puro. Parecer em
+`00a-inspetor-parecer.md`.
