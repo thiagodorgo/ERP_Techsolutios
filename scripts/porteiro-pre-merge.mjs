@@ -320,11 +320,27 @@ export function verifyAttestation(snapshot, attestation) {
   if (attestation.repo !== snapshot.repo || attestation.pr !== snapshot.pr || attestation.head !== snapshot.head.oid) fail('atestado não pertence ao PR/head/repo');
   if (attestation.snapshotSha256 !== snapshot.snapshotSha256) fail('atestado pertence a snapshot diferente');
   if (!SHA40.test(attestation.head)) fail('SHA abreviado não é aceito');
-  // DECLARACAO DE INVOCACAO — nao e recibo nem prova. Estes tres campos sao auto-escritos e a
-  // decisao do dono (D-PORTEIRO-PRE-MERGE) os torna obrigatorios com estes valores exatos.
-  // Falsear a declaracao e violacao nomeada da decisao do dono, detectavel so a posteriori.
-  // A PROVA conferivel deste atestado e outra: `evidence` + `commands`, logo abaixo.
-  if (attestation.role !== 'porteiro-pos-merge' || attestation.runtime !== 'codex' || attestation.model !== 'gpt-5.6-sol' || attestation.reasoningEffort !== 'ultra') fail('declaração de invocação fora da decisão do dono (D-PORTEIRO-PRE-MERGE)');
+  // DECLARACAO DE INVOCACAO — REGISTRO, NAO CONDICAO DE MERGE (D-GOV-AMEACA-DESCUIDO,
+  // decisao do dono 2026-08-25: a ameaca e DESCUIDO, nao ataque).
+  //
+  // O pin que exigia `runtime === 'codex'` e `model === 'gpt-5.6-sol'` SAIU do gate. Duas razoes
+  // medidas, nao opiniao:
+  //
+  //   1. CONTROLE DE SINAL TROCADO. Os tres campos sao auto-escritos pelo proprio agente. O porteiro
+  //      HONESTO do Claude Code escreveria `runtime: 'claude-code'` e ficava VERMELHO; o forjador
+  //      digitava 'codex' e ficava VERDE. O gate constrangia exatamente e apenas quem dizia a verdade.
+  //
+  //   2. INVERIFICAVEL EM PRINCIPIO. Nao existe hoje, em API comercial fechada, forma de provar que
+  //      uma resposta veio de um modelo especifico (PD-GOV-PORTEIRO-RECIBO, arXiv:2603.14283). Assinar
+  //      o campo prova quem ESCREVEU o arquivo, nunca quem COMPUTOU o conteudo.
+  //
+  // O papel continua sendo condicao (e estrutural, nao auto-declaracao de modelo). Runtime, modelo e
+  // esforco continuam GRAVADOS no atestado para auditoria a posteriori — e a fonte melhor deles e o
+  // transcript do harness, que grava `"model":` por mensagem, escrito pelo HARNESS e nao pelo agente.
+  if (attestation.role !== 'porteiro-pos-merge') fail('atestado com papel diferente de porteiro-pos-merge');
+  for (const campo of ['runtime', 'model', 'reasoningEffort']) {
+    if (!nonEmpty(attestation[campo])) fail(`atestado sem \`${campo}\` declarado (registro obrigatorio, valor livre)`);
+  }
   assertIndependent(snapshot, attestation.agentId, 'porteiro pré-merge');
   if (!Array.isArray(attestation.commands) || attestation.commands.length === 0) fail('atestado sem comandos reexecutados');
   for (const c of attestation.commands) {
@@ -359,7 +375,11 @@ export function buildNegativeVerdict({ verdict, repo, pr, head, agentId, reason 
   return {
     schema: 'erp-porteiro-attestation:v1', verdict: literal, autoriza: false,
     repo, pr, head, agentId, role: 'porteiro-pos-merge',
-    runtime: 'codex', model: 'gpt-5.6-sol', reasoningEffort: 'ultra', reason,
+    // Declarado por quem emite, para registro — nao mais cravado (D-GOV-AMEACA-DESCUIDO).
+    runtime: process.env.ERP_PORTEIRO_RUNTIME || 'desconhecido',
+    model: process.env.ERP_PORTEIRO_MODEL || 'desconhecido',
+    reasoningEffort: process.env.ERP_PORTEIRO_EFFORT || 'desconhecido',
+    reason,
   };
 }
 
