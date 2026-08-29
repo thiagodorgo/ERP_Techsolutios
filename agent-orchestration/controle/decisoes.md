@@ -1843,3 +1843,24 @@ Maps Platform em qualquer superfície, esta decisão **caduca** e a rotação vo
 da primeira chamada.
 
 Confirmada pelo dono em 2026-08-29, em resposta a pergunta direta do orquestrador do bloco SAN2-1.
+
+## D-SAN2-OPCAO-C (decisão do dono, 2026-08-29) — o destino do SAN2-1: salvar agora, ler depois
+
+**Contexto.** O `SAN2-1` (triagem das 226 pendências) foi **reprovado nos ciclos 1 e 2** e **PARADO** pelo
+teto de dois ciclos (`D-TETO-DOIS-CICLOS`) — o primeiro bloco a acionar a regra. O dossiê
+(`omega/reprovacoes/DOSSIE-SAN2-1-parada.md`) apresentou quatro opções com custo.
+
+**A decisão.** O dono escolheu a **opção C**: **(1)** mergear agora o que as duas juntas verificaram —
+índice gerado e idempotente, 97→0 sem status, a CRÍTICA falsa fechada, backfill, reconciliação, limpeza de
+disco; **(2)** trocar a etiqueta das 79 diferidas pela frase **verdadeira** ("adiada por triagem automática;
+NÃO verificada item a item"); **(3)** fechar `P-036` como duplicata da `P-CHK-TEMPLATE-PRISMA-V7`; **(4)**
+retirar o tripwire de tarifa do balde C; **(5)** **adiar — não descartar** — a leitura real das 79, uma a
+uma, para DEPOIS do ciclo 5 do financeiro, registrada com dono e critério em `P-SAN2-LEITURA-DAS-79`.
+
+**Execução:** bloco `SAN2-1R` (branch `chore/san2-1-resgate`) — **bloco novo executando decisão do dono**,
+não ciclo 3 (não existe ciclo 3 sob o teto).
+
+**Por que esta entrada existe** (registrada por exigência do R2 do inspetor de terreno do SAN2-1R): a
+escolha vivia só no briefing e nas etiquetas — e decisão do dono é o **topo** da hierarquia de fonte de
+verdade (§A1.1), tem de viver em `decisoes.md`. É a mesma lição da `D-GOLIVE-MAPS-ROTACAO-DISPENSADA`,
+aprendida duas vezes no mesmo dia.
