@@ -34,7 +34,7 @@ A **lista exata** da bateria barata, que é parte da FORMA e sem a qual o denomi
 
 ### Validação (forma declarada — número sem N e forma não vale)
 
-- **Bateria barata** dos 6 arquivos, Node v20.19.5, cluster descartável com 103 migrations:
+- **Bateria barata** dos 7 arquivos, Node v20.19.5, cluster descartável com 103 migrations:
   **PRÉ 7/13 vermelhas** (+ 1 queda de denominador 37→32) → **PÓS 13/13 ec=0, 0 `XX000`, denominador
   37 idêntico nas 13**.
 - **Canônica 3** (`npm test` com `DATABASE_URL`), **N=10** sobre o código final, com vaza-metro
@@ -42,7 +42,12 @@ A **lista exata** da bateria barata, que é parte da FORMA e sem a qual o denomi
   denominador idêntico nas 10, Δroles = 0 em todas e nenhuma role nova ao fim** — contra as 2 órfãs
   com LOGIN e DML em todas as tabelas medidas no ciclo 4.
 - **Canônica 1** (sem `DATABASE_URL`, N=3): ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
-  idênticos, piso **0**. O vermelho é ambiental, **pré-existente e nomeado**
+  idênticos. O piso de denominador **dispara 1 vez, nomeando**
+  `tests/core-saas-role-authority.test.ts`: o pulo **declarado** não cai nele (os 58 passam limpos), o que cai
+  é o arquivo que morre no load sem registrar teste nem declarar skip — o comportamento desenhado.
+  [CORRIGIDO em 2026-08-28 pelo bloco de registro: o "piso **0**" publicado no #359 vinha de medição em commit
+  intermediário, anterior a `1676a5b`. Achado C do porteiro pós-merge.] O vermelho é ambiental,
+  **pré-existente e nomeado**
   (`tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lança no load sem
   banco); diff desse arquivo e de `src/` contra a base: vazio. Consertar é proibido aqui.
 - **Canônica 2** (lista `SUITES` do `ci.yml` da base, N=3): **3/3 ec=0**, denominador **148 idêntico**,

@@ -35,12 +35,18 @@ nominalmente em 2026-08-28. Nenhum acumulo.
 
 ### Numeros (forma declarada; sem N e forma, numero nao vale)
 
-- **Bateria barata** (6 arquivos, `DATABASE_URL`→:55950, `CORE_SAAS_PERSISTENCE` nao exportada, Node
+- **Bateria barata** (7 arquivos, `DATABASE_URL`→:55950, `CORE_SAAS_PERSISTENCE` nao exportada, Node
   v20.19.5, cluster descartavel com 103 migrations): **PRE 7/13 vermelhas** com `XX000` + 1 queda de
   denominador 37→32; **POS 13/13 ec=0, 0 `XX000`, denominador 37 identico nas 13**.
 - **Canonica 3** (`npm test` com DATABASE_URL, N=10, com vaza-metro): resultado no PR e no history.
 - **Canonica 1** (`npm test` SEM DATABASE_URL, N=3): ec=1 nas 3, denominador **2359 identico**, 58
-  pulos identicos, piso **0** (pulo declarado nao dispara o piso). Vermelho ambiental NOMEADO e
+  pulos identicos. O piso de denominador DISPARA 1 vez, NOMEANDO
+  `tests/core-saas-role-authority.test.ts` — o pulo DECLARADO nao cai nele (os 58 passam limpos); o que cai
+  e o arquivo que morre no LOAD sem registrar teste e sem declarar skip, que e exatamente o comportamento
+  desenhado. [CORRIGIDO em 2026-08-28 pelo bloco de registro: o "piso **0**" publicado no #359 foi medido em
+  commit intermediario, anterior a `1676a5b`, que abriu os olhos do piso para dentro do repo. Reexecucao
+  independente do porteiro pos-merge no head final confirma o disparo — `00c-porteiro-pos-merge-359.md`,
+  achado C.] Vermelho ambiental NOMEADO e
   pre-existente: `tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lanca
   no LOAD sem `DATABASE_URL`. Diff contra a base desse arquivo e de `src/`: VAZIO. Consertar e
   proibido aqui.

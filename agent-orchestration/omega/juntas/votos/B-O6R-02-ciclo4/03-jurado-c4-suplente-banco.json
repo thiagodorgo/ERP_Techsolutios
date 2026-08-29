@@ -1,0 +1,144 @@
+{
+ "jurado": "jurado-c4-suplente-banco-triggers (SUPLENTE, identidade nova; nada do titular jurado-c4-banco-triggers foi reaproveitado — briefing re-executado inteiro, do hash do pristino ao teardown; o voto APROVADO da cadeira fail-closed não foi herdado como fato)",
+ "lente": "Banco, locks e triggers (veto) — camada de banco do C1: delete sob uow.run + FOR UPDATE + re-check; migration 20260870000000_add_reversal_pair_atomicity aditiva; par de triggers no catálogo; FOR SHARE fechando o interleaving delete×reverse no banco SOZINHO nas 2 ordens; SQL cru e RLS; D23 (com vermelho-controle) e D28. Head 12c3825, Node v20.19.5, cluster descartável jur-c4s-banco-pg (55711), worktree próprio .claude/worktrees/jur-c4s-banco.",
+ "voto": "APROVADO",
+ "justificativa": "Tudo medido por mim, no meu cluster e worktree, Node v20.19.5.\n\nTABELA POR ORDEM DE DISPARO (SQL cru, 2 conexões dedicadas + monitor, barrier por pid em pg_stat_activity, triggers LIGADOS, mesmo par, N=30 por ordem):\nordem         | N  | fabricados | 40P01 | SALDO máx | bloqueou no row lock | perdedor\nreverse-first | 30 | 0          | 0     | 0         | 30/30                | P0001 Ω6R-DIN-002 (30/30)\ndelete-first  | 30 | 0          | 0     | 0         | 30/30                | P0001 Ω6R-DIN-002 (30/30)\nRepetido após o D28 (down → re-apply): idêntico (0/0/0, 60/60 bloqueios, 60/60 P0001).\nVERMELHO-CONTROLE no MESMO cluster com o down do rodapé aplicado (sem triggers): reverse-first 30/30 fabricados, delete-first 30/30 fabricados, 0 bloqueios, ambos commitaram 60/60, SALDO máx 100 (dinheiro fabricado) — o §0.1 reproduzido; o fecho é dos triggers/FOR SHARE, não do acaso.\nCamada de SERVIÇO (suíte committed, Promise.all, N=20 por ordem, saldo pelo entryService.balance do produto): 6/6 verde com triggers ON (2 corridas: deploy e pós-reapply); com triggers DOWN os 2 testes de serviço seguem 0/40 fabricado (a defesa de serviço segura sozinha) e os 3 testes de trigger ficam vermelhos (controle honesto).\n\nDUMP pg_trigger (financial_entries, não-internos): financial_entries_block_orphan_on_delete tgtype=19 (BEFORE ROW UPDATE) tgenabled=O; financial_entries_block_orphan_on_reversal tgtype=23 (BEFORE ROW INSERT OR UPDATE OF reversal_of, deleted_at) tgenabled=O. Funções plpgsql, provolatile=v, prosecdef=f (SECURITY INVOKER). Aditividade: pg_constraint 4 / pg_indexes 8 / colunas 24 ANTES do down, DEPOIS do down e DEPOIS do re-apply (nenhum objeto destrutivo entrou); grep de ALTER TABLE|DROP COLUMN|DROP TABLE|DROP INDEX|UPDATE|DELETE na migration → nenhum; git diff 6efe5ad..12c3825 -- prisma/ = só 2 migration.sql adicionados (+166), schema.prisma intocado. EXPLAIN com enable_seqscan=off: o predicado do EXISTS do Trigger A faz Index Only Scan using financial_entries_reversal_of_active_key (reusa o índice parcial vizinho).\n\nSQLSTATE dos ataques de SQL cru (psql, triggers ON): (a) INSERT estorno vivo → original apagado: P0001 'Ω6R-DIN-002: estorno aponta um lançamento original inexistente ou ja apagado…' (órfãos=0); (b) UPDATE soft-delete de original com contrapartida viva: P0001 'Ω6R-DIN-002: nao se apaga um lançamento que tem estorno ativo…' (original segue vivo=t); (b2) UPDATE reversal_of de linha viva apontando original apagado: P0001 DIN-002; (b3) ressuscitar (deleted_at=NULL) estorno cujo original está apagado: P0001 DIN-002; (b4) apagar contrapartida e depois o original na mesma tx: permitido (par inteiro, não metade). RLS pelo caminho do app (role jur_app LOGIN NOBYPASSRLS, rolsuper=f, RLS FORÇADA na tabela, GUC app.current_tenant_id via set_config): (c0) sem GUC 0 linhas visíveis, com GUC 5; (c1) INSERT órfão: P0001 DIN-002; (c2) soft-delete com contrapartida viva: P0001 DIN-002; (c3) estorno LEGÍTIMO comita (1 contrapartida viva — o trigger enxerga o original sob a policy, sem falso-positivo); (c4) tenant cruzado (GUC=t2, estorno em t2 apontando original de t1): P0001 DIN-002; (c5) soft-delete cruzado: UPDATE 0 (policy esconde). Controle sem triggers: (a) comita o órfão (1), (b) apaga o original com contrapartida viva (vivo=f), (c4) o estorno cruzado COMITA (linhas_t2=1) — os triggers fecham também essa porta.\n\nD28: down do rodapé (4 DROPs) → 0 triggers, 0 funções, 4 constraints, 8 índices; órfão semeado à mão (tenant próprio); re-apply de migration.sql via psql → só NOTICEs de DROP IF EXISTS, WARNING 01000 'financial_entries: 1 estorno(s) ORFAO(S) de legado detectado(s)… P-O6R-B02-ORFAOS-LEGADOS', catálogo 2/2/4/8 restaurado, órfão INTACTO (deleted_at nulo, mesmo updated_at 04:52:28.716552), censo não mutou dado; cleanup escopado do tenant do órfão → 0 órfãos, 0 linhas. No deploy inicial (banco vazio) o censo ficou mudo (0 WARNING), coerente.\n\nItem 1 (lido em financial-entry.service.ts 232–275 × 286–359 e financial-entry-prisma.repository.ts 114–122): delete faz pre-checks fast-fail do pool, depois uow.run → ctx.assertPeriodOpenShared (pg_advisory_xact_lock_shared, src/database/financial-period-lock.ts:41) → ctx.entries.findByIdForUpdate (SELECT id … FOR UPDATE real) → assertMutable(locked) → assertUndoAllowed com unitUndoReaders(ctx) (ctx.entries.findActiveReversalOf / ctx.cheques.findActiveByLinkedEntry, nunca this.repository) → ctx.entries.softDelete. Mesma ordem advisory→row lock do reverse. 40P01 medido: 0 em 16 logs (as 6 ocorrências do grep são o rótulo '40P01=0' do meu sumário), em 120 iterações de serviço + 180 de SQL cru.\n\nPristino ANTES e DEPOIS (hash-object no meu worktree = rev-parse 12c3825:): undo-owners e352c6c, service 9be7caf, types 89bedc1, migration d1f503d, repository bb74358, race test e529508, pg-barrier 93b653c — IGUAL nos 7; md5 LF 78b9279d… (service) e 9887150b… (undo-owners) = briefing; git status --porcelain do worktree vazio antes e depois; nenhum arquivo do head foi mutado (só o catálogo do meu cluster, por down/re-apply).\n\nNão medido por ser de outra cadeira: rotas HTTP e GET /financial-accounts/:id/balance (jurado-c4-suplente-ataque-ao-dinheiro — o meu SALDO é entryService.balance no lote committed e SUM SQL no drill cru); bateria canônica completa formas 1/2/3 e §5/divergência D-DIVERGENCIA-C4-PONTA-AUSENTE (jurado-c4-suplente-validador-diff-plano); denominador N≥10 rodadas e forma da medição (jurado-c4-suplente-arnes-concorrente); C2/C3/C4/C5 (fail-closed já votou; validador). Nada da minha lente ficou sem executar.\n\nVOTO: APROVADO — metade órfã impossível por construção do banco nas 2 ordens (N=30 por ordem em SQL cru sob barrier + N=20 por ordem no serviço ×2 corridas, 0 fabricado, 0 40P01)",
+ "o_que_executei": [
+  {
+   "comando": "git worktree add --detach .claude/worktrees/jur-c4s-banco 12c3825; node --version; para 5 arquivos: git -C wt hash-object == git rev-parse 12c3825:<f>; sed 's/\\r$//' | md5sum; git status --porcelain",
+   "forma": "pristino ANTES, worktree próprio (curto), autocrlf=true → hash-object/md5 LF, nunca md5 cru",
+   "resultado": "v20.19.5; undo-owners e352c6c=blob md5 9887150b28118aa7292d894e3391cc37; service 9be7caf=blob md5 78b9279dcf4bed2550663780adae859b; types 89bedc1=blob; migration d1f503d=blob; repository bb74358=blob; porcelain vazio; head 12c3825"
+  },
+  {
+   "comando": "npm ci --no-audit --no-fund > npm-ci.log; DATABASE_URL=<meu cluster> npx prisma generate > prisma-generate.log",
+   "forma": "no PRÓPRIO worktree, sem junction/symlink, exit por variável",
+   "resultado": "326 pacotes em 56s, npm_ci_ec=0; gen_ec=0; node_modules/.prisma/client presente"
+  },
+  {
+   "comando": "docker run -d --name jur-c4s-banco-pg -p 55711:5432 postgres:16; docker run -d --name jur-c4s-banco-redis -p 56711:6379 redis:7; pg_isready; npx prisma migrate deploy > migrate-deploy.log",
+   "forma": "cluster descartável próprio; base viva erp-postgres não tocada (só docker ps)",
+   "resultado": "pg_ec=0 redis_ec=0 ready_ec=0; deploy_ec=0, 105 migrations aplicadas incl. 20260870000000_add_reversal_pair_atomicity; 0 WARNING (banco vazio → censo mudo)"
+  },
+  {
+   "comando": "psql -f catalog.sql (pg_trigger, pg_proc, pg_constraint, pg_indexes, information_schema.columns, pg_class/pg_policy RLS, pg_roles, _prisma_migrations)",
+   "forma": "docker exec -i psql, \\set VERBOSITY verbose, saída em catalog.out",
+   "resultado": "2 triggers: block_orphan_on_delete tgtype=19 BEFORE UPDATE FOR EACH ROW, block_orphan_on_reversal tgtype=23 BEFORE INSERT OR UPDATE OF reversal_of, deleted_at, ambos tgenabled=O; funções plpgsql provolatile=v prosecdef=f; 4 constraints (pkey + 3 FKs), 8 índices (nenhum novo; reversal_of_active_key é da 20260869), 24 colunas; RLS relrowsecurity=t relforcerowsecurity=t, policy tenant_isolation USING/WITH CHECK app.current_tenant_id; único role postgres rolsuper=t rolbypassrls=t; migration 20260870000000 finished ok=t"
+  },
+  {
+   "comando": "grep -nEi 'ALTER TABLE|DROP COLUMN|DROP TABLE|DROP INDEX|ALTER COLUMN|DROP CONSTRAINT|^\\s*UPDATE |^\\s*DELETE ' migration.sql; git diff --stat 6efe5ad 12c3825 -- prisma/",
+   "forma": "aditividade por grep + diff base..head",
+   "resultado": "grep_ec=1 (nenhum destrutivo; só CREATE OR REPLACE FUNCTION, DROP TRIGGER IF EXISTS dos próprios nomes, CREATE TRIGGER, DO censo); diff prisma/ = 2 migration.sql adicionados (+48, +118), schema.prisma intocado"
+  },
+  {
+   "comando": "leitura de financial-entry.service.ts 232–275 (delete), 286–359 (reverse), 573–594 (poolUndoReaders/unitUndoReaders); financial-entry-prisma.repository.ts 114–122 (findByIdForUpdate); src/database/financial-period-lock.ts:41",
+   "forma": "inspeção de código do head no meu worktree",
+   "resultado": "delete: fast-fail (pool) → uow.run → ctx.assertPeriodOpenShared (pg_advisory_xact_lock_shared) → ctx.entries.findByIdForUpdate (SELECT id … FOR UPDATE) → assertMutable → assertUndoAllowed(unitUndoReaders(ctx): ctx.entries/ctx.cheques) → ctx.entries.softDelete; reverse: mesma ordem advisory→row lock; leitores da unidade nunca this.repository"
+  },
+  {
+   "comando": "node --test --import tsx tests/financial-entry-delete-reverse-race-db.test.ts > race-committed-ON.log 2>&1; ec=$?",
+   "forma": "serviço × Postgres, Promise.all, N=20 por ordem (reverse-first e delete-first), triggers ON, Node v20.19.5, DATABASE_URL do meu cluster",
+   "resultado": "6/6 ok (2 ordens serviço, trigger B, trigger A, barrier·FOR SHARE, RLS-legítimo), ec=0, 40P01=0"
+  },
+  {
+   "comando": "node raw-barrier-drill.cjs (pg 8.21 do meu worktree; conexões A/B dedicadas + monitor; barrier: pg_stat_activity.wait_event_type='Lock' pelo pid de B ou B liquidou) LABEL=triggersON N=30",
+   "forma": "SQL cru, 2 ordens (reverse-first: INSERT estorno segura tx → UPDATE soft-delete; delete-first: UPDATE soft-delete segura tx → INSERT estorno), mesmo par por iteração, SALDO por SUM(in−out) das linhas vivas, teardown escopado por tenant",
+   "resultado": "reverse-first N=30 fabricados=0 ambos_commitaram=0 bloqueou_no_lock=30 40P01=0 SALDO_max=0 perdedor {P0001:DIN-002:30}; delete-first idem 0/0/30/0/0 {P0001:DIN-002:30}; ec=0"
+  },
+  {
+   "comando": "psql -f attack.sql (triggers ON): (a) INSERT estorno vivo→original apagado; (b) UPDATE soft-delete com contrapartida viva; (b2) UPDATE reversal_of→apagado; (b3) deleted_at=NULL de estorno com original apagado; (b4) par inteiro; CREATE ROLE jur_app NOBYPASSRLS + GRANTs + SET ROLE + set_config(app.current_tenant_id): (c0)(c1)(c2)(c3)(c4)(c5)",
+   "forma": "superuser e depois role sem bypass (rolsuper=f rolbypassrls=f) sob RLS FORÇADA; \\set VERBOSITY verbose para SQLSTATE; cleanup escopado",
+   "resultado": "(a) P0001 DIN-002, órfãos=0; (b) P0001 DIN-002, original vivo=t; (b2) P0001, reversal_of segue nulo; (b3) P0001, segue apagado; (b4) 2 UPDATEs ok; (c0) 0 visíveis sem GUC / 5 com; (c1) P0001; (c2) P0001, vivo=t; (c3) estorno legítimo comita, 1 contrapartida viva; (c4) tenant cruzado P0001; (c5) UPDATE 0; resíduo 0"
+  },
+  {
+   "comando": "psql -f explain.sql (EXPLAIN COSTS OFF do predicado do EXISTS do Trigger A, padrão e com enable_seqscan=off; do SELECT … FOR SHARE do Trigger B)",
+   "forma": "tabela vazia do meu cluster",
+   "resultado": "padrão: Seq Scan (custo em tabela vazia); seqscan off: Index Only Scan using financial_entries_reversal_of_active_key, Index Cond (tenant_id, reversal_of) → o índice parcial vizinho é reusado pelo predicado; Trigger B: LockRows → Index Scan"
+  },
+  {
+   "comando": "psql -f down.sql (os 4 DROPs do rodapé da migration) + contagens",
+   "forma": "D28 passo 'down' no mesmo cluster, ON_ERROR_STOP on",
+   "resultado": "down_ec=0; triggers=0 funcoes=0 constraints=4 indexes=8 (reverte limpo, sem tocar mais nada)"
+  },
+  {
+   "comando": "node raw-barrier-drill.cjs LABEL=controlDOWN N=30 (sem triggers)",
+   "forma": "VERMELHO-CONTROLE pré-migration, mesmo cluster, mesma forma",
+   "resultado": "reverse-first fabricados=30/30 ambos_commitaram=30 bloqueou=0 40P01=0 SALDO_max=100; delete-first idem 30/30, SALDO 100; fabricados_total=60 (§0.1 reproduzido: sem FOR SHARE/trigger ninguém bloqueia e o órfão comita)"
+  },
+  {
+   "comando": "node --test … race-db.test.ts > race-committed-DOWN.log (sem triggers)",
+   "forma": "controle do lote committed",
+   "resultado": "ok 1, ok 2 (serviço segura sozinha 0/40), not ok 3/4/5 (trigger B, trigger A, barrier·FOR SHARE vermelhos), ok 6 (teste RLS passa SEM trigger); # pass 3 fail 3, ec=1"
+  },
+  {
+   "comando": "psql -f attack.sql (sem triggers)",
+   "forma": "controle das sondas cruas",
+   "resultado": "(a) órfão COMITA (orfaos_apos_a=1); (b) original apagado com contrapartida viva (vivo=f); (b2)(b3)(c1) 23505 no índice parcial (metade DUPLICATA, porque (a) já pusera o estorno ativo — o índice não expressa a metade órfã); (c2) vivo=f; (c4) estorno cruzado COMITA (linhas_t2=1); role jur_app já existia (42710, esperado)"
+  },
+  {
+   "comando": "psql -f seed-orphan.sql (tenant próprio: original com deleted_at + estorno vivo apontando-o) → psql -f reapply.sql (migration.sql LF + catálogo + verificação do órfão)",
+   "forma": "D28 re-apply com órfão semeado à mão",
+   "resultado": "WARNING 01000 'financial_entries: 1 estorno(s) ORFAO(S) de legado detectado(s)… P-O6R-B02-ORFAOS-LEGADOS' disparou; só NOTICEs 00000 de DROP IF EXISTS; triggers 2 (19/23, O), funções 2, constraints 4, índices 8; órfão INTACTO (id 54cc62ff…, deleted_at nulo, updated_at 04:52:28.716552 igual ao da semeadura); orfaos_no_banco=1; reapply_ec=0"
+  },
+  {
+   "comando": "psql -f cleanup-orphan.sql (DELETE escopado ao tenant d72b6a32…)",
+   "forma": "limpeza escopada, nunca sentença sobre a base",
+   "resultado": "DELETE 2/1/1; orfaos_no_banco=0; financial_entries total=0; tenants jur/race=0"
+  },
+  {
+   "comando": "node raw-barrier-drill.cjs LABEL=postReapplyON N=30; node --test … race-db.test.ts > race-committed-REAPPLY.log",
+   "forma": "pós-D28, triggers re-aplicados",
+   "resultado": "cru: 0 fabricados nas 2 ordens, 60/60 bloqueios, 0 40P01, SALDO 0, 60/60 P0001 DIN-002; committed 6/6 ok ec=0"
+  },
+  {
+   "comando": "for f in *.log: grep -c 40P01; grep -ho '40P01=[0-9]*' raw-drill-*.log | uniq -c",
+   "forma": "varredura de deadlock em 16 logs",
+   "resultado": "0 em 13 logs; 2 em cada raw-drill-*.log = as 6 ocorrências são o rótulo '40P01=0' do sumário (6× '40P01=0'); nenhum deadlock real em 120 iterações de serviço + 180 de SQL cru"
+  },
+  {
+   "comando": "pristino DEPOIS: hash-object de 7 arquivos vs rev-parse 12c3825; sed CRLF|md5sum; git status --porcelain (wt e principal --untracked-files=no)",
+   "forma": "R7 — antes e depois, mesma forma",
+   "resultado": "IGUAL 7/7 (e352c6c, 9be7caf, 89bedc1, d1f503d, bb74358, e529508, 93b653c); md5 LF 78b9279d…/9887150b…; porcelain wt vazio, head 12c3825; principal (rastreados) vazio"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "O teste committed '[C1/P9][db][RLS] estorno LEGÍTIMO sob o contexto RLS do app: trigger enxerga o original vivo' não exercita RLS: roda como `postgres` (rolsuper=t, rolbypassrls=t) no cluster local, na CI (ci.yml DATABASE_URL postgres:postgres) e no compose (POSTGRES_USER postgres) — e passou com os triggers DERRUBADOS (controle DOWN: ok 6).",
+   "evidencia": "catalog.out: único role postgres rolbypassrls=t; race-committed-DOWN.log: 'ok 6 - …[RLS]…' com 0 triggers no catálogo (down.log triggers=0); ci.yml:15/31 e docker-compose.yml:7. A propriedade trigger × RLS foi provada por mim com role jur_app NOBYPASSRLS sob RLS FORÇADA: (c1)(c2)(c4) P0001 DIN-002, (c3) legítimo comita (attack-ON.log).",
+   "gravidade": "ajuste",
+   "motivo": "O título do teste afirma o que a execução não sustenta (mesma classe do C5: contrato que só pode afirmar o que a execução sustenta). Não bloqueia porque a propriedade em si é verdadeira por execução minha; a cadeira de validação decide o peso. Não proponho o conserto (§C7.4-bis)."
+  },
+  {
+   "defeito": "Sem os triggers, o índice parcial financial_entries_reversal_of_active_key só fecha a metade DUPLICATA: no controle DOWN as sondas (b2)(b3)(c1) morreram em 23505 apenas porque (a) já tinha inserido o estorno ativo do mesmo original apagado; a metade ÓRFÃ comitou em (a), (b), (c2) e (c4).",
+   "evidencia": "attack-DOWN.log: orfaos_apos_a=1, original_continua_vivo=f, linhas_t2=1; attack-ON.log: as mesmas sondas P0001 DIN-002.",
+   "gravidade": "nota",
+   "motivo": "Confirma por execução a tese da migration (l.9–13): predicado entre linhas não cabe em índice parcial; o trigger é a peça que fecha. Registro para a ata, não é defeito."
+  },
+  {
+   "defeito": "Com os triggers derrubados, a camada de SERVIÇO sozinha segura a corrida (0/40 fabricado nas 2 ordens); com o serviço fora do caminho (SQL cru), a camada de BANCO sozinha segura (0/60). As duas defesas foram medidas separadas, cada uma com o próprio vermelho-controle.",
+   "evidencia": "race-committed-DOWN.log ok 1/ok 2 vs raw-drill-DOWN.log 60/60 fabricados; raw-drill-ON.log e raw-drill-REAPPLY.log 0/60.",
+   "gravidade": "nota",
+   "motivo": "Evidência de que C1 é defesa em profundidade e não uma camada mascarando a outra — insumo para a cadeira arnês-concorrente/validador."
+  },
+  {
+   "defeito": "Trigger B também recusa estorno de TENANT CRUZADO (GUC=t2 apontando original vivo de t1), porta que a policy WITH CHECK sozinha deixava passar (controle DOWN: comitou).",
+   "evidencia": "attack-ON.log (c4) P0001 DIN-002; attack-DOWN.log (c4) linhas_t2=1.",
+   "gravidade": "nota",
+   "motivo": "Propriedade positiva além do prometido; o filtro explícito tenant_id = NEW.tenant_id das funções é o que fecha. Registro."
+  },
+  {
+   "defeito": "EXPLAIN padrão do EXISTS do Trigger A em tabela vazia escolhe Seq Scan; com enable_seqscan=off o planner usa Index Only Scan no índice parcial vizinho.",
+   "evidencia": "explain.log.",
+   "gravidade": "nota",
+   "motivo": "Escolha de custo em tabela vazia, não defeito: o predicado do EXISTS casa exatamente o predicado do índice parcial e ele é usável — 'reusa o índice parcial' confirmado por construção, não por volume."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "Superfície HTTP (as duas ordens pelas rotas reais, GET /financial-accounts/:id/balance como SALDO) — cadeira jurado-c4-suplente-ataque-ao-dinheiro; o meu SALDO é entryService.balance (lote committed) e SUM SQL (drill cru).",
+  "Denominador N≥10 rodadas e a forma canônica da medição (formas 1/2/3, Node 20 vs 22) — cadeiras jurado-c4-suplente-arnes-concorrente e jurado-c4-suplente-validador-diff-plano; não repeti a bateria completa.",
+  "§5 do plano, D-DIVERGENCIA-C4-PONTA-AUSENTE (C4.1 reabre teste do ciclo 3), R4 (letra do S0) e R5 (nome do dev na ata) — cadeira de validação/ata; li os insumos, não os julguei.",
+  "C2/C3/C4/C5 — fora da minha lente (fail-closed já votou; validador cobre).",
+  "P-O6R-B02-ORFAOS-LEGADOS: o censo só AVISA (provado: órfão semeado ficou intacto após o re-apply); higiene de legado real é decisão humana (§C7.5) — aceito que a migration não mute dado.",
+  "Achado 'ajuste' (teste [RLS] committed roda como superuser e passa sem trigger): a propriedade foi provada por mim com role NOBYPASSRLS; o peso do teste vazio é da cadeira de validação."
+ ],
+ "teardown": "Criei: containers jur-c4s-banco-pg (postgres:16, 55711) e jur-c4s-banco-redis (redis:7, 56711); worktree C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/jur-c4s-banco em 12c3825 com node_modules próprio (npm ci, sem junction); role jur_app e tenants de teste SÓ dentro do meu cluster (limpos por DELETE escopado antes de derrubar; morreram com o container); 25 arquivos de log/script em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/503c6f08-ccd0-4bd6-ab60-e39ab6ee6f63/scratchpad/jur-c4s-banco/ (mantidos para auditoria da ata; nunca dentro do worktree). Derrubei e confirmei: `docker rm -fv jur-c4s-banco-pg jur-c4s-banco-redis` → rm_ec=0; `docker ps -a` sem nenhum jur-c4s-banco-*; `docker volume ls | grep -c jur` → 0; `git worktree remove --force …/jur-c4s-banco` → ec=0; `git worktree prune`; `git worktree list` sem jur-c4s-banco; `ls` do diretório → 'No such file or directory'. Worktree do dev (agent-af6ea607f3ddf8efd) intocado: node_modules 222 entradas, status --porcelain 0 linhas; árvore principal rastreada limpa. A base viva erp-postgres/erp-redis recebeu só `docker ps` (leitura). Os containers/worktrees jur-c4s-arnes/dinheiro/validador que aparecem vivos são das outras cadeiras — não toquei."
+}

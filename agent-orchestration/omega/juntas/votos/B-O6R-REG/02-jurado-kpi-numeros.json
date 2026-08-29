@@ -1,0 +1,63 @@
+{
+  "cadeira": "KPI e NUMEROS",
+  "identidade": "jurado-kpi-numeros-B-O6R-REG (identidade NOVA, terceiro titular da cadeira; nada herdado dos dois anteriores, que cairam sem medir)",
+  "head_julgado": "ee5ef03",
+  "veredito": "APROVADO",
+  "justificativa": "Medi as quatro frentes do mandato por execucao propria no worktree reg-359 e as quatro sustentam o que o bloco alega. (1) BATERIA - reexecutada, nao copiada: kpi-dashboard-charts 16/16 pass, 0 fail, ec=0; kpi-achados-paridade 6/6 pass, 0 fail, ec=0; kpi-freeze --check devolveu literalmente 'em dia (snapshot 2026-08-28)' com ec=0; node --check Kpis/app.js ec=0. Somei, por folga, os dois itens restantes da bateria alegada: npm run check (tsc --noEmit) ec=0, git diff --check ec=0, os dois JSON parseiam. Nenhuma alegacao da bateria foi desmentida. (2) BACKFILL §C3.5 - exato: a entrada pr:359 do kpis-history.json (unica entrada com esse pr; history com 143 snapshots) traz merge_commit f081b5d e approved_head d4cf978. Conferi a identidade dos dois contra o git, nao contra a ata: f081b5d E origin/main e e o squash do PR #359; d4cf978 existe e e o head que a ata J-B-O6R-ARNES declara julgado (linhas 4 e 141); e a arvore de 0c37fa2 e a de f081b5d sao o MESMO objeto (87c7323), o que confirma a nota do bloco sobre o head final. O release do kpis-latest.json traz merge_commit/approved_head null - correto por contrato, porque e o PR CORRENTE, com backfill_note apontando para a entrada #359. (3) FRASE SOBREVIVENTE - achei uma. As tres frases foram corrigidas nos arquivos de registro e na description do kpis-history.json, e todas as demais ocorrencias estao dentro de blocos de correcao ou de atas/votos que citam o texto antigo de proposito (legitimas). Mas 'piso **0**' sobrevive como AFIRMACAO VIVA em Kpis/kpis-history.md:122, 98 linhas abaixo da linha 24 do MESMO arquivo, que anuncia a correcao - ver achado A-1. (4) HONESTIDADE DAS METRICAS - limpa no que importa: o diff de Kpis/kpis-latest.json nao toca uma unica linha de metrica. blocks_completed segue 152, mvp_demo 99 e mvp_vendavel 88 intocados, backend 2595/2597, smoke 1126/1126 e flutter 864/864 carregados; o history registra a nota §C3.3 explicita. Como outra cadeira ja provou (e eu reconfirmei) que o diff de codigo e vazio, mover contagem de teste aqui seria desonesto e o bloco nao moveu nenhuma. Voto APROVADO porque nenhum NUMERO publicado por este bloco caiu sob reexecucao independente e o backfill e exato ao commit. Os tres achados sao de texto de registro, nao de metrica: nenhum fabrica, infla ou desloca um valor. Classifico A-1 e A-2 como 'ajuste' e nao 'bloqueia' porque §C7.1-ter(b) poe este bloco na maioria de 3, o erro de A-1 aponta CONTRA a entrega (o piso dispara mais do que a frase diz, nao menos) e a correcao e de uma linha. Registro, porem, que A-1 e exatamente a classe que este bloco existe para fechar, e que ele fechou a pendencia P-ARNES-REGISTROS-DEFASADOS-NA-MAIN como FECHADA sem alcanca-la.",
+  "comandos_executados": [
+    "git rev-parse HEAD -> 77a27b7; git diff --stat ee5ef03..77a27b7 -> 1 arquivo (votos/00b-perda-de-jurado-trilha.md, +40); Kpis/ INTOCADO, por isso a bateria medida no HEAD vale para ee5ef03",
+    "git diff --stat f081b5d..ee5ef03 -> 41 arquivos, +5844/-40",
+    "node --test --import tsx tests/kpi-dashboard-charts.test.ts -> tests 16, pass 16, fail 0, skipped 0, EXIT=0",
+    "node --test --import tsx tests/kpi-achados-paridade.test.ts -> tests 6, pass 6, fail 0, skipped 0, EXIT=0",
+    "node scripts/kpi-freeze.mjs --check -> 'kpi-freeze: em dia (snapshot 2026-08-28).' EXIT=0",
+    "node --check Kpis/app.js -> EXIT=0; npm run check (tsc --noEmit) -> EXIT=0; git diff --check -> EXIT=0",
+    "node -e (history) -> len=143; entradas pr=359 = 1 {version:B-O6R-ARNES, merge_commit:f081b5d, approved_head:d4cf978}; ultima = {version:B-O6R-REG, pr:null, merge_commit:null, approved_head:null}",
+    "git log -1 --format f081b5d -> squash do #359; git rev-parse origin/main -> o MESMO hash",
+    "git log -1 --format d4cf978 -> existe; git rev-parse 0c37fa2^{tree} f081b5d^{tree} -> 87c7323 nas duas (arvores identicas)",
+    "grep -n d4cf978|0c37fa2 agent-orchestration/omega/juntas/J-B-O6R-ARNES.md -> linhas 4, 5, 36, 83, 141",
+    "grep -rn por '2358', '6 arquivos', 'piso 0|piso **0**' em Kpis/, agent-orchestration/, docs/ -> ocorrencias inspecionadas com contexto, filtrando falso-positivos '16 arquivos'/'26 arquivos'",
+    "sed -n 105,135p Kpis/kpis-history.md -> linha 122: 'denominador 2359 identico, 58 pulos identicos, piso **0** (...)'",
+    "git show f081b5d:Kpis/kpis-history.md | grep -n -> a mesma frase ja existia na linha 76 da base",
+    "git diff f081b5d..ee5ef03 -- Kpis/kpis-history.md -> hunk UNICO (-6,6 +6,52); a secao B-O6R-ARNES nao foi tocada",
+    "git diff f081b5d..ee5ef03 -- Kpis/kpis-latest.json -> so version/block/title/pr/summary/backfill_note; ZERO linha de metrica",
+    "node -e (metrics do latest) -> blocks_completed 152, mvp_demo 99, mvp_vendavel 88, backend 2595/2597, smoke 1126/1126, flutter 864/864",
+    "git diff --stat f081b5d..ee5ef03 -- src/ prisma/ frontend/ mobile/ tests/ scripts/ .github/ -> VAZIO (reconfirmado)",
+    "git diff --numstat + -U0 em decisoes.md -> 202/0, hunk unico (-1545,0 +1546,202): append PURO, claim 'main e prefixo estrito' CONFIRMADA",
+    "git diff --name-status -- agent-orchestration/omega/ -> 30 arquivos, todos A",
+    "grep -c note Kpis/app.js e Kpis/index.html -> metrics.*.note NAO e renderizado pelo painel (as 7 ocorrencias estao no fallback congelado da linha 1623)"
+  ],
+  "nao_medido": [
+    "Se a frase CORRIGIDA e ela propria verdadeira: nao reexecutei a canonica 1 (npm test sem DATABASE_URL, N=3) para confirmar que o piso realmente dispara nomeando tests/core-saas-role-authority.test.ts, nem a canonica 3 para confirmar 2359/2597. Julguei a consistencia do registro, nao a remedicao do #359.",
+    "npm test (suite backend completa), suite Flutter e frontend smoke - nao rodados. Justificados por serem metricas CARREGADAS num bloco sem diff de codigo.",
+    "scripts/sync-agent-agents.mjs --check - NAO rodado por instrucao expressa (falso-vermelho conhecido, P-REG-S0-GUARD-FALSO-VERMELHO).",
+    "Conteudo material do §0 novo de docs/CRONOGRAMA.md e do §0 de PROJECT_MEMORY.md - fora da minha cadeira.",
+    "A alegacao do achado nao previsto (status TROCADO de P-O6R-B04/B-05) - materia da cadeira de trilha.",
+    "Nada foi mutado: nenhum arquivo rastreado alterado, nenhum commit, erp-postgres/erp-redis nao tocados."
+  ],
+  "achados": [
+    {
+      "id": "A-1",
+      "titulo": "A frase 'piso 0' sobrevive como afirmacao viva em Kpis/kpis-history.md:122 - no mesmo arquivo cuja entrada nova, na linha 24, anuncia que ela foi corrigida",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "grep -ni por 'piso 0|piso **0**' em Kpis/kpis-history.md devolve 2 linhas. Linha 24 (entrada NOVA deste bloco): 'Tres frases defasadas que a execucao contradiz - piso 0 -> o piso dispara nomeando tests/core-saas-role-authority.test.ts'. Linha 122 (entrada B-O6R-ARNES, intocada): 'Canonica 1 - npm test sem DATABASE_URL, N=3: ec=1 nas 3, denominador 2359 identico, 58 pulos identicos, piso **0** (pulo declarado nao cai no piso - e o que mantem esta forma utilizavel).' Nao e citacao dentro de bloco CORRIGIDO: e a afirmacao original, em prosa corrida. git diff f081b5d..ee5ef03 -- Kpis/kpis-history.md tem hunk UNICO (-6,6 +6,52), ou seja, o bloco EDITOU este arquivo (+46 linhas no topo) e nao varreu o corpo dele; git show f081b5d:Kpis/kpis-history.md mostra a mesma frase na linha 76 da base. Contraste medido: no kpis-history.json a mesma afirmacao FOI substituida, com nota de correcao (linha 2206). E o proprio texto de fechamento em pendencias.md:3342 diz 'FECHADO - corrigido em log-execucao.md, status-geral.md e P-ARNES-CANONICA1' - Kpis/kpis-history.md nao esta na lista. Observacao de escopo: '2358' e '6 arquivos' NAO sobrevivem neste arquivo.",
+      "motivo": "Kpis/kpis-history.* e artefato de KPI por §C3.1 e e o historico permanente legivel do painel. Hoje ele afirma as duas coisas ao mesmo tempo, a 98 linhas de distancia: que o piso deu 0 e que o piso dispara. Quem abrir a entrada do B-O6R-ARNES - o leitor natural, ja que e a entrada do bloco medido - leva o numero errado, e a linha 24 nao o alcanca porque esta sob outro cabecalho, de outro bloco. Isto e exatamente a classe que o bloco existe para fechar e a pendencia P-ARNES-REGISTROS-DEFASADOS-NA-MAIN foi marcada FECHADA sem alcanca-la. Nao classifico como bloqueia porque nenhum KPI e afetado, o erro aponta contra a propria entrega e §C7.1-ter(b) poe este bloco em maioria de 3 - mas a pendencia nao deveria estar fechada com esta linha viva."
+    },
+    {
+      "id": "A-2",
+      "titulo": "As tres metricas carregadas nao ganharam marcador §C3.3 deste bloco, e a nota de backend_tests continua afirmando, em primeira pessoa, execucao real 'desta arvore' e 'sobre o codigo final deste PR'",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "node -e sobre Kpis/kpis-latest.json: metrics.backend_tests.note comeca com 'Execucao real desta arvore, forma CANONICA 3 declarada: npm test ... N=10 rodadas sequenciais sobre o codigo final deste PR. Resultado: 10/10 ec=0...' - sem nenhum marcador de carregamento. Ja frontend_smoke_tests.note e flutter_tests.note TERMINAM com '[B-O6R-ARNES: valor CARREGADO - a trilha web/Flutter nao foi tocada; sem reexecucao (§C3.3)]', isto e, o marcador do bloco ANTERIOR. git diff f081b5d..ee5ef03 -- Kpis/kpis-latest.json nao toca uma linha de metrica: nenhum '[B-O6R-REG: ...]' foi acrescentado a nenhuma das tres. O snapshot corrente e version B-O6R-REG. Mitigacao medida: metrics.*.note NAO e renderizado pelo painel, e a nota §C3.3 EXISTE no history.",
+      "motivo": "A letra de §C3.3 esta cumprida (a nota explicita existe no history), por isso ajuste e nao bloqueia, e o VALOR esta correto - e o ultimo oficial. O defeito e de proveniencia: no snapshot B-O6R-REG a nota de backend_tests diz, em primeira pessoa, que 10 rodadas N=10 foram feitas 'sobre o codigo final deste PR', e este PR nao rodou a suite backend nem alterou uma linha de codigo. O convivio com smoke/flutter, que carregam o marcador do bloco anterior, mostra que a convencao de marcar o carregamento por metrica ja existia neste mesmo arquivo e nao foi seguida aqui - quem ler o JSON atribui a este bloco uma execucao que nao houve."
+    },
+    {
+      "id": "A-3",
+      "titulo": "'29 registros de junta' nao bate com os 30 arquivos que o diff acrescenta em agent-orchestration/omega/",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "git diff --name-status f081b5d..ee5ef03 -- agent-orchestration/omega/ devolve 30 linhas, todas com status A (2 auditorias, 3 briefings, 3 atas, 13 votos/pareceres, 4 planos, 3 reprovacoes = 30). O summary do kpis-latest.json e a entrada do kpis-history.md dizem '29 registros de junta'. Excluindo os 2 arquivos que sao do proprio B-O6R-REG (BRIEFING-B-O6R-REG.md e votos/B-O6R-REG/00a-inspetor-terreno-passada1.md, que nao vieram reconciliados da demo) o total reconciliado seria 28 - 29 nao bate por nenhuma das duas leituras.",
+      "motivo": "Reporto por rigor de cadeira, nao por materialidade: e uma contagem em prosa, sem efeito sobre KPI, sobre o painel ou sobre qualquer decisao. Registro apenas porque num bloco cujo produto e a exatidao do registro uma contagem publicada deveria ser reproduzivel por um comando - e esta nao e. Nao afeta o veredito."
+    }
+  ]
+}

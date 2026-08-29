@@ -2234,10 +2234,21 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
-- status: **FECHADA (2026-08-15, PR #353 `a8901ff`)** — os dois P0 viraram gate de boot:
-  produção recusa subir com o agregado core-saas em memória, sem banco, sem worker e com Redis apontando
-  para host local. O texto acima descreve o estado **anterior** ao PR e fica como registro histórico; a
-  `main` de hoje já não o reproduz. Ata: `omega/juntas/J-O6R-B05-PR353-merge.md` (3×0, sem veto).
+- status: **ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.**
+  Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
+  a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
+
+> **CORREÇÃO DE REGISTRO (2026-08-28, bloco de registro).** Esta linha continha, até hoje, o status
+> `FECHADA (2026-08-15, PR #353 a8901ff)` com o texto *"os dois P0 viraram gate de boot: produção recusa
+> subir com o agregado core-saas em memória, sem banco, sem worker e com Redis apontando para host local"*.
+> Esse texto é do **`P-O6R-B05`** (portões de runtime de produção, `Ω6R-DAT-001` + `Ω6R-DIN-006`) — o #353
+> se chama literalmente *"fix(infra): produção não sobe mais sem persistir e sem worker (B-O6R-05)"* e nada
+> nele toca estoque. O status ficou ancorado na seção errada e o `P-O6R-B05` seguiu marcado `ABERTA`: os dois
+> se anulavam. **Consequência material do defeito:** quem lesse a `pendencias.md` concluiria que os dois P0 de
+> estoque (saldo concorrente e fechamento de contagem cíclica) estavam fechados e **pularia o B-04 inteiro**.
+> Contraprova que fixa a leitura correta: `Kpis/kpis-latest.json` → `roadmap.blocos` marca `B-O6R-04`
+> `"estado": "a_fazer"` e `B-O6R-05` `"estado": "concluido", "pr": 353`; e `production_readiness.fechados`
+> credita `Ω6R-DAT-001`/`Ω6R-DIN-006` ao `B-O6R-05` (PR #353), nunca `DAT-002`/`DAT-003`.
 
 ## P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — **achado ÓRFÃO, sem bloco até hoje**
 
@@ -2301,8 +2312,13 @@ reconciliação de custódia, diárias de cobrança e notificações legais devi
 
 **Bloqueia:** **o deploy produtivo em si** (é a razão material do 5×0) e qualquer feature que dependa de sweep
 — cobrança por diária, notificação agendada, reconciliação de custódia.
-- status: ABERTA — 2 P0. Rascunho arquitetural correlato: `docs/revisoes/O6R/D-003-jobs-duraveis.md`
-  (**pauta do dono, não decisão**).
+- status: **FECHADA (2026-08-15, PR #353 `a8901ff`)** — os dois P0 viraram gate de boot:
+  produção recusa subir com o agregado core-saas em memória, sem banco, sem worker e com Redis apontando
+  para host local. O texto acima descreve o estado **anterior** ao PR e fica como registro histórico; a
+  `main` de hoje já não o reproduz. Ata: `omega/juntas/J-O6R-B05-PR353-merge.md` (3×0, sem veto).
+  Rascunho arquitetural correlato: `docs/revisoes/O6R/D-003-jobs-duraveis.md` (**pauta do dono, não decisão**).
+  [Status devolvido a esta seção em 2026-08-28 pelo bloco de registro — estava ancorado na seção do
+  `P-O6R-B04`, que por sua vez seguia marcado como fechado sem nunca ter sido iniciado.]
 
 ## P-O6R-B06 (2026-08-14) — `fix/billing-durability` — Ω6R-DIN-005 + Ω6R-DIN-007 (2 P0) — **BLOQUEIA a trilha CHECKLIST P1 (em execução AGORA) e o cloud billing**
 
@@ -3061,9 +3077,20 @@ evento na trilha append-only, e o teardown apaga o tenant sem conhecer a trilha.
 
 ## P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO, fora do escopo
 
-Canônica 1 (`npm test` **sem** `DATABASE_URL`, N=3, Node v20.19.5): **ec=1 nas 3**, denominador **2358
-IDÊNTICO nas 3**, **58 pulos declarados** idênticos, e o piso de denominador **não** disparou (0 nas 3 — o
-pulo declarado não cai nele, que é o que mantém esta forma utilizável).
+**Dono:** próximo bloco que tocar `tests/core-saas-role-authority.test.ts` ou o gate de `DATABASE_URL` das
+suítes não-`-db`. **PR-alvo:** ainda não aberto.
+
+Canônica 1 (`npm test` **sem** `DATABASE_URL`, N=3, Node v20.19.5): **ec=1 nas 3**, denominador **2359
+IDÊNTICO nas 3**, **58 pulos declarados** idênticos, e o piso de denominador **dispara 1 vez, nomeando este
+mesmo arquivo** — o pulo declarado **não** cai nele (os 58 passam limpos), que é o que mantém esta forma
+utilizável; o que cai é o arquivo que morre no LOAD sem registrar teste nem declarar skip.
+
+> **CORRIGIDO em 2026-08-28 (bloco de registro).** O texto mergeado no #359 dizia denominador **2358** e
+> **piso 0**. Os dois vinham de medição em commit intermediário, anterior a `1676a5b` — o commit que abriu os
+> olhos do piso para dentro do repo. A junta corrigiu o denominador para 2359 na frase vizinha e **esqueceu
+> esta**; a reexecução independente do porteiro pós-merge no head final mede 2359 e o piso disparando
+> (achado C de `omega/juntas/votos/B-O6R-ARNES/00c-porteiro-pos-merge-359.md`). É a mesma classe de defeito
+> que a junta pegou — corrigir um número e deixar o gêmeo vivo ao lado.
 
 O vermelho é **sempre o mesmo arquivo**: `tests/core-saas-role-authority.test.ts` (sem sufixo `-db`).
 **Causa medida, não inferida:** ele importa — transitivamente — `src/database/prisma.ts`, que **lança no LOAD
@@ -3095,7 +3122,9 @@ v20.19.5): arquivo que não registra teste ganha um ponto TOP-LEVEL cujo NOME é
 **D40, mesma fixture e mesmo comando nas duas pontas:** ANTES (F0(b), pré-correção) `ec=0`,
 `"2 arquivo(s) · 3 teste(s) · pass 3"`, guard mudo; DEPOIS `ec=1` com `PISO DE DENOMINADOR` nomeando o
 arquivo. Pulo DECLARADO **não** cai no piso — caso permanente próprio, e a canônica 1 confirma em execução
-real (58 pulos, piso 0).
+real: os **58 pulos declarados não caem no piso**, e o piso dispara 1 vez nomeando
+`tests/core-saas-role-authority.test.ts`, que morre no LOAD sem declarar skip. [Frase corrigida em 2026-08-28
+pelo bloco de registro — o "piso 0" original media commit intermediário; ver `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`.]
 
 ## P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrada ANTES de consolidar
 
@@ -3136,3 +3165,307 @@ com fixture DENTRO do repositório**, sob `test-results/` (gitignored), que é o
 **A lição, para a ata:** um drill cuja fixture não reproduz o arranjo real prova o mecanismo, não a
 propriedade. Os dois auto-defeitos nasceram em correção, nenhum no código original — exatamente o que a
 decisão do dono prevê.
+
+---
+
+## Registros do ciclo 4 do `B-O6R-02`, reconciliados da trilha para a `main` (2026-08-28)
+
+> Estas entradas nasceram em 25–28/08 na branch `demo/investidor` e **nunca existiram na `main`**. O bloco
+> `B-O6R-ARNES` tropeçou exatamente nisso: o plano dele mandava *fechar* a `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP`
+> e ela **não existia na base** — o dev registrou a divergência em vez de fabricar histórico
+> (`P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN`). O ciclo 5 do financeiro referencia as nove
+> `P-O6R-B02-*` como insumo; sem esta reconciliação ele repetiria o mesmo tropeço.
+
+## P-O6R-B02 — CICLO 4 REPROVADO 4×1 (2026-08-28) — a classe que reprova é de ARNÊS, não de dinheiro
+
+Ata `agent-orchestration/omega/juntas/J-B-O6R-02-ciclo4.md`; relatório do achador
+`agent-orchestration/omega/reprovacoes/R-B-O6R-02-ciclo4.md`; votos verbatim em `omega/juntas/votos/B-O6R-02-ciclo4/`.
+Head `12c3825`. **Fechado por execução independente:** B-1 (corrida `delete×reverse`) não fabrica dinheiro em nenhuma
+camada/ordem/intercalação — 3 cadeiras, 590+140+66 iterações, saldo 0; C2/C3/C4/C5 confirmados. **Reprova:** a cadeira
+do arnês — o número publicado da canônica 3 (`2745/2743/0/2`) é o desfecho de **7/10** rodadas (`XX000 tuple concurrently
+updated` em `CREATE ROLE`, `audit-security.test.ts:158` ×2 e `auth-identity-fixture.ts:150`), denominador **2740×2745**
+numa rodada, **2 roles órfãs com LOGIN+DML nas 115 tabelas** persistindo, +5 `auth_identities`/rodada. É a classe
+pré-existente `P-O6R-ARNES-ISOLAMENTO`, agora medida **dentro** da forma canônica com N=10.
+
+**Próximo passo (§C7.4, ciclos 4–5):** junta ampliada replaneja a fatia — plano novo (Fable), crítico e jurados com
+**identidade nova** (pool esgotado). Deliberação obrigatória por escrito: fechar a classe do arnês dentro do B-O6R-02 ou
+destacar bloco próprio e publicar o número com N e forma honestos. Parada + dossiê ao dono **só** após o ciclo 5 falho.
+
+### Pendências nomeadas pelo ciclo 4 (ajustes A1–A8 da ata; sem correção proposta)
+
+## P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU (2026-08-28 — cadeira de ataque, ajuste A1) — MÉDIA
+`API_CONTRACTS.md` l.426–428 (head `12c3825`) e o cabeçalho de `20260870000000_add_reversal_pair_atomicity` afirmam *"impossível
+por construção, mesmo para escritor que não passa pelo serviço"*. Medido: `DELETE` físico do original com estorno vivo é
+**aceito** (rows=1; `GET /financial-accounts/:id/balance` = 100, correto 0) e `UPDATE id` do original deixa a contrapartida
+pendurada (DELETE HTTP legítimo do renomeado → 200, saldo 100). Não há FK em `reversal_of`; trigger A é só BEFORE UPDATE.
+Nenhuma rota do produto faz DELETE físico (grep em `src` = 0) — é **defeito de TEXTO e de guarda ausente**, não de caminho do
+produto. Propriedade a decidir: o contrato só pode afirmar o que os triggers garantem.
+
+## P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA
+O teste `[C1/P9][db][RLS] estorno LEGÍTIMO sob o contexto RLS do app: trigger enxerga o original vivo` roda como `postgres`
+(`rolsuper=t`, `rolbypassrls=t`) no local, na CI (`ci.yml` `postgres:postgres`) e no compose — e **passou com os triggers
+derrubados** (controle DOWN: ok 6). O título afirma o que a execução não sustenta (classe do C5). A propriedade trigger×RLS
+**é verdadeira** — provada pelo jurado com role `NOBYPASSRLS` sob RLS forçada ((c1)(c2)(c4) P0001 DIN-002; (c3) legítimo comita).
+
+## P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (registro §A2)
+**D27 como enunciado no plano é insatisfazível** (remover a chamada do construtor = mutante equivalente: 87/87 verde; a
+propriedade do parecer #2 foi provada por outra via — M2 corpo do guard → exit 1; M3 estado perigoso real → 2 fails).
+**D21**: uma ordem de disparo fica verde sob a mutação (não determinística — HTTP delete-first para o dev, memória
+delete-first para o validador/ataque) enquanto o plano exige "as DUAS ordens" vermelhas; a suíte -db pega a mutação nas duas
+ordens deterministicamente. As duas divergências estavam **só no corpo dos commits** `b7de4c9`/`db5b047`; ficam registradas aqui
+e na ata para que ninguém herde "D27/D21 vermelhos como escritos" como fato.
+
+## P-O6R-B02-BATERIA-CANONICAS-1-2 (2026-08-28 — validação, ajuste A4) — MÉDIA
+O KPI do ciclo 4 publica só a canônica 3 e os focados; **canônicas 1 e 2** (§9.2, §9.6 — N≥15, denominador constante) não
+foram executadas/publicadas pelo dev. Validador mediu N=1: canônica 1 = 2465/2400/**1 fail ambiental** (`core-saas-role-authority`
+inicializa o Prisma Client após o skip sem `DATABASE_URL` — pré-existente)/64 skip; canônica 2 = 194/194, 0 skip, 0 hits
+`unhandledRejection|XX000|23505|40P01`. Falta a publicação com N e forma, não há número falso.
+
+## P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA
+`tests/financial-entry-delete-reverse-race-db.test.ts` (corrida em Postgres real, 2 ordens + SQL cru + barrier + RLS) **não
+está na lista SUITES do job `backend-postgres`** do `ci.yml` (0 hits no head; denominador da canônica 2 = 194 sem ela). Roda só
+pela canônica 3 (job `backend`) e isolada. `ci.yml` era PROIBIDO no ciclo 4 (§5) — a inclusão é pendência nomeada, não emenda.
+
+## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
+No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
+junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
+2026-08-28 nesta mesma rodada de registro).
+
+## P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA
+O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: nenhuma suíte exercita o bloco `DO` da migration
+(WARNING com órfão semeado); só o drill D28 o exerce (validador executou: WARNING nomeado com 1 órfão). Os demais componentes
+(≥6 corrida, ≥2 SQL cru) e o total (≥21) estão acima do piso.
+
+## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO em 2026-08-28** (era ALTA)
+
+> **Não reproduz.** O `--check` no worktree real do head e num **checkout LF puro** (o que a CI Linux vê) dá
+> **ec=0, 0 DIVERGE, "25 agentes, espelho consistente"**. Os 15 (validador do c4) e os 25 (planejador do c5) vieram de
+> `git archive`+`tar` numa máquina com `core.autocrlf=true`, que injeta 64 CR no arquivo do espelho (blob = 0 CR nos dois
+> lados, 26+25 arquivos, sem `.gitattributes`); o script compara com o gerado (LF) e acusa divergência inexistente.
+> Errata completa, com as 4 medições, na ata do ciclo 4 e no plano do ciclo 5. **S0(i) do ciclo 5 = NO-OP.**
+> Registro original preservado abaixo (§A2 — não se reescreve):
+`git archive 12c3825 .claude/agents .agents/agents scripts/sync-agent-agents.mjs` → `node scripts/sync-agent-agents.mjs --check`
+→ **ec=1, 15 DIVERGE** (12 agentes-base + 3 especialistas). Na árvore principal → OK 32. A R4 do inspetor mediu o espelho VIVO,
+não o head; o S0 do plano ("`--check` até o espelho fechar") **não fecha em `12c3825`**. `5e321ac` segue não-ancestral. A CI não
+executa o `--check` (0 hits em `ci.yml`). Fechar antes do PR/porteiro (rebase ou sync na branch), fora do dev.
+
+## P-O6R-B02-RUNNER-SUMICO-SEM-SKIP (2026-08-28 — arnês #4 / D26b) — MÉDIA (mesma classe do B-2c4)
+Suíte -db que sai limpa **sem registrar teste** (mutação `if (true) {} else if (!connectionString)`) → `npm test` **ec=0**,
+"260 arquivo(s) · 2740 teste(s) · pass 2738 · skipped 2", guard mudo. O D26 literal (auto-pulo com `skip:`) fica vermelho e
+nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
+
+## P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do arnês, N=10)
+
+- **A classe `XX000` reaparece DENTRO da forma canônica 3**, não fora dela: 3/10 rodadas do mesmo `npm test` com `DATABASE_URL`,
+  em cluster próprio onde só o jurado conectava (contenção de CPU de outras baterias na máquina, nunca o mesmo banco).
+  Produtores medidos: `tests/audit-security.test.ts:158` (CREATE ROLE, ×2) e `tests/helpers/auth-identity-fixture.ts:150`
+  (`createEphemeralRole`, via `auth-identity-backfill-db.test.ts:115`).
+- **Denominador 2740×2745** numa rodada (5 subtestes do teste 120 não correram; o arquivo abortou no `XX000` antes de os
+  registrar); o runner não tem piso de `# tests`.
+- **Roles órfãs nascem no caminho de falha do `CREATE ROLE`** e persistem com LOGIN + DML total nas 115 tabelas (2 em 10 rodadas);
+  **vazamento linear** de `auth_identities`/`auth_identity_link_events` (+5/rodada) mesmo em rodadas verdes; `permissions` 1→15 uma vez (idempotente).
+- **Aborto duro (SIGKILL) na corrida -db** deixa 1 tenant/1 user/1 conta/1 lançamento sem varredura (não contamina: slugs únicos);
+  o teardown no caminho de `assert.fail` está provado (resíduo 0).
+- **ERRATA do rótulo (28/08):** nas linhas apontadas, `audit-security.test.ts:158` é `DROP OWNED BY` (teardown, FORA do
+  `withRoleCatalogLock`) e `auth-identity-fixture.ts:150` é `GRANT USAGE ON SCHEMA public` (DENTRO do lock) — escritas em
+  `pg_namespace.nspacl`/`pg_class.relacl`, não `pg_authid`. Objeto disputado a nomear por execução no ciclo 5 (ver errata da ata).
+
+## Pendências do porteiro pós-merge do #359 (`B-O6R-ARNES`) — 2026-08-28, `LIBERADO COM RESSALVA`
+
+Parecer completo em `agent-orchestration/omega/juntas/votos/B-O6R-ARNES/00c-porteiro-pos-merge-359.md`.
+O porteiro reexecutou por conta própria: canônica 3 **2597/2595/0 fail/2 skip, ec=0, zero papel órfão**
+(`pg_roles` = 15, só built-ins + `postgres`), bateria focada **34/34**, canônica 1 com denominador **2359**
+— os números do KPI **reproduzem**. Escopo e promessas conferidos contra o diff real.
+
+### FECHADAS agora pelo orquestrador
+
+- **Branch remota `fix/o6r-arnes-catalogo-unico` apagada** (achado B): o `--delete-branch` do `gh pr merge`
+  falhou porque a branch estava presa ao worktree do dev; `git push origin --delete` executado e conferido
+  por `git ls-remote` (vazio).
+- **Trilha tornada durável** (achado D): `demo/investidor` **não existia no remoto** — 46 commits, com a ata,
+  os votos, o briefing e os planos da junta que autorizou um merge da `main` vivendo só em disco local.
+  Push executado (`a6dffcd`). **Não** abre PR e **não** move a `main`; é durabilidade da prova, não merge.
+
+## P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE (2026-08-28) — BAIXA · **Dono:** bloco de arnês seguinte
+
+Achado `pre-existente` da cadeira de catálogo na junta do `B-O6R-ARNES` (voto `01`, achado 4), sem entrada
+própria até aqui (achado E do porteiro). Nenhum dos 3 escritores movidos para o mecanismo único assevera a
+**identidade da conexão sob teste** (`SELECT current_user` / `rolsuper` / `rolbypassrls`) dentro do próprio
+teste. Consequência: um teste que se declara "sob a role X" pode estar rodando como `postgres` e ninguém
+percebe — a mesma classe do `[RLS]` que rodava como superusuário e passava com os triggers derrubados
+(`P-O6R-B02-TESTE-RLS-SUPERUSER`).
+
+## P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por execução** (candidato: bloco de arnês seguinte)
+
+Achado `pre-existente` da cadeira do runner (voto `02`, achado 2), **sem dono na ata** — o porteiro cobrou
+(achado E). `tests/authority-portal.test.ts:162` (*"hashing: scrypt round-trip … rejeita hash adulterado"*)
+falhou com `ERR_ASSERTION true !== false` em **1 de 2** rodadas da suíte inteira do jurado. Está **fora da
+classe** deste bloco (não é catálogo, não é denominador, não é teardown de papel). **Quem receber precisa
+primeiro atribuir por execução** — N≥10 isolado — antes de qualquer correção; hoje há uma medição de 1/2 e
+nada mais.
+
+## P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-29, este PR — ver errata)**
+
+> **ERRATA DE FECHAMENTO (2026-08-29, achado A-1 da cadeira de KPI).** Esta pendência foi marcada `FECHADA`
+> em 28/08 **antes de estar fechada**. A frase `piso **0**` sobreviveu **viva** em `Kpis/kpis-history.md:122`
+> — no corpo da entrada do `B-O6R-ARNES`, 98 linhas **abaixo** da entrada nova que anunciava a correção, no
+> mesmo arquivo que este bloco havia editado. O bloco editou o topo do arquivo e **não varreu o corpo dele**.
+> A junta pegou; a linha foi corrigida em 29/08, com o texto antigo preservado e datado; e só **agora** a
+> pendência está de fato fechada. Registrado por inteiro porque é a própria classe que este bloco existe para
+> exterminar — declarar fechado o que a execução mostra aberto — cometida pelo bloco que a estava fechando.
+
+Achados C e F do porteiro. Na `main` mergeada sobrevivem três frases que a execução contradiz — a **mesma
+classe** que a junta corrigiu em `0c37fa2`, na frase vizinha:
+
+1. **"piso 0 nas 3"** (canônica 1): medido no head final, o piso **dispara nomeando** um arquivo
+   (`tests/core-saas-role-authority.test.ts`, que morre no load sem registrar teste nem declarar skip). A
+   direção do erro é **a favor** da entrega — o mecanismo nomeia o morto em vez de silenciar —, mas a frase
+   está errada. Era medição anterior a `1676a5b`, que abriu os olhos do piso para dentro do repositório.
+2. **"6 arquivos"** sobrevive em `agent-orchestration/codex/log-execucao.md:38` e
+   `agent-orchestration/docs/status-geral.md:37`, contradizendo a lista dos **7** no mesmo arquivo.
+3. **`P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`** mantém **2358** (não foi alcançada pela correção de `0c37fa2`)
+   e não tem linha `Dono:`.
+
+## P-ARNES-BACKFILL-359 (2026-08-28) — MÉDIA · **FECHADA (2026-08-28, este PR)**
+
+`Kpis/kpis-latest.json` e a entrada nova do `kpis-history.json` na `main` têm `pr: 359` preenchido e
+`merge_commit`/`approved_head` **`null`** — legal na autoria, dívida agora. Backfill: `merge_commit` =
+**`f081b5d`**; `approved_head` = **`d4cf978`** (o head que a junta aprovou) com nota do head final
+**`0c37fa2`** (correções de registro exigidas pela própria junta) — a ata §6 registra os dois.
+
+- **status: FECHADA (2026-08-28, bloco de registro `B-O6R-REG`).** Backfill aplicado em
+  `Kpis/kpis-latest.json` (`release`) e na entrada `#359` do `Kpis/kpis-history.json`:
+  `merge_commit` = `f081b5d`, `approved_head` = `d4cf978`, com nota do head final `0c37fa2`.
+
+---
+
+## Fechamento das ressalvas do porteiro do #359 — feito por este bloco (2026-08-28)
+
+Das **seis** ressalvas (A–F), duas já haviam sido fechadas pelo orquestrador no próprio dia (B: branch remota
+apagada; D: trilha pushada). Este bloco fecha as **quatro** restantes:
+
+| Achado | O que era | Estado |
+|---|---|---|
+| **A** | backfill §C3.5 (`merge_commit`/`approved_head` = `null`) | **FECHADO** — `P-ARNES-BACKFILL-359` |
+| **C** | "piso 0" não reproduz no head final | **FECHADO** — corrigido em `log-execucao.md`, `status-geral.md`, `P-ARNES-CANONICA1`, na `description` do `kpis-history.json` **e em `Kpis/kpis-history.md:122`**, esta última só em 29/08, depois de a junta a achar viva (achado A-1) |
+| **E** | 2 achados `pre-existente` da ata sem entrada própria | **FECHADO** — `P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE` e `P-ARNES-AUTHORITY-PORTAL-INTERMITENTE` agora existem na `main`, com dono |
+| **F** | "6 arquivos"→7 e "2358"→2359 sem `Dono:` | **FECHADO** — as três frases corrigidas |
+
+**Achado não previsto pelo porteiro, encontrado por este bloco:** o status de `P-O6R-B04` e `P-O6R-B05`
+estava **trocado** na `pendencias.md` da `main` — o bloco de estoque figurava como FECHADO pelo #353 (que é
+do B-05) e o B-05, de fato mergeado, figurava como ABERTO. Corrigido nas duas seções, com a contraprova do
+`Kpis/kpis-latest.json`. Era o defeito de registro de maior consequência da varredura: fazia pular um bloco
+com 2 P0 abertos.
+
+---
+
+## P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE (2026-08-28) — divergência de processo, registrada ANTES de consolidar (§A2)
+
+**O que divergiu.** O papel do `planejador-mestre` é obrigatório antes de código: o contrato o institui no
+§C7 (`D-PLANEJADOR-MODELO-FABLE`, §C7.6) e o **corpo do agente** o enuncia na forma curta —
+`.claude/agents/planejador-mestre.md`, frontmatter: *"Escreve o plano obrigatório antes de qualquer código.
+Nenhuma linha de código sem plano dele."* Este bloco (`B-O6R-REG`) foi implementado **sem** plano dele.
+
+> **ERRATA (2026-08-29, achado REG-DIFF-1 da cadeira de diff/escopo).** A primeira redação desta pendência
+> atribuía a frase *"nenhuma linha de código sem plano dele"*, como citação verbatim, ao `CLAUDE.md` §C7 — e
+> `grep` no `CLAUDE.md` não a devolve em ponto algum: ela vive no `description` do frontmatter do agente. A
+> substância não muda (a regra existe, vincula, e foi divergida), mas **um bloco cuja tese é "o registro passa
+> a dizer o que a execução diz" não pode citar errado a fonte da regra que confessa ter violado** — e quem for
+> escrever a carve-out precisa saber onde a regra mora de fato.
+
+**Por que, dito sem maquiagem.** É um bloco de **registro**: o diff em `src/`, `prisma/`, `tests/`,
+`scripts/`, `frontend/`, `mobile/` e `.github/` é **vazio** — não há linha de código. O conteúdo é a lista
+fechada e já escrita das quatro ressalvas do porteiro pós-merge do #359, mais duas tarefas nomeadas
+explicitamente pelo dono (sincronizar o cronograma; reconciliar os registros das juntas para a `main`). O
+"plano" deste bloco é o próprio parecer do porteiro, que enumera item a item o que tem de entrar no próximo PR
+— `omega/juntas/votos/B-O6R-ARNES/00c-porteiro-pos-merge-359.md`, fecho do documento.
+
+**O que NÃO é desculpa.** A regra não abre exceção por escrito para blocos de registro. Duas saídas possíveis,
+e a escolha é da junta: (a) a junta ratifica esta divergência como pontual, ou (b) o contrato ganha a carve-out
+explícita para blocos sem diff de código — o que **entra na lista do §6 da `D-JUNTA-ESCOPO-E-CALIBRACAO`**, que
+já nomeia pendências de contrato não fechadas. Recomendação registrada: **(b)**, porque a regra tal como escrita
+é violada por todo bloco de registro que este repositório já fez, incluindo os que a junta aprovou.
+
+**O que NÃO divergiu:** a junta (§C7.1) e o inspetor de terreno (§C7.1-bis) continuam obrigatórios e não foram
+pulados. Quórum deste bloco: **maioria de 3** — não toca dinheiro, segurança, permissão nem perda de dado
+(`D-JUNTA-ESCOPO-E-CALIBRACAO` §2).
+
+- **Dono:** a junta deste PR · **PR-alvo:** este.
+
+---
+
+## P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder tocar `scripts/`
+
+**Achador:** `inspetor-de-terreno-da-junta` do `B-O6R-REG` (ressalva R1), **confirmado por execução** pelo
+orquestrador. **Quem achou não conserta** (`D-JUNTA-SEPARACAO-DE-PAPEIS`) — e `scripts/` está **fora do escopo**
+do `B-O6R-REG`, cuja promessa central é diff de código vazio. Por isso fica nomeado, não remendado.
+
+**O defeito.** `scripts/sync-agent-agents.mjs --check` dá **falso-vermelho universal em checkout fresco no
+Windows**. A causa é uma assimetria de duas linhas:
+
+- **l.39** (`transform`): `rawInput.replace(/\r\n/g,'\n')` — normaliza CRLF→LF **na fonte**.
+- **l.80**: `readFileSync(to,'utf8') !== want` — compara o **alvo CRU**, sem normalizar.
+
+Sob `core.autocrlf=true` (o caso desta máquina), um checkout fresco materializa **origem e alvo com CRLF**. A
+origem é normalizada dentro do `transform`; o alvo não. Resultado: **todo** arquivo diverge.
+
+**Medido nas duas pontas (2026-08-29):** no worktree fresco `.claude/worktrees/reg-359` → `DIVERGE` em 22
+agentes; na árvore principal (onde os alvos foram escritos pelo próprio script, em LF) → `OK — 40 agentes,
+espelho consistente`. O inspetor mediu os **blobs commitados** com transform replicado e eol-neutro: **0/22
+divergências reais**. O espelho está consistente; **o guard é que mente**.
+
+**Por que isto importa mais do que parece.** O S0 (consistência do espelho Codex) é **gate fail-closed de toda
+junta** (`D-INSPETOR-TERRENO-JUNTA`). Como está, qualquer junta futura instruída a rodar o `--check` num
+worktree novo — o arranjo que o próprio contrato **exige** para isolamento de jurado — vê vermelho e ou bloqueia
+sem motivo, ou aprende a ignorar o vermelho. O segundo é o dano real, e é a mesma classe do `.env` que sequestrava
+a bateria local (PR #355): *"o risco maior não era o vermelho — era alguém aprender a ignorá-lo."*
+
+**É também exatamente a armadilha que a `D-JUNTA-ESCOPO-E-CALIBRACAO` §3 nomeia** — medir conteúdo versionado
+sem neutralizar eol sob `core.autocrlf=true` fabrica divergência. Ali foi `git archive`+`tar`; aqui é um
+`readFileSync` cru. A decisão proibiu a ferramenta; a classe sobreviveu em outra.
+
+**Correção indicada (não aplicada aqui):** normalizar o alvo como já se normaliza a fonte — comparar
+`readFileSync(to,'utf8').replace(/\r\n/g,'\n')` com `want`. Quem receber deve provar por **mutação**: em
+checkout fresco, `--check` verde; e com um arquivo do espelho realmente adulterado, vermelho.
+
+---
+
+## P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é quem vai reusar a forma)
+
+**Achador:** orquestrador, em varredura **pós-voto** do `B-O6R-REG` (nenhum jurado a nomeou). **Escopo:
+`pre-existente`** — as duas frases já estavam na `main` em `f081b5d`, antes deste bloco. **Não corrigida
+aqui**: decidir qual lista é a certa exige **executar** a bateria em cluster descartável, o que está fora do
+escopo de um bloco com diff de código vazio; e quem acha não conserta.
+
+**O defeito.** A "bateria barata" é a **forma declarada** que torna o denominador 37 reproduzível por
+terceiro — foi criada exatamente para isso, por exigência da cadeira de catálogo na junta do `B-O6R-ARNES`.
+Existem hoje na `main` **duas listas diferentes**, ambas afirmando o **mesmo denominador 37**:
+
+| | `agent-orchestration/docs/status-geral.md` (l.33) | `agent-orchestration/controle/pendencias.md`, seção `P-O6R-ARNES-ISOLAMENTO — EMENDAS` |
+|---|---|---|
+| Rótulo | **sete** arquivos | **6 arquivos** |
+| `audit-security` | ✔ (1) | ✔ |
+| `auth-identity-backfill-db` | ✔ (6) | ✔ |
+| `auth-identity-link-events-db` | ✔ (5) | — |
+| `auth-identity-role-real-db` | ✔ (10) | — |
+| `auth-identity-links-db` | — | ✔ |
+| `impound-process-checklist-link-schema` | ✔ (5) | ✔ |
+| `rls-tenant-isolation` | ✔ (1) | ✔ |
+| `vehicle-identity-schema` | ✔ (9) | ✔ |
+| **Total declarado** | **37** | **37** |
+
+**Medido:** os quatro arquivos em disputa **existem todos** (`tests/auth-identity-links-db.test.ts`,
+`auth-identity-link-events-db.test.ts`, `auth-identity-role-real-db.test.ts`, `auth-identity-backfill-db.test.ts`)
+— não é erro de digitação de um nome inexistente. E `git show f081b5d:.../pendencias.md | grep -c` = **1**: a
+lista de 6 já estava na `main`.
+
+**Por que importa.** O `status-geral.md` afirma que *"nenhuma combinação de 6 que contenha as vítimas nomeadas
+fecha 37"*. Se isso é verdade, a lista de 6 **não pode** ter dado 37 — e ela é a forma declarada no §0.a do
+plano do ciclo 5, que é o insumo de auditoria do **próximo** bloco do financeiro. Um terceiro que tentar
+reproduzir o 37 hoje pega uma das duas listas ao acaso e não sabe qual. É a mesma classe do "piso 0", do
+"6 arquivos" e do "2358" — número publicado cuja **forma** não sobrevive à conferência —, só que aqui o
+conflito é entre **dois registros vivos**, não entre registro e execução.
+
+**Como fechar (não feito aqui):** rodar `node scripts/run-backend-tests.mjs` sobre **cada** uma das duas
+listas, em cluster descartável, N≥3, e publicar os dois denominadores com N e forma. A lista que não fechar 37
+recebe errata apensada (§A2 — o texto original fica), nomeando qual medição a produziu.
