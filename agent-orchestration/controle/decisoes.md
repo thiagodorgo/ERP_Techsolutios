@@ -1745,3 +1745,48 @@ Inventário completo, parágrafo a parágrafo, com o risco de perda por ordem de
 **Por que esta errata existe e não uma correção silenciosa:** o §A2 proíbe consolidação silenciosa, e
 esta rodada inteira é sobre artefatos que afirmam números que a execução não produz. Eu escrevi três
 números sem re-medir e um deles não existe em estado nenhum do repositório. O texto original fica.
+## D-TETO-DOIS-CICLOS (decisão do dono, 2026-08-29) — o teto do protocolo de dificuldade cai de 5 ciclos para 2
+
+**A decisão, literal:** *"após duas rodadas de execução/reexecução do bloco a junta deve parar e pedir
+intervenção humana."*
+
+**O que isto REVOGA.** O `CLAUDE.md` §C7.4 (e o espelho `AGENTS.md`) mandava: ciclos 1–2 a `agente-fabrica`
+cria especialistas; ciclo 3 o crítico reabre a premissa com pesquisa ≥5 fontes; ciclos 4–5 junta ampliada
+replaneja a fatia; **parada + dossiê SOMENTE após o ciclo 5 falho**. **Esse teto de 5 está REVOGADO.** O novo
+teto é **2**: entregou, foi reprovado, corrigiu, foi reprovado de novo → **para e chama o dono**.
+
+**Por que o dono mudou, e a evidência que ele tinha diante de si.** O teto de 5 foi desenhado para evitar
+parada precoce, e conseguiu — mas o custo apareceu medido:
+
+- O **`B-O6R-01`** levou **3 ciclos**. O **`B-O6R-02`** chegou ao **ciclo 5** e ainda não fechou: planos de
+  ciclo escritos em 24/08, 25/08 e 28/08, com **16 identidades de jurado queimadas** e 14 especialistas
+  criados só nesse bloco. A auditoria de 2026-08-28 mediu **3 blocos consumindo 24% de todos os ciclos**.
+- A resposta do protocolo à reprovação é **escalar** — mais agentes, junta maior, quórum mais alto. Isso
+  **reduz** a chance de aprovação a cada ciclo, em vez de aumentar: o ciclo 4 do financeiro foi reprovado
+  4×1 por uma única cadeira, num quórum que o próprio protocolo havia elevado.
+- E o `SAN2-1` acabou de mostrar a forma mais barata do mesmo problema: **o ciclo 2 corrigiu seis achados e
+  reintroduziu um defeito ao corrigir outro** (o marcador riscado que voltou a classificar como diferida).
+  Ciclo que conserta e reintroduz é sinal de que a premissa precisa de gente, não de mais uma rodada.
+
+**A regra nova, por extenso.**
+
+1. **Ciclo 1** — entrega, junta, veredito.
+2. **Ciclo 2** — se reprovado: corrige (com **separação de papéis** §C7.4-bis intacta — quem achou não
+   conserta) e vai à junta com **identidade nova** na cadeira que reprovou.
+3. **Se o ciclo 2 for reprovado: PARA.** Não há ciclo 3. **Dossiê ao dono**, com: o que foi entregue, o que
+   cada junta achou, o que foi corrigido, **por que a correção não bastou**, e as opções com custo.
+4. A `agente-fabrica` **continua** podendo criar especialistas — mas **dentro dos dois ciclos**, não como
+   forma de adiar a parada.
+5. As **paradas imediatas irredutíveis** do §C7.5 seguem valendo e são independentes deste teto.
+
+**O que o dono ganha.** Ele é chamado quando a informação vale mais — depois de **duas** tentativas honestas,
+com dois conjuntos de achados na mesa — em vez de depois de cinco, quando o bloco já consumiu semanas e a
+junta já esgotou o pool de identidades.
+
+**Aplicação aos blocos em voo, dita para não ficar ambígua.**
+
+- **`SAN2-1`** está **no ciclo 2**. Se a junta de identidade nova reprovar, **para e vira dossiê** — não há
+  ciclo 3 para ele.
+- **`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
+  última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto.
+- Blocos **novos** nascem sob o teto de 2.
