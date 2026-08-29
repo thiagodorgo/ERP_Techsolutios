@@ -6,7 +6,7 @@
   "release": {
     "block": "B-O6R-REG — sincronizacao de registro: ressalvas do porteiro, cronograma e trilha das juntas.",
     "title": "O registro passa a dizer o que a execucao diz",
-    "pr": null,
+    "pr": 360,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
