@@ -2,7 +2,7 @@
 
 | # | agente | modelo | mandato | fase da morte | erro | custo do redo |
 |---|---|---|---|---|---|---|
-| 1 | inspetor de terreno (1ª) | pin `fable` | 3 itens | **escrevendo o parecer — 3/3 itens JÁ MEDIDOS e persistidos (P1)** | response stopped | **re-executar 6 comandos do roteiro + compor o parecer** (~minutos) — contra "mandato inteiro" no regime antigo |
+| 1 | inspetor de terreno (1ª) | pin `fable` | 3 itens | **escrevendo o parecer — 3/3 itens JÁ MEDIDOS e persistidos (P1)** | response stopped | **re-executar os comandos do roteiro + compor o parecer** — medido depois: foram **9 comandos, 9/9 confirmados, em 139 s** [corrigido de “6” pelo achado FOR-1 da cadeira forense: o 6 era estimativa minha escrita ANTES da re-execução, e número estimado não se escreve como medido] — contra "mandato inteiro" no regime antigo |
 
 > **Primeira morte sob o protocolo, e ela é o caso de teste perfeito:** é a MESMA classe da queda #8 do
 > postmortem (inspetor do SAN2-1 morto na reta final com o trabalho pronto), que no regime antigo custou o
