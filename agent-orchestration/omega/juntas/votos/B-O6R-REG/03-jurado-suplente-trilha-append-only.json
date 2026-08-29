@@ -1,0 +1,69 @@
+{
+  "cadeira": "trilha e append-only (SUPLENTE, com poder de veto)",
+  "identidade": "jurado-suplente-trilha-append-only-B-O6R-REG (identidade NOVA; nada do titular caido foi herdado ou lido como fato - mandato re-executado do zero)",
+  "head_julgado": "ee5ef03 (branch chore/o6r-reg-sync-359; base origin/main = f081b5d)",
+  "veredito": "APROVADO",
+  "justificativa": "Os dois itens de veto foram provados por execucao, nao por leitura. (1) APPEND-ONLY DE decisoes.md: a versao da main (f081b5d, 1545 linhas, 139.588 bytes) e PREFIXO ESTRITO BYTE-A-BYTE da versao do head (1747 linhas, 153.968 bytes) - cmp das primeiras 1545 linhas retorna ec=0 e o sha256 dos dois e identico (e5a0068430ba0707d7466ae4626084608bd0ac9035cd6f86477175648c231548); o diff tem ZERO linhas de remocao; e o blob do head (ef09c9b2) e literalmente o mesmo blob de demo/investidor (819ff83), logo nao houve reescrita no transporte. As 202 linhas acrescidas sao tres decisoes do dono (D-INSPETOR-TERRENO-JUNTA, D-GOV-AMEACA-DESCUIDO, D-JUNTA-ESCOPO-E-CALIBRACAO) mais a ERRATA de §6 - todas ja canonicas no CLAUDE.md, nenhuma linha de dado da demo. Nenhuma decisao do dono foi perdida ou alterada. (2) TROCA B-04/B-05 (R4): verifiquei com desconfianca maxima e NUNCA pelo texto do orquestrador. O defeito na main era real e se prova sozinho: sob P-O6R-B04 (estoque, DAT-002/DAT-003) o status dizia 'FECHADA (2026-08-15, PR #353 a8901ff)' com um corpo que fala de core-saas em memoria, worker e Redis - materia de B-05 -, enquanto P-O6R-B05 dizia 'ABERTA'. Tres contraprovas INDEPENDENTES e anteriores ao bloco confirmam a direcao: (a) roadmap.blocos na BASE f081b5d traz B-O6R-04 estado 'a_fazer' e B-O6R-05 'concluido', pr 353 - e e BIT-A-BIT igual no head, ou seja, o bloco nao ajustou o oraculo para caber na narrativa; (b) production_readiness.fechados na BASE credita Omega6R-DAT-001 e Omega6R-DIN-006 a 'B-O6R-05 (PR #353, a8901ff)', nunca DAT-002/DAT-003, e o objeto inteiro e identico entre base e head; (c) o titulo real do merge a8901ff e 'fix(infra): producao nao sobe mais sem persistir e sem worker (B-O6R-05) (#353)' e git show a8901ff --name-only nao toca UM arquivo de inventory/cycle-count. A correcao no head deixa B-04 'ABERTA - 2 P0 + 1 P1. NAO INICIADO' e B-05 'FECHADA (2026-08-15, PR #353)': esta na direcao certa e NAO inverteu de novo. Item 3: dos 30 arquivos adicionados, 28 tem blob byte-identico ao de demo/investidor; as 2 excecoes sao artefatos do proprio bloco (o briefing e o parecer do inspetor). Os 6 JSON de omega/planos/povoamento/ existem na demo (6) e sao ZERO no head - ficaram fora, como decidido. Item 5: o conjunto de IDs de pendencia nao perdeu NADA (209 cabecalhos na base, 229 no head, comm -23 vazio) e as 10 linhas removidas de pendencias.md estao todas contabilizadas - 6 sao o par de status B-04/B-05 sendo MOVIDO (o texto reaparece na secao certa) e 4 sao a canonica 1 errada ('2358', 'piso 0'), substituida com o texto antigo citado verbatim dentro de um bloco '> CORRIGIDO em 2026-08-28'. Nenhuma remocao silenciosa de registro historico. Item 4: as cinco pendencias prometidas existem com dono, e P-ARNES-AUTHORITY-PORTAL-INTERMITENTE manda explicitamente 'atribuir por execucao - N>=10 isolado - ANTES de qualquer correcao', nao manda consertar; as nove P-O6R-B02-* do ciclo 4 estao todas la. Item 6: o CRONOGRAMA nao apagou verdade - as 17 linhas removidas sao numeros defasados de 05/08 e cabecalhos reestruturados; a parada irredutivel 'Ativacao cloud / go-live' sobrevive VERBATIM e ainda ganha a nota do bloqueio da J-6R, a rotacao da chave Google Maps sobrevive RISCADA com a dispensa do dono datada (2026-08-13, o mapa e MapLibre/OpenFreeMap desde #338) e a declaracao de que fica riscada 'para nao renascer numa releitura', e o CHECKLIST P1 passa a figurar corretamente como BLOQUEADA em vez de 'rodada corrente'. Os numeros do CRONOGRAMA batem com kpis-latest.json (2595/2597, 1126, 864, blocos 152, MVP 99/88), e blocks_completed e mvp_* estao intocados entre base e head. O backfill §C3.5 confirmou-se por execucao: a entrada #359 do history saiu de merge_commit/approved_head null para f081b5d/d4cf978. R1 respeitada: nao rodei o guard do S0 como regua nem toquei em scripts/. R3 respeitada: mandato read-only, nenhum arquivo mutado, nenhum commit, nenhum container tocado. Nenhuma medicao usou git archive+tar. Achados residuais sao todos nota, nenhum bloqueia.",
+  "comandos_executados": [
+    "git worktree list; git log --oneline f081b5d..ee5ef03; git rev-parse HEAD; git status --porcelain (worktree reg-359)",
+    "git diff --name-status 757485c..8c00fab; 8c00fab..ee5ef03; ee5ef03..630f224",
+    "git show f081b5d:agent-orchestration/controle/decisoes.md > dec_main.md; git show ee5ef03:...decisoes.md > dec_head.md; wc -l/-c em ambos",
+    "head -n 1545 dec_head.md > dec_head_prefix.md; cmp dec_main.md dec_head_prefix.md (ec=0); sha256sum dos dois (identicos)",
+    "git diff f081b5d..ee5ef03 -- decisoes.md | grep -c linhas de remocao -> 0",
+    "git rev-parse f081b5d:decisoes.md ee5ef03:decisoes.md 819ff83:decisoes.md; git diff --stat ee5ef03 819ff83 -- decisoes.md (vazio)",
+    "sed -n 1546,1747p dec_head.md | grep cabecalhos",
+    "git show f081b5d:pendencias.md | grep -nE P-O6R-B0[45]; sed nas faixas 2193-2215, 2272-2296, 2232-2248, 2300-2308",
+    "git show ee5ef03:pendencias.md | sed 2193-2282 e 2283-2340 | grep status/cabecalho/citacao",
+    "git show f081b5d:Kpis/kpis-latest.json | node -e extrai roadmap.blocos B-O6R-04/05 (idem em ee5ef03)",
+    "git show f081b5d:Kpis/kpis-latest.json | node -e extrai production_readiness.fechados; diff base vs head -> IDENTICO",
+    "git log --all --oneline --grep=353; git log -1 --format a8901ff",
+    "git show a8901ff --name-only | grep -ciE inventory|cycle-count|estoque -> 0; lista completa dos 15 arquivos de #353",
+    "git diff --stat f081b5d..ee5ef03 -- src prisma tests scripts frontend mobile .github lockfiles (saida VAZIA, ec=0)",
+    "git ls-tree -r --name-only 819ff83 -- omega/planos/povoamento/ | wc -l -> 6; idem em ee5ef03 -> 0",
+    "laco sobre os arquivos adicionados comparando git rev-parse ee5ef03:$f vs 819ff83:$f -> 28 identicos, 2 ausentes na demo (artefatos do proprio bloco)",
+    "git show f081b5d:pendencias.md | grep cabecalhos | sort > h_base; idem head > h_head; comm -23 h_base h_head (VAZIO); comm -13",
+    "git diff --unified=0 -- pendencias.md | grep linhas de remocao | nl (as 10 remocoes)",
+    "git show ee5ef03:pendencias.md | grep -c das frases-chave (core-saas, pauta do dono, 2359, 58 pulos)",
+    "awk por secao sobre pendencias.md do head para as 5 pendencias prometidas",
+    "git show ee5ef03:pendencias.md | grep -E ^## P-O6R-B02 (9 sub-pendencias + o bloco + a entrada do ciclo 4)",
+    "git diff -- docs/CRONOGRAMA.md | grep remocoes; idem PROJECT_MEMORY.md, log-execucao.md, status-geral.md",
+    "git show ee5ef03:docs/CRONOGRAMA.md | grep -niE go-live|ativacao|google maps|CHECKLIST P1|parada irredut",
+    "git show base e head :Kpis/kpis-latest.json | node -e blocks_completed, mvp_demo, mvp_vendavel",
+    "git show base e head :Kpis/kpis-history.json | node -e total de snapshots + ultimas entradas",
+    "git diff --numstat 819ff83 ee5ef03 -- pendencias.md; git diff | grep cabecalhos adicionados e removidos"
+  ],
+  "achados": [
+    {
+      "id": "T-1",
+      "titulo": "Quatro hashes para um bloco: julguei ee5ef03, mas a branch ja esta em 630f224 - a ata precisa consignar os quatro",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "O briefing nomeia 757485c; o inspetor de terreno liberou 8c00fab (N1); meu mandato nomeia ee5ef03; git rev-parse HEAD no worktree reg-359 devolve 630f224. Medi o delta que me separa do topo: git diff --name-status ee5ef03..630f224 = 1 arquivo, A agent-orchestration/omega/juntas/votos/B-O6R-REG/00b-perda-de-jurado-trilha.md - o registro da queda do titular e do disparo deste suplente. git status --porcelain no worktree = vazio. Nenhuma linha de conteudo da entrega mudou entre ee5ef03 e 630f224.",
+      "motivo": "Cada acrescimo de registro a branch move o head, e a junta ja vinha com dois hashes divergentes (N1 do inspetor). Nao e defeito de entrega - o delta e inerte para o merito e meu voto vale sobre ee5ef03 sem ressalva - mas a ata que fechar este bloco tem de consignar a cadeia 757485c -> 8c00fab -> b9058a7 -> ee5ef03 -> 630f224 e dizer qual head cada cadeira julgou, sob pena de o porteiro pos-merge nao conseguir casar approved_head com voto nenhum. E exatamente o achado A (backfill §C3.5) que este mesmo bloco acabou de fechar para o #359."
+    },
+    {
+      "id": "T-2",
+      "titulo": "A reconciliacao da trilha para a main nao e total: P-GOV-MAIN-SEM-PROTECAO e sua atualizacao ficaram so na demo/investidor",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "git diff 819ff83 ee5ef03 -- pendencias.md | grep cabecalhos removidos devolve quatro que a demo tem e o head nao. Dois sao apenas as versoes pre-fechamento de P-ARNES-REGISTROS-DEFASADOS-NA-MAIN e P-ARNES-BACKFILL-359 (o head as traz FECHADAS por este PR - correto). Os outros dois nunca chegaram a main: 'P-GOV-MAIN-SEM-PROTECAO - a main nao tem protecao nenhuma (2026-08-24)' e 'P-GOV-MAIN-SEM-PROTECAO - ATUALIZACAO (2026-08-25): ruleset INSTALADO'. Confirmei que nao e perda: comm -23 entre os IDs de f081b5d e de ee5ef03 e VAZIO - a main nunca teve essas entradas, nada foi apagado.",
+      "motivo": "Nenhum dado foi perdido e a omissao e coerente com a R6 do inspetor (o workstream de governanca esta vivo e nao commitado em .claude/worktrees/gov-descuido, e este bloco faria bem em nao pisar nele). Registro como nota para que a ata NAO consigne 'trilha reconciliada' sem qualificacao: a reconciliacao cobre os 29 registros nomeados + decisoes.md, e deixa de fora a dupla de governanca de 24-25/08, que segue existindo so na demo/investidor. Quem ler a main amanha continua sem saber que a protecao da main foi discutida e que o ruleset foi instalado."
+    },
+    {
+      "id": "T-3",
+      "titulo": "docs/CRONOGRAMA.md publica 142 snapshots de KPI enquanto o kpis-history.json do MESMO commit tem 143",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "git show ee5ef03:docs/CRONOGRAMA.md linha 46: '| Snapshots de KPI no history | **142** | 15/06/2026 -> 28/08/2026 |', numa tabela cuja coluna se chama 'Hoje'. Contagem executada sobre o arquivo do mesmo head: git show ee5ef03:Kpis/kpis-history.json | node -e len -> 143. Na base f081b5d a contagem e 142. A 143a entrada e a deste proprio PR (pr null, merge_commit null, approved_head null, description 'B-O6R-REG - o registro passa a dizer o que a execucao diz'), acrescentada em 757485c.",
+      "motivo": "Ha duas leituras e nenhuma e absurda: 142 e exato se o documento se ancora no 'ultimo snapshot: B-O6R-ARNES, PR #359' que ele proprio declara no cabecalho (linha 7), e e off-by-one se a coluna 'Hoje' se refere ao arquivo que viaja no mesmo commit. Nao reprovo porque a ambiguidade e do rotulo, nao do dado, e porque merge_commit null na autoria e o que a §C3.5 manda. Reporto porque este e o bloco cuja promessa central e 'o registro passa a dizer o que a execucao diz', e a unica leitura que salva o numero depende de o leitor casar a linha 46 com a linha 7 - exatamente o tipo de casamento implicito que produziu o achado C (o 'piso 0') e o achado F (o '6 arquivos' contra a lista de 7) que este PR esta fechando."
+    },
+    {
+      "id": "T-4",
+      "titulo": "O que esta cadeira NAO mediu, declarado para nao virar aprovacao por silencio",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "Nao reexecutei a bateria do §3 do briefing (tests/kpi-dashboard-charts.test.ts, tests/kpi-achados-paridade.test.ts, npm run check, scripts/kpi-freeze.mjs --check, node --check Kpis/app.js) - meu mandato priorizou os itens 1 e 2, de veto, e a bateria e lane da cadeira de KPI/numeros. Nao executei a R5 (git ls-remote --heads origin para os achados B e D do porteiro), que o inspetor atribuiu por nome a cadeira de diff/escopo. Nao abri nem toquei erp-postgres/erp-redis (R3) e nao rodei scripts/sync-agent-agents.mjs --check como regua (R1).",
+      "motivo": "'Nao consigo medir' e REPROVADO, mas 'nao me cabia medir' e outra coisa - e a diferenca so e honesta se estiver escrita. Meu APROVADO cobre a trilha e o append-only: prefixo estrito de decisoes.md, integridade dos 28 blobs reconciliados, exclusao do povoamento, ausencia de remocao em pendencias.md, as pendencias prometidas com dono, a contraprova independente da troca B-04/B-05 e a honestidade do CRONOGRAMA contra os JSON. Ele NAO cobre a bateria verde nem o estado das branches remotas; se as outras duas cadeiras nao medirem isso, a junta fecha com esses itens nao verificados por ninguem."
+    }
+  ]
+}
