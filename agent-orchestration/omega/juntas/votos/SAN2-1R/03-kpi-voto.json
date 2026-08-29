@@ -1,0 +1,17 @@
+{
+  "cadeira": "03-kpi-e-registro",
+  "identidade": "jurado-suplente-kpi-registro-san2-1r (identidade nova; titular caiu sem escrever nada — mediu do zero)",
+  "head_julgado": "4cd0867",
+  "base": "a0a1075",
+  "veredito": "APROVADO",
+  "justificativa": "Tudo medido por execucao propria neste worktree, nada herdado. (1) Bateria: kpi-dashboard-charts 16/16 pass; kpi-freeze --check 'em dia (snapshot 2026-08-29)'. (2) Diff do kpis-latest.json (50 linhas, lido inteiro): nenhum value/total/display de metrica de teste mudou (flutter 864/864, smoke 1126/1126, backend 2595/2597, contract 34/34); as 3 notas ganham apenas o marcador '[SAN2-1R: valor CARREGADO ... §C3.3]'; blocks_completed intocado em 152; mvp_demo 99 / mvp_vendavel 88 intocados; pr=null na autoria conforme §C3.5, com backfill do #361 (a0a1075/48dc863) no history. (3) Placar em prosa x execucao: gerador imprime 229 cabecalhos / 221 IDs / ABERTA 184 / FECHADA 45 / baldes C:77 B:76 A:31 — identico ao summary (184 abertas, 77 diferidas -> 107 ativas = 76+31, 45 fechadas, zero sem status, zero contraditorias). Gerador idempotente: git diff vazio apos a execucao, nenhum restore necessario. (4) A costura 79x77 verificada por execucao: 79 entradas carregam a etiqueta corrigida; 77 tem marcador DIFERIDO-LEVE ativo; as 2 sem marcador sao exatamente P-036 (fechada como duplicata) e P-Omega3F3B-UPDATE-VALIDA4 (retirada do balde C, achado A-C2) — a prosa e o placar contam a mesma historia. Etiqueta antiga mentirosa: 0 ocorrencias. Evidencia integral em votos/SAN2-1R/03-kpi-evidencia.md.",
+  "achados": [
+    {
+      "id": "A-KPI-1",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "nota",
+      "bloqueia": false,
+      "descricao": "O summary do kpis-latest.json escreve o ID do tripwire como 'P-O3F3B-UPDATE-VALIDA4' (O latino); o ID real em pendencias.md e 'P-Omega3F3B-...' com Omega grego. E a convencao de transliteracao ASCII do JSON (mesmo tratamento de 'Omega-SAN2'), nao numero errado — mas grep pelo literal do JSON nao acha a pendencia. Sugestao de registro, nao de reprovacao."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "cadeira": "diff-portagem-append-only (veto)",
+  "identidade": "jurado-san2-1r-diff-portagem-2026-08-29 (identidade nova)",
+  "head_julgado": "4cd0867",
+  "base": "a0a1075",
+  "ciclo": "1 de 2",
+  "veredito": "APROVADO",
+  "justificativa": "Os 3 itens do mandato passam por execução no worktree da junta (HEAD conferido = 4cd08677f69ae853723e99d6f360df58fe923ce5). (1) Diff de código de produto a0a1075..4cd0867 sobre src/prisma/tests/scripts/frontend/mobile/.github/package-lock.json é VAZIO — o quórum maioria-de-3 sustenta-se; o name-status completo tem 24 arquivos, todos em agent-orchestration/** (19), docs/** (1), Kpis/* (3), CLAUDE.md e AGENTS.md. (2) decisoes.md da main é PREFIXO byte-a-byte da nova (cmp sobre os primeiros N bytes; 1820→1866 linhas) e as 46 linhas acrescentadas são exatamente D-GOLIVE-MAPS-ROTACAO-DISPENSADA portada + D-SAN2-OPCAO-C; pendencias.md remove APENAS 2 linhas (diff +602/−2), ambas substituições declaradas com texto original preservado no próprio arquivo (§A2): o cabeçalho da P-GOLIVE-SECRET-ROTATE (fechamento da CRÍTICA falsa, ancorado na decisão portada) e a linha de status contraditória da P-CHK-FLUTTER-KIND-COLAPSA (resolvida por data, escopo pre-existente declarado); as 79 etiquetas trocadas materializam-se como PURA ADIÇÃO relativa à main (a base nunca teve etiqueta) — contadas exatamente 79 linhas '+' com a frase verdadeira 'adiada por triagem automática; NÃO verificada item a item'; P-036 fechada como duplicata e tripwire de tarifa retirado do balde C, ambos por adição. (3) kpis-history.json tem a entrada pr=361 com merge_commit=a0a1075 e approved_head=48dc863 (parse JSON real); o §C7 lê 4, 4-bis, 5, 6, 7 nos DOIS contratos e o item 7 (D-JUNTA-RESILIENTE, 14 linhas) é byte-idêntico entre CLAUDE.md:386 e AGENTS.md:414 (diff -u vazio); 00c-porteiro-pos-merge-361.md presente com sucessão P3 declarada e 00-quedas.md com as quedas 1–2 na tabela P6. Evidência integral comando a comando em 02-diff-evidencia.md.",
+  "achados": [
+    {
+      "id": "A1",
+      "titulo": "Reescrita do cabeçalho da P-GOLIVE-SECRET-ROTATE perde a atribuição de origem '(CRÍTICA, secops go-live junta 2026-07-19)' do cabeçalho original",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "grep por '2026-07-19' na seção da P-GOLIVE do head (linhas 1326-1340) → 0 hits; a severidade sobrevive como 'era CRÍTICA' e o CORPO original está preservado verbatim sob 'Texto original preservado abaixo (§A2)', mas a paráfrase tachada do cabeçalho ('~~Chave Google Maps: rotação humana obrigatória~~') não carrega a data/origem da junta secops.",
+      "motivo": "Não bloqueia: a substituição é declarada, o corpo histórico está preservado no próprio arquivo e o fechamento é rastreável por D-GOLIVE-MAPS-ROTACAO-DISPENSADA em decisoes.md (que registra a cronologia 2026-08-13/2026-08-29). Perda restrita a metadado de atribuição do cabeçalho; registrado para a ata, sem exigência de correção."
+    }
+  ]
+}

@@ -1818,3 +1818,49 @@ que agente sobrevive.
 
 **Hipótese em aberto, declarada com n pequeno.** Pinados em `fable`: 1 morte em 5 (~20%); herdando o modelo
 da sessão: ~13 em 23 (~57%). Não é conclusão — a série do P6 decide, sem pinar nada por palpite.
+
+## D-GOLIVE-MAPS-ROTACAO-DISPENSADA (decisão do dono, 2026-08-13, **registrada em 2026-08-29**)
+
+**A decisão.** A rotação da chave Google Maps que estava exposta no histórico git está **DISPENSADA**.
+
+**Fundamento, medido.** O projeto **não usa Google Maps**. O mapa operacional é **MapLibre GL +
+OpenFreeMap** desde o PR #338 (custo US$ 0), por decisão da Junta de Mapas registrada em
+`agent-orchestration/omega/juntas/J-002-provedor-de-mapa.md` e reafirmada como regra de ouro de arquitetura
+em `decisoes.md`. A chave estava hardcoded num **arquivo de protótipo** (`docs/claude-code-handoff/ERP
+Web.dc.html`), foi **redigida do HEAD** no PR #229, e **não tem uso ativo**: nenhuma superfície de produto a
+consome.
+
+**Por que isto vira decisão registrada, e não some.** A `P-GOLIVE-SECRET-ROTATE` figurava como a **única
+pendência CRÍTICA da trilha** e como "parada irredutível (exposição de segredo)". A dispensa do dono existia
+**apenas na memória do agente** — e o §A1 põe decisão do dono no topo da hierarquia de fonte de verdade,
+o que significa que ela tem de viver **no repositório**. Uma CRÍTICA falsa aberta é pior que inútil: ela
+ensina a conviver com crítica aberta.
+
+**O que a dispensa NÃO cobre.** A chave **segue no histórico git** e continua devendo ser tratada como
+comprometida por qualquer um que a encontre. A dispensa é da **ação de rotação**, pelo fato de a chave não
+ter uso no produto — não é uma afirmação de que a exposição não ocorreu. Se o projeto voltar a usar Google
+Maps Platform em qualquer superfície, esta decisão **caduca** e a rotação volta a ser obrigatória **antes**
+da primeira chamada.
+
+Confirmada pelo dono em 2026-08-29, em resposta a pergunta direta do orquestrador do bloco SAN2-1.
+
+## D-SAN2-OPCAO-C (decisão do dono, 2026-08-29) — o destino do SAN2-1: salvar agora, ler depois
+
+**Contexto.** O `SAN2-1` (triagem das 226 pendências) foi **reprovado nos ciclos 1 e 2** e **PARADO** pelo
+teto de dois ciclos (`D-TETO-DOIS-CICLOS`) — o primeiro bloco a acionar a regra. O dossiê
+(`omega/reprovacoes/DOSSIE-SAN2-1-parada.md`) apresentou quatro opções com custo.
+
+**A decisão.** O dono escolheu a **opção C**: **(1)** mergear agora o que as duas juntas verificaram —
+índice gerado e idempotente, 97→0 sem status, a CRÍTICA falsa fechada, backfill, reconciliação, limpeza de
+disco; **(2)** trocar a etiqueta das 79 diferidas pela frase **verdadeira** ("adiada por triagem automática;
+NÃO verificada item a item"); **(3)** fechar `P-036` como duplicata da `P-CHK-TEMPLATE-PRISMA-V7`; **(4)**
+retirar o tripwire de tarifa do balde C; **(5)** **adiar — não descartar** — a leitura real das 79, uma a
+uma, para DEPOIS do ciclo 5 do financeiro, registrada com dono e critério em `P-SAN2-LEITURA-DAS-79`.
+
+**Execução:** bloco `SAN2-1R` (branch `chore/san2-1-resgate`) — **bloco novo executando decisão do dono**,
+não ciclo 3 (não existe ciclo 3 sob o teto).
+
+**Por que esta entrada existe** (registrada por exigência do R2 do inspetor de terreno do SAN2-1R): a
+escolha vivia só no briefing e nas etiquetas — e decisão do dono é o **topo** da hierarquia de fonte de
+verdade (§A1.1), tem de viver em `decisoes.md`. É a mesma lição da `D-GOLIVE-MAPS-ROTACAO-DISPENSADA`,
+aprendida duas vezes no mesmo dia.

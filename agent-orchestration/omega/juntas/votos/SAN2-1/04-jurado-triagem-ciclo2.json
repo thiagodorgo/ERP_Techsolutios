@@ -1,0 +1,48 @@
+{
+  "cadeira": "TRIAGEM e REGRA DE CLASSIFICACAO (com veto)",
+  "ciclo": 2,
+  "identidade": "jurado-triagem-classificacao-san2-1-c2 (identidade NOVA; nada dos titulares caidos foi herdado)",
+  "head_julgado": "bdc7dbcf99679acea79f863367f36ae21483829b (base 74430cc)",
+  "veredito": "REPROVADO",
+  "justificativa": "Item 1 PASSA: as duas reaberturas estao corretas e visiveis. Item 2 REPROVA: em 5 sorteadas do balde C, 2 nao sao leves — e uma delas (P-036) descreve, no proprio corpo, um defeito que 'afeta toda criacao/edicao de template de checklist no live prisma', carimbado por este bloco com a frase 'cosmetico/polimento, sem consequencia de produto, dado, seguranca ou numero'. A mesma frase foi aplicada VERBATIM as 79 entradas do balde (32+47 = 79), o que prova que a assercao por item nunca foi verificada; e 45 das 79 nao tem severidade nenhuma, populacao que a regra 5 do indice (que so sinaliza CRITICA/ALTA/MEDIA) e estruturalmente incapaz de alcancar. Ciclo 1 mediu 2 em 6 de forma independente; somando, 4 materiais em 11 amostradas. E a classe que esta rodada existe para exterminar, cometida no artefato que ela entrega.",
+  "item_1_reaberturas": {
+    "metodo_sorteio": "perl srand(20260829) sobre a lista literal de 79 IDs extraida da secao 'balde C' do indice (linhas 178-256) — reproduzivel",
+    "P-Omega3F6": "ABERTA em pendencias.md:1297, com sub de REABERTURA nomeando o achado A-1 e os quatro residuais sem cabecalho proprio. Aparece como aberta no indice, linha 123. CONFORME.",
+    "P-Omega4-7-CLEAR-RETRO": "ABERTA em pendencias.md:1260, com sub de REABERTURA nomeando o achado A-2 e a confusao vocabulario-de-dominio x vocabulario-de-status. Aparece como aberta no indice, linha 122. CONFORME.",
+    "observacao": "As secoes SEM STATUS e CONTRADITORIAS do indice estao ambas em 0, e o cabecalho documenta as duas regras aprendidas. Item 1 nao gerou achado."
+  },
+  "amostra_balde_c": [
+    {"id": "P-010", "linha": 111, "veredito": "LEVE — correto. Codigo morto no dashboard.adapter.ts, tree-shaken, consumido so por testes; a entrada diz 'sem efeito em runtime'."},
+    {"id": "P-036", "linha": 425, "veredito": "NAO LEVE — achado A-C1. Bug que quebra POST /api/v1/tenant/checklists no caminho live/prisma; o corpo diz 'Afeta toda criacao/edicao de template de checklist no live prisma'."},
+    {"id": "P-Omega3F3B-UPDATE-VALIDA4", "linha": 607, "veredito": "NAO LEVE — achado A-C2. Guarda de invariante de TARIFA: a entrada diz que tornar customer_id/service_catalog_id mutaveis no update 'abre bypass'. E dinheiro, condicional a bloco futuro."},
+    {"id": "P-Omega4-8-SUMMARY-SCALE", "linha": 1274, "veredito": "LEVE (limitrofe) — divida de performance no /financial-summary; a entrada sustenta que 'correcao e performance, nunca correcao de valor'."},
+    {"id": "P-PATIOS-HEX-TOKENS", "linha": 1723, "veredito": "LEVE — correto. Hex inline vs tokens do DS no modulo patios; puramente cosmetico."}
+  ],
+  "achados": [
+    {
+      "id": "A-C1",
+      "titulo": "P-036 — bug que quebra a criacao de template de checklist foi carimbado como 'cosmetico/polimento, sem consequencia de produto', e ainda esta duplicado de uma entrada ja RESOLVIDA",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "sed -n '425,439p' pendencias.md -> corpo: 'POST /api/v1/tenant/checklists (live, CORE_SAAS_PERSISTENCE=prisma) -> 400 invalid_request ... Afeta toda criacao/edicao de template de checklist no live prisma'; rodape: 'status: ABERTA · agendamento: DIFERIDO-LEVE · severidade: a classificar' + sub 'balde C — cosmetico/polimento, sem consequencia de produto, dado, seguranca ou numero'. git blame -L 438,438 bdc7dbc -> commit 6886892, 2026-08-29, DENTRO do intervalo deste bloco (autoria propria, nao herdada). grep 'P-CHK-TEMPLATE-PRISMA-V7' -> pendencias.md:1672 '(2026-08-01) — createTemplate falha no runtime do Prisma v7 (bug REAL de producao) — RESOLVIDO (2026-08-02)', listado na secao FECHADAS do indice. O codigo em src/modules/checklists/checklist-prisma.repository.ts:141-145 carrega o comentario do fix.",
+      "motivo": "O registro faz DUAS afirmacoes falsas sobre o mesmo defeito ao mesmo tempo: chama de 'sem consequencia de produto' o que o proprio corpo descreve como quebra total de uma funcionalidade, e o mantem ABERTA-diferida quando o defeito foi fechado em 2026-08-02 sob outro ID, com a entrada gemea rotulada 'bug REAL de producao'. A severidade nunca foi atribuida ('a classificar'), o que torna a assercao de leveza logicamente impossivel de ter sido verificada. Um leitor que pergunte 'o que esta aberto e o que e material?' recebe as duas respostas erradas."
+    },
+    {
+      "id": "A-C2",
+      "titulo": "P-Omega3F3B-UPDATE-VALIDA4 — tripwire de bypass de validacao de TARIFA arquivado em balde declarado 'sem consequencia de dinheiro'",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "sed -n '607,622p' pendencias.md -> acao: 'se um bloco futuro tornar customer_id/service_catalog_id MUTAVEIS no update, a validacao #4 DEVE ser replicada no update (senao abre bypass)'; rodape com a sub do balde C. Verificacao do invariante hoje: grep -c 'customerId|serviceCatalogId' em UpdateWorkOrderInput -> 0 (continua nao expondo os dois campos).",
+      "motivo": "O invariante ainda vale, entao nao e defeito vivo — mas a entrada existe exclusivamente para ser VISTA no dia em que alguem tocar o DTO de update, e seu modo de falha declarado e bypass da tarifa vigente, isto e, cobranca errada. Enterra-la num balde de 79 itens cuja etiqueta afirma literalmente 'sem consequencia de ... dinheiro' anula a unica funcao que a entrada tem."
+    },
+    {
+      "id": "A-C3",
+      "titulo": "A assercao de leveza foi aplicada VERBATIM as 79 entradas, e 45 delas nao tem severidade — a populacao que o sinalizador automatico e incapaz de enxergar",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "grep -c das duas formas do rodape -> 32 + 47 = 79, exatamente o tamanho do balde C. Distribuicao de severidade das 79 (awk sobre o indice): 45 sem severidade, 32 BAIXA, 2 MEDIA. Regra 5 do indice: 'Item CRITICA/ALTA/MEDIA marcado como diferido aparece sinalizado' — a secao 'Diferidas com severidade MATERIAL' lista 2. Amostra desta cadeira: 2 materiais em 5; amostra independente do ciclo 1: 2 em 6; total 4 em 11.",
+      "motivo": "Uma frase identica repetida 79 vezes nao e resultado de 79 verificacoes; e um carimbo. E o carimbo afirma justamente aquilo que o bloco admite nao saber conferir — ele proprio declara que o sinalizador automatico nao pega itens BAIXA que sao materiais. Pior: o sinalizador so alcanca CRITICA/ALTA/MEDIA, logo as 45 entradas sem severidade nenhuma (57% do balde, P-036 entre elas) sao invisiveis a ele POR CONSTRUCAO, nao por descuido. O balde C e a maior superficie do entregavel (79 de 184 abertas) e e a unica parte cuja veracidade nao tem nenhuma rede — a rede era a amostragem humana, e duas amostragens independentes acharam material nas duas vezes."
+    }
+  ],
+  "nota_teto_dois_ciclos": "Voto ciente de D-TETO-DOIS-CICLOS: este REPROVADO encerra o bloco e o converte em dossie ao dono, com dois conjuntos independentes de achados sobre o mesmo balde (ciclo 1: 2/6; ciclo 2: 2/5, mais o defeito mecanico A-C3). Nao reprovo o Item 1 — as duas reaberturas estao certas e bem documentadas; reprovo porque a maior fatia do entregavel carrega uma assercao coletiva nao verificada, e a amostra mostra que ela e falsa a uma taxa de ~40%."
+}
