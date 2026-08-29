@@ -38,3 +38,19 @@ próprios limites é auditável, e um jurado morto não é.
 **Nomeado para o orquestrador, sem correção aqui:** vale uma pendência sobre o custo de mandatos longos em
 junta (o do titular de KPI tinha 6 itens; o de trilha, 6 itens com duas verificações de veto). Fatiar cadeira
 grande em duas menores é mais barato que perder e refazer.
+
+---
+
+## Terceira perda — cadeira de KPI, SEGUNDA vez (2026-08-29)
+
+O **suplente** de KPI/números caiu pela mesma causa (`Connection lost mid-response`), também **no início**, sem
+medir nada. **Placar de infraestrutura desta junta: 3 quedas em 5 disparos**, duas delas na mesma cadeira.
+
+**O que mudou no terceiro disparo, e por quê.** O mandato foi **encurtado a 4 itens medíveis em sequência
+fixa**, com ordem explícita de **emitir o voto ao terminar o item 4** e proibição de explorar fora da lista.
+Fundamento medido, não palpite: das 5 tentativas, a que **completou** com folga (diff/escopo) tinha os itens
+mais baratos; as duas que morreram no início tinham mandatos de 6 itens com execução de teste embutida. A
+cadeira grande é a que morre.
+
+**Nomeado, sem correção aqui:** cadeira de junta deve ser dimensionada como fatia de bloco — se não cabe num
+mandato curto, são duas cadeiras. Vale pendência de processo.
