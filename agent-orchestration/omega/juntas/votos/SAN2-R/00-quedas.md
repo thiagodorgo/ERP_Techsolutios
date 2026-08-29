@@ -10,3 +10,4 @@
 > com comando → saída → veredito parcial, um achado real (o `Kpis/index.html` ausente do diff, para a
 > cadeira de KPI pesar) e a divergência de head já explicada e medida. O sucessor re-executa e compara —
 > não redescobre. **P1 e P3 pagaram o próprio custo na primeira utilização.**
+| 2 | porteiro pós-merge #361 | pin `fable` | 3 itens | início do item 3 — **itens 1 e 2 VERIFICADOS e persistidos (P1)** | connection lost | re-executar o roteiro dos itens 1–2 + medir o item 3 do zero. A frase final dele ("nenhuma BLOQUEIA é de trilha documental") é conclusão SEM comando registrado → **não-insumo por P3**, o sucessor mede |

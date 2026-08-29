@@ -1,0 +1,17 @@
+{
+  "cadeira": "KPI e REGISTRO",
+  "ciclo": 2,
+  "identidade": "jurado-san2-1-kpi-registro-ciclo2 (identidade NOVA; nada medido por titulares anteriores foi herdado — todos os numeros vem de execucao propria)",
+  "head_julgado": "53daff0cf4ed775a472d7f6ddf574f5fc8b3f113",
+  "veredito": "APROVADO",
+  "justificativa": "Os tres numeros alegados batem por execucao minha, no head 53daff0: kpi-dashboard-charts 16/16 (pass 16, fail 0), kpi-achados-paridade 6/6 (pass 6, fail 0), kpi-freeze --check 'em dia (snapshot 2026-08-29)' com ec=0. O diff 74430cc..53daff0 em Kpis/kpis-latest.json NAO move um unico valor de metrica: extrai value/total/display das DEZ metricas nos dois commits e o par e identico em todos — backend_tests 2595/2597, frontend_smoke_tests 1126/1126, flutter_tests 864/864, backend_contract_tests_focused 34/34, flutter_modules 17/17, mobile_backend_contracts 18/18, mobile_core_saas_contracts 21/21. blocks_completed continua 152 e mvp_demo/mvp_vendavel continuam 99%/88%, intocados. O diff e exclusivamente textual: snapshot_date 2026-08-28->2026-08-29, version B-O6R-REG->SAN2-1, o bloco release (block/title/pr null/summary/backfill_note) e o acrescimo do marcador '[SAN2-1: valor CARREGADO — bloco de registro, diff de codigo vazio; sem reexecucao (§C3.3)]' nas notas das tres metricas de teste. Isso e exatamente o que §C3.3 manda fazer num PR que nao tocou trilha de codigo: carregar o valor COM nota explicita, em vez de mexer na contagem. Nenhuma desonestidade de medicao para relatar.",
+  "comandos_executados": [
+    "git rev-parse HEAD -> 53daff0cf4ed775a472d7f6ddf574f5fc8b3f113",
+    "node --test --import tsx tests/kpi-dashboard-charts.test.ts -> tests 16 / pass 16 / fail 0 (5077ms)",
+    "node --test --import tsx tests/kpi-achados-paridade.test.ts -> tests 6 / pass 6 / fail 0 (290ms)",
+    "node scripts/kpi-freeze.mjs --check -> 'kpi-freeze: em dia (snapshot 2026-08-29).' EXIT=0",
+    "git diff 74430cc..53daff0 -- Kpis/kpis-latest.json -> so snapshot_date, version, release.* e as 3 notas §C3.3",
+    "git show <commit>:Kpis/kpis-latest.json | node -e (nos DOIS commits) -> dump value/total/display das 10 metricas + escalares de topo, comparados valor a valor"
+  ],
+  "achados": []
+}

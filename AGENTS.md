@@ -381,18 +381,6 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    sinal de que a premissa precisa de **gente**, não de mais uma rodada. O dono passa a ser chamado quando a
    informação vale mais — com **dois** conjuntos de achados na mesa, não cinco.
 
-7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`).** Toda junta,
-   inspeção de terreno e porteiro seguem o **`PROTOCOLO-JUNTA-RESILIENTE.md`** (`agent-orchestration/omega/
-   juntas/`). Origem medida: 14 quedas de agente em ~28 disparos (~50%) numa única sessão, todas
-   `server_error` de streaming — postmortem em `omega/POSTMORTEM-QUEDAS-2026-08-29.md`. O essencial:
-   **evidência incremental em arquivo a cada item** (a morte custa só a cauda não medida); **voto escrito em
-   arquivo ANTES da mensagem final** (mensagem final = 1 linha); sucessor de jurado caído **re-executa o
-   roteiro de evidência registrado** e compara — conclusão sem comando registrado segue sendo não-insumo;
-   **mandato ≤3 itens**; **máximo 2 disparos em paralelo**, com pausa de 15 min após 2 quedas em 30 min; e
-   **registro padronizado de quedas** (`00-quedas.md` por junta). Quóruns, vetos, identidade nova e o teto
-   de dois ciclos ficam intactos: o protocolo muda como o trabalho sobrevive à morte de quem o fez, não o
-   mérito do julgamento.
-
 4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
    `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
    **quem acha** reporta defeito + evidência executada + **motivo** (e *não* propõe correção); **quem planeja**
@@ -422,6 +410,18 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    modelo da sessão**; quem invoca não precisa lembrar. Chamada de `Agent`/`Workflow` que passe `model`
    diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
    vira nota no registro da junta.
+
+7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`).** Toda junta,
+   inspeção de terreno e porteiro seguem o **`PROTOCOLO-JUNTA-RESILIENTE.md`** (`agent-orchestration/omega/
+   juntas/`). Origem medida: 14 quedas de agente em ~28 disparos (~50%) numa única sessão, todas
+   `server_error` de streaming — postmortem em `omega/POSTMORTEM-QUEDAS-2026-08-29.md`. O essencial:
+   **evidência incremental em arquivo a cada item** (a morte custa só a cauda não medida); **voto escrito em
+   arquivo ANTES da mensagem final** (mensagem final = 1 linha); sucessor de jurado caído **re-executa o
+   roteiro de evidência registrado** e compara — conclusão sem comando registrado segue sendo não-insumo;
+   **mandato ≤3 itens**; **máximo 2 disparos em paralelo**, com pausa de 15 min após 2 quedas em 30 min; e
+   **registro padronizado de quedas** (`00-quedas.md` por junta). Quóruns, vetos, identidade nova e o teto
+   de dois ciclos ficam intactos: o protocolo muda como o trabalho sobrevive à morte de quem o fez, não o
+   mérito do julgamento.
 
 ---
 

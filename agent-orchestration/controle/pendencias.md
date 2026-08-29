@@ -1,5 +1,28 @@
 # Pendencias
 
+> **Leia primeiro o índice: [`pendencias-indice.md`](./pendencias-indice.md).**
+> Este arquivo tem **226 cabeçalhos** e mais de 3.500 linhas. Ele é a **fonte** — o índice é a **resposta**
+> para "o que está aberto, com que gravidade e de quem é". O índice é **gerado por script** a partir daqui,
+> nunca digitado; se os dois divergirem, vale este arquivo e o índice se regenera.
+>
+> **Triagem SAN2-1 (2026-08-29).** Antes dela, **97 entradas não tinham linha de `status:`** (régua: linha
+> começando por `status:` **ou** `Estado:`), 131 não tinham severidade e apenas 9 tinham dono — e foi nesse
+> escuro que o status de `P-O6R-B04` e `P-O6R-B05` ficou **trocado por 13 dias**, fazendo o bloco de estoque
+> parecer fechado com 2 P0 abertos. **Hoje, pela MESMA régua: zero.** A régua está dita porque a primeira
+> redação desta frase publicou “zero” medindo com uma régua **mais estrita** que a do “97 antes” — e o
+> número não fechava (achado A-4 da junta). Num arquivo que existe para matar número que a execução não
+> produz, publicar um assim era a própria doença.
+>
+> A regra da triagem é conservadora e está escrita no índice. **Ela falhou uma vez e foi corrigida:** a
+> primeira passada fechou duas entradas por conta própria — uma porque o título dizia *“período **fechado**”*
+> (vocabulário de **domínio**, não de status) e outra porque dizia *“RESOLVIDO **PARCIAL**”* enquanto
+> carregava **quatro residuais abertos**. As duas foram **reabertas**, e o classificador passou a decidir
+> **só pela linha de status**, nunca pelo título.
+>
+> **`DIFERIDO-LEVE`** marca o balde C — cosmético/polimento, sem consequência de produto, dado, segurança ou
+> número. São **diferidas, não descartadas**, e a lista é **nominal e vetável**: o dono lê os IDs no índice e
+> derruba qualquer um que discorde.
+
 ## P-001 - Validacao de stack
 
 - descricao: conflito historico entre memoria (C) e repositorio (Node.js + TypeScript) foi registrado e consolidado documentalmente
@@ -35,11 +58,17 @@
 - impacto: A5 edita AMBOS para o grupo Cadastros aparecer e passar nos testes; espelhar sempre a pagina viva.
 - status: aberto (tratado por A5; limpeza do codigo morto fora de escopo)
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-005 - ui-ux-pro-max search.py ausente (2026-07-07)
 
 - descricao: `.claude/skills/ui-ux-pro-max/.../scripts` e `data` sao symlinks quebrados; `search.py` nao existe.
 - impacto: checklist pre-merge aplicado manualmente (conteudo extraido do SKILL.md).
 - status: aberto (nao bloqueante)
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-006 - RLS por-tenant e rate-limit por-tenant (proposta, nao implementar)
 
@@ -65,6 +94,9 @@
   Os testes constroem o detail diretamente (nao dependem do mock).
 - status: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders)
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-009 - Contraste de texto muted (#94A3B8) abaixo de 4.5:1 no DS (2026-07-07)
 
 - descricao: token muted DS-wide (#94A3B8 sobre branco ~2.6:1) e usado tambem como CONTEUDO (ex.: afordancias
@@ -72,6 +104,9 @@
 - impacto: a11y (§11 contraste 4.5:1). DS esta congelado -> correcao e follow-up transversal do DS (trocar por
   ~#64748B nos textos de conteudo), fora do escopo de C2.
 - status: aberto (proposta de a11y do DS)
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-010 - Codigo morto do adapter de dashboard (pre-C3) (2026-07-07)
 
@@ -82,6 +117,9 @@
   contem PT-BR sem acento no trecho inativo.
 - impacto: manutencao/rot; sem efeito em runtime.
 - status: aberto (limpeza — remover funcoes/tipos/testes B-124 obsoletos num bloco de chore)
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-011 - Badge de aprovacoes no sidebar e constante hardcoded (2026-07-07)
 
@@ -106,6 +144,9 @@
 - status: aberto (reavaliar o affordance na F12/cera — tornar o card um atalho para a janela filtrada,
   ou manter como indicador). Nao bloqueia F1 (veredito APROVADO).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-013 - F2: guard de disponibilidade so na criacao de OS, nao no assign (2026-07-08)
 
 - descricao: R2.3 (viatura em `em_execucao` = indisponivel) foi aplicada em `work-order.service.create()`
@@ -116,6 +157,9 @@
 - status: aberto (se o negocio exigir bloquear no assign, abrir bloco dedicado tocando o fluxo de assign
   com a regressao field-dispatch/registry-assign coberta). Nao bloqueia F2.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-014 - F3: cancelamento de multa gateado so por papel (sem permissao dedicada) (2026-07-08)
 
 - descricao: "Cancelar" multa (`→cancelada`) e restrito a `tenant_admin`/`super_admin` via checagem de
@@ -124,6 +168,9 @@
 - impacto: correto e consistente (backend e autoridade); porem menos granular que uma permissao dedicada.
 - status: aberto (se quiser RBAC mais granular no futuro, criar `fines:cancel` no catalogo + trocar o
   gate de papel por permissao). Nao bloqueia F3.
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-015 - F3: `driver_id` parser afrouxado (string) x coluna UUID (2026-07-08)
 
@@ -135,6 +182,9 @@
 - status: aberto (se/quando unificar o formato de id de usuario, alinhar o parser a UUID ou a coluna a TEXT).
   Nao bloqueia F3 (veredito APROVADO).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-016 - F4 (R4.3): indicador "viatura sem apolice vigente" na tela Viaturas + Mapa adiado (2026-07-08)
 
 - descricao: `docs/pd-controle.md` §F4 R4.3 pede indicador de atencao para viatura sem apolice vigente na
@@ -145,6 +195,9 @@
   dedicado ligar `hasActivePolicy` (helper read-only exportavel pelo backend F4) na Viaturas/Mapa.
 - status: aberto (F6 ou bloco dedicado). Nao bloqueia F4.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-017 - F4: barra de vigencia de apolice cancelada usa tom neutro/verde (2026-07-08)
 
 - descricao: em `/fleet/insurance`, `computeVigencia` neutraliza o tom de apolices `cancelada` para
@@ -153,6 +206,9 @@
 - impacto: baixo/cosmetico; nao e card morto nem engana (Chip e autoridade). Teste assere `tone==="default"`.
 - status: aberto (F12/cera — introduzir 4º tom "muted" so para canceladas, ajustando o teste em lockstep).
   Nao bloqueia F4.
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-018 - Attachments: allowlist de mime confia no Content-Type declarado (sem sniffing) (2026-07-08)
 
@@ -176,6 +232,9 @@
   P-011). Renomear agora divergiria das referencias visuais aprovadas.
 - status: aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
   login e intencional em modo mock). Nao bloqueia F6.
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-08)
 
@@ -216,6 +275,9 @@
   bloco futuro pode derivar o ultimo `auth_session`/login por usuario).
 - status: aberto (quando quiser ultimo acesso real, derivar do audit/sessoes de auth). Nao bloqueia F9.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-024 - F9/F11: vocabulario RBAC de usuarios (users:read x users.read) parcialmente reconciliado (2026-07-09)
 
 - descricao: o guard da rota `/users` foi corrigido de `users:read` (mock, sem grant em nenhum papel) para
@@ -244,6 +306,9 @@
 - impacto: cosmetico/§11.1; nao afeta funcao. Concentrado em telas bespoke de plataforma/legado.
 - status: aberto (bloco dedicado de copy/i18n varrendo `frontend/src/**` por acentuacao de UI). Nao bloqueia F12.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
 
 - descricao: a uniao `UserRole` (frontend) + `mapBackendRole` nao tem rotulo para `inventory` (cai em null)
@@ -252,6 +317,9 @@
   o route-guard/backend (correto); so o menu visual nao honra 100% a matriz para esses papeis.
 - impacto: baixo — acesso e correto (permissao); estetica de menu aproxima p/ inventory/support.
 - status: aberto (bloco futuro: adicionar `inventory` (+ representacoes distintas) a `UserRole`+`mapBackendRole`).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-027 - F11: divergencias matriz x catalog + perms `purchase_orders:read`/`reports:read` ausentes (2026-07-09)
 
@@ -264,6 +332,9 @@
   backend adicionar as perms, esses itens so aparecem para quem ja as tiver — honesto, sem fabricar acesso.
 - status: aberto (**bloco backend de reconciliacao de permissoes**: adicionar `purchase_orders:read`/
   `reports:read` ao `PERMISSION_CATALOG` + alinhar grants de dashboard/aprovacoes a matriz). Nao bloqueia F11.
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-029 - Ω2-a.2: modal de edicao de Tarifa mantem selects de referencia habilitados, mas o backend os ignora (2026-07-12)
 
@@ -293,6 +364,9 @@
 - impacto: cosmetico/manutencao; nenhum efeito funcional.
 - status: aberto (limpar comentario e ramos mortos num chore; A6 vira bloco de UX quando houver tenant >100).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-031 - Higiene: diretorios untracked .claude/skills/* fora do escopo das PRs (2026-07-12)
 
 - descricao: working tree contem `.claude/skills/{blockchain-developer,cloud-architect,cloud-devops,
@@ -309,6 +383,9 @@
   banco os `*:read` que o catalog.ts lhe dá (tags/pois/tenant_settings) → GET 403 ao vivo p/ auditor. A
   matriz promete R. Alinhar o seed de role_permissions ao catálogo (afeta blocos Ω2-b→e).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω3a (Ω3-a ServiceQuote) — pendências declaradas
 - **Aditivo `quotes[]` no detalhe da OS** (`GET /work-orders/:id`) DEFERIDO para Ω3-e (consumidor natural;
   H1 do crítico: exige novo parâmetro opcional em `toWorkOrderDto`, não cabe em `links`). O filtro
@@ -321,6 +398,9 @@
   `service_catalog:read`+`customers:read`+`work_orders:read`, ou aceitar a degradação. Não bloqueia (junta 5/5).
 - **Achados validador-mestre resolvidos no ciclo 2:** quantity sem teto → guard `assertMoneyInRange(quantity)`
   (422, paridade InMemory×Prisma) + 2 testes; contagem de smoke documentada corrigida (13→12).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω3b (Ω3-b Despacho endurecido + Comentário/Timeline da OS) — validador-mestre
 - **P-034 (MÉDIA — granularidade RBAC, não isolamento):** o feed `recentEvents` do dashboard
@@ -339,6 +419,9 @@
   `/dashboard/summary`. Auditoria (§2.8) provada AO VIVO: `SELECT count(*) FROM audit_logs WHERE metadata LIKE '%marker%'` = 0.
 - **P-035 (BAIXA — doc):** contagem por arquivo do task-history — **CORRIGIDA** para 8+9+8=25 (após +P-034).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-036 (PRÉ-EXISTENTE — descoberto no smoke do Ω3-c) — create de checklist quebrado no live/prisma
 - `POST /api/v1/tenant/checklists` (live, CORE_SAAS_PERSISTENCE=prisma) → 400 `invalid_request`:
   "Unknown argument `tenant_id`" em `checklist-prisma.repository.ts:105` (`checklistTemplate.create`).
@@ -350,12 +433,19 @@
 - Correção (bloco futuro): usar `tenant: { connect: { id } }` no create OU o unchecked create explícito.
   Afeta toda criação/edição de template de checklist no live prisma.
 
+- **status:** FECHADA · **severidade:** era ALTA · **dono:** encerrado
+  <sub>**FECHADA em 2026-08-29 (resgate da opção C) como DUPLICATA da `P-CHK-TEMPLATE-PRISMA-V7`, resolvida em 2026-08-02.** Achado A-C1 da junta do SAN2-1, conferido pelo orquestrador: mesma chamada (`checklistTemplate.create`), mesma causa (`tenant_id` explícito no nested-create do Prisma v7), mesma correção — o fix vive em `src/modules/checklists/checklist-prisma.repository.ts` com o comentário “NÃO passar tenant_id aqui”. Esta entrada ficou 27 dias aberta após o gêmeo fechar, e a triagem ainda a carimbou de “cosmética” — as duas afirmações erradas estão registradas na ata. O texto original segue abaixo (§A2).</sub>
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-037 (Ω3-c, BAIXA — validador) — assimetria memory×prisma em freezeChecklistSnapshot
 - Prisma grava `updated_by: actorUserId ?? null`; InMemory grava `updatedBy: actorUserId ?? current.updatedBy`.
   Inócuo no fluxo real (o despacho SEMPRE tem `actor.userId`). É o MESMO padrão pré-existente de
   `updateGeocode` (memory `?? current.updatedBy` × prisma `?? null`) — mantido por consistência com o
   irmão. Alinhar ambos (freeze + geocode) num bloco de higiene futuro. Não bloqueia.
 - (A asserção tautológica em checklist-snapshot-dispatch.test.ts — 2º achado BAIXA — foi REMOVIDA no fechamento.)
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω3d (Ω3-d Anexos de OS) — coverage/cosmético (junta APROVOU; não-veto)
 - **413 too_large:** COBERTO no fechamento (teste com blob 11MB > default 10MB).
@@ -368,12 +458,18 @@
 - **Migration name:** RENOMEADA de `20260732000000` (dia 32 inválido) → `20260801000000` (2026-08-01) + registro
   do _prisma_migrations do dev atualizado; `migrate status` = up to date. RESOLVIDO.
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-INFRA-RLS (transversal — apontado pelo coordenador no Ω3-d) — RLS não enforçada em runtime (dev)
 - O app conecta no Postgres como `postgres` (`rolsuper=true`, `rolbypassrls=true`), então as policies RLS
   (ENABLE+FORCE) de TODAS as tabelas são BYPASSADAS em runtime dev. O isolamento multi-tenant é sustentado
   pela camada de APLICAÇÃO (filtros `tenant_id` + `assertX` + `withTenantRls` que seta `app.current_tenant_id`).
   PRÉ-EXISTENTE e plataforma-wide (não do Ω3-d). RLS fica como defense-in-depth para quando o app conectar
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13)
 - descricao: `npm run test:e2e` (Playwright) NÃO entra no gate obrigatório do CI neste PR Ω-GATE — exige app
@@ -445,12 +541,18 @@
   inline (removido em seguida). NUNCA usa `db:seed`/demo.
 - status: aberto (follow-up de ativacao; nao bloqueia o merge da config inerte)
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
   (simetrico ao backend) nao se aplica ao frontend (hoje: `fly releases` nativo ou rebuild do SHA). Apontado por
   devops (C3).
 - acao: publicar a imagem do web no GHCR num bloco futuro de infra para simetria total do rollback.
 - status: aberto (mitigado por `fly releases`; nao bloqueia o merge)
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-SAN-INFRA1-NITS - Nits não-bloqueantes do Ω-INFRA-1 (J-SAN-4, 2026-07-13)
 - (1) Imagem do backend 837MB (engine Prisma + node slim): aceitável p/ MVP; otimizar (distroless/alpine +
@@ -461,12 +563,18 @@
   não muda o ranking. (5) `/health` cru é liveness; o profundo é `/health/ready` (documentado).
 - status: aberto (nits; nenhum bloqueia)
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-Ω3F1-ENTITYTYPE - Enum técnico cru na linha "Entidade" da aprovação (J-OMEGA3F-1, 2026-07-14)
 - descricao: `GeneralInfoTab.tsx` (aprovação operacional) exibe `${approval.entityType} · ${code}` → o enum
   técnico `work_order|checklist_run|evidence` aparece cru na UI ("work_order · OS-123"). PRE-EXISTENTE (veio
   1:1 da página de detalhe antiga; NÃO introduzido pelo Ω3F-1). Apontado por cognicao-visual (J-OMEGA3F-1).
 - acao: humanizar (mapa enum→rótulo PT-BR) no **Ω3F-3** (dono da superfície Financeiro/aprovação).
 - status: aberto (não bloqueia; fora do escopo UI-shell do Ω3F-1)
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-Ω3F2B-ACENTOS - Varredura de acentuação no WorkOrderForm + validador (J-OMEGA3F-2B, 2026-07-14)
 - descricao: labels de Input e mensagens do validador de OS são sem-acento pré-existentes ("Identificacao",
@@ -475,6 +583,9 @@
 - acao: bloco de varredura único acentuando labels + mensagens de `WorkOrderForm.tsx` e
   `work-orders.adapter.ts` (validateWorkOrderForm) de uma vez, destravando a convenção p/ os próximos Ω3F.
 - status: aberto (apontado por cognicao-visual)
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-Ω3F3A-MOEDA-AGREGADO - Total agregado somava moedas heterogêneas (J-OMEGA3F-3A, 2026-07-15) — RESOLVIDO NO PR
 - descricao: o GET de itens financeiros da OS agrega `totalAmount = roundMoney(items.reduce(...))` e emite
@@ -506,6 +617,11 @@
   reordenação).
 - status: aberto (não-bloqueante; guarda de invariante para blocos futuros).
 
+- **status:** ABERTA · **severidade:** MÉDIA (reclassificada) · **dono:** a atribuir
+- **agendamento:** ~~DIFERIDO-LEVE~~ → **RETIRADO DO BALDE C em 2026-08-29** (achado A-C2 da junta)
+  <sub>É um **tripwire de bypass de TARIFA**: existe exclusivamente para ser VISTO no dia em que alguém tornar `customer_id`/`service_catalog_id` mutáveis no update — o modo de falha declarado é cobrança errada. Enterrá-lo num balde rotulado “sem consequência de dinheiro” anulava a única função que ele tem. O invariante segue valendo hoje (medido pela junta: `UpdateWorkOrderInput` não expõe os dois campos).</sub>
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-Ω3F4B-SHARE-TOKEN-UNIQUE - share_token sem unicidade/índice; endpoint público adiado (J-OMEGA3F-4B, 2026-07-15)
 - descricao: o Ω3F-4b gera `service_quotes.share_token` (randomUUID) mas a coluna NÃO tem `@@unique`/índice.
   Enquanto a leitura pública por token está ADIADA (D-Ω3F-4B-SHARE), é inerte. Apontado por validador-mestre
@@ -514,6 +630,9 @@
   DEVE adicionar unicidade + índice de lookup do share_token (migration) e passar por revisão secops
   (superfície não-autenticada; §2.8; sem vazar tenant/dados internos).
 - status: aberto (não-bloqueante; guarda para a fatia do consumo público).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-Ω3F4B-APPROVE-CRASH - Crash duro entre reserva e carimbo do approve (J-OMEGA3F-4B ciclo1, 2026-07-15)
 - descricao: o CAS fecha o duplo-faturamento concorrente (1 OS + 1×409), mas um crash DURO do processo ENTRE
@@ -525,6 +644,9 @@
   draft), não crash entre passos.
 - status: aberto (não-bloqueante; falha segura).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-Ω3F4C-ACTIVATION-PROMPT - Aprovar dispara sem diálogo de modo de acionamento/origem-destino (J-OMEGA3F-4C, 2026-07-15)
 - descricao: no QuoteTab/OrcamentosPage o botão Aprovar chama approveServiceQuote(context, id, {}) — clique único,
   sem coletar `activation_mode` nem origem/destino (que o backend aceita como OPCIONAIS). O vídeo §1.3 mostra o
@@ -534,6 +656,9 @@
   destino (para tipos que exigem, ex. reboque), passando ao corpo do approve. Fecha a fidelidade fina do #7.
 - status: aberto (não-bloqueante).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-Ω3F5-DOC-TYPE - Categoria de documento no upload manual de anexo (Ω3F-5, 2026-07-15)
 - descricao: o back de anexos (Ω3-d) deriva nome=fileName e tipo=mimeType; NÃO tem campo de categoria
   selecionável pelo usuário (só `description` livre, que nem é exposto no DTO). O vídeo §1.3 1:46–2:09 pode
@@ -541,6 +666,9 @@
 - acao: se a fidelidade exigir categoria, estender `WorkOrderAttachment.metadata.documentType` (aditivo, sem
   migration) + expor no DTO + selector na UI, numa fatia futura tocando o módulo de anexos.
 - status: aberto (não-bloqueante).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-Ω3F5A-TAG-TOCTOU - Comentário pode persistir com uma tag a menos sob delete concorrente de tag (J-OMEGA3F-5A, 2026-07-15)
 - descricao: addComment pré-valida todas as tags (422) e cria o comentário + attach das tags em transações
@@ -551,6 +679,9 @@
 - acao: robustez — envolver create-do-comentário + attach-das-tags numa ÚNICA transação (ou reordenar) para
   atomicidade total, numa fatia futura. Hoje: 500→422 corrigido; orfandade residual só sob corrida rara.
 - status: aberto (não-bloqueante; falha seseg — o 500 já foi eliminado).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-Ω3F6-COMISSAO - `keep_unpaid` grava a decisão mas não suprime a comissão (Ω3F-6, 2026-07-17)
 - descricao: o cancel com `financial_decision='keep_unpaid'` ("manter valores sem remunerar o profissional")
@@ -648,6 +779,9 @@
   (agora desnecessário e nocivo) — hover volta a viver nelas também. Fatia de chore no front.
 - status: aberto (o DS já está consertado; falta limpar os consumidores legados).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-Ω3F6B-DS-NITS - Nits de DS/A11y apontados na J-OMEGA3F-6B (2026-07-17)
 - (1) **CTA navy × azul**: `.ui-button--primary` = `#12385c` (tokens) enquanto a MESMA barra usa `#2563EB`
   inline no "Abrir checklist" (e o protótipo usa #2563EB). Divergência SISTÊMICA (atinge WorkOrderForm) →
@@ -659,6 +793,9 @@
 - (5) `WorkOrderStatusPayload` ficou órfão em types (o `updateWorkOrderStatus` foi removido) — limpar no
   próximo bloco que tocar o arquivo (coordenador, cosmético).
 - status: aberto (nenhum bloqueia; a cognicao deferiu todos como pendência).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-Ω3F6-ZERO-ATOMICIDADE - `zero` do cancel: N deletes sequenciais sem transação (+ N+1) (pós-análise Ω3F-6, 2026-07-17)
 - descricao: `WorkOrderService.zeroFinancialItems` percorre os itens e chama `financials.delete` um a um, SEM
@@ -714,12 +851,18 @@ O badge de atraso do Ω3F-9 é DERIVADO de `scheduled_for` (não há `due_at`/SL
 para adicionar um campo de prazo/SLA real (migration) + recompor o "restantes" fiel ao protótipo. Não é bug;
 é fidelidade adiada por decisão explícita (D-Ω3F-9-BADGE).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω3F-9-DISPATCH-DTO — Expor "envio ativo" no DTO da lista de OS (aberta, Ω3F-9)
 A visibilidade de "Revogar envio" na linha é heurística (permissão + status não-terminal); a existência real do
 despacho só é confirmada no clique (descoberta lazy). Follow-up opcional: expor `hasActiveDispatch`/
 `activeDispatchId` no DTO da lista de OS para visibilidade exata sem o GET extra. Rejeitado no PR do -9 para
 manter 100% front (tocaria o serializer da lista + suíte de contrato). Baixo impacto (o clique já trata
 ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispatch).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-2A-NITS — Observações da junta do Ω4-2a (2026-07-17)
 - **Para Ω4-6 (informativo do validador-mestre):** o chokepoint `assertPeriodOpen` hoje bloqueia só
@@ -731,6 +874,9 @@ ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispa
   mesma classe, código divergente só em edge duplamente-inválido. Sem impacto de correção/segurança.
 - **(BAIXA) Campos opcionais não podem ser LIMPOS via PATCH** (document/category/account_id="" preserva o
   valor) — consistente entre os dois repos e com o Ω4-1; limitação conhecida, intencional no v1.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-COMPETENCIA-TZ — RESOLVIDO (fix-omega4-competencia-tz, pré-Ω4-6)
 `deriveCompetencia` (financial-title.validators.ts) usa `getUTCMonth`. Um título emitido 31/07 23h BRT (UTC-3)
@@ -744,10 +890,16 @@ negócio (America/Sao_Paulo, possivelmente tenant-configurável), ancorando date
 cruzar a fronteira do dia. **Bloco dedicado com decisão + testes de fuso antes do Ω4-6.** Sintoma-irmão (BAIXA):
 `isTitleOverdue` compara `due_date.getTime() < now` (naïve UTC) → título "vencido" ~27h cedo no fim do dia BR.
 
+- **status:** FECHADA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
+
 ## P-Ω4-ACCOUNT-ACTIVE — Título pode referenciar conta financeira INATIVA (BAIXA — decidir no Ω4-4)
 O resolver de conta (InMemory findById não filtra is_active; Prisma FK aponta para a row que sobrevive ao
 soft-delete) aceita account_id de conta desativada. Agenda-se liquidação para conta inativa. Relevante ao Ω4-4
 (Caixa/pagamentos): decidir se a conta de liquidação precisa estar ativa (rejeitar → 400/422).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-2A-COBERTURA — Nits menores do Ω4-2a (BAIXA)
 - GET /:id de título soft-deletado → 200 (a list esconde; as mutações dão 404). Decidir se detalhe de excluído
@@ -755,11 +907,17 @@ soft-delete) aceita account_id de conta desativada. Agenda-se liquidação para 
 - Sem índice `(tenant_id, created_at)` (ordenação default faz sort em memória) — perf quando o volume crescer.
 - `nullable()` no prisma-repo é dead code (service nunca passa null; campos opcionais não limpáveis — nit conhecido).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-FINANCE-READ-ORFA — /finance (dashboard) ainda gated pela órfã finance:read (BAIXA, Ω4-8)
 O Ω4-2b moveu as rotas-filhas /finance/charges e /finance/payments para a perm real financial_titles:read, mas
 o dashboard-pai /finance (FinanceiroPage, ainda MOCK) e o item de menu FINANCEIRO seguem na órfã finance:read/
 finance.read. Resolver no Ω4-8 (dashboard real): trocar o gate por uma perm real (financial_titles:read ou uma
 finance_dashboard:read dedicada) quando a FinanceiroPage consumir o backend.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-2B-KPI-AGREGADO — KPIs/tabs somam só as linhas carregadas (MÉDIO, Ω4-8 Dashboard)
 Os KPIs e as tabs de Cobranças/Pagamentos somam sobre as linhas carregadas (agora limit=100, antes 20) e
@@ -768,10 +926,16 @@ os N de M" quando total>carregado. Cobertura COMPLETA (endpoint de agregados/sum
 real) fica para o Ω4-8 (Dashboard financeiro real). Relacionado: "Recebidas/Pagos (mês)" usa competencia (mês
 contábil), não a data de baixa (que não existe no DTO — Ω4-4 introduz pagamento/baixa) — rótulo impreciso até lá.
 
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-2B-A11Y — Menu ⋮ e modais sem dismiss por Escape/clique-fora + focus-trap (BAIXA)
 TitleRowActions (menu sem outside-click/Escape, dois menus podem ficar abertos) e TitleFormModal/TitleCancelPrompt
 (role=dialog/aria-modal sem focus-trap/foco inicial/Escape; backdrop fecha mesmo em submit). Padrão leve herdado
 do Ω3F-6; endurecer quando houver um componente de menu/modal compartilhado do DS.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-3-REFATURAR-DELTA — Faturar o delta de itens adicionados após o 1º faturamento (BAIXA, fatia futura)
 A idempotência do faturamento é por (tenant_id, work_order_id, direction) — 1 título receivable por OS. Um item
@@ -779,17 +943,28 @@ lançado no Financeiro da OS APÓS o 1º faturamento fica "a faturar", mas o 2º
 (não fatura o delta). Faturar o delta (2º título com Σ dos itens não-faturados, ou aditar o título) é fatia futura.
 Item novo pós-faturamento permanece editável (invoiced_at NULL); só os já carimbados travam (item_invoiced 422).
 
+- **status:** ABERTA · **severidade:** MÉDIA (reclassificada) · **dono:** a atribuir
+- **agendamento:** ~~DIFERIDO-LEVE~~ → **RETIRADO DO BALDE C em 2026-08-29** (achado A-5 da junta do SAN2-1)
+  <sub>A cadeira de triagem amostrou 6 das 81 diferidas e provou que esta **não é cosmética**: item lançado no Financeiro da OS depois do 1º faturamento **nunca é faturado**: o 2º `POST /invoice` devolve `409 already_invoiced` e o delta fica “a faturar” para sempre. É **receita executada que o produto não consegue cobrar** — produto e dinheiro, não polimento. A etiqueta colada aqui afirmava *“sem consequência de produto, dado, segurança ou número”* — e o próprio texto da pendência desmente. **Não era o adiamento que estava errado, era a etiqueta**, e é ela que o dono lê ao decidir se veta. Volta ao balde por severidade real.</sub>
+
+
 ## P-Ω4-3-TEST-HERMETIC — createMemoryWorkOrderInvoicingService não é puramente memory (BAIXA)
 O WorkOrderInvoicingService.invoke() alcança createDefaultWorkOrderService()/createDefaultFinancialTitleService()
 por dynamic import — que honram o env (congelado no import). Sob `.env` prisma, tests/work-order-invoicing.test.ts
 falha 15/16 (CI é verde porque roda com CORE_SAAS_PERSISTENCE=memory). Fix: injetar work-order/title services no
 construtor do invoicing service (como o WorkOrderFinancialService faz) para o factory memory ser hermético.
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-3-INVOICE-ATOMIC — Título↔carimbo não-atômico (BAIXA)
 createForWorkOrder (título) e markInvoiced (itens) são 2 statements sem $transaction. Crash entre eles: título
 criado com itens não-travados (invoiced_at NULL → editáveis). A idempotência (índice parcial) preserva "1 título
 ativo/OS", mas a divergência amount↔itens fica possível nesse recorte raro. Ideal: envolver em $transaction.
 Distinto de P-Ω4-3-REFATURAR-DELTA (que é o delta de itens pós-faturamento).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-3-CURRENCY-BRL — Item da OS aceita moeda ≠ BRL, mas faturar exige BRL (MÉDIA-BAIXA)
 work-order-financials (Ω3F) usa parseCurrency da shape compartilhada (aceita QUALQUER ISO de 3 letras) + trava
@@ -798,15 +973,24 @@ o título só aceita BRL (v1) → 400 invalid_currency vindo de OUTRO módulo, b
 work-order-financials ao allowlist {BRL} v1 (ou o título aceitar a moeda congelada quando o multi-currency chegar).
 Reachable só via item manual não-BRL (baixa prob). Ω3F-module — mudar toca módulo mergeado + seus testes.
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-3-INVOICE-TOCTOU-DELETE — DELETE de item durante o faturamento infla o título (BAIXA)
 Entre listInvoiceableByWorkOrder (lê o agregado) e markInvoiced, um item ainda-não-faturado pode ser soft-deleted
 (assertItemNotInvoiced passa: invoiced_at ainda null). O título nasce com a Σ que INCLUÍA o item, mas markInvoiced
 pula deletados → title.amount > Σ dos itens carimbados. TOCTOU no READ (distinto de P-Ω4-3-INVOICE-ATOMIC = crash
 título↔carimbo). Fix: ler o agregado + carimbar na MESMA $transaction com lock. Estreito, mas o dano é dinheiro.
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-3-INVOICE-LEASTPRIV — Rota invoice não exige work_order_financials:read (BAIXA)
 POST /work-orders/:id/invoice gateia só financial_titles:create mas LÊ os itens financeiros da OS. finance tem
 ambas, impacto baixo; por least-privilege, considerar exigir também work_order_financials:read.
+
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-READINESS — O que o Ω4-4 (Caixa/liquidação) precisa construir (GUIA, não bug)
 Notas de prontidão do título para a liquidação dirigir partially_paid/paid:
@@ -819,6 +1003,9 @@ Notas de prontidão do título para a liquidação dirigir partially_paid/paid:
   conta o dinheiro entrou (FinancialEntry → conta). A conta de liquidação deve estar ATIVA (P-Ω4-ACCOUNT-ACTIVE).
 - **Prontos:** ida-e-volta título↔OS exposto (workOrderId no DTO do título; titleId/invoiced no DTO do item);
   título faturado nasce due_date hoje+30d, status open, competencia derivada, paid_amount 0. Estorno=contra-lançamento.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-EDGES — Bordas do Ω4-4 (Caixa/Extrato + liquidação) — implementado, com decisões e limites
 Entregue no bloco Ω4-4 (branch feat-omega4-4-cash). Decisões e bordas que ficam como pendência de fatias futuras:
@@ -837,6 +1024,9 @@ Entregue no bloco Ω4-4 (branch feat-omega4-4-cash). Decisões e bordas que fica
 - **Paridade InMemory×Prisma** é estrutural (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
   (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma não é exercido sem banco, como nos vizinhos Ω4-1/4-2a.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-4-LIQUID-ATOMIC — Liquidação lançamento↔título não-atômica (MÉDIA)
 payTitle faz assertPayable → entry.create → applyPayment (3 statements, sem $transaction). Numa corrida REAL de 2
 pagamentos do MESMO título SEM client_action_id: ambos passam assertPayable, ambos criam lançamento (saldo da CONTA
@@ -846,6 +1036,9 @@ client_action_id o 2º entry.create dá 409 duplicate_payment ANTES do applyPaym
 applyPayment em prisma.$transaction (documentar limitação InMemory). Só o cenário sem token idempotente + concorrência
 genuína abre a janela.
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-4-REVERSE-MUTABLE — reverse() não chama assertMutable — ✅ RESOLVIDO no Ω4-5
 update/delete barram lançamento reconciled (422), mas reverse não. **Fechado no bloco Ω4-5**
 (branch feat-omega4-5-reconciliation): reverse() agora chama `this.assertMutable(original)` logo após
@@ -854,11 +1047,17 @@ entry_reconciled (exige desconciliar antes). Precedência documentada: um contra
 for estornado dispara `entry_reconciled` (422) ANTES de `reversal_pair_immutable` (422) — mesma classe HTTP,
 reason diferente. Sem regressão em A1/B1 (testes de estorno operam sobre lançamentos não conciliados).
 
+- **status:** FECHADA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
+
 ## P-Ω4-4-REVERSE-IDEM — Idempotência do estorno é app-level sem rede no banco (MÉDIA)
 reverse faz check-then-act (findActiveReversalOf → create) SEM índice único em reversal_of (diferente da
 liquidação, que tem índice parcial). 2 reverse(A) concorrentes → 2 contra-lançamentos → saldo estornado em dobro.
 Fix: índice único parcial (tenant_id, reversal_of) WHERE reversal_of IS NOT NULL AND deleted_at IS NULL +
 $transaction. Casa com o tratamento de atomicidade do P-Ω4-4-LIQUID-ATOMIC.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-CHOKEPOINT-CLOSING — chokepoint só bloqueia 'closed', não 'closing' — ✅ RESOLVIDO no Ω4-6 (M2)
 isPeriodClosed (financial-title.repository) só reconhecia status='closed'; o enum tem open|closing|closed|reopened.
@@ -869,6 +1068,9 @@ pós-fechamento; D-Ω4-5-RECONCILE-META) — confirmado por teste. O ramo 'closi
 atômico open→closed e NUNCA escreve 'closing' (a coluna closing_started_at é reservada). **M1 (liquidar título de
 período fechado) NÃO é bug** — é D-Ω4-POS-FECHAMENTO ratificada (pagamento é evento da competência corrente;
 paid_amount é acumulador vitalício; applyPayment gated só pelo período do caixa).
+
+- **status:** FECHADA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
 
 ## P-Ω4-6-CLOSE-RACE — read-skew entre a leitura do snapshot e o commit do 'closed' (MÉDIA, v1 aceita)
 O close lê títulos+lançamentos da competência e grava a linha `closed` na MESMA withTenantRls tx (atômico
@@ -886,11 +1088,17 @@ a proteção fica completa quando o writer também o pegar. **Controle compensat
 corrida (count/sumAmount extra vs o snapshot congelado), mantendo-se imune a pagamentos cross-mês/reconcile legítimos.
 Espelha o precedente P-Ω4-4-LIQUID-ATOMIC.
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-6-REOPEN-FOUR-EYES — reopen sem segundo ator (risco residual conhecido, BAIXA)
 reopen ∈ {super_admin, platform_admin, tenant_admin} + reason obrigatório (RN-FIN-009). Risco residual (ataque emenda h,
 anotado, não bloqueia): um `tenant_admin` sozinho pode reopen→editar→reclose com auto-auditoria (sem four-eyes). Aceitável
 no MVP; eventual notificação/segundo ator no reopen. A trilha é preservada (snapshot.history append-only + AuditLog de
 cada close/reopen — d/ataque), então o ciclo fica AUDITÁVEL mesmo sem four-eyes.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-5-DIVERGENCE — Ω4-5 Conciliação (divergence_type + write-path de reconcile) — ✅ RESOLVIDO
 **Entregue no bloco Ω4-5** (branch feat-omega4-5-reconciliation). Migration aditiva 20260813000000_add_reconciliation
@@ -919,12 +1127,18 @@ lista (?reconciled=, ?divergence_type=). Decisões endurecidas pelo ataque adver
 
 Testes de overpayment na borda de centavo + chokepoint bloqueando pay/reverse já cobertos no Ω4-4; nada pendente aqui.
 
+- **status:** FECHADA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
+
 ## P-Ω4-5-BATCH — conciliação em LOTE (importar extrato CSV/OFX → casar N lançamentos) — ADIADO
 O Ω4-5 entrega só o reconcile UNITÁRIO por lançamento (PATCH /financial-entries/:id/reconcile). Conciliação em lote
 (upload de extrato bancário CSV/OFX, matching automático de N lançamentos, tabela ReconciliationBatch com linhas
 importadas e status de casamento) é fatia futura — não cria tabela/endpoint de lote nesta fatia. Quando priorizada,
 avaliar: modelo ReconciliationBatch + ReconciliationLine, parser de OFX/CSV, heurística de matching (valor+data+ref),
 e resolução manual de linhas não casadas.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-6-READINESS — O que o Ω4-6 (Fechamento) precisa construir + a exceção reconcile (GUIA CRÍTICO)
 - **M1 (SNAPSHOT):** reconcile é EXENTO do chokepoint (D-Ω4-5-RECONCILE-META) e MEXE em updated_at/updated_by +
@@ -940,10 +1154,16 @@ e resolução manual de linhas não casadas.
   existe, SEM service/endpoints); snapshot de pendências (RN-FIN-008 checklist); fechar atômico ($transaction: snapshot
   + flip status); reabertura exige permissão dedicada + motivo + auditoria (RN-FIN-009/RN-AUD-005). ANTES: resolver P-Ω4-COMPETENCIA-TZ.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-5-CATEGORY-CASE — Filtro ?category= é case-sensitive (BAIXA, pré-existente Ω4-4)
 parseFilterToken faz toLowerCase() mas category é gravada preservando caixa → ?category=Servico não casa "Servico".
 Paridade InMemory×Prisma preservada (ambos iguais). direction/payment_method/divergence_type não sofrem (lowercase na escrita).
 Fix: lowercar category na escrita OU no filtro usar ILIKE/case-insensitive. Baixíssimo, herdado do Ω4-4.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-COMPETENCIA-TZ — STATUS: RESOLVIDO (2026-07-18)
 deriveCompetencia agora formata em `America/Sao_Paulo` (Intl, IANA — acompanha DST se voltar) e parseBusinessDate
@@ -954,6 +1174,9 @@ etc. → 400, não rola p/ o mês seguinte — furo ALTA do critico corrigido). 
 -02:00 < -03:00 em magnitude → âncora sempre no MESMO dia civil BR mesmo se DST voltar; provado pelo critico). Junta
 verify APROVADO (validador + critico), casos d/e cumpridos.
 
+- **status:** FECHADA · **severidade:** ALTA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
+
 ## P-Ω4-OVERDUE-TZ — isTitleOverdue + parseDueDate no fuso de negócio (BAIXA, sintoma-irmão)
 Ainda pendente (fora do escopo do fix de competência): (1) isTitleOverdue compara due_date.getTime() < now (naïve) →
 título "vencido" ~24-27h cedo no fim do dia BR; o correto é vencer quando o DIA de due_date TERMINA no fuso de negócio
@@ -961,10 +1184,16 @@ título "vencido" ~24-27h cedo no fim do dia BR; o correto é vencer quando o DI
 viraram BR-anchored (parseBusinessDate) — inconsistência (caso h do critico). Fix bundle: parseDueDate usar
 parseBusinessDate + isTitleOverdue comparar contra fim-do-dia BR. Baixo impacto (borda de virada de dia).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-6-FRONT-RESOLVE-NAME — /financial-periods expõe closedBy/reopenedBy UUID (BAIXA, para a fatia de FRONT)
 O DTO/snapshot de fechamento expõe closedBy/reopenedBy como UUID cru (padrão backend, §2.8 OK — não vaza tenant/nome).
 A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderizar (precedente R-Ω3F-5b §11.2: UUID cru na UI = veto)
 — reusar o UserNameResolver do Ω3F-5b.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-6-NITS — Nits da pós-análise do Ω4-6 (BAIXA)
 - L-4: pg_advisory_xact_lock(hashtext(tenant:period)) é int4 (2^32) — colisão serializa close/reopen cross-tenant
@@ -972,6 +1201,9 @@ A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderiza
 - CORRIGIDOS nesta pós-análise: M-1 (balance.receivableOpen/payableOpen excluíam cancelados → agora sumOpen exclui;
   material mantém p/ checksum), L-1 (reclose deixava reopened_* obsoleto no DTO → nula quando status≠reopened),
   L-2 (forced:true só quando houve override real), L-3 (comentário "tabela vazia e nunca bloqueia" — falso desde Ω4-6, corrigido).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-8-READINESS — Guia do Dashboard financeiro real (Ω4-8)
 - GET /financial-periods/:period NÃO computa agregados de dinheiro AO VIVO para período ABERTO (só o checklist de
@@ -983,6 +1215,9 @@ A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderiza
 - P-Ω4-6-FRONT-RESOLVE-NAME: resolver closedBy/reopenedBy UUID→nome (UserNameResolver do Ω3F-5b) antes de renderizar.
 - P-Ω4-2B-KPI-AGREGADO: os KPIs de Cobranças/Pagamentos somam só a página carregada — o Dashboard deve usar agregados de verdade.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-7-READINESS — Guia do Cheque (Ω4-7)
 - Cheque = meio de pagamento com status próprio (issued→deposited→cleared/bounced). Ao lançar caixa passa pelo
   chokepoint/competência automaticamente (via occurred_at do lançamento) — sem plumbing novo p/ o happy path.
@@ -990,12 +1225,20 @@ A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderiza
   COMPENSAÇÃO — determina qual período o trava; (b) transições que flipam/revertem um lançamento (bounced) DEVEM ir
   pelo caminho de ESTORNO (chokepoint-guarded), NUNCA update destrutivo de lançamento de período possivelmente fechado.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-7-CLEAR-ATOMIC — Resíduo de atomicidade do clear/bounce do cheque (BAIXA — espelha P-Ω4-4-LIQUID-ATOMIC)
 O MUTEX (flip condicional) ELIMINA a dupla-postagem concorrente e o rollback trata falha do post. Resíduo: crash entre
 o create do lançamento (sucesso) e o attach do id → cheque fica 'cleared' com cleared_entry_id=null (ou 'bounced' com
 bounce_entry_id=null) e um lançamento posto sem back-link. Recuperável/detectável (cleared sem entry). Mesma classe do
 payTitle (P-Ω4-4-LIQUID-ATOMIC). Ideal futuro: create+attach na MESMA $transaction Prisma (o InMemory já é atômico no
 event-loop). Não bloqueia — a conservação de dinheiro nunca é violada (o post não duplica).
+
+- **status:** ABERTA · **severidade:** MÉDIA (reclassificada) · **dono:** a atribuir
+- **agendamento:** ~~DIFERIDO-LEVE~~ → **RETIRADO DO BALDE C em 2026-08-29** (achado A-5 da junta do SAN2-1)
+  <sub>A cadeira de triagem amostrou 6 das 81 diferidas e provou que esta **não é cosmética**: crash entre o create do lançamento e o attach do id deixa o cheque `cleared` com `cleared_entry_id=null` e um lançamento postado sem back-link — **consequência de DADO no razão financeiro**. A própria entrada diz *“Mesma classe do payTitle”* e *“espelha `P-Ω4-4-LIQUID-ATOMIC`”* — e o índice deste mesmo bloco põe `P-Ω4-4-LIQUID-ATOMIC` no **balde A**. O espelho declarado de um item A havia ido para o C. A etiqueta colada aqui afirmava *“sem consequência de produto, dado, segurança ou número”* — e o próprio texto da pendência desmente. **Não era o adiamento que estava errado, era a etiqueta**, e é ela que o dono lê ao decidir se veta. Volta ao balde por severidade real.</sub>
+
 
 ## P-Ω4-7-ENTRY-OWNERSHIP — Lançamento de cheque manipulável direto por /financial-entries (BAIXA)
 cleared_entry_id/bounce_entry_id apontam FinancialEntry comuns. Um ator com financial_entries:update pode delete/reverse
@@ -1006,21 +1249,39 @@ contra-lançamento fresco). Fechamento forte (flag owned_by='cheque' bloqueando 
 inverteria a dependência entries→cheques → adiado. Conservação de dinheiro do LEDGER é preservada (o guard de par de
 estorno já impede re-estorno).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-7-DUPLA-CONTAGEM — cheque-register vs payTitle p/ o mesmo dinheiro (BAIXA — risco de PROCESSO)
 Nada no backend impede registrar+compensar um cheque E liquidar o mesmo título com payTitle(payment_method='check') p/ o
 mesmo dinheiro físico → dois lançamentos independentes. É disciplina do usuário (fluxos distintos). Quando title_id
 entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dupla. Fora do escopo do Ω4-7 (title_id não modelado).
+
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-7-CLEAR-RETRO — Compensação retroativa a período fechado (BAIXA)
 O clear sempre usa server-now → competência CORRENTE. Se o banco compensou de fato num mês já FECHADO, a data verdadeira
 não é escriturável (usar now posta no mês corrente, coerente com caixa quando registrado). Política: compensação sempre no
 período corrente aberto; retroação a período fechado exigiria reabertura (D-Ω4-6). Espelha D-Ω4-POS-FECHAMENTO. Documentado, não é dead-end silencioso (o clear falha com 422 period_closed se o mês corrente estiver fechado → cheque fica 'deposited').
 
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>**REABERTA em 2026-08-29 — achado A-2 da junta do SAN2-1.** Foi marcada FECHADA porque o cabeçalho diz
+  *"Compensação retroativa a período **fechado**"* — e o classificador da primeira passada casou a palavra
+  "fechado", que ali qualifica o **período contábil**, não a pendência. **Vocabulário de domínio lido como
+  vocabulário de status.** A entrada não se declara resolvida em linha nenhuma: descreve uma **política
+  aceita** (compensação sempre no período corrente; retroação exigiria reabertura). Fica **ABERTA por padrão
+  conservador** — se a política é para encerrá-la, isso é decisão a registrar, não inferência de regex.</sub>
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-Ω4-8-SUMMARY-SCALE — /financial-summary faz full-scan das linhas (BAIXA)
 O agregado carrega TODAS as linhas de título/lançamento/cheque do tenant em memória e soma em JS (espelha o dashboard
 operacional; correto e com paridade InMemory↔Prisma). Para tenants grandes, otimizar com agregados SQL (SUM/COUNT/GROUP BY
 por status/direção/competência direto no Postgres) — hoje só o saldo por conta já usa groupBy. Não bloqueia (data set de
 dashboard); correção é performance, nunca correção de valor.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-8-DASHBOARD-FIDELITY — Reduções de composição do dashboard vs financeiro.png (BAIXA/MÉDIA)
 Junta do Ω4-8b (cognicao-visual) apontou 2 reduções HONESTAS de composição vs a referência (não bloqueantes):
@@ -1032,6 +1293,9 @@ Junta do Ω4-8b (cognicao-visual) apontou 2 reduções HONESTAS de composição 
 CORRIGIDO na junta (MÉDIA): o adapter agora NORMALIZA status/direction dos recentTitles contra o enum (fallback seguro) →
 o chip/label nunca recebe valor fora do mapa e quebra o render. Re-etiquetagem de KPI ("aberto" em vez de "30d"; "Saldo em
 caixa" em vez de "projetado"; subtítulo sem org hardcoded) é MAIS honesta aos agregados reais (D-007) — mantida de propósito.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω3F6 — cluster de cancelamento: STATUS-BYPASS/TERMINAL-GUARD/ZERO-ATOMICIDADE RESOLVIDOS (D-CANCEL-INTEGRITY, 2026-07-18)
 Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atômicos) foram FECHADOS. Residuais BAIXA abertos:
@@ -1047,10 +1311,42 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
   o replay marca failed+retry até maxRetry. Mapear cancel_via_status_forbidden para estado terminal não-retryable (dead-letter)
   para drenar a fila. Não-bloqueante (sistema novo não tem fila legada com cancels).
 
-## P-GOLIVE-SECRET-ROTATE — Chave Google Maps exposta redigida do HEAD; ROTAÇÃO humana obrigatória (CRÍTICA, secops go-live junta 2026-07-19)
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>**REABERTA em 2026-08-29 — achado A-1 da junta do SAN2-1, gravidade `bloqueia`.** Esta entrada foi
+  marcada FECHADA pela primeira passada da triagem porque o cabeçalho diz "RESOLVIDOS". **Está errado:** o
+  cabeçalho fala dos **três** defeitos do cluster, e o corpo, logo abaixo, diz textualmente *"Residuais BAIXA
+  **abertos**:"* e lista **quatro** — `P-Ω3F6-CANCEL-RACE`, `P-Ω3F6-LEGACY-NULL`, `P-Ω3F6-CANCEL-IDEM`,
+  `P-Ω3F6-MOBILE-DEADLETTER` — que **não têm cabeçalho próprio em lugar nenhum deste arquivo**. Fechar aqui
+  sumia com os quatro da resposta a "o que está aberto?" — a **mesma classe** do `P-O6R-B04`, que originou
+  esta rodada, cometida pelo bloco que existia para exterminá-la. Causa-raiz do classificador: ele lia
+  "RESOLVIDO **PARCIAL**" e ignorava o qualificador. **Enquanto os quatro residuais não tiverem entrada
+  própria, esta entrada é a única coisa que os mantém visíveis — e por isso fica ABERTA.**</sub>
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
+## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
+
+- **status:** FECHADA · **severidade:** era CRÍTICA · **dono:** encerrado
+  <sub>**Fechada por decisão do dono**, registrada em `decisoes.md` → `D-GOLIVE-MAPS-ROTACAO-DISPENSADA`
+  (decidida em 2026-08-13, **registrada em 2026-08-29**). Motivo medido: o projeto **não usa Google Maps** —
+  o mapa é MapLibre + OpenFreeMap desde o #338 —, a chave vivia num arquivo de **protótipo**, foi redigida do
+  HEAD no #229 e **não tem uso ativo**. Era a **única CRÍTICA aberta da trilha**, e a dispensa existia só na
+  memória do agente, fora do repositório, o que o §A1 proíbe. **A dispensa é da AÇÃO de rotação, não da
+  exposição**: a chave segue no histórico git e a decisão **caduca** se o projeto voltar a usar Google Maps
+  Platform.</sub>
+
+Texto original preservado abaixo (§A2 — registro histórico, não reescrito):
 Chave Google Maps API ativa estava hardcoded em docs/claude-code-handoff/ERP Web.dc.html:2670 (arquivo rastreado). REDIGIDA do
 HEAD neste bloco (placeholder). Como a chave SEGUE no histórico git, deve ser considerada COMPROMETIDA → o dono DEVE revogar/
 rotacionar no Google Cloud Console e restringir a nova chave (referer/HTTP + API + cota). Parada irredutível (exposição de segredo).
+
+> **ERRATA DA PRÓPRIA TRIAGEM (2026-08-29).** Aqui existia, até agora, uma **segunda linha de status** —
+> `status: ABERTA · severidade: CRITICA` — que **eu mesmo apensei** na passada em massa deste bloco, antes de
+> fechar a pendência por decisão do dono. A seção ficou **se contradizendo**: dizia FECHADA no topo e ABERTA
+> logo abaixo, e a linha obsoleta ainda carregava **CRÍTICA**, de modo que um `grep` por críticas abertas
+> continuaria encontrando esta. **Removida** — e a remoção é de texto que nasceu hoje, nesta mesma triagem,
+> não de registro histórico (§A2 preservado). Achado por auditoria do próprio orquestrador sobre o próprio
+> classificador, e é literalmente a classe que este bloco existe para exterminar: **registro que afirma duas
+> coisas incompatíveis ao mesmo tempo.**
 
 ## P-GOLIVE-VALIDATE-CONSTRAINT — Operacionalizar VALIDATE CONSTRAINT do CHECK do cancelamento (MÉDIA, go-live)
 O CHECK work_orders_cancelled_decision_check é NOT VALID (não valida linhas legadas). Hoje há 0 linhas cancelled+NULL no banco →
@@ -1058,10 +1354,16 @@ o VALIDATE passaria de imediato. Após aplicar 13..16 em produção e confirmar 
 VALIDATE CONSTRAINT work_orders_cancelled_decision_check` (bloco de follow-up rastreado). Até lá, o consumidor de comissões trata
 NULL-em-cancelled como "segurar para revisão" (P-Ω3F6-LEGACY-NULL). Ver docs/go-live-readiness.md.
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-GOLIVE-GATES — Gates humanos de go-live (R1 provedor, R2 restore cronometrado, smoke autenticado) — docs/go-live-readiness.md
 Readiness config-as-code = GO; ativação viva é fronteira humana. Gates que só existem no ambiente real: R1 (ratificar "dados no
 Brasil"), R2 (drill de restore cronometrado com app vivo + login + RPO no runbook), staging verde antes de prod, PROD_SMOKE_EMAIL/
 PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) + custo (~US$47-110/mês) em docs/go-live-readiness.md.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-UI-REFRESH-LIVENESS — indicador sutil de auto-atualização nas telas (WS-UI-REFRESH, 2026-07-19)
 - descricao: WS-UI-REFRESH removeu o botão manual "Atualizar" e ligou auto-refresh silencioso em 30 telas (o dono pediu
@@ -1073,6 +1375,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   de "tela viva". Cruza com WS-UI-CARDS/WS-UI-CHARTS (mesma passada de vitalidade de UI).
 - status: aberto (não-bloqueante; sancionado pela junta como comportamento pedido).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-UI-REFRESH-ERROR-COPY — cópia de erro referencia refresh manual que não existe mais (WS-UI-REFRESH, 2026-07-19)
 - descricao: alguns toasts/cópias de erro em ADAPTERS (fora do escopo do WS, não tocados) instruem recarregar manualmente,
   agora que o botão sumiu e a tela atualiza sozinha a cada 30s: `users.adapter.ts` ("Atualize a lista e tente novamente"),
@@ -1082,6 +1387,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   a instrução manual). São mensagens de erro (não empty-states).
 - status: aberto (não-bloqueante; cosmético).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-RBAC-GATING-MOCKSHELLS — gating RBAC das 3 telas-casca fica com a ligação a dados (WS-SCALE-8TELAS, 2026-07-19)
 - descricao: a auditoria RBAC listou 5 telas com botões de escrita expostos. WS-RBAC-GATING-CHECKLISTS gateou as 2 REAIS
   (service-backed): TenantChecklistsPage + ChecklistRunsPage. As outras 3 — DispatchConsolePage, TablePage (purchase-orders),
@@ -1089,6 +1397,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: gatear essas 3 JUNTO da ligação a dados reais (gate-on-wiring) em WS-SCALE-8TELAS — quando ganharem hook + service +
   usePermissions, aplicar o mesmo padrão (usePermissions + can + render condicional dos botões de escrita).
 - status: aberto (não-bloqueante; hoje são mocks sem efeito).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-RBAC-CATALOG-MATRIZ — divergências pré-existentes catalog.ts × RBAC_MATRIX.md em checklists (2026-07-19)
 - descricao: a junta (coordenador-de-acessos) achou 2 divergências PRÉ-EXISTENTES (não introduzidas pelo gating): (1) matriz
@@ -1108,6 +1419,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: quando houver um modo somente-leitura real do builder, desabilitar as interações locais no view. Cosmético.
 - status: aberto (não-bloqueante; sem persistência).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-CHECKLIST-RUNS-STATUS-COPY — status técnico cru na cópia da tela de execuções (2026-07-19)
 - descricao: ChecklistRunsPage.tsx (~linha 105) renderiza `{item.status}` cru dentro de frase PT-BR ("… componentes ·
   {item.status}"), expondo valor técnico (ex.: "published") — roça §3/§11.2 (sem termo técnico na UI). PRÉ-EXISTENTE, fora do
@@ -1115,6 +1429,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: mapear status → rótulo PT-BR (ex.: published→"Publicado") numa passada de cópia. Cruza com P-UI-REFRESH-ERROR-COPY
   (mesmo lote de polish de cópia).
 - status: aberto (não-bloqueante; cosmético).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-FINANCE-HEADER-ACTIONS — page header do Financeiro sem ações à direita (§11 #4, pré-existente, 2026-07-19)
 - descricao: o header da FinanceiroPage tem só título+subtítulo, sem as ações à direita do protótipo ("Conciliar NF-e" +
@@ -1124,6 +1441,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: restaurar ações significativas no header (Novo lançamento; Conciliar quando a trilha NF-e existir — cruza com a
   parada NF-e do scale-roadmap). Passada de fidelidade §11.
 - status: aberto (não-bloqueante; cosmético/pré-existente).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-MAPA-GOOGLE-PADDING-RESIZE — GoogleMapsCanvas não re-enquadra ao expandir rail (WS-MAPA layout, 2026-07-19)
 - descricao: no redesign de layout (overlays de vidro), o MapLibre reaplica `setPadding` (persistente) no resize, mas o
@@ -1158,12 +1478,18 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   `prisma.workOrder.groupBy` quando/se o volume exigir. Sem mudança de contrato.
 - status: aberto (otimização; feature funcionando).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-WOTS-SCALE — otimização de agregação (full-scan) no work-order-timeseries (2026-07-19)
 - descricao: o agregado GET /operations/work-orders-timeseries varre as OS do tenant (só status+3 timestamps) e agrega no
   compute puro. Correto e completo; em tenants com muita OS, filtrar por janela na query + GROUP BY seria mais eficiente.
   Espelha a mesma escolha de technician-performance/financial-summary. NÃO é pendência funcional.
 - acao: OTIMIZAÇÃO FUTURA (filtro SQL por from/to + agregação no banco) quando o volume exigir. Sem mudança de contrato.
 - status: aberto (otimização; feature funcionando).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-WOTS-FRONT-ACCESS — gráfico temporal deve tratar 403 (papel sem work_orders:read) no Dashboard (2026-07-19)
 - descricao: a série usa `work_orders:read` (mais restritiva que o `dashboard:read` do /dashboard/summary). Um papel com
@@ -1229,6 +1555,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   + PD se envolver servico tarifado).
 - status: ABERTA (parada honesta entregue; monitoramento real e trabalho de infra futuro).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-PLATFORM-TENANTDETAIL-REAL - Detalhe da Organizacao (plataforma) ainda mock (2026-07-20)
 
 - descricao: `PlatformTenantDetailPage` segue com consts hardcoded (STATS/CONTRACTED/HEALTH/USERS; nao le useParams tenantId).
@@ -1236,6 +1565,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   usuarios + modulos) real para wirar o detalhe. Backend: reusar listUsersForTenant(withTenantRls) + listTenantModules; sem
   migracao. MRR/uptime/saude-do-sistema por org = sem fonte (omitir, como no overview).
 - status: ABERTA (follow-up do WS-SCALE; PR-5a entregou o overview; detalhe fica para PR proprio).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-PURCHASE-ORDERS-BACKEND-GATE - Gate server-side de Pedidos/Relatórios pendente (2026-07-21, PR-SCALE-1)
 
@@ -1247,6 +1579,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   aplicar `requirePermission("purchase_orders:*"/"reports:read")` server-side. O catálogo + gating de UI desta fatia já preparam o
   terreno (fecha o gap pré-existente em que App.tsx/navegação referenciavam permissões ausentes do catálogo).
 - status: ABERTA (nasce junto com o endpoint; gating de UI isolado é cosmético mas correto).
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-SCREEN-REFS-PATH — screen-refs/ na raiz × docs/claude-code-handoff/screen-refs/ (2026-07-28, D-INTEROP-CLAUDE-CODEX)
 
@@ -1312,6 +1647,9 @@ rodada de saneamento de RBAC (§A2 — registradas para não consolidar em silê
 - **`finance`/`inventory`**: a matriz concede `read`/`read+answer-by-scope`; o catálogo pode não refletir.
 Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, caso a caso.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-IMPOUND-CHK-VISIBILITY (2026-08-01) — consequência de RBAC no endpoint de custódia (conflito §A2 com D-record da rota impound checklist-runs)
 
 CONFLITO REGISTRADO (não resolvido em silêncio). Ao conceder `checklist_runs:read` ao `field_technician`
@@ -1331,6 +1669,9 @@ passa a ser visível dentro do dossiê de custódia") foi desenhado assumindo qu
   `field_technician` não tenha (ex.: `impound:read` + uma perm de custódia dedicada) para restaurar a barreira
   original, ou se a visibilidade atual é aceitável. NÃO alterar a matriz nem o gate sem essa decisão.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-CHK-TEMPLATE-PRISMA-V7 (2026-08-01) — createTemplate falha no runtime do Prisma v7 (bug REAL de produção) — **RESOLVIDO (2026-08-02)**
 
 > **RESOLVIDO** na fatia de limpeza-de-pendências (antes do CHECKLIST P1). Fix: removido `tenant_id` explícito dos
@@ -1341,6 +1682,9 @@ passa a ser visível dentro do dossiê de custódia") foi desenhado assumindo qu
 > componente/resposta é o do pai (tenant do ator), sem vazamento. dba-guardião APROVADO_CONDICIONADO → irmão fechado no
 > mesmo PR. Varredura confirmou: nenhum outro nested-relation-create com relation-scalar compartilhado no codebase (os
 > demais `create:` são ramos de `upsert` top-level, seguros). Ver [[P-CHK-PRISMA-CLIENT-TYPING]].
+
+- **status:** FECHADA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
 
 ## P-CHK-PRISMA-CLIENT-TYPING (2026-08-02) — repo prisma de checklist descarta os tipos gerados (MÉDIA sistêmica)
 
@@ -1363,6 +1707,9 @@ falharia). NÃO introduzido por nenhum trabalho recente (pré-existente). Fora d
 `createMany` sem o relation-scalar duplicado) + adicionar um teste DB-gated de `createTemplate` contra Postgres real
 (o gap que escondeu isso). Registrado para não se perder (§A2).
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-DS-TABS-ARIA — Padrão WAI-ARIA de abas incompleto no `Tabs` do design system (BAIXA)
 
 Junta do Ω-VID PR-07 (`cognicao-visual`). O `Tabs` (`frontend/src/components/ui/index.tsx`) tem `role=tablist/tab` +
@@ -1373,6 +1720,9 @@ ativa, e sem roving-tabindex/navegação por ArrowLeft/ArrowRight (só `Tab` ent
 `aria-labelledby ↔ aria-controls` + (opcional) navegação por setas. Ver também **[P-Ω4-2B-A11Y]** (focus-trap/Esc no
 `Modal` compartilhado — mesma classe transversal, herdada pelo modal grande do dossiê).
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-PATIOS-HEX-TOKENS — Hex inline no módulo pátios contra J-002 (BAIXA)
 
 Junta do Ω-VID PR-07 (`cognicao-visual`). `VehicleDossieModal`/`ProcessIdentityCard` e os irmãos do módulo
@@ -1381,6 +1731,9 @@ estilos inline, contra a regra "nunca hex solto em componente" (J-002). **Não �
 a convenção já estabelecida em TODO o módulo pátios (consistente com os irmãos). Corrigir numa passada de tokenização
 do módulo: promover para as variáveis já usadas em outras telas (`var(--text-primary)` / `var(--text-secondary)` /
 `var(--color-core-primary)`). Registrado para rastreabilidade (§A2); fora do escopo de qualquer PR de feature.
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-CHK-RUN-DTO-NARROW — Estreitar o resumo de ChecklistRun removendo UUIDs não-usados (BAIXA)
 
@@ -1392,6 +1745,9 @@ do DTO. **Não é violação §allowlist** — é aperto opcional. Fora do escop
 eventuais consumidores futuros — PR-09 Histórico pode querer `relatedEntityId` para agrupar). Registrado para a
 rodada de custódia decidir junto de [P-IMPOUND-CHK-VISIBILITY].
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-CHK-RUN-ASSIGNEE-SCOPE — `listChecklistRunsForProcess` não escopa por assignee (BAIXA, → junta de custódia)
 
 Junta do Ω-VID PR-08 (coordenador-de-acessos). O `checklist_runs:read` do `field_technician` tem intenção
@@ -1401,6 +1757,9 @@ cross-tenant — 404 provado nos testes 4/5); a nuance é apenas se o guincheiro
 do processo. É exatamente a decisão que [P-IMPOUND-CHK-VISIBILITY] defere à **junta de custódia**: (a) exigir permissão
 de custódia dedicada além de `impound:read`? (b) escopar por assignee para alinhar à intenção "answer-assigned"? PR-08
 não é o lugar de decidir. Registrado (§A2).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-DOSSIE-PAGE-TABS — Página fallback /patios/processos/:id não reflete as abas Checklist/Histórico do modal (BAIXA) — **RESOLVIDO (2026-08-02)**
 
@@ -1420,6 +1779,9 @@ histórico. Não é bug (a página é fallback; o ponto de entrada primário é 
 de completude entre os dois caminhos. Decidir numa fatia própria: (a) alinhar a página ao modal (reusar
 `ChecklistRunsPanel`/`CustodyHistoryPanel` + hooks — baratos, já são componentes puros), OU (b) deprecar a página em
 favor do modal (redirecionar `/patios/processos/:id` para abrir o modal). Registrado (§A2).
+
+- **status:** FECHADA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
 
 ## P-CHK-RENDER-ENVELOPE (2026-08-03) — O run screen mobile renderiza dos SEEDS, não do backend (ALTA) — **RESOLVIDA (2026-08-04, aguardando re-verificação da junta)**
 
@@ -1454,6 +1816,9 @@ congelada, não a viva; hoje `getSchema` não lê snapshot). Nesse caso o plumbi
 `buildChecklistSnapshot` passa a valer. **Alvo: PR-08 (reconciliação mobile)** desta rodada. §A2/§A6: ALTA registrada
 ABERTA, não escondida — o PR-01 alinhou os TIPOS e o AUTHORING web + plumbou os DOIS DTOs, mas NÃO fecha o render mobile.
 
+- **status:** FECHADA · **severidade:** ALTA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
+
 ## P-CHK-CATALOG-EXHAUSTIVE (2026-08-03) — Catálogo de componentes é array, não Record (tsc não garante cobertura) (BAIXA)
 
 Junta do CHECKLIST P1 PR-01 (critico-adversarial, menor). `CHECKLIST_COMPONENT_CATALOG` (`checklist.components.ts`) é
@@ -1462,22 +1827,34 @@ tenha entrada no catálogo (um tipo novo sem entrada passaria silencioso; hoje e
 para um Record keyed por tipo (o `tsc` passa a exigir cobertura), preservando a ordem via um array de ordenação. Fora
 do escopo do PR-01. Registrado.
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-WO-LIST-TECH-NAME (2026-08-04) — DTO da lista de OS sem o nome do técnico atribuído (BAIXA, UX)
 
 Rodada TELAS PADRONIZADAS PR-B. O design do dono (sc_os) mostra avatar+NOME do técnico na coluna TÉCNICO, mas o DTO
 da lista de work-orders só carrega `assignedOperatorId` — a tela degrada honestamente para "Atribuído" (sem inventar
 iniciais). Fatia pequena de backend: incluir `assignedOperatorName` no DTO de lista (join leve) + adapter/coluna.
 
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
 ## P-USERS-LAST-ACCESS (2026-08-04) — DTO de usuários sem "último acesso" (BAIXA, UX)
 
 TELAS PR-C. O design mostra ÚLTIMO ACESSO ("14/07/2026 · há 21 dias"), mas `User` só tem `createdAt` — a tela usa
 "CRIADO EM" honesto. Fatia backend: gravar/expor last_login (a base já tem sessões/auditoria de login para derivar).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-AUD-ACTOR-NAME (2026-08-04) — DTO de auditoria sem nome/perfil do ator (BAIXA, UX)
 
 TELAS PR-C. O design mostra avatar+nome+perfil do ator; o DTO expõe só `actor_user_id` (id opaco). A tela mostra
 "Usuário"+cor determinística (nunca UUID; chip no filtro). Fatia backend: incluir displayName/role do ator no DTO
 (join leve), respeitando a allowlist §2.8 (nome é rótulo, não PII sensível no contexto do próprio tenant).
+
+- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-SUITE-ENV-PERSISTENCE (2026-08-05) — suíte backend depende de `CORE_SAAS_PERSISTENCE=memory` no SHELL (MÉDIA sistêmica)
 
@@ -1689,6 +2066,9 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
   [[P-JUNTA-LIMPEZA-BASE-VIVA]]); o caminho seguro é corrigir o SEED e re-semear, não apagar em massa.
 - status: ABERTA.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
 Junta do PR-02d. O `resolveChecklistPreviewMode` decide dock × modal por `window.innerWidth >= 1600`, mas a
@@ -1697,6 +2077,9 @@ caberia bem antes de 1600. O número está certo para o layout expandido e errad
 - **Correção:** medir o contêiner (`ResizeObserver` ou `clientWidth` da grade) contra os 1198px reais, em vez
   da janela. De quebra, trocar o listener de `resize` por `matchMedia` elimina o re-render por pixel.
 - status: ABERTA.
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-RBAC-CATALOGO-NAO-CHEGA-AO-BANCO (2026-08-08) — permissão declarada em código nasce MORTA em produção (ALTA sistêmica) — **RESOLVIDO com guard**
 
@@ -1763,6 +2146,9 @@ mesma que o próprio seed usa como fallback. Sem impacto no RBAC efetivo (nenhum
   fazer seed **e** provisionamento lerem de lá. Fora do escopo desta frente (não podia tocar `prisma/seed.ts`).
 - status: ABERTA.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-CHK-DOSSIE-VERSAO-NA-UI (2026-08-10 — junta do CHK P1 PR-03, 2ª rodada)
 
 O backend do dossiê do veículo passou a dizer a verdade sobre vistoria reaberta: o resumo da aba
@@ -1776,6 +2162,9 @@ antes do PR-03.
 **Fechar no CHK P1 PR-05 (histórico):** 3 campos no tipo espelho + 3 linhas em `adaptChecklistRun` + chip
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
 
@@ -1799,7 +2188,15 @@ de serviço** — o resolvedor sozinho não produz a colisão. Ela volta a ser a
 ganha `generic` (e o que mais o eixo `role` tiver); (c) `fromApiValue` deixa de colapsar desconhecido — valor
 não reconhecido é erro explícito ou um `unknown` que a comparação RECUSA, nunca um palpite; (d)
 `getRunByKind` deixa de usar `firstOrNull` sobre conjunto ambíguo.
-- status: ABERTA — pré-requisito de merge da PR-04b, não item de backlog.
+- **status:** FECHADA · **severidade:** MÉDIA · **dono:** encerrado
+  <sub>Resolução de contradição (2026-08-29). O texto original desta linha era *“status: ABERTA — pré-requisito de merge da PR-04b, não item de backlog”*, preservado no parágrafo abaixo.</sub>
+- ~~status: ABERTA — pré-requisito de merge da PR-04b~~ *(texto de 10/08, obsoleto — ver acima)*
+  <sub>**Contradição PRÉ-EXISTENTE, resolvida por DATA e não por regex.** Esta linha é de **10/08** e dizia ABERTA; o cabeçalho desta mesma seção, de **11/08**, diz **RESOLVIDA na PR-04b**. A linha era pré-requisito *daquela* PR — e ela mergeou, o que a tornou obsoleta no dia seguinte. Vence o texto **mais novo**. O classificador do índice **não decide isto sozinho**: ele emitia `CONTRADITÓRIA` e exigia decisão humana, porque comparar datas não é coisa que um regex faça — foi exatamente chutar aqui que reprovou a primeira passada. Escopo: `pre-existente`, nasceu 19 dias antes deste bloco.</sub>
+  <sub>**Contradição PRÉ-EXISTENTE, nomeada pela triagem SAN2-1 (2026-08-29), não corrigida por reescrita.**
+  Esta linha é de **10/08** e diz ABERTA; o **cabeçalho** desta mesma seção diz **RESOLVIDA na PR-04b
+  (2026-08-11)**. A linha ficou obsoleta quando a PR-04b mergeou — era pré-requisito *dela*, e ela entrou.
+  O índice classifica como **FECHADA**, seguindo o cabeçalho, que é o mais novo. O texto de 10/08 fica como
+  registro histórico (§A2). Escopo: `pre-existente` — nasceu 19 dias antes deste bloco.</sub>
 
 ## P-CHK-CUSTODIA-AUTOLINK-SEM-FILTRO (2026-08-10 — junta do CHK P1 PR-04, achado A3 do `critico-adversarial`) — **BLOQUEIA A PR-04b**
 
@@ -1881,6 +2278,9 @@ o caso, no MESMO dia, dos 7 arquivos de KPI que restaurei por reflexo e que o do
 propósito. **Inventariar antes de apagar** é a regra que sobrou dos dois episódios.
 
 ### Registro original (mantido para rastreabilidade)
+
+- **status:** FECHADA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
 
 ## P-WORKTREE-INTEROP-ORFAO — registro original (achado do `porteiro-pos-merge` no gate do #351)
 
@@ -2606,6 +3006,9 @@ que esta mesma fatia consertou do outro lado, e que ninguém somaria seis meses 
 - **Correção:** o `create` passa a normalizar, como o `reassign`.
 - status: ABERTA.
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS (2026-08-15 — porteiro pós-merge do #352)
 
 `package.json:19` define `"test": "node --test --import tsx tests/*.test.ts"`. **No Windows o shell não expande o
@@ -2691,6 +3094,9 @@ que o consumidor vai ler.
   de cinco itens de contenção.
 - **Alvo:** B-O6R-08 (`fix/durable-jobs-realtime`). status: ABERTA.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B05-STAGING-SCALE-ZERO (2026-08-15 — bloco B-O6R-05, questão Q5)
 
 O staging escala a zero (`fly.staging.toml`: paradas automáticas ligadas, mínimo de máquinas em execução = 0).
@@ -2717,6 +3123,9 @@ portal público** — quem seguisse as instruções do próprio arquivo receberi
 de escutar a porta. Este bloco completou os cabeçalhos com os **nomes**. Falta o dossiê de hand-off humano
 (`docs/deployment.md`, seção de ativação) **herdar a mesma lista corrigida**, para não divergir de novo.
 - **Alvo:** hand-off de ativação. status: ABERTA.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-SUITE-NAO-SUPORTA-ENV-PRISMA (2026-08-15 — bloco B-O6R-05, revelado ao consertar o `npm test`)
 
@@ -2798,6 +3207,9 @@ como teste** (o caso nomeia a pendência), justamente para a afirmação não po
 - **Correção, se um dia valer:** resolução no boot, com o custo declarado (falha de DNS passa a impedir o boot).
 - status: ABERTA (limitação conhecida e declarada, não defeito silencioso).
 
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
 ## P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST (2026-08-15 — junta do PR #353, ressalva do `agente-dba-guardiao`)
 
 O B-O6R-05 nasceu para fechar a assimetria "banco blindado, Redis aberto" e **entregou o inverso**: o `REDIS_URL`
@@ -2819,6 +3231,9 @@ Redis: some no restart, que é literalmente o `Ω6R-DAT-001` entrando por outra 
 - Já feito neste PR: o comentário do campo em `src/config/env.ts` foi reescrito para declarar o que ele **não**
   faz, a pedido da junta — a frase anterior prometia mais rigor do que as duas linhas seguintes entregavam.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353)
 
 O Redis de desenvolvimento desta máquina carrega **42.393 chaves de payload de fila** (`erp:jobs:data:*`) de
@@ -2827,6 +3242,9 @@ veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é paylo
 - **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
   explícito e contagem antes/depois, nunca por curinga solto.
 - status: ABERTA.
+
+- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 ## P-O6R-B01-ROLE-LITERAIS (2026-08-18 — ciclo 2 do B-O6R-01, plano §9)
 
@@ -2940,6 +3358,9 @@ auditoria, no `B-O6R-07`.
 caminho anônimo tem piso de latência e balde por e-mail, e o achado é **soma** ao `SEC-003`, não regressão.
 **Dono natural:** `B-O6R-07` (autorização e anexos), que já fecha o `SEC-003`.
 
+- **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída
 
 **Achado por:** `agente-secops`, medido: depois da religação, o titular da conta **provada** perde acesso
@@ -2953,6 +3374,9 @@ vínculo que NÃO dependa de credencial de outra organização."*
 ergonomia de saída. Mas é assimetria real, e o `§5.3` do plano v6 declarava bidirecionalidade que a execução
 não entrega inteira.
 
+- **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de candidatos é invisível
 
 **Achado por:** `agente-secops`: `logError` do `AnonymousLoginService` é **código morto** — declarado em
@@ -2962,12 +3386,18 @@ não entrega inteira.
 na composição que roda em produção"* — log, métrica ou alarme. Sem isso, a sonda de prontidão pode dizer
 `inactive` e ninguém saber por quê.
 
+- **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)**
 
 O escopo registrado no ciclo 2 citava só o `DELETE`. A junta do ciclo 3 **mediu o `GET` da mesma rota**
 devolvendo a mensagem **crua do Postgres** no corpo público (`400` com `Raw query failed…`). O escopo real é
 a rota inteira, e a causa é o fallback de `sendRouteError` (`http.ts:51-60`), compartilhado por dezenas de
 módulos — o que mantém a decisão de tratá-lo como bloco próprio.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-ARNES-ISOLAMENTO — **EMENDAS medidas pela junta do ciclo 3**
 
@@ -2987,6 +3417,9 @@ Acrescentar ao registro existente, com evidência executada:
   de 30 s, e o denominador cai de 148 para 134. A falha se manifesta como **arquivo abortado**, não como
   espera declarada. Folga atual quantificada: amostrador a 10 Hz durante uma bateria inteira nunca pegou mais
   de 1 titular do lock.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-ARNES-ISOLAMENTO — **EMENDAS do bloco B-O6R-ARNES (2026-08-28)** — o bloco próprio existiu e rodou
 
@@ -3034,6 +3467,9 @@ P1 (paralelismo não declarado) · P2 · P4 (DDL de esquema compartilhado — `c
 de fixture órfãos do aborto duro (o varredor cobre **roles**; organizações/usuários deixados por `SIGKILL`
 seguem sem caminho de remoção) · `P-O6R-B02-SUITES-LIST-CI`.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-ARNES-RLS-TEST-FORA-DO-SWEEP (2026-08-28 — B-O6R-ARNES, C-C) — MÉDIA · decisão CONSCIENTE, não esquecimento
 
 **Estado:** ABERTO · **Dono:** junta, junto do destino dos prefixos legados.
@@ -3075,6 +3511,9 @@ para quem receber a classe. O mecanismo já está descrito na `P-O6R-B01-TRILHA-
 produção normaliza o par do token preguiçosamente (`normalizePairIdentity`, por desenho) criando vínculo +
 evento na trilha append-only, e o teardown apaga o tenant sem conhecer a trilha.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO, fora do escopo
 
 **Dono:** próximo bloco que tocar `tests/core-saas-role-authority.test.ts` ou o gate de `DATABASE_URL` das
@@ -3102,6 +3541,9 @@ Client.`, `src/database/prisma.ts:12`). O arquivo não é DB-gated e não declar
 inteiro. Nada neste PR o alcança. **Consertá-lo é PROIBIDO aqui** (§10.3 do plano — bloco irmão): ou ele ganha
 o gate de `DATABASE_URL` como as suítes `-db`, ou deixa de importar Prisma no load. Decisão de quem receber.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** declarado acima
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN (2026-08-28) — divergência do plano, registrada ANTES de consolidar (§A2)
 
 O plano (§12) mandava **fechar** `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` com este PR. **Medido:** essa pendência
@@ -3126,6 +3568,9 @@ real: os **58 pulos declarados não caem no piso**, e o piso dispara 1 vez nomea
 `tests/core-saas-role-authority.test.ts`, que morre no LOAD sem declarar skip. [Frase corrigida em 2026-08-28
 pelo bloco de registro — o "piso 0" original media commit intermediário; ver `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`.]
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrada ANTES de consolidar
 
 A §5 lista `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md` e `index.html`, mas **não**
@@ -3137,6 +3582,9 @@ deixa a bateria vermelha, por desenho (`D-KPI-INDEX-PAINEL`: o número nunca mor
 nunca digitada**, e o diff em `app.js` fica restrito à linha `var FROZEN = …`, conferível. Não editei lógica
 do painel. `Kpis/index.html` **não** precisou mudar: ele hidrata dos JSON em runtime e este bloco não inaugura
 dimensão nova de métrica (§C3) — não mexer nele é a opção honesta, não uma omissão.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO (2026-08-28) — DOIS achados por execução CONTRA a própria correção
 
@@ -3168,6 +3616,9 @@ decisão do dono prevê.
 
 ---
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## Registros do ciclo 4 do `B-O6R-02`, reconciliados da trilha para a `main` (2026-08-28)
 
 > Estas entradas nasceram em 25–28/08 na branch `demo/investidor` e **nunca existiram na `main`**. O bloco
@@ -3193,6 +3644,9 @@ destacar bloco próprio e publicar o número com N e forma honestos. Parada + do
 
 ### Pendências nomeadas pelo ciclo 4 (ajustes A1–A8 da ata; sem correção proposta)
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU (2026-08-28 — cadeira de ataque, ajuste A1) — MÉDIA
 `API_CONTRACTS.md` l.426–428 (head `12c3825`) e o cabeçalho de `20260870000000_add_reversal_pair_atomicity` afirmam *"impossível
 por construção, mesmo para escritor que não passa pelo serviço"*. Medido: `DELETE` físico do original com estorno vivo é
@@ -3201,11 +3655,17 @@ pendurada (DELETE HTTP legítimo do renomeado → 200, saldo 100). Não há FK e
 Nenhuma rota do produto faz DELETE físico (grep em `src` = 0) — é **defeito de TEXTO e de guarda ausente**, não de caminho do
 produto. Propriedade a decidir: o contrato só pode afirmar o que os triggers garantem.
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA
 O teste `[C1/P9][db][RLS] estorno LEGÍTIMO sob o contexto RLS do app: trigger enxerga o original vivo` roda como `postgres`
 (`rolsuper=t`, `rolbypassrls=t`) no local, na CI (`ci.yml` `postgres:postgres`) e no compose — e **passou com os triggers
 derrubados** (controle DOWN: ok 6). O título afirma o que a execução não sustenta (classe do C5). A propriedade trigger×RLS
 **é verdadeira** — provada pelo jurado com role `NOBYPASSRLS` sob RLS forçada ((c1)(c2)(c4) P0001 DIN-002; (c3) legítimo comita).
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (registro §A2)
 **D27 como enunciado no plano é insatisfazível** (remover a chamada do construtor = mutante equivalente: 87/87 verde; a
@@ -3215,26 +3675,41 @@ delete-first para o validador/ataque) enquanto o plano exige "as DUAS ordens" ve
 ordens deterministicamente. As duas divergências estavam **só no corpo dos commits** `b7de4c9`/`db5b047`; ficam registradas aqui
 e na ata para que ninguém herde "D27/D21 vermelhos como escritos" como fato.
 
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B02-BATERIA-CANONICAS-1-2 (2026-08-28 — validação, ajuste A4) — MÉDIA
 O KPI do ciclo 4 publica só a canônica 3 e os focados; **canônicas 1 e 2** (§9.2, §9.6 — N≥15, denominador constante) não
 foram executadas/publicadas pelo dev. Validador mediu N=1: canônica 1 = 2465/2400/**1 fail ambiental** (`core-saas-role-authority`
 inicializa o Prisma Client após o skip sem `DATABASE_URL` — pré-existente)/64 skip; canônica 2 = 194/194, 0 skip, 0 hits
 `unhandledRejection|XX000|23505|40P01`. Falta a publicação com N e forma, não há número falso.
 
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA
 `tests/financial-entry-delete-reverse-race-db.test.ts` (corrida em Postgres real, 2 ordens + SQL cru + barrier + RLS) **não
 está na lista SUITES do job `backend-postgres`** do `ci.yml` (0 hits no head; denominador da canônica 2 = 194 sem ela). Roda só
 pela canônica 3 (job `backend`) e isolada. `ci.yml` era PROIBIDO no ciclo 4 (§5) — a inclusão é pendência nomeada, não emenda.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
 junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
 2026-08-28 nesta mesma rodada de registro).
 
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA
 O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: nenhuma suíte exercita o bloco `DO` da migration
 (WARNING com órfão semeado); só o drill D28 o exerce (validador executou: WARNING nomeado com 1 órfão). Os demais componentes
 (≥6 corrida, ≥2 SQL cru) e o total (≥21) estão acima do piso.
+
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO em 2026-08-28** (era ALTA)
 
@@ -3249,10 +3724,16 @@ O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: n
 não o head; o S0 do plano ("`--check` até o espelho fechar") **não fecha em `12c3825`**. `5e321ac` segue não-ancestral. A CI não
 executa o `--check` (0 hits em `ci.yml`). Fechar antes do PR/porteiro (rebase ou sync na branch), fora do dev.
 
+- **status:** FECHADA · **severidade:** ALTA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
+
 ## P-O6R-B02-RUNNER-SUMICO-SEM-SKIP (2026-08-28 — arnês #4 / D26b) — MÉDIA (mesma classe do B-2c4)
 Suíte -db que sai limpa **sem registrar teste** (mutação `if (true) {} else if (!connectionString)`) → `npm test` **ec=0**,
 "260 arquivo(s) · 2740 teste(s) · pass 2738 · skipped 2", guard mudo. O D26 literal (auto-pulo com `skip:`) fica vermelho e
 nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do arnês, N=10)
 
@@ -3269,6 +3750,9 @@ nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
 - **ERRATA do rótulo (28/08):** nas linhas apontadas, `audit-security.test.ts:158` é `DROP OWNED BY` (teardown, FORA do
   `withRoleCatalogLock`) e `auth-identity-fixture.ts:150` é `GRANT USAGE ON SCHEMA public` (DENTRO do lock) — escritas em
   `pg_namespace.nspacl`/`pg_class.relacl`, não `pg_authid`. Objeto disputado a nomear por execução no ciclo 5 (ver errata da ata).
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## Pendências do porteiro pós-merge do #359 (`B-O6R-ARNES`) — 2026-08-28, `LIBERADO COM RESSALVA`
 
@@ -3295,6 +3779,9 @@ teste. Consequência: um teste que se declara "sob a role X" pode estar rodando 
 percebe — a mesma classe do `[RLS]` que rodava como superusuário e passava com os triggers derrubados
 (`P-O6R-B02-TESTE-RLS-SUPERUSER`).
 
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** declarado acima
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por execução** (candidato: bloco de arnês seguinte)
 
 Achado `pre-existente` da cadeira do runner (voto `02`, achado 2), **sem dono na ata** — o porteiro cobrou
@@ -3303,6 +3790,9 @@ falhou com `ERR_ASSERTION true !== false` em **1 de 2** rodadas da suíte inteir
 classe** deste bloco (não é catálogo, não é denominador, não é teardown de papel). **Quem receber precisa
 primeiro atribuir por execução** — N≥10 isolado — antes de qualquer correção; hoje há uma medição de 1/2 e
 nada mais.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-29, este PR — ver errata)**
 
@@ -3325,6 +3815,9 @@ classe** que a junta corrigiu em `0c37fa2`, na frase vizinha:
    `agent-orchestration/docs/status-geral.md:37`, contradizendo a lista dos **7** no mesmo arquivo.
 3. **`P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`** mantém **2358** (não foi alcançada pela correção de `0c37fa2`)
    e não tem linha `Dono:`.
+
+- **status:** FECHADA · **severidade:** BAIXA · **dono:** a atribuir
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status, mas **ela própria já se declarava resolvida** no cabeçalho — a linha é **transcrição**, não juízo novo. [Nota corrigida em 2026-08-29 pelo achado A-3 da junta: aqui estava colado o boilerplate *“Marcada ABERTA por padrão conservador”*, que contradizia o próprio `status: FECHADA` logo acima. A nota é a prova de auditoria da regra — colada sem discriminar, transformava o registro numa afirmação dupla.]</sub>
 
 ## P-ARNES-BACKFILL-359 (2026-08-28) — MÉDIA · **FECHADA (2026-08-28, este PR)**
 
@@ -3394,6 +3887,9 @@ pulados. Quórum deste bloco: **maioria de 3** — não toca dinheiro, seguranç
 
 ---
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** declarado acima
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
 ## P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder tocar `scripts/`
 
 **Achador:** `inspetor-de-terreno-da-junta` do `B-O6R-REG` (ressalva R1), **confirmado por execução** pelo
@@ -3429,6 +3925,9 @@ sem neutralizar eol sob `core.autocrlf=true` fabrica divergência. Ali foi `git 
 checkout fresco, `--check` verde; e com um arquivo do espelho realmente adulterado, vermelho.
 
 ---
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** declarado acima
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é quem vai reusar a forma)
 
@@ -3469,3 +3968,102 @@ conflito é entre **dois registros vivos**, não entre registro e execução.
 **Como fechar (não feito aqui):** rodar `node scripts/run-backend-tests.mjs` sobre **cada** uma das duas
 listas, em cluster descartável, N≥3, e publicar os dois denominadores com N e forma. A lista que não fechar 37
 recebe errata apensada (§A2 — o texto original fica), nomeando qual medição a produziu.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** declarado acima
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
+---
+
+## Reconciliação da governança da `main`, trazida da trilha (SAN2-1, 2026-08-29)
+
+> Estas duas entradas nasceram em 24–25/08 na branch `demo/investidor` e **nunca existiram na `main`**.
+> O porteiro pós-merge do #360 registrou isso como **achado C — "reconciliação declaradamente parcial"**:
+> quem lesse a `main` seguia sem saber que a proteção dela foi discutida **e instalada**. Texto verbatim,
+> preservado como estava (§A2).
+
+## P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24)
+
+- **status:** FECHADA · **severidade:** ALTA · **dono:** encerrado pela atualização de 25/08
+  <sub>Linha de status acrescentada na reconciliação SAN2-1 (2026-08-29). O texto veio verbatim da `demo/investidor` e não trazia nem `status:` nem `Estado:` — o índice o marcava SEM-STATUS, que é um estado visível e não um palpite. **Fechada** porque a entrada seguinte, de 25/08, registra o ruleset instalado.</sub>
+
+**Medido agora**, no ciclo 3 do protocolo de dificuldade:
+
+```
+$ gh api repos/thiagodorgo/ERP_Techsolutios/rulesets
+[]
+$ gh api repos/thiagodorgo/ERP_Techsolutios/branches/main/protection
+{"message":"Branch not protected","status":"404"}
+```
+
+**Consequência:** hoje `gh pr merge --squash` funciona sem junta, sem porteiro e sem CI. Todo o aparato de
+governança dos §C7 e §C2.8 é **voluntário** — não "quase voluntário": literalmente. Cada regra do contrato
+depende de o agente escolher obedecer.
+
+Isso não invalida o contrato — invalida a leitura de que o contrato está *sendo imposto*. Onde um documento
+disser "o gate impede", hoje a frase correta é "o gate constrange quem já decidiu obedecer".
+
+**Segundo fato, do mesmo levantamento:** o repositório é de **usuário**, não de organização
+(`owner.id = MDQ6VXNlcjQyOTE1NTYz` = `04:User42915563`). A regra `workflows` de ruleset — a única construção
+que a `PD-GOV-PORTEIRO-RECIBO` identificou como não-forjável pelo autor — é **org + Enterprise** e **não
+existe** em repositório de usuário.
+
+**BLOQUEIA** qualquer afirmação de que o merge é controlado. Não bloqueia trabalho de produto.
+
+**Decisão do dono pendente** (ver `R-GOV-PORTEIRO-PRE-MERGE-ciclo3.md`): defender-se de agente **descuidado**
+ou de agente **malicioso**? A resposta muda o tamanho da entrega em uma ordem de grandeza.
+
+---
+
+## P-GOV-MAIN-SEM-PROTECAO — ATUALIZAÇÃO (2026-08-25): ruleset INSTALADO
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** workstream de governança (`docs/governanca-porteiro-pre-merge-sol`)
+  <sub>Linha acrescentada na reconciliação SAN2-1 (2026-08-29). O ruleset foi instalado, mas **fica aberto** o que a própria entrada nomeia: versionar `.github/rulesets/` (hoje o ruleset vive **só no servidor**) e encolher a branch de governança de 46 commits para o tripwire.</sub>
+
+O dono respondeu a pergunta do ciclo 3: **DESCUIDADO** (`D-GOV-AMEACA-DESCUIDO`). Com isso o desenho
+de tripwire foi instalado NA HORA:
+
+```
+$ gh api repos/thiagodorgo/ERP_Techsolutios/rulesets
+21453239  active  "main — PR + CI verde (tripwire, D-GOV-AMEACA-DESCUIDO)"
+
+$ gh api repos/.../rules/branches/main       # regras EFETIVAS na ref
+deletion · non_fast_forward · pull_request ·
+required_status_checks: backend · backend-postgres · frontend · flutter · docker · owner-portal · authority-portal
+```
+
+Desenho: PR obrigatório (squash; 0 aprovações — o dono é o único humano) · os 7 checks REAIS do
+`ci.yml` verdes no head atualizado (`strict`) · `integration_id` 15368 pinado · sem force-push · sem
+delete · bypass list VAZIA. O check do porteiro NÃO entrou: o workflow não existe na `main`, e exigi-lo
+bloquearia todo merge (e era o overclaim que o ciclo 3 derrubou).
+
+**Nota honesta de método:** `git push --dry-run` foi tentado como prova e descartado — dry-run não
+avalia ruleset no servidor; a prova registrada é a API de regras efetivas acima. O "morde de verdade"
+será medido no primeiro merge por PR.
+
+**RESTA da pendência:** o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits →
+encolher para tripwire declarado, tirar "prova"/"independente" do vocabulário, pin de modelo vira
+registro). Trabalho de ciclo próprio, com plano novo — não bloqueia mais nada.
+
+
+---
+
+## P-SAN2-LEITURA-DAS-79 (2026-08-29) — MÉDIA · **Dono:** bloco próprio, DEPOIS do ciclo 5 do financeiro
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco próprio, após o ciclo 5
+
+**O compromisso da opção C, escrito para não evaporar.** O dono decidiu (dossiê do `SAN2-1`, 2026-08-29):
+salvar agora o que as juntas verificaram e **adiar** a leitura real do balde C — não descartá-la. Este é o
+registro do adiamento com dono.
+
+**O que o bloco futuro faz:** ler as **79 pendências** marcadas `DIFERIDO-LEVE`, **uma a uma**, e
+classificar cada uma com evidência própria (a etiqueta atual diz honestamente: *"adiada por triagem
+automática; NÃO verificada item a item"*). A taxa medida de contaminação nas duas amostragens independentes
+foi **~40% — 4 materiais em 11 lidas** (A-5 do ciclo 1: `P-Ω4-7-CLEAR-ATOMIC`, `P-Ω4-3-REFATURAR-DELTA`;
+A-C1/A-C2 do ciclo 2: `P-036`, `P-Ω3F3B-UPDATE-VALIDA4` — todas já retiradas/fechadas individualmente).
+Extrapolando a taxa, **o balde deve conter mais ~25–30 materiais escondidos** — é por isso que a severidade
+desta pendência é MÉDIA e não BAIXA.
+
+**Por que depois do ciclo 5:** decisão do dono na escolha da opção C — a leitura custa ~4–6 h e não pode
+ficar no caminho crítico do teto do §C7.4. **Critério de fechamento:** as 79 com veredito individual e
+evidência; as materiais promovidas de balde; o índice regenerado; e a etiqueta de triagem automática
+removida (porque a leitura terá acontecido).
