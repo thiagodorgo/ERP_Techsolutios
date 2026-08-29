@@ -6,6 +6,52 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-28 - B-O6R-REG - o registro passa a dizer o que a execução diz
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend / Flutter / Smoke | **carregados** — 2595/2597, 864/864, 1126/1126. Nenhuma trilha de código foi tocada (§C3.3) |
+| Blocos Entregues | **152 — INTOCADO.** Governança e registro não contam como bloco de feature entregue (mesmo critério do `JUNTA-MAPAS` e do `Ω-GOV`) |
+| mvp_demo / mvp_vendável | **INTOCADOS** — nenhum escopo de produto se moveu |
+
+Bloco de **registro**, sem uma linha de código de produto: o diff em `src/`, `prisma/`, `frontend/`, `mobile/`,
+`tests/`, `scripts/` e `.github/` é **vazio**.
+
+**Fecha as quatro ressalvas** que sobraram do porteiro pós-merge do #359 — as outras duas ele próprio fechou no
+dia (apagar a branch remota; tornar a trilha durável). (1) **Backfill §C3.5** do #359. (2) **Três frases
+defasadas** que a execução contradiz — *"piso 0"* → o piso **dispara** nomeando
+`tests/core-saas-role-authority.test.ts`; *"6 arquivos"* → **7**; *"2358"* → **2359**, com linha `Dono:`. As
+três viviam **também** na `description` do history e foram corrigidas lá: o porteiro só tinha nomeado os
+arquivos de registro. (3) Os **dois achados `pre-existente` órfãos** da ata ganharam entrada com dono — o do
+`authority-portal.test.ts:162` exige **atribuição por execução, N≥10, antes** de qualquer correção.
+
+**Achado não previsto, encontrado por este bloco.** O status de `P-O6R-B04` e `P-O6R-B05` estava **trocado** na
+`pendencias.md` da `main`: o bloco de **estoque** figurava como FECHADO pelo PR #353 — que é do **B-05** e se
+chama literalmente *"produção não sobe mais sem persistir e sem worker"* — e o B-05, de fato mergeado, figurava
+como ABERTO. Os dois se anulavam. **Consequência material:** quem lesse a trilha pularia o B-04 inteiro achando
+que os dois P0 de estoque (saldo concorrente, fechamento de contagem cíclica) estavam fechados. A contraprova
+estava no próprio `roadmap` do KPI, que sempre marcou B-04 `a_fazer` e B-05 `concluido`.
+
+**Reconciliação da trilha.** 29 registros de junta (atas, votos, briefings, planos, relatórios de achador, as
+duas auditorias) e — o que mais importa — **três decisões do dono** (`D-INSPETOR-TERRENO-JUNTA`,
+`D-GOV-AMEACA-DESCUIDO`, `D-JUNTA-ESCOPO-E-CALIBRACAO`) viviam **só** na branch `demo/investidor`. Decisão do
+dono é o **topo** da hierarquia de fonte de verdade (§A1.1) e estava fora da `main`. O `decisoes.md` é
+append-only puro — conferido: a `main` é prefixo **estrito** da `demo`, então a reconciliação não sobrescreve
+nada. As nove `P-O6R-B02-*` do ciclo 4 também entraram: são o insumo do ciclo 5, e foi exatamente a ausência
+delas na `main` que fez o próprio `B-O6R-ARNES` tropeçar. Os JSON de povoamento (dados da demo) ficaram **fora**.
+
+**Cronograma.** O `docs/CRONOGRAMA.md` era de **05/08**: dizia 136 blocos, backend 2.110, e apresentava a trilha
+CHECKLIST P1 como *"rodada em curso"* — sem **uma palavra** sobre a auditoria Ω6R ou a reprovação para produção.
+Quem o abrisse concluiria que o projeto estava fechando vistorias, quando o deploy está travado por 11 achados
+críticos. Ganhou um **§0** com o veredito, os números reais e a fila priorizada correta. O `PROJECT_MEMORY.md`,
+de 28/07, ganhou um §0 de delta do mês.
+
+**Bateria:** `kpi-dashboard-charts` **16/16** · `kpi-achados-paridade` **6/6** · `npm run check` **ec=0** ·
+`kpi-freeze --check` em dia · `node --check Kpis/app.js` **ec=0** · `git diff --check` limpo · os dois JSON
+parseiam.
+
 ## 2026-08-28 - B-O6R-ARNES - o arnês de teste vira bloco próprio e fecha PRIMEIRO
 
 ### Resultado

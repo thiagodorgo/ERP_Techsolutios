@@ -1543,3 +1543,205 @@ foram desmentidas por execução (R-B-O6R-01-ciclo1):**
    passo 6, medido na ativação), não do trigger. O header da migração recebeu a mesma enumeração
    honesta (edição só-comentário; `migrate deploy` no dev não recusou — nada ressincronizado), e o
    guard 10c (`tests/auth-invariant-guards.test.ts`) trava `DISABLE TRIGGER` em `src/**` (baseline 0).
+
+---
+
+## D-INSPETOR-TERRENO-JUNTA (decisão do dono, 2026-08-24) — inspeção de terreno antes de toda junta
+
+**Contexto:** três ciclos de junta julgaram muito bem e falharam sempre no mesmo lugar — o **terreno**. A
+contaminação entre jurados foi "encerrada" para a base viva no ciclo 2 (`tenants` 320→322→321) e **voltou** no
+ciclo 3 no worktree compartilhado (`financial-entry-undo-owners.ts` mutado por um jurado, md5 `4c44ee14…` vs
+pristino, flagrado por 3 jurados independentes). A fatia S0 (espelho Codex dos especialistas) faltou **dois
+ciclos seguidos**. E o planejador do ciclo 3 herdou da ata do ciclo 2 a premissa "birth-fixed se sustenta",
+que o crítico e o dba **falsificaram por execução**. É a mesma classe de defeito que os jurados são ótimos em
+achar no código — "um defeito declarado fechado que voltou um nível acima" — acontecendo na orquestração deles.
+
+**Decisão:** nasce o agente `inspetor-de-terreno-da-junta` (`.claude/agents/`, espelhado em `.agents/agents/`),
+**Fable por contrato**, com poder de VETO sobre o **start** da junta. Ele não julga o mérito da entrega — julga
+o TABULEIRO, fail-closed (o que ele não medir vira BLOQUEADO):
+
+1. **Isolamento:** árvore do head sem mutação viva (md5 × blob); worktree próprio para cada jurado que muta;
+   cluster Postgres descartável por jurado; a base viva não é alvo de ninguém; sem resíduo de jurado anterior.
+2. **Insumos:** parecer do crítico + PD (≥5 fontes) nos ciclos ≥3; afirmações da ata anterior marcadas
+   "a re-verificar", nunca herdadas como fato.
+3. **Papéis (§C7.4-bis):** inelegibilidade conferida por nome contra as atas; composição cobre a competência
+   dos achados.
+4. **Fatia S0:** espelho Codex consistente (`node scripts/sync-agent-agents.mjs --check` verde).
+5. **Baseline honesto** medido ANTES (`npm run check` exit 0, tree limpa); **plano de perda de jurado**
+   declarado (o voto perdido do ciclo 3 — jurado morto em erro de API sem plano de quórum).
+
+**Amarração:** §C7 cláusula **1-bis** de `CLAUDE.md` e `AGENTS.md` (espelhadas) — **sem o `LIBERADO` do
+inspetor a junta não começa.** Um agente que ninguém invoca é teatro; esta cláusula é o que o torna real.
+
+---
+
+## D-GOV-AMEACA-DESCUIDO (decisão do dono, 2026-08-25) — o modelo de ameaça da governança é DESCUIDO
+
+**A pergunta** (aberta pelo ciclo 3 do porteiro pré-merge, `R-GOV-PORTEIRO-PRE-MERGE-ciclo3.md`): o gate
+defende contra um agente **descuidado** ou contra um agente **malicioso**? O ciclo provou que contra
+malicioso não existe solução dentro deste repositório (autor = dono das chaves, do disco, do CI e do
+ruleset; recibo local é SLSA Build L1 — "trivial to bypass or forge"; provar qual modelo respondeu não
+existe para API comercial fechada).
+
+**A resposta do dono: DESCUIDADO.**
+
+**Consequências (executáveis a partir de agora):**
+1. **O pin de modelo/runtime SAI do `verifyAttestation`** e vira registro auditável a posteriori — o
+   transcript do harness (que grava `"model":` por mensagem, escrito pelo harness e não pelo agente) no
+   lugar da string auto-escrita. O gate que exige `runtime === 'codex'` está morto: era controle de sinal
+   trocado (o honesto ficava vermelho, o forjador verde).
+2. **Segunda identidade GitHub: dispensável.** Nenhuma exigência de aprovação humana de outra conta.
+3. **A entrega da governança encolhe** para o que a plataforma sustenta mecanicamente: PR obrigatório ·
+   head congelado (strict) · CI verde do app certo · sem force-push · sem delete de `main`. O que
+   sobrevive da branch: compare-and-swap do head, normalização de checks (D-10), paginação de files,
+   `aplicaSeABranchDefault`, registro externo imutável por merge.
+4. **O vocabulário muda:** nenhum artefato diz "prova", "independente" ou "inforjável". O controle é
+   declaradamente **tripwire** — pega desvio acidental, não resiste a adversário com as chaves. (SLSA L1
+   é um nível legítimo, desde que rotulado.)
+5. **Ruleset instalado JÁ**, no desenho de tripwire (sem o check do porteiro, que não existe na `main`).
+   Editável pelo admin — aceitável contra descuido, e é o dono quem edita.
+
+**Resolve:** `P-GOV-MAIN-SEM-PROTECAO` (parcial — a instalação), o destino do bloqueante 2 do ciclo 2 da
+governança, e o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits → encolher,
+trabalho de ciclo próprio com plano novo).
+
+---
+
+## D-JUNTA-ESCOPO-E-CALIBRACAO (decisão do dono, 2026-08-28) — o veredito ganha escopo e a junta é calibrada por risco
+
+**Base de evidência:** `agent-orchestration/omega/auditoria-juntas-2026-08-28.md` — inventário de
+**≈ 155 juntas**, **≈ 66 ciclos de reprovação**, 11 falsos-verdes e 15 falhas do próprio esquema,
+levantados por duas varreduras independentes do repositório.
+
+**O que a auditoria estabeleceu, e que esta decisão respeita:** o esquema de juntas **paga o que
+custa no caso normal** — pegou 34 defeitos reais de produto, incluindo duplo-faturamento por falta de
+CAS, `ADJUSTMENT` negativo zerando dívida, bypass do 2º fator numa superfície pública e a corrida que
+fabricava saldo no razão. Nada disto se afrouxa. O custo está **na cauda**: 3 blocos consumiram
+**24% de todos os ciclos**, e neles o bloqueante final foi **processo/medição em 11 dos 16**.
+
+**O caso que forçou a decisão.** No ciclo 4 do `B-O6R-02` (28/08), quatro cadeiras aprovaram e uma
+reprovou. O dinheiro estava provado fechado por três cadeiras independentes; o voto que derrubou
+julgou o **número** — a bateria canônica verde em 7 de 10 execuções. E os dois produtores desse
+defeito **antecedem o bloco**: `tests/audit-security.test.ts` é de 08/06 e
+`tests/helpers/auth-identity-fixture.ts` nasceu no bloco anterior em 19/08; a branch do financeiro
+começou em 20/08. O §5 do plano **proibia** o bloco de tocar `tests/**` alheio. **O bloco foi
+reprovado por um defeito que não criou e estava proibido de consertar.**
+
+### 1. O veredito passa a ter ESCOPO
+
+Todo voto, além de `gravidade: bloqueia | ajuste | nota`, declara **`escopo`**:
+
+| escopo | significado | efeito |
+|---|---|---|
+| `dentro-do-bloco` | o achado toca o que este bloco mudou | `bloqueia` reprova, como sempre |
+| `pre-existente` | a classe do achado antecede o bloco e/ou está fora do escopo permitido dele | **não reprova**: vira **pendência nomeada com bloco dono**, e o número afetado é publicado com **N, forma e causa** |
+
+O poder de veto continua **inteiro** para o que o bloco mexeu. O jurado declara o escopo **com
+evidência de data ou origem** (quando o arquivo nasceu, qual bloco o criou); a ata registra; o
+`inspetor-de-terreno-da-junta` confere na passada seguinte. Escopo declarado sem evidência = achado
+tratado como `dentro-do-bloco`.
+
+O critério não é invenção do orquestrador: a própria cadeira do arnês escreveu que reprova *"número
+publicado sem N, não número imperfeito declarado"*.
+
+### 2. A junta é calibrada por risco — e o quórum não escrito passa a ser escrito
+
+O §C7.1 listava exaustivamente o que exige unanimidade de 5 (deploy de produção, dependência nova,
+serviço externo pago). **"Invariante financeiro" nunca esteve no `CLAUDE.md`, no `AGENTS.md` nem no
+`EXECUTION_MODEL.md`** — vivia só nos corpos dos jurados e nas atas, e foi o quórum que reprovou
+quatro ciclos seguidos. Passa a valer, escrito:
+
+- **Unanimidade de 3** quando o bloco toca **dinheiro, segurança, permissão ou perda de dado**.
+- **Maioria de 3** no resto.
+- Unanimidade de 5 permanece **só** para as decisões críticas já listadas no §C7.1 (produção,
+  dependência nova, serviço externo pago).
+- O `critico-adversarial` ataca o plano **apenas** nos blocos de invariante.
+
+**Motivo medido:** cada ciclo queima identidades — 16 inelegíveis só no `B-O6R-02`, incluindo a única
+competência que o achado do ciclo 4 exigia. A resposta do protocolo à reprovação é **escalar**, o que
+**reduz** a chance de unanimidade a cada ciclo. O bloco sozinho produziu **14 especialistas**.
+
+### 3. Duas lições de terreno viram regra
+
+- **Junction/symlink de `node_modules` entre worktrees é PROIBIDA.** Em 26/08 a remoção de um worktree
+  apagou, por dentro de uma junction, o `node_modules` do worktree do dev e mutilou o da árvore
+  principal. Cada worktree roda `npm ci` próprio; remoção só por `git worktree remove --force`.
+- **Não se mede o conteúdo de um commit com `git archive` + `tar` sob `core.autocrlf=true`** — injeta
+  CR e fabrica divergência. Foi assim que "o espelho Codex diverge no head" virou pendência ALTA (15
+  DIVERGE na ata do ciclo 4, 25 no plano do ciclo 5) e foi fechada por não-reprodução no mesmo dia.
+  Formas honestas: `git -c core.autocrlf=false checkout <head> -- <caminhos>` ou `git show` do blob.
+
+### 4. O que NÃO muda
+
+Inspetor de terreno antes da junta, separação de papéis achador ≠ planejador ≠ dev, identidade nova
+por ciclo, porteiro pós-merge, KPI por PR com contagem de execução real. Pegaram defeitos reais e não
+estão no caminho crítico. **Não** entra fatiamento obrigatório no 3º ciclo.
+
+### 5. Consequência imediata
+
+O `B-O6R-02` deixa de carregar a classe do arnês: ela vira o bloco próprio **`B-O6R-ARNES`**, que roda
+**primeiro** (é pré-requisito de confiança em qualquer número dos 10 blocos restantes). O financeiro
+re-mede numa base limpa e fecha pelo mérito que três cadeiras já aprovaram. O plano do ciclo 5 recebe
+**emenda apensada** (nunca reescrita, §A2).
+
+### 6. Pendências de contrato que esta decisão NÃO fecha, e ficam nomeadas
+
+- **Quatro versões divergentes do contrato** (`decisoes.md`: 1480 linhas em `origin/main`, 1606 em
+  `demo/investidor`, 1649 na branch do financeiro, 1664 na de governança). Reconciliação em PR
+  próprio, sem código, com `origin/main` como base — é o que `D-CONTRATOS-FORA-DO-PR-FINANCEIRO` manda.
+- **O porteiro em dois lugares** (pós-merge no texto vigente, pré-merge no da governança) — a decisão
+  que registra o conflito explicitamente não escolhe. Escolher na reconciliação.
+- **Quatro vetos permanentes** que se dizem obrigatórios em "toda PR" sem que o §C7.1 os cite, e três
+  papéis de porta com verificações sobrepostas. Definir quando cada um é obrigatório, por tipo de bloco.
+- **O que acontece depois do teto do §C7.4** — formato do dossiê, onde vive, quem escreve, o que a
+  resposta do dono destrava, se as inelegibilidades zeram.
+- **Descomissionamento dos especialistas de bloco** — os 14 do `B-O6R-02` não têm cláusula, ao
+  contrário dos efêmeros das rodadas Ω4C e Ω5P, deletados com registro nominal em ata.
+- **`scripts/limpar-residuo-de-junta.sh` não é citado por documento nenhum** — entra no §C5.
+
+### ERRATA de `D-JUNTA-ESCOPO-E-CALIBRACAO` §6 (2026-08-28, apensada — §A2, o texto original fica) — os números estavam errados, e o quadro é melhor do que eu escrevi
+
+O §6 acima diz *"quatro versões divergentes do contrato (`decisoes.md`: **1480** linhas em
+`origin/main`, **1606** em `demo/investidor`, 1649 na branch do financeiro, 1664 na de governança)"*.
+**Duas dessas contagens estão erradas e a caracterização é imprecisa.** Medido agora, por
+`git show <ref>:<caminho> | wc -l`:
+
+| ref | `decisoes.md` | o que eu escrevi |
+|---|---|---|
+| `origin/main` (`6efe5ad`, imóvel) | **1545** | 1480 — **não corresponde a estado nenhum** da `main` |
+| `demo/investidor` (HEAD) | **1700** | 1606 — era a contagem **antes do meu próprio commit** (`1231e71^` = 1606) |
+| `feat/o6r-b02-financial-uow` (`12c3825`) | 1649 | 1649 ✓ |
+| `docs/governanca-porteiro-pre-merge-sol` (`48a75e9`) | 1664 | 1664 ✓ |
+
+**A caracterização "quatro versões do contrato" também é imprecisa, e o erro é a meu favor —
+o que o torna pior.** Medido: `CLAUDE.md`, `AGENTS.md` e `EXECUTION_MODEL.md` da branch do financeiro
+são **byte-idênticos** aos da `main` (blobs `081c4b90` e `e0f15245`) — ela **cumpriu literalmente**
+`D-CONTRATOS-FORA-DO-PR-FINANCEIRO` e não é uma versão do contrato. Divergem só a `decisoes.md` e a
+`pendencias.md` dela. O correto: **três textos de contrato** (`main` = financeiro · `demo/investidor` ·
+governança) e **quatro registros de decisão**.
+
+**Três fatos medidos que melhoram muito o quadro da reconciliação, e que o §6 não tinha:**
+
+1. **`origin/main` é o ancestral comum das três branches** (`git merge-base` de cada par = `6efe5ad`).
+   Nenhuma contém trabalho de outra: a reconciliação é de três vias com base única e limpa.
+2. **`decisoes.md` é append-only nas três branches** — `git diff origin/main <ref> -- decisoes.md |
+   grep -c '^-[^-]'` = **0** nas três. **Nenhuma decisão pré-existente foi reescrita por ninguém**, e as
+   69 decisões herdadas têm texto idêntico nas quatro. O risco de perda silenciosa é menor do que eu disse.
+3. **Só a branch de governança sobrescreve norma** (−33 linhas no `CLAUDE.md`, −37 no `AGENTS.md`, −18
+   no `EXECUTION_MODEL.md`). `demo/investidor` é 100% aditiva (1 hunk).
+
+**O que continua verdadeiro do §6, e agora com o alvo exato:** há **duas decisões com o mesmo id e
+corpos diferentes** (`D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO`, nascida na branch do financeiro em
+2026-08-20 21:38 e emendada na de governança 2h20 depois, com a emenda **descartando** as seis
+consequências numeradas do original); **duas decisões que só existem na branch do financeiro**
+(`D-CONTRATOS-FORA-DO-PR-FINANCEIRO`, `D-INSTANCIA-NOVA-COM-AUDITORIA`); **duas que só existem na de
+governança** (`D-PORTEIRO-PRE-MERGE` com 3 emendas, `D-FABLE-PARA-GPT-5-6-SOL`); e **três que só
+existem aqui** (`D-INSPETOR-TERRENO-JUNTA`, `D-GOV-AMEACA-DESCUIDO`, esta). E o porteiro segue em dois
+desenhos incompatíveis **com o mesmo `name:` de agente** — não coexistem no mesmo repositório.
+
+Inventário completo, parágrafo a parágrafo, com o risco de perda por ordem de merge:
+`agent-orchestration/omega/divergencias-do-contrato-2026-08-28.md`.
+
+**Por que esta errata existe e não uma correção silenciosa:** o §A2 proíbe consolidação silenciosa, e
+esta rodada inteira é sobre artefatos que afirmam números que a execução não produz. Eu escrevi três
+números sem re-medir e um deles não existe em estado nenhum do repositório. O texto original fica.
