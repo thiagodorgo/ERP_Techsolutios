@@ -19,3 +19,22 @@ anterior uma premissa falsa como fato (achado que motivou a criação do própri
 
 **Consequência para o quórum.** A junta **não fecha com menos de 3 votos**. Dois votos não são maioria de três
 — são junta inválida. Se o suplente também cair, dispara-se outro suplente, e a ata registra cada perda.
+
+---
+
+## Segunda perda — cadeira de KPI e NÚMEROS (2026-08-29)
+
+**O que houve.** O titular da cadeira de KPI/números **também caiu por erro de infraestrutura**
+(`API Error: Connection lost mid-response`), desta vez **no início do mandato** — não mediu nada e **não deixou
+insumo algum**. Suplente com identidade nova disparado, executando o mandato do zero.
+
+**Padrão observado nesta junta, para a ata.** Duas das três cadeiras caíram por infraestrutura antes de votar.
+Não é a primeira vez: a junta do ciclo 4 do `B-O6R-02` perdeu **quatro** cadeiras por limite de sessão em 26/08
+e teve de ser refeita com suplentes em 28/08. **Isto é uma classe, não azar.** O mandato dos suplentes desta
+junta passou a trazer instrução explícita de **economia de passos** e de **emitir voto parcial e honesto**
+declarando o que não foi medido, em vez de morrer com a medição pela metade — porque um voto que declara seus
+próprios limites é auditável, e um jurado morto não é.
+
+**Nomeado para o orquestrador, sem correção aqui:** vale uma pendência sobre o custo de mandatos longos em
+junta (o do titular de KPI tinha 6 itens; o de trilha, 6 itens com duas verificações de veto). Fatiar cadeira
+grande em duas menores é mais barato que perder e refazer.
