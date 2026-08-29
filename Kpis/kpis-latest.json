@@ -6,7 +6,7 @@
   "release": {
     "block": "SAN2-1R — resgate do SAN2-1 pela opcao C do dono (rodada Omega-SAN2).",
     "title": "O que as juntas verificaram entra; a etiqueta que mentia sai",
-    "pr": null,
+    "pr": 362,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
