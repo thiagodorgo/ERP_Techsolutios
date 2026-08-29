@@ -1,0 +1,17 @@
+{
+  "cadeira": "diff-escopo-espelho (veto)",
+  "identidade": "jurado-san2r-diff-espelho-2026-08-29 (identidade nova)",
+  "head_julgado": "48dc863",
+  "veredito": "APROVADO",
+  "justificativa": "Os 3 itens do mandato passam por execução no head real da junta. (1) Diff de código de produto 74430cc..48dc863 sobre src/prisma/tests/scripts/frontend/mobile/.github/package-lock.json é VAZIO (exit 0) — o quórum maioria-de-3 sustenta-se; o name-status completo tem 12 arquivos, todos em agent-orchestration/**, Kpis/*, CLAUDE.md e AGENTS.md. (2) O §C7.7 é byte-idêntico nos dois contratos (diff vazio do bloco de 26 linhas, que inclui o §C7.4-bis); o §C7.4 novo (D-TETO-DOIS-CICLOS) está nos dois e o teto antigo de 5 sumiu dos dois — grep por 'ciclo 5 falho', 'teto 6 agentes', 'CRIAR AGENTES ANTES DE PARAR' e 'junta ampliada replaneja' devolve zero hits; os 'ciclo 5' remanescentes são a justificativa histórica dentro do texto novo. (3) D-JUNTA-RESILIENTE e D-TETO-DOIS-CICLOS são entradas completas em controle/decisoes.md (linhas 1794 e 1748); protocolo e postmortem existem no commit e o §C7.7 os referencia por caminhos que resolvem (o atalho omega/… segue a convenção que o §C7.4 já usa). Um achado menor, não bloqueante, registrado abaixo.",
+  "achados": [
+    {
+      "id": "A1",
+      "titulo": "Redação divergente no §C7.4 entre os contratos: CLAUDE.md diz 'A `agente-fabrica`', AGENTS.md diz 'A fábrica de agentes'",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "diff dos blocos §C7.4 extraídos de `git show 48dc863:CLAUDE.md` e `git show 48dc863:AGENTS.md` → única divergência nas linhas 9-10 do bloco (nome do agente + requebra de linha); todo o resto do §C7.4, o §C7.7 e o §C7.4-bis são idênticos.",
+      "motivo": "Não bloqueia: `agente-fabrica` é subagente de `.claude/agents/` — invocação de subagente é exatamente a classe de diferença específica-de-ferramenta que a regra de espelhamento (§A2/D-INTEROP-CLAUDE-CODEX) permite, e o conteúdo normativo (especialistas dentro dos dois ciclos, nunca para adiar a parada) é idêntico. Registrado para a ata saber que a divergência é consciente e classificada, não escapou ao diff."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "cadeira": "forense (veto)",
+  "identidade": "jurado-forense-san2r-c1-2026-08-29",
+  "head_julgado": "48dc863",
+  "veredito": "APROVADO",
+  "justificativa": "Os 3 itens do mandato fecham por execução própria. (1) A tabela das 14 quedas sustenta os 6 fatos: exatamente 4 mortes na mensagem 1 (#3,#4,#7,#12 — F2), as 3 mortes de fim marcadas (#8,#10,#13 — F3), exatamente 1 queda com pin fable (#8) e 13 herdadas, 1+13=14, 14/28=50%, 1/5=20%, 13/23≈57% — toda a aritmética confere, e F5 é corretamente publicado como hipótese, não conclusão. (2) P1–P6 respondem F2–F6 um a um sem P órfão; F1 (achado negativo — não há bug de orquestração) corretamente não recebe P. (3) A prova viva bate com os arquivos: o inspetor caído persistiu 3/3 itens com comando→saída→veredito (P1), o sucessor re-executou 9/9 comandos e fechou o drift de head com medições novas (P3), e o registro P6 já capturou um ponto de dado CONTRA a hipótese fable — registrado sem maquiagem. A primeira morte sob o protocolo custou minutos onde o regime antigo custava o mandato inteiro: o protocolo pagou o próprio custo na primeira utilização. Três achados, todos baixos, nenhum bloqueia.",
+  "achados": [
+    {
+      "id": "FOR-1",
+      "titulo": "00-quedas.md declara '6 comandos' de redo; o roteiro persistido tem 9 e o sucessor reporta 9/9",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "cat votos/SAN2-R/00-quedas.md ('re-executar 6 comandos do roteiro') vs contagem dos comandos em 00a-inspetor-evidencia.md (itens 1–3 = 3+3+3 = 9) vs tabela do 00a-inspetor-parecer.md (linhas 1–9, '9/9 CONFIRMADOS')",
+      "motivo": "O registro P6 subestima o custo do redo em 3 comandos. Erro de estimativa numa nota; evidência e parecer (registros com autoridade) são consistentes entre si e a conclusão qualitativa (~minutos vs mandato inteiro) não muda. Corrigir a linha quando o orquestrador consolidar a ata."
+    },
+    {
+      "id": "FOR-2",
+      "titulo": "O 'por quê' do P2 rotula a queda #8 como 'morrer streamando o voto' e promete custo zero sob P2 sozinho",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "PROTOCOLO-JUNTA-RESILIENTE.md P2 ('quedas #8, #10, #13... teriam custado zero') vs tabela do postmortem (#8 morreu na 'fase de limpeza — inspeção pronta', não compondo parecer); o próprio F3 do postmortem descreve #8 com precisão",
+      "motivo": "Imprecisão retórica: quem zeraria a perda de #8 é P1+P3 (evidência persistida + re-execução barata), não P2 isolado — e a prova viva da SAN2-R demonstrou exatamente isso (o caído tinha P1 completo e o parecer ainda custou re-execução + composição). A prescrição normativa de P2 permanece correta e necessária; nada a mudar na norma, só no argumento."
+    },
+    {
+      "id": "FOR-3",
+      "titulo": "Denominadores de F5 (5 pinados / 23 herdados) não são itemizáveis pela tabela — só as mortes são listadas",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "grep nas linhas de queda do postmortem: 1 'pin fable' + 13 'herdado' = 14 mortes conferem; sobreviventes ('14 conclusões', corridas de 154k/137k/121k/109k tokens) só em agregado — 5/23 não é re-derivável do documento",
+      "motivo": "As taxas 20%/57% de F5 dependem de denominadores que o leitor não consegue auditar pela tabela. O texto mitiga corretamente (declara hipótese, n pequeno, e o P6 existe para decidir pela série) — por isso não bloqueia; fica consignado para que a série do P6 seja o único lugar de onde essa hipótese possa virar conclusão."
+    }
+  ]
+}

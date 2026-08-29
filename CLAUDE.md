@@ -332,11 +332,38 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
-4. **Protocolo de dificuldade — CRIAR AGENTES ANTES DE PARAR.** Reprovação/bloqueio técnico **não gera parada
-   direta**. Ciclos (registro em `omega/reprovacoes/R-<entrega>-<ciclo>.md`): **ciclos 1–2 = a `agente-fabrica`
-   CRIA 1–2 especialistas sob medida** para o problema (entram na junta seguinte e votam); ciclo 3 = crítico
-   reabre a premissa + pesquisa ≥5 fontes (teto 6 agentes); ciclos 4–5 = junta ampliada replaneja a fatia.
-   **Parada + dossiê ao humano SOMENTE** após o ciclo 5 falho, **ou** nas paradas imediatas irredutíveis.
+4. **Protocolo de dificuldade — TETO DE DOIS CICLOS (decisão do dono, 2026-08-29, `D-TETO-DOIS-CICLOS`).**
+   **REVOGA o teto de 5 ciclos** que esta seção trazia (ciclos 1–2 fábrica · ciclo 3 crítico reabre premissa ·
+   ciclos 4–5 junta ampliada · parada só após o 5). O teto agora é **2**:
+   - **Ciclo 1** — entrega, junta, veredito.
+   - **Ciclo 2** — se reprovado: corrige (com §C7.4-bis intacto — **quem achou não conserta**) e volta à junta
+     com **identidade nova** na cadeira que reprovou.
+   - **Reprovou no ciclo 2 → PARA. Não há ciclo 3.** **Dossiê ao dono**, com o que foi entregue, o que cada
+     junta achou, o que foi corrigido, **por que a correção não bastou** e as opções com custo.
+   - A `agente-fabrica` **continua** criando especialistas — mas **dentro dos dois ciclos**, nunca como forma
+     de adiar a parada.
+   - Registro dos ciclos segue em `omega/reprovacoes/R-<entrega>-<ciclo>.md`. As **paradas imediatas
+     irredutíveis** (§C7.5) são independentes deste teto.
+
+   **Por quê, medido:** o `B-O6R-01` levou 3 ciclos; o `B-O6R-02` chegou ao **ciclo 5** com **16 identidades de
+   jurado queimadas**, e a auditoria de 28/08 mediu **3 blocos consumindo 24% de todos os ciclos**. A resposta
+   do protocolo à reprovação era **escalar** (mais agentes, quórum maior), o que **reduz** a chance de
+   aprovação a cada rodada em vez de aumentar. E o `SAN2-1` mostrou a forma barata do mesmo mal: o ciclo 2
+   corrigiu seis achados e **reintroduziu um defeito ao corrigir outro**. Ciclo que conserta e reintroduz é
+   sinal de que a premissa precisa de **gente**, não de mais uma rodada. O dono passa a ser chamado quando a
+   informação vale mais — com **dois** conjuntos de achados na mesa, não cinco.
+
+7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`).** Toda junta,
+   inspeção de terreno e porteiro seguem o **`PROTOCOLO-JUNTA-RESILIENTE.md`** (`agent-orchestration/omega/
+   juntas/`). Origem medida: 14 quedas de agente em ~28 disparos (~50%) numa única sessão, todas
+   `server_error` de streaming — postmortem em `omega/POSTMORTEM-QUEDAS-2026-08-29.md`. O essencial:
+   **evidência incremental em arquivo a cada item** (a morte custa só a cauda não medida); **voto escrito em
+   arquivo ANTES da mensagem final** (mensagem final = 1 linha); sucessor de jurado caído **re-executa o
+   roteiro de evidência registrado** e compara — conclusão sem comando registrado segue sendo não-insumo;
+   **mandato ≤3 itens**; **máximo 2 disparos em paralelo**, com pausa de 15 min após 2 quedas em 30 min; e
+   **registro padronizado de quedas** (`00-quedas.md` por junta). Quóruns, vetos, identidade nova e o teto
+   de dois ciclos ficam intactos: o protocolo muda como o trabalho sobrevive à morte de quem o fez, não o
+   mérito do julgamento.
 
 4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
    `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
