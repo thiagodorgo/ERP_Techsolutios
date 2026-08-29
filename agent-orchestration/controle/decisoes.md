@@ -1790,3 +1790,31 @@ junta já esgotou o pool de identidades.
 - **`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
   última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto.
 - Blocos **novos** nascem sob o teto de 2.
+
+## D-JUNTA-RESILIENTE (2026-08-29) — a junta passa a sobreviver à morte de quem a executa
+
+**Contexto medido.** Na sessão de 28–29/08, **14 agentes morreram em ~28 disparos (~50%)**, todos por
+`server_error` de streaming da API — cortes do lado do serviço, não bug de repositório (agentes Explore e
+Plan, que não leem arquivo de junta nenhum, morreram do mesmo jeito). Forense completa, com a tabela das 14
+e os seis fatos: `agent-orchestration/omega/POSTMORTEM-QUEDAS-2026-08-29.md`.
+
+**A decisão.** Toda junta, inspeção de terreno e porteiro passam a operar sob o
+**`PROTOCOLO-JUNTA-RESILIENTE`** (`omega/juntas/`): **P1** evidência incremental em arquivo, item a item ·
+**P2** voto escrito em arquivo ANTES da mensagem final · **P3** emenda à R2 — evidência registrada é
+roteiro de re-execução barata para o sucessor; conclusão sem comando registrado segue sendo não-insumo ·
+**P4** mandato ≤3 itens, medição ≠ voto, saída final curta · **P5** máximo 2 disparos em paralelo + pausa
+de 15 min após 2 quedas em 30 min · **P6** registro padronizado de quedas (`00-quedas.md` por junta).
+
+**Errata de lição, registrada por honestidade.** A regularidade publicada nas atas de 29/08 — *"mandato
+longo morre, mandato curto entrega"* — era **simplificação parcialmente errada**: quatro mortes ocorreram
+na **mensagem 1**, antes de qualquer trabalho, provando falha por request independente do mandato. A
+relação verdadeira é *morte ≈ exposição × taxa de falha da janela*. Mandato curto continua sendo a norma
+(P4), pelo motivo certo: reduz exposição E custo da perda.
+
+**O que NÃO muda.** Quóruns, vetos, identidade nova por ciclo, separação de papéis (§C7.4-bis) e o teto de
+dois ciclos (`D-TETO-DOIS-CICLOS`). A junta pegou quatro classes reais de defeito na mesma sessão das
+quedas — o desenho de mérito funciona; o que este protocolo conserta é o **modelo de custo**, que assumia
+que agente sobrevive.
+
+**Hipótese em aberto, declarada com n pequeno.** Pinados em `fable`: 1 morte em 5 (~20%); herdando o modelo
+da sessão: ~13 em 23 (~57%). Não é conclusão — a série do P6 decide, sem pinar nada por palpite.
