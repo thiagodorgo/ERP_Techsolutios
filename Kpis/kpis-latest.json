@@ -6,7 +6,7 @@
   "release": {
     "block": "SAN2-R — protocolo de junta resiliente (rodada Omega-SAN2, prioridade do dono).",
     "title": "A junta passa a sobreviver a morte de quem a executa",
-    "pr": null,
+    "pr": 361,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
