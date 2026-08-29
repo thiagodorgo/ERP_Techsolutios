@@ -51,3 +51,70 @@ como pontual ou se isso é achado. Não escondam: se acharem que é `bloqueia`, 
 
 O mérito do `B-O6R-ARNES` (#359) já foi julgado e mergeado. O mérito do `B-O6R-02` ciclo 5 é de outra junta.
 Aqui julga-se **só** se o registro passou a dizer o que a execução diz.
+
+---
+
+# EMENDA (2026-08-29) — ressalvas do inspetor de terreno, apensadas antes da junta (§A2)
+
+Parecer: `agent-orchestration/omega/juntas/votos/B-O6R-REG/00a-inspetor-terreno-passada1.md`.
+Veredito: **`LIBERADO COM RESSALVA`**. O inspetor mediu e confirmou, por execução própria: diff de código
+**vazio**, `.gitignore` sem rastreado ignorado, `Kpis/app.js` com diff de **1 linha** (só o `FROZEN` regerado),
+povoamento **fora**, quórum "maioria de 3" **sustentado** pelo diff real, baseline `npm run check` **ec=0**,
+sem junction, sem resíduo de jurado, e **nenhum cluster de banco é necessário**.
+
+**N1 — os dois hashes.** O briefing acima nomeia `757485c`; o head efetivamente julgado é **`8c00fab`**, cujo
+único acréscimo é este próprio briefing (medido: `--name-status` = 1 arquivo). A ata consigna os dois.
+
+## R1 — ATENÇÃO: o guard do S0 dá FALSO-VERMELHO neste worktree
+
+Se você rodar `node scripts/sync-agent-agents.mjs --check` aqui, verá **`DIVERGE` em 22 agentes**. **Não é
+divergência real** e **não é achado deste bloco**. Causa medida: a l.39 normaliza CRLF na **fonte**, a l.80
+compara o **alvo cru**; sob `core.autocrlf=true` um checkout fresco materializa os dois com CRLF. Nos blobs
+commitados, com eol neutralizado: **0/22**. Na árvore principal: `OK — 40 agentes`. Já registrado com dono em
+`P-REG-S0-GUARD-FALSO-VERMELHO`. **Não conserte o script** — `scripts/` está fora do escopo, e consertar aqui
+destruiria a promessa central do bloco.
+
+## R2 — plano de perda de jurado
+
+Jurado que cair por infra (limite de sessão, interrupção) **não tem voto contado**. O suplente de identidade
+nova **re-executa o briefing inteiro** — nada do que o titular começou conta. A junta **não fecha com menos de
+3 votos**; 2 votos = junta inválida, não maioria.
+
+## R3 — isolamento e mandato
+
+Mandato **read-only**: nenhum jurado muta arquivo rastreado, cria commit ou branch. **Nenhum jurado precisa de
+banco** — `erp-postgres`/`erp-redis` (base viva) **jamais são alvo, nem de leitura**. Re-execução de bateria:
+serializada no `reg-359`, ou em worktree detached próprio com `npm ci` próprio — **junction/symlink de
+`node_modules` é PROIBIDA** (`D-JUNTA-ESCOPO-E-CALIBRACAO` §3). Para medir conteúdo de commit, use `git show`
+ou `git -c core.autocrlf=false checkout` — **nunca** `git archive`+`tar` (é a classe da R1).
+
+## R4 — o item 6 foi achado E consertado pela mesma mão
+
+A troca de status `P-O6R-B04`/`P-O6R-B05` foi encontrada **e** corrigida pelo orquestrador — a classe que o
+§C7.4-bis manda desconfiar. **A cadeira de trilha deve verificá-lo executando a contraprova independente**
+(`Kpis/kpis-latest.json` → `roadmap.blocos` e `production_readiness.fechados`), com desconfiança máxima, e
+**nunca** por leitura do texto que o próprio orquestrador escreveu. Se a correção inverteu de novo, é `bloqueia`.
+
+## R5 — os achados B e D não são fato herdado
+
+O §1 afirma que o porteiro fechou B (branch remota apagada) e D (trilha pushada). **Spot-check pela cadeira de
+diff/escopo**, por execução: `git ls-remote --heads origin | grep arnes` e `git ls-remote --heads origin | grep demo/investidor`.
+
+## R6 — resíduos fora do terreno (não são achado da junta)
+
+`.claude/worktrees/gov-descuido` tem mutação **real** não commitada em `scripts/porteiro-pre-merge.mjs` — é
+workstream **paralelo** de governança, nenhum jurado desta junta o usa. `agent-af6ea607…` e `plan-c5` limpos.
+`.tmp-demo/` untracked e inerte.
+
+## Cadeiras homologadas pelo inspetor
+
+1. **diff/escopo** — diff vazio de código, `.gitignore`, povoamento fora, `8c00fab` só-briefing, e o **mérito da
+   divergência de processo** (`P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE`). Com veto.
+2. **KPI/números** — backfill §C3.5, "piso 0", "6→7", "2358→2359", `FROZEN`, honestidade §C3.3,
+   `blocks_completed` intocado em 152, `mvp_*` intocados.
+3. **trilha/append-only** — prefixo estrito de `decisoes.md` **por execução**, os 29 registros, as pendências
+   órfãs com dono, e a troca B-04/B-05 pela contraprova independente (R4). Com veto.
+
+**Inelegíveis, por nome:** o orquestrador (escreveu o diff **e** achou o item 6 — não vota); `porteiro-pos-merge`
+(achador de A–F); `inspetor-de-terreno-da-junta` (julgou o terreno); `jurado-arnes-*` e suplentes (votaram o
+material cujo **registro** está em julgamento); `jurado-c4-*` e `jurado-c5-*`.

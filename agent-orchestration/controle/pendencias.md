@@ -3374,3 +3374,39 @@ pulados. Quórum deste bloco: **maioria de 3** — não toca dinheiro, seguranç
 (`D-JUNTA-ESCOPO-E-CALIBRACAO` §2).
 
 - **Dono:** a junta deste PR · **PR-alvo:** este.
+
+---
+
+## P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder tocar `scripts/`
+
+**Achador:** `inspetor-de-terreno-da-junta` do `B-O6R-REG` (ressalva R1), **confirmado por execução** pelo
+orquestrador. **Quem achou não conserta** (`D-JUNTA-SEPARACAO-DE-PAPEIS`) — e `scripts/` está **fora do escopo**
+do `B-O6R-REG`, cuja promessa central é diff de código vazio. Por isso fica nomeado, não remendado.
+
+**O defeito.** `scripts/sync-agent-agents.mjs --check` dá **falso-vermelho universal em checkout fresco no
+Windows**. A causa é uma assimetria de duas linhas:
+
+- **l.39** (`transform`): `rawInput.replace(/\r\n/g,'\n')` — normaliza CRLF→LF **na fonte**.
+- **l.80**: `readFileSync(to,'utf8') !== want` — compara o **alvo CRU**, sem normalizar.
+
+Sob `core.autocrlf=true` (o caso desta máquina), um checkout fresco materializa **origem e alvo com CRLF**. A
+origem é normalizada dentro do `transform`; o alvo não. Resultado: **todo** arquivo diverge.
+
+**Medido nas duas pontas (2026-08-29):** no worktree fresco `.claude/worktrees/reg-359` → `DIVERGE` em 22
+agentes; na árvore principal (onde os alvos foram escritos pelo próprio script, em LF) → `OK — 40 agentes,
+espelho consistente`. O inspetor mediu os **blobs commitados** com transform replicado e eol-neutro: **0/22
+divergências reais**. O espelho está consistente; **o guard é que mente**.
+
+**Por que isto importa mais do que parece.** O S0 (consistência do espelho Codex) é **gate fail-closed de toda
+junta** (`D-INSPETOR-TERRENO-JUNTA`). Como está, qualquer junta futura instruída a rodar o `--check` num
+worktree novo — o arranjo que o próprio contrato **exige** para isolamento de jurado — vê vermelho e ou bloqueia
+sem motivo, ou aprende a ignorar o vermelho. O segundo é o dano real, e é a mesma classe do `.env` que sequestrava
+a bateria local (PR #355): *"o risco maior não era o vermelho — era alguém aprender a ignorá-lo."*
+
+**É também exatamente a armadilha que a `D-JUNTA-ESCOPO-E-CALIBRACAO` §3 nomeia** — medir conteúdo versionado
+sem neutralizar eol sob `core.autocrlf=true` fabrica divergência. Ali foi `git archive`+`tar`; aqui é um
+`readFileSync` cru. A decisão proibiu a ferramenta; a classe sobreviveu em outra.
+
+**Correção indicada (não aplicada aqui):** normalizar o alvo como já se normaliza a fonte — comparar
+`readFileSync(to,'utf8').replace(/\r\n/g,'\n')` com `want`. Quem receber deve provar por **mutação**: em
+checkout fresco, `--check` verde; e com um arquivo do espelho realmente adulterado, vermelho.
