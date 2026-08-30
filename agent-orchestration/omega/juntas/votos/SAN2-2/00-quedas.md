@@ -41,3 +41,37 @@ quedas em sequência curta.
 CI é parte da correção do item 1 (§3.1c) — escrevê-lo me tornaria achador e corretor do mesmo item, que é
 exatamente o que o §C7.4-bis proíbe e o que contaminou o ciclo do painel de KPI. A junta julga o diff; um
 hunk assinado por quem confirmou o defeito envenena o voto. Espera-se a janela em vez de furar a regra.
+
+## Quedas da JUNTA do SAN2-2 (registro P6)
+
+| # | cadeira | modelo | mandato | fase da morte | erro | custo do redo |
+|---|---|---|---|---|---|---|
+| J1 | C3 `zelador-do-contrato-canonico` (titular) | herdado da sessão | 3 itens | **início** — "agora o item 1, reexecutado por mim" | `response stopped` | **total** — zero linha de evidência |
+
+**R2 aplicada:** o voto perdido não conta; o sucessor entra com **identidade nova** e nada do titular é
+herdado. Como o titular não chegou a registrar comando nenhum, **não há sequer roteiro de re-execução
+barata** (P3) — o sucessor mede do zero.
+
+**Observação para a série:** é a segunda queda do dia em que o agente anuncia o primeiro item e morre na
+transição para executá-lo. O P1 protege quem já mediu; não há proteção para quem morre antes da primeira
+medição — e não deveria haver, porque não existe trabalho a preservar. O custo aqui é de disparo, não de
+trabalho perdido.
+
+| J2 | C2 `curador-da-lista-suites-ci` (titular) | herdado | 3 itens | **mensagem 1** | connection lost | zero (nada iniciado) |
+| J3 | C4 `auditor-do-kpi-honesto` (titular) | herdado | 3 itens | **fim** — 3 itens medidos e escritos, caiu antes do voto-arquivo | response stopped | **só o voto** — 313 linhas de evidência preservadas |
+
+**ERRATA DO ORQUESTRADOR (escrita minutos depois, não apagada).** Eu registrei a J3 como "mensagem 1,
+zero iniciado" **lendo a mensagem final do agente** ("vou começar lendo o briefing"), sem olhar o disco. Era
+falso: o arquivo `04-kpi-evidencia.md` tem **313 linhas**, com os **três itens medidos e com veredito
+parcial** — a cadeira morreu escrevendo a seção de fecho, DEPOIS de todo o trabalho. A última mensagem
+transmitida não diz onde o agente estava; **só o disco diz**. Cometi, no registro de quedas, a mesma classe
+de erro que este bloco existe para matar: afirmar estado sem medir.
+
+**Duas das quatro cadeiras titulares caíram na PRIMEIRA mensagem** — antes de ler o briefing,
+antes do primeiro comando. Nenhuma perdeu trabalho, porque não havia trabalho. É a confirmação mais limpa
+do **F2** do postmortem: a falha é **por request**, não por carga de mandato. As duas cadeiras que
+sobreviveram à primeira mensagem (C1 e C3) **completaram integralmente**, com 42 e 36 chamadas de
+ferramenta — mandatos idênticos em tamanho aos que mataram as outras três.
+
+**Consequência operacional:** não há mandato a encolher. O que resta é redisparar, e a R2 é barata neste
+caso — sem evidência registrada, o suplente mede do zero sem herdar nada, que é o que a regra quer.

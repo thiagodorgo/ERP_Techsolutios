@@ -4398,3 +4398,102 @@ mas corrompe um terço da resposta do artefato de controle que a rodada inteira 
 pendente e com quem.
 
 - **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — bloco que possa tocar `agent-orchestration/controle/gerar-indice-pendencias.py`
+
+
+---
+
+## P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `release.summary` nem a `description` do history: a honestidade do bloco mora fora do artefato principal
+
+**Origem: junta do `SAN2-2` (PR #363), cadeira C4 `auditor-do-kpi-honesto`** — achado **A-2** de
+`agent-orchestration/omega/juntas/votos/SAN2-2/04-kpi-voto.json`, campo `achados`. Escopo declarado
+**`pre-existente`** com evidência de origem, e por isso **publicado como pendência em vez de reprovar**
+(`D-JUNTA-ESCOPO-E-CALIBRACAO`(a), §C7.1-ter). **Não foi consertado no `SAN2-2`:** `Kpis/index.html` não
+está no diff do bloco e a junta já havia votado quando o achado foi tratado. Quem registra aqui **não é
+quem achou e não conserta** (§C7.4-bis, `D-JUNTA-SEPARACAO-DE-PAPEIS`).
+
+**O que é.** Todo bloco escreve, no `release.summary` do `Kpis/kpis-latest.json` e na `description` da sua
+entrada do `Kpis/kpis-history.json`, o texto em que declara o que entregou **e o que NÃO fechou**. Esse
+texto **não tem consumidor de render**: não chega ao `Kpis/index.html`, que a `D-KPI-INDEX-PAINEL` define
+como **o artefato**.
+
+### A medição da C4, citada como ela a registrou
+
+> "Removi a linha do FROZEN (l.1623, que e dado congelado e nao codigo de render) e procurei consumidores em
+> `Kpis/app.js`: `release.` / `.summary` / `.description` -> UMA unica ocorrencia,
+> `if (latest.release && latest.release.status_label) bits.push(latest.release.status_label);` (l.932) — e
+> `status_label` NEM EXISTE no JSON, logo nem essa dispara. O `Kpis/index.html` tem 172 linhas e suas secoes
+> sao state / charts / conclusion / recent / findings / roadmap: nenhuma para o texto do release. A prosa da
+> 'Conclusao' e MONTADA pelo app.js a partir de `metrics` (l.1150-1180), nao do summary."
+
+E a evidência de origem que sustenta o escopo `pre-existente`, também dela:
+
+> "A MESMA medicao sobre `git show main:Kpis/app.js` (main = 87f6ae6, o merge do #362, mergeado em
+> 2026-08-29) devolve a MESMA unica ocorrencia `latest.release.status_label`. A propriedade antecede a branch
+> em qualquer leitura, e o diff deste PR em `Kpis/app.js` e regeneracao do FROZEN (item 3e:
+> `JSON.stringify(FROZEN) === JSON.stringify(latest)` = true), nao codigo de render."
+
+### Re-medição própria (2026-08-30) — não herdei a conclusão, reproduzi
+
+Excluída a linha `var FROZEN` (l.1623, dado congelado, não código de render), varrendo `summary`,
+`description`, `release.` e `release[` nas **três** árvores:
+
+| árvore | ocorrências fora do FROZEN |
+|---|---|
+| `main` = `87f6ae615c07872c820b3a0dda771a6b48fb4d0d` (merge do #362, 2026-08-29) | **1** — `l.932: latest.release.status_label` |
+| head julgado `c8dc716` | **1** — a mesma, `l.932` |
+| árvore de trabalho (já com a correção do A-1) | **1** — a mesma, `l.932` |
+
+E a única ocorrência **não dispara**: `grep -c status_label Kpis/kpis-latest.json` = **0**. O
+`Kpis/index.html` (172 linhas) não contém as palavras `summary`, `description` nem `release` — nem na
+árvore, nem em `git show main:Kpis/index.html`. **Idêntico na `main`, anterior a este bloco: o escopo
+`pre-existente` se sustenta na medição, não na declaração.**
+
+**O tamanho do que não chega, medido:** `release.summary` tem **5.988 caracteres**, e a `description` da
+entrada `SAN2-2` do history tem os **mesmos 5.988** — é o mesmo texto nos dois lugares, e nenhum dos dois
+tem consumidor.
+
+**O que o painel mostra no lugar (medido, para não confundir o próximo leitor).** A seção "Últimas demandas"
+existe, mas hidrata de `latest.recent.itens[]` (`Kpis/app.js` l.1195-1234) — um array **curado à mão**, com
+campo próprio `resumo` (8 itens hoje, resumos de 203 a 588 caracteres, o mais novo o PR #359). Não é o
+`release.summary` nem a `description` do history. Ou seja: o painel **não é mudo**, ele conta outra coisa,
+escrita em outro campo — e o parágrafo onde o bloco declara o que ficou aberto não é essa coisa.
+
+### Por que importa
+
+A `D-KPI-INDEX-PAINEL` (§C3.0) estabelece que **o `Kpis/index.html` é o ARTEFATO** e os JSON são só a
+**fonte de dados** — "é ele que o dono abre para ver onde o projeto está". O `summary` é justamente onde
+cada bloco declara **o que NÃO fechou**; no `SAN2-2` ele traz um bloco próprio intitulado *"O QUE ESTE BLOCO
+NÃO FECHOU, dito antes que perguntem"*, com três itens. **Nada disso chega ao painel.**
+
+A consequência é assimétrica e é o ponto: enquanto isto valer, *"o painel é a entrega"* vale **para os
+números** — que hidratam, têm card, têm gráfico e têm guard — e **não vale para as ressalvas**, que existem,
+são escritas com evidência, são cobradas pela junta… e ficam invisíveis no artefato principal. A honestidade
+do registro tem custo de produção e **zero alcance** em quem o painel serve. É também o que derruba a segunda
+perna do argumento que os blocos vêm usando sobre o §C3.0 — *"o lugar honesto delas é a `description`"* —:
+a `description` não é um lugar do painel.
+
+### Severidade
+
+**MÉDIA**, e a classificação é **da C4** (`gravidade: "MEDIA"`, `bloqueia: false` no voto), não um carimbo
+deste registro. O que eu verifiquei é o **mecanismo** — as três medições acima — e ele é compatível com o
+critério que este arquivo já vem usando para MÉDIA: não toca produto, dado, dinheiro nem permissão, e nenhum
+valor de `metrics` depende disto; mas corrompe o alcance do artefato de controle que a rodada inteira usa
+para dizer onde o projeto está. Quem discordar da gravidade tem a medição inteira acima para reclassificar
+sem refazer o trabalho.
+
+### Dono e o que falta
+
+**Dono: a atribuir** — na prática, **o próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`**.
+Não nomeio bloco existente: nomear compromisso que não combinei é a mesma classe de afirmação sem execução
+atrás que este arquivo existe para matar.
+
+O que a C4 aponta como correção natural, **registrado como direção e não como plano** (quem acha e quem
+registra não consertam): uma seção no painel que renderize `release.summary` — e a `description` por entrega
+no histórico —, **hidratada do JSON** como a §C3.1.0 exige, com o fallback `file://` honesto e rotulado. Quem
+receber deve provar por **mutação**, como os guards de KPI já provam os seus: mudar o texto no JSON tem de
+mudar o painel, e texto ausente não pode virar seção vazia mentindo que não havia ressalva.
+
+**Critério de fechamento:** abrir o `Kpis/index.html` com dado real mostra o texto em que o bloco declarou o
+que não fechou, hidratado do JSON, e um guard permanente falha se essa seção sumir ou defasar do snapshot.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`

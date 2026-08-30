@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **232** |
-| IDs distintos | 224 |
-| **ABERTAS** | **185** |
+| Cabecalhos `## P-` | **233** |
+| IDs distintos | 225 |
+| **ABERTAS** | **186** |
 | — das quais **diferidas** (balde C) | 77 |
-| — das quais **ativas nesta rodada** | **108** |
+| — das quais **ativas nesta rodada** | **109** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 47 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **232 cabecalhos para 224 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **233 cabecalhos para 225 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -56,7 +56,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 31
+## ABERTAS · balde A — material — 32
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -91,6 +91,7 @@
 | `P-GOV-MAIN-SEM-PROTECAO` | 4155 | MÉDIA | sim | P-GOV-MAIN-SEM-PROTECAO — ATUALIZAÇÃO (2026-08-25): ruleset INSTALADO |
 | `P-SAN2-LEITURA-DAS-79` | 4188 | MÉDIA | sim | P-SAN2-LEITURA-DAS-79 (2026-08-29) — MÉDIA · **Dono:** bloco próprio, DEPOIS do ciclo 5  |
 | `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 4345 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
+| `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 4405 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
 
 ## ABERTAS · balde B — processo/registro — 77
 

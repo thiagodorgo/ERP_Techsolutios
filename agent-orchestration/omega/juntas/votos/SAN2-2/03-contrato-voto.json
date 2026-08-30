@@ -1,0 +1,77 @@
+{
+  "cadeira": "C3 — zelador-do-contrato-canonico (SUPLENTE, identidade NOVA; o titular caiu por server_error sem registrar comando algum — nada herdado, regra R2; medi tudo do zero)",
+  "junta": "SAN2-2",
+  "pr": 363,
+  "branch": "fix/san2-2-guard-espelho-ci",
+  "head": "c8dc716",
+  "merge_base": "87f6ae6",
+  "veto": true,
+  "veredito": "APROVADO",
+  "evidencia": "agent-orchestration/omega/juntas/votos/SAN2-2/03-contrato-evidencia.md",
+  "itens_medidos": [
+    {
+      "item": "1 — O paragrafo C7.4 ANTIGO (teto de 5 ciclos) nao veio de carona no transporte",
+      "resultado": "LIMPO",
+      "comandos": [
+        "git show <ref>:<f> | grep -c 'ciclo 5 falho'  ->  HEAD 0/0 · main 0/0 · demo/investidor 1/1",
+        "grep -cF 'teto 6 agentes'               -> HEAD 0/0 · main 0/0 · demo 1/1",
+        "grep -cF 'pesquisa >=5 fontes'          -> HEAD 0/0 · main 0/0 · demo 1/1",
+        "grep -cF 'ciclos 4-5 = junta ampliada'  -> HEAD 0/0 · main 0/0 · demo 1/1",
+        "grep -c 'D-TETO-DOIS-CICLOS'            -> HEAD 1/1 · main 1/1 · demo 0/0",
+        "git diff main...HEAD -- CLAUDE.md AGENTS.md | grep -c '^-[^-]'  -> 0",
+        "grep -c 'Protocolo de dificuldade'      -> HEAD 1/1 · main 1/1 (nenhuma secao duplicada)"
+      ],
+      "nota": "Usei o discriminador correto ('ciclo 5 falho'), que de fato separa demo de main/HEAD. NAO usei 'ciclos 4-5' como regua — ela aparece nos dois textos e nao discrimina."
+    },
+    {
+      "item": "2 — Insercao pura, instrumento verbatim, espelho gerado por script, nada mais da demo",
+      "resultado": "LIMPO",
+      "comandos": [
+        "git diff --numstat main...HEAD -- CLAUDE.md AGENTS.md -> 45/0 e 45/0",
+        "git diff main...HEAD -- <contrato> | grep '^@@' -> UM unico hunk por arquivo (@@ -329,6 +329,51 @@ e @@ -357,6 +357,51 @@)",
+        "git cat-file blob <ref>:<f> | tr -dc CR | wc -c -> CR=0 em main E em HEAD nos dois contratos (nenhuma conversao CRLF->LF disfarcada de insercao)",
+        "linhas: CLAUDE 497->542, AGENTS 546->591 (delta +45 exato); bytes: +3972 IDENTICO nos dois arquivos",
+        "MSYS_NO_PATHCONV=1 git rev-parse demo/investidor:.claude/agents/inspetor-de-terreno-da-junta.md == HEAD:<mesmo> -> 8262abfb5ae85049033d5824ce191432f36d8b55 (MESMO BLOB)",
+        "MSYS_NO_PATHCONV=1 git diff demo/investidor:<p> HEAD:<p> -> VAZIO; git show HEAD:<p> | wc -l -> 115; git diff HEAD -- <p> -> vazio",
+        "ls .claude/agents/*.md | wc -l -> 23 ; ls -1 .agents/agents/ | wc -l -> 24 (23 espelhos + README, que e KEEP)",
+        "node scripts/sync-agent-agents.mjs --check -> '[agents-sync] OK — 23 agentes, espelho consistente.' exit=0",
+        "varredura blob-a-blob dos 25 arquivos do diff: EXATAMENTE 2 iguais aos da demo (fonte e espelho do inspetor)",
+        "git ls-tree -r --name-only HEAD | grep -c especialistas/ -> 0 (a demo tem 34 arquivos em especialistas/)"
+      ],
+      "nota": "Instrumento descartado e NAO publicado: uma primeira medicao de CR com 'od -c | grep -o' devolveu 1638/1777 — numero falso; refeita com git cat-file + tr. Tambem nao usei grep -c com padrao CR (MSYS esvazia o padrao), nem sed nos contratos, nem git archive + tar."
+    },
+    {
+      "item": "3 — Paridade CLAUDE x AGENTS do trecho inserido + estado das 3 pendencias",
+      "resultado": "LIMPO (com 1 achado pre-existente que nao reprova)",
+      "comandos": [
+        "diff <linhas + de CLAUDE.md> <linhas + de AGENTS.md> -> VAZIO; 45 linhas / 3972 bytes cada; sha256 IDENTICO: 505a83b578fd4d32df49ea8e93590575de5fdf92c151768599f908fb12791d17",
+        "zero diferencas de mecanismo de ferramenta a listar; os dois contratos alterados no MESMO commit 2e4985b",
+        "replica READ-ONLY do gerar-indice-pendencias.py (nao rodei o gerador — ele mutaria o indice)",
+        "P-C7-BIS-TER-FORA-DA-MAIN (l.4212): linha '- **status:** FECHADA' -> classificacao FECHADA",
+        "P-REG-S0-GUARD-FALSO-VERMELHO (l.3998): linha '- **status:** FECHADA' -> classificacao FECHADA",
+        "P-O6R-B02-SUITES-LIST-CI (l.3690): linha '- **status:** ABERTA ... **dono:** o PR que mergear o B-O6R-02' -> ABERTA com dono NOMEADO",
+        "diff do PR mostra a mudanca NA LINHA DE STATUS: '- **status:** ABERTA ... dono: a atribuir' -> '... dono: o PR que mergear o B-O6R-02'",
+        "placar re-derivado por mim: 232 cabecalhos · 185 ABERTAS · 47 FECHADAS · 0 CONTRADITORIAS · 0 SEM-STATUS  ==  placar publicado no indice (5 de 5 batem)",
+        "secoes do indice: P-O6R-B02 em 'ABERTAS · balde A — material'; P-REG-S0 e P-C7-BIS-TER em 'FECHADAS'"
+      ],
+      "nota": "NENHUMA pendencia foi fechada por cabecalho. Nas duas fechadas, cabecalho E linha de status concordam — por isso o classificador emite FECHADA e nao CONTRADITORIA. A classe que reprovou o SAN2-1 duas vezes nao se repete. O indice foi conferido EOL-NEUTRO por re-derivacao da classificacao — jamais por md5sum ou git status, que fabricam divergencia sob core.autocrlf=true."
+    }
+  ],
+  "achados": [
+    {
+      "achado": "A tabela de mapeamento Claude Code <-> Codex do AGENTS.md afirma '24 agentes em .claude/agents/*.md' e '24 papeis espelhados em .agents/agents/*.md', mas a contagem real de papeis e 23 no head (e era 22 na main). O numero de referencia do contrato mente.",
+      "gravidade": "BAIXA",
+      "escopo": "pre-existente",
+      "evidencia": "Evidencia de ORIGEM: a linha e BYTE-IDENTICA em main:AGENTS.md l.541 e em HEAD:AGENTS.md l.586, e o PR NAO a tocou — 'git diff main...HEAD -- AGENTS.md | grep -c \"papeis espelhados\"' -> 0. Contagem real por 'git ls-tree --name-only <ref> -- .claude/agents/ | grep -c .md$': main=22 (erro de 2), HEAD=23 (erro de 1), demo/investidor=23. O bloco levou o real de 22 para 23 e portanto REDUZIU o erro de 2 para 1; nao o criou nem o ampliou. O CLAUDE.md nao faz afirmacao de contagem (grep=0), logo nao ha quebra de paridade introduzida aqui. Corrigir exigiria editar o contrato fora da insercao pura que o item 2 do meu mandato — e o paragrafo 5 do plano — delimitam.",
+      "consequencia": "Nao reprova (C7.1-ter-a). Vira pendencia nomeada; bloco dono sugerido: o proximo bloco autorizado a editar AGENTS.md fora de insercao pura."
+    }
+  ],
+  "justificativa": "Os tres itens do mandato foram medidos DO ZERO, sem herdar nada do titular caido — que nao deixou nem conclusao nem roteiro. (1) O risco mais caro do bloco, o C7.4 pre-revogacao voltar de carona no transporte, esta REFUTADO por quatro marcadores independentes: todos zero no head, todos presentes na demo, com o D-TETO-DOIS-CICLOS intacto em 1/1 e zero linhas removidas no diff dos contratos. (2) O transporte e uma insercao cirurgica de verdade: um unico hunk por contrato, +45/-0, blobs 100% LF antes e depois (nenhuma conversao de massa disfarcada de insercao), delta de bytes identico nos dois; o instrumento do gate e o MESMO BLOB da demo (8262abfb, 115 linhas, diff vazio); o espelho passa no --check do script real com 23 agentes e 24 arquivos, e o --check regenera e compara byte a byte, logo prova que o espelho e gerado e nao digitado; e a varredura blob-a-blob dos 25 arquivos do diff mostra que EXATAMENTE dois vieram da demo — os dois do inspetor —, com zero arquivos de especialistas/ dos 34 que a demo carrega. (3) O fragmento inserido e byte-identico nos dois contratos (mesmo sha256, mesmos 3972 bytes), sem nada de mecanismo de ferramenta a listar, e entrou no mesmo commit; e as tres pendencias estao no estado prometido pela LINHA DE STATUS canonica, nao por cabecalho — com CONTRADITORIAS=0 e SEM-STATUS=0, e o dono da que segue aberta nomeado na propria linha de status por este PR. O unico achado e uma contagem estagnada numa tabela de referencia do AGENTS.md, provadamente anterior a branch e nao tocada por ela, de gravidade BAIXA: pelo C7.1-ter-a vira pendencia e nao reprova. Julguei apenas o item 3 do mandato desta cadeira; o merito do guard e da C1, a lista do CI e da C2 e o KPI e da C4 — nao derivei nada do LIBERADO do inspetor de terreno.",
+  "cadeiras_nao_julgadas_por_mim": [
+    "C1 — merito do guard e dos Drills A/B",
+    "C2 — lista SUITES do CI",
+    "C4 — KPI"
+  ],
+  "terreno": "Nenhum toque em erp-postgres nem em erp-redis. Nenhum commit. Nenhuma mutacao de arquivo rastreado — apenas os artefatos de junta em votos/SAN2-2/.",
+  "data": "2026-08-30"
+}
