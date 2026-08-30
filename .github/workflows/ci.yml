@@ -205,6 +205,19 @@ jobs:
           # §8 do plano: rls-tenant-isolation entra na lista (estava ausente — rodava só no job backend,
           # onde se declara pulada sem DATABASE_URL; aqui o guard de zero pulos a pune se pular).
           SUITES="$SUITES tests/rls-tenant-isolation.test.ts"
+          # SAN2-2 (item 2 de P-O6R-B02-SUITES-LIST-CI) — 4 suítes -db que EXISTEM na main e estavam fora da
+          # lista curada: rodavam só no job "backend", onde auto-pulam em silêncio se o env quebrar (única
+          # condição de skip delas) e o job fica verde. Cada uma foi medida ANTES de entrar: 3 execuções em
+          # Postgres descartável, nas condições exatas deste job — 0 falha e 0 pulo nas 3, denominador
+          # constante (3 + 5 + 6 + 8 = 22 casos). Agora sob o guard de zero pulos do passo seguinte.
+          SUITES="$SUITES tests/impound-custody-history-db.test.ts"
+          SUITES="$SUITES tests/vehicle-identity-merge-db.test.ts"
+          SUITES="$SUITES tests/work-order-checklists-freeze-links-db.test.ts"
+          SUITES="$SUITES tests/work-order-checklists-sticky-db.test.ts"
+          # LUGAR RESERVADO — tests/financial-entry-delete-reverse-race-db.test.ts NÃO entra hoje: o arquivo
+          # não existe na main (vive só na branch não-mergeada feat/o6r-b02-financial-uow, blob e5295083), e
+          # a linha quebraria este job de imediato. Sua inclusão é DoD do PR que mergear o B-O6R-02 (ciclo 5
+          # financeiro); a pendência P-O6R-B02-SUITES-LIST-CI segue ABERTA, com esse PR como dono.
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
