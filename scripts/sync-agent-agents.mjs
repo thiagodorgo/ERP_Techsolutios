@@ -77,7 +77,13 @@ if (CHECK) {
     const want = transform(f.replace(/\.md$/, ''), readFileSync(join(SRC, f), 'utf8'));
     const to = join(DST, f);
     if (!existsSync(to)) { drift.push(`FALTA no espelho: .agents/agents/${f}`); continue; }
-    if (readFileSync(to, 'utf8') !== want) drift.push(`DIVERGE: .agents/agents/${f}`);
+    // Comparação EOL-NEUTRA — e SÓ eol. O `want` já sai normalizado do `transform` (a l.39 faz
+    // CRLF -> LF na FONTE); aqui o alvo lido do disco passa pela MESMA regra antes de comparar.
+    // Sem essa simetria o guard MENTE em checkout fresco sob `core.autocrlf=true`: o Windows
+    // materializa CRLF nas duas pontas e TODO arquivo "diverge" com os blobs idênticos
+    // (P-REG-S0-GUARD-FALSO-VERMELHO). Nada de trim, case ou colapso de espaço: qualquer outra
+    // diferença de byte — palavra trocada, espaço interno, BOM, linha a mais — continua reprovando.
+    if (readFileSync(to, 'utf8').replace(/\r\n/g, '\n') !== want) drift.push(`DIVERGE: .agents/agents/${f}`);
   }
   for (const f of dstFiles) if (!expected.has(f) && !KEEP.has(f)) drift.push(`SOBRA no espelho (não existe na origem): .agents/agents/${f}`);
   if (drift.length === 0) {

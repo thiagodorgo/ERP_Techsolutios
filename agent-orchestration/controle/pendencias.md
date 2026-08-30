@@ -3692,9 +3692,58 @@ inicializa o Prisma Client após o skip sem `DATABASE_URL` — pré-existente)/6
 está na lista SUITES do job `backend-postgres`** do `ci.yml` (0 hits no head; denominador da canônica 2 = 194 sem ela). Roda só
 pela canônica 3 (job `backend`) e isolada. `ci.yml` era PROIBIDO no ciclo 4 (§5) — a inclusão é pendência nomeada, não emenda.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** **o PR que mergear o `B-O6R-02`** (ciclo 5 do financeiro) — re-atribuído em 2026-08-30 pelo `SAN2-2`, ver apenso abaixo
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+### Apenso de 2026-08-30 (`SAN2-2`, Fase 2 — `02ced85`): parte entrou, o resto tem dono
+
+**A pendência continua ABERTA, e isso é o resultado certo** — não se fecha o que não se pode executar.
+O que mudou é que ela deixou de ser um item sem dono.
+
+**O que ENTROU.** A Fase 2 do `SAN2-2` levou para a lista curada do job `backend-postgres` **4 suítes `-db`
+que existem na `main` e estavam fora dela**: `impound-custody-history-db`, `vehicle-identity-merge-db`,
+`work-order-checklists-freeze-links-db` e `work-order-checklists-sticky-db`. Rodavam só no job `backend`,
+onde a **única** condição de skip delas é a ausência de `DATABASE_URL` — ou seja, se o env quebrasse, elas
+pulavam **em silêncio** e o job ficava verde. É a classe verde-cego que a lista curada e o guard de zero
+pulos existem para punir. Cada uma foi **medida antes de entrar**: 3 execuções em Postgres descartável, nas
+condições exatas do job, **0 falha e 0 pulo nas 3**, denominador constante — **3 + 5 + 6 + 8 = 22 casos**.
+Intermitência desqualificaria a linha; nenhuma teve.
+
+**Lista `SUITES` de 23 → 27**, conferido nesta fase pela régua da linha de atribuição:
+
+```
+$ git show 02ced85^:.github/workflows/ci.yml | grep -cE '^\s*SUITES='   -> 23
+$ git show 02ced85:.github/workflows/ci.yml  | grep -cE '^\s*SUITES='   -> 27
+```
+
+> **Nota de régua (a primeira medição estava errada e fica registrada).** `grep -c "test.ts"` no mesmo par de
+> arquivos dá **24 → 29**, porque casa ocorrências fora do bloco `SUITES`. Os dois pares são "verdadeiros"
+> para réguas diferentes, e é por isso que a régua vai escrita junto do número — a mesma disciplina que o
+> cabeçalho deste arquivo cobra do "97 antes / zero hoje".
+
+**O que NÃO entrou, e por quê.** `tests/financial-entry-delete-reverse-race-db.test.ts` — a suíte que
+originou esta pendência — **continua fora**, com um **lugar reservado e comentado** no `ci.yml`. Medido em
+2026-08-30:
+
+```
+$ git ls-tree main -- tests/financial-entry-delete-reverse-race-db.test.ts
+(vazio  ->  o arquivo NAO existe na main)
+$ git ls-tree feat/o6r-b02-financial-uow -- tests/financial-entry-delete-reverse-race-db.test.ts
+100644 blob e52950837ae3e97b1fb3272c159c1a5887d37a12
+```
+
+A suíte vive **apenas** na branch não-mergeada `feat/o6r-b02-financial-uow` (blob `e5295083`). Pôr a linha
+hoje **quebraria o job de imediato**. Fechar a pendência seria mentir; incluir a linha seria trocar um job
+verde-cego por um job vermelho-por-arquivo-ausente.
+
+**A contradição que este apenso resolve.** O `ci.yml` entregue na Fase 2 **já afirma**, no comentário do
+lugar reservado, que a pendência *"segue ABERTA, com esse PR como dono"* — enquanto o registro aqui dizia
+`dono: a atribuir`. Um dono declarado no código e ausente no registro é um dono que ninguém cobra. A linha de
+status acima passa a nomeá-lo: **o PR que mergear o `B-O6R-02`**, para quem a inclusão da linha vira **DoD**.
+
+**Critério de fechamento:** a linha `SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"`
+presente no `ci.yml`, com a suíte existente na `main` e o job `backend-postgres` verde sob o guard de zero
+pulos.
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
 junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
@@ -3735,6 +3784,62 @@ nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
 - **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+### Apenso de 2026-08-30 (`SAN2-2`, Fase 4) — a causa REAL nesta árvore não é auto-pulo, é **crash no load**
+
+**Escopo: `pre-existente`** (o arquivo e o `throw` antecedem o `SAN2-2`; a entrada de 2026-08-28
+`P-O6R-B02-BATERIA-CANONICAS-1-2` já nomeava o mesmo arquivo — *"inicializa o Prisma Client após o skip sem
+`DATABASE_URL` — pré-existente"*). **Não corrigido aqui**: `src/**` e `tests/**` estão fora do escopo do
+`SAN2-2`, e quem acha não conserta (`D-JUNTA-SEPARACAO-DE-PAPEIS`).
+
+**O que a entrada acima descreve** é uma suíte que sai **limpa** sem registrar teste — cenário obtido por
+**mutação** (`if (true) {} else if (!connectionString)`). **O que acontece de verdade** ao rodar `npm test`
+**sem** `DATABASE_URL`, sem mutação nenhuma, é outra coisa: o arquivo **estoura no carregamento**.
+
+```
+$ env -u DATABASE_URL npm test
+...
+# C:\...\src\database\prisma.ts:12
+#     at <anonymous> (...\src\database\prisma.ts:12:9)
+#   Error: DATABASE_URL is required to initialize Prisma Client.      (2 ocorrências)
+```
+
+`src/database/prisma.ts:12` é o `throw` em **escopo de módulo** (l.9 lê `process.env.DATABASE_URL`, l.11–13
+lançam se ausente). Ele dispara no *import*, **antes** de qualquer `test()` se registrar — por isso o arquivo
+some inteiro do denominador em vez de aparecer como falha ou como pulo. **Arquivo culpado nomeado pela própria
+execução:** `tests/core-saas-role-authority.test.ts`.
+
+**Medição (execução real, 2026-08-30, neste worktree, sem `.env` — só `.env.example`):**
+
+```
+[run-backend-tests] 248 arquivo(s) · 2371 teste(s) · pass 2312 · fail 1 · skipped 58
+EXIT=1
+```
+
+`2371 · fail 1 · skipped 58` — **idêntico** às 2 execuções que o orquestrador mediu antes desta; esta é a
+**terceira**, feita de forma independente pela Fase 4, e o número não se moveu.
+
+**O que o apenso MUDA na entrada acima, e o que confirma.**
+
+- **MUDA a causa:** nesta árvore o sumiço não vem de auto-pulo silencioso, vem de **exceção no load**. Quem
+  for consertar procurando por `skip:` não vai achar nada.
+- **CONFIRMA o diagnóstico central** ("o buraco que resta é o denominador sem piso") e mostra que **ele já
+  foi tampado**. O piso de denominador entregue pelo `B-O6R-ARNES` (#359) **morde neste caso real**:
+
+  ```
+  [run-backend-tests] PISO DE DENOMINADOR: 1 arquivo(s) expandido(s) terminaram sem registrar um único
+  teste e sem declarar skip:
+  [run-backend-tests]   tests\core-saas-role-authority.test.ts
+  [run-backend-tests] O total acima (2371) é MENOR do que a suíte de verdade e não dá para saber quanto —
+  testes que não rodaram não aparecem como falha. Sair 0 aqui é publicar um denominador que a execução não
+  sustenta (P-O6R-B02-RUNNER-SUMICO-SEM-SKIP).
+  ```
+
+  **`ec=1`, com o arquivo nomeado e esta pendência citada pelo ID.** O "guard mudo / `ec=0`" descrito acima
+  vale para o head em que a entrada foi escrita, **não** para o head de hoje.
+
+**O que resta ABERTO, portanto,** não é mais a detecção — é a **causa**: `tests/core-saas-role-authority.test.ts`
+não declara skip quando falta `DATABASE_URL` (ao contrário do irmão `-db`), então a bateria sem banco não
+consegue sair verde legitimamente. Trabalho de bloco que possa tocar `tests/**`.
 ## P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do arnês, N=10)
 
 - **A classe `XX000` reaparece DENTRO da forma canônica 3**, não fora dela: 3/10 rodadas do mesmo `npm test` com `DATABASE_URL`,
@@ -3890,7 +3995,40 @@ pulados. Quórum deste bloco: **maioria de 3** — não toca dinheiro, seguranç
 - **status:** ABERTA · **severidade:** a classificar · **dono:** declarado acima
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
-## P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder tocar `scripts/`
+## P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder tocar `scripts/` — **FECHADA em 2026-08-30**
+
+> **FECHADA em 2026-08-30 pelo `SAN2-2` (Fase 1, commit `db2d291`).** A correção aplicada é exatamente a
+> indicada no fim desta entrada — normalizar o alvo como já se normaliza a fonte (`scripts/sync-agent-agents.mjs`,
+> +7/−1) — e ela **não entrou por releitura**: entrou com os dois drills que a própria entrada exigia.
+>
+> - **Drill A — o falso-vermelho reproduzido e morto.** Script da `main` no worktree fresco →
+>   **22 `DIVERGE`, exit 1**. Script corrigido, mesmo worktree → **0 divergências / 0 `FALTA` / 0 `SOBRA`,
+>   exit 0**. O vermelho era do guard, não do espelho — como o inspetor já havia medido nos blobs.
+> - **Drill B — o guard ainda morde.** **8 mutações** injetadas (fonte e espelho) → **8 vermelhas**. Esta é
+>   a metade que importa: uma "correção" que apenas apagasse o vermelho passaria no Drill A e **falharia
+>   aqui**. Verde-cego refutado **por execução**, não por argumento.
+> - **12 casos permanentes** em `tests/agents-mirror-guard.test.ts`: os três arranjos de EOL (CRLF nas duas
+>   pontas, fonte CRLF + espelho LF, fonte LF + espelho CRLF), mutação em cada ponta, `FALTA`, `SOBRA`, o
+>   `README.md` como KEEP, as **três** provas de que a normalização é *só* de EOL (espaço no fim da linha,
+>   caixa e linha em branco a mais continuam reprovando) e a preservação de `model:` (`D-PLANEJADOR-MODELO-FABLE`).
+> - **O `--check` passou a rodar no CI:** `.github/workflows/ci.yml:69-70`, job `backend`. Antes não rodava
+>   em lugar nenhum — e era por isso que um gate fail-closed de toda junta dependia de alguém lembrar de
+>   executá-lo à mão.
+>
+> **Por que fechar importa, e não é formalidade.** Enquanto o registro dissesse ABERTA, o próximo
+> `inspetor-de-terreno-da-junta` leria que o gate S0 ainda mente — e faria uma de duas coisas: bloquearia
+> junta sem motivo, ou **aprenderia a ignorar a pendência**. A segunda é o dano real, e é a mesma frase que
+> esta entrada já usa sobre o `.env` do #355: *"o risco maior não era o vermelho — era alguém aprender a
+> ignorá-lo."* Um registro que continua vermelho **depois** do conserto ensina exatamente isso.
+>
+> **Origem de cada número (§A2 — fato separado de herança).** Os drills A e B são do `dev-fase1-log.md`
+> (953 linhas, commit `db2d291`) e **não foram reexecutados** nesta fase de registro — reproduzi-los exige
+> checkout fresco, fora do mandato da Fase 4. O que esta fase **mediu por conta própria**, em 2026-08-30:
+> os 12 casos (`grep -cE "^\s*(test|it)\(" tests/agents-mirror-guard.test.ts` → 12), o passo do CI
+> (2 hits em `ci.yml`), o diffstat do `db2d291` (+7/−1 no script, +345 no teste, +9 no `ci.yml`) e
+> `node scripts/sync-agent-agents.mjs --check` → `OK — 23 agentes, espelho consistente`, **exit 0**.
+>
+> Registro original preservado abaixo (§A2 — não se reescreve).
 
 **Achador:** `inspetor-de-terreno-da-junta` do `B-O6R-REG` (ressalva R1), **confirmado por execução** pelo
 orquestrador. **Quem achou não conserta** (`D-JUNTA-SEPARACAO-DE-PAPEIS`) — e `scripts/` está **fora do escopo**
@@ -3926,8 +4064,8 @@ checkout fresco, `--check` verde; e com um arquivo do espelho realmente adultera
 
 ---
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** declarado acima
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **status:** FECHADA · **severidade:** MEDIA · **dono:** `SAN2-2` (Fase 1, `db2d291`) — fechada em 2026-08-30, ver bloco no topo da entrada
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`. [Superada em 2026-08-30 pela Fase 4 do `SAN2-2`: a triagem marcou ABERTA por não ter verificado; agora foi verificado, e o que fechou a entrada foi **execução** (drills A e B), não o cabeçalho.]</sub>
 
 ## P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é quem vai reusar a forma)
 
@@ -4067,3 +4205,295 @@ desta pendência é MÉDIA e não BAIXA.
 ficar no caminho crítico do teto do §C7.4. **Critério de fechamento:** as 79 com veredito individual e
 evidência; as materiais promovidas de balde; o índice regenerado; e a etiqueta de triagem automática
 removida (porque a leitura terá acontecido).
+
+
+---
+
+## P-C7-BIS-TER-FORA-DA-MAIN (2026-08-30) — MÉDIA · **FECHADA no mesmo PR que a abriu**
+
+**Aberta e fechada no mesmo PR, e isso é deliberado.** Este ID era citado por nome em **três** artefatos da
+junta do `SAN2-1R` e no plano do `SAN2-2` — mas **não tinha entrada aqui nem no índice**. Um ID citado como
+se existisse, sem registro, é pior do que um ID ausente: quem consultasse o índice para saber o que estava
+aberto **não o veria**, e quem lesse a ata acharia que veria. A entrada é criada para que o fechamento tenha
+onde constar — §A2: não se consolida em silêncio.
+
+Conferido em 2026-08-30, antes de escrever esta entrada:
+
+```
+$ grep -c "P-C7-BIS-TER-FORA-DA-MAIN" agent-orchestration/controle/pendencias.md        -> 0
+$ grep -c "P-C7-BIS-TER-FORA-DA-MAIN" agent-orchestration/controle/pendencias-indice.md -> 0
+$ git grep -n "P-C7-BIS-TER-FORA-DA-MAIN" -- .
+   votos/SAN2-1R/00-quedas-pos-merge.md · 00c-porteiro-evidencia.md · 00c-porteiro-pos-merge-362.md
+   planos/SAN2-2-plano.md
+```
+
+### O defeito
+
+**§C7.1-bis** (`D-INSPETOR-TERRENO-JUNTA` — o inspetor de terreno que libera ou bloqueia o *start* de toda
+junta) e **§C7.1-ter** (`D-JUNTA-ESCOPO-E-CALIBRACAO` — todo voto declara `escopo` além de `gravidade`, e o
+quórum por risco) são **decisões do dono que regem como toda junta começa e como todo voto é emitido**. Elas
+existiam **apenas** na branch `demo/investidor`. Os **dois** contratos espelhados da `main` não as tinham —
+e a regra de espelhamento exige que Claude Code e Codex sigam as mesmas regras.
+
+Medido pelo porteiro pós-merge do #362 e **re-medido nesta fase**, nos 4 pontos:
+
+| ponto | `grep -c "1-bis\|1-ter"` |
+|---|--:|
+| `main:CLAUDE.md` | **0** |
+| `main:AGENTS.md` | **0** |
+| `demo/investidor:CLAUDE.md` | 2 |
+| `demo/investidor:AGENTS.md` | 2 |
+
+**Escopo: `pre-existente`** — `74430cc` já media 0; o #362 não removeu nada. **Agravante:** a ausência de
+registro descrita acima. As duas decisões governavam na prática e não constavam do contrato que a `main`
+publica; um inspetor de terreno instanciado a partir da `main` não encontraria a norma que o torna
+obrigatório.
+
+### O fechamento — commit `2e4985b` (`SAN2-2`, Fase 3)
+
+```
+$ git show --numstat --format= 2e4985b
+121  0  .agents/agents/inspetor-de-terreno-da-junta.md
+115  0  .claude/agents/inspetor-de-terreno-da-junta.md
+ 45  0  AGENTS.md
+ 45  0  CLAUDE.md
+525  0  .../votos/SAN2-2/dev-fase3-log.md
+```
+
+- **Inserção pura: +45 / −0 em CADA contrato.** Zero linhas removidas — o transporte não pisou em nenhuma
+  regra existente. É o que separa "trouxe a norma" de "trouxe a branch".
+- **O §C7.4 revogado não voltou de carona.** `git show 2e4985b:CLAUDE.md | grep -c "ciclo 5 falho"` → **0**;
+  idem em `AGENTS.md` → **0**. Era o risco concreto de puxar texto de uma branch de demo para a `main`, e
+  ele não se materializou.
+- **O instrumento veio junto, verbatim:** `.claude/agents/inspetor-de-terreno-da-junta.md`, **115 linhas** —
+  norma sem o agente que a executa seria letra morta. O espelho Codex tem 121 (as 6 linhas do cabeçalho de
+  emulação que o gerador acrescenta).
+- **Espelho consistente e provado hoje:** `node scripts/sync-agent-agents.mjs --check` →
+  `OK — 23 agentes, espelho consistente`, **exit 0**. São **23 agentes espelhados** em **24 arquivos** de
+  `.agents/agents/` (o 24º é o `README.md`, que é KEEP e não vira `SOBRA`).
+- **Head desta branch:** `git show 2e4985b:CLAUDE.md | grep -c "1-bis\|1-ter"` → **2**; `AGENTS.md` → **2**.
+  Os dois pontos que mediam 0 medem 2.
+
+### Severidade — classificação desta entrada, não herdada
+
+**MÉDIA.** Nenhuma junta atribuiu severidade a este achado (ele nasceu no gate pós-merge do #362 e nunca teve
+entrada), então classifico aqui e digo o critério, em vez de carimbar um rótulo emprestado: **é governança e
+registro** — não toca dinheiro, dado, permissão nem código de produto (a régua de quórum da própria
+§C7.1-ter) — mas atinge o contrato que decide **como toda junta começa**, o que a põe acima de cosmético.
+
+- **status:** FECHADA · **severidade:** MÉDIA · **dono:** `SAN2-2` — Fase 3 (`2e4985b`) executou, Fase 4 registrou
+
+
+---
+
+## P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produto
+
+**O que é.** A porta **55432** — prescrita no mandato do bloco e no §6 do `SAN2-2-plano.md` (l.221 e l.223)
+para o Postgres descartável — **não pode ser aberta nesta máquina**. Ela cai dentro de uma **faixa de
+exclusão dinâmica reservada pelo Windows/Hyper-V**, e o `docker run` falha no *bind*, não no Docker:
+
+```
+docker: Error response from daemon: ports are not available: exposing port TCP 0.0.0.0:55432 -> 127.0.0.1:0:
+listen tcp 0.0.0.0:55432: bind: Foi feita uma tentativa de acesso a um soquete de uma maneira que é proibida
+```
+
+**Verificado por consulta ao sistema (2026-08-30), não deduzido da mensagem de erro:**
+
+```
+$ netsh interface ipv4 show excludedportrange protocol=tcp
+...
+     55253       55352
+     55353       55452      <- 55432 cai AQUI
+...
+```
+
+**O contorno que a Fase 2 tomou:** o par descartável subiu em **56432** (Postgres) e **56379** (Redis) —
+ambos fora de toda faixa excluída na mesma listagem. Containers `san2-2-pg` / `san2-2-redis`. Nada mais
+mudou: só host:porta.
+
+**Por que isto vira registro em vez de morrer no log.** A porta é o **primeiro** comando de qualquer bloco
+que precise de cluster descartável — o arranjo que a `D-INSPETOR-TERRENO-JUNTA` **exige** de todo jurado que
+muta. O plano do `SAN2-2` continua prescrevendo 55432 em duas linhas rastreadas; o próximo agente que o
+seguir ao pé da letra bate na mesma parede e gasta o mesmo tempo diagnosticando um erro que **parece** do
+Docker e é do Windows. Foi exatamente o que aconteceu aqui.
+
+**Faixas são dinâmicas.** Os intervalos variam por máquina e mudam entre reinicializações do Hyper-V/WinNAT.
+A lição durável **não** é "use 56432": é **consultar `netsh interface ipv4 show excludedportrange` antes de
+escolher a porta**, e escolher fora do que a listagem mostrar.
+
+### Severidade e dono — honestos, e por isso modestos
+
+- **Severidade: BAIXA.** É a mesma classificação que a Fase 2 registrou no `dev-fase2-log.md` (l.319), e
+  concordo com o critério: **não é defeito de produto**. Nada em `src/`, `tests/`, `prisma/` ou `.github/`
+  está errado; nenhum número publicado depende disto; nenhum dado, dinheiro ou permissão é tocado. O custo é
+  tempo de terreno de quem vier depois — real, mas limitado.
+- **Escopo: `pre-existente`.** A reserva é configuração da máquina do dono e antecede o bloco; o `SAN2-2` não
+  a criou. Evidência de origem: a faixa aparece na listagem do sistema, não em nada que este PR tenha tocado.
+- **Dono: a atribuir — e não vou fingir que tenho um.** O trabalho que fecharia isto é documental (corrigir
+  as duas linhas do `SAN2-2-plano.md`, ou somar a consulta do `netsh` à receita de cluster descartável em
+  `docs/`), e **ambos os arquivos estão fora do escopo desta fase**, que só pode tocar `pendencias.md`.
+  Nomear um dono que não combinei seria inventar compromisso alheio.
+
+**Critério de fechamento:** a receita de cluster descartável (plano ou `docs/`) manda consultar as faixas
+excluídas antes de fixar a porta, e nenhuma linha rastreada prescreve 55432 como se fosse livre.
+
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+
+
+---
+
+## P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **sim** para quem não tem dono
+
+**Registrado por §A2** (não esconder conflito), fora das cinco ações do mandato da Fase 4: o defeito foi
+encontrado **enquanto se executava** a ação 3 desta fase, e cala-lo tornaria a própria ação 3 inconsequente.
+**Não corrigido aqui** — `gerar-indice-pendencias.py` está fora do escopo desta fase (que só pode tocar
+`pendencias.md` e o índice gerado), e quem acha não conserta (`D-JUNTA-SEPARACAO-DE-PAPEIS`).
+
+**Como apareceu.** A ação 3 da Fase 4 re-atribuiu o dono de `P-O6R-B02-SUITES-LIST-CI`, que era
+`a atribuir`, para *"o PR que mergear o `B-O6R-02`"*. Regenerado o índice, a linha **não mudou**: dizia `sim`
+antes e diz `sim` depois. A coluna que existe para responder *"de quem é"* não distinguia dono nomeado de
+dono ausente.
+
+**O tamanho, medido em 2026-08-30 sobre este arquivo:**
+
+| | qtde |
+|---|--:|
+| cabeçalhos `## P-` | 231 |
+| marcados `dono = sim` pelo classificador | **108** |
+| — dos quais o campo diz literalmente `a atribuir` (**falso sim**) | **91** |
+| — com dono de verdade | 17 |
+
+**Oitenta e quatro por cento** dos "sim" são falsos.
+
+**O mecanismo — são DUAS faltas independentes, e cada uma sozinha já bastaria:**
+
+```python
+dono = bool(re.search(r'\*\*dono:\*\*\s*(?!a atribuir)', body, re.I)) \
+    or bool(re.search(r'\*\*Dono:?\*\*', body, re.I))
+```
+
+1. **O lookahead negativo não protege**, porque `\s*` **retrocede para zero espaços**: a engine casa
+   `**dono:**`, recua o `\s*` até vazio e avalia `(?!a atribuir)` diante de `" a atribuir"` — que começa com
+   **espaço** e portanto não é `a atribuir`. O lookahead passa. Reproduzido isolado:
+   `re.search(r'\*\*dono:\*\*\s*(?!a atribuir)', '- **dono:** a atribuir', re.I)` → **casa**.
+2. **A segunda alternativa não tem filtro nenhum e roda sob `re.I`**, então `\*\*Dono:?\*\*` casa o
+   `**dono:**` de qualquer entrada. Mesmo que a falta 1 fosse consertada, o `or` reintroduziria o defeito.
+
+**Por que isto é da mesma família que o índice já foi reprovado por cometer.** O cabeçalho deste arquivo
+promete que o índice responde *"o que está aberto, com que gravidade **e de quem é**"*. As duas primeiras
+respostas foram endurecidas depois da reprovação da junta do `SAN2-1` (só a linha de status decide;
+parcialidade nunca fecha; contradição não vira palpite). **A terceira nunca foi auditada** — e é a que diz a
+231 leitores futuros que 91 pendências têm responsável quando não têm. É o mesmo dano do guard que dava
+falso-vermelho: um sinal que não significa o que promete ensina o leitor a ignorá-lo.
+
+**Correção indicada (não aplicada aqui):** decidir o campo pelo **texto do valor**, não pela presença do
+rótulo — capturar `\*\*dono:?\*\*\s*([^
+·]*)` e testar se o valor casa `a atribuir`. Quem receber deve
+provar **por mutação**, como o `agents-mirror-guard` prova o seu: uma entrada com dono nomeado tem de sair
+`sim`, e a **mesma** entrada com `a atribuir` tem de sair `a atribuir`. Enquanto não for corrigido, **a
+coluna `dono` do `pendencias-indice.md` não deve ser citada** — vale ler o campo na fonte.
+
+**Severidade: MÉDIA**, classificada aqui com o critério dito: não toca produto, dado, dinheiro nem permissão,
+mas corrompe um terço da resposta do artefato de controle que a rodada inteira usa para saber o que está
+pendente e com quem.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — bloco que possa tocar `agent-orchestration/controle/gerar-indice-pendencias.py`
+
+
+---
+
+## P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `release.summary` nem a `description` do history: a honestidade do bloco mora fora do artefato principal
+
+**Origem: junta do `SAN2-2` (PR #363), cadeira C4 `auditor-do-kpi-honesto`** — achado **A-2** de
+`agent-orchestration/omega/juntas/votos/SAN2-2/04-kpi-voto.json`, campo `achados`. Escopo declarado
+**`pre-existente`** com evidência de origem, e por isso **publicado como pendência em vez de reprovar**
+(`D-JUNTA-ESCOPO-E-CALIBRACAO`(a), §C7.1-ter). **Não foi consertado no `SAN2-2`:** `Kpis/index.html` não
+está no diff do bloco e a junta já havia votado quando o achado foi tratado. Quem registra aqui **não é
+quem achou e não conserta** (§C7.4-bis, `D-JUNTA-SEPARACAO-DE-PAPEIS`).
+
+**O que é.** Todo bloco escreve, no `release.summary` do `Kpis/kpis-latest.json` e na `description` da sua
+entrada do `Kpis/kpis-history.json`, o texto em que declara o que entregou **e o que NÃO fechou**. Esse
+texto **não tem consumidor de render**: não chega ao `Kpis/index.html`, que a `D-KPI-INDEX-PAINEL` define
+como **o artefato**.
+
+### A medição da C4, citada como ela a registrou
+
+> "Removi a linha do FROZEN (l.1623, que e dado congelado e nao codigo de render) e procurei consumidores em
+> `Kpis/app.js`: `release.` / `.summary` / `.description` -> UMA unica ocorrencia,
+> `if (latest.release && latest.release.status_label) bits.push(latest.release.status_label);` (l.932) — e
+> `status_label` NEM EXISTE no JSON, logo nem essa dispara. O `Kpis/index.html` tem 172 linhas e suas secoes
+> sao state / charts / conclusion / recent / findings / roadmap: nenhuma para o texto do release. A prosa da
+> 'Conclusao' e MONTADA pelo app.js a partir de `metrics` (l.1150-1180), nao do summary."
+
+E a evidência de origem que sustenta o escopo `pre-existente`, também dela:
+
+> "A MESMA medicao sobre `git show main:Kpis/app.js` (main = 87f6ae6, o merge do #362, mergeado em
+> 2026-08-29) devolve a MESMA unica ocorrencia `latest.release.status_label`. A propriedade antecede a branch
+> em qualquer leitura, e o diff deste PR em `Kpis/app.js` e regeneracao do FROZEN (item 3e:
+> `JSON.stringify(FROZEN) === JSON.stringify(latest)` = true), nao codigo de render."
+
+### Re-medição própria (2026-08-30) — não herdei a conclusão, reproduzi
+
+Excluída a linha `var FROZEN` (l.1623, dado congelado, não código de render), varrendo `summary`,
+`description`, `release.` e `release[` nas **três** árvores:
+
+| árvore | ocorrências fora do FROZEN |
+|---|---|
+| `main` = `87f6ae615c07872c820b3a0dda771a6b48fb4d0d` (merge do #362, 2026-08-29) | **1** — `l.932: latest.release.status_label` |
+| head julgado `c8dc716` | **1** — a mesma, `l.932` |
+| árvore de trabalho (já com a correção do A-1) | **1** — a mesma, `l.932` |
+
+E a única ocorrência **não dispara**: `grep -c status_label Kpis/kpis-latest.json` = **0**. O
+`Kpis/index.html` (172 linhas) não contém as palavras `summary`, `description` nem `release` — nem na
+árvore, nem em `git show main:Kpis/index.html`. **Idêntico na `main`, anterior a este bloco: o escopo
+`pre-existente` se sustenta na medição, não na declaração.**
+
+**O tamanho do que não chega, medido:** `release.summary` tem **5.988 caracteres**, e a `description` da
+entrada `SAN2-2` do history tem os **mesmos 5.988** — é o mesmo texto nos dois lugares, e nenhum dos dois
+tem consumidor.
+
+**O que o painel mostra no lugar (medido, para não confundir o próximo leitor).** A seção "Últimas demandas"
+existe, mas hidrata de `latest.recent.itens[]` (`Kpis/app.js` l.1195-1234) — um array **curado à mão**, com
+campo próprio `resumo` (8 itens hoje, resumos de 203 a 588 caracteres, o mais novo o PR #359). Não é o
+`release.summary` nem a `description` do history. Ou seja: o painel **não é mudo**, ele conta outra coisa,
+escrita em outro campo — e o parágrafo onde o bloco declara o que ficou aberto não é essa coisa.
+
+### Por que importa
+
+A `D-KPI-INDEX-PAINEL` (§C3.0) estabelece que **o `Kpis/index.html` é o ARTEFATO** e os JSON são só a
+**fonte de dados** — "é ele que o dono abre para ver onde o projeto está". O `summary` é justamente onde
+cada bloco declara **o que NÃO fechou**; no `SAN2-2` ele traz um bloco próprio intitulado *"O QUE ESTE BLOCO
+NÃO FECHOU, dito antes que perguntem"*, com três itens. **Nada disso chega ao painel.**
+
+A consequência é assimétrica e é o ponto: enquanto isto valer, *"o painel é a entrega"* vale **para os
+números** — que hidratam, têm card, têm gráfico e têm guard — e **não vale para as ressalvas**, que existem,
+são escritas com evidência, são cobradas pela junta… e ficam invisíveis no artefato principal. A honestidade
+do registro tem custo de produção e **zero alcance** em quem o painel serve. É também o que derruba a segunda
+perna do argumento que os blocos vêm usando sobre o §C3.0 — *"o lugar honesto delas é a `description`"* —:
+a `description` não é um lugar do painel.
+
+### Severidade
+
+**MÉDIA**, e a classificação é **da C4** (`gravidade: "MEDIA"`, `bloqueia: false` no voto), não um carimbo
+deste registro. O que eu verifiquei é o **mecanismo** — as três medições acima — e ele é compatível com o
+critério que este arquivo já vem usando para MÉDIA: não toca produto, dado, dinheiro nem permissão, e nenhum
+valor de `metrics` depende disto; mas corrompe o alcance do artefato de controle que a rodada inteira usa
+para dizer onde o projeto está. Quem discordar da gravidade tem a medição inteira acima para reclassificar
+sem refazer o trabalho.
+
+### Dono e o que falta
+
+**Dono: a atribuir** — na prática, **o próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`**.
+Não nomeio bloco existente: nomear compromisso que não combinei é a mesma classe de afirmação sem execução
+atrás que este arquivo existe para matar.
+
+O que a C4 aponta como correção natural, **registrado como direção e não como plano** (quem acha e quem
+registra não consertam): uma seção no painel que renderize `release.summary` — e a `description` por entrega
+no histórico —, **hidratada do JSON** como a §C3.1.0 exige, com o fallback `file://` honesto e rotulado. Quem
+receber deve provar por **mutação**, como os guards de KPI já provam os seus: mudar o texto no JSON tem de
+mudar o painel, e texto ausente não pode virar seção vazia mentindo que não havia ressalva.
+
+**Critério de fechamento:** abrir o `Kpis/index.html` com dado real mostra o texto em que o bloco declarou o
+que não fechou, hidratado do JSON, e um guard permanente falha se essa seção sumir ou defasar do snapshot.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`

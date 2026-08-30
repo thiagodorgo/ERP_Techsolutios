@@ -329,6 +329,51 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    críticas (deploy de PRODUÇÃO, dependência nova, contratação/config de serviço externo, **chamada a serviço
    externo tarifado/pago**). Votos+justificativa
    em `agent-orchestration/omega/juntas/J-<n>-<tema>.md`. **Junta sem registro = merge inválido.**
+
+   **1-ter. ESCOPO DO VEREDITO E CALIBRAÇÃO POR RISCO (decisão do dono, 2026-08-28,
+   `D-JUNTA-ESCOPO-E-CALIBRACAO`).** Dois ajustes, medidos em `agent-orchestration/omega/auditoria-juntas-2026-08-28.md`
+   (≈155 juntas, ≈66 ciclos, 34 defeitos reais de produto pegos — e 3 blocos consumindo 24% dos ciclos,
+   com o bloqueante final sendo **processo/medição em 11 dos 16**):
+
+   **(a) Todo voto declara `escopo`, além de `gravidade`.** `dentro-do-bloco` → `bloqueia` reprova, como
+   sempre. `pre-existente` (a classe do achado antecede o bloco e/ou está fora do escopo permitido dele)
+   → **não reprova**: vira **pendência nomeada com bloco dono**, e o número afetado é publicado com **N,
+   forma e causa**. O jurado declara o escopo **com evidência de data ou origem**; a ata registra; o
+   `inspetor-de-terreno-da-junta` confere na passada seguinte. **Escopo declarado sem evidência é tratado
+   como `dentro-do-bloco`.** O veto continua inteiro para o que o bloco mexeu. Por quê: no ciclo 4 do
+   `B-O6R-02` o bloco foi reprovado por um defeito de arnês que ele **não criou** (`audit-security.test.ts`
+   é de 08/06; o fixture nasceu no bloco anterior em 19/08; a branch começou em 20/08) e que o §5 do
+   próprio plano **proibia** o bloco de consertar.
+
+   **(b) Quórum por risco, agora escrito.** **Unanimidade de 3** quando o bloco toca **dinheiro,
+   segurança, permissão ou perda de dado**; **maioria de 3** no resto; **unanimidade de 5** permanece só
+   para as decisões críticas do item 1 (produção, dependência nova, serviço externo pago). O
+   `critico-adversarial` ataca o plano **apenas** nos blocos de invariante. Por quê: "invariante financeiro
+   = 5/5" era regra **não escrita** — vivia só nos corpos dos jurados e nas atas — e reprovou quatro ciclos;
+   e a resposta do protocolo à reprovação é escalar, o que **reduz** a chance de unanimidade a cada ciclo
+   (16 identidades inelegíveis e 14 especialistas criados só nesse bloco).
+
+   **(c) Duas lições de terreno viram regra.** **Junction/symlink de `node_modules` entre worktrees é
+   PROIBIDA** (em 26/08 a remoção de um worktree apagou o `node_modules` do worktree do dev por dentro de
+   uma junction e mutilou o da árvore principal): cada worktree roda `npm ci` próprio, remoção só por
+   `git worktree remove --force`. E **não se mede o conteúdo de um commit com `git archive` + `tar` sob
+   `core.autocrlf=true`** — injeta CR e fabrica divergência (foi assim que "o espelho Codex diverge no
+   head" virou pendência ALTA e foi fechada por não-reprodução no mesmo dia); use
+   `git -c core.autocrlf=false checkout <head> -- <caminhos>` ou `git show` do blob.
+
+
+   **1-bis. INSPEÇÃO DE TERRENO ANTES DE TODA JUNTA — fail-closed (decisão do dono, 2026-08-24,
+   `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`
+   (Fable por contrato). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
+   viva; **worktree próprio para cada jurado que muta** e **cluster Postgres descartável por jurado** (a base
+   viva não é alvo de ninguém); insumos do briefing presentes (parecer do crítico + PD nos ciclos ≥3);
+   afirmações da ata anterior marcadas "a re-verificar" e não herdadas como fato; inelegibilidade dos papéis
+   conferida por nome; **fatia S0 executada** (espelho Codex consistente por `sync-agent-agents.mjs --check`);
+   baseline honesto medido; e plano de perda de jurado declarado. **Sem o `LIBERADO` dele a junta não
+   começa.** Por quê: três ciclos julgaram bem e falharam sempre no terreno — a contaminação entre jurados
+   "encerrada" num ciclo voltou no seguinte, a fatia S0 faltou dois ciclos seguidos, e uma premissa falsa da
+   ata anterior foi herdada como fato. O inspetor é para a junta o que o cluster descartável é para o jurado
+   de banco: a condição de o voto significar algo.
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
