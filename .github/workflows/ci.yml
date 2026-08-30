@@ -60,6 +60,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # SAN2-2 §3.1(c) — O GUARD DO ESPELHO GANHA GUARDA. `.agents/agents/` é o espelho Codex de
+      # `.claude/agents/` (D-INTEROP-CLAUDE-CODEX: "alterou um, altera o outro no mesmo PR"), mas
+      # NENHUM job executava o `--check`: drift do espelho chegava à main sem ninguém ver. Roda logo
+      # após a instalação e ANTES dos testes porque custa <1s e falha rápido. O runner é Linux, sem
+      # autocrlf — o falso-vermelho de checkout no Windows não existe aqui, e a comparação passou a
+      # ser eol-neutra de toda forma. SEM continue-on-error, SEM `|| true`: divergência REPROVA o PR.
+      - name: Agents mirror guard (sync-agent-agents --check)
+        run: node scripts/sync-agent-agents.mjs --check
+
       - name: Generate Prisma Client
         run: npm run db:generate
 
