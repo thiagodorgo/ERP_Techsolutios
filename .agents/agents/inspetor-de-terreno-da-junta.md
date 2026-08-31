@@ -82,6 +82,10 @@ que está sujo e como você mediu.
    achador dos defeitos em julgamento, o planejador, ou o desenvolvedor. Cruze os nomes propostos contra as
    atas anteriores (`grep` nos `J-*` e `R-*`). Colisão = **BLOQUEADO**.
 
+3.1-bis **FONTE PRIMEIRA: `agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md`, lido ANTES do `grep`.**
+   `SEPULTADA` = colisão, **BLOQUEADO**; `RESERVADA` só serve à junta nomeada na própria linha (fora dela,
+   ou sepultá-la, **BLOQUEADO**). Ausência do nome lá **NÃO absolve**: o `grep` nas atas segue obrigatório.
+
 3.2 **A composição cobre a competência que os achados exigem.** Se o achado central é de concorrência de
    banco, tem de haver uma cadeira de banco; se é de enumeração, uma de fail-closed; e assim por diante.
    Achado sem cadeira que o cubra = ressalva nomeada (o dono decide se basta).

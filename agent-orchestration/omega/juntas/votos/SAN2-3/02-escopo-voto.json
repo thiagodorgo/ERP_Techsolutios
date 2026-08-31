@@ -1,0 +1,94 @@
+{
+  "cadeira": "C2 — zelador-do-escopo-e-do-instrumento",
+  "bloco": "SAN2-3",
+  "pr": 364,
+  "head_julgado": "23d9227",
+  "quorum": "MAIORIA de 3",
+  "identidade": "NOVA",
+  "veredito": "APROVADO",
+  "itens": [
+    {
+      "id": "C2-1",
+      "titulo": "O diff cabe no §5 do plano (11 arquivos; proibido intocado)",
+      "veredito": "CONFORME_COM_RESSALVA",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "02-escopo-evidencia.md §1.1-§1.7 (roteiro da antecessora) + §1.8 RE-EXECUCAO por esta cadeira: 11 arquivos, mesma lista name-status, proibido exit=0, diff --check exit=0 — CONVERGE, sem divergencia",
+      "medido": {
+        "arquivos_no_diff": 11,
+        "esperado_pelo_briefing": 11,
+        "proibido_diff_vazio": true,
+        "forma_da_medicao": "git diff --exit-code --quiet main...HEAD -- <paths proibidos> => exit 0 (eol-neutro, nao md5sum/git status)",
+        "app_js_linhas_alteradas": 1,
+        "app_js_linha_e_var_FROZEN": true,
+        "pendencias_md_linhas": "2/2, ambas o campo dono (SO o autorizado pelo §5)",
+        "decisoes_md": "append puro @@ -1866,0 +1867,46 @@ (46 add / 0 del)",
+        "especialistas_nascidos_na_main": 0,
+        "git_diff_check": "exit 0",
+        "outros_22_papeis_e_README_espelho": "INTOCADOS",
+        "re_executado_por_esta_cadeira": true
+      }
+    },
+    {
+      "id": "C2-2",
+      "titulo": "O instrumento e o espelho (edicao <=4 linhas; espelho GERADO por script; aponta o OBITUARIO)",
+      "veredito": "CONFORME",
+      "gravidade": null,
+      "escopo": "dentro-do-bloco",
+      "evidencia": "02-escopo-evidencia.md §2.1-§2.5",
+      "medido": {
+        "edicao_linhas_adicionadas": 4,
+        "edicao_linhas_removidas": 0,
+        "insercao_pura": true,
+        "teto_do_plano": "2-4 linhas (§5 l.225) — 4 adicionadas (3 de texto + 1 em branco), dentro do teto",
+        "as_duas_pontas_mesmo_delta": "+4/-0 em .claude/agents/ e .agents/agents/ (medicao propria; converge com o registro da antecessora)",
+        "onde_caiu": "bloco 3.1-bis, logo apos 3.1 \"Inelegibilidade conferida por nome\", antes do 3.2",
+        "aponta_o_obituario": "sim, path verbatim agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md — fonte l.79, espelho l.85",
+        "alvo_existe_no_head": "git cat-file -e HEAD:.../OBITUARIO-IDENTIDADES.md => OK",
+        "fail_closed_preservado": "sim — \"Ausencia do nome la NAO absolve: o grep nas atas segue obrigatorio\"; 3.1 original intacto (0 remocoes)",
+        "sync_check_exit": 0,
+        "sync_check_saida": "[agents-sync] OK — 23 agentes, espelho consistente.",
+        "espelho_GERADO_prova_independente": "sandbox isolado fora do repo (scratchpad/sb-mirror) com DST vazio; regeneracao do zero; sha256 EOL-NEUTRO: 23/23 identicos ao alvo commitado; inspetor 711a618252dd6195 / 9004 bytes nas duas pontas; unica SOBRA = README.md (esta no KEEP l.28 do script)",
+        "guard_provado_por_mutacao": "no sandbox: (1) trocar 1 caractere acentuado do espelho => DIVERGE exit=1; (2) apagar a linha model: => DIVERGE exit=1 — comparador sensivel, nao e teatro",
+        "transform_tools_removido": "fontes com tools: 23 / espelhos com tools: 0",
+        "transform_model_preservado": "fontes com model: 4 / espelhos com model: 4; espelho do inspetor mantem \"model: fable\"",
+        "forma_da_medicao": "git diff --numstat; sed; grep -n; git cat-file -e; node scripts/sync-agent-agents.mjs [--check]; regeneracao em sandbox + sha256 apos \r\n->\n (nunca md5sum/git status sob core.autocrlf=true)",
+        "mutacao_no_worktree": false
+      }
+    },
+    {
+      "id": "C2-3",
+      "titulo": "Zero descarte fisico e a demo/investidor intocada",
+      "veredito": "CONFORME",
+      "gravidade": null,
+      "escopo": "dentro-do-bloco",
+      "evidencia": "02-escopo-evidencia.md §3",
+      "medido": {
+        "git_diff_name_status_D": "VAZIO (grep ^D exit=1) — zero descarte fisico no PR",
+        "especialistas_em_HEAD": 0,
+        "demo_investidor_claude_especialistas": 17,
+        "demo_investidor_agents_espelho_especialistas": 17,
+        "demo_tocada_pelo_PR": false,
+        "forma_da_medicao": "git diff --name-status main...HEAD | grep ^D; git ls-tree -r --name-only HEAD/demo-investidor; branch alvo do PR e main — demo/investidor fora do alcance do merge"
+      }
+    }
+  ],
+  "achados": [
+    {
+      "id": "C2-A1",
+      "titulo": "votos/SAN2-2/00c-porteiro-pos-merge-363.md nao consta na lista fechada do §5 (que autoriza votos/SAN2-3/**)",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia_de_origem": "git status A (nao existe na main: `git cat-file -e main:<path>` => fatal); plano SAN2-3 l.6 nomeia o path VERBATIM como autorizacao de start; dev-log l.178 e l.201 declaram o arquivo e o commit de origem f56e453",
+      "motivo_de_nao_bloquear": "adicao pura de peca de rastreabilidade (§C6) que por construcao nao podia existir no PR #363 (parecer pos-merge dele); nomeada no cabecalho do proprio plano; nao toca nada do PROIBIDO nem codigo/teste/contrato",
+      "ressalva": "o fechamento do dev-log afirma que os 11 arquivos estao TODOS na lista fechada do §5 — impreciso em 1 dos 11; a formulacao exata e 10 na lista fechada + 1 nomeado no cabecalho do plano"
+    }
+  ],
+  "assinatura": "zelador-do-escopo-e-do-instrumento (identidade nova, junta SAN2-3)",
+  "veredito_justificativa": "Os tres itens do mandato CONFORMES por medicao propria desta cadeira. (1) Diff = 11 arquivos, todos no escopo do §5 salvo a ressalva C2-A1, e o PROIBIDO com diff VAZIO medido eol-neutro (exit 0) em src/, tests/, scripts/, prisma/, migrations/, .github/, frontend/, mobile/, CLAUDE.md, AGENTS.md, Kpis/index.html, infra/. (2) Instrumento: insercao pura de 4 linhas (<=4) no 3.1 do inspetor, apontando o OBITUARIO-IDENTIDADES.md que existe no head, com o fail-closed explicitamente preservado; espelho GERADO — provado por regeneracao independente em sandbox isolado (23/23 byte a byte, sha256 eol-neutro) e por mutacao do guard (1 caractere e a linha model: => DIVERGE exit=1); transform removeu tools: (23->0) e preservou model: (4->4). (3) Zero descarte fisico: nenhum arquivo D no diff, especialistas/ nao nasceu na main (0), e a demo/investidor segue com 17+17 arquivos intactos e fora do alcance do merge. Unica ressalva: C2-A1, BAIXA, nao bloqueia. Nenhum achado novo de gravidade que reprove.",
+  "ressalvas_do_voto": [
+    "C2-A1 (BAIXA, dentro-do-bloco, nao bloqueia): votos/SAN2-2/00c-porteiro-pos-merge-363.md nao consta na lista fechada do §5 (que autoriza votos/SAN2-3/**), embora esteja nomeado verbatim na l.6 do proprio plano; e o fechamento do dev-log afirma que os 11 estao TODOS na lista fechada — a formulacao exata e 10 na lista + 1 nomeado no cabecalho."
+  ],
+  "nao_duplicado": "Nao rejulguei os achados das outras cadeiras: C1 (obituario construido do diretorio e nao das atas — 15 identidades queimadas fora do registro, pre-existente) e C3 (P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY com dois donos — dentro-do-bloco, BAIXA). O indice de pendencias inalterado e P-SAN2-2-INDICE-DONO-SEMPRE-SIM se manifestando, ESPERADO — nao contei como defasagem."
+}

@@ -4397,7 +4397,7 @@ coluna `dono` do `pendencias-indice.md` não deve ser citada** — vale ler o ca
 mas corrompe um terço da resposta do artefato de controle que a rodada inteira usa para saber o que está
 pendente e com quem.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — bloco que possa tocar `agent-orchestration/controle/gerar-indice-pendencias.py`
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: as duas faltas medidas do classificador de dono em `agent-orchestration/controle/gerar-indice-pendencias.py` (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)
 
 
 ---
@@ -4483,9 +4483,11 @@ sem refazer o trabalho.
 
 ### Dono e o que falta
 
-**Dono: a atribuir** — na prática, **o próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`**.
-Não nomeio bloco existente: nomear compromisso que não combinei é a mesma classe de afirmação sem execução
-atrás que este arquivo existe para matar.
+**Dono: bloco `SAN2-5`** — "ferramentas de registro honestas", **parte 1**: o bloco que toca
+`Kpis/app.js` e `Kpis/index.html`. O registro original não nomeava bloco ("a atribuir", por não querer
+afirmar compromisso sem execução atrás); o `SAN2-3` **nomeou** o dono (§3.5 do seu plano, quitando a
+ressalva do porteiro do #363), e a **linha de status** ao final desta pendência é o campo canônico.
+Se o dono humano redirecionar, re-atribui-se com registro.
 
 O que a C4 aponta como correção natural, **registrado como direção e não como plano** (quem acha e quem
 registra não consertam): uma seção no painel que renderize `release.summary` — e a `description` por entrega
@@ -4496,4 +4498,97 @@ mudar o painel, e texto ausente não pode virar seção vazia mentindo que não 
 **Critério de fechamento:** abrir o `Kpis/index.html` com dado real mostra o texto em que o bloco declarou o
 que não fechou, hidratado do JSON, e um guard permanente falha se essa seção sumir ou defasar do snapshot.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 1**: `Kpis/app.js` e `Kpis/index.html` passam a renderizar o `release.summary` e a `description` do history (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)
+
+
+---
+
+## P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` cobre quem tinha ARQUIVO, não quem VOTOU: 15 identidades queimadas ficaram fora do registro
+
+**Origem: junta do `SAN2-3` (PR #364), cadeira C1 `auditor-do-obituario`** — achado **A-1** de
+`agent-orchestration/omega/juntas/votos/SAN2-3/01-obituario-voto.json`, campo `achados`. Escopo declarado
+**`pre-existente`** com evidência de data e de origem, e por isso **publicado como pendência em vez de
+reprovar** (`D-JUNTA-ESCOPO-E-CALIBRACAO`(a), §C7.1-ter) — a junta fechou **APROVADO 3×0**. Quem registra
+aqui **não é quem achou e não conserta** (§C7.4-bis, `D-JUNTA-SEPARACAO-DE-PAPEIS`); a cadeira C1 fechou o
+achado com `correcao_proposta: null`, e nada abaixo é plano de conserto.
+
+**O que é.** O `agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` foi derivado do **diretório**
+`.claude/agents/especialistas/` (17 arquivos, vivos em `demo/investidor` nas duas pontas do espelho), não
+das **atas**. O universo que ele cobre é, portanto, "identidade que existiu como **arquivo de agente**" — e
+não "identidade que **votou**". Como as juntas dos últimos dias foram compostas por cadeiras que nunca
+tiveram arquivo em `especialistas/`, elas assinaram voto, queimaram-se, e **não entraram no registro**.
+
+### A medição da C1, com N, forma e causa
+
+- **N = 15** identidades queimadas fora do registro.
+- **Forma:** contadas **só** nos `agent-orchestration/omega/juntas/votos/*/*.json` que têm **campo de autor**
+  (`jurado`/`identidade`/`cadeira`), e **só** em juntas **concluídas**.
+- **Causa:** o registro derivou do **diretório**, não das atas — `git ls-tree demo/investidor --
+  .claude/agents/` devolve **0 ocorrências para cada um dos 15 nomes**: essas identidades **nunca existiram
+  como arquivo de agente**, e por construção não podiam aparecer numa lista extraída de `especialistas/`.
+- **O número real é MAIOR que 15**, e isto faz parte do achado: **jurados caídos** (nomeados em briefing,
+  que não chegaram a assinar) e **inspetores de terreno** de cada junta **não foram contados** — a forma da
+  medição exigia campo de autor em voto de junta concluída.
+
+**Evidência de data (o que sustenta o escopo `pre-existente`):** `J-B-O6R-REG.md` (`74430cc`, 2026-08-29),
+`J-SAN2-1R.md` (`87f6ae6`, 2026-08-29), `J-SAN2-R.md` (`a0a1075`, 2026-08-29) e `J-SAN2-2.md` (`d283903`,
+2026-08-30) — **todas anteriores** ao head julgado `23d9227` (2026-08-30). **Evidência de origem:** o
+mandato escrito do bloco era registrar os de `.claude/agents/especialistas/` (`omega/planos/SAN2-3-plano.md`
+l.54-57, citando os porteiros do #362 e do #363); identidade sem arquivo **nunca esteve no enunciado**.
+
+### As 15, nomeadas
+
+Do `B-O6R-REG` e da série `SAN2-1`/`SAN2-1R`: `jurado-reg-diff-escopo` · `jurado-kpi-numeros-B-O6R-REG` ·
+`jurado-suplente-trilha-append-only-B-O6R-REG` · `jurado-san2-1-kpi-registro-ciclo2` ·
+`jurado-triagem-classificacao-san2-1-c2` · `jurado-san2-1r-fidelidade-opcao-c` ·
+`jurado-san2-1r-diff-portagem-2026-08-29` · `jurado-suplente-kpi-registro-san2-1r`.
+
+Da série `SAN2-R`: `jurado-san2r-diff-espelho-2026-08-29` · `jurado-forense-san2r-c1-2026-08-29` ·
+`jurado-san2r-kpi-registro`.
+
+**E as quatro cadeiras que julgaram o `SAN2-2` (PR #363)** — as mais recentes, e as que mais custam num
+descuido de composição: `provador-de-mutacao-do-espelho` · `curador-da-lista-suites-ci` ·
+`zelador-do-contrato-canonico` · `auditor-do-kpi-honesto`.
+
+### O atenuante MEDIDO — e é ele que salva o documento
+
+O obituário **não produz falsa segurança escrita**, e a C1 mediu os dois motivos:
+
+1. **Ele declara a própria fronteira.** O §4 ("Papéis permanentes — o obituário NÃO os cobre") diz, no
+   texto, que o registro cobre **identidades descartáveis de caso** e que para o resto **aponta as atas**.
+2. **Ele se recusa a absolver por ausência** — §1.4, **fail-closed**: *"Ausência do nome aqui NÃO absolve:
+   as atas do caso continuam sendo a prova... nome não listado exige a conferência nas atas, não um passe
+   livre."* O mesmo texto foi inserido no `inspetor-de-terreno-da-junta` (bloco `3.1-bis`), de modo que o
+   gate que consulta o obituário **continua obrigado ao `grep` nas atas**.
+
+Ou seja: o defeito é de **cobertura**, não de **confiabilidade**. Quem seguir o documento como ele está
+escrito **não** compõe junta com identidade queimada — só não recebe do documento a ajuda que poderia
+receber. É por isso que a gravidade é MÉDIA e o achado não reprovou.
+
+### Por que importa mesmo assim
+
+A regra que o registro serve é dura: identidade `SEPULTADA` **não entra em junta nenhuma, nunca** (§1.2). O
+custo de errar é recompor uma junta inteira depois de ela ter votado — foi para evitar isso que o obituário
+existe. Enquanto ele responder "quem tinha arquivo", a pergunta que o orquestrador faz na composição
+("posso usar este nome?") continua dependendo de uma varredura manual nas atas, que é justamente o trabalho
+que o §1.1 promete ter resolvido em **0 colisões** como condição de partida. E o conjunto ausente não é
+marginal: inclui **a junta imediatamente anterior**.
+
+### Dono e o que falta
+
+**Dono: bloco `SAN2-5`** — mesma família de trabalho documental já atribuída a ele nas duas outras
+pendências desta rodada ("ferramentas de registro honestas"), **parte 3**. Nomeado pelo bloco `SAN2-3` no
+tratamento pós-junta; se o dono humano redirecionar, re-atribui-se **com registro**.
+
+A direção que o achado permite registrar — **como direção, não como plano**, porque quem acha e quem
+registra não consertam: uma **segunda passada do obituário derivada das ATAS** (varredura dos
+`omega/juntas/votos/**/*.json` e das `J-*.md` pelo campo de autor e pelos briefings), somando as identidades
+sem arquivo às 17 já listadas, e nomeando explicitamente as classes que a medição da C1 **não** contou
+(jurados caídos, suplentes que não assinaram, inspetores de terreno).
+
+**Critério de fechamento:** o `OBITUARIO-IDENTIDADES.md` passa a ser **derivado das atas**, não do
+diretório — a lista contém as 15 nomeadas acima **mais** as classes hoje não contadas, cada linha com a
+evidência do voto/ata que a queimou; e o §5 (divergência §A2) é reconciliado com o placar novo. Enquanto
+isso não acontecer, o §1.4 **fail-closed** permanece o que garante que a lacuna não vire passe livre.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 3**: segunda passada do obituário **derivada das atas** (não do diretório `especialistas/`), absorvendo as 15 identidades nomeadas acima e as classes não contadas pela medição da C1 (dono NOMEADO no tratamento pós-junta do `SAN2-3`; se o dono humano redirecionar, re-atribui-se com registro)
