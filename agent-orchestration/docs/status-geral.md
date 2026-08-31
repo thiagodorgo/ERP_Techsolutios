@@ -32,6 +32,61 @@ a tupla de ACL (`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`.
 
 A **lista exata** da bateria barata, que é parte da FORMA e sem a qual o denominador 37 não é reproduzível por terceiro (achado da cadeira de catálogo na junta): `tests/audit-security.test.ts` (1) · `tests/auth-identity-backfill-db.test.ts` (6) · `tests/auth-identity-link-events-db.test.ts` (5) · `tests/auth-identity-role-real-db.test.ts` (10) · `tests/impound-process-checklist-link-schema.test.ts` (5) · `tests/rls-tenant-isolation.test.ts` (1) · `tests/vehicle-identity-schema.test.ts` (9) = **37**. São **sete** arquivos, não seis — o rótulo anterior dizia "6 arquivos escritores de catálogo" e nenhuma combinação de 6 que contenha as vítimas nomeadas fecha 37.
 
+> ### ⚠ ERRATA E-1 (2026-08-31, bloco `SAN2-4b`, correção C5) — apenso §A2: **o parágrafo acima fica intocado**
+>
+> **A segunda metade da sentença acima é FALSA por execução.** O texto diz *"São **sete** arquivos, não
+> seis — o rótulo anterior dizia «6 arquivos escritores de catálogo» e **nenhuma combinação de 6 que
+> contenha as vítimas nomeadas fecha 37**"*. Existem **duas** combinações de 6 que contêm as 4 vítimas
+> nomeadas e fecham 37 (`medicao-2-bateria-barata.md` §R.5, contraexemplos **executados**), e a cadeira
+> C2 da junta do #365 executou **três** listas de 6 distintas dando `(6, 37)`. Uma delas é a própria
+> **lista-6** que `agent-orchestration/controle/pendencias.md` e o §0.a do `B-O6R-02-ciclo5-plano.md` já
+> declaravam — medida em **10/10 rodadas com `tests=37`** (§F5.2/F5.3 da medição 2).
+>
+> **O que PERMANECE verdadeiro nesta mesma linha, e por isso não se apaga nada:** as **sete contagens por
+> arquivo** estão **TODAS certas**, conferidas uma a uma com N=5 por arquivo (§F4/§R.1); a lista-7 fecha
+> 37 em 10 rodadas; e *"a lista é parte da FORMA"* segue valendo. O defeito é a **inferência de exclusão**
+> — sete é *uma* forma válida, não *a* forma. Lista-6 e lista-7 são **partições diferentes do mesmo
+> total**, unidas pela coincidência aritmética exata `link-events(5) + role-real(10) == links(15)`.
+>
+> **E o problema maior, que esta errata registra junto (E-2 emendada pelo achado C2-A1):** o denominador
+> **37 não IDENTIFICA a lista** — e o par `(arquivos, testes)` **também não**, porque três listas de 6
+> distintas produzem `(6, 37)`. O par é **necessário e insuficiente**. A receita reprodutível por terceiro
+> exige **NOMEAR os arquivos**, e a receita canônica é o **§V.3 da `medicao-2-bateria-barata.md`**:
+> `tests/audit-security.test.ts` · `tests/auth-identity-backfill-db.test.ts` ·
+> `tests/auth-identity-links-db.test.ts` · `tests/rls-tenant-isolation.test.ts` ·
+> `tests/vehicle-identity-schema.test.ts` · `tests/impound-process-checklist-link-schema.test.ts`
+> = **`(6 arquivos, 37 testes)`**. Este mesmo bloco apensou o §V.3 ao critério **D29** do
+> `B-O6R-02-ciclo5-plano.md`.
+>
+> **Registro canônico das três medições:** `agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-1-authority-portal.md`,
+> `medicao-2-bateria-barata.md` e `medicao-3-censo-roles.md` — os diários de `votos/SAN2-4a/`, não um
+> consolidado em `omega/medicoes/` (divergência mandato × plano do 4a, fechada aqui por decisão escrita:
+> copiar verbatim criaria um 4º registro da mesma verdade, e a própria medição 2 provou que replicação
+> não é corroboração).
+>
+> **Origem:** medicao-2 §V.2 (E-1 e E-2 + errata-da-errata do achado C2-A1) e §V.5 observação **O-1**.
+> Fechada com esta errata a pendência `P-REG-BATERIA-BARATA-DUAS-LISTAS`.
+
+### Atualização 2026-08-31 — SAN2-4b (CORRIGIR o arnês a partir das 12 observações medidas do 4a)
+
+O `SAN2-4` foi partido em **4a (MEDIR)** e **4b (CORRIGIR)**. O 4a (#365) mediu e não consertou nada; este
+bloco consome aquele diagnóstico e fecha, com prova de poder declarada, **quatro** correções de código e o
+registro. **C1** — `src/modules/authority/authority-password.ts`: o `keylen` deixou de ser derivado do
+stored recebido e passou a ser pinado em `AUTHORITY_SCRYPT_PARAMS.keylen`, com rejeição de base64
+não-canônico; vermelho-controle medido **79/20 000** → **0/100 000**, controle positivo **100 000/100 000**.
+**C2** — `tests/authority-portal.test.ts`: o tamper que trocava **padding** passa a adulterar **dado**, e
+dois casos novos pinam a classe (denominador do arquivo **12 → 14**); **30/30 vermelhas** contra o `src/`
+sem a C1 e **30/30 verdes** com ela — a detecção da classe saiu de **1/256 por execução para 100%**.
+**C3** — as **duas** portas da exclusão do varredor fecham juntas (`rls_test` em `SWEPT_ROLE_FAMILIES`
+**e** o criador passando a invocar o sweep sob o lock que já detém); mutação de **uma metade de cada vez**
+provou que meia correção deixa a órfã viva 2/2 nas duas metades. **C4** — o teardown cru de `rls_test_`
+virou `dropEphemeralRoleResilient`: forma crua **10/10 órfãs**, resiliente **0/10**, vaza-metro Δ=0 em
+10/10. **A base viva (`erp-postgres`/`erp-redis`) não recebeu nenhum comando, nem de leitura** — todo o
+trabalho rodou em cluster descartável na porta 56432, e **as 68 órfãs de `rls_test_` seguem CARREGADAS e
+não recontadas** (`P-ARNES-RLS-TEST-FORA-DO-SWEEP` continua **ABERTA**, com a recontagem supervisionada
+como decisão da junta dona). Diários por correção em
+`agent-orchestration/omega/juntas/votos/SAN2-4b/`.
+
 ### Validação (forma declarada — número sem N e forma não vale)
 
 - **Bateria barata** dos 7 arquivos, Node v20.19.5, cluster descartável com 103 migrations:

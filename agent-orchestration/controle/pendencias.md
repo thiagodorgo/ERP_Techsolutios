@@ -3485,6 +3485,70 @@ quem é o lixo).
 **O que falta decidir:** se as 68 legadas são recolhidas por uma rotina única e supervisionada (fora do lote de
 teste) ou se a família entra no sweep depois de a base do dono ser limpa uma vez à mão.
 
+### APENSO 2026-08-31 — bloco `SAN2-4b` (correcao C3): a familia entrou no sweep; **as 68 seguem CARREGADAS**
+
+**A entrada acima fica intocada, e esta pendencia permanece ABERTA.** O que a correcao C3 muda e o
+**calculo** dela, nao o seu estado: o que resta decidir e o mesmo de antes — o destino das **68 orfas
+vivas na base do dono**.
+
+**O que a medicao 3 do `SAN2-4a` apurou e esta entrada nao registrava: a exclusao era DUPLA.** (a)
+`rls_test_` estava fora de `SWEPT_ROLE_FAMILIES` — a decisao consciente que esta pendencia ja
+registrava; e (b) `sweepOrphanEphemeralRoles` tinha **chamador unico** (`createEphemeralRole`), e o
+criador da familia (`tests/rls-tenant-isolation.test.ts`) importava apenas `withRoleCatalogLock` —
+**nunca invocava o sweep**. Fechar so a porta (a) nao mudaria nada observavel: com a familia registrada
+mas sem chamador no criador, rodar o criador sozinho continuaria sem varrer nada. Origem:
+`medicao-3-censo-roles.md` §F6.3 / §F8.2 / §F9.
+
+**O que a correcao C3 fez (commit `ecfdb24`) — as duas portas no MESMO commit.** A familia `rls_test`
+entrou em `SWEPT_ROLE_FAMILIES`, **e** o criador passou a invocar o varredor sob o `withRoleCatalogLock`
+que ja detinha, antes do `CREATE ROLE`. A ancoragem (`^` no regex, `LIKE` por prefixo), que ja separava
+`vid_rls_test_` de `rls_test_`, **nao** foi tocada. **Prova:** orfa sintetica retrodatada 2 h
+**sobrevivia 2/2** nas duas portas antes e passou a ser **recolhida 2/2** depois; vermelho-controle
+`audit_rls_` recolhido **2/2** (prova de que o sweep rodou mesmo); prefixo **nao registrado**
+sobrevivendo **2/2** (contraprova anti-mass-delete); e `rls_test_` da **rodada corrente** sobrevivendo
+**2/2** (o corte de 60 min protege os processos irmaos). Mutacao de **uma metade de cada vez** confirmou
+o §F6.3: com meia correcao a orfa sobrevive **2/2** em cada metade. Diario:
+`votos/SAN2-4b/dev-c3-sweep.md`.
+
+**Consequencia para o calculo desta pendencia.** De agora em diante, orfa **nova** da familia morre em
+**<=60 min** a partir de qualquer suite-gatilho — e os gatilhos passaram de **5 para 6**, porque o
+proprio criador virou um. Os cinco medidos: `auth-identity-backfill-db`, `auth-identity-link-events-db`,
+`auth-identity-role-real-db`, `auth-login-candidates-fn-db` e `db-catalog-write-guard` — este ultimo
+achado pela **errata C2-A2** apensa a medicao-3 §F6.3 (eram *cinco* gatilhos, nao quatro, com 8 chamadas
+de `createEphemeralRole`).
+
+**O que este bloco NAO fez, e a razao.** **As 68 continuam CARREGADAS — nao foram recontadas, nem
+lidas.** O §5.2 do `SAN2-4b-plano.md` proibe **qualquer** comando em `erp-postgres`/`erp-redis`,
+**inclusive leitura**; todo o trabalho do bloco rodou em cluster descartavel (`:56432`). O dono
+designado pela medicao 3 (O-3) e **a junta desta pendencia**, em recontagem **supervisionada e so
+`SELECT`** — e toda orfa e **datavel pelo proprio nome**, que embute `Date.now()`, sem consultar
+catalogo. O numero **68** segue sendo o de 18/08 e **nao** foi re-verificado por este bloco.
+
+**Assinatura e genese, medidas (M3-O-5).** 5/5 orfas produzidas deliberadamente sairam identicas: com
+`LOGIN`, **sem expiracao**, **460 grants = 115 tabelas x 4** — a mesma assinatura das 68. A genese foi
+reproduzida por `SIGKILL` na janela de ~70% do tempo de vida do processo (1883-1970 ms), quando o
+`finally` do teardown ainda nao rodou.
+
+**Risco residual que a junta dona precisa pesar (§7.3 do plano).** Registrar a familia no sweep **nao**
+toca a base viva agora, mas cria um vetor **futuro**: uma violacao de `DATABASE_URL` que aponte uma
+suite-gatilho para `erp-postgres` varreria as 68 (todas com mais de 60 min) **antes** de a junta as
+datar e contar. Seria perda de **evidencia**, nao de dado de produto (sao roles de arnes), e a datacao
+vive nos nomes. O mesmo vetor de violacao **ja** varreria hoje as outras cinco familias: a correcao
+**nao cria** o vetor — iguala a `rls_test_` as irmas, que era a assimetria que a medicao 3 nomeou. Se a
+junta preferir **sequenciar** (recontar antes de manter a familia registrada), o voto dela o diz.
+
+**Armadilha de nomenclatura (M3-O-4), fechada como registro + drill.** `rls_test_` e **substring** de
+`vid_rls_test_`; quem varrer por substring em vez de **prefixo ancorado** recolhe a familia irma. A
+ancoragem ja existia e agora fica **exercitada por execucao para sempre**: a familia nova entrou nos
+dois drills PD de sweep de `tests/db-catalog-write-guard.test.ts` (recolhe-o-que-deve /
+nao-toca-no-que-nao-deve), **sem `test()` novo** — o laco e interno, e o denominador do guard nao se
+moveu.
+
+**Registro canonico das medicoes:** os diarios de
+`agent-orchestration/omega/juntas/votos/SAN2-4a/` (`medicao-1-authority-portal.md`,
+`medicao-2-bateria-barata.md`, `medicao-3-censo-roles.md`), e **nao** um consolidado em
+`omega/medicoes/`.
+
 ## P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES — **ATRIBUÍDO POR EXECUÇÃO** (2026-08-28, B-O6R-ARNES) — fora do escopo deste bloco
 
 O vaza-metro da canônica 3 mede, em toda rodada, **+5 `auth_identities` e +5 `auth_identity_link_events`** —
@@ -3859,6 +3923,60 @@ consegue sair verde legitimamente. Trabalho de bloco que possa tocar `tests/**`.
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+## P-O6R-ARNES-ISOLAMENTO — EMENDAS do bloco `SAN2-4b` (2026-08-31) — mecanismo da orfa e denominadores por arquivo
+
+**Emenda, nao reabertura: o texto das entradas anteriores fica intocado (§A2).** Tres coisas que as
+medicoes do `SAN2-4a` (#365) provaram e que esta pendencia ainda nao registrava, mais uma que o plano do
+4a §5.1 previa e nunca foi aplicada.
+
+**1. A assinatura das orfas liga o mecanismo as 68 (M3-O-5).** Cinco de cinco orfas produzidas
+deliberadamente em cluster descartavel sairam **identicas**: com `LOGIN`, **sem expiracao**, e com
+**460 grants = 115 tabelas x 4** — exatamente a assinatura das **68** que esta pendencia conta desde
+18/08. A genese foi reproduzida por `SIGKILL` na janela de ~70% do tempo de vida do processo
+(1883-1970 ms), que e quando o `finally` do teardown ainda nao rodou: **5/5**. Cada nome embute
+`Date.now()`, logo **toda orfa e datavel pelo nome**, sem consultar catalogo. Origem:
+`medicao-3-censo-roles.md` §F7/§F8/§F10. A base viva **nao foi tocada** e as 68 seguem **CARREGADAS**.
+
+**2. Armadilha de nomenclatura (M3-O-4).** `rls_test_` e **substring** de `vid_rls_test_`. Varredura por
+substring recolheria a familia irma; a defesa e **prefixo ancorado** (`^` no regex, `LIKE` por prefixo),
+que ja existia e foi conferida por execucao (2/2 na forma F9). A partir do `SAN2-4b` a ancoragem fica
+exercitada permanentemente, com a familia nova dentro dos dois drills PD de sweep do
+`tests/db-catalog-write-guard.test.ts`.
+
+**3. Os denominadores por arquivo da bateria barata, medidos** — o que o plano do 4a §5.1 previa e nunca
+foi aplicado (o 4a nao tocou `pendencias.md`). `N=5` por arquivo, forma
+`node scripts/run-backend-tests.mjs <arquivo>`, Node **v20.19.5**, cluster descartavel com **103**
+migrations, head `116aa46`: `tests/audit-security.test.ts` **1** ·
+`tests/auth-identity-backfill-db.test.ts` **6** · `tests/auth-identity-link-events-db.test.ts` **5** ·
+`tests/auth-identity-role-real-db.test.ts` **10** ·
+`tests/impound-process-checklist-link-schema.test.ts` **5** · `tests/rls-tenant-isolation.test.ts` **1** ·
+`tests/vehicle-identity-schema.test.ts` **9** = **37**. As **sete contagens estao todas certas**. O que
+**nao** estava certo era a inferencia de exclusao que o `status-geral.md` l.33 tirava delas — ver a
+**errata E-1** apensa la pelo mesmo bloco.
+
+**4. Replicacao nao e corroboracao (M2-O-3).** A lista de **6** arquivos registrada nesta pendencia e a
+do §0.a do `B-O6R-02-ciclo5-plano.md` sao **a mesma lista em dois lugares** (`B ≡ C`) — **uma**
+afirmacao replicada, nao duas confirmacoes independentes. Lista-6 e lista-7 sao **particoes diferentes
+do mesmo total 37**, unidas pela coincidencia aritmetica exata
+`link-events(5) + role-real(10) == links(15)`; e o par `(arquivos, testes)` **nao identifica** a lista,
+porque **tres** listas de 6 distintas produzem `(6, 37)`. A receita reprodutivel por terceiro e a lista
+**NOMEADA** do **§V.3** da `medicao-2-bateria-barata.md`, apensa por este bloco ao criterio **D29** do
+plano do ciclo 5.
+
+**5. Gatilhos do sweep: sao 5, nao 4** (errata C2-A2 a medicao-3 §F6.3) — cinco arquivos e **8** chamadas
+de `createEphemeralRole`; o quinto e `tests/db-catalog-write-guard.test.ts`, justamente o guard que
+exercita o sweep de proposito. Com a correcao C3 do `SAN2-4b`, o criador `tests/rls-tenant-isolation.test.ts`
+tambem passou a invocar o varredor: **6** gatilhos.
+
+**Registro canonico das medicoes:** os diarios de `agent-orchestration/omega/juntas/votos/SAN2-4a/`
+(`medicao-1-authority-portal.md`, `medicao-2-bateria-barata.md`, `medicao-3-censo-roles.md`), e **nao**
+um consolidado em `omega/medicoes/` — divergencia mandato x plano do 4a, fechada por decisao escrita:
+copiar verbatim criaria um quarto registro da mesma verdade, e a medicao 2 acabou de provar que
+replicacao nao corrobora.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+  <sub>Emenda do `SAN2-4b` (2026-08-31): cabecalho NOVO, apenso a serie de emendas desta pendencia (§A2) — nao altera o estado da pendencia-mae, so acrescenta o que foi medido. Severidade deixada como **a classificar** de proposito: este bloco mediu mecanismo e contagens, nao impacto.</sub>
+
 ## Pendências do porteiro pós-merge do #359 (`B-O6R-ARNES`) — 2026-08-28, `LIBERADO COM RESSALVA`
 
 Parecer completo em `agent-orchestration/omega/juntas/votos/B-O6R-ARNES/00c-porteiro-pos-merge-359.md`.
@@ -3887,7 +4005,53 @@ percebe — a mesma classe do `[RLS]` que rodava como superusuário e passava co
 - **status:** ABERTA · **severidade:** BAIXA · **dono:** declarado acima
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
-## P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por execução** (candidato: bloco de arnês seguinte)
+## P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por execução** (candidato: bloco de arnês seguinte) — **FECHADA em 2026-08-31**
+
+> **FECHADA em 2026-08-31 pelo bloco `SAN2-4b` (correcoes C1 e C2).** Esta entrada exigia, como
+> pre-condicao de qualquer correcao, **atribuir por execucao** (N>=10 isolado) antes de consertar — e
+> foi exatamente isso que o `SAN2-4a` (#365) fez, sem consertar nada.
+>
+> **Causa medida, em 7 elos.** O tamper da l.161 **nunca via** `"A"` (o hash termina em `=` em
+> 100.000/100.000 amostras): ele trocava o **padding** do base64, nao o dado. 44 chars sem padding
+> decodificam para **33 bytes** — os 32 originais **intactos** mais um `0x00`; `parseStored`
+> re-derivava `keylen` do stored **recebido**, o que deixava o guard de comprimento cego (33===33); e
+> `timingSafeEqual` passava sse o 33o byte derivado fosse `0x00`. Taxa: **1/256 por execucao, sem elo
+> temporal** (nao era "flaky por concorrencia"). Previsao byte a byte conferida contra o
+> `verifyPassword` REAL em **20.000/20.000** (sonda E3 do 4a) e **40.000/40.000** e
+> **200.000/200.000** (cadeira C1 da J-SAN2-4a). Origem: `medicao-1-authority-portal.md` §F3.
+>
+> **Correcao (commit `f6631d0` deste bloco).** **C1** — `parseStored`
+> (`src/modules/authority/authority-password.ts`) deixou de derivar `keylen` do dado de entrada e passou
+> a pina-lo em `AUTHORITY_SCRYPT_PARAMS.keylen`, somando rejeicao de base64 nao-canonico; o defeito era
+> de `src/`, nao so do teste. **C2** — o tamper passou a adulterar **dado** (primeiro caractere do
+> payload, que carrega 6 bits), e **dois casos novos** pinam a classe: o denominador do arquivo foi
+> **12 -> 14**.
+>
+> **Prova executada.** Vermelho-controle contra o `src/` sem a C1: **79/20 000** e **18/5 000**
+> aceitacoes indevidas -> **0/100 000** com a C1. Controle positivo **100 000/100 000** (nenhum stored
+> legitimo passou a ser rejeitado) e caminho de producao OWASP `N=2^17` **3/3**. No arquivo:
+> **30/30 vermelhas** sem a C1 -> **30/30 verdes** com ela. A deteccao da classe saiu de **1/256 por
+> execucao para 100%**. Diarios: `votos/SAN2-4b/dev-c1-parsestored.md` e `dev-c2-tamper-guard.md`.
+>
+> **Licao de metodo que fica registrada (OBS-3 da medicao-1).** Nesta classe, *"ficou verde"* nao prova
+> nada: `P(0 em 40 | 1/256)` = **85,5%**, e o **N=10** que esta propria entrada prescrevia tinha
+> **96,2%** de chance de sair verde **com o defeito presente**. O N de prova se deriva do **poder**,
+> nunca de numero redondo (~766 execucoes para 95%).
+>
+> **Ressalva herdada, NAO fechada por esta correcao, dita por extenso.** O **1/2** do jurado (suite
+> inteira, maquina dele) **nao fica totalmente explicado**: sob 1/256, ver ao menos 1 falha em 2
+> execucoes tem `P` = **0,78%**. Ou foi azar de 1-em-128, ou existe uma **segunda contribuicao** que so
+> aparece no arranjo de suite inteira — e as medicoes do 4a **nao decidem entre as duas**. Medir a
+> hipotese custaria ~766 execucoes da suite inteira contra um objeto que, pos-correcao, **ja e outro**.
+> Consequencia pratica, que e o motivo de isto poder fechar assim mesmo: o caminho 1/256 **deixa de
+> existir**, portanto qualquer recorrencia da assinatura naquela linha e **por construcao defeito
+> NOVO** e nasce como **pendencia nova** — nunca como reabertura desta.
+>
+> **Registro canonico das medicoes:** os diarios
+> `agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-1-authority-portal.md`,
+> `medicao-2-bateria-barata.md` e `medicao-3-censo-roles.md` — **nao** um consolidado em
+> `omega/medicoes/` (divergencia mandato x plano do 4a, fechada aqui por decisao escrita: copiar
+> verbatim criaria um quarto registro da mesma verdade).
 
 Achado `pre-existente` da cadeira do runner (voto `02`, achado 2), **sem dono na ata** — o porteiro cobrou
 (achado E). `tests/authority-portal.test.ts:162` (*"hashing: scrypt round-trip … rejeita hash adulterado"*)
@@ -3896,8 +4060,8 @@ classe** deste bloco (não é catálogo, não é denominador, não é teardown d
 primeiro atribuir por execução** — N≥10 isolado — antes de qualquer correção; hoje há uma medição de 1/2 e
 nada mais.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **status:** FECHADA · **severidade:** MEDIA · **dono:** bloco `SAN2-4b` (correcoes C1+C2, commit `f6631d0`) — fechada em 2026-08-31, ver bloco no topo da entrada
+  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`. [Superada em 2026-08-31 pelo `SAN2-4b`: a triagem marcou ABERTA por nao ter verificado; agora foi verificado, e o que fechou a entrada foi **execucao** — 0/100 000 na sonda contra o `verifyPassword` real e 30/30 no arquivo —, nao o cabecalho.]</sub>
 
 ## P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-29, este PR — ver errata)**
 
@@ -4067,7 +4231,43 @@ checkout fresco, `--check` verde; e com um arquivo do espelho realmente adultera
 - **status:** FECHADA · **severidade:** MEDIA · **dono:** `SAN2-2` (Fase 1, `db2d291`) — fechada em 2026-08-30, ver bloco no topo da entrada
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`. [Superada em 2026-08-30 pela Fase 4 do `SAN2-2`: a triagem marcou ABERTA por não ter verificado; agora foi verificado, e o que fechou a entrada foi **execução** (drills A e B), não o cabeçalho.]</sub>
 
-## P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é quem vai reusar a forma)
+## P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é quem vai reusar a forma) — **FECHADA em 2026-08-31**
+
+> **FECHADA em 2026-08-31 pelo bloco `SAN2-4b` (correcao C5), com a errata como condicao de
+> fechamento.** A entrada abaixo fica **intocada**: ela descreve com precisao o que se via em 29/08.
+> O que a medicao 2 do `SAN2-4a` (#365) mostrou e que **a natureza do problema nao era a que a entrada
+> supunha** — nao havia **conflito a arbitrar** entre duas listas; havia **uma sentenca falsa a
+> corrigir** (achado O-4 da `medicao-2-bateria-barata.md` §V.5).
+>
+> **O que foi medido.** As **duas** listas fecham **37**. As sete contagens por arquivo da lista-7
+> estao **todas certas** (N=5 por arquivo); a lista-6 deu `(6 arquivos, 37 testes)` em **10/10**
+> rodadas. Lista-6 e lista-7 sao **particoes diferentes do mesmo total**, unidas pela coincidencia
+> aritmetica exata `link-events(5) + role-real(10) == links(15)`. Forma:
+> `node scripts/run-backend-tests.mjs <lista>`, Node **v20.19.5**, cluster descartavel com **103**
+> migrations, `CORE_SAAS_PERSISTENCE` **nao exportada**, rodadas sequenciais, head `116aa46`.
+>
+> **A unica sentenca FALSA, e onde ela mora.** `agent-orchestration/docs/status-geral.md` l.33 afirmava
+> que *"nenhuma combinacao de 6 que contenha as vitimas nomeadas fecha 37"*. Existem **duas**
+> combinacoes de 6 que contem as 4 vitimas e fecham 37 (contraexemplos **executados**, §R.5), e a
+> cadeira C2 da junta do #365 executou **tres** listas de 6 distintas dando `(6, 37)`. A **errata E-1**
+> foi apensa ao `status-geral.md` por este mesmo bloco, com o paragrafo original preservado (§A2).
+>
+> **O achado maior, que muda o criterio do proximo bloco (errata-da-errata E-2, achado C2-A1).** O
+> denominador **37 nao identifica a lista** — e o par `(arquivos, testes)` **tambem nao**, porque tres
+> listas de 6 distintas produzem `(6, 37)`. O par e **necessario e insuficiente**. A receita
+> reprodutivel por terceiro exige **NOMEAR os arquivos**, e a receita canonica e o **§V.3** da
+> `medicao-2-bateria-barata.md`. Este bloco a apensou ao criterio **D29** do
+> `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md`, que e quem vai reusar a forma.
+>
+> **B ≡ C: replicacao nao e corroboracao (achado O-3).** A lista de 6 registrada em `pendencias.md` e a
+> do §0.a do plano do ciclo 5 sao **a mesma lista em dois lugares**. Duas ocorrencias do mesmo texto
+> nao sao duas confirmacoes independentes — sao **uma** afirmacao replicada. Fica registrado aqui e na
+> emenda `P-O6R-ARNES-ISOLAMENTO` deste mesmo bloco.
+>
+> **Registro canonico das medicoes:** os diarios de
+> `agent-orchestration/omega/juntas/votos/SAN2-4a/` (`medicao-1-authority-portal.md`,
+> `medicao-2-bateria-barata.md`, `medicao-3-censo-roles.md`), e **nao** um consolidado em
+> `omega/medicoes/`.
 
 **Achador:** orquestrador, em varredura **pós-voto** do `B-O6R-REG` (nenhum jurado a nomeou). **Escopo:
 `pre-existente`** — as duas frases já estavam na `main` em `f081b5d`, antes deste bloco. **Não corrigida
@@ -4107,7 +4307,7 @@ conflito é entre **dois registros vivos**, não entre registro e execução.
 listas, em cluster descartável, N≥3, e publicar os dois denominadores com N e forma. A lista que não fechar 37
 recebe errata apensada (§A2 — o texto original fica), nomeando qual medição a produziu.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** declarado acima
+- **status:** FECHADA · **severidade:** MEDIA · **dono:** bloco `SAN2-4b` (correcao C5) — fechada em 2026-08-31, ver bloco no topo da entrada
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ---
@@ -4286,7 +4486,28 @@ registro** — não toca dinheiro, dado, permissão nem código de produto (a r�
 
 ---
 
-## P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produto
+## P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produto — **FECHADA em 2026-08-31**
+
+> **FECHADA em 2026-08-31 pelo bloco `SAN2-4b` (correcao C5).** O **criterio de fechamento** escrito
+> nesta propria entrada — *"a receita de cluster descartavel (plano ou `docs/`) manda consultar as
+> faixas excluidas antes de fixar a porta, e nenhuma linha rastreada prescreve 55432 como se fosse
+> livre"* — esta cumprido nas duas metades.
+>
+> **Metade 1 — a receita passou a mandar consultar, e foi executada e transcrita DUAS vezes.** O
+> `SAN2-4a` (#365) fez da consulta ao `netsh` o **primeiro** comando de terreno de cada fase, e as duas
+> transcricoes estao em `agent-orchestration/omega/juntas/votos/SAN2-4a/`:
+> `medicao-2-bateria-barata.md` §T2 e `medicao-3-censo-roles.md` §T2 — as duas reproduzem **por
+> execucao** a faixa `55353-55452`, que e a que contem a 55432, e as duas escolheram **56432/56379**,
+> fora de toda faixa listada. O `SAN2-4b` executou a mesma consulta antes de subir o seu cluster. A
+> licao duravel continua sendo a que a entrada ja dizia: **nao** e "use 56432", e sim consultar
+> `netsh interface ipv4 show excludedportrange protocol=tcp` **antes** de fixar a porta, porque as
+> faixas sao dinamicas e mudam entre reinicializacoes do Hyper-V/WinNAT.
+>
+> **Metade 2 — a linha rastreada que prescrevia 55432 ganhou nota datada.** O §6 do
+> `agent-orchestration/omega/planos/SAN2-2-plano.md` (l.221 e l.223) recebeu **errata apensa** apontando
+> a consulta ao `netsh`, **sem apagar as linhas originais** (§A2). Era exatamente a metade que a Fase 4
+> do `SAN2-2` **nao podia** fazer, e disse por escrito que nao podia — o plano estava fora do escopo
+> dela, e por isso ela se recusou, corretamente, a nomear um dono que nao havia combinado.
 
 **O que é.** A porta **55432** — prescrita no mandato do bloco e no §6 do `SAN2-2-plano.md` (l.221 e l.223)
 para o Postgres descartável — **não pode ser aberta nesta máquina**. Ela cai dentro de uma **faixa de
@@ -4337,7 +4558,7 @@ escolher a porta**, e escolher fora do que a listagem mostrar.
 **Critério de fechamento:** a receita de cluster descartável (plano ou `docs/`) manda consultar as faixas
 excluídas antes de fixar a porta, e nenhuma linha rastreada prescreve 55432 como se fosse livre.
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** FECHADA · **severidade:** BAIXA · **dono:** bloco `SAN2-4b` (correcao C5) — fechada em 2026-08-31, ver bloco no topo da entrada
 
 
 ---
@@ -4592,3 +4813,86 @@ evidência do voto/ata que a queimou; e o §5 (divergência §A2) é reconciliad
 isso não acontecer, o §1.4 **fail-closed** permanece o que garante que a lacuna não vire passe livre.
 
 - **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 3**: segunda passada do obituário **derivada das atas** (não do diretório `especialistas/`), absorvendo as 15 identidades nomeadas acima e as classes não contadas pela medição da C1 (dono NOMEADO no tratamento pós-junta do `SAN2-3`; se o dono humano redirecionar, re-atribui-se com registro)
+
+## P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA (2026-08-31 — achado do `SAN2-4b`, correcoes C3/C4) — `pre-existente`, NOMEADO, **sem correcao proposta**
+
+**Achador:** a instancia dev das correcoes C3/C4 do `SAN2-4b`, por execucao. **Quem acha nao conserta**
+(§C7.4-bis): esta entrada relata **defeito, evidencia e motivo**, e **nao** propoe correcao.
+
+**O defeito do instrumento.** A `FROZEN_ALLOWLIST` de `tests/db-catalog-write-guard.test.ts` e um
+**ratchet por CONTAGEM**: congela, por arquivo, quantos padroes de escrita de catalogo
+(`CREATE ROLE` / `DROP ROLE` / `GRANT` / `REVOKE` / `OWNER TO`) o arquivo contem, e fica vermelho quando
+o numero se move. A regex conta **ocorrencias de texto** — e por isso conta **igual** uma linha de SQL
+executavel e uma mencao em **comentario**. Consequencia: trocar SQL por prosa em quantidade igual **nao
+move o numero**, e o ratchet **nao ve**.
+
+**Medido, nao deduzido** (regexes do proprio guard, head base `f6631d0` x estado com C3+C4):
+
+| arquivo | base `f6631d0` | com C3+C4 | composicao base | composicao depois |
+|---|---|---|---|---|
+| `tests/rls-tenant-isolation.test.ts` | **8** | **8** | CREATE ROLE 2 · DROP ROLE 2 · GRANT 4 | CREATE ROLE 2 · DROP ROLE 2 · GRANT 4 |
+| `tests/helpers/auth-identity-fixture.ts` | **30** | **30** | CR 9 · DR 8 · GRANT 10 · REVOKE 1 · OWNER TO 2 | idem |
+
+O total identico e **coincidencia de composicao**, nao ausencia de mudanca: a correcao C4 **removeu** o
+`DROP ROLE IF EXISTS` do SQL de `tests/rls-tenant-isolation.test.ts` (migrou para
+`dropEphemeralRoleResilient`), e a **prosa** que explica a migracao **menciona** `DROP ROLE`. Dois -> dois,
+com o SQL virando comentario. O `SAN2-4b` registrou o fato na `reason` da entrada, no formato do
+precedente escrito no repo, para o proximo auditor nao ler "8" e concluir que nada aconteceu — mas **a
+trava nao teria pego esta migracao sozinha**.
+
+**Por que nao foi corrigido aqui.** O desenho do ratchet esta **fora da lista fechada do §5.1** do
+`SAN2-4b-plano.md`, que so autorizava atualizar as **entradas afetadas** da allowlist com contagem medida
+e motivo. Corrigir o instrumento e mudanca de desenho, com alternativas que precisam ser escolhidas e
+provadas (contagem sobre o SQL depois de remover comentarios? contagem por AST? separar SQL de comentario
+na propria regex?) — nao e uma linha, e nao cabe a quem achou.
+
+**Escopo: `pre-existente`, com evidencia de origem.** O ratchet por contagem nasceu no bloco
+`B-O6R-ARNES` (2026-08-28), antes desta branch; o `SAN2-4b` apenas **exercitou** a cegueira ao migrar um
+`DROP ROLE` para o helper. Nao foi este bloco que a criou.
+
+**Criterio de fechamento:** o guard passa a distinguir **SQL executavel de comentario** (por qualquer
+mecanismo que o bloco dono escolher), e a distincao e provada **por mutacao** — trocar um `DROP ROLE`
+executavel por uma mencao em comentario deixa o guard **vermelho**.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir — candidato natural e o
+  proximo bloco autorizado a tocar o desenho de `tests/db-catalog-write-guard.test.ts` (o `B-O6R-02`
+  ciclo 5 ja tem, no seu §C6, mandato escrito para mexer nas contagens e razoes do ratchet). Nao nomeio
+  dono que nao combinei.
+
+## P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre-existente`, NOMEADO, **sem correcao proposta**
+
+**Achador:** a instancia dev da correcao C2 do `SAN2-4b`, por execucao. **Quem acha nao conserta**
+(§C7.4-bis).
+
+**O defeito.** `npm run check` e `npm run lint` sao **o mesmo comando** (`lint` -> `check` ->
+`tsc -p tsconfig.json --noEmit`), e o `tsconfig.json` declara `"include": ["src/**/*.ts"]`. Logo, **a
+bateria oficial do repositorio nao faz typecheck de `tests/`**. Erro de tipo em arquivo de teste nao
+aparece em `check` nem em `lint`.
+
+**Conferido por execucao, nao lido do `tsconfig`:**
+`npx tsc -p tsconfig.json --noEmit --listFiles | grep -c authority-portal.test.ts` = **0** — o arquivo de
+teste **nao entra** no programa que o typecheck monta.
+
+**Por que importa.** `tests/` e onde vivem os guards que esta governanca usa como prova (o ratchet de
+catalogo, o piso de denominador do runner, os drills PD de sweep, os contratos de frontend lidos por
+texto). Um guard com erro de tipo pode atravessar a bateria e falhar so na execucao. O `SAN2-4b`
+contornou rodando um typecheck **avulso** do arquivo que tocou (ec=0, log `T1-typecheck-teste.log`), para
+nao entregar codigo nao checado — mas o contorno vale para **um** arquivo e **uma** vez, nao para a
+bateria.
+
+**Por que nao foi corrigido aqui.** `tsconfig.json` e **explicitamente proibido** pelo §5.2 do
+`SAN2-4b-plano.md`. E a correcao nao e trivial: incluir `tests/` no programa muda de uma vez o que o
+`check` cobre em todo o repositorio, podendo acender erros pre-existentes em muitos arquivos. Precisa de
+bloco proprio, com o vermelho medido antes.
+
+**Escopo: `pre-existente`, com evidencia de origem.** O `include` restrito a `src/**/*.ts` ja estava no
+`tsconfig.json` antes desta branch, e **nenhuma** das correcoes do `SAN2-4b` o tocou — o `tsconfig.json`
+nao aparece no diff do bloco.
+
+**Criterio de fechamento:** `npm run check` passa a typechecar `tests/`, com o vermelho pre-existente
+medido e publicado antes (quantos arquivos, quantos erros, quais classes), e a prova e **por mutacao**:
+introduzir um erro de tipo num arquivo de `tests/` deixa `npm run check` vermelho.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir — o trabalho toca
+  `tsconfig.json` e potencialmente muitos arquivos de `tests/`; nomear dono sem combinar seria inventar
+  compromisso alheio.

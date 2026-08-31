@@ -163,6 +163,40 @@ Forma de todo drill: baseline verde medido na hora → mutação → vermelho co
 | **D35** | migration FK: up → down → re-up; sondas (v)/(vii) com FK e no down | com FK: recusadas; no down: ACEITAS (vermelho-controle); catálogo restaurado no re-up (`pg_constraint` 5→4→5) | §0.d: sem FK, (v)/(vii) aceitas (head); com FK, recusadas |
 | **D36** | ordem interna do contrato | grep do texto novo do contrato SÓ depois de D29/D32/D34/D35 verdes (commit posterior) | lição do B-5/C5.1 do c4 |
 
+
+> ### APENSO 2026-08-31 (bloco `SAN2-4b`, §3-C5.7) — o criterio do **D29** e a lista NOMEADA, nao o par
+>
+> **O texto do D29 acima fica intocado (§A2); isto acrescenta a forma que faltava.** A medicao 2 do
+> `SAN2-4a` (#365) mediu a bateria barata e achou o seguinte: o denominador **37 nao identifica a
+> lista**, e o par `(arquivos, testes)` **tambem nao** — **tres** listas de 6 arquivos **distintas**
+> produzem `(6, 37)`, executadas pela cadeira C2 da J-SAN2-4a. O par e **necessario e insuficiente**.
+> Conferir so o `37`, ou so o par, deixa o D29 sem pinar a forma que ele existe para pinar.
+>
+> **A receita canonica do D29 e o §V.3 da `medicao-2-bateria-barata.md` — a lista NOMEADA de 6
+> arquivos:** `tests/audit-security.test.ts` · `tests/auth-identity-backfill-db.test.ts` ·
+> `tests/auth-identity-links-db.test.ts` · `tests/rls-tenant-isolation.test.ts` ·
+> `tests/vehicle-identity-schema.test.ts` · `tests/impound-process-checklist-link-schema.test.ts` —
+> com denominador **`(6 arquivos, 37 testes)`**, medido em **10/10** rodadas, forma
+> `node scripts/run-backend-tests.mjs <lista>`, Node **v20.19.5**, `CORE_SAAS_PERSISTENCE` **nao
+> exportada**, cluster descartavel com **103** migrations, rodadas **sequenciais**, head `116aa46`.
+>
+> **A lista-7 do `status-geral.md` e forma alternativa EQUIVALENTE em total** — `(7 arquivos, 37
+> testes)` — **e nao intercambiavel**: mede arquivos diferentes. As duas sao **particoes do mesmo
+> total**, unidas pela coincidencia aritmetica exata `link-events(5) + role-real(10) == links(15)`.
+> **A canonica do D29 e a lista-6**, porque e a que este plano ja declara no §0.a e a unica com
+> vermelho-controle historico comparavel (**5/13** aqui e **7/13** em `pendencias.md`, pre-correcao do
+> arnes) — trocar a canonica agora **invalidaria** essa comparabilidade.
+>
+> **Cuidado herdado, dito por extenso:** o `SAN2-4b` tocou dois membros desta lista
+> (`tests/rls-tenant-isolation.test.ts` e o `tests/helpers/auth-identity-fixture.ts` que todos
+> importam) **sem criar nem remover `test()`** — o par `(6, 37)` foi re-medido apos as correcoes e
+> **nao se moveu**. Se um dia se mover, o D29 perde a comparabilidade com o vermelho-controle acima e
+> isso e achado, nao detalhe.
+>
+> **Origem:** `agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-2-bateria-barata.md` §V.3 e §V.5
+> (achado **O-2**, emendado pela errata-da-errata **E-2** / achado **C2-A1** da junta), consignado na
+> ata `J-SAN2-4a.md`. Esses diarios de `votos/SAN2-4a/` sao o **registro canonico** das medicoes — nao
+> ha consolidado em `omega/medicoes/`.
 **Re-execuções obrigatórias** (só arquivos tocados mudam; `src/` intocado — âncoras `e352c6c…`/`9be7caf…` conferidas por hash no início e no fim): suíte -db de corrida completa ×10 (`financial-entry-delete-reverse-race-db`, agora com RLS real + casos FK) · **D26 literal** (auto-pulo declarado → guard nomeia) · ratchet do catálogo · guards de KPI · as três canônicas (§9). D21/D23/D24/D25/D27/D28 **não** se re-executam individualmente (código-alvo intocado; qualquer hash de âncora divergente = violação de §5 e reabre).
 
 ## §8 · Ordem e dependências

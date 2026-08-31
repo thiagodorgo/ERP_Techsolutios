@@ -231,6 +231,8 @@ for s in impound-custody-history-db vehicle-identity-merge-db \
 done
 ```
 
+> **ERRATA 2026-08-31 (bloco `SAN2-4b`, §3-C5.6) — as linhas 221 e 223 acima ficam intocadas (§A2), mas a porta **55432** NAO abre nesta maquina:** ela cai na faixa de exclusao dinamica do Windows/Hyper-V `55353-55452`, e o `docker run` falha no *bind*. **Consulte `netsh interface ipv4 show excludedportrange protocol=tcp` ANTES de fixar a porta** — as faixas sao dinamicas e mudam entre reinicializacoes do WinNAT; nao decore um numero. O `SAN2-2` (Fase 2), o `SAN2-4a` (#365, transcrito duas vezes) e o `SAN2-4b` usaram **56432/56379**, fora de toda faixa listada. Registro: `P-SAN2-2-PORTA-55432-RESERVADA` (FECHADA por esta errata).
+
 Esperado por suíte: **0 fail · 0 skipped** — não há denominador prévio de `pass` (o N de cada suíte é
 registrado na evidência da junta; o critério de entrada na lista é zero pulo/zero falha, §3.2b). Rodar o
 `for` **3 vezes** seguidas: intermitência local já desqualifica a linha (§7c). Suíte que pular/falhar fica
