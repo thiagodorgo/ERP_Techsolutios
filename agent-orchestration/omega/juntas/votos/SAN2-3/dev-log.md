@@ -207,9 +207,17 @@ corretamente fora do sepultamento.**
 
 ## Fechamento
 
-**Escopo:** os 11 arquivos do PR estão **todos** dentro da lista fechada do §5; nenhum caminho proibido
-tocado; **zero descarte físico** em qualquer branch; `demo/investidor` intocada; `erp-postgres`/`erp-redis`
-não foram sequer consultados (o bloco não precisa de banco).
+**Escopo — a conta exata, corrigida após a junta (achado `C2-A1`, BAIXA, não bloqueou):** o PR tem **11**
+arquivos, dos quais **10 estão na lista fechada do §5** e **1 está nomeado apenas no cabeçalho do plano** —
+`agent-orchestration/omega/juntas/votos/SAN2-2/00c-porteiro-pos-merge-363.md`, citado **verbatim na l.6**
+do `SAN2-3-plano.md` como a autorização de start (parecer do porteiro pós-merge do #363). A redação
+anterior dizia que os 11 estavam **todos** na lista fechada, e isso era **impreciso em 1 dos 11**: a lista
+do §5 autoriza `votos/SAN2-3/**`, não `votos/SAN2-2/**`. O arquivo não podia, por construção, existir no
+próprio #363 (é o parecer *sobre* aquele merge, commitado em `f56e453`), é adição pura de peça de
+rastreabilidade (§C6) e não toca código, teste, contrato nem nada do PROIBIDO — por isso a C2 registrou
+ressalva sem reprovar. **Quem corrige aqui não é quem achou** (§C7.4-bis); o plano **não** foi alterado.
+No mais: nenhum caminho proibido tocado; **zero descarte físico** em qualquer branch; `demo/investidor`
+intocada; `erp-postgres`/`erp-redis` não foram sequer consultados (o bloco não precisa de banco).
 **Divergências registradas:** uma só — a do §4 do plano sobre o índice (P4), que virou evidência do defeito
 já nomeado, não achado novo. A compressão do inspetor fechou em **+4**, dentro do teto; **nenhuma
 divergência ali**.
