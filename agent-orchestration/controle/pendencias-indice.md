@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **237** |
-| IDs distintos | 228 |
-| **ABERTAS** | **187** |
+| Cabecalhos `## P-` | **240** |
+| IDs distintos | 231 |
+| **ABERTAS** | **190** |
 | — das quais **diferidas** (balde C) | 77 |
-| — das quais **ativas nesta rodada** | **110** |
+| — das quais **ativas nesta rodada** | **113** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 50 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **237 cabecalhos para 228 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **240 cabecalhos para 231 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -56,7 +56,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 31
+## ABERTAS · balde A — material — 33
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -91,8 +91,10 @@
 | `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 4566 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
 | `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 4626 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
 | `P-OBITUARIO-DERIVADO-DO-DIRETORIO` | 4727 | MÉDIA | sim | P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` co |
+| `P-KPI-RECENT-CONGELADO` | 4928 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
+| `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5060 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
 
-## ABERTAS · balde B — processo/registro — 79
+## ABERTAS · balde B — processo/registro — 80
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -174,7 +176,8 @@
 | `P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE` | 3996 | BAIXA | sim | P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE (2026-08-28) — BAIXA · **Dono:** bloco de  |
 | `P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE` | 4124 | — | sim | P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE (2026-08-28) — divergência de processo, registra |
 | `P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA` | 4817 | — | sim | P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA (2026-08-31 — achado do `SAN2-4b`, correcoes C |
-| `P-REG-BATERIA-NAO-TYPECHECA-TESTS` | 4862 | — | sim | P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre |
+| `P-REG-BATERIA-NAO-TYPECHECA-TESTS` | 4888 | — | sim | P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre |
+| `P-AUTHORITY-N-NAO-CANONICO-NO-STORED` | 5005 | BAIXA | sim | P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stor |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 77
 

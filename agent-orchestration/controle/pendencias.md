@@ -4846,9 +4846,35 @@ e motivo. Corrigir o instrumento e mudanca de desenho, com alternativas que prec
 provadas (contagem sobre o SQL depois de remover comentarios? contagem por AST? separar SQL de comentario
 na propria regex?) — nao e uma linha, e nao cabe a quem achou.
 
-**Escopo: `pre-existente`, com evidencia de origem.** O ratchet por contagem nasceu no bloco
-`B-O6R-ARNES` (2026-08-28), antes desta branch; o `SAN2-4b` apenas **exercitou** a cegueira ao migrar um
-`DROP ROLE` para o helper. Nao foi este bloco que a criou.
+**Escopo: `pre-existente`, com evidencia de origem — CORRIGIDA em 2026-08-31 (achado C3-A2 da junta
+J-SAN2-4b).** O ratchet por contagem **nasceu em `0a39824`, 2026-08-19, bloco `B-O6R-01` (#357)** — nao
+no `B-O6R-ARNES`, como esta entrada declarava na sua primeira redacao. A classificacao `pre-existente`
+**fica de pe e mais forte**: sao **12 dias** antes do inicio desta branch, nao 3.
+
+Medido (re-executado por quem escreve esta emenda, nao copiado do voto):
+
+```
+git log --diff-filter=A -- tests/db-catalog-write-guard.test.ts   -> 0a39824  2026-08-19  (B-O6R-01, #357)
+git log -S 'FROZEN_ALLOWLIST' -- tests/db-catalog-write-guard.test.ts -> so 0a39824
+git log -- tests/db-catalog-write-guard.test.ts -> 3 commits: 0a39824 (19/08) - f081b5d (28/08) - ecfdb24 (31/08)
+```
+
+E `git show 0a39824:tests/db-catalog-write-guard.test.ts` mostra o mecanismo **inteiro** ja la:
+`CATALOG_WRITE_PATTERNS` (l.48), `FROZEN_ALLOWLIST` com `count` (l.60), `countCatalogWrites` sobre o
+**texto cru** lido por `readFileSync` (l.144/166) e o `count !== frozen.count` (l.185) — inclusive a
+propria entrada `rls-tenant-isolation.test.ts` ja com `count: 8` e a **mesma** `reason` (l.71-74). Isto e,
+a cegueira a prosa ja estava completa no dia em que o arquivo nasceu.
+
+O `B-O6R-ARNES` (`f081b5d`, 2026-08-28) **atualizou contagens e razoes de uma allowlist herdada** — o
+diff dele nao toca uma linha de `countCatalogWrites`, `CATALOG_WRITE_PATTERNS`, `readFileSync` nem do
+comparador `count !== frozen.count` (grep sobre `git diff f081b5d~1 f081b5d` do arquivo: saida vazia). O
+`SAN2-4b` (`ecfdb24`, 31/08) apenas **exercitou** a cegueira, ao migrar um `DROP ROLE` para o helper.
+Nenhum dos dois a criou.
+
+**Por que a correcao valia a pena** (nenhum numero, codigo ou veredito muda com ela): sob um rotulo que
+promete *evidencia de origem*, a atribuicao errada mandava o futuro dono desta pendencia procurar o
+desenho do ratchet no **#359**, onde ele **nao esta**. Um `git log --diff-filter=A` de dois segundos no
+arquivo da o bloco certo. Registrado aqui em vez de reescrito em silencio (§A2).
 
 **Criterio de fechamento:** o guard passa a distinguir **SQL executavel de comentario** (por qualquer
 mecanismo que o bloco dono escolher), e a distincao e provada **por mutacao** — trocar um `DROP ROLE`
@@ -4896,3 +4922,204 @@ introduzir um erro de tipo num arquivo de `tests/` deixa `npm run check` vermelh
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir — o trabalho toca
   `tsconfig.json` e potencialmente muitos arquivos de `tests/`; nomear dono sem combinar seria inventar
   compromisso alheio.
+
+---
+
+## P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está parada em 28/08: renderiza um estado que já não é verdade
+
+**Origem: junta do `SAN2-4b` (PR #366), cadeira C3 `zelador-do-escopo-do-registro-e-do-kpi`** — achado
+**A-3** de `agent-orchestration/omega/juntas/votos/SAN2-4b/03-escopo-registro-kpi-voto.json`, campo
+`achados`. Escopo declarado **`pre-existente`** com evidência de origem, e por isso **publicado como
+pendência em vez de reprovar** (`D-JUNTA-ESCOPO-E-CALIBRACAO`(a), §C7.1-ter) — a junta fechou
+**APROVADO 3×0, unanimidade**. Quem registra aqui **não é quem achou e não conserta** (§C7.4-bis,
+`D-JUNTA-SEPARACAO-DE-PAPEIS`); a C3 fechou o achado com `correcao_proposta: null`, e **nada abaixo é
+plano de conserto**.
+
+**O que é.** O objeto `recent` do `Kpis/kpis-latest.json` — o array **curado à mão** que alimenta a seção
+"Últimas demandas" do painel — está **congelado em `as_of 2026-08-28`, com PR-topo 359**. De lá para cá
+mergearam o **#364** (`SAN2-3`) e o **#365** (`SAN2-4a`), e ambos **estão** no `Kpis/kpis-history.json`.
+A seção **é renderizada**: não é dado morto, é dado velho exibido.
+
+**Re-medido por quem registra (não herdei a conclusão da C3 — reproduzi):**
+
+| árvore | `recent.as_of` | itens | PRs listados | `recent` idêntico ao de `main`? |
+|---|---|---|---|---|
+| `main` | `2026-08-28` | 8 | 359 · (sem pr) · 355 · 354 · 353 · 352 · 347 · 351 | — |
+| head julgado `2d2d16d` | `2026-08-28` | 8 | os mesmos 8 | **sim**, byte a byte |
+| árvore de trabalho | `2026-08-28` | 8 | os mesmos 8 | **sim** |
+
+E o consumo é real, não hipotético:
+
+```
+Kpis/app.js  l.1195  var rec = latest.recent;
+Kpis/app.js  l.1233  setHTML("recent-list", html);
+Kpis/app.js  l.1234  reveal("recent-section");
+Kpis/app.js  l.1558  if (latest.recent) addSource(latest.recent.source);
+Kpis/index.html l.106 <section class="section" id="recent-section" …>   l.114 <ol id="recent-list">
+                l.23  <a href="#recent-section" …>Últimas demandas</a>   (item de navegação)
+```
+
+Contraprova do outro lado: `Kpis/kpis-history.json` tem **149** entradas na árvore, com as três últimas
+mergeadas sendo `pr 363` · `pr 364` · `pr 365`, mais a entrada de autoria deste bloco (`pr: null`, §C3.5).
+Ou seja, o histórico **sabe** de #364 e #365; a seção que o dono vê, **não**.
+
+**Escopo `pre-existente`, com evidência de origem.** O objeto `recent` do blob de `main` já trazia
+`as_of 2026-08-28` e PR-topo 359 **enquanto o history de `main` já continha `SAN2-3` (#364) e `SAN2-4a`
+(#365)** — a classe nasce, no mínimo, no bloco que mergeou o #364, antes desta branch. `main` e head são
+**idênticos** nesse objeto: o `SAN2-4b` não criou nem agravou nada aqui, e o §5.1 do plano dele escopou o
+trabalho de KPI à dívida dupla mais a entrada do próprio bloco.
+
+**Por que importa — e por que casa com `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY`.** As duas são a mesma família:
+**o artefato principal contando o que não é mais verdade.** A `D-KPI-INDEX-PAINEL` (§C3.0) diz que o
+`Kpis/index.html` **é a entrega** — "é ele que o dono abre para ver onde o projeto está" — e que o painel
+**hidrata em runtime dos JSON**, de modo que atualizar o JSON já move o painel. As duas pendências são as
+duas metades do furo dessa promessa:
+
+- a **irmã** (`P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY`): o texto em que cada bloco declara **o que NÃO fechou**
+  existe no JSON e **não tem seção** — honestidade produzida com alcance zero;
+- **esta**: a seção **existe, tem navegação e hidrata** — só que de um array **curado à mão** que ninguém
+  atualiza. O painel não está mudo nem vazio; ele está **afirmando** que a última entrega é o #359.
+
+A irmã falha por omissão; esta falha por **afirmação desatualizada**, que é a metade visível. E as duas se
+explicam pelo mesmo desenho: o que o painel mostra não deriva da fonte que os blocos são obrigados a
+atualizar — deriva de um campo paralelo, mantido por lembrança.
+
+**Severidade: MÉDIA**, pelo mesmo critério que este arquivo já aplicou à irmã: não toca produto, dado,
+dinheiro nem permissão, nenhum valor de `metrics` depende dela, os guards de KPI (`kpi-freeze --check`,
+`kpi-dashboard-charts`) seguem verdes porque **não é divergência de série** — mas corrompe o alcance do
+artefato de controle que a rodada inteira usa para dizer onde o projeto está. A gravidade que a C3
+declarou no voto é `observa` (`bloqueia: false`), que é a escala da **junta**; **MÉDIA** é a tradução para
+a escala **deste arquivo**, feita por quem registra, com a medição inteira acima para quem quiser
+reclassificar sem refazer o trabalho.
+
+**Critério de fechamento:** abrir o `Kpis/index.html` com dado real mostra as últimas entregas **de fato**
+(incluindo #364, #365 e #366), e a atualização **não depende de alguém lembrar** — ou a seção passa a
+derivar do `history`, ou um guard permanente fica **vermelho** quando o PR-topo de `recent` fica atrás do
+PR-topo do `history`. Prova **por mutação**, como os outros guards de KPI já se provam: mergear uma entrega
+sem tocar `recent` tem de acender vermelho.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.
+
+---
+
+## P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stored` do authority aceitam forma não-canônica: ` 1024`, `0x400` e `+1024` passam por `N = 1024`
+
+**Origem: junta do `SAN2-4b` (PR #366), cadeira C1 `auditor-do-produto`** — achado **C1-I3-A1** de
+`agent-orchestration/omega/juntas/votos/SAN2-4b/01-produto-voto.json` (`itens` → `C1-I3` → `achados`).
+Escopo declarado **`pre-existente`** com evidência de data, e por isso **publicado como pendência em vez
+de reprovar** (`D-JUNTA-ESCOPO-E-CALIBRACAO`(a), §C7.1-ter) — a junta fechou **APROVADO 3×0**. Quem
+registra aqui **não é quem achou e não conserta** (§C7.4-bis, `D-JUNTA-SEPARACAO-DE-PAPEIS`); a C1 fechou
+o achado com `bloqueia: false` e sem correção proposta, e **nada abaixo é plano de conserto**.
+
+**O que é.** A correção C1 do `SAN2-4b` fechou a canonicidade dos campos **base64** do `stored`
+(`parseStored` passou a exigir round-trip em `salt` e `hash`, e a pinar o `keylen` como constante do
+sistema). Os campos **numéricos** ficaram como estavam: `src/modules/authority/authority-password.ts:74-76`
+lê `N`, `r` e `p` com `Number(parts[n])`, e `Number` é **tolerante** — aceita espaço em volta, notação
+hexadecimal e sinal explícito. O guard de canonicidade que o bloco introduziu vale para `parts[4]` e
+`parts[5]`; **não** alcança `parts[1..3]`.
+
+**Vetor W08, re-medido por quem registra** (a C1 nomeou espaço, `0x400` e `1e3`; reproduzi e a lista saiu
+maior):
+
+```
+node -e '…Number(s), Number.isInteger(Number(s))…'
+ "1024"       -> 1024   isInteger=true    (canônico)
+ " 1024"      -> 1024   isInteger=true    <- aceito como N=1024
+ "1024 "      -> 1024   isInteger=true    <- aceito como N=1024
+ "	1024
+"   -> 1024   isInteger=true    <- aceito como N=1024
+ "0x400"      -> 1024   isInteger=true    <- aceito como N=1024
+ "+1024"      -> 1024   isInteger=true    <- aceito como N=1024
+ "1e3"        -> 1000   isInteger=true    (parseia, mas vira OUTRO custo: 1000 != 1024)
+```
+
+Isto é: **cinco** grafias distintas do mesmo `stored` verificam `true` contra o mesmo hash. `1e3` é caso
+à parte — atravessa o parse, mas com `N` diferente, logo a derivação não bate.
+
+**O que isto NÃO é — e a C1 foi explícita.** **Não é bypass de autenticação.** A senha correta segue
+exigida; os 32 bytes seguem comparados inteiros; e mudar o **valor** de `N` quebra a verificação
+(`N=2` → `false`). O vetor só é alcançável por quem **já tem escrita no banco** — quem tem isso já pode
+trocar o hash inteiro. O efeito prático é de **canonicidade de formato**, não de controle de acesso.
+
+**Escopo `pre-existente`, com evidência de data.** A linha `const N = Number(parts[1])` nasce em
+**`5a6a91b`, 2026-07-28**, `Ω5P PR-18a` (#306) — **34 dias** antes do início desta branch. E ela está
+**intocada** no diff do bloco: `git diff 45c3b97 2d2d16d | grep 'Number(parts'` = **saída vazia**
+(`ec 1`). O `SAN2-4b` não criou, não moveu e não agravou; ele fechou uma classe **vizinha** (base64 e
+keylen) e, ao fazê-lo, tornou visível o que sobrou. Dos 21 vetores que a C1 testou, **20 fecharam**; este
+é o único sobrevivente, e é de outra classe.
+
+**Critério de fechamento:** `parseStored` passa a exigir que `parts[1..3]` sejam a **forma canônica**
+decimal do número que representam (isto é, o round-trip `String(Number(x)) === x`, o mesmo teste barato já
+usado para o base64), e a exigência é provada **por mutação**: um `stored` com ` 1024`, `0x400` ou `+1024`
+no lugar de `1024` passa a ser **rejeitado**, e o `stored` legítimo continua aceito.
+
+- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir — candidato natural é o próximo bloco autorizado a tocar `src/modules/authority/authority-password.ts`, onde a correção cabe em `parseStored` junto do guard de base64 que o `SAN2-4b` acabou de introduzir. Não nomeio bloco que não combinei.
+
+---
+
+## P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da base viva seguem intocadas" é propriedade do **operador**, não do **código**: verdadeiro como executado, não garantido por construção
+
+**Origem: junta do `SAN2-4b` (PR #366), cadeira C2 `auditor-do-arnes-e-da-suite`** — achado **A-C2-1** de
+`agent-orchestration/omega/juntas/votos/SAN2-4b/02-arnes-suite-voto.json`, campo `achados`. Escopo
+declarado **`pre-existente`** com evidência de data, e por isso **publicado como pendência em vez de
+reprovar** (`D-JUNTA-ESCOPO-E-CALIBRACAO`(a), §C7.1-ter) — a junta fechou **APROVADO 3×0**. Quem registra
+aqui **não é quem achou e não conserta** (§C7.4-bis, `D-JUNTA-SEPARACAO-DE-PAPEIS`); a C2 fechou o achado
+declarando `disposicao: pendência nomeada` e **sem** propor correção, e **nada abaixo é plano de conserto**.
+
+**O que é.** A correção C3/C4 do `SAN2-4b` acrescentou a família `rls_test` à `SWEPT_ROLE_FAMILIES` do
+`tests/helpers/auth-identity-fixture.ts`, fechando "as duas portas do varredor". O registro do bloco
+afirma, ao lado disso, que **"as 68 órfãs da base viva seguem intocadas"**. A afirmação é **verdadeira como
+executado** — nenhum comando foi enviado a `erp-postgres` durante o bloco nem durante a junta — mas ela
+descreve **o que o operador fez**, e não **o que o código impede**. Não há nada no código que impeça o
+varredor de alcançar aquelas 68 roles: o que houve foi disciplina.
+
+**Re-medido por quem registra, só em arquivo — nenhum comando enviado à base viva, nem de leitura:**
+
+```
+grep -o "@[^/]*" .env            (raiz do repo)  ->  @localhost:5432     = a base viva
+ls .claude/worktrees/san2-r/.env                 ->  não existe          = o worktree não tem .env próprio
+head -1 tests/rls-tenant-isolation.test.ts       ->  import "dotenv/config";
+tests/helpers/auth-identity-fixture.ts l.117-124 ->  SWEPT_ROLE_FAMILIES inclui "rls_test"
+```
+
+Encadeado: `npm test` **da raiz** é a forma **documentada** de rodar a bateria (CLAUDE.md §9); o teste
+carrega `dotenv/config`; o `.env` da raiz aponta para a base viva; e o sweep, desde esta correção, cobre a
+família `rls_test`. Logo, **após o merge, um `npm test` da raiz varre a base viva e recolhe as 68** — que
+é exatamente o dado que `P-ARNES-RLS-TEST-FORA-DO-SWEEP` reserva para **recontagem supervisionada**.
+
+**Escopo `pre-existente`, com evidência de data** (blame conferido por mim, linha a linha):
+
+| quando | commit | o que entrou |
+|---|---|---|
+| 2026-08-19 | `0a39824` (#357, `B-O6R-01`) | o mecanismo de sweep, o corte de idade e o `ORPHAN_ROLE_NAME_PATTERN` |
+| 2026-08-28 | `f081b5d` (#359, `B-O6R-ARNES`) | as **cinco** famílias irmãs da `SWEPT_ROLE_FAMILIES` (l.117-122) |
+| 2026-08-31 | `ecfdb24` (**este** bloco) | a linha `"rls_test"` (l.123) — a **sexta** família |
+
+Desde **28/08**, portanto, um `npm test` da raiz **já** dropava as roles velhas de cinco famílias na base
+viva. O `SAN2-4b` estendeu a uma sexta o que já valia para cinco — que é **o que o plano lhe mandou
+fazer**. E o `.env` da raiz apontando `localhost:5432` é anterior a tudo isso (configuração de ambiente do
+dono). Segundo braço do §C7.1-ter(a): **consertar isto estava fora do escopo permitido** — o §5.1 do plano
+deu às correções C3/C4 exatamente três arquivos de `tests/` e interditou `.env`, base viva e a resolução da
+pendência irmã.
+
+**Por que não reprova, e por que mesmo assim fica registrado.** Nenhum número publicado depende disto;
+nenhum comportamento medido muda; sob a regra vigente da rodada (cluster descartável por jurado, base viva
+intocável) o caminho **não dispara**. O bloco **declarou** a pendência irmã aberta e **não** alegou tê-la
+resolvido — não há "carimbar o que não se mediu". O dado em risco é **forense** (a contagem e os
+timestamps das 68), não de produto: as roles não possuem objetos, só grants.
+
+O que fica registrado é a **classe do enunciado**: uma garantia escrita no registro como se fosse
+propriedade do sistema, quando o que a sustenta é a conduta de quem roda o comando. É a mesma família de
+defeito que esta rodada vem perseguindo — afirmação que sobrevive porque ninguém executou o caminho que a
+derrubaria. Enquanto a frase valer só por disciplina, ela **não** é insumo válido para a recontagem
+supervisionada que a pendência irmã planeja: quem for recontar precisa saber que qualquer `npm test` da
+raiz feito nesse intervalo pode ter mudado o denominador.
+
+**Critério de fechamento:** a propriedade deixa de depender de conduta — o sweep **recusa-se a rodar**
+contra um banco que não seja descartável (ou exige opt-in explícito para varrer), de modo que rodar
+`npm test` da raiz com o `.env` do dono **não** alcance as 68; e a recusa é provada **por mutação**:
+apontar o `DATABASE_URL` para a base viva deixa o caminho **vermelho** em vez de silenciosamente
+produtivo. Enquanto isso não existir, a frase "seguem intocadas" só pode ser publicada com a qualificação
+"**como executado**", nunca como garantia.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a junta de `P-ARNES-RLS-TEST-FORA-DO-SWEEP` (l.3473) — é ela que já detém a recontagem supervisionada das 68 e a decisão consciente sobre a família `rls_test`; separar as duas criaria dois donos para o mesmo dado. Atribuição feita conforme a disposição declarada pela própria cadeira C2 no voto, não inventada aqui.

@@ -197,6 +197,7 @@ Forma de todo drill: baseline verde medido na hora → mutação → vermelho co
 > (achado **O-2**, emendado pela errata-da-errata **E-2** / achado **C2-A1** da junta), consignado na
 > ata `J-SAN2-4a.md`. Esses diarios de `votos/SAN2-4a/` sao o **registro canonico** das medicoes — nao
 > ha consolidado em `omega/medicoes/`.
+
 **Re-execuções obrigatórias** (só arquivos tocados mudam; `src/` intocado — âncoras `e352c6c…`/`9be7caf…` conferidas por hash no início e no fim): suíte -db de corrida completa ×10 (`financial-entry-delete-reverse-race-db`, agora com RLS real + casos FK) · **D26 literal** (auto-pulo declarado → guard nomeia) · ratchet do catálogo · guards de KPI · as três canônicas (§9). D21/D23/D24/D25/D27/D28 **não** se re-executam individualmente (código-alvo intocado; qualquer hash de âncora divergente = violação de §5 e reabre).
 
 ## §8 · Ordem e dependências
