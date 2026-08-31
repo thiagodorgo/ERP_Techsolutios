@@ -157,8 +157,25 @@ test("hashing: scrypt round-trip + salt por-hash + rejeita senha errada/ hash ad
   const hash2 = await hashPassword("senha-forte-123", FAST_PARAMS);
   assert.notEqual(hash, hash2);
   assert.equal(await verifyPassword("senha-forte-123", hash2), true);
-  // hash adulterado (flip do último char) → false, sem lançar (tempo-constante via timingSafeEqual).
-  const tampered = hash.slice(0, -1) + (hash.at(-1) === "A" ? "B" : "A");
+  // hash adulterado → false, sem lançar (tempo-constante via timingSafeEqual).
+  // ARITMÉTICA DO BASE64 (SAN2-4b — medida, não escolhida por gosto; §2 do diário do dev). 32 bytes viram
+  // 44 chars e o ÚLTIMO é SEMPRE "=" (5 000/5 000): o tamper anterior — `hash.at(-1) === "A" ? "B" : "A"` —
+  // NUNCA via "A", então trocava o PADDING e não o dado. Os 44 chars resultantes decodificam para 33 bytes
+  // com os 32 originais INTACTOS, e o `false` só acontecia por acaso (1/256). O PENÚLTIMO char também não
+  // serve: ele carrega 4 bits de dado + 2 bits de preenchimento, e mexer nos 2 bits baixos decodifica para
+  // os MESMOS 32 bytes (500/500 medidos). O PRIMEIRO char do payload carrega 6 bits do byte 0 — "A" vira
+  // "B" (e vice-versa) mudando o byte 0 em 4: adulteração de DADO, canônica e com 32 bytes, que ATRAVESSA
+  // os guards de formato e chega à derivação e ao timingSafeEqual — que é o que esta asserção diz exercitar.
+  const parts = hash.split("$");
+  const payloadAdulterado = (parts[5][0] === "A" ? "B" : "A") + parts[5].slice(1);
+  const tampered = [...parts.slice(0, 5), payloadAdulterado].join("$");
+  const bytesOriginais = Buffer.from(parts[5], "base64");
+  const bytesAdulterados = Buffer.from(payloadAdulterado, "base64");
+  // o tamper MORDE: mesmo comprimento, base64 canônico, keylen preservado — e os BYTES diferem.
+  assert.equal(payloadAdulterado.length, parts[5].length);
+  assert.equal(bytesAdulterados.toString("base64"), payloadAdulterado, "tamper canônico (não é troca de padding)");
+  assert.equal(bytesAdulterados.length, 32, "tamper preserva o keylen: o que muda é o DADO");
+  assert.ok(!bytesAdulterados.equals(bytesOriginais), "tamper muda os bytes derivados, não a codificação");
   assert.equal(await verifyPassword("senha-forte-123", tampered), false);
   // stored malformado → false (nunca lança).
   assert.equal(await verifyPassword("x", "not-a-scrypt-hash"), false);
@@ -183,6 +200,67 @@ test("hashing: params OWASP N=2^17 NÃO lançam (maxmem explícito ≥256MiB é 
   const hash = await hashPassword("owasp-strength", AUTHORITY_SCRYPT_PARAMS);
   assert.equal(await verifyPassword("owasp-strength", hash), true);
   assert.equal(await verifyPasswordDummy("owasp-strength", AUTHORITY_SCRYPT_PARAMS), false);
+});
+
+// ── (1-bis) GUARD DA CLASSE PADDING/COMPRIMENTO (SAN2-4b) ────────────────────────────────────────────────
+// Por que estes dois testes existem. Até o SAN2-4b, o ÚNICO código do repositório que percorria o caminho
+// "stored não-canônico ou de comprimento errado" era o tamper acima — e o percorria SEM SABER, asserindo
+// `false` sobre algo que o `src/` aceitava a 1/256 (P(0 em 40) = 85,5 %: "ficou verde" não provava nada).
+// Corrigido o tamper para adulterar DADO, a classe ficaria SEM TESTEMUNHA: reverter `parseStored` não
+// quebraria mais nada. Estes dois testes são essa testemunha permanente — um por validação de `parseStored`
+// (canonicidade e pino do keylen), que pegam vetores DISJUNTOS: nenhuma das duas validações é redundante.
+// Os percentuais citados foram MEDIDOS contra o `src/` ANTERIOR à correção (diário do dev §2, N = 5 000).
+
+test("hashing: stored com base64 NÃO-CANÔNICO é rejeitado (SAN2-4b — classe do padding)", async () => {
+  const hash = await hashPassword("senha-forte-123", FAST_PARAMS);
+  const parts = hash.split("$");
+  const comHash = (payload: string) => [...parts.slice(0, 5), payload].join("$");
+  const comSalt = (salt: string) => [...parts.slice(0, 4), salt, parts[5]].join("$");
+
+  // (a) padding "=" REMOVIDO do hash: 43 chars que decodificam para os MESMOS 32 bytes — o texto muda, o
+  //     dado não. Era aceito 5 000/5 000 (100 %) antes da correção: buraco DETERMINÍSTICO, e o único vetor
+  //     desta bateria que SÓ a canonicidade pega (para o pino do keylen são 32 === 32, nada a ver).
+  const semPadding = parts[5].slice(0, -1);
+  assert.equal(parts[5].at(-1), "=", "32 bytes em base64 sempre terminam em padding");
+  assert.equal(Buffer.from(semPadding, "base64").length, 32, "decodifica para os MESMOS 32 bytes");
+  assert.notEqual(Buffer.from(semPadding, "base64").toString("base64"), semPadding, "e é não-canônico");
+  assert.equal(await verifyPassword("senha-forte-123", comHash(semPadding)), false);
+
+  // (b) o TAMPER ANTIGO preservado como CASO: "=" trocado por "A" → 44 chars → 33 bytes (os 32 originais
+  //     + 0x00). Aceito a ~1/256 antes da correção (24/5 000) — é a intermitência que o SAN2-4a mediu.
+  const paddingTrocado = parts[5].slice(0, -1) + "A";
+  assert.equal(Buffer.from(paddingTrocado, "base64").length, 33, "trocar o padding ACRESCENTA um 33.º byte");
+  assert.equal(await verifyPassword("senha-forte-123", comHash(paddingTrocado)), false);
+
+  // (c) o SALT também é validado, não só o hash: 16 bytes → 24 chars terminando em "==". Sem o padding ele
+  //     decodifica para os mesmos 16 bytes, e era aceito 500/500 (100 %) antes da correção.
+  const saltSemPadding = parts[4].replace(/=+$/, "");
+  assert.notEqual(saltSemPadding, parts[4], "o salt canônico tem padding a remover");
+  assert.equal(await verifyPassword("senha-forte-123", comSalt(saltSemPadding)), false);
+});
+
+test("hashing: hash canônico de comprimento diferente do keylen é rejeitado (SAN2-4b — pino do keylen)", async () => {
+  const hash = await hashPassword("senha-forte-123", FAST_PARAMS);
+  const parts = hash.split("$");
+  const derivado = Buffer.from(parts[5], "base64");
+  const comBytes = (buf: Buffer) => [...parts.slice(0, 5), buf.toString("base64")].join("$");
+  assert.equal(derivado.length, AUTHORITY_SCRYPT_PARAMS.keylen, "o keylen é constante do SISTEMA");
+
+  // (a) EXTENSÃO em comprimento: 33 bytes em base64 impecavelmente canônico. Como o `keylen` vinha do
+  //     stored RECEBIDO e o scrypt é prefixo-estável, isto era aceito a ~1/256 por byte extra (12/5 000).
+  //     É a metade da OBS-2 que a canonicidade NÃO pega — o texto aqui é canônico.
+  const estendido = Buffer.concat([derivado, Buffer.from([0x00])]);
+  assert.equal(estendido.length, 33);
+  const estendidoB64 = estendido.toString("base64");
+  assert.equal(Buffer.from(estendidoB64, "base64").toString("base64"), estendidoB64, "vetor canônico");
+  assert.equal(await verifyPassword("senha-forte-123", comBytes(estendido)), false);
+
+  // (b) TRUNCAMENTO: 31 bytes canônicos. Prefixo-estável + keylen vindo do input = QUALQUER prefixo do
+  //     hash autenticava — 5 000/5 000 (100 %) antes da correção. Determinístico, não intermitente.
+  assert.equal(await verifyPassword("senha-forte-123", comBytes(derivado.subarray(0, 31))), false);
+
+  // (c) e o caminho feliz segue feliz — o pino não rejeita credencial legítima.
+  assert.equal(await verifyPassword("senha-forte-123", hash), true);
 });
 
 // ── (2) ENUMERAÇÃO de username — inexistente ≡ senha-errada ≡ suspenso ≡ bloqueado (byte-idêntico + 401) ─────────
