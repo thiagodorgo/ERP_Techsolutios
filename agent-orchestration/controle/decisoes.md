@@ -1864,3 +1864,49 @@ não ciclo 3 (não existe ciclo 3 sob o teto).
 escolha vivia só no briefing e nas etiquetas — e decisão do dono é o **topo** da hierarquia de fonte de
 verdade (§A1.1), tem de viver em `decisoes.md`. É a mesma lição da `D-GOLIVE-MAPS-ROTACAO-DISPENSADA`,
 aprendida duas vezes no mesmo dia.
+
+## REGISTRO-SAN2-3-OBITUARIO (2026-08-30) — **registro de CONFLITO MEDIDO (§A2), não decisão do dono**
+
+**O que é.** O enunciado herdado do bloco `SAN2-3` — *"descarte dos 16 especialistas queimados em
+`.claude/agents/especialistas/`"* — **não sobrevive à medição**, em dois pontos independentes. O §A2 proíbe
+escolher um lado em silêncio, então o conflito fica registrado aqui **antes** da consolidação. Isto **não é
+decisão do dono**: é o executor dizendo o que mediu e o que fez com a divergência. O dono pode derrubá-lo.
+
+**(a) O diretório nunca existiu na `main` — o descarte físico é um no-op.**
+`git ls-tree -r --name-only HEAD -- .claude/agents/ .agents/agents/ | grep -c especialistas` → **0**;
+`git log main --oneline -- .claude/agents/especialistas/` → **vazio**. As 17 identidades nasceram e vivem só
+na branch `demo/investidor` (5 commits: `1736727`, `160a87f`, `77ead96`, `e74b469`, `bd0d700`), nas duas
+pontas do espelho. **Nenhum mandato escrito manda apagá-las**: as formulações canônicas são as dos porteiros
+(#362: *"SAN2-3 (obituário dos 16 especialistas): documental"*; #363: *"obituário dos 16 especialistas,
+preservando `critico-c5-adversarial`"*).
+**Resolução:** o `SAN2-3` **não apaga nada, em branch nenhuma** — nem na `main` (não há o que apagar) nem na
+`demo/investidor` (branch de trabalho do dono, fora do alcance e do direito de um PR nascido da `main`). O
+descarte é **lógico**: `agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md`, append-only, é o
+registro que mata o **direito de sentar numa junta** sem matar o byte.
+
+**(b) A conta "16 queimados + 1 preservado" erra em UMA identidade — são 15 + 2.**
+`jurado-c5-arnes-catalogo-postgres` estava na lista dos 16 e **não pode ser sepultado**: a ata
+`omega/juntas/J-B-O6R-ARNES.md` (l.51-56) registra que o `inspetor-de-terreno-da-junta` **BLOQUEOU** o seu
+reaproveitamento na cadeira 1 daquele bloco — *"o corpo dele é o contrato de outra junta"* — e que ele
+*"ficou intocado e reservado para a junta do ciclo 5"*. Reconfirmado em
+`votos/B-O6R-ARNES/01-jurado-arnes-catalogo.json` l.2. Junto com `critico-c5-adversarial` (nomeado como o
+crítico do ciclo 5 em `omega/planos/B-O6R-02-ciclo5-plano.md` l.10/171/230/301, e sem nenhum voto ou ata de
+caso concluído no `grep`), são **2 RESERVADAS**, não queimadas — e o ciclo 5 do `B-O6R-02` **não rodou**
+(`ls omega/juntas/ | grep -i ciclo5` → vazio; `ls omega/juntas/votos/ | grep -i ciclo5` → vazio).
+**Resolução:** **15 SEPULTADAS** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4) + **2 RESERVADAS**, cada
+linha com a citação da fonte. Sepultar as duas destruiria a composição já pronta do próximo bloco
+financeiro da fila.
+
+**Onde o detalhe vive.** `agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` §5 ("Divergência §A2"),
+com a tabela das 17 identidades, a evidência por linha e a regra de consulta. O
+`.claude/agents/inspetor-de-terreno-da-junta.md` (item 3.1-bis, +4 linhas, espelho **gerado** por
+`scripts/sync-agent-agents.mjs`) passa a apontar esse arquivo como **fonte primeira** da checagem de
+inelegibilidade do §C7.1-bis — sem afrouxar o fail-closed: **ausência do nome no obituário não absolve**, o
+`grep` nas atas segue obrigatório.
+
+**O que este registro NÃO faz:** não cria pendência de "apagar depois" (os arquivos não fazem mal onde
+estão — o guard do espelho não enxerga subdiretório, `scripts/sync-agent-agents.mjs` l.66/74 usam
+`readdirSync` não-recursivo, e nenhum job os consome) e **não** adiciona guard de código novo: o vetor real
+de reuso é a **composição da junta**, não a existência do arquivo — um teste "nome queimado não existe na
+árvore" daria **verde com o reuso acontecendo na demo**, que é a classe de falsa segurança que a rodada SAN2
+existe para exterminar. O argumento está escrito para ser derrubado no voto, se a junta discordar.

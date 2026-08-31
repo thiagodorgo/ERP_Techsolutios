@@ -4397,7 +4397,7 @@ coluna `dono` do `pendencias-indice.md` não deve ser citada** — vale ler o ca
 mas corrompe um terço da resposta do artefato de controle que a rodada inteira usa para saber o que está
 pendente e com quem.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — bloco que possa tocar `agent-orchestration/controle/gerar-indice-pendencias.py`
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: as duas faltas medidas do classificador de dono em `agent-orchestration/controle/gerar-indice-pendencias.py` (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)
 
 
 ---
@@ -4496,4 +4496,4 @@ mudar o painel, e texto ausente não pode virar seção vazia mentindo que não 
 **Critério de fechamento:** abrir o `Kpis/index.html` com dado real mostra o texto em que o bloco declarou o
 que não fechou, hidratado do JSON, e um guard permanente falha se essa seção sumir ou defasar do snapshot.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** a atribuir — próximo bloco que puder tocar `Kpis/app.js` e `Kpis/index.html`
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 1**: `Kpis/app.js` e `Kpis/index.html` passam a renderizar o `release.summary` e a `description` do history (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)
