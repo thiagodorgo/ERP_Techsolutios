@@ -91,12 +91,24 @@ const ORPHAN_ROLE_MAX_AGE_MS = 60 * 60 * 1000;
 // resíduo sem varredor. Todas embutem o `Date.now()` da criação no nome, que é o que torna o corte
 // de idade aplicável por construção.
 //
-// `rls_test_` FICA DE FORA — decisão CONSCIENTE, não esquecimento (sub-pendência
-// `P-ARNES-RLS-TEST-FORA-DO-SWEEP`). Há 68 órfãs vivas dessa família na base do dono, todas com
-// LOGIN. Um sweep que as alcançasse seria exatamente a classe do incidente de mass-delete de
-// 26/07 caso alguém apontasse `DATABASE_URL` para a base errada: a diferença entre "limpo o meu
-// lixo" e "limpo 68 objetos que não sei de quem são" é o que separa teardown de acidente. O
-// destino dessas 68 é decisão da junta, junto do resto dos prefixos legados.
+// `rls_test_` ENTROU EM 2026-08-31 (SAN2-4b, C3) — a decisão anterior, de deixá-la de fora, era
+// consciente e está registrada acima de mim na história deste arquivo; o que a revoga não é gosto,
+// é PREÇO MEDIDO. A medição 3 do SAN2-4a (`omega/juntas/votos/SAN2-4a/medicao-3-*.md` §F7/F8/F10)
+// cronometrou o que a exclusão custava: **5/5 órfãs produzidas** quando o processo morre na janela
+// de ~70% do tempo de vida (1883-1970 ms), **0 recolhimentos em 4 oportunidades** de varredura, e
+// cada órfã nascendo com **LOGIN, sem expiração e 460 grants (115 tabelas × 4)** — a MESMA
+// assinatura das 68 da base viva. A família era a única do arnês tratada de forma assimétrica: as
+// irmãs (`audit_rls_`, `vid_rls_test_`, `vid_link_rls_`) já eram varridas desde o B-O6R-ARNES.
+//
+// O QUE A ENTRADA **NÃO** DECIDE: as **68 órfãs da base viva** seguem intocadas e a sub-pendência
+// `P-ARNES-RLS-TEST-FORA-DO-SWEEP` continua **ABERTA** — a recontagem supervisionada (só SELECT,
+// datável pelo nome, que cada órfã embute) é da junta dona dela, não deste arquivo. O receio que
+// motivou a exclusão original — o incidente de mass-delete de 26/07 — não é respondido por
+// promessa e sim pelo desenho, exercitado por execução nos drills PD do
+// `db-catalog-write-guard.test.ts`: varredura por **lista explícita ancorada** (`^`, nunca
+// heurística) **e** corte de idade de 60 min. Prefixo não registrado sobrevive; timestamp novo
+// sobrevive. Esse mesmo desenho já governa as outras 5 famílias: registrar a `rls_test_` não cria
+// vetor novo, iguala-a às irmãs.
 //
 // O grupo de sufixo é OPCIONAL porque as 5 órfãs legadas do ciclo 2 nasceram sem ele
 // (`o6r_clone_owner_<timestamp>`); as novas sempre o carregam.
@@ -108,6 +120,7 @@ const SWEPT_ROLE_FAMILIES = [
   "audit_rls",
   "vid_rls_test",
   "vid_link_rls",
+  "rls_test",
 ] as const;
 
 export type SweptRoleFamily = (typeof SWEPT_ROLE_FAMILIES)[number];
@@ -135,7 +148,19 @@ export async function withRoleCatalogLock<T>(
 // `SWEPT_ROLE_FAMILIES` cujo timestamp embutido no nome seja mais velho que 60 min. É teardown do
 // namespace conhecido — nunca curinga além disso (este repositório já teve incidente de mass-delete
 // na base viva). O que for dropado é reportado no stderr para ficar anexável ao relatório.
-async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<string[]> {
+//
+// EXPORTADA em 2026-08-31 (SAN2-4b, C3 — porta 2). Até aqui ela tinha **um único chamador**,
+// `createEphemeralRole`, e o criador da família `rls_test_`
+// (`tests/rls-tenant-isolation.test.ts`) importava só `withRoleCatalogLock`: rodar aquele arquivo
+// sozinho **não varria nada, de nenhuma família** — medido 2/2 no vermelho-controle do SAN2-4b
+// (nem o `audit_rls_` velho morria). Registrar a família sem dar um chamador ao criador seria meia
+// correção: o alvo continuaria vivo exatamente no arranjo em que ele nasce.
+//
+// CONTRATO DE USO: só se chama de DENTRO de `withRoleCatalogLock` — o parâmetro é um
+// `Prisma.TransactionClient`, que neste arnês só existe lá dentro. Varrer fora do lock disputaria
+// `pg_authid`/`pg_auth_members` com os outros escritores do lote paralelo, que é o `XX000` que o
+// mecanismo único existe para matar.
+export async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<string[]> {
   const likePatterns = SWEPT_ROLE_FAMILIES.map((prefix) => `${prefix}_%`);
   const rows = await tx.$queryRaw<Array<{ rolname: string }>>`
     SELECT rolname FROM pg_roles

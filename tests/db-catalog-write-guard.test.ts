@@ -85,7 +85,8 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
       "rls-tenant-isolation.test.ts",
       {
         count: 8,
-        reason: "escritor DENTRO do lock (role rls_test_ via withRoleCatalogLock importado do arnês)",
+        reason:
+          "escritor DENTRO do lock (role rls_test_ via withRoleCatalogLock importado do arnês) — SAN2-4b (C3+C4): o DROP ROLE saiu daqui para o teardown resiliente do arnês e o arquivo passou a varrer órfãs antes de criar; a contagem CONTINUA 8 por coincidência de composição (o DROP ROLE que saiu do SQL reapareceu na prosa que explica a migração), medida 8 e não herdada — CREATE ROLE 2 · DROP ROLE 2 · GRANT 4",
       },
     ],
     [
@@ -451,6 +452,17 @@ if (!connectionString) {
   // antigas. Sem isto, serializar a criação e deixar o resíduo sem varredor seria meia correção: as
   // órfãs medidas na canônica 3 eram justamente `audit_rls_*`, com LOGIN e DML em 115 tabelas.
   //
+  // SAN2-4b, C3: entra a QUARTA — `rls_test_`, a família do `rls-tenant-isolation.test.ts`, que era
+  // a última tratada de forma assimétrica (fora da lista E com um varredor que o seu criador nunca
+  // chamava). Ela é a família cuja órfã o SAN2-4a produziu 5/5 matando o processo na janela, com
+  // LOGIN e 460 grants. A lista deste laço é a mesma coisa que a `SWEPT_ROLE_FAMILIES`: se alguém
+  // remover a família do arnês sem mexer aqui, este caso fica VERMELHO.
+  //
+  // ARMADILHA DE NOMENCLATURA exercitada por construção (M3-O-4): `rls_test` e `vid_rls_test` estão
+  // as DUAS no laço. Se a varredura fosse por SUBSTRING em vez de prefixo ancorado, `rls_test_%`
+  // varreria as `vid_rls_test_*` — e a contraprova de sobrevivência do caso seguinte cairia. É por
+  // isso que as duas convivem aqui em vez de o teste escolher uma.
+  //
   // DRILL D43 tem as duas metades: esta (recolhe o que deve) e a seguinte (não toca no que não deve).
   // -----------------------------------------------------------------------------------------------
   test("(PD) sweep: órfã VELHA de cada família nova é recolhida pela próxima criação de role", async () => {
@@ -459,7 +471,7 @@ if (!connectionString) {
     const orfas: string[] = [];
 
     try {
-      for (const familia of ["audit_rls", "vid_rls_test", "vid_link_rls"] as const) {
+      for (const familia of ["audit_rls", "vid_rls_test", "vid_link_rls", "rls_test"] as const) {
         orfas.push(await createSyntheticOrphanRole(adminClient, familia, DUAS_HORAS));
       }
 
@@ -501,11 +513,18 @@ if (!connectionString) {
   //       explícita, jamais por heurística;
   //   (b) família REGISTRADA com timestamp NOVO — o corte de idade protege a execução corrente, que
   //       é o que impede o varredor de matar as roles dos processos irmãos rodando em paralelo.
+  //
+  // SAN2-4b, C3: o controle (b) passa a valer TAMBÉM para a `rls_test_` recém-registrada. É a
+  // resposta executada ao receio que manteve a família fora do varredor por dois blocos — o
+  // incidente de mass-delete de 26/07: a família entra, mas o corte de idade continua sendo o que
+  // separa "recolho o meu lixo velho" de "apago o que estiver na frente". `rls_test_` com timestamp
+  // NOVO tem de sobreviver ao sweep, como qualquer irmã.
   // -----------------------------------------------------------------------------------------------
   test("(PD) sweep: prefixo não registrado e família registrada com timestamp NOVO ficam intocados", async () => {
     const adminClient = await novoAdminClient();
     const sonda = await createUnsweptProbeRole(adminClient);
     const recente = await createSyntheticOrphanRole(adminClient, "audit_rls", 0);
+    const recenteRlsTest = await createSyntheticOrphanRole(adminClient, "rls_test", 0);
 
     try {
       const varredor = await createEphemeralRole(adminClient, databaseUrl);
@@ -521,6 +540,12 @@ if (!connectionString) {
           true,
           "família registrada com timestamp NOVO sobrevive: o corte de 60 min protege a execução corrente",
         );
+        assert.equal(
+          await roleVive(adminClient, recenteRlsTest),
+          true,
+          "rls_test_ com timestamp NOVO sobrevive: registrar a família não pode matar a role da " +
+            "execução corrente — é o corte de idade que separa teardown de mass-delete",
+        );
       } finally {
         await varredor.drop();
       }
@@ -529,6 +554,10 @@ if (!connectionString) {
       await limparOuGritar(
         dropSyntheticOrphanRole(adminClient, recente),
         `drop da role recente ${recente}`,
+      );
+      await limparOuGritar(
+        dropSyntheticOrphanRole(adminClient, recenteRlsTest),
+        `drop da role recente ${recenteRlsTest}`,
       );
       await adminClient.$disconnect();
     }
