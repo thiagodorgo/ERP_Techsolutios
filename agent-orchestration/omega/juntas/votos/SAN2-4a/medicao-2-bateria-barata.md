@@ -407,8 +407,42 @@ terceiro a quem se diga apenas *"deu 37"* **não consegue inferir qual bateria r
 do **D29** do plano do ciclo 5 (*"denominador idêntico"*) é, sozinho, **insuficiente** para provar
 que a mesma forma foi reproduzida.
 **O discriminador medido é o PAR `(arquivos, testes)`**, que o próprio runner já imprime no sumário:
-`(6, 37)` para a lista-6 · `(7, 37)` para a lista-7. Publicar/conferir o par — e não só o total —
-é o que torna a bateria barata reproduzível por terceiro.
+`(6, 37)` para a lista-6 · `(7, 37)` para a lista-7. O par **melhora** sobre o total — separa a
+lista-6 da lista-7, que o `37` sozinho confunde.
+
+> #### ⚠ E-2 · ERRATA DA ERRATA (2026-08-31, pós-junta do #365 — achado **C2-A1**, gravidade `atenção`, escopo `dentro-do-bloco`)
+>
+> **A conclusão original desta E-2 dizia:** *"Publicar/conferir o par — e não só o total — é o que
+> torna a bateria barata reproduzível por terceiro."* **Essa frase é FALSA e está retirada.** A
+> medição que a antecede continua **inteira e correta** (o `37` sozinho não identifica a lista; o par
+> discrimina a lista-6 da lista-7); errado era o **alcance** que a conclusão deu ao par.
+>
+> **Contraexemplo, executado pela cadeira C2 da junta** (`02-medicoes-2-3-voto.json`, item
+> `C2-1e`/achado `C2-A1`): **TRÊS listas de 6 arquivos distintas produzem `(6, 37)`** — enumeradas
+> sobre os denominadores por arquivo que a própria C2 mediu, e as três **EXECUTADAS** por ela
+> (`lista6` 3/3 · `lista6alt` 3/3 · `lista6alt2` 2/2), imprimindo as três exatamente
+> `6 arquivo(s) - 37 teste(s)`. Um terceiro a quem se diga `(6, 37)` **continua sem saber qual das
+> três rodou**.
+>
+> **O contraexemplo já estava impresso NESTE documento, três parágrafos acima.** O §R.5 enumerou a
+> segunda combinação de 6 que fecha 37 e a rotulou `[outra]` — e o laço com esta E-2 não foi
+> fechado. (O §R.5 enumera **sob o filtro** "contém as 4 vítimas nomeadas" e acha **2**; a C2
+> enumerou **sem** esse filtro e achou **3**. As duas contagens são compatíveis: `2 ⊂ 3`. O filtro
+> não salva a frase — bastava **uma** segunda lista para derrubá-la, e o próprio §R.5 exibiu essa
+> segunda.)
+>
+> **Conclusão corrigida:** o par `(arquivos, testes)` é **NECESSÁRIO e INSUFICIENTE**. Necessário
+> porque o total sozinho nem sequer fixa a cardinalidade; insuficiente porque a cardinalidade mais o
+> total ainda admitem ≥ 3 listas distintas. **A receita reprodutível por terceiro exige NOMEAR os 6
+> arquivos** — que é exatamente o que o **§V.3 deste mesmo documento já faz**, com os seis nomes, o
+> par, o N, a forma, a versão do Node e o head.
+>
+> **Para o ciclo 5, sem ambiguidade: o critério do D29 é o §V.3 — a lista NOMEADA —, NÃO esta E-2.**
+> A observação **O-2** (que mandava apensar a E-2 ao critério do D29) fica **emendada**: o que se
+> apensa ao D29 é o **§V.3**. Apensar a E-2 como estava daria ao D29 um critério que **não pina a
+> forma**, que é precisamente o defeito que o D29 existe para fechar.
+>
+> Correção aplicada por agente que **não** achou o defeito (§C7.4-bis); a medição não foi tocada.
 
 **E-3 · nada a corrigir em `pendencias.md` l.3440-3448 nem no ciclo 5 §0.a.** As duas declarações da
 lista-6 sobrevivem à execução: lista correta, denominador 37 correto, forma declarada. Ficam
@@ -458,7 +492,7 @@ O 4a **não corrigiu nada** e não vai corrigir. Registro o que a medição apon
 | # | Achado | Onde | Sugestão de dono |
 |---|---|---|---|
 | **O-1** | Apensar **errata E-1** (sentença de impossibilidade falsa, com os 2 contraexemplos) | `agent-orchestration/docs/status-geral.md` l.33 | **SAN2-4b** |
-| **O-2** | Apensar **errata E-2** (o 37 não identifica a lista; discriminador = par `(arquivos, testes)`) | `status-geral.md` l.33 **e** o critério do **D29** no plano do ciclo 5 | **SAN2-4b** + junta do ciclo 5 |
+| **O-2** *(emendada em 2026-08-31 pelo achado **C2-A1**)* | Apensar **errata E-2** (o 37 não identifica a lista). **O que se apensa ao critério do D29 é o §V.3 — a lista NOMEADA —, NÃO o par `(arquivos, testes)`:** o par é necessário e **insuficiente** (três listas de 6 distintas dão `(6, 37)`, executadas pela cadeira C2). Ver a *errata da errata* na E-2 | `status-geral.md` l.33 **e** o critério do **D29** no plano do ciclo 5 | **SAN2-4b** + junta do ciclo 5 |
 | **O-3** | Registrar que **B ≡ C** (mesma lista em dois lugares) — replicação, não corroboração | `pendencias.md` (apenso na pendência) | **SAN2-4b** |
 | **O-4** | `P-REG-BATERIA-BARATA-DUAS-LISTAS` **muda de natureza**: não há conflito a arbitrar; há **uma sentença falsa a corrigir**. Fecha por esta medição, com a errata como condição de fechamento | `pendencias.md` | **SAN2-4b** |
 

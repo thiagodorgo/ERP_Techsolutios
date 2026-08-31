@@ -178,10 +178,37 @@ observação para o 4b (O-3), não consertado.**
 
 **Consequência mensurável:** mesmo que `rls_test_` fosse acrescentada a `SWEPT_ROLE_FAMILIES`, rodar
 `tests/rls-tenant-isolation.test.ts` **sozinho** continuaria sem varrer nada — o sweep só roda quando
-alguma das 4 suítes que usam `createEphemeralRole` (`auth-identity-backfill-db`,
-`auth-identity-link-events-db`, `auth-identity-role-real-db`, `auth-login-candidates-fn-db`) executa.
+alguma das **5 suítes** que usam `createEphemeralRole` executa:
+`tests/auth-identity-backfill-db.test.ts` · `tests/auth-identity-link-events-db.test.ts` ·
+`tests/auth-identity-role-real-db.test.ts` · `tests/auth-login-candidates-fn-db.test.ts` ·
+**`tests/db-catalog-write-guard.test.ts`**.
 Isto é **observação para o 4b (O-1)**, não conserto: quem for fechar a exclusão precisa decidir as
 DUAS pontas, não só a lista.
+
+> #### ⚠ ERRATA (2026-08-31, pós-junta do #365 — achado **C2-A2**, gravidade `atenção`, escopo `dentro-do-bloco`)
+>
+> **A contagem publicada acima era "4 suítes", e nomeava quatro. São CINCO.** Faltava
+> **`tests/db-catalog-write-guard.test.ts`**, que chama `createEphemeralRole` **três vezes** — l.383,
+> l.471 e l.511 — e cuja l.470 diz literalmente *"O sweep roda dentro de `createEphemeralRole` — é
+> assim que ele roda na suíte de verdade"*. O arquivo **não é novo**: último commit `f081b5d`
+> (2026-08-28, #359, `fix(test-harness)`), portanto **já existia** quando esta medição foi escrita e
+> estava ao alcance do mesmo `grep`. A omissão é da enumeração, não do terreno.
+>
+> **Comando que fecha as cinco** (reexecutado na correção, saída conferida):
+> `grep -rn "await createEphemeralRole(" tests/ src/ scripts/ | cut -d: -f1 | sort | uniq -c` →
+> `1 auth-identity-backfill-db` · `1 auth-identity-link-events-db` · `1 auth-identity-role-real-db` ·
+> `2 auth-login-candidates-fn-db` · `3 db-catalog-write-guard` = **5 arquivos, 8 chamadas**.
+>
+> **O que a errata NÃO move:** a exclusão dupla continua real e a consequência qualitativa continua
+> verdadeira — rodar `tests/rls-tenant-isolation.test.ts` sozinho **não varre nada**, com 4 gatilhos
+> ou com 5.
+>
+> **Por que importa mesmo assim:** o N errado estava numa enumeração publicada **como completa**,
+> dentro da frase entregue ao 4b como **O-1**. Quem planejasse o fechamento a partir dela contaria
+> **4** gatilhos havendo **5** — e o que faltava é justamente o **guard que existe para exercitar o
+> sweep de propósito**, isto é, o lugar mais provável de a correção ser verificada.
+>
+> Correção aplicada por agente que **não** achou o defeito (§C7.4-bis).
 
 ### F6.4 · Como nasce a órfã (mecanismo, antes da execução que o mede)
 

@@ -126,7 +126,7 @@ Duração F1: mín 2 637 ms (r04) · máx 2 765 ms (r11) · amplitude 128 ms —
 
 **Agregado F2:** falhas **0/10**. `ec=0` em 10/10, denominador **constante em 12**, `# fail 0` / `# skipped 0` / `# cancelled 0` em 10/10, zero `not ok`.
 
-**A contenção foi REAL, e isto é a prova (não a intenção):** a duração subiu de **2 637–2 765 ms** (F1, máquina livre) para **3 902–4 797 ms** (F2), **+48 % a +78 %** — a carga de fato disputou CPU com a suíte. Carga viva 7/7 nas 10 rodadas. Ao final, `kill -9` nos 7 PIDs e conferência: **0 processos sobreviventes** (nenhum busy-loop deixado na máquina do dono).
+**A contenção foi REAL, e isto é a prova (não a intenção):** a duração subiu de **2 637–2 765 ms** (F1, máquina livre) para **3 902–4 797 ms** (F2), **+48,0 % a +73,5 %** — **pareamento declarado: percentis homólogos** (mín F2 ÷ mín F1 e máx F2 ÷ máx F1); ver a **errata E-1** no §8, que retira o antigo "+78 %" — a carga de fato disputou CPU com a suíte. Carga viva 7/7 nas 10 rodadas. Ao final, `kill -9` nos 7 PIDs e conferência: **0 processos sobreviventes** (nenhum busy-loop deixado na máquina do dono).
 
 **Diferença de forma, dita sem disfarce (§4.7):** a medição vermelha da pendência (1/2) veio da **suíte inteira**, na máquina do jurado do B-O6R-ARNES. A F2 é **starvation de CPU declarada sobre o arquivo isolado** — NÃO é a suíte inteira (custo proibitivo, e contaminaria o N com os defeitos já medidos do lote, §3.1 do plano). Quem comparar F2 com o 1/2 do jurado precisa saber que **as formas diferem**; a F2 não refuta o 1/2, e a F1 tampouco.
 
@@ -226,7 +226,7 @@ número.** O poder delas contra um defeito de frequência 1/256 é de 11,1 % e 3
 | Forma | O que é | N | Falhas | Taxa | Como ler |
 |---|---|---|---|---|---|
 | **F1** | `node scripts/run-backend-tests.mjs tests/authority-portal.test.ts`, isolado, máquina livre, sem `DATABASE_URL`/`CORE_SAAS_PERSISTENCE` | **30 execuções** | **0** | **0/30** | denominador constante em 12; `ec=0` 30/30; zero `not ok` |
-| **F2** | idêntica à F1, sob **starvation de CPU declarada** (7 busy-loops, carga viva conferida por `kill -0` a cada rodada) | **10 execuções** | **0** | **0/10** | contenção **provada pela duração**: 2 637–2 765 ms → 3 902–4 797 ms (**+48 % a +78 %**) |
+| **F2** | idêntica à F1, sob **starvation de CPU declarada** (7 busy-loops, carga viva conferida por `kill -0` a cada rodada) | **10 execuções** | **0** | **0/10** | contenção **provada pela duração**: 2 637–2 765 ms → 3 902–4 797 ms (**+48,0 % a +73,5 %**, pareamento **mín↔mín / máx↔máx** — errata E-1, §8) |
 | **F3·E1** | sonda de causa (calibração) — `verifyPassword` real de `src/`, tamper verbatim da l.161 | **1 000 iterações** | 5 | **5/1 000** = 0,5000 % | controles + e − 1000/1000 |
 | **F3·E2** | sonda de causa (bateria principal), mesma sonda | **100 000 iterações** | 390 | **390/100 000** = **0,3900 %** | controles + e − 100000/100000 |
 | **F3·E3** | sonda de **mecanismo** — prevê byte a byte e compara com o veredito real | **20 000 iterações** | 93 | **93/20 000** = 0,4650 % | **previsão bateu 20 000/20 000, 0 erros** |
@@ -351,3 +351,49 @@ capturada (483 em 120 000, forma única), asserção exata transcrita, inputs ca
 E2 mais 5 exemplos da E3, com hash, tampered e comprimentos) e **causa nomeada por execução**, com
 previsão que acertou 20 000/20 000. **Nenhum conserto foi aplicado.** As medições 2 e 3 do plano
 (denominadores da bateria barata; censo `rls_test_`) permanecem **não iniciadas**.
+
+---
+
+## 8. ⚠ E-1 · ERRATA ao limite superior da contenção da F2
+
+> **Datada `2026-08-31`, pós-junta do PR #365 · achado **C1-A1** (cadeira C1, auditor da medição 1) ·
+> gravidade `baixa` · escopo `dentro-do-bloco`.** Escrita por quem **conserta**, não por quem achou
+> (§C7.4-bis). **Aponho — não reescrevo em silêncio** (§A2).
+
+**A frase retirada, na íntegra:** *"a duração subiu de **2 637–2 765 ms** (F1, máquina livre) para
+**3 902–4 797 ms** (F2), **+48 % a +78 %**"*.
+
+**O defeito:** o `+78 %` **não deriva de nenhum pareamento declarado**. Os dados publicados são F1
+`n=30 · mín 2637 · máx 2765 · média 2703,83` e F2 `n=10 · mín 3902 · máx 4797 · média 4375` — os
+mesmos das tabelas §F1/§F2 acima, não recalculados a partir de nada novo. Recomputei **todos** os
+pareamentos possíveis entre esses seis números (aritmética reconferida por esta instância,
+independente da C1):
+
+| Pareamento | Conta | Resultado |
+|---|---|---|
+| **mín ↔ mín** (homólogo) | 3902 ÷ 2637 | **+48,0 %** |
+| **máx ↔ máx** (homólogo) | 4797 ÷ 2765 | **+73,5 %** |
+| média ↔ média | 4375 ÷ 2703,83 | +61,8 % |
+| máx F2 ÷ mín F1 (envelope máximo) | 4797 ÷ 2637 | +81,9 % |
+| mín F2 ÷ máx F1 (envelope mínimo) | 3902 ÷ 2765 | +41,1 % |
+| máx F2 ÷ média F1 (o mais generoso defensável) | 4797 ÷ 2703,83 | +77,4 % |
+
+**Nenhum dá 78.** O `+48 %` do limite inferior **é exato** (mín↔mín, +47,97 % arredondado) — o
+defeito é **só** no limite superior, e a forma dele é aritmeticamente diagnosticável: o par que o
+`+48 %` inaugura é o **homólogo**, e o homólogo do topo é **+73,5 %**. Para `+78 %` fechar sob esse
+mesmo pareamento, o máximo da F2 teria de ter sido **4 922 ms** — e foi **4 797 ms** (r07, tabela
+§F2). A C1 chegou a esse mesmo 4 922 por caminho próprio; as duas contas batem.
+
+**A correção aplicada:** as **duas** ocorrências (a do corpo da F2 e a da coluna "Como ler" da
+tabela do §1 do Fecho) passam a dizer **`+48,0 % a +73,5 %`**, e ambas **declaram o pareamento**
+(mín↔mín e máx↔máx), que era exatamente o que faltava — o mandato admitia as duas saídas (corrigir
+o número **ou** declarar o pareamento) e esta errata faz **as duas**, porque um intervalo sem
+pareamento declarado é irreproduzível mesmo quando os extremos estão certos.
+
+**O que NÃO muda, e é o que a medição afirmava:** a **contenção foi real** e segue provada pela
+duração — sob a leitura mais conservadora possível (`mín F2 ÷ máx F1`) a F2 ainda é **+41,1 %** mais
+lenta que a F1, com **zero sobreposição** entre os dois intervalos (`[2637, 2765]` e `[3902, 4797]`
+são disjuntos, com folga de 1 137 ms). Nenhuma conclusão da medição 1 depende de o topo ser 73,5 ou
+78: as taxas publicadas (**F1 0/30 · F2 0/10 · F3 483/120 000**), a causa nomeada e a previsão
+20 000/20 000 ficam **intocadas**. Este é um defeito de **relato**, não de medição — e por isso a C1
+aprovou com gravidade `baixa`.
