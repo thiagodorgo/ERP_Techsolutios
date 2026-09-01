@@ -3808,6 +3808,46 @@ status acima passa a nomeá-lo: **o PR que mergear o `B-O6R-02`**, para quem a i
 **Critério de fechamento:** a linha `SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"`
 presente no `ci.yml`, com a suíte existente na `main` e o job `backend-postgres` verde sob o guard de zero
 pulos.
+
+### Apenso de 2026-08-31 (`SAN2-5`, bloqueio B3): a contradição entre DOIS mergeados, resolvida por escrito
+
+**A pendência continua ABERTA e o dono continua sendo o PR do ciclo 5** — o que este apenso resolve é uma
+contradição que tornava a pendência **inexecutável**: os dois documentos que mandavam no dev do ciclo 5
+diziam coisas opostas, e ele violaria um deles fizesse o que fizesse.
+
+**Ponta A — `.github/workflows/ci.yml` na main (`df496d2`), l.217-220**, escrito pelo **#363** (`d283903`,
+2026-08-30), o mesmo PR que criou o lugar reservado: *"Sua inclusão é **DoD do PR que mergear o B-O6R-02
+(ciclo 5 financeiro)**; a pendência `P-O6R-B02-SUITES-LIST-CI` segue ABERTA, **com esse PR como dono**"*.
+
+**Ponta B — `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md`**, de 2026-08-27/28, em **três**
+lugares: **§5 l.134** (`ci.yml` no PROIBIDO + *"Arquivo fora das listas → o dev PARA e devolve"*) · **§10.5
+l.234** (*"PROIBIDO; `P-O6R-B02-SUITES-LIST-CI` é do bloco seguinte"*) · **§12 l.256** (*"Manter abertas:
+… bloco seguinte, `ci.yml`"*).
+
+**Resolução (decidida no `SAN2-5-plano.md` §3-E3, executada por apenso ao plano do ciclo 5): VALE O
+`ci.yml`.** Razões: (1) é o documento **mergeado e mais recente**, escrito por quem **criou** o lugar
+reservado; (2) a justificativa original do PROIBIDO caducou por **inversão de risco** — ela foi escrita
+quando acrescentar a linha quebraria o job (o arquivo não existia na main), e o #363 inverteu isso: agora é
+**não** acrescentá-la que deixa a suíte de corrida entrar na main **fora** do subconjunto Postgres do CI,
+auto-pulando em silêncio no job `backend` — o exato verde-cego que o guard de zero pulos existe para matar;
+(3) o `pipefail` já contém o risco do `tee`.
+
+**O que passa a valer** (apenso B3 ao plano do ciclo 5, que **emenda** §5 l.134, §10.5 l.234 e §12 l.256):
+a única mudança permitida em `.github/workflows/ci.yml` no PR do ciclo 5 é **UMA linha** —
+`SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"`, no formato literal das vizinhas
+(l.**213-216** — as l.208-212 são comentário; errata pós-voto do PR #367, achado C2-A2), entre a l.216
+e o comentário do LUGAR RESERVADO — **no MESMO PR** que traz o arquivo de teste
+para a main; o comentário do lugar reservado é **atualizado, nunca apagado**; **nada mais** do `ci.yml`
+muda, e quem confere linha a linha é a cadeira **C3 `jurado-c5-validador-diff-plano`**. Para todo o resto do
+arquivo, o PROIBIDO e o *"PARA e devolve"* seguem **inteiros**.
+
+**Esta pendência FECHA no PR do ciclo 5** (sai de "Manter abertas" e entra em "Fechar com o PR", §12 do
+plano do c5 emendado). **Critério de fechamento — inalterado**, é o já escrito no apenso de 2026-08-30: a
+linha presente no `ci.yml`, com a suíte existente na `main` e o job `backend-postgres` verde sob o guard de
+zero pulos.
+
+**Registrado, não consolidado em silêncio (§A2).** O `SAN2-5` **não tocou** `.github/workflows/ci.yml`;
+resolveu por texto. Diário: `agent-orchestration/omega/juntas/votos/SAN2-5/dev-b3-b4-dividas.md`.
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
 junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
@@ -5123,3 +5163,84 @@ produtivo. Enquanto isso não existir, a frase "seguem intocadas" só pode ser p
 "**como executado**", nunca como garantia.
 
 - **status:** ABERTA · **severidade:** MÉDIA · **dono:** a junta de `P-ARNES-RLS-TEST-FORA-DO-SWEEP` (l.3473) — é ela que já detém a recontagem supervisionada das 68 e a decisão consciente sobre a família `rls_test`; separar as duas criaria dois donos para o mesmo dado. Atribuição feita conforme a disposição declarada pela própria cadeira C2 no voto, não inventada aqui.
+
+---
+
+## P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉDIA · `pre-existente` · o espelho Codex é **cego** a `.claude/agents/especialistas/**`, e por isso o `ec=0` do S0 **não prova nada** sobre os corpos de jurado
+
+**Origem: `SAN2-5`, bloqueio B2 (corpos das cadeiras do ciclo 5).** Registrada por quem **não** vai
+consertá-la e **sem** propor correção (§C7.4-bis, `D-JUNTA-SEPARACAO-DE-PAPEIS`): editar
+`scripts/sync-agent-agents.mjs` é `scripts/**`, **proibido** pelo §5 do plano deste bloco.
+
+**O que é, medido por leitura do arquivo, l.66:**
+
+```js
+const files = readdirSync(SRC).filter((f) => f.endsWith('.md')).sort();
+```
+
+`readdirSync` **plano, sem recursão**. O diretório `especialistas` não termina em `.md`, logo o filtro o
+descarta — e **todo o conteúdo de `.claude/agents/especialistas/**` é invisível ao espelho**. O script
+espelha, hoje, os **23** corpos-base de `.claude/agents/*.md` e mais nada.
+
+**Consequência dupla, e a segunda é a que importa:**
+
+1. **Benigna** — trazer os corpos de especialista para a linhagem **não quebra o S0**:
+   `node scripts/sync-agent-agents.mjs --check` continua `ec=0`, "23 agentes", porque não os enxerga.
+2. **Perigosa — conforto falso.** O `inspetor-de-terreno-da-junta` é **fail-closed** e tem a "fatia S0"
+   (`--check` consistente) entre as condições de LIBERADO (§C7.1-bis). Um inspetor que leia o `ec=0`
+   como prova de que os corpos de jurado estão íntegros **estará lendo um verde que não foi medido
+   sobre eles**. É a classe de defeito desta rodada: afirmação que sobrevive porque ninguém executou o
+   caminho que a derrubaria.
+
+**Divergência de convenção entre as duas trilhas, registrada e NÃO resolvida em silêncio (§A2).**
+Contado por `git ls-tree -r`: `demo/investidor` **TEM** `.agents/agents/especialistas/` com **17 de 41**
+arquivos — ou seja, aquela branch espelhou os especialistas por **algum mecanismo que a `main` não tem**
+(não pode ter sido este script). A `main` não espelha nenhum. As duas trilhas divergem na convenção do
+espelho de especialistas, e **nenhum lado foi escolhido aqui**.
+
+**Por que não se espelha à mão.** Reproduzir manualmente a transformação do script (limpeza de
+frontmatter + preâmbulo de emulação Codex) é reproduzir à mão **exatamente a classe de erro que o script
+existe para evitar** — e um espelho escrito à mão diverge do gerado no primeiro `--check` que alguém
+rodar em modo escrita.
+
+**Critério de fechamento (o que fecha, não como fazer):** (a) uma decisão **escrita** sobre se
+`.claude/agents/especialistas/**` **deve** ou **não deve** ser espelhado para o Codex — as duas
+respostas são legítimas, o que não é legítimo é a ausência; (b) se **deve**, o espelho passa a ser
+gerado pelo mesmo mecanismo dos 23 corpos-base, e `--check` fica **vermelho por mutação** quando um
+corpo de especialista muda sem o espelho acompanhar; (c) se **não deve**, o `--check` (ou o corpo do
+`inspetor-de-terreno-da-junta`) passa a **declarar por escrito o que ele NÃO cobre**, para que nenhum
+inspetor futuro leia o `ec=0` como cobertura que ele não tem; (d) e, em qualquer dos dois caminhos, a
+divergência de convenção com `demo/investidor` fica reconciliada por escrito.
+
+**Enquanto isto não fechar, a prova dos corpos de jurado é a TABELA DE HASHES** (`git hash-object`, que
+aplica a normalização de fim de linha) publicada no **APENSO DE COMPOSIÇÃO, §E1.8**, de
+`agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` — **nunca** o `ec=0` do S0. O apenso E1.6 já
+diz isso ao inspetor do ciclo 5, com todas as letras.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: o `readdirSync`
+  plano é o mecanismo original do script, anterior à existência de `.claude/agents/especialistas/`, que
+  nasceu nos ciclos de especialistas deste bloco; nenhum bloco desta rodada o alterou) · **dono:** a
+  atribuir — candidato natural é o próximo bloco autorizado a tocar `scripts/sync-agent-agents.mjs`.
+  **Não nomeio bloco que não combinei**, e não atribuo ao ciclo 5: `scripts/sync-agent-agents.mjs`
+  **não está na allowlist fechada** do dev do ciclo 5 — o §5 do plano dele (l.129-134) lista os arquivos
+  permitidos **um a um** e fecha com *“Arquivo fora das listas → o dev PARA e devolve”* —, e o ciclo 5 é a
+  **última tentativa** do `B-O6R-02` (`D-TETO-DOIS-CICLOS`); carregá-lo com matéria alheia é exatamente o
+  que consumiu o ciclo 4.
+
+**ERRATA (2026-09-01 — tratamento pós-voto do PR #367, achado `C3-A4` da cadeira C3; §A2, nada apagado;
+escrita por quem **não** achou o defeito, §C7.4-bis):** a linha de status acima dizia, até aqui, que *“o §5 do
+plano dele congela `scripts/**`”*. **É falso, e a medição é reproduzível:** `grep -n 'scripts/\*\*'` em
+`agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` sai **vazio** nas **783** linhas do arquivo — a
+string não existe lá. Mais: o §5 **l.131** lista `scripts/run-backend-tests.mjs` como arquivo **PERMITIDO** ao
+dev do ciclo 5, e o §5 **l.133** manda o S0 rodar `scripts/sync-agent-agents.mjs` **em modo escrita** + commit.
+O PROIBIDO da **l.134** congela `src/**` inteiro, os demais `tests/**`, o `ci.yml`, `prisma/schema.prisma`,
+migrations existentes, `CLAUDE.md`/`AGENTS.md`, `.env`, lockfiles, `infra/**`, frontend, mobile, RBAC e
+`mvp_*` — **`scripts/**` não está na lista**, e nenhum apenso o acrescentou.
+
+**Corrigi a JUSTIFICATIVA, não a CONCLUSÃO.** A atribuição fica onde estava (fora do ciclo 5, dono *a
+atribuir*) porque nunca dependeu daquela premissa: ela se sustenta pelo outro pé, que agora é o único
+escrito — o arquivo **não está na allowlist fechada** do dev do ciclo 5, e a regra do §5 é *“Arquivo fora
+das listas → o dev PARA e devolve”*, num ciclo que é a **única tentativa** restante (`D-TETO-DOIS-CICLOS`).
+A **outra** alegação de escopo desta mesma pendência — *editar o script é `scripts/**`, proibido pelo §5 do
+plano **deste** bloco* — foi re-conferida e **é verdadeira**: `SAN2-5-plano.md` **l.427** traz `scripts/**` no
+PROIBIDO, com o parêntese *“executar `kpi-freeze`/`sync`/`run-backend-tests` sim; EDITAR não”*. Essa fica.
