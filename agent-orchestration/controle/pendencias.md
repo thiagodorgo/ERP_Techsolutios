@@ -3835,7 +3835,8 @@ auto-pulando em silêncio no job `backend` — o exato verde-cego que o guard de
 **O que passa a valer** (apenso B3 ao plano do ciclo 5, que **emenda** §5 l.134, §10.5 l.234 e §12 l.256):
 a única mudança permitida em `.github/workflows/ci.yml` no PR do ciclo 5 é **UMA linha** —
 `SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"`, no formato literal das vizinhas
-(l.209-216), entre a l.216 e o comentário do LUGAR RESERVADO — **no MESMO PR** que traz o arquivo de teste
+(l.**213-216** — as l.208-212 são comentário; errata pós-voto do PR #367, achado C2-A2), entre a l.216
+e o comentário do LUGAR RESERVADO — **no MESMO PR** que traz o arquivo de teste
 para a main; o comentário do lugar reservado é **atualizado, nunca apagado**; **nada mais** do `ci.yml`
 muda, e quem confere linha a linha é a cadeira **C3 `jurado-c5-validador-diff-plano`**. Para todo o resto do
 arquivo, o PROIBIDO e o *"PARA e devolve"* seguem **inteiros**.
@@ -5220,6 +5221,26 @@ diz isso ao inspetor do ciclo 5, com todas as letras.
   plano é o mecanismo original do script, anterior à existência de `.claude/agents/especialistas/`, que
   nasceu nos ciclos de especialistas deste bloco; nenhum bloco desta rodada o alterou) · **dono:** a
   atribuir — candidato natural é o próximo bloco autorizado a tocar `scripts/sync-agent-agents.mjs`.
-  **Não nomeio bloco que não combinei**, e não atribuo ao ciclo 5: o §5 do plano dele congela
-  `scripts/**`, e o ciclo 5 é a **última tentativa** do `B-O6R-02` (`D-TETO-DOIS-CICLOS`) — carregá-lo
-  com matéria alheia é exatamente o que consumiu o ciclo 4.
+  **Não nomeio bloco que não combinei**, e não atribuo ao ciclo 5: `scripts/sync-agent-agents.mjs`
+  **não está na allowlist fechada** do dev do ciclo 5 — o §5 do plano dele (l.129-134) lista os arquivos
+  permitidos **um a um** e fecha com *“Arquivo fora das listas → o dev PARA e devolve”* —, e o ciclo 5 é a
+  **última tentativa** do `B-O6R-02` (`D-TETO-DOIS-CICLOS`); carregá-lo com matéria alheia é exatamente o
+  que consumiu o ciclo 4.
+
+**ERRATA (2026-09-01 — tratamento pós-voto do PR #367, achado `C3-A4` da cadeira C3; §A2, nada apagado;
+escrita por quem **não** achou o defeito, §C7.4-bis):** a linha de status acima dizia, até aqui, que *“o §5 do
+plano dele congela `scripts/**`”*. **É falso, e a medição é reproduzível:** `grep -n 'scripts/\*\*'` em
+`agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` sai **vazio** nas **783** linhas do arquivo — a
+string não existe lá. Mais: o §5 **l.131** lista `scripts/run-backend-tests.mjs` como arquivo **PERMITIDO** ao
+dev do ciclo 5, e o §5 **l.133** manda o S0 rodar `scripts/sync-agent-agents.mjs` **em modo escrita** + commit.
+O PROIBIDO da **l.134** congela `src/**` inteiro, os demais `tests/**`, o `ci.yml`, `prisma/schema.prisma`,
+migrations existentes, `CLAUDE.md`/`AGENTS.md`, `.env`, lockfiles, `infra/**`, frontend, mobile, RBAC e
+`mvp_*` — **`scripts/**` não está na lista**, e nenhum apenso o acrescentou.
+
+**Corrigi a JUSTIFICATIVA, não a CONCLUSÃO.** A atribuição fica onde estava (fora do ciclo 5, dono *a
+atribuir*) porque nunca dependeu daquela premissa: ela se sustenta pelo outro pé, que agora é o único
+escrito — o arquivo **não está na allowlist fechada** do dev do ciclo 5, e a regra do §5 é *“Arquivo fora
+das listas → o dev PARA e devolve”*, num ciclo que é a **única tentativa** restante (`D-TETO-DOIS-CICLOS`).
+A **outra** alegação de escopo desta mesma pendência — *editar o script é `scripts/**`, proibido pelo §5 do
+plano **deste** bloco* — foi re-conferida e **é verdadeira**: `SAN2-5-plano.md` **l.427** traz `scripts/**` no
+PROIBIDO, com o parêntese *“executar `kpi-freeze`/`sync`/`run-backend-tests` sim; EDITAR não”*. Essa fica.

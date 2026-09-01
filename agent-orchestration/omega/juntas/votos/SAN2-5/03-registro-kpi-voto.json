@@ -1,0 +1,117 @@
+{
+  "cadeira": "C3 — auditor-do-registro-e-do-kpi",
+  "bloco": "SAN2-5",
+  "pr": 367,
+  "head_julgado": "5256b491607154d61d2190d4029e13334daa1281",
+  "quorum": "maioria de 3",
+  "identidade": "NOVA",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": "C3-1",
+      "titulo": "Backfill do #366 esta certo (pr 366 / merge_commit df496d2 / approved_head 2d2d16d = head da ATA, nao headRefOid)",
+      "veredito": "OK",
+      "achados": [],
+      "medicao": "pr 366 / merge_commit df496d2 / approved_head 2d2d16d conferidos no JSON. merge_commit RE-MEDIDO (git rev-parse main origin/main = df496d2 nos dois; gh pr view 366 mergeCommit.oid = df496d22659...). PROVA do approved_head: ata J-SAN2-4b.md l.6 diz literalmente 'Head julgado: 2d2d16d'; git rev-list --count 2d2d16d..6b284f4 = 1 e git diff --name-only 2d2d16d 6b284f4 = 17 arquivos, TODOS em agent-orchestration/ (0 fora) — registro puro pos-voto, zero em Kpis/, src/, tests/, scripts/, prisma/, .github/. headRefOid do GitHub = 6b284f4e775d..., corretamente NAO gravado. Par (approved_head, conteudo) FECHA: git show 2d2d16d:Kpis/kpis-history.json = 149 entradas, ultima SAN2-4b, blocks 155, backend 2609/2611, pr/merge/ah null na autoria; kpis-latest.json ja em SAN2-4b.",
+      "porque_escrito": "EXPLICITO, nao implicito. A description carrega 'POR QUE: gravar o headRefOid declararia que a junta aprovou um commit que ela nunca viu', com ata, linha (l.6), quorum, CI (run 33435953434) e o delta nomeados; o release.backfill_note do kpis-latest.json repete o porque e aponta que o backfill vive na entrada SAN2-4b do history. Reincidencia do achado C3-A1 do SAN2-4a (backfill_note carregando o texto do backfill anterior) CONFERIDA e NAO ocorreu: o campo foi reescrito para o #366."
+    },
+    {
+      "id": "C3-2",
+      "titulo": "Entrada do SAN2-5 e honesta (150a, blocks_completed 156, trilhas CARREGADAS com nota C3.3, diff de codigo vazio, mvp_* intocados, nulls na autoria, summary declara o que NAO fechou, guard do freeze mordeu)",
+      "veredito": "OK_COM_ACHADOS",
+      "achados": [
+        {
+          "id": "A-1",
+          "gravidade": "MEDIA",
+          "escopo": "dentro-do-bloco",
+          "bloqueia": false,
+          "titulo": "A terceira 'PROVA MEDIDA' da entrada e FALSA no head julgado: 'o diff commitado inteiro contra a main e 1 arquivo' — sao 17.",
+          "evidencia": "git diff --name-only main...HEAD | wc -l = 17. git log --oneline main..HEAD = 2 commits: 44a30e4 (1 arquivo, o parecer do porteiro) e 5256b49 (16 arquivos). 1+16=17. A frase era verdadeira em 44a30e4 e deixou de ser em 5256b49, que E o head julgado; o numero nunca foi re-medido apos o commit final. Publicada nas DUAS superficies: description do kpis-history.json E release.summary do kpis-latest.json (release.summary.includes('1 arquivo') -> true).",
+          "evidencia_de_origem": "Texto autorado por ESTE PR no commit 5256b49 (2026-09-01); nao existe no main (df496d2). Por isso dentro-do-bloco.",
+          "por_que_nao_bloqueia": "Nao move contagem de teste, blocks_completed nem mvp_*. A conclusao que a frase serve ('o bloco nao toca codigo') esta provada de forma independente e VERDADEIRA pelas outras duas pontas da mesma frase, que reexecutei e sairam vazias. Defeito de RELATO, da classe 'numero sem origem no metodo' que o briefing §4 manda cacar."
+        },
+        {
+          "id": "A-3",
+          "gravidade": "BAIXA",
+          "escopo": "dentro-do-bloco",
+          "bloqueia": false,
+          "titulo": "Data citada como evidencia de origem nao sai do comando citado ao lado: 74430cc datado 2026-08-28, medido 2026-08-29.",
+          "evidencia": "git log -1 --format='%ad/%cd' --date=iso 74430cc = 2026-08-29 01:15:15 -0300 nas DUAS (author e committer); nenhuma das formas %ad/%cd/%as/%cs devolve 2026-08-28. Fonte real do 2026-08-28 rastreada: e o snapshot_date da entrada de KPI do #360 (version B-O6R-REG, pr 360, merge_commit 74430cc) — nao a saida do git log que o texto cita.",
+          "evidencia_de_origem": "Texto autorado por ESTE PR (commit 5256b49), no item (4) da secao 'O QUE ESTE BLOCO NAO FECHOU'.",
+          "por_que_nao_bloqueia": "O hash (74430cc) e o PR (#360) estao corretos e a substancia se sustenta — o espelho kpis-history.md esta parado desde antes deste bloco —, entao a classificacao pre-existente fica de pe. E defeito de transcricao, nao de verdade."
+        },
+        {
+          "id": "A-2",
+          "gravidade": "BAIXA",
+          "escopo": "dentro-do-bloco",
+          "bloqueia": false,
+          "tipo": "observacao",
+          "titulo": "As 68 roles orfas nao recontadas nao aparecem nesta entrada.",
+          "evidencia": "Busca nas duas superficies (description e release.summary): '68', 'recontad', 'orfa', 'rls_test' -> todos false.",
+          "evidencia_de_origem": "Ausencia no texto autorado por este PR (5256b49).",
+          "por_que_nao_bloqueia": "NAO classifico como omissao desonesta: a secao declara o que ESTE bloco nao fechou, e as 68 nunca estiveram no seu escopo (nao tocou arnes nem banco — nenhum comando na base viva). O numero esta declarado, com P-ARNES-RLS-TEST-FORA-DO-SWEEP ABERTA, na entrada IMEDIATAMENTE ANTERIOR (SAN2-4b) do mesmo arquivo; o registro nao fica mudo. Anotado para a junta sem gravidade."
+        }
+      ],
+      "medicao": "150a entrada CONFERIDA (h.length=150, indexOf('SAN2-5')+1=150). blocks_completed 156 correto (SAN2-4b=155 + condicao literal 'sobe para 156 SO QUANDO ESTE BLOCO MERGEAR', e #366 mergeou em df496d2) e a condicao do 157 ESTA escrita ('sobe para 157 SO QUANDO O SAN2-5 MERGEAR — na autoria fica em 156'). Trilhas CARREGADAS com nota §C3.3 explicita + 'sem reexecucao', identicas valor a valor a #366 (backend 2609/2611, smoke 1126/1126, flutter 864/864, contract 34/34). NAO TOCA CODIGO, provado nas DUAS pontas: git diff --name-only main...HEAD -- src/ tests/ prisma/ = VAZIO; ampliado para migrations/, frontend/, mobile/, .github/, scripts/ = VAZIO; git status --porcelain nos 8 caminhos = VAZIO. mvp_demo 99 e mvp_vendavel 88 byte-identicos entre HEAD e main (value/note/label/caveat). pr/merge_commit/approved_head null na autoria. GUARDS REEXECUTADOS: kpi-freeze.mjs --check ec=0 ('em dia, snapshot 2026-09-01'); node --check Kpis/app.js ec=0; node --test --import tsx tests/kpi-dashboard-charts.test.ts = 16 tests/16 pass/0 fail/0 skipped, ec=0. MORDIDA DO GUARD CONFIRMADA por drill em diretorio isolado (app.js@main + kpis-latest.json@HEAD): ec=1 ANTES do freeze, reinjecao 67106 bytes, ec=0 DEPOIS — bate com dev-b3-b4-dividas.md l.352-356. Prova extra: o app.js commitado no head e byte-identico ao gerado pelo script (cmp, 137152 bytes, 0 CR) — a copia congelada foi GERADA, nao digitada.",
+      "summary_declara_o_que_nao_fechou": "SIM, secao 'O QUE ESTE BLOCO NAO FECHOU' com 4 itens numerados e consequencia dita por extenso: (1) E2c/tests/junta-voto-escopo-guard.test.ts AUSENTE — 'um corpo novo pode nascer sem escopo e nada fica vermelho'; (2) absorcao da main NAO feita, 12c3825 nao-ancestral, atribuida ao S0 do ciclo 5, com B-O6R-02-ciclo5-terreno-pos-absorcao.md ausente e citado por 7 dos 8 corpos; (3) painel/indice como estavam (P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY, P-KPI-RECENT-CONGELADO, P-SAN2-2-INDICE-DONO-SEMPRE-SIM), conferido: recent.as_of 2026-08-28 com pr 359 no topo; (4) Kpis/kpis-history.md parado desde o #360. NAO e so narrativa de acerto."
+    },
+    {
+      "id": "C3-3",
+      "titulo": "Pendencias novas com severidade honesta (P-SYNC-AGENTS-NAO-RECURSIVO status/severidade/dono; nenhuma fechada por cabecalho em vez da linha de status)",
+      "veredito": "OK_COM_ACHADOS",
+      "achados": [
+        {
+          "id": "A-5",
+          "gravidade": "MEDIA",
+          "escopo": "dentro-do-bloco",
+          "bloqueia": false,
+          "titulo": "O bloco criou uma pendencia e deixou o pendencias-indice.md fora de sincronia: o indice subconta as ABERTAS (190 onde sao 191) e nao lista a pendencia nova.",
+          "evidencia": "Medido por EXECUCAO do gerador real (gerar-indice-pendencias.py) em copia isolada, com os blobs do head 5256b49: saida '241 cabecalhos / 232 IDs | ABERTA 191 | balde A 34' contra o indice COMMITADO que diz 240 / 231 / 190 / balde A 33; a linha P-SYNC-AGENTS-NAO-RECURSIVO entra no balde A. grep -c da ID no indice commitado = 0. A entrada de KPI tambem nao a nomeia (description.includes('P-SYNC-AGENTS') = false).",
+          "evidencia_de_origem": "CONTROLE executado na main (df496d2), mesma receita: gerador -> '240 / 231 / ABERTA 190 / balde A 33' e cmp contra o indice commitado do main = IDENTICO, ou seja na main o indice estava EM SINCRONIA. E git diff --quiet main...HEAD -- pendencias-indice.md sai 0 (o PR nao tocou o indice). Logo a dessincronia nasce em 5256b49, deste PR.",
+          "nota_de_metodo": "NAO e a armadilha do briefing par.5. Nao reportei por md5sum nem por git status nem por fim de linha: rodei o gerador de verdade sobre os blobs do head E do main e comparei o TEXTO; a diferenca sao CONTAGENS e uma linha nova, nao bytes de EOL. A afirmacao do briefing ('o indice nao muda ao regenerar') valia para a arvore ANTES do apenso da pendencia; neste head ela nao se confirma.",
+          "por_que_nao_bloqueia": "O proprio cabecalho do indice declara a hierarquia — 'Se este arquivo divergir do pendencias.md, vale o pendencias.md e o indice se regenera'. A pendencia esta integra, ABERTA e com severidade honesta no arquivo AUTORITATIVO, e a correcao e UM comando. Defeito de propagacao de registro, nao de verdade. Registro que o precedente da casa e regenerar: o SAN2-4b regenerou no mesmo PR em que criou pendencias."
+        },
+        {
+          "id": "A-4",
+          "gravidade": "BAIXA",
+          "escopo": "dentro-do-bloco",
+          "bloqueia": false,
+          "titulo": "A razao escrita para nao atribuir a pendencia ao ciclo 5 e falsa: 'o par.5 do plano dele congela scripts/**' nao sobrevive a leitura do plano.",
+          "evidencia": "grep da string 'scripts/**' em B-O6R-02-ciclo5-plano.md (783 linhas) sai VAZIO — a string nao aparece. O par.5 l.131 lista scripts/run-backend-tests.mjs como arquivo PERMITIDO ao dev do ciclo 5, e o par.5 l.133 manda o S0 rodar scripts/sync-agent-agents.mjs em MODO ESCRITA + commit. O PROIBIDO da l.134 congela src/** INTEIRO, 'qualquer outro tests/**', ci.yml, prisma/schema.prisma, migrations existentes, CLAUDE.md/AGENTS.md, .env, lockfiles, infra/**, frontend, mobile, RBAC, mvp_* — scripts/** NAO esta na lista. E o apenso deste PR nao emendou o par.5 para incluir scripts/**.",
+          "evidencia_de_origem": "Frase autorada por este PR (commit 5256b49); a pendencia inteira nasce aqui. Contraste medido: a OUTRA alegacao de escopo da mesma pendencia ('editar o script e scripts/**, proibido pelo par.5 do plano DESTE bloco') e VERDADEIRA — SAN2-5-plano.md l.423-426 tem scripts/** no PROIBIDO. So a alegacao sobre o plano do CICLO 5 e falsa.",
+          "por_que_nao_bloqueia": "A CONCLUSAO sobrevive por outro pe escrito na mesma frase: sync-agent-agents.mjs nao esta na allowlist fechada do dev do ciclo 5 ('Arquivo fora das listas -> o dev PARA e devolve') e o ciclo 5 e a tentativa unica sob D-TETO-DOIS-CICLOS. O resultado da atribuicao (dono 'a atribuir', fora do ciclo 5) e correto e conservador, e a premissa falsa NAO foi propagada para o plano do ciclo 5."
+        }
+      ],
+      "medicao": "P-SYNC-AGENTS-NAO-RECURSIVO: cabecalho (l.5168) e linha de status (l.5222) CONCORDAM — ABERTA / MEDIA / escopo pre-existente / dono 'a atribuir' com candidato nomeado (nao inventa dono). PRE-EXISTENTE PROVADO PELOS DOIS PES: (1) o readdirSync plano da l.66 nasce COM o script em 0fa2726 (2026-07-28, #304), enquanto .claude/agents/especialistas/ so aparece em 5a2de97 (2026-08-20) — 2026-07-28 < 2026-08-20; (2) scripts/** esta no PROIBIDO do proprio SAN2-5-plano.md l.423-426. NUMEROS INTERNOS CONFEREM UM A UM: 23 corpos-base em .claude/agents/*.md; 17 especialistas de 41 .md em .agents/agents/ de demo/investidor; 0 em main. NADA FOI FECHADO POR CABECALHO: o diff de pendencias.md e 100/0 — zero linhas removidas, nenhuma linha de status pre-existente alterada, este PR nao fecha pendencia nenhuma. Na unica pendencia que recebeu apenso (P-O6R-B02-SUITES-LIST-CI) cabecalho (3754), linha de status (3759, ABERTA) e apenso (3812, 'continua ABERTA') os tres concordam; o 'FECHA no PR do ciclo 5' e futuro declarado, nao fechamento aplicado."
+    }
+  ],
+  "justificativa": "APROVADO. Os tres itens da cadeira fecham no substantivo. (1) O BACKFILL DO #366 ESTA CERTO e o approved_head 2d2d16d e PROVADAMENTE o head da ata, nao o headRefOid: a ata J-SAN2-4b.md l.6 o consigna, e o delta 2d2d16d..6b284f4 e UM commit de registro puro com 17 arquivos, TODOS em agent-orchestration/ e ZERO em Kpis/, src/, tests/, scripts/, prisma/ ou .github/. O porque esta ESCRITO, nao implicito, nas duas superficies, e o par (approved_head, conteudo) FECHA — em 2d2d16d o history ja tem 149 entradas terminando em SAN2-4b com blocks 155. A reincidencia do achado C3-A1 do SAN2-4a (backfill_note obsoleta) foi conferida e NAO ocorreu. (2) A ENTRADA DO SAN2-5 E HONESTA no que decide: e a 150a, blocks_completed 156 com a condicao do 157 escrita, trilhas CARREGADAS com nota par.C3.3 e 'sem reexecucao', mvp_* byte-identicos ao main, nulls na autoria, e o 'nao toca codigo' PROVADO nas duas pontas (diff e git status vazios em src/, tests/, prisma/ e nos 5 caminhos ampliados). A secao 'O QUE ESTE BLOCO NAO FECHOU' e substantiva e conta contra o proprio bloco (E2c ausente com a consequencia por extenso, absorcao da main nao feita e atribuida ao S0 do ciclo 5 com o arquivo de terreno AUSENTE citado por 7 dos 8 corpos, painel/indice, espelho .md parado). Os tres guards foram REEXECUTADOS verdes (kpi-freeze --check ec=0; node --check ec=0; kpi-dashboard-charts 16/16 ec=0) e a MORDIDA DO GUARD foi CONFIRMADA por drill isolado: ec=1 antes do freeze, ec=0 depois, com a copia congelada byte-identica a gerada pelo script (cmp, 137152 bytes) — foi GERADA, nao digitada. (3) A PENDENCIA NOVA TEM SEVERIDADE HONESTA: ABERTA / MEDIA / pre-existente provado pelos DOIS pes (readdirSync de 2026-07-28 anterior aos especialistas de 2026-08-20; e scripts/** no PROIBIDO do proprio plano do bloco), dono 'a atribuir' sem inventar bloco, e os numeros internos (23, 17 de 41, 0 na main) conferem um a um. Nada foi fechado por cabecalho — o diff e append-only 100/0 e nada foi fechado. QUATRO ACHADOS, nenhum bloqueante, todos dentro-do-bloco e todos da mesma familia que o briefing par.4 mandou cacar (numero sem origem no metodo / conclusao alem da medicao), o que responde ao registro de que a junta do 4b nao achou nenhum: A-5 (MEDIA) o indice de pendencias ficou dessincronizado por este PR — provado por EXECUCAO do gerador no head e CONTROLE na main, nao por md5sum —, subcontando as ABERTAS em 1 e omitindo a pendencia recem-criada; A-1 (MEDIA) a terceira 'PROVA MEDIDA' da entrada diz que 'o diff commitado inteiro contra a main e 1 arquivo' quando no head julgado sao 17 (medicao de meio-de-autoria publicada como medida, nas DUAS superficies); A-4 (BAIXA) a razao 'o par.5 do ciclo 5 congela scripts/**' e falsa — a string nao existe nas 783 linhas do plano e run-backend-tests.mjs esta explicitamente PERMITIDO la; A-3 (BAIXA) a data 2026-08-28 atribuida a um git log que devolve 2026-08-29 em todas as formas (a fonte real e o snapshot_date do KPI do #360). NENHUM bloqueia porque nenhum move contagem de teste, blocks_completed, mvp_* ou a classificacao de escopo de qualquer pendencia, e em cada um a conclusao que o numero servia esta provada por outra medicao que reexecutei e passou. Os quatro sao de RELATO e PROPAGACAO. Recomendo tratamento pos-voto por agente que nao os achou (par.C7.4-bis) — eu nao proponho correcao.",
+  "achados_resumo": {
+    "total": 4,
+    "bloqueantes": 0,
+    "por_gravidade": {
+      "MEDIA": [
+        "A-1",
+        "A-5"
+      ],
+      "BAIXA": [
+        "A-3",
+        "A-4"
+      ]
+    },
+    "por_escopo": {
+      "dentro-do-bloco": [
+        "A-1",
+        "A-3",
+        "A-4",
+        "A-5"
+      ],
+      "pre-existente": []
+    },
+    "observacoes_sem_gravidade": [
+      "A-2"
+    ]
+  },
+  "nao_proponho_correcao": "par.C7.4-bis — quem acha nao conserta. Nenhum achado acima vem acompanhado de correcao proposta.",
+  "mutacao": "NENHUMA. Cadeira nao-mutante: os dois drills (freeze e indice) rodaram em diretorios isolados no scratchpad, removidos ao final. git status --porcelain em src/, tests/, prisma/, scripts/, Kpis/, .github/ e agent-orchestration/controle/ = 0 linhas. erp-postgres/erp-redis: NENHUM comando, nem de leitura."
+}

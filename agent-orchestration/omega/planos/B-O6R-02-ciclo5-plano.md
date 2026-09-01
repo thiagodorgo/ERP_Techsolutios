@@ -542,6 +542,70 @@ correção contra o contrato mergeado `d283903`; e o inspetor do ciclo 5 confere
 **Diário de execução, comando a comando (P1):**
 `agent-orchestration/omega/juntas/votos/SAN2-5/dev-b1-b2-junta-corpos.md`.
 
+## E1.10 — CLÁUSULA DE PRECEDÊNCIA e ERRATA DE CITAÇÃO (2026-09-01, apensado — §A2, append-only)
+
+> **Quem escreve:** o agente de **tratamento pós-voto** do `SAN2-5` (PR #367, APROVADO 3×0), que **não
+> votou e não achou** nenhum dos defeitos abaixo (§C7.4-bis — quem acha não conserta). Origem: achado
+> **C1-A2** (cadeira C1 — *auditor-da-composição-e-dos-corpos*) e achados **C2-A1 / C2-A2** (cadeira C2
+> — *provador-do-apenso-e-do-escopo*).
+>
+> **Append-only, como os anteriores:** nenhuma linha deste plano foi removida ou reescrita — nem as **341**
+> originais, nem as dos apensos E1, E3 e E4. As correções abaixo entram por **apenso**, que é a única forma
+> que o §A2 admite; o texto errado permanece legível, com a errata ao lado.
+
+### (a) A cláusula de precedência que faltava a ESTE apenso — achado C1-A2
+
+**Este APENSO DE COMPOSIÇÃO (E1) EMENDA o §13 (l.260), o §13.3 (l.266) e o §13.4 (l.267) deste plano.
+Onde divergirem, vence este apenso** — pela mesma razão que os apensos **E3** (l.547+) e **E4** (l.646+) já
+declaravam a sua: é o mais recente e é o que reconcilia o plano com a decisão do dono já escrita na
+**EMENDA DO ORQUESTRADOR** (l.314+, item 4: *“A junta deste bloco passa a ser de 3 unânimes (toca
+dinheiro), não 7”*).
+
+Em concreto, para que o `inspetor-de-terreno-da-junta` do ciclo 5 — que é **fail-closed** — não encontre
+dois números e pare:
+
+- o **“≥7 cadeiras”** do título do §13 e as **6 cadeiras votantes** do §13.3 estão **SUPERADOS**: valem as
+  **3 nomeadas em E1.1**, com quórum de **UNANIMIDADE DE 3** (§C7.1-ter(b): unanimidade de 3 quando o bloco
+  toca dinheiro);
+- o **piso de “não fecha com menos de 6 votos de mérito”** do §13.4 está **SUPERADO**: o piso é **3**, com
+  os suplentes 1-a-1 de **E1.7** (`D-JUNTA-RESILIENTE`);
+- as 3 cadeiras do §13.3 que não reaparecem em E1.1 são exatamente as **cortadas/fundida** de **E1.3** —
+  por isso **não têm corpo**: ausência deliberada e explicada, não lacuna.
+
+**Por que isto era ressalva e não defeito de mérito:** a substância já estava resolvida **acima** de E1 (a
+EMENDA, item 4) e repetida em E1.1, E1.3, E1.7 e nos 8 corpos (“unanimidade de 3”, medido 8/8 pela cadeira
+C1). O que faltava era a **forma** — a frase de precedência que E3 e E4 têm e E1 não tinha (**0**
+ocorrências de *vence* / *prevalece* / *substitui* em todo o apenso E1, medido pela cadeira C1). Agora tem,
+na mesma forma dos outros dois.
+
+### (b) Errata das duas citações de intervalo do apenso E3 — achados C2-A1 e C2-A2
+
+Re-medi os dois intervalos **eu mesmo**, no blob do arquivo **mergeado**
+(`git -c core.autocrlf=false show main:.github/workflows/ci.yml`, numeração real do arquivo, sem CR
+injetado — a armadilha do `git archive`/`tar` que o §C7.1-ter(c) probe). **Esta errata é OPERANTE: onde
+divergir do texto de E3.2(3) e E3.3(a), vale o intervalo daqui.**
+
+| Onde | O texto diz | **Vale** | O que a medição mostrou |
+|---|---|---|---|
+| **E3.2**, item 3 (l.662 neste head) | “o guard das linhas **223-230**” | **l.223-231** | l.223-225 são comentário; o passo `- name: Fail on skipped tests (green-blind guard)` está na **l.226** e o `run:` vai até a **l.231**. E é a **l.231** — `test "$skipped" -eq 0 \|\| { … exit 1; }` — **a asserção que faz o guard morder**. Citar *223-230* deixava de fora exatamente a linha que executa a decisão: a l.230 só trata o caso de **não conseguir ler** a contagem. |
+| **E3.3**, item (a) (l.678) — e a mesma citação em **E3.2**, item 3 (l.665) | “no formato literal das vizinhas **(l.209-216)**” | **l.213-216** | as **l.208-212 são comentário** (`# SAN2-2 (item 2 de P-O6R-B02-SUITES-LIST-CI) …`). As linhas no formato `SUITES="$SUITES …"` são **213-216** — e, antes do bloco, 197-204 e 207. |
+
+**Nenhuma das duas desloca a decisão do B3.** O guard existe, é do **#363** (`d283903`, 2026-08-30), o
+argumento do verde-cego se sustenta inteiro, e a linha exata que o dev do ciclo 5 deve escrever continua
+transcrita **verbatim** em E3.3(a) — ninguém é induzido a erro. São **citações imprecisas**, corrigidas
+para que o dev e a cadeira que confere linha a linha (`jurado-c5-validador-diff-plano`) leiam o intervalo
+certo, e para que ninguém conclua que a asserção decisiva do guard está fora do passo.
+
+> **Sobre os números de linha desta tabela.** As colunas *Onde* apontam para **seções** (E3.2 item 3,
+> E3.3 item (a)) porque a seção é âncora estável e a linha não é: **este apenso acrescentou 58 linhas
+> ACIMA do E3**, e as citações dos votos (l.598 / l.601 / l.613-614) valiam no head `5256b49`, antes
+> dele. Os números entre parênteses foram **re-medidos depois da inserção**, no head deste apenso. É a
+> mesma lição do achado **C3-A1**: número de árvore só vale **com o head em que foi medido**.
+
+**O espelho desta errata** está na entrada `P-O6R-B02-SUITES-LIST-CI` de
+`agent-orchestration/controle/pendencias.md` (l.3838), corrigida no mesmo tratamento pós-voto.
+**Diário deste tratamento:** `agent-orchestration/omega/juntas/votos/SAN2-5/pos-voto-log.md`.
+
 ---
 
 # APENSO DE DECISÃO B3 (2026-08-31, apensado — §A2, nunca reescrita) — bloco `SAN2-5`, entrega E3
