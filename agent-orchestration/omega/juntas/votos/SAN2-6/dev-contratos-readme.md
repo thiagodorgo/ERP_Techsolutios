@@ -753,3 +753,72 @@ textos-fonte das descrições e os dois arquivos de extração da prova de parid
 
 **Nada parou.** As duas divergências que eu mesmo medi (o caminho inexistente no §5; a localização do
 registro §A2) estão declaradas — nenhuma foi resolvida em silêncio, e nenhuma mudou uma norma.
+
+---
+
+## ERRATA (pós-voto, achado C1-A1 da junta `J-SAN2-6`)
+
+> **Quem escreve esta seção NÃO é o autor do diário acima.** Ela é apensa pela **orquestração do bloco**,
+> por determinação do §7 do plano `agent-orchestration/omega/planos/SAN2-6-correcoes-pos-voto.md`, e
+> executada pelo `dev-san2-6-correcoes` (identidade nova, §C7.4-bis — quem acha não conserta).
+> **Nada acima foi alterado.** Os números da tabela do §3.4 continuam como o dev os escreveu, porque o
+> diário é **registro histórico de quem executou**: reescrevê-lo apagaria a evidência do próprio erro.
+> A errata **anota**, não corrige.
+
+### O que a cadeira C1 mediu
+
+A cadeira **C1** (`01-insercao-paridade`) julgou o head `d90fbbb` contra a base `e6a6461` e aprovou os
+três itens do seu mandato (`C1-1_insercao_pura`, `C1-2_paridade_A2`, `C1-3_greps_de_feito` — todos
+**APROVADO**). O achado `C1-A1` é **gravidade `nota`**, escopo **`dentro-do-bloco`**, e **não bloqueia**.
+
+Três imprecisões, todas de **contabilidade do registro**:
+
+1. **A edição 9a está subdeclarada.** A linha 174 do §3.4 diz *"+5 linhas: seção nova **### Gates
+   fail-closed**"*. O hunk real é **`+6 -0`**: as 5 linhas de conteúdo **mais o separador em branco**.
+2. **A soma por edição não fecha com o numstat.** Somando as adições declaradas edição a edição
+   (`1:+1 · 2:+1 · 9b:+5 · 4:+1 · 7:+5 · 8:+5 · 3:+1 · 5:+0 · 6:+1 · 9a:+5`) dá **25**; o numstat real é
+   **26**. As **remoções batem exatamente** (14 declaradas, 14 reais).
+3. **Duas âncoras são off-by-one.** A edição 9a é declarada *"após a l.75"* e o hunk insere **após a
+   l.76** (l.75 é a linha do `guardiao-fail-closed`, l.76 é a linha em branco). A edição 8 é declarada
+   *"após a l.38"* e insere **após a l.39** (l.38 é o fim do passo 6, l.39 é a linha em branco).
+
+### O comando que a cadeira usou — e que a orquestração RE-EXECUTOU
+
+```
+git diff -U0 e6a6461 d90fbbb -- .agents/agents/README.md \
+  | awk '/^@@/{if(hh!=""){printf "%-22s +%d -%d\n", hh, aa, rr}; hh=$2" "$3; aa=0; rr=0; next} \
+         /^\+/{aa++} /^-/{rr++} END{printf "%-22s +%d -%d\n", hh, aa, rr}'
+git show e6a6461:.agents/agents/README.md | sed -n '74,78p'
+```
+
+Saída re-executada (não copiada do voto), 11 hunks:
+
+```
+-5,2  +5,2    +2 -2      -39,0 +46,5    +5 -0      -66   +72,0   +0 -1
+-12,0 +13,5   +5 -0      -43   +54      +1 -1      -68   +74     +1 -1
+-24   +29     +1 -1      -49   +59,0    +0 -1      -76,0 +83,6   +6 -0   <- a edicao 9a
+-33,4 +38,5   +5 -4      -56,3 +65,0    +0 -3
+```
+```
+$ git diff --numstat e6a6461 d90fbbb -- .agents/agents/README.md
+26	14	.agents/agents/README.md
+
+$ git show e6a6461:.agents/agents/README.md | sed -n '74,78p'
+ 74| | `inspetor-de-arnes-concorrente` | **VETO** | ...
+ 75| | `guardiao-fail-closed` | **VETO** | ...      <- a ancora declarada
+ 76| (linha em branco)                              <- onde o hunk realmente insere
+ 77| ### Segurança / banco / infra / custo
+```
+
+Confere com o que a C1 publicou, item por item.
+
+### A frase que fecha a errata
+
+**A contabilidade deste registro estava imprecisa; o conteúdo não estava errado.** Nenhuma linha
+pré-existente do README foi tocada em nenhum dos dois hunks: as edições 8 e 9a continuam sendo
+**inserção pura** (`-0` nas duas), o efeito semântico é **nulo**, e o próprio diário já declarava o
+numstat correto — **`.agents/agents/README.md 26 14`**, na linha 176, logo abaixo da tabela. O erro é a
+**decomposição por edição**, que soma 25 e devia somar 26, e duas âncoras que apontam para a linha de
+conteúdo em vez da linha em branco seguinte.
+
+*Apensa em 2026-09-02, sobre o head `e545e64`, pela orquestração do bloco SAN2-6.*

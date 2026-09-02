@@ -232,7 +232,7 @@ git status --porcelain
 ### 4.1 — Leitura obrigatória, na ordem
 
 1. `CLAUDE.md` **inteiro** — em especial **§C7** (autonomia por juntas), **§C7.1-ter** (escopo do
-   veredito e calibração por risco), **§C7.4** (protocolo de dificuldade + **o teto**, l.388-397),
+   veredito e calibração por risco), **§C7.4** (protocolo de dificuldade + **o teto**, l.380-405),
    **§C7.4-bis** (separação de papéis), **§C5** (limpeza), **§9** (baterias).
 2. `AGENTS.md` — o espelho, e **§C7.7 (l.464+)**, o protocolo de junta resiliente **P1–P6** inline.
 3. **O plano**: `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` — **com a precedência do

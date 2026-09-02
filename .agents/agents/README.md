@@ -5,7 +5,10 @@
 > dba votando**, com ciclos de reprovação adversariais. No Claude Code isso são 23 agentes isolados em
 > `.claude/agents/*.md`. Aqui estão os **mesmos 23 papéis** em formato portátil para o Codex —
 > **corpo verbatim** (as instruções e os poderes de VETO não sofrem drift), frontmatter portátil
-> (`name` + `description`), com um preâmbulo de orientação Codex no topo de cada arquivo.
+> (`name` + `description` + `model`, quando o papel o fixa), com um preâmbulo de orientação Codex no topo
+> de cada arquivo. O `model:` é **preservado por contrato** pelo sync (`D-PLANEJADOR-MODELO-FABLE`): só o
+> `tools:` é removido, por ser mecanismo do Claude Code — apagar o `model:` faria o espelho Codex perder a
+> regra **em silêncio**, e o `planejador-mestre` em Fable é obrigatório na revalidação de código corrigido.
 >
 > Mantidos em dia por `scripts/sync-agent-agents.mjs` (cópia + `--check`, sem symlink). Alterou um
 > agente em `.claude/agents/`, rode o script para espelhar (e vice-versa). Fonte canônica de conduta:
