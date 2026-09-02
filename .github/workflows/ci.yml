@@ -60,6 +60,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # SAN2-2 §3.1(c) — O GUARD DO ESPELHO GANHA GUARDA. `.agents/agents/` é o espelho Codex de
+      # `.claude/agents/` (D-INTEROP-CLAUDE-CODEX: "alterou um, altera o outro no mesmo PR"), mas
+      # NENHUM job executava o `--check`: drift do espelho chegava à main sem ninguém ver. Roda logo
+      # após a instalação e ANTES dos testes porque custa <1s e falha rápido. O runner é Linux, sem
+      # autocrlf — o falso-vermelho de checkout no Windows não existe aqui, e a comparação passou a
+      # ser eol-neutra de toda forma. SEM continue-on-error, SEM `|| true`: divergência REPROVA o PR.
+      - name: Agents mirror guard (sync-agent-agents --check)
+        run: node scripts/sync-agent-agents.mjs --check
+
       - name: Generate Prisma Client
         run: npm run db:generate
 
@@ -196,6 +205,15 @@ jobs:
           # §8 do plano: rls-tenant-isolation entra na lista (estava ausente — rodava só no job backend,
           # onde se declara pulada sem DATABASE_URL; aqui o guard de zero pulos a pune se pular).
           SUITES="$SUITES tests/rls-tenant-isolation.test.ts"
+          # SAN2-2 (item 2 de P-O6R-B02-SUITES-LIST-CI) — 4 suítes -db que EXISTEM na main e estavam fora da
+          # lista curada: rodavam só no job "backend", onde auto-pulam em silêncio se o env quebrar (única
+          # condição de skip delas) e o job fica verde. Cada uma foi medida ANTES de entrar: 3 execuções em
+          # Postgres descartável, nas condições exatas deste job — 0 falha e 0 pulo nas 3, denominador
+          # constante (3 + 5 + 6 + 8 = 22 casos). Agora sob o guard de zero pulos do passo seguinte.
+          SUITES="$SUITES tests/impound-custody-history-db.test.ts"
+          SUITES="$SUITES tests/vehicle-identity-merge-db.test.ts"
+          SUITES="$SUITES tests/work-order-checklists-freeze-links-db.test.ts"
+          SUITES="$SUITES tests/work-order-checklists-sticky-db.test.ts"
           # B-O6R-02 (Ω6R-DIN-008 / QUA-003) — close × writer com barreira sob Postgres real: o writer
           # bloqueia na trava SHARED de período e re-valida DENTRO da tx que grava (G10), e o close
           # espera writer em voo e o snapshot o inclui (G11). A suíte fixa CORE_SAAS_PERSISTENCE=prisma
@@ -219,6 +237,8 @@ jobs:
           # bloqueado satisfazia a espera. Agora a barreira é escopada por application_name, e esta
           # suíte prova as duas metades — bloqueio próprio satisfaz; decoy alheio real NÃO satisfaz.
           SUITES="$SUITES tests/pg-barrier-scoped-db.test.ts"
+          # Fecha o LUGAR RESERVADO da main e P-O6R-B02-SUITES-LIST-CI, cujo dono é este PR.
+          SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

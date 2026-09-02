@@ -147,7 +147,7 @@ Para **ler a lógica**: abra o `.dc.html` como texto. Cada tela é um bloco
   especializadas (multi-tenant, RBAC, frontend, Flutter, UI/UX, auditoria de código) devem ser
   usadas em vez de improvisar (§A6). Manter os dois diretórios idênticos via
   `scripts/sync-agent-skills.mjs`.
-- **Subagentes / papéis de junta:** os **24 papéis** que o Claude Code roda como subagentes isolados
+- **Subagentes / papéis de junta:** os **23 papéis** que o Claude Code roda como subagentes isolados
   (`.claude/agents/*.md`) estão espelhados para o Codex em **`.agents/agents/*.md`** — **corpo verbatim**
   (as instruções e os poderes de **VETO** não sofrem drift), com um preâmbulo de orientação Codex no topo.
   O índice e o **protocolo de emulação da junta** estão em **`.agents/agents/README.md`**: se o seu Codex
@@ -357,14 +357,79 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    críticas (deploy de PRODUÇÃO, dependência nova, contratação/config de serviço externo, **chamada a serviço
    externo tarifado/pago**). Votos+justificativa
    em `agent-orchestration/omega/juntas/J-<n>-<tema>.md`. **Junta sem registro = merge inválido.**
+
+   **1-ter. ESCOPO DO VEREDITO E CALIBRAÇÃO POR RISCO (decisão do dono, 2026-08-28,
+   `D-JUNTA-ESCOPO-E-CALIBRACAO`).** Dois ajustes, medidos em `agent-orchestration/omega/auditoria-juntas-2026-08-28.md`
+   (≈155 juntas, ≈66 ciclos, 34 defeitos reais de produto pegos — e 3 blocos consumindo 24% dos ciclos,
+   com o bloqueante final sendo **processo/medição em 11 dos 16**):
+
+   **(a) Todo voto declara `escopo`, além de `gravidade`.** `dentro-do-bloco` → `bloqueia` reprova, como
+   sempre. `pre-existente` (a classe do achado antecede o bloco e/ou está fora do escopo permitido dele)
+   → **não reprova**: vira **pendência nomeada com bloco dono**, e o número afetado é publicado com **N,
+   forma e causa**. O jurado declara o escopo **com evidência de data ou origem**; a ata registra; o
+   `inspetor-de-terreno-da-junta` confere na passada seguinte. **Escopo declarado sem evidência é tratado
+   como `dentro-do-bloco`.** O veto continua inteiro para o que o bloco mexeu. Por quê: no ciclo 4 do
+   `B-O6R-02` o bloco foi reprovado por um defeito de arnês que ele **não criou** (`audit-security.test.ts`
+   é de 08/06; o fixture nasceu no bloco anterior em 19/08; a branch começou em 20/08) e que o §5 do
+   próprio plano **proibia** o bloco de consertar.
+
+   **(b) Quórum por risco, agora escrito.** **Unanimidade de 3** quando o bloco toca **dinheiro,
+   segurança, permissão ou perda de dado**; **maioria de 3** no resto; **unanimidade de 5** permanece só
+   para as decisões críticas do item 1 (produção, dependência nova, serviço externo pago). O
+   `critico-adversarial` ataca o plano **apenas** nos blocos de invariante. Por quê: "invariante financeiro
+   = 5/5" era regra **não escrita** — vivia só nos corpos dos jurados e nas atas — e reprovou quatro ciclos;
+   e a resposta do protocolo à reprovação é escalar, o que **reduz** a chance de unanimidade a cada ciclo
+   (16 identidades inelegíveis e 14 especialistas criados só nesse bloco).
+
+   **(c) Duas lições de terreno viram regra.** **Junction/symlink de `node_modules` entre worktrees é
+   PROIBIDA** (em 26/08 a remoção de um worktree apagou o `node_modules` do worktree do dev por dentro de
+   uma junction e mutilou o da árvore principal): cada worktree roda `npm ci` próprio, remoção só por
+   `git worktree remove --force`. E **não se mede o conteúdo de um commit com `git archive` + `tar` sob
+   `core.autocrlf=true`** — injeta CR e fabrica divergência (foi assim que "o espelho Codex diverge no
+   head" virou pendência ALTA e foi fechada por não-reprodução no mesmo dia); use
+   `git -c core.autocrlf=false checkout <head> -- <caminhos>` ou `git show` do blob.
+
+
+   **1-bis. INSPEÇÃO DE TERRENO ANTES DE TODA JUNTA — fail-closed (decisão do dono, 2026-08-24,
+   `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`
+   (Fable por contrato). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
+   viva; **worktree próprio para cada jurado que muta** e **cluster Postgres descartável por jurado** (a base
+   viva não é alvo de ninguém); insumos do briefing presentes (parecer do crítico + PD nos ciclos ≥3);
+   afirmações da ata anterior marcadas "a re-verificar" e não herdadas como fato; inelegibilidade dos papéis
+   conferida por nome; **fatia S0 executada** (espelho Codex consistente por `sync-agent-agents.mjs --check`);
+   baseline honesto medido; e plano de perda de jurado declarado. **Sem o `LIBERADO` dele a junta não
+   começa.** Por quê: três ciclos julgaram bem e falharam sempre no terreno — a contaminação entre jurados
+   "encerrada" num ciclo voltou no seguinte, a fatia S0 faltou dois ciclos seguidos, e uma premissa falsa da
+   ata anterior foi herdada como fato. O inspetor é para a junta o que o cluster descartável é para o jurado
+   de banco: a condição de o voto significar algo.
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → subagente pesquisador web (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
-4. **Protocolo de dificuldade — CRIAR AGENTES ANTES DE PARAR.** Reprovação/bloqueio técnico **não gera parada
-   direta**. Ciclos (registro em `omega/reprovacoes/R-<entrega>-<ciclo>.md`): **ciclos 1–2 = a fábrica de
-   agentes CRIA 1–2 especialistas sob medida** para o problema (entram na junta seguinte e votam); ciclo 3 =
-   crítico reabre a premissa + pesquisa ≥5 fontes (teto 6 agentes); ciclos 4–5 = junta ampliada replaneja a
-   fatia. **Parada + dossiê ao humano SOMENTE** após o ciclo 5 falho, **ou** nas paradas imediatas irredutíveis.
+4. **Protocolo de dificuldade — TETO DE DOIS CICLOS (decisão do dono, 2026-08-29, `D-TETO-DOIS-CICLOS`).**
+   **REVOGA o teto de 5 ciclos** que esta seção trazia (ciclos 1–2 fábrica · ciclo 3 crítico reabre premissa ·
+   ciclos 4–5 junta ampliada · parada só após o 5). O teto agora é **2**:
+   - **Ciclo 1** — entrega, junta, veredito.
+   - **Ciclo 2** — se reprovado: corrige (com §C7.4-bis intacto — **quem achou não conserta**) e volta à junta
+     com **identidade nova** na cadeira que reprovou.
+   - **Reprovou no ciclo 2 → PARA. Não há ciclo 3.** **Dossiê ao dono**, com o que foi entregue, o que cada
+     junta achou, o que foi corrigido, **por que a correção não bastou** e as opções com custo.
+   - A `agente-fabrica` **continua** criando especialistas — mas **dentro dos dois ciclos**, nunca como forma
+     de adiar a parada.
+   - Registro dos ciclos segue em `omega/reprovacoes/R-<entrega>-<ciclo>.md`. As **paradas imediatas
+     irredutíveis** (§C7.5) são independentes deste teto.
+   - **Blocos em voo sob o teto antigo — aplicação, transcrita de `D-TETO-DOIS-CICLOS`
+     (`agent-orchestration/controle/decisoes.md`):** blocos **novos** nascem sob o teto de 2; e
+     "**`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
+     última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto."
+     **Não há ciclo 6.** Após reprovação no teto, o único caminho é o dossiê ao dono.
+
+   **Por quê, medido:** o `B-O6R-01` levou 3 ciclos; o `B-O6R-02` chegou ao **ciclo 5** com **16 identidades de
+   jurado queimadas**, e a auditoria de 28/08 mediu **3 blocos consumindo 24% de todos os ciclos**. A resposta
+   do protocolo à reprovação era **escalar** (mais agentes, quórum maior), o que **reduz** a chance de
+   aprovação a cada rodada em vez de aumentar. E o `SAN2-1` mostrou a forma barata do mesmo mal: o ciclo 2
+   corrigiu seis achados e **reintroduziu um defeito ao corrigir outro**. Ciclo que conserta e reintroduz é
+   sinal de que a premissa precisa de **gente**, não de mais uma rodada. O dono passa a ser chamado quando a
+   informação vale mais — com **dois** conjuntos de achados na mesa, não cinco.
 
 4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
    `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
@@ -395,6 +460,59 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    modelo da sessão**; quem invoca não precisa lembrar. Chamada de `Agent`/`Workflow` que passe `model`
    diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
    vira nota no registro da junta.
+
+7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`) — P1–P6, inline.**
+   Toda junta, inspeção de terreno e porteiro seguem as seis normas abaixo. Origem medida: **14 quedas de
+   agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
+   `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
+   `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md` (a fonte; em divergência, ela vale).
+   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** — quóruns, vetos, identidade nova,
+   separação de papéis (§C7.4-bis) e o teto de dois ciclos ficam intactos.
+
+   - **P1 — Evidência incremental.** Após **CADA item medido**, apensar a
+     `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` três linhas: **comando
+     executado → saída resumida → veredito parcial do item**. Nunca só no fim. *Caso:* trabalho ~90%
+     feito virou 100% perdido — um inspetor morreu na limpeza com a inspeção pronta; com o arquivo, a
+     morte custa só a cauda não medida.
+   - **P2 — Voto-arquivo-primeiro.** O voto (`<cadeira>-voto.json`, mesmo diretório) é escrito **ANTES**
+     da mensagem final; a mensagem final é **1 linha** apontando o arquivo. Vale para pareceres de
+     inspetor e porteiro (`.md`). *Caso:* três jurados morreram streamando o voto — sob P2, essas mortes
+     teriam custado zero. **Emenda voto-esqueleto (J-SAN2-2; medida: 5 quedas no MESMO ponto, a
+     transição medir→gravar):** o artefato de saída **nasce como esqueleto** com os itens `EM APURAÇÃO`
+     e cada item é gravado **ao ser medido**; item grande também se fatia (item de 6 sub-chaves: a queda
+     custou 1/6, não 6/6) — **a granularidade do registro acompanha a da medição**: onde medir tem N
+     passos, gravar tem N passos.
+   - **P3 — Perda de jurado (emenda à R2).** Voto perdido não conta; o sucessor tem identidade nova — e:
+     *"**Nada conta sem re-execução própria** — mas evidência **registrada em arquivo** pelo caído (P1) é
+     **roteiro de re-execução barata**: o sucessor re-roda cada comando registrado e compara a saída, e
+     só então mede a cauda que faltou. **Conclusão sem comando registrado continua sendo não-insumo**,
+     inclusive parcial favorável."* *Caso:* a R2 nasceu da contaminação por afirmação herdada (ciclo 4 do
+     financeiro) — isso fica; re-rodar comando escrito custa segundos e É verificação própria.
+   - **P4 — Mandato ≤3 itens · medir ≠ julgar.** Cadeira com mais de 3 itens vira **duas cadeiras**;
+     medição pesada separa **medir** (uma fatia; só números, com N e forma) de **julgar** (outra fatia) —
+     o padrão 4a/4b; logs e saídas longas só no arquivo de evidência, nunca na mensagem final. *Caso
+     (lição corrigida):* mandato longo não mata — 4 agentes morreram na mensagem 1; morte ≈ exposição ×
+     taxa da janela. Mandato curto reduz exposição E custo da perda.
+   - **P5 — Disparo escalonado.** Máximo **2 jurados em paralelo**; o terceiro só quando um concluir.
+     **2 quedas em <30 min → pausa de ~15 min** antes de qualquer redisparo, registrada no arquivo de
+     quedas. *Caso:* as quedas agrupam no tempo; redisparar dentro da janela ruim multiplicou as perdas.
+   - **P6 — Registro padronizado de quedas.** Toda queda = 1 linha em `votos/<JUNTA>/00-quedas.md`,
+     colunas fixas: `agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do
+     redo`. *Caso:* a hipótese "pinar modelo reduz queda" (1/5 × ~13/23 no postmortem) tem n pequeno
+     demais — só a série decide; sem ela, cada sessão redescobre o problema.
+
+   **Modelo de mandato (colar no disparo de cada cadeira — verbatim da fonte):**
+   ```
+   Após CADA item: apense a <cadeira>-evidencia.md → comando · saída resumida · veredito parcial.  [P1]
+   Antes da mensagem final: escreva <cadeira>-voto.json. Mensagem final = 1 linha apontando o arquivo.  [P2]
+   Máximo 3 itens; logs longos só no arquivo de evidência.  [P4]
+   Se você substituir um caído: re-execute cada comando do <cadeira>-evidencia.md dele e compare, depois
+   meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
+   ```
+   **Do orquestrador (não do agente):** dispara ≤2 em paralelo e aplica a pausa de janela instável (P5);
+   commita evidência e voto após cada conclusão (agente não commita); preenche `00-quedas.md` no momento
+   da perda (P6); na ata, consigna quedas, custo real de redo e o que o suplente re-executou vs mediu de
+   novo.
 
 ---
 
@@ -511,7 +629,7 @@ divergência entre os dois contratos, **prevalece o `CLAUDE.md`**.
 | **Descoberta de skills** | `.claude/skills/` | `.agents/skills/` (mesmo conteúdo `SKILL.md`) |
 | **Invocação de skill** | `/nome-da-skill` (slash) ou ativação automática | `$nome-da-skill` ou ativação automática pela descrição |
 | **Sincronização de skills** | — | `scripts/sync-agent-skills.mjs` mantém os dois diretórios idênticos |
-| **Subagentes / papéis de junta** | 24 agentes em `.claude/agents/*.md` (subagentes isolados) | **24 papéis espelhados em `.agents/agents/*.md`** (corpo verbatim + preâmbulo Codex); protocolo de emulação em `.agents/agents/README.md` — invocar como subagente OU emular a junta (§C7) |
+| **Subagentes / papéis de junta** | 23 agentes em `.claude/agents/*.md` (subagentes isolados) | **23 papéis espelhados em `.agents/agents/*.md`** (corpo verbatim + preâmbulo Codex); protocolo de emulação em `.agents/agents/README.md` — invocar como subagente OU emular a junta (§C7) |
 | **Sincronização de agentes** | — | `scripts/sync-agent-agents.mjs` mantém `.claude/agents/` ↔ `.agents/agents/` |
 | **Comandos de bloco** | `agent-orchestration/codex/comandos/` (formato `comando-template.md`) — pode isolar em `agent-orchestration/claude/` | `agent-orchestration/codex/comandos/` (mesmo formato) |
 | **Companheiros (valem p/ ambos)** | `EXECUTION_MODEL.md` · `comando-template.md` · `API_CONTRACTS.md` · `BUILD_ORDER.md` · `PROJECT_MEMORY.md` | idênticos |

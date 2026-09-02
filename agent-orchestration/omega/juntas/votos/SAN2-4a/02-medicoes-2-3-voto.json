@@ -1,0 +1,111 @@
+{
+  "cadeira": "C2 — auditor-das-medicoes-2-e-3",
+  "bloco": "SAN2-4a",
+  "pr": 365,
+  "head_julgado": "4199b92",
+  "identidade": "NOVA",
+  "quorum": "maioria de 3",
+  "veredito": "APROVADO",
+  "itens": [
+    {
+      "id": "C2-1",
+      "titulo": "As duas listas fecham 37 por execucao propria; o par (arquivos,testes) discrimina; a sentenca de impossibilidade e falsa por contraexemplo",
+      "status": "CONFIRMADO COM ACHADO",
+      "sub": {
+        "C2-1a_lista_A_7_termos_fecha_37": "CONFIRMADO — (7,37) em 3/3 rodadas minhas",
+        "C2-1b_lista_B_6_termos_fecha_37": "CONFIRMADO — (6,37) em 3/3 rodadas minhas",
+        "C2-1c_identidade_link_events_5_mais_role_real_10_igual_links_15": "CONFIRMADO — 8 denominadores medidos N=2 cada, 16/16 ec=0, denominador constante; 5+10==15 exato; soma por arquivo == denominador da lista inteira nas duas listas (o runner nao altera a contagem ao agregar)",
+        "C2-1d_execucao_propria_das_duas_listas_cluster_descartavel": "CONFIRMADO — cluster descartavel proprio c2san24a-pg :56532 / c2san24a-redis :56579, 103 migrations aplicadas, 115 tabelas, Node v20.19.5, head 4199b92, rodadas sequenciais",
+        "C2-1e_par_arquivos_testes_discrimina_onde_denominador_nao": "ACHADO — verdadeiro em parte, FALSO como enunciado: TRES listas de 6 arquivos distintas produzem (6,37), e as tres foram EXECUTADAS por mim. O par melhora sobre o total, mas NAO identifica a lista.",
+        "C2-1f_sentenca_nenhuma_combinacao_de_6_fecha_37_e_falsa_por_contraexemplo": "CONFIRMADO — minha enumeracao devolve 2 combinacoes (mesma cardinalidade do bloco); uma delas E a lista-6, executada 3/3 em (6,37)"
+      },
+      "achados": [
+        {
+          "id": "C2-A1",
+          "titulo": "E-2 afirma suficiencia FALSA: publicar o par (arquivos,testes) NAO torna a bateria reproduzivel por terceiro",
+          "gravidade": "atencao",
+          "escopo": "dentro-do-bloco",
+          "evidencia_de_data_ou_origem": "git log do arquivo -> commit 1949c6a (2026-08-31), desta branch; merge-base com main = c9fd3a1 (2026-08-31). O texto nasceu NESTE bloco. Formulacao propagada ao BRIEFING-SAN2-4a.md l.17.",
+          "onde": "agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-2-bateria-barata.md l.409-411 (errata E-2)",
+          "prova": "enum.mjs sobre os denominadores que EU medi: 3 listas de 6 arquivos distintas produzem (6,37); 8 listas de qualquer tamanho somam 37. As 3 de tamanho 6 foram EXECUTADAS (lista6 3/3, lista6alt 3/3, lista6alt2 2/2) e as 3 imprimem exatamente \"6 arquivo(s) - 37 teste(s)\".",
+          "contraexemplo_estava_no_proprio_bloco": "sim — o R.5 enumerou a segunda combinacao de 6 que fecha 37 e a rotulou [outra]; o laco com o E-2, tres paragrafos adiante, nao foi fechado.",
+          "atenuante": "o V.3 do mesmo diario NOMEIA os 6 arquivos na receita e diz \"nao intercambiavel\" — a receita recomendada esta correta e completa; errado e o ALCANCE do E-2.",
+          "consequencia": "O-2 manda apensar o E-2 ao criterio do D29 do ciclo 5; como esta, o D29 ganharia um criterio que ainda nao pina a forma.",
+          "nao_proponho_correcao": true
+        }
+      ]
+    },
+    {
+      "id": "C2-2",
+      "titulo": "A exclusao do varredor e DUPLA — no codigo",
+      "status": "CONFIRMADO COM ACHADO",
+      "sub": {
+        "C2-2a_SWEPT_ROLE_FAMILIES_nao_contem_rls_test_": "CONFIRMADO — l.105-111 = [o6r_b01, o6r_clone_owner, audit_rls, vid_rls_test, vid_link_rls]; rls_test_ ausente. LIKE (l.139) + regex ANCORADO ^(?:...)_(d+)...$ (l.119-121): nenhuma alternativa e prefixo de rls_test. Exclusao documentada como consciente na l.94 (P-ARNES-RLS-TEST-FORA-DO-SWEEP).",
+        "C2-2b_sweepOrphanEphemeralRoles_tem_chamador_unico_createEphemeralRole": "CONFIRMADO — grep do bloco reproduzido (2 linhas: def l.138, chamada l.310) e ampliado por ripgrep ao worktree inteiro: as mesmas 2 linhas de codigo. A l.310 esta dentro de createEphemeralRole, que abre na l.299.",
+        "C2-2c_criador_em_rls-tenant-isolation.test.ts_25_nunca_invoca_o_varredor": "CONFIRMADO — l.6 importa APENAS withRoleCatalogLock; nao importa createEphemeralRole. l.25 monta rls_test_${Date.now()}_...; l.31-42 faz CREATE ROLE + grants inline dentro do lock.",
+        "C2-2d_fechar_uma_porta_nao_resolve": "CONFIRMADO — as duas exclusoes sao independentes: registrar a familia nao faz o arquivo varrer (nao chama o varredor) e faze-lo chamar sem registrar a familia nao alcanca (LIKE + regex ancorado rejeitam)."
+      },
+      "achados": [
+        {
+          "id": "C2-A2",
+          "titulo": "Enumeracao dos gatilhos do sweep publicada como 4 suites; sao 5",
+          "gravidade": "atencao",
+          "escopo": "dentro-do-bloco",
+          "evidencia_de_data_ou_origem": "Sentenca em medicao-3-censo-roles.md l.179-182, commit 593cd99 (2026-08-31), desta branch. O arquivo omitido tests/db-catalog-write-guard.test.ts tem ultimo commit f081b5d (2026-08-28, #359) — JA existia quando a medicao foi escrita, logo era alcancavel pelo mesmo grep.",
+          "onde": "agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-3-censo-roles.md l.179-182 (a frase entregue ao 4b como O-1)",
+          "prova": "grep -rn \"await createEphemeralRole(\" tests/ src/ scripts/ | cut -d: -f1 | sort -u -> 5 arquivos. O quinto, tests/db-catalog-write-guard.test.ts, chama em l.383, l.471 e l.511; a l.470 diz literalmente \"O sweep roda dentro de createEphemeralRole — e assim que ele roda na suite de verdade\".",
+          "nao_move_a_conclusao": "a exclusao dupla e real e a consequencia qualitativa (rodar o arquivo sozinho nao varre nada) continua verdadeira",
+          "por_que_importa": "N errado numa enumeracao publicada como completa, dentro da frase entregue ao 4b como O-1: quem fechar a exclusao a partir dela planeja contra 4 gatilhos havendo 5 — e o que falta e o guard que existe para exercitar o sweep.",
+          "nao_proponho_correcao": true
+        }
+      ]
+    },
+    {
+      "id": "C2-3",
+      "titulo": "A assinatura liga o mecanismo as 68 sem conta-las",
+      "status": "CONFIRMADO",
+      "sub": {
+        "C2-3a_460_privilegios_igual_115_tabelas_x_4_medido": "CONFIRMADO POR EXECUCAO MINHA — role criada no meu cluster com os grants literais de rls-tenant-isolation.test.ts l.31-42: privilegios_de_tabela=460, tabelas_distintas=115, SELECT/INSERT/UPDATE/DELETE = 115 cada, LOGIN=true, rolvaliduntil NULL, USAGE em public=true. O 115 conferido independentemente em pg_class (relkind de tabela, schema public).",
+        "C2-3b_assinatura_bate_com_P-O6R-ARNES-ISOLAMENTO": "CONFIRMADO — pendencias.md l.3296-3298: \"68 orfas vivas, todas com LOGIN\" e \"ate 460 privilegios de tabela cada\". Bate exatamente com a genese que eu medi. Nota lateral pre-existente (2026-08-18, NAO e achado do bloco): a mesma linha diz \"Cinco prefixos\" e lista quatro nomes.",
+        "C2-3c_timestamp_do_nome_data_cada_role": "CONFIRMADO — 1788186498149 -> 2026-08-31T14:28:18.149Z e 1788179560018 -> 2026-08-31T12:32:40.018Z; origem na l.25 do teste (Date.now() embutido no nome).",
+        "C2-3d_idade_descartada_com_prova_retrodatada_2h_4_oportunidades_0_recolhimentos": "CONFIRMADO — F9 REPRODUZIDA por mim: 4 roles sinteticas com o MESMO timestamp retrodatado 2h; o varredor invocado pelo unico chamador real recolheu audit_rls_ e vid_rls_test_ (vermelho-controle + ancoragem) e NAO tocou rls_test_ nem zzz_probe_; 3 oportunidades (2 invocacoes do varredor + 1 passada do proprio criador), 0 recolhimentos. Idade descartada: a sobrevivente tem o MESMO timestamp das recolhidas.",
+        "C2-3e_68_declarado_CARREGADO_nao_remedido": "CONFIRMADO — varri as 10 mencoes a 68 nos artefatos do bloco + 2 no briefing; em nenhuma o 68 aparece como numero de hoje. F10 rotula em tabela: valor 68, data 2026-08-18, fonte P-O6R-ARNES-ISOLAMENTO l.3296-3298, status \"CARREGADO — NAO re-verificado\", e declara o numero de hoje \"desconhecido e >= 68 apenas por argumento — nao por medicao\".",
+        "C2-3f_duas_falhas_de_instrumento_publicadas_nao_maquiadas": "CONFIRMADO — F8.0 (l.299-318) tem titulo proprio e publica as duas: I-1 ($! do Git Bash != PID do Windows, com o \"0/5\" espurio nomeado como falha de instrumento e descartado por escrito) e I-2 (contaminacao por orfa anterior vista em ~11 ms; as 4 tentativas declaradas INVALIDAS e fora do N). Nenhuma suavizada.",
+        "C2-3g_numero_sem_N_e_forma_nas_medicoes_2_e_3": "ITEM 3 LIMPO — nenhum numero proprio da medicao 3 publicado sem N e forma; o F8.4 antecipa o ataque e recusa ler 5/5 como taxa incondicional. Os dois analogos do achado da C1 estao nos itens 1 e 2 (C2-A1 e C2-A2) e estao registrados la."
+      },
+      "achados": []
+    }
+  ],
+  "achados_consolidados": [
+    {
+      "id": "C2-A1",
+      "gravidade": "atencao",
+      "escopo": "dentro-do-bloco",
+      "titulo": "E-2: publicar o par (arquivos,testes) NAO torna a bateria reproduzivel por terceiro — TRES listas de 6 arquivos distintas produzem (6,37), as tres executadas por mim",
+      "dono_sugerido": "SAN2-4b (emenda ao O-2, antes de tocar o criterio D29 do ciclo 5)"
+    },
+    {
+      "id": "C2-A2",
+      "gravidade": "atencao",
+      "escopo": "dentro-do-bloco",
+      "titulo": "Enumeracao dos gatilhos do sweep publicada como 4 suites; sao 5 (falta tests/db-catalog-write-guard.test.ts, que chama createEphemeralRole 3x e exercita o sweep de proposito)",
+      "dono_sugerido": "SAN2-4b (emenda ao O-1)"
+    }
+  ],
+  "nota_metodo": "Esqueleto criado ANTES de qualquer medicao (P2+). Cada sub-chave e preenchida ao medir, com evidencia apensada em 02-medicoes-2-3-evidencia.md.",
+  "resumo_do_veredito": "As tres alegacoes que me couberam sobrevivem a execucao PROPRIA: (1) as duas listas fecham 37 — 9 rodadas de lista + 16 por arquivo, denominador constante, 0 fail; (2) a exclusao do varredor e DUPLA no codigo — familia fora de SWEPT_ROLE_FAMILIES com regex ancorado E chamador unico que o criador de rls_test_ nunca invoca; (3) a assinatura 460 = 115x4 e reproduzivel, bate com P-O6R-ARNES-ISOLAMENTO, o timestamp data cada role, a idade foi descartada com vermelho-controle (F9 reproduzida por mim) e o 68 esta declarado CARREGADO, nao remedido. Nenhum conserto escondido: diff de codigo vazio. As duas falhas de instrumento da M3 estao PUBLICADAS com o \"0/5 orfas\" espurio nomeado. Dois achados de gravidade `atencao` e escopo `dentro-do-bloco`, ambos de ALCANCE DE CONCLUSAO e nenhum de medicao — nao reprovam, mas precisam de errata ANTES de o 4b escrever o D29.",
+  "nota_pre_existente_nao_reprovante": "pendencias.md l.3296-3298 (2026-08-18, treze dias antes desta branch) diz \"Cinco prefixos\" e lista quatro nomes. Fora do escopo do 4a; registrado para nao ser lido como defeito desta entrega.",
+  "terreno_e_limpeza": {
+    "cluster_descartavel": "c2san24a-pg :56532 + c2san24a-redis :56579, criados e REMOVIDOS por mim; docker ps -a --filter name=c2san24a devolve VAZIO ao final",
+    "base_viva": "erp-postgres/erp-redis INTOCADOS — nenhum comando meu os alcanca, nem leitura; Up 2 days (healthy) no inicio E no fim, o uptime atravessa a minha passada",
+    "teardown_de_roles": "3 drops NOMINAIS (nome exato), nunca curinga, nunca em massa; controle anti-mass-delete exercitado (dono do cluster RECUSADO por estar fora dos prefixos); catalogo final do meu cluster: 0 roles nao-sistema",
+    "arvore": "nada commitado; git status acusa apenas artefatos de junta untracked; git diff --stat HEAD sobre src/tests/scripts/prisma/frontend/mobile/.github/package*/Kpis = VAZIO; git diff --check ec=0",
+    "portas": "56532/56579 conferidas contra netsh excludedportrange antes de fixar (ultima faixa abaixo termina em 55452)"
+  },
+  "conformidade": {
+    "nao_propus_correcao": true,
+    "quem_acha_nao_conserta": "observado (§C7.4-bis)",
+    "voto_escrito_em_arquivo_antes_da_mensagem_final": true,
+    "esqueleto_criado_antes_de_qualquer_medicao": true
+  }
+}

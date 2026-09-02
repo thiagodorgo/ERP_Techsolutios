@@ -1,0 +1,8 @@
+{
+  "cadeira": "kpi-e-registro",
+  "identidade": "jurado-san2r-kpi-registro (identidade nova, 2026-08-29)",
+  "head_julgado": "48dc863",
+  "veredito": "APROVADO",
+  "justificativa": "Os tres itens do mandato conferem por reexecucao e por git. (1) Bateria reexecutada no head: kpi-dashboard-charts 16/16 pass 0 fail 0 skip; kpi-achados-paridade 6/6; kpi-freeze --check 'em dia (snapshot 2026-08-29)' exit=0 — os numeros alegados sao os reais. (2) Backfill §C3.5 do #360 correto: a entrada pr:360 do history carrega merge_commit=74430cc (git log confirma ser o squash do #360) e approved_head=ee5ef03 (existe no repo e e o head que a ata J-B-O6R-REG.md §1 linha 18 nomeia como julgado pelas tres cadeiras). (3) Diff de Kpis/kpis-latest.json contra a base: nenhum value/total/display de backend_tests (2595/2597), frontend_smoke_tests (1126/1126) ou flutter_tests (864/864) mudou — as 3 unicas divergencias sao os campos .note, cada um com o marcador de valor CARREGADO exigido pelo §C3.3; blocks_completed=152 e mvp_demo=99/mvp_vendavel=88 intocados. O achado do inspetor caido (diff toca Kpis/app.js mas nao index.html) NAO viola o §C3: a unica linha alterada do app.js e 'var FROZEN', regenerada por scripts/kpi-freeze.mjs (o --check falharia sem ela — e cumprimento mecanico, nao entrega de painel); o index.html hidrata em runtime dos JSON (D-KPI-INDEX-PAINEL), e SAN2-R nao inaugura dimensao nova — nenhuma metrica/trilha nova, apenas um valor novo na dimensao ja existente de rodadas, que o grafico 'entregas por rodada' le do history em runtime (teste 16 da suite, verde).",
+  "achados": []
+}

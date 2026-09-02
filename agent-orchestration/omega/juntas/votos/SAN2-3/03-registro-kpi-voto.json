@@ -1,0 +1,62 @@
+{
+  "junta": "SAN2-3",
+  "pr": 364,
+  "cadeira": "C3 — auditor-do-registro-e-kpi",
+  "identidade": "NOVA",
+  "head_julgado": "23d9227",
+  "quorum": "MAIORIA de 3",
+  "criado_em": "2026-08-30",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": "I1",
+      "titulo": "Backfill §C3.5 do #363: merge_commit d283903 e approved_head c8dc716 (head JULGADO, nao headRefOid e4926bd); porqueescrito na description",
+      "veredito": "APROVADO",
+      "gravidade": "nenhuma",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "git log --oneline c8dc716..e4926bd = 1 commit (e4926bd, docs(junta) SAN2-2 APROVADO 4x0). 18 arquivos, TODOS de registro: ata J-SAN2-2.md (A), 4 votos+evidencias da junta SAN2-2 (A), parecer/evidencia do inspetor (A), 00-quedas.md (M), pos-voto-log.md (A), pendencias.md/-indice.md (M), e Kpis/{app.js,kpis-latest.json,kpis-history.json} (M). ZERO em src/, tests/, scripts/, .github/, frontend/, mobile/. DIFF DOS CAMPOS NUMERICOS de kpis-latest.json entre c8dc716 e e4926bd = VAZIO (nenhum numero se moveu pos-voto). O unico delta em Kpis/app.js e 1 linha: a constante de dados FROZEN, word-diff = [-16 arquivos:-] {+25 arquivos no head julgado c8dc716+} — a correcao A-1 da cadeira C4, texto, nao logica. Ata J-SAN2-2.md l.5 consigna literalmente **Head julgado: c8dc716** e l.100 repete o raciocinio. d283903 esta na main e titula (#363) — e o squash merge do PR. Precedente #362 alegado na description CONFERE por leitura propria: merge_commit 87f6ae6 != approved_head 4cd0867.",
+      "porque_explicito": true,
+      "nota_porque": "O porque NAO ficou implicito: a description escreve textualmente que approved_head e o head JULGADO, consignado na ata J-SAN2-2.md l.5 e no §Delta pos-voto, que NAO e o headRefOid e4926bd, que o delta e a ata mais o registro pos-voto, e cita o precedente do #362. Gravar e4926bd declararia que a junta aprovou a propria ata que a registrou.",
+      "observacao_nao_achado": "A description diz sem uma linha de codigo e o delta toca Kpis/app.js (.js) em 1 linha. Verificado: essa linha e a constante de dados FROZEN (fallback congelado do file://, §C3.1), texto de description — nenhuma logica. A substancia da afirmacao se sustenta; registro como observacao, nao como achado."
+    },
+    {
+      "id": "I2",
+      "titulo": "Entrada de KPI do SAN2-3 honesta: execucao real, nulls na autoria, trilhas nao tocadas com nota §C3.3, mvp_* intocados, blocks_completed 152->153, guards verdes, description com 11 arquivos medidos",
+      "veredito": "APROVADO",
+      "gravidade": "nenhuma",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "MEDIDO POR MIM. (a) 11 arquivos: git diff --name-only main...HEAD | wc -l = 11, e a lista bate item a item com a composicao declarada (2 papel de agente, 3 Kpis/, 6 agent-orchestration/). O numero publicado HOJE e o MEDIDO — a estimativa de 7 foi corrigida antes do voto. (b) Trilhas nao tocadas: git diff --name-only main...HEAD -- frontend/ mobile/ = VAZIO; -- src/ tests/ scripts/ prisma/ .github/ = VAZIO; git status --porcelain nesses caminhos = VAZIO (a arvore de trabalho tambem, como a nota afirma). As 4 metricas carregadas (backend_tests, frontend_smoke_tests, flutter_tests, backend_contract_tests_focused) tem marcador §C3.3 EXPLICITO e NOMINAL do SAN2-3, cada uma citando a prova, e cada uma dizendo que a nota anterior descreve execucao de bloco anterior e NAO deste PR. Valores carregados identicos ao ultimo oficial (SAN2-2): 2607/2609, 1126/1126, 864/864. (c) pr/merge_commit/approved_head = null na autoria (§C3.5). (d) mvp_demo 99 e mvp_vendavel 88 IDENTICOS entre main e HEAD. (e) blocks_completed 152 (main) -> 153 (HEAD), exatamente como a entrada do SAN2-2 havia declarado. (f) GUARDS REEXECUTADOS POR MIM: node scripts/kpi-freeze.mjs --check -> \"em dia (snapshot 2026-08-30)\" EXIT=0; node --test --import tsx tests/kpi-dashboard-charts.test.ts -> 16 tests/16 pass/0 fail/0 skip EXIT=0; node --check Kpis/app.js EXIT=0; e, por corroborar a nota de KPI, node --test --import tsx tests/agents-mirror-guard.test.ts -> 12/12/0/0 EXIT=0. Os numeros 12 e 16 que a description declara batem EXATAMENTE com a minha execucao independente."
+    },
+    {
+      "id": "I3",
+      "titulo": "Dono real SAN2-5 substituiu 'a atribuir' em P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY e P-SAN2-2-INDICE-DONO-SEMPRE-SIM; indice medido eol-neutro (diff vazio ESPERADO, nao defasagem)",
+      "veredito": "APROVADO COM ACHADO NAO-BLOQUEANTE",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "CAMPO CANONICO CORRETO NOS DOIS. git diff main...HEAD -- controle/pendencias.md mostra as duas linhas de status migrando de \"**dono:** a atribuir\" para \"**dono:** bloco **SAN2-5**\", com a justificativa anexada (dono NOMEADO pelo SAN2-3, §3.5 do plano, quitando a ressalva do porteiro do #363). Nenhum \"a atribuir\" sobrou no campo **dono:** de nenhuma das duas. ARMADILHA NAO CAI: as 7 ocorrencias de \"a atribuir\" dentro de P-SAN2-2-INDICE-DONO-SEMPRE-SIM sao PROSA descrevendo o proprio defeito (o regex, o placar de 91 falsos-sim, a reproducao isolada) — meu primeiro grep bruto marcou falso-positivo e a leitura do campo desfez. INDICE MEDIDO EOL-NEUTRO, COMO MANDADO: regenerei com o script EXISTENTE (python agent-orchestration/controle/gerar-indice-pendencias.py) e git diff --exit-code saiu 0 = CONTEUDO IDENTICO. A armadilha reproduziu exatamente como registrada: 36421 bytes/310 CRLF -> 36111 bytes/0 CRLF, md5 bruto f508593d -> ac409fbf, e git status exibindo M com o diff VAZIO. O md5 EOL-neutro ac409fbf8ae2f41270ae8bcfac584698 e o placar 233 cabecalhos / 225 IDs / 186 ABERTAS / 47 FECHADAS batem CARACTERE A CARACTERE com o que o dev registrou. Diff vazio aqui e a pendencia se manifestando, NAO indice defasado — nao reporto defasagem. Arvore restaurada por git checkout -- ao estado pristino (36421 bytes, f508593d)."
+    }
+  ],
+  "achados": [
+    {
+      "id": "A-1",
+      "titulo": "Em P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY, a secao narrativa \"### Dono e o que falta\" continua dizendo \"**Dono: a atribuir**\" depois de o campo canonico passar a SAN2-5 — a mesma pendencia declara dois donos diferentes",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia_de_origem": "O bloco SAN2-3 e quem editou a linha de status desta pendencia (git diff main...HEAD -- agent-orchestration/controle/pendencias.md), e deixou intocada a secao narrativa do mesmo bloco de texto. A divergencia NAO existia antes: ate a main, os dois lugares diziam a atribuir e concordavam. Logo a origem e a edicao deste bloco, e o escopo e dentro-do-bloco.",
+      "medicao": "Estrutura da pendencia (a partir da l.4405 de pendencias.md): l.15 \"### A medicao da C4, citada como ela a registrou\" · l.31 \"### Re-medicao propria\" · l.57 \"### Por que importa\" · l.71 \"### Severidade\" · l.80 \"### Dono e o que falta\" · l.95 linha de status. A secao l.80 NAO esta dentro do bloco citado verbatim da C4 (que termina em l.31): e texto do proprio registrador do SAN2-2, em primeira pessoa (\"Nao nomeio bloco existente: nomear compromisso que nao combinei...\"). Hoje ela contradiz a l.95, que diz bloco SAN2-5.",
+      "impacto_medido": "NENHUM no indice gerado, verificado: o classificador usa **dono:** e, na segunda alternativa, **Dono:?** — e a linha narrativa e \"**Dono: a atribuir**\", que nao casa nenhum dos dois (apos **Dono: vem espaco, nao **). O dano e de leitura humana: quem abrir a pendencia inteira le dois donos.",
+      "motivo": "O bloco atualizou o campo que a maquina le e nao o paragrafo que a pessoa le. Registro o defeito, a evidencia executada e o motivo; NAO proponho correcao (§C7.4-bis).",
+      "por_que_nao_bloqueia": "Escopo do veredito §C7.1-ter: o campo que o mandato pede — o **dono:** canonico — esta correto nos DOIS. A divergencia e de prosa, gravidade baixa, sem efeito em numero, indice, produto, dinheiro, seguranca, permissao ou dado. Bloco documental sob quorum de MAIORIA."
+    }
+  ],
+  "nao_propoe_correcao": true,
+  "resumo": "APROVADO. (I1) Backfill do #363 correto e provado: o delta c8dc716..e4926bd e 1 commit de registro puro (ata + votos + evidencias + pos-voto), ZERO campo numerico movido pos-voto, e o unico delta em Kpis/app.js e a constante de dados FROZEN com a correcao A-1 de 16 para 25 arquivos. O porque esta EXPLICITO na description, citando a ata J-SAN2-2.md l.5 e o precedente do #362 (87f6ae6 != 4cd0867), que eu confirmei. (I2) Entrada de KPI honesta: 11 arquivos MEDIDOS por mim, batendo com o numero publicado hoje (a estimativa de 7 foi corrigida antes do voto); nulls na autoria; 4 trilhas carregadas com nota §C3.3 NOMINAL do SAN2-3 e prova de diff vazio em frontend/ e mobile/ que eu reproduzi, no commitado e na arvore; mvp_* intocados (99/88); blocks_completed 152->153; e os 4 guards reexecutados por mim batendo exatamente com os numeros publicados. (I3) Dono real SAN2-5 nos DOIS campos canonicos, provado pelo diff; indice medido eol-neutro com git diff --exit-code = 0 — diff vazio e a pendencia se manifestando, NAO defasagem, e nao reporto defasagem; a armadilha reproduziu com os mesmos bytes, md5 e placar que o dev registrou. 1 achado baixa / dentro-do-bloco / NAO-bloqueante (A-1).",
+  "guards_reexecutados": {
+    "node scripts/kpi-freeze.mjs --check": "em dia (snapshot 2026-08-30) · EXIT=0",
+    "node --test --import tsx tests/kpi-dashboard-charts.test.ts": "16 tests / 16 pass / 0 fail / 0 skip · EXIT=0",
+    "node --check Kpis/app.js": "EXIT=0",
+    "node --test --import tsx tests/agents-mirror-guard.test.ts": "12 / 12 / 0 / 0 · EXIT=0"
+  },
+  "arvore_deixada": "Limpa. Regenerei o indice de pendencias para medir e restaurei por git checkout -- ao estado pristino (36421 bytes, md5 f508593d). Nenhum arquivo rastreado mutado. Nao commitei. Nao toquei erp-postgres nem erp-redis."
+}

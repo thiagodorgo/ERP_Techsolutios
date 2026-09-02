@@ -1477,44 +1477,6 @@ Nenhuma das três foi pega por releitura. **Só execução pega**, e só por um 
 - Esta regra **não** substitui a §C7.4 (a `agente-fabrica` cria especialistas nos ciclos 1–2); ela diz **como**
   os papéis se distribuem dentro de cada ciclo.
 
-## D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO (2026-08-20 — **decisão do dono**; amplia `D-JUNTA-SEPARACAO-DE-PAPEIS`)
-
-**A separação não nasce na reprovação: vale desde o primeiro passo de TODA entrega.** Planejar, escrever o
-código, analisar/revisar, votar na junta e exercer o porteiro pós-merge são alçadas incompatíveis dentro da
-mesma entrega. Cada alçada é ocupada por agente/pessoa distinta; trocar o nome do papel ou fazer passes
-sequenciais no mesmo agente **não** satisfaz a separação.
-
-| Alçada | Faz | **Não** faz na mesma entrega |
-|---|---|---|
-| **Achador/origem** | registra achado + evidência executada + motivo, sem prescrever a correção | não planeja a correção, não implementa, não vota a própria descoberta |
-| **Planejador** | mede a premissa e publica o plano antes do código | não implementa, não analisa/aprova o diff, não atua como porteiro |
-| **Desenvolvedor** | implementa o plano aprovado e executa a bateria de autoria | não altera o plano em silêncio, não analisa/aprova o próprio diff, não atua como porteiro |
-| **Analistas/revisores e junta** | reexecutam provas, atacam plano/diff e votam com independência | não planejam nem implementam a entrega que julgam; cada voto pertence a agente/pessoa distinta |
-| **Porteiro pós-merge** | nasce depois do merge, reexecuta promessa × diff × testes × KPI × pendências e decide o próximo start | não participou das alçadas anteriores desta entrega e nunca conserta o que encontrar |
-
-**Consequências operacionais permanentes:**
-
-1. O plano, a ata da junta e o parecer do porteiro identificam nominalmente quem ocupou cada alçada. Se um
-   nome/agente aparecer em duas alçadas incompatíveis, o fluxo está contaminado e não avança.
-2. A junta mantém composição mínima e poderes de veto da §C7, mas seus votantes são também distintos entre si;
-   o desenvolvedor não ganha voto e o planejador não ratifica o próprio plano pela junta.
-3. Toda reprovação preserva a separação acima e continua respondendo às três perguntas da decisão de 17/08;
-   replanejamento e correção usam agentes novos e distintos do achador/revisor que reprovou.
-4. O `porteiro-pos-merge` é uma pessoa/agente novo, criado somente depois do merge. Parecer emitido por quem
-   planejou, desenvolveu, analisou ou votou o PR é inválido.
-5. A emulação de papéis por passes sequenciais do mesmo agente, antes aceita como fallback mecânico, **não vale
-   para esta separação**. Se não houver agentes/pessoas isolados suficientes, a entrega fica bloqueada até haver
-   composição independente; não se reduz a regra por conveniência da ferramenta.
-6. A decisão vale prospectivamente a partir de 2026-08-20, inclusive para entregas já em andamento nas etapas
-   ainda não executadas. Não invalida retroativamente commits anteriores, mas nenhum próximo papel pode ser
-   acumulado por quem já ocupou outra alçada na mesma entrega.
-
-**Aplicação imediata no B-O6R-02/F6:** o achado vem da auditoria Ω6R; `/root/planejador_f6` ocupa somente o
-planejamento; outro agente implementará; uma junta independente analisará/votará; depois do merge, um novo
-`porteiro-pos-merge` fará a revalidação. O modelo Fable fixado para o planejador não estava disponível no
-catálogo da sessão em 2026-08-20; a exceção de indisponibilidade prevista em `D-PLANEJADOR-MODELO-FABLE` foi
-registrada no plano F6, sem autorizar acúmulo de papéis.
-
 ## D-O6R-B01-IDENTIDADE-GLOBAL (2026-08-18 — B-O6R-01, plano v6 aprovado 5×0 em J-O6R-B01)
 
 **O modelo de identidade global entrou em vigor.** Três artefatos novos (migração aditiva
@@ -1582,68 +1544,369 @@ foram desmentidas por execução (R-B-O6R-01-ciclo1):**
    honesta (edição só-comentário; `migrate deploy` no dev não recusou — nada ressincronizado), e o
    guard 10c (`tests/auth-invariant-guards.test.ts`) trava `DISABLE TRIGGER` em `src/**` (baseline 0).
 
-## D-CONTRATOS-FORA-DO-PR-FINANCEIRO — o §C7.4-bis foi reescrito em DUAS branches (registro §A2)
+---
 
-- status: **registrada, NÃO consolidada** (é exatamente isso que o §A2 exige antes de qualquer consolidação)
-- origem: bloqueante **B-4** da junta `J-B-O6R-02-ciclo1`; execução do ciclo 2 do `B-O6R-02` (2026-08-22)
-- impacto: `CLAUDE.md`, `AGENTS.md`, escopo do PR do `B-O6R-02`
+## D-INSPETOR-TERRENO-JUNTA (decisão do dono, 2026-08-24) — inspeção de terreno antes de toda junta
 
-**O fato.** O head `e4e914a` do `feat/o6r-b02-financial-uow` carregava 19 linhas alteradas em cada um dos
-dois contratos, reescrevendo o **§C7.4-bis**. A branch `docs/governanca-porteiro-pre-merge-sol` reescreve
-**o mesmo parágrafo** com texto **materialmente diferente** — há frase normativa que existe só numa versão e
-frase que existe só na outra (ex.: a versão financeira fala em "porteiro pós-merge" e acrescenta que a
-indisponibilidade de agentes isolados bloqueia a entrega; a de governança fala em "porteiro pré-merge" e
-"executor pós-merge"). **Quem mergear por último apagaria a do outro em silêncio** — a consolidação que o
-§A2 proíbe. Agravante: era o PR **financeiro** alterando o contrato de governança **que rege a junta que o
-julga**.
+**Contexto:** três ciclos de junta julgaram muito bem e falharam sempre no mesmo lugar — o **terreno**. A
+contaminação entre jurados foi "encerrada" para a base viva no ciclo 2 (`tenants` 320→322→321) e **voltou** no
+ciclo 3 no worktree compartilhado (`financial-entry-undo-owners.ts` mutado por um jurado, md5 `4c44ee14…` vs
+pristino, flagrado por 3 jurados independentes). A fatia S0 (espelho Codex dos especialistas) faltou **dois
+ciclos seguidos**. E o planejador do ciclo 3 herdou da ata do ciclo 2 a premissa "birth-fixed se sustenta",
+que o crítico e o dba **falsificaram por execução**. É a mesma classe de defeito que os jurados são ótimos em
+achar no código — "um defeito declarado fechado que voltou um nível acima" — acontecendo na orquestração deles.
 
-**A decisão deste ciclo.** Os dois arquivos **saem do PR financeiro** e voltam byte a byte ao `origin/main`
-(conteúdo obtido por `git show origin/main:<arquivo>`; nada de `git checkout`, vedado nesta rodada). Prova:
-`git diff origin/main...HEAD -- CLAUDE.md AGENTS.md` **vazio**. O PR financeiro não carrega contrato.
+**Decisão:** nasce o agente `inspetor-de-terreno-da-junta` (`.claude/agents/`, espelhado em `.agents/agents/`),
+**Fable por contrato**, com poder de VETO sobre o **start** da junta. Ele não julga o mérito da entrega — julga
+o TABULEIRO, fail-closed (o que ele não medir vira BLOQUEADO):
 
-**O que este registro NÃO faz.** Não escolhe um dos dois textos, não funde os dois, não declara qual está
-certo. **O texto normativo pertence à trilha de governança** (`docs/governanca-porteiro-pre-merge-sol`), que
-tem alçadas próprias para isso; a reconciliação de conteúdo é trabalho dela, nomeadamente. Enquanto não
-ocorrer, vale o que está no `origin/main`.
+1. **Isolamento:** árvore do head sem mutação viva (md5 × blob); worktree próprio para cada jurado que muta;
+   cluster Postgres descartável por jurado; a base viva não é alvo de ninguém; sem resíduo de jurado anterior.
+2. **Insumos:** parecer do crítico + PD (≥5 fontes) nos ciclos ≥3; afirmações da ata anterior marcadas
+   "a re-verificar", nunca herdadas como fato.
+3. **Papéis (§C7.4-bis):** inelegibilidade conferida por nome contra as atas; composição cobre a competência
+   dos achados.
+4. **Fatia S0:** espelho Codex consistente (`node scripts/sync-agent-agents.mjs --check` verde).
+5. **Baseline honesto** medido ANTES (`npm run check` exit 0, tree limpa); **plano de perda de jurado**
+   declarado (o voto perdido do ciclo 3 — jurado morto em erro de API sem plano de quórum).
 
-**Excursões de escopo do bloco, ratificadas e agora DECLARADAS** (a junta apontou que existiam sem estar
-nomeadas):
-
-1. `src/database/financial-period-lock.ts` — excursão **planejada** (nomeada no plano v1 §D3). O achado da
-   junta sobre ela é de **declaração**, não de mérito: o comentário prometia mais que a garantia, e o M2 do
-   ciclo 2 o estreitou.
-2. `.claude/agents/especialistas/inspetor-fixtures-financeiras-legadas.md` e o espelho em `.agents/agents/` —
-   artefato **legítimo do §C7.4** (a `agente-fabrica` cria 1–2 especialistas sob medida nos ciclos 1–2), que
-   não estava declarado no comando. Fica declarado aqui.
+**Amarração:** §C7 cláusula **1-bis** de `CLAUDE.md` e `AGENTS.md` (espelhadas) — **sem o `LIBERADO` do
+inspetor a junta não começa.** Um agente que ninguém invoca é teatro; esta cláusula é o que o torna real.
 
 ---
 
-## D-INSTANCIA-NOVA-COM-AUDITORIA — instância nova do mesmo papel conta como agente novo, se auditar (2026-08-23)
+## D-GOV-AMEACA-DESCUIDO (decisão do dono, 2026-08-25) — o modelo de ameaça da governança é DESCUIDO
 
-**Decisão do dono**, respondendo a uma ambiguidade que estava **aberta e registrada**: um achador da rodada de
-governança perguntou se *"dois agentes do MESMO subagent_type em fases diferentes da mesma entrega são agentes
-distintos"*, e a §C7.4-bis só dizia que *"passes sequenciais do mesmo agente com nomes diferentes não
-satisfazem a regra"* — o que não resolvia o caso da instância nova.
+**A pergunta** (aberta pelo ciclo 3 do porteiro pré-merge, `R-GOV-PORTEIRO-PRE-MERGE-ciclo3.md`): o gate
+defende contra um agente **descuidado** ou contra um agente **malicioso**? O ciclo provou que contra
+malicioso não existe solução dentro deste repositório (autor = dono das chaves, do disco, do CI e do
+ruleset; recibo local é SLSA Build L1 — "trivial to bypass or forge"; provar qual modelo respondeu não
+existe para API comercial fechada).
 
-**A regra:** uma **instância nova** do mesmo tipo de agente **conta como agente novo** para a §C7.4-bis —
-**desde que**, quando substituir uma alçada cujo trabalho foi reprovado, sua **primeira tarefa seja auditar por
-execução as afirmações do artefato anterior**, antes de escrever qualquer coisa nova.
+**A resposta do dono: DESCUIDADO.**
 
-**Por quê.** Instância nova não tem memória do trabalho anterior, então não tem o que defender — que é o
-mecanismo que a regra protege. Mas contexto limpo sozinho não basta: o artefato reprovado **continua na
-árvore**, e o novo ocupante vai lê-lo como insumo. Sem auditoria explícita, ele herda a afirmação falsa em vez
-de a derrubar — que é exatamente a pergunta (c) do §C7.4-bis (*"o planejador está usando dado podre?"*)
-acontecendo por omissão.
+**Consequências (executáveis a partir de agora):**
+1. **O pin de modelo/runtime SAI do `verifyAttestation`** e vira registro auditável a posteriori — o
+   transcript do harness (que grava `"model":` por mensagem, escrito pelo harness e não pelo agente) no
+   lugar da string auto-escrita. O gate que exige `runtime === 'codex'` está morto: era controle de sinal
+   trocado (o honesto ficava vermelho, o forjador verde).
+2. **Segunda identidade GitHub: dispensável.** Nenhuma exigência de aprovação humana de outra conta.
+3. **A entrega da governança encolhe** para o que a plataforma sustenta mecanicamente: PR obrigatório ·
+   head congelado (strict) · CI verde do app certo · sem force-push · sem delete de `main`. O que
+   sobrevive da branch: compare-and-swap do head, normalização de checks (D-10), paginação de files,
+   `aplicaSeABranchDefault`, registro externo imutável por merge.
+4. **O vocabulário muda:** nenhum artefato diz "prova", "independente" ou "inforjável". O controle é
+   declaradamente **tripwire** — pega desvio acidental, não resiste a adversário com as chaves. (SLSA L1
+   é um nível legítimo, desde que rotulado.)
+5. **Ruleset instalado JÁ**, no desenho de tripwire (sem o check do porteiro, que não existe na `main`).
+   Editável pelo admin — aceitável contra descuido, e é o dono quem edita.
 
-**O caso que originou a decisão.** O plano do ciclo 2 do B-O6R-02 afirmou, no §7, que sob o drill D11 *"o helper
-de efeito acusa `net = −100`"*. A junta mediu: **não acusa nada** — o único vermelho vem de uma asserção de
-recusa, não de efeito. A correção inteira foi construída sobre essa afirmação **não executada e falsa**, e o
-planejador que a escreveu tem um resultado próprio a defender.
+**Resolve:** `P-GOV-MAIN-SEM-PROTECAO` (parcial — a instalação), o destino do bloqueante 2 do ciclo 2 da
+governança, e o redesenho da branch `docs/governanca-porteiro-pre-merge-sol` (46 commits → encolher,
+trabalho de ciclo próprio com plano novo).
 
-**Consequência operacional.** Quem invoca a instância nova **declara no briefing** quais afirmações do artefato
-anterior precisam ser auditadas por execução, e a instância **reporta o resultado da auditoria antes do
-produto**. Auditoria que não roda não conta — é a mesma regra de sempre.
+---
 
-**O que NÃO muda:** a proibição de acúmulo continua integral. Quem achou não planeja nem implementa; quem
-planejou não implementa nem vota; votante de um ciclo é inelegível para as alçadas do ciclo seguinte. Esta
-decisão trata **só** de identidade de agente, não de acúmulo de papel.
+## D-JUNTA-ESCOPO-E-CALIBRACAO (decisão do dono, 2026-08-28) — o veredito ganha escopo e a junta é calibrada por risco
+
+**Base de evidência:** `agent-orchestration/omega/auditoria-juntas-2026-08-28.md` — inventário de
+**≈ 155 juntas**, **≈ 66 ciclos de reprovação**, 11 falsos-verdes e 15 falhas do próprio esquema,
+levantados por duas varreduras independentes do repositório.
+
+**O que a auditoria estabeleceu, e que esta decisão respeita:** o esquema de juntas **paga o que
+custa no caso normal** — pegou 34 defeitos reais de produto, incluindo duplo-faturamento por falta de
+CAS, `ADJUSTMENT` negativo zerando dívida, bypass do 2º fator numa superfície pública e a corrida que
+fabricava saldo no razão. Nada disto se afrouxa. O custo está **na cauda**: 3 blocos consumiram
+**24% de todos os ciclos**, e neles o bloqueante final foi **processo/medição em 11 dos 16**.
+
+**O caso que forçou a decisão.** No ciclo 4 do `B-O6R-02` (28/08), quatro cadeiras aprovaram e uma
+reprovou. O dinheiro estava provado fechado por três cadeiras independentes; o voto que derrubou
+julgou o **número** — a bateria canônica verde em 7 de 10 execuções. E os dois produtores desse
+defeito **antecedem o bloco**: `tests/audit-security.test.ts` é de 08/06 e
+`tests/helpers/auth-identity-fixture.ts` nasceu no bloco anterior em 19/08; a branch do financeiro
+começou em 20/08. O §5 do plano **proibia** o bloco de tocar `tests/**` alheio. **O bloco foi
+reprovado por um defeito que não criou e estava proibido de consertar.**
+
+### 1. O veredito passa a ter ESCOPO
+
+Todo voto, além de `gravidade: bloqueia | ajuste | nota`, declara **`escopo`**:
+
+| escopo | significado | efeito |
+|---|---|---|
+| `dentro-do-bloco` | o achado toca o que este bloco mudou | `bloqueia` reprova, como sempre |
+| `pre-existente` | a classe do achado antecede o bloco e/ou está fora do escopo permitido dele | **não reprova**: vira **pendência nomeada com bloco dono**, e o número afetado é publicado com **N, forma e causa** |
+
+O poder de veto continua **inteiro** para o que o bloco mexeu. O jurado declara o escopo **com
+evidência de data ou origem** (quando o arquivo nasceu, qual bloco o criou); a ata registra; o
+`inspetor-de-terreno-da-junta` confere na passada seguinte. Escopo declarado sem evidência = achado
+tratado como `dentro-do-bloco`.
+
+O critério não é invenção do orquestrador: a própria cadeira do arnês escreveu que reprova *"número
+publicado sem N, não número imperfeito declarado"*.
+
+### 2. A junta é calibrada por risco — e o quórum não escrito passa a ser escrito
+
+O §C7.1 listava exaustivamente o que exige unanimidade de 5 (deploy de produção, dependência nova,
+serviço externo pago). **"Invariante financeiro" nunca esteve no `CLAUDE.md`, no `AGENTS.md` nem no
+`EXECUTION_MODEL.md`** — vivia só nos corpos dos jurados e nas atas, e foi o quórum que reprovou
+quatro ciclos seguidos. Passa a valer, escrito:
+
+- **Unanimidade de 3** quando o bloco toca **dinheiro, segurança, permissão ou perda de dado**.
+- **Maioria de 3** no resto.
+- Unanimidade de 5 permanece **só** para as decisões críticas já listadas no §C7.1 (produção,
+  dependência nova, serviço externo pago).
+- O `critico-adversarial` ataca o plano **apenas** nos blocos de invariante.
+
+**Motivo medido:** cada ciclo queima identidades — 16 inelegíveis só no `B-O6R-02`, incluindo a única
+competência que o achado do ciclo 4 exigia. A resposta do protocolo à reprovação é **escalar**, o que
+**reduz** a chance de unanimidade a cada ciclo. O bloco sozinho produziu **14 especialistas**.
+
+### 3. Duas lições de terreno viram regra
+
+- **Junction/symlink de `node_modules` entre worktrees é PROIBIDA.** Em 26/08 a remoção de um worktree
+  apagou, por dentro de uma junction, o `node_modules` do worktree do dev e mutilou o da árvore
+  principal. Cada worktree roda `npm ci` próprio; remoção só por `git worktree remove --force`.
+- **Não se mede o conteúdo de um commit com `git archive` + `tar` sob `core.autocrlf=true`** — injeta
+  CR e fabrica divergência. Foi assim que "o espelho Codex diverge no head" virou pendência ALTA (15
+  DIVERGE na ata do ciclo 4, 25 no plano do ciclo 5) e foi fechada por não-reprodução no mesmo dia.
+  Formas honestas: `git -c core.autocrlf=false checkout <head> -- <caminhos>` ou `git show` do blob.
+
+### 4. O que NÃO muda
+
+Inspetor de terreno antes da junta, separação de papéis achador ≠ planejador ≠ dev, identidade nova
+por ciclo, porteiro pós-merge, KPI por PR com contagem de execução real. Pegaram defeitos reais e não
+estão no caminho crítico. **Não** entra fatiamento obrigatório no 3º ciclo.
+
+### 5. Consequência imediata
+
+O `B-O6R-02` deixa de carregar a classe do arnês: ela vira o bloco próprio **`B-O6R-ARNES`**, que roda
+**primeiro** (é pré-requisito de confiança em qualquer número dos 10 blocos restantes). O financeiro
+re-mede numa base limpa e fecha pelo mérito que três cadeiras já aprovaram. O plano do ciclo 5 recebe
+**emenda apensada** (nunca reescrita, §A2).
+
+### 6. Pendências de contrato que esta decisão NÃO fecha, e ficam nomeadas
+
+- **Quatro versões divergentes do contrato** (`decisoes.md`: 1480 linhas em `origin/main`, 1606 em
+  `demo/investidor`, 1649 na branch do financeiro, 1664 na de governança). Reconciliação em PR
+  próprio, sem código, com `origin/main` como base — é o que `D-CONTRATOS-FORA-DO-PR-FINANCEIRO` manda.
+- **O porteiro em dois lugares** (pós-merge no texto vigente, pré-merge no da governança) — a decisão
+  que registra o conflito explicitamente não escolhe. Escolher na reconciliação.
+- **Quatro vetos permanentes** que se dizem obrigatórios em "toda PR" sem que o §C7.1 os cite, e três
+  papéis de porta com verificações sobrepostas. Definir quando cada um é obrigatório, por tipo de bloco.
+- **O que acontece depois do teto do §C7.4** — formato do dossiê, onde vive, quem escreve, o que a
+  resposta do dono destrava, se as inelegibilidades zeram.
+- **Descomissionamento dos especialistas de bloco** — os 14 do `B-O6R-02` não têm cláusula, ao
+  contrário dos efêmeros das rodadas Ω4C e Ω5P, deletados com registro nominal em ata.
+- **`scripts/limpar-residuo-de-junta.sh` não é citado por documento nenhum** — entra no §C5.
+
+### ERRATA de `D-JUNTA-ESCOPO-E-CALIBRACAO` §6 (2026-08-28, apensada — §A2, o texto original fica) — os números estavam errados, e o quadro é melhor do que eu escrevi
+
+O §6 acima diz *"quatro versões divergentes do contrato (`decisoes.md`: **1480** linhas em
+`origin/main`, **1606** em `demo/investidor`, 1649 na branch do financeiro, 1664 na de governança)"*.
+**Duas dessas contagens estão erradas e a caracterização é imprecisa.** Medido agora, por
+`git show <ref>:<caminho> | wc -l`:
+
+| ref | `decisoes.md` | o que eu escrevi |
+|---|---|---|
+| `origin/main` (`6efe5ad`, imóvel) | **1545** | 1480 — **não corresponde a estado nenhum** da `main` |
+| `demo/investidor` (HEAD) | **1700** | 1606 — era a contagem **antes do meu próprio commit** (`1231e71^` = 1606) |
+| `feat/o6r-b02-financial-uow` (`12c3825`) | 1649 | 1649 ✓ |
+| `docs/governanca-porteiro-pre-merge-sol` (`48a75e9`) | 1664 | 1664 ✓ |
+
+**A caracterização "quatro versões do contrato" também é imprecisa, e o erro é a meu favor —
+o que o torna pior.** Medido: `CLAUDE.md`, `AGENTS.md` e `EXECUTION_MODEL.md` da branch do financeiro
+são **byte-idênticos** aos da `main` (blobs `081c4b90` e `e0f15245`) — ela **cumpriu literalmente**
+`D-CONTRATOS-FORA-DO-PR-FINANCEIRO` e não é uma versão do contrato. Divergem só a `decisoes.md` e a
+`pendencias.md` dela. O correto: **três textos de contrato** (`main` = financeiro · `demo/investidor` ·
+governança) e **quatro registros de decisão**.
+
+**Três fatos medidos que melhoram muito o quadro da reconciliação, e que o §6 não tinha:**
+
+1. **`origin/main` é o ancestral comum das três branches** (`git merge-base` de cada par = `6efe5ad`).
+   Nenhuma contém trabalho de outra: a reconciliação é de três vias com base única e limpa.
+2. **`decisoes.md` é append-only nas três branches** — `git diff origin/main <ref> -- decisoes.md |
+   grep -c '^-[^-]'` = **0** nas três. **Nenhuma decisão pré-existente foi reescrita por ninguém**, e as
+   69 decisões herdadas têm texto idêntico nas quatro. O risco de perda silenciosa é menor do que eu disse.
+3. **Só a branch de governança sobrescreve norma** (−33 linhas no `CLAUDE.md`, −37 no `AGENTS.md`, −18
+   no `EXECUTION_MODEL.md`). `demo/investidor` é 100% aditiva (1 hunk).
+
+**O que continua verdadeiro do §6, e agora com o alvo exato:** há **duas decisões com o mesmo id e
+corpos diferentes** (`D-JUNTA-SEPARACAO-DE-PAPEIS-TODO-FLUXO`, nascida na branch do financeiro em
+2026-08-20 21:38 e emendada na de governança 2h20 depois, com a emenda **descartando** as seis
+consequências numeradas do original); **duas decisões que só existem na branch do financeiro**
+(`D-CONTRATOS-FORA-DO-PR-FINANCEIRO`, `D-INSTANCIA-NOVA-COM-AUDITORIA`); **duas que só existem na de
+governança** (`D-PORTEIRO-PRE-MERGE` com 3 emendas, `D-FABLE-PARA-GPT-5-6-SOL`); e **três que só
+existem aqui** (`D-INSPETOR-TERRENO-JUNTA`, `D-GOV-AMEACA-DESCUIDO`, esta). E o porteiro segue em dois
+desenhos incompatíveis **com o mesmo `name:` de agente** — não coexistem no mesmo repositório.
+
+Inventário completo, parágrafo a parágrafo, com o risco de perda por ordem de merge:
+`agent-orchestration/omega/divergencias-do-contrato-2026-08-28.md`.
+
+**Por que esta errata existe e não uma correção silenciosa:** o §A2 proíbe consolidação silenciosa, e
+esta rodada inteira é sobre artefatos que afirmam números que a execução não produz. Eu escrevi três
+números sem re-medir e um deles não existe em estado nenhum do repositório. O texto original fica.
+## D-TETO-DOIS-CICLOS (decisão do dono, 2026-08-29) — o teto do protocolo de dificuldade cai de 5 ciclos para 2
+
+**A decisão, literal:** *"após duas rodadas de execução/reexecução do bloco a junta deve parar e pedir
+intervenção humana."*
+
+**O que isto REVOGA.** O `CLAUDE.md` §C7.4 (e o espelho `AGENTS.md`) mandava: ciclos 1–2 a `agente-fabrica`
+cria especialistas; ciclo 3 o crítico reabre a premissa com pesquisa ≥5 fontes; ciclos 4–5 junta ampliada
+replaneja a fatia; **parada + dossiê SOMENTE após o ciclo 5 falho**. **Esse teto de 5 está REVOGADO.** O novo
+teto é **2**: entregou, foi reprovado, corrigiu, foi reprovado de novo → **para e chama o dono**.
+
+**Por que o dono mudou, e a evidência que ele tinha diante de si.** O teto de 5 foi desenhado para evitar
+parada precoce, e conseguiu — mas o custo apareceu medido:
+
+- O **`B-O6R-01`** levou **3 ciclos**. O **`B-O6R-02`** chegou ao **ciclo 5** e ainda não fechou: planos de
+  ciclo escritos em 24/08, 25/08 e 28/08, com **16 identidades de jurado queimadas** e 14 especialistas
+  criados só nesse bloco. A auditoria de 2026-08-28 mediu **3 blocos consumindo 24% de todos os ciclos**.
+- A resposta do protocolo à reprovação é **escalar** — mais agentes, junta maior, quórum mais alto. Isso
+  **reduz** a chance de aprovação a cada ciclo, em vez de aumentar: o ciclo 4 do financeiro foi reprovado
+  4×1 por uma única cadeira, num quórum que o próprio protocolo havia elevado.
+- E o `SAN2-1` acabou de mostrar a forma mais barata do mesmo problema: **o ciclo 2 corrigiu seis achados e
+  reintroduziu um defeito ao corrigir outro** (o marcador riscado que voltou a classificar como diferida).
+  Ciclo que conserta e reintroduz é sinal de que a premissa precisa de gente, não de mais uma rodada.
+
+**A regra nova, por extenso.**
+
+1. **Ciclo 1** — entrega, junta, veredito.
+2. **Ciclo 2** — se reprovado: corrige (com **separação de papéis** §C7.4-bis intacta — quem achou não
+   conserta) e vai à junta com **identidade nova** na cadeira que reprovou.
+3. **Se o ciclo 2 for reprovado: PARA.** Não há ciclo 3. **Dossiê ao dono**, com: o que foi entregue, o que
+   cada junta achou, o que foi corrigido, **por que a correção não bastou**, e as opções com custo.
+4. A `agente-fabrica` **continua** podendo criar especialistas — mas **dentro dos dois ciclos**, não como
+   forma de adiar a parada.
+5. As **paradas imediatas irredutíveis** do §C7.5 seguem valendo e são independentes deste teto.
+
+**O que o dono ganha.** Ele é chamado quando a informação vale mais — depois de **duas** tentativas honestas,
+com dois conjuntos de achados na mesa — em vez de depois de cinco, quando o bloco já consumiu semanas e a
+junta já esgotou o pool de identidades.
+
+**Aplicação aos blocos em voo, dita para não ficar ambígua.**
+
+- **`SAN2-1`** está **no ciclo 2**. Se a junta de identidade nova reprovar, **para e vira dossiê** — não há
+  ciclo 3 para ele.
+- **`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
+  última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto.
+- Blocos **novos** nascem sob o teto de 2.
+
+## D-JUNTA-RESILIENTE (2026-08-29) — a junta passa a sobreviver à morte de quem a executa
+
+**Contexto medido.** Na sessão de 28–29/08, **14 agentes morreram em ~28 disparos (~50%)**, todos por
+`server_error` de streaming da API — cortes do lado do serviço, não bug de repositório (agentes Explore e
+Plan, que não leem arquivo de junta nenhum, morreram do mesmo jeito). Forense completa, com a tabela das 14
+e os seis fatos: `agent-orchestration/omega/POSTMORTEM-QUEDAS-2026-08-29.md`.
+
+**A decisão.** Toda junta, inspeção de terreno e porteiro passam a operar sob o
+**`PROTOCOLO-JUNTA-RESILIENTE`** (`omega/juntas/`): **P1** evidência incremental em arquivo, item a item ·
+**P2** voto escrito em arquivo ANTES da mensagem final · **P3** emenda à R2 — evidência registrada é
+roteiro de re-execução barata para o sucessor; conclusão sem comando registrado segue sendo não-insumo ·
+**P4** mandato ≤3 itens, medição ≠ voto, saída final curta · **P5** máximo 2 disparos em paralelo + pausa
+de 15 min após 2 quedas em 30 min · **P6** registro padronizado de quedas (`00-quedas.md` por junta).
+
+**Errata de lição, registrada por honestidade.** A regularidade publicada nas atas de 29/08 — *"mandato
+longo morre, mandato curto entrega"* — era **simplificação parcialmente errada**: quatro mortes ocorreram
+na **mensagem 1**, antes de qualquer trabalho, provando falha por request independente do mandato. A
+relação verdadeira é *morte ≈ exposição × taxa de falha da janela*. Mandato curto continua sendo a norma
+(P4), pelo motivo certo: reduz exposição E custo da perda.
+
+**O que NÃO muda.** Quóruns, vetos, identidade nova por ciclo, separação de papéis (§C7.4-bis) e o teto de
+dois ciclos (`D-TETO-DOIS-CICLOS`). A junta pegou quatro classes reais de defeito na mesma sessão das
+quedas — o desenho de mérito funciona; o que este protocolo conserta é o **modelo de custo**, que assumia
+que agente sobrevive.
+
+**Hipótese em aberto, declarada com n pequeno.** Pinados em `fable`: 1 morte em 5 (~20%); herdando o modelo
+da sessão: ~13 em 23 (~57%). Não é conclusão — a série do P6 decide, sem pinar nada por palpite.
+
+## D-GOLIVE-MAPS-ROTACAO-DISPENSADA (decisão do dono, 2026-08-13, **registrada em 2026-08-29**)
+
+**A decisão.** A rotação da chave Google Maps que estava exposta no histórico git está **DISPENSADA**.
+
+**Fundamento, medido.** O projeto **não usa Google Maps**. O mapa operacional é **MapLibre GL +
+OpenFreeMap** desde o PR #338 (custo US$ 0), por decisão da Junta de Mapas registrada em
+`agent-orchestration/omega/juntas/J-002-provedor-de-mapa.md` e reafirmada como regra de ouro de arquitetura
+em `decisoes.md`. A chave estava hardcoded num **arquivo de protótipo** (`docs/claude-code-handoff/ERP
+Web.dc.html`), foi **redigida do HEAD** no PR #229, e **não tem uso ativo**: nenhuma superfície de produto a
+consome.
+
+**Por que isto vira decisão registrada, e não some.** A `P-GOLIVE-SECRET-ROTATE` figurava como a **única
+pendência CRÍTICA da trilha** e como "parada irredutível (exposição de segredo)". A dispensa do dono existia
+**apenas na memória do agente** — e o §A1 põe decisão do dono no topo da hierarquia de fonte de verdade,
+o que significa que ela tem de viver **no repositório**. Uma CRÍTICA falsa aberta é pior que inútil: ela
+ensina a conviver com crítica aberta.
+
+**O que a dispensa NÃO cobre.** A chave **segue no histórico git** e continua devendo ser tratada como
+comprometida por qualquer um que a encontre. A dispensa é da **ação de rotação**, pelo fato de a chave não
+ter uso no produto — não é uma afirmação de que a exposição não ocorreu. Se o projeto voltar a usar Google
+Maps Platform em qualquer superfície, esta decisão **caduca** e a rotação volta a ser obrigatória **antes**
+da primeira chamada.
+
+Confirmada pelo dono em 2026-08-29, em resposta a pergunta direta do orquestrador do bloco SAN2-1.
+
+## D-SAN2-OPCAO-C (decisão do dono, 2026-08-29) — o destino do SAN2-1: salvar agora, ler depois
+
+**Contexto.** O `SAN2-1` (triagem das 226 pendências) foi **reprovado nos ciclos 1 e 2** e **PARADO** pelo
+teto de dois ciclos (`D-TETO-DOIS-CICLOS`) — o primeiro bloco a acionar a regra. O dossiê
+(`omega/reprovacoes/DOSSIE-SAN2-1-parada.md`) apresentou quatro opções com custo.
+
+**A decisão.** O dono escolheu a **opção C**: **(1)** mergear agora o que as duas juntas verificaram —
+índice gerado e idempotente, 97→0 sem status, a CRÍTICA falsa fechada, backfill, reconciliação, limpeza de
+disco; **(2)** trocar a etiqueta das 79 diferidas pela frase **verdadeira** ("adiada por triagem automática;
+NÃO verificada item a item"); **(3)** fechar `P-036` como duplicata da `P-CHK-TEMPLATE-PRISMA-V7`; **(4)**
+retirar o tripwire de tarifa do balde C; **(5)** **adiar — não descartar** — a leitura real das 79, uma a
+uma, para DEPOIS do ciclo 5 do financeiro, registrada com dono e critério em `P-SAN2-LEITURA-DAS-79`.
+
+**Execução:** bloco `SAN2-1R` (branch `chore/san2-1-resgate`) — **bloco novo executando decisão do dono**,
+não ciclo 3 (não existe ciclo 3 sob o teto).
+
+**Por que esta entrada existe** (registrada por exigência do R2 do inspetor de terreno do SAN2-1R): a
+escolha vivia só no briefing e nas etiquetas — e decisão do dono é o **topo** da hierarquia de fonte de
+verdade (§A1.1), tem de viver em `decisoes.md`. É a mesma lição da `D-GOLIVE-MAPS-ROTACAO-DISPENSADA`,
+aprendida duas vezes no mesmo dia.
+
+## REGISTRO-SAN2-3-OBITUARIO (2026-08-30) — **registro de CONFLITO MEDIDO (§A2), não decisão do dono**
+
+**O que é.** O enunciado herdado do bloco `SAN2-3` — *"descarte dos 16 especialistas queimados em
+`.claude/agents/especialistas/`"* — **não sobrevive à medição**, em dois pontos independentes. O §A2 proíbe
+escolher um lado em silêncio, então o conflito fica registrado aqui **antes** da consolidação. Isto **não é
+decisão do dono**: é o executor dizendo o que mediu e o que fez com a divergência. O dono pode derrubá-lo.
+
+**(a) O diretório nunca existiu na `main` — o descarte físico é um no-op.**
+`git ls-tree -r --name-only HEAD -- .claude/agents/ .agents/agents/ | grep -c especialistas` → **0**;
+`git log main --oneline -- .claude/agents/especialistas/` → **vazio**. As 17 identidades nasceram e vivem só
+na branch `demo/investidor` (5 commits: `1736727`, `160a87f`, `77ead96`, `e74b469`, `bd0d700`), nas duas
+pontas do espelho. **Nenhum mandato escrito manda apagá-las**: as formulações canônicas são as dos porteiros
+(#362: *"SAN2-3 (obituário dos 16 especialistas): documental"*; #363: *"obituário dos 16 especialistas,
+preservando `critico-c5-adversarial`"*).
+**Resolução:** o `SAN2-3` **não apaga nada, em branch nenhuma** — nem na `main` (não há o que apagar) nem na
+`demo/investidor` (branch de trabalho do dono, fora do alcance e do direito de um PR nascido da `main`). O
+descarte é **lógico**: `agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md`, append-only, é o
+registro que mata o **direito de sentar numa junta** sem matar o byte.
+
+**(b) A conta "16 queimados + 1 preservado" erra em UMA identidade — são 15 + 2.**
+`jurado-c5-arnes-catalogo-postgres` estava na lista dos 16 e **não pode ser sepultado**: a ata
+`omega/juntas/J-B-O6R-ARNES.md` (l.51-56) registra que o `inspetor-de-terreno-da-junta` **BLOQUEOU** o seu
+reaproveitamento na cadeira 1 daquele bloco — *"o corpo dele é o contrato de outra junta"* — e que ele
+*"ficou intocado e reservado para a junta do ciclo 5"*. Reconfirmado em
+`votos/B-O6R-ARNES/01-jurado-arnes-catalogo.json` l.2. Junto com `critico-c5-adversarial` (nomeado como o
+crítico do ciclo 5 em `omega/planos/B-O6R-02-ciclo5-plano.md` l.10/171/230/301, e sem nenhum voto ou ata de
+caso concluído no `grep`), são **2 RESERVADAS**, não queimadas — e o ciclo 5 do `B-O6R-02` **não rodou**
+(`ls omega/juntas/ | grep -i ciclo5` → vazio; `ls omega/juntas/votos/ | grep -i ciclo5` → vazio).
+**Resolução:** **15 SEPULTADAS** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4) + **2 RESERVADAS**, cada
+linha com a citação da fonte. Sepultar as duas destruiria a composição já pronta do próximo bloco
+financeiro da fila.
+
+**Onde o detalhe vive.** `agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` §5 ("Divergência §A2"),
+com a tabela das 17 identidades, a evidência por linha e a regra de consulta. O
+`.claude/agents/inspetor-de-terreno-da-junta.md` (item 3.1-bis, +4 linhas, espelho **gerado** por
+`scripts/sync-agent-agents.mjs`) passa a apontar esse arquivo como **fonte primeira** da checagem de
+inelegibilidade do §C7.1-bis — sem afrouxar o fail-closed: **ausência do nome no obituário não absolve**, o
+`grep` nas atas segue obrigatório.
+
+**O que este registro NÃO faz:** não cria pendência de "apagar depois" (os arquivos não fazem mal onde
+estão — o guard do espelho não enxerga subdiretório, `scripts/sync-agent-agents.mjs` l.66/74 usam
+`readdirSync` não-recursivo, e nenhum job os consome) e **não** adiciona guard de código novo: o vetor real
+de reuso é a **composição da junta**, não a existência do arquivo — um teste "nome queimado não existe na
+árvore" daria **verde com o reuso acontecendo na demo**, que é a classe de falsa segurança que a rodada SAN2
+existe para exterminar. O argumento está escrito para ser derrubado no voto, se a junta discordar.

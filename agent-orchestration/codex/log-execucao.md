@@ -1,3 +1,81 @@
+## 2026-08-28 - B-O6R-ARNES - mecanismo unico de catalogo, teardown que nao deixa papel vivo, piso de denominador
+
+### Resumo
+
+A classe do arnes de teste (`P-O6R-ARNES-ISOLAMENTO`, 2026-08-18) saiu do `B-O6R-02` e virou bloco
+proprio por decisao do dono (`D-JUNTA-ESCOPO-E-CALIBRACAO` §5): o financeiro foi reprovado no ciclo 4
+por um defeito que nao criou e estava proibido de consertar. Branch `fix/o6r-arnes-catalogo-unico`
+sobre `origin/main` `6efe5ad`. So `tests/**` e `scripts/**` (7 arquivos); o diff contra a base em
+`src/`, `prisma/`, `.github/`, `CLAUDE.md`, `AGENTS.md`, `frontend/`, `mobile/` e lockfiles e VAZIO,
+conferido por `git diff --stat` e item da bateria.
+
+Papeis (§C7.4-bis): quem ACHOU = a cadeira do arnes do ciclo 4 (`jurado-c4-suplente-arnes`, voto
+REPROVADO com a tabela N=10 e o vaza-metro) + as medicoes do orquestrador; quem PLANEJOU =
+`planejador-mestre`, instancia nova (Fable); quem DESENVOLVEU = esta instancia, designada
+nominalmente em 2026-08-28. Nenhum acumulo.
+
+### Entregue
+
+- **C-A — os 3 ultimos escritores entram no mecanismo unico.** `audit-security`,
+  `vehicle-identity-schema` e `impound-process-checklist-link-schema` executavam CREATE ROLE / GRANT /
+  DROP OWNED / DROP ROLE fora de `withRoleCatalogLock`. Agora so a sequencia de CATALOGO entra no lock
+  (janela curta: criacao de organizacao e corpo do teste ficam fora). A enumeracao de escritores de
+  `tests/**` ja nao tem excecao.
+- **C-B — teardown resiliente E RUIDOSO** (`dropEphemeralRoleResilient`), usado pelos 3 escritores e
+  pelo proprio arnes. Mata os dois anti-padroes OPOSTOS: a sequencia sem catch (a falha do 1o engolia
+  o 2o; a role sobrevivia com LOGIN e DML em 115 tabelas) e o `.catch(() => undefined)` (a falha sumia
+  em silencio). Respeita `2BP01` (repete a sequencia inteira enquanto a role viver) e `25P02` (um
+  statement por transacao, porque erro aborta a transacao); role viva ao fim LANCA.
+- **C-C — sweep por familia**: `audit_rls_`, `vid_rls_test_`, `vid_link_rls_` entram com o corte de 60
+  min. `rls_test_` fica FORA por decisao consciente (68 orfas legadas; classe do mass-delete de 26/07).
+- **C-D — porte verbatim** do guard de skip C5.3 (+42/+56, blobs finais `28a589b`/`593c3b8`).
+- **C-E — piso de denominador**: arquivo expandido que termina sem registrar teste e sem declarar skip
+  e ERRO que NOMEIA o arquivo. Estrutural, nao por contagem fixa. Pulo declarado nao cai no piso.
+- **C-F — allowlist do ratchet** recongelada por medicao real, com o motivo de cada delta.
+
+### Numeros (forma declarada; sem N e forma, numero nao vale)
+
+- **Bateria barata** (7 arquivos, `DATABASE_URL`→:55950, `CORE_SAAS_PERSISTENCE` nao exportada, Node
+  v20.19.5, cluster descartavel com 103 migrations): **PRE 7/13 vermelhas** com `XX000` + 1 queda de
+  denominador 37→32; **POS 13/13 ec=0, 0 `XX000`, denominador 37 identico nas 13**.
+- **Canonica 3** (`npm test` com DATABASE_URL, N=10, com vaza-metro): resultado no PR e no history.
+- **Canonica 1** (`npm test` SEM DATABASE_URL, N=3): ec=1 nas 3, denominador **2359 identico**, 58
+  pulos identicos. O piso de denominador DISPARA 1 vez, NOMEANDO
+  `tests/core-saas-role-authority.test.ts` — o pulo DECLARADO nao cai nele (os 58 passam limpos); o que cai
+  e o arquivo que morre no LOAD sem registrar teste e sem declarar skip, que e exatamente o comportamento
+  desenhado. [CORRIGIDO em 2026-08-28 pelo bloco de registro: o "piso **0**" publicado no #359 foi medido em
+  commit intermediario, anterior a `1676a5b`, que abriu os olhos do piso para dentro do repo. Reexecucao
+  independente do porteiro pos-merge no head final confirma o disparo — `00c-porteiro-pos-merge-359.md`,
+  achado C.] Vermelho ambiental NOMEADO e
+  pre-existente: `tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lanca
+  no LOAD sem `DATABASE_URL`. Diff contra a base desse arquivo e de `src/`: VAZIO. Consertar e
+  proibido aqui.
+- **Canonica 2** (`db:seed` + `node --test --import tsx $SUITES` da lista do `ci.yml` da base, N=3):
+  **3/3 ec=0**, denominador **148 identico**, 2 pulos, grep `unhandledRejection|tuple concurrently
+  updated|23505|40P01` = **0** nas 3.
+- **Casos permanentes de guarda**: 22 (21 runner-guard + 1 ratchet) → **34** (29 + 5). Nenhum morreu.
+- Drills D37–D43 (+ D40b) todos com baseline medido na hora, mutacao, vermelho com ec registrado e
+  restore conferido por `git hash-object` = blob.
+
+### Auto-defeitos achados por EXECUCAO contra a propria correcao (registrados, nao escondidos)
+
+Dois, ambos nascidos na correcao e nenhum no codigo original — a classe que a
+`D-JUNTA-SEPARACAO-DE-PAPEIS` descreve: (1) o `.catch(() => undefined)` renasceu nos casos -db novos e
+engoliu uma falha real no D43, deixando uma role viva (quem achou foi o vaza-metro); (2) o piso de
+denominador nasceu CEGO dentro de `tests/`, porque comparava so a forma passada ao `node --test`
+enquanto o TAP nomeia o ponto de arquivo pelo absoluto — os drills nao pegaram porque a fixture morava
+FORA do repositorio, o unico arranjo em que as duas formas coincidem; quem achou foi a canonica 1.
+Os dois corrigidos no mesmo PR, com caso permanente novo em cada caso e drill que os reproduz.
+
+### Divergencias registradas (§A2, antes de consolidar)
+
+`P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` **nao existe nesta base** (0 ocorrencias em `origin/main`; presente
+so na trilha `demo/investidor`, 33 commits sem PR) — a correcao foi entregue e provada, o registro se
+fecha la. E o `Kpis/app.js` (fora da §5) foi REGERADO pelo gerador do proprio repo
+(`scripts/kpi-freeze.mjs`), porque a copia congelada e derivada do JSON e o guard permanente do painel
+compara as duas. Ambas em `pendencias.md`, junto da atribuicao por execucao do vazamento linear de
+identidades (+4 `core-saas-prisma`, +1 `core-saas-role-authority-db`, soma = os +5/rodada medidos).
+
 ## 2026-07-29 - FIX-NAV-MENU-PLATFORM-JWT
 
 ### Resumo

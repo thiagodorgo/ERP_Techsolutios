@@ -4,6 +4,16 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
+import {
+  dropEphemeralRoleResilient,
+  withRoleCatalogLock,
+} from "./helpers/auth-identity-fixture.js";
+
+// B-O6R-ARNES (2026-08-28) — terceiro e último escritor de catálogo que rodava fora do mecanismo
+// único. Mesma correção e mesmo motivo do `vehicle-identity-schema`: a sequência da role
+// `vid_link_rls_*` entra em `withRoleCatalogLock` e o teardown deixa de engolir as falhas em
+// `.catch(() => undefined)`.
+
 const connectionString = process.env.DATABASE_URL;
 
 // Ω-VID PR-04 (§Parte D) — bateria de prova viva do schema (Postgres real) de "impound_process_checklist_links".
@@ -87,12 +97,14 @@ if (!connectionString) {
     let ctxA: Awaited<ReturnType<typeof seedContext>> | undefined;
     let ctxB: Awaited<ReturnType<typeof seedContext>> | undefined;
     try {
-      await adminClient.$executeRawUnsafe(
-        `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
-      );
-      await adminClient.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`);
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(
+          `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
+        );
+        await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
+        await tx.$executeRawUnsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`);
+        await tx.$executeRawUnsafe(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`);
+      });
 
       ctxA = await seedContext(adminClient, "rls-a");
       ctxB = await seedContext(adminClient, "rls-b");
@@ -119,8 +131,8 @@ if (!connectionString) {
       if (ctxA) await teardown(adminClient, ctxA, { skipDisconnect: true });
       if (ctxB) await teardown(adminClient, ctxB, { skipDisconnect: true });
       if (client) await client.$disconnect();
-      await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`).catch(() => undefined);
-      await adminClient.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`).catch(() => undefined);
+      // C-B: idem vehicle-identity-schema — sai o par de `.catch(() => undefined)`.
+      await dropEphemeralRoleResilient(adminClient, roleName);
       await adminClient.$disconnect();
     }
   });

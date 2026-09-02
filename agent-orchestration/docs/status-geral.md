@@ -1,84 +1,134 @@
 # Status Geral
 
-## Atualização 2026-08-24 — B-O6R-02 ciclo 3: as QUATRO propriedades implementadas
+## Atualização 2026-08-28 — B-O6R-ARNES (arnês de teste: catálogo, teardown, denominador)
 
 ### Status
 
-Ciclo 3 na branch `feat/o6r-b02-financial-uow`. Não houve push/PR/merge: o gate
-`G-A109FD7-PUBLICADO` permanece aberto. A junta 5/5 do ciclo 3 ainda não ocorreu — nenhum achado muda de
-status até ela ficar verde.
+Bloco próprio, branch `fix/o6r-arnes-catalogo-unico` sobre `origin/main` `6efe5ad`. A classe do arnês
+(`P-O6R-ARNES-ISOLAMENTO`, 2026-08-18 — **anterior** a todos os blocos O6R de código) saiu do
+`B-O6R-02` por decisão do dono (`D-JUNTA-ESCOPO-E-CALIBRACAO` §5) e rodou **primeiro**: ela é
+pré-requisito de confiança em qualquer número dos blocos restantes. O financeiro havia sido reprovado
+no ciclo 4 por um defeito que não criou e estava proibido de consertar.
 
-O eixo do ciclo é a frase do votante que reprovou o ciclo 2: **"os defeitos do ciclo 1 estão fechados; a
-classe que os gerou, não."** O ciclo 1 fechou o B-2 acrescentando o membro que faltava a uma lista escrita à
-mão, e por isso o ciclo 2 reprovou pelo mesmo motivo. Este ciclo muda as propriedades, não os exemplares.
+Escopo: **só `tests/**` e `scripts/**`** (7 arquivos). O diff contra a base em `src/`, `prisma/`,
+`.github/`, `CLAUDE.md`, `AGENTS.md`, `frontend/`, `mobile/` e lockfiles é **vazio** — item de bateria,
+não promessa.
 
-### Entregue na autoria (por propriedade)
+### Entregue
 
-- **P6 (fecha B-1)** — o invariante de efeito do cheque soma o **fecho por estorno** dos lançamentos vivos
-  alcançáveis pelas pontas, e a seleção acontece DENTRO do helper. A raiz era a fronteira de confiança: a
-  contrapartida do estorno nasce sem vínculo com o cheque, então nenhum dos dois carregadores a via, e o
-  helper somava metade do razão dando verde. As três cópias do carregador (memória, HTTP, Postgres) pararam
-  de selecionar e passaram a asserir a própria promessa de completude. Suíte nova do PRÓPRIO helper, que o
-  ciclo 2 nunca teve.
-- **P5 (fecha B-2)** — vínculo de agregado fail-closed **por construção**, em `src/` (restrição medida:
-  `npm run check` só compila `src/**`, então cerca escrita em teste não é conferida por build nenhum).
-  Classificação total dos campos, políticas célula a célula por dono × rota, ordens de precedência como dado
-  com igualdade de união, fonte única das duas pontas do cheque consumida pelas duas cópias, e censo do
-  schema (texto, fail-closed nas duas bocas).
-- **P7 (fecha o correlato ALTA do B-2)** — os três contratos de repositório têm mapa de classificação
-  `write`/`read`/`test_reset` com exaustividade pelo compilador, e a classificação é julgada por **harness
-  empírico**: cada membro é exercido dentro de uma unidade que aborta, e o estado tem de voltar idêntico.
-- **P8 (fecha B-3)** — a pré-condição de catálogo volta ao padrão da casa (auto-provisionar, idempotente e
-  sem clobber), e o job `backend` **permanece seedless de propósito**, porque é o detector permanente.
+O **mecanismo de escrita de catálogo de cluster passou a ser único**: os três últimos escritores que
+rodavam fora do `withRoleCatalogLock` entraram, e a enumeração de escritores de `tests/**` já não tem
+exceção. O **teardown de role efêmera deixou de poder deixar papel vivo** — resiliente por statement,
+ruidoso nas falhas, com segunda tentativa da sequência inteira (a armadilha `2BP01`) e falha alta se a
+role sobreviver. O **varredor de órfãs ganhou as três famílias novas** com o mesmo corte de 60 min,
+com contraprova de que não toca prefixo não registrado. E o **runner ganhou piso de denominador**:
+arquivo que termina sem registrar teste e sem declarar skip fica vermelho **nomeando o arquivo**, em
+vez de sair 0 publicando um total menor e plausível.
 
-### Validação de autoria (N e FORMA declarados; exit code por variável, nunca por pipe)
+Por que "quase todos os escritores" nunca serviu — medido, não argumentado: serialização parcial não
+protegia **nem os serializados**. Na bateria barata pré-correção, 7 de 13 rodadas ficaram vermelhas com
+`XX000 tuple concurrently updated`, e as vítimas incluíam quem **tomava** o lock. O objeto disputado é
+a tupla de ACL (`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`.
 
-- `npm run check` · `npm run lint` · `npm run build` · `npm --prefix frontend run check`: **exit 0**.
-- **Forma canônica 3** (o arranjo do job `backend`: banco descartável, `prisma migrate deploy`, SEM seed,
-  `DATABASE_URL`/`REDIS_URL`/`CORE_SAAS_PERSISTENCE=memory` exportados), medida no MESMO arranjo antes e
-  depois: **antes 2659 · 2651 pass · 6 fail · 2 skip** (as 6 falhas eram o B-3, todas "ausente do catalogo")
-  → **depois 2719 · 2717 pass · 0 fail · 2 skip**. Delta +60 casos novos, +66 pass, −6 fail.
-- Drills **D15–D20** e **D10/D11/D12 re-executados sobre o código refatorado**: cada mutação vermelha com
-  exit registrado, cada restauração conferida por **md5**, e cada uma com controle provando que não estava
-  vermelha antes.
-- Ressalva de arranjo, registrada sem conclusão causal: no worktree isolado não existe `.env`, então
-  `DATABASE_URL` está genuinamente ausente e `tests/core-saas-role-authority.test.ts` falha no load do módulo
-  (`src/database/prisma.ts` exige a variável). É **pré-existente** — medida idêntica no head da branch antes
-  de qualquer alteração deste ciclo — e desaparece assim que `DATABASE_URL` existe (forma canônica 3, exit 0).
+A **lista exata** da bateria barata, que é parte da FORMA e sem a qual o denominador 37 não é reproduzível por terceiro (achado da cadeira de catálogo na junta): `tests/audit-security.test.ts` (1) · `tests/auth-identity-backfill-db.test.ts` (6) · `tests/auth-identity-link-events-db.test.ts` (5) · `tests/auth-identity-role-real-db.test.ts` (10) · `tests/impound-process-checklist-link-schema.test.ts` (5) · `tests/rls-tenant-isolation.test.ts` (1) · `tests/vehicle-identity-schema.test.ts` (9) = **37**. São **sete** arquivos, não seis — o rótulo anterior dizia "6 arquivos escritores de catálogo" e nenhuma combinação de 6 que contenha as vítimas nomeadas fecha 37.
 
-### O que NÃO mudou de status
+> ### ⚠ ERRATA E-1 (2026-08-31, bloco `SAN2-4b`, correção C5) — apenso §A2: **o parágrafo acima fica intocado**
+>
+> **A segunda metade da sentença acima é FALSA por execução.** O texto diz *"São **sete** arquivos, não
+> seis — o rótulo anterior dizia «6 arquivos escritores de catálogo» e **nenhuma combinação de 6 que
+> contenha as vítimas nomeadas fecha 37**"*. Existem **duas** combinações de 6 que contêm as 4 vítimas
+> nomeadas e fecham 37 (`medicao-2-bateria-barata.md` §R.5, contraexemplos **executados**), e a cadeira
+> C2 da junta do #365 executou **três** listas de 6 distintas dando `(6, 37)`. Uma delas é a própria
+> **lista-6** que `agent-orchestration/controle/pendencias.md` e o §0.a do `B-O6R-02-ciclo5-plano.md` já
+> declaravam — medida em **10/10 rodadas com `tests=37`** (§F5.2/F5.3 da medição 2).
+>
+> **O que PERMANECE verdadeiro nesta mesma linha, e por isso não se apaga nada:** as **sete contagens por
+> arquivo** estão **TODAS certas**, conferidas uma a uma com N=5 por arquivo (§F4/§R.1); a lista-7 fecha
+> 37 em 10 rodadas; e *"a lista é parte da FORMA"* segue valendo. O defeito é a **inferência de exclusão**
+> — sete é *uma* forma válida, não *a* forma. Lista-6 e lista-7 são **partições diferentes do mesmo
+> total**, unidas pela coincidência aritmética exata `link-events(5) + role-real(10) == links(15)`.
+>
+> **E o problema maior, que esta errata registra junto (E-2 emendada pelo achado C2-A1):** o denominador
+> **37 não IDENTIFICA a lista** — e o par `(arquivos, testes)` **também não**, porque três listas de 6
+> distintas produzem `(6, 37)`. O par é **necessário e insuficiente**. A receita reprodutível por terceiro
+> exige **NOMEAR os arquivos**, e a receita canônica é o **§V.3 da `medicao-2-bateria-barata.md`**:
+> `tests/audit-security.test.ts` · `tests/auth-identity-backfill-db.test.ts` ·
+> `tests/auth-identity-links-db.test.ts` · `tests/rls-tenant-isolation.test.ts` ·
+> `tests/vehicle-identity-schema.test.ts` · `tests/impound-process-checklist-link-schema.test.ts`
+> = **`(6 arquivos, 37 testes)`**. Este mesmo bloco apensou o §V.3 ao critério **D29** do
+> `B-O6R-02-ciclo5-plano.md`.
+>
+> **Registro canônico das três medições:** `agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-1-authority-portal.md`,
+> `medicao-2-bateria-barata.md` e `medicao-3-censo-roles.md` — os diários de `votos/SAN2-4a/`, não um
+> consolidado em `omega/medicoes/` (divergência mandato × plano do 4a, fechada aqui por decisão escrita:
+> copiar verbatim criaria um 4º registro da mesma verdade, e a própria medição 2 provou que replicação
+> não é corroboração).
+>
+> **Origem:** medicao-2 §V.2 (E-1 e E-2 + errata-da-errata do achado C2-A1) e §V.5 observação **O-1**.
+> Fechada com esta errata a pendência `P-REG-BATERIA-BARATA-DUAS-LISTAS`.
 
-Os achados (`DIN-002/010/011` e irmãos) seguem exatamente como estavam: nada muda até a junta 5/5 do ciclo 3
-ficar verde. Deploy segue bloqueado pela J-6R. O gate `G-A109FD7-PUBLICADO` segue bloqueando push/PR/merge.
+### Atualização 2026-08-31 — SAN2-4b (CORRIGIR o arnês a partir das 12 observações medidas do 4a)
 
-## Atualização 2026-08-20 — B-O6R-02 F6 em `aguardando_merge`
+O `SAN2-4` foi partido em **4a (MEDIR)** e **4b (CORRIGIR)**. O 4a (#365) mediu e não consertou nada; este
+bloco consome aquele diagnóstico e fecha, com prova de poder declarada, **quatro** correções de código e o
+registro. **C1** — `src/modules/authority/authority-password.ts`: o `keylen` deixou de ser derivado do
+stored recebido e passou a ser pinado em `AUTHORITY_SCRYPT_PARAMS.keylen`, com rejeição de base64
+não-canônico; vermelho-controle medido **79/20 000** → **0/100 000**, controle positivo **100 000/100 000**.
+**C2** — `tests/authority-portal.test.ts`: o tamper que trocava **padding** passa a adulterar **dado**, e
+dois casos novos pinam a classe (denominador do arquivo **12 → 14**); **30/30 vermelhas** contra o `src/`
+sem a C1 e **30/30 verdes** com ela — a detecção da classe saiu de **1/256 por execução para 100%**.
+**C3** — as **duas** portas da exclusão do varredor fecham juntas (`rls_test` em `SWEPT_ROLE_FAMILIES`
+**e** o criador passando a invocar o sweep sob o lock que já detém); mutação de **uma metade de cada vez**
+provou que meia correção deixa a órfã viva 2/2 nas duas metades. **C4** — o teardown cru de `rls_test_`
+virou `dropEphemeralRoleResilient`: forma crua **10/10 órfãs**, resiliente **0/10**, vaza-metro Δ=0 em
+10/10. **A base viva (`erp-postgres`/`erp-redis`) não recebeu nenhum comando, nem de leitura** — todo o
+trabalho rodou em cluster descartável na porta 56432, e **as 68 órfãs de `rls_test_` seguem CARREGADAS e
+não recontadas** (`P-ARNES-RLS-TEST-FORA-DO-SWEEP` continua **ABERTA**, com a recontagem supervisionada
+como decisão da junta dona). Diários por correção em
+`agent-orchestration/omega/juntas/votos/SAN2-4b/`.
 
-> **SUPERADA (reconciliação do ciclo 3, 2026-08-24).** Os números desta seção são os do **ciclo 1**, que a
-> junta 5/5 **REPROVOU** (`J-B-O6R-02-ciclo1`), e seguiram publicados aqui como se fossem o estado da branch —
-> achado da ata do ciclo 2. Ficam preservados como registro histórico (rastreabilidade entre agentes é regra,
-> §A4/§A6); o estado corrente é a seção de 2026-08-24 acima.
+### Validação (forma declarada — número sem N e forma não vale)
 
-### Status
+- **Bateria barata** dos 7 arquivos, Node v20.19.5, cluster descartável com 103 migrations:
+  **PRÉ 7/13 vermelhas** (+ 1 queda de denominador 37→32) → **PÓS 13/13 ec=0, 0 `XX000`, denominador
+  37 idêntico nas 13**.
+- **Canônica 3** (`npm test` com `DATABASE_URL`), **N=10** sobre o código final, com vaza-metro
+  (snapshot de `pg_roles` + linhas nas 115 tabelas antes e depois de cada rodada): **10/10 ec=0,
+  denominador idêntico nas 10, Δroles = 0 em todas e nenhuma role nova ao fim** — contra as 2 órfãs
+  com LOGIN e DML em todas as tabelas medidas no ciclo 4.
+- **Canônica 1** (sem `DATABASE_URL`, N=3): ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
+  idênticos. O piso de denominador **dispara 1 vez, nomeando**
+  `tests/core-saas-role-authority.test.ts`: o pulo **declarado** não cai nele (os 58 passam limpos), o que cai
+  é o arquivo que morre no load sem registrar teste nem declarar skip — o comportamento desenhado.
+  [CORRIGIDO em 2026-08-28 pelo bloco de registro: o "piso **0**" publicado no #359 vinha de medição em commit
+  intermediário, anterior a `1676a5b`. Achado C do porteiro pós-merge.] O vermelho é ambiental,
+  **pré-existente e nomeado**
+  (`tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lança no load sem
+  banco); diff desse arquivo e de `src/` contra a base: vazio. Consertar é proibido aqui.
+- **Canônica 2** (lista `SUITES` do `ci.yml` da base, N=3): **3/3 ec=0**, denominador **148 idêntico**,
+  ruído (`unhandledRejection|XX000|23505|40P01`) **0** nas 3.
+- **Casos permanentes de guarda: 22 → 34**; nenhum morreu (meta do plano: M ≥ 31).
+- **Oito drills** (D37–D43 + D40b): baseline medido na hora, mutação, vermelho com ec registrado,
+  restore conferido por `git hash-object` = blob (nunca md5 cru, nunca `git archive`+`tar`).
+- `npm run check`/`lint`/`build`, `npm --prefix frontend run check`/`build` e `node --check Kpis/app.js`
+  todos **ec=0**.
 
-A autoria das seis fatias de atomicidade financeira está concluída na branch
-`feat/o6r-b02-financial-uow`. Não houve push/PR/merge: o gate `G-A109FD7-PUBLICADO` permanece aberto e exige
-publicar separadamente as ressalvas do porteiro #357 antes de atualizar esta branch e reexecutar a bateria.
+### O que este bloco aprendeu contra si mesmo
 
-### Entregue na autoria
+Dois auto-defeitos, ambos **nascidos na correção** e nenhum no código original, ambos achados por
+**execução** e não por releitura: o `.catch(() => undefined)` renasceu nos casos novos e engoliu uma
+falha real (achado pelo vaza-metro), e o piso de denominador nasceu **cego dentro de `tests/`** porque
+os drills usavam fixture fora do repositório — o único arranjo em que o defeito não aparece (achado
+pela canônica 1). Os dois corrigidos no mesmo PR, cada um com caso permanente e drill próprio.
+Registrado em `pendencias.md` como evidência a favor da `D-JUNTA-SEPARACAO-DE-PAPEIS`.
 
-- UoW tenant-scoped para pagamento, estorno e cheque; writers e fechamento compartilham a trava de período.
-- PATCH/DELETE de título com CAS no PostgreSQL, status derivado no mesmo UPDATE e erros
-  `amount_below_paid`/`title_has_payments` sem vazamento cross-tenant.
-- Cinco suítes DB-gated no CI: 32 testes top-level G1–G12, zero skip.
-- Ciclo 1 corrigiu isoladamente a fixture de `title_restore_conflict` no commit `b8ec196`, sem porta de teste.
+KPIs atualizados no próprio PR (§C3), com `backend_tests` de execução real; `mvp_demo`/`mvp_vendavel`
+**intocados** (nenhum escopo de produto se moveu).
 
-### Validação de autoria
+### Atualização 2026-09-01 — SAN2-6 (contrato autossuficiente antes do ciclo 5: P1–P6 inline, teto por extenso, README do Codex)
 
-- Backend final: **2617/2627**, 0 fail, 10 pulos DB-gated declarados.
-- Focados: **178/178**; PostgreSQL: **32/32**; lote com seed: **10/10**, denominador 32 idêntico.
-- D4/D5/D8: vermelho 12/14 durante cada mutação, verde 14/14 após restauração; D9 preservado no ciclo 1.
-- Backend build e frontend check verdes. Flutter/smoke web carregados, pois as trilhas não foram tocadas.
-- Seis achados permanecem `aguardando_merge`; deploy segue bloqueado pela J-6R.
+Por **ordem literal do dono** (*"coloque P1–P6 inline no contrato e também adicione ao contrato que o ciclo 5 é a última tentativa, publique e deixe salvo no repo"*), `CLAUDE.md` e `AGENTS.md` passam a trazer **P1–P6 inline** no §C7.7 (`grep` **6/6**, era 0/0, com o Modelo de mandato verbatim) e, no §C7.4, a cláusula transcrita de `D-TETO-DOIS-CICLOS` — *"o ciclo 5 já é a última tentativa sob qualquer das duas regras"* mais **"Não há ciclo 6"** (a mesma string nos dois contratos e na fonte: 1/1/1); o bloco §C7.4→§C7.7 ficou **idêntico** nos dois contratos (diff eol-neutro de **0 linhas**, matando de passagem um micro-drift pré-existente, consolidado com registro §A2). O README do Codex parou de ensinar o teto REVOGADO e de tabelar 5 papéis que não existem em disco, e ganhou os dois gates fail-closed (`inspetor-de-terreno-da-junta`, `porteiro-pos-merge`); a emenda voto-esqueleto de `J-SAN2-2` foi apensada à fonte `PROTOCOLO-JUNTA-RESILIENTE.md` (append-only, `numstat 14 0`). Bloco 100% documental: diff de `src/`, `tests/`, `prisma/`, `scripts/` e `.github/` **vazio** nas duas pontas.
+As **3 dívidas de KPI** que o porteiro pós-merge do #367 nomeou para "o PR do ciclo 5" foram pagas aqui, com reatribuição §A2: backfill §C3.5 (`pr` 367 · `merge_commit` `e6a6461` · `approved_head` `5256b49` — o head **julgado na ata `J-SAN2-5.md`**, não o `headRefOid` `657928f`), `blocks_completed` **156 → 157** e as provas "442 0"/"100 0" **ancoradas ao head em que valem**. Nova pendência com dono humano: `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` (índice regenerado **pelo gerador**: 241 → **242** cabeçalhos, ABERTAS 191 → **192**). **O próximo bloco segue sendo o ciclo 5 do `B-O6R-02`** — o parecer do porteiro do #367 continua valendo integralmente; o SAN2-6 preparou o tabuleiro documental e não moveu nenhuma peça do jogo. Na autoria, `pr`/`merge_commit`/`approved_head` do próprio bloco ficam `null` (§C3.5).
 
 ## Atualização 2026-07-29 — FIX-NAV-MENU-PLATFORM-JWT
 

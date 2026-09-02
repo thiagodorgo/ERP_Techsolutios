@@ -50,11 +50,23 @@ export type EphemeralRole = {
 //        lados do DONO" que rodava FORA do lock no ciclo 2 (`XX000` provado pelo orquestrador) e
 //        foi movida para cá no ciclo 3.
 //
-//   NÃO tomam o lock e são ANTERIORES ao bloco (fora do batch -db do job backend-postgres; o
-//   destino deles é o bloco irmão — `P-O6R-ARNES-ISOLAMENTO` em agent-orchestration/controle/
-//   pendencias.md): `tests/audit-security.test.ts` (prefixo audit_rls_),
-//   `tests/impound-process-checklist-link-schema.test.ts` (vid_link_rls_) e
-//   `tests/vehicle-identity-schema.test.ts` (vid_rls_test_).
+//     5. `tests/audit-security.test.ts` (audit_rls_),
+//        `tests/impound-process-checklist-link-schema.test.ts` (vid_link_rls_) e
+//        `tests/vehicle-identity-schema.test.ts` (vid_rls_test_) — os TRÊS ÚLTIMOS, que escreviam
+//        catálogo por fora e entraram em B-O6R-ARNES (2026-08-28). A enumeração já não tem exceção:
+//        TODO escritor de `tests/**` passa por este mecanismo.
+//
+//   POR QUE "quase todos" NUNCA SERVIU — o fato medido que fechou a questão: serialização PARCIAL
+//   não protege nem os serializados. Bateria barata da base (6 arquivos, N=13, cluster descartável,
+//   Node v20.19.5): 7/13 rodadas vermelhas com `XX000 tuple concurrently updated`, e as vítimas
+//   incluem quem TOMAVA o lock — `rls-tenant-isolation` (3×) e `auth-identity-backfill-db` via
+//   `createEphemeralRole` —, não apenas os três de fora. O objeto disputado NÃO é `pg_authid` (sonda
+//   de par `CREATE ROLE`×`CREATE ROLE`: 0/150): é a TUPLA DE ACL — `pg_namespace.nspacl` e
+//   `pg_class.relacl` —, escrita por `GRANT`/`REVOKE`/`DROP OWNED` (sondas de par: `GRANT`×`GRANT`
+//   200/200, `DROP OWNED`×`GRANT` 200/200). Um `DROP OWNED BY` de teardown rodando fora do lock
+//   colide com o `GRANT USAGE ON SCHEMA public` de quem está DENTRO dele, e quem perde a tupla
+//   recebe o erro. Daí a propriedade ser "mecanismo ÚNICO entre TODOS os escritores", jamais "a
+//   maioria dos escritores".
 //
 //   Detector de escritor NOVO: `tests/db-catalog-write-guard.test.ts` — ratchet lexical com
 //   allowlist congelada por arquivo e por contagem; suíte nova com escrita de catálogo fica
@@ -72,13 +84,54 @@ const ROLE_CATALOG_TX_OPTIONS = { maxWait: 30_000, timeout: 30_000 } as const;
 // O varredor não depende do teardown do processo que morreu; depende do relógio.
 const ORPHAN_ROLE_MAX_AGE_MS = 60 * 60 * 1000;
 
-// As DUAS famílias de role que o próprio arnês cria (ciclo 3, C4): `o6r_b01_` (role efêmera de
-// conexão) e `o6r_clone_owner_` (dona do clone da função elevada — `createCloneOwnerProbe`).
+// FAMÍLIAS VARRIDAS — registro EXPLÍCITO, nunca curinga (B-O6R-ARNES, C-C; amplia o P5 da
+// `P-O6R-ARNES-ISOLAMENTO`). Duas nasceram no ciclo 3 (`o6r_b01_` = role efêmera de conexão,
+// `o6r_clone_owner_` = dona do clone da função elevada); as TRÊS restantes entraram quando os seus
+// escritores entraram no mecanismo único — não faria sentido serializar a criação e deixar o
+// resíduo sem varredor. Todas embutem o `Date.now()` da criação no nome, que é o que torna o corte
+// de idade aplicável por construção.
+//
+// `rls_test_` ENTROU EM 2026-08-31 (SAN2-4b, C3) — a decisão anterior, de deixá-la de fora, era
+// consciente e está registrada acima de mim na história deste arquivo; o que a revoga não é gosto,
+// é PREÇO MEDIDO. A medição 3 do SAN2-4a (`omega/juntas/votos/SAN2-4a/medicao-3-*.md` §F7/F8/F10)
+// cronometrou o que a exclusão custava: **5/5 órfãs produzidas** quando o processo morre na janela
+// de ~70% do tempo de vida (1883-1970 ms), **0 recolhimentos em 4 oportunidades** de varredura, e
+// cada órfã nascendo com **LOGIN, sem expiração e 460 grants (115 tabelas × 4)** — a MESMA
+// assinatura das 68 da base viva. A família era a única do arnês tratada de forma assimétrica: as
+// irmãs (`audit_rls_`, `vid_rls_test_`, `vid_link_rls_`) já eram varridas desde o B-O6R-ARNES.
+//
+// O QUE A ENTRADA **NÃO** DECIDE: as **68 órfãs da base viva** seguem intocadas e a sub-pendência
+// `P-ARNES-RLS-TEST-FORA-DO-SWEEP` continua **ABERTA** — a recontagem supervisionada (só SELECT,
+// datável pelo nome, que cada órfã embute) é da junta dona dela, não deste arquivo. O receio que
+// motivou a exclusão original — o incidente de mass-delete de 26/07 — não é respondido por
+// promessa e sim pelo desenho, exercitado por execução nos drills PD do
+// `db-catalog-write-guard.test.ts`: varredura por **lista explícita ancorada** (`^`, nunca
+// heurística) **e** corte de idade de 60 min. Prefixo não registrado sobrevive; timestamp novo
+// sobrevive. Esse mesmo desenho já governa as outras 5 famílias: registrar a `rls_test_` não cria
+// vetor novo, iguala-a às irmãs.
+//
 // O grupo de sufixo é OPCIONAL porque as 5 órfãs legadas do ciclo 2 nasceram sem ele
-// (`o6r_clone_owner_<timestamp>`); as novas sempre o carregam. Prefixos ALHEIOS (`rls_test_`,
-// `audit_rls_`, `vid_link_rls_`, `vid_rls_test_`) NÃO são tocados: são do bloco irmão
-// (P-O6R-ARNES-ISOLAMENTO), e varrê-los daqui seria o improviso que a decisão de escopo proíbe.
-const ORPHAN_ROLE_NAME_PATTERN = /^o6r_(?:b01|clone_owner)_(\d+)(?:_[0-9a-f]+)?$/;
+// (`o6r_clone_owner_<timestamp>`); as novas sempre o carregam.
+// Nomeadas SEM o separador final — ele é acrescentado onde faz falta (LIKE, regex, construção de
+// nome). A assinatura de `createSyntheticOrphanRole` já usava essa forma e não muda.
+const SWEPT_ROLE_FAMILIES = [
+  "o6r_b01",
+  "o6r_clone_owner",
+  "audit_rls",
+  "vid_rls_test",
+  "vid_link_rls",
+  "rls_test",
+] as const;
+
+export type SweptRoleFamily = (typeof SWEPT_ROLE_FAMILIES)[number];
+
+// Derivado da lista acima — a verdade da varredura mora em UM lugar só. Prefixo não registrado é
+// intocável: o padrão é ancorado (`^`), então `rls_test_…` não casa nenhuma alternativa. E o
+// contrário também vale: `vid_rls_test_…`/`vid_link_rls_…` não seriam alcançados por um hipotético
+// `rls_test_%`, porque LIKE e regex ancoram no INÍCIO do nome.
+const ORPHAN_ROLE_NAME_PATTERN = new RegExp(
+  `^(?:${SWEPT_ROLE_FAMILIES.join("|")})_(\\d+)(?:_[0-9a-f]+)?$`,
+);
 
 export async function withRoleCatalogLock<T>(
   adminClient: PrismaClient,
@@ -91,15 +144,27 @@ export async function withRoleCatalogLock<T>(
   }, ROLE_CATALOG_TX_OPTIONS);
 }
 
-// Sweep de órfãs, SEMPRE dentro do lock de catálogo: EXCLUSIVAMENTE as duas famílias do PRÓPRIO
-// arnês (`o6r_b01_%` e `o6r_clone_owner_%`) cujo timestamp embutido no nome seja mais velho que
-// 60 min. É teardown do próprio namespace — nunca curinga além disso (este repositório já teve
-// incidente de mass-delete na base viva). O que for dropado é reportado no stderr para ficar
-// anexável ao relatório.
-async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<string[]> {
+// Sweep de órfãs, SEMPRE dentro do lock de catálogo: EXCLUSIVAMENTE as famílias REGISTRADAS em
+// `SWEPT_ROLE_FAMILIES` cujo timestamp embutido no nome seja mais velho que 60 min. É teardown do
+// namespace conhecido — nunca curinga além disso (este repositório já teve incidente de mass-delete
+// na base viva). O que for dropado é reportado no stderr para ficar anexável ao relatório.
+//
+// EXPORTADA em 2026-08-31 (SAN2-4b, C3 — porta 2). Até aqui ela tinha **um único chamador**,
+// `createEphemeralRole`, e o criador da família `rls_test_`
+// (`tests/rls-tenant-isolation.test.ts`) importava só `withRoleCatalogLock`: rodar aquele arquivo
+// sozinho **não varria nada, de nenhuma família** — medido 2/2 no vermelho-controle do SAN2-4b
+// (nem o `audit_rls_` velho morria). Registrar a família sem dar um chamador ao criador seria meia
+// correção: o alvo continuaria vivo exatamente no arranjo em que ele nasce.
+//
+// CONTRATO DE USO: só se chama de DENTRO de `withRoleCatalogLock` — o parâmetro é um
+// `Prisma.TransactionClient`, que neste arnês só existe lá dentro. Varrer fora do lock disputaria
+// `pg_authid`/`pg_auth_members` com os outros escritores do lote paralelo, que é o `XX000` que o
+// mecanismo único existe para matar.
+export async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<string[]> {
+  const likePatterns = SWEPT_ROLE_FAMILIES.map((prefix) => `${prefix}_%`);
   const rows = await tx.$queryRaw<Array<{ rolname: string }>>`
     SELECT rolname FROM pg_roles
-    WHERE rolname LIKE 'o6r_b01_%' OR rolname LIKE 'o6r_clone_owner_%'
+    WHERE rolname LIKE ANY(${likePatterns}::text[])
     ORDER BY rolname
   `;
   const cutoff = Date.now() - ORPHAN_ROLE_MAX_AGE_MS;
@@ -124,12 +189,136 @@ async function sweepOrphanEphemeralRoles(tx: Prisma.TransactionClient): Promise<
 
   if (orphans.length > 0) {
     process.stderr.write(
-      `[o6r-arnes] sweep dropou ${orphans.length} role(s) órfã(s) o6r_b01_*/o6r_clone_owner_* (> 60 min):\n` +
+      `[o6r-arnes] sweep dropou ${orphans.length} role(s) órfã(s) das famílias registradas ` +
+        `(${SWEPT_ROLE_FAMILIES.join(", ")}) com mais de 60 min:\n` +
         orphans.map((name) => `[o6r-arnes]   ${name}\n`).join(""),
     );
   }
 
   return orphans;
+}
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-ARNES, C-B — TEARDOWN DE ROLE RESILIENTE **E RUIDOSO**.
+//
+// O defeito que este código existe para matar tem DUAS caras opostas, ambas medidas na base:
+//
+//   (a) `audit-security.test.ts:158-159` encadeava `DROP OWNED BY` → `DROP ROLE IF EXISTS` SEM
+//       catch: a falha do primeiro engolia o segundo e a role sobrevivia COM LOGIN e DML em 115
+//       tabelas (2 órfãs em 10 rodadas da canônica 3, com `has_table_privilege(…,'financial_
+//       entries','INSERT') = true`).
+//   (b) `vehicle-identity-schema.test.ts:260-261` e `impound-…:122-123` punham
+//       `.catch(() => undefined)` nos DOIS statements: a falha sumia em SILÊNCIO e a role
+//       sobrevivia por dependência.
+//
+// "Resiliente" NÃO é "silencioso". O aceite é **nenhum papel vivo ao fim E as falhas reportadas**.
+//
+// DUAS ARMADILHAS DO POSTGRES QUE O DESENHO PRECISA RESPEITAR — e que try/catch por statement,
+// sozinho, NÃO resolve:
+//
+//   1. `2BP01 dependent_objects_still_exist`: se o `DROP OWNED BY` não rodou, o `DROP ROLE`
+//      seguinte falha porque a role ainda detém grants. Tentar "cada statement uma vez, cada um
+//      no seu catch" deixa a role viva e diz que tentou. Por isso a SEQUÊNCIA INTEIRA é repetida
+//      enquanto a role sobreviver (até `MAX_DROP_ATTEMPTS`): a segunda passada roda o `DROP OWNED`
+//      que faltou e só então o `DROP ROLE` tem chance.
+//   2. Um erro dentro de uma transação ABORTA a transação (`25P02`): capturar a exceção e emitir o
+//      próximo statement no MESMO `$transaction` só produz "current transaction is aborted". Por
+//      isso cada statement roda em sua PRÓPRIA aquisição de `withRoleCatalogLock` — o que também
+//      atende à janela curta (PB): várias janelas curtas, nunca uma longa.
+//
+// Fail-closed no fim: role ainda viva ⇒ LANÇA. Role morta com falhas pelo caminho ⇒ devolve o
+// relatório e escreve as falhas no stderr — quem chamou de dentro de um `finally` não perde o erro
+// original do teste, mas o ruído fica no log.
+// -----------------------------------------------------------------------------------------------
+
+const MAX_DROP_ATTEMPTS = 2;
+
+export type CatalogStatementFailure = {
+  readonly attempt: number;
+  readonly statement: string;
+  readonly message: string;
+};
+
+export type EphemeralRoleDropReport = {
+  readonly roleName: string;
+  readonly attempts: number;
+  readonly failures: readonly CatalogStatementFailure[];
+};
+
+async function roleExists(adminClient: PrismaClient, roleName: string): Promise<boolean> {
+  const rows = await adminClient.$queryRaw<Array<{ rolname: string }>>`
+    SELECT rolname FROM pg_roles WHERE rolname = ${roleName}
+  `;
+
+  return rows.length > 0;
+}
+
+/** Um statement de catálogo, na sua própria janela de lock, com a falha COLECIONADA (não engolida). */
+async function runCatalogStatement(
+  adminClient: PrismaClient,
+  statement: string,
+  attempt: number,
+  failures: CatalogStatementFailure[],
+): Promise<void> {
+  try {
+    await withRoleCatalogLock(adminClient, async (tx) => {
+      await tx.$executeRawUnsafe(statement);
+    });
+  } catch (error) {
+    failures.push({
+      attempt,
+      statement,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+export async function dropEphemeralRoleResilient(
+  adminClient: PrismaClient,
+  roleName: string,
+  precedingStatements: readonly string[] = [],
+): Promise<EphemeralRoleDropReport> {
+  const failures: CatalogStatementFailure[] = [];
+  let attempts = 0;
+
+  for (let attempt = 1; attempt <= MAX_DROP_ATTEMPTS; attempt++) {
+    if (!(await roleExists(adminClient, roleName))) {
+      break;
+    }
+
+    attempts = attempt;
+
+    for (const statement of precedingStatements) {
+      await runCatalogStatement(adminClient, statement, attempt, failures);
+    }
+
+    await runCatalogStatement(adminClient, `DROP OWNED BY "${roleName}"`, attempt, failures);
+    await runCatalogStatement(adminClient, `DROP ROLE IF EXISTS "${roleName}"`, attempt, failures);
+  }
+
+  const survived = await roleExists(adminClient, roleName);
+
+  if (failures.length > 0) {
+    process.stderr.write(
+      `[o6r-arnes] teardown de "${roleName}": ${failures.length} statement(s) de catálogo ` +
+        `falharam em ${attempts} tentativa(s) — role ${survived ? "SOBREVIVEU" : "removida"}:\n` +
+        failures
+          .map((f) => `[o6r-arnes]   tentativa ${f.attempt} · ${f.statement} → ${f.message}\n`)
+          .join(""),
+    );
+  }
+
+  if (survived) {
+    throw new Error(
+      `[o6r-arnes] teardown FALHOU: a role efêmera "${roleName}" sobreviveu a ${attempts} ` +
+        `tentativa(s) da sequência de limpeza. Role viva com LOGIN e grants é a classe que deixou ` +
+        `2 órfãs com INSERT em todas as tabelas na canônica 3 — falha alto em vez de sumir em ` +
+        `silêncio.\nFalhas coletadas:\n` +
+        failures.map((f) => `  tentativa ${f.attempt} · ${f.statement} → ${f.message}`).join("\n"),
+    );
+  }
+
+  return { roleName, attempts, failures };
 }
 
 export async function createEphemeralRole(
@@ -167,10 +356,9 @@ export async function createEphemeralRole(
     client,
     async drop(): Promise<void> {
       await client.$disconnect();
-      await withRoleCatalogLock(adminClient, async (tx) => {
-        await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
-        await tx.$executeRawUnsafe(`DROP ROLE "${roleName}"`);
-      });
+      // C-B: o próprio arnês usa o teardown resiliente — a propriedade não pode valer só para os
+      // outros. Antes, um `DROP OWNED` que falhasse por concorrência derrubava o `DROP ROLE` junto.
+      await dropEphemeralRoleResilient(adminClient, roleName);
     },
   };
 }
@@ -229,11 +417,12 @@ export async function createCloneOwnerProbe(adminClient: PrismaClient): Promise<
     roleName,
     functionName,
     async drop(): Promise<void> {
-      await withRoleCatalogLock(adminClient, async (tx) => {
-        await tx.$executeRawUnsafe(`DROP FUNCTION IF EXISTS public.${functionName}(text)`);
-        await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
-        await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
-      });
+      // C-B: idem. O `DROP FUNCTION` entra como statement PRECEDENTE porque a função é do dono —
+      // sem ela fora do caminho, o `DROP OWNED` teria mais trabalho e o `DROP ROLE` falharia por
+      // dependência (`2BP01`).
+      await dropEphemeralRoleResilient(adminClient, roleName, [
+        `DROP FUNCTION IF EXISTS public.${functionName}(text)`,
+      ]);
     },
   };
 }
@@ -246,7 +435,7 @@ export async function createCloneOwnerProbe(adminClient: PrismaClient): Promise<
 // -----------------------------------------------------------------------------------------------
 export async function createSyntheticOrphanRole(
   adminClient: PrismaClient,
-  family: "o6r_b01" | "o6r_clone_owner",
+  family: SweptRoleFamily,
   ageMs: number,
 ): Promise<string> {
   const roleName = `${family}_${Date.now() - ageMs}_${Math.random().toString(16).slice(2)}`;
@@ -256,6 +445,33 @@ export async function createSyntheticOrphanRole(
   });
 
   return roleName;
+}
+
+// Contraprova do sweep (B-O6R-ARNES, D43): uma role de prefixo NÃO REGISTRADO, criada para provar
+// que o varredor não a alcança. Fica FORA de `SWEPT_ROLE_FAMILIES` de propósito — é o controle
+// anti-mass-delete. Quem a cria é responsável por dropá-la com `dropUnsweptProbeRole`.
+const UNSWEPT_PROBE_PREFIX = "zzz_probe_";
+
+export async function createUnsweptProbeRole(adminClient: PrismaClient): Promise<string> {
+  const roleName = `${UNSWEPT_PROBE_PREFIX}${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+  await withRoleCatalogLock(adminClient, async (tx) => {
+    await tx.$executeRawUnsafe(`CREATE ROLE "${roleName}" NOLOGIN NOSUPERUSER NOBYPASSRLS`);
+  });
+
+  return roleName;
+}
+
+export async function dropUnsweptProbeRole(
+  adminClient: PrismaClient,
+  roleName: string,
+): Promise<void> {
+  assert.ok(
+    roleName.startsWith(UNSWEPT_PROBE_PREFIX),
+    "o drop da sonda só aceita roles do prefixo de sonda",
+  );
+
+  await dropEphemeralRoleResilient(adminClient, roleName);
 }
 
 export async function dropSyntheticOrphanRole(

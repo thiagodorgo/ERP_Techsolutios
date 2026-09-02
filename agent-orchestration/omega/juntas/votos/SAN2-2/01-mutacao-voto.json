@@ -1,0 +1,57 @@
+{
+  "cadeira": "C1 — provador-de-mutacao-do-espelho",
+  "bloco": "SAN2-2",
+  "pr": 363,
+  "head": "c8dc716e9b4ffa014783289fdab484da07858d67",
+  "branch": "fix/san2-2-guard-espelho-ci",
+  "veredito": "APROVADO",
+  "veto": "nao exercido",
+  "itens_medidos": [
+    {
+      "item": 1,
+      "titulo": "A normalizacao e eol-neutra e SO eol",
+      "resultado": "CONFIRMADO",
+      "forma": "13 casos de mutacao por Buffer (nunca sed) em worktree proprio, arvore real de 23 papeis, script real da branch",
+      "numeros": "espaco no fim de linha (fonte E2 e alvo E2b), caixa trocada (E3), linha em branco a mais (corpo E4c, frontmatter E4d, alvo E4b), espaco interno duplicado (E5), BOM (E6), CR solto (E7), TAB (E8), palavra trocada (E9), 1 byte (E10) => TODOS exit 1 com 1 DIVERGE. CRLF->LF puro nas duas pontas (E1/E1b) => exit 0. Baseline e pos-bateria: exit 0, 0/0/0.",
+      "conclusao": "Nao virou trim, nao virou case-fold, nao virou colapso de espaco. A insensibilidade e estritamente CRLF: CR solto segue reprovando. Delta funcional do diff = 1 linha (l.86); o resto sao comentarios."
+    },
+    {
+      "item": 2,
+      "titulo": "O verde-cego esta refutado",
+      "resultado": "CONFIRMADO",
+      "forma": "Drill A e Drill B REEXECUTADOS por mim do zero, sem aceitar a saida dos diarios",
+      "numeros": "Drill A: script main 923db98faf51 => 23 DIVERGE / 0 FALTA / 0 SOBRA / exit 1; script branch de1d2871c5f8 => 0/0/0 / exit 0, com git status vazio nas duas pontas (unica variavel = o script). Drill A-bis (discriminador que NAO usa o codigo novo): arvore re-materializada em LF real (w/lf, 0 CRLF) + script NAO consertado da main => exit 0, 0 DIVERGE, provando que os 23 vermelhos eram integralmente de EOL e que nao ha drift de conteudo real escondido. Drill B: 9 mutacoes que deviam reprovar => 9 vermelhas (V1 DIVERGE, V2 FALTA, V3 SOBRA, V4a/V4b/V4c nao-eol, V5/V6 model: arrancado das duas pontas, V7 FALTA), cada uma nomeando EXATAMENTE 1 arquivo e deixando os outros 22 em paz, tres rotulos distintos; + 2 controles de KEEP (V8 README removido, V9 README alterado) verdes como devem. Zero mutacoes verdes entre as 9.",
+      "conclusao": "23, nao 22: o head tem 23 agentes (o inspetor entrou na Fase 3). O 22 e da fatia isolada da Fase 1 e ja estava declarado no briefing. Guard nao ficou cego nem grosseiro."
+    },
+    {
+      "item": 3,
+      "titulo": "O teste permanente e honesto",
+      "resultado": "CONFIRMADO",
+      "forma": "execucao propria do teste + mutacao do script que ele copia, em arvore isolada (sem worktree, sem junction)",
+      "numeros": "12 tests / 12 pass / 0 fail / 0 skipped / 0 todo. Prova de que roda o script REAL: M1 (reverte o conserto no script copiado) => 7 pass / 5 fail; M2 (guard CEGO, comparacao nunca acusa) => 7 pass / 5 fail; M3 (afrouxa para EOL+trim, sintaxe valida por node --check) => 11 pass / 1 fail, acendendo exatamente o caso 9. Caso 12 asserta model: fable PRESERVADA, tools: removida, name: mantido, corpo verbatim, o negativo (papel sem model: nao ganha um) e o par escrita/verificacao. Passo do CI na l.69-70 do job backend (l.12-105): run nu, sem continue-on-error, sem || true, sem exit code engolido; a unica ocorrencia da string continue-on-error no ci.yml e o COMENTARIO da l.68. O teste e coletado pelo runner (248 .test.ts varridos, presente) e esta rastreado (db2d291).",
+      "conclusao": "As duas pontas do risco (g) se cobrem: o teste roda a copia (provado por mutacao que a copia e do original) e o CI roda o original, fail-closed."
+    }
+  ],
+  "achados": [
+    {
+      "achado": "A comparacao do guard e insensivel a UMA linha em branco A MAIS NO FIM DO ARQUIVO da fonte (o caso E4e saiu verde). Nao e cegueira a 'linha em branco a mais' em geral: a mesma mutacao no meio do corpo (E4c) e dentro do frontmatter (E4d) fica VERMELHA.",
+      "gravidade": "informativa",
+      "escopo": "pre-existente",
+      "evidencia": "A causa nao esta na linha alterada por este PR. Ela vive no `transform`, em `.replace(/\\n+$/, '\\n')` (l.58) — e o `transform` da main e o da branch sao IDENTICOS: `git show main:scripts/sync-agent-agents.mjs` l.44-59 confere byte a byte, e o diff `main..c8dc716` do arquivo tem como UNICO delta funcional a l.86 (o resto sao 6 linhas de comentario). A l.47 (`body.replace(/^\\n+/,'')`) e a l.58 antecedem este PR. Localizacao do byte medida antes de reportar: `indexOf(CRLF, 600)` = 1134, e o arquivo LF-normalizado tem 1124 chars — a sonda caiu no ULTIMO CRLF, nao no meio do corpo.",
+      "reprova": false,
+      "nota": "NAO e defeito, e semantica correta: o espelho e GERADO por esse mesmo transform, entao a pergunta que o --check responde ('rodar o sync mudaria o espelho?') tem resposta correta 'nao'. Registrado por transparencia, nao como pendencia — nao proponho correcao (C7.4-bis)."
+    }
+  ],
+  "achados_bloqueantes": [],
+  "justificativa": "Os tres itens do meu mandato foram medidos por execucao propria e passaram. (1) A normalizacao e eol-neutra e SO eol: as tres exigencias explicitas do mandato — espaco no fim de linha, caixa trocada, linha em branco a mais — continuam reprovando, nas duas pontas, e a insensibilidade e estritamente CRLF (CR solto ainda reprova). (2) O verde-cego esta refutado: alem do par 23->0 do Drill A, montei o Drill A-bis, que NAO usa o codigo novo — com a arvore em LF real o script NAO consertado da main tambem fica verde, o que prova que os 23 vermelhos eram integralmente de EOL e que nenhum drift de conteudo real se escondeu atras da normalizacao; e o Drill B mostrou 9 mutacoes / 9 vermelhas, cada uma nomeando 1 arquivo com o rotulo certo e deixando os outros 22 em paz — guard cego ficaria verde, guard grosseiro acusaria os 23. (3) O teste permanente e honesto: 12/12, 0 skip, roda o script REAL (provado porque mutar o script copiado deixa o teste vermelho — M1/M2/M3), preserva `model:` com asserção nas duas direcoes mais o negativo, e o passo do CI no job backend nao tem continue-on-error nem engole exit code. Nao aceitei nenhum numero dos diarios: cada linha da minha evidencia tem comando que eu executei. O unico caso verde da minha bateria foi rastreado ate a sua causa antes de virar afirmacao, e e pre-existente ao PR com evidencia de origem — e nem defeito e. Evidencia completa em 01-mutacao-evidencia.md.",
+  "regras_de_terreno_respeitadas": {
+    "worktree_proprio_para_mutacao": "sim — /c/Users/AMP/AppData/Local/Temp/c1w, detached em c8dc716, removido por git worktree remove --force",
+    "junction_symlink_node_modules": "nenhuma — o script nao tem dependencia; a arvore isolada do item 3 nao e worktree",
+    "sed_usado_para_mutar": "nao — mutacao por Buffer, byte a byte (sed converteria CRLF->LF e fabricaria massa)",
+    "md5sum_ou_git_status_como_prova_de_conteudo": "nao — medicao eol-neutra por git ls-files --eol, git diff e contagem de CRLF por Node",
+    "grep_c_CR": "nao usado (inutil no Git Bash desta maquina — MSYS esvazia o padrao)",
+    "bancos": "nenhum tocado; erp-postgres/erp-redis intactos (esta cadeira nao usa banco)",
+    "commits": "nenhum — apenas os dois arquivos de voto/evidencia desta cadeira, untracked",
+    "arvore_da_junta": "sem mutacao viva"
+  }
+}

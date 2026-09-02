@@ -43,3 +43,11 @@ experiments/frontend-v2/test-results/
 
 # Saída TAP do subconjunto de rota contra o Postgres (job backend-postgres do CI)
 postgres-subset.tap
+
+# Worktrees de agente e scratch de rodada — NUNCA versionar.
+# Motivo medido (2026-08-28): `.claude/worktrees/` guarda checkouts COMPLETOS do repositorio (com
+# node_modules proprio, por exigencia da D-JUNTA-ESCOPO-E-CALIBRACAO §3, que PROIBE junction/symlink
+# de node_modules entre worktrees). Nenhum dos dois estava ignorado, entao um `git add -A` na raiz
+# tentaria versionar arvores inteiras dentro da propria arvore.
+.claude/worktrees/
+.tmp-demo/

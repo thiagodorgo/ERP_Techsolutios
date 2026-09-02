@@ -1,0 +1,60 @@
+{
+  "cadeira": "C1",
+  "identidade": "auditor-da-medicao-1",
+  "bloco": "SAN2-4a",
+  "pr": 365,
+  "head_julgado": "4199b92",
+  "quorum": "maioria-de-3",
+  "insumo": "agent-orchestration/omega/juntas/votos/SAN2-4a/medicao-1-authority-portal.md",
+  "criado_em": "2026-08-31T15:34:16Z",
+  "itens": [
+    {
+      "id": "C1-1",
+      "titulo": "A causa 1/256 se sustenta? (tamper de padding -> keylen=33 -> 33o byte zero)",
+      "status": "MEDIDO",
+      "veredito": "SUSTENTA-SE",
+      "evidencia": "Elos 1-3 reproduzidos por sonda propria N=200.000 (200000/200000, deterministicos: b64 sempre termina em '=', ternario nunca ve \"A\" 0/200000, 33 bytes com prefixo intacto e byte[32]=0x00). Elos 4-7 contra o verifyPassword REAL de src/ via import file:// N=40.000: previsao byte a byte bateu 40000/40000, previsao_errou=0; byte33_zero=150 == verifyPassword_true=150; prefixo scrypt keylen33 vs 32 estavel 40000/40000; 256 valores distintos no byte 33. Taxa propria 150/40000=0,3750% (z=-0,501 vs 1/256). Os 4 z do documento reproduzem ao milesimo (E1 +0,554 / E2 -0,032 / E3 +1,686 / soma +0,659). src/ e tests/ intocados (git -c core.autocrlf=false diff --exit-code main...HEAD = vazio).",
+      "gravidade": "nenhuma",
+      "escopo": "n/a"
+    },
+    {
+      "id": "C1-2",
+      "titulo": "Calculo de poder correto (P(0 em 40)=85,5%; ~766 exec p/ 95%) e verdes F1/F2 tratados honestamente (nao refutam o vermelho 1/2)",
+      "status": "MEDIDO",
+      "veredito": "CORRETO E HONESTO",
+      "evidencia": "Poder recalculado: P(0 em 10)=96,162% / P(0 em 30)=88,921% / P(0 em 40)=85,508% (o 85,5% alegado) ; poder F1=11,08% F2=3,84% ; n p/ 95% = ln(0,05)/ln(255/256)=765,41 -> 766 (teto apertado: 765 da 94,99%). P(>=1 em 2)=0,7797% (o 0,780% do §4.7-2). Premissa da ponte conferida na fonte: 1 unica assercao de tamper por execucao do arquivo (l.161-162). Ressalva MANTIDA INTEIRA (§4.7-1 verbatim: \"nada aqui refuta aquilo\") e reforcada (§4.7-2 admite 2a contribuicao possivel so na suite inteira, NAO decidida). Forma do vermelho 1/2 conferida na fonte primaria pendencias.md:3890-3896 (suite inteira, outra maquina). Pendencia P-ARNES-AUTHORITY-PORTAL-INTERMITENTE segue ABERTA e pendencias.md intocada na branch (diff --exit-code rc=0). OBS-3 vira a critica contra o proprio criterio N>=10 que teria absolvido o bloco.",
+      "gravidade": "nenhuma",
+      "escopo": "n/a"
+    },
+    {
+      "id": "C1-3",
+      "titulo": "Contencao da F2 provada (duracao +48%..+78%, kill -0 por rodada, 7 PIDs mortos, 0 sobreviventes) ou apenas afirmada?",
+      "status": "MEDIDO",
+      "veredito": "PROVADA (com 1 achado BAIXA)",
+      "evidencia": "Duracoes recalculadas das tabelas: F1 n=30 min=2637 max=2765 amplitude=128 media=2703,83; F2 n=10 min=3902 max=4797 media=4375 — transcricao EXATA. Faixas DISJUNTAS: minF2 supera maxF1 em 41,1% -> contencao sobre-provada. Limite inferior +48% exato (min/min=48,0%). Limite superior +78% NAO sai de pareamento declarado: max/max=73,5%, maxF2/mediaF1=77,4%, maxF2/minF1=81,9%. PIDs 17126-17132 todos MORTOS e varredura Windows de todos os node.exe por linha de comando -> NENHUM busy-loop sobrevivente (instrumento independente do kill -0 do bloco); 0 sobreviventes CONFIRMADO.",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco"
+    }
+  ],
+  "achados": [
+    {
+      "id": "C1-A1",
+      "titulo": "O limite superior \"+78 %\" da contencao da F2 nao corresponde a nenhum pareamento declarado",
+      "descricao": "medicao-1-authority-portal.md:129 e :229 publicam \"2 637-2 765 ms -> 3 902-4 797 ms, +48 % a +78 %\". O limite inferior e exato (minF2/minF1 = 48,0%), mas o superior nao: o pareamento natural do intervalo citado (max<->max) da 73,5%, e o mais generoso defensavel (maxF2/mediaF1) da 77,4%. A formula do segundo limite nao esta declarada.",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "evidencia_origem": "Arquivo NAO existe na main; nasceu no commit 116aa46 (2026-08-31) desta branch chore/san2-4a-medir-arnes. git cat-file -e main:<path> falha.",
+      "impacto": "NENHUM sobre as conclusoes: a contencao esta sobre-provada por faixas disjuntas (minF2 > maxF1 em 41,1%), o limite inferior esta certo, e 0/10, denominador 12 e a causa 1/256 nao dependem desse numero. Imprecisao de redacao, nao medicao errada.",
+      "bloqueia": false,
+      "dono_sugerido": "SAN2-4b (registro), sem conserto proposto por esta cadeira (§C7.4-bis)"
+    }
+  ],
+  "voto": "APROVADO",
+  "fundamentacao": "A MEDICAO 1 se sustenta em execucao propria, nao em leitura. (1) A causa 1/256 e aritmeticamente fechada nos elos 1-3 (reproduzidos 200.000/200.000 em sonda minha: b64 de 32 B termina SEMPRE em \"=\", o ternario da l.161 nunca ve \"A\" 0/200.000, o tamper troca o PADDING e decodifica 33 B com os 32 originais intactos e byte[32]=0x00) e estruturalmente necessaria no elo 5 (PBKDF2-HMAC-SHA256 de 1 iteracao e prefixo-estavel: keylen=33 = T1 || T2[0]). O elo 7 foi reproduzido contra o verifyPassword REAL de src/ em N=40.000: previsao byte a byte bateu 40.000/40.000, previsao_errou=0, e byte33_zero=150 == verifyPassword_true=150. Taxa propria 150/40.000 = 0,3750% (z=-0,501 vs 1/256); os quatro z do documento reproduzem ao milesimo, com a E2 (390 observados vs 390,625 esperados) praticamente sobre o valor teorico. (2) O calculo de poder esta exato item a item — P(0 em 40)=85,508%, poder de F1=11,08% e F2=3,84%, e o teto 766 para 95% e apertado e correto (765 da 94,99%). A premissa da ponte (1 assercao de tamper por execucao do arquivo) foi conferida na fonte. E a ressalva foi MANTIDA INTEIRA e ainda endurecida: o §4.7-2 admite contra si que 1/256 nao explica sozinho o 1/2 do jurado (P=0,780%) e declara a segunda hipotese NAO DECIDIDA; a pendencia P-ARNES-AUTHORITY-PORTAL-INTERMITENTE segue ABERTA e pendencias.md esta intocada na branch. A OBS-3 vira a critica contra o proprio criterio N>=10 que teria absolvido o bloco. (3) A contencao da F2 esta PROVADA por faixas de duracao disjuntas (minF2 3902 > maxF1 2765 em 41,1%), com carga conferida rodada a rodada, e os 7 PIDs estao mortos com 0 busy-loops sobreviventes — confirmado por mim em instrumento independente (varredura Windows de todos os node.exe por linha de comando), nao herdado. Conserto escondido: na area que julgo, src/, tests/ e scripts/ tem diff VAZIO eol-neutro contra main, e os dois arquivos-alvo nunca foram tocados na branch. Unico reparo: o limite superior \"+78 %\" da contencao nao sai de pareamento declarado (max<->max = 73,5%) — BAIXA, dentro-do-bloco, sem efeito sobre conclusao alguma.",
+  "itens_medidos": 3,
+  "nao_consegui_medir": false,
+  "propos_correcao": false,
+  "commitou": false,
+  "containers_vivos_preservados": "erp-postgres / erp-redis Up 2 days (healthy) — somente listagem de nome/status; nenhum comando enviado",
+  "fechado_em": "2026-08-31T15:34:16Z (criado) / fechado apos os 3 itens"
+}

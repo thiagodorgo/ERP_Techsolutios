@@ -1,0 +1,90 @@
+{
+  "cadeira": "C2 — auditor-do-arnes-e-da-suite",
+  "identidade": "NOVA (nunca votou, planejou nem desenvolveu em nenhum ciclo deste bloco ou dos anteriores)",
+  "bloco": "SAN2-4b",
+  "pr": 366,
+  "head_julgado": "2d2d16d",
+  "branch": "fix/san2-4b-corrigir-arnes",
+  "quorum": "UNANIMIDADE de 3 (bloco toca seguranca + perda de dado — §C7.1-ter(b))",
+  "data": "2026-08-31",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": "I1",
+      "titulo": "As DUAS portas do varredor estao fechadas — no codigo e por execucao (mutacao de uma metade de cada vez)",
+      "veredito": "APROVADO",
+      "medicoes": [
+        "CODIGO porta 1: SWEPT_ROLE_FAMILIES (auth-identity-fixture.ts:117-124) contem \"rls_test\" (6a e ultima); ORPHAN_ROLE_NAME_PATTERN derivado da lista via join(\"|\") e ancorado em ^",
+        "CODIGO porta 2: sweepOrphanEphemeralRoles EXPORTADA (l.163); chamador novo em rls-tenant-isolation.test.ts:42, DENTRO do withRoleCatalogLock aberto na l.41 (o lock que o arquivo ja detinha) e ANTES do CREATE ROLE da l.43",
+        "MUTACAO CONFERIDA POR 3 PROVAS por estado (grep na fixture + grep no criador + git diff --stat eol-neutro) + impressao da regiao mutada. sed -i <N>d por numero de linha (imune ao CRLF que derrubou a 1a tentativa do dev). Restauro por copia byte-a-byte com git diff --exit-code ec=0",
+        "CRIADOR SOZINHO, N=2 por estado, denominador constante # tests 1 # pass 1: BASE alvo VIVA 2/2 + ctrl VIVA 2/2 | M1 (so porta 2) alvo VIVA 2/2 + ctrl MORTA 2/2 | M2 (so porta 1) alvo VIVA 2/2 + ctrl VIVA 2/2 | FULL alvo MORTA 2/2",
+        "CONFIRMADO: as duas meias-correcoes deixam o alvo vivo 2/2 CADA, falhando por motivos DIFERENTES (M1 o varredor roda e passa ao lado; M2 nao roda). Quem medisse so o ctrl audit_rls_ teria visto verde em M1",
+        "GATILHO PORTA 1 (db-catalog-write-guard) FULL: # tests 5 # pass 5 ec=0, alvo MORTA 2/2. ACHADO A FAVOR nao entregue: no estado BASE esse gatilho sai ec=1 # pass 4 # fail 1 — o drill estendido pela C3 e guard PERMANENTE contra a reabertura da porta 1",
+        "VETOR PROPRIO (o bloco nao mediu nenhum): 10 nomes adversariais, 10/10 no esperado. Destaque: rls_testX_<-2h> SOBREVIVEU — o LIKE rls_test_% CASA esse nome (o _ e curinga de 1 char em SQL) e so o regex ancorado o salva. A ancoragem sai de argumento para medicao",
+        "13 rodadas de gatilho no item: sonda nao registrada sobreviveu 13/13; rls_test_<agora> sobreviveu 13/13. drop.sh recusou (ec=2) postgres e rls_test_% — controle anti-mass-delete exercitado, nunca prometido"
+      ]
+    },
+    {
+      "id": "I2",
+      "titulo": "O teardown resiliente elimina a orfa (0/10 vs 10/10 da forma crua), com vaza-metro e controle de aparicao",
+      "veredito": "APROVADO",
+      "medicoes": [
+        "FORMA CRUA tirada do GIT (git show f6631d0:tests/rls-tenant-isolation.test.ts l.3148-3151), nao da transcricao do diario do dev",
+        "SONDA PROPRIA (.tmp-c2-teardown-probe.mts, escrita por mim, apagada ao final) em cluster descartavel proprio 56732, mesma falha injetada (duplo que rejeita a 1a aquisicao de $transaction, forma do drill PC l.394-416)",
+        "N=10: FORMA A (crua) sobreviveu 10/10 e LANCOU 10/10, com 460 grants na sobrevivente em 10/10 (=115x4, a assinatura das 68 da base viva) | FORMA B (dropEphemeralRoleResilient) sobreviveu 0/10, lancou 0/10, attempts=2 e failures=2 em 10/10",
+        "SEGUNDA METADE DO ACEITE medida: marcador [o6r-arnes] teardown de ... no stderr em 10/10 — resiliente nao virou silencioso",
+        "VAZA-METRO com controle de aparicao: 8 rodadas (5 no criador + 3 no guard), delta=0 em 8/8, lista ordenada IDENTICA em 8/8, poller viu 7 amostras com a role por rodada no criador (1 distinta) — delta=0 nao e indistinguivel de nao ter tocado o cluster",
+        "ORFA QUE EU VI E RASTREEI ATE A CAUSA: residuo rls_test_...29c3bc62e3b0f discriminado pelo catalogo (rolcanlogin=f, 0 grants => sintetica do drill, nao a role do criador). Reproduzi a causa: com a MINHA mutacao M1 aplicada o guard sai ec=1 e deixa delta=+2, porque dropSyntheticOrphanRole (l.481-485) assere contra ORPHAN_ROLE_NAME_PATTERN, derivado da lista que eu havia mutado — recusa fail-closed correta. ARTEFATO DO MEU EXPERIMENTO, nao propriedade de 2d2d16d (que da delta=0 em 3/3 no mesmo gatilho)"
+      ]
+    },
+    {
+      "id": "I3",
+      "titulo": "A suite completa (R3 do inspetor): 2609/2611 na canonica 3, delta +2 explicado, 2 pulos nomeados",
+      "veredito": "APROVADO",
+      "medicoes": [
+        "FORMA CANONICA 3 montada e conferida por execucao ANTES de rodar: cluster proprio c2-arnes-pg :56732 (103 migrations conferidas por SELECT, 115 tabelas) + c2-arnes-redis :56779 (redis-cli ping = PONG); CORE_SAAS_PERSISTENCE undefined; RBAC_DB_PARITY undefined; .env INEXISTENTE no worktree (impossivel herdar a base viva por dotenv); Node v20.19.5; arvore com git diff --exit-code src/ tests/ ec=0 e a sonda temporaria ja apagada",
+        "REEXECUCAO NO HEAD 2d2d16d: ec=0, 197s. [run-backend-tests] 248 arquivo(s) - 2611 teste(s) - pass 2609 - fail 0 - skipped 2. Rodape TAP: # tests 2611 / # pass 2609 / # fail 0 / # cancelled 0 / # skipped 2 / # todo 0. grep -c '^not ok' = 0. CONFIRMA 2609/2611 nos CINCO numeros, nao so no display",
+        "OS 2 PULOS, NOMEADOS: 'ok 1648 - toda permissao do catalogo existe na tabela permissions do banco' e 'ok 1649 - os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas direcoes)'. Ambos de tests/permission-catalog-db-parity.test.ts, gated na l.49 por RBAC_DB_PARITY !== '1' — ou seja, consequencia DECLARADA da propria forma canonica 3, nao residuo",
+        "SIM, SAO OS DO ORCAMENTO DO RUNNER, e casam POR NOME: scripts/run-backend-tests.mjs:73-82 nomeia esses dois exatos e fixa SKIP_BUDGET_DB=2. Com DATABASE_URL presente e skipped=2=orcamento, o guard do C5.3 nao disparou, corretamente. Casar por NOME (e nao so pela contagem 2) e o que impede um terceiro pulo silencioso de se esconder atras do numero",
+        "DELTA +2 MEDIDO DOS DOIS LADOS, nao deduzido. Head, isolado, N=3: authority-portal 14 teste(s) pass 14, constante 3/3. Base 45c3b97 (os 5 arquivos do diff repostos por 'git show <rev>:<path>' do BLOB — nunca git archive+tar, a armadilha de core.autocrlf que o §C7.1-ter(c) proibe; prova de que eu estava mesmo na base antes de medir: grep -c AUTHORITY_SCRYPT_PARAMS.keylen = 0 e grep -c da familia rls_test na lista = 0): authority-portal 12, db-catalog-write-guard 5, rls-tenant-isolation 1. UNICO denominador movel entre os arquivos do diff = authority-portal 12 -> 14",
+        "ALEM DO QUE O MANDATO PEDIU: rodei a SUITE COMPLETA NA BASE, na mesma forma canonica 3 e no mesmo cluster: ec=0, 201s, 248 arquivo(s) - 2609 teste(s) - pass 2607 - fail 0 - skipped 2 = 2607/2609. Delta medido: arquivos 248->248 (0, nenhum arquivo entrou ou sumiu), testes 2609->2611 (+2), pass 2607->2609 (+2), fail 0->0, skipped 2->2 (os mesmos dois nomeados). A ancora 2607/2609 do KPI NAO e afirmacao herdada da ata do bloco anterior — eu a reexecutei",
+        "VAZA-METRO DA PROPRIA SUITE: catalogo do cluster com 0 roles de arnes antes e 0 depois da rodada base — a suite terminando normalmente nao deixa orfa, coerente com o diagnostico do 4a (a genese exige morte do processo ou o teardown cru falhando, nao o caminho feliz)"
+      ]
+    }
+  ],
+  "achados": [
+    {
+      "id": "A-C2-1",
+      "titulo": "A frase 'as 68 orfas da base viva seguem intocadas' (auth-identity-fixture.ts:103-105) e propriedade da DISCIPLINA do operador, nao do codigo — e o .env da RAIZ aponta para a base viva",
+      "gravidade": "media",
+      "escopo": "pre-existente",
+      "reprova": false,
+      "evidencia_executada": [
+        "Medido no item 1: role rls_test_<agora-2h> MORRE assim que qualquer gatilho de sweep roda contra o banco em que ela vive — 2/2 no criador e 2/2 no guard, no head julgado. As 68 sao todas muito mais velhas que o corte de 60 min e todas casam o padrao (o 4a as datou pelo nome)",
+        "grep no .env da RAIZ (arquivo local; NENHUM comando enviado a erp-postgres, nem de leitura): host:porta do DATABASE_URL = localhost:5432 = a base viva. Nenhuma credencial impressa. O worktree do jurado NAO tem .env",
+        "npm test da raiz e a forma DOCUMENTADA de rodar a bateria (CLAUDE.md §9) e tests/rls-tenant-isolation.test.ts abre com import 'dotenv/config' — logo, apos o merge, um npm test da raiz varre a base viva e recolhe as 68, que e o dado que P-ARNES-RLS-TEST-FORA-DO-SWEEP reserva para recontagem supervisionada"
+      ],
+      "evidencia_de_escopo_por_data": [
+        "0a39824 (2026-08-19, #357 B-O6R-01): o mecanismo de sweep, o corte de 60 min e o ORPHAN_ROLE_NAME_PATTERN — anteriores ao bloco",
+        "f081b5d (2026-08-28, #359 B-O6R-ARNES): as CINCO familias irmas entram na SWEPT_ROLE_FAMILIES (git blame -L 118,122). Desde 28/08 um npm test da raiz JA dropava as roles velhas dessas cinco na base viva",
+        "ecfdb24 (2026-08-31, ESTE bloco): a linha \"rls_test\", — o bloco estende a uma SEXTA familia o que ja valia para cinco, que e o que o plano lhe mandou fazer",
+        "O .env da raiz apontando localhost:5432 e anterior a tudo isso (config de ambiente do dono)",
+        "Segundo braco do §C7.1-ter(a): consertar isto esta FORA do escopo permitido — o §5.1 do plano deu a C3/C4 exatamente 3 arquivos de tests/ e interditou .env, base viva e a resolucao da pendencia"
+      ],
+      "por_que_nao_reprova": "A classe antecede o bloco (19/08 e 28/08) e o conserto estava fora do seu escopo permitido — as duas condicoes do §C7.1-ter(a). Nenhum numero publicado depende disso; nenhum comportamento medido muda; sob a regra vigente da rodada (cluster descartavel por jurado, base viva intocavel) o caminho nao dispara. O bloco DECLAROU a pendencia aberta e nao alegou te-la resolvido — nao ha 'carimbar o que nao se mediu'. O dado em risco e FORENSE (a contagem e os timestamps das 68), nao produto: as roles nao possuem objetos, so grants",
+      "disposicao": "Pendencia nomeada, dona = a junta de P-ARNES-RLS-TEST-FORA-DO-SWEEP, que ja detem a recontagem supervisionada. NAO proponho correcao (§C7.4-bis) — reporto defeito, evidencia executada e motivo"
+    }
+  ],
+  "terreno": {
+    "base_viva_intocada": "CONFIRMADO — erp-postgres e erp-redis 'Up 2 days (healthy)' na abertura e no fechamento; ZERO comandos enviados a qualquer um dos dois, nem de leitura. Nenhuma DATABASE_URL/REDIS_URL deste trabalho apontou 5432/6379, e o worktree nao tem .env de onde herdar",
+    "cluster_descartavel": "c2-arnes-pg (postgres:16) :56732 + c2-arnes-redis (redis:7) :56779 — proprios, distintos do par 56432/56379 do dev; portas escolhidas DEPOIS de ler netsh excludedportrange protocol=tcp (55432 cai em 55353-55452, proibida; 56732 e 56779 fora de toda faixa)",
+    "cleanup": "c2-arnes-pg e c2-arnes-redis derrubados (docker rm -f); docker ps -a com ZERO containers c2-arnes-*. Base viva no fechamento: erp-postgres Up 2 days (healthy), erp-redis Up 2 days (healthy) — o uptime que atravessou o bloco PRESERVADO. Sonda .tmp-c2-teardown-probe.mts apagada. Arvore: git diff --exit-code src/ tests/ ec=0, HEAD 2d2d16d inalterado, NADA commitado. Nenhum DROP/DELETE por curinga em nenhuma base: toda role removida por nome exato, uma a uma"
+  },
+  "justificativa": "Os tres itens do mandato reproduzem na minha bancada, em cluster descartavel proprio, com a medicao refeita e nao herdada. (1) As duas portas do varredor estao fechadas no codigo (rls_test em SWEPT_ROLE_FAMILIES; sweepOrphanEphemeralRoles exportada e invocada pelo criador DENTRO do lock que ele ja detinha) e por execucao: mutando uma metade de cada vez, M1 e M2 deixam o alvo vivo 2/2 CADA, falhando por motivos diferentes — fechar uma porta nao resolveria, e quem medisse so o vermelho-controle audit_rls_ teria visto verde em M1. A minha mutacao foi conferida por TRES provas independentes por estado (imune ao CRLF que derrubou a 1a tentativa do dev). (2) O teardown resiliente inverte 10/10 (forma crua, 460 grants na sobrevivente) para 0/10, com as duas metades do aceite (nenhum papel vivo E falha reportada, marcador no stderr 10/10) e vaza-metro delta=0 em 8/8 COM controle de aparicao. (3) A suite completa reproduz 2609/2611 nos cinco numeros (248 arquivos, 2611 testes, pass 2609, fail 0, skipped 2, zero 'not ok'); os 2 pulos sao NOMEADOS e casam por nome com o orcamento nomeado do runner; e o delta +2 foi medido dos DOIS lados, com a suite da base reexecutada por mim em 2607/2609. Encontrei um unico achado, de escopo pre-existente com evidencia de data, que nao reprova. Nenhuma correcao que mascare, nenhum numero publicado alem do que a forma declarada sustenta, e nenhuma mutacao que nao mutasse.",
+  "ataques_do_briefing": {
+    "correcao que mascara": "PROCURADA E NAO ENCONTRADA no arnes. Ao contrario: no estado BASE o gatilho db-catalog-write-guard sai ec=1 (# pass 4 # fail 1) — o drill estendido pela C3 e guard PERMANENTE contra a reabertura da porta 1. A correcao nao depende de memoria de ninguem",
+    "conclusao alem da medicao": "UMA encontrada — o achado A-C2-1 (afirmacao sobre as 68 que se le como propriedade do codigo). Todo NUMERO publicado, porem, derivou do metodo declarado e reproduziu: 10/10 x 0/10, 2/2 por porta, 2609/2611 nos cinco numeros e o delta +2 dos dois lados",
+    "mutacao que nao muta": "NEUTRALIZADA por construcao. Os arquivos sao CRLF (file confirmou), entao nao usei regex multi-linha: sed -i '<N>d' por numero de linha, com TRES provas por estado antes de medir (grep na fixture + grep no criador + git diff --stat eol-neutro) mais a impressao da regiao mutada. Restauro por copia byte-a-byte com git diff --exit-code ec=0"
+  },
+  "inelegibilidade": "Identidade NOVA. Nao votei, nao planejei e nao desenvolvi neste bloco nem em nenhum anterior; nao sou o orquestrador, o planejador-mestre do bloco, o dev-san2-4b, o inspetor desta junta nem o porteiro-pos-merge do #365. Nao herdei nenhuma afirmacao de ata como fato: reexecutei ate a ancora 2607/2609 do bloco anterior"
+}

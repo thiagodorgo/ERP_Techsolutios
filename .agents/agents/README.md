@@ -2,14 +2,22 @@
 
 > **D-INTEROP-CLAUDE-CODEX (2026-07-28).** O nível alto das rodadas deste repositório vem da **junta
 > de agentes** (§C7 do `AGENTS.md`/`CLAUDE.md`): planejador → dev → **avaliador + secops + crítico +
-> dba votando**, com ciclos de reprovação adversariais. No Claude Code isso são 24 agentes isolados em
-> `.claude/agents/*.md`. Aqui estão os **mesmos 24 papéis** em formato portátil para o Codex —
+> dba votando**, com ciclos de reprovação adversariais. No Claude Code isso são 23 agentes isolados em
+> `.claude/agents/*.md`. Aqui estão os **mesmos 23 papéis** em formato portátil para o Codex —
 > **corpo verbatim** (as instruções e os poderes de VETO não sofrem drift), frontmatter portátil
-> (`name` + `description`), com um preâmbulo de orientação Codex no topo de cada arquivo.
+> (`name` + `description` + `model`, quando o papel o fixa), com um preâmbulo de orientação Codex no topo
+> de cada arquivo. O `model:` é **preservado por contrato** pelo sync (`D-PLANEJADOR-MODELO-FABLE`): só o
+> `tools:` é removido, por ser mecanismo do Claude Code — apagar o `model:` faria o espelho Codex perder a
+> regra **em silêncio**, e o `planejador-mestre` em Fable é obrigatório na revalidação de código corrigido.
 >
 > Mantidos em dia por `scripts/sync-agent-agents.mjs` (cópia + `--check`, sem symlink). Alterou um
 > agente em `.claude/agents/`, rode o script para espelhar (e vice-versa). Fonte canônica de conduta:
 > `CLAUDE.md`; regras de junta: §C7.
+>
+> **Cadeiras efêmeras de ciclo (`.claude/agents/especialistas/`) NÃO são espelhadas:** o sync é cego a
+> subdiretório (`P-SYNC-AGENTS-NAO-RECURSIVO`, ABERTA — o `--check` ec=0 não prova nada sobre elas).
+> Os 8 corpos de jurado do ciclo 5 do `B-O6R-02` (`*-c5-*`) vivem lá; Codex: leia-os direto de
+> `.claude/agents/especialistas/` na raiz do repositório.
 
 ## Como o Codex usa estes papéis (protocolo de emulação da junta)
 
@@ -21,7 +29,7 @@ revisores de veto **em paralelo**.
 Emule assim, num único fluxo, **adotando um papel de cada vez** (carregue o arquivo do papel como se
 fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 
-1. **Planejar** — adote `planejador-mestre` (ou `omega5p-planejador` na rodada de Pátios) e publique o
+1. **Planejar** — adote `planejador-mestre` e publique o
    plano curto **antes de qualquer código** (em `docs/juntas/`). Nenhuma linha de código sem plano.
 2. **Atacar o plano** — adote `critico-adversarial` e tente derrubar o plano (borda/concorrência/
    multi-tenant/RBAC/erro/premissa). O que sobreviver vira requisito explícito.
@@ -30,32 +38,34 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 4. **Junta (passes de veto INDEPENDENTES — cada um é um passe adversarial próprio, não um carimbo):**
    rode os revisores aplicáveis ao PR; cada um emite **APROVADO/REPROVADO** com achados por severidade.
    Dinheiro/alienação/superfície pública/migração ⇒ os obrigatórios abaixo **têm de** rodar.
-5. **Reprovação** — se algum veto REPROVAR, siga o **protocolo de ciclos** (§C7.4): ciclos 1–2 a
-   `agente-fabrica` cria 1–2 especialistas sob medida; ciclo 3 o `critico-adversarial` reabre a
-   premissa + pesquisa (`agente-pesquisador-web`, ≥5 fontes); ciclos 4–5 replanejam. Registre em
-   `agent-orchestration/omega/reprovacoes/R-<entrega>-<ciclo>.md`.
+5. **Reprovação — teto de DOIS ciclos (`D-TETO-DOIS-CICLOS`; o teto de 5 está REVOGADO):** no ciclo 2
+   corrige-se (quem achou NÃO conserta — §C7.4-bis) e volta-se à junta com **identidade nova** na
+   cadeira que reprovou; **reprovou no ciclo 2 → PARA e vira dossiê ao dono — não há ciclo 3.**
+   Registre em `agent-orchestration/omega/reprovacoes/R-<entrega>-<ciclo>.md`. Em voo: o `B-O6R-02`
+   está no ciclo 5, que já era o teto dele — **o ciclo 5 é a última tentativa**; se reprovar, para.
 6. **Registrar a ata** — votos + justificativa em `docs/juntas/` (ou `agent-orchestration/omega/juntas/`).
    **Junta sem registro = merge inválido.** Verde da junta + CI verde = merge (§C7.1).
+
+> **Resiliência de junta (P1–P6 — §C7.7 do `AGENTS.md`, inline):** toda cadeira grava **evidência
+> incremental** em `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` a cada
+> item, escreve o **voto em arquivo ANTES da mensagem final** (mensagem final = 1 linha), nasce como
+> esqueleto `EM APURAÇÃO`, mandato ≤3 itens, máximo 2 disparos em paralelo, quedas em `00-quedas.md`.
 
 > **Regra da dúvida (§C7.3):** qualquer incerteza → adote `agente-pesquisador-web` (≥3 fontes) e registre
 > a PD em `docs/omega-pd.md` **antes** de decidir. Dúvida sem pesquisa = veto.
 
-## Os 24 papéis por função
+## Os 23 papéis por função
 
 ### Planejar / estratégia
 | Papel | Função |
 |---|---|
 | `planejador-mestre` | O plano obrigatório antes de qualquer código. |
-| `omega5p-planejador` | Planejador da rodada Ω5P (Pátios/SIGPRV) — publica plano curto por PR. |
 | `planejador-mapas` | Planejador da Junta de Mapas (geo/tiles/rotas/geocoding). |
 | `estrategista` | Ordem e agrupamento das entregas por dependência e risco. |
 
 ### Implementar (devs)
 | Papel | Função |
 |---|---|
-| `omega5p-dev-backend` | Backend Node/TS/Express/Prisma das fatias Ω5P. |
-| `omega5p-dev-frontend` | Console React/Vite do operador (`/patios`). |
-| `omega5p-dev-portal` | Superfícies PÚBLICAS isoladas (PWAs/BFFs) — foco em segurança. |
 | `dev-mapas` | Implementação de mapa/geo (React/backend/Flutter). |
 | `frontend-pixel-master` | Frontend pixel-perfect a partir de referência visual. |
 
@@ -63,9 +73,8 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 | Papel | Poder | Função |
 |---|---|---|
 | `validador-mestre` | **VETO** | Validação avançada final do diff × plano × regras. |
-| `omega5p-avaliador` | **VETO** | Avaliador bloqueante da rodada Ω5P (Seção 10 + invariantes I1-I10). |
 | `avaliador-mapas` | **VETO** | Revisa qualquer diff de mapa/geo antes do merge. |
-| `critico-adversarial` | ataque | Ataca o plano antes do código; reabre a premissa nos ciclos 4–5. |
+| `critico-adversarial` | ataque | Ataca o plano antes do código; obrigatório nos blocos de invariante — dinheiro/segurança/permissão/perda de dado (§C7.1-ter(b)). |
 | `coordenador-de-acessos` | **VETO** | Cadeia completa de acesso (papel→permissão→menu→rota→backend), RBAC, SoD. |
 | `inspetor-de-rotas` | **VETO** | Caça rotas erradas em toda PR. |
 | `master-teste-telas-rotas` | **VETO** | Prova cada tela ponta a ponta. |
@@ -73,6 +82,12 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 | `agente-ci-doutor` | veto no gate | Triagem de CI/testes vermelhos por causa raiz (nunca skipa teste). |
 | `inspetor-de-arnes-concorrente` | **VETO** | Corrida de catálogo do Postgres em arnês de teste (role/schema sob paralelismo), denominador que varia, lixo com privilégio. **Achador/votante: não escreve a correção.** |
 | `guardiao-fail-closed` | **VETO** | Enumeração de segurança fail-closed — prova POR MUTAÇÃO se o membro não previsto nasce permitido e se a omissão quebra o build. **Achador/votante: não escreve a correção.** |
+
+### Gates fail-closed (não julgam mérito; sem o parecer deles nada começa)
+| Papel | Poder | Função |
+|---|---|---|
+| `inspetor-de-terreno-da-junta` | **gate (fail-closed)** | Antes de TODA junta: terreno limpo — worktree próprio por jurado que muta, cluster Postgres descartável por jurado, insumos do briefing, inelegibilidade por nome, fatia S0, baseline honesto. Sem o `LIBERADO` dele a junta não começa (§C7.1-bis). |
+| `porteiro-pos-merge` | **gate (fail-closed)** | Após TODO merge: promessa do PR × diff real, contagens REEXECUTADAS, KPI com backfill, ata da junta, pendências por amostragem, limpeza §C5 — só então autoriza o início da próxima demanda (§C2.8). |
 
 ### Segurança / banco / infra / custo
 | Papel | Poder | Função |

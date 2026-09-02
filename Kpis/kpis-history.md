@@ -6,6 +6,173 @@ Este arquivo e o historico permanente do painel `Kpis/`. Todo bloco futuro deve 
 - `Kpis/app.js`
 - `Kpis/kpis-history.md`
 
+## 2026-08-28 - B-O6R-REG - o registro passa a dizer o que a execução diz
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend / Flutter / Smoke | **carregados** — 2595/2597, 864/864, 1126/1126. Nenhuma trilha de código foi tocada (§C3.3) |
+| Blocos Entregues | **152 — INTOCADO.** Governança e registro não contam como bloco de feature entregue (mesmo critério do `JUNTA-MAPAS` e do `Ω-GOV`) |
+| mvp_demo / mvp_vendável | **INTOCADOS** — nenhum escopo de produto se moveu |
+
+Bloco de **registro**, sem uma linha de código de produto: o diff em `src/`, `prisma/`, `frontend/`, `mobile/`,
+`tests/`, `scripts/` e `.github/` é **vazio**.
+
+**Fecha as quatro ressalvas** que sobraram do porteiro pós-merge do #359 — as outras duas ele próprio fechou no
+dia (apagar a branch remota; tornar a trilha durável). (1) **Backfill §C3.5** do #359. (2) **Três frases
+defasadas** que a execução contradiz — *"piso 0"* → o piso **dispara** nomeando
+`tests/core-saas-role-authority.test.ts`; *"6 arquivos"* → **7**; *"2358"* → **2359**, com linha `Dono:`. As
+três viviam **também** na `description` do history e foram corrigidas lá: o porteiro só tinha nomeado os
+arquivos de registro. (3) Os **dois achados `pre-existente` órfãos** da ata ganharam entrada com dono — o do
+`authority-portal.test.ts:162` exige **atribuição por execução, N≥10, antes** de qualquer correção.
+
+**Achado não previsto, encontrado por este bloco.** O status de `P-O6R-B04` e `P-O6R-B05` estava **trocado** na
+`pendencias.md` da `main`: o bloco de **estoque** figurava como FECHADO pelo PR #353 — que é do **B-05** e se
+chama literalmente *"produção não sobe mais sem persistir e sem worker"* — e o B-05, de fato mergeado, figurava
+como ABERTO. Os dois se anulavam. **Consequência material:** quem lesse a trilha pularia o B-04 inteiro achando
+que os dois P0 de estoque (saldo concorrente, fechamento de contagem cíclica) estavam fechados. A contraprova
+estava no próprio `roadmap` do KPI, que sempre marcou B-04 `a_fazer` e B-05 `concluido`.
+
+**Reconciliação da trilha.** 28 registros de junta (atas, votos, briefings, planos, relatórios de achador, as
+duas auditorias — contagem corrigida em 29/08 pelo achado A-3: o diff acrescenta 30 arquivos em `omega/`, dos
+quais 2 são artefatos do próprio bloco) e — o que mais importa — **três decisões do dono** (`D-INSPETOR-TERRENO-JUNTA`,
+`D-GOV-AMEACA-DESCUIDO`, `D-JUNTA-ESCOPO-E-CALIBRACAO`) viviam **só** na branch `demo/investidor`. Decisão do
+dono é o **topo** da hierarquia de fonte de verdade (§A1.1) e estava fora da `main`. O `decisoes.md` é
+append-only puro — conferido: a `main` é prefixo **estrito** da `demo`, então a reconciliação não sobrescreve
+nada. As nove `P-O6R-B02-*` do ciclo 4 também entraram: são o insumo do ciclo 5, e foi exatamente a ausência
+delas na `main` que fez o próprio `B-O6R-ARNES` tropeçar. Os JSON de povoamento (dados da demo) ficaram **fora**.
+
+**E a reconciliação NÃO é total** — dito aqui porque a junta cobrou (achado T-2): `P-GOV-MAIN-SEM-PROTECAO` e
+sua atualização de 25/08 (*ruleset instalado*) seguem existindo **só** na `demo/investidor`. Não é perda — a
+`main` nunca as teve —, e deixá-las é coerente com não pisar no workstream de governança que está vivo e não
+commitado no worktree `gov-descuido`. Mas quem ler a `main` hoje segue sem saber que a proteção da `main` foi
+discutida e instalada.
+
+**Cronograma.** O `docs/CRONOGRAMA.md` era de **05/08**: dizia 136 blocos, backend 2.110, e apresentava a trilha
+CHECKLIST P1 como *"rodada em curso"* — sem **uma palavra** sobre a auditoria Ω6R ou a reprovação para produção.
+Quem o abrisse concluiria que o projeto estava fechando vistorias, quando o deploy está travado por 11 achados
+críticos. Ganhou um **§0** com o veredito, os números reais e a fila priorizada correta. O `PROJECT_MEMORY.md`,
+de 28/07, ganhou um §0 de delta do mês.
+
+**Bateria:** `kpi-dashboard-charts` **16/16** · `kpi-achados-paridade` **6/6** · `npm run check` **ec=0** ·
+`kpi-freeze --check` em dia · `node --check Kpis/app.js` **ec=0** · `git diff --check` limpo · os dois JSON
+parseiam.
+
+## 2026-08-28 - B-O6R-ARNES - o arnês de teste vira bloco próprio e fecha PRIMEIRO
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | **2595 / 2597** (2562/2572 → 2595/2597; execução real, canônica 3, N=10) |
+| Bateria focada do bloco | **34 / 34** (composição declarada, idêntica em 2 execuções) |
+| Flutter / Frontend Smoke | inalterados — trilhas não tocadas (864/864 e 1126/1126, carregados) |
+| Blocos Entregues | 152 (151 → 152) |
+| mvp_demo / mvp_vendável | **INTOCADOS** — nenhum escopo de produto se moveu |
+
+A classe do arnês (`P-O6R-ARNES-ISOLAMENTO`, 2026-08-18) saiu do `B-O6R-02` e virou bloco próprio por decisão
+do dono (`D-JUNTA-ESCOPO-E-CALIBRACAO` §5): ela é **anterior** a todos os blocos O6R de código, e o financeiro
+foi reprovado no ciclo 4 por um defeito que **não criou e estava proibido de consertar**. Só `tests/**` e
+`scripts/**` (7 arquivos); o diff contra `origin/main` `6efe5ad` em `src/`, `prisma/`, `.github/`, `CLAUDE.md`
+e `AGENTS.md` é **vazio**, conferido como item de bateria.
+
+**Três entregas.** (1) **Mecanismo único** de escrita de catálogo de cluster: os três últimos escritores que
+rodavam fora do `withRoleCatalogLock` entraram. O motivo é medido, não argumentado — serialização **parcial não
+protegia nem os serializados**: 7 de 13 rodadas da bateria barata pré-correção ficaram vermelhas com
+`XX000 tuple concurrently updated`, e entre as vítimas estavam `rls-tenant-isolation` (3×) e
+`auth-identity-backfill-db` (1×), que **tomavam** o lock. O objeto disputado é a tupla de ACL
+(`pg_namespace.nspacl`/`pg_class.relacl`), não `pg_authid`. A **lista exata** da bateria barata — parte da FORMA, e sem ela o denominador 37 não é reproduzível por terceiro (achado da cadeira de catálogo na junta): `audit-security` (1) · `auth-identity-backfill-db` (6) · `auth-identity-link-events-db` (5) · `auth-identity-role-real-db` (10) · `impound-process-checklist-link-schema` (5) · `rls-tenant-isolation` (1) · `vehicle-identity-schema` (9) = **37**. São **sete** arquivos, não seis: nenhuma combinação de 6 que contenha as vítimas nomeadas fecha 37. (2) **Teardown que não deixa papel vivo**:
+resiliente por statement, **ruidoso** nas falhas, com segunda tentativa da sequência inteira (a armadilha
+`2BP01`) e falha alta se a role sobreviver — mata os dois anti-padrões opostos que existiam (a sequência sem
+catch, em que a falha do primeiro engolia o segundo; e o `.catch(() => undefined)`, em que a falha sumia em
+silêncio). O varredor ganhou as três famílias novas; `rls_test_` ficou **fora por decisão consciente** (68
+órfãs legadas — a classe do incidente de mass-delete de 26/07). (3) **Piso de denominador** no runner: arquivo
+que termina sem registrar teste e sem declarar skip fica vermelho **nomeando o arquivo**, em vez de sair 0
+publicando um total menor e plausível — foi assim que a canônica 3 publicou 2740 no lugar de 2745 sem avisar
+ninguém.
+
+### Os números, com N e forma (a frase do veto que criou o bloco: *número publicado sem N reprova*)
+
+**Bateria barata** — 6 arquivos escritores de catálogo, `node scripts/run-backend-tests.mjs`, `DATABASE_URL`
+e `REDIS_URL` em cluster descartável próprio (postgres:16, 103 migrations), `CORE_SAAS_PERSISTENCE` não
+exportada, Node v20.19.5, **N=13**: **PRÉ 7/13 vermelhas** + 1 queda de denominador 37→32 → **PÓS 13/13 ec=0,
+0 `XX000`, denominador 37 IDÊNTICO nas 13**.
+
+**Canônica 3** — `npm test` com `DATABASE_URL`, **N=10 sobre o código final**, com vaza-metro (snapshot de
+`pg_roles` + linhas nas 115 tabelas antes e depois de **cada** rodada):
+
+| rodada | tests | pass | fail | skip | ec | XX000 | Δroles | Δlinhas | s |
+|---|---|---|---|---|---|---|---|---|---|
+| 01 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 189 |
+| 02 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 194 |
+| 03 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 214 |
+| 04 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 221 |
+| 05 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 221 |
+| 06 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 222 |
+| 07 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 221 |
+| 08 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 222 |
+| 09 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 221 |
+| 10 | 2597 | 2595 | 0 | 2 | 0 | 0 | 0 | +10 | 221 |
+
+**Δroles = 0 em todas as 10 e ZERO role nova ao fim** — contra as **2 órfãs com LOGIN e
+INSERT/UPDATE/DELETE em todas as tabelas** (inclusive `financial_entries`) que o ciclo 4 mediu.
+
+O residual de **+10 linhas/rodada** é **pré-existente** e fica **nomeado, não consertado** — atribuição
+completa por execução isolada: `tests/core-saas-prisma.test.ts` **+4/+4** (2 rodadas, linear) e
+`tests/core-saas-role-authority-db.test.ts` **+1/+1** (3 rodadas, linear), soma **+5/+5** em `auth_identities`
+e `auth_identity_link_events` — exatamente o residual medido. Contraprova: 16 outros candidatos isolados deram
+**0**, e a canônica 2 (lista `SUITES` do `ci.yml`, que contém `role-authority-db` mas **não** `core-saas-prisma`)
+mede exatamente **+1/+1** por rodada. Os dois arquivos estão fora da §5 deste bloco.
+
+**Canônica 1** — `npm test` **sem** `DATABASE_URL`, N=3: ec=1 nas 3, denominador **2359 idêntico**, 58 pulos
+idênticos. O piso de denominador **dispara 1 vez, nomeando `tests/core-saas-role-authority.test.ts`** — o
+pulo declarado **não** cai nele (os 58 passam limpos), que é o que mantém esta forma utilizável; o que cai é o
+arquivo que morre no load sem registrar teste nem declarar skip. [**CORRIGIDO em 2026-08-29 pelo bloco de
+registro `B-O6R-REG`**, achado A-1 da cadeira de KPI: o texto publicado aqui dizia "piso **0**" e sobreviveu
+**vivo** neste arquivo mesmo depois de a entrada nova, 98 linhas acima, anunciar a correção. O `B-O6R-REG`
+editou o topo deste arquivo e **não varreu o corpo dele** — e chegou a marcar a pendência
+`P-ARNES-REGISTROS-DEFASADOS-NA-MAIN` como FECHADA sem alcançar esta linha. É a própria classe que aquele
+bloco existia para exterminar, cometida por ele.] Vermelho
+ambiental **pré-existente e nomeado**: `tests/core-saas-role-authority.test.ts` importa
+`src/database/prisma.ts`, que **lança no load** sem banco; o diff desse arquivo e de `src/` contra a base é
+**vazio**, e consertá-lo é proibido aqui.
+
+**Canônica 2** — `db:seed` + `node --test --import tsx $SUITES` (lista do `ci.yml` da base), N=3: **3/3 ec=0**,
+denominador **148 idêntico**, grep `unhandledRejection|tuple concurrently updated|23505|40P01` = **0** nas 3.
+
+**Casos permanentes de guarda: 22 → 34** (nenhum morreu; meta do plano M ≥ 31).
+
+**Oito drills** (D37–D43 + D40b), cada um com baseline medido na hora, mutação, vermelho com ec registrado e
+restore conferido por `git hash-object` = blob (nunca md5 cru, nunca `git archive`+`tar` — errata autocrlf):
+D37 bateria barata · D38 sonda de barreira sem o lock de **um** lado → **75** ocorrências de `XX000` ·
+D39 resiliência removida → role sobrevive a 1 tentativa · D40 piso desligado → arquivo que some passa ·
+D40b forma absoluta removida → **2** casos vermelhos · D41 auto-pulo declarado nas **duas** pontas (ec=0 antes
+do porte, ec=1 depois, nomeando a contagem) · D42 a canônica 3 N=10 · D43 sweep revertido às duas famílias
+antigas.
+
+### Dois auto-defeitos achados por execução **contra a própria correção**
+
+Ambos nasceram **na correção**, nenhum no código original — a classe que a `D-JUNTA-SEPARACAO-DE-PAPEIS`
+descreve. **(a)** O `.catch(() => undefined)` **renasceu** nos casos -db novos: durante o D43 a mutação fez o
+padrão de nome deixar de casar, o catch engoliu o assert, e uma role `audit_rls_*` ficou **viva** no cluster;
+quem achou foi o **vaza-metro**, não a releitura. **(b)** O piso de denominador nasceu **cego dentro de
+`tests/`**: comparava o nome do ponto de arquivo do TAP só com a forma **passada** ao `node --test`, mas para
+alvo dentro do repositório o runner encurta para **relativo** e o TAP responde com o **absoluto**. Os drills
+não pegaram porque a fixture morava em `os.tmpdir()`, **fora** do repositório — o único arranjo em que as duas
+formas coincidem; quem pegou foi a **canônica 1**. Os dois corrigidos no mesmo PR, cada um com caso permanente
+novo e drill que o reproduz. **A lição, registrada:** drill cuja fixture não reproduz o arranjo real prova o
+mecanismo, não a propriedade.
+
+### Divergências registradas antes de consolidar (§A2)
+
+`P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` **não existe nesta base** (0 ocorrências em `origin/main`; presente só na
+trilha `demo/investidor`, 33 commits sem PR) — a correção foi entregue e provada; o registro se fecha lá.
+E `Kpis/app.js`, que a §5 do plano não lista, foi **regerado** por `node scripts/kpi-freeze.mjs` (o cabeçalho
+deste próprio arquivo manda todo bloco atualizá-lo, e o guard permanente do painel compara a cópia congelada
+com o JSON) — diff restrito à linha `var FROZEN = …`. Ambas em `pendencias.md`.
+
+
 ## 2026-08-04 - TELAS PADRONIZADAS PR-D (Pátios com ocupação real) — fecha a rodada de 5 telas
 
 ### Resultado

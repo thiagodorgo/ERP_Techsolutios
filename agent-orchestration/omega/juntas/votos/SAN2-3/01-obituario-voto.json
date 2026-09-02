@@ -1,0 +1,72 @@
+{
+  "cadeira": "C1",
+  "identidade": "auditor-do-obituario",
+  "bloco": "SAN2-3",
+  "pr": 364,
+  "head_julgado": "23d9227",
+  "quorum": "maioria de 3",
+  "veredito": "APROVADO",
+  "itens": [
+    {
+      "id": "I1",
+      "titulo": "A conta 15 sepultadas + 2 reservadas esta certa (leitura propria das atas)",
+      "status": "APROVADO",
+      "gravidade": "nenhuma",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "J-B-O6R-ARNES.md l.51 e l.56 reservam jurado-c5-arnes-catalogo-postgres para o ciclo 5 (leitura propria, nao do obituario); citacao do obituario l.92 e FIEL ao intervalo l.51-56. critico-c5-adversarial: planos/B-O6R-02-ciclo5-plano.md l.10/171/230/301 exatamente como declarado, e nenhum voto/ata o traz como autor. ls juntas|grep ciclo5 e ls votos|grep ciclo5 -> exit 1 (vazio): a junta do ciclo 5 nao rodou. Segunda fonte: votos/B-O6R-ARNES/01-jurado-arnes-catalogo.json l.2 (permanece reservada aquela junta). Ambas marcadas RESERVADA com junta de destino nomeada, nao SEPULTADA."
+    },
+    {
+      "id": "I2",
+      "titulo": "As 15 sepultadas sao de fato identidades queimadas (votaram/atuaram) e nao falta ninguem",
+      "status": "APROVADO com achado pre-existente",
+      "gravidade": "media (o achado); nenhuma dentro do universo declarado",
+      "escopo": "pre-existente",
+      "evidencia": "17 arquivos de especialistas/ em demo/investidor == 17 linhas do obituario (diff vazio, mesmos nomes). Os 8 autores reais de voto (3 ARNES + 5 ciclo4, extraidos do campo jurado dos .json) sao exatamente os 8 marcados votou. Os 7 nomeada-e-preparada conferidos: 3 suplentes ARNES em BRIEFING-B-O6R-ARNES.md l.49-51; 4 titulares c4 com 2 ocorrencias no briefing + 1 na ata cada. Ninguem sepultado sem ter votado ou sido preparado; ninguem do universo declarado faltando."
+    },
+    {
+      "id": "I3",
+      "titulo": "O obituario serve ao proposito (nome/motivo/onde atuou) e o inspetor aponta para ele",
+      "status": "APROVADO",
+      "gravidade": "nenhuma",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "As 17 linhas tem 7 colunas e ZERO celulas vazias (nome/papel/status/classe/evidencia-com-arquivo-de-voto/commit-e-data); contagem derivada da tabela = 15 SEPULTADA + 2 RESERVADA, identica ao placar do §2. A edicao no inspetor e +4 linhas em cada ponta (8 insercoes, 0 remocoes) inserida como item 3.1-bis em l.79, imediatamente APOS o 3.1 Inelegibilidade conferida por nome e dentro da secao 3. Papeis §C7.4-bis; grep -c 3.1-bis = 1 (sem colisao); o caminho citado resolve. O texto bloqueia os DOIS lados do erro caro (usar RESERVADA fora da junta dela E sepulta-la) e preserva o fail-closed (ausencia nao absolve; grep nas atas segue obrigatorio), o que neutraliza na pratica o achado A-1."
+    }
+  ],
+  "achados": [
+    {
+      "id": "A-1",
+      "titulo": "15 identidades queimadas fora do registro — o obituario foi construido do diretorio especialistas/, nao das atas",
+      "gravidade": "media",
+      "escopo": "pre-existente",
+      "reprova": false,
+      "N": 15,
+      "forma": "contadas so nos votos/*/*.json com campo de autor, em juntas CONCLUIDAS; o numero real e maior (jurados caidos e inspetores nao contados)",
+      "causa": "as 15 nunca existiram como arquivo de agente (git ls-tree demo/investidor -- .claude/agents/ = 0 ocorrencias para cada nome); o registro derivou do diretorio, nao das atas",
+      "identidades": [
+        "jurado-reg-diff-escopo",
+        "jurado-kpi-numeros-B-O6R-REG",
+        "jurado-suplente-trilha-append-only-B-O6R-REG",
+        "jurado-san2-1-kpi-registro-ciclo2",
+        "jurado-triagem-classificacao-san2-1-c2",
+        "jurado-san2-1r-fidelidade-opcao-c",
+        "jurado-san2-1r-diff-portagem-2026-08-29",
+        "jurado-suplente-kpi-registro-san2-1r",
+        "provador-de-mutacao-do-espelho",
+        "curador-da-lista-suites-ci",
+        "zelador-do-contrato-canonico",
+        "auditor-do-kpi-honesto",
+        "jurado-san2r-diff-espelho-2026-08-29",
+        "jurado-forense-san2r-c1-2026-08-29",
+        "jurado-san2r-kpi-registro"
+      ],
+      "evidencia_de_escopo": "DATA: J-B-O6R-REG.md 74430cc 2026-08-29, J-SAN2-1R.md 87f6ae6 2026-08-29, J-SAN2-R.md a0a1075 2026-08-29, J-SAN2-2.md d283903 2026-08-30 — todas anteriores ao head julgado 23d9227 (2026-08-30). ORIGEM: o mandato escrito e o registro dos 16 de .claude/agents/especialistas/ (planos/SAN2-3-plano.md l.54-57, citando os porteiros #362/#363); identidade sem arquivo nunca esteve no enunciado.",
+      "atenuante": "O documento declara a fronteira no §4 e se recusa a absolver por ausencia no §1.4 (fail-closed): nome nao listado exige conferencia nas atas, nao passe livre. Nao ha falsa seguranca escrita.",
+      "correcao_proposta": null,
+      "nota": "§C7.4-bis: quem acha nao conserta. Nenhuma correcao proposta aqui."
+    }
+  ],
+  "nota": "Esqueleto criado antes de qualquer medicao (P2+ do PROTOCOLO-JUNTA-RESILIENTE).",
+  "placar_itens": "3 APROVADO / 0 REPROVADO",
+  "achados_dentro_do_bloco": 0,
+  "justificativa": "A conta 15+2 esta certa e foi verificada por leitura propria das atas, nao do obituario: J-B-O6R-ARNES.md l.51 e l.56 reservam jurado-c5-arnes-catalogo-postgres para o ciclo 5, e planos/B-O6R-02-ciclo5-plano.md l.10/171/230/301 escalam critico-c5-adversarial para o mesmo ciclo, que nao rodou (ls ciclo5 em juntas/ e votos/ = vazio). As duas estao marcadas RESERVADA com a junta de destino nomeada na linha — o erro caro do bloco (queimar um jurado guardado) NAO foi cometido, e o bloco ainda corrigiu o enunciado herdado de 16+1 registrando a divergencia (§5b + REGISTRO-SAN2-3-OBITUARIO), como manda o §A2. Dentro do universo declarado o registro e exato: 17 arquivos = 17 linhas, os 8 autores reais de voto batem com os 8 marcados votou, e os 7 nomeada-e-preparada estao nos briefings e atas — ninguem sepultado sem causa, ninguem faltando. Fora dele, 15 identidades queimadas em juntas de 29-30/08 nao constam; achado pre-existente por data e por origem (o mandato escrito era o diretorio especialistas/), que nao reprova e que o proprio §1.4 do obituario e o novo 3.1-bis do inspetor neutralizam ao manter o grep nas atas obrigatorio."
+}
