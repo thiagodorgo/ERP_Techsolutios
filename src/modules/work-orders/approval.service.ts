@@ -83,6 +83,45 @@ export class ApprovalService {
     input: DecideOperationalApprovalInput,
   ): Promise<OperationalApproval> {
     const current = await this.get(actor, input.approvalId);
+
+    // B-O6R-07a (Ω6R-SEC-002, §3.2) — SEGREGAÇÃO DE FUNÇÃO: quem PEDIU não decide. Vale para approve E
+    // reject (rejeitar a própria pendência também encerra o controle sem segundo par de olhos).
+    //
+    // ORDEM DELIBERADA — este teste vem ANTES do 409 `approval_already_decided`. Autorização primeiro:
+    // o solicitante recebe a MESMA resposta (403) esteja a pendência aberta ou já decidida, e não
+    // aprende pelo código de erro em que estado ela está. Se o 409 viesse antes, uma varredura do
+    // próprio solicitante distinguiria "pendente" de "decidida" — vazamento pequeno, mas gratuito.
+    //
+    // A comparação é por `requestedByUserId` (o agregado já o carrega — approval.types.ts). Nenhum campo
+    // novo, nenhuma migração.
+    if (actor.userId === current.requestedByUserId) {
+      recordApprovalAudit({
+        action: "approval.self_decision_denied",
+        tenantId: current.tenantId,
+        actorId: actor.userId,
+        approvalId: current.id,
+        entityType: current.entityType,
+        entityId: current.entityId,
+        outcome: "denied",
+        // §2.8 (allowlist) — nada de PII nova: `decision` é o enum approved|rejected e o ator já é o
+        // `actorId` do próprio evento. O id do solicitante NÃO é repetido em metadata (seria a mesma
+        // pessoa, dita duas vezes).
+        metadata: {
+          reason: "self_decision",
+          decision: input.decision,
+          status: current.status,
+          work_order_id: current.workOrderId,
+        },
+      });
+
+      throw new ApprovalError(
+        403,
+        "APPROVAL_SELF_DECISION",
+        "self_decision",
+        "The requester cannot decide their own approval.",
+      );
+    }
+
     if (current.status !== "pending_approval") {
       throw new ApprovalError(
         409,

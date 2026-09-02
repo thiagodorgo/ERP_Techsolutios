@@ -2812,6 +2812,69 @@ MIME vindo do cliente e download em `attachment.storage.ts:90-105` + `attachment
 módulo, por deliberação.
 - status: ABERTA — 1 P0 + 2 P1.
 
+## P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:approve` — MÉDIA
+
+Aberta pelo B-O6R-07a (§3.1 do plano), no PR que criou a permissão dedicada `work_orders:approve`.
+
+`RBAC_MATRIX.md:46` classifica finance e inventory como **"approval-by-policy"** em Workflow/approvals — isto
+é, aprovam *conforme a política*. A política em questão é **de VALOR**, e ela não existe como dado: o agregado
+de aprovação (`src/modules/work-orders/approval.types.ts`) tem `entityType ∈ {work_order, checklist_run,
+evidence}` e **nenhum campo monetário** — medido, lido o arquivo inteiro. Conceder a chave a esses dois papéis
+hoje seria transformar "aprova conforme a alçada" em "aprova sempre", que é justamente a classe do achado
+Ω6R-SEC-002 com outro papel no lugar do técnico.
+
+Por isso a concessão do 07a é a MÍNIMA: `manager` explícito + `tenant_admin`/`super_admin`/`platform_admin`
+por herança do catálogo. finance e inventory ficam de fora **por ausência de modelo**, não por esquecimento.
+
+**Fecha quando:** existir alçada monetária ancorada no agregado (valor da OS/pendência + limite por papel, na
+linha do `APPROVAL_LIMITS.md`) e a concessão puder ser condicionada a ela.
+- status: ABERTA — MÉDIA. Dono natural: o bloco que introduzir alçada por valor.
+
+## P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE (2026-09-02) — `work_orders:approve` exige migração e 3 snapshots fora do §5 — **BLOQUEIA o merge do 07a**
+
+Registrada sob §A2 (conflito não se consolida em silêncio) pelo dev do 07a, com medição, não com suposição.
+
+O §3.1 do plano manda criar a chave `work_orders:approve` no catálogo em CÓDIGO. Medido no head `c421f9f`,
+acrescentar a chave torna **quatro** verificações vermelhas, e **as quatro vivem fora do §5 PERMITIDO do
+próprio plano**:
+
+1. `tests/permission-catalog-migration-parity.test.ts` — *"Permissão nova no catálogo e SEM migração de dados:
+   work_orders:approve"*. Exige uma migração aditiva em `prisma/migrations/`, no padrão
+   `20260861000000_grant_checklist_run_reopen_permission`. **`prisma/**` é PROIBIDO INTEIRO no §5** ("zero
+   migration neste bloco"). A válvula de escape (acrescentar a chave a `PERMISSOES_HERDADAS_DO_SEED`) está
+   **fechada por medição**: a lista tem 189 chaves e `TAMANHO_CONGELADO` é 189 — crescer reprova o próprio
+   guard, que documenta em voz alta que essa lista "NÃO CRESCE".
+2. `tests/core-saas.test.ts` — literal `expectedPermissionCatalog` (l.48). Uma linha após
+   `"work_orders:mileage_correct"`.
+3. `tests/fixtures/role-catalog-contract.snapshot.json` — snapshot papel→permissões consumido por
+   `tests/core-saas-role-authority.test.ts` (que **não** é o `-db` do ciclo 5).
+4. — (o quarto vermelho é de D3, registrado na pendência seguinte.)
+
+O §3.10 do plano previu o caso ("se a paridade RBAC persistente exigir seed, o seed correspondente entra no
+diff do 07a"), mas nomeou **seed** — e `prisma/seed.ts` também é `prisma/**`. Não há caminho dentro do escopo
+declarado: o plano pede a chave e proíbe o único lugar onde ela pode ser provisionada.
+
+**Decisão pendente (do orquestrador/junta, não do dev):** (a) ampliar o §5 do 07a para os 3 arquivos + a
+migração; ou (b) mover D1 para sub-bloco próprio com escopo que os inclua. O código de D1 já está escrito e a
+prova de papel (6 casos + vermelho-controle) já está verde.
+- status: ABERTA — BLOQUEIA o merge do 07a enquanto a chave estiver no catálogo sem provisionamento.
+
+## P-O6R-B07A-STICKY-409-VIRA-403 (2026-09-02) — o escopo por objeto muda o código de um teste fora do §5 — **BLOQUEIA o merge do 07a**
+
+`tests/work-order-checklists-sticky.test.ts:612` assere que um `field_technician` que desvia pelo update
+genérico com corpo `checklists` recebe **409 `checklist_set_requires_endpoint`**. Com o guard de escopo por
+objeto do §3.3, esse mesmo ator (não atribuído àquela ordem) passa a receber **403 `WORK_ORDER_NOT_ASSIGNED`**.
+
+**Não é regressão — é a porta fechando antes.** A intenção declarada do teste ("o desvio pelo update genérico é
+porta fechada, não 200") continua satisfeita; muda só o código, porque um controle mais forte passou a disparar
+primeiro. **A ordem não é escolha de estilo:** o 409 é lançado dentro de `applyChecklistSelectionOnUpdate`, que
+é o ponto de ESCRITA do conjunto (`rewriteChecklistSet`) — medido. Pôr o guard de autorização depois dele seria
+autorizar depois de gravar.
+
+O arquivo **não está no §2.5** do plano (a lista de testes que o dev pode editar), então o dev parou e devolveu
+em vez de ajustar. Correção necessária: **uma asserção**, `409 → 403`, com a razão `not_assigned_to_actor`.
+- status: ABERTA — BLOQUEIA o merge do 07a. Decisão de escopo do orquestrador/junta.
+
 ## P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1) — **BLOQUEIA jobs e tempo real de campo**
 
 Bloco 8 do plano (depende do B05). Aceite: lease/reclaim, schedule singleton, concorrência com deadline,

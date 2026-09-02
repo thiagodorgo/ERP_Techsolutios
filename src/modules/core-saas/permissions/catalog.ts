@@ -32,6 +32,14 @@ export const PERMISSION_CATALOG = [
   // Ω3F-7a (correção J-Ω3F-7A) — a BASE corrige o km (a proveniência app×base é a razão da feature).
   // Permissão DEDICADA (não `work_orders:update`, que o técnico de campo TEM): só o escritório corrige.
   "work_orders:mileage_correct",
+  // B-O6R-07a (Ω6R-SEC-002, P0) — DECIDIR uma aprovação operacional é ato próprio, não "editar a OS".
+  // Antes deste bloco `POST /approvals/:id/approve|reject` exigia `work_orders:update`, que technician e
+  // field_technician TÊM: o técnico de campo decidia aprovação tenant-wide. Mesmo idioma do
+  // `work_orders:mileage_correct` (permissão dedicada quando `:update` é largo demais). Concessão MÍNIMA:
+  // manager explicitamente + tenant_admin/super_admin/platform_admin por HERANÇA do catálogo (o padrão
+  // medido da casa). finance/inventory ("approval-by-policy" na RBAC_MATRIX) ficam de FORA enquanto não
+  // houver política de VALOR ancorada no agregado — P-O6R-B07-APPROVAL-BY-POLICY.
+  "work_orders:approve",
   "customers:read",
   "customers:create",
   "customers:update",
@@ -427,6 +435,11 @@ export const ROLE_PERMISSIONS = {
     "work_orders:status",
     "work_orders:cancel",
     "work_orders:mileage_correct",
+    // B-O6R-07a (Ω6R-SEC-002) — o manager é o aprovador default (APPROVAL_LIMITS.md l.38-42). É a ÚNICA
+    // concessão explícita deste bloco: tenant_admin/super_admin/platform_admin recebem por herança
+    // (TENANT_ADMIN_PERMISSIONS = catálogo sem `platform:`; os dois admins = PERMISSION_CATALOG inteiro),
+    // que é como recebem todos os demais `work_orders:*` — medido, não presumido.
+    "work_orders:approve",
     "customers:read",
     "customers:create",
     "customers:update",

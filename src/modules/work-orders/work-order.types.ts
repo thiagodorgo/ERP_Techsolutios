@@ -67,6 +67,67 @@ export type WorkOrderActorContext = {
   readonly permissions: readonly Permission[];
 };
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// B-O6R-07a (Ω6R-SEC-002, §3.3) — ESCOPO POR OBJETO na mutação de OS.
+//
+// O achado: `work-order.service.ts` filtrava só tenant + id + estado. Um técnico de campo com
+// `work_orders:update`/`:status` mutava QUALQUER ordem da organização, inclusive a de outro técnico.
+// A permissão diz "pode editar ordem"; ela nunca disse "pode editar a ordem DE QUEM".
+//
+// A decisão é tomada UMA vez, papel a papel, aqui — e por INCLUSÃO, no idioma de `ROLE_AUTHORITY`
+// (catalog.ts): `satisfies Record<Role, …>` faz papel novo sem entrada REPROVAR o `npm run check`.
+// Derivar por exclusão ("todo mundo menos os de campo") é o desenho que faz o membro não previsto
+// nascer permitido.
+//
+//   tenant_wide   → gestão/despacho: muta a organização inteira (RBAC_MATRIX l.45, full/create-edit).
+//                   É quem redistribui trabalho — travá-lo na própria atribuição quebraria o despacho.
+//   assigned_only → CAMPO: muta só a ordem atribuída a si. É a classe que o achado nomeia.
+//   no_mutation   → papel que HOJE não tem `work_orders:update` nem `:status` no catálogo (medido:
+//                   viewer e auditor têm só `work_orders:read`; finance, inventory e support não têm
+//                   nenhuma chave `work_orders:*`). A classificação é honesta, não um "outros": se um
+//                   destes vier a ganhar mutação, esta linha é o lugar onde a decisão de escopo tem de
+//                   ser tomada, em vez de herdada em silêncio.
+export const WORK_ORDER_MUTATION_SCOPE = {
+  super_admin: "tenant_wide",
+  platform_admin: "tenant_wide",
+  tenant_admin: "tenant_wide",
+  manager: "tenant_wide",
+  operator: "tenant_wide",
+  field_dispatcher: "tenant_wide",
+  technician: "assigned_only",
+  field_technician: "assigned_only",
+  viewer: "no_mutation",
+  finance: "no_mutation",
+  inventory: "no_mutation",
+  auditor: "no_mutation",
+  support: "no_mutation",
+} as const satisfies Record<Role, "tenant_wide" | "assigned_only" | "no_mutation">;
+
+export type WorkOrderMutationScope = (typeof WORK_ORDER_MUTATION_SCOPE)[Role];
+
+/**
+ * O ator alcança esta ordem SÓ por papel de campo — e portanto só pode mutar a que é dele?
+ *
+ * A regra é de PRESENÇA, nos dois lados, como o §3.3 do plano a enuncia: o ator tem papel de campo
+ * **e** não tem papel de gestão. Não é "todo mundo menos a gestão".
+ *
+ * RESOLUÇÃO POR UNIÃO — o padrão da casa (um usuário com `manager` + `technician` tem a união das
+ * permissões dos dois, `resolvePermissionsForRoles`). Basta UM papel `tenant_wide` para o ator NÃO
+ * cair no escopo por objeto: o guard existe para o técnico que é SÓ técnico, não para punir quem
+ * acumula função. O caso de dois papéis tem teste próprio.
+ *
+ * Por que a regra NÃO é "ausência de papel de gestão": chamadores internos do serviço passam contexto
+ * sem papel nenhum (`roles: []` — medido em tests/work-order-checklists-sticky*.test.ts), e o
+ * middleware HTTP já recusa `roles.length === 0` com 403 `role_required` antes do serviço. Fazer
+ * "sem papel ⇒ escopado" não fecharia buraco de HTTP nenhum e quebraria composição interna.
+ */
+export function actorMutatesAssignedOnly(actor: WorkOrderActorContext): boolean {
+  const scopes: Record<string, WorkOrderMutationScope | undefined> = WORK_ORDER_MUTATION_SCOPE;
+  const hasTenantWide = actor.roles.some((role) => scopes[role] === "tenant_wide");
+  const hasFieldRole = actor.roles.some((role) => scopes[role] === "assigned_only");
+  return hasFieldRole && !hasTenantWide;
+}
+
 export type WorkOrder = {
   readonly id: string;
   readonly tenantId: string;

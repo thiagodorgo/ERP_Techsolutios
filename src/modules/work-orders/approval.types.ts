@@ -51,13 +51,22 @@ export type DecideOperationalApprovalInput = {
 };
 
 export type ApprovalAuditEvent = {
-  readonly action: "approval.requested" | "approval.approved" | "approval.rejected";
+  readonly action:
+    | "approval.requested"
+    | "approval.approved"
+    | "approval.rejected"
+    // B-O6R-07a (Ω6R-SEC-002) — a RECUSA por segregação de função deixa rastro. Uma tentativa de
+    // autoaprovação recusada em silêncio é indistinguível de "ninguém tentou": o padrão que se quer
+    // detectar é justamente a repetição.
+    | "approval.self_decision_denied";
   readonly tenantId: string;
   readonly actorId: string;
   readonly approvalId: string;
   readonly entityType: ApprovalEntityType;
   readonly entityId: string;
-  readonly outcome: "success";
+  // `denied` entra com a recusa de SoD. Continua sendo um enum fechado: o auditor lê o desfecho, não
+  // um texto livre.
+  readonly outcome: "success" | "denied";
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly createdAt: string;
 };
