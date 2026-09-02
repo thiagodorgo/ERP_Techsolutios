@@ -5524,3 +5524,80 @@ por retro-escrita de um carimbo `[SAN2-5: …]` que ninguém escreveu na época.
   no blob da base `e6a6461`, merge do #367, é byte-idêntica à do head) · **dono:** SAN2-5.
 
 ---
+
+## P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉDIA
+
+**Origem:** B-O6R-07a §3.5. Sucede a metade "IP/distribuído" de `P-O6R-B01-RATE-LIMIT-IP`, que fica
+**parcialmente fechada** por este bloco: o balde por IP passou a existir e a rotação de e-mails na
+mesma origem deixou de escapar do freio (medido: `401 !== 429` no head-base × `429 RATE_LIMITED` com
+a correção — evidência em `omega/juntas/votos/O6R-07a/dev-a1-a3-auth.md` §II.2/A2).
+
+**O que SEGUE ABERTO, e é o que esta pendência carrega:**
+
+1. **Multi-réplica.** O `TokenBucket` de `portal-shared` roda com `InMemoryTokenBucketStore` — o balde
+   vive **por instância do processo**. Com N réplicas atrás de um balanceador, o teto efetivo por IP
+   é N × 30/5 min, não 30/5 min. O store já é plugável (interface `TokenBucketStore`); o fecho é uma
+   implementação Redis. **Não é regressão** — antes deste bloco o teto por IP era infinito.
+2. **Política de proxy / `X-Forwarded-For`.** O IP vem do **socket** (`trust proxy` DESLIGADO, default
+   do Express), de propósito: com `trust proxy` ligado sem allowlist, o header é spoofável e o freio
+   vira decorativo. Atrás de um proxy confiável, porém, todo tráfego chega com o IP do proxy e cai num
+   balde único. Ligar `trust proxy` com a allowlist certa é **decisão de INFRA**, fora do §5 do bloco.
+3. **NAT corporativo.** Um escritório inteiro compartilha um IP; por isso o teto adotado é o mesmo de
+   `AUTHORITY_ANTI_ABUSE_DEFAULTS.ipBucket` (30/5 min), e não algo mais apertado. O fecho fino depende
+   de (1) e (2).
+
+**Residual irmão, registrado aqui por dependência direta — `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`:** a
+linha de auditoria de falha anônima criada pelo §3.4 **não carrega `ipAddress`/`userAgent`**.
+Encaminhá-los exigiria alterar `src/modules/auth/auth-runtime.ts` (o adaptador que envolve cada
+candidato em `withTenantRls`), **fora do §5 PERMITIDO** do B-O6R-07a. O rastro do SUCESSO anônimo já
+carrega o contexto; o da FALHA, não. Consequência prática: hoje dá para saber **que** houve força
+bruta anônima contra uma conta, não **de onde**. Fecha junto com (2), que é quando "de onde" passa a
+ter resposta confiável.
+
+> **§A2 — divergência declarada, não escondida.** O ID `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP` é citado
+> **pelo comentário de produção** em `local-auth-login.service.ts` ("Fica registrado em
+> `pendencias.md`"), escrito pelo `dev-o6r07a-auth-residuais` antes de cair. O mandato do sucessor
+> (`dev-o6r07a-auth-provas`) autorizava editar este arquivo nominalmente para
+> `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` — só. Deixá-lo sem registro faria o **código mentir**; abrir
+> uma seção própria excederia o mandato. Registrado, então, como residual **dentro** da seção
+> autorizada, com esta nota. A junta decide se promove a seção própria.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (nasce com o §3.5/§3.4
+  do B-O6R-07a) · **dono:** B-O6R-07a → trilha de infra.
+
+---
+
+## D-DIVERGENCIA-B07A-A3-METODO-DA-PROVA — o §4 pedia espião de scrypt; a prova saiu por testemunha de efeito
+
+**Registro §A2 (orquestrador, 2026-09-02) — bloco dono: `B-O6R-07a`. Não é pendência aberta: é
+divergência plano × terreno, declarada para a junta validar ou reprovar.**
+
+**O que o plano pedia.** §4, linha 6: o vermelho-controle do A3 (pino N/r/p no `parseScryptHash`) seria
+provado por **espião de scrypt** — um contador de derivações, no idioma do `B-O6R-01` §6.4.4 — mostrando
+que a base **deriva** com o N vindo do dado armazenado.
+
+**O que o dev mediu, e por que divergiu.** `dev-o6r07a-auth-provas` reportou que **não existe ponto de
+injeção** para o espião sem **alargar `password.service.ts` só para o arnês** — isto é, mudar código de
+produção para acomodar o teste. Em vez disso, provou por **testemunha de efeito**, em duas pernas:
+
+1. `actual: true` na base — o parse **aceita** um stored com `N=2` e **deriva** com ele;
+2. `ERR_CRYPTO_INVALID_SCRYPT_PARAMS` **subindo até o serviço de login** com N gigante — erro não tratado
+   atravessando a camada.
+
+Com o pino: `6 casos · pass 6 · fail 0`.
+
+**Decisão do orquestrador: ACEITO, e a razão é de mérito, não de conveniência.** A testemunha de efeito
+prova **mais** que o contador, não menos: o espião responderia *"scrypt rodou N vezes"*; a testemunha
+responde *"o parse aceitou parâmetro do atacante E derivou com ele"*, que é **o defeito em si**, e ainda
+mostra a segunda porta (o `RangeError` não tratado) que um contador não veria. E preserva um invariante
+que vale mais que a literalidade do §4: **não se alarga código de produção para acomodar arnês** — foi
+exatamente a classe de erro do `SAN2-4b`, onde o `keylen` virava função do input.
+
+**O que a junta do 07a tem de validar (não presuma que está fechado):**
+(a) a testemunha de efeito é de fato **≥** o espião em poder de detecção, ou há caminho que só o contador
+pegaria? (b) o `ERR_CRYPTO_INVALID_SCRYPT_PARAMS` chegando ao serviço de login era **defeito próprio**
+que este bloco fechou de brinde — e, se sim, ele merece número e nota próprios? (c) o §4 do plano deve
+ser emendado para admitir testemunha de efeito como forma canônica, ou este caso é exceção nomeada?
+
+**Precedente que isto cria, se a junta aceitar:** *"o vermelho-controle é sobre PROVAR QUE A SONDA MORDE,
+não sobre um instrumento específico — instrumento que exige alargar produção é instrumento errado."*

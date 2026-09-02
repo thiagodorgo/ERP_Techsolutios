@@ -5,7 +5,15 @@ import {
   getAccessTokenExpiresInSeconds,
   signAccessToken,
 } from "../services/jwt.service.js";
-import { AnonymousLoginService } from "../services/anonymous-login.service.js";
+import { AnonymousLoginService, loginIpBucketKey } from "../services/anonymous-login.service.js";
+import { LOGIN_IP_BUCKET } from "../anonymous-login.constants.js";
+import {
+  InMemoryTokenBucketStore,
+  TokenBucket,
+  type TokenBucketConfig,
+  type TokenBucketStore,
+} from "../../portal-shared/token-bucket.js";
+import { env } from "../../../config/env.js";
 import {
   attachAuthenticatedActor,
   getAuthenticatedActor,
@@ -34,6 +42,15 @@ type AuthRouterOptions = {
   // B-O6R-01 (§6) — serviço do login sem organização; injetável nos testes (espião do contador
   // de scrypt, relógio, sleep). O default compõe o core-saas + o serviço de login reais.
   readonly getAnonymousLoginService?: () => Promise<AnonymousLoginService>;
+  // B-O6R-07a (§3.5) — freio por IP das DUAS vias de POST /login. Tudo injetável para teste
+  // (store, parâmetros, relógio e extrator de IP); em produção nada disto é passado e valem os
+  // defaults: LOGIN_IP_BUCKET, Date.now e o IP do SOCKET.
+  readonly loginIpRateLimit?: {
+    readonly store?: TokenBucketStore;
+    readonly config?: TokenBucketConfig;
+    readonly clock?: () => number;
+    readonly resolveClientIp?: (request: Request) => string;
+  };
 };
 
 type LoginRequestBody = {
@@ -90,8 +107,37 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
       return defaultAnonymousLoginService;
     });
 
+  // B-O6R-07a (§3.5) — balde por IP, cacheado por router (vive entre requisições, como o balde
+  // por e-mail do B01). TokenBucket REUSADO de portal-shared: zero dependência nova.
+  const loginIpRateLimit = options.loginIpRateLimit ?? {};
+  const loginIpBucket = new TokenBucket(
+    loginIpRateLimit.store ?? new InMemoryTokenBucketStore(),
+    loginIpRateLimit.config ?? LOGIN_IP_BUCKET,
+  );
+  const loginIpClock = loginIpRateLimit.clock ?? Date.now;
+  const resolveLoginClientIp = loginIpRateLimit.resolveClientIp ?? readSocketIp;
+
   router.post("/login", async (request, response) => {
     try {
+      // O freio por IP vem ANTES de qualquer trabalho — parse de corpo incluso: corpo malformado
+      // em volume não pode ser a via barata de contornar o freio. Sem oráculo de conta: o 429 fala
+      // do volume da PRÓPRIA origem, não da existência de e-mail ou organização.
+      const clientIp = resolveLoginClientIp(request);
+      const ipBucketKey = loginIpBucketKey(env.JWT_SECRET, clientIp);
+      const ipBucketNowMs = loginIpClock();
+
+      if (!loginIpBucket.wouldAllow(ipBucketKey, ipBucketNowMs)) {
+        response.status(429).json({
+          error: {
+            code: "RATE_LIMITED",
+            message: "Too many attempts. Try again later.",
+          },
+        });
+        return;
+      }
+
+      loginIpBucket.consume(ipBucketKey, ipBucketNowMs);
+
       const parsedBody = parseLoginRequestBody(request.body);
 
       if (!parsedBody.ok) {
@@ -500,6 +546,16 @@ function parseLoginRequestBody(body: unknown): ParsedLoginRequestBody {
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+// B-O6R-07a (§3.5) — IP do SOCKET. `trust proxy` fica DESLIGADO (default do Express), então
+// `request.ip` é o peer real e não um X-Forwarded-For spoofável — mesmo raciocínio já escrito em
+// `owner-portal.controller.ts:16` e `authority-portal.controller.ts:16`. Atrás de proxy confiável
+// a configuração de `trust proxy` é decisão de INFRA, fora deste bloco
+// (`P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`). Origem indeterminável cai num balde único "unknown" —
+// fail-closed: some com o freio, não sem ele.
+function readSocketIp(request: Request): string {
+  return request.ip ?? request.socket.remoteAddress ?? "unknown";
 }
 
 function readHeader(value: string | string[] | undefined): string | undefined {

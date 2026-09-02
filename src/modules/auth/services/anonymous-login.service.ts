@@ -30,9 +30,12 @@ import type { LocalAuthLoginResult } from "../types/auth.types.js";
 //   401 uniforme em 0 sucessos — INCLUSIVE candidato em lock (o 423 não existe no caminho
 //   anônimo); 409 TENANT_SELECTION_REQUIRED com SOMENTE as organizações provadas;
 //   piso de latência constante em TODOS os desfechos (padrão settle do authority-portal).
-// O que o balde NÃO fecha (declarado): rotação de e-mails segue sem teto — idêntico ao login de
-// hoje; fecho por IP/distribuído é o B-O6R-07 (P-O6R-B01-RATE-LIMIT-IP). In-process, por
-// instância — store Redis-ready (plugável).
+// O que o balde por e-mail NÃO fecha (declarado no B01): rotação de e-mails segue sem teto.
+// B-O6R-07a (§3.5) FECHOU essa ponta com um balde por IP aplicado às DUAS vias em `auth.routes.ts`
+// (`loginIpBucketKey` abaixo, LOGIN_IP_BUCKET nas constantes) — os dois baldes são independentes e
+// o mais restritivo vence. SEGUE ABERTO e re-nomeado como `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`:
+// balde multi-réplica (Redis) e política de X-Forwarded-For/proxy — decisão de infra, fora do
+// bloco. In-process, por instância — store Redis-ready (plugável).
 // -----------------------------------------------------------------------------------------------
 
 export type AnonymousLoginOutcome =
@@ -85,6 +88,16 @@ export function anonymousEmailBucketKey(secret: string, email: string): string {
   const domainKey = createHmac("sha256", secret).update("anonymous-login-bucket-v1", "utf8").digest();
 
   return createHmac("sha256", domainKey).update(normalizeCredentialEmail(email), "utf8").digest("hex");
+}
+
+// B-O6R-07a (§3.5 do plano) — chave do balde por IP: MESMO idioma do balde por e-mail acima
+// (HMAC-SHA256 com subchave derivada de JWT_SECRET por separação de domínio; zero env nova), com
+// rótulo de domínio PRÓPRIO para que os dois baldes nunca colidam. O IP entra normalizado
+// (trim + lower — hex de IPv6 varia de caixa) e NUNCA vai em claro para a chave do store.
+export function loginIpBucketKey(secret: string, ip: string): string {
+  const domainKey = createHmac("sha256", secret).update("login-ip-bucket-v1", "utf8").digest();
+
+  return createHmac("sha256", domainKey).update(ip.trim().toLowerCase(), "utf8").digest("hex");
 }
 
 export class AnonymousLoginService {

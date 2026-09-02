@@ -66,3 +66,31 @@ seguinte: **não citar head no mandato — mandar o agente medir o próprio head
   se a verificação mostrar que está errado.
 - **P5 não disparou:** 1 queda nesta janela (a da cadeira C3 do `J-SAN2-6` foi horas antes). Sem pausa.
 - Nenhuma conclusão do caído é herdada como fato — só o `§0 Baseline`, que tem comandos, serve de roteiro.
+
+---
+
+## ERRATA (orquestrador, pós-execução do sucessor) — a frase "não sobrou comando nenhum" é FALSA
+
+O sucessor `dev-o6r07a-auth-provas` **achou um erro neste registro**, e ele procede.
+
+Onde eu escrevi *"dele não sobrou comando nenhum para re-executar barato"*, a medição mostra que
+**sobrou saída BRUTA** no scratchpad da sessão — **9 arquivos**: `red-a1-mem.txt`, `red-a1-db.txt`,
+`red-a1-final.txt`, `red-a2-probe.ts`, `red-a2-probe.mts`, `red-a3.txt`, `green-n1.txt`, `green-n2.txt`,
+`green-n3.txt`. Conferidos por `ls` pelo orquestrador.
+
+**O que muda e o que NÃO muda:**
+
+- **A premissa era imprecisa** — eu afirmei ausência sem ter varrido o scratchpad. É exatamente a classe
+  *"afirmação publicada sem medir"* que esta rodada combate, cometida por mim, no registro que existe
+  para registrar exatamente isso.
+- **A conclusão continua correta, e por outro motivo:** saída bruta **sem comando, sem head e sem
+  atribuição** não é roteiro re-executável — é log órfão. O **P3** exige *"re-roda cada comando
+  registrado e compara a saída"*, e não há comando registrado. Logo os três vermelhos-controle tinham
+  mesmo de ser refeitos do zero. **O custo de 3/3 das provas estava certo; a razão que eu dei, não.**
+- **Conduta do sucessor, que é o padrão a seguir:** ele **não usou** os arquivos (não são insumo pelo P3)
+  e **não os apagou** (não eram comprovadamente dele). Declarou os dois lados.
+
+**A lição fica mais afiada, não mais fraca:** o P1 não pede que o agente *produza saída* — pede que ele
+**grave comando + saída + veredito no arquivo de evidência**. O caído produziu saída e não a ancorou; por
+isso ela existe e não vale. **Log órfão é indistinguível de log inventado**, e é por isso que o protocolo
+exige o par comando↔saída no mesmo lugar.

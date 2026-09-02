@@ -206,11 +206,31 @@ export class LocalAuthLoginService {
     };
   }
 
-  // B-O6R-01 (§6.2/§6.4 do plano) — verificação de UM candidato do caminho anônimo, SEM efeito
-  // colateral: falha anônima não incrementa contador de candidato nem audita em N organizações
-  // (§6.4.3). Candidato em lock → reason "locked", que o caminho anônimo achata em 401 uniforme
-  // (o 423 não existe no caminho anônimo). O scrypt é executado pela função INJETADA (espião do
-  // contador nos testes — §6.4.4).
+  // B-O6R-01 (§6.2/§6.4 do plano) — verificação de UM candidato do caminho anônimo. O scrypt é
+  // executado pela função INJETADA (espião do contador nos testes — §6.4.4).
+  //
+  // B-O6R-07a (§3.4 do plano) — o B01 deixou esta via SEM efeito colateral ("falha anônima não
+  // incrementa contador de candidato nem audita"), e a medição do secops mostrou o preço:
+  // 12 tentativas em banco real com o contador PARADO em 0 e zero rastro — força bruta ilimitada
+  // por um caminho que sequer exige conhecer a organização (`P-O6R-B01-ANONIMO-SEM-LOCKOUT`).
+  // A falha de SENHA passa a chamar o MESMO `incrementFailedAttempts` atômico do B01 (reuso
+  // obrigatório: nenhum contador novo, nenhum read-modify-write novo) e a deixar UMA linha de
+  // auditoria na organização do candidato — rastro INTERNO, jamais na resposta.
+  //
+  // O que NÃO muda, e é o que o B01 comprou: candidato em lock → reason "locked", que o caminho
+  // anônimo achata em 401 uniforme; o 423 NUNCA existe aqui; a resposta não enumera organizações.
+  //
+  // TRADE-OFF DECLARADO À JUNTA (§3.4, decisão dela, não minha): armar lockout por via anônima
+  // cria vetor de negação de acesso à conta a custo baixo — quem souber o e-mail tranca a conta
+  // por 15 min. Mitigações medidas: TTL de 15 min (não é banimento), balde por e-mail do B01
+  // (10/15 min) somado ao balde por IP do §3.5, e o rastro auditável que antes não existia. A
+  // alternativa — não armar — mantém força bruta ilimitada e sem rastro, que é exatamente o
+  // achado Ω6R-SEC-003.
+  //
+  // RESIDUAL DECLARADO: esta linha de auditoria NÃO carrega ipAddress/userAgent. Encaminhá-los
+  // exigiria alterar `auth-runtime.ts` (o adaptador que envolve cada candidato em withTenantRls),
+  // que está FORA do §5 PERMITIDO deste bloco. Fica registrado em `pendencias.md`
+  // (`P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`); o rastro do sucesso anônimo já carrega o contexto.
   async verifyAnonymousCandidate(
     input: Pick<LocalAuthLoginInput, "tenant_id" | "email" | "password">,
     verifyPasswordFn: typeof verifyPassword = verifyPassword,
@@ -236,6 +256,11 @@ export class LocalAuthLoginService {
     const passwordMatches = await verifyPasswordFn(input.password, credential.password_hash);
 
     if (!passwordMatches) {
+      // B-O6R-07a (§3.4) — MESMO UPDATE atômico do B01 (threshold → locked_until num único
+      // statement). Sem contador novo, sem read-modify-write.
+      await this.credentials.incrementFailedAttempts(credential.id, tenantId);
+      await this.recordLoginFailure(tenantId, email, "invalid_credentials", {}, "without_org");
+
       return { ok: false, reason: "invalid_credentials" };
     }
 
@@ -294,11 +319,15 @@ export class LocalAuthLoginService {
     });
   }
 
+  // `loginMode` distingue o rastro do caminho SEM organização (B-O6R-07a §3.4) do rastro do
+  // login direcionado — espelho do que `finalizeAnonymousLogin` já faz no sucesso. A allowlist do
+  // metadado não muda: e-mail normalizado e motivo, nada de senha, hash ou identificador externo.
   private async recordLoginFailure(
     tenantId: string,
     email: string,
     reason: "invalid_credentials" | "locked" | "inactive",
     auditContext: LocalAuthAuditContext,
+    loginMode?: "without_org",
   ): Promise<void> {
     await new EnterpriseAuditLogService(this.auditLogs).record({
       tenantId,
@@ -313,6 +342,7 @@ export class LocalAuthLoginService {
       metadata: {
         email,
         reason,
+        ...(loginMode ? { loginMode } : {}),
       },
     });
   }

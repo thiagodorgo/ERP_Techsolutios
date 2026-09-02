@@ -569,3 +569,131 @@ inclusive os 8 arquivos do ciclo 5. Arquivo fora das listas → o dev PARA e dev
   fecham no PRÓPRIO 07a quando os caminhos do E3 forem entregues — quem fechar registra em `pendencias.md`.
 
 — fim da EMENDA E1 —
+
+---
+
+## EMENDA E2 (pós-achado do dev U3, 2026-09-02) — sticky l.620/l.628: consertar o ARRANJO, não a asserção
+
+**Papel:** `planejador-mestre` (Fable — `D-PLANEJADOR-MODELO-FABLE`; §C7.6: fluxo voltando ao planejador
+pós-achado de execução = Fable OBRIGATÓRIO). Identidade distinta da que escreveu o corpo E da que escreveu
+a E1. Terreno: worktree `.claude/worktrees/b07`, branch `fix/o6r07a-authorization`, head **`a37a9dd`**
+(medido por `git rev-parse HEAD`; inclui o diff do U1-U3 e a E1). Em curso no MESMO worktree: o
+`dev-o6r07a-auth-provas` mutando `src/modules/auth/**` — nada de auth é tocado ou citado por esta emenda.
+Esta seção é um APENSO APPEND-ONLY: nenhuma linha do corpo nem da E1 foi tocada (prova:
+`git diff --numstat` deste arquivo = só adições, 0 remoções).
+
+### F0 · O achado do dev, RE-VERIFICADO por execução minha (não herdado)
+
+- No head `a37a9dd` (sticky limpo vs HEAD, sha256 `f806fa8c…`): `node --test --import tsx
+  tests/work-order-checklists-sticky.test.ts` → **ec=1 · tests 15 · pass 14 · fail 1**, `403 !== 409`
+  no caso `[rota]` — exatamente o que o U3 devolveu (a falha avançou da l.612, já emendada, para a l.620).
+- Causa relida no fonte: o caso dispara TRÊS `PATCH /work-orders/:id` com `x-role: field_technician`
+  (e `x-user-id` = managerA — o helper `headers()` l.717-719 fixa o MESMO usuário para todos os papéis)
+  sobre uma OS que o arranjo NUNCA atribuiu a ninguém; o guard `assertMutationObjectScope`
+  (`work-order.service.ts:808-825`) recusa as três antes de qualquer porta de checklist.
+
+### F1 · A l.620: É a mesma classe mecânica da l.612 — e MESMO ASSIM não autorizo a renumeração
+
+Mecanicamente, SIM: mesmo ator não-atribuído, mesma OS, mesmo guard, mesmo ponto (o U3 mediu 15/15 com
+620→403 + 628→403; eu medi o INVERSO — com a OS atribuída, a l.620 fica verde em 409, sonda do F2.4).
+Mas renumerar seria consertar o sintoma: com as três respostas em 403, as três requisições morrem no
+guard de escopo e a cobertura declarada do caso (comentário l.603-606: o DESVIO pela rota genérica "com
+os papéis REAIS do catálogo" passa o gate da rota e é o SERVIÇO que fecha a porta do conjunto) desaparece
+em silêncio — viraria re-prova do que `tests/o6r07a-wo-object-scope.test.ts` já prova em 12 casos, e
+NENHUM teste HTTP provaria mais a porta única do conjunto contra papel real do catálogo. Decisão: a
+l.620 FICA 409; o que muda é o arranjo (F3). Se a junta derrubar o F2, o fallback é a renumeração das
+DUAS (620→403, 628→403) com esta perda de cobertura registrada em ata.
+
+### F2 · A l.628: decidida com MEDIÇÃO — o contrato É 403 para não-atribuído; o TESTE atribui a OS
+
+1. **A matriz (fonte que o §5 congela) já decide o contrato.** `RBAC_MATRIX.md:45`, coluna 7 =
+   `field_technician` (header l.29, conferido): work orders → **execute/update-assigned**. O poder de
+   update do técnico é escopado à OS ATRIBUÍDA, por escrito, na fonte que "não se move". O guard do D3
+   NÃO contraria a matriz — ele a cumpre; o **200 antigo é que a contrariava** (o arranjo nunca atribuiu
+   a OS). O defeito, portanto, não é do guard — era do arranjo do teste.
+2. **O achado pede exatamente isso.** `Ω6R-SEC-002` (achados.jsonl l.9, relido): impacto "Técnico altera
+   OS alheia…", aceite "Técnico A não altera OS de B" — sem ressalva de campo inócuo. Escopo só nas
+   mutações "sensíveis" exigiria classificar campo a campo o que é sensível (lista nova, sem fonte de
+   verdade que a ancore) e deixaria o P0 meio-aberto: `description` de OS alheia seguiria mutável.
+   **REJEITADO com medição, não preferência.**
+3. **A intenção original do caso se preserva ATRIBUINDO, não renumerando.** O comentário l.622 diz "o
+   técnico segue editando o que a permissão dele cobre" — e o que ela cobre, pela matriz, é a OS
+   atribuída. Com um técnico ATRIBUÍDO, o caso volta a afirmar semântica campo×rota (409 da porta do
+   conjunto, 200 da edição comum) — e fica MAIS forte: os 409 passam a ser provados para um ator que
+   PASSA o guard de escopo, ou seja, a porta do conjunto continua fechada até para o técnico da própria
+   OS. Um 403 na l.628 inverteria o que o caso afirma (de semântica de campo para autorização).
+4. **A terceira leitura FUNCIONA — medida, com sonda revertida.** Sonda no sticky: (i) perfil de operador
+   criado pelo serviço — receita provada de `tests/o6r07a-wo-object-scope.test.ts:259-262`; usuário =
+   UUID CRU, porque o store de memória emite `usr_000001` (`core-saas.service.ts:200,596`), não-UUID, e
+   o `OperatorProfileService` valida UUID; (ii) `POST /work-orders/:id/assign {operatorId: perfil.id}`
+   → 200; (iii) `desvio`/`zeragem`/`edicaoComum` com o técnico atribuído; (iv) l.612-613 revertidas ao
+   texto pré-E1. Resultado: **ec=0 · 15/15 · skipped 0** (N=1; o log registra o PATCH de `description`
+   do técnico-UUID atribuído respondendo 200). Sonda REVERTIDA por cópia byte-exata: sha256
+   `f806fa8c…` idêntico antes/depois, `git diff --numstat` do arquivo VAZIO vs `a37a9dd`.
+5. **O que se perde na escolha — dito às claras.** (a) No PRODUTO: técnico não-atribuído perde TODA
+   mutação, inclusive a inócua — fluxo "editar antes de ser formalmente atribuído" vira 403; e a tensão
+   §A2 do `assigned_operator_id` (atribuição por user id grava id que não é de perfil → atribuído
+   legítimo recebe 403) passa a cobrir mais verbos. É fail-closed: recusa a mais, nunca permissão a
+   mais; a tensão SEGUE com a junta (E1/E4). (b) No TESTE: retrabalho de 2 linhas já entregues (reverter
+   a 612-613) — a classe da `D-JUNTA-SEPARACAO-DE-PAPEIS`; mitigação: a reversão é a texto byte-exato de
+   `git show 2d54ea2:…`, não texto novo, executada por dev que não decidiu esta emenda.
+
+### F3 · Escopo EMENDADO — SUPERA o E3.4 da E1; UM arquivo, quatro edições nominais e fechadas
+
+`tests/work-order-checklists-sticky.test.ts`, SOMENTE dentro do caso `[rota]` (l.572-664 no head `a37a9dd`):
+
+1. **l.612-613 REVERTEM ao texto pré-E1** — byte-exato de
+   `git show 2d54ea2:tests/work-order-checklists-sticky.test.ts` (l.612-613 de lá):
+   `assert.equal(desvio.status, 409, "o desvio pelo update genérico é porta fechada, não 200");`
+   `assert.equal(desvio.body.error?.reason ?? desvio.body.reason, "checklist_set_requires_endpoint");`
+2. **Bloco de arranjo NOVO** entre o fim da asserção do `ajuste` (l.601) e o comentário
+   `// P1 da verificação — o DESVIO` (l.603), na forma que a sonda provou (comentário de abertura
+   identificando "B-O6R-07a EMENDA E2"): import dinâmico de `createDefaultOperatorProfileService`
+   (`../src/modules/operator-profiles/operator-profile.service.js`); `tecnicoUserId = randomUUID()`
+   (o import de `randomUUID` já existe, l.2); `profileService.create(<ator tenant_admin do tenantA>,
+   { user_id: tecnicoUserId, full_name: "Tecnico de Campo" })`;
+   `POST /work-orders/:id/assign` com `headers(seed, "tenant_admin")` e `body {operatorId:
+   perfilTecnico.id}` + `assert.equal(status, 200)`; e `const tecnicoHeaders = { "x-tenant-id":
+   seed.tenantA.id, "x-user-id": tecnicoUserId, "x-role": "field_technician" }`. Nota de tipo: a sonda
+   provou o RUNTIME (tsx não checa tipos); se `npm run check` acusar o literal do ator, o idioma
+   permitido é o `as never` do arquivo irmão (`o6r07a-wo-object-scope.test.ts:260`) — dentro do bloco.
+3. **As TRÊS requisições** `desvio` (l.609), `zeragem` (l.617), `edicaoComum` (l.625) trocam
+   `headers(seed, "field_technician")` por `tecnicoHeaders`. A `semPermissao` (l.584) NÃO muda: o 403
+   dela nasce no gate de rota (`field_dispatch:create` ausente do papel), independe de atribuição, e a
+   intenção própria dela ("quem não despacha não redefine o que vai a campo") fica intacta.
+4. **NADA MAIS.** l.620 e l.628 ficam EXATAMENTE como estão (409 e 200) — este é o ponto da emenda.
+   `withApi`/harness (l.666-826) intocado: a sonda ficou verde SEM reset de runtime de perfis (tenant
+   novo por execução isola; mudança mínima). Nenhuma linha de `src/**` — o contrato de produto do §3.3
+   não muda nesta emenda.
+
+**Aceite:** o arquivo **15/15 `ec=0`** (N=3, denominador idêntico) · `npm run check` `ec=0` · suíte
+canônica sem falha nova (a única falha atual — F0 — fecha). **Vermelho-controle da mudança de arranjo:**
+a execução no head `a37a9dd` SEM o arranjo = `ec=1 · 14/15 · 403 !== 409` (F0, re-executável por
+qualquer jurado; foi executada por mim, não herdada).
+
+### F4 · Precedência, erratas e o que é da JUNTA
+
+- **ESTA EMENDA VENCE a E1 onde divergirem.** O E3.4 da E1 ("SOMENTE a asserção da l.612… nenhuma outra
+  linha do arquivo") está SUPERADO: a mudança que ele autorizou — entregue no commit `a37a9dd` — é
+  REVERTIDA pelo F3.1. A E1 acertou o diagnóstico local (para ator NÃO-atribuído não existe ordem que
+  preserve o 409 e autorize antes de gravar — segue verdadeiro) e errou a consequência por falta da
+  medição das TRÊS requisições, que só o U3 produziu: renumerar mutila o caso; atribuir preserva-o.
+- **Errata do E0 da E1:** "a intenção do teste, 'porta fechada, não 200', segue satisfeita" valia para a
+  asserção da l.612 isolada; o caso INTEIRO não fecha assim (l.620 e l.628) — é o achado desta emenda.
+- **O corpo (§3.3) NÃO muda.** O 403 `WORK_ORDER_NOT_ASSIGNED` para ator de campo não-atribuído
+  permanece o contrato implementado e provado (12 casos em `o6r07a-wo-object-scope.test.ts`). Esta
+  emenda é 100% arranjo de teste; o delta de `API_CONTRACTS.md` do §3.10 não ganha nem perde linha.
+- **Pendência `P-O6R-B07A-STICKY-409-VIRA-403`:** o rumo desta emenda inverte o título (o sticky NÃO
+  vira 403 — VOLTA a 409, com ator atribuído no arranjo). Quem entregar o F3 fecha a pendência citando
+  esta emenda e anota a correção de rumo em `pendencias.md`. `P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE` não é
+  afetada (U1/U2 já entregues em `a37a9dd`).
+- **INSUMO PARA A JUNTA — digo em voz alta:** (a) a leitura de contrato do F2 (escopo por objeto cobre
+  TODA mutação do ator de campo, inclusive edição comum; fundamentos `RBAC_MATRIX.md:45`
+  "execute/update-assigned" e o aceite do SEC-002) é o que a junta do 07a valida; se a derrubar, entra o
+  fallback nomeado no F1 com a perda de cobertura consignada em ata; (b) a tensão §A2 da semântica de
+  `assigned_operator_id` (atribuição por user id × id de perfil) SEGUE com a junta, como a E1/E4 já
+  deixou — o arranjo do F3 usa a forma canônica (`operatorId = perfil.id`) e não toma partido; (c) o
+  F3.1 é reversão de linhas entregues (a classe da `D-JUNTA-SEPARACAO-DE-PAPEIS`) — a junta confere que
+  quem executa não é quem decidiu (decidi eu, planejador desta emenda; não desenvolvo, não voto).
+
+— fim da EMENDA E2 —
