@@ -1196,6 +1196,49 @@ Vale para **tudo** neste bloco: a tree do merge simulado (`4441897` em `df496d2`
 **acrescentou 58 linhas ACIMA do E3**, deslocando as citações anteriores). **Publique sempre o head ao
 lado do número.**
 
+### 11.11 — Git concorrente: o `.lock` é **espera**, nunca `reset`. E o ponto de disputa **não** é o índice
+
+Este bloco roda **em paralelo** com outro agente (o `B-O6R-07`, em worktree próprio do Claude Code).
+O que os dois compartilham foi **medido** nesta preparação (`git 2.53.0.windows.2`):
+
+| Estado | Onde vive | Compartilhado? |
+|---|---|---|
+| `index` / `index.lock` | `.git/worktrees/<nome>/` | **NÃO** — um por worktree |
+| `FETCH_HEAD` | `.git/worktrees/<nome>/` | **NÃO** — um por worktree |
+| `HEAD`, branch checada | `.git/worktrees/<nome>/` | **NÃO** |
+| `refs/heads/*`, `refs/remotes/origin/*` | `.git/` (common-dir) | **SIM** |
+| `packed-refs` | `.git/` (common-dir) | **SIM** |
+| `objects/` | `.git/` (common-dir) | **SIM** (seguro por desenho — endereçado por conteúdo) |
+
+Comando de medição: `git rev-parse --git-dir` (por worktree) × `git rev-parse --git-common-dir`
+(compartilhado).
+
+**Consequência 1 — `git add`/`git commit`/`git stash` do vizinho NÃO travam os seus.** Índices separados.
+Se você vir `Unable to create '…/index.lock': File exists`, a causa é **local ao seu worktree** — um git
+seu que ficou pendurado, ou o git da IDE.
+
+**Consequência 2 — o ponto real de disputa é `git fetch`.** Os dois worktrees escrevem
+`refs/remotes/origin/*` e `packed-refs`, que são do common-dir. Dois `git fetch` simultâneos podem sair com
+`cannot lock ref 'refs/remotes/origin/…'` ou `packed-refs.lock: File exists`.
+
+**A resposta é a mesma para os dois casos, e é uma só: espere alguns segundos e repita o mesmo comando.**
+Nada foi corrompido e nada rodou pela metade — o comando **nem começou**. Se persistir além de ~1 minuto,
+**pare e devolva ao orquestrador**; não investigue por conta própria.
+
+**O que NUNCA fazer — é por isto que esta armadilha está escrita:**
+
+- **`rm …/index.lock`** ou **`rm .git/packed-refs.lock`** — se a operação dona ainda estiver viva, você
+  tirou a trava de baixo dela, e *aí sim* corrompe.
+- **`git reset`** (qualquer forma), **`git checkout -- .`**, **`git stash`** — "destravar" com comando
+  destrutivo é a reação errada: o erro de lock **não é** estado sujo a limpar, e esses três apagam trabalho
+  real (o seu, ou o do vizinho).
+- **`git gc`**, **`git prune`**, **`git pack-refs`** enquanto o outro trabalha — são exatamente os comandos
+  que tomam `packed-refs.lock` e transformam uma disputa rara em falha certa.
+- **`--force`** de qualquer espécie.
+
+A regra em uma linha: **lock do git só pede paciência.** Qualquer comando que "conserte" o lock é mais
+perigoso que o lock.
+
 ---
 
 ## §12 · DEFINITION OF DONE (a parte que é sua) E RASTREABILIDADE
