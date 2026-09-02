@@ -94,3 +94,17 @@ meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
 - Preenche `00-quedas.md` (P6) no momento de cada perda.
 - Na ata: consigna quedas, custo de redo real e, quando houver suplente, **quais itens foram re-executados
   do roteiro** vs medidos de novo.
+
+## Emenda (2026-09-01, medida na junta `J-SAN2-2`) — voto-esqueleto: a granularidade do registro acompanha a da medição
+
+As cadeiras C2 e C4 do `J-SAN2-2` morreram **cinco vezes no mesmo ponto**: a transição *medir → gravar
+o voto*. O P2 mata a morte streamando o voto, mas o voto continuava sendo **ato único**. A correção que
+funcionou, em duas escalas, passa a ser norma de P1/P2:
+
+1. **voto-esqueleto**: o artefato de saída (evidência E voto) **nasce como esqueleto** com os itens
+   `EM APURAÇÃO`, e cada item é gravado **ao ser medido**;
+2. **item grande também se fatia**: o item 3 da C4 virou objeto de 6 sub-chaves e a queda seguinte
+   custou 1/6 em vez de 6/6.
+
+Regra: **onde medir tem N passos, gravar tem N passos.** Inline nos contratos desde o SAN2-6 (§C7.7,
+dentro do P2).

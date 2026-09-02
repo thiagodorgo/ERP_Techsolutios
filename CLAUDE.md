@@ -389,6 +389,11 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      de adiar a parada.
    - Registro dos ciclos segue em `omega/reprovacoes/R-<entrega>-<ciclo>.md`. As **paradas imediatas
      irredutíveis** (§C7.5) são independentes deste teto.
+   - **Blocos em voo sob o teto antigo — aplicação, transcrita de `D-TETO-DOIS-CICLOS`
+     (`agent-orchestration/controle/decisoes.md`):** blocos **novos** nascem sob o teto de 2; e
+     "**`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
+     última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto."
+     **Não há ciclo 6.** Após reprovação no teto, o único caminho é o dossiê ao dono.
 
    **Por quê, medido:** o `B-O6R-01` levou 3 ciclos; o `B-O6R-02` chegou ao **ciclo 5** com **16 identidades de
    jurado queimadas**, e a auditoria de 28/08 mediu **3 blocos consumindo 24% de todos os ciclos**. A resposta
@@ -428,17 +433,58 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
    vira nota no registro da junta.
 
-7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`).** Toda junta,
-   inspeção de terreno e porteiro seguem o **`PROTOCOLO-JUNTA-RESILIENTE.md`** (`agent-orchestration/omega/
-   juntas/`). Origem medida: 14 quedas de agente em ~28 disparos (~50%) numa única sessão, todas
-   `server_error` de streaming — postmortem em `omega/POSTMORTEM-QUEDAS-2026-08-29.md`. O essencial:
-   **evidência incremental em arquivo a cada item** (a morte custa só a cauda não medida); **voto escrito em
-   arquivo ANTES da mensagem final** (mensagem final = 1 linha); sucessor de jurado caído **re-executa o
-   roteiro de evidência registrado** e compara — conclusão sem comando registrado segue sendo não-insumo;
-   **mandato ≤3 itens**; **máximo 2 disparos em paralelo**, com pausa de 15 min após 2 quedas em 30 min; e
-   **registro padronizado de quedas** (`00-quedas.md` por junta). Quóruns, vetos, identidade nova e o teto
-   de dois ciclos ficam intactos: o protocolo muda como o trabalho sobrevive à morte de quem o fez, não o
-   mérito do julgamento.
+7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`) — P1–P6, inline.**
+   Toda junta, inspeção de terreno e porteiro seguem as seis normas abaixo. Origem medida: **14 quedas de
+   agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
+   `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
+   `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md` (a fonte; em divergência, ela vale).
+   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** — quóruns, vetos, identidade nova,
+   separação de papéis (§C7.4-bis) e o teto de dois ciclos ficam intactos.
+
+   - **P1 — Evidência incremental.** Após **CADA item medido**, apensar a
+     `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` três linhas: **comando
+     executado → saída resumida → veredito parcial do item**. Nunca só no fim. *Caso:* trabalho ~90%
+     feito virou 100% perdido — um inspetor morreu na limpeza com a inspeção pronta; com o arquivo, a
+     morte custa só a cauda não medida.
+   - **P2 — Voto-arquivo-primeiro.** O voto (`<cadeira>-voto.json`, mesmo diretório) é escrito **ANTES**
+     da mensagem final; a mensagem final é **1 linha** apontando o arquivo. Vale para pareceres de
+     inspetor e porteiro (`.md`). *Caso:* três jurados morreram streamando o voto — sob P2, essas mortes
+     teriam custado zero. **Emenda voto-esqueleto (J-SAN2-2; medida: 5 quedas no MESMO ponto, a
+     transição medir→gravar):** o artefato de saída **nasce como esqueleto** com os itens `EM APURAÇÃO`
+     e cada item é gravado **ao ser medido**; item grande também se fatia (item de 6 sub-chaves: a queda
+     custou 1/6, não 6/6) — **a granularidade do registro acompanha a da medição**: onde medir tem N
+     passos, gravar tem N passos.
+   - **P3 — Perda de jurado (emenda à R2).** Voto perdido não conta; o sucessor tem identidade nova — e:
+     *"**Nada conta sem re-execução própria** — mas evidência **registrada em arquivo** pelo caído (P1) é
+     **roteiro de re-execução barata**: o sucessor re-roda cada comando registrado e compara a saída, e
+     só então mede a cauda que faltou. **Conclusão sem comando registrado continua sendo não-insumo**,
+     inclusive parcial favorável."* *Caso:* a R2 nasceu da contaminação por afirmação herdada (ciclo 4 do
+     financeiro) — isso fica; re-rodar comando escrito custa segundos e É verificação própria.
+   - **P4 — Mandato ≤3 itens · medir ≠ julgar.** Cadeira com mais de 3 itens vira **duas cadeiras**;
+     medição pesada separa **medir** (uma fatia; só números, com N e forma) de **julgar** (outra fatia) —
+     o padrão 4a/4b; logs e saídas longas só no arquivo de evidência, nunca na mensagem final. *Caso
+     (lição corrigida):* mandato longo não mata — 4 agentes morreram na mensagem 1; morte ≈ exposição ×
+     taxa da janela. Mandato curto reduz exposição E custo da perda.
+   - **P5 — Disparo escalonado.** Máximo **2 jurados em paralelo**; o terceiro só quando um concluir.
+     **2 quedas em <30 min → pausa de ~15 min** antes de qualquer redisparo, registrada no arquivo de
+     quedas. *Caso:* as quedas agrupam no tempo; redisparar dentro da janela ruim multiplicou as perdas.
+   - **P6 — Registro padronizado de quedas.** Toda queda = 1 linha em `votos/<JUNTA>/00-quedas.md`,
+     colunas fixas: `agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do
+     redo`. *Caso:* a hipótese "pinar modelo reduz queda" (1/5 × ~13/23 no postmortem) tem n pequeno
+     demais — só a série decide; sem ela, cada sessão redescobre o problema.
+
+   **Modelo de mandato (colar no disparo de cada cadeira — verbatim da fonte):**
+   ```
+   Após CADA item: apense a <cadeira>-evidencia.md → comando · saída resumida · veredito parcial.  [P1]
+   Antes da mensagem final: escreva <cadeira>-voto.json. Mensagem final = 1 linha apontando o arquivo.  [P2]
+   Máximo 3 itens; logs longos só no arquivo de evidência.  [P4]
+   Se você substituir um caído: re-execute cada comando do <cadeira>-evidencia.md dele e compare, depois
+   meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
+   ```
+   **Do orquestrador (não do agente):** dispara ≤2 em paralelo e aplica a pausa de janela instável (P5);
+   commita evidência e voto após cada conclusão (agente não commita); preenche `00-quedas.md` no momento
+   da perda (P6); na ata, consigna quedas, custo real de redo e o que o suplente re-executou vs mediu de
+   novo.
 
 ---
 

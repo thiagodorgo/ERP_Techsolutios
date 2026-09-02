@@ -125,6 +125,11 @@ Registrado em `pendencias.md` como evidência a favor da `D-JUNTA-SEPARACAO-DE-P
 KPIs atualizados no próprio PR (§C3), com `backend_tests` de execução real; `mvp_demo`/`mvp_vendavel`
 **intocados** (nenhum escopo de produto se moveu).
 
+### Atualização 2026-09-01 — SAN2-6 (contrato autossuficiente antes do ciclo 5: P1–P6 inline, teto por extenso, README do Codex)
+
+Por **ordem literal do dono** (*"coloque P1–P6 inline no contrato e também adicione ao contrato que o ciclo 5 é a última tentativa, publique e deixe salvo no repo"*), `CLAUDE.md` e `AGENTS.md` passam a trazer **P1–P6 inline** no §C7.7 (`grep` **6/6**, era 0/0, com o Modelo de mandato verbatim) e, no §C7.4, a cláusula transcrita de `D-TETO-DOIS-CICLOS` — *"o ciclo 5 já é a última tentativa sob qualquer das duas regras"* mais **"Não há ciclo 6"** (a mesma string nos dois contratos e na fonte: 1/1/1); o bloco §C7.4→§C7.7 ficou **idêntico** nos dois contratos (diff eol-neutro de **0 linhas**, matando de passagem um micro-drift pré-existente, consolidado com registro §A2). O README do Codex parou de ensinar o teto REVOGADO e de tabelar 5 papéis que não existem em disco, e ganhou os dois gates fail-closed (`inspetor-de-terreno-da-junta`, `porteiro-pos-merge`); a emenda voto-esqueleto de `J-SAN2-2` foi apensada à fonte `PROTOCOLO-JUNTA-RESILIENTE.md` (append-only, `numstat 14 0`). Bloco 100% documental: diff de `src/`, `tests/`, `prisma/`, `scripts/` e `.github/` **vazio** nas duas pontas.
+As **3 dívidas de KPI** que o porteiro pós-merge do #367 nomeou para "o PR do ciclo 5" foram pagas aqui, com reatribuição §A2: backfill §C3.5 (`pr` 367 · `merge_commit` `e6a6461` · `approved_head` `5256b49` — o head **julgado na ata `J-SAN2-5.md`**, não o `headRefOid` `657928f`), `blocks_completed` **156 → 157** e as provas "442 0"/"100 0" **ancoradas ao head em que valem**. Nova pendência com dono humano: `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` (índice regenerado **pelo gerador**: 241 → **242** cabeçalhos, ABERTAS 191 → **192**). **O próximo bloco segue sendo o ciclo 5 do `B-O6R-02`** — o parecer do porteiro do #367 continua valendo integralmente; o SAN2-6 preparou o tabuleiro documental e não moveu nenhuma peça do jogo. Na autoria, `pr`/`merge_commit`/`approved_head` do próprio bloco ficam `null` (§C3.5).
+
 ## Atualização 2026-07-29 — FIX-NAV-MENU-PLATFORM-JWT
 
 ### Status
