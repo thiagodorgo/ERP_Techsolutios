@@ -600,21 +600,58 @@ test("[rota] o ajuste exige a permissão de ENVIAR ao técnico e o detalhe passa
       ],
     );
 
+    // B-O6R-07a EMENDA E2 — ARRANJO: o técnico das três PATCH abaixo é ATRIBUÍDO a esta OS.
+    // `RBAC_MATRIX.md:45` dá a `field_technician`, em work orders, `execute/update-assigned`: o poder de
+    // update do técnico é escopado, POR ESCRITO, à OS atribuída. O arranjo antigo nunca atribuía a OS a
+    // ninguém e mandava o managerA vestido de técnico (o helper `headers()` fixa o MESMO usuário para todo
+    // papel), então as três requisições morriam no guard de escopo antes de chegarem à porta do conjunto —
+    // que é o que este caso existe para provar. Com o técnico ATRIBUÍDO, os 409 abaixo voltam a afirmar
+    // semântica de CAMPO (a porta do conjunto continua fechada até para o técnico da própria OS) e o 200 da
+    // edição comum volta a afirmar o que a permissão dele cobre.
+    const { createDefaultOperatorProfileService } = await import(
+      "../src/modules/operator-profiles/operator-profile.service.js"
+    );
+    const profileService = await createDefaultOperatorProfileService();
+    // O usuário do técnico é UUID CRU: o store de memória emite `usr_000001` (não-UUID) e o
+    // `OperatorProfileService` valida UUID — o id do seed não passaria. `randomUUID` já vem importado (l.2).
+    const tecnicoUserId = randomUUID();
+    const atorAdmin = {
+      tenantId: seed.tenantA.id,
+      userId: seed.managerA.id,
+      roles: ["tenant_admin"],
+      permissions: [],
+    } as never;
+    const perfilTecnico = await profileService.create(atorAdmin, {
+      user_id: tecnicoUserId,
+      full_name: "Tecnico de Campo",
+    });
+    const atribuicao = await req(baseUrl, `/api/v1/work-orders/${workOrder.id}/assign`, {
+      method: "POST",
+      headers: headers(seed, "tenant_admin"),
+      body: { operatorId: perfilTecnico.id },
+    });
+    assert.equal(atribuicao.status, 200);
+    const tecnicoHeaders = {
+      "x-tenant-id": seed.tenantA.id,
+      "x-user-id": tecnicoUserId,
+      "x-role": "field_technician",
+    };
+
     // P1 da verificação — o DESVIO pela rota genérica, com os papéis REAIS do catálogo: o técnico de campo TEM
     // `work_orders:update`, então `PATCH /work-orders/:id` passa pelo gate da rota; é o serviço que fecha a
     // porta do conjunto. Antes da correção estes DOIS requests devolviam 200 — o primeiro apagava a vistoria de
     // entrega (a prova jurídica da comparação), o segundo zerava o conjunto.
     const desvio = await req(baseUrl, `/api/v1/work-orders/${workOrder.id}`, {
       method: "PATCH",
-      headers: headers(seed, "field_technician"),
+      headers: tecnicoHeaders,
       body: { checklists: [{ checklistId: coleta.id, role: "generic" }] },
     });
-    assert.equal(desvio.status, 403, "o desvio pelo update genérico é porta fechada, não 200");
-    assert.equal(desvio.body.error?.reason ?? desvio.body.reason, "not_assigned_to_actor");
+    assert.equal(desvio.status, 409, "o desvio pelo update genérico é porta fechada, não 200");
+    assert.equal(desvio.body.error?.reason ?? desvio.body.reason, "checklist_set_requires_endpoint");
 
     const zeragem = await req(baseUrl, `/api/v1/work-orders/${workOrder.id}`, {
       method: "PATCH",
-      headers: headers(seed, "field_technician"),
+      headers: tecnicoHeaders,
       body: { checklists: null },
     });
     assert.equal(zeragem.status, 409, "zerar com `checklists: null` também é porta fechada");
@@ -622,7 +659,7 @@ test("[rota] o ajuste exige a permissão de ENVIAR ao técnico e o detalhe passa
     // O 409 é do CAMPO, não da rota: o técnico segue editando o que a permissão dele cobre.
     const edicaoComum = await req(baseUrl, `/api/v1/work-orders/${workOrder.id}`, {
       method: "PATCH",
-      headers: headers(seed, "field_technician"),
+      headers: tecnicoHeaders,
       body: { description: "Atualizado do campo" },
     });
     assert.equal(edicaoComum.status, 200);
