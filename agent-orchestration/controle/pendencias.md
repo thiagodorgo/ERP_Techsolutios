@@ -5244,3 +5244,220 @@ das listas → o dev PARA e devolve”*, num ciclo que é a **única tentativa**
 A **outra** alegação de escopo desta mesma pendência — *editar o script é `scripts/**`, proibido pelo §5 do
 plano **deste** bloco* — foi re-conferida e **é verdadeira**: `SAN2-5-plano.md` **l.427** traz `scripts/**` no
 PROIBIDO, com o parêntese *“executar `kpi-freeze`/`sync`/`run-backend-tests` sim; EDITAR não”*. Essa fica.
+
+---
+
+## P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, §3.7.1 do plano) — BAIXA · `pre-existente` · **dono: o dono** · a abertura do contrato canônico ainda manda valer o `AGENTS.md`; a regra de espelhamento, 25 linhas abaixo, manda o contrário
+
+**O que está escrito hoje, com linha e literal** (medido no worktree `san2-r`, sobre `CLAUDE.md` já com
+as edições do SAN2-6 — a abertura não foi tocada por este bloco):
+
+- `CLAUDE.md` **l.3-6** (blockquote de abertura): *"Onde este arquivo divergir do `AGENTS.md` ou das
+  fontes de verdade, **valem o `AGENTS.md` e as fontes de verdade** — nunca a memória do agente."*
+- `CLAUDE.md` **l.28-30** (regra de espelhamento, `D-INTEROP-CLAUDE-CODEX`, 2026-07-28): *"**Em
+  qualquer divergência, prevalece o `CLAUDE.md`.** Isto **atualiza** o parágrafo de abertura acima (que
+  dizia \"valem o `AGENTS.md` e as fontes de verdade\"): as **fontes de verdade** (§A1) seguem valendo
+  acima de tudo; entre os **dois contratos espelhados**, o canônico é o `CLAUDE.md`."*
+- `AGENTS.md` **l.7-8** já está certo: *"ele é a fonte da verdade; este `AGENTS.md` é o espelho
+  adaptado. Em divergência, prevalece o `CLAUDE.md`."* — o espelho **não** replica o defeito.
+
+**Por que isto é uma pendência e não um erro de leitura.** A l.28 é honesta: ela **se declara** uma
+atualização do parágrafo de abertura, e cita a frase que revoga. Ou seja, o contrato não se contradiz
+sem saber — ele carrega a errata inline. O problema é operacional, não lógico: **a errata está 25
+linhas depois da afirmação que ela revoga**, e a afirmação revogada é a **primeira** coisa que um
+executor lê. Quem parar na l.6 — e o parágrafo seguinte manda "ler o arquivo inteiro", o que já é
+admissão de que ninguém para lá por acidente — sai com a precedência **invertida**: acreditará que, em
+choque entre os dois contratos, vale o `AGENTS.md`. Exatamente a hipótese que o `SAN2-6` passou o bloco
+inteiro tentando eliminar em dois outros pontos (P1–P6 e o teto), pela mesma razão: **norma que exige
+salto de referência não é lida sob pressão**.
+
+**Superfície real do risco, medida:** os dois contratos ficaram, neste PR, com o bloco §C7.4→§C7.7
+**idêntico** (diff de 0 linhas, eol-neutro) — então, para o trecho que este bloco tocou, a precedência
+não decide nada hoje. O risco é o **próximo** drift: no momento em que os dois divergirem de novo, o
+leitor da l.6 e o leitor da l.28 resolvem o conflito para lados opostos.
+
+**O que este bloco NÃO fez, e por quê.** Não corrigiu. Mexer no **parágrafo de abertura do contrato
+canônico** é decisão do dono, não de dev: (a) está fora do §5 deste plano, que autoriza em `CLAUDE.md`
+**só** o §C7.4 e o §C7.7; (b) a abertura é o texto que todo agente lê primeiro, e reescrevê-la muda o
+enquadramento de todos os blocos futuros; (c) `D-INTEROP-CLAUDE-CODEX` é decisão registrada do dono
+(2026-07-28) e o desenho de duas camadas — "fontes de verdade acima de tudo" + "entre os espelhados,
+o `CLAUDE.md`" — pode ser intencional na forma em que está.
+
+**Sem correção proposta (§C7.4-bis: quem acha não conserta).** As opções que existem são visíveis por
+si só a quem decidir; nomeá-las aqui seria escrever o conserto com a confiança de quem achou o defeito,
+que é a classe que a separação de papéis existe para cortar.
+
+**Critério de fechamento:** uma decisão escrita do dono sobre a redação da abertura do `CLAUDE.md`, e o
+`AGENTS.md` conferido contra ela **no mesmo trabalho** (regra de espelhamento: alterou um, altera o
+outro no mesmo bloco/commit/PR).
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (evidência de origem: o
+  texto da abertura é de 2026-07-28, data de `D-INTEROP-CLAUDE-CODEX`; nenhum bloco desta rodada o
+  alterou — `git log -1 --format=%ad -L3,6:CLAUDE.md` e o diff deste PR, que não toca as 30 primeiras
+  linhas do arquivo) · **dono:** o dono (decisão humana — nenhum agente).
+
+---
+
+## Registro §A2 do bloco `SAN2-6` (2026-09-01) — o que foi consolidado, e as cinco divergências plano × terreno
+
+> **Onde este registro deveria estar, e por que está aqui.** O mandato do dev pedia a entrada em
+> `agent-orchestration/controle/decisoes.md`. O **§5 do plano do SAN2-6 é uma lista fechada de 9
+> alvos**, e `decisoes.md` **não está nela** — `controle/pendencias.md` está, e o próprio §3.7.2 do
+> plano manda gravar o "Registro §A2 (SAN2-6)" **neste** arquivo, no mesmo append da pendência. Entre
+> o mandato e o plano, **o plano vence** (é a regra que o próprio mandato repete). Nada do conteúdo
+> foi perdido: ele está inteiro abaixo, mais na `description` da entrada 151 do `kpis-history.json` e
+> no diário do dev. **Sexta divergência, portanto, e é esta.**
+
+**(1) Consolidação de micro-drift entre os contratos espelhados (§A2 — nada em silêncio).** O §C7.4 do
+`AGENTS.md` dizia *"A fábrica de agentes **continua** a existir…"*; o `CLAUDE.md`, canônico, diz *"A
+`agente-fabrica` **continua**…"*. Divergência de **redação**, não de norma — mas divergência entre
+espelhos, e a regra manda registrar antes de consolidar. **Consolidada para o canônico** (`CLAUDE.md`),
+com re-quebra de linha para acompanhá-lo. Prova: o bloco do §C7 que vai do item 4 ao item 7, extraído
+dos dois contratos e comparado eol-neutro, passou de **2 linhas divergentes** para **0 linhas de diff**
+(110 linhas de cada lado).
+
+**(2) Reatribuição das 3 dívidas de KPI do porteiro pós-merge do #367.** O parecer
+(`agent-orchestration/omega/juntas/votos/SAN2-5/00c-porteiro-pos-merge-367.md`) nomeou-as para "o PR do
+ciclo 5": (a) backfill §C3.5 do #367; (b) `blocks_completed` 156→157; (c) ancorar ao head as provas
+"442 0"/"100 0". **As três foram pagas pelo `SAN2-6`**, que entrou na fila antes por ordem literal do
+dono (fonte de verdade nº 1, §A1). A inserção **não contorna o gate**: o parecer do porteiro continua
+valendo integralmente para o ciclo 5. Razão de mérito: o ciclo-teto tem **uma** tentativa
+(`D-TETO-DOIS-CICLOS`) e não deve gastá-la pagando dívida alheia. Precedente idêntico e recente: o
+`SAN2-5` reatribuiu a si o item B.10 do porteiro do #366.
+
+**(3) As cinco divergências plano × terreno** — quatro medidas pelo dev das entregas §3.1–§3.5 e uma
+pelo dev do §3.6/§3.7. **Todas são de descrição no plano; nenhuma de norma**, e nenhuma mudou uma
+linha do texto que passou a valer:
+
+| # | O plano afirma | O terreno mede | Efeito |
+|---|---|---|---|
+| i | `PROTOCOLO-JUNTA-RESILIENTE.md` tem **97** linhas (§3.5, §4.6) | **96** (`wc -l` = `awk END{NR}` = 96; termina com CRLF completo) | **Nulo.** A prova de append-only foi refeita com `head -96` (0 linhas de diff) e com `numstat` **14 0** |
+| ii | o bloco do §C7.7 tem **59** linhas; líquido **+48**, total **+53** (§3.2) | o texto que o próprio plano transcreve tem **52** linhas (27+25); líquido **+41**, total **+46** por contrato (`numstat` 57 11) | **Nulo.** Copiou-se o **texto** (normativo), não o número (descritivo). O orçamento do D-a é um **teto** (≤60) e ficou cumprido com folga — nenhuma linha de *Caso* precisou ser cortada |
+| iii | "**0** referências a `omega5p` fora do README" (§3.4.5, R7) | **161 ocorrências em 39 arquivos** (atas `J-OMEGA5P`, `omega/reprovacoes/R-omega5p-*`, `docs/kpis/omega5p/*`, `kpis-history.json`) | **Nulo sobre a ação, corrigido na medição.** Todas são **registro histórico**, não ponteiro operacional; e `ls .claude/agents/omega5p* .agents/agents/omega5p*` devolve *No such file* nos dois lados — **nenhum corpo de papel Ω5P existe em disco**. A tabela do README era o único lugar **vivo** que mandava invocá-los. Remover as 5 linhas não orfanou nada e não reescreveu história |
+| iv | a tabela do README tem **24** papéis | **26** linhas de papel (`git show HEAD:.agents/agents/README.md \| grep -cE '^\| \`[a-z0-9-]+\`'`) | **Nulo.** O título era falso por dois motivos, não um. 26 − 5 (Ω5P) + 2 (gates) = **23**, o mesmo destino que o plano previu por outro caminho ("21 + 2") |
+| v | o §5 põe no PROIBIDO `agent-orchestration/codex/comandos/B-O6R-02-ciclo5-plano.md` | esse caminho **não existe** (`ls` → *No such file or directory*); o arquivo é `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` | **Nulo sobre a ação** (não foi tocado sob nenhum dos dois nomes), **não nulo como norma**: um PROIBIDO que aponta para o vazio não protege nada, e a próxima junta mede pelo caminho |
+
+**(4) O que fica ABERTO e com dono nomeado, para não se perder no fim do bloco:**
+`P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` (acima, **dono: o dono**) ·
+`P-SYNC-AGENTS-NAO-RECURSIVO` (ABERTA, dono a atribuir — **não** é do ciclo 5) · o guard **E2c**
+(`tests/junta-voto-escopo-guard.test.ts`) segue **não-nascido**, e a re-medição manual na abertura de
+cada junta continua sendo a única rede — consignação do porteiro do #367, preservada.
+
+**(5) A SÉTIMA divergência — achada pela JUNTA, não pelo dev, e FECHADA aqui.** Apensa em 2026-09-02,
+pós-voto de `J-SAN2-6` (**APROVADO 3×0, zero achado `bloqueia`**), a partir dos achados **C2-A1** e
+**C3-A1** — gravidade **alta**, escopo `dentro-do-bloco`, encontrados **por duas cadeiras independentes**.
+
+*O que divergiu:* o `Kpis/*` deste bloco foi escrito **uma única vez**, em `53e44d3`
+(2026-09-01 23:00:44), e **nunca mais tocado**, enquanto `2c1eee1` (+1.702) e `41e2316` (+43) traziam
+**depois** o maior artefato do PR — o comando do Codex para o ciclo 5 (`B-O6R-02-ciclo5.md`, 1.301 l.) e
+o plano do `B-O6R-07` (444 l.). A `description` da entrada 151 inventariava **45,4%** do PR e omitia
+**2.067 das 3.783 linhas adicionadas (54,6%)**, das quais **1.745 (46,1%) descritíveis** — violação do
+**§C3.1** sobre quase metade do próprio PR, num artefato que o §C3.0 define como **o principal**.
+
+*A ordem que autorizou o alargamento de escopo, agora num controle durável:* ordem literal do dono, na
+mesma sessão — *"o proximo bloco mergea isso me passe o handoff do codex e seu prompt … planeje tambem
+um bloco para vc atacar"* — **fonte de verdade nº 1 (§A1), que vence o §5 de um plano**. Até esta
+correção ela existia **só** no §1 do `BRIEFING-SAN2-6.md`, que é **insumo de junta** e é ele próprio um
+dos arquivos fora da lista fechada do §5 — isto é, a autorização morava dentro da coisa que ela
+autorizava.
+
+*A CONSEQUÊNCIA ACEITA, que passa a valer como norma de processo:* **escopo permitido de um plano não é
+emendável por ordem verbal sem registro.** Ordem do dono que amplie o escopo de um bloco **em curso**
+entra no **Registro §A2** *e* na `description` do KPI do bloco, **no mesmo PR, antes do merge** — não em
+insumo de junta, não só no chat.
+
+*Estado:* **FECHADA neste mesmo trabalho** — a `description` da entrada 151 e o `release.summary` do
+`kpis-latest.json` passaram a inventariar as três peças omitidas (o comando do Codex, o plano do
+`B-O6R-07`, o briefing e os artefatos da junta), com a autorização transcrita, e o item (4) da seção *"O
+QUE ESTE BLOCO NAO FECHOU"* ganhou a ressalva da C3-A1. Correção executada pelo `dev-san2-6-correcoes`
+(identidade nova) sob o plano `agent-orchestration/omega/planos/SAN2-6-correcoes-pos-voto.md`, com
+diário em `agent-orchestration/omega/juntas/votos/SAN2-6/dev-correcoes-pos-voto.md` — **§C7.4-bis
+respeitado: quem achou (C1/C2/C3) não consertou.**
+
+**(6) As duas pendências nomeadas que a junta abriu e que este bloco NÃO fecha** (`C1-A3` e `C3-N1`,
+ambas `nota`, ambas `pre-existente`): registradas logo abaixo, com **bloco dono** nomeado.
+
+---
+
+## P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — BAIXA · `pre-existente` · **não corrigir sem tocar o §C7.3 do espelho**
+
+**O que é.** Diffando o **§C7 inteiro** dos dois contratos espelhados no head (167 linhas de cada lado,
+eol-neutro) — e não só o bloco que o `SAN2-6` alterou —, sobra **exatamente uma** linha divergente: o
+item 3 (*Regra da dúvida*) nomeia **`agente-pesquisador-web`** no `CLAUDE.md` e **"subagente pesquisador
+web"** no `AGENTS.md`.
+
+**Medição, re-executada em 2026-09-02 sobre o head `e545e64`** (idêntico a `d90fbbb` nos dois contratos —
+`git diff --numstat d90fbbb HEAD -- CLAUDE.md AGENTS.md` sai vazio):
+
+```
+$ diff <(git show HEAD:CLAUDE.md | tr -d '\r' | sed -n '323,489p') \
+       <(git show HEAD:AGENTS.md | tr -d '\r' | sed -n '351,517p')
+56c56
+< 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
+---
+> 3. **Regra da dúvida:** qualquer dúvida → subagente pesquisador web (≥3 fontes) → registro PD em
+ec=1   (uma unica linha em 167)
+```
+
+**Por que NÃO é divergência de regra, e por que mesmo assim fica registrada.** É diferença
+estritamente de **mecanismo** (como se invoca um subagente), o caso **explicitamente permitido** por
+`D-INTEROP-CLAUDE-CODEX`: *"Diferenças permitidas apenas quando forem estritamente específicas da
+ferramenta."* A **regra** é idêntica dos dois lados — ≥3 fontes, registro PD **antes** da decisão, dúvida
+sem pesquisa = veto. Registra-se para que uma passada futura **não a redescubra como achado** e gaste um
+ciclo com ela.
+
+**Evidência de escopo `pre-existente`:** a divergência já está no blob da **base** `e6a6461` e nasceu em
+`39eb46c`, **2026-07-28** — `chore(governance): interoperabilidade Claude Code ↔ Codex … (#303)` —,
+medido por `git log -1 -S'subagente pesquisador web' -- AGENTS.md`. Nenhum hunk do `SAN2-6` toca essas
+linhas.
+
+**Sem correção proposta (§C7.4-bis).** A cadeira que achou não conserta, e este bloco não a corrige.
+
+**Critério de fechamento:** quando algum bloco tocar o **§C7.3 do espelho** por outro motivo, decidir
+conscientemente entre (a) manter a diferença de mecanismo e **anotá-la inline** como permitida por
+`D-INTEROP-CLAUDE-CODEX`, ou (b) uniformizar a redação. Fechar sem tocar o §C7.3 seria mexer no contrato
+só para calar uma nota.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (evidência de origem:
+  `39eb46c`, 2026-07-28, PR #303) · **dono:** o bloco que tocar o §C7.3 do `AGENTS.md`.
+
+---
+
+## P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BAIXA · `pre-existente` · **bloco dono: SAN2-5**
+
+**O que é.** As `note` de `metrics.mvp_demo` e `metrics.mvp_vendavel` do `Kpis/kpis-latest.json`
+terminavam no carimbo **`[SAN2-4b: INTOCADO — …]`**, **dois blocos atrasado**: o `SAN2-5` **não** apensou
+o seu. Um leitor do `kpis-latest.json` via `version: "SAN2-6"` com carimbo de `mvp_*` dizendo `SAN2-4b`.
+
+**Não é violação do §C3.4** — que exige justificativa **quando o valor muda**, e os valores **99% / 88%
+não mudaram**. É defasagem de **carimbo**, não de número.
+
+**Medição, re-executada em 2026-09-02** (blob da base × blob do head, para não medir a árvore já
+corrigida):
+
+```
+mvp_demo     | value base 99 -> head 99 | note BYTE-IDENTICA base<->head: true | 442 chars
+mvp_vendavel | value base 88 -> head 88 | note BYTE-IDENTICA base<->head: true | 421 chars
+base version: SAN2-5   head version: SAN2-6
+ambas terminando em: "... nova ao usuario (§C3.4).]"
+```
+
+A `note` do blob de `e6a6461` (o merge do **#367 / SAN2-5**) é **byte-idêntica** à do head: é por isso
+que `mvp_*` **não aparece** entre as folhas alteradas do `kpis-latest.json` neste PR. **A defasagem
+nasceu no SAN2-5, não neste bloco** — daí o escopo `pre-existente` e o bloco dono.
+
+**O que o SAN2-6 fez, e o que deliberadamente NÃO fez.** Apensou o **seu** carimbo —
+`[SAN2-6: INTOCADO — o bloco não move escopo de produto]` — **sem apagar** o do `SAN2-4b`. **NÃO forjou o
+carimbo do `SAN2-5`**: ele nunca foi posto, e escrevê-lo agora seria **fabricar registro** de um bloco
+que não o escreveu. O vão `SAN2-4b → SAN2-5` fica **visível e nomeado** nesta pendência, que é o lugar
+honesto para ele.
+
+**Critério de fechamento:** decisão consciente de (a) deixar o vão como registro histórico — a leitura
+que este bloco recomenda, por ser o que de fato aconteceu — ou (b) o dono autorizar uma nota de errata
+no `kpis-history.json` da entrada do `SAN2-5` dizendo que o carimbo não foi posto. **Em nenhuma hipótese
+por retro-escrita de um carimbo `[SAN2-5: …]` que ninguém escreveu na época.**
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (evidência de origem: a `note`
+  no blob da base `e6a6461`, merge do #367, é byte-idêntica à do head) · **dono:** SAN2-5.
+
+---

@@ -1,0 +1,70 @@
+{
+  "cadeira": "C2 — provador-do-espelho-e-do-comando",
+  "veredito": "APROVADO",
+  "head_julgado": "d90fbbb",
+  "base": "e6a6461",
+  "tem_veto": true,
+  "data": "2026-09-02",
+  "onde_medi": "worktree .claude/worktrees/san2-r (ressalva R1 do inspetor: a árvore principal demo/investidor tem mutação viva de scripts/sync-agent-agents.mjs, que é o guard desta cadeira); drills de mutação em worktree descartável próprio criado do head d90fbbb no scratchpad e removido com git worktree remove --force (ressalva R2)",
+  "evidencia": "agent-orchestration/omega/juntas/votos/SAN2-6/02-espelho-comando-evidencia.md",
+  "itens": [
+    {
+      "id": "C2-1",
+      "titulo": "O espelho foi GERADO, não digitado; e o que o guard NÃO prova",
+      "veredito": "APROVADO",
+      "resumo": "node scripts/sync-agent-agents.mjs --check => ec=0 ('OK — 23 agentes'). O guard MORDE a fatia que enxerga (mutar .agents/agents/porteiro-pos-merge.md => ec=1 nomeando o arquivo; restaurar => ec=0). Os 23 espelhos são gerados: rodar o script SEM --check e comparar eol-neutro com o blob do head dá identicos=23 divergentes=0. O ec=0 NÃO prova: (a) nada sobre .claude/agents/especialistas/ (8 corpos de jurado do ciclo 5) — readdirSync plano nas l.66/74/101; drill: plantar corpo FALSO em .agents/agents/especialistas/ mantém ec=0 e o gerador não o remove; (b) nada sobre o próprio .agents/agents/README.md, que está em KEEP (l.27) — o script NÃO o gera; drill: injetar no README a frase 'ciclos 4-5 replanejam (teto revogado)' mantém ec=0 e o gerador NÃO restaura. Logo as 9 edições do README, que são o núcleo do bloco, são inteiramente NÃO-GUARDADAS. O bloco declarou as duas cegueiras com precisão em 4 lugares (plano l.62/210/362; diário do dev l.157 e l.688-696; comando §4.4 l.346-349 — cuja alegação sobre a l.66 confere literalmente; README l.14-17), com a pendência P-SYNC-AGENTS-NAO-RECURSIVO ABERTA e dono fora deste bloco."
+    },
+    {
+      "id": "C2-2",
+      "titulo": "Escopo proibido intocado, provado por mutação; e o diff inteiro × §5",
+      "veredito": "APROVADO com achado alta",
+      "resumo": "Diff proibido VAZIO (ec=0 com --exit-code, 3 pontos e 2 pontos; merge-base == base). O comando SABE MORDER: mutando e commitando src/app.ts + tests/agents-mirror-guard.test.ts + .github/workflows/ci.yml + scripts/sync-agent-agents.mjs (commit e76b036 no worktree descartável), a mesma medida sai ec=1 NOMEANDO os 4; restaurado, volta a ec=0. Nenhum dos 8 pathspecs é letra morta (git ls-files: 765/252/16/108/5/756/287/1). CLAUDE.md tem só 2 hunks (§C7.4 e §C7.7) e AGENTS.md 5, todos em posições nomeadas pelo §5. Fora da lista fechada: 4 arquivos — ver C2-A1."
+    },
+    {
+      "id": "C2-3",
+      "titulo": "O comando do Codex × o contrato que este PR deixa na main",
+      "veredito": "APROVADO com achado baixa",
+      "resumo": "11 citações amostradas (mandato pedia >=5) conferidas contra o BLOB do head: §C7.4 teto (CLAUDE.md 392-396 / AGENTS.md 420-424), §C7.7 l.464+ (exato), §C3.5 'não bloqueia' (l.271-273), §C5 (l.285), §C7.1-ter(a) (l.340), (b) unanimidade de 3 por dinheiro (l.348), (c) junction + git archive (l.356-359), §C7.4-bis três papéis (l.406-407), §C4 'fora de autorização explícita' (l.277/280), §A4 (l.74/83). A cláusula do teto é TRANSCRIÇÃO, não paráfrase: diff de 0 linhas entre o comando l.26-28 e CLAUDE.md l.394-396, e grep -cF da string dá 1/1/1 (fonte + 2 contratos). O comando NÃO descreve um contrato que não existirá após o merge. §11.11 RE-MEDIDA nesta máquina e correta linha a linha (git 2.53.0.windows.2 igual ao declarado; index/FETCH_HEAD/HEAD no git-dir do worktree; refs/heads, refs/remotes/origin, packed-refs, objects só no common-dir; rev-parse origin/main idêntico nos 3 worktrees). A sobreposição do §2.1 é COMPATÍVEL com o README como este PR o deixa: o passo 5 do README agora ensina o teto de 2 e 'o ciclo 5 é a última tentativa' (grep 'ciclos 4' = 0, era 2), idêntico ao comando; os invariantes 'junta é OBRIGATÓRIA' e P1 sobrevivem, e a justificativa (§2.2) é derivada de §C7.4-bis, não preferência de ferramenta."
+    }
+  ],
+  "achados": [
+    {
+      "id": "C2-A1",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Os 4 arquivos nasceram NESTE PR: git log --diff-filter=A e6a6461..d90fbbb aponta B-O6R-02-ciclo5.md e B-O6R-07-plano.md em 2c1eee1 (+41e2316 no primeiro), BRIEFING-SAN2-6.md em 1115aeb e votos/SAN2-5/00c-porteiro-pos-merge-367.md em b324258 — todos dentro do intervalo base..head.",
+      "o_que": "O §5 do plano declara escopo PERMITIDO 'fechado — 9 alvos'. Quatro arquivos do PR ficam FORA dele: agent-orchestration/codex/comandos/B-O6R-02-ciclo5.md (1301/0, NOVO), agent-orchestration/omega/planos/B-O6R-07-plano.md (444/0, NOVO), agent-orchestration/omega/juntas/BRIEFING-SAN2-6.md (162/0 — a lista cobre J-SAN2-6*.md e votos/SAN2-6/*, e 'BRIEFING-…' não casa nenhum) e agent-orchestration/omega/juntas/votos/SAN2-5/00c-porteiro-pos-merge-367.md (161/0 — votos/SAN2-5, não SAN2-6). São 2068 das 3783 linhas adicionadas (54,7%). Pior: o par comando+B-O6R-07 (1745 linhas, 46,1% do PR — o maior artefato do PR) NÃO é mencionado em NENHUM registro durável do bloco. A entrada 151 do kpis-history.json (o campo description, fonte do painel que o dono abre — §C3.0) tem 0 ocorrências de 'B-O6R-02-ciclo5.md', 'B-O6R-07', '1301', 'comando do Codex' e 'BRIEFING'; status-geral.md não os cita; e o 'Registro §A2 do bloco SAN2-6' (98 linhas apensas a pendencias.md) registra SEIS divergências plano × terreno com rigor — inclusive a (v), sobre um caminho de codex/comandos/ — e não registra esta, que é a maior. Nenhuma ordem do dono sobre publicar o handoff está registrada nos controles (grep em controle/ e status-geral.md por 'publique o handoff|publicar o handoff|comando do Codex|handoff do Codex' => vazio); ela só existe no BRIEFING §1, que é insumo de junta e é ele próprio um dos 4 arquivos fora da lista. Cronologia agrava: o Kpis/* foi escrito em 53e44d3 e NÃO voltou a ser tocado depois que 2c1eee1 (+1702) e 41e2316 (+43) trouxeram o handoff — §C3.1 manda o PR atualizar Kpis/* no mesmo PR.",
+      "por_que_nao_bloqueia": "O escopo PROIBIDO está intocado e isso foi provado POR MUTAÇÃO (item C2-2), não por diff vazio: nenhum código, teste, migration, CI, lockfile ou corpo de papel foi arrastado, e os 4 arquivos são adição pura (0 remoções). A junta não foi enganada: o BRIEFING §1 diz textualmente que o comando de 1301 linhas e o plano do bloco paralelo entram no mesmo PR por ordem do dono, e o §2 tabela os 15 arquivos. Ordem do dono é fonte de verdade nº 1 (§A1) e supera o plano — o que falta é o REGISTRO dela. E o item votos/SAN2-5/00c-… nasceu em b324258, que é a BASE declarada do trabalho do dev (diário l.4): é artefato do gate que autorizou o bloco, não trabalho do bloco.",
+      "comando": "git diff --numstat e6a6461...d90fbbb | (classificação arquivo por arquivo contra §5 do SAN2-6-plano.md l.375-390); git show d90fbbb:Kpis/kpis-history.json | python -c \"...count('B-O6R-02-ciclo5.md')...\"; grep -rn 'publique o handoff|publicar o handoff|comando do Codex|handoff do Codex' agent-orchestration/controle/ agent-orchestration/docs/status-geral.md; git log --oneline e6a6461..d90fbbb -- Kpis/",
+      "saida": "18 arquivos, 3783 adições; 4 fora da lista fechada (1301+444+162+161 = 2068 linhas). description da entrada 151: 'B-O6R-02-ciclo5.md'->0, 'B-O6R-07'->0, '1301'->0, 'comando do Codex'->0, 'BRIEFING'->0 ('codex/comandos'->1, e é a divergência (v) sobre um PROIBIDO inexistente). grep nos controles: vazio. git log -- Kpis/: só 53e44d3."
+    },
+    {
+      "id": "C2-A2",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O arquivo B-O6R-02-ciclo5.md é NOVO neste PR (git show --stat 2c1eee1 => 1258 insertions, 0 deletions) e os contratos foram fixados ANTES dele, em 53e44d3 — logo o intervalo já nasceu impreciso no head em que foi escrito; não é herança.",
+      "o_que": "A §4.1 do comando (l.235) manda ler '§C7.4 (protocolo de dificuldade + o teto, l.388-397)' do CLAUDE.md. No blob do head, §C7.4 vai de l.380 (cabeçalho '4. **Protocolo de dificuldade — TETO DE DOIS CICLOS…') a l.405 (l.406 já é o 4-bis). O intervalo citado deixa de fora o cabeçalho e o NÚCLEO do teto — l.386-387, 'Reprovou no ciclo 2 → PARA. Não há ciclo 3. Dossiê ao dono' — e termina numa linha em branco (l.397), com o 'Por quê, medido' começando em 398, fora dele. Dano prático baixo porque a mesma frase manda ler 'CLAUDE.md inteiro' e o intervalo é um 'em especial'; mas citação por número de linha de contrato vivo é a mesma classe que a cadeira C2 do PR #367 já pegou duas vezes (ACH-C2-01/C2-02).",
+      "comando": "git show d90fbbb:CLAUDE.md | tr -d '\\r' | grep -n '^4\\. \\*\\*Protocolo de dificuldade|^4-bis\\.|^5\\. \\*\\*Paradas'; git show d90fbbb:CLAUDE.md | tr -d '\\r' | sed -n '386,398p'",
+      "saida": "380: 4. **Protocolo de dificuldade — TETO DE DOIS CICLOS…  |  406: 4-bis. **SEPARAÇÃO DE PAPÉIS…  |  420: 5. **Paradas imediatas irredutíveis…  ; l.386-387 = 'Reprovou no ciclo 2 → PARA. Não há ciclo 3.'; l.392-396 = a cláusula do teto; l.397 = branco; l.398 = 'Por quê, medido:'."
+    },
+    {
+      "id": "C2-A3",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "A linha é IDÊNTICA no blob da base e no do head: git show e6a6461:.agents/agents/README.md | grep -n 'frontmatter portátil' => 7:  ; git show d90fbbb:… => 7:  . Nenhuma das 9 edições do §3.4 a toca.",
+      "o_que": "O README l.7 descreve o frontmatter portátil do espelho como '(name + description)', omitindo `model:`, que o script PRESERVA por contrato (D-PLANEJADOR-MODELO-FABLE — o comentário do próprio sync-agent-agents.mjs, l.44-52, diz que apagá-lo faria o espelho Codex perder a regra EM SILÊNCIO). Um Codex que leia só o README pode concluir que o `model:` do planejador-mestre não vale no espelho.",
+      "comando": "git show e6a6461:.agents/agents/README.md | grep -n 'frontmatter portátil'; git show d90fbbb:.agents/agents/README.md | grep -n 'frontmatter portátil'; grep -n 'PRESERVA .model.' scripts/sync-agent-agents.mjs",
+      "saida": "base 7: · head 7: (mesma linha, intocada). Script l.44-52 documenta a preservação do `model:`."
+    },
+    {
+      "id": "C2-A4",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "A frase 'caminho de emulação — sempre válido' existe idêntica no blob da base (e6a6461, l.20) e no head (d90fbbb, l.25); as 9 edições do bloco não a tocam.",
+      "o_que": "Tensão apenas literal, consignada para a ata e NÃO tratada como defeito: o README qualifica o caminho de emulação como 'sempre válido', enquanto o §2.1 do comando declara que 5 dos 6 passos 'NÃO se aplicam' ao Codex neste bloco. Em contexto, 'sempre válido' qualifica o MECANISMO (emular é sempre aceitável quando não há subagentes) e não impede um comando de bloco de repartir papéis; e o comando mantém o contrato acima de si na l.5 ('Em divergência, valem as fontes de verdade (§A1) e o CLAUDE.md — nunca este comando'). Os dois invariantes do README ('a junta é OBRIGATÓRIA; só o mecanismo muda' e P1) sobrevivem à sobreposição.",
+      "comando": "git show e6a6461:.agents/agents/README.md | grep -n 'sempre válido'; git show d90fbbb:.agents/agents/README.md | grep -n 'sempre válido'; sed -n '/^### 2\\.1/,/^### 2\\.2/p' agent-orchestration/codex/comandos/B-O6R-02-ciclo5.md",
+      "saida": "base 20: · head 25: (linha intocada). §2.1: 'Neste bloco, os passos 1, 2, 4, 5 e 6 desse protocolo NÃO se aplicam a você… O Codex NÃO monta junta.'"
+    }
+  ],
+  "limpeza": "1 worktree descartável criado do head d90fbbb no scratchpad (sparse-checkout de .claude/agents, .agents/agents, scripts, .github, src, tests para contornar MAX_PATH do Windows) e removido com `git worktree remove --force`; 3 temporários removidos. Nenhum npm ci, nenhuma junction/symlink de node_modules (C7.1-ter(c)). Base viva erp-postgres/erp-redis: ZERO comandos, nem de leitura. Nenhum git reset/checkout/stash/gc/prune/force na árvore julgada — `git status --porcelain` de san2-r ao final traz só os arquivos de voto untracked. O commit de drill e76b036 ficou como objeto solto não-referenciado (não rodei gc, por contrato)."
+}

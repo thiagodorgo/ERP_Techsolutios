@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **241** |
-| IDs distintos | 232 |
-| **ABERTAS** | **191** |
+| Cabecalhos `## P-` | **244** |
+| IDs distintos | 235 |
+| **ABERTAS** | **194** |
 | — das quais **diferidas** (balde C) | 77 |
-| — das quais **ativas nesta rodada** | **114** |
+| — das quais **ativas nesta rodada** | **117** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 50 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **241 cabecalhos para 232 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **244 cabecalhos para 235 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -95,7 +95,7 @@
 | `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5100 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
 | `P-SYNC-AGENTS-NAO-RECURSIVO` | 5169 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
 
-## ABERTAS · balde B — processo/registro — 80
+## ABERTAS · balde B — processo/registro — 83
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -179,6 +179,9 @@
 | `P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA` | 4857 | — | sim | P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA (2026-08-31 — achado do `SAN2-4b`, correcoes C |
 | `P-REG-BATERIA-NAO-TYPECHECA-TESTS` | 4928 | — | sim | P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre |
 | `P-AUTHORITY-N-NAO-CANONICO-NO-STORED` | 5045 | BAIXA | sim | P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stor |
+| `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` | 5250 | BAIXA | sim | P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, § |
+| `P-ESPELHO-C7-3-MECANISMO-PESQUISADOR` | 5382 | BAIXA | sim | P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — |
+| `P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5` | 5426 | BAIXA | sim | P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BA |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 77
 

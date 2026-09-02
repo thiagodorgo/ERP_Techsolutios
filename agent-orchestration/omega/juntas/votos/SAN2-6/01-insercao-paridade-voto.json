@@ -1,0 +1,54 @@
+{
+  "cadeira": "C1 — auditor-da-insercao-e-da-paridade",
+  "veredito": "APROVADO",
+  "head_julgado": "d90fbbb",
+  "base": "e6a6461",
+  "evidencia": "agent-orchestration/omega/juntas/votos/SAN2-6/01-insercao-paridade-evidencia.md",
+  "itens": {
+    "C1-1_insercao_pura": "APROVADO",
+    "C1-2_paridade_A2": "APROVADO",
+    "C1-3_greps_de_feito": "APROVADO"
+  },
+  "achados": [
+    {
+      "id": "C1-A1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "As duas imprecisoes estao no diario dev-contratos-readme.md, arquivo criado por ESTE bloco no commit 53e44d3; nao existe versao anterior.",
+      "o_que": "A tabela do §3.4 do diario do dev subdeclara a edicao 9a: diz '+5 linhas' para a secao '### Gates fail-closed', mas o hunk real e '+6 -0' (as 5 linhas de conteudo mais o separador em branco). A soma das adicoes declaradas por edicao no README da 25; o numstat real e 26. As remocoes declaradas (14) batem exatamente. Duas ancoras de insercao pura tambem sao off-by-one: a edicao 9a e declarada 'apos a l.75' e o hunk insere apos a l.76 (linha em branco), e a edicao 8 e declarada 'apos a l.38' e o hunk insere apos a l.39 (linha em branco). Nenhuma linha pre-existente foi tocada em nenhum dos dois casos: os hunks continuam sendo insercao pura, e o efeito semantico e nulo. E imprecisao de contabilidade no registro, nao defeito de conteudo.",
+      "comando": "git diff -U0 e6a6461 d90fbbb -- .agents/agents/README.md | awk '/^@@/{if(hh!=\"\")printf \"%-22s +%d -%d\\n\", hh, aa, rr; hh=$2\" \"$3; aa=0; rr=0; next} /^\\+/{aa++} /^-/{rr++} END{printf \"%-22s +%d -%d\\n\", hh, aa, rr}'  ;  git show e6a6461:.agents/agents/README.md | sed -n '74,78p'",
+      "saida": "11 hunks: -5,2+5,2 [+2 -2] | -12,0+13,5 [+5 -0] | -24+29 [+1 -1] | -33,4+38,5 [+5 -4] | -39,0+46,5 [+5 -0] | -43+54 [+1 -1] | -49+59,0 [+0 -1] | -56,3+65,0 [+0 -3] | -66+72,0 [+0 -1] | -68+74 [+1 -1] | -76,0+83,6 [+6 -0]. Total +26 -14 (numstat confirma). Soma declarada pelo dev: +25 -14. Base l.75='guardiao-fail-closed', l.76=(em branco), l.77='### Seguranca / banco / infra / custo'."
+    },
+    {
+      "id": "C1-A2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "A tabela de EOL esta no §0 e no §4.5 do diario dev-contratos-readme.md, criado por este bloco em 53e44d3.",
+      "o_que": "Nota de metodo, sem defeito. A tabela de EOL do diario ('CLAUDE.md 542/542 -> 588/588 CR, 100% CRLF preservado') mede a ARVORE DE TRABALHO, nao o blob. Reproduzi os numeros exatamente na arvore de san2-r (core.autocrlf=true, sem .gitattributes na raiz). Mas o blob que entra na main e LF puro dos DOIS lados (CR=0 em e6a6461 e em d90fbbb, nos 4 arquivos), entao nao existe delta de EOL possivel dentro deste commit. A prova de ausencia de conversao em massa e MAIS forte do que a que o diario apresenta — mas a frase 'CRLF preservado' descreve o checkout local, nao o conteudo mergeado. Registro para que uma passada futura nao leia a tabela do diario como afirmacao sobre o blob.",
+      "comando": "for f in CLAUDE.md AGENTS.md .agents/agents/README.md agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md; do for c in e6a6461 d90fbbb; do echo \"$c $f linhas=$(git show $c:$f | wc -l) CR=$(git show $c:$f | tr -cd '\\r' | wc -c)\"; done; done ; git config --get core.autocrlf",
+      "saida": "e6a6461 CLAUDE.md 542/CR=0 | d90fbbb CLAUDE.md 588/CR=0 | e6a6461 AGENTS.md 591/CR=0 | d90fbbb AGENTS.md 637/CR=0 | README 97/CR=0 -> 109/CR=0 | PROTOCOLO 96/CR=0 -> 110/CR=0. core.autocrlf=true; sem .gitattributes na raiz. Arvore: CLAUDE.md 588 linhas/588 CR, AGENTS.md 637/637 (reproduz o diario). numstat real 57/11 e 61/15 — nao 542/542 nem 591/591."
+    },
+    {
+      "id": "C1-A3",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "A divergencia ja esta no blob da base e6a6461 (CLAUDE.md l.378 x AGENTS.md l.406) e nasceu no commit 39eb46c de 2026-07-28 (PR #303, 'interoperabilidade Claude Code <-> Codex'), medido por git log -S. Nenhum hunk deste bloco toca essas linhas (hunks do AGENTS.md: 150, 416-417, 419+5, 459-469->464+52, 586).",
+      "o_que": "Diffei o §C7 INTEIRO dos dois contratos no head (167 linhas cada) e nao so o bloco alterado. Sobra exatamente UMA linha divergente: o item 3 (Regra da duvida) nomeia 'agente-pesquisador-web' no CLAUDE.md e 'subagente pesquisador web' no AGENTS.md. Isto e diferenca estritamente de MECANISMO (invocacao de subagente), o caso explicitamente permitido pelo D-INTEROP-CLAUDE-CODEX; a REGRA e identica (>=3 fontes, PD antes de decidir, duvida sem pesquisa = veto). NAO e divergencia de regra e NAO reprova. Registrado como pendencia nomeada apenas para nao ser redescoberto como achado numa passada futura — bloco dono: quem tocar o §C7.3 do espelho.",
+      "comando": "diff <(git show d90fbbb:CLAUDE.md | tr -d '\\r' | sed -n '323,489p') <(git show d90fbbb:AGENTS.md | tr -d '\\r' | sed -n '351,517p') ; git log -1 --format='%h %ad %s' --date=short -S'subagente pesquisador web' -- AGENTS.md",
+      "saida": "56c56 < 3. **Regra da duvida:** ... -> `agente-pesquisador-web` (>=3 fontes) ... / > 3. **Regra da duvida:** ... -> subagente pesquisador web (>=3 fontes) ... ; ec=1 (unica linha). Origem: 39eb46c 2026-07-28 'interoperabilidade Claude Code <-> Codex ... (#303)'."
+    }
+  ],
+  "provas_centrais": [
+    "C1-1: insercao do teto e HUNK PROPRIO com zero remocoes nos dois contratos — CLAUDE.md '@@ -391,0 +392,5 @@', AGENTS.md '@@ -419,0 +420,5 @@'. Aritmetica de hunks fecha com numstat 57/11 e 61/15 sem hunk sobrando. Um unico commit (53e44d3) toca os 4 arquivos; escopo proibido (src/tests/scripts/prisma/.github/frontend/mobile/package-lock/.claude/agents) VAZIO no range.",
+    "C1-2: diff do bloco §C7.4->§C7.7 (110 linhas de cada lado, fronteiras achadas por ancora) sai VAZIO, ec=0, e os dois fragmentos tem o MESMO sha256 7add01374c69240f1acd38ce42c0c3bc2ffe2ff5a791077d2b650284d15cddc5. O teto isolado (CLAUDE 392-396 x AGENTS 420-424) tambem sai identico. A afirmacao do orquestrador esta PROVADA, nao aceita.",
+    "C1-3: append-only da fonte provado por IDENTIDADE DE PREFIXO — sha256 do PROTOCOLO base inteiro (96 l.) == sha256 do head[1..96], 2c01eab732af6390acae10829545f0b2dc2bc8d9fd63d6d8299903eb22940f71, com hunk unico '@@ -96,0 +97,14 @@'. Greps do 'antes' reproduzem contra a main (P[1-6] 0/0, 'ciclo 6' 0/0, 'ciclos 4' README=2, omega5p=6, 2 gates=0); do 'depois' saem 15/15, 1/1, 0, 0, 2. Conteudo amostrado: 'Nao ha ciclo 6' e proibicao dentro do §C7.4; os 6 P estao inline com norma e Caso; o passo 5 do README foi SUBSTITUIDO pela regra certa (teto de 2 + B-O6R-02 no ciclo 5 como ultima tentativa), nao apenas apagado; os 2 gates sao 2 linhas de tabela com poder e funcao. Fences do item 7 novo: par fechado nos dois contratos (CLAUDE 477/483, AGENTS 505/511)."
+  ],
+  "nao_medido_por_esta_cadeira": [
+    "Se o numero 23 do espelho e correto e se o README bate byte a byte com o que sync-agent-agents.mjs gera (cadeira C2). Conferi apenas que 'ls .claude/agents/*.md | wc -l' = 23, consistente com o numero corrigido.",
+    "KPI, backfill do #367, painel e pendencias (cadeira C3).",
+    "Conteudo do comando do Codex B-O6R-02-ciclo5.md e das citacoes que ele faz ao contrato (cadeira C2)."
+  ],
+  "propos_correcao": false,
+  "commitou": false,
+  "base_viva_tocada": false
+}
