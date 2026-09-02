@@ -2433,7 +2433,15 @@ homônimo em organizações distintas é legal no modelo.
   `API_CONTRACTS.md`). status: ABERTA.
 - **`P-O6R-B01-RATE-LIMIT-IP`** (→ B-O6R-07) — fecho por IP/distribuído do canal anônimo. Residuais nomeados:
   enumeração pelo `400 TENANT_ID_REQUIRED` (revela "e-mail em >3 organizações"), amplificação distribuída,
-  rotação de e-mails (o balde por e-mail não a fecha — idêntico ao login de hoje, não regride). status: ABERTA.
+  rotação de e-mails (o balde por e-mail não a fecha — idêntico ao login de hoje, não regride).
+  **FECHADA pelo B-O6R-07a (2026-09-02) na metade que era dele, com o residual RE-NOMEADO em vez de escondido:**
+  entrou balde por **IP** (`TokenBucket` REUTILIZADO de `portal-shared` — zero dependência nova; chave HMAC
+  derivada de `JWT_SECRET` sobre o IP) nas **duas** rotas de login, estouro → **429 `RATE_LIMITED`**. Evidência:
+  `o6r07a-login-rate-limit` **6/6**, vermelho-controle `6 · pass 2 · fail 4` com os quatro `not ok` nomeados,
+  entre eles *e-mails DIFERENTES no mesmo IP → 429* (fecha a rotação de e-mails) e *IPs distintos NÃO
+  compartilham balde* (o vizinho de NAT não derruba o outro). **NÃO fechados, e por isso vivem agora em
+  `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`:** multi-réplica/Redis, política de `X-Forwarded-For` e a enumeração pelo
+  `400 TENANT_ID_REQUIRED`. status: FECHADA (residual distribuído migrado, não perdido).
 - **`P-O6R-B01-TROCA-SENHA`** — rota de troca de senha (o gancho §5.5 nasce ARMADO e inerte;
   `changePasswordWithIdentityHook` + `IdentityLinkService.handlePasswordChange`). **Colisão declarada
   (crítico higiene 5): o fluxo de RESET de senha, por definição sem ator autenticado, não pode chamar o setter
@@ -2810,7 +2818,16 @@ MIME vindo do cliente e download em `attachment.storage.ts:90-105` + `attachment
 
 **Bloqueia:** feature em auth (SEC-003) e em evidências/anexos/upload mobile (SEC-004) — P1 antes de feature no
 módulo, por deliberação.
-- status: ABERTA — 1 P0 + 2 P1.
+**METADE FECHADA pelo B-O6R-07a (2026-09-02) — e a entrada NÃO fecha por isso.** `Ω6R-SEC-002` (P0) e
+`Ω6R-SEC-003` (P1) estão fechados **na autoria** (rastro em `docs/revisoes/O6R/achados.jsonl` e
+`REGISTRO_ACHADOS_O6R.md`; o painel os põe em `production_readiness.aguardando_merge` e **não** move
+`p0_fechados`/`p1_fechados`, que só contam conserto na `main`). **`Ω6R-SEC-004` segue ABERTO** — é o sub-bloco
+**07b** (`fix/o6r07b-uploads`): scanner fail-closed por ambiente, sniff de magic bytes in-house e download
+endurecido, nas **5 vias** medidas (mobile evidence, attachments, checklists, damages, work-order-attachments).
+**Consequência de gate, dita em voz alta:** o título "1 P0 + 2 P1" só zera com o 07b, e o gate da CHECKLIST P1
+(`J-CHK-04C-EMENDA`) exige **`B-O6R-06` E os DOIS sub-blocos do `B-O6R-07`** mergeados. O `Bloqueia:` de
+auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/upload mobile **permanece** até o 07b.
+- status: ABERTA — resta 1 P1 (`Ω6R-SEC-004`, sub-bloco 07b). Os outros 2 (1 P0 + 1 P1) fecharam no 07a.
 
 ## P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:approve` — MÉDIA
 
@@ -2857,7 +2874,22 @@ declarado: o plano pede a chave e proíbe o único lugar onde ela pode ser provi
 **Decisão pendente (do orquestrador/junta, não do dev):** (a) ampliar o §5 do 07a para os 3 arquivos + a
 migração; ou (b) mover D1 para sub-bloco próprio com escopo que os inclua. O código de D1 já está escrito e a
 prova de papel (6 casos + vermelho-controle) já está verde.
-- status: ABERTA — BLOQUEIA o merge do 07a enquanto a chave estiver no catálogo sem provisionamento.
+**FECHADA no próprio 07a (2026-09-02).** A decisão pendente foi resolvida pela **EMENDA E1** do plano, que
+escolheu a opção (a) — ampliar o §5 de forma **nominal e fechada** — e rejeitou a (b) com quatro razões, a mais
+forte sendo que mover o D1 para PR próprio obrigaria a **desfazer código pronto e provado**, que é a classe
+medida pela `D-JUNTA-SEPARACAO-DE-PAPEIS`. **O instrumento é MIGRAÇÃO, não seed** — quem prescreve é o próprio
+guard (mensagem + `PADRAO_A_SEGUIR`), e `prisma/seed.ts` itera o `PERMISSION_CATALOG`, de modo que a mudança do
+catálogo flui ao seed sozinha; produção nunca semeia. **Entregue:**
+`prisma/migrations/20260871000000_grant_work_orders_approve_permission/migration.sql` (diretório NOVO, aditivo e
+idempotente, com runbook de `down`), mais a linha do literal em `tests/core-saas.test.ts` e a chave nos 4 arrays
+de `tests/fixtures/role-catalog-contract.snapshot.json`. **Evidência de fechamento, re-executada no head
+`73a351c` por agente que não a implementou:** `permission-catalog-migration-parity` **3/3, skipped 0, `ec=0`**;
+`permission-catalog-db-parity` **2/2, skipped 0, `ec=0`** com `RBAC_DB_PARITY=1` e banco semeado; num banco
+**só-migrado, sem seed**, `select key from permissions where key='work_orders:approve'` devolve a chave (quem
+inseriu foi a migração); num banco semeado, os grants caem em **manager, super_admin, tenant_admin** e em mais
+ninguém. `PERMISSOES_HERDADAS_DO_SEED` **não cresceu** (segue 189). Suíte canônica **255 arq · 2647 · pass 2645
+· fail 0 · skipped 2**, `ec=0` — as três vermelhas desta pendência fecharam e nenhuma nova nasceu.
+- status: FECHADA — o bloqueio do merge do 07a cai por esta entrega. Severidade: ALTA. Dono: B-O6R-07a.
 
 ## P-O6R-B07A-STICKY-409-VIRA-403 (2026-09-02) — o escopo por objeto muda o código de um teste fora do §5 — **BLOQUEIA o merge do 07a**
 
@@ -2873,7 +2905,23 @@ autorizar depois de gravar.
 
 O arquivo **não está no §2.5** do plano (a lista de testes que o dev pode editar), então o dev parou e devolveu
 em vez de ajustar. Correção necessária: **uma asserção**, `409 → 403`, com a razão `not_assigned_to_actor`.
-- status: ABERTA — BLOQUEIA o merge do 07a. Decisão de escopo do orquestrador/junta.
+**FECHADA no próprio 07a (2026-09-02) — E COM CORREÇÃO DE RUMO: o título desta pendência ficou INVERTIDO.**
+O sticky **não virou 403**; ele **VOLTOU a 409**. O que a **EMENDA E2** mediu é que renumerar as asserções
+consertaria o sintoma e **mutilaria o caso**: com as três requisições em 403, todas morreriam no guard de
+escopo, e a cobertura declarada (o desvio pela rota genérica com papéis REAIS do catálogo, fechado pelo
+SERVIÇO) desapareceria em silêncio — nenhum teste HTTP provaria mais a porta única do conjunto. **O defeito
+era do ARRANJO do teste, não do guard:** o arranjo nunca atribuiu a OS a ninguém. Entregue: bloco de arranjo
+novo (perfil de operador + `POST /work-orders/:id/assign` + `tecnicoHeaders`), as três requisições passando a
+usar um técnico ATRIBUÍDO, e as 2 linhas que a E1 havia autorizado **REVERTIDAS ao texto byte-exato pré-E1**
+(`git show 2d54ea2:...`). l.620 fica **409** e l.628 fica **200** — este é o ponto da emenda. Zero linha de
+`src/**`: o contrato de produto (403 `not_assigned_to_actor` para ator de campo não atribuído) **não muda**.
+**Fundamento, medido e não preferido:** `RBAC_MATRIX.md:45` já dizia `field_technician =
+execute/update-assigned` — o guard **cumpre** a matriz; o **200 antigo é que a contrariava**. **Evidência de
+fechamento:** `tests/work-order-checklists-sticky.test.ts` **15/15, fail 0, skipped 0, `ec=0`** (denominador
+inalterado — o arquivo tinha 15 antes), com vermelho-controle registrado no head `a37a9dd` (`14/15`, `403 !==
+409`). **Fica com a junta**, e não com esta entrada: a leitura de contrato do F2 (escopo por objeto cobre TODA
+mutação do ator de campo, inclusive a edição comum) e a tensão §A2 da semântica de `assigned_operator_id`.
+- status: FECHADA — o bloqueio do merge do 07a cai por esta entrega. Severidade: ALTA. Dono: B-O6R-07a.
 
 ## P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1) — **BLOQUEIA jobs e tempo real de campo**
 
@@ -3421,8 +3469,20 @@ auditoria, no `B-O6R-07`.
 caminho anônimo tem piso de latência e balde por e-mail, e o achado é **soma** ao `SEC-003`, não regressão.
 **Dono natural:** `B-O6R-07` (autorização e anexos), que já fecha o `SEC-003`.
 
-- **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+**FECHADA pelo B-O6R-07a (2026-09-02), como o próprio registro previa (`dono natural: B-O6R-07`).**
+`verifyAnonymousCandidate` passa a chamar o **MESMO `incrementFailedAttempts` atômico do B-O6R-01** — nenhum
+contador novo, nenhum read-modify-write novo, por exigência do §3.4 do plano — e a falha anônima passa a deixar
+**rastro de auditoria**. A RESPOSTA anônima segue **401 uniforme**: o 423 **nunca** vaza por essa via, o que
+preserva o anti-enumeração entregue pelo B01. **Trade-off consignado para a junta, não escondido:** armar
+lockout por via anônima cria vetor de negação de acesso à conta a custo baixo; mitigações medidas são o TTL de
+15 min, o balde por e-mail já existente e o rastro auditável — a alternativa (não armar) mantém força bruta
+ilimitada **sem rastro**, que é exatamente o achado. **Evidência de fechamento:** `o6r07a-anon-lockout` **7/7**
+e `o6r07a-anon-lockout-db` **6/6**, com **vermelho-controle conjunto** de `13 · pass 4 · fail 9` — e o caso que
+reproduz a medição original do `agente-secops` (as 12 tentativas anônimas que não moviam o contador) está entre
+as sondas. Os três vermelhos-controle desta trilha foram **refeitos do zero** por agente de identidade nova,
+depois de o primeiro dev cair sem gravá-los (`00-quedas.md`).
+- **status:** FECHADA · **severidade:** ALTA · **dono:** B-O6R-07a
+  <sub>Fechada em 2026-09-02 com evidência executada e vermelho-controle registrado. A triagem SAN2-1 a mantivera ABERTA por padrão conservador; agora há verificação.</sub>
 
 ## P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída
 
@@ -5601,3 +5661,28 @@ ser emendado para admitir testemunha de efeito como forma canônica, ou este cas
 
 **Precedente que isto cria, se a junta aceitar:** *"o vermelho-controle é sobre PROVAR QUE A SONDA MORDE,
 não sobre um instrumento específico — instrumento que exige alargar produção é instrumento errado."*
+
+## P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do #368 — **REGISTRO, não pendência aberta**
+
+Registro **§A2** (conflito não se consolida em silêncio), gravado pelo B-O6R-07a no PR que paga a dívida.
+
+**O conflito:** o `kpis-latest.json` do SAN2-6 atribuía o próximo backfill §C3.5 ao *"PR seguinte, que é o ciclo
+5"*; o parecer do porteiro pós-merge do #368 (`agent-orchestration/omega/juntas/votos/SAN2-6/`
+`00c-porteiro-pos-merge-368.md`, veredito **LIBERADO COM RESSALVA**) reformulou para *"o PR que mergear
+primeiro carrega o backfill"*, liberando **dois** blocos em paralelo: o ciclo 5 do `B-O6R-02` (Codex, UMA
+tentativa) e o `B-O6R-07` (Claude Code).
+
+**A decisão, e ela é do §7.1 do plano `B-O6R-07`:** vale a **REGRA DO PRIMEIRO-QUE-MERGE**. **Este PR paga.**
+Aplicado na entrada **151** (`SAN2-6`) de `Kpis/kpis-history.json`: `pr` **368** · `merge_commit` **`f895dd2`** ·
+`approved_head` **`d90fbbb`**, e `blocks_completed` **157 → 158** no cartão do painel.
+
+**A razão do `approved_head`, exigida pela ressalva R1 do porteiro e transcrita ao lado do valor na própria
+entrada 151:** grava-se **o head da ATA**, nunca o `headRefOid` — a ata `J-SAN2-6.md` nomeia `d90fbbb` (3
+ocorrências) e **não nomeia** `9051e9b` nem `85a9058` (0 ocorrências); o precedente é **provado** pela cadeira C3
+do `J-SAN2-6` em **3 de 3** casos com hashes divergentes (#363, #364, #366). O head final `9051e9b` tem árvore
+idêntica à do squash e carrega o **delta pós-voto** que a ata declara **em prosa, sem pinar por hash**.
+
+**O que o ciclo 5 deve fazer:** **VERIFICAR e NÃO duplicar.** Ao rebasear, se a entrada 151 já vier com os três
+campos preenchidos, a dívida está quitada — reescrevê-los criaria divergência onde não há.
+
+- status: FECHADA — registro de reatribuição consumado no mesmo PR que paga a dívida. Dono: B-O6R-07a.

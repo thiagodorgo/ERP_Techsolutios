@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **244** |
-| IDs distintos | 235 |
-| **ABERTAS** | **194** |
+| Cabecalhos `## P-` | **249** |
+| IDs distintos | 240 |
+| **ABERTAS** | **195** |
 | — das quais **diferidas** (balde C) | 77 |
-| — das quais **ativas nesta rodada** | **117** |
+| — das quais **ativas nesta rodada** | **118** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 50 |
+| FECHADAS | 54 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **244 cabecalhos para 235 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **249 cabecalhos para 240 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -56,7 +56,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 34
+## ABERTAS · balde A — material — 36
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -76,26 +76,28 @@
 | `P-CHK-PATCH-SEM-LOCK` | 1976 | MÉDIA | **a atribuir** | P-CHK-PATCH-SEM-LOCK (2026-08-07) — PATCH de checklist é last-write-wins sem guarda de v |
 | `P-CHK-CHIPS-SEM-CONSUMIDOR` | 1996 | MÉDIA | **a atribuir** | P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA,  |
 | `P-JUNTA-LIMPEZA-BASE-VIVA` | 2035 | MÉDIA | **a atribuir** | P-JUNTA-LIMPEZA-BASE-VIVA (2026-08-08) — 2º incidente de limpeza ad-hoc por subagente na |
-| `P-O6R-B01-ANONIMO-SEM-LOCKOUT` | 3347 | ALTA | sim | P-O6R-B01-ANONIMO-SEM-LOCKOUT (2026-08-19) — **ALTA** · o caminho anônimo não arma o loc |
-| `P-O6R-B01-RELIGACAO-SEM-REMEDIO` | 3364 | ALTA | sim | P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída |
-| `P-O6R-B01-LOGERROR-MORTO` | 3380 | ALTA | sim | P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de |
-| `P-ARNES-RLS-TEST-FORA-DO-SWEEP` | 3473 | MÉDIA | sim | P-ARNES-RLS-TEST-FORA-DO-SWEEP (2026-08-28 — B-O6R-ARNES, C-C) — MÉDIA · decisão CONSCIE |
-| `P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN` | 3611 | MÉDIA | sim | P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN (2026-08-28) — divergência do plano |
-| `P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU` | 3714 | MÉDIA | sim | P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU (2026-08-28 — cadeira de ataque, ajuste A1) — MÉDIA |
-| `P-O6R-B02-TESTE-RLS-SUPERUSER` | 3725 | MÉDIA | sim | P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA |
-| `P-O6R-B02-BATERIA-CANONICAS-1-2` | 3745 | MÉDIA | sim | P-O6R-B02-BATERIA-CANONICAS-1-2 (2026-08-28 — validação, ajuste A4) — MÉDIA |
-| `P-O6R-B02-SUITES-LIST-CI` | 3754 | MÉDIA | sim | P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA |
-| `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` | 3883 | MÉDIA | sim | P-O6R-B02-RUNNER-SUMICO-SEM-SKIP (2026-08-28 — arnês #4 / D26b) — MÉDIA (mesma classe do |
-| `P-GOV-MAIN-SEM-PROTECAO` | 4395 | MÉDIA | sim | P-GOV-MAIN-SEM-PROTECAO — ATUALIZAÇÃO (2026-08-25): ruleset INSTALADO |
-| `P-SAN2-LEITURA-DAS-79` | 4428 | MÉDIA | sim | P-SAN2-LEITURA-DAS-79 (2026-08-29) — MÉDIA · **Dono:** bloco próprio, DEPOIS do ciclo 5  |
-| `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 4606 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
-| `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 4666 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
-| `P-OBITUARIO-DERIVADO-DO-DIRETORIO` | 4767 | MÉDIA | sim | P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` co |
-| `P-KPI-RECENT-CONGELADO` | 4968 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
-| `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5100 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
-| `P-SYNC-AGENTS-NAO-RECURSIVO` | 5169 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
+| `P-O6R-B07` | 2774 | ALTA | **a atribuir** | P-O6R-B07 (2026-08-14) — `fix/authorization-and-uploads` — Ω6R-SEC-002 (P0) + SEC-003, S |
+| `P-O6R-B07-APPROVAL-BY-POLICY` | 2832 | MÉDIA | **a atribuir** | P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:appro |
+| `P-O6R-B01-RELIGACAO-SEM-REMEDIO` | 3487 | ALTA | sim | P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída |
+| `P-O6R-B01-LOGERROR-MORTO` | 3503 | ALTA | sim | P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de |
+| `P-ARNES-RLS-TEST-FORA-DO-SWEEP` | 3596 | MÉDIA | sim | P-ARNES-RLS-TEST-FORA-DO-SWEEP (2026-08-28 — B-O6R-ARNES, C-C) — MÉDIA · decisão CONSCIE |
+| `P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN` | 3734 | MÉDIA | sim | P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN (2026-08-28) — divergência do plano |
+| `P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU` | 3837 | MÉDIA | sim | P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU (2026-08-28 — cadeira de ataque, ajuste A1) — MÉDIA |
+| `P-O6R-B02-TESTE-RLS-SUPERUSER` | 3848 | MÉDIA | sim | P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA |
+| `P-O6R-B02-BATERIA-CANONICAS-1-2` | 3868 | MÉDIA | sim | P-O6R-B02-BATERIA-CANONICAS-1-2 (2026-08-28 — validação, ajuste A4) — MÉDIA |
+| `P-O6R-B02-SUITES-LIST-CI` | 3877 | MÉDIA | sim | P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA |
+| `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` | 4006 | MÉDIA | sim | P-O6R-B02-RUNNER-SUMICO-SEM-SKIP (2026-08-28 — arnês #4 / D26b) — MÉDIA (mesma classe do |
+| `P-GOV-MAIN-SEM-PROTECAO` | 4518 | MÉDIA | sim | P-GOV-MAIN-SEM-PROTECAO — ATUALIZAÇÃO (2026-08-25): ruleset INSTALADO |
+| `P-SAN2-LEITURA-DAS-79` | 4551 | MÉDIA | sim | P-SAN2-LEITURA-DAS-79 (2026-08-29) — MÉDIA · **Dono:** bloco próprio, DEPOIS do ciclo 5  |
+| `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 4729 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
+| `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 4789 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
+| `P-OBITUARIO-DERIVADO-DO-DIRETORIO` | 4890 | MÉDIA | sim | P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` co |
+| `P-KPI-RECENT-CONGELADO` | 5091 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
+| `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5223 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
+| `P-SYNC-AGENTS-NAO-RECURSIVO` | 5292 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
+| `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` | 5588 | MÉDIA | sim | P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉD |
 
-## ABERTAS · balde B — processo/registro — 83
+## ABERTAS · balde B — processo/registro — 82
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -142,46 +144,45 @@
 | `P-IMPOUND-LINK-SEM-UNLINK` | 2246 | — | **a atribuir** | P-IMPOUND-LINK-SEM-UNLINK (2026-08-11 — junta `J-CHK-P1-PR04B-autolink`, fato comum aos  |
 | `P-WORKTREE-INTEROP-ORFAO` | 2285 | — | **a atribuir** | P-WORKTREE-INTEROP-ORFAO — registro original (achado do `porteiro-pos-merge` no gate do  |
 | `P-O6R-BACKLOG` | 2304 | — | **a atribuir** | P-O6R-BACKLOG (2026-08-14) — os 29 achados da auditoria Ω6R entram no controle operacion |
-| `P-O6R-B02` | 2484 | BAIXA | **a atribuir** | P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-00 |
-| `P-O6R-B03` | 2560 | — | **a atribuir** | P-O6R-B03 (2026-08-14) — `fix/expense-sync-atomic` — Ω6R-DIN-009 (P0) + QUA-001 (P1) — * |
-| `P-O6R-B04` | 2593 | BAIXA | **a atribuir** | P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA |
-| `P-O6R-B12` | 2653 | — | sim | P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — ** |
-| `P-O6R-B06` | 2723 | — | **a atribuir** | P-O6R-B06 (2026-08-14) — `fix/billing-durability` — Ω6R-DIN-005 + Ω6R-DIN-007 (2 P0) — * |
-| `P-O6R-B07` | 2766 | — | **a atribuir** | P-O6R-B07 (2026-08-14) — `fix/authorization-and-uploads` — Ω6R-SEC-002 (P0) + SEC-003, S |
-| `P-O6R-B08` | 2815 | — | **a atribuir** | P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1 |
-| `P-O6R-B09` | 2861 | — | **a atribuir** | P-O6R-B09 (2026-08-14) — `fix/dispatch-atomic-timeline` — Ω6R-ARQ-004 (P1) — **BLOQUEIA  |
-| `P-O6R-B10` | 2882 | — | **a atribuir** | P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — ** |
-| `P-O6R-B11` | 2914 | — | **a atribuir** | P-O6R-B11 (2026-08-14) — `fix/mobile-work-order-contracts` — Ω6R-QUA-004, QUA-005 (2 P1) |
-| `P-TESTS-FORA-DO-TYPECHECK` | 2961 | — | **a atribuir** | P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A) |
-| `P-CHK-DEFERRED-SEM-LEITURA` | 2979 | BAIXA | **a atribuir** | P-CHK-DEFERRED-SEM-LEITURA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A) |
-| `P-O6R-B05-WORKER-EXTERNO-DIFERIDO` | 3087 | — | sim | P-O6R-B05-WORKER-EXTERNO-DIFERIDO (2026-08-15 — bloco B-O6R-05, decisão C4) |
-| `P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO` | 3111 | — | **a atribuir** | P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO (2026-08-15 — bloco B-O6R-05) |
-| `P-O6R-B05-README-ATIVACAO` | 3119 | — | sim | P-O6R-B05-README-ATIVACAO (2026-08-15 — bloco B-O6R-05) |
-| `P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST` | 3213 | — | sim | P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST (2026-08-15 — junta do PR #353, ressalva do `a |
-| `P-O6R-B01-ROLE-LITERAIS` | 3249 | — | **a atribuir** | P-O6R-B01-ROLE-LITERAIS (2026-08-18 — ciclo 2 do B-O6R-01, plano §9) |
-| `P-O6R-B01-ROUTE-ERROR-LEAK` | 3267 | — | **a atribuir** | P-O6R-B01-ROUTE-ERROR-LEAK (2026-08-18 — ciclo 2 do B-O6R-01, plano §9; achado B-7 do R- |
-| `P-O6R-ARNES-ISOLAMENTO` | 3278 | — | sim | P-O6R-ARNES-ISOLAMENTO (2026-08-18) — o arranjo do lote de testes contra Postgres, **ant |
-| `P-O6R-B01-ROUTE-ERROR-LEAK` | 3392 | — | sim | P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)** |
-| `P-O6R-ARNES-ISOLAMENTO` | 3402 | — | sim | P-O6R-ARNES-ISOLAMENTO — **EMENDAS medidas pela junta do ciclo 3** |
-| `P-O6R-ARNES-ISOLAMENTO` | 3424 | — | sim | P-O6R-ARNES-ISOLAMENTO — **EMENDAS do bloco B-O6R-ARNES (2026-08-28)** — o bloco próprio |
-| `P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES` | 3552 | — | sim | P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES — **ATRIBUÍDO POR EXECUÇÃO** (2026-08-28, B-O6R-ARN |
-| `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL` | 3581 | — | sim | P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO |
-| `P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-` | 3638 | — | sim | P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrad |
-| `P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO` | 3653 | — | sim | P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO (2026-08-28) — DOIS achados por execução CONTRA a |
-| `P-O6R-B02` | 3694 | — | sim | P-O6R-B02 — CICLO 4 REPROVADO 4×1 (2026-08-28) — a classe que reprova é de ARNÊS, não de |
-| `P-O6R-B02-DIVERGENCIA-D27-D21` | 3734 | BAIXA | sim | P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (re |
-| `P-O6R-B02-REGISTRO-STATUS-LOG` | 3851 | BAIXA | sim | P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA |
-| `P-O6R-B02-CENSO-CASO-PERMANENTE` | 3859 | BAIXA | sim | P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA |
-| `P-O6R-ARNES-ISOLAMENTO` | 3947 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do a |
-| `P-O6R-ARNES-ISOLAMENTO` | 3966 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDAS do bloco `SAN2-4b` (2026-08-31) — mecanismo da orfa e d |
-| `P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE` | 4036 | BAIXA | sim | P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE (2026-08-28) — BAIXA · **Dono:** bloco de  |
-| `P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE` | 4164 | — | sim | P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE (2026-08-28) — divergência de processo, registra |
-| `P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA` | 4857 | — | sim | P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA (2026-08-31 — achado do `SAN2-4b`, correcoes C |
-| `P-REG-BATERIA-NAO-TYPECHECA-TESTS` | 4928 | — | sim | P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre |
-| `P-AUTHORITY-N-NAO-CANONICO-NO-STORED` | 5045 | BAIXA | sim | P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stor |
-| `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` | 5250 | BAIXA | sim | P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, § |
-| `P-ESPELHO-C7-3-MECANISMO-PESQUISADOR` | 5382 | BAIXA | sim | P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — |
-| `P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5` | 5426 | BAIXA | sim | P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BA |
+| `P-O6R-B02` | 2492 | BAIXA | **a atribuir** | P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-00 |
+| `P-O6R-B03` | 2568 | — | **a atribuir** | P-O6R-B03 (2026-08-14) — `fix/expense-sync-atomic` — Ω6R-DIN-009 (P0) + QUA-001 (P1) — * |
+| `P-O6R-B04` | 2601 | BAIXA | **a atribuir** | P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA |
+| `P-O6R-B12` | 2661 | — | sim | P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — ** |
+| `P-O6R-B06` | 2731 | — | **a atribuir** | P-O6R-B06 (2026-08-14) — `fix/billing-durability` — Ω6R-DIN-005 + Ω6R-DIN-007 (2 P0) — * |
+| `P-O6R-B08` | 2926 | — | **a atribuir** | P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1 |
+| `P-O6R-B09` | 2972 | — | **a atribuir** | P-O6R-B09 (2026-08-14) — `fix/dispatch-atomic-timeline` — Ω6R-ARQ-004 (P1) — **BLOQUEIA  |
+| `P-O6R-B10` | 2993 | — | **a atribuir** | P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — ** |
+| `P-O6R-B11` | 3025 | — | **a atribuir** | P-O6R-B11 (2026-08-14) — `fix/mobile-work-order-contracts` — Ω6R-QUA-004, QUA-005 (2 P1) |
+| `P-TESTS-FORA-DO-TYPECHECK` | 3072 | — | **a atribuir** | P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A) |
+| `P-CHK-DEFERRED-SEM-LEITURA` | 3090 | BAIXA | **a atribuir** | P-CHK-DEFERRED-SEM-LEITURA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A) |
+| `P-O6R-B05-WORKER-EXTERNO-DIFERIDO` | 3198 | — | sim | P-O6R-B05-WORKER-EXTERNO-DIFERIDO (2026-08-15 — bloco B-O6R-05, decisão C4) |
+| `P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO` | 3222 | — | **a atribuir** | P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO (2026-08-15 — bloco B-O6R-05) |
+| `P-O6R-B05-README-ATIVACAO` | 3230 | — | sim | P-O6R-B05-README-ATIVACAO (2026-08-15 — bloco B-O6R-05) |
+| `P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST` | 3324 | — | sim | P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST (2026-08-15 — junta do PR #353, ressalva do `a |
+| `P-O6R-B01-ROLE-LITERAIS` | 3360 | — | **a atribuir** | P-O6R-B01-ROLE-LITERAIS (2026-08-18 — ciclo 2 do B-O6R-01, plano §9) |
+| `P-O6R-B01-ROUTE-ERROR-LEAK` | 3378 | — | **a atribuir** | P-O6R-B01-ROUTE-ERROR-LEAK (2026-08-18 — ciclo 2 do B-O6R-01, plano §9; achado B-7 do R- |
+| `P-O6R-ARNES-ISOLAMENTO` | 3389 | — | sim | P-O6R-ARNES-ISOLAMENTO (2026-08-18) — o arranjo do lote de testes contra Postgres, **ant |
+| `P-O6R-B01-ROUTE-ERROR-LEAK` | 3515 | — | sim | P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)** |
+| `P-O6R-ARNES-ISOLAMENTO` | 3525 | — | sim | P-O6R-ARNES-ISOLAMENTO — **EMENDAS medidas pela junta do ciclo 3** |
+| `P-O6R-ARNES-ISOLAMENTO` | 3547 | — | sim | P-O6R-ARNES-ISOLAMENTO — **EMENDAS do bloco B-O6R-ARNES (2026-08-28)** — o bloco próprio |
+| `P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES` | 3675 | — | sim | P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES — **ATRIBUÍDO POR EXECUÇÃO** (2026-08-28, B-O6R-ARN |
+| `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL` | 3704 | — | sim | P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO |
+| `P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-` | 3761 | — | sim | P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrad |
+| `P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO` | 3776 | — | sim | P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO (2026-08-28) — DOIS achados por execução CONTRA a |
+| `P-O6R-B02` | 3817 | — | sim | P-O6R-B02 — CICLO 4 REPROVADO 4×1 (2026-08-28) — a classe que reprova é de ARNÊS, não de |
+| `P-O6R-B02-DIVERGENCIA-D27-D21` | 3857 | BAIXA | sim | P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (re |
+| `P-O6R-B02-REGISTRO-STATUS-LOG` | 3974 | BAIXA | sim | P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA |
+| `P-O6R-B02-CENSO-CASO-PERMANENTE` | 3982 | BAIXA | sim | P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA |
+| `P-O6R-ARNES-ISOLAMENTO` | 4070 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do a |
+| `P-O6R-ARNES-ISOLAMENTO` | 4089 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDAS do bloco `SAN2-4b` (2026-08-31) — mecanismo da orfa e d |
+| `P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE` | 4159 | BAIXA | sim | P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE (2026-08-28) — BAIXA · **Dono:** bloco de  |
+| `P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE` | 4287 | — | sim | P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE (2026-08-28) — divergência de processo, registra |
+| `P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA` | 4980 | — | sim | P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA (2026-08-31 — achado do `SAN2-4b`, correcoes C |
+| `P-REG-BATERIA-NAO-TYPECHECA-TESTS` | 5051 | — | sim | P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre |
+| `P-AUTHORITY-N-NAO-CANONICO-NO-STORED` | 5168 | BAIXA | sim | P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stor |
+| `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` | 5373 | BAIXA | sim | P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, § |
+| `P-ESPELHO-C7-3-MECANISMO-PESQUISADOR` | 5505 | BAIXA | sim | P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — |
+| `P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5` | 5549 | BAIXA | sim | P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BA |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 77
 
@@ -261,11 +262,11 @@
 | `P-CHK-SEED-DEMO-SUJO` | 2055 | BAIXA | **a atribuir** | P-CHK-SEED-DEMO-SUJO (2026-08-08) — dados de demonstração com nomes técnicos e lixo de t |
 | `P-CHK-PREVIEW-DOCK-LIMIAR` | 2072 | BAIXA | **a atribuir** | P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do co |
 | `P-RBAC-PROVISION-DESCRICOES` | 2138 | BAIXA | **a atribuir** | P-RBAC-PROVISION-DESCRICOES (2026-08-08) — descrição curada das permissões duplicada no  |
-| `P-CHK-CREATE-RAZAO-NAO-NORMALIZADA` | 2997 | — | **a atribuir** | P-CHK-CREATE-RAZAO-NAO-NORMALIZADA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A) |
-| `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3193 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
-| `P-REDIS-DEV-LIXO-DE-FILA` | 3237 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
+| `P-CHK-CREATE-RAZAO-NAO-NORMALIZADA` | 3108 | — | **a atribuir** | P-CHK-CREATE-RAZAO-NAO-NORMALIZADA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A) |
+| `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3304 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
+| `P-REDIS-DEV-LIXO-DE-FILA` | 3348 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 50
+## FECHADAS — 54
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -306,16 +307,20 @@
 | `P-CHK-CUSTODIA-AUTOLINK-SEM-FILTRO` | 2201 | — | **a atribuir** | P-CHK-CUSTODIA-AUTOLINK-SEM-FILTRO (2026-08-10 — junta do CHK P1 PR-04, achado A3 do `cr |
 | `P-WORKTREE-INTEROP-ORFAO` | 2260 | — | sim | P-WORKTREE-INTEROP-ORFAO (2026-08-12) — **RESOLVIDA no mesmo dia: DESCARTADA por decisão |
 | `P-O6R-B01` | 2380 | — | **a atribuir** | P-O6R-B01 (2026-08-14) — `fix/identity-authority` — Ω6R-SEC-001 + Ω6R-TEN-001 (2 P0) — * |
-| `P-O6R-B05` | 2683 | — | **a atribuir** | P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P |
-| `P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS` | 3012 | — | **a atribuir** | P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS (2026-08-15 — porteiro pós-merge do #352) |
-| `P-O6R-B05-STAGING-SCALE-ZERO` | 3100 | — | **a atribuir** | P-O6R-B05-STAGING-SCALE-ZERO (2026-08-15 — bloco B-O6R-05, questão Q5) |
-| `P-SUITE-NAO-SUPORTA-ENV-PRISMA` | 3130 | — | **a atribuir** | P-SUITE-NAO-SUPORTA-ENV-PRISMA (2026-08-15 — bloco B-O6R-05, revelado ao consertar o `np |
-| `P-O6R-B02-S0-ESPELHO-NO-HEAD` | 3867 | ALTA | sim | P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO  |
-| `P-ARNES-AUTHORITY-PORTAL-INTERMITENTE` | 4048 | MÉDIA | sim | P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por exec |
-| `P-ARNES-REGISTROS-DEFASADOS-NA-MAIN` | 4106 | BAIXA | sim | P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-29, este P |
-| `P-ARNES-BACKFILL-359` | 4131 | MÉDIA | **a atribuir** | P-ARNES-BACKFILL-359 (2026-08-28) — MÉDIA · **FECHADA (2026-08-28, este PR)** |
-| `P-REG-S0-GUARD-FALSO-VERMELHO` | 4202 | MÉDIA | sim | P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder t |
-| `P-REG-BATERIA-BARATA-DUAS-LISTAS` | 4274 | MÉDIA | sim | P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é  |
-| `P-GOV-MAIN-SEM-PROTECAO` | 4362 | ALTA | sim | P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24) |
-| `P-C7-BIS-TER-FORA-DA-MAIN` | 4452 | MÉDIA | sim | P-C7-BIS-TER-FORA-DA-MAIN (2026-08-30) — MÉDIA · **FECHADA no mesmo PR que a abriu** |
-| `P-SAN2-2-PORTA-55432-RESERVADA` | 4529 | BAIXA | sim | P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produ |
+| `P-O6R-B05` | 2691 | — | **a atribuir** | P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P |
+| `P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE` | 2850 | ALTA | **a atribuir** | P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE (2026-09-02) — `work_orders:approve` exige migração  |
+| `P-O6R-B07A-STICKY-409-VIRA-403` | 2894 | ALTA | **a atribuir** | P-O6R-B07A-STICKY-409-VIRA-403 (2026-09-02) — o escopo por objeto muda o código de um te |
+| `P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS` | 3123 | — | **a atribuir** | P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS (2026-08-15 — porteiro pós-merge do #352) |
+| `P-O6R-B05-STAGING-SCALE-ZERO` | 3211 | — | **a atribuir** | P-O6R-B05-STAGING-SCALE-ZERO (2026-08-15 — bloco B-O6R-05, questão Q5) |
+| `P-SUITE-NAO-SUPORTA-ENV-PRISMA` | 3241 | — | **a atribuir** | P-SUITE-NAO-SUPORTA-ENV-PRISMA (2026-08-15 — bloco B-O6R-05, revelado ao consertar o `np |
+| `P-O6R-B01-ANONIMO-SEM-LOCKOUT` | 3458 | ALTA | sim | P-O6R-B01-ANONIMO-SEM-LOCKOUT (2026-08-19) — **ALTA** · o caminho anônimo não arma o loc |
+| `P-O6R-B02-S0-ESPELHO-NO-HEAD` | 3990 | ALTA | sim | P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO  |
+| `P-ARNES-AUTHORITY-PORTAL-INTERMITENTE` | 4171 | MÉDIA | sim | P-ARNES-AUTHORITY-PORTAL-INTERMITENTE (2026-08-28) — MÉDIA · **Dono: a atribuir por exec |
+| `P-ARNES-REGISTROS-DEFASADOS-NA-MAIN` | 4229 | BAIXA | sim | P-ARNES-REGISTROS-DEFASADOS-NA-MAIN (2026-08-28) — BAIXA · **FECHADA (2026-08-29, este P |
+| `P-ARNES-BACKFILL-359` | 4254 | MÉDIA | **a atribuir** | P-ARNES-BACKFILL-359 (2026-08-28) — MÉDIA · **FECHADA (2026-08-28, este PR)** |
+| `P-REG-S0-GUARD-FALSO-VERMELHO` | 4325 | MÉDIA | sim | P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder t |
+| `P-REG-BATERIA-BARATA-DUAS-LISTAS` | 4397 | MÉDIA | sim | P-REG-BATERIA-BARATA-DUAS-LISTAS (2026-08-29) — MÉDIA · **Dono:** `B-O6R-02` ciclo 5 (é  |
+| `P-GOV-MAIN-SEM-PROTECAO` | 4485 | ALTA | sim | P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24) |
+| `P-C7-BIS-TER-FORA-DA-MAIN` | 4575 | MÉDIA | sim | P-C7-BIS-TER-FORA-DA-MAIN (2026-08-30) — MÉDIA · **FECHADA no mesmo PR que a abriu** |
+| `P-SAN2-2-PORTA-55432-RESERVADA` | 4652 | BAIXA | sim | P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produ |
+| `P-O6R-B07A-REGISTRO-A2-DIVIDA-368` | 5665 | — | **a atribuir** | P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do # |
