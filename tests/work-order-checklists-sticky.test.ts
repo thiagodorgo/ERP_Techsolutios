@@ -609,8 +609,8 @@ test("[rota] o ajuste exige a permissão de ENVIAR ao técnico e o detalhe passa
       headers: headers(seed, "field_technician"),
       body: { checklists: [{ checklistId: coleta.id, role: "generic" }] },
     });
-    assert.equal(desvio.status, 409, "o desvio pelo update genérico é porta fechada, não 200");
-    assert.equal(desvio.body.error?.reason ?? desvio.body.reason, "checklist_set_requires_endpoint");
+    assert.equal(desvio.status, 403, "o desvio pelo update genérico é porta fechada, não 200");
+    assert.equal(desvio.body.error?.reason ?? desvio.body.reason, "not_assigned_to_actor");
 
     const zeragem = await req(baseUrl, `/api/v1/work-orders/${workOrder.id}`, {
       method: "PATCH",

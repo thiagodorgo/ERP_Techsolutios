@@ -442,3 +442,130 @@ que a junta técnica não viu).
 primeira linha de código.**
 
 — fim —
+
+---
+
+## EMENDA E1 (pós-achado do dev, 2026-09-02) — provisionamento de `work_orders:approve` e os 4 caminhos
+
+**Papel:** `planejador-mestre` (Fable — `D-PLANEJADOR-MODELO-FABLE`; §C7.6: fluxo voltando ao planejador
+pós-achado = Fable OBRIGATÓRIO). Identidade distinta da que escreveu o corpo. Terreno da emenda: worktree
+`.claude/worktrees/b07`, branch `fix/o6r07a-authorization`; o mandato citou head `c453454`, o worktree e a
+origin estão em `2d54ea2` — mesmo título de commit, mesmo pai `c421f9f` (provável amend do dev); tudo aqui
+foi medido sobre `2d54ea2`. `origin/main` = `f895dd2`. Esta seção é um APENSO APPEND-ONLY: nenhuma linha do
+corpo foi tocada (prova: `git diff --numstat` deste arquivo = só adições, 0 remoções).
+
+### E0 · O achado, medido pelo dev (evidência: `juntas/votos/O6R-07a/dev-d1-d3-autorizacao.md`)
+
+- O §3.1 exige `work_orders:approve`; acrescentá-la ao catálogo deixa 3 verificações vermelhas, TODAS fora
+  do §5-PERMITIDO: `tests/permission-catalog-migration-parity.test.ts` (exige migração de dados em
+  `prisma/migrations/`), `tests/core-saas.test.ts` (literal, l.48) e
+  `tests/fixtures/role-catalog-contract.snapshot.json`.
+- A válvula do guard está fechada POR DESENHO: `PERMISSOES_HERDADAS_DO_SEED` = 189 chaves =
+  `TAMANHO_CONGELADO` (re-conferido por mim no guard, l.321-327: a linha de base SÓ ENCOLHE).
+- O D3 esbarra em 1 asserção fora do §5: `tests/work-order-checklists-sticky.test.ts:612` (409 → 403 — é o
+  contrato novo funcionando; a intenção do teste, "porta fechada, não 200", segue satisfeita).
+- A contradição, literal: o §3.1 EXIGE a chave; o §5 PROÍBE `prisma/**` INTEIRO; o §3.10 previu o caso mas
+  nomeou "seed" — e `prisma/seed.ts` também é `prisma/**`. Não havia caminho dentro do escopo declarado.
+  O dev parou e devolveu, como o mandato manda. **O erro é do plano, não do dev.**
+
+### E1 · Decisão: OPÇÃO (a) — emenda nominal ao §5; o D1 PERMANECE no 07a
+
+1. O instrumento correto é MIGRAÇÃO, não seed — o PRÓPRIO GUARD prescreve (mensagem l.302-309 + a
+   referência `PADRAO_A_SEGUIR` = migração 20260861). Medido: `prisma/seed.ts` importa e itera
+   `PERMISSION_CATALOG` (l.6, l.229) — a mudança já feita em `catalog.ts` flui ao seed SOZINHA; seed não se
+   edita. E produção NUNCA semeia (`deploy-production.yml:136-141`). O §3.10 acertou o caso e errou o
+   instrumento.
+2. Opção (b) — D1 em PR próprio (`07a-bis`) — REJEITADA, por quatro razões:
+   (i) deixaria o P0 SEC-002 meio-aberto no merge do 07a: as rotas approve/reject voltariam a
+   `work_orders:update` e o técnico seguiria decidindo aprovação — o D2 sozinho fecha só a autoaprovação;
+   (ii) obrigaria o dev a DESFAZER código pronto e provado com vermelho-controle (catálogo + rotas) — a
+   classe exata que a `D-JUNTA-SEPARACAO-DE-PAPEIS` mediu: o defeito novo nasce no re-trabalho da correção;
+   (iii) NÃO elimina a migração — só a adia para uma terceira junta/inspeção/porteiro, mais processo sem
+   reduzir risco nenhum, e a colisão temida com o ciclo 5 é ≈ZERO (E2, medida, não presumida);
+   (iv) o gate da CHECKLIST P1 ("07a E 07b mergeados") passaria a esperar TRÊS merges.
+3. O §C4 do CLAUDE.md exige autorização EXPLÍCITA para `prisma/**` — esta emenda É o instrumento dessa
+   autorização, nominal e fechada: o E3 lista os caminhos um a um; nada genérico, nada além deles.
+
+### E2 · Colisão com o ciclo 5 — MEDIDA, comando a comando
+
+- A branch do c5 é LEGÍVEL localmente (checada no worktree do Codex): `feat/o6r-b02-financial-uow`,
+  local = origin = `12c3825` (`git rev-parse`). O corpo dizia "UMA migration"; a branch TEM DUAS (medido:
+  `git diff --name-status origin/main...feat/o6r-b02-financial-uow -- prisma/`):
+  `20260869000000_add_financial_invariants` e `20260870000000_add_reversal_pair_atomicity`.
+- Independência SEMÂNTICA, por leitura do SQL (`git show` + grep): as duas tocam SOMENTE
+  `financial_titles`/`financial_entries` (CHECK NOT VALID, índice único parcial, triggers); menções a
+  `permissions`/`role_permissions` = 0 nas duas. A migração do 07a toca SOMENTE `permissions` e
+  `role_permissions`. Qualquer ordem de aplicação produz o MESMO esquema.
+- Colisão GIT: inexistente — diretórios NOVOS de nomes distintos; adições disjuntas não conflitam no merge.
+- Ordem no prisma, medida em cluster descartável (postgres:16 em :56434 — 0 listeners re-medidos antes;
+  :56381 não foi preciso, a medição não usa redis; projeto-cobaia FORA do repo; prisma CLI **7.8.0**, a
+  MESMA versão do repo; container e cobaia destruídos ao final):
+  1. `migrate deploy` com só `20260871...` presente → aplica, `ec=0`;
+  2. chegam `20260869...` + `20260870...` (pendentes MAIS ANTIGAS que a já aplicada — o cenário EXATO de
+     quem merge por último) → `migrate deploy` APLICA AS DUAS, `ec=0`, SEM erro nem warning de ordem;
+  3. `migrate status` em seguida: "Database schema is up to date!", `ec=0`; re-deploy: "No pending
+     migrations to apply" (idempotente no nível de diretório);
+  4. EDITAR migração JÁ aplicada → o deploy IGNORA em silêncio (não re-aplica, não acusa checksum): editar
+     migração existente é no-op drift em todo ambiente já migrado — a proibição de editar migração
+     EXISTENTE continua de pé, agora com medição própria.
+- Só o `migrate deploy` importa: CI/staging/produção aplicam migração EXCLUSIVAMENTE por ele
+  (`ci.yml:84,163` · `deploy-staging.yml:44` · `deploy-production.yml:136`); `migrate dev` não roda em
+  pipeline nenhum.
+- **VEREDITO:** risco real ≈ ZERO nas duas ordens de merge, e a tentativa única do c5 (`D-TETO-DOIS-CICLOS`)
+  NÃO é gasta por esta emenda: se o 07a mergear primeiro, a main fica VERDE (as 4 vermelhas fecham no MESMO
+  PR) e o rebase do c5 recebe base verde + uma migração de tabelas que ele não toca; se o c5 mergear
+  primeiro, o 07a rebaseia e re-mede (o §7.1 já previa exatamente isso para os registros compartilhados).
+- **REMÉDIO DE NOME (higiene, não necessidade):** prefixo do 07a = `20260871000000` (máximo conhecido =
+  `20260870...` do c5, +1; o mais novo na main é `20260868000000_add_auth_identities`). No rebase FINAL
+  antes do PR: se `origin/main` tiver ganho prefixo ≥ `20260871`, renomear o diretório para max+1 (a
+  migração ainda não existe em ambiente nenhum além do cluster descartável do dev — renomear é `mv` de
+  diretório). Regra determinística, sem julgamento.
+
+### E3 · Escopo EMENDADO — os 4 caminhos que passam a ser PERMITIDOS no 07a (e NADA além)
+
+1. `prisma/migrations/20260871000000_grant_work_orders_approve_permission/migration.sql` — diretório NOVO.
+   Aditiva e idempotente, cópia da FORMA de
+   `prisma/migrations/20260861000000_grant_checklist_run_reopen_permission` (INSERT em `permissions` com
+   `ON CONFLICT (key) DO NOTHING` + INSERT em `role_permissions` por SELECT com `ON CONFLICT (role_id,
+   permission_id) DO NOTHING`). Distribuição NO BANCO: `r.key IN ('super_admin','tenant_admin','manager')`
+   — `platform_admin` NÃO existe como role no banco (medido: comentário da migração-padrão +
+   `deploy-production.yml:141`, "nenhuma migração insere em roles"); no catálogo em CÓDIGO o
+   platform_admin herda normalmente (catalog.ts l.398-405, medição do dev). Runbook de down no cabeçalho,
+   como na padrão (DELETE dos grants → DELETE da permission, nesta ordem, pela FK). Aceite: os DOIS guards
+   de paridade verdes — `permission-catalog-migration-parity` (sem banco) e `permission-catalog-db-parity`
+   COM banco no cluster descartável (rodando de fato, não skipped).
+2. `tests/core-saas.test.ts` — SOMENTE 1 linha: `"work_orders:approve"` no literal
+   `expectedPermissionCatalog`, imediatamente após `"work_orders:mileage_correct"` (l.48).
+3. `tests/fixtures/role-catalog-contract.snapshot.json` — SOMENTE a chave `work_orders:approve` nos 4
+   arrays de papel que a recebem: `super_admin`, `platform_admin`, `tenant_admin`, `manager` (medido: o
+   conjunto de quem tem a irmã `mileage_correct` MENOS `operator` — operator NÃO recebe approve, §3.1).
+   O snapshot é lido só por `core-saas-role-authority.test.ts` (não-db) — NÃO é arquivo do c5 (grep nas
+   duas variantes).
+4. `tests/work-order-checklists-sticky.test.ts` — SOMENTE a asserção da l.612:
+   `409 checklist_set_requires_endpoint` → `403 WORK_ORDER_NOT_ASSIGNED` (reason `not_assigned_to_actor`).
+   Nenhuma outra linha do arquivo. (O 409 nasce no ponto de ESCRITA — medição do dev: não existe ordem que
+   preserve o 409 E autorize antes de gravar.)
+
+CONTINUAM PROIBIDOS: `prisma/schema.prisma` · `prisma/seed.ts` · TODA migração EXISTENTE (editar = no-op
+drift, E2 item 4) · `PERMISSOES_HERDADAS_DO_SEED` (não cresce: 189) · todo o resto do §5-PROIBIDO,
+inclusive os 8 arquivos do ciclo 5. Arquivo fora das listas → o dev PARA e devolve, como fez.
+
+### E4 · Precedência e erratas do corpo (o corpo NÃO foi reescrito — é o registro do planejado ANTES da medição)
+
+- **ESTA EMENDA VENCE o §5 e o §3.10 do corpo onde divergirem.** Em particular:
+  (i) a hipótese "arquivo de seed de paridade RBAC" (§3.10 e a linha correspondente do §5-PERMITIDO) está
+  MORTA — o instrumento é a migração do E3.1; seed não se edita (E1.1);
+  (ii) a linha do §7.1 "este bloco = ZERO migration → zero colisão" está MORTA — vale o E2: UMA migração
+  de dados, colisão medida ≈ zero, com remédio de nome;
+  (iii) o "ciclo 5 = UMA migration nova" do §7.1 estava DEFASADO — hoje são DUAS na branch (E2, medido).
+- O "Modelagem: ZERO migration, zero campo novo" do §3.10 permanece verdadeiro para SCHEMA: a migração do
+  E3.1 é de DADOS (provisionamento); `schema.prisma` não muda, nenhuma coluna ou tabela nasce.
+- Rollback do §7.2 intacto: revert do squash remove rotas + catálogo; a linha que a migração criou em
+  `permissions` fica INERTE (nenhuma rota a exige) — exatamente o pós-revert já previsto.
+- Pisos de prova do §4 e quórum do §8 NÃO mudam com esta emenda. A junta do 07a recebe como insumo esta
+  emenda + a evidência do dev (`dev-d1-d3-autorizacao.md`) — inclusive a tensão §A2 sobre
+  `assigned_operator_id`, que o dev consignou e que É da junta decidir; esta emenda não a resolve.
+- As pendências abertas pelo dev (`P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE`, `P-O6R-B07A-STICKY-409-VIRA-403`)
+  fecham no PRÓPRIO 07a quando os caminhos do E3 forem entregues — quem fechar registra em `pendencias.md`.
+
+— fim da EMENDA E1 —
