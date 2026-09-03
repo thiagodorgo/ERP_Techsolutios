@@ -3673,7 +3673,13 @@ real: os **58 pulos declarados não caem no piso**, e o piso dispara 1 vez nomea
 `tests/core-saas-role-authority.test.ts`, que morre no LOAD sem declarar skip. [Frase corrigida em 2026-08-28
 pelo bloco de registro — o "piso 0" original media commit intermediário; ver `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`.]
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F6):** o ask desta divergência cumpriu-se — a pendência
+`P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` agora EXISTE na linha publicada (chegou pela rodada SAN2) e foi marcada
+**FECHADA apontando o #359** como autor da correção, com o resíduo carvado em pendência própria
+(`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`). Nenhum histórico foi fabricado: a entrada e o fechamento carregam as
+datas e os autores reais.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5 — o ask se cumpriu) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrada ANTES de consolidar
@@ -3760,7 +3766,15 @@ pendurada (DELETE HTTP legítimo do renomeado → 200, saldo 100). Não há FK e
 Nenhuma rota do produto faz DELETE físico (grep em `src` = 0) — é **defeito de TEXTO e de guarda ausente**, não de caminho do
 produto. Propriedade a decidir: o contrato só pode afirmar o que os triggers garantem.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F4/F6):** as duas portas cruas fecharam **por construção** —
+FK composta `financial_entries_reversal_pair_fk` (migration `20260871000000_add_reversal_pair_fk`,
+`(tenant_id, reversal_of) → (tenant_id, id)` `ON DELETE/UPDATE RESTRICT`), sondas (v)/(vii) recusadas com
+`23503` em casos permanentes `[C9/P13]` da suíte -db, vermelho-controle provado no down (D35: só os 2 caem,
+`pg_constraint` 5→4→5). E o TEXTO passou a afirmar só o que triggers+FK sustentam: contrato re-versionado
+`financial_entry_undo@2026-09-02.b-o6r-02-c5`, com o limite que resta NOMEADO (`UPDATE amount`/`account_id`
+cru, DELETE físico da contrapartida — nenhum desenho de par os fecha).
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA
@@ -3769,7 +3783,13 @@ O teste `[C1/P9][db][RLS] estorno LEGÍTIMO sob o contexto RLS do app: trigger e
 derrubados** (controle DOWN: ok 6). O título afirma o que a execução não sustenta (classe do C5). A propriedade trigger×RLS
 **é verdadeira** — provada pelo jurado com role `NOBYPASSRLS` sob RLS forçada ((c1)(c2)(c4) P0001 DIN-002; (c3) legítimo comita).
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F5):** o caso foi REFORMULADO — `[C10/P14][db][RLS real]` roda
+sob papel efêmero `NOBYPASSRLS` criado pelo mecanismo único do arnês (`createEphemeralRole`, sem editar o
+fixture), com a postura asserida por execução (`pg_roles` f/f), a política provada mordendo (0 linhas sem
+contexto / 1 com) e as DUAS portas de órfão recusando `Ω6R-DIN-002` sob a política. Drill D34 provado nas
+duas pontas: triggers no down → o caso fica VERMELHO (no ciclo 4 ficava verde); re-up → 9/9.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (registro §A2)
@@ -3889,12 +3909,31 @@ zero pulos.
 
 **Registrado, não consolidado em silêncio (§A2).** O `SAN2-5` **não tocou** `.github/workflows/ci.yml`;
 resolveu por texto. Diário: `agent-orchestration/omega/juntas/votos/SAN2-5/dev-b3-b4-dividas.md`.
+
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, S0-zero + F6):** a inclusão aconteceu no commit de merge do
+S0-zero (`84bb90b`), sob o **ruling do CP-1** que emendou a cláusula "UMA linha" do apenso B3/E3.3 para
+**7 linhas** (as 6 suítes dos ciclos 1–4, vivas só na branch, + esta) — união dirigida, fundamento =
+a mesma inversão de risco do E3.2 aplicada às 6 (main-integral as poria na main roteadas em lugar nenhum);
+registro completo no terreno pós-absorção §7 e no diário do ciclo 5 (segundo registro + adendo). O
+comentário do LUGAR RESERVADO foi substituído pelo comentário de fechamento (l.240 em `84bb90b`); o rastro
+integral vive no histórico git e aqui. **Critério cumprido na parte local:** as 7 linhas presentes,
+`git cat-file -e` ec=0 nas 7, e as 7 suítes exercidas SEM pulo no cluster descartável nas condições do job
+(P4: 3× `52/52`, 0 pulo, 0 XX000; canônica 2 da bateria re-exercita com N≥15). **A prova final** — job
+`backend-postgres` verde sob o guard de zero pulos — é do CI do PR, e o fechamento fica condicionado a ela.
+
+- **status:** FECHADA condicionada ao CI do PR (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
+
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
 junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
 2026-08-28 nesta mesma rodada de registro).
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F6):** `status-geral.md` e `log-execucao.md` reconciliados
+neste PR — o REPROVADO do ciclo 4, a absorção S0-zero (`84bb90b`) e a autoria do ciclo 5 registrados; a
+crônica dos ciclos 1–4 da branch, descartada conscientemente na resolução main-integral (60/80 e 16/45
+linhas — ver terreno pós-absorção §6), foi recomposta com os números DESTE head.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** BAIXA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA
@@ -3902,7 +3941,13 @@ O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: n
 (WARNING com órfão semeado); só o drill D28 o exerce (validador executou: WARNING nomeado com 1 órfão). Os demais componentes
 (≥6 corrida, ≥2 SQL cru) e o total (≥21) estão acima do piso.
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F5):** caso permanente `[A6][db][censo]` na suíte -db — semeia
+o órfão em tenant PRÓPRIO (modo réplica na mesma sessão crua), executa o bloco `DO $censo$` **extraído do
+.sql da migration 20260870** (nunca cópia digitada), observa o WARNING nomeado (`P-O6R-B02-ORFAOS-LEGADOS`,
+contagem publicada) por listener de notice, e prova o controle negativo (par restaurado → censo MUDO).
+Teardown escopado por tenant.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** BAIXA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO em 2026-08-28** (era ALTA)
@@ -3926,7 +3971,16 @@ Suíte -db que sai limpa **sem registrar teste** (mutação `if (true) {} else i
 "260 arquivo(s) · 2740 teste(s) · pass 2738 · skipped 2", guard mudo. O D26 literal (auto-pulo com `skip:`) fica vermelho e
 nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F6, por decisão do CP-3 — ATO DE REGISTRO, não de
+implementação):** a correção que esta pendência pedia — **piso de denominador no runner** — foi entregue e
+provada pelo `B-O6R-ARNES` (**PR #359**): D40 nas duas pontas, e a canônica 1 real mostra o piso disparando
+1× e NOMEANDO `tests/core-saas-role-authority.test.ts` (ver
+`P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN`, que pedia exatamente esta reconciliação). Este PR
+não tocou runner nenhum: apenas reconcilia o registro, como o dev do ARNES deixou instruído. **O resíduo
+NÃO fecha** e ganha pendência própria: `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` (o arquivo nomeado morre no LOAD
+sem declarar skip — o piso o pega, mas o defeito do arquivo continua; fim deste arquivo).
+
+- **status:** FECHADA (2026-09-02 — corrigida pelo #359; registro reconciliado pelo PR do B-O6R-02 c5) · **severidade:** MEDIA · **dono da correção:** B-O6R-ARNES (#359)
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ### Apenso de 2026-08-30 (`SAN2-2`, Fase 4) — a causa REAL nesta árvore não é auto-pulo, é **crash no load**
@@ -5557,3 +5611,44 @@ regra (agora espera o erro de ponta ausente). O plano §5 lista `financial-ledge
 que o dev do C4 modifica, então a atualização está no escopo. **A JUNTA decide se a reabertura é aceita** —
 este registro existe para que a reversão do invariante do ciclo 3 seja consciente, com evidência, e não passe
 silenciosa. status: REGISTRADA (aguarda ata da junta do ciclo 4).
+
+## P-O6R-ARNES-ISOLAMENTO — EMENDA do ciclo 5 do B-O6R-02 (2026-09-02) — o objeto disputado NOMEADO, por determinação do §12 do plano
+
+**Emenda, não reabertura: o texto das entradas anteriores fica intocado (§A2).** O plano do ciclo 5 (§12)
+mandou emendar esta pendência com o que o §0.a/§0.b dele mediu, para que a informação viva AQUI e não só
+no corpo do plano:
+
+- **O objeto disputado do `XX000` tem nome:** a **tupla de ACL** — `pg_namespace.nspacl` e
+  `pg_class.relacl` —, escrita pelas concessões/remoções de privilégio e pelo descarte de objetos de
+  papel efêmero. **`pg_authid` NÃO colide**: sonda de par criação×criação = **0/150**; sondas de par nas
+  ACLs = **200/200**. Isto fecha o "a nomear por execução no ciclo 5" da ERRATA de 28/08 acima.
+- **O `XX000` atinge inclusive quem toma o lock** (medido na bateria barata do §0.a do plano: as vítimas
+  incluem `rls-tenant-isolation` ×3 e `auth-identity-backfill-db` via o arnês) — a propriedade correta é
+  "mecanismo ÚNICO entre TODOS os escritores", jamais "os de fora entram no lock". O mecanismo único foi
+  entregue pelo `B-O6R-ARNES` (#359); a expectativa pós-#359 confere no head pós-absorção: **D29 13/13**,
+  forma `(6, 37)` constante, 0 `XX000` (terreno pós-absorção §3).
+- **O que segue AQUI (fora do B-O6R-02):** P1 (paralelismo declarado do runner), P4 (DDL de esquema
+  compartilhado), a divergência das TRÊS formas de execução (seed/detrito), as 68 órfãs `rls_test_` da
+  base do dono (`P-ARNES-RLS-TEST-FORA-DO-SWEEP`), o teto da fila do lock e o vermelho ambiental da
+  canônica 1 (este último agora com pendência própria: `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`).
+
+- **status:** ABERTA (emenda registrada) · **severidade:** a classificar · **dono:** a atribuir
+
+## P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · escopo `pre-existente`
+
+`tests/core-saas-role-authority.test.ts` **morre no CARREGAMENTO** quando falta `DATABASE_URL` — o
+`throw` em escopo de módulo de `src/database/prisma.ts:12` dispara no import, antes de qualquer `test()`
+se registrar — em vez de declarar skip como o irmão `-db`. Consequências medidas (apenso SAN2-2 de
+2026-08-30 em `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP`): o arquivo some inteiro do denominador; o **piso de
+denominador do #359 o pega e o NOMEIA** (é o vermelho ambiental declarado da canônica 1), mas o defeito
+do arquivo continua — a bateria sem banco não consegue sair verde legitimamente.
+
+**Por que não fechou no B-O6R-02 c5:** a correção exige tocar `src/database/prisma.ts` (ou o teste fora
+da lista §5) — `src/**` é PROIBIDO no bloco (o produto financeiro está fechado por 3 cadeiras) e o
+arquivo de teste está fora do escopo permitido. Escopo `pre-existente` com produtor nomeado por execução
+(§C7.1-ter(a)).
+
+**Critério de fechamento:** sem `DATABASE_URL`, o arquivo declara skip (ou registra os testes e pula) —
+canônica 1 com **0 fail ambiental** e os pulos DECLARADOS; o piso do runner continua mudo para ele.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)

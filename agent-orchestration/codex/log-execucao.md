@@ -3930,3 +3930,95 @@ até a junta 5/5 do ciclo 3 ficar verde.
 Sem push, PR ou merge. `G-A109FD7-PUBLICADO` continua bloqueando publicação até o follow-up do porteiro
 #357 entrar na main, esta branch ser atualizada e a bateria ser reexecutada. Depois seguem junta, CI/merge,
 backfill e porteiro pós-merge.
+
+## 2026-09-03 — B-O6R-02 ciclo 5 (TETO): FK do par, `[RLS]` real, censo e a bateria com N e forma
+
+### Papel e alçada
+
+Registro de AUTORIA. Esta entrada reabre a trilha `agent-orchestration/codex/`, parada em **2026-08-20 /
+B-124** para o registro consolidado. **Execução partida entre duas ferramentas, por determinação do dono:**
+o Codex executou o preflight (§3), o S0-zero (§7.1), o terreno pós-absorção (§7.2) e a auditoria S2 (§7.3)
+até o **CP-3**; com a saída dele, o Claude Code — que orquestrou o bloco e respondeu os checkpoints —
+assumiu **F4, F5, F6 e a bateria §10**. Divergência §A2 registrada no diário do bloco, não consolidada em
+silêncio. Não escrevi o plano do ciclo 5, não julgo e não voto (§C7.4-bis); a junta de 3 (unanimidade) não
+ocorreu.
+
+### Implementado (por propriedade, não por arquivo)
+
+- **P13 — o par não se separa nem por escritor cru.** Migration nova e aditiva
+  `prisma/migrations/20260871000000_add_reversal_pair_fk/migration.sql`: censo `DO` **fail-closed** que
+  aborta sem mutar nada e publica só a contagem (`P-O6R-B02-ORFAOS-LEGADOS`, nunca `tenant_id`) →
+  `ADD CONSTRAINT financial_entries_reversal_pair_fk FOREIGN KEY (tenant_id, reversal_of) REFERENCES
+  financial_entries(tenant_id, id) ON DELETE RESTRICT ON UPDATE RESTRICT NOT VALID` → `VALIDATE` → down
+  documentado no rodapé. `prisma/schema.prisma` **intocado** (precedente da casa: índice parcial e triggers
+  também vivem só na migration); nenhuma coluna e nenhum índice novo — o alvo
+  `financial_entries_tenant_id_id_key` já existia. Dois casos permanentes na suíte -db provam a recusa
+  (`23503`) das duas portas que os triggers do ciclo 4 não alcançavam: DELETE físico do original com estorno
+  vivo, e rename da PK do original.
+- **P14 — título de teste só afirma o que a execução exercita.** O caso `[RLS]` foi **reformulado**: roda sob
+  papel efêmero `NOBYPASSRLS` criado pelo **mecanismo único do arnês** (`createEphemeralRole`, sem editar
+  `tests/helpers/auth-identity-fixture.ts`, que está fora do escopo), com a postura do papel **asserida por
+  execução** (`pg_roles`: `rolsuper=f`, `rolbypassrls=f`), a política provada mordendo (0 linhas sem contexto
+  de organização, 1 com) e as DUAS portas de órfão recusando `Ω6R-DIN-002` sob a política. Antes ele rodava
+  como superusuário e passava com os triggers derrubados.
+- **A6 — censo com caso permanente.** Semeia um órfão em tenant próprio (modo réplica, na mesma sessão crua),
+  executa o bloco `DO $censo$` **extraído do `.sql` da migration `20260870`** — nunca uma cópia digitada, que
+  poderia divergir — e observa o WARNING nomeado; controle negativo com o par restaurado sai **mudo**.
+  Teardown escopado ao tenant.
+- **C9 (texto) —** `API_CONTRACTS.md` re-versionado `financial_entry_undo@2026-09-02.b-o6r-02-c5`, afirmando
+  as duas camadas e **nomeando o limite que resta** (UPDATE cru de `amount`/`account_id`, DELETE físico da
+  contrapartida: nenhum desenho de par os fecha). Entrou em commit **posterior** ao D35/D34 verdes (D36).
+- **F1–F3 NO-OP**, confirmado no CP-3: a matéria foi entregue pelo `B-O6R-ARNES` (#359). Medido, não suposto:
+  o lado-branch de `scripts/run-backend-tests.mjs` e `tests/npm-test-runner-guard.test.ts` tem **zero** linha
+  ausente na `main`.
+
+### Validação executada
+
+Cluster descartável próprio por bateria, com porta efêmera; a base viva `erp-postgres`/`erp-redis` **não
+recebeu um único comando, nem de leitura**. Node **v20.19.5**, **106** migrations conferidas por `SELECT` em
+`_prisma_migrations`, head `84bb90b` + os commits de fatia.
+
+- **Canônica 3** — `npm test`, **N=10** rodadas sequenciais, `CORE_SAAS_PERSISTENCE` não exportada,
+  `RBAC_DB_PARITY` ausente: **10/10 ec=0**, denominador **idêntico nas dez** (`261 arquivos · 2771 testes ·
+  pass 2769 · fail 0 · skipped 2`), durações 207–292 s. Os 2 skips são os `RBAC_DB_PARITY` **declarados e
+  nomeados**. **Δroles = 0 nas dez.**
+- **Canônica 2** — `db:seed` + as **34** suítes da lista `SUITES` do `ci.yml` (já com as 7 do S0-zero),
+  **N=15**: **15/15 ec=0**, denominador **225 constante**, **0** ocorrência de
+  `unhandledRejection|XX000|23505|40P01`.
+- **Canônica 1** — `npm test` **sem** `DATABASE_URL`, **N=3**: `ec=1` nas três, com o vermelho **ambiental
+  DECLARADO** (`tests/core-saas-role-authority.test.ts` morre no *load*; o piso de denominador do #359 o
+  **nomeia**). Não é meta zerá-lo — virou pendência própria. As três rodadas também acusaram o guard
+  `kpi-achados-paridade`, que estava certo: ver "Achado do próprio processo" abaixo.
+- **Corrida -db isolada, N=10**: 10/10, **9/9** casos, zero `XX000|23505|40P01`.
+- **Drills:** **D35** `up → down → re-up` com `pg_constraint` **5 → 4 → 5** e vermelho-controle **exato** (no
+  down, só os 2 casos C9 caem; os outros 7 seguem verdes), `VALIDATE` em 3.635 ms neste cluster (217 ms na
+  sonda com dados); **D34** triggers no down → o caso `[RLS]` fica **VERMELHO** (no ciclo 4 ficava verde),
+  re-up → 9/9; **D29** 13/13 na forma `(6, 37)`; **D33** vaza-metro por rodada; **D36** ordem do contrato.
+- `npm run check` · `npm run lint` · `npm run build` · `npm --prefix frontend run check`: **ec=0**.
+  `node --check Kpis/app.js` ec=0 e guards do painel **22/22**.
+- **Escopo:** `git diff --check` limpo; `CLAUDE.md`/`AGENTS.md` **sem diff** contra `origin/main`; **`src/**`
+  sem diff desde `84bb90b`** (âncoras `e352c6c` e `9be7caf` conferidas no início e no fim); `ci.yml`
+  **intocado** desde a absorção — a autorização do §5.1-bis foi consumida no S0-zero.
+
+### Achado do próprio processo, registrado
+
+A canônica 1 acusou o guard `tests/kpi-achados-paridade.test.ts` em 3 casos, e ele estava **certo**: a
+resolução main-integral do S0-zero apagara `Ω6R-DIN-010/011` do censo do painel (`p0_total` 15 contra 17 no
+`achados.jsonl`, que veio do lado-branch sem conflito), além de 6 estados divergentes. Reconciliado neste PR
+— é exatamente a obrigação que o CP-3 mandou escrever, e um guard a cobrou antes de qualquer junta.
+
+### O que NÃO fechou
+
+O **vazamento linear** de linhas nas rodadas verdes (+10/rodada) foi **atribuído por execução**, não
+consertado: `auth_identities` **+5** e `auth_identity_link_events` **+5** por rodada (mais `permissions`
+1 → 15 uma única vez, idempotente, que explica os +24 da primeira). É a trilha de identidades — escopo
+`pre-existente`, classe que saiu deste bloco na EMENDA item 1 e vive em `P-O6R-ARNES-ISOLAMENTO`. E o
+vermelho ambiental da canônica 1 ganhou pendência própria `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`: o conserto
+exige tocar `src/database/prisma.ts`, proibido neste bloco.
+
+### Gate
+
+Sem push, sem PR, sem merge, sem junta e sem ata — nada disso é do executor (§9.B). O bloco para no
+**CP-FIM** e devolve ao orquestrador para a convocação do `inspetor-de-terreno-da-junta` e da junta de 3
+(unanimidade, §C7.1-ter(b): o bloco toca dinheiro). `pr`, `merge_commit` e `approved_head` do ciclo 5
+seguem `null` na autoria (§C3.5).

@@ -2481,3 +2481,58 @@ para a junta decidir (§C7.4-bis: quem implementa registra, nao resolve por fiat
 Nenhum achado muda de status: a junta 5/5 do ciclo 4 ainda **nao ocorreu**. `pr`, `merge_commit` e
 `approved_head` seguem `null`; `mvp_demo`/`mvp_vendavel` intocados; `blocks_completed` inalterado. Deploy segue
 bloqueado pela J-6R e o gate `G-A109FD7-PUBLICADO` continua bloqueando push/PR/merge.
+
+## 2026-09-03 - B-O6R-02 CICLO 5 (TETO) — a FK do par, o `[RLS]` real e o número que sobrevive à forma
+
+### Resultado
+
+- `backend_tests` **2609/2611 -> 2769/2771** (execução real, N=10, forma canônica 3 declarada)
+- `flutter_tests` 864/864 · `frontend_smoke_tests` 1126/1126 · `backend_contract_tests_focused` 34/34 — **CARREGADOS** (§C3.3; o PR não toca `mobile/`, `frontend/` nem os arquivos da bateria focada do #359)
+- `mvp_demo` 99% e `mvp_vendavel` 88% **INTOCADOS** — `src/**` tem diff vazio
+- `blocks_completed` **157**, sobe para 158 **só quando este PR mergear**
+- Backfill §C3.5 do **#368** pago na entrada `SAN2-6`: `pr` 368 · `merge_commit` `f895dd2` · `approved_head` `d90fbbb` (head **julgado** da ata, não o headRefOid `9051e9b`)
+
+### O que entrou
+
+**A FK composta do par de estorno**, em migration nova e aditiva (`20260871000000_add_reversal_pair_fk`):
+censo `DO` fail-closed → `ADD CONSTRAINT ... NOT VALID` → `VALIDATE` → down no rodapé. Ela fecha **por
+construção** (`23503`) as duas portas cruas que os triggers do ciclo 4 não alcançavam e que o §0.d mediu
+como aceitas: DELETE físico do original com estorno vivo, e rename da PK do original. `schema.prisma`
+intocado; nenhum índice novo.
+
+**O caso `[RLS]` deixou de mentir.** Antes rodava como superusuário e passava com os triggers derrubados;
+agora roda sob papel efêmero `NOBYPASSRLS` do mecanismo único do arnês, com a postura asserida por
+execução e a política provada mordendo. **D34**: triggers no down → VERMELHO; re-up → verde.
+
+**O censo de legado ganhou caso permanente** (órfão semeado em tenant próprio, bloco `DO` extraído do
+`.sql` da migration, WARNING nomeado observado, controle negativo mudo).
+
+### Bateria — N e forma em cada número
+
+Cluster descartável próprio; base viva `erp-postgres`/`erp-redis` sem um único comando. Node v20.19.5,
+**106** migrations.
+
+| medida | N | resultado |
+|---|---|---|
+| **Canônica 3** (`npm test`) | 10 sequenciais | **10/10 ec=0**, denominador **idêntico nas dez**: `261 arquivos · 2771 testes · pass 2769 · fail 0 · skipped 2`; **Δroles = 0** nas dez |
+| **Canônica 2** (seed + 34 suítes do `ci.yml`) | 15 | **15/15 ec=0**, denominador **225 constante**, 0 hit de `unhandledRejection\|XX000\|23505\|40P01` |
+| **Canônica 1** (sem `DATABASE_URL`) | 3 | `ec=1` nas três — vermelho **ambiental declarado**, nomeado pelo piso do #359 |
+| **Corrida -db isolada** | 10 | 10/10, **9/9** casos, zero SQLSTATE proibido |
+| **D35** (`up→down→re-up`) | 1 | `pg_constraint` **5→4→5**; no down **só os 2 casos C9 caem**; `VALIDATE` 3.635 ms |
+| **D29** (bateria barata, lista-6) | 13 | 13/13, forma `(6, 37)` constante, 0 `XX000` |
+
+### O que não fechou — com o produtor nomeado
+
+O **vazamento linear** das rodadas verdes (+10/rodada) foi **atribuído por execução** em rodada
+instrumentada com snapshot por tabela: `auth_identities` **+5** e `auth_identity_link_events` **+5** por
+rodada, mais `permissions` 1→15 uma única vez (idempotente — explica os +24 da primeira). Trilha de
+**identidades**, escopo `pre-existente`, classe que saiu deste bloco na EMENDA item 1. **Não consertado
+aqui, por desenho.** O vermelho ambiental da canônica 1 virou pendência própria
+(`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`).
+
+### O guard que cobrou antes da junta
+
+A canônica 1 acusou `kpi-achados-paridade` em 3 casos, e **ele estava certo**: a resolução main-integral do
+S0-zero apagara `Ω6R-DIN-010/011` do censo do painel (`p0_total` 15 contra 17 no `achados.jsonl`), mais 6
+estados divergentes. Reconciliado neste PR — `p0_total` **15→17**, `p0_abertos` **11→13**, os dois achados
+no cronograma do bloco. É a obrigação que o CP-3 mandou escrever, e um guard a cobrou primeiro.

@@ -1,5 +1,74 @@
 # Status Geral
 
+## Atualização 2026-09-03 — B-O6R-02 ciclo 5 (TETO): a FK do par, o `[RLS]` real e o número que sobrevive à forma
+
+### Status
+
+Ciclo 5 — **última tentativa** sob `D-TETO-DOIS-CICLOS`; não há ciclo 6. Branch
+`feat/o6r-b02-financial-uow`, head julgado do ciclo 4 (`12c3825`) **preservado como pai** do merge de
+absorção `84bb90b` (S0-zero: a `main` `f895dd2` entrou por merge, dois pais, sem rebase). O ciclo 4
+foi **REPROVADO** por um defeito de arnês que o bloco não criou e estava proibido de consertar — a
+classe saiu para o `B-O6R-ARNES` (#359, mergeado) e o `D-JUNTA-ESCOPO-E-CALIBRACAO` nasceu disso.
+
+**Execução partida entre duas ferramentas:** o Codex executou o preflight, o S0-zero e o S2 até o
+CP-3; o Claude Code (orquestrador do bloco) respondeu os checkpoints e, com a saída do Codex,
+**assumiu a execução de F4–F6 e da bateria** por determinação do dono — divergência §A2 registrada no
+diário, não consolidada em silêncio.
+
+### Entregue
+
+**F4 — a FK composta do par de estorno.** Migration nova e aditiva
+`20260871000000_add_reversal_pair_fk`: censo `DO` **fail-closed** (aborta sem mutar nada, nomeando
+`P-O6R-B02-ORFAOS-LEGADOS` e publicando só a contagem) → `ADD CONSTRAINT (tenant_id, reversal_of) →
+financial_entries(tenant_id, id) ON DELETE/UPDATE RESTRICT NOT VALID` → `VALIDATE` → down no rodapé.
+`prisma/schema.prisma` **não muda** (precedente da casa) e nenhum índice novo nasce — o alvo
+`financial_entries_tenant_id_id_key` já existia. Ela fecha **por construção** as duas portas cruas que
+os triggers do ciclo 4 não alcançavam e que o §0.d mediu como ACEITAS: DELETE físico do original com
+estorno vivo, e rename da PK do original.
+
+**F5 — o que o título afirma passa a ser o que a execução exercita.** A suíte -db foi de 6 para 9
+casos permanentes: as duas sondas de SQL cru (recusa `23503` nomeando a FK); o caso `[RLS]`
+**reformulado** para rodar sob papel efêmero `NOBYPASSRLS` criado pelo mecanismo único do arnês — com
+a postura do papel asserida por execução e a política provada mordendo (0 linhas sem contexto, 1 com)
+—, e o censo de legado com WARNING nomeado observado e controle negativo mudo. Antes, esse caso rodava
+como superusuário e **passava com os triggers derrubados**.
+
+**F6 — contrato, registro e KPI.** `API_CONTRACTS.md` re-versionado
+`financial_entry_undo@2026-09-02.b-o6r-02-c5`, afirmando as duas camadas (triggers e FK) **e nomeando
+o limite que resta**: `UPDATE` cru de `amount`/`account_id` e DELETE físico da contrapartida seguem
+possíveis para escritor privilegiado — nenhum desenho de par os fecha, a defesa é autorização e
+auditoria.
+
+### Validação executada
+
+Cluster descartável próprio por bateria; a base viva `erp-postgres`/`erp-redis` **não recebeu um
+único comando, nem de leitura**. Node v20.19.5, 106 migrations.
+
+- **Canônica 3** (`npm test`, N=10 sequenciais): **10/10 ec=0**, denominador **idêntico nas 10** —
+  `261 arquivos · 2771 testes · pass 2769 · fail 0 · skipped 2`, os 2 skips sendo os `RBAC_DB_PARITY`
+  declarados. **Δroles = 0 nas dez**.
+- **Canônica 2** (seed + as 34 suítes da lista `SUITES` do `ci.yml`, N=15): **15/15 ec=0**,
+  denominador **225 constante**, 0 ocorrência de `unhandledRejection|XX000|23505|40P01`.
+- **Corrida -db isolada, N=10**: 10/10, 9/9 casos, zero `XX000|23505|40P01`.
+- **Drills:** D35 (`up → down → re-up`, `pg_constraint` **5 → 4 → 5**, com as sondas ACEITAS no down —
+  vermelho-controle exato: só os 2 casos C9 caem); D34 (triggers no down → o caso `[RLS]` fica
+  **VERMELHO**, re-up → verde); D29 13/13 na forma `(6, 37)`; D36 (o texto do contrato entra em commit
+  posterior ao D35/D34 verdes).
+- `npm run check` · `npm run lint` · `npm run build` · `npm --prefix frontend run check`: ec=0.
+  Guards do painel 22/22. Escopo: `git diff --check` limpo, `CLAUDE.md`/`AGENTS.md` sem diff contra
+  `origin/main`, **`src/**` sem diff desde `84bb90b`** e `ci.yml` intocado desde a absorção.
+
+### O que NÃO fechou
+
+O vazamento linear de linhas (+10/rodada nas rodadas verdes) é `pre-existente` e foi **atribuído por
+execução**, não consertado — a classe do arnês saiu deste bloco. E o vermelho ambiental da canônica 1
+ganhou pendência própria (`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`): `core-saas-role-authority.test.ts`
+morre no *load* sem declarar skip, o piso de denominador do #359 o pega e o nomeia, mas o defeito do
+arquivo exige tocar `src/` — proibido aqui.
+
+---
+
+
 ## Atualização 2026-08-28 — B-O6R-ARNES (arnês de teste: catálogo, teardown, denominador)
 
 ### Status

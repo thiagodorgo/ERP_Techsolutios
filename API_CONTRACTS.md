@@ -396,7 +396,7 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
   estado de fechamento. Nenhum erro inclui `tenant_id`, PII ou detalhe SQL.
 - O banco mantém `0 <= paid_amount <= amount`; violação SQL direta falha com SQLSTATE `23514`.
 
-**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-08-25.b-o6r-02-c4`):**
+**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-09-02.b-o6r-02-c5`):**
 
 A regra única das duas rotas: **lançamento vinculado a um agregado só se desfaz PELO FLUXO DO
 AGREGADO.** `DELETE /financial-entries/:id` e `POST /financial-entries/:id/reverse` recusam com
@@ -419,17 +419,33 @@ tenant estranho recebe `404` antes de qualquer regra financeira):
 `reverse` de uma liquidação é **permitido** — é o fluxo do agregado título, e devolve o pagamento na
 mesma unidade da contrapartida. Nenhum destes erros inclui `tenant_id`, PII nem detalhe SQL.
 
-**Indivisibilidade SOB CONCORRÊNCIA (B-O6R-02 ciclo 4 · Ω6R-DIN-002 concorrente).** A recusa acima não
-vale só na chamada sequencial: `DELETE` e `reverse` do MESMO par **nunca comprometem ambas** sob
+**Indivisibilidade SOB CONCORRÊNCIA (B-O6R-02 ciclos 4–5 · Ω6R-DIN-002 concorrente).** A recusa acima
+não vale só na chamada sequencial: `DELETE` e `reverse` do MESMO par **nunca comprometem ambas** sob
 concorrência — o efeito líquido no saldo é 0, ou uma delas recusa, SEMPRE. As duas portas serializam no
 `SELECT … FOR UPDATE` do lançamento original dentro da unidade (`uow.run`), e o perdedor re-checa sob o
-lock, recebendo os MESMOS erros da tabela acima (nunca um `softDelete` cego). No banco, a **metade órfã**
-(estorno vivo apontando original apagado) é impossível **por construção**, mesmo para escritor que não
-passa pelo serviço: a migration `add_reversal_pair_atomicity` instala um par de triggers, e o `FOR SHARE`
-do trigger do estorno serializa os dois caminhos no row lock do original. Se esta invariante regredir, as
-suítes nomeadas aqui ficam vermelhas — o contrato não sobrevive sozinho: `tests/financial-entries.test.ts`
+lock, recebendo os MESMOS erros da tabela acima (nunca um `softDelete` cego). No banco, DUAS camadas — e
+o texto afirma exatamente o que cada uma sustenta por execução:
+
+- a **metade órfã por SOFT-delete/estorno** (estorno vivo apontando original com `deleted_at`) é recusada
+  pelo par de triggers da migration `add_reversal_pair_atomicity` — o `FOR SHARE` do trigger do estorno
+  serializa os dois caminhos no row lock do original —, inclusive sob papel `NOBYPASSRLS` com a política
+  RLS aplicada (caso `[C10/P14][db][RLS real]`);
+- a **separação CRUA do par** — `DELETE` físico do original com estorno vivo e rename da PK do original —
+  é recusada **por construção** pela FK composta `financial_entries_reversal_pair_fk`
+  (`(tenant_id, reversal_of) → financial_entries(tenant_id, id)`, `ON DELETE/UPDATE RESTRICT`, migration
+  `add_reversal_pair_fk`), com SQLSTATE `23503` (casos `[C9/P13]`, sondas (v)/(vii)).
+
+**O limite que resta, nomeado:** triggers + FK amarram a EXISTÊNCIA e a indivisibilidade do par, não o
+CONTEÚDO das linhas. Edições cruas fora da classe do par — `UPDATE amount`/`account_id` direto no banco,
+`DELETE` físico da **contrapartida** — permanecem possíveis para escritor privilegiado com SQL cru e
+**nenhum desenho de par as fecha** (medidas pelo ataque do ciclo 4); a defesa segue sendo autorização +
+auditoria, não constraint. Órfãos de **legado** anteriores aos guards não são mutados por migração: o
+censo da `add_reversal_pair_atomicity` os conta com WARNING nomeado (`P-O6R-B02-ORFAOS-LEGADOS`,
+exercitado pelo caso permanente `[A6][db][censo]`) e o censo fail-closed da `add_reversal_pair_fk`
+aborta a validação da FK se existirem referências penduradas. Se esta invariante regredir, as suítes
+nomeadas aqui ficam vermelhas — o contrato não sobrevive sozinho: `tests/financial-entries.test.ts`
 (corrida em memória e HTTP, as DUAS ordens de disparo) e `tests/financial-entry-delete-reverse-race-db.test.ts`
-(barreira determinística + SQL cru contra os triggers, sob Postgres).
+(barreira determinística + SQL cru contra os triggers, FK, `[RLS real]` e censo, sob Postgres).
 
 ### 3.12 Custódia / Pátios de Recolhimento (SIGPRV — Ω5P)
 
