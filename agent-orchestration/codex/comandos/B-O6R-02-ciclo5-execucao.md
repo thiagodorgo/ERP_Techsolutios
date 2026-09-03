@@ -806,3 +806,74 @@ com esta linha como evidência — não houve consolidação silenciosa.
 - comando: `docker stop` dos clusters próprios (todos com `--rm`); `docker ps`
 - saída: **nenhum container `claude-o6r-c5-*` vivo**; sobraram apenas `erp-postgres` e `erp-redis`, que **não receberam um único comando** em toda a execução, nem de leitura. Artefatos de build (`dist/`, `frontend/dist/`) são gitignored e ficam para a limpeza pós-merge; temporários da sessão vivem fora da árvore do repositório
 - parcial: OK
+
+## Correções pós-crítico — os três requisitos do `critico-c5-adversarial` — 2026-09-03
+
+> **Papéis (§C7.4-bis):** quem ACHOU foi o `critico-c5-adversarial` (parecer
+> `agent-orchestration/omega/juntas/votos/B-O6R-02-ciclo5/01-critico-adversarial.md`, veredito **PLANO
+> ROBUSTO** com 5 achados); quem CONSERTOU foi o executor (este registro). São agentes distintos, e o
+> crítico não propôs correção — reportou achado, evidência executada e motivo, como manda o protocolo.
+>
+> **Contexto:** o `inspetor-de-terreno-da-junta` **BLOQUEOU** a primeira passada (parecer `00-`) com um
+> único bloqueante, B1: o ataque do crítico ao plano — que o §8 põe em S1, antes do código — nunca
+> aconteceu, porque a execução foi partida entre duas ferramentas. O bloqueio estava certo. O crítico
+> rodou, e três dos seus achados viraram requisito explícito diante da junta.
+
+### C.1 — ACHADO-4 (o mais grave): a frase de atribuição afirmava mais do que a execução exercitou
+
+- comando: leitura do §A9 do parecer do crítico + `grep -rln` das publicações afetadas
+- saída: **procede, e é da mesma família que reprovou o ciclo 4.** O que eu medi por execução foram as
+  **TABELAS** (`auth_identities` +5, `auth_identity_link_events` +5, `permissions` 1→15 idempotente) — isso
+  o crítico confirma. O que eu publiquei como "produtor NOMEADO por execução" incluía quatro **arquivos**
+  que saíram de **grep**. O crítico executou os quatro isolados: **0/0 nos quatro**. E mediu o que faltava:
+  `tests/core-saas-role-authority-db.test.ts` vaza **+1/+1** — a atribuição de 2026-08-19 que o próprio
+  §0.a do plano cita, e que estava **fora** da minha lista. Causa do erro, nomeada por ele: o escritor
+  entra pela **camada de serviço**, não pelo nome literal da tabela. Os **+4/+4 restantes seguem sem
+  produtor nomeado** (~12 suítes `-db` exercitam `core-saas`; não varridas — limite declarado)
+- correção: frase reescrita nas **cinco** publicações — `Kpis/kpis-latest.json` (nota de `backend_tests`),
+  `Kpis/kpis-history.json` (description da entrada 152), `Kpis/kpis-history.md`,
+  `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` — passando a
+  dizer **tabelas nomeadas por execução; arquivo produtor, não**, com os 0/0 e o +1/+1 publicados. Emenda
+  `P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5` registrada com a tabela de medição do crítico
+- parcial: OK — over-claim corrigido **antes** do voto, por execução de papel independente
+
+### C.2 — ACHADO-2: o item órfão do §12
+
+- comando: leitura do §ACHADO-2 + `grep` do status no head
+- saída: procede — `P-O6R-B02-BATERIA-CANONICAS-1-2` era o **único dos 7 itens** da lista "fechar com o
+  PR" do §12 sem fechamento no head, embora a substância (A4: canônicas 1 e 2 publicadas com N e forma)
+  estivesse entregue e re-medida pelo próprio crítico (A10). O CP-3 decidiu `RUNNER-SUMICO` e **calou**
+  sobre esta
+- correção: fechamento escrito na própria entrada, com N, forma e ponteiro para B.2/B.5 do diário
+- parcial: OK — "entregue-mas-não-registrado é a imagem invertida do over-claim", como ele escreveu
+
+### C.3 — ACHADO-1: promessas de ruling sem destino
+
+- comando: leitura do §ACHADO-1 + `git log 84bb90b..bcf6460 -- <arquivo-mãe do comando>`
+- saída: procede. Os rulings do **CP-0** (item 2) e do **CP-1** (item C) prometeram que o conserto do
+  arquivo do comando (§3.3 passo 3 e o `head -120` do §7.1.b) "entra no PR deste bloco, no fim" — e não
+  entrou. Agravante que **eu** não vi e ele viu: o **§5.1 não lista o arquivo-mãe** (o glob
+  `B-O6R-02-ciclo5-*.md` não casa `B-O6R-02-ciclo5.md`), ou seja, **o ruling criou obrigação que o escopo
+  proibia cumprir**
+- correção: pendência nova `P-O6R-B02-RULINGS-SEM-DESTINO` com o **destino declarado por escrito** — o
+  conserto NÃO entra neste PR (violar escopo no ciclo-teto para consertar um comando já executado é trocar
+  risco alto por benefício nulo) e fica para o próximo comando de bloco, com os dois defeitos
+  diagnosticados. Adotada a propriedade que ele nomeia: *obrigação criada por ruling tem destino
+  verificável no próprio PR — cumprida ou descartada por escrito*
+- parcial: OK
+
+### C.4 — os dois achados que NÃO exigem ação deste PR
+
+- **ACHADO-3** (a EMENDA nunca desceu aos §§ vinculantes do plano — §5/§6/§12 seguem contradizendo-a):
+  defeito **do plano**, neutralizado em runtime pelo S2 + CP-3. Não se corrige plano mergeado por PR de
+  execução; fica para quem escrever o plano seguinte. **ACHADO-5** (o plano não nomeia quem responde
+  checkpoints depois que o planejador se autodeclara morto): mesma natureza. Ambos ficam nomeados no
+  parecer, que é artefato de junta
+- parcial: OK — registrados, não consertados
+
+### C.5 — revalidação após as correções
+
+- comando: `node -e` parse dos dois JSON; `node scripts/kpi-freeze.mjs`; `node --test --import tsx tests/kpi-achados-paridade.test.ts tests/kpi-dashboard-charts.test.ts`; conferência de EOL
+- saída: JSONs válidos; FROZEN reinjetado (snapshot 2026-09-03); guards **22/22 ec=0**; `pendencias.md`
+  com EOL uniforme (5730 CR / 5730 linhas)
+- parcial: OK

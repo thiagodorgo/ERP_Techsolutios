@@ -60,8 +60,11 @@ Cluster descartável próprio por bateria; a base viva `erp-postgres`/`erp-redis
 
 ### O que NÃO fechou
 
-O vazamento linear de linhas (+10/rodada nas rodadas verdes) é `pre-existente` e foi **atribuído por
-execução**, não consertado — a classe do arnês saiu deste bloco. E o vermelho ambiental da canônica 1
+O vazamento linear de linhas (+10/rodada nas rodadas verdes) é `pre-existente`: as **tabelas** foram
+nomeadas por execução, mas o **arquivo produtor não** — os quatro candidatos que publiquei vieram de grep,
+e o `critico-c5-adversarial` os refutou executando (0/0 nos quatro); o único vazador medido,
+`core-saas-role-authority-db` (+1/+1), estava fora da lista, e +4/+4 seguem sem produtor nomeado. Não
+consertado — a classe do arnês saiu deste bloco. E o vermelho ambiental da canônica 1
 ganhou pendência própria (`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`): `core-saas-role-authority.test.ts`
 morre no *load* sem declarar skip, o piso de denominador do #359 o pega e o nomeia, mas o defeito do
 arquivo exige tocar `src/` — proibido aqui.

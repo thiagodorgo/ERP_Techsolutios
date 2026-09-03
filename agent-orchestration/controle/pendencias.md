@@ -3809,7 +3809,17 @@ foram executadas/publicadas pelo dev. Validador mediu N=1: canônica 1 = 2465/24
 inicializa o Prisma Client após o skip sem `DATABASE_URL` — pré-existente)/64 skip; canônica 2 = 194/194, 0 skip, 0 hits
 `unhandledRejection|XX000|23505|40P01`. Falta a publicação com N e forma, não há número falso.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-03 — B-O6R-02 ciclo 5, F6; registro completado após o ACHADO-2 do
+`critico-c5-adversarial`, que mediu esta entrada como o ÚNICO dos 7 itens do §12 sem fechamento no
+head).** As duas canônicas foram executadas e publicadas com N e forma neste PR: **canônica 1** — `npm
+test` sem `DATABASE_URL`, **N=3**, com o vermelho ambiental DECLARADO por nome
+(`core-saas-role-authority`, que o piso de denominador do #359 nomeia); **canônica 2** — `db:seed` + as
+**34** suítes da lista `SUITES` extraída do `ci.yml` do head, **N=15**, `15/15 ec=0`, denominador **225
+constante**, 0 hit de `unhandledRejection|XX000|23505|40P01`. Ambas em cluster descartável próprio, Node
+v20.19.5, 106 migrations, com a forma declarada no KPI e no diário (B.2, B.5). A substância foi
+re-medida de forma independente pelo crítico (A10 do parecer).
+
+- **status:** FECHADA (2026-09-03, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA
@@ -5652,3 +5662,69 @@ arquivo de teste está fora do escopo permitido. Escopo `pre-existente` com prod
 canônica 1 com **0 fail ambiental** e os pulos DECLARADOS; o piso do runner continua mudo para ele.
 
 - **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)
+
+## P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5 tem TABELA nomeada, não ARQUIVO
+
+**Emenda, não reabertura: o texto das entradas anteriores fica intocado (§A2).** Corrige, no registro
+canônico, uma frase que este bloco publicou afirmando mais do que a execução exercitou — apanhada pelo
+`critico-c5-adversarial` (ACHADO-4) **antes** do voto da junta, e aceita sem contestação.
+
+**O que foi medido por execução (vale):** rodada instrumentada da canônica 3 com snapshot **por tabela**
+antes e depois — `auth_identities` **+5** e `auth_identity_link_events` **+5** por rodada verde, mais
+`permissions` 1 → 15 uma única vez (idempotente, o que explica os +24 da primeira rodada).
+
+**O que NÃO foi medido, e foi publicado como se fosse (o defeito):** os quatro *arquivos* apontados como
+produtores saíram de **grep** pelo nome da tabela. O crítico executou cada um isolado, com snapshot de
+linhas antes/depois, no cluster próprio dele:
+
+| suíte | resultado | Δ `auth_identities` / Δ `auth_identity_link_events` |
+|---|---|---|
+| `auth-identity-backfill-db` | 6/6 pass, 0 skip | **0 / 0** |
+| `auth-identity-links-db` | 15/15 pass, 0 skip | **0 / 0** |
+| `auth-identity-link-events-db` | 5/5 pass, 0 skip | **0 / 0** |
+| `auth-identity-role-real-db` | 10/10 pass, 0 skip | **0 / 0** |
+| **`core-saas-role-authority-db`** — a atribuição de 2026-08-19, citada pelo §0.a do plano do c5 e **ausente** da lista publicada | 5/5 pass, 0 skip | **+1 / +1** |
+
+**Por que o grep falhou:** o escritor entra pela **camada de serviço** (`core-saas.service.ts` e os
+repositórios de identity-link), não pelo nome literal da tabela — os quatro arquivos que *contêm* a
+string limpam atrás de si, e um que **não** a contém vaza.
+
+**O que fica ABERTO, nomeado:** os **+4/+4 restantes por rodada completa** seguem **sem produtor
+nomeado** — há ~12 suítes `-db` exercitando `core-saas` e elas **não foram varridas**; o limite fica
+declarado, não escondido. Matéria segue `pre-existente` (EMENDA item 1, trilha de identidades): o achado
+é de **precisão do registro**, não de reabertura de classe.
+
+**Por que isto importa mais do que parece:** é a mesma família de defeito — *a frase afirma mais do que a
+execução exercitou* — pela qual este bloco foi reprovado no ciclo 4. Desta vez foi apanhada por execução
+de um papel independente, antes do voto, e corrigida nas cinco publicações (`Kpis/kpis-latest.json`,
+`kpis-history.json`, `kpis-history.md`, `docs/status-geral.md`, `codex/log-execucao.md`).
+
+- **status:** ABERTA (emenda registrada; os +4/+4 sem produtor nomeado seguem aqui) · **severidade:** a classificar · **dono:** a atribuir
+
+## P-O6R-B02-RULINGS-SEM-DESTINO (2026-09-03 — ACHADO-1 do `critico-c5-adversarial`) — BAIXA · registro §A2
+
+Dois rulings de checkpoint deste bloco criaram, **por escrito**, uma obrigação que o PR não cumpriu e que
+não foi declarada como descarte: o do **CP-0** (item 2) e o do **CP-1** (item C) prometeram que o conserto
+do arquivo do comando — passo 3 do preflight §3.3 (checava `HEAD`, devia checar `origin/main`) e o
+`head -120` da sonda §7.1.b, que trunca 2 dos 9 arquivos — "entra no PR deste bloco, no fim".
+
+**Medido pelo crítico:** `git log 84bb90b..bcf6460 -- agent-orchestration/codex/comandos/B-O6R-02-ciclo5.md`
+sai **vazio**; no blob do head, o passo 3 segue lendo `HEAD` (l.176-178) e o `head -120` segue na l.579.
+
+**Agravante estrutural, e é a parte que interessa:** o **§5.1 do próprio comando não lista o arquivo-mãe**
+— o glob `B-O6R-02-ciclo5-*.md` casa os arquivos de registro (`-execucao`, `-auditoria`), mas **não**
+`B-O6R-02-ciclo5.md`. O ruling criou uma obrigação que o escopo escrito **proibia** cumprir, e ninguém
+nomeou a contradição na hora.
+
+**Destino, declarado agora por escrito (era o que faltava):** o conserto **NÃO entra neste PR** — tocar o
+arquivo-mãe seria violação de escopo §5.3, e violar escopo no ciclo-teto para consertar um comando já
+executado é trocar risco alto por benefício nulo. Fica para quem escrever o próximo comando de bloco, com
+os dois defeitos já diagnosticados e com evidência: o preflight deve checar marcadores de governança em
+`origin/main` (não em `HEAD`, que numa branch antiga é falso-positivo por construção), e a sonda de
+insumo vivo **não pode truncar** a evidência que existe para achar.
+
+**Propriedade que o crítico nomeia e que este registro adota:** *toda obrigação criada por ruling de
+checkpoint tem destino verificável no próprio PR — cumprida, ou descartada POR ESCRITO com motivo; e
+ruling não cria obrigação fora do escopo §5 sem emendá-lo na mesma linha.*
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (a promessa é dos meus rulings) · **dono:** o próximo comando de bloco da rodada Ω6R

@@ -2523,11 +2523,15 @@ Cluster descartável próprio; base viva `erp-postgres`/`erp-redis` sem um únic
 
 ### O que não fechou — com o produtor nomeado
 
-O **vazamento linear** das rodadas verdes (+10/rodada) foi **atribuído por execução** em rodada
-instrumentada com snapshot por tabela: `auth_identities` **+5** e `auth_identity_link_events` **+5** por
-rodada, mais `permissions` 1→15 uma única vez (idempotente — explica os +24 da primeira). Trilha de
-**identidades**, escopo `pre-existente`, classe que saiu deste bloco na EMENDA item 1. **Não consertado
-aqui, por desenho.** O vermelho ambiental da canônica 1 virou pendência própria
+O **vazamento linear** das rodadas verdes (+10/rodada) teve as **TABELAS** nomeadas por execução, em
+rodada instrumentada com snapshot por tabela: `auth_identities` **+5** e `auth_identity_link_events` **+5**
+por rodada, mais `permissions` 1→15 uma única vez (idempotente — explica os +24 da primeira).
+**CORREÇÃO PÓS-CRÍTICO (ACHADO-4, aceita):** a publicação inicial dizia "produtor nomeado por execução" e
+listava quatro arquivos vindos de **grep**; o `critico-c5-adversarial` executou os quatro isolados e todos
+medem **0/0** — o escritor entra pela camada de serviço, não pelo nome literal da tabela. O único vazador
+medido é `tests/core-saas-role-authority-db.test.ts` (**+1/+1**), que estava **fora** da minha lista, e os
+**+4/+4 restantes seguem sem produtor nomeado**. Tabelas nomeadas por execução; **arquivo produtor, não**.
+Matéria `pre-existente` (EMENDA item 1). **Não consertado aqui, por desenho.** O vermelho ambiental da canônica 1 virou pendência própria
 (`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`).
 
 ### O guard que cobrou antes da junta

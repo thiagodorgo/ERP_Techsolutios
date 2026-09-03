@@ -4009,10 +4009,14 @@ resolução main-integral do S0-zero apagara `Ω6R-DIN-010/011` do censo do pain
 
 ### O que NÃO fechou
 
-O **vazamento linear** de linhas nas rodadas verdes (+10/rodada) foi **atribuído por execução**, não
-consertado: `auth_identities` **+5** e `auth_identity_link_events` **+5** por rodada (mais `permissions`
-1 → 15 uma única vez, idempotente, que explica os +24 da primeira). É a trilha de identidades — escopo
-`pre-existente`, classe que saiu deste bloco na EMENDA item 1 e vive em `P-O6R-ARNES-ISOLAMENTO`. E o
+O **vazamento linear** de linhas nas rodadas verdes (+10/rodada) teve as **tabelas** nomeadas por
+execução, e não foi consertado: `auth_identities` **+5** e `auth_identity_link_events` **+5** por rodada
+(mais `permissions` 1 → 15 uma única vez, idempotente, que explica os +24 da primeira). **Correção
+pós-crítico (ACHADO-4, aceita):** os quatro arquivos que publiquei como produtores vieram de **grep**, e o
+`critico-c5-adversarial` os **refutou por execução** — 0/0 nos quatro. O único vazador medido é
+`tests/core-saas-role-authority-db.test.ts` (**+1/+1**), ausente da minha lista, e os **+4/+4 restantes
+seguem sem produtor nomeado**. Escopo `pre-existente`, classe que saiu deste bloco na EMENDA item 1 e vive
+em `P-O6R-ARNES-ISOLAMENTO`. E o
 vermelho ambiental da canônica 1 ganhou pendência própria `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`: o conserto
 exige tocar `src/database/prisma.ts`, proibido neste bloco.
 
