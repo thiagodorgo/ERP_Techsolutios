@@ -1,0 +1,68 @@
+{
+  "cadeira": "C1 — jurado-b07a-autorizacao-e-alcada",
+  "veredito": "REPROVADO",
+  "head_julgado": "fb6618b413bda0a8efd8bbbf1ace38f824761b82",
+  "tem_veto": true,
+  "nota_sobre_o_head": "O briefing (ERRATA E-1) manda registrar e9a9caa. Medi fb6618b (git rev-parse HEAD no worktree b07). Conferi que e9a9caa..fb6618b contém APENAS registros de junta (BRIEFING + 2 arquivos do inspetor) e que 7c248c9..HEAD restrito a src/ prisma/ tests/ frontend/ RBAC_MATRIX.md é VAZIO: os três heads são equivalentes para efeito de código.",
+  "itens": {
+    "C1-1_permissao_contra_a_matriz": "CONFORME",
+    "C1-2_sod_e_escopo_por_objeto": "CONFORME",
+    "C1-3_o_p0_fecha": "NAO CONFORME"
+  },
+  "achados": [
+    {
+      "id": "C1-A1",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O flip de status ativo->fechado do Ω6R-SEC-002 está NO DIFF DESTE PR: `git diff f895dd2 HEAD -- docs/revisoes/O6R/achados.jsonl` mostra -\"status\":\"ativo\" / +\"status\":\"fechado\",\"fechado_em\":\"2026-09-02\",\"fechado_por\":\"B-O6R-07a\". E `docs/revisoes/O6R/achados.jsonl` consta do §5 PERMITIDO do 07a (plano l.294). Logo o ato de declarar o P0 fechado é deste bloco, não herdado.",
+      "o_que": "O bloco marca o P0 Ω6R-SEC-002 como `fechado` enquanto o critério de aceite escrito no próprio achado — campo `teste`: 'Técnico A não altera OS de B nem decide aprovação' — FALHA por execução. O guard de escopo por objeto tem apenas 2 call sites (WorkOrderService.update e changeStatus), e o módulo tem 14 rotas mutantes. Um field_technician, com as chaves que ele TEM (work_orders:update / :comment), altera a OS de outro técnico da mesma organização por 3 rotas: POST /work-orders/:id/attachments (201), DELETE /work-orders/:id/attachments/:aid (204 — APAGA a evidência alheia, com o blob removido do storage) e POST /work-orders/:id/comments (201). O `evidencia_fechamento` gravado declara duas exclusões ('alçada por VALOR' e 'team_id') e NÃO declara que o escopo por objeto cobre só update/status. Não imputo ao bloco o conserto das rotas — elas estão fora do §5 dele; imputo a DECLARAÇÃO de fechamento de um P0 que segue aberto, que tira o achado do razão e faz com que ninguém volte a ele.",
+      "comando": "cd .claude/worktrees/jur-c1-drill && node --test --import tsx tests/zz-c1-drill-p0.test.ts ; node --test --import tsx tests/zz-c1-drill-p0b.test.ts ; grep -rn assertMutationObjectScope src/ ; git diff f895dd2 HEAD -- docs/revisoes/O6R/achados.jsonl",
+      "saida": "PATCH /work-orders/:B -> 403 WORK_ORDER_NOT_ASSIGNED | PATCH /work-orders/:B/status -> 403 WORK_ORDER_NOT_ASSIGNED | POST /work-orders/:B/attachments -> 201 OK | DELETE /work-orders/:B/attachments/:id -> 204 OK | POST /work-orders/:B/comments -> 201 OK || EFEITO: anexo do dono lista ANTES=1, DELETE por tecnico A=204, lista DEPOIS=0, download antes=200 depois=404 || grep assertMutationObjectScope = 2 call sites (work-order.service.ts:837 update, :1304 changeStatus)"
+    },
+    {
+      "id": "C1-A2",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "A afirmação é do material desta junta: BRIEFING-O6R-07a.md §6 item 3, transcrevendo a EMENDA E2 do plano deste bloco (commit e9a9caa/fb6618b). Não existe antes do bloco.",
+      "o_que": "A caracterização levada à junta para deliberar — 'técnico não atribuído perde TODA mutação, inclusive a inócua; o fluxo editar antes de ser formalmente atribuído vira 403' — é FALSA por medição. O técnico não atribuído mantém criar anexo, APAGAR anexo alheio e comentar em qualquer OS da organização. A junta recebeu uma descrição do efeito do guard mais forte do que a execução entrega, e é sobre essa descrição que o item 3 do §6 pedia decisão.",
+      "comando": "cd .claude/worktrees/jur-c1-drill && node --test --import tsx tests/zz-c1-drill-p0.test.ts",
+      "saida": "POST /work-orders/:B/attachments -> 201 OK ; DELETE /work-orders/:B/attachments/:id -> 204 OK ; POST /work-orders/:B/comments -> 201 OK (contra 'perde TODA mutação')"
+    },
+    {
+      "id": "C1-A3",
+      "gravidade": "alta",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "WorkOrderAttachmentService.deleteAttachment nasceu em bf456b0, 2026-07-13, PR #173 (Ω3-d) — sete semanas antes deste bloco; `git log -1 --date=short -- src/modules/work-orders/work-order-attachment.service.ts` = bf456b0 2026-07-13. `git diff --stat f895dd2 HEAD -- src/modules/work-orders/work-order-attachment.service.ts src/modules/work-order-comments/` é VAZIO: o bloco não tocou nenhum dos dois. E nenhum deles consta do §5 PERMITIDO do 07a (o §5 do 07b cita work-order-attachment.storage.ts, que é scanner/storage, não autorização).",
+      "o_que": "As rotas de sub-recurso da OS não têm guard de objeto nem de autoria: WorkOrderAttachmentService.assertWorkOrder() só chama workOrderService.get (escopo de TENANT), e deleteAttachment não confere quem enviou o anexo nem a quem a OS está atribuída — qualquer portador de work_orders:update apaga qualquer anexo de qualquer OS da organização, com remoção do blob no storage. Mesma forma em POST attachments e em POST comments (work_orders:comment). Pendência a nomear, com bloco dono; NÃO reprova por si (§C7.1-ter(a)).",
+      "comando": "git log -1 --format='%h %ad %s' --date=short -- src/modules/work-orders/work-order-attachment.service.ts ; git diff --stat f895dd2 HEAD -- src/modules/work-orders/work-order-attachment.service.ts src/modules/work-order-comments/",
+      "saida": "bf456b0 2026-07-13 feat(work-orders): Ω3-d — anexos de OS (#173) ; diff --stat VAZIO"
+    },
+    {
+      "id": "C1-A4",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O 403 NASCE com assertMutationObjectScope, introduzida por este bloco em 2d54ea2 (`git diff f895dd2 HEAD -- src/modules/work-orders/work-order.service.ts`); antes o mesmo PATCH devolvia 200. A via de atribuição por userId é pré-existente, mas a RECUSA é do guard novo.",
+      "o_que": "A tensão E1/E4 que o briefing §6 item 2 entrega à junta é REAL e tem efeito operacional, medida: work-order.service.ts:1670 grava `operatorId: parseRequiredUuid(body.operatorId ?? body.userId)`, então atribuir mandando `userId` (que é o que o app Flutter faz — achado Ω6R-QUA-004, componente assignWorkOrder ainda listado como ABERTO) escreve um USER id em assigned_operator_id. O técnico LEGITIMAMENTE atribuído passa então a receber 403 WORK_ORDER_NOT_ASSIGNED no PATCH /work-orders/:id E no PATCH /work-orders/:id/status — este último é o caminho da fila offline do mobile. É fail-closed (recusa a mais, nunca permissão a mais), por isso não é `bloqueia`; mas trava fluxo de campo real e o bloco não abriu pendência própria para ela (pendencias.md:2924 a entrega à junta sem dono).",
+      "comando": "cd .claude/worktrees/jur-c1-drill && node --test --import tsx tests/zz-c1-drill-tensao.test.ts",
+      "saida": "(1) assign{operatorId:PERFIL} -> 200 gravou=PERFIL | PATCH pelo tecnico A -> 200 OK ;; (2) assign{userId:USER} -> 200 gravou=USER-ID | PATCH pelo MESMO tecnico -> 403 WORK_ORDER_NOT_ASSIGNED ;; (3) PATCH status pelo MESMO tecnico -> 403 WORK_ORDER_NOT_ASSIGNED"
+    }
+  ],
+  "conforme_sem_achado": [
+    "C1-1a/b/c: distribuição de work_orders:approve bate com RBAC_MATRIX.md linha 'Workflow / approvals' (full|full|full|request|approval-by-policy|approval-by-policy|request/ack|read|support-view) papel a papel; manager é a única concessão explícita, admins por herança, migração no banco em super_admin/tenant_admin/manager com platform_admin ausente por razão escrita.",
+    "C1-1d: GET /approvals/pending e GET /approvals/:id seguem em work_orders:read — ler não decide.",
+    "C1-1e: PROVA POR MUTAÇÃO — concedi work_orders:approve a technician em runtime e a rota ABRIU (403 -> 200 approve e 200 reject); restaurei e FECHOU (403). O gate consulta a chave, não um papel hardcoded.",
+    "C1-1b-extra: ampliei os negativos de 4 para 9 papéis x 2 verbos = 18/18 em 403 permission_required; positivos manager/tenant_admin/super_admin/platform_admin 4/4 em 200.",
+    "C1-1f: P-O6R-B07-APPROVAL-BY-POLICY registrado em pendencias.md:2833 com a razão medida (o agregado não tem campo monetário) — finance/inventory ficam de fora por ausência de modelo, não por omissão.",
+    "C1-2a: 403 APPROVAL_SELF_DECISION em approve E reject, com o solicitante sendo manager (portador da chave) para isolar a causa; e o 403 vem ANTES do 409 already_decided — o solicitante não aprende o estado da pendência.",
+    "C1-2b: fronteira preservada — 403 WORK_ORDER_NOT_ASSIGNED na mesma organização, 404 WORK_ORDER_NOT_FOUND para técnico de outra organização.",
+    "C1-2c: a regra nasce no SERVICE (método privado de WorkOrderService), não em middleware de rota; atacada pelas rotas HTTP reais.",
+    "C1-2d: união de papéis vence — mesmo x-user-id com 'field_technician,manager' recebe 200 e com 'field_technician' recebe 403; a diferença é o papel, não a pessoa.",
+    "C1-2e: auditoria da recusa de SoD na allowlist — metadata {reason, decision, status, work_order_id}, sem token/path/bucket/storage_key/base64; sanitizeAuditMetadata filtra por regex; tenantId de topo é a forma pré-existente do ApprovalAuditEvent, não PII nova."
+  ],
+  "terreno": {
+    "worktree_do_jurado": ".claude/worktrees/jur-c1-drill (criado de fb6618b, npm ci próprio, 326 pacotes, ec=0; removido por git worktree remove --force)",
+    "banco": "NENHUM cluster subido — todo o ataque rodou no arnês HTTP em memória (CORE_SAAS_PERSISTENCE=memory). Nenhuma porta aberta. erp-postgres/erp-redis não tocados nem lidos.",
+    "arvore_principal": "não escrita (R2)",
+    "escrita_no_b07": "somente os dois arquivos desta cadeira em agent-orchestration/omega/juntas/votos/O6R-07a/"
+  }
+}
