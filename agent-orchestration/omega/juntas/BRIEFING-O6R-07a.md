@@ -204,3 +204,38 @@ o SQL da migração escrito na evidência e **o arquivo não gravado**.
 
 **Separação de papéis (§C7.4-bis) em quatro voltas:** quem achou não emendou; quem emendou não codou; quem
 codou não rejulgou. Os diários estão em `agent-orchestration/omega/juntas/votos/O6R-07a/`.
+
+---
+
+## ERRATA (orquestrador, após a inspeção de terreno) — duas defasagens minhas, achadas pelo inspetor
+
+**E-1 · O head do cabeçalho está DEFASADO em 1 commit.** O cabeçalho diz `7c248c9`; o head real do PR e do
+worktree é **`e9a9caa`**, e o delta é **exatamente este briefing** (+206 linhas, 1 arquivo). Causa: escrevi
+o briefing citando o head vigente e **commitei o briefing em seguida**, movendo a branch.
+**As cadeiras registram `head_julgado = e9a9caa`.** Todo número de diff de **código** vale idêntico nos
+dois heads (o inspetor conferiu: blob do plano idêntico, numstat de código igual).
+**É a QUARTA vez nesta sessão que passo head defasado a um agente** — e a quarta em que um agente me
+corrige. A prática que já vale para os mandatos: **não citar head; mandar medir.** O cabeçalho de briefing
+ainda escapava dessa regra; passa a não escapar.
+
+**E-2 · A armadilha 10 do §10 está MORTA.** Ela diz que `frontend/node_modules` não existe neste worktree e
+que o check falha sem `npm ci`. **Verdade quando escrevi; falsa agora** — eu mesmo rodei `npm --prefix
+frontend ci` ao fechar a bateria, e o inspetor mediu: `check` e `build` passam com `ec=0` **sem** `npm ci`.
+**Consequência para o voto: nenhuma cadeira pode declarar item de frontend "não medido por ambiente".**
+Se rodar vermelho para você, é achado — não é o ambiente.
+
+**E-3 · Precisão sobre a ressalva R2 do inspetor, que eu devo à junta.** Ele registra "mutação viva na
+árvore principal" para `planejador-mestre.md`, `porteiro-pos-merge.md` e `scripts/sync-agent-agents.mjs`.
+A conduta que ele prescreve (**nenhum jurado escreve na árvore principal**) está **certa e vale**. Mas a
+caracterização merece precisão, porque **a mesma premissa já foi falsa uma vez nesta rodada**: em 02/09,
+no `SAN2-6`, um inspetor leu esse mesmo ` M` como mutação viva, e o **porteiro do #368 mediu depois** que
+os três arquivos são **byte-idênticos ao HEAD eol-neutro** (sha256 iguais par a par, `git diff --numstat`
+vazio, `core.filemode=false`). É **stat-cache preso sob `core.autocrlf=true`**, não edição.
+**Para a junta:** trate R2 como **regra de conduta** (não escreva lá), **não** como fato sobre o conteúdo.
+Se alguma cadeira precisar afirmar algo sobre esses arquivos, **meça eol-neutro** antes.
+
+**R4 permanece integralmente:** portas rotacionam por boot; **re-meça** antes de subir cluster. Ocupadas na
+medição do inspetor: `5432`/`6379` (base viva, **intocável**) e `32769`/`32770` (**cluster do ciclo 5, que
+roda AGORA no Codex — intocável**). `55432` proibida por regra. Drill de mutação **nunca** no `b07`:
+worktree próprio a partir de `e9a9caa`, `npm ci` próprio, remoção só por `git worktree remove --force`.
+O caminho `agent-af6ea607f3ddf8efd` **não aparece em comando de jurado**.
