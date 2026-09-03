@@ -5687,3 +5687,149 @@ idêntica à do squash e carrega o **delta pós-voto** que a ata declara **em pr
 campos preenchidos, a dívida está quitada — reescrevê-los criaria divergência onde não há.
 
 - status: FECHADA — registro de reatribuição consumado no mesmo PR que paga a dívida. Dono: B-O6R-07a.
+
+---
+
+# Registros do CICLO 2 do B-O6R-07a (2026-09-03) — sete registros, bloco único de APPEND
+
+> Mecânica declarada (§A2): `pendencias.md` tem EOL MISTO — o apenso C2·5 item 11 exige SÓ APPEND e o
+> mandato do dev autoriza "Write de bloco ao fim". Os sete registros abaixo foram APENSADOS ao fim do
+> arquivo, cada um nomeando a entrada-alvo por título e linha; NENHUMA linha pré-existente foi editada.
+> Autor: `dev-o6r07a-ciclo2-c` (fecha registro; não achou, não planejou — §C7.4-bis). Fonte: apenso
+> `## CICLO 2` de `agent-orchestration/omega/planos/B-O6R-07-plano.md` (C2·2, C2·3, C2·4) e diário
+> `agent-orchestration/omega/juntas/votos/O6R-07a/dev-ciclo2.md`.
+
+## APPEND (registro 1/7) à `D-DIVERGENCIA-B07A-A3-METODO-DA-PROVA` (l.5631) — a RAZÃO registrada era FALSA; a DECISÃO estava certa
+
+A junta do ciclo 1 (cadeira C2) devolveu o reparo que este append consuma. A razão registrada na
+entrada original — *"não existe ponto de injeção para o espião sem alargar `password.service.ts`"* —
+é **FALSA por demonstração**: a C2 montou espião de TEMPO **de fora**, ~30 linhas, ZERO alteração de
+produção, e publicou a MARGEM: derivação canônica **49,08 ms** × todo trio fora do pino
+**0,04–0,40 ms** (razão **>=120x**), inclusive `N=32768` respondido em **0,09 ms** — exatamente o
+caminho "derivar primeiro, pinar depois" que a testemunha de retorno não pegaria. A **DECISÃO** de
+não alargar produção para acomodar arnês estava **CERTA** (classe do `SAN2-4b`); a razão certa é
+*"desnecessário por dentro"*, não *"impossível"*. Consuma-se também a resposta à pergunta (c) da
+entrada original: o §4 do plano fica **EMENDADO pela errata E-b do apenso C2·7** — vale a
+PROPRIEDADE (*provar que a derivação NÃO ocorreu, por qualquer testemunha que a decida — contador,
+exceção distintiva ou relógio — DESDE QUE a evidência publique a margem medida ou o controle
+distintivo; testemunha sem margem publicada não é testemunha*). Nenhum código muda por este registro.
+
+## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis pelo técnico sobre OS ALHEIA — **ALTA**
+
+**Dono nomeado: `B-O6R-07c` (branch `fix/o6r07c-subresource-scope`)** — bloco novo, a planejar após o
+merge do 07b. **Origem do registro:** achado `C1-A1` da junta do ciclo 1 do B-O6R-07a; a declaração de
+fechamento do `Ω6R-SEC-002` foi revertida para `parcialmente_superado` (C2·2, caminho (i)) e esta
+pendência é a dona da parte aberta.
+
+**As 9 rotas, cada uma com N/forma/causa** (paridade com `docs/revisoes/O6R/achados.jsonl` l.9 e com
+o drill da cadeira C1, conferida no diário `dev-ciclo2.md` D2.d):
+
+1. `POST /work-orders/:id/attachments` — anexa em OS alheia (gate `create` OU `update`).
+   **EXECUÇÃO: HTTP 201.** Causa: `bf456b0` (2026-07-13, PR #173) — subrecurso nasceu sem escopo por
+   objeto, ANTES do B-O6R-07a.
+2. `DELETE /work-orders/:id/attachments/:attachmentId` — apaga anexo alheio; blob sai do storage.
+   **EXECUÇÃO: HTTP 204 + download 200->404.** Causa: `bf456b0` #173.
+3. `POST /work-orders/:id/comments` — comenta em OS alheia (gate `comment`). **EXECUÇÃO: HTTP 201.**
+   Causa: agregado próprio (`work-order-comment.routes.ts`), sem guard de objeto.
+4. `PATCH /work-orders/:id/comments/:commentId` — edita comentário de OUTRO autor.
+   **LEITURA DE CÓDIGO** (`assertCanMutate` = autor OU `work_orders:update`; o técnico porta
+   `update`). Causa: `D-Ω3F-5-COMMENT` — desenho deliberado da casa.
+5. `DELETE /work-orders/:id/comments/:commentId` — soft-delete de comentário alheio. **LEITURA.**
+   Causa: `D-Ω3F-5-COMMENT`.
+6. `POST /work-orders/:id/comments/:commentId/tags/:tagId` — taggeia comentário alheio. **LEITURA.**
+   Causa: `D-Ω3F-5-COMMENT`.
+7. `DELETE /work-orders/:id/comments/:commentId/tags/:tagId` — destaggeia (hard-delete da
+   associação). **LEITURA.** Causa: `D-Ω3F-5-COMMENT`.
+8. `POST /work-orders/:id/geocode` — alcançável em OS alheia (gate `update`). **ALCANCE por
+   EXECUÇÃO (HTTP 200 `geocoded=false`, provider Noop); EFEITO CONDICIONADO a `GEOCODING_ENABLED`**,
+   nunca medido ligado. Causa: rota anterior ao bloco, sem guard de objeto.
+9. `POST /work-orders/:id/geocode-destination` — idem: mesma guarda, mesma forma (drill mediu 422 de
+   validação de domínio — passou o gate e morreu no domínio; alcance provado, efeito por env).
+
+**Distribuição das formas: 3 execução · 4 leitura · 2 condicionadas a env.** Das 14 rotas mutantes do
+router principal, 6 passam o gate com as chaves do técnico (`read/comment/update/status`): 2 ficaram
+GUARDADAS pelo 07a (PATCH `/:id`, PATCH `/:id/status`) e 4 abertas; as 5 do router de comentários
+passam todas.
+
+**Item explícito do plano do 07c:** a cláusula `autor OU update` do `D-Ω3F-5-COMMENT` é decisão de
+PRODUTO deliberada — escopá-la por objeto a reverte em parte; medir o fluxo do despachante e do
+gestor moderando comentário ANTES de codar. **Consequências declaradas:** o gate da CHECKLIST P1
+continua *"07a E 07b (e B-O6R-06) mergeados"* (a deliberação J-6R fala de BLOCOS, não de achados);
+fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** desta pendência.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
+  `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
+  `B-O6R-07c`.
+
+## P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem mecanismo — **MÉDIA**
+
+**Dono nomeado: `B-AUTH-KDF-V2`** (bloco de auth a agendar pós-O6R). Consolida dois achados da
+cadeira C2 do ciclo 1 do B-O6R-07a, ambos declarados `pre-existente` com evidência:
+
+- **C2-A2:** o comentário do pino N/r/p em `password.service.ts` promete *"rotação via v=2"*, mas não
+  existe mecanismo: nenhum caminho de coexistência v1/v2, nenhum re-hash no login, nenhum teste. A
+  promessa é anterior ao 07a; o pino do ciclo 1 (aprovado) apenas a tornou visível.
+- **C2-A3:** a l.45 (`scryptSync` do caminho de verificação) não tem defesa própria (try/catch); o
+  500 por `ERR_CRYPTO_INVALID_SCRYPT_PARAMS` ficou fechado SÓ por consequência do pino do parse — se
+  a rotação um dia aceitar trio variável, a porta reabre.
+
+**Escopo do bloco dono:** coexistência v1/v2 + re-hash no login + defesa própria na l.45. **NENHUM
+código de KDF muda no ciclo 2 do 07a** — o item C2-3 foi APROVADO pela junta e está CONGELADO
+(C2·5-PROIBIDO: `password.service.ts`).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** `B-AUTH-KDF-V2`.
+
+## P-KPI-HISTORY-MD-BACKLOG (registro 4/7, 2026-09-03) — espelho `Kpis/kpis-history.md` com backlog #361–#368 — **BAIXA**
+
+Achado `C3-A1` da junta do ciclo 1: o espelho `.md` do history parou antes das entradas dos PRs
+**#361–#368** (o `.json` as tem). O ciclo 2 do 07a **apensa a PRÓPRIA entrada** no espelho (D3.e do
+diário) — o backlog das oito anteriores fica com esta pendência. **Dono: o próximo bloco `…F` de
+KPI** (correção documental §C1). Forma do número: 8 entradas ausentes, contadas por diff de IDs entre
+`kpis-history.json` e o espelho.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` · **dono:** próximo `…F` de KPI.
+
+## APPEND (registro 5/7) à entrada do sticky (l.2896-2924) — a tensão §A2 de `assigned_operator_id`, devolvida MEDIDA e resolvida por DUAL-MATCH
+
+A entrada original fechou dizendo *"Fica com a junta ... a tensão §A2 da semântica de
+`assigned_operator_id`"*. A junta do ciclo 1 a devolveu **medida** (achado `C1-A4`): o write do
+assign grava **user id** dentro de `assigned_operator_id` (campo de perfil —
+`work-order.service.ts:1669`, `body.operatorId ?? body.userId`; o app Flutter manda `userId`,
+componente `assignWorkOrder` do `Ω6R-QUA-004`), e o guard do ciclo 1 comparava SÓ contra o perfil —
+o técnico LEGITIMAMENTE atribuído recebia **403** no PATCH e no PATCH `/status` (a fila offline do
+mobile). O 403 nasceu com o guard DESTE bloco.
+
+**Resolução (ciclo 2, C2·4 opção (c) — implementada e provada):** DUAL-MATCH no READ, dentro de
+`assertMutationObjectScope` e em nenhum outro lugar: a atribuição prova-se por
+`assignedOperatorId === operatorProfileId` **OU** `assignedOperatorId === actor.userId` (~2 linhas).
+Fail-closed preservado (sem match nos dois ramos -> 403; OS órfã não casa com nenhum); 404
+cross-tenant intocado; só quem porta `work_orders:assign` escreve o campo, logo o segundo ramo só
+concede ao usuário que um ATRIBUIDOR nomeou. Cura as linhas históricas por leitura. Provas no diário
+`dev-ciclo2.md` D3.a/D3.b: 3 casos novos VERMELHOS no código pré-correção (`ec=1`, o técnico nomeado
+recebia 403) -> **8/8 verde N=3** com denominador idêntico. Erratas E-f do apenso C2·7.
+**`Ω6R-QUA-004` SEGUE ABERTO com o dono dele** — o write continua torto; o read passa a aceitar as
+duas formas canônicas que DE FATO existem no banco.
+
+## FECHAMENTO (registro 6/7) do residual `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP` (registrado dentro do `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`, l.5610-5623)
+
+O residual dizia: a linha de auditoria da falha anônima não carrega `ipAddress`/`userAgent`, porque
+encaminhá-los exigiria alterar `auth-runtime.ts`, fora do §5 de então. **O ciclo 2 abriu a porta
+nominalmente** (C2·5 item 4: ampliação nominal de `auth-runtime.ts` — só o espelho `withTenantRls`
+do método novo `registerAnonymousFailure`) e o C2·3 encaminhou `ipAddress`/`userAgent` ao
+`recordLoginFailure` da falha anônima. **Evidência de fechamento (diário D1.g):** caso -db multi-org
+pela fiação REAL (`auth.routes` -> `auth-runtime`/`withTenantRls` -> `registerAnonymousFailure`)
+asserta os DOIS campos no metadata da linha — `ok 6 - CICLO 2: ... 1 requisição falhada = 1
+incremento + 1 linha, com ipAddress/userAgent` — **3/3, `ec=0`**, com vermelho-controle no código
+pré-correção (`ec=1`, `2 !== 1`). Consequência prática: passa a dar para saber **de onde** veio a
+força bruta anônima, na medida do IP de socket — a política de `X-Forwarded-For` continua sendo o
+item 2 da pendência-mãe, que segue ABERTA.
+
+- **status do residual:** FECHADO no ciclo 2 do B-O6R-07a · a pendência-mãe
+  `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` **não muda de status** (segue ABERTA, MÉDIA).
+
+## APPEND (registro 7/7) ao `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` (l.5589) — 1 linha do ciclo 2
+
+`C2-A4` (nota da junta): a folga do piso de 400 ms sob banco CARREGADO não foi medida — a medição sob
+carga pertence ao fecho distribuído desta pendência. Nota a favor: o ciclo 2 REDUZIU as escritas do
+ramo de falha anônima de 2xN para **<=2 por requisição** (<=1 UPDATE + <=1 INSERT, ato único
+pós-veredicto — C2·3), o que só melhora a folga.

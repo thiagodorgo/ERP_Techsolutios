@@ -33,6 +33,30 @@
 --   DELETE FROM role_permissions rp USING permissions p
 --     WHERE rp.permission_id = p.id AND p.key = 'work_orders:approve';
 --   DELETE FROM permissions WHERE key = 'work_orders:approve';
+--
+-- AVISO 1 SOBRE O ROLLBACK ACIMA (achado C3-A4 da junta do ciclo 1) — o DOWN desfaz os DADOS, mas
+-- NAO desmarca a migracao em `_prisma_migrations`. Depois de rodar esses dois DELETE, o Prisma
+-- continua considerando `20260871000000` APLICADA, e `prisma migrate deploy` NAO a reaplica: o
+-- banco fica sem a permissao e sem ninguem para reconceder. Reaplicar exige uma das duas coisas,
+-- conscientemente:
+--   (a) rodar o corpo desta migracao a mao (ele e idempotente: ON CONFLICT DO NOTHING nos 2 passos); ou
+--   (b) criar uma migracao NOVA com o mesmo corpo (caminho recomendado em producao, porque deixa
+--       rastro no historico em vez de divergir o banco do que `_prisma_migrations` afirma).
+-- Nao existe caminho automatico: `prisma migrate resolve --rolled-back` mexe no registro mas nao
+-- reexecuta, e apagar a linha de `_prisma_migrations` a mao e drift silencioso.
+--
+-- AVISO 2 SOBRE O SEGUNDO INSERT (achado C3-A5 da junta do ciclo 1) — o grant depende de `roles`
+-- JA estar populada. Num banco criado so por `prisma migrate deploy`, sem bootstrap/seed, a tabela
+-- `roles` esta VAZIA: o `CROSS JOIN` nao encontra nenhuma das tres chaves, o segundo INSERT insere
+-- **0 linhas** e a migracao termina com `ec=0` — sucesso aparente, permissao concedida a ninguem.
+-- Isso NAO e um defeito desta migracao (ela e aditiva e idempotente por desenho, e reexecutar
+-- depois do seed concede corretamente); e uma DEPENDENCIA DE ORDEM que o runbook precisa declarar:
+-- em ambiente novo, o seed/bootstrap de papeis roda ANTES, ou este corpo e reexecutado DEPOIS.
+-- Verificacao de 1 linha para o operador conferir que o grant pegou de verdade:
+--   SELECT r.key FROM role_permissions rp
+--     JOIN roles r ON r.id = rp.role_id
+--     JOIN permissions p ON p.id = rp.permission_id
+--    WHERE p.key = 'work_orders:approve';   -- espera-se super_admin, tenant_admin, manager
 
 INSERT INTO permissions (key, description)
 VALUES ('work_orders:approve', 'Decidir (aprovar ou reprovar) uma solicitação de aprovação operacional da OS.')

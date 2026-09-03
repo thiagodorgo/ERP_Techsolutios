@@ -1,5 +1,5 @@
 {
-  "snapshot_date": "2026-09-02",
+  "snapshot_date": "2026-09-03",
   "version": "B-O6R-07a",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
@@ -27,10 +27,10 @@
       "note": "Execução real: 1125/1125 → 1126/1126 (+1): o adapter web mapeia os códigos novos do login sem organização (auth-login-errors.adapter.test.ts), com cópia sem termo técnico. [Ciclos 2 e 3: valor CARREGADO — a trilha web não foi tocada pelas correções; sem reexecução (§C3.3).] [B-O6R-ARNES: valor CARREGADO — a trilha web nao foi tocada (o bloco so altera tests/** e scripts/** do backend); sem reexecucao (§C3.3). O `npm --prefix frontend run check` e o build rodaram VERDES na bateria como regressao, sem mover a contagem de smoke.] [B-O6R-REG: valor CARREGADO — este bloco NAO tocou codigo nem teste (diff vazio contra a base em src/, tests/, scripts/, prisma/, frontend/, mobile/ e .github/, conferido pela junta); sem reexecucao (§C3.3). A nota acima descreve a execucao do B-O6R-ARNES (#359), NAO deste PR — marcador acrescentado em 2026-08-29 pelo achado A-2 da cadeira de KPI, que observou que smoke e Flutter ja carregavam o marcador do bloco anterior e o backend afirmava, em primeira pessoa, N=10 'sobre o codigo final deste PR'.] [SAN2-R: valor CARREGADO — bloco de orquestracao, diff de codigo vazio; sem reexecucao (§C3.3).] [SAN2-1R: valor CARREGADO — bloco de registro, diff de codigo vazio; sem reexecucao (§C3.3).] [SAN2-2: valor CARREGADO — o PR NAO toca `frontend/` (prova: `git diff --name-only main...HEAD -- frontend/` sai VAZIO); sem reexecucao (§C3.3). A nota acima descreve execucao de bloco anterior, NAO deste PR.] [SAN2-3: valor CARREGADO — o PR NAO toca `frontend/` (prova: `git diff --name-only main...HEAD -- frontend/` e o diff da arvore de trabalho saem os DOIS vazios); sem reexecucao (§C3.3). A nota acima descreve execucao de bloco anterior, NAO deste PR.] [SAN2-4a: valor CARREGADO — bloco de MEDICAO, diff de codigo vazio; o PR NAO toca `frontend/` (prova: `git diff --name-only main...HEAD -- frontend/` e o diff da arvore de trabalho saem os DOIS vazios); sem reexecucao (§C3.3). A nota acima descreve execucao de bloco anterior, NAO deste PR.] [SAN2-4b: valor CARREGADO — o PR nao toca esta trilha; sem reexecucao (§C3.3). Prova medida nas DUAS pontas (commitado e arvore de trabalho): `git diff --name-only 45c3b97...HEAD` e `git status --porcelain` sobre `mobile/` e `frontend/` saem VAZIOS. O diff de codigo deste bloco sao 5 arquivos: `src/modules/authority/authority-password.ts` e quatro em `tests/`.] \n[SAN2-5: valor CARREGADO — o bloco NAO toca codigo de produto (governanca de junta, registro e painel); sem reexecucao (§C3.3). Prova medida nas DUAS pontas: `git diff --name-only main...HEAD -- src/ tests/ prisma/` e `git status --porcelain -- src/ tests/ prisma/` saem os DOIS VAZIOS, e `frontend/` nao aparece em nenhum dos dois. A nota acima descreve execucao de bloco anterior, NAO deste PR.] \n[SAN2-6: valor CARREGADO — bloco 100% documental/registro (contratos, README do Codex, fonte do protocolo, KPI e pendencias); sem reexecucao (§C3.3). Prova medida nas DUAS pontas: `git diff --name-only main...HEAD -- frontend/` e `git status --porcelain -- frontend/` saem os DOIS VAZIOS. A nota acima descreve execucao de bloco anterior, NAO deste PR.] \n[B-O6R-07a: valor CARREGADO — o ultimo valor oficial, NAO reexecutado por este PR (§C3.3). O bloco corrige autorizacao e autenticacao no backend: o diff nao toca `frontend/` nem `mobile/`, provado nas DUAS pontas (`git diff --name-only origin/main...HEAD -- frontend/ mobile/` e `git status --porcelain` saem os DOIS VAZIOS). `npm --prefix frontend run check` e `npm --prefix frontend run build` rodaram VERDES (`ec=0`) como regressao, sem mover a contagem de smoke. A nota acima descreve execucao de bloco anterior, NAO deste PR.]"
     },
     "backend_tests": {
-      "value": 2645,
-      "total": 2647,
-      "display": "2645/2647",
-      "note": "Execucao real DESTE PR, N=1 rodada completa, FORMA CANONICA declarada: `npm test` (= `node scripts/run-backend-tests.mjs`) com `DATABASE_URL` e `REDIS_URL` exportadas para o par descartavel do bloco (`o6r07a-final-pg` :56450, postgres:16, **104** migrations; `o6r07a-final-redis` :56451), `CORE_SAAS_PERSISTENCE` **NAO exportada** (o runner declara `memory` no processo filho, como o job `backend` do CI) e `RBAC_DB_PARITY` **AUSENTE**. Node v20.19.5. Resultado literal: **255 arquivo(s) · 2647 teste(s) · pass 2645 · fail 0 · skipped 2**, `ec=0`, 193 155 ms, e `grep -c \"^not ok\"` no log inteiro = **0**. Display 2645/2647 = pass/tests, a mesma regua da entrada anterior (2609/2611). O DELTA E +36 E FECHA PELOS DOIS LADOS: base oficial 248 arquivos / 2611 testes (#366); os **7 arquivos NOVOS** somados isoladamente dao exatamente 36 — `o6r07a-approval-permission` 3 · `o6r07a-approval-sod` 3 · `o6r07a-wo-object-scope` 5 · `o6r07a-anon-lockout` 7 · `o6r07a-anon-lockout-db` 6 · `o6r07a-login-rate-limit` 6 · `o6r07a-scrypt-pin` 6 — e os **4 arquivos EDITADOS** mantiveram denominador, medido um a um: `work-order-checklists-sticky` 15, `approval-routes` 2, `auth-login-anonymous-db` 6, `core-saas` 26. Nao ha numero orfao. Os **2 skipped tem nome**: sao os dois casos de `permission-catalog-db-parity`, que se auto-declaram pulados porque a forma canonica nao exporta `RBAC_DB_PARITY` — e foram rodados A PARTE, COM banco semeado (banco `erp_k3_parity` criado e DERRUBADO no mesmo passo, sem tocar a base de trabalho): **2/2 pass, skipped 0, ec=0**, ao lado de `permission-catalog-migration-parity` **3/3, skipped 0, ec=0**. O aceite do E3.1 da EMENDA E1 exigia os DOIS guards verdes e nenhum deles pulado. A base viva (`erp-postgres`:5432 / `erp-redis`:6379) NAO recebeu nenhum comando, nem de leitura."
+      "value": 2654,
+      "total": 2656,
+      "display": "2654/2656",
+      "note": "Execucao real DESTE PR no CICLO 2 (o ciclo 1 media 2645/2647), N=1 rodada completa, FORMA CANONICA declarada: `npm test` (= `node scripts/run-backend-tests.mjs`) com `DATABASE_URL`/`REDIS_URL` exportadas para o par descartavel do ciclo 2 (`dev-c2-pg` :15432, postgres:16, **104** migrations — reuso declarado do container que o proprio bloco subiu; `dev-c2c-redis` :15433, portas medidas por `docker ps` + `netsh` antes), `CORE_SAAS_PERSISTENCE` **NAO exportada** (o runner declara `memory` no processo filho, como o job `backend` do CI) e `RBAC_DB_PARITY` **AUSENTE**. Resultado literal da rodada final: **256 arquivo(s) · 2656 teste(s) · pass 2654 · fail 0 · skipped 2**, `ec=0`. O DELTA sobre o ciclo 1 e **+9 e fecha pelos dois lados**: 255→256 arquivos (o NOVO `o6r07a-anon-lockout-multiorg` = 5) e, nos editados, `o6r07a-anon-lockout-db` 6→7 (+1, caso multi-org sob RLS real) e `o6r07a-wo-object-scope` 5→8 (+3, dual-match) — focados N=3 cada: 5/5 · 7/7 · 8/8 · 7/7, `ec=0` nas 12 execucoes. Honestidade da rodada: a PRIMEIRA suite plena do ciclo 2 saiu `pass 2653 · fail 1` — o unico vermelho era o guard `kpi-dashboard-charts` mordendo a cauda da queda #3 do bloco (`kpis-latest.json` editado pelo dev caido sem rodar `kpi-freeze`); fechada a cauda (freeze re-rodado), a rodada final fechou sem tocar em teste nenhum. Entre a primeira e a final houve DUAS rodadas vermelhas sob CONTENDA de maquina — o critico do ciclo 5 do B-O6R-02 (containers crit-c5-pg/crit-c5-red) rodava em paralelo na mesma maquina: fail 6 e fail 5, TODAS as vitimas com timeout de transacao (5000 ms estourados) ou corrida, interseccao de vitimas entre rodadas VAZIA, nenhum arquivo do bloco entre elas, e parede +54%; com a maquina livre a rodada final voltou ao patamar de parede da rodada 1 e fechou verde. As 4 rodadas estao gravadas no diario dev-ciclo2.md, cada uma com ec, placar e causa nomeada."
     },
     "backend_contract_tests_focused": {
       "value": 34,
@@ -157,17 +157,12 @@
     "source": "docs/revisoes/O6R/achados.jsonl",
     "aguardando_merge": [
       {
-        "id": "Ω6R-SEC-002",
-        "por": "B-O6R-07a (PR na autoria; nº e hash no backfill pós-merge)",
-        "em": "2026-09-02"
-      },
-      {
         "id": "Ω6R-SEC-003",
         "por": "B-O6R-07a (PR na autoria; nº e hash no backfill pós-merge)",
         "em": "2026-09-02"
       }
     ],
-    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco."
+    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco. O Ω6R-SEC-002 SAIU desta lista no ciclo 2 do B-O6R-07a: deixou de ser declarado fechado (virou parcialmente_superado, com 9 rotas nomeadas na pendência P-O6R-SUBRECURSO-OBJECT-SCOPE) e não se aguarda merge do que não se declara fechado."
   },
   "findings": {
     "as_of": "2026-09-02",
@@ -241,8 +236,8 @@
         "id": "Ω6R-SEC-002",
         "severidade": "P0",
         "modulo": "work-orders / approvals / RBAC",
-        "status": "fechado",
-        "resumo": "O técnico de campo pode aprovar a própria ordem de serviço — a mesma permissão serve para editar e para aprovar.",
+        "status": "parcialmente_superado",
+        "resumo": "O técnico de campo podia aprovar a própria ordem de serviço; papel, SoD e escopo nas duas rotas guardadas foram fechados, mas 9 rotas mutantes (anexos, comentários, geocode) seguem alcançáveis sobre OS alheia.",
         "bloco": "B-O6R-07"
       },
       {

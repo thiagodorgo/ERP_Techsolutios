@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **249** |
-| IDs distintos | 240 |
-| **ABERTAS** | **194** |
+| Cabecalhos `## P-` | **252** |
+| IDs distintos | 243 |
+| **ABERTAS** | **197** |
 | — das quais **diferidas** (balde C) | 76 |
-| — das quais **ativas nesta rodada** | **118** |
+| — das quais **ativas nesta rodada** | **121** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 55 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **249 cabecalhos para 240 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **252 cabecalhos para 243 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -55,7 +55,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 36
+## ABERTAS · balde A — material — 38
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -95,8 +95,10 @@
 | `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5224 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
 | `P-SYNC-AGENTS-NAO-RECURSIVO` | 5293 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
 | `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` | 5589 | MÉDIA | sim | P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉD |
+| `P-O6R-SUBRECURSO-OBJECT-SCOPE` | 5717 | ALTA | sim | P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis  |
+| `P-AUTH-KDF-ROTACAO-V2` | 5764 | MÉDIA | sim | P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem m |
 
-## ABERTAS · balde B — processo/registro — 82
+## ABERTAS · balde B — processo/registro — 83
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -182,6 +184,7 @@
 | `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` | 5374 | BAIXA | sim | P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, § |
 | `P-ESPELHO-C7-3-MECANISMO-PESQUISADOR` | 5506 | BAIXA | sim | P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — |
 | `P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5` | 5550 | BAIXA | sim | P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BA |
+| `P-KPI-HISTORY-MD-BACKLOG` | 5782 | BAIXA | sim | P-KPI-HISTORY-MD-BACKLOG (registro 4/7, 2026-09-03) — espelho `Kpis/kpis-history.md` com |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 76
 

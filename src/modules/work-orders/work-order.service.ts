@@ -814,7 +814,22 @@ export class WorkOrderService {
     const resolver = this.references.resolveActorOperatorProfileId;
     const operatorProfileId = resolver ? await resolver(actor) : undefined;
 
-    if (!operatorProfileId || workOrder.assignedOperatorId !== operatorProfileId) {
+    // B-O6R-07a CICLO 2 (C2·4, opção (c)) — DUAL-MATCH: a atribuição prova-se pelo PERFIL do ator ou
+    // pelo USER ID dele. As duas formas existem de fato em `assigned_operator_id` porque o write do
+    // assign faz `body.operatorId ?? body.userId` (l.1669) e o app de campo manda `userId` — sem o
+    // segundo ramo, o técnico LEGITIMAMENTE atribuído pelo app recebia 403 no PATCH e no PATCH
+    // /status (achado `C1-A4`, defeito operacional criado pelo guard do ciclo 1).
+    //
+    // Segurança do ramo novo, dita às claras: só quem porta `work_orders:assign` escreve esse campo
+    // (o técnico NÃO — medido), logo ele só concede a quem um ATRIBUIDOR nomeou; ids são gerados e
+    // não escolhidos, então colisão entre user id e perfil de outrem não é vetor. Fail-closed
+    // preservado: sem match nos DOIS ramos → 403; cross-tenant segue 404 (o guard só roda depois do
+    // `findById` tenant-scoped). O write continua torto e é do `Ω6R-QUA-004`, que segue ABERTO.
+    const atribuidoPorPerfil =
+      Boolean(operatorProfileId) && workOrder.assignedOperatorId === operatorProfileId;
+    const atribuidoPorUsuario = workOrder.assignedOperatorId === actor.userId;
+
+    if (!atribuidoPorPerfil && !atribuidoPorUsuario) {
       throw new WorkOrderError(
         403,
         "WORK_ORDER_NOT_ASSIGNED",

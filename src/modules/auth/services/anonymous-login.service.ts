@@ -72,6 +72,16 @@ type AnonymousLoginDeps = {
     roleCount: number,
     auditContext: { readonly ipAddress?: string; readonly userAgent?: string },
   ) => Promise<void>;
+  // B-O6R-07a CICLO 2 (C2·3) — cobrança da falha como ATO ÚNICO PÓS-VEREDICTO (em produção:
+  // `LocalAuthLoginService.registerAnonymousFailure`, espelhado em `auth-runtime.ts` sob
+  // withTenantRls). Opcional pela mesma razão estrutural das demais deps de arnês: dublês que não
+  // exercem o ramo de falha não precisam dela; a fiação real SEMPRE a fornece (auth.routes.ts).
+  readonly registerFailure?: (
+    tenantId: string,
+    credentialId: string,
+    email: string,
+    auditContext: { readonly ipAddress?: string; readonly userAgent?: string },
+  ) => Promise<void>;
   readonly verifyPasswordFn?: typeof verifyPassword;
   readonly bucketStore?: TokenBucketStore;
   readonly minLatencyMs?: number;
@@ -167,6 +177,13 @@ export class AnonymousLoginService {
       readonly candidate: AnonymousLoginCandidateRef;
       readonly result: Extract<AnonymousCandidateResult, { ok: true }>;
     }> = [];
+    // C2·3 — candidatos COBRÁVEIS: só quem falhou a SENHA (o verify devolve `charge`). Quem está
+    // em lock ou não existe no tenant nunca entra aqui — o lock não é combustível.
+    const chargeableFailures: Array<{
+      readonly tenantId: string;
+      readonly credentialId: string;
+      readonly failedAttempts: number;
+    }> = [];
 
     for (const candidate of candidates) {
       const result = await this.deps.verifyCandidate(
@@ -178,10 +195,32 @@ export class AnonymousLoginService {
 
       if (result.ok) {
         successes.push({ candidate, result });
+      } else if (result.charge) {
+        chargeableFailures.push({
+          tenantId: candidate.tenantId,
+          credentialId: result.charge.credential_id,
+          failedAttempts: result.charge.failed_attempts,
+        });
       }
     }
 
     if (successes.length === 0) {
+      // B-O6R-07a CICLO 2 (C2·3) — a cobrança é ATO ÚNICO PÓS-VEREDICTO: 1 requisição falhada =
+      // ≤1 incremento (o MESMO UPDATE atômico do B01) + ≤1 linha de auditoria, contra EXATAMENTE
+      // UM candidato — o de MENOR failed_attempts entre os que falharam a senha (empate → ordem
+      // estável da lista). Sucesso em qualquer candidato ⇒ zero cobrança (este ramo nem roda).
+      // Fica DEPOIS do laço e ANTES do settle: o piso de 400 ms segue cobrindo a escrita. A
+      // corrida benigna entre requisições concorrentes afeta só a distribuição da cobrança, nunca
+      // a atomicidade do incremento.
+      if (chargeableFailures.length > 0 && this.deps.registerFailure) {
+        const [target] = [...chargeableFailures].sort((a, b) => a.failedAttempts - b.failedAttempts);
+
+        await this.deps.registerFailure(target.tenantId, target.credentialId, email, {
+          ipAddress: input.ipAddress,
+          userAgent: input.userAgent,
+        });
+      }
+
       // 401 uniforme — inclusive quando algum candidato estava em lock (sem 423 anônimo).
       return this.settle(startMs, { kind: "invalid" });
     }

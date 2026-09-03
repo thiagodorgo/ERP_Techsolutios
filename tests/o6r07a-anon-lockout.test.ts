@@ -33,17 +33,17 @@ const EMAIL = "alvo@example.com";
 const SENHA_CERTA = "SenhaCerta123!";
 const SENHA_ERRADA = "SenhaErrada123!";
 
+// CICLO 2 (C2·3): o sítio da cobrança saiu de `verifyAnonymousCandidate` (que voltou a ser SEM
+// efeito colateral) para o ato único pós-veredicto em `AnonymousLoginService.attempt`. Ajuste
+// MECÂNICO exigido pela assinatura interna: os dois primeiros testes passam a exercer o caminho
+// real (`attempt`); as asserções de contagem NÃO afrouxam — 1 falha mono-org segue = 1 incremento
+// (o MESMO do B01) + 1 linha de rastro, idêntico ao ciclo 1.
 test("(I-REUSO) falha anônima chama o incrementFailedAttempts do B01 — e NENHUM contador novo", async () => {
   const harness = await buildHarness();
 
-  const result = await harness.service.verifyAnonymousCandidate({
-    tenant_id: TENANT,
-    email: EMAIL,
-    password: SENHA_ERRADA,
-  });
+  const outcome = await harness.anonymous.attempt({ email: EMAIL, password: SENHA_ERRADA });
 
-  assert.equal(result.ok, false);
-  assert.equal(result.ok === false ? result.reason : null, "invalid_credentials");
+  assert.equal(outcome.kind, "invalid");
   assert.deepEqual(
     harness.repository.mutations,
     [`incrementFailedAttempts:credential-1:${TENANT}`],
@@ -55,11 +55,7 @@ test("(I-REUSO) falha anônima chama o incrementFailedAttempts do B01 — e NENH
 test("(rastro) a falha anônima deixa 1 linha de auditoria interna, marcada como sem organização", async () => {
   const harness = await buildHarness();
 
-  await harness.service.verifyAnonymousCandidate({
-    tenant_id: TENANT,
-    email: EMAIL,
-    password: SENHA_ERRADA,
-  });
+  await harness.anonymous.attempt({ email: EMAIL, password: SENHA_ERRADA });
 
   assert.equal(harness.auditRows.length, 1, "exatamente UMA linha por candidato que falhou");
 
@@ -294,6 +290,9 @@ async function buildHarness(): Promise<{
       service.verifyAnonymousCandidate({ tenant_id: tenantId, email, password }, verifyPasswordFn),
     finalizeSuccess: (tenantId, credentialId, user, roleCount) =>
       service.finalizeAnonymousLogin(tenantId, credentialId, user, roleCount, {}),
+    // CICLO 2 (C2·3): a cobrança única pós-veredicto entra pela MESMA fiação do produto.
+    registerFailure: (tenantId, credentialId, email, auditContext) =>
+      service.registerAnonymousFailure(tenantId, credentialId, email, auditContext),
     minLatencyMs: 0,
   });
 

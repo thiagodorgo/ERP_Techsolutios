@@ -176,6 +176,127 @@ test("D3 — a classificação de escopo é exaustiva e a união é por presenç
   assert.equal(actorMutatesAssignedOnly(contexto([])), false);
 });
 
+// -----------------------------------------------------------------------------------------------
+// B-O6R-07a · CICLO 2 (C2·4 do plano) — DUAL-MATCH no READ, opção (c).
+//
+// A tensão que a junta do ciclo 1 devolveu MEDIDA (achado `C1-A4`): o write do assign faz
+// `operatorId: parseRequiredUuid(body.operatorId ?? body.userId)` (work-order.service.ts:1669), ou
+// seja, quando o chamador manda `userId` — que é o que o app Flutter manda, componente `assign`
+// ABERTO do `Ω6R-QUA-004` — o USER ID vai parar dentro de `assigned_operator_id`, que é campo de
+// PERFIL. O guard deste bloco comparava só contra o perfil, então o técnico LEGITIMAMENTE atribuído
+// recebia 403 no PATCH e no PATCH /status: um defeito operacional que o guard NOVO criou, e que
+// travaria a fila offline do app de campo.
+//
+// O conserto é no READ, não no write: a atribuição prova-se por perfil OU por user id. Segurança:
+// só quem porta `work_orders:assign` escreve o campo (o técnico não), logo o segundo ramo só concede
+// a quem um ATRIBUIDOR nomeou. `Ω6R-QUA-004` SEGUE ABERTO com o dono dele — o write continua torto.
+//
+// VERMELHO-CONTROLE (C2·6 item 3): os três casos abaixo VERMELHOS no código pré-correção `9d44989`
+// (o técnico nomeado por user id recebe 403). Registro em
+// agent-orchestration/omega/juntas/votos/O6R-07a/dev-ciclo2.md, item D3.a.
+// -----------------------------------------------------------------------------------------------
+
+test("D3/DM1 — atribuído por USER ID (a forma que o app grava): o técnico nomeado muta update E status", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed }) => {
+    const os = await criarOsAtribuidaPorUserId(baseUrl, seed, seed.tecnicoA.id);
+    const headersA = authHeaders(seed.tenantA, seed.tecnicoA, "field_technician");
+
+    const update = await requestJson(baseUrl, `/api/v1/work-orders/${os}`, {
+      method: "PATCH",
+      headers: headersA,
+      body: { title: "Editada por quem foi nomeado por user id" },
+    });
+    const status = await requestJson(baseUrl, `/api/v1/work-orders/${os}/status`, {
+      method: "PATCH",
+      headers: headersA,
+      body: { status: "accepted" },
+    });
+
+    // As DUAS rotas guardadas pelo bloco — o 403 do ciclo 1 aparecia nas duas, e o conserto tem de
+    // valer nas duas (o guard é um só, mas quem prova é a execução).
+    assert.equal(update.status, 200, `PATCH /:id do técnico ATRIBUÍDO veio ${update.status}`);
+    assert.equal(update.body.data.title, "Editada por quem foi nomeado por user id");
+    assert.equal(status.status, 200, `PATCH /:id/status do técnico ATRIBUÍDO veio ${status.status}`);
+    assert.equal(status.body.data.status, "accepted");
+  });
+});
+
+test("D3/DM2 — o dual-match NÃO é permissão-a-mais: só o usuário nomeado passa, o colega segue 403", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed }) => {
+    const os = await criarOsAtribuidaPorUserId(baseUrl, seed, seed.tecnicoA.id);
+
+    // O colega tem o MESMO papel e as MESMAS permissões; a única diferença é não ter sido nomeado.
+    const colega = await requestJson(baseUrl, `/api/v1/work-orders/${os}`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.tecnicoB, "field_technician"),
+      body: { title: "Sequestrada pelo colega" },
+    });
+
+    assert.equal(colega.status, 403, `o colega NÃO nomeado veio ${colega.status}`);
+    assert.equal(colega.body.error.code, "WORK_ORDER_NOT_ASSIGNED");
+    assert.equal(colega.body.error.reason, "not_assigned_to_actor");
+
+    // O par que dá sentido ao negativo: o nomeado passa. Sem ele, "403 para todos" ficaria verde
+    // aqui e o teste não distinguiria conserto de guard caído.
+    const nomeado = await requestJson(baseUrl, `/api/v1/work-orders/${os}`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantA, seed.tecnicoA, "field_technician"),
+      body: { title: "Editada por quem foi nomeado" },
+    });
+
+    assert.equal(nomeado.status, 200, `o técnico NOMEADO veio ${nomeado.status}`);
+    assert.equal(nomeado.body.data.title, "Editada por quem foi nomeado");
+
+    // A recusa do colega não pode ter deixado efeito nenhum.
+    const conferencia = await requestJson(baseUrl, `/api/v1/work-orders/${os}`, {
+      headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    });
+    assert.equal(conferencia.body.data.title, "Editada por quem foi nomeado");
+  });
+});
+
+test("D3/DM3 — as DUAS formas de atribuição coexistem e a fronteira 403/404 não se mexeu", async () => {
+  await withWorkOrderApi(async ({ baseUrl, seed }) => {
+    const porPerfil = await criarOsAtribuida(baseUrl, seed, seed.perfilA.id);
+    const porUserId = await criarOsAtribuidaPorUserId(baseUrl, seed, seed.tecnicoA.id);
+    const headersA = authHeaders(seed.tenantA, seed.tecnicoA, "field_technician");
+
+    // Forma canônica ANTIGA (perfil): o ramo que já existia não pode ter sido SUBSTITUÍDO pelo novo.
+    const viaPerfil = await requestJson(baseUrl, `/api/v1/work-orders/${porPerfil}`, {
+      method: "PATCH",
+      headers: headersA,
+      body: { title: "Pela forma de perfil" },
+    });
+    assert.equal(viaPerfil.status, 200, `atribuição por PERFIL veio ${viaPerfil.status}`);
+
+    // Forma canônica NOVA (user id): a que existe de fato no banco por causa do write torto.
+    const viaUserId = await requestJson(baseUrl, `/api/v1/work-orders/${porUserId}`, {
+      method: "PATCH",
+      headers: headersA,
+      body: { title: "Pela forma de user id" },
+    });
+    assert.equal(viaUserId.status, 200, `atribuição por USER ID veio ${viaUserId.status}`);
+
+    // 404 do cross-tenant INTOCADO — o ramo novo não pode virar oráculo de existência para estranho.
+    const estranho = await requestJson(baseUrl, `/api/v1/work-orders/${porUserId}`, {
+      method: "PATCH",
+      headers: authHeaders(seed.tenantB, seed.tecnicoB2, "field_technician"),
+      body: { title: "De outra organizacao" },
+    });
+    assert.equal(estranho.status, 404, `cross-tenant veio ${estranho.status}, e tem de ser 404`);
+
+    // Fail-closed preservado: OS SEM atribuição segue 403 — "ninguém é dono" não virou "todos são".
+    const orfa = await criarOs(baseUrl, seed);
+    const orfaResposta = await requestJson(baseUrl, `/api/v1/work-orders/${orfa}`, {
+      method: "PATCH",
+      headers: headersA,
+      body: { title: "Ordem de ninguem" },
+    });
+    assert.equal(orfaResposta.status, 403, `OS órfã veio ${orfaResposta.status}`);
+    assert.equal(orfaResposta.body.error.code, "WORK_ORDER_NOT_ASSIGNED");
+  });
+});
+
 // Os usuários deste arnês são UUIDs CRUS, e não `core.createUser(...)`: o store em memória emite id
 // no formato `usr-000001`, enquanto `users.id` é `@db.Uuid` no schema e `OperatorProfileService`
 // valida `user_id` como UUID. Usar o formato de produção mantém o teste medindo o produto, não o
@@ -213,6 +334,26 @@ async function criarOsAtribuida(baseUrl: string, seed: SeedData, operatorProfile
   });
   assert.equal(atribuida.status, 200, `atribuição falhou: ${JSON.stringify(atribuida.body)}`);
   assert.equal(atribuida.body.data.assignedOperatorId, operatorProfileId);
+  return workOrderId;
+}
+
+// CICLO 2 (C2·4) — a atribuição na forma que o app de campo REALMENTE manda: corpo com `userId` e
+// sem `operatorId`. Não é hipótese: `work-order.service.ts:1669` faz `body.operatorId ?? body.userId`
+// e grava o resultado em `assigned_operator_id`, campo de PERFIL. A asserção abaixo é a prova
+// executada dessa tensão (`Ω6R-QUA-004`, componente `assignWorkOrder`, que segue ABERTO).
+async function criarOsAtribuidaPorUserId(baseUrl: string, seed: SeedData, userId: string): Promise<string> {
+  const workOrderId = await criarOs(baseUrl, seed);
+  const atribuida = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/assign`, {
+    method: "POST",
+    headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    body: { userId },
+  });
+  assert.equal(atribuida.status, 200, `atribuição por user id falhou: ${JSON.stringify(atribuida.body)}`);
+  assert.equal(
+    atribuida.body.data.assignedOperatorId,
+    userId,
+    "o write grava o USER ID no campo de perfil — é esta a forma que o dual-match do READ aceita",
+  );
   return workOrderId;
 }
 

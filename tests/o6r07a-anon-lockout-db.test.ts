@@ -195,6 +195,82 @@ if (!connectionString) {
         assert.equal(credential?.failed_attempts, 0);
         assert.equal(credential?.locked_until, null);
       });
+
+      // B-O6R-07a CICLO 2 (C2·3) — M3 sob RLS REAL: o e-mail vive em DUAS organizações e a
+      // cobrança é ATO ÚNICO pela fiação de produção (auth.routes → auth-runtime →
+      // withTenantRls → registerAnonymousFailure), não pelo arnês em memória. É a prova que a
+      // ampliação nominal do C2·5 item 4 obriga.
+      await t.test("CICLO 2: e-mail em DUAS organizações — 1 requisição falhada = 1 incremento + 1 linha, com ipAddress/userAgent (N=3)", async () => {
+        const emailMulti = `o6r07a-multi-${suffix}@example.com`;
+        const orgM1 = await createOrgWithUser(adminClient, {
+          name: `O6R07a Multi 1 ${suffix}`,
+          slug: `o6r07a-multi-1-${suffix}`,
+          email: emailMulti,
+          password: "SenhaMulti1123!",
+        });
+        const orgM2 = await createOrgWithUser(adminClient, {
+          name: `O6R07a Multi 2 ${suffix}`,
+          slug: `o6r07a-multi-2-${suffix}`,
+          email: emailMulti,
+          password: "SenhaMulti2123!",
+        });
+
+        tenantIds.push(orgM1.tenantId, orgM2.tenantId);
+
+        const somaContadores = async () => {
+          const rows = await adminClient.localAuthCredential.findMany({
+            where: { tenant_id: { in: [orgM1.tenantId, orgM2.tenantId] } },
+            select: { failed_attempts: true },
+          });
+
+          return rows.reduce((sum, row) => sum + row.failed_attempts, 0);
+        };
+        const linhasDeRastro = () =>
+          adminClient.auditLog.findMany({
+            where: {
+              tenant_id: { in: [orgM1.tenantId, orgM2.tenantId] },
+              action: "auth.login.failed",
+            },
+            orderBy: { created_at: "asc" },
+          });
+
+        // N=3: a cada requisição falhada, a soma dos contadores entre as DUAS organizações sobe
+        // EXATAMENTE 1 e nasce EXATAMENTE 1 linha de rastro (o ciclo 1 fazia 2+2 por requisição).
+        for (let tentativa = 1; tentativa <= 3; tentativa += 1) {
+          const response = await requestJson(baseUrl, "/api/v1/auth/login", {
+            method: "POST",
+            headers: { "user-agent": "o6r07a-ciclo2-db-probe" },
+            body: { email: emailMulti, password: "SenhaErradaNasDuas123!" },
+          });
+
+          assert.equal(response.status, 401, "401 uniforme em toda falha anônima");
+          assert.equal(
+            await somaContadores(),
+            tentativa,
+            `após a requisição ${tentativa}: soma dos incrementos entre as orgs = ${tentativa}`,
+          );
+          assert.equal(
+            (await linhasDeRastro()).length,
+            tentativa,
+            `após a requisição ${tentativa}: linhas de rastro = ${tentativa}`,
+          );
+        }
+
+        for (const row of await linhasDeRastro()) {
+          const metadata = row.metadata as {
+            loginMode?: string;
+            ipAddress?: string;
+            userAgent?: string;
+          } | null;
+
+          assert.equal(metadata?.loginMode, "without_org");
+          assert.ok(
+            metadata?.ipAddress,
+            "o rastro anônimo carrega ipAddress (fecha P-O6R-B07A-RASTRO-ANONIMO-SEM-IP)",
+          );
+          assert.equal(metadata?.userAgent, "o6r07a-ciclo2-db-probe");
+        }
+      });
     } finally {
       if (server) {
         await closeServer(server);

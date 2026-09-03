@@ -101,6 +101,9 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
             ),
           finalizeSuccess: (tenantId, credentialId, user, roleCount, auditContext) =>
             loginService.finalizeAnonymousLogin(tenantId, credentialId, user, roleCount, auditContext),
+          // B-O6R-07a CICLO 2 (C2·3) — cobrança única pós-veredicto da falha anônima.
+          registerFailure: (tenantId, credentialId, email, auditContext) =>
+            loginService.registerAnonymousFailure(tenantId, credentialId, email, auditContext),
         });
       }
 
