@@ -6,7 +6,7 @@
   "release": {
     "block": "\nB-O6R-07a — sub-bloco de AUTORIZACAO da trilha `fix/authorization-and-uploads` do plano Ω6R: fecha o P0 Ω6R-SEC-002 (permissao dedicada `work_orders:approve`, SoD no decide e escopo por objeto no caminho do tecnico), fecha os dois residuais do P1 Ω6R-SEC-003 (lockout no caminho anonimo e rate-limit por IP), pina N/r/p no scrypt de tenant e PROVISIONA a chave nova por MIGRACAO — sem ela a permissao nasce morta em producao. Ω6R-SEC-004 (uploads) NAO entra: e o 07b.",
     "title": "\nO tecnico de campo para de aprovar a propria ordem de servico — e a permissao chega ao banco",
-    "pr": null,
+    "pr": 369,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
