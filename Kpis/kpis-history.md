@@ -2521,7 +2521,7 @@ Cluster descartável próprio; base viva `erp-postgres`/`erp-redis` sem um únic
 | **D35** (`up→down→re-up`) | 1 | `pg_constraint` **5→4→5**; no down **só os 2 casos C9 caem**; `VALIDATE` 3.635 ms |
 | **D29** (bateria barata, lista-6) | 13 | 13/13, forma `(6, 37)` constante, 0 `XX000` |
 
-### O que não fechou — com o produtor nomeado
+### O que não fechou — o que a execução nomeia, e o que ela não nomeia
 
 O **vazamento linear** das rodadas verdes (+10/rodada) teve as **TABELAS** nomeadas por execução, em
 rodada instrumentada com snapshot por tabela: `auth_identities` **+5** e `auth_identity_link_events` **+5**

@@ -877,3 +877,29 @@ com esta linha como evidência — não houve consolidação silenciosa.
 - saída: JSONs válidos; FROZEN reinjetado (snapshot 2026-09-03); guards **22/22 ec=0**; `pendencias.md`
   com EOL uniforme (5730 CR / 5730 linhas)
 - parcial: OK
+
+## Ajuste A1 da junta — a manchete que sobreviveu à própria correção — 2026-09-04
+
+> **Papéis:** achou a cadeira **C1** (`jurado-c5-arnes-catalogo-postgres`), no voto que APROVOU o bloco;
+> consertou o executor. Gravidade **ajuste**, escopo `dentro-do-bloco`, nomeado para conserto
+> **antes/no merge** — não bloqueia, mas não vai para a main como está.
+
+- comando: leitura do achado A1 do voto `02-C1-arnes-catalogo-postgres.md` + `node -e` localizando a string em cada artefato
+- saída: **procede.** A correção do ACHADO-4 (commit `2709f4b`) trocou a **afirmação operativa** em cinco
+  publicações, mas deixou de pé a **manchete** `"O QUE NAO FECHOU — e o produtor NOMEADO POR EXECUCAO"` em
+  três instâncias: `release.summary` do `kpis-latest.json` (sem nota de correção no próprio texto), o
+  `FROZEN` do `Kpis/app.js` que o espelha, a `description` do `kpis-history.json` e o heading l.2524 do
+  `kpis-history.md`. **Causa do meu erro, nomeada:** meu `grep` de verificação buscou `"NOMEADO por
+  execucao"` em caixa mista e a manchete está em **caixa alta** — e, no `release.summary`, a cópia foi
+  feita da `description` **antes** de eu corrigi-la. Manchete e nota do mesmo artefato se contradiziam
+- correção: manchete reescrita para `"O QUE NAO FECHOU — e o que a execucao NOMEIA e o que ela NAO
+  nomeia."` na `description` do history; `release.summary` **re-sincronizado a partir da description já
+  corrigida** (a origem do defeito era a cópia antecipada); heading do `history.md` reescrito;
+  `node scripts/kpi-freeze.mjs` reinjetou o `FROZEN`
+- saída da revalidação: `grep -c "NOMEADO POR EXECUCAO"` = **0** nos quatro artefatos; guards
+  `kpi-achados-paridade` + `kpi-dashboard-charts` **22/22 ec=0**; JSONs válidos
+- parcial: OK — **propriedade que a C1 nomeia e que este registro adota:** *toda instância da afirmação
+  num artefato publicado diz exatamente o que a execução exercitou — manchete e corpo não podem se
+  contradizer dentro do mesmo artefato.* É a terceira materialização, nesta mesma rodada, da classe
+  "a frase afirma mais do que a execução exercitou": a primeira foi apanhada pelo crítico, a segunda e a
+  terceira pelo inspetor e pela C1. Nenhuma delas por releitura minha
