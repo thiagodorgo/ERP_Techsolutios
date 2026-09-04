@@ -903,3 +903,49 @@ com esta linha como evidência — não houve consolidação silenciosa.
   contradizer dentro do mesmo artefato.* É a terceira materialização, nesta mesma rodada, da classe
   "a frase afirma mais do que a execução exercitou": a primeira foi apanhada pelo crítico, a segunda e a
   terceira pelo inspetor e pela C1. Nenhuma delas por releitura minha
+
+## Fase de publicação — o gate `G-A109FD7-PUBLICADO` e o que ele obriga — 2026-09-04
+
+### G.0 — o gate foi ACHADO antes de eu propor o merge, e ele bloqueava
+
+- comando: `grep -n "G-A109FD7-PUBLICADO" agent-orchestration/controle/pendencias.md`; `git merge-base --is-ancestor a109fd7 origin/main`; `gh pr list --head chore/ressalvas-porteiro-357`
+- saída: gate **ABERTO**, com o texto *"bloqueia push/abertura do PR B-O6R-02 **e seu merge**"* e a proibição
+  nomeada do atalho (*"cherry-pick silencioso de `a109fd7` no PR financeiro é proibido"*). `a109fd7` **não**
+  é ancestral de `origin/main`; **nenhum PR** existia para a branch. Ou seja: eu estava prestes a propor o
+  merge do ciclo 5 sobre um bloqueio formal que não tinha conferido
+- parcial: OK — corrigido antes de agir; a verificação de gate passa a ser passo explícito antes de propor merge
+
+### G.1 — decisão da Fase 0 (dono, fonte §A1.1)
+
+- comando: apresentação do plano ao dono com duas decisões pedidas — (1) quem conduz o PR das ressalvas,
+  (2) se ele passa por junta própria; recomendação registrada: dispensar junta (42 linhas de teste e
+  registro, **zero diff de produto**, em que 3 cadeiras custariam mais do que protegem)
+- saída: **"faça no modo autônomo, siga"** — o dono, tendo lido a recomendação, autorizou a execução
+  autônoma. Registro a leitura que adoto, para não fabricar autorização mais ampla do que a dada: (1) o PR
+  das ressalvas é conduzido por mim; (2) **junta dispensada** para ele, com a justificativa acima escrita no
+  corpo do PR e aqui. O `B-O6R-02` **não** é abrangido por esta dispensa — ele já tem junta 3×0
+- parcial: OK
+
+### G.2 — o que o gate obriga, medido antes de começar
+
+- comando: leitura literal da cláusula + `git diff origin/main...origin/chore/ressalvas-porteiro-357 --stat`
+  + `git merge-tree` da branch de ressalvas contra o meu head + contagem de `test()` novos
+- saída: a branch tem **5 arquivos, +42 −3**; as mudanças em `core-saas-role-authority-db.test.ts` são
+  **só comentário** (todas as linhas `//` — zero mudança de comportamento); mas **`auth-invariant-guards.test.ts`
+  ganha 1 `test()` novo** (guard 11: `catalog.ts` não pode ganhar import). **Consequência que domina a fase:
+  o denominador da canônica 3 passa de 2771 para 2772**, e o gate exige, com estas palavras, *"bateria/
+  contagens B-O6R-02 reexecutadas depois da atualização"* — nenhum número meu sobrevive à absorção sem ser
+  refeito. Conflitos previstos na absorção: `Kpis/app.js` e `pendencias.md` (nenhum em `src/`, migration ou
+  testes)
+- parcial: OK — plano de 5 fases desenhado a partir disto, não de suposição
+
+### G.3 — o delta pós-junta, medido e declarado
+
+- comando: `git log --oneline 2709f4b..HEAD`; `git diff --stat 7fb5c08 HEAD`
+- saída: a junta julgou **`2709f4b`**. Depois vieram 7 commits: o primeiro (`7fb5c08`) é **o ajuste A1 que a
+  própria junta pediu**; os outros 6 somam **+272 linhas, 0 remoções, exclusivamente em `pendencias.md`**
+  (append puro, registro de governança e de método nascido da troca com a sessão do `B-O6R-07a`)
+- parcial: **DECLARADO, e com consequência.** Hoje esse delta é defensável como registro fora do mérito;
+  **depois da reexecução da bateria (Fase 3) ele deixa de ser**, porque os números que a junta validou mudam.
+  Por isso o plano inclui **re-passada das três cadeiras sobre o head final, com mandato restrito ao delta** —
+  mergear um head cujos números ninguém julgou seria a classe exata que reprovou os ciclos anteriores
