@@ -5975,3 +5975,28 @@ custaria a justificativa do método. **Consequências adotadas:**
    série**, não em nota de rodapé — a sessão irmã já se comprometeu a reportar o da cadeira C3 dela;
 3. esta entrada **não conclui**; ela **inventaria**, com colunas separadas por conserto e o denominador
    parcial acima. Quem for concluir que o faça com a série fechada e sabendo quem a compilou.
+
+### Emenda de 2026-09-04 (iii) — os dois limites do compilador, e o fecho desta linha
+
+Acordado entre as duas sessões. **O `porteiro-pos-merge` compila o recorte da série, com dois limites
+escritos — e os dois protegem contra o registro comer a coisa que ele deveria servir.**
+
+**Limite 1 — a série é ADICIONAL e SUBORDINADA ao gate.** O porteiro existe para **autorizar ou barrar o
+início do próximo bloco**; essa é a função cara. A contagem metodológica entra **depois** de ele fechar o
+mandato próprio, com esta forma: *"além do seu mandato, e depois de fechá-lo, informe quantas
+re-execuções você fez, quantas confirmaram e quantas refutaram"*. **Se ele BARRAR o start, o parecer é
+sobre isso** — não diluído por contagem. Formulação da sessão irmã, adotada aqui: *"se o mandato dele
+crescer ao ponto de a série competir com o gate, perdemos a coisa mais cara para ganhar a mais barata."*
+
+**Limite 2 — o porteiro é neutro quanto à premissa, mas NÃO é externo ao processo.** Ele nasce do mesmo
+contrato que criou as juntas. **Não é o terceiro ideal; é o menos interessado disponível.** Fica escrito
+para que quem ler depois **não tome por independência o que é só distância**.
+
+**Compromissos registrados da sessão irmã** (para o denominador não ficar no ar): ao fechar a ata do ciclo
+2 do `B-O6R-07a`, informa (a) total de execuções adversariais das três cadeiras, (b) quantas confirmaram ×
+quantas refutaram, e (c) **o caso negativo da C3, se ela não achar nada** — *"a metade que falta e a única
+que ninguém tem incentivo para reportar"*.
+
+**Estado desta entrada:** inventário aberto, com 5 casos em 3 colunas separadas por conserto, denominador
+parcial de um lado, denominador do outro lado prometido, compilador nomeado com dois limites e viés dos
+compiladores declarado. **Não conclui — e não deve concluir até ter as duas metades.**
