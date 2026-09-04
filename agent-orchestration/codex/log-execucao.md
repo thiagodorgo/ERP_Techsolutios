@@ -1,3 +1,44 @@
+## 2026-09-03 - B-O6R-07a CICLO 2 - reversao do SEC-002, cobranca unica pos-veredicto, dual-match no guard de objeto
+
+### Resumo
+
+Ciclo 2 do sub-bloco de autorizacao (branch `fix/o6r07a-authorization`, PR #369): o ciclo 1 foi
+REPROVADO 2x1 (vetos C1/autorizacao e C2/auth multi-organizacao) e este e a ULTIMA tentativa
+(`D-TETO-DOIS-CICLOS`). Plano: apenso `## CICLO 2` (C2·0-C2·8) do `B-O6R-07-plano.md`, por
+planejador-mestre de identidade nova. Papeis (§C7.4-bis): quem ACHOU = cadeiras C1/C2 do ciclo 1;
+quem PLANEJOU = o apenso; quem DESENVOLVEU = sucessao de identidades novas A->B->C (3 quedas de
+infraestrutura registradas em `votos/O6R-07a/00-quedas.md`; diario unico `dev-ciclo2.md`).
+
+### Entregue
+
+- **C2-A1**: cobranca do lockout anonimo sai de `verifyAnonymousCandidate` (volta a ser sem efeito
+  colateral) e vira ato unico pos-veredicto em `AnonymousLoginService.attempt` — 1 requisicao
+  falhada = 1 incremento (o mesmo UPDATE atomico do B01) + 1 linha de auditoria com
+  `ipAddress`/`userAgent` (fecha `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`). `auth-runtime.ts` ganha SO o
+  espelho `withTenantRls` do metodo novo (ampliacao nominal do C2·5).
+- **C1-A4**: dual-match em `assertMutationObjectScope` (perfil OU user id, ~2 linhas) — o write do
+  assign grava user id no campo de perfil e o tecnico legitimamente atribuido recebia 403;
+  fail-closed e 404 cross-tenant preservados; `Ω6R-QUA-004` segue aberto.
+- **C1-A1**: `Ω6R-SEC-002` deixa de ser declarado fechado — `parcialmente_superado` com as 9 rotas
+  abertas nomeadas (3 execucao, 4 leitura, 2 env), dona `P-O6R-SUBRECURSO-OBJECT-SCOPE` (ALTA,
+  `B-O6R-07c`); distribuicao P0 15 = 4 fechados, 1 parcialmente superado, 10 abertos; SEC-002 fora
+  de `aguardando_merge`; `p0_fechados` segue 4.
+- Migracao `20260871000000`: cabecalho `--` (runbook de down + dependencia de ordem), corpo SQL
+  byte-identico, idempotencia 3x nos dois estados. Pendencias novas: `P-AUTH-KDF-ROTACAO-V2`
+  (MEDIA), `P-KPI-HISTORY-MD-BACKLOG` (BAIXA); correcao da razao da divergencia A3 (margem
+  49,08 ms x 0,04-0,40 ms, >=120x); tudo em `pendencias.md` por APPEND (146/0).
+
+### Bateria
+
+Suite plena canonica: **256 arq · 2656 testes · pass 2654 · fail 0 · skipped 2**, `ec=0`, com
+denominador publicado (Δ +9: multiorg novo 5 · -db +1 · object-scope +3, todos com
+vermelho-controle). Focados N=3: 5/5 · 7/7 · 8/8 · 7/7. `check`/`lint`/`build` `ec=0`; contrato
+mobile 25/25; `git diff --check` limpo; `kpi-freeze --check` `ec=0`; guards `kpi-dashboard-charts`
+16/16 e `kpi-achados-paridade` 6/6. KPI: `backend_tests` 2654/2656 no latest; entrada
+`B-O6R-07a-ciclo2` no history + espelho md apensado; indice de pendencias regenerado pelo gerador
+(249 -> 252 cabecalhos; ABERTAS 194 -> 197). Detalhe integral no diario
+`agent-orchestration/omega/juntas/votos/O6R-07a/dev-ciclo2.md`.
+
 ## 2026-08-28 - B-O6R-ARNES - mecanismo unico de catalogo, teardown que nao deixa papel vivo, piso de denominador
 
 ### Resumo

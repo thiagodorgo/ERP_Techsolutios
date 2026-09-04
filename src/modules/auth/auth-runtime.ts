@@ -60,6 +60,13 @@ async function createLocalAuthLoginService(): Promise<LocalAuthLoginService> {
         buildService(tx).finalizeAnonymousLogin(tenantId, credentialId, user, roleCount, auditContext),
       );
     },
+    // B-O6R-07a CICLO 2 (C2·3) — cobrança única pós-veredicto da falha anônima, na organização do
+    // candidato cobrado (ampliação NOMINAL do C2·5: só este espelho, na forma do método acima).
+    registerAnonymousFailure(tenantId, credentialId, email, auditContext) {
+      return withTenantRls(prisma, tenantId, async (tx) =>
+        buildService(tx).registerAnonymousFailure(tenantId, credentialId, email, auditContext),
+      );
+    },
   } as LocalAuthLoginService;
 }
 

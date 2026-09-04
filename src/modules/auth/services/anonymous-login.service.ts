@@ -30,9 +30,12 @@ import type { LocalAuthLoginResult } from "../types/auth.types.js";
 //   401 uniforme em 0 sucessos — INCLUSIVE candidato em lock (o 423 não existe no caminho
 //   anônimo); 409 TENANT_SELECTION_REQUIRED com SOMENTE as organizações provadas;
 //   piso de latência constante em TODOS os desfechos (padrão settle do authority-portal).
-// O que o balde NÃO fecha (declarado): rotação de e-mails segue sem teto — idêntico ao login de
-// hoje; fecho por IP/distribuído é o B-O6R-07 (P-O6R-B01-RATE-LIMIT-IP). In-process, por
-// instância — store Redis-ready (plugável).
+// O que o balde por e-mail NÃO fecha (declarado no B01): rotação de e-mails segue sem teto.
+// B-O6R-07a (§3.5) FECHOU essa ponta com um balde por IP aplicado às DUAS vias em `auth.routes.ts`
+// (`loginIpBucketKey` abaixo, LOGIN_IP_BUCKET nas constantes) — os dois baldes são independentes e
+// o mais restritivo vence. SEGUE ABERTO e re-nomeado como `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`:
+// balde multi-réplica (Redis) e política de X-Forwarded-For/proxy — decisão de infra, fora do
+// bloco. In-process, por instância — store Redis-ready (plugável).
 // -----------------------------------------------------------------------------------------------
 
 export type AnonymousLoginOutcome =
@@ -69,6 +72,16 @@ type AnonymousLoginDeps = {
     roleCount: number,
     auditContext: { readonly ipAddress?: string; readonly userAgent?: string },
   ) => Promise<void>;
+  // B-O6R-07a CICLO 2 (C2·3) — cobrança da falha como ATO ÚNICO PÓS-VEREDICTO (em produção:
+  // `LocalAuthLoginService.registerAnonymousFailure`, espelhado em `auth-runtime.ts` sob
+  // withTenantRls). Opcional pela mesma razão estrutural das demais deps de arnês: dublês que não
+  // exercem o ramo de falha não precisam dela; a fiação real SEMPRE a fornece (auth.routes.ts).
+  readonly registerFailure?: (
+    tenantId: string,
+    credentialId: string,
+    email: string,
+    auditContext: { readonly ipAddress?: string; readonly userAgent?: string },
+  ) => Promise<void>;
   readonly verifyPasswordFn?: typeof verifyPassword;
   readonly bucketStore?: TokenBucketStore;
   readonly minLatencyMs?: number;
@@ -85,6 +98,16 @@ export function anonymousEmailBucketKey(secret: string, email: string): string {
   const domainKey = createHmac("sha256", secret).update("anonymous-login-bucket-v1", "utf8").digest();
 
   return createHmac("sha256", domainKey).update(normalizeCredentialEmail(email), "utf8").digest("hex");
+}
+
+// B-O6R-07a (§3.5 do plano) — chave do balde por IP: MESMO idioma do balde por e-mail acima
+// (HMAC-SHA256 com subchave derivada de JWT_SECRET por separação de domínio; zero env nova), com
+// rótulo de domínio PRÓPRIO para que os dois baldes nunca colidam. O IP entra normalizado
+// (trim + lower — hex de IPv6 varia de caixa) e NUNCA vai em claro para a chave do store.
+export function loginIpBucketKey(secret: string, ip: string): string {
+  const domainKey = createHmac("sha256", secret).update("login-ip-bucket-v1", "utf8").digest();
+
+  return createHmac("sha256", domainKey).update(ip.trim().toLowerCase(), "utf8").digest("hex");
 }
 
 export class AnonymousLoginService {
@@ -154,6 +177,13 @@ export class AnonymousLoginService {
       readonly candidate: AnonymousLoginCandidateRef;
       readonly result: Extract<AnonymousCandidateResult, { ok: true }>;
     }> = [];
+    // C2·3 — candidatos COBRÁVEIS: só quem falhou a SENHA (o verify devolve `charge`). Quem está
+    // em lock ou não existe no tenant nunca entra aqui — o lock não é combustível.
+    const chargeableFailures: Array<{
+      readonly tenantId: string;
+      readonly credentialId: string;
+      readonly failedAttempts: number;
+    }> = [];
 
     for (const candidate of candidates) {
       const result = await this.deps.verifyCandidate(
@@ -165,10 +195,32 @@ export class AnonymousLoginService {
 
       if (result.ok) {
         successes.push({ candidate, result });
+      } else if (result.charge) {
+        chargeableFailures.push({
+          tenantId: candidate.tenantId,
+          credentialId: result.charge.credential_id,
+          failedAttempts: result.charge.failed_attempts,
+        });
       }
     }
 
     if (successes.length === 0) {
+      // B-O6R-07a CICLO 2 (C2·3) — a cobrança é ATO ÚNICO PÓS-VEREDICTO: 1 requisição falhada =
+      // ≤1 incremento (o MESMO UPDATE atômico do B01) + ≤1 linha de auditoria, contra EXATAMENTE
+      // UM candidato — o de MENOR failed_attempts entre os que falharam a senha (empate → ordem
+      // estável da lista). Sucesso em qualquer candidato ⇒ zero cobrança (este ramo nem roda).
+      // Fica DEPOIS do laço e ANTES do settle: o piso de 400 ms segue cobrindo a escrita. A
+      // corrida benigna entre requisições concorrentes afeta só a distribuição da cobrança, nunca
+      // a atomicidade do incremento.
+      if (chargeableFailures.length > 0 && this.deps.registerFailure) {
+        const [target] = [...chargeableFailures].sort((a, b) => a.failedAttempts - b.failedAttempts);
+
+        await this.deps.registerFailure(target.tenantId, target.credentialId, email, {
+          ipAddress: input.ipAddress,
+          userAgent: input.userAgent,
+        });
+      }
+
       // 401 uniforme — inclusive quando algum candidato estava em lock (sem 423 anônimo).
       return this.settle(startMs, { kind: "invalid" });
     }

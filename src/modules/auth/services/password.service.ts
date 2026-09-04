@@ -119,6 +119,23 @@ function parseScryptHash(passwordHash: string): ParsedScryptHash | undefined {
     return undefined;
   }
 
+  // B-O6R-07a (§3.6 do plano) — PINO de N/r/p. O trio de custo é CONSTANTE DO SISTEMA, nunca
+  // função do dado armazenado: `v=1` significa exatamente N=16384, r=8, p=1, que é o único trio
+  // que `hashPassword` emite. Qualquer outro trio → `undefined` → `invalid_credentials`, SEM
+  // rodar scrypt. Rotacionar o custo exige uma VERSÃO NOVA do formato (v=2) — não um stored que
+  // se auto-descreve.
+  //
+  // Lição do SAN2-4b (`authority-password.ts:89-93`), classe irmã: lá o `keylen` vinha do input
+  // recebido e uma extensão em comprimento era aceita a 1/256 por byte extra. Aqui a mesma
+  // família aparecia no trio de custo, e com duas consequências MEDIDAS neste bloco:
+  //   (1) DOWNGRADE — um stored forjado com N=2 autenticava com a senha correspondente, ou seja,
+  //       quem escrevesse a coluna escolhia o custo do KDF (vermelho-controle: `true !== false`);
+  //   (2) 500 — um stored com N acima do maxmem (64 MiB) fazia o scrypt LANÇAR
+  //       (`ERR_CRYPTO_INVALID_SCRYPT_PARAMS`) e o erro subia sem catch até a rota de login.
+  if (parsed.N !== SCRYPT_N || parsed.r !== SCRYPT_R || parsed.p !== SCRYPT_P) {
+    return undefined;
+  }
+
   return {
     N: parsed.N,
     r: parsed.r,

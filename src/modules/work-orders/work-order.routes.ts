@@ -35,6 +35,13 @@ export const WORK_ORDER_PERMISSIONS = {
   delete: "work_orders:delete",
   comment: "work_orders:comment",
   mileageCorrect: "work_orders:mileage_correct",
+  // B-O6R-07a (Ω6R-SEC-002, P0) — DECIDIR aprovação operacional tem chave PRÓPRIA. Antes deste bloco
+  // approve/reject exigiam `work_orders:update`, a MESMA guarda do PATCH /work-orders/:id — e technician e
+  // field_technician têm `:update` (catalog.ts). Resultado medido pela auditoria Ω6R: o técnico de campo
+  // decidia aprovação tenant-wide. Mesmo idioma do `mileageCorrect` logo acima: quando `:update` é largo
+  // demais para o ato, a casa cria a chave dedicada. LEITURA NÃO DECIDE — GET /approvals/pending e
+  // GET /approvals/:id seguem em `work_orders:read`, de propósito (ver a fila não é decidir nela).
+  approve: "work_orders:approve",
   // CHECKLIST P1 PR-04c-A (§10.3) — o ajuste do conjunto de vistorias reusa a permissão de ENVIAR ao técnico,
   // sem inventar chave nova: o conjunto de atores que despacham (manager, field_dispatcher, tenant_admin por
   // herança e os dois admins) é exatamente quem a decisão do dono descreve para "o operador define no envio".
@@ -75,9 +82,10 @@ export function createWorkOrderRouter(
     }),
   );
 
+  // B-O6R-07a (Ω6R-SEC-002) — decidir exige `work_orders:approve`, NÃO `work_orders:update`.
   router.post(
     "/approvals/:approvalId/approve",
-    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    requirePermission(WORK_ORDER_PERMISSIONS.approve),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await approvalController.approve(request));
     }),
@@ -85,7 +93,7 @@ export function createWorkOrderRouter(
 
   router.post(
     "/approvals/:approvalId/reject",
-    requirePermission(WORK_ORDER_PERMISSIONS.update),
+    requirePermission(WORK_ORDER_PERMISSIONS.approve),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await approvalController.reject(request));
     }),

@@ -33,7 +33,7 @@ import type {
   WorkOrderTeamLink,
   WorkOrderVehicleLink,
 } from "./work-order.types.js";
-import { WorkOrderError } from "./work-order.types.js";
+import { actorMutatesAssignedOnly, WorkOrderError } from "./work-order.types.js";
 import {
   assertNonEmptyString,
   assertStatusTransition,
@@ -167,6 +167,12 @@ export type WorkOrderReferenceResolvers = {
   // CHECKLIST P1 PR-04c-A — rótulo do modelo, para a linha da timeline que o guincheiro lê ("Vistoria X
   // retirada..."). `null` quando não resolve; a mensagem então omite o rótulo em vez de inventá-lo (D-007).
   readonly resolveChecklistLabel?: (actor: WorkOrderActorContext, checklistId: string) => Promise<string | null>;
+  // B-O6R-07a (Ω6R-SEC-002, §3.3) — o PERFIL DE CAMPO do próprio ator, para o escopo por objeto.
+  // `work_orders.assigned_operator_id` guarda o id do OperatorProfile; OperatorProfile é 1:1 com
+  // (tenant_id, user_id), então o mapeamento ator→perfil existe e é uma leitura só. Devolve undefined
+  // quando o usuário não tem perfil profissional — e, para um ator de campo, "sem perfil" significa
+  // "nenhuma ordem é dele", que é a recusa correta.
+  readonly resolveActorOperatorProfileId?: (actor: WorkOrderActorContext) => Promise<string | undefined>;
 };
 
 type ServiceCatalogTypeInfo = { readonly serviceType: string | null; readonly requiresDestination: boolean } | null;
@@ -783,6 +789,56 @@ export class WorkOrderService {
     return { customer, vehicle, team, serviceCatalog };
   }
 
+  /**
+   * B-O6R-07a (Ω6R-SEC-002, §3.3) — ESCOPO POR OBJETO. A regra nasce AQUI, no serviço, porque o backend
+   * é a autoridade final de autorização (CLAUDE.md B§2.4); esconder o botão na UI não é controle.
+   *
+   * Quem cai no guard: o ator que alcança a ordem SÓ por papel de campo (ver `actorMutatesAssignedOnly`).
+   * Para ele, a mutação exige que a ordem esteja atribuída ao SEU perfil de operador.
+   *
+   * 403, NÃO 404 — deliberado, e é o contrato que muda. 404 continua reservado ao cross-tenant (a ordem
+   * de OUTRA organização não existe para este ator, e é assim que o `findById` tenant-scoped já
+   * responde). Aqui a ordem EXISTE na organização do ator, ele pode LÊ-LA (`work_orders:read` é
+   * tenant-wide, e a lista do app depende disso) — o que ele não pode é MUTÁ-LA. Devolver 404 mentiria
+   * sobre um objeto que a mesma sessão acabou de listar.
+   *
+   * Sem resolver de perfil injetado a recusa é a mesma: para um ator de campo, não conseguir provar a
+   * atribuição é não ter a atribuição. Fail-closed por composição incompleta, nunca por omissão.
+   */
+  private async assertMutationObjectScope(
+    actor: WorkOrderActorContext,
+    workOrder: WorkOrder,
+  ): Promise<void> {
+    if (!actorMutatesAssignedOnly(actor)) return;
+
+    const resolver = this.references.resolveActorOperatorProfileId;
+    const operatorProfileId = resolver ? await resolver(actor) : undefined;
+
+    // B-O6R-07a CICLO 2 (C2·4, opção (c)) — DUAL-MATCH: a atribuição prova-se pelo PERFIL do ator ou
+    // pelo USER ID dele. As duas formas existem de fato em `assigned_operator_id` porque o write do
+    // assign faz `body.operatorId ?? body.userId` (l.1669) e o app de campo manda `userId` — sem o
+    // segundo ramo, o técnico LEGITIMAMENTE atribuído pelo app recebia 403 no PATCH e no PATCH
+    // /status (achado `C1-A4`, defeito operacional criado pelo guard do ciclo 1).
+    //
+    // Segurança do ramo novo, dita às claras: só quem porta `work_orders:assign` escreve esse campo
+    // (o técnico NÃO — medido), logo ele só concede a quem um ATRIBUIDOR nomeou; ids são gerados e
+    // não escolhidos, então colisão entre user id e perfil de outrem não é vetor. Fail-closed
+    // preservado: sem match nos DOIS ramos → 403; cross-tenant segue 404 (o guard só roda depois do
+    // `findById` tenant-scoped). O write continua torto e é do `Ω6R-QUA-004`, que segue ABERTO.
+    const atribuidoPorPerfil =
+      Boolean(operatorProfileId) && workOrder.assignedOperatorId === operatorProfileId;
+    const atribuidoPorUsuario = workOrder.assignedOperatorId === actor.userId;
+
+    if (!atribuidoPorPerfil && !atribuidoPorUsuario) {
+      throw new WorkOrderError(
+        403,
+        "WORK_ORDER_NOT_ASSIGNED",
+        "not_assigned_to_actor",
+        "Field actors can only change work orders assigned to them.",
+      );
+    }
+  }
+
   async update(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
     if ("status" in body) {
       throw new WorkOrderError(400, "WORK_ORDER_INVALID", "status_endpoint_required", "Use the status endpoint to change work order status.");
@@ -791,6 +847,9 @@ export class WorkOrderService {
     // Ω3F-2a — reusa o current (tipo IMUTÁVEL pós-create): a regra de destino no update lê o
     // service_catalog_id PERSISTIDO, nunca um do corpo (update não aceita troca de tipo).
     const current = await this.get(actor, workOrderId);
+
+    // B-O6R-07a (§3.3) — antes de QUALQUER parse ou escrita: ator de campo só muta a ordem dele.
+    await this.assertMutationObjectScope(actor, current);
 
     // CHECKLIST P1 PR-04c-A — o conjunto de vistorias no UPDATE.
     //
@@ -1253,6 +1312,12 @@ export class WorkOrderService {
 
   async changeStatus(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
     const current = await this.get(actor, workOrderId);
+
+    // B-O6R-07a (§3.3) — mesma guarda do update. Este é também o caminho da FILA OFFLINE do mobile
+    // (`work_order.status_change` em mobile-work-order-sync.ts chama este método), então o técnico não
+    // contorna o escopo por objeto sincronizando em vez de chamar a rota.
+    await this.assertMutationObjectScope(actor, current);
+
     const nextStatus = parseWorkOrderStatus(body.status);
     const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const cancellationReason = optionalString(body.cancellationReason) ?? optionalString(body.reason);
@@ -1970,6 +2035,24 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         return (await service.getTemplate(actor, checklistId)).name;
       } catch {
         return null;
+      }
+    },
+    // B-O6R-07a (Ω6R-SEC-002, §3.3) — perfil de campo do ator, para o escopo por objeto. Import dinâmico
+    // no mesmo idioma dos resolvers vizinhos (mantém o módulo work-orders desacoplado do de perfis).
+    //
+    // O `catch` devolve undefined DE PROPÓSITO e isso é a recusa, não um afrouxamento: o único
+    // consumidor é `assertMutationObjectScope`, que trata undefined como 403. Falha de leitura do
+    // perfil nunca vira permissão.
+    resolveActorOperatorProfileId: async (actor) => {
+      try {
+        const { createDefaultOperatorProfileService } = await import(
+          "../operator-profiles/operator-profile.service.js"
+        );
+        const service = await createDefaultOperatorProfileService();
+
+        return (await service.findByUserId(actor.tenantId, actor.userId))?.id;
+      } catch {
+        return undefined;
       }
     },
     // Ω3F-8b — bases = POIs de categoria "base" (Ω2-d; zero migration). Reusa PoiService (mesmo singleton

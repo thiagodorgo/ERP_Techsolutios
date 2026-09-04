@@ -17,6 +17,9 @@ type LocalAuthCredentialRecord = {
   readonly email: string;
   readonly password_hash: string;
   readonly locked_until: Date | null;
+  // B-O6R-07a ciclo 2 (C2·3) — opcional para não quebrar dublês estruturais existentes; a linha
+  // real do Prisma sempre o tem. Alimenta SÓ a escolha do candidato cobrado (menor contador).
+  readonly failed_attempts?: number;
 };
 
 type LocalAuthCredentialRepositoryLike = {
@@ -79,6 +82,14 @@ export type AnonymousCandidateResult =
   | {
       readonly ok: false;
       readonly reason: "invalid_credentials" | "locked" | "inactive";
+      // B-O6R-07a ciclo 2 (C2·3) — dados INTERNOS de cobrança, presentes SÓ quando a SENHA falhou
+      // (nunca em lock, nunca inexistente, nunca inativo). Alimentam o ato único pós-veredicto em
+      // `AnonymousLoginService.attempt`; JAMAIS são serializados na resposta HTTP (o desfecho
+      // anônimo continua achatado em `{kind:"invalid"}`).
+      readonly charge?: {
+        readonly credential_id: string;
+        readonly failed_attempts: number;
+      };
     };
 type LocalAuthAuditContext = Pick<
   EnterpriseAuditLogInput,
@@ -206,11 +217,23 @@ export class LocalAuthLoginService {
     };
   }
 
-  // B-O6R-01 (§6.2/§6.4 do plano) — verificação de UM candidato do caminho anônimo, SEM efeito
-  // colateral: falha anônima não incrementa contador de candidato nem audita em N organizações
-  // (§6.4.3). Candidato em lock → reason "locked", que o caminho anônimo achata em 401 uniforme
-  // (o 423 não existe no caminho anônimo). O scrypt é executado pela função INJETADA (espião do
-  // contador nos testes — §6.4.4).
+  // B-O6R-01 (§6.2/§6.4 do plano) — verificação de UM candidato do caminho anônimo. O scrypt é
+  // executado pela função INJETADA (espião do contador nos testes — §6.4.4).
+  //
+  // B-O6R-07a CICLO 2 (C2·3 do plano) — esta função é SEM efeito colateral, e isso é invariante
+  // restaurado: o ciclo 1 plugou a cobrança AQUI DENTRO, e como o laço de `attempt` roda por
+  // candidato sem curto-circuito, o uso CORRETO do dono (mesmo e-mail em 2 organizações, senhas
+  // distintas) trancava a organização irmã e todo login bem-sucedido fabricava uma linha de falha
+  // (achado `C2-A1`, bloqueia). Na falha de SENHA a função devolve os dados internos de cobrança
+  // (`charge`) e QUEM cobra é `AnonymousLoginService.attempt`, uma única vez por requisição,
+  // DEPOIS do veredicto (só quando nenhum candidato autenticou) — via `registerAnonymousFailure`
+  // abaixo, que reusa o MESMO `incrementFailedAttempts` atômico do B01 e o MESMO
+  // `recordLoginFailure` append-only. Força bruta anônima segue armando lockout e deixando rastro
+  // (Ω6R-SEC-003 continua fechado); o que morre é o multiplicador por candidato.
+  //
+  // O que NÃO muda, e é o que o B01 comprou: candidato em lock → reason "locked" SEM charge (o
+  // lock não é combustível), que o caminho anônimo achata em 401 uniforme; o 423 NUNCA existe
+  // aqui; e-mail inexistente não tem o que cobrar; a resposta não enumera organizações.
   async verifyAnonymousCandidate(
     input: Pick<LocalAuthLoginInput, "tenant_id" | "email" | "password">,
     verifyPasswordFn: typeof verifyPassword = verifyPassword,
@@ -236,7 +259,15 @@ export class LocalAuthLoginService {
     const passwordMatches = await verifyPasswordFn(input.password, credential.password_hash);
 
     if (!passwordMatches) {
-      return { ok: false, reason: "invalid_credentials" };
+      // C2·3 — nenhuma escrita aqui: só os dados de cobrança para o ato único pós-veredicto.
+      return {
+        ok: false,
+        reason: "invalid_credentials",
+        charge: {
+          credential_id: credential.id,
+          failed_attempts: credential.failed_attempts ?? 0,
+        },
+      };
     }
 
     const user = await this.users.findByIdForTenant(credential.user_id, tenantId);
@@ -294,11 +325,38 @@ export class LocalAuthLoginService {
     });
   }
 
+  // B-O6R-07a CICLO 2 (C2·3) — a cobrança da falha anônima como ATO ÚNICO PÓS-VEREDICTO: chamada
+  // por `AnonymousLoginService.attempt` no ramo `successes.length === 0`, exatamente UMA vez por
+  // requisição falhada, para o candidato escolhido (menor `failed_attempts` entre os que falharam
+  // a SENHA). Reusa o MESMO `incrementFailedAttempts` atômico do B01 (UPDATE único
+  // threshold → locked_until; nenhum contador novo, nenhum read-modify-write) e o MESMO
+  // `recordLoginFailure` append-only — agora COM ipAddress/userAgent (fecha
+  // `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`). Rastro INTERNO, jamais na resposta.
+  async registerAnonymousFailure(
+    tenantId: string,
+    credentialId: string,
+    email: string,
+    auditContext: LocalAuthAuditContext,
+  ): Promise<void> {
+    await this.credentials.incrementFailedAttempts(credentialId, tenantId);
+    await this.recordLoginFailure(
+      tenantId,
+      normalizeCredentialEmail(email),
+      "invalid_credentials",
+      auditContext,
+      "without_org",
+    );
+  }
+
+  // `loginMode` distingue o rastro do caminho SEM organização (B-O6R-07a §3.4) do rastro do
+  // login direcionado — espelho do que `finalizeAnonymousLogin` já faz no sucesso. A allowlist do
+  // metadado não muda: e-mail normalizado e motivo, nada de senha, hash ou identificador externo.
   private async recordLoginFailure(
     tenantId: string,
     email: string,
     reason: "invalid_credentials" | "locked" | "inactive",
     auditContext: LocalAuthAuditContext,
+    loginMode?: "without_org",
   ): Promise<void> {
     await new EnterpriseAuditLogService(this.auditLogs).record({
       tenantId,
@@ -313,6 +371,7 @@ export class LocalAuthLoginService {
       metadata: {
         email,
         reason,
+        ...(loginMode ? { loginMode } : {}),
       },
     });
   }

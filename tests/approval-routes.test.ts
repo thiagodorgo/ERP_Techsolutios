@@ -9,12 +9,20 @@ import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.type
 test("approval routes listam, aprovam, rejeitam e aplicam RBAC/tenant", async () => {
   await withApprovalApi(async ({ baseUrl, seed, approvalService }) => {
     const workOrderId = randomUUID();
+    // B-O6R-07a (Ω6R-SEC-002, §3.2) — DUAS LINHAS mudaram neste arquivo, e só estas: o solicitante
+    // das duas pendências deixou de ser `managerA` (que é quem decide mais abaixo) e passou a ser
+    // `viewerA`. Motivo: o contrato novo recusa a AUTODECISÃO com 403 APPROVAL_SELF_DECISION, e o
+    // arranjo antigo tinha o mesmo usuário pedindo e decidindo — o que fazia este teste medir, sem
+    // querer, um fluxo que o produto agora proíbe. O ALVO do teste (RBAC de papel, isolamento por
+    // organização, 400 sem motivo, 409 na segunda decisão, ausência de campo sensível no payload)
+    // está INTACTO: nenhuma asserção foi alterada, removida ou afrouxada. A cobertura do SoD em si
+    // vive em tests/o6r07a-approval-sod.test.ts, não aqui.
     const approvalA = await approvalService.request({
       tenantId: seed.tenantA.id,
       entityType: "work_order",
       entityId: workOrderId,
       workOrderId,
-      requestedByUserId: seed.managerA.id,
+      requestedByUserId: seed.viewerA.id,
       pendingReason: "OS concluida.",
     });
     const approvalB = await approvalService.request({
@@ -22,7 +30,7 @@ test("approval routes listam, aprovam, rejeitam e aplicam RBAC/tenant", async ()
       entityType: "evidence",
       entityId: "evidence-public-ref",
       workOrderId,
-      requestedByUserId: seed.managerA.id,
+      requestedByUserId: seed.viewerA.id,
       pendingReason: "Evidencia armazenada.",
     });
 

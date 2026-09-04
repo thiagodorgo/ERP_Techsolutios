@@ -2294,3 +2294,21 @@ instrução do orquestrador.
 Números deste snapshot, todos de execução real desta árvore: `npm test` **2562/2572 · fail 0 · 10 pulos**;
 bateria focada **92/92** (22 memory + 69 `-db` + 1 ratchet, contagem idêntica em 2 execuções). Flutter
 `864/864` e smoke web `1126/1126` **carregados** (trilhas não tocadas — §C3.3).
+
+## 2026-09-03 — B-O6R-07a-ciclo2 (PR #369, autoria) — a reversão de uma declaração de fechamento, e a cobrança que vira ato único
+
+O ciclo 1 deste bloco foi REPROVADO 2×1 e o ciclo 2 é a ÚLTIMA tentativa (`D-TETO-DOIS-CICLOS`). O que
+ele muda no produto: a cobrança do lockout anônimo sai de `verifyAnonymousCandidate` (que volta a ser
+função sem efeito colateral) e vira **ato único pós-veredicto** — 1 requisição falhada = 1 incremento +
+1 linha de auditoria, agora com `ipAddress`/`userAgent` (fecha `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`);
+uso correto na org A não tranca mais a org B; e o guard de escopo por objeto ganha **dual-match**
+(perfil OU user id), porque o write do assign grava user id no campo de perfil e o técnico
+legitimamente atribuído recebia 403 — defeito que o próprio ciclo 1 criou. No registro: o P0
+`Ω6R-SEC-002` deixa de ser declarado fechado e vira **`parcialmente_superado`** com as **9 rotas
+abertas nomeadas** (3 por execução · 4 por leitura · 2 condicionadas a env), dona
+`P-O6R-SUBRECURSO-OBJECT-SCOPE` (ALTA, `B-O6R-07c`); `p0_fechados` segue **4** (o guard conta só hash
+de merge). Números de execução real (§C3.3): `backend_tests` **2654/2656** (256 arquivos, skipped 2,
+`ec=0`; Δ +9 por arquivo: multiorg novo 5 · -db +1 · wo-object-scope +3), focados N=3 verdes;
+carregadas sem exercer, com marcador: flutter 864/864 · smoke 1126/1126. `blocks_completed` fica em
+158 (mesmo bloco, mesmo PR). `merge_commit`/`approved_head` null na autoria. Este espelho recebe SÓ a
+própria entrada: o backlog #361–#368 está em `P-KPI-HISTORY-MD-BACKLOG` (BAIXA, próximo `…F` de KPI).

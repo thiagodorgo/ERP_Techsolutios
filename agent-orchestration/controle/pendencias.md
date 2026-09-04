@@ -419,7 +419,8 @@
   `/dashboard/summary`. Auditoria (§2.8) provada AO VIVO: `SELECT count(*) FROM audit_logs WHERE metadata LIKE '%marker%'` = 0.
 - **P-035 (BAIXA — doc):** contagem por arquivo do task-history — **CORRIGIDA** para 8+9+8=25 (após +P-034).
 
-- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** MEDIA · **dono:** a atribuir
+- **status:** FECHADA · **severidade:** era MEDIA · **dono:** encerrado
+  <sub>**FECHADA em 2026-09-02 (validacao pedida pelo dono, executada pelo orquestrador).** O corpo desta entrada ja dizia *"RESOLVIDO no fechamento do bloco (ciclo 2)"* para o **P-034** e *"CORRIGIDA"* para o **P-035**, mas a linha de status seguia `ABERTA/MEDIA` — e o indice, obedecendo a propria regra 3 (*"a linha de status vence o cabecalho"*), a contava como **diferida com severidade material**, que foi como ela chegou aos olhos do dono. **O indice fez o trabalho dele; o defeito era o rotulo.** Verificado por EXECUCAO, nas tres pernas que a correcao exige: (1) `src/modules/dashboard/dashboard-prisma.repository.ts:95` -> `where: { tenant_id, event_type: { not: "work_order_comment" } }`; (2) `src/modules/dashboard/dashboard.repository.ts:183` -> `.filter((event) => event.eventType !== "work_order_comment")` — **paridade memory x prisma**, que e onde este tipo de correcao costuma ficar pela metade; (3) `tests/work-order-comments-routes.test.ts:228` — o teste `[P-034]` existe **e passa**: `node --test --import tsx tests/work-order-comments-routes.test.ts` devolve `15/15, fail 0, ec=0`. O risco descrito — corpo livre de comentario (PII possivel) alcancando o papel `support`, que tem `dashboard:read` e NAO tem `work_orders:read` — esta fechado nos DOIS caminhos. **Classe do defeito de registro:** entrada corrigida no corpo e nao no status, exatamente como a `P-036`, que ficou 27 dias aberta depois de a gemea dela fechar. A subnota de triagem abaixo diz, ela mesma, *"adiada por triagem automatica; NAO verificada item a item"* — esta e uma das **79** que levaram carimbo em massa em 29/08 (`P-SAN2-LEITURA-DAS-79`), e a verificacao item a item que faltava esta acima. O texto original segue preservado (§A2).</sub>
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-036 (PRÉ-EXISTENTE — descoberto no smoke do Ω3-c) — create de checklist quebrado no live/prisma
@@ -2433,7 +2434,15 @@ homônimo em organizações distintas é legal no modelo.
   `API_CONTRACTS.md`). status: ABERTA.
 - **`P-O6R-B01-RATE-LIMIT-IP`** (→ B-O6R-07) — fecho por IP/distribuído do canal anônimo. Residuais nomeados:
   enumeração pelo `400 TENANT_ID_REQUIRED` (revela "e-mail em >3 organizações"), amplificação distribuída,
-  rotação de e-mails (o balde por e-mail não a fecha — idêntico ao login de hoje, não regride). status: ABERTA.
+  rotação de e-mails (o balde por e-mail não a fecha — idêntico ao login de hoje, não regride).
+  **FECHADA pelo B-O6R-07a (2026-09-02) na metade que era dele, com o residual RE-NOMEADO em vez de escondido:**
+  entrou balde por **IP** (`TokenBucket` REUTILIZADO de `portal-shared` — zero dependência nova; chave HMAC
+  derivada de `JWT_SECRET` sobre o IP) nas **duas** rotas de login, estouro → **429 `RATE_LIMITED`**. Evidência:
+  `o6r07a-login-rate-limit` **6/6**, vermelho-controle `6 · pass 2 · fail 4` com os quatro `not ok` nomeados,
+  entre eles *e-mails DIFERENTES no mesmo IP → 429* (fecha a rotação de e-mails) e *IPs distintos NÃO
+  compartilham balde* (o vizinho de NAT não derruba o outro). **NÃO fechados, e por isso vivem agora em
+  `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`:** multi-réplica/Redis, política de `X-Forwarded-For` e a enumeração pelo
+  `400 TENANT_ID_REQUIRED`. status: FECHADA (residual distribuído migrado, não perdido).
 - **`P-O6R-B01-TROCA-SENHA`** — rota de troca de senha (o gancho §5.5 nasce ARMADO e inerte;
   `changePasswordWithIdentityHook` + `IdentityLinkService.handlePasswordChange`). **Colisão declarada
   (crítico higiene 5): o fluxo de RESET de senha, por definição sem ator autenticado, não pode chamar o setter
@@ -2810,7 +2819,110 @@ MIME vindo do cliente e download em `attachment.storage.ts:90-105` + `attachment
 
 **Bloqueia:** feature em auth (SEC-003) e em evidências/anexos/upload mobile (SEC-004) — P1 antes de feature no
 módulo, por deliberação.
-- status: ABERTA — 1 P0 + 2 P1.
+**METADE FECHADA pelo B-O6R-07a (2026-09-02) — e a entrada NÃO fecha por isso.** `Ω6R-SEC-002` (P0) e
+`Ω6R-SEC-003` (P1) estão fechados **na autoria** (rastro em `docs/revisoes/O6R/achados.jsonl` e
+`REGISTRO_ACHADOS_O6R.md`; o painel os põe em `production_readiness.aguardando_merge` e **não** move
+`p0_fechados`/`p1_fechados`, que só contam conserto na `main`). **`Ω6R-SEC-004` segue ABERTO** — é o sub-bloco
+**07b** (`fix/o6r07b-uploads`): scanner fail-closed por ambiente, sniff de magic bytes in-house e download
+endurecido, nas **5 vias** medidas (mobile evidence, attachments, checklists, damages, work-order-attachments).
+**Consequência de gate, dita em voz alta:** o título "1 P0 + 2 P1" só zera com o 07b, e o gate da CHECKLIST P1
+(`J-CHK-04C-EMENDA`) exige **`B-O6R-06` E os DOIS sub-blocos do `B-O6R-07`** mergeados. O `Bloqueia:` de
+auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/upload mobile **permanece** até o 07b.
+- status: ABERTA — resta 1 P1 (`Ω6R-SEC-004`, sub-bloco 07b). Os outros 2 (1 P0 + 1 P1) fecharam no 07a.
+
+## P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:approve` — MÉDIA
+
+Aberta pelo B-O6R-07a (§3.1 do plano), no PR que criou a permissão dedicada `work_orders:approve`.
+
+`RBAC_MATRIX.md:46` classifica finance e inventory como **"approval-by-policy"** em Workflow/approvals — isto
+é, aprovam *conforme a política*. A política em questão é **de VALOR**, e ela não existe como dado: o agregado
+de aprovação (`src/modules/work-orders/approval.types.ts`) tem `entityType ∈ {work_order, checklist_run,
+evidence}` e **nenhum campo monetário** — medido, lido o arquivo inteiro. Conceder a chave a esses dois papéis
+hoje seria transformar "aprova conforme a alçada" em "aprova sempre", que é justamente a classe do achado
+Ω6R-SEC-002 com outro papel no lugar do técnico.
+
+Por isso a concessão do 07a é a MÍNIMA: `manager` explícito + `tenant_admin`/`super_admin`/`platform_admin`
+por herança do catálogo. finance e inventory ficam de fora **por ausência de modelo**, não por esquecimento.
+
+**Fecha quando:** existir alçada monetária ancorada no agregado (valor da OS/pendência + limite por papel, na
+linha do `APPROVAL_LIMITS.md`) e a concessão puder ser condicionada a ela.
+- status: ABERTA — MÉDIA. Dono natural: o bloco que introduzir alçada por valor.
+
+## P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE (2026-09-02) — `work_orders:approve` exige migração e 3 snapshots fora do §5 — **BLOQUEIA o merge do 07a**
+
+Registrada sob §A2 (conflito não se consolida em silêncio) pelo dev do 07a, com medição, não com suposição.
+
+O §3.1 do plano manda criar a chave `work_orders:approve` no catálogo em CÓDIGO. Medido no head `c421f9f`,
+acrescentar a chave torna **quatro** verificações vermelhas, e **as quatro vivem fora do §5 PERMITIDO do
+próprio plano**:
+
+1. `tests/permission-catalog-migration-parity.test.ts` — *"Permissão nova no catálogo e SEM migração de dados:
+   work_orders:approve"*. Exige uma migração aditiva em `prisma/migrations/`, no padrão
+   `20260861000000_grant_checklist_run_reopen_permission`. **`prisma/**` é PROIBIDO INTEIRO no §5** ("zero
+   migration neste bloco"). A válvula de escape (acrescentar a chave a `PERMISSOES_HERDADAS_DO_SEED`) está
+   **fechada por medição**: a lista tem 189 chaves e `TAMANHO_CONGELADO` é 189 — crescer reprova o próprio
+   guard, que documenta em voz alta que essa lista "NÃO CRESCE".
+2. `tests/core-saas.test.ts` — literal `expectedPermissionCatalog` (l.48). Uma linha após
+   `"work_orders:mileage_correct"`.
+3. `tests/fixtures/role-catalog-contract.snapshot.json` — snapshot papel→permissões consumido por
+   `tests/core-saas-role-authority.test.ts` (que **não** é o `-db` do ciclo 5).
+4. — (o quarto vermelho é de D3, registrado na pendência seguinte.)
+
+O §3.10 do plano previu o caso ("se a paridade RBAC persistente exigir seed, o seed correspondente entra no
+diff do 07a"), mas nomeou **seed** — e `prisma/seed.ts` também é `prisma/**`. Não há caminho dentro do escopo
+declarado: o plano pede a chave e proíbe o único lugar onde ela pode ser provisionada.
+
+**Decisão pendente (do orquestrador/junta, não do dev):** (a) ampliar o §5 do 07a para os 3 arquivos + a
+migração; ou (b) mover D1 para sub-bloco próprio com escopo que os inclua. O código de D1 já está escrito e a
+prova de papel (6 casos + vermelho-controle) já está verde.
+**FECHADA no próprio 07a (2026-09-02).** A decisão pendente foi resolvida pela **EMENDA E1** do plano, que
+escolheu a opção (a) — ampliar o §5 de forma **nominal e fechada** — e rejeitou a (b) com quatro razões, a mais
+forte sendo que mover o D1 para PR próprio obrigaria a **desfazer código pronto e provado**, que é a classe
+medida pela `D-JUNTA-SEPARACAO-DE-PAPEIS`. **O instrumento é MIGRAÇÃO, não seed** — quem prescreve é o próprio
+guard (mensagem + `PADRAO_A_SEGUIR`), e `prisma/seed.ts` itera o `PERMISSION_CATALOG`, de modo que a mudança do
+catálogo flui ao seed sozinha; produção nunca semeia. **Entregue:**
+`prisma/migrations/20260871000000_grant_work_orders_approve_permission/migration.sql` (diretório NOVO, aditivo e
+idempotente, com runbook de `down`), mais a linha do literal em `tests/core-saas.test.ts` e a chave nos 4 arrays
+de `tests/fixtures/role-catalog-contract.snapshot.json`. **Evidência de fechamento, re-executada no head
+`73a351c` por agente que não a implementou:** `permission-catalog-migration-parity` **3/3, skipped 0, `ec=0`**;
+`permission-catalog-db-parity` **2/2, skipped 0, `ec=0`** com `RBAC_DB_PARITY=1` e banco semeado; num banco
+**só-migrado, sem seed**, `select key from permissions where key='work_orders:approve'` devolve a chave (quem
+inseriu foi a migração); num banco semeado, os grants caem em **manager, super_admin, tenant_admin** e em mais
+ninguém. `PERMISSOES_HERDADAS_DO_SEED` **não cresceu** (segue 189). Suíte canônica **255 arq · 2647 · pass 2645
+· fail 0 · skipped 2**, `ec=0` — as três vermelhas desta pendência fecharam e nenhuma nova nasceu.
+- status: FECHADA — o bloqueio do merge do 07a cai por esta entrega. Severidade: ALTA. Dono: B-O6R-07a.
+
+## P-O6R-B07A-STICKY-409-VIRA-403 (2026-09-02) — o escopo por objeto muda o código de um teste fora do §5 — **BLOQUEIA o merge do 07a**
+
+`tests/work-order-checklists-sticky.test.ts:612` assere que um `field_technician` que desvia pelo update
+genérico com corpo `checklists` recebe **409 `checklist_set_requires_endpoint`**. Com o guard de escopo por
+objeto do §3.3, esse mesmo ator (não atribuído àquela ordem) passa a receber **403 `WORK_ORDER_NOT_ASSIGNED`**.
+
+**Não é regressão — é a porta fechando antes.** A intenção declarada do teste ("o desvio pelo update genérico é
+porta fechada, não 200") continua satisfeita; muda só o código, porque um controle mais forte passou a disparar
+primeiro. **A ordem não é escolha de estilo:** o 409 é lançado dentro de `applyChecklistSelectionOnUpdate`, que
+é o ponto de ESCRITA do conjunto (`rewriteChecklistSet`) — medido. Pôr o guard de autorização depois dele seria
+autorizar depois de gravar.
+
+O arquivo **não está no §2.5** do plano (a lista de testes que o dev pode editar), então o dev parou e devolveu
+em vez de ajustar. Correção necessária: **uma asserção**, `409 → 403`, com a razão `not_assigned_to_actor`.
+**FECHADA no próprio 07a (2026-09-02) — E COM CORREÇÃO DE RUMO: o título desta pendência ficou INVERTIDO.**
+O sticky **não virou 403**; ele **VOLTOU a 409**. O que a **EMENDA E2** mediu é que renumerar as asserções
+consertaria o sintoma e **mutilaria o caso**: com as três requisições em 403, todas morreriam no guard de
+escopo, e a cobertura declarada (o desvio pela rota genérica com papéis REAIS do catálogo, fechado pelo
+SERVIÇO) desapareceria em silêncio — nenhum teste HTTP provaria mais a porta única do conjunto. **O defeito
+era do ARRANJO do teste, não do guard:** o arranjo nunca atribuiu a OS a ninguém. Entregue: bloco de arranjo
+novo (perfil de operador + `POST /work-orders/:id/assign` + `tecnicoHeaders`), as três requisições passando a
+usar um técnico ATRIBUÍDO, e as 2 linhas que a E1 havia autorizado **REVERTIDAS ao texto byte-exato pré-E1**
+(`git show 2d54ea2:...`). l.620 fica **409** e l.628 fica **200** — este é o ponto da emenda. Zero linha de
+`src/**`: o contrato de produto (403 `not_assigned_to_actor` para ator de campo não atribuído) **não muda**.
+**Fundamento, medido e não preferido:** `RBAC_MATRIX.md:45` já dizia `field_technician =
+execute/update-assigned` — o guard **cumpre** a matriz; o **200 antigo é que a contrariava**. **Evidência de
+fechamento:** `tests/work-order-checklists-sticky.test.ts` **15/15, fail 0, skipped 0, `ec=0`** (denominador
+inalterado — o arquivo tinha 15 antes), com vermelho-controle registrado no head `a37a9dd` (`14/15`, `403 !==
+409`). **Fica com a junta**, e não com esta entrada: a leitura de contrato do F2 (escopo por objeto cobre TODA
+mutação do ator de campo, inclusive a edição comum) e a tensão §A2 da semântica de `assigned_operator_id`.
+- status: FECHADA — o bloqueio do merge do 07a cai por esta entrega. Severidade: ALTA. Dono: B-O6R-07a.
 
 ## P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1) — **BLOQUEIA jobs e tempo real de campo**
 
@@ -3358,8 +3470,20 @@ auditoria, no `B-O6R-07`.
 caminho anônimo tem piso de latência e balde por e-mail, e o achado é **soma** ao `SEC-003`, não regressão.
 **Dono natural:** `B-O6R-07` (autorização e anexos), que já fecha o `SEC-003`.
 
-- **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+**FECHADA pelo B-O6R-07a (2026-09-02), como o próprio registro previa (`dono natural: B-O6R-07`).**
+`verifyAnonymousCandidate` passa a chamar o **MESMO `incrementFailedAttempts` atômico do B-O6R-01** — nenhum
+contador novo, nenhum read-modify-write novo, por exigência do §3.4 do plano — e a falha anônima passa a deixar
+**rastro de auditoria**. A RESPOSTA anônima segue **401 uniforme**: o 423 **nunca** vaza por essa via, o que
+preserva o anti-enumeração entregue pelo B01. **Trade-off consignado para a junta, não escondido:** armar
+lockout por via anônima cria vetor de negação de acesso à conta a custo baixo; mitigações medidas são o TTL de
+15 min, o balde por e-mail já existente e o rastro auditável — a alternativa (não armar) mantém força bruta
+ilimitada **sem rastro**, que é exatamente o achado. **Evidência de fechamento:** `o6r07a-anon-lockout` **7/7**
+e `o6r07a-anon-lockout-db` **6/6**, com **vermelho-controle conjunto** de `13 · pass 4 · fail 9` — e o caso que
+reproduz a medição original do `agente-secops` (as 12 tentativas anônimas que não moviam o contador) está entre
+as sondas. Os três vermelhos-controle desta trilha foram **refeitos do zero** por agente de identidade nova,
+depois de o primeiro dev cair sem gravá-los (`00-quedas.md`).
+- **status:** FECHADA · **severidade:** ALTA · **dono:** B-O6R-07a
+  <sub>Fechada em 2026-09-02 com evidência executada e vermelho-controle registrado. A triagem SAN2-1 a mantivera ABERTA por padrão conservador; agora há verificação.</sub>
 
 ## P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída
 
@@ -5461,3 +5585,251 @@ por retro-escrita de um carimbo `[SAN2-5: …]` que ninguém escreveu na época.
   no blob da base `e6a6461`, merge do #367, é byte-idêntica à do head) · **dono:** SAN2-5.
 
 ---
+
+## P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉDIA
+
+**Origem:** B-O6R-07a §3.5. Sucede a metade "IP/distribuído" de `P-O6R-B01-RATE-LIMIT-IP`, que fica
+**parcialmente fechada** por este bloco: o balde por IP passou a existir e a rotação de e-mails na
+mesma origem deixou de escapar do freio (medido: `401 !== 429` no head-base × `429 RATE_LIMITED` com
+a correção — evidência em `omega/juntas/votos/O6R-07a/dev-a1-a3-auth.md` §II.2/A2).
+
+**O que SEGUE ABERTO, e é o que esta pendência carrega:**
+
+1. **Multi-réplica.** O `TokenBucket` de `portal-shared` roda com `InMemoryTokenBucketStore` — o balde
+   vive **por instância do processo**. Com N réplicas atrás de um balanceador, o teto efetivo por IP
+   é N × 30/5 min, não 30/5 min. O store já é plugável (interface `TokenBucketStore`); o fecho é uma
+   implementação Redis. **Não é regressão** — antes deste bloco o teto por IP era infinito.
+2. **Política de proxy / `X-Forwarded-For`.** O IP vem do **socket** (`trust proxy` DESLIGADO, default
+   do Express), de propósito: com `trust proxy` ligado sem allowlist, o header é spoofável e o freio
+   vira decorativo. Atrás de um proxy confiável, porém, todo tráfego chega com o IP do proxy e cai num
+   balde único. Ligar `trust proxy` com a allowlist certa é **decisão de INFRA**, fora do §5 do bloco.
+3. **NAT corporativo.** Um escritório inteiro compartilha um IP; por isso o teto adotado é o mesmo de
+   `AUTHORITY_ANTI_ABUSE_DEFAULTS.ipBucket` (30/5 min), e não algo mais apertado. O fecho fino depende
+   de (1) e (2).
+
+**Residual irmão, registrado aqui por dependência direta — `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`:** a
+linha de auditoria de falha anônima criada pelo §3.4 **não carrega `ipAddress`/`userAgent`**.
+Encaminhá-los exigiria alterar `src/modules/auth/auth-runtime.ts` (o adaptador que envolve cada
+candidato em `withTenantRls`), **fora do §5 PERMITIDO** do B-O6R-07a. O rastro do SUCESSO anônimo já
+carrega o contexto; o da FALHA, não. Consequência prática: hoje dá para saber **que** houve força
+bruta anônima contra uma conta, não **de onde**. Fecha junto com (2), que é quando "de onde" passa a
+ter resposta confiável.
+
+> **§A2 — divergência declarada, não escondida.** O ID `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP` é citado
+> **pelo comentário de produção** em `local-auth-login.service.ts` ("Fica registrado em
+> `pendencias.md`"), escrito pelo `dev-o6r07a-auth-residuais` antes de cair. O mandato do sucessor
+> (`dev-o6r07a-auth-provas`) autorizava editar este arquivo nominalmente para
+> `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` — só. Deixá-lo sem registro faria o **código mentir**; abrir
+> uma seção própria excederia o mandato. Registrado, então, como residual **dentro** da seção
+> autorizada, com esta nota. A junta decide se promove a seção própria.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (nasce com o §3.5/§3.4
+  do B-O6R-07a) · **dono:** B-O6R-07a → trilha de infra.
+
+---
+
+## D-DIVERGENCIA-B07A-A3-METODO-DA-PROVA — o §4 pedia espião de scrypt; a prova saiu por testemunha de efeito
+
+**Registro §A2 (orquestrador, 2026-09-02) — bloco dono: `B-O6R-07a`. Não é pendência aberta: é
+divergência plano × terreno, declarada para a junta validar ou reprovar.**
+
+**O que o plano pedia.** §4, linha 6: o vermelho-controle do A3 (pino N/r/p no `parseScryptHash`) seria
+provado por **espião de scrypt** — um contador de derivações, no idioma do `B-O6R-01` §6.4.4 — mostrando
+que a base **deriva** com o N vindo do dado armazenado.
+
+**O que o dev mediu, e por que divergiu.** `dev-o6r07a-auth-provas` reportou que **não existe ponto de
+injeção** para o espião sem **alargar `password.service.ts` só para o arnês** — isto é, mudar código de
+produção para acomodar o teste. Em vez disso, provou por **testemunha de efeito**, em duas pernas:
+
+1. `actual: true` na base — o parse **aceita** um stored com `N=2` e **deriva** com ele;
+2. `ERR_CRYPTO_INVALID_SCRYPT_PARAMS` **subindo até o serviço de login** com N gigante — erro não tratado
+   atravessando a camada.
+
+Com o pino: `6 casos · pass 6 · fail 0`.
+
+**Decisão do orquestrador: ACEITO, e a razão é de mérito, não de conveniência.** A testemunha de efeito
+prova **mais** que o contador, não menos: o espião responderia *"scrypt rodou N vezes"*; a testemunha
+responde *"o parse aceitou parâmetro do atacante E derivou com ele"*, que é **o defeito em si**, e ainda
+mostra a segunda porta (o `RangeError` não tratado) que um contador não veria. E preserva um invariante
+que vale mais que a literalidade do §4: **não se alarga código de produção para acomodar arnês** — foi
+exatamente a classe de erro do `SAN2-4b`, onde o `keylen` virava função do input.
+
+**O que a junta do 07a tem de validar (não presuma que está fechado):**
+(a) a testemunha de efeito é de fato **≥** o espião em poder de detecção, ou há caminho que só o contador
+pegaria? (b) o `ERR_CRYPTO_INVALID_SCRYPT_PARAMS` chegando ao serviço de login era **defeito próprio**
+que este bloco fechou de brinde — e, se sim, ele merece número e nota próprios? (c) o §4 do plano deve
+ser emendado para admitir testemunha de efeito como forma canônica, ou este caso é exceção nomeada?
+
+**Precedente que isto cria, se a junta aceitar:** *"o vermelho-controle é sobre PROVAR QUE A SONDA MORDE,
+não sobre um instrumento específico — instrumento que exige alargar produção é instrumento errado."*
+
+## P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do #368 — **REGISTRO, não pendência aberta**
+
+Registro **§A2** (conflito não se consolida em silêncio), gravado pelo B-O6R-07a no PR que paga a dívida.
+
+**O conflito:** o `kpis-latest.json` do SAN2-6 atribuía o próximo backfill §C3.5 ao *"PR seguinte, que é o ciclo
+5"*; o parecer do porteiro pós-merge do #368 (`agent-orchestration/omega/juntas/votos/SAN2-6/`
+`00c-porteiro-pos-merge-368.md`, veredito **LIBERADO COM RESSALVA**) reformulou para *"o PR que mergear
+primeiro carrega o backfill"*, liberando **dois** blocos em paralelo: o ciclo 5 do `B-O6R-02` (Codex, UMA
+tentativa) e o `B-O6R-07` (Claude Code).
+
+**A decisão, e ela é do §7.1 do plano `B-O6R-07`:** vale a **REGRA DO PRIMEIRO-QUE-MERGE**. **Este PR paga.**
+Aplicado na entrada **151** (`SAN2-6`) de `Kpis/kpis-history.json`: `pr` **368** · `merge_commit` **`f895dd2`** ·
+`approved_head` **`d90fbbb`**, e `blocks_completed` **157 → 158** no cartão do painel.
+
+**A razão do `approved_head`, exigida pela ressalva R1 do porteiro e transcrita ao lado do valor na própria
+entrada 151:** grava-se **o head da ATA**, nunca o `headRefOid` — a ata `J-SAN2-6.md` nomeia `d90fbbb` (3
+ocorrências) e **não nomeia** `9051e9b` nem `85a9058` (0 ocorrências); o precedente é **provado** pela cadeira C3
+do `J-SAN2-6` em **3 de 3** casos com hashes divergentes (#363, #364, #366). O head final `9051e9b` tem árvore
+idêntica à do squash e carrega o **delta pós-voto** que a ata declara **em prosa, sem pinar por hash**.
+
+**O que o ciclo 5 deve fazer:** **VERIFICAR e NÃO duplicar.** Ao rebasear, se a entrada 151 já vier com os três
+campos preenchidos, a dívida está quitada — reescrevê-los criaria divergência onde não há.
+
+- status: FECHADA — registro de reatribuição consumado no mesmo PR que paga a dívida. Dono: B-O6R-07a.
+
+---
+
+# Registros do CICLO 2 do B-O6R-07a (2026-09-03) — sete registros, bloco único de APPEND
+
+> Mecânica declarada (§A2): `pendencias.md` tem EOL MISTO — o apenso C2·5 item 11 exige SÓ APPEND e o
+> mandato do dev autoriza "Write de bloco ao fim". Os sete registros abaixo foram APENSADOS ao fim do
+> arquivo, cada um nomeando a entrada-alvo por título e linha; NENHUMA linha pré-existente foi editada.
+> Autor: `dev-o6r07a-ciclo2-c` (fecha registro; não achou, não planejou — §C7.4-bis). Fonte: apenso
+> `## CICLO 2` de `agent-orchestration/omega/planos/B-O6R-07-plano.md` (C2·2, C2·3, C2·4) e diário
+> `agent-orchestration/omega/juntas/votos/O6R-07a/dev-ciclo2.md`.
+
+## APPEND (registro 1/7) à `D-DIVERGENCIA-B07A-A3-METODO-DA-PROVA` (l.5631) — a RAZÃO registrada era FALSA; a DECISÃO estava certa
+
+A junta do ciclo 1 (cadeira C2) devolveu o reparo que este append consuma. A razão registrada na
+entrada original — *"não existe ponto de injeção para o espião sem alargar `password.service.ts`"* —
+é **FALSA por demonstração**: a C2 montou espião de TEMPO **de fora**, ~30 linhas, ZERO alteração de
+produção, e publicou a MARGEM: derivação canônica **49,08 ms** × todo trio fora do pino
+**0,04–0,40 ms** (razão **>=120x**), inclusive `N=32768` respondido em **0,09 ms** — exatamente o
+caminho "derivar primeiro, pinar depois" que a testemunha de retorno não pegaria. A **DECISÃO** de
+não alargar produção para acomodar arnês estava **CERTA** (classe do `SAN2-4b`); a razão certa é
+*"desnecessário por dentro"*, não *"impossível"*. Consuma-se também a resposta à pergunta (c) da
+entrada original: o §4 do plano fica **EMENDADO pela errata E-b do apenso C2·7** — vale a
+PROPRIEDADE (*provar que a derivação NÃO ocorreu, por qualquer testemunha que a decida — contador,
+exceção distintiva ou relógio — DESDE QUE a evidência publique a margem medida ou o controle
+distintivo; testemunha sem margem publicada não é testemunha*). Nenhum código muda por este registro.
+
+## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis pelo técnico sobre OS ALHEIA — **ALTA**
+
+**Dono nomeado: `B-O6R-07c` (branch `fix/o6r07c-subresource-scope`)** — bloco novo, a planejar após o
+merge do 07b. **Origem do registro:** achado `C1-A1` da junta do ciclo 1 do B-O6R-07a; a declaração de
+fechamento do `Ω6R-SEC-002` foi revertida para `parcialmente_superado` (C2·2, caminho (i)) e esta
+pendência é a dona da parte aberta.
+
+**As 9 rotas, cada uma com N/forma/causa** (paridade com `docs/revisoes/O6R/achados.jsonl` l.9 e com
+o drill da cadeira C1, conferida no diário `dev-ciclo2.md` D2.d):
+
+1. `POST /work-orders/:id/attachments` — anexa em OS alheia (gate `create` OU `update`).
+   **EXECUÇÃO: HTTP 201.** Causa: `bf456b0` (2026-07-13, PR #173) — subrecurso nasceu sem escopo por
+   objeto, ANTES do B-O6R-07a.
+2. `DELETE /work-orders/:id/attachments/:attachmentId` — apaga anexo alheio; blob sai do storage.
+   **EXECUÇÃO: HTTP 204 + download 200->404.** Causa: `bf456b0` #173.
+3. `POST /work-orders/:id/comments` — comenta em OS alheia (gate `comment`). **EXECUÇÃO: HTTP 201.**
+   Causa: agregado próprio (`work-order-comment.routes.ts`), sem guard de objeto.
+4. `PATCH /work-orders/:id/comments/:commentId` — edita comentário de OUTRO autor.
+   **LEITURA DE CÓDIGO** (`assertCanMutate` = autor OU `work_orders:update`; o técnico porta
+   `update`). Causa: `D-Ω3F-5-COMMENT` — desenho deliberado da casa.
+5. `DELETE /work-orders/:id/comments/:commentId` — soft-delete de comentário alheio. **LEITURA.**
+   Causa: `D-Ω3F-5-COMMENT`.
+6. `POST /work-orders/:id/comments/:commentId/tags/:tagId` — taggeia comentário alheio. **LEITURA.**
+   Causa: `D-Ω3F-5-COMMENT`.
+7. `DELETE /work-orders/:id/comments/:commentId/tags/:tagId` — destaggeia (hard-delete da
+   associação). **LEITURA.** Causa: `D-Ω3F-5-COMMENT`.
+8. `POST /work-orders/:id/geocode` — alcançável em OS alheia (gate `update`). **ALCANCE por
+   EXECUÇÃO (HTTP 200 `geocoded=false`, provider Noop); EFEITO CONDICIONADO a `GEOCODING_ENABLED`**,
+   nunca medido ligado. Causa: rota anterior ao bloco, sem guard de objeto.
+9. `POST /work-orders/:id/geocode-destination` — idem: mesma guarda, mesma forma (drill mediu 422 de
+   validação de domínio — passou o gate e morreu no domínio; alcance provado, efeito por env).
+
+**Distribuição das formas: 3 execução · 4 leitura · 2 condicionadas a env.** Das 14 rotas mutantes do
+router principal, 6 passam o gate com as chaves do técnico (`read/comment/update/status`): 2 ficaram
+GUARDADAS pelo 07a (PATCH `/:id`, PATCH `/:id/status`) e 4 abertas; as 5 do router de comentários
+passam todas.
+
+**Item explícito do plano do 07c:** a cláusula `autor OU update` do `D-Ω3F-5-COMMENT` é decisão de
+PRODUTO deliberada — escopá-la por objeto a reverte em parte; medir o fluxo do despachante e do
+gestor moderando comentário ANTES de codar. **Consequências declaradas:** o gate da CHECKLIST P1
+continua *"07a E 07b (e B-O6R-06) mergeados"* (a deliberação J-6R fala de BLOCOS, não de achados);
+fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** desta pendência.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
+  `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
+  `B-O6R-07c`.
+
+## P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem mecanismo — **MÉDIA**
+
+**Dono nomeado: `B-AUTH-KDF-V2`** (bloco de auth a agendar pós-O6R). Consolida dois achados da
+cadeira C2 do ciclo 1 do B-O6R-07a, ambos declarados `pre-existente` com evidência:
+
+- **C2-A2:** o comentário do pino N/r/p em `password.service.ts` promete *"rotação via v=2"*, mas não
+  existe mecanismo: nenhum caminho de coexistência v1/v2, nenhum re-hash no login, nenhum teste. A
+  promessa é anterior ao 07a; o pino do ciclo 1 (aprovado) apenas a tornou visível.
+- **C2-A3:** a l.45 (`scryptSync` do caminho de verificação) não tem defesa própria (try/catch); o
+  500 por `ERR_CRYPTO_INVALID_SCRYPT_PARAMS` ficou fechado SÓ por consequência do pino do parse — se
+  a rotação um dia aceitar trio variável, a porta reabre.
+
+**Escopo do bloco dono:** coexistência v1/v2 + re-hash no login + defesa própria na l.45. **NENHUM
+código de KDF muda no ciclo 2 do 07a** — o item C2-3 foi APROVADO pela junta e está CONGELADO
+(C2·5-PROIBIDO: `password.service.ts`).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** `B-AUTH-KDF-V2`.
+
+## P-KPI-HISTORY-MD-BACKLOG (registro 4/7, 2026-09-03) — espelho `Kpis/kpis-history.md` com backlog #361–#368 — **BAIXA**
+
+Achado `C3-A1` da junta do ciclo 1: o espelho `.md` do history parou antes das entradas dos PRs
+**#361–#368** (o `.json` as tem). O ciclo 2 do 07a **apensa a PRÓPRIA entrada** no espelho (D3.e do
+diário) — o backlog das oito anteriores fica com esta pendência. **Dono: o próximo bloco `…F` de
+KPI** (correção documental §C1). Forma do número: 8 entradas ausentes, contadas por diff de IDs entre
+`kpis-history.json` e o espelho.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` · **dono:** próximo `…F` de KPI.
+
+## APPEND (registro 5/7) à entrada do sticky (l.2896-2924) — a tensão §A2 de `assigned_operator_id`, devolvida MEDIDA e resolvida por DUAL-MATCH
+
+A entrada original fechou dizendo *"Fica com a junta ... a tensão §A2 da semântica de
+`assigned_operator_id`"*. A junta do ciclo 1 a devolveu **medida** (achado `C1-A4`): o write do
+assign grava **user id** dentro de `assigned_operator_id` (campo de perfil —
+`work-order.service.ts:1669`, `body.operatorId ?? body.userId`; o app Flutter manda `userId`,
+componente `assignWorkOrder` do `Ω6R-QUA-004`), e o guard do ciclo 1 comparava SÓ contra o perfil —
+o técnico LEGITIMAMENTE atribuído recebia **403** no PATCH e no PATCH `/status` (a fila offline do
+mobile). O 403 nasceu com o guard DESTE bloco.
+
+**Resolução (ciclo 2, C2·4 opção (c) — implementada e provada):** DUAL-MATCH no READ, dentro de
+`assertMutationObjectScope` e em nenhum outro lugar: a atribuição prova-se por
+`assignedOperatorId === operatorProfileId` **OU** `assignedOperatorId === actor.userId` (~2 linhas).
+Fail-closed preservado (sem match nos dois ramos -> 403; OS órfã não casa com nenhum); 404
+cross-tenant intocado; só quem porta `work_orders:assign` escreve o campo, logo o segundo ramo só
+concede ao usuário que um ATRIBUIDOR nomeou. Cura as linhas históricas por leitura. Provas no diário
+`dev-ciclo2.md` D3.a/D3.b: 3 casos novos VERMELHOS no código pré-correção (`ec=1`, o técnico nomeado
+recebia 403) -> **8/8 verde N=3** com denominador idêntico. Erratas E-f do apenso C2·7.
+**`Ω6R-QUA-004` SEGUE ABERTO com o dono dele** — o write continua torto; o read passa a aceitar as
+duas formas canônicas que DE FATO existem no banco.
+
+## FECHAMENTO (registro 6/7) do residual `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP` (registrado dentro do `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`, l.5610-5623)
+
+O residual dizia: a linha de auditoria da falha anônima não carrega `ipAddress`/`userAgent`, porque
+encaminhá-los exigiria alterar `auth-runtime.ts`, fora do §5 de então. **O ciclo 2 abriu a porta
+nominalmente** (C2·5 item 4: ampliação nominal de `auth-runtime.ts` — só o espelho `withTenantRls`
+do método novo `registerAnonymousFailure`) e o C2·3 encaminhou `ipAddress`/`userAgent` ao
+`recordLoginFailure` da falha anônima. **Evidência de fechamento (diário D1.g):** caso -db multi-org
+pela fiação REAL (`auth.routes` -> `auth-runtime`/`withTenantRls` -> `registerAnonymousFailure`)
+asserta os DOIS campos no metadata da linha — `ok 6 - CICLO 2: ... 1 requisição falhada = 1
+incremento + 1 linha, com ipAddress/userAgent` — **3/3, `ec=0`**, com vermelho-controle no código
+pré-correção (`ec=1`, `2 !== 1`). Consequência prática: passa a dar para saber **de onde** veio a
+força bruta anônima, na medida do IP de socket — a política de `X-Forwarded-For` continua sendo o
+item 2 da pendência-mãe, que segue ABERTA.
+
+- **status do residual:** FECHADO no ciclo 2 do B-O6R-07a · a pendência-mãe
+  `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` **não muda de status** (segue ABERTA, MÉDIA).
+
+## APPEND (registro 7/7) ao `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` (l.5589) — 1 linha do ciclo 2
+
+`C2-A4` (nota da junta): a folga do piso de 400 ms sob banco CARREGADO não foi medida — a medição sob
+carga pertence ao fecho distribuído desta pendência. Nota a favor: o ciclo 2 REDUZIU as escritas do
+ramo de falha anônima de 2xN para **<=2 por requisição** (<=1 UPDATE + <=1 INSERT, ato único
+pós-veredicto — C2·3), o que só melhora a folga.
