@@ -5810,3 +5810,57 @@ mesma classe do meu, e mesmo defeito: instrução de teardown sem critério de p
 sessões emitiram mandatos com o mesmo buraco**, o que confirma que isto é defeito de desenho de mandato, e
 não descuido de uma cadeira em particular. A regra foi adotada nos dois lados, inline nos mandatos
 seguintes.
+
+### FORMULAÇÃO COMO CLASSE (2026-09-04) — para referência de outros blocos
+
+> Escrito a pedido da sessão do `B-O6R-07a`, que referencia esta entrada. O incidente acima é **um caso**;
+> o que segue é a **classe**, enunciada para ser conferível sem conhecer o caso.
+
+**CLASSE: mandato de teardown sem critério de propriedade escrito.**
+
+**Enunciado.** Um mandato que ordena a um agente subordinado destruir recursos ("remova seus worktrees",
+"derrube o que você criar", "limpe os temporários") **sem enumerar o critério literal de propriedade**
+delega ao subordinado uma **inferência sobre nomes** que ele não tem informação para fazer. Em ambiente
+com **blocos simultâneos**, nomes de papel colidem por construção — a cadeira "C1" existe em todo bloco
+que tenha uma primeira cadeira —, então a inferência **vai** errar; a única variável é para que lado.
+
+**Por que o defeito é do mandato, e não do agente.** O subordinado recebe uma ordem verdadeira ("limpe o
+que é seu") cuja aplicação exige um dado que só o convocante tem: **quais nomes pertencem a este bloco**.
+Ele não pode consultar o outro bloco, não sabe que o outro bloco existe, e um nome plausível é
+indistinguível de um nome próprio. Culpar a cadeira é confundir *quem executou* com *quem projetou a
+armadilha*.
+
+**Propriedade ausente (é isto que se confere):** *toda ordem de destruição num mandato nomeia o prefixo
+literal que delimita o alvo, e declara que tudo fora dele é intocável — inclusive o que parecer resíduo
+próprio, órfão, ou sobra de encarnação anterior do próprio agente.*
+
+**Teste de detecção, aplicável a qualquer mandato antes de disparar:** localize toda ordem de remoção; para
+cada uma, pergunte **"o subordinado consegue decidir o alvo sem inferir?"**. Se a resposta depender de ele
+reconhecer um nome como seu, o mandato tem o defeito. O conserto é uma linha: o prefixo literal.
+
+**Duas materializações independentes, na mesma semana (é o que a torna classe, e não acidente):**
+
+| | `B-O6R-02` ciclo 5 | `B-O6R-07a` ciclo 2 |
+|---|---|---|
+| texto do mandato | "remova seus worktrees" (sem prefixo) | "remova o que você criar" (sem prefixo) |
+| orquestrador | Claude Code (esta sessão) | sessão irmã, independente |
+| resultado | cadeira removeu worktree alheio **em uso** | mesmo buraco, sem materializar |
+
+**Orquestradores diferentes, mandatos escritos em separado, defeito idêntico.** Nenhuma das duas sessões
+copiou o texto da outra. É defeito de **forma de mandato**, não de disciplina de cadeira.
+
+**Correção, nos dois lados:** a regra dos 4 itens da entrada acima passou a valer inline nos mandatos
+seguintes das duas sessões.
+
+**Corolário sobre o P1 — uma segunda função da mesma regra, e barata.** O `P1` (`D-JUNTA-RESILIENTE`)
+existe para que **o voto sobreviva à morte do jurado**. Neste caso ele fez outra coisa: a cadeira atingida
+**anotou a anomalia de terreno no próprio voto**, embora ela não afetasse o mérito do que ela julgava — e
+foi **só por isso** que o acidente ficou visível. Nenhuma das duas sessões o veria sozinha: quem destruiu
+achava que limpava resíduo próprio; quem foi destruída poderia simplesmente ter migrado e seguido.
+**Regra que decorre, adotada pelas duas sessões:** *o jurado registra anomalia de terreno mesmo quando ela
+não afeta o mérito do seu voto.* Custo: uma linha no voto. Benefício: acidentes **entre sessões** deixam
+de ser invisíveis por construção.
+
+**Enunciado que a sessão irmã pediu para citar, e que é o resumo do caso:** *o worktree destruído não era
+resíduo de uma cadeira morta — era o terreno da rede que substituiu a cadeira morta. A resiliência estava
+em uso quando foi atropelada.*
