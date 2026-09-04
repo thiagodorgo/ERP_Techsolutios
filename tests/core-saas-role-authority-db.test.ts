@@ -18,7 +18,11 @@ import { PLATFORM_ROLES } from "../src/modules/core-saas/permissions/catalog.js"
 //   · AUTO-SKIP sem DATABASE_URL — e o guard de zero pulos do job `backend-postgres` (ci.yml)
 //     pune o pulo lá, onde o banco existe;
 //   · com DATABASE_URL presente, a suíte FIXA `CORE_SAAS_PERSISTENCE=prisma` em runtime, antes
-//     de qualquer import da aplicação (convenção escrita no ci.yml; molde de
+//     de qualquer import que LEIA o modo. Precisão que o porteiro do #357 cobrou: a linha 6
+//     importa `catalog.js` ANTES disso — e é seguro só porque `catalog.ts` não importa nada, logo
+//     não alcança `src/config/env.ts`, que é quem congela o modo. Essa propriedade era acidente e
+//     virou guarda: `tests/auth-invariant-guards.test.ts` (guard 11) fica vermelho se alguém
+//     acrescentar import lá. (convenção escrita no ci.yml; molde de
 //     `checklist-routes-db.test.ts:266`). Uma suíte que prova o caminho de persistência real
 //     não pode executar com internals de memória (middleware de permissão resolvendo do
 //     catálogo em vez da tabela) — nem passando, nem falhando: ou fixa o modo, ou pula

@@ -244,3 +244,28 @@ test("guard 10c — DISABLE TRIGGER não aparece em src/** (baseline 0; o DONO d
 
   assert.deepEqual(matches, [], "DISABLE TRIGGER em src/** desligaria a trilha append-only (M-1)");
 });
+
+test("guard 11: catalog.ts não pode ganhar import — é o que mantém honesto o setup da suíte -db", () => {
+  // Ressalva 4 do porteiro pós-merge do #357: a 11ª instância da classe, em estado EMBRIONÁRIO.
+  //
+  // `tests/core-saas-role-authority-db.test.ts` fixa `CORE_SAAS_PERSISTENCE=prisma` em runtime, mas
+  // importa `catalog.js` numa linha ANTERIOR. Isso é seguro hoje por uma razão que ninguém tinha
+  // escrito: `catalog.ts` não importa nada, então não alcança `src/config/env.ts` — quem congela o
+  // modo na primeira leitura. Um import futuro em `catalog.ts` que encoste no env congelaria o modo
+  // antes da suíte setá-lo, e ela voltaria a provar o caminho Prisma contra o adaptador de MEMÓRIA:
+  // exatamente o defeito que derrubou a CI do #357.
+  //
+  // A propriedade era acidente feliz. Aqui ela vira guarda.
+  const catalogo = readFileSync(
+    fileURLToPath(new URL("../src/modules/core-saas/permissions/catalog.ts", import.meta.url)),
+    "utf8",
+  );
+  const imports = [...catalogo.matchAll(/^\s*import\s.+$/gm)].map((m) => m[0].trim());
+  assert.deepEqual(
+    imports,
+    [],
+    "catalog.ts ganhou import. Se ele alcançar src/config/env.ts, a suíte core-saas-role-authority-db " +
+      "volta a rodar contra memória no job `backend`. Ou o import comprovadamente não toca o env — e " +
+      "este guard é atualizado às claras —, ou a suíte passa a fixar o modo antes de qualquer import.",
+  );
+});
