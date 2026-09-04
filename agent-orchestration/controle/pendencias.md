@@ -5728,3 +5728,56 @@ checkpoint tem destino verificável no próprio PR — cumprida, ou descartada P
 ruling não cria obrigação fora do escopo §5 sem emendá-lo na mesma linha.*
 
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (a promessa é dos meus rulings) · **dono:** o próximo comando de bloco da rodada Ω6R
+
+## P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simultâneas) — MÉDIA · `dentro-do-bloco`
+
+**Incidente, sem dano, medido pelas duas pontas.** Durante o teardown do mandato dela, a cadeira **C1**
+(`jurado-c5-arnes-catalogo-postgres`) do `B-O6R-02` ciclo 5 **removeu o worktree
+`.claude/worktrees/jur-c1v2-drill`, que pertencia a uma jurada do `B-O6R-07a`** (sessão simultânea, bloco
+irmão) e estava **em uso**. Reportado pela sessão vizinha; **dano zero confirmado por ela**: a jurada já
+havia migrado para worktree próprio, o `b07` seguiu intacto em `9989c62`, e os `node_modules` da árvore
+principal e do `b07` seguiram com 222 pacotes cada — **não havia junction**, então nada foi arrastado.
+
+**Causa raiz — não é "limpeza de resíduo", é INFERÊNCIA SOBRE NOME ALHEIO.** O voto da C1 (l.188) diz, com
+estas letras: *"o resíduo `jur-c1v2-drill` **das encarnações caídas**"*. Ela havia caído duas vezes por
+limite de sessão; ao ver `jur` + `c1` + `v2` leu como *"jurado C1, segunda encarnação"* — quer dizer, dela.
+Era do 07a. **E o mesmo parágrafo erra na direção oposta:** classifica `jur-c2v2-red` como *"da cadeira C2"*
+(do ciclo 5) quando também é do vizinho. **Duas inferências de nome, ambas erradas**; só não houve dano na
+segunda porque o erro caiu do lado seguro.
+
+**O que funcionou, e não deve ser confundido com o que falhou:** a C1 varreu reparse points antes
+(`dir /AL /S` = zero), usou `cmd rmdir /S /Q` (que **não** atravessa junction) e nunca `rm -rf` do Git
+Bash — exatamente a disciplina nascida do incidente de 26/08 (`D-JUNTA-ESCOPO-E-CALIBRACAO(c)`). Foi ela
+que impediu isto de virar destruição de `node_modules` alheio. Mas essa disciplina protege **contra a
+propagação por junction**, não **contra remover o alvo errado**: a jurada vizinha perdeu terreno vivo, e só
+não perdeu trabalho por já ter migrado. **Sorte, não desenho.**
+
+**Responsabilidade:** do **orquestrador**, não da cadeira. O mandato que emiti mandava derrubar containers
+e remover worktrees no fecho, e **não escreveu o limite**. Uma cadeira instruída a "limpar o que é seu",
+sem critério de propriedade escrito, vai inferir — e nomes de cadeira colidem entre blocos simultâneos por
+construção (a C1 do ciclo 5 e a C1-v2 do 07a são cadeiras diferentes com a mesma letra).
+
+### A regra que passa a valer
+
+1. **Recurso efêmero (worktree, container, cluster, volume) leva no nome o identificador do BLOCO, nunca
+   só o da cadeira** — `o6r-c5`, `o6r07a`. Cadeiras homônimas coexistem em blocos simultâneos; o nome da
+   cadeira **não** é identificador único. Os recursos que seguiram isso neste ciclo
+   (`claude-o6r-c5-*`, `jur-c5-*`, `jur-c5-bfk-*`) não colidiram com nada.
+2. **Só se remove recurso cujo nome bate com o identificador do próprio bloco.** Nome que não bate é
+   **intocável** — mesmo parecendo resíduo próprio, mesmo órfão, mesmo sem `.git`. **Resíduo alheio se
+   REPORTA, não se varre.**
+3. **Quem convoca escreve o limite no mandato**, por extenso e com o prefixo literal. Mandato que diz
+   "remova seus worktrees" sem dizer *quais nomes são seus* delega ao subordinado uma inferência que ele
+   não tem como fazer com segurança.
+4. **Antes de qualquer remoção, `git worktree list` e `docker ps` são leitura obrigatória** — e o que não
+   estiver na lista do próprio bloco fica.
+
+**Evidência de origem (escopo):** `dentro-do-bloco` — o mandato defeituoso é meu, emitido nesta rodada; a
+remoção ocorreu no teardown desta junta. **Não** é `pre-existente`: a classe de 26/08 é vizinha, mas aquela
+era propagação por junction, e esta é seleção de alvo.
+
+**Aviso registrado da sessão vizinha (prefixos declarados, para quem vier depois):** do `B-O6R-07a` são
+`b07`, `jur-c1v2*`, `jur-c2v2*`, `dev-c2*`; do `B-O6R-02` ciclo 5 são `agent-af6ea*`, `jur-c5-*`,
+containers `claude-o6r-c5-*` e `jur-c5-arnes-*`, portas 15501/15502 e 32779–32782.
+
+- **status:** ABERTA · **severidade:** MEDIA · **escopo:** `dentro-do-bloco` · **dono:** a regra vale já; a consolidação no contrato (§C7.1-ter(c), ao lado da regra de junction) é do próximo bloco de governança
