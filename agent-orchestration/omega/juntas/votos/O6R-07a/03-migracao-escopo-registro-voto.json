@@ -1,0 +1,88 @@
+{
+  "cadeira": "C3 — jurado-b07a-migracao-escopo-registro",
+  "veredito": "APROVADO",
+  "head_julgado": "fb6618b413bda0a8efd8bbbf1ace38f824761b82",
+  "tem_veto": true,
+  "nota_sobre_o_head": "Medi eu mesmo. O briefing dizia 7c248c9 e a errata mandava registrar e9a9caa; o head real avançou de novo depois do inspetor, pelo commit do parecer dele. Confirmei que e9a9caa..fb6618b contém APENAS registros de junta (BRIEFING + 2 arquivos do inspetor, 3 arquivos / 155 inserções, zero linha de código). Base do PR medida: git merge-base HEAD origin/main = f895dd2.",
+  "achados": [
+    {
+      "id": "C3-A1",
+      "gravidade": "baixa",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "git log -- Kpis/kpis-history.md -> último toque 74430cc, 2026-08-29 (#360). O PR imediatamente anterior, #368 (f895dd2, 2026-09-01), tocou exatamente os mesmos 3 arquivos de Kpis/ que este (git diff --name-only e6a6461..f895dd2 -- Kpis/ = app.js, kpis-history.json, kpis-latest.json). A prática precede a branch em pelo menos 5 PRs.",
+      "o_que": "O §C3.1 manda atualizar `Kpis/kpis-history.*`; o espelho Markdown `Kpis/kpis-history.md` NÃO foi apensado neste PR. NÃO REPROVA (§C7.1-ter(a)): vira pendência com bloco dono. Agravante invertido a favor do bloco: ele MESMO declara a condição na seção (11) item (6) da description ('Kpis/kpis-history.md (espelho Markdown) segue parado desde o #360'), com a mesma evidência de origem — não a esconde.",
+      "comando": "git log --format='%h %ad %s' --date=short -3 -- Kpis/kpis-history.md ; git diff --name-only e6a6461..f895dd2 -- Kpis/ ; git diff --name-only f895dd2..HEAD -- Kpis/",
+      "saida": "74430cc 2026-08-29 (#360) | #368 tocou app.js+kpis-history.json+kpis-latest.json | este PR tocou app.js+kpis-history.json+kpis-latest.json"
+    },
+    {
+      "id": "C3-A2",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O texto foi escrito neste PR, no diário dev-k1-k3-kpi.md (arquivo novo do bloco, commit 62ec12d).",
+      "o_que": "O §Fechamento de `agent-orchestration/omega/juntas/votos/O6R-07a/dev-k1-k3-kpi.md` conclui 'TOTAL DO PR: 42 arquivos'. O total DISTINTO naquele head é 41: `agent-orchestration/controle/pendencias.md` é contado duas vezes — está nos '32 arquivos' da camada de código/evidência (head 73a351c) E na lista de 9 da camada de registro. 41 é o número que o §2 do briefing e o inspetor mediram. A `description` do KPI NÃO repete o erro (nunca escreve '42'), então o painel não publica número errado — por isso `baixa` e não `media`.",
+      "comando": "git diff --name-only f895dd2..62ec12d | wc -l ; git diff --name-only f895dd2..73a351c -- agent-orchestration/",
+      "saida": "41 ; a lista dos 8 de agent-orchestration em 73a351c INCLUI agent-orchestration/controle/pendencias.md"
+    },
+    {
+      "id": "C3-A3",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O arquivo foi alterado por este PR; a omissão está no §5 do plano deste bloco.",
+      "o_que": "`Kpis/app.js` (1/1) não é nominado no §5-PERMITIDO, que lista apenas kpis-latest.json, kpis-history.json, kpis-history.md e index.html. NÃO é desvio de escopo: a mudança é UMA linha — a `var FROZEN` (snapshot_date 2026-09-01/SAN2-6 -> 2026-09-02/B-O6R-07a) — e o §C3.0 do CLAUDE.md EXIGE essa paridade ('congelado no último merge'). Regra da casa > omissão do §5. É lacuna de redação da lista, não da entrega. Mesma classe: `agent-orchestration/controle/pendencias-indice.md` (artefato GERADO de um arquivo permitido) e os registros da própria junta (BRIEFING, votos/, as duas emendas apensas ao plano), que nenhum plano pode autorizar nominalmente de antemão.",
+      "comando": "git diff f895dd2..HEAD -- Kpis/app.js | grep -c '^[+-]' ; git show HEAD:Kpis/app.js | grep -o '\"snapshot_date\":\"[^\"]*\",\"version\":\"[^\"]*\"' | head -1",
+      "saida": "4 (2 cabeçalhos de diff + 1 remoção + 1 adição = UMA linha trocada) ; \"snapshot_date\":\"2026-09-02\",\"version\":\"B-O6R-07a\""
+    },
+    {
+      "id": "C3-A4",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O cabeçalho da migração foi escrito neste PR (arquivo novo, commit a37a9dd).",
+      "o_que": "O runbook de `down` do cabeçalho reverte os DADOS corretamente (executei-o: DELETE dos grants antes do DELETE da permission, pela FK, ec=0, estado volta a 0), mas o cabeçalho não avisa que `_prisma_migrations` CONTINUA marcando a migração como aplicada (finished_at IS NOT NULL = t) — logo `migrate deploy` não a re-aplica, e re-subir exige rodar o SQL à mão ou uma nova migração. Nenhum comportamento prometido falhou; é lacuna de instrução de operação.",
+      "comando": "docker exec -i jur-c3-pg psql ... -c \"<runbook do cabeçalho>\" ; SELECT migration_name, finished_at IS NOT NULL FROM _prisma_migrations WHERE migration_name LIKE '%approve%';",
+      "saida": "DELETE 3 / DELETE 1, ec=0, permissions=0 ; 20260871000000_grant_work_orders_approve_permission|t"
+    },
+    {
+      "id": "C3-A5",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "É propriedade do desenho de deploy, anterior ao bloco: `deploy-production.yml` roda apenas `prisma migrate deploy` ('produção NUNCA semeia') e NENHUMA migração insere em `roles` (grep -rl 'INSERT INTO roles' prisma/migrations/ = vazio) — os papéis vêm do bootstrap único.",
+      "o_que": "Num banco provisionado SÓ por migração (sem bootstrap), `roles` fica vazia e a migração concede 0 grants — medido: count(roles)=0 e count(grants)=0 após `migrate deploy` puro. Não é defeito desta migração (sem papel nenhum não há RBAC nenhum), mas o cabeçalho não diz a dependência nesses termos. Registro para não se perder.",
+      "comando": "npx prisma migrate deploy ; SELECT count(*) FROM roles; SELECT count(*) FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE p.key='work_orders:approve';",
+      "saida": "deploy ec=0 ; roles=0 ; grants=0 (após db:seed: roles=6, grants=3)"
+    },
+    {
+      "id": "C3-A6",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Erro meu, durante esta auditoria, no head fb6618b.",
+      "o_que": "AUTO-ERRATA, para que ninguém herde como fato: na primeira execução, `permission-catalog-db-parity` com RBAC_DB_PARITY=1 saiu `fail 1, ec=1` listando 'platform_admin deveria ter <catálogo inteiro> e não tem no banco'. NÃO É ACHADO DO BLOCO — a causa fui EU, que havia injetado à força uma role `platform_admin` no cluster no teste adversarial do C3-1.b. Derrubei o cluster contaminado, subi outro limpo, reprovisionei e re-medi: 2/2 pass, skipped 0, ec=0. De passagem, é evidência A FAVOR do bloco: o guard de banco pega deriva de papel de verdade.",
+      "comando": "docker rm -f jur-c3-pg ; docker run ... jur-c3-pg2 ; npx prisma migrate deploy ; npm run db:seed ; RBAC_DB_PARITY=1 node --test --import tsx tests/permission-catalog-db-parity.test.ts",
+      "saida": "sujo: tests 2 · pass 1 · fail 1 · ec=1 || limpo: tests 2 · pass 2 · fail 0 · skipped 0 · ec=0"
+    }
+  ],
+  "provas_centrais": {
+    "C3-1a_idempotencia": "3 aplicações do MESMO arquivo do head via psql -v ON_ERROR_STOP=1: ec=0/0/0, permissions=1, grants=3 em todas. ON CONFLICT DO NOTHING nas duas pontas. Encoding preservado.",
+    "C3-1b_distribuicao": "grants = manager, super_admin, tenant_admin (exatos 3 do E3.1). platform_admin NÃO existe como role no banco, CONFIRMADO POR CONSULTA após migrate deploy + db:seed: 6 papéis globais (field_dispatcher, manager, super_admin, technician, tenant_admin, viewer). Teste adversarial: injetei platform_admin/operator/field_technician/auditor/support (roles 6->11) e re-apliquei — NENHUM dos 5 recebeu.",
+    "C3-1c_down": "Runbook do cabeçalho executado literalmente: grants antes da permission (ordem da FK), ec=0, estado volta a 0. Ciclo up->down->up fechado 3 vezes.",
+    "C3-1d_guards": "migration-parity 3/3 skipped 0 ec=0 E MORDE (removida a migração no worktree descartável: fail 1, ec=1, nomeando work_orders:approve; restaurada: 3/3, ec=0). db-parity ligado em cluster limpo: 2/2 skipped 0 ec=0. O skip é PRÉ-EXISTENTE (287bda3, 2026-08-10, #344) e a CI o desliga (.github/workflows/ci.yml:120 RBAC_DB_PARITY=\"1\" no job backend-postgres, que roda os DOIS arquivos).",
+    "C3-2a_escopo_permitido": "44 arquivos no diff f895dd2..fb6618b, classificados um a um. As 4 edições nominais da E1 batem literalmente (core-saas.test.ts 1/0 após mileage_correct; snapshot 4/0 em ROLE_PERMISSIONS.{super_admin,platform_admin,tenant_admin,manager}, zero a mais). As 4 da E2 também, incluindo a REVERSÃO BYTE-EXATA da l.612-613 ao texto de 2d54ea2 (provada com cat -A nas duas pontas: bytes idênticos, LF puro).",
+    "C3-2b_proibido": "Uma passada com todos os pathspecs do §5-PROIBIDO -> saída VAZIA. Os 8 arquivos do ciclo 5, .github/, frontend/, mobile/, CLAUDE.md, AGENTS.md, RBAC_MATRIX.md, APPROVAL_LIMITS.md, lockfiles, .env, scripts/, authority/**, financial*/**: zero toque. prisma/** reduz-se à ÚNICA migração nova, status A (nenhuma migração existente editada). tests/permission-catalog-migration-parity.test.ts intocado -> PERMISSOES_HERDADAS_DO_SEED não cresce.",
+    "C3-2c_mutacao": "Worktree descartável jur-c3-drill (head fb6618b, npm ci próprio). Limpo: ec=0. Mutadas 3 pernas reais (.github/workflows/ci.yml, tests/audit-security.test.ts, RBAC_MATRIX.md) por printf >> (jamais sed -i): ec=1 NOMEANDO as três. Restaurado por truncagem de sufixo em Python (sem git checkout --): ec=0, git status vazio.",
+    "C3-3a_kpi": "pr=369, merge_commit=null, approved_head=null, status=published_per_pr. 8 de 8 métricas não exercidas carregam o marcador §C3.3 na MESMA forma literal (não só as duas nomeadas — conferi todas, que foi a lição do J-SAN2-6). mvp_demo 99 e mvp_vendavel 88 INTOCADOS em valor, com marcador 'INTOCADO ... §C3.4'. backend_tests 2645/2647 com N e forma canônica; os 2 skips têm nome e eu os reproduzi.",
+    "C3-3b_backfill368": "pr 368 / merge_commit f895dd2 / approved_head d90fbbb, com a razão transcrita ao lado. Verifiquei: a ata J-SAN2-6.md nomeia d90fbbb (linhas 5, 81, 148) e NÃO nomeia 9051e9b nem 85a9058 (grep -c = 0). O head final 9051e9b APARECE declarado (grep -c em kpis-history.json = 2, kpis-latest.json = 2) — a ressalva R1 do porteiro do #368 está PAGA. E a afirmação 'a árvore de 9051e9b é idêntica à do squash' é VERDADEIRA: rev-parse 9051e9b^{tree} = f895dd2^{tree} = 997a409db963d0b9b927049f494aadcc12320afa; d90fbbb é ancestral de 9051e9b.",
+    "C3-3c_indice": "blocks_completed 157->158 com a condição que a entrada SAN2-6 escreveu para si mesma, e origin/main = f895dd2 confirma o merge. Índice REGENERADO PELO GERADOR sobre os BLOBS do head, em diretório isolado (git show, nunca git archive+tar): sha256 do regenerado == sha256 do commitado = d2f50c2f6416301774b373a58130cdefaae850fc3d935d46acd2de4ac438f3a6. ZERO dessincronia — a classe do J-SAN2-5/C3-A5 está fechada. Nota de método: o blob de pendencias.md é LF PURO (0 CR em 5689 linhas); os '5654 CR' do briefing são da árvore de trabalho sob autocrlf.",
+    "C3-3d_description": "Os 6 números declarados batem exatamente (32 arq +4842/-27 no head 73a351c; camadas 12/11/1/8 com +1790/-13, +344/-14, +47, +2661). O texto DECLARA o head em que mediu e delega o numstat final ao §Fechamento de dev-k1-k3-kpi.md — delegação HONRADA (a tabela lá publica arquivo por arquivo, com API_CONTRACTS.md 15/4). Nomeia os 7 testes novos e os 4 editados com contagens. Não nomeia, na própria description, API_CONTRACTS.md e role-catalog-contract.snapshot.json (ambos nos diários). Os 3 registros de junta posteriores são estruturalmente inomeáveis (nasceram depois do commit do KPI).",
+    "C3-3e_guard_painel": "Drill isolado: app.js do head x JSON do head = 16/16, ec=0. app.js da main (git show f895dd2:Kpis/app.js) x JSON do head = ec=1, NOMEANDO as 6 chaves divergentes [snapshot_date, version, release, metrics, production_readiness, findings]. Restaurado: 16/16, ec=0, git diff --numstat vazio, sha256 igual ao blob. No b07: kpi-freeze --check 'em dia (snapshot 2026-09-02)' ec=0; node --check Kpis/app.js ec=0.",
+    "C3-3f_pomega3b": "As TRÊS pernas verificadas nas linhas exatas: dashboard-prisma.repository.ts:95 event_type:{not:'work_order_comment'}; dashboard.repository.ts:183 .filter(e => e.eventType !== 'work_order_comment') (paridade memory x prisma fechada nos DOIS caminhos); tests/work-order-comments-routes.test.ts:228 [P-034] existe E PASSA — executado: tests 15 / pass 15 / fail 0 / skipped 0, ec=0. Linha de status virada para FECHADA. A evidência é VERDADEIRA."
+  },
+  "terreno": {
+    "cluster_proprio": "jur-c3-pg2 em 127.0.0.1:25432 (postgres:16). Portas RE-MEDIDAS neste boot: ocupadas 5432/6379 (base viva) e 32769/32770 (ciclo 5); 25432 livre e fora de toda faixa excluída do Hyper-V. Nunca 55432.",
+    "base_viva": "erp-postgres:5432 e erp-redis:6379 NÃO receberam nenhum comando, nem de leitura.",
+    "ciclo5": "O worktree agent-af6ea607f3ddf8efd, a branch feat/o6r-b02-financial-uow e as portas 32769/32770 NÃO aparecem em nenhum comando meu.",
+    "worktree_drill": "jur-c3-drill criado por git worktree add --detach a partir de fb6618b, com npm ci PRÓPRIO (ec=0). Zero junction/symlink de node_modules. Removido por git worktree remove --force.",
+    "arvore_principal": "Não escrevi nela (ressalva R2 tratada como regra de conduta).",
+    "escritas_no_b07": "Apenas votos/O6R-07a/03-migracao-escopo-registro-evidencia.md e este .json. Não commitei nada.",
+    "proibicoes_respeitadas": "Nenhum git reset / checkout -- . / stash / rm de lock / gc / prune / pack-refs / --force. Nenhum sed -i ou perl -i. Nenhum git archive+tar (usei git show do blob). Nenhum heredoc com aspas (arquivos escritos com Write)."
+  },
+  "evidencia": "agent-orchestration/omega/juntas/votos/O6R-07a/03-migracao-escopo-registro-evidencia.md"
+}

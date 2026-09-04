@@ -266,7 +266,7 @@ if (!connectionString) {
   // ---------------------------------------------------------------------------------------------
   // B-O6R-02 ciclo 5 · C9 (P13, A1) — as duas portas CRUAS que os triggers NÃO cobrem, fechadas POR
   // CONSTRUÇÃO pela FK composta financial_entries_reversal_pair_fk (migration
-  // 20260871000000_add_reversal_pair_fk): o Trigger A só guarda a transição de SOFT-delete e o
+  // 20260872000000_add_reversal_pair_fk): o Trigger A só guarda a transição de SOFT-delete e o
   // Trigger B só dispara em INSERT/UPDATE de reversal_of/deleted_at — DELETE físico e rename da PK
   // do original passavam por baixo (medido no §0.d do plano: ambas ACEITAS sem FK). Sondas (v) e
   // (vii), agora permanentes. Vermelho-controle: no down da FK (drill D35) as duas são ACEITAS.

@@ -21,3 +21,19 @@ export const ANONYMOUS_LOGIN_MIN_LATENCY_MS = 400;
 // Lockout direcionado: 5 falhas → 15 minutos (§12.2).
 export const LOGIN_LOCKOUT_MAX_FAILED_ATTEMPTS = 5;
 export const LOGIN_LOCKOUT_MINUTES = 15;
+
+// B-O6R-07a (§3.5 do plano) — balde por IP das DUAS vias de POST /auth/login (com organização e
+// anônima), fechando `P-O6R-B01-RATE-LIMIT-IP`: o balde do B01 é por E-MAIL, então rodar e-mails
+// (ou organizações) na mesma origem escapava do freio inteiro. Medido no head-base: 200 tentativas
+// do mesmo IP com 200 e-mails distintos → 200×401 e ZERO 429.
+//
+// Números NÃO inventados: são os mesmos de `AUTHORITY_ANTI_ABUSE_DEFAULTS.ipBucket`
+// (portal-shared/anti-abuse.ts) — 30 logins por IP com reposição de 30 a cada 5 min, o teto por
+// ORIGEM que a casa já usa na outra superfície de login credenciada. Mais generoso que o balde por
+// e-mail (10/15 min), de propósito: se o freio por IP fosse mais apertado, o primeiro a sentir
+// seria o escritório atrás de NAT, não o atacante.
+export const LOGIN_IP_BUCKET = {
+  capacity: 30,
+  refillTokens: 30,
+  refillIntervalMs: 5 * 60 * 1000,
+} as const;
