@@ -191,3 +191,65 @@ grava** — não o assume.
   por `git worktree remove --force`.
 - Container **`dev-c2-pg`** (Up 7h) — resíduo da queda #2, ainda não varrido.
 - Ambos são do bloco. `erp-postgres`/`erp-redis` são a **base viva** e não se tocam.
+
+---
+
+| # | agente | modelo | mandato | fase da morte | erro | custo do redo |
+|---|---|---|---|---|---|---|
+| 4 | `inspetor-de-terreno-da-junta` (ciclo 2, 1ª) | pin `fable` | 3 itens (T1/T2/T3) | **mensagem 1** — nada escrito, nada medido | `rate_limit` HTTP 429 (teto de sessão) | zero trabalho perdido; redisparo integral |
+
+Classe "mensagem 1" do postmortem: independe de conduta. Nada a herdar (P3 sem objeto). P5 não dispara
+(1 queda na janela). Entre a queda e o redisparo, a **proveniência dos corpos c5 foi confirmada** pela
+sessão vizinha (`erp-techsolutios-dd`): **reposição verbatim** dela, como orquestradora da junta do ciclo 5
+— hash a hash contra a tabela E1.8, declarada no briefing dela e aceita pelo inspetor dela como ressalva R2.
+A mutação viva em `.claude/agents/especialistas/` da árvore principal é **declarada e deve ficar intocada**
+até a junta do c5 fechar. O redisparo do nosso inspetor carrega esse fato para ele não contar a mutação
+como contaminação sem dono.
+
+---
+
+| # | agente | modelo | mandato | fase da morte | erro | custo do redo |
+|---|---|---|---|---|---|---|
+| 5 | `jurado-b07a-c2-autorizacao` (C1-v2) | pin `fable` | 3 itens (J1/J2/J3) | **indo escrever o drill** no worktree descartável, com `J1.a`/`J1.d`/`J1.e` **MEDIDOS e gravados** | `rate_limit` HTTP 429 (teto de sessão) | **~1/3**: sobra o drill das 9 rotas (J1.b/c) + J2 + J3 |
+| 6 | `jurado-b07a-c2-auth-multiorg` (C2-v2) | pin `fable` | 3 itens (J1/J2/J3) | **lendo o arnês multiorg**, com o esqueleto criado e `J2.d` conferido só no diff (não gravado) | `rate_limit` HTTP 429 (mesmo teto) | **quase integral**: esqueleto sobrevive, medição não |
+
+## P5 NÃO disparou — e a razão fica escrita, porque a regra literal diria o contrário
+
+O P5 manda **pausa de ~15 min após 2 quedas em menos de 30 minutos**. Estas duas foram **simultâneas**, o
+que pela letra dispara a pausa. **Não pausei, e o motivo é o que o próprio P5 diz existir para evitar:**
+a regra nasceu de *"as quedas agrupam no tempo; redisparar dentro da janela ruim multiplicou as perdas"* —
+ou seja, protege contra **janela instável de streaming**, onde o próximo disparo tem alta chance de morrer
+igual.
+
+Aqui a causa é **teto de cota**, que é **fronteira dura, não janela instável**: as duas cadeiras morreram
+no MESMO limite, no mesmo instante, e **o limite já foi reposto** (confirmado pelo dono). Pausar 15 minutos
+contra um teto já levantado seria cumprir a letra contra a finalidade. **Registro a decisão em vez de
+aplicar ou pular a regra em silêncio** — e é a segunda vez neste bloco que a série do P6 mostra a mesma
+coisa: **as quedas não têm uma causa só, logo não têm um remédio só** (streaming · cota · rede, nas seis).
+
+**Sugestão à série, como hipótese e não como norma:** o P5 poderia distinguir **classe de erro** —
+`server_error` (janela instável → pausa) × `rate_limit` (fronteira de cota → redisparo assim que reposta).
+Fica para o dono decidir; nenhum agente muda contrato.
+
+## O que sobrevive, cadeira a cadeira (P3)
+
+**C1-v2 — três sub-provas MEDIDAS e gravadas, com comando:**
+- `J1.a` — `achados.jsonl` SEC-002: **CONFERE** com o C2·2 item 1; o critério de aceite original
+  (*"Técnico A não altera OS de B"*) **permanece intacto no campo `teste`**, que é o ponto delicado do
+  registro (superar não pode apagar o critério).
+- `J1.d` — `REGISTRO_ACHADOS_O6R.md`: **CONFERE**; *"as duas seções contam a mesma história"*.
+- `J1.e` — KPI + guard de paridade: **CONFERE**, guard **rodado por ela**.
+- Última linha antes de morrer, por leitura: `operator-profile.repository.ts:35` gera `id: randomUUID()`
+  **no servidor**, e `create()` **não aceita id do cliente** — ou seja, o vetor de colisão de UUID do J2
+  é **teórico, não real**. Está no corpo da mensagem dela, **não gravado no arquivo**: pelo P3 é
+  **não-insumo**, e o sucessor **re-mede**.
+- **Falta:** o drill das 9 rotas (J1.b/J1.c), o J2 inteiro (dual-match sob ataque) e o J3.
+
+**C2-v2 — esqueleto e nada mais.** Criou o arquivo com J1 fatiado em 6 sub-provas, J2 em 6 e J3 em 3, todos
+`EM APURAÇÃO`. Morreu lendo o arnês. **Nada medido; nada a herdar além da estrutura.**
+
+## Resíduo
+
+Worktree **`jur-c1v2-drill`** (detached em `9989c62`) — terreno da C1-v2, **de pé**; o sucessor dela reusa
+ou remove por `git worktree remove --force`. **`jur-c5-arnes` e os containers `jur-c5-arnes-*` são da junta
+do ciclo 5 da sessão vizinha — INTOCÁVEIS.**

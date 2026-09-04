@@ -1,0 +1,40 @@
+{
+  "cadeira": "C2-v2 — jurado-b07a-c2-auth-multiorg-s",
+  "veredito": "APROVADO",
+  "head_julgado": "9989c62a3b81468dee6dd39fae3da6246e0e6fb1",
+  "tem_veto": true,
+  "ciclo": "2 (TETO)",
+  "substitui": "jurado-b07a-c2-auth-multiorg (queda #6)",
+  "quorum": "unanimidade de 3 (C2·8 / §C7.1-ter(b))",
+  "evidencia": "agent-orchestration/omega/juntas/votos/O6R-07a/12-c2-auth-multiorg-evidencia.md",
+  "mandato": {
+    "J1": "CONFERE — as 4 propriedades do C2·3 por execução, N=3, denominador idêntico, com contraste vermelho re-executado por mim nas duas pontas + caso -db multi-org em cluster descartável próprio",
+    "J2": "CONFERE — o desenho novo é o desenho entregue; 6/6 sub-provas do inventário, duas delas provadas por MUTAÇÃO e não por leitura",
+    "J3": "CONFERE — append com a margem publicada (append-only provado por hunk único), errata E-b emenda o §4 para propriedade, texto × evidência do ciclo 1 fiel (leitura, rotulada)"
+  },
+  "achados": [
+    {
+      "id": "J2-A1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "a dep nasce NESTE diff: src/modules/auth/services/anonymous-login.service.ts l.79, hunk `@@ -72,6 +82,16 @@` de `git diff 9d44989 9989c62`. Antes do ciclo 2 ela não existia.",
+      "o_que": "`registerFailure` é dep OPCIONAL (`readonly registerFailure?`) e a ausência dela falha ABERTO E EM SILÊNCIO: o guard `chargeableFailures.length > 0 && this.deps.registerFailure` simplesmente não cobra, sem exceção. Medi que o TIPO não protege — removi a injeção do único sítio de produção (auth.routes.ts:104-106) e `npx tsc --noEmit` saiu ec=0 com 0 `error TS`. NÃO é a classe de `verifyPasswordFn?`/`bucketStore?`/`minLatencyMs?`, que têm default seguro no próprio serviço; esta não tem default — a ausência dela é a ausência da defesa, e o modo de falha é a regressão literal do Ω6R-SEC-003 ('contador PARADO: failed_attempts = 0'). NÃO REPROVA porque a defesa existente é executável e larga: há UM só sítio de produção, ele injeta, e o -db sobe o app real (createApp), de modo que a regressão derruba 6 de 7 subtestes, incluindo o caso 1 (a própria medição do secops). O head entregue não tem o defeito; tem uma porta que só um erro futuro abriria, com alarme alto. Observação de desenho para o próximo bloco de auth.",
+      "comando": "npx tsc --noEmit -p tsconfig.json  ·  DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:15831/erp_techsolutions node --test --import tsx tests/o6r07a-anon-lockout-db.test.ts  (drill MUT-1, worktree descartável próprio em 9989c62, cluster próprio; restaurado por edição inversa exata, git status --porcelain VAZIO)",
+      "saida": "tsc: ec=0, `grep -c 'error TS'` = 0 (o compilador NÃO pega) | -db: ec=1, `# tests 7 · # pass 1 · # fail 6`, `error: 'contador PARADO: failed_attempts = 0 (antes deste bloco era 0)'` e, no subteste multi-org, `0 !== 1` — sem 500, sem exceção"
+    }
+  ],
+  "medicoes_chave": {
+    "J1_verde_head": "node --test --import tsx tests/o6r07a-anon-lockout-multiorg.test.ts → 3× `# tests 5 · # pass 5 · # fail 0 · # skipped 0`, ec=0 (ec medido sem pipe)",
+    "J1_vermelho_pre_correcao_9d44989": "ec=1 · `# tests 5 · # pass 2 · # fail 3` · M1 `expected 0 / actual 5` · M2 `expected 0 / actual 1` · M3 `expected 1 / actual 2` — bate linha a linha com D1.a/b/c do diário",
+    "J1_vermelho_base_f895dd2": "ec=1 · `# tests 5 · # pass 3 · # fail 2` · M4 `expected 5 / actual 0` (contador parado do SEC-003) · M3 `expected 1 / actual 0` — forma OPOSTA à do pré-correção, prova de que a sonda morde dos dois lados",
+    "J1_db_multiorg": "3× `# tests 7 · # pass 7 · # fail 0`, ec=0, cluster descartável próprio jur-c2v2-pg:15831, migrate deploy ec=0, 104 migrations aplicadas",
+    "J2_incrementFailedAttempts": "contado por BLOB (não por texto — a linha é duplicada): pré `9d44989` l.152 (direcionado B01) + l.261 (anônimo); pós `9989c62` l.163 (o MESMO direcionado, deslocado) + l.341 (dentro de registerAnonymousFailure). l.152 fora de todos os hunks → caminho direcionado INTOCADO; repositório do B01 fora do diff",
+    "J2_auth_runtime_portante": "drill MUT-2 (remoção do espelho withTenantRls): tsc ec=0 (o `as LocalAuthLoginService` é cast) mas -db ec=1 com `desfechos anônimos observados: [500,...,429,429]` — o espelho está na fiação real e sua ausência falha ALTO",
+    "J3_append_only": "`git diff -U0 9d44989 9989c62 -- agent-orchestration/controle/pendencias.md` → UM hunk `@@ -5689,0 +5690,146 @@`, `grep -c '^-[^-]'` = 0; arquivo 5689→5835 linhas. O `diff -q` que acusou divergência era EOL (blob 0 CR × árvore 5654 CR), não conteúdo"
+  },
+  "terreno": {
+    "árvore_julgada_intacta": "sim — git status só lista registros da junta; zero mutação em src/, tests/, prisma/",
+    "isolamento": "worktree próprio ../jur-c2v2-red (npm ci próprio, zero junction/symlink), cluster próprio 15831",
+    "limpeza": "container jur-c2v2-pg removido; worktree removido por `git worktree remove --force` após git status VAZIO; base viva 5432/6379 nem lida; jur-c5-arnes (prunable) NÃO podado; nenhum reset/stash/checkout -- ./gc/prune"
+  }
+}
