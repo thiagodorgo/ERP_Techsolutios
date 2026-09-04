@@ -5864,3 +5864,56 @@ de ser invisíveis por construção.
 **Enunciado que a sessão irmã pediu para citar, e que é o resumo do caso:** *o worktree destruído não era
 resíduo de uma cadeira morta — era o terreno da rede que substituiu a cadeira morta. A resiliência estava
 em uso quando foi atropelada.*
+
+## P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA (2026-09-04 — dado de método das rodadas Ω6R simultâneas) — registro, sem dono de correção
+
+**Origem:** troca entre as sessões do `B-O6R-02` c5 e do `B-O6R-07a` c2, que rodaram em paralelo. A sessão
+irmã levantou a ressalva metodológica que motiva esta entrada: *"os três meus são de superfície de rota e
+os seus são de atribuição de causa — pode ser a mesma classe ou podem ser duas; sete numa tabela só é mais
+persuasivo do que honesto"*. **Ela está certa, e conferir mudou a contagem.** Registro com as colunas
+separadas; **não somo antes de separar**.
+
+**Classe candidata, enunciada depois de conferir caso a caso:** *ferramenta sintática (grep, leitura,
+lembrança do autor) usada para sustentar afirmação semântica (causa, completude, exaustividade) — e
+publicada com o verbo da afirmação forte.* O defeito não é usar grep; é **publicar o resultado dele como
+se fosse execução**.
+
+### Coluna A — completude de superfície (o censo enumera o que o autor lembrou)
+
+| # | achado | quem achou | o que a leitura afirmava | o que a execução mediu |
+|---|---|---|---|---|
+| A1 | P0 declarado fechado com técnico apagando anexo alheio (`DELETE` → 204) | C1 do c1 (07a) | superfície coberta | só apareceu atacando **14 rotas** |
+| A2 | dono com e-mail em duas orgs se trancava **logando corretamente** | C2 do c1 (07a) | fluxo coberto | só apareceu em cenário multi-org que o arnês não tinha |
+| A3 | décima via (`POST /mobile/sync/work-order-actions`, `mileage` em OS alheia) | C1-v2 do c2 (07a) | censo de 2 routers, feito por leitura | via fora do censo |
+
+**O mais incômodo é o A3**, e a sessão irmã o nomeia: o censo foi refeito **depois** de a junta já ter
+cobrado precisão — e ficou incompleto de novo, **por não executar**.
+
+### Coluna B — proveniência do método (grep publicado como execução, ou como prova de completude)
+
+| # | achado | quem achou | o que eu publiquei | o que a execução mediu |
+|---|---|---|---|---|
+| B1 | "produtor NOMEADO por execução", 4 arquivos vindos de `grep` | `critico-c5-adversarial` | os 4 como produtores | **0/0 nos quatro**; o vazador real (`core-saas-role-authority-db`, +1/+1) estava fora da lista |
+| B2 | manchete residual contradizendo a nota do mesmo artefato | cadeira **C1** (c5) | correção "feita nas cinco publicações", **verificada por `grep`** | o `grep` era **case-sensitive** e a manchete estava em caixa alta — 3 instâncias sobreviveram |
+
+**O B2 é o caso mais instrutivo das duas colunas**, e por isso não o descartei: ali o `grep` não foi fonte
+da afirmação, foi **a prova de que a correção estava completa**. A ferramenta que falhou era a que eu usei
+para me convencer de que não havia falhado.
+
+### O que ficou de FORA, e por que a exclusão importa
+
+**"Dois commits novos" × **um** medido** (achado do `inspetor-de-terreno-da-junta`, R5a) **não pertence a
+esta classe.** Não houve ferramenta sintática nem verbo de execução: foi uma declaração factual que eu
+**podia** ter conferido com um comando e não conferi. É a classe vizinha *"afirmação de conveniência não
+conferida"* — parente, mas distinta, e somá-la aqui inflaria a série. **5 casos, não 6, e não 7.**
+
+### O dado que falta, e que a sessão irmã ofereceu registrar
+
+A série só vale com o **denominador**: quantas vezes a execução foi aplicada **sem** achar nada. A sessão
+irmã ofereceu registrar também o caso negativo da cadeira C3 dela — *"conto também se ela **não** achar,
+que é o dado que a série precisa e ninguém costuma registrar"*. **Sem isso, esta tabela mede a
+disponibilidade dos achados, não a taxa de acerto do método.** Fica declarado como limite desta entrada:
+o que ela sustenta hoje é *"execução achou o que leitura não acharia em 5 ocasiões medidas"*, e **não**
+*"execução acha sempre"* nem *"leitura nunca acha"*.
+
+- **status:** ABERTA (registro de método, coletivo; sem correção associada) · **severidade:** informativa · **dono:** nenhum — é dado para calibrar mandatos futuros
