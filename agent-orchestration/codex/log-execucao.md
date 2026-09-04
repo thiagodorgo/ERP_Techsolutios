@@ -1,3 +1,122 @@
+## 2026-09-03 - B-O6R-07a CICLO 2 - reversao do SEC-002, cobranca unica pos-veredicto, dual-match no guard de objeto
+
+### Resumo
+
+Ciclo 2 do sub-bloco de autorizacao (branch `fix/o6r07a-authorization`, PR #369): o ciclo 1 foi
+REPROVADO 2x1 (vetos C1/autorizacao e C2/auth multi-organizacao) e este e a ULTIMA tentativa
+(`D-TETO-DOIS-CICLOS`). Plano: apenso `## CICLO 2` (C2·0-C2·8) do `B-O6R-07-plano.md`, por
+planejador-mestre de identidade nova. Papeis (§C7.4-bis): quem ACHOU = cadeiras C1/C2 do ciclo 1;
+quem PLANEJOU = o apenso; quem DESENVOLVEU = sucessao de identidades novas A->B->C (3 quedas de
+infraestrutura registradas em `votos/O6R-07a/00-quedas.md`; diario unico `dev-ciclo2.md`).
+
+### Entregue
+
+- **C2-A1**: cobranca do lockout anonimo sai de `verifyAnonymousCandidate` (volta a ser sem efeito
+  colateral) e vira ato unico pos-veredicto em `AnonymousLoginService.attempt` — 1 requisicao
+  falhada = 1 incremento (o mesmo UPDATE atomico do B01) + 1 linha de auditoria com
+  `ipAddress`/`userAgent` (fecha `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`). `auth-runtime.ts` ganha SO o
+  espelho `withTenantRls` do metodo novo (ampliacao nominal do C2·5).
+- **C1-A4**: dual-match em `assertMutationObjectScope` (perfil OU user id, ~2 linhas) — o write do
+  assign grava user id no campo de perfil e o tecnico legitimamente atribuido recebia 403;
+  fail-closed e 404 cross-tenant preservados; `Ω6R-QUA-004` segue aberto.
+- **C1-A1**: `Ω6R-SEC-002` deixa de ser declarado fechado — `parcialmente_superado` com as 9 rotas
+  abertas nomeadas (3 execucao, 4 leitura, 2 env), dona `P-O6R-SUBRECURSO-OBJECT-SCOPE` (ALTA,
+  `B-O6R-07c`); distribuicao P0 15 = 4 fechados, 1 parcialmente superado, 10 abertos; SEC-002 fora
+  de `aguardando_merge`; `p0_fechados` segue 4.
+- Migracao `20260871000000`: cabecalho `--` (runbook de down + dependencia de ordem), corpo SQL
+  byte-identico, idempotencia 3x nos dois estados. Pendencias novas: `P-AUTH-KDF-ROTACAO-V2`
+  (MEDIA), `P-KPI-HISTORY-MD-BACKLOG` (BAIXA); correcao da razao da divergencia A3 (margem
+  49,08 ms x 0,04-0,40 ms, >=120x); tudo em `pendencias.md` por APPEND (146/0).
+
+### Bateria
+
+Suite plena canonica: **256 arq · 2656 testes · pass 2654 · fail 0 · skipped 2**, `ec=0`, com
+denominador publicado (Δ +9: multiorg novo 5 · -db +1 · object-scope +3, todos com
+vermelho-controle). Focados N=3: 5/5 · 7/7 · 8/8 · 7/7. `check`/`lint`/`build` `ec=0`; contrato
+mobile 25/25; `git diff --check` limpo; `kpi-freeze --check` `ec=0`; guards `kpi-dashboard-charts`
+16/16 e `kpi-achados-paridade` 6/6. KPI: `backend_tests` 2654/2656 no latest; entrada
+`B-O6R-07a-ciclo2` no history + espelho md apensado; indice de pendencias regenerado pelo gerador
+(249 -> 252 cabecalhos; ABERTAS 194 -> 197). Detalhe integral no diario
+`agent-orchestration/omega/juntas/votos/O6R-07a/dev-ciclo2.md`.
+
+## 2026-08-28 - B-O6R-ARNES - mecanismo unico de catalogo, teardown que nao deixa papel vivo, piso de denominador
+
+### Resumo
+
+A classe do arnes de teste (`P-O6R-ARNES-ISOLAMENTO`, 2026-08-18) saiu do `B-O6R-02` e virou bloco
+proprio por decisao do dono (`D-JUNTA-ESCOPO-E-CALIBRACAO` §5): o financeiro foi reprovado no ciclo 4
+por um defeito que nao criou e estava proibido de consertar. Branch `fix/o6r-arnes-catalogo-unico`
+sobre `origin/main` `6efe5ad`. So `tests/**` e `scripts/**` (7 arquivos); o diff contra a base em
+`src/`, `prisma/`, `.github/`, `CLAUDE.md`, `AGENTS.md`, `frontend/`, `mobile/` e lockfiles e VAZIO,
+conferido por `git diff --stat` e item da bateria.
+
+Papeis (§C7.4-bis): quem ACHOU = a cadeira do arnes do ciclo 4 (`jurado-c4-suplente-arnes`, voto
+REPROVADO com a tabela N=10 e o vaza-metro) + as medicoes do orquestrador; quem PLANEJOU =
+`planejador-mestre`, instancia nova (Fable); quem DESENVOLVEU = esta instancia, designada
+nominalmente em 2026-08-28. Nenhum acumulo.
+
+### Entregue
+
+- **C-A — os 3 ultimos escritores entram no mecanismo unico.** `audit-security`,
+  `vehicle-identity-schema` e `impound-process-checklist-link-schema` executavam CREATE ROLE / GRANT /
+  DROP OWNED / DROP ROLE fora de `withRoleCatalogLock`. Agora so a sequencia de CATALOGO entra no lock
+  (janela curta: criacao de organizacao e corpo do teste ficam fora). A enumeracao de escritores de
+  `tests/**` ja nao tem excecao.
+- **C-B — teardown resiliente E RUIDOSO** (`dropEphemeralRoleResilient`), usado pelos 3 escritores e
+  pelo proprio arnes. Mata os dois anti-padroes OPOSTOS: a sequencia sem catch (a falha do 1o engolia
+  o 2o; a role sobrevivia com LOGIN e DML em 115 tabelas) e o `.catch(() => undefined)` (a falha sumia
+  em silencio). Respeita `2BP01` (repete a sequencia inteira enquanto a role viver) e `25P02` (um
+  statement por transacao, porque erro aborta a transacao); role viva ao fim LANCA.
+- **C-C — sweep por familia**: `audit_rls_`, `vid_rls_test_`, `vid_link_rls_` entram com o corte de 60
+  min. `rls_test_` fica FORA por decisao consciente (68 orfas legadas; classe do mass-delete de 26/07).
+- **C-D — porte verbatim** do guard de skip C5.3 (+42/+56, blobs finais `28a589b`/`593c3b8`).
+- **C-E — piso de denominador**: arquivo expandido que termina sem registrar teste e sem declarar skip
+  e ERRO que NOMEIA o arquivo. Estrutural, nao por contagem fixa. Pulo declarado nao cai no piso.
+- **C-F — allowlist do ratchet** recongelada por medicao real, com o motivo de cada delta.
+
+### Numeros (forma declarada; sem N e forma, numero nao vale)
+
+- **Bateria barata** (7 arquivos, `DATABASE_URL`→:55950, `CORE_SAAS_PERSISTENCE` nao exportada, Node
+  v20.19.5, cluster descartavel com 103 migrations): **PRE 7/13 vermelhas** com `XX000` + 1 queda de
+  denominador 37→32; **POS 13/13 ec=0, 0 `XX000`, denominador 37 identico nas 13**.
+- **Canonica 3** (`npm test` com DATABASE_URL, N=10, com vaza-metro): resultado no PR e no history.
+- **Canonica 1** (`npm test` SEM DATABASE_URL, N=3): ec=1 nas 3, denominador **2359 identico**, 58
+  pulos identicos. O piso de denominador DISPARA 1 vez, NOMEANDO
+  `tests/core-saas-role-authority.test.ts` — o pulo DECLARADO nao cai nele (os 58 passam limpos); o que cai
+  e o arquivo que morre no LOAD sem registrar teste e sem declarar skip, que e exatamente o comportamento
+  desenhado. [CORRIGIDO em 2026-08-28 pelo bloco de registro: o "piso **0**" publicado no #359 foi medido em
+  commit intermediario, anterior a `1676a5b`, que abriu os olhos do piso para dentro do repo. Reexecucao
+  independente do porteiro pos-merge no head final confirma o disparo — `00c-porteiro-pos-merge-359.md`,
+  achado C.] Vermelho ambiental NOMEADO e
+  pre-existente: `tests/core-saas-role-authority.test.ts` importa `src/database/prisma.ts`, que lanca
+  no LOAD sem `DATABASE_URL`. Diff contra a base desse arquivo e de `src/`: VAZIO. Consertar e
+  proibido aqui.
+- **Canonica 2** (`db:seed` + `node --test --import tsx $SUITES` da lista do `ci.yml` da base, N=3):
+  **3/3 ec=0**, denominador **148 identico**, 2 pulos, grep `unhandledRejection|tuple concurrently
+  updated|23505|40P01` = **0** nas 3.
+- **Casos permanentes de guarda**: 22 (21 runner-guard + 1 ratchet) → **34** (29 + 5). Nenhum morreu.
+- Drills D37–D43 (+ D40b) todos com baseline medido na hora, mutacao, vermelho com ec registrado e
+  restore conferido por `git hash-object` = blob.
+
+### Auto-defeitos achados por EXECUCAO contra a propria correcao (registrados, nao escondidos)
+
+Dois, ambos nascidos na correcao e nenhum no codigo original — a classe que a
+`D-JUNTA-SEPARACAO-DE-PAPEIS` descreve: (1) o `.catch(() => undefined)` renasceu nos casos -db novos e
+engoliu uma falha real no D43, deixando uma role viva (quem achou foi o vaza-metro); (2) o piso de
+denominador nasceu CEGO dentro de `tests/`, porque comparava so a forma passada ao `node --test`
+enquanto o TAP nomeia o ponto de arquivo pelo absoluto — os drills nao pegaram porque a fixture morava
+FORA do repositorio, o unico arranjo em que as duas formas coincidem; quem achou foi a canonica 1.
+Os dois corrigidos no mesmo PR, com caso permanente novo em cada caso e drill que os reproduz.
+
+### Divergencias registradas (§A2, antes de consolidar)
+
+`P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` **nao existe nesta base** (0 ocorrencias em `origin/main`; presente
+so na trilha `demo/investidor`, 33 commits sem PR) — a correcao foi entregue e provada, o registro se
+fecha la. E o `Kpis/app.js` (fora da §5) foi REGERADO pelo gerador do proprio repo
+(`scripts/kpi-freeze.mjs`), porque a copia congelada e derivada do JSON e o guard permanente do painel
+compara as duas. Ambas em `pendencias.md`, junto da atribuicao por execucao do vazamento linear de
+identidades (+4 `core-saas-prisma`, +1 `core-saas-role-authority-db`, soma = os +5/rodada medidos).
+
 ## 2026-07-29 - FIX-NAV-MENU-PLATFORM-JWT
 
 ### Resumo

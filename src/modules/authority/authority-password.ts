@@ -60,6 +60,14 @@ export async function hashPassword(password: string, params: ScryptParams = AUTH
 
 type ParsedHash = { params: ScryptParams; salt: Buffer; hash: Buffer };
 
+// Base64 CANÔNICO. `Buffer.from(x, "base64")` do Node é LENIENTE — aceita padding faltando e ignora caracteres
+// inválidos, então ele praticamente nunca lança e NÃO serve de validação sozinho. O round-trip (re-encodar e comparar
+// com o texto original) é o teste barato de canonicidade: tudo que `hashPassword` emite é `Buffer.toString("base64")`,
+// canônico por construção, logo o round-trip é identidade para todo stored legítimo.
+function isCanonicalBase64(raw: string, decoded: Buffer): boolean {
+  return decoded.toString("base64") === raw;
+}
+
 function parseStored(stored: string): ParsedHash | undefined {
   const parts = stored.split("$");
   if (parts.length !== 6 || parts[0] !== "scrypt") return undefined;
@@ -76,13 +84,29 @@ function parseStored(stored: string): ParsedHash | undefined {
     return undefined;
   }
   if (salt.length === 0 || hash.length === 0) return undefined;
-  return { params: { N, r, p, keylen: hash.length }, salt, hash };
+  // (1) Codificação não-canônica → o stored NÃO saiu de `hashPassword` → rejeita ANTES de qualquer derivação.
+  if (!isCanonicalBase64(parts[4], salt) || !isCanonicalBase64(parts[5], hash)) return undefined;
+  // (2) PINO do keylen: o tamanho da chave é CONSTANTE DO SISTEMA, nunca função do dado recebido (era o defeito —
+  //     ver o bloco de comentário de `verifyPassword`). Rotacionar o keylen exigiria uma VERSÃO NOVA do formato;
+  //     N/r/p seguem self-describing, então a rotação de CUSTO continua possível como sempre foi.
+  if (hash.length !== AUTHORITY_SCRYPT_PARAMS.keylen) return undefined;
+  return { params: { N, r, p, keylen: AUTHORITY_SCRYPT_PARAMS.keylen }, salt, hash };
 }
 
-// Verifica em TEMPO CONSTANTE. Usa os params DO HASH ARMAZENADO (self-describing) — permite rotacionar params sem
-// invalidar credenciais antigas. Hash malformado → false (nunca lança). O comprimento é comparado ANTES do
-// timingSafeEqual (que exige buffers do mesmo tamanho) — a divergência de tamanho não é um oráculo aqui porque
-// todos os hashes desta casa têm keylen fixo (32); um stored corrompido simplesmente falha.
+// Verifica em TEMPO CONSTANTE. Usa **N/r/p** DO HASH ARMAZENADO (self-describing) — permite rotacionar o CUSTO sem
+// invalidar credenciais antigas. O **keylen NÃO** vem do stored: é constante do sistema, pinada em `parseStored`.
+// Hash malformado, não-canônico ou de comprimento errado → false (nunca lança).
+//
+// SAN2-4b (2026-08-31) — este comentário afirmava, até aqui, que "um stored corrompido simplesmente falha". A EXECUÇÃO
+// contradizia a afirmação (SAN2-4a, `medicao-1-authority-portal.md` §F3, OBS-2): `parseStored` derivava
+// `keylen: hash.length` do stored RECEBIDO, de modo que uma EXTENSÃO EM COMPRIMENTO de um stored válido era aceita a
+// **1/256 por byte extra** — scrypt é prefixo-estável (os 32 primeiros bytes derivados não mudam com keylen maior), o
+// guard `derived.length !== parsed.hash.length` comparava 33 com 33 e só sobrava o acaso do byte novo bater. Vermelho
+// medido nesta casa, no código anterior: 79/20 000 (hash com o `=` de padding trocado → 33 B, os 32 originais intactos)
+// e 18/5 000 (33 B em base64 perfeitamente canônico). As DUAS validações de `parseStored` existem por causa disso: o
+// round-trip canônico mata a primeira forma, o pino do keylen mata a segunda — nenhuma das duas sozinha basta.
+// O comprimento segue comparado antes do `timingSafeEqual` (que exige buffers do mesmo tamanho) e continua sem ser
+// oráculo: o stored vem do banco, não do atacante — quem se autentica controla a SENHA, não o hash armazenado.
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parsed = parseStored(stored);
   if (!parsed) return false;

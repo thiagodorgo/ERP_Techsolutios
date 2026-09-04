@@ -1,0 +1,45 @@
+{
+  "cadeira": "C3 — zelador-do-escopo-do-registro-e-do-kpi",
+  "identidade": "NOVA",
+  "bloco": "SAN2-4b",
+  "pr": 366,
+  "head_julgado": "2d2d16d",
+  "quorum": "UNANIMIDADE de 3",
+  "criado_em": "2026-08-31",
+  "estado": "EM APURACAO",
+  "itens": [
+    {
+      "id": "I1",
+      "titulo": "Escopo do diff (20 arquivos) contra o §5.1 do plano + proibido intocado + R2 do inspetor (20o arquivo)",
+      "estado": "APROVADO",
+      "achados": [],
+      "veredito": "19 arquivos do bloco todos dentro do §5.1, limites cirurgicos medidos (app.js 1 hunk = linha FROZEN; fixture so +rls_test e export; guard 6->6 test(); rls 2->2; portal 12->14). Proibido intocado EOL-neutro ec=0. R2: o 20o arquivo esta no commit fca131a = base de planejamento (unico delta 45c3b97..fca131a, +133/-0), gate de start §C2.8, declarado no plano l.5-8 — CABE."
+    },
+    {
+      "id": "I2",
+      "titulo": "Registro (C5): 3 pendencias fechadas pela LINHA DE STATUS, 3 novas com severidade honesta, 68 CARREGADO, indice regenerado por script",
+      "estado": "APROVADO_COM_ACHADO",
+      "achados": [
+        {
+          "id": "A-1",
+          "titulo": "Atribuicao de origem ERRADA na pendencia nova P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA",
+          "gravidade": "observa",
+          "escopo": "dentro-do-bloco",
+          "evidencia_de_escopo": "as duas frases foram escritas por este bloco no commit 2d2d16d (pendencias.md l.4849-4850 e dev-c5-c6-registro-kpi.md l.190); nao existem em main",
+          "o_que_diz": "O ratchet por contagem nasceu no bloco B-O6R-ARNES (2026-08-28)",
+          "o_que_medi": "git log --diff-filter=A de tests/db-catalog-write-guard.test.ts = 0a39824, 2026-08-19, B-O6R-01, PR #357; git log -S FROZEN_ALLOWLIST = so 0a39824; git show 0a39824 mostra as 6 regexes, countCatalogWrites sobre TEXTO CRU, FROZEN_ALLOWLIST com count: por arquivo (9 entradas) e a propria entrada rls-tenant-isolation com count: 8. B-O6R-ARNES (f081b5d, #359) apenas ATUALIZOU contagens e razoes.",
+          "impacto": "a classificacao pre-existente FICA DE PE e mais forte (12 dias antes da branch, nao 3); nenhum numero publicado, linha de codigo ou veredito muda. Custo pratico: manda o futuro dono procurar o desenho no #359, onde ele nao esta.",
+          "nao_reprova_porque": "nao altera nenhum numero publicado nem nenhuma conclusao; e errata datada de pos-voto — mesma forma com que a J-SAN2-4a tratou os 5 achados dela"
+        }
+      ],
+      "veredito": "3 fechamentos pela LINHA DE STATUS (as 3 linhas ABERTA removidas e trocadas por FECHADA); prova mecanica: classificador da 50 FECHADA + 187 ABERTA = 237 cabecalhos, ZERO CONTRADITORIA e ZERO SEM-STATUS. §A2 respeitado (nenhuma linha apagada; a nota de triagem volta verbatim + [Superada em 2026-08-31]). 68 declarado CARREGADO e a pendencia dele intocada. Indice = saida literal do script (git hash-object == OID do blob do HEAD); ANTES/DEPOIS reproduzidos por execucao minha. severidade a classificar sustenta-se (balde B, e a emenda segue a convencao das 4 emendas anteriores, todas com sev —)."
+    },
+    {
+      "id": "I3",
+      "titulo": "KPI (C6): backfill #365 (365/45c3b97/4199b92=head da ATA), blocks_completed 155, 2609/2611 com delta +2, mvp_* intocados, nulls na autoria, guard do freeze mordeu nos dois sentidos",
+      "estado": "EM APURACAO",
+      "achados": []
+    }
+  ],
+  "voto": "EM APURACAO"
+}

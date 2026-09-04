@@ -3,7 +3,11 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { withRoleCatalogLock } from "./helpers/auth-identity-fixture.js";
+import {
+  dropEphemeralRoleResilient,
+  sweepOrphanEphemeralRoles,
+  withRoleCatalogLock,
+} from "./helpers/auth-identity-fixture.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -28,7 +32,14 @@ if (!connectionString) {
     // B-O6R-01 ciclo 2 (A-1/B-5): este arquivo é o QUARTO escritor de catálogo do batch -db —
     // CREATE ROLE/GRANT disputam pg_authid/pg_auth_members sob o paralelismo do node --test.
     // Toma o MESMO advisory lock do arnês de identidade (helper exportado); os grants não mudam.
+    //
+    // SAN2-4b, C3 (porta 2): o criador da família `rls_test_` passa a VARRER antes de criar, no
+    // mesmo desenho de `createEphemeralRole` (sweep e criação sob o MESMO lock). Antes disto o
+    // varredor tinha um chamador único que não era este arquivo, e rodar esta suíte sozinha não
+    // recolhia nada — medido 2/2 no vermelho-controle do bloco. O corte de 60 min do varredor
+    // protege as roles das execuções irmãs em paralelo; só órfã velha é alcançada.
     await withRoleCatalogLock(adminClient, async (tx) => {
+      await sweepOrphanEphemeralRoles(tx);
       await tx.$executeRawUnsafe(
         `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
       );
@@ -3145,10 +3156,19 @@ if (!connectionString) {
       await client.$disconnect();
       // Teardown da role no MESMO lock de catálogo (DROP OWNED/DROP ROLE também escrevem
       // pg_authid/pg_auth_members e disputariam com os outros escritores do batch).
-      await withRoleCatalogLock(adminClient, async (tx) => {
-        await tx.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
-        await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
-      });
+      //
+      // SAN2-4b, C4: era `DROP OWNED` + `DROP ROLE` CRUS dentro de UMA transação — a terceira porta
+      // de gênese de órfã desta família (medicao-3 O-2), além do SIGKILL e do SIGINT. Erro no
+      // primeiro statement ABORTA a transação (`25P02`) e o segundo nunca chega a ser emitido: a
+      // role sobrevive com LOGIN e 460 grants, e a exceção ainda mascara o erro original do teste
+      // por vir de dentro de um `finally`. Medido no bloco: **10/10 sobreviveu** na forma crua
+      // contra **0/10** com o helper, sob a mesma falha transitória injetada.
+      //
+      // `dropEphemeralRoleResilient` toma o lock POR STATEMENT (janelas curtas, PB), repete a
+      // sequência inteira contra a armadilha `2BP01`, REPORTA as falhas no stderr e falha ALTO se a
+      // role sobreviver. É o mesmo caminho que `vehicle-identity-schema` e
+      // `impound-process-checklist-link-schema` já usam — esta família era a única de fora.
+      await dropEphemeralRoleResilient(adminClient, roleName);
       await adminClient.$disconnect();
     }
   });

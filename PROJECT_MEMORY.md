@@ -2,14 +2,74 @@
 
 > Resumo vivo, **fundado no repositório** (código, `prisma/`, `Kpis/`, `agent-orchestration/`), do
 > estado material do ERP Techsolutions. É referenciado pelo `CLAUDE.md` (Parte A, cabeçalho): leia-o
-> **antes de qualquer bloco**, junto do contrato. Snapshot deste documento: **2026-07-28**
-> (versão de KPI `OMEGA5P-PR-17`).
+> **antes de qualquer bloco**, junto do contrato. Snapshot deste documento: **2026-08-28**
+> (versão de KPI `B-O6R-ARNES`, PR #359). O corpo abaixo (§2 em diante) ainda descreve o estado de
+> **2026-07-28** e é mantido como registro; o **§0 abaixo é o delta** entre aquela data e hoje, e é
+> ele que vale quando os dois divergirem.
 >
 > **Regra de precedência:** este arquivo é um *resumo*. A **trilha viva** em
 > `agent-orchestration/` (controle/decisões/pendências), nas atas `docs/juntas/` e nos KPIs
 > `Kpis/*` é a fonte de verdade. **Onde este resumo divergir da trilha, vale a trilha no repo** —
 > nunca a memória do agente. As fontes de verdade de produto/permissão/alçada continuam sendo as
 > do `CLAUDE.md` §A1 (decisões do dono → arquivos-base → `docs/` → `agent-orchestration/` → `src/`).
+
+---
+
+## 0. Delta 2026-07-28 → 2026-08-28 — leia isto primeiro
+
+O corpo deste documento é de **28/07** e descreve a rodada Ω5P como "em curso". Um mês se passou e a
+coisa mais importante do período **não está nele**:
+
+### ⛔ REPROVADO PARA PRODUÇÃO (junta J-6R, 5×0, 2026-08-12)
+
+Uma **auditoria adversarial total** encomendada pelo próprio time (PR #347) varreu 70/70 unidades e
+produziu **30 achados: 15 P0 + 15 P1**. A junta reprovou o sistema para produção e o **deploy está
+bloqueado**. Ata: `docs/revisoes/O6R/ATA_J6R.md` · achados: `docs/revisoes/O6R/achados.jsonl` (com
+guard de paridade) · plano de 12 blocos: `docs/revisoes/O6R/PLANO_O6R.md`.
+
+**Posição hoje: 4 P0 fechados, 11 P0 + 15 P1 abertos.**
+
+| Bloco | Fecha | Estado |
+|---|---|---|
+| `B-O6R-05` portões de runtime | DAT-001, DIN-006 | ✅ #353 (15/08) |
+| `B-O6R-01` identidade e autoridade | SEC-001, TEN-001 | ✅ #357 (19/08) |
+| `B-O6R-ARNES` arnês de teste | pré-requisito de confiança | ✅ #359 (28/08) |
+| `B-O6R-02` atomicidade do financeiro | 5 P0 + QUA-003 | 🚧 ciclo 5 — **teto do §C7.4** |
+| `B-O6R-04` estoque · `B-O6R-07` autorização | 3 P0 + 4 P1 | ⏭️ frentes livres |
+| `B-O6R-03 · 06 · 08 · 09 · 10 · 11 · 12` | 2 P0 + 11 P1 | ⛔ não iniciados |
+
+### Rodadas mergeadas depois do snapshot de 28/07
+
+**Ω-VID** (dossiê do veículo de terceiro como entidade de 1ª classe, #315–#327) · **CHECKLIST P0**
+(fecha o data-loss despacho→guincheiro) · **TELAS PADRONIZADAS** (5 telas + biblioteca `pat-*`) ·
+**Mapa Operacional** recriado em MapLibre/OpenFreeMap (#338) · **painel de KPI repaginado** (#356) ·
+e a rodada **Ω6R** acima.
+
+### Governança que mudou e vale daqui em diante
+
+- **`D-KPI-INDEX-PAINEL`** (04/08) — o artefato principal de KPI é o `Kpis/index.html`, que hidrata
+  dos JSON em runtime; os JSON são a fonte de dados.
+- **`D-KPI-DUPLA-REVOGADA`** (12/08) — o painel é **UM**: `Kpis/`. O de `mobile/flutter_app/Kpis/`
+  foi apagado.
+- **`D-PORTEIRO-POS-MERGE`** (12/08) — depois de **cada** merge nasce o `porteiro-pos-merge`, que
+  revalida a entrega e **autoriza ou não** o início da demanda seguinte. Sem parecer dele, nenhum
+  bloco novo começa.
+- **`D-JUNTA-SEPARACAO-DE-PAPEIS`** (17/08) — **quem acha um defeito não é quem o conserta**.
+- **`D-INSPETOR-TERRENO-JUNTA`** (24/08) — antes de toda junta, um inspetor julga se o **tabuleiro**
+  está limpo (isolamento por jurado, insumos, inelegibilidade). Sem o `LIBERADO` dele, a junta não
+  começa.
+- **`D-JUNTA-ESCOPO-E-CALIBRACAO`** (28/08) — o voto declara **escopo**: achado `pre-existente` não
+  reprova, vira pendência com dono. E o **quórum é calibrado por risco**: unanimidade de 3 para
+  dinheiro/segurança/permissão/perda de dado, maioria de 3 no resto, 5/5 só para produção,
+  dependência nova ou serviço pago. Duas regras de terreno viraram lei: **junction/symlink de
+  `node_modules` entre worktrees é PROIBIDA**, e **não se mede conteúdo de commit com
+  `git archive`+`tar` sob `core.autocrlf=true`** (injeta CR e fabrica divergência).
+
+### KPIs de hoje (execução real, #359)
+
+backend **2.595/2.597** · smoke web **1.126/1.126** · Flutter **864/864** · blocos **152** ·
+`mvp_demo` **99%** · `mvp_vendavel` **88%** — lembrando que os dois últimos medem **escopo
+construído**, não prontidão; prontidão é o bloco vermelho no topo.
 
 ---
 

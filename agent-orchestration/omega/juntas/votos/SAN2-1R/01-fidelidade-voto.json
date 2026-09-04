@@ -1,0 +1,25 @@
+{
+  "cadeira": "1/3 — FIDELIDADE À OPÇÃO C (poder de veto)",
+  "identidade": "jurado-san2-1r-fidelidade-opcao-c (identidade nova, 2026-08-29)",
+  "head_julgado": "4cd08677f69ae853723e99d6f360df58fe923ce5",
+  "veredito": "APROVADO",
+  "justificativa": "Os 5 elementos da opção C do dono estão executados e registrados com fidelidade ao dossiê (§4): (1) o verificado salvo e nomeado na D-SAN2-OPCAO-C, que existe em decisoes.md como append puro e fecha o R2 do inspetor; (2) a etiqueta falsa morta como afirmação — sobrevive exatamente 2x, ambas como CITAÇÃO em notas de correção (linhas 948/1240) — e a frase verdadeira 'adiada por triagem automática; NÃO verificada item a item' presente nas 79 entradas carimbadas (79 = 77 no balde C + P-036 fechada + tripwire retirado, trilhas preservadas §A2), com amostragem reprodutível de 3 diferidas (seed = head) confirmando que a frase nova diz a verdade; (3) P-036 FECHADA como duplicata da P-CHK-TEMPLATE-PRISMA-V7 (resolvida 2026-08-02) — mesma chamada, mesma causa, e o comentário do fix conferido por leitura em src/modules/checklists/checklist-prisma.repository.ts:142-144; (4) o tripwire P-Ω3F3B-UPDATE-VALIDA4 fora do balde C com o motivo escrito e reclassificado MÉDIA no balde A do índice — sem recaída do defeito do marcador riscado; (5) P-SAN2-LEITURA-DAS-79 com dono (bloco próprio), prazo relativo (após o ciclo 5) e critério de fechamento explícito. O delta pós-liberação do inspetor (31cd9ad..4cd0867) é registro puro: 4 arquivos, 237 inserções, 0 deleções. Dois achados de gravidade nota, nenhum bloqueante. Evidência item a item em 01-fidelidade-evidencia.md, escrita antes de cada item seguinte.",
+  "achados": [
+    {
+      "id": "F-N1",
+      "titulo": "Trilha preservada sob P-036 e sob o tripwire ainda termina em 'Diferida, não descartada'/'Continua ABERTA ... balde C' abaixo da nota vigente (FECHADA/RETIRADO)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "sed -n '425,440p' e '608,624p' agent-orchestration/controle/pendencias.md — em ambas, a linha de status e a nota nova ficam ACIMA da etiqueta antiga corrigida; grep no pendencias-indice.md confirma que o índice não as conta como diferidas (P-036 em FECHADAS linha 270; tripwire em balde A linha 64)",
+      "motivo": "É a convenção §A2 (append, não apaga) e a nota vigente é inequívoca, mas um leitor apressado pode tropeçar na frase residual da trilha. Não altera contagem nem afirmação vigente — não bloqueia."
+    },
+    {
+      "id": "F-N2",
+      "titulo": "P-SAN2-LEITURA-DAS-79 fala em 'ler as 79' quando o balde C pós-resgate tem 77",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "sed -n '4050,4068p' pendencias.md (a própria entrada declara que as 4 materiais amostradas foram 'já retiradas/fechadas individualmente') × placar do pendencias-indice.md ('diferidas (balde C) | 77')",
+      "motivo": "O 79 é a população histórica carimbada (é o próprio ID da pendência) e o texto é internamente coerente; o bloco futuro lerá as 77 remanescentes. Não bloqueia."
+    }
+  ]
+}

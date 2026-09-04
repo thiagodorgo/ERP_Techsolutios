@@ -127,13 +127,24 @@ Fontes: `src/modules/auth/routes/auth.routes.ts`, `identity-links.routes.ts`, `m
 
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
-| POST | `/auth/login` | Pública | Autentica credencial local; emite access+refresh token, sessão e permissões efetivas. **Com `tenantId`**: fluxo direcionado — mesmos códigos e mesma forma de resposta do contrato histórico (`423` se conta bloqueada), com duas diferenças declaradas (R-ciclo1, B-8 — "byte-idêntico" não era verdade): o access token agora carrega o claim `identity_id`, e o primeiro login do par pós-migração pode gravar identidade+vínculo+evento (normalização preguiçosa). **Sem `tenantId`** (B-O6R-01): a CREDENCIAL decide — o e-mail só seleciona candidatos internos; `200` com exatamente 1 organização provada · `409 TENANT_SELECTION_REQUIRED` com **somente as organizações provadas** (`error.tenants[{id,name}]`) · `400 TENANT_ID_REQUIRED` quando o e-mail existe em mais de 3 organizações (zero verificações de senha) · `429 RATE_LIMITED` no balde por e-mail (10/15min) · `401` uniforme em todo o resto — **inclusive conta bloqueada** (o `423` não existe no caminho anônimo). Piso de latência constante em todos os desfechos. |
+| POST | `/auth/login` | Pública | Autentica credencial local; emite access+refresh token, sessão e permissões efetivas. **Com `tenantId`**: fluxo direcionado — mesmos códigos e mesma forma de resposta do contrato histórico (`423` se conta bloqueada; **B-O6R-07a: `429 RATE_LIMITED` também aqui, pelo balde por IP — ver a nota de rate-limit abaixo da tabela**), com duas diferenças declaradas (R-ciclo1, B-8 — "byte-idêntico" não era verdade): o access token agora carrega o claim `identity_id`, e o primeiro login do par pós-migração pode gravar identidade+vínculo+evento (normalização preguiçosa). **Sem `tenantId`** (B-O6R-01): a CREDENCIAL decide — o e-mail só seleciona candidatos internos; `200` com exatamente 1 organização provada · `409 TENANT_SELECTION_REQUIRED` com **somente as organizações provadas** (`error.tenants[{id,name}]`) · `400 TENANT_ID_REQUIRED` quando o e-mail existe em mais de 3 organizações (zero verificações de senha) · `429 RATE_LIMITED` no balde por e-mail (10/15min) · `401` uniforme em todo o resto — **inclusive conta bloqueada** (o `423` não existe no caminho anônimo). Piso de latência constante em todos os desfechos. |
 | POST | `/auth/refresh` | Posse do refresh token | Renova o access token a partir do refresh token. Relê o vínculo do par e inclui o claim `identity_id` (dica; nunca fonte de autorização). |
 | POST | `/auth/active-tenant` | Bearer válido | Troca a organização ativa. **Decide pelo VÍNCULO explícito de identidade, nunca pelo e-mail** (Ω6R-TEN-001): sem vínculo na organização pedida → `403` (fail-closed); usuário inativo/organização suspensa → `403`. |
 | POST | `/auth/logout` | Posse do refresh token | Revoga a sessão (idempotente). |
 | GET | `/auth/identity-links` | Bearer válido (JWT; header legado → 401) | Vínculos da própria identidade: `[{id, tenant{id,name,status}, attached_via, created_at}]` — **nunca** `identity_id`. |
 | POST | `/auth/identity-links` | Bearer válido (JWT) | **Religação** (B-O6R-01 §5): prova a credencial de OUTRA organização (`{tenantId, email, password}`) e move **exatamente** o vínculo da organização provada para a identidade do ator. `201` movido · `200 already_linked` · `401` credencial (conta como tentativa direcionada) · `423` conta alvo bloqueada · `403` organização suspensa · `409 IDENTITY_LINK_CONFLICT` (pré-check E corrida 23505). |
 | DELETE | `/auth/identity-links/:id` | Bearer válido (JWT) + reautenticação por senha | **Desvínculo em autosserviço.** Reautentica com a senha de **qualquer organização vinculada que tenha credencial — jamais a da organização do vínculo removido** (`{password, reauthTenantId?}`; inelegível → `403 reauth_credential_unavailable`). `200 {status:"removed", revoked_sessions}` · `200 already_standalone` (único vínculo; sessões intactas) · `401` sem/errada reautenticação · `404` vínculo alheio/inexistente. **Janela do I3, declarada:** a remoção revoga NA MESMA transação todas as sessões do par do vínculo removido — **a renovação (refresh) e as rotas de identidade morrem na hora; o access token em voo sobrevive até `JWT_EXPIRES_IN` (15 min)**. A UI não pode prometer "acesso revogado" imediato. |
+
+> **Rate-limit por IP nas DUAS rotas de login e lockout no caminho anônimo (B-O6R-07a — resíduos do
+> `Ω6R-SEC-003`).** `POST /auth/login` passa a ter um balde **por IP** — `TokenBucket` reutilizado de
+> `portal-shared`, chave HMAC derivada de `JWT_SECRET`, **in-process** — que vale para o fluxo COM organização e
+> para o anônimo; estouro → **`429 RATE_LIMITED`**, o mesmo código que o balde por e-mail já emitia (o app
+> Flutter e o adapter web já o mapeiam). Baldes independentes: IPs distintos não compartilham freio, e e-mails
+> diferentes no mesmo IP **não** escapam dele. **Falha anônima passa a armar o lockout** (o MESMO `UPDATE`
+> atômico do B-O6R-01, com rastro de auditoria) — e a resposta anônima **continua `401` uniforme**: o `423`
+> jamais vaza por essa via, preservando o anti-enumeração. **Não coberto, declarado:** multi-réplica/Redis e
+> política de `X-Forwarded-For` ficam em `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`; a enumeração pelo
+> `400 TENANT_ID_REQUIRED` idem.
 | GET | `/me` | Autenticado | Perfil do usuário + organização + papéis + permissões efetivas do ator. |
 | GET | `/me/tenants` | Autenticado (JWT) | Organizações **vinculadas à identidade** do ator (vínculo explícito; nunca correlação por e-mail). Normaliza preguiçosamente o par do token. |
 | GET | `/sessions` | `sessions:read` | Sessões ativas da organização (filtrável por usuário). |
@@ -213,8 +224,8 @@ colidir com o router base.
 | GET | `/work-orders` | `work_orders:read` | Lista OS. |
 | POST | `/work-orders` | `work_orders:create` | Cria OS. |
 | GET | `/work-orders/:workOrderId` | `work_orders:read` | Detalhe da OS. |
-| PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. |
-| PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. |
+| PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. **B-O6R-07a (Ω6R-SEC-002):** ator que só alcança a OS por papel de CAMPO muta apenas a OS **atribuída a ele** (`assigned_operator_id` = perfil de operador do ator); OS de outro ou sem atribuição → **403 `not_assigned_to_actor`** — nunca 404, que segue reservado a cross-tenant. Papéis de gestão/despacho seguem tenant-wide. Cumpre `RBAC_MATRIX.md:45` (`field_technician = execute/update-assigned`), que o 200 anterior contrariava. |
+| PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. **Mesmo guard de escopo por objeto do `PATCH /work-orders/:id`** (403 `not_assigned_to_actor`). |
 | PATCH | `/work-orders/:workOrderId/checklists` | `field_dispatch:create` | Ajusta o **conjunto de vistorias** da OS antes do envio ao técnico (§3.5.1). |
 | PATCH | `/work-orders/:workOrderId/mileage` | `work_orders:mileage_correct` | Correção de quilometragem. |
 | POST | `/work-orders/:workOrderId/cancel` | `work_orders:cancel` | Cancela OS (integridade atômica/terminal-guard). |
@@ -229,7 +240,7 @@ colidir com o router base.
 | GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/comments` (+ `/:commentId`, `/:commentId/tags/:tagId`) | `work_orders:read` / `work_orders:comment` | Comentários da OS e marcação por tag. |
 | GET | `/work-orders/:workOrderId/audit-logs` | `work_orders:read` | Auditoria filtrada pela OS. |
 | GET | `/approvals/pending` · `/approvals/:approvalId` | `work_orders:read` | Aprovações pendentes / detalhe (alçadas). |
-| POST | `/approvals/:approvalId/approve` · `/reject` | `work_orders:update` | Aprova/rejeita alçada. |
+| POST | `/approvals/:approvalId/approve` · `/reject` | **`work_orders:approve`** | Decide (aprova/rejeita) a alçada. **B-O6R-07a (Ω6R-SEC-002, P0):** a chave é DEDICADA — até este bloco as duas rotas exigiam `work_orders:update`, a mesma guarda do `PATCH /work-orders/:id`, que `technician` e `field_technician` têm. Quem NÃO decide recebe **403** (papéis de campo, `operator`, `auditor`, `support`; `finance`/`inventory` aguardam política de valor — `P-O6R-B07-APPROVAL-BY-POLICY`). **SoD:** o próprio solicitante decidindo → **403 `self_decision`** (rastro `approval.self_decision_denied`, `outcome: denied`). Preservados: `404` cross-tenant e `409 APPROVAL_ALREADY_DECIDED`. Ler não decide — `GET /approvals/*` seguem em `work_orders:read`. |
 | GET | `/operations/work-orders-timeseries` | `work_orders:read` | Série temporal de OS por dia (zero-fill, fuso America/Sao_Paulo). |
 
 #### 3.5.1 Conjunto de vistorias da OS (CHECKLIST P1 PR-04c-A)

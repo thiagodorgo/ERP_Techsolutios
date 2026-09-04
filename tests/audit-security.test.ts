@@ -3,6 +3,23 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import {
+  dropEphemeralRoleResilient,
+  withRoleCatalogLock,
+} from "./helpers/auth-identity-fixture.js";
+
+// B-O6R-ARNES (2026-08-28) — este arquivo era um dos TRÊS que escreviam catálogo de cluster fora do
+// mecanismo único. A sequência de catálogo (CREATE ROLE + GRANTs no setup; DROP OWNED/DROP ROLE no
+// teardown) passa agora por `withRoleCatalogLock`, o MESMO advisory lock do arnês. Duas medições
+// explicam por que aqui era o pior lugar para ficar de fora:
+//   - o `DROP OWNED BY` da l.158 foi o produtor nomeado do `XX000 tuple concurrently updated` em
+//     2 das 10 rodadas da canônica 3 e reaparece na bateria barata da base;
+//   - a sequência de teardown não tinha catch: a falha do `DROP OWNED` engolia o `DROP ROLE`
+//     seguinte e a role `audit_rls_*` sobrevivia COM LOGIN e INSERT/UPDATE/DELETE em 115 tabelas
+//     (inclusive `financial_entries`). Era o B-3c4.
+// Só a sequência de CATÁLOGO entra no lock — a criação de organização/usuário e o corpo do teste
+// ficam de fora, para a janela ser curta.
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -35,16 +52,18 @@ if (!connectionString) {
     let client: InstanceType<typeof PrismaClient> | undefined;
 
     try {
-      await adminClient.$executeRawUnsafe(
-        `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
-      );
-      await adminClient.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
-      await adminClient.$executeRawUnsafe(
-        `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`,
-      );
-      await adminClient.$executeRawUnsafe(
-        `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`,
-      );
+      await withRoleCatalogLock(adminClient, async (tx) => {
+        await tx.$executeRawUnsafe(
+          `CREATE ROLE "${roleName}" LOGIN PASSWORD '${escapeSqlLiteral(rolePassword)}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT`,
+        );
+        await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${roleName}"`);
+        await tx.$executeRawUnsafe(
+          `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${roleName}"`,
+        );
+        await tx.$executeRawUnsafe(
+          `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${roleName}"`,
+        );
+      });
 
       client = new PrismaClient({
         adapter: new PrismaPg({
@@ -155,8 +174,10 @@ if (!connectionString) {
           },
         },
       });
-      await adminClient.$executeRawUnsafe(`DROP OWNED BY "${roleName}"`);
-      await adminClient.$executeRawUnsafe(`DROP ROLE IF EXISTS "${roleName}"`);
+      // Teardown resiliente E ruidoso (C-B): a sequência inteira roda no lock, statement a
+      // statement, e é repetida enquanto a role sobreviver — a falha de um não engole os
+      // seguintes, e nenhuma delas some em silêncio. Role viva ao fim LANÇA.
+      await dropEphemeralRoleResilient(adminClient, roleName);
       await adminClient.$disconnect();
     }
   });

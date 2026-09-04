@@ -1,0 +1,78 @@
+{
+ "jurado": "jurado-c4-fail-closed-enumeracao",
+ "lente": "C2/P5-v2 — fail-closed e exaustividade: o valor de FINANCIAL_ENTRY_FIELD_CLASS tem consumidor ou é exhaustiveness theatre?",
+ "voto": "APROVADO",
+ "justificativa": "Executei o D22 nas duas pontas em worktree próprio no head 12c3825 e o valor da classificação TEM consumidor com efeito observável: desclassificar titleId (a) compila (check exit 0) mas derruba 5 casos (exit 1), incluindo a rota HTTP onde o DELETE da liquidação passou a devolver 200 em vez de 422 — a rede de testes nega o mutante permissivo; classificar category como dono (b) faz o delete de um lançamento livre nascer NEGADO em runtime (settlementEntryImmutableError lançado de assertUndoAllowed), com 3 casos vermelhos. Campo omitido no mapa é negado pelo COMPILADOR (TS1360, exit 2). A autoridade é única no caminho de guarda: ownsEntry = derivação do mapa OU tabela total de extras, nas duas fases (fast-fail e re-check sob lock) das duas rotas; os titleId!=null remanescentes são efeito (restore) e idempotência de create, fora da guarda por decisão escrita do plano. O D27 como enunciado no plano (remover a chamada do construtor) sobrevive à suíte inteira — medi 87/87 e 2465 testes com 1 fail puramente ambiental —, mas provei por execução que o mutante é equivalente hoje e que a propriedade do parecer #2 está fechada por outra via: neutralizar o corpo do guard fica vermelho (exit 1) e o estado perigoso real (refuse fora de ordem na tabela real, SEM a chamada do construtor) cai em 2 casos unit (exit 1) — a recusa-que-ninguém-percorre não nasce verde. O dev mediu o mesmo e declarou a divergência no commit b7de4c9. O cabeçalho diz exatamente o fato que eu medi, com o resíduo declarado. Todas as mutações restauradas com md5 igual ao blob do briefing e verde no restore.",
+ "o_que_executei": [
+  {
+   "comando": "git show 12c3825:src/modules/financial-entries/financial-entry-undo-owners.ts | md5sum (e .service.ts); sed 's/\\r$//' <arquivo> | md5sum",
+   "forma": "worktree próprio descartável (git worktree add --detach scratchpad/jur-c4-failclosed-wt 12c3825) + junction de node_modules do worktree do dev; Node v20.19.5 (o da CI)",
+   "resultado": "pristino confere com o briefing: 9887150b28118aa7292d894e3391cc37 (undo-owners) e 78b9279dcf4bed2550663780adae859b (service), blob e normalizado idênticos"
+  },
+  {
+   "comando": "npx tsc -p tsconfig.json --noEmit > log 2>&1; ec=$? && node --test --import tsx tests/financial-entry-undo-owners.test.ts tests/financial-entries.test.ts tests/financial-entry-link-census.test.ts > log 2>&1; ec=$?",
+   "forma": "baseline pré-C2 no pristino, exit lido do redirecionamento (nunca de pipe), worktree próprio",
+   "resultado": "check exit 0; suítes 87/87 pass, 0 fail, exit 0 — o verde pré-mutação re-medido por mim"
+  },
+  {
+   "comando": "D22(a): sed titleId 'owner:title_settlement'→'plain' em financial-entry-undo-owners.ts; tsc --noEmit; node --test --import tsx <3 suítes>",
+   "forma": "mutação em cópia do meu worktree; check e testes com exit redirecionado; N=87",
+   "resultado": "check exit 0 (compila — 'plain' é FieldClass válido), testes exit 1 com 5 FAIL: 3 recusas de runtime (casos 31/32 'Missing expected rejection' e caso 63 rota HTTP '200 !== 422' — o DELETE da liquidação foi ACEITO sob a mutação) + 2 unit de derivação (casos 82/84). Restaurado: md5 a248e40357a7053f6ca510b73e674b15 confere"
+  },
+  {
+   "comando": "D22(b): sed category 'plain'→'owner:title_settlement'; tsc --noEmit; node --test --import tsx <3 suítes>",
+   "forma": "mesma forma do (a); N=87",
+   "resultado": "check exit 0, testes exit 1 com 3 FAIL: caso 18 (happy-path de delete: lançamento livre com category NEGADO em runtime — settlementEntryImmutableError lançado de FinancialEntryService.assertUndoAllowed→delete), caso 64 (precedência mudou: settlement_entry_immutable no lugar de cheque_entry_immutable) e caso 82 (unit de derivação). O lado restritivo NEGA em runtime. Restaurado com md5"
+  },
+  {
+   "comando": "MEMBRO OMITIDO: sed adiciona 'readonly payrollId?: string;' ao tipo FinancialEntry sem classificar; npx tsc -p tsconfig.json --noEmit",
+   "forma": "mutação no meu worktree; exit redirecionado",
+   "resultado": "exit 2 — TS1360 em financial-entry-undo-owners.ts(87,12): \"Property 'payrollId' is missing ... but required in type 'Record<keyof FinancialEntry, FieldClass>'\" — a reprovação vem do COMPILADOR. Restaurado: md5 492e997a84f0c5cd7df6f3fa9effc579 confere"
+  },
+  {
+   "comando": "D27 como enunciado: sed remove 'assertUndoOrdersCoverEveryRefusal(this.undoPolicies);' do construtor; tsc; node --test <3 suítes>; node scripts/run-backend-tests.mjs (suíte cheia)",
+   "forma": "mutação no meu worktree; suíte cheia = runner canônico, sem DATABASE_URL; N=87 (3 suítes) e N=2465 (cheia)",
+   "resultado": "check exit 0; 3 suítes 87/87 VERDE exit 0; suíte cheia 2400 pass / 1 fail / 64 skip exit 1 — o único fail é core-saas-role-authority por 'DATABASE_URL is required to initialize Prisma Client' (ambiental, sem relação com financeiro; reproduzido IDÊNTICO no código pristino: exit 1 mesma mensagem). O mutante do construtor SOBREVIVE à suíte inteira"
+  },
+  {
+   "comando": "M2 (forma do dev, commit b7de4c9): sed neutraliza o if do corpo de assertUndoOrdersCoverEveryRefusal ('if (false)'); node --test tests/financial-entry-undo-owners.test.ts",
+   "forma": "mutação isolada (construtor restaurado antes, md5 ad82f9e8 conferido); N=6",
+   "resultado": "exit 1 — not ok 6 '[C2/P5][parecer #2] dono que RECUSA ... FORA da ordem → LANÇA': o guard está EXERCITADO (no ciclo 3 esta classe de remoção media 240/240 verde). Restaurado com md5"
+  },
+  {
+   "comando": "M3 (composto — a propriedade sem a chamada): chamada do construtor removida + title_settlement.reverse trocado de allow(...) para refuse(errors.settlementEntryImmutable) na tabela REAL; node --test <unit + financial-entries>",
+   "forma": "mutação dupla no meu worktree; N=84",
+   "resultado": "exit 1 — 2 FAIL na suíte unit (célula-a-célula 'PERMITE reverse' + 'a tabela REAL cobre toda recusa (não lança)'): o estado perigoso que a chamada do construtor protegia NÃO nasce verde nem sem ela — o mutante do construtor é equivalente hoje. Restaurado: md5 dos 3 arquivos = baseline; blob = briefing"
+  },
+  {
+   "comando": "restore final: git checkout -- src/modules/financial-entries/ + md5sum + node --test <3 suítes>; grep -rn 'titleId != null|reversalOf != null' src/modules/financial-entries",
+   "forma": "verde-no-restore + censo da autoridade por VALOR; N=87",
+   "resultado": "87/87 pass exit 0 no pristino restaurado; autoridade paralela no caminho de guarda: NENHUMA — restam service.ts:346 (ramo de EFEITO do reverse, restorePaymentGuarded — fora da guarda por plano C2.3/§10) e repository.ts:165 (idempotência de create). Limpeza: junction removida, worktree removido + prune, logs apagados, node_modules compartilhado intacto"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "O drill D27 COMO ENUNCIADO no plano ('remover a chamada assertUndoOrdersCoverEveryRefusal do construtor → o caso do C2.5 fica vermelho') não se cumpre: o mutante sobrevive às 3 suítes (87/87 verde) e à suíte cheia (2465 testes; único fail é ambiental, presente no pristino). O critério era insatisfazível como escrito — a tabela real é sempre válida e não há ponto de injeção, logo a remoção é comportamentalmente equivalente hoje. A propriedade do parecer #2 está fechada por outra via, provada por mim: neutralizar o corpo do guard → vermelho (exit 1); e o estado perigoso real (refuse fora de ordem) SEM a chamada do construtor → 2 casos unit vermelhos (exit 1).",
+   "evidencia": "Meu worktree @ 12c3825: mutação do construtor → check exit 0, 87/87 verde, suíte cheia 2400/1/64 com fail só ambiental (reproduzido idêntico no pristino); M2 (corpo do guard) → not ok 6, exit 1; M3 (composto) → 2 not ok, exit 1. Dev declarou a mesma medição e a divergência no commit b7de4c9.",
+   "gravidade": "nota"
+  },
+  {
+   "defeito": "A divergência do D27 (drill do plano substituído pela mutação do corpo do guard) está declarada apenas no corpo do commit b7de4c9 — não em agent-orchestration/controle/pendencias.md, onde a A2 manda registrar divergência antes de consolidar (só a D-DIVERGENCIA-C4-PONTA-AUSENTE está lá). Rastreável, mas no lugar errado; a ata deste ciclo deve incorporá-la.",
+   "evidencia": "grep 'D27' em agent-orchestration/controle/pendencias.md → 0 ocorrências; grep 'D27' nos commits do branch → só b7de4c9 ('NOTA de divergencia: o D27 do plano fala em remover a chamada do construtor; ... nao e capturavel por teste unitario. Mutei o corpo do guard').",
+   "gravidade": "nota"
+  },
+  {
+   "defeito": "Suíte cheia sem DATABASE_URL tem 1 vermelho ambiental fora do escopo do ciclo: tests/core-saas-role-authority.test.ts pula as metades prisma mas um import pós-skip inicializa o Prisma Client e mata o processo ('DATABASE_URL is required to initialize Prisma Client', src/database/prisma.ts:12). Na CI (com banco) não aparece; localmente polui a leitura de qualquer drill de suíte cheia.",
+   "evidencia": "run-backend-tests.mjs sem DATABASE_URL: 2465 testes, fail 1 = core-saas-role-authority (exitCode 1); reproduzido idêntico no código pristino (exit 1, mesma mensagem), logo independente de qualquer mutação deste parecer.",
+   "gravidade": "nota"
+  }
+ ],
+ "pendencias_que_aceito": [
+  "Resíduo declarado no cabeçalho (financial-entry-undo-owners.ts:32-36): campo NOVO classificado 'plain' de boa-fé compila e passa — a construção força a decisão a existir, aparecer no diff e ter efeito, não a estar certa; fechado pelo par {decisão visível no diff + junta}, o mesmo aceito no precedente do catalog.ts. Confirmei que o cabeçalho diz isso com o fato medido, sem overclaim.",
+  "A má-classificação PERMISSIVA de campo existente (dono→plain) não é negada pelo runtime em si — é negada pela rede de testes (D22a: 5 vermelhos, incluindo 200!==422 na rota); a direção restritiva nega em runtime e a omissão nega no compilador. Nenhuma das três direções nasce verde-aceita.",
+  "A proteção contra 'refuse fora de ordem' na tabela do SERVIÇO depende de o serviço continuar construindo undoPolicies via buildUndoOwnerPolicies (o unit pina o builder, não o campo privado); a chamada do construtor segue no código como defesa em profundidade para esse cenário de segunda ordem.",
+  "Divergência D27 registrada só no corpo do commit b7de4c9 — aceito desde que a ata do ciclo 4 a incorpore.",
+  "Não rodei as suítes *-db.test.ts (sem cluster): minha lente (C2) é provada por unit + serviço em memória + rota HTTP in-process; a camada de banco é da cadeira do jurado de banco/triggers.",
+  "Vermelho ambiental de core-saas-role-authority em execução local sem DATABASE_URL (pré-existente, fora do escopo do ciclo)."
+ ]
+}

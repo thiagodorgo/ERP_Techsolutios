@@ -1,0 +1,62 @@
+{
+  "cadeira": "diff e escopo",
+  "identidade": "jurado-reg-diff-escopo (identidade nova; nao planejou, nao implementou, nao achou nada neste bloco, nunca votou em junta deste repositorio)",
+  "head_julgado": "ee5ef03d77838b53d575b0838329514dd266b2c7",
+  "veredito": "APROVADO",
+  "comandos_executados": [
+    "git rev-parse HEAD -> ee5ef03; branch chore/o6r-reg-sync-359; origin/main -> f081b5d; git status --porcelain -> VAZIO",
+    "git log --oneline f081b5d..ee5ef03 -> 4 commits (757485c, 8c00fab, b9058a7, ee5ef03)",
+    "git merge-base --is-ancestor f081b5d ee5ef03 -> ec=0 (linear, sem merge)",
+    "git diff f081b5d..ee5ef03 --stat -- src prisma tests scripts frontend mobile .github <4 lockfiles/manifests> -> SAIDA VAZIA, ec=0",
+    "git diff <mesmos caminhos> | wc -c -> 0 bytes",
+    "git diff f081b5d..ee5ef03 --name-status -> 41 arquivos (10 M + 31 A)",
+    "git diff --raw -> todos :100644 (zero 120000/160000/100755); --numstat sem traco (zero binarios); -M -C sem D/R/C",
+    "git diff --numstat -- Kpis/app.js -> 1 1; -U0 | grep @@ -> 1 hunk (-1623 +1623); linha alterada = var FROZEN",
+    "node --check Kpis/app.js -> ec=0",
+    "node -e (parse do FROZEN de Kpis/app.js vs JSON.parse de Kpis/kpis-latest.json) -> FROZEN === kpis-latest.json ? true",
+    "git diff -- .gitignore -> +8 linhas, -0",
+    "git ls-files | grep -E .claude/worktrees/|.tmp-demo/ | wc -l -> 0",
+    "git ls-tree -r --name-only ee5ef03 | grep os dois prefixos | wc -l -> 0; idem em f081b5d -> 0",
+    "git ls-files -z | git check-ignore --stdin -z | grep -c . -> 0 (PROVA EXAUSTIVA: nenhum rastreado do head e ignorado pelo .gitignore inteiro)",
+    "git diff --name-only | grep -i povoamento | wc -l -> 0; git ls-tree -r --name-only ee5ef03 | grep -i povoamento -> vazio",
+    "git ls-tree -r --name-only demo/investidor | grep -i povoamento -> 6 JSON existem la e NAO entraram nesta branch",
+    "R5a: git ls-remote --heads origin | grep -i arnes -> VAZIO",
+    "R5b: git ls-remote --heads origin | grep demo/investidor -> 819ff833 refs/heads/demo/investidor (EXISTE)",
+    "git diff --name-only -- CLAUDE.md AGENTS.md .claude .agents | wc -l -> 0",
+    "git diff --numstat -- agent-orchestration/controle/decisoes.md -> 202 0; -U0 -> 1 hunk (-1545,0 +1546,202); cmp das 1545 primeiras linhas -> IDENTICO (prefixo estrito)",
+    "git diff --name-only | extensoes -> 1 gitignore, 1 js, 10 json, 29 md (zero .ts/.tsx/.dart/.sql/.yml/.mjs/.sh)",
+    "grep -n planejador-mestre CLAUDE.md -> l.348,360,361,366; a frase 'nenhuma linha de codigo sem plano dele' NAO aparece em CLAUDE.md",
+    "head -20 .claude/agents/planejador-mestre.md -> a frase esta no campo description do frontmatter do agente",
+    "varredura dos 60 commits ate f081b5d por commits so-registro -> 6efe5ad(#358), adc0cb5(#351), 001f832(#345), c4e390c(#344), c7b7a08(#315) e outros mergeados sem plano em omega/planos/",
+    "git ls-files | grep -iE planos/ -> 20 arquivos, nenhum de bloco de registro/backfill",
+    "git diff --check f081b5d..ee5ef03 -> ec=0",
+    "git status --porcelain ao final -> VAZIO (mandato read-only cumprido)"
+  ],
+  "justificativa": "A promessa central e VERDADEIRA e eu a medi, nao a li: o diff de codigo contra f081b5d nos onze caminhos sai com ZERO BYTES, ec=0 - nao 'sem mudanca relevante', literalmente vazio. O --name-status completo tem 41 arquivos e TODOS caem no conjunto permitido: .gitignore, quatro Kpis/*, PROJECT_MEMORY.md, docs/CRONOGRAMA.md e 34 de agent-orchestration/**. Nenhum D nem R, nenhum binario, nenhum modo diferente de 100644 (portanto nenhum symlink nem submodulo se disfarcando de documento), e por extensao so .gitignore, um .js, dez .json e vinte e nove .md. A branch e linear sobre a base, sem merge que escondesse arvore de terceiro. O Kpis/app.js muda EXATAMENTE uma linha, num unico hunk, e essa linha e a var FROZEN; fui alem do exigido: reparseei o FROZEN e comparei com o JSON.parse de kpis-latest.json - sao a MESMA estrutura, o que prova que o congelado foi REGERADO da fonte e nao digitado a mao (a armadilha que o proprio comentario do arquivo nomeia). O .gitignore nao tem vetor de perda de dado, e provei na forma forte: passei a lista INTEIRA de rastreados por git check-ignore e o resultado foi zero. Os seis JSON de povoamento ficaram fora, e confirmei que EXISTEM em demo/investidor - a exclusao foi ato deliberado sobre material disponivel, nao acidente de material ausente. R5 conferido por execucao e nao herdado do briefing. O vetor que mais me preocuparia - decisoes.md tomado inteiro da demo - sai limpo: um unico hunk puramente apensado e cmp byte a byte das 1545 primeiras linhas dando IDENTICO. E os arquivos de contrato estao INTOCADOS: o bloco recomendou a carve-out em vez de se auto-anistiar editando a regra, que era o desfecho perigoso aqui. Sobre o merito da divergencia de processo, que a junta me mandou decidir e nao contornar: ela e real, mas eu a ratifico como pontual e NAO bloqueia, por tres razoes medidas. Primeira, o antecedente da regra nao ocorre: a norma fala em 'nenhuma linha de codigo sem plano' e eu medi zero byte de codigo; punir um bloco por nao planejar codigo que ele comprovadamente nao escreveu e formalismo sem objeto tutelado. Segunda, o precedente e macico e ja foi aceito por juntas anteriores: ao menos cinco PRs de registro/backfill mergeados na main (#358, #351, #345, #344, #315) e nenhum plano de bloco de registro entre os 20 arquivos de plano rastreados - a regra tal como escrita e violada por todo bloco de registro que este repositorio ja fez, o que a torna candidata a conserto de contrato, nao a veto retroativo. Terceira, e a que mais pesa: quantifiquei o custo real da ausencia do plano em vez de supo-lo. O prejuizo pratico e que perco a lista ex-ante de escopo permitido do §C4 e so posso conferir o diff contra um briefing escrito DEPOIS dele. Entao fui atras do que escapa a essa rede: das 41 alteracoes, as quatro ressalvas A/C/E/F sao ex-ante (vem do parecer do porteiro, escrito por outro agente, antes do diff) e cronograma/PROJECT_MEMORY sao instrucao do dono (§A1.1); a UNICA adicao de iniciativa propria fora dessa lista fechada e o .gitignore de duas linhas - e essa e justamente a que provei inerte de forma exaustiva. O raio de dano medido da divergencia e duas linhas que nao ocultam nada. Isso e nota de governanca, nao veto. Respeitei R1 (nao rodei nem consertei o sync-agent-agents.mjs) e R3 integralmente: nao mutei arquivo rastreado, nao commitei, nao criei branch, nao encostei em erp-postgres/erp-redis, nao usei git archive+tar, e o git status sai vazio ao final. Nada que eu precisava medir ficou por medir.",
+  "achados": [
+    {
+      "id": "REG-DIFF-1",
+      "titulo": "A pendencia que declara a divergencia cita errado a fonte da regra: a frase 'nenhuma linha de codigo sem plano dele' nao esta no CLAUDE.md §C7",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "grep -n por 'nenhuma linha de c' no CLAUDE.md -> a frase NAO aparece em nenhum ponto (as ocorrencias de planejador-mestre sao l.348, 360, 361, 366, que tratam de outra coisa). head -20 .claude/agents/planejador-mestre.md -> 'description: Escreve o plano obrigatorio antes de qualquer codigo. Nenhuma linha de codigo sem plano dele.' O texto de P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE abre atribuindo a frase, como verbatim, ao CLAUDE.md §C7.",
+      "motivo": "Este bloco existe para eliminar frases de registro que a execucao contradiz (o 'piso 0', o '6 arquivos', o '2358'). A pendencia em que ele confessa a propria divergencia reproduz exatamente essa classe: cita como verbatim de §C7 um texto que vive no description do agente. A substancia nao muda - a regra existe, vincula e foi divergida -, e por isso nao reprova; mas a citacao precisa apontar para .claude/agents/planejador-mestre.md (e/ou para §C7.4-bis/§C7.6, que estabelecem o papel sem essa frase). Se a carve-out recomendada for escrita no contrato, ela tem de ser escrita no lugar certo, e a pendencia e o insumo de quem vai escreve-la."
+    },
+    {
+      "id": "REG-DIFF-2",
+      "titulo": "O head julgado e o terceiro hash da junta e e POSTERIOR ao head em que o inspetor liberou o terreno (8c00fab)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "git log --oneline f081b5d..ee5ef03 -> 4 commits: 757485c (registro) -> 8c00fab (briefing) -> b9058a7 (emenda do briefing + P-REG-S0-GUARD-FALSO-VERMELHO) -> ee5ef03 (parecer do inspetor). O briefing nomeia 757485c; o parecer do inspetor diz 8c00fab; a cadeira julga ee5ef03. Delta 8c00fab..ee5ef03 medido por commit: b9058a7 = 2 arquivos (pendencias.md, BRIEFING); ee5ef03 = 1 arquivo (parecer do inspetor persistido). Re-medicao propria em ee5ef03: diff de codigo 0 bytes, check-ignore 0, app.js 1 linha, povoamento ausente, git status limpo.",
+      "motivo": "O §C7.1-bis e fail-closed: a junta so comeca com o LIBERADO do inspetor, e esse LIBERADO foi medido em 8c00fab. Dois commits pousaram depois. Nao ha achado material - os tres arquivos do delta sao a emenda das ressalvas, a pendencia do falso-vermelho do S0 e o proprio parecer, isto e, os artefatos que as ressalvas do inspetor mandavam apensar (§A2) - e eu reexecutei todas as promessas centrais no head real em vez de herdar a medicao dele. Fica como nota para que a ata consigne TRES hashes, e nao dois como a N1 previu."
+    },
+    {
+      "id": "REG-DIFF-3",
+      "titulo": "Divergencia de processo (bloco implementado sem plano do planejador-mestre): RATIFICADA como pontual, com o raio de dano medido em duas linhas",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_executada": "Antecedente da regra ausente: diff de codigo contra a base = 0 bytes. Precedente: varredura dos 60 commits ate f081b5d -> 6efe5ad (#358 backfill pos-merge do #357), adc0cb5 (#351), 001f832 (#345), c4e390c (#344), c7b7a08 (#315), entre outros; git ls-files por planos -> 20 arquivos, nenhum plano de bloco de registro/backfill. Raio de dano: das 41 alteracoes, A/C/E/F vem do parecer ex-ante do porteiro, CRONOGRAMA/PROJECT_MEMORY sao instrucao do dono (§A1.1), e a unica iniciativa fora dessa lista fechada e o .gitignore (+8/-0) - provado inerte por 'git ls-files -z | git check-ignore --stdin -z | grep -c .' -> 0. Contrato intocado: diff em CLAUDE.md, AGENTS.md, .claude e .agents -> 0 arquivos.",
+      "motivo": "Voto por ratificar como divergencia pontual e NAO reprovar, com fundamento medido e nao por comodidade. A regra protege contra escopo nao planejado e defeito reintroduzido em codigo; aqui nao ha codigo (0 bytes), e o substituto ex-ante existe e e de outro agente (o parecer do porteiro enumera A-F item a item antes do diff). O custo real da ausencia do plano e um so: perco a lista de escopo permitido do §C4 e so posso medir o diff contra um briefing escrito depois dele - entao fui atras do que escapa a rede e achei UMA adicao de iniciativa propria, o .gitignore de duas linhas, que provei nao ocultar nenhum arquivo rastreado do repositorio inteiro. Duas linhas inertes e o dano medido. Endosso a recomendacao (b) da propria pendencia: a carve-out para blocos sem diff de codigo tem de ser ESCRITA no contrato e entrar na lista do §6 da D-JUNTA-ESCOPO-E-CALIBRACAO, porque a regra como esta hoje e violada por todo bloco de registro ja mergeado neste repositorio - e regra que todo mundo viola e ninguem aplica corrompe as regras que importam. Registro tambem, a favor do bloco, que ele NAO se auto-anistiou: CLAUDE.md e AGENTS.md ficaram intocados e a correcao foi recomendada a junta em vez de aplicada pela propria mao."
+    }
+  ]
+}

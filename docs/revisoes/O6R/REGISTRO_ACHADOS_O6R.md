@@ -218,6 +218,69 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-SEC-002] Técnico de campo pode alterar OS alheia e decidir aprovações do tenant
 - Severidade: P0        Confiança: 1.00
+- Status: **parcialmente superado** pelo B-O6R-07a (PR #369, ciclo 2). **NÃO está fechado** — a
+  declaração de fechamento da autoria foi REVERTIDA no ciclo 2, depois que a junta mediu 9 rotas mutantes
+  ainda alcançáveis pelo técnico sobre OS alheia (achado `C1-A1`). O que o bloco PROVOU e o que segue
+  ABERTO, separados:
+
+  **SUPERADO (provado por execução, com vermelho-controle registrado).** **(1) Papel:** permissão dedicada
+  `work_orders:approve` no catálogo, exigida por `POST /approvals/:id/approve` e `/reject` — antes as duas
+  rotas usavam `work_orders:update`, a MESMA guarda do `PATCH /work-orders/:id`, que `technician` e
+  `field_technician` **têm**. Concessão mínima: `manager` explícito + `tenant_admin`/`super_admin`/
+  `platform_admin` por herança; `technician`, `field_technician`, `operator`, `auditor` e `support` de fora;
+  `finance`/`inventory` ("approval-by-policy" na matriz) adiados por não existir política de VALOR ancorada
+  no agregado (`P-O6R-B07-APPROVAL-BY-POLICY`). `GET /approvals/pending` e `/:id` seguem em
+  `work_orders:read` — ver a fila não é decidir nela. **(2) SoD:** `approval.service.decide()` recusa quando
+  o ator é o solicitante → **403 `self_decision`**, para approve E reject, com rastro auditável (ação
+  `approval.self_decision_denied`, `outcome: "denied"`, enum fechado — recusa em silêncio é
+  indistinguível de "ninguém tentou"). **(3) Escopo por objeto NAS DUAS ROTAS GUARDADAS:**
+  `work-order.service` recusa mutação de ator de campo sobre OS não atribuída a ele → **403
+  `not_assigned_to_actor`** em `PATCH /work-orders/:id` e `PATCH /:id/status`, nunca 404 (o 404 segue
+  reservado a cross-tenant). No **ciclo 2** a atribuição passa a provar-se por **dual-match** (perfil OU
+  user id — C2·4), porque o write do assign grava `user_id` no campo de perfil e o técnico legitimamente
+  atribuído pelo app recebia 403. A permissão nova é **provisionada por migração** aditiva e idempotente
+  (`20260871000000_grant_work_orders_approve_permission`): produção roda só `prisma migrate deploy`, sem
+  seed, e sem a migração a chave nasceria morta no banco — a rota responderia **403 para TODOS os papéis,
+  inclusive o manager**. Provas: `o6r07a-approval-permission` 3/3, `o6r07a-approval-sod` 3/3,
+  `o6r07a-wo-object-scope` **5/5 no ciclo 1 e 8/8 no ciclo 2**, **todas com vermelho-controle registrado**
+  contra o head-base (technician recebia 200 no approve — 3 · pass 2 · fail 1; autoaprovação 200 — 3 · pass 0
+  · fail 3; técnico A mutava OS de B com 200 — 5 · pass 3 · fail 2; os 3 casos do dual-match — 8 · pass 5 ·
+  fail 3), mais os dois guards de paridade RBAC verdes e **não pulados** (migration-parity 3/3; db-parity
+  2/2 com banco semeado). Fundamento de política, medido: `RBAC_MATRIX.md:45` já dizia
+  `field_technician = execute/update-assigned` — **o guard cumpre a matriz; o 200 antigo é que a
+  contrariava**.
+
+  **ABERTO — 9 rotas mutantes, com a FORMA de cada número dita às claras.** Medição do ciclo 2: das **14**
+  rotas mutantes do router principal, exatamente **6** passam o gate com as chaves do técnico
+  (`work_orders:` comment/read/status/update) — **2 guardadas** por este bloco (`PATCH /:id`,
+  `PATCH /:id/status`) e **4 abertas**; e as **5** mutantes do router de comentários passam **todas**.
+  1. `POST /work-orders/:id/attachments` — anexa em OS alheia (gate `create` OU `update`). **EXECUÇÃO** —
+     HTTP 201. Origem: `bf456b0` (2026-07-13, PR #173), anterior a este bloco.
+  2. `DELETE /work-orders/:id/attachments/:attachmentId` — apaga anexo alheio, blob sai do storage (gate
+     `update`). **EXECUÇÃO** — HTTP 204 + blob removido. Origem: `bf456b0` #173.
+  3. `POST /work-orders/:id/comments` — comenta em OS alheia (gate `comment`). **EXECUÇÃO** — HTTP 201.
+  4. `PATCH /work-orders/:id/comments/:commentId` — edita comentário de OUTRO autor (`assertCanMutate` =
+     autor **OU** `work_orders:update`, e o técnico tem `update`). **LEITURA DE CÓDIGO** — HTTP não
+     executado. Origem: `D-Ω3F-5-COMMENT`, desenho deliberado da casa, não regressão deste bloco.
+  5. `DELETE /work-orders/:id/comments/:commentId` — soft-delete de comentário alheio. **LEITURA**.
+  6. `POST /work-orders/:id/comments/:commentId/tags/:tagId` — taggeia comentário alheio. **LEITURA**.
+  7. `DELETE /work-orders/:id/comments/:commentId/tags/:tagId` — destaggeia comentário alheio (hard-delete
+     da associação). **LEITURA**.
+  8. `POST /work-orders/:id/geocode` — alcançável em OS alheia (gate `update`). **ALCANCE por execução**
+     (HTTP 200, `geocoded=false` — provider Noop por default); **EFEITO condicionado a
+     `GEOCODING_ENABLED`**, que ninguém mediu ligado.
+  9. `POST /work-orders/:id/geocode-destination` — idem, mesma guarda e mesma forma.
+
+  **Dona da parte aberta: `P-O6R-SUBRECURSO-OBJECT-SCOPE`** (ALTA), bloco `B-O6R-07c`
+  (`fix/o6r07c-subresource-scope`), a planejar após o merge do 07b — com a decisão de produto do
+  `D-Ω3F-5-COMMENT` como item explícito do plano dele.
+
+  **Por que NÃO se estendeu o guard aqui** (decisão do ciclo 2, C2·2): custaria ≥36 casos novos em dois
+  módulos a mais, poria ~31 casos existentes de attachments em risco, e exigiria reverter em parte uma
+  decisão de PRODUTO (`D-Ω3F-5-COMMENT`) que ninguém mediu com o fluxo do despachante. Fora do
+  fechamento, dito às claras: **alçada por VALOR** não é implementável neste agregado
+  (`approval.types.ts` não tem campo de valor) e **`team_id`** não entra como critério (sem modelo de
+  membership medido).
 - Categoria: SEC
 - Módulo: work-orders / approvals / RBAC        Lente: A2
 - Local: `src/modules/core-saas/permissions/catalog.ts:784-820`, `src/modules/work-orders/work-order.routes.ts:70-83`, `src/modules/work-orders/work-order.routes.ts:110-123`, `src/modules/work-orders/work-order.service.ts:759-804`, `src/modules/work-orders/approval.service.ts:61-97`, `RBAC_MATRIX.md:44-46`, `RBAC_MATRIX.md:66`, `APPROVAL_LIMITS.md:38-52`
@@ -587,6 +650,26 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-SEC-003] Lockout de login é caminho morto e permite tentativas ilimitadas
 - Severidade: P1        Confiança: 1.00
+- Status: **fechado** em 2026-09-02, em DUAS partes: o núcleo pelo **B-O6R-01** (PR #357) e os dois residuais
+  pelo **B-O6R-07a** (PR na autoria; nº e hash no backfill pós-merge).
+  **Núcleo — já entregue antes deste bloco, e re-medido antes de qualquer linha nova** (§2.2 do plano
+  `B-O6R-07`): `incrementFailedAttempts` é **um UPDATE atômico** com `CASE WHEN failed_attempts + 1 >=
+  threshold THEN now() + 15min`; `markSuccessfulLogin` zera contador e lock; o login recusa `locked` **antes**
+  do scrypt. Este bloco **não re-implementa** o que já existia — e por isso não há migration de schema
+  (`locked_until`/`failed_attempts` já estão no schema). **Residual 1 — caminho anônimo:**
+  `verifyAnonymousCandidate` passa a chamar o MESMO UPDATE atômico do B01 (zero contador novo, zero
+  read-modify-write novo) e deixa rastro; a resposta anônima segue **401 uniforme** — o 423 nunca vaza por
+  essa via, preservando o anti-enumeração do B01. Fecha `P-O6R-B01-ANONIMO-SEM-LOCKOUT`. **Residual 2 —
+  rate-limit por IP:** `TokenBucket` **reutilizado** de `portal-shared` (zero dependência nova — dependência
+  nova exigiria junta-5), chave HMAC derivada de `JWT_SECRET` sobre o IP, nas **duas** rotas de login,
+  estouro → **429 `RATE_LIMITED`**. Fecha `P-O6R-B01-RATE-LIMIT-IP`. Provas: `o6r07a-anon-lockout` 7/7 +
+  `o6r07a-anon-lockout-db` 6/6 (vermelho-controle conjunto: 13 · pass 4 · fail 9) e `o6r07a-login-rate-limit`
+  6/6 (vermelho-controle: 6 · pass 2 · fail 4, com os quatro `not ok` nomeados e o mesmo modo de falha — o
+  volume passava respondendo 401). Os três vermelhos-controle de auth foram **refeitos do zero** por agente
+  de identidade nova, depois de o primeiro dev cair sem gravá-los (`00-quedas.md`). **Não fechado, e
+  re-nomeado em vez de escondido:** o freio é **in-process** — multi-réplica/Redis, política de
+  `X-Forwarded-For` e a enumeração via `400 TENANT_ID_REQUIRED` ficam em
+  `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`.
 - Categoria: SEC
 - Módulo: auth        Lente: A2
 - Local: `src/modules/auth/services/local-auth-login.service.ts:113-141`, `src/modules/auth/repositories/local-auth-credential.repository.ts:101-112`, `src/modules/auth/routes/auth.routes.ts:53-91`
@@ -728,3 +811,18 @@ reconciliação pós-merge, sem alterar as dívidas em si.)
   de quem fechou, e **todo achado aberto coberto por um bloco do cronograma**. Foi ele que encontrou o órfão,
   na primeira execução. Antes disso, os três artefatos eram mantidos em paridade **à mão**, e já haviam
   divergido duas vezes nesta mesma seção.
+- **Atualização 2026-09-02, corrigida no ciclo 2 (B-O6R-07a):** `Ω6R-SEC-003` (P1) fechado **na autoria**;
+  `Ω6R-SEC-002` (P0) **NÃO** — a declaração de fechamento foi revertida para **parcialmente superado**
+  depois que a junta do ciclo 1 mediu **9 rotas mutantes** ainda alcançáveis pelo técnico sobre OS alheia
+  (anexos, comentários e geocode — seção do SEC-002 acima, com a forma de cada número). Distribuição por
+  STATUS: **P0 15 (4 fechados · 1 parcialmente superado · 10 abertos) · P1 15 (1 fechado, 14 abertos)**.
+  **O contador do painel NÃO se move:** `p0_fechados` continua **4** e `p1_fechados` continua **0**, porque
+  `tests/kpi-achados-paridade.test.ts` conta só o que tem hash de merge no `fechado_por`. Em
+  `production_readiness.aguardando_merge` fica **só o SEC-003** — não se aguarda merge do que não se
+  declara fechado. O guard nasceu de um caso vivo (o B-O6R-01 marcou dois P0 como fechados na autoria e a
+  junta do ciclo 2 vetou o bloco): promessa não é entrega, e o painel é a página que o dono mostra a
+  investidor. **A reversão do SEC-002 é a mesma lição aplicada a nós mesmos** — desta vez pegou-se um
+  fechamento declarado enquanto 9 rotas seguiam abertas. `Ω6R-SEC-004` (a terceira linha do `B-O6R-07`)
+  **segue ABERTO** — é o sub-bloco 07b, e o gate da CHECKLIST P1 só se satisfaz com os DOIS mergeados.
+- **O veredito da J-6R segue integral: REPROVADO PARA PRODUÇÃO** — `deploy_bloqueado: true`. Fechar 5 de 15
+  P0 não move o veredito, e fechar achado não libera deploy: só junta libera, com ata.

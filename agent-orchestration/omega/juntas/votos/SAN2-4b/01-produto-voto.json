@@ -1,0 +1,166 @@
+{
+  "cadeira": "C1 — auditor-da-correcao-de-produto",
+  "bloco": "SAN2-4b",
+  "pr": 366,
+  "head_julgado": "2d2d16d",
+  "identidade": "NOVA",
+  "quorum": "UNANIMIDADE de 3",
+  "criado_em": "2026-08-31",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": "C1-I1",
+      "titulo": "A correcao do src/ resolve a CAUSA (pino de keylen em parseStored), nao o sintoma; vermelho-controle reexecutado",
+      "status": "MEDIDO",
+      "veredito": "APROVADO",
+      "achados": [
+        {
+          "id": "C1-I1-A1",
+          "titulo": "A classe era PIOR que 1/256: com keylen vindo do input, QUALQUER prefixo do hash autenticava — 1 byte so, 5000/5000. O briefing caracteriza a classe apenas pelos dois vetores raros.",
+          "gravidade": "observacao",
+          "escopo": "dentro-do-bloco",
+          "bloqueia": false,
+          "evidencia": "R1 v3/v7 = 5000/5000 aceitos contra o blob 45c3b97; medido por esta cadeira em 2026-08-31. Subdimensiona o defeito corrigido, nao o superdimensiona; os vetores estao nomeados no comentario do teste da C2."
+        },
+        {
+          "id": "C1-I1-A2",
+          "titulo": "verifyPassword LANCA ERR_CRYPTO_INVALID_SCRYPT_PARAMS para N/r/p fora de faixa (N=2^30, N=1000, r=2^20, p=2^30)",
+          "gravidade": "baixa",
+          "escopo": "pre-existente",
+          "bloqueia": false,
+          "evidencia": "E2 identico PRE (blob 45c3b97) e POS (head 2d2d16d); as linhas 74-77 do parse de N/r/p estao INTOCADAS no git diff 45c3b97 2d2d16d — origem Omega5P PR-18a. Nao falsifica o comentario reescrito (um stored com N=2^30 passa no parseStored, logo nao e malformado no sentido do codigo)."
+        },
+        {
+          "id": "C1-I1-N1",
+          "titulo": "NAO-achado registrado: v9 base64url aceito 2630/10000 pos-fix sao os casos NO-OP (hash sem + nem /), nao bypass",
+          "gravidade": "nenhuma",
+          "escopo": "n/a",
+          "bloqueia": false,
+          "evidencia": "E1 dirigido: EFETIVOS 0/1484 pos-fix contra 1468/1468 pre-fix; (62/64)^43 = 0,26 bate com 2630/10000 = 0,263"
+        },
+        {
+          "id": "C1-I1-N2",
+          "titulo": "NAO-achado: salt de comprimento nao pinado (ressalva §7.6 do dev) nao e buraco",
+          "gravidade": "nenhuma",
+          "escopo": "n/a",
+          "bloqueia": false,
+          "evidencia": "E3: salt canonico de 17B -> false, PRE e POS"
+        }
+      ],
+      "metodo": "sonda propria (jurado-c1-probe.mts), 9 vetores + 2 controles, import por file:// URL, zero edicao do repo; alvos por sha256 (prefix da4a192e..., posfix f68bcfd0...)",
+      "vermelho_controle_reexecutado": {
+        "v1_padding_trocado": "75/20000 (0,375%)",
+        "v2_estendido_33_canonico": "83/20000 (0,415%)",
+        "v3_truncado_31": "5000/5000 (100%)",
+        "v4_padding_removido": "5000/5000 (100%)",
+        "v5_salt_sem_padding": "5000/5000 (100%)",
+        "v7_truncado_1_byte": "5000/5000 (100%)",
+        "v8_whitespace": "5000/5000 (100%)",
+        "v9_base64url_efetivos": "1468/1468 (100%)",
+        "ctrl_mais": "5000/5000",
+        "ctrl_menos": "0/5000"
+      },
+      "verde": {
+        "v1": "0/100000",
+        "v2": "0/100000",
+        "v3": "0/10000",
+        "v4": "0/10000",
+        "v5": "0/10000",
+        "v6": "0/10000",
+        "v7": "0/10000",
+        "v8": "0/10000",
+        "v9_efetivos": "0/1484",
+        "ctrl_mais": "10000/10000",
+        "ctrl_menos": "0/10000",
+        "excecoes": 0
+      }
+    },
+    {
+      "id": "C1-I2",
+      "titulo": "O teste MORDE: tests/authority-portal.test.ts falha contra src/ sem a C1, e as falhas sao os 2 guards novos; com a C1 passa (14 casos). Achado central: o tamper corrigido sozinho passava (# pass 12)",
+      "status": "MEDIDO",
+      "veredito": "APROVADO",
+      "achados": [],
+      "metodo": "teste do head inalterado x 4 versoes do src/; troca por cp com trap EXIT; sha256 f68bcfd0... conferido nas 3 sessoes; git status -- src/ tests/ vazio ao final; nao commitei",
+      "baseline": {
+        "ec": 0,
+        "tests": 14,
+        "pass": 14,
+        "fail": 0,
+        "guards_novos": "casos 4 e 5"
+      },
+      "vermelho": {
+        "execucoes": 5,
+        "resultado": "5/5 identicas: ec=1, # tests 14, # pass 12, # fail 2, falharam=[4,5]",
+        "determinismo": "DETERMINISTICO, nao 1/256",
+        "asseracao": "expected false / actual true / strictEqual (x2)"
+      },
+      "achado_central": {
+        "sustenta": true,
+        "evidencia": "# pass 12 no vermelho => o caso 1 (tamper corrigido) PASSOU contra o src/ defeituoso, 5/5; 2a testemunha independente: sonda v6_dado_1o_char = 0/5000 aceitos pre-fix; e grep -rn verifyPassword tests/ prova que authority-portal.test.ts e a UNICA testemunha da classe no repo (os outros 3 arquivos usam stored legitimo ou invalid-hash de outro modulo). Logo C2 so com a troca do caractere = deteccao ZERO."
+      },
+      "mutacao_meia_a_meia": {
+        "M1_so_canonicidade": "# fail 1, falhou=[5] em 3 execucoes",
+        "M2_so_pino": "# fail 1, falhou=[4] em 3 execucoes",
+        "verde_controle": "ec=0, 14/14",
+        "leitura": "guards disjuntos e nao-redundantes; correcao parcial seria pega pelo proprio arquivo de teste — oposto de mascarar; confirma a errata do dev ao §3-C1.1"
+      }
+    },
+    {
+      "id": "C1-I3",
+      "titulo": "A classe esta fechada: ~1/256 -> 100% deterministico por mecanismo; vetores nomeados (= removido, hash truncado a 31 bytes) testados por mim",
+      "status": "MEDIDO",
+      "veredito": "APROVADO",
+      "achados": [
+        {
+          "id": "C1-I3-A1",
+          "titulo": "Campo N aceita forma nao-canonica: um stored com espaco antes do 1024 verifica true (Number com espaco === 1024). Idem 0x400 e 1e3.",
+          "gravidade": "baixa",
+          "escopo": "pre-existente",
+          "bloqueia": false,
+          "evidencia": "W08 identico PRE e POS. A linha \"const N = Number(parts[1])\" esta INTOCADA no diff (git diff 45c3b97 2d2d16d | grep Number(parts) = vazio) e nasce em 5a6a91b, 2026-07-28, Omega5P PR-18a #306. NAO e bypass: a senha correta segue exigida, os 32 bytes sao comparados inteiros, e mudar o VALOR de N quebra a verificacao (N=2 -> false). Exploravel so por quem ja tem escrita no banco.",
+          "destino": "pendencia nomeada, bloco dono a definir"
+        },
+        {
+          "id": "C1-I3-N1",
+          "titulo": "NAO-achado: o lockout de credencial com keylen diferente de 32 nao atinge ninguem",
+          "gravidade": "nenhuma",
+          "escopo": "n/a",
+          "bloqueia": false,
+          "evidencia": "W11: keylen 16 e 64 rejeitados pos-fix. Unico produtor de stored do authority e AuthorityCredentialService com scryptParams default = AUTHORITY_SCRYPT_PARAMS (l.26); TODO literal de keylen do repo e 32 (grep -rn keylen src/ tests/ scripts/ prisma/). O comentario novo ja documenta que rotacionar keylen exige versao nova do formato."
+        },
+        {
+          "id": "C1-I3-N2",
+          "titulo": "NAO-achado (armadilha do §4 evitada): o \" M pendencias-indice.md\" do git status e fantasma de CRLF",
+          "gravidade": "nenhuma",
+          "escopo": "n/a",
+          "bloqueia": false,
+          "evidencia": "git diff --exit-code -- pendencias-indice.md ec=0 sob core.autocrlf=true; nao toquei o arquivo. git diff --exit-code -- src/ tests/ tambem ec=0."
+        }
+      ],
+      "vetores_nomeados_pelo_bloco": {
+        "padding_igual_removido": "PRE 5000/5000 (100%) -> POS 0/10000",
+        "hash_truncado_31B": "PRE 5000/5000 (100%) -> POS 0/10000",
+        "extra_medido_por_mim": "truncado a 1 BYTE: PRE 5000/5000 -> POS 0/10000"
+      },
+      "deteccao": {
+        "antes": "0,375% por execucao (= 75/20000; a unica asseracao da classe no teste antigo, l.161, roda 1x por execucao). METODO: derivado da taxa de aceitacao medida em N=20000, NAO por rodar o arquivo antigo 20000 vezes",
+        "depois": "100% deterministico: 5/5 execucoes com \"# fail 2\" nos casos 4 e 5; mecanismo = vetores de 100% (semPadding 5000/5000, truncado_31 10000/10000)"
+      },
+      "caca_a_fuga": {
+        "vetores_testados": 21,
+        "fechados": 20,
+        "sobrevivente": "W08"
+      }
+    }
+  ],
+  "resumo": "APROVADO. A C1 conserta a CAUSA (o keylen deixa de ser funcao do input e vira constante do sistema, com guard de comprimento), o vermelho-controle foi REEXECUTADO por esta cadeira com sonda propria e ACUSOU (75/20000 e 83/20000 nos vetores raros, e 100% em SEIS vetores deterministicos que o bloco nao mediu), o teste MORDE deterministicamente (5/5, \"# fail 2\", casos 4 e 5), o achado central se sustenta com duas testemunhas independentes, e a mutacao de uma metade de cada vez prova que os dois guards sao disjuntos e nao-redundantes — uma correcao parcial seria pega pelo proprio arquivo de teste, que e o oposto de mascarar. 21 vetores testados, 20 fechados; o unico sobrevivente (W08, campo N nao-canonico) e pre-existente, de outra classe e sem bypass.",
+  "terreno_de_saida": {
+    "head": "2d2d16db69afa22682866b8bb414e8afc35a5e80",
+    "commitei": false,
+    "git_diff_exit_code_src_tests": 0,
+    "sha256_src_restaurado": "f68bcfd01390dfdefa5f9e2973ed8685196e97dbf0b57ad17926355d3dc3ecb1",
+    "base_viva": "erp-postgres Up 2 days (healthy) | erp-redis Up 2 days (healthy) — zero comandos a container",
+    "cluster_descartavel": "nenhum necessario (CORE_SAAS_PERSISTENCE=memory)"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "junta": "SAN2-4b",
+  "pr": 366,
+  "head_julgado": "2d2d16d",
+  "cadeira": "C3 — zelador-do-escopo-do-registro-e-do-kpi (TERCEIRA suplente, identidade nova)",
+  "quorum": "unanimidade de 3",
+  "metodo": "medicao a partir dos BLOBS do head (git show 2d2d16d:<path> / git diff main...2d2d16d) — a arvore de trabalho e compartilhada com a cadeira C2, que teve mandato de mutar codigo (00-quedas.md). Onde foi preciso executar script sobre arquivo, montei copia isolada no scratchpad a partir dos blobs. Nao escrevi em arquivo rastreado, nao commitei, nao restaurei e nao reverti nada. Base viva (erp-postgres/erp-redis) sem nenhum comando meu, nem de leitura: a unica execucao de teste saiu com DATABASE_URL apontada para porta morta 127.0.0.1:59999.",
+  "antecessoras": "duas quedas nesta cadeira, ambas na transicao medir->gravar. Pela R2 as conclusoes delas NAO sao insumo; pela P3 os comandos registrados foram roteiro de re-execucao barata — re-executei todos e medi do zero o que faltava (o item 3 inteiro). Registros preservados intactos em 03-antecessora-caida-evidencia.md e nas 127 linhas iniciais de 03-escopo-registro-kpi-evidencia.md; o meu trabalho e apenso so-adicao a partir da linha 128.",
+  "estado_da_arvore_medido_por_mim": "git diff --exit-code -- src/ tests/ = ec 0 e git diff --exit-code -- agent-orchestration/ = ec 0: conteudo IDENTICO ao head. O ' M' do git status e stat-cache, nao conteudo (P-SAN2-2-INDICE-DONO-SEMPRE-SIM) — reporta-lo seria fabricar achado. Zero mutacao viva.",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": "1",
+      "titulo": "Escopo — 20 arquivos dentro do §5.1; 20o arquivo (R2 do inspetor); .github/contratos intocados",
+      "veredito": "APROVADO",
+      "medicoes": [
+        "merge-base main 2d2d16d = 45c3b97 (a base declarada no cabecalho do plano)",
+        "git diff --name-only main...2d2d16d = 20 arquivos; git diff --check = ec 0",
+        "codigo: exatamente os 5 do §5.1 (authority-password.ts, authority-portal.test.ts, auth-identity-fixture.ts, rls-tenant-isolation.test.ts, db-catalog-write-guard.test.ts); registro/KPI: os 14 nomeados",
+        "§5.2 PROIBIDO, por pathspec ampliado (.github/**, prisma/**, migrations/**, scripts/**, frontend/**, mobile/**, portals/**, package*.json, .claude/**, .agents/**, infra/**, .env*, CLAUDE.md, AGENTS.md, API_CONTRACTS.md, docs/**, RBAC_MATRIX.md, APPROVAL_LIMITS.md): SAIDA VAZIA. Os 4 outros gatilhos do sweep: VAZIO.",
+        "gerar-indice-pendencias.py: git diff --exit-code main...2d2d16d = ec 0 — o classificador que julga o registro nao foi tocado pelo bloco que ele julga",
+        "Kpis/app.js: numstat 1 1, 1 hunk, as duas linhas +/- sao a var FROZEN — e o kpi-freeze --check verde prova que foi GERADA pelo script, nao digitada",
+        "test() por execucao nos blobs: authority-portal 12->14 (os 2 nomes novos sao os guards da classe), db-catalog-write-guard 6->6, rls-tenant-isolation 2->2 (diff de NOMES vazio nos dois)",
+        "auth-identity-fixture: fora de comentario o diff sao 2 linhas ('rls_test' na lista + export). ORPHAN_ROLE_MAX_AGE_MS, o regex e dropEphemeralRoleResilient AUSENTES do diff, como o §5.1 exige"
+      ],
+      "R2_do_inspetor": "JULGADA — CABE. O 20o arquivo (votos/SAN2-4a/00c-porteiro-pos-merge-365.md, +133/-0) entrou no commit fca131a (2026-08-31), ANTERIOR aos tres commits do dev e unico arquivo dele; e a autorizacao de start exigida pelo §C2.8/D-PORTEIRO-POS-MERGE, declarada por escrito no cabecalho do plano (l.5-8) antes de existir codigo, e e adicao pura. Nao e obra do executor e nao e escopo estourado. Ressalva de REDACAO, sem gravidade: o parentese 'desta junta' do §5.1 e mais estreito que o glob que qualifica — higiene de plano futuro.",
+      "nuance_registrada": "isCanonicalBase64 e funcao nova de modulo e o §5.1 dizia 'SOMENTE parseStored'. Medido: 2 hunks no arquivo, 2 chamadores ambos dentro de parseStored, nao exportada, corpos de hashPassword/verifyPassword fora do diff. Detalhe de implementacao do proprio parseStored. NAO bloqueia."
+    },
+    {
+      "id": "2",
+      "titulo": "Registro (C5) — 3 pendencias fechadas pela LINHA DE STATUS; 3 novas com severidade 'a classificar'; 68 CARREGADO",
+      "veredito": "APROVADO com 2 achados observa",
+      "medicoes": [
+        "as 7 remocoes de pendencias.md sao 3 cabecalhos + 3 LINHAS DE STATUS ABERTA + 1 nota; as 3 linhas de status voltam FECHADA com dono e data; a nota volta verbatim com [Superada em 2026-08-31]",
+        "prova mecanica (classificador rodado por mim em copia isolada, blobs de main e do head): MAIN {FECHADA 47, ABERTA 187} / 234 cabecalhos e HEAD {FECHADA 50, ABERTA 187} / 237 — 47+187=234 e 50+187=237, ou seja ZERO CONTRADITORIA e ZERO SEM-STATUS. Fechamento por cabecalho com a linha ainda ABERTA produziria CONTRADITORIA por construcao.",
+        "baldes reproduzem o C5 celula a celula: A 33->31, B 77->79, C 77->77; +3 cabecalhos e +2 IDs (a emenda reusa ID). ABERTAS fica em 187 e isso e verdade publicada parada.",
+        "indice: git hash-object do regenerado = git rev-parse do blob commitado, IDENTICO nos DOIS lados (head 1fa0e0fa..., main 65927aa0...). Nao ha defasagem — a armadilha P-SAN2-2-INDICE-DONO-SEMPRE-SIM nao caiu, e reportar por md5sum/git status seria fabricar achado.",
+        "'a classificar' em linha de status: main 34 -> head 37. O carimbo ja governava 34 entradas — e convencao do arquivo, nao invencao do bloco. A emenda com cabecalho proprio tem 4 precedentes no mesmo ID (l.3402/3424/3907).",
+        "P-REG-BATERIA-NAO-TYPECHECA-TESTS verificada e LITERALMENTE VERDADEIRA: package.json l.33 lint->check, l.19 check = tsc -p tsconfig.json --noEmit, tsconfig l.15 include ['src/**/*.ts']",
+        "as 6 regexes do ratchet reexecutadas por mim nos 4 blobs: rls-tenant-isolation 8->8 [CREATE ROLE 2 - DROP ROLE 2 - GRANT 4] e auth-identity-fixture 30->30 [CR 9 - DR 8 - GRANT 10 - REVOKE 1 - OWNER TO 2] — batem com a tabela publicada, celula a celula",
+        "o 68: declarado CARREGADO em 4 pontos do apenso ('nao foram recontadas, nem lidas'); P-ARNES-RLS-TEST-FORA-DO-SWEEP segue ABERTA (campo canonico '**Estado:** ABERTO', l.3475, FORA das 7 remocoes); o risco residual do sweep alcancar as 68 sob violacao de DATABASE_URL esta escrito para a junta dona pesar, nao escondido"
+      ]
+    },
+    {
+      "id": "3",
+      "titulo": "KPI (C6) — backfill #365, blocks 155, 2609/2611 com delta +2, mvp_* intocados, 3 nulls; guards reexecutados",
+      "veredito": "APROVADO com 1 achado observa pre-existente",
+      "medicoes": [
+        "backfill: pr 365 e merge_commit 45c3b97 confirmados por gh pr view 365 (mergeCommit.oid 45c3b97dcb..., state MERGED); 45c3b97 e o tip da main",
+        "approved_head 4199b92 E o head JULGADO: J-SAN2-4a.md l.4 'Head julgado: 4199b92'. O headRefOid do GitHub e aa22b7f, que e o commit que PERSISTIU a propria ata e portanto e POSTERIOR ao julgamento. O KPI carrega o head da ata, nao o do GitHub.",
+        "a description da entrada SAN2-4a e APPEND-ONLY: y.startsWith(x) = true, +1270 chars de sufixo datado (§A2), zero reescrita. As 4 afirmacoes do sufixo reexecutadas por mim: delta 4199b92..aa22b7f = 15 arquivos; ZERO em src/ tests/ scripts/ prisma/ .github/; inclui os 3 Kpis/; e o history em 4199b92 tinha 147 entradas, ultima SAN2-3, SEM entrada SAN2-4a. As 4 batem.",
+        "blocks_completed 154->155, com a condicao do 156 escrita na propria nota ('sobe para 156 SO QUANDO O SAN2-4b MERGEAR — na autoria fica em 155'), e a promessa anterior ('155 so quando o SAN2-4a mergear') cumprida por 45c3b97",
+        "backend_tests 2607/2609 -> 2609/2611: +2 no pass e +2 no total, 2 pulos nos dois. Causa nomeada e conferida pelos dois lados: authority-portal 12->14, com os 2 nomes novos sendo o guard do base64 nao-canonico (l.214) e o pino do keylen (l.242); os outros 12 identicos a main nome por nome; db-catalog-write-guard 6->6 e rls-tenant-isolation 2->2 com diff de nomes vazio.",
+        "EXECUCAO MINHA do arquivo (DATABASE_URL em porta morta, base viva intocada): tests 14 - pass 14 - fail 0 - skipped 0. Denominador novo por execucao, nao por promessa.",
+        "numero lateral verificado: a nota diz '248 arquivo(s)' e git ls-tree -r 2d2d16d tests/ | grep -c '.test.ts' = 248 (e 248 em main — o bloco nao criou nem removeu arquivo de teste)",
+        "mvp_demo 99 e mvp_vendavel 88: value, unit, display, label e caveat IDENTICOS campo a campo; so o note muda, por ACRESCIMO ('[SAN2-4b: INTOCADO — o PR nao move escopo ... §C3.4]') — o §C3.4 cumprido pelo lado de dentro",
+        "release.pr / merge_commit / approved_head = null / null / null com status published_per_pr (§C3.5 na autoria); os mesmos 3 null na entrada nova do history",
+        "history append-only: das 148 entradas de main, 147 sao identicas byte a byte; a unica que muda e a do SAN2-4a (backfill) e a 149a e nova",
+        "guards reexecutados por mim no head: kpi-freeze --check ec 0 ('em dia, snapshot 2026-08-31'); node --check Kpis/app.js ec 0; kpi-dashboard-charts tests 16 - pass 16 - fail 0; npm run check ec 0",
+        "MORDIDA NOS DOIS SENTIDOS, em copia isolada do scratchpad (arvore nao tocada): intacto ec 0 -> mutei blocks_completed.value 155 para 999 -> ec 1 ('a copia congelada DIVERGE') -> restaurei o blob -> ec 0. CONFIRMADO."
+      ]
+    }
+  ],
+  "achados": [
+    {
+      "id": "A-1",
+      "titulo": "O apenso ao B-O6R-02-ciclo5-plano.md muda a ATRIBUICAO RENDERIZADA de uma linha preexistente de plano alheio",
+      "gravidade": "observa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_origem": "main tem 0 continuacoes-lazy nesse arquivo e o head tem 1; o apenso (l.165-199) entrou no commit 2d2d16d, unico desta branch a tocar o arquivo (git log --oneline main..2d2d16d -- <arquivo>)",
+      "evidencia_executada": "o apenso termina na l.199 e a l.200 preexistente ('**Re-execucoes obrigatorias** ...', l.166 em main) vem COLADA, sem linha em branco. Renderizei os dois contextos pelo GFM do proprio GitHub (gh api -X POST markdown, mode gfm): MAIN = 0 blockquotes e a linha aparece FORA de qualquer blockquote (true); HEAD = 1 blockquote, a linha aparece DENTRO dele (true) e FORA de blockquote (false). Vermelho-controle nos dois sentidos.",
+      "alcance_da_classe": "varri os 5 arquivos de registro tocados: pendencias.md 2->2 (as duas preexistentes), status-geral.md 0->0, SAN2-2-plano.md 0->0, SAN2-4b-plano.md 0->0, B-O6R-02-ciclo5-plano.md 0->1. UMA unica instancia nova; o bloco acertou a linha em branco nos outros dois apensos (status-geral l.68-70, SAN2-2-plano l.233-235).",
+      "motivo": "uma linha NORMATIVA do plano do ciclo 5 do B-O6R-02 (a lista de re-execucoes obrigatorias dele) passa a renderizar dentro do blockquote do apenso do SAN2-4b — deixa de se apresentar como texto do plano e passa a parecer citacao de outro bloco. E a fronteira do §5.2 ('nenhuma linha existente de planos alheios e apagada ou ALTERADA') tocada pela FORMA, nao pelo conteudo (os bytes sao adicao pura, numstat 34/0 — honesto).",
+      "bloqueia": false,
+      "correcao_proposta": null
+    },
+    {
+      "id": "A-2",
+      "titulo": "Atribuicao de origem ERRADA na pendencia nova do ratchet, sob rotulo que promete 'evidencia de origem'",
+      "gravidade": "observa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_origem": "a frase nao existe em main (grep -c de P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA no blob de main = 0) e foi escrita no commit 2d2d16d",
+      "evidencia_executada": "P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA declara 'o ratchet por contagem nasceu no bloco B-O6R-ARNES (2026-08-28)'. Medi: git log --diff-filter=A do arquivo = 0a39824, 2026-08-19, B-O6R-01 (#357); git log -S 'FROZEN_ALLOWLIST' = so 0a39824; e git show 0a39824 mostra o mecanismo INTEIRO ja la (CATALOG_WRITE_PATTERNS l.48, FROZEN_ALLOWLIST com count l.60, countCatalogWrites sobre o TEXTO CRU l.144, count !== frozen.count l.185, e a propria entrada 'rls-tenant-isolation.test.ts' com count: 8 e a MESMA reason, l.71-74). O B-O6R-ARNES (f081b5d, 28/08) apenas atualizou contagens e razoes de uma allowlist herdada.",
+      "motivo": "a classificacao pre-existente FICA DE PE e mais forte (12 dias anteriores a branch, nao 3); nenhum numero, codigo ou veredito muda. O defeito e a evidencia NAO EXECUTADA sob um rotulo que promete evidencia — e custa: manda o futuro dono da pendencia procurar o desenho no #359, onde ele nao esta. Um git log de dois segundos no arquivo da o bloco certo.",
+      "bloqueia": false,
+      "correcao_proposta": null,
+      "nota": "achado ja levantado pela primeira antecessora desta cadeira; NAO o herdei — reexecutei os comandos e cheguei ao mesmo resultado por medicao propria. Zero divergencia."
+    },
+    {
+      "id": "A-3",
+      "titulo": "A secao 'recent' do painel de KPI esta parada 2 entregas atras, e o painel a renderiza",
+      "gravidade": "observa",
+      "escopo": "pre-existente",
+      "evidencia_de_origem": "o objeto recent do blob de MAIN ja traz as_of 2026-08-28 e PR-topo 359, enquanto o history de MAIN ja continha as entradas SAN2-3 (#364) e SAN2-4a (#365). A classe antecede esta branch — nasce, no minimo, no bloco que mergeou o #364. main e head sao IDENTICOS nesse objeto.",
+      "evidencia_executada": "parser sobre os dois blobs: main recent.as_of=2026-08-28 PRs=359,,355,354,353,352,347,351 e head IDENTICO. E a secao E consumida: Kpis/app.js l.1195 'var rec = latest.recent;', l.1233 setHTML('recent-list', ...), l.1234 reveal('recent-section').",
+      "motivo": "sob D-KPI-INDEX-PAINEL ('o painel e a entrega'), o cartao de ultimas entregas mostra ao dono um estado de 28/08 — omite #364 e #365, e omitira #366. NAO reprova: e classe pre-existente (§C7.1-ter(a)) e o §5.1 deste bloco escopou o trabalho de KPI a divida dupla + a entrada do bloco. Fica NOMEADA, com dono a designar.",
+      "bloqueia": false,
+      "correcao_proposta": null
+    }
+  ],
+  "o_que_procurei_e_nao_achei": [
+    "CONCLUSAO ALEM DA MEDICAO (defeito recorrente, pego em 3/3 cadeiras do 4a): as 12 observacoes do §3.0 estao la, uma a uma, com 11 FECHA + 1 NAO FECHA (item 10, as 68 da base viva) e a razao escrita — a conta '11 das 12' e LITERAL. O 2609/2611 declara N e forma; o +2 fecha pelos dois lados; o 248 confere; o 8->8 do ratchet confere celula a celula; o '15 arquivos / 147 entradas' do backfill confere.",
+    "NUMERO SEM ORIGEM NO METODO (o analogo dos '+78%' e das '11 observacoes' que a junta do 4a pegou): procurei em cada numero publicado pelo bloco e NAO ACHEI. Onde o numero podia ser inflado (o backfill, cujo approved_head nao continha a propria entrada de KPI), o bloco publicou a ma noticia com N e forma em vez de esconde-la.",
+    "PENDENCIA FECHADA SEM O CRITERIO QUE ELA PROPRIA DECLARAVA: as 3 fecharam pelo campo canonico, com o classificador dando zero CONTRADITORIA e zero SEM-STATUS."
+  ],
+  "linha_de_limpeza": "Criei apenas o apenso em 03-escopo-registro-kpi-evidencia.md (a partir da l.128; as 127 linhas da antecessora ficam intactas) e este voto — registro da junta, ficam. Temporarios so no scratchpad da sessao (copias de blobs, os dois renders do GFM, a arvore isolada do classificador e a do kpi-freeze), que morrem com ela. Zero containers, zero portas, zero worktrees, zero commits, zero comandos a base viva, zero escrita em arquivo rastreado. git diff --exit-code = ec 0 no fechamento."
+}

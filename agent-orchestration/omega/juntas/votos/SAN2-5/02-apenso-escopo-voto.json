@@ -1,0 +1,99 @@
+{
+  "cadeira": "C2 — provador-do-apenso-e-do-escopo",
+  "bloco": "SAN2-5",
+  "pr": 367,
+  "head_julgado": "5256b491607154d61d2190d4029e13334daa1281",
+  "base_main": "df496d22659ead321e5050176c604ea0913e541d",
+  "quorum": "MAIORIA de 3",
+  "identidade": "NOVA",
+  "muta": true,
+  "worktree_proprio": "C:/Users/AMP/AppData/Local/Temp/c2wt (detached 5256b49) — criado por git worktree add a partir de .claude/worktrees/san2-r; SEM junction de node_modules; remocao por git worktree remove --force ao final",
+  "veredito": "APROVADO",
+  "itens": [
+    {
+      "id": "C2-1",
+      "titulo": "Apensos ao B-O6R-02-ciclo5-plano.md sao APPEND-ONLY (+442/-0) e as 341 linhas originais seguem hash-identicas (medicao eol-neutra)",
+      "veredito": "CONFORME",
+      "achados": [],
+      "medicao": {
+        "blob_base_main": "a191381bea1ffd76c176c206f00f9c65b9585823 (df496d2:<plano do c5>)",
+        "blob_head": "9ff53da3e70c6b651dec78a6eed6d44e7a0b08dd (5256b49:<plano do c5>)",
+        "base_bytes": 48455,
+        "base_linhas": 341,
+        "head_bytes": 80042,
+        "head_linhas": 783,
+        "delta_linhas": 442,
+        "numstat": "442  0 — bate com a alegacao +442/-0",
+        "hunks": "UNICO: @@ -341,0 +342,442 @@ (nenhuma linha da origem no lado -)",
+        "linhas_removidas": 0,
+        "prova_forte": "head -c 48455 head.md | git hash-object => a191381bea1ffd76c176c206f00f9c65b9585823 == OID do arquivo INTEIRO da main. Prefixo de 341 linhas e o MESMO OBJETO GIT, nao apenas semelhante.",
+        "sha256_das_duas_pernas": "aafcf54b9dced6ef3f955a2651fa712970109018d9776addc2222b6b23bcc838 (base.md == head_prefix.bin == head341.md)",
+        "cr_medido_com_tr": "0 CR na base e 0 CR no head (tr -cd '\r' | wc -c; grep -c $'\r' NAO usado — armadilha §5)",
+        "base_termina_em_LF": true,
+        "vermelho_controle": "1 byte trocado no offset 100 => cmp ec=1 ('differ: char 101') e git hash-object 640df11e... != a191381... O detector acusa; o zero do passo 1.2 e medicao."
+      }
+    },
+    {
+      "id": "C2-2",
+      "titulo": "Diff de codigo ZERO em src/, tests/, prisma/, .github/, CLAUDE.md, AGENTS.md — com VERMELHO-CONTROLE por mutacao no worktree proprio",
+      "veredito": "CONFORME",
+      "achados": [],
+      "medicao": {
+        "verde": "git diff --exit-code --quiet main...5256b49 -- src tests prisma .github CLAUDE.md AGENTS.md => ec=0; patch = 0 bytes; name-only = 0 arquivos",
+        "superficie_ampliada_por_minha_conta": "frontend, mobile, scripts, package.json, package-lock.json, API_CONTRACTS.md => numstat VAZIO",
+        "merge_base": "git merge-base main 5256b49 = df496d2 = main — a branch NAO esta atras; o ... nao esconde mudanca da main",
+        "universo_do_diff": "17 arquivos, TODOS de registro/governanca: 8 corpos em .claude/agents/especialistas (+357..+413, todos /0) · Kpis/app.js 1/1 · kpis-history 14/2 · kpis-latest 13/13 · pendencias.md 100/0 · porteiro #366 153/0 · 2 diarios do dev 769/0 e 408/0 · plano do c5 442/0 · SAN2-5-plano.md 517/0 (novo)",
+        "arvore_do_worktree": "git rev-parse HEAD = 5256b49...; git diff --exit-code ec=0; git status --porcelain = 0 linhas",
+        "vermelho_controle": "MUTEI 6 alvos (um por caminho julgado) no MEU worktree C:/Users/AMP/AppData/Local/Temp/c2wt, sem commit: src/app.ts, tests/audit-security.test.ts, prisma/schema.prisma, .github/workflows/ci.yml, CLAUDE.md, AGENTS.md. Mesmo comando => ec=1, numstat 2/0 nos SEIS, patch 2773 bytes. AS 6 PERNAS ACUSARAM.",
+        "restauro": "git checkout -- <os 6> => ec=0 de novo, porcelain 0 linhas, HEAD nao moveu (5256b49)",
+        "observacao_fora_do_item": "Kpis/app.js muda 1 linha, so a var FROZEN (fallback congelado de file:// que o D-KPI-INDEX-PAINEL manda existir e rotular). Nenhuma logica do painel muda. Fora dos 6 caminhos julgados; o merito e da cadeira C3."
+      }
+    },
+    {
+      "id": "C2-3",
+      "titulo": "A decisao do B3 (o ci.yml vence) e coerente com o que esta MERGEADO — a emenda por apenso resolve a contradicao sem reescrever o mergeado, e nenhum dev despachado depois deste PR viola um dos dois",
+      "veredito": "CONFORME COM RESSALVA",
+      "achados": [
+        {
+          "id": "ACH-C2-01",
+          "titulo": "Intervalo do guard citado curto por UMA linha — a assercao que faz o guard morder fica de fora do intervalo",
+          "gravidade": "BAIXA",
+          "escopo": "dentro-do-bloco",
+          "evidencia_de_data_origem": "o texto nasceu NESTE PR: apenso E3.2(3) do plano do c5, head 5256b49, l.598, datado 2026-08-31. Nao existe na main (df496d2) — o plano na main tem 341 linhas e termina antes do apenso.",
+          "medicao": "E3.2(3) diz \"o guard das linhas 223-230 (Fail on skipped tests)\". Medido em main:.github/workflows/ci.yml: comentario 223-225 + passo 226-231; a l.231 e `test \"$skipped\" -eq 0 || { ... exit 1; }` — a assercao decisiva — FORA do intervalo citado.",
+          "impacto": "nenhum sobre a decisao: o guard existe, e do #363 (d283903, 2026-08-30) e o argumento do verde-cego se sustenta. Citacao imprecisa, nao numero falso."
+        },
+        {
+          "id": "ACH-C2-02",
+          "titulo": "\"formato literal das linhas vizinhas (l.209-216)\" inclui 4 linhas que NAO sao daquele formato",
+          "gravidade": "BAIXA",
+          "escopo": "dentro-do-bloco",
+          "evidencia_de_data_origem": "nasceu NESTE PR, em DOIS lugares: plano do c5 l.613 (E3.3(a)) e pendencias.md l.3837-3838, ambos datados 2026-08-31. Nenhum dos dois existe na main.",
+          "medicao": "l.209-212 do ci.yml sao COMENTARIO (# SAN2-2 (item 2 de P-O6R-B02-SUITES-LIST-CI) ...). As vizinhas no formato SUITES=\"$SUITES ...\" sao 213-216 (e 197-204, 207).",
+          "impacto": "nenhum: a linha exata a escrever esta transcrita VERBATIM em E3.3(a); ninguem e induzido a erro."
+        }
+      ],
+      "medicao": {
+        "contradicao_e_real": "SIM, e nao foi inventada para justificar o bloco. Ponta A: main:.github/workflows/ci.yml l.217-220 (autoria d283903 / #363 / 2026-08-30, commit mais recente do arquivo, conferido por git log) da ao PR do ciclo 5 a DoD de acrescentar a linha. Ponta B: o plano do c5 mergeado proibe o arquivo em l.134 (§5) + l.234 (§10.5) + l.256 (§12), com \"o dev PARA e devolve\".",
+        "transcricao_do_bloco": "E3.1 bate BYTE A BYTE com a minha leitura do blob da main, inclusive o intervalo 216-221",
+        "fatos_do_comentario_do_ci_conferidos": "12c3825:tests/financial-entry-delete-reverse-race-db.test.ts = e52950837ae3e97b... (o ci.yml cita e5295083 — confere) e o arquivo NAO existe na main (confere)",
+        "exaustividade_que_eu_provei": "o bloco alegou 3 lugares e nao provou que sao todos. Varri o arquivo: 10 ocorrencias de ci.yml nas 341 linhas originais (77, 89, 91, 93, 134, 221, 234, 256, 274, 305) e 1 de .github (l.134). So 134/234/256 sao PRESCRITIVAS; as outras 7 sao descritivas (l.89/91/93 descrevem a opcao (A) NAO escolhida; l.221 usa a lista SUITES como receita da canonica 2; l.77/274/305 sao medicoes). NAO EXISTE QUARTO LUGAR PROIBITIVO — a emenda cobre o conjunto completo.",
+        "sem_reescrever_o_mergeado": "nos DOIS. ci.yml: diff 0 bytes, com vermelho-controle (C2-2) — o bloco nao tocou. Plano do c5: append-only, hunk unico, prefixo com o MESMO OID de blob da main (C2-1) — 134/234/256 fisicamente intactas. pendencias.md: +100/-0, e o hunk da emenda (@@ -3810,0 +3811,39 @@) cai DENTRO da secao ## P-O6R-B02-SUITES-LIST-CI (l.3754 na main; a secao seguinte comecava em 3811), nao no fim do arquivo.",
+        "dev_despachado_depois": "NAO viola nenhum dos dois, nos TRES pontos de entrada: (1) plano do c5 — apenso B3 no mesmo arquivo, com precedencia declarada e as 4 restricoes (a)-(d); (2) pendencias.md — apenso in-section l.3812-3849, com decisao, dono e criterio de fechamento INALTERADO; (3) ci.yml — comentario intacto e ainda verdadeiro (pendencia ABERTA, dono = PR do c5), e E3.3(b) manda ATUALIZAR, nunca apagar.",
+        "efeito_colateral_fechado": "o bloco re-baseou os DOIS criterios mecanicos que reprovariam o ciclo 5 por aritmetica (§9.9 e §7, no E4.4) e repetiu o aviso ao inspetor no E1.6 — que vem ANTES do E3/E4 no arquivo. Re-medi em vez de aceitar: git diff --name-only 12c3825 4441897 -- src/ = UM arquivo (src/modules/authority/authority-password.ts), blob 92613bb -> 3648006, e 3648006 == blob da main. Confere: e a correcao C1 do #366.",
+        "ressalva_estrutural_declarada": "por ser append-only (§A2 + §4.1 do SAN2-5-plano.md), a l.134 continua LITERALMENTE dizendo PROIBIDO, sem marcador in-loco; quem der grep no §5 e parar ali le instrucao caduca. NAO e defeito deste bloco: e o custo da regra do contrato, o mesmo mecanismo ja em uso no proprio arquivo (o §7 da base, l.151+, ja carrega apenso do SAN2-4b), e foi mitigado nos 3 pontos de entrada. Registro como observacao, nao como achado."
+      }
+    }
+  ],
+  "ataques_dirigidos": {
+    "preparo_que_invade_o_ciclo_5": "PROCURADO, NAO ENCONTRADO. E4.6 declara a fronteira e eu conferi cada declaracao: git branch -v --list feat/o6r-b02-financial-uow => AINDA em 12c3825; prisma/ no diff => vazio (migration da FK nao criada); tests/, .github/, src/ no diff => vazio (nenhum drill nem canonica do c5 rodada e commitada). E reproduzi o merge SIMULADO do E4.2: git merge-tree --write-tree df496d2 12c3825 => ec=1, tree 4441897a14dccbad243267f692b38b53d4f7dbac, com EXATAMENTE os 9 conflitos nomeados. merge-tree --write-tree nao move ref nem HEAD — escreve so um objeto de arvore. O bloco simulou; nao absorveu.",
+    "numero_sem_origem_no_metodo": "2 achados, ambos BAIXA (ACH-C2-01, ACH-C2-02) — os dois sao citacao de INTERVALO, nao numero fabricado. Todo o resto reproduziu na fonte: set -o pipefail na l.173, primeira linha do run: do MESMO passo (171-221) que contem a l.221 => alegacao (3) VERDADEIRA; git rev-list --count 6efe5ad..df496d2 = 8, com os 8 commits/PRs do E4.1 batendo um a um (#359 f081b5d, #360 74430cc, #361 a0a1075, #362 87f6ae6, #363 d283903, #364 c9fd3a1, #365 45c3b97, #366 df496d2); l.66 do sync-agent-agents.mjs literal como alegado. Nao usei o --check do S0 como prova nem reportei a cegueira como achado novo (e P-SYNC-AGENTS-NAO-RECURSIVO)."
+  },
+  "sintese": "Os tres itens medidos por mim, cada um com o detector validado antes de o zero valer. (1) Append-only PROVADO na forma mais forte possivel: o prefixo de 341 linhas do head hasheia para o MESMO OID de blob (a191381...) que o arquivo INTEIRO da main; hunk unico @@ -341,0 +342,442 @@; 0 remocoes; 0 CR medido com tr (nunca grep -c). (2) Diff de codigo ZERO nos 6 caminhos — e o zero significa algo: mutei os 6 no MEU worktree e o mesmo comando devolveu ec=1 / 2773 bytes / 6 arquivos, voltando a 0 no restauro. (3) A contradicao do B3 era real, a decisao pelo peso do mergeado esta certa, foi executada sem reescrever NENHUM dos dois mergeados, e eu provei a EXAUSTIVIDADE que o bloco nao provou: das 10 ocorrencias de ci.yml no plano, so 3 sao prescritivas — nao ha quarto lugar. Nenhum dos 3 pontos de entrada de um dev do ciclo 5 restou contraditorio, e os dois criterios mecanicos que reprovariam o proprio ciclo 5 por aritmetica foram re-baseados. Preparo que invade o ciclo 5: procurado com 4 medicoes, NAO ENCONTRADO. Dois achados BAIXA de citacao de intervalo, ambos dentro-do-bloco, nenhum desloca a decisao.",
+  "reservas_para_a_ata": [
+    "ACH-C2-01 e ACH-C2-02: correcao de citacao de intervalo no apenso E3 e no espelho em pendencias.md — BAIXA, dentro-do-bloco, nao bloqueia o merge.",
+    "Observacao estrutural (nao achado): sendo append-only por contrato, a l.134 do plano segue literalmente PROIBIDO sem marcador in-loco. Mitigado nos 3 pontos de entrada; e o custo da regra §A2, nao defeito deste bloco.",
+    "Nao julguei o merito do KPI (Kpis/app.js 1/1, kpis-latest 13/13, kpis-history 14/2) — e da cadeira C3."
+  ],
+  "limpeza": "worktree proprio C:/Users/AMP/AppData/Local/Temp/c2wt removido por git worktree remove --force; lista de worktrees conferida de volta ao estado anterior. Nenhuma junction/symlink de node_modules criada. Nenhum commit. erp-postgres/erp-redis nao tocados (nem para leitura)."
+}

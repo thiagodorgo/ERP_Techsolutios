@@ -136,3 +136,45 @@ E no repositório: `git clean -nxd` (dry-run) **antes** de qualquer `git clean` 
 |---|---|---|
 | 2026-08-12 | 2 (primeira execução) | +4,85 GB (2,1 → 6,96 GB livres) |
 | 2026-08-12 | 3 (primeira compactação) | +15,3 GB no vhdx (21,67 → 6,37 GB); livre total 2,1 → **28 GB** no dia |
+
+---
+
+## Execução de 2026-08-29 (rodada Ω-SAN2, bloco SAN2-1) — 21 → 26 GB livres
+
+**Medição antes**, feita item a item em vez de estimada:
+
+| Item | Antes |
+|---|---:|
+| AVD `erp_pixel` | 9,41 GB |
+| Docker (`AppData/Local/Docker`) | 10,11 GB |
+| Android SDK | 7,12 GB (`ndk` 2,12 · `system-images` 2,28 · `emulator` 1,01 · `platforms` 0,60 · `sources` 0,20) |
+| `~/.gradle` | 4,18 GB |
+| `Temp/claude` | 0,53 GB |
+| npm-cache | 0,43 GB |
+| **Livre em C:** | **21 GB** de 238 GB |
+
+**O que foi removido, e o que sobrou:**
+
+| Ação | Resultado medido |
+|---|---|
+| `~/.gradle/caches`, `daemon`, `native` | **4,18 GB → 226 MB** (1,4 MB de `caches` resistiram por lock do language server Java do VSCode) |
+| `Temp/claude` — **89 sessões antigas**, preservando a corrente | **554 MB → 4,7 MB** |
+| `sources` do Android SDK | 0,20 GB — removido |
+| npm cache (`npm cache clean --force`) | 430 → 231 MB (o comando estourou 2 min e limpou parcialmente) |
+| `.tmp-demo/` (untracked, logs inertes de 24–25/08) | 2,9 MB — removido |
+| **Livre em C: 21 → 26 GB** | **+5 GB** |
+
+**O que NÃO foi tocado, e por quê:**
+
+- **AVD `erp_pixel` (9,41 GB) — PRESERVADO por decisão do dono (2026-08-29).** Era o maior ganho único e o
+  emulador não estava rodando, mas o dono decidiu que ter o emulador pronto vale mais que o espaço.
+- **Os dois processos `java` NÃO foram derrubados.** A inspeção mostrou que **não há daemon de Gradle vivo**:
+  os dois são o *language server Java do VSCode* (`redhat.java`). Derrubá-los faria a IDE reindexar — isso é
+  **interferir no projeto**, e a ordem do dono foi descartar Gradle ocioso *desde que não interferisse*.
+  Consequência aceita: eles seguram um resíduo de 1,4 MB em `~/.gradle/caches`.
+- **`ndk` do SDK (2,12 GB) — não removido.** `mobile/flutter_app/android/app/build.gradle.kts:11` declara
+  `ndkVersion = flutter.ndkVersion`. **Não dá para afirmar que é dispensável sem teste**; fica como
+  experimento reversível (mover, rodar `flutter build apk`, restaurar se quebrar).
+- **Docker `.vhdx` (10,11 GB) — não compactado.** `docker system df` mostra só **135 MB** recuperáveis dentro
+  da VM, e compactar o disco virtual exige `wsl --shutdown`, que **derruba `erp-postgres` e `erp-redis`** — a
+  base viva de desenvolvimento. Segue fora do automático, como esta diretriz já mandava.

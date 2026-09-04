@@ -17,8 +17,13 @@ const connectionString = process.env.DATABASE_URL;
 // -----------------------------------------------------------------------------------------------
 // B-O6R-01 — login SEM organização de ponta a ponta contra o Postgres real (a rota atravessa a
 // função elevada; em dev/CI a conexão tem privilégio e o caminho está ATIVO — §6.1). Aqui também
-// vive a prova do lockout DIRECIONADO real (as falhas contam e a 5ª tranca) em contraste com o
-// canal anônimo (que não incrementa e nunca devolve 423).
+// vive a prova do lockout DIRECIONADO real (as falhas contam e a 5ª tranca).
+//
+// B-O6R-07a (§3.4) — a metade "o canal anônimo não incrementa" DESTE contrato foi REVOGADA: era
+// exatamente o achado Ω6R-SEC-003 residual (`P-O6R-B01-ANONIMO-SEM-LOCKOUT`), com 12 tentativas
+// anônimas medidas e o contador parado em 0. A falha anônima passa a contar no MESMO contador
+// atômico. O que PERMANECE inteiro, e segue asserido abaixo: o canal anônimo nunca devolve 423 e
+// nunca enumera organizações. A prova dedicada do novo contrato vive em `o6r07a-anon-lockout-db`.
 // -----------------------------------------------------------------------------------------------
 
 if (!connectionString) {
@@ -26,7 +31,7 @@ if (!connectionString) {
     skip: "Set DATABASE_URL and run migrations to execute anonymous login tests.",
   });
 } else {
-  test("login sem organização: a credencial decide; anônimo não incrementa; direcionado tranca", async (t) => {
+  test("login sem organização: a credencial decide; as duas vias alimentam o MESMO contador; direcionado tranca", async (t) => {
     process.env.LOG_LEVEL = "silent";
     process.env.JWT_SECRET = "dev-only-change-me";
     process.env.JWT_EXPIRES_IN = "15m";
@@ -170,7 +175,7 @@ if (!connectionString) {
         assert.equal(response.body.error?.code, "TENANT_ID_REQUIRED");
       });
 
-      await t.test("anônimo com senha errada NÃO incrementa candidato; direcionado incrementa e a 5ª falha TRANCA", async () => {
+      await t.test("anônimo com senha errada INCREMENTA o candidato (B-O6R-07a); a 5ª falha TRANCA", async () => {
         const email = `anon-lock-${suffix}@example.com`;
         const org = await createOrgWithUser(adminClient, {
           name: `Anon Lock ${suffix}`,
@@ -181,7 +186,8 @@ if (!connectionString) {
 
         tenantIds.push(org.tenantId);
 
-        // Anônimo: senha errada, contador PARADO.
+        // B-O6R-07a (§3.4): anônimo com senha errada CONTA — o contador saiu de 0 e o desfecho
+        // visível segue sendo o 401 uniforme. (Antes deste bloco a asserção aqui era `0`.)
         const anon = await anonymousLogin(email, "SenhaErrada123!");
 
         assert.equal(anon.status, 401);
@@ -191,7 +197,8 @@ if (!connectionString) {
           select: { failed_attempts: true, locked_until: true },
         });
 
-        assert.equal(afterAnonymous?.failed_attempts, 0, "falha anônima não incrementa nenhum candidato");
+        assert.equal(afterAnonymous?.failed_attempts, 1, "falha anônima incrementa o candidato");
+        assert.equal(afterAnonymous?.locked_until, null, "1 falha ainda não tranca");
 
         // E-mail INEXISTENTE responde exatamente igual à senha errada (401 uniforme).
         const ghost = await anonymousLogin(`ghost-${suffix}@example.com`, "SenhaErrada123!");
@@ -199,8 +206,10 @@ if (!connectionString) {
         assert.equal(ghost.status, 401);
         assert.deepEqual(ghost.body, anon.body);
 
-        // Direcionado: 5 falhas → locked_until gravado (lockout REAL, não decorativo).
-        for (let attempt = 0; attempt < 5; attempt += 1) {
+        // Direcionado: a 5ª falha NO TOTAL grava locked_until (lockout REAL, não decorativo).
+        // São 4 aqui porque a anônima acima já foi a 1ª — o contador é UM SÓ, e é esse o ponto do
+        // B-O6R-07a: as duas vias alimentam o MESMO `incrementFailedAttempts` atômico do B01.
+        for (let attempt = 0; attempt < 4; attempt += 1) {
           const response = await requestJson(baseUrl, "/api/v1/auth/login", {
             method: "POST",
             body: { tenantId: org.tenantId, email, password: "SenhaErrada123!" },

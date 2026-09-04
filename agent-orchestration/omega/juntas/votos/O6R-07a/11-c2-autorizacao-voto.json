@@ -1,0 +1,53 @@
+{
+  "cadeira": "C1-v2 — jurado-b07a-c2-autorizacao-s",
+  "veredito": "APROVADO",
+  "head_julgado": "9989c62a3b81468dee6dd39fae3da6246e0e6fb1",
+  "tem_veto": true,
+  "ciclo": "2 (TETO)",
+  "substitui": "jurado-b07a-c2-autorizacao (queda #5)",
+  "quorum": "unanimidade de 3",
+  "terreno": "worktree proprio .claude/worktrees/jur-c1v2s @ 9989c62, npm ci proprio (222 pacotes), zero junction, arnes HTTP em memoria, nenhuma porta aberta, nenhum container subido; base viva e containers do c5 nao tocados nem lidos",
+  "itens_do_mandato": {
+    "J1_paridade_declaracao_x_medicao": "CONFORME, com o achado S-A1 (alta, pre-existente)",
+    "J2_dual_match_sob_ataque": "CONFORME",
+    "J3_errata_E-a_e_material_da_junta": "CONFORME"
+  },
+  "p3_reexecucao_das_provas_herdadas": {
+    "J1.a_achados_jsonl": "CONFIRMO — 30/30 linhas parseiam, SEC-002 na linha 9, status=parcialmente_superado, fechado_em/fechado_por AUSENTES, 6 chaves em supersedido, componentes_abertos=9, componente_superado=2451 chars; e o criterio de aceite original segue byte-identico no campo `teste`",
+    "J1.d_registro_achados": "CONFIRMO — l.221/l.818 com '4 fechados · 1 parcialmente superado · 10 abertos'; a l.800 ('4 fechados, 11 abertos') e paragrafo HISTORICO datado 2026-08-18, nao divergencia",
+    "J1.e_kpi_e_guard": "CONFIRMO — aguardando_merge = [SEC-003] apenas; p0_fechados=4; deploy_bloqueado=true; kpi-achados-paridade 6/6 pass, ec=0, rodado por mim",
+    "pista_fora_do_arquivo_randomUUID": "RE-MEDIDA e confirmada, nao herdada — id do perfil e gerado no servidor nos DOIS backends (memoria randomUUID(); Postgres @default(dbgenerated(\"gen_random_uuid()\")) em schema.prisma:2137) e operator-profile.service.ts:45-63 monta o input campo a campo e NUNCA le body.id"
+  },
+  "achados": [
+    {
+      "id": "S-A1",
+      "gravidade": "alta",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "git log -S 'work_order.mileage' -- src/modules/mobile/mobile-work-order-sync.ts -> eed6240, 2026-07-17, 'feat(work-orders): Omega3F-7a — quilometragem (app preenche, base corrige) (#197)'; o MESMO commit cria 'async setMileage'. O guard assertMutationObjectScope nasce em 2d54ea2, 2026-09-02, NESTE bloco (~7 semanas depois). git diff --name-only f895dd2 HEAD -- src/ = 12 arquivos, NENHUM em src/modules/mobile/ — e src/modules/mobile/** NAO esta no §5 PERMITIDO do C2·5, logo o dev estava PROIBIDO de tocar a via.",
+      "o_que": "DECIMA VIA de mutacao sobre OS alheia, fora do censo publicado. O registro declara 9 componentes abertos sobre um universo explicitamente escopado (as 14 rotas do router principal + as 5 do de comentarios). Fora desse universo, POST /api/v1/mobile/sync/work-order-actions com type='work_order.mileage' deixa um field_technician NAO atribuido escrever mileage_start/mileage_end/mileage_source em OS de outro tecnico da mesma organizacao: a via de sync gateia com work_orders:status (que o tecnico porta), enquanto a rota HTTP homonima PATCH /work-orders/:id/mileage exige a chave dedicada work_orders:mileage_correct (403 medido). A causa e que assertMutationObjectScope tem 2 call sites (update l.852, changeStatus l.1319) e setMileage NAO e um deles. NAO reprova (classe pre-existente e fora do escopo permitido, §C7.1-ter(a)), mas o numero '9 rotas' abre SEM qualificador no campo contagem_aberta e o dono B-O6R-07c foi chartered para fechar essa lista: se a tomar por exaustiva, entrega o 07c acreditando ter fechado o Omega6R-SEC-002 com esta via aberta. O numero deve ser lido como ESCOPADO aos 2 routers censados. NAO proponho a correcao (§C7.4-bis).",
+      "comando": "node --test --import tsx tests/zz-c1v2s-drill.test.ts   (teste S4, worktree jur-c1v2s @ 9989c62)",
+      "saida": "km-ANTES {start:null,end:null,source:null} | POST /api/v1/mobile/sync/work-order-actions {type:'work_order.mileage', payload:{work_order_id:<OS do colega B>}} como field_technician A -> HTTP 200, summary {received:1, accepted:1, rejected:0} | km-DEPOIS {start:111111, end:222222, source:'app'} — MUTACAO REAL DA OS ALHEIA. CONTROLES na mesma execucao: PATCH /work-orders/:B/mileage (rota DO censo) -> 403 permission_required; work_order.status_change pela MESMA via de sync -> rejected 1, WORK_ORDER_NOT_ASSIGNED (o guard do bloco ALCANCA a via de sync); work_order.mileage CROSS-TENANT pela mesma via -> rejected 1, WORK_ORDER_NOT_FOUND (404 intacto). 1..3 # tests 3 # pass 3 # fail 0 ec=0."
+    },
+    {
+      "id": "S-N1",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "mesmo eed6240/2026-07-17 e anteriores; src/modules/checklists/** tambem fora do §5 PERMITIDO do C2·5",
+      "o_que": "O restante da superficie de sync tambem nao foi censado — por NINGUEM, nem por mim. Declaro a forma do meu proprio numero: medi por EXECUCAO apenas a acao work_order.mileage. As demais (/mobile/sync/checklist-actions, /mobile/sync/evidence-actions, /mobile/checklist-runs/:runId/* com checklist_runs:update|complete|acknowledge, que o field_technician porta) eu SO LI. Nao afirmo numero que nao medi; afirmo a forma do gap: a superficie de sync nao entrou no censo, e >=1 via nela esta provada aberta (S-A1).",
+      "comando": "grep -rn 'assignedOperatorId|assertMutationObjectScope|not_assigned' src/modules/checklists/*.service.ts",
+      "saida": "VAZIO — nenhuma verificacao de atribuicao no servico de checklist-runs (LEITURA DE CODIGO, nao executei HTTP)."
+    }
+  ],
+  "provas_positivas_medidas_por_mim": [
+    "Drill das 19 rotas mutantes, executado em DOIS terrenos independentes com o MESMO resultado: 10/10 fechadas respondem 403 (8 permission_required + update/status = not_assigned_to_actor, as 2 GUARDADAS pelo bloco) e 9/9 nomeadas abertas respondem abertas — attach-POST 201, attach-DELETE 204 com EFEITO (lista 2->1, download do anexo apagado 200->404), comment-POST 201, e as 4 declaradas 'por LEITURA' que EU EXECUTEI por HTTP (comment-PATCH 200, tag-POST 201, tag-DELETE 204, comment-DELETE 204). NENHUMA nomeada aberta respondeu 403 — o vermelho que o aceite C2·6 item 2 nomeia NAO ocorreu.",
+    "A nuance do 422: meu drill mediu 422 nas DUAS rotas de geocode; o do ciclo 1 mediu 200 geocoded=false no /geocode e 422 no /geocode-destination. Diferenca de FIXTURE (minha OS nasce sem endereco), nao de codigo. As duas execucoes provam a MESMA e unica coisa que a declaracao afirma — a requisicao passou o gate e nao encontrou guard de objeto (um 403 viria ANTES do 422). O diario [C] declara a nuance as claras (l.370-374). NAO muda a contagem.",
+    "Quem escreve assigned_operator_id, por EXECUCAO e por CENSO: tecnico -> 403 permission_required; portador de work_orders:assign -> 200 (grava o USER ID). O censo estatico das escritas em todo o src/ devolve 2 sitios, ambos o mesmo repository.assign(), alcancado so por service.assign() — cujos unicos chamadores exigem work_orders:assign. O segundo ramo do dual-match so concede a quem um ATRIBUIDOR nomeou.",
+    "Permissao-a-mais: NAO. Colega nao nomeado -> 403 WORK_ORDER_NOT_ASSIGNED; OS orfa -> 403 (fail-closed nos dois ramos, e o codigo exige Boolean(operatorProfileId) antes de comparar, entao undefined===undefined nao vira match); ataque proprio alem do roteiro — assign{operatorId:perfilB, userId:tecnicoA} -> o tecnico A segue 403: o dual-match NAO ganhou um terceiro ramo por assignedUserId.",
+    "Fronteira 403 mesma-org x 404 cross-tenant INTACTA: PATCH de tecnico de outra organizacao -> 404 WORK_ORDER_NOT_FOUND.",
+    "Os 3 casos novos: N=3 rodadas, 8/8 pass cada, denominador identico. E PROVA POR MUTACAO no meu worktree — desliguei o segundo ramo (atribuidoPorUsuario=false) e mediu-se # tests 8 # pass 5 # fail 3 ec=1, caindo EXATAMENTE DM1/DM2/DM3 e mantendo verdes os 5 antigos; restaurado por edicao inversa exata (git status --porcelain src/ VAZIO) e 8/8 verde de novo.",
+    "Errata E-a confere com a MINHA execucao em 9/9 pontos; o texto falso ('perde TODA mutacao') nao e afirmado como fato vigente em nenhuma ocorrencia do repo (grep: briefing do ciclo 1 e corpo do plano sao registro historico superado pela errata; a ata e a evidencia da C1 o citam AO DECLARA-LO FALSO).",
+    "Pendencias bem-formadas: P-O6R-SUBRECURSO-OBJECT-SCOPE (l.5717) ALTA, dono B-O6R-07c/fix/o6r07c-subresource-scope, as 9 rotas uma a uma com N/forma/causa (3 execucao · 4 leitura · 2 env) e escopo pre-existente com evidencia de data; e o APPEND da tensao A4 (l.5792, sem editar a entrada original de l.2896-2924) com a resolucao por dual-match e o Omega6R-QUA-004 declarado SEGUE ABERTO com o dono dele."
+  ],
+  "razao_do_veredito": "Aprovo. Dentro do universo que o registro declara (as 19 rotas dos 2 routers) a paridade DECLARACAO x MEDICAO e exata nos dois sentidos, medida por mim em dois terrenos; e o vermelho que o proprio aceite C2·6 item 2 nomeia — 'se alguma nomeada como aberta responder 403' — NAO ocorreu em 9/9. O achado S-A1 e real e o registro como alta, mas nao e a classe que reprovou o ciclo 1: la o bloco declarou FECHADO um P0 aberto; aqui ele reverte para parcialmente_superado, preserva INTACTO o criterio de aceite original, tira o SEC-002 de aguardando_merge, publica os componentes com forma e causa e abre pendencia ALTA com dono — nenhum estado virou de aberto para fechado, e o S-A1 e subcontagem dentro de um achado ja declarado aberto e ja com dono. A classe do S-A1 nasceu em 2026-07-17 (#197), ~7 semanas antes do bloco, e vive em src/modules/mobile/**, territorio que o §5 do C2·5 PROIBIA ao dev — o D-JUNTA-ESCOPO-E-CALIBRACAO (§C7.1-ter(a), fonte §A1.1) manda que classe pre-existente com evidencia de data NAO reprove e vire pendencia nomeada com numero publicado com N, forma e causa. O veto segue inteiro para o que o bloco mexeu, e o que ele mexeu eu ataquei por execucao e por mutacao, e esta de pe. Fica vinculante para quem ler o numero: '9 rotas' e ESCOPADO aos 2 routers censados, e o B-O6R-07c nao fecha o Omega6R-SEC-002 sem censar a superficie de sync do app, onde >=1 via esta provada aberta.",
+  "limpeza": "Worktree proprio jur-c1v2s removido por git worktree remove --force (com os 2 arquivos de drill dentro). Nenhum container subido, nenhuma porta aberta. Mutacao de prova desfeita por edicao inversa exata, e so no meu worktree descartavel — nunca no b07 nem na arvore principal. Na arvore b07 escrevi so 11-c2-autorizacao-evidencia.md (minha PARTE II, apensa abaixo do texto da titular, preservado verbatim) e este voto. Nao commitei. Registro sem ser o autor: o worktree jur-c1v2-drill foi destruido por outra sessao no meio do meu trabalho; conferi b07 e arvore principal — zero dano (src/app.ts presente, node_modules 222, 0 rastreados deletados)."
+}

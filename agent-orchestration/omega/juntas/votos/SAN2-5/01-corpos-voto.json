@@ -1,0 +1,94 @@
+{
+  "cadeira": "C1 — auditor-da-composicao-e-dos-corpos",
+  "bloco": "SAN2-5",
+  "pr": 367,
+  "head_julgado": "5256b491607154d61d2190d4029e13334daa1281",
+  "quorum": "MAIORIA de 3",
+  "identidade": "NOVA",
+  "veredito": "APROVADO",
+  "itens": [
+    {
+      "id": "C1-1",
+      "titulo": "Os 8 corpos conferem — hashes re-medidos por mim (disco x tabela E1.8 x blob do head 5256b49)",
+      "veredito": "CONFORME",
+      "achados": [],
+      "medicao": {
+        "pernas": [
+          "disco git hash-object",
+          "blob ls-tree do head 5256b49",
+          "tabela E1.8 do blob do plano no head"
+        ],
+        "resultado": "8/8 nas tres pernas",
+        "cr_por_corpo": 0,
+        "arquivos_no_head": 8,
+        "git_diff_exit_code": 0,
+        "estabilidade": "2a leitura identica; mtime do corpo reescrito 2026-08-31T23:29:01 confere com a confissao do diario; git status do dir = 0 linhas"
+      },
+      "nota_residuo": "hash obsoleto bcf7b5f3/422 aparece SO no diario (3x), a ocorrencia da tabela marcada [SUPERADO]; NAO aparece no plano (artefato E1.8 que o inspetor le). Nenhuma afirmacao falsa viva."
+    },
+    {
+      "id": "C1-2",
+      "titulo": "Os 8 corpos obedecem ao contrato vigente: nenhum 5/5 OPERANTE (so revogacao), votantes com campo escopo, frontmatter valido e model: preservado",
+      "veredito": "CONFORME",
+      "achados": [],
+      "medicao": {
+        "ocorrencias_5_5": 16,
+        "operantes_5_5": 0,
+        "todas_revogacao": true,
+        "quorum_operante": "unanimidade de 3 em 8/8 corpos",
+        "escopo_no_schema_de_voto": "6/6 votantes, par gravidade+escopo completo",
+        "destino_pre_existente": "pendencias_que_aceito em 6/6",
+        "frontmatter_valido": "8/8",
+        "name_igual_filename": "8/8",
+        "model": "fable em 8/8",
+        "preservacao_trazidos": "critico: 271 verbatim + 86 de apenso, 0 alteradas; arnes: exatamente 3 hunks in-loco. Ambas as alegacoes VERDADEIRAS por diff contra os blobs de origem 7c47b0f5 e 48abf266"
+      },
+      "analogo_nos_6_novos": "PROCURADO E NAO ENCONTRADO. Os 6 corpos NOVOS nasceram com o par gravidade+escopo e com quorum de 3; nenhum reproduz a classe do defeito (que esta provada no blob de origem 48abf26 l.295 sem escopo e l.79 com 5/5 operante)."
+    },
+    {
+      "id": "C1-3",
+      "titulo": "Composicao do ciclo 5 nomeada por escrito onde o inspetor fail-closed procura; cortes com razao medida (#359) e fusao de ataque-ao-dinheiro argumentada",
+      "veredito": "CONFORME COM RESSALVA",
+      "achados": [],
+      "medicao": {
+        "composicao_nomeada": "E1.1 (3 titulares) + E1.2 (nao-votantes) + E1.7 (suplentes 1-a-1), dentro do plano do ciclo 5 (B-O6R-02-ciclo5-plano.md l.345-546), que e o artefato que o inspetor fail-closed le",
+        "cruzamento_nomes_x_corpos": "8 cadeiras ATIVAS nomeadas == 8 corpos existentes (diff sem diferenca). As 3 excedentes citadas sao exatamente as CORTADAS/FUNDIDA do E1.3, corretamente sem corpo.",
+        "mapeamento_13_3": "o §13.3 nomeia 6 votantes; E1 dispoe das 6 = 3 mantidas + 3 cortadas/fundida. Sem cadeira orfa.",
+        "corte_confirmado_por_mim": "f081b5d (#359) e ancestral de origin/main (git merge-base --is-ancestor = SIM) e o ASSUNTO do commit mergeado nomeia as duas materias cortadas: \"piso de denominador\" e \"teardown que nao deixa papel vivo\". Confirmado pelo commit, nao pela alegacao do plano.",
+        "resto_do_vaza_metro": "nao virou orfao: delta roles/grants/linhas por rodada esta no mandato da C1 (arnes l.184/373; supl-arnes l.113/213)",
+        "fusao_ataque_ao_dinheiro": "argumentada em E1.3 (src/** congelado pelo §5 + B-1 fechado por 3 cadeiras no c4) e OPERANTE nos dois corpos da C2 como item de MEDICAO: GET /financial-accounts/:id/balance pelo endpoint real alem do servico (banco-fk l.98/105/108/225/387; supl-banco-fk l.111/119/234/391). A competencia foi transferida, nao apagada."
+      }
+    }
+  ],
+  "achados": [
+    {
+      "id": "C1-A1",
+      "tipo": "observacao",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "defeito": "critico-c5-adversarial l.259 (formato de saida, item 4 Achados) e as linhas de VEREDITO l.267-269 listam gravidade sem escopo, divergindo do suplente novo, que traz escopo inline (l.325-326) e na linha de veredito (l.335).",
+      "evidencia_data_origem": "a linha vem VERBATIM do blob 7c47b0f56bf0341442ca1768236ca5a47dde8872 de demo/investidor; medido: head -271 do corpo atual e identico ao blob de origem, 0 linhas alteradas. Antecede o SAN2-5.",
+      "por_que_nao_reprova": "o apenso se declara OPERANTE e vence o corpo onde divergir (l.276) e a secao A.4 (l.337) obriga escopo em todo achado; alem disso o critico NAO e votante, e o C7.1-ter(a) obriga o campo no VOTO. Nao bloqueia.",
+      "bloco_dono": "SAN2-5 (registro); classe originada em demo/investidor"
+    },
+    {
+      "id": "C1-A2",
+      "tipo": "ressalva",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "defeito": "O apenso E1 (composicao) e o UNICO dos tres apensos do bloco sem clausula de precedencia explicita. O §13 intitula \"junta ampliada (>=7 cadeiras)\" e o §13.4 fixa piso de 6 votos de merito; E1.1/E1.7 fixam 3 cadeiras e piso de 3. E3 declara \"Este apenso EMENDA o §5 (l.134), o §10.5 (l.234) e o §12 (l.256)... Onde divergirem, vence\"; E4 declara o equivalente; E1 tem 0 ocorrencias de vence/prevalece/substitui.",
+      "evidencia_data_origem": "o cabecalho do proprio apenso o data e o atribui a este bloco: \"APENSO DE COMPOSICAO (2026-08-31, apensado — §A2) — bloco SAN2-5, entrega E1\" (plano l.345). E entrega DO bloco, nao materia anterior.",
+      "por_que_nao_bloqueia": "a substancia ja esta resolvida ACIMA de E1, no corpo do plano: a EMENDA item 4 (l.335) diz \"A junta deste bloco passa a ser de 3 unanimes (toca dinheiro), nao 7\" — o que mata o >=7 do §13 e, por \"3 unanimes\", o piso de 6. Somado a E1.1 (3 nomeadas), E1.3 (as 6 do §13.3 dispostas uma a uma), E1.7 (piso de 3) e aos 8/8 corpos dizendo \"unanimidade de 3\", a composicao e inequivoca para quem le o plano inteiro.",
+      "bloco_dono": "SAN2-5"
+    }
+  ],
+  "assinatura": "auditor-da-composicao-e-dos-corpos",
+  "veredito_texto": "APROVADO — os 8 corpos conferem nas tres pernas (disco x tabela E1.8 x blob do head), obedecem ao contrato vigente (0 ocorrencia de 5/5 operante em 16, escopo no schema em 6/6 votantes) e a composicao do ciclo 5 esta nomeada com cortes confirmados pelo #359 mergeado. Duas ressalvas nao bloqueantes (1 nota, 1 ajuste).",
+  "quorum_aplicado": "MAIORIA de 3 (o bloco nao toca produto: diff de codigo 0 bytes)",
+  "nao_medi": [
+    "O ec=0 de sync-agent-agents.mjs --check NAO foi usado como prova sobre os corpos: o --check e readdirSync plano (l.66) e cego a especialistas/ — P-SYNC-AGENTS-NAO-RECURSIVO, ja conhecida, nao a reporto como achado novo.",
+    "Nao medi o merito do ciclo 5 (nao e desta cadeira), nem o append-only dos apensos / diff 0 bytes (cadeira C2), nem KPI/backfill (cadeira C3).",
+    "Nao toquei erp-postgres/erp-redis, nem para leitura. Nao commitei. Nao propus correcao (§C7.4-bis)."
+  ],
+  "metodo": "Voto criado ANTES da medicao com os 3 itens em EM APURACAO e preenchido item a item; evidencia apensada apos CADA item em 01-corpos-evidencia.md (297 linhas). Medicoes eol-neutras (git hash-object / git cat-file / git diff --exit-code); CR contado por tr -cd, nunca grep -c."
+}

@@ -1,0 +1,101 @@
+{
+  "cadeira": "C3 — zelador-do-escopo-e-do-kpi",
+  "identidade": "NOVA (suplente; a titular caiu ao escrever o voto final — Parte I do .md e roteiro, nao insumo)",
+  "bloco": "SAN2-4a",
+  "pr": 365,
+  "head_julgado": "4199b92",
+  "quorum": "maioria de 3",
+  "veredito": "APROVADO",
+  "itens": [
+    {
+      "id": "C3-1",
+      "titulo": "Diff de codigo VAZIO — o bloco so mede, nao conserta",
+      "status": "MEDIDO",
+      "veredito": "APROVA",
+      "evidencia": "Diff de codigo VAZIO nas TRES pontas, eol-neutro, reexecutado por mim: git -c core.autocrlf=false diff --exit-code --name-only sobre [src tests scripts prisma .github frontend mobile CLAUDE.md AGENTS.md] em main...HEAD (ec=0, commitado), main (ec=0, arvore) e HEAD (ec=0, mutacao viva); MAIS a ponta que git diff nao enxerga: git status --porcelain --untracked-files=all nos mesmos caminhos = VAZIO. git diff --check ec=0. main == merge-base == c9fd3a1; HEAD == 4199b922 (head julgado do briefing). Diff completo = 11 arquivos / 6 commits, TODOS em Kpis/ (3) e agent-orchestration/ (8); nenhum caminho do 5.2 tocado. Base viva preservada: erp-postgres/erp-redis Up 2 days (healthy), criados 2026-07-13 — uptime atravessa o bloco; zero container san2-4a-*; os dois c2san24a-* (Up 2 minutes) sao o cluster descartavel da cadeira C2 votando em paralelo, nao do bloco.",
+      "nota_fronteira": "agent-orchestration/omega/medicoes/ NAO EXISTE (ls: No such file or directory): o relatorio canonico nomeado no 5.1 nunca foi criado; os 4 diarios foram para omega/juntas/votos/SAN2-4a/, caminho coberto pelo glob omega/juntas/** mas cujo parentetico diz \"criados pelos papeis dela, nao pelo dev\". Divergencia DECLARADA e literal nos tres diarios (m1 sec.0; m2 l.11-16; m3 l.17-22), mesma resolucao: obedecer ao mandato quanto ao CAMINHO e ao plano quanto ao CONTEUDO. Registro em caminho vizinho, nao conserto escondido: NAO bloqueia."
+    },
+    {
+      "id": "C3-2",
+      "titulo": "KPI: backfill 364/c9fd3a1/23d9227 (head da ata), blocks_completed=154, metricas de teste intocadas, guard do freeze mordeu",
+      "status": "MEDIDO",
+      "veredito": "APROVA COM ACHADOS (nao bloqueia)",
+      "evidencia": "approved_head 23d9227 PROVADO como head da ATA: J-SAN2-3.md l.4 \"Head julgado: 23d9227\"; gh pr view 364 headRefOid=4083146283... (DIFERENTE), mergeCommit=c9fd3a1e9ecb... (bate com merge_commit). Delta 23d9227..4083146 = 1 commit de registro pos-voto, 14 arquivos, TODOS sob agent-orchestration/, ZERO em Kpis/src/tests/scripts/.github (git diff --name-only). Gravar 4083146 diria que a junta aprovou commit que nunca viu. | METRICAS INTOCADAS por diff estrutural de CHAVES-FOLHA (nao de olho): kpis-latest 462 folhas em main e 462 no HEAD, 7 mudaram (release.pr None->364, release.merge_commit None->c9fd3a1, release.approved_head None->23d9227, release.summary apenso, blocks_completed.{value,display,note} 153->154); as outras 455 identicas. backend_tests 2607/2609, frontend_smoke_tests 1126/1126, flutter_tests 864/864, mvp_demo 99, mvp_vendavel 88: IGUAIS em TODOS os subcampos (value/total/display/note). kpis-history: 147 entradas em main e 147 no HEAD, so a entrada[146] (SAN2-3) difere, em 5 campos (pr, merge_commit, approved_head, blocks_completed, description); as outras 146 identicas campo a campo. | blocks_completed=154 COM justificativa escrita nos dois lugares, e a condicao existia ANTES: a note em main termina literalmente em \"Sobe para 154 so quando o SAN2-3 mergear\" — o numero cumpre condicao previamente publicada pela propria serie, nao e incremento arbitrado. | BATERIA REEXECUTADA POR MIM: node scripts/kpi-freeze.mjs --check -> \"em dia (snapshot 2026-08-30)\" ec=0; node --check Kpis/app.js ec=0; node --test --import tsx tests/kpi-dashboard-charts.test.ts -> 16 tests/16 pass/0 fail/0 skip ec=0. | GUARD DO FREEZE MORDE — CONFIRMADO (nao herdado) por 4 drills em copia isolada no scratchpad, blobs via git show (eol-neutro), zero mutacao na arvore: A) app.js de main + kpis-latest.json do HEAD -> ec=1 \"a copia congelada DIVERGE\"; D) CONTROLE app.js de main + json de main -> ec=0 (A nao e falso-positivo); B) roda freeze (60567 bytes) -> --check ec=0; C) cmp do app.js gerado x git show HEAD:Kpis/app.js -> IDENTICO (a linha FROZEN foi GERADA, nao digitada, 5.1).",
+      "achados": [
+        "A-1",
+        "A-3"
+      ]
+    },
+    {
+      "id": "C3-3",
+      "titulo": "12 (nao 11) observacoes nomeadas para o 4b sem conserto; o 68 declarado CARREGADO",
+      "status": "MEDIDO",
+      "veredito": "APROVA",
+      "evidencia": "CONTAGEM POR ROTULO DISTINTO (nao de memoria): M1 = OBS-1/OBS-2/OBS-3 (3); M2 = O-1..O-4 (4); M3 = O-1..O-5 (5). TOTAL 12, nao 11. ESCOPO DECLARADO COM EVIDENCIA DE DATA/ORIGEM nos tres: M1 \"a linha antecede este bloco — o diff de codigo do SAN2-4a e vazio por construcao\"; M2 l.467 \"a sentenca da l.33 e anterior a este bloco\"; M3 l.565 \"todos pre-existente POR CONSTRUCAO\" com datas nomeadas (familia do B-O6R-01; exclusao do sweep 28/08; o 68 de 18/08). | SEM CORRECAO PROPOSTA (C7.4-bis intacto): formula executada e nao decorativa — medicao-1:302-305 \"NENHUM conserto aplicado ... Sou achador; achador nao conserta ... nao proponho nem escrevo a correcao\"; medicao-3:561-565 idem; medicao-2:456 \"O 4a nao corrigiu nada e nao vai corrigir\". O item 1 PROVA o texto por execucao (diff vazio nas 3 pontas). FRONTEIRA TESTADA nos 2 casos mais proximos de propor correcao: m3/O-1 vai na direcao OPOSTA (\"Acrescentar rls_test_ a SWEPT_ROLE_FAMILIES NAO bastaria\" — chamador unico l.310); m1/OBS-2 toca src/ e se autolimita (\"Isto e fato medido, nao juizo de risco ... Nao proponho alteracao de src/. Dono: a junta do SAN2-4a designa\"); m3 devolve a decisao (\"O custo-beneficio e da junta; o numero e meu\"). | O 68 CARREGADO, nunca apresentado como medido: m3 l.493 na propria tabela de numeros \"68 | 2026-08-18 | P-O6R-ARNES-ISOLAMENTO l.3296-3298 | CARREGADO — NAO re-verificado\"; l.497 o motivo (\"contar as 68 exigiria consultar erp-postgres, e o 5.2 do plano proibe\"); l.541 e l.590 reafirmam. O-5 liga o mecanismo as 68 SEM conta-las, pela assinatura 460=115x4 (confirmei: 115*4=460).",
+      "correcao_factual": "Sao 12 roteiros de observacao, 11 COM DONO (M1 2 + M2 4 + M3 5); a 12a (OBS-3 da M1) e nota de metodo sem dono. O \"11\" do briefing fecha so sob essa regra tacita, que nao esta escrita."
+    }
+  ],
+  "achados": [
+    {
+      "id": "A-1",
+      "titulo": "A entrada/release SAN2-4a NAO EXISTE, e o plano a exigia em dois lugares (1.6 \"obrigacao, nao opcao\" e 6.4 item da bateria)",
+      "gravidade": "media",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia": "Medido por mim: kpis-history tem 147 entradas em main E 147 no HEAD (nenhuma acrescentada); grep -c '\"SAN2-4a\"' nos dois JSON = 0; kpis-latest segue version \"SAN2-3\", snapshot_date \"2026-08-30\", release.pr 364. O item 4 da bateria do 6 nao passa como escrito. Declarado (nao silencioso) na mensagem do commit 83d0366: \"NAO ENTROU a entrada do SAN2-4a: o bloco ainda esta em execucao\".",
+      "evidencia_de_escopo": "dentro-do-bloco: a obrigacao e do proprio plano do SAN2-4a (1.6 e 6.4), nasce e morre neste bloco.",
+      "por_que_nao_bloqueia": "(i) o gatilho do C3.1 e \"PR que altere codigo, teste ou escopo\" e este PR nao altera nenhum dos tres (item 1 prova codigo/teste em 3 pontas; mvp_* intocados provam escopo), logo o CONTRATO nao exige entrada nova — so o plano do bloco; (ii) nenhum numero publicado e falso: a omissao nao afirma nada, e tudo que esta publicado eu provei verdadeiro; (iii) divergencia declarada em commit (A2).",
+      "consequencia_medivel": "Quando o #365 mergear, kpis-latest.json continuara em version \"SAN2-3\"/release.pr 364 — o painel, ARTEFATO PRINCIPAL (D-KPI-INDEX-PAINEL), volta a estar UM MERGE ATRAS, que e o defeito que o proprio commit 83d0366 anuncia ter consertado.",
+      "dono": "porteiro pos-merge do #365 / SAN2-4b"
+    },
+    {
+      "id": "A-3",
+      "titulo": "O backfill_note exigido pelo 1.6 nao foi escrito; o campo homonimo carrega o backfill ANTERIOR (#363)",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "achado_proprio": "SIM — nao consta da Parte I; medido por mim",
+      "evidencia": "O 1.6 exige literalmente \"...e nos campos correspondentes de Kpis/kpis-latest.json, COM backfill_note explicando o porque do head da ata\". O campo release.backfill_note existe e NAO esta entre as 7 chaves que mudaram: main e HEAD sao byte a byte identicos, ambos dizendo \"Backfill C3.5 do #363 aplicado por ESTE bloco: pr 363, merge_commit d283903, approved_head c8dc716\".",
+      "nao_e_falso_achado": "O objeto release inteiro ainda e o do SAN2-3 (version \"SAN2-3\"), entao \"ESTE bloco\"=SAN2-3, que de fato aplicou o backfill do #363 no SAN2-2. A nota NAO e falsa e NAO ha contradicao factual — 363/d283903/c8dc716 estao corretos e vivem na entrada SAN2-2 do history. O defeito e de LOCALIZACAO, nao de verdade.",
+      "evidencia_de_escopo": "dentro-do-bloco: o campo e irmao dos tres que ESTE PR editou (release.{pr,merge_commit,approved_head}, None->#364) e o 1.6 os nomeia na mesma frase.",
+      "por_que_nao_bloqueia": "A explicacao exigida EXISTE e esta completa — foi para release.summary (apenso puro de 1801 chars, 6827->8628, medido por diff de string; nada reescrito) e para blocks_completed.note. Nenhum numero falso. Custo: quem for ao backfill_note procurar por que approved_head e 23d9227 e nao 4083146 encontra resposta sobre OUTRO par de hashes.",
+      "dono": "porteiro pos-merge do #365 / SAN2-4b"
+    }
+  ],
+  "assinatura_temporal": "esqueleto criado antes de qualquer medicao (P2+)",
+  "divergencias_com_a_parte_I": [
+    {
+      "item": "kpis-latest: denominador de chaves",
+      "parte_I": "\"7 chaves mudaram de 90\"",
+      "minha_medicao": "7 mudaram de 462 chaves-folha (main 462, HEAD 462)",
+      "resolucao": "numerador dela correto, denominador nao; nenhum comando de contagem estava registrado ao lado do 90. Prevalece a minha medicao (R2/P3)."
+    }
+  ],
+  "alvo_extra_da_C1": {
+    "corroboracao_do_+78%": {
+      "veredito": "CONFIRMADO — a C1 esta certa",
+      "aritmetica": "medicao-1 l.129/l.229 publica F1 2637-2765 ms -> F2 3902-4797 ms, \"+48 % a +78 %\". Os 4 pareamentos: min<->min 3902/2637=+48,0% (bate com o limite inferior); max<->max 4797/2765=+73,5% (o par CORRESPONDENTE, e nao e 78); maxF2/minF1=+81,9%; minF2/maxF1=+41,1%. NENHUM da 78. Para fechar, o max da F2 teria de ser 4922 ms (medido 4797) ou o max da F1 2695 ms (medido 2765).",
+      "contraste_que_da_peso": "Todo numero vizinho que testei DERIVA: (255/256)^10=96,2% e ^30=88,9% (publicados identicos), 115*4=460. O bloco e aritmeticamente rigoroso em volta; o +78% e a excecao isolada.",
+      "gravidade": "media",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "dono": "SAN2-4b / porteiro pos-merge do #365"
+    },
+    "analogo_na_minha_area": {
+      "achado": "O \"11 observacoes\" publicado no BRIEFING (l.10 e l.25) nao deriva de contagem registrada: a contagem executavel da 12, e o 11 so fecha sob a regra tacita \"as que tem dono\", que nao esta escrita em lugar nenhum.",
+      "gravidade": "baixa",
+      "escopo": "pre-existente / fora do bloco",
+      "evidencia_de_escopo": "BRIEFING-SAN2-4a.md esta UNTRACKED (git status ?? ), nao integra o diff do PR, e foi escrito pelo orquestrador para esta junta — nao pelo bloco. Nenhum diario nem o plano contem \"11 observ|onze observ|11 achado\" (grep vazio).",
+      "bloqueia": false,
+      "dono": "proxima passada do inspetor-de-terreno-da-junta"
+    },
+    "varredura_negativa": {
+      "o_que_procurei": "Todos os numeros que ESTE PR publica no KPI, um a um.",
+      "resultado": "TODOS DERIVAM: 364 e c9fd3a1 (gh pr view 364); 23d9227 (ata l.4); 154 (condicao publicada pela serie anterior); \"14 arquivos, todos em agent-orchestration/\" (medi: 14); mergedAt 2026-08-31T12:06:58Z; 1801 chars de apenso (medi por diff de string).",
+      "prova_independente_extra": "Fui a fonte do unico numero citado de segunda mao (o CI da ata): gh run view 33346995433 -> conclusion success, 7 jobs TODOS success (owner-portal, authority-portal, backend-postgres, backend, flutter, frontend, docker) = \"CI 7/7\" CONFERE; e headSha = 23d922720cfbc797d0e3f036542b65f290a08ed3 = 23d9227. O CI que validou o SAN2-3 rodou NO HEAD JULGADO, nao no 4083146 do GitHub — prova independente de que o approved_head gravado e o commit de fato testado e votado."
+    }
+  },
+  "achados_bloqueantes": 0,
+  "resumo": "Os 3 itens do mandato MEDIDOS por execucao propria e APROVADOS. (1) O bloco nao consertou nada: diff de codigo vazio em TRES pontas (commitado, arvore, untracked), eol-neutro; 11 arquivos, todos em Kpis/ e agent-orchestration/; base viva com Up 2 days preservado. (2) KPI: backfill certo pela razao certa (approved_head = head da ATA, corroborado pelo headSha do run de CI), metricas de teste e mvp_* intocadas (455 de 462 chaves-folha identicas; 146 de 147 entradas do history identicas), 154 justificado por condicao previamente publicada, e o guard do freeze MORDE de verdade (drill A ec=1 com controle D ec=0). (3) 12 observacoes (11 com dono) nomeadas para o 4b, com escopo e evidencia de data/origem, sem conserto aplicado nem proposto; o 68 declarado CARREGADO. TRES ACHADOS, nenhum bloqueante: A-1 (media, dentro-do-bloco) entrada/release SAN2-4a nao existe e o plano a exigia; A-3 (baixa, dentro-do-bloco, MEU) o backfill_note do 1.6 nao foi escrito e o campo carrega o backfill anterior; mais a corroboracao do +78% da C1 (media, dentro-do-bloco). Nao propus correcao a nenhum (C7.4-bis). Nao commitei nada.",
+  "limpeza": "Removi o diretorio de drills do scratchpad (c3sup-freeze: copias de kpi-freeze.mjs + Kpis/). Zero container criado, zero mutacao em rastreado, erp-postgres e erp-redis intocados (Up 2 days healthy preservado; nenhum comando, nem leitura)."
+}

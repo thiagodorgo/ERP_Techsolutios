@@ -1,0 +1,77 @@
+{
+  "cadeira": "C3 — suplente-conferente-do-kpi-e-das-dividas",
+  "veredito": "APROVADO",
+  "head_julgado": "d90fbbb",
+  "tem_veto": true,
+  "substitui": "conferente-do-kpi-e-das-dividas (queda: rate_limit)",
+  "c3_1_reexecutado": true,
+  "c3_1_reproduz_o_roteiro_da_caida": true,
+  "evidencia": "agent-orchestration/omega/juntas/votos/SAN2-6/03-kpi-dividas-evidencia.md",
+  "itens": {
+    "C3-1_backfill_C3.5_do_367": "APROVADO — 1a/1b/1c/1d re-executados, saída idêntica à registrada pela caída; merge_commit e6a6461 e approved_head 5256b49 conferidos contra git+gh+ata; tabela de precedentes reproduz 3/3 seguindo a ata; 149 entradas anteriores com ZERO alteração",
+    "C3-2_numeros_da_entrada_151": "APROVADO COM ACHADO — blocks_completed 156→157 justificado e medido; §C3.3 carregado com marcador explícito nas 4 métricas; §C3.4 mvp intocados; âncora de head VERDADEIRA nos 4 números; achado C3-A1 na completude da description",
+    "C3-3_painel_e_guard": "APROVADO — 5/5 fatias verdes; FROZEN provado GERADO byte a byte; guard provado MORDENDO por mutação (ec=1/ec=0); índice regenerado byte-idêntico ao commitado, sem a dessincronia C3-A5"
+  },
+  "achados": [
+    {
+      "id": "C3-A1",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Os dois arquivos omitidos nascem DENTRO do intervalo do PR: `agent-orchestration/codex/comandos/B-O6R-02-ciclo5.md` em 2c1eee1 (2026-09-01 23:49:49) e 41e2316 (2026-09-02 00:25:27); `agent-orchestration/omega/planos/B-O6R-07-plano.md` em 2c1eee1. Ambos no range e6a6461..d90fbbb — não antecedem o bloco, logo não é `pre-existente`.",
+      "o_que": "O conjunto `Kpis/*` foi escrito UMA vez, em 53e44d3 (2026-09-01 23:00:44), e nunca mais tocado — o head é de 00:42 de 02/09. Resultado: a `description` da entrada 151 (e o `release.summary` do `kpis-latest.json`) inventaria 45,4% do PR e omite 2067 das 3783 linhas adicionadas (54,6%), das quais 1745 (46,1%) eram DESCRITÍVEIS: o comando de bloco do ciclo 5 (1301 l., 34,4% do PR — o maior artefato entregue) e o plano do B-O6R-07 (444 l.). Agravante: a seção 'O QUE ESTE BLOCO NAO FECHOU' traz o item '(4) Nada do ciclo 5 em si … o SAN2-6 prepara o TABULEIRO documental; nao move nenhuma peca do jogo' — os itens que ele ENUMERA seguem verdadeiros (`git diff --name-only e6a6461 d90fbbb -- .github/ .claude/agents/` = vazio), mas o título e o fecho leem como excluindo justamente o que o PR entrega, na mesma `codex/comandos/` cuja peça de ciclo 5 o §5 do plano pôs no PROIBIDO. O Registro §A2 apenso a `controle/pendencias.md` (98 linhas) registra SEIS divergências plano×terreno e nenhuma é esta; o diário do dev tampouco. É a 6ª materialização da classe 'número medido cedo, publicado tarde' — a mesma que o porteiro do #367 numerou como 5ª e que este PR declara ter fechado (fechou para a entrada 150, reabriu na 151). NÃO BLOQUEIA por três atenuantes MEDIDAS: (1) há ordem do dono mandando publicar o handoff do Codex (§A1, fonte de verdade nº1, vence o §5 de um plano) — não é excursão de escopo; (2) a junta está integralmente informada: o BRIEFING-SAN2-6.md tabula os dois arquivos com numstat (l.32/53/54) e o inspetor os mediu (00a-inspetor-evidencia.md l.75) — não há consolidação silenciosa perante quem vota; (3) precedente direto desta cadeira: em J-SAN2-5 o achado C3-A1 foi a mesma classe ('1 arquivo', verdadeiro em 44a30e4, publicado sem re-medição em 5256b49), foi graduado não-bloqueante, o bloco foi APROVADO 3×0 e a correção veio pós-voto; e este bloco não toca dinheiro, segurança, permissão nem perda de dado (§C7.1-ter(b)). Superfície a corrigir: `Kpis/kpis-history.json` entrada 151 + `Kpis/kpis-latest.json` release.summary. Bloco dono: SAN2-6. NÃO PROPONHO CORREÇÃO (§C7.4-bis).",
+      "comando": "git log --format='%h %ci %s' e6a6461..d90fbbb ; for f in $(git diff --name-only e6a6461 d90fbbb); do echo \"$f <- $(git log --format='%h' e6a6461..d90fbbb -- \\\"$f\\\")\"; done ; git diff --numstat e6a6461 d90fbbb ; grep -c -E 'B-O6R-07|BRIEFING|1301|444' <description-151>",
+      "saida": "Kpis/kpis-history.json <- 53e44d3 · Kpis/kpis-latest.json <- 53e44d3 · Kpis/app.js <- 53e44d3 (nenhum commit posterior) || codex/comandos/B-O6R-02-ciclo5.md <- 41e2316 2c1eee1 (1301 0) · omega/planos/B-O6R-07-plano.md <- 2c1eee1 (444 0) · BRIEFING-SAN2-6.md <- 1115aeb (162 0) · votos/SAN2-6/00a-inspetor-evidencia.md <- d90fbbb (116 0) · 00a-inspetor-parecer.md <- d90fbbb (44 0) || grep na description 151: 'B-O6R-07' 0 ocorrências · 'BRIEFING' 0 · '1301' 0 · '444' 0 · 'porteiro-pos-merge-367' 0 · 'B-O6R-02-ciclo5' 2, AS DUAS sendo o caminho-fantasma '…-plano.md' da divergência (v) || soma do numstat = 3783 linhas adicionadas; 2067 entraram depois de 53e44d3"
+    },
+    {
+      "id": "C3-N1",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "O blob da base `e6a6461` traz a `note` de mvp_demo/mvp_vendavel BYTE-IDÊNTICA à do head — é por isso que `mvp_*` não aparece entre as 12 folhas alteradas do kpis-latest.json. A defasagem nasceu no SAN2-5 (#367), não neste bloco. Bloco dono: SAN2-5.",
+      "o_que": "As `note` de `mvp_demo` e `mvp_vendavel` terminam com o carimbo `[SAN2-4b: INTOCADO — …]`, dois blocos atrasado: nem o SAN2-5 nem o SAN2-6 apensaram o seu. Não é violação de §C3.4 (que exige justificativa apenas QUANDO o valor muda, e os valores 99%/88% não mudaram), mas um leitor do `kpis-latest.json` do head vê `version: \"SAN2-6\"` com carimbo de mvp dizendo `SAN2-4b`.",
+      "comando": "node -e \"walk() das folhas de kpis-latest.json, blob e6a6461 × blob d90fbbb; lista as diferentes e imprime todas as chaves /mvp/i\"",
+      "saida": "total de folhas alteradas no latest = 12 (version, release.block/title/summary/backfill_note, 4 notes de métrica, blocks_completed value/display/note) — NENHUMA folha de mvp_* entre elas; metrics.mvp_demo.value 99 (base 99), metrics.mvp_vendavel.value 88 (base 88), notes idênticas base↔head e ambas terminando em '[SAN2-4b: INTOCADO …]'"
+    },
+    {
+      "id": "C3-N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "A mutação está no diff e6a6461..d90fbbb da entrada 150 do kpis-history.json, criada por 53e44d3 — dentro do bloco.",
+      "o_que": "A titular caída descreveu a mudança da `description` da entrada 150 como 'o apenso [BACKFILL §C3.5 …] e a âncora do K3'. Medi e a base NÃO é prefixo do head: além do apenso final, há uma REESCRITA IN LOCO a partir do char 3775 (a errata C3-A1 que ancora os números ao head). Não é defeito — a reescrita se declara no próprio texto ('norma da ERRATA C3-A1, aplicada aqui pelo SAN2-6 a pedido do porteiro pos-merge do #367'), é rastreável e corrige um número que envelhecia. Registro para a próxima cadeira não herdar 'foi só apenso' como fato: uma entrada JÁ MERGEADA teve texto publicado reescrito, não só acrescido.",
+      "comando": "node scratchpad/desc150-diff.js  (prefixo e sufixo comuns máximos entre as descriptions dos blobs e6a6461 e d90fbbb)",
+      "saida": "len base = 12077 | len head = 14035; prefixo comum = 3775 | sufixo comum = 0; TRECHO REMOVIDO da base = 8302 chars; TRECHO INSERIDO no head = 10260 chars; 'description do head CONTÉM a do base como prefixo? false'"
+    },
+    {
+      "id": "C3-N3",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O marcador `[SAN2-6: …]` de backend_tests é criado por 53e44d3, dentro do bloco.",
+      "o_que": "O primeiro parágrafo de `metrics.backend_tests.note` continua abrindo com 'Execucao real DESTE PR, com N=1 rodada completa…' — texto herdado do #366. O marcador `[SAN2-6: …]` no fim desarma a frase ('NAO afirma nada em primeira pessoa sobre ela', 'medido pelo #366'), então §C3.3 está cumprido. A nota é de FORMA: dos quatro marcadores SAN2-6, o do backend_tests é o único que não repete a frase literal 'A nota acima descreve execucao de bloco anterior, NAO deste PR' que smoke, flutter e contratos usam. Equivalente em conteúdo, mais fraco na forma — e backend_tests é justamente a métrica cuja abertura afirma execução em primeira pessoa.",
+      "comando": "node -e \"imprime metrics.<m>.note de kpis-latest.json no blob d90fbbb para backend_tests, frontend_smoke_tests, flutter_tests, backend_contract_tests_focused\"",
+      "saida": "backend_tests: '[SAN2-6: valor CARREGADO — 2609/2611 e o ultimo valor oficial, medido pelo #366; este bloco NAO reexecutou a suite e NAO afirma nada em primeira pessoa sobre ela (§C3.3) …]' (sem a frase 'A nota acima descreve…'); frontend_smoke_tests / flutter_tests / backend_contract_tests_focused: os três terminam com '… A nota acima descreve execucao de bloco anterior, NAO deste PR.]'"
+    }
+  ],
+  "medicoes_verdes": [
+    "history parseia; 150 (base) -> 151 (head) entradas; entradas 1..149 com ZERO alteração",
+    "merge_commit e6a6461 = mergeCommit do #367 (gh) = tip de main/origin/main, assunto traz '(#367)'",
+    "approved_head 5256b49 = 'Head julgado' da ata J-SAN2-5.md l.4; precedentes #363/#364/#366 seguem a ata em 3 de 3; 657928f é o commit que REGISTRA a ata (assunto: 'SAN2-5 APROVADO 3x0'), portanto posterior ao voto",
+    "âncora de head VERDADEIRA nos 4 números: 442 0 / 100 0 em df496d2...5256b49 e 506 0 / 121 0 em e6a6461^..e6a6461; e6a6461^ É df496d2; blob do prefixo do plano = a191381; zero remoções nas 4 medições",
+    "blocks_completed 156->157 justificado: a entrada 150 escrevera 'sobe para 157 SO QUANDO O SAN2-5 MERGEAR' e o #367 mergeou (MERGED, e6a6461, 2026-09-01T04:52:35Z)",
+    "§C3.3: as 4 métricas trazem marcador [SAN2-6: …] com 'sem reexecucao (§C3.3)'; diff de código 0 byte nas duas pontas e nos oito caminhos (src/ tests/ prisma/ mobile/ frontend/ scripts/ .github/ .claude/agents/)",
+    "§C3.4: mvp_demo 99% e mvp_vendavel 88% intocados — nenhuma folha mvp_* entre as 12 alteradas",
+    "3a FROZEN GERADO: o gerador rodou e não mudou um byte ('nada a fazer, ja em dia'); e a linha commitada (71933 bytes) é BYTE A BYTE igual a 'var FROZEN = ' + JSON.stringify(JSON.parse(kpis-latest.json)) + ';' medido no blob",
+    "3b node scripts/kpi-freeze.mjs --check -> ec=0",
+    "3c node --check Kpis/app.js -> ec=0",
+    "3d guard MORDE por mutação: JSON do head × app.js da main -> ec=1 ('a copia congelada do app.js DIVERGE do kpis-latest.json'); app.js do head -> ec=0",
+    "3d-bônus: node --test --import tsx tests/kpi-dashboard-charts.test.ts -> 16 tests / 16 pass / 0 fail / 0 skipped, ec=0 (confere a alegação da description)",
+    "3e índice REGENERADO POR SCRIPT: python gerar-indice-pendencias.py devolve 242 cabecalhos / 233 IDs / ABERTA 192 / baldes A34 B81 C77 / FECHADA 50, e o diff eol-neutro contra o commitado é 0 linhas — a dessincronia C3-A5 de J-SAN2-5 NÃO se repete",
+    "números avulsos da description conferidos: pendencias.md 98 0 · PROTOCOLO-JUNTA-RESILIENTE.md 14 0 · status-geral.md 5 0 · Kpis/index.html ausente do numstat (não mudou)"
+  ],
+  "terreno": {
+    "worktree_de_medicao": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r (ressalva R1)",
+    "worktree_descartavel_dos_drills": "criado do head d90fbbb sob o scratchpad, SEM node_modules e SEM junction/symlink; 1a tentativa falhou por MAX_PATH ('Filename too long') sem deixar registro pendurado; refeito com `git -c core.longpaths=true` (override por invocação, nenhuma config mutada); removido por `git worktree remove --force` + limpeza do resto em disco",
+    "base_viva": "erp-postgres/erp-redis: ZERO comandos, nem de leitura",
+    "arvore_julgada_intacta": "git rev-parse HEAD = d90fbbb; git status --porcelain traz só os arquivos de voto untracked de SAN2-6",
+    "git worktree list": "as 4 de sempre — nenhuma sobra"
+  },
+  "nao_commito": true
+}
