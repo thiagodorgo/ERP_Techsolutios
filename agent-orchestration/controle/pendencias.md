@@ -5917,3 +5917,61 @@ o que ela sustenta hoje é *"execução achou o que leitura não acharia em 5 oc
 *"execução acha sempre"* nem *"leitura nunca acha"*.
 
 - **status:** ABERTA (registro de método, coletivo; sem correção associada) · **severidade:** informativa · **dono:** nenhum — é dado para calibrar mandatos futuros
+
+### Emenda de 2026-09-04 (ii) — a coluna C, o denominador parcial e o viés declarado
+
+**A sessão irmã depurou os próprios casos com a mesma régua e separou uma coluna nova.** O caso do dono
+multi-org **não é falha de censo**: ninguém enumerou uma superfície e esqueceu um item — o arnês inteiro
+do PR era **mono-organização**, e o defeito só existe na forma multi-org. *"Não é 'o autor lembrou de 9 e
+havia 10' — é 'o autor testou uma forma e o defeito vive na outra'."*
+
+**Coluna C — completude de FORMA do arnês: 1 caso.** Coluna A cai para **2**.
+
+**Decisão sobre a fusão A+C: NÃO FUNDIR — e o argumento é o conserto, não a aparência.**
+
+| | Coluna A (superfície) | Coluna C (forma) |
+|---|---|---|
+| o que falta | um **item** de uma lista que existe | uma **dimensão** do espaço de configuração; não há lista |
+| detecção | *"sua enumeração bate com a superfície medida?"* — **conferível mecanicamente** (enumere por execução e compare) | *"que dimensões o seu arnês fixa num único valor?"* — exige **imaginar a dimensão** antes de poder testá-la |
+| conserto | enumerar por execução em vez de por leitura | **variar** algo que ninguém tinha pensado em variar |
+
+Fundi-las esconderia justamente a que é mais difícil de pegar: a A tem procedimento mecânico de detecção;
+a C não tem — depende de alguém perceber que o arnês inteiro vive num ponto do espaço. **Séries úteis
+separam por conserto, não por sintoma.** Total: **coluna A 2 · coluna B 2 · coluna C 1 = 5**, e nunca 7.
+
+**Sobre a coluna B, refinamento aceito da sessão irmã (a aplicar se a série crescer):** nos quatro outros
+casos a ferramenta falhou **produzindo** a afirmação; no B2 ela falhou **verificando** a afirmação. *"É uma
+classe de segundo grau, e a mais difícil de pegar, porque a verificação sente-se como prova."* Separar-se-á
+em `grep como fonte` × `grep como verificação` quando houver casos bastantes.
+
+### O DENOMINADOR PARCIAL QUE ESTE LADO JÁ TEM — e que enfraquece a narrativa fácil
+
+Registrado porque a entrada anterior declarou a falta e **metade do dado já existe deste lado**. Nesta
+junta, execução independente foi aplicada sobre afirmações do bloco **e CONFIRMOU a grande maioria**:
+
+- `critico-c5-adversarial`: re-mediu **D29 N=13** (13/13, `(6,37)` idêntico) e a **canônica 3** — bateram
+  com o publicado; re-mediu o containment de F1–F3 (zero linha ausente) e o critério `src/**` re-baseado
+  **até o blob** — bateram. Refutou **1** afirmação (B1).
+- **C1**: canônica 3 **N=10** com denominador idêntico ao publicado; vaza-metro **+5/+5** idêntico; D29
+  13/13. Tudo **confirmou**. Refutou **1** (B2), e ainda assim votou APROVADO.
+- **C2**: **97 operações adversariais em 11 caminhos**, endpoint real, 2 ordens × 20 na corrida —
+  **0 fabricado**, `maxAbs=0`. **Confirmou integralmente**; nenhuma refutação de mérito.
+- **C3**: re-executou canônicas 1 e 2 — bateram; conferiu escopo 13/13 e PROIBIDO 8/8 — bateram.
+
+**Leitura honesta:** neste bloco a execução independente **confirmou o publicado na esmagadora maioria das
+medições** e refutou em **duas**. A afirmação que a série sustenta é *"execução pega o que releitura não
+pegaria, e o custo se paga quando pega"* — **não** *"o publicado costuma estar errado"*.
+
+### VIÉS DECLARADO (levantado pela sessão irmã, e a parte mais importante desta emenda)
+
+*"Nós dois somos partes interessadas na conclusão 'execução > leitura', porque foi ela que justificou o
+custo das nossas juntas."* **Procede, e fica escrito na entrada.** As duas sessões que compilam esta série
+são as que gastaram cadeiras, clusters e horas com base nessa premissa; um resultado que a desmentisse nos
+custaria a justificativa do método. **Consequências adotadas:**
+
+1. o denominador deve ser levantado **por quem não torce** — de preferência um terceiro papel, não
+   nenhuma das duas sessões;
+2. o **caso negativo** (execução aplicada que não achou nada) é dado de primeira classe e **entra na
+   série**, não em nota de rodapé — a sessão irmã já se comprometeu a reportar o da cadeira C3 dela;
+3. esta entrada **não conclui**; ela **inventaria**, com colunas separadas por conserto e o denominador
+   parcial acima. Quem for concluir que o faça com a série fechada e sabendo quem a compilou.
