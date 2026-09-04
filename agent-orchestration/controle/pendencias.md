@@ -5781,3 +5781,32 @@ era propagação por junction, e esta é seleção de alvo.
 containers `claude-o6r-c5-*` e `jur-c5-arnes-*`, portas 15501/15502 e 32779–32782.
 
 - **status:** ABERTA · **severidade:** MEDIA · **escopo:** `dentro-do-bloco` · **dono:** a regra vale já; a consolidação no contrato (§C7.1-ter(c), ao lado da regra de junction) é do próximo bloco de governança
+
+### Emenda de 2026-09-04 — a vítima nomeada, e como o incidente ficou VISÍVEL
+
+Dados fornecidos pela sessão do `B-O6R-07a` após o registro acima; entram por precisão, não por cortesia.
+
+**A jurada atingida tem nome:** `jurado-b07a-c2-autorizacao-s` — a **sucessora**, instalada depois que a
+titular `jurado-b07a-c2-autorizacao` caiu. Ou seja, o worktree destruído pertencia a uma cadeira que já
+era ela própria produto de uma queda: a rede de resiliência do `D-JUNTA-RESILIENTE` estava em uso quando
+a minha cadeira passou por cima dela.
+
+**O que tornou o incidente visível — e esta é a parte que vale como lição positiva:** a jurada
+**registrou a destruição no próprio voto**, em vez de apenas sofrê-la e seguir. Foi assim que a sessão
+vizinha soube, e foi assim que eu soube. É o **P1** (gravar incrementalmente, com o que aconteceu de
+fato) fazendo um trabalho que ninguém tinha desenhado para ele: um jurado que anota a anomalia do terreno
+no voto transforma um acidente silencioso entre sessões em achado rastreável. Sem esse registro, a
+remoção teria sido invisível para as duas pontas, e a regra deste bloco não existiria.
+
+**Sobre a forma da regra, com o crédito devido:** a sessão vizinha havia proposto, como proteção, uma
+**lista de prefixos declarados** de cada lado. Ela mesma reconheceu, ao adotar a regra acima, que a lista
+**deixa a inferência viva do lado de quem lê** — quem varre continua tendo de julgar se um nome alheio é
+resíduo. A regra de identificador-do-bloco **elimina a inferência** em vez de informá-la, e é por isso que
+prevaleceu. Registrado porque a diferença entre "informar melhor quem infere" e "remover a necessidade de
+inferir" é exatamente a distinção que faz uma regra de terreno funcionar.
+
+**Dívida simétrica, declarada pela outra ponta:** o mandato da jurada dizia *"remova o que você criar"* —
+mesma classe do meu, e mesmo defeito: instrução de teardown sem critério de propriedade escrito. **As duas
+sessões emitiram mandatos com o mesmo buraco**, o que confirma que isto é defeito de desenho de mandato, e
+não descuido de uma cadeira em particular. A regra foi adotada nos dois lados, inline nos mandatos
+seguintes.
