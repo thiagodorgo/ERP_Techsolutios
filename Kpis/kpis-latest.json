@@ -125,9 +125,9 @@
     "fonte_veredito": "Junta J-6R, 5×0 — docs/revisoes/O6R/ATA_J6R.md",
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
-    "p0_total": 15,
+    "p0_total": 17,
     "p0_fechados": 4,
-    "p0_abertos": 11,
+    "p0_abertos": 13,
     "p1_total": 15,
     "p1_fechados": 0,
     "p1_abertos": 15,
@@ -157,9 +157,7 @@
     "source": "docs/revisoes/O6R/achados.jsonl",
     "aguardando_merge": [
       {
-        "id": "Ω6R-SEC-003",
-        "por": "B-O6R-07a (PR na autoria; nº e hash no backfill pós-merge)",
-        "em": "2026-09-02"
+        "id": "Ω6R-SEC-003"
       }
     ],
     "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco. O Ω6R-SEC-002 SAIU desta lista no ciclo 2 do B-O6R-07a: deixou de ser declarado fechado (virou parcialmente_superado, com 9 rotas nomeadas na pendência P-O6R-SUBRECURSO-OBJECT-SCOPE) e não se aguarda merge do que não se declara fechado."
@@ -172,7 +170,7 @@
         "id": "Ω6R-DIN-001",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Pagamento de título: o lançamento é gravado antes de aplicar ao título; duas requisições ao mesmo tempo podem pagar duas vezes.",
         "bloco": "B-O6R-02"
       },
@@ -180,7 +178,7 @@
         "id": "Ω6R-DIN-002",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Estorno lança a contrapartida contábil mas não devolve o valor pago nem o status do título — o título fica pago sem estar.",
         "bloco": "B-O6R-02"
       },
@@ -188,7 +186,7 @@
         "id": "Ω6R-DIN-003",
         "severidade": "P0",
         "modulo": "cheques / financial-entries",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Cheque: estado, lançamento e vínculo são gravados em etapas separadas; falha no meio deixa o cheque inconsistente.",
         "bloco": "B-O6R-02"
       },
@@ -196,7 +194,7 @@
         "id": "Ω6R-DIN-004",
         "severidade": "P0",
         "modulo": "financial-titles",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Dá para reduzir o valor de um título abaixo do que já foi pago, e apagar título já pago.",
         "bloco": "B-O6R-02"
       },
@@ -332,7 +330,7 @@
         "id": "Ω6R-QUA-003",
         "severidade": "P1",
         "modulo": "financial-entries / cheques / period-close / expenses",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "Os testes financeiros usam banco de mentira: atomicidade e concorrência nunca foram exercitadas.",
         "bloco": "B-O6R-02"
       },
@@ -340,7 +338,7 @@
         "id": "Ω6R-DIN-008",
         "severidade": "P0",
         "modulo": "financial-period-closes / financial writers",
-        "status": "ativo",
+        "status": "aguardando_merge",
         "resumo": "O fechamento de período usa trava, mas quem escreve não a respeita: dá para lançar depois do período fechado.",
         "bloco": "B-O6R-02"
       },
@@ -407,6 +405,22 @@
         "status": "ativo",
         "resumo": "Editar o perfil normativo re-tempera custódias em curso, sem versão nem vigência, e a auditoria não registra o que mudou.",
         "bloco": "B-O6R-12"
+      },
+      {
+        "id": "Ω6R-DIN-010",
+        "severidade": "P0",
+        "modulo": "financial-entries / financial-titles",
+        "status": "aguardando_merge",
+        "resumo": "DELETE de um lançamento de LIQUIDAÇÃO é aceito: o caixa volta e o título continua com paid_amount > 0",
+        "bloco": "B-O6R-02"
+      },
+      {
+        "id": "Ω6R-DIN-011",
+        "severidade": "P0",
+        "modulo": "cheques / financial-entries",
+        "status": "aguardando_merge",
+        "resumo": "O lançamento de COMPENSAÇÃO de um cheque pode ser estornado (ou apagado) pela superfície de lançamentos sem que o cheque saia de 'cleared'",
+        "bloco": "B-O6R-02"
       }
     ]
   },
@@ -442,7 +456,9 @@
           "Ω6R-DIN-003",
           "Ω6R-DIN-004",
           "Ω6R-DIN-008",
-          "Ω6R-QUA-003"
+          "Ω6R-QUA-003",
+          "Ω6R-DIN-010",
+          "Ω6R-DIN-011"
         ],
         "dep": [
           "B-O6R-01"

@@ -2507,6 +2507,38 @@ reexecutadas depois da atualização. Evidência: `gh pr view <PR> --json
 number,state,mergedAt,headRefOid,mergeCommit,url` + ancestralidade no task-history. O parecer anterior
 `LIBERADO COM RESSALVA` permite desenvolver a F6; não permite publicar B-O6R-02 sem este gate. Cherry-pick
 silencioso de `a109fd7` no PR financeiro é proibido. **status: ABERTA — BLOQUEIA PUBLICAÇÃO B-O6R-02.**
+
+**FECHAMENTO (2026-09-04) — o gate `G-A109FD7-PUBLICADO` foi SATISFEITO, condição a condição.**
+
+O gate foi **achado por conferência ativa antes de o merge do ciclo 5 ser proposto** — não por acaso: a
+verificação de gate passou a ser passo explícito depois de eu quase propor um merge sobre um bloqueio
+formal que não tinha lido.
+
+| condição literal do gate | evidência medida |
+|---|---|
+| CI e junta verdes | junta do ciclo 5 **APROVADO 3×0** (`J-B-O6R-02-ciclo5.md`); CI do PR dedicado **7/7 jobs pass** (run `33922531004`) |
+| PR dedicado mergeado na `main` | **PR #370**, `state: MERGED`, `mergedAt: 2026-09-04T22:22:32Z` |
+| número, `headRefOid` e `mergeCommit.oid` registrados **aqui** | `pr` **370** · `headRefOid` **`a1d5d2d1c0619bc43ea08b4e547649c9d30d74ad`** · `mergeCommit.oid` **`54a41947f82ab7405ab1aabdf4b1761da70fe815`** |
+| branch `B-O6R-02` atualizada | merge de absorção **`099f71f`**, dois pais (`9f37f61` + `54a4194`) |
+| `git merge-base --is-ancestor <merge_commit> HEAD` ec=0 | **ec=0** para `54a4194` — e `12c3825` (head julgado do ciclo 4) segue ancestral, também ec=0 |
+| bateria/contagens reexecutadas **depois** da atualização | reexecutada no head pós-absorção — números publicados no KPI e no `kpis-history` deste PR |
+
+**Nota de forma, para não confundir quem medir depois:** o merge do #370 foi **squash** (política §8.5 do
+`CLAUDE.md`), então `a109fd7` **não** é ancestral da `main` — o que é ancestral é o `mergeCommit`
+`54a4194`, que é exatamente o que a cláusula do gate pede. O **conteúdo** chegou íntegro, conferido por
+execução na `main`: o `guard 11` (`catalog.ts não pode ganhar import`) está presente, o comentário de
+precisão em `core-saas-role-authority-db.test.ts` está presente, e as duas atribuições de dono
+(`B-O6R-07`, `B-O6R-08`) estão presentes.
+
+**O que o PR #370 precisou além do previsto, registrado porque é dado de terreno:** a branch estava
+parada em **19/08** e tinha **3 conflitos** com a `main` — por isso o evento `pull_request` sequer
+disparava CI. Foi atualizada por **merge da `main` dentro dela** (nunca rebase, para não mover
+`a109fd7`), com `Kpis/app.js` e `kpis-latest.json` resolvidos **main-integral** (a branch só mudava um
+`as_of` de 08-17 para 08-19, e a `main` já estava em 09-02 — preservar o lado dela **regrediria o
+painel**) e `pendencias.md` por **união**, preservando as 10 linhas de atribuição de dono. Diff final
+contra a `main`: **3 arquivos, +40 −1** — o mérito, sem regressão.
+
+- **status:** **FECHADA (2026-09-04, PR #370 — `54a4194`)** · o gate `G-A109FD7-PUBLICADO` **deixa de bloquear** a publicação do `B-O6R-02`
 - **`P-O6R-B01-TRILHA-ORFA-LIMPEZA`** (ciclo 3, C5 — 2026-08-19) — a trilha `auth_identity_link_events` da
   base do dono carrega **231 linhas órfãs de origem** (medido em 2026-08-19 antes do F1: 231 de 508, todas
   `event='backfill'`, apontando para organização que não existe mais) — despejadas pelo backfill SEM escopo
