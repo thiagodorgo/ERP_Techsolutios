@@ -1,0 +1,61 @@
+{
+  "cadeira": "C2 — jurado-r07a-backfill",
+  "veredito": "APROVADO",
+  "head_julgado": "533cefd",
+  "base": "3c29189 (origin/main medido por mim; o briefing dizia cae6086, a ERRATA E-1 dizia 1a7ad4d, o #376 mergeou depois — provei na tabela do §0 da evidencia que os valores dos meus 3 itens sao identicos em 1a7ad4d e 3c29189)",
+  "merge_base": "cae6086",
+  "quorum": "maioria de 3",
+  "quem_esta_certo_no_blocks_completed": "o orquestrador — mas o diagnostico do porteiro do #369 estava certo e so o instrumento estava errado. O porteiro mediu no blob de dc8168b (153 entradas, a do B-O6R-02-ciclo5 ainda nao existia) e viu corretamente que a divida do 159 (merge do 07a no #369) estava sem pagar. O que ele prescreveu — escrever 159 NA ENTRADA DO CICLO 2 — contraria a regra que a propria trilha escreve em 4 lugares medidos: blocks_completed e instantaneo DA AUTORIA e o incremento de um bloco e pago pela entrada SEGUINTE, porque um bloco so conclui quando merga (entrada 150: '156->157 cumprindo a condicao que a anterior escreveu'; entrada 151: 'sobe para 159 so quando ESTE PR mergear'; entrada 152: 'FICA em 158: mesmo bloco e mesmo PR #369'; kpis-latest.json em dc8168b: 'na autoria ele fica em 158'). Gravar 159 numa entrada de snapshot_date 2026-09-03 dataria o incremento antes do merge dc8168b, de 2026-09-04. E, decisivamente, a divida JA ESTAVA PAGA: cae6086 (#372, 2026-09-05 00:17) e a merge-base desta branch e publicou 158->160 com a razao escrita em kpis-latest.json ('159 = B-O6R-07a ... cuja divida NINGUEM pagou' + '160 = B-O6R-02 ciclo 5'). O orquestrador tambem registrou a refutacao contra si mesmo dentro do JSON (nota da entrada 152: 'corrigido pela sessao vizinha contra a minha leitura'). Sem achado contra o orquestrador no merito do J3.",
+  "j1_hashes": "CONFERE. Entrada 151 (B-O6R-07a): merge_commit dc8168b, approved_head null. Entrada 152 (ciclo2): merge_commit dc8168b, approved_head 9989c62. dc8168b e ancestral de origin/main (squash do #369). A ata J-O6R-07a-ciclo2.md l.4 diz 'Head julgado: 9989c62' (1 ocorrencia; 0a7f5fd = 0 ocorrencias). Precedente RE-EXECUTADO 3/3, todos com hashes divergentes: #363 ata c8dc716 x headRefOid e4926bd; #364 ata 23d9227 x 4083146; #366 ata 2d2d16d x 6b284f4 — os tres gravaram o head da ATA. Head final 0a7f5fd declarado ao lado na nota; verifiquei a alegacao em vez de aceita-la: 0a7f5fd^{tree} == dc8168b^{tree} == a666c66f, e git diff 9989c62 0a7f5fd = 12 arquivos com ZERO src/, ZERO tests/, ZERO prisma/ (so Kpis/app.js 1/1, kpis-latest.json 1/1 e 10 docs de junta) — nada de produto fica escondido atras da escolha do head da ata.",
+  "j2_null_ciclo1": "JUSTIFICADO, nao e omissao. A ata J-O6R-07a-ciclo1.md l.17 diz verbatim 'RESULTADO: REPROVADO 2x1' (C1 REPROVADO + C2 REPROVADO, C3 APROVADO), placar identico ao afirmado. A razao esta escrita NA PROPRIA ENTRADA do JSON (cauda da description da entrada 151): 'approved_head fica NULL de proposito — este ciclo foi REPROVADO 2x1 pela junta; nao se fabrica aprovacao para um ciclo que a junta reprovou'. Levantei a hipotese de achado (nota na cauda da description em vez de campo proprio) e a DESCARTEI por medicao: a chave backfill_note existe em 1 de 154 entradas e nasceu no cae6086 (#372); a convencao estabelecida do arquivo e cauda da description, 4 de 4 (entradas 145/146/148/150). Este PR segue a convencao dominante.",
+  "achados": [
+    {
+      "id": "J3-A1",
+      "gravidade": "media",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "valor 160 ausente em 99f1840 (#371) e presente em cae6086 (#372, 2026-09-05 00:17, sessao vizinha); a entrada B-O6R-02-ciclo5 tem 0 ocorrencias no diff de kpis-history.json deste PR",
+      "o_que": "A entrada 153 (B-O6R-02-ciclo5) grava blocks_completed 160 no campo enquanto a sua PROPRIA description diz, verbatim, 'blocks_completed segue 158: sobe para 159 SO QUANDO ESTE PR MERGEAR', e o backfill_note dela explica so merge_commit/approved_head, nada sobre o +2 ('160' tem zero ocorrencias na description). A justificativa dos DOIS incrementos existe apenas em Kpis/kpis-latest.json. Contraria o precedente 1/1 do proprio arquivo para salto +2: a entrada 146 (SAN2-3, 152->154) explicou os dois incrementos DENTRO da entrada. Quem audita o history — o razao append-only — le 160 encostado numa prosa que diz 158. Dono: sessao vizinha / #372.",
+      "comando": "node -e \"const a=require('./r07a-hist-main.json');const e=a[153];console.log(e.blocks_completed);console.log(e.description.indexOf('160'));console.log(e.backfill_note)\"  +  for c in 99f1840 cae6086; do git show $c:Kpis/kpis-history.json | node -e '...c5 blocks...'; done",
+      "saida": "blocks_completed=160 · description.indexOf('160') = -1 (zero ocorrencias) · backfill_note fala so de merge_commit/approved_head e do headRefOid 7adff45 · trilha: 99f1840 -> c5 AUSENTE; cae6086 -> c5 blocks=160 · description da 153: 'blocks_completed segue 158: sobe para 159 SO QUANDO ESTE PR MERGEAR' · entrada 146: 'blocks_completed 152 -> 153: o merge do SAN2-2 (#363)' e '153 -> 154 NESTA MESMA GRAVACAO'"
+    },
+    {
+      "id": "J3-A2",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "o apenso de 30 linhas em pendencias.md e deste PR (diff contra a merge-base cae6086)",
+      "o_que": "As duas clausulas da MESMA ressalva do porteiro do #369 foram registradas de forma assimetrica: a R1 ganhou apenso de 30 linhas em agent-orchestration/controle/pendencias.md; o descumprimento DELIBERADO da clausula 'blocks_completed 158 -> 159' da R2 esta registrado so na cauda da nota da entrada 152 do kpis-history.json. §A2 manda registrar divergencia em agent-orchestration/controle/, que e onde quem audita a cadeia porteiro->PR-seguinte vai olhar. O registro EXISTE e esta no lugar mais lido pelo consumidor do KPI — por isso baixa, e nao alta — mas a assimetria e real.",
+      "comando": "git diff $(git merge-base HEAD origin/main) HEAD -- agent-orchestration/controle/pendencias.md | grep '^+' | grep -ciE 'blocks_completed|159|R2'",
+      "saida": "0 (zero ocorrencias); o apenso trata apenas da decima via de sync (R1)"
+    },
+    {
+      "id": "J3-N1",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "54a4194 (#370), 2026-09-04, fora deste bloco e fora do diff deste PR",
+      "o_que": "Buraco na trilha achado de passagem: o #370 mergeou tocando dois arquivos de TESTE (tests/auth-invariant-guards.test.ts +25 e tests/core-saas-role-authority-db.test.ts +5/-1) e nao deixou entrada nenhuma em Kpis/kpis-history.json. §C3.1 manda que todo PR que altere codigo/teste/escopo atualize Kpis/* no proprio PR. Nao afeta o blocks_completed (PRs de ressalva/registro nao incrementam — nem o #372 nem este #373), mas e lacuna do razao de KPI. Dono: #370.",
+      "comando": "git show --numstat --format='%H %ad %s' --date=short 54a4194  +  for c in dc8168b 54a4194 99f1840; do git show $c:Kpis/kpis-history.json | node -e '...N...'; done",
+      "saida": "#370 numstat: pendencias.md 10/0 · tests/auth-invariant-guards.test.ts 25/0 · tests/core-saas-role-authority-db.test.ts 5/1 · N entradas: dc8168b=153, 54a4194=153, 99f1840=153 (inalterado)"
+    },
+    {
+      "id": "T1",
+      "gravidade": "nota",
+      "escopo": "terreno",
+      "evidencia_escopo": "git rev-parse origin/main medido por mim nesta arvore",
+      "o_que": "A base moveu uma TERCEIRA vez: o briefing dizia cae6086, a ERRATA E-1 corrigiu para 1a7ad4d e o meu proprio mandato repetiu 1a7ad4d — mas origin/main e 3c29189 (#376 mergeou depois da errata). Provei que isso NAO altera nenhum dos meus 3 itens medindo kpis-history.json nos 7 commits da sequencia: N=154 e os valores usados (07a-ciclo2 blocks=158/merge=null, c5 blocks=160) sao identicos em 1a7ad4d e 3c29189.",
+      "comando": "git rev-parse origin/main; for c in dc8168b 54a4194 99f1840 cae6086 066b47e 1a7ad4d 3c29189; do git show $c:Kpis/kpis-history.json | node -e '...'; done",
+      "saida": "origin/main = 3c29189351541e082d218ff510a7bc4de174776a · tabela dos 7 blobs na evidencia §0: valores identicos em 1a7ad4d e 3c29189"
+    },
+    {
+      "id": "T2",
+      "gravidade": "nota",
+      "escopo": "terreno",
+      "evidencia_escopo": "git diff --numstat 039c2dc 533cefd",
+      "o_que": "O head tambem moveu desde a inspecao de terreno: o inspetor liberou sobre 039c2dc e eu julgo 533cefd. O delta e de 3 arquivos, 165/0, todos docs de governanca (a propria ERRATA do briefing + os 2 arquivos do inspetor, antes untracked). Zero src/, zero tests/, zero Kpis/ — o LIBERADO COM RESSALVA nao e invalidado por este delta.",
+      "comando": "git diff --numstat 039c2dc 533cefd",
+      "saida": "68/0 BRIEFING-O6R-07a-ressalvas.md · 63/0 00a-inspetor-evidencia.md · 34/0 00a-inspetor-parecer.md"
+    }
+  ],
+  "nenhum_achado_bloqueia": true,
+  "nao_propus_correcao": true,
+  "nao_commitei": true
+}

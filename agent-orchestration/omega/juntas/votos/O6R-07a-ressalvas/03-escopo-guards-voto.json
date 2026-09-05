@@ -1,0 +1,96 @@
+{
+  "cadeira": "C3 — jurado-r07a-escopo-guards",
+  "veredito": "APROVADO",
+  "head_julgado": "533cefd14dd69e0f63bdc480a0674c1aa38676b1",
+  "base": "3c29189351541e082d218ff510a7bc4de174776a",
+  "merge_base_medido": "cae60863ba9fb8e27f23d29daf496b58f29905f1",
+  "arvore_mesclada_medida": "ade5bd1 (tree ca4bda8d88b0982767d3d74961e61b4f7de0b797, pais 3c29189 + 533cefd, merge limpo)",
+  "quorum": "maioria de 3 — CONFIRMADO por medicao: zero src/, zero teste, zero migration",
+  "apenso_neutro_para_o_indice": true,
+  "defasagem_do_indice_ainda_existe": false,
+  "nota_sobre_a_base": "A base moveu QUATRO vezes: corpo do briefing dizia cae6086 (morto), a ERRATA E-1 dizia 1a7ad4d (tambem morto, #376 mergeou depois). Eu medi origin/main = 3c29189, igual ao que a cadeira C2 mediu. Altera UM dos meus itens — o J3.3 — e e justamente o que derruba a afirmacao (b) do orquestrador. J1 e J2 sao medidos por merge-base...HEAD e nao dependem de para onde a main andou (three-dot contra cae6086 e contra origin/main dao saida identica).",
+  "itens": {
+    "J1_escopo": {
+      "resultado": "LIMPO",
+      "arquivos_no_head_medido": 7,
+      "composicao": "3 de registro (Kpis/kpis-history.json 5/5 · agent-orchestration/controle/pendencias.md 30/0 · docs/revisoes/O6R/achados.jsonl 32/32) + 4 de governanca (BRIEFING 127/0 · 00a-inspetor-evidencia.md 63/0 · 00a-inspetor-parecer.md 34/0 · votos/O6R-07a/00c-porteiro-pos-merge-369.md 184/0)",
+      "zonas_proibidas": "ZERO — src, tests, prisma, migrations, .github, frontend, mobile, scripts, CLAUDE.md, AGENTS.md, lockfiles, .env, pubspec, infra",
+      "prova_por_mutacao": "ec 0 -> 1 (nomeando 6 arquivos reais mutados) -> 0"
+    },
+    "J2_achados_jsonl": {
+      "resultado": "SEM MUTACAO SILENCIOSA",
+      "registros": "32 -> 32, todas as linhas parseiam nas duas pontas",
+      "cr_no_blob": "base 0, head 0",
+      "identicos_por_valor": "31 / 32",
+      "alterados": "1 — Omega6R-SEC-002, unico campo: supersedido",
+      "afirmacao_do_orquestrador": "CONFIRMADA",
+      "natureza_dos_31": "reserializacao pura de separadores (',' -> ', ' e ':' -> ': '); conjunto de chaves de topo diferente em 0 registros; ordem de chaves mudou em 0 registros; anulada a diferenca, os objetos sao identicos"
+    },
+    "J3_guards": {
+      "no_head_533cefd": {
+        "kpi-freeze --check": 0,
+        "node --check Kpis/app.js": 0,
+        "kpi-achados-paridade": "ec=0 · 6/6 pass · 0 fail · 0 skip",
+        "kpi-dashboard-charts": "ec=0 · 16/16 pass · 0 fail · 0 skip",
+        "git diff --check cae6086 HEAD": 0,
+        "git diff --check origin/main...HEAD": 0
+      },
+      "na_arvore_mesclada_ade5bd1": {
+        "kpi-freeze --check": 0,
+        "node --check Kpis/app.js": 0,
+        "kpi-achados-paridade": "ec=0 · 6/6 pass · 0 fail · 0 skip",
+        "kpi-dashboard-charts": "ec=0 · 16/16 pass · 0 fail · 0 skip"
+      },
+      "integridade_do_merge": "main 6604 -> mesclada 6634 linhas em pendencias.md; 0 linhas removidas da main, 30 acrescentadas; blobs do PR e da main preservados identicos nos demais arquivos"
+    }
+  },
+  "achados": [
+    {
+      "id": "J3-A1",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Causado exclusivamente pelo apenso deste PR, provado por diferenca controlada: duas rodadas do MESMO gerador mudando so a presenca do apenso. Nao ha componente pre-existente — a origin/main 3c29189 esta em sincronia perfeita com o gerador (0 linhas de diff), medido em J3.3.",
+      "o_que": "Com a main em sincronia perfeita, o apenso de 30 linhas deste PR desloca em +30 o numero de linha de 5 pendencias no indice regenerado (P-AUTH-KDF-ROTACAO-V2, P-C3-DOIS-PRS-SEM-KPI, P-DERIVADO-ESQUECIDO, P-KPI-HISTORY-MD-BACKLOG, P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR). Como o PR nao leva pendencias-indice.md, o indice na main nasce defasado logo apos o merge — a situacao que a R1(e) do inspetor nomeou por antecipacao. NAO REPROVA: o placar nao se move (zero cabecalho '## P-' novo, zero ID novo, zero mudanca de estado/balde/severidade; anulada a coluna 'linha', os indices sao byte-identicos), o artefato e derivado e regeneravel por um comando, e nao tocar o indice CUMPRE a combinacao com a outra sessao (§4 do briefing). O criterio de reprovacao do mandato — 'se o apenso MOVER O PLACAR' — nao foi acionado. Nota: uma das 5 pendencias deslocadas chama-se P-DERIVADO-ESQUECIDO, que e a pendencia desta mesma classe.",
+      "comando": "git merge-tree --write-tree origin/main HEAD -> commit-tree -> worktree detached; em cada rodada: git show <rev>:agent-orchestration/controle/pendencias.md > <arquivo> (BLOB, LF — nunca o arquivo do worktree, que tem 6634 CR por autocrlf); python agent-orchestration/controle/gerar-indice-pendencias.py; diff das duas saidas; depois awk -F'|' 'NF>3{$3=\" X \"}' nos dois e diff de novo",
+      "saida": "PLACAR IDENTICO nas duas rodadas: 'indice: 263 cabecalhos / 252 IDs | {FECHADA: 63, ABERTA: 200} | baldes {-: 63, C: 76, B: 87, A: 37} | diferidas-materiais 1'. diff dos arquivos gerados: ec=1, 5 linhas '<' e 5 '>' de 339, todas diferindo em exatamente +30 (6396-6366, 6504-6474, 6536-6506, 6414-6384, 6599-6569). Anulada a coluna 'linha': diff ec=0, saida vazia."
+    },
+    {
+      "id": "J3-A2",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "A afirmacao (b) do orquestrador foi medida contra cae6086 (#372, base do briefing). A defasagem foi sanada pelo #374 (066b47e) e mantida em sincronia pelo #375 e #376 — todos MERGEADOS por outra sessao, fora deste PR.",
+      "o_que": "A afirmacao (b) do orquestrador ('a defasagem do indice PRE-EXISTE a este PR, 252/243/55 -> 261/250/62, causa #371/#372') esta MORTA. Ele estava CERTO quando mediu — em cae6086 a defasagem era real (99 linhas) e o gerador produzia exatamente 261/250/62, os numeros que ele publicou. Mas o #374 trouxe o indice de volta a sincronia e o #375/#376 a mantiveram. Consequencia que INVERTE o onus: com a main em sincronia perfeita, este PR deixa de ser ruido dentro de uma defasagem maior e passa a ser a UNICA fonte de defasagem nova do indice pos-merge (as 5 linhas de J3-A1). A propria ERRATA E-2 do orquestrador antecipou este resultado e mandou registra-lo — o credito e dele.",
+      "comando": "para cada rev em {cae6086, 066b47e, 1a7ad4d, 3c29189}: git show <rev>:...pendencias.md > arquivo; python gerar-indice-pendencias.py; diff da saida contra git show <rev>:...pendencias-indice.md",
+      "saida": "cae6086 -> 261 cab./250 IDs, FECHADA 62/ABERTA 197/SEM-STATUS 2 | committed DEFASADO (99 linhas). 066b47e -> 262/251 | EM SINCRONIA. 1a7ad4d -> 263/252 | EM SINCRONIA. 3c29189 -> 263 cab./252 IDs, FECHADA 63/ABERTA 200/SEM-STATUS 0 | EM SINCRONIA (diff ec=0, 0 linhas)."
+    },
+    {
+      "id": "J2-N1",
+      "gravidade": "baixa",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "A troca de separadores foi introduzida por este PR: o blob de cae6086 e compacto e o do head 533cefd e espacado.",
+      "o_que": "A reserializacao fez o numstat sair 32/32: o diff textual repinta as 32 linhas e ESCONDE visualmente que so uma mudou. Nao ha perda de dado e o conteudo esta provado preservado (31/32 identicos por valor), mas 32/32 num razao de achados e exatamente a assinatura que uma mutacao silenciosa teria — quem revisar por leitura de diff nao distingue os dois casos. Foi por isso que este item exigiu comparacao por objeto parseado.",
+      "comando": "node r07a-cmp-reserial.mjs — 1o byte divergente na posicao 6 do registro DIN-001",
+      "saida": "base '{\"id\":\"Omega6R-DIN-001\",\"severidade\":\"P0\"' vs head '{\"id\": \"Omega6R-DIN-001\", \"severidade\": \"P0\"'. Delta total 1892 bytes = SEC-002 (+818) + os outros 31 (+1074, so espaco em branco)."
+    },
+    {
+      "id": "J1-N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O commit 533cefd, que publica a propria ERRATA, e o que acrescenta os 2 arquivos.",
+      "o_que": "O 'PR tem 5 arquivos' da ERRATA E-4 envelheceu para 7 no head que julguei. A errata estava CERTA para 039c2dc (5 arquivos, briefing 59/0); o commit que a publica somou +68 linhas ao briefing (59->127) e commitou os 2 arquivos do inspetor, que o parecer dele declarava untracked. Auto-referente e benigno — os 3 de registro seguem exatos e nada em zona proibida. Registrado para a ata nao herdar '5' como fato.",
+      "comando": "git diff --numstat cae6086 HEAD | wc -l ; git diff --numstat cae6086 039c2dc | wc -l ; git show --numstat --oneline 533cefd",
+      "saida": "HEAD 533cefd -> 7 arquivos. 039c2dc -> 5 arquivos. O commit 533cefd acrescenta: BRIEFING 68/0, 00a-inspetor-evidencia.md 63/0, 00a-inspetor-parecer.md 34/0."
+    },
+    {
+      "id": "J0-N1",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "Anomalia do meu proprio arnes de medicao, nao do PR.",
+      "o_que": "Anomalia de terreno registrada para as proximas cadeiras: 'echo ec=$?' depois de um PIPE mede o ultimo comando do pipe, nao o git. Minha primeira tentativa de revert usou '-q', que NAO e flag de git revert — o git imprimiu o usage e nao reverteu, mas o ec lido do 'tail' do pipe imprimiu ec=0. So a medicao seguinte (que saiu ec=1 quando devia sair 0) denunciou o falso revert. As medidas publicadas nao usam pipe. Mesma familia da armadilha ja catalogada de md5sum/git status sob autocrlf: a ferramenta responde, mas sobre o objeto errado.",
+      "comando": "git revert --no-edit 93a89e1 2>&1 | tail -3; echo ec=$?",
+      "saida": "imprimiu 'revert ec=0' com o revert NAO executado (head seguia 93a89e1). Refeito sem pipe: revert real -> a9a1a39, arvore identica a 533cefd, medida de volta a ec=0."
+    }
+  ],
+  "nao_medido_dito_as_claras": "Merito de C1 (a decima via reproduz por execucao?) e de C2 (hashes do backfill, trilha de blocks_completed) — nao sao minha cadeira. Do Omega6R-SEC-002 julguei APENAS que a alteracao existe e e a declarada; se o conteudo dela e verdadeiro cabe a C1. Nao rodei a suite plena nem CI local; nao li a base viva.",
+  "limpeza": "2 worktrees descartaveis meus (wt-r07a-c3-mut, wt-r07a-c3-merged), ambos sob .claude/worktrees/, detached, sem junction, removidos por git worktree remove --force; arquivos de scratchpad todos com prefixo r07a-. Zero container, base viva 5432/6379 nao lida, zero recurso alheio tocado (o6r-b02-cond5, gov-descuido, san2-r e a arvore principal foram reportados, nao varridos). Objetos soltos 93a89e1/a9a1a39/ade5bd1 deixados sem gc, conforme o terreno."
+}
