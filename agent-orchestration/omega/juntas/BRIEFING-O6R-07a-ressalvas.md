@@ -57,3 +57,71 @@ Base viva `erp-postgres` (5432) / `erp-redis` (6379) **INTOCÁVEL, nem leitura**
 ## 7 · Armadilhas (medidas)
 
 `grep -c $'\r'` **não conta CR** (use `tr -cd '\r' | wc -c`) · `md5sum`/`git status` **mentem** sob `autocrlf` · `sed -i` **PROIBIDO** em `pendencias.md` (**EOL misto**) · **`git archive`+`tar` PROIBIDO** · heredoc com aspas **quebra** (use `Write`) · backtick vira **substituição de comando** · `$!` não é PID do Windows · **`Edit`/`Write` recebem caminho ABSOLUTO e não herdam o `cd`**.
+
+---
+
+## ERRATA (orquestrador, após a inspeção de terreno) — cinco premissas minhas caíram
+
+O inspetor mediu e **`LIBEROU COM RESSALVA`** com 8 ressalvas. Cinco são correções ao que eu escrevi acima.
+**Onde esta errata divergir do corpo, vale a errata.**
+
+**E-1 · A BASE MUDOU DUAS VEZES.** O corpo diz `origin/main = cae6086`. **É `1a7ad4d`** — os PRs **#374 e
+#375** da outra sessão mergearam enquanto eu escrevia. Medido pelo inspetor: `git merge-tree --write-tree`
+sai **sem conflito** (tree `0b711e4c`) e o CI 7/7 rodou **sobre esse merge**. **Toda cadeira mede contra
+`origin/main` = `1a7ad4d` ou contra a árvore mesclada — nunca contra `cae6086`.**
+
+**E-2 · O ITEM C3.3(b) PODE JÁ NÃO EXISTIR.** Eu afirmei que o índice estava defasado (`252/243/55` →
+`261/250/62`) por causa do #371/#372. **Aqueles números são de `cae6086`. O #375 REGENEROU o índice.**
+A cadeira C3 **re-mede a defasagem contra `origin/main`** — e, se ela não existir mais, **a minha
+afirmação está morta** e é isso que se registra. E a neutralidade do meu apenso mede-se **na árvore
+mesclada**, com o gerador em `agent-orchestration/controle/gerar-indice-pendencias.py` (**não** em
+`scripts/`).
+
+**E-3 · ARMADILHA QUE TERIA FABRICADO ACHADO FALSO — leia antes de medir EOL.** O corpo diz que
+`pendencias.md` "tem EOL misto". **Isso vale para o ARQUIVO DO WORKTREE, não para o BLOB.** Medido pelo
+inspetor: o blob tem **0 CR** (`i/lf`) em `cae6086` e em `origin/main`; o worktree tem **6.527 CR**, todas
+por `autocrlf=true`. **Jurado que contar CR no arquivo vai "achar" injeção de CR que não existe.**
+**Meça em BLOB** (`git cat-file -p` / `git show`), nunca no arquivo. `sed -i` continua proibido.
+*(Eu mesmo publiquei "CRLF preservado 6527/6527" no commit — estava medindo o worktree. O conteúdo está
+certo; a medição era do objeto errado.)*
+
+**E-4 · O PR TEM 5 ARQUIVOS, NÃO 3.** O §2 lista os 3 de registro (numstat **confere**: `5/5`, `30/0`,
+`32/32`), mas o diff carrega também `BRIEFING-O6R-07a-ressalvas.md` (59/0) e
+`votos/O6R-07a/00c-porteiro-pos-merge-369.md` (184/0) — docs de governança, inertes. **A resposta certa
+para a C3 item 1 é "5, sendo 2 docs"**, nenhum em `src/`/`tests/`/`prisma/`/`.github/`/`frontend/`/
+`mobile/`/`scripts/`/`CLAUDE.md`/`AGENTS.md`.
+
+**E-5 · O "CI 7/7" do cabeçalho era ANTECIPAÇÃO.** Aquele 7/7 era do head `dfc0507`; o run de `039c2dc`
+só fechou depois. **Agora está medido pelo inspetor: 7/7 em `039c2dc`, sobre o merge com `1a7ad4d`.**
+
+## PLANO DE PERDA DE JURADO (R3 — estava AUSENTE; texto do inspetor, adotado)
+
+Quórum **maioria de 3**. Voto perdido conta como **queda registrada** (classe: streaming · cota · rede),
+**nunca como voto**. Com 2 votos restantes só há decisão **se os dois coincidirem**; **1×1 + queda =
+re-disparo OBRIGATÓRIO** da cadeira caída antes de fechar a ata.
+
+- **C1 (`decima-via`)** — sucessor lê o `-evidencia.md` e retoma no 1º item **sem `veredito parcial`**. O
+  drill re-executa **do zero** em worktree **novo** com identificador do bloco; o do caído **não se
+  reaproveita nem se apaga** — **reporta-se**. Se a evidência já tiver "km `null → 111111`" gravada **com
+  comando e saída**, aproveita-se (P3).
+- **C2 (`backfill`)** — só leitura de blobs; sucessor re-mede os 3 hashes e a trilha de `blocks_completed`
+  em `origin/main`. Nada a montar.
+- **C3 (`escopo-guards`)** — sucessor re-roda os 5 guards (`ec` gravado **um a um**) e a neutralidade do
+  índice **na árvore mesclada**.
+
+## TERRENO — o que a inspeção acrescenta e é vinculante
+
+- **C1 precisa de worktree PRÓPRIO** (nome com `r07a`, `git -c core.longpaths=true worktree add --detach`),
+  **sob `.claude/worktrees/`**, com `npm ci` + `npx prisma generate`, **sem `.env`**,
+  `CORE_SAAS_PERSISTENCE` **não exportada** (arnês em memória — zero porta, zero container). O arquivo de
+  drill (`tests/zz-*.test.ts`) **não se commita**. **Lição medida hoje:** worktree **fora** de
+  `.claude/worktrees/` e sem `npm ci` próprio falha com `ERR_MODULE_NOT_FOUND dotenv` — o `r07a` resolve
+  pacotes por **subida de diretório**, não por link. **Nunca junction.**
+- **Concorrência viva:** `o6r-b02-cond5` é da outra sessão e **está ativo** (mudou de branch entre duas
+  medições do inspetor) — **intocável**. `gov-descuido` e a casca vazia `san2-r` são órfãos **alheios**.
+  A árvore principal tem 11 arquivos de agentes do `B-O6R-02 c5` modificados — **alheio**.
+- **O scratchpad é COMPARTILHADO entre sessões.** Todo temporário desta junta leva prefixo **`r07a-`**, e
+  **ninguém varre nome alheio** (`P-JUNTA-RECURSO-EFEMERO-POR-BLOCO`).
+- **Forma dos guards, para a ata (R6):** `node --test --import tsx tests/<guard>.test.ts` ·
+  `node scripts/kpi-freeze.mjs --check` · `node --check Kpis/app.js` · `git diff --check <base> <head>`.
+  Este briefing **faz as vezes de plano** — não há comando formal em `codex/comandos/`.
