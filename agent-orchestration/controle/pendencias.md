@@ -2538,7 +2538,7 @@ disparava CI. Foi atualizada por **merge da `main` dentro dela** (nunca rebase, 
 painel**) e `pendencias.md` por **união**, preservando as 10 linhas de atribuição de dono. Diff final
 contra a `main`: **3 arquivos, +40 −1** — o mérito, sem regressão.
 
-- **status:** **FECHADA (2026-09-04, PR #370 — `54a4194`)** · o gate `G-A109FD7-PUBLICADO` **deixa de bloquear** a publicação do `B-O6R-02`
+- **status:** FECHADA (2026-09-04, PR #370 — `54a4194`) · o gate `G-A109FD7-PUBLICADO` **deixa de bloquear** a publicação do `B-O6R-02`
 - **`P-O6R-B01-TRILHA-ORFA-LIMPEZA`** (ciclo 3, C5 — 2026-08-19) — a trilha `auth_identity_link_events` da
   base do dono carrega **231 linhas órfãs de origem** (medido em 2026-08-19 antes do F1: 231 de 508, todas
   `event='backfill'`, apontando para organização que não existe mais) — despejadas pelo backfill SEM escopo
@@ -3993,7 +3993,8 @@ re-medida de forma independente pelo crítico (A10 do parecer).
 está na lista SUITES do job `backend-postgres`** do `ci.yml` (0 hits no head; denominador da canônica 2 = 194 sem ela). Roda só
 pela canônica 3 (job `backend`) e isolada. `ci.yml` era PROIBIDO no ciclo 4 (§5) — a inclusão é pendência nomeada, não emenda.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** **o PR que mergear o `B-O6R-02`** (ciclo 5 do financeiro) — re-atribuído em 2026-08-30 pelo `SAN2-2`, ver apenso abaixo
+- **status:** FECHADA (2026-09-05 — PR #371, `99f1840`, com o job `backend-postgres` verde) · **severidade:** MEDIA · **dono:** B-O6R-02 c5 — o dono era **"o PR que mergear o `B-O6R-02`"** (re-atribuído em 2026-08-30 pelo `SAN2-2`); ele mergeou, e o fechamento com a evidência está no apenso ao fim desta entrada.
+  <sub>**Linha corrigida em 2026-09-05.** Ela dizia `ABERTA` mesmo depois de o fechamento estar escrito no apenso — e é **a primeira linha de status da entrada**, que é justamente a que `gerar-indice-pendencias.py` lê (`LINHA.search`, não `findall`). Resultado: o índice contava esta pendência como aberta enquanto o corpo dizia fechada. Achado pelo `porteiro-pos-merge` independente (condição 5, PARCIAL: *"o critério material está satisfeito, mas a entrada dona ainda diz ABERTA"*). Auditei as **9** pendências que este bloco fechou: **8 têm uma única linha de status e estão corretas**; só esta tinha três, por ter recebido dois apensos ao longo da rodada. Não é defeito sistemático — é esta entrada.</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ### Apenso de 2026-08-30 (`SAN2-2`, Fase 2 — `02ced85`): parte entrou, o resto tem dono
@@ -4112,7 +4113,7 @@ Nota de forma, porque o apenso E3.3 dizia outra coisa: a cláusula original auto
 resolução main-integral as poria na `main` **roteadas em lugar nenhum**, auto-pulando verdes. É o mesmo
 fundamento anti-verde-cego do E3.2, aplicado às seis. Registrado no §7 do terreno pós-absorção.
 
-- **status:** **FECHADA (2026-09-05 — PR #371, `99f1840`, com CI verde no job `backend-postgres`)** · **severidade:** MEDIA · **dono:** B-O6R-02 c5
+- **status:** FECHADA (2026-09-05 — PR #371, `99f1840`, com CI verde no job `backend-postgres`) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
 
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
@@ -6535,3 +6536,63 @@ alheio **não é** publicar execução alheia* — por isso levar o índice rege
 entre **reproduzir um comando** e **afirmar um resultado**.
 
 - **status:** ABERTA (as três instâncias corrigidas; a classe fica registrada) · **severidade:** MEDIA · **dono:** este PR
+
+### Apenso a `P-DERIVADO-ESQUECIDO` (2026-09-05) — a QUARTA instância, e ela fecha a série
+
+O `porteiro-pos-merge` independente achou a quarta, e ela é a mais silenciosa das quatro: a entrada
+`P-O6R-B02-SUITES-LIST-CI` recebeu o fechamento **como apenso ao fim**, e a **primeira** linha de status —
+lá no topo, escrita em agosto — continuou dizendo `ABERTA`.
+
+**Por que isso importa e não é preciosismo:** `gerar-indice-pendencias.py` decide o estado com
+`LINHA.search(body)` — **a primeira ocorrência**, não a última. O próprio cabeçalho do script diz que *"a
+LINHA de status vence o CABECALHO — a linha é o campo canônico"*. Então o **índice contava a pendência como
+aberta** enquanto o corpo dela dizia, com evidência, que estava fechada. **Regenerar o índice não
+consertava** — ele estava fielmente refletindo uma fonte que se contradizia.
+
+**Auditei as 9 pendências que este bloco fechou, e o defeito não é sistemático:** 8 têm **uma única** linha
+de status e estão corretas; só esta tinha **três**, por ter recebido dois apensos ao longo da rodada (a
+decisão do E3 em 30/08 e o fechamento em 05/09). **Registro a medição porque "não é sistemático" também é
+resultado** — e porque a tentação, depois de três instâncias da mesma classe, é presumir que a quarta
+contaminou tudo.
+
+**A propriedade que faltava, e que completa as três já registradas:** *o estado de um registro é o que a
+**primeira** linha de status diz, porque é o que o gerador lê — apenso que fecha uma pendência tem de
+atualizar a linha canônica, não apenas acrescentar a evidência ao fim.* É a mesma família das outras três:
+**escrevi o conteúdo certo no lugar que eu estava olhando, e não no lugar que o consumidor lê.**
+
+## P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR (2026-09-05) — BAIXA · achado ao consertar a quarta instância
+
+**O defeito, medido:** `gerar-indice-pendencias.py` classifica o estado com
+`FECHA = re.compile(r'^(FECHAD|RESOLVID|DESCARTAD|DECIDID)')` sobre o que a regex `LINHA` captura — e
+`LINHA` **para no primeiro `**`** depois do rótulo. Então:
+
+| escrita | o gerador captura | classifica |
+|---|---|---|
+| `- **status:** FECHADA (…)` | `FECHADA (…)` | **FECHADA** ✅ |
+| `- **status:** **FECHADA (…)**` | `**FECHADA (…)**` | **SEM-STATUS** ❌ |
+
+**Negrito no VALOR do status torna o fechamento invisível ao índice.** O rótulo pode ser negrito; o valor
+não pode. É indistinguível a olho — as duas formas renderizam quase igual em Markdown — e nenhum guard
+cobre.
+
+**Como apareceu:** ao consertar a quarta instância de `P-DERIVADO-ESQUECIDO` (a linha de status de
+`P-O6R-B02-SUITES-LIST-CI` que ainda dizia `ABERTA`), escrevi o conserto **em negrito** e o índice passou de
+`SEM-STATUS: 2` para `3`. **O conserto reproduziu, na forma, o defeito que consertava:** eu tinha escrito o
+conteúdo certo no lugar que eu olhava, e de novo não no formato que o consumidor lê. Foi o próprio gerador
+que me denunciou, na linha seguinte.
+
+**Varredura completa do arquivo — 5 entradas afetadas, e o efeito é real:** corrigidas as **3 deste bloco**
+(`P-O6R-B01-PORTEIRO-357-A109FD7`, `P-O6R-B02-SUITES-LIST-CI` e o apenso B3 do `SAN2-5` dentro dela). Com
+elas, o índice foi de **FECHADA 62 → 63** e `SEM-STATUS 3 → 2`.
+
+**As 2 restantes NÃO são deste bloco e ficam REPORTADAS, não corrigidas** (`P-JUNTA-RECURSO-EFEMERO-POR-BLOCO`
+— registro alheio se reporta):
+
+- **`Registro §A2 do bloco SAN2-6`** — captura `**FECHADA neste mesmo trabalho**`; dono: `SAN2-6`;
+- **`FECHAMENTO (registro 6/7) do residual P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`** — captura
+  `do residual:** FECHADO no ciclo 2 do B-O6R-0…`; dono: `B-O6R-07a`.
+
+**Propriedade:** *o valor do campo de status é texto simples — o negrito vai no rótulo, nunca no valor.
+Formatação que muda o que um gerador lê é conteúdo, não estilo.*
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (as 3 corrigidas) e `pre-existente` (as 2 reportadas) · **dono:** as 2 restantes, com seus blocos
