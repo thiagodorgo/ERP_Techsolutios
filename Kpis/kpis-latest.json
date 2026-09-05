@@ -126,31 +126,47 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 17,
-    "p0_fechados": 4,
-    "p0_abertos": 13,
+    "p0_fechados": 11,
+    "p0_abertos": 6,
     "p1_total": 15,
-    "p1_fechados": 0,
-    "p1_abertos": 15,
+    "p1_fechados": 1,
+    "p1_abertos": 14,
     "fechados": [
       {
-        "id": "Ω6R-SEC-001",
-        "por": "B-O6R-01 (PR #357, 0a39824)",
-        "em": "2026-08-19"
+        "id": "Ω6R-DIN-001"
       },
       {
-        "id": "Ω6R-TEN-001",
-        "por": "B-O6R-01 (PR #357, 0a39824)",
-        "em": "2026-08-19"
+        "id": "Ω6R-DIN-002"
       },
       {
-        "id": "Ω6R-DAT-001",
-        "por": "B-O6R-05 (PR #353, a8901ff)",
-        "em": "2026-08-15"
+        "id": "Ω6R-DIN-003"
       },
       {
-        "id": "Ω6R-DIN-006",
-        "por": "B-O6R-05 (PR #353, a8901ff)",
-        "em": "2026-08-15"
+        "id": "Ω6R-DIN-004"
+      },
+      {
+        "id": "Ω6R-SEC-001"
+      },
+      {
+        "id": "Ω6R-TEN-001"
+      },
+      {
+        "id": "Ω6R-DAT-001"
+      },
+      {
+        "id": "Ω6R-DIN-006"
+      },
+      {
+        "id": "Ω6R-QUA-003"
+      },
+      {
+        "id": "Ω6R-DIN-008"
+      },
+      {
+        "id": "Ω6R-DIN-010"
+      },
+      {
+        "id": "Ω6R-DIN-011"
       }
     ],
     "as_of": "2026-09-02",
@@ -170,7 +186,7 @@
         "id": "Ω6R-DIN-001",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "Pagamento de título: o lançamento é gravado antes de aplicar ao título; duas requisições ao mesmo tempo podem pagar duas vezes.",
         "bloco": "B-O6R-02"
       },
@@ -178,7 +194,7 @@
         "id": "Ω6R-DIN-002",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "Estorno lança a contrapartida contábil mas não devolve o valor pago nem o status do título — o título fica pago sem estar.",
         "bloco": "B-O6R-02"
       },
@@ -186,7 +202,7 @@
         "id": "Ω6R-DIN-003",
         "severidade": "P0",
         "modulo": "cheques / financial-entries",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "Cheque: estado, lançamento e vínculo são gravados em etapas separadas; falha no meio deixa o cheque inconsistente.",
         "bloco": "B-O6R-02"
       },
@@ -194,7 +210,7 @@
         "id": "Ω6R-DIN-004",
         "severidade": "P0",
         "modulo": "financial-titles",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "Dá para reduzir o valor de um título abaixo do que já foi pago, e apagar título já pago.",
         "bloco": "B-O6R-02"
       },
@@ -330,7 +346,7 @@
         "id": "Ω6R-QUA-003",
         "severidade": "P1",
         "modulo": "financial-entries / cheques / period-close / expenses",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "Os testes financeiros usam banco de mentira: atomicidade e concorrência nunca foram exercitadas.",
         "bloco": "B-O6R-02"
       },
@@ -338,7 +354,7 @@
         "id": "Ω6R-DIN-008",
         "severidade": "P0",
         "modulo": "financial-period-closes / financial writers",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "O fechamento de período usa trava, mas quem escreve não a respeita: dá para lançar depois do período fechado.",
         "bloco": "B-O6R-02"
       },
@@ -410,7 +426,7 @@
         "id": "Ω6R-DIN-010",
         "severidade": "P0",
         "modulo": "financial-entries / financial-titles",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "DELETE de um lançamento de LIQUIDAÇÃO é aceito: o caixa volta e o título continua com paid_amount > 0",
         "bloco": "B-O6R-02"
       },
@@ -418,7 +434,7 @@
         "id": "Ω6R-DIN-011",
         "severidade": "P0",
         "modulo": "cheques / financial-entries",
-        "status": "aguardando_merge",
+        "status": "fechado",
         "resumo": "O lançamento de COMPENSAÇÃO de um cheque pode ser estornado (ou apagado) pela superfície de lançamentos sem que o cheque saia de 'cleared'",
         "bloco": "B-O6R-02"
       }

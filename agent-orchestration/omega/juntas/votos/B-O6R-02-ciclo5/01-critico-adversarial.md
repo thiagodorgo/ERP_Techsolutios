@@ -279,7 +279,7 @@ do diario e honesta — composicao nomeada — mas o numero da canonica 1 no hea
   de grep se publica como candidato de grep.*
 
 ## ACHADO-5 — O plano nao nomeia quem responde checkpoints depois que o planejador se autodeclara morto
-- **Defeito:** o plano l.3: "Encerro a participacao ao entregar este plano". O §8-S2 e o §13.1: 
+- **Defeito:** o plano l.3: "Encerro a participacao ao entregar este plano". O §8-S2 e o §13.1:
   "Divergencia -> devolve ao planejador". Devolve a QUEM? A execucao inventou (orquestrador assume sob
   Fable, `D-PLANEJADOR-MODELO-FABLE` "satisfeito por sessao") — e deu certo AQUI porque os fundamentos
   eram medidos (A1-A4), mas a mesma pessoa acumulou decisor-de-checkpoint e executor de F4-F6, que e o

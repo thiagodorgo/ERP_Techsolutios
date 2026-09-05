@@ -2,6 +2,12 @@
 
 ## Atualização 2026-09-05 — B-O6R-02 ciclo 5: APROVADO 3×0, e a bateria reexecutada depois da absorção
 
+**MERGEADO: PR #371, squash `99f1840`, em 2026-09-05T02:27:34Z.** O squash parou um commit
+antes do fim e deixou o REGISTRO de fora (KPI, log e este arquivo) — o produto entrou integro
+(`git diff 6ee74bf 99f1840 -- src prisma` = VAZIO). O `porteiro-pos-merge` achou a lacuna SOZINHO e
+classificou como `BLOQUEADO`; este PR de registro e o conserto. Os **7 P0 + Ω6R-QUA-003** passam a
+**fechado** com evidencia — o painel vai de **4 para 11** P0 corrigidos na main, de 17.
+
 **A junta votou APROVADO 3×0** (unanimidade de 3, §C7.1-ter(b) — o bloco toca dinheiro). Ata em
 `agent-orchestration/omega/juntas/J-B-O6R-02-ciclo5.md`, com os 6 pareceres em `votos/B-O6R-02-ciclo5/`.
 O `B-O6R-02` sai do **teto** aprovado, na última tentativa que tinha.

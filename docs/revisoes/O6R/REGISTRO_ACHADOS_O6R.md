@@ -24,7 +24,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-001] Pagamento concorrente pode criar lançamento órfão e inflar o saldo
 - Severidade: P0        Confiança: 0.99
-- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  Pagamento em transacao UNICA (uow.run + FOR UPDATE + re-check sob o lock). Corrida provada nas DUAS ordens de disparo, N=20 por ordem, em memoria e sob Postgres real: perdedor 422 sem lancamento orfao, saldo liquido 0, zero 40P01. Suite permanente tests/financial-pay-title-atomic-db.test.ts, roteada no job backend-postgres do ci.yml.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:261-282`, `src/modules/financial-titles/financial-title-prisma.repository.ts:132-138`
@@ -46,7 +47,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-002] Estorno de lançamento não reabre nem reduz o valor pago do título
 - Severidade: P0        Confiança: 0.98
-- Status: **aguardando_merge** — foi REABERTO em 2026-08-22 pela junta `J-B-O6R-02-ciclo1` (bloqueante B-1) e o ciclo 2 o consertou em autoria; volta a `aguardando_merge` (conserto escrito, NÃO na main). O `reverse` passou a devolver, mas o `DELETE` do MESMO lançamento de liquidação continuava aceito no head `e4e914a`: o caixa voltava e o título ficava com `paid_amount` intacto — o impacto declarado deste achado seguia alcançável por HTTP, pela outra porta. O caminho do delete está registrado em detalhe como `Ω6R-DIN-010`; os dois só voltam a `aguardando_merge` juntos.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  Estorno devolve o pagamento na MESMA unidade e a dupla reversao morre no FOR UPDATE + re-check. No BANCO, a metade orfa e impossivel por construcao: par de triggers da migration 20260870000000_add_reversal_pair_atomicity (o FOR SHARE do trigger do estorno serializa os dois caminhos no row lock do original) MAIS a FK composta financial_entries_reversal_pair_fk da 20260872000000, que fecha as duas portas cruas que os triggers nao alcancavam (DELETE fisico do original e rename da PK -> 23503). Drill D35 provado up->down->re-up com pg_constraint 5->4->5 e vermelho-controle exato.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:158-195`
@@ -65,7 +67,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-003] Compensação e devolução de cheque podem deixar lançamento financeiro órfão
 - Severidade: P0        Confiança: 0.97
-- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  Compensacao de cheque em transacao UNICA; cheque intacto sob falha real e mutex 409 com invariante cleared <-> entry. Guard cheque_entry_immutable: movimento de cheque so se desfaz pela maquina de estados do cheque. Suite permanente tests/cheque-clear-bounce-atomic-db.test.ts.
 - Categoria: DIN
 - Módulo: cheques / financial-entries        Lente: A3
 - Local: `src/modules/cheques/cheque.service.ts:152-184`, `src/modules/cheques/cheque.service.ts:187-231`
@@ -90,7 +93,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-004] Título pago aceita valor inferior ao liquidado e exclusão lógica
 - Severidade: P0        Confiança: 0.99
-- Status: **aguardando_merge** — CAS de PATCH/DELETE e cobertura G7–G9 implementados; fechamento depende de revisão independente, junta, merge e porteiro.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  CAS de PATCH/DELETE com status derivado no mesmo UPDATE, precedencia de periodo/404 e CHECK 23514; o banco mantem 0 <= paid_amount <= amount. Suite permanente tests/financial-title-invariants-db.test.ts.
 - Categoria: DIN
 - Módulo: financial-titles        Lente: A3
 - Local: `src/modules/financial-titles/financial-title.service.ts:218-243`, `src/modules/financial-titles/financial-title.service.ts:317-325`, `src/modules/financial-titles/financial-title-prisma.repository.ts:102-118`, `prisma/schema.prisma:1762-1767`
@@ -517,7 +521,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-QUA-003] Testes financeiros críticos exercem apenas adapters em memória
 - Severidade: P1        Confiança: 0.99
-- Status: **aguardando_merge** — cinco suítes PostgreSQL somam 32 casos top-level; fechamento depende de revisão independente, junta, merge e porteiro.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  As suites que provam os P0 acima passaram a rodar CONTRA POSTGRES REAL no job backend-postgres, sob o guard de zero pulos — sete linhas SUITES= acrescentadas ao ci.yml no commit de merge do S0-zero (ruling do CP-1). Antes elas entrariam na main roteadas em lugar nenhum, auto-pulando verdes no job backend: o exato verde-cego que deixou os P0 passarem. Provado por execucao: 3x 52/52 sem pulo antes de fechar o S0, e canonica 2 15/15 com denominador 225 constante.
 - Categoria: QUA
 - Módulo: financial-entries / cheques / period-close / expenses        Lente: A5
 - Local: `tests/financial-entries.test.ts:53-59`, `tests/financial-entries.test.ts:436-439`, `tests/cheques.test.ts:59-65`, `tests/cheques.test.ts:453-466`, `tests/financial-period-closes.test.ts:49-59`, `tests/expense-management-routes.test.ts:182-204`
@@ -539,7 +544,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-008] Escritores podem confirmar dinheiro depois do snapshot de período fechado
 - Severidade: P0        Confiança: 1.00
-- Status: **aguardando_merge** — write-path financeiro e PATCH compartilham a trava de competência; fechamento depende de revisão independente, junta, merge e porteiro.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  Writer bloqueia na trava SHARED de periodo e re-valida DENTRO da tx que grava; o close espera writer em voo e o snapshot o inclui. Barreira deterministica escopada por application_name (o controle negativo vive em tests/pg-barrier-scoped-db.test.ts). Suite permanente tests/financial-period-close-write-race-db.test.ts.
 - Categoria: DIN
 - Módulo: financial-period-closes / financial writers        Lente: A3
 - Local: `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:49-52`, `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:77-89`, `src/modules/financial-titles/financial-title.service.ts:338-344`
@@ -733,7 +739,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-010] DELETE de lançamento de liquidação apaga o caixa, mantém o título pago e cria estado sem rota de saída
 - Severidade: P0        Confiança: 1.00
-- Status: **aguardando_merge** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueantes B-1 e B-2), medido por execução no head `e4e914a`; corrigido em autoria no ciclo 2 (C1), NÃO na main. Registrado por agente distinto de quem o achou e de quem o corrige (§C7.4-bis).
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  Achado pela PROPRIA junta do bloco (J-B-O6R-02-ciclo1). Lancamento vinculado a agregado so se desfaz pelo fluxo do agregado: DELETE de lancamento com title_id recusa 422 settlement_entry_immutable, e o reverse devolve o pagamento ao titulo na mesma unidade — o titulo volta a ter rota de saida ponta a ponta.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:153-168`, `src/modules/financial-titles/financial-title-prisma.repository.ts:166-178`
@@ -753,7 +760,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-011] Cheque devolve em dobro: o lançamento de compensação se desfaz por fora da máquina de estados
 - Severidade: P0        Confiança: 1.00
-- Status: **aguardando_merge** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueante B-3), medido por execução no head `e4e914a`; corrigido em autoria no ciclo 2 (C2), NÃO na main. Cruza com `Ω6R-DIN-003`: aquele nomeia a atomicidade de clear/bounce (corrigida e provada por ataque); este é o defeito **distinto** de duas portas desfazerem o mesmo dinheiro. Nada merge com este aberto.
+- Status: **fechado** em 2026-09-05 pelo B-O6R-02 ciclo 5 (PR #371, 99f1840).
+  Achado pela PROPRIA junta do bloco (J-B-O6R-02-ciclo1). Lancamento referenciado por cleared_entry_id/bounce_entry_id recusa delete e reverse pela superficie de lancamentos (422 cheque_entry_immutable); desfazer passa a ser exclusividade do bounce. O net dos lancamentos vivos deixa de poder ir a -100 num cheque de 100.
 - Categoria: DIN
 - Módulo: cheques / financial-entries        Lente: A3
 - Local: `src/modules/cheques/cheque.service.ts:164-235`, `src/modules/financial-entries/financial-entry.service.ts:153-246`

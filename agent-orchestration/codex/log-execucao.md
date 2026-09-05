@@ -4131,3 +4131,30 @@ reconfirmadas na prática: `kill` do MSYS **não** mata processo Windows nativo 
 Sem PR, sem merge, sem junta nova. O bloco para aqui e devolve ao orquestrador a decisão sobre a
 **re-passada das cadeiras**: a junta aprovou o head `2709f4b` com denominador **2771**, e o head agora é
 outro, com **2817**. `pr`/`merge_commit`/`approved_head` seguem `null` na autoria (§C3.5).
+
+### Apenso de 2026-09-05 — o merge, o que o squash deixou de fora, e o porteiro
+
+**O bloco MERGEOU: PR #371, squash `99f1840`, `mergedAt 2026-09-05T02:27:34Z`**, sobre `54a4194` (#370).
+Conduzido por outra sessão a pedido do dono, no head `7adff45`.
+
+**O squash parou UM COMMIT ANTES do fim.** Medido: `99f1840^{tree} == 7adff45^{tree}`, e os 6 blobs do
+delta `7adff45 → 6ee74bf` **diferem** entre `origin/main` e `6ee74bf`. O **produto entrou íntegro**
+(`git diff 6ee74bf 99f1840 -- src prisma` = **VAZIO**); o que ficou fora foi **registro** — KPI, este log e
+o `status-geral` —, e passou despercebido justamente **porque não toca `src/` nem `prisma/`**. Causa
+mecânica, sem atenuante para mim: **`6ee74bf` nunca foi empurrado** (`git branch -r --contains` vazio); eu
+commitei às 23:25:46 local e o merge saiu às 23:27:33 sobre o topo **remoto**. É o
+`D-DURABILIDADE-BRANCHES-LOCAIS` em cheio — *o que só existe num disco não conta como entregue*.
+
+**Consequência publicada, até este PR de registro:** a `main` dizia `version: B-O6R-07a`,
+`backend_tests: 2654/2656`, `blocks_completed: 158`. O painel **não sabia que o bloco tinha mergeado**.
+
+**O `porteiro-pos-merge` do #371 achou isso SOZINHO e classificou como `BLOQUEADO`** — ninguém lhe contou.
+Ele reexecutou a suíte por conta própria e mediu **2814 pass / 2817**, com 1 vermelho **ambiental**
+(isolado, 3× verde), e registrou que *"`6ee74bf` publica 2815/2817 e confere com o meu"*. **A medição deste
+bloco foi verificada por um terceiro que não a tinha visto** — o parecer dele está em
+`omega/juntas/votos/B-O6R-02-ciclo5/00c-porteiro-pos-merge-371.md` e vem neste PR.
+
+**Fechamentos que este PR de registro completa:** os **7 P0 + `Ω6R-QUA-003`** passam de `aguardando_merge`
+a **`fechado`**, com `fechado_em`/`fechado_por`/`evidencia_fechamento` — o painel vai de **4 para 11** P0
+corrigidos na `main`, de 17. E `P-O6R-B02-SUITES-LIST-CI` fecha **em definitivo**: a condição que faltava
+era o job `backend-postgres` verde no CI do PR, e o #371 a cumpriu.

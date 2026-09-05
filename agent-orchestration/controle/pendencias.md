@@ -4097,7 +4097,22 @@ integral vive no histórico git e aqui. **Critério cumprido na parte local:** a
 (P4: 3× `52/52`, 0 pulo, 0 XX000; canônica 2 da bateria re-exercita com N≥15). **A prova final** — job
 `backend-postgres` verde sob o guard de zero pulos — é do CI do PR, e o fechamento fica condicionado a ela.
 
-- **status:** FECHADA condicionada ao CI do PR (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
+**FECHAMENTO DEFINITIVO (2026-09-05) — a condição foi cumprida.** O critério escrito era *"a linha presente
+no `ci.yml` mergeado **+** a suíte exercida no job `backend-postgres` **sem pulo**"*. Ambos verificados:
+
+- **as 7 linhas `SUITES=` estão na `main`** (o commit de merge do S0-zero entrou no squash `99f1840` do
+  **PR #371**), com a contagem indo de 27 para 34;
+- **o job `backend-postgres` passou no CI do #371**, sob o guard de zero pulos — que é a prova que a
+  condição pedia e que só o CI podia dar;
+- prova local anterior, medida antes de fechar o S0: **3× `52/52`**, zero pulo, zero `XX000`; e a canônica 2
+  da bateria final, **15/15** com denominador **225 constante**, exercitando a lista inteira do `ci.yml`.
+
+Nota de forma, porque o apenso E3.3 dizia outra coisa: a cláusula original autorizava **UMA** linha e o
+**ruling do CP-1** a emendou para **sete** — as 6 suítes vivas do lado-branch mais a 7ª —, porque a
+resolução main-integral as poria na `main` **roteadas em lugar nenhum**, auto-pulando verdes. É o mesmo
+fundamento anti-verde-cego do E3.2, aplicado às seis. Registrado no §7 do terreno pós-absorção.
+
+- **status:** **FECHADA (2026-09-05 — PR #371, `99f1840`, com CI verde no job `backend-postgres`)** · **severidade:** MEDIA · **dono:** B-O6R-02 c5
 
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
