@@ -1,0 +1,58 @@
+{
+  "cadeira": "C1 — jurado-r07a-decima-via",
+  "veredito": "APROVADO",
+  "head_julgado": "533cefd14dd69e0f63bdc480a0674c1aa38676b1",
+  "base": "3c29189351541e082d218ff510a7bc4de174776a",
+  "quorum": "maioria de 3 (§C7.1-ter(b)) — PR de registro puro: zero src/, zero teste, zero migration",
+  "itens": {
+    "J1": "CONFORME — componentes_abertos 9->10 no blob; entrada nova completa; origem eed6240 (2026-07-17, PR #197) conferida por git log/git show; as 9 vias antigas e os 15 campos de topo byte-identicos",
+    "J2": "CONFORME (item central) — efeito REPRODUZ 3/3 por execucao propria: HTTP 200, summary {received 1, accepted 1, rejected 0}, km null -> 111111/222222, com 4 controles e causa medida no produto",
+    "J3": "CONFORME — contagem_aberta desarma o numero nos 3 pontos exigidos; paridade 6/6 com o apenso na pendencia dona; apenso neutro para o indice (0 cabecalhos, 0 linhas de status, 0 CR)"
+  },
+  "achados": [
+    {
+      "id": "J3-N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "a frase nasce neste PR — blob de origin/main (3c29189) nao a contem; diff de tres pontos contra o merge-base cae6086",
+      "o_que": "Tensao de linguagem entre os dois artefatos: contagem_aberta diz que o numero 'mede o que os routers de OS E O SYNC expoem', enquanto o apenso diz que 'nenhum censo deste bloco percorreu' a superficie de sync. De fato mediu-se UMA acao (work_order.mileage) por ataque; as demais (checklist-actions, evidence-actions, checklist-runs/*) a propria C1-v2 declarou que so LEU. Nao e achado porque a sentenca seguinte ordena o censo e e ela que governa a conduta do 07c: a leitura 'o sync ja esta medido' nao sobrevive a frase que manda medi-lo.",
+      "comando": "node scratchpad/r07a-c1-sec002.mjs <blob head> ; git diff origin/main...HEAD -- agent-orchestration/controle/pendencias.md",
+      "saida": "contagem_aberta: '...mede o que os routers de OS e o sync expoem...' | apenso: '...e nenhum censo deste bloco a percorreu.'"
+    },
+    {
+      "id": "J3-N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "titulo pre-existe (registro 2/7, 2026-09-03), mas a decisao de nao o emendar e deste PR",
+      "o_que": "O TITULO da pendencia dona continua dizendo '9 rotas mutantes' — e o titulo e o que aparece no pendencias-indice.md, a superficie que se escaneia. Nao e omissao: a primeira linha do apenso reconcilia explicitamente ('O titulo desta pendencia diz 9 rotas... Existe uma decima') e nao reescrever historico e a convencao §A2. Registro para o planejador do 07c nao parar no titulo.",
+      "comando": "git show HEAD:agent-orchestration/controle/pendencias.md | grep -n '^## ' | awk -F: '$1<6389' | tail -2",
+      "saida": "6312:## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcancaveis pelo tecnico sobre OS ALHEIA — **ALTA**"
+    },
+    {
+      "id": "J0-N3",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "#376 mergeou em 2026-09-05, depois de o inspetor medir 1a7ad4d e depois de a ERRATA ser escrita (commit 533cefd)",
+      "o_que": "Desvio de ancora, contra o processo e nao contra o PR: o corpo do briefing diz base cae6086, a ERRATA E-1 corrige para 1a7ad4d, e eu meco origin/main = 3c29189. A base moveu TRES vezes. O head tambem moveu (inspetor mediu 039c2dc; eu meco 533cefd, o commit da propria errata). Merge segue limpo contra a main de agora (merge-tree ec=0, tree ca4bda8d), entao nao afeta o merito.",
+      "comando": "git rev-parse origin/main ; git rev-parse HEAD ; git merge-tree --write-tree origin/main HEAD",
+      "saida": "3c29189351541e082d218ff510a7bc4de174776a ; 533cefd14dd69e0f63bdc480a0674c1aa38676b1 ; ca4bda8d88b0982767d3d74961e61b4f7de0b797 (ec=0)"
+    }
+  ],
+  "armadilhas_registradas": [
+    "git diff DOIS PONTOS (origin/main HEAD) sobre pendencias.md exibe o avanco da main (#374/#375/#376) como REMOCAO pelo PR — leria como 'o PR apaga registro alheio'. So o TRES PONTOS (origin/main...HEAD) mede o que o PR faz: 30/0, puramente aditivo. Segunda armadilha da familia da errata E-3, e nao estava escrita em lugar nenhum.",
+    "Asserir o summary do sync por igualdade profunda falha: o objeto real traz conflicts e already_applied alem dos 3 campos que o registro nomeia. Isso mede o enunciado do jurado, nao o do registro."
+  ],
+  "terreno": {
+    "worktree": ".claude/worktrees/r07a (nome com r07a, sob .claude/worktrees/)",
+    "env": "sem .env; CORE_SAAS_PERSISTENCE nao exportada; arnes em memoria fixado dentro do drill",
+    "node_modules": "resolvido por SUBIDA de diretorio para a arvore principal; zero junction criada",
+    "banco": "zero porta, zero container; base viva erp-postgres/erp-redis NAO lida",
+    "drill": "tests/zz-r07a-c1-drill.test.ts — untracked, NAO commitado, removido no fecho"
+  },
+  "nao_medi": [
+    "Os hashes de backfill do kpis-history.json e a trilha de blocks_completed — cadeira C2.",
+    "Escopo/guards/derivados e a neutralidade do indice na arvore mesclada — cadeira C3 (meci so a neutralidade estrutural do apenso, porque toca o numero que julgo).",
+    "As demais acoes da superficie de sync (checklist-actions, evidence-actions, checklist-runs/*) — fora do meu mandato e, por desenho, materia do censo que o 07c deve fazer."
+  ],
+  "nao_commitei": true
+}
