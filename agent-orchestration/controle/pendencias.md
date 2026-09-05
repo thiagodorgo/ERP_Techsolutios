@@ -6495,3 +6495,43 @@ tamanho — um PR de 42 linhas que acrescenta um `test()` move o denominador e d
 mil.*
 
 - **status:** ABERTA (registro; a lacuna numérica está coberta, a de forma fica nomeada) · **severidade:** MEDIA · **escopo:** `dentro-do-bloco` · **dono:** este PR de registro
+
+## P-DERIVADO-ESQUECIDO (2026-09-05 — três instâncias em três PRs consecutivos meus) — MÉDIA · `dentro-do-bloco`
+
+**A classe:** *o autor confere o que escreveu, e não o que aquilo que ele escreveu **alimenta**.* Artefato
+com **derivado a jusante** exige regenerar o derivado no mesmo PR — e o derivado é justamente o que o autor
+não olha, porque não foi ele que o digitou.
+
+**Três instâncias, todas minhas, em PRs consecutivos, cada uma achada por um papel diferente:**
+
+| # | PR | o que mudei | derivado esquecido | quem achou |
+|---|---|---|---|---|
+| 1 | **#370** | `tests/auth-invariant-guards.test.ts` (+25, um `test()` novo) | **`Kpis/*`** — o teste **move o denominador** e o §C3.1 fala de *código, teste ou escopo* | sessão irmã |
+| 2 | **#371 e #372** | `pendencias.md` (**660 linhas** somadas) | **`pendencias-indice.md`** — placar 252/243/55 → **261/250/62** pelo gerador | sessão irmã |
+| 3 | **#372** | `production_readiness.fechados` reescrito no meu script | **os campos `por`/`em`** — 12 entradas ficaram sem autor e data, e `Kpis/app.js:1020` renderiza `"fechado por " + esc(f.por)` → **12 linhas de "fechado por undefined" no painel** | `porteiro-pos-merge` independente |
+
+**A terceira é a pior, e é da classe que o `D-JUNTA-SEPARACAO-DE-PAPEIS` descreve:** ela **nasceu dentro da
+correção**. Eu estava consertando a ausência do registro do bloco e, no mesmo movimento, **quebrei a
+apresentação dele** — destruindo campos que as 4 entradas antigas **já tinham**. Nenhum guard pega: o CI
+passou verde nas três.
+
+**A régua que falhou, em cada uma:**
+1. apliquei **tamanho** ("PR de 42 linhas") onde o §C3 fala de **natureza**;
+2. tratei `pendencias.md` como "só registro", ignorando que ele tem **gerador** a jusante;
+3. reescrevi uma lista **derivando só o campo que eu precisava** (`id`), sem conferir o que o consumidor
+   dela lê.
+
+**Propriedades adotadas:**
+- *o §C3 pergunta a **natureza** do diff (código, teste, escopo), nunca o seu tamanho — um PR de 42 linhas
+  que acrescenta um `test()` move o denominador e deve o KPI igual a um de mil;*
+- *arquivo com **gerador** a jusante obriga a rodar o gerador no mesmo PR — `pendencias.md` →
+  `gerar-indice-pendencias.py`; `kpis-latest.json` → `kpi-freeze.mjs`;*
+- *ao reescrever estrutura consumida por outro código, **derive-a da fonte e confira o consumidor** — quem
+  reescreve uma lista precisa saber quais campos quem a lê espera encontrar.*
+
+**Distinção útil, formulada pela sessão irmã e adotada aqui:** *saída de gerador determinístico sobre texto
+alheio **não é** publicar execução alheia* — por isso levar o índice regenerado (que reflete o
+`pendencias.md` dos dois lados) é legítimo, enquanto transportar **medição** alheia não seria. A linha é
+entre **reproduzir um comando** e **afirmar um resultado**.
+
+- **status:** ABERTA (as três instâncias corrigidas; a classe fica registrada) · **severidade:** MEDIA · **dono:** este PR
