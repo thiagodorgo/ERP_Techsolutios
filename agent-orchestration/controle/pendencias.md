@@ -4097,7 +4097,22 @@ integral vive no histórico git e aqui. **Critério cumprido na parte local:** a
 (P4: 3× `52/52`, 0 pulo, 0 XX000; canônica 2 da bateria re-exercita com N≥15). **A prova final** — job
 `backend-postgres` verde sob o guard de zero pulos — é do CI do PR, e o fechamento fica condicionado a ela.
 
-- **status:** FECHADA condicionada ao CI do PR (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
+**FECHAMENTO DEFINITIVO (2026-09-05) — a condição foi cumprida.** O critério escrito era *"a linha presente
+no `ci.yml` mergeado **+** a suíte exercida no job `backend-postgres` **sem pulo**"*. Ambos verificados:
+
+- **as 7 linhas `SUITES=` estão na `main`** (o commit de merge do S0-zero entrou no squash `99f1840` do
+  **PR #371**), com a contagem indo de 27 para 34;
+- **o job `backend-postgres` passou no CI do #371**, sob o guard de zero pulos — que é a prova que a
+  condição pedia e que só o CI podia dar;
+- prova local anterior, medida antes de fechar o S0: **3× `52/52`**, zero pulo, zero `XX000`; e a canônica 2
+  da bateria final, **15/15** com denominador **225 constante**, exercitando a lista inteira do `ci.yml`.
+
+Nota de forma, porque o apenso E3.3 dizia outra coisa: a cláusula original autorizava **UMA** linha e o
+**ruling do CP-1** a emendou para **sete** — as 6 suítes vivas do lado-branch mais a 7ª —, porque a
+resolução main-integral as poria na `main` **roteadas em lugar nenhum**, auto-pulando verdes. É o mesmo
+fundamento anti-verde-cego do E3.2, aplicado às seis. Registrado no §7 do terreno pós-absorção.
+
+- **status:** **FECHADA (2026-09-05 — PR #371, `99f1840`, com CI verde no job `backend-postgres`)** · **severidade:** MEDIA · **dono:** B-O6R-02 c5
 
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
@@ -6413,3 +6428,70 @@ item 2 da pendência-mãe, que segue ABERTA.
 carga pertence ao fecho distribuído desta pendência. Nota a favor: o ciclo 2 REDUZIU as escritas do
 ramo de falha anônima de 2xN para **<=2 por requisição** (<=1 UPDATE + <=1 INSERT, ato único
 pós-veredicto — C2·3), o que só melhora a folga.
+
+### Emenda de 2026-09-05 — ERRATA: o caso de 04/09 (worktree `agent-af6ea*`) NÃO pertence a esta classe
+
+**Correção contra as duas sessões que se acusaram.** No dia 04/09, o worktree
+`.claude/worktrees/agent-af6ea607f3ddf8efd` (do `B-O6R-02`) e a branch `feat/o6r-b02-financial-uow`
+desapareceram, e **duas sessões assumiram culpa por isso**: a do `B-O6R-07a`, por "ter apagado branch com
+trabalho não empurrado"; e a do `B-O6R-02`, por "ter dado ao worktree um nome opaco que não identificava o
+bloco". **Nenhuma das duas causou o desaparecimento.**
+
+**Medido por uma terceira sessão, que não participou de nenhum dos dois blocos:** o `B-O6R-02` **havia
+mergeado** minutos antes — PR **#371**, squash `99f1840`, `mergedAt 2026-09-05T02:27:34Z`. A remoção do
+worktree e a deleção da branch foram o **`--delete-branch` do §8.5** e a **limpeza pós-merge do §C5**
+fazendo exatamente o que devem fazer com o recurso de um bloco que acabou de mergear. `.claude/worktrees/`
+tem mtime de 4 minutos após o merge.
+
+**Por que registrar uma errata em vez de deixar barato:** culpa mal atribuída **polui a classe**. Se esta
+entrada dissesse que o caso de 04/09 foi colisão de nome, quem a lesse depois aprenderia a regra errada —
+passaria a temer a limpeza legítima e a procurar culpado onde houve processo correto. A classe
+`P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` continua **válida e necessária** (o caso do `jur-c1v2-drill`, de
+worktree **vivo** removido por inferência de nome, é real e é dela). O que sai da classe é **este** caso.
+
+**O que sobrevive, e não é pouco:** (a) o nome opaco `agent-af6ea607f3ddf8efd` continua sendo um defeito —
+ele **tornaria** o erro possível se o worktree estivesse vivo, e o corolário *"nome opaco transfere ao
+outro um risco que era seu"* segue valendo; (b) a regra da sessão irmã — *"quando o nome não informa e
+existe sessão viva, perguntar é obrigatório, não cortês"* — segue valendo, e teria evitado **a confusão**,
+mesmo não tendo havido dano; (c) **o `D-DURABILIDADE-BRANCHES-LOCAIS` pega em cheio o `B-O6R-02`**: o
+commit `6ee74bf` ficou horas **só num disco**, sem upstream, e só não se perdeu porque o objeto sobreviveu
+e foi recuperado. Aqui não doeu — o produto já estava na `main` —, mas o que só existe num disco não conta
+como entregue.
+
+**Método, que é o que vale para a próxima:** as duas sessões envolvidas convergiram para uma explicação
+**plausível e falsa** — cada uma reconhecendo um defeito real seu e ligando-o ao dano sem medir o elo. Quem
+desfez foi uma terceira, **sem participação nos blocos**, medindo `gh pr view` e o mtime do diretório. É o
+mesmo padrão da série `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA`: a explicação que o autor produz sobre o
+próprio erro é ela própria uma afirmação que precisa de execução, e **confissão convincente não é prova**.
+
+## P-C3-DOIS-PRS-SEM-KPI (2026-09-05 — achado da sessão irmã, conferido por execução) — MÉDIA · `dentro-do-bloco`
+
+**A lacuna §C3 desta rodada é de DOIS PRs, não de um.** O §C3.1 diz *"todo PR que altere **código, teste ou
+escopo** atualiza `Kpis/kpis-latest.json`, `Kpis/kpis-history.*` e `Kpis/index.html` **no mesmo PR**"*.
+
+| PR | o que mergeou | tocou `Kpis/*`? |
+|---|---|---|
+| **#370** (`54a4194`) | `tests/auth-invariant-guards.test.ts` **+25** (um `test()` novo — o `guard 11`) e `tests/core-saas-role-authority-db.test.ts` (+6 −1) | **NÃO** — `git diff --name-only dc8168b 54a4194 -- 'Kpis/**'` sai **VAZIO** |
+| **#371** (`99f1840`) | a migration, a suíte -db, o contrato | **NÃO** — o squash parou um commit antes do `6ee74bf`, que os trazia |
+
+**O #370 é meu, e a violação é minha.** Fui eu quem o conduziu, para destravar o gate
+`G-A109FD7-PUBLICADO`; conferi CI, escopo e ancestralidade, e **não conferi o §C3** — apesar de o próprio
+PR ter acrescentado um `test()` que **muda o denominador** da canônica (2771 → 2772 pelo guard 11, e daí
+para 2817 com o #369). Publiquei no corpo do PR que o diff era "3 arquivos, +40 −1, o mérito sem
+regressão" e **não notei que o mérito incluía um teste novo sem KPI**.
+
+**Por que passou:** eu estava a conferir o §C3 do bloco **grande** (o ciclo 5) e tratei o #370 como
+"PR de registro alheio, de 42 linhas". A régua que apliquei foi o tamanho, não o §C3.1 — que fala de
+**natureza** (código, teste ou escopo), não de tamanho.
+
+**Como este PR de registro trata:** o `backend_tests` que ele publica (**2815/2817**) é execução real
+**posterior a ambos**, medida no head que já continha o #370 e o #369 — ou seja, **cobre numericamente as
+duas lacunas**. O que não se conserta retroativamente é o **registro por PR**: o #370 mergeou sem a sua
+entrada, e isso fica **nomeado aqui** em vez de sumir. Nomear os dois importa porque, sem isto, quem
+auditar depois conclui que só o #371 falhou.
+
+**Propriedade que decorre:** *a régua do §C3 é a NATUREZA do diff (código, teste, escopo), nunca o seu
+tamanho — um PR de 42 linhas que acrescenta um `test()` move o denominador e deve o KPI igual a um de
+mil.*
+
+- **status:** ABERTA (registro; a lacuna numérica está coberta, a de forma fica nomeada) · **severidade:** MEDIA · **escopo:** `dentro-do-bloco` · **dono:** este PR de registro

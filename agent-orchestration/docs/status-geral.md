@@ -1,5 +1,37 @@
 # Status Geral
 
+## Atualização 2026-09-05 — B-O6R-02 ciclo 5: APROVADO 3×0, e a bateria reexecutada depois da absorção
+
+**MERGEADO: PR #371, squash `99f1840`, em 2026-09-05T02:27:34Z.** O squash parou um commit
+antes do fim e deixou o REGISTRO de fora (KPI, log e este arquivo) — o produto entrou integro
+(`git diff 6ee74bf 99f1840 -- src prisma` = VAZIO). O `porteiro-pos-merge` achou a lacuna SOZINHO e
+classificou como `BLOQUEADO`; este PR de registro e o conserto. Os **7 P0 + Ω6R-QUA-003** passam a
+**fechado** com evidencia — o painel vai de **4 para 11** P0 corrigidos na main, de 17.
+
+**A junta votou APROVADO 3×0** (unanimidade de 3, §C7.1-ter(b) — o bloco toca dinheiro). Ata em
+`agent-orchestration/omega/juntas/J-B-O6R-02-ciclo5.md`, com os 6 pareceres em `votos/B-O6R-02-ciclo5/`.
+O `B-O6R-02` sai do **teto** aprovado, na última tentativa que tinha.
+
+**O gate que ninguém tinha conferido.** `G-A109FD7-PUBLICADO` bloqueava a publicação deste bloco desde
+20/08 e foi achado por conferência ativa **antes** de o merge ser proposto. Destravado pelo **PR #370**
+(`54a4194`, CI 7/7), que fechou as 4 ressalvas do porteiro do #357. A branch dele estava parada em 19/08
+com 3 conflitos — por isso o CI sequer disparava.
+
+**A absorção trouxe dois PRs** (#369 e #370) e uma **colisão de timestamp de migration** com o
+`B-O6R-07a`, desfeita renomeando a minha para `20260872000000`. O denominador foi de **2771 → 2817**.
+
+**Bateria reexecutada** (exigência literal do gate), cluster próprio, 107 migrations: canônica 3 **10/10**
+com denominador idêntico nas dez e Δroles=0; canônica 2 **15/15** com 225 constante; corrida **10/10**;
+canônica 1 com o vermelho ambiental declarado, que o piso do #359 **nomeia**. `check`/`lint`/`build`/
+`frontend check` ec=0.
+
+**O que não fechou, declarado:** o vazamento linear tem as **tabelas** nomeadas por execução mas o
+**arquivo produtor não** — os candidatos que publiquei vieram de `grep` e o crítico os refutou executando.
+E o vermelho ambiental da canônica 1 tem pendência própria.
+
+---
+
+
 ## Atualização 2026-09-03 — B-O6R-02 ciclo 5 (TETO): a FK do par, o `[RLS]` real e o número que sobrevive à forma
 
 ### Status
