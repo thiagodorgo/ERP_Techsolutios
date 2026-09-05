@@ -5,6 +5,7 @@ import {
   invalidAccountReferenceError,
   type ChequeRepository,
 } from "./cheque.repository.js";
+import { CHEQUE_ENTRY_LINK_COLUMN_NAMES } from "./cheque.types.js";
 import type {
   Cheque,
   CreateChequeInput,
@@ -110,6 +111,21 @@ export class PrismaChequeRepository implements ChequeRepository {
     return this.attachEntry(tenantId, chequeId, "bounced", { bounce_entry_id: entryId }, updatedBy);
   }
 
+  // B-O6R-02 ciclo 3 · C2 (P5) — o `OR` é MONTADO a partir da fonte única
+  // (`CHEQUE_ENTRY_LINK_COLUMNS`), não escrito à mão. Era este literal, e o seu gêmeo na cópia de
+  // memória, que faziam duas listas manuais precisarem concordar sem nada obrigá-las a isso.
+  // tenant_id explícito (além da RLS) e deleted_at IS NULL, como os vizinhos.
+  async findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
+    const record = await this.client.cheque.findFirst({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: null,
+        OR: CHEQUE_ENTRY_LINK_COLUMN_NAMES.map((column) => ({ [column]: entryId }) as Prisma.ChequeWhereInput),
+      },
+    });
+    return record ? mapRecord(record) : undefined;
+  }
+
   private async attachEntry(
     tenantId: string,
     chequeId: string,
@@ -151,6 +167,9 @@ export class RlsPrismaChequeRepository implements ChequeRepository {
   }
   attachBounceEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).attachBounceEntry(tenantId, chequeId, entryId, updatedBy));
+  }
+  findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).findActiveByLinkedEntry(tenantId, entryId));
   }
 }
 

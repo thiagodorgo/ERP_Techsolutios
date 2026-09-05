@@ -5,12 +5,15 @@ import type {
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
+  DeleteFinancialTitleResult,
+  GuardedTitlePaymentInput,
   ListFinancialTitleInput,
   ListFinancialTitleResult,
   UpdateFinancialTitleInput,
+  UpdateFinancialTitleResult,
 } from "./financial-title.types.js";
 import { FinancialTitleError } from "./financial-title.types.js";
-import { isTitleOverdue } from "./financial-title.validators.js";
+import { isTitleOverdue, roundMoney } from "./financial-title.validators.js";
 
 export interface FinancialTitleRepository {
   create(input: CreateFinancialTitleInput): Promise<FinancialTitle>;
@@ -23,13 +26,34 @@ export interface FinancialTitleRepository {
   // source_id)+direção. Sustenta o PRE-CHECK de idempotência do lançamento por origem E o badge derivado
   // (findActiveBySource no GET). A rede real é o índice parcial financial_titles_source_direction_active_key.
   findActiveBySource(tenantId: string, sourceType: string, sourceId: string, direction: string): Promise<FinancialTitle | undefined>;
-  update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined>;
+  update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult>;
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined>;
   // Ω4-4 — WRITE-PATH da liquidação: paid_amount + status juntos (contorna a máquina de status).
   applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined>;
-  softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined>;
+  softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult>;
+  // B-O6R-02 F3 (Ω6R-DIN-001) — leitura ESTÁVEL para CLASSIFICAR o erro quando o CAS casa 0 linhas
+  // (distinguir 404 / title_cancelled / title_already_paid / overpayment sobre a tupla travada).
+  // No Prisma é SELECT ... FOR UPDATE dentro da transação corrente; no InMemory é findById (o mutex
+  // por tenant do runner de memória já serializa a unidade inteira).
+  findByIdForUpdate(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined>;
+  // B-O6R-02 F3 (Ω6R-DIN-001) — liquidação GUARDADA (CAS): incrementa paid_amount e deriva o status
+  // ('paid' quando quita, senão 'partially_paid') num ÚNICO UPDATE condicional
+  // (`status NOT IN ('paid','cancelled') AND paid_amount + X <= amount`). O perdedor da corrida
+  // re-avalia o predicado contra a tupla nova e recebe undefined — DENTRO da mesma transação do
+  // lançamento, o 422 do chamador aborta e o lançamento morre junto (zero órfão).
+  applyPaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined>;
+  // B-O6R-02 F4 (Ω6R-DIN-002) — estorno GUARDADO (CAS): decrementa paid_amount e recalcula o status
+  // (`= 0 → open`, `0 < x < amount → partially_paid`) num ÚNICO UPDATE condicional
+  // (`status IN ('paid','partially_paid') AND paid_amount - X >= 0`). undefined = título não
+  // restaurável (deletado/estado legado) — o chamador aborta a unidade inteira (fail-closed).
+  restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined>;
   reset?(): void;
 }
+
+// M2 (Ω4-6) — LAR ÚNICO do conjunto de status que BLOQUEIA escrita: {closing, closed}. Os dois
+// isPeriodClosed (InMemory abaixo e Prisma em financial-title-prisma.repository.ts) e o re-check
+// in-tx do DIN-008 (B-O6R-02) leem DESTA constante — a mesma verdade nunca vive em dois literais.
+export const PERIOD_WRITE_BLOCKING_STATUSES = ["closing", "closed"] as const;
 
 // CHOKEPOINT (D-Ω4-A3) — fonte da verdade do fechamento de período. Ω4-6 povoa a tabela (fechar/reabrir);
 // a fiação é REAL: toda escrita de título/lançamento consulta isPeriodClosed.
@@ -91,6 +115,24 @@ export function titleAlreadyPaidError(): FinancialTitleError {
 
 export function overpaymentError(): FinancialTitleError {
   return new FinancialTitleError(422, "FINANCIAL_TITLE_UNPROCESSABLE", "overpayment", "Payment amount exceeds the outstanding balance of the title.");
+}
+
+export function amountBelowPaidError(): FinancialTitleError {
+  return new FinancialTitleError(
+    422,
+    "FINANCIAL_TITLE_UNPROCESSABLE",
+    "amount_below_paid",
+    "The title amount cannot be lower than the amount already paid.",
+  );
+}
+
+export function titleHasPaymentsError(): FinancialTitleError {
+  return new FinancialTitleError(
+    422,
+    "FINANCIAL_TITLE_UNPROCESSABLE",
+    "title_has_payments",
+    "A financial title with payments must be reversed before it can be deleted.",
+  );
 }
 
 // Ω4-3 (D-Ω4-C2) — rede do índice PARCIAL de idempotência: um 2º título ATIVO para a mesma OS+direção.
@@ -218,10 +260,13 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     return title?.tenantId === tenantId ? title : undefined;
   }
 
-  async update(input: UpdateFinancialTitleInput): Promise<FinancialTitle | undefined> {
+  async update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult> {
     const current = await this.findById(input.tenantId, input.financialTitleId);
     // PATCH em título deletado → trata como inexistente (→404), simétrico ao re-delete (lição M1 do Ω4-1).
-    if (!current || current.deletedAt != null) return undefined;
+    if (!current || current.deletedAt != null) return { outcome: "not_found" };
+    if (input.amount !== undefined && current.paidAmount > input.amount) {
+      return { outcome: "amount_below_paid" };
+    }
 
     const updated: FinancialTitle = {
       ...current,
@@ -235,10 +280,13 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
         accountId: input.accountId,
         updatedBy: input.updatedBy,
       }),
+      ...(input.amount !== undefined && current.paidAmount > 0
+        ? { status: current.paidAmount === input.amount ? "paid" : "partially_paid" }
+        : {}),
       updatedAt: new Date(),
     };
     this.titles.set(updated.id, updated);
-    return updated;
+    return { outcome: "updated", title: updated };
   }
 
   async changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined> {
@@ -272,10 +320,59 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
     return updated;
   }
 
-  async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<FinancialTitle | undefined> {
+  // B-O6R-02 F3 — no InMemory a leitura "estável" é o próprio findById: o mutex por tenant do runner
+  // de memória (financial-uow) serializa a unidade inteira, então não existe tupla mudando por baixo.
+  async findByIdForUpdate(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined> {
+    return this.findById(tenantId, financialTitleId);
+  }
+
+  // B-O6R-02 F3 — CAS da liquidação (espelho do UPDATE condicional do Prisma): o predicado inteiro é
+  // avaliado SINCRONAMENTE contra a linha atual (sem await entre leitura e escrita) e o não-casamento
+  // devolve undefined — mesma semântica de "0 linhas" do Postgres.
+  async applyPaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const current = this.titles.get(input.financialTitleId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (current.status === "paid" || current.status === "cancelled") return undefined;
+    const newPaid = roundMoney(current.paidAmount + input.amount);
+    if (newPaid > current.amount) return undefined;
+
+    const updated: FinancialTitle = {
+      ...current,
+      paidAmount: newPaid,
+      status: newPaid >= current.amount ? "paid" : "partially_paid",
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.titles.set(updated.id, updated);
+    return updated;
+  }
+
+  // B-O6R-02 F4 — CAS do estorno (espelho do UPDATE condicional do Prisma): só título com pagamento
+  // (paid/partially_paid — a máquina de status garante que cancelled nunca tem paid_amount > 0) e com
+  // saldo suficiente para devolver; `= 0 → open`, parcial → partially_paid.
+  async restorePaymentGuarded(input: GuardedTitlePaymentInput): Promise<FinancialTitle | undefined> {
+    const current = this.titles.get(input.financialTitleId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (current.status !== "paid" && current.status !== "partially_paid") return undefined;
+    const newPaid = roundMoney(current.paidAmount - input.amount);
+    if (newPaid < 0) return undefined;
+
+    const updated: FinancialTitle = {
+      ...current,
+      paidAmount: newPaid,
+      status: newPaid <= 0 ? "open" : "partially_paid",
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.titles.set(updated.id, updated);
+    return updated;
+  }
+
+  async softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult> {
     const current = await this.findById(tenantId, financialTitleId);
     // Já deletado → trata como inexistente (re-delete → 404).
-    if (!current || current.deletedAt != null) return undefined;
+    if (!current || current.deletedAt != null) return { outcome: "not_found" };
+    if (current.paidAmount > 0) return { outcome: "title_has_payments" };
 
     const removed: FinancialTitle = {
       ...current,
@@ -284,11 +381,26 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
       deletedAt: new Date(),
     };
     this.titles.set(removed.id, removed);
-    return removed;
+    return { outcome: "deleted", title: removed };
   }
 
   reset(): void {
     this.titles.clear();
+  }
+
+  // B-O6R-02 — par snapshot/restore do UNDO-LOG do runner de memória (financial-uow). Dublê honesto:
+  // NÃO é evidência de atomicidade (a prova real é a suíte -db contra Postgres); existe só para o
+  // rollback dos fluxos multi-write manter as provas de memória vivas. Escopo por tenant, cópia rasa
+  // por linha (as linhas são tratadas como imutáveis pelos writers InMemory — sempre `set` de objeto novo).
+  snapshotTenantForUow(tenantId: string): FinancialTitle[] {
+    return [...this.titles.values()].filter((title) => title.tenantId === tenantId).map((title) => ({ ...title }));
+  }
+
+  restoreTenantForUow(tenantId: string, rows: readonly FinancialTitle[]): void {
+    for (const [id, title] of [...this.titles]) {
+      if (title.tenantId === tenantId) this.titles.delete(id);
+    }
+    for (const row of rows) this.titles.set(row.id, { ...row });
   }
 
   private sorted(): FinancialTitle[] {
@@ -309,7 +421,7 @@ export class InMemoryFinancialPeriodCloseRepository implements FinancialPeriodCl
   // (financial-entry.service.ts) → fica exento por construção mesmo com o período fechado.
   async isPeriodClosed(tenantId: string, period: string): Promise<boolean> {
     const row = this.closes.get(closeKey(tenantId, period));
-    return row != null && (row.status === "closed" || row.status === "closing");
+    return row != null && (PERIOD_WRITE_BLOCKING_STATUSES as readonly string[]).includes(row.status);
   }
 
   // Helper (testes + fiação do Ω4-6): registra SÓ o status de fechamento de uma competência do tenant (upsert).

@@ -214,10 +214,31 @@ jobs:
           SUITES="$SUITES tests/vehicle-identity-merge-db.test.ts"
           SUITES="$SUITES tests/work-order-checklists-freeze-links-db.test.ts"
           SUITES="$SUITES tests/work-order-checklists-sticky-db.test.ts"
-          # LUGAR RESERVADO — tests/financial-entry-delete-reverse-race-db.test.ts NÃO entra hoje: o arquivo
-          # não existe na main (vive só na branch não-mergeada feat/o6r-b02-financial-uow, blob e5295083), e
-          # a linha quebraria este job de imediato. Sua inclusão é DoD do PR que mergear o B-O6R-02 (ciclo 5
-          # financeiro); a pendência P-O6R-B02-SUITES-LIST-CI segue ABERTA, com esse PR como dono.
+          # B-O6R-02 (Ω6R-DIN-008 / QUA-003) — close × writer com barreira sob Postgres real: o writer
+          # bloqueia na trava SHARED de período e re-valida DENTRO da tx que grava (G10), e o close
+          # espera writer em voo e o snapshot o inclui (G11). A suíte fixa CORE_SAAS_PERSISTENCE=prisma
+          # ela mesma e asserta o modo (lição do #357).
+          SUITES="$SUITES tests/financial-period-close-write-race-db.test.ts"
+          # B-O6R-02 F3–F5 (Ω6R-DIN-001/002/003 / QUA-003) — pagamento, estorno e cheque em transação
+          # ÚNICA, provados com duas conexões e barreira determinística (fila de lock observada em
+          # pg_stat_activity): G1/G2 perdedor 422 sem lançamento órfão + replay 409 sem mutação;
+          # G3/G3b/G4 estorno devolve o pagamento e a dupla reversão morre no FOR UPDATE + re-check;
+          # G5/G6 cheque intacto sob falha real e mutex 409 com invariante cleared ⇔ entry. Cada
+          # suíte fixa CORE_SAAS_PERSISTENCE=prisma ela mesma e asserta o modo (lição do #357).
+          SUITES="$SUITES tests/financial-pay-title-atomic-db.test.ts"
+          SUITES="$SUITES tests/financial-entry-reverse-restore-db.test.ts"
+          SUITES="$SUITES tests/cheque-clear-bounce-atomic-db.test.ts"
+          # B-O6R-02 F6 (Ω6R-DIN-001..004/008 / QUA-003) — CAS de PATCH/DELETE,
+          # status derivado no mesmo UPDATE, precedência de período/404 e CHECK 23514 (G7-G9).
+          SUITES="$SUITES tests/financial-title-invariants-db.test.ts"
+          # B-O6R-02 ciclo 2 · C3 (B-5 da J-B-O6R-02-ciclo1) — CONTROLE NEGATIVO da barreira das
+          # suítes acima. Elas esperavam por statement bloqueado consultando pg_stat_activity
+          # CLUSTER-WIDE, e este job roda os arquivos em PROCESSOS PARALELOS: um backend alheio
+          # bloqueado satisfazia a espera. Agora a barreira é escopada por application_name, e esta
+          # suíte prova as duas metades — bloqueio próprio satisfaz; decoy alheio real NÃO satisfaz.
+          SUITES="$SUITES tests/pg-barrier-scoped-db.test.ts"
+          # Fecha o LUGAR RESERVADO da main e P-O6R-B02-SUITES-LIST-CI, cujo dono é este PR.
+          SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

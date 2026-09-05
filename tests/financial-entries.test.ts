@@ -6,22 +6,35 @@ import test from "node:test";
 
 import {
   createMemoryFinancialAccountService,
+  getMemoryFinancialAccountRepositoryForTests,
   resetFinancialAccountRuntimeForTests,
 } from "../src/modules/financial-accounts/financial-account.service.js";
+import { getMemoryChequeRepositoryForTests } from "../src/modules/cheques/index.js";
 import {
   createMemoryFinancialTitleService,
   deriveCompetencia,
   getMemoryFinancialPeriodCloseRepositoryForTests,
+  getMemoryFinancialTitleRepositoryForTests,
   resetFinancialTitleRuntimeForTests,
 } from "../src/modules/financial-titles/index.js";
 import {
   FinancialEntryError,
+  FinancialEntryService,
   createMemoryFinancialEntryService,
+  getMemoryFinancialEntryRepositoryForTests,
   parseOccurredAt,
   resetFinancialEntryRuntimeForTests,
+  type AccountReader,
   type FinancialEntryActorContext,
 } from "../src/modules/financial-entries/index.js";
+import {
+  createMemoryFinancialUnitOfWork,
+  type FinancialUnitOfWork,
+  type FinancialUowContext,
+  type FinancialUowResolver,
+} from "../src/modules/financial-uow/index.js";
 import type { Tenant } from "../src/modules/core-saas/types/core-saas.types.js";
+import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
 
 // A liquidação delega os guards de ESTADO do título ao módulo de títulos → esses erros são
 // FinancialTitleError (cancelado/pago/overpayment/404), enquanto conta/moeda/idempotência são
@@ -433,6 +446,228 @@ test("ESTORNO de lançamento inexistente/cross-tenant → 404", async () => {
   );
 });
 
+// ---------------------------------------------------------------- estorno de LIQUIDAÇÃO (B-O6R-02 F4, Ω6R-DIN-002)
+// O estorno de um lançamento de liquidação passou a DEVOLVER o pagamento ao título NA MESMA unidade:
+// paid_amount decrementa e o status recalcula (total → open; parcial → partially_paid). Antes, o caixa
+// era revertido e o título continuava pago — as duas verdades incompatíveis do achado.
+
+test("ESTORNO de liquidação TOTAL devolve o pagamento: paid_amount volta a 0 e o título REABRE (open)", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 250 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 250, account_id: account.id, payment_method: "pix" });
+  assert.equal((await titles.get(ctx, title.id)).status, "paid");
+
+  const contra = await entries.reverse(ctx, payment.id);
+  assert.equal(contra.reversalOf, payment.id);
+  assert.equal(contra.direction, "out");
+  // A contrapartida nasce SEM title_id (não duplica a contagem da liquidação).
+  assert.equal(contra.titleId, undefined);
+
+  const refreshed = await titles.get(ctx, title.id);
+  assert.equal(refreshed.paidAmount, 0, "o pagamento devolvido tem de sair do título");
+  assert.equal(refreshed.status, "open", "título totalmente devolvido reabre");
+});
+
+test("ESTORNO de liquidação PARCIAL: título volta a partially_paid com o paid_amount decrementado", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+  const second = await entries.payTitle(ctx, title.id, { amount: 60, account_id: account.id, payment_method: "pix" });
+  assert.equal((await titles.get(ctx, title.id)).status, "paid");
+
+  await entries.reverse(ctx, second.id);
+  const refreshed = await titles.get(ctx, title.id);
+  assert.equal(refreshed.paidAmount, 40, "só o pagamento estornado sai do título");
+  assert.equal(refreshed.status, "partially_paid");
+});
+
+test("ESTORNO de liquidação: 2º estorno → 409 already_reversed e o título NÃO decrementa de novo", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 100, account_id: account.id, payment_method: "pix" });
+  await entries.reverse(ctx, payment.id);
+
+  await assert.rejects(
+    () => entries.reverse(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 409, "already_reversed"),
+  );
+  const refreshed = await titles.get(ctx, title.id);
+  assert.equal(refreshed.paidAmount, 0, "um único decremento — nunca duplo");
+  assert.equal(refreshed.status, "open");
+  // Exatamente 1 contrapartida ativa apontando o original.
+  assert.equal(
+    (await entries.list(ctx, {})).items.filter((item) => item.reversalOf === payment.id).length,
+    1,
+  );
+});
+
+test("ESTORNO de liquidação com restore rejeitado → 409 fail-closed e NADA commita", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+  const titleBefore = await titles.get(ctx, title.id);
+  const originalBefore = await entries.get(ctx, payment.id);
+
+  const memoryUow = createMemoryFinancialUnitOfWork({
+    titles: getMemoryFinancialTitleRepositoryForTests(),
+    entries: getMemoryFinancialEntryRepositoryForTests(),
+    cheques: getMemoryChequeRepositoryForTests(),
+    periodCloses: getMemoryFinancialPeriodCloseRepositoryForTests(),
+  });
+  const faultUow: FinancialUnitOfWork = {
+    async run<T>(tenantId: string, work: (uowCtx: FinancialUowContext) => Promise<T>): Promise<T> {
+      return memoryUow.run(tenantId, async (uowCtx) => {
+        const faultTitles = new Proxy(uowCtx.titles, {
+          get(target, property, receiver) {
+            if (property === "restorePaymentGuarded") {
+              return async () => undefined;
+            }
+            const member = Reflect.get(target, property, receiver);
+            return typeof member === "function" ? member.bind(target) : member;
+          },
+        });
+        return work({ ...uowCtx, titles: faultTitles });
+      });
+    },
+  };
+  const resolveFaultUow: FinancialUowResolver = async () => faultUow;
+  const accountReader: AccountReader = {
+    async findAccount(tenantId, accountId) {
+      const found = await getMemoryFinancialAccountRepositoryForTests().findById(tenantId, accountId);
+      if (!found) return undefined;
+      return {
+        id: found.id,
+        currency: found.currency,
+        isActive: found.isActive,
+        openingBalance: found.openingBalance,
+      };
+    },
+  };
+  const entriesWithRestoreFault = new FinancialEntryService(
+    getMemoryFinancialEntryRepositoryForTests(),
+    getMemoryFinancialPeriodCloseRepositoryForTests(),
+    accountReader,
+    () => Promise.resolve(createMemoryFinancialTitleService()),
+    resolveFaultUow,
+  );
+
+  await assert.rejects(
+    () => entriesWithRestoreFault.reverse(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 409, "title_restore_conflict"),
+  );
+  // Fail-closed: a contrapartida NÃO pode sobreviver sem o título restaurado (senão DIN-002 renasce).
+  assert.equal((await entries.list(ctx, {})).items.filter((item) => item.reversalOf === payment.id).length, 0);
+  const titleAfter = await titles.get(ctx, title.id);
+  assert.equal(titleAfter.deletedAt, undefined, "o título continua ativo");
+  assert.equal(titleAfter.paidAmount, titleBefore.paidAmount, "paid_amount volta ao valor anterior");
+  assert.equal(titleAfter.status, titleBefore.status, "o status do título não muda");
+  const originalAfter = await entries.get(ctx, payment.id);
+  assert.equal(originalAfter.deletedAt, undefined, "o lançamento original continua ativo");
+  assert.deepEqual(originalAfter, originalBefore, "o lançamento original continua inalterado");
+});
+
+// ------------------------------------------- delete de LIQUIDAÇÃO recusa (B-O6R-02 ciclo 2 · C1)
+// P1 — desfazer o caixa de uma liquidação devolve o pagamento ao título na MESMA unidade (reverse)
+//      ou é RECUSADO (delete → 422), em TODO caminho da API que desfaz.
+// P2 — nenhuma sequência de chamadas deixa título com paid_amount > 0 sem lançamento vivo que o
+//      sustente, e todo título alcançável pela API tem ROTA DE SAÍDA.
+// O defeito (Ω6R-DIN-010, medido em e4e914a): DELETE do lançamento de liquidação era ACEITO — o caixa
+// voltava, o título ficava paid=40, e depois nem se apagava (422 title_has_payments) nem se estornava
+// (404 entry_not_found). Um estado sem saída, criado por uma chamada HTTP com a permissão de quem paga.
+
+test("[C1/P1] DELETE de lançamento de LIQUIDAÇÃO → 422 settlement_entry_immutable; título e lançamento INTACTOS", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+  const balanceBefore = await entries.balance(ctx, account.id);
+
+  await assert.rejects(
+    () => entries.delete(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 422, "settlement_entry_immutable"),
+  );
+
+  // Nada se moveu: nem o lançamento, nem o título, nem o caixa.
+  const entryAfter = await entries.get(ctx, payment.id);
+  assert.equal(entryAfter.deletedAt, undefined, "o lançamento de liquidação continua vivo");
+  assert.equal(entryAfter.titleId, title.id);
+  const titleAfter = await titles.get(ctx, title.id);
+  assert.equal(titleAfter.paidAmount, 40, "o título não pode perder nem ganhar pagamento numa recusa");
+  assert.equal(titleAfter.status, "partially_paid");
+  assert.deepEqual(await entries.balance(ctx, account.id), balanceBefore, "o saldo da conta não se move");
+});
+
+test("[C1/P2] ROTA DE SAÍDA: pay → delete RECUSADO → reverse → paid=0/open → delete do TÍTULO aceito", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const title = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const payment = await entries.payTitle(ctx, title.id, { amount: 40, account_id: account.id, payment_method: "pix" });
+
+  // (1) o caminho errado é recusado — e é aqui que o estado sem saída deixava de ser alcançável.
+  await assert.rejects(
+    () => entries.delete(ctx, payment.id),
+    (e: unknown) => isDomainError(e, 422, "settlement_entry_immutable"),
+  );
+  // (2) enquanto o título tem pagamento, apagá-lo continua (corretamente) recusado.
+  await assert.rejects(
+    () => titles.delete(ctx, title.id),
+    (e: unknown) => isDomainError(e, 422, "title_has_payments"),
+  );
+  // (3) a ÚNICA porta que desfaz: o estorno devolve o pagamento na mesma unidade.
+  await entries.reverse(ctx, payment.id);
+  const reopened = await titles.get(ctx, title.id);
+  assert.equal(reopened.paidAmount, 0);
+  assert.equal(reopened.status, "open");
+  // (4) e então o título volta a ser apagável — a saída existe, ponta a ponta.
+  const removed = await titles.delete(ctx, title.id);
+  assert.notEqual(removed.deletedAt, undefined, "com paid_amount = 0 o título volta a ser removível");
+});
+
+test("[C1] precedência do DELETE: entry_reconciled e reversal_pair_immutable vêm ANTES de settlement_entry_immutable", async () => {
+  const { entries, accounts, titles } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+
+  // Liquidação CONCILIADA: a imutabilidade da conciliação decide primeiro.
+  const titleA = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const conciliada = await entries.payTitle(ctx, titleA.id, { amount: 10, account_id: account.id, payment_method: "pix" });
+  await entries.reconcile(ctx, conciliada.id, { reconciled: true });
+  await assert.rejects(
+    () => entries.delete(ctx, conciliada.id),
+    (e: unknown) => isDomainError(e, 422, "entry_reconciled"),
+  );
+
+  // Liquidação JÁ ESTORNADA: o par de estorno decide antes da liquidação.
+  const titleB = await titles.create(ctx, receivableBody({ amount: 100 }));
+  const estornada = await entries.payTitle(ctx, titleB.id, { amount: 10, account_id: account.id, payment_method: "pix" });
+  await entries.reverse(ctx, estornada.id);
+  await assert.rejects(
+    () => entries.delete(ctx, estornada.id),
+    (e: unknown) => isDomainError(e, 422, "reversal_pair_immutable"),
+  );
+});
+
+test("[C1] o guard é ESTREITO: lançamento AVULSO (sem title_id) continua deletável", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const avulso = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 30, payment_method: "pix" });
+
+  const removed = await entries.delete(ctx, avulso.id);
+  assert.notEqual(removed.deletedAt, undefined, "o delete de avulso não pode ser vítima colateral do guard");
+  assert.equal((await entries.list(ctx, {})).total, 0);
+});
+
 // ---------------------------------------------------------------- conciliação (reconcile) [Ω4-5]
 // Paridade InMemory×Prisma é ESTRUTURAL (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
 // (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma da conciliação não é exercido sem banco, idêntico a
@@ -830,6 +1065,151 @@ test("[rota] estorno: POST /financial-entries/:id/reverse → 201 contra-lançam
   });
 });
 
+// [C1/P1] O achado da junta era uma CHAMADA HTTP, com a mesma permissão de quem paga — a prova tem
+// de ser HTTP também, com envelope e reason exatos (o serviço podia recusar e a rota traduzir errado).
+test("[rota][C1] DELETE /financial-entries/:id de LIQUIDAÇÃO → 422 settlement_entry_immutable; título e caixa intactos", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA, { opening_balance: 0 });
+    const title = await createTitle(baseUrl, seed.tenantA, { amount: 100 });
+    const pay = await requestJson(baseUrl, `/api/v1/financial-titles/${title.id}/pay`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, "finance"),
+      body: { amount: 40, account_id: account.id, payment_method: "pix" },
+    });
+    assert.equal(pay.status, 201);
+
+    const removed = await requestJson(baseUrl, `/api/v1/financial-entries/${pay.body.data.id}`, {
+      method: "DELETE",
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(removed.status, 422, "o DELETE da liquidação era 200 no head e4e914a — é o achado Ω6R-DIN-010");
+    assert.equal(removed.body.error.reason, "settlement_entry_immutable");
+    assert.match(String(removed.body.error.message), /reverse/i, "a mensagem tem de apontar o remédio");
+    assert.equal(removed.body.error.tenantId, undefined, "§2.8: erro não vaza tenant");
+    assert.equal(removed.body.error.tenant_id, undefined);
+
+    // O caixa NÃO voltou (era 40 → 0 no defeito) e o título segue com o pagamento.
+    const balance = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, {
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(balance.body.data.balance, 40, "o saldo tem de continuar 40 — o dinheiro não some pela recusa");
+    const refreshed = await requestJson(baseUrl, `/api/v1/financial-titles/${title.id}`, {
+      headers: authHeaders(seed.tenantA, "finance"),
+    });
+    assert.equal(refreshed.body.data.paidAmount, 40);
+    assert.equal(refreshed.body.data.status, "partially_paid");
+  });
+});
+
+// [C2/P3 · Ω6R-DIN-011] O ataque da junta ponta a ponta POR HTTP, que é como ele foi medido: cheque
+// de +100 compensado → reverse do lançamento de compensação → bounce. Dava 200 devolvidos num cheque
+// de 100. A recusa tem de acontecer na ROTA, não só no serviço.
+test("[rota][C2] reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_immutable; bounce leva a líquido ZERO, nunca −100", async () => {
+  await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+    const account = await createAccount(baseUrl, seed.tenantA, { opening_balance: 0 });
+    const headers = authHeaders(seed.tenantA, "finance");
+
+    const cheque = await requestJson(baseUrl, "/api/v1/cheques", {
+      method: "POST",
+      headers,
+      body: { direction: "received", cheque_number: "000999", bank: "Banco Ataque", amount: 100, account_id: account.id },
+    });
+    assert.equal(cheque.status, 201);
+    const chequeId = cheque.body.data.id as string;
+    assert.equal((await requestJson(baseUrl, `/api/v1/cheques/${chequeId}/deposit`, { method: "POST", headers })).status, 200);
+    const cleared = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}/clear`, { method: "POST", headers });
+    assert.equal(cleared.status, 200);
+    const clearingEntryId = cleared.body.data.clearedEntryId as string;
+    assert.ok(clearingEntryId);
+
+    const balanceAfterClear = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers });
+    assert.equal(balanceAfterClear.body.data.balance, 100);
+
+    // O ATAQUE: era 201 no head e4e914a. As duas portas são disparadas e o desfecho fica GUARDADO —
+    // `requestJson` já é never-reject, então a captura aqui é a ORDEM: o razão fala primeiro (C1.5).
+    const reversed = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}/reverse`, { method: "POST", headers });
+    const deleted = await requestJson(baseUrl, `/api/v1/financial-entries/${clearingEntryId}`, { method: "DELETE", headers });
+
+    // B-O6R-02 ciclo 3 · C1 (P6) — O RAZÃO PRIMEIRO, POR HTTP. Se o guard cair (drill D15), o
+    // vermelho vem DAQUI: o fecho por estorno enxerga a contrapartida que nenhuma ponta do cheque
+    // referencia, e um cheque 'cleared' de 100 passa a valer 0.
+    const stillCleared = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}`, { headers });
+    await expectChequeLedgerOverHttp(baseUrl, headers, account.id, stillCleared.body.data, "depois do ataque, por HTTP");
+
+    // E SÓ ENTÃO a razão de cada recusa.
+    assert.equal(reversed.status, 422, "estornar a compensação por fora da máquina do cheque era ACEITO — é o Ω6R-DIN-011");
+    assert.equal(reversed.body.error.reason, "cheque_entry_immutable");
+    assert.equal(reversed.body.error.tenantId, undefined, "§2.8: erro não vaza tenant");
+    assert.equal(deleted.status, 422);
+    assert.equal(deleted.body.error.reason, "cheque_entry_immutable");
+
+    // O cheque não se moveu, e o caixa também não.
+    assert.equal(stillCleared.body.data.status, "cleared");
+    assert.equal(
+      (await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers })).body.data.balance,
+      100,
+      "as recusas não podem ter devolvido nada",
+    );
+
+    // E a única porta que desfaz leva a ZERO — no defeito, esta linha dava −100.
+    const bounced = await requestJson(baseUrl, `/api/v1/cheques/${chequeId}/bounce`, {
+      method: "POST",
+      headers,
+      body: { reason: "sem fundos" },
+    });
+    assert.equal(bounced.status, 200);
+    assert.equal(bounced.body.data.status, "bounced");
+    await expectChequeLedgerOverHttp(baseUrl, headers, account.id, bounced.body.data, "depois do bounce, por HTTP");
+    assert.equal(
+      (await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, { headers })).body.data.balance,
+      0,
+      "líquido ZERO: 200 devolvidos num cheque de 100 era o achado",
+    );
+  });
+});
+
+// B-O6R-02 ciclo 3 · C1 (P6) — a TERCEIRA cópia do carregador (memória, Postgres e AQUI, HTTP), e
+// pela mesma regra das outras duas: carrega o razão COMPLETO da conta e não seleciona nada.
+// O DTO expõe `active` em vez de `deleted_at` (§2.8 — deliberado), então a linha apagada chega como
+// `active: false` e vira `deletedAt` para o helper; a informação que o invariante precisa é a mesma.
+async function expectChequeLedgerOverHttp(
+  baseUrl: string,
+  headers: Record<string, string>,
+  accountId: string,
+  cheque: Record<string, unknown>,
+  label: string,
+): Promise<void> {
+  const listed = await requestJson(
+    baseUrl,
+    `/api/v1/financial-entries?account_id=${accountId}&include_deleted=true&limit=100`,
+    { headers },
+  );
+  assert.equal(listed.status, 200, `${label}: o razão tem de carregar`);
+  // A rota de LISTA responde `{ items, pagination }` direto (sem envelope `data`, ao contrário das
+  // rotas de item) — medido no controller: `return { body: toFinancialEntryListDto(result) }`.
+  const items = listed.body.items as Record<string, unknown>[];
+  assert.equal(
+    items.length,
+    listed.body.pagination.total,
+    `${label}: o razão carregado tem de ser COMPLETO (sem truncar por paginação)`,
+  );
+  const linkedIds = [cheque.clearedEntryId, cheque.bounceEntryId].filter((id): id is string => typeof id === "string");
+  expectChequeLedgerCoherent({
+    status: String(cheque.status),
+    direction: String(cheque.direction),
+    amount: Number(cheque.amount),
+    linkedIds,
+    ledger: items.map((item) => ({
+      id: String(item.id),
+      direction: String(item.direction),
+      amount: Number(item.amount),
+      reversalOf: (item.reversalOf as string | null) ?? undefined,
+      deletedAt: item.active === false ? new Date(0) : undefined,
+    })),
+    label,
+  });
+}
+
 test("[rota] PATCH /financial-entries/:id/reconcile finance → 200; DTO §2.8 (sem tenant_id)", async () => {
   await withFinancialEntryApi(async ({ baseUrl, seed }) => {
     const account = await createAccount(baseUrl, seed.tenantA);
@@ -1010,6 +1390,135 @@ test("[rota][RBAC] requisição anônima → 403", async () => {
     assert.equal(anon.status, 403);
   });
 });
+
+// ================================================================================================
+// B-O6R-02 ciclo 4 · C1 (P9, Ω6R-DIN-002 concorrente) — SUÍTE PERMANENTE de corrida delete×reverse.
+//
+// A propriedade: as portas `delete` e `reverse` do MESMO par NUNCA comprometem ambas sob concorrência —
+// o efeito líquido no saldo é 0 e o perdedor recebe o erro do controle SEQUENCIAL (422
+// reversal_pair_immutable ou 404 entry_not_found). Até o ciclo 3 o `delete` fazia softDelete solto (sem
+// lock, sem re-check) e a corrida FABRICAVA saldo — medido 19/20 em memória (serviço) e até 19/20 por
+// HTTP (§0.1 do plano). Estes testes medem as DUAS ORDENS de disparo: a Forma B do §0.1 (delete
+// primeiro, 0/20) provou que medir UMA ordem só dá verde-cego.
+//
+// A asserção é sobre EFEITO (saldo == 0 em TODAS as iterações), não sobre taxa de interleaving; qualquer
+// fabricação = vermelho, não se arredonda. N = 25 por ordem.
+// ================================================================================================
+
+const RACE_N = 25;
+const RACE_LOSER_STATUS = [422, 404];
+
+/** Cria um lançamento avulso `out amount`, roda [reverse, delete] em `order`, devolve o desfecho. */
+async function raceReverseDeleteMemory(
+  entries: ReturnType<typeof createMemoryFinancialEntryService>,
+  accounts: ReturnType<typeof createMemoryFinancialAccountService>,
+  ctx: FinancialEntryActorContext,
+  order: "reverse-first" | "delete-first",
+  amount = 100,
+) {
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, {
+    account_id: account.id,
+    direction: "out",
+    amount,
+    payment_method: "pix",
+    occurred_at: "2026-05-10T12:00:00.000Z",
+  });
+  const ops =
+    order === "reverse-first"
+      ? [entries.reverse(ctx, entry.id), entries.delete(ctx, entry.id)]
+      : [entries.delete(ctx, entry.id), entries.reverse(ctx, entry.id)];
+  const [a, b] = await Promise.allSettled(ops);
+  const balance = await entries.balance(ctx, account.id);
+  return { a, b, balance: balance.balance };
+}
+
+for (const order of ["reverse-first", "delete-first"] as const) {
+  test(`[C1/P9][memória][${order}] corrida delete×reverse: saldo líquido 0, nunca ambas, perdedor com erro do controle`, async () => {
+    for (let it = 0; it < RACE_N; it++) {
+      const { entries, accounts } = setup();
+      const ctx = actor();
+      const { a, b, balance } = await raceReverseDeleteMemory(entries, accounts, ctx, order);
+
+      const bothAccepted = a.status === "fulfilled" && b.status === "fulfilled";
+      assert.equal(bothAccepted, false, `it=${it}: as DUAS portas aceitaram — saldo fabricado`);
+      assert.equal(balance, 0, `it=${it}: saldo líquido tem de ser 0, veio ${balance}`);
+
+      const rejected = [a, b].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      assert.equal(rejected.length >= 1, true, `it=${it}: pelo menos uma porta tem de recusar`);
+      for (const r of rejected) {
+        const ok =
+          isDomainError(r.reason, 422, "reversal_pair_immutable") || isDomainError(r.reason, 404, "entry_not_found");
+        assert.equal(ok, true, `it=${it}: perdedor tem de ser 422 reversal_pair_immutable ou 404 entry_not_found`);
+      }
+    }
+  });
+}
+
+test("[C1/P9][memória] controle SEQUENCIAL: reverse então delete → 422 reversal_pair_immutable, saldo 0", async () => {
+  const { entries, accounts } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const entry = await entries.create(ctx, {
+    account_id: account.id,
+    direction: "out",
+    amount: 100,
+    payment_method: "pix",
+    occurred_at: "2026-05-10T12:00:00.000Z",
+  });
+  await entries.reverse(ctx, entry.id);
+  await assert.rejects(
+    entries.delete(ctx, entry.id),
+    (error: unknown) => isDomainError(error, 422, "reversal_pair_immutable"),
+  );
+  const balance = await entries.balance(ctx, account.id);
+  assert.equal(balance.balance, 0);
+});
+
+for (const order of ["reverse-first", "delete-first"] as const) {
+  test(`[C1/P9][HTTP][${order}] corrida delete×reverse pelas rotas reais: saldo líquido 0, nunca ambas`, async () => {
+    await withFinancialEntryApi(async ({ baseUrl, seed }) => {
+      for (let it = 0; it < RACE_N; it++) {
+        const account = await createAccount(baseUrl, seed.tenantA);
+        const created = await requestJson(baseUrl, "/api/v1/financial-entries", {
+          method: "POST",
+          headers: authHeaders(seed.tenantA, "finance"),
+          body: { account_id: account.id, direction: "out", amount: 100, payment_method: "pix" },
+        });
+        assert.equal(created.status, 201, `it=${it}: create`);
+        const id = created.body.data.id as string;
+
+        const reverse = () =>
+          requestJson(baseUrl, `/api/v1/financial-entries/${id}/reverse`, {
+            method: "POST",
+            headers: authHeaders(seed.tenantA, "finance"),
+          });
+        const del = () =>
+          requestJson(baseUrl, `/api/v1/financial-entries/${id}`, {
+            method: "DELETE",
+            headers: authHeaders(seed.tenantA, "finance"),
+          });
+        const [rev, delRes] = await Promise.all(order === "reverse-first" ? [reverse(), del()] : [del(), reverse()]);
+
+        const bothAccepted = rev.status < 300 && delRes.status < 300;
+        assert.equal(bothAccepted, false, `it=${it}: as DUAS rotas aceitaram (2xx) — saldo fabricado`);
+
+        const balance = await requestJson(baseUrl, `/api/v1/financial-accounts/${account.id}/balance`, {
+          headers: authHeaders(seed.tenantA, "finance"),
+        });
+        assert.equal(balance.body.data.balance, 0, `it=${it}: saldo líquido tem de ser 0`);
+
+        const loser = [rev, delRes].find((r) => r.status >= 300);
+        assert.notEqual(loser, undefined, `it=${it}: uma rota tem de recusar`);
+        assert.equal(
+          RACE_LOSER_STATUS.includes(loser!.status),
+          true,
+          `it=${it}: perdedor tem de ser 422/404, veio ${loser!.status}`,
+        );
+      }
+    });
+  });
+}
 
 // ---------------------------------------------------------------- harness (espelho de financial-titles-routes)
 

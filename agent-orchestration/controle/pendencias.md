@@ -2490,6 +2490,79 @@ homônimo em organizações distintas é legal no modelo.
   `P-O6R-B01-IDENTIDADE-ORFA`), nunca linha de teardown. A CI **não é afetada**: o banco do job nasce limpo
   a cada execução. status: ABERTA.
 
+### P-O6R-B01-PORTEIRO-357-A109FD7 (2026-08-20) — ressalvas implementadas localmente, ainda não publicadas
+
+O commit `a109fd7` (`chore/ressalvas-porteiro-357`) declara fechar quatro ressalvas do porteiro do PR #357,
+mas a medição de 2026-08-20 mostrou que ele está apenas em branch local, não é ancestral da `main` nem de
+`feat/o6r-b02-financial-uow` e não possui PR. Portanto, as ressalvas **não estão fechadas na linha publicada**.
+
+**Artefato de destino exato:** PR dedicado com head `chore/ressalvas-porteiro-357`, sem misturar o diff
+financeiro, mais ata independente em
+`agent-orchestration/omega/juntas/J-O6R-B01-PORTEIRO-357-RESSALVAS.md`.
+
+**Gate `G-A109FD7-PUBLICADO`:** bloqueia push/abertura do PR B-O6R-02 e seu merge até: CI e junta verdes; PR
+dedicado mergeado na `main`; número, `headRefOid` e `mergeCommit.oid` registrados aqui; branch B-O6R-02
+atualizada; `git merge-base --is-ancestor <merge_commit> HEAD` com exit 0; e bateria/contagens B-O6R-02
+reexecutadas depois da atualização. Evidência: `gh pr view <PR> --json
+number,state,mergedAt,headRefOid,mergeCommit,url` + ancestralidade no task-history. O parecer anterior
+`LIBERADO COM RESSALVA` permite desenvolver a F6; não permite publicar B-O6R-02 sem este gate. Cherry-pick
+silencioso de `a109fd7` no PR financeiro é proibido. **status: ABERTA — BLOQUEIA PUBLICAÇÃO B-O6R-02.**
+
+**FECHAMENTO (2026-09-04) — o gate `G-A109FD7-PUBLICADO` foi SATISFEITO, condição a condição.**
+
+O gate foi **achado por conferência ativa antes de o merge do ciclo 5 ser proposto** — não por acaso: a
+verificação de gate passou a ser passo explícito depois de eu quase propor um merge sobre um bloqueio
+formal que não tinha lido.
+
+| condição literal do gate | evidência medida |
+|---|---|
+| CI e junta verdes | junta do ciclo 5 **APROVADO 3×0** (`J-B-O6R-02-ciclo5.md`); CI do PR dedicado **7/7 jobs pass** (run `33922531004`) |
+| PR dedicado mergeado na `main` | **PR #370**, `state: MERGED`, `mergedAt: 2026-09-04T22:22:32Z` |
+| número, `headRefOid` e `mergeCommit.oid` registrados **aqui** | `pr` **370** · `headRefOid` **`a1d5d2d1c0619bc43ea08b4e547649c9d30d74ad`** · `mergeCommit.oid` **`54a41947f82ab7405ab1aabdf4b1761da70fe815`** |
+| branch `B-O6R-02` atualizada | merge de absorção **`099f71f`**, dois pais (`9f37f61` + `54a4194`) |
+| `git merge-base --is-ancestor <merge_commit> HEAD` ec=0 | **ec=0** para `54a4194` — e `12c3825` (head julgado do ciclo 4) segue ancestral, também ec=0 |
+| bateria/contagens reexecutadas **depois** da atualização | reexecutada no head pós-absorção — números publicados no KPI e no `kpis-history` deste PR |
+
+**Nota de forma, para não confundir quem medir depois:** o merge do #370 foi **squash** (política §8.5 do
+`CLAUDE.md`), então `a109fd7` **não** é ancestral da `main` — o que é ancestral é o `mergeCommit`
+`54a4194`, que é exatamente o que a cláusula do gate pede. O **conteúdo** chegou íntegro, conferido por
+execução na `main`: o `guard 11` (`catalog.ts não pode ganhar import`) está presente, o comentário de
+precisão em `core-saas-role-authority-db.test.ts` está presente, e as duas atribuições de dono
+(`B-O6R-07`, `B-O6R-08`) estão presentes.
+
+**O que o PR #370 precisou além do previsto, registrado porque é dado de terreno:** a branch estava
+parada em **19/08** e tinha **3 conflitos** com a `main` — por isso o evento `pull_request` sequer
+disparava CI. Foi atualizada por **merge da `main` dentro dela** (nunca rebase, para não mover
+`a109fd7`), com `Kpis/app.js` e `kpis-latest.json` resolvidos **main-integral** (a branch só mudava um
+`as_of` de 08-17 para 08-19, e a `main` já estava em 09-02 — preservar o lado dela **regrediria o
+painel**) e `pendencias.md` por **união**, preservando as 10 linhas de atribuição de dono. Diff final
+contra a `main`: **3 arquivos, +40 −1** — o mérito, sem regressão.
+
+- **status:** **FECHADA (2026-09-04, PR #370 — `54a4194`)** · o gate `G-A109FD7-PUBLICADO` **deixa de bloquear** a publicação do `B-O6R-02`
+- **`P-O6R-B01-TRILHA-ORFA-LIMPEZA`** (ciclo 3, C5 — 2026-08-19) — a trilha `auth_identity_link_events` da
+  base do dono carrega **231 linhas órfãs de origem** (medido em 2026-08-19 antes do F1: 231 de 508, todas
+  `event='backfill'`, apontando para organização que não existe mais) — despejadas pelo backfill SEM escopo
+  que as execuções do próprio bloco rodaram até o ciclo 2. **O canal do backfill está fechado** (C1: sentença
+  escopada + tripwire; a sonda F4 mediu 0 instantes com terceiro no conjunto-alvo em 713 amostras durante o
+  F1). **Mas a medição F4 do ciclo 3 deu delta +12 (231 → 243 nas 12 execuções, ≈1 por iteração)** — o
+  condicional do C5 disparou, e a ATRIBUIÇÃO está fechada com evidência (execução isolada por suíte):
+  o produtor residual é `tests/core-saas-role-authority-db.test.ts` (+1 órfã por execução, sozinha; as demais
+  candidatas, 0). Mecanismo: a suíte assina JWT direto e dirige POST/PATCH `/users` autenticado sob
+  `CORE_SAAS_PERSISTENCE=prisma`; o caminho de produção normaliza PREGUIÇOSAMENTE o par do token
+  (`normalizePairIdentity`, §3.4 — por desenho) criando vínculo + evento de nascimento; o teardown da suíte
+  apaga o tenant sem conhecer a trilha → evento órfão indelével. **NOTA DE PREMISSA**: o plano do ciclo 3
+  previa este delta como "suíte irmã que não conhece a trilha" e prescrevia transferência ao bloco irmão —
+  mas a suíte medida NASCEU NESTE BLOCO (ciclo 2, B-4). O desenvolvedor do ciclo 3 NÃO remendou (o plano
+  proíbe conserto improvisado neste ramo) e NÃO decidiu o destino: cabe à junta escolher entre (a) o teardown
+  da suíte adotar o idioma escopado do arnês (`cleanupIdentityFixture`) — o que toca a trilha e exige a
+  bênção da junta pela garantia declarada — ou (b) transferir a `P-O6R-ARNES-ISOLAMENTO`. Evidência
+  espelhada lá. **As existentes FICAM** (244 no ato deste registro: 231 de origem + 12 do F1 + 1 da execução
+  de atribuição; o número cresce ≈1 por execução da suíte contra a base viva até a junta decidir o destino):
+  alcançá-las exige contornar o trigger append-only — a quebra de garantia que o próprio bloco declara
+  inviolável — e isso é **decisão de junta com privilégio** (higiene na base viva, mesma classe de
+  `P-O6R-B01-IDENTIDADE-ORFA`), nunca linha de teardown. A CI **não é afetada**: o banco do job nasce limpo
+  a cada execução. status: ABERTA.
+
 ## P-O6R-B02 (2026-08-14) — `fix/financial-uow` — Ω6R-DIN-001..004, DIN-008 (5 P0) + QUA-003 (P1) — **BLOQUEIA o financeiro**
 
 Bloco 2 do plano (depende do B01). Aceite: Unit of Work tenant-scoped, locks, e pay/reverse/cheque/title/close
@@ -3766,7 +3839,13 @@ real: os **58 pulos declarados não caem no piso**, e o piso dispara 1 vez nomea
 `tests/core-saas-role-authority.test.ts`, que morre no LOAD sem declarar skip. [Frase corrigida em 2026-08-28
 pelo bloco de registro — o "piso 0" original media commit intermediário; ver `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL`.]
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F6):** o ask desta divergência cumpriu-se — a pendência
+`P-O6R-B02-RUNNER-SUMICO-SEM-SKIP` agora EXISTE na linha publicada (chegou pela rodada SAN2) e foi marcada
+**FECHADA apontando o #359** como autor da correção, com o resíduo carvado em pendência própria
+(`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`). Nenhum histórico foi fabricado: a entrada e o fechamento carregam as
+datas e os autores reais.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5 — o ask se cumpriu) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-ARNES-DIVERGENCIA-KPI-APP-JS-FORA-DA-§5 (2026-08-28) — divergência do plano, registrada ANTES de consolidar
@@ -3853,7 +3932,15 @@ pendurada (DELETE HTTP legítimo do renomeado → 200, saldo 100). Não há FK e
 Nenhuma rota do produto faz DELETE físico (grep em `src` = 0) — é **defeito de TEXTO e de guarda ausente**, não de caminho do
 produto. Propriedade a decidir: o contrato só pode afirmar o que os triggers garantem.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F4/F6):** as duas portas cruas fecharam **por construção** —
+FK composta `financial_entries_reversal_pair_fk` (migration `20260871000000_add_reversal_pair_fk`,
+`(tenant_id, reversal_of) → (tenant_id, id)` `ON DELETE/UPDATE RESTRICT`), sondas (v)/(vii) recusadas com
+`23503` em casos permanentes `[C9/P13]` da suíte -db, vermelho-controle provado no down (D35: só os 2 caem,
+`pg_constraint` 5→4→5). E o TEXTO passou a afirmar só o que triggers+FK sustentam: contrato re-versionado
+`financial_entry_undo@2026-09-02.b-o6r-02-c5`, com o limite que resta NOMEADO (`UPDATE amount`/`account_id`
+cru, DELETE físico da contrapartida — nenhum desenho de par os fecha).
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-TESTE-RLS-SUPERUSER (2026-08-28 — cadeira de banco, ajuste A2) — MÉDIA
@@ -3862,7 +3949,13 @@ O teste `[C1/P9][db][RLS] estorno LEGÍTIMO sob o contexto RLS do app: trigger e
 derrubados** (controle DOWN: ok 6). O título afirma o que a execução não sustenta (classe do C5). A propriedade trigger×RLS
 **é verdadeira** — provada pelo jurado com role `NOBYPASSRLS` sob RLS forçada ((c1)(c2)(c4) P0001 DIN-002; (c3) legítimo comita).
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F5):** o caso foi REFORMULADO — `[C10/P14][db][RLS real]` roda
+sob papel efêmero `NOBYPASSRLS` criado pelo mecanismo único do arnês (`createEphemeralRole`, sem editar o
+fixture), com a postura asserida por execução (`pg_roles` f/f), a política provada mordendo (0 linhas sem
+contexto / 1 com) e as DUAS portas de órfão recusando `Ω6R-DIN-002` sob a política. Drill D34 provado nas
+duas pontas: triggers no down → o caso fica VERMELHO (no ciclo 4 ficava verde); re-up → 9/9.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-DIVERGENCIA-D27-D21 (2026-08-28 — cadeira de validação, ajuste A3) — BAIXA (registro §A2)
@@ -3882,7 +3975,17 @@ foram executadas/publicadas pelo dev. Validador mediu N=1: canônica 1 = 2465/24
 inicializa o Prisma Client após o skip sem `DATABASE_URL` — pré-existente)/64 skip; canônica 2 = 194/194, 0 skip, 0 hits
 `unhandledRejection|XX000|23505|40P01`. Falta a publicação com N e forma, não há número falso.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-03 — B-O6R-02 ciclo 5, F6; registro completado após o ACHADO-2 do
+`critico-c5-adversarial`, que mediu esta entrada como o ÚNICO dos 7 itens do §12 sem fechamento no
+head).** As duas canônicas foram executadas e publicadas com N e forma neste PR: **canônica 1** — `npm
+test` sem `DATABASE_URL`, **N=3**, com o vermelho ambiental DECLARADO por nome
+(`core-saas-role-authority`, que o piso de denominador do #359 nomeia); **canônica 2** — `db:seed` + as
+**34** suítes da lista `SUITES` extraída do `ci.yml` do head, **N=15**, `15/15 ec=0`, denominador **225
+constante**, 0 hit de `unhandledRejection|XX000|23505|40P01`. Ambas em cluster descartável próprio, Node
+v20.19.5, 106 migrations, com a forma declarada no KPI e no diário (B.2, B.5). A substância foi
+re-medida de forma independente pelo crítico (A10 do parecer).
+
+- **status:** FECHADA (2026-09-03, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-SUITES-LIST-CI (2026-08-28 — validação A5 + arnês #6) — MÉDIA
@@ -3982,12 +4085,31 @@ zero pulos.
 
 **Registrado, não consolidado em silêncio (§A2).** O `SAN2-5` **não tocou** `.github/workflows/ci.yml`;
 resolveu por texto. Diário: `agent-orchestration/omega/juntas/votos/SAN2-5/dev-b3-b4-dividas.md`.
+
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, S0-zero + F6):** a inclusão aconteceu no commit de merge do
+S0-zero (`84bb90b`), sob o **ruling do CP-1** que emendou a cláusula "UMA linha" do apenso B3/E3.3 para
+**7 linhas** (as 6 suítes dos ciclos 1–4, vivas só na branch, + esta) — união dirigida, fundamento =
+a mesma inversão de risco do E3.2 aplicada às 6 (main-integral as poria na main roteadas em lugar nenhum);
+registro completo no terreno pós-absorção §7 e no diário do ciclo 5 (segundo registro + adendo). O
+comentário do LUGAR RESERVADO foi substituído pelo comentário de fechamento (l.240 em `84bb90b`); o rastro
+integral vive no histórico git e aqui. **Critério cumprido na parte local:** as 7 linhas presentes,
+`git cat-file -e` ec=0 nas 7, e as 7 suítes exercidas SEM pulo no cluster descartável nas condições do job
+(P4: 3× `52/52`, 0 pulo, 0 XX000; canônica 2 da bateria re-exercita com N≥15). **A prova final** — job
+`backend-postgres` verde sob o guard de zero pulos — é do CI do PR, e o fechamento fica condicionado a ela.
+
+- **status:** FECHADA condicionada ao CI do PR (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** MEDIA · **dono:** B-O6R-02 c5
+
 ## P-O6R-B02-REGISTRO-STATUS-LOG (2026-08-28 — validação A5) — BAIXA
 No head `12c3825`, `agent-orchestration/docs/status-geral.md` e `agent-orchestration/codex/log-execucao.md` ainda dizem que a
 junta do ciclo 3 "ainda não ocorreu" e não têm autoria do ciclo 4. Reconciliar no PR (a árvore principal recebe a entrada de
 2026-08-28 nesta mesma rodada de registro).
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F6):** `status-geral.md` e `log-execucao.md` reconciliados
+neste PR — o REPROVADO do ciclo 4, a absorção S0-zero (`84bb90b`) e a autoria do ciclo 5 registrados; a
+crônica dos ciclos 1–4 da branch, descartada conscientemente na resolução main-integral (60/80 e 16/45
+linhas — ver terreno pós-absorção §6), foi recomposta com os números DESTE head.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** BAIXA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-CENSO-CASO-PERMANENTE (2026-08-28 — validação A6) — BAIXA
@@ -3995,7 +4117,13 @@ O componente *"1 censo de legado"* do piso §6 da P9 não tem caso permanente: n
 (WARNING com órfão semeado); só o drill D28 o exerce (validador executou: WARNING nomeado com 1 órfão). Os demais componentes
 (≥6 corrida, ≥2 SQL cru) e o total (≥21) estão acima do piso.
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F5):** caso permanente `[A6][db][censo]` na suíte -db — semeia
+o órfão em tenant PRÓPRIO (modo réplica na mesma sessão crua), executa o bloco `DO $censo$` **extraído do
+.sql da migration 20260870** (nunca cópia digitada), observa o WARNING nomeado (`P-O6R-B02-ORFAOS-LEGADOS`,
+contagem publicada) por listener de notice, e prova o controle negativo (par restaurado → censo MUDO).
+Teardown escopado por tenant.
+
+- **status:** FECHADA (2026-09-02, PR do B-O6R-02 ciclo 5; nº no backfill pós-merge) · **severidade:** BAIXA · **dono:** B-O6R-02 c5
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-S0-ESPELHO-NO-HEAD (2026-08-28 — validação A7) — **FECHADA POR NÃO-REPRODUÇÃO em 2026-08-28** (era ALTA)
@@ -4019,7 +4147,16 @@ Suíte -db que sai limpa **sem registrar teste** (mutação `if (true) {} else i
 "260 arquivo(s) · 2740 teste(s) · pass 2738 · skipped 2", guard mudo. O D26 literal (auto-pulo com `skip:`) fica vermelho e
 nomeia a contagem — cumprido; o buraco que resta é o denominador sem piso.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+**Fechamento (2026-09-02 — B-O6R-02 ciclo 5, F6, por decisão do CP-3 — ATO DE REGISTRO, não de
+implementação):** a correção que esta pendência pedia — **piso de denominador no runner** — foi entregue e
+provada pelo `B-O6R-ARNES` (**PR #359**): D40 nas duas pontas, e a canônica 1 real mostra o piso disparando
+1× e NOMEANDO `tests/core-saas-role-authority.test.ts` (ver
+`P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN`, que pedia exatamente esta reconciliação). Este PR
+não tocou runner nenhum: apenas reconcilia o registro, como o dev do ARNES deixou instruído. **O resíduo
+NÃO fecha** e ganha pendência própria: `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` (o arquivo nomeado morre no LOAD
+sem declarar skip — o piso o pega, mas o defeito do arquivo continua; fim deste arquivo).
+
+- **status:** FECHADA (2026-09-02 — corrigida pelo #359; registro reconciliado pelo PR do B-O6R-02 c5) · **severidade:** MEDIA · **dono da correção:** B-O6R-ARNES (#359)
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ### Apenso de 2026-08-30 (`SAN2-2`, Fase 4) — a causa REAL nesta árvore não é auto-pulo, é **crash no load**
@@ -5596,6 +5733,439 @@ por retro-escrita de um carimbo `[SAN2-5: …]` que ninguém escreveu na época.
 
 ---
 
+## P-O6R-B02-INDISPUTE-RESTORE (2026-08-22) — estorno devolve `in_dispute` para `open`
+
+Achado menor da `J-B-O6R-02-ciclo1`. Um título em **disputa**, pago e depois estornado, volta para `open`: o
+`restorePaymentGuarded` recalcula o status a partir do `paid_amount` (`= 0 → open`, parcial →
+`partially_paid`) e não tem como saber que o estado anterior era `in_dispute`.
+
+**Por que NÃO foi corrigido neste ciclo.** Preservar o estado anterior exige (a) **coluna aditiva** que guarde
+o status pré-liquidação — e o plano do ciclo 2 é explícito: nenhuma migration nova, nenhuma coluna, nenhum
+índice — e (b) **regra de negócio** que ninguém decidiu: um título em disputa que recebe pagamento continua
+em disputa? o estorno reabre a disputa ou a encerra? São perguntas de domínio, não de implementação.
+
+Encaminhamento: **decisão do dono/junta** antes de qualquer código. status: ABERTA.
+
+## P-O6R-B02-CHEQUE-UNCLEAR (2026-08-22) — não existe des-compensar um cheque compensado por engano
+
+Consequência **declarada** do guard `cheque_entry_immutable` (C2 do ciclo 2, fecha `Ω6R-DIN-011`). Com a regra
+"movimento de cheque só se desfaz pela máquina de estados do cheque", some o único caminho que existia para
+desfazer um `clear` — o `reverse` do lançamento de compensação. E era justamente esse caminho que devolvia
+dinheiro em dobro, então tirá-lo é a correção, não o defeito.
+
+**O caso bancário real está coberto:** cheque compensado que depois volta do banco é `bounce`
+(`cleared → bounced`), que posta contra-lançamento e leva o líquido a zero. O que NÃO tem porta é o **erro de
+operação** — compensar o cheque errado. Hoje a saída é operacional (lançamento avulso de ajuste, que fica no
+razão com trilha), não uma transição de estado.
+
+Encaminhamento: se o dono/junta quiserem uma transição `cleared → deposited` (des-compensar), ela precisa de
+desenho próprio — quem pode, com que trilha, e o que acontece com a conciliação do lançamento compensado.
+Registrado para não virar surpresa em produção. status: ABERTA.
+
+## D-DIVERGENCIA-C4-PONTA-AUSENTE (2026-08-25) — plano do ciclo 4 (C4.1) REABRE um invariante do ciclo 3
+
+**Registrada pelo desenvolvedor do ciclo 4 (§C7.4-bis: quem implementa registra a divergência plano×código,
+não a resolve por conta própria). §A2: conflito registrado ANTES da consolidação.**
+
+O plano `B-O6R-02-ciclo4-plano.md` §C4.1 manda: *"ponta DECLARADA ausente do razão é ERRO em TODOS os status
+(nunca skip silencioso)"*, e o §0.6 nomeia `reversalClosure` (financial-ledger.ts:75) como *"a mecânica exata
+do B-4"*. **Medido por mim, por execução**, o comportamento ATUAL do helper para ponta declarada + razão
+vazio: `cleared` → ACUSA (vermelho de regra "e vale 0"); `bounced`/`deposited`/`registered`/`cancelled` →
+**PASSA em silêncio** (4/5 mudos). Isso CONFIRMA o B-4.
+
+**A divergência:** existe teste committado do CICLO 3 — `tests/financial-ledger-helper.test.ts`,
+*"[P6] ponta declarada que não existe no razão não inventa membro nem quebra a travessia"* — que assere,
+com racional escrito (*"um id órfão não pode virar exceção de runtime — tem de virar o vermelho de REGRA...
+ponta sem linha no razão é ausência de dinheiro, não erro de programa"*), EXATAMENTE o oposto do C4.1: que a
+ponta ausente NÃO é erro, e sim o vermelho de regra do `cleared`. O plano do ciclo 4 **não menciona** esse
+teste ao mandar transformar a ponta ausente em erro.
+
+**Como foi resolvido (seguindo o plano, não julgando-o):** implementei o C4.1 (ponta ausente = `assert.fail`
+nomeando as duas causas, nos 5 status — ainda AssertionError, não exceção de runtime, então o espírito
+"não crash de programa" do ciclo 3 é preservado) e ATUALIZEI o teste "ponta órfã" do ciclo 3 para a nova
+regra (agora espera o erro de ponta ausente). O plano §5 lista `financial-ledger-helper.test.ts` como arquivo
+que o dev do C4 modifica, então a atualização está no escopo. **A JUNTA decide se a reabertura é aceita** —
+este registro existe para que a reversão do invariante do ciclo 3 seja consciente, com evidência, e não passe
+silenciosa. status: REGISTRADA (aguarda ata da junta do ciclo 4).
+
+## P-O6R-ARNES-ISOLAMENTO — EMENDA do ciclo 5 do B-O6R-02 (2026-09-02) — o objeto disputado NOMEADO, por determinação do §12 do plano
+
+**Emenda, não reabertura: o texto das entradas anteriores fica intocado (§A2).** O plano do ciclo 5 (§12)
+mandou emendar esta pendência com o que o §0.a/§0.b dele mediu, para que a informação viva AQUI e não só
+no corpo do plano:
+
+- **O objeto disputado do `XX000` tem nome:** a **tupla de ACL** — `pg_namespace.nspacl` e
+  `pg_class.relacl` —, escrita pelas concessões/remoções de privilégio e pelo descarte de objetos de
+  papel efêmero. **`pg_authid` NÃO colide**: sonda de par criação×criação = **0/150**; sondas de par nas
+  ACLs = **200/200**. Isto fecha o "a nomear por execução no ciclo 5" da ERRATA de 28/08 acima.
+- **O `XX000` atinge inclusive quem toma o lock** (medido na bateria barata do §0.a do plano: as vítimas
+  incluem `rls-tenant-isolation` ×3 e `auth-identity-backfill-db` via o arnês) — a propriedade correta é
+  "mecanismo ÚNICO entre TODOS os escritores", jamais "os de fora entram no lock". O mecanismo único foi
+  entregue pelo `B-O6R-ARNES` (#359); a expectativa pós-#359 confere no head pós-absorção: **D29 13/13**,
+  forma `(6, 37)` constante, 0 `XX000` (terreno pós-absorção §3).
+- **O que segue AQUI (fora do B-O6R-02):** P1 (paralelismo declarado do runner), P4 (DDL de esquema
+  compartilhado), a divergência das TRÊS formas de execução (seed/detrito), as 68 órfãs `rls_test_` da
+  base do dono (`P-ARNES-RLS-TEST-FORA-DO-SWEEP`), o teto da fila do lock e o vermelho ambiental da
+  canônica 1 (este último agora com pendência própria: `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`).
+
+- **status:** ABERTA (emenda registrada) · **severidade:** a classificar · **dono:** a atribuir
+
+## P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · escopo `pre-existente`
+
+`tests/core-saas-role-authority.test.ts` **morre no CARREGAMENTO** quando falta `DATABASE_URL` — o
+`throw` em escopo de módulo de `src/database/prisma.ts:12` dispara no import, antes de qualquer `test()`
+se registrar — em vez de declarar skip como o irmão `-db`. Consequências medidas (apenso SAN2-2 de
+2026-08-30 em `P-O6R-B02-RUNNER-SUMICO-SEM-SKIP`): o arquivo some inteiro do denominador; o **piso de
+denominador do #359 o pega e o NOMEIA** (é o vermelho ambiental declarado da canônica 1), mas o defeito
+do arquivo continua — a bateria sem banco não consegue sair verde legitimamente.
+
+**Por que não fechou no B-O6R-02 c5:** a correção exige tocar `src/database/prisma.ts` (ou o teste fora
+da lista §5) — `src/**` é PROIBIDO no bloco (o produto financeiro está fechado por 3 cadeiras) e o
+arquivo de teste está fora do escopo permitido. Escopo `pre-existente` com produtor nomeado por execução
+(§C7.1-ter(a)).
+
+**Critério de fechamento:** sem `DATABASE_URL`, o arquivo declara skip (ou registra os testes e pula) —
+canônica 1 com **0 fail ambiental** e os pulos DECLARADOS; o piso do runner continua mudo para ele.
+
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)
+
+## P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5 tem TABELA nomeada, não ARQUIVO
+
+**Emenda, não reabertura: o texto das entradas anteriores fica intocado (§A2).** Corrige, no registro
+canônico, uma frase que este bloco publicou afirmando mais do que a execução exercitou — apanhada pelo
+`critico-c5-adversarial` (ACHADO-4) **antes** do voto da junta, e aceita sem contestação.
+
+**O que foi medido por execução (vale):** rodada instrumentada da canônica 3 com snapshot **por tabela**
+antes e depois — `auth_identities` **+5** e `auth_identity_link_events` **+5** por rodada verde, mais
+`permissions` 1 → 15 uma única vez (idempotente, o que explica os +24 da primeira rodada).
+
+**O que NÃO foi medido, e foi publicado como se fosse (o defeito):** os quatro *arquivos* apontados como
+produtores saíram de **grep** pelo nome da tabela. O crítico executou cada um isolado, com snapshot de
+linhas antes/depois, no cluster próprio dele:
+
+| suíte | resultado | Δ `auth_identities` / Δ `auth_identity_link_events` |
+|---|---|---|
+| `auth-identity-backfill-db` | 6/6 pass, 0 skip | **0 / 0** |
+| `auth-identity-links-db` | 15/15 pass, 0 skip | **0 / 0** |
+| `auth-identity-link-events-db` | 5/5 pass, 0 skip | **0 / 0** |
+| `auth-identity-role-real-db` | 10/10 pass, 0 skip | **0 / 0** |
+| **`core-saas-role-authority-db`** — a atribuição de 2026-08-19, citada pelo §0.a do plano do c5 e **ausente** da lista publicada | 5/5 pass, 0 skip | **+1 / +1** |
+
+**Por que o grep falhou:** o escritor entra pela **camada de serviço** (`core-saas.service.ts` e os
+repositórios de identity-link), não pelo nome literal da tabela — os quatro arquivos que *contêm* a
+string limpam atrás de si, e um que **não** a contém vaza.
+
+**O que fica ABERTO, nomeado:** os **+4/+4 restantes por rodada completa** seguem **sem produtor
+nomeado** — há ~12 suítes `-db` exercitando `core-saas` e elas **não foram varridas**; o limite fica
+declarado, não escondido. Matéria segue `pre-existente` (EMENDA item 1, trilha de identidades): o achado
+é de **precisão do registro**, não de reabertura de classe.
+
+**Por que isto importa mais do que parece:** é a mesma família de defeito — *a frase afirma mais do que a
+execução exercitou* — pela qual este bloco foi reprovado no ciclo 4. Desta vez foi apanhada por execução
+de um papel independente, antes do voto, e corrigida nas cinco publicações (`Kpis/kpis-latest.json`,
+`kpis-history.json`, `kpis-history.md`, `docs/status-geral.md`, `codex/log-execucao.md`).
+
+- **status:** ABERTA (emenda registrada; os +4/+4 sem produtor nomeado seguem aqui) · **severidade:** a classificar · **dono:** a atribuir
+
+## P-O6R-B02-RULINGS-SEM-DESTINO (2026-09-03 — ACHADO-1 do `critico-c5-adversarial`) — BAIXA · registro §A2
+
+Dois rulings de checkpoint deste bloco criaram, **por escrito**, uma obrigação que o PR não cumpriu e que
+não foi declarada como descarte: o do **CP-0** (item 2) e o do **CP-1** (item C) prometeram que o conserto
+do arquivo do comando — passo 3 do preflight §3.3 (checava `HEAD`, devia checar `origin/main`) e o
+`head -120` da sonda §7.1.b, que trunca 2 dos 9 arquivos — "entra no PR deste bloco, no fim".
+
+**Medido pelo crítico:** `git log 84bb90b..bcf6460 -- agent-orchestration/codex/comandos/B-O6R-02-ciclo5.md`
+sai **vazio**; no blob do head, o passo 3 segue lendo `HEAD` (l.176-178) e o `head -120` segue na l.579.
+
+**Agravante estrutural, e é a parte que interessa:** o **§5.1 do próprio comando não lista o arquivo-mãe**
+— o glob `B-O6R-02-ciclo5-*.md` casa os arquivos de registro (`-execucao`, `-auditoria`), mas **não**
+`B-O6R-02-ciclo5.md`. O ruling criou uma obrigação que o escopo escrito **proibia** cumprir, e ninguém
+nomeou a contradição na hora.
+
+**Destino, declarado agora por escrito (era o que faltava):** o conserto **NÃO entra neste PR** — tocar o
+arquivo-mãe seria violação de escopo §5.3, e violar escopo no ciclo-teto para consertar um comando já
+executado é trocar risco alto por benefício nulo. Fica para quem escrever o próximo comando de bloco, com
+os dois defeitos já diagnosticados e com evidência: o preflight deve checar marcadores de governança em
+`origin/main` (não em `HEAD`, que numa branch antiga é falso-positivo por construção), e a sonda de
+insumo vivo **não pode truncar** a evidência que existe para achar.
+
+**Propriedade que o crítico nomeia e que este registro adota:** *toda obrigação criada por ruling de
+checkpoint tem destino verificável no próprio PR — cumprida, ou descartada POR ESCRITO com motivo; e
+ruling não cria obrigação fora do escopo §5 sem emendá-lo na mesma linha.*
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (a promessa é dos meus rulings) · **dono:** o próximo comando de bloco da rodada Ω6R
+
+## P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simultâneas) — MÉDIA · `dentro-do-bloco`
+
+**Incidente, sem dano, medido pelas duas pontas.** Durante o teardown do mandato dela, a cadeira **C1**
+(`jurado-c5-arnes-catalogo-postgres`) do `B-O6R-02` ciclo 5 **removeu o worktree
+`.claude/worktrees/jur-c1v2-drill`, que pertencia a uma jurada do `B-O6R-07a`** (sessão simultânea, bloco
+irmão) e estava **em uso**. Reportado pela sessão vizinha; **dano zero confirmado por ela**: a jurada já
+havia migrado para worktree próprio, o `b07` seguiu intacto em `9989c62`, e os `node_modules` da árvore
+principal e do `b07` seguiram com 222 pacotes cada — **não havia junction**, então nada foi arrastado.
+
+**Causa raiz — não é "limpeza de resíduo", é INFERÊNCIA SOBRE NOME ALHEIO.** O voto da C1 (l.188) diz, com
+estas letras: *"o resíduo `jur-c1v2-drill` **das encarnações caídas**"*. Ela havia caído duas vezes por
+limite de sessão; ao ver `jur` + `c1` + `v2` leu como *"jurado C1, segunda encarnação"* — quer dizer, dela.
+Era do 07a. **E o mesmo parágrafo erra na direção oposta:** classifica `jur-c2v2-red` como *"da cadeira C2"*
+(do ciclo 5) quando também é do vizinho. **Duas inferências de nome, ambas erradas**; só não houve dano na
+segunda porque o erro caiu do lado seguro.
+
+**O que funcionou, e não deve ser confundido com o que falhou:** a C1 varreu reparse points antes
+(`dir /AL /S` = zero), usou `cmd rmdir /S /Q` (que **não** atravessa junction) e nunca `rm -rf` do Git
+Bash — exatamente a disciplina nascida do incidente de 26/08 (`D-JUNTA-ESCOPO-E-CALIBRACAO(c)`). Foi ela
+que impediu isto de virar destruição de `node_modules` alheio. Mas essa disciplina protege **contra a
+propagação por junction**, não **contra remover o alvo errado**: a jurada vizinha perdeu terreno vivo, e só
+não perdeu trabalho por já ter migrado. **Sorte, não desenho.**
+
+**Responsabilidade:** do **orquestrador**, não da cadeira. O mandato que emiti mandava derrubar containers
+e remover worktrees no fecho, e **não escreveu o limite**. Uma cadeira instruída a "limpar o que é seu",
+sem critério de propriedade escrito, vai inferir — e nomes de cadeira colidem entre blocos simultâneos por
+construção (a C1 do ciclo 5 e a C1-v2 do 07a são cadeiras diferentes com a mesma letra).
+
+### A regra que passa a valer
+
+1. **Recurso efêmero (worktree, container, cluster, volume) leva no nome o identificador do BLOCO, nunca
+   só o da cadeira** — `o6r-c5`, `o6r07a`. Cadeiras homônimas coexistem em blocos simultâneos; o nome da
+   cadeira **não** é identificador único. Os recursos que seguiram isso neste ciclo
+   (`claude-o6r-c5-*`, `jur-c5-*`, `jur-c5-bfk-*`) não colidiram com nada.
+2. **Só se remove recurso cujo nome bate com o identificador do próprio bloco.** Nome que não bate é
+   **intocável** — mesmo parecendo resíduo próprio, mesmo órfão, mesmo sem `.git`. **Resíduo alheio se
+   REPORTA, não se varre.**
+3. **Quem convoca escreve o limite no mandato**, por extenso e com o prefixo literal. Mandato que diz
+   "remova seus worktrees" sem dizer *quais nomes são seus* delega ao subordinado uma inferência que ele
+   não tem como fazer com segurança.
+4. **Antes de qualquer remoção, `git worktree list` e `docker ps` são leitura obrigatória** — e o que não
+   estiver na lista do próprio bloco fica.
+
+**Evidência de origem (escopo):** `dentro-do-bloco` — o mandato defeituoso é meu, emitido nesta rodada; a
+remoção ocorreu no teardown desta junta. **Não** é `pre-existente`: a classe de 26/08 é vizinha, mas aquela
+era propagação por junction, e esta é seleção de alvo.
+
+**Aviso registrado da sessão vizinha (prefixos declarados, para quem vier depois):** do `B-O6R-07a` são
+`b07`, `jur-c1v2*`, `jur-c2v2*`, `dev-c2*`; do `B-O6R-02` ciclo 5 são `agent-af6ea*`, `jur-c5-*`,
+containers `claude-o6r-c5-*` e `jur-c5-arnes-*`, portas 15501/15502 e 32779–32782.
+
+- **status:** ABERTA · **severidade:** MEDIA · **escopo:** `dentro-do-bloco` · **dono:** a regra vale já; a consolidação no contrato (§C7.1-ter(c), ao lado da regra de junction) é do próximo bloco de governança
+
+### Emenda de 2026-09-04 — a vítima nomeada, e como o incidente ficou VISÍVEL
+
+Dados fornecidos pela sessão do `B-O6R-07a` após o registro acima; entram por precisão, não por cortesia.
+
+**A jurada atingida tem nome:** `jurado-b07a-c2-autorizacao-s` — a **sucessora**, instalada depois que a
+titular `jurado-b07a-c2-autorizacao` caiu. Ou seja, o worktree destruído pertencia a uma cadeira que já
+era ela própria produto de uma queda: a rede de resiliência do `D-JUNTA-RESILIENTE` estava em uso quando
+a minha cadeira passou por cima dela.
+
+**O que tornou o incidente visível — e esta é a parte que vale como lição positiva:** a jurada
+**registrou a destruição no próprio voto**, em vez de apenas sofrê-la e seguir. Foi assim que a sessão
+vizinha soube, e foi assim que eu soube. É o **P1** (gravar incrementalmente, com o que aconteceu de
+fato) fazendo um trabalho que ninguém tinha desenhado para ele: um jurado que anota a anomalia do terreno
+no voto transforma um acidente silencioso entre sessões em achado rastreável. Sem esse registro, a
+remoção teria sido invisível para as duas pontas, e a regra deste bloco não existiria.
+
+**Sobre a forma da regra, com o crédito devido:** a sessão vizinha havia proposto, como proteção, uma
+**lista de prefixos declarados** de cada lado. Ela mesma reconheceu, ao adotar a regra acima, que a lista
+**deixa a inferência viva do lado de quem lê** — quem varre continua tendo de julgar se um nome alheio é
+resíduo. A regra de identificador-do-bloco **elimina a inferência** em vez de informá-la, e é por isso que
+prevaleceu. Registrado porque a diferença entre "informar melhor quem infere" e "remover a necessidade de
+inferir" é exatamente a distinção que faz uma regra de terreno funcionar.
+
+**Dívida simétrica, declarada pela outra ponta:** o mandato da jurada dizia *"remova o que você criar"* —
+mesma classe do meu, e mesmo defeito: instrução de teardown sem critério de propriedade escrito. **As duas
+sessões emitiram mandatos com o mesmo buraco**, o que confirma que isto é defeito de desenho de mandato, e
+não descuido de uma cadeira em particular. A regra foi adotada nos dois lados, inline nos mandatos
+seguintes.
+
+### FORMULAÇÃO COMO CLASSE (2026-09-04) — para referência de outros blocos
+
+> Escrito a pedido da sessão do `B-O6R-07a`, que referencia esta entrada. O incidente acima é **um caso**;
+> o que segue é a **classe**, enunciada para ser conferível sem conhecer o caso.
+
+**CLASSE: mandato de teardown sem critério de propriedade escrito.**
+
+**Enunciado.** Um mandato que ordena a um agente subordinado destruir recursos ("remova seus worktrees",
+"derrube o que você criar", "limpe os temporários") **sem enumerar o critério literal de propriedade**
+delega ao subordinado uma **inferência sobre nomes** que ele não tem informação para fazer. Em ambiente
+com **blocos simultâneos**, nomes de papel colidem por construção — a cadeira "C1" existe em todo bloco
+que tenha uma primeira cadeira —, então a inferência **vai** errar; a única variável é para que lado.
+
+**Por que o defeito é do mandato, e não do agente.** O subordinado recebe uma ordem verdadeira ("limpe o
+que é seu") cuja aplicação exige um dado que só o convocante tem: **quais nomes pertencem a este bloco**.
+Ele não pode consultar o outro bloco, não sabe que o outro bloco existe, e um nome plausível é
+indistinguível de um nome próprio. Culpar a cadeira é confundir *quem executou* com *quem projetou a
+armadilha*.
+
+**Propriedade ausente (é isto que se confere):** *toda ordem de destruição num mandato nomeia o prefixo
+literal que delimita o alvo, e declara que tudo fora dele é intocável — inclusive o que parecer resíduo
+próprio, órfão, ou sobra de encarnação anterior do próprio agente.*
+
+**Teste de detecção, aplicável a qualquer mandato antes de disparar:** localize toda ordem de remoção; para
+cada uma, pergunte **"o subordinado consegue decidir o alvo sem inferir?"**. Se a resposta depender de ele
+reconhecer um nome como seu, o mandato tem o defeito. O conserto é uma linha: o prefixo literal.
+
+**Duas materializações independentes, na mesma semana (é o que a torna classe, e não acidente):**
+
+| | `B-O6R-02` ciclo 5 | `B-O6R-07a` ciclo 2 |
+|---|---|---|
+| texto do mandato | "remova seus worktrees" (sem prefixo) | "remova o que você criar" (sem prefixo) |
+| orquestrador | Claude Code (esta sessão) | sessão irmã, independente |
+| resultado | cadeira removeu worktree alheio **em uso** | mesmo buraco, sem materializar |
+
+**Orquestradores diferentes, mandatos escritos em separado, defeito idêntico.** Nenhuma das duas sessões
+copiou o texto da outra. É defeito de **forma de mandato**, não de disciplina de cadeira.
+
+**Correção, nos dois lados:** a regra dos 4 itens da entrada acima passou a valer inline nos mandatos
+seguintes das duas sessões.
+
+**Corolário sobre o P1 — uma segunda função da mesma regra, e barata.** O `P1` (`D-JUNTA-RESILIENTE`)
+existe para que **o voto sobreviva à morte do jurado**. Neste caso ele fez outra coisa: a cadeira atingida
+**anotou a anomalia de terreno no próprio voto**, embora ela não afetasse o mérito do que ela julgava — e
+foi **só por isso** que o acidente ficou visível. Nenhuma das duas sessões o veria sozinha: quem destruiu
+achava que limpava resíduo próprio; quem foi destruída poderia simplesmente ter migrado e seguido.
+**Regra que decorre, adotada pelas duas sessões:** *o jurado registra anomalia de terreno mesmo quando ela
+não afeta o mérito do seu voto.* Custo: uma linha no voto. Benefício: acidentes **entre sessões** deixam
+de ser invisíveis por construção.
+
+**Enunciado que a sessão irmã pediu para citar, e que é o resumo do caso:** *o worktree destruído não era
+resíduo de uma cadeira morta — era o terreno da rede que substituiu a cadeira morta. A resiliência estava
+em uso quando foi atropelada.*
+
+## P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA (2026-09-04 — dado de método das rodadas Ω6R simultâneas) — registro, sem dono de correção
+
+**Origem:** troca entre as sessões do `B-O6R-02` c5 e do `B-O6R-07a` c2, que rodaram em paralelo. A sessão
+irmã levantou a ressalva metodológica que motiva esta entrada: *"os três meus são de superfície de rota e
+os seus são de atribuição de causa — pode ser a mesma classe ou podem ser duas; sete numa tabela só é mais
+persuasivo do que honesto"*. **Ela está certa, e conferir mudou a contagem.** Registro com as colunas
+separadas; **não somo antes de separar**.
+
+**Classe candidata, enunciada depois de conferir caso a caso:** *ferramenta sintática (grep, leitura,
+lembrança do autor) usada para sustentar afirmação semântica (causa, completude, exaustividade) — e
+publicada com o verbo da afirmação forte.* O defeito não é usar grep; é **publicar o resultado dele como
+se fosse execução**.
+
+### Coluna A — completude de superfície (o censo enumera o que o autor lembrou)
+
+| # | achado | quem achou | o que a leitura afirmava | o que a execução mediu |
+|---|---|---|---|---|
+| A1 | P0 declarado fechado com técnico apagando anexo alheio (`DELETE` → 204) | C1 do c1 (07a) | superfície coberta | só apareceu atacando **14 rotas** |
+| A2 | dono com e-mail em duas orgs se trancava **logando corretamente** | C2 do c1 (07a) | fluxo coberto | só apareceu em cenário multi-org que o arnês não tinha |
+| A3 | décima via (`POST /mobile/sync/work-order-actions`, `mileage` em OS alheia) | C1-v2 do c2 (07a) | censo de 2 routers, feito por leitura | via fora do censo |
+
+**O mais incômodo é o A3**, e a sessão irmã o nomeia: o censo foi refeito **depois** de a junta já ter
+cobrado precisão — e ficou incompleto de novo, **por não executar**.
+
+### Coluna B — proveniência do método (grep publicado como execução, ou como prova de completude)
+
+| # | achado | quem achou | o que eu publiquei | o que a execução mediu |
+|---|---|---|---|---|
+| B1 | "produtor NOMEADO por execução", 4 arquivos vindos de `grep` | `critico-c5-adversarial` | os 4 como produtores | **0/0 nos quatro**; o vazador real (`core-saas-role-authority-db`, +1/+1) estava fora da lista |
+| B2 | manchete residual contradizendo a nota do mesmo artefato | cadeira **C1** (c5) | correção "feita nas cinco publicações", **verificada por `grep`** | o `grep` era **case-sensitive** e a manchete estava em caixa alta — 3 instâncias sobreviveram |
+
+**O B2 é o caso mais instrutivo das duas colunas**, e por isso não o descartei: ali o `grep` não foi fonte
+da afirmação, foi **a prova de que a correção estava completa**. A ferramenta que falhou era a que eu usei
+para me convencer de que não havia falhado.
+
+### O que ficou de FORA, e por que a exclusão importa
+
+**"Dois commits novos" × **um** medido** (achado do `inspetor-de-terreno-da-junta`, R5a) **não pertence a
+esta classe.** Não houve ferramenta sintática nem verbo de execução: foi uma declaração factual que eu
+**podia** ter conferido com um comando e não conferi. É a classe vizinha *"afirmação de conveniência não
+conferida"* — parente, mas distinta, e somá-la aqui inflaria a série. **5 casos, não 6, e não 7.**
+
+### O dado que falta, e que a sessão irmã ofereceu registrar
+
+A série só vale com o **denominador**: quantas vezes a execução foi aplicada **sem** achar nada. A sessão
+irmã ofereceu registrar também o caso negativo da cadeira C3 dela — *"conto também se ela **não** achar,
+que é o dado que a série precisa e ninguém costuma registrar"*. **Sem isso, esta tabela mede a
+disponibilidade dos achados, não a taxa de acerto do método.** Fica declarado como limite desta entrada:
+o que ela sustenta hoje é *"execução achou o que leitura não acharia em 5 ocasiões medidas"*, e **não**
+*"execução acha sempre"* nem *"leitura nunca acha"*.
+
+- **status:** ABERTA (registro de método, coletivo; sem correção associada) · **severidade:** informativa · **dono:** nenhum — é dado para calibrar mandatos futuros
+
+### Emenda de 2026-09-04 (ii) — a coluna C, o denominador parcial e o viés declarado
+
+**A sessão irmã depurou os próprios casos com a mesma régua e separou uma coluna nova.** O caso do dono
+multi-org **não é falha de censo**: ninguém enumerou uma superfície e esqueceu um item — o arnês inteiro
+do PR era **mono-organização**, e o defeito só existe na forma multi-org. *"Não é 'o autor lembrou de 9 e
+havia 10' — é 'o autor testou uma forma e o defeito vive na outra'."*
+
+**Coluna C — completude de FORMA do arnês: 1 caso.** Coluna A cai para **2**.
+
+**Decisão sobre a fusão A+C: NÃO FUNDIR — e o argumento é o conserto, não a aparência.**
+
+| | Coluna A (superfície) | Coluna C (forma) |
+|---|---|---|
+| o que falta | um **item** de uma lista que existe | uma **dimensão** do espaço de configuração; não há lista |
+| detecção | *"sua enumeração bate com a superfície medida?"* — **conferível mecanicamente** (enumere por execução e compare) | *"que dimensões o seu arnês fixa num único valor?"* — exige **imaginar a dimensão** antes de poder testá-la |
+| conserto | enumerar por execução em vez de por leitura | **variar** algo que ninguém tinha pensado em variar |
+
+Fundi-las esconderia justamente a que é mais difícil de pegar: a A tem procedimento mecânico de detecção;
+a C não tem — depende de alguém perceber que o arnês inteiro vive num ponto do espaço. **Séries úteis
+separam por conserto, não por sintoma.** Total: **coluna A 2 · coluna B 2 · coluna C 1 = 5**, e nunca 7.
+
+**Sobre a coluna B, refinamento aceito da sessão irmã (a aplicar se a série crescer):** nos quatro outros
+casos a ferramenta falhou **produzindo** a afirmação; no B2 ela falhou **verificando** a afirmação. *"É uma
+classe de segundo grau, e a mais difícil de pegar, porque a verificação sente-se como prova."* Separar-se-á
+em `grep como fonte` × `grep como verificação` quando houver casos bastantes.
+
+### O DENOMINADOR PARCIAL QUE ESTE LADO JÁ TEM — e que enfraquece a narrativa fácil
+
+Registrado porque a entrada anterior declarou a falta e **metade do dado já existe deste lado**. Nesta
+junta, execução independente foi aplicada sobre afirmações do bloco **e CONFIRMOU a grande maioria**:
+
+- `critico-c5-adversarial`: re-mediu **D29 N=13** (13/13, `(6,37)` idêntico) e a **canônica 3** — bateram
+  com o publicado; re-mediu o containment de F1–F3 (zero linha ausente) e o critério `src/**` re-baseado
+  **até o blob** — bateram. Refutou **1** afirmação (B1).
+- **C1**: canônica 3 **N=10** com denominador idêntico ao publicado; vaza-metro **+5/+5** idêntico; D29
+  13/13. Tudo **confirmou**. Refutou **1** (B2), e ainda assim votou APROVADO.
+- **C2**: **97 operações adversariais em 11 caminhos**, endpoint real, 2 ordens × 20 na corrida —
+  **0 fabricado**, `maxAbs=0`. **Confirmou integralmente**; nenhuma refutação de mérito.
+- **C3**: re-executou canônicas 1 e 2 — bateram; conferiu escopo 13/13 e PROIBIDO 8/8 — bateram.
+
+**Leitura honesta:** neste bloco a execução independente **confirmou o publicado na esmagadora maioria das
+medições** e refutou em **duas**. A afirmação que a série sustenta é *"execução pega o que releitura não
+pegaria, e o custo se paga quando pega"* — **não** *"o publicado costuma estar errado"*.
+
+### VIÉS DECLARADO (levantado pela sessão irmã, e a parte mais importante desta emenda)
+
+*"Nós dois somos partes interessadas na conclusão 'execução > leitura', porque foi ela que justificou o
+custo das nossas juntas."* **Procede, e fica escrito na entrada.** As duas sessões que compilam esta série
+são as que gastaram cadeiras, clusters e horas com base nessa premissa; um resultado que a desmentisse nos
+custaria a justificativa do método. **Consequências adotadas:**
+
+1. o denominador deve ser levantado **por quem não torce** — de preferência um terceiro papel, não
+   nenhuma das duas sessões;
+2. o **caso negativo** (execução aplicada que não achou nada) é dado de primeira classe e **entra na
+   série**, não em nota de rodapé — a sessão irmã já se comprometeu a reportar o da cadeira C3 dela;
+3. esta entrada **não conclui**; ela **inventaria**, com colunas separadas por conserto e o denominador
+   parcial acima. Quem for concluir que o faça com a série fechada e sabendo quem a compilou.
+
+### Emenda de 2026-09-04 (iii) — os dois limites do compilador, e o fecho desta linha
+
+Acordado entre as duas sessões. **O `porteiro-pos-merge` compila o recorte da série, com dois limites
+escritos — e os dois protegem contra o registro comer a coisa que ele deveria servir.**
+
+**Limite 1 — a série é ADICIONAL e SUBORDINADA ao gate.** O porteiro existe para **autorizar ou barrar o
+início do próximo bloco**; essa é a função cara. A contagem metodológica entra **depois** de ele fechar o
+mandato próprio, com esta forma: *"além do seu mandato, e depois de fechá-lo, informe quantas
+re-execuções você fez, quantas confirmaram e quantas refutaram"*. **Se ele BARRAR o start, o parecer é
+sobre isso** — não diluído por contagem. Formulação da sessão irmã, adotada aqui: *"se o mandato dele
+crescer ao ponto de a série competir com o gate, perdemos a coisa mais cara para ganhar a mais barata."*
+
+**Limite 2 — o porteiro é neutro quanto à premissa, mas NÃO é externo ao processo.** Ele nasce do mesmo
+contrato que criou as juntas. **Não é o terceiro ideal; é o menos interessado disponível.** Fica escrito
+para que quem ler depois **não tome por independência o que é só distância**.
+
+**Compromissos registrados da sessão irmã** (para o denominador não ficar no ar): ao fechar a ata do ciclo
+2 do `B-O6R-07a`, informa (a) total de execuções adversariais das três cadeiras, (b) quantas confirmaram ×
+quantas refutaram, e (c) **o caso negativo da C3, se ela não achar nada** — *"a metade que falta e a única
+que ninguém tem incentivo para reportar"*.
+
+**Estado desta entrada:** inventário aberto, com 5 casos em 3 colunas separadas por conserto, denominador
+parcial de um lado, denominador do outro lado prometido, compilador nomeado com dois limites e viés dos
+compiladores declarado. **Não conclui — e não deve concluir até ter as duas metades.**
 ## P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉDIA
 
 **Origem:** B-O6R-07a §3.5. Sucede a metade "IP/distribuído" de `P-O6R-B01-RATE-LIMIT-IP`, que fica

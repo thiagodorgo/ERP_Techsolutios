@@ -13,15 +13,44 @@ import {
 } from "../src/modules/financial-titles/index.js";
 import {
   createMemoryFinancialEntryService,
+  getMemoryFinancialEntryRepositoryForTests,
   resetFinancialEntryRuntimeForTests,
 } from "../src/modules/financial-entries/index.js";
 import {
+  CHEQUE_ENTRY_LINK_FIELDS,
   ChequeError,
   createMemoryChequeService,
   resetChequeRuntimeForTests,
   toChequeDto,
   type ChequeActorContext,
 } from "../src/modules/cheques/index.js";
+import { expectChequeLedgerCoherent } from "./helpers/financial-ledger.js";
+
+// B-O6R-02 ciclo 3 · C1 (P6) — CAPTURA LIQUIDADA: a tentativa de ataque NUNCA rejeita a promessa do
+// teste. `assert.rejects` aborta o caso no instante da recusa, e foi assim que o ciclo 2 se enganou:
+// com o guard no lugar, o teste morria no `rejects` e o helper de efeito nunca chegava a rodar
+// contra o estado pós-ataque — o verde do helper era um verde NÃO EXERCIDO. Capturando o desfecho,
+// o razão é julgado PRIMEIRO e SOZINHO, e só depois se cobra a razão da recusa.
+type Attempt = { readonly rejected: boolean; readonly error: unknown };
+
+async function capture(action: () => Promise<unknown>): Promise<Attempt> {
+  try {
+    await action();
+    return { rejected: false, error: undefined };
+  } catch (error) {
+    return { rejected: true, error };
+  }
+}
+
+function expectRefused(attempt: Attempt, statusCode: number, reason: string, what: string): void {
+  assert.ok(attempt.rejected, `${what}: a porta tinha de RECUSAR, e aceitou`);
+  assert.ok(
+    isDomainError(attempt.error, statusCode, reason),
+    `${what}: recusou pelo motivo errado — esperava ${statusCode}/${reason}, veio ${JSON.stringify(
+      attempt.error instanceof Error ? { statusCode: (attempt.error as { statusCode?: unknown }).statusCode, reason: (attempt.error as { reason?: unknown }).reason, message: attempt.error.message } : attempt.error,
+    )}`,
+  );
+}
 
 // Erros de domínio renderizam idêntico via HTTP (statusCode+reason); o clear/bounce compõem com o serviço de
 // lançamentos → um period_closed do chokepoint chega como FinancialEntryError. Checagem class-agnostic.
@@ -71,6 +100,39 @@ async function activeAccount(
   overrides: Record<string, unknown> = {},
 ) {
   return accounts.create(ctx, { name: `Caixa ${randomUUID()}`, ...overrides });
+}
+
+// B-O6R-02 ciclo 3 · C1 (P6) — o carregador NÃO seleciona mais nada.
+//
+// A versão anterior entregava "os vivos vinculados" e era exatamente aí que o B-1 morava: a
+// contrapartida do estorno nasce SEM vínculo com o cheque, então este filtro a apagava do razão
+// antes do helper ver, e o helper somava +100 num cheque cujo dinheiro já tinha voltado.
+//
+// Agora o carregador promete UMA coisa só — a COMPLETUDE do razão da conta, vivos E apagados — e a
+// seleção do conjunto relevante (o fecho por estorno) acontece dentro do helper.
+async function chequeLedgerInput(
+  entries: ReturnType<typeof createMemoryFinancialEntryService>,
+  ctx: ChequeActorContext,
+  chequeId: string,
+  cheques: ReturnType<typeof createMemoryChequeService>,
+  accountId: string,
+) {
+  const cheque = await cheques.get(ctx, chequeId);
+  const linkedIds = [cheque.clearedEntryId, cheque.bounceEntryId].filter((id): id is string => id != null);
+  const all = await entries.list(ctx, { account_id: accountId, include_deleted: true, limit: 100 });
+  // A completude é a ÚNICA promessa deste carregador, então ela é ASSERIDA: um razão truncado pela
+  // paginação daria verde sobre metade do dinheiro — a classe de defeito exata do ciclo 2.
+  assert.equal(all.items.length, all.total, "o razão carregado tem de ser COMPLETO (sem truncar por paginação)");
+  return {
+    linkedIds,
+    ledger: all.items.map((entry) => ({
+      id: entry.id,
+      direction: entry.direction,
+      amount: entry.amount,
+      reversalOf: entry.reversalOf,
+      deletedAt: entry.deletedAt,
+    })),
+  };
 }
 
 function chequeBody(accountId: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -425,6 +487,237 @@ test("bounce cleared→bounced FUNCIONA mesmo com o lançamento de compensação
   const balance = await entries.balance(ctx, account.id);
   assert.equal(balance.balance, 0);
 });
+
+// ------------------------------- lançamento de cheque só se desfaz pelo cheque (ciclo 2 · C2)
+// P3 — lançamento referenciado por cleared_entry_id ou bounce_entry_id não é deletável nem estornável
+//      pela superfície de lançamentos; em QUALQUER ordem de chamadas,
+//      net(lançamentos vivos do cheque) ∈ { +valor (cleared), 0 (bounced), sem lançamento (demais) }.
+// O ataque da junta (Ω6R-DIN-011), reproduzido e agora RECUSADO: clear +100 → reverse do lançamento
+// de compensação → o cheque continuava 'cleared' → bounce postava −100. 200 num cheque de 100.
+
+test("[C2/P3] ATAQUE da junta: reverse do lançamento de COMPENSAÇÃO → 422 cheque_entry_immutable; net = +valor, nunca −valor", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  const cleared = await cheques.clear(ctx, cheque.id);
+  assert.equal((await entries.balance(ctx, account.id)).balance, 100);
+
+  // (1) a tentativa é CAPTURADA, não julgada — o razão fala antes do desfecho (C1.5).
+  const attempt = await capture(() => entries.reverse(ctx, cleared.clearedEntryId!));
+
+  // (2) O RAZÃO PRIMEIRO, e SOZINHO. Se o guard cair (drill D15), este checkpoint fica vermelho
+  //     pelo HELPER — com o fecho por estorno vendo a contrapartida que nenhuma ponta referencia —
+  //     independentemente do que a chamada tenha devolvido.
+  expectChequeLedgerCoherent({
+    status: (await cheques.get(ctx, cheque.id)).status,
+    direction: "received",
+    amount: 100,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de reverse",
+  });
+  assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 100, "o estorno recusado não pode ter mexido no caixa");
+
+  // (3) e SÓ ENTÃO a razão da recusa — era ela que abria a devolução em dobro.
+  expectRefused(attempt, 422, "cheque_entry_immutable", "reverse do lançamento de compensação");
+
+  // (4) o ÚNICO caminho que desfaz é o bounce — e ele leva a líquido ZERO, jamais a −100.
+  const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+  assert.equal(bounced.status, "bounced");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 0, "líquido ZERO — no defeito dava −100");
+  expectChequeLedgerCoherent({
+    status: "bounced",
+    direction: "received",
+    amount: 100,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após o bounce",
+  });
+});
+
+test("[C2/P3] DELETE do lançamento de COMPENSAÇÃO → 422 cheque_entry_immutable; cheque e caixa intactos", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 250 }));
+  await cheques.deposit(ctx, cheque.id);
+  const cleared = await cheques.clear(ctx, cheque.id);
+
+  // Captura liquidada: o razão é julgado ANTES do desfecho (C1.5). Sem o guard, o delete apaga a
+  // compensação e o fecho por estorno passa a ver ZERO linha viva num cheque 'cleared' de 250.
+  const attempt = await capture(() => entries.delete(ctx, cleared.clearedEntryId!));
+  expectChequeLedgerCoherent({
+    status: (await cheques.get(ctx, cheque.id)).status,
+    direction: "received",
+    amount: 250,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de delete",
+  });
+  expectRefused(attempt, 422, "cheque_entry_immutable", "delete do lançamento de compensação");
+  assert.equal((await entries.get(ctx, cleared.clearedEntryId!)).deletedAt, undefined);
+  assert.equal((await cheques.get(ctx, cheque.id)).status, "cleared");
+  assert.equal((await entries.balance(ctx, account.id)).balance, 250);
+});
+
+// B-O6R-02 ciclo 4 · C4 (P6-v2) — ACOPLAMENTO carregador × helper (D25 committado). O que faz o drill
+// `include_deleted: true→false` MORDER para sempre: um estado committado cujo veredito DEPENDE de a
+// linha APAGADA estar no razão. Com a completude (include_deleted no chequeLedgerInput), o helper julga
+// certo; se o carregador voltar a filtrar deleted_at, as pontas somem e o C4.1 EXPLODE por ponta ausente.
+test("[C4/P6-v2][acoplamento] cheque com pontas APAGADAS: helper julga certo COM a linha no razão e ACUSA sem ela", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  const cleared = await cheques.clear(ctx, cheque.id);
+  const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+
+  // MANIPULAÇÃO TEST-ONLY (bypassa o guard cheque_entry_immutable DE PROPÓSITO, indo direto ao
+  // repositório): apaga as DUAS pontas do cheque. O cheque segue 'bounced'; as pontas viram linhas
+  // APAGADAS no razão. É o estado em que a completude do razão passa a decidir o veredito.
+  const entryRepo = getMemoryFinancialEntryRepositoryForTests();
+  await entryRepo.softDelete(ctx.tenantId, cleared.clearedEntryId!, ctx.userId);
+  await entryRepo.softDelete(ctx.tenantId, bounced.bounceEntryId!, ctx.userId);
+
+  const loaded = await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id);
+
+  // (a) COM a linha (razão COMPLETO, include_deleted): 'bounced' com 0 lançamento vivo no fecho é
+  //     coerente (0 ou 2) → o helper JULGA CERTO (verde).
+  expectChequeLedgerCoherent({
+    status: "bounced",
+    direction: "received",
+    amount: 100,
+    ...loaded,
+    label: "pontas apagadas — razão completo",
+  });
+
+  // (b) SEM a linha (o carregador volta a filtrar deleted_at — exatamente a mutação do D25): as pontas
+  //     somem do razão e o helper EXPLODE por ponta ausente (C4.1). O veredito DEPENDE da completude.
+  const filtrado = { ...loaded, ledger: loaded.ledger.filter((row) => row.deletedAt == null) };
+  assert.throws(
+    () =>
+      expectChequeLedgerCoherent({
+        status: "bounced",
+        direction: "received",
+        amount: 100,
+        ...filtrado,
+        label: "pontas apagadas — razão filtrado",
+      }),
+    (error: unknown) => error instanceof assert.AssertionError && /ausente do razão carregado/.test((error as Error).message),
+    "carregador que filtra deleted_at derruba este caso: as pontas apagadas somem e a completude quebra",
+  );
+});
+
+test("[C2/P3] o CONTRA-lançamento do bounce também é imutável: reverse e delete → 422; net segue ZERO", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  await cheques.clear(ctx, cheque.id);
+  const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+
+  // Sem este guard, estornar o contra-lançamento devolveria o cheque devolvido ao caixa: +100 outra vez.
+  // Captura liquidada nas DUAS portas, com o razão julgado entre elas e no fim.
+  const reverseAttempt = await capture(() => entries.reverse(ctx, bounced.bounceEntryId!));
+  expectChequeLedgerCoherent({
+    status: (await cheques.get(ctx, cheque.id)).status,
+    direction: "received",
+    amount: 100,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de reverse do contra-lançamento",
+  });
+  expectRefused(reverseAttempt, 422, "cheque_entry_immutable", "reverse do contra-lançamento do bounce");
+
+  const deleteAttempt = await capture(() => entries.delete(ctx, bounced.bounceEntryId!));
+  expectChequeLedgerCoherent({
+    status: (await cheques.get(ctx, cheque.id)).status,
+    direction: "received",
+    amount: 100,
+    ...(await chequeLedgerInput(entries, ctx, cheque.id, cheques, account.id)),
+    label: "após a tentativa de delete do contra-lançamento",
+  });
+  expectRefused(deleteAttempt, 422, "cheque_entry_immutable", "delete do contra-lançamento do bounce");
+
+  assert.equal((await entries.balance(ctx, account.id)).balance, 0, "o cheque devolvido tem de continuar valendo ZERO");
+});
+
+test("[C2] o guard é ESTREITO: lançamento avulso na mesma conta segue estornável e deletável", async () => {
+  const { cheques, accounts, entries } = setup();
+  const ctx = actor();
+  const account = await activeAccount(accounts, ctx);
+  const cheque = await cheques.create(ctx, chequeBody(account.id, { amount: 100 }));
+  await cheques.deposit(ctx, cheque.id);
+  await cheques.clear(ctx, cheque.id);
+
+  const avulso = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 15, payment_method: "pix" });
+  const contra = await entries.reverse(ctx, avulso.id);
+  assert.equal(contra.reversalOf, avulso.id, "o guard do cheque não pode virar parede sobre lançamento alheio");
+  const outro = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 5, payment_method: "pix" });
+  assert.notEqual((await entries.delete(ctx, outro.id)).deletedAt, undefined);
+});
+
+// ------------------------------------------------- B-O6R-02 ciclo 3 · C2 (P5): TABELA POR PONTA
+//
+// Os casos de recusa deixaram de nomear as pontas à mão e passam a ITERAR a fonte única
+// (`CHEQUE_ENTRY_LINK_FIELDS`). Consequência que é o ponto: ponta nova classificada em
+// `CHEQUE_FIELD_CLASS` ganha linhas de teste SOZINHA, nas duas rotas — ninguém precisa lembrar de
+// escrevê-las. E repositório que deixar de enxergar uma ponta (drill D18) perde a linha dela.
+
+/**
+ * Fixtures por ponta. FAIL-CLOSED EM RUNTIME: ponta presente na fonte única e ausente daqui faz o
+ * caso FALHAR, não sumir. Um teste que se cala diante de uma ponta desconhecida seria exatamente a
+ * classe de defeito que este bloco existe para fechar.
+ */
+const PONTA_FIXTURES: Record<
+  string,
+  (deps: ReturnType<typeof setup>, ctx: ChequeActorContext, accountId: string) => Promise<{ entryId: string; chequeId: string }>
+> = {
+  clearedEntryId: async ({ cheques }, ctx, accountId) => {
+    const cheque = await cheques.create(ctx, chequeBody(accountId, { amount: 100 }));
+    await cheques.deposit(ctx, cheque.id);
+    const cleared = await cheques.clear(ctx, cheque.id);
+    return { entryId: cleared.clearedEntryId!, chequeId: cheque.id };
+  },
+  bounceEntryId: async ({ cheques }, ctx, accountId) => {
+    const cheque = await cheques.create(ctx, chequeBody(accountId, { amount: 100 }));
+    await cheques.deposit(ctx, cheque.id);
+    await cheques.clear(ctx, cheque.id);
+    const bounced = await cheques.bounce(ctx, cheque.id, { reason: "sem fundos" });
+    return { entryId: bounced.bounceEntryId!, chequeId: cheque.id };
+  },
+};
+
+for (const ponta of CHEQUE_ENTRY_LINK_FIELDS) {
+  for (const rota of ["delete", "reverse"] as const) {
+    test(`[C2/P5][memória][ponta:${ponta}][rota:${rota}] lançamento vinculado → 422 cheque_entry_immutable`, async () => {
+      const fixture = PONTA_FIXTURES[ponta];
+      assert.ok(
+        fixture,
+        `a ponta '${ponta}' está em CHEQUE_ENTRY_LINK_FIELDS e não tem fixture nesta tabela. ` +
+          "Ponta nova entra na fonte única E ganha o estado que a exercita — silenciar aqui recriaria o B-2.",
+      );
+      const deps = setup();
+      const ctx = actor();
+      const account = await activeAccount(deps.accounts, ctx);
+      const { entryId, chequeId } = await fixture(deps, ctx, account.id);
+      assert.ok(entryId, `${ponta}: a fixture tem de produzir o lançamento vinculado`);
+
+      const attempt = await capture(() => deps.entries[rota](ctx, entryId));
+      expectRefused(attempt, 422, "cheque_entry_immutable", `${rota} do lançamento da ponta ${ponta}`);
+      // A recusa não pode ter mexido em nada: a linha continua viva e o cheque no estado dele.
+      assert.equal((await deps.entries.get(ctx, entryId)).deletedAt, undefined, `${ponta}: a linha continua viva`);
+      expectChequeLedgerCoherent({
+        status: (await deps.cheques.get(ctx, chequeId)).status,
+        direction: "received",
+        amount: 100,
+        ...(await chequeLedgerInput(deps.entries, ctx, chequeId, deps.cheques, account.id)),
+        label: `ponta ${ponta} após ${rota} recusado`,
+      });
+    });
+  }
+}
 
 test("bounce de 'registered'/'cancelled' → 422 invalid_transition", async () => {
   const { cheques, accounts } = setup();

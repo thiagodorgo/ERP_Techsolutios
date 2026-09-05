@@ -3,11 +3,13 @@ import { getMemoryFinancialAccountRepositoryForTests } from "../financial-accoun
 import {
   InMemoryFinancialPeriodCloseRepository,
   InMemoryFinancialTitleRepository,
+  amountBelowPaidError,
   invalidAccountReferenceError,
   overpaymentError,
   periodClosedError,
   titleAlreadyPaidError,
   titleCancelledError,
+  titleHasPaymentsError,
   titleNotFoundError,
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
@@ -229,7 +231,7 @@ export class FinancialTitleService {
 
     // Editáveis: party_name/document/category/description/amount/due_date/account_id. NÃO altera
     // status/paid_amount/competencia/direction/party_type (imutáveis pós-create nesta fatia).
-    const updated = await this.repository.update({
+    const result = await this.repository.update({
       tenantId: actor.tenantId,
       financialTitleId: current.id,
       partyName: body.party_name === undefined && body.partyName === undefined ? undefined : parsePartyName(body.party_name ?? body.partyName),
@@ -241,10 +243,9 @@ export class FinancialTitleService {
       accountId,
       updatedBy: actor.userId,
     });
-    if (!updated) {
-      throw titleNotFoundError();
-    }
-    return updated;
+    if (result.outcome === "not_found") throw titleNotFoundError();
+    if (result.outcome === "amount_below_paid") throw amountBelowPaidError();
+    return result.title;
   }
 
   async changeStatus(actor: FinancialTitleActorContext, financialTitleId: string, body: RawRecord): Promise<FinancialTitle> {
@@ -318,11 +319,10 @@ export class FinancialTitleService {
     const current = await this.getWritable(actor, financialTitleId);
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
 
-    const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
-    if (!removed) {
-      throw titleNotFoundError();
-    }
-    return removed;
+    const result = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
+    if (result.outcome === "not_found") throw titleNotFoundError();
+    if (result.outcome === "title_has_payments") throw titleHasPaymentsError();
+    return result.title;
   }
 
   // Localiza um título ESCREVÍVEL (existe, do tenant, não deletado). Fonte do 404 e da competência que o

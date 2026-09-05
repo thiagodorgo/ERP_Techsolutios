@@ -8,7 +8,7 @@ import type {
   TransitionChequeInput,
   UpdateChequeInput,
 } from "./cheque.types.js";
-import { ChequeError } from "./cheque.types.js";
+import { CHEQUE_ENTRY_LINK_FIELDS, ChequeError } from "./cheque.types.js";
 
 export interface ChequeRepository {
   create(input: CreateChequeInput): Promise<Cheque>;
@@ -24,6 +24,11 @@ export interface ChequeRepository {
   attachClearingEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined>;
   // Vincula o contra-lançamento ao cheque JÁ em 'bounced' (2º passo do bounce-após-clear).
   attachBounceEntry(tenantId: string, chequeId: string, entryId: string, updatedBy?: string): Promise<Cheque | undefined>;
+  // B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — cheque ATIVO que REFERENCIA este lançamento, por qualquer
+  // das duas pontas (cleared_entry_id OU bounce_entry_id). É a leitura que sustenta o guard da
+  // superfície de LANÇAMENTOS: sem ela, `delete`/`reverse` nunca souberam que o lançamento pertencia
+  // à máquina de estados de um cheque, e desfaziam o dinheiro por fora dela (devolução em dobro).
+  findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined>;
   reset?(): void;
 }
 
@@ -166,8 +171,37 @@ export class InMemoryChequeRepository implements ChequeRepository {
     return this.attachEntry(tenantId, chequeId, "bounced", { bounceEntryId: entryId }, updatedBy);
   }
 
+  // B-O6R-02 ciclo 3 · C2 (P5) — as pontas vêm da FONTE ÚNICA (`CHEQUE_ENTRY_LINK_FIELDS`), não de
+  // um literal escrito à mão. A cópia anterior (`clearedEntryId === entryId || bounceEntryId ===
+  // entryId`) e a do Prisma eram duas listas manuais que precisavam concordar: ponta nova entrava
+  // numa e não na outra, e a divergência nascia PERMITIDA. Agora ponta nova aparece nas duas no
+  // mesmo commit, porque as duas iteram o mesmo derivado.
+  async findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
+    return [...this.cheques.values()].find(
+      (cheque) =>
+        cheque.tenantId === tenantId &&
+        cheque.deletedAt == null &&
+        CHEQUE_ENTRY_LINK_FIELDS.some((field) => cheque[field] === entryId),
+    );
+  }
+
   reset(): void {
     this.cheques.clear();
+  }
+
+  // B-O6R-02 F5 — par snapshot/restore do UNDO-LOG do runner de memória (financial-uow). Dublê honesto:
+  // NÃO é evidência de atomicidade (a prova real é a suíte -db contra Postgres); existe só para o
+  // rollback dos fluxos multi-write do cheque (clear/bounce) manter as provas de memória vivas.
+  // Escopo por tenant, cópia rasa por linha (linhas tratadas como imutáveis — sempre `set` de objeto novo).
+  snapshotTenantForUow(tenantId: string): Cheque[] {
+    return [...this.cheques.values()].filter((cheque) => cheque.tenantId === tenantId).map((cheque) => ({ ...cheque }));
+  }
+
+  restoreTenantForUow(tenantId: string, rows: readonly Cheque[]): void {
+    for (const [id, cheque] of [...this.cheques]) {
+      if (cheque.tenantId === tenantId) this.cheques.delete(id);
+    }
+    for (const row of rows) this.cheques.set(row.id, { ...row });
   }
 
   private attachEntry(

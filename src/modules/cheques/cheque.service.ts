@@ -1,9 +1,15 @@
 import { env } from "../../config/env.js";
 import { getMemoryFinancialAccountRepositoryForTests } from "../financial-accounts/financial-account.service.js";
 import {
-  createMemoryFinancialEntryService,
-  type FinancialEntryService,
-} from "../financial-entries/financial-entry.service.js";
+  currencyMismatchError,
+  periodClosedError as entryPeriodClosedError,
+} from "../financial-entries/financial-entry.repository.js";
+import { deriveCompetencia } from "../financial-titles/index.js";
+import {
+  createDefaultFinancialUnitOfWork,
+  type FinancialUowContext,
+  type FinancialUowResolver,
+} from "../financial-uow/index.js";
 import {
   InMemoryChequeRepository,
   accountInactiveError,
@@ -45,10 +51,8 @@ import {
 
 type RawRecord = Record<string, unknown>;
 
-export type FinancialEntryServiceResolver = () => Promise<FinancialEntryService>;
-
 // Permissão FINANCEIRA forte exigida pelas transições que MOVEM dinheiro (compensar/devolver-após-compensar):
-// a chamada service→service a entryService.create NÃO reatravessa a rota /financial-entries, então o gate de
+// a escrita do lançamento pela unidade (UoW) NÃO reatravessa a rota /financial-entries, então o gate de
 // dinheiro é reafirmado aqui (defesa em profundidade). Sem ela, um ator com só cheques:update movimentaria caixa
 // pela porta dos fundos do cheque (achado ALTA do ataque). Fonte ÚNICA da constante — a rota importa daqui
 // (evita divergência rota↔serviço; condição BAIXA da junta).
@@ -68,7 +72,9 @@ export class ChequeService {
   constructor(
     private readonly repository: ChequeRepository,
     private readonly accountReader: AccountReader,
-    private readonly resolveEntryService: FinancialEntryServiceResolver,
+    // B-O6R-02 F5 — porta de Unit of Work: clear/bounce-após-clear rodam transição + lançamento +
+    // vínculo como UMA unidade (falha → o cheque volta ao estado anterior PELO BANCO).
+    private readonly resolveUow: FinancialUowResolver = createDefaultFinancialUnitOfWork,
   ) {}
 
   async list(actor: ChequeActorContext, query: RawRecord): Promise<ListChequeResult> {
@@ -149,45 +155,42 @@ export class ChequeService {
     return this.flipOnly(actor, chequeId, "cancelled");
   }
 
-  // COMPENSAR (deposited→cleared) — MOVE DINHEIRO. A transição é o MUTEX: reserva atômica deposited→cleared
-  // (só o vencedor da corrida segue; perdedor → 409), posta 1 lançamento via entryService.create (server-now →
-  // competência CORRENTE, chokepoint), vincula cleared_entry_id. Falha do post (period_closed/account_inactive/
-  // currency_mismatch/amount_overflow) → ROLLBACK cleared→deposited e propaga o erro (cheque volta a 'deposited').
+  // COMPENSAR (deposited→cleared) — MOVE DINHEIRO. B-O6R-02 F5 (Ω6R-DIN-003): transição (CAS, o mutex
+  // preservado — perdedor → 409), lançamento (server-now → competência CORRENTE, com trava SHARED +
+  // re-check DENTRO da tx) e vínculo cleared_entry_id rodam como UMA transação. Qualquer falha →
+  // rollback PELO BANCO: o cheque volta ao estado anterior sem código de compensação (o best-effort
+  // `.catch(() => {})` foi DELETADO — deixou de existir, não virou cinto extra). Conta ativa + moeda
+  // são pré-validadas FAIL-FAST (mesmos erros de antes, agora sem nem tocar o cheque).
   async clear(actor: ChequeActorContext, chequeId: string): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     this.assertTransition(current.status, "cleared");
     this.assertCanMoveMoney(actor);
+    await this.assertPostableAccount(actor.tenantId, current);
 
-    const reserved = await this.repository.transition({
-      tenantId: actor.tenantId,
-      chequeId: current.id,
-      fromStatus: "deposited",
-      toStatus: "cleared",
-      clearedEntryId: null,
-      updatedBy: actor.userId,
-    });
-    if (!reserved) throw transitionConflictError();
-
-    let entry: { readonly id: string };
-    try {
-      const direction = reserved.direction === "received" ? "in" : "out";
-      entry = await this.postEntry(actor, reserved, direction, "cheque_clearing", `Compensação de cheque ${reserved.chequeNumber}`);
-    } catch (error) {
-      // Compensação NÃO postou → devolve o cheque a 'deposited' (nada meio-postado). Recuperável e auditável.
-      // Rollback BEST-EFFORT: uma falha ao reverter o estado NÃO pode mascarar o erro de negócio original
-      // (period_closed/account_inactive/...) — sempre relança o erro que causou o rollback.
-      await this.repository.transition({ tenantId: actor.tenantId, chequeId: current.id, fromStatus: "cleared", toStatus: "deposited", updatedBy: actor.userId }).catch(() => {});
-      throw error;
-    }
-
-    const linked = await this.repository.attachClearingEntry(actor.tenantId, current.id, entry.id, actor.userId);
-    return linked ?? reserved;
+    const occurredAt = new Date();
+    const competencia = deriveCompetencia(occurredAt);
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, (ctx) =>
+      this.moveMoneyInUnit(ctx, actor, current, {
+        fromStatus: "deposited",
+        toStatus: "cleared",
+        competencia,
+        occurredAt,
+        direction: current.direction === "received" ? "in" : "out",
+        category: "cheque_clearing",
+        description: `Compensação de cheque ${current.chequeNumber}`,
+        attach: (entryId) => ctx.cheques.attachClearingEntry(actor.tenantId, current.id, entryId, actor.userId),
+        transitionExtras: { clearedEntryId: null },
+      }),
+    );
   }
 
-  // DEVOLVER (bounce). deposited→bounced: sem caixa (nunca compensou). cleared→bounced: MOVE DINHEIRO — posta um
-  // CONTRA-lançamento NOVO (direção invertida, category='cheque_bounce', server-now) em vez de reverse() do
-  // original — assim NÃO é travado por conciliação do lançamento compensado (Ω4-5) e preserva a conciliação
-  // dele. Mutex + rollback iguais ao clear. bounce_reason opcional (motivo da devolução — auditoria).
+  // DEVOLVER (bounce). deposited→bounced: sem caixa (nunca compensou) — CAS simples, fora da unidade.
+  // cleared→bounced: MOVE DINHEIRO — posta um CONTRA-lançamento NOVO (direção invertida,
+  // category='cheque_bounce', server-now) em vez de reverse() do original — assim NÃO é travado por
+  // conciliação do lançamento compensado (Ω4-5) e preserva a conciliação dele. B-O6R-02 F5: transição +
+  // contra-lançamento + vínculo na MESMA transação (mutex preservado; falha → rollback pelo banco).
+  // bounce_reason opcional (motivo da devolução — auditoria).
   async bounce(actor: ChequeActorContext, chequeId: string, body: RawRecord): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     const reason = parseOptionalBounceReason(body.reason ?? body.bounce_reason) ?? null;
@@ -207,48 +210,93 @@ export class ChequeService {
 
     if (current.status === "cleared") {
       this.assertCanMoveMoney(actor);
-      const reserved = await this.repository.transition({
-        tenantId: actor.tenantId,
-        chequeId: current.id,
-        fromStatus: "cleared",
-        toStatus: "bounced",
-        bounceReason: reason,
-        updatedBy: actor.userId,
-      });
-      if (!reserved) throw transitionConflictError();
+      await this.assertPostableAccount(actor.tenantId, current);
 
-      let counter: { readonly id: string };
-      try {
-        const direction = reserved.direction === "received" ? "out" : "in";
-        counter = await this.postEntry(actor, reserved, direction, "cheque_bounce", `Devolução de cheque ${reserved.chequeNumber}`);
-      } catch (error) {
-        // Rollback BEST-EFFORT (idem ao clear): não mascara o erro de negócio original.
-        await this.repository.transition({ tenantId: actor.tenantId, chequeId: current.id, fromStatus: "bounced", toStatus: "cleared", updatedBy: actor.userId }).catch(() => {});
-        throw error;
-      }
-
-      const linked = await this.repository.attachBounceEntry(actor.tenantId, current.id, counter.id, actor.userId);
-      return linked ?? reserved;
+      const occurredAt = new Date();
+      const competencia = deriveCompetencia(occurredAt);
+      const uow = await this.resolveUow();
+      return uow.run(actor.tenantId, (ctx) =>
+        this.moveMoneyInUnit(ctx, actor, current, {
+          fromStatus: "cleared",
+          toStatus: "bounced",
+          competencia,
+          occurredAt,
+          direction: current.direction === "received" ? "out" : "in",
+          category: "cheque_bounce",
+          description: `Devolução de cheque ${current.chequeNumber}`,
+          attach: (entryId) => ctx.cheques.attachBounceEntry(actor.tenantId, current.id, entryId, actor.userId),
+          transitionExtras: { bounceReason: reason },
+        }),
+      );
     }
 
     // registered/bounced/cancelled → devolver é ilegal.
     throw invalidTransitionError(current.status, "bounced");
   }
 
-  // Posta um lançamento de caixa via o SERVIÇO de lançamentos (reusa conta-ativa + moeda + chokepoint de
-  // competência). SEM occurred_at → server-now → competência CORRENTE (a compensação/devolução é HOJE; a
-  // due_date "bom para" é memo e nunca entra na competência). payment_method='check'.
-  private async postEntry(actor: ChequeActorContext, cheque: Cheque, direction: "in" | "out", category: string, description: string) {
-    const entryService = await this.resolveEntryService();
-    return entryService.create(this.toEntryActor(actor), {
-      account_id: cheque.accountId,
-      direction,
-      amount: cheque.amount,
-      currency: cheque.currency,
-      payment_method: "check",
-      category,
-      description,
+  // B-O6R-02 F5 — a RECEITA transacional única de mover dinheiro do cheque (clear e bounce-após-clear):
+  // trava SHARED de período + re-check (advisory ANTES do row lock do cheque — ordem global de locks
+  // do lar único), transição CAS (o mutex: perdedor casa 0 linhas → 409 com a unidade ainda limpa),
+  // lançamento server-now (payment_method='check'; a due_date "bom para" é memo e nunca entra na
+  // competência) e vínculo do entry id — tudo commit-junto-ou-morre-junto.
+  private async moveMoneyInUnit(
+    ctx: FinancialUowContext,
+    actor: ChequeActorContext,
+    cheque: Cheque,
+    input: {
+      readonly fromStatus: ChequeStatus;
+      readonly toStatus: ChequeStatus;
+      readonly competencia: string;
+      readonly occurredAt: Date;
+      readonly direction: "in" | "out";
+      readonly category: string;
+      readonly description: string;
+      readonly attach: (entryId: string) => Promise<Cheque | undefined>;
+      readonly transitionExtras?: { readonly clearedEntryId?: string | null; readonly bounceReason?: string | null };
+    },
+  ): Promise<Cheque> {
+    await ctx.assertPeriodOpenShared(input.competencia, entryPeriodClosedError);
+
+    const reserved = await ctx.cheques.transition({
+      tenantId: actor.tenantId,
+      chequeId: cheque.id,
+      fromStatus: input.fromStatus,
+      toStatus: input.toStatus,
+      ...(input.transitionExtras ?? {}),
+      updatedBy: actor.userId,
     });
+    if (!reserved) throw transitionConflictError();
+
+    const entry = await ctx.entries.create({
+      tenantId: actor.tenantId,
+      accountId: reserved.accountId,
+      direction: input.direction,
+      amount: reserved.amount,
+      currency: reserved.currency,
+      paymentMethod: "check",
+      category: input.category,
+      occurredAt: input.occurredAt,
+      competencia: input.competencia,
+      description: input.description,
+      createdBy: actor.userId,
+      updatedBy: actor.userId,
+    });
+
+    const linked = await input.attach(entry.id);
+    // Inalcançável dentro da mesma tx (a linha acabou de ser flipada por nós e está travada); se
+    // acontecer, fail-closed: aborta a unidade inteira em vez de commitar cheque sem vínculo.
+    if (!linked) throw transitionConflictError();
+    return linked;
+  }
+
+  // Pré-validação FAIL-FAST do post de caixa (mesmos erros de antes, que vinham do serviço de
+  // lançamentos — agora SEM tocar o cheque): conta existente (400) e ativa (422), moeda do cheque ==
+  // moeda da conta (422). A FK composta (tenant_id, account_id) segue como rede final dentro da tx.
+  private async assertPostableAccount(tenantId: string, cheque: Cheque): Promise<void> {
+    const account = await this.resolveActiveAccount(tenantId, cheque.accountId);
+    if (account.currency !== cheque.currency) {
+      throw currencyMismatchError();
+    }
   }
 
   // Transição SEM dinheiro (deposit/cancel): valida a legalidade e flipa atômico (mutex). from = status atual.
@@ -296,10 +344,6 @@ export class ChequeService {
     if (!current || current.deletedAt != null) throw chequeNotFoundError();
     return current;
   }
-
-  private toEntryActor(actor: ChequeActorContext) {
-    return { tenantId: actor.tenantId, userId: actor.userId, roles: actor.roles, permissions: actor.permissions };
-  }
 }
 
 const memoryChequeRepository = new InMemoryChequeRepository();
@@ -315,9 +359,10 @@ const memoryAccountReader: AccountReader = {
 };
 
 export function createMemoryChequeService(): ChequeService {
-  // Compõe com o MESMO singleton InMemory de lançamentos (createMemoryFinancialEntryService compartilha
-  // memoryEntryRepository) → a compensação do cheque aparece no saldo/extrato e atravessa o MESMO chokepoint.
-  return new ChequeService(memoryChequeRepository, memoryAccountReader, () => Promise.resolve(createMemoryFinancialEntryService()));
+  // A porta UoW default resolve para o runner de MEMÓRIA, que compõe os MESMOS singletons InMemory
+  // (lançamentos/títulos/cheques/fechamento) → a compensação do cheque aparece no saldo/extrato e
+  // atravessa o MESMO chokepoint de período.
+  return new ChequeService(memoryChequeRepository, memoryAccountReader);
 }
 
 export function getMemoryChequeRepositoryForTests(): InMemoryChequeRepository {
@@ -338,10 +383,9 @@ export function resetChequeRuntimeForTests(): void {
 }
 
 async function createPrismaChequeService(): Promise<ChequeService> {
-  const [{ createPrismaChequeRepository }, { createPrismaAccountReader }, { createDefaultFinancialEntryService }] = await Promise.all([
+  const [{ createPrismaChequeRepository }, { createPrismaAccountReader }] = await Promise.all([
     import("./cheque-prisma.repository.js"),
     import("../financial-entries/financial-entry-prisma.repository.js"),
-    import("../financial-entries/financial-entry.service.js"),
   ]);
-  return new ChequeService(await createPrismaChequeRepository(), await createPrismaAccountReader(), createDefaultFinancialEntryService);
+  return new ChequeService(await createPrismaChequeRepository(), await createPrismaAccountReader());
 }

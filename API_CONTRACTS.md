@@ -394,6 +394,70 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 | POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
 
+**Invariantes de mutação de título (`financial_title_mutation@2026-08-20.b-o6r-02-f6`):**
+
+- `PATCH /financial-titles/:id` é CAS tenant-scoped. Se `amount < paidAmount`, retorna `422`
+  `FINANCIAL_TITLE_UNPROCESSABLE` com `reason: "amount_below_paid"`, sem persistir nenhum outro campo
+  do PATCH composto. Se `paidAmount > 0`, o mesmo `UPDATE` deriva `status`: igualdade → `paid`;
+  valor maior que o pago → `partially_paid`. Sem `amount`, preserva o status.
+- `DELETE /financial-titles/:id` é soft-delete CAS tenant-scoped e só casa `paidAmount = 0`. Título
+  com pagamento retorna `422 FINANCIAL_TITLE_UNPROCESSABLE`, `reason: "title_has_payments"`.
+- Precedência pública: autenticação/RBAC → posse (`404 title_not_found`) → competência fechada
+  (`422 period_closed`) → invariante financeira. Assim, outro tenant nunca descobre valor pago ou
+  estado de fechamento. Nenhum erro inclui `tenant_id`, PII ou detalhe SQL.
+- O banco mantém `0 <= paid_amount <= amount`; violação SQL direta falha com SQLSTATE `23514`.
+
+**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-09-02.b-o6r-02-c5`):**
+
+A regra única das duas rotas: **lançamento vinculado a um agregado só se desfaz PELO FLUXO DO
+AGREGADO.** `DELETE /financial-entries/:id` e `POST /financial-entries/:id/reverse` recusam com
+`422 FINANCIAL_ENTRY_UNPROCESSABLE` e um `reason` que nomeia o dono do vínculo:
+
+| `reason` | Quando | Rota de saída correta |
+|---|---|---|
+| `reversal_pair_immutable` | O lançamento é contrapartida de estorno, ou (no `DELETE`) já foi estornado. | Nenhuma: o par é indivisível. |
+| `settlement_entry_immutable` | O lançamento liquida um título (`title_id` preenchido) e a rota é `DELETE`. | `POST /:id/reverse` — devolve o pagamento ao título na MESMA unidade. |
+| `cheque_entry_immutable` | O lançamento é ponta de um cheque ativo (`cleared_entry_id` ou `bounce_entry_id`), em qualquer das duas rotas. | `POST /cheques/:id/bounce` — a máquina de estados do cheque. |
+
+**Precedência pública, por rota** (a IDENTIDADE do lançamento decide antes da HISTÓRIA dele; um
+tenant estranho recebe `404` antes de qualquer regra financeira):
+
+- `DELETE`: `404 entry_not_found` → `422 entry_reconciled` → `422 reversal_pair_immutable` →
+  `422 settlement_entry_immutable` → `422 cheque_entry_immutable` → `422 period_closed`.
+- `reverse`: `404 entry_not_found` → `422 entry_reconciled` → `422 reversal_pair_immutable` →
+  `422 cheque_entry_immutable` → `409 already_reversed` → `422 period_closed`.
+
+`reverse` de uma liquidação é **permitido** — é o fluxo do agregado título, e devolve o pagamento na
+mesma unidade da contrapartida. Nenhum destes erros inclui `tenant_id`, PII nem detalhe SQL.
+
+**Indivisibilidade SOB CONCORRÊNCIA (B-O6R-02 ciclos 4–5 · Ω6R-DIN-002 concorrente).** A recusa acima
+não vale só na chamada sequencial: `DELETE` e `reverse` do MESMO par **nunca comprometem ambas** sob
+concorrência — o efeito líquido no saldo é 0, ou uma delas recusa, SEMPRE. As duas portas serializam no
+`SELECT … FOR UPDATE` do lançamento original dentro da unidade (`uow.run`), e o perdedor re-checa sob o
+lock, recebendo os MESMOS erros da tabela acima (nunca um `softDelete` cego). No banco, DUAS camadas — e
+o texto afirma exatamente o que cada uma sustenta por execução:
+
+- a **metade órfã por SOFT-delete/estorno** (estorno vivo apontando original com `deleted_at`) é recusada
+  pelo par de triggers da migration `add_reversal_pair_atomicity` — o `FOR SHARE` do trigger do estorno
+  serializa os dois caminhos no row lock do original —, inclusive sob papel `NOBYPASSRLS` com a política
+  RLS aplicada (caso `[C10/P14][db][RLS real]`);
+- a **separação CRUA do par** — `DELETE` físico do original com estorno vivo e rename da PK do original —
+  é recusada **por construção** pela FK composta `financial_entries_reversal_pair_fk`
+  (`(tenant_id, reversal_of) → financial_entries(tenant_id, id)`, `ON DELETE/UPDATE RESTRICT`, migration
+  `add_reversal_pair_fk`), com SQLSTATE `23503` (casos `[C9/P13]`, sondas (v)/(vii)).
+
+**O limite que resta, nomeado:** triggers + FK amarram a EXISTÊNCIA e a indivisibilidade do par, não o
+CONTEÚDO das linhas. Edições cruas fora da classe do par — `UPDATE amount`/`account_id` direto no banco,
+`DELETE` físico da **contrapartida** — permanecem possíveis para escritor privilegiado com SQL cru e
+**nenhum desenho de par as fecha** (medidas pelo ataque do ciclo 4); a defesa segue sendo autorização +
+auditoria, não constraint. Órfãos de **legado** anteriores aos guards não são mutados por migração: o
+censo da `add_reversal_pair_atomicity` os conta com WARNING nomeado (`P-O6R-B02-ORFAOS-LEGADOS`,
+exercitado pelo caso permanente `[A6][db][censo]`) e o censo fail-closed da `add_reversal_pair_fk`
+aborta a validação da FK se existirem referências penduradas. Se esta invariante regredir, as suítes
+nomeadas aqui ficam vermelhas — o contrato não sobrevive sozinho: `tests/financial-entries.test.ts`
+(corrida em memória e HTTP, as DUAS ordens de disparo) e `tests/financial-entry-delete-reverse-race-db.test.ts`
+(barreira determinística + SQL cru contra os triggers, FK, `[RLS real]` e censo, sob Postgres).
+
 ### 3.12 Custódia / Pátios de Recolhimento (SIGPRV — Ω5P)
 
 Fontes: `yard/`, `jurisdiction/`, `tariffs/`, `impound/`, `charging/`, `release/`, `auction/`.

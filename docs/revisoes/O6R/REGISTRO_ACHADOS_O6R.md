@@ -10,7 +10,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 |---|---:|
 | SEC | 005 |
 | TEN | 002 |
-| DIN | 010 |
+| DIN | 012 |
 | DAT | 005 |
 | PERF | 004 |
 | ARQ | 005 |
@@ -24,6 +24,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-001] Pagamento concorrente pode criar lançamento órfão e inflar o saldo
 - Severidade: P0        Confiança: 0.99
+- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:261-282`, `src/modules/financial-titles/financial-title-prisma.repository.ts:132-138`
@@ -45,6 +46,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-002] Estorno de lançamento não reabre nem reduz o valor pago do título
 - Severidade: P0        Confiança: 0.98
+- Status: **aguardando_merge** — foi REABERTO em 2026-08-22 pela junta `J-B-O6R-02-ciclo1` (bloqueante B-1) e o ciclo 2 o consertou em autoria; volta a `aguardando_merge` (conserto escrito, NÃO na main). O `reverse` passou a devolver, mas o `DELETE` do MESMO lançamento de liquidação continuava aceito no head `e4e914a`: o caixa voltava e o título ficava com `paid_amount` intacto — o impacto declarado deste achado seguia alcançável por HTTP, pela outra porta. O caminho do delete está registrado em detalhe como `Ω6R-DIN-010`; os dois só voltam a `aguardando_merge` juntos.
 - Categoria: DIN
 - Módulo: financial-entries / financial-titles        Lente: A3
 - Local: `src/modules/financial-entries/financial-entry.service.ts:158-195`
@@ -63,6 +65,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-003] Compensação e devolução de cheque podem deixar lançamento financeiro órfão
 - Severidade: P0        Confiança: 0.97
+- Status: **aguardando_merge** — implementação B-O6R-02 F1–F6 concluída em autoria; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: cheques / financial-entries        Lente: A3
 - Local: `src/modules/cheques/cheque.service.ts:152-184`, `src/modules/cheques/cheque.service.ts:187-231`
@@ -87,6 +90,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-004] Título pago aceita valor inferior ao liquidado e exclusão lógica
 - Severidade: P0        Confiança: 0.99
+- Status: **aguardando_merge** — CAS de PATCH/DELETE e cobertura G7–G9 implementados; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-titles        Lente: A3
 - Local: `src/modules/financial-titles/financial-title.service.ts:218-243`, `src/modules/financial-titles/financial-title.service.ts:317-325`, `src/modules/financial-titles/financial-title-prisma.repository.ts:102-118`, `prisma/schema.prisma:1762-1767`
@@ -513,6 +517,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-QUA-003] Testes financeiros críticos exercem apenas adapters em memória
 - Severidade: P1        Confiança: 0.99
+- Status: **aguardando_merge** — cinco suítes PostgreSQL somam 32 casos top-level; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: QUA
 - Módulo: financial-entries / cheques / period-close / expenses        Lente: A5
 - Local: `tests/financial-entries.test.ts:53-59`, `tests/financial-entries.test.ts:436-439`, `tests/cheques.test.ts:59-65`, `tests/cheques.test.ts:453-466`, `tests/financial-period-closes.test.ts:49-59`, `tests/expense-management-routes.test.ts:182-204`
@@ -534,6 +539,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-DIN-008] Escritores podem confirmar dinheiro depois do snapshot de período fechado
 - Severidade: P0        Confiança: 1.00
+- Status: **aguardando_merge** — write-path financeiro e PATCH compartilham a trava de competência; fechamento depende de revisão independente, junta, merge e porteiro.
 - Categoria: DIN
 - Módulo: financial-period-closes / financial writers        Lente: A3
 - Local: `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:49-52`, `src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:77-89`, `src/modules/financial-titles/financial-title.service.ts:338-344`
@@ -724,6 +730,42 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Impacto: Um `PATCH` autorizado (`jurisdiction:update`, que gestão e administradores possuem) re-tempera todas as custódias em curso ligadas ao perfil. Elevar o teto de `THIRTY_DAYS_LEGACY` para `SIX_MONTHS`/`UNLIMITED`, ou trocar `ROLLING_24H` por `CALENDAR`, muda o valor devido de bens que entraram sob o regime anterior — e nessa direção não há compensação: `charging` só detecta e estorna a **sobre**-acumulação (`reconciliationPending`/`overAccruedDailies` em `charge.service.ts:131-134`, estorno no settle), nunca a sub-acumulação. Como o registro não guarda de/para, a organização não consegue reconstruir sob qual regime cada diária foi cobrada — que é exatamente a prova exigida para sustentar uma cobrança de estada contestada. Mitigações reais, que limitam o alcance e por isso a severidade é P1 e não P0: o gate de leilão impõe piso federal de 60 dias com `max(profileDays, 60)` e exige `OWNER_INITIAL` satisfeita independentemente do perfil (`auction.eligibility.ts:16-44`), fechando a direção "encurtar o relógio para leiloar antes".
 - Correção sugerida: Carimbar no processo o snapshot normativo vigente em `entered_at` (ou versionar o perfil e referenciar a versão a partir de `impound_processes`), fazendo os motores lerem o regime do processo em vez do perfil corrente; e auditar a edição campo a campo, com valor anterior e novo, sem PII (os campos são todos numéricos/enums, então cabem na allowlist do §2.8).
 - Teste recomendado: Custódia com `entered_at` sob `THIRTY_DAYS_LEGACY`; `PATCH` do perfil para `SIX_MONTHS`; o extrato da custódia antiga mantém `capCount = 30` enquanto uma custódia nova nasce com o teto novo; e o registro de auditoria da edição contém o campo alterado com valor anterior e novo.
+
+### [Ω6R-DIN-010] DELETE de lançamento de liquidação apaga o caixa, mantém o título pago e cria estado sem rota de saída
+- Severidade: P0        Confiança: 1.00
+- Status: **aguardando_merge** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueantes B-1 e B-2), medido por execução no head `e4e914a`; corrigido em autoria no ciclo 2 (C1), NÃO na main. Registrado por agente distinto de quem o achou e de quem o corrige (§C7.4-bis).
+- Categoria: DIN
+- Módulo: financial-entries / financial-titles        Lente: A3
+- Local: `src/modules/financial-entries/financial-entry.service.ts:153-168`, `src/modules/financial-titles/financial-title-prisma.repository.ts:166-178`
+- Descrição: `delete()` do serviço de lançamentos checa `assertMutable`, par de estorno e período — **nunca `titleId`**. Um lançamento de LIQUIDAÇÃO é, portanto, deletável: o caixa volta e o título continua com `paid_amount > 0`, sem lançamento vivo que o sustente. Agravante do mesmo diff: o CAS de `softDelete` do título passou a exigir `paid_amount = 0`, de modo que o título resultante também não tem saída pela API — `DELETE` do título dá 422 `title_has_payments` e o `reverse` do lançamento (já deletado) dá 404 `entry_not_found`.
+- Evidência:
+  ```
+  DELETE do lancamento de LIQUIDACAO: PERMITIDO
+    | titulo paid=40 status=partially_paid
+    | saldo pos-pagamento=40 pos-delete=0
+  apos apagar o lancamento: titulo.delete=422 title_has_payments
+    | reverse do lancamento=404 entry_not_found
+    | titulo paid=40 deleted_at=null
+  ```
+- Impacto: o dinheiro some por uma chamada HTTP, **com a mesma permissão de quem paga** — sem concorrência, sem crash, sem SQL cru. O razão perde a liquidação e o título segue quitado (as duas verdades incompatíveis do `Ω6R-DIN-002`, por outra porta). E o título fica num estado irreversível: nem se apaga nem se estorna.
+- Correção sugerida: lançamento vinculado a um agregado só se desfaz **pelo fluxo do agregado**. `DELETE` de lançamento com `title_id` RECUSA (422 `settlement_entry_immutable`, mensagem apontando o remédio: use `reverse`), porque o `reverse` já devolve o pagamento ao título na mesma unidade, com contrapartida e trilha no razão. Ensinar o `delete` a devolver criaria uma **segunda semântica de desfazer** — exatamente a classe de defeito do `Ω6R-DIN-011`.
+- Teste recomendado: pagar 40 de 100; `DELETE` do lançamento de liquidação → 422 `settlement_entry_immutable`, título e lançamento intactos; `reverse` → `paid_amount = 0` e status `open`; `DELETE` do título volta a ser aceito — a rota de saída provada ponta a ponta contra o Postgres.
+
+### [Ω6R-DIN-011] Cheque devolve em dobro: o lançamento de compensação se desfaz por fora da máquina de estados
+- Severidade: P0        Confiança: 1.00
+- Status: **aguardando_merge** — achado NOVO da junta `J-B-O6R-02-ciclo1` (bloqueante B-3), medido por execução no head `e4e914a`; corrigido em autoria no ciclo 2 (C2), NÃO na main. Cruza com `Ω6R-DIN-003`: aquele nomeia a atomicidade de clear/bounce (corrigida e provada por ataque); este é o defeito **distinto** de duas portas desfazerem o mesmo dinheiro. Nada merge com este aberto.
+- Categoria: DIN
+- Módulo: cheques / financial-entries        Lente: A3
+- Local: `src/modules/cheques/cheque.service.ts:164-235`, `src/modules/financial-entries/financial-entry.service.ts:153-246`
+- Descrição: `clear`/`bounce` vinculam o lançamento ao cheque no nascimento (`cleared_entry_id`/`bounce_entry_id`, mesma unidade), mas a superfície de lançamentos (`delete`/`reverse`) **nunca consulta esse vínculo**. Estornar o lançamento de compensação é aceito e o cheque **continua `cleared`**; o `bounce` seguinte é legal e posta o contra-lançamento.
+- Evidência:
+  ```
+  cheque +100 compensado -> reverse do lancamento: PERMITIDO -> bounce: PERMITIDO
+    | saldo clear=100 reverse=0 bounce=-100 | cheque.status=bounced
+  ```
+- Impacto: **200 devolvidos num cheque de 100**. O estado do cheque diverge do razão e o caixa é debitado duas vezes. A suíte do ciclo 1 afirmava a invariante como **existência** do lançamento, nunca como **efeito líquido** — o lançamento existe; o dinheiro já voltou.
+- Correção sugerida: lançamento referenciado por `cleared_entry_id` ou `bounce_entry_id` recusa `delete` **e** `reverse` pela superfície de lançamentos (422 `cheque_entry_immutable`); desfazer vira exclusividade da máquina de estados do cheque. A invariante nos testes passa a ser de EFEITO: `net(lançamentos vivos do cheque) ∈ {+valor (cleared), 0 (bounced após clear), sem lançamento (demais)}`.
+- Teste recomendado: `clear` +100 → `reverse` do lançamento de compensação → 422 `cheque_entry_immutable`, cheque segue `cleared` e `net = +100` → `bounce` → `net = 0`, **nunca −100**. Idem para o `delete` do lançamento de compensação e o `reverse` do contra-lançamento de `bounce`.
 
 ## Hipóteses a confirmar
 

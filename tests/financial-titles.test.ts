@@ -380,6 +380,95 @@ test("PATCH de amount que estoura Decimal(12,2) → 422 amount_overflow", async 
   );
 });
 
+test("DIN-004 memória: PATCH abaixo do pago → 422 amount_below_paid e mutação composta é indivisível", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100, party_name: "Antes", description: "Original" }));
+  await svc.applyPayment(ctx, title.id, 80);
+  await assert.rejects(
+    () => svc.update(ctx, title.id, { amount: 50, party_name: "Depois", description: "Alterada" }),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "amount_below_paid",
+  );
+  const unchanged = await svc.get(ctx, title.id);
+  assert.equal(unchanged.amount, 100);
+  assert.equal(unchanged.partyName, "Antes");
+  assert.equal(unchanged.description, "Original");
+  assert.equal(unchanged.paidAmount, 80);
+});
+
+test("DIN-004 memória: segundo PATCH abaixo do pago preserva título e retorna o mesmo código", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 200 }));
+  await svc.applyPayment(ctx, title.id, 120);
+  await assert.rejects(
+    () => svc.update(ctx, title.id, { amount: 119.99 }),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "amount_below_paid",
+  );
+  assert.equal((await svc.get(ctx, title.id)).amount, 200);
+});
+
+test("DIN-004 memória: PATCH igual ao pago deriva status paid", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await svc.applyPayment(ctx, title.id, 80);
+  const updated = await svc.update(ctx, title.id, { amount: 80 });
+  assert.equal(updated.amount, 80);
+  assert.equal(updated.paidAmount, 80);
+  assert.equal(updated.status, "paid");
+});
+
+test("DIN-004 memória: aumentar nominal quitado deriva partially_paid e permite quitar o saldo", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 80 }));
+  await svc.applyPayment(ctx, title.id, 80);
+  const reopened = await svc.update(ctx, title.id, { amount: 100 });
+  assert.equal(reopened.status, "partially_paid");
+  const repaid = await svc.applyPayment(ctx, title.id, 20);
+  assert.equal(repaid.status, "paid");
+  assert.equal(repaid.paidAmount, 100);
+});
+
+test("DIN-004 memória: DELETE com pagamento → 422 title_has_payments e linha ativa", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await svc.applyPayment(ctx, title.id, 40);
+  await assert.rejects(
+    () => svc.delete(ctx, title.id),
+    (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "title_has_payments",
+  );
+  assert.equal((await svc.get(ctx, title.id)).deletedAt, undefined);
+});
+
+test("DIN-004 memória: DELETE pago repete 422 title_has_payments sem apagar", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 25 }));
+  await svc.applyPayment(ctx, title.id, 25);
+  await assert.rejects(
+    () => svc.delete(ctx, title.id),
+    (e: unknown) => e instanceof FinancialTitleError && e.reason === "title_has_payments",
+  );
+  assert.equal((await svc.list(ctx, {})).total, 1);
+});
+
+test("DIN-004 memória: período fechado precede amount_below_paid e title_has_payments", async () => {
+  const svc = service();
+  const ctx = actor();
+  const title = await svc.create(ctx, receivable({ amount: 100 }));
+  await svc.applyPayment(ctx, title.id, 80);
+  getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(ctx.tenantId, title.competencia, "closed");
+  for (const operation of [() => svc.update(ctx, title.id, { amount: 50 }), () => svc.delete(ctx, title.id)]) {
+    await assert.rejects(
+      operation,
+      (e: unknown) => e instanceof FinancialTitleError && e.statusCode === 422 && e.reason === "period_closed",
+    );
+  }
+});
+
 test("PATCH em título deletado → 404 (simétrico ao re-delete)", async () => {
   const svc = service();
   const ctx = actor();

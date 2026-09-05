@@ -19,8 +19,14 @@ export interface FinancialEntryRepository {
   // Conciliação bancária (Ω4-5): grava reconciled + os 4 metadados. Lançamento deletado → undefined (→404).
   reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined>;
   // Estorno já feito? (existe contra-lançamento ATIVO apontando este original) — sustenta a idempotência
-  // do estorno (a rede real no Prisma é a mesma consulta; não há índice único porque reversal_of é app-level).
+  // do estorno. B-O6R-02: a rede de banco passou a existir — índice único PARCIAL
+  // financial_entries_reversal_of_active_key (migração 20260869000000), backstop do FOR UPDATE do estorno.
   findActiveReversalOf(tenantId: string, originalEntryId: string): Promise<FinancialEntry | undefined>;
+  // B-O6R-02 F4 (Ω6R-DIN-002) — SELECT ... FOR UPDATE do lançamento ORIGINAL dentro da transação do
+  // estorno: serializa estornos concorrentes do mesmo original (o 2º bloqueia aqui e o re-check de
+  // reversão ativa, DENTRO da tx, o mata com 409 — inclusive concorrente). No InMemory é findById
+  // (o mutex por tenant do runner de memória já serializa a unidade inteira).
+  findByIdForUpdate(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined>;
   // Saldo/Extrato: soma dos lançamentos ATIVOS da conta por direção (deletados EXCLUÍDOS).
   sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }>;
   reset?(): void;
@@ -84,11 +90,69 @@ export function alreadyReversedError(): FinancialEntryError {
   return new FinancialEntryError(409, "FINANCIAL_ENTRY_CONFLICT", "already_reversed", "This financial entry has already been reversed.");
 }
 
+// B-O6R-02 F4 — fail-closed do estorno de LIQUIDAÇÃO: o restore GUARDADO do título casou 0 linhas
+// (título soft-deletado com pagamento — buraco DIN-004 até a F6 fechar o DELETE — ou paid_amount
+// insuficiente por estado legado). Commitar só a contrapartida recriaria o DIN-002 (caixa devolvido,
+// título ainda pago) → a unidade INTEIRA desfaz. Inalcançável nos fluxos íntegros; decisão desta
+// fatia reportada no fechamento (o plano não nomeava o erro deste ramo).
+export function titleRestoreConflictError(): FinancialEntryError {
+  return new FinancialEntryError(
+    409,
+    "FINANCIAL_ENTRY_CONFLICT",
+    "title_restore_conflict",
+    "The linked financial title could not be restored; the reversal was aborted.",
+  );
+}
+
 // Ω4-4 pós-análise (A1/B1) — um lançamento que faz parte de um PAR de estorno (o original já estornado OU o
 // próprio contra-lançamento) é IMUTÁVEL: deletá-lo ou re-estorná-lo desbalancearia o saldo (o outro lado do
 // par continua ativo). Para desfazer, estorna-se o par inteiro por um novo ajuste, nunca por delete.
 export function reversalPairImmutableError(): FinancialEntryError {
   return new FinancialEntryError(422, "FINANCIAL_ENTRY_UNPROCESSABLE", "reversal_pair_immutable", "An entry that is part of a reversal pair cannot be deleted or reversed.");
+}
+
+// B-O6R-02 ciclo 2 · C1 (Ω6R-DIN-010, reabre Ω6R-DIN-002) — LANÇAMENTO DE LIQUIDAÇÃO NÃO SE APAGA.
+//
+// A REGRA, que o `reversal_pair_immutable` acima já praticava e este erro estende: **lançamento
+// vinculado a um agregado só se desfaz pelo fluxo do agregado**. O `delete` apagava o lançamento com
+// `title_id` e o título ficava com `paid_amount` intacto — o caixa voltava, o título seguia quitado
+// (o impacto declarado do DIN-002, agora pela outra porta), e o título resultante ainda ficava SEM
+// ROTA DE SAÍDA, porque o CAS de softDelete do título exige `paid_amount = 0`.
+//
+// A cura NÃO é ensinar o `delete` a devolver: seria uma SEGUNDA semântica de desfazer (a classe do
+// DIN-011), e apagaria o movimento sem contrapartida — o razão perderia a história (§2.8). O `reverse`
+// já é a ÚNICA porta que devolve com contrapartida e trilha, na mesma unidade. Aqui só se RECUSA, e a
+// mensagem aponta o remédio.
+//
+// Livre de corrida POR CONSTRUÇÃO: `title_id` é fixado no NASCIMENTO (payTitle cria o lançamento já
+// com ele) e nenhuma API o muta depois — o pre-check no serviço lê um vínculo que ninguém move.
+export function settlementEntryImmutableError(): FinancialEntryError {
+  return new FinancialEntryError(
+    422,
+    "FINANCIAL_ENTRY_UNPROCESSABLE",
+    "settlement_entry_immutable",
+    "A settlement entry cannot be deleted; reverse it instead so the payment returns to the title.",
+  );
+}
+
+// B-O6R-02 ciclo 2 · C2 (Ω6R-DIN-011) — MOVIMENTO DE CHEQUE SÓ SE DESFAZ PELA MÁQUINA DO CHEQUE.
+//
+// Medido pela junta: cheque de +100 compensado → `reverse` do lançamento de compensação ACEITO → o
+// cheque continuava `cleared` → `bounce` legal postava o contra-lançamento. Saldo: clear=100,
+// reverse=0, bounce=−100. **200 devolvidos num cheque de 100**, com o estado do cheque divergindo do
+// razão. Duas portas desfaziam o mesmo dinheiro e não se falavam.
+//
+// Vale para as DUAS pontas do vínculo (`cleared_entry_id` e `bounce_entry_id`) e para as DUAS
+// operações da superfície de lançamentos (`delete` e `reverse`): desfazer um movimento de cheque é
+// exclusividade do `bounce`, que posta um contra-lançamento NOVO — preservando a conciliação do
+// lançamento compensado e a história no razão.
+export function chequeEntryImmutableError(): FinancialEntryError {
+  return new FinancialEntryError(
+    422,
+    "FINANCIAL_ENTRY_UNPROCESSABLE",
+    "cheque_entry_immutable",
+    "An entry linked to a cheque cannot be deleted or reversed; use the cheque bounce flow instead.",
+  );
 }
 
 export class InMemoryFinancialEntryRepository implements FinancialEntryRepository {
@@ -203,6 +267,12 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
     );
   }
 
+  // B-O6R-02 F4 — no InMemory a leitura travada é o próprio findById (mutex por tenant do runner de
+  // memória serializa a unidade; não há tupla mudando por baixo).
+  async findByIdForUpdate(tenantId: string, financialEntryId: string): Promise<FinancialEntry | undefined> {
+    return this.findById(tenantId, financialEntryId);
+  }
+
   // Ω4-6 — leitura ESTREITA por competência (lançamentos ATIVOS do tenant) que alimenta o snapshot de
   // fechamento. tenant_id filtrado EXPLICITAMENTE (g/ataque).
   async findByCompetencia(tenantId: string, competencia: string): Promise<FinancialEntry[]> {
@@ -224,6 +294,21 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
 
   reset(): void {
     this.entries.clear();
+  }
+
+  // B-O6R-02 — par snapshot/restore do UNDO-LOG do runner de memória (financial-uow). Dublê honesto:
+  // NÃO é evidência de atomicidade (a prova real é a suíte -db contra Postgres); existe só para o
+  // rollback dos fluxos multi-write manter as provas de memória vivas. Escopo por tenant, cópia rasa
+  // por linha (as linhas são tratadas como imutáveis pelos writers InMemory — sempre `set` de objeto novo).
+  snapshotTenantForUow(tenantId: string): FinancialEntry[] {
+    return [...this.entries.values()].filter((entry) => entry.tenantId === tenantId).map((entry) => ({ ...entry }));
+  }
+
+  restoreTenantForUow(tenantId: string, rows: readonly FinancialEntry[]): void {
+    for (const [id, entry] of [...this.entries]) {
+      if (entry.tenantId === tenantId) this.entries.delete(id);
+    }
+    for (const row of rows) this.entries.set(row.id, { ...row });
   }
 
   private findActiveByClientAction(tenantId: string, titleId: string, clientActionId: string): boolean {
