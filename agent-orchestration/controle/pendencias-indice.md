@@ -29,9 +29,9 @@
 |---|---:|
 | Cabecalhos `## P-` | **263** |
 | IDs distintos | 252 |
-| **ABERTAS** | **198** |
+| **ABERTAS** | **200** |
 | — das quais **diferidas** (balde C) | 76 |
-| — das quais **ativas nesta rodada** | **122** |
+| — das quais **ativas nesta rodada** | **124** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 63 |
 
@@ -45,12 +45,10 @@
 |---|--:|---|---|
 | `P-Ω4-8-DASHBOARD-FIDELITY` | 1287 | **MÉDIA** | P-Ω4-8-DASHBOARD-FIDELITY — Reduções de composição do dashboard vs financeiro.pn |
 
-## SEM STATUS — nenhuma linha `status:`/`Estado:` (o indice NAO chuta) — 2
+## SEM STATUS — nenhuma linha `status:`/`Estado:` (o indice NAO chuta) — 0
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
-| `P-O6R-B02-INDISPUTE-RESTORE` | 5752 | — | **a atribuir** | P-O6R-B02-INDISPUTE-RESTORE (2026-08-22) — estorno devolve `in_dispute` para `open` |
-| `P-O6R-B02-CHEQUE-UNCLEAR` | 5765 | — | **a atribuir** | P-O6R-B02-CHEQUE-UNCLEAR (2026-08-22) — não existe des-compensar um cheque compensado po |
 
 ## CONTRADITORIAS — cabecalho e linha de status se opoem — 0
 
@@ -90,16 +88,16 @@
 | `P-KPI-RECENT-CONGELADO` | 5255 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
 | `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5387 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
 | `P-SYNC-AGENTS-NAO-RECURSIVO` | 5456 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
-| `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` | 5829 | MÉDIA | sim | P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · e |
-| `P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` | 5914 | MÉDIA | sim | P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simul |
-| `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA` | 6050 | ALTA | sim | P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA (2026-09-04 — dado de método das rodadas Ω6R si |
-| `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` | 6185 | MÉDIA | sim | P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉD |
-| `P-O6R-SUBRECURSO-OBJECT-SCOPE` | 6313 | ALTA | sim | P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis  |
-| `P-AUTH-KDF-ROTACAO-V2` | 6360 | MÉDIA | sim | P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem m |
-| `P-C3-DOIS-PRS-SEM-KPI` | 6468 | MÉDIA | sim | P-C3-DOIS-PRS-SEM-KPI (2026-09-05 — achado da sessão irmã, conferido por execução) — MÉD |
-| `P-DERIVADO-ESQUECIDO` | 6500 | MÉDIA | sim | P-DERIVADO-ESQUECIDO (2026-09-05 — três instâncias em três PRs consecutivos meus) — MÉDI |
+| `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` | 5835 | MÉDIA | sim | P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · e |
+| `P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` | 5920 | MÉDIA | sim | P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simul |
+| `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA` | 6056 | ALTA | sim | P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA (2026-09-04 — dado de método das rodadas Ω6R si |
+| `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` | 6191 | MÉDIA | sim | P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉD |
+| `P-O6R-SUBRECURSO-OBJECT-SCOPE` | 6319 | ALTA | sim | P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis  |
+| `P-AUTH-KDF-ROTACAO-V2` | 6366 | MÉDIA | sim | P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem m |
+| `P-C3-DOIS-PRS-SEM-KPI` | 6474 | MÉDIA | sim | P-C3-DOIS-PRS-SEM-KPI (2026-09-05 — achado da sessão irmã, conferido por execução) — MÉD |
+| `P-DERIVADO-ESQUECIDO` | 6506 | MÉDIA | sim | P-DERIVADO-ESQUECIDO (2026-09-05 — três instâncias em três PRs consecutivos meus) — MÉDI |
 
-## ABERTAS · balde B — processo/registro — 85
+## ABERTAS · balde B — processo/registro — 87
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -183,11 +181,13 @@
 | `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` | 5537 | BAIXA | sim | P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, § |
 | `P-ESPELHO-C7-3-MECANISMO-PESQUISADOR` | 5669 | BAIXA | sim | P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — |
 | `P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5` | 5713 | BAIXA | sim | P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BA |
-| `P-O6R-ARNES-ISOLAMENTO` | 5807 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDA do ciclo 5 do B-O6R-02 (2026-09-02) — o objeto disputado |
-| `P-O6R-ARNES-ISOLAMENTO` | 5848 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5  |
-| `P-O6R-B02-RULINGS-SEM-DESTINO` | 5886 | BAIXA | sim | P-O6R-B02-RULINGS-SEM-DESTINO (2026-09-03 — ACHADO-1 do `critico-c5-adversarial`) — BAIX |
-| `P-KPI-HISTORY-MD-BACKLOG` | 6378 | BAIXA | sim | P-KPI-HISTORY-MD-BACKLOG (registro 4/7, 2026-09-03) — espelho `Kpis/kpis-history.md` com |
-| `P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR` | 6563 | BAIXA | sim | P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR (2026-09-05) — BAIXA · achado ao consertar a quart |
+| `P-O6R-B02-INDISPUTE-RESTORE` | 5752 | — | sim | P-O6R-B02-INDISPUTE-RESTORE (2026-08-22) — estorno devolve `in_dispute` para `open` |
+| `P-O6R-B02-CHEQUE-UNCLEAR` | 5768 | — | sim | P-O6R-B02-CHEQUE-UNCLEAR (2026-08-22) — não existe des-compensar um cheque compensado po |
+| `P-O6R-ARNES-ISOLAMENTO` | 5813 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDA do ciclo 5 do B-O6R-02 (2026-09-02) — o objeto disputado |
+| `P-O6R-ARNES-ISOLAMENTO` | 5854 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5  |
+| `P-O6R-B02-RULINGS-SEM-DESTINO` | 5892 | BAIXA | sim | P-O6R-B02-RULINGS-SEM-DESTINO (2026-09-03 — ACHADO-1 do `critico-c5-adversarial`) — BAIX |
+| `P-KPI-HISTORY-MD-BACKLOG` | 6384 | BAIXA | sim | P-KPI-HISTORY-MD-BACKLOG (registro 4/7, 2026-09-03) — espelho `Kpis/kpis-history.md` com |
+| `P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR` | 6569 | BAIXA | sim | P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR (2026-09-05) — BAIXA · achado ao consertar a quart |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 76
 
@@ -336,4 +336,4 @@
 | `P-GOV-MAIN-SEM-PROTECAO` | 4649 | ALTA | sim | P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24) |
 | `P-C7-BIS-TER-FORA-DA-MAIN` | 4739 | MÉDIA | sim | P-C7-BIS-TER-FORA-DA-MAIN (2026-08-30) — MÉDIA · **FECHADA no mesmo PR que a abriu** |
 | `P-SAN2-2-PORTA-55432-RESERVADA` | 4816 | BAIXA | sim | P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produ |
-| `P-O6R-B07A-REGISTRO-A2-DIVIDA-368` | 6262 | — | **a atribuir** | P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do # |
+| `P-O6R-B07A-REGISTRO-A2-DIVIDA-368` | 6268 | — | **a atribuir** | P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do # |

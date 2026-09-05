@@ -5762,6 +5762,9 @@ em disputa? o estorno reabre a disputa ou a encerra? São perguntas de domínio,
 
 Encaminhamento: **decisão do dono/junta** antes de qualquer código. status: ABERTA.
 
+- **status:** ABERTA · **severidade:** a classificar · **dono:** decisão do dono/junta — pergunta de domínio, não de implementação
+  <sub>**Linha de status acrescentada em 2026-09-05** (fechamento do `B-O6R-02` ciclo 5, condicao do porteiro do #371). **O estado NAO mudou** — a entrada ja declarava `status: ABERTA`, mas **em prosa, no fim de um paragrafo**, e a regex `LINHA` do `gerar-indice-pendencias.py` so le status em **inicio de linha** (`^[-*>]?\s*\**(?:status|estado)`). Resultado: o indice a classificava como **SEM-STATUS** (balde `?`) e ela **nao entrava no total de ABERTAS** — uma pendencia de dominio aberta, invisivel no placar que o dono le. Terceira forma da mesma classe neste bloco, depois de (1) linha dizendo `ABERTA` quando o criterio ja fechara (PR #371) e (2) valor em **negrito** que a regex nao captura (PR #375). Texto original preservado (§A2).</sub>
+
 ## P-O6R-B02-CHEQUE-UNCLEAR (2026-08-22) — não existe des-compensar um cheque compensado por engano
 
 Consequência **declarada** do guard `cheque_entry_immutable` (C2 do ciclo 2, fecha `Ω6R-DIN-011`). Com a regra
@@ -5777,6 +5780,9 @@ razão com trilha), não uma transição de estado.
 Encaminhamento: se o dono/junta quiserem uma transição `cleared → deposited` (des-compensar), ela precisa de
 desenho próprio — quem pode, com que trilha, e o que acontece com a conciliação do lançamento compensado.
 Registrado para não virar surpresa em produção. status: ABERTA.
+
+- **status:** ABERTA · **severidade:** a classificar · **dono:** decisão do dono/junta — exige desenho próprio (quem pode, que trilha, efeito na conciliação)
+  <sub>**Linha de status acrescentada em 2026-09-05** (fechamento do `B-O6R-02` ciclo 5, condicao do porteiro do #371). **O estado NAO mudou** — a entrada ja declarava `status: ABERTA`, mas **em prosa, no fim de um paragrafo**, e a regex `LINHA` do `gerar-indice-pendencias.py` so le status em **inicio de linha** (`^[-*>]?\s*\**(?:status|estado)`). Resultado: o indice a classificava como **SEM-STATUS** (balde `?`) e ela **nao entrava no total de ABERTAS** — uma pendencia de dominio aberta, invisivel no placar que o dono le. Terceira forma da mesma classe neste bloco, depois de (1) linha dizendo `ABERTA` quando o criterio ja fechara (PR #371) e (2) valor em **negrito** que a regex nao captura (PR #375). Texto original preservado (§A2).</sub>
 
 ## D-DIVERGENCIA-C4-PONTA-AUSENTE (2026-08-25) — plano do ciclo 4 (C4.1) REABRE um invariante do ciclo 3
 
