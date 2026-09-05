@@ -6413,3 +6413,38 @@ item 2 da pendência-mãe, que segue ABERTA.
 carga pertence ao fecho distribuído desta pendência. Nota a favor: o ciclo 2 REDUZIU as escritas do
 ramo de falha anônima de 2xN para **<=2 por requisição** (<=1 UPDATE + <=1 INSERT, ato único
 pós-veredicto — C2·3), o que só melhora a folga.
+
+### Emenda de 2026-09-05 — ERRATA: o caso de 04/09 (worktree `agent-af6ea*`) NÃO pertence a esta classe
+
+**Correção contra as duas sessões que se acusaram.** No dia 04/09, o worktree
+`.claude/worktrees/agent-af6ea607f3ddf8efd` (do `B-O6R-02`) e a branch `feat/o6r-b02-financial-uow`
+desapareceram, e **duas sessões assumiram culpa por isso**: a do `B-O6R-07a`, por "ter apagado branch com
+trabalho não empurrado"; e a do `B-O6R-02`, por "ter dado ao worktree um nome opaco que não identificava o
+bloco". **Nenhuma das duas causou o desaparecimento.**
+
+**Medido por uma terceira sessão, que não participou de nenhum dos dois blocos:** o `B-O6R-02` **havia
+mergeado** minutos antes — PR **#371**, squash `99f1840`, `mergedAt 2026-09-05T02:27:34Z`. A remoção do
+worktree e a deleção da branch foram o **`--delete-branch` do §8.5** e a **limpeza pós-merge do §C5**
+fazendo exatamente o que devem fazer com o recurso de um bloco que acabou de mergear. `.claude/worktrees/`
+tem mtime de 4 minutos após o merge.
+
+**Por que registrar uma errata em vez de deixar barato:** culpa mal atribuída **polui a classe**. Se esta
+entrada dissesse que o caso de 04/09 foi colisão de nome, quem a lesse depois aprenderia a regra errada —
+passaria a temer a limpeza legítima e a procurar culpado onde houve processo correto. A classe
+`P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` continua **válida e necessária** (o caso do `jur-c1v2-drill`, de
+worktree **vivo** removido por inferência de nome, é real e é dela). O que sai da classe é **este** caso.
+
+**O que sobrevive, e não é pouco:** (a) o nome opaco `agent-af6ea607f3ddf8efd` continua sendo um defeito —
+ele **tornaria** o erro possível se o worktree estivesse vivo, e o corolário *"nome opaco transfere ao
+outro um risco que era seu"* segue valendo; (b) a regra da sessão irmã — *"quando o nome não informa e
+existe sessão viva, perguntar é obrigatório, não cortês"* — segue valendo, e teria evitado **a confusão**,
+mesmo não tendo havido dano; (c) **o `D-DURABILIDADE-BRANCHES-LOCAIS` pega em cheio o `B-O6R-02`**: o
+commit `6ee74bf` ficou horas **só num disco**, sem upstream, e só não se perdeu porque o objeto sobreviveu
+e foi recuperado. Aqui não doeu — o produto já estava na `main` —, mas o que só existe num disco não conta
+como entregue.
+
+**Método, que é o que vale para a próxima:** as duas sessões envolvidas convergiram para uma explicação
+**plausível e falsa** — cada uma reconhecendo um defeito real seu e ligando-o ao dano sem medir o elo. Quem
+desfez foi uma terceira, **sem participação nos blocos**, medindo `gh pr view` e o mtime do diretório. É o
+mesmo padrão da série `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA`: a explicação que o autor produz sobre o
+próprio erro é ela própria uma afirmação que precisa de execução, e **confissão convincente não é prova**.

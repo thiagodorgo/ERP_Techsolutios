@@ -4067,3 +4067,67 @@ Sem push, sem PR, sem merge, sem junta e sem ata — nada disso é do executor (
 **CP-FIM** e devolve ao orquestrador para a convocação do `inspetor-de-terreno-da-junta` e da junta de 3
 (unanimidade, §C7.1-ter(b): o bloco toca dinheiro). `pr`, `merge_commit` e `approved_head` do ciclo 5
 seguem `null` na autoria (§C3.5).
+
+## 2026-09-05 — B-O6R-02 ciclo 5: a bateria REEXECUTADA depois da absorção, por exigência do gate
+
+### Papel e alçada
+
+Continuação da entrada de 2026-09-03. Registro de AUTORIA; a junta já votou (**APROVADO 3×0**) e não se
+re-litiga aqui. Esta entrada existe porque o **gate `G-A109FD7-PUBLICADO`** — achado por conferência ativa
+**antes** de o merge ser proposto — exige, com estas palavras, *"bateria/contagens B-O6R-02 reexecutadas
+depois da atualização"*, e a atualização trouxe dois PRs inteiros.
+
+### Implementado
+
+- **PR #370 conduzido e mergeado** (`54a4194`, CI 7/7): as 4 ressalvas do porteiro do #357, que viviam numa
+  branch parada em 19/08. Ela tinha **3 conflitos** com a `main` — por isso o `pull_request` sequer
+  disparava CI. Atualizada por **merge da `main` dentro dela**, nunca rebase (para não mover `a109fd7`),
+  com `Kpis/` **main-integral** (preservar o lado dela **regrediria o painel** de 09-02 para 08-19) e
+  `pendencias.md` por **união**, preservando as 10 linhas de atribuição de dono. Diff final: 3 arquivos,
+  **+40 −1**.
+- **Absorção da `main`** no bloco (`099f71f`, dois pais; `12c3825` segue ancestral), trazendo o **#369**
+  (B-O6R-07a: 65 arquivos, +12.373 linhas, 8 suítes novas) e o #370. Cinco conflitos, **todos de KPI e
+  registro** — nenhum em `src/`, testes ou migrations. Os quatro de KPI resolvidos **main-integral** (esta
+  entrada os republica com números medidos; carregar os meus seria carregar número que eu já sabia errado);
+  `pendencias.md` por **união de 3 vias**, com os dois lados conferidos íntegros.
+- **Colisão de timestamp desfeita:** o #369 criou `20260871000000_grant_work_orders_approve_permission`, o
+  **mesmo timestamp** da minha migration. Renomeada para **`20260872000000_add_reversal_pair_fk`**; o
+  catálogo prova a ordem correta e `convalidated = t`.
+- **Censo do painel reconciliado**, derivado do registro e não à mão: a resolução main-integral tinha
+  desfeito a reconciliação (32 achados no `achados.jsonl` contra 30 no painel, `p0_total` 15 × 17, 6 estados
+  divergentes). Guards **22/22**.
+
+### Validação executada
+
+Cluster descartável próprio, porta efêmera; a base viva **não recebeu um único comando, nem de leitura**.
+Node **v20.19.5**, **107 migrations**, head `099f71f`.
+
+- **Canônica 3** (N=10 sequenciais): **10/10 ec=0**, denominador **idêntico nas dez** — `269 arquivos ·
+  2817 testes · pass 2815 · fail 0 · skipped 2` —, **Δroles = 0 nas dez**, 225–235 s. Os 2 skips são os
+  `RBAC_DB_PARITY` declarados, lidos do TAP.
+- **Canônica 2** (N=15): **15/15 ec=0**, **225 constante**, **0** hit de
+  `unhandledRejection|XX000|23505|40P01`.
+- **Canônica 1** (N=3, sem `DATABASE_URL`): `ec=1` nas três — o **piso do #359 mordendo e nomeando**
+  `tests/core-saas-role-authority.test.ts`. **Não é meta zerá-lo** (`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`).
+- **Corrida -db** (N=10): 10/10, 9/9 casos, zero SQLSTATE proibido.
+- `check` · `lint` · `build` · `frontend check`: **ec=0** nos quatro. Escopo: `src/**` vazio contra o head
+  pós-absorção, contratos sem diff, `ci.yml` intocado desde a absorção.
+
+### Um erro meu, registrado porque contaminou medição
+
+Cheguei a ter **três baterias rodando ao mesmo tempo no mesmo cluster**. A sequência: a primeira parecia
+travada (log parado durante o `migrate deploy` das 107 migrations), **concluí que morrera sem verificar o
+processo** e disparei outra — duas vezes. O sinal que me denunciou foi o monitor mostrar `r7` e depois
+`r6`: a última linha **regredindo**, porque duas instâncias escreviam intercaladas no mesmo arquivo. Joguei
+fora toda a medição contaminada; nenhum número dela foi publicado. É **exatamente o arranjo que a cadeira
+C1 nomeou** no voto dela (a rodada vermelha que ela mediu veio de três baterias simultâneas disputando
+CPU) — eu reproduzi o defeito que ela documentou. Correções adotadas: **lockfile exclusivo** no script (uma
+segunda instância aborta) e monitor que verifica **o processo**, não só o log. E duas armadilhas do §11
+reconfirmadas na prática: `kill` do MSYS **não** mata processo Windows nativo (§11.5), e log parado **não
+é** processo morto.
+
+### Gate
+
+Sem PR, sem merge, sem junta nova. O bloco para aqui e devolve ao orquestrador a decisão sobre a
+**re-passada das cadeiras**: a junta aprovou o head `2709f4b` com denominador **2771**, e o head agora é
+outro, com **2817**. `pr`/`merge_commit`/`approved_head` seguem `null` na autoria (§C3.5).

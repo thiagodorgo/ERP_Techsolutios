@@ -2312,3 +2312,62 @@ de merge). Números de execução real (§C3.3): `backend_tests` **2654/2656** (
 carregadas sem exercer, com marcador: flutter 864/864 · smoke 1126/1126. `blocks_completed` fica em
 158 (mesmo bloco, mesmo PR). `merge_commit`/`approved_head` null na autoria. Este espelho recebe SÓ a
 própria entrada: o backlog #361–#368 está em `P-KPI-HISTORY-MD-BACKLOG` (BAIXA, próximo `…F` de KPI).
+
+## 2026-09-05 - B-O6R-02 CICLO 5 (TETO) — reexecutado após a absorção, e o gate que o destravou
+
+### Resultado
+
+- `backend_tests` **2654/2656 → 2815/2817** (execução real, **N=10**, denominador **idêntico nas dez**)
+- `flutter_tests` 864/864 · `frontend_smoke_tests` 1126/1126 — **CARREGADOS** (§C3.3; o PR não toca `mobile/` nem `frontend/`)
+- `mvp_demo` 99% e `mvp_vendavel` 88% **INTOCADOS** · `blocks_completed` **158**, sobe a 159 **só no merge**
+- **Junta: APROVADO 3×0**, unânime (§C7.1-ter(b) — o bloco toca dinheiro)
+
+### O gate que ninguém tinha conferido
+
+`G-A109FD7-PUBLICADO` bloqueava a publicação deste bloco **desde 20/08** — *"bloqueia push/abertura do PR
+B-O6R-02 **e seu merge**"* — e foi **achado por conferência ativa antes de o merge ser proposto**, não por
+acaso. Satisfeito condição a condição: PR dedicado **#370 MERGED** (`54a4194`, CI 7/7), número/`headRefOid`/
+`mergeCommit` registrados na pendência, `is-ancestor` **ec=0**, e a **bateria reexecutada depois** — que é a
+cláusula que obrigou tudo o que vem abaixo.
+
+O #370 exigiu trabalho não previsto: a branch estava parada em **19/08** com **3 conflitos** (por isso o
+evento `pull_request` sequer disparava CI). Atualizada por **merge da `main` dentro dela** — nunca rebase,
+para não mover `a109fd7` —, com `Kpis/` **main-integral** (preservar o lado dela **regrediria o painel** de
+09-02 para 08-19) e `pendencias.md` por **união**. Diff final: **3 arquivos, +40 −1**.
+
+### A colisão que a absorção revelou
+
+O **#369** criou `20260871000000_grant_work_orders_approve_permission` — **o mesmo timestamp** da minha
+`20260871000000_add_reversal_pair_fk`. Renomeada para **`20260872000000`**, e o catálogo do cluster prova a
+ordem correta (a do #369 aplica antes) com `convalidated = t`.
+
+### Bateria reexecutada — N e forma em cada número
+
+Cluster descartável próprio; a base viva `erp-postgres`/`erp-redis` **sem um único comando**. Node
+v20.19.5, **107 migrations**, head `099f71f`.
+
+| medida | N | resultado |
+|---|---|---|
+| **Canônica 3** (`npm test`) | 10 | **10/10 ec=0**, denominador **idêntico nas dez**: `269 arq · 2817 testes · pass 2815 · fail 0 · skip 2`; **Δroles = 0** nas dez; 225–235 s |
+| **Canônica 2** (seed + 34 suítes do `ci.yml`) | 15 | **15/15 ec=0**, **225 constante**, 0 hit de `unhandledRejection\|XX000\|23505\|40P01` |
+| **Canônica 1** (sem `DATABASE_URL`) | 3 | `ec=1` nas três — vermelho **ambiental declarado** |
+| **Corrida -db isolada** | 10 | **10/10**, 9/9 casos, zero SQLSTATE proibido |
+| `check` · `lint` · `build` · `frontend check` | — | **ec=0** nos quatro |
+
+O denominador foi de **2771 → 2817**: os **+3 casos deste PR** já estavam nos 2771; os **+46 vêm da
+absorção** — as 8 suítes do #369 e o `guard 11` do #370.
+
+### O vermelho que não é meta zerar
+
+A canônica 1 sai `ec=1` nas três, e é **o piso do #359 fazendo o que deve**: nomeia
+`tests/core-saas-role-authority.test.ts` e diz por extenso que sair 0 ali seria *publicar um denominador
+que a execução não sustenta*. O conserto exige `src/database/prisma.ts` — proibido neste bloco. Vive em
+`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`.
+
+### O limite declarado do vazamento
+
+`Δlinhas` +24 na r1 e +10 nas demais: as **TABELAS** estão nomeadas por execução (`auth_identities` +5,
+`auth_identity_link_events` +5, `permissions` 1→15 idempotente), o **ARQUIVO produtor não** — os quatro
+candidatos que publiquei vieram de `grep` e o crítico os refutou executando (**0/0** nos quatro); o único
+vazador medido (`core-saas-role-authority-db`, **+1/+1**) estava **fora** da minha lista, e os **+4/+4
+restantes seguem sem produtor nomeado**.
