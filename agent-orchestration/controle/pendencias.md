@@ -6356,6 +6356,36 @@ fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** 
   `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
   `B-O6R-07c`.
 
+
+**APENSO (ressalva R1 do porteiro pós-merge do #369) — A DÉCIMA VIA, e ela NÃO está entre as 9 acima.**
+
+O título desta pendência diz *"9 rotas"*, e as 9 são **escopadas aos dois routers de OS** (`work-order.routes`
+e `work-order-comments`). **Existe uma décima, numa superfície que o censo não olhou:**
+
+| via | efeito medido | forma |
+|---|---|---|
+| `POST /api/v1/mobile/sync/work-order-actions` com `work_order.mileage` | técnico **não atribuído** escreve quilometragem em **OS alheia** — HTTP **200**, `summary {received 1, accepted 1, rejected 0}`; km **`null` → `111111`/`222222`** | **execução** |
+
+**Quem achou e como:** a cadeira **C1-v2** da junta do **ciclo 2** do `B-O6R-07a` (achado `S-A1`), atacando por
+HTTP em vez de ler o censo. **Re-confirmado independentemente** pelo `porteiro-pos-merge` do #369, que
+escreveu drill próprio de 24 medições e reproduziu a mutação (`00c-porteiro-pos-merge-369.md`, item G1.8).
+
+**Escopo: `pre-existente`.** Origem `eed6240`, **2026-07-17**, PR **#197** — sete semanas antes do
+`B-O6R-07a`, e fora do §5 permitido dele. **Não reprovou** o bloco (§C7.1-ter(a)) e **não reprova** aqui.
+
+**O QUE ISTO OBRIGA — e é a razão de o apenso existir:** *"9"* **não é exaustivo**. O número mede
+**o que dois routers expõem**, não *"tudo que o técnico não atribuído alcança"*. A superfície de **sync
+mobile** é um caminho de escrita **paralelo** às rotas HTTP de OS, com fila offline e replay, e **nenhum
+censo deste bloco a percorreu**.
+
+**Item vinculante para o plano do `B-O6R-07c`:** **censar a superfície de `sync` antes de declarar o
+`Ω6R-SEC-002` fechado.** Fechar o P0 com base nas 9 rotas deixaria a décima viva — e seria a **mesma classe**
+pela qual o ciclo 1 do `B-O6R-07a` foi **reprovado**: declarar fechado o que segue aberto, tirando o achado
+do razão para que ninguém volte a ele.
+
+**Por que a décima escapou, dito para não repetir:** o censo das 9 foi feito **enumerando os routers de OS**
+— e um censo por enumeração acha o que o autor lembrou de enumerar. A décima só apareceu porque uma cadeira
+**executou** em vez de ler. O `07c` que repita o método, não a lista.
 ## P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem mecanismo — **MÉDIA**
 
 **Dono nomeado: `B-AUTH-KDF-V2`** (bloco de auth a agendar pós-O6R). Consolida dois achados da
