@@ -6448,3 +6448,35 @@ como entregue.
 desfez foi uma terceira, **sem participação nos blocos**, medindo `gh pr view` e o mtime do diretório. É o
 mesmo padrão da série `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA`: a explicação que o autor produz sobre o
 próprio erro é ela própria uma afirmação que precisa de execução, e **confissão convincente não é prova**.
+
+## P-C3-DOIS-PRS-SEM-KPI (2026-09-05 — achado da sessão irmã, conferido por execução) — MÉDIA · `dentro-do-bloco`
+
+**A lacuna §C3 desta rodada é de DOIS PRs, não de um.** O §C3.1 diz *"todo PR que altere **código, teste ou
+escopo** atualiza `Kpis/kpis-latest.json`, `Kpis/kpis-history.*` e `Kpis/index.html` **no mesmo PR**"*.
+
+| PR | o que mergeou | tocou `Kpis/*`? |
+|---|---|---|
+| **#370** (`54a4194`) | `tests/auth-invariant-guards.test.ts` **+25** (um `test()` novo — o `guard 11`) e `tests/core-saas-role-authority-db.test.ts` (+6 −1) | **NÃO** — `git diff --name-only dc8168b 54a4194 -- 'Kpis/**'` sai **VAZIO** |
+| **#371** (`99f1840`) | a migration, a suíte -db, o contrato | **NÃO** — o squash parou um commit antes do `6ee74bf`, que os trazia |
+
+**O #370 é meu, e a violação é minha.** Fui eu quem o conduziu, para destravar o gate
+`G-A109FD7-PUBLICADO`; conferi CI, escopo e ancestralidade, e **não conferi o §C3** — apesar de o próprio
+PR ter acrescentado um `test()` que **muda o denominador** da canônica (2771 → 2772 pelo guard 11, e daí
+para 2817 com o #369). Publiquei no corpo do PR que o diff era "3 arquivos, +40 −1, o mérito sem
+regressão" e **não notei que o mérito incluía um teste novo sem KPI**.
+
+**Por que passou:** eu estava a conferir o §C3 do bloco **grande** (o ciclo 5) e tratei o #370 como
+"PR de registro alheio, de 42 linhas". A régua que apliquei foi o tamanho, não o §C3.1 — que fala de
+**natureza** (código, teste ou escopo), não de tamanho.
+
+**Como este PR de registro trata:** o `backend_tests` que ele publica (**2815/2817**) é execução real
+**posterior a ambos**, medida no head que já continha o #370 e o #369 — ou seja, **cobre numericamente as
+duas lacunas**. O que não se conserta retroativamente é o **registro por PR**: o #370 mergeou sem a sua
+entrada, e isso fica **nomeado aqui** em vez de sumir. Nomear os dois importa porque, sem isto, quem
+auditar depois conclui que só o #371 falhou.
+
+**Propriedade que decorre:** *a régua do §C3 é a NATUREZA do diff (código, teste, escopo), nunca o seu
+tamanho — um PR de 42 linhas que acrescenta um `test()` move o denominador e deve o KPI igual a um de
+mil.*
+
+- **status:** ABERTA (registro; a lacuna numérica está coberta, a de forma fica nomeada) · **severidade:** MEDIA · **escopo:** `dentro-do-bloco` · **dono:** este PR de registro
