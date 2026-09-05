@@ -115,11 +115,28 @@ ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do
 | `especialista-maquinas-de-desfazer` | **VETO** | B-O6R-02, ciclo 2 | Enumera **todas** as portas da API que desfazem o mesmo efeito monetário/de estado e prova que **concordam**; caça estado alcançável **sem rota de saída** (guard que fecha a saída sem fechar a entrada); exige invariante de **efeito líquido**, nunca de existência de linha; executa os drills de mutação em fixture. **Achador/votante: não escreve a correção.** |
 | `especialista-arnes-postgres-node` | **VETO** | B-O6R-02, ciclo 2 | Valida o **arranjo** de cada medição (comando, env — inclusive `DATABASE_URL` —, N e forma do job) antes do número; ataca barreira de teste com **decoy**; enumera promessa que pode rejeitar **sem handler**; mede vazamento de catálogo e de dado antes/depois, inclusive em lote **abortado**. Piso: **15/15 na forma exata do job — não se arredonda.** **Achador/votante: não escreve a correção.** |
 
-> **Divergência registrada (§A2), não consolidada em silêncio:** neste head, `scripts/sync-agent-agents.mjs:66`
-> lê **apenas o topo** de `.claude/agents/` e o `--check` varre **apenas o topo** de `.agents/agents/` — os
-> arquivos de `especialistas/` não são espelhados nem cobertos pelo guard. O espelho desta subpasta depende da
-> versão **recursiva** do script, que vive na trilha de governança. Enquanto as duas versões não convergirem, o
-> espelho de `especialistas/` **não é garantido pelo `--check`**: conferir à mão antes da junta.
+> **Divergência RESOLVIDA (§A2) — corrigida em 2026-09-05, B-O6R-02 ciclo 5.** O `--check` **cobre**
+> `especialistas/`. **Não confira à mão; rode o guard.** Medido neste head:
+> `node scripts/sync-agent-agents.mjs --check` → `OK — 34 agentes, espelho consistente` (`ec=0`), e
+> `.claude/agents/especialistas/*.md` = **11** contra `.agents/agents/especialistas/*.md` = **11**.
+> O script é **recursivo de propósito** (`scripts/sync-agent-agents.mjs`, `listMd()`), com o motivo no
+> próprio comentário: *"o listing raso já deixou `especialistas/` fora do espelho E do `--check` dois
+> ciclos seguidos"*.
+>
+> **Por que isto era perigoso, e não apenas desatualizado:** o texto abaixo mandava **desligar um guard
+> que funciona** ("conferir à mão antes da junta") — e conferência manual antes da junta é exatamente o
+> passo que falhou os dois ciclos que motivaram a versão recursiva. Medido: a versão recursiva do script
+> **e** a nota que a nega entraram no **mesmo commit** — `99f1840` (#371) —, logo a nota **já nasceu falsa**;
+> não houve janela em que ela descrevesse este repositório. A afirmação "a versão recursiva vive na trilha
+> de governança" também não se sustenta: ela está na `main`.
+>
+> Texto original preservado (§A2 — acrescentar, nunca apagar), **falso e sem efeito**:
+>
+> > ~~neste head, `scripts/sync-agent-agents.mjs:66` lê **apenas o topo** de `.claude/agents/` e o
+> > `--check` varre **apenas o topo** de `.agents/agents/` — os arquivos de `especialistas/` não são
+> > espelhados nem cobertos pelo guard. O espelho desta subpasta depende da versão **recursiva** do
+> > script, que vive na trilha de governança. Enquanto as duas versões não convergirem, o espelho de
+> > `especialistas/` **não é garantido pelo `--check`**: conferir à mão antes da junta.~~
 
 ## Composição típica da junta por tipo de PR
 - **Feature normal:** planejador → crítico → dev → `validador-mestre` (VETO) + `inspetor-de-rotas` + `coordenador-de-acessos` (se toca acesso) + `cognicao-visual` (se toca tela).

@@ -129,8 +129,8 @@
     "p0_fechados": 11,
     "p0_abertos": 6,
     "p1_total": 15,
-    "p1_fechados": 1,
-    "p1_abertos": 14,
+    "p1_fechados": 2,
+    "p1_abertos": 13,
     "fechados": [
       {
         "id": "Ω6R-DIN-001",
@@ -191,16 +191,17 @@
         "id": "Ω6R-DIN-011",
         "por": "B-O6R-02 ciclo 5 (PR #371, 99f1840)",
         "em": "2026-09-05"
+      },
+      {
+        "id": "Ω6R-SEC-003",
+        "por": "B-O6R-01 (núcleo, PR #357) + B-O6R-07a (residuais, PR #369, dc8168b)",
+        "em": "2026-09-04"
       }
     ],
     "as_of": "2026-09-02",
     "source": "docs/revisoes/O6R/achados.jsonl",
-    "aguardando_merge": [
-      {
-        "id": "Ω6R-SEC-003"
-      }
-    ],
-    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco. O Ω6R-SEC-002 SAIU desta lista no ciclo 2 do B-O6R-07a: deixou de ser declarado fechado (virou parcialmente_superado, com 9 rotas nomeadas na pendência P-O6R-SUBRECURSO-OBJECT-SCOPE) e não se aguarda merge do que não se declara fechado."
+    "aguardando_merge": [],
+    "nota_aguardando": "Conserto escrito e em revisão, ainda NÃO na main. Não conta como corrigido: a junta ainda pode reprovar — e reprovou o ciclo 2 deste bloco. O Ω6R-SEC-002 SAIU desta lista no ciclo 2 do B-O6R-07a: deixou de ser declarado fechado (virou parcialmente_superado, com 9 rotas nomeadas na pendência P-O6R-SUBRECURSO-OBJECT-SCOPE) e não se aguarda merge do que não se declara fechado.  ATUALIZACAO 2026-09-05 (B-O6R-02 ciclo 5, PR de registro consolidado): a lista esta VAZIA. O Ω6R-SEC-003 saiu dela porque a metade que faltava MERGEOU — B-O6R-07a ciclo 2, PR #369, mergeCommit dc8168b, em 2026-09-04 —, e o `fechado_por` do achados.jsonl, que ainda carregava o IOU \"n° e hash no backfill pos-merge\", recebeu o numero e o hash. Com isso ele passa a satisfazer `fechadoNaMain` do guard tests/kpi-achados-paridade.test.ts (status fechado + hash de merge em fechado_por) e migra de `aguardando_merge` para `fechados`: p1_fechados 1 -> 2 e p1_abertos 14 -> 13, derivados do achados.jsonl e nao digitados a mao. Lista vazia aqui significa \"nada fechado so na autoria\" — nunca que se parou de medir."
   },
   "findings": {
     "as_of": "2026-09-02",

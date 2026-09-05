@@ -207,3 +207,34 @@ Verde da junta = **merge autorizado** (§C7.1). Após o merge: `porteiro-pos-mer
 ressalvas R2 (mutação declarada na árvore principal) e R3 (espelho Codex).
 
 **O `B-O6R-02` sai do teto aprovado, na última tentativa que tinha.**
+
+---
+
+## §10 · ADENDO PÓS-MERGE (2026-09-05) — ressalva **R4** do porteiro
+
+Acrescentado pelo PR de registro consolidado do `B-O6R-02` ciclo 5. **Nada acima foi alterado** (§A2):
+a ata registra o que a junta viu **no momento do voto**; este adendo registra o que a execução mostrou
+**depois**, para que a diferença fique auditável em vez de herdada como fato.
+
+| Fato | Valor | Observação |
+|---|---|---|
+| Head **julgado** pela junta | `2709f4b` | é o `approved_head` do backfill — o que os jurados leram |
+| Head **absorvido** | `099f71f` | merge de `origin/main`, **dois pais**; `12c3825` (head do ciclo 4) segue ancestral |
+| `headRefOid` que o GitHub mergeou | `7adff45` | **um commit antes** de `6ee74bf` — por isso o registro ficou de fora do #371 e precisou do #372 |
+| `merge_commit` | `99f1840` | PR **#371**, `MERGED` |
+| Denominador | **2771 → 2817** | os **+3 casos deste PR** já estavam nos 2771; os **+46 vêm da absorção** (8 suítes do #369 + `guard 11` do #370) |
+
+**O `src/` do bloco não mudou na absorção:** `git diff 6ee74bf 99f1840 -- src prisma` = **vazio**, e
+`99f1840^{tree}` == `7adff45^{tree}`. O produto entrou íntegro; o que ficou de fora do #371 foi o
+**registro**, não o código — distinção que só a comparação de **árvores** decide (um `diff` com pathspec
+sai vazio por duas causas indistinguíveis).
+
+**Correção ao §9 acima.** O §9 previa `blocks_completed` **157 → 158**. Medido depois: o campo foi a
+**160**, em **dois** incrementos — 159 pelo `B-O6R-07a` (#369, `dc8168b`), cuja dívida ninguém havia
+pago, e 160 por este bloco (#371). Detalhamento em `Kpis/kpis-history.md`, seção *"Errata do
+`blocks_completed`"*.
+
+**Destino das ressalvas do §9:** R2 (mutação declarada na árvore principal) e R3 (espelho Codex) foram
+reavaliadas pelo porteiro após o #376; o espelho Codex está **consistente** — `sync-agent-agents.mjs
+--check` → `OK — 34 agentes` (`ec=0`), com `especialistas/` **coberto** (11 espelhos), e a nota do
+`.agents/agents/README.md` que afirmava o contrário foi corrigida neste mesmo PR (R5).

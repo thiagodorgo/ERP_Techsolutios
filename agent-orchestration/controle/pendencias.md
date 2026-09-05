@@ -4945,7 +4945,50 @@ coluna `dono` do `pendencias-indice.md` não deve ser citada** — vale ler o ca
 mas corrompe um terço da resposta do artefato de controle que a rodada inteira usa para saber o que está
 pendente e com quem.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: as duas faltas medidas do classificador de dono em `agent-orchestration/controle/gerar-indice-pendencias.py` (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)
+**EMENDA de 2026-09-05 (B-O6R-02 ciclo 5, PR de registro consolidado) — re-medição, dono órfão e uma
+correção ao mecanismo descrito acima.** Emenda dentro da própria entrada, sem cabeçalho novo: um `## `
+repetido criaria um segundo ID no índice e inflaria o placar — o artefato que esta pendência existe para
+proteger. Texto acima **intocado** (§A2).
+
+**(1) O dono ficou órfão.** O campo abaixo aponta para o bloco **`SAN2-5`**. Medido: `SAN2-5` é o **PR #367**,
+`MERGED` em **2026-09-01** (`e6a6461`) — e **não tocou o gerador**. O último commit da `main` a tocar
+`gerar-indice-pendencias.py` é o **#362** (`87f6ae6`, `SAN2-1R`), anterior a esta pendência. A linha 98
+defeituosa está **viva na `main`** neste head. O dono precisa ser re-atribuído: quem o detinha entregou e
+fechou sem executá-lo.
+
+**(2) Re-medição, com a lógica do próprio gerador** (não uma varredura própria — a varredura própria de `##`
+foi um dos erros de medição desta rodada; o gerador parte em **toda** linha `## ` e só então filtra
+`## P-…`, com a classe `[A-Za-z0-9ΩΔ_-]`, que não inclui `.`):
+
+| | 2026-08-30 (texto acima) | **2026-09-05 (re-medido)** |
+|---|--:|--:|
+| cabeçalhos `## P-` | 231 | **263** |
+| `dono = sim` | 108 | **134** |
+| — **falsos** (único valor: `a atribuir`) | 91 | **85** |
+
+Conferido contra o que o **consumidor** lê: `pendencias-indice.md` tem **134** `sim` e **129**
+`**a atribuir**` (134 + 129 = 263).
+
+**(3) Correção ao mecanismo: a falta 2, no código REAL, não sustenta o defeito sozinha.** O trecho citado
+acima reproduz a segunda alternativa **com `re.I`**. A linha 98 da `main` **não tem `re.I` nela**:
+
+```python
+dono = bool(re.search(r'\*\*dono:\*\*\s*(?!a atribuir)', body, re.I)) or bool(re.search(r'\*\*Dono:?\*\*', body))
+```
+
+Sem `re.I`, `\*\*Dono:?\*\*` só casa **`Dono` com D maiúsculo**, e as entradas escrevem `**dono:**` minúsculo.
+Medido, isolando cada alternativa sobre as 263: a falta 2 marca **0** entradas sozinha (as 11 em que ela casa
+também são casadas pela falta 1). **Consequência prática, medida:** consertar **apenas** a falta 1 levaria os
+falsos `sim` de **85 → 0**; é sob o snippet citado (com `re.I`) que sobrariam **85**. A frase *"mesmo que a
+falta 1 fosse consertada, o `or` reintroduziria o defeito"* vale para o snippet, **não** para o código como
+está. Isso **não** dispensa endurecer a falta 2 — ela é uma porta aberta para quem escrever `**Dono:**` —,
+mas dimensiona o conserto honestamente, e evita que quem receber conclua que o conserto de uma só não
+adianta. Quem corrigir continua devendo a **prova por mutação** já exigida acima.
+
+**Quem mediu não conserta** (§C7.4-bis): esta emenda é registro, e nenhuma linha do gerador foi tocada
+neste PR.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** **RE-ATRIBUÍDO em 2026-09-05** — bloco próprio de **ferramentas de registro** (sucessor do `SAN2-5` §3.5), a ser encaixado na fila pelo dono ou pela junta; **não** o `B-O6R-07b`, que é uploads/`SEC-004` e não toca registro. Deliberadamente **não** se inventou um `SAN2-7`: a trilha vai de `SAN2-1` a `SAN2-6` e criar número novo aqui seria fabricar um bloco que ninguém planejou. Dono anterior, preservado (§A2): *"bloco **SAN2-5** — \"ferramentas de registro honestas\", **parte 2** … (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)"* — cláusula de redirecionamento **exercida aqui**, com o motivo medido: o `SAN2-5` mergeou (#367, `e6a6461`) sem executar a parte 2.
 
 
 ---
@@ -5849,7 +5892,7 @@ arquivo de teste está fora do escopo permitido. Escopo `pre-existente` com prod
 **Critério de fechamento:** sem `DATABASE_URL`, o arquivo declara skip (ou registra os testes e pula) —
 canônica 1 com **0 fail ambiental** e os pulos DECLARADOS; o piso do runner continua mudo para ele.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** **ATRIBUÍDO em 2026-09-05** (ressalva R6 do porteiro pós-merge) — **trilha do arnês de teste**, sucessora do bloco `B-O6R-ARNES` (#359, `f081b5d`): é ela que detém o **piso de denominador do runner**, e é o piso dela que **NOMEIA** `tests/core-saas-role-authority.test.ts` ao recusar o `ec=0`. O conserto vive exatamente onde essa trilha já tem mandato — o arquivo de teste e o `src/database/prisma.ts` que ele carrega. **Não** foi atribuído ao `B-O6R-07b` (uploads/`SEC-004`), que não toca arnês nem `src/database/`. Valor anterior, preservado (§A2): *"a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)"*.
 
 ## P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5 tem TABELA nomeada, não ARQUIVO
 
@@ -6316,7 +6359,16 @@ PROPRIEDADE (*provar que a derivação NÃO ocorreu, por qualquer testemunha que
 exceção distintiva ou relógio — DESDE QUE a evidência publique a margem medida ou o controle
 distintivo; testemunha sem margem publicada não é testemunha*). Nenhum código muda por este registro.
 
-## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis pelo técnico sobre OS ALHEIA — **ALTA**
+## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 10 vias mutantes sobre OS ALHEIA (9 nos routers de OS + 1 no sync mobile) — **ALTA**
+
+> **Título corrigido em 2026-09-05** (ressalva D1 do porteiro pós-merge do `B-O6R-07a`). Título original,
+> preservado (§A2): *"9 rotas mutantes alcançáveis pelo técnico sobre OS ALHEIA — **ALTA**"*. Ele contava
+> **9** enquanto o **APENSO** desta mesma entrada (mais abaixo) e a linha A3 da tabela de achados já
+> registravam a **décima via** (`POST /api/v1/mobile/sync/work-order-actions` com `work_order.mileage`,
+> medida por **execução**: HTTP 200, km `null` → `111111`). O corpo dizia dez e o cabeçalho dizia nove — e o
+> cabeçalho é o que o `pendencias-indice.md` publica, truncado em 88 caracteres, para quem só lê o índice.
+> As **9** seguem sendo as dos dois routers de OS; a décima está fora desse censo, e é por isso que ela
+> escapou — não por engano de contagem dentro dele.
 
 **Dono nomeado: `B-O6R-07c` (branch `fix/o6r07c-subresource-scope`)** — bloco novo, a planejar após o
 merge do 07b. **Origem do registro:** achado `C1-A1` da junta do ciclo 1 do B-O6R-07a; a declaração de

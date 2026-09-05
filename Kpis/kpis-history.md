@@ -2371,3 +2371,36 @@ que a execução não sustenta*. O conserto exige `src/database/prisma.ts` — p
 candidatos que publiquei vieram de `grep` e o crítico os refutou executando (**0/0** nos quatro); o único
 vazador medido (`core-saas-role-authority-db`, **+1/+1**) estava **fora** da minha lista, e os **+4/+4
 restantes seguem sem produtor nomeado**.
+
+### Backfill pós-merge (§C3.5) — aplicado em 2026-09-05, PR de registro consolidado
+
+Ressalva **R3** do porteiro pós-merge (`votos/B-O6R-02-ciclo5/00d-porteiro-reavaliacao-pos-376.md`).
+Medido antes de escrever: no `kpis-history.md` os três rastros davam **0/0/0** (`99f1840` = 0,
+`2709f4b` = 0, `#371` = 0) — o backfill tinha ido para o `kpis-history.json` e **não** para este espelho
+em Markdown, que é o documento que se lê.
+
+| Campo | Valor | Como foi medido |
+|---|---|---|
+| `pr` | **#371** | `gh pr view 371` — `MERGED` |
+| `merge_commit` | **`99f1840`** | `mergeCommit.oid` do #371; presente em `origin/main` |
+| `approved_head` | **`2709f4b`** | head **julgado pela junta** (ata `J-B-O6R-02-ciclo5.md`) |
+| `headRefOid` (nota) | **`7adff45`** | head que o GitHub mergeou — **um commit antes** de `6ee74bf` |
+
+`approved_head` = `2709f4b` e **não** o `headRefOid` `7adff45`: gravar o `headRefOid` declararia que a
+junta aprovou commits que ela nunca viu (o ajuste A1 que ela pediu, os registros de governança e a
+bateria reexecutada vieram **depois** do voto). Os dois ficam registrados para que a diferença seja
+auditável em vez de escondida.
+
+### Errata do `blocks_completed` — **158 → 160**, e os dois incrementos nomeados
+
+O texto acima, escrito **na autoria**, diz *"`blocks_completed` **158**, sobe a 159 **só no merge**"*.
+Ficou **desatualizado**: o campo hoje vale **160**. Preservo a frase original (§A2 — acrescentar, nunca
+apagar) e registro aqui o que a medição mostra, **dois** incrementos e não um:
+
+- **159 = B-O6R-07a**, que mergeou no **#369** (`dc8168b`) e **cuja dívida ninguém pagou** — as duas
+  entradas anteriores deste histórico estão **ambas** em 158.
+- **160 = este bloco**, mergeado no **#371** (`99f1840`), pelo critério de **um incremento por PR
+  mergeado** que a própria nota do campo invoca (precedente `SAN2-4a`/`4b`).
+
+Achado por **medição de terceiro** (junta do #373): o campo dizia 160 e a `description` dizia 158, sem
+justificar o `+2`. A correção da `description` no `.json` saiu no **#377**; esta é a metade em Markdown.
