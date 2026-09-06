@@ -75,7 +75,13 @@ export function buildContentDisposition(rawFileName: string): string {
     const extension = dot > 0 ? fallback.slice(dot) : "";
     fallback = `${fallback.slice(0, 100 - extension.length)}${extension}`;
   }
-  if (!fallback || /^[._ ]*$/.test(fallback) || WINDOWS_RESERVED_NAME.test(fallback)) {
+  // Degenerado = o que sobrou não informa nada. A checagem olha a BASE (antes da última extensão): um
+  // nome só de emoji vira `____`, e `____.png` é tão pouco informativo quanto `____` — o RFC 6266
+  // Apêndice D manda gerar o fallback "substituindo os equivalentes US-ASCII", e quando não há
+  // equivalente nenhum o certo é um nome genérico, não uma fileira de placeholders. O nome ÍNTEGRO
+  // continua inteiro no `filename*`, que é o que todo UA moderno usa (RFC 6266 §4.3).
+  const fallbackBase = fallback.includes(".") ? fallback.slice(0, fallback.lastIndexOf(".")) : fallback;
+  if (!fallback || /^[._ ]*$/.test(fallbackBase) || WINDOWS_RESERVED_NAME.test(fallback)) {
     const dot = name.lastIndexOf(".");
     const safeExtension = dot > 0 ? name.slice(dot + 1).replace(/[^A-Za-z0-9]/g, "") : "";
     fallback = safeExtension ? `arquivo.${safeExtension}` : "arquivo";
