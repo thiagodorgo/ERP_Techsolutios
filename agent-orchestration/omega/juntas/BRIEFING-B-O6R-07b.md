@@ -9,9 +9,9 @@
 
 | Item | Valor |
 |---|---|
-| Head do bloco | **`3fa616f7`** (branch `fix/o6r07b-uploads`) |
+| Head do bloco (registro) | **`37a2c465`** (branch `fix/o6r07b-uploads`) — *corrigido pela ressalva R1 da passada 2 do inspetor; a 1ª versão deste briefing dizia `3fa616f7`, que era o head no momento em que ele foi escrito, antes de as 4 cadeiras entrarem* |
 | Base | `origin/main` = **`e55245a`** |
-| Head de CÓDIGO julgado | **`a2988b5`** — os commits posteriores são registro (parecer do inspetor, este briefing) |
+| Head de CÓDIGO julgado | **`a2988b5`** — provado por diff: `git diff --stat a2988b5 37a2c465 -- src tests prisma frontend mobile .github scripts package*.json Kpis docs API_CONTRACTS.md` sai **vazio**, e `rev-parse :src`/`:tests` são idênticos. Os commits acima dele são **só registro** (parecer do inspetor, este briefing, as 4 cadeiras + espelho) |
 | Achado que o bloco fecha | **`Ω6R-SEC-004`** (P1) — como **`parcialmente_superado`**, não `fechado` |
 
 Cadeia, do mais antigo: `03f136e` plano · `221843c` parecer do crítico r1 · `2b9003a` emenda E1 ·

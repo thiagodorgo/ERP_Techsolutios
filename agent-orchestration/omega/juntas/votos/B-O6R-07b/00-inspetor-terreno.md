@@ -287,3 +287,124 @@ este parecer, untracked, para o orquestrador commitar); árvore principal com as
 na cópia solta do plano nem em corpo de agente algum.
 
 — `inspetor-de-terreno-da-junta` (Fable), 2026-09-06, passada 1 — não voto, não conserto, não julgo a entrega.
+
+---
+---
+
+# PASSADA 2 — 2026-09-06 — re-medição dos itens que eu mesmo nomeei (1.2 · 2.1 · 3.1 · 4.1 · 5) + `status` + `--check`
+
+**Apenso à passada 1, que fica preservada acima (§A2).** Head agora **`37a2c465`** (== `origin/fix/o6r07b-uploads`).
+
+## P2·0 · O head de CÓDIGO continua `a2988b5` — provado por diff, não por confiança
+
+```
+git log --oneline a2988b5..HEAD  -> 37a2c465 (4 cadeiras + espelho) · 345ef4e0 (briefing) · 3fa616f7 (meu parecer)
+git diff --name-status a2988b5 HEAD -> 10 arquivos, todos A: 4× .claude/agents/especialistas/jurado-07b-*.md,
+                                      4× .agents/agents/especialistas/jurado-07b-*.md, BRIEFING-B-O6R-07b.md, 00-inspetor-terreno.md
+git diff --stat a2988b5 HEAD -- src tests prisma frontend mobile .github scripts package.json package-lock.json Kpis docs API_CONTRACTS.md -> VAZIO
+git rev-parse a2988b5:src HEAD:src     -> 7f626fbc… == 7f626fbc…      (mesma árvore)
+git rev-parse a2988b5:tests HEAD:tests -> 8d00ef1b… == 8d00ef1b…      (mesma árvore)
+git status --porcelain --untracked-files=all -> VAZIO ; storage/ só com o .gitkeep rastreado
+```
+
+Logo os números do §4.2 da passada 1 (2938/2817, Δ +121, `npm run check` ec=0) **permanecem os números deste head** —
+nada de código, teste, lockfile ou KPI mudou. **Meu parecer commitado em `3fa616f7` é o que escrevi**: blob `ee792ae353`
+== `HEAD` == arquivo de trabalho == concatenação do meu scratchpad (idêntico após normalização de CR).
+
+## P2·1 · Item 1.2 — plano de isolamento POR JURADO no briefing — **VERDE**
+
+`agent-orchestration/omega/juntas/BRIEFING-B-O6R-07b.md` existe no head (170 linhas, commit `345ef4e0`). §3 "Isolamento
+por jurado — vinculante", lido linha a linha: (1) worktree PRÓPRIO para cada jurado que mutar; (2) `npm ci` próprio,
+**junction/symlink PROIBIDA**; (3) **cluster Postgres descartável PRÓPRIO por jurado; `erp-postgres`/`erp-redis` não é
+alvo de ninguém, nem para leitura**; (4) remoção só por `git worktree remove --force` (+ fallback Windows); (5) não tocar
+em `demo/investidor`, `gov-descuido`, `san2-r`, `status-read` — resíduo alheio se reporta; (6) a suíte grava em
+`storage/checklist-attachments/<uuid>/` no worktree onde roda — limpar. **As três frases exigidas pelo mandato estão
+escritas.** (Falta só "porta livre" explícita para o cluster; o §8 do plano, l.566-568, já manda medir porta por
+`netsh`/`docker ps` — nota, não ressalva.)
+
+## P2·2 · Item 2.1 — nada da ata anterior herdado como fato — **VERDE**
+
+Briefing §5 "O que NÃO se herda como fato": *nada da ata do 07a vale aqui como medido* (com o motivo: o 07a caiu por censo
+incompleto e a classe voltou como M5); onde corpo e E1 divergem **vale a E1**; piso **≥89** (a frase-ponte "65" é
+errada, e diz por quê); `M-D3` não existe, é `D6`; o §2 do plano-mãe foi medido em `53e44d3` e é **suspeito** até
+reconferido. §0 manda "confira, não herde"; §4 publica o meu baseline e ainda assim manda "meça o seu". §1 aponta os
+insumos **no head** (plano+E1 1054 l., crítico 558 l., PDs 11/13 fontes) e avisa da cópia podre já retirada. Nenhuma
+conclusão do 07a ou do porteiro é repassada como verdade.
+
+## P2·3 · Item 3.1 — inelegibilidade por nome — **VERDE**
+
+Roster do briefing §2: **C1 `agente-secops` · C2 `jurado-07b-contrato-mobile-b108` · C3 `jurado-07b-contrato-regressao-registro`**;
+suplentes `jurado-07b-suplente-contrato-mobile-b108` / `jurado-07b-suplente-contrato-regressao-registro`. Inelegíveis
+listados por nome no briefing: `planejador-mestre`, `critico-adversarial`, dev `general-purpose`, `porteiro-pos-merge`,
+`inspetor-de-terreno-da-junta`. **Nenhum deles está no roster.**
+
+Origem das 4 identidades novas, provada por **presença** (`git log --all -S<nome> --reverse`): o primeiro commit em que
+cada nome existe é **`345ef4e0`** (briefing) e o corpo nasce em **`37a2c465`**; em `e55245a` (`origin/main`) → **0
+arquivos**; em `HEAD` (`git grep -l`) aparecem **só** nos 4 corpos, nos 4 espelhos e no briefing — em nenhum `J-*`, `R-*`,
+voto ou plano. Frontmatter `name:` == nome do arquivo nos 4. Dentro dos corpos, os nomes inelegíveis aparecem apenas na
+lista de inelegibilidade (l.23-30) e na auto-declaração "identidade nova — não votei, não planejei, não desenvolvi".
+`agente-secops`: corpo `6216e1324c` idêntico em `HEAD`, árvore principal e `demo/investidor`; não consta em nenhuma ata
+ou voto do 07a (`git grep -l agente-secops HEAD -- J-O6R-07a-* votos/O6R-07a*` → nada; onde consta, na passada 1, é
+B01/B05/SAN); achador do `SEC-004` é `o6r-seguranca` (`ATA_J6R.md` l.8). **Nenhuma colisão.** Nota: as 4 cadeiras não
+fixam `model:` no frontmatter — o contrato só o exige para planejador/crítico/inspetor/porteiro; informação, não ressalva.
+
+## P2·4 · Item 4.1 — fatia S0 (`sync-agent-agents.mjs --check`, `ec` por variável, sem pipe) — **VERDE no head · RESSALVA na árvore principal (não bloqueia)**
+
+```
+[worktree o6r07b @ 37a2c465]  node scripts/sync-agent-agents.mjs --check > f 2>&1; ec=$?  -> ec=0  "OK — 38 agentes, espelho consistente."
+[árvore principal demo/investidor] idem                                                     -> ec=1  12 linhas: os 8 c5 da passada 1
+                                                                                             + 4 "FALTA no espelho: .agents/agents/especialistas/jurado-07b-*"
+```
+
+**Equivalência que o orquestrador pediu para eu derrubar — não caiu.** `git hash-object` na árvore principal × blob do head:
+`agente-secops.md` 6216e1324c == 6216e1324c · `jurado-07b-contrato-mobile-b108.md` 24b6e934ee == 24b6e934ee ·
+`jurado-07b-contrato-regressao-registro.md` c0535d4378 == c0535d4378 · suplentes 2d2f4f04f2 / b7cd8887f0 == idem.
+**O que se invoca de qualquer das duas árvores é byte-idêntico ao que está commitado no head.** Na árvore principal os 4
+corpos estão como `??` (untracked, idênticos); o espelho `.agents/agents/` de lá não os tem.
+
+**Julgamento sobre a decisão de NÃO rodar o sync na árvore principal:** correta. Rodá-lo em `demo/investidor` gravaria um
+espelho descrevendo um roster com 15 identidades sepultadas pelo #364 — consolidação silenciosa entre linhas divergentes,
+exatamente o que §A2 proíbe. A regra S0 existe para que o espelho Codex descreva o roster **que vota**, e isso está
+satisfeito onde o roster está commitado (head, `ec=0`). A junta corre em Claude Code, que lê `.claude/agents/` — provado
+idêntico. O `ec=1` da árvore principal é **condição pré-existente de `demo/investidor`** (S6), fica como ressalva ao dono,
+e volta a ser bloqueio se algum jurado for emulado via Codex a partir dela.
+
+## P2·5 · Item 5 — plano de perda de jurado — **VERDE (com uma parada declarada)**
+
+Briefing §2: suplente nomeado para C2 e C3 (corpos existem: 346 e 401 linhas); o suplente **não herda medição** e
+re-executa o briefing inteiro; **voto perdido nunca conta como aprovação**; se a **C1 `agente-secops` cair, a junta
+PARA** e o orquestrador registra — C1 é obrigatória e não tem suplente. É um plano completo e interpretável pelo dono; a
+parada da C1 é escolha declarada, não lacuna. Quórum: unanimidade de 3, com o porquê de não ser 5/5.
+
+## P2·6 · Re-medições de terreno físico (1.1/1.3) — **VERDE**
+
+`docker ps -a` → só `erp-postgres`/`erp-redis`; `git worktree list` → os 4 de origem (nenhum jurado entrou antes da
+hora); `.claude/worktrees/san2-r` segue diretório vazio (inerte, alheio, não toquei); **S5 confirmado:**
+`ls agent-orchestration/omega/planos/B-O6R-07b-plano.md` na árvore principal → **não existe**; no head o plano tem
+**1054 linhas**, 3 ocorrências de `EMENDA E1`, blob `27991543a6` (o mesmo da passada 1). Árvore principal: 22 linhas de
+status = as 19 do início − a cópia podre + os 4 corpos das cadeiras (untracked, idênticos ao head) — nada meu.
+
+## RESSALVAS (para o orquestrador pôr em destaque)
+
+- **R1** · Briefing §0 diz "Head do bloco `3fa616f7`"; o head real é **`37a2c465`** (o commit das cadeiras veio depois
+  do briefing). O head de CÓDIGO `a2988b5` está certo. Cada cadeira mede o próprio head (§0 já manda) — mas a ata deve
+  gravar `37a2c465` como head julgado de registro e `a2988b5` como head de código.
+- **R2** · `--check` **vermelho na árvore principal** (12 linhas) — pré-existente (S6) + os 4 corpos novos fora do espelho
+  de lá. Não bloqueia (P2·4); bloqueia se houver emulação Codex a partir de `demo/investidor`.
+- **R3** · Os 4 corpos das cadeiras estão **untracked na árvore principal**. Idênticos hoje; se alguém os editar lá, a
+  árvore de invocação diverge do commitado sem que `git status` do worktree acuse. Após a junta: retirar de lá ou
+  reconciliar `demo/investidor` — decisão do orquestrador/dono, não minha.
+- **R4** · S6 permanece: `demo/investidor` 21 atrás / 49 à frente, 15 identidades sepultadas vivas em `.claude/agents/`,
+  `inspetor` de 08-25. Ressalva ao dono; o briefing não esconde.
+
+## VEREDITO DA PASSADA 2: **LIBERADO COM RESSALVA** — **a junta PODE COMEÇAR.**
+
+S1, S2, S3 e S5 fechados por medição minha; S4 julgado não-bloqueante com a equivalência provada por hash; S6 e R1–R4
+vão ao briefing/ata em destaque. Cada cadeira nasce em worktree próprio com cluster próprio (briefing §3, vinculante);
+mede o próprio head; declara `gravidade` e `escopo` com evidência; e limpa o seu `storage/`.
+
+**Limpeza desta passada:** não criei container, worktree nem arquivo temporário fora do scratchpad; só leituras e
+`hash-object`. `git status` do worktree `o6r07b` = apenas este apenso (` M 00-inspetor-terreno.md`), para o orquestrador
+commitar.
+
+— `inspetor-de-terreno-da-junta` (Fable), 2026-09-06, passada 2 — não voto, não conserto, não julgo a entrega.
