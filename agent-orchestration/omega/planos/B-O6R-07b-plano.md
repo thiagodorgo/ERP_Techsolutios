@@ -764,3 +764,291 @@ cobre a competência? (b) quem achou consertou? (c) o planejador usou dado podre
 com o parecer dele antes da primeira linha de código.**
 
 — fim —
+
+---
+
+## EMENDA E1 (2026-09-06) — pós-parecer do `critico-adversarial` (PLANO ROBUSTO COM RESSALVA, 8 achados)
+
+**Papel:** `planejador-mestre` (Fable — `D-PLANEJADOR-MODELO-FABLE`; §C7.6: fluxo voltando ao planejador
+pós-achado = Fable OBRIGATÓRIO). Mesma identidade que escreveu o corpo (não houve código nem voto; §C7.4-bis:
+quem achou = crítico, `votos/B-O6R-07b/01-critico-adversarial.md`, commit `221843c`; quem planeja = esta
+emenda; quem desenvolve = dev novo). **Terreno:** worktree `.claude/worktrees/o6r07b`, branch
+`fix/o6r07b-uploads`, head `221843c` — `git diff --stat e55245a HEAD -- src tests frontend mobile prisma` =
+**vazio** (só plano + parecer), logo todo `arquivo:linha` abaixo continua sendo `e55245a`. **Apenso
+APPEND-ONLY:** nenhuma linha do corpo foi tocada (prova: `git diff --numstat 221843c -- <este arquivo>` = `N 0`).
+
+### E1·0 · Precedência e o que o crítico CONFIRMOU (fica como está)
+
+**Esta emenda VENCE o corpo onde divergirem.** Ficam de pé, re-medidos pelo crítico (parecer §2, D1–D11):
+V4/V5 sem scanner (prova por presença: `.scan(` em exatamente 3 sítios de `src/`); 5 vias de bytes e 5
+egressos (sem V6/E6); as 3 erratas ao plano-mãe; web/Flutter ignoram `Content-Disposition` (no Flutter, por
+vacuidade — `downloadAttachment` de `api_contracts.dart:99-100` é declarado e nunca usado: vai à ata); a
+ordem 409-antes-do-gate; o invariante B-108 (`_blobStore.delete` só dentro de `_isStoredStatus`, nos dois
+arquivos Dart); o lastro aritmético dos pisos (exceto A8). O desenho — gate único, marca no storage,
+re-derivação do tipo nos bytes — **não muda**; o que muda está numerado abaixo, um item por achado, cada
+aceite reescrito com a mutação que o deixa vermelho (e, em A4/A5, **a mutação que o crítico executou**).
+
+### E1·1 · A1 — o censo ganha **M5**, e a pendência passa a nomear a CLASSE (decisão: FORA do código do bloco, DENTRO do censo)
+
+**M5 — `POST /api/v1/impound-processes/:processId/notifications/:notificationId/issue`** (`impound.routes.ts:175`),
+campo "comprovante": `impound.notifications.validators.ts:78-92` (`parseOptionalAttachment`) aceita do corpo
+`file_url` (≤2000, sem esquema), `file_name`, `content_type`, `checksum_sha256`, `storage_provider`,
+`storage_key` (≤512); `impound.notifications-prisma.repository.ts:116-134` grava linha `attachment`
+`status: "stored"`, `entity_type: "process_notification"`. Origem: `398a19d`, 2026-07-27, #290 (M2:
+`574a1d2`, 2026-07-26, #285). Sítios de `attachment.create(` em `src/`: **3** (V2 + M2 + M5) — o crítico contou
+e eu re-li; quem fechar a classe re-conta.
+
+**Egresso das linhas de M5, medido por mim:** `rg process_notification src/` → só o writer, o DTO-comentário e
+`resourceType` de auditoria — **nenhum leitor**; E1 devolve 404 (E1·2). Hoje o byte na chave que o cliente
+escreveu **não é lido por rota alguma**. Isso não a absolve: a linha nasce `stored` com chave/tipo do cliente e
+qualquer leitor futuro (um "baixar comprovante") herda o buraco.
+
+**Decisão: M5 NÃO entra no código do 07b — entra no CENSO e na pendência, que muda de enunciado.** Por quê:
+(i) o conserto correto é no WRITE (`impound/**` aceitar só `attachmentId` próprio ou receber bytes por V2 com
+o `entity_type` registrado no resolver) — muda dois contratos do pátio cujos clientes (UI do pátio, PR-10/09)
+este plano não mediu; (ii) `impound/**` é PROIBIDO e o bloco tem teto de 2 ciclos; (iii) a metade da classe que
+É alcançável pelos arquivos deste bloco — a leitura por chave — **fecha aqui** (E1·2), para os dois routers.
+A pendência `P-O6R-B07B-IMPOUND-PHOTO-KEY-DO-CLIENTE` do §12 é **RENOMEADA** para
+**`P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE`** e passa a dizer: a CLASSE (linha `attachment stored` com
+`storage_key`/`content_type`/`storage_provider`/`file_url` do corpo), as DUAS rotas com arquivo:linha e
+origem, o egresso real de cada uma (M2 → E5 pela chave; M5 → nenhum leitor hoje; E1 → 404 para ambas), o que o
+07b fechou (guard de prefixo de tenant no READ) e o que resta (WRITE). Dono: `B-O6R-07c` (que já deve censar
+superfícies JSON/sync) ou bloco de pátio — o dono decide; quem fechar prova por presença (3 sítios → 1).
+
+### E1·2 · A2 — "M2 é servível por E1" é FALSO; o conflito §5 × pendência se resolve SEM tocar o owner-portal
+
+**Premissa corrigida (caminho lido inteiro, não grep):** `attachment.service.ts:142-159` `loadOwnedAttachment`
+→ `this.resolver.descriptorFor(entityType)`; `undefined` → **404** (l.151-156). O registro tem **4** entradas
+(`attachment-entity-resolver.ts:83/98/113/128`: `damage`, `fine`, `insurance_policy`, `maintenance_order`);
+`impound_intake_inspection` (M2) e `process_notification` (M5) não estão nele → **E1 nunca serve essas
+linhas**. Onde a exposição vive: **E5** — `owner-portal.service.ts:417-441` monta um `Attachment` sintético com
+`storageProvider`/`storageKey` **da linha** (`tenantId: this.deps.tenantId`, l.428) e chama
+`resolveAttachmentDownload(attachmentForDownload)` (`attachment.storage.ts:196-209`, importado em
+`owner-portal.service.ts:2`); o provider local (`resolveSafeStoragePath`, l.67-84) só impede sair do
+diretório-base — **não confere o prefixo de tenant**. Retiro, portanto, o crédito do §2.3/§3.5/§11.4 ("o 07b
+neutraliza a metade tipo via E1"): em E5 a metade tipo é inerte por outro motivo (Jimp re-codifica), e por E1
+nada é servido. **Errata nominal ao §2.3 (linha M2), §3.5 e §11 item 4.**
+
+**Resolução do conflito: o §5 NÃO muda (`owner-portal/**` segue INTOCÁVEL) e a pendência muda de enunciado —
+porque a proteção que E5 precisa vive num arquivo que o §5 JÁ permite.** `resolveAttachmentDownload` é do
+módulo `attachments` (§5 item 4). Entra no bloco, como item novo **3.8**:
+
+- **`src/modules/evidence/storage-key-scope.ts` (NOVO):** `assertStorageKeyWithinTenant(storageKey, tenantId,
+  provider)` — chave gravada pelos providers é `tenantId/runId/objeto` no local
+  (`local-checklist-storage.provider.ts:24`) e `[prefixo/]tenantId/runId/objeto` no S3
+  (`s3-checklist-storage.provider.ts:118-123`, `normalizedPrefix` pode ser vazio); o guard remove o prefixo
+  normalizado ATUAL (se presente) e exige **primeiro segmento === tenantId da linha**; qualquer outra forma →
+  o MESMO 404 `attachment_file_not_found` que os resolvers já lançam (nunca revela).
+- Chamado nos **4** resolvers: `resolveAttachmentDownload` (`attachment.storage.ts:196`),
+  `resolveWorkOrderAttachmentDownload` (`work-order-attachment.storage.ts:187`),
+  `resolveDamageAttachmentDownload` (`damage-attachment.storage.ts:207`),
+  `resolveChecklistAttachmentDownload` (`checklist-attachment.storage.ts:201`) — ANTES do `getObject`.
+- **E5 herda o guard sem uma linha em `owner-portal/**`** (chama a função protegida com o tenant do deploy).
+  Prova executada, não inferida: 1 caso NOVO apensado a `tests/owner-portal-photos.test.ts` (o harness de
+  l.150-166 já cria a linha de foto com `storage_key`): linha do tenant do portal apontando para
+  `outroTenant/…` (objeto existente) → **`not_found`**; vermelho-controle na base: **200** com a foto alheia
+  re-codificada. Mais T1–T8 no §E1·10 (4 resolvers × {chave alheia → 404, chave própria → 200}).
+- Risco declarado: chave S3 legada com prefixo ANTIGO (config mudou entre gravação e leitura) → 404. S3 não
+  está configurado em ambiente algum (`.env.example:30-31` vazios); local não é afetado. Consignar.
+- O que resta na pendência (E1·1): a metade WRITE. O crédito que o plano passa a reivindicar, dito com precisão:
+  **"nenhum resolver deste repositório entrega objeto fora do prefixo de tenant da linha — inclusive E5"**, e
+  nada sobre "tipo" para M2/M5.
+
+### E1·3 · A4 — a marca ERA burlável por derivação; passa a ter identidade por INSTÂNCIA, não por conteúdo
+
+**Resposta por escrito à pergunta do crítico** (*"um objeto derivado de uma marca legítima por clonagem é aceito
+pelo provider?"*): no desenho do corpo, **sim** — o spread copia propriedades próprias enumeráveis, inclusive as
+de chave `Symbol`, e a checagem de sha lia a propriedade do próprio objeto. O §3.1/§3.4 ficam **EMENDADOS**:
+
+- **Identidade por instância, registro privado do módulo:** `verifyUploadContent` cria um objeto **opaco e
+  congelado** (`Object.freeze({})` — **nenhuma** propriedade pública, nenhum `Symbol` em runtime; a "marca" de
+  tipo `UploadVerification` é só de tipo, `unique symbol` declarado, sem existência em runtime) e registra os
+  FATOS (`mimeType`, `sha256`, `sizeBytes`, `scanner`, `verifiedAt`) num **`WeakMap<object, VerifiedFacts>`
+  privado** de `upload-gate.ts` (não exportado).
+- **`assertUploadVerification(value, buffer): VerifiedFacts`** → `registry.get(value)`; ausente → lança
+  `upload_not_verified:brand`; presente → compara `sha256(buffer)` e `buffer.length` com os fatos **do
+  registro** (nunca com propriedade do objeto) → divergência lança `upload_not_verified:bytes`; devolve os
+  fatos — **os providers usam `facts.mimeType` do retorno**, nunca leem o objeto.
+- Consequência: `{ ...marca, sha256: sha(hostil), sizeBytes: hostil.length }` é um objeto NOVO → não está no
+  `WeakMap` → recusado. Idem `Object.assign({}, marca)`, `Object.create(marca)` (prototype ≠ identidade),
+  `structuredClone`, `JSON.parse(JSON.stringify(...))`, `new Proxy(marca, {})`. Mutar a marca é impossível
+  (congelada) e irrelevante (os fatos vivem no registro). Construir de fora: não há construtor exportado; o
+  único produtor é `verifyUploadContent` (e `createUploadVerificationForTests`, que o censo C4 impede de ser
+  referenciado em `src/**`).
+- **Aceites novos B7–B12 (§E1·10)** — e a mutação que os deixa vermelhos é **a réplica do crítico**: trocar
+  `registry.get(value)` por checagem de propriedade/`Symbol` no objeto (identidade por conteúdo) → B7 (o
+  spread exato: `{ ...marcaLegítima, sha256: sha(bufHostil), sizeBytes: bufHostil.length }`) passa a ACEITAR
+  bytes hostis → vermelho. Registrar `ec` e trecho dessa mutação (**M-B9**) como de qualquer outra. C6
+  (censo de `as UploadVerification`) **deixa de ser contado como prova** da marca — vira só higiene; a prova
+  é B7–B12 + M-B9.
+
+### E1·4 · A5 — o gate de boot da allowlist passa a validar a allowlist EFETIVA (os dois nomes), e M-B8 mutila o nome que escapava
+
+Medido de novo: `env.ts:241` `CHECKLIST_STORAGE_ALLOWED_MIME_TYPES` e `:245` `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES`
+(vivo em `.env.example:42`); o `superRefine` (l.283) lê o objeto **cru**; o `??` que escolhe a efetiva está em
+l.548-551, **depois**. §3.3 fica **EMENDADO**:
+
+- O refinamento calcula a allowlist efetiva **com a MESMA cadeia** `value.CHECKLIST_STORAGE_ALLOWED_MIME_TYPES
+  ?? value.CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES ?? DEFAULT` (a constante `DEFAULT` passa a ser UMA, importada
+  nos dois lugares — hoje é literal duplicável) e exige ⊂ `SNIFFABLE_MIME_TYPES`, nomeando a entrada ofensora e
+  **qual nome de env** a trouxe.
+- **M-B8 reescrita para a mutação do crítico:** `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES=image/png,image/svg+xml`
+  com `CHECKLIST_STORAGE_ALLOWED_MIME_TYPES` **ausente** → `envSchema.parse` **FALHA**. Mais **M-B8b**: os dois
+  setados, legado com svg e o novo sem → parse PASSA (precedência do `??`, documentada — e a efetiva não tem
+  svg); **M-B8c**: novo com svg → FALHA. Vermelho-controle: base não tem refinamento (os 3 falham na base);
+  mutação que os derruba: refinamento lendo só a chave nova → M-B8 passa a aceitar (verde-com-defeito → o
+  caso fica vermelho).
+- **Segunda camada, dita às claras (para o aceite não depender só do boot):** mesmo com o gate de boot
+  mutilado, nenhum SVG/HTML é gravado — `sniffMimeType` **nunca devolve** um tipo fora de `SNIFFABLE`, e o
+  gate exige `sniffado ∈ allowlist`; `image/svg+xml` na allowlist é entrada morta. Caso **A11** (§E1·10):
+  gate de boot removido por mutação + allowlist com svg + upload de SVG declarado `image/svg+xml` → **415**
+  (`content_unrecognized`) e nada persistido; mutação que o derruba: sniff devolvendo o declarado quando não
+  reconhece. O gate de boot existe para ser **barulhento** (o operador descobre no boot, não no primeiro 415).
+
+### E1·5 · A3 — staging NÃO é condicional: recusa todo upload no dia do deploy; o remédio escrito era a própria pane
+
+Medido: `fly.staging.toml:31` `NODE_ENV = "production"` (e l.9-12: *"regra geral: TODO ambiente com
+NODE_ENV=production, staging incluso"*); `Dockerfile:25` idem; nenhum workflow sobrescreve. **§8.3(b) e §12.6
+ficam SUPERADOS**: a condição já é verdadeira. Consequências escritas, para o humano ser **informado** (§C7.2):
+
+1. **A partir do deploy do 07b em staging, as 5 vias respondem 503 a todo upload** (evidência mobile, anexo
+   genérico, de OS, de checklist e foto de dano). O smoke do deploy (`scripts/smoke-staging.mjs`) **não faz
+   upload** (rg zero) → o job fica **verde** e a pane só é visível a quem usa.
+2. `EVIDENCE_SCANNER=unavailable` **não é remédio** — é o default que produz o 503; `noop` é recusado no boot de
+   propósito. **Não haverá válvula** neste bloco (uma flag "permitir noop em produção" é o achado com outro
+   nome); a única saída é o antivírus real (`P-O6R-B07B-SCANNER-AV-REAL`, junta-5).
+3. `demo/investidor`: nenhum workflow nem `fly*.toml` referencia essa branch (rg zero) — é a árvore principal
+   local. **Se a demonstração ao investidor usar staging com upload antes do bloco de AV, ela para de aceitar
+   foto no dia do deploy.** Decisão de agenda é do dono, com três caminhos nomeados: (a) agendar o bloco de
+   AV imediatamente após o 07b; (b) segurar o deploy do 07b em staging até o AV (a `main` já fica protegida);
+   (c) qualquer rebaixamento temporário é decisão explícita do dono, não deste bloco. Vai à ata e à entrada
+   `P-GOV-FILA-P1-ANTES-DE-P0` como item 2.
+4. Pendência §12.6 **REESCRITA**: `P-O6R-B07B-STAGING-SEM-UPLOAD` — MÉDIA-ALTA — "staging recusa todo upload
+   a partir do deploy do 07b; remédio = AV real; agenda = dono". A frase "setar `EVIDENCE_SCANNER=unavailable`"
+   sai. `P-O6R-B07B-SCANNER-AV-REAL` passa a BLOQUEAR também "staging com upload".
+
+### E1·6 · A6 — a tabela do §7 erra o V4: 503 → `UPLOAD_FAILED`, não `SCAN_FAILED`
+
+Medido: `rg -n 503 mobile/flutter_app/lib` → **1 linha**, `evidence_upload.dart:261`.
+`checklist_attachment_upload.dart:243-256` mapeia 400/413/422 e cai em `_ => 'UPLOAD_FAILED'`. Linha corrigida
+da tabela do §7: **V1** 503 → `SCAN_FAILED`; **V4** 503 → `UPLOAD_FAILED` (indistinguível de erro de rede para o
+técnico). O invariante **não** muda (blob preservado nos dois; `delete` só em `_isStoredStatus`). Com E1·5,
+**todo anexo de checklist em staging aparecerá como falha genérica** até o AV real. Origem: `c0630fa`,
+2026-08-01, #321 — pré-existente; entra como item da pendência `P-O6R-B07B-MOBILE-RETRY-PERMANENTE`
+("unificar o mapeamento dos dois arquivos: 503 → `SCAN_FAILED`, 415/422 → estado terminal com revisão").
+
+### E1·7 · A7 — a promessa "caminho novo sem gate não compila" ganha fronteira escrita; o censo declara seu alcance
+
+Medido: `tsconfig.json` `include: ["src/**/*.ts"]`; `lint` == `check` == `tsc -p tsconfig.json --noEmit`
+(**não há ESLint**); `build` = `tsc -p` (emite só `src`). A frase do §3.4 fica **EMENDADA** para o que o arnês
+garante de fato, em três camadas com alcance declarado:
+
+1. **Tipo (build/check):** todo `.ts` em `src/**` que chame `save()` dos 2 providers de checklist ou `store()`
+   do provider de evidência **sem `verification`** falha o `tsc` — **só isso**. Não cobre: `tests/**` (fora do
+   `tsconfig`), `.js`/`.mjs` em `src/` (include é `*.ts`), `scripts/**`, e qualquer escritor que **não** passe
+   pelos 3 providers.
+2. **Runtime (providers):** `assertUploadVerification` nos 3 `save`/`store` — pega teste, JS e cast; é a
+   camada que responde por "quem burla o compilador não grava" (agora com identidade por instância, E1·3).
+   Não cobre quem escreve fora dos providers.
+3. **Censo C5 (tripwire de TEXTO, não prova):** alcance **`src/**`** (igual à C1 — a divergência
+   `src/modules/**` × `src/**` acaba) e padrões ampliados: `writeFile(`, `writeFileSync(`, `appendFile(`,
+   `appendFileSync(`, `copyFile(`, `copyFileSync(`, `createWriteStream(`, `rename(` de temporário,
+   `fs.promises.`, `PutObjectCommand`, `Upload` de `@aws-sdk/lib-storage`, `UploadPartCommand`. Allowlist
+   nominal = os 3 providers. **Pontos cegos declarados:** acesso dinâmico (`fs[nome]`), alias de import
+   (`import * as x from "node:fs"` + `x.writeFile`), código em `scripts/`. Cada padrão novo tem mutação
+   própria (arquivo temporário com o padrão → C5 vermelho nomeando-o).
+
+A frase que a junta vai citar passa a ser: **"quem chama os providers sem marca não passa no `tsc` nem grava;
+quem escreve fora dos providers é pego pelo censo C5 — que é tripwire de texto com os pontos cegos acima, não
+prova"**. O bloco continua estrutural para o caminho que existe (providers); não promete o que não mede.
+
+### E1·8 · A8 — UM piso, rótulos corrigidos, e as erratas nominais ao corpo (nada reescrito)
+
+- **Piso único:** **N ≈ 20** (estática do §2.6, re-medida por execução na abertura) → **meta M ≥ 2N = ≥ 40**
+  (mínimo contratual). **Piso de projeto (soma das seções, o número que a C3 confere):** §6.1 **32** · §6.2
+  **20** (B1 = **9** casos: 4 assinaturas positivas + 5 negativas `MZ`/`<html`/`GIF8`/`<svg`/`PK`; B2–B6 = 5;
+  B7–B12 = 6) · §6.3 **7** (M-B7 ×3 + M-B8/b/c ×3 + A11) · §6.4 **24** (15 + T1–T8 + E5) · §6.5 **6** →
+  **≥ 89**. Publicar o real, não o piso.
+- **Erratas nominais (linha do corpo → texto que vale):** l.35 "≥40" = a META (fica) · l.185 "(§6 soma ≥ 44)" =
+  **resíduo de versão anterior, SEM efeito** — vale ≥ 89 · l.506 "≥ 65" = **superado** por ≥ 89 · l.423 "a
+  mutação M-D3 do §6" → **"a mutação D6 do §6.4"** (a de desligar `xContentTypeOptions` em `app.ts`; nunca
+  entra no diff) · §6.2 "Piso: ≥ 12" → **≥ 20** com a decomposição acima.
+- Duas notas do parecer (§4, item 7) que viram texto do plano: (i) `tests/owner-portal-photos.test.ts:150-166`
+  chama `saveAttachmentFile` direto → precisa da marca (**"troca de marca"**, não de fixture) — entra
+  nominalmente no §5.10 (E1·9); (ii) **D4** (nome com acento/emoji/CRLF) só é alcançável **semeando a linha**
+  (`sanitizeFileName` reduz o nome a `[A-Za-z0-9._-]` no upload, `attachment.storage.ts:211-215`) — o caso é
+  declarado assim para não virar teatro.
+
+### E1·9 · Escopo EMENDADO (§5) — só o que esta emenda acrescenta; tudo o mais do §5 segue igual
+
+**PERMITIDO, a mais:** `src/modules/evidence/storage-key-scope.ts` (NOVO — guard de prefixo de tenant, E1·2) ·
+nos 4 `*.storage.ts` já permitidos, **também** os `resolve*Download` (l.196/187/207/201) para chamar o guard
+ANTES do `getObject` · `tests/owner-portal-photos.test.ts` — **SÓ** (a) a marca no `saveAttachmentFile` de
+l.150-166 ("troca de marca") e (b) **1** caso novo: chave alheia → `not_found` (E1·2). Nenhuma outra linha
+desse arquivo. · `.env.example:42` pode ganhar o MESMO comentário do item novo (allowlist ⊂ sniffável).
+**PROIBIDO, reafirmado:** `src/modules/owner-portal/**` (E5 fica protegido por herança, E1·2) ·
+`src/modules/impound/**` (M2/M5 → pendência) · válvula de `noop` em produção (E1·5).
+
+### E1·10 · Aceites NOVOS — cada um com a mutação que o deixa vermelho (A4/A5 usam a mutação do crítico)
+
+| # | Caso | Verde exigido | Mutação / vermelho-controle |
+|---|---|---|---|
+| **B7** | **spread do crítico**: `{ ...marcaLegítima, sha256: sha(bufHostil), sizeBytes: bufHostil.length }` passado ao provider com `bufHostil` | provider lança `upload_not_verified:brand`; **0** escritas | **M-B9**: identidade por conteúdo (propriedade/`Symbol` no objeto em vez de `registry.get`) → B7 ACEITA os bytes → vermelho. Base `e55245a`: não há gate (vermelho por ausência) |
+| B8 | `Object.assign({}, marca)` | lança `:brand` | M-B9 |
+| B9 | `Object.create(marca)` | lança `:brand` | M-B9 (prototype não é identidade) |
+| B10 | `structuredClone(marca)` e `JSON.parse(JSON.stringify(marca))` | lançam `:brand` | M-B9 |
+| B11 | `new Proxy(marca, {})` | lança `:brand` | M-B9 |
+| B12 | marca legítima + MESMOS bytes, chamada 2× | aceita 2× (a marca não é de uso único; idempotência de retry) | regressão — e mutação "one-shot" (apagar do registro após o 1º uso) o derruba |
+| **M-B8** | `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES=image/png,image/svg+xml`, chave nova AUSENTE, `NODE_ENV` qualquer | `envSchema.parse` **falha** nomeando `image/svg+xml` e o nome legado | refinamento lendo só a chave nova → passa → vermelho. Base: passa (sem refinamento) |
+| M-B8b | as duas setadas; legado com svg, nova sem | parse passa (precedência `??`) | documenta a precedência; mutação: refinamento validando a UNIÃO das duas → falha indevida |
+| M-B8c | chave nova com svg | falha | base: passa |
+| **A11** | gate de boot removido por mutação + allowlist com svg + upload SVG declarado `image/svg+xml` (V2) | **415** `content_unrecognized`; nada persistido | sniff devolvendo o declarado quando não reconhece → 201 → vermelho |
+| **T1–T8** | nos 4 resolvers: linha do tenant A com `storageKey = "tenantB/…"` (objeto existente em B) → download; e chave própria → download | alheia → **404** `attachment_file_not_found`, corpo vazio; própria → 200 | guard removido → 200 com bytes de B. Base: 200 (vermelho-controle) |
+| **T9 (E5)** | `owner-portal-photos.test.ts`: foto do processo com `storage_key` de outro tenant | `not_found`; log `PHOTO_VIEWED`/`NOT_FOUND` | base: 200 com a foto alheia re-codificada (vermelho-controle) — prova de que E5 herdou o guard sem ser tocado |
+| T10 | S3 fake (`checklist-storage.test.ts:133` idioma) com `CHECKLIST_STORAGE_S3_PREFIX="p/q"` e chave `p/q/tenantA/run/obj` | passa o guard | prefixo não removido → 404 indevido → vermelho |
+
+Contagem: B7–B12 = 6 · M-B8/b/c = 3 · A11 = 1 · T1–T10 = 10 → **+20** sobre o corpo (já dentro do ≥ 89 do E1·8;
+T10 entra em §6.4 no lugar de um dos casos genéricos de peek — o dev publica a soma real).
+
+### E1·11 · Registro EMENDADO (§9/§12) — o achado fecha como `parcialmente_superado`, e as pendências mudam de nome
+
+- **`Ω6R-SEC-004` → `parcialmente_superado`** (formato QUA-004/SEC-002 do ciclo 2 do 07a), não `fechado`. O
+  crítico está certo (parecer §4, item 3): com `noop` sendo o default de `development`/`test` **por desenho**,
+  o primeiro dos três mecanismos do achado ("scanner default sempre clean") só deixa de ser verdade em
+  produção. `supersedido.por` = "B-O6R-07b (PR #<n>)"; `componente_superado` = sniff nas 5 vias + gate único
+  com marca + egresso endurecido (E1–E4) + fail-closed em produção/staging + guard de prefixo de tenant nos 4
+  resolvers; `componentes_abertos` = **["antivírus real em produção — serviço externo, junta-5; até lá
+  produção/staging recusam upload com 503 (P-O6R-B07B-SCANNER-AV-REAL)"]**. O fechamento a `fechado` é
+  contrato do bloco de AV. `REGISTRO_ACHADOS_O6R.md` l.701 segue a forma que o 07a usou para o SEC-002.
+- **KPI (§9) em consequência:** SEC-004 **NÃO** entra em `production_readiness.aguardando_merge` (não se
+  aguarda merge do que não se declara fechado — C2·2 item 3 do plano-mãe); `p1_fechados` segue 2; `findings`
+  espelha `parcialmente_superado`; `blocks_completed` 160→161 e o resto do §9 inalterados.
+- **`P-O6R-B07`:** linha `- status: FECHADA — 1 P0 + 2 P1: SEC-002 parcialmente superado no 07a (#369;
+  residual em P-O6R-SUBRECURSO-OBJECT-SCOPE) · SEC-003 fechado no 07a (#369) · SEC-004 parcialmente superado
+  no 07b (PR #<n>; residual em P-O6R-B07B-SCANNER-AV-REAL)` — mesma contabilidade que o 07a usou para o
+  parcial; o `Bloqueia` de evidências/anexos/upload mobile cai; gate da CHECKLIST P1 passa a depender só de
+  `B-O6R-06`.
+- **Pendências (§12) — o que muda:** (2) **renomeada** `P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE` (classe M2+M5,
+  E1·1/E1·2) · (5) `MOBILE-RETRY-PERMANENTE` ganha o item de mapeamento 503 divergente (E1·6) · (6)
+  **reescrita** `P-O6R-B07B-STAGING-SEM-UPLOAD` (E1·5) · (1) `SCANNER-AV-REAL` passa a bloquear também "staging
+  com upload" e a ser o dono do fechamento do SEC-004 · (11) `P-GOV-FILA-P1-ANTES-DE-P0` ganha o item 2 (demo/
+  staging sem upload até o AV). Nova, BAIXA: **`P-O6R-B07B-S3-PREFIXO-LEGADO`** (chave S3 com prefixo antigo →
+  404 sob o guard; S3 não está em uso — E1·2).
+
+### E1·12 · Junta e ata — o que esta emenda acrescenta ao §11; prova de append-only
+
+- A **C1 (`agente-secops`)** re-executa **B7 e M-B9 com o script do crítico** (`brand-spread.mjs`, réplica do
+  desenho) contra o gate real — não contra uma réplica — e M-B8 com o nome legado; a **C3** confere T9 (E5
+  protegido sem diff em `owner-portal/**`) e as erratas nominais do E1·8. O parecer do crítico é insumo
+  obrigatório do briefing (§C7.1-bis: presente nos ciclos ≥1 deste bloco).
+- Itens que vão à ata como **informação ao humano** (§C7.2): staging/demo sem upload até o AV (E1·5);
+  `Ω6R-SEC-004` fecha só como parcial; a decisão de fila `P-GOV-FILA-P1-ANTES-DE-P0`.
+- Respostas §C7.4-bis para este ciclo de emenda: (a) a composição cobre a competência? — sim, com a C1 em
+  `agente-secops` e o crítico como insumo; (b) quem achou consertou? — não: o crítico não escreveu esta
+  emenda nem escreverá código; (c) dado podre? — as 4 premissas falsas que ele apontou (E1 serve M2; censo de
+  4; marca por conteúdo; staging condicional) estão corrigidas com arquivo:linha re-lido por mim, não
+  herdadas do parecer.
+- **Prova de append-only desta emenda:** `git diff --numstat 221843c -- agent-orchestration/omega/planos/B-O6R-07b-plano.md`
+  = **`N 0`** (só adições). O corpo do plano (766 linhas) permanece byte-idêntico ao commit `03f136e`.
+
+— fim da EMENDA E1 —
