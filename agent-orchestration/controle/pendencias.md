@@ -5547,10 +5547,43 @@ aplica a normalização de fim de linha) publicada no **APENSO DE COMPOSIÇÃO, 
 `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` — **nunca** o `ec=0` do S0. O apenso E1.6 já
 diz isso ao inspetor do ciclo 5, com todas as letras.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: o `readdirSync`
+**FECHAMENTO em 2026-09-05 — a premissa desta pendência morreu e ninguém a fechou.** Achada por
+**cadeira independente** ao julgar o PR de registro consolidado do `B-O6R-02` c5; quem achou **não**
+escreveu este fechamento (§C7.4-bis). O texto acima fica **intocado** (§A2): ele descreve corretamente o
+mecanismo de 2026-08-31.
+
+**A premissa não existe mais.** O corpo cita `scripts/sync-agent-agents.mjs` l.66 com
+`readdirSync(SRC).filter(...)` **plano**. Na `main` deste head o script usa `listMd()` **recursivo**, com o
+motivo escrito no próprio comentário. Medido: o recursivo entrou em **`1aeb6e9` (2026-08-25)** na branch,
+publicado na `main` pelo squash **`99f1840`** (#371) — **cinco dias antes** de esta pendência ser aberta.
+Ela nasceu de leitura de uma versão que a `main` já não tinha.
+
+**Critérios de fechamento, um a um, por execução:**
+
+| critério | como fechou |
+|---|---|
+| **(a)** decisão escrita sobre espelhar ou não `especialistas/**` | **DEVE ser espelhado** — é o que a `main` faz, e agora está escrito: `.agents/agents/README.md` (topo e §especialistas) |
+| **(b)** espelho pelo mesmo mecanismo + `--check` **vermelho por mutação** | **PROVADO POR MUTAÇÃO.** Corpo de `.claude/agents/especialistas/jurado-c5-banco-fk-triggers.md` alterado sem espelhar → `--check` **`ec=1`**, `DIVERGE: .agents/agents/especialistas/jurado-c5-banco-fk-triggers.md`; restaurado → `ec=0`. Mesmo `listMd()` dos corpos-base; 11 espelhos para 11 corpos |
+| **(c)** *(caminho “não deve”)* | **não se aplica** — venceu o “deve” |
+| **(d)** divergência de convenção com `demo/investidor` reconciliada | `demo/investidor` é branch de longa duração **fora da linha da `main`** (medido: `origin/main` **não** é seu ancestral; 50 commits exclusivos dela, 18 da `main` ausentes). A convenção que vale é a da `main` — espelhar. O estado de `especialistas/` naquela branch não governa este contrato e será reconciliado quando ela for integrada, se for |
+
+**Consequência que importa mais que o fechamento:** enquanto isto ficou ABERTA com premissa morta, o
+`.agents/agents/README.md` mandava, **no topo**, ler os especialistas direto de `.claude/agents/` e
+avisava que *"o `--check` ec=0 não prova nada sobre elas"* — instrução falsa citando **esta** pendência
+como fundamento. As duas coisas se sustentavam mutuamente: a pendência dava respaldo à nota, e a nota
+dava plausibilidade à pendência. Corrigidas juntas, no mesmo PR, por isso.
+
+Fica de pé, e **não** é fechado aqui: a orientação do apenso `E1.8` de provar corpo de jurado por
+**tabela de hashes** continua boa prática — ela nunca dependeu de o `--check` ser cego, e um hash
+publicado prova mais que um `ec=0`.
+
+- **status:** FECHADA em 2026-09-05 · **fechado por:** PR de registro consolidado do `B-O6R-02` ciclo 5
+  (achado da cadeira independente que julgou o PR; fechamento escrito por outro papel, §C7.4-bis) ·
+  **evidência:** critérios (a),(b),(d) na tabela acima, com o drill de mutação `ec=1` → `ec=0` ·
+  **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: o `readdirSync`
   plano é o mecanismo original do script, anterior à existência de `.claude/agents/especialistas/`, que
-  nasceu nos ciclos de especialistas deste bloco; nenhum bloco desta rodada o alterou) · **dono:** a
-  atribuir — candidato natural é o próximo bloco autorizado a tocar `scripts/sync-agent-agents.mjs`.
+  nasceu nos ciclos de especialistas deste bloco; nenhum bloco desta rodada o alterou) · **dono:**
+  encerrado — candidato natural é o próximo bloco autorizado a tocar `scripts/sync-agent-agents.mjs`.
   **Não nomeio bloco que não combinei**, e não atribuo ao ciclo 5: `scripts/sync-agent-agents.mjs`
   **não está na allowlist fechada** do dev do ciclo 5 — o §5 do plano dele (l.129-134) lista os arquivos
   permitidos **um a um** e fecha com *“Arquivo fora das listas → o dev PARA e devolve”* —, e o ciclo 5 é a
@@ -6684,3 +6717,40 @@ elas, o índice foi de **FECHADA 62 → 63** e `SEM-STATUS 3 → 2`.
 Formatação que muda o que um gerador lê é conteúdo, não estilo.*
 
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (as 3 corrigidas) e `pre-existente` (as 2 reportadas) · **dono:** as 2 restantes, com seus blocos
+
+## P-GOV-REGISTRO-PURO-QUORUM (2026-09-05) — MÉDIA · PR de registro puro: junta de 3 ou uma cadeira independente? A prática desta cadeia foi as duas coisas
+
+**Registrado por §A2, não decidido em silêncio.** Achado pela cadeira independente que julgou o PR de
+registro consolidado do `B-O6R-02` c5, que explicitamente **não** quis escolher a convenção — e quem
+escreveu o PR também não deve escolhê-la sozinho, porque é a regra que o julga.
+
+**O conflito, medido nesta mesma cadeia de 6 PRs de registro:**
+
+| PR | tem ata de junta? |
+|---|---|
+| #373 | **sim** — `J-O6R-07a-ressalvas.md`, 3 cadeiras |
+| #374 · #375 · #377 | **não** |
+| #378 (este) | **não** — um parecer de cadeira independente, não uma junta de 3 |
+
+O §C7.1 diz *"junta sem registro = merge inválido"* e não abre exceção por tipo de PR. Lido ao pé da
+letra, **quatro** dos merges acima seriam inválidos — o que ou está errado, ou é uma dívida que ninguém
+declarou. O §C7.1-ter(b) calibra **quórum por risco** (unanimidade de 3 quando o bloco toca dinheiro,
+segurança, permissão ou perda de dado; maioria de 3 no resto), mas o "resto" pressupõe uma junta; não
+existe faixa escrita para *"PR que não toca código, teste nem escopo"*.
+
+**Por que não é academicismo:** um PR de registro **move números publicados** (este mexeu em
+`production_readiness`, no `blocks_completed` do histórico e no placar de pendências) e **corrige
+instruções que outros agentes obedecem** (a nota do `.agents/agents/README.md` mandava desligar um guard).
+É pouco risco de produto e **muito** risco de registro — exatamente a categoria que o §C7.1-ter foi
+escrito para calibrar, e a única que ele não nomeia.
+
+**Critério de fechamento (o que fecha, não como fazer):** uma decisão **escrita** — do dono ou de junta —
+que diga, para PR que não toca `src/`, `tests/` nem `prisma/`, qual é o quórum exigido; e, se for menos
+que 3, o que substitui a ata (parecer de cadeira independente registrado em `votos/`, por exemplo). As
+duas respostas são legítimas; a ausência não é, porque hoje o mesmo tipo de PR mergeou dos dois jeitos na
+mesma semana.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: a assimetria começa
+  no #373/#374, 2026-09-05, antes deste PR; e o §C7.1 é de 2026-07-13) · **dono:** **decisão do dono ou de
+  junta de governança** — não é matéria de implementação, e quem escreve PR de registro é parte
+  interessada na resposta
