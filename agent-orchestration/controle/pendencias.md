@@ -6960,8 +6960,26 @@ dia do deploy.** Três caminhos, todos legítimos, nenhum escolhível por agente
 imediatamente após o 07b; (b) segurar o deploy do 07b **em staging** até o AV existir (a `main` já fica
 protegida de qualquer forma); (c) qualquer rebaixamento temporário é decisão **explícita** do dono.
 
-- **status:** ABERTA · **severidade:** MÉDIA-ALTA · **escopo:** `dentro-do-bloco` · **dono:** **decisão do dono**
-  (agenda), com o conserto técnico em `P-O6R-B07B-SCANNER-AV-REAL`
+**DECISÃO DO DONO — 2026-09-06: caminho (a).** Perguntado com os três caminhos na mesa, o dono respondeu
+**"fazer A"**: mergear o `B-O6R-07b` normalmente. Decisão do dono é fonte §A1.1.
+
+**E o risco que esta entrada descrevia é MENOR do que ela dizia — medido depois de escrita.** O texto acima
+diz *"staging para de aceitar foto no dia do deploy"*, o que pressupõe que o merge **causa** deploy. Ele não
+causa: `.github/workflows/deploy-staging.yml` dispara em `push` na `main` **mas o job tem
+`if: vars.STAGING_DEPLOY_ENABLED == 'true'`**, e essa variável **não existe** no repositório
+(`gh variable list` → vazio, `ec=0`). Provado por histórico de execução, não por leitura: os **últimos 5 runs
+do `deploy-staging` estão `skipped`** (#375, #373, #377, #378, #379). O deploy de staging é **ato manual e
+separado**, hoje desligado no nível do repositório.
+
+**Consequência, dita sem suavizar:** a pane é **latente**, não iminente. Ela materializa no dia em que alguém
+puser `STAGING_DEPLOY_ENABLED=true` e fizer deploy sem o antivírus real. Quem ligar essa variável **precisa
+ler esta entrada antes** — é o gatilho, e ele agora está nomeado.
+
+- **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (caminho (a), mergear normalmente) +
+  medição de que o merge não dispara deploy (`STAGING_DEPLOY_ENABLED` ausente; 5 runs `skipped`) ·
+  **severidade:** MÉDIA-ALTA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. **O conserto técnico
+  permanece em `P-O6R-B07B-SCANNER-AV-REAL` (ALTA), que segue ABERTA e é pré-requisito de habilitar
+  `STAGING_DEPLOY_ENABLED`.**
 
 ## P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE (2026-09-06) — linha `attachment stored` com chave/tipo/provedor vindos do CORPO — ALTA
 
@@ -7123,5 +7141,20 @@ uma pergunta de **agenda de demonstração**, não só de ordem de correção.
 
 **Nenhuma decisão de fila é tomada por agente.**
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (a tensão é declarada por este
-  bloco) · **dono:** **decisão do dono**
+**DECISÃO DO DONO — 2026-09-06.** Duas respostas, na ordem em que foram dadas:
+
+1. **Terminar o `B-O6R-07b`** — o custo está afundado e as três cadeiras da junta já mediram. A violação de
+   *"P0 precede P1"* fica **registrada e aceita para este bloco**, não normalizada.
+2. **`B-O6R-06` (`fix/billing-durability`) é o próximo**, e não o `B-O6R-04`. Razão dada pelo dono: *"a
+   apresentação do INVESTIDOR usa componentes reais do sistema"* — e o `Ω6R-DIN-005` é exatamente
+   *"vistoria concluída que ninguém fatura"*: a métrica faturável é best-effort, engole a falha num `.catch()`
+   e o replay idempotente **não republica**, então o subfaturamento é permanente. Com componentes reais em
+   cena, os números que o investidor vê saem errados. O `B-O6R-06` é também o **único bloco que destrava a
+   trilha CHECKLIST P1 por dentro** (5 fatias paradas desde 15/08).
+
+**O `B-O6R-04` não foi descartado** — desce um lugar na fila. Ele segue com 2 P0 (`DAT-002`, `DAT-003`),
+dependência satisfeita desde 19/08 e **sem dono nomeado**.
+
+- **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (terminar o 07b; `B-O6R-06` a seguir) ·
+  **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. A tensão que ela registrava
+  está **resolvida por decisão**, não por medição — que é o desfecho correto para uma pergunta de fila.
