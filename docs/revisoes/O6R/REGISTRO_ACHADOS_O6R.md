@@ -699,6 +699,25 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: N falhas concorrentes armam lock persistente; senha correta durante TTL retorna 423 e funciona após expiração.
 
 ### [Ω6R-SEC-004] Uploads produtivos usam scanner no-op e confiam no MIME declarado
+- Status: **parcialmente_superado** em 2026-09-06 pelo `B-O6R-07b` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+  **Dois dos três mecanismos do achado morrem em TODO ambiente.** (1) *MIME do cliente*: gate único
+  (`src/modules/evidence/upload-gate.ts`) com sniff de assinatura in-house (`content-sniff.ts`, tabela da
+  `PD-O6R-B07B-MAGIC-BYTES`, offset 0 estrito, ZERO dependência) nas **5 vias** de ingresso, e o campo `mimeType`
+  DECLARADO **removido** do input dos 3 providers — nenhum chamador consegue mais preenchê-lo. (2) *download
+  inline com esse MIME*: `serve-verified-file.ts` re-deriva o tipo dos BYTES no ato do download (o banco não é
+  consultado, o que resolve o legado sem migration) e serve `attachment` + `nosniff` + CSP `sandbox
+  allow-downloads` nas 4 rotas. (3) *scanner default sempre clean*: morto em **produção e staging** — registro
+  único com default por `NODE_ENV` e gate de BOOT que recusa `EVIDENCE_SCANNER=noop` em produção
+  (`fly.staging.toml:31` já declara `NODE_ENV=production`).
+  **Por que não `fechado`:** com `noop` sendo o default de `development`/`test` POR DESENHO, o mecanismo (3)
+  segue verdadeiro fora de produção. Residual com dono: `P-O6R-B07B-SCANNER-AV-REAL` (antivírus real = serviço
+  externo → junta-5) e a quarentena. O fechamento a `fechado` é contrato do bloco de AV.
+  **Além do enunciado**, porque a auditoria do plano encontrou no caminho: as vias V4 (anexo de checklist) e V5
+  (foto de dano) **não tinham scanner NENHUM** — nem Noop — e passam a ter; e a leitura por chave ganhou guard
+  de prefixo de tenant nos 4 resolvers (`storage-key-scope.ts`), fechando **por herança de chamada** o vazamento
+  cross-tenant do owner-portal, sem tocar `owner-portal/**` nem `impound/**` (PROIBIDOS no escopo).
+  **Prova:** 121 casos novos permanentes; vermelho-controle **executado** na base `e55245a` (6/6 asserções
+  invertidas passaram lá) e 7 mutações registradas, entre elas a M-B9, que reabre o ataque de clonagem da marca.
 - Severidade: P1        Confiança: 0.99
 - Categoria: SEC
 - Módulo: evidence / attachments / mobile        Lente: A2
@@ -874,5 +893,20 @@ reconciliação pós-merge, sem alterar as dívidas em si.)
   investidor. **A reversão do SEC-002 é a mesma lição aplicada a nós mesmos** — desta vez pegou-se um
   fechamento declarado enquanto 9 rotas seguiam abertas. `Ω6R-SEC-004` (a terceira linha do `B-O6R-07`)
   **segue ABERTO** — é o sub-bloco 07b, e o gate da CHECKLIST P1 só se satisfaz com os DOIS mergeados.
+- **Atualização 2026-09-06 (B-O6R-07b):** `Ω6R-SEC-004` (P1) passa de **ativo** a **parcialmente superado**
+  na autoria — seção acima, com a forma de cada prova. Distribuição por STATUS, lida do JSONL no dia e não
+  copiada: **P0 17 (11 fechados · 1 parcialmente superado · 5 ativos) · P1 15 (2 fechados · 3 parcialmente
+  superados · 10 ativos)**. **O contador do painel NÃO se move:** `p1_fechados` continua **2** e `p1_abertos`
+  continua **13** (o guard conta como fechado só o que tem hash de merge, e "aberto" é total − fechados —
+  parcialmente superado é aberto). Em `production_readiness.aguardando_merge` fica **vazio**: não se aguarda
+  merge do que não se declara fechado. **É o bloco pagando por escolher a leitura honesta** — declarar
+  `fechado` moveria o número do painel, e seria afirmar o que não é verdade em `development`/`test`, onde o
+  scanner `noop` continua sendo o default POR DESENHO. A porta por onde essa honestidade pode ser desfeita
+  amanhã está nomeada: se alguém promover o achado a `fechado` no backfill pós-merge **sem o antivírus real**,
+  o guard **não pega** (ele só exige hash de merge, não exige AV). O contrato é do bloco de AV
+  (`P-O6R-B07B-SCANNER-AV-REAL`).
+  Com isso o `B-O6R-07` fecha as suas TRÊS linhas: SEC-002 parcialmente superado no 07a (#369, residual em
+  `P-O6R-SUBRECURSO-OBJECT-SCOPE`), SEC-003 fechado no 07a (#369), SEC-004 parcialmente superado no 07b. O gate
+  da CHECKLIST P1 passa a depender **só de `B-O6R-06`**.
 - **O veredito da J-6R segue integral: REPROVADO PARA PRODUÇÃO** — `deploy_bloqueado: true`. Fechar 5 de 15
   P0 não move o veredito, e fechar achado não libera deploy: só junta libera, com ata.

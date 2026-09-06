@@ -531,3 +531,396 @@ nova é um escritor a mais que precisa **lembrar** de tomar um lock — e é iss
 
 **Escolha de arranjo é de quem planeja** (`D-JUNTA-SEPARACAO-DE-PAPEIS`): esta PD registra o custo e o limite
 de cada opção, não elege uma.
+
+---
+
+## PD-O6R-B07B-MAGIC-BYTES — tabela de assinaturas do sniff in-house (JPEG/PNG/WebP/PDF) (2026-09-06)
+
+Rodada Ω6R · B-O6R-07b · **RESOLVIDO — NÃO dispara junta-5** (módulo in-house, ZERO dependência, nenhum
+serviço externo). Pesquisa `agente-pesquisador-web`, 11 fontes (≥3 normativas), regra da dúvida §C7.3,
+registrada **antes** da decisão e antes da primeira linha de `content-sniff.ts`.
+
+**Contexto:** o bloco entrega um sniff de magic bytes próprio que reconhece **exatamente 4** tipos e devolve
+`undefined` para todo o resto. As dúvidas: quantos bytes por assinatura, se o 4º byte do JPEG entra, se IHDR
+(PNG) e o fourCC do chunk (WebP) entram, se o `%PDF-` exige offset 0 ou tolera lixo à frente, se vale checar
+trailer, e o que fica de fora.
+
+### 1. Achados, um por pergunta
+
+**(1) JPEG — a assinatura é `FF D8 FF`, e o 4º byte NÃO entra.** Três referências independentes convergem:
+o WHATWG define o padrão como `FF D8 FF` / máscara `FF FF FF` — três bytes, "o marcador SOI do JPEG seguido
+do byte indicador de outro marcador"; o `file(1)` tem a entrada catch-all
+`0 belong&0xffffff00 0xffd8ff00 JPEG image data`, cuja máscara **zera deliberadamente o 4º byte**; e o
+`file-type` (líder do domínio em JS) faz `check([0xFF,0xD8,0xFF])` e só consulta o offset 3 para desempatar
+JPEG-LS, nunca para aceitar/rejeitar JPEG. Se o 4º byte fosse exigido, a allowlist honesta não seria {E0,E1}:
+teria de conter todo marcador legal — `E0` JFIF, `E1` Exif/XMP, `E2` ICC, `EE` Adobe/APP14, `DB` DQT-primeiro,
+`C0`–`CF` SOF/DHT, `FE` COM-primeiro, `DD` DRI — **e ainda `FF`**, porque T.81 §B.1.1.2 permite qualquer
+número de *fill bytes* `0xFF` antes de um marcador. Ou seja: a allowlist correta é "quase tudo", e a incorreta
+rejeita JPEGs legítimos. Valor de segurança: **nulo** — o 4º byte é escolhido pelo atacante ao custo de 1 byte.
+
+**(2) PNG — os 8 bytes da assinatura; IHDR NÃO entra.** RFC 2083 §3.1: "The first eight bytes of a PNG file
+always contain the following (decimal) values: 137 80 78 71 13 10 26 10" = `89 50 4E 47 0D 0A 1A 0A`. O W3C
+PNG 3rd ed. §5.2 repete os mesmos 8 bytes; §11 acrescenta "The IHDR chunk shall be the first chunk in the PNG
+datastream". **Custo/benefício da checagem de IHDR:** custo = min-buffer sobe de 8 → 16; benefício de
+segurança = **zero**, porque esses 8 bytes extras são copiáveis pelo atacante com o mesmo esforço dos 8
+primeiros. O WHATWG, o `file(1)` e o `file-type` param na assinatura de 8 bytes.
+
+**(3) WebP — 14 bytes (WHATWG), com `VP` em 12-13.** A spec do contêiner (Google) fixa: offsets 0-3 = `RIFF`,
+4-7 = tamanho uint32 **little-endian** (variável), 8-11 = `WEBP` — cabeçalho de 12 bytes. Em 12-15 vem o
+fourCC do primeiro chunk, e a spec é explícita: os três canônicos são **`VP8 `** (`56 50 38 20` — "the fourth
+character in the 'VP8 ' FourCC is an ASCII space (0x20)"), **`VP8L`** (`56 50 38 4C`) e **`VP8X`**
+(`56 50 38 58`). O WHATWG resolve sem allowlist: padrão de 14 bytes com os 4 do tamanho curinga e **`56 50`
+(`VP`) em 12-13** — dois bytes comuns aos três fourCC, que cobrem os três com uma comparação só, não quebram
+em variante futura `VP8?`, e ainda são 2 bytes mais estritos que o `file-type` (que só verifica `WEBP` no 8).
+
+**(4) PDF — `%PDF-` em offset 0 ESTRITO. Sem tolerância.** ISO 32000-1 §7.5.2: *"The first line of a PDF file
+shall be a header consisting of the 5 characters %PDF– followed by a version number of the form 1.N"* — a
+norma diz **primeira linha**, isto é, offset 0. A tolerância de ~1024 bytes é **leniência histórica de
+leitor** (nota da Adobe: "Acrobat viewers require only that the header appear somewhere within the first 1024
+bytes"), não requisito de conformidade — e é precisamente ela que a Glasswall documenta como o habilitador dos
+poliglotas imagem+PDF: *"Due to this tolerance in the header location, it opens the door to other file headers
+being introduced within the first 1KB."* As duas referências de implementação concordam com o offset 0: o
+WHATWG lista o padrão `25 50 44 46 2D` com **"Leading bytes to be ignored: None"**, e o `file-type` faz
+`checkString('%PDF')` na posição 0, sem varredura.
+**O argumento decisivo é de tipo, não de compatibilidade:** varrer 1024 bytes faz um arquivo que começa com
+`FF D8 FF` — JPEG válido pela nossa própria tabela — casar **também** com PDF. Quem perguntar "é imagem?" ouve
+sim; quem perguntar "é PDF?" ouve sim. Isso é confusão de tipo fabricada pelo próprio validador. Com offset 0
+em todas as quatro entradas, **os primeiros bytes ficam mutuamente exclusivos** (`FF` · `89` · `52` · `25`):
+nenhum buffer casa com dois tipos, a ordem da tabela vira irrelevante e o poliglota
+imagem-com-cabeçalho-PDF-deslocado é rejeitado sem regra especial.
+*Consequência aceita e declarada:* PDFs com lixo à frente (que o Acrobat abriria) são rejeitados. É o
+comportamento desejado — arquivo não conforme à §7.5.2 não deve entrar por um caminho de upload.
+
+**(5) Trailer (`FF D9` / `IEND`) — NÃO entra.** Três razões, em ordem de peso:
+- **Falso-positivo é a regra, não a exceção.** A spec Exif/DCF determina que leitores operem sem interrupção
+  mesmo havendo dado gravado após o EOI da imagem primária, e que dado desconhecido após o EOI seja pulado.
+  Na prática: thumbnails embutidos produzem múltiplos pares SOI/EOI; aparelhos OPPO gravam duas estruturas
+  JFIF completas; Google Motion Photo anexa um MP4 inteiro depois do EOI. "Bytes depois do `FF D9`" é **JPEG
+  legítimo de câmera**, não indício de ataque.
+- **Valor de segurança quase nulo contra o que existe.** As classes de poliglota documentadas pela Glasswall
+  põem a carga **dentro** de estruturas legítimas — chunk `tEXt` do PNG, segmento `COM` do JPEG, bloco de
+  comentário do GIF — todas **antes** do trailer. Uma checagem de trailer não vê nenhuma delas.
+- **Custo real de arquitetura.** Exige o buffer inteiro em memória (ou um segundo seek até o fim), quebrando
+  um sniff de cabeça (14 bytes) e o caminho de streaming do upload.
+A defesa correta contra carga anexada é outra camada: re-encode/CDR, `Content-Disposition: attachment`,
+`X-Content-Type-Options: nosniff` e servir de origem sem script — nunca 2 bytes no fim do arquivo.
+
+**(6) O que NUNCA entra — e por quê.**
+- **SVG (`image/svg+xml`)** — dois vetos independentes. (a) *Não é sniffável por prefixo*: é XML, pode começar
+  com BOM, `<?xml`, comentário, DOCTYPE, whitespace arbitrária ou direto `<svg`; o WHATWG **não tem padrão
+  algum** para `image/svg+xml`. (b) *É scriptável*: carrega `<script>`, handlers e XXE — o próprio WHATWG
+  registra que "it is critical that the rules for distinguishing if a resource is text or binary never
+  determine the computed MIME type to be a scriptable MIME type, as this could allow a privilege escalation
+  attack".
+- **HTML** — mesmo veto (b). Além disso, os padrões de HTML do WHATWG são os únicos da tabela que **ignoram
+  whitespace à frente**, ou seja, exigiriam abandonar a regra de offset 0 que sustenta a exclusividade mútua.
+- **HEIC/HEIF/AVIF** — não é prefixo. O `ftyp` fica no **offset 4**, precedido de um tamanho de box big-endian
+  de 4 bytes (byte 0 não é constante → destrói a exclusividade mútua), e a identificação exige ler a *major
+  brand* **e** a lista de *compatible brands* — é caminhada de box ISO-BMFF, não comparação de prefixo.
+- **GIF** — fora dos 4 tipos exigidos; e é o cavalo de batalha histórico do poliglota (GIFAR; blocos de
+  comentário que podem aparecer "at any point in the Data Stream").
+- **ZIP (`50 4B 03 04`)** — contêiner de entradas arbitrárias (DOCX/XLSX/JAR/APK), logo casar o prefixo **não
+  diz nada** sobre o conteúdo. Pior: ZIP é lido a partir do **fim** (central directory), então a checagem de
+  prefixo é estruturalmente irrelevante para o que o descompactador vai fazer.
+- **`MZ` (`4D 5A`, executável PE)** — o motivo é **de modelo, não de tipo**: este módulo é uma **allowlist**, e
+  tudo que não está nela já retorna `undefined`. Acrescentar `MZ` como entrada "conhecida e rejeitada"
+  transformaria a allowlist em denylist — inversão do modelo de segurança e superfície infinita de bypass.
+
+**(7) Buffer menor que a assinatura → `undefined`. Confirmado.** É o que a norma manda: o algoritmo de *pattern
+matching* do WHATWG começa com **"If input's length is less than pattern's length, return false."** Guard de
+comprimento **explícito, antes de qualquer indexação** — em JS ler além do fim de um `Buffer` devolve
+`undefined` em vez de lançar, então uma comparação ingênua "funcionaria por acidente" e quebraria no dia em que
+alguém trocasse por `subarray()`/`readUInt32BE()`. Nunca lançar exceção: retornar `undefined`.
+
+### 2. Limite honesto desta decisão
+
+OWASP é explícito sobre o teto: *"In conjunction with content-type validation, validating the file's signature
+can be checked and verified against the expected file that should be received. **This should not be used on
+its own, as bypassing it is pretty common and easy.**"* Este sniff é **uma** camada — vale como allowlist de
+tipo e como recusa do `Content-Type` do cliente (que "is provided by the user, and as such cannot be trusted,
+as it is trivial to spoof"). Ele **não** prova que o arquivo é válido, **não** prova que não é poliglota e
+**não** substitui armazenamento fora do document root, `nosniff` + `Content-Disposition` na entrega, nem
+re-encode/CDR. Registrar isso é parte da decisão.
+
+### 3. Fontes (o que cada uma fundamentou)
+
+1. **WHATWG MIME Sniffing Standard** (mimesniff.spec.whatwg.org) — padrão `FF D8 FF`/máscara `FF FF FF`
+   (JPEG, 3 bytes); assinatura PNG de 8 bytes; padrão WebP de 14 bytes com máscara curinga no tamanho e `VP`
+   em 12-13; padrão PDF `25 50 44 46 2D` com **"Leading bytes to be ignored: None"**; ausência total de padrão
+   para `image/svg+xml` e HEIC; whitespace ignorada só nos padrões de HTML; a regra "input's length < pattern's
+   length ⇒ return false"; e a justificativa de segurança do *sniff-scriptable* flag. Também a assinatura ZIP.
+2. **RFC 2083 §3.1 (PNG)** (rfc-editor.org/rfc/rfc2083.txt) — os 8 bytes `137 80 78 71 13 10 26 10` e a
+   exigência de IHDR como primeiro chunk.
+3. **W3C PNG (3rd ed.) §5.2/§11** (w3.org/TR/png-3/) — confirmação normativa moderna: mesma assinatura de 8
+   bytes; "The IHDR chunk shall be the first chunk"; layout do IHDR — base do custo/benefício que o rejeitou.
+4. **Google — WebP Container Specification** (developers.google.com/speed/webp/docs/riff_container) — layout
+   exato `RIFF`(0-3) + tamanho LE(4-7) + `WEBP`(8-11); os três fourCC canônicos, com a nota explícita de que o
+   4º caractere de `VP8 ` é espaço ASCII 0x20.
+5. **`file(1)` / libmagic — `magic/Magdir/jpeg`** (github.com/file/file) — a entrada catch-all
+   `0 belong&0xffffff00 0xffd8ff00`, cuja máscara zera o 4º byte: prova de que a ferramenta de referência do
+   domínio **não** testa o 4º byte para identificar JPEG.
+6. **`file-type` v19.6.0** (github.com/sindresorhus/file-type) — produto líder do domínio em JS:
+   `check([0xFF,0xD8,0xFF])` com o offset 3 só para JPEG-LS; PNG de 8 bytes; `WEBP` no offset 8; e
+   **`checkString('%PDF')` em offset 0, sem varredura** — nenhuma implementação de referência aplica a
+   tolerância de 1024 bytes.
+7. **ISO 32000-1:2008 §7.5.2** (via PDF Association / LoC FDD000277) — *"The first line of a PDF file shall be
+   a header consisting of the 5 characters %PDF–…"*: a base normativa do offset 0; e a leniência "within the
+   first 1024 bytes" como comportamento de **leitor Acrobat**, não de conformidade.
+8. **Glasswall — "Polyglot files: unmasking images & PDF"** — a tolerância de 1KB como habilitador direto do
+   poliglota; e que a carga real mora **dentro** de `tEXt`/`COM`/comentário — argumento que derrubou o trailer.
+9. **Exif/DCF + prática de câmeras** (media.mit.edu deepview; NVISO Labs) — dado após o EOI é **legítimo e
+   comum** (thumbnails com múltiplos SOI/EOI, duplo JFIF de OPPO, MP4 do Motion Photo), e a spec manda pular.
+10. **OWASP File Upload Cheat Sheet** — allowlist obrigatória; `Content-Type` do cliente não é confiável; e o
+    teto explícito ("should not be used on its own").
+11. **ITU-T T.81 §B.1.1.2** (w3.org/Graphics/JPEG/itu-t81.pdf) — marcador = `FF` + byte ≠ `00` e ≠ `FF`,
+    **mas** qualquer marcador pode ser precedido de *fill bytes* `0xFF`: até `FF` seria um 4º byte legal, o que
+    fecha o caso contra a allowlist de 4º byte.
+
+### 4. DECISÃO
+
+Módulo **allowlist**, ZERO dependência, **offset 0 estrito em todas as entradas**, sem checagem de trailer,
+sem tolerância de deslocamento, retorno `undefined` (nunca exceção) para tudo o mais.
+**Cabeça a ler do arquivo: 14 bytes** (a maior assinatura). Cada entrada confere o próprio comprimento antes
+de indexar.
+
+| Tipo devolvido | Offset | Bytes exatos (hex) | ASCII | Bytes comparados | Min. buffer | 4º byte / chunk |
+|---|---|---|---|---|---|---|
+| `image/jpeg` | 0 | `FF D8 FF` | — | 3 | **3** | **NÃO se verifica.** Qualquer valor em `buf[3]` é aceito (inclusive `00` e `FF`). |
+| `image/png` | 0 | `89 50 4E 47 0D 0A 1A 0A` | `\x89PNG\r\n\x1a\n` | 8 | **8** | **IHDR NÃO se verifica.** Bytes 8-15 ignorados. |
+| `image/webp` | 0 | `52 49 46 46` · `?? ?? ?? ??` · `57 45 42 50` · `56 50` | `RIFF` + 4 curingas + `WEBP` + `VP` | 10 (offsets 0-3, 8-11, 12-13) | **14** | Offsets 4-7 = **curinga** (tamanho uint32 LE). Offsets 12-13 = `56 50` (`VP`) obrigatórios; 14-15 **NÃO se verificam** — `VP` já cobre `VP8 `, `VP8L` e `VP8X`. |
+| `application/pdf` | 0 | `25 50 44 46 2D` | `%PDF-` | 5 | **5** | Versão (`1.N` / `2.0`) **NÃO se verifica**. **Offset 0 estrito** — nenhuma varredura, nenhum byte ignorado à frente. |
+
+**Regras do módulo:**
+1. `buffer.length < min. buffer da entrada` ⇒ aquela entrada não casa. Nada casou ⇒ **`undefined`**. Nunca
+   lançar.
+2. **Ordem de avaliação é irrelevante** — os primeiros bytes das 4 entradas são mutuamente exclusivos
+   (`FF` · `89` · `52` · `25`), logo nenhum buffer casa com duas entradas. Primeiro casamento vence.
+3. Guard de comprimento **explícito**, antes de qualquer indexação.
+4. A função decide **só pelos bytes**: não lê nome de arquivo, extensão nem `Content-Type` declarado.
+5. WebP: os offsets 4-7 nunca são comparados (tamanho, uint32 **little-endian**).
+
+**O QUE NÃO ENTRA**
+
+| Não entra | Motivo determinante |
+|---|---|
+| **4º byte do JPEG** (E0/E1/DB/EE/E2-EF/C0…) | A allowlist correta seria "quase todo marcador" + `FF` (fill bytes, T.81 §B.1.1.2) ⇒ só gera falso-negativo. `file(1)` mascara esse byte; WHATWG e `file-type` não o usam. Valor de segurança nulo. |
+| **`IHDR` do PNG** (offsets 8-15) | Min-buffer 8→16 sem ganho: os 8 bytes extras são tão forjáveis quanto os 8 primeiros. |
+| **fourCC completo do WebP** (offsets 14-15) | `VP` em 12-13 já cobre os 3 canônicos, sem allowlist para manter. |
+| **Tolerância de offset no PDF (1024 bytes)** | Leniência de leitor Acrobat, não conformidade ISO 32000-1 §7.5.2. É o habilitador documentado do poliglota imagem+PDF e destruiria a exclusividade mútua dos primeiros bytes. |
+| **Versão do PDF (`1.N` / `2.0`)** | Rejeitaria PDF 2.x e futuros. |
+| **Trailer `FF D9` (JPEG EOI) / `IEND` (PNG)** | Falso-positivo garantido (Exif/DCF permite e manda pular dado após EOI). Não vê os poliglotas reais, que ficam em `tEXt`/`COM`. Exige o arquivo inteiro em memória. |
+| **`image/svg+xml`** | Não tem prefixo fixo — WHATWG não tem padrão para ele; e é **scriptável** (XSS/XXE), classe que a norma proíbe alcançar por sniffing. |
+| **`text/html`** | Scriptável; e seus padrões ignoram whitespace à frente, incompatível com a regra de offset 0. |
+| **HEIC/HEIF/AVIF** | `ftyp` no offset 4 atrás de um tamanho de box arbitrário (byte 0 não constante ⇒ quebra a exclusividade mútua) e exige ler major brand + compatible brands. |
+| **GIF** | Fora dos 4 tipos exigidos; historicamente o veículo de poliglota (GIFAR). |
+| **ZIP (`50 4B 03 04`)** | Contêiner de conteúdo arbitrário; é lido a partir do **fim** ⇒ o prefixo não diz nada sobre o que será extraído. |
+| **`MZ` (`4D 5A`, PE)** | Motivo de **modelo**: a tabela é allowlist e tudo fora dela já é `undefined`. Entrada "conhecida e rejeitada" viraria denylist. |
+
+**Limite declarado (OWASP):** este sniff é **uma** camada. Não prova validade nem ausência de poliglota, e não
+substitui armazenamento fora do document root, `X-Content-Type-Options: nosniff`,
+`Content-Disposition: attachment`, origem sem script e/ou re-encode/CDR.
+
+**Onde a decisão foi implementada:** `src/modules/evidence/content-sniff.ts` (B-O6R-07b). As quatro
+divergências entre a tabela PROVISÓRIA do plano (§3.3) e esta decisão estão anotadas no cabeçalho do módulo.
+
+---
+
+## PD-O6R-B07B-DISPOSITION — `Content-Disposition` seguro ao servir arquivo de storage: nome não-ASCII, header injection e sniffing (2026-09-06)
+
+Rodada Ω6R · B-O6R-07b · **RESOLVIDO — NÃO dispara junta-5** (nenhuma dependência nova, nenhum serviço
+externo: tudo é header de resposta + built-in do `node:`). Pesquisa `agente-pesquisador-web`, **13 fontes** —
+normativas (RFC 6266 / 8187 / 9110, WHATWG Fetch+HTML) > produto líder do domínio
+(`jshttp/content-disposition`, que é o motor do `res.download`/`res.attachment` do Express; helmet) >
+MDN/MS Learn. Regra da dúvida §C7.3, registrada antes da primeira linha de `serve-verified-file.ts`.
+
+**Contexto:** o helper `sendVerifiedFile` serve bytes vindos do storage e precisa fechar o vetor "bytes hostis
+servidos **inline** com o MIME que o **cliente** declarou". O nome do arquivo é dado de usuário (upload) e vai
+para dentro de um header — logo, é entrada não-confiável num canal com framing por CRLF.
+
+### 1. O que pode e o que NUNCA pode dentro das aspas
+
+RFC 6266 §4.1: `filename-parm = "filename" "=" value | "filename*" "=" ext-value`, com
+`value = token / quoted-string`. A `quoted-string` é a do HTTP (RFC 9110 §5.6.4):
+
+```
+quoted-string = DQUOTE *( qdtext / quoted-pair ) DQUOTE
+qdtext        = HTAB / SP / %x21 / %x23-5B / %x5D-7E / obs-text
+quoted-pair   = "\" ( HTAB / SP / VCHAR / obs-text )
+```
+
+**Cabe sem escape:** HTAB, SP, `!`, %x23–%x5B, %x5D–%x7E, obs-text (%x80–FF). **Só via `quoted-pair`:** `"` e
+`\`.
+
+**NUNCA podem aparecer — é aqui que mora o header injection.** RFC 9110 §5.5: *"Field values containing CR,
+LF, or NUL characters are invalid and dangerous… a recipient of CR, LF, or NUL within a field value MUST
+either reject the message or replace each of those characters with SP before further processing."* CR/LF/NUL
+permitem **response splitting** (fabricar um segundo header a partir do nome do arquivo). Também ficam fora do
+`qdtext` os demais controles %x01–%x1F e %x7F. O `setHeader` do Node lança para valor fora de latin1 —
+**isso é a última linha de defesa, não a primeira**: quem saneia é o helper.
+
+**Além da gramática, o que a interoperabilidade proíbe (RFC 6266 Apêndice D):** evitar `\` (*"not all user
+agent implementations unescape it correctly"*) e evitar `%` seguido de dois hex-dígitos (*"as it can be
+interpreted as a percent-encoded sequence"* — MDN mede a divergência: Firefox e Chrome decodificam, Safari
+não). Somar o conselho do RFC 2183 §5 citado pela MDN: *"Any path information should be stripped."*
+
+**Consequência de projeto (é a decisão, não um detalhe):** em vez de escapar `"` e `\` com `quoted-pair`,
+**sanear o fallback para um conjunto que nunca precisa de escape** — assim nenhum `quoted-pair` é emitido e o
+conselho do Apêndice D é cumprido por construção, não por disciplina.
+
+**`attr-char` (RFC 8187 §3.2.1, que OBSOLETA o RFC 5987)** — o que **não** precisa de percent-encoding no
+`filename*`: `ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"`. Todo o
+resto vira bytes UTF-8 percent-encoded. **Armadilha de JS medida contra a ABNF:** `encodeURIComponent` **não**
+codifica `! ~ * ' ( )`. `!` e `~` são `attr-char` (podem ficar crus); **`* ' ( )` NÃO são** → precisam de
+codificação manual. Na direção oposta, ele **super-codifica** `# $ & + ^ | \`` — inofensivo.
+
+### 2. Ordem dos parâmetros — `filename` ANTES de `filename*`
+
+RFC 6266 §4.3: *"When both 'filename' and 'filename*' are present… recipients SHOULD pick 'filename*' and
+ignore 'filename'"* — o fallback nunca "vence" num UA moderno. E o Apêndice D é explícito sobre a ordem: o
+`filename` **deve vir antes** do `filename*`, *"due to parsing problems in some existing implementations"*. O
+`jshttp/content-disposition` faz exatamente isso.
+
+### 3. Fallback ASCII quando o nome é 100% não-ASCII
+
+O Apêndice D manda gerar o `filename` *"by substituting the US-ASCII equivalents"*, mas não diz o que fazer
+quando não sobra nada. O `jshttp/content-disposition` resolve com `replace(NON_LATIN1_REGEXP, '?')` — **e isso
+é um defeito para o nosso caso**: `?` é **reservado em nome de arquivo no Windows** (MS Learn lista
+`< > : " / \ | ? *`). Decisão: substituir por **`_`**; e se o fallback ficar vazio, reduzir-se a
+`_`/`.`/espaço, ou bater num **nome de dispositivo reservado** (`CON PRN AUX NUL COM1-9 LPT1-9`), usar
+**`arquivo`**, preservando a extensão quando ela for ASCII-alfanumérica. Nunca terminar em `.` nem em espaço.
+
+### 4. Efeito de `attachment` — CONFIRMADO: inerte em `fetch()`/XHR, ativo em navegação
+
+- **Navegação:** o HTML Standard põe o download no algoritmo de navegação — *"servers can respond with 204 or
+  205 status codes or with `Content-Disposition: attachment` headers, which cause navigation to abort"*.
+- **`fetch()`/XHR:** o Fetch Standard **não processa `Content-Disposition` em passo nenhum**. O corpo chega ao
+  JS como bytes; o header é **inerte para comportamento**.
+- **Corolário de segurança, que é o que importa aqui:** `attachment` protege **navegação**, não **subrecurso**.
+  `<img src>`, `<script src>`, `<link rel=stylesheet>` ignoram o header por completo. Portanto **`attachment`
+  sozinho NÃO fecha o vetor** — quem fecha é `Content-Type` derivado dos bytes + `nosniff`.
+
+### 5. `X-Content-Type-Options: nosniff` — o que impede, e o encaixe com ORB/CORB
+
+MDN / Fetch §3.6.1: bloqueia a resposta quando o destino é `script` e o MIME não é JavaScript, ou `style` e o
+MIME não é `text/css`; e *"prevents MIME type sniffing for all other response types, causing the browser to
+use the declared Content-Type without examining the response content."* É **ele** que torna o nosso
+`application/octet-stream` vinculante.
+
+**ORB (sucessor do CORB) — o caso do `<img src>` de origem cruzada:** requisição de `<img>` é `no-cors`, e o
+ORB decide se os bytes chegam ao processo do atacante. Safelist = JavaScript MIME, `text/css`,
+`image/svg+xml`; blocklist = HTML/JSON/XML; e há a lista *opaque-blocklisted-never-sniffed* (inclui
+`application/pdf`, `application/zip`, `text/csv`) que **nunca** é sniffada. O `nosniff` entra em dois pontos do
+algoritmo, e o efeito é **remover o escape-hatch de sniffing**: uma resposta nossa não pode mais ser
+"resgatada" para dentro de um `<img>` por parecer uma imagem.
+
+**Vale setar explicitamente mesmo com helmet global? SIM** — helmet o seta por default, e ainda assim: (a) o
+helper pode ser montado em router/harness onde helmet não está — garantia que só existe numa composição é
+garantia que não se testa por resposta; (b) torna a promessa **local e asseverável**; (c) `res.setHeader` com
+o mesmo valor é idempotente; (d) blinda contra mudança futura de ordem de middleware. O mesmo vale para
+`Cross-Origin-Resource-Policy: same-origin`.
+
+### 6. `Content-Security-Policy: sandbox` — ENTRA, com `allow-downloads`
+
+**O que compra:** o `sandbox` **pelado** aplica restrição máxima: sem `allow-same-origin` o documento recebe
+**origem opaca**, sem `allow-scripts` **não executa script**. A ameaça coberta: bytes que são HTML/SVG servidos
+com `Content-Type` não-HTML e alcançados por um caminho onde o `attachment` não se aplica ou foi removido
+(proxy, extensão, visualizador, futura rota de *preview*). Com origem opaca, mesmo renderizado o documento
+**não lê cookie/localStorage da origem do app nem scripta nela**. É literalmente o header que o
+`raw.githubusercontent.com` usa para servir conteúdo de usuário.
+
+**A armadilha (por isso NÃO é `sandbox` pelado):** `sandbox` sem `allow-downloads` **bloqueia download** — a
+MDN documenta o token `allow-downloads`, e o Chrome 83 passou a bloquear download sob flag de sandbox. Como a
+razão de existir do helper é **fazer o download acontecer**, `sandbox` pelado trocaria defesa em profundidade
+por quebra de funcionalidade.
+
+**Ressalva honesta registrada:** não se encontrou frase normativa fixando se a CSP `sandbox` da **própria**
+resposta bloqueia o download **dessa mesma** resposta — o comportamento documentado do Chrome fala do *frame
+que inicia* o download. O `allow-downloads` torna a pergunta irrelevante a custo zero.
+
+### 7. `Content-Length`
+
+RFC 9110 §8.6: indica *"the size of the representation data in octets"*; SHOULD ser enviado quando o tamanho é
+conhecido. Valor que **discorda do corpo real é erro de framing** — truncamento/dessincronização, primitiva
+clássica de request smuggling/desync. Node: com `response.strictContentLength = true` a divergência lança
+`ERR_HTTP_CONTENT_LENGTH_MISMATCH`.
+
+### 8. O que NÃO foi medido
+
+- **Nada foi executado** pela pesquisa: zero teste de browser, zero requisição. Tudo é leitura de norma/doc.
+- **`test.greenbytes.de/tech/tc2231/`** (a matriz de interop de `Content-Disposition`) ficou **inacessível**
+  (certificado TLS). As afirmações de interop repousam no RFC 6266 Apêndice D e na MDN, não em matriz.
+- A interação CSP-`sandbox` × download da própria resposta não foi fixada por fonte normativa (§6).
+- Comportamento de UA legado com o fallback `_` versus `?` não foi verificado em navegador.
+
+### 9. Fontes
+
+RFC 6266 · RFC 8187 · RFC 9110 (§5.5, §5.6.4, §8.6) · WHATWG Fetch Standard (§3.6 nosniff; algoritmo ORB) ·
+annevk/orb · WHATWG HTML Standard (browsing-the-web) · MDN (`Content-Disposition`, `X-Content-Type-Options`,
+`CSP: sandbox`) · `jshttp/content-disposition` 0.5.4 (fonte) · Microsoft Learn (Naming Files, Paths, and
+Namespaces) · Node.js `http` docs (`setHeader`, `strictContentLength`) · helmet.js.org (headers default) ·
+content-security-policy.com/sandbox · RFC 2183 §5 (via MDN).
+
+### 10. DECISÃO
+
+**(a) A string do `Content-Disposition` e a regra de escape/percent-encoding**
+
+```
+Content-Disposition: attachment; filename="<fallback ASCII saneado>"; filename*=UTF-8''<pct-encoded UTF-8>
+```
+
+Regra (nenhum `quoted-pair` é jamais emitido — o escape é substituído por SANEAMENTO):
+
+```
+0) name = NFC(raw); name = ultimo segmento de split(name, /[\/\\]/)   # basename: mata "../" e "C:\"
+   name = remove(name, /[\u0000-\u001F\u007F]/)                       # MATA CR/LF/NUL (RFC 9110 §5.5)
+   name = trim(name)
+1) ext = encodeURIComponent(name)
+   ext = replace(ext, /['()*]/, c -> "%" + hex2upper(codePoint(c)))   # ' ( ) * NAO sao attr-char
+2) fb = replace(name, /[^\x20-\x7E]/, "_")        # nao-ASCII -> "_"  (NUNCA "?": reservado no Windows)
+   fb = replace(fb,   /["\\%\/<>:|?*]/, "_")      # " \ sairiam do qdtext; % e ambiguo; o resto e reservado
+   fb = colapsa espacos; tira "." e espaco das pontas; trunca a 100 preservando ".ext"
+   se a BASE de fb (antes da ultima extensao) for vazia/so [._ ], ou fb for nome reservado do Windows:
+      fb = "arquivo" + (extensao ASCII-alfanumerica de name, se houver)
+3) return 'attachment; filename="' + fb + '"; filename*=UTF-8\'\'' + ext
+```
+
+*(Ajuste feito na implementação, sobre a redação original desta PD: a checagem de degeneração olha a **BASE**
+do nome, não o nome inteiro — senão `🚚📸.png` produziria `filename="____.png"`, uma fileira de placeholders
+tão pouco informativa quanto `____`. O nome íntegro continua no `filename*`.)*
+
+Invariantes asseridos por teste: o header nunca contém `\r`, `\n`, `\0`; nunca contém `\` nem `%` dentro das
+aspas; `filename=` aparece **antes** de `filename*=`; nome só-emoji produz `arquivo[.ext]`; nome com `"` ou
+`..\..\` produz fallback sem aspas e sem separador de caminho.
+
+**(b) Headers que o helper seta, nesta ordem** (a ordem entre campos de nomes diferentes não tem efeito
+semântico — RFC 9110 §5.3; é ordem de documentação e de teste):
+
+| # | Header | Valor | Por quê |
+|---|---|---|---|
+| 1 | `Content-Type` | tipo **derivado dos bytes verificados**; `application/octet-stream` quando não há assinatura | **nunca** o MIME declarado pelo cliente — é o vetor do bloco |
+| 2 | `X-Content-Type-Options` | `nosniff` | torna o (1) vinculante; fecha o escape-hatch de sniffing do ORB |
+| 3 | `Content-Disposition` | `attachment; filename="…"; filename*=UTF-8''…` | força download em navegação; nome íntegro sem injeção |
+| 4 | `Content-Security-Policy` | `default-src 'none'; sandbox allow-downloads` | origem opaca + sem script se algum dia renderizar |
+| 5 | `Cross-Origin-Resource-Policy` | `same-origin` | mata embed de origem cruzada antes da heurística de ORB |
+| 6 | `Cache-Control` | `private, no-store` | arquivo é tenant-scoped e auth-gated |
+| 7 | `Content-Length` | tamanho conhecido | RFC 9110 §8.6 |
+
+Os itens 2 e 5 já são default do helmet: são setados **explicitamente mesmo assim** (idempotente, custo zero).
+
+**Divergência declarada entre a PD e a implementação, e por quê.** A PD recomenda setar `Content-Length`
+**só** a partir do buffer em mãos, e **omiti-lo** quando o corpo for um fluxo. A implementação preserva o
+§3.5(5) do plano ("`Content-Length` de `sizeBytes` quando conhecido") **e** fecha o risco que a PD nomeia com
+o mecanismo que a própria PD cita: liga `response.strictContentLength = true` sempre que declara o header, de
+modo que divergência entre o declarado e o corpo real vira `ERR_HTTP_CONTENT_LENGTH_MISMATCH` e a resposta
+morre, em vez de entregar bytes dessincronizados. Motivo de manter o header: o aceite D1 do plano exige
+`content-length` nas 4 rotas, e o provider local devolve fluxo. Registrado aqui em vez de escolhido em
+silêncio (§A2).
+
+**(c) CSP `sandbox`: ENTRA** — como `default-src 'none'; sandbox allow-downloads`. É a única camada que
+continua valendo se o `Content-Disposition` for ignorado no caminho; `default-src 'none'` corta qualquer
+subrecurso (sem canal de exfiltração). **Não pelado:** `sandbox` sem `allow-downloads` bloqueia o download,
+que é a função do helper; `allow-downloads` neutraliza isso sem devolver `allow-scripts` nem
+`allow-same-origin`, que são os tokens que importam para a defesa.
+
+**Onde a decisão foi implementada:** `src/modules/evidence/serve-verified-file.ts` (B-O6R-07b), usado pelos 4
+routers de download (E1–E4). E5 (owner-portal) não é tocada — ela já re-codifica os bytes por Jimp.

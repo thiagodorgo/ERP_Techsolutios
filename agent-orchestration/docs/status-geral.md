@@ -4167,3 +4167,38 @@ local" e mensagens seguras.
 Validacao local: check OK, build OK, test:smoke 44/44 (33 -> 44). Backend e
 mobile nao tocados. KPIs nao alterados (C3) — publicacao via B-124K apos
 avaliacao humana.
+
+## B-O6R-07b (2026-09-06) — `fix/o6r07b-uploads` — Ω6R-SEC-004 parcialmente superado
+
+Sub-bloco 07b do `B-O6R-07`, o último P1 da pendência-mãe `P-O6R-B07`. Fecha o achado
+`Ω6R-SEC-004` ("scanner default sempre clean, MIME vem do cliente, download inline com esse
+MIME") como **parcialmente_superado**: dois dos três mecanismos morrem em TODO ambiente, e o
+terceiro morre em produção e staging.
+
+Entregue, nas **5 vias de ingresso de bytes** e nas **4 rotas de download**: gate único de
+conteúdo (`src/modules/evidence/upload-gate.ts`) com sniff de assinatura in-house (tabela da
+`PD-O6R-B07B-MAGIC-BYTES`, offset 0 estrito, ZERO dependência) rodando antes do scanner; marca
+de verificação com identidade por INSTÂNCIA (objeto congelado + WeakMap privado, fatos lidos do
+registro) — o desenho anterior foi quebrado por execução pelo `critico-adversarial` com um
+spread de uma linha; scanner fail-closed por `NODE_ENV` (`production` → `unavailable`), com
+`noop` recusado no BOOT em produção; `verification` obrigatória no tipo de entrada dos 3
+providers de storage, de modo que chamador sem ela **não compila** e quem burla o compilador
+**não grava**; egresso com tipo re-derivado dos BYTES + `attachment` + `nosniff` + CSP
+`sandbox allow-downloads` (forma da `PD-O6R-B07B-DISPOSITION`); e guard de prefixo de tenant nos
+4 resolvers de download, que fecha **por herança de chamada** o vazamento cross-tenant do
+owner-portal, sem tocar `owner-portal/**` nem `impound/**` (ambos proibidos no escopo).
+
+Duas das cinco vias — anexo de checklist e foto de dano — **não tinham scanner nenhum**, nem
+Noop. ZERO dependência nova, ZERO migration.
+
+Validação: `npm run check` / `lint` / `build` OK · suíte backend **2936/2938** (`ec=0`, 2 skips
+declarados), contra baseline **2815/2817** medido por execução num worktree separado da base
+`e55245a` · `npm --prefix frontend run check` e `build` OK · 121 casos novos permanentes ·
+vermelho-controle **executado** na base (6/6 asserções invertidas passaram lá) · 7 mutações
+registradas. Frontend e mobile **não tocados**. KPIs atualizados no próprio PR (§C3): `2936/2938`,
+`blocks_completed` 160 → 161, `mvp_*` intocados.
+
+**Consequência operacional declarada:** a partir do merge, **produção e staging respondem 503 a
+todo upload** até existir antivírus real — `P-O6R-B07B-SCANNER-AV-REAL` (ALTA, junta-5) e
+`P-O6R-B07B-STAGING-SEM-UPLOAD` (agenda, decisão do dono). O gate da CHECKLIST P1 passa a
+depender **só de `B-O6R-06`**.
