@@ -2636,8 +2636,42 @@ banco". Vizinhas na mesma condição: `tests/cheques.test.ts:59-65`, `tests/fina
 **Bloqueia (todos os seis):** feature nova em financeiro (lançamentos, títulos, cheques, fechamento,
 conciliação, faturamento). O P1 `Ω6R-QUA-003` vem **antes** de nova feature financeira, por deliberação da
 J-6R — não depois.
-- status: ABERTA — 5 P0 + 1 P1. Rascunho arquitetural correlato: `docs/revisoes/O6R/D-002-uow-outbox.md`
-  (**pauta do dono, não decisão**).
+**FECHAMENTO em 2026-09-06 — ressalva A3 do `porteiro-pos-merge` de `ed0a692`.** A linha de status abaixo
+dizia `ABERTA — 5 P0 + 1 P1` enquanto os **seis** achados que esta entrada nomeia estavam `fechado` no
+`achados.jsonl` e contados como fechados no painel. Achado por quem **não** escreveu este fechamento
+(§C7.4-bis). Texto acima **intocado** (§A2).
+
+**Os seis, medidos no `achados.jsonl` deste head** — todos `status: fechado`, `fechado_em: 2026-09-05`,
+`fechado_por: "B-O6R-02 ciclo 5 (PR #371, 99f1840)"`, com hash de merge (o que o guard
+`tests/kpi-achados-paridade.test.ts` chama de `fechadoNaMain`):
+
+| achado | severidade | estado |
+|---|---|---|
+| `Ω6R-DIN-001` · `DIN-002` · `DIN-003` · `DIN-004` · `DIN-008` | P0 (5) | **fechado** por #371 (`99f1840`) |
+| `Ω6R-QUA-003` | P1 | **fechado** por #371 (`99f1840`) |
+
+O bloco `B-O6R-02` foi ao **ciclo 5** (teto do §C7.4), aprovado **3×0** pela junta e mergeado no **#371**;
+o porteiro pós-merge dele e a reavaliação pós-#376 estão em `votos/B-O6R-02-ciclo5/`.
+
+**O que esta entrada deixa de bloquear, e o que NÃO deixa.** O `Bloqueia (todos os seis)` acima —
+*feature nova em financeiro* — **cai**, porque os seis fecharam. O que **permanece**, com pendência
+**própria** e dono próprio, e por isso não justifica manter esta guarda-chuva aberta:
+
+- `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` — o vermelho ambiental da canônica 1 (exige `src/database/prisma.ts`);
+- `P-O6R-ARNES-ISOLAMENTO` e suas emendas — o vazamento com **tabelas** nomeadas e **arquivo produtor
+  não**, matéria da trilha do arnês;
+- `P-O6R-B02-SUITES-LIST-CI` e demais residuais já registrados individualmente.
+
+Fechar a guarda-chuva **não** fecha nenhum deles: cada um responde por si, que é a razão de terem sido
+destacados. Manter esta entrada ABERTA com os seis achados fechados fazia o índice publicar
+`BLOQUEIA o financeiro` sem achado aberto que o sustentasse — sinal que não significa o que promete.
+
+- **status:** FECHADA em 2026-09-06 · **fechado por:** ressalva A3 do `porteiro-pos-merge` de `ed0a692`,
+  escrita por outro papel (§C7.4-bis) · **evidência:** os 6 achados `fechado` com hash de merge `99f1840`
+  no `achados.jsonl`, espelhados em `production_readiness.fechados` e confirmados pelo guard 6/6 ·
+  **severidade:** —  · **dono:** encerrado. Rascunho arquitetural correlato:
+  `docs/revisoes/O6R/D-002-uow-outbox.md` (**pauta do dono, não decisão**). Texto de status anterior,
+  preservado (§A2): *"status: ABERTA — 5 P0 + 1 P1"*.
 
 ## P-O6R-B03 (2026-08-14) — `fix/expense-sync-atomic` — Ω6R-DIN-009 (P0) + QUA-001 (P1) — **BLOQUEIA despesas/RDV e mobile**
 
@@ -6751,7 +6785,7 @@ entrada dizia "6" e omitia `#372` e `#376` — corrigido por medição de cadeir
 | #375 | `1a7ad4d` | **não** |
 | #376 | `3c29189` | **não** — só reavaliação de porteiro pós-merge |
 | #377 | `9919f4d` | **não** |
-| #378 (este) | — | **não** — dois pareceres de uma cadeira independente, não uma junta de 3 |
+| #378 | `ed0a692` | **não** — **três** passadas de uma cadeira independente (pré-merge, a 3ª LIBEROU) + o parecer do `porteiro-pos-merge` de `ed0a692`; nenhuma junta de 3. Os **quatro** corpos estão em `agent-orchestration/omega/juntas/votos/B-O6R-02-ciclo5-consolidado/` — persistidos DEPOIS do merge, pela ressalva **A2** daquele porteiro: eles não existiam no repo quando o #378 mergeou, que é a mesma classe `D-DURABILIDADE-BRANCHES-LOCAIS` que o **R1** do #378 acabara de pagar |
 
 Conferido: não existe `J-*.md` nem diretório em `votos/` para `#372` e `#376`; eles só aparecem
 **citados** em documentos de outros blocos.
