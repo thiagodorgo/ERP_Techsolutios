@@ -315,3 +315,244 @@ o plano fica em condição de ir à junta.
 não toquei `src/`. Meu único arquivo neste worktree é este parecer.
 
 — `critico-adversarial`, 2026-09-06
+
+---
+
+# RODADA 2 (2026-09-06) — verificação da `EMENDA E1` (teto do §C7.4 atingido; encerro aqui)
+
+**Alvo:** `B-O6R-07b-plano.md` l.770–1054, commit **`2b9003a`**. **Escopo:** só os 8 achados da rodada 1 +
+a decisão nova que a emenda tomou (`parcialmente_superado`). Não re-litigo o que já validei em §2 (D1–D11).
+
+**Terreno, provado por mim e não herdado do coordenador:**
+- `git diff -U0 03f136e HEAD -- <plano>` → **um único hunk**: `@@ -766,0 +767,288 @@`; `--numstat` → `288  0`.
+- `git show 03f136e:<plano> | head -766 | sha256sum` **==** `git show HEAD:<plano> | head -766 | sha256sum`
+  (`93e18953effa1c0d…`). **Append-only comprovado** (§A2): o corpo não foi reescrito para caber na emenda.
+- `git diff --stat e55245a HEAD -- src/ tests/ frontend/ mobile/ prisma/` = **vazio**. Continua sem código.
+- `git status --short` limpo. Não toquei `demo/investidor`, `gov-descuido`, `san2-r`; nada em `src/`.
+
+## VEREDITO DA RODADA 2: **PLANO ROBUSTO** — o bloco pode gerar a primeira linha de código
+
+Os **8 achados fecham**, e os dois que passavam verdes com o defeito presente (A4, A5) fecham **por execução
+minha, não por promessa do plano**. Três notas residuais ficam registradas abaixo; nenhuma delas deixa aceite
+verde com defeito presente, nenhuma é premissa falsa, e nenhuma bloqueia o start.
+
+| # | Achado (rodada 1) | Rodada 2 | Como verifiquei |
+|---|---|---|---|
+| A1 | censo sem M5 | **FECHADO** | M5 entra com arquivo:linha e origem; pendência renomeada para a CLASSE; a alegação "M5 sem leitor" é **verdadeira** (medida por mim) |
+| A2 | "M2 servível por E1" falso; mitigação vazia | **FECHADO** | crédito retirado nominalmente; guard de tenant nos **4** resolvers, e provei que **não há caminho para `getObject` fora deles** |
+| A3 | staging condicional / remédio invertido | **FECHADO** | `fly.staging.toml:31` assumido; remédio errado removido; e as **duas** alegações novas da emenda conferem |
+| A4 | marca burlável por derivação | **FECHADO (executado)** | 6 rotas de clonagem recusadas contra o desenho novo; M-B9 reproduz o meu ataque de rodada 1 |
+| A5 | gate de boot lê 1 de 2 nomes de env | **FECHADO (executado por leitura de cadeia)** | equivalência do `??` provada; M-B8 é **a minha** mutação, não uma variante mais fácil |
+| A6 | tabela §7 erra o V4 | **FECHADO** | linha corrigida exatamente como medi |
+| A7 | "não compila" over-claim | **FECHADO** | fronteira escrita em 3 camadas; e medi que o C5 emendado **não gera falso-positivo** em `src/` hoje |
+| A8 | três pisos + rótulo M-D3 | **FECHADO COM NOTA** | piso único ≥89 confere na soma; a frase-ponte "+20 sobre o corpo" não reconcilia com o ≥65 |
+
+## R2·1 · A4 — **executado contra o desenho novo: os seis atalhos morrem, e o vermelho-controle funciona**
+
+Repliquei o desenho da E1·3 (objeto opaco `Object.freeze({})` sem propriedade nem `Symbol` em runtime +
+`WeakMap` privado + fatos lidos do **registro** + providers usando o **retorno**) e rodei contra ele o meu
+ataque de rodada 1 e os cinco irmãos:
+
+```
+$ node brand-weakmap.mjs ; echo "ec=$?"
+B7  spread          : recusado -> upload_not_verified:brand      <-- o MEU ataque da rodada 1
+B8  Object.assign   : recusado -> upload_not_verified:brand
+B9  Object.create   : recusado -> upload_not_verified:brand
+B10 structuredClone : recusado -> upload_not_verified:brand
+B10 JSON round-trip : recusado -> upload_not_verified:brand
+B11 Proxy(marca,{}) : recusado -> upload_not_verified:brand
+B12 reuso 2x mesmos : ACEITOU (mimeType=image/png)               <-- verde ESPERADO (marca não é one-shot)
+X1  marca de A + bufB: recusado -> upload_not_verified:bytes
+M-B9 spread (antigo): ACEITOU (mimeType=image/png)               <-- vermelho-controle: o desenho de conteúdo cai
+ec=0
+```
+
+Leitura: identidade por **instância** fecha a classe inteira de derivação — spread, `Object.assign`,
+`Object.create` (prototype não é identidade), `structuredClone`, round-trip JSON e `Proxy` (o proxy **é** outra
+chave de `WeakMap`). E **M-B9 é vermelho de verdade**: com a checagem por propriedade/`Symbol`, o meu spread
+volta a aceitar bytes hostis — ou seja, o aceite B7 não é decorativo, ele mede o que mudou.
+
+**Procurei o quarto atalho e não achei um que valha bloqueio.** Testei os dois candidatos que eu tinha:
+- **`Proxy` sobre o BUFFER** (hash veria A, escrita veria B): `createHash().update(proxy)` → **`TypeError:
+  The "data" argument must be … Buffer, TypedArray, or DataView`**. Não é vetor.
+- **Janela verify→write:** o assert é síncrono; o `writeFile` do provider acontece depois de um `await`
+  (`mkdir`). Medi que, se o MESMO `Buffer` for mutado nessa janela, grava-se conteúdo diferente do verificado
+  (`bytes gravados == verificados? false`, arquivo começando com `MZ`). **Não é achado**: em nenhuma das 5 vias
+  existe segundo detentor do buffer (busboy monta um por requisição). Registro como propriedade a declarar —
+  a marca prova *"estes bytes foram verificados no ato da chamada"*, não *"estes bytes foram gravados"* —,
+  não como defeito.
+
+## R2·2 · A5 — a cadeia é a mesma, o nome legado está coberto, e **M-B8 é a minha mutação, não uma mais fácil**
+
+Confirmei a equivalência que a emenda promete, por leitura da cadeia inteira:
+- `env.ts:520` — `const parsedEnv = envSchema.parse(process.env)`; o `superRefine` está em `env.ts:283`, no
+  MESMO schema. Logo o `value` do refinamento **é** o objeto que vira `parsedEnv`: a cadeia
+  `NEW ?? LEGACY ?? DEFAULT` que a emenda manda usar é byte-a-byte a de `l.548-551`. Não há transformação
+  entre uma e outra que pudesse divergir (`""` é impossível: as duas chaves são `.trim().min(1).optional()`).
+- **Não há terceiro nome:** `grep -rn CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES src/` → **2 linhas**, a do
+  schema (`:245`) e a do `??` (`:550`). Nenhum consumidor lê a chave legada por fora.
+- **M-B8 é a minha mutação:** legado com `image/svg+xml` **e a chave nova AUSENTE** → parse tem de falhar. Essa
+  é exatamente a configuração que eu disse que escapava. A mutação antiga (chave nova com svg) foi rebaixada a
+  **M-B8c**, e M-B8b documenta a precedência. **Não é variante mais fácil — é a mais difícil das três.**
+
+**Nota residual (BAIXA, não bloqueia): normalização.** Quem consome a allowlist normaliza —
+`checklist-storage.factory.ts:29-32` faz `.split(",").map(trim().toLowerCase()).filter(Boolean)`. A emenda
+especifica o refinamento como "⊂ `SNIFFABLE_MIME_TYPES`" **sem dizer** que aplica a mesma normalização; assim
+como está, `IMAGE/SVG+XML` ou `" image/svg+xml "` passa o gate de boot e chega normalizado à allowlist
+efetiva. Os três casos (M-B8/b/c) usam minúscula, então o aceite não veria isso. **Por que é nota e não
+achado:** a segunda camada que a própria emenda escreveu absorve — `sniffMimeType` nunca devolve tipo fora do
+conjunto sniffável, então SVG na allowlist é entrada morta e o upload dá 415 (`content_unrecognized`), que é o
+caso **A11**. O gate de boot existe para ser barulhento; ficar mudo num caso de caixa-alta não abre buraco de
+bytes. Registrar em 1 linha ("compara com a MESMA normalização do consumidor") resolve.
+
+## R2·3 · A2 — **fechou**, e a pergunta decisiva tem resposta medida: não há caminho para o `getObject` fora dos 4 resolvers
+
+A pergunta era: *"herança por chamada é prova suficiente, ou existe caminho para o `getObject` que não passa
+pelos 4 resolvers?"* Medi por **presença**, enumerando todos os sítios:
+
+```
+$ grep -rn "getObject(" src/ --include=*.ts        → 7 ocorrências
+  checklist-storage.types.ts:42          (declaração da interface)
+  local-checklist-storage.provider.ts:41 (implementação)
+  s3-checklist-storage.provider.ts:82    (implementação)
+  attachment.storage.ts:202              ← dentro de resolveAttachmentDownload            (def :196)
+  work-order-attachment.storage.ts:193   ← dentro de resolveWorkOrderAttachmentDownload   (def :187)
+  damage-attachment.storage.ts:217       ← dentro de resolveDamageAttachmentDownload      (def :207)
+  checklist-attachment.storage.ts:212    ← dentro de resolveChecklistAttachmentDownload   (def :201)
+```
+
+**4 chamadores, 4 resolvers, correspondência 1:1** — li os corpos das quatro funções para confirmar que a
+chamada está dentro delas e não numa função vizinha. E `owner-portal.service.ts:417-441` alcança o objeto por
+`resolveAttachmentDownload` (importado em `:2`), não por provider próprio: **E5 herda o guard sem uma linha em
+`owner-portal/**`**. O §5 não precisou afrouxar.
+
+Dois pontos que a emenda **não** afirmou e que eu confiro porque decidiam a viabilidade:
+1. **O guard tem de onde tirar o tenant sem mudar assinatura.** Os quatro tipos carregam
+   `readonly tenantId: string` — `Attachment` (`attachment.types.ts`), `ChecklistAttachment`, `DamageAttachment`,
+   `WorkOrderAttachment`. Logo `assertStorageKeyWithinTenant` é chamável **dentro** dos resolvers, sem tocar
+   nenhum chamador — inclusive sem encostar em `checklist.service.ts` fora do trecho permitido (o §5 do corpo
+   só libera `createUploadedAttachment` l.387-415; o download vive noutro método). **Não há PARA escondido aqui.**
+2. **O formato da chave sustenta "primeiro segmento = tenant".** Local: `path.posix.join(tenantId, runId, obj)`
+   (`local-checklist-storage.provider.ts:24`). S3: `[normalizedPrefix, tenantId, runId, obj].filter(Boolean)`
+   (`s3-checklist-storage.provider.ts:118-123`) — daí o T10 do prefixo. E a via V2, que usa o slot `runId` como
+   `${entityType}/${entityId}` (`attachment.storage.ts:166-168`), continua com **tenantId no primeiro
+   segmento** (4 segmentos, não 3). O guard vale para as quatro.
+
+**Nota residual (a única estrutural, não bloqueia): o censo cobre ESCRITA, não LEITURA.** A doutrina do §3.6 é
+*"parser novo que apareça em `src/` sem estar no censo derruba o guard"*, e a C5 emendada (E1·7) lista padrões
+de **escrita**. Não há cláusula para `getObject(`. Hoje isso é inofensivo — os 4 sítios são os 4 resolvers —,
+mas um quinto leitor amanhã passa por fora de `assertStorageKeyWithinTenant` **em silêncio**, e o T1–T9 não
+pega (eles exercitam os 4 que existem). Peço, sem bloquear, o mesmo tratamento que a emenda deu ao A7:
+**declarar o alcance** ("o guard de leitura vive em 4 sítios nominais; não há tripwire para um quinto").
+
+## R2·4 · A1 — M5 fora do código é **escopo legítimo**, não a esquiva que acusei; e a alegação "sem leitor" é verdadeira
+
+A pergunta do coordenador é a certa: por que isto não é a mesma esquiva do meu achado A2 da rodada 1? Porque
+**a esquiva de lá era crédito por mitigação que não alcança o alvo**; aqui o crédito é verificável e eu
+verifiquei. Confiro os três pilares da decisão:
+
+1. **"`process_notification` não tem leitor em `src/`" — VERDADEIRO.** `grep -rn process_notification src/`
+   devolve 8 linhas: o writer (`impound.notifications-prisma.repository.ts:120`), 3 comentários, 2
+   `resourceType` de auditoria (`impound.notifications.controller.ts:31,51`) e uma tabela SQL homônima
+   (`process_notifications`, l.62/386 — outra coisa). **Nenhum leitor de `attachment` por esse `entity_type`.**
+   Confirmado pelos dois lados: E1 devolve 404 (registro de 4 descriptors) e o único leitor de anexo de
+   impound é `getInspectionPhotoAttachmentForPortal` (`impound.service.ts:153`), que filtra
+   `entity_type: "impound_intake_inspection"` (`impound-prisma.repository.ts:569`). Egresso de M5 hoje = **zero**.
+2. **A metade alcançável fecha aqui, para as duas rotas.** O guard de prefixo de tenant é no READ, nos 4
+   resolvers — vale para M2 (que É lido, por E5) e valeria para qualquer leitor futuro de M5.
+3. **A metade que fica tem dono, origem datada e enunciado de CLASSE.** `impound/**` é PROIBIDO no §5 do
+   corpo; a origem é anterior ao bloco (`574a1d2` 2026-07-26 #285; `398a19d` 2026-07-27 #290) → §C7.1-ter(a)
+   manda pendência nomeada, não reprovação. E a pendência deixou de ser "a rota da foto" para ser a classe
+   (`P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE`), com "quem fechar prova por presença (3 sítios → 1)" — que é o
+   critério que impede fechar metade e declarar a classe resolvida. Era exatamente a minha objeção. **Fechado.**
+
+## R2·5 · A3, A6, A7, A8 — obrigação escrita com alcance honesto
+
+**A3 · FECHADO.** A condição virou fato (`fly.staging.toml:31`), o remédio invertido saiu, a pendência foi
+reescrita como `P-O6R-B07B-STAGING-SEM-UPLOAD` e a agenda vai ao dono com três caminhos nomeados. Conferi as
+**duas alegações novas** que a emenda introduziu, porque afirmação nova é afirmação a medir:
+- *"o smoke do deploy não faz upload → o job fica verde e a pane só é visível a quem usa"* — `scripts/smoke-staging.mjs`
+  existe e **não contém** `multipart`, `evidence-uploads` nem `attachments`. **Verdadeira, e é a parte mais
+  desconfortável do achado**: o CI não vai avisar.
+- *"nenhum workflow nem `fly*.toml` referencia `demo/investidor`"* — `grep` em `.github/`, `fly.staging.toml`,
+  `fly.production.toml`, `docker-compose*.yml` → **zero**. **Verdadeira** (o risco da demo é de uso, não de pipeline).
+
+**A6 · FECHADO.** A linha do §7 passa a dizer V1 503→`SCAN_FAILED`, V4 503→`UPLOAD_FAILED` — que é o que medi
+(`rg -n 503 mobile/flutter_app/lib` = 1 linha) — mantendo o invariante do B-108, que continua verdadeiro. O
+item entrou na pendência de mobile com o enunciado certo (unificar o mapeamento), sem tocar `mobile/**`.
+
+**A7 · FECHADO — e a nova frase promete o que mede.** Verifiquei as duas coisas que decidem isso:
+- **O ponto cego declarado está vazio hoje:** `find src -name "*.js" -o -name "*.mjs" -o -name "*.cjs"` → **nada**.
+  Declarar um ponto cego que não existe ainda é conservador, não é desculpa.
+- **A C5 emendada não gera falso-positivo** — e isso importa, porque tripwire ruidoso vira allowlist inchada:
+  rodei o conjunto de padrões novo (`writeFile(|writeFileSync(|appendFile(|appendFileSync(|copyFile(|copyFileSync(|createWriteStream(|rename(|fs.promises.|PutObjectCommand|UploadPartCommand`)
+  sobre `src/**` **excluindo os 3 providers**: **zero ocorrências**. Só 3 arquivos de `src/` sequer importam
+  `node:fs` (os 2 providers de escrita + `cloud-costs/aws-cur.importer.ts`, que não casa nenhum padrão).
+  A allowlist nominal de 3 é suficiente e não precisará crescer.
+- A frase final ("quem chama os providers sem marca não passa no `tsc` nem grava; quem escreve fora é pego
+  pelo censo C5 — tripwire de texto, não prova") é **exatamente** o alcance medido. Over-claim removido.
+
+**A8 · FECHADO COM NOTA.** O piso único **≥89 confere na soma**: 32 + 20 + 7 + 24 + 6 = 89, e cada parcela tem
+decomposição (B1 = 9; §6.3 = M-B7×3 + M-B8/b/c×3 + A11; §6.4 = 15 + T1–T8 + T9). `M-D3` → `D6` corrigido; as
+notas do meu §4 item 7 (owner-portal-photos = "troca de marca", D4 só por semeadura) viraram texto.
+**Nota:** a frase-ponte do E1·10 — *"+20 sobre o corpo (já dentro do ≥89)"* — **não reconcilia**: 6+3+1+10 = 20,
+mas o próprio texto diz que T10 **substitui** um caso genérico (net +19), e o ≥65 do corpo nunca contou o §6.3
+e usava §6.2 mais grosso (12, não 14). 65+19 = 84 ≠ 89. O número que a C3 deve conferir é **89, a soma das
+seções** — a frase-ponte não é fonte. É a mesma classe do A8 (número que não fecha na subtração), agora
+inofensiva porque o piso absoluto está decomposto; registro para não virar discussão na junta.
+
+## R2·6 · A decisão nova: `Ω6R-SEC-004` fecha como `parcialmente_superado` — **é honestidade, e eu provo por três lados**
+
+**Veredito: honestidade. Não é o bloco entregando menos do que o nome promete.**
+
+1. **Conta dos mecanismos.** A `descricao` do achado afirma três fatos. Depois do bloco: *"MIME vem do
+   cliente"* morre em **todo** ambiente (sniff nas 5 vias, tipo gravado = verificado); *"download inline com
+   esse MIME"* morre em **todo** ambiente (tipo dos bytes + `attachment` + `nosniff` em E1–E4). *"Scanner
+   default sempre clean"* morre em produção/staging e **sobrevive por desenho** em `development`/`test`. Dois
+   de três em todo lugar, o terceiro onde importa. Declarar `fechado` seria afirmar o que não é verdade num
+   `NODE_ENV` que o próprio plano escolhe manter — foi a ressalva que levantei na rodada 1 (§4, item 3), e a
+   emenda a adotou em vez de contorná-la.
+2. **O bloco PAGA por isso, visivelmente.** Conferi o guard: `tests/kpi-achados-paridade.test.ts:172-173`
+   classifica como fechado **só** `status === "fechado"`; `:186-189` conta `p1_fechados` só com hash de merge;
+   `:192-196` exige que `aguardando_merge` seja **exatamente** os fechados-na-autoria. Com
+   `parcialmente_superado`, o achado **não pode** entrar em `aguardando_merge` e **não** move `p1_fechados` —
+   que é precisamente o que a E1·11 escreve. Ou seja: o formato do KPI que a emenda adota é o **único** que o
+   guard aceita, e o preço é o painel não mostrar avanço de P1 neste PR. **Esquiva não paga preço visível.**
+   (E `parcialmente_superado` não é dimensão nova: já ocorre 2× em `achados.jsonl` — sem §C3.0 pendente.)
+3. **Não havia opção barata em escopo.** Matar o mecanismo (1) em dev/test exigiria ou AV real (serviço novo →
+   junta-5, fora) ou recusar upload também em dev/test (quebraria a suíte e toda máquina de desenvolvimento).
+   A terceira via — uma flag "permitir noop em produção" — é o achado com outro nome, e a emenda a proíbe
+   nominalmente (E1·9). O residual está nomeado, com dono (`P-O6R-B07B-SCANNER-AV-REAL`) e com o contrato de
+   quem o fecha.
+
+**O que precisa ficar na ata para isto continuar honesto:** `fechado` só quando o bloco de AV existir. Se
+alguém promover o achado a `fechado` no backfill pós-merge sem o AV, o guard **não** pega (ele só exige hash de
+merge, não exige AV) — essa é a única porta por onde a honestidade de hoje pode ser desfeita amanhã.
+
+## R2·7 · Encerramento — teto de 2 rodadas cumprido
+
+**Rodada 1:** 8 achados, 4 bloqueantes. **Rodada 2:** os 8 fecham; A4 e A5 — os dois que passavam verdes com o
+defeito presente — fecham **por execução minha contra o desenho novo**, não por promessa. Procurei o quarto
+atalho da marca e não encontrei um que sustente bloqueio (dois candidatos testados, ambos não-vetores).
+
+**Três notas residuais, todas BAIXA, nenhuma bloqueia** — para a ata, não para o start:
+1. **Sem tripwire de LEITURA:** o guard de tenant vive em 4 sítios nominais; o censo cobre escrita. Declarar o
+   alcance, como o A7 declarou o dele (R2·3).
+2. **Normalização da allowlist:** o refinamento deve comparar com a mesma normalização do consumidor
+   (`trim().toLowerCase()`), senão o gate de boot fica mudo em caixa-alta — absorvido pela segunda camada (R2·2).
+3. **Frase-ponte do piso:** o número a conferir é **89** (soma das seções); o "+20 sobre o corpo" não
+   reconcilia com o ≥65 (R2·5).
+4. **Propriedade a declarar, não defeito:** a marca prova *"estes bytes foram verificados no ato da chamada"*,
+   não *"estes bytes foram gravados"* — há um `await` entre o assert e a escrita. Sem detentor concorrente do
+   buffer nas 5 vias, não há exploit (R2·1).
+
+**VEREDITO FINAL: PLANO ROBUSTO.** O desenho sobrevive, as premissas falsas foram corrigidas com
+arquivo:linha re-lido, e os aceites voltaram a ser falsificáveis — inclusive os dois que não eram. **O bloco
+pode gerar a primeira linha de código.**
+
+**Papéis (§C7.4-bis), nesta rodada:** continuo só achando. Não escrevi a emenda, não escreverei código, não
+voto. Os dois scripts que rodei são réplicas do desenho (`brand-weakmap.mjs`, `brand-buffer-probes.mjs`) em
+scratchpad de sessão, fora do repositório; nada além deste parecer foi escrito no worktree —
+`git status --short` = só `votos/B-O6R-07b/`.
+
+— `critico-adversarial`, 2026-09-06 (rodada 2 de 2 — encerrado)
