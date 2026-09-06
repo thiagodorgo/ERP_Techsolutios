@@ -25,3 +25,22 @@ exigido. Se a série mostrar que estou errado (nova queda na mesma classe em < 3
 - Modelo dos redisparos: **herdado da sessão = `claude-fable-5-1`** (fica registrado para a série
   "pin × queda", que o P6 existe para alimentar).
 - Ordem de disparo: C1 + C2 agora; **C3 só quando uma concluir** (P5).
+
+| 3 | 2026-09-06 ~14:25 | `agente-secops` (C1, redisparo) | `claude-fable-5-1` herdado | 3 | **na cauda** — última linha: *"o `sed` quebrou o regex… reescrevo os patches e rodo M-B3 → M-B9 de novo"* | `rate_limit` 429 — *session limit · resets 6:50pm* | **~0 — o P2 PAGOU.** `C1-secops-evidencia.md` (100 l.) e `C1-secops-voto.json` (`voto: APROVADO`, 4 achados) já **gravados** às 14:24/14:25, antes da morte. Perdeu-se a mensagem final, não o julgamento |
+| 4 | 2026-09-06 ~14:2x | `jurado-07b-contrato-regressao-registro` (C3) | `claude-fable-5-1` herdado | 3 | **antes de qualquer medição** — última linha: *"Começo medindo o terreno"* | `rate_limit` 429 — mesma janela | **0** — nada gravado |
+
+## Leitura da série (o P6 existe para isto)
+
+**4 quedas, todas `rate_limit` (teto de sessão), zero `server_error` de streaming** — classe **diferente**
+das 14 do postmortem de 29/08, onde a causa era a janela instável de streaming. Aqui é cota determinística.
+
+**A queda #3 é a primeira prova medida nesta casa de que o P2 converte perda TOTAL em perda NULA.** A C1
+morreu *na cauda* e o voto sobreviveu porque o P2 manda gravá-lo **antes** da mensagem final. Sem ele, uma
+cadeira **com veto** refaria o julgamento inteiro; com ele, o custo foi uma mensagem. O P1 (evidência
+incremental) fez o resto: 100 linhas de comando→saída→veredito parcial, auditáveis sem o agente.
+
+**Modelo × queda:** 2 quedas sob `claude-opus-5`, 2 sob `claude-fable-5-1`, e nas quatro o gatilho foi o teto
+da sessão. **Nada aqui sustenta "pinar modelo reduz queda"; sustenta que cota é ortogonal a modelo.**
+
+**Redisparo da C3:** identidade **mantida** (não houve voto perdido nem medição — §C7.4/P3 falam de *voto*
+perdido). Suplentes seguem reservados para queda **durante** o julgamento.
