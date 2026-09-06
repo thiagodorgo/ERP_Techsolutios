@@ -22,12 +22,20 @@
 > .agents/agents/especialistas/jurado-c5-banco-fk-triggers.md`); restaurado, volta a `ec=0`.
 > Codex: leia os espelhos em `.agents/agents/especialistas/` como os demais.
 >
-> Texto anterior, preservado (§A2 — acrescentar, nunca apagar) e **falso desde `1aeb6e9` (2026-08-25)**:
+> Texto anterior, preservado (§A2 — acrescentar, nunca apagar) e **falso desde `99f1840` (2026-09-04)**:
 > ~~"Cadeiras efêmeras de ciclo NÃO são espelhadas: o sync é cego a subdiretório
 > (`P-SYNC-AGENTS-NAO-RECURSIVO`, ABERTA — o `--check` ec=0 não prova nada sobre elas). … Codex: leia-os
-> direto de `.claude/agents/especialistas/` na raiz do repositório."~~ Era **verdade quando escrito**
-> (entrou por `f895dd2`, #368, 2026-09-02, herdando a premissa de `8145415`) e envelheceu sem que
-> ninguém o revisse. `P-SYNC-AGENTS-NAO-RECURSIVO` está **FECHADA** — ver `pendencias.md`.
+> direto de `.claude/agents/especialistas/` na raiz do repositório."~~ Era **verdade quando escrito** e o
+> autor **não herdou premissa de ninguém: ele leu a `main`, e a `main` lhe deu razão.** Medido por
+> `git show <commit>:scripts/sync-agent-agents.mjs`: `e6a6461` (#367, 09-01) **raso**, `f895dd2` (#368,
+> 09-02 — o commit que escreveu esta nota) **raso**, `99f1840` (#371, 09-04) **recursivo**. A nota foi
+> **verdadeira na `main` de 09-02 a 09-04** e envelheceu quando o script mudou, sem que ninguém a
+> revisse. `P-SYNC-AGENTS-NAO-RECURSIVO` está **FECHADA** — ver `pendencias.md`.
+>
+> **Datar pela linha certa.** Uma versão anterior deste parágrafo datava a nota por `1aeb6e9`/`8145415` —
+> commits que vivem **só na branch do #371** e não são ancestrais de `f895dd2` nem da `origin/main`. É a
+> mesma falha que o §especialistas abaixo acabou de proibir, cometida no commit que a proíbe: a regra foi
+> escrita e o hábito voltou na frase seguinte. Datar um texto da `main` exige a linha da `main`.
 
 ## Como o Codex usa estes papéis (protocolo de emulação da junta)
 

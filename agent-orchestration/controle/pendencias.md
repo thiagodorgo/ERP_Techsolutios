@@ -5552,11 +5552,27 @@ diz isso ao inspetor do ciclo 5, com todas as letras.
 escreveu este fechamento (§C7.4-bis). O texto acima fica **intocado** (§A2): ele descreve corretamente o
 mecanismo de 2026-08-31.
 
-**A premissa não existe mais.** O corpo cita `scripts/sync-agent-agents.mjs` l.66 com
-`readdirSync(SRC).filter(...)` **plano**. Na `main` deste head o script usa `listMd()` **recursivo**, com o
-motivo escrito no próprio comentário. Medido: o recursivo entrou em **`1aeb6e9` (2026-08-25)** na branch,
-publicado na `main` pelo squash **`99f1840`** (#371) — **cinco dias antes** de esta pendência ser aberta.
-Ela nasceu de leitura de uma versão que a `main` já não tinha.
+**A premissa não existe mais — mas ela EXISTIA quando esta pendência nasceu.** O corpo cita
+`scripts/sync-agent-agents.mjs` l.66 com `readdirSync(SRC).filter(...)` **plano**. Na `main` deste head o
+script usa `listMd()` **recursivo**. Cronologia medida com `git show <commit>:scripts/sync-agent-agents.mjs`:
+
+| commit | data | script |
+|---|---|---|
+| `e6a6461` (#367) | 2026-09-01 | **raso** |
+| `f895dd2` (#368) | 2026-09-02 | **raso** |
+| `99f1840` (#371) | 2026-09-04 | **recursivo** |
+
+A pendência foi aberta em **2026-08-31** e entrou na `main` por `e6a6461`, onde o script **era** raso.
+**Ela nasceu verdadeira**: descreveu corretamente a `main` do seu tempo e **ficou sem objeto quatro dias
+depois**, em `99f1840`. Fica **FECHADA por perda de objeto**, não por erro de quem a escreveu.
+
+**Correção de um erro que este próprio fechamento cometeu**, apanhado por cadeira independente antes do
+merge: a primeira versão deste parágrafo dizia que o recursivo fora publicado *"cinco dias antes de esta
+pendência ser aberta"* e que ela *"nasceu de leitura de uma versão que a `main` já não tinha"*. **Inverte
+a cronologia.** O erro veio de datar pelo commit `1aeb6e9` (2026-08-25), que vive **só na branch** do #371
+e não é ancestral de `e6a6461` — a mesma falha de datação-pela-branch que este PR registrou como regra
+duas seções antes. Registrado em vez de silenciosamente reescrito, porque o padrão importa mais que a
+instância: **a regra escrita não impede a repetição; só a medição de terceiro impediu.**
 
 **Critérios de fechamento, um a um, por execução:**
 
@@ -5565,7 +5581,7 @@ Ela nasceu de leitura de uma versão que a `main` já não tinha.
 | **(a)** decisão escrita sobre espelhar ou não `especialistas/**` | **DEVE ser espelhado** — é o que a `main` faz, e agora está escrito: `.agents/agents/README.md` (topo e §especialistas) |
 | **(b)** espelho pelo mesmo mecanismo + `--check` **vermelho por mutação** | **PROVADO POR MUTAÇÃO.** Corpo de `.claude/agents/especialistas/jurado-c5-banco-fk-triggers.md` alterado sem espelhar → `--check` **`ec=1`**, `DIVERGE: .agents/agents/especialistas/jurado-c5-banco-fk-triggers.md`; restaurado → `ec=0`. Mesmo `listMd()` dos corpos-base; 11 espelhos para 11 corpos |
 | **(c)** *(caminho “não deve”)* | **não se aplica** — venceu o “deve” |
-| **(d)** divergência de convenção com `demo/investidor` reconciliada | `demo/investidor` é branch de longa duração **fora da linha da `main`** (medido: `origin/main` **não** é seu ancestral; 50 commits exclusivos dela, 18 da `main` ausentes). A convenção que vale é a da `main` — espelhar. O estado de `especialistas/` naquela branch não governa este contrato e será reconciliado quando ela for integrada, se for |
+| **(d)** divergência de convenção com `demo/investidor` reconciliada | **A divergência não existe — medida, não argumentada.** `demo/investidor` tem o script **recursivo** (`withFileTypes` presente) e **17 corpos para 17 espelhos** em `especialistas/`; cadeira independente rodou o `--check` sobre a árvore reconstruída dela: `OK — 40 agentes`, `ec=0`. As duas linhas já praticam a **mesma** convenção — espelhar —, então não há o que reconciliar. Divergência de *linha* segue existindo (`git rev-list --left-right --count origin/main...demo/investidor` = **19 / 49**), mas é de conteúdo, não de convenção de espelho. **Versão anterior deste critério, corrigida:** dizia que a branch *"está fora da linha da `main`, logo não governa"*, com **50 / 18** — números errados **e** argumento no lugar de medição. Quando a medição estava disponível e era mais forte, eu argumentei |
 
 **Consequência que importa mais que o fechamento:** enquanto isto ficou ABERTA com premissa morta, o
 `.agents/agents/README.md` mandava, **no topo**, ler os especialistas direto de `.claude/agents/` e
@@ -6724,17 +6740,25 @@ Formatação que muda o que um gerador lê é conteúdo, não estilo.*
 registro consolidado do `B-O6R-02` c5, que explicitamente **não** quis escolher a convenção — e quem
 escreveu o PR também não deve escolhê-la sozinho, porque é a regra que o julga.
 
-**O conflito, medido nesta mesma cadeia de 6 PRs de registro:**
+**O conflito, medido na cadeia INTEIRA de 7 PRs de registro** (`#372`–`#378`; a primeira versão desta
+entrada dizia "6" e omitia `#372` e `#376` — corrigido por medição de cadeira independente):
 
-| PR | tem ata de junta? |
-|---|---|
-| #373 | **sim** — `J-O6R-07a-ressalvas.md`, 3 cadeiras |
-| #374 · #375 · #377 | **não** |
-| #378 (este) | **não** — um parecer de cadeira independente, não uma junta de 3 |
+| PR | merge | tem ata de junta? |
+|---|---|---|
+| #372 | `cae6086` | **não** — julgado por porteiro independente pré-merge, uma cadeira, sem ata |
+| #373 | `0afedf8` | **sim** — `J-O6R-07a-ressalvas.md`, 3 cadeiras |
+| #374 | `066b47e` | **não** |
+| #375 | `1a7ad4d` | **não** |
+| #376 | `3c29189` | **não** — só reavaliação de porteiro pós-merge |
+| #377 | `9919f4d` | **não** |
+| #378 (este) | — | **não** — dois pareceres de uma cadeira independente, não uma junta de 3 |
+
+Conferido: não existe `J-*.md` nem diretório em `votos/` para `#372` e `#376`; eles só aparecem
+**citados** em documentos de outros blocos.
 
 O §C7.1 diz *"junta sem registro = merge inválido"* e não abre exceção por tipo de PR. Lido ao pé da
-letra, **quatro** dos merges acima seriam inválidos — o que ou está errado, ou é uma dívida que ninguém
-declarou. O §C7.1-ter(b) calibra **quórum por risco** (unanimidade de 3 quando o bloco toca dinheiro,
+letra, **cinco** merges **já consumados** seriam inválidos (`#372`, `#374`, `#375`, `#376`, `#377`) — o que
+ou está errado, ou é uma dívida que ninguém declarou. O §C7.1-ter(b) calibra **quórum por risco** (unanimidade de 3 quando o bloco toca dinheiro,
 segurança, permissão ou perda de dado; maioria de 3 no resto), mas o "resto" pressupõe uma junta; não
 existe faixa escrita para *"PR que não toca código, teste nem escopo"*.
 
