@@ -7,10 +7,13 @@ import type { Request } from "express";
 
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import {
+  resetEvidenceScannerForTests,
+  setEvidenceScannerForTests,
+} from "../evidence/evidence-scanner.factory.js";
+import {
   EVIDENCE_ALLOWED_MIME_TYPES,
   EVIDENCE_MAX_FILE_SIZE_BYTES,
   LocalProtectedEvidenceStorageProvider,
-  NoopEvidenceScanner,
   getEvidenceAuditEventsForTests,
   recordEvidenceAuditEvent,
   resetEvidenceAuditEventsForTests,
@@ -18,6 +21,7 @@ import {
   type EvidenceScanner,
   type EvidenceStorageProvider,
 } from "../evidence/evidence-storage.js";
+import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import { findMobileEvidenceSyncReceiptForUpload } from "./mobile-evidence-sync.js";
 
 const CONTRACT_NAME = "mobile_evidence_file_upload";
@@ -51,15 +55,16 @@ export type MobileEvidenceUploadResponse = {
 
 let evidenceUploadStorageRoot = path.join(os.tmpdir(), "erp-mobile-evidence-uploads");
 let evidenceStorageProvider: EvidenceStorageProvider = new LocalProtectedEvidenceStorageProvider(evidenceUploadStorageRoot);
-let evidenceScanner: EvidenceScanner = new NoopEvidenceScanner();
 
 export function configureMobileEvidenceUploadStorageForTests(root: string): void {
   evidenceUploadStorageRoot = root;
   evidenceStorageProvider = new LocalProtectedEvidenceStorageProvider(root);
 }
 
+// B-O6R-07b (§3.2) — wrapper fino do registro único; a variável de módulo com `new NoopEvidenceScanner()`
+// como default morreu aqui também.
 export function configureMobileEvidenceUploadScannerForTests(scanner: EvidenceScanner): void {
-  evidenceScanner = scanner;
+  setEvidenceScannerForTests(scanner);
 }
 
 export function getMobileEvidenceUploadAuditEventsForTests(): readonly EvidenceAuditEvent[] {
@@ -69,7 +74,7 @@ export function getMobileEvidenceUploadAuditEventsForTests(): readonly EvidenceA
 export async function resetMobileEvidenceUploadRuntimeForTests(): Promise<void> {
   await evidenceStorageProvider.clear?.();
   resetEvidenceAuditEventsForTests();
-  evidenceScanner = new NoopEvidenceScanner();
+  resetEvidenceScannerForTests();
 }
 
 export async function uploadMobileEvidenceFile(
@@ -130,35 +135,44 @@ export async function uploadMobileEvidenceFile(
     throw routeError(400, "BAD_REQUEST", "sha256_mismatch", "sha256 does not match uploaded file.");
   }
 
-  const scanResult = await evidenceScanner.scan({
-    tenantId: actor.tenantId,
-    evidenceId,
-    clientEvidenceId,
-    mimeType: contentType,
-    sizeBytes: parsed.file.sizeBytes,
-    checksumSha256: computedSha256,
+  // B-O6R-07b (Ω6R-SEC-004) — GATE ÚNICO no lugar do `evidenceScanner.scan` solto. Posição preservada:
+  // DEPOIS dos 400 de sha/tamanho e do 409 de recibo (ordem vigente do B-108). A allowlist desta via é
+  // a `EVIDENCE_ALLOWED_MIME_TYPES` (jpeg/png) — mais estreita que a das irmãs, de propósito: um PDF
+  // com bytes válidos declarado `image/jpeg` era 201 aqui e passa a ser 415 `unsupported_media_type`.
+  const verification = await verifyUploadContent({
+    via: "V1",
     buffer: parsed.file.buffer,
+    declaredMimeType: contentType,
+    allowedMimeTypes: [...EVIDENCE_ALLOWED_MIME_TYPES],
+    scan: { tenantId: actor.tenantId, evidenceId, clientEvidenceId },
+  }).catch((error: unknown) => {
+    if (!(error instanceof UploadGateError)) throw error;
+    const status = uploadGateStatus(error.kind);
+    if (status === 422) {
+      recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, "scanner_infected", parsed.file.sizeBytes, contentType);
+      throw routeError(422, "UNPROCESSABLE_ENTITY", "evidence_rejected", "Evidence file was rejected by safety scan.");
+    }
+    if (status === 503) {
+      recordEvidenceAuditEvent({
+        action: "evidence.upload.scan_failed",
+        tenantId: actor.tenantId,
+        actorId: actor.userId,
+        evidenceId,
+        outcome: "failure",
+        metadata: {
+          client_evidence_id: clientEvidenceId,
+          mime_type: contentType,
+          size_bytes: parsed.file.sizeBytes,
+          reason: "scanner_unavailable",
+        },
+      });
+      throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_scan_failed", "Evidence safety scan is temporarily unavailable.");
+    }
+    // 415 novo: o evento `evidence.upload.rejected` em memória leva o MESMO reason do gate
+    // (`content_type_mismatch` | `content_unrecognized` | `unsupported_media_type`).
+    recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, error.kind, parsed.file.sizeBytes, contentType);
+    throw routeError(415, "UNSUPPORTED_MEDIA_TYPE", error.kind, error.detail);
   });
-  if (scanResult.status === "infected") {
-    recordRejectedEvidenceAudit(actor, evidenceId, clientEvidenceId, "scanner_infected", parsed.file.sizeBytes, contentType);
-    throw routeError(422, "UNPROCESSABLE_ENTITY", "evidence_rejected", "Evidence file was rejected by safety scan.");
-  }
-  if (scanResult.status === "failed") {
-    recordEvidenceAuditEvent({
-      action: "evidence.upload.scan_failed",
-      tenantId: actor.tenantId,
-      actorId: actor.userId,
-      evidenceId,
-      outcome: "failure",
-      metadata: {
-        client_evidence_id: clientEvidenceId,
-        mime_type: contentType,
-        size_bytes: parsed.file.sizeBytes,
-        reason: "scanner_unavailable",
-      },
-    });
-    throw routeError(503, "SERVICE_UNAVAILABLE", "evidence_scan_failed", "Evidence safety scan is temporarily unavailable.");
-  }
 
   recordEvidenceAuditEvent({
     action: "evidence.upload.accepted",
@@ -179,8 +193,8 @@ export async function uploadMobileEvidenceFile(
     evidenceId,
     clientEvidenceId,
     buffer: parsed.file.buffer,
-    mimeType: contentType,
     checksumSha256: computedSha256,
+    verification,
   });
 
   recordEvidenceAuditEvent({

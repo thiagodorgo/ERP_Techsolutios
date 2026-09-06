@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import type { Permission } from "../core-saas/permissions/catalog.js";
 import { env } from "../../config/env.js";
 import {
@@ -8,9 +6,10 @@ import {
   type AttachmentEntityResolver,
 } from "./attachment-entity-resolver.js";
 import { InMemoryAttachmentRepository, type AttachmentRepository } from "./attachment.repository.js";
+import { readChecklistStorageConfig } from "../checklists/storage/checklist-storage.factory.js";
+import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import {
   deleteStoredAttachmentFile,
-  getAttachmentScanner,
   resolveAttachmentDownload,
   saveAttachmentFile,
   type AttachmentDownload,
@@ -66,25 +65,31 @@ export class AttachmentService {
       }
     }
 
-    // RN-ANEXO-07 — AV-scan ANTES de armazenar; malware nunca chega ao store.
-    const checksumSha256 = createHash("sha256").update(upload.file.buffer).digest("hex");
-    const scan = await getAttachmentScanner().scan({
-      tenantId: actor.tenantId,
-      evidenceId: entityId,
-      clientEvidenceId: upload.clientActionId ?? "",
-      mimeType: upload.file.mimeType,
-      sizeBytes: upload.file.sizeBytes,
-      checksumSha256,
+    // B-O6R-07b (Ω6R-SEC-004) — RN-ANEXO-07 continua valendo (scan ANTES do store, malware nunca chega
+    // ao storage), mas o scan deixa de ser a única checagem: o GATE ÚNICO faz sniff de assinatura ANTES
+    // do scanner e devolve a marca que o `save` exige. Posição preservada: depois do 409 de
+    // idempotência e da posse — não se gasta verificação num retry já resolvido.
+    const verification = await verifyUploadContent({
+      via: "V2",
       buffer: upload.file.buffer,
+      declaredMimeType: upload.file.mimeType,
+      allowedMimeTypes: readChecklistStorageConfig().allowedMimeTypes,
+      scan: {
+        tenantId: actor.tenantId,
+        evidenceId: entityId,
+        clientEvidenceId: upload.clientActionId ?? "",
+      },
+    }).catch((error: unknown) => {
+      throw toAttachmentGateError(error);
     });
-    if (scan.status === "infected") {
-      throw new AttachmentError(422, "ATTACHMENT_REJECTED", "evidence_rejected", "Attachment failed the malware scan.");
-    }
-    if (scan.status === "failed") {
-      throw new AttachmentError(503, "ATTACHMENT_SCAN_UNAVAILABLE", "scan_unavailable", "Attachment scanner is unavailable; retry later.");
-    }
 
-    const stored = await saveAttachmentFile({ tenantId: actor.tenantId, entityType, entityId, upload: upload.file });
+    const stored = await saveAttachmentFile({
+      tenantId: actor.tenantId,
+      entityType,
+      entityId,
+      upload: upload.file,
+      verification,
+    });
 
     try {
       const attachment = await this.repository.createAttachment({
@@ -213,4 +218,21 @@ async function createPrismaAttachmentService(): Promise<AttachmentService> {
   const { createPrismaAttachmentRepository } = await import("./attachment-prisma.repository.js");
   const repository = await createPrismaAttachmentRepository();
   return new AttachmentService(repository, createDefaultAttachmentEntityResolver());
+}
+
+/**
+ * B-O6R-07b — traduz a recusa NEUTRA do gate para a família de código DESTA via (plano §4). Os códigos
+ * 422/503 já existiam e ficam idênticos (contrato vigente, afirmado por `attachments-crud.test.ts`); o
+ * 415 é a família nova do sniff, com o `reason` dizendo QUAL das três recusas de conteúdo ocorreu.
+ */
+function toAttachmentGateError(error: unknown): unknown {
+  if (!(error instanceof UploadGateError)) return error;
+  const status = uploadGateStatus(error.kind);
+  if (status === 422) {
+    return new AttachmentError(422, "ATTACHMENT_REJECTED", "evidence_rejected", "Attachment failed the malware scan.");
+  }
+  if (status === 503) {
+    return new AttachmentError(503, "ATTACHMENT_SCAN_UNAVAILABLE", "scan_unavailable", "Attachment scanner is unavailable; retry later.");
+  }
+  return new AttachmentError(415, "ATTACHMENT_UNSUPPORTED_MEDIA_TYPE", error.kind, error.detail);
 }

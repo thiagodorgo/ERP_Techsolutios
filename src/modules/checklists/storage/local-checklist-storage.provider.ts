@@ -3,6 +3,7 @@ import { createReadStream } from "node:fs";
 import { mkdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { assertUploadVerification } from "../../evidence/upload-gate.js";
 import { ChecklistError } from "../checklist.types.js";
 import type {
   ChecklistStorageObject,
@@ -20,6 +21,10 @@ export class LocalChecklistStorageProvider implements ChecklistStorageProvider {
   constructor(private readonly basePath: string) {}
 
   async save(input: SaveChecklistStorageObjectInput): Promise<StoredChecklistStorageObject> {
+    // B-O6R-07b — RUNTIME: quem burla o compilador não grava. O assert recusa marca clonada/forjada
+    // (`upload_not_verified:brand`) e marca legítima com OUTROS bytes (`upload_not_verified:bytes`), e
+    // devolve os fatos. O tipo gravado é `facts.mimeType` — do RETORNO, nunca de campo de entrada.
+    const facts = assertUploadVerification(input.verification, input.buffer);
     const storedFileName = `${randomUUID()}-${input.safeFileName}`;
     const storageKey = path.posix.join(input.tenantId, input.runId, storedFileName);
     const filePath = this.resolveSafeStoragePath(storageKey);
@@ -30,7 +35,7 @@ export class LocalChecklistStorageProvider implements ChecklistStorageProvider {
     return {
       fileUrl: `${localStorageSchemePrefix}${storageKey}`,
       fileName: input.safeFileName,
-      mimeType: input.mimeType,
+      mimeType: facts.mimeType,
       sizeBytes: input.sizeBytes,
       checksumSha256: input.checksumSha256,
       storageProvider: this.name,

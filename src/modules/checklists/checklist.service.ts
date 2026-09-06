@@ -1,7 +1,9 @@
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
+import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import {
   deleteStoredChecklistAttachmentFile,
+  getChecklistAttachmentStorageConfig,
   resolveChecklistAttachmentDownload,
   saveChecklistAttachmentFile,
   type ChecklistAttachmentDownload,
@@ -391,10 +393,29 @@ export class ChecklistService {
   ): Promise<ChecklistAttachment> {
     await this.assertRunComponent(actor, runId, upload.componentId);
 
+    // B-O6R-07b (Ω6R-SEC-004) — O SCAN NASCE AQUI. Esta via NÃO tinha scanner nenhum: nem Noop.
+    // `createUploadedAttachment` ia direto de `assertRunComponent` para `saveChecklistAttachmentFile`,
+    // e a única checagem de tipo era a allowlist contra o MIME DECLARADO no parser. Agora o gate único
+    // roda depois do `assertRunComponent` (posse antes de verificação, como nas irmãs) e antes do save.
+    const verification = await verifyUploadContent({
+      via: "V4",
+      buffer: upload.file.buffer,
+      declaredMimeType: upload.file.mimeType,
+      allowedMimeTypes: getChecklistAttachmentStorageConfig().allowedMimeTypes,
+      scan: {
+        tenantId: actor.tenantId,
+        evidenceId: runId,
+        clientEvidenceId: upload.componentId,
+      },
+    }).catch((error: unknown) => {
+      throw toChecklistAttachmentGateError(error);
+    });
+
     const stored = await saveChecklistAttachmentFile({
       tenantId: actor.tenantId,
       runId,
       upload: upload.file,
+      verification,
     });
 
     try {
@@ -818,4 +839,25 @@ function isForeignKeyViolation(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   const code = (error as { code?: unknown }).code;
   return code === "P2003" || code === "23503";
+}
+
+/**
+ * B-O6R-07b — recusa neutra do gate → família DESTA via (plano §4). As famílias 422/503 são NOVAS aqui
+ * (a via não tinha scanner), espelhando nominalmente o módulo `attachments` (Ω4C PR-01): mesmos
+ * `reason`, mesma mensagem, mesma posição — nada persistido, nenhum órfão no storage.
+ *
+ * O `400 mime_type_not_allowed` do parser (MIME declarado) permanece e roda antes: é contrato vigente,
+ * afirmado por `checklist-attachments.test.ts`, e a inconsistência com o `415`/`413` das irmãs é
+ * pré-existente e declarada (`P-O6R-B07B-CODIGOS-INCONSISTENTES`, BAIXA).
+ */
+function toChecklistAttachmentGateError(error: unknown): unknown {
+  if (!(error instanceof UploadGateError)) return error;
+  const status = uploadGateStatus(error.kind);
+  if (status === 422) {
+    return new ChecklistError(422, "CHECKLIST_ATTACHMENT_REJECTED", "evidence_rejected", "Attachment failed the malware scan.");
+  }
+  if (status === 503) {
+    return new ChecklistError(503, "CHECKLIST_ATTACHMENT_SCAN_UNAVAILABLE", "scan_unavailable", "Attachment scanner is unavailable; retry later.");
+  }
+  return new ChecklistError(415, "CHECKLIST_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE", error.kind, error.detail);
 }

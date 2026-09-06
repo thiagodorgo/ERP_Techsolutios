@@ -11,6 +11,8 @@ import {
   readChecklistStorageConfig,
 } from "./storage/checklist-storage.factory.js";
 import type { ChecklistStorageProviderName } from "./storage/checklist-storage.types.js";
+import { assertStorageKeyWithinTenant } from "../evidence/storage-key-scope.js";
+import { assertUploadVerification, type UploadVerification } from "../evidence/upload-gate.js";
 import { ChecklistError, type ChecklistAttachment, type JsonRecord } from "./checklist.types.js";
 
 export type ChecklistAttachmentUpload = {
@@ -169,18 +171,22 @@ export async function saveChecklistAttachmentFile(input: {
   readonly tenantId: string;
   readonly runId: string;
   readonly upload: ChecklistAttachmentUpload["file"];
+  /** B-O6R-07b — marca do gate; sem ela isto não compila (§3.4). */
+  readonly verification: UploadVerification;
 }): Promise<StoredChecklistAttachmentFile> {
+  // Extensão do nome saneado pelo tipo VERIFICADO, nunca pelo declarado.
+  const facts = assertUploadVerification(input.verification, input.upload.buffer);
   const checksum = createHash("sha256").update(input.upload.buffer).digest("hex");
-  const fileName = sanitizeFileName(input.upload.originalName, input.upload.mimeType);
+  const fileName = sanitizeFileName(input.upload.originalName, facts.mimeType);
   const stored = await getDefaultChecklistStorageProvider().save({
     tenantId: input.tenantId,
     runId: input.runId,
     buffer: input.upload.buffer,
     originalName: input.upload.originalName,
     safeFileName: fileName,
-    mimeType: input.upload.mimeType,
     sizeBytes: input.upload.sizeBytes,
     checksumSha256: checksum,
+    verification: input.verification,
   });
 
   return {
@@ -208,6 +214,12 @@ export async function resolveChecklistAttachmentDownload(
   if (!storageDriver || !storageKey) {
     throw new ChecklistError(404, "CHECKLIST_ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found.");
   }
+
+  // B-O6R-07b (E1·2) — a chave tem de ficar dentro do tenant DA LINHA antes de qualquer leitura.
+  assertStorageKeyWithinTenant(
+    { storageKey, tenantId: attachment.tenantId, provider: storageDriver },
+    () => new ChecklistError(404, "CHECKLIST_ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found."),
+  );
 
   const object = await createChecklistStorageProviderByName(storageDriver).getObject({ storageKey });
 

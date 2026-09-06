@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
-
 import { env } from "../../config/env.js";
+import { readChecklistStorageConfig } from "../checklists/storage/checklist-storage.factory.js";
+import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import { WorkOrderError } from "./work-order.types.js";
 import {
   createDefaultWorkOrderService,
@@ -13,7 +13,6 @@ import {
 } from "./work-order-attachment.repository.js";
 import {
   deleteStoredWorkOrderAttachmentFile,
-  getWorkOrderAttachmentScanner,
   resolveWorkOrderAttachmentDownload,
   saveWorkOrderAttachmentFile,
   type WorkOrderAttachmentDownload,
@@ -54,25 +53,29 @@ export class WorkOrderAttachmentService {
       }
     }
 
-    // R2 — AV-scan ANTES de armazenar; malware nunca chega ao store.
-    const checksumSha256 = createHash("sha256").update(upload.file.buffer).digest("hex");
-    const scan = await getWorkOrderAttachmentScanner().scan({
-      tenantId: actor.tenantId,
-      evidenceId: workOrder.id,
-      clientEvidenceId: upload.clientActionId ?? "",
-      mimeType: upload.file.mimeType,
-      sizeBytes: upload.file.sizeBytes,
-      checksumSha256,
+    // B-O6R-07b (Ω6R-SEC-004) — R2 preservada (verificação ANTES do store), agora pelo GATE ÚNICO:
+    // sniff de assinatura ANTES do scanner, e a marca que o `save` exige. Posição inalterada: depois do
+    // 409 de idempotência.
+    const verification = await verifyUploadContent({
+      via: "V3",
       buffer: upload.file.buffer,
+      declaredMimeType: upload.file.mimeType,
+      allowedMimeTypes: readChecklistStorageConfig().allowedMimeTypes,
+      scan: {
+        tenantId: actor.tenantId,
+        evidenceId: workOrder.id,
+        clientEvidenceId: upload.clientActionId ?? "",
+      },
+    }).catch((error: unknown) => {
+      throw toWorkOrderAttachmentGateError(error);
     });
-    if (scan.status === "infected") {
-      throw new WorkOrderAttachmentError(422, "WORK_ORDER_ATTACHMENT_REJECTED", "evidence_rejected", "Attachment failed the malware scan.");
-    }
-    if (scan.status === "failed") {
-      throw new WorkOrderAttachmentError(503, "WORK_ORDER_ATTACHMENT_SCAN_UNAVAILABLE", "scan_unavailable", "Attachment scanner is unavailable; retry later.");
-    }
 
-    const stored = await saveWorkOrderAttachmentFile({ tenantId: actor.tenantId, workOrderId: workOrder.id, upload: upload.file });
+    const stored = await saveWorkOrderAttachmentFile({
+      tenantId: actor.tenantId,
+      workOrderId: workOrder.id,
+      upload: upload.file,
+      verification,
+    });
 
     try {
       const attachment = await this.repository.createAttachment({
@@ -186,4 +189,20 @@ async function createPrismaWorkOrderAttachmentService(): Promise<WorkOrderAttach
   const repository = await createPrismaWorkOrderAttachmentRepository();
   const workOrderService = await createDefaultWorkOrderService();
   return new WorkOrderAttachmentService(repository, workOrderService);
+}
+
+/**
+ * B-O6R-07b — recusa neutra do gate → família DESTA via (plano §4). 422/503 idênticos ao contrato
+ * vigente; 415 é a família nova do sniff, com o `reason` nomeando a recusa.
+ */
+function toWorkOrderAttachmentGateError(error: unknown): unknown {
+  if (!(error instanceof UploadGateError)) return error;
+  const status = uploadGateStatus(error.kind);
+  if (status === 422) {
+    return new WorkOrderAttachmentError(422, "WORK_ORDER_ATTACHMENT_REJECTED", "evidence_rejected", "Attachment failed the malware scan.");
+  }
+  if (status === 503) {
+    return new WorkOrderAttachmentError(503, "WORK_ORDER_ATTACHMENT_SCAN_UNAVAILABLE", "scan_unavailable", "Attachment scanner is unavailable; retry later.");
+  }
+  return new WorkOrderAttachmentError(415, "WORK_ORDER_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE", error.kind, error.detail);
 }

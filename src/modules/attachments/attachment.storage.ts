@@ -11,7 +11,14 @@ import {
   readChecklistStorageConfig,
 } from "../checklists/storage/checklist-storage.factory.js";
 import type { ChecklistStorageProviderName } from "../checklists/storage/checklist-storage.types.js";
-import { NoopEvidenceScanner, type EvidenceScanner } from "../evidence/evidence-storage.js";
+import {
+  resetEvidenceScannerForTests,
+  resolveEvidenceScanner,
+  setEvidenceScannerForTests,
+} from "../evidence/evidence-scanner.factory.js";
+import type { EvidenceScanner } from "../evidence/evidence-storage.js";
+import { assertStorageKeyWithinTenant } from "../evidence/storage-key-scope.js";
+import { assertUploadVerification, type UploadVerification } from "../evidence/upload-gate.js";
 import { AttachmentError, type Attachment } from "./attachment.types.js";
 
 // Ω4C PR-01 — anexo genérico. REUSA o checklist STORAGE PROVIDER (D-014, sem storage/presigned novo)
@@ -49,16 +56,19 @@ export type AttachmentDownload = {
   readonly sizeBytes?: number;
 };
 
-// Scanner injetável (R2 do crítico): default Noop (clean); FakeEvidenceScanner em teste.
-let scanner: EvidenceScanner = new NoopEvidenceScanner();
+// B-O6R-07b (§3.2) — a variável de módulo com `new NoopEvidenceScanner()` como default MORREU: eram
+// três defaults independentes dizendo "limpo" (aqui, em `work-order-attachment.storage.ts` e em
+// `mobile-evidence-upload.ts`), que é o mecanismo (1) do Ω6R-SEC-004 replicado. Estes três nomes ficam
+// como WRAPPERS FINOS do registro único (`evidence-scanner.factory.ts`) para que as suítes que já os
+// usam não precisem mudar uma linha.
 export function configureAttachmentScannerForTests(next: EvidenceScanner): void {
-  scanner = next;
+  setEvidenceScannerForTests(next);
 }
 export function resetAttachmentScannerForTests(): void {
-  scanner = new NoopEvidenceScanner();
+  resetEvidenceScannerForTests();
 }
 export function getAttachmentScanner(): EvidenceScanner {
-  return scanner;
+  return resolveEvidenceScanner();
 }
 
 export function isMultipartAttachmentRequest(request: Request): boolean {
@@ -159,9 +169,14 @@ export async function saveAttachmentFile(input: {
   readonly entityType: string;
   readonly entityId: string;
   readonly upload: AttachmentUpload["file"];
+  /** B-O6R-07b — a marca do gate viaja do serviço até o provider; sem ela isto não compila. */
+  readonly verification: UploadVerification;
 }): Promise<StoredAttachmentFile> {
+  // O tipo que decide a EXTENSÃO do nome saneado vem do assert, não do `upload.mimeType` declarado —
+  // senão um `.png` no storage continuaria provando apenas o que o cliente escreveu no part.
+  const facts = assertUploadVerification(input.verification, input.upload.buffer);
   const checksum = createHash("sha256").update(input.upload.buffer).digest("hex");
-  const fileName = sanitizeFileName(input.upload.originalName, input.upload.mimeType);
+  const fileName = sanitizeFileName(input.upload.originalName, facts.mimeType);
   const stored = await getDefaultChecklistStorageProvider().save({
     tenantId: input.tenantId,
     // Chave de partição do storage (slot `runId` do provider) = `${entityType}/${entityId}`.
@@ -169,9 +184,9 @@ export async function saveAttachmentFile(input: {
     buffer: input.upload.buffer,
     originalName: input.upload.originalName,
     safeFileName: fileName,
-    mimeType: input.upload.mimeType,
     sizeBytes: input.upload.sizeBytes,
     checksumSha256: checksum,
+    verification: input.verification,
   });
 
   return {
@@ -199,6 +214,13 @@ export async function resolveAttachmentDownload(attachment: Attachment): Promise
   if (!storageProvider || !storageKey) {
     throw new AttachmentError(404, "ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found.");
   }
+  // B-O6R-07b (E1·2) — a chave tem de ficar dentro do tenant DA LINHA antes de qualquer leitura. É por
+  // este resolver que o owner-portal (E5) lê a foto de vistoria cuja `storage_key` veio do CORPO da
+  // requisição de impound; sem o guard, `outroTenant/…` no corpo serviria bytes alheios.
+  assertStorageKeyWithinTenant(
+    { storageKey, tenantId: attachment.tenantId, provider: storageProvider },
+    () => new AttachmentError(404, "ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found."),
+  );
   const object = await createChecklistStorageProviderByName(storageProvider).getObject({ storageKey });
   return {
     body: object.body,
