@@ -50,6 +50,7 @@ import {
   resetJurisdictionRuntimeForTests,
 } from "../src/modules/jurisdiction/jurisdiction.service.js";
 import { saveAttachmentFile } from "../src/modules/attachments/attachment.storage.js";
+import { createUploadVerificationForTests } from "../src/modules/evidence/upload-gate.js";
 import type { ImpoundActorContext } from "../src/modules/impound/impound.types.js";
 
 const TENANT = randomUUID();
@@ -156,6 +157,10 @@ async function seedPhoto(processId: string, buffer: Buffer, mimeType: string): P
     entityType: "impound_intake_inspection",
     entityId: inspection.id,
     upload: { buffer, originalName: `foto.${mimeType === "image/png" ? "png" : "jpg"}`, mimeType, sizeBytes: buffer.length },
+    // B-O6R-07b: TROCA DE MARCA (nenhuma assercao mudou). Este harness chama `saveAttachmentFile`
+    // DIRETO, sem passar por rota, entao a marca vem do helper de teste do gate. Os bytes sao reais
+    // (jimp) e o tipo declarado bate com eles.
+    verification: createUploadVerificationForTests(buffer, mimeType === "image/png" ? "image/png" : "image/jpeg"),
   });
   await impound.addInspectionPhoto(actor(), processId, {
     set: "FRONT",

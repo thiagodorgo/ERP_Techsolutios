@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
+import { PNG_BYTES, uploadFile } from "./helpers/upload-fixtures.js";
+
 // Ω4C PR-01 — anexos genéricos POLIMÓRFICOS (memory service + resolver de posse/RBAC injetável).
 // Cobre: create+list por entityType, cross-tenant 404, posse 404, RBAC herdada 403, soft-delete
 // (some do list + deleteObject chamado), §2.8 (DTO sem campos internos), idempotência 409, download
@@ -55,7 +57,9 @@ function actor(tenantId: string, permissions: readonly string[] = ["maintenance_
 const upload = (entityId: string, over: Record<string, unknown> = {}) => ({
   entityType: "maintenance_order",
   entityId,
-  file: { buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]), originalName: "f.png", mimeType: "image/png", sizeBytes: 4 },
+  // B-O6R-07b: troca de FIXTURE (nenhuma assercao mudou). Os 4 bytes antigos sao so metade da
+  // assinatura PNG (RFC 2083 exige 8) e o sniff os recusa com `content_unrecognized`.
+  file: uploadFile(PNG_BYTES, "f.png", "image/png"),
   ...over,
 });
 

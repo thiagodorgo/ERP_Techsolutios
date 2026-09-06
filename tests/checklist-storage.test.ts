@@ -8,6 +8,7 @@ import test from "node:test";
 
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
+import { createUploadVerificationForTests } from "../src/modules/evidence/upload-gate.js";
 import {
   ChecklistError,
   createChecklistStorageProviderFromConfig,
@@ -31,9 +32,12 @@ test("local checklist storage saves, reads and deletes tenant-scoped objects", a
     buffer,
     originalName: "../../Evidence Photo.png",
     safeFileName: "Evidence_Photo.png",
-    mimeType: "image/png",
     sizeBytes: buffer.length,
     checksumSha256,
+    // B-O6R-07b: TROCA DE MARCA (nenhuma assercao mudou). O campo `mimeType` saiu do input do provider
+    // — o tipo gravado agora vem do retorno de `assertUploadVerification`. Este teste exercita o
+    // PROVIDER isolado, sem subir uma via, entao a marca vem do helper de teste do gate.
+    verification: createUploadVerificationForTests(buffer, "image/png"),
   });
 
   assert.equal(stored.storageProvider, "local");
@@ -160,9 +164,11 @@ test("S3-compatible checklist storage uses SDK commands without real AWS calls",
     buffer,
     originalName: "photo.webp",
     safeFileName: "photo.webp",
-    mimeType: "image/webp",
     sizeBytes: buffer.length,
     checksumSha256,
+    // B-O6R-07b: TROCA DE MARCA (ver o caso do provider local). A assercao de que o `ContentType` do
+    // PutObjectCommand e `image/webp` continua identica — so a PROCEDENCIA desse valor mudou.
+    verification: createUploadVerificationForTests(buffer, "image/webp"),
   });
 
   assert.equal(stored.storageProvider, "s3");

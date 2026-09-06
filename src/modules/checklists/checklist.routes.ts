@@ -3,6 +3,7 @@ import { Router, type Response } from "express";
 import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/persistent-rbac-context.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import { sendVerifiedFile } from "../evidence/serve-verified-file.js";
 import { ChecklistController, type ChecklistServiceResolver } from "./checklist.controller.js";
 import { CHECKLIST_PERMISSIONS, requireAnyChecklistPermission, requireChecklistPermission } from "./checklist.permissions.js";
 import { createDefaultChecklistService } from "./checklist.service.js";
@@ -208,19 +209,12 @@ export function createChecklistRouter(
 }
 
 function sendResult(response: Response, result: ControllerResult): void {
+  // B-O6R-07b (Ω6R-SEC-004) — EGRESSO ENDURECIDO. Antes: `Content-Type` do que a LINHA dizia (isto é,
+  // o que o cliente declarou no upload) + `Content-Disposition: inline`. Agora o tipo é re-derivado dos
+  // BYTES no ato do download, e todo arquivo sai como `attachment` — ver serve-verified-file.ts.
   if (result.file) {
     response.status(result.status ?? 200);
-    response.setHeader("Content-Type", result.file.mimeType);
-    if (result.file.sizeBytes !== undefined) {
-      response.setHeader("Content-Length", result.file.sizeBytes.toString());
-    }
-    response.setHeader("Content-Disposition", `inline; filename="${escapeHeaderFileName(result.file.fileName)}"`);
-    if (Buffer.isBuffer(result.file.body)) {
-      response.send(result.file.body);
-      return;
-    }
-
-    result.file.body.pipe(response);
+    void sendVerifiedFile(response, result.file);
     return;
   }
 
@@ -230,8 +224,4 @@ function sendResult(response: Response, result: ControllerResult): void {
   }
 
   response.status(result.status ?? 200).json(result.body ?? { data: result.data });
-}
-
-function escapeHeaderFileName(fileName: string): string {
-  return fileName.replace(/["\\\r\n]/g, "_");
 }

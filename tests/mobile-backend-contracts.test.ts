@@ -6,6 +6,8 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import { JPEG_BYTES } from "./helpers/upload-fixtures.js";
+
 // Fixa a persistência em memória ANTES dos imports de módulos do app (que carregam config/env.ts, cujo
 // snapshot de env é congelado no 1º import). Sem isto o `.env` local (CORE_SAAS_PERSISTENCE="prisma") faria
 // o harness — que usa MemoryCoreSaasAdapter + serviços em memória — resolver serviços Prisma e falhar. Mesmo
@@ -1883,7 +1885,11 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
     const clientEvidenceId = "woevid-local-upload-1";
-    const bytes = Buffer.from("fake-jpeg-bytes");
+    // B-O6R-07b: troca de FIXTURE (nenhuma assercao mudou). A string "fake-jpeg-bytes" nao tem
+    // assinatura JPEG e o gate a recusa com 415 `content_unrecognized`. O caso NOVO "bytes falsos
+    // declarados jpeg -> 415" nasce em tests/o6r07b-mime-sniff-routes.test.ts; esta suite de contrato
+    // B-108 muda o minimo.
+    const bytes = JPEG_BYTES;
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     const noMetadata = await requestMultipart(baseUrl, "/api/v1/mobile/evidence-uploads", {
       headers,

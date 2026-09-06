@@ -36,7 +36,10 @@ import { SNIFF_HEAD_BYTES, sniffMimeType } from "./content-sniff.js";
  */
 
 export type VerifiedFileToSend = {
-  readonly body: Buffer | Readable;
+  // `NodeJS.ReadableStream` e não `Readable`: é a forma que dois dos quatro `ControllerResult` já
+  // declaram, e `Readable` (o que os providers realmente devolvem) é atribuível a ela. Assim o helper
+  // serve os 4 routers sem que nenhum deles precise mudar linha fora do ramo de arquivo (§5 do plano).
+  readonly body: Buffer | NodeJS.ReadableStream;
   readonly fileName: string;
   readonly sizeBytes?: number;
 };
@@ -86,6 +89,18 @@ export function buildContentDisposition(rawFileName: string): string {
  * tipo estar decidido pelos bytes.
  */
 export async function sendVerifiedFile(response: Response, file: VerifiedFileToSend): Promise<void> {
+  // NUNCA REJEITA. Os 4 `sendResult` que chamam este helper sao sincronos (o §5 do plano so libera o
+  // RAMO DE ARQUIVO deles, entao nao da para torna-los `async` e aguardar), e uma promessa rejeitada
+  // aqui viraria unhandled rejection — derrubando o processo por um arquivo ilegivel. Falha de leitura
+  // do storage encerra a conexao: nada de corpo pela metade com headers de sucesso.
+  try {
+    await writeVerifiedFile(response, file);
+  } catch {
+    response.destroy();
+  }
+}
+
+async function writeVerifiedFile(response: Response, file: VerifiedFileToSend): Promise<void> {
   if (Buffer.isBuffer(file.body)) {
     writeVerifiedFileHeaders(response, file.body, file.fileName, file.body.byteLength);
     response.send(file.body);
@@ -96,7 +111,7 @@ export async function sendVerifiedFile(response: Response, file: VerifiedFileToS
   // Lê só a CABEÇA (14 bytes bastam para as 4 assinaturas), decide o tipo, escreve os headers, manda a
   // cabeça e emenda o resto por `pipe` — o corpo sai byte-idêntico, sem `unshift` (que lançaria
   // `ERR_STREAM_UNSHIFT_AFTER_END_EVENT` num arquivo menor que a cabeça, o caso de 0 B e 5 B).
-  const source = file.body;
+  const source = file.body as Readable;
   const { head, ended } = await readStreamHead(source, SNIFF_HEAD_BYTES);
 
   if (ended) {
