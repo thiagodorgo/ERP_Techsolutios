@@ -14,10 +14,28 @@
 > agente em `.claude/agents/`, rode o script para espelhar (e vice-versa). Fonte canônica de conduta:
 > `CLAUDE.md`; regras de junta: §C7.
 >
-> **Cadeiras efêmeras de ciclo (`.claude/agents/especialistas/`) NÃO são espelhadas:** o sync é cego a
-> subdiretório (`P-SYNC-AGENTS-NAO-RECURSIVO`, ABERTA — o `--check` ec=0 não prova nada sobre elas).
-> Os 8 corpos de jurado do ciclo 5 do `B-O6R-02` (`*-c5-*`) vivem lá; Codex: leia-os direto de
-> `.claude/agents/especialistas/` na raiz do repositório.
+> **Cadeiras efêmeras de ciclo (`.claude/agents/especialistas/`) SÃO espelhadas** — e o `--check` as
+> cobre. Medido em 2026-09-05: `node scripts/sync-agent-agents.mjs --check` → `OK — 34 agentes`
+> (`ec=0`), com **11** corpos em `.claude/agents/especialistas/` e **11** em
+> `.agents/agents/especialistas/`. Provado **por mutação**: alterado o corpo de um especialista sem
+> espelhar, o `--check` sai **`ec=1`** e **nomeia o arquivo** (`DIVERGE:
+> .agents/agents/especialistas/jurado-c5-banco-fk-triggers.md`); restaurado, volta a `ec=0`.
+> Codex: leia os espelhos em `.agents/agents/especialistas/` como os demais.
+>
+> Texto anterior, preservado (§A2 — acrescentar, nunca apagar) e **falso desde `99f1840` (2026-09-04)**:
+> ~~"Cadeiras efêmeras de ciclo NÃO são espelhadas: o sync é cego a subdiretório
+> (`P-SYNC-AGENTS-NAO-RECURSIVO`, ABERTA — o `--check` ec=0 não prova nada sobre elas). … Codex: leia-os
+> direto de `.claude/agents/especialistas/` na raiz do repositório."~~ Era **verdade quando escrito** e o
+> autor **não herdou premissa de ninguém: ele leu a `main`, e a `main` lhe deu razão.** Medido por
+> `git show <commit>:scripts/sync-agent-agents.mjs`: `e6a6461` (#367, 09-01) **raso**, `f895dd2` (#368,
+> 09-02 — o commit que escreveu esta nota) **raso**, `99f1840` (#371, 09-04) **recursivo**. A nota foi
+> **verdadeira na `main` de 09-02 a 09-04** e envelheceu quando o script mudou, sem que ninguém a
+> revisse. `P-SYNC-AGENTS-NAO-RECURSIVO` está **FECHADA** — ver `pendencias.md`.
+>
+> **Datar pela linha certa.** Uma versão anterior deste parágrafo datava a nota por `1aeb6e9`/`8145415` —
+> commits que vivem **só na branch do #371** e não são ancestrais de `f895dd2` nem da `origin/main`. É a
+> mesma falha que o §especialistas abaixo acabou de proibir, cometida no commit que a proíbe: a regra foi
+> escrita e o hábito voltou na frase seguinte. Datar um texto da `main` exige a linha da `main`.
 
 ## Como o Codex usa estes papéis (protocolo de emulação da junta)
 
@@ -115,11 +133,40 @@ ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do
 | `especialista-maquinas-de-desfazer` | **VETO** | B-O6R-02, ciclo 2 | Enumera **todas** as portas da API que desfazem o mesmo efeito monetário/de estado e prova que **concordam**; caça estado alcançável **sem rota de saída** (guard que fecha a saída sem fechar a entrada); exige invariante de **efeito líquido**, nunca de existência de linha; executa os drills de mutação em fixture. **Achador/votante: não escreve a correção.** |
 | `especialista-arnes-postgres-node` | **VETO** | B-O6R-02, ciclo 2 | Valida o **arranjo** de cada medição (comando, env — inclusive `DATABASE_URL` —, N e forma do job) antes do número; ataca barreira de teste com **decoy**; enumera promessa que pode rejeitar **sem handler**; mede vazamento de catálogo e de dado antes/depois, inclusive em lote **abortado**. Piso: **15/15 na forma exata do job — não se arredonda.** **Achador/votante: não escreve a correção.** |
 
-> **Divergência registrada (§A2), não consolidada em silêncio:** neste head, `scripts/sync-agent-agents.mjs:66`
-> lê **apenas o topo** de `.claude/agents/` e o `--check` varre **apenas o topo** de `.agents/agents/` — os
-> arquivos de `especialistas/` não são espelhados nem cobertos pelo guard. O espelho desta subpasta depende da
-> versão **recursiva** do script, que vive na trilha de governança. Enquanto as duas versões não convergirem, o
-> espelho de `especialistas/` **não é garantido pelo `--check`**: conferir à mão antes da junta.
+> **Divergência RESOLVIDA (§A2) — corrigida em 2026-09-05, B-O6R-02 ciclo 5.** O `--check` **cobre**
+> `especialistas/`. **Não confira à mão; rode o guard.** Medido neste head:
+> `node scripts/sync-agent-agents.mjs --check` → `OK — 34 agentes, espelho consistente` (`ec=0`), e
+> `.claude/agents/especialistas/*.md` = **11** contra `.agents/agents/especialistas/*.md` = **11**.
+> O script é **recursivo de propósito** (`scripts/sync-agent-agents.mjs`, `listMd()`), com o motivo no
+> próprio comentário: *"o listing raso já deixou `especialistas/` fora do espelho E do `--check` dois
+> ciclos seguidos"*.
+>
+> **Por que isto era perigoso, e não apenas desatualizado:** o texto abaixo mandava **desligar um guard
+> que funciona** ("conferir à mão antes da junta") — e conferência manual antes da junta é exatamente o
+> passo que falhou os dois ciclos que motivaram a versão recursiva. A afirmação "a versão recursiva vive
+> na trilha de governança" não se sustenta: ela está na `main`.
+>
+> **CORREÇÃO (2026-09-05), de um over-claim meu apanhado por cadeira independente antes do merge.** Eu
+> havia escrito aqui que a nota e o script recursivo *"entraram no mesmo commit `99f1840`, logo a nota já
+> nasceu falsa"*. **É falso, e o erro é de medição.** Medido na história da **branch** (`7adff45` ainda é
+> objeto): a nota entrou em **`8145415` (2026-08-23)**, quando o script **era** raso; o script virou
+> recursivo em **`1aeb6e9` (2026-08-25)**, e `8145415` é ancestral de `1aeb6e9`. A nota **nasceu
+> verdadeira** e ficou falsa **dois dias depois** — ninguém a reviu ao consertar o script.
+>
+> O "mesmo commit" só aparece porque o **squash** do #371 colapsou a branch inteira em `99f1840`: eu datei
+> os dois com `git log -S` **na `main`**, onde a história interna da branch não existe mais, e li o
+> achatamento como simultaneidade. **Regra que fica:** `git log -S` na `main` não data nada que aconteceu
+> **dentro** de uma branch squashada — é a mesma classe do `is-ancestor`, que diz "não-ancestral" para toda
+> branch squash-mergeada. O mecanismo real não é "nota nascida falsa", é **conserto que não atualizou a
+> documentação** — e é esse que a próxima pessoa precisa reconhecer.
+>
+> Texto original preservado (§A2 — acrescentar, nunca apagar), **falso e sem efeito**:
+>
+> > ~~neste head, `scripts/sync-agent-agents.mjs:66` lê **apenas o topo** de `.claude/agents/` e o
+> > `--check` varre **apenas o topo** de `.agents/agents/` — os arquivos de `especialistas/` não são
+> > espelhados nem cobertos pelo guard. O espelho desta subpasta depende da versão **recursiva** do
+> > script, que vive na trilha de governança. Enquanto as duas versões não convergirem, o espelho de
+> > `especialistas/` **não é garantido pelo `--check`**: conferir à mão antes da junta.~~
 
 ## Composição típica da junta por tipo de PR
 - **Feature normal:** planejador → crítico → dev → `validador-mestre` (VETO) + `inspetor-de-rotas` + `coordenador-de-acessos` (se toca acesso) + `cognicao-visual` (se toca tela).

@@ -4945,7 +4945,50 @@ coluna `dono` do `pendencias-indice.md` não deve ser citada** — vale ler o ca
 mas corrompe um terço da resposta do artefato de controle que a rodada inteira usa para saber o que está
 pendente e com quem.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: as duas faltas medidas do classificador de dono em `agent-orchestration/controle/gerar-indice-pendencias.py` (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)
+**EMENDA de 2026-09-05 (B-O6R-02 ciclo 5, PR de registro consolidado) — re-medição, dono órfão e uma
+correção ao mecanismo descrito acima.** Emenda dentro da própria entrada, sem cabeçalho novo: um `## `
+repetido criaria um segundo ID no índice e inflaria o placar — o artefato que esta pendência existe para
+proteger. Texto acima **intocado** (§A2).
+
+**(1) O dono ficou órfão.** O campo abaixo aponta para o bloco **`SAN2-5`**. Medido: `SAN2-5` é o **PR #367**,
+`MERGED` em **2026-09-01** (`e6a6461`) — e **não tocou o gerador**. O último commit da `main` a tocar
+`gerar-indice-pendencias.py` é o **#362** (`87f6ae6`, `SAN2-1R`), anterior a esta pendência. A linha 98
+defeituosa está **viva na `main`** neste head. O dono precisa ser re-atribuído: quem o detinha entregou e
+fechou sem executá-lo.
+
+**(2) Re-medição, com a lógica do próprio gerador** (não uma varredura própria — a varredura própria de `##`
+foi um dos erros de medição desta rodada; o gerador parte em **toda** linha `## ` e só então filtra
+`## P-…`, com a classe `[A-Za-z0-9ΩΔ_-]`, que não inclui `.`):
+
+| | 2026-08-30 (texto acima) | **2026-09-05 (re-medido)** |
+|---|--:|--:|
+| cabeçalhos `## P-` | 231 | **263** |
+| `dono = sim` | 108 | **134** |
+| — **falsos** (único valor: `a atribuir`) | 91 | **85** |
+
+Conferido contra o que o **consumidor** lê: `pendencias-indice.md` tem **134** `sim` e **129**
+`**a atribuir**` (134 + 129 = 263).
+
+**(3) Correção ao mecanismo: a falta 2, no código REAL, não sustenta o defeito sozinha.** O trecho citado
+acima reproduz a segunda alternativa **com `re.I`**. A linha 98 da `main` **não tem `re.I` nela**:
+
+```python
+dono = bool(re.search(r'\*\*dono:\*\*\s*(?!a atribuir)', body, re.I)) or bool(re.search(r'\*\*Dono:?\*\*', body))
+```
+
+Sem `re.I`, `\*\*Dono:?\*\*` só casa **`Dono` com D maiúsculo**, e as entradas escrevem `**dono:**` minúsculo.
+Medido, isolando cada alternativa sobre as 263: a falta 2 marca **0** entradas sozinha (as 11 em que ela casa
+também são casadas pela falta 1). **Consequência prática, medida:** consertar **apenas** a falta 1 levaria os
+falsos `sim` de **85 → 0**; é sob o snippet citado (com `re.I`) que sobrariam **85**. A frase *"mesmo que a
+falta 1 fosse consertada, o `or` reintroduziria o defeito"* vale para o snippet, **não** para o código como
+está. Isso **não** dispensa endurecer a falta 2 — ela é uma porta aberta para quem escrever `**Dono:**` —,
+mas dimensiona o conserto honestamente, e evita que quem receber conclua que o conserto de uma só não
+adianta. Quem corrigir continua devendo a **prova por mutação** já exigida acima.
+
+**Quem mediu não conserta** (§C7.4-bis): esta emenda é registro, e nenhuma linha do gerador foi tocada
+neste PR.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **dono:** **RE-ATRIBUÍDO em 2026-09-05** — bloco próprio de **ferramentas de registro** (sucessor do `SAN2-5` §3.5), a ser encaixado na fila pelo dono ou pela junta; **não** o `B-O6R-07b`, que é uploads/`SEC-004` e não toca registro. Deliberadamente **não** se inventou um `SAN2-7`: a trilha vai de `SAN2-1` a `SAN2-6` e criar número novo aqui seria fabricar um bloco que ninguém planejou. Dono anterior, preservado (§A2): *"bloco **SAN2-5** — \"ferramentas de registro honestas\", **parte 2** … (dono NOMEADO pelo `SAN2-3`, §3.5 do plano, quitando a ressalva do porteiro do #363; se o dono humano redirecionar, re-atribui-se com registro)"* — cláusula de redirecionamento **exercida aqui**, com o motivo medido: o `SAN2-5` mergeou (#367, `e6a6461`) sem executar a parte 2.
 
 
 ---
@@ -5504,10 +5547,59 @@ aplica a normalização de fim de linha) publicada no **APENSO DE COMPOSIÇÃO, 
 `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano.md` — **nunca** o `ec=0` do S0. O apenso E1.6 já
 diz isso ao inspetor do ciclo 5, com todas as letras.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: o `readdirSync`
+**FECHAMENTO em 2026-09-05 — a premissa desta pendência morreu e ninguém a fechou.** Achada por
+**cadeira independente** ao julgar o PR de registro consolidado do `B-O6R-02` c5; quem achou **não**
+escreveu este fechamento (§C7.4-bis). O texto acima fica **intocado** (§A2): ele descreve corretamente o
+mecanismo de 2026-08-31.
+
+**A premissa não existe mais — mas ela EXISTIA quando esta pendência nasceu.** O corpo cita
+`scripts/sync-agent-agents.mjs` l.66 com `readdirSync(SRC).filter(...)` **plano**. Na `main` deste head o
+script usa `listMd()` **recursivo**. Cronologia medida com `git show <commit>:scripts/sync-agent-agents.mjs`:
+
+| commit | data | script |
+|---|---|---|
+| `e6a6461` (#367) | 2026-09-01 | **raso** |
+| `f895dd2` (#368) | 2026-09-02 | **raso** |
+| `99f1840` (#371) | 2026-09-04 | **recursivo** |
+
+A pendência foi aberta em **2026-08-31** e entrou na `main` por `e6a6461`, onde o script **era** raso.
+**Ela nasceu verdadeira**: descreveu corretamente a `main` do seu tempo e **ficou sem objeto quatro dias
+depois**, em `99f1840`. Fica **FECHADA por perda de objeto**, não por erro de quem a escreveu.
+
+**Correção de um erro que este próprio fechamento cometeu**, apanhado por cadeira independente antes do
+merge: a primeira versão deste parágrafo dizia que o recursivo fora publicado *"cinco dias antes de esta
+pendência ser aberta"* e que ela *"nasceu de leitura de uma versão que a `main` já não tinha"*. **Inverte
+a cronologia.** O erro veio de datar pelo commit `1aeb6e9` (2026-08-25), que vive **só na branch** do #371
+e não é ancestral de `e6a6461` — a mesma falha de datação-pela-branch que este PR registrou como regra
+duas seções antes. Registrado em vez de silenciosamente reescrito, porque o padrão importa mais que a
+instância: **a regra escrita não impede a repetição; só a medição de terceiro impediu.**
+
+**Critérios de fechamento, um a um, por execução:**
+
+| critério | como fechou |
+|---|---|
+| **(a)** decisão escrita sobre espelhar ou não `especialistas/**` | **DEVE ser espelhado** — é o que a `main` faz, e agora está escrito: `.agents/agents/README.md` (topo e §especialistas) |
+| **(b)** espelho pelo mesmo mecanismo + `--check` **vermelho por mutação** | **PROVADO POR MUTAÇÃO.** Corpo de `.claude/agents/especialistas/jurado-c5-banco-fk-triggers.md` alterado sem espelhar → `--check` **`ec=1`**, `DIVERGE: .agents/agents/especialistas/jurado-c5-banco-fk-triggers.md`; restaurado → `ec=0`. Mesmo `listMd()` dos corpos-base; 11 espelhos para 11 corpos |
+| **(c)** *(caminho “não deve”)* | **não se aplica** — venceu o “deve” |
+| **(d)** divergência de convenção com `demo/investidor` reconciliada | **A divergência não existe — medida, não argumentada.** `demo/investidor` tem o script **recursivo** (`withFileTypes` presente) e **17 corpos para 17 espelhos** em `especialistas/`; cadeira independente rodou o `--check` sobre a árvore reconstruída dela: `OK — 40 agentes`, `ec=0`. As duas linhas já praticam a **mesma** convenção — espelhar —, então não há o que reconciliar. Divergência de *linha* segue existindo (`git rev-list --left-right --count origin/main...demo/investidor` = **19 / 49**), mas é de conteúdo, não de convenção de espelho. **Versão anterior deste critério, corrigida:** dizia que a branch *"está fora da linha da `main`, logo não governa"*, com **50 / 18** — números errados **e** argumento no lugar de medição. Quando a medição estava disponível e era mais forte, eu argumentei |
+
+**Consequência que importa mais que o fechamento:** enquanto isto ficou ABERTA com premissa morta, o
+`.agents/agents/README.md` mandava, **no topo**, ler os especialistas direto de `.claude/agents/` e
+avisava que *"o `--check` ec=0 não prova nada sobre elas"* — instrução falsa citando **esta** pendência
+como fundamento. As duas coisas se sustentavam mutuamente: a pendência dava respaldo à nota, e a nota
+dava plausibilidade à pendência. Corrigidas juntas, no mesmo PR, por isso.
+
+Fica de pé, e **não** é fechado aqui: a orientação do apenso `E1.8` de provar corpo de jurado por
+**tabela de hashes** continua boa prática — ela nunca dependeu de o `--check` ser cego, e um hash
+publicado prova mais que um `ec=0`.
+
+- **status:** FECHADA em 2026-09-05 · **fechado por:** PR de registro consolidado do `B-O6R-02` ciclo 5
+  (achado da cadeira independente que julgou o PR; fechamento escrito por outro papel, §C7.4-bis) ·
+  **evidência:** critérios (a),(b),(d) na tabela acima, com o drill de mutação `ec=1` → `ec=0` ·
+  **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: o `readdirSync`
   plano é o mecanismo original do script, anterior à existência de `.claude/agents/especialistas/`, que
-  nasceu nos ciclos de especialistas deste bloco; nenhum bloco desta rodada o alterou) · **dono:** a
-  atribuir — candidato natural é o próximo bloco autorizado a tocar `scripts/sync-agent-agents.mjs`.
+  nasceu nos ciclos de especialistas deste bloco; nenhum bloco desta rodada o alterou) · **dono:**
+  encerrado — candidato natural é o próximo bloco autorizado a tocar `scripts/sync-agent-agents.mjs`.
   **Não nomeio bloco que não combinei**, e não atribuo ao ciclo 5: `scripts/sync-agent-agents.mjs`
   **não está na allowlist fechada** do dev do ciclo 5 — o §5 do plano dele (l.129-134) lista os arquivos
   permitidos **um a um** e fecha com *“Arquivo fora das listas → o dev PARA e devolve”* —, e o ciclo 5 é a
@@ -5849,7 +5941,7 @@ arquivo de teste está fora do escopo permitido. Escopo `pre-existente` com prod
 **Critério de fechamento:** sem `DATABASE_URL`, o arquivo declara skip (ou registra os testes e pula) —
 canônica 1 com **0 fail ambiental** e os pulos DECLARADOS; o piso do runner continua mudo para ele.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)
+- **status:** ABERTA · **severidade:** MEDIA · **dono:** **ATRIBUÍDO em 2026-09-05** (ressalva R6 do porteiro pós-merge) — **trilha do arnês de teste**, sucessora do bloco `B-O6R-ARNES` (#359, `f081b5d`): é ela que detém o **piso de denominador do runner**, e é o piso dela que **NOMEIA** `tests/core-saas-role-authority.test.ts` ao recusar o `ec=0`. O conserto vive exatamente onde essa trilha já tem mandato — o arquivo de teste e o `src/database/prisma.ts` que ele carrega. **Não** foi atribuído ao `B-O6R-07b` (uploads/`SEC-004`), que não toca arnês nem `src/database/`. Valor anterior, preservado (§A2): *"a atribuir (bloco que possa tocar `src/database/prisma.ts` ou o teste)"*.
 
 ## P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5 tem TABELA nomeada, não ARQUIVO
 
@@ -6316,7 +6408,16 @@ PROPRIEDADE (*provar que a derivação NÃO ocorreu, por qualquer testemunha que
 exceção distintiva ou relógio — DESDE QUE a evidência publique a margem medida ou o controle
 distintivo; testemunha sem margem publicada não é testemunha*). Nenhum código muda por este registro.
 
-## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 9 rotas mutantes alcançáveis pelo técnico sobre OS ALHEIA — **ALTA**
+## P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 10 vias mutantes sobre OS ALHEIA (9 nos routers de OS + 1 no sync mobile) — **ALTA**
+
+> **Título corrigido em 2026-09-05** (ressalva D1 do porteiro pós-merge do `B-O6R-07a`). Título original,
+> preservado (§A2): *"9 rotas mutantes alcançáveis pelo técnico sobre OS ALHEIA — **ALTA**"*. Ele contava
+> **9** enquanto o **APENSO** desta mesma entrada (mais abaixo) e a linha A3 da tabela de achados já
+> registravam a **décima via** (`POST /api/v1/mobile/sync/work-order-actions` com `work_order.mileage`,
+> medida por **execução**: HTTP 200, km `null` → `111111`). O corpo dizia dez e o cabeçalho dizia nove — e o
+> cabeçalho é o que o `pendencias-indice.md` publica, truncado em 88 caracteres, para quem só lê o índice.
+> As **9** seguem sendo as dos dois routers de OS; a décima está fora desse censo, e é por isso que ela
+> escapou — não por engano de contagem dentro dele.
 
 **Dono nomeado: `B-O6R-07c` (branch `fix/o6r07c-subresource-scope`)** — bloco novo, a planejar após o
 merge do 07b. **Origem do registro:** achado `C1-A1` da junta do ciclo 1 do B-O6R-07a; a declaração de
@@ -6632,3 +6733,48 @@ elas, o índice foi de **FECHADA 62 → 63** e `SEM-STATUS 3 → 2`.
 Formatação que muda o que um gerador lê é conteúdo, não estilo.*
 
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (as 3 corrigidas) e `pre-existente` (as 2 reportadas) · **dono:** as 2 restantes, com seus blocos
+
+## P-GOV-REGISTRO-PURO-QUORUM (2026-09-05) — MÉDIA · PR de registro puro: junta de 3 ou uma cadeira independente? A prática desta cadeia foi as duas coisas
+
+**Registrado por §A2, não decidido em silêncio.** Achado pela cadeira independente que julgou o PR de
+registro consolidado do `B-O6R-02` c5, que explicitamente **não** quis escolher a convenção — e quem
+escreveu o PR também não deve escolhê-la sozinho, porque é a regra que o julga.
+
+**O conflito, medido na cadeia INTEIRA de 7 PRs de registro** (`#372`–`#378`; a primeira versão desta
+entrada dizia "6" e omitia `#372` e `#376` — corrigido por medição de cadeira independente):
+
+| PR | merge | tem ata de junta? |
+|---|---|---|
+| #372 | `cae6086` | **não** — julgado por porteiro independente pré-merge, uma cadeira, sem ata |
+| #373 | `0afedf8` | **sim** — `J-O6R-07a-ressalvas.md`, 3 cadeiras |
+| #374 | `066b47e` | **não** |
+| #375 | `1a7ad4d` | **não** |
+| #376 | `3c29189` | **não** — só reavaliação de porteiro pós-merge |
+| #377 | `9919f4d` | **não** |
+| #378 (este) | — | **não** — dois pareceres de uma cadeira independente, não uma junta de 3 |
+
+Conferido: não existe `J-*.md` nem diretório em `votos/` para `#372` e `#376`; eles só aparecem
+**citados** em documentos de outros blocos.
+
+O §C7.1 diz *"junta sem registro = merge inválido"* e não abre exceção por tipo de PR. Lido ao pé da
+letra, **cinco** merges **já consumados** seriam inválidos (`#372`, `#374`, `#375`, `#376`, `#377`) — o que
+ou está errado, ou é uma dívida que ninguém declarou. O §C7.1-ter(b) calibra **quórum por risco** (unanimidade de 3 quando o bloco toca dinheiro,
+segurança, permissão ou perda de dado; maioria de 3 no resto), mas o "resto" pressupõe uma junta; não
+existe faixa escrita para *"PR que não toca código, teste nem escopo"*.
+
+**Por que não é academicismo:** um PR de registro **move números publicados** (este mexeu em
+`production_readiness`, no `blocks_completed` do histórico e no placar de pendências) e **corrige
+instruções que outros agentes obedecem** (a nota do `.agents/agents/README.md` mandava desligar um guard).
+É pouco risco de produto e **muito** risco de registro — exatamente a categoria que o §C7.1-ter foi
+escrito para calibrar, e a única que ele não nomeia.
+
+**Critério de fechamento (o que fecha, não como fazer):** uma decisão **escrita** — do dono ou de junta —
+que diga, para PR que não toca `src/`, `tests/` nem `prisma/`, qual é o quórum exigido; e, se for menos
+que 3, o que substitui a ata (parecer de cadeira independente registrado em `votos/`, por exemplo). As
+duas respostas são legítimas; a ausência não é, porque hoje o mesmo tipo de PR mergeou dos dois jeitos na
+mesma semana.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: a assimetria começa
+  no #373/#374, 2026-09-05, antes deste PR; e o §C7.1 é de 2026-07-13) · **dono:** **decisão do dono ou de
+  junta de governança** — não é matéria de implementação, e quem escreve PR de registro é parte
+  interessada na resposta

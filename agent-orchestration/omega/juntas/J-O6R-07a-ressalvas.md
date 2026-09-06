@@ -109,3 +109,53 @@ se fabrica aprovação para um ciclo que a junta reprovou**.
 
 **O que NÃO entra, com razão medida:** `blocks_completed` (a ressalva do porteiro estava errada no
 instrumento — C2) e `pendencias-indice.md` (o apenso é neutro, e a `main` está em sincronia — C3).
+
+---
+
+## ADENDO PÓS-MERGE (2026-09-05) — ressalvas **D2** e **D3**, medidas depois do merge
+
+Acrescentado pelo PR de registro consolidado do `B-O6R-02` ciclo 5. **Nada acima foi alterado** (§A2): a
+ata registra o que a junta viu; este adendo registra o que a execução mostrou depois.
+
+### D2 — a ata diz que o PR **não** toca `pendencias-indice.md`, e ele toca
+
+O §"O que NÃO entra" afirma: *"`pendencias-indice.md` (o apenso é neutro, e a `main` está em sincronia)"*.
+Medido no merge do próprio PR (**#373**, `0afedf8`):
+
+```
+agent-orchestration/controle/pendencias-indice.md  |  10 +-
+```
+
+**As duas metades da frase não têm o mesmo valor de verdade.** *"O apenso é neutro"* **procede** — nenhuma
+coluna de **estado**, **severidade** ou **dono** mudou. *"Não entra no PR"* **não procede**: o apenso somou
+30 linhas ao `pendencias.md`, e o índice carrega o **número da linha** de cada entrada, então regenerá-lo
+reescreveu **10 células de número**. O erro é de classe conhecida nesta rodada — *neutro no conteúdo* foi
+lido como *ausente do diff*. Um arquivo **gerado** entra no diff sempre que a **fonte** se desloca, mesmo
+quando nada que ele afirma muda.
+
+### D3 — o head julgado (`533cefd`) é órfão, e **não** é o head que mergeou
+
+| fato | medida |
+|---|---|
+| `533cefd` existe como objeto | `git cat-file -t` → `commit` |
+| alcançável de quantos refs | **0** (`git for-each-ref --contains`) — órfão, sujeito a GC |
+| é ancestral do head mergeado? | **NÃO** (`git merge-base --is-ancestor 533cefd 7e0a378` → falso) |
+| head que o GitHub mergeou | `headRefOid` = **`7e0a378`** — também alcançável de **0** refs |
+| merge commit (durável) | **`0afedf8`**, na `main` |
+| `7e0a378^{tree}` vs `0afedf8^{tree}` | **IDÊNTICAS** (`f8afbcf…`) — o squash preservou a árvore inteira |
+
+**Consequência, dita sem suavizar:** a ata ancora seu veredito em `533cefd`, um commit que (a) não é
+alcançável de nenhuma referência, (b) **não está na cadeia** do que foi mergeado, e (c) difere do que
+entrou na `main` em **11 arquivos**, incluindo `pendencias.md` (**+110 −3**) e `pendencias-indice.md`. Um
+leitor futuro **não consegue reconstruir** o que as três cadeiras leram: o objeto morre no próximo `gc` e
+já não corresponde ao conteúdo publicado.
+
+**O que é auditável e deve ser citado no lugar dele:** o merge commit **`0afedf8`**, cuja árvore é
+byte-idêntica à do head realmente mergeado (`7e0a378`). O `achados.jsonl` — o artefato central do voto —
+é **idêntico** entre `533cefd` e a `main`, então o objeto do julgamento sobreviveu; o que não sobreviveu
+foi a **âncora**.
+
+**Isto não reabre o veredito** — quem registra não julga (§C7.4-bis). Registra-se para que a próxima ata
+ancore no que dura: `merge_commit`, ou um head **empurrado** para o remoto. É a `D-DURABILIDADE-BRANCHES-LOCAIS`
+outra vez, agora em cima de um head de ata, e na mesma semana em que este bloco a pagou com dois pareceres
+que só existiam em disco (ressalva **R1**).
