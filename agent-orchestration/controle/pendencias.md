@@ -1025,7 +1025,8 @@ Entregue no bloco Ω4-4 (branch feat-omega4-4-cash). Decisões e bordas que fica
 - **Paridade InMemory×Prisma** é estrutural (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
   (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma não é exercido sem banco, como nos vizinhos Ω4-1/4-2a.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** ABERTA · **severidade:** a classificar · **dono:** **ATRIBUÍDO em 2026-09-05** — **decisão do dono ou de junta**, não de implementação. **NÃO foi fechada junto com as irmãs**: só a parte `Ω6R-DIN-002` (estorno) foi resolvida pelo #371; o restante desta entrada é uma **lista de limites de desenho aceitos** (moeda BRL-only por allowlist, campos imutáveis do lançamento, erros bi-modais por origem, paridade InMemory×Prisma não exercida sem banco) — nada que um bloco de atomicidade fechasse, e fechá-la por tabela junto das outras duas seria exatamente o erro que a disposição delas evitou. O que falta é **classificar**: quais desses limites viram escopo e quais viram decisão registrada
+  <sub>**Disposição de 2026-09-05** (ressalva do `porteiro-pos-merge` de `ed0a692`, achada por cadeira independente): a guarda-chuva `P-O6R-B02` — que o §Reconciliação dela declarava dona desta entrada, dando-lhe *"a severidade e o dono (bloco) que não tinham"* — **FECHOU** em 2026-09-05. Sem esta disposição, esta entrada ficaria ABERTA **sem dono nenhum**, com a matéria já fechada. Quem achou não escreveu esta disposição (§C7.4-bis).</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-LIQUID-ATOMIC — Liquidação lançamento↔título não-atômica (MÉDIA)
@@ -1037,7 +1038,8 @@ client_action_id o 2º entry.create dá 409 duplicate_payment ANTES do applyPaym
 applyPayment em prisma.$transaction (documentar limitação InMemory). Só o cenário sem token idempotente + concorrência
 genuína abre a janela.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+- **status:** FECHADA em 2026-09-05 · **severidade:** MEDIA · **fechado por:** `B-O6R-02` ciclo 5 (PR #371, `99f1840`) — o achado `Ω6R-DIN-001` que esta entrada virou está `fechado` com hash de merge no `achados.jsonl` · **evidência medida no código:** `src/modules/financial-uow/financial-uow-prisma.ts` abre UMA transação tenant-scoped e entrega repositórios ligados a ela, e o comentário do módulo nomeia o achado — *"o work lançar = rollback de tudo — inclusive do lançamento do perdedor numa corrida (DIN-001, F3)"*. Era o fix que esta entrada pedia por extenso (*"envolver entry.create + applyPayment em `prisma.$transaction`"*) · **dono:** encerrado
+  <sub>**Disposição de 2026-09-05** (ressalva do `porteiro-pos-merge` de `ed0a692`, achada por cadeira independente): a guarda-chuva `P-O6R-B02` — que o §Reconciliação dela declarava dona desta entrada, dando-lhe *"a severidade e o dono (bloco) que não tinham"* — **FECHOU** em 2026-09-05. Sem esta disposição, esta entrada ficaria ABERTA **sem dono nenhum**, com a matéria já fechada. Quem achou não escreveu esta disposição (§C7.4-bis).</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-REVERSE-MUTABLE — reverse() não chama assertMutable — ✅ RESOLVIDO no Ω4-5
@@ -1089,7 +1091,8 @@ a proteção fica completa quando o writer também o pegar. **Controle compensat
 corrida (count/sumAmount extra vs o snapshot congelado), mantendo-se imune a pagamentos cross-mês/reconcile legítimos.
 Espelha o precedente P-Ω4-4-LIQUID-ATOMIC.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+- **status:** FECHADA em 2026-09-05 · **severidade:** MEDIA · **fechado por:** `B-O6R-02` ciclo 5 (PR #371, `99f1840`) — `Ω6R-DIN-008` está `fechado` com hash de merge no `achados.jsonl` · **evidência medida no código:** esta entrada dizia que o fix REAL exigia o guard-read do writer NA MESMA tx, com lock compartilhado em `(tenant,period)`, e que isso era "fora deste bloco". Hoje `src/database/financial-period-lock.ts` é o lar único (`pg_advisory_xact_lock` + `..._shared`) e `src/modules/financial-titles/financial-title-prisma.repository.ts` **importa e usa** `acquirePeriodLockShared`; o comentário de `financial-period-close-prisma.repository.ts` afirma nominalmente que *"o read-skew de P-Ω4-6-CLOSE-RACE está fechado"* · **dono:** encerrado
+  <sub>**Disposição de 2026-09-05** (ressalva do `porteiro-pos-merge` de `ed0a692`, achada por cadeira independente): a guarda-chuva `P-O6R-B02` — que o §Reconciliação dela declarava dona desta entrada, dando-lhe *"a severidade e o dono (bloco) que não tinham"* — **FECHOU** em 2026-09-05. Sem esta disposição, esta entrada ficaria ABERTA **sem dono nenhum**, com a matéria já fechada. Quem achou não escreveu esta disposição (§C7.4-bis).</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-6-REOPEN-FOUR-EYES — reopen sem segundo ator (risco residual conhecido, BAIXA)
@@ -2636,7 +2639,7 @@ banco". Vizinhas na mesma condição: `tests/cheques.test.ts:59-65`, `tests/fina
 **Bloqueia (todos os seis):** feature nova em financeiro (lançamentos, títulos, cheques, fechamento,
 conciliação, faturamento). O P1 `Ω6R-QUA-003` vem **antes** de nova feature financeira, por deliberação da
 J-6R — não depois.
-**FECHAMENTO em 2026-09-06 — ressalva A3 do `porteiro-pos-merge` de `ed0a692`.** A linha de status abaixo
+**FECHAMENTO em 2026-09-05 (noite) — ressalva A3 do `porteiro-pos-merge` de `ed0a692`.** A linha de status abaixo
 dizia `ABERTA — 5 P0 + 1 P1` enquanto os **seis** achados que esta entrada nomeia estavam `fechado` no
 `achados.jsonl` e contados como fechados no painel. Achado por quem **não** escreveu este fechamento
 (§C7.4-bis). Texto acima **intocado** (§A2).
@@ -2653,20 +2656,52 @@ dizia `ABERTA — 5 P0 + 1 P1` enquanto os **seis** achados que esta entrada nom
 O bloco `B-O6R-02` foi ao **ciclo 5** (teto do §C7.4), aprovado **3×0** pela junta e mergeado no **#371**;
 o porteiro pós-merge dele e a reavaliação pós-#376 estão em `votos/B-O6R-02-ciclo5/`.
 
-**O que esta entrada deixa de bloquear, e o que NÃO deixa.** O `Bloqueia (todos os seis)` acima —
-*feature nova em financeiro* — **cai**, porque os seis fecharam. O que **permanece**, com pendência
-**própria** e dono próprio, e por isso não justifica manter esta guarda-chuva aberta:
+**Aviso de leitura — o ID `P-O6R-B02` fica em DOIS baldes.** Este arquivo usa cabeçalho repetido para
+emendas, e existe um segundo `## P-O6R-B02 — CICLO 4 REPROVADO 4×1 (2026-08-28)`, que segue **ABERTA**
+(é o registro histórico da reprovação do ciclo 4, não a matéria dos seis achados). Logo, no
+`pendencias-indice.md` o mesmo ID aparece em **FECHADAS** (esta entrada) e em **ABERTAS** (aquela). Não é
+contradição de estado: o gerador classifica **por seção**, não por ID, e as duas seções falam de coisas
+diferentes. Fica escrito para que ninguém leia o índice e conclua que o placar se contradiz.
 
-- `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` — o vermelho ambiental da canônica 1 (exige `src/database/prisma.ts`);
-- `P-O6R-ARNES-ISOLAMENTO` e suas emendas — o vazamento com **tabelas** nomeadas e **arquivo produtor
-  não**, matéria da trilha do arnês;
-- `P-O6R-B02-SUITES-LIST-CI` e demais residuais já registrados individualmente.
+**O que esta entrada deixa de bloquear.** O `Bloqueia (todos os seis)` acima — *feature nova em
+financeiro* — **cai**, porque os seis fecharam. Manter esta entrada ABERTA com os seis achados fechados
+fazia o índice publicar `BLOQUEIA o financeiro` sem achado aberto que o sustentasse — sinal que não
+significa o que promete.
 
-Fechar a guarda-chuva **não** fecha nenhum deles: cada um responde por si, que é a razão de terem sido
-destacados. Manter esta entrada ABERTA com os seis achados fechados fazia o índice publicar
-`BLOQUEIA o financeiro` sem achado aberto que o sustentasse — sinal que não significa o que promete.
+**O que permanece, com o estado REAL de cada um — corrigido depois de uma cadeira independente medir.**
+A primeira versão deste parágrafo dizia que os residuais tinham "pendência **própria** e **dono próprio**".
+**Duas das três afirmações eram falsas**, e a terceira estava incompleta:
 
-- **status:** FECHADA em 2026-09-06 · **fechado por:** ressalva A3 do `porteiro-pos-merge` de `ed0a692`,
+| residual | o que eu afirmei | o que a medição diz |
+|---|---|---|
+| `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` | pendência e dono próprios | **procede** — dono real atribuído em 2026-09-05 (trilha do arnês) |
+| `P-O6R-B02-SUITES-LIST-CI` | "residual vivo" | **falso** — está **FECHADA** (PR #371, `99f1840`, job `backend-postgres` verde) |
+| `P-O6R-ARNES-ISOLAMENTO` | "dono próprio" | **falso** — o cabeçalho diz *"bloco próprio, ainda não aberto"* (defasado: o `B-O6R-ARNES` rodou e mergeou no **#359**) e **todas** as emendas dizem `dono: a atribuir`. O `sim` do índice é o defeito `P-SAN2-2-INDICE-DONO-SEMPRE-SIM`, não dono real |
+
+**AS TRÊS PENDÊNCIAS ANTIGAS QUE ESTA ENTRADA DECLARAVA SER DONA — e que o fechamento ia deixar órfãs.**
+O §"Reconciliação" acima diz, com todas as letras, que registrar aqui *"dá a eles a severidade e o **dono
+(bloco)** que não tinham"*. Fechar a guarda-chuva sem dispô-las tiraria o único dono que elas tinham. Achado
+por cadeira independente; disposto aqui, uma a uma, **por medição no código**, nunca por tabela:
+
+- **`P-Ω4-4-LIQUID-ATOMIC`** (DIN-001) → **FECHADA**. `src/modules/financial-uow/financial-uow-prisma.ts`
+  abre UMA transação tenant-scoped e entrega repositórios ligados a ela; o comentário do próprio módulo diz
+  *"o work lançar = rollback de tudo — inclusive do lançamento do perdedor numa corrida (**DIN-001**, F3)"*.
+  Era exatamente o fix que a entrada pedia (*"envolver `entry.create` + `applyPayment` em transação"*).
+- **`P-Ω4-6-CLOSE-RACE`** (DIN-008) → **FECHADA**. A entrada dizia que o fix real exigia o guard-read do
+  writer **na mesma tx**, com lock compartilhado em `(tenant,period)` — "fora deste bloco". Medido:
+  `src/database/financial-period-lock.ts` é o lar único (`pg_advisory_xact_lock` exclusivo e
+  `..._shared`), e `src/modules/financial-titles/financial-title-prisma.repository.ts` **importa e usa**
+  `acquirePeriodLockShared`. O comentário de
+  `financial-period-close-prisma.repository.ts` afirma nominalmente: *"desde o B-O6R-02 (Ω6R-DIN-008) o
+  write-path toma a MESMA chave em modo SHARED e re-valida o período DENTRO da tx que grava — o read-skew
+  de **P-Ω4-6-CLOSE-RACE** está fechado"*.
+- **`P-Ω4-4-EDGES`** (DIN-002) → **CONTINUA ABERTA, agora com dono**. **Não** a fechei: só a parte DIN-002
+  (estorno) foi resolvida; o resto da entrada é uma **lista de limites de desenho aceitos** (moeda BRL-only,
+  campos imutáveis do lançamento, erros bi-modais, paridade InMemory×Prisma) com severidade `a classificar`
+  — nada disso é defeito que #371 fechasse, e fechá-la por tabela seria o erro que este próprio parágrafo
+  acabou de corrigir.
+
+- **status:** FECHADA em 2026-09-05 · **fechado por:** ressalva A3 do `porteiro-pos-merge` de `ed0a692`,
   escrita por outro papel (§C7.4-bis) · **evidência:** os 6 achados `fechado` com hash de merge `99f1840`
   no `achados.jsonl`, espelhados em `production_readiness.fechados` e confirmados pelo guard 6/6 ·
   **severidade:** —  · **dono:** encerrado. Rascunho arquitetural correlato:
@@ -6808,7 +6843,55 @@ que 3, o que substitui a ata (parecer de cadeira independente registrado em `vot
 duas respostas são legítimas; a ausência não é, porque hoje o mesmo tipo de PR mergeou dos dois jeitos na
 mesma semana.
 
+**SEGUNDA PERGUNTA, acrescentada em 2026-09-05 (achado de cadeira independente): quem persiste o
+parecer?** Os quatro pareceres que julgaram o #378 foram gravados no repo **pelo próprio autor julgado**
+(`votos/B-O6R-02-ciclo5-consolidado/`), porque os agentes de junta devolvem texto e não gravam arquivo.
+Isso cria um mecanismo em que **a parte interessada é a única testemunha da fidelidade do parecer que a
+julga**. Nenhuma reescrita foi detectada — uma cadeira independente re-mediu 26 afirmações desses corpos
+e as 26 reproduzem, e os seis over-claims contra o autor estão preservados —, mas *não detectado* não é
+*impossível*, e hoje não há artefato que torne a verificação desnecessária. Entra aqui, e não numa
+pendência própria, porque é a mesma pergunta: **qual é o registro válido de aprovação de um PR que não
+toca código?** Uma resposta que exija ata de 3 provavelmente resolve as duas metades; uma que aceite
+cadeira independente precisa dizer **quem grava**.
+
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: a assimetria começa
   no #373/#374, 2026-09-05, antes deste PR; e o §C7.1 é de 2026-07-13) · **dono:** **decisão do dono ou de
   junta de governança** — não é matéria de implementação, e quem escreve PR de registro é parte
   interessada na resposta
+
+## P-GOV-D-DURABILIDADE-FORA-DA-MAIN (2026-09-05) — MÉDIA · a decisão sobre durabilidade só existe numa branch que a `main` não contém
+
+**Achada por cadeira independente** ao julgar o PR de pareceres do `B-O6R-02` c5; registrada por outro
+papel (§C7.4-bis). **Escopo `pre-existente`**: a primeira citação entrou na `main` em `cae6086` (#372,
+2026-09-05), antes deste registro.
+
+**O que foi medido:**
+
+| medição | resultado |
+|---|---|
+| `git show origin/main:agent-orchestration/controle/decisoes.md` contém `D-DURABILIDADE-BRANCHES-LOCAIS` | **0** ocorrências |
+| `git show demo/investidor:…/decisoes.md` | **1** — a definição vive só ali |
+| `git merge-base --is-ancestor demo/investidor origin/main` | **falso** — a branch não alcança a `main` |
+| citações do ID na `main` | **6 arquivos** (log de execução, `pendencias.md`, ata `J-O6R-07a-ressalvas`, e 3 pareceres de porteiro) |
+
+**Por que importa, e não é ironia gratuita:** `D-DURABILIDADE-BRANCHES-LOCAIS` é a decisão que diz que
+**o que só existe num disco não conta como entregue**. Ela é invocada como fundamento em pelo menos seis
+arquivos da `main` — inclusive nos pareceres que cobraram a persistência de outros artefatos — e a sua
+**própria definição** não está na `main`. Quem seguir a citação não acha o texto; e a regra que sustenta
+metade das cobranças de registro desta rodada é, ela mesma, o exemplo do que proíbe.
+
+**Não consertado aqui, e o motivo:** trazer a decisão para a `main` significa mexer em
+`agent-orchestration/controle/decisoes.md` com texto que hoje vive numa branch de longa duração
+(`demo/investidor`, 49 commits exclusivos, **não** ancestral da `main`). Isso é **consolidação entre
+linhas divergentes** — §A2 manda registrar antes de consolidar, e é decisão de quem manda na branch, não
+de um PR de registro. Fechar isto por conta própria seria escolher um lado em silêncio, que é exatamente
+o que o §A2 proíbe.
+
+**Critério de fechamento:** a decisão passa a existir na `main` (portada com o texto que a
+`demo/investidor` tem, ou reescrita e aprovada de novo), **ou** as citações da `main` deixam de invocá-la
+como fonte e passam a citar o que de fato está na `main`. As duas respostas são legítimas; a ausência não
+é, porque hoje seis arquivos apontam para um alvo que não existe na linha em que eles vivem.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
+  desde `cae6086`, 2026-09-05; a decisão nunca esteve na `main`) · **dono:** **decisão do dono** — envolve
+  consolidar texto entre `demo/investidor` e a `main`, que é dele, não de um bloco de execução
