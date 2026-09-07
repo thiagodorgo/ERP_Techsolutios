@@ -1,0 +1,143 @@
+{
+ "jurado": "jurado-06-invariante-financeiro-rateio (identidade nova — nao votei, nao planejei, nao desenvolvi; nada herdado de planejador-mestre, critico-adversarial, do dev general-purpose, do porteiro-pos-merge, do inspetor-de-terreno-da-junta, dos jurado-07b-* nem do agente-secops; briefing re-executado inteiro)",
+ "lente": "Invariante financeiro e rateio — series S/B pelo VALOR (SUM/GROUP BY no banco sem take, tipos nulaveis com _count._all discriminador, lineItemCount>0 e total=null e erro, ?? 0 proibido nominalmente, cap alto com count antes) · DIN-007 fechando OS DOIS defeitos (truncamento + float) com referencia em BigInt e tolerancia 0 · ataque ao exactly-once efetivo e a tese do §4 por categoria de custo. Quorum: unanimidade de 3. Nao julga: contexto RLS e atomicidade (C1) · escopo, KPI e registro (C3).",
+ "voto": "APROVADO",
+ "justificativa": "IDENTIDADE E RÉGUA. Sou identidade NOVA da cadeira C2; nada de ata, plano, briefing ou parecer alheio entrou como fato — tudo que afirmo saiu de comando meu, registrado em C2-financeiro-rateio-evidencia.md. A minha cadeira TEM VETO; o quórum é UNANIMIDADE DE 3 (§C7.1-ter(b): o bloco toca dinheiro nos dois lados — o total que o painel publica e a base sobre a qual o custo é rateado), NÃO 5/5: medi eu mesmo que package.json, package-lock.json, frontend/package*.json e pubspec* estão INTOCADOS entre fe2748c e 0f0a872a (git diff --numstat = vazio), logo não há dependência nova; não há produção nem serviço externo pago no diff. O veto NÃO alcança `pre-existente`. E o scripts/reconcile-checklist-usage.ts está BLOQUEADO por decisão do crítico (R2-A): a SÉRIE K NÃO EXISTE na suíte, e cobrá-la — ou cobrar I2' reescrita, o outbox genérico da Ω6R D-002, string-decimal no contrato, cursor no rateio, a agenda da projeção diária, migration, dependência nova, mobile/** ou piso ≥90 — seria REPROVAR POR CONSTRUÇÃO. Não cobrei nada disso. Onde corpo e EMENDA E1 divergem, apliquei a E1.\n\nTERRENO. Worktree PRÓPRIO e detached, .claude/worktrees/o6r06-jur-c2 em e6b21231; head de CÓDIGO 0f0a872a provado POR MIM com o pathspec (git diff --numstat 0f0a872a e6b21231 -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs' → VAZIO); base origin/main = fe2748c. npm ci --no-audit --no-fund PRÓPRIO (ec=0); cmd /c dir /AL node_modules → \"Arquivo não encontrado\" = ZERO junction; npx prisma generate ec=0 (v7.8.0); prisma migrate deploy ec=0. Node v20.19.5, npm 11.7.0. Cluster descartável PRÓPRIO: o6r06-jc2-pg :58432 e o6r06-jc2-redis :58379, portas escolhidas DEPOIS de netsh …excludedportrange e docker ps (a C1 está em 57432; 5432/6379 da base viva NÃO foram tocados, nem para leitura). Pristino ANTES e DEPOIS conferido com --ignored (só node_modules; storage/checklist-attachments tem apenas o .gitkeep RASTREADO).\n\nFAIXA DA FIXTURE E FORMA DA REFERÊNCIA. Fixture MINHA, faixa REALISTA: 10.000 linhas de 987654.321987 mais 1 de 999999.999999 com billing_period_start mais recente e serviceCode exclusivo; N=10.001, semeadas por createMany em UM statement (3345 ms). Total 9877543219.869999 = 9.877.543.219.869.999 micro-unidades, que é maior que 2^53 — logo S1 e S10 são o mesmo cenário aqui. Minha referência aritmética: BigInt de micro-unidades sobre unblended_cost::text lido em 21 páginas de LIMIT 500 OFFSET n. Nunca Number, nunca Decimal de JS. Tolerância ZERO.\n\nITEM 1 — APROVADO. Spy MEU sobre o cliente real: o aggregate do resumo recebe ['where','_sum','_count'] e o groupBy ['by','where','_sum','_count']; sumUsageBasis recebe ['where','_count'] e ['by','where','_sum','_count'] — NENHUM take/skip/cursor/distinct, e o where do aggregate é byte-idêntico ao do groupBy. A premissa de versão foi pinada POR EXECUÇÃO (require('@prisma/client/package.json').version → 7.8.0), não por leitura do package.json. normalizeSummaryFilters não injeta mais limit e getSummary não o passa ao repositório. Tabela de nulabilidade medida caso a caso: {count:0,total:null} → zeros explícitos; {count:3,total:null} → LANÇA CLOUD_COST_SUMMARY_INCONSISTENT/summary_total_missing; grupo com custo nulo → LANÇA. S7 medido POR HTTP (a suíte do bloco faz por serviço; eu fiz por HTTP): 200 com totalUnblendedCost 0, totalUnblendedCostExact \"0\", lineItemCount 0, services [] e currencies [], sem null e sem NaN. `?? 0` e `|| 0` no caminho do total: por PRESENÇA, ZERO ocorrências de CÓDIGO — as 4 ocorrências são comentário; a única de código na área (cloud-cost-allocation.service.ts:150) é inicializador de acumulador de Map e está FORA do diff do bloco. COALESCE no SQL: zero. Teto: CLOUD_COST_ALLOCATION_LINE_ITEM_CAP = 100000 lido do EXPORT e igual ao default do construtor; cap injetado 10 com 11 linhas → run failed com errorMessage period_exceeds_line_item_cap trazendo count 11 e cap 10, e ZERO tenant_cloud_cost_allocations gravadas; controle com cap 11 → completed. Base do rateio PELO VALOR, com proporção MINHA (5:2, não a 3:1 do dev): 2 organizações, runs criadas e concluídas pelo repositório REAL, SEM rodar aggregateDailyUsage; base lida por mim direto do banco (5 e 2 em checklist_run.completed) → 70.00 rateados em 50.00 e 20.00, ratio 0.714285714286 e 0.285714285714, unallocated sem a linha de checklists. Mapa do §3.4 julgado como mapeamento por propriedade, com a PD-OUTBOX-IN-DB lida antes: cada termo do aceite tem mecanismo entregue, e onde o mecanismo do outbox não existe (relay) o bloco DIZ que não existe, em vez de emprestar a chancela.\n\nITEM 2 — APROVADO, e fecha OS DOIS defeitos. Exato = referência BigInt = sum()::text = fixture, delta ZERO nos três; lineItemCount = 10001 e a 10.001ª aparece em services[]. O tipo do que o _sum devolve foi conferido POR EXECUÇÃO: Decimal2 (decimal.js), e ele morre em String() dentro do repositório. O defeito que o achado NÃO NOMEIA, medido por mim na minha fixture: reduce em double = 9877543219.871105 contra 9877543219.869999 exato → divergência 1,10626e-3 (1107 micro-unidades), 1106 vezes a tolerância antiga de 1e-6, mesma ordem do 1,1e-3 do crítico e em fixture independente da dele. S10 executado: acima de 2^53 micro-unidades o campo exato bate e o number PERDE 1 micro-unidade — lossy documentado, não defeito. Campo ADITIVO conferido (nenhum campo antigo saiu do CloudCostSummary). Que o Decimal não é somado em JS provei por PRESENÇA, enumerando os três pontos do caminho (decimalToExactString → String; requireTotal → só testa null; toBoundedNumber → Number na borda): zero plus/minus/times, zero toNumber antes da borda, zero acumulador. B3 é regressão, e a evidencia_fechamento do DIN-007 cita S1/S2/S3'/S4 e S5–S10 e C3, e NÃO cita B3 — eu não cobrei B3 como prova.\n\nITEM 3 — APROVADO. \"exactly-once\" aparece 2 vezes no repositório inteiro e as DUAS são a negação do termo; o arquivo chama-se cloud-usage.capture.ts e o contrato checklist_run_billing@2026-09-06.b-o6r-06 está enunciado em linguagem de banco, como propriedade verificável (chave estável, unique (tenant_id, idempotency_key), commit na mesma transação), com as exceções DECLARADAS. Testei o risco INVERSO — contrato prometendo MAIS garantia do que a arquitetura dá: enumerei por PRESENÇA os 3 sítios que inserem em checklist_runs; :419 e :473 têm captura, :801 (reopen) não tem, E ISSO ESTÁ DECLARADO NO PRÓPRIO CONTRATO; os 3 chamadores de repository.completeRun batem com a tabela do plano, e o 4º caminho está fechado pelo compilador (C6). Não achei overclaim. Censo de produtores MEU: 15 chaves distintas — o mesmo número do crítico, obtido por comando meu — com 4 SEM produtor (api_request.count, api_requests_count, storage_gb_month, storage_bytes_current). A PERGUNTA CENTRAL DA MINHA CADEIRA, medida: um defeito de base numa categoria NÃO contamina o valor de outra — checklists vale 70 nos três cenários (só checklists com base; storage/jobs com base; storage perdido pela metade), porque o motor resolve regra e base LINHA A LINHA e o custo sem base cai inteiro em unallocated com missing_usage_basis, sem redistribuir para ninguém. Logo o P0 fecha INTEIRO para a categoria que o achado nomeia, e não pela metade. O que a perda residual FAZ, quantificado por mim: desloca dinheiro ENTRE organizações DENTRO de storage/jobs — 4,285714 de 57,00 (7,5%) quando metade da base de B se perde. Recorte julgado com a evidência do local: conferi em git show fe2748c que cloud-usage.events.ts:38-53 é exatamente o ramo created mais runs_count e que rules.ts:61-66 é exatamente a regra checklists; storage/jobs/api estão em rules.ts:32-59, FORA do local. Aceito o recorte. Censo C1 MEU: created mais completed pelo evento de domínio → 0 eventos; attachment_uploaded → 3 eventos. A base NÃO dobra, e a segunda medida independente confirma (5 e 2 vistorias pelo caminho real → n=5 e n=2 por chave, nunca 10 e 4). O acoplamento fail-closed está escrito no contrato e em capture.ts:29-33 e provado por F7 (6/6, ec=0) — escolha de risco DECLARADA é engenharia; a mesma escolha silenciosa seria achado.\n\nMUTAÇÕES, todas com ec lido por variável e restauradas com git hash-object igual a git rev-parse HEAD do caminho: M-7 ec=1 (C3 e S5 — e digo honestamente que o TOTAL não muda, porque o repositório ignora limit: é guarda de regressão, não falsificador do valor); M-8 ec=1 (S1, S3', S4, S9, S10); \"?? 0 incondicional\" ec=1 com S8 VERMELHO e S7 VERDE — o pareamento honesto que o plano declarou, confirmado por mim; M-9 ec=1 (B1 e mais quatro); M-10 ec=1 (só B4, em cluster limpo); M-6 ec=1 (C1 com expected 0 e actual 2, C4, C5).\n\nO QUE PASSOU: as 10 asserções da série S, as 10 da série B, as 7 do censo C e as 6 de F — todas no MEU cluster, com ZERO skip. npm run check ec=0.\n\nO QUE REPROVA: nada. Nenhum achado bloqueia.\n\nPROPRIEDADES AUSENTES, nomeadas e sem conserto: (i) a propriedade que a ata deve enunciar sobre o normalizador é \"não INJETA limit\", não \"o objeto nunca tem limit\" — um limit vindo da query do cliente sobrevive ao spread; medi o efeito no VALOR e ele é INERTE (12 linhas com limit=5 → lineItemCount 12 e total 12.000000); (ii) a base de rateio atravessa number em sumUsageBasis e a razão é divisão em float no motor — exato para contagens de vistoria, classe pré-existente do motor e não deste bloco; (iii) a pendência USAGE-BEST-EFFORT-RESIDUAL tem dono, data e forma, mas não tinha N do EFEITO — publico o meu: 7,5% deslocados entre organizações no cenário medido.\n\nO QUE NÃO MEDI, por ser de outra cadeira: a atomicidade da captura e o contexto RLS (papel sem BYPASSRLS, canário do helper, drill sob os dois papéis) são da C1 — jurado-06-banco-atomicidade-rls; escopo §5/§6, KPI, Δ mais 54, piso maior ou igual a 47, backfill do #380, paridade achados.jsonl com o REGISTRO e a regressão do frontend são da C3 — jurado-06-contrato-regressao-kpi.\n\nO QUE FICOU SEM EXECUTAR E POR QUÊ: a suíte backend COMPLETA — é a contagem da C3; rodei inteiros os 5 arquivos da minha lente.\n\nANOMALIA DE TERRENO, minha, reportada: as minhas fixtures ficaram no cluster e contaminaram a PRIMEIRA execução de M-10 (B1, B2', B7 e B8 vermelhos por resíduo MEU, porque sumUsageBasis varre listTenants()); limpei escopado por slug, reconferi tenants=0 e cloud_usage_events=0, re-rodei a série B limpa (10/10) e refiz M-10 (só B4). Duas armadilhas de ferramenta nomeadas: docker exec SEM -i não liga o stdin, e o heredoc SQL passa em silêncio com ec=0 sem apagar nada; e o diretório de scratchpad é COMPARTILHADO entre as cadeiras da mesma sessão — um arquivo meu de nome genérico foi sobrescrito pelo de outra cadeira, e passei a prefixar tudo com c2-.\n\nLIMPEZA: 5 scripts .mts meus removidos; worktree pristino conferido com --ignored; cluster próprio derrubado com docker rm -fv e confirmado; worktree removido por git worktree remove --force e prune; base viva nunca tocada, nem para leitura; worktrees alheios (b06, gov-descuido, o6r06-jur-c1 e a árvore principal demo/investidor) intactos.\nVOTO: APROVADO — total = SUM do banco sem teto (10.001 linhas, faixa realista ~9,9e5 por linha e ~9,88e9 no total com 6 casas), exato batendo com sum()::text por referência em BigInt de micro-unidades com tolerância 0, nulabilidade discriminada por _count._all sem ?? 0, cap alto com count antes e run failed nomeada, base de rateio na proporção medida 5:2, e a tese do §4 estreitada por categoria com as classes residuais nomeadas com dono",
+ "o_que_executei": [
+  {
+   "comando": "git diff --numstat 0f0a872a e6b21231 -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs'",
+   "forma": "no worktree proprio .claude/worktrees/o6r06-jur-c2 (detached e6b21231); base origin/main=fe2748c",
+   "resultado": "SAIDA VAZIA -> head de CODIGO julgado = 0f0a872a, confirmado por mim"
+  },
+  {
+   "comando": "git diff --numstat fe2748c 0f0a872a -- package.json package-lock.json frontend/package.json frontend/package-lock.json mobile/flutter_app/pubspec.yaml mobile/flutter_app/pubspec.lock",
+   "forma": "prova da CATEGORIA do quorum",
+   "resultado": "VAZIO -> nenhuma dependencia nova; quorum segue unanimidade de 3, nao 5/5"
+  },
+  {
+   "comando": "npm ci --no-audit --no-fund ; cmd /c dir /AL node_modules ; npx prisma generate ; npx prisma migrate deploy",
+   "forma": "worktree proprio; DATABASE_URL apontando 127.0.0.1:58432/erp_test; Node v20.19.5 / npm 11.7.0",
+   "resultado": "ec=0 ; junctions: 'Arquivo nao encontrado' = 0 ; 'Generated Prisma Client (v7.8.0)' ; 'All migrations have been successfully applied'"
+  },
+  {
+   "comando": "node -e \"console.log(require('@prisma/client/package.json').version)\"",
+   "forma": "premissa de versao POR EXECUCAO, nao por leitura do package.json (aceite S9)",
+   "resultado": "7.8.0 -> em 7.8.0 aggregate() IGNORA take/skip/cursor/distinct; o Prisma 8 passa a honra-los"
+  },
+  {
+   "comando": "docker run -d --name o6r06-jc2-pg -p 58432:5432 postgres:16 ; docker run -d --name o6r06-jc2-redis -p 58379:6379 redis:7",
+   "forma": "portas escolhidas apos netsh interface ipv4 show excludedportrange protocol=tcp e docker ps; a C1 esta em 57432; base viva 5432/6379 NAO tocada",
+   "resultado": "Up; cluster descartavel proprio"
+  },
+  {
+   "comando": "node --test --test-reporter=tap --import tsx tests/o6r06-cost-summary-sum-db.test.ts tests/o6r06-cost-summary-sum.test.ts",
+   "forma": "ec lido por variavel; contagens lidas do TAP NO ARQUIVO",
+   "resultado": "EC=0 · # tests 10 · pass 10 · fail 0 · skipped 0 (S1 S2 S3' S4 S9 S10 S5 S6 S7 S8)"
+  },
+  {
+   "comando": "node --test --test-reporter=tap --import tsx tests/o6r06-allocation-basis-rls-db.test.ts tests/o6r06-billing-census.test.ts",
+   "forma": "idem, no MEU cluster",
+   "resultado": "EC=0 · # tests 17 · pass 17 · fail 0 · skipped 0 (B1 B2' B3 B4 B5 B6'/B9 B7 B8 B10 B11 · C1..C7)"
+  },
+  {
+   "comando": "node --test --test-reporter=tap --import tsx tests/o6r06-usage-fault-injection.test.ts",
+   "forma": "F7 = o acoplamento fail-closed executado",
+   "resultado": "EC=0 · # tests 6 · pass 6 · fail 0 · skipped 0"
+  },
+  {
+   "comando": "npm run check",
+   "forma": "tsc -p tsconfig.json --noEmit no worktree proprio",
+   "resultado": "EC=0"
+  },
+  {
+   "comando": "npx tsx c2-medicao-item2.mts (fixture MINHA: 10.000 x 987654.321987 + 1 x 999999.999999, createMany em 1 statement)",
+   "forma": "faixa REALISTA ~9,9e5 por linha; total 9877543219.869999 = 9877543219869999 micro-unidades > 2^53; referencia em BigInt sobre unblended_cost::text em 21 paginas de LIMIT 500 OFFSET n; tolerancia 0",
+   "resultado": "SEED 10001 em 3345ms · TIPO do _sum por execucao: ctor=Decimal2 · _count._all=10001 · REFERENCIA=9877543219869999 · PUBLICADO exato=9877543219.869999 · BANCO sum()::text=9877543219.869999 · exato==referencia TRUE delta 0 · exato==sum()::text TRUE delta 0 · lineItemCount=10001 · services inclui C2AmazonUltimaLinha · LOSSY: delta(number,exato) = -1 micro-unidade · FLOAT (reduce em double) = 9877543219.871105 -> DIVERGENCIA 1,10626e-3 (1107 micro-unidades)"
+  },
+  {
+   "comando": "npx tsx c2-medicao-item1a.mts (HTTP + dubles)",
+   "forma": "servidor express real, x-role super_admin; tabela de nulabilidade por duble",
+   "resultado": "S7-HTTP 200 com {totalUnblendedCost:0,totalUnblendedCostExact:'0',lineItemCount:0,services:[],currencies:[]} sem null e sem NaN · {count:3,total:null} LANCA CLOUD_COST_SUMMARY_INCONSISTENT/summary_total_missing · {count:0,total:null} zeros · grupo com custo null LANCA · S5: repositorio recebe {periodStart,periodEnd} sem 'limit' · ?limit=5 sobre 12 linhas -> lineItemCount 12 e total 12.000000 (INERTE)"
+  },
+  {
+   "comando": "npx tsx c2-medicao-item1b.mts (rateio pelo VALOR, proporcao MINHA 5:2)",
+   "forma": "2 organizacoes, runs pelo repositorio REAL (createRun + completeRun{meterCompletion:true}), SEM aggregateDailyUsage; spy proprio atravessando o $transaction",
+   "resultado": "BASE-CRUA lida do banco por mim: A checklist_run.completed 5 / B 2 · ALOC A 50 (ratio 0.714285714286) e B 20 (0.285714285714) sobre 70.00 · S9-basis: aggregate ['where','_count'] e groupBy ['by','where','_sum','_count'], nenhuma chave proibida · api 13 e jobs 17 em unallocated com missing_usage_basis"
+  },
+  {
+   "comando": "npx tsx c2-medicao-item1c.mts (teto + S9 do resumo + B10)",
+   "forma": "cap injetado no construtor; spy proprio em cloudCostLineItem",
+   "resultado": "B5 constante = 100000 lida do EXPORT e == default do construtor · B4 cap=10 com 11 linhas -> status failed, errorMessage period_exceeds_line_item_cap com {count:11,cap:10}, 0 alocacoes gravadas · controle cap=11 -> completed · S9-resumo: aggregate ['where','_sum','_count'] e groupBy ['by','where','_sum','_count'], where IDENTICO nos dois lados, nenhuma chave proibida · B10 groupBy vazio com count>0 LANCA usage_basis_group_by_empty; tenant sem evento -> []"
+  },
+  {
+   "comando": "npx tsx c2-medicao-item3.mts (censo C1 proprio + contaminacao entre categorias)",
+   "forma": "recordCloudUsageForDomainEvent chamado direto; allocateCloudCosts com 4 linhas de custo e 3 estados da base",
+   "resultado": "created+completed pelo evento de dominio -> 0 eventos; attachment_uploaded -> 3 eventos · checklists = 70 nos TRES cenarios (NAO contamina) · storage/jobs sem base -> unallocated 70 no total · com metade da base de B perdida: A 95,30 -> 99,585714 e B 31,70 -> 27,414286 (4,285714 deslocados, 7,5% de 57,00)"
+  },
+  {
+   "comando": "grep -rhoE 'metricKey: \"[^\"]+\"' src --include=*.ts | sort -u   (censo de produtores MEU)",
+   "forma": "cruzado com basisMetricKeys de cloud-cost-allocation.rules.ts, arquivo INTOCADO (git diff --numstat fe2748c 0f0a872a -- rules.ts = vazio)",
+   "resultado": "15 chaves distintas — mesmo numero do critico, por comando meu; 4 SEM produtor: api_request.count, api_requests_count, storage_gb_month, storage_bytes_current"
+  },
+  {
+   "comando": "grep -n '?? 0' e '|| 0' nos 3 arquivos do caminho do total ; grep -rn COALESCE nos 3 modulos",
+   "forma": "prova por PRESENCA, nunca por ausencia",
+   "resultado": "4 ocorrencias, TODAS em comentario (linhas 97, 215, 262, 306); a unica de CODIGO na area e cloud-cost-allocation.service.ts:150 (inicializador de acumulador de Map), FORA do diff do bloco; COALESCE: zero ocorrencia de codigo"
+  },
+  {
+   "comando": "git log --diff-filter=A --format='%h %ad %s' --date=short -- src/modules/cloud-usage/cloud-usage.events.ts src/modules/cloud-cost-allocation/cloud-cost-allocation.rules.ts",
+   "forma": "evidencia de DATA/ORIGEM dos escopos pre-existentes",
+   "resultado": "0648a8e1 2026-06-08 'feat: add cloud usage metering foundation' · 6f27faae 2026-06-08 'feat: add cloud cost allocation engine'"
+  },
+  {
+   "comando": "git show fe2748c:src/modules/cloud-usage/cloud-usage.events.ts | sed -n '38,53p' ; idem rules.ts 61-66 e 32-59",
+   "forma": "julgar o recorte com a evidencia do 'local' do achado, lida na BASE",
+   "resultado": "38-53 = exatamente o ramo checklist_run.created + checklist_runs_count; rules.ts 61-66 = exatamente a regra checklists; storage/jobs/api estao em 32-59, FORA do local nomeado"
+  },
+  {
+   "comando": "MUTACOES M-7, M-8, '?? 0 incondicional', M-9, M-10, M-6 — cada uma aplicada, executada e revertida por git checkout --",
+   "forma": "ec lido por variavel; restauracao conferida com git hash-object == git rev-parse HEAD:<path>",
+   "resultado": "M-7 ec=1 (C3, S5; o TOTAL nao muda) · M-8 ec=1 (S1 S3' S4 S9 S10) · ??0 ec=1 (S8 vermelho, S7 VERDE) · M-9 ec=1 (B1 + 4) · M-10 ec=1 (so B4, em cluster limpo) · M-6 ec=1 (C1 expected 0 actual 2, C4, C5). Hashes restaurados: 134b5e45, 6a2e290e, 74923e98, c4d79900, 1f17e201"
+  },
+  {
+   "comando": "git status --porcelain --ignored ; ls -A storage/checklist-attachments",
+   "forma": "pristino DEPOIS com --ignored (o --porcelain nao ve o que a suite grava)",
+   "resultado": "so node_modules/ e frontend/node_modules/; storage/checklist-attachments contem apenas o .gitkeep RASTREADO; nenhum residuo"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A propriedade que a ata deve enunciar sobre `normalizeSummaryFilters` e 'nao INJETA limit', nao 'o objeto nunca tem limit': a rota monta `limit` a partir da query (`parseLineItemFilters`) e o normalizador faz spread, entao um `?limit=` do cliente SOBREVIVE no objeto entregue ao repositorio.",
+   "evidencia": "c2-medicao-item1a.mts: `\"limit\" in normalizeSummaryFilters({serviceCode})` = false, mas `\"limit\" in normalizeSummaryFilters({limit:5})` = true. EFEITO NO VALOR, medido: GET /api/v1/platform/cloud-costs/summary?...&limit=5 sobre 12 linhas -> lineItemCount=12 e totalUnblendedCostExact=12.000000, IDENTICO a chamada sem limit. O campo e INERTE: buildLineItemWhere o ignora e o agregador nunca o recebe (spy: aggregate ['where','_sum','_count'], groupBy ['by','where','_sum','_count']).",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "Propriedade ausente: o aceite C3 assere sobre uma entrada SEM limit, logo nao fecha o predicado 'o objeto entregue ao repositorio nunca carrega limit'. Nao ha erro de VALOR — o total publicado e o total do banco nos dois casos, medido. E nota, nao bloqueia: o dinheiro esta certo."
+  },
+  {
+   "defeito": "A base de rateio atravessa `number` e a razao e divisao em ponto flutuante: `sumUsageBasis` devolve `quantity: Number(group._sum.quantity)` sobre um `numeric(20,6)`, e o motor calcula `ratio = quantity / totalQuantity` com `roundCost`/`roundRatio` por `toFixed`.",
+   "evidencia": "cloud-cost-allocation-prisma.repository.ts (mapeamento do groupBy) e cloud-cost-allocation.engine.ts:49,66-68,189-195. Medido por mim: com base 5 e 2 o ratio sai 0.714285714286/0.285714285714 e os custos 50.00/20.00 sobre 70.00 — EXATO para contagem de vistoria. `git diff --numstat fe2748c 0f0a872a -- ...engine.ts` = 5 linhas +, 3 -, e o delta e SO a troca da fonte (usageAggregates -> usageBasis): a aritmetica do motor nao foi tocada.",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "motivo": "Propriedade ausente: a base do rateio nao tem, no caminho, uma referencia da MESMA familia aritmetica do valor (como o resumo passou a ter com o campo exato). Origem `6f27faae` 2026-06-08 ('feat: add cloud cost allocation engine'), anterior ao bloco; dono: `P-O6R-B06-DECIMAL-NA-BORDA` (BAIXA) / bloco de rateio. O veto nao alcanca `pre-existente`."
+  },
+  {
+   "defeito": "A pendencia `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL` nomeia a classe com dono, data, forma e as chaves, mas NAO publica o N do EFEITO — quanto dinheiro a perda residual move, e para onde.",
+   "evidencia": "pendencias.md:7243-7273 (status ABERTA, ALTA, escopo pre-existente `0648a8e1` 2026-06-08, dono B-O6R-06b ou o outbox generico, forma 'leitura cruzada reproduzivel'). Eu publico o N: c2-medicao-item3.mts, com custos checklists 70 / storage 40 / api 13 / jobs 17 e tres estados da base — perdendo METADE da base de storage da organizacao B, a org A vai de 95,30 para 99,585714 e a B de 31,70 para 27,414286: 4,285714 DESLOCADOS entre organizacoes, 7,5% dos 57,00 de storage+jobs. E `checklists` continua valendo 70 nos tres cenarios (nao contamina).",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "motivo": "Propriedade ausente: a classe residual esta nomeada com dono e forma, mas sem o N do efeito no valor — que e o que permite ao dono priorizar. Nao bloqueia: o remedio esta fora do `local` do achado (conferido em git show fe2748c: events.ts:38-53 e rules.ts:61-66 nao incluem storage/jobs), e fecha-lo aqui seria o outbox generico da Omega6R D-002, rascunho que o dono optou por nao deliberar."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "C1 (jurado-06-banco-atomicidade-rls) cobre: atomicidade da captura (series A/F/R), o $executeRaw com alvo explicito, o drill sob papel NOSUPERUSER NOBYPASSRLS, o canario do helper em sumUsageBasis e listTenantAllocations, e o defeito do canario sob os DOIS papeis. Nao medi nada disso como merito meu.",
+  "C3 (jurado-06-contrato-regressao-kpi) cobre: escopo dos paragrafos 5 e 6 por git diff --numstat, KPI por reexecucao (backend_tests, Delta +54 decomposto, piso >=47 UNICO, blocks_completed 161 para 162), backfill do #380, ordem contrato x diff, paridade achados.jsonl x REGISTRO_ACHADOS_O6R, contagem de pendencias, e a regressao do frontend (npm --prefix frontend run check/build).",
+  "P-O6R-B06-RECONCILE-BLOQUEADO (ALTA) — DECISAO desta junta, nao defeito: o ramo completed do script refaturaria a trilha C que a EMENDA E1 item 2 acabou de proteger. A serie K nao existe na suite e eu nao a cobri.",
+  "P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL (ALTA, pre-existente, origem 0648a8e1 de 2026-06-08, dono B-O6R-06b ou o bloco de outbox generico) e P-O6R-B06-BASE-SEM-PRODUTOR (ALTA, pre-existente, origens 6f27faae e 0648a8e1 de 2026-06-08, dono cloud billing/produto) — conferi as duas por medicao propria: 15 produtores no total, 4 chaves sem produtor nenhum. Aceito como pendencia e publico o N do efeito (7,5% deslocados entre organizacoes dentro de storage e jobs).",
+  "P-O6R-B06-DECIMAL-NA-BORDA (BAIXA, parcialmente resolvida pelo campo aditivo exato) e P-O6R-B06-RATEIO-CURSOR-100K (MEDIA) — nao cobrei string-decimal no contrato nem paginacao por cursor.",
+  "P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA (MEDIA), P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA (MEDIA, decisao de produto, 0 para 0 medido) e P-O6R-B06-SEM-PODA-POR-IDADE (BAIXA) — fora deste bloco.",
+  "A divergencia 3x2 da severidade do DIN-007 (A3/A4 defenderam P1) fica PRESERVADA e NAO REABERTA — li o campo votacao do achados.jsonl e nao litiguei a severidade.",
+  "Ressalvas do critico que CONFERI e NAO converti em veto novo: C5 nao tem mutacao nomeada (esta na prosa da EMENDA E1 item 4(5b) e ainda assim conta 1 caso) e B9/B5 sao autorreferentes (apagar a assercao deixa vermelho o teste da assercao — guarda de regressao, nao falsificador). Nao inflei a leitura da matriz com elas.",
+  "[A RE-VERIFICAR] que permanece: nao reproduzi o baseline 2936/2938 da base fe2748c — e da C3 (ressalva R4 do inspetor)."
+ ],
+ "teardown": "CRIEI: worktree .claude/worktrees/o6r06-jur-c2 (detached e6b21231) com npm ci proprio; containers o6r06-jc2-pg (:58432) e o6r06-jc2-redis (:58379); 5 scripts .mts de medicao no worktree; fixtures de 10.001 linhas de custo (2x, em imports proprios) e 4 organizacoes com vistorias. RESTAUREI: as 6 mutacoes por git checkout -- <path>, cada uma com git hash-object == git rev-parse HEAD:<path> conferido (134b5e45, 6a2e290e, 74923e98, c4d79900, 1f17e201); git status --porcelain VAZIO. REMOVI: os 5 scripts .mts; as minhas fixtures do banco, escopadas por slug e por import_id (conferido depois: tenants=0, cloud_usage_events=0, cloud_cost_line_items=0; sobraram 2 cloud_cost_allocation_runs do meu drill de cap, dentro do cluster descartavel que foi destruido). PRISTINO DEPOIS: git status --porcelain --ignored so mostra node_modules/ e frontend/node_modules/; storage/checklist-attachments contem apenas o .gitkeep RASTREADO. DERRUBEI: docker rm -fv o6r06-jc2-pg o6r06-jc2-redis (com -v, para nao deixar volume anonimo dangling — a ressalva R2 do inspetor) e confirmei por docker ps -a; worktree removido por git worktree remove --force + git worktree prune. BASE VIVA erp-postgres/erp-redis NUNCA tocada, nem para leitura. WORKTREES ALHEIOS intactos: b06, gov-descuido, o6r06-jur-c1 e a arvore principal demo/investidor — nao toquei em nenhum, e nao varri residuo alheio."
+}
