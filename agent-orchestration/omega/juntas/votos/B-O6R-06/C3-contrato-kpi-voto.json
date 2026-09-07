@@ -1,0 +1,170 @@
+{
+ "jurado": "jurado-06-contrato-regressao-kpi (identidade nova — não votei, não planejei, não desenvolvi; nada herdado de planejador-mestre, critico-adversarial, do dev general-purpose, do porteiro-pos-merge, do inspetor-de-terreno-da-junta, dos jurado-07b-* nem do agente-secops; briefing re-executado inteiro)",
+ "lente": "Contrato x diff x registro — escopo §6 COMO EMENDADO (E1·7) por hash de árvore E numstat, hunk a hunk, com as duas divergências declaradas julgadas; KPI por reexecução com N, forma, Δ +54 decomposto por arquivo, piso único >= 47, FROZEN, aguardando_merge exato e o backfill do #380 nos 4 lugares com a pré-condição reexecutada; ordem API_CONTRACTS x drill por git log, achados.jsonl + REGISTRO conferidos pelo guard executado, pendências bem-formadas e a frase do gate da CHK P1 no status-geral. Quórum: unanimidade de 3. Não julga: atomicidade e RLS (C1) · valor e invariante (C2).",
+ "voto": "APROVADO",
+ "justificativa": "TERRENO: worktree próprio detached `.claude/worktrees/o6r06-jur-c3` no head que EU medi (`cae4305a`; o head moveu para `93619d8e` durante a medição — voto da C2 — e o pathspec de código entre os dois sai VAZIO), mais um worktree próprio da base `.claude/worktrees/o6r06-jur-c3-base` em `fe2748c`; `npm ci` PRÓPRIO nos dois (ec=0, 326 pacotes) + `prisma generate`; `dir /AL` = 0 junctions; dois clusters descartáveis MEUS (`o6r06-jc3-pg` :56701 / `o6r06-jc3-redis` :56702 e `o6r06-jc3-pg-base` :56703 / :56704), portas escolhidas DEPOIS de `netsh excludedportrange` e `docker ps`, nunca 5432/55432 nem as do dev (56446/56393) nem a do inspetor (56501); base viva `erp-postgres`/`erp-redis` NUNCA alvo, nem para leitura; Node v20.19.5; 107 migrations em CADA cluster; pristino DEPOIS conferido com `--ignored` (removi os 37 diretórios `storage/checklist-attachments/<uuid>/` que as MINHAS passadas criaram, preservando o `.gitkeep` RASTREADO).\n\nHEAD DE CÓDIGO: `git diff --numstat 0f0a872a cae4305a -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs'` VAZIO, ec=0, logo julguei o código em `0f0a872a`; base `origin/main` = `fe2748c8` = merge-base, sempre com TRÊS PONTOS.\n\nA RÉGUA QUE APLIQUEI está escrita por extenso no §1.0 da evidência, ANTES do veredito, para ser contestável: §6 do corpo com os deltas da E1·7 (capture.ts e não outbox.ts; 3 sítios em checklist.service.ts; interface em checklist.repository.ts; replaceTenantAllocations/listTenantAllocations por forEachTenantInOneTx; rls.ts NÃO entra; item 11 REVOGADO pelo veredito R2-A do crítico).\n\nITEM 1 — ESCOPO: 46 arquivos no diff, `--numstat` e `--name-only` inteiros publicados. O PROIBIDO está VAZIO em 100% dos caminhos pelos DOIS instrumentos, com a saída colada: `--numstat` vazio (ec=0) em prisma, mobile, frontend, src/infra, impound, owner-portal, auth, core-saas, src/modules/mobile, cloud-charges, field-dispatch, evidence, attachments, damages, work-orders, financial-*, src/database/rls.ts, package.json, package-lock.json, pubspec.*, infra, CLAUDE.md, AGENTS.md, RBAC_MATRIX.md, APPROVAL_LIMITS.md, PLANO_O6R.md e scripts; e hash de árvore IGUAL nos 15 que existem nos dois revs (prisma be98074a, mobile 3a2ac028, frontend 24be761e, src/infra f2ee31ef, rls.ts f8bd0fae, package-lock 9039d1e8, scripts 08de36f3). Confirmei a armadilha §9.1 na minha própria medição: `pubspec.*` e `infra` NÃO existem no topo (base=NAO head=NAO), por isso o instrumento foi o `--numstat` e o hash só confirmação.\n\nCATEGORIA DO BLOCO, medição especificamente minha: `package.json`/`package-lock.json` com numstat VAZIO e blobs idênticos, zero dependência nova, zero passo de deploy, e 107=107 migrations aplicadas nos dois clusters, logo a categoria NÃO muda, o quórum permanece unanimidade de 3 e NÃO 5/5.\n\n`scripts/reconcile-checklist-usage.ts` AUSENTE (grep ec=1) e a árvore `scripts/` com hash IDÊNTICO, isto é zero edição e zero adição: isso é CONFORMIDADE com o R2-A, não omissão. Apliquei em consequência que a série K não existe e não conta no piso, que M-12/M-15 não se aplicam, e não cobrei o script, nem I2' reescrita, nem o predicado observável do dev.\n\nHUNKS ancorados por nome de função (os números da E1 moveram): `reopenRunWithinTransaction` INTOCADO (nenhuma linha +/- toca 'reopen', ec=1); `checklist.service.ts` com EXATAMENTE 3 sítios ganhando `{meterCompletion}` (`:543` true, `:700` false, `:754` false) e ZERO outra lógica; `rules.ts` intocado; nenhuma DECLARAÇÃO de `importAwsCurCsv`/`listLineItems`/`normalizeLimit` alterada (ec=1); `ci.yml` com 8 linhas + e 0 menos (append puro, e entraram 4 suítes onde o §6 pedia 3, o que FORTALECE); `Kpis/app.js` 1/1, só a linha `var FROZEN`; `pendencias.md` 309/0, APPEND puro sem renumeração nem EOL em massa; espelho Codex `sync-agent-agents.mjs --check` ec=0 (44 agentes), aplicável porque os 6 corpos de jurado entraram COM espelho; nenhum artefato de drill commitado; `db-catalog-write-guard.test.ts` com numstat 0 (allowlist congelada INTACTA).\n\nAS DUAS DIVERGÊNCIAS DECLARADAS conferem exatamente e nada foi afrouxado: em `lifecycle-db` são precisamente os 8 sítios de `repo.completeRun` mais 1 bloco de teardown (`cloudUsageEvent.deleteMany` escopado ao tenant) exigido pela FK `ON DELETE RESTRICT`, cuja alternativa seria migration PROIBIDA, com TODAS as asserções verbatim; em `create-concurrency-db` a asserção (a.3) ficou MAIS FORTE, era condicional sob `CORE_SAAS_PERSISTENCE !== 'prisma'` lendo memória após `setTimeout(150)` e passou a ler A TABELA sob `withTenantRls`, sem ramo e sem espera, mantendo IGUALDADE. `comm -13` de nomes: nenhum caso sumido em 5 dos 6 arquivos; no `reopen` os 4 migrados mapeiam 1:1 com a propriedade de negócio preservada verbatim e uma delas ACRESCIDA (\"e uma linha só\"), com assert 21 para 23, igualdade 17 para 18, assert.ok 2 para 2 e skip 0 para 0. Confirmo o inspetor: em tests/ são exatamente essas duas, sem terceira.\n\nITEM 2 — KPI: declaro um ERRO DE MÉTODO MEU, porque muda a leitura das duas primeiras passadas. Rodei head e base SIMULTANEAMENTE na mesma máquina e as duas vieram com falhas de timeout de transação; uma terceira passada do head sozinho ainda deu 4 falhas, e a asserção foi inequívoca (S1 esperava 10001 e recebeu 10002, exatamente UMA linha a mais; S10 diferia por exatamente 40.000000): era RESÍDUO DA MINHA PRÓPRIA passada anterior no mesmo banco. Refiz em banco PRISTINO e publico as quatro passadas na evidência. O número que vale: head em `erp_fresh` = 2992 testes, pass 2990, fail 0, skipped 2, ec=0, 282 arquivos, EXATAMENTE o publicado e reproduzido por mim; e baseline em `erp_bfresh` = 2938, pass 2936, fail 0, skipped 2, ec=0, 275 arquivos, o que FECHA a ressalva R4 do inspetor, que não a reproduzira. Forma canônica declarada: `npm test`, DATABASE_URL/REDIS_URL do meu cluster, CORE_SAAS_PERSISTENCE NÃO exportada, RBAC_DB_PARITY ausente, ec por variável, contagens do TAP no arquivo. Os 2 skips são os 2 do orçamento (`permission-catalog-db-parity`), sem auto-pulo silencioso.\n\nO Δ FECHA POR TRÊS CAMINHOS: denominador 2992-2938=54, aprovados 2990-2936=54, e soma por arquivo rodada uma a uma em banco novo = 15+6+6+6+4+10+7 = 54, cada arquivo verde com 0 skip e ec=0; os 4 do `reopen` seguem 4 para 4 e não movem o denominador.\n\nPISO 54 >= 47, único, publicado uma vez. A contagem por grep dá 58 e a diferença de +4 é ela própria explicada: são os 4 guards de auto-pulo DECLARADO (`if (!connectionString) test(\"... requires DATABASE_URL ...\")`) dos 4 arquivos -db, que só rodam SEM banco, o oposto de pulo silencioso. NÃO apliquei >=90 como piso; publico a lacuna desenho (90 novos, menos os 6 da série K bloqueada = 84) contra entregue (54) como OBSERVAÇÃO com N e forma, e verifiquei aceite por aceite POR PRESENÇA que NENHUM aceite do desenho está ausente da suíte: a lacuna é unidade de contagem (a E1·7 conta sub-asserções, \"A1 2 · A2 2 · A3 1\"; a execução conta blocos test()). Registro que a armadilha da prova por ausência me mordeu DUAS vezes: meu laço acusou \"B9 AUSENTE\" e depois \"B6' AUSENTE\", e os dois eram FALSOS, pois vivem no rótulo combinado `test(\"B6'/B9 · o GUC é SUBSTITUÍDO a cada volta...\")`, exatamente como a própria E1·7 os pareia. Entregue ainda B11, que o desenho não pedia (canário do R2-C).\n\nFROZEN regenerada (`kpi-freeze --check` ec=0, \"em dia\"), `node --check app.js` ec=0, `kpi-dashboard-charts` 16/16. `Kpis/index.html` NÃO está no diff e isso é CONFORMIDADE: ele é um shell de 172 linhas com ZERO número cravado (grep ec=1 lido por variável) cujo único script é `./app.js`, o §6 NÃO o autoriza (grep \"index.html\" nas 1153 linhas do plano = ec=1) e o PR anterior JÁ MERGEADO (#380) também não o tocou. `aguardando_merge` = exatamente [Ω6R-DIN-005, Ω6R-DIN-007] sem hash; `p0_fechados` = 11; `fechados` sem os dois; `blocks_completed` 161 para 162; `mvp_demo` 99% e `mvp_vendavel` 88% INTOCADOS com nota; `pr`/`merge_commit`/`approved_head` da entrada B-O6R-06 = null na autoria, o que NÃO bloqueia (§C3.5). Trilhas não tocadas CARREGADAS COM NOTA nominal deste bloco (flutter 864/864, smoke 1126/1126, contract focused 34/34), com a não-alteração provada nas duas pontas (diff e porcelain de frontend/ e mobile/ ambos vazios).\n\nBACKFILL DO #380 nos QUATRO lugares: kpis-latest.json (a string \"pr 380 · merge_commit fe2748c · approved_head a2988b5\" 2x), a entrada B-O6R-07b do history (pr 380, merge_commit fe2748c, approved_head a2988b5 e `backfill_note` dizendo que foi PAGO PELO B-O6R-06 e citando `c5d63bf` como `pr_head`), `achados.jsonl` SEC-004 `supersedido.por` e a seção do REGISTRO. PRÉ-CONDIÇÃO REEXECUTADA POR MIM porque é comando e não afirmação: `git diff --stat a2988b5 c5d63bf -- src tests prisma frontend mobile .github scripts` sai VAZIO (0 linhas, ec=0) e `tree(c5d63bf) == tree(fe2748c) == 1f957536a37373b93748897ca24a5ac74f17eaa7`, batendo com o prefixo publicado, provado por `rev^{tree}` e nunca por `is-ancestor`.\n\nITEM 3 — REGISTRO: ORDEM provada por `git log` com horário: `API_CONTRACTS.md` foi tocado por UM só commit, `c5535470` às 00:58:24, e os drills entraram em `b5f2f0e9` 00:14:00, `706dbf77` 00:21:25 e `a618bc83` 00:29:41, logo o contrato está 29 MINUTOS DEPOIS do último drill, e os três pares da E1·7 (contrato 1 de S1/S7/S10; 2 de B2'/B8; 3 de A1/A10/F1/F7) conferem arquivo a arquivo. O contrato não promete mais do que a arquitetura entrega, pelo contrário: a E1·4(4) mandava \"exactly-once efetivo\" sair, o termo aparece 1x e a ocorrência é uma NOTA QUE O NEGA (\"a expressão exactly-once não é usada de propósito — PD-O6R-B06-OUTBOX-IN-DB\"), com a invariante em linguagem de banco (mesma transação, unique (tenant_id, idempotency_key)), sem campo novo no DTO, `totalUnblendedCost` documentado como lossy e `docs/api.md` com numstat 0.\n\nGUARD EXECUTADO POR MIM: `kpi-achados-paridade` 6/6 ec=0, e as três cláusulas ancoradas por CONTEÚDO batem (só `status === \"fechado\"` classifica; `p0_fechados` conta só com hash de merge e segue 11; `aguardando_merge` é exatamente os fechados-na-autoria). A `evidencia_fechamento` do DIN-005 NÃO cita K4 nem K1/K2/K3 (regex sobre a string inteira), quarta medição independente e quarta negativa, alarme encerrado, e ainda DECLARA o não-entregue em primeira pessoa. Sobre B3 no DIN-007: um grep literal devolve SIM, mas a frase o EXCLUI explicitamente (\"fica como REGRESSÃO e NÃO entra nesta evidência: já era verde na base\"), que é o oposto do defeito contra o qual a regra protege; não converto em achado e publico os dois lados. Os aceites citados nas duas evidências somam 54, fechando com o Δ.\n\nPENDÊNCIAS: contei EU, três comandos concordando, 11 (grep no head 11, grep das linhas + do diff 11, base 0); o dev declarou 10; publico os dois números com o comando de cada, e as 11 são as 9 nominais mais as 2 divergências, nenhuma faltando, todas em APPEND, com as emendas de `P-O6R-B08` e `P-O6R-SUBRECURSO-OBJECT-SCOPE` presentes como append de uma linha. Gerador RODADO por mim (ec=0, \"288 cabeçalhos / 277 IDs\") com `pendencias-indice.md` BYTE-IDÊNTICO ao rastreado (0daf5bde), pois o \" M\" do porcelain era o fantasma de autocrlf, confirmado por `git diff` vazio e `hash-object`.\n\nA frase que o bloco PROMETEU INFORMAR está em `status-geral.md:4240-4242`, com todas as letras: gate da CHK P1 satisfeito por BLOCO mas NÃO por ACHADO, `Ω6R-SEC-002` ainda `parcialmente_superado` e residual ABERTO em `P-O6R-SUBRECURSO-OBJECT-SCOPE` (dono B-O6R-07c). `log-execucao.md` reconciliado, com o vermelho-controle na base 4 de 4.\n\nATA §C7.4-bis: (a) a composição cobre a competência que os achados exigem (banco/RLS, valor/invariante, contrato/regressão/KPI); (b) QUEM ACHOU NÃO CONSERTOU — o crítico atacou o plano e não implementou, o dev implementou e não julgou o achado, e eu não planejei nem desenvolvi; (c) o planejador NÃO usou dado podre — a E1 nasceu do parecer do crítico e as 2 PDs mudaram o desenho ANTES da implementação. Insumos presentes (crítico 629 linhas em 2 rodadas; PDs em omega-pd.md:930 e :1141) e o LIBERADO do inspetor existe (passada 2). BATERIA rodada por mim, ec por variável: check 0, lint 0, build 0, frontend ci 0, frontend check 0, frontend build 0, node --check app.js 0, sync-agent-agents --check 0, git diff --check 2 (1 trailing whitespace).\n\nO QUE PASSOU: tudo o que o meu mandato define como veto — escopo, KPI e registro.\n\nO QUE REPROVA: nada.\n\nPROPRIEDADES AUSENTES, nomeadas e sem conserto (todas `nota`, nenhuma `bloqueia`): (1) há um arquivo de registro no diff que a lista fechada do plano não enumera — `votos/B-O6R-07b/05-porteiro-pos-merge-fe2748c.md` —, ainda que seja o parecer que autoriza o start do bloco; (2) o número de pendências que o dev narrou (10) não é o que o registro contém (11); (3) a pendência-mãe segue ABERTA na autoria, coerente com todo o resto do registro mas não com a leitura de que ela fecha neste PR; (4) uma linha de prosa carrega espaço em branco à direita.\n\nO QUE NÃO MEDI POR SER DE OUTRA CADEIRA: a atomicidade da captura, o contexto RLS por execução e a propriedade do papel efêmero do drill (`rolsuper`/`rolbypassrls`, falha de criação = vermelho) são da C1 `jurado-06-banco-atomicidade-rls`; o valor, o SUM sem teto, a tolerância zero e o mérito do \"exactly-once efetivo\" são da C2 `jurado-06-invariante-financeiro-rateio`. Julguei a LETRA do contrato, não o mérito da garantia.\n\nO QUE FICOU SEM EXECUTAR: nada do meu núcleo.\n\nLIMPEZA §C5: removi os 37 diretórios `storage/checklist-attachments/<uuid>/` que as minhas passadas criaram (o `.gitkeep` RASTREADO ficou), removi `frontend/tsconfig.tsbuildinfo`, e derrubo os 4 containers com `docker rm -fv` e os meus 2 worktrees por `git worktree remove --force`, nunca `rm -rf`, e só pelos identificadores do MEU bloco. Worktrees alheios (b06, gov-descuido, demo/investidor) intactos; `san2-r` não existe nesta árvore e reporto isso em vez de varrer.\n\nVOTO: APROVADO — diff cabe na §6 como emendada e o PROIBIDO está vazio por hash de árvore e numstat (saídas coladas), hunks dentro dos trechos autorizados, as duas divergências declaradas conferem e nada foi afrouxado, piso 54 >= 47 por execução com o Δ +54 decompondo por arquivo, backfill do #380 nos 4 lugares com a pré-condição reexecutada, contrato posterior aos drills por git log, guard de paridade verde rodado por mim e registro apensado com dono",
+ "o_que_executei": [
+  {
+   "comando": "git rev-parse HEAD ; git rev-parse origin/main ; git merge-base origin/main HEAD",
+   "forma": "leitura no worktree b06 e na árvore principal",
+   "resultado": "head cae4305a (moveu para 93619d8e durante a medição, só registro) · origin/main fe2748c8 · merge-base = fe2748c8"
+  },
+  {
+   "comando": "git diff --numstat 0f0a872a cae4305a -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs'",
+   "forma": "two-dot entre commits da mesma branch, pathspec de exclusão, ec por variável",
+   "resultado": "VAZIO, ec=0 → head de CÓDIGO = 0f0a872a"
+  },
+  {
+   "comando": "git diff --numstat origin/main...0f0a872a",
+   "forma": "base origin/main=fe2748c8, TRÊS PONTOS",
+   "resultado": "46 arquivos; nenhum em prisma/ mobile/ frontend/ src/infra/ scripts/ nem lockfiles"
+  },
+  {
+   "comando": "git diff --numstat origin/main...0f0a872a -- <cada um dos 27 caminhos PROIBIDOS>",
+   "forma": "three-dot; --numstat como INSTRUMENTO, nunca rev-parse (falha em silêncio para caminho inexistente)",
+   "resultado": "VAZIO em 100%, ec=0. pubspec.* e infra confirmados INEXISTENTES no topo (base=NAO head=NAO)"
+  },
+  {
+   "comando": "git rev-parse origin/main:<path> vs 0f0a872a:<path> nos 15 caminhos existentes",
+   "forma": "hash de árvore como CONFIRMAÇÃO, ec por variável",
+   "resultado": "IGUAL em todos: prisma be98074a · mobile 3a2ac028 · frontend 24be761e · src/infra f2ee31ef · rls.ts f8bd0fae · package-lock 9039d1e8 · scripts 08de36f3"
+  },
+  {
+   "comando": "git ls-tree -r --name-only 0f0a872a -- scripts/ | grep -i reconcile ; diff da enumeração base x head",
+   "forma": "prova por presença + enumeração de nomes",
+   "resultado": "ec=1 (AUSENTE); scripts/ IDÊNTICO em nomes e em hash de árvore → conformidade com R2-A"
+  },
+  {
+   "comando": "git diff -U1 origin/main...0f0a872a -- src/modules/checklists/checklist.service.ts",
+   "forma": "hunks lidos inteiros, ancorados por NOME DE FUNÇÃO",
+   "resultado": "exatamente 3 sítios ganham {meterCompletion} (:543 true, :700 false, :754 false); zero outra lógica"
+  },
+  {
+   "comando": "git diff ... -- checklist-prisma.repository.ts | grep -i reopen nas linhas +/-",
+   "forma": "grep restrito a linhas + e -",
+   "resultado": "ec=1 → reopenRunWithinTransaction INTOCADO"
+  },
+  {
+   "comando": "comm -13 <(nomes head) <(nomes base) nos 6 arquivos de teste editados",
+   "forma": "listas de nomes de test() ordenadas",
+   "resultado": "nenhum caso sumido em 5; no reopen 4→4 com 2 nomes remapeados 1:1; assert 21→23, igualdade 17→18, assert.ok 2→2, skip 0→0"
+  },
+  {
+   "comando": "npm test (head, banco PRISTINO erp_fresh)",
+   "forma": "node scripts/run-backend-tests.mjs · DATABASE_URL 127.0.0.1:56701/erp_fresh · REDIS :56702 · CORE_SAAS_PERSISTENCE não exportada · RBAC_DB_PARITY ausente · Node v20.19.5 · 107 migrations",
+   "resultado": "ec=0 por variável; TAP no arquivo: tests 2992 · pass 2990 · fail 0 · skipped 2 · 282 arquivos"
+  },
+  {
+   "comando": "npm test (base fe2748c, worktree e cluster próprios, banco PRISTINO erp_bfresh)",
+   "forma": "mesma forma canônica; DATABASE_URL :56703, REDIS :56704, npm ci próprio, 107 migrations",
+   "resultado": "ec=0; tests 2938 · pass 2936 · fail 0 · skipped 2 · 275 arquivos → REPRODUZ a baseline que o inspetor não reproduziu (R4)"
+  },
+  {
+   "comando": "node --test --import tsx tests/o6r06-<cada um dos 7>.test.ts (banco novo erp_dec)",
+   "forma": "arquivo por arquivo, runner canônico, ec por variável",
+   "resultado": "15·6·6·6·4·10·7 = 54; todos pass, 0 fail, 0 skip, ec=0 cada"
+  },
+  {
+   "comando": "grep -cE (test|it) abrindo parêntese, nos 7 arquivos novos",
+   "forma": "contagem lexical, para contrastar com a execução",
+   "resultado": "58 = 54 reais + 4 guards de auto-pulo DECLARADO dos 4 arquivos -db"
+  },
+  {
+   "comando": "git diff --stat a2988b5 c5d63bf -- src tests prisma frontend mobile .github scripts",
+   "forma": "pré-condição do backfill REEXECUTADA (é comando, não afirmação), ec por variável",
+   "resultado": "ec=0, 0 linhas → VAZIO"
+  },
+  {
+   "comando": "git rev-parse c5d63bf^{tree} / fe2748c^{tree} / a2988b5^{tree}",
+   "forma": "absorção por rev^{tree}, nunca por is-ancestor (que mente sob squash)",
+   "resultado": "c5d63bf == fe2748c == 1f957536a37373b93748897ca24a5ac74f17eaa7 (bate com o prefixo publicado); a2988b5 = 60dea962 (difere só em registro)"
+  },
+  {
+   "comando": "git log --format=%h %ad %s --reverse origin/main..0f0a872a -- API_CONTRACTS.md  e  -- tests/o6r06-*.test.ts",
+   "forma": "ordem contrato x drill por git log, com horário",
+   "resultado": "contrato em c5535470 00:58:24; drills em b5f2f0e9 00:14:00, 706dbf77 00:21:25, a618bc83 00:29:41 → contrato 29 min DEPOIS de todo drill"
+  },
+  {
+   "comando": "node --test --import tsx tests/kpi-achados-paridade.test.ts",
+   "forma": "guard EXECUTADO por mim, ec por variável",
+   "resultado": "ec=0 · tests 6 · pass 6 · fail 0 · skipped 0"
+  },
+  {
+   "comando": "node --test --import tsx tests/kpi-dashboard-charts.test.ts ; node --check Kpis/app.js ; node scripts/kpi-freeze.mjs --check",
+   "forma": "guards do painel, ec por variável",
+   "resultado": "ec=0 (16/16) · ec=0 · ec=0 (kpi-freeze: em dia, snapshot 2026-09-07)"
+  },
+  {
+   "comando": "regex de K4 e de K1/K2/K3 sobre a evidencia_fechamento COMPLETA de DIN-005 e DIN-007",
+   "forma": "parse do JSONL em Node sobre a string inteira, não leitura visual",
+   "resultado": "K4 NÃO citado; K1/K2/K3 NÃO citados; DIN-005 declara o não-entregue; B3 aparece no DIN-007 apenas para EXCLUIR-se da evidência"
+  },
+  {
+   "comando": "grep -c do cabeçalho ## P-O6R-B06- no head ; grep -c das linhas + do diff ; idem na base",
+   "forma": "três contagens independentes",
+   "resultado": "11 · 11 · 0 (o dev declarou 10)"
+  },
+  {
+   "comando": "python agent-orchestration/controle/gerar-indice-pendencias.py ; git hash-object vs git rev-parse HEAD:<path>",
+   "forma": "RODAR o gerador (não varredura própria) e comparar bytes",
+   "resultado": "ec=0, 288 cabeçalhos / 277 IDs; índice BYTE-IDÊNTICO (0daf5bde) → o M do porcelain era fantasma de autocrlf"
+  },
+  {
+   "comando": "node scripts/sync-agent-agents.mjs --check",
+   "forma": "espelho Codex; aplicável porque os 6 corpos de jurado entraram no PR com espelho",
+   "resultado": "ec=0 — OK, 44 agentes, espelho consistente"
+  },
+  {
+   "comando": "npm run check ; npm run lint ; npm run build ; npm --prefix frontend ci ; npm --prefix frontend run check ; npm --prefix frontend run build ; git diff --check",
+   "forma": "bateria, uma vez cada, ec por variável",
+   "resultado": "0 · 0 · 0 · 0 · 0 · 0 ; git diff --check ec=2 (1 trailing whitespace em docs/omega-pd.md:1191)"
+  },
+  {
+   "comando": "git status --porcelain --ignored (antes e depois) ; git diff --name-only origin/main...0f0a872a -- frontend/ mobile/",
+   "forma": "pristino com --ignored (o --porcelain não vê storage/); trilhas provadas nas DUAS pontas",
+   "resultado": "37 diretórios storage/checklist-attachments/<uuid>/ criados pelas MINHAS passadas e removidos; .gitkeep rastreado preservado; frontend/ e mobile/ vazios nos dois instrumentos"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "Há arquivo no diff que a lista fechada do §6, como emendada, não enumera: agent-orchestration/omega/juntas/votos/B-O6R-07b/05-porteiro-pos-merge-fe2748c.md (140/0, novo). O §6 autoriza omega/juntas/{BRIEFING, J-, votos/B-O6R-06/*}; votos/B-O6R-07b/ não consta da lista.",
+   "evidencia": "git diff --numstat origin/main...0f0a872a → 140 0 .../votos/B-O6R-07b/05-porteiro-pos-merge-fe2748c.md ; git log --diff-filter=A --format='%h %ad %an %s' → dd16beb1 2026-09-06 thiagodorgo 'parecer do porteiro pos-merge do #380 — LIBERADO COM RESSALVA para o B-O6R-06'",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente é a exaustividade da lista de registro do §6: ela não previu o próprio artefato que o §C2.8 exige para o bloco poder começar. Arquivo novo, append puro, zero produto, zero efeito sobre código, KPI ou contrato."
+  },
+  {
+   "defeito": "O número de pendências que o dev narrou não é o que o registro contém: narrativa 10, registro 11.",
+   "evidencia": "grep -c do cabeçalho ## P-O6R-B06- em pendencias.md@0f0a872a = 11; as mesmas linhas contadas nas adições do diff = 11; na base origin/main = 0. As 11 são as 9 nominais mais as 2 divergências declaradas, e nenhuma falta.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente é a coincidência entre o número declarado e o número medido. O registro está COMPLETO; o desvio é de contagem na narrativa, e o registro é o que vale."
+  },
+  {
+   "defeito": "A pendência-mãe P-O6R-B06 segue com status ABERTA e com o campo Bloqueia ativo, enquanto o status-geral do mesmo PR afirma que os dois P0 dela fecham.",
+   "evidencia": "pendencias.md@0f0a872a:2874 e a última linha da seção ('- status: ABERTA — 2 P0.', '**Bloqueia:** feature em cloud billing / cobrança de nuvem / rateio de custo'); status-geral.md:4209 'Os dois P0 da pendência-mãe P-O6R-B06 fecham. Ela BLOQUEAVA a trilha CHECKLIST P1 e o cloud billing.' CONTRA-MEDIÇÃO que fiz: pendencias.md tem 309 linhas adicionadas e 0 removidas, e o repositório marca fechamento REESCREVENDO a linha de status (o que exigiria remoção); e os outros quatro lugares do registro (aguardando_merge com os dois, fechados sem eles, p0_fechados=11, merge_commit=null) dizem coerentemente que nada mergeou ainda.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente é a leitura única do estado da mãe entre dois arquivos do mesmo PR. Não converto em bloqueio porque o registro é internamente coerente com 'aguardando merge' e o Bloqueia cai no merge, como o próprio plano prevê; publico os dois lados para a junta contestar minha leitura."
+  },
+  {
+   "defeito": "Uma linha de prosa entra com espaço em branco à direita.",
+   "evidencia": "git diff --check origin/main...0f0a872a → ec=2 lido por variável: 'docs/omega-pd.md:1191: trailing whitespace'. No head de registro cae4305a soma-se 'C1-banco-rls-evidencia.md:359: new blank line at EOF', que é arquivo de OUTRA cadeira e reporto sem varrer.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente é o diff limpo em git diff --check. Cosmético, em arquivo de registro, sem efeito sobre código, contrato ou número."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "C1 jurado-06-banco-atomicidade-rls cobre: atomicidade da captura (séries A/F/R), contexto RLS por execução, o canário sob os DOIS papéis, e a PROPRIEDADE do papel efêmero do drill (rolsuper=false, rolbypassrls=false, falha de criação = vermelho). Não re-medi nada disso.",
+  "C2 jurado-06-invariante-financeiro-rateio cobre: o valor, o SUM/GROUP BY sem teto, os tipos nuláveis, a tolerância zero contra referência em BigInt e o mérito do 'exactly-once efetivo'. Julguei só a LETRA do contrato.",
+  "P-O6R-B06-RECONCILE-BLOQUEADO (ALTA) — decisão DESTA junta: o predicado observável de I2' e o aceite K com trilha C semeada. O script está corretamente FORA do diff (R2-A) e a série K não conta no piso.",
+  "P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB (MÉDIA) — ratifico: medi que o diff é exatamente o declarado (8 sítios mais 1 teardown; a asserção (a.3) do outro arquivo ficou MAIS FORTE), que não havia caminho verde sem migration (proibida) e que nenhum guard foi afrouxado.",
+  "P-O6R-B06-PAPEL-DO-DRILL-VEM-DO-ARNES (BAIXA) — ratifico a DECLARAÇÃO (existe e é anterior a qualquer consolidação, §A2 cumprido); a propriedade é da C1.",
+  "P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL e P-O6R-B06-BASE-SEM-PRODUTOR (ALTA, declaradas pre-existentes pelo bloco) — não as re-datei nem as converti em veto; ficam como pendências nomeadas com dono, e o veto não as alcança.",
+  "A lacuna desenho (84, já descontada a série K bloqueada) contra o entregue por execução (54) fica publicada como observação com N e forma, NÃO como critério. Verifiquei aceite por aceite, por presença, que nenhum aceite do desenho está ausente da suíte.",
+  "Ressalvas do crítico que conferi e NÃO converti em veto: R2-A (script bloqueado, logo a ausência é conformidade) e a exigência de caminho autorizado em src/ para a sonda de compilação do C6 — não há arquivo de sonda solto no diff, e o C6 prova o parâmetro obrigatório pelo compilador de dentro do censo.",
+  "[A RE-VERIFICAR pelo porteiro pós-merge] o backfill de pr/merge_commit/approved_head da entrada B-O6R-06 (null na autoria por contrato, §C3.5) e a entrada dos dois P0 em 'fechados' com hash de merge, com p0_fechados subindo de 11 para 13."
+ ],
+ "teardown": "CRIEI: 2 worktrees (.claude/worktrees/o6r06-jur-c3 em cae4305a e .claude/worktrees/o6r06-jur-c3-base em fe2748c), 4 containers (o6r06-jc3-pg :56701, o6r06-jc3-redis :56702, o6r06-jc3-pg-base :56703, o6r06-jc3-redis-base :56704), 4 bancos (erp_test, erp_fresh, erp_dec, erp_bfresh), 37 diretórios storage/checklist-attachments/<uuid>/ e logs no scratchpad da sessão, fora dos worktrees. DERRUBEI: os 4 containers com docker rm -fv (COM o -v, para não repetir os 49 volumes órfãos da ressalva R2); os 2 worktrees por git worktree remove --force mais git worktree prune (NUNCA rm -rf sobre worktree registrado, e só pelos identificadores do MEU bloco); apaguei os 37 diretórios de storage preservando o .gitkeep RASTREADO, mais frontend/tsconfig.tsbuildinfo. NOTA HONESTA DE LIMPEZA: a remoção do worktree da base deixou resíduo de node_modules travado por lock de arquivo (Permission denied em ~24 arquivos de effect/dist), com a entrada já liberada por git worktree prune; removi os resíduos numa segunda passada, depois de confirmar por dir /AL que NÃO havia junction e que já não existia .git de worktree vivo ali — nunca removi através de junction nem por identificador de cadeia alheia. CONFIRMAÇÃO EXECUTADA: docker ps -a sem nenhum o6r06-jc3-* (grep ec=1); docker volume ls -f dangling=true = 0; git worktree list com apenas 3 entradas e nenhuma minha (grep ec=1); ls .claude/worktrees/ = b06, gov-descuido, san2-r. A base viva erp-postgres/erp-redis NUNCA foi alvo, nem para leitura, e segue Up 9 days (healthy) nos dois. Worktrees alheios INTACTOS: b06 (do dev, que avançou sozinho para 93619d8e com o voto da C2), gov-descuido (outra sessão) e a árvore principal demo/investidor — nenhum tocado. RESÍDUO ALHEIO QUE REPORTO EM VEZ DE VARRER: .claude/worktrees/san2-r existe em disco e NÃO consta de git worktree list (órfão), exatamente como o briefing antecipou; não é meu e não o toquei. Na árvore principal permanecem os 5 ' M' (3 dos quais são os fantasmas conhecidos de autocrlf) e os corpos de jurado untracked — estado de OUTRAS sessões, que eu não criei nem alterei."
+}
