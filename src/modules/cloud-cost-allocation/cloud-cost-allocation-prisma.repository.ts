@@ -146,7 +146,11 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     await this.forEachTenantInOneTx(
       tenants.map((tenant) => tenant.id),
       async (tx, tenantId) => {
-        await tx.tenantCloudCostAllocation.deleteMany({ where: { allocation_run_id: runId } });
+        // Mesma razão: sem `tenant_id` explícito, sob superusuário a PRIMEIRA volta apagaria as
+        // alocações de TODAS as organizações do run, e as voltas seguintes regravariam só as suas.
+        await tx.tenantCloudCostAllocation.deleteMany({
+          where: { allocation_run_id: runId, tenant_id: tenantId },
+        });
 
         for (const allocation of byTenant.get(tenantId) ?? []) {
           const record = await tx.tenantCloudCostAllocation.create({
@@ -265,7 +269,12 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     const rows: UsageBasisRow[] = [];
 
     await this.forEachTenantInOneTx(tenantIds, async (tx, tenantId) => {
-      const where = { occurred_at: { gte: periodStart, lte: periodEnd } };
+      // `tenant_id` NA CLÁUSULA, além da RLS — isolamento EXPLÍCITO, no padrão dos demais métodos da
+      // casa (`stampRunRole` carrega a mesma nota). Não é redundância decorativa: o papel de dev e o
+      // da CI são `postgres`, SUPERUSUÁRIO, e superusuário IGNORA RLS. Confiar só na policy faria este
+      // `groupBy` somar a base de TODAS as organizações num único balde em toda execução local e de
+      // CI — e o canário abaixo, que existe para o vazamento de GUC, foi justamente quem pegou isso.
+      const where = { tenant_id: tenantId, occurred_at: { gte: periodStart, lte: periodEnd } };
 
       const [aggregated, grouped] = await Promise.all([
         tx.cloudUsageEvent.aggregate({ where, _count: { _all: true } }),
