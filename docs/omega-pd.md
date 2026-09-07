@@ -924,3 +924,388 @@ que é a função do helper; `allow-downloads` neutraliza isso sem devolver `all
 
 **Onde a decisão foi implementada:** `src/modules/evidence/serve-verified-file.ts` (B-O6R-07b), usado pelos 4
 routers de download (E1–E4). E5 (owner-portal) não é tocada — ela já re-codifica os bytes por Jimp.
+
+---
+
+## PD-O6R-B06-OUTBOX-IN-DB — Captura transacional sem relay, `ON CONFLICT DO NOTHING` como idempotência e chave derivada da entidade (2026-09-06)
+
+Rodada Ω6R · B-O6R-06 · Pesquisa `agente-pesquisador-web`, **16 fontes** (docs primárias PostgreSQL/Prisma >
+catálogo de padrões microservices.io/AWS > produtos líderes de idempotência: Stripe, Shopify, AWS Builders'
+Library). Regra da dúvida §C7.3. **BLOQUEIA:** `src/modules/cloud-usage/cloud-usage.outbox.ts`.
+**Não decide o desenho** — levanta o que a evidência externa diz. Onde a fonte contraria o plano, está dito
+com todas as letras.
+
+> **Nota de proveniência (§A2).** A pesquisa foi executada pelo `agente-pesquisador-web`, que nesta sessão
+> **não tinha ferramenta de escrita** (`Read`/`WebSearch`/`WebFetch` apenas). O texto abaixo é o devolvido por
+> ela, **gravado pelo orquestrador**. Nenhuma fonte foi acrescentada nem removida na transcrição; quem ler
+> deve saber que a transcrição é de terceiro, como já se registrou nos pareceres do `B-O6R-02` c5.
+
+### 0. Como ler esta PD
+
+**FATO** = o que a fonte diz, com citação. **RECOMENDAÇÃO** = conclusão do pesquisador, sem autoridade de
+junta. **CONTRA-O-PLANO** = onde a evidência externa não sustenta uma afirmação do `B-O6R-06-plano.md`.
+
+### 1. Transactional outbox sem relay — o que se ganha e o que se perde
+
+**FATO (microservices.io).** O padrão resolve *"How to atomically update the database and send messages to a
+message broker?"*. Garantias listadas: *"Messages are guaranteed to be sent if and only if the database
+transaction commits"* e *"Messages are sent to the message broker in the order they were sent by the
+application"*. O relay é constitutivo: *"The Message relay might publish a message more than once. It might,
+for example, crash after publishing a message but before recording the fact that it has done so."*
+
+**FATO (AWS Prescriptive Guidance).** A intenção é nomeada assim: *"The transactional outbox pattern resolves
+the dual write operations issue that occurs in distributed systems when a single operation involves both a
+database write operation and a message or event notification."* Entre "Issues and considerations":
+*"Duplicate messages: … we recommend that you make the consuming service idempotent by tracking the processed
+messages"*; *"Order of notification: Send messages or events in the same order in which the service updates
+the database"*; *"Transaction rollback: Do not send out an event notification if the transaction is rolled
+back."*
+
+**CONTRA-O-PLANO (nomenclatura).** As duas fontes definem o padrão pelo **dual write para um segundo
+sistema**. No desenho do §3.1 não há segundo sistema: o efeito é uma linha na mesma base, na mesma transação.
+Logo **não é um Transactional Outbox** — é uma escrita atômica com chave única. A tabela do §3.4 ("Outbox → a
+linha faturável") **redefine o termo do aceite** (`PLANO_O6R.md:12`), não o implementa. Isso não diz que o
+desenho é pior: **para o problema do dual write, é estritamente mais forte** (não existe janela entre commit
+e publicação porque não existe publicação). Diz que o plano não pode invocar a literatura do outbox como se
+ela chancelasse a ausência de relay — a literatura só descreve o caso em que o relay existe. Quem julga o
+aceite tem de julgar a **propriedade**, não a palavra.
+
+**FATO — o que se perde ao não haver relay, item a item.**
+
+- **Ordering** — o outbox entrega a ordem de publicação (fonte 1) e a AWS a trata como requisito de qualidade
+  de dado. Sem tabela de eventos ordenada não há *replay ordenado* para nenhum consumidor futuro (motor de
+  fatura, provedor externo de billing). Para `SUM` é irrelevante (soma é comutativa) — o plano acerta ao dizer
+  que ordering não é dúvida **deste** desenho. Passa a ser dúvida no dia em que existir consumidor externo.
+- **Retry desacoplado** — o relay converte falha de entrega em **nova tentativa**. Sem relay, a falha da
+  escrita da métrica não tem retry próprio.
+- **CONTRA-O-PLANO (acoplamento de disponibilidade, ausente do §10).** O §3.1 declara: *"se a medição falha, a
+  run não commita e o chamador recebe erro"*. A consequência que o plano não escreve: **um defeito no
+  faturamento passa a derrubar a operação de campo**. Qualquer exceção no caminho novo — `validateInput`
+  lançando, `sanitizeCloudUsageMetadata` lançando, policy RLS negando `INSERT` em `cloud_usage_events` para o
+  papel da aplicação, constraint futura — impede o técnico de **criar ou concluir uma vistoria**. Antes, o
+  `.catch(warn)` degradava o faturamento e preservava a operação; depois, degrada os dois. É exatamente o
+  acoplamento que o relay existe para evitar. A matriz de risco do §10 não tem linha para isso.
+
+**RECOMENDAÇÃO.** (a) Julgar a entrega pela propriedade "nenhuma run commitada sem unidade faturável", não
+pelo rótulo "outbox"; e **renomear** o arquivo/contrato para algo que descreva o que ele faz (captura
+transacional / medição na transação), para não fixar no repositório um nome que a literatura reserva para
+outra coisa. (b) Acrescentar ao §10 a linha de risco do acoplamento, com mitigação testável: o `build…` deve
+ser **total** (nunca lançar para run válida) e o `append…` só pode falhar por indisponibilidade do banco — que
+já derrubaria a run de qualquer forma. Um teste que injete `validateInput` lançando e prove que a run **não**
+é criada é o vermelho honesto desse risco (hoje o §7 não tem esse caso).
+
+### 2. `INSERT … ON CONFLICT DO NOTHING` como idempotência — armadilhas documentadas
+
+**FATO (PostgreSQL, INSERT).** *"`ON CONFLICT DO NOTHING` simply avoids inserting a row as its alternative
+action."* · *"For `ON CONFLICT DO NOTHING`, it is optional to specify a `conflict_target`; when omitted,
+conflicts with **all usable constraints (and unique indexes)** are handled."* · sobre `RETURNING`: *"Only rows
+that were successfully inserted or updated will be returned."*
+
+**FATO (PostgreSQL, Transaction Isolation §13.2.2).** *"INSERT with an ON CONFLICT DO NOTHING clause may have
+insertion not proceed for a row due to the outcome of another transaction whose effects are not visible to the
+INSERT snapshot. Again, this is only the case in Read Committed mode."* Em **READ COMMITTED** (default do
+PostgreSQL e do Prisma) o `DO NOTHING` é seguro sob concorrência; fora dele o mesmo statement pode devolver
+`40001 serialization_failure` em vez de pular.
+
+**FATO (PostgreSQL, tipos seriais).** *"A value allocated from the sequence is still 'used up' even if a row
+containing that value is never successfully inserted into the table column."*
+
+**FATO — ele mascara colisão legítima? SIM, em três formas.**
+
+1. **Sem `conflict_target`, mascara conflito em QUALQUER unique/PK.** Um bug que gerasse `id` duplicado, ou uma
+   unique nova adicionada por migração futura, seria engolido em silêncio pelo mesmo `DO NOTHING` que existe
+   para dedup.
+2. **Não distingue "já existia" de "não inseri"** — `RETURNING` só devolve linha inserida; `createMany`
+   devolve só `{ count }`. O código **não consegue afirmar** pelo INSERT que a linha existe agora.
+3. **Mascara divergência de payload.** Se a mesma chave for reescrita com `quantity` diferente (regra de run
+   reaberta mudar; run reaberta e concluída de novo), o segundo INSERT é **descartado** e a quantidade
+   **antiga** permanece — valor errado, silencioso, em coluna de dinheiro. Mesma classe de defeito que o bloco
+   fecha, só relocada.
+
+**CONTRA-O-PLANO (divergência concreta e verificável).** O §3.1 escreve a prosa como
+`INSERT … ON CONFLICT (tenant_id, idempotency_key) DO NOTHING` mas **autoriza como equivalente**
+`createMany({ data, skipDuplicates: true })`. **Não são equivalentes.** A doc oficial do Prisma mostra o SQL
+gerado verbatim: `INSERT INTO "public"."User" (...) VALUES (...), (...) ON CONFLICT DO NOTHING` — **sem
+conflict target**. A opção "A" do plano cai na armadilha (1). A "prova no log de query" que o §3.1 pede
+confirmaria a **presença** da cláusula, não a **especificidade** — e é a especificidade que separa dedup de
+mascaramento.
+
+**RECOMENDAÇÃO.** Preferir `$executeRaw` com **alvo explícito** (`ON CONFLICT (tenant_id, idempotency_key) DO
+NOTHING`), como já faz `createRunWithClientKey`. Se `createMany` for escolhido mesmo assim, registrar em
+comentário e em teste que a cláusula é genérica, e acrescentar um caso que prove que colisão de `id` **não** é
+silenciada (ou aceitar por escrito que é). Verificar se `cloud_usage_events` tem coluna com `DEFAULT
+nextval()` — isso se mede, não se supõe. E fixar por asserção que a transação da run roda em **READ
+COMMITTED**: um teste que suba o nível de isolamento troca "pula" por `40001`.
+
+### 3. Por que `create` do Prisma seria pior aqui — CONFIRMADO, com o mecanismo correto
+
+**FATO (PostgreSQL).** `23505 unique_violation` e `25P02 in_failed_sql_transaction` são condições nomeadas do
+catálogo. O tutorial é explícito: *"`ROLLBACK TO` is the only way to regain control of a transaction block that
+was put in aborted state by the system due to an error, short of rolling it back completely and starting
+again."*
+
+**FATO (Prisma).** Transação interativa: *"The transaction commits when the callback returns and rolls back
+when it throws"* e *"Nothing inside the callback survives an error."* O issue `prisma/prisma#12862` documenta
+que, sob transação interativa, o erro chega **obfuscado** — o chamador vê o `25P02` em vez do `P2002`,
+tornando o `catch (P2002)` não confiável dentro da tx.
+
+**Veredito.** A afirmação do plano está **correta no efeito**, mas o mecanismo a citar é do **PostgreSQL**, não
+do Prisma: o erro põe a transação em estado abortado e todo comando seguinte falha até `ROLLBACK`. Prisma não
+expõe `SAVEPOINT` em transação interativa, então não há como capturar o `23505` e continuar. `findUnique` +
+`create` continua proibido por corrida.
+
+### 4. Chave derivada da entidade vs UUID — a evidência está DIVIDIDA, e o plano cita só um lado
+
+**FATO (Stripe).** *"How you create unique keys is up to you, but we suggest using V4 UUIDs, or another random
+string with enough entropy to avoid collisions."* · *"You can remove keys from the system automatically after
+they're at least 24 hours old."*
+
+**FATO (Shopify).** *"Shopify tracks idempotency keys for 24 hours from the original request"*; para casos
+determinísticos, sugere **UUID v5** derivado dos parâmetros.
+
+**FATO (AWS Builders' Library).** O token e as mutações têm de ser **ACID juntos**: *"the process that combines
+recording the idempotent token and all mutating operations related to servicing the request must meet the
+properties for an atomic, consistent, isolated, and durable (ACID) operation."* E — **contra a chave
+derivada** — prefere token **fornecido pelo chamador**, porque derivar *"doesn't work in all cases"*: um
+cliente pode legitimamente querer duas requisições idênticas processadas separadamente.
+
+**FATO (Gunnar Morling).** Contra o UUID aleatório: *"They require the consumer to store the UUIDs of all the
+previous messages it ever has received in order to reliably identify a duplicate"* — recomenda chave
+determinística.
+
+**FATO (microservices.io, Idempotent consumer).** *"a consumer must be idempotent: the outcome of processing
+the same message repeatedly must be the same as processing the message once"*, materializado por PK
+`(subscriberId, messageID)`.
+
+**Reconciliação honesta.** As duas recomendações não colidem: falam de **objetos diferentes**.
+Stripe/Shopify/AWS descrevem **chave de idempotência de requisição HTTP do cliente** — por isso aleatória e com
+TTL de 24 h. O plano cria **chave natural determinística de um fato derivado** (uma unidade faturável por
+`(run, métrica)`), que não é requisição e não expira. Para esse objeto, Morling e o Idempotent Consumer
+sustentam a chave derivada; e o estado **atual** do código (`idempotencyKey` a partir de `event.id =
+randomUUID()` por emissão) é literalmente o modo de falha que Morling nomeia: chave nova a cada emissão
+**nunca deduplica**.
+
+**FATO — o que a evidência NÃO sustenta.** (a) **TTL:** Stripe/Shopify podam em 24 h; a chave derivada é
+**permanente** — e precisa ser. Significa que a tabela **nunca** poderá ter poda por idade sem quebrar a
+idempotência. Registrar. (b) A objeção da AWS aplica-se ao **script de reconciliação**, não ao append: o plano
+já resolve deduplicando por `(source_type, source_id, metric_key)` e não pela chave nova — **correto**, e é a
+decisão de desenho mais fina do §3.1. (c) **Coexistência:** linhas legadas (chave `event.id`) e novas (chave
+estável) **não se deduplicam entre si**. O corolário que o plano não escreve: enquanto qualquer caminho legado
+puder emitir, a mesma run pode ter **duas** linhas da mesma métrica — **dobra de cobrança**. O aceite C1 (o
+ramo antigo não grava mais) é o que impede isso, e por isso é o teste mais importante do bloco.
+
+### 5. "Exactly-once efetivo" — a expressão é defensável, com uma ressalva
+
+**FATO.** As duas fontes de padrão dizem o mesmo: entrega at-least-once + consumidor idempotente. O termo
+corrente é **effectively-once**; "exactly-once" estrito é demonstradamente impossível para entrega de mensagem.
+
+**Ressalva.** No §3.1 **não há entrega nenhuma**, logo não há at-least-once. A propriedade obtida é uma
+**invariante de banco** — no máximo uma linha por `(tenant_id, chave)` por unique constraint, e ao menos uma
+por atomicidade da transação. Isso é **mais forte** que effectively-once; descrever com o vocabulário mais
+fraco subvende a entrega e convida ataque.
+
+**RECOMENDAÇÃO.** No `API_CONTRACTS.md`, documentar a invariante em linguagem de banco (unique + atomicidade),
+citando "at-least-once + idempotência" apenas como analogia.
+
+### 6. O que NÃO foi medido por esta PD
+
+- **Nada foi executado.** Zero query, zero teste, zero leitura da base.
+- **`debezium.io`** devolveu **HTTP 403** — a posição do Debezium sobre relay/CDC não veio de fonte primária.
+- O **SQL efetivamente emitido** pelo `createMany` na versão **7.8.0** instalada não foi observado; a citação
+  vem da doc oficial. Confirmar por log de query é obrigação do dev — e o que ele precisa conferir é o
+  **alvo**, não a cláusula.
+- Não foi encontrada fonte normativa que discuta o caso "consumidor é o mesmo banco" — a ausência é ela própria
+  o achado do item 1.
+
+### 7. Fontes
+
+1. **microservices.io — Transactional outbox** — https://microservices.io/patterns/data/transactional-outbox.html (2026-09-06). Definição, papel constitutivo do relay, ordering, "publish more than once". Base do §1.
+2. **microservices.io — Idempotent consumer** — https://microservices.io/patterns/communication-style/idempotent-consumer.html (2026-09-06). Dedup por PK na mesma transação do efeito. Base de §4 e §5.
+3. **AWS Prescriptive Guidance — Transactional outbox** — https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html (2026-09-06). "dual write issue", duplicatas, ordem, rollback.
+4. **PostgreSQL 18 — INSERT** — https://www.postgresql.org/docs/current/sql-insert.html (2026-09-06). `DO NOTHING`; conflict_target opcional ⇒ "all usable constraints"; `RETURNING`. Base de §2.
+5. **PostgreSQL 18 — Transaction Isolation** — https://www.postgresql.org/docs/current/transaction-iso.html (2026-09-06). `DO NOTHING` sob concorrência só em Read Committed.
+6. **PostgreSQL 18 — Numeric Types** — https://www.postgresql.org/docs/current/datatype-numeric.html (2026-09-06). Sequência "used up".
+7. **PostgreSQL 18 — Error Codes** — https://www.postgresql.org/docs/current/errcodes-appendix.html (2026-09-06). `23505`, `25P02`, `40001`.
+8. **PostgreSQL 18 — Transactions (tutorial)** — https://www.postgresql.org/docs/current/tutorial-transactions.html (2026-09-06). Estado abortado e `ROLLBACK TO`. Base de §3.
+9. **Prisma ORM — Transactions** — https://www.prisma.io/docs/orm/prisma-client/queries/transactions (2026-09-06). "Nothing inside the callback survives an error".
+10. **Prisma ORM — Client API reference (`createMany`)** — https://www.prisma.io/docs/orm/reference/prisma-client-reference (2026-09-06). `skipDuplicates`.
+11. **Prisma ORM — CRUD, SQL gerado por `createMany`** — https://www.prisma.io/docs/orm/v6/prisma-client/queries/crud (2026-09-06). O verbatim `ON CONFLICT DO NOTHING` **sem conflict target**. **Fonte da divergência CONTRA-O-PLANO do §2.**
+12. **prisma/prisma#12862** — https://github.com/prisma/prisma/issues/12862 (2026-09-06). Erro obfuscado sob transação interativa.
+13. **Stripe — Idempotent requests** — https://docs.stripe.com/api/idempotent_requests (2026-09-06). UUID v4 e poda em 24 h.
+14. **Shopify — Implementing idempotency** — https://shopify.dev/docs/api/usage/implementing-idempotency (2026-09-06). Janela de 24 h; UUID v5 determinístico como exceção.
+15. **AWS Builders' Library — Making retries safe with idempotent APIs** — https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/ (2026-09-06). Token + mutações ACID juntos; preferência por token do chamador.
+16. **Gunnar Morling — On Idempotency Keys** — https://www.morling.dev/blog/on-idempotency-keys/ (2026-09-06). Contrapeso a 13/14/15.
+
+---
+
+## PD-O6R-B06-SUM-NUMERIC-RLS — `SUM`/`GROUP BY` no banco sobre coluna monetária, sob `FORCE ROW LEVEL SECURITY`, via Prisma 7 + `@prisma/adapter-pg` (2026-09-06)
+
+Rodada Ω6R · B-O6R-06 · Pesquisa `agente-pesquisador-web`, **14 fontes**. Regra da dúvida §C7.3.
+**BLOQUEIA:** `summarizeLineItems` (`aws-cur-prisma.repository.ts`) e `sumUsageBasis`
+(`cloud-cost-allocation-prisma.repository.ts`). Mesma nota de proveniência da PD anterior.
+
+**Terreno medido para esta PD** (leitura de `package.json` no worktree `b06`): `@prisma/client ^7.8.0` **e
+`@prisma/adapter-pg ^7.8.0`**. O plano **não menciona** o driver adapter, e ele muda o caminho do `numeric` —
+§1.3.
+
+### 1. Precisão: `SUM` sobre `numeric` e o caminho até o JS
+
+**1.1 FATO (PostgreSQL, funções de agregação).** `sum ( numeric ) → numeric` · `sum ( bigint ) → numeric` ·
+`sum ( real ) → real` · `sum ( double precision ) → double precision`. Somar `numeric` **devolve `numeric`** —
+não há promoção a ponto flutuante.
+
+**1.2 FATO (PostgreSQL, tipos numéricos).** *"The type `numeric` … is especially recommended for storing
+monetary amounts and other quantities where exactness is required."* E: *"The data types `real` and `double
+precision` are **inexact**… If you require exact storage and calculations (such as for monetary amounts), use
+the `numeric` type instead."* Contrapartida honesta, na mesma página: *"calculations on `numeric` values are
+very slow compared to the integer types, or to the floating-point types."*
+
+**Conclusão do item.** Somar no banco em `Decimal(20,6)` é **exato**. Acumular em `number` no processo — que é
+o que `sumCosts` faz hoje (`total += line.unblendedCost`) — é inexato **por tipo**, independentemente do teto
+de 10.000 linhas. **O DIN-007 tem dois defeitos superpostos:** o truncamento (que o achado nomeia) e a
+acumulação em float (que ele **não** nomeia). Fechar só o primeiro deixa o segundo.
+
+**1.3 FATO (Prisma + driver adapter).** `Decimal` no Prisma é **decimal.js**: *"`Decimal` fields are
+represented by the `Decimal.js` library."* Em Prisma 7 o driver adapter é obrigatório; para PostgreSQL é
+`@prisma/adapter-pg` (node-postgres). O issue `prisma/prisma#23505` documenta que o adapter **registra type
+parsers globais do node-postgres**, sobrepondo os nativos — valores passam a chegar **como string**. Somado ao
+princípio do node-postgres (*"node-postgres will convert a database type to a JavaScript string if it doesn't
+have a registered type parser"*) e ao fato de `numeric` (OID 1700) não ter parser numérico por default, o
+caminho é: **`numeric` → texto no wire → `Decimal` no client**. **Não há `float` no meio.**
+
+**FATO — onde a precisão SE PERDE, então.** Só na conversão final para `number`. `decimal.js` documenta que
+`toNumber()` cai no double de 64 bits. E há uma armadilha adicional **não citada pelo plano**: o `precision` de
+decimal.js tem **default 20 dígitos significativos** e *"All functions which return a Decimal will round the
+return value to `precision` significant digits"* — as exceções **não incluem** `plus`, `minus` nem `times`.
+**Somar `Decimal` em JS também arredonda**, a 20 significativos. Não é problema para `Decimal(20,6)`, mas
+destrói a ideia de que "somar Decimal em JS é seguro por definição".
+
+**RECOMENDAÇÃO.** Somar **no banco** (o plano acerta). Manter coluna e retorno do repositório em
+`Decimal`/string até a borda HTTP; converter **uma vez**, no serializador. Registrar o teto do `number`: com 6
+casas decimais, um total ≥ ~1e10 já ultrapassa os ~15-16 dígitos significativos exatos do double — o risco #6
+do §10 está na **ordem de grandeza certa** e é conservador. Um teste com total acima do teto, provando que
+`Decimal.toString()` bate com o SQL e que o `number` **não** bate, é o vermelho honesto dessa linha.
+
+### 2. `groupBy`/`aggregate` do Prisma: há truncamento implícito?
+
+**2.1 FATO (SQL gerado, doc oficial).** A doc mostra o SQL do `groupBy`: `SELECT …, SUM(…), COUNT(*) FROM … 
+WHERE 1=1 GROUP BY … HAVING AVG(…) >= $1 ORDER BY … OFFSET $2`. `SUM`/`COUNT`/`GROUP BY`/`HAVING` **no
+banco**, sem reduce no cliente. A premissa do §3.2/§3.3 está sustentada por SQL verbatim.
+
+**2.2 FATO — não há `take` implícito, mas há armadilha de versão.** `take`/`skip` são opções **explícitas**;
+nada indica limite default. Mas a nota de release `v8.0.0-rc.4-dev.12` (fix #30067) revela o comportamento das
+versões anteriores — e **7.8.0 está entre elas**: *"The window the caller asked for was discarded silently — no
+error, no warning, just a confident wrong number"*, e *"**Behaviour change.** Any existing chain combining
+`take` / `skip` / `cursor` / `distinct` / `distinctOn` with a root `.aggregate()` returns a different number
+after this merges — the correct one."*
+
+**Leitura para este bloco.** Em **7.8.0**, `aggregate()` **ignora** `take`/`skip` — o total é o do `where`
+inteiro, que é o que o bloco quer. Mas é **comportamento pinado na versão**: se um `take` entrar por descuido
+no `aggregate` do resumo, hoje não faz nada e **no upgrade para Prisma 8 passa a fazer** — e o total de
+faturamento muda sem que uma linha do bloco seja tocada. `groupBy`, ao contrário, **honra** `take`/`skip`.
+
+**RECOMENDAÇÃO.** Além de "não passar `take`", **asseverar por teste** que o objeto de argumentos de
+`aggregate`/`groupBy` não contém `take`/`skip`/`cursor`/`distinct` — asserção barata que sobrevive ao upgrade
+de major. Anotar a dependência de versão no comentário do repositório.
+
+**2.3 O que NÃO foi possível confirmar.** Não há fonte oficial sobre limites de `where` complexo em agregação
+nem sobre teto de número de grupos. **Ausência de limite documentado não é prova de ausência de limite** — se o
+desenho depender disso, mede-se por execução com N grande.
+
+### 3. RLS e agregação — a armadilha é silenciosa e é da mesma família do defeito que o bloco fecha
+
+**3.1 FATO (PostgreSQL, Row Security Policies).** *"Superusers and roles with the `BYPASSRLS` attribute
+**always** bypass the row security system when accessing a table. Table owners **normally bypass** row security
+as well, though a table owner can choose to be subject to row security with `ALTER TABLE … FORCE ROW LEVEL
+SECURITY`."* Sobre a ordem: *"This expression will be evaluated for each row **prior to any conditions or
+functions coming from the user's query**… Rows for which the expression does not return `true` will not be
+processed."* E: *"If no policy exists for the table, a default-deny policy is used."*
+
+**3.2 FATO (PostgreSQL, CREATE POLICY).** *"Any rows for which the expression returns false **or null** will
+not be visible to the user (in a `SELECT`)… Typically, such rows are **silently suppressed; no error is
+reported**."*
+
+**Consequência direta para `SUM`.** A policy filtra **antes** da agregação. Um `SUM` sob RLS soma apenas as
+linhas visíveis e devolve número **menor, sem erro e sem aviso** — literalmente a mesma classe de defeito do
+`take: 10_000` que o DIN-007 acusa, movida da camada de aplicação para a de segurança. **Trocar truncamento
+por RLS mal contextualizada não é conserto; é troca de causa.**
+
+**3.3 FATO (contexto por GUC).** `current_setting(name, missing_ok)`: *"If there is no such setting,
+`current_setting` throws an error unless `missing_ok` is supplied and is `true` (in which case NULL is
+returned)."* `SET LOCAL`: *"The effects of `SET LOCAL` last only till the end of the current transaction"* ·
+*"Issuing this outside of a transaction block emits a warning and otherwise has no effect."*
+
+**Os três modos de falha, todos silenciosos:**
+
+- **GUC não setada** → `current_setting(…, true)` = NULL → policy não retorna true → **zero linhas**. Para
+  `sumUsageBasis` vira `[]` → `missing_usage_basis` → custo `unallocated`. **Faturamento sem erro e sem
+  número.**
+- **`SET` sem `LOCAL` em pool de conexões** → o valor **sobrevive** à requisição e contamina a próxima que
+  pegar a mesma conexão → **vazamento entre organizações** numa consulta de dinheiro. É pior.
+- **`SET LOCAL` fora de transação** → warning e **nenhum efeito** → volta ao primeiro caso.
+
+**3.4 CI × produção — confirmado que a suíte, como configurada, NÃO consegue provar o caminho.** O §2.4-b do
+plano afirma que dev/CI rodam como `postgres` (superusuário). Cruzado com 3.1: **todo teste de RLS que rode
+como `postgres` passa por bypass** e não exerce a policy — nem com `FORCE ROW LEVEL SECURITY`, porque `FORCE`
+sujeita o **dono**, não o superusuário. O drill do §8.2 com papel **sem `BYPASSRLS` e não-superusuário** não é
+rigor extra: é a **única** configuração em que o resultado significa alguma coisa. **A hipótese do plano está
+corroborada pela doc.**
+
+**3.5 Nota de desenho.** Sob contexto RLS de um único tenant, o `groupBy({ by: ["tenant_id", …] })` do §3.2 é
+redundante — inofensivo, e útil como **canário**: mais de um `tenant_id` num grupo prova que o contexto não
+estava aplicado. **RECOMENDAÇÃO:** afirmar isso por asserção, e tratar `[]` como **suspeita**, não como "tenant
+sem uso" — hoje os dois estados são indistinguíveis, e um deles é bug de cobrança.
+
+### 4. `NULL` em agregação — a armadilha clássica de cobrança, e contradiz um tipo do plano
+
+**4.1 FATO (PostgreSQL).** *"It should be noted that except for `count`, these functions return a null value
+when no rows are selected."* E: *"In particular, `sum` of no rows returns **null, not zero as one might
+expect**… The `coalesce` function can be used to substitute zero…"*
+
+**4.2 FATO (Prisma, mudança na 2.21.0 — `prisma/prisma#6320`).** *"All aggregated fields, whether they are
+nullable or not, **will be nullable**. They will return null when there's either no record in the database, or
+if all the aggregated records are null."* E: *"The only exception is `count`, which will **still always return
+0**."* O Prisma 7 do repo está do lado do `null`.
+
+**CONTRA-O-PLANO.** O §3.3 declara `summarizeLineItems(filters): Promise<CloudCostSummaryRows>` com
+**`{ total: Decimal|string, … }`** — tipo **não-nulável**. Pela evidência acima,
+`aggregate({ _sum: { unblended_cost: true } })` devolve **`_sum.unblended_cost === null`** sempre que o filtro
+não casar nenhuma linha (período novo, organização sem custo, `serviceCode` inexistente) — estado **normal**,
+não excepcional. Idem `_sum.quantity` em `sumUsageBasis`. Desfechos possíveis, todos ruins e todos vistos em
+produção de billing: `null` vazando para o JSON e o painel exibindo `R$ NaN`; `Number(null) === 0` mascarando a
+diferença entre "sem custo" e "sem dado"; ou um `?? 0` sem distinção — que é **exatamente** o `|| 0` que a
+`feedback-honest-kpi-dashboard` já registrou como fabricador de número falso **neste** repositório.
+
+**RECOMENDAÇÃO.** (a) Tipar o retorno como **nulável** e decidir por contrato o que `total = null` significa
+(sugestão: `total: "0"` **só** quando `lineItemCount === 0`, e **erro** se `lineItemCount > 0` e `total` for
+`null` — combinação impossível que denuncia bug). (b) `_count._all` devolve `0` (nunca `null`) e por isso é o
+**discriminador** correto entre "janela vazia" e "soma nula". (c) Caso de teste com período vazio, asseverando
+a forma exata da resposta, é obrigatório. (d) `COALESCE` no SQL **apaga a distinção**; preferir tratar no
+repositório, onde ela ainda existe.
+
+### 5. O que NÃO foi medido por esta PD
+
+- **Nada foi executado.** Nenhuma query, nenhum `EXPLAIN`, nenhum contato com banco.
+- O exemplo oficial de RLS do Prisma caiu por `socket hang up`; §3.3 repousa **só** nas docs do PostgreSQL — a
+  fonte mais forte disponível.
+- O `conversion.ts` do `@prisma/adapter-pg` devolveu **404**; o caminho `numeric → texto → Decimal` do §1.3 está
+  sustentado pelo issue #23505 + princípio do node-postgres, **não** por leitura do parser.
+- Não foi medido `groupBy` com `where` relacional complexo, nem teto de nº de grupos.
+- Não foi verificado qual papel de banco a produção usa (o plano já declara isso como não medido).
+
+### 6. Fontes
+
+1. **PostgreSQL 18 — Aggregate Functions** — https://www.postgresql.org/docs/current/functions-aggregate.html (2026-09-06). `sum(numeric) → numeric`; *"sum of no rows returns null"*. Base de §1.1 e §4.1.
+2. **PostgreSQL 18 — Numeric Types** — https://www.postgresql.org/docs/current/datatype-numeric.html (2026-09-06). `numeric` exato para dinheiro; float inexato; "very slow".
+3. **PostgreSQL 18 — Row Security Policies** — https://www.postgresql.org/docs/current/ddl-rowsecurity.html (2026-09-06). `BYPASSRLS` sempre bypassa; `FORCE` sujeita o dono; policy antes das condições; default-deny.
+4. **PostgreSQL 18 — CREATE POLICY** — https://www.postgresql.org/docs/current/sql-createpolicy.html (2026-09-06). *"silently suppressed; no error is reported"*.
+5. **PostgreSQL 18 — SET** — https://www.postgresql.org/docs/current/sql-set.html (2026-09-06). `SET LOCAL` fora de transação: warning e nenhum efeito.
+6. **PostgreSQL 18 — System Administration Functions** — https://www.postgresql.org/docs/current/functions-admin.html (2026-09-06). `current_setting(…, true)` → NULL.
+7. **Prisma ORM — CRUD (reference)** — https://www.prisma.io/docs/orm/v6/prisma-client/queries/crud (2026-09-06). SQL verbatim do `groupBy`.
+8. **Prisma ORM — Client API reference** — https://www.prisma.io/docs/orm/reference/prisma-client-reference (2026-09-06). `take`/`skip` explícitos em `aggregate`/`groupBy`.
+9. **prisma/prisma — release `v8.0.0-rc.4-dev.12` (fix #30067)** — https://github.com/prisma/prisma/releases/tag/v8.0.0-rc.4-dev.12 (2026-09-06). *"discarded silently"*; behaviour change de `aggregate()`.
+10. **prisma/prisma#6320** — https://github.com/prisma/prisma/issues/6320 (2026-09-06). Todo campo agregado **nulável** desde 2.21.0; `count` continua 0. **Fonte do CONTRA-O-PLANO do §4.**
+11. **Prisma ORM — Fields & types** — https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types (2026-09-06). `Decimal` = decimal.js.
+12. **decimal.js — API docs** — https://mikemcl.github.io/decimal.js/ (2026-09-06). `precision` default 20; arredondamento em `plus`/`minus`/`times`; perda em `toNumber()`.
+13. **prisma/prisma#23505** — https://github.com/prisma/prisma/issues/23505 (2026-09-06). Adapter registra parsers **globais**; valores chegam como string.
+14. **Prisma ORM — Upgrade to Prisma ORM 7** — https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7 (2026-09-06). Driver adapter obrigatório; `@prisma/adapter-pg`.
