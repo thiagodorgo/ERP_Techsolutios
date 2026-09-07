@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
-import type { CloudUsageDailyAggregate } from "../cloud-usage/cloud-usage.types.js";
+import type { CloudUsageDailyAggregate, CloudUsageEvent } from "../cloud-usage/cloud-usage.types.js";
 import type {
   CloudCostAllocationRun,
   CloudCostAllocationRunFilters,
@@ -10,6 +10,7 @@ import type {
   TenantCloudCostAllocation,
   TenantCloudCostAllocationFilters,
   UpdateCloudCostAllocationRunInput,
+  UsageBasisRow,
 } from "./cloud-cost-allocation.types.js";
 
 export type CloudCostAllocationRepository = {
@@ -23,7 +24,16 @@ export type CloudCostAllocationRepository = {
   ): Promise<readonly TenantCloudCostAllocation[]>;
   listTenantAllocations(runId: string, filters?: TenantCloudCostAllocationFilters): Promise<readonly TenantCloudCostAllocation[]>;
   listCostLineItems(periodStart: Date, periodEnd: Date): Promise<readonly CloudCostLineItem[]>;
+  // B-O6R-06 — FICA (serve `GET /platform/cloud-usage/tenants/:id/daily`), mas SAIU do caminho do
+  // rateio: a base de dinheiro nao pode depender de uma projecao que ninguem agenda.
   listUsageDailyAggregates(periodStart: Date, periodEnd: Date): Promise<readonly CloudUsageDailyAggregate[]>;
+  // B-O6R-06 — a BASE DE RATEIO: `SUM ... GROUP BY` sobre `cloud_usage_events`, POR TENANT, sob o
+  // contexto RLS de cada um. Sem `take`, sem projecao no meio.
+  sumUsageBasis(
+    periodStart: Date,
+    periodEnd: Date,
+    tenantIds: readonly string[],
+  ): Promise<readonly UsageBasisRow[]>;
   listTenants(): Promise<readonly CloudCostAllocationTenant[]>;
 };
 
@@ -32,6 +42,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   private allocations: TenantCloudCostAllocation[] = [];
   private costLineItems: CloudCostLineItem[] = [];
   private usageAggregates: CloudUsageDailyAggregate[] = [];
+  private usageEvents: CloudUsageEvent[] = [];
   private tenants: CloudCostAllocationTenant[] = [];
 
   async createRun(input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
@@ -125,6 +136,39 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     return this.usageAggregates.filter((aggregate) => aggregate.date >= start && aggregate.date <= end);
   }
 
+  // Duble: reduz sobre os EVENTOS semeados, sem limite. Espelha a semantica do `groupBy` do Postgres
+  // (agrupa por tenant/metrica/unidade/origem) e respeita o recorte por tenant.
+  async sumUsageBasis(
+    periodStart: Date,
+    periodEnd: Date,
+    tenantIds: readonly string[],
+  ): Promise<readonly UsageBasisRow[]> {
+    const allowed = new Set(tenantIds);
+    const groups = new Map<string, { row: UsageBasisRow; quantity: number }>();
+
+    for (const event of this.usageEvents) {
+      if (!allowed.has(event.tenantId)) continue;
+      if (event.occurredAt < periodStart || event.occurredAt > periodEnd) continue;
+
+      const key = [event.tenantId, event.metricKey, event.unit, event.sourceType].join("|");
+      const existing = groups.get(key);
+      const quantity = (existing?.quantity ?? 0) + event.quantity;
+
+      groups.set(key, {
+        quantity,
+        row: {
+          tenantId: event.tenantId,
+          metricKey: event.metricKey,
+          unit: event.unit,
+          sourceType: event.sourceType,
+          quantity,
+        },
+      });
+    }
+
+    return [...groups.values()].map((group) => ({ ...group.row, quantity: group.quantity }));
+  }
+
   async listTenants(): Promise<readonly CloudCostAllocationTenant[]> {
     return this.tenants;
   }
@@ -133,10 +177,12 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     readonly tenants?: readonly CloudCostAllocationTenant[];
     readonly costLineItems?: readonly CloudCostLineItem[];
     readonly usageAggregates?: readonly CloudUsageDailyAggregate[];
+    readonly usageEvents?: readonly CloudUsageEvent[];
   }): void {
     this.tenants = [...(input.tenants ?? this.tenants)];
     this.costLineItems = [...(input.costLineItems ?? this.costLineItems)];
     this.usageAggregates = [...(input.usageAggregates ?? this.usageAggregates)];
+    this.usageEvents = [...(input.usageEvents ?? this.usageEvents)];
   }
 
   reset(): void {
@@ -144,6 +190,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     this.allocations = [];
     this.costLineItems = [];
     this.usageAggregates = [];
+    this.usageEvents = [];
     this.tenants = [];
   }
 

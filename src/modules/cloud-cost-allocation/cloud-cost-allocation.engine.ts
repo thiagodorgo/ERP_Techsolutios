@@ -82,9 +82,11 @@ function resolveBasis(input: AllocationEngineInput, metricKeys: readonly CloudUs
   for (const metricKey of metricKeys) {
     const byTenant = new Map<string, number>();
 
-    for (const aggregate of input.usageAggregates) {
-      if (aggregate.metricKey !== metricKey) continue;
-      byTenant.set(aggregate.tenantId, (byTenant.get(aggregate.tenantId) ?? 0) + aggregate.quantity);
+    // B-O6R-06 — a fonte mudou de PROJECAO DIARIA para SOMA DA TABELA DURAVEL; o corpo nao muda,
+    // porque so `tenantId`/`metricKey`/`quantity` sao lidos.
+    for (const basis of input.usageBasis) {
+      if (basis.metricKey !== metricKey) continue;
+      byTenant.set(basis.tenantId, (byTenant.get(basis.tenantId) ?? 0) + basis.quantity);
     }
 
     const rows = [...byTenant.entries()].map(([tenantId, quantity]) => ({ tenantId, quantity }));

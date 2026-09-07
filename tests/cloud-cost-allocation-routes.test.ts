@@ -5,7 +5,7 @@ import test from "node:test";
 
 import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.types.js";
 import type { CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
-import type { CloudUsageDailyAggregate } from "../src/modules/cloud-usage/index.js";
+import type { CloudUsageEvent } from "../src/modules/cloud-usage/index.js";
 
 const periodStart = new Date("2026-06-01T00:00:00.000Z");
 const periodEnd = new Date("2026-06-30T23:59:59.999Z");
@@ -111,7 +111,7 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
       costLine("cost-direct", { tenantTag: seed.tenantA.id, serviceCode: "AmazonEC2", unblendedCost: 5 }),
       costLine("cost-s3", { serviceCode: "AmazonS3", usageType: "TimedStorage-ByteHrs", unblendedCost: 10 }),
     ],
-    usageAggregates: [
+    usageEvents: [
       usage(seed.tenantA.id, "storage_gb_month", 1),
       usage(seed.tenantB.id, "storage_gb_month", 1),
     ],
@@ -178,22 +178,24 @@ function costLine(id: string, override: Partial<CloudCostLineItem>): CloudCostLi
   };
 }
 
+// B-O6R-06 — a base de rateio passou a ser somada na TABELA DURAVEL de eventos (`cloud_usage_events`),
+// nao mais na projecao diaria que ninguem agenda. A fixture acompanha o mecanismo: o que se semeia agora
+// e o EVENTO de consumo, que e o que existe em producao.
 function usage(
   tenantId: string,
-  metricKey: CloudUsageDailyAggregate["metricKey"],
+  metricKey: CloudUsageEvent["metricKey"],
   quantity: number,
-): CloudUsageDailyAggregate {
+): CloudUsageEvent {
   return {
     id: `${tenantId}-${metricKey}`,
     tenantId,
-    date: "2026-06-15",
+    sourceType: "test",
     metricKey,
     quantity,
     unit: "count",
-    sourceType: "test",
+    occurredAt: new Date("2026-06-15T12:00:00.000Z"),
     metadata: {},
     createdAt: periodStart,
-    updatedAt: periodStart,
   };
 }
 
