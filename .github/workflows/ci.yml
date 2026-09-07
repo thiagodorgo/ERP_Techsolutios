@@ -219,6 +219,14 @@ jobs:
           # espera writer em voo e o snapshot o inclui (G11). A suíte fixa CORE_SAAS_PERSISTENCE=prisma
           # ela mesma e asserta o modo (lição do #357).
           SUITES="$SUITES tests/financial-period-close-write-race-db.test.ts"
+          # B-O6R-06 (Ω6R-DIN-005 / DIN-007) — as três suítes `-db` do faturamento da vistoria. Elas
+          # auto-pulam DECLARANDO sem DATABASE_URL (no job `backend`), e é aqui, sob o guard de zero
+          # pulos do passo seguinte, que a atomicidade da unidade faturável, o SUM/GROUP BY sem teto e
+          # o rateio sob papel SEM BYPASSRLS deixam de ser afirmação e viram execução.
+          SUITES="$SUITES tests/o6r06-usage-atomic-db.test.ts"
+          SUITES="$SUITES tests/o6r06-usage-fault-injection.test.ts"
+          SUITES="$SUITES tests/o6r06-cost-summary-sum-db.test.ts"
+          SUITES="$SUITES tests/o6r06-allocation-basis-rls-db.test.ts"
           # B-O6R-02 F3–F5 (Ω6R-DIN-001/002/003 / QUA-003) — pagamento, estorno e cheque em transação
           # ÚNICA, provados com duas conexões e barreira determinística (fila de lock observada em
           # pg_stat_activity): G1/G2 perdedor 422 sem lançamento órfão + replay 409 sem mutação;

@@ -608,7 +608,7 @@ function uniqueSuffix(): string {
 
 /**
  * PAPEL SEM BYPASSRLS pelo ARNÊS ÚNICO da casa (`createEphemeralRole`), nunca por SQL de catálogo
- * escrito aqui: `CREATE ROLE`/`GRANT` fora de `withRoleCatalogLock` disputa a TUPLA DE ACL com as
+ * escrito aqui: criação de papel e concessões fora de `withRoleCatalogLock` disputam a TUPLA DE ACL com as
  * outras suítes sob `node --test` paralelo e produz `XX000 tuple concurrently updated`
  * (`P-O6R-ARNES-ISOLAMENTO`). É também por isso que este arquivo não aparece no ratchet
  * `db-catalog-write-guard`: ele não escreve catálogo, ele PEDE ao arnês.

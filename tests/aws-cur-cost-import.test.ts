@@ -73,6 +73,19 @@ test("summary agrega custos por serviceCode", async () => {
       ["AmazonS3", 2.25],
     ],
   );
+
+  // B-O6R-06 (Ω6R-DIN-007) — os campos ADITIVOS do contrato `cloud_cost_summary@2026-09-06.b-o6r-06`:
+  // `lineItemCount` é quantas linhas foram AGREGADAS (antes o resumo somava no máximo 10.000 e não
+  // tinha como dizer que faltou linha), e `*Exact` é o valor sem a conversão lossy para `number`.
+  assert.equal(summary.lineItemCount, 2, "a fixture tem 2 linhas de custo — é o denominador do resumo");
+  assert.equal(summary.totalUnblendedCostExact, "12.750000");
+  assert.deepEqual(
+    summary.services.map((serviceCost) => [serviceCost.serviceCode, serviceCost.unblendedCostExact]),
+    [
+      ["AmazonEC2", "10.500000"],
+      ["AmazonS3", "2.250000"],
+    ],
+  );
 });
 
 test("import failed registra erro sanitizado", async () => {
