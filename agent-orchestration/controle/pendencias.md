@@ -7222,3 +7222,32 @@ autorização para **consertar** o achatamento, não para **curar** o catálogo.
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (as 5 foram instaladas aninhadas
   antes deste bloco) · **dono:** decisão do dono · **bloqueia:** nada. **Pergunta a responder:**
   `blockchain-developer` fica ou sai?
+
+
+---
+
+## P-GOV-AUDITOR-FORA-DA-CI (2026-09-07) — o auditor de elenco e o `--check` das skills são gates MANUAIS — MÉDIA
+
+Achado do `inspetor-de-terreno-da-junta` na passada 1 de `B-GOV-ELENCO` (ressalva R3), e **medido**:
+`.github/workflows/ci.yml` l.69-70 roda **somente** `node scripts/sync-agent-agents.mjs --check`.
+`grep -c 'audit-agents-skills\|sync-agent-skills' .github/workflows/ci.yml` → **0**.
+
+Consequência: o `audit-agents-skills.mjs` (as 10 checagens C1–C10) e o `sync-agent-skills.mjs --check`
+dependem de alguém lembrar de rodá-los. Foi exatamente "alguém lembrar" que deixou **5 skills sem carregar
+por meses** — o `--check` de agentes estava verde e ninguém olhava as skills.
+
+O briefing da passada 1 **afirmava que o auditor rodava em CI**. Não rodava. A afirmação foi corrigida no
+briefing da passada 2 e o erro fica registrado aqui, não apagado.
+
+**Por que não foi consertado neste bloco:** `.github/**` está no escopo **PROIBIDO** de `B-GOV-ELENCO`
+(§5-bis do plano). Mexer na CI dentro de um bloco de governança de elenco seria o alargamento silencioso de
+escopo que o §C4 proíbe — e cobrá-lo da junta deste bloco é reprovação por construção.
+
+**Correção proposta (próximo bloco de infraestrutura de CI):** dois passos no job `backend`, ao lado do
+"Agents mirror guard" que já existe, sem `continue-on-error` e sem `|| true`:
+`node scripts/sync-agent-skills.mjs --check` e `node scripts/audit-agents-skills.mjs`.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a CI nunca teve esses passos; o
+  `sync-agent-agents --check` entrou sozinho) · **dono:** próximo bloco que tocar `.github/workflows/` ·
+  **bloqueia:** nada — mas enquanto estiver aberta, toda a proteção nova deste bloco depende de disciplina
+  humana, não de gate.

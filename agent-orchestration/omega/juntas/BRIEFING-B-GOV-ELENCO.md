@@ -1,16 +1,23 @@
 # BRIEFING — junta do bloco `B-GOV-ELENCO`
 
-**Head a julgar:** `25c0112a` · **Base:** `origin/main` = `fe2748c8`
-**Branch:** `chore/gov-auditoria-elenco` · **Worktree:** `.claude/worktrees/gov-elenco`
-**Plano (com §5 escopo e §6 critérios):** `agent-orchestration/omega/planos/B-GOV-ELENCO-plano.md`
-**Quórum:** **unanimidade de 3** — justificado no §8 do plano (o bloco reescreve a regra da própria junta e
-remove 15 arquivos; não é dinheiro/segurança/permissão/perda de dado no produto, mas o quórum sobe por
-decisão registrada, não por interpretação silenciosa).
+> **PASSADA 2.** A passada 1 foi **BLOQUEADA** pelo `inspetor-de-terreno-da-junta`
+> (`votos/B-GOV-ELENCO/00-inspetor-terreno.md`): item **1.2** — três jurados apontados para um único
+> worktree, com uma bateria que **exige injeção de defeito** (A4, C2, C3). Isso é a contaminação dos ciclos
+> 2 e 3 armada de antemão. Corrigido no **§7** abaixo. As ressalvas **R1–R5** dele estão incorporadas e
+> marcadas.
 
-> **Rode tudo a partir do worktree** `.claude/worktrees/gov-elenco`. Ele **não tem `node_modules`** — e isso
-> é deliberado: junction/symlink de `node_modules` entre worktrees é **PROIBIDA** (§C7.1-ter(c); em 26/08 a
-> remoção de um worktree apagou o `node_modules` do dev por dentro de uma junction). O auditor deste bloco
-> usa **só builtins do Node e o Git**. Se você precisar de `npm`, **isso é achado, não conserto**: reporte.
+**Branch:** `chore/gov-auditoria-elenco` · **Base:** `origin/main` = `fe2748c8` · **Worktree:**
+`.claude/worktrees/gov-elenco`
+**Plano (§5 escopo, §5-bis proibido, §6 critérios A1–A10, §8 quórum):**
+`agent-orchestration/omega/planos/B-GOV-ELENCO-plano.md`
+**Quórum:** **unanimidade de 3** — justificado no §8 do plano.
+
+**Head a julgar (R1).** É o **head da branch no momento do seu voto** — meça-o você mesmo
+(`git -C <wt> rev-parse HEAD`) e **registre o hash no seu voto**. Um briefing não pode nomear o commit que o
+contém, e por isso a numeração de commit de registro se move. O que está **medido e fixo**: o head de
+**código e elenco** é `25c0112a`; tudo depois dele é **registro** (briefing, ata, votos). Se
+`git -C <wt> diff --name-status 25c0112a..$(git -C <wt> rev-parse HEAD)` mostrar **qualquer** caminho fora de
+`agent-orchestration/omega/juntas/`, isso é achado `dentro-do-bloco` e **bloqueia**.
 
 ---
 
@@ -28,42 +35,99 @@ decisão registrada, não por interpretação silenciosa).
 
 ## 2 · Os dois defeitos que a própria ferramenta teve — e que já estão consertados
 
-Estão documentados **no corpo do script**, e você deve conferir que o conserto é real, não texto:
+Documentados **no corpo do script**; confira que o conserto é real, não texto:
 
 - **CRLF.** Em JavaScript `.` **não casa `\r`**; `/(.*)$/` sem flag `m` falha em linha CRLF. A v1 reportou
-  "sem `name`/`description`/`model`" em `planejador-mestre.md` e `porteiro-pos-merge.md` — dois agentes
-  válidos, só CRLF no disco sob `core.autocrlf=true`. **6 falsos-positivos.**
+  "sem `name`/`description`/`model`" em `planejador-mestre.md` e `porteiro-pos-merge.md` — **6 falsos-positivos**.
 - **Bloco cercado.** A varredura de links pegava links dentro de ```` ```markdown ```` do `skill-creator`, que
-  são **exemplos de documentação**. **6 falsos-positivos.**
+  são **exemplos de documentação** — **6 falsos-positivos**.
 
-**Achado falso é pior que achado nenhum** — entra em ata com a mesma cara de um verdadeiro. Se você achar uma
-terceira classe de falso-positivo, é achado `dentro-do-bloco` e **bloqueia**.
+**Achado falso é pior que achado nenhum.** Terceira classe de falso-positivo = achado `dentro-do-bloco` que
+**bloqueia**.
 
 ## 3 · Critérios de aceite — §6 do plano, A1..A10
 
 Publique **N e forma** de cada medição. "Verde" sem N e sem forma não é prova.
 
-## 4 · Reprovação POR CONSTRUÇÃO (cobrar isto é reprovar sem defeito)
+**A4 tem forma obrigatória (R5).** A prova de que o C8 ainda pega link quebrado de verdade é: numa **cópia
+isolada** (§7), acrescentar a UMA `SKILL.md` a linha `[teste](references/NAO-EXISTE.md)`, rodar o auditor,
+exigir **exatamente 1** achado `C8 link quebrado` nomeando aquele arquivo; desfazer; rodar de novo e exigir
+**0**. Publique os dois números. O mesmo padrão vale para as mutações de C2 e C3.
 
-- **`.gitignore`** está no escopo **PROIBIDO** (§5-bis do plano), embora a auditoria tenha achado que
-  `.claude/worktrees/` não é ignorado. Virou `P-GOV-WORKTREES-NAO-IGNORADAS`. Mexer nele afetaria os dois
-  worktrees de outras sessões que estão vivos agora.
-- **`src/`, `tests/`, `prisma/`, `frontend/`, `mobile/`, `.github/`** — proibidos. Exigir teste novo em
-  `tests/` é reprovar sem defeito; o guard deste bloco **é o próprio auditor**, e ele roda em CI pelo
-  `sync-agent-agents --check` já existente mais o comando do §6.
-- **`npm run check`/`test`/`build`** não rodaram localmente, e o §7 do plano diz por quê (worktree sem
-  `node_modules`, disco escasso, e **zero arquivo de `src/`/`tests/` tocado** — provado, não afirmado).
-  Cobrar a suíte local é cobrar o que o plano declarou que não faria; a suíte roda na CI do PR.
-- **`blockchain-developer`** voltou a carregar e não tem relação com este produto — está em
-  `P-GOV-SKILLS-RELEVANCIA`, é decisão do dono, e **remover skill instalada não é ato de agente**.
+**Controle já medido pelo inspetor, que você pode repetir:** o auditor contra a **base**
+(`node scripts/audit-agents-skills.mjs --ref fe2748c8`) sai **ec=1 com 6 BLOQUEIA** — prova que ele *vê* o
+defeito que o bloco corrige, e não que ficou verde por não olhar.
 
-## 5 · Declare `escopo` em todo achado
+## 4 · Onde os gates rodam — CORRIGIDO (R3)
+
+A versão anterior deste briefing afirmava que o auditor roda em CI. **Falso, e medido:**
+`.github/workflows/ci.yml` l.69-70 roda **somente** `node scripts/sync-agent-agents.mjs --check`;
+`grep -c 'audit-agents-skills\|sync-agent-skills' .github/workflows/ci.yml` → **0**.
+
+Portanto, hoje: **`sync-agent-agents --check` é gate de CI**; **`audit-agents-skills.mjs` e
+`sync-agent-skills --check` são gates MANUAIS**. `.github/**` está no escopo **PROIBIDO** (§5-bis), então
+este bloco não pode colocá-los lá — virou `P-GOV-AUDITOR-FORA-DA-CI`. **Se isso basta ou não é MÉRITO** (é
+pergunta legítima para C3): julgue e vote. O que não se admite é receber a afirmação errada como fato.
+
+## 5 · Reprovação POR CONSTRUÇÃO (cobrar isto é reprovar sem defeito)
+
+- **`.gitignore`** — proibido (§5-bis), embora a auditoria tenha achado que `.claude/worktrees/` não é
+  ignorado. Mexer nele afeta os **dois worktrees de outras sessões vivos agora**. Virou
+  `P-GOV-WORKTREES-NAO-IGNORADAS`.
+- **`.github/**`** — proibido. Ver §4: pôr o auditor na CI é o próximo bloco, não este.
+- **`src/`, `tests/`, `prisma/`, `frontend/`, `mobile/`** — proibidos. Exigir teste novo em `tests/` é
+  reprovar sem defeito.
+- **`npm run check`/`test`/`build` locais** — o §7 do plano declara por que não rodam aqui. O inspetor,
+  ainda assim, executou os **4 testes que leem artefatos tocados** (`kpi-dashboard-charts` 16/16,
+  `kpi-achados-paridade` 6/6, `kpi-dashboard-contraste` 6/6, `agents-mirror-guard` 12/12, ec=0 nos quatro),
+  usando o `tsx` da árvore principal **por caminho absoluto**, sem instalar nada e sem junction. Você pode
+  repetir; cobrar `npm ci` no worktree é cobrar o que §C7.1-ter(c) desaconselha e o disco não comporta.
+- **`blockchain-developer`** voltou a carregar e não tem relação com o produto — `P-GOV-SKILLS-RELEVANCIA`,
+  decisão do dono; remover skill instalada não é ato de agente.
+
+## 6 · Declare `escopo` em todo achado
 
 `dentro-do-bloco` | `pre-existente`, **com evidência de data ou origem** (§C7.1-ter(a)). Escopo sem evidência
 é tratado como `dentro-do-bloco`. **"Não consigo medir" = REPROVADO.** Não proponha correção (§C7.4-bis) —
 reporte defeito, evidência executada e motivo.
 
-## 6 · Papéis (§C7.4-bis)
+## 7 · ISOLAMENTO — obrigatório, e o que destravou a passada 2
+
+**O worktree `.claude/worktrees/gov-elenco` é SOMENTE-LEITURA para todo jurado.** Ali você lê, roda o auditor
+sem mutar, e mede. **Nenhum jurado escreve nele.** Ao terminar, `git -C <wt> status --porcelain` tem de estar
+**vazio** — se você o encontrar sujo, **pare e reporte anomalia de terreno**; não contorne e não limpe: pode
+ser mutação viva de outro jurado.
+
+**Toda prova por mutação roda em CÓPIA ISOLADA E PRÓPRIA.** O auditor deriva `ROOT` de `import.meta.url`
+(`scripts/audit-agents-skills.mjs`), então uma cópia autocontida audita a si mesma. Receita:
+
+```bash
+WT=/c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco
+MEU=$(mktemp -d)                       # fora do repo, só seu
+mkdir -p "$MEU/scripts"
+cp "$WT/scripts/audit-agents-skills.mjs" "$MEU/scripts/"
+cp -r "$WT/.claude" "$WT/.agents" "$MEU/"
+cd "$MEU" && node scripts/audit-agents-skills.mjs      # baseline da SUA cópia: ec=0
+# ... mute o que precisar aqui dentro, meça, e no fim:
+rm -rf "$MEU"
+```
+
+**Sem `git worktree add`** para isto: worktree extra tem o risco de remoção que já mutilou `node_modules`
+nesta máquina (§C7.1-ter(c)), e a cópia por `cp` resolve o mesmo problema com `rm -rf` de um diretório fora
+do repo. **Sem junction, sem symlink, sem `npm ci`.** Declare no seu voto **onde** você mutou.
+
+## 8 · Plano de perda de jurado (R2)
+
+Quórum é **unanimidade de 3**: um voto perdido não é aprovação nem reprovação. Se uma cadeira cair por infra
+(limite de sessão, rede, API):
+
+1. **Re-disparo da MESMA identidade**, uma vez — o corpo é permanente e não há memória de bloco a perder.
+2. Caindo de novo, o orquestrador **registra o voto perdido na ata**, nomeando a cadeira e o erro.
+3. **A junta NÃO fecha com menos de 3 votos de mérito.** Sem os três, o bloco não merga — não existe
+   "aprovado por maioria dos presentes" sob unanimidade.
+4. O `cadeira-permanente-backend-review` **homologa depois**, e a perda entra na medição dele.
+
+## 9 · Papéis (§C7.4-bis)
 
 | Papel | Quem |
 |---|---|
@@ -73,7 +137,15 @@ reporte defeito, evidência executada e motivo.
 | Quem JULGA | **C1** `validador-mestre` · **C2** `guardiao-fail-closed` · **C3** `agente-ci-doutor` |
 | Quem HOMOLOGA | `cadeira-permanente-backend-review` (§C7.1-quater — primeira aplicação real) |
 
-> **Nota honesta de composição, para a ata:** achar, planejar e desenvolver caíram no **mesmo orquestrador**
-> — o §C7.4-bis separa esses papéis **no ciclo de reprovação**, e este é o ciclo 1. É exatamente por isso que
-> as três cadeiras de mérito **e** o assento permanente são independentes: nenhuma delas escreveu uma linha
-> deste diff. Se a junta reprovar, a correção **vai para outro agente**.
+> **Nota de composição, confirmada pelo inspetor:** achar/planejar/desenvolver caíram no **mesmo
+> orquestrador**. O §C7.4-bis exige a separação em três agentes **no ciclo de REPROVAÇÃO** ("todo ciclo de
+> reprovação distribui…"); este é o **ciclo 1**, o fluxo normal do §C2, e a proteção que a regra busca existe
+> aqui: **nenhuma das quatro cadeiras escreveu uma linha deste diff**. Duas condições ficam registradas:
+> (i) **se a junta reprovar, a correção vai para agente distinto do orquestrador**; (ii) esta nota entra na
+> ata. Registre-se também que o "achador" é **em parte a própria ferramenta sob julgamento** — motivo a mais
+> para a cadeira C3 existir.
+
+> **R4 — o rascunho ao lado.** A árvore principal (`demo/investidor`, `d1fab3bc`) tem 14 ` M` + 45 `??`,
+> e 9 dos ` M` são mutações reais, **incluindo uma versão RASCUNHO do próprio §C7.1-quater**. É o que o §2(a)
+> do plano mandou não confiar. **Todo comando seu usa `git -C <wt>` ou caminho absoluto**, e seu voto registra
+> o `rev-parse` que você mediu. Não toque naquela árvore.
