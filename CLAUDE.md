@@ -227,6 +227,11 @@ validação** e **rastreabilidade**. Tipos:
    (branch por bloco).
 6. **Junta do PR valida** (inclusive os números de KPI). Verde da junta = merge (autonomia por juntas,
    §C7); o humano audita a posteriori pelo history.
+6-bis. **ASSENTO PERMANENTE HOMOLOGA (§C7.1-quater).** Votadas as cadeiras de mérito e **antes do merge**,
+   a `cadeira-permanente-backend-review` mede o **voto**: aprovação ganha? veto legítimo? quórum do risco?
+   `HOMOLOGADO` (ou com ressalva) libera o veredito; `ANULADO POR APROVAÇÃO NÃO GANHA` /
+   `ANULADO POR VETO ILEGÍTIMO` devolve à junta **sem consumir ciclo**. **Ata sem o parecer dele = merge
+   inválido.**
 7. **Registrar** decisão/estado em `agent-orchestration/`.
 8. **PORTEIRO PÓS-MERGE — o gate do próximo start (decisão do dono, 2026-08-12, `D-PORTEIRO-POS-MERGE`).**
    Concluído o merge, nasce o agente `porteiro-pos-merge` (Fable por contrato). Ele **revalida** o que foi
@@ -361,6 +366,44 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    head" virou pendência ALTA e foi fechada por não-reprodução no mesmo dia); use
    `git -c core.autocrlf=false checkout <head> -- <caminhos>` ou `git show` do blob.
 
+
+   **1-quater. ASSENTO PERMANENTE — A CADEIRA QUE MEDE O VOTO (decisão do dono, 2026-09-07,
+   `D-CADEIRA-PERMANENTE-JUNTA`).** A junta era auditada nas duas pontas e **não no meio**: o
+   `inspetor-de-terreno-da-junta` prova o tabuleiro **antes** (1-bis) e o `porteiro-pos-merge` prova a entrega
+   **depois** (§C2.8) — **ninguém media o voto**. Passa a existir **uma única cadeira permanente**, a
+   `cadeira-permanente-backend-review` (Fable por contrato; método = skill `backend-review-ts-prisma`), que
+   entra em **TODA** junta, **depois** dos votos de mérito e **antes** do merge. É a única cadeira
+   **não-descartável**: não recebe identidade nova por bloco, não tem suplente, não morre no fim do ciclo.
+
+   **Ela não julga a entrega — julga o ATO DE JULGAR.** Mede, cadeira a cadeira, se a **aprovação foi ganha**
+   (voto com execução, `N`, forma, e `escopo` com evidência) e, achado a achado, se o **veto foi legítimo**
+   (`dentro-do-bloco`, com evidência executada, dentro do escopo que o plano **de fato escreveu** — conferindo
+   inclusive qual cópia do plano a cadeira usou). Confere ainda o quórum do risco (1-ter(b)) e os papéis do
+   §C7.4-bis. Quatro vereditos: `HOMOLOGADO` · `HOMOLOGADO COM RESSALVA` · `ANULADO POR APROVAÇÃO NÃO GANHA`
+   (o verde **não** autoriza merge; as cadeiras nomeadas votam de novo) · `ANULADO POR VETO ILEGÍTIMO` (o
+   achado cai para pendência nomeada com bloco dono e a junta reaprecia sem ele). **As duas anulações NÃO
+   consomem ciclo** do teto de dois ciclos (item 4) — não houve julgamento de produto.
+
+   **A assimetria é o desenho, não um detalhe:** anulação **nunca** produz veredito de mérito. Ela não
+   transforma reprovado em aprovado nem o contrário — devolve a decisão a quem tem competência, com o defeito
+   de processo nomeado. É isso que impede o assento de virar superjurado atropelando especialistas com
+   identidade nova e competência específica. A cadeira permanente **não acha bug de produto** (isso é das
+   descartáveis; o que vir vira pendência com bloco dono), **não conserta** (§C7.4-bis) e **é inelegível para
+   cadeira de mérito no mesmo bloco**.
+
+   **Por que permanente, e por que isso não contamina.** Memória de bloco anterior só contamina quem decide se
+   o código está certo; para quem mede se o voto foi ganho, memória é o **instrumento** — é a única cadeira
+   capaz de ver a mesma cadeira aprovando sem executar duas vezes, ou a mesma classe de achado virando
+   `pre-existente` sem evidência em três blocos. **E ela também é medida:** publica em toda ata a própria
+   série (homologadas × anuladas), que o `porteiro-pos-merge` confere — carimbo e pedágio aparecem na série
+   antes de aparecerem no dano. Por quê agora: a auditoria de 2026-08-28 mediu **3 blocos consumindo 24% dos
+   ciclos**, com o bloqueante final sendo **processo/medição em 11 dos 16** — e nenhum desses vetos foi
+   medido por ninguém.
+
+   **Fail-closed nas duas pontas:** o `inspetor-de-terreno-da-junta` **BLOQUEIA** o start da junta que não
+   convocou o assento permanente; o `porteiro-pos-merge` trata **ata sem o parecer dele** como achado do
+   tamanho do merge, e **merge sobre veredito ANULADO como merge inválido**. **Junta sem parecer do assento
+   permanente = merge inválido**, na mesma força do item 1.
 
    **1-bis. INSPEÇÃO DE TERRENO ANTES DE TODA JUNTA — fail-closed (decisão do dono, 2026-08-24,
    `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`

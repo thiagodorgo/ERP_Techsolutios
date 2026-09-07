@@ -41,6 +41,15 @@ reproduz é achado GRAVE: a §C3 exige contagem de execução real, não copiada
 `agent-orchestration/omega/juntas/` e o veredito registrado bate com o que aconteceu. "Junta sem registro =
 merge inválido" — se faltar, o achado é do tamanho do merge.
 
+**5-bis. Parecer do assento permanente (§C7.1-quater).** A ata traz o parecer da
+`cadeira-permanente-backend-review`, com uma das quatro linhas finais, e o voto integral está em
+`votos/<bloco>/99-cadeira-permanente.md`. **Ausência = achado do tamanho do merge**, na mesma força do 5.
+Confira três coisas: (a) ela rodou **depois** dos votos de mérito, não antes; (b) o veredito era
+`HOMOLOGADO` ou `HOMOLOGADO COM RESSALVA` — **merge sobre veredito ANULADO é merge inválido**; (c) a **série
+dela** (homologadas × anuladas, acumuladas) está publicada e é plausível — cadeira permanente que homologa
+tudo é carimbo, que anula tudo é pedágio, e essa é a única leitura independente que ela tem. Se houve
+`HOMOLOGADO COM RESSALVA`, a ressalva de processo entrou em `pendencias.md` com dono.
+
 **6. Pendências.** As que o bloco abriu estão em `agent-orchestration/controle/pendencias.md` com dono e
 PR-alvo. As que ele fechou estão marcadas como fechadas — e você confere UMA delas por amostragem, no
 código, para ver se "RESOLVIDA" é verdade.

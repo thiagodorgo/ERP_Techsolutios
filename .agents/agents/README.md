@@ -3,7 +3,7 @@
 > **D-INTEROP-CLAUDE-CODEX (2026-07-28).** O nível alto das rodadas deste repositório vem da **junta
 > de agentes** (§C7 do `AGENTS.md`/`CLAUDE.md`): planejador → dev → **avaliador + secops + crítico +
 > dba votando**, com ciclos de reprovação adversariais. No Claude Code isso são 23 agentes isolados em
-> `.claude/agents/*.md`. Aqui estão os **mesmos 23 papéis** em formato portátil para o Codex —
+> `.claude/agents/*.md`. Aqui estão os **mesmos 24 papéis** em formato portátil para o Codex —
 > **corpo verbatim** (as instruções e os poderes de VETO não sofrem drift), frontmatter portátil
 > (`name` + `description` + `model`, quando o papel o fixa), com um preâmbulo de orientação Codex no topo
 > de cada arquivo. O `model:` é **preservado por contrato** pelo sync (`D-PLANEJADOR-MODELO-FABLE`): só o
@@ -72,7 +72,7 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 > **Regra da dúvida (§C7.3):** qualquer incerteza → adote `agente-pesquisador-web` (≥3 fontes) e registre
 > a PD em `docs/omega-pd.md` **antes** de decidir. Dúvida sem pesquisa = veto.
 
-## Os 23 papéis por função
+## Os 24 papéis por função
 
 ### Planejar / estratégia
 | Papel | Função |
@@ -86,6 +86,11 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 |---|---|
 | `dev-mapas` | Implementação de mapa/geo (React/backend/Flutter). |
 | `frontend-pixel-master` | Frontend pixel-perfect a partir de referência visual. |
+
+### Assento permanente (§C7.1-quater — a única cadeira NÃO-descartável)
+| Papel | Poder | Função |
+|---|---|---|
+| `cadeira-permanente-backend-review` | **HOMOLOGA / ANULA o veredito** | Entra em **TODA** junta, **depois** dos votos de mérito e **antes** do merge. Não julga a entrega: julga o **ato de julgar** — se a aprovação foi **ganha** (execução, N, forma, escopo com evidência) e se o veto foi **legítimo** (dentro-do-bloco, com evidência, dentro do escopo que o plano escreveu). Anulação nunca vira veredito de mérito: devolve a decisão a quem tem competência. Emular em **passe independente**, nunca acumulado com cadeira de mérito. Método: skill `backend-review-ts-prisma`. **Ata sem o parecer dele = merge inválido.** |
 
 ### Junta / VETO (revisão)
 | Papel | Poder | Função |
@@ -129,9 +134,6 @@ ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do
 
 | Papel | Poder | Nasceu em | Função |
 |---|---|---|---|
-| `inspetor-fixtures-financeiras-legadas` | **VETO** | B-O6R-02/F6, ciclo 1 | Fixture legada × invariante nova: prova **por execução** que `title_restore_conflict` continua discriminando sem afrouxar `DIN-004`/`title_has_payments`. **Achador/votante: não planeja, não corrige.** |
-| `especialista-maquinas-de-desfazer` | **VETO** | B-O6R-02, ciclo 2 | Enumera **todas** as portas da API que desfazem o mesmo efeito monetário/de estado e prova que **concordam**; caça estado alcançável **sem rota de saída** (guard que fecha a saída sem fechar a entrada); exige invariante de **efeito líquido**, nunca de existência de linha; executa os drills de mutação em fixture. **Achador/votante: não escreve a correção.** |
-| `especialista-arnes-postgres-node` | **VETO** | B-O6R-02, ciclo 2 | Valida o **arranjo** de cada medição (comando, env — inclusive `DATABASE_URL` —, N e forma do job) antes do número; ataca barreira de teste com **decoy**; enumera promessa que pode rejeitar **sem handler**; mede vazamento de catálogo e de dado antes/depois, inclusive em lote **abortado**. Piso: **15/15 na forma exata do job — não se arredonda.** **Achador/votante: não escreve a correção.** |
 
 > **Divergência RESOLVIDA (§A2) — corrigida em 2026-09-05, B-O6R-02 ciclo 5.** O `--check` **cobre**
 > `especialistas/`. **Não confira à mão; rode o guard.** Medido neste head:

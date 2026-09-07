@@ -1910,3 +1910,106 @@ estão — o guard do espelho não enxerga subdiretório, `scripts/sync-agent-ag
 de reuso é a **composição da junta**, não a existência do arquivo — um teste "nome queimado não existe na
 árvore" daria **verde com o reuso acontecendo na demo**, que é a classe de falsa segurança que a rodada SAN2
 existe para exterminar. O argumento está escrito para ser derrubado no voto, se a junta discordar.
+
+---
+
+## D-CADEIRA-PERMANENTE-JUNTA (decisão do dono, 2026-09-07) — a junta ganha um assento permanente que mede o voto
+
+**O buraco.** A junta era auditada nas duas pontas e **não no meio**. O `inspetor-de-terreno-da-junta`
+(`D-INSPETOR-TERRENO-JUNTA`, 24/08) prova que o tabuleiro é justo **antes** do voto. O `porteiro-pos-merge`
+(`D-PORTEIRO-POS-MERGE`, 12/08) prova que a entrega é real **depois** do merge. **Ninguém media o voto.**
+
+Duas coisas passavam por aí, e as duas têm preço medido:
+
+1. **Aprovação não ganha** — cadeira que escreve `APROVADO` a partir de leitura, de herança da ata anterior,
+   ou de um "verde" sem `N` e sem forma. Veredito formalmente válido, materialmente vazio.
+2. **Veto ilegítimo** — reprovação por achado `pre-existente` sem evidência de data, por algo que o §5 do
+   plano **proibia** o bloco de tocar, ou por exigência que o plano nunca fez (*reprovação por construção*).
+   A `auditoria-juntas-2026-08-28.md` mediu: **3 blocos consumiram 24% de todos os ciclos**, e em **11 dos 16**
+   o bloqueante final era **processo/medição, não produto**.
+
+**A decisão.** Passa a existir **uma única cadeira permanente** na junta: a
+`cadeira-permanente-backend-review` — **Fable por contrato**, método = skill `backend-review-ts-prisma`
+(espelhada em `.agents/skills/`). Ela entra em **TODA** junta, **depois** dos votos de mérito e **antes** do
+merge. É a **única** cadeira não-descartável: não recebe identidade nova por bloco, não tem suplente, não
+morre no fim do ciclo.
+
+**Ela não julga a entrega — julga o ATO DE JULGAR.** Mede, cadeira a cadeira, se a **aprovação foi ganha**
+(execução, `N`, forma, `escopo` com evidência, denominador estável, "não consigo medir" tratado como
+reprovado) e, achado a achado, se o **veto foi legítimo** (`dentro-do-bloco`, com evidência executada, dentro
+do escopo que o plano **de fato escreveu** — conferindo inclusive qual cópia do plano a cadeira usou; a cópia
+na árvore principal já teve 307 linhas contra 847 na linhagem do bloco). Confere o quórum do risco
+(§C7.1-ter(b)) e os papéis do §C7.4-bis.
+
+**Quatro vereditos, e a assimetria é o desenho:**
+
+| Veredito | Efeito | Consome ciclo? |
+|---|---|---|
+| `HOMOLOGADO` | o veredito da junta vale | — |
+| `HOMOLOGADO COM RESSALVA` | vale, com dívida de processo nomeada em `pendencias.md` | — |
+| `ANULADO POR APROVAÇÃO NÃO GANHA` | o verde **não** autoriza merge; as cadeiras nomeadas votam de novo | **não** |
+| `ANULADO POR VETO ILEGÍTIMO` | o achado cai para pendência com bloco dono; a junta reaprecia sem ele | **não** |
+
+**Anulação nunca produz veredito de mérito.** Não transforma reprovado em aprovado nem o contrário — devolve
+a decisão a quem tem competência, com o defeito de processo nomeado. É isso que impede o assento permanente
+de virar superjurado que atropela especialistas com identidade nova e competência específica.
+
+**Fronteiras duras.** Não acha bug de produto (o que vir vira pendência com bloco dono, nunca voto); não
+conserta (§C7.4-bis); **é inelegível para cadeira de mérito no mesmo bloco**.
+
+**Por que permanente, e por que isso não contamina.** Memória de bloco anterior só contamina quem decide se o
+código está certo. Para quem mede se o voto foi ganho, memória é o **instrumento**: é a única cadeira capaz
+de ver a mesma cadeira aprovando sem executar duas vezes, a mesma classe de achado virando `pre-existente`
+sem evidência em três blocos, ou o mesmo plano sendo cobrado além do que escreveu. Publica essa **série entre
+juntas** em toda ata.
+
+**Ela também é medida.** Publica a própria série (homologadas × anuladas, acumuladas), conferida pelo
+`porteiro-pos-merge` (item 5-bis). Cadeira permanente que homologa tudo é **carimbo**; que anula tudo é
+**pedágio**. As duas coisas aparecem na série antes de aparecerem no dano.
+
+**Fail-closed nas duas pontas.** O `inspetor-de-terreno-da-junta` (item 3.3) **BLOQUEIA** o start da junta que
+não convocou o assento — mais barato bloquear o start do que descobrir com os votos gastos; e bloqueia também
+se ela tiver sido escalada como cadeira de mérito. O `porteiro-pos-merge` (item 5-bis) trata **ata sem o
+parecer dela** como achado do tamanho do merge, e **merge sobre veredito ANULADO como merge inválido**.
+**Junta sem parecer do assento permanente = merge inválido**, na mesma força do §C7.1.
+
+**Onde vive.** `.claude/agents/cadeira-permanente-backend-review.md` (mandato) +
+`.claude/skills/backend-review-ts-prisma/` (método), ambos espelhados em `.agents/` por
+`sync-agent-agents.mjs` / `sync-agent-skills.mjs`. Contrato em `CLAUDE.md` §C7.1-quater e §C2.6-bis,
+espelhado em `AGENTS.md`. Molde de ata com a seção §P pronta:
+`agent-orchestration/omega/juntas/TEMPLATE-J-ata.md`. Parecer integral em
+`votos/<bloco>/99-cadeira-permanente.md`.
+
+---
+
+## D-APOSENTADORIA-ELENCO-EFEMERO (decisão do dono, 2026-09-07) — cadeira de bloco encerrado sai do diretório vivo
+
+**O que estava acontecendo.** O §C7.4 manda a `agente-fabrica` criar cadeiras sob medida a cada bloco, e o
+§C7.1-ter(b) reconhece que a resposta à reprovação é escalar. Nenhuma regra dizia **quando essas cadeiras
+saem**. Resultado medido em `origin/main@fe2748c8` pelo auditor novo
+(`node scripts/audit-agents-skills.mjs`): **15 especialistas de blocos já encerrados**, somando **~19,8 KB de
+`description` (~5.068 tokens)** carregados no contexto de **toda sessão** — 3× o peso dos 24 papéis
+permanentes juntos (6,6 KB). Na branch `demo/investidor` o mesmo número era **33 especialistas / ~43 KB /
+~11k tokens**, porque lá os 9 jurados do ciclo 4 nunca saíram.
+
+**A decisão.** Especialista cujo bloco tem **ata fechada e PR mergeado** é **aposentado** do diretório vivo.
+Cadeira de bloco **em voo nunca sai**. A remoção é sempre **por identificador de BLOCO**, nunca por nome de
+cadeira solto — nomes de papel colidem entre sessões, e uma cadeira de outra sessão já destruiu o worktree
+vivo de uma sucessora lendo o nome como dela.
+
+**Aposentar não apaga.** O corpo continua no Git; a ata continua sendo a prova do voto. O registro nominal —
+cadeira, bloco, ata, PR que fechou, e o **commit onde o corpo pode ser lido de volta** — vive em
+`agent-orchestration/controle/aposentadoria-especialistas.md`, que toda rodada futura anexa. Reviver é
+`git show <commit>:.claude/agents/especialistas/<nome>.md`; mas o normal é a `agente-fabrica` criar cadeira
+**nova** (identidade nova é requisito do §C7.4) usando o corpo antigo como molde, não como ocupante.
+
+**O que a primeira rodada removeu:** as 15 cadeiras de `B-O6R-02` (ciclos 1–5, PR #371) e `B-O6R-07b`
+(PR #380). Elenco de especialistas depois: **0** — que é o estado correto, porque cadeira efêmera só existe
+enquanto vota.
+
+**Uma competência sai e fica registrada, não engolida.** `especialista-maquinas-de-desfazer` tem
+`description` genérica de verdade ("QUALQUER caminho que desfaz — delete, reverse, estorno, cancel, bounce,
+unclear, reabertura, rollback"; "quando duas superfícies diferentes tocam o mesmo dinheiro"). É competência de
+papel **permanente**, não de cadeira de bloco; só o corpo estava amarrado ao `B-O6R-02`. Sai por critério, e
+fica a pendência `P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER`: se um bloco voltar a mexer em caminho que desfaz
+dinheiro, promovê-lo a papel permanente com o corpo generalizado — não recriá-lo como efêmero de novo.

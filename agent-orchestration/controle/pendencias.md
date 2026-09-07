@@ -7158,3 +7158,67 @@ dependência satisfeita desde 19/08 e **sem dono nomeado**.
 - **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (terminar o 07b; `B-O6R-06` a seguir) ·
   **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. A tensão que ela registrava
   está **resolvida por decisão**, não por medição — que é o desfecho correto para uma pergunta de fila.
+
+
+---
+
+## P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER (2026-09-07) — competência reutilizável saiu na aposentadoria do elenco — BAIXA
+
+`especialista-maquinas-de-desfazer` foi aposentado na rodada 1 de `D-APOSENTADORIA-ELENCO-EFEMERO` porque o
+bloco dele (`B-O6R-02`, PR #371) fechou. O critério está certo e foi aplicado certo — mas a **competência não
+era de bloco**. A `description` dele é genérica de verdade: *"QUALQUER caminho que desfaz (delete, reverse,
+estorno, cancel, bounce, unclear, reabertura, rollback)"*, *"quando duas superfícies diferentes tocam o mesmo
+dinheiro"*, *"quando uma suíte prova invariante financeira pela EXISTÊNCIA de uma linha em vez do efeito
+líquido"*. Isso é papel **permanente** (mesma família de `guardiao-fail-closed`); só o **corpo** estava
+amarrado ao `B-O6R-02` e aos ciclos 1–2.
+
+**O que fazer quando reaparecer:** bloco que mexa em caminho que desfaz dinheiro **promove** este papel a
+`.claude/agents/` com o corpo generalizado (tirando as âncoras de `B-O6R-02`), em vez de a `agente-fabrica`
+criar mais uma cadeira efêmera com a mesma competência. O corpo está em
+`git show 99f18403:.claude/agents/especialistas/especialista-maquinas-de-desfazer.md`.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (a competência nasceu em
+  `B-O6R-02`, ciclos 1–2, antes deste bloco) · **dono:** o próximo bloco que tocar caminho de desfazer com
+  efeito monetário · **bloqueia:** nada.
+
+---
+
+## P-GOV-WORKTREES-NAO-IGNORADAS (2026-09-07) — `.claude/worktrees/` não está no `.gitignore` — MÉDIA
+
+Medido em `B-GOV-ELENCO`: `git check-ignore -v .claude/worktrees/b06` não casa nenhuma regra, e o
+`.gitignore` não tem uma única linha sobre `.claude`. Três worktrees vivem hoje sob `.claude/worktrees/`
+(`b06`, `gov-descuido`, `gov-elenco`) — cada um é uma **árvore de trabalho inteira do repositório**. Um
+`git add -A` distraído em qualquer sessão comitaria milhares de arquivos de uma árvore dentro da outra.
+
+O que **não** aconteceu: nada foi comitado assim até aqui — a checagem foi `git status --porcelain`, que
+mostra `.claude/worktrees/` como untracked e nunca staged. É risco, não incidente.
+
+**Por que não foi consertado neste bloco:** o `.gitignore` está fora do escopo permitido de `B-GOV-ELENCO`
+(§5 do plano — o bloco toca elenco de agentes, skills, contrato e registro; `.gitignore` é infraestrutura de
+repositório e afeta todo trabalho em voo, inclusive os dois worktrees de outras sessões). Consertar aqui
+seria exatamente o alargamento silencioso de escopo que o §C4 proíbe.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (o `.gitignore` nunca teve a
+  regra; os worktrees existem desde 26/08) · **dono:** próximo bloco de infraestrutura de repositório ·
+  **bloqueia:** nada. **Correção proposta:** uma linha `.claude/worktrees/` no `.gitignore`.
+
+---
+
+## P-GOV-SKILLS-RELEVANCIA (2026-09-07) — 5 skills voltaram a carregar; 1 delas não tem relação com o ERP — BAIXA
+
+`B-GOV-ELENCO` consertou o achatamento de 5 skills que estavam com o `SKILL.md` um nível fundo
+(`.claude/skills/X/X/SKILL.md`) e por isso **nunca carregaram**: `blockchain-developer`, `cloud-architect`,
+`cloud-devops`, `payment-integration`, `skill-creator`. O conserto é inequívoco — o defeito era estrutural e
+o `name:` de cada uma já batia com a pasta.
+
+O efeito colateral é que as 5 passam a ocupar espaço no contexto de toda sessão. Quatro têm uso plausível
+aqui (`cloud-architect`/`cloud-devops` nas trilhas Ω-INFRA, `payment-integration` no financeiro,
+`skill-creator` na criação de skills/agentes, que é rotina). **`blockchain-developer` não tem relação
+nenhuma com este produto** — ERP de serviços de campo, sem cripto em lugar algum do domínio.
+
+**Não foi removida** porque remover skill instalada é decisão do dono, não de agente, e o bloco tinha
+autorização para **consertar** o achatamento, não para **curar** o catálogo.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (as 5 foram instaladas aninhadas
+  antes deste bloco) · **dono:** decisão do dono · **bloqueia:** nada. **Pergunta a responder:**
+  `blockchain-developer` fica ou sai?

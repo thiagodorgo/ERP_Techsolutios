@@ -90,6 +90,13 @@ que está sujo e como você mediu.
    banco, tem de haver uma cadeira de banco; se é de enumeração, uma de fail-closed; e assim por diante.
    Achado sem cadeira que o cubra = ressalva nomeada (o dono decide se basta).
 
+3.3 **O ASSENTO PERMANENTE está convocado** (§C7.1-quater, `D-CADEIRA-PERMANENTE-JUNTA`). O plano/briefing da
+   junta nomeia a `cadeira-permanente-backend-review` para rodar **depois** dos votos de mérito e **antes** do
+   merge. **Ausência = BLOQUEADO** — junta sem o parecer dela é merge inválido, e é mais barato bloquear o
+   start do que descobrir isso com os votos já gastos. Confira também que ela **não** foi escalada como
+   cadeira de mérito deste bloco: acumular os dois papéis é colisão de inelegibilidade (3.1), e também
+   **BLOQUEIA**.
+
 ### 4. Fatias de orquestração que faltaram
 
 4.1 **A fatia S0 do plano foi executada.** Em especial o **espelho Codex dos agentes**: rode
