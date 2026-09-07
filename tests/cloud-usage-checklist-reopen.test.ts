@@ -217,7 +217,16 @@ test("[base de rateio] a conclusão reaberta não move a agregação diária nem
       { id: organizacaoA.tenantId, name: "Organização A" },
       { id: organizacaoB.tenantId, name: "Organização B" },
     ],
-    usageAggregates: agregados,
+    // B-O6R-06 — o motor passou a receber a BASE somada (`usageBasis`) em vez da projecao diaria. A
+    // asercao continua a mesma: o que atravessa daqui e o mesmo numero que a agregacao acabou de
+    // publicar, e a conclusao reaberta contribui com ZERO.
+    usageBasis: agregados.map((item) => ({
+      tenantId: item.tenantId,
+      metricKey: item.metricKey,
+      quantity: item.quantity,
+      unit: item.unit,
+      sourceType: item.sourceType,
+    })),
     costLineItems: [linhaDeCustoDeChecklist(10, hoje)],
   });
 

@@ -113,7 +113,7 @@ if (!connectionString) {
     const suffix = uniqueSuffix();
     const { tenantId, userId } = await seedTenant(ctx, suffix);
 
-    const { resetCloudUsageRuntimeForTests, getMemoryCloudUsageRepositoryForTests } = await import(
+    const { resetCloudUsageRuntimeForTests } = await import(
       "../src/modules/cloud-usage/cloud-usage.service.js"
     );
     const { withTenantRls } = await import("../src/database/rls.js");
@@ -172,16 +172,17 @@ if (!connectionString) {
       );
       assert.equal(createdAudits, 1, "só o vencedor pode auditar/publicar checklist_run.created (1 unidade faturada)");
 
-      // (a.3) prova LITERAL do metric checklist_runs_count quando o cloud-usage roda em memória (config do
-      // proof run: CORE_SAAS_PERSISTENCE=memory). O evento é fire-and-forget → flush antes de inspecionar.
-      const { env } = await import("../src/config/env.js");
-      if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        const billed = (await getMemoryCloudUsageRepositoryForTests().listEvents({ tenantId })).filter(
-          (event) => event.metricKey === "checklist_runs_count",
-        );
-        assert.equal(billed.length, 1, "exatamente 1 unidade FATURADA checklist_runs_count");
-      }
+      // (a.3) prova LITERAL do metric `checklist_runs_count` — B-O6R-06 (Omega6R-DIN-005) tornou-a MAIS
+      // forte, e por isso ela mudou de LUGAR. Antes, a unidade nascia do consumidor do evento de dominio
+      // (`recordCloudUsageBestEffort`), fire-and-forget, e aterrissava no repositorio EM MEMORIA do
+      // cloud-usage quando `CORE_SAAS_PERSISTENCE` nao era prisma — daí o `setTimeout(150)` e o `if`.
+      // Agora ela commita na MESMA transacao da run, no MESMO Postgres em que a run vive: o teste le a
+      // TABELA, sem espera e sem ramo condicional. Uma leitura fraca (contagem em memoria) passaria a ser
+      // vacuamente verde aqui, que e exatamente o que nao se pode aceitar num teste de faturamento.
+      const billed = await withTenantRls(client, tenantId, (tx) =>
+        tx.cloudUsageEvent.count({ where: { tenant_id: tenantId, metric_key: "checklist_runs_count" } }),
+      );
+      assert.equal(billed, 1, "exatamente 1 unidade FATURADA checklist_runs_count");
     } finally {
       resetCloudUsageRuntimeForTests();
       await teardown(ctx, tenantId);

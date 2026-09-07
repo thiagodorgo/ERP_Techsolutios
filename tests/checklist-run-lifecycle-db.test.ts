@@ -36,7 +36,7 @@ if (!connectionString) {
         runId: run.id,
         answers: [{ componentId: seed.observationId, value: "Primeira leitura", metadata: {} }],
       });
-      const completed = await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed");
+      const completed = await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed", { meterCompletion: true });
       assert.equal(completed?.run.status, "completed");
 
       await assert.rejects(
@@ -52,7 +52,7 @@ if (!connectionString) {
       );
 
       await assert.rejects(
-        () => repo.completeRun(seed.tenantId, run.id, seed.userId, "completed"),
+        () => repo.completeRun(seed.tenantId, run.id, seed.userId, "completed", { meterCompletion: true }),
         (error: { statusCode?: number }) => error.statusCode === 409,
         "concluir de novo é mutação de prova assinada",
       );
@@ -126,7 +126,7 @@ if (!connectionString) {
           error.statusCode === 409 && error.reason === "checklist_run_not_completed",
       );
 
-      await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed");
+      await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed", { meterCompletion: true });
 
       const reason = "Foto do para-choque saiu tremida; refazer o registro.";
       const reopened = await repo.reopenRun({
@@ -190,7 +190,7 @@ if (!connectionString) {
       );
 
       // A cadeia continua: concluída a versão nova, ela também pode gerar a próxima (A→B→C).
-      await repo.completeRun(seed.tenantId, reopened!.run.id, seed.userId, "completed");
+      await repo.completeRun(seed.tenantId, reopened!.run.id, seed.userId, "completed", { meterCompletion: true });
       const terceira = await repo.reopenRun({
         tenantId: seed.tenantId,
         runId: reopened!.run.id,
@@ -210,7 +210,7 @@ if (!connectionString) {
       const { repo, service } = ctx;
       const actor = { tenantId: seed.tenantId, userId: seed.userId };
       const run = await createRun(ctx, seed);
-      await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed");
+      await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed", { meterCompletion: true });
 
       const result = await service.reopenRun(actor, run.id, {
         reason: "Conferência do gestor apontou divergência no registro.",
@@ -247,7 +247,7 @@ if (!connectionString) {
     try {
       const { repo, service } = ctx;
       const runA = await createRun(ctx, seedA);
-      await repo.completeRun(seedA.tenantId, runA.id, seedA.userId, "completed");
+      await repo.completeRun(seedA.tenantId, runA.id, seedA.userId, "completed", { meterCompletion: true });
 
       // Leitura: some (não existe para B).
       assert.equal(await repo.getRun(seedB.tenantId, runA.id), null, "B não lê a vistoria de A");
@@ -347,7 +347,7 @@ if (!connectionString) {
       );
 
       // e a versão anterior não pode ser apagada por baixo da nova (RESTRICT)
-      await repo.completeRun(seedA.tenantId, runA.id, seedA.userId, "completed");
+      await repo.completeRun(seedA.tenantId, runA.id, seedA.userId, "completed", { meterCompletion: true });
       const nova = await repo.reopenRun({
         tenantId: seedA.tenantId,
         runId: runA.id,
@@ -398,7 +398,7 @@ if (!connectionString) {
         runId: run.id,
         answers: [{ componentId: seed.observationId, value: "Concluída após a inativação", metadata: {} }],
       });
-      const completed = await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed");
+      const completed = await repo.completeRun(seed.tenantId, run.id, seed.userId, "completed", { meterCompletion: true });
       assert.equal(completed?.run.status, "completed");
 
       // Sem vistoria VIVA, o modelo inativo volta a recusar o render (nada a servir) — e nenhuma vistoria
@@ -552,6 +552,11 @@ async function teardown(
         if (removed.count === 0) break;
       }
       await tx.checklistRun.deleteMany({ where: { tenant_id: tenantId } });
+      // B-O6R-06 (Omega6R-DIN-005) — a unidade FATURAVEL passou a nascer na MESMA transacao da run, entao
+      // agora SEMPRE existe linha em `cloud_usage_events` deste tenant, e ela tem FK `ON DELETE RESTRICT`
+      // para `tenants`. Sem esta remocao (escopada ao tenant do teste, dentro do proprio contexto RLS) o
+      // teardown estoura em `cloud_usage_events_tenant_id_fkey` ao apagar a organizacao.
+      await tx.cloudUsageEvent.deleteMany({ where: { tenant_id: tenantId } });
       await tx.checklistTemplateComponent.deleteMany({ where: { tenant_id: tenantId } });
       await tx.checklistTemplate.deleteMany({ where: { tenant_id: tenantId } });
       await tx.auditLog.deleteMany({ where: { tenant_id: tenantId } });
