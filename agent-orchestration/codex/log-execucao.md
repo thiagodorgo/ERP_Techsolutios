@@ -4249,3 +4249,24 @@ um comando**, nem de leitura. Backfill §C3.5 do #380 pago em 4 lugares, com a p
 **executada** por quem escreve.
 
 **Não entregue, por bloqueio do crítico:** o script de reconciliação — `P-O6R-B06-RECONCILE-BLOQUEADO`.
+
+
+### Vermelho-controle do B-O6R-06, EXECUTADO na base `fe2748c` (§8.5 do plano)
+
+Worktree separado (`.claude/worktrees/o6r06-base`, `npm ci` próprio, mesmo cluster descartável), com os
+quatro aceites-cabeceira portados. `ec=1`, **4 de 4 vermelhos** — nenhum deles estava medindo o que já era
+verdade:
+
+| Aceite | O que a base devolveu | O que a branch exige |
+|---|---|---|
+| **A1** | `unidades gravadas na tx = 0` | 2 (`checklist_run.created` + `checklist_runs_count`) |
+| **F1** | `runs = 1 · unidades = 0` — a vistoria existe e a unidade **não**: é a janela literal do achado | ou as duas, ou nenhuma |
+| **S1** | `lineItemCount = undefined` (o campo **nem existia**) · a 10.001ª **não** aparece em `services[]` · total `9900000000.01083` | `lineItemCount = 10001`, a 10.001ª presente, exato `9900999999.010001` |
+| **B1** | run `completed` com **0 alocações** e `unallocated = 40` — `missing_usage_basis` | 2 alocações, 3:1 |
+
+O total do S1 na base carrega **os dois defeitos ao mesmo tempo**, e dá para lê-los separados: faltam
+`999999.000001` (a 10.001ª, truncada) **e** as casas decimais estão erradas — `…01083` onde a soma exata das
+10.000 primeiras é `…010000`. O primeiro é o defeito que o achado nomeia; o segundo é o que ele não nomeia.
+
+O worktree da base foi **removido** no fechamento; o arquivo de controle vivia só nele e nunca entrou na
+branch.
