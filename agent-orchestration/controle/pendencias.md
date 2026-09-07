@@ -2971,6 +2971,27 @@ endurecido, nas **5 vias** medidas (mobile evidence, attachments, checklists, da
 (`J-CHK-04C-EMENDA`) exige **`B-O6R-06` E os DOIS sub-blocos do `B-O6R-07`** mergeados. O `Bloqueia:` de
 auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/upload mobile **permanece** até o 07b.
 - status: ABERTA — resta 1 P1 (`Ω6R-SEC-004`, sub-bloco 07b). Os outros 2 (1 P0 + 1 P1) fecharam no 07a.
+- status: FECHADA — 1 P0 + 2 P1: Omega6R-SEC-002 parcialmente superado no 07a (#369, dc8168b; residual P0 em
+  P-O6R-SUBRECURSO-OBJECT-SCOPE, dono B-O6R-07c) · Omega6R-SEC-003 fechado no 07a (#369) · Omega6R-SEC-004
+  **parcialmente superado no 07b** (PR na autoria; nº e hash no backfill pós-merge — §C3.5; residual em
+  P-O6R-B07B-SCANNER-AV-REAL, que é quem promove o achado a fechado).
+  **APPEND de 2026-09-06 (B-O6R-07b) — a linha "- status: ABERTA" logo acima está SUPERADA e fica preservada
+  por §A2 (acrescentar, nunca apagar).** O "Bloqueia:" de **evidências/anexos/upload mobile** CAI com o merge
+  deste PR — era o que faltava, e o de auth/OS/aprovações/RBAC já havia caído com o 07a. O gate da CHECKLIST P1
+  (J-CHK-04C-EMENDA) passa a depender **só de B-O6R-06**: os DOIS sub-blocos do B-O6R-07 estão entregues.
+  **O que o 07b entregou, em uma linha:** gate único de conteúdo (sniff de assinatura in-house + scanner
+  fail-closed por NODE_ENV, com noop recusado no boot de produção) nas 5 vias de ingresso; marca de
+  verificação OBRIGATÓRIA no tipo de entrada dos 3 providers de storage (chamador sem ela não compila; quem
+  burla o compilador não grava); egresso com tipo re-derivado dos BYTES + Content-Disposition attachment +
+  nosniff nas 4 rotas de download; e guard de prefixo de tenant nos 4 resolvers, que fecha o vazamento
+  cross-tenant do owner-portal por herança de chamada. As vias V4 (anexo de checklist) e V5 (foto de dano)
+  **não tinham scanner nenhum** — nem Noop — e passam a ter. ZERO dependência nova, ZERO migration. 121 casos
+  novos permanentes; suíte plena 2815/2817 → 2936/2938, ec=0.
+  **O que ele NÃO fechou, e por isso o achado é parcialmente_superado e não fechado:** com noop sendo o
+  default de development/test POR DESENHO, o primeiro dos três mecanismos do achado ("scanner default sempre
+  clean") segue verdadeiro fora de produção. E a consequência disso é operacional e visível: **produção e
+  staging respondem 503 a TODO upload** até P-O6R-B07B-SCANNER-AV-REAL — ver também
+  P-O6R-B07B-STAGING-SEM-UPLOAD (agenda, decisão do dono).
 
 ## P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:approve` — MÉDIA
 
@@ -6895,3 +6916,245 @@ como fonte e passam a citar o que de fato está na `main`. As duas respostas sã
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
   desde `cae6086`, 2026-09-05; a decisão nunca esteve na `main`) · **dono:** **decisão do dono** — envolve
   consolidar texto entre `demo/investidor` e a `main`, que é dele, não de um bloco de execução
+
+## P-O6R-B07B-SCANNER-AV-REAL (2026-09-06) — produção e staging recusam TODO upload até haver antivírus real — ALTA
+
+Aberta pelo `B-O6R-07b` no PR que fechou o `Ω6R-SEC-004` como **parcialmente superado**. É o residual nomeado
+daquele achado: **quem fechar esta entrada é quem promove o achado a `fechado`.**
+
+**O que acontece a partir do merge deste bloco.** O scanner de conteúdo passou a ter default por ambiente
+(`src/modules/evidence/evidence-scanner.factory.ts`): `production` → `unavailable`; `development`/`test` →
+`noop`. `fly.staging.toml:31` declara `NODE_ENV = "production"` (e os comentários l.9-12 do próprio arquivo
+dizem *"regra geral: TODO ambiente com NODE_ENV=production, staging incluso"*), e `Dockerfile:25` idem. Logo,
+**no dia do deploy, staging e produção respondem `503` a todo upload** nas 5 vias: evidência mobile, anexo
+genérico, anexo de OS, anexo de checklist e foto de dano.
+
+**`EVIDENCE_SCANNER=unavailable` NÃO é remédio** — é o default que produz o 503. E `noop` é recusado no boot de
+propósito: uma flag "permitir noop em produção" seria o achado com outro nome. **Não há válvula neste bloco.**
+
+**O CI não avisa.** `scripts/smoke-staging.mjs` não faz upload (nem `multipart`, nem `evidence-uploads`, nem
+`attachments` aparecem no arquivo), então o job de deploy fica **verde** e a pane só é visível a quem usa.
+
+**Conserto:** antivírus real. Candidato: ClamAV (container em compose/fly) + cliente `INSTREAM` in-house via
+`node:net` (zero dependência nova no runtime). É **serviço externo → junta-5 + PD** (`PD-O6R-B07B-CLAMD-INSTREAM`:
+protocolo `zINSTREAM`, `StreamMaxLength`, respostas `OK`/`FOUND`/`ERROR`, timeouts). A decisão sobre **quarentena**
+(reter o byte infectado) é item do mesmo bloco — hoje infectado vira 422 + log, nada gravado.
+
+- **status:** ABERTA · **severidade:** ALTA · **BLOQUEIA:** go-live de upload **e staging com upload** ·
+  **escopo:** `dentro-do-bloco` (é consequência declarada e desejada do fail-closed que o 07b entrega) ·
+  **dono:** bloco próprio pós-O6R (`B-AV-REAL`), a encaixar pelo dono
+
+## P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do deploy — MÉDIA-ALTA
+
+Entrada **de agenda**, não de código: o remédio técnico é `P-O6R-B07B-SCANNER-AV-REAL`. Existe separada porque
+o que ela pede é uma **decisão do dono**, e o §C7.2 diz que o humano é *informado*.
+
+Medido: `fly.staging.toml:31` já é `NODE_ENV = "production"`; nenhum workflow sobrescreve. A versão anterior
+desta pendência (§12.6 do plano, "condicional — só se o dev medir staging ≠ production", com o valor a setar
+`EVIDENCE_SCANNER=unavailable`) estava **duplamente errada** e foi reescrita: o gatilho já disparou, e o valor
+prescrito é justamente o que produz a pane. Achado do `critico-adversarial` (rodada 1, A3).
+
+**`demo/investidor`:** nenhum workflow nem `fly*.toml` referencia essa branch — o risco é de **uso**, não de
+pipeline. Mas **se a demonstração ao investidor rodar sobre staging e envolver foto, ela para de funcionar no
+dia do deploy.** Três caminhos, todos legítimos, nenhum escolhível por agente: (a) agendar o bloco de AV
+imediatamente após o 07b; (b) segurar o deploy do 07b **em staging** até o AV existir (a `main` já fica
+protegida de qualquer forma); (c) qualquer rebaixamento temporário é decisão **explícita** do dono.
+
+**DECISÃO DO DONO — 2026-09-06: caminho (a).** Perguntado com os três caminhos na mesa, o dono respondeu
+**"fazer A"**: mergear o `B-O6R-07b` normalmente. Decisão do dono é fonte §A1.1.
+
+**E o risco que esta entrada descrevia é MENOR do que ela dizia — medido depois de escrita.** O texto acima
+diz *"staging para de aceitar foto no dia do deploy"*, o que pressupõe que o merge **causa** deploy. Ele não
+causa: `.github/workflows/deploy-staging.yml` dispara em `push` na `main` **mas o job tem
+`if: vars.STAGING_DEPLOY_ENABLED == 'true'`**, e essa variável **não existe** no repositório
+(`gh variable list` → vazio, `ec=0`). Provado por histórico de execução, não por leitura: os **últimos 5 runs
+do `deploy-staging` estão `skipped`** (#375, #373, #377, #378, #379). O deploy de staging é **ato manual e
+separado**, hoje desligado no nível do repositório.
+
+**Consequência, dita sem suavizar:** a pane é **latente**, não iminente. Ela materializa no dia em que alguém
+puser `STAGING_DEPLOY_ENABLED=true` e fizer deploy sem o antivírus real. Quem ligar essa variável **precisa
+ler esta entrada antes** — é o gatilho, e ele agora está nomeado.
+
+- **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (caminho (a), mergear normalmente) +
+  medição de que o merge não dispara deploy (`STAGING_DEPLOY_ENABLED` ausente; 5 runs `skipped`) ·
+  **severidade:** MÉDIA-ALTA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. **O conserto técnico
+  permanece em `P-O6R-B07B-SCANNER-AV-REAL` (ALTA), que segue ABERTA e é pré-requisito de habilitar
+  `STAGING_DEPLOY_ENABLED`.**
+
+## P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE (2026-09-06) — linha `attachment stored` com chave/tipo/provedor vindos do CORPO — ALTA
+
+**A CLASSE**, não uma rota: duas rotas de pátio criam uma linha `attachment` com `status: "stored"` cujos
+`storage_key`, `storage_provider`, `content_type` e `file_url` vêm do **corpo da requisição**.
+
+- **M2** — `POST /api/v1/impound-processes/:processId/inspection/photos` (`impound.routes.ts:126`);
+  validação em `impound.intake.validators.ts:77-86`, escrita em `impound-prisma.repository.ts:533-544`,
+  `entity_type: "impound_intake_inspection"`. Origem: `574a1d2`, **2026-07-26**, #285.
+- **M5** — `POST /api/v1/impound-processes/:processId/notifications/:notificationId/issue`
+  (`impound.routes.ts:175`), campo *comprovante*; `impound.notifications.validators.ts:78-92`
+  (`parseOptionalAttachment` aceita `file_url` ≤2000 **sem validação de esquema**, `content_type`,
+  `checksum_sha256`, `storage_provider`, `storage_key` ≤512), escrita em
+  `impound.notifications-prisma.repository.ts:116-134`, `entity_type: "process_notification"`. Origem:
+  `398a19d`, **2026-07-27**, #290. **Achado do `critico-adversarial`** (rodada 1, A1): o censo do plano
+  declarava 4 superfícies e eram 5.
+
+**Egresso real de cada uma, medido — e não suposto.** `E1` (`GET /attachments/:id/download`) devolve **404**
+para as duas: `attachment.service.ts:142-159` resolve o descriptor pelo `entity_type` e `undefined` → 404, e o
+registro tem **exatamente 4** entradas (`attachment-entity-resolver.ts:83/98/113/128`: `damage`, `fine`,
+`insurance_policy`, `maintenance_order`). M2 **é** lida — por **E5**, o owner-portal
+(`owner-portal.service.ts:417-441` monta um `Attachment` sintético com a `storageKey` DA LINHA e chama
+`resolveAttachmentDownload`). M5 **não tem leitor nenhum** hoje (`grep process_notification src/` → o writer,
+3 comentários, 2 `resourceType` de auditoria e uma tabela SQL homônima).
+
+**O que o `B-O6R-07b` FECHOU:** a metade **READ**. `src/modules/evidence/storage-key-scope.ts` é chamado nos
+**4** resolvers de download antes de qualquer `getObject`, e exige que a `storage_key` comece no `tenant_id`
+**da própria linha**. E5 herda o guard **por chamada**, sem uma linha em `owner-portal/**`. Provado por T9 em
+`tests/owner-portal-photos.test.ts`, com vermelho-controle: removido o guard do resolver, T9 fica vermelho.
+
+**O que RESTA:** a metade **WRITE**. O conserto correto é a rota de pátio aceitar só `attachmentId` próprio do
+tenant/processo (ou receber bytes pela via V2, com o `entity_type` registrado no resolver) — e isso muda dois
+contratos do pátio cujos clientes (UI do pátio, PR-10/09) este bloco não mediu. `src/modules/impound/**` é
+PROIBIDO no escopo do 07b, e o bloco tem teto de 2 ciclos.
+
+**Critério de fechamento, para não fechar metade e declarar a classe resolvida:** hoje há **3** sítios de
+`attachment.create(` em `src/` (o V2 legítimo + M2 + M5). Quem fechar **prova por presença: 3 → 1**.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (evidência de origem datada acima:
+  `574a1d2` 2026-07-26 e `398a19d` 2026-07-27, ambas anteriores ao bloco) · **dono:** `B-O6R-07c` (que já deve
+  censar superfícies JSON/sync) **ou** bloco de pátio — o dono decide
+
+## P-O6R-B07B-CHECKLIST-JSON-FILEURL (2026-09-06) — ramo JSON do anexo de checklist aceita `fileUrl`/`mimeType` arbitrários — MÉDIA
+
+`POST /api/v1/mobile/checklist-runs/:runId/attachments`, ramo **JSON** (`checklist.controller.ts:212-216`;
+exercitado por `checklist-routes.test.ts:143-152`) aceita `fileUrl` — qualquer string ≥1, sem esquema
+(`checklist.validator.ts:225`) — e `mimeType`. Cria anexo **sem `storageKey`**, então a rota de download
+responde 404 `attachment_file_not_found`; mas o DTO devolve o `fileUrl` **cru** quando não há storage
+gerenciado (`checklist.dto.ts:180-182`), o web só bloqueia caminho Windows
+(`checklist-attachments.adapter.ts:103-108`) e decide o ícone pelo `mimeType` declarado
+(`ChecklistEvidencePreview.tsx:18-19`). Também alcançável por `registerDivergence`
+(`checklist.service.ts:647-650`).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (origem Ω3/CHK) · **dono:** trilha
+  CHECKLIST (bloco de checklists)
+
+## P-O6R-B07B-DATAURI-NO-VALUE (2026-09-06) — data-URI base64 persistido no `value` de resposta de checklist — MÉDIA
+
+`POST /api/v1/mobile/sync/checklist-actions`: o `payload.value` pode ser um data-URI base64 (assinatura/foto),
+que é **persistido** (`mobile-checklist-sync.ts:684,699`) e devolvido em GET (`checklist.dto.ts:160`). O único
+teto é o `express.json({limit:"2mb"})` de `app.ts:106`. Nenhum consumidor web/app renderiza `data:` como
+imagem hoje (rg em `frontend/src` e `mobile/flutter_app/lib` → só o SVG do mapa), então **não é o mecanismo do
+`Ω6R-SEC-004`** (nunca vira `Content-Type`) — mas é byte não-verificado no banco, por um caminho que o gate
+de upload não vê.
+
+**Correção sugerida:** assinatura/foto viram anexo pela via V4 (que agora tem gate); `value` ganha teto próprio
+e recusa `data:`.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (origem CHK PR-03) · **dono:** trilha
+  mobile/checklists
+
+## P-O6R-B07B-MOBILE-RETRY-PERMANENTE (2026-09-06) — o app re-tenta para sempre o que foi rejeitado para sempre — MÉDIA
+
+O app não tem estado terminal para *"rejeitado, aguarda revisão"*: `415` e `422` viram `SyncStatus.failed` com
+o blob **preservado**, e a fila re-tenta a cada passada. Era assim para `422` e passa a valer também para o
+`415` novo. Custo: banda e bateria por passada; **nenhuma perda de dado**.
+
+**Item 2, medido pelo `critico-adversarial` (rodada 1, A6) — o mapeamento de `503` DIVERGE entre os dois
+arquivos Dart.** `rg -n 503 mobile/flutter_app/lib` devolve **uma** linha, `evidence_upload.dart:261`
+(`503 → SCAN_FAILED`). `checklist_attachment_upload.dart:243-256` mapeia 400/413/422 e cai em
+`_ => 'UPLOAD_FAILED'` — **não tem ramo 503**. Combinado com `P-O6R-B07B-SCANNER-AV-REAL`, isso significa que
+**todo anexo de checklist em staging aparecerá ao técnico como falha genérica**, indistinguível de erro de
+rede, enquanto a evidência mobile mostrará `SCAN_FAILED`. Origem: `c0630fa`, **2026-08-01**, #321.
+
+**O invariante do B-108 NÃO cai** e foi re-conferido: nos dois arquivos o `_blobStore.delete(blobRef)` vive
+**só** dentro do ramo `_isStoredStatus`; todo `ApiError` e todo `catch(_)` caem em `failed` **sem** delete.
+Não há caminho que apague evidência do usuário.
+
+**Conserto:** unificar o mapeamento dos dois arquivos (503 → `SCAN_FAILED`) e dar estado terminal a 415/422
+com revisão. Inclui a suíte Dart de mapeamento (padrão de `bo6r01_login_sem_org_erros_test.dart`).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (origem `c0630fa`, 2026-08-01) ·
+  **dono:** trilha mobile (`B-O6R-11`/QUA-004). O `B-O6R-07b` **não** toca `mobile/**` (PROIBIDO no escopo)
+
+## P-O6R-B07B-LEGADO-MIME (2026-09-06) — linhas antigas com `mime_type` declarado pelo cliente — BAIXA
+
+Toda linha gravada antes deste bloco carrega o tipo que o cliente declarou. **O download já não lê o banco**
+(`serve-verified-file.ts` re-deriva o tipo dos bytes no ato), então o risco de entrega está fechado; o que
+resta é o **valor gravado**, que o DTO de listagem ainda expõe (só ícone/rótulo no web). Falta um relatório em
+lote (script de leitura, **sem escrita em massa ad-hoc**) e a correção do gravado.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` · **dono:** bloco de manutenção de dados
+
+## P-O6R-B07B-REJEICAO-SEM-AUDIT-LOG (2026-09-06) — recusa de upload em V2–V5 só em log estruturado — BAIXA
+
+O gate emite **1 linha de log estruturado** (pino `warn`, sem PII, sem path: `via`, `tenantId`, `kind`,
+`declared`, `sniffed`, `sizeBytes`, `sha256`) em toda recusa. Em **V1** há, além disso, o evento
+`evidence.upload.rejected` em memória. Em **V2–V5** não há registro em `audit_logs`.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (decisão consciente do §3.7 do
+  plano: log entra, `audit_logs` não) · **dono:** bloco de auditoria
+
+## P-O6R-B07B-CODIGOS-INCONSISTENTES (2026-09-06) — V4 usa `400` onde as irmãs usam `415`/`413` — BAIXA
+
+O parser de anexo de checklist devolve `400 mime_type_not_allowed` (e `400` para tamanho excedido) onde
+attachments/work-orders/damages usam `415`/`413`. É **contrato vigente**, afirmado por
+`checklist-attachments.test.ts:149`, e o app mapeia 400 → `UPLOAD_VALIDATION` e 415 → `UPLOAD_FAILED` —
+**ambos preservam o blob**. Mantido de propósito pelo `B-O6R-07b`, que só acrescentou a família `415` do
+sniff ao lado. Normalizar exige versão de contrato.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` · **dono:** bloco de contrato
+
+## P-O6R-B07B-RECEIPT-CONTENT-TYPE (2026-09-06) — V1 não cruza o `content_type` do recibo com o tipo verificado — BAIXA (nota)
+
+`POST /api/v1/mobile/sync/evidence-actions` valida o `content_type` do recibo contra jpeg/png
+(`mobile-evidence-sync.ts:459-465`), e o upload V1 verifica os bytes — mas os dois valores **não são
+cruzados**. Inofensivo hoje: os dois passam pela mesma allowlist, e a divergência não produz efeito de
+segurança (o tipo que vale, gravado e servido, é sempre o verificado). Registrado para não virar descoberta.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (declarado no §3.7 do plano) ·
+  **dono:** trilha mobile/evidência
+
+## P-O6R-B07B-S3-PREFIXO-LEGADO (2026-09-06) — chave S3 gravada com prefixo antigo passa a dar 404 — BAIXA
+
+`assertStorageKeyWithinTenant` desconta o `CHECKLIST_STORAGE_S3_PREFIX` **vigente** antes de exigir o tenant no
+primeiro segmento. Se a configuração de prefixo mudar entre a gravação e a leitura, uma chave legada deixa de
+casar e o download responde 404. **Efeito hoje: nulo** — o S3 não está configurado em ambiente algum
+(`.env.example` traz bucket e região vazios), e o provider local não tem prefixo. Consignado por honestidade,
+não por dano medido.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** quem ligar o S3
+
+## P-GOV-FILA-P1-ANTES-DE-P0 (2026-09-06) — um P1 executado com 6 P0 abertos, e a agenda da demo — MÉDIA
+
+**Registro de uma tensão, não uma proposta de solução.** `docs/revisoes/O6R/PLANO_O6R.md:3` manda *"P0 precede
+P1"*. O `B-O6R-07b` carrega **1 P1** enquanto **6 P0** seguem abertos (`kpis-latest.json →
+production_readiness.p0_abertos: 6`): `B-O6R-06` 2 (DIN-005, DIN-007), `B-O6R-04` 2 (DAT-002, DAT-003),
+`B-O6R-03` 1 (DIN-009), `B-O6R-07c` 1 (SEC-002 parcialmente superado, residual em
+`P-O6R-SUBRECURSO-OBJECT-SCOPE`).
+
+O start foi autorizado assim mesmo, **duas vezes**, por porteiro pós-merge:
+`votos/B-O6R-02-ciclo5-consolidado/04-porteiro-pos-merge-ed0a692.md:105-137` (*"LIBERADO COM RESSALVA:
+B-O6R-07b"*, com a tabela mostrando que nenhuma pendência com BLOQUEIA alcança a superfície do 07b) e, antes,
+`votos/O6R-07a/00c-porteiro-pos-merge-369.md:184`.
+
+**Item 2 (acrescentado pela EMENDA E1·5 do plano):** a partir do merge do 07b, **staging e a demo não aceitam
+upload** até o bloco de antivírus real — ver `P-O6R-B07B-STAGING-SEM-UPLOAD`. Isso torna a pergunta de fila
+uma pergunta de **agenda de demonstração**, não só de ordem de correção.
+
+**Nenhuma decisão de fila é tomada por agente.**
+
+**DECISÃO DO DONO — 2026-09-06.** Duas respostas, na ordem em que foram dadas:
+
+1. **Terminar o `B-O6R-07b`** — o custo está afundado e as três cadeiras da junta já mediram. A violação de
+   *"P0 precede P1"* fica **registrada e aceita para este bloco**, não normalizada.
+2. **`B-O6R-06` (`fix/billing-durability`) é o próximo**, e não o `B-O6R-04`. Razão dada pelo dono: *"a
+   apresentação do INVESTIDOR usa componentes reais do sistema"* — e o `Ω6R-DIN-005` é exatamente
+   *"vistoria concluída que ninguém fatura"*: a métrica faturável é best-effort, engole a falha num `.catch()`
+   e o replay idempotente **não republica**, então o subfaturamento é permanente. Com componentes reais em
+   cena, os números que o investidor vê saem errados. O `B-O6R-06` é também o **único bloco que destrava a
+   trilha CHECKLIST P1 por dentro** (5 fatias paradas desde 15/08).
+
+**O `B-O6R-04` não foi descartado** — desce um lugar na fila. Ele segue com 2 P0 (`DAT-002`, `DAT-003`),
+dependência satisfeita desde 19/08 e **sem dono nomeado**.
+
+- **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (terminar o 07b; `B-O6R-06` a seguir) ·
+  **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. A tensão que ela registrava
+  está **resolvida por decisão**, não por medição — que é o desfecho correto para uma pergunta de fila.

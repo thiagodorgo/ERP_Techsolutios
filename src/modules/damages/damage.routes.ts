@@ -5,6 +5,7 @@ import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/p
 import { requireAnyPermission, requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import { sendVerifiedFile } from "../evidence/serve-verified-file.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { DamageController, type DamageServiceResolver } from "./damage.controller.js";
 import { createDefaultDamageService } from "./damage.service.js";
@@ -106,19 +107,12 @@ export function createDamageRouter(
 }
 
 function sendResult(response: Response, result: ControllerResult): void {
+  // B-O6R-07b (Ω6R-SEC-004) — EGRESSO ENDURECIDO. Antes: `Content-Type` do que a LINHA dizia (isto é,
+  // o que o cliente declarou no upload) + `Content-Disposition: inline`. Agora o tipo é re-derivado dos
+  // BYTES no ato do download, e todo arquivo sai como `attachment` — ver serve-verified-file.ts.
   if (result.file) {
     response.status(result.status ?? 200);
-    response.setHeader("Content-Type", result.file.mimeType);
-    if (result.file.sizeBytes !== undefined) {
-      response.setHeader("Content-Length", result.file.sizeBytes.toString());
-    }
-    response.setHeader("Content-Disposition", `inline; filename="${escapeHeaderFileName(result.file.fileName)}"`);
-    if (Buffer.isBuffer(result.file.body)) {
-      response.send(result.file.body);
-      return;
-    }
-
-    result.file.body.pipe(response);
+    void sendVerifiedFile(response, result.file);
     return;
   }
 
@@ -128,8 +122,4 @@ function sendResult(response: Response, result: ControllerResult): void {
   }
 
   response.status(result.status ?? 200).json(result.body ?? { data: result.data });
-}
-
-function escapeHeaderFileName(fileName: string): string {
-  return fileName.replace(/["\\\r\n]/g, "_");
 }

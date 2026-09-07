@@ -4,8 +4,10 @@ import { createDefaultOperatorProfileService } from "../operator-profiles/operat
 import { createDefaultProfessionalStatementService } from "../professional-statements/professional-statement.service.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import { createDefaultWorkOrderService } from "../work-orders/work-order.service.js";
+import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import {
   deleteStoredDamageAttachmentFile,
+  readDamageAttachmentStorageConfig,
   resolveDamageAttachmentDownload,
   saveDamageAttachmentFile,
   type DamageAttachmentDownload,
@@ -311,10 +313,29 @@ export class DamageService {
   ): Promise<DamageAttachment> {
     const damage = await this.getEntity(actor, damageId);
 
+    // B-O6R-07b (Omega6R-SEC-004) — O SCAN NASCE AQUI. Esta via NAO tinha scanner nenhum: nem Noop.
+    // `createUploadedAttachment` ia direto de `getEntity` para `saveDamageAttachmentFile`, e a unica
+    // checagem de tipo era a allowlist contra o MIME DECLARADO no parser. O gate unico roda depois do
+    // `getEntity` (posse antes de verificacao, como nas irmas) e antes do save.
+    const verification = await verifyUploadContent({
+      via: "V5",
+      buffer: upload.file.buffer,
+      declaredMimeType: upload.file.mimeType,
+      allowedMimeTypes: readDamageAttachmentStorageConfig().allowedMimeTypes,
+      scan: {
+        tenantId: actor.tenantId,
+        evidenceId: damage.id,
+        clientEvidenceId: "",
+      },
+    }).catch((error: unknown) => {
+      throw toDamageAttachmentGateError(error);
+    });
+
     const stored = await saveDamageAttachmentFile({
       tenantId: actor.tenantId,
       damageId: damage.id,
       upload: upload.file,
+      verification,
     });
 
     try {
@@ -638,4 +659,21 @@ export function deriveStatementDebit(
     firstDueDate,
     hasSettled: entries.some((entry) => entry.status === "settled"),
   };
+}
+
+/**
+ * B-O6R-07b — recusa neutra do gate -> familia DESTA via (plano §4). As familias 422/503 sao NOVAS aqui
+ * (a via nao tinha scanner), espelhando nominalmente o modulo `attachments` (Omega4C PR-01): mesmos
+ * `reason`, mesma mensagem, mesma posicao — nada persistido, nenhum orfao no storage.
+ */
+function toDamageAttachmentGateError(error: unknown): unknown {
+  if (!(error instanceof UploadGateError)) return error;
+  const status = uploadGateStatus(error.kind);
+  if (status === 422) {
+    return new DamageError(422, "DAMAGE_ATTACHMENT_REJECTED", "evidence_rejected", "Attachment failed the malware scan.");
+  }
+  if (status === 503) {
+    return new DamageError(503, "DAMAGE_ATTACHMENT_SCAN_UNAVAILABLE", "scan_unavailable", "Attachment scanner is unavailable; retry later.");
+  }
+  return new DamageError(415, "DAMAGE_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE", error.kind, error.detail);
 }

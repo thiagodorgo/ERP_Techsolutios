@@ -1,0 +1,118 @@
+{
+  "junta": "B-O6R-07b",
+  "cadeira": "C1 · segurança de conteúdo",
+  "agente": "agente-secops",
+  "modelo": "claude-fable-5-1 (herdado da sessão; redisparo após queda #1 por 429)",
+  "disparo": "redisparo — sem evidência herdada (queda #1 não mediu nada)",
+  "head_codigo": "a2988b5",
+  "head_registro": "cec77b40",
+  "base": "e55245a",
+  "status": "CONCLUIDO",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": 1,
+      "titulo": "GATE e MARCA — cast, reuso, parser novo, ordem dos gates (A8–A10, M-B1…M-B6, censo C1–C6); procurar o 7º atalho da marca",
+      "status": "MEDIDO",
+      "veredito_parcial": "APROVADO",
+      "achados": [
+        {
+          "gravidade": "BAIXA",
+          "escopo": "dentro-do-bloco",
+          "evidencia": "M-B3 → corpo {code:BAD_REQUEST,reason:invalid_request,message:upload_not_verified:brand}",
+          "motivo": "UploadGateError lançado fora do .catch do gate não é traduzido pela via; só alcançável por defeito de código; sem vazamento. Observação de ata, não pendência."
+        }
+      ],
+      "medicoes": [
+        "baseline 7 suítes 138/138 + check ec0 no worktree próprio",
+        "ataque à marca: 6 do crítico + 15 candidatos — nenhum atalho; só mesma instância+mesmos bytes aceita",
+        "M-B3: tsc ec0, C6 verde, rotas 35/36 (A3 V5 → upload_not_verified:brand)",
+        "M-B9: gate 15/21 — B7/B8/B9/B11 vermelhos",
+        "M-B1: tsc ec2 TS2345",
+        "M-B5/M-B6: censo 6/8, C1+C3 nomeiam o arquivo"
+      ],
+      "decisao_vista": "C6 verde na M-B3 e guard NÃO apertado: decisão CORRETA (E1·3 rebaixou C6 a higiene; runtime pegou a mutação)"
+    },
+    {
+      "id": 2,
+      "titulo": "SNIFF — poliglotas, truncados, PDF com lixo, WebP VP8L/VP8X, SVG por env (M-B8); aceite promete mais do que entrega?",
+      "status": "MEDIDO",
+      "veredito_parcial": "APROVADO",
+      "achados": [],
+      "medicoes": [
+        "sonda própria 39 casos: poliglotas/truncados/WebP/SVG/HTML coerentes com tipo-não-inocuidade; nenhum buffer casa 2 tipos",
+        "scanner-failclosed 13/13 (M-B8 legado, M-B8b, M-B8c, normalização)",
+        "mutação E1 (refinamento só chave nova) → 11/13: M-B8 e caso dev/test vermelhos",
+        "A11 gate + A11-rota verdes; allowlist das 5 vias rastreada até a cadeia validada no boot"
+      ]
+    },
+    {
+      "id": 3,
+      "titulo": "EGRESSO — D1–D6, header injection no filename, owner-portal INTOCADO em src/, E5 herda por chamada",
+      "status": "MEDIDO",
+      "veredito_parcial": "APROVADO com achados",
+      "achados": [
+        "F3.1",
+        "F3.2",
+        "F3.3"
+      ],
+      "medicoes": [
+        "congelados intocados por arvore: owner-portal/impound/auth/prisma/mobile/frontend = 0 arquivos; hash da subarvore owner-portal identico (69304ac3)",
+        "getObject( = 7 sitios de codigo (interface + 2 impls + 4 resolvers) + 1 comentario; E5 chama resolveAttachmentDownload (owner-portal.service.ts:2,442)",
+        "download-hardened 23/23; fuzz proprio 38 nomes hostis: 36 ok, 0 injecoes; 2 BAIXA (teto 100 furado com extensao >100; lone surrogate -> destroy)",
+        "T1-T8 executados ao nivel do RESOLVER: 4/4 recusam chave alheia com 404 attachment_file_not_found e servem a propria",
+        "guard removido em V2 -> T9 vermelho; em V4 e V5 -> SO o censo C7 (texto) fica vermelho; 6 suites executadas seguem verdes",
+        "M1->E4 EM ROTA: JSON com metadata.storageKey de outro tenant -> 201; download HEAD = 404; com guard V4 removido = 200 + corpo do outro tenant (12 B image/png)"
+      ]
+    }
+  ],
+  "decisoes_vistas_em_ata": [
+    "503 em TODO upload em producao E staging a partir do merge (env.ts: EVIDENCE_SCANNER default unavailable quando NODE_ENV=production; fly.staging.toml:31 NODE_ENV=production; scripts/smoke-staging.mjs com 0 referencias a upload -> CI verde, pane so para quem usa). Decisao do dono, VISTA por esta cadeira, nao julgada.",
+    "Censo C6 verde na M-B3 e guard NAO apertado: decisao CORRETA (E1·3 rebaixou C6 a higiene; runtime pegou a mutacao 35/36).",
+    "Omega6R-SEC-004 fecha como parcialmente_superado: honesto (noop segue default em dev/test por desenho); a unica porta para desfazer e promover a fechado no backfill sem AV — fica na ata."
+  ],
+  "evidencia": "agent-orchestration/omega/juntas/votos/B-O6R-07b/C1-secops-evidencia.md",
+  "quorum_nota": "Unanimidade de 3. Este voto NAO reprova: nenhum achado atinge VETO do contrato secops (segredo versionado, gate de env afrouxado, CORS/TLS, PII/path em resposta) nem gravidade bloqueia dentro-do-bloco. O defeito de seguranca encontrado (F3.1) e pre-existente com data de origem e o bloco o FECHA na leitura; o que e dentro-do-bloco e registro (censo/pendencias) e prova (teste), nao codigo.",
+  "achados": [
+    {
+      "id": "F3.1",
+      "gravidade": "ALTA",
+      "escopo": "MISTO: defeito pre-existente (bfc5c7f7 2026-06-07 DTO metadata; 2530850a 2026-06-07 resolver le metadata.storageKey; 9e31a245 2026-06-08 readStorageProvider) | censo/registro dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia": "checklist.validator.ts:222-231 metadata: z.record(z.unknown()) do corpo -> checklist-prisma.repository.ts:853 grava -> checklist-attachment.storage.ts:212,279-283 le storageKey/storageDriver. Sonda em rota (evidencia 3.e): HEAD 404; guard V4 removido -> 200 com objeto do tenant B. Plano §2.3 M1 e pendencia P-O6R-B07B-CHECKLIST-JSON-FILEURL (pendencias.md:7007-7011) dizem SEM storageKey; P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE conta 3 sitios de attachment.create( -> M1 (tabela checklist_attachments) fica fora do criterio de fechamento.",
+      "motivo": "A classe linha-stored-com-chave-do-cliente tem um terceiro membro que ninguem censou (planejador, critico r1/r2, dev, inspetor). O bloco FECHA a metade cross-tenant de M1 por heranca (guard em E4) — ganho de seguranca nao nomeado — mas o registro sai com premissa falsa e criterio de fechamento que permite declarar a classe resolvida com M1 aberto: e o A1 do critico pela terceira vez na rodada. Pre-existente nao reprova (§C7.1-ter(a)); vira pendencia nomeada. O que resta aberto: WRITE (cliente escreve chave) e object-scope intra-tenant (classe P-O6R-SUBRECURSO-OBJECT-SCOPE)."
+    },
+    {
+      "id": "F3.2",
+      "gravidade": "MEDIA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia": "guard removido em V4: censo 7/8 (C7) e download-hardened 23/23, mime-sniff-routes 36/36, owner-portal-photos 18/18, checklist-attachments 2/2, checklist-routes 15/15; idem V5. T1-T8 (download-hardened.test.ts:198-283) exercitam isStorageKeyWithinTenant, nao os resolvers; cabecalho l.25-27 afirma casos em rota que nao existem para chave alheia; log do dev declara 3 divergencias (A11, D6, A5.2), nao esta.",
+      "motivo": "A E1·10 prometia T1-T8 nos 4 resolvers com mutacao guard-removido -> 200; para E2/E3/E4 a unica falsificacao e tripwire de texto (C7). E4 e justamente o resolver onde o cliente escreve a chave hoje (F3.1). Codigo correto por execucao propria (3.c), logo MEDIA e nao ALTA."
+    },
+    {
+      "id": "F3.3",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia": "serve-verified-file.ts:73-77: extensao >100 chars -> slice(0, negativo) -> fallback de 402 chars (a. + 300 b); alcancavel: sanitizeFileName permite 120 (a. + 118 b -> 220). serve-verified-file.ts:62: lone surrogate -> encodeURIComponent lanca URIError -> catch -> response.destroy(). Fuzz 38 nomes: 0 injecoes.",
+      "motivo": "Teto cosmetico furado (so ASCII, header valido) e falha fechada (conexao derrubada, nenhum header). Informativo."
+    },
+    {
+      "id": "F1.1",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia": "M-B3 (cast em V5): rotas 35/36, corpo {code:BAD_REQUEST, reason:invalid_request, message:upload_not_verified:brand}",
+      "motivo": "UploadGateError lancado de save*File fora do .catch do gate nao e traduzido pela via; so alcancavel por defeito de codigo; nada gravado; nada vazado. Nota de ata."
+    }
+  ],
+  "pendencias_nomeadas": [
+    "F3.1: reescrever P-O6R-B07B-CHECKLIST-JSON-FILEURL (M1 escreve metadata.storageKey/storageDriver; leitura cross-tenant fechada pelo 07b em E4; WRITE e object-scope abertos) e incluir M1 na classe P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE com criterio de fechamento que o conte (dono: quem o orquestrador designar — trilha CHECKLIST ou B-O6R-07c)",
+    "F3.2: falsificacao executada do guard em E2/E3/E4 (dono: bloco seguinte da trilha)",
+    "F3.3 e F1.1: notas de ata, sem dono"
+  ],
+  "papeis": "Quem acha nao conserta: nenhuma correcao proposta; nenhuma linha de src/ ou tests/ tocada no worktree do bloco (unicos arquivos meus: C1-secops-evidencia.md e C1-secops-voto.json). Mutacoes so no worktree proprio, todas revertidas (git status = 0 mods apos cada).",
+  "terreno": "worktree proprio .claude/worktrees/o6r07b-jur-c1 @ a2988b5, npm ci proprio (sem junction), prisma generate; sem cluster Postgres (nenhuma suite do mandato abre banco); erp-postgres/erp-redis intocados; demo/investidor, gov-descuido, san2-r, status-read intocados; storage/checklist-attachments do worktree proprio removido; worktree removido por git worktree remove --force ao fim.",
+  "scripts": "copias em <scratchpad da sessao>/c1/: brand-attack.ts, sniff-probe.ts, cd-fuzz.ts, resolver-probe.ts, e4-probe.test.ts, mb3.cjs, mb9.cjs, mb8.cjs, guard-off*.cjs"
+}

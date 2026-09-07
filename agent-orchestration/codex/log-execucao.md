@@ -4158,3 +4158,61 @@ bloco foi verificada por um terceiro que não a tinha visto** — o parecer dele
 a **`fechado`**, com `fechado_em`/`fechado_por`/`evidencia_fechamento` — o painel vai de **4 para 11** P0
 corrigidos na `main`, de 17. E `P-O6R-B02-SUITES-LIST-CI` fecha **em definitivo**: a condição que faltava
 era o job `backend-postgres` verde no CI do PR, e o #371 a cumpriu.
+
+---
+
+## B-O6R-07b — o tipo do arquivo deixa de ser o que o cliente escreveu no envelope (2026-09-06)
+
+Branch `fix/o6r07b-uploads`, base `origin/main` = `e55245a` (#379). Sub-bloco 07b do `B-O6R-07`.
+
+**O que o bloco descobriu antes de consertar, e que não estava no enunciado do achado.** O
+`Ω6R-SEC-004` fala de "scanner default sempre clean". A leitura do plano mediu que **duas das cinco
+vias de upload não tinham scanner NENHUM** — nem Noop: `checklist.service.ts` ia direto de
+`assertRunComponent` para o save, e `damage.service.ts` de `getEntity` para o save. O `.scan(` sobre
+`EvidenceScanner` existia em **exatamente 3** sítios em todo o `src/`. Não era "tornar fail-closed" nessas
+duas: era **introduzir** a verificação.
+
+**O ataque que mudou o desenho.** O plano previa a marca de verificação como "objeto com propriedade de
+chave `Symbol` + `sha256` + `sizeBytes`, congelado". O `critico-adversarial` a **quebrou por execução**,
+com uma linha e **sem nenhum cast**: `{ ...marca, sha256: sha(hostil), sizeBytes: hostil.length }` — o
+spread copia propriedades próprias enumeráveis **inclusive as de chave `Symbol`**, e a checagem de sha lia
+a propriedade do próprio objeto. `tsc` verde, censo de casts verde, assert verde, provider gravando. A
+emenda trocou o critério de identidade: objeto **opaco e congelado sem propriedade alguma** + `WeakMap`
+privado do módulo, com os fatos lidos **do registro** e **devolvidos** ao chamador. Isso mata a classe
+inteira de derivação (spread, `Object.assign`, `Object.create`, `structuredClone`, JSON, `Proxy`), e a
+mutação **M-B9** — voltar a identidade por conteúdo — reabre o ataque e derruba 4 dos casos. O aceite mede
+o que promete.
+
+**A lição que fica, e que não é sobre este bloco.** O censo de casts (`as UploadVerification`) parecia ser
+a prova de que a marca não era forjável. Não era: o ataque não usava cast nenhum e passava por ele
+tranquilo. Medido de novo na bateria de mutações deste PR — na M-B3 o censo C6 ficou **VERDE** enquanto o
+assert de runtime ficou vermelho, porque o cast que usei (`as unknown as typeof verification`) não casa com
+o texto que o guard procura. **Guard de texto é tripwire, não prova**, e apertá-lo para caçar uma grafia
+específica seria teatro. Está escrito no próprio arquivo do censo.
+
+**Três lugares onde o teste divergiu do plano, cada um por medição.** (1) O caso A11 saiu da rota e foi
+para o nível do gate: em rota ele ficava verde **pelo motivo errado** — a allowlist vem de `env`, cujo
+snapshot congela no primeiro import, então quem recusava era o parser com a allowlist antiga e o gate nem
+era alcançado. (2) O caso D6 virou teste **permanente** em vez de mutação de sessão: a suíte de egresso roda
+contra um express mínimo, sem helmet e sem os routers do produto, e se o `nosniff` só existisse pelo helmet
+global sumiria ali. (3) O A5.2 recusa com `unsupported_media_type` e não `content_type_mismatch` — a ordem
+do gate é (1) reconheço? (2) está na allowlist DA VIA? (3) bate com o declarado?, e a assinatura PDF morre
+no (2). Minha asserção inicial é que estava errada.
+
+**O vermelho-controle foi executado, não inferido.** Um worktree separado da base `e55245a`, com `npm ci`
+próprio, recebeu uma sonda com as asserções **invertidas** — afirmando o defeito. **6/6 passaram lá:** `MZ`
+declarado `image/png` entrava com 201; bytes PNG declarados `image/jpeg` entravam com 201 e gravavam
+`image/jpeg`; 4 bytes truncados entravam com 201; PDF declarado `image/png` entrava com 201; a via de dano
+aceitava `MZ` por não ter scanner; e o download respondia `inline` com o tipo da linha.
+
+**O que o bloco NÃO fechou, dito em voz alta.** Com `noop` sendo o default de `development`/`test` por
+desenho, o primeiro mecanismo do achado segue verdadeiro fora de produção — por isso `parcialmente_superado`
+e não `fechado`, e por isso `p1_fechados` **não se move**. A consequência é operacional: **produção e
+staging recusam todo upload com 503** até o bloco de antivírus real, e o smoke de deploy **não faz upload**,
+então o CI fica verde e a pane só é visível a quem usa. Duas pendências nomeiam isso
+(`P-O6R-B07B-SCANNER-AV-REAL`, ALTA; `P-O6R-B07B-STAGING-SEM-UPLOAD`, agenda do dono) e a decisão de fila
+vai para `P-GOV-FILA-P1-ANTES-DE-P0`.
+
+Números: suíte plena **2815/2817 → 2936/2938**, `ec=0`, Δ +121 que fecha por arquivo. `blocks_completed`
+160 → 161. Duas PDs novas em `docs/omega-pd.md`, fechadas **antes** da primeira linha dos módulos que
+dependiam delas. Cluster descartável próprio (`:56436`/`:56383`); a base viva não recebeu um comando.

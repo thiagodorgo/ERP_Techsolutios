@@ -1,7 +1,22 @@
 import { config } from "dotenv";
 import { z } from "zod";
 
+import { SNIFFABLE_MIME_TYPES, type SniffableMimeType } from "../modules/evidence/content-sniff.js";
+
 config();
+
+/**
+ * B-O6R-07b (EMENDA E1·4) — a allowlist DEFAULT do storage de anexos, em UM lugar só.
+ *
+ * Ela era um literal repetível: o `??` que resolve a allowlist efetiva o escrevia inline, e o gate de
+ * boot precisaria escrevê-lo de novo. Duas cópias da mesma verdade de segurança divergem — foi assim
+ * que o gate original ficou lendo UMA das DUAS chaves de env. Aqui a cadeia
+ * `NOVA ?? LEGADA ?? DEFAULT` é a mesma nos dois pontos, com esta constante no fim das duas.
+ *
+ * O conteúdo é exatamente `SNIFFABLE_MIME_TYPES` — a allowlist default é, por construção, o conjunto que
+ * o sniff sabe verificar. Se algum dia divergirem, o próprio gate G-EVIDENCE-SNIFFABLE recusa o boot.
+ */
+export const DEFAULT_CHECKLIST_STORAGE_ALLOWED_MIME_TYPES = SNIFFABLE_MIME_TYPES.join(",");
 
 /**
  * Flag booleana de ambiente parseada de forma ESTRITA. `z.coerce.boolean()` usa `Boolean(value)`,
@@ -243,6 +258,12 @@ export const envSchema = z.object({
   CHECKLIST_ATTACHMENT_STORAGE_PATH: z.string().trim().min(1).optional(),
   CHECKLIST_ATTACHMENT_MAX_SIZE_MB: z.coerce.number().positive().max(100).optional(),
   CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES: z.string().trim().min(1).optional(),
+  // B-O6R-07b (Ω6R-SEC-004) — qual scanner de conteúdo o registro único
+  // (`src/modules/evidence/evidence-scanner.factory.ts`) instala. NÃO tem `.default()` de propósito: o
+  // default é derivado do `NODE_ENV` lá embaixo (`production` → `unavailable`; dev/test → `noop`), para
+  // que ESQUECER a variável em produção caia no lado seguro. `noop` em produção é recusado no BOOT pelo
+  // gate G-EVIDENCE-SCANNER do `superRefine` — ver o comentário lá.
+  EVIDENCE_SCANNER: z.enum(["noop", "unavailable"]).optional(),
   AWS_CUR_IMPORT_ENABLED: z.coerce.boolean().default(false),
   AWS_CUR_S3_BUCKET: z.string().trim().optional().default(""),
   AWS_CUR_S3_PREFIX: z.string().trim().optional().default(""),
@@ -515,6 +536,64 @@ export const envSchema = z.object({
         "Ω6R-DAT-001: REDIS_URL é obrigatória em produção, precisa declarar um host e não pode apontar para um host local — a fila de jobs ficaria isolada dentro do contêiner e o que estivesse enfileirado se perderia no restart. A recusa é por ENDEREÇO (qualquer notação do inet_aton que caia em 127.0.0.0/8 ou em 0.0.0.0 — inclusive as formas curtas 127.1/127.0.1, o inteiro 2130706433 e as formas octal/hex — mais o IPv4-mapeado ::ffff:) e por NOME conhecido (localhost, ::1, ::, host.docker.internal, gateway.docker.internal). Nome que só se revela local na resolução de DNS não é verificado aqui.",
     });
   }
+
+  // G-EVIDENCE-SCANNER (Ω6R-SEC-004, B-O6R-07b §3.2) — produção NÃO sobe com o scanner que diz "limpo"
+  // para qualquer byte. O default por ambiente já resolve `unavailable` em produção; este gate fecha a
+  // porta de quem SETA `noop` de propósito para "destravar o upload". Não há válvula: uma flag
+  // "permitir noop em produção" seria o achado com outro nome (plano §E1·9). Enquanto
+  // `P-O6R-B07B-SCANNER-AV-REAL` (antivírus real = serviço externo → junta-5) não existir, produção e
+  // staging recusam todo upload com 503 — declarado, não acidental.
+  if (value.NODE_ENV === "production" && value.EVIDENCE_SCANNER === "noop") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["EVIDENCE_SCANNER"],
+      message:
+        "Ω6R-SEC-004: EVIDENCE_SCANNER=noop is not allowed in production. O NoopEvidenceScanner responde 'clean' para qualquer conteúdo — é o primeiro dos três mecanismos do achado. Em produção o valor é 'unavailable' (todo upload responde 503, nada é gravado) até existir um antivírus real (P-O6R-B07B-SCANNER-AV-REAL).",
+    });
+  }
+
+  // G-EVIDENCE-SNIFFABLE (Ω6R-SEC-004, B-O6R-07b §3.3 + EMENDA E1·4) — a allowlist de MIME do storage é
+  // configurável por env, e o gate de upload só sabe VERIFICAR os tipos que o sniff de assinatura
+  // reconhece. Ligar `image/svg+xml`, `text/html` ou `image/heic` por env criaria um tipo aceito que
+  // ninguém consegue conferir nos bytes.
+  //
+  // POR QUE A CADEIA E NÃO A CHAVE (achado A5 do crítico, rodada 1): a allowlist EFETIVA tem DOIS nomes
+  // de env — o novo `CHECKLIST_STORAGE_ALLOWED_MIME_TYPES` e o legado
+  // `CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES` (vivo em `.env.example`) —, resolvidos pelo `??` lá embaixo
+  // (`CHECKLIST_STORAGE_ALLOWED_MIME_TYPES` do objeto exportado). Um refinamento que lesse só a chave
+  // nova ficaria MUDO para quem escrevesse svg no nome legado: o gate existia e a configuração passava.
+  // Por isso aqui se calcula a MESMA cadeia, com a MESMA constante de default, e a mensagem nomeia
+  // tanto a entrada ofensora quanto o NOME DE ENV que a trouxe.
+  //
+  // NORMALIZAÇÃO: compara com a mesma que o consumidor aplica em
+  // `checklist-storage.factory.ts` (`trim().toLowerCase()`), senão `IMAGE/SVG+XML` passaria o gate de
+  // boot e chegaria normalizado à allowlist efetiva (nota residual R2·2 do crítico).
+  //
+  // Este gate é a camada BARULHENTA (o operador descobre no boot, não no primeiro 415). A camada que
+  // realmente impede o byte de entrar é outra e independente: `sniffMimeType` nunca devolve um tipo fora
+  // de SNIFFABLE_MIME_TYPES, então um tipo não-sniffável na allowlist é entrada MORTA — é o caso A11.
+  const effectiveAllowedMimeSource =
+    value.CHECKLIST_STORAGE_ALLOWED_MIME_TYPES !== undefined
+      ? ("CHECKLIST_STORAGE_ALLOWED_MIME_TYPES" as const)
+      : value.CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES !== undefined
+        ? ("CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES" as const)
+        : ("<default>" as const);
+  const effectiveAllowedMimeTypes =
+    value.CHECKLIST_STORAGE_ALLOWED_MIME_TYPES ??
+    value.CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES ??
+    DEFAULT_CHECKLIST_STORAGE_ALLOWED_MIME_TYPES;
+  const notSniffable = effectiveAllowedMimeTypes
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((entry) => !SNIFFABLE_MIME_TYPES.includes(entry as SniffableMimeType));
+  if (notSniffable.length > 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [effectiveAllowedMimeSource === "<default>" ? "CHECKLIST_STORAGE_ALLOWED_MIME_TYPES" : effectiveAllowedMimeSource],
+      message: `Ω6R-SEC-004: ${effectiveAllowedMimeSource} declara tipo(s) que o gate de upload não sabe verificar por assinatura de bytes: ${notSniffable.join(", ")}. Tipos verificáveis: ${SNIFFABLE_MIME_TYPES.join(", ")}.`,
+    });
+  }
 });
 
 const parsedEnv = envSchema.parse(process.env);
@@ -548,6 +627,14 @@ export const env = {
   CHECKLIST_STORAGE_ALLOWED_MIME_TYPES:
     parsedEnv.CHECKLIST_STORAGE_ALLOWED_MIME_TYPES ??
     parsedEnv.CHECKLIST_ATTACHMENT_ALLOWED_MIME_TYPES ??
-    "image/jpeg,image/png,image/webp,application/pdf",
+    DEFAULT_CHECKLIST_STORAGE_ALLOWED_MIME_TYPES,
+  // B-O6R-07b (Ω6R-SEC-004) — DEFAULT DO SCANNER POR AMBIENTE, e não por quem chama.
+  // `production` (que é o que `fly.staging.toml:31` e `Dockerfile:25` declaram — staging INCLUSO) →
+  // `unavailable`: fail-closed, todo upload responde 503 e nada é gravado. `development`/`test` →
+  // `noop`, para a máquina de desenvolvimento e a suíte continuarem funcionando.
+  // ESQUECER a variável em produção cai em `unavailable` — o lado seguro. SETAR `noop` em produção não
+  // sobe: o gate G-EVIDENCE-SCANNER do superRefine recusa o boot.
+  EVIDENCE_SCANNER:
+    parsedEnv.EVIDENCE_SCANNER ?? (parsedEnv.NODE_ENV === "production" ? "unavailable" : "noop"),
 };
 

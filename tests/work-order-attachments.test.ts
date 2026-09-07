@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
+import { PNG_BYTES, uploadFile } from "./helpers/upload-fixtures.js";
+
 // Ω3-d — service/scan/idempotência/download-gate/delete lógico (memory).
 
 async function setup() {
@@ -30,7 +32,8 @@ function actor(tenantId = randomUUID()) {
 
 const upload = (clientActionId?: string) => ({
   clientActionId,
-  file: { buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]), originalName: "f.png", mimeType: "image/png", sizeBytes: 4 },
+  // B-O6R-07b: troca de FIXTURE (nenhuma assercao mudou) — ver attachments-crud.test.ts.
+  file: uploadFile(PNG_BYTES, "f.png", "image/png"),
 });
 
 test("Noop default → clean → grava status=stored", async () => {

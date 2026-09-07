@@ -10,6 +10,7 @@ import {
   type S3ClientConfig,
 } from "@aws-sdk/client-s3";
 
+import { assertUploadVerification } from "../../evidence/upload-gate.js";
 import { ChecklistError } from "../checklist.types.js";
 import type {
   ChecklistStorageObject,
@@ -48,6 +49,10 @@ export class S3ChecklistStorageProvider implements ChecklistStorageProvider {
   }
 
   async save(input: SaveChecklistStorageObjectInput): Promise<StoredChecklistStorageObject> {
+    // B-O6R-07b — mesma barreira de runtime do provider local: sem marca válida PARA ESTES BYTES não há
+    // `PutObjectCommand`. E o `ContentType` gravado no objeto passa a ser o VERIFICADO — era ele que
+    // levava o tipo declarado pelo cliente para dentro do S3 e voltava no `getObject`.
+    const facts = assertUploadVerification(input.verification, input.buffer);
     const storageKey = this.buildStorageKey(input);
 
     await this.client.send(
@@ -55,7 +60,7 @@ export class S3ChecklistStorageProvider implements ChecklistStorageProvider {
         Bucket: this.config.bucket,
         Key: storageKey,
         Body: input.buffer,
-        ContentType: input.mimeType,
+        ContentType: facts.mimeType,
         ContentLength: input.sizeBytes,
         ChecksumSHA256: Buffer.from(input.checksumSha256, "hex").toString("base64"),
         Metadata: {
@@ -71,7 +76,7 @@ export class S3ChecklistStorageProvider implements ChecklistStorageProvider {
     return {
       fileUrl: `s3://${this.config.bucket}/${storageKey}`,
       fileName: input.safeFileName,
-      mimeType: input.mimeType,
+      mimeType: facts.mimeType,
       sizeBytes: input.sizeBytes,
       checksumSha256: input.checksumSha256,
       storageProvider: this.name,

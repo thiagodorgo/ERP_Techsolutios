@@ -11,7 +11,14 @@ import {
   readChecklistStorageConfig,
 } from "../checklists/storage/checklist-storage.factory.js";
 import type { ChecklistStorageProviderName } from "../checklists/storage/checklist-storage.types.js";
-import { NoopEvidenceScanner, type EvidenceScanner } from "../evidence/evidence-storage.js";
+import {
+  resetEvidenceScannerForTests,
+  resolveEvidenceScanner,
+  setEvidenceScannerForTests,
+} from "../evidence/evidence-scanner.factory.js";
+import type { EvidenceScanner } from "../evidence/evidence-storage.js";
+import { assertStorageKeyWithinTenant } from "../evidence/storage-key-scope.js";
+import { assertUploadVerification, type UploadVerification } from "../evidence/upload-gate.js";
 import { WorkOrderAttachmentError, type WorkOrderAttachment } from "./work-order-attachment.types.js";
 
 // Ω3-d — anexo de OS. REUSA o checklist STORAGE PROVIDER (D-014, sem storage/presigned novo) para o
@@ -46,16 +53,16 @@ export type WorkOrderAttachmentDownload = {
   readonly sizeBytes?: number;
 };
 
-// Scanner injetável (R2 do crítico): default Noop (clean); FakeEvidenceScanner em teste.
-let scanner: EvidenceScanner = new NoopEvidenceScanner();
+// B-O6R-07b (§3.2) — wrappers finos do registro único (`evidence-scanner.factory.ts`). O
+// `new NoopEvidenceScanner()` como default de módulo morreu aqui, como nas outras duas vias.
 export function configureWorkOrderAttachmentScannerForTests(next: EvidenceScanner): void {
-  scanner = next;
+  setEvidenceScannerForTests(next);
 }
 export function resetWorkOrderAttachmentScannerForTests(): void {
-  scanner = new NoopEvidenceScanner();
+  resetEvidenceScannerForTests();
 }
 export function getWorkOrderAttachmentScanner(): EvidenceScanner {
-  return scanner;
+  return resolveEvidenceScanner();
 }
 
 export function isMultipartWorkOrderAttachmentRequest(request: Request): boolean {
@@ -151,9 +158,13 @@ export async function saveWorkOrderAttachmentFile(input: {
   readonly tenantId: string;
   readonly workOrderId: string;
   readonly upload: WorkOrderAttachmentUpload["file"];
+  /** B-O6R-07b — marca do gate; sem ela isto não compila (§3.4). */
+  readonly verification: UploadVerification;
 }): Promise<StoredWorkOrderAttachmentFile> {
+  // Extensão do nome saneado pelo tipo VERIFICADO, nunca pelo declarado.
+  const facts = assertUploadVerification(input.verification, input.upload.buffer);
   const checksum = createHash("sha256").update(input.upload.buffer).digest("hex");
-  const fileName = sanitizeFileName(input.upload.originalName, input.upload.mimeType);
+  const fileName = sanitizeFileName(input.upload.originalName, facts.mimeType);
   const stored = await getDefaultChecklistStorageProvider().save({
     tenantId: input.tenantId,
     // `workOrderId` é a chave de partição do storage (slot `runId` do provider).
@@ -161,9 +172,9 @@ export async function saveWorkOrderAttachmentFile(input: {
     buffer: input.upload.buffer,
     originalName: input.upload.originalName,
     safeFileName: fileName,
-    mimeType: input.upload.mimeType,
     sizeBytes: input.upload.sizeBytes,
     checksumSha256: checksum,
+    verification: input.verification,
   });
 
   return {
@@ -190,6 +201,11 @@ export async function resolveWorkOrderAttachmentDownload(attachment: WorkOrderAt
   if (!storageProvider || !storageKey) {
     throw new WorkOrderAttachmentError(404, "WORK_ORDER_ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found.");
   }
+  // B-O6R-07b (E1·2) — a chave tem de ficar dentro do tenant DA LINHA antes de qualquer leitura.
+  assertStorageKeyWithinTenant(
+    { storageKey, tenantId: attachment.tenantId, provider: storageProvider },
+    () => new WorkOrderAttachmentError(404, "WORK_ORDER_ATTACHMENT_NOT_FOUND", "attachment_file_not_found", "Attachment file not found."),
+  );
   const object = await createChecklistStorageProviderByName(storageProvider).getObject({ storageKey });
   return {
     body: object.body,

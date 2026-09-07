@@ -50,6 +50,7 @@ import {
   resetJurisdictionRuntimeForTests,
 } from "../src/modules/jurisdiction/jurisdiction.service.js";
 import { saveAttachmentFile } from "../src/modules/attachments/attachment.storage.js";
+import { createUploadVerificationForTests } from "../src/modules/evidence/upload-gate.js";
 import type { ImpoundActorContext } from "../src/modules/impound/impound.types.js";
 
 const TENANT = randomUUID();
@@ -156,6 +157,10 @@ async function seedPhoto(processId: string, buffer: Buffer, mimeType: string): P
     entityType: "impound_intake_inspection",
     entityId: inspection.id,
     upload: { buffer, originalName: `foto.${mimeType === "image/png" ? "png" : "jpg"}`, mimeType, sizeBytes: buffer.length },
+    // B-O6R-07b: TROCA DE MARCA (nenhuma assercao mudou). Este harness chama `saveAttachmentFile`
+    // DIRETO, sem passar por rota, entao a marca vem do helper de teste do gate. Os bytes sao reais
+    // (jimp) e o tipo declarado bate com eles.
+    verification: createUploadVerificationForTests(buffer, mimeType === "image/png" ? "image/png" : "image/jpeg"),
   });
   await impound.addInspectionPhoto(actor(), processId, {
     set: "FRONT",
@@ -362,6 +367,61 @@ test("(3) cache: opaqueRef inválido NUNCA povoa o cache; opaqueRef válido povo
     assert.equal(ok2.status, 200);
     assert.equal(photoCache.sizeForTests, 1);
     assert.deepEqual(ok1.buffer, ok2.buffer, "cache HIT devolve o MESMO buffer já minimizado");
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// T9 (B-O6R-07b · EMENDA E1·2) — E5 herda o guard de prefixo de tenant SEM uma linha em owner-portal/**
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+test("T9 [B-O6R-07b] foto cuja storage_key aponta para OUTRO tenant → not_found (E5 herda o guard)", async () => {
+  // POR QUE ESTE CASO EXISTE, medido pelo `critico-adversarial` (rodada 1, achado A2): as duas rotas de
+  // pátio que gravam `attachment` (`.../inspection/photos` e `.../notifications/:id/issue`) aceitam
+  // `storage_key` do CORPO da requisição, e `owner-portal.service.ts` monta um `Attachment` sintético
+  // com a chave DA LINHA e chama `resolveAttachmentDownload`. O provider local só impede sair do
+  // diretório-base — não confere o prefixo de tenant. Um cliente que escrevesse `outroTenant/…` fazia o
+  // portal servir bytes alheios, re-codificados e tudo.
+  //
+  // O conserto NÃO tocou `src/modules/owner-portal/**` (PROIBIDO pelo §5: E5 foi endurecida por junta-5
+  // no Ω5P PR-17b): o guard vive nos 4 resolvers de download, e E5 o herda POR CHAMADA. Este caso é a
+  // prova executada dessa herança.
+  //
+  // VERMELHO-CONTROLE na base `e55245a`: 200, com a foto do outro tenant re-codificada e entregue.
+  const { service } = buildHarness();
+  const seeded = await seedProcessWithSession({ plate: "TNT1A11", renavam: "70707070707" });
+  const png = await makePngBuffer(120, 90);
+
+  // Um objeto REAL, gravado sob a chave de OUTRO tenant.
+  const foreignTenant = randomUUID();
+  const impound = createMemoryImpoundService();
+  const inspection = await impound.saveInspection(actor(), seeded.processId, {});
+  const foreign = await saveAttachmentFile({
+    tenantId: foreignTenant,
+    entityType: "impound_intake_inspection",
+    entityId: inspection.id,
+    upload: { buffer: png, originalName: "alheia.png", mimeType: "image/png", sizeBytes: png.length },
+    verification: createUploadVerificationForTests(png, "image/png"),
+  });
+  assert.equal(foreign.storageKey.startsWith(`${foreignTenant}/`), true, "a chave alheia tem de existir de verdade");
+
+  // A linha do processo (tenant do portal) aponta para a chave ALHEIA — é o que as rotas de pátio
+  // permitem hoje, porque aceitam `storage_key` do corpo.
+  await impound.addInspectionPhoto(actor(), seeded.processId, {
+    set: "FRONT",
+    file_url: foreign.fileUrl,
+    file_name: foreign.fileName,
+    content_type: foreign.contentType,
+    storage_provider: foreign.storageProvider,
+    storage_key: foreign.storageKey,
+  });
+
+  await withApp(service, async (baseUrl) => {
+    const refs = await fetchOpaqueRefs(baseUrl, seeded.session);
+    assert.equal(refs.length, 1, "só a foto de chave alheia foi semeada");
+    const response = await getBinary(baseUrl, `/portal/v1/owner/photos/${refs[0].opaqueRef}`, bearer(seeded.session));
+    assert.equal(response.status, 404, "o portal não pode servir objeto fora do prefixo de tenant da linha");
+    assert.equal(response.buffer.length === 0 || !response.buffer.subarray(0, 8).equals(png.subarray(0, 8)), true,
+      "nenhum byte da foto alheia pode vazar no corpo");
   });
 });
 

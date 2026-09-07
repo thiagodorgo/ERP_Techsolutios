@@ -537,6 +537,66 @@ por organização resolvidos no controller/serviço; DTO respeita **§2.8** (sem
 
 ---
 
+### 3.N — Verificação de conteúdo de upload e egresso de arquivo (B-O6R-07b · Ω6R-SEC-004)
+
+Fonte: `src/modules/evidence/{upload-gate,content-sniff,evidence-scanner.factory,serve-verified-file,storage-key-scope}.ts`.
+Vale para as **5 vias de ingresso de bytes** e as **4 rotas de download de arquivo**. **Zero migration.**
+
+**Regra:** os códigos que já existiam em cada via **não mudam**; o que o gate acrescenta usa a **família de
+código da própria via**, com o mesmo `reason` em todas. Preservados: 404 cross-tenant, 409 de
+idempotência/estado (`already_uploaded`, `evidence_metadata_required`, `work_order_mismatch`), 413/400 de
+tamanho, 400 de campo, 403 de permissão — e a **ordem**: 409/403/404 da via precedem 415/422/503 do gate.
+
+| Via | Rota | Sniff: bytes ≠ declarado / sem assinatura / assinatura fora da allowlist | Scanner `infected` | Scanner indisponível |
+|---|---|---|---|---|
+| V1 | `POST /api/v1/mobile/evidence-uploads` | **NOVO** `415 UNSUPPORTED_MEDIA_TYPE` · reason `content_type_mismatch` \| `content_unrecognized` \| `unsupported_media_type` (+ evento `evidence.upload.rejected` com o mesmo reason). O `400 unsupported_content_type` do MIME **declarado** permanece e roda antes | `422 UNPROCESSABLE_ENTITY / evidence_rejected` (vigente) | `503 SERVICE_UNAVAILABLE / evidence_scan_failed` (vigente) |
+| V2 | `POST /api/v1/attachments` | **NOVO** `415 ATTACHMENT_UNSUPPORTED_MEDIA_TYPE` · mesmos reasons (o `415 unsupported_media_type` do declarado permanece, no parser) | `422 ATTACHMENT_REJECTED / evidence_rejected` (vigente) | `503 ATTACHMENT_SCAN_UNAVAILABLE / scan_unavailable` (vigente) |
+| V3 | `POST /api/v1/work-orders/:workOrderId/attachments` | **NOVO** `415 WORK_ORDER_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE` · mesmos reasons | `422 WORK_ORDER_ATTACHMENT_REJECTED` (vigente) | `503 WORK_ORDER_ATTACHMENT_SCAN_UNAVAILABLE` (vigente) |
+| V4 | `POST /api/v1/mobile/checklist-runs/:runId/attachments` (ramo multipart) | **NOVO** `415 CHECKLIST_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE` · mesmos reasons (o `400 mime_type_not_allowed` do declarado permanece — inconsistência **pré-existente** e declarada, `P-O6R-B07B-CODIGOS-INCONSISTENTES`) | **NOVO** `422 CHECKLIST_ATTACHMENT_REJECTED / evidence_rejected` | **NOVO** `503 CHECKLIST_ATTACHMENT_SCAN_UNAVAILABLE / scan_unavailable` |
+| V5 | `POST /api/v1/damages/:damageId/attachments` | **NOVO** `415 DAMAGE_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE` · mesmos reasons | **NOVO** `422 DAMAGE_ATTACHMENT_REJECTED / evidence_rejected` | **NOVO** `503 DAMAGE_ATTACHMENT_SCAN_UNAVAILABLE / scan_unavailable` |
+
+V4 e V5 **não tinham scanner nenhum** antes deste bloco (nem Noop): as famílias 422/503 delas nascem aqui,
+espelhando nominalmente o módulo `attachments` (Ω4C PR-01) — mesmos `reason`, mesma mensagem, mesma posição
+(nada persistido, nenhum órfão no storage).
+
+**Ordem das três recusas de conteúdo (415):** (1) bytes irreconhecíveis → `content_unrecognized`; (2)
+assinatura fora da allowlist **da via** → `unsupported_media_type`; (3) assinatura ≠ tipo declarado →
+`content_type_mismatch`. A allowlist de V1 é `image/jpeg,image/png`; a das irmãs vem de
+`CHECKLIST_STORAGE_ALLOWED_MIME_TYPES` (default `image/jpeg,image/png,image/webp,application/pdf`).
+
+**Egresso — `GET .../download` das 4 rotas de anexo (E1–E4), delta:**
+
+| Header | Antes | Agora |
+|---|---|---|
+| `Content-Type` | tipo da LINHA (isto é, o declarado pelo cliente no upload) | **tipo derivado dos BYTES no ato do download** (∈ jpeg/png/webp/pdf) ou `application/octet-stream` |
+| `Content-Disposition` | `inline; filename="…"` | `attachment; filename="<ASCII saneado>"; filename*=UTF-8''<pct>` (RFC 6266/8187 — `filename` antes de `filename*`) |
+| `X-Content-Type-Options` | só pelo helmet global | `nosniff`, também explícito na resposta |
+| `Content-Security-Policy` | — | `default-src 'none'; sandbox allow-downloads` |
+| `Cross-Origin-Resource-Policy` | só pelo helmet global | `same-origin`, também explícito |
+| `Cache-Control` | — | `private, no-store` |
+| `Content-Length` | quando conhecido | idem, com `strictContentLength` ligado |
+
+Status e erros (200/404/409 `attachment_not_ready`) **inalterados**. `GET /portal/v1/owner/photos/:opaqueRef`
+(E5) **inalterado** — já servia `image/jpeg` re-codificado por Jimp.
+
+**Leitura por chave — guard de tenant (todas as 4 rotas + E5 por herança):** a `storage_key` da linha tem de
+começar no `tenant_id` **da própria linha** (descontado o prefixo S3 vigente). Chave fora do tenant devolve o
+**mesmo** `404 attachment_file_not_found` que "sem chave" — a recusa não revela que o objeto existe.
+
+**Corpo 201 de V1 (`mobile_evidence_file_upload@2026-06-18.b108`) — INALTERADO em forma.** `status: "stored"`,
+`mime_type`/`content_type` = tipo **verificado** (igual ao declarado sempre que aceito, porque divergência é
+415), demais campos idem. **A versão do contrato não muda**: nenhum campo novo, nenhum status novo no corpo; o
+que muda são códigos HTTP de recusa, que o app já trata genericamente (415 → `UPLOAD_FAILED`, 422 →
+`UPLOAD_REJECTED`, 503 → `SCAN_FAILED` em V1 / `UPLOAD_FAILED` em V4 — divergência pré-existente entre os dois
+arquivos Dart, registrada em `P-O6R-B07B-MOBILE-RETRY-PERMANENTE`). Em todos eles o blob local é
+**preservado** (o `delete` do blob só ocorre dentro de `_isStoredStatus`).
+
+**Env:** `EVIDENCE_SCANNER` (`noop` | `unavailable`), default por `NODE_ENV` — `production` (staging incluso)
+→ `unavailable`; dev/test → `noop`. `noop` em produção é **recusado no boot**. Enquanto
+`P-O6R-B07B-SCANNER-AV-REAL` não existir, produção e staging respondem **503 a todo upload**.
+
+---
+
 ## 4. Nota de manutenção
 
 Contratos versionados por **data/bloco** quando relevante

@@ -2404,3 +2404,39 @@ apagar) e registro aqui o que a medição mostra, **dois** incrementos e não um
 
 Achado por **medição de terceiro** (junta do #373): o campo dizia 160 e a `description` dizia 158, sem
 justificar o `+2`. A correção da `description` no `.json` saiu no **#377**; esta é a metade em Markdown.
+
+## 2026-09-06 — B-O6R-07b (PR na autoria) — o tipo do arquivo deixa de ser o que o cliente escreveu no envelope
+
+Sub-bloco 07b do `B-O6R-07`, o último P1 da pendência-mãe `P-O6R-B07`. O achado `Ω6R-SEC-004` afirma TRÊS
+fatos — *"scanner default sempre clean"*, *"MIME vem do cliente"*, *"download usa inline com esse MIME"*.
+**Dois morrem em todo ambiente; o terceiro morre onde importa** — por isso ele fecha como
+**`parcialmente_superado`**, e não `fechado`: com `noop` sendo o default de `development`/`test` POR DESENHO,
+o primeiro fato continua verdadeiro fora de produção, e declarar `fechado` seria afirmar o que não é verdade
+num `NODE_ENV` que o próprio bloco escolhe manter. O bloco **paga por essa honestidade de forma visível**: com
+`parcialmente_superado` o achado **não entra** em `aguardando_merge` e **não move** `p1_fechados` (segue **2**)
+— o painel não mostra avanço de P1 neste PR. Residual com dono: `P-O6R-B07B-SCANNER-AV-REAL` (antivírus real
+= serviço externo → junta-5).
+
+O que entrou, nas **5 vias de ingresso de bytes** e nas **4 rotas de download**: um **gate único** (sniff de
+assinatura in-house → scanner → marca); a **marca com identidade por INSTÂNCIA** (objeto congelado sem
+propriedade alguma + `WeakMap` privado, fatos lidos do registro), porque o desenho original do plano foi
+**quebrado por execução** pelo `critico-adversarial` com um spread de uma linha e sem nenhum cast; **scanner
+fail-closed por `NODE_ENV`** com `noop` recusado no boot de produção; a **`verification` obrigatória** no tipo
+de entrada dos 3 providers (quem chama sem ela **não compila**, e quem burla o compilador **não grava**); o
+**egresso** servindo tipo derivado dos BYTES + `attachment` + `nosniff` + CSP `sandbox allow-downloads`; e um
+**guard de prefixo de tenant** nos 4 resolvers, que fecha o vazamento cross-tenant do owner-portal **por
+herança de chamada**, sem tocar `owner-portal/**` nem `impound/**` (ambos proibidos no escopo). Duas das cinco
+vias — anexo de checklist e foto de dano — **não tinham scanner nenhum**, nem Noop. ZERO dependência nova,
+ZERO migration.
+
+Números de execução real (§C3.3), cluster descartável próprio (`:56436`/`:56383`; a base viva não recebeu um
+comando): `backend_tests` **2936/2938** (`ec=0`, 2 skips declarados). **Baseline medido, não copiado**, num
+worktree SEPARADO da base `e55245a` com `npm ci` próprio: **2815/2817** — idêntico ao publicado pelo #371. Δ
+**+121**, que fecha por arquivo: 6 arquivos novos (19+21+13+36+23+8 = 120) + 1 caso novo em
+`owner-portal-photos` (17→18). Piso de projeto do §6/E1·8 era ≥ 89. **Vermelho-controle executado na base**,
+com as asserções invertidas: 6/6 passaram lá — `MZ` declarado `image/png` entrava com 201, bytes PNG
+declarados `image/jpeg` gravavam `image/jpeg`, e o download respondia `inline` com o tipo da linha. Carregadas
+sem exercer, com marcador: flutter **864/864** · smoke **1126/1126**. `blocks_completed` **160 → 161**.
+`pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5). Duas PDs novas em `docs/omega-pd.md`
+(`MAGIC-BYTES`, 11 fontes; `DISPOSITION`, 13 fontes), fechadas ANTES da primeira linha dos módulos que
+dependiam delas. Este espelho recebe SÓ a própria entrada: o backlog segue em `P-KPI-HISTORY-MD-BACKLOG`.
