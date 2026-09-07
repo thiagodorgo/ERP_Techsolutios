@@ -26,8 +26,6 @@ process.env.LOG_LEVEL = "silent";
  * carrega o campo certo por construção e não notaria o produtor parar de carimbá-lo.
  */
 
-const DIA_DA_MEDICAO = "2026-06-15";
-const OCORRIDO_EM = `${DIA_DA_MEDICAO}T10:00:00.000Z`;
 
 test("[cadeia real] concluir a vistoria REABERTA registra quantidade ZERO — a organização não é cobrada duas vezes", async () => {
   const { ChecklistService, InMemoryChecklistRepository, usageEvents, resetUsage } = await bootstrap();
@@ -97,66 +95,81 @@ test("[cadeia real] concluir a vistoria REABERTA registra quantidade ZERO — a 
   resetUsage();
 });
 
-test("[payload sem o campo e com false] conclusão comum continua sendo cobrada — a correção não zera vistoria legítima", async () => {
-  const { recordCloudUsageForDomainEvent, usageEvents, drainUsage, resetUsage } = await bootstrap();
+/**
+ * B-O6R-06 (Ω6R-DIN-005) — OS QUATRO CASOS FORAM MIGRADOS PARA O CAMINHO DA TRANSAÇÃO (aceite R4).
+ *
+ * A ASSERÇÃO DE NEGÓCIO É A MESMA, verbatim: vistoria original cobra 1, versão reaberta cobra 0, a linha
+ * zerada fica na trilha com chave `:reopened`, e a reabertura não move a agregação diária nem o rateio.
+ * O MECANISMO é que mudou de lugar: a unidade faturável não nasce mais do consumidor do evento de domínio
+ * (`recordCloudUsageForDomainEvent`, pós-commit, `.catch(warn)`, chave por `event.id`) — ela nasce DENTRO
+ * da transação que insere/conclui a run, com chave derivada da RUN (`cloud-usage.capture.ts`).
+ *
+ * POR ISSO os três casos que montavam ENVELOPE À MÃO deixaram de fazer sentido como estavam: o ramo que
+ * eles exercitavam não existe mais em `cloud-usage.events.ts` (é o que o censo C1 prova). Eles passam a
+ * exercitar a mesma propriedade pelo caminho novo — e é justamente a mutação M-11 (`quantity = 1` na
+ * conclusão reaberta) que os deixa vermelhos, como antes.
+ */
+test("[conclusão comum] duas vistorias distintas cobram 1 cada — a correção não zera vistoria legítima", async () => {
+  const { ChecklistService, InMemoryChecklistRepository, usageEvents, resetUsage } = await bootstrap();
   resetUsage();
 
-  const tenantId = randomUUID();
-  const runLegado = randomUUID();
-  const runExplicita = randomUUID();
+  const actor = { tenantId: randomUUID(), userId: randomUUID() };
+  const service = new ChecklistService(new InMemoryChecklistRepository());
+  const template = await publicarModelo(service, actor);
 
-  // Envelope LEGADO: evento que já estava na fila antes da correção existir e não conhece `isReopenedRun`.
-  // Ele não pode virar consumo zerado — seria deixar de faturar trabalho de campo real (o erro simétrico).
-  recordCloudUsageForDomainEvent(
-    envelopeConcluida(tenantId, { runId: runLegado, templateId: randomUUID(), status: "completed" }),
-  );
-  recordCloudUsageForDomainEvent(
-    envelopeConcluida(tenantId, {
-      runId: runExplicita,
-      templateId: randomUUID(),
-      status: "completed",
-      isReopenedRun: false,
-    }),
-  );
-  await drainUsage();
+  const primeira = await service.createRun(actor, { checklistId: template.id, answers: [] });
+  const segunda = await service.createRun(actor, { checklistId: template.id, answers: [] });
+  await service.completeRun(actor, primeira.id, { hasDivergence: false });
+  await service.completeRun(actor, segunda.id, { hasDivergence: false });
 
-  const concluidas = await usageEvents(tenantId, "checklist_run.completed");
+  const concluidas = await usageEvents(actor.tenantId, "checklist_run.completed");
 
   assert.equal(concluidas.length, 2);
   assert.equal(
-    concluidas.find((evento) => evento.sourceId === runLegado)?.quantity,
+    concluidas.find((evento) => evento.sourceId === primeira.id)?.quantity,
     1,
-    "payload legado (sem o campo) é conclusão comum: cobra 1",
+    "vistoria original é conclusão comum: cobra 1",
   );
   assert.equal(
-    concluidas.find((evento) => evento.sourceId === runExplicita)?.quantity,
+    concluidas.find((evento) => evento.sourceId === segunda.id)?.quantity,
     1,
-    "isReopenedRun=false é conclusão comum: cobra 1",
+    "vistoria original é conclusão comum: cobra 1",
   );
+
+  // A origem do zero deixou de ser um booleano viajando no payload de um evento: é `reopenedFromRunId`
+  // lido da PRÓPRIA LINHA da run. Um refactor que pare de propagar o campo no evento não pode mais
+  // reintroduzir a cobrança dobrada em silêncio — o dado está na tabela.
+  for (const evento of concluidas) {
+    assert.equal(evento.metadata.reopenedFromRunId, undefined);
+  }
 
   resetUsage();
 });
 
-test("[reentrega da fila] o mesmo evento de conclusão reaberta entregue duas vezes continua valendo zero", async () => {
-  const { recordCloudUsageForDomainEvent, usageEvents, drainUsage, resetUsage } = await bootstrap();
+test("[reentrega] a mesma conclusão reaberta capturada duas vezes continua valendo zero e uma linha só", async () => {
+  const { usageEvents, resetUsage, buildChecklistRunUsageEvents, appendChecklistRunUsageInMemory } =
+    await bootstrap();
   resetUsage();
 
   const tenantId = randomUUID();
-  const evento = envelopeConcluida(tenantId, {
-    runId: randomUUID(),
-    templateId: randomUUID(),
-    status: "completed",
-    isReopenedRun: true,
-  });
+  const run = {
+    id: randomUUID(),
+    tenantId,
+    startedAt: new Date(),
+    completedAt: new Date(),
+    reopenedFromRunId: randomUUID(),
+  };
 
-  recordCloudUsageForDomainEvent(evento);
-  recordCloudUsageForDomainEvent(evento);
-  await drainUsage();
+  // Duas capturas do MESMO fato — é o que uma reentrega, um replay ou uma reconciliação produzem.
+  const entradas = buildChecklistRunUsageEvents("completed", run);
+  await appendChecklistRunUsageInMemory(entradas);
+  await appendChecklistRunUsageInMemory(entradas);
 
   const concluidas = await usageEvents(tenantId, "checklist_run.completed");
 
   assert.equal(concluidas.length, 1, "a reentrega é deduplicada pela chave de idempotência");
   assert.equal(concluidas[0]?.quantity, 0);
+  assert.match(String(concluidas[0]?.idempotencyKey), /:reopened$/);
 
   resetUsage();
 });
@@ -167,52 +180,49 @@ test("[reentrega da fila] o mesmo evento de conclusão reaberta entregue duas ve
  * 2/3 da fatura de checklist em vez da metade — dinheiro real, cobrado por um conserto nosso.
  */
 test("[base de rateio] a conclusão reaberta não move a agregação diária nem o rateio de custo de nuvem", async () => {
-  const { recordCloudUsageForDomainEvent, aggregateDay, drainUsage, resetUsage, allocateCloudCosts } =
+  const { ChecklistService, InMemoryChecklistRepository, aggregateDay, resetUsage, allocateCloudCosts } =
     await bootstrap();
   resetUsage();
 
-  const organizacaoA = randomUUID();
-  const organizacaoB = randomUUID();
+  const organizacaoA = { tenantId: randomUUID(), userId: randomUUID() };
+  const organizacaoB = { tenantId: randomUUID(), userId: randomUUID() };
+  const repositorio = new InMemoryChecklistRepository();
+  const service = new ChecklistService(repositorio);
 
   // A: uma vistoria concluída + a conclusão da versão REABERTA dela (correção, não trabalho novo).
-  recordCloudUsageForDomainEvent(
-    envelopeConcluida(organizacaoA, { runId: randomUUID(), templateId: randomUUID(), status: "completed" }),
-  );
-  recordCloudUsageForDomainEvent(
-    envelopeConcluida(organizacaoA, {
-      runId: randomUUID(),
-      templateId: randomUUID(),
-      status: "completed",
-      isReopenedRun: true,
-    }),
-  );
-  // B: uma vistoria concluída. Mesmo trabalho de campo que A → mesma fatia da conta.
-  recordCloudUsageForDomainEvent(
-    envelopeConcluida(organizacaoB, { runId: randomUUID(), templateId: randomUUID(), status: "completed" }),
-  );
-  await drainUsage();
+  const modeloA = await publicarModelo(service, organizacaoA);
+  const runA = await service.createRun(organizacaoA, { checklistId: modeloA.id, answers: [] });
+  await service.completeRun(organizacaoA, runA.id, { hasDivergence: false });
+  const reaberta = await service.reopenRun(organizacaoA, runA.id, { reason: "Foto ilegível" });
+  await service.completeRun(organizacaoA, reaberta.run.run.id, { hasDivergence: false });
 
-  const agregados = await aggregateDay(new Date(`${DIA_DA_MEDICAO}T12:00:00.000Z`));
+  // B: uma vistoria concluída. Mesmo trabalho de campo que A → mesma fatia da conta.
+  const modeloB = await publicarModelo(service, organizacaoB);
+  const runB = await service.createRun(organizacaoB, { checklistId: modeloB.id, answers: [] });
+  await service.completeRun(organizacaoB, runB.id, { hasDivergence: false });
+
+  const hoje = new Date();
+  const agregados = await aggregateDay(hoje);
   const daBase = agregados.filter((item) => item.metricKey === "checklist_run.completed");
 
-  assert.equal(daBase.find((item) => item.tenantId === organizacaoA)?.quantity, 1);
-  assert.equal(daBase.find((item) => item.tenantId === organizacaoB)?.quantity, 1);
+  assert.equal(daBase.find((item) => item.tenantId === organizacaoA.tenantId)?.quantity, 1);
+  assert.equal(daBase.find((item) => item.tenantId === organizacaoB.tenantId)?.quantity, 1);
 
   const resultado = allocateCloudCosts({
     runId: randomUUID(),
-    periodStart: new Date(`${DIA_DA_MEDICAO}T00:00:00.000Z`),
-    periodEnd: new Date(`${DIA_DA_MEDICAO}T23:59:59.999Z`),
+    periodStart: inicioDoDia(hoje),
+    periodEnd: fimDoDia(hoje),
     strategy: "usage_weighted_v1",
     tenants: [
-      { id: organizacaoA, name: "Organização A" },
-      { id: organizacaoB, name: "Organização B" },
+      { id: organizacaoA.tenantId, name: "Organização A" },
+      { id: organizacaoB.tenantId, name: "Organização B" },
     ],
     usageAggregates: agregados,
-    costLineItems: [linhaDeCustoDeChecklist(10)],
+    costLineItems: [linhaDeCustoDeChecklist(10, hoje)],
   });
 
-  const fatiaA = resultado.allocations.find((item) => item.tenantId === organizacaoA);
-  const fatiaB = resultado.allocations.find((item) => item.tenantId === organizacaoB);
+  const fatiaA = resultado.allocations.find((item) => item.tenantId === organizacaoA.tenantId);
+  const fatiaB = resultado.allocations.find((item) => item.tenantId === organizacaoB.tenantId);
 
   assert.equal(
     fatiaA?.allocationBasisMetricKey,
@@ -228,47 +238,64 @@ test("[base de rateio] a conclusão reaberta não move a agregação diária nem
 
 // --- apoio -----------------------------------------------------------------------------------------------
 
-type PayloadDeConclusao = {
-  readonly runId: string;
-  readonly templateId: string;
-  readonly status: string;
-  readonly isReopenedRun?: boolean;
-};
-
-function envelopeConcluida(tenantId: string, payload: PayloadDeConclusao) {
-  return {
-    id: randomUUID(),
-    name: "checklist_run.completed" as const,
-    payload: { ...payload, hasDivergence: false },
-    tenantId,
-    actorId: randomUUID(),
-    correlationId: randomUUID(),
-    occurredAt: OCORRIDO_EM,
-  };
+function inicioDoDia(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
 }
 
-function linhaDeCustoDeChecklist(unblendedCost: number) {
+function fimDoDia(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
+}
+
+type ServicoDeChecklist = {
+  createTemplate(actor: unknown, input: unknown): Promise<{ id: string }>;
+  publishTemplate(actor: unknown, id: string): Promise<{ id: string }>;
+};
+
+async function publicarModelo(
+  service: ServicoDeChecklist,
+  actor: { readonly tenantId: string; readonly userId: string },
+): Promise<{ id: string }> {
+  const template = await service.createTemplate(actor, {
+    name: "Vistoria de coleta",
+    type: "towing_collection",
+    schema: {},
+    components: [
+      {
+        type: "observation",
+        label: "Observações do guincheiro",
+        required: false,
+        config: {},
+        validationRules: {},
+        visibilityRules: {},
+      },
+    ],
+  });
+
+  return service.publishTemplate(actor, template.id);
+}
+
+function linhaDeCustoDeChecklist(unblendedCost: number, dia: Date) {
   return {
     id: randomUUID(),
     importId: "import-checklist-reopen",
     provider: "aws" as const,
-    billingPeriodStart: new Date(`${DIA_DA_MEDICAO}T00:00:00.000Z`),
-    billingPeriodEnd: new Date(`${DIA_DA_MEDICAO}T23:59:59.999Z`),
+    billingPeriodStart: inicioDoDia(dia),
+    billingPeriodEnd: fimDoDia(dia),
     serviceCode: "ChecklistService",
     usageType: "ChecklistRuns",
     unblendedCost,
     currency: "USD",
     rawLineHash: randomUUID(),
     metadata: {},
-    createdAt: new Date(`${DIA_DA_MEDICAO}T00:00:00.000Z`),
+    createdAt: inicioDoDia(dia),
   };
 }
 
 async function bootstrap() {
-  const [checklists, cloudUsage, cloudUsageEvents, allocation] = await Promise.all([
+  const [checklists, cloudUsage, cloudUsageCapture, allocation] = await Promise.all([
     import("../src/modules/checklists/checklist.service.js"),
     import("../src/modules/cloud-usage/cloud-usage.service.js"),
-    import("../src/modules/cloud-usage/cloud-usage.events.js"),
+    import("../src/modules/cloud-usage/cloud-usage.capture.js"),
     import("../src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.js"),
   ]);
   const repositorio = await import("../src/modules/checklists/checklist.repository.js");
@@ -280,7 +307,8 @@ async function bootstrap() {
   return {
     ChecklistService: checklists.ChecklistService,
     InMemoryChecklistRepository: repositorio.InMemoryChecklistRepository,
-    recordCloudUsageForDomainEvent: cloudUsageEvents.recordCloudUsageForDomainEvent,
+    buildChecklistRunUsageEvents: cloudUsageCapture.buildChecklistRunUsageEvents,
+    appendChecklistRunUsageInMemory: cloudUsageCapture.appendChecklistRunUsageInMemory,
     allocateCloudCosts: allocation.allocateCloudCosts,
     drainUsage,
     resetUsage: cloudUsage.resetCloudUsageRuntimeForTests,

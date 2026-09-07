@@ -22,7 +22,7 @@ export class CloudUsageService {
   constructor(private readonly repository: CloudUsageRepository) {}
 
   async recordUsageEvent(input: RecordUsageEventInput) {
-    const validated = validateInput(input);
+    const validated = validateCloudUsageInput(input);
 
     return this.repository.createEvent({
       ...validated,
@@ -33,7 +33,7 @@ export class CloudUsageService {
   async recordManyUsageEvents(inputs: readonly RecordUsageEventInput[]) {
     return this.repository.createManyEvents(
       inputs.map((input) => {
-        const validated = validateInput(input);
+        const validated = validateCloudUsageInput(input);
 
         return {
           ...validated,
@@ -146,8 +146,17 @@ export function sanitizeCloudUsageMetadata(metadata: Record<string, unknown> | u
   return compactRecord(sanitizeRecord(metadata));
 }
 
-// A medição é BEST-EFFORT e fire-and-forget por desenho: cobrar não pode travar nem derrubar a operação de
-// negócio. O efeito colateral é que a gravação aterrissa DEPOIS de quem a disparou já ter respondido — e um
+// BEST-EFFORT SÓ PARA O QUE NÃO É BASE DE FATURAMENTO DA VISTORIA — a vistoria é medida NA TRANSAÇÃO
+// (B-O6R-06 / Ω6R-DIN-005: `cloud-usage.capture.ts`, chamado de dentro de `checklist-prisma.repository.ts`).
+// Os ramos `checklist_run.created` e `checklist_run.completed` SAÍRAM de `cloud-usage.events.ts`: se
+// ficassem, cada emissão gravaria uma SEGUNDA linha (chave por `event.id`) e a base de rateio dobraria — é
+// o que o censo C1 mata por execução.
+//
+// O que continua passando por aqui: bytes/contagem de anexo, `s3_*_requests`, divergência e ciência. Para
+// essas chaves a medição segue BEST-EFFORT e fire-and-forget — cobrar não pode travar a operação —, e o
+// resíduo está NOMEADO com dono em `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL`.
+//
+// O efeito colateral do fire-and-forget é que a gravação aterrissa DEPOIS de quem a disparou já ter respondido — e um
 // teardown de teste que apaga o tenant no mesmo instante bate na FK `cloud_usage_events_tenant_id_fkey`
 // (aconteceu de verdade, e a "correção" por repetição não resolve: a corrida continua aberta entre as
 // tentativas). Guardar a corrente de escritas em voo permite ESPERAR por elas de forma determinística.
@@ -219,7 +228,12 @@ async function createPrismaCloudUsageService(): Promise<CloudUsageService> {
   return new CloudUsageService(await createPrismaCloudUsageRepository());
 }
 
-function validateInput(input: RecordUsageEventInput): RecordUsageEventInput {
+/**
+ * B-O6R-06 (§6 item 2 do plano) — EXPORTADO para a captura transacional (`cloud-usage.capture.ts`)
+ * reusar exatamente a mesma validação do caminho best-effort. Uma segunda validação, escrita à mão
+ * lá, seria uma segunda verdade sobre o que é medição válida.
+ */
+export function validateCloudUsageInput(input: RecordUsageEventInput): RecordUsageEventInput {
   if (!input.tenantId.trim()) {
     throw new CloudUsageError(400, "CLOUD_USAGE_INVALID", "tenant_required", "Tenant id is required.");
   }

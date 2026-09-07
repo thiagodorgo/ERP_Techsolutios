@@ -3,6 +3,10 @@ import pino from "pino";
 
 import { env } from "../../config/env.js";
 import { withTenantRls } from "../../database/rls.js";
+import {
+  appendChecklistRunUsageInTx,
+  buildChecklistRunUsageEvents,
+} from "../cloud-usage/cloud-usage.capture.js";
 import { EnterpriseAuditLogService } from "../core-saas/audit/audit-log.service.js";
 import type { AuditLogWriter } from "../core-saas/audit/audit-log.service.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
@@ -34,6 +38,7 @@ import type {
 } from "./checklist.types.js";
 import type {
   ChecklistRepository,
+  CompleteRunBilling,
   CreateRunData,
   CreateRunResult,
   CreateTemplateData,
@@ -76,6 +81,10 @@ type PrismaChecklistClient = {
   // P0a — INSERT ... ON CONFLICT DO NOTHING RETURNING para a criação idempotente-durável de run (createRun com
   // client_run_key). O tagged-template do Prisma; tipado frouxo (o repo já recebe o `tx` por cast opaco).
   $queryRaw<T = unknown>(query: TemplateStringsArray, ...values: unknown[]): Promise<T>;
+  // B-O6R-06 (Omega6R-DIN-005) — INSERT ... ON CONFLICT (tenant_id, idempotency_key) DO NOTHING da
+  // unidade FATURAVEL, na MESMA transacao da run (`cloud-usage.capture.ts`). Mesma tipagem frouxa do
+  // `$queryRaw` acima: o repositorio ja recebe o `tx` por cast opaco.
+  $executeRaw(query: TemplateStringsArray, ...values: unknown[]): Promise<number>;
 };
 
 export class PrismaChecklistRepository implements ChecklistRepository {
@@ -431,7 +440,15 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       },
     });
 
-    return { run: mapRunRecord(record), created: true };
+    const run = mapRunRecord(record);
+
+    // B-O6R-06 (Omega6R-DIN-005) — a unidade FATURAVEL nasce AQUI, dentro da MESMA transacao interativa
+    // que `withTenantRls` abriu para todo o `createRun`. Ou a run e as duas linhas de
+    // `cloud_usage_events` commitam juntas, ou nenhuma existe (F1). Nao ha mais a janela "run confirmada,
+    // medicao perdida" que o achado descreve.
+    await appendChecklistRunUsageInTx(this.client, buildChecklistRunUsageEvents("created", run));
+
+    return { run, created: true };
   }
 
   // P0a (conserto MÉDIA da junta) — insere a run com client_run_key SEM nunca abortar a transação sob corrida.
@@ -523,6 +540,11 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         })),
       });
     }
+
+    // B-O6R-06 — SO no ramo que REALMENTE inseriu. No ramo de conflito (`created:false`) a metrica ja
+    // commitou com a run do vencedor, entao o replay nao tem o que reparar — e o `ON CONFLICT DO
+    // NOTHING` da propria captura torna a repeticao inocua de qualquer forma (A15).
+    await appendChecklistRunUsageInTx(this.client, buildChecklistRunUsageEvents("created", run));
 
     return { run, created: true };
   }
@@ -664,7 +686,13 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     return this.getRun(data.tenantId, data.runId);
   }
 
-  async completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null> {
+  async completeRun(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    status: ChecklistRunStatus,
+    billing: CompleteRunBilling,
+  ): Promise<RepositoryRunDetails | null> {
     const existing = await this.getRun(tenantId, runId);
 
     if (!existing) {
@@ -690,7 +718,17 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       },
     });
 
-    return this.getRun(tenantId, runId);
+    const updated = await this.getRun(tenantId, runId);
+
+    // B-O6R-06 (Omega6R-DIN-005) + EMENDA E1.2: a unidade de CONCLUSAO na MESMA transacao do UPDATE de
+    // status — e SO quando o chamador declara que este caminho fatura. Dos tres chamadores de
+    // `repository.completeRun`, apenas `service.completeRun` publica `checklist_run.completed` hoje;
+    // `registerDivergence` e `acknowledgeRun` valem 0 e continuam valendo 0 (A10, F6, C4).
+    if (billing.meterCompletion && updated) {
+      await appendChecklistRunUsageInTx(this.client, buildChecklistRunUsageEvents("completed", updated.run));
+    }
+
+    return updated;
   }
 
   // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — reabertura APPEND-ONLY. A run concluída não recebe UPDATE
@@ -1008,8 +1046,14 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     return this.withTenant(data.tenantId, (repository) => repository.updateRun(data));
   }
 
-  completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null> {
-    return this.withTenant(tenantId, (repository) => repository.completeRun(tenantId, runId, actorUserId, status));
+  completeRun(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    status: ChecklistRunStatus,
+    billing: CompleteRunBilling,
+  ): Promise<RepositoryRunDetails | null> {
+    return this.withTenant(tenantId, (repository) => repository.completeRun(tenantId, runId, actorUserId, status, billing));
   }
 
   // Segunda rede, no MESMO nível do `$transaction`: o timeout da transação interativa e o rollback por
