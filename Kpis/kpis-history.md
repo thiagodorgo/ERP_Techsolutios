@@ -2440,3 +2440,71 @@ sem exercer, com marcador: flutter **864/864** · smoke **1126/1126**. `blocks_c
 `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5). Duas PDs novas em `docs/omega-pd.md`
 (`MAGIC-BYTES`, 11 fontes; `DISPOSITION`, 13 fontes), fechadas ANTES da primeira linha dos módulos que
 dependiam delas. Este espelho recebe SÓ a própria entrada: o backlog segue em `P-KPI-HISTORY-MD-BACKLOG`.
+
+## 2026-09-07 — B-O6R-06 (PR na autoria) — o que é dinheiro commita com o fato; o que é soma, soma no banco
+
+Fecha os **dois P0** da pendência-mãe `P-O6R-B06`, que BLOQUEAVA a trilha CHECKLIST P1 e o cloud billing.
+
+**Ω6R-DIN-005.** Existia uma janela entre o COMMIT da vistoria e a gravação da unidade faturável, e o que se
+perdia ali se perdia **para sempre**: a medição rodava num `.catch(warn)` fora da transação, com chave
+derivada do `event.id` — novo a cada emissão —, e o replay da mesma `client_run_key` devolve `created:false`,
+então o serviço nem republicava. Agora a linha de `cloud_usage_events` é inserida na **mesma transação** que
+insere/conclui a run (`src/modules/cloud-usage/cloud-usage.capture.ts`, `$executeRaw` com **alvo explícito**
+`ON CONFLICT (tenant_id, idempotency_key) DO NOTHING`), com **chave derivada da RUN**. A opção
+`createMany({ skipDuplicates: true })` foi **retirada do plano** pela PD: o Prisma emite `ON CONFLICT DO
+NOTHING` **sem alvo**, e sem alvo o PostgreSQL engole conflito de qualquer constraint utilizável — inclusive a
+PK. É **fail-closed por escolha declarada**: se a medição falha, a run não commita e o técnico recebe erro; o
+vermelho honesto desse acoplamento está executado em `F7`, não prometido.
+
+**A intenção de faturar voltou ao emissor, por assinatura.** `repository.completeRun` tem **três** chamadores
+e só um fatura hoje. Capturar dentro do repositório sem distinguir faria a trilha de **divergência do app de
+campo** (registrar divergência → ciência) passar de **0 para 1** unidade cobrada — mudança de preço, decisão
+de produto, não deste bloco. O 5º parâmetro `billing: { meterCompletion }` é **obrigatório e sem default**: o
+`tsc` recusa um quarto chamador que não declare, e isso é medido por execução em `C6`. A tabela antes = depois
+por chamador foi publicada e medida (`C4`): `{ completeRun: 1, registerDivergence: 0, acknowledgeRun: 0 }`.
+
+**Ω6R-DIN-007 fecha DOIS defeitos**, e só um estava no enunciado. O **truncamento**: `normalizeSummaryFilters`
+cravava `limit: 10_000` e o `take` com `orderBy asc` cortava justamente a linha **mais recente** — o campo
+`limit` deixou de existir nesse normalizador, e o resumo passou a `aggregate` + `groupBy` **no banco**, com o
+`where` compartilhado com o detalhe (que segue paginado ≤500). E a **acumulação em float**, que o achado não
+nomeia: com 10.001 linhas na faixa realista, o total (~9,9e9 com 6 casas) nem cabe exato num `number` — daí os
+campos aditivos `totalUnblendedCostExact`/`unblendedCostExact` e a referência de conferência em
+micro-unidades **`BigInt`**, com tolerância **zero**. Tipos **nuláveis** com `_count._all` como discriminador:
+janela vazia devolve zeros explícitos, `lineItemCount > 0` com total nulo **lança**. `?? 0` incondicional é
+proibido nominalmente aqui — é o mesmo `|| 0` que já fabricou pico neste painel.
+
+**A base do rateio mudou de fonte.** Ela lia uma projeção diária escrita só por um job que **ninguém
+enfileira** (medido, não suposto): em produção seria vazia por construção e todo custo cairia em
+`unallocated` — durabilizar a métrica e continuar lendo essa projeção seria consertar o P0 no papel. As três
+operações sobre a tabela de alocações (somar a base, escrever, ler o painel) passaram a rodar sob contexto de
+tenant numa única transação, porque sob papel **sem BYPASSRLS** a escrita morria na policy e o `DELETE` apagava
+zero linhas **em silêncio**. De brinde, o replace virou atômico.
+
+**Dois defeitos foram achados pelo próprio canário deste bloco, durante a implementação:** `sumUsageBasis` e o
+`deleteMany` do replace confiavam **só** na RLS para o recorte por tenant — e dev e CI rodam como `postgres`,
+**superusuário**, que ignora RLS. O `groupBy` somava a base de todas as organizações num balde só. Corrigido
+com `tenant_id` explícito na cláusula, além da RLS.
+
+Números de execução real (§C3.3), cluster descartável próprio (`o6r06-pg` :56446 / `o6r06-redis` :56393; a
+base viva não recebeu um comando, nem de leitura): `backend_tests` **2990/2992** (`ec=0`, 2 skips declarados).
+**Baseline medido, não copiado**, num worktree SEPARADO da base `fe2748c` com `npm ci` próprio:
+**2936/2938** — idêntico ao publicado pelo #380 e reexecutado pelo porteiro. Δ **+54**, que fecha por arquivo:
+`usage-atomic-db` 15 · `usage-atomic` 6 · `fault-injection` 6 · `cost-summary-sum-db` 6 · `cost-summary-sum` 4
+· `allocation-basis-rls-db` 10 · `billing-census` 7. Os 4 casos de `cloud-usage-checklist-reopen` foram
+**migrados** para o caminho da transação — mesma asserção de negócio, mecanismo novo — e não movem o
+denominador. Piso único do plano: ≥ 47 novos. **18 das 20 mutações** aplicadas, executadas e revertidas —
+todas vermelhas, com a árvore limpa ao final de cada uma; M-12 e M-15 não se aplicam porque mutam o script que
+este PR não entrega. Carregadas sem exercer, com marcador: flutter **864/864** · smoke **1126/1126**.
+`blocks_completed` **161 → 162**. `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
+
+**Backfill §C3.5 do #380 pago aqui**, nos 4 lugares que o porteiro cobrou: `pr 380 · merge_commit fe2748c ·
+approved_head a2988b5`. A pré-condição foi **executada por quem escreve**, não copiada do plano: `git diff
+--stat a2988b5 c5d63bf -- src tests prisma frontend mobile .github scripts` sai **vazio**, e
+`tree(c5d63bf) == tree(fe2748c) == 1f957536`.
+
+**O que NÃO foi entregue, e por quê:** `scripts/reconcile-checklist-usage.ts`. O `critico-adversarial` mediu,
+na 2ª rodada, que o ramo `completed` do script **refaturaria a trilha C que a própria emenda acabou de
+proteger** — uma run de divergência→ciência termina com `completed_at` preenchido e **sem** métrica, por
+decisão. Está **bloqueado** até a junta decidir qual predicado observável delimita a conclusão faturável:
+`P-O6R-B06-RECONCILE-BLOQUEADO`. Este espelho recebe SÓ a própria entrada: o backlog segue em
+`P-KPI-HISTORY-MD-BACKLOG`.

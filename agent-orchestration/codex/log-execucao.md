@@ -4216,3 +4216,36 @@ vai para `P-GOV-FILA-P1-ANTES-DE-P0`.
 Números: suíte plena **2815/2817 → 2936/2938**, `ec=0`, Δ +121 que fecha por arquivo. `blocks_completed`
 160 → 161. Duas PDs novas em `docs/omega-pd.md`, fechadas **antes** da primeira linha dos módulos que
 dependiam delas. Cluster descartável próprio (`:56436`/`:56383`); a base viva não recebeu um comando.
+
+
+## B-O6R-06 — `fix/billing-durability` (2026-09-07, PR na autoria)
+
+**Ω6R-DIN-005 + Ω6R-DIN-007, os dois P0 da `P-O6R-B06`.** Papéis do §C7.4-bis, com identidades distintas:
+achou o `critico-adversarial` (2 rodadas: `PLANO FRÁGIL` → `PLANO ROBUSTO COM RESSALVA`); planejou o
+`planejador-mestre` (corpo + `EMENDA E1`); **implementou este agente**, que não julgou a validade de nenhum
+achado.
+
+**Como o mecanismo mudou de lugar.** O diagnóstico do plano seguiu a cadeia pelo **emissor**
+(`publishDomainEvent`) e o desenho escolheu o ponto de captura pelo **receptor** (o repositório, porque é ele
+que tem a transação). Os dois conjuntos de chamadores **não coincidem** — foi o achado `E2` do crítico, e é a
+razão de o parâmetro `billing` existir e ser obrigatório: o compilador fecha o conjunto para o futuro, e o
+censo `C4` publica o número faturado por trilha, antes e depois.
+
+**Dois defeitos foram achados pelo canário deste próprio bloco, durante a implementação, e corrigidos:**
+`sumUsageBasis` e o `deleteMany` do replace confiavam **só** na RLS para o recorte por tenant — e dev e CI
+rodam como `postgres`, **superusuário**, que ignora RLS. O `groupBy` somava a base de todas as organizações
+num balde só, e a primeira volta do replace teria apagado as alocações de todas elas. `tenant_id` foi para a
+cláusula, além da RLS. O canário que os pegou existe por causa do achado `R2-C` — que pedia canário na
+**leitura**, não na escrita.
+
+**Divergência de escopo registrada, não escolhida em silêncio (§A2):** duas suítes `-db` fora da lista §6
+tiveram de ser tocadas, porque o mecanismo novo as quebra e a alternativa exigiria migration (PROIBIDA) —
+`P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB`. Nenhuma das duas foi afrouxada; a de concorrência ficou **mais
+forte** (passou a ler a tabela em vez do repositório em memória).
+
+**Números:** suíte plena **2936/2938 → 2990/2992**, `ec=0`, Δ +54 que fecha por arquivo. `blocks_completed`
+161 → 162. Cluster descartável próprio (`o6r06-pg` :56446 / `o6r06-redis` :56393); a **base viva não recebeu
+um comando**, nem de leitura. Backfill §C3.5 do #380 pago em 4 lugares, com a pré-condição de diff vazio
+**executada** por quem escreve.
+
+**Não entregue, por bloqueio do crítico:** o script de reconciliação — `P-O6R-B06-RECONCILE-BLOQUEADO`.

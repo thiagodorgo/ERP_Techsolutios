@@ -4202,3 +4202,41 @@ registradas. Frontend e mobile **não tocados**. KPIs atualizados no próprio PR
 todo upload** até existir antivírus real — `P-O6R-B07B-SCANNER-AV-REAL` (ALTA, junta-5) e
 `P-O6R-B07B-STAGING-SEM-UPLOAD` (agenda, decisão do dono). O gate da CHECKLIST P1 passa a
 depender **só de `B-O6R-06`**.
+
+
+## 2026-09-07 — B-O6R-06 (`fix/billing-durability`, PR na autoria) — Ω6R-DIN-005 + Ω6R-DIN-007
+
+Os **dois P0** da pendência-mãe `P-O6R-B06` fecham. Ela BLOQUEAVA a trilha CHECKLIST P1 e o cloud billing.
+
+**A unidade faturável passou a commitar com a vistoria.** Antes, a medição rodava fora da transação, em
+`.catch(warn)`, com chave derivada do `event.id` — novo a cada emissão. Uma falha entre o commit da run e a
+gravação perdia a unidade **para sempre**, porque o replay da `client_run_key` devolve `created:false` e o
+serviço nem republicava. Agora o `INSERT` em `cloud_usage_events` roda **dentro** da mesma transação
+(`src/modules/cloud-usage/cloud-usage.capture.ts`, `$executeRaw` com **alvo explícito**), com chave derivada
+da RUN. É **fail-closed por escolha declarada**: se a medição falha, a vistoria não commita.
+
+**A intenção de faturar voltou ao emissor, por assinatura.** `repository.completeRun` tem três chamadores e só
+um fatura. O 5º parâmetro **obrigatório e sem default** `billing: { meterCompletion }` mantém a trilha
+divergência→ciência do app de campo em **0 → 0** (medido antes e depois) e faz o **compilador** recusar um
+quarto chamador que não declare.
+
+**O resumo de custo soma no banco**, sem o teto de 10.000 que cortava justamente a linha mais recente — e o
+segundo defeito, a soma em ponto flutuante, fecha junto (campos aditivos exatos). **A base do rateio** deixou
+de ler uma projeção diária que **nenhum job enfileira** e passou a somar a tabela durável por organização, sob
+o contexto RLS de cada uma; as três operações sobre a tabela de alocações passaram a rodar sob contexto,
+porque sob papel sem `BYPASSRLS` a escrita morria na policy e o `DELETE` apagava zero linhas em silêncio.
+
+Validação: `npm run check` / `lint` / `build` OK · suíte backend **2990/2992** (`ec=0`, 2 skips declarados),
+contra baseline **2936/2938** medido por execução num worktree separado da base `fe2748c` ·
+`npm --prefix frontend run check` e `build` OK · **54 casos novos** permanentes em 7 arquivos (piso do plano:
+≥ 47) + 4 migrados · **18 das 20 mutações** aplicadas, executadas e revertidas, todas vermelhas. Frontend e
+mobile **não tocados**. KPIs atualizados no próprio PR (§C3): `blocks_completed` 161 → 162, `mvp_*` intocados,
+e o **backfill do #380** pago em 4 lugares com a pré-condição executada.
+
+**O que este bloco NÃO entrega, e por quê:** `scripts/reconcile-checklist-usage.ts`. O crítico mediu que o
+ramo `completed` **refaturaria a trilha C que a própria emenda acabou de proteger** — está BLOQUEADO até a
+junta decidir o predicado observável (`P-O6R-B06-RECONCILE-BLOQUEADO`).
+
+**Gate da CHECKLIST P1:** por BLOCO, fica satisfeito com este merge. Por ACHADO, **não**: `Ω6R-SEC-002` (P0)
+segue `parcialmente_superado`, com residual ABERTO em `P-O6R-SUBRECURSO-OBJECT-SCOPE` (dono `B-O6R-07c`), e a
+CHK P1 grava no caminho de criação de OS. Quem abrir o gate precisa tratar esse residual explicitamente.

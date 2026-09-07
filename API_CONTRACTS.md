@@ -205,6 +205,56 @@ Fontes: `src/modules/platform/platform.routes.ts` (montado em `/api/v1/platform`
 | GET | `/platform/cloud-usage/summary` | `platform:cloud-usage:read` | Uso agregado da plataforma. |
 | GET | `/platform/cloud-usage/tenants/:tenantId/summary` · `/daily` | `platform:cloud-usage:read` | Uso por organização (resumo/diário). |
 
+**Faturamento da vistoria — `checklist_run_billing@2026-09-06.b-o6r-06`.** `POST /checklists/:id/runs` (201),
+`POST /checklists/runs/:id/complete` e `POST /api/v1/mobile/sync/checklists` (`checklist.run_create` /
+`checklist.complete`): **forma inalterada**, nenhum campo novo no DTO — a unidade de medição não sai para o
+cliente. O que o contrato passa a garantir, em linguagem de banco:
+
+- `201` / `accepted` / `already_applied` implica que a unidade faturável correspondente **está commitada na
+  mesma transação** da vistoria, em `cloud_usage_events`, com chave `checklist_run:{runId}:{metricKey}`
+  (sufixo `:reopened` na conclusão da versão reaberta) e unicidade garantida pelo índice
+  `(tenant_id, idempotency_key)`.
+- **Falha na medição ⇒ 5xx e NENHUMA vistoria persistida.** É fail-closed por desenho: não existe estado em
+  que a vistoria exista e a unidade não. Quem repara é o **retry do cliente** (fila offline / sync).
+- **Replay** da mesma `client_run_key` / `local_run_id` ⇒ **1 vistoria, 1 unidade por métrica**.
+- Vistoria **reaberta** é estado legítimo **sem** as chaves de criação (regra da junta PR-03), e a conclusão
+  dela vale `quantity 0`.
+- A trilha **divergência → ciência** (`POST /checklists/runs/:id/divergences`,
+  `POST /checklists/runs/:id/acknowledgements` e os pares no sync) **não gera unidade de conclusão** — 0 antes
+  e 0 depois deste bloco. Cobrá-la é decisão de produto (`P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA`).
+
+*Nota de precisão do termo:* a garantia acima é **atomicidade transacional + unicidade por chave natural**.
+Não é um Transactional Outbox (não há segundo sistema nem relay), e a expressão "exactly-once" não é usada de
+propósito — `PD-O6R-B06-OUTBOX-IN-DB`.
+
+**Resumo de custo — `cloud_cost_summary@2026-09-06.b-o6r-06`.** `GET /api/v1/platform/cloud-costs/summary`.
+Forma **inalterada + 3 campos aditivos**:
+
+- `lineItemCount: integer` — quantas linhas foram **agregadas** no período/filtro. É o que permite cruzar o
+  resumo com o detalhe paginado; antes o resumo somava no máximo 10.000 linhas e não tinha como avisar.
+- `totalUnblendedCostExact: string` e `services[].unblendedCostExact: string` — o valor **decimal exato**, tal
+  como o banco o somou, sem conversão. `totalUnblendedCost: number` e `services[].unblendedCost: number`
+  **permanecem** e são **documentadamente lossy** acima de ~1e10 com 6 casas; para conferir fatura, use os
+  campos exatos.
+
+`totalUnblendedCost` e `services[].unblendedCost` passam a ser `SUM` **no banco, sem teto** (antes: soma em
+processo das primeiras 10.000 linhas, em ponto flutuante). Período **vazio** devolve `200` com
+`{ totalUnblendedCost: 0, totalUnblendedCostExact: "0", lineItemCount: 0, services: [], currencies: [] }` —
+nunca `null`, nunca `NaN`. Códigos inalterados: `400` filtros inválidos, `403` sem `platform:cloud-costs:read`.
+`GET /platform/cloud-costs/line-items` **inalterado** (paginado, `limit` ≤ 500).
+*Diferença de default, documentada:* o **resumo** injeta período default de 30 dias; o **detalhe** não tem
+default. Mudar o default do detalhe é contrato do painel, fora deste bloco.
+
+**Rateio de custo — `cloud_cost_allocation_run@2026-09-06.b-o6r-06`.**
+`POST /api/v1/platform/cloud-cost-allocations/runs`: `201` como hoje. Dois efeitos observáveis novos:
+
+- a run pode terminar `status: "failed"` com `errorMessage` iniciado por `period_exceeds_line_item_cap`
+  (com `{count, cap}`) quando o período tem mais de **100.000** linhas de custo — **antes** ela terminava
+  `completed` com o valor **truncado em silêncio**;
+- a **base de rateio** passa a ser somada na tabela durável de eventos de uso, **por organização e sob o
+  contexto RLS dela** — o rateio deixa de depender da projeção diária (que nenhum job enfileira) e passa a
+  funcionar sob papel de banco **sem `BYPASSRLS`**, o que antes falhava na escrita e lia zero na leitura.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).

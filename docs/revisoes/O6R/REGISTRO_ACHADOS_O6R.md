@@ -117,6 +117,32 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Pagar 80 de um título de 100 e tentar `PATCH amount=50` e `DELETE`; ambos devem falhar sem alterar título ou lançamentos, inclusive sob concorrência.
 
 ### [Ω6R-DIN-005] Métrica faturável de checklist pode ser perdida definitivamente
+- Status: **fechado** em 2026-09-07 pelo `B-O6R-06` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+  **A unidade faturável passou a commitar com a run.** `src/modules/cloud-usage/cloud-usage.capture.ts`
+  (`appendChecklistRunUsageInTx`, `$executeRaw` com **alvo explícito** `ON CONFLICT (tenant_id,
+  idempotency_key) DO NOTHING`) é chamado de dentro da transação que o `withTenantRls` já abria em
+  `createRun`/`createRunWithClientKey`/`completeRun`, com **chave estável derivada da RUN**
+  (`checklist_run:{runId}:{metricKey}`) no lugar da chave por emissão (`event.id`). Os ramos
+  `checklist_run.created`/`completed` **saíram** de `cloud-usage.events.ts`: se ficassem, cada emissão
+  gravaria uma 2ª linha e a base de rateio dobraria (é o que o censo **C1** mata).
+  **A janela do achado deixa de existir:** se a medição falha, a run **não commita** e o cliente recebe
+  erro — o *retry* é quem repara. É fail-closed **por escolha declarada**, com o acoplamento
+  faturamento→operação escrito e provado no vermelho (F7).
+  **Universo das invariantes, declarado:** `I1′` vale para run com `reopened_from_run_id IS NULL` — a
+  versão **reaberta** é estado legítimo SEM as chaves de criação (regra da junta PR-03), e é isso que
+  **A8′** verifica por SQL, com contagem **positiva** para as reabertas. `I2′` cobre a conclusão que
+  passa por `service.completeRun`: a trilha **divergência → ciência** do app de campo continua valendo
+  **0 → 0**, garantida pelo 5º parâmetro **obrigatório e sem default** `billing: { meterCompletion }` —
+  cujo caráter obrigatório é provado **pelo compilador** (C6) — e medida por A10/F6/C4.
+  **A base do rateio mudou de fonte:** deixou de ler a projeção diária que **ninguém agenda** e passa a
+  somar `cloud_usage_events` por tenant, sob o contexto RLS de cada um (B1 prova o rateio correto com a
+  projeção **vazia**).
+  **Prova:** 54 casos novos por execução em cluster Postgres descartável (A 15 · F 6 · R 6 · S 10 · B 10
+  · C 7), mais os 4 casos do `reopen` migrados para o caminho da transação; **18 mutações** do catálogo
+  aplicadas, executadas e revertidas — **todas vermelhas**, com a árvore limpa ao final.
+  **Residual com dono:** `scripts/reconcile-checklist-usage.ts` NÃO foi entregue — o ramo `completed`
+  está **bloqueado** pelo achado `R2-A` do `critico-adversarial` (o script refaturaria a trilha C que a
+  própria emenda protegeu) até a junta decidir o predicado observável: `P-O6R-B06-RECONCILE-BLOQUEADO`.
 - Severidade: P0        Confiança: 0.99
 - Categoria: DIN
 - Módulo: checklists / cloud-usage / cloud-cost-allocation        Lente: A1
@@ -501,6 +527,28 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Fixture de contrato para cada ação, replay pelo coordinator e consulta do mesmo estoque Prisma; reiniciar backend e provar persistência/idempotência.
 
 ### [Ω6R-DIN-007] Resumo de custo ignora silenciosamente itens após o limite 10.000
+- Status: **fechado** em 2026-09-07 pelo `B-O6R-06` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+  **O resumo soma no banco.** `summarizeLineItems` (`aggregate` + `groupBy`, **sem `take`**) com
+  `buildLineItemWhere` **compartilhado** com `listLineItems`, e o campo `limit` **removido** de
+  `normalizeSummaryFilters` — era ele o truncamento. O detalhe (`/line-items`) segue paginado ≤500.
+  **Tipos nuláveis, `_count._all` como discriminador:** janela vazia devolve zeros explícitos;
+  `lineItemCount > 0` com total `null` **lança** (combinação impossível). `?? 0` incondicional é
+  proibido nominalmente neste bloco, e não há `COALESCE` no SQL — apagariam a distinção entre "janela
+  vazia" e "soma nula", que é exatamente o tipo de `|| 0` que já fabricou número nesta casa.
+  **O SEGUNDO defeito, que o enunciado não nomeia, fecha junto:** a soma em ponto flutuante. Com 10.001
+  linhas na faixa realista (~9,9e5 com 6 casas) o total (~9,9e9) **não cabe exato** num `number`. Uma
+  única conversão na borda + campos **aditivos** exatos `totalUnblendedCostExact` e
+  `services[].unblendedCostExact` (string decimal). `totalUnblendedCost: number` **fica**, documentado
+  como *lossy* — `P-O6R-B06-DECIMAL-NA-BORDA` fica parcialmente resolvida (o exato já sai; migrar o
+  painel para lê-lo é do bloco de contrato).
+  **Prova por execução:** `o6r06-cost-summary-sum-db` 6/6 com 10.001 linhas — S1 (a 10.001ª, que é a
+  **mais recente** e portanto a que o `take`+`orderBy asc` cortava, entra no total, no `lineItemCount` e
+  em `services[]`), S3′ (referência em micro-unidades **BigInt** sobre todas as linhas, tolerância
+  **zero**), S9 (spy: nenhum `take/skip/cursor/distinct` no agregado — a premissa Prisma 7.8.0 × 8
+  pinada), S10 (acima de 2^53 micro-unidades o exato bate e o `number` **não** — o risco executado, não
+  prometido) — mais `-sum` 4/4 (S5–S8) e C3. Mutações **M-7** e **M-8** vermelhas.
+  **B3 NÃO entra nesta evidência:** já era verde na base (`listCostLineItems` sempre teve `take:
+  100_000`) e ficou relabelado como regressão.
 - Severidade: P0        Confiança: 1.00
 - Categoria: DIN
 - Módulo: cloud-costs        Lente: A4
@@ -699,7 +747,11 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: N falhas concorrentes armam lock persistente; senha correta durante TTL retorna 423 e funciona após expiração.
 
 ### [Ω6R-SEC-004] Uploads produtivos usam scanner no-op e confiam no MIME declarado
-- Status: **parcialmente_superado** em 2026-09-06 pelo `B-O6R-07b` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+- Status: **parcialmente_superado** em 2026-09-06 pelo `B-O6R-07b` (**PR #380, merge `fe2748c`, head julgado `a2988b5`**).
+  *(Backfill §C3.5 pago pelo `B-O6R-06`, com a pré-condição EXECUTADA e não copiada: `git diff --stat
+  a2988b5 c5d63bf -- src tests prisma frontend mobile .github scripts` sai **vazio**, e
+  `tree(c5d63bf) == tree(fe2748c) == 1f957536`. `approved_head` responde "qual código a junta aprovou",
+  não "qual commit a plataforma mergeou" — `c5d63bf` é o `pr_head`, com os commits de registro.)*
   **Dois dos três mecanismos do achado morrem em TODO ambiente.** (1) *MIME do cliente*: gate único
   (`src/modules/evidence/upload-gate.ts`) com sniff de assinatura in-house (`content-sniff.ts`, tabela da
   `PD-O6R-B07B-MAGIC-BYTES`, offset 0 estrito, ZERO dependência) nas **5 vias** de ingresso, e o campo `mimeType`

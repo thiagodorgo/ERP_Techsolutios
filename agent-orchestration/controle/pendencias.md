@@ -7158,3 +7158,312 @@ dependência satisfeita desde 19/08 e **sem dono nomeado**.
 - **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (terminar o 07b; `B-O6R-06` a seguir) ·
   **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. A tensão que ela registrava
   está **resolvida por decisão**, não por medição — que é o desfecho correto para uma pergunta de fila.
+
+---
+
+## P-O6R-B06-RECONCILE-BLOQUEADO (2026-09-07) — o script de reparação NÃO foi entregue; a junta decide o predicado — ALTA
+
+**Aberta pelo `B-O6R-06`, e é o item que a junta precisa decidir antes de qualquer coisa neste bloco.**
+
+O plano previa `scripts/reconcile-checklist-usage.ts` (dry-run por default, `--apply` para escrever) para
+reparar o subfaturamento das vistorias já criadas sem métrica. Ele **não foi implementado**, por instrução
+explícita do veredito da 2ª rodada do `critico-adversarial` (`votos/B-O6R-06/01-critico-adversarial.md`,
+achado `R2-A`, `gravidade: bloqueia o script`, `escopo: dentro-do-bloco`).
+
+**O defeito, medido pelo crítico e conferido na leitura do caminho.** Duas seções da mesma emenda se
+contradizem. A `E1·2` protege a **trilha C** (`registerDivergence` → `acknowledgeRun`) em **0 → 0**, com dois
+aceites e duas mutações. A `E1·1` manda o reconcile cobrir *"todas as runs com `completed_at`/`pending_ack`"*
+— **sem recorte de trilha**. E uma run de trilha C termina com `completed_at` **preenchido**
+(`checklist-prisma.repository.ts`: `completed_at: status === "pending_acknowledgement" ? null : new Date()`;
+a ciência chama com `completed_with_divergence`) e **sem** evento `checklist_run.completed`, corretamente, por
+`meterCompletion: false`. O `WHERE NOT EXISTS` a enxergaria como "concluída sem métrica" e **inseriria 1
+unidade faturável** na base de rateio `checklists`. É dinheiro, e é a mesma classe do achado `E1` da 1ª rodada
+— o script tratando estado legítimo como defeito —, só que agora o estado legítimo foi criado pela própria
+emenda.
+
+**Por que não dá para consertar sozinho, e por que o dev não escolheu um recorte.** A causa raiz é o achado
+irmão `R2-B`: **`I2′` não é verificável por SQL**. O universo dela é *"run concluída **que passou por
+`service.completeRun`**"*, e "passou por `service.completeRun`" **não é observável em coluna nenhuma** —
+`status` e `completed_at` são idênticos nos dois casos para `completed_with_divergence`. A distinção existe só
+no **sítio de chamada**. O script só tem SQL, e o predicado de que ele precisaria não está no banco. Escolher
+um recorte aqui seria o dev decidindo, sozinho e sem mandato, **quanto se cobra de quem** — exatamente o tipo
+de decisão que o §C7.4-bis tira das mãos de quem implementa.
+
+**O que a junta precisa decidir (o crítico não propõe, e o dev também não):**
+
+1. **Qual predicado OBSERVÁVEL** delimita "conclusão faturável". As opções que existem hoje no schema, sem
+   migration: (a) presença de linha em `checklist_acknowledgements` para a run; (b) ausência de evento
+   `checklist_run.divergence_reported` em `cloud_usage_events` para aquele `source_id`; (c) `status =
+   'completed'` apenas, deixando `completed_with_divergence` de fora — cada uma cobra um conjunto diferente,
+   e nenhuma é obviamente a que o produto quer.
+2. **Ou** aceitar que `I2′` deixe de ser vendida como verificável por SQL, e que o reconcile cubra **só** as
+   chaves de criação (`I1′`, que É verificável: `reopened_from_run_id IS NULL` é coluna).
+3. Um **aceite da série K com uma run de trilha C semeada** — hoje não existe nenhum. `K4` semeia reabertas e
+   originais; `K1′` declara as 5 como originais. Nenhum caso do plano põe uma run de divergência→ciência na
+   frente do script.
+
+**Enquanto isto não for decidido:** o `--apply` na base viva (demo) **não deve sequer ser oferecido ao dono**
+— é o texto literal do veredito. A pendência 5 do §12 do plano (`P-O6R-B06-RECONCILIACAO-NA-DEMO`) fica
+**suspensa** por esta.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `dentro-do-bloco` (nasce da emenda deste bloco) ·
+  **dono:** junta do `B-O6R-06` (decisão), depois um bloco de implementação a nomear ·
+  **forma da evidência:** leitura do caminho, reproduzível — o crítico cita `checklist.service.ts` (3 sítios
+  de chamada de `repository.completeRun`) e a linha de `completed_at` do repositório Prisma.
+
+---
+
+## P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA (2026-09-07) — a trilha de divergência do app de campo vale 0, e isso é decisão de produto — MÉDIA
+
+Uma vistoria de campo que registra **divergência** e recebe **ciência** — sem passar pelo `completeRun` do
+serviço — **não é cobrada hoje**. Medido por execução neste bloco (`C4`, censo por chamador):
+`{ completeRun: 1, registerDivergence: 0, acknowledgeRun: 0 }`, **antes e depois**.
+
+**Por que a pendência nasce agora, se o número não mudou.** Porque o bloco quase o mudou sem querer. Capturar
+a unidade dentro de `repository.completeRun` — que é onde a transação está — faria os **três** chamadores
+faturarem, e a trilha C passaria de **0 para 1**. Isso é mudança de **preço** numa trilha inteira do app de
+campo, e não é decisão de um bloco de durabilidade. O 5º parâmetro **obrigatório e sem default**
+`billing: { meterCompletion }` existe para que essa escolha seja **declarada em cada sítio**, e não herdada
+por acidente da camada onde o código foi parar.
+
+**Se deve ou não ser cobrada:** é trabalho de campo concluído, com divergência. O argumento a favor é óbvio; o
+argumento contra também (a organização pode ler a divergência como serviço não concluído). **Não é decisão
+técnica.**
+
+**Onde se muda, se o dono/produto decidir cobrar:** UMA linha — `registerDivergence` passa a
+`{ meterCompletion: true }` (`src/modules/checklists/checklist.service.ts`). A mutação `M-16` já exercita
+exatamente esse ponto e deixa `A10`/`C4` vermelhos, então o efeito é imediatamente visível em teste.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (o caminho é de
+  `mobile-checklist-sync.ts` e `checklist.service.ts`, anteriores ao bloco) · **dono:** produto / dono ·
+  **N e forma:** 0 → 0, medido por execução em `C4` (memória) e `A10`/`F6` (Postgres + sync).
+
+---
+
+## P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL (2026-09-07) — as chaves de anexo e de job continuam best-effort — ALTA
+
+O `B-O6R-06` tirou do fire-and-forget **as duas chaves do P0** (`checklist_run.created`,
+`checklist_run.completed`). As demais chaves **que têm produtor** continuam passando por
+`recordCloudUsageBestEffort`, com `.catch(warn)`, **fora da transação do fato de origem**:
+
+- `checklist_attachment.uploaded.bytes` / `downloaded.bytes` / `.count`, `s3_put_requests`, `s3_get_requests`
+  (`src/modules/cloud-usage/cloud-usage.events.ts`);
+- `job.executed` / `job_executions_count` (`src/infra/jobs/job.worker.ts`).
+
+As duas primeiras famílias são **base de rateio** das categorias `storage` e `jobs`
+(`cloud-cost-allocation.rules.ts`). Ou seja: **dinheiro que ainda pode se perder em silêncio**, pela mesma
+mecânica que o `Ω6R-DIN-005` descreve — só que noutras chaves, e fora do `local` que o achado nomeia.
+
+**Remédio:** a mesma disciplina do bloco — append na transação do fato de origem (o anexo, a execução do job),
+com chave derivada da entidade. O molde já existe e está pronto para reuso:
+`src/modules/cloud-usage/cloud-usage.capture.ts`.
+
+**Por que não foi feito aqui:** o recorte do bloco é fiel ao `local` do achado (confirmado pelo crítico);
+fechar todas as chaves seria o outbox genérico da `Ω6R D-002`, que o dono **optou por não deliberar**.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
+  *feat: add cloud usage metering foundation*) · **dono:** bloco novo `B-O6R-06b`, ou o bloco de outbox
+  genérico se a `Ω6R D-002` for deliberada · **forma:** leitura cruzada, reproduzível.
+
+---
+
+## P-O6R-B06-BASE-SEM-PRODUTOR (2026-09-07) — três categorias de custo caem sempre em `unallocated`, em silêncio — ALTA
+
+Achado do `critico-adversarial` (`E6`), conferido: cruzando toda `basisMetricKeys` de
+`cloud-cost-allocation.rules.ts` contra todo `metricKey:` escrito em `src`, quatro chaves **não são gravadas
+por ninguém**: `api_request.count`, `api_requests_count`, `storage_gb_month`, `storage_bytes_current`.
+
+Consequência: a regra `api_requests` (que só tem essas duas) e **metade** da regra `storage` apontam para
+chaves que **nunca existem** → `resolveBasis` devolve `totalQuantity = 0` → `missing_usage_basis` → o custo
+inteiro dessas categorias cai em `unallocated`, **sempre e em silêncio**.
+
+**Por que isto está separado da pendência irmã:** para essas quatro chaves o remédio "append na transação do
+fato de origem" **não se aplica** — não há fato. Alguém precisa **decidir se essas métricas devem existir** e,
+se sim, escrever o produtor. Descrevê-las como "residual best-effort" seria descrever o defeito errado.
+
+O aceite `C2` deste bloco cobre a metade que dá para cobrir agora: para a categoria `checklists`, **toda chave
+da base tem produtor na transação** — se alguém acrescentar uma chave à regra sem produtor, o censo fica
+vermelho. As outras categorias ficam com esta pendência.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
+  (2026-06-08) · **dono:** bloco de cloud billing / produto · **forma:** leitura cruzada, reproduzível.
+
+---
+
+## P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS (2026-09-07) — leituras de plataforma sem tenant devolvem zero sob papel sem BYPASSRLS — ALTA
+
+`cloud_usage_events` e `cloud_usage_daily_aggregates` têm `ENABLE` **e `FORCE ROW LEVEL SECURITY`**
+(migração `20260611000000`), com policy `tenant_id = NULLIF(current_setting('app.current_tenant_id', true),
+'')::uuid`. `FORCE` aplica **ao dono da tabela**; só `superuser`/`BYPASSRLS` escapa.
+
+As leituras **de plataforma** — `RlsPrismaCloudUsageRepository.listEvents({})` / `listDailyAggregates({})`,
+servindo `GET /platform/cloud-usage/summary` e `/tenants/:id/daily` — rodam com o `PrismaClient` cru, **sem
+GUC**: `NULLIF('','')` é `NULL`, a policy é falsa, e o resultado é **zero linhas** para qualquer papel que não
+bypasse RLS. Dev e CI usam `postgres` (superusuário), então o defeito é **invisível na suíte**.
+
+**Medido por execução neste bloco**, sob papel criado pelo arnês único da casa e conferido em `pg_roles`
+(`rolbypassrls = false`, `rolsuper = false`): `A7` mostra que, sem contexto, a contagem é `0` — e que **com** o
+contexto certo as linhas estão lá (controle positivo). O papel de produção **não é conhecido**: não foi
+medido, e `fly.production.toml` não o declara.
+
+O **rateio** já não depende disso — este bloco o passou a ler por tenant, sob contexto. O que resta são as
+leituras de plataforma **fora** do rateio.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
+  (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
+  descartável, papel `NOSUPERUSER NOBYPASSRLS`.
+
+---
+
+## P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA (2026-09-07) — ninguém enfileira o job da projeção diária — MÉDIA
+
+`cloud_usage_daily_aggregates` é escrita **só** por `aggregateDailyUsage`, exposta pelo job
+`cloud-usage.aggregate-daily`. **Nenhum sítio em `src/` enfileira esse job** nem chama o agregador: a varredura
+devolve apenas a definição do tipo, o registro, o arquivo do job, o agregador e a string `generatedBy`. Não há
+rota, e o bootstrap do worker sobe outras varreduras — nenhuma é esta.
+
+Em produção, a projeção que serve `GET /platform/cloud-usage/tenants/:id/daily` está **vazia por construção**.
+
+**O que este bloco mudou:** ela **deixou de ser base de dinheiro** — o rateio passou a somar a tabela durável
+de eventos, por tenant (aceite `B1` prova o rateio correto **com a projeção vazia**). O método
+`listUsageDailyAggregates` **fica**, servindo o endpoint diário. A **agenda** é o que continua faltando.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08) ·
+  **dono:** `B-O6R-08` (agenda singleton) ou produto · **forma:** varredura de `src`, reproduzível.
+
+---
+
+## P-O6R-B06-RATEIO-CURSOR-100K (2026-09-07) — o teto do rateio ficou ALTO, mas continua sendo um teto — MÉDIA
+
+`listCostLineItems` do rateio sempre teve `take: 100_000`. O motor itera **linha a linha** (tag direta ou regra
+por linha) — não se reduz a um `SUM` —, então a cura de verdade é **paginação por cursor**, que é outro bloco.
+
+**O que este bloco fez:** trocou o **truncamento silencioso** por **recusa alta**. Há um `count` antes do
+`findMany`, e acima do teto a run termina `failed` com `period_exceeds_line_item_cap` e `{count, cap}` na
+mensagem. Abaixo do teto, por prova (`B3`); acima, por recusa explícita (`B4`, com teto injetado em 10); nunca
+por truncamento mudo. A constante `CLOUD_COST_ALLOCATION_LINE_ITEM_CAP` é exportada e é o default do
+construtor (`B5`).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` — origem `6f27faae` (2026-06-08) ·
+  **dono:** bloco de cloud-costs.
+
+---
+
+## P-O6R-B06-SEM-PODA-POR-IDADE (2026-09-07) — `cloud_usage_events` não pode ser podada por idade sem quebrar a idempotência — BAIXA
+
+Consequência direta e pouco óbvia da chave estável. Diferente de uma chave de idempotência de **requisição
+HTTP** (aleatória, com TTL de 24 h, que é o que Stripe/Shopify/AWS descrevem), a chave deste bloco é uma
+**chave natural de um fato derivado**: uma unidade por `(run, métrica)`, um objeto que **não expira**.
+
+Logo: **apagar linhas de `cloud_usage_events` por idade, para `source_type = 'checklist_run'`, reabre a
+duplicação** — a linha some, a chave deixa de existir, e a próxima emissão do mesmo fato (uma reconciliação,
+um replay tardio) grava de novo. Qualquer proposta futura de retenção nessa tabela precisa tratar essa família
+de linhas à parte, ou substituir a idempotência por outro mecanismo.
+
+- **status:** ABERTA · **severidade:** BAIXA (registro; não há proposta de poda hoje) · **escopo:**
+  `dentro-do-bloco` (a restrição nasce do desenho deste bloco) · **dono:** quem propuser retenção.
+
+---
+
+## P-O6R-B06-DECIMAL-NA-BORDA (2026-09-07) — `totalUnblendedCost: number` continua lossy no contrato — BAIXA
+
+**Parcialmente resolvida por este bloco.** O valor **exato** já sai: `totalUnblendedCostExact` e
+`services[].unblendedCostExact` (string decimal), somados no banco e convertidos **zero** vezes. O que fica é
+o campo antigo `totalUnblendedCost: number`, mantido por compatibilidade do painel e **documentado como
+lossy** acima de ~1e10 com 6 casas.
+
+Medido, não prometido: `S10` prova, com a fixture de 10.001 linhas na faixa realista (total ~9,9e9), que o
+campo exato **bate** com `sum(...)::text` do banco e que o `number` **não** bate.
+
+**O que falta:** migrar o painel de cloud billing para ler o campo exato, e então decidir se o campo `number`
+sai do contrato. Isso muda o consumidor — é contrato, não é deste bloco.
+
+- **status:** ABERTA (parcialmente resolvida) · **severidade:** BAIXA · **escopo:** `pre-existente` ·
+  **dono:** bloco de contrato do cloud billing.
+
+---
+
+## P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB (2026-09-07) — duas suítes fora da lista §6 tiveram de ser tocadas — MÉDIA
+
+**Divergência registrada ANTES de consolidar (§A2), e não escolhida em silêncio.** A lista de testes
+permitidos do §6 do plano **não inclui** `tests/checklist-run-lifecycle-db.test.ts` nem
+`tests/checklist-run-create-concurrency-db.test.ts`. As duas ficaram **vermelhas** com o mecanismo novo, e não
+existe caminho que as deixe verdes sem tocá-las:
+
+1. **`checklist-run-lifecycle-db`** — (a) o teardown apagava a organização, e agora **sempre** existe linha em
+   `cloud_usage_events` daquele tenant, com FK `ON DELETE RESTRICT` para `tenants` → estourava
+   `cloud_usage_events_tenant_id_fkey`. Uma linha acrescentada, **escopada ao tenant do teste** e dentro do
+   próprio contexto RLS (nunca wildcard). A alternativa — `ON DELETE CASCADE` — exigiria **migration**, que o
+   §5 PROÍBE. (b) os **8 sítios** que chamam `repo.completeRun` direto passaram a declarar o 5º argumento
+   `billing`. `tests/**` está **fora do tsconfig**, então o compilador não os alcança — é exatamente a razão
+   de o aceite `C6` precisar de uma sonda dentro de `src/`.
+2. **`checklist-run-create-concurrency-db`** — a asserção `(a.3)` do `checklist_runs_count` lia o repositório
+   **em memória** do cloud-usage, e só quando `CORE_SAAS_PERSISTENCE !== "prisma"` (a unidade aterrissava lá
+   porque o produtor era fire-and-forget). Com a captura na transação, a unidade nasce **no mesmo Postgres em
+   que a run vive**. A asserção passou a **ler a tabela**, sem `setTimeout` e sem ramo condicional — ficou
+   **mais forte**, não mais fraca: a leitura antiga passaria a ser vacuamente verde.
+
+**Nenhum guard, teste ou validador foi afrouxado.** As duas mudanças aumentam o que se prova.
+
+**Nota de terreno, do mesmo tipo:** o ratchet `tests/db-catalog-write-guard.test.ts` é **lexical** e conta
+ocorrências em **comentário**. A prosa dos arquivos novos foi reescrita para não conter os literais de escrita
+de catálogo — os arquivos **não escrevem catálogo** (pedem ao arnês `createEphemeralRole`, sob
+`withRoleCatalogLock`), então a **allowlist congelada fica intocada** e o detector segue com sinal limpo.
+Registrado porque a decisão foi consciente: acrescentar entradas à allowlist teria sido a outra saída, e ela
+tocaria um arquivo também fora do §6 **e** enfraqueceria o ratchet.
+
+- **status:** ABERTA (para a junta ratificar ou não a extensão de escopo) · **severidade:** MÉDIA ·
+  **escopo:** `dentro-do-bloco` · **dono:** junta do `B-O6R-06` · **forma:** as duas suítes ficam **verdes**
+  na bateria (`6/6` e `4/4`), e o diff é de 3 hunks somados.
+
+---
+
+## P-O6R-B06-PAPEL-DO-DRILL-VEM-DO-ARNES (2026-09-07) — o papel sem BYPASSRLS não se chama `o6r06_app` — BAIXA
+
+O plano (aceite `B2′`) manda o teste **criar** `ROLE o6r06_app LOGIN NOSUPERUSER NOBYPASSRLS` + `GRANT`. A
+**propriedade** foi entregue integralmente — papel criado pelo próprio teste, sem `BYPASSRLS` e sem
+superusuário, com **falha na criação sendo VERMELHO, nunca skip**, e conferido em `pg_roles`
+(`rolbypassrls = false`, `rolsuper = false`). O que mudou foi **o mecanismo e o nome**: o papel vem de
+`createEphemeralRole` (`tests/helpers/auth-identity-fixture.ts`), com nome da família `o6r_b01_*`.
+
+**Por quê:** escrita de catálogo de cluster fora de `withRoleCatalogLock` disputa a tupla de ACL com as outras
+suítes sob `node --test` paralelo e produz `XX000 tuple concurrently updated` — é o
+`P-O6R-ARNES-ISOLAMENTO`, e a regra vigente diz, com estas letras, que **todo escritor de `tests/**` passa por
+este mecanismo**. Uma regra de arnês do repositório vale mais do que um nome de papel escrito num plano.
+
+- **status:** ABERTA (registro; nada a corrigir) · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` ·
+  **dono:** encerrado com o merge, salvo objeção da junta.
+
+---
+
+## EMENDAS DO `B-O6R-06` a pendências existentes (2026-09-07) — APPEND, nunca reescrita
+
+**`P-O6R-B06` (a pendência-mãe, 2026-08-14) → FECHADA na autoria.** Os dois P0 que ela carregava estão
+`fechado` no registro (`Ω6R-DIN-005`, `Ω6R-DIN-007`), com evidência por execução e o hash no backfill
+pós-merge (§C3.5). O **Bloqueia** que ela declarava — *"a trilha CHECKLIST P1 (em execução AGORA) e o cloud
+billing"* — **cai com o merge deste PR**. Ficam, no lugar dela, as pendências filhas nomeadas acima, cada uma
+com dono; a mais importante é `P-O6R-B06-RECONCILE-BLOQUEADO`, que a junta precisa decidir.
+
+**`P-O6R-B08` — append de uma linha.** O `B-O6R-06` **NÃO apoia dinheiro em `src/infra/jobs/**`**, e não
+tocou uma linha desse diretório. Depois deste bloco, nenhum real da categoria `checklists` depende de
+consumidor nenhum: a unidade commita com a vistoria, e o rateio a lê direto da tabela onde ela commitou. O que
+resta em `ARQ-001`/`PERF-001` para esta trilha é **latência e visibilidade** — run de rateio disparada por job
+podendo ficar presa em `processing` (visível e reexecutável, nunca subtraindo), e a projeção diária sem
+agenda (`P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA`). **A ressalva vale para a categoria `checklists`, e só para
+ela:** `storage` e `jobs` continuam com base gravada fora da transação — é a
+`P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL`, e `api_requests`/metade de `storage` nem produtor têm
+(`P-O6R-B06-BASE-SEM-PRODUTOR`).
+
+**`P-O6R-SUBRECURSO-OBJECT-SCOPE` — append de uma linha.** O gate da trilha CHECKLIST P1 enunciado em
+`J-CHK-04C-EMENDA-deliberacao-j6r.md` fala em *"até o merge de B-O6R-07 e B-O6R-06"*. **Por BLOCO**, ele fica
+satisfeito com o merge deste PR (07a #369, 07b #380 e 06). **Mas o enunciado fala de ACHADOS**, e um deles não
+está fechado: `Ω6R-SEC-002` (P0) é `parcialmente_superado`, com residual **ABERTO** nesta pendência (10 vias
+mutantes sobre OS alheia, dono `B-O6R-07c`) — e a CHECKLIST P1 grava no caminho de criação de OS. **Quem abrir
+o gate da CHK P1 depois do B06 precisa tratar esse residual EXPLICITAMENTE**, em vez de herdar "resta só o
+B06" como fato. Deliberação por bloco × por achado é decisão de junta/dono; este bloco **registra e não
+resolve**.
+
+**`P-O6R-B06-RECONCILIACAO-NA-DEMO` — SUSPENSA antes de nascer.** A pendência que o plano previa (rodar
+`--apply` na base viva, decisão do dono) fica **suspensa** por `P-O6R-B06-RECONCILE-BLOQUEADO`: enquanto a
+junta não decidir o predicado observável, o `--apply` **não deve sequer ser oferecido ao dono** — é o texto
+literal do veredito do crítico. O script, aliás, **não existe neste PR**.

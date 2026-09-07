@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **277** |
-| IDs distintos | 266 |
-| **ABERTAS** | **208** |
+| Cabecalhos `## P-` | **288** |
+| IDs distintos | 277 |
+| **ABERTAS** | **219** |
 | — das quais **diferidas** (balde C) | 76 |
-| — das quais **ativas nesta rodada** | **132** |
+| — das quais **ativas nesta rodada** | **143** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 69 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **277 cabecalhos para 266 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **288 cabecalhos para 277 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -55,7 +55,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 41
+## ABERTAS · balde A — material — 49
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -100,8 +100,16 @@
 | `P-O6R-B07B-CHECKLIST-JSON-FILEURL` | 7025 | MÉDIA | sim | P-O6R-B07B-CHECKLIST-JSON-FILEURL (2026-09-06) — ramo JSON do anexo de checklist aceita  |
 | `P-O6R-B07B-DATAURI-NO-VALUE` | 7039 | MÉDIA | sim | P-O6R-B07B-DATAURI-NO-VALUE (2026-09-06) — data-URI base64 persistido no `value` de resp |
 | `P-O6R-B07B-MOBILE-RETRY-PERMANENTE` | 7054 | MÉDIA | sim | P-O6R-B07B-MOBILE-RETRY-PERMANENTE (2026-09-06) — o app re-tenta para sempre o que foi r |
+| `P-O6R-B06-RECONCILE-BLOQUEADO` | 7164 | ALTA | sim | P-O6R-B06-RECONCILE-BLOQUEADO (2026-09-07) — o script de reparação NÃO foi entregue; a j |
+| `P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA` | 7216 | MÉDIA | sim | P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA (2026-09-07) — a trilha de divergência do app  |
+| `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL` | 7243 | ALTA | sim | P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL (2026-09-07) — as chaves de anexo e de job continua |
+| `P-O6R-B06-BASE-SEM-PRODUTOR` | 7270 | ALTA | sim | P-O6R-B06-BASE-SEM-PRODUTOR (2026-09-07) — três categorias de custo caem sempre em `unal |
+| `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` | 7293 | ALTA | sim | P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS (2026-09-07) — leituras de plataforma sem ten |
+| `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA` | 7318 | MÉDIA | sim | P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA (2026-09-07) — ninguém enfileira o job da projeção  |
+| `P-O6R-B06-RATEIO-CURSOR-100K` | 7336 | ALTA | sim | P-O6R-B06-RATEIO-CURSOR-100K (2026-09-07) — o teto do rateio ficou ALTO, mas continua se |
+| `P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB` | 7386 | MÉDIA | sim | P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB (2026-09-07) — duas suítes fora da lista §6 tiver |
 
-## ABERTAS · balde B — processo/registro — 91
+## ABERTAS · balde B — processo/registro — 94
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -196,6 +204,9 @@
 | `P-O6R-B07B-CODIGOS-INCONSISTENTES` | 7095 | BAIXA | sim | P-O6R-B07B-CODIGOS-INCONSISTENTES (2026-09-06) — V4 usa `400` onde as irmãs usam `415`/` |
 | `P-O6R-B07B-RECEIPT-CONTENT-TYPE` | 7105 | BAIXA | sim | P-O6R-B07B-RECEIPT-CONTENT-TYPE (2026-09-06) — V1 não cruza o `content_type` do recibo c |
 | `P-O6R-B07B-S3-PREFIXO-LEGADO` | 7115 | BAIXA | sim | P-O6R-B07B-S3-PREFIXO-LEGADO (2026-09-06) — chave S3 gravada com prefixo antigo passa a  |
+| `P-O6R-B06-SEM-PODA-POR-IDADE` | 7352 | BAIXA | sim | P-O6R-B06-SEM-PODA-POR-IDADE (2026-09-07) — `cloud_usage_events` não pode ser podada por |
+| `P-O6R-B06-DECIMAL-NA-BORDA` | 7368 | BAIXA | sim | P-O6R-B06-DECIMAL-NA-BORDA (2026-09-07) — `totalUnblendedCost: number` continua lossy no |
+| `P-O6R-B06-PAPEL-DO-DRILL-VEM-DO-ARNES` | 7421 | BAIXA | sim | P-O6R-B06-PAPEL-DO-DRILL-VEM-DO-ARNES (2026-09-07) — o papel sem BYPASSRLS não se chama  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 76
 
