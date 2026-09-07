@@ -1,7 +1,7 @@
 # BRIEFING — junta do bloco `B-GOV-ELENCO`
 
 > **PASSADA 2.** A passada 1 foi **BLOQUEADA** pelo `inspetor-de-terreno-da-junta`
-> (`votos/B-GOV-ELENCO/00-inspetor-terreno.md`): item **1.2** — três jurados apontados para um único
+> (`votos/B-GOV-ELENCO/00-inspetor-terreno-passada1.md`): item **1.2** — três jurados apontados para um único
 > worktree, com uma bateria que **exige injeção de defeito** (A4, C2, C3). Isso é a contaminação dos ciclos
 > 2 e 3 armada de antemão. Corrigido no **§7** abaixo. As ressalvas **R1–R5** dele estão incorporadas e
 > marcadas.
@@ -16,8 +16,16 @@
 (`git -C <wt> rev-parse HEAD`) e **registre o hash no seu voto**. Um briefing não pode nomear o commit que o
 contém, e por isso a numeração de commit de registro se move. O que está **medido e fixo**: o head de
 **código e elenco** é `25c0112a`; tudo depois dele é **registro** (briefing, ata, votos). Se
-`git -C <wt> diff --name-status 25c0112a..$(git -C <wt> rev-parse HEAD)` mostrar **qualquer** caminho fora de
-`agent-orchestration/omega/juntas/`, isso é achado `dentro-do-bloco` e **bloqueia**.
+`git -C <wt> diff --name-only 25c0112a..$(git -C <wt> rev-parse HEAD)` mostrar **qualquer** caminho fora de
+**`agent-orchestration/`**, isso é achado `dentro-do-bloco` e **bloqueia**.
+
+> **Correção da passada 3 (o inspetor pegou, e o erro era meu).** Esta regra dizia
+> `agent-orchestration/omega/juntas/` — prefixo **falso**, porque o próprio commit `23285d2d` mexeu em
+> `agent-orchestration/controle/pendencias.md` para registrar `P-GOV-AUDITOR-FORA-DA-CI`, que nasceu da
+> ressalva R3 do inspetor. Aplicada como escrita, ela mandaria vocês reprovarem um caminho que o §5 do
+> plano **permite** — reprovação por construção, a classe de bloqueante que a auditoria de 28/08 mediu
+> em **11 de 16**. O prefixo correto é `agent-orchestration/` (registro do bloco: plano, briefing, atas,
+> votos, decisões e pendências). Medido no head desta passada: **0 caminhos fora dele**.
 
 ---
 
@@ -115,6 +123,11 @@ rm -rf "$MEU"
 **Sem `git worktree add`** para isto: worktree extra tem o risco de remoção que já mutilou `node_modules`
 nesta máquina (§C7.1-ter(c)), e a cópia por `cp` resolve o mesmo problema com `rm -rf` de um diretório fora
 do repo. **Sem junction, sem symlink, sem `npm ci`.** Declare no seu voto **onde** você mutou.
+
+**Duas precisões medidas pelo inspetor na passada 2** (ele executou a receita: `0 → 1 → 0` na cópia,
+`0 → 0 → 0` no worktree): (a) rode a receita **a partir do worktree** — ali `.claude/` tem só `agents/` e
+`skills/`; a partir da árvore principal, `cp -r .claude` arrastaria `.claude/worktrees/` inteiro. (b) A cópia
+leva só o que o auditor **lê**; se a sua mutação for em `CLAUDE.md`, `AGENTS.md` ou `Kpis/*`, copie-os também.
 
 ## 8 · Plano de perda de jurado (R2)
 
