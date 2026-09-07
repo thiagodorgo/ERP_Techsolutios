@@ -771,3 +771,383 @@ registra e NÃO resolve:** quem abrir o gate da CHK P1 depois do B06 precisa tra
 
 *Fim do plano. Nada de `src/` foi tocado por este arquivo. Emendas pós-crítico entram como `EMENDA E1 (data)` em
 APPEND, com precedência sobre o corpo onde divergirem.*
+
+---
+
+## EMENDA E1 (2026-09-06) — pós-parecer do `critico-adversarial` (PLANO FRÁGIL: E1/E2/E3 bloqueiam) e pós-PDs (5 pontos CONTRA-O-PLANO)
+
+**Papel:** `planejador-mestre` (Fable — obrigatório na revalidação, §C7.6). **Insumos lidos inteiros:**
+`votos/B-O6R-06/01-critico-adversarial.md` (348 linhas, commit `be608a52`) e as duas PDs em `docs/omega-pd.md:930-1311`
+(`PD-O6R-B06-OUTBOX-IN-DB`, 16 fontes; `PD-O6R-B06-SUM-NUMERIC-RLS`, 14 fontes). **Forma:** APPEND — o corpo
+(§0–§12, 773 linhas) fica **intacto**; onde esta emenda divergir do corpo, **vale a emenda**. Quem acha não
+conserta (§C7.4-bis): o crítico achou; eu replanejo; **outro** agente implementa. Não commito.
+
+### E1·0 · Precedência, o que NÃO se re-litiga, e a LIÇÃO DE MÉTODO que o crítico nomeou
+
+**Sobreviveu e fica como está (parecer, "o que sobreviveu", itens 1–10):** os três achados do §2.4 (agora com prova
+por execução do crítico — D1/D5 para FORCE RLS; enumeração exaustiva dos 6 sítios de `enqueue(` + `eventJobMap`
+inteiro para "ninguém agenda"); o recorte do `.catch(warn)` fiel ao `local` do achado; a dedup do reconcile pela
+identidade da fonte; `approved_head = a2988b5` (pré-condição executada; prova por árvore `1f957536…`); o piso único
+47 e a aritmética 61/57; a fronteira de autoridade; e **a ausência de dispatcher — que não é o ponto fraco**. Esta
+emenda **não gasta uma linha** trocando Plano A por B: nenhum dos três bloqueantes se resolve assim.
+
+**A lição de método (raiz do E2, e o que vale para E1 também):** o §2.1 diagnosticou a cadeia pelo **emissor**
+(`publishDomainEvent`) e o §3.1 escolheu o ponto de captura pelo **receptor** (o repositório, porque detém a `tx`).
+**Os dois conjuntos de chamadores não coincidem** — e o plano não mediu a diferença. Medido agora (`rg
+"repository\.(createRun|completeRun|reopenRun)\(" src`): `repository.createRun` tem **1** chamador
+(`checklist.service.ts:248`); `repository.completeRun` tem **3** (`:538` completeRun → publica `completed`;
+`:685` registerDivergence → publica `divergence_reported`; `:733` acknowledgeRun → publica
+`acknowledgement_created`); `repository.reopenRun` tem **1** (`:598`, que publica `reopened`, **nunca** `created`).
+**Regra que passa a valer neste plano:** quando o ponto de captura muda de camada, a emenda **enumera os chamadores
+do ponto novo, publica o número faturado por trilha ANTES e DEPOIS, e tem um aceite por chamador** — o compilador
+(parâmetro obrigatório, sem default) fecha o conjunto para o futuro, mas **não substitui** a medição.
+
+### E1·1 · Bloqueante E1 — o universo da invariante, a reabertura e o script que refaturava
+
+**O que estava errado.** I1 dizia `∀ r ∈ checklist_runs …` — mas o terceiro sítio de INSERT em `checklist_runs`
+(`checklist-prisma.repository.ts:763`, `reopenRunWithinTransaction`) cria run **sem** `checklist_runs_count` **de
+propósito** (junta PR-03; `checklist.service.ts:586-588`). Logo A8 ficaria vermelho em código correto, o argumento
+"republicar deixa de ser necessário" apoiava-se em invariante falsa, e o `NOT EXISTS` do reconcile inseriria **1
+unidade por reabertura** — o que o §12 propunha rodar na demo.
+
+**O que muda no desenho:**
+
+- **Invariantes com UNIVERSO declarado (substituem I1/I2 do §3.1):**
+  - **I1′ (criação):** `∀ r ∈ checklist_runs` com **`r.reopened_from_run_id IS NULL`** `∃ e` com
+    `source_type='checklist_run' ∧ source_id=r.id ∧ metric_key ∈ {checklist_run.created, checklist_runs_count}`
+    (uma linha por chave). **Run reaberta é estado legítimo SEM essas duas chaves** — é a regra PR-03, preservada.
+  - **I2′ (conclusão):** `∀ r` com `completed_at IS NOT NULL ∨ status='pending_acknowledgement'` **e que tenha
+    passado por `service.completeRun`** (ver E1·2 — não por `registerDivergence`) `∃ e` com
+    `metric_key='checklist_run.completed'`, `quantity = 0` se `reopened_from_run_id IS NOT NULL` (chave com sufixo
+    `:reopened`), `1` caso contrário.
+  - O argumento do §3.1 passa a ser: *"não existe estado em que uma run **original** exista sem as duas chaves de
+    criação, nem run concluída pelo `completeRun` sem a chave de conclusão"*. `reopenRunWithinTransaction`
+  **continua FORA do escopo** (§6 item 6 mantido) — é medido, não alterado.
+- **Reconcile com o mesmo universo:** o `INSERT … SELECT … WHERE NOT EXISTS` das chaves de criação ganha
+  **`AND r.reopened_from_run_id IS NULL`**; a chave `completed` cobre todas as runs com `completed_at`/`pending_ack`
+  com `quantity = CASE WHEN r.reopened_from_run_id IS NOT NULL THEN 0 ELSE 1 END` e sufixo `:reopened` quando
+  reaberta. O relatório do script passa a imprimir, por tenant: `originais sem métrica`, `reabertas encontradas
+  (puladas nas chaves de criação)`, `concluídas sem métrica`, `inseridas por chave`.
+
+**Aceites novos/reescritos e mutações (falsificadores conferidos no papel):**
+
+| ID | Aceite | N | Mutação |
+|---|---|---|---|
+| A8′ (substitui A8) | 20 runs (10 concluídas, **2 reabertas** e concluídas): `NOT EXISTS` de `created`/`runs_count` restrito a `reopened_from_run_id IS NULL` → **0**; para as 2 reabertas, contagem **positiva** = **0** linhas dessas duas chaves e **1** linha `completed` com `quantity 0` | 2 | M-1 (originais sem chave); **M-14** (grava chave de criação na reabertura → as reabertas passam a ter 2 linhas → vermelho) |
+| A9 (novo) | `reopenRun` via repositório real → nova run com `reopened_from_run_id` e **0** eventos de `created`/`runs_count`; `checklist_run.reopened` continua publicado | 1 | **M-14** |
+| R6 (novo, memória) | idem A9 no dublê (`InMemoryChecklistRepository.reopenRun`) | 1 | **M-14** no dublê |
+| K4 (novo) | reconcile: semear 3 reabertas **legadas sem métrica** (2 concluídas, 1 em andamento) + 2 originais sem métrica → `--apply` insere **0** `created`/`runs_count` para as reabertas, **2×2** para as originais, e **2** `completed` com `quantity 0` para as reabertas concluídas; 2ª execução → 0 | 2 | **M-15** (remover o predicado `reopened_from_run_id IS NULL` → 3 reabertas ganham `runs_count` → vermelho) |
+| K1′ | K1 passa a **declarar** que as 5 runs semeadas "sem eventos" são **originais** (`reopened_from_run_id NULL`) — a fixture não pode mais ser ambígua | (mesmo N) | M-12 |
+
+**Decisão sobre o reconcile e a demo (§12 pendência 5, reescrita):** o script **continua** sendo entregue e **continua**
+sendo decisão do dono rodá-lo na demo — mas com **três pré-condições escritas na pendência**: (i) merge deste PR;
+(ii) a ata registra o universo I1′/I2′ e K4 verde **com N**; (iii) o dono lê o relatório do **dry-run** (que agora
+nomeia as reabertas puladas) **antes** do `--apply`. Sem (ii) o script não é mais seguro do que era; com (ii) o
+refaturamento que o crítico achou não existe mais — K4 é o que prova.
+
+### E1·2 · Bloqueante E2 — `completeRun` do repositório tem TRÊS chamadores; a trilha de divergência do mobile mudaria de 0 para 1
+
+**O que estava errado.** Capturar `checklist_run.completed` **dentro** de `repository.completeRun` faz
+`registerDivergence` (`service.ts:685`, caminho do sync mobile `mobile-checklist-sync.ts:515`) e `acknowledgeRun`
+(`:733`) — que hoje **não** publicam `completed` e **não** faturam — passarem a faturar. A frase *"semântica de
+cobrança PRESERVADA"* do §3.1 era falsa para a trilha C. É dinheiro e é decisão de produto; **não é deste bloco**.
+
+**O que muda no desenho — a intenção de faturar sai do RECEPTOR e volta ao EMISSOR, por assinatura:**
+
+- `ChecklistRepository.completeRun` (`checklist.repository.ts:132`, Prisma `:667`, memória `:415`) ganha um **5º
+  parâmetro OBRIGATÓRIO, sem default**: `billing: { readonly meterCompletion: boolean }`. **Todo** chamador tem de
+  declarar — hoje são três, e o compilador (`npm run check`) recusa um quarto que não declare. Os três declaram:
+  `service.completeRun` (`:538`) → `{ meterCompletion: true }`; `registerDivergence` (`:685`) → `false`;
+  `acknowledgeRun` (`:733`) → `false`. O repositório só chama `appendChecklistRunUsageInTx(kind="completed")`
+  quando `meterCompletion === true`. **Resultado: o conjunto que fatura é exatamente o conjunto que hoje publica
+  `checklist_run.completed`** — 1 chamador, o mesmo do §2.1.
+- **Número faturado por trilha, ANTES e DEPOIS (publicado; o aceite C4 o mede por execução):**
+
+| Trilha | Hoje (`fe2748c`) | Depois (com `meterCompletion`) | Onde |
+|---|---|---|---|
+| A · `completeRun(hasDivergence=false)` → `completed` | 1 | **1** | A2 |
+| B · `completeRun(hasDivergence=true)` → `pending_acknowledgement` → `acknowledgeRun` | 1 (a ciência não publica `completed`) | **1** (ciência com `false`; e a chave estável deduplicaria de todo modo) | A11 |
+| **C · `registerDivergence` (sync/REST) → `acknowledgeRun`** | **0** | **0** | A10, F6 |
+| D · run reaberta concluída por `completeRun` | 1 evento com `quantity 0` | **1 com `quantity 0`** | A3 |
+
+- A frase do §3.1 é **substituída** por: *"semântica de cobrança preservada por TRILHA (tabela acima), medida antes
+  e depois; a única mudança de número deste bloco é a que o P0 pede — a unidade que HOJE se perde por falha passa a
+  commitar"*.
+- **Trilha C como decisão de produto, nomeada e não tomada:** vistoria de campo que registra divergência e recebe
+  ciência **sem** passar pelo `completeRun` do serviço **não é cobrada hoje** (0). Se deve ser (é trabalho de campo
+  concluído com divergência), é decisão do dono/junta de produto. Nasce **`P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA`**
+  (MÉDIA · `pre-existente` — o caminho é de `mobile-checklist-sync.ts` e `service.ts:656-711`, anteriores ao bloco;
+  dono: **produto/dono**), com o número **0 → 0** medido por C4 e o ponto único onde mudar (`registerDivergence` →
+  `{ meterCompletion: true }`, uma linha, coberta por A10 no vermelho).
+
+**Aceites novos e mutações:**
+
+| ID | Aceite | N | Mutação |
+|---|---|---|---|
+| A10 (novo, `-db`) | `registerDivergence` (com e sem `fileUrl`) → **0** linhas `checklist_run.completed`; em seguida `acknowledgeRun` → **ainda 0**; a run termina `completed_with_divergence` | 2 | **M-16** (`registerDivergence` passa `true` → passo 1 vermelho) · **M-17** (`acknowledgeRun` passa `true` → passo 2 vermelho) |
+| A11 (novo, `-db`) | `completeRun(hasDivergence=true)` → **1** linha `completed` (`quantity 1`, status `pending_acknowledgement`); `acknowledgeRun` → **ainda 1** (nunca 2) | 1 | M-2 (0 no passo 1) |
+| F6 (novo, sync HTTP em memória) | lote `checklist.divergence_create` + `checklist.acknowledgement_create` → `accepted` ×2 e **0** `completed`; lote `checklist.complete` → **1**; replay dos três → `already_applied`, contagens inalteradas | 2 | **M-16** |
+| C4 (novo, censo por execução) | Para cada um dos **3** chamadores do serviço, chamado isoladamente sobre run própria: `completed` = `{completeRun: 1, registerDivergence: 0, acknowledgeRun: 0}` — tabela publicada na ata como "antes = depois" | 3 | M-16, M-17 |
+| C6 (novo, compilação) | Arquivo-mutação que chama `repository.completeRun(t, r, u, s)` **sem** o 5º parâmetro → `npm run check` **ec≠0** nomeando `billing` (prova de que o conjunto está fechado pelo compilador; espelho da M-B1 do 07b) | 1 | dar `default` ao parâmetro → o `check` passa → vermelho |
+
+**Escopo (§6) emendado por este item:** item 8 (`checklist.service.ts`) deixa de ser "só comentários": **3 sítios
+de chamada ganham o argumento `billing`** (`:538`, `:685`, `:733`) — nenhuma outra lógica. Item 7
+(`checklist.repository.ts`) inclui a **interface** (`:132`) além do dublê. `src/modules/mobile/**` segue
+**PROIBIDO** — a trilha C é medida (F6), não alterada. Nada do §5 é cruzado.
+
+### E1·3 · Bloqueante E3 — sob papel sem BYPASSRLS a ESCRITA do rateio morre; B2 era insatisfazível
+
+**O que estava errado.** `tenant_cloud_cost_allocations` tem `ENABLE` + `FORCE ROW LEVEL SECURITY` com `USING`
+**e `WITH CHECK`** (`migration 20260613…:88-93`), e `replaceTenantAllocations`
+(`cloud-cost-allocation-prisma.repository.ts:80-108`: `deleteMany` + `create` em laço) escreve com o `PrismaClient`
+**cru** (`:165-168`), sem GUC. O crítico executou: `INSERT` sem GUC → `new row violates row-level security policy`
+(ec=1); `DELETE` sem GUC → `DELETE 0` **silencioso**. O §3.2 consertou só a **leitura** da base; *"correta em
+qualquer papel"* era overclaim. E `listTenantAllocations` (`:114-127`, lida pelo `GET …/summary` do painel do
+investidor via `service.ts:135`) tem o mesmo defeito na leitura.
+
+**O que muda no desenho — TODO acesso a tabela com RLS do rateio roda sob contexto de tenant, numa ÚNICA transação:**
+
+- **Helper privado no repositório Prisma do rateio** (mesmo arquivo, §6 item 10):
+  `forEachTenantInOneTx<T>(tenantIds, (tx, tenantId) => Promise<T>)` = **um** `prisma.$transaction(async tx => { for
+  (tenantId) { await setTenantRlsContext(tx, tenantId); … } }, { timeout })` — `setTenantRlsContext` já é exportado
+  por `src/database/rls.ts:17-27` e aceita `TransactionClient`; `set_config(…, true)` é **transaction-local** e a
+  chamada seguinte **substitui** o GUC (é o que B6 já exigia). `rls.ts` **não é tocado**. `timeout` explícito
+  (dimensionado por N tenants; default do Prisma é 5 s).
+- **`sumUsageBasis`** (§3.2-a) passa a usar o helper: **1 transação** para os N tenants (não N `withTenantRls`).
+- **`replaceTenantAllocations`** passa a rodar **dentro do helper**, iterando **todos** os tenants de `listTenants()`
+  — não só os que têm alocação nesta execução — para que `deleteMany({ allocation_run_id })` **sob o GUC de cada
+  tenant** limpe também linhas de execução anterior de tenant que hoje ficou sem alocação; depois `createMany` das
+  linhas daquele tenant. **Ganho lateral, dito:** hoje o replace **não é transacional** (`deleteMany` e N `create`
+  soltos, `:84-105`); passa a ser **all-or-nothing** — falha no meio → nada apagado, nada gravado, run `failed`
+  pelo `catch` de `service.ts:80-87`, reexecutável.
+- **`listTenantAllocations`** passa pelo helper (união dos resultados por tenant; filtro `tenantId` reduz a lista
+  a 1). `cloud_cost_allocation_runs` e `cloud_cost_line_items` **não têm RLS** (a migração `20260613` só cria policy
+  para `tenant_cloud_cost_allocations`; a `20260612` não cria nenhuma — medido por `grep "ROW LEVEL SECURITY\|CREATE
+  POLICY"`), então `createRun/updateRun/listRuns/listCostLineItems` **ficam como estão**.
+- **Tipo (nota E9 do crítico):** os três métodos acima exigem `$transaction`, logo um `PrismaClient`; o construtor
+  continua `PrismaExecutor` para os demais, e os três **assertam em runtime** (`"$transaction" in client`) com erro
+  nomeado — um `TransactionClient` injetado falha alto, nunca escreve sem contexto.
+- **Afirmação corrigida:** *"a leitura da base, a escrita e a leitura das alocações rodam sob contexto do tenant
+  dono da linha; o **rateio** passa a funcionar sob papel sem BYPASSRLS"*. As leituras de plataforma **fora** do
+  rateio (`/platform/cloud-usage/*` sem tenant) seguem na pendência 2 do §12.
+
+**Aceites reescritos/novos e mutações:**
+
+| ID | Aceite | N | Mutação |
+|---|---|---|---|
+| B2′ (substitui B2) | O teste **cria** `ROLE o6r06_app LOGIN NOSUPERUSER NOBYPASSRLS` + `GRANT` (falha da criação = teste **vermelho**, nunca skip — CI e cluster do dev são superuser), abre `PrismaClient` com essa URL e constrói o repositório sobre ele: `allocateCostsForPeriod` → **`completed`**, 3:1 lido por `listTenantAllocations` **com o mesmo papel**; **controle** no mesmo teste: `create` cru em `tenant_cloud_cost_allocations` com esse papel → erro de policy (reproduz o D3 do crítico); `findMany` cru → 0 | 3 | **M-18** (retirar o `setTenantRlsContext` antes das escritas → run `failed` por policy) · M-9 (base vazia) |
+| B7 (novo) | Reexecução do run sob o papel: tenant que tinha alocação e ficou sem → linhas antigas **apagadas** (o replace varre todos os tenants); tenant novo → gravado; nenhuma linha órfã | 1 | iterar só os tenants com alocação → linha órfã sobrevive → vermelho |
+| B8 (novo) | Atomicidade do replace: falha injetada no `createMany` do 2º tenant → **0** linhas do run gravadas (nem as do 1º), run `failed` | 1 | tirar o `$transaction` do helper → 1º tenant persiste → vermelho |
+| B9 (novo) | Canário do contexto: `groupBy` de `sumUsageBasis` devolvendo `tenant_id` ≠ o do GUC corrente → o repositório **lança** (nunca soma base alheia) | 1 | remover a asserção |
+| B6′ | B6 fica, agora provando a **substituição** do GUC dentro da mesma transação (A→B→A) — a base de cada volta é só a do tenant corrente | 1 | não re-setar o GUC no laço |
+| B3 | **Relabelado**: regressão (já verde na base, `take: 100_000`) — **não** conta como prova do DIN-007 na ata (E10) | (mesmo) | — |
+
+**Vermelho-controle (§8.5) ganha B2′**: na base `fe2748c`, o mesmo teste sob o papel sem BYPASSRLS termina com a run
+`failed` na escrita — é o D3 do crítico reproduzido por quem implementa, não herdado do parecer.
+
+### E1·4 · A `PD-O6R-B06-OUTBOX-IN-DB` contra o plano — e as ressalvas E4/E5 do crítico, que são do mesmo lugar
+
+**(1) `createMany({ skipDuplicates: true })` NÃO é `ON CONFLICT (tenant_id, idempotency_key) DO NOTHING`.** A doc do
+Prisma mostra o SQL **sem conflict target**; a do PostgreSQL diz que, omitido o alvo, *"conflicts with all usable
+constraints (and unique indexes) are handled"* — engoliria colisão de **PK** e de qualquer unique futura. **Decisão:
+a opção `createMany` é RETIRADA do §3.1.** `appendChecklistRunUsageInTx` usa **só** `$executeRaw` com alvo explícito
+`ON CONFLICT (tenant_id, idempotency_key) DO NOTHING`, espelho literal de `createRunWithClientKey`
+(`checklist-prisma.repository.ts:437-449`). A "prova no log de query" do §8.3-b passa a conferir o **alvo**, não a
+cláusula. Medido para a PD: `cloud_usage_events.id` é `gen_random_uuid()` (`schema.prisma:452`) — **não há
+sequência "used up"**. E o nível de isolamento vira **premissa pinada**: `DO NOTHING` só é seguro sob concorrência em
+READ COMMITTED (PD §2, PostgreSQL §13.2.2).
+
+**(E4) A5 não era construtível** (o `run.id` nasce no INSERT; não há como semear a colisão antes). **A5′:** dentro de
+**uma** `withTenantRls`, chamar `appendChecklistRunUsageInTx` **duas vezes** com os mesmos inputs → 2ª chamada afeta
+**0** linhas, a transação **continua válida** (um `SELECT` depois funciona; sem 25P02), commit com **1** linha por
+chave. É o falsificador da escolha `$executeRaw`-com-alvo contra `create` (M-4).
+
+**(E5) M-3 não deixava vermelhos A4/R1/F5** — no replay com `client_run_key` o `createRun` devolve `created:false`
+**antes de qualquer INSERT** (`:400-408`), então chave aleatória não se manifesta ali. **A4 é RETIRADO** (absorvido
+por A15 + K1). **Pareamento corrigido:** M-3 ↔ **A1** (forma da chave) e **A15**.
+
+| ID | Aceite | N | Mutação |
+|---|---|---|---|
+| A12 (novo) | Colisão de **PK** não é silenciada: `INSERT` cru com `id` já existente e chave nova → **23505** (a tx do teste aborta, e é o esperado) — prova que o alvo do `ON CONFLICT` é `(tenant_id, idempotency_key)` e só ele | 1 | **M-19** (omitir o alvo: `ON CONFLICT DO NOTHING`) → 0 linhas e silêncio → vermelho |
+| A13 (novo) | Dentro de `withTenantRls`: `SELECT current_setting('transaction_isolation')` = `read committed` — pino da premissa da PD | 1 | **M-20** (`isolationLevel: "Serializable"` em `rls.ts`, **só como drill**, revertido) |
+| A14 (novo) | 2ª chamada com a **mesma chave e `quantity` diferente** → descartada; a 1ª permanece. **Aceito por desenho e documentado**: para a mesma run, `quantity` nunca muda de propósito — reabertura é run **nova** (chave nova), conclusão dupla é 409 (`assertChecklistRunFieldWritable`), e o sufixo `:reopened` separa a conclusão reaberta | 1 | trocar `DO NOTHING` por `DO UPDATE SET quantity` → a 2ª vence → vermelho |
+| A15 (novo) | Duas emissões da **mesma** run em **duas** transações (simula a dupla emissão legada) → **1** linha por chave | 1 | **M-3** (chave por emissão → 2 linhas) |
+
+**(3) O `.catch(warn)` era um desacoplador — e o §10 não dizia.** Com a captura na tx, *"se a medição falha, a run
+não commita"* significa que **um defeito no faturamento impede o técnico de criar/concluir vistoria**. **Decisão:
+fail-closed é o que o P0 pede — mantido —, com o acoplamento escrito e mitigado:** (a) `buildChecklistRunUsageEvents`
+é **total**: função pura sobre campos da run, chaves de uma lista fechada, `unit` constante, `quantity ∈ {0,1}` —
+**nunca lança para run válida**; (b) `appendChecklistRunUsageInTx` só pode falhar por **indisponibilidade do banco**
+ou **policy RLS** — e o append roda **dentro** de `withTenantRls`, com o GUC do tenant, logo o `WITH CHECK` passa
+(A17 prova sob papel sem BYPASSRLS); (c) o fail-open com alarme foi considerado e **recusado**: é o achado com outro
+nome. **§10 ganha a linha 12:** *"acoplamento de disponibilidade faturamento→operação; aceito por desenho; mitigado
+por builder total + append sem lógica; provado por F7/A16/A17"*.
+
+| ID | Aceite | N | Mutação |
+|---|---|---|---|
+| F7 (novo) | `validateInput` forçado a lançar (spy) → `createRun` **rejeita** e **nada** persiste — o vermelho honesto do acoplamento, executado | 1 | M-5 (append fora da tx com `.catch` → run persiste) |
+| A16 (novo) | Propriedade: para toda combinação `status × reopenedFromRunId × kind`, `build…` **não lança** e o resultado passa por `validateInput` | 1 | remover `checklist_runs_count` de `CLOUD_USAGE_METRIC_KEYS` → lança → vermelho |
+| A17 (novo, `-db`) | `RlsPrismaChecklistRepository` sobre `PrismaClient` conectado como `o6r06_app` (sem BYPASSRLS): `createRun` → run **e** 2 eventos commitados (o `WITH CHECK` de `cloud_usage_events` passa sob o GUC) | 1 | M-5 (append sem GUC → policy nega → engolido → run sem evento) |
+
+**(4) Nome.** A PD é explícita: sem segundo sistema e sem relay **não é Transactional Outbox** — é escrita atômica com
+chave única, **mais forte** para o dual write, mas não chancelada pela literatura do outbox. **Decisão:** o arquivo
+passa a chamar-se **`src/modules/cloud-usage/cloud-usage.capture.ts`** ("captura transacional da medição") e a
+função **`appendChecklistRunUsageInTx`**; o §3.4 fica como registro de **mapeamento por propriedade** (o termo do
+aceite `PLANO_O6R.md:12` é atendido pela propriedade "nenhuma run original commitada sem unidade faturável", não
+pela palavra). `API_CONTRACTS.md` (`checklist_run_billing@…`) documenta a invariante **em linguagem de banco**
+(unique `(tenant_id, idempotency_key)` + atomicidade da transação), citando "at-least-once + idempotência" só como
+analogia — "exactly-once efetivo" **sai** do texto do contrato.
+
+**(5) Chave derivada — evidência dividida, reconciliada por escrito.** Stripe/Shopify/AWS falam de **chave de
+idempotência de requisição HTTP** (aleatória, TTL 24 h); este bloco cria **chave natural de um fato derivado**
+(uma unidade por `(run, métrica)`), objeto que **não expira** — Morling e o Idempotent Consumer sustentam. Duas
+consequências que o corpo não escrevia: (a) **`cloud_usage_events` nunca pode ser podada por idade** para
+`source_type='checklist_run'` sem quebrar a idempotência → nasce **`P-O6R-B06-SEM-PODA-POR-IDADE`** (BAIXA · registro;
+dono: quem propuser retenção); (b) linhas legadas (chave `event.id`) e novas **não se deduplicam entre si** — por
+isso **C1 é o teste mais importante do bloco** (o ramo antigo não pode emitir), e ganha **C5**: run criada **antes**
+(linha legada semeada) e concluída **depois** → 1 `created` legado + 1 `completed` novo, **nunca** 2 da mesma chave.
+
+### E1·5 · A `PD-O6R-B06-SUM-NUMERIC-RLS` contra o plano — `null`, versão pinada, o driver adapter e o SEGUNDO defeito do DIN-007
+
+**(2) `_sum` devolve `null` e o tipo do §3.3 não admitia.** PostgreSQL: *"sum of no rows returns null, not zero"*;
+Prisma desde 2.21.0: **todo** campo agregado é nulável, `count` é a exceção (sempre `0`). Período vazio é estado
+**normal** (organização nova, filtro sem linha). **Decisão:** `summarizeLineItems` devolve
+`{ lineItemCount: number; total: Decimal | null; byServiceCurrency: …; currencies: … }` — **nulável, e o
+`_count._all` é o discriminador**. Regra de contrato no serviço: `lineItemCount === 0` → `totalUnblendedCost: 0`,
+`services: []`, `currencies: []`; **`lineItemCount > 0 ∧ total === null` → erro** (combinação impossível — denuncia
+bug, nunca vira `0`); **sem `COALESCE` no SQL** (apagaria a distinção onde ela ainda existe). O mesmo para
+`sumUsageBasis`: grupo com `_sum.quantity === null` → **omitido**; e se `aggregate._count._all > 0` para o tenant no
+período mas o `groupBy` vier vazio → **lança** (é o "`[]` é suspeita" da PD §3.5, tornado decidível pelo `count`).
+Um `?? 0` incondicional é **proibido nominalmente** — é o `|| 0` que a `feedback-honest-kpi-dashboard` já registrou
+como fabricador de número neste repositório.
+
+**(5b) Premissa pinada na versão.** Em Prisma **7.8.0** (`package.json:39,57`) `aggregate()` **ignora**
+`take/skip/cursor/distinct`; o **Prisma 8** (fix #30067) passa a **honrá-los** — um `take` que hoje não faz nada
+mudaria o total de faturamento no upgrade sem tocar uma linha do bloco. **Decisão:** aceite S9 assere por spy que o
+objeto de argumentos de `aggregate`/`groupBy` **não contém** essas quatro chaves, e o comentário do repositório
+nomeia a dependência de versão (`prisma/prisma` release `v8.0.0-rc.4-dev.12`).
+
+**(bônus) O driver adapter e o segundo defeito.** O plano não mencionava `@prisma/adapter-pg ^7.8.0`
+(`package.json:38`): com ele o `numeric` viaja **texto → `Decimal` (decimal.js)** — **sem float no meio** — e a
+precisão só se perde na conversão final `toNumber()`. Isso muda a leitura do DIN-007: há **dois defeitos
+superpostos** — o **truncamento** (que o achado nomeia) e a **acumulação em float** do `sumCosts`/loop
+(`aws-cur.service.ts:91-100,194-196`, que ele **não** nomeia). O crítico mediu (E8): com 10.001 linhas na casa de
+1e5–1e6, a soma em `double` diverge do `SUM(numeric)` em **1,1e-3** — 1108× a tolerância do S3; e o total (~9,9e9
+com 6 casas) já **não cabe** exato num `number`. **Decisões:** (i) o bloco fecha **os dois** — soma no banco e
+**uma** conversão na borda (já era o §3.3), agora com **campo aditivo exato** no contrato:
+`totalUnblendedCostExact: string` (o `Decimal.toString()`, sem conversão) ao lado de `totalUnblendedCost: number`
+(mantido, **documentado como lossy** acima de ~1e10 com 6 casas); `services[]` idem (`unblendedCostExact`).
+`cloud_cost_summary@2026-09-06.b-o6r-06` passa a listar os dois campos aditivos. A pendência 6 do §12
+(`DECIMAL-NA-BORDA`) fica **parcialmente resolvida** (o exato já sai; a migração do painel para lê-lo fica). (ii) O
+`Decimal` em JS **também arredonda** (`precision` default 20 significativos em `plus/minus/times`) — o serviço **não
+soma `Decimal` em JS**; o único `Decimal` que existe no processo é o que o banco devolveu.
+
+**(E8) Tolerância derivada da fixture, referência exata.** S3′: a referência manual deixa de ser soma em float de 11
+páginas — passa a ser **soma em micro-unidades inteiras (`BigInt`)** dos `unblended_cost` lidos **como string** das
+páginas de 500 (o adapter os entrega como texto/`Decimal`); compara com `totalUnblendedCostExact` com **tolerância
+0**. A fixture S1 fica fixada na faixa **realista** do crítico (caso C: valores ~9,9e5, 6 casas) — é o cenário que
+torna o DIN-007 grave, e é onde o `number` já não representa o total.
+
+**(E9) "Mesmo `where`" com período explícito.** `normalizeSummaryFilters` continua injetando período default de 30
+dias (`:184-191`) e o detalhe **não** (`:78-82`); ambos filtram só por `billing_period_start`. **Decisão:**
+`buildLineItemWhere(filters)` é compartilhado **e** S4 passa período **explícito e idêntico** nos dois lados; a
+diferença de default fica **documentada no contrato** (resumo: 30 dias; detalhe: sem default) — mudar o default do
+detalhe é contrato do painel, fora.
+
+**(E10) B3 é regressão** — relabelado em E1·3; não entra na evidência de fechamento do DIN-007.
+
+| ID | Aceite | N | Mutação |
+|---|---|---|---|
+| S3′ (substitui S3) | referência em `BigInt` micro-unidades sobre 21 páginas de 500 da fixture realista = `totalUnblendedCostExact` (tolerância **0**); e `totalUnblendedCost === Number(totalUnblendedCostExact)` (lossy, documentado) | 2 | M-8; somar em float no serviço |
+| S7 (novo) | Período **vazio** (HTTP): 200 e forma exata `{ totalUnblendedCost: 0, totalUnblendedCostExact: "0", lineItemCount: 0, services: [], currencies: [] }` — nenhum `null`, nenhum `NaN` | 1 | `?? 0` sem olhar `lineItemCount` (passa) — vermelho pelo par S8 |
+| S8 (novo) | Repositório-dublê devolvendo `{ lineItemCount: 3, total: null }` → o serviço **lança** (combinação impossível) | 1 | `?? 0` incondicional → devolve 0 → vermelho |
+| S9 (novo) | Spy no `client`: argumentos de `aggregate`/`groupBy` do resumo e de `sumUsageBasis` **não** contêm `take/skip/cursor/distinct` | 2 | acrescentar `take: 10_000` ao `aggregate` (em 7.8.0 passa despercebido sem este aceite) |
+| S10 (novo) | Total acima de 2^53 micro-unidades (fixture C): `totalUnblendedCostExact` **bate** com `SELECT sum(...)::text`; `totalUnblendedCost` **não** bate — o Risco 6 executado, não prometido | 1 | converter cedo para `number` e somar → o exato deixa de bater |
+| B10 (novo) | `sumUsageBasis` com `_sum.quantity === null` num grupo → grupo omitido; `count > 0` e `groupBy` vazio → lança | 2 | `?? 0` no quantity; remover o cheque do count |
+
+### E1·6 · Ressalvas E6/E7 — a pendência descrevia o defeito errado, e a tese do §4 era mais larga do que o recorte
+
+**(E6) Nem toda chave "residual" é best-effort — quatro não têm PRODUTOR nenhum.** O crítico cruzou toda
+`basisMetricKeys` de `rules.ts` contra todo `metricKey: "…"` escrito em `src` (15 produtores): `api_request.count`,
+`api_requests_count`, `storage_gb_month` e `storage_bytes_current` **não são gravadas por ninguém**. Para elas o
+remédio "append na tx do fato de origem" **não se aplica** — não há fato. **Decisão:** a pendência 1 do §12 é
+**dividida em duas**:
+- **`P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL`** (ALTA · `pre-existente` `0648a8e1`) passa a nomear **só** o que tem
+  produtor fora da tx: `checklist_attachment.uploaded/downloaded.bytes` (`cloud-usage.events.ts:56-118`) e
+  `job.executed`/`job_executions_count` (`job.worker.ts:66,80`). Remédio: disciplina do §3.1 no fato de origem.
+- **`P-O6R-B06-BASE-SEM-PRODUTOR`** (ALTA · `pre-existente` `6f27faae`/`0648a8e1`, 2026-06-08 · dono: bloco de
+  cloud billing/produto): as regras `api_requests` e a metade da regra `storage` apontam para chaves que **nunca
+  existem** → essas categorias caem **sempre** em `missing_usage_basis` (custo `unallocated`), em silêncio. Forma:
+  leitura cruzada (o comando do crítico, reproduzível). Não é deste bloco escrever esses produtores.
+
+**(E7) A tese do §4 quantificada por CATEGORIA de custo.** *"Nenhum real depende de consumidor nenhum"* era mais
+larga do que o recorte: as categorias `storage` e `jobs` (`rules.ts:36-49`) continuam com base gravada por
+`recordCloudUsageBestEffort` fora da tx — dinheiro que **pode se perder em silêncio**, `pre-existente`, e que este
+bloco **não** toca (recorte fiel ao `local` do achado, confirmado pelo crítico). **A tabela do §4 ganha a linha que
+faltava**, e a frase passa a ser: *"nenhum real da categoria **`checklists`** depende de consumidor nenhum"*:
+
+| Componente | Depende de `infra/jobs`? | Depende de fire-and-forget? | Dinheiro se perde? |
+|---|---|---|---|
+| Base de rateio `checklists` (`checklist_run.completed`, `checklist_runs_count`) | Não | **Não** (captura na tx) | **Não** |
+| Base de rateio `storage` (bytes de anexo) e `jobs` (`job.executed`) | Não | **SIM** (`.catch(warn)`, fora da tx) | **Sim, em silêncio — `pre-existente`, pendência `USAGE-BEST-EFFORT-RESIDUAL`** |
+| Base de rateio `api_requests` e `storage_gb_month`/`storage_bytes_current` | — | — | **Nunca existe** — pendência `BASE-SEM-PRODUTOR` |
+
+Essa é a resposta **exata** à ressalva (2) do porteiro: o bloco tira a categoria do P0 de qualquer consumidor; as
+outras duas continuam onde a auditoria as deixou, **nomeadas** e com dono.
+
+### E1·7 · Consolidação — escopo emendado, mutações, recontagem, decisões, e o que a junta decide NA REVISÃO
+
+**Escopo (§6) emendado — só o delta; tudo o mais do §6 segue igual. Nenhuma proibição do §5/§6 é cruzada:**
+- item 1: o arquivo NOVO é **`src/modules/cloud-usage/cloud-usage.capture.ts`** (não `…outbox.ts`); função
+  `appendChecklistRunUsageInTx` (`$executeRaw` com alvo explícito; `createMany` **proibido** aqui).
+- item 6 (`checklist-prisma.repository.ts`): `completeRun` ganha o 5º parâmetro obrigatório `billing`; o append de
+  `completed` fica condicionado a `meterCompletion`. **`reopenRunWithinTransaction` segue intocado.**
+- item 7 (`checklist.repository.ts`): a **interface** (`:132`) + o dublê (`:300`, `:415`) — mesmo parâmetro.
+- item 8 (`checklist.service.ts`): **3 sítios** (`:538`, `:685`, `:733`) ganham o argumento `billing`; comentários
+  `:257-261`/`:550-556` reescritos; nenhuma outra lógica.
+- item 10 (`cloud-cost-allocation-prisma.repository.ts`): além de `sumUsageBasis` e do cap, **`replaceTenantAllocations`**
+  e **`listTenantAllocations`** passam pelo helper `forEachTenantInOneTx` (E1·3); asserção de `PrismaClient` nos três.
+- item 9 (`aws-cur.*`): tipos nuláveis no port; `totalUnblendedCostExact`/`unblendedCostExact` no `CloudCostSummary`.
+- `src/database/rls.ts` **NÃO entra** (usa `setTenantRlsContext` já exportado). `src/modules/mobile/**`, `prisma/**`,
+  `src/infra/**`: **PROIBIDOS, sem mudança**. Dependência nova: **nenhuma**; quórum segue **unanimidade de 3**.
+- testes: `o6r06-usage-atomic-db` ganha A5′/A9/A10/A11/A12/A13/A14/A15/A17; `-fault-injection` ganha F6/F7;
+  `-usage-atomic` (memória) ganha A16/R6; `-cost-summary-sum-db` ganha S3′/S7/S8/S9/S10; `-allocation-basis-rls-db`
+  ganha B2′/B7/B8/B9/B10; `-billing-census` ganha C4/C5/C6; `o6r06-usage-atomic-db` ganha K4. O drill M-20 toca
+  `rls.ts` **só como mutação revertida** (registrado com `git checkout --`), nunca como mudança.
+
+**Mutações acrescentadas (catálogo do §7 passa a M-1…M-20; M-3 re-pareada; A4 retirado):** M-14 gravar chave de
+criação na reabertura · M-15 remover `reopened_from_run_id IS NULL` do reconcile · M-16 `registerDivergence` com
+`meterCompletion: true` · M-17 `acknowledgeRun` com `true` · M-18 escrever alocações sem `setTenantRlsContext` ·
+M-19 `ON CONFLICT DO NOTHING` **sem alvo** · M-20 `Serializable` em `rls.ts` (drill). **Regra de pareamento:** toda
+mutação aparece em **≥1** aceite que ela comprovadamente deixa vermelho **pelo caminho que o aceite exercita** —
+o dev registra, por mutação, o aceite e o `ec`; verde numa mutação = "cobertura furada", não "matriz errada",
+porque a matriz foi conferida no papel nesta emenda.
+
+**Recontagem (substitui a do §7; cada série somada caso a caso):** A **21** (A1 2 · A2 2 · A3 1 · A5′ 1 · A6 1 · A7 2 · A8′ 2 = 11; + A9 1 · A10 2 · A11 1 · A12 1 · A13 1 · A14 1 · A15 1 · A16 1 · A17 1 = 10) · F **10** (7 + F6 2 + F7 1) · R **13** (12 + R6 1) · S **21** (S1 3 · S2 3 · S3′ 2 · S4 5 · S5 2 · S6 1 = 16; + S7 1 · S8 1 · S9 2 · S10 1) · B **13** (B1 1 · B2′ 3 · B3 1 · B4 1 · B5 1 · B6′ 1 = 8; + B7 1 · B8 1 · B9 1 · B10 2) · C **10** (5 + C4 3 + C5 1 + C6 1) · K **6** (K1′ 2 · K2 1 · K3 1 + K4 2) → **94** casos, dos quais 4 migrados = **90 novos ≥ 47**. **Piso único inalterado: ≥ 47** (publicado uma vez; se o N real da abertura divergir, o piso é esse N, uma vez). O número que vale é o **publicado por execução, por arquivo**, na ata — estes são o mínimo que o desenho exige.
+
+**Decisões consolidadas (para a junta julgar na revisão do plano, não descobrir em execução):**
+1. **Reconcile:** entregue com universo I1′/I2′ e K4; rodar na demo continua decisão do dono, **com as 3
+   pré-condições** de E1·1. O §12 (pendência 5) fica emendado nesses termos.
+2. **Trilha C (divergência mobile → ciência):** **0 → 0**, preservado por parâmetro obrigatório; cobrança dessa
+   trilha é **decisão de produto** (`P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA`), não deste bloco.
+3. **Fail-closed** (falha na medição → run não commita): **mantido**, com o acoplamento escrito no §10 (linha 12) e
+   provado por F7/A16/A17.
+4. **Sem `createMany`**; `$executeRaw` com alvo explícito; READ COMMITTED pinado (A13).
+5. **Rename** para `capture`; contrato em linguagem de banco; "exactly-once efetivo" sai do contrato.
+6. **Rateio sob RLS de ponta a ponta** (base, escrita, leitura das alocações) em **uma** transação — de brinde,
+   o replace vira atômico.
+7. **DIN-007 fecha os dois defeitos** (truncamento + float), com campo exato aditivo; B3 não é prova.
+
+**Efeitos em §9/§12:** `evidencia_fechamento` do DIN-005 cita I1′/I2′ + A8′/A9/A10/A11/A15/A17/F6/F7/K4; do DIN-007
+cita S1/S2/S3′/S7–S10 (**sem** B3). Pendências novas além das 6 do §12: **`P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA`**
+(MÉDIA · produto), **`P-O6R-B06-SEM-PODA-POR-IDADE`** (BAIXA · registro), **`P-O6R-B06-BASE-SEM-PRODUTOR`** (ALTA ·
+`pre-existente`); pendência 1 **estreitada** (E1·6); pendência 6 **parcialmente resolvida** (campo exato entregue).
+Ordem contrato × drill (§5) ganha os pares: contrato 1 ← S1/S7/S10; contrato 2 ← B2′/B8; contrato 3 ← A1/A10/F1/F7.
+
+**O que o crítico deve atacar no ciclo 2 (teto: este é o último):** (i) se o parâmetro obrigatório `billing` fecha
+mesmo o conjunto — procurar um 4º caminho que mude `status` de run sem passar por `completeRun` (o dev enumera
+`checklistRun.update(` em `src` e publica); (ii) o helper de uma-transação com N `set_config` — vazamento de GUC
+entre iterações (B6′/B9); (iii) a tolerância 0 de S3′ com o adapter entregando string — conferir que o `Decimal`
+não passa por `toNumber()` em nenhum ponto antes da borda (S10); (iv) K4 com reaberta **de reaberta** (cadeia de 3).
+
+*Fim da EMENDA E1. Corpo §0–§12 preservado verbatim; esta emenda prevalece onde divergir.*
