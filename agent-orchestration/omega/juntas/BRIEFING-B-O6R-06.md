@@ -8,8 +8,8 @@
 
 | Item | Valor |
 |---|---|
-| Head de **registro** | **`e35492ef`** (branch `fix/billing-durability`) |
-| Head de **CÓDIGO julgado** | **`0f0a872a`** — provado pelo inspetor: `git diff --stat 0f0a872a e35492ef` = **12 arquivos `jurado-06-*`** (6 corpos + 6 espelhos), e `--numstat` fora de registro sai **vazio** |
+| Head de **registro** | **vigente na branch `fix/billing-durability`** — este briefing nomeava `e35492ef`, mas o commit que **contém** o briefing é posterior (ressalva **R7** do inspetor: quem abrisse worktree em `e35492ef` teria o mesmo código e **não** teria este arquivo). **O despacho de cada jurado nomeia o head vigente; use o que o seu despacho disser.** |
+| Head de **CÓDIGO julgado** | **`0f0a872a`**. **Prove você mesmo, com o pathspec** (o inspetor mediu assim): `git diff --numstat 0f0a872a <head> -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs'` → **vazio**. Tudo acima de `0f0a872a` é registro |
 | Base | `origin/main` = **`fe2748c`** (= merge-base, conferido) |
 | Achados que o bloco fecha | **`Ω6R-DIN-005`** e **`Ω6R-DIN-007`** — **2 P0** |
 
@@ -71,7 +71,7 @@ menos de 3 votos de mérito**.
 |---|--:|--:|--:|--:|--:|--:|
 | **head `0f0a872a`** (dev, cluster próprio) | — | **2992** | 2990 | 0 | 2 | 0 |
 | **head, re-medido pelo INSPETOR** (cluster próprio `o6r06-insp-pg`, 107 migrations, forma canônica 3) | — | **2992** | 2990 | 0 | 2 | 0 |
-| base `fe2748c` (dev, worktree separado) | — | **2936** | — | 0 | 2 | 0 |
+| base `fe2748c` (dev, worktree separado) | — | **2938** | **2936** | 0 | 2 | 0 |
 
 **Δ = +54 casos novos**, decomposto por arquivo: **15 · 6 · 6 · 6 · 4 · 10 · 7**. Os 4 do `reopen` foram
 **migrados**, não somados. **Piso ÚNICO do plano: ≥ 47.**

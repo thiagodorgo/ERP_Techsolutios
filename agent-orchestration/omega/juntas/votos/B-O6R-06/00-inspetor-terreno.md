@@ -248,3 +248,111 @@ em `storage/checklist-attachments/` removidos (11 com arquivos, 2 vazios) → `-
 (`check.out`, `sync.out`, `migrate.out`, `suite.out/err/ec`) no scratchpad da sessão, fora da árvore · `git status --porcelain
 --untracked-files=all` no `b06` → **vazio**, HEAD `e35492ef` · base viva `erp-postgres`/`erp-redis` **não recebeu um comando,
 nem de leitura** · árvore principal e `gov-descuido` intactos. Este arquivo é o único untracked que deixo (o orquestrador commita).
+
+---
+---
+
+# PASSADA 2 — 2026-09-07 — head `416a5687` — re-medição do que eu mesmo nomeei (1.2 · 2.1 · 5.1) + `status --ignored` + `--check`
+
+A passada 1 acima fica **intacta** (§A2). Tudo abaixo executado no `b06`, `ec` por variável.
+
+## P2·0 · Head novo e head de CÓDIGO — **VERDE**
+
+```
+git rev-parse --short HEAD -> 416a5687 [fix/billing-durability] ; git worktree list -> 3 (main d1fab3bc · b06 416a5687 · gov-descuido 497d360d)
+git log --oneline 0f0a872a..HEAD -> 416a5687 briefing · e35492ef cadeiras  (2 commits)
+git diff --stat 0f0a872a 416a5687 -> 14 arquivos, +5512/-0 : 6 .claude/agents/especialistas/ · 6 .agents/agents/especialistas/ · BRIEFING · este parecer
+git diff --numstat 0f0a872a 416a5687 -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs' -> VAZIO (0 linhas)
+git ls-remote --heads origin fix/billing-durability -> 416a5687 (pushado)
+```
+
+Head de CÓDIGO continua **`0f0a872a`**, provado por diff no head novo. **Comando que a junta repete** (o briefing descreve a prova
+mas não escreve os pathspecs): `git diff --numstat 0f0a872a <head> -- . ':!agent-orchestration' ':!.claude' ':!.agents' ':!docs'` → vazio.
+
+## P2·S · Pristino com `--ignored` — **VERDE** · P2·C · S0 — **VERDE**
+
+```
+git status --porcelain --untracked-files=all | wc -l -> 0 ; git status --porcelain --ignored -> só "!! frontend/node_modules/" e "!! node_modules/" (os 2 de partida)
+node scripts/sync-agent-agents.mjs --check > sync2.out 2>&1; ec=$? -> ec=0 · "[agents-sync] OK — 44 agentes, espelho consistente." ; find .claude/agents -name '*.md' | wc -l -> 44
+```
+
+## P2·1 · Item 1.2 — plano de isolamento POR JURADO no briefing — **VERDE**
+
+```
+git ls-tree HEAD -- agent-orchestration/omega/juntas/BRIEFING-B-O6R-06.md -> presente ; 196 l. · 13.937 bytes ; git hash-object == HEAD:<path> (disco == blob)
+§3 "Isolamento por jurado — vinculante" (l.50-66), medido por grep (padrões ASCII; `-i` no locale C não dobra Ó/ã):
+  worktree PRÓPRIO 1 · npm ci PRÓPRIO 1 · "Junction/symlink … é PROIBIDA" l.52-53 · cluster descartável PRÓPRIO por jurado 1 ·
+  "não é alvo de ninguém, nem para leitura" 1 · docker rm -fv 1 · --ignored 4 (l.59, 61, 189) · storage/checklist-attachments 1 ·
+  git worktree remove --force 1 · não tocar demo/investidor · gov-descuido · san2-r (l.63-64)
+```
+
+**As três frases exigidas pelo mandato estão escritas como REGRA** (worktree próprio por jurado que muta; cluster descartável
+próprio, derrubado com `-v`; base viva fora de alvo, nem leitura) — e R1 (`--ignored`) e R2 (`rm -fv`) entraram como regra, não
+nota. **Nota (não ressalva):** "porta livre"/`netsh` não está no briefing — está no plano §8 l.554-556 e nos 6 corpos (C1 l.158-160:
+nunca 5432/55432/56446/56393), como no precedente 07b-P2.
+
+## P2·2 · Item 2.1 — nada da ata anterior herdado como fato — **VERDE**
+
+```
+§0 título "confira, não herde" · §5 l.93 "Nada da ata do 07b. Nada do relatório do dev vale como medido: re-execute" ·
+§5 l.94-96 vale a E1 sobre o corpo; as PDs mudaram o desenho · §5 l.97 "O dev declarou 10 pendências novas; o inspetor e o orquestrador mediram 11. A C3 conta ela mesma"
+§4 l.81-84: "A re-medição do inspetor NÃO é insumo do voto" 1 · "O baseline 2936/2938 NÃO foi reproduzido pelo inspetor … A C3 re-mede" 1
+§4 l.86-89: piso ≥47 único; "Cobrar ≥90 como piso é erro do jurado" (l.88-89)
+grep -c 'A RE-VERIFICAR' BRIEFING -> 0 (o literal está nos 6 corpos, 2 em cada; o briefing usa "confira, não herde" / "re-execute" / "não é insumo")
+J-B-O6R-07b.md -> no head; não listada no §1 (insumos), neutralizada no §5 — mesma forma aceita no 07b-P2
+```
+
+Nenhuma conclusão do 07b, do porteiro ou do dev é repassada como verdade; até a minha re-medição vem marcada "não é insumo".
+
+**Ressalva R8 — uma célula da tabela do §4 (l.74):** a linha da base traz **`2936` na coluna "testes"** e `—` em "pass". O par
+correto (`2936` pass / `2938` testes) está no texto logo abaixo (l.83) e no porteiro (l.37). É transcrição, não herança — mas é
+exatamente o tipo de número que um jurado copia. Corrigir a célula (1 edição) ou a C3 lê o texto, não a tabela.
+
+## P2·3 · Item 5.1 — plano de perda de jurado — **VERDE**
+
+```
+§2 tabela l.35-39: suplente nomeado por cadeira (jurado-06-suplente-{banco-atomicidade-rls, invariante-financeiro-rateio, contrato-regressao-kpi}); os 3 corpos existem no head e no espelho (P1 §4.1)
+§2 l.41-43: "o suplente não herda medição nenhuma — re-executa o briefing inteiro" (l.41) · "voto perdido nunca conta como aprovação" 1 · "não fecha com menos de 3 votos de mérito" 1
+§8 l.165-174: P1 evidência incremental · P2 voto-esqueleto ANTES de medir · P3 substituto re-executa cada comando do caído · P4 ≤3 itens · "o jurado NÃO commita"
+```
+
+## P2·R2 · Volumes — **VERDE, base viva intocada**
+
+```
+docker volume ls -q -f dangling=true | wc -l -> 0 ; docker volume ls -> só erp_techsolutios_erp_postgres_data · erp_techsolutios_erp_redis_data
+docker inspect erp-postgres / erp-redis -> Up 9 days (healthy) · StartedAt 2026-08-29T02:17Z · restarts=0 ; volumes CreatedAt 2026-05-28 (originais)
+docker system df -> Local Volumes 2 · 288,5 MB · 0 B recuperável   (antes: 51 · 2,63 GB · 2,35 GB)
+docker ps -a -> só os dois da base viva; nenhum jur-*/crit-*/o6r06-*
+```
+
+## P2·R5 / R6 / R7 — o que decido sobre as ressalvas da passada 1
+
+- **R5 (ci.yml "três" × 4 linhas · 11 × 10 pendências · 1 espaço final em `docs/omega-pd.md`): nenhuma precisa de correção antes
+  do voto.** Nenhuma move placar, guard ou start: a 4ª suíte no `ci.yml` é a do §7.2 (Postgres descartável), o comentário é que
+  está curto; a contagem de pendências já está exposta no §5 para a C3 contar; o espaço final está em registro, e `src tests
+  .github scripts` têm `--check` ec=0. Ficam nomeadas para a C3 registrar — mérito/registro, não terreno.
+- **R6 (`model:` ausente nos 6 corpos):** aceito — `D-PLANEJADOR-MODELO-FABLE` fixa modelo só para o `planejador-mestre`; para
+  jurado não há regra. Registrado, sem efeito.
+- **R7 (nova, terreno):** o briefing nomeia como head de registro **`e35492ef`** (não podia nomear o próprio commit); o head que
+  **contém** o briefing é **`416a5687`**. Jurado que fizer `git worktree add --detach … e35492ef` terá o mesmo CÓDIGO (provado
+  acima) mas **não** terá o briefing na árvore. **O despacho de cada jurado nomeia o head vigente (`416a5687`, ou posterior se
+  o orquestrador commitar mais registro) e o jurado prova o head de código com o comando de P2·0.** A prova do §0 do briefing
+  ("12 arquivos") vale para `e35492ef`; em `416a5687` são 14 — todos registro.
+
+## §6 do briefing — as exposições, conferidas
+
+Cinco (l.100-135): (1) inversão sob `NOBYPASSRLS` **para as três cadeiras** (l.102-109: "INVISÍVEL sob o papel", "VERDE COM O
+DEFEITO PRESENTE", "medir apenas sob o papel restrito APROVARIA o defeito", mutação sob superusuário) — fecha o que medi na P1
+(estava só na C1/suplente C1); (2) reconcile bloqueado / série K inexistente / reprovação por construção; (3) as duas divergências,
+com o meu "exatamente essas duas, sem terceira"; (4) alarme do K4 não confirmado; (5) o achado do próprio dev. §9: 8 armadilhas,
+`rev-parse` em silêncio em 1º (l.183-185), `--porcelain` não vê ignorado (l.189).
+
+## VEREDITO DA PASSADA 2: **LIBERADO COM RESSALVA** — **a junta PODE começar.**
+
+Ressalvas para o despacho (não bloqueiam): **R7** (head vigente no despacho + comando da prova) · **R8** (célula l.74 do §4) ·
+nota "porta livre" (plano §8 + corpos). O item 1.2 que bloqueou a passada 1 está limpo por presença, no head, contra as três
+frases do mandato.
+
+**Limpeza da passada 2:** nada criado — nenhum container, volume, worktree ou arquivo na árvore (`sync2.out` no scratchpad);
+`docker ps -a`/`volume ls` só base viva; `git worktree list` = 3; a única mudança no `b06` é o ` M` deste arquivo (apêndice),
+que o orquestrador commita. Base viva não recebeu um comando, nem de leitura.
