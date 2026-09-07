@@ -346,3 +346,284 @@ contado como prova do DIN-007 no fechamento.
 container `b06-critico-pg` (cluster descartável, porta 56606); nada foi escrito em `src/`, em `tests/`, na
 árvore principal ou nos worktrees alheios; a base viva `erp-postgres`/`erp-redis` não foi tocada.
 Único arquivo produzido: **este parecer**. **Eu não commito.**
+
+---
+---
+
+# RODADA 2 (2026-09-06) — ataque à `EMENDA E1`
+
+**Escopo desta rodada: SÓ O DELTA.** Commit `26182d6b` sobre `be608a52`: `git diff --stat` = **1 arquivo,
+380 inserções, 0 remoções**; conferi por `cmp` que as 773 linhas do corpo ficam **byte-idênticas**
+(`git show be608a52:…|head -773` vs `git show 26182d6b:…|head -773` → **ec=0**). Não re-litigo nada da
+rodada 1 que ficou fechado. **Rodada final (teto 2).** Terreno: worktree `b06`, **segundo cluster
+descartável próprio** (`b06-critico-pg2`, porta **56607**, `postgres:16-alpine`), removido no fechamento;
+base viva fora de alvo; `ec` sem pipe.
+
+## VEREDITO DA RODADA 2: **PLANO ROBUSTO COM RESSALVA**
+
+**E2 e E3 fecharam** — o E3 com prova por execução contra o desenho novo. **E1 fechou pela metade**: o
+universo foi declarado e a reabertura deixou de ser refaturada, mas **a mesma classe reapareceu num
+caminho novo que a própria emenda abriu** — o reconcile agora refatura a **trilha C** que o E1·2 acabou
+de proteger. **O bloco PODE gerar a primeira linha de código** em tudo que não seja o script de
+reparação (detalhe do veredito no fim).
+
+---
+
+## R2-1 · E1 (universo da invariante) — **FECHADO para a reabertura**; **REABERTO para a trilha C**
+
+### O que fechou (verificado)
+
+- **Restringir o universo aqui é conserto, não fuga do contraexemplo.** O teste é: o recorte tem
+  **justificativa independente do contraexemplo**? Tem, e é anterior ao bloco — `reopened_from_run_id IS
+  NULL` é a fronteira que a **junta PR-03** já havia estabelecido para não cobrar duas vezes o mesmo
+  trabalho de campo (`checklist.service.ts:586-588`, `checklist-prisma.repository.ts:696-707`). O universo
+  novo **coincide com a regra de negócio existente**, não com o que o teste precisava para passar. Se o
+  recorte fosse "runs que não sejam as 2 que quebram", seria fuga. Não é.
+- **`A8′` passou a exigir contagem POSITIVA** para as reabertas (0 linhas de criação **e** 1 `completed`
+  com `quantity 0`), não só ausência — é o que impede o recorte de virar cegueira. **`M-14` guarda** os
+  dois lados (A8′, A9, R6).
+- **Reaberta DE reaberta (item iv do coordenador): não refatura.** Cadeia r1→r2→r3: `r2` e `r3` têm
+  `reopened_from_run_id` **NOT NULL** (`checklist-prisma.repository.ts:771` grava `previous.run.id`, que na
+  segunda reabertura é `r2.id`), logo **ambas caem no predicado** `reopened_from_run_id IS NULL` do
+  reconcile e nenhuma ganha chave de criação; a conclusão de cada uma cai no `CASE WHEN … IS NOT NULL THEN
+  0`. E a original `r1` (reopened NULL, `completed_at` NOT NULL) recebe `1`, correto. ✔
+
+### O que **não** fechou — achado novo `R2-A` (`gravidade: bloqueia o script`, `escopo: dentro-do-bloco`)
+
+**O reconcile do E1·1 refatura exatamente a trilha C que o E1·2 protegeu.** As duas seções da mesma emenda
+se contradizem:
+
+- **E1·2, decisão 2:** trilha C (`registerDivergence` → `acknowledgeRun`) fica **0 → 0**, garantido por
+  parâmetro obrigatório `meterCompletion: false`, com dois aceites (A10, F6) e duas mutações (M-16, M-17).
+- **E1·1, reconcile:** *"a chave `completed` cobre **todas as runs** com `completed_at`/`pending_ack` com
+  `quantity = CASE WHEN r.reopened_from_run_id IS NOT NULL THEN 0 ELSE 1 END`"* — **sem** recorte de trilha.
+
+**Evidência (leitura do caminho, exaustiva).** Uma run de trilha C termina com `completed_at` **preenchido**:
+`checklist-prisma.repository.ts:688-690` — `completed_at: status === "pending_acknowledgement" ? null : new
+Date()`; `acknowledgeRun` (`service.ts:733`) chama com `completed_with_divergence`, logo `completed_at = now`.
+Essa run satisfaz o `WHERE` do reconcile e **não tem** evento `checklist_run.completed` (correto, por
+`meterCompletion: false`). O `WHERE NOT EXISTS` a enxerga como "concluída sem métrica" e **insere 1 unidade
+faturável** — na base de rateio `checklists` (`rules.ts:64`).
+
+**Motivo.** (i) É **dinheiro**, e é a **mesma classe** do E1 da rodada 1 (o script trata "run sem métrica"
+como defeito quando é estado legítimo), só que agora o estado legítimo foi **criado pela própria emenda**.
+(ii) O `--apply` na demo é a pendência 5 do §12, **decisão do dono** — o refaturamento sairia por lá.
+(iii) **Nenhum aceite pega:** K4 semeia 3 reabertas + 2 originais; **nenhuma run de trilha C**. K1′ declara as
+5 como originais. Não há mutação equivalente a M-15 para este predicado.
+
+### Achado novo `R2-B` (`gravidade: alta`, `escopo: dentro-do-bloco`) — **I2′ não é verificável por SQL**
+
+O corpo vendia I1/I2 como *"verificáveis por SQL"*. **I1′ é** (`reopened_from_run_id IS NULL` é coluna).
+**I2′ não é**: seu universo é *"`∀ r` com `completed_at IS NOT NULL ∨ status='pending_acknowledgement'` **e
+que tenha passado por `service.completeRun`**"* — e "passou por `service.completeRun`" **não é observável em
+nenhuma coluna** de `checklist_runs`. Medido: a distinção trilha A/B × trilha C existe **só no sítio de
+chamada** (`service.ts:538` vs `:685`/`:733`); nada no schema a registra (`status` e `completed_at` são
+idênticos nos dois casos para `completed_with_divergence`). Consequência dupla: (a) o aceite que "prova I2′
+por SQL" não pode existir na forma que A8′ tem para I1′; (b) é **a mesma razão** pela qual o reconcile erra
+(R2-A) — o script só tem SQL, e o predicado que ele precisaria não está no banco.
+
+---
+
+## R2-2 · E2 (intenção de faturar por assinatura) — **FECHADO**, com uma ressalva de método
+
+**Isso troca convenção por condição verificada pelo compilador?** Sim, para o conjunto de chamadores de
+`completeRun`: parâmetro **obrigatório sem default** faz `npm run check` recusar um 4º chamador que não
+declare, e o precedente do idioma existe e foi medido no 07b —
+`votos/B-O6R-07b/C1-secops-evidencia.md`: *"arquivo novo `src/modules/zz-c1-probe/probe.storage.ts` chamando
+`provider.save({…})` sem `verification`: `npm run check` → **ec 2**, `error TS2345`"*. **C6 é construtível
+pelo mesmo caminho.**
+
+**O parâmetro pode ser passado errado sem nada morder?** Não em silêncio: `meterCompletion: true` indevido
+em `registerDivergence`/`acknowledgeRun` é exatamente **M-16**/**M-17**, e **A10** (dois passos), **F6** e
+**C4** (censo por chamador) ficam vermelhos. O pareamento aqui está correto.
+
+**Existe um 4º caminho que muda `status` sem passar por `completeRun`? SIM — e ele está fechado por OUTRA
+trava, que o plano não pina.** Enumerei **todos** os sítios que mutam `checklist_runs` em `src`:
+
+```
+$ rg -n 'checklistRun\.update|checklistRun\.updateMany|UPDATE checklist_runs' src
+checklist-prisma.repository.ts:551   stampRunRole        (SET role — não toca status)
+checklist-prisma.repository.ts:651   updateRun           <-- 4o caminho: SET status = data.status
+checklist-prisma.repository.ts:679   completeRun         (o do parâmetro billing)
+```
+
+`updateRun` (`:612-665`, chamado por `service.ts:353` ← REST `controller.ts:183` e **sync mobile**
+`mobile-checklist-sync.ts:443`) **muda `status`** — mas `assertChecklistRunStatusTransition`
+(`checklist.run-lifecycle.ts:166-186`) **barra com 409** os três estados que interessam ao faturamento:
+`completed`, `completed_with_divergence` (`:169-176`) e `pending_acknowledgement` (`:178-185`).
+**Portanto o conjunto está fechado — por DUAS travas em arquivos diferentes**, e a emenda só prova uma
+(o compilador, C6). Se alguém relaxar `assertChecklistRunStatusTransition` amanhã, uma run chega a
+`completed` **sem métrica** — o P0 de volta — e **nenhum dos 94 aceites nota**. `run-lifecycle.ts` não está
+no escopo §6, então isto é **ressalva** (`gravidade: média`, `escopo: pre-existente` — o guard é de PR-03),
+não bloqueio: o que falta é um aceite que **pine** a trava, não código.
+
+**Ressalva menor (`baixa`, `dentro-do-bloco`):** C6 exige um arquivo-sonda **dentro de `src/`** (é o que faz
+o `tsc` do `npm run check` alcançá-lo — `tests/**` está fora do tsconfig, como o próprio 07b registra). O §6
+emendado autoriza **um** caminho novo em `src/` (`cloud-usage.capture.ts`); a sonda de C6 não está nomeada.
+
+---
+
+## R2-3 · E3 (RLS de ponta a ponta) — **FECHADO, e provado por execução contra o desenho novo**
+
+Reproduzi o meu drill da rodada 1 **contra o desenho da emenda** (helper `forEachTenantInOneTx` = **uma**
+`$transaction` com `set_config` por iteração), no cluster `b06-critico-pg2`, papel
+`app LOGIN NOSUPERUSER NOBYPASSRLS`, espelho de `tenant_cloud_cost_allocations` (FORCE RLS + `WITH CHECK`):
+
+```
+N1  UMA tx: set_config(A) → delete(run) → insert(A) → set_config(B) → delete(run) → insert(B) → commit
+      -> ec=0 · INSERT 0 1 · INSERT 0 1        A ESCRITA PASSA (era ec=1 no desenho antigo, D3)
+N2  conferência (superuser): 1 linha para A, 1 linha para B                                  ✔
+N3  VAZAMENTO DE GUC no laço (esquecer o set_config da 2ª volta e inserir a linha de B):
+      -> ec=1 · ERROR: new row violates row-level security policy for table "tca"   FALHA ALTO
+N4  delete sob GUC de A apaga só a linha de A (a de B sobrevive)  -> DELETE 1               ✔
+N5  nova transação sem set_config: GUC <VAZIO>, count = 0  (set_config(...,true) é tx-local) ✔
+```
+
+**Respostas diretas ao coordenador:** (i) **a escrita passa** — o E3 está resolvido, e o `B2′` que era
+insatisfazível agora é satisfazível; (ii) **vazamento de GUC no laço, na ESCRITA, é fail-closed e ruidoso**
+(N3) — não existe caminho de escrever no tenant errado em silêncio; (iii) `B2′` tratar falha de criação do
+papel como **vermelho e nunca skip** é o que impede o drill de virar teatro sob superusuário (CI é
+`postgres`, medido na rodada 1); (iv) `listTenants()` funciona sob o papel — **provei por presença** que
+`tenants` **não tem RLS**: os **únicos** dois `ALTER TABLE "tenants"` de todo `prisma/migrations` são a
+adição da coluna `modules` (`20260722000000_add_tenant_modules:14,16`).
+
+### Achado novo `R2-C` (`gravidade: média`, `escopo: dentro-do-bloco`) — o helper é fail-closed na escrita e **fail-OPEN na leitura**
+
+A simetria que o N3 sugere **não existe**. Medido no mesmo cluster, mesma transação:
+
+```
+begin; set_config('app.current_tenant_id', A, true);
+  select … from tca;                    -> iter A                  : 1 linha do tenant A
+  select … from tca;   (iteração "B" SEM re-setar o GUC)
+                                        -> "iter B SEM set_config" : 1 linha do tenant A   ec=0
+commit;
+```
+
+A `USING` da policy casa com o GUC **obsoleto** e devolve as linhas do tenant **anterior**, em silêncio.
+Ou seja: no laço do helper, **esquecer o `set_config` numa volta de ESCRITA é impossível de não notar (N3);
+numa volta de LEITURA, atribui o número de um cliente a outro sem um único erro.**
+A emenda cobre **um** dos dois leitores: **B9** (canário que compara o `tenant_id` do `groupBy` com o GUC
+corrente) protege `sumUsageBasis`. **`listTenantAllocations` — que o E1·3 também passa a rodar no helper, e
+que alimenta o `GET /platform/cloud-cost-allocations/summary` do painel do investidor
+(`cloud-cost-allocation.service.ts:135`) — não tem canário nem aceite equivalente.** Não é bloqueio (o
+código correto está correto), é **cobertura ausente na exata falha que o helper introduz**.
+
+---
+
+## R2-4 · PDs — os 5 pontos
+
+| # | Ponto | Fechou? | Medição minha |
+|---|---|---|---|
+| 1 | `createMany` retirado; só `$executeRaw` com alvo explícito | **Sim** | Decisão correta e bem fundada; ver **R2-D** para a mutação que a guarda |
+| 2 | Tipos **nuláveis**, `_count._all` discriminador, `count>0 ∧ total=null` → erro, `?? 0` proibido nominalmente | **Sim** | S7 declara-se explicitamente "passa com o defeito, vermelho pelo par S8" — **honesto e corretamente pareado**; S8 e B10 são os falsificadores reais. É o padrão que faltou no 07b |
+| 3 | Prisma 8 pinado por spy nos args (`take/skip/cursor/distinct`) | **Sim** | S9 é falsificável por construção (spy em argumento). Premissa de versão explicitada: `package.json` 7.8.0 |
+| 4 | DIN-007 fechando **os dois** defeitos: `totalUnblendedCostExact: string`, tolerância **0** com referência em `BigInt` na fixture realista | **Sim** | É a resposta exata ao meu E8: a referência sai do `double` (que era o que divergia 1,1e-3) e vai para inteiro. S10 executa o Risco 6 em vez de prometê-lo |
+| 5 | Fail-closed **mantido**, com linha 12 no §10 e teste que injeta a falha (F7/A16/A17) | **Sim** | Escolha declarada, não silenciosa; A17 prova o `WITH CHECK` de `cloud_usage_events` sob papel sem BYPASSRLS — o mesmo mecanismo que o meu D1/D5 mediu |
+
+### Achado novo `R2-D` (`gravidade: média`, `escopo: dentro-do-bloco`) — **M-19 não tem falsificador; A12 testa o PostgreSQL, não o bloco**
+
+**A12** promete *"`INSERT` cru com `id` já existente e chave nova → 23505"* como prova de que o alvo do
+`ON CONFLICT` é `(tenant_id, idempotency_key)` **e só ele**, com **M-19** (omitir o alvo) como falsificador.
+**Medido:** `RecordUsageEventInput` (`cloud-usage.types.ts:59-69`) **não tem campo `id`**, e
+`cloud_usage_events.id` é `@default(dbgenerated("gen_random_uuid()"))` (`schema.prisma:452`) — a própria
+emenda mede isso em E1·4(1). Logo **a colisão de PK é inalcançável pelo caminho de produção**: ou A12 faz um
+`INSERT` cru **próprio** (e aí mutar o `ON CONFLICT` de `appendChecklistRunUsageInTx` não muda o resultado —
+o aceite fica **verde com o defeito presente**), ou A12 chama a função de produção (e aí não consegue semear
+`id` duplicado). Conferi que **nenhum outro aceite** distingue alvo-explícito de alvo-omitido: A5′ (0 linhas
+afetadas), A14 (`DO NOTHING` vs `DO UPDATE`) e A15 (1 linha por chave) dão o **mesmo** resultado sob M-19,
+porque a única outra unique da tabela é `@@unique([tenant_id, id])` e o `id` nunca é fornecido. **M-19 é
+inobservável** — a decisão de retirar o `createMany` continua certa (defesa em profundidade), mas a emenda
+promete em E1·7 que *"toda mutação aparece em ≥1 aceite que ela comprovadamente deixa vermelho **pelo
+caminho que o aceite exercita**"*, e esta não aparece.
+
+---
+
+## R2-5 · A pergunta central: **20 mutações × 94 casos — alguma passa com o defeito presente?**
+
+Percorri o pareamento **um a um**. **Resultado: 18 das 20 mutações têm falsificador legítimo pelo caminho
+que o aceite exercita.** As exceções, e mais dois pontos de forma:
+
+1. **M-19 → inobservável** (R2-D). É a repetição exata da classe que derrubou dois aceites no 07b — só que
+   agora numa mutação, não num aceite.
+2. **M-3 → re-pareamento CORRETO e conferido.** Era o meu E5. Agora M-3 ↔ **A1** (assert da forma da chave)
+   e **A15** (*"duas emissões da mesma run em duas transações → 1 linha por chave"*): sob chave por emissão,
+   A15 vê **2** linhas → vermelho **pelo caminho que exercita**. E **A4 foi retirado** em vez de remendado —
+   correto: era o aceite sem falsificador. ✔
+3. **M-18 só é vermelha sob o papel sem BYPASSRLS** — o que está certo, porque seu único alvo é B2′, que
+   **cria** o papel e trata falha de criação como vermelho. Sob superusuário seria verde; a emenda fechou
+   essa porta explicitamente. ✔
+4. **C5 não tem mutação nomeada** — está na prosa do E1·4(5b), fora de qualquer tabela, e ainda assim conta
+   1 caso na recontagem. Viola a regra (i) do próprio §7 (*"todo aceite tem N, forma e mutação nomeada"*).
+   `gravidade: baixa`.
+5. **B9 e "remover a asserção"; B5 e "mudar o default"** são mutações **autorreferentes** (apagar a asserção
+   deixa vermelho o teste da asserção). Não provam detecção de defeito real; contam como guarda de
+   regressão, não como falsificador. `gravidade: baixa` — não inflar a leitura da matriz.
+
+### Piso e aritmética — **CONFEREM; o piso continua ÚNICO**
+
+Recomputei cada série caso a caso, sem copiar os subtotais da emenda:
+
+```
+A = (2+2+1+1+1+2+2) + (1+2+1+1+1+1+1+1+1) = 11 + 10 = 21
+F = 7 + 2 + 1 = 10          R = 12 + 1 = 13
+S = (3+3+2+5+2+1) + (1+1+2+1) = 16 + 5 = 21
+B = (1+3+1+1+1+1) + (1+1+1+2) =  8 + 5 = 13
+C = 5 + 3 + 1 + 1 = 10      K = 2+1+1+2 = 6
+TOTAL = 21+10+13+21+13+10+6 = 94 · migrados 4 · NOVOS = 90 ≥ 47
+```
+
+**94 e 90 batem.** A saída de A4 (−1) e a subida de A8→A8′ (1→2) explicam a série A permanecer em 11 antes
+dos novos. **Piso: um só, `≥ 47`**, o mesmo do §2.3, com a mesma regra de recálculo publicada **uma** vez —
+o defeito do 07b (três pisos para o mesmo número) **não se repete**. Nota de honestidade que a ata deve
+carregar: dos 90 "novos", **B3 (1) já é verde na base** — a emenda o relabelou como regressão e o tirou da
+evidência do DIN-007, o que está certo; ele apenas não deve ser lido como cobertura nova de defeito.
+
+---
+
+## R2-6 · Placar dos meus achados da rodada 1
+
+| # | Achado (rodada 1) | Situação após a `EMENDA E1` |
+|---|---|---|
+| E1 | I1 falsa; reconcile refatura reaberta | **FECHADO para a reabertura** (I1′ com universo justificado por PR-03, A8′ com contagem positiva, M-14/M-15, K4) · **REABERTO noutro caminho**: `R2-A` (reconcile × trilha C) e `R2-B` (I2′ não é SQL) |
+| E2 | 3 chamadores; trilha C de 0→1 | **FECHADO** — parâmetro obrigatório sem default, 3 chamadores declarados, tabela antes/depois, A10/A11/F6/C4/C6, M-16/M-17, e a cobrança da trilha C virou pendência de produto. Ressalva: o conjunto é fechado por **duas** travas e só uma é pinada |
+| E3 | B2 insatisfazível; escrita morre sob RLS | **FECHADO e PROVADO por execução** (N1–N5). Ressalva nova `R2-C`: o helper é fail-open na **leitura**, e só `sumUsageBasis` tem canário |
+| E4 | A5 não construtível | **FECHADO** — A5′ (duas chamadas na mesma tx, 0 linhas afetadas, tx viva) é construtível e falsifica M-4 |
+| E5 | M-3 sem falsificador | **FECHADO** — re-pareada com A1/A15; A4 retirado |
+| E6 | pendência descrevia o defeito errado | **FECHADO** — dividida em `USAGE-BEST-EFFORT-RESIDUAL` (com produtor) e `BASE-SEM-PRODUTOR` (sem produtor), com dono |
+| E7 | tese do §4 mais larga que o recorte | **FECHADO** — tabela por categoria de custo; a frase passa a ser "da categoria `checklists`" |
+| E8 | tolerância 1e-6 não derivada | **FECHADO** — referência em `BigInt`, tolerância 0, fixture na faixa realista, e S10 executa o Risco 6 |
+| E9 | "mesmo `where`" inexato; tipo `PrismaExecutor` | **FECHADO** — período explícito nos dois lados + default documentado; asserção `"$transaction" in client` |
+| E10 | B3 verde na base | **FECHADO** — relabelado, fora da evidência do DIN-007 |
+
+**8 de 10 fechados; 2 fechados com caminho novo aberto pela própria emenda** (`R2-A`, `R2-B`, `R2-C`).
+
+---
+
+## VEREDITO FINAL: **PLANO ROBUSTO COM RESSALVA**
+
+**O bloco PODE gerar a primeira linha de código** — com **um** artefato bloqueado:
+
+- **LIBERADO para implementar já:** `cloud-usage.capture.ts` + `appendChecklistRunUsageInTx` (§3.1 emendado),
+  o parâmetro obrigatório `billing` e os 3 sítios de chamada (E1·2), o helper `forEachTenantInOneTx` e os
+  três métodos do rateio (E1·3 — **provado por execução**, N1–N5), `summarizeLineItems`/`buildLineItemWhere`
+  e os campos exatos (E1·5), e os aceites correspondentes. Nada aqui depende de `R2-A`/`R2-B`/`R2-C`.
+- **BLOQUEADO até a junta decidir:** `scripts/reconcile-checklist-usage.ts` — o ramo `completed`, que hoje
+  refaturaria a trilha C (`R2-A`), e a redação de I2′, cujo universo não existe em SQL (`R2-B`). **Não
+  proponho o recorte** (não é meu papel): a junta precisa decidir **qual predicado observável** delimita a
+  conclusão faturável e **exigir um aceite da série K com uma run de trilha C semeada** — hoje não há
+  nenhuma. Enquanto não decidir, o `--apply` na demo (pendência 5) não deve sequer ser oferecido ao dono.
+
+**Requisitos explícitos que saem desta rodada** (o que sobreviveu, em forma de exigência): (1) o reconcile
+precisa do mesmo recorte de trilha que o `meterCompletion` impõe, com aceite que semeie trilha C; (2) I2′
+tem de ser reescrita num predicado observável, ou deixar de ser vendida como verificável por SQL; (3)
+`listTenantAllocations` precisa do mesmo canário de contexto que `sumUsageBasis` ganhou (B9), porque a
+leitura no laço é fail-open (`R2-C`); (4) M-19 precisa de aceite que a mate pelo caminho que ela muta, ou
+sai do catálogo como decisão de defesa em profundidade sem falsificador; (5) C5 precisa de mutação nomeada;
+(6) a sonda de compilação de C6 precisa de caminho autorizado em `src/`; (7) a trava
+`assertChecklistRunStatusTransition` merece um aceite que a pine, já que metade do fechamento do conjunto
+repousa nela.
+
+**Encerramento (rodada 2).** Não implementei, não corrigi, não propus correção (§C7.4-bis). Limpeza §C5:
+removido o cluster descartável `b06-critico-pg2` (porta 56607); nenhum arquivo de `src/`, `tests/`,
+`prisma/` foi tocado; árvore principal e worktrees alheios intactos; base viva nunca foi alvo. Único
+arquivo produzido nas duas rodadas: **este parecer**. **Eu não commito.**
