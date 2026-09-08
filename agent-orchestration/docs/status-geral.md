@@ -4202,3 +4202,47 @@ registradas. Frontend e mobile **não tocados**. KPIs atualizados no próprio PR
 todo upload** até existir antivírus real — `P-O6R-B07B-SCANNER-AV-REAL` (ALTA, junta-5) e
 `P-O6R-B07B-STAGING-SEM-UPLOAD` (agenda, decisão do dono). O gate da CHECKLIST P1 passa a
 depender **só de `B-O6R-06`**.
+
+
+---
+
+## 2026-09-08 — `B-GOV-ELENCO` (REPROVADO, parou no teto) e `B-GOV-ELENCO-ENXUTO` (#381, mergeado)
+
+**O pedido do dono:** auditar agente a agente e skill a skill, espelhar, deixar o repo organizado.
+
+**`B-GOV-ELENCO` — REPROVADO e PARADO no teto de dois ciclos** (`D-TETO-DOIS-CICLOS`). Ciclo 1: 3×0
+(`J-B-GOV-ELENCO.md`). Ciclo 2, fatia A: 2×1 (`J-B-GOV-ELENCO-ciclo2-A.md`). **Não mergeou** — dossiê ao dono
+em `agent-orchestration/omega/DOSSIE-B-GOV-ELENCO.md`, com a causa raiz medida e quatro opções com custo.
+Insumo preservado em `origin/chore/gov-auditoria-elenco` e `origin/chore/gov-elenco-fatia-b`.
+
+**A causa raiz, medida nos dois ciclos:** o auditor errava **na fronteira da gramática que ele próprio
+define**, e cada conserto fechava a classe apontada e abria a vizinha — prefixo de nome → lista de
+ferramentas → subconjunto YAML → gramática de link. Consequência de parsear YAML e Markdown com regex.
+
+**Decisão do dono a partir do dossiê:** encolher o auditor ao que regex faz com segurança e trocar
+adivinhação por **recusa nomeada na fronteira**; a faxina entra junto; **bloco novo e pequeno, não ciclo 3**.
+
+**`B-GOV-ELENCO-ENXUTO` — PR #381, merge `90d30f8a`, CI verde nos 7 jobs.** Junta **APROVADA 2×1**
+(`J-B-GOV-ELENCO-ENXUTO.md`, maioria de 3). O merge ficou **retido por rail do §8.7** (KPI creditava 162
+blocos a um bloco reprovado que nunca mergeou); corrigido por agente distinto e **re-verificado por quem
+achou**. O `porteiro-pos-merge` revalidou por execução e emitiu `LIBERADO COM RESSALVA`
+(`votos/B-GOV-ELENCO-ENXUTO/PORTEIRO-381.md`).
+
+O que entrou: **5 skills que nunca carregaram** passam a carregar (tinham `SKILL.md` um nível fundo, e o
+`sync --check` estava verde porque o espelho copiou o defeito) · **15 especialistas de blocos encerrados
+aposentados** com registro nominal e revival testado · índice do Codex reconciliado (23 = 23) · backfill do
+#380 · **`scripts/audit-agents-skills.mjs`**, guard novo com **default-deny** de escrita e **recusa nomeada**
+(não medir é vermelho) · **`D-FALLBACK-MODELO-FABLE-OPUS`**: a escada `Fable → Opus → PARADA`, com o
+mapeamento Codex nomeado (Astra ≡ Fable **declarado** pelo dono; Sol como degrau **derivado**).
+
+Validação: auditor `ec=0` no head e `ec=1` contra `fe2748c8` (vê o defeito que corrige) · os dois
+`sync-agent-*.mjs --check` `ec=0` · `node --check` · `git diff --check` · 4 suítes de KPI/espelho verdes ·
+`blocks_completed` **161 → 162** em `value` e `display`. **Zero arquivo de `src/`, `tests/`, `prisma/`,
+`frontend/` ou `mobile/` tocado.**
+
+**O que fica pendente e nomeado:** o **assento permanente da junta** teve o desenho **reprovado** e vive em
+`origin/chore/gov-elenco-fatia-b`; o dono decidiu (2026-09-08) reconstruí-lo na forma estreita — **cadeira
+descartável que só classifica achado contestado** (`dentro-do-bloco` × `pre-existente`, e se o plano de fato
+pediu aquilo), **sem veredito novo e sem poder vinculante**: registra na ata e a cadeira de mérito decide.
+As **6 ressalvas do porteiro** viajam para o próximo bloco. **Próxima demanda pelo backlog: `B-O6R-06`**
+(Ω6R-DIN-005 e DIN-007), último pré-requisito do gate da CHECKLIST P1.

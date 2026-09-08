@@ -7183,7 +7183,24 @@ criar mais uma cadeira efêmera com a mesma competência. O corpo está em
 
 ---
 
-## P-GOV-WORKTREES-NAO-IGNORADAS (2026-09-07) — `.claude/worktrees/` não está no `.gitignore` — MÉDIA
+## P-GOV-WORKTREES-NAO-IGNORADAS (2026-09-07) — FECHADA POR NÃO-REPRODUÇÃO em 2026-09-08 — era FALSA
+
+> **FECHADA em 2026-09-08 · motivo: a pendência nunca existiu.** `.claude/worktrees/` **está** no
+> `.gitignore` (linha 52) desde o commit `74430cc1`, de **2026-08-29** — nove dias antes de eu abri-la.
+> Medido duas vezes, independentemente: pelo `porteiro-pos-merge` do #381 e pelo orquestrador.
+>
+> **Como o erro nasceu, porque é isto que importa:** medi o `.gitignore` na árvore de trabalho principal,
+> que está em `demo/investidor`, **23 commits atrás da `main`** — ali a linha não existe (0 ocorrências).
+> É exatamente o **dado podre** do §C7.4-bis(c): *"premissa não medida, versão errada do arquivo"*. O
+> orquestrador passou dois blocos cobrando dos jurados que medissem na árvore certa, e escorregou nisto.
+>
+> Terceira contaminação vinda da mesma árvore nesta sessão — ela entregou ao inspetor uma norma inexistente,
+> ao porteiro um corpo de agente pré-merge, e ao orquestrador um `.gitignore` velho. A raiz virou a
+> pendência do caminho repo→sessão, no fim deste arquivo.
+
+O texto original fica abaixo, **não apagado**, para a trilha registrar o que foi afirmado e por que caiu.
+
+### Texto original (2026-09-07) — INVÁLIDO
 
 Medido em `B-GOV-ELENCO`: `git check-ignore -v .claude/worktrees/b06` não casa nenhuma regra, e o
 `.gitignore` não tem uma única linha sobre `.claude`. Três worktrees vivem hoje sob `.claude/worktrees/`
@@ -7254,6 +7271,12 @@ mutação que a deixa vermelha, partindo de baseline e voltando a ele, medida em
 (`votos/B-GOV-ELENCO/DEV-A-evidencia.md`). Quem fiar o auditor na CI porta essa bateria para `tests/` em vez
 de inventar uma nova; `tests/**` é escopo **PROIBIDO** deste bloco (§5-bis), e é por isso que ela vive na
 evidência e não numa suíte.
+
+> **DONO NOMEADO em 2026-09-08 (ressalva 5 do porteiro do #381):** **decisão do dono**, e com urgência maior
+> do que quando foi aberta — o `B-GOV-ELENCO-ENXUTO` **entregou o instrumento** (`audit-agents-skills.mjs`),
+> e ele **não é disparado por gate nenhum**, nem o `sync-agent-skills --check`. A CI roda apenas
+> `sync-agent-agents --check`. Um guard que depende de alguém lembrar de rodá-lo foi exatamente o que deixou
+> **5 skills sem carregar por meses**.
 
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a CI nunca teve esses passos; o
   `sync-agent-agents --check` entrou sozinho) · **dono:** próximo bloco que tocar `.github/workflows/` ·
@@ -7526,7 +7549,14 @@ mérito são **byte-idênticas** (EOL-neutro) entre a branch e a sessão; **só 
 desenho reprovado, e então o §C7.1-quater passa a existir em `CLAUDE.md`/`AGENTS.md`; ou (b) emendar o item
 3.3 do `inspetor-de-terreno-da-junta`, retirando a exigência enquanto a norma não existir.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
+> **REBAIXADA em 2026-09-08 (ressalva 3 do porteiro do #381).** O item 3.3 foi **removido por edição
+> inversa** da árvore principal — medido: `0` ocorrências, arquivo byte-idêntico ao `HEAD`. Ele não existia
+> em ref nenhuma (nem `main`, nem `HEAD` de `demo/investidor`, nem `chore/gov-elenco-fatia-b`): era edição
+> **não commitada**. **A raiz continua viva** — o `decisoes.md` da árvore principal ainda carrega edição não
+> commitada da mesma leva. Severidade cai de **ALTA** para **BAIXA**, e o que resta é uma **nota anexada à
+> decisão do assento**: se ele for adotado, o 3.3 entra junto.
+
+- **status:** REBAIXADA · **severidade:** BAIXA (era ALTA) · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
   `B-GOV-ELENCO`, 2026-09-07, e ficou na branch não-mergeada) · **dono:** decisão do dono ·
   **bloqueia:** nada hoje — o inspetor mediu e não aplicou. Mas cada junta futura paga o custo de re-descobrir.
 
@@ -7608,3 +7638,33 @@ partir de leitura recusada), todas com prevalência 0 e nenhuma bloqueante:
 
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
   tocar o auditor · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-CAMINHO-REPO-SESSAO (2026-09-08) — o caminho repo→sessão entregou norma inexistente e corpo pré-merge — ALTA
+
+Ressalva 6 do `porteiro-pos-merge` do #381, e a raiz de **três contaminações medidas na mesma sessão**.
+
+Os subagentes são carregados do `.claude/agents/` do **diretório da sessão** — que aqui é a árvore principal,
+em `demo/investidor`, **23 commits atrás da `main`** e com 58 caminhos sujos. Não do worktree julgado, não da
+`main`. Efeitos medidos:
+
+1. O `inspetor-de-terreno-da-junta` recebeu um item **3.3** mandando bloquear por `§C7.1-quater` — cláusula
+   que **não existe em ref nenhuma**. Ele mediu antes de aplicar, e não aplicou.
+2. O `porteiro-pos-merge` recebeu um **corpo pré-merge**, byte a byte o de `demo/investidor`, e a mesma
+   cláusula inexistente pelo prompt. Ele mediu a origem e reportou.
+3. O orquestrador mediu o `.gitignore` naquela árvore e abriu uma pendência **falsa**
+   (`P-GOV-WORKTREES-NAO-IGNORADAS`), fechada no mesmo dia por não-reprodução.
+
+**Os dois gates se salvaram medindo antes de aplicar** — que é o comportamento certo, mas é caro pagar por
+ele em toda junta. E o terceiro caso mostra que quem orquestra não tem essa proteção automática.
+
+**O que fecha:** decisão do dono sobre de onde os corpos de agente devem ser carregados quando o alvo do
+julgamento é outra ref. Duas saídas que a sessão levantou, sem decidir: rodar a sessão a partir de um worktree
+na `main`; ou o inspetor passar a conferir **corpo carregado × corpo julgado** de forma EOL-neutra como item
+fixo — ele já fez isso ad hoc nesta rodada, e foi assim que a divergência apareceu.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (o mecanismo de carregamento é do
+  runtime, anterior a qualquer bloco) · **dono:** **decisão do dono** · **bloqueia:** nada, mas cada junta
+  futura paga o custo de re-descobrir.
