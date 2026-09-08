@@ -1,0 +1,120 @@
+{
+  "head_medido": "918f5a01dff71db4f6a5d32f44d62b6cd33c88a3",
+  "cadeira": "C2",
+  "identidade": "guardiao-fail-closed",
+  "bloco": "B-GOV-ELENCO",
+  "veredito": "REPROVADO",
+  "evidencia_integral": "agent-orchestration/omega/juntas/votos/B-GOV-ELENCO/C2-evidencia.md",
+  "resumo": "As duas travas fecham no TEXTO e nao no MECANISMO. A enumeracao dos quatro vereditos e defendida no consumidor por DENYLIST ('merge sobre veredito ANULADO e merge invalido'): o membro nao previsto nasce PERMITIDO, e a mutacao executada mostra gates verdes e runtime aceitando. Nao e hipotetico: tres desfechos que o proprio mandato do assento manda declarar nao tem veredito na enumeracao, e um deles ('nao consegui medir a cadeira') e roteado por texto explicito para HOMOLOGADO COM RESSALVA, que libera o merge - contra a regra 'nao consigo medir = REPROVADO' que o mesmo bloco cobra de todas as outras cadeiras.",
+  "achados": [
+    {
+      "id": "C2-01",
+      "titulo": "Enumeracao de veredito defendida por EXCLUSAO no consumidor: a quinta string nasce permitida",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DATA/ORIGEM: porteiro-pos-merge.md:48 (e o espelho .agents/agents/porteiro-pos-merge.md:54) e adicao pura deste bloco - 'git diff fe2748c8..25c0112a -- .claude/agents/porteiro-pos-merge.md' mostra o hunk @@ -41,6 +41,15 @@ so com linhas '+'; D-CADEIRA-PERMANENTE-JUNTA datada 2026-09-07 em decisoes.md. MUTACAO (copia isolada /tmp/tmp.tUrZ26DBRc): ata votos/B-FICTICIO/99-cadeira-permanente.md terminando em 'SUSPENSO POR QUORUM INVALIDO: ...'. (a) nao existe build/tsc - a enumeracao vive so em prosa .md; (b) audit-agents-skills.mjs ec=0 'OK - nenhum achado' e sync-agent-agents.mjs --check ec=0 (unico gate de CI, ci.yml:69-70); (b2) 'grep -rln omega/juntas|99-cadeira-permanente|VEREDITO DO ASSENTO|HOMOLOGADO scripts/ tests/ .github/' devolve 6 arquivos e os 6 sao comentario ou caminho (auth-identity-fixture.ts:96, o6r07a-approval-sod.test.ts:17, deploy-production.yml:9 e :68) - ZERO parsers do veredito; (c) runtime: ACEITO, nao ha gate entre o ultimo voto de merito e o merge. CONTROLE de arnes vivo no mesmo arquivo: model fable->sonnet ec=1 (C3); tools +Write ec=1 (C4); revertido ec=0. Ou seja 0->1->0.",
+      "motivo": "A regra operativa de negacao nomeia SO 'ANULADO' (porteiro:48 segunda metade; CLAUDE.md:405; CLAUDE.md:232 e mapeamento de dois ramos sem else; decisoes.md:1948-1951 e tabela de 4 linhas sem linha 'qualquer outra'). Quinta string nao e ANULADO, a negacao nao dispara, e o permitido vira o complemento de um conjunto enumerado. Compila (n/a) + verde + aceito = FAIL-OPEN. A metade allowlist da mesma frase ('o veredito era HOMOLOGADO ou HOMOLOGADO COM RESSALVA') contradiz a metade denylist; na divergencia vence a permissiva, porque o porteiro roda POS-merge e o que ele emite e achado, nao rollback."
+    },
+    {
+      "id": "C2-02",
+      "titulo": "Tres desfechos do proprio mandato do assento nao tem veredito; o caso 'nao consegui medir' nasce do lado que libera o merge",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DATA/ORIGEM: .claude/agents/cadeira-permanente-backend-review.md e arquivo NOVO deste bloco (aparece como adicao em 'git diff --name-only fe2748c8..25c0112a'). Item 3.2 (l.129-130): 'Junta que fechou com menos votos de merito do que o quorum exige esta INVALIDA'. Item 3.3 (l.132-133): papeis do C7.4-bis ausentes = 'CICLO INVALIDO'. Linha 187-188: 'Se voce nao conseguir medir alguma cadeira ... ela entra como RESSALVA NOMEADA'. Nenhum dos tres e exprimivel pelas quatro linhas finais de l.170-181. O terceiro mapeia para HOMOLOGADO COM RESSALVA, que por porteiro:48 libera o merge. Regra oposta no MESMO head: briefing:99 ('Nao consigo medir = REPROVADO'), item 1.6 do proprio assento l.98-99 ('a regra e literal'), decisoes.md:1937.",
+      "motivo": "Nao e um quinto membro hipotetico: o desenho ja produz tres casos nao classificados, e o unico com rota escrita foi roteado para o lado PERMITIDO. E o default-que-permite do caso nao previsto, agravado por assimetria - cadeira de merito que nao mede e reprovada; assento que nao consegue medir homologa com ressalva. O briefing:141 ('o assento homologa depois, e a perda entra na medicao dele') poe o caso 'voto perdido' exatamente no buraco do item 3.2."
+    },
+    {
+      "id": "C2-03",
+      "titulo": "A trava de ENTRADA (inspetor 3.3) confere PROMESSA, nao execucao; o ponto de decisao (o merge) nao tem guarda",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DATA/ORIGEM: inspetor-de-terreno-da-junta.md:87-92 e adicao pura deste bloco ('git diff fe2748c8..25c0112a', hunk @@ -84,6 +84,13 @@). 3.3 verifica que 'o plano/briefing NOMEIA' a cadeira - objeto que existe antes do primeiro voto; nada verifica que ela RODOU. CLAUDE.md:236 (C2.8, D-PORTEIRO-POS-MERGE 2026-08-12): 'CONCLUIDO O MERGE, nasce o porteiro-pos-merge'. Logo a sequencia C2 6 -> 6-bis -> 7 -> 8 nao tem gate executavel entre o ultimo voto e o merge. CLAUDE.md:403-406 chama isso de 'Fail-closed nas duas pontas'.",
+      "motivo": "As duas pontas sao antes do voto e depois do merge; o merge fica no meio, sem guarda. 'Merge sobre veredito ANULADO e merge invalido' e nulidade retroativa, nao prevencao: no ponto de decisao o caso proibido e ACEITO e so depois declarado invalido. A favor do bloco: ele reivindica paridade explicita com o item 1 ('na mesma forca do item 1'), cuja natureza pos-hoc e PRE-EXISTENTE (D-SAN-AUTONOMIA), e .github/** esta no escopo PROIBIDO (plano 5-bis). Por isso e 'alta' e nao 'bloqueia', e por isso NAO proponho correcao."
+    },
+    {
+      "id": "C2-04",
+      "titulo": "3.3 so dispara enquanto alguem lembra de procurar - medido nas tres passadas do inspetor DESTE bloco",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Passada 1 (00-inspetor-terreno-passada1.md:73) conferiu 3.3 ('VERDE, com circularidade registrada'). Passadas 2 e 3: grep por '3.3|assento|ASSENTO|cadeira-permanente' em 00b-inspetor-passada2.md e 00c-inspetor-passada3.md devolve 0 linhas nas duas. No MESMO par de passadas o item 4.1 - que TEM comando - foi reexecutado: 00b:45 'sync-agent-agents.mjs --check -> OK - 24 agentes ec=0' e 00c:41 idem. Repeti no head: sync-agent-agents --check ec=0; sync-agent-skills --check ec=0.",
+      "motivo": "Comparacao controlada: mesmo agente, mesmo bloco, mesma passada incremental. O item com comando executavel sobreviveu as duas passadas; o item que depende de ler o briefing nao reapareceu em nenhuma. Concedo que 2 e 3 foram incrementais por mandato P4 e que 3.3 nao mudara; a propriedade que a tabela prova mesmo assim e que a trava nao tem artefato cuja ausencia um comando denuncie."
+    },
+    {
+      "id": "C2-05",
+      "titulo": "O guard C4 enumera ferramenta de escrita POR NOME; Bash e escrita plena e nasce do lado permitido - 'nao conserta' nao e imposto por mecanismo",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DATA/ORIGEM: scripts/audit-agents-skills.mjs e arquivo NOVO deste bloco. l.54 define a regex de ferramenta de escrita como (Write|Edit|NotebookEdit) com bordas de palavra; l.162 a aplica aos nomes iniciados por 'cadeira-permanente-'. 'grep ^tools: .claude/agents/cadeira-permanente-backend-review.md' devolve 'tools: Read, Grep, Glob, Bash'. MUTACAO na copia: (i) tools +Write -> auditor ec=1 [BLOQUEIA] C4 (guard vivo); (ii) escrita real via Bash (printf >>) no proprio arquivo do assento -> auditor ec=0, sync ec=1 apenas por divergencia de espelho; (iii) escrita via Bash em CLAUDE.md (sem espelho automatico) -> auditor ec=0 E sync ec=0. Prova viva: este parecer foi escrito com Read, Grep, Glob, Bash.",
+      "motivo": "Allowlist de negacao por enumeracao de nomes: qualquer ferramenta de escrita nao listada - Bash hoje, qualquer nova amanha - nasce permitida para um papel que JULGA. O assento pode reescrever CLAUDE.md, decisoes.md, pendencias.md, a ata e os votos sem que nenhum gate acuse. A pratica de dar Bash a papeis que julgam e PRE-EXISTENTE (inspetor 2026-08-24, porteiro 2026-08-12, mesma linha tools:); o que e deste bloco e o guard C4, que se apresenta como a imposicao do C7.4-bis e nao impoe."
+    },
+    {
+      "id": "C2-06",
+      "titulo": "Anulacao sem teto: existe caminho em que a anulacao vira aprovacao de fato",
+      "gravidade": "alta",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DATA/ORIGEM: cadeira-permanente-backend-review.md:179-181, arquivo novo deste bloco: 'ANULADO POR VETO ILEGITIMO ... os achados ilegitimos caem para pendencia ... e a junta REAPRECIA SEM ELES. Nao consome ciclo do teto'. 'grep -i teto|limite|maxim|duas vezes|repet|quantas' sobre as linhas de anulacao em CLAUDE.md, AGENTS.md, corpo do assento e decisoes.md devolve 0 linhas: nao existe teto de anulacoes. Unico freio desenhado (item 5, l.147-151): a serie AUTO-PUBLICADA pelo proprio assento, sem limiar numerico, conferida pelo porteiro-pos-merge - isto e, depois do merge.",
+      "motivo": "O assento remove achados da apreciacao; a operacao nao consome ciclo do D-TETO-DOIS-CICLOS; nao ha limite de repeticao. Iterado, esvazia o veto sem que nenhuma linha diga 'aprovado': a fronteira 'anulacao nunca produz veredito de merito' e respeitada na forma e contornada no efeito. Freio auto-reportado, sem numero e medido tarde nao e mecanismo que falha sozinho."
+    },
+    {
+      "id": "C2-07",
+      "titulo": "A mesma verdade de seguranca em 9 literais; 4 deles sem nenhum mecanismo de concordancia",
+      "gravidade": "media",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "MAPA medido no head: L1 .claude/agents/cadeira-permanente-backend-review.md:170-181 | L2 .agents/agents/cadeira-permanente-backend-review.md:176-187 | L3 .claude/agents/porteiro-pos-merge.md:48 | L4 .agents/agents/porteiro-pos-merge.md:54 | L5 .claude/skills/backend-review-ts-prisma/SKILL.md:32 | L6 CLAUDE.md:232 e :382 | L7 AGENTS.md:260 e :410 | L8 agent-orchestration/controle/decisoes.md:1948-1951 | L9 agent-orchestration/omega/juntas/TEMPLATE-J-ata.md:86. FORCADOS: L1<->L2 e L3<->L4 por sync-agent-agents.mjs --check, que ESTA na CI (ci.yml:69-70); L5 so contra o proprio espelho por sync-agent-skills --check, MANUAL ('grep -c audit-agents-skills|sync-agent-skills ci.yml' = 0). SEM MECANISMO: L6, L7, L8 e L9 entre si e contra L1 ('grep -rln AGENTS.md scripts/*.mjs tests/*.ts .github/workflows/*.yml' devolve so sync-agent-agents.mjs, e la e comentario na l.31). CONCORDAM HOJE, medido: diff L1 x L2 nas 4 linhas finais identico; diff CLAUDE.md:370-406 x AGENTS.md:398-434 com saida VAZIA. MUTACAO de divergencia na copia: em CLAUDE.md:382 troquei 'ANULADO POR APROVACAO NAO GANHA' pela variante sem acento e acrescentei um quinto veredito 'HOMOLOGADO SOB PROTESTO', deixando corpo do agente, AGENTS.md, decisoes.md e TEMPLATE com a lista antiga -> auditor ec=0 e sync --check ec=0. Revertido; diff contra o worktree identico.",
+      "motivo": "O contrato canonico (CLAUDE.md, que por regra de espelhamento PREVALECE) pode passar a listar cinco vereditos, um deles novo e permissivo, divergindo de todas as outras copias, sem que nada fique vermelho. A concordancia de hoje e mantida por disciplina de mesmo-PR (D-INTEROP), que e passo humano no meio. A classe do buraco CLAUDE.md<->AGENTS.md e PRE-EXISTENTE (D-INTEROP-CLAUDE-CODEX, 2026-07-28); o que este bloco fez foi depositar sobre ela uma verdade de SEGURANCA nova - a enumeracao que decide merge - em cinco copias novas."
+    },
+    {
+      "id": "C2-N1",
+      "titulo": "Nota de terreno: o briefing 7 proibe o jurado de escrever no worktree e o protocolo P1/P2/P4 manda escrever",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "BRIEFING-B-GOV-ELENCO.md:104-107: 'O worktree e SOMENTE-LEITURA para todo jurado ... Nenhum jurado escreve nele. Ao terminar, git -C <wt> status --porcelain tem de estar VAZIO'. O meu mandato (P1/P2/P4) ordena apensar C2-evidencia.md e escrever C2-voto.json exatamente ali. Ao final, status --porcelain mostra '?? C1-evidencia.md' (cadeira C1, mesmo protocolo) mais os meus dois arquivos.",
+      "motivo": "Contradicao entre dois insumos do mesmo head. Segui o protocolo P1/P2/P4 e registro, para que o proximo inspetor nao leia os '??' como mutacao viva - anomalia que esta casa ja teve. Nao e achado de merito e nao pesa no voto."
+    }
+  ],
+  "mutacoes": [
+    { "onde": "copia isolada /tmp/tmp.tUrZ26DBRc (mktemp -d, fora do repo, criada A PARTIR DO WORKTREE conforme briefing 7; sem git worktree add, sem junction, sem npm ci; removida com rm -rf e confirmada por test -d)", "o_que": "CONTROLE C3 - model: fable -> sonnet no arquivo do assento", "resultado": "auditor ec=1, [BLOQUEIA] C3 modelo fixado; revertido ec=0 (0->1->0)" },
+    { "onde": "mesma copia", "o_que": "CONTROLE C4 - tools: Read, Grep, Glob, Bash + Write", "resultado": "auditor ec=1, [BLOQUEIA] C4 C7.4-bis 'papel que JULGA com ferramenta de escrita'; revertido ec=0" },
+    { "onde": "mesma copia", "o_que": "O ASSENTO SOME do elenco: rm dos dois arquivos (.claude/agents/ e .agents/agents/)", "resultado": "auditor ec=1 - mas por C8 link quebrado em .claude/skills/backend-review-ts-prisma/SKILL.md:24: o unico fio que segura a existencia do assento e um link markdown na skill. sync-agent-agents --check (gate de CI) ec=0 'OK - 23 agentes, espelho consistente'. Restaurado ec=0" },
+    { "onde": "mesma copia", "o_que": "QUINTO VEREDITO - ata votos/B-FICTICIO/99-cadeira-permanente.md terminando em 'SUSPENSO POR QUORUM INVALIDO: ...', sem classificar o membro novo em lugar nenhum", "resultado": "FAIL-OPEN: sem build/tsc (prosa .md), auditor ec=0, sync --check ec=0, zero consumidores executaveis do literal; no ponto de decisao o membro novo e ACEITO" },
+    { "onde": "mesma copia", "o_que": "DIVERGENCIA entre literais - CLAUDE.md:382 passa a listar a variante sem acento + quinto veredito 'HOMOLOGADO SOB PROTESTO', com as demais copias intactas", "resultado": "auditor ec=0 e sync --check ec=0: nada forca a concordancia; revertido, diff contra o worktree identico" },
+    { "onde": "mesma copia", "o_que": "'NAO CONSERTA' - escrita real via Bash (printf >>) no arquivo do assento e, depois, em CLAUDE.md, com o toolset exato do assento", "resultado": "no arquivo espelhado: auditor ec=0 e sync ec=1 so por divergencia de espelho; em CLAUDE.md: auditor ec=0 E sync ec=0 - a escrita nao e barrada por nada. Restaurado ec=0 nos dois" },
+    { "onde": "worktree .claude/worktrees/gov-elenco", "o_que": "NENHUMA mutacao (somente leitura, conforme briefing 7)", "resultado": "git status --porcelain ao final = apenas '?? C1-evidencia.md' (cadeira C1) mais os meus dois arquivos de voto" },
+    { "onde": "arvore principal (demo/investidor)", "o_que": "NENHUM comando e NENHUMA leitura de merito", "resultado": "nao tocada; todo comando usou caminho absoluto do worktree ou da copia" }
+  ],
+  "comandos_executados": [
+    "git -C <wt> rev-parse HEAD -> 918f5a01dff71db4f6a5d32f44d62b6cd33c88a3",
+    "git -C <wt> diff --name-only 25c0112a..HEAD | grep -v '^agent-orchestration/' | wc -l -> 0 (regra de escopo do briefing satisfeita)",
+    "git -C <wt> diff fe2748c8..25c0112a -- .claude/agents/inspetor-de-terreno-da-junta.md -> hunk @@ -84,6 +84,13 @@, adicao pura (item 3.3)",
+    "git -C <wt> diff fe2748c8..25c0112a -- .claude/agents/porteiro-pos-merge.md -> hunk @@ -41,6 +41,15 @@, adicao pura (item 5-bis)",
+    "node scripts/audit-agents-skills.mjs (worktree) -> ec=0, '24 agentes · 12 skills · OK - nenhum achado'",
+    "node scripts/audit-agents-skills.mjs --ref fe2748c8 (worktree) -> ec=1, '6 BLOQUEIA · 0 AVISO' (controle do briefing 3 confere)",
+    "node scripts/sync-agent-agents.mjs --check (worktree) -> ec=0, 'OK - 24 agentes, espelho consistente'",
+    "node scripts/sync-agent-skills.mjs --check (worktree) -> ec=0, 'OK - 12 skills, 39 arquivos, espelho identico'",
+    "grep -rn por 'ANULADO POR APROVA|ANULADO POR VETO|HOMOLOGADO COM RESSALVA' em *.md *.mjs *.ts *.js *.json sem node_modules -> 9 literais distintos, mapeados em C2-07",
+    "grep -rln por 'omega/juntas|99-cadeira-permanente|VEREDITO DO ASSENTO|HOMOLOGADO' em scripts/ tests/ .github/ -> 6 arquivos, os 6 comentario/caminho; zero parsers do veredito",
+    "grep -c 'audit-agents-skills|sync-agent-skills' .github/workflows/ci.yml -> 0; sed -n 55,85p ci.yml confirma que o unico gate de elenco e sync-agent-agents --check (l.69-70)",
+    "grep -rln 'AGENTS.md' scripts/*.mjs tests/*.ts .github/workflows/*.yml -> so sync-agent-agents.mjs (comentario l.31): nao existe guard de paridade CLAUDE.md x AGENTS.md",
+    "diff <(sed -n '370,406p' CLAUDE.md) <(sed -n '398,434p' AGENTS.md) -> saida vazia (as copias CONCORDAM hoje)",
+    "grep por '3.3|assento|ASSENTO|cadeira-permanente' nos 3 pareceres do inspetor -> passada1: 3 hits (l.57, 73, 78); passada2: 0; passada3: 0",
+    "grep -i por 'teto|limite|maxim|duas vezes|repet|quantas' sobre anulacao em CLAUDE.md, AGENTS.md, corpo do assento e decisoes.md -> 0 linhas",
+    "grep '^tools:' .claude/agents/cadeira-permanente-backend-review.md -> 'tools: Read, Grep, Glob, Bash'",
+    "sed -n '54p;162p' scripts/audit-agents-skills.mjs -> regex de escrita = (Write|Edit|NotebookEdit), aplicada a ^cadeira-permanente-",
+    "grep -rn 'cadeira-permanente-backend-review' no plano e no briefing -> so na linha 'P' (homologa) e em 'Quem HOMOLOGA'; nunca como C1/C2/C3: inelegibilidade respeitada neste bloco",
+    "rm -rf /tmp/tmp.tUrZ26DBRc && test -d -> copia removida"
+  ],
+  "nao_executado": [
+    "npm run check / npm test / npm run build: o 7 do plano os exclui e o 5 do briefing os marca como reprovacao por construcao (worktree sem node_modules; npm ci desaconselhado pelo C7.1-ter(c)). Nao cobro.",
+    "tests/agents-mirror-guard.test.ts: nao rodei. Verifiquei por grep que ele nao le CLAUDE.md nem AGENTS.md, logo nao muda conclusao minha; o inspetor ja o mediu 12/12 ec=0 na passada 3.",
+    "Simulacao de um porteiro-pos-merge vivo diante de uma quinta string: artefato de prosa, julgado por leitura adversarial como o mandato manda."
+  ],
+  "o_que_o_bloco_acertou": [
+    "As 9 copias do literal CONCORDAM hoje, byte a byte nos trechos comparaveis - medido, nao presumido.",
+    "O par .claude/agents <-> .agents/agents tem mecanismo executavel E esta na CI (ci.yml:69-70).",
+    "O arnes novo esta vivo sobre o arquivo do assento: C3 e C4 ficam vermelhos sob mutacao (0->1->0 nas duas).",
+    "O controle contra a base (--ref fe2748c8 -> ec=1, 6 BLOQUEIA) confirma que o auditor VE o defeito que o bloco corrige.",
+    "A inelegibilidade do assento como cadeira de merito foi respeitada de fato neste bloco.",
+    "A redacao de 3.3 fecha o vao do briefing que simplesmente nao menciona o assento ('Ausencia = BLOQUEADO' mais a regra de ouro do inspetor)."
+  ],
+  "regra_do_voto_aplicada": "VOTO A FAVOR exigiria mutacao mostrando build ou teste VERMELHO na omissao, runtime NEGANDO o membro novo, e autoridade unica (ou concordancia imposta por mecanismo que falha sozinho). Medi: nenhum vermelho, runtime aceitando, e 4 copias sem mecanismo. Nao proponho correcao nem escolho mecanismo (C7.4-bis): entrego a propriedade ausente, provada."
+}

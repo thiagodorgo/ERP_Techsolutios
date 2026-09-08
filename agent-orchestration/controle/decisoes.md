@@ -1910,3 +1910,254 @@ estão — o guard do espelho não enxerga subdiretório, `scripts/sync-agent-ag
 de reuso é a **composição da junta**, não a existência do arquivo — um teste "nome queimado não existe na
 árvore" daria **verde com o reuso acontecendo na demo**, que é a classe de falsa segurança que a rodada SAN2
 existe para exterminar. O argumento está escrito para ser derrubado no voto, se a junta discordar.
+
+---
+
+## D-APOSENTADORIA-ELENCO-EFEMERO (decisão do dono, 2026-09-07) — cadeira de bloco encerrado sai do diretório vivo
+
+**O que estava acontecendo.** O §C7.4 manda a `agente-fabrica` criar cadeiras sob medida a cada bloco, e o
+§C7.1-ter(b) reconhece que a resposta à reprovação é escalar. Nenhuma regra dizia **quando essas cadeiras
+saem**. Resultado medido em `origin/main@fe2748c8` pelo auditor novo
+(`node scripts/audit-agents-skills.mjs`): **15 especialistas de blocos já encerrados**, somando **~19,8 KB de
+`description` (~5.068 tokens)** carregados no contexto de **toda sessão** — 3× o peso dos 24 papéis
+permanentes juntos (6,6 KB). Na branch `demo/investidor` o mesmo número era **33 especialistas / ~43 KB /
+~11k tokens**, porque lá os 9 jurados do ciclo 4 nunca saíram.
+
+> **Errata (`B-GOV-ELENCO` ciclo 2, fatia A, 2026-09-08) — acréscimo, o parágrafo acima não foi alterado.**
+> Os "**24 papéis permanentes juntos (6,6 KB)**" da linha acima não se reproduzem, e foi a cadeira C1 da
+> junta `J-B-GOV-ELENCO` que mediu (achado `C1-03`, BAIXA). Pelo método do próprio
+> `scripts/audit-agents-skills.mjs` (frontmatter linha a linha, aspas removidas, `String.length`):
+> em `origin/main@fe2748c8` são **23** papéis / 5.563 chars / **5,4 KB**, e no head desta fatia idem
+> (**23** / 5.563 / **5,4 KB**). O peso dos 15 efêmeros é 20.271 chars = **19,8 KB**, logo a razão é
+> **3,64×**, não 3×. **A decisão abaixo não muda**: o número que a sustenta ficou maior, não menor.
+> Registro para o "6,6 KB" não ser reusado como fato — corrigido também no cabeçalho do script, no history
+> do KPI e no Apenso 1 ao `B-GOV-ELENCO-plano.md`.
+
+**A decisão.** Especialista cujo bloco tem **ata fechada e PR mergeado** é **aposentado** do diretório vivo.
+Cadeira de bloco **em voo nunca sai**. A remoção é sempre **por identificador de BLOCO**, nunca por nome de
+cadeira solto — nomes de papel colidem entre sessões, e uma cadeira de outra sessão já destruiu o worktree
+vivo de uma sucessora lendo o nome como dela.
+
+**Aposentar não apaga.** O corpo continua no Git; a ata continua sendo a prova do voto. O registro nominal —
+cadeira, bloco, ata, PR que fechou, e o **commit onde o corpo pode ser lido de volta** — vive em
+`agent-orchestration/controle/aposentadoria-especialistas.md`, que toda rodada futura anexa. Reviver é
+`git show <commit>:.claude/agents/especialistas/<nome>.md`; mas o normal é a `agente-fabrica` criar cadeira
+**nova** (identidade nova é requisito do §C7.4) usando o corpo antigo como molde, não como ocupante.
+
+**O que a primeira rodada removeu:** as 15 cadeiras de `B-O6R-02` (ciclos 1–5, PR #371) e `B-O6R-07b`
+(PR #380). Elenco de especialistas depois: **0** — que é o estado correto, porque cadeira efêmera só existe
+enquanto vota.
+
+**Uma competência sai e fica registrada, não engolida.** `especialista-maquinas-de-desfazer` tem
+`description` genérica de verdade ("QUALQUER caminho que desfaz — delete, reverse, estorno, cancel, bounce,
+unclear, reabertura, rollback"; "quando duas superfícies diferentes tocam o mesmo dinheiro"). É competência de
+papel **permanente**, não de cadeira de bloco; só o corpo estava amarrado ao `B-O6R-02`. Sai por critério, e
+fica a pendência `P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER`: se um bloco voltar a mexer em caminho que desfaz
+dinheiro, promovê-lo a papel permanente com o corpo generalizado — não recriá-lo como efêmero de novo.
+
+
+---
+
+## D-QUORUM-B-GOV-ELENCO (2026-09-07) — a subida de quórum do bloco de governança, registrada e não herdada
+
+O §C7.1-ter(b) literal daria **maioria de 3** ao `B-GOV-ELENCO`: é bloco de governança, sem dinheiro,
+segurança, permissão ou perda de dado **no produto**. O §8 do plano subiu para **unanimidade de 3**, com a
+justificativa de que o bloco **reescreve a regra da própria junta** e **remove 15 arquivos** — um defeito ali
+enfraquece toda junta futura.
+
+O `cadeira-permanente-backend-review`, na homologação nº 1, conferiu e mediu: a subida é **decisão declarada,
+não silenciosa**, e **não** é a escalada-por-reprovação que a auditoria de 28/08 mediu (aquela sobe o quórum
+*depois* de reprovar, reduzindo a chance de aprovação a cada ciclo; esta foi declarada *antes* do primeiro
+voto). Efeito no ciclo: **nenhum** — a junta saiu 3×0. Mas ele cobrou o registro formal, porque o quórum vivia
+só no plano, e `decisoes.md` não tinha uma menção.
+
+**A regra que fica: quórum elevado não se herda por inércia.** Toda subida acima do §C7.1-ter(b) é declarada
+**antes** do primeiro voto, com o motivo escrito, e **registrada aqui**. O ciclo 2 do `B-GOV-ELENCO` mantém a
+unanimidade de 3 por esta decisão; qualquer bloco seguinte volta ao quórum do risco, salvo nova declaração.
+
+
+---
+
+## D-AUDITOR-ENXUTO (2026-09-08) — encolher o auditor ao que regex faz com segurança, e trocar adivinhação por recusa nomeada
+
+**Decisão do dono (Thiago), 2026-09-08**, sobre o dossiê `agent-orchestration/omega/DOSSIE-B-GOV-ELENCO.md`:
+
+> *"Encolher o auditor ao que regex faz com segurança e trocar adivinhação por recusa nomeada na fronteira.
+> A faxina entra junto, pronta e verificada. Como bloco novo e pequeno — não como ciclo 3."*
+
+É a **Opção 3 + Opção 1** do §5 do dossiê, nessa ordem. Executada em `B-GOV-ELENCO-ENXUTO`, branch
+`chore/gov-elenco-enxuto`.
+
+### Por que ENCOLHER em vez de CONSERTAR — o padrão medido em dois ciclos
+
+`B-GOV-ELENCO` foi reprovado **duas vezes** e parou no teto de dois ciclos (`D-TETO-DOIS-CICLOS`). Ciclo 1:
+**3×0**. Ciclo 2, fatia A: **2×1**. As duas juntas acharam **a mesma família de defeito**, e é isso que
+decide a questão: **o instrumento erra na fronteira da gramática que ele próprio define.**
+
+| Ciclo | Gramática que o auditor definiu | Onde ela errou |
+|---|---|---|
+| 1 | nomes de papel (regex de **prefixo**) | cega a `agente-*` — **13 de 24** papéis; a cadeira que o pegou era invisível a ele |
+| 1 | ferramentas de escrita (**3 nomes literais**) | `MultiEdit` passava limpo |
+| 2 | **subconjunto YAML** do frontmatter | comentário no fim da linha `tools:` → acusação `C4` com **nome de ferramenta fabricado** (`A-C2-02`) |
+| 2 | **destinos de link** | `<destino>` do CommonMark, query string, cerca de til recuada → arquivo **existente** acusado (`A-C2-03`, `A-C2-04`); e destino com **espaço** nunca conferido (`A-C2-05`) |
+
+**Cada conserto fechou a classe apontada e abriu a vizinha.** Não é azar: é a consequência de **parsear YAML
+e Markdown com regex**. Um terceiro ciclo fecharia estas duas classes e, pelo padrão medido, abriria a
+próxima. A decisão corta a **superfície**, não a instância.
+
+**Duas propriedades do padrão que sustentam a escolha.** (i) Todas as falhas medidas eram **fail-closed** —
+vermelho falso, nunca verde falso — **exceto uma**: `A-C2-05`, que era o único **fail-OPEN** de toda a
+auditoria, e vivia justamente dentro do `C8`. Cortar o `C8` mata a única classe que absolvia por engano.
+(ii) A **prevalência** de achado `C8` na árvore de trabalho, em `origin/main` e em `fe2748c8`, medida no dia
+do corte, é **0 nos três** — saiu superfície de erro, não saiu medição.
+
+### O que a decisão determina
+
+1. **`C8` (link relativo quebrado) é CORTADO**, com o regex `LINK`, `semCercas`, `semCodeSpans`,
+   `semComentariosHtml` e `embranquecer`. **Corte, não conserto.** A perda é real e vai **publicada** no
+   cabeçalho do script e na pendência `P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK` — link quebrado de verdade deixa
+   de ser pego (provado por mutação de controle: `1 BLOQUEIA · ec=1` antes, `0 · ec=0` depois).
+2. **Recusa nomeada na fronteira.** Entrada fora do subconjunto YAML **declarado** não produz diagnóstico:
+   produz `C1 recusa de medição` / `C6 recusa de medição`, **com arquivo, linha e motivo**, e **nenhuma
+   outra checagem daquele arquivo é emitida** — para o auditor nunca acusar a partir de leitura que ele
+   mesmo declarou não confiável. **A recusa REPROVA (`ec=1`): não medir é vermelho, nunca verde.**
+3. **A recusa cobre as chaves cujo VALOR vira acusação** — `name` (→`C2`), `model` (→`C3`), `tools`
+   (→`C4`/`C5`) — e **não** `description`, da qual o auditor mede só presença e comprimento. Isso **não é
+   arbitrário e foi medido**: `origin/main` e `fe2748c8` têm **5 arquivos** cuja `description` contém ` #`
+   (o texto `PR #363`), e a forma larga da recusa teria inventado a **quinta classe de falso-positivo** —
+   a mesma patologia que esta decisão existe para cortar.
+4. **O cabeçalho do script tem de dizer o que ele NÃO faz, e por quê.** Gate que promete mais do que mede é
+   pior que gate ausente: a ausência é visível, a promessa quebrada não.
+5. **O que FICA, porque é determinístico e já provou valor:** `C0` (alvo vazio não é limpo) · `C1`/`C2`/`C3`
+   · `C4`/`C5` **default-deny** — mecanismo **intocado**, a cadeira `A-C2` provou em **16 mutações** que
+   fecha · `C6`/`C7` (**puro sistema de arquivos** — foi o que achou as **5 skills que nunca carregaram**) ·
+   `C9` (paridade de espelho, nos dois sentidos) · `C10` (peso do elenco efêmero) · o parser estrito de
+   argumentos com `ec=2` · o modo `--ref` lendo **BLOB**.
+
+### O que fica de lição, além deste arquivo
+
+**Antes de escrever uma regra de recusa, meça a prevalência da construção que ela passará a recusar.** A
+primeira forma redigida neste bloco (recusar ` #` em **qualquer** escalar plano) teria acusado 5 arquivos
+reais e **suprimido** as demais checagens neles. Foi a medição — não a releitura — que pegou.
+
+**Volume da decisão:** `scripts/audit-agents-skills.mjs` 664 → 668 linhas; ~99 linhas de gramática de link
+removidas, ~103 de fronteira declarada e recusa acrescentadas. **Zero dependência nova.**
+
+
+---
+
+## D-FALLBACK-MODELO-FABLE-OPUS (decisão do dono, 2026-09-07, **ampliada em 2026-09-08**) — esgotado o Fable cai para o Opus; esgotado o Opus, **para**
+
+**Status:** aplicada · **Origem:** ordem do dono (Thiago), em duas datas · **Impacto:** em que modelo **todo
+gate de junta** roda — `inspetor-de-terreno-da-junta`, `porteiro-pos-merge`, o assento permanente e o
+`planejador-mestre` — e uma **parada de rodada** nova.
+
+### As duas ordens que a originaram
+
+> **2026-09-07 —** *"documente: quando o Fable esgotar, cai para o Opus."*
+>
+> **2026-09-08 (ampliação) —** *"quando o Opus acabar, **para**."*
+
+A primeira criou o degrau; a segunda fechou a escada. O texto normativo vive no **§C7.6-bis** do `CLAUDE.md`
+e no espelho do `AGENTS.md` (48 linhas, **idênticas** nos dois — conferido por `diff` linha a linha). Esta
+entrada é a **autoridade escrita** dessas 48 linhas, e é ela que faltava.
+
+### Por que esta entrada existe — o defeito que a criou
+
+A norma foi para o corpo do contrato e **nunca** para o registro operacional. Medido na junta do
+`B-GOV-ELENCO-ENXUTO` pela cadeira **C1** (`validador-mestre`), achado `C1-E-02` (MÉDIA, `dentro-do-bloco`):
+`grep -c D-FALLBACK-MODELO-FABLE-OPUS agent-orchestration/controle/decisoes.md` → **0**, contra **21**
+arquivos `.md` da árvore que a citavam no head julgado `9c0e6ac9` — entre eles os corpos de
+`inspetor-de-terreno-da-junta`, `planejador-mestre` e `porteiro-pos-merge` **nos dois espelhos**. Remedido
+por mim (`dev-rail-enxuto`) no head `7af524ba`: **23** arquivos, e os dois a mais são exatamente a ata
+`J-B-GOV-ELENCO-ENXUTO.md` e a própria evidência da C1 — nascidos depois do voto dela.
+
+**A autoridade da norma era circular:** a única coisa escrita que sustentava a regra era o texto que a
+citava. O mecanismo que o `inspetor-de-terreno-da-junta` usou **nesta mesma junta** para validar a subida de
+quórum — ir a `decisoes.md` e achar `D-QUORUM-B-GOV-ELENCO` — não funcionava para esta. §A5, §A6 e §C6:
+decisão materialmente relevante vai para a **estrutura operacional**, não só para o corpo do contrato. E
+**não foi falta de oportunidade**: o mesmo diff acrescentou `D-APOSENTADORIA-ELENCO-EFEMERO`,
+`D-QUORUM-B-GOV-ELENCO` e `D-AUDITOR-ENXUTO` a este arquivo.
+
+### A escada — dois degraus, e o terceiro é uma parada
+
+| Estado | O que fazer |
+|---|---|
+| Fable disponível | roda em **Fable** (o `model:` do frontmatter) |
+| Fable esgotado | roda em **Opus** — **único** substituto autorizado — **e DECLARA** |
+| Opus esgotado | **PARA.** Não se desce mais um degrau |
+
+**Nunca** Sonnet, **nunca** Haiku, **nunca** "o modelo da sessão".
+
+### Por que a PROIBIÇÃO importa mais do que a permissão
+
+O que esta decisão realmente institui **não** é a permissão de usar Opus — é a **proibição de tudo abaixo
+dele**. E a razão é assimétrica:
+
+**Gate degradado é pior que gate ausente.** A ausência de um gate é **visível**: alguém abre a ata e não acha
+o parecer. A degradação **não é**: um parecer de porteiro, de inspetor ou do assento permanente sai com
+**exatamente a mesma cara de autoridade** — mesmo cabeçalho, mesmo veredito, mesma linguagem de medição —
+independentemente do modelo que o produziu. Quem lê a ata seis semanas depois não tem como distinguir um
+`LIBERADO` medido de um `LIBERADO` que só pareceu medido. É a mesma família da lição que o
+`D-AUDITOR-ENXUTO` registra sobre instrumentos: *gate que promete mais do que mede é pior que gate ausente*.
+
+Daí as duas consequências de desenho: (i) o fallback é para **um** modelo **nomeado**, não para "o melhor
+disponível" — uma escada aberta vira, na prática, "o modelo da sessão"; e (ii) ela **termina numa parada**,
+em vez de continuar descendo. **Não se improvisa modelo, não se pula o gate, não se declara verde por falta
+de quem meça.**
+
+**A parada é da família do §C7.5** (paradas imediatas irredutíveis): o trabalho em voo é **registrado onde
+está** — evidência P1, votos parciais, head medido — e o dono é avisado.
+
+**A substituição é DECLARADA, nunca silenciosa.** Quem invoca registra, no artefato daquele papel **e na
+ata**: **qual papel · qual modelo rodou · por que o Fable faltou**. Isto **estende** a cláusula de
+indisponibilidade do item 6 do §C7 (`D-PLANEJADOR-MODELO-FABLE`), dando à nota **conteúdo obrigatório** e
+**destino nomeado**.
+
+### O `model: fable` PERMANECE no frontmatter
+
+O fallback é do **invocador**, não do arquivo. Trocar o `model:` de
+`.claude/agents/{planejador-mestre,inspetor-de-terreno-da-junta,porteiro-pos-merge}.md` (e dos espelhos em
+`.agents/agents/`) para `opus` tornaria a degradação **permanente e invisível** para a próxima sessão —
+que é precisamente o que o `D-PLANEJADOR-MODELO-FABLE` existe para impedir: o frontmatter existe para valer
+**independente do modelo da sessão**, para que quem invoca não precise lembrar. **Quem caiu para Opus volta
+ao Fable quando o limite renovar** — e volta sozinho, porque o arquivo nunca mudou.
+
+### O motivo MEDIDO da parada
+
+Em **2026-09-08** a rodada do `B-GOV-ELENCO` bateu **no limite do Fable e no do Opus na mesma sessão**. A
+política tinha **um degrau só**, e a saída silenciosa naquele momento teria sido exatamente a que ela proíbe:
+descer para o modelo da sessão e emitir um parecer com cara de autoridade. A ampliação de 08/09 nasceu desse
+fato, não de zelo abstrato.
+
+### Espelho Codex — o mapeamento, e o que nele é DECLARADO × DERIVADO
+
+O roster da conta OpenAI é **GPT-6 Astra · GPT-5.6 Sol · GPT-5.6 Terra · GPT-5.6 Luna · GPT-5.5**, em ordem
+decrescente de capacidade.
+
+| Papel de contrato | Claude Code | Codex |
+|---|---|---|
+| Modelo fixado dos gates e do planejador | **Fable** | **GPT-6 Astra** — *equivalência **declarada pelo dono*** |
+| Degrau único de fallback | **Opus** | **GPT-5.6 Sol** — ***derivado** da ordem do roster, não declarado nominalmente* |
+| Abaixo disso | **PARA** | **PARA** |
+
+**A distinção tem de estar escrita, e é por isto:** a linha do **Astra** é **fato dito pelo dono**; a do
+**Sol** é **derivação minha/da casa**, de ele ser o degrau imediatamente abaixo no roster. Um contrato de
+execução **não pode apresentar derivação como declaração** (§A6: separar fato de hipótese) — e a
+consequência prática é assimétrica: a linha declarada só muda se o dono mudar de ideia; a derivada
+**se corrige numa linha** se estiver errada, e quem a lê precisa saber que ela é corrigível.
+
+**`Terra`, `Luna` e `GPT-5.5` não são fallback de gate em hipótese alguma.** Para eles vale a parada.
+
+### O que fica de regra
+
+1. Gate de junta e `planejador-mestre` rodam em **Fable**; **Opus** é o único substituto, e **declarado**.
+2. Esgotado o Opus (ou o Sol, no Codex), **para** — com registro do trabalho em voo e aviso ao dono.
+3. O `model:` do frontmatter **não se toca** para acomodar esgotamento.
+4. Toda substituição vai para a **ata** com papel · modelo · motivo.
+5. Chamada de `Agent`/`Workflow` que passe um modelo **fora desta escada** para esses papéis **contraria o
+   contrato**.
+
+**Fecha o achado `C1-E-02`** da junta `J-B-GOV-ELENCO-ENXUTO` (registro escrito por `dev-rail-enxuto`, agente
+distinto de quem achou e de quem escreveu o defeito — §C7.4-bis). **Não abre pendência:** o que faltava era o
+registro, e ele passa a existir aqui.

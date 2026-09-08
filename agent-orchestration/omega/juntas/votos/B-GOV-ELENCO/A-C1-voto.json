@@ -1,0 +1,106 @@
+{
+  "head_medido": {
+    "head_atual": "d2d25f6b932eb1fd6da17a891cc1774540ae53e2",
+    "head_de_codigo": "7facc396d2a5226c077d45b111f7bea6b5378c78",
+    "base_origin_main": "fe2748c84cc187a54ebe3fa651fcdc347c5b3494",
+    "branch": "chore/gov-auditoria-elenco",
+    "apos_head_de_codigo_fora_de_agent_orchestration": 0
+  },
+  "cadeira": "A-C1",
+  "identidade": "agente-secops",
+  "fatia": "A",
+  "mandato": "(1) escopo A-21 A-30 e particao A/B; (2) registro A-22 A-27 A-25; (3) KPI A-23 A-24 A-26 e julgamento da EMENDA 2",
+  "veredito": "APROVADO",
+  "quorum": "unanimidade de 3 (D-QUORUM-B-GOV-ELENCO)",
+  "achados_bloqueantes": 0,
+  "achados": [
+    {
+      "id": "A-C1-01",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "git log -1 --date=iso 7facc396 devolve autoria 2026-09-08 01:40:31 -0300. No MESMO commit, .agents/agents/README.md data o adendo como ciclo 2, 2026-09-07, enquanto a errata de agent-orchestration/controle/decisoes.md diz ciclo 2, fatia A, 2026-09-08 e Kpis/kpis-latest.json mais Kpis/kpis-history.json trazem snapshot_date 2026-09-08.",
+      "motivo": "Dois registros datados no mesmo commit carregam datas diferentes. Trabalho atravessando a meia-noite explica sem defeito, e a medicao que o adendo publica reproduz integralmente (sync-agent-agents --check devolve OK 23 agentes com ec=0; especialistas 0 contra 0), por isso NAO bloqueia. Registrado porque este repositorio ja pagou pendencia por datar registro pela linha errada.",
+      "bloqueia": false
+    }
+  ],
+  "verificacoes_conformes": {
+    "item_1_escopo": {
+      "caminhos_no_diff_de_codigo": 91,
+      "padroes_proibidos_5bis_com_ocorrencia": "0 de 15 (src, tests, prisma, frontend, mobile, .github, .gitignore, scripts/sync-agent-*, infra, .env, package-lock, pnpm-lock, yarn.lock, pubspec.lock, scripts/kpi-freeze.mjs)",
+      "caminhos_fora_do_permitido_5_1": 0,
+      "caminhos_da_fatia_B_presentes": 0,
+      "bytes_de_hunk_da_fatia_B_nos_6_arquivos_compartilhados": 0,
+      "renames_R100_com_blob_identico_dos_dois_lados": "32 de 32; divergentes 0",
+      "A_30_aposentadoria_intocada": "diff 25c0112a..7facc396 vazio; blob e919302b nos dois",
+      "linhas_de_main_apagadas_em_decisoes_md": 0,
+      "linhas_de_main_apagadas_em_pendencias_md": 0
+    },
+    "item_2_registro": {
+      "corpos_recuperaveis_nos_commits_citados": "15 de 15; ausentes 0; divergentes do blob da base 0",
+      "commits_de_revival_ancestrais_de_origin_main": "3 de 3 (e6a64619, 99f18403, fe2748c8)",
+      "atas_citadas_rastreadas_em_origin_main": "4 de 4",
+      "prs_citados_sao_merges_reais_na_main": "371 igual a 99f18403 e 380 igual a fe2748c8",
+      "afirmacoes_numericas_do_registro_que_reproduziram": "8 de 8",
+      "medicao_independente_do_peso": "23 papeis / 5563 chars / 5,4 KB em fe2748c8 e no head A; 15 efemeros / 20271 chars / 19,8 KB; razao 3,6439 contra 3,64 publicado; .claude/skills em fe2748c8 igual a 11 diretorios; N com Bash fora da allowlist igual a 17 pelo auditor e 17 pela minha contagem (20 com Bash menos 3 da allowlist que o tem)",
+      "D_FALLBACK_MODELO_FABLE_OPUS_preservada_na_fatia_B": "CLAUDE.md com 6-bis x3 e D-FALLBACK x1; AGENTS.md x1; decisoes.md x1; os 4 agentes model fable com a linha de fallback (grep -ci opus igual a 2 em cada)",
+      "D_QUORUM_B_GOV_ELENCO_permaneceu_na_fatia_A": "sim; decisoes.md l.1961 no head A, ausente em fe2748c8, presente tambem na fatia B, nasceu em c0cbfe10",
+      "A_27_plano_do_ciclo1": "142 linhas iniciais byte-identicas a 25c0112a (diff vazio); Apenso 1 na l.146; total 211; R-B-GOV-ELENCO-ciclo1.md existe com 79 linhas"
+    },
+    "item_3_kpi": {
+      "blocks_completed": "value 162 e display 162; metricas so-digitos 1, divergentes 0",
+      "frozen_vs_kpis_latest": "JSON canonico IDENTICO (true); o texto difere so por serializacao, minificado 73814 contra indentado 80442, que e a forma gerada por kpi-freeze.mjs; kpi-freeze --check devolve em dia com ec=0",
+      "backfill_B_O6R_07b": "pr 380, merge_commit fe2748c84cc187a54ebe3fa651fcdc347c5b3494, approved_head a2988b5, backfill_note presente: INTACTO",
+      "autoria_do_PR_corrente": "pr, merge_commit e approved_head null conforme C3.5; a branch nao esta pushada, logo nao ha PR aberto e o null e o estado honesto",
+      "suites_reexecutadas_por_mim": "kpi-dashboard-charts 16/16, kpi-achados-paridade 6/6, kpi-dashboard-contraste 6/6, agents-mirror-guard 12/12, todas com ec=0",
+      "contagens_carregadas_legitimas": "sim: zero arquivo de tests, src, frontend ou mobile no diff, e a nota C3.3 esta escrita na description",
+      "A_26_readme": "Nasceu em 0; 24 papeis 0; 23 agentes 2; 34 agentes 3 preservado; 0 contra 0 igual a 1; assento permanente 0. Afirmacoes do adendo reexecutadas: sync-agent-agents --check devolve OK 23 agentes com ec=0 e especialistas 0 contra 0",
+      "A_25_emendado": "description sem 5 de 12 (0) e sem 6,6 KB (0); diz que o desenho da cadeira permanente vai inteiro para a fatia B e que esta entrada NAO o publica como entregue"
+    },
+    "julgamento_da_EMENDA_2": {
+      "afrouxou_alguma_propriedade": false,
+      "achado_contra_o_orquestrador": null,
+      "prova": "O artefato satisfaz o criterio ANTIGO E o NOVO: grep pela palavra assento na description devolve 0 ocorrencias, logo ele passaria no grep antigo tal como escrito. A emenda nao e load-bearing para esta aprovacao. No merito ela APERTA: troca uma proibicao lexical, falsificavel por sinonimo (um texto dizendo que a cadeira permanente foi entregue passaria com 0 ocorrencias de assento), por uma proibicao semantica MAIS uma obrigacao positiva inedita, a de dizer que o desenho vai para a fatia B.",
+      "mutacao_reexecutada_por_mim": "A-16 em copia isolada: linha 217 trocada por const normalizado = texto, resultando em 34 BLOQUEIA (23 agentes mais 11 skills) com ec=1; restaurado devolve 0 BLOQUEIA com ec=0. Ciclo 0 para 34 para 0. O 34 republicado pela EMENDA 2 REPRODUZ, pelo mecanismo que ela alegou."
+    }
+  },
+  "comandos_executados": [
+    "git -C wt rev-parse HEAD, --abbrev-ref HEAD, origin/main, 7facc396 e 25c0112a",
+    "git -C wt status --porcelain=v1 (inicio e fim)",
+    "git -C wt log --oneline -6",
+    "git -C wt diff --name-only 7facc396..HEAD e a contagem do que nao e agent-orchestration",
+    "git -C wt diff --name-status -M fe2748c8..7facc396 e git diff --raw -M para o hash de blob dos 32 renames",
+    "grep -Ec de 15 padroes do 5-bis e de 7 padroes da fatia B sobre a lista de caminhos",
+    "grep -vE com a allowlist do 5.1 sobre os 91 caminhos unicos",
+    "git -C wt diff fe2748c8..7facc396 nos 6 arquivos compartilhados da fatia B, medido em bytes",
+    "git -C wt diff 25c0112a..7facc396 em aposentadoria-especialistas.md",
+    "git -C wt merge-base --is-ancestor para 25c0112a, c0cbfe10, e6a64619, 99f18403 e fe2748c8",
+    "git -C wt cat-file -e e rev-parse dos corpos das 15 cadeiras nos commits citados e em fe2748c8",
+    "git -C wt cat-file -e das 4 atas em fe2748c8 e em 7facc396",
+    "git -C wt log --oneline origin/main filtrado por 371 e 380",
+    "git -C wt show da branch chore/gov-elenco-fatia-b em CLAUDE.md, AGENTS.md e decisoes.md com grep -c",
+    "laco sobre .claude/agents nos dois heads procurando model fable e contando opus",
+    "node mede.mjs no scratchpad: medicao propria do peso de description em 2 refs e 2 diretorios",
+    "git -C wt ls-tree --name-only fe2748c8 em .claude/skills",
+    "diff entre o plano do ciclo 1 em 25c0112a e as 142 primeiras linhas no head A",
+    "node scripts/audit-agents-skills.mjs e a variante --json, apenas leitura",
+    "node -e sobre Kpis/kpis-latest.json comparando value e display, e sobre Kpis/app.js comparando o FROZEN",
+    "node scripts/kpi-freeze.mjs --check",
+    "node -e sobre Kpis/kpis-history.json: entrada B-GOV-ELENCO, backfill do B-O6R-07b e greps na description",
+    "node --test --import com loader tsx por file URL nas 4 suites de KPI e espelho",
+    "node scripts/sync-agent-agents.mjs --check e node scripts/sync-agent-skills.mjs --check, apenas executados",
+    "git -C wt ls-remote --exit-code origin chore/gov-auditoria-elenco",
+    "MUTACAO em copia isolada: mktemp -d, cp de scripts, .claude/agents, .claude/skills, .agents/agents e .agents/skills; sed na linha 217; node scripts/audit-agents-skills.mjs; restauracao; rm -rf"
+  ],
+  "forma": {
+    "node": "v20.19.5",
+    "autocrlf": "true (global, sem override local nem de sistema)",
+    "so": "Windows 11 Pro 10.0.22631",
+    "shell": "Git Bash POSIX",
+    "worktree": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
+    "arvore_principal_lida": false,
+    "arvore_limpa_no_inicio": true,
+    "N_execucoes_por_estado": 1,
+    "isolamento": "mutacao unica em mktemp -d, removida com rm -rf; sem git worktree add, sem junction, sem symlink, sem npm ci; a minha escrita se limita a votos/B-GOV-ELENCO/A-C1-evidencia.md e A-C1-voto.json"
+  },
+  "evidencia": "agent-orchestration/omega/juntas/votos/B-GOV-ELENCO/A-C1-evidencia.md"
+}

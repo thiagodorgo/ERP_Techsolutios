@@ -1,0 +1,125 @@
+{
+  "head_medido": "d2d25f6b932eb1fd6da17a891cc1774540ae53e2",
+  "head_de_codigo_declarado": "7facc396",
+  "diff_apos_head_de_codigo": "somente agent-orchestration/ (briefing, plano do ciclo 2, 2 arquivos do inspetor) - nenhum caminho de codigo",
+  "cadeira": "A-C3",
+  "papel": "coordenador-de-acessos",
+  "bloco": "B-GOV-ELENCO",
+  "ciclo": 2,
+  "fatia": "A",
+  "veredito": "APROVADO",
+  "quorum": "unanimidade de 3 (D-QUORUM-B-GOV-ELENCO)",
+  "mandato": [
+    "1) SoD: default-deny do C4 (A-3, A-4, A-5) e honestidade das listas",
+    "2) a excecao Bash (A-6) nomeada, contada e com dono",
+    "3) os papeis do C7.4-bis distintos neste ciclo, e a EMENDA 2"
+  ],
+  "forma": {
+    "node": "v20.19.5",
+    "autocrlf": "true",
+    "plataforma": "win32 (Git Bash)",
+    "isolamento": "toda mutacao em copia isolada via mktemp -d mais cp de scripts/, .claude/ e .agents/; sem git worktree add, sem junction, sem symlink, sem npm ci; copia removida ao final (test -d negativo)",
+    "baseline": "23 agentes . 11 skills . 0 BLOQUEIA . 1 AVISO . ec=0, reproduzido no worktree e na copia",
+    "revert": "0 -> N -> 0 conferido em cada mutacao",
+    "execucoes_por_estado": 1,
+    "worktree_ao_final": "intacto; git status --porcelain so com os arquivos de voto das cadeiras; HEAD inalterado"
+  },
+  "itens": [
+    {
+      "item": 1,
+      "titulo": "a allowlist de escrita e uma decisao visivel?",
+      "veredito": "PASSA",
+      "a_quatro_nomes": "3 sao devs/fabrica (agente-fabrica, dev-mapas, frontend-pixel-master); 1 NAO e - agente-devops-provisionador tem na propria description a frase Vota nas juntas de infra, e no corpo uma secao Criterio de voto / veto (l.36-37, 44)",
+      "b_visibilidade_no_diff": "SIM - new Set com um nome por linha (l.123-128): acrescentar e diff de mais uma linha em caminho permitido. MAS o nome compra isencao TOTAL (C4 inteiro e o ramo BLOQUEIA do C5 desligados para o papel) e, medido, faz o N do AVISO CAIR de 17 para 16",
+      "c_somente_leitura": "nada que escreve passa - 6 sondas aceitas (Read, Grep, Glob, WebFetch, WebSearch e Bash tolerado) e 13 negadas (Write, Edit, MultiEdit, NotebookEdit, Task, TodoWrite, NotebookRead, BashOutput, KillShell, SlashCommand, read minusculo, READ maiusculo, Bash escopado com git); asterisco cai em recusa C1 (fail-closed)",
+      "d_sod": "SIM, existe um papel que julga E pode escrever pela allowlist: agente-devops-provisionador. Registrado em A-C3-01"
+    },
+    {
+      "item": 2,
+      "titulo": "o AVISO do Bash e honesto, ou e a excecao virando regra?",
+      "veredito": "PASSA",
+      "a_contagem_independente": "17, e os mesmos nomes - awk sobre a linha tools do frontmatter menos os 4 da allowlist, comparado com a lista papeis do --json: diff IDENTICAS",
+      "contexto_medido": "20 de 23 papeis carregam Bash; 3 deles estao na allowlist (logo fora do N); 17 de 17 dos contados tem linguagem de voto/veto no corpo; 0 papeis fora da allowlist com Write/Edit/MultiEdit/NotebookEdit",
+      "b_exit_code": "AVISO nao derrubar o exit NAO e carve-out do Bash: e regra geral do instrumento (6 sitios AVISO contra 23 BLOQUEIA; o exit sai de bloqueia.length na l.664, declarado no cabecalho l.29). O custo, dito sem enfeite: a classe tolerada cobre 100 por cento da populacao que nomeia, e a classe reprovavel tem 0 instancia real - hoje o C4 e barreira de regressao (fecha em 13 de 13 sondas), nao detector. Nao esvazia a regra porque o bloco NAO afirma que a regra esta sendo feita cumprir - afirma o contrario, em tres lugares",
+      "c_saida_escolhida": "e a certa, e NAO encontrei caminho melhor dentro do escopo desta fatia: tirar Bash quebra P1/P2 (estou escrevendo este voto com Bash); fazer Bash BLOQUEIA e o mesmo item do 10.3; asserir o N exige tests/ (5-bis); e a concessao escopada de Bash e NEGADA pelo proprio auditor (medido) - se o runtime aceita essa forma no tools de subagente eu NAO medi e nao asserto"
+    },
+    {
+      "item": 3,
+      "titulo": "os papeis do C7.4-bis foram distintos, e a EMENDA 2 afrouxou algo?",
+      "veredito": "PASSA",
+      "a_dev_distinto": "declarado e coerente no registro (papel, head de partida c0cbfe10, forma propria); a secao 2.0 mostra decisao de particao do orquestrador executada e registrada pelo dev, com A-21 sobre 8 arquivos em vez de 4 (mais estrito); nenhum arquivo de agente novo criado (5-bis). LIMITE PUBLICADO: a autoria git e a mesma em todos os commits (identidade da maquina do dono), logo NAO distingue papeis e eu nao a uso como prova",
+      "b_dev_julgou_achado": "nao - busca por linguagem de merito em DEV-A-evidencia.md vazia; o registro diz o oposto em 6 pontos",
+      "c_tres_itens_devolvidos": "separacao funcionando, medido: implementei o atalho que o dev recusou (a passada de code span ignorando linha que pareca cerca). Com as duas passadas vivas -> 0 BLOQUEIA ec=0 (no-op); com so a passada de cerca morta -> 6 BLOQUEIA ec=1, ou seja o A-17 antigo fecharia pela letra. Ele tinha o atalho, descreveu-o e nao o usou",
+      "d_emenda_2": "nenhuma propriedade afrouxada, com 4 mutacoes reexecutadas por mim. A-16: 34 BLOQUEIA igual a 23 C1 mais 11 C6 (um por arquivo), revert 0 - o 71 era do parser do ciclo 1. A-17 letra antiga: 0 BLOQUEIA (nao fecha mesmo). A-17a: exatamente 6 em skill-creator, os seis nomeados. A-17b: exatamente 1 na fixture de til que montei, controle 0. A-25 spot-check: passa no antigo e no novo. Resposta ao mandato: o que a A-C1 mediu para A-25 NAO vale para A-16 nem A-17 - os dois falham na LETRA antiga, e medi o mecanismo de cada um; a forma mudou, a propriedade nao"
+    }
+  ],
+  "achados": [
+    {
+      "id": "A-C3-01",
+      "titulo": "a excecao de ESCRITA isenta um papel que VOTA, e o bloco nao o nomeia",
+      "gravidade": "MEDIA",
+      "escopo": "pre-existente no mecanismo; dentro-do-bloco na publicacao",
+      "evidencia_de_escopo": "mecanismo: agente-devops-provisionador.md tem Write, Edit e Bash E a frase Vota nas juntas de infra desde fb2e5fdf, 2026-07-13 (unico commit do arquivo, medido por git log -S), cerca de 2 meses antes do bloco; git diff --name-status fe2748c8..HEAD nos 4 arquivos da allowlist = vazio. Publicacao: a linha PODE_ESCREVER nasce neste head (git diff fe2748c8..HEAD no script)",
+      "propriedade_ausente": "o bloco tratou a excecao Bash como nomeada, contada (N=17) e com dono, e a excecao de ESCRITA como apenas nomeada: sem N, sem dono e sem dizer que um dos quatro isentos se auto-descreve como votante de junta. Estar na allowlist remove o papel INTEIRO da medicao C4/C5 (medido: tirando so esse nome, 1 BLOQUEIA C4 nomeando Write e Edit; e acrescentar um papel que julga faz o N publicado cair de 17 para 16)",
+      "bloqueia": false,
+      "motivo_de_nao_bloquear": "classe pre-existente com data (C7.1-ter(a)); a metade dentro-do-bloco e assimetria de honestidade, nao quebra de propriedade declarada - A-3, A-4 e A-5 fecham por execucao",
+      "correcao_proposta": null
+    },
+    {
+      "id": "A-C3-02",
+      "titulo": "a EMENDA 2 e ato de planejamento assinado por quem nao e o planejador",
+      "gravidade": "MEDIA",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "commit 88ff8726, 2026-09-08, nesta branch (git log -S sobre B-GOV-ELENCO-ciclo2-plano.md), 4 minutos depois do commit de codigo 7facc396",
+      "propriedade_ausente": "a secao 2 do proprio plano atribui planejar ao planejador-mestre e lista o orquestrador como inelegivel para implementar e votar; emendar o plano e planejar. Quem assinou achou, planejou e desenvolveu o ciclo 1, reprovado 3x0, e a emenda reescreve os criterios pelos quais a correcao desse mesmo ciclo e julgada",
+      "bloqueia": false,
+      "motivo_de_nao_bloquear": "o C7.4-bis(b) fala de codigo, nao de criterio - e achado de cadeia de autorizacao, nao violacao literal; e as propriedades sobreviveram a reexecucao das 4 mutacoes, a emenda esta em destaque, datada, assinada, nomeia o proprio gesto como suspeito e roteia o julgamento a junta",
+      "correcao_proposta": null
+    }
+  ],
+  "observacoes_declaradas_e_nao_cobradas": [
+    "WebFetch e WebSearch em SOMENTE_LEITURA sao canais de saida, nao de escrita no repositorio - fora da propriedade que o C7.4-bis trata",
+    "nada assere o N=17 depois do merge: e criterio de junta (A-6), nao guard; o guard exigiria tests/ (5-bis e 10.1), deferido com dono",
+    "o auditor nao esta na CI nem em npm script (grep vazio em .github/ e package.json) - P-GOV-AUDITOR-FORA-DA-CI, pre-existente, 10.1: lido para caracterizar o efeito do exit code, NAO cobrado",
+    "a pendencia registra dono igual a bloco de governanca de ferramentas de agente na linha de status, e diz que a saida e decisao do dono no adendo; li os dois sentidos como compativeis (quem implementa contra quem decide a direcao) e nao transformo ambiguidade de palavra em achado",
+    "o C4 so varre .claude/agents/; o espelho .agents/agents/ e coberto por sync-agent-agents.mjs --check (paridade de bytes, na CI) - fora do meu mandato e nao cobrado"
+  ],
+  "reprovacao_por_construcao_nao_cobrada": [
+    "tests/, .github/, .gitignore, src/, prisma/, frontend/, mobile/, lockfiles, scripts/sync-agent-*.mjs, scripts/kpi-freeze.mjs (5-bis)",
+    "o assento permanente, o C7.1-quater do CLAUDE.md, a skill backend-review-ts-prisma e o TEMPLATE-J-ata.md (fatia B)",
+    "D-FALLBACK-MODELO-FABLE-OPUS (foi inteiro para a fatia B; conferi que nao sumiu: ponteiro chore/gov-elenco-fatia-b criado em c0cbfe10 antes da cirurgia, registrado na secao 2.0 do dev)",
+    "npm run check/test/build no worktree (C7.1-ter(c), disco)",
+    "remover Bash de quem julga, ou exigir que o AVISO agregado seja BLOQUEIA (10.3)",
+    "blockchain-developer (P-GOV-SKILLS-RELEVANCIA, decisao do dono)"
+  ],
+  "comandos_executados": [
+    "git -C wt rev-parse HEAD ; node --version ; git config --get core.autocrlf ; git status --porcelain",
+    "git -C wt diff --name-only 7facc396..HEAD",
+    "node scripts/audit-agents-skills.mjs (baseline no worktree e na copia): 23 agentes . 11 skills . 0 BLOQUEIA . 1 AVISO . ec=0",
+    "awk sobre .claude/agents/*.md listando name e tools dos 23 papeis",
+    "sed dos 4 arquivos de PODE_ESCREVER (frontmatter e description) e grep de voto/junta/julga/veredito nos 4",
+    "git log --format sobre .claude/agents/agente-devops-provisionador.md ; git log -S da frase Vota nas juntas de infra",
+    "git diff fe2748c8..HEAD no script, filtrando as linhas de PODE_ESCREVER, SOMENTE_LEITURA e TOLERADA_COM_AVISO",
+    "M-A na copia: agente-secops com Write -> 1 BLOQUEIA C4 ec=1",
+    "M-B na copia: idem mais agente-secops em PODE_ESCREVER -> 0 BLOQUEIA ec=0 e N do AVISO de 17 para 16; revert -> 0",
+    "sonda de 19 valores de tools em coordenador-de-acessos, um por execucao, revert entre cada: 6 aceitos, 13 negados",
+    "M-D1 na copia: dev-mapas fora da allowlist -> 1 BLOQUEIA C4 Edit e Write, ec=1",
+    "M-D2 na copia: agente-devops-provisionador fora da allowlist -> 1 BLOQUEIA C4 Write e Edit, ec=1",
+    "M-E na copia: nome fantasma em PODE_ESCREVER -> 1 AVISO C4-ter, ec=0",
+    "awk independente contando Bash fora da allowlist = 17; lista papeis do --json = 17; diff das duas listas = IDENTICAS",
+    "grep -l de tools com Bash = 20 de 23; grep de voto/veto nos 17 = 17 de 17",
+    "grep dos sitios AVISO (6) contra BLOQUEIA (23) e leitura da linha 664 do exit",
+    "grep -rn de audit-agents-skills em .github/ e package.json -> vazios (leitura, nao cobranca)",
+    "A-16 na copia: linha 217 sem a normalizacao de CRLF -> 34 BLOQUEIA (23 C1 mais 11 C6) ec=1; revert -> 0",
+    "A-17 letra antiga na copia: so a passada de cerca morta, head intacto -> 0 BLOQUEIA ec=0",
+    "A-17a na copia: as duas passadas mortas -> 6 BLOQUEIA em skill-creator/SKILL.md (FORMS, REFERENCE, EXAMPLES, DOCX-JS, REDLINING, OOXML) ec=1; revert -> 0",
+    "A-17b na copia: fixture de cerca de til montada por mim; duas vivas -> 0; so a de cerca morta -> 1 (references/GUIA-TIL.md) ec=1; restaurado -> 0; fixture removida",
+    "ATALHO recusado pelo dev, implementado por mim na copia: duas passadas vivas -> 0 BLOQUEIA ec=0 (no-op); so a de cerca morta -> 6 BLOQUEIA ec=1",
+    "A-25 spot-check: node sobre Kpis/kpis-history.json - as tres strings antigas dao false; a frase sobre a fatia B esta presente",
+    "git log de autor, data e assunto em fe2748c8..HEAD ; git log -S da EMENDA 2 sobre o plano",
+    "grep de linguagem de merito e de nao-julgamento em DEV-A-evidencia.md",
+    "ls .claude/agents/ filtrado por dev-gov e c2 -> vazio",
+    "rm -rf da copia isolada mais test -d negativo; git status --porcelain e rev-parse HEAD do worktree conferidos ao final"
+  ],
+  "evidencia": "agent-orchestration/omega/juntas/votos/B-GOV-ELENCO/A-C3-evidencia.md"
+}

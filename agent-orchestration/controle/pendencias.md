@@ -7158,3 +7158,453 @@ dependência satisfeita desde 19/08 e **sem dono nomeado**.
 - **status:** FECHADA em 2026-09-06 · **fechado por:** decisão do dono (terminar o 07b; `B-O6R-06` a seguir) ·
   **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** encerrado. A tensão que ela registrava
   está **resolvida por decisão**, não por medição — que é o desfecho correto para uma pergunta de fila.
+
+
+---
+
+## P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER (2026-09-07) — competência reutilizável saiu na aposentadoria do elenco — BAIXA
+
+`especialista-maquinas-de-desfazer` foi aposentado na rodada 1 de `D-APOSENTADORIA-ELENCO-EFEMERO` porque o
+bloco dele (`B-O6R-02`, PR #371) fechou. O critério está certo e foi aplicado certo — mas a **competência não
+era de bloco**. A `description` dele é genérica de verdade: *"QUALQUER caminho que desfaz (delete, reverse,
+estorno, cancel, bounce, unclear, reabertura, rollback)"*, *"quando duas superfícies diferentes tocam o mesmo
+dinheiro"*, *"quando uma suíte prova invariante financeira pela EXISTÊNCIA de uma linha em vez do efeito
+líquido"*. Isso é papel **permanente** (mesma família de `guardiao-fail-closed`); só o **corpo** estava
+amarrado ao `B-O6R-02` e aos ciclos 1–2.
+
+**O que fazer quando reaparecer:** bloco que mexa em caminho que desfaz dinheiro **promove** este papel a
+`.claude/agents/` com o corpo generalizado (tirando as âncoras de `B-O6R-02`), em vez de a `agente-fabrica`
+criar mais uma cadeira efêmera com a mesma competência. O corpo está em
+`git show 99f18403:.claude/agents/especialistas/especialista-maquinas-de-desfazer.md`.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (a competência nasceu em
+  `B-O6R-02`, ciclos 1–2, antes deste bloco) · **dono:** o próximo bloco que tocar caminho de desfazer com
+  efeito monetário · **bloqueia:** nada.
+
+---
+
+## P-GOV-WORKTREES-NAO-IGNORADAS (2026-09-07) — `.claude/worktrees/` não está no `.gitignore` — MÉDIA
+
+Medido em `B-GOV-ELENCO`: `git check-ignore -v .claude/worktrees/b06` não casa nenhuma regra, e o
+`.gitignore` não tem uma única linha sobre `.claude`. Três worktrees vivem hoje sob `.claude/worktrees/`
+(`b06`, `gov-descuido`, `gov-elenco`) — cada um é uma **árvore de trabalho inteira do repositório**. Um
+`git add -A` distraído em qualquer sessão comitaria milhares de arquivos de uma árvore dentro da outra.
+
+O que **não** aconteceu: nada foi comitado assim até aqui — a checagem foi `git status --porcelain`, que
+mostra `.claude/worktrees/` como untracked e nunca staged. É risco, não incidente.
+
+**Por que não foi consertado neste bloco:** o `.gitignore` está fora do escopo permitido de `B-GOV-ELENCO`
+(§5 do plano — o bloco toca elenco de agentes, skills, contrato e registro; `.gitignore` é infraestrutura de
+repositório e afeta todo trabalho em voo, inclusive os dois worktrees de outras sessões). Consertar aqui
+seria exatamente o alargamento silencioso de escopo que o §C4 proíbe.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (o `.gitignore` nunca teve a
+  regra; os worktrees existem desde 26/08) · **dono:** próximo bloco de infraestrutura de repositório ·
+  **bloqueia:** nada. **Correção proposta:** uma linha `.claude/worktrees/` no `.gitignore`.
+
+---
+
+## P-GOV-SKILLS-RELEVANCIA (2026-09-07) — 5 skills voltaram a carregar; 1 delas não tem relação com o ERP — BAIXA
+
+`B-GOV-ELENCO` consertou o achatamento de 5 skills que estavam com o `SKILL.md` um nível fundo
+(`.claude/skills/X/X/SKILL.md`) e por isso **nunca carregaram**: `blockchain-developer`, `cloud-architect`,
+`cloud-devops`, `payment-integration`, `skill-creator`. O conserto é inequívoco — o defeito era estrutural e
+o `name:` de cada uma já batia com a pasta.
+
+O efeito colateral é que as 5 passam a ocupar espaço no contexto de toda sessão. Quatro têm uso plausível
+aqui (`cloud-architect`/`cloud-devops` nas trilhas Ω-INFRA, `payment-integration` no financeiro,
+`skill-creator` na criação de skills/agentes, que é rotina). **`blockchain-developer` não tem relação
+nenhuma com este produto** — ERP de serviços de campo, sem cripto em lugar algum do domínio.
+
+**Não foi removida** porque remover skill instalada é decisão do dono, não de agente, e o bloco tinha
+autorização para **consertar** o achatamento, não para **curar** o catálogo.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (as 5 foram instaladas aninhadas
+  antes deste bloco) · **dono:** decisão do dono · **bloqueia:** nada. **Pergunta a responder:**
+  `blockchain-developer` fica ou sai?
+
+
+---
+
+## P-GOV-AUDITOR-FORA-DA-CI (2026-09-07) — o auditor de elenco e o `--check` das skills são gates MANUAIS — MÉDIA
+
+Achado do `inspetor-de-terreno-da-junta` na passada 1 de `B-GOV-ELENCO` (ressalva R3), e **medido**:
+`.github/workflows/ci.yml` l.69-70 roda **somente** `node scripts/sync-agent-agents.mjs --check`.
+`grep -c 'audit-agents-skills\|sync-agent-skills' .github/workflows/ci.yml` → **0**.
+
+Consequência: o `audit-agents-skills.mjs` (as 10 checagens C1–C10) e o `sync-agent-skills.mjs --check`
+dependem de alguém lembrar de rodá-los. Foi exatamente "alguém lembrar" que deixou **5 skills sem carregar
+por meses** — o `--check` de agentes estava verde e ninguém olhava as skills.
+
+O briefing da passada 1 **afirmava que o auditor rodava em CI**. Não rodava. A afirmação foi corrigida no
+briefing da passada 2 e o erro fica registrado aqui, não apagado.
+
+**Por que não foi consertado neste bloco:** `.github/**` está no escopo **PROIBIDO** de `B-GOV-ELENCO`
+(§5-bis do plano). Mexer na CI dentro de um bloco de governança de elenco seria o alargamento silencioso de
+escopo que o §C4 proíbe — e cobrá-lo da junta deste bloco é reprovação por construção.
+
+**Correção proposta (próximo bloco de infraestrutura de CI):** dois passos no job `backend`, ao lado do
+"Agents mirror guard" que já existe, sem `continue-on-error` e sem `|| true`:
+`node scripts/sync-agent-skills.mjs --check` e `node scripts/audit-agents-skills.mjs`.
+
+**Adendo (`B-GOV-ELENCO` ciclo 2, fatia A, 2026-09-08).** A pendência continua ABERTA e o dono é o mesmo, mas
+agora existe **o que levar para a CI**, escrito e executado: a bateria de mutação do §7.1 do
+`B-GOV-ELENCO-ciclo2-plano.md` (critérios A-3 a A-17) é a **regressão** do auditor — cada checagem com a
+mutação que a deixa vermelha, partindo de baseline e voltando a ele, medida em cópia isolada
+(`votos/B-GOV-ELENCO/DEV-A-evidencia.md`). Quem fiar o auditor na CI porta essa bateria para `tests/` em vez
+de inventar uma nova; `tests/**` é escopo **PROIBIDO** deste bloco (§5-bis), e é por isso que ela vive na
+evidência e não numa suíte.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a CI nunca teve esses passos; o
+  `sync-agent-agents --check` entrou sozinho) · **dono:** próximo bloco que tocar `.github/workflows/` ·
+  **bloqueia:** nada — mas enquanto estiver aberta, toda a proteção nova deste bloco depende de disciplina
+  humana, não de gate.
+
+
+---
+
+## P-GOV-VEREDITO-SEM-PARSER (2026-09-07) — veredito de junta é PROSA, e nenhum gate o lê — MÉDIA
+
+Componente **mecânico** do achado `C2-01` da junta `J-B-GOV-ELENCO`, **re-escopado pelo assento permanente**
+na homologação nº 1: a cadeira C2 o classificou como `bloqueia`/`dentro-do-bloco`; o assento mediu e mostrou
+que ele **antecede o bloco** e que consertá-lo exigiria caminho **proibido**.
+
+**O fato.** O veredito de uma junta existe como **texto em markdown**. Nenhum script lê essa linha: `grep` por
+parser de veredito em `scripts/`, `tests/` e `.github/` → **0**. Portanto "merge sobre veredito `ANULADO` é
+merge inválido" é **nulidade retroativa, não prevenção** — no ponto de decisão o caso proibido é aceito, e só
+depois declarado inválido. O mesmo vale, desde sempre, para o `LIBERADO` do inspetor (24/08) e o `LIBERADO` do
+porteiro (12/08) e para o próprio "verde da junta = merge" (`D-SAN-AUTONOMIA`, 13/07).
+
+**Por que é `pre-existente` e não deste bloco.** A classe "veredito de junta é prosa sem parser" nasce com a
+`D-SAN-AUTONOMIA` em 2026-07-13 e atravessa os dois gates criados depois. `B-GOV-ELENCO` **acrescentou um
+quarto veredito à mesma prosa** — não criou a ausência de parser. E o conserto viveria em `tests/**` ou
+`.github/**`, **ambos no §5-bis PROIBIDO** do plano deste bloco: cobrá-lo aqui seria reprovação por
+construção (§C7.1-ter(a)).
+
+**O componente que NÃO é pre-existente e segue como achado do ciclo:** o **texto** da regra de negação nomeia
+apenas `ANULADO`, sem ramo "qualquer outra string" — defesa derivada **por exclusão**, escrita em quatro
+literais (`CLAUDE.md` l.405 e l.232, `porteiro-pos-merge.md` l.48, `decisoes.md` l.1948). Esse componente é
+`dentro-do-bloco`, gravidade **ALTA**, e entra no ciclo 2.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (D-SAN-AUTONOMIA, 2026-07-13) ·
+  **dono:** próximo bloco que tocar `.github/workflows/` ou `tests/` de governança · **bloqueia:** nada.
+  **Correção proposta:** um parser de veredito que leia a linha final da ata e do parecer do assento, com
+  **allowlist explícita** e `else` que **NEGA**, consumido por exit code em CI — junto de
+  `P-GOV-AUDITOR-FORA-DA-CI`.
+
+---
+
+## P-GOV-BASH-EM-QUEM-JULGA (2026-09-07) — `Bash` dá poder de escrita a todo papel que julga — ALTA
+
+Achado por **duas cadeiras independentes** na junta `J-B-GOV-ELENCO`: `C2-05` (guardião fail-closed) e
+`C3-A2` (CI-doutor). Medido e reproduzido pelo orquestrador:
+
+- `Bash` está em **11 de 11** papéis que a função `JULGA()` do auditor reconhece.
+- A negação do auditor (`FERRAMENTA_DE_ESCRITA`) é **por enumeração de nomes** — `Write|Edit|NotebookEdit`.
+  Qualquer ferramenta de escrita fora da lista nasce **permitida**: `Bash` hoje, `MultiEdit` também
+  (verificado: passa limpo), e qualquer nova amanhã.
+
+**A consequência prática:** o §C7.4-bis diz "quem acha não conserta", e a garantia disso era supostamente
+estrutural. Não é. Um papel que julga pode reescrever `CLAUDE.md`, `decisoes.md`, `pendencias.md`, a ata e os
+próprios votos por `Bash`, sem que gate nenhum acuse. **Hoje o §C7.4-bis é respeitado por CONVENÇÃO, não por
+construção** — e os agentes o respeitaram: nenhum jurado desta junta escreveu fora dos seus dois arquivos.
+
+**Tensão real, que a correção precisa resolver e não pode ignorar:** o próprio protocolo P1/P2 do
+`D-JUNTA-RESILIENTE` (§C7.7) **exige** que o jurado escreva `<cadeira>-evidencia.md` e `<cadeira>-voto.json`.
+Como eles não têm `Write`/`Edit` por desenho, escrevem **com `Bash`**. Tirar `Bash` quebra o P1/P2; deixar
+`Bash` mantém o buraco. A saída não é óbvia e não cabe num bloco de elenco.
+
+**Escopo.** A prática de dar `Bash` a papéis que julgam é `pre-existente` (o `porteiro-pos-merge` a tem desde
+12/08 e o `inspetor-de-terreno-da-junta` desde 24/08, na mesma linha `tools:`). O que é **deste bloco** é
+(a) ter estendido a prática a uma cadeira **permanente**, e (b) ter **publicado como fato medido**, no §4.4 do
+plano, que "o §C7.4-bis está respeitado por construção" — afirmação produzida por um instrumento **cego** para
+a classe. Esse (b) é `dentro-do-bloco` e entra no ciclo 2.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` no mecanismo (2026-08-12) ·
+  **dono:** bloco de governança de ferramentas de agente · **bloqueia:** nada hoje.
+
+**Adendo (`B-GOV-ELENCO` ciclo 2, fatia A, 2026-09-08) — o componente (b) FECHOU; o (a) continua aberto.**
+
+Esta pendência tinha duas metades. **(b) A afirmação falsa morreu.** O §4.4 do plano do ciclo 1 publicava
+"§C7.4-bis respeitado **por construção**", produzido por um instrumento cego; a frase está **retirada** (Apenso
+1 ao `B-GOV-ELENCO-plano.md`) e o que se publica no lugar é medido: **por construção** para `Write`, `Edit`,
+`MultiEdit`, `NotebookEdit` e **qualquer nome desconhecido** — a checagem C4 virou **default-deny**, com
+allowlist de 4 nomes; **por convenção** para `Bash`, com **N = 17** papéis nomeados, publicados pelo auditor
+num AVISO agregado que **não derruba o exit code**, e com esta pendência como dono.
+
+**(a) O mecanismo continua ABERTO.** `Bash` segue dando escrita por redirecionamento de shell a 17 papéis que
+julgam. Não se conserta aqui, e cobrar isso da junta desta fatia é **reprovação por construção** (§10.3 do
+plano do ciclo 2): tirar `Bash` quebraria o §C7.7 P1/P2 — o jurado grava a própria evidência e o próprio voto
+com `Bash`, e sem ele a evidência incremental que salva o trabalho numa queda deixa de existir. A saída é
+decisão do dono (ferramenta de escrita restrita a `votos/<bloco>/`, ou outro mecanismo), não do bloco.
+
+O que **mudou de fato** com esta fatia: a exceção deixou de ser invisível e passou a ser **nomeada, contada e
+com dono** — `node scripts/audit-agents-skills.mjs --json` devolve a lista dos 17 em `achados[].papeis`.
+
+---
+
+## P-GOV-ESPELHO-CONTRATO-SEM-GUARD (2026-09-07) — `CLAUDE.md` e `AGENTS.md` podem divergir sem nada ficar vermelho — MÉDIA
+
+Achado `C2-07` da junta `J-B-GOV-ELENCO`. O `D-INTEROP-CLAUDE-CODEX` (2026-07-28) manda alterar os dois
+contratos **no mesmo trabalho**, e o `CLAUDE.md` **prevalece** em divergência. Mas: `sync-agent-agents.mjs` e
+`sync-agent-skills.mjs` guardam `.claude/**` ↔ `.agents/**`; **nenhum guard compara `CLAUDE.md` com
+`AGENTS.md`**. O contrato canônico pode passar a listar um veredito novo e permissivo, divergindo de todas as
+outras cópias, sem que nada fique vermelho. A concordância de hoje é mantida por **disciplina de mesmo-PR** —
+passo humano no meio.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (`D-INTEROP-CLAUDE-CODEX`,
+  2026-07-28) · **dono:** próximo bloco de governança de contrato · **bloqueia:** nada.
+
+---
+
+## P-GOV-NOTA-KPI-CONGELADA (2026-09-07) — nota de KPI medida num head antigo, apresentada como deste head — MÉDIA
+
+Achado `C1-05` da junta `J-B-GOV-ELENCO`, declarado `pre-existente` pela própria cadeira **com evidência de
+origem** e, por isso, **não reprovou** (§C7.1-ter(a) funcionando como desenhado). Uma nota em `Kpis/*` carrega
+medição congelada num head anterior e é apresentada como medida no head corrente — a classe de afirmação que
+este projeto já pagou caro para herdar.
+
+Registrado aqui porque **`B-GOV-ELENCO` editou o mesmo arquivo** e a nota ficou ainda mais distante do real.
+
+**FECHADA no `B-GOV-ELENCO` ciclo 2, fatia A (2026-09-08) — com uma correção escrita, porque o texto acima
+aponta o arquivo errado.** A nota congelada **não vive em `Kpis/*`**: vive em `.agents/agents/README.md`, sob
+o título "Divergência RESOLVIDA (§A2)", e é ela que publicava `--check → OK, 34 agentes` e
+`especialistas/ = 11 contra 11` — medições de **2026-09-05** — como "Medido neste head". Fechada por
+**adendo datado** no próprio README, com os números medidos agora (`OK — 23 agentes`, `ec=0`;
+`especialistas/` = **0 contra 0**) e o texto anterior **preservado** (§A2 — acrescentar, nunca apagar). O
+adendo diz também o que **não** envelheceu: o mecanismo. O `--check` continua cobrindo `especialistas/`, e o
+parágrafo que mandava "conferir à mão" segue morto.
+
+- **status:** **FECHADA** · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono original:**
+  **`B-O6R-02` ciclo 5** (nomeado pela cadeira C1) · **fechada por:** `B-GOV-ELENCO` ciclo 2 fatia A,
+  branch `chore/gov-auditoria-elenco` (hash no backfill pós-merge, §C3.5) · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-BAIXA-CICLO1-FECHADOS (2026-09-08) — os três achados BAIXA do ciclo 1, fechados na fatia A — REGISTRO
+
+Entrada de **registro** (nasce FECHADA): os achados `C1-02`, `C1-03` e `C1-04` da junta `J-B-GOV-ELENCO`
+foram fechados no ciclo 2, fatia A. Ficam aqui para que os números **não sejam reusados como fato** por um
+bloco futuro — que foi a razão pela qual a cadeira C1 os registrou em vez de deixá-los passar.
+
+| Achado | O que estava publicado | O que é, medido | Onde foi corrigido |
+|---|---|---|---|
+| `C1-02` | "5 de **12** skills" atribuído a `origin/main@fe2748c8` | `git ls-tree fe2748c8 -- .claude/skills` = **11** diretórios; o auditor imprime `11 skills` nesse ref | cabeçalho de `scripts/audit-agents-skills.mjs` (l.10-12), history do KPI, e **Apenso 1** ao plano do ciclo 1 |
+| `C1-03` | "3× o peso dos **24** papéis permanentes juntos (**6,6 KB**)" | pelo método do próprio script: `fe2748c8` = **23** papéis / 5.563 chars / **5,4 KB**; head da fatia A = **23** / 5.563 / **5,4 KB**; efêmeros = 20.271 chars / 19,8 KB → razão **3,64×** | cabeçalho do script, history do KPI, **Apenso 1**, e linha de errata em `decisoes.md` |
+| `C1-04` | tabela de especialistas com **cabeçalho e zero linhas** em `.agents/agents/README.md` | elenco efêmero neste head = **0** (estado correto) | tabela substituída por frase de estado, apontando `aposentadoria-especialistas.md` |
+
+- **status:** **FECHADA** · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **fechada por:**
+  `B-GOV-ELENCO` ciclo 2 fatia A, branch `chore/gov-auditoria-elenco` (hash no backfill pós-merge, §C3.5) ·
+  **bloqueia:** nada.
+
+
+---
+
+## P-GOV-KPI-DISPLAY-SEM-GUARD (2026-09-08) — nenhum guard compara o CARD com o `value` do JSON — MÉDIA
+
+Nasce do achado `C1-01` da junta `J-B-GOV-ELENCO`. O painel se contradizia **na mesma carga**:
+`metrics.blocks_completed` tinha `value: 162` e `display: "161"` — o gráfico dizia 162, o history dizia 162,
+a `note` dizia "161 → 162", e o **card**, que é o único número que o dono abre para ver, dizia **161**. Como
+a cópia `var FROZEN` do `app.js` é byte-idêntica ao JSON, o erro propagava para o modo `file://`.
+
+**O que fecha o defeito e o que NÃO fecha.** O `display` foi corrigido para `"162"` e o FROZEN regenerado por
+`node scripts/kpi-freeze.mjs` (`--check` → `em dia`). Mas isso conserta **esta** ocorrência, não a **classe**:
+os quatro guards de KPI foram executados com o defeito vivo e **todos passaram** —
+`kpi-dashboard-charts` 16/16, `kpi-achados-paridade` 6/6, `kpi-dashboard-contraste` 6/6,
+`agents-mirror-guard` 12/12. O `charts` compara a **SÉRIE** com o history; **nenhum** compara `display` com
+`value`. O defeito era silencioso com CI verde, e voltaria silencioso.
+
+**Correção proposta (uma asserção, no bloco que puder tocar `tests/`):** para toda métrica cujo `display`
+seja composto só de dígitos, `value === Number(display)`; e, para as de forma `N/M`, o `N` casa o `value`.
+Executado à mão neste head, passa (hoje só `blocks_completed` cai na primeira forma).
+
+**Por que não foi consertado aqui:** `tests/**` está no escopo **PROIBIDO** de `B-GOV-ELENCO` (§5-bis do
+plano do ciclo 2). Cobrar o guard da junta desta fatia é **reprovação por construção** (§10.1).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o `display` errado nasceu no
+  ciclo 1 deste bloco; a **ausência do guard** é `pre-existente`) · **dono:** próximo bloco que tocar
+  `tests/kpi-*` · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-C10-ENCERRADO (2026-09-08) — a checagem C10 mede PESO e não sabe se o bloco encerrou — MÉDIA
+
+Nasce do achado `C3-A3`. A checagem C10 soma os bytes de `description` dos arquivos em
+`.claude/agents/especialistas/` e reprova acima de 20.000 chars. O texto dela **prometia** outra coisa —
+"jurado de bloco ENCERRADO é aposentável" — e a checagem **não consulta** ata, `aposentadoria-especialistas.md`
+nem Git para saber se o bloco encerrou. Medido pela cadeira: com os **15** efêmeros de `fe2748c8` restaurados,
+BLOQUEIA (`~19,8 KB`, `ec=1`); com **14** — todos igualmente de blocos encerrados — vira AVISO e `ec=0`. Um
+arquivo a menos e o defeito que motivou o bloco inteiro passa verde.
+
+**O que a fatia A fez:** o texto passou a dizer **o que a checagem faz** ("Esta checagem mede PESO; o critério
+de aposentadoria é humano — `D-APOSENTADORIA-ELENCO-EFEMERO`"). A afirmação de detecção **morreu**. O limiar
+fica **documentado**, não prometido.
+
+**Desenho da detecção mecânica, para quem for fechar:** (i) `bloco:` passa a ser chave **obrigatória** no
+frontmatter de todo arquivo sob `especialistas/` — **fail-closed**: ausente = BLOQUEIA, porque um efêmero sem
+bloco dono é exatamente o que ninguém consegue aposentar depois; (ii) "encerrado" = existe entrada em
+`Kpis/kpis-history.json` com `version == <bloco>` e `merge_commit != null`; (iii) efêmero de bloco encerrado =
+BLOQUEIA **por nome**, independentemente do peso, e o peso vira só o AVISO agregado que já existe.
+
+**Por que não foi feito aqui:** exige um guard em `tests/` para não regredir e a chave nova no frontmatter de
+arquivos que **este bloco acabou de apagar** (elenco efêmero = 0 — não há em que testar neste head).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** o bloco que fiar o
+  auditor na CI (mesmo dono de `P-GOV-AUDITOR-FORA-DA-CI`) · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK (2026-09-08) — o auditor de elenco DEIXOU de conferir link, por decisão — MÉDIA
+
+Nasce de `D-AUDITOR-ENXUTO` (decisão do dono, 2026-09-08), executada em `B-GOV-ELENCO-ENXUTO`. A checagem
+`C8` do `scripts/audit-agents-skills.mjs` — link relativo quebrado dentro de uma `SKILL.md` — foi **cortada
+inteira**, junto com o regex `LINK` e as três passadas que só existiam para alimentá-lo (`semCercas`,
+`semCodeSpans`, `semComentariosHtml`).
+
+**Por que foi cortada.** Ela sozinha produziu **quatro classes de erro** medidas pela cadeira `A-C2` do
+ciclo 2 de `B-GOV-ELENCO`: destino CommonMark entre `<>` para arquivo que **existe** (`A-C2-03`), destino
+com query string (a instância irmã), cerca de til recuada dentro de lista (`A-C2-04`) e — o **único
+fail-OPEN de toda a auditoria** — destino com espaço, que nunca era conferido (`A-C2-05`). Duas juntas
+mediram que **cada conserto de gramática fechava a classe apontada e abria a vizinha**, porque a gramática
+de link estava sendo escrita com regex.
+
+**O que se perdeu, medido e publicado.** Link relativo **realmente** quebrado numa `SKILL.md` deixa de ser
+pego: mutação de controle (`M6` da evidência do bloco) sai `1 BLOQUEIA · ec=1` no auditor antigo e
+`0 BLOQUEIA · ec=0` no novo. É perda real, e está declarada no cabeçalho do próprio script, na seção
+"O QUE ESTE AUDITOR NÃO FAZ".
+
+**O que NÃO se perdeu.** Prevalência de achado `C8` na árvore de trabalho, em `origin/main` e em
+`fe2748c8`, medida no dia do corte: **0 nos três**. Nenhum alvo real mudou de cor. Saiu superfície de erro,
+não saiu medição.
+
+**O que fecharia esta pendência.** Um **parser Markdown de verdade** (biblioteca), em vez de regex. Isso é
+**dependência nova**, portanto **junta unânime de 5** (§C7.1) mais PD com ≥3 fontes (§C7.3). Alternativa
+mais barata a considerar na mesma junta: um verificador de link **fora** do auditor de elenco (script
+próprio, ou passo de CI com ferramenta de mercado), para que a superfície de gramática não volte a morar
+dentro do gate que decide sobre papéis e permissões.
+
+**Fronteira vizinha, na mesma decisão.** O auditor também **não interpreta YAML além do subconjunto
+declarado** — fora dele ele **RECUSA a medição, com arquivo e linha, e reprova** (`ec=1`), em vez de
+adivinhar. Isso **não** é pendência: é o comportamento entregue neste bloco, provado por mutação. A
+pendência aqui é só a checagem de link, que saiu sem substituto.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o `C8` nasceu e morreu na
+  cadeia `B-GOV-ELENCO` → `B-GOV-ELENCO-ENXUTO`; nenhuma checagem anterior a ela existia) · **dono:** o
+  bloco que fiar o auditor na CI (mesmo dono de `P-GOV-AUDITOR-FORA-DA-CI`), que é onde a decisão
+  "dependência nova × verificador separado" tem de ser tomada · **bloqueia:** nada — a prevalência de link
+  quebrado nos três alvos é 0.
+
+
+---
+
+## P-GOV-INSPETOR-33-SEM-NORMA (2026-09-08) — o contrato do inspetor manda bloquear por norma que não existe — ALTA
+
+Achado `R5` do `inspetor-de-terreno-da-junta` na passada do `B-GOV-ELENCO-ENXUTO`, medido por ele **antes de
+aplicar a própria regra** — que é exatamente o comportamento certo.
+
+O corpo do inspetor que **rodou** carrega um item **3.3** ordenando `BLOQUEADO` se a
+`cadeira-permanente-backend-review` não estiver convocada, invocando o **§C7.1-quater**. Medido:
+
+- `grep -nE 'C7.1-quater|cadeira-permanente'` em `CLAUDE.md`, `AGENTS.md` e `decisoes.md` → **vazio nos três**
+- `git show fe2748c8:CLAUDE.md | grep C7.1-quater` → **vazio**
+- `git ls-tree -r --name-only fe2748c8 | grep cadeira-permanente` → **não existe em `main`**
+- só existe em `chore/gov-elenco-fatia-b`, **branch não mergeada e com o desenho REPROVADO** (ciclo 1, 3×0)
+
+**A norma nunca existiu em `origin/main`.** Enquanto o item 3.3 e o contrato divergirem, **todo inspetor
+futuro tem de escolher entre desobedecer o próprio corpo e bloquear sem defeito** — e bloquear sem defeito é a
+patologia que a auditoria de 28/08 mediu em **11 de 16** bloqueantes.
+
+**Como isso chegou aqui:** os subagentes são carregados do `.claude/agents/` do **diretório da sessão** (a
+árvore principal, em `demo/investidor`), não do worktree julgado. Medido nesta passada: as três cadeiras de
+mérito são **byte-idênticas** (EOL-neutro) entre a branch e a sessão; **só o inspetor diverge**. É a lacuna
+"corpo carregado × corpo julgado" que o ciclo 2 do bloco anterior já havia nomeado.
+
+**O que fecha:** decisão do dono, em uma de duas direções — (a) decidir o assento permanente, corrigindo o
+desenho reprovado, e então o §C7.1-quater passa a existir em `CLAUDE.md`/`AGENTS.md`; ou (b) emendar o item
+3.3 do `inspetor-de-terreno-da-junta`, retirando a exigência enquanto a norma não existir.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
+  `B-GOV-ELENCO`, 2026-09-07, e ficou na branch não-mergeada) · **dono:** decisão do dono ·
+  **bloqueia:** nada hoje — o inspetor mediu e não aplicou. Mas cada junta futura paga o custo de re-descobrir.
+
+---
+
+## P-GOV-ESGOTADO-SEM-TESTE (2026-09-08) — "modelo esgotado" é declarado, não provado — MÉDIA
+
+Achado `R6` do inspetor, sobre a escada `Fable → Opus → PARADA` que o dono instituiu hoje. Ele julgou o
+desenho **fail-closed e correto no essencial** — um degrau nomeado, fim explícito, e a justificativa certa
+(*"gate degradado é pior que gate ausente"*: a ausência é visível, a degradação não).
+
+A lacuna: o §C7.6-bis exige **declarar** *qual papel · qual modelo · por que o Fable faltou* — mas **não exige
+evidência**. Numa casa cuja regra de ouro é *"afirmação sem execução não é prova"*, "o Fable esgotou" é hoje
+uma afirmação que ninguém confere. Um invocador com pressa pode declarar esgotamento que não houve e rodar em
+Opus — ou, pior, o mesmo hábito migra para "o Opus esgotou" e a **parada** deixa de ser parada.
+
+**O que fecharia:** exigir, junto da declaração, a **evidência do erro** — `rate_limit` HTTP 429 com o
+`model sent to the API` e o `request id`, que é o que esta sessão de fato colheu nas duas quedas
+(`claude-fable-5-1` e `claude-opus-5`) e registrou na ata.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o §C7.6-bis nasce neste bloco) ·
+  **dono:** próximo bloco de governança de modelo · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-RECUSA-CANCELA-ACUSACAO (2026-09-08) — a chave excluída da recusa cancela acusação verdadeira — MÉDIA
+
+Achado `C2E-01` do `guardiao-fail-closed` na junta do `B-GOV-ELENCO-ENXUTO`, medido em 40 mutações. A recusa
+nomeada suprime as demais checagens do arquivo recusado — desenho correto, porque a recusa **já é vermelha**.
+Mas há uma construção (1 de 16 testadas) em que a supressão **cancela uma acusação verdadeira sem que a
+recusa a substitua**, e o `ec` volta a 0. É **fail-OPEN de exit code** — a única direção de falha que este
+projeto não tolera num guard.
+
+Prevalência **0** no head e fora do caminho de autorização de escrita, por isso não bloqueou.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar `scripts/audit-agents-skills.mjs` · **bloqueia:** nada hoje.
+
+---
+
+## P-GOV-DEFAULT-DENY-POR-NOME-BASE (2026-09-08) — a allowlist de escrita é chaveada pelo ARQUIVO, não pelo papel — MÉDIA
+
+Achado `C3-E1` do `agente-ci-doutor`. O default-deny do `C4` decide autorização de escrita pelo **nome-base do
+arquivo** (`<nome>.md`), não pela identidade do papel. Dois arquivos com o mesmo nome-base em diretórios
+diferentes — ou um arquivo renomeado para colidir com um nome da allowlist — herdam a autorização.
+**Fail-OPEN por colisão de nome**, na mesma família do `C3-A1` do bloco anterior (que era fail-OPEN por
+cegueira de prefixo): a chave da decisão continua sendo o **nome**, e nome é fraco como identidade.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar o auditor · **bloqueia:** nada hoje (prevalência 0). **Nota:** é a terceira vez que uma decisão de
+  segurança ancorada em nome de arquivo produz achado. Vale perguntar, no bloco dono, se a âncora deve mudar.
+
+---
+
+## P-GOV-MODELO-FIXADO-SEM-MECANISMO (2026-09-08) — `MODELO_FIXADO` é lista de obrigação sem mecanismo — MÉDIA
+
+Achado `C2E-02`. A tabela `MODELO_FIXADO` do auditor lista os papéis cujo modelo o contrato fixa, e confere
+os que estão nela. **Gate novo nasce fora da lista, logo nasce NÃO CONFERIDO** — a obrigação existe no
+contrato e o mecanismo não a alcança até alguém lembrar de acrescentar a linha. É a mesma forma do
+`P-GOV-DEFAULT-DENY-POR-NOME-BASE`: enumeração que precisa de manutenção manual para não ficar cega.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar o auditor · **bloqueia:** nada.
+
+---
+
+## P-GOV-AUDITOR-ARESTAS-MENORES (2026-09-08) — quatro arestas BAIXA do auditor enxuto — BAIXA
+
+Agrupadas por serem da mesma natureza (texto que promete mais do que o código faz, ou número publicado a
+partir de leitura recusada), todas com prevalência 0 e nenhuma bloqueante:
+
+- `C2E-04` — o texto do `C0` diz *"nada foi auditado"* numa execução com 11 skills auditadas.
+- `C3-E2` — o `C10` publica peso derivado de leitura que o **próprio auditor recusou**.
+- `C3-E3` — a recusa **não é agregada**: uma recusa geral zera outros números publicados sem nota, e o
+  auditor não distingue *"um arquivo estranho"* de *"o parser quebrou e recusou tudo"*.
+- `C3-E4` — extensão `.MD` em maiúscula é invisível ao auditor (impacto **não provado** pela cadeira).
+- `C3-E5` — o cabeçalho descreve a supressão pela recusa **mais larga** do que o código faz.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar o auditor · **bloqueia:** nada.

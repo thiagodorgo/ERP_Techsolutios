@@ -1,0 +1,41 @@
+{
+  "head_medido": "f9520ab3fb26c7eb118cc955cb926546bfd5e389",
+  "head_anterior_julgado": "7af524ba",
+  "base": "fe2748c84cc187a54ebe3fa651fcdc347c5b3494",
+  "branch": "chore/gov-elenco-enxuto",
+  "cadeira": "C1 validador-mestre (a mesma que achou os dois defeitos)",
+  "papel": "VERIFICA, nao conserta (C7.4-bis)",
+  "data": "2026-09-08",
+  "veredito": "CONSERTADO",
+  "itens": [
+    {
+      "achado": "C1-E-01",
+      "gravidade_original": "ALTA",
+      "estado": "FECHADO",
+      "evidencia": "Reexecutei o painel num sandbox node:vm (arranjo de tests/kpi-dashboard-charts.test.ts) em copia isolada, nas DUAS pontas. ANTES (7af524ba): serie blocks termina 162->163, blocks.includes(163)=true, <title>08/09 - 163 blocos</title>, weeks[-1].count=2. DEPOIS (f9520ab3): serie termina 161->162, blocks.includes(163)=false, max=162, ZERO <title> com 163, weeks[-1].count=1 (<title>Semana de 07/09 - 1 bloco entregue - janela incompleta>), card #kpi-cards = \"162 Blocos de trabalho entregues\". Varredura cega de TODO o DOM renderizado (21 elementos com conteudo): 163 aparece 10x e as 10 sao coordenada de SVG (y=163.0, cx=163.0); \"B-GOV-ELENCO\" sem sufixo -ENXUTO aparece 0x. charts-section.hidden=false (a serie foi lida de verdade). value x display: 10 metricas, 10 coerentes, 0 divergencia, blocks_completed value=162 display=\"162\". FROZEN do app.js BYTE-IDENTICO ao kpis-latest.json (literal === JSON.stringify(latest), 77691=77691 chars). A escolha do conserto: a entrada B-GOV-ELENCO PERMANECE no history com blocks_completed 161 (igual ao B-O6R-07b) e null PERMANENTE declarado - convencao confirmada por mim nos 4 precedentes citados (B-O6R-07a 158/158, B-O6R-01 151/151/151, CHK-DISPATCH 120/120/120, OMEGA-VID-PR-05 122/122). Resolve a contradicao no lugar que importa (o numero que o painel desenha), nao a move: o render calcula por DIFERENCA entre pontos e a diferenca ali e ZERO."
+    },
+    {
+      "achado": "C1-E-02",
+      "gravidade_original": "MEDIA",
+      "estado": "FECHADO",
+      "evidencia": "grep -c D-FALLBACK-MODELO-FABLE-OPUS em agent-orchestration/controle/decisoes.md: 0 em fe2748c8 (main), 0 em 7af524ba (head julgado), 2 em f9520ab3. Entrada em decisoes.md:2049, +122/-0, apendice puro no fim (arquivo sem indice de topo). AUDITAVEL: (1) as duas ordens do dono citadas em bloco e datadas (2026-09-07 \"cai para o Opus\" / 2026-09-08 \"quando o Opus acabar, para\"); (2) o PORQUE da proibicao em secao propria (\"gate degradado e pior que gate ausente\" - a ausencia e visivel, a degradacao nao); (3) o motivo MEDIDO da ampliacao (em 08/09 a rodada bateu no limite do Fable E do Opus na mesma sessao); (4) mapeamento Codex com o roster nomeado e parada para Terra/Luna/GPT-5.5. DECLARADO x DERIVADO: esta no TITULO da secao e na PROPRIA CELULA da tabela - Astra \"equivalencia declarada pelo dono\", Sol \"derivado da ordem do roster, nao declarado nominalmente\" - com paragrafo explicando por que a distincao precisa existir (a declarada so muda se o dono mudar de ideia; a derivada se corrige numa linha), ancorado no A6. COERENCIA DOS TRES: CLAUDE.md e AGENTS.md C7.6-bis comparados por blob (git show, nunca git archive+tar) = 48 linhas, 3292 bytes, sha256 IDENTICO (7083454049b3effe...), diff ec=0; e 10 de 10 afirmacoes normativas presentes nas TRES pontas com texto normalizado. Cross-checks: os 3 arquivos com model: fable sao exatamente os 3 nomeados pela clausula, nos dois espelhos; as contagens 21/23 do texto batem (git grep -l por rev) e os 2 arquivos a mais sao exatamente a ata e a minha evidencia."
+    },
+    {
+      "achado": "ESCOPO DO CONSERTO (item 3)",
+      "gravidade_original": "n/a",
+      "estado": "OK",
+      "evidencia": "git diff --name-status f9520ab3~1..f9520ab3 = 6 arquivos: Kpis/{app.js,kpis-history.json,kpis-history.md,kpis-latest.json}, agent-orchestration/controle/decisoes.md, agent-orchestration/omega/juntas/votos/B-GOV-ELENCO-ENXUTO/DEV-RAIL-evidencia.md. Filtro pelo escopo permitido deixa resto VAZIO. scripts/audit-agents-skills.mjs NAO tocado, provado alem do diff: o BLOB e o mesmo em 7af524ba e f9520ab3 (c82c592806141a39020e5ecd67e438daaf1d9f3b) - o instrumento julgado chega ao merge byte a byte. git diff --stat sobre scripts/ .claude/ .agents/ src/ tests/ prisma/ frontend/ mobile/ CLAUDE.md AGENTS.md = VAZIO. Cirurgia dentro do permitido: 13 das 14 chaves de kpis-latest.json IDENTICAS ao head julgado; so metrics.blocks_completed mudou (value 163->162 E display \"163\"->\"162\"). BATERIA: audit-agents-skills.mjs 0 BLOQUEIA 1 AVISO ec=0; sync-agent-agents.mjs --check ec=0 (23 agentes); sync-agent-skills.mjs --check ec=0 (11 skills, 36 arquivos); node --check Kpis/app.js ec=0; JSON.parse dos 2 JSON ec=0; git diff --check ec=0 na arvore e no commit; git status --porcelain so com a minha propria evidencia. Guard do painel PORTADO para Node puro (o worktree nao tem node_modules e eu NAO criei junction): 10 PASS de 10 no head do conserto - e 10 PASS de 10 tambem no head anterior, o que registra que o guard NAO pegava o C1-E-01."
+    },
+    {
+      "achado": "RESIDUAL-C1-REV-01 (declarado, nao reabre nada)",
+      "gravidade_original": "BAIXA",
+      "estado": "ABERTO / nomeado ao porteiro pos-merge",
+      "evidencia": "git merge-base --is-ancestor 7facc396 HEAD -> ec=0: os 12 commits do bloco reprovado (25c0112a..7facc396) sao ancestrais desta branch e entram na main por ESTE PR, junto com a faxina que sobreviveu (git diff --stat fe2748c8..f9520ab3 -- .claude/ = 34 arquivos, +21/-5079; aposentadoria-especialistas.md nao existe em main e existe no head; a skill aninhada blockchain-developer/blockchain-developer existe em main e nao no head). A emenda escreve \"Nao existe merge para preencher\" - salva pelo qualificador \"por merge proprio\" e verdadeira sobre origin/main hoje -, mas NENHUMA das duas entradas do history diz que a faxina viaja dentro do PR do -ENXUTO (faxina/aposentad/achat/.claude = 0 ocorrencias na description do -ENXUTO). NAO reabre o C1-E-01: o achado era o painel publicar entrega inexistente e o painel parou; o acumulado ficou +1 para +1 merge; a junta aprovou o head que JA continha esses commits. E rastreabilidade (C6) em campo de texto, nao numero publicado."
+    }
+  ],
+  "forma": {
+    "node": "v20.19.5",
+    "autocrlf": "true"
+  },
+  "notas_de_forma": "Zero mutacao na arvore do repo. Execucoes em copia isolada no scratchpad (iso/ do head atual por cp -r; antes/ do head 7af524ba por git show <sha>:<caminho>, NUNCA git archive+tar sob autocrlf=true). Nenhuma junction/symlink de node_modules criada. Comparacao de contrato por blob (git show), nao pela arvore."
+}
