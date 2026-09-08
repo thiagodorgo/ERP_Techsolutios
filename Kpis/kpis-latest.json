@@ -60,9 +60,9 @@
       "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
     },
     "blocks_completed": {
-      "value": 163,
-      "display": "163",
-      "note": "162 -> 163 (B-GOV-ELENCO-ENXUTO). ATENCAO AO 162: ele e o `B-GOV-ELENCO`, que NAO MERGEOU — foi REPROVADO duas vezes pela propria junta (ciclo 1 3x0, ciclo 2 fatia A 2x1) e parou no teto de dois ciclos (`D-TETO-DOIS-CICLOS`), com o trabalho preservado nas branches `chore/gov-auditoria-elenco` e `chore/gov-elenco-fatia-b`, sem PR aberto. A entrada 162 ficou no history como registro de autoria daquele ciclo, com `pr`/`merge_commit`/`approved_head` em `null`, e assim permanece. Este bloco e o 163: bloco NOVO e pequeno, executando `D-AUDITOR-ENXUTO` — corta a checagem de link e troca adivinhacao por recusa nomeada. `display` e `value` batem (163 = 163), como manda o achado `C1-01` da junta do ciclo 1."
+      "value": 162,
+      "display": "162",
+      "note": "161 -> 162 (B-GOV-ELENCO-ENXUTO). O degrau anterior e o `B-O6R-07b` (161, PR #380, merge `fe2748c8`) — NAO o `B-GOV-ELENCO`. ATENCAO AO `B-GOV-ELENCO`: ele NAO MERGEOU. Foi REPROVADO duas vezes pela propria junta (ciclo 1 3x0, ciclo 2 fatia A 2x1), parou no teto de dois ciclos (`D-TETO-DOIS-CICLOS`) e virou dossie ao dono, com o trabalho preservado nas branches `chore/gov-auditoria-elenco` e `chore/gov-elenco-fatia-b`, sem PR aberto. BLOCO QUE NUNCA MERGEOU NAO ENTREGOU: a entrada dele PERMANECE no history como registro do que aconteceu (§A5/§C6), mas com `blocks_completed` 161 — ela nao move o acumulado —, e com `pr`/`merge_commit`/`approved_head` em `null` PERMANENTE, que nao e backfill pendente. Este bloco e o 162: bloco NOVO e pequeno, executando `D-AUDITOR-ENXUTO` — corta a checagem de link e troca adivinhacao por recusa nomeada. `display` e `value` batem (162 = 162), como manda o achado `C1-01` da junta do ciclo 1 do bloco anterior. O texto anterior desta nota dizia `162 -> 163` e fazia o painel publicar DUAS entregas na semana de 07/09 quando so UMA existe: corrigido neste mesmo PR, antes do merge, pelo rail do §8.7 (achado `C1-E-01`)."
     },
     "mobile_backend_contracts": {
       "value": 18,

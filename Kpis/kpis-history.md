@@ -2503,10 +2503,35 @@ Git Bash.
 backend **2936/2938** — porque o diff **não toca** `src/`, `tests/`, `prisma/`, `frontend/` nem `mobile/`,
 provado nas **duas pontas** (diff contra a base e `git status --porcelain`, os dois vazios). `mvp_demo` e
 `mvp_vendavel` **INTOCADOS** (§C3.4): o bloco encolhe uma ferramenta de governança, não move escopo de
-produto. `blocks_completed` **162 → 163**, com `value` e `display` batendo — e **o 162 é o `B-GOV-ELENCO`,
-que NÃO mergeou**: ficou no history como registro de autoria daquele ciclo, com `pr`/`merge_commit`/
-`approved_head` em `null`, e assim permanece. `pr`/`merge_commit`/`approved_head` deste bloco **null na
-autoria** (§C3.5). **ZERO** dependência nova, **ZERO** migration.
+produto. `blocks_completed` **161 → 162**, com `value` e `display` batendo. `pr`/`merge_commit`/
+`approved_head` deste bloco **null na autoria** (§C3.5). **ZERO** dependência nova, **ZERO** migration.
 
-**Nota de backlog deste espelho:** o `B-GOV-ELENCO` (entrada 162) nunca ganhou seção aqui — pendência
-`P-KPI-HISTORY-MD-BACKLOG`, que este bloco **não** fecha. Esta seção é só a do próprio bloco.
+### Emenda do rail §8.7 — **o acumulado não credita bloco que nunca mergeou**
+
+O texto original desta seção dizia `blocks_completed` **162 → 163** e o degrau anterior seria o
+`B-GOV-ELENCO`. **A junta aprovou o bloco 2×1, e mesmo assim o merge ficou retido** — não pela junta, pelo
+**rail** do §8.7 (*"nunca merge com KPI divergente da execução real"*), que maioria não levanta. A cadeira
+**C1** executou o painel num sandbox `node:vm` e mediu a série `161 (B-O6R-07b) → 162 (B-GOV-ELENCO) →
+163 (B-GOV-ELENCO-ENXUTO)`, com `<title>08/09 · 162 blocos</title>` e a semana de 07/09 desenhando **duas**
+entregas onde só **uma** existe: este PR (achado `C1-E-01`, ALTA). O desmentido vivia no campo `note`, que o
+código de render **nunca lê**.
+
+**Bloco que nunca mergeou NÃO ENTREGOU.** O `B-GOV-ELENCO` foi reprovado nos dois ciclos que o protocolo
+permite (3×0 e 2×1), parou no teto de `D-TETO-DOIS-CICLOS` e virou **dossiê ao dono**; nenhum PR foi aberto,
+e `git merge-base --is-ancestor 7facc396 origin/main` é **falso**. Corrigido **antes do merge**, neste mesmo
+PR: a entrada dele **permanece no history** — é registro do que aconteceu, e apagá-la seria reescrever a
+trilha (§A5/§C6) —, mas com `blocks_completed` **161**, o mesmo valor do `B-O6R-07b`, e com
+`pr`/`merge_commit`/`approved_head` declarados `null` **PERMANENTES**, não backfill pendente. É a convenção
+medida da casa em **quatro** precedentes (`B-O6R-07a` 158→158, `B-O6R-01` 151→151,
+`CHK-DISPATCH-CREATE-PR-A`/`-FIX-JUNTA`/`-REVERIF` 120/120/120, `OMEGA-VID-PR-05` 122/122): ciclo que não
+entrega **repete** o acumulado.
+
+**Provado por execução, antes e depois**, no mesmo arranjo `node:vm` do guard
+`tests/kpi-dashboard-charts.test.ts`: a série de blocos termina em **162**, **nenhum** `<title>` diz `163`,
+**nenhum** credita o `B-GOV-ELENCO`, e a semana de 07/09 cai de **2** para **1** entrega. `FROZEN` do
+`Kpis/app.js` regenerado por `scripts/kpi-freeze.mjs`, byte-idêntico ao `kpis-latest.json`. Evidência em
+`agent-orchestration/omega/juntas/votos/B-GOV-ELENCO-ENXUTO/DEV-RAIL-evidencia.md`.
+
+**Nota de backlog deste espelho:** o `B-GOV-ELENCO` (a entrada de 08/09 que **não** entregou) nunca ganhou
+seção aqui — pendência `P-KPI-HISTORY-MD-BACKLOG`, que este bloco **não** fecha. Esta seção é só a do
+próprio bloco.

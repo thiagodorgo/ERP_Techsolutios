@@ -2042,3 +2042,122 @@ reais e **suprimido** as demais checagens neles. Foi a medição — não a rele
 
 **Volume da decisão:** `scripts/audit-agents-skills.mjs` 664 → 668 linhas; ~99 linhas de gramática de link
 removidas, ~103 de fronteira declarada e recusa acrescentadas. **Zero dependência nova.**
+
+
+---
+
+## D-FALLBACK-MODELO-FABLE-OPUS (decisão do dono, 2026-09-07, **ampliada em 2026-09-08**) — esgotado o Fable cai para o Opus; esgotado o Opus, **para**
+
+**Status:** aplicada · **Origem:** ordem do dono (Thiago), em duas datas · **Impacto:** em que modelo **todo
+gate de junta** roda — `inspetor-de-terreno-da-junta`, `porteiro-pos-merge`, o assento permanente e o
+`planejador-mestre` — e uma **parada de rodada** nova.
+
+### As duas ordens que a originaram
+
+> **2026-09-07 —** *"documente: quando o Fable esgotar, cai para o Opus."*
+>
+> **2026-09-08 (ampliação) —** *"quando o Opus acabar, **para**."*
+
+A primeira criou o degrau; a segunda fechou a escada. O texto normativo vive no **§C7.6-bis** do `CLAUDE.md`
+e no espelho do `AGENTS.md` (48 linhas, **idênticas** nos dois — conferido por `diff` linha a linha). Esta
+entrada é a **autoridade escrita** dessas 48 linhas, e é ela que faltava.
+
+### Por que esta entrada existe — o defeito que a criou
+
+A norma foi para o corpo do contrato e **nunca** para o registro operacional. Medido na junta do
+`B-GOV-ELENCO-ENXUTO` pela cadeira **C1** (`validador-mestre`), achado `C1-E-02` (MÉDIA, `dentro-do-bloco`):
+`grep -c D-FALLBACK-MODELO-FABLE-OPUS agent-orchestration/controle/decisoes.md` → **0**, contra **21**
+arquivos `.md` da árvore que a citavam no head julgado `9c0e6ac9` — entre eles os corpos de
+`inspetor-de-terreno-da-junta`, `planejador-mestre` e `porteiro-pos-merge` **nos dois espelhos**. Remedido
+por mim (`dev-rail-enxuto`) no head `7af524ba`: **23** arquivos, e os dois a mais são exatamente a ata
+`J-B-GOV-ELENCO-ENXUTO.md` e a própria evidência da C1 — nascidos depois do voto dela.
+
+**A autoridade da norma era circular:** a única coisa escrita que sustentava a regra era o texto que a
+citava. O mecanismo que o `inspetor-de-terreno-da-junta` usou **nesta mesma junta** para validar a subida de
+quórum — ir a `decisoes.md` e achar `D-QUORUM-B-GOV-ELENCO` — não funcionava para esta. §A5, §A6 e §C6:
+decisão materialmente relevante vai para a **estrutura operacional**, não só para o corpo do contrato. E
+**não foi falta de oportunidade**: o mesmo diff acrescentou `D-APOSENTADORIA-ELENCO-EFEMERO`,
+`D-QUORUM-B-GOV-ELENCO` e `D-AUDITOR-ENXUTO` a este arquivo.
+
+### A escada — dois degraus, e o terceiro é uma parada
+
+| Estado | O que fazer |
+|---|---|
+| Fable disponível | roda em **Fable** (o `model:` do frontmatter) |
+| Fable esgotado | roda em **Opus** — **único** substituto autorizado — **e DECLARA** |
+| Opus esgotado | **PARA.** Não se desce mais um degrau |
+
+**Nunca** Sonnet, **nunca** Haiku, **nunca** "o modelo da sessão".
+
+### Por que a PROIBIÇÃO importa mais do que a permissão
+
+O que esta decisão realmente institui **não** é a permissão de usar Opus — é a **proibição de tudo abaixo
+dele**. E a razão é assimétrica:
+
+**Gate degradado é pior que gate ausente.** A ausência de um gate é **visível**: alguém abre a ata e não acha
+o parecer. A degradação **não é**: um parecer de porteiro, de inspetor ou do assento permanente sai com
+**exatamente a mesma cara de autoridade** — mesmo cabeçalho, mesmo veredito, mesma linguagem de medição —
+independentemente do modelo que o produziu. Quem lê a ata seis semanas depois não tem como distinguir um
+`LIBERADO` medido de um `LIBERADO` que só pareceu medido. É a mesma família da lição que o
+`D-AUDITOR-ENXUTO` registra sobre instrumentos: *gate que promete mais do que mede é pior que gate ausente*.
+
+Daí as duas consequências de desenho: (i) o fallback é para **um** modelo **nomeado**, não para "o melhor
+disponível" — uma escada aberta vira, na prática, "o modelo da sessão"; e (ii) ela **termina numa parada**,
+em vez de continuar descendo. **Não se improvisa modelo, não se pula o gate, não se declara verde por falta
+de quem meça.**
+
+**A parada é da família do §C7.5** (paradas imediatas irredutíveis): o trabalho em voo é **registrado onde
+está** — evidência P1, votos parciais, head medido — e o dono é avisado.
+
+**A substituição é DECLARADA, nunca silenciosa.** Quem invoca registra, no artefato daquele papel **e na
+ata**: **qual papel · qual modelo rodou · por que o Fable faltou**. Isto **estende** a cláusula de
+indisponibilidade do item 6 do §C7 (`D-PLANEJADOR-MODELO-FABLE`), dando à nota **conteúdo obrigatório** e
+**destino nomeado**.
+
+### O `model: fable` PERMANECE no frontmatter
+
+O fallback é do **invocador**, não do arquivo. Trocar o `model:` de
+`.claude/agents/{planejador-mestre,inspetor-de-terreno-da-junta,porteiro-pos-merge}.md` (e dos espelhos em
+`.agents/agents/`) para `opus` tornaria a degradação **permanente e invisível** para a próxima sessão —
+que é precisamente o que o `D-PLANEJADOR-MODELO-FABLE` existe para impedir: o frontmatter existe para valer
+**independente do modelo da sessão**, para que quem invoca não precise lembrar. **Quem caiu para Opus volta
+ao Fable quando o limite renovar** — e volta sozinho, porque o arquivo nunca mudou.
+
+### O motivo MEDIDO da parada
+
+Em **2026-09-08** a rodada do `B-GOV-ELENCO` bateu **no limite do Fable e no do Opus na mesma sessão**. A
+política tinha **um degrau só**, e a saída silenciosa naquele momento teria sido exatamente a que ela proíbe:
+descer para o modelo da sessão e emitir um parecer com cara de autoridade. A ampliação de 08/09 nasceu desse
+fato, não de zelo abstrato.
+
+### Espelho Codex — o mapeamento, e o que nele é DECLARADO × DERIVADO
+
+O roster da conta OpenAI é **GPT-6 Astra · GPT-5.6 Sol · GPT-5.6 Terra · GPT-5.6 Luna · GPT-5.5**, em ordem
+decrescente de capacidade.
+
+| Papel de contrato | Claude Code | Codex |
+|---|---|---|
+| Modelo fixado dos gates e do planejador | **Fable** | **GPT-6 Astra** — *equivalência **declarada pelo dono*** |
+| Degrau único de fallback | **Opus** | **GPT-5.6 Sol** — ***derivado** da ordem do roster, não declarado nominalmente* |
+| Abaixo disso | **PARA** | **PARA** |
+
+**A distinção tem de estar escrita, e é por isto:** a linha do **Astra** é **fato dito pelo dono**; a do
+**Sol** é **derivação minha/da casa**, de ele ser o degrau imediatamente abaixo no roster. Um contrato de
+execução **não pode apresentar derivação como declaração** (§A6: separar fato de hipótese) — e a
+consequência prática é assimétrica: a linha declarada só muda se o dono mudar de ideia; a derivada
+**se corrige numa linha** se estiver errada, e quem a lê precisa saber que ela é corrigível.
+
+**`Terra`, `Luna` e `GPT-5.5` não são fallback de gate em hipótese alguma.** Para eles vale a parada.
+
+### O que fica de regra
+
+1. Gate de junta e `planejador-mestre` rodam em **Fable**; **Opus** é o único substituto, e **declarado**.
+2. Esgotado o Opus (ou o Sol, no Codex), **para** — com registro do trabalho em voo e aviso ao dono.
+3. O `model:` do frontmatter **não se toca** para acomodar esgotamento.
+4. Toda substituição vai para a **ata** com papel · modelo · motivo.
+5. Chamada de `Agent`/`Workflow` que passe um modelo **fora desta escada** para esses papéis **contraria o
+   contrato**.
+
+**Fecha o achado `C1-E-02`** da junta `J-B-GOV-ELENCO-ENXUTO` (registro escrito por `dev-rail-enxuto`, agente
+distinto de quem achou e de quem escreveu o defeito — §C7.4-bis). **Não abre pendência:** o que faltava era o
+registro, e ele passa a existir aqui.
