@@ -99,6 +99,32 @@ Manter rastreabilidade · preservar organização por **módulos e domínios** �
 e pendências em `controle/` · **não esconder conflitos** · separar **fato de hipótese** ·
 escalar para documentação/skill especializada em vez de improvisar.
 
+
+## A7. Onde se MEDE — a ref alvo, nunca a árvore da sessão (decisão do dono, 2026-09-08, `D-MEDIR-NA-REF-ALVO`)
+
+Toda afirmação sobre **contrato, elenco de agentes, skills ou configuração do repositório** é medida na
+**ref que está sob julgamento** — `git show <ref>:<caminho>`, `git ls-tree <ref>`, `git cat-file` — e
+**nunca** lendo o disco da sessão, a menos que a sessão esteja comprovadamente naquela ref.
+
+**Por quê, medido em 2026-09-08.** O diretório da sessão pode estar numa branch qualquer, atrás da `main` e
+com trabalho não commitado de outra sessão. Numa rodada só, esse caminho produziu **três contaminações**:
+o `inspetor-de-terreno-da-junta` recebeu um item mandando bloquear por um `§C7.1-quater` **que não existia
+em ref nenhuma**; o `porteiro-pos-merge` recebeu um **corpo de agente pré-merge**; e o orquestrador leu um
+`.gitignore` de **23 commits atrás** e abriu uma **pendência falsa**, fechada no mesmo dia por
+não-reprodução. Os dois gates se salvaram porque **mediram antes de aplicar** — quem orquestra não tem gate
+e pagou o preço.
+
+**Na prática:**
+- **Antes de afirmar** que uma regra, um agente ou um arquivo "existe" / "não existe" / "diz X", diga em
+  **qual ref** você mediu, e meça lá.
+- **Sessão a partir de um worktree que acompanha a `main`.** É o que remove a classe inteira, em vez de
+  detectá-la caso a caso.
+- O `inspetor-de-terreno-da-junta` confere **corpo carregado × corpo julgado** (item 3.3) de forma
+  **EOL-neutra** — `md5sum` cru dos dois lados **fabrica divergência** sob `core.autocrlf=true`
+  (§C7.1-ter(c)).
+- **Norma citada que não existe na ref julgada não se aplica.** Bloquear por cláusula que não está escrita é
+  reprovação por construção — a patologia que a auditoria de 2026-08-28 mediu em **11 de 16** bloqueantes.
+
 ---
 
 # PARTE B — Guia de implementação do MVP
