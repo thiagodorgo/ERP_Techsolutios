@@ -7251,3 +7251,94 @@ escopo que o §C4 proíbe — e cobrá-lo da junta deste bloco é reprovação p
   `sync-agent-agents --check` entrou sozinho) · **dono:** próximo bloco que tocar `.github/workflows/` ·
   **bloqueia:** nada — mas enquanto estiver aberta, toda a proteção nova deste bloco depende de disciplina
   humana, não de gate.
+
+
+---
+
+## P-GOV-VEREDITO-SEM-PARSER (2026-09-07) — veredito de junta é PROSA, e nenhum gate o lê — MÉDIA
+
+Componente **mecânico** do achado `C2-01` da junta `J-B-GOV-ELENCO`, **re-escopado pelo assento permanente**
+na homologação nº 1: a cadeira C2 o classificou como `bloqueia`/`dentro-do-bloco`; o assento mediu e mostrou
+que ele **antecede o bloco** e que consertá-lo exigiria caminho **proibido**.
+
+**O fato.** O veredito de uma junta existe como **texto em markdown**. Nenhum script lê essa linha: `grep` por
+parser de veredito em `scripts/`, `tests/` e `.github/` → **0**. Portanto "merge sobre veredito `ANULADO` é
+merge inválido" é **nulidade retroativa, não prevenção** — no ponto de decisão o caso proibido é aceito, e só
+depois declarado inválido. O mesmo vale, desde sempre, para o `LIBERADO` do inspetor (24/08) e o `LIBERADO` do
+porteiro (12/08) e para o próprio "verde da junta = merge" (`D-SAN-AUTONOMIA`, 13/07).
+
+**Por que é `pre-existente` e não deste bloco.** A classe "veredito de junta é prosa sem parser" nasce com a
+`D-SAN-AUTONOMIA` em 2026-07-13 e atravessa os dois gates criados depois. `B-GOV-ELENCO` **acrescentou um
+quarto veredito à mesma prosa** — não criou a ausência de parser. E o conserto viveria em `tests/**` ou
+`.github/**`, **ambos no §5-bis PROIBIDO** do plano deste bloco: cobrá-lo aqui seria reprovação por
+construção (§C7.1-ter(a)).
+
+**O componente que NÃO é pre-existente e segue como achado do ciclo:** o **texto** da regra de negação nomeia
+apenas `ANULADO`, sem ramo "qualquer outra string" — defesa derivada **por exclusão**, escrita em quatro
+literais (`CLAUDE.md` l.405 e l.232, `porteiro-pos-merge.md` l.48, `decisoes.md` l.1948). Esse componente é
+`dentro-do-bloco`, gravidade **ALTA**, e entra no ciclo 2.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (D-SAN-AUTONOMIA, 2026-07-13) ·
+  **dono:** próximo bloco que tocar `.github/workflows/` ou `tests/` de governança · **bloqueia:** nada.
+  **Correção proposta:** um parser de veredito que leia a linha final da ata e do parecer do assento, com
+  **allowlist explícita** e `else` que **NEGA**, consumido por exit code em CI — junto de
+  `P-GOV-AUDITOR-FORA-DA-CI`.
+
+---
+
+## P-GOV-BASH-EM-QUEM-JULGA (2026-09-07) — `Bash` dá poder de escrita a todo papel que julga — ALTA
+
+Achado por **duas cadeiras independentes** na junta `J-B-GOV-ELENCO`: `C2-05` (guardião fail-closed) e
+`C3-A2` (CI-doutor). Medido e reproduzido pelo orquestrador:
+
+- `Bash` está em **11 de 11** papéis que a função `JULGA()` do auditor reconhece.
+- A negação do auditor (`FERRAMENTA_DE_ESCRITA`) é **por enumeração de nomes** — `Write|Edit|NotebookEdit`.
+  Qualquer ferramenta de escrita fora da lista nasce **permitida**: `Bash` hoje, `MultiEdit` também
+  (verificado: passa limpo), e qualquer nova amanhã.
+
+**A consequência prática:** o §C7.4-bis diz "quem acha não conserta", e a garantia disso era supostamente
+estrutural. Não é. Um papel que julga pode reescrever `CLAUDE.md`, `decisoes.md`, `pendencias.md`, a ata e os
+próprios votos por `Bash`, sem que gate nenhum acuse. **Hoje o §C7.4-bis é respeitado por CONVENÇÃO, não por
+construção** — e os agentes o respeitaram: nenhum jurado desta junta escreveu fora dos seus dois arquivos.
+
+**Tensão real, que a correção precisa resolver e não pode ignorar:** o próprio protocolo P1/P2 do
+`D-JUNTA-RESILIENTE` (§C7.7) **exige** que o jurado escreva `<cadeira>-evidencia.md` e `<cadeira>-voto.json`.
+Como eles não têm `Write`/`Edit` por desenho, escrevem **com `Bash`**. Tirar `Bash` quebra o P1/P2; deixar
+`Bash` mantém o buraco. A saída não é óbvia e não cabe num bloco de elenco.
+
+**Escopo.** A prática de dar `Bash` a papéis que julgam é `pre-existente` (o `porteiro-pos-merge` a tem desde
+12/08 e o `inspetor-de-terreno-da-junta` desde 24/08, na mesma linha `tools:`). O que é **deste bloco** é
+(a) ter estendido a prática a uma cadeira **permanente**, e (b) ter **publicado como fato medido**, no §4.4 do
+plano, que "o §C7.4-bis está respeitado por construção" — afirmação produzida por um instrumento **cego** para
+a classe. Esse (b) é `dentro-do-bloco` e entra no ciclo 2.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` no mecanismo (2026-08-12) ·
+  **dono:** bloco de governança de ferramentas de agente · **bloqueia:** nada hoje.
+
+---
+
+## P-GOV-ESPELHO-CONTRATO-SEM-GUARD (2026-09-07) — `CLAUDE.md` e `AGENTS.md` podem divergir sem nada ficar vermelho — MÉDIA
+
+Achado `C2-07` da junta `J-B-GOV-ELENCO`. O `D-INTEROP-CLAUDE-CODEX` (2026-07-28) manda alterar os dois
+contratos **no mesmo trabalho**, e o `CLAUDE.md` **prevalece** em divergência. Mas: `sync-agent-agents.mjs` e
+`sync-agent-skills.mjs` guardam `.claude/**` ↔ `.agents/**`; **nenhum guard compara `CLAUDE.md` com
+`AGENTS.md`**. O contrato canônico pode passar a listar um veredito novo e permissivo, divergindo de todas as
+outras cópias, sem que nada fique vermelho. A concordância de hoje é mantida por **disciplina de mesmo-PR** —
+passo humano no meio.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (`D-INTEROP-CLAUDE-CODEX`,
+  2026-07-28) · **dono:** próximo bloco de governança de contrato · **bloqueia:** nada.
+
+---
+
+## P-GOV-NOTA-KPI-CONGELADA (2026-09-07) — nota de KPI medida num head antigo, apresentada como deste head — MÉDIA
+
+Achado `C1-05` da junta `J-B-GOV-ELENCO`, declarado `pre-existente` pela própria cadeira **com evidência de
+origem** e, por isso, **não reprovou** (§C7.1-ter(a) funcionando como desenhado). Uma nota em `Kpis/*` carrega
+medição congelada num head anterior e é apresentada como medida no head corrente — a classe de afirmação que
+este projeto já pagou caro para herdar.
+
+Registrado aqui porque **`B-GOV-ELENCO` editou o mesmo arquivo** e a nota ficou ainda mais distante do real.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** **`B-O6R-02` ciclo 5**
+  (nomeado pela cadeira C1) · **bloqueia:** nada.

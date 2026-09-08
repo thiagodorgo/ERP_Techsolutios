@@ -102,7 +102,13 @@ reporte defeito, evidência executada e motivo.
 ## 7 · ISOLAMENTO — obrigatório, e o que destravou a passada 2
 
 **O worktree `.claude/worktrees/gov-elenco` é SOMENTE-LEITURA para todo jurado.** Ali você lê, roda o auditor
-sem mutar, e mede. **Nenhum jurado escreve nele.** Ao terminar, `git -C <wt> status --porcelain` tem de estar
+sem mutar, e mede. **Nenhum jurado escreve nele — com UMA exceção: os seus próprios arquivos em**
+`agent-orchestration/omega/juntas/votos/<bloco>/`, que o P1/P2 do §C7.7 **mandam** você escrever.
+(Correção pós-homologação nº 1: a redação anterior dizia "nenhum jurado escreve" sem ressalva e
+contradizia o protocolo que obriga o jurado a gravar evidência e voto. O assento permanente pegou.)
+
+**Publique no seu voto a versão do Node e o `core.autocrlf`** — nenhuma das três cadeiras do ciclo 1
+publicou a versão do Node, e "N sem forma" é a metade do que o §C7.7 chama de verde-cego. Ao terminar, `git -C <wt> status --porcelain` tem de estar
 **vazio** — se você o encontrar sujo, **pare e reporte anomalia de terreno**; não contorne e não limpe: pode
 ser mutação viva de outro jurado.
 

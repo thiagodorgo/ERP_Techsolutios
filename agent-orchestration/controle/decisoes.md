@@ -2013,3 +2013,23 @@ unclear, reabertura, rollback"; "quando duas superfícies diferentes tocam o mes
 papel **permanente**, não de cadeira de bloco; só o corpo estava amarrado ao `B-O6R-02`. Sai por critério, e
 fica a pendência `P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER`: se um bloco voltar a mexer em caminho que desfaz
 dinheiro, promovê-lo a papel permanente com o corpo generalizado — não recriá-lo como efêmero de novo.
+
+
+---
+
+## D-QUORUM-B-GOV-ELENCO (2026-09-07) — a subida de quórum do bloco de governança, registrada e não herdada
+
+O §C7.1-ter(b) literal daria **maioria de 3** ao `B-GOV-ELENCO`: é bloco de governança, sem dinheiro,
+segurança, permissão ou perda de dado **no produto**. O §8 do plano subiu para **unanimidade de 3**, com a
+justificativa de que o bloco **reescreve a regra da própria junta** e **remove 15 arquivos** — um defeito ali
+enfraquece toda junta futura.
+
+O `cadeira-permanente-backend-review`, na homologação nº 1, conferiu e mediu: a subida é **decisão declarada,
+não silenciosa**, e **não** é a escalada-por-reprovação que a auditoria de 28/08 mediu (aquela sobe o quórum
+*depois* de reprovar, reduzindo a chance de aprovação a cada ciclo; esta foi declarada *antes* do primeiro
+voto). Efeito no ciclo: **nenhum** — a junta saiu 3×0. Mas ele cobrou o registro formal, porque o quórum vivia
+só no plano, e `decisoes.md` não tinha uma menção.
+
+**A regra que fica: quórum elevado não se herda por inércia.** Toda subida acima do §C7.1-ter(b) é declarada
+**antes** do primeiro voto, com o motivo escrito, e **registrada aqui**. O ciclo 2 do `B-GOV-ELENCO` mantém a
+unanimidade de 3 por esta decisão; qualquer bloco seguinte volta ao quórum do risco, salvo nova declaração.
