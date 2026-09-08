@@ -7342,3 +7342,33 @@ Registrado aqui porque **`B-GOV-ELENCO` editou o mesmo arquivo** e a nota ficou 
 
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** **`B-O6R-02` ciclo 5**
   (nomeado pela cadeira C1) · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-MODELO-CODEX-SEM-NOME (2026-09-07) — o espelho Codex nunca registrou QUAL modelo usa — MÉDIA
+
+O `D-FALLBACK-MODELO-FABLE-OPUS` fixa: Fable esgotado → **Opus**, nunca abaixo. O dono pediu isso "exatamente
+espelhado no codex com os modelos correspondentes da openai" — e aí a regra esbarra num fato medido:
+**este repositório nunca registrou qual modelo o Codex roda.**
+
+Medido em `origin/main@fe2748c8` + head do bloco: `grep -rniE 'gpt-|o[34]-|codex-|model:'` em `AGENTS.md` e
+`.agents/agents/README.md` → nenhuma menção a modelo OpenAI. O `sync-agent-agents.mjs` **preserva o `model:`
+verbatim** (é regra do `D-PLANEJADOR-MODELO-FABLE`, e o README do espelho diz isso na l.9-10), então o espelho
+carrega `model: fable` — um nome **Anthropic** — para dentro do ambiente Codex, sem tradução em lugar nenhum.
+
+**O que foi documentado assim mesmo:** a regra por **degrau** — o Codex roda os quatro papéis no modelo de
+raciocínio máximo da conta OpenAI e, esgotado, no degrau imediatamente abaixo; nunca num modelo de propósito
+geral ou rápido.
+
+**O que NÃO foi documentado, e por quê:** o par concreto de IDs OpenAI. Nomear um ID por suposição dentro do
+contrato de execução seria hipótese vendida como fato (§A6), na única classe de arquivo onde isso não pode
+acontecer — e um ID errado ali seria copiado adiante por toda sessão que lesse o contrato.
+
+**O que fecha esta pendência:** o dono nomear os dois IDs (máximo e degrau abaixo). Com eles, uma linha em
+`AGENTS.md` §C7.6-bis e outra em `.agents/agents/README.md`, mais a tradução `fable → <id>` /
+`opus → <id>` para o Codex não ter de adivinhar o que `model: fable` significa do lado dele.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a lacuna nasce com o
+  `D-INTEROP-CLAUDE-CODEX`, 2026-07-28, e atravessou o `D-PLANEJADOR-MODELO-FABLE`) · **dono:** decisão do
+  dono · **bloqueia:** nada no Claude Code; no Codex, o fallback fica por interpretação até fechar.

@@ -476,6 +476,36 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
    vira nota no registro da junta.
 
+6-bis. **ESGOTADO O FABLE, CAI PARA O OPUS — nunca para baixo em silêncio (decisão do dono, 2026-09-07,
+   `D-FALLBACK-MODELO-FABLE-OPUS`).** Quatro papéis têm `model: fable` fixado no frontmatter — os três gates
+   (`inspetor-de-terreno-da-junta`, `porteiro-pos-merge`, `cadeira-permanente-backend-review`) e o
+   `planejador-mestre`. O Fable tem **limite de uso**, e ele acaba no meio de rodadas longas: foi o que
+   aconteceu na rodada deste bloco.
+
+   **A regra.** Fable indisponível ou esgotado → o papel roda em **Opus**, que é o degrau imediatamente
+   abaixo em raciocínio e o **único** substituto autorizado. **Nunca** Sonnet, nunca Haiku, nunca "o modelo
+   da sessão" — degradar um gate para um modelo mais fraco é pior do que não ter gate, porque o parecer sai
+   com a mesma cara de autoridade e menos capacidade por trás.
+
+   **A substituição é DECLARADA, nunca silenciosa.** Quem invoca registra, no artefato daquele papel (parecer
+   do inspetor, do porteiro, do assento, ou o cabeçalho do plano) e na ata: **qual papel · qual modelo rodou ·
+   por que o Fable não estava disponível**. Isto **estende**, e não substitui, a cláusula do item 6 ("a única
+   exceção é indisponibilidade do modelo, que vira nota no registro da junta"): a nota passa a ter **conteúdo
+   obrigatório** e **destino nomeado**.
+
+   **O frontmatter continua dizendo `fable`.** O fallback é do **invocador**, não do arquivo: trocar o
+   `model:` do agente tornaria a degradação permanente e invisível para a próxima sessão, que é exatamente o
+   que o `D-PLANEJADOR-MODELO-FABLE` existe para impedir. Quem cai para Opus por esgotamento **volta ao Fable
+   assim que o limite renovar**.
+
+   **Espelho Codex (`D-INTEROP-CLAUDE-CODEX`).** A regra é a mesma; só o nome do modelo muda. O Codex roda
+   esses quatro papéis no **modelo de raciocínio máximo** disponível na conta OpenAI e, esgotado esse,
+   **no degrau imediatamente abaixo** — nunca num modelo de propósito geral ou rápido. O par concreto de IDs
+   OpenAI é registrado em `AGENTS.md` §C7.6-bis: **este repositório nunca registrou qual modelo o Codex usa**,
+   e nomear um por suposição num contrato seria hipótese vendida como fato (§A6). Enquanto o dono não nomear
+   o par, vale a regra por **degrau**, e a lacuna está registrada em `P-GOV-MODELO-CODEX-SEM-NOME`.
+
+
 7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`) — P1–P6, inline.**
    Toda junta, inspeção de terreno e porteiro seguem as seis normas abaixo. Origem medida: **14 quedas de
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em

@@ -5,6 +5,12 @@ tools: Read, Grep, Glob, Bash
 model: fable
 ---
 
+> **Fable esgotado? Rode em Opus — e DECLARE** (`D-FALLBACK-MODELO-FABLE-OPUS`, dono, 2026-09-07).
+> Opus é o **único** substituto autorizado; nunca Sonnet, Haiku ou "o modelo da sessão" — gate degradado
+> é pior que gate ausente, porque o parecer sai com a mesma cara de autoridade. Quem invoca registra no
+> seu parecer e na ata: **papel · modelo que rodou · por que o Fable faltou**. O frontmatter continua
+> dizendo `fable`: o fallback é do invocador, e volta ao Fable quando o limite renovar.
+
 > **Modelo fixado (D-INSPETOR-TERRENO-JUNTA, decisão do dono 2026-08-24):** este papel roda em **Fable**,
 > independente do modelo da sessão. Ele é o único gate entre "montei a junta" e "a junta vota".
 

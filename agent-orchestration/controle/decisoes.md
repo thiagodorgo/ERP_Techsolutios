@@ -2033,3 +2033,49 @@ só no plano, e `decisoes.md` não tinha uma menção.
 **A regra que fica: quórum elevado não se herda por inércia.** Toda subida acima do §C7.1-ter(b) é declarada
 **antes** do primeiro voto, com o motivo escrito, e **registrada aqui**. O ciclo 2 do `B-GOV-ELENCO` mantém a
 unanimidade de 3 por esta decisão; qualquer bloco seguinte volta ao quórum do risco, salvo nova declaração.
+
+
+---
+
+## D-FALLBACK-MODELO-FABLE-OPUS (decisão do dono, 2026-09-07) — esgotado o Fable, cai para o Opus, e declara
+
+**O gatilho, dito pelo dono em execução:** *"o limite do fable está acabando, DOCUMENTE que quando o limite do
+fable acabar usar o opus, exatamente espelhado no codex com os modelos correspondentes da openai."*
+
+**O problema real.** Quatro papéis rodam com `model: fable` fixado no frontmatter — os três gates
+(`inspetor-de-terreno-da-junta`, `porteiro-pos-merge`, `cadeira-permanente-backend-review`) e o
+`planejador-mestre`. São exatamente os papéis que **decidem se o trabalho de todos os outros vale**. O Fable
+tem limite de uso, e ele acaba **no meio de rodadas longas** — aconteceu nesta. Até aqui o contrato só dizia
+que "indisponibilidade do modelo vira nota no registro da junta" (`D-PLANEJADOR-MODELO-FABLE`, item 6), sem
+dizer **para onde** cair nem **o que** a nota tem de conter. Uma lacuna assim se resolve sozinha, e sempre
+para baixo: quem invoca pega o modelo da sessão e segue.
+
+**A decisão.** Fable indisponível ou esgotado → o papel roda em **Opus**, o degrau imediatamente abaixo em
+raciocínio e o **único** substituto autorizado. **Nunca** Sonnet, nunca Haiku, nunca "o modelo da sessão".
+
+**Por quê a proibição é mais importante que a permissão.** Gate degradado é **pior que gate ausente**. Um
+parecer de porteiro ou de assento permanente sai com a mesma cara de autoridade independentemente do modelo
+que o produziu — a ata registra `LIBERADO` ou `HOMOLOGADO` do mesmo jeito. A ausência do gate seria visível;
+a degradação, não. Por isso o fallback é para **um** modelo nomeado, e não para "o que estiver disponível".
+
+**A substituição é DECLARADA.** Quem invoca registra, no artefato daquele papel e na ata: **qual papel · qual
+modelo rodou · por que o Fable não estava disponível**. Isto **estende** a cláusula do item 6, dando à nota
+**conteúdo obrigatório** e **destino nomeado**.
+
+**O frontmatter continua dizendo `fable`.** O fallback é do **invocador**, não do arquivo. Trocar o `model:`
+do agente tornaria a degradação **permanente e invisível** para a próxima sessão — exatamente o que o
+`D-PLANEJADOR-MODELO-FABLE` existe para impedir ("para valer independente do modelo da sessão; quem invoca não
+precisa lembrar"). Quem caiu para Opus por esgotamento **volta ao Fable quando o limite renovar**.
+
+**Espelho Codex (`D-INTEROP-CLAUDE-CODEX`).** A regra é a mesma; só o nome do modelo muda. O Codex roda os
+quatro papéis no **modelo de raciocínio máximo** da conta OpenAI e, esgotado esse, **no degrau imediatamente
+abaixo** — nunca num modelo de propósito geral ou rápido. **O par concreto de IDs OpenAI não foi registrado**,
+porque este repositório nunca registrou qual modelo o Codex usa: o `sync-agent-agents.mjs` preserva o `model:`
+verbatim e o Codex o lê, sem tradução em lugar nenhum. Nomear um ID por suposição dentro de um contrato de
+execução seria **hipótese vendida como fato** (§A6), na única classe de arquivo onde isso não pode acontecer.
+Enquanto o dono não nomear o par, vale a regra por **degrau**, e a lacuna vive em
+`P-GOV-MODELO-CODEX-SEM-NOME`.
+
+**Onde vive:** `CLAUDE.md` §C7.6-bis, espelhado em `AGENTS.md`; e o preâmbulo dos quatro agentes com
+`model: fable`, que passam a carregar a linha do fallback junto da linha do modelo fixado — para quem os
+invoca não precisar lembrar de ler o contrato.
