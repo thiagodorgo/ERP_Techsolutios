@@ -1,3 +1,69 @@
+> ## EMENDA 2 — três critérios corrigidos DEPOIS de medidos (orquestrador, 2026-09-08)
+>
+> O dev da fatia A (`dev-gov-elenco-c2`) devolveu três itens **sem resolvê-los sozinho**, como o §C7.4-bis
+> manda. Decido os três aqui, em vez de deixar a junta julgar critério mal escrito — e declaro a decisão em
+> destaque, porque emendar critério **depois** de ver a medição é exatamente o gesto que merece desconfiança.
+>
+> ### Por que isto não é mover a trave — a prova está no comportamento do dev
+>
+> Se a intenção fosse afrouxar, o caminho era trivial e estava na mão dele: bastava fazer `semCodeSpans`
+> ignorar linha que pareça cerca, e o mutante do `A-17` passaria a dar vermelho **na configuração do teste**
+> sem mudar **nada** na configuração correta. Ele **recusou**, e escreveu o motivo: seria código escrito para
+> o teste. Um dev disposto a afrouxar o critério teria feito isso em uma linha e ninguém veria. A emenda abaixo
+> **não muda a propriedade provada** em nenhum dos três casos — muda a forma de prová-la, ou o alvo do grep.
+>
+> ### (1) `A-17` — a forma pressupunha UM mecanismo; o desenho tem DOIS que se sobrepõem
+>
+> **Como estava:** "cópia do script sem a remoção de cercas → voltam os **6** falsos do `skill-creator`".
+> **O que o dev mediu (tabela T1–T7′):** matando só `semCercas`, o resultado é **0**, porque a passada de
+> *code span* também cobre a cerca de crase — uma linha ` ``` ` é cerca **e** sequência de três crases. As duas
+> passadas existem porque o `C3-A4` cobrou **duas** classes; a sobreposição é consequência do conserto, não
+> defeito dele.
+>
+> **Como fica** — a mesma propriedade ("o conserto de cerca é load-bearing, não decorativo"), provada pelas
+> duas mutações que este desenho admite:
+> - **A-17a** — as **duas** passadas mortas (= v1 sem conserto nenhum) → voltam **exatamente os 6** do
+>   `skill-creator` (`FORMS.md`, `REFERENCE.md`, `EXAMPLES.md`, `DOCX-JS.md`, `REDLINING.md`, `OOXML.md`),
+>   `ec=1`; restaurado → **0**, `ec=0`. *(medido: T4)*
+> - **A-17b** — **só `semCercas`** morta, contra fixture de cerca de **til** (`~~~`) → **exatamente 1** falso
+>   `C8` nomeando o arquivo, `ec=1`; restaurado → **0**. É o caso em que `semCercas` carrega peso **sozinha**:
+>   o til não tem crase para o code span pegar. *(medido: T6′)*
+> - **Vermelho de controle:** se `A-17a` der 0 com as duas mortas, o conserto é decorativo e o critério reprova.
+>
+> ### (2) `A-16` — número do ciclo 1 colado num parser que mudou
+>
+> **Como estava:** "71 falsos". **Medido agora: 34.** Mecanismo: o parser novo recusa o **arquivo inteiro** com
+> **um** achado, onde o antigo emitia três (`name`, `description`, `model`). E 34 = **23 agentes + 11
+> `SKILL.md`** — o denominador da fatia A, não os 24/12 do superset. A direção não muda (sem o conserto de
+> CRLF chovem falsos); só o número, que era herança de outra configuração. **Como fica:** `A-16` exige
+> **≥ 1 BLOQUEIA falso** com `normalizado = texto`, e publica **N e forma**; o valor esperado neste head é
+> **34**, e divergência do N publicado é que reprova — não um número fixo escrito antes da medição.
+>
+> ### (3) `A-25` — o grep testava a PALAVRA, e a palavra não é a propriedade
+>
+> **Como estava:** `description` **sem** `"5 de 12"`, **sem** `"6,6 KB"`, **sem** `"assento"`.
+> Os dois primeiros são **fatos errados** que não podem reaparecer — ficam como estão. O terceiro é de outra
+> natureza: `"assento"` era **proxy** para "a fatia A não pode publicar o assento como entregue". O dev
+> escreveu a frase certa evitando a palavra, e **declarou que a evitou** — sinal de que o proxy estava errado,
+> não a frase.
+>
+> **Como fica:** a `description` da fatia A **não pode afirmar o assento permanente como entregue**, e **deve**
+> dizer que ele vai inteiro para a fatia B. A palavra é livre. Reprova: qualquer texto que credite o assento a
+> esta entrega, ou o silêncio total sobre o destino dele.
+> **O artefato atual já satisfaz** — *"o desenho da cadeira permanente da junta vai inteiro para a fatia B, com
+> PR e junta próprios — esta entrada NÃO o publica como entregue"*. **Nenhuma edição é necessária:** a emenda
+> conserta o critério, não o artefato. Registra-se que a palavra foi evitada por causa do grep, e que evitar
+> palavra para passar em grep é um hábito ruim que o critério novo torna desnecessário.
+>
+> ### O que a junta da fatia A deve conferir nesta emenda
+>
+> Que `A-17a`/`A-17b` **reprovam de verdade** (rode as duas mutações; não aceite a tabela do dev sem
+> reexecutar pelo menos uma); que o **34** do `A-16` reproduz; que a `description` do KPI **não** credita o
+> assento; e — o mais importante — **se esta emenda afrouxou alguma propriedade**. Se afrouxou, é achado
+> `dentro-do-bloco` contra o **orquestrador**, não contra o dev.
+
+---
+
 > ## EMENDA 1 — escopo acrescentado POR ORDEM DO DONO, no meio do ciclo (2026-09-07)
 >
 > Depois de este plano ser escrito e **antes** de qualquer implementação, o dono deu uma ordem nova:
