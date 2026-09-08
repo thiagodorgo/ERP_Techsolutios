@@ -7453,3 +7453,46 @@ arquivos que **este bloco acabou de apagar** (elenco efêmero = 0 — não há e
 
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** o bloco que fiar o
   auditor na CI (mesmo dono de `P-GOV-AUDITOR-FORA-DA-CI`) · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK (2026-09-08) — o auditor de elenco DEIXOU de conferir link, por decisão — MÉDIA
+
+Nasce de `D-AUDITOR-ENXUTO` (decisão do dono, 2026-09-08), executada em `B-GOV-ELENCO-ENXUTO`. A checagem
+`C8` do `scripts/audit-agents-skills.mjs` — link relativo quebrado dentro de uma `SKILL.md` — foi **cortada
+inteira**, junto com o regex `LINK` e as três passadas que só existiam para alimentá-lo (`semCercas`,
+`semCodeSpans`, `semComentariosHtml`).
+
+**Por que foi cortada.** Ela sozinha produziu **quatro classes de erro** medidas pela cadeira `A-C2` do
+ciclo 2 de `B-GOV-ELENCO`: destino CommonMark entre `<>` para arquivo que **existe** (`A-C2-03`), destino
+com query string (a instância irmã), cerca de til recuada dentro de lista (`A-C2-04`) e — o **único
+fail-OPEN de toda a auditoria** — destino com espaço, que nunca era conferido (`A-C2-05`). Duas juntas
+mediram que **cada conserto de gramática fechava a classe apontada e abria a vizinha**, porque a gramática
+de link estava sendo escrita com regex.
+
+**O que se perdeu, medido e publicado.** Link relativo **realmente** quebrado numa `SKILL.md` deixa de ser
+pego: mutação de controle (`M6` da evidência do bloco) sai `1 BLOQUEIA · ec=1` no auditor antigo e
+`0 BLOQUEIA · ec=0` no novo. É perda real, e está declarada no cabeçalho do próprio script, na seção
+"O QUE ESTE AUDITOR NÃO FAZ".
+
+**O que NÃO se perdeu.** Prevalência de achado `C8` na árvore de trabalho, em `origin/main` e em
+`fe2748c8`, medida no dia do corte: **0 nos três**. Nenhum alvo real mudou de cor. Saiu superfície de erro,
+não saiu medição.
+
+**O que fecharia esta pendência.** Um **parser Markdown de verdade** (biblioteca), em vez de regex. Isso é
+**dependência nova**, portanto **junta unânime de 5** (§C7.1) mais PD com ≥3 fontes (§C7.3). Alternativa
+mais barata a considerar na mesma junta: um verificador de link **fora** do auditor de elenco (script
+próprio, ou passo de CI com ferramenta de mercado), para que a superfície de gramática não volte a morar
+dentro do gate que decide sobre papéis e permissões.
+
+**Fronteira vizinha, na mesma decisão.** O auditor também **não interpreta YAML além do subconjunto
+declarado** — fora dele ele **RECUSA a medição, com arquivo e linha, e reprova** (`ec=1`), em vez de
+adivinhar. Isso **não** é pendência: é o comportamento entregue neste bloco, provado por mutação. A
+pendência aqui é só a checagem de link, que saiu sem substituto.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o `C8` nasceu e morreu na
+  cadeia `B-GOV-ELENCO` → `B-GOV-ELENCO-ENXUTO`; nenhuma checagem anterior a ela existia) · **dono:** o
+  bloco que fiar o auditor na CI (mesmo dono de `P-GOV-AUDITOR-FORA-DA-CI`), que é onde a decisão
+  "dependência nova × verificador separado" tem de ser tomada · **bloqueia:** nada — a prevalência de link
+  quebrado nos três alvos é 0.

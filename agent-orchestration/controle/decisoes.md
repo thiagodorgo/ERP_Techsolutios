@@ -1974,3 +1974,71 @@ só no plano, e `decisoes.md` não tinha uma menção.
 **A regra que fica: quórum elevado não se herda por inércia.** Toda subida acima do §C7.1-ter(b) é declarada
 **antes** do primeiro voto, com o motivo escrito, e **registrada aqui**. O ciclo 2 do `B-GOV-ELENCO` mantém a
 unanimidade de 3 por esta decisão; qualquer bloco seguinte volta ao quórum do risco, salvo nova declaração.
+
+
+---
+
+## D-AUDITOR-ENXUTO (2026-09-08) — encolher o auditor ao que regex faz com segurança, e trocar adivinhação por recusa nomeada
+
+**Decisão do dono (Thiago), 2026-09-08**, sobre o dossiê `agent-orchestration/omega/DOSSIE-B-GOV-ELENCO.md`:
+
+> *"Encolher o auditor ao que regex faz com segurança e trocar adivinhação por recusa nomeada na fronteira.
+> A faxina entra junto, pronta e verificada. Como bloco novo e pequeno — não como ciclo 3."*
+
+É a **Opção 3 + Opção 1** do §5 do dossiê, nessa ordem. Executada em `B-GOV-ELENCO-ENXUTO`, branch
+`chore/gov-elenco-enxuto`.
+
+### Por que ENCOLHER em vez de CONSERTAR — o padrão medido em dois ciclos
+
+`B-GOV-ELENCO` foi reprovado **duas vezes** e parou no teto de dois ciclos (`D-TETO-DOIS-CICLOS`). Ciclo 1:
+**3×0**. Ciclo 2, fatia A: **2×1**. As duas juntas acharam **a mesma família de defeito**, e é isso que
+decide a questão: **o instrumento erra na fronteira da gramática que ele próprio define.**
+
+| Ciclo | Gramática que o auditor definiu | Onde ela errou |
+|---|---|---|
+| 1 | nomes de papel (regex de **prefixo**) | cega a `agente-*` — **13 de 24** papéis; a cadeira que o pegou era invisível a ele |
+| 1 | ferramentas de escrita (**3 nomes literais**) | `MultiEdit` passava limpo |
+| 2 | **subconjunto YAML** do frontmatter | comentário no fim da linha `tools:` → acusação `C4` com **nome de ferramenta fabricado** (`A-C2-02`) |
+| 2 | **destinos de link** | `<destino>` do CommonMark, query string, cerca de til recuada → arquivo **existente** acusado (`A-C2-03`, `A-C2-04`); e destino com **espaço** nunca conferido (`A-C2-05`) |
+
+**Cada conserto fechou a classe apontada e abriu a vizinha.** Não é azar: é a consequência de **parsear YAML
+e Markdown com regex**. Um terceiro ciclo fecharia estas duas classes e, pelo padrão medido, abriria a
+próxima. A decisão corta a **superfície**, não a instância.
+
+**Duas propriedades do padrão que sustentam a escolha.** (i) Todas as falhas medidas eram **fail-closed** —
+vermelho falso, nunca verde falso — **exceto uma**: `A-C2-05`, que era o único **fail-OPEN** de toda a
+auditoria, e vivia justamente dentro do `C8`. Cortar o `C8` mata a única classe que absolvia por engano.
+(ii) A **prevalência** de achado `C8` na árvore de trabalho, em `origin/main` e em `fe2748c8`, medida no dia
+do corte, é **0 nos três** — saiu superfície de erro, não saiu medição.
+
+### O que a decisão determina
+
+1. **`C8` (link relativo quebrado) é CORTADO**, com o regex `LINK`, `semCercas`, `semCodeSpans`,
+   `semComentariosHtml` e `embranquecer`. **Corte, não conserto.** A perda é real e vai **publicada** no
+   cabeçalho do script e na pendência `P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK` — link quebrado de verdade deixa
+   de ser pego (provado por mutação de controle: `1 BLOQUEIA · ec=1` antes, `0 · ec=0` depois).
+2. **Recusa nomeada na fronteira.** Entrada fora do subconjunto YAML **declarado** não produz diagnóstico:
+   produz `C1 recusa de medição` / `C6 recusa de medição`, **com arquivo, linha e motivo**, e **nenhuma
+   outra checagem daquele arquivo é emitida** — para o auditor nunca acusar a partir de leitura que ele
+   mesmo declarou não confiável. **A recusa REPROVA (`ec=1`): não medir é vermelho, nunca verde.**
+3. **A recusa cobre as chaves cujo VALOR vira acusação** — `name` (→`C2`), `model` (→`C3`), `tools`
+   (→`C4`/`C5`) — e **não** `description`, da qual o auditor mede só presença e comprimento. Isso **não é
+   arbitrário e foi medido**: `origin/main` e `fe2748c8` têm **5 arquivos** cuja `description` contém ` #`
+   (o texto `PR #363`), e a forma larga da recusa teria inventado a **quinta classe de falso-positivo** —
+   a mesma patologia que esta decisão existe para cortar.
+4. **O cabeçalho do script tem de dizer o que ele NÃO faz, e por quê.** Gate que promete mais do que mede é
+   pior que gate ausente: a ausência é visível, a promessa quebrada não.
+5. **O que FICA, porque é determinístico e já provou valor:** `C0` (alvo vazio não é limpo) · `C1`/`C2`/`C3`
+   · `C4`/`C5` **default-deny** — mecanismo **intocado**, a cadeira `A-C2` provou em **16 mutações** que
+   fecha · `C6`/`C7` (**puro sistema de arquivos** — foi o que achou as **5 skills que nunca carregaram**) ·
+   `C9` (paridade de espelho, nos dois sentidos) · `C10` (peso do elenco efêmero) · o parser estrito de
+   argumentos com `ec=2` · o modo `--ref` lendo **BLOB**.
+
+### O que fica de lição, além deste arquivo
+
+**Antes de escrever uma regra de recusa, meça a prevalência da construção que ela passará a recusar.** A
+primeira forma redigida neste bloco (recusar ` #` em **qualquer** escalar plano) teria acusado 5 arquivos
+reais e **suprimido** as demais checagens neles. Foi a medição — não a releitura — que pegou.
+
+**Volume da decisão:** `scripts/audit-agents-skills.mjs` 664 → 668 linhas; ~99 linhas de gramática de link
+removidas, ~103 de fronteira declarada e recusa acrescentadas. **Zero dependência nova.**

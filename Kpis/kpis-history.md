@@ -2440,3 +2440,73 @@ sem exercer, com marcador: flutter **864/864** · smoke **1126/1126**. `blocks_c
 `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5). Duas PDs novas em `docs/omega-pd.md`
 (`MAGIC-BYTES`, 11 fontes; `DISPOSITION`, 13 fontes), fechadas ANTES da primeira linha dos módulos que
 dependiam delas. Este espelho recebe SÓ a própria entrada: o backlog segue em `P-KPI-HISTORY-MD-BACKLOG`.
+
+
+---
+
+## 2026-09-08 — B-GOV-ELENCO-ENXUTO (PR na autoria) — o auditor para de adivinhar na fronteira, e diz o que não sabe medir
+
+Execução de **`D-AUDITOR-ENXUTO`** (decisão do dono, 2026-09-08) — a **Opção 3 + Opção 1** do §5 do dossiê
+`agent-orchestration/omega/DOSSIE-B-GOV-ELENCO.md`, **como bloco novo e pequeno, não como ciclo 3**.
+
+**Por que existe.** O `B-GOV-ELENCO` foi **reprovado duas vezes** e parou no teto de dois ciclos
+(`D-TETO-DOIS-CICLOS`): ciclo 1 **3×0**, ciclo 2 fatia A **2×1**. As duas juntas acharam **a mesma família de
+defeito** — *o instrumento erra na fronteira da gramática que ele próprio define*, e cada conserto fecha a
+classe apontada e **abre a vizinha**: prefixo de nome (cego a 13 de 24 papéis) → lista de 3 ferramentas
+literais (`MultiEdit` passava limpo) → subconjunto YAML (comentário no fim da linha `tools:` virava acusação
+`C4` com **nome de ferramenta fabricado**, `A-C2-02`) → gramática de link (destino CommonMark entre `<>` para
+arquivo que **existe**, acusado, `A-C2-03`). Não é azar: é a consequência de **parsear YAML e Markdown com
+regex**. Um terceiro ciclo fecharia estas duas e abriria a próxima. Corta-se a **superfície**.
+
+**O que saiu.** `C8` — link relativo quebrado — **cortado inteiro**, com o regex `LINK`, `semCercas`,
+`semCodeSpans`, `semComentariosHtml` e `embranquecer`. **Corte, não conserto.** Ela sozinha produziu as
+**quatro** classes de erro medidas pela cadeira `A-C2`, entre elas o **único fail-OPEN de toda a auditoria**
+(`A-C2-05`, destino com espaço nunca conferido). **Prevalência de achado `C8` nos três alvos no dia do
+corte: ZERO** — árvore de trabalho, `origin/main` e `fe2748c8` — medida **antes** de o arquivo ser tocado, e
+reconferida depois: os três saem com os **mesmos números** (`0 BLOQUEIA · 1 AVISO · ec=0` na árvore;
+`6 BLOQUEIA · 1 AVISO · ec=1` nos dois refs, sendo 5×`C6` + 1×`C10`).
+
+**O preço, publicado.** Link **realmente** quebrado deixa de ser pego: mutação de controle sai
+`1 BLOQUEIA · ec=1` no auditor antigo e `0 · ec=0` no novo. Declarado no cabeçalho do próprio script (seção
+*"O QUE ESTE AUDITOR NÃO FAZ"*) e aberto como **`P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK`** — fechá-lo exige parser
+Markdown de verdade, isto é **dependência nova → junta unânime de 5** (§C7.1).
+
+**O que entrou.** **Recusa nomeada na fronteira.** Entrada fora do subconjunto YAML **declarado** deixa de
+produzir diagnóstico e passa a produzir `C1 recusa de medição` / `C6 recusa de medição`, **com arquivo, linha
+e motivo**, suprimindo **todas** as demais checagens daquele arquivo — para o auditor nunca acusar a partir de
+leitura que ele mesmo declarou não confiável. **A recusa REPROVA (`ec=1`): não medir é vermelho, nunca
+verde.** Três formas, todas provadas por mutação: ` #` em escalar plano; **chave medida duplicada** (era
+"último vence" **em silêncio**, com `ec=0` — **ganho líquido**); e item de `tools:` que não é nome de
+ferramenta legível.
+
+**E a recusa é estreita por MEDIÇÃO, não por esquecimento.** Ela cobre só as chaves cujo **valor vira
+acusação** — `name`(→`C2`), `model`(→`C3`), `tools`(→`C4`/`C5`) — e **não** `description`, da qual se mede
+apenas presença e comprimento. A forma larga foi medida **antes de ser escrita** e rejeitada: `origin/main` e
+`fe2748c8` têm **5 arquivos** cuja `description` contém ` #` (o texto `PR #363`), e ela teria emitido 5
+recusas em arquivos reais — **a quinta classe de falso-positivo, criada pelo próprio conserto**. Foi a
+medição, não a releitura, que pegou.
+
+**O que ficou intocado:** `C0` · `C1`/`C2`/`C3` (`MODELO_FIXADO` segue com **três** entradas — o assento
+permanente não existe neste bloco) · `C4`/`C5` **default-deny**, cujo mecanismo a cadeira `A-C2` provou em 16
+mutações que fecha · `C6`/`C7` (**puro sistema de arquivos** — foi o que achou as 5 skills que nunca
+carregaram) · `C9` · `C10` · parser estrito de argumentos com `ec=2` · `--ref` lendo **BLOB**.
+
+**Como foi provado.** 18 **cópias isoladas** (`mktemp -d` + `cp -r`, **sem** `git worktree add`, **sem**
+junction, **sem** symlink, **sem** `npm ci`), cada uma carregando **os dois scripts** — o de `HEAD` e o novo —
+para que ANTES e DEPOIS medissem **os mesmos bytes**. `0 → N → 0` em cada mutação. Os **dois bloqueantes do
+ciclo 2** reproduzidos: `A-C2-02` sai `C1 recusa de medição` nomeando a linha 4 (era `C4` acusando a
+"ferramenta" `"Bash # so-leitura"`, que não existe); `A-C2-03` sai `0 BLOQUEIA · ec=0`. **13 mutações de
+regressão** saem **idênticas** antes e depois. Forma: **Node `v20.19.5`**, `core.autocrlf=true`, Windows 11 /
+Git Bash.
+
+**Números.** Contagens de teste **CARREGADAS** com nota §C3.3 — flutter **864/864** · smoke **1126/1126** ·
+backend **2936/2938** — porque o diff **não toca** `src/`, `tests/`, `prisma/`, `frontend/` nem `mobile/`,
+provado nas **duas pontas** (diff contra a base e `git status --porcelain`, os dois vazios). `mvp_demo` e
+`mvp_vendavel` **INTOCADOS** (§C3.4): o bloco encolhe uma ferramenta de governança, não move escopo de
+produto. `blocks_completed` **162 → 163**, com `value` e `display` batendo — e **o 162 é o `B-GOV-ELENCO`,
+que NÃO mergeou**: ficou no history como registro de autoria daquele ciclo, com `pr`/`merge_commit`/
+`approved_head` em `null`, e assim permanece. `pr`/`merge_commit`/`approved_head` deste bloco **null na
+autoria** (§C3.5). **ZERO** dependência nova, **ZERO** migration.
+
+**Nota de backlog deste espelho:** o `B-GOV-ELENCO` (entrada 162) nunca ganhou seção aqui — pendência
+`P-KPI-HISTORY-MD-BACKLOG`, que este bloco **não** fecha. Esta seção é só a do próprio bloco.

@@ -19,6 +19,33 @@
 // BLOB (`git show <ref>:<path>`), nunca de `git archive`+`tar` — sob `core.autocrlf=true` aquilo injeta CR
 // e FABRICA divergência. Sem `--ref`, audita a árvore de trabalho.
 //
+// ─────────────────────────────────────────────────────────────────────────────
+// O QUE ESTE AUDITOR **NÃO** FAZ — e por quê (`D-AUDITOR-ENXUTO`, decisão do dono, 2026-09-08)
+//
+// Duas juntas seguidas mediram a MESMA família de defeito: **o instrumento erra na fronteira da gramática
+// que ele próprio define**, e cada conserto fechava a classe apontada e abria a vizinha — prefixo de nome
+// (ciclo 1) → lista de ferramentas (ciclo 1) → subconjunto YAML (ciclo 2) → gramática de link (ciclo 2).
+// Não é azar: é a consequência de **parsear YAML e Markdown com regex**. Por isso o auditor ENCOLHEU até o
+// que regex faz com segurança, em vez de ganhar mais uma camada de gramática.
+//
+// 1) **NÃO confere link.** A checagem `C8` (link relativo quebrado) foi **CORTADA**, com o regex `LINK`,
+//    `semCercas`, `semCodeSpans` e `semComentariosHtml`. Ela sozinha produziu QUATRO classes de erro
+//    medidas pela cadeira `A-C2` do ciclo 2: destino CommonMark entre `<>` para arquivo que EXISTE
+//    (`A-C2-03`), destino com query string (a instância irmã), cerca de til recuada dentro de lista
+//    (`A-C2-04`) e — o **único fail-OPEN medido em toda a auditoria** — destino com espaço, que nunca era
+//    conferido (`A-C2-05`). Prevalência de achado `C8` no head, em `origin/main` e em `fe2748c8`
+//    quando o corte foi feito: **0 nos três**. Ou seja: saiu superfície de erro, não saiu medição.
+//    Quem quiser a checagem de link de volta precisa de um parser Markdown de verdade — o que é
+//    dependência nova e portanto **junta unânime de 5** (§C7.1). Está aberto como
+//    `P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK`.
+//
+// 2) **NÃO interpreta YAML além do subconjunto declarado** (a lista está em `lerFrontmatter`, abaixo).
+//    Fora dele o auditor **RECUSA a medição, com arquivo e linha** — e não emite nenhuma outra checagem
+//    daquele arquivo, para nunca produzir diagnóstico derivado de uma leitura que ele mesmo declarou não
+//    confiável. **A recusa REPROVA (`BLOQUEIA`, `ec=1`): não medir é vermelho, nunca verde.** É o conserto
+//    de `A-C2-02`, em que uma linha `tools:` com comentário no fim fazia o auditor acusar `C4` com um
+//    **nome de ferramenta fabricado**, que não existe em lugar nenhum.
+//
 // USO
 //   node scripts/audit-agents-skills.mjs                 # árvore de trabalho
 //   node scripts/audit-agents-skills.mjs --ref origin/main
@@ -184,6 +211,25 @@ const semAspas = (s) => {
 };
 
 /**
+ * As chaves cujo VALOR o auditor transforma em ACUSAÇÃO — e só elas.
+ *
+ * Este conjunto é o critério da recusa nomeada, e ele não é arbitrário: `name` vira `C2` ("name ≠
+ * arquivo"), `model` vira `C3` ("contrato exige model:X"), `tools` vira `C4`/`C5` ("ferramenta Y não é
+ * somente-leitura"). Se o parser ler ERRADO o valor de uma destas três, o auditor **fabrica um
+ * diagnóstico** — foi exatamente o `A-C2-02`. Logo, valor fora do subconjunto NESTAS chaves = RECUSA.
+ *
+ * `description` fica de fora **por medição, não por esquecimento**: dela o auditor mede apenas PRESENÇA e
+ * COMPRIMENTO, e um comentário absorvido no fim não consegue virar acusação nenhuma. Incluí-la seria caro e
+ * errado: em `origin/main` e em `fe2748c8` há **5 arquivos** cuja `description` contém ` #` (o texto
+ * `PR #363`), e recusá-los inventaria a QUINTA classe de falso-positivo — a mesma patologia que este bloco
+ * existe para cortar. Medido em 2026-09-08 nos três alvos; a limitação está declarada acima.
+ */
+const CHAVES_MEDIDAS_POR_VALOR = new Set(["name", "model", "tools"]);
+
+/** Nome de ferramenta legível: identificador puro. Qualquer outra forma em `tools:` é RECUSA, não palpite. */
+const TOKEN_FERRAMENTA = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+/**
  * Frontmatter — SUBCONJUNTO YAML DECLARADO. Sem dependência nova (§C7.1).
  *
  * O que este parser LÊ (e é tudo o que ele promete ler):
@@ -204,6 +250,19 @@ const semAspas = (s) => {
  * diagnóstico: nenhuma outra checagem C1–C5 sai para esse arquivo, para o auditor nunca dizer
  * "sem description" sobre um arquivo cujo frontmatter ele não conseguiu ler.
  *
+ * FRONTEIRA DAS CHAVES MEDIDAS POR VALOR (`CHAVES_MEDIDAS_POR_VALOR`, acima) — conserto do `A-C2-02`.
+ * Nestas três chaves o parser recusa, em vez de adivinhar, quando:
+ *   (a) o valor está na própria linha, NÃO está entre aspas e contém ` #` — em YAML isso inicia um
+ *       comentário, e este parser não sabe onde o conteúdo termina e o comentário começa. Era o caso exato
+ *       de `tools: Read, Grep, Glob, Bash # comentário`, que produzia `C4` acusando uma "ferramenta"
+ *       chamada `Bash # comentário`, inexistente;
+ *   (b) a chave aparece DUAS VEZES no mesmo frontmatter — o "último vence" é um palpite, não uma leitura;
+ *   (c) `tools:` produz um item que não é um identificador puro (`TOKEN_FERRAMENTA`), qualquer que tenha
+ *       sido a forma de origem (linha única, lista `- item`, com ou sem aspas). Cobre o `#` colado sem
+ *       espaço, que YAML NÃO trata como comentário e que mesmo assim não é nome de ferramenta.
+ * LIMITAÇÃO DECLARADA: em escalar de BLOCO (`|`, `>`) e em `description` o ` #` NÃO é recusado — no bloco
+ * ele é conteúdo literal por YAML, e em `description` a leitura errada não vira acusação (ver acima).
+ *
  * ARMADILHA MEDIDA (2026-09-07, na primeira execução deste auditor): a árvore de trabalho roda sob
  * `core.autocrlf=true` e alguns arquivos chegam ao disco com **CRLF**. Em JavaScript, `.` **não casa
  * `\r`**. Logo `/(.*)$/` sem a flag `m` FALHA em `name: valor\r`, e a v1 reportou "sem name/description"
@@ -223,6 +282,7 @@ function lerFrontmatter(texto) {
 
   const linhas = normalizado.slice(primeiraQuebra + 1, fim).split("\n");
   const campos = {};
+  const linhaDaChave = {};
   let i = 0;
   while (i < linhas.length) {
     const linha = linhas[i];
@@ -238,9 +298,26 @@ function lerFrontmatter(texto) {
     const resto = m[2];
     const bloco = /^\s*([|>])([+-]?)\s*$/.exec(resto);
 
+    // (b) chave medida repetida: "último vence" é palpite, não leitura.
+    if (CHAVES_MEDIDAS_POR_VALOR.has(chave) && chave in campos) {
+      return { erro: numeroNoArquivo, motivo: `chave \`${chave}:\` repetida no mesmo frontmatter` };
+    }
+    linhaDaChave[chave] = numeroNoArquivo;
+
     if (resto.trim() !== "" && !bloco) {
       // Valor na própria linha. Coleção em fluxo, âncora, alias e tag ficam FORA do subconjunto.
-      if (/^[{[&*!]/.test(resto.trim())) return { erro: numeroNoArquivo };
+      const cru = resto.trim();
+      if (/^[{[&*!]/.test(cru)) return { erro: numeroNoArquivo };
+      // (a) ` #` num escalar PLANO de chave medida: YAML abre comentário aqui e este parser não sabe onde
+      //     o conteúdo acaba. Recusa nomeada em vez de valor com o comentário grudado.
+      const entreAspas =
+        cru.length >= 2 && ((cru[0] === '"' && cru.at(-1) === '"') || (cru[0] === "'" && cru.at(-1) === "'"));
+      if (CHAVES_MEDIDAS_POR_VALOR.has(chave) && !entreAspas && /\s#/.test(resto)) {
+        return {
+          erro: numeroNoArquivo,
+          motivo: `\`${chave}:\` é escalar plano com \` #\` — comentário e conteúdo indistinguíveis`,
+        };
+      }
       campos[chave] = semAspas(resto);
       i++;
       continue;
@@ -283,6 +360,24 @@ function lerFrontmatter(texto) {
     }
     i = j;
   }
+
+  // (c) FRONTEIRA DO `tools:` — cada item tem de ser um identificador puro, venha de linha única, de lista
+  //     `- item` ou de aspas. Item que não é nome de ferramenta é RECUSA, nunca uma acusação `C4` com um
+  //     nome inventado (`A-C2-02`). O `#` colado sem espaço cai aqui, porque YAML não o trata como
+  //     comentário e ele tampouco é nome de ferramenta.
+  if (typeof campos.tools === "string" && campos.tools.trim() !== "") {
+    // `.filter(Boolean)` espelha `listaFerramentas`: item vazio (vírgula dobrada, vírgula final) é
+    // descartado dos dois lados e nunca vira acusação — logo não há o que recusar nele.
+    for (const item of campos.tools.split(",").map((s) => s.trim()).filter(Boolean)) {
+      if (!TOKEN_FERRAMENTA.test(item)) {
+        return {
+          erro: linhaDaChave.tools,
+          motivo: `\`tools:\` tem o item ${JSON.stringify(item)}, que não é um nome de ferramenta legível`,
+        };
+      }
+    }
+  }
+
   return { campos };
 }
 
@@ -326,10 +421,13 @@ for (const caminho of arquivosAgente) {
   if (lido.erro) {
     add(
       "BLOQUEIA",
-      "C1 frontmatter",
+      "C1 recusa de medição",
       caminho,
-      `não consigo ler o frontmatter (linha ${lido.erro} fora do subconjunto YAML lido) — ` +
-        "recusa de medição, não diagnóstico: nenhuma outra checagem C1–C5 sai para este arquivo",
+      `não consigo ler o frontmatter — linha ${lido.erro}` +
+        `${lido.motivo ? `: ${lido.motivo}` : " fora do subconjunto YAML declarado"}. ` +
+        "RECUSA, não diagnóstico: nenhuma outra checagem C1–C5 sai para este arquivo, para o auditor não " +
+        "acusar a partir de leitura que ele mesmo declarou não confiável. Não medir REPROVA (`ec=1`).",
+      { linha: lido.erro },
     );
     continue;
   }
@@ -429,96 +527,14 @@ for (const nome of [...PODE_ESCREVER, ...Object.keys(MODELO_FIXADO)]) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// C6..C8 — SKILLS
+// C6..C7 — SKILLS
+//
+// `C8` (link relativo quebrado) foi CORTADO por `D-AUDITOR-ENXUTO` — ver o bloco "O QUE ESTE AUDITOR NÃO
+// FAZ", no cabeçalho. Saíram com ele o regex `LINK` e as três passadas que só existiam para alimentá-lo
+// (`semCercas`, `semCodeSpans`, `semComentariosHtml`) e o utilitário `embranquecer`. O que fica aqui é
+// PURO SISTEMA DE ARQUIVOS — onde a `SKILL.md` está e o que o `name:` dela diz — que é justamente o que
+// achou as 5 skills que nunca carregaram.
 // ─────────────────────────────────────────────────────────────────────────────
-
-const embranquecer = (s) => s.replace(/[^\n]/g, "");
-
-/**
- * Cercas de código, POR LINHA (CommonMark §4.5), preservando as quebras de linha.
- *
- * ARMADILHA MEDIDA (2026-09-07): a v1 varria o markdown INTEIRO e reportou 6 links quebrados em
- * `skill-creator/SKILL.md` — todos dentro de um bloco ```markdown ILUSTRANDO como se referencia um
- * arquivo. Achado falso é pior que achado nenhum: entra em ata com a mesma cara de um verdadeiro.
- *
- * SEGUNDA ARMADILHA (achado C3-A4a/b): o conserto da v1 era um regex `^```[\s\S]*?^```` que só via
- * TRÊS crases na COLUNA ZERO. Cerca recuada (até 3 espaços, o que acontece em item de lista) e cerca de
- * TIL — as duas válidas em CommonMark — voltavam a produzir falso-positivo. Agora: abertura
- * `^ {0,3}(```+|~~~+)`, fechamento na primeira linha `^ {0,3}` do MESMO caractere com comprimento
- * MAIOR OU IGUAL ao da abertura, e sem fechamento vai até o fim do arquivo.
- *
- * LIMITAÇÃO DECLARADA: bloco de código por RECUO de 4 espaços (sem cerca) não é reconhecido.
- * Prevalência medida no head: zero.
- */
-function semCercas(texto) {
-  let aberta = null;
-  return texto
-    .split("\n")
-    .map((linha) => {
-      if (aberta) {
-        const fecha = new RegExp(`^ {0,3}\\${aberta.char}{${aberta.tamanho},}\\s*$`).test(linha);
-        if (fecha) aberta = null;
-        return embranquecer(linha);
-      }
-      const abre = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(linha);
-      if (!abre) return linha;
-      // A info string de uma cerca de crase não pode conter crase (CommonMark §4.5).
-      if (abre[1][0] === "`" && abre[2].includes("`")) return linha;
-      aberta = { char: abre[1][0], tamanho: abre[1].length };
-      return embranquecer(linha);
-    })
-    .join("\n");
-}
-
-/**
- * Code spans (CommonMark §6.1): uma sequência de N crases fecha na PRÓXIMA sequência de EXATAMENTE N.
- * Achado C3-A4c: `[teste](references/EXEMPLO.md)` escrito entre crases, como exemplo de sintaxe, era
- * lido como link e reprovado.
- */
-function semCodeSpans(texto) {
-  let saida = "";
-  let i = 0;
-  while (i < texto.length) {
-    if (texto[i] !== "`") {
-      saida += texto[i];
-      i++;
-      continue;
-    }
-    let n = 0;
-    while (texto[i + n] === "`") n++;
-    let j = i + n;
-    let fecha = -1;
-    while (j < texto.length) {
-      if (texto[j] !== "`") {
-        j++;
-        continue;
-      }
-      let m = 0;
-      while (texto[j + m] === "`") m++;
-      if (m === n) {
-        fecha = j;
-        break;
-      }
-      j += m;
-    }
-    if (fecha < 0) {
-      saida += texto.slice(i, i + n);
-      i += n;
-      continue;
-    }
-    saida += embranquecer(texto.slice(i, fecha + n));
-    i = fecha + n;
-  }
-  return saida;
-}
-
-/** Comentário HTML não renderiza — o que está dentro dele não é link. */
-const semComentariosHtml = (texto) => texto.replace(/<!--[\s\S]*?-->/g, embranquecer);
-
-// Destino com UM nível de parêntese balanceado (`references/paren(1).md` é caminho legítimo), título
-// opcional entre aspas ou parênteses. O caminho reportado é o destino INTEIRO — a v1 truncava no
-// primeiro `)` e reportava um caminho que não existia em lugar nenhum (achado C3-A4, menor).
-const LINK = /\]\(\s*((?:[^()\s]|\([^()\s]*\))+)(?:\s+(?:"[^"]*"|'[^']*'|\([^()]*\)))?\s*\)/g;
 
 for (const dir of dirsSkill) {
   const esperado = `.claude/skills/${dir}/SKILL.md`;
@@ -541,10 +557,12 @@ for (const dir of dirsSkill) {
   if (lido.erro) {
     add(
       "BLOQUEIA",
-      "C6 frontmatter",
+      "C6 recusa de medição",
       esperado,
-      `não consigo ler o frontmatter (linha ${lido.erro} fora do subconjunto YAML lido) — ` +
-        "recusa de medição, não diagnóstico",
+      `não consigo ler o frontmatter — linha ${lido.erro}` +
+        `${lido.motivo ? `: ${lido.motivo}` : " fora do subconjunto YAML declarado"}. ` +
+        "RECUSA, não diagnóstico: nenhuma outra checagem sai para este arquivo. Não medir REPROVA (`ec=1`).",
+      { linha: lido.erro },
     );
     continue;
   }
@@ -557,20 +575,6 @@ for (const dir of dirsSkill) {
   if (!nome) add("BLOQUEIA", "C6 frontmatter", esperado, "sem `name:`");
   else if (nome !== dir) add("BLOQUEIA", "C7 nome × pasta", esperado, `name:"${nome}" ≠ pasta "${dir}"`);
   if (!(fm.description ?? "")) add("BLOQUEIA", "C6 frontmatter", esperado, "sem `description:`");
-
-  // C8 — link relativo que não resolve dentro da própria skill.
-  const prosa = semComentariosHtml(semCodeSpans(semCercas(texto.replace(/\r\n?/g, "\n"))));
-  for (const m of prosa.matchAll(LINK)) {
-    const destino = m[1];
-    if (/^(https?:|mailto:|#)/.test(destino)) continue;
-    const alvo = destino.split("#")[0];
-    if (!alvo || alvo.startsWith("/")) continue;
-    const resolvido = posix.normalize(posix.join(`.claude/skills/${dir}`, alvo));
-    const existe = REF
-      ? ler(resolvido) !== null || listar(resolvido).length > 0
-      : existsSync(join(ROOT, resolvido));
-    if (!existe) add("BLOQUEIA", "C8 link quebrado", esperado, `-> ${destino}`);
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
