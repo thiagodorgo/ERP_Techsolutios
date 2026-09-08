@@ -433,6 +433,54 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    diferente para esse papel **contraria o contrato** — a única exceção é indisponibilidade do modelo, que
    vira nota no registro da junta.
 
+6-bis. **ESGOTADO O FABLE, CAI PARA O OPUS. ESGOTADO O OPUS, PARA (decisão do dono, 2026-09-07, ampliada em
+   2026-09-08 — `D-FALLBACK-MODELO-FABLE-OPUS`).** Os gates da junta e o `planejador-mestre` têm `model: fable`
+   fixado no frontmatter. São exatamente os papéis que **decidem se o trabalho de todos os outros vale**. O
+   Fable tem limite de uso, e ele acaba no meio de rodadas longas.
+
+   **A escada é de dois degraus, e o terceiro é uma parada.**
+
+   | Estado | O que fazer |
+   |---|---|
+   | Fable disponível | roda em **Fable** (o frontmatter) |
+   | Fable esgotado | roda em **Opus** — único substituto autorizado — **e DECLARA** |
+   | Opus esgotado | **PARA.** Não se desce mais um degrau |
+
+   **Nunca** Sonnet, nunca Haiku, nunca "o modelo da sessão". **Gate degradado é pior que gate ausente**: a
+   ausência seria visível; a degradação não — um parecer de porteiro, inspetor ou assento sai com a mesma cara
+   de autoridade independentemente do modelo que o produziu. Por isso o fallback é para **um** modelo nomeado,
+   e por isso ele **termina numa parada** em vez de continuar descendo.
+
+   **A parada por esgotamento do Opus é da família do §C7.5** (paradas imediatas irredutíveis): o trabalho em
+   voo é **registrado onde está** (evidência P1, votos parciais, head medido) e o dono é avisado. Não se
+   improvisa modelo, não se pula o gate, não se declara verde por falta de quem meça. Por quê: em 2026-09-08 a
+   rodada do `B-GOV-ELENCO` bateu **no limite do Fable e no do Opus na mesma sessão** — a política tinha um
+   degrau só, e a saída silenciosa teria sido justamente a que ela proíbe.
+
+   **A substituição é DECLARADA, nunca silenciosa.** Quem invoca registra, no artefato daquele papel e na ata:
+   **qual papel · qual modelo rodou · por que o Fable faltou**. Isto **estende** a cláusula do item 6, dando à
+   nota **conteúdo obrigatório** e **destino nomeado**.
+
+   **O frontmatter continua dizendo `fable`.** O fallback é do **invocador**, não do arquivo: trocar o `model:`
+   tornaria a degradação **permanente e invisível** para a próxima sessão — exatamente o que o
+   `D-PLANEJADOR-MODELO-FABLE` existe para impedir. Quem caiu para Opus **volta ao Fable quando o limite
+   renovar**.
+
+   **Espelho Codex — o mapeamento, agora nomeado (decisão do dono, 2026-09-08).** O roster da conta OpenAI é
+   **GPT-6 Astra · GPT-5.6 Sol · GPT-5.6 Terra · GPT-5.6 Luna · GPT-5.5**, em ordem decrescente de capacidade.
+
+   | Papel de contrato | Claude Code | Codex |
+   |---|---|---|
+   | Modelo fixado dos gates e do planejador | **Fable** | **GPT-6 Astra** — *equivalência declarada pelo dono* |
+   | Degrau único de fallback | **Opus** | **GPT-5.6 Sol** — *derivado da ordem do roster, não declarado nominalmente* |
+   | Abaixo disso | **PARA** | **PARA** |
+
+   A linha do Astra é **fato dito pelo dono**; a do Sol é **derivada** de ele ser o degrau imediatamente
+   abaixo no roster. A distinção fica escrita porque a segunda se corrige numa linha se estiver errada, e
+   porque um contrato de execução não pode apresentar derivação como declaração (§A6). `Terra`, `Luna` e
+   `GPT-5.5` **não são fallback de gate em hipótese alguma** — para eles vale a parada.
+
+
 7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`) — P1–P6, inline.**
    Toda junta, inspeção de terreno e porteiro seguem as seis normas abaixo. Origem medida: **14 quedas de
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
