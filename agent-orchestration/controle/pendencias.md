@@ -7496,3 +7496,56 @@ pendência aqui é só a checagem de link, que saiu sem substituto.
   bloco que fiar o auditor na CI (mesmo dono de `P-GOV-AUDITOR-FORA-DA-CI`), que é onde a decisão
   "dependência nova × verificador separado" tem de ser tomada · **bloqueia:** nada — a prevalência de link
   quebrado nos três alvos é 0.
+
+
+---
+
+## P-GOV-INSPETOR-33-SEM-NORMA (2026-09-08) — o contrato do inspetor manda bloquear por norma que não existe — ALTA
+
+Achado `R5` do `inspetor-de-terreno-da-junta` na passada do `B-GOV-ELENCO-ENXUTO`, medido por ele **antes de
+aplicar a própria regra** — que é exatamente o comportamento certo.
+
+O corpo do inspetor que **rodou** carrega um item **3.3** ordenando `BLOQUEADO` se a
+`cadeira-permanente-backend-review` não estiver convocada, invocando o **§C7.1-quater**. Medido:
+
+- `grep -nE 'C7.1-quater|cadeira-permanente'` em `CLAUDE.md`, `AGENTS.md` e `decisoes.md` → **vazio nos três**
+- `git show fe2748c8:CLAUDE.md | grep C7.1-quater` → **vazio**
+- `git ls-tree -r --name-only fe2748c8 | grep cadeira-permanente` → **não existe em `main`**
+- só existe em `chore/gov-elenco-fatia-b`, **branch não mergeada e com o desenho REPROVADO** (ciclo 1, 3×0)
+
+**A norma nunca existiu em `origin/main`.** Enquanto o item 3.3 e o contrato divergirem, **todo inspetor
+futuro tem de escolher entre desobedecer o próprio corpo e bloquear sem defeito** — e bloquear sem defeito é a
+patologia que a auditoria de 28/08 mediu em **11 de 16** bloqueantes.
+
+**Como isso chegou aqui:** os subagentes são carregados do `.claude/agents/` do **diretório da sessão** (a
+árvore principal, em `demo/investidor`), não do worktree julgado. Medido nesta passada: as três cadeiras de
+mérito são **byte-idênticas** (EOL-neutro) entre a branch e a sessão; **só o inspetor diverge**. É a lacuna
+"corpo carregado × corpo julgado" que o ciclo 2 do bloco anterior já havia nomeado.
+
+**O que fecha:** decisão do dono, em uma de duas direções — (a) decidir o assento permanente, corrigindo o
+desenho reprovado, e então o §C7.1-quater passa a existir em `CLAUDE.md`/`AGENTS.md`; ou (b) emendar o item
+3.3 do `inspetor-de-terreno-da-junta`, retirando a exigência enquanto a norma não existir.
+
+- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
+  `B-GOV-ELENCO`, 2026-09-07, e ficou na branch não-mergeada) · **dono:** decisão do dono ·
+  **bloqueia:** nada hoje — o inspetor mediu e não aplicou. Mas cada junta futura paga o custo de re-descobrir.
+
+---
+
+## P-GOV-ESGOTADO-SEM-TESTE (2026-09-08) — "modelo esgotado" é declarado, não provado — MÉDIA
+
+Achado `R6` do inspetor, sobre a escada `Fable → Opus → PARADA` que o dono instituiu hoje. Ele julgou o
+desenho **fail-closed e correto no essencial** — um degrau nomeado, fim explícito, e a justificativa certa
+(*"gate degradado é pior que gate ausente"*: a ausência é visível, a degradação não).
+
+A lacuna: o §C7.6-bis exige **declarar** *qual papel · qual modelo · por que o Fable faltou* — mas **não exige
+evidência**. Numa casa cuja regra de ouro é *"afirmação sem execução não é prova"*, "o Fable esgotou" é hoje
+uma afirmação que ninguém confere. Um invocador com pressa pode declarar esgotamento que não houve e rodar em
+Opus — ou, pior, o mesmo hábito migra para "o Opus esgotou" e a **parada** deixa de ser parada.
+
+**O que fecharia:** exigir, junto da declaração, a **evidência do erro** — `rate_limit` HTTP 429 com o
+`model sent to the API` e o `request id`, que é o que esta sessão de fato colheu nas duas quedas
+(`claude-fable-5-1` e `claude-opus-5`) e registrou na ata.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o §C7.6-bis nasce neste bloco) ·
+  **dono:** próximo bloco de governança de modelo · **bloqueia:** nada.

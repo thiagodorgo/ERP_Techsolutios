@@ -7,8 +7,16 @@ depois de `adc41a54` só `agent-orchestration/` muda. Qualquer caminho fora diss
 `git -C <wt> diff --name-only adc41a54..HEAD` é achado `dentro-do-bloco` que bloqueia.
 **Quórum:** **MAIORIA DE 3** (§C7.1-ter(b) literal: governança, sem dinheiro/segurança/permissão/perda de
 dado no produto). **Não** se herda a unanimidade do `B-GOV-ELENCO`: aquela subida foi declarada para um bloco
-que reescrevia a regra da junta; **este não reescreve**. Escalar quórum sem risco que o justifique é o que
+que reescrevia a regra da junta; **este mexe MENOS nela — mas mexe** (ver abaixo). Escalar quórum sem risco que o justifique é o que
 queima ciclos (auditoria de 28/08).
+
+> **Correção da passada de terreno (R3), porque a frase original era inexata por medição.** Este bloco
+> **toca sim** a regra da junta: `git diff --stat fe2748c8..adc41a54 -- CLAUDE.md AGENTS.md` dá **+48 linhas
+> em cada um**, e essas 48 linhas são o **§C7.6-bis** — norma que governa **em que modelo os gates de TODA
+> junta rodam** e que institui uma **PARADA**. Somem-se as **30 deleções de arquivo de agente**. O que o
+> bloco anterior fazia e este não faz é **criar uma cadeira nova e um veredito novo**. A descida de quórum
+> **não depende dessa frase** — sustenta-se no `D-QUORUM-B-GOV-ELENCO` e no §C7.1-ter(b) literal. **Olhem o
+> §C7.6-bis e as 30 deleções com atenção: é o que mais importa neste diff.**
 
 ## Bloco novo, não ciclo 3
 
@@ -39,8 +47,15 @@ de link (ciclo 2). Quatro classes, todas da mesma família, todas por parsear YA
 3. **Mantém o que é determinístico e já provou valor:** `C0` (piso), `C1`–`C3`, `C4`/`C5` **default-deny**
    (provado em 16 mutações pela cadeira `A-C2`), `C6`/`C7` (puro sistema de arquivos — foi o que achou as 5
    skills mortas), `C9` (paridade de espelho), `C10` (peso do elenco).
-4. **Carrega a faxina**, já verificada por três cadeiras no ciclo 2: 5 skills achatadas (32 renames por hash),
+4. **Carrega a faxina — A RE-VERIFICAR, e ela é a MAIOR parte do diff.** 5 skills achatadas (32 renames),
    15 especialistas aposentados com registro nominal, índice do Codex reconciliado, backfill do #380.
+   **`62 dos 113 arquivos` do diff são a faxina** (30 deleções = 15 especialistas × 2 espelhos; 32 renames
+   `R100`) — não é anexo, é o corpo do bloco. No ciclo 2 do bloco anterior ela foi coberta por `A-C1`
+   (escopo/registro/KPI) e `A-C3` (separação de poderes); a `A-C2` julgava o auditor. **Isso é insumo, não
+   fato estabelecido:** o §2.1 do inspetor proíbe herdar conclusão de ata como verdade, e foi assim que uma
+   premissa falsa contaminou um ciclo do financeiro. **Meça você.** E note o agravante que o inspetor
+   nomeou: **as mesmas 15 remoções foram metade da justificativa que SUBIU o quórum no ciclo 1**, e agora
+   chegam sob maioria — ou seja, com o menor escrutínio que já tiveram.
 5. **Fecha a diretiva de modelo do dono:** mapeamento OpenAI nomeado (Astra ≡ Fable, **declarado**; Sol como
    degrau, **derivado** — a distinção está escrita) e **a escada ganha fim: Fable → Opus → PARADA**.
 
@@ -100,6 +115,31 @@ evidência = `dentro-do-bloco`. Publique **N e forma, inclusive versão do Node 
 O `inspetor-de-terreno-da-junta` roda em **Opus**, não em Fable: **o limite de Fable da conta está esgotado**
 (medido em 08/09, `rate_limit` HTTP 429 em `claude-fable-5-1`). A substituição é declarada no parecer dele.
 **Se o Opus também esgotar, a rodada PARA** — é a regra que o dono acrescentou hoje, e não há terceiro degrau.
+
+## Divulgação obrigatória (R2 do terreno) — declare no seu voto
+
+O diff que você julga **contém** `25c0112a` (o head reprovado 3×0 **por vocês três**, no ciclo 1 do bloco
+anterior) e `7facc396` (o conserto dos achados de vocês). Provado por `git merge-base --is-ancestor`.
+O inspetor mediu e concluiu: **não há colisão que exija troca de cadeira** — os defeitos que ESTE bloco
+conserta são da `A-C2`, que está inelegível. Mas **divulgação não é substituição**: cada uma **declara no
+voto o que já julgou nesta linhagem**, como a ata do ciclo 2 fez com as dela.
+
+**Corpo carregado × corpo julgado — medido pelo orquestrador:** os corpos de `validador-mestre`,
+`guardiao-fail-closed` e `agente-ci-doutor` são **idênticos** (comparação EOL-neutra) entre esta branch e o
+`.claude/agents/` da sessão de onde vocês são carregados. **Só o `inspetor-de-terreno-da-junta` diverge** —
+e é ele mesmo quem reportou (ressalva R5): o corpo que rodou carrega um item 3.3 que manda bloquear por uma
+norma (`§C7.1-quater`) que **não existe na `main` nem nesta branch**. Virou `P-GOV-INSPETOR-33-SEM-NORMA`,
+decisão do dono. **Não cobrem o §C7.1-quater aqui** — seria reprovar sem defeito.
+
+## Perda de jurado (R4 do terreno — o P3, que faltava)
+
+Sob **maioria de 3**, uma queda somada a um 1×1 **não produz maioria**, e a piscina de elegíveis desta
+linhagem já está estreita (6 identidades gastas em dois ciclos). Vale o **P3** do §C7.7, que o modelo de
+mandato havia omitido: *voto perdido não conta; o sucessor tem identidade nova*; e a evidência que o caído
+**gravou em arquivo** (P1) é **roteiro de re-execução barata** — o sucessor re-roda cada comando registrado
+e compara, depois mede a cauda. **Conclusão sem comando registrado não é insumo.**
+**Suplentes nomeados de antemão:** C1 → `inspetor-de-rotas` · C2 → `agente-secops` ·
+C3 → `agente-dba-guardiao`. A junta **não fecha com menos de 3 votos de mérito**.
 
 ## Protocolo (§C7.7)
 
