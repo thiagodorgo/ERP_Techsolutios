@@ -107,7 +107,7 @@ o corpo que **roda** pode não ser o corpo que está **sob julgamento**.
 
 Medido pelo inspetor nesta passada e registrado no parecer dele: os corpos das três cadeiras são **idênticos**
 nos dois lados, comparados de forma **EOL-neutra** (`git show <head>:<caminho>` contra o arquivo carregado,
-ambos sem `` antes do hash). **Nunca compare com `md5sum` cru**: a árvore está sob `core.autocrlf=true` e
+ambos com o CR removido antes do hash). **Nunca compare com `md5sum` cru**: a árvore está sob `core.autocrlf=true` e
 chega ao disco com CRLF enquanto o blob tem LF — o hash cru **fabrica divergência** (§C7.1-ter(c)).
 
 Se você suspeitar que o seu próprio corpo diverge do head julgado, **isso é anomalia de terreno**: reporte,
