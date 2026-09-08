@@ -7549,3 +7549,62 @@ Opus — ou, pior, o mesmo hábito migra para "o Opus esgotou" e a **parada** de
 
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o §C7.6-bis nasce neste bloco) ·
   **dono:** próximo bloco de governança de modelo · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-RECUSA-CANCELA-ACUSACAO (2026-09-08) — a chave excluída da recusa cancela acusação verdadeira — MÉDIA
+
+Achado `C2E-01` do `guardiao-fail-closed` na junta do `B-GOV-ELENCO-ENXUTO`, medido em 40 mutações. A recusa
+nomeada suprime as demais checagens do arquivo recusado — desenho correto, porque a recusa **já é vermelha**.
+Mas há uma construção (1 de 16 testadas) em que a supressão **cancela uma acusação verdadeira sem que a
+recusa a substitua**, e o `ec` volta a 0. É **fail-OPEN de exit code** — a única direção de falha que este
+projeto não tolera num guard.
+
+Prevalência **0** no head e fora do caminho de autorização de escrita, por isso não bloqueou.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar `scripts/audit-agents-skills.mjs` · **bloqueia:** nada hoje.
+
+---
+
+## P-GOV-DEFAULT-DENY-POR-NOME-BASE (2026-09-08) — a allowlist de escrita é chaveada pelo ARQUIVO, não pelo papel — MÉDIA
+
+Achado `C3-E1` do `agente-ci-doutor`. O default-deny do `C4` decide autorização de escrita pelo **nome-base do
+arquivo** (`<nome>.md`), não pela identidade do papel. Dois arquivos com o mesmo nome-base em diretórios
+diferentes — ou um arquivo renomeado para colidir com um nome da allowlist — herdam a autorização.
+**Fail-OPEN por colisão de nome**, na mesma família do `C3-A1` do bloco anterior (que era fail-OPEN por
+cegueira de prefixo): a chave da decisão continua sendo o **nome**, e nome é fraco como identidade.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar o auditor · **bloqueia:** nada hoje (prevalência 0). **Nota:** é a terceira vez que uma decisão de
+  segurança ancorada em nome de arquivo produz achado. Vale perguntar, no bloco dono, se a âncora deve mudar.
+
+---
+
+## P-GOV-MODELO-FIXADO-SEM-MECANISMO (2026-09-08) — `MODELO_FIXADO` é lista de obrigação sem mecanismo — MÉDIA
+
+Achado `C2E-02`. A tabela `MODELO_FIXADO` do auditor lista os papéis cujo modelo o contrato fixa, e confere
+os que estão nela. **Gate novo nasce fora da lista, logo nasce NÃO CONFERIDO** — a obrigação existe no
+contrato e o mecanismo não a alcança até alguém lembrar de acrescentar a linha. É a mesma forma do
+`P-GOV-DEFAULT-DENY-POR-NOME-BASE`: enumeração que precisa de manutenção manual para não ficar cega.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar o auditor · **bloqueia:** nada.
+
+---
+
+## P-GOV-AUDITOR-ARESTAS-MENORES (2026-09-08) — quatro arestas BAIXA do auditor enxuto — BAIXA
+
+Agrupadas por serem da mesma natureza (texto que promete mais do que o código faz, ou número publicado a
+partir de leitura recusada), todas com prevalência 0 e nenhuma bloqueante:
+
+- `C2E-04` — o texto do `C0` diz *"nada foi auditado"* numa execução com 11 skills auditadas.
+- `C3-E2` — o `C10` publica peso derivado de leitura que o **próprio auditor recusou**.
+- `C3-E3` — a recusa **não é agregada**: uma recusa geral zera outros números publicados sem nota, e o
+  auditor não distingue *"um arquivo estranho"* de *"o parser quebrou e recusou tudo"*.
+- `C3-E4` — extensão `.MD` em maiúscula é invisível ao auditor (impacto **não provado** pela cadeira).
+- `C3-E5` — o cabeçalho descreve a supressão pela recusa **mais larga** do que o código faz.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** próximo bloco que
+  tocar o auditor · **bloqueia:** nada.

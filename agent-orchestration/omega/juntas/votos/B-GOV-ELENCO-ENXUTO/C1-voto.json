@@ -1,0 +1,106 @@
+{
+  "head_medido": "9c0e6ac9df237b5cfe1a6fe1d16d4128861d7d10",
+  "head_de_codigo": "adc41a54a885ba7243692890156a5da0b4d23786",
+  "base": "fe2748c84cc187a54ebe3fa651fcdc347c5b3494",
+  "cadeira": "C1",
+  "papel": "validador-mestre",
+  "mandato": "diff x plano x escopo x faxina x KPI",
+  "quorum": "maioria de 3",
+  "veredito": "REPROVADO",
+  "participacao_previa": "Votei no CICLO 1 do B-GOV-ELENCO e REPROVEI aquele head, com o achado C1-01 (blocks_completed com value=162 e display=161 na mesma carga). O diff que julgo agora CONTEM aquele head (25c0112a) e o conserto dele (7facc396) — provado por mim com git merge-base --is-ancestor, nao herdado do briefing. Declaro o vies nos DOIS sentidos: tenho incentivo a ENCERRAR uma linhagem que ja consumiu dois ciclos e um dossie, e incentivo a REENCONTRAR o meu proprio achado. Por isso remedi o C1-01 do zero contra o arquivo (esta FECHADO: value 163 == display 163), e o achado que levanto agora nasceu de executar o painel, nao de reler a minha ata.",
+  "data": "2026-09-08",
+  "resumo": "Escopo, particao e faxina passam por medicao independente e integral - 32/32 renames provados por blob, 15/15 revivals ancestrais da main com corpo identico ao apagado, 22/22 skills carregaveis, indice do Codex 23=23, tres guards ec=0. O paragrafo C7.6-bis esta espelhado 48=48 e distingue por escrito declarado de derivado. Reprovo por UM achado ALTA: executei o painel e ele desenha 2 blocos entregues na semana de 07/09, quando so este PR entra - o degrau 161->162 e o B-GOV-ELENCO, que o proprio bloco declara nao mergeado, e a ressalva vive no campo note, que o codigo de render nunca le. Mais um MEDIA: a norma que institui uma PARADA de rodada entra na main sem registro em decisoes.md.",
+  "achados": [
+    {
+      "id": "C1-E-01",
+      "gravidade": "ALTA",
+      "escopo": "dentro-do-bloco",
+      "titulo": "O acumulado blocks_completed publica no painel uma entrega que nao aconteceu, e o desmentido mora num campo que a tela nunca le",
+      "arquivos": [
+        "Kpis/kpis-history.json (entrada 162, B-GOV-ELENCO)",
+        "Kpis/kpis-latest.json (metrics.blocks_completed)",
+        "Kpis/app.js (linha 125, contrato da serie; linha 1037, rotulo do card)"
+      ],
+      "evidencia": "Executei o proprio painel num sandbox node:vm (mesmo arranjo de tests/kpi-dashboard-charts.test.ts), em copia isolada fora do repo. buildChartSeries devolve a serie ...161 (B-O6R-07b) -> 162 (B-GOV-ELENCO) -> 163 (B-GOV-ELENCO-ENXUTO) e weeks[-1] = {start:2026-09-07, count:2, medido:true}. Renderizado, o SVG sai com <title>Semana de 07/09 - 2 blocos entregues</title>, <title>08/09 - 162 blocos</title> e <title>08/09 - 163 blocos</title>, com charts-section hidden=false. So UMA entrega existe nessa semana: este PR. O ponto 162 e o B-GOV-ELENCO, que a nota do proprio bloco descreve como 'NAO MERGEOU - reprovado duas vezes... sem PR aberto', com pr/merge_commit/approved_head em null 'e assim permanece'. O app.js declara na linha 125 o que a serie significa: 'O acumulado blocks_completed e medicao real. A diferenca entre dois pontos medidos e entrega real.' A ressalva NAO chega a tela: varredura de .note no codigo de render (awk NR!=1623) devolve ZERO referencias - o card renderiza display (linhas 968/969/1049) sob o rotulo 'Blocos de trabalho entregues' (linha 1037).",
+      "motivo": "As duas afirmacoes do bloco nao podem ser verdadeiras ao mesmo tempo. (i) Se o 162 ENTREGOU - o que justificaria o degrau ate 163 - entao a nota 'NAO MERGEOU ... trabalho preservado nas branches chore/gov-auditoria-elenco e chore/gov-elenco-fatia-b, sem PR aberto' fica FALSA no instante do merge, e o pr/merge_commit/approved_head em null 'e assim permanece' orfana para sempre um bloco cujo conteudo esta na main. (ii) Se o 162 NAO entregou, o degrau 161->162 fabrica uma entrega e o painel desenha 2 blocos onde 1 entrou. Medi que o conteudo atribuido ao 162 (a faxina: 5 skills achatadas, 15 especialistas aposentados, registro nominal, indice do Codex, backfill do #380) NAO esta em origin/main e entra por ESTE PR - git cat-file -e fe2748c8:.claude/skills/blockchain-developer/blockchain-developer/SKILL.md ainda resolve (main tem a aninhada) e fe2748c8:agent-orchestration/controle/aposentadoria-especialistas.md nao existe. A convencao da casa e o contrario e foi medida em QUATRO precedentes, um deles de dois dias atras na MESMA serie: B-O6R-07a 158 -> B-O6R-07a-ciclo2 158; B-O6R-01 151 -> ciclo2 151; CHK-DISPATCH-CREATE-PR-A/-FIX-JUNTA/-REVERIF 120/120/120; OMEGA-VID-PR-05 122/122. Ciclo que nao entrega nao move o acumulado; a entrada 162 moveu. Isto viola o rail do paragrafo 8.7 ('nunca merge com KPI divergente da execucao real') e a D-KPI-INDEX-PAINEL / D-007, que fazem do painel o ARTEFATO PRINCIPAL e proibem que ele invente serie. Consequencia colateral medida: grep -c -iE 'aposentad|achatad' em Kpis/kpis-latest.json = 0 - a entrada 163, que e o registro DESTE PR, descreve so o auditor e omite 62 dos 113 arquivos.",
+      "por_que_dentro_do_bloco": "A entrada 162 foi autorada em 7facc396 (B-GOV-ELENCO ciclo 2), commit que NAO esta em origin/main (git merge-base --is-ancestor 7facc396 origin/main -> falso) e que so alcanca a main por ESTE PR; alem disso o commit de codigo deste bloco (3b4aa97c) editou Kpis/kpis-latest.json e escreveu a nota que decide manter o 162 'e assim permanece'. Os arquivos de KPI estao no escopo PERMITIDO do bloco. Logo nao cabe pre-existente pelo paragrafo C7.1-ter(a): a classe nao antecede o bloco na main nem esta fora do escopo dele.",
+      "nao_proponho_correcao": "Qual das duas leituras adotar (reconciliar o acumulado ou assumir a entrega e backfillar o 162) e materia de quem planeja a correcao, paragrafo C7.4-bis. Reporto o defeito, a evidencia executada e o motivo."
+    },
+    {
+      "id": "C1-E-02",
+      "gravidade": "MEDIA",
+      "escopo": "dentro-do-bloco",
+      "titulo": "O paragrafo C7.6-bis institui uma PARADA de rodada citando uma decisao que nao existe em decisoes.md",
+      "arquivos": [
+        "CLAUDE.md (+48 linhas, paragrafo C7.6-bis)",
+        "AGENTS.md (+48 linhas, idem)",
+        "agent-orchestration/controle/decisoes.md (ausencia)"
+      ],
+      "evidencia": "grep -c D-FALLBACK-MODELO-FABLE-OPUS em agent-orchestration/controle/decisoes.md -> 0, tanto no head quanto em git show fe2748c8:. O mesmo identificador aparece em 21 arquivos .md da arvore: CLAUDE.md, AGENTS.md, os corpos de inspetor-de-terreno-da-junta, planejador-mestre e porteiro-pos-merge nos DOIS espelhos, briefings, atas e pareceres. Nao foi falta de oportunidade: o MESMO diff acrescenta tres cabecalhos ao registro - D-APOSENTADORIA-ELENCO-EFEMERO, D-QUORUM-B-GOV-ELENCO e D-AUDITOR-ENXUTO, este ultimo escrito pelo proprio commit de codigo do bloco (3b4aa97c, git log -S). O irmao direto da norma, D-PLANEJADOR-MODELO-FABLE (o item 6 que o 6-bis estende), esta em decisoes.md com 2 ocorrencias. Tambem nao ha entrada em pendencias.md para P-GOV-MODELO-CODEX-SEM-NOME, que este bloco fecha ao nomear Astra/Sol (3 arquivos o citam; nenhum e pendencias.md).",
+      "motivo": "Paragrafos A5, A6 e C6: decisao materialmente relevante vai para a estrutura operacional, nao so para o corpo do contrato. A norma governa em que modelo TODO gate de junta roda e institui uma PARADA de rodada - e a sua unica autoridade escrita e o proprio texto que a cita, o que e circular. O mecanismo que o inspetor usou nesta mesma junta para validar a descida de quorum (ir a decisoes.md e achar D-QUORUM-B-GOV-ELENCO, datado um dia antes) nao funciona para esta. A casa ja nomeou a patologia uma vez, P-GOV-D-DURABILIDADE-FORA-DA-MAIN (2026-09-05, MEDIA, 'a decisao so existe numa branch que a main nao contem'); aqui e um grau adiante, porque nao esta em decisoes.md em nenhuma versao deste head.",
+      "por_que_dentro_do_bloco": "O identificador nasce em c0cbfe10, que NAO esta em origin/main e e ancestral de adc41a54 - entra na main por este PR. E o commit de codigo do bloco (adc41a54) e quem escreve as 96 linhas de contrato que o citam e o declara 'ampliada em 2026-09-08', ao mesmo tempo em que edita decisoes.md para outras tres decisoes.",
+      "condicao_se_a_junta_aprovar": "Pelo meu contrato, achado MEDIA so acompanha aprovacao COM registro gravado em agent-orchestration/controle/pendencias.md. Conferi: nao esta la. Enquanto nao estiver, nem como MEDIA ele pode ser dado por tratado."
+    }
+  ],
+  "verificacoes_verdes": [
+    "ITEM 1 - particao: git diff --name-only adc41a54..HEAD | grep -vc '^agent-orchestration/' = 0. origin/main E fe2748c8. fe2748c8 ancestral de adc41a54.",
+    "ITEM 1 - escopo proibido: 0 de 113 arquivos em src/|tests/|prisma/|frontend/|mobile/|.github/|.gitignore|scripts/sync-agent-; nenhum lockfile; unico scripts/ tocado e o proprio auditor.",
+    "ITEM 1 - assento permanente AUSENTE: .claude/agents/cadeira-permanente*, .claude/skills/backend-review* e TEMPLATE-J-ata nao existem em ls-tree de adc41a54; C7.1-quater ausente dos dois contratos. NAO cobrei o assento (seria reprovar por construcao).",
+    "ITEM 1 - arvore limpa antes e depois; nenhum arquivo rastreado tocado por mim.",
+    "ITEM 2(a) - 32/32 renames R100 confirmados por HASH DE BLOB nos dois lados, com o caminho antigo removido do head. Zero renames nao-R100.",
+    "ITEM 2(b) - 30 delecoes = 15 nomes x 2 espelhos, todas em especialistas/, nenhuma fora. 15/15 commits de revival existem, sao ANCESTRAIS de origin/main, contem o corpo, e o blob e IDENTICO ao que foi apagado. 4/4 atas citadas existem no head E em origin/main. PRs #367/#371/#380 conferidos no log.",
+    "ITEM 2(b) - nenhuma cadeira de bloco em voo removida: varredura dos 15 nomes fora de ata/plano/registro so acha mencoes historicas; a unica no README do Codex e um exemplo de falha do guard, nao entrada de indice. especialistas/ = 0 nos dois espelhos.",
+    "ITEM 2(c) - 22/22 (11 skills x 2 espelhos): SKILL.md na raiz, name: igual ao nome da pasta, nenhuma casca aninhada residual.",
+    "ITEM 2(d) - indice do Codex 23 declarados = 23 listados = 23 no diretorio, conjuntos identicos; e .claude/agents x .agents/agents com conjunto identico. Nota envelhecida PRESERVADA com adendo datado (paragrafo A2), nao apagada.",
+    "ITEM 2(e) - sync-agent-agents --check ec=0 (23 agentes), sync-agent-skills --check ec=0 (11 skills, 36 arquivos), audit-agents-skills ec=0 (0 BLOQUEIA, 1 AVISO C4-bis do Bash, pendencia do dono).",
+    "ITEM 3(a) - blocks_completed value 163 == display 163 (o meu C1-01 do ciclo 1 esta FECHADO); FROZEN deep-equal a kpis-latest.json; backfill do B-O6R-07b intacto (pr 380, merge fe2748c8, approved_head a2988b5).",
+    "ITEM 3(b) - paragrafo C7.6-bis: 48 = 48 linhas, texto IDENTICO nos dois contratos, mesmo ponto de insercao, 96 insertions e zero delecao; escada fail-closed com PARADA explicita; mapeamento OpenAI distingue POR ESCRITO o declarado (Astra) do derivado (Sol), que e justamente o que o paragrafo A6 exige. SEM ACHADO."
+  ],
+  "nao_cobrado_por_construcao": [
+    "o auditor na CI (P-GOV-AUDITOR-FORA-DA-CI)",
+    "a volta da checagem de link (decisao do dono, D-AUDITOR-ENXUTO; P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK registra o que a reabriria)",
+    "o assento permanente e o paragrafo C7.1-quater (medi que nao existem neste bloco nem nos contratos)",
+    "blockchain-developer (P-GOV-SKILLS-RELEVANCIA, decisao do dono)"
+  ],
+  "limites_declarados": [
+    "Nao rodei tests/kpi-dashboard-charts.test.ts: este worktree nao tem node_modules e o briefing proibe npm ci. Medi a mesma propriedade de forma mais direta - executei o Kpis/app.js de verdade no mesmo sandbox node:vm que o guard usa, com fetch servindo os JSON, e li o SVG renderizado. Nao ha 'nao consigo medir' neste voto.",
+    "Nao comparei arvores com git archive + tar (autocrlf=true fabrica CR); toda comparacao de conteudo foi por hash de BLOB do Git ou por git show."
+  ],
+  "anomalia_de_terreno_reportada": "O scratchpad da sessao contem artefatos de outra cadeira (bateria*.sh, bateria*.log, c2-copia, apenso1.md) e o worktree tem C2-evidencia.md untracked. Nao toquei em nada disso - residuo alheio se reporta, nao se varre. Os worktrees b06 e gov-descuido sao de outros blocos vivos; nao os toquei, nem a arvore principal em demo/investidor.",
+  "forma": {
+    "node": "v20.19.5",
+    "autocrlf": "true",
+    "shell": "Git Bash",
+    "worktree": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
+    "branch": "chore/gov-elenco-enxuto",
+    "mutacao": "somente em copia isolada FORA do repositorio (scratchpad da sessao), removida ao final; worktree somente-leitura, `git diff --stat` vazio no fim",
+    "N_do_diff": "113 arquivos (36 A, 30 D, 15 M, 32 R) em fe2748c8..adc41a54; 4 arquivos, todos em agent-orchestration/, em adc41a54..HEAD"
+  },
+  "comandos_executados": [
+    "git -C <wt> rev-parse HEAD / origin/main / adc41a54 / fe2748c8",
+    "git -C <wt> merge-base --is-ancestor {fe2748c8,25c0112a,7facc396,d2d25f6b,c0cbfe10} {adc41a54,origin/main}",
+    "git -C <wt> diff --name-only adc41a54..HEAD | grep -vc '^agent-orchestration/'",
+    "git -C <wt> diff --name-status -M fe2748c8..adc41a54 | cut -c1 | sort | uniq -c",
+    "git -C <wt> diff --name-only -M fe2748c8..adc41a54 | grep -cE '^(src/|tests/|prisma/|frontend/|mobile/|.github/|.gitignore$|scripts/sync-agent-)'",
+    "git -C <wt> ls-tree -r --name-only adc41a54 | grep -E 'cadeira-permanente|backend-review|TEMPLATE-J-ata'",
+    "git -C <wt> show adc41a54:CLAUDE.md | grep -nE 'C7.1-quater|cadeira-permanente'",
+    "laco sobre os 32 renames: git rev-parse fe2748c8:<old> vs adc41a54:<new> + git cat-file -e adc41a54:<old>",
+    "git diff --name-status -M | awk D | sed | sort | uniq -c   (pareamento 15x2)",
+    "diff <(git show fe2748c8:.claude/.../critico-c5-adversarial.md) <(git show fe2748c8:.agents/.../critico-c5-adversarial.md)",
+    "laco sobre as 15 cadeiras: git cat-file -e <commit>^{commit}; git merge-base --is-ancestor <commit> origin/main; git rev-parse <commit>:<caminho> vs fe2748c8:<caminho>",
+    "git ls-tree -r --name-only {adc41a54,fe2748c8} | grep -F <ata>   (4 atas)",
+    "git log --oneline fe2748c8 --grep='#371' e '#380'; git log --oneline -1 e6a64619",
+    "grep -rlnE '<os 15 nomes>' --include='*.md' --include='*.mjs' --include='*.json' .",
+    "laco sobre .claude/skills/*/ e .agents/skills/*/: teste de SKILL.md na raiz, name: == pasta, e pasta aninhada residual",
+    "grep -oE '^| *`[a-z0-9./-]+`' .agents/agents/README.md | sort -u | wc -l  vs  ls .agents/agents/*.md",
+    "node scripts/sync-agent-agents.mjs --check; node scripts/sync-agent-skills.mjs --check; node scripts/audit-agents-skills.mjs",
+    "node: extracao do literal var FROZEN da linha 1623 de Kpis/app.js, JSON.parse e deep-equal contra Kpis/kpis-latest.json",
+    "node: leitura de Kpis/kpis-history.json - 157 entradas, entradas sem pr, monotonicidade do acumulado, backfill do B-O6R-07b",
+    "node:vm em copia isolada: buildChartSeries(history) - serie blocks e weeks; e hidratacao completa com fetch stub, lendo innerHTML de chart-velocity e chart-blocks",
+    "awk 'NR!=1623 && /[.]note/' e /display/ e /blocks_completed/ sobre Kpis/app.js",
+    "git diff --stat fe2748c8..adc41a54 -- CLAUDE.md AGENTS.md; diff das 48 linhas acrescentadas de cada",
+    "grep -c D-FALLBACK-MODELO-FABLE-OPUS em decisoes.md (head e fe2748c8); grep -rln do mesmo id na arvore",
+    "git diff fe2748c8..adc41a54 -- decisoes.md | grep '^+## '; git log -S D-AUDITOR-ENXUTO",
+    "git status --porcelain --untracked-files=all e git diff --stat no worktree, antes e depois"
+  ]
+}
