@@ -6,7 +6,7 @@
   "release": {
     "block": "B-GOV-ELENCO-ENXUTO (governanca): o auditor de elenco e skills perde a checagem de link — a superficie que gerou quatro classes de falso-positivo em duas juntas — e ganha RECUSA NOMEADA na fronteira do subconjunto YAML que ele sabe ler, com arquivo, linha e motivo. Nao medir passa a ser vermelho, nunca verde. ZERO dependencia nova, ZERO migration, ZERO arquivo de src/tests/prisma/frontend/mobile tocado.",
     "title": "O auditor para de adivinhar na fronteira — e diz o que nao sabe medir",
-    "pr": null,
+    "pr": 381,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
