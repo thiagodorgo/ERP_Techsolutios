@@ -99,6 +99,20 @@ executada e motivo.
 > §C7.1-quater — ele nasce na fatia B. Julgar a A sob uma regra que ainda está em julgamento seria
 > circularidade sem ganho. Na fatia B ele homologa, com nota de conflito.
 
+## Como as identidades são carregadas (R2 do inspetor — lacuna do ciclo 1)
+
+As três cadeiras são **subagentes nomeados**, carregados pelo runtime a partir do `.claude/agents/` do
+**diretório da sessão** — que é a árvore principal (`demo/investidor`), **não** este worktree. Isso importa:
+o corpo que **roda** pode não ser o corpo que está **sob julgamento**.
+
+Medido pelo inspetor nesta passada e registrado no parecer dele: os corpos das três cadeiras são **idênticos**
+nos dois lados, comparados de forma **EOL-neutra** (`git show <head>:<caminho>` contra o arquivo carregado,
+ambos sem `` antes do hash). **Nunca compare com `md5sum` cru**: a árvore está sob `core.autocrlf=true` e
+chega ao disco com CRLF enquanto o blob tem LF — o hash cru **fabrica divergência** (§C7.1-ter(c)).
+
+Se você suspeitar que o seu próprio corpo diverge do head julgado, **isso é anomalia de terreno**: reporte,
+não contorne.
+
 ## Perda de jurado
 
 Unanimidade de 3: voto perdido não é aprovação nem reprovação. Cadeira que cair por infra é **re-disparada uma
