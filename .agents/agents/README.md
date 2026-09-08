@@ -3,7 +3,7 @@
 > **D-INTEROP-CLAUDE-CODEX (2026-07-28).** O nível alto das rodadas deste repositório vem da **junta
 > de agentes** (§C7 do `AGENTS.md`/`CLAUDE.md`): planejador → dev → **avaliador + secops + crítico +
 > dba votando**, com ciclos de reprovação adversariais. No Claude Code isso são 23 agentes isolados em
-> `.claude/agents/*.md`. Aqui estão os **mesmos 24 papéis** em formato portátil para o Codex —
+> `.claude/agents/*.md`. Aqui estão os **mesmos 23 papéis** em formato portátil para o Codex —
 > **corpo verbatim** (as instruções e os poderes de VETO não sofrem drift), frontmatter portátil
 > (`name` + `description` + `model`, quando o papel o fixa), com um preâmbulo de orientação Codex no topo
 > de cada arquivo. O `model:` é **preservado por contrato** pelo sync (`D-PLANEJADOR-MODELO-FABLE`): só o
@@ -72,7 +72,7 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 > **Regra da dúvida (§C7.3):** qualquer incerteza → adote `agente-pesquisador-web` (≥3 fontes) e registre
 > a PD em `docs/omega-pd.md` **antes** de decidir. Dúvida sem pesquisa = veto.
 
-## Os 24 papéis por função
+## Os 23 papéis por função
 
 ### Planejar / estratégia
 | Papel | Função |
@@ -86,11 +86,6 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 |---|---|
 | `dev-mapas` | Implementação de mapa/geo (React/backend/Flutter). |
 | `frontend-pixel-master` | Frontend pixel-perfect a partir de referência visual. |
-
-### Assento permanente (§C7.1-quater — a única cadeira NÃO-descartável)
-| Papel | Poder | Função |
-|---|---|---|
-| `cadeira-permanente-backend-review` | **HOMOLOGA / ANULA o veredito** | Entra em **TODA** junta, **depois** dos votos de mérito e **antes** do merge. Não julga a entrega: julga o **ato de julgar** — se a aprovação foi **ganha** (execução, N, forma, escopo com evidência) e se o veto foi **legítimo** (dentro-do-bloco, com evidência, dentro do escopo que o plano escreveu). Anulação nunca vira veredito de mérito: devolve a decisão a quem tem competência. Emular em **passe independente**, nunca acumulado com cadeira de mérito. Método: skill `backend-review-ts-prisma`. **Ata sem o parecer dele = merge inválido.** |
 
 ### Junta / VETO (revisão)
 | Papel | Poder | Função |
@@ -129,11 +124,12 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 ## Especialistas do protocolo de reprovação (§C7.4) — subpasta `especialistas/`
 
 Criados pela `agente-fabrica` nos ciclos 1–2 de uma reprovação, **sob medida para o defeito que reprovou**.
-**Entram na junta seguinte e votam**, e permanecem disponíveis pelo resto da rodada. Todos nascem **sem
+**Entram na junta seguinte e votam**, e permanecem **enquanto o bloco está em voo**. Todos nascem **sem
 ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do §C7.4-bis: quem acha não conserta.
 
-| Papel | Poder | Nasceu em | Função |
-|---|---|---|---|
+Elenco efêmero neste head: **0** — estado correto: cadeira efêmera só existe **enquanto vota**. Quem saiu,
+de qual bloco e em que commit está em `agent-orchestration/controle/aposentadoria-especialistas.md`. Quando
+houver cadeiras vivas, esta seção volta a listá-las numa tabela.
 
 > **Divergência RESOLVIDA (§A2) — corrigida em 2026-09-05, B-O6R-02 ciclo 5.** O `--check` **cobre**
 > `especialistas/`. **Não confira à mão; rode o guard.** Medido neste head:
@@ -142,6 +138,19 @@ ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do
 > O script é **recursivo de propósito** (`scripts/sync-agent-agents.mjs`, `listMd()`), com o motivo no
 > próprio comentário: *"o listing raso já deixou `especialistas/` fora do espelho E do `--check` dois
 > ciclos seguidos"*.
+>
+> **Adendo (`B-GOV-ELENCO` ciclo 2, 2026-09-07).** Os números do parágrafo acima — **34 agentes**, e
+> **11 contra 11** em `especialistas/` — são do head de **2026-09-05**; não são deste head. Medido **agora**,
+> com os mesmos comandos: `node scripts/sync-agent-agents.mjs --check` → `OK — 23 agentes, espelho
+> consistente` (`ec=0`), e a contagem de `especialistas/` nas duas árvores é `0 contra 0`
+> (`.claude/agents/especialistas/*.md` = **0**, `.agents/agents/especialistas/*.md` = **0**) —
+> as 15 cadeiras efêmeras saíram por
+> `D-APOSENTADORIA-ELENCO-EFEMERO`, com o registro nominal em
+> `agent-orchestration/controle/aposentadoria-especialistas.md`. **O que envelheceu foi a medição, não o
+> mecanismo:** o `--check` continua cobrindo `especialistas/`, e é por isso que o texto acima fica de pé.
+> O texto anterior é preservado (§A2 — acrescentar, nunca apagar). Isto fecha
+> `P-GOV-NOTA-KPI-CONGELADA`, **com uma correção escrita**: o texto daquela pendência diz `Kpis/*`, e a
+> nota congelada vive **neste README** — o painel de KPI nunca teve nada a ver com ela.
 >
 > **Por que isto era perigoso, e não apenas desatualizado:** o texto abaixo mandava **desligar um guard
 > que funciona** ("conferir à mão antes da junta") — e conferência manual antes da junta é exatamente o

@@ -140,3 +140,72 @@ para julgar exatamente esse ato seria contraditório e geraria churn imediato. N
 | C3 | `agente-ci-doutor` | o auditor mede o que diz medir? falso-positivo e falso-negativo |
 | — | `inspetor-de-terreno-da-junta` | libera ou bloqueia o START (§C7.1-bis) |
 | **P** | `cadeira-permanente-backend-review` | **homologa o voto** (§C7.1-quater) — primeira aplicação real |
+
+---
+
+## Apenso 1 (ciclo 2, 2026-09-08) — errata do que a junta derrubou
+
+> **As 142 linhas acima são as JULGADAS e ficam byte-idênticas a `25c0112a`** (§5-bis do plano do ciclo 2:
+> o plano julgado não se reescreve; só se apensa). Este apenso é acréscimo ao fim, e nada mais.
+> Escrito pelo dev do ciclo 2 (`dev-gov-elenco-c2`) executando o §4.4 do
+> `B-GOV-ELENCO-ciclo2-plano.md`. Registro da reprovação: `omega/reprovacoes/R-B-GOV-ELENCO-ciclo1.md`.
+
+### E1 · §4.1 — "5 de 12 skills" era "5 de 11" (achado `C1-02`, BAIXA)
+
+O §4.1 publica **5 de 12 skills** com o `SKILL.md` um nível fundo, atribuindo a medição a
+`origin/main@fe2748c8`. O denominador é do **head**, não da base.
+
+- `git ls-tree -r --name-only fe2748c8 -- .claude/skills`, contados os diretórios de 1º nível: **11**.
+- O próprio auditor, no ref declarado, imprime `[audit] alvo: fe2748c8 · 38 agentes · 11 skills`.
+- A 12ª skill (`backend-review-ts-prisma`) é **criada por este bloco** — e, depois do fatiamento do ciclo 2,
+  nasce na **fatia B**.
+
+**Leia-se, no §4.1: "5 de 11".** O conjunto dos 5 defeitos e os nomes estão corretos; o que não fechava era a
+fração publicada. Corrigido também no cabeçalho de `scripts/audit-agents-skills.mjs` (l.10-12) e no history
+do KPI.
+
+### E2 · §4.2 — "6,6 KB" não se reproduz (achado `C1-03`, BAIXA)
+
+O §4.2 publica que os 15 especialistas pesavam **3× o peso dos 24 papéis permanentes juntos (6,6 KB)**.
+Replicando o método **exato** do script (frontmatter linha a linha, aspas removidas, `String.length`):
+
+| Alvo | Papéis permanentes (raiz de `.claude/agents/`) | chars | KB |
+|---|---|---|---|
+| `fe2748c8` (base) | **23** | 5.563 | **5,4** |
+| `25c0112a` (head do ciclo 1) | 24 | 6.130 | 6,0 |
+| head da **fatia A** do ciclo 2 | **23** | 5.563 | **5,4** |
+
+Nenhuma das medições dá 6,6 KB, e **na base são 23 papéis, não 24**. O peso dos efêmeros é **20.271 chars
+= 19,8 KB** (o número que o C10 imprime).
+
+**Leia-se, no §4.2: "3,6× o peso dos 23 papéis permanentes juntos (5,4 KB)"** — razão `20.271 / 5.563 =
+3,64`. A afirmação qualitativa do §4.2 (o elenco efêmero pesava várias vezes o permanente) **sobrevive e até
+folga**; o que não se reproduzia era o número.
+
+### E3 · §4.4 — "§C7.4-bis respeitado por construção" está RETIRADA (achado `C3-A2`, ALTA)
+
+O §4.4 registrava, **como fato medido**, que o §C7.4-bis estava respeitado "**por construção**" — e a
+medição que produziu a frase veio de um instrumento cego a duas classes inteiras (achados `C3-A1` e
+`C3-A2`): a checagem C4 reconhecia papel por **regex de prefixo de nome** (via 11 dos 24; era cega a
+`agente-ci-doutor`, `agente-dba-guardiao`, `agente-secops` e mais 10) e media escrita por uma **lista fechada
+de três nomes** (`Write|Edit|NotebookEdit`), de modo que `MultiEdit` passava limpo.
+
+**A frase está retirada.** O que a substitui, e que é o que o ciclo 2 pode sustentar por execução:
+
+> **Por construção** para toda ferramenta que não seja somente-leitura — `Write`, `Edit`, `MultiEdit`,
+> `NotebookEdit` e **qualquer nome desconhecido** — porque a checagem C4 passou a ser **default-deny**:
+> quem pode escrever é uma allowlist de 4 nomes, e todo o resto é não-escritor.
+> **Por convenção**, não por construção, para **`Bash`** — que escreve por redirecionamento de shell e está
+> em **N = 17** papéis fora da allowlist. Tirá-lo quebraria o §C7.7 P1/P2 (o jurado grava a própria
+> evidência e o próprio voto). O auditor publica esse N com os nomes, num AVISO agregado que **não derruba o
+> exit code**, e o dono da decisão é `P-GOV-BASH-EM-QUEM-JULGA`.
+
+A diferença que importa: onde antes havia uma afirmação de cobertura total, agora há **um número, uma lista
+de nomes e uma pendência com dono**.
+
+### E4 · O que este apenso NÃO corrige
+
+O restante do plano do ciclo 1 fica como está — inclusive as partes que a junta aprovou (A1–A10, os 32
+renames, as 15 aposentadorias) e as partes sobre o **assento permanente**, que **não** foram implementadas
+na fatia A e vivem no `B-GOV-ELENCO-ciclo2-plano.md` §6, com PR e junta próprios. Este apenso corrige
+**afirmações**, não decisões.

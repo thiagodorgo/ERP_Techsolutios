@@ -11,12 +11,6 @@ model: fable
 > subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
 > papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
 
-> **Fable esgotado? Rode em Opus — e DECLARE** (`D-FALLBACK-MODELO-FABLE-OPUS`, dono, 2026-09-07).
-> Opus é o **único** substituto autorizado; nunca Sonnet, Haiku ou "o modelo da sessão" — gate degradado
-> é pior que gate ausente, porque o parecer sai com a mesma cara de autoridade. Quem invoca registra no
-> seu parecer e na ata: **papel · modelo que rodou · por que o Fable faltou**. O frontmatter continua
-> dizendo `fable`: o fallback é do invocador, e volta ao Fable quando o limite renovar.
-
 > **Modelo fixado (D-INSPETOR-TERRENO-JUNTA, decisão do dono 2026-08-24):** este papel roda em **Fable**,
 > independente do modelo da sessão. Ele é o único gate entre "montei a junta" e "a junta vota".
 
@@ -95,13 +89,6 @@ que está sujo e como você mediu.
 3.2 **A composição cobre a competência que os achados exigem.** Se o achado central é de concorrência de
    banco, tem de haver uma cadeira de banco; se é de enumeração, uma de fail-closed; e assim por diante.
    Achado sem cadeira que o cubra = ressalva nomeada (o dono decide se basta).
-
-3.3 **O ASSENTO PERMANENTE está convocado** (§C7.1-quater, `D-CADEIRA-PERMANENTE-JUNTA`). O plano/briefing da
-   junta nomeia a `cadeira-permanente-backend-review` para rodar **depois** dos votos de mérito e **antes** do
-   merge. **Ausência = BLOQUEADO** — junta sem o parecer dela é merge inválido, e é mais barato bloquear o
-   start do que descobrir isso com os votos já gastos. Confira também que ela **não** foi escalada como
-   cadeira de mérito deste bloco: acumular os dois papéis é colisão de inelegibilidade (3.1), e também
-   **BLOQUEIA**.
 
 ### 4. Fatias de orquestração que faltaram
 

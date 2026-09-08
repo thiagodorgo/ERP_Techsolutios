@@ -7247,6 +7247,14 @@ escopo que o §C4 proíbe — e cobrá-lo da junta deste bloco é reprovação p
 "Agents mirror guard" que já existe, sem `continue-on-error` e sem `|| true`:
 `node scripts/sync-agent-skills.mjs --check` e `node scripts/audit-agents-skills.mjs`.
 
+**Adendo (`B-GOV-ELENCO` ciclo 2, fatia A, 2026-09-08).** A pendência continua ABERTA e o dono é o mesmo, mas
+agora existe **o que levar para a CI**, escrito e executado: a bateria de mutação do §7.1 do
+`B-GOV-ELENCO-ciclo2-plano.md` (critérios A-3 a A-17) é a **regressão** do auditor — cada checagem com a
+mutação que a deixa vermelha, partindo de baseline e voltando a ele, medida em cópia isolada
+(`votos/B-GOV-ELENCO/DEV-A-evidencia.md`). Quem fiar o auditor na CI porta essa bateria para `tests/` em vez
+de inventar uma nova; `tests/**` é escopo **PROIBIDO** deste bloco (§5-bis), e é por isso que ela vive na
+evidência e não numa suíte.
+
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a CI nunca teve esses passos; o
   `sync-agent-agents --check` entrou sozinho) · **dono:** próximo bloco que tocar `.github/workflows/` ·
   **bloqueia:** nada — mas enquanto estiver aberta, toda a proteção nova deste bloco depende de disciplina
@@ -7315,6 +7323,24 @@ a classe. Esse (b) é `dentro-do-bloco` e entra no ciclo 2.
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` no mecanismo (2026-08-12) ·
   **dono:** bloco de governança de ferramentas de agente · **bloqueia:** nada hoje.
 
+**Adendo (`B-GOV-ELENCO` ciclo 2, fatia A, 2026-09-08) — o componente (b) FECHOU; o (a) continua aberto.**
+
+Esta pendência tinha duas metades. **(b) A afirmação falsa morreu.** O §4.4 do plano do ciclo 1 publicava
+"§C7.4-bis respeitado **por construção**", produzido por um instrumento cego; a frase está **retirada** (Apenso
+1 ao `B-GOV-ELENCO-plano.md`) e o que se publica no lugar é medido: **por construção** para `Write`, `Edit`,
+`MultiEdit`, `NotebookEdit` e **qualquer nome desconhecido** — a checagem C4 virou **default-deny**, com
+allowlist de 4 nomes; **por convenção** para `Bash`, com **N = 17** papéis nomeados, publicados pelo auditor
+num AVISO agregado que **não derruba o exit code**, e com esta pendência como dono.
+
+**(a) O mecanismo continua ABERTO.** `Bash` segue dando escrita por redirecionamento de shell a 17 papéis que
+julgam. Não se conserta aqui, e cobrar isso da junta desta fatia é **reprovação por construção** (§10.3 do
+plano do ciclo 2): tirar `Bash` quebraria o §C7.7 P1/P2 — o jurado grava a própria evidência e o próprio voto
+com `Bash`, e sem ele a evidência incremental que salva o trabalho numa queda deixa de existir. A saída é
+decisão do dono (ferramenta de escrita restrita a `votos/<bloco>/`, ou outro mecanismo), não do bloco.
+
+O que **mudou de fato** com esta fatia: a exceção deixou de ser invisível e passou a ser **nomeada, contada e
+com dono** — `node scripts/audit-agents-skills.mjs --json` devolve a lista dos 17 em `achados[].papeis`.
+
 ---
 
 ## P-GOV-ESPELHO-CONTRATO-SEM-GUARD (2026-09-07) — `CLAUDE.md` e `AGENTS.md` podem divergir sem nada ficar vermelho — MÉDIA
@@ -7340,35 +7366,90 @@ este projeto já pagou caro para herdar.
 
 Registrado aqui porque **`B-GOV-ELENCO` editou o mesmo arquivo** e a nota ficou ainda mais distante do real.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** **`B-O6R-02` ciclo 5**
-  (nomeado pela cadeira C1) · **bloqueia:** nada.
+**FECHADA no `B-GOV-ELENCO` ciclo 2, fatia A (2026-09-08) — com uma correção escrita, porque o texto acima
+aponta o arquivo errado.** A nota congelada **não vive em `Kpis/*`**: vive em `.agents/agents/README.md`, sob
+o título "Divergência RESOLVIDA (§A2)", e é ela que publicava `--check → OK, 34 agentes` e
+`especialistas/ = 11 contra 11` — medições de **2026-09-05** — como "Medido neste head". Fechada por
+**adendo datado** no próprio README, com os números medidos agora (`OK — 23 agentes`, `ec=0`;
+`especialistas/` = **0 contra 0**) e o texto anterior **preservado** (§A2 — acrescentar, nunca apagar). O
+adendo diz também o que **não** envelheceu: o mecanismo. O `--check` continua cobrindo `especialistas/`, e o
+parágrafo que mandava "conferir à mão" segue morto.
+
+- **status:** **FECHADA** · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono original:**
+  **`B-O6R-02` ciclo 5** (nomeado pela cadeira C1) · **fechada por:** `B-GOV-ELENCO` ciclo 2 fatia A,
+  branch `chore/gov-auditoria-elenco` (hash no backfill pós-merge, §C3.5) · **bloqueia:** nada.
 
 
 ---
 
-## P-GOV-MODELO-CODEX-SEM-NOME (2026-09-07) — o espelho Codex nunca registrou QUAL modelo usa — MÉDIA
+## P-GOV-BAIXA-CICLO1-FECHADOS (2026-09-08) — os três achados BAIXA do ciclo 1, fechados na fatia A — REGISTRO
 
-O `D-FALLBACK-MODELO-FABLE-OPUS` fixa: Fable esgotado → **Opus**, nunca abaixo. O dono pediu isso "exatamente
-espelhado no codex com os modelos correspondentes da openai" — e aí a regra esbarra num fato medido:
-**este repositório nunca registrou qual modelo o Codex roda.**
+Entrada de **registro** (nasce FECHADA): os achados `C1-02`, `C1-03` e `C1-04` da junta `J-B-GOV-ELENCO`
+foram fechados no ciclo 2, fatia A. Ficam aqui para que os números **não sejam reusados como fato** por um
+bloco futuro — que foi a razão pela qual a cadeira C1 os registrou em vez de deixá-los passar.
 
-Medido em `origin/main@fe2748c8` + head do bloco: `grep -rniE 'gpt-|o[34]-|codex-|model:'` em `AGENTS.md` e
-`.agents/agents/README.md` → nenhuma menção a modelo OpenAI. O `sync-agent-agents.mjs` **preserva o `model:`
-verbatim** (é regra do `D-PLANEJADOR-MODELO-FABLE`, e o README do espelho diz isso na l.9-10), então o espelho
-carrega `model: fable` — um nome **Anthropic** — para dentro do ambiente Codex, sem tradução em lugar nenhum.
+| Achado | O que estava publicado | O que é, medido | Onde foi corrigido |
+|---|---|---|---|
+| `C1-02` | "5 de **12** skills" atribuído a `origin/main@fe2748c8` | `git ls-tree fe2748c8 -- .claude/skills` = **11** diretórios; o auditor imprime `11 skills` nesse ref | cabeçalho de `scripts/audit-agents-skills.mjs` (l.10-12), history do KPI, e **Apenso 1** ao plano do ciclo 1 |
+| `C1-03` | "3× o peso dos **24** papéis permanentes juntos (**6,6 KB**)" | pelo método do próprio script: `fe2748c8` = **23** papéis / 5.563 chars / **5,4 KB**; head da fatia A = **23** / 5.563 / **5,4 KB**; efêmeros = 20.271 chars / 19,8 KB → razão **3,64×** | cabeçalho do script, history do KPI, **Apenso 1**, e linha de errata em `decisoes.md` |
+| `C1-04` | tabela de especialistas com **cabeçalho e zero linhas** em `.agents/agents/README.md` | elenco efêmero neste head = **0** (estado correto) | tabela substituída por frase de estado, apontando `aposentadoria-especialistas.md` |
 
-**O que foi documentado assim mesmo:** a regra por **degrau** — o Codex roda os quatro papéis no modelo de
-raciocínio máximo da conta OpenAI e, esgotado, no degrau imediatamente abaixo; nunca num modelo de propósito
-geral ou rápido.
+- **status:** **FECHADA** · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **fechada por:**
+  `B-GOV-ELENCO` ciclo 2 fatia A, branch `chore/gov-auditoria-elenco` (hash no backfill pós-merge, §C3.5) ·
+  **bloqueia:** nada.
 
-**O que NÃO foi documentado, e por quê:** o par concreto de IDs OpenAI. Nomear um ID por suposição dentro do
-contrato de execução seria hipótese vendida como fato (§A6), na única classe de arquivo onde isso não pode
-acontecer — e um ID errado ali seria copiado adiante por toda sessão que lesse o contrato.
 
-**O que fecha esta pendência:** o dono nomear os dois IDs (máximo e degrau abaixo). Com eles, uma linha em
-`AGENTS.md` §C7.6-bis e outra em `.agents/agents/README.md`, mais a tradução `fable → <id>` /
-`opus → <id>` para o Codex não ter de adivinhar o que `model: fable` significa do lado dele.
+---
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a lacuna nasce com o
-  `D-INTEROP-CLAUDE-CODEX`, 2026-07-28, e atravessou o `D-PLANEJADOR-MODELO-FABLE`) · **dono:** decisão do
-  dono · **bloqueia:** nada no Claude Code; no Codex, o fallback fica por interpretação até fechar.
+## P-GOV-KPI-DISPLAY-SEM-GUARD (2026-09-08) — nenhum guard compara o CARD com o `value` do JSON — MÉDIA
+
+Nasce do achado `C1-01` da junta `J-B-GOV-ELENCO`. O painel se contradizia **na mesma carga**:
+`metrics.blocks_completed` tinha `value: 162` e `display: "161"` — o gráfico dizia 162, o history dizia 162,
+a `note` dizia "161 → 162", e o **card**, que é o único número que o dono abre para ver, dizia **161**. Como
+a cópia `var FROZEN` do `app.js` é byte-idêntica ao JSON, o erro propagava para o modo `file://`.
+
+**O que fecha o defeito e o que NÃO fecha.** O `display` foi corrigido para `"162"` e o FROZEN regenerado por
+`node scripts/kpi-freeze.mjs` (`--check` → `em dia`). Mas isso conserta **esta** ocorrência, não a **classe**:
+os quatro guards de KPI foram executados com o defeito vivo e **todos passaram** —
+`kpi-dashboard-charts` 16/16, `kpi-achados-paridade` 6/6, `kpi-dashboard-contraste` 6/6,
+`agents-mirror-guard` 12/12. O `charts` compara a **SÉRIE** com o history; **nenhum** compara `display` com
+`value`. O defeito era silencioso com CI verde, e voltaria silencioso.
+
+**Correção proposta (uma asserção, no bloco que puder tocar `tests/`):** para toda métrica cujo `display`
+seja composto só de dígitos, `value === Number(display)`; e, para as de forma `N/M`, o `N` casa o `value`.
+Executado à mão neste head, passa (hoje só `blocks_completed` cai na primeira forma).
+
+**Por que não foi consertado aqui:** `tests/**` está no escopo **PROIBIDO** de `B-GOV-ELENCO` (§5-bis do
+plano do ciclo 2). Cobrar o guard da junta desta fatia é **reprovação por construção** (§10.1).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (o `display` errado nasceu no
+  ciclo 1 deste bloco; a **ausência do guard** é `pre-existente`) · **dono:** próximo bloco que tocar
+  `tests/kpi-*` · **bloqueia:** nada.
+
+
+---
+
+## P-GOV-C10-ENCERRADO (2026-09-08) — a checagem C10 mede PESO e não sabe se o bloco encerrou — MÉDIA
+
+Nasce do achado `C3-A3`. A checagem C10 soma os bytes de `description` dos arquivos em
+`.claude/agents/especialistas/` e reprova acima de 20.000 chars. O texto dela **prometia** outra coisa —
+"jurado de bloco ENCERRADO é aposentável" — e a checagem **não consulta** ata, `aposentadoria-especialistas.md`
+nem Git para saber se o bloco encerrou. Medido pela cadeira: com os **15** efêmeros de `fe2748c8` restaurados,
+BLOQUEIA (`~19,8 KB`, `ec=1`); com **14** — todos igualmente de blocos encerrados — vira AVISO e `ec=0`. Um
+arquivo a menos e o defeito que motivou o bloco inteiro passa verde.
+
+**O que a fatia A fez:** o texto passou a dizer **o que a checagem faz** ("Esta checagem mede PESO; o critério
+de aposentadoria é humano — `D-APOSENTADORIA-ELENCO-EFEMERO`"). A afirmação de detecção **morreu**. O limiar
+fica **documentado**, não prometido.
+
+**Desenho da detecção mecânica, para quem for fechar:** (i) `bloco:` passa a ser chave **obrigatória** no
+frontmatter de todo arquivo sob `especialistas/` — **fail-closed**: ausente = BLOQUEIA, porque um efêmero sem
+bloco dono é exatamente o que ninguém consegue aposentar depois; (ii) "encerrado" = existe entrada em
+`Kpis/kpis-history.json` com `version == <bloco>` e `merge_commit != null`; (iii) efêmero de bloco encerrado =
+BLOQUEIA **por nome**, independentemente do peso, e o peso vira só o AVISO agregado que já existe.
+
+**Por que não foi feito aqui:** exige um guard em `tests/` para não regredir e a chave nova no frontmatter de
+arquivos que **este bloco acabou de apagar** (elenco efêmero = 0 — não há em que testar neste head).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** o bloco que fiar o
+  auditor na CI (mesmo dono de `P-GOV-AUDITOR-FORA-DA-CI`) · **bloqueia:** nada.

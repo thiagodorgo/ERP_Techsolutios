@@ -1913,75 +1913,6 @@ existe para exterminar. O argumento está escrito para ser derrubado no voto, se
 
 ---
 
-## D-CADEIRA-PERMANENTE-JUNTA (decisão do dono, 2026-09-07) — a junta ganha um assento permanente que mede o voto
-
-**O buraco.** A junta era auditada nas duas pontas e **não no meio**. O `inspetor-de-terreno-da-junta`
-(`D-INSPETOR-TERRENO-JUNTA`, 24/08) prova que o tabuleiro é justo **antes** do voto. O `porteiro-pos-merge`
-(`D-PORTEIRO-POS-MERGE`, 12/08) prova que a entrega é real **depois** do merge. **Ninguém media o voto.**
-
-Duas coisas passavam por aí, e as duas têm preço medido:
-
-1. **Aprovação não ganha** — cadeira que escreve `APROVADO` a partir de leitura, de herança da ata anterior,
-   ou de um "verde" sem `N` e sem forma. Veredito formalmente válido, materialmente vazio.
-2. **Veto ilegítimo** — reprovação por achado `pre-existente` sem evidência de data, por algo que o §5 do
-   plano **proibia** o bloco de tocar, ou por exigência que o plano nunca fez (*reprovação por construção*).
-   A `auditoria-juntas-2026-08-28.md` mediu: **3 blocos consumiram 24% de todos os ciclos**, e em **11 dos 16**
-   o bloqueante final era **processo/medição, não produto**.
-
-**A decisão.** Passa a existir **uma única cadeira permanente** na junta: a
-`cadeira-permanente-backend-review` — **Fable por contrato**, método = skill `backend-review-ts-prisma`
-(espelhada em `.agents/skills/`). Ela entra em **TODA** junta, **depois** dos votos de mérito e **antes** do
-merge. É a **única** cadeira não-descartável: não recebe identidade nova por bloco, não tem suplente, não
-morre no fim do ciclo.
-
-**Ela não julga a entrega — julga o ATO DE JULGAR.** Mede, cadeira a cadeira, se a **aprovação foi ganha**
-(execução, `N`, forma, `escopo` com evidência, denominador estável, "não consigo medir" tratado como
-reprovado) e, achado a achado, se o **veto foi legítimo** (`dentro-do-bloco`, com evidência executada, dentro
-do escopo que o plano **de fato escreveu** — conferindo inclusive qual cópia do plano a cadeira usou; a cópia
-na árvore principal já teve 307 linhas contra 847 na linhagem do bloco). Confere o quórum do risco
-(§C7.1-ter(b)) e os papéis do §C7.4-bis.
-
-**Quatro vereditos, e a assimetria é o desenho:**
-
-| Veredito | Efeito | Consome ciclo? |
-|---|---|---|
-| `HOMOLOGADO` | o veredito da junta vale | — |
-| `HOMOLOGADO COM RESSALVA` | vale, com dívida de processo nomeada em `pendencias.md` | — |
-| `ANULADO POR APROVAÇÃO NÃO GANHA` | o verde **não** autoriza merge; as cadeiras nomeadas votam de novo | **não** |
-| `ANULADO POR VETO ILEGÍTIMO` | o achado cai para pendência com bloco dono; a junta reaprecia sem ele | **não** |
-
-**Anulação nunca produz veredito de mérito.** Não transforma reprovado em aprovado nem o contrário — devolve
-a decisão a quem tem competência, com o defeito de processo nomeado. É isso que impede o assento permanente
-de virar superjurado que atropela especialistas com identidade nova e competência específica.
-
-**Fronteiras duras.** Não acha bug de produto (o que vir vira pendência com bloco dono, nunca voto); não
-conserta (§C7.4-bis); **é inelegível para cadeira de mérito no mesmo bloco**.
-
-**Por que permanente, e por que isso não contamina.** Memória de bloco anterior só contamina quem decide se o
-código está certo. Para quem mede se o voto foi ganho, memória é o **instrumento**: é a única cadeira capaz
-de ver a mesma cadeira aprovando sem executar duas vezes, a mesma classe de achado virando `pre-existente`
-sem evidência em três blocos, ou o mesmo plano sendo cobrado além do que escreveu. Publica essa **série entre
-juntas** em toda ata.
-
-**Ela também é medida.** Publica a própria série (homologadas × anuladas, acumuladas), conferida pelo
-`porteiro-pos-merge` (item 5-bis). Cadeira permanente que homologa tudo é **carimbo**; que anula tudo é
-**pedágio**. As duas coisas aparecem na série antes de aparecerem no dano.
-
-**Fail-closed nas duas pontas.** O `inspetor-de-terreno-da-junta` (item 3.3) **BLOQUEIA** o start da junta que
-não convocou o assento — mais barato bloquear o start do que descobrir com os votos gastos; e bloqueia também
-se ela tiver sido escalada como cadeira de mérito. O `porteiro-pos-merge` (item 5-bis) trata **ata sem o
-parecer dela** como achado do tamanho do merge, e **merge sobre veredito ANULADO como merge inválido**.
-**Junta sem parecer do assento permanente = merge inválido**, na mesma força do §C7.1.
-
-**Onde vive.** `.claude/agents/cadeira-permanente-backend-review.md` (mandato) +
-`.claude/skills/backend-review-ts-prisma/` (método), ambos espelhados em `.agents/` por
-`sync-agent-agents.mjs` / `sync-agent-skills.mjs`. Contrato em `CLAUDE.md` §C7.1-quater e §C2.6-bis,
-espelhado em `AGENTS.md`. Molde de ata com a seção §P pronta:
-`agent-orchestration/omega/juntas/TEMPLATE-J-ata.md`. Parecer integral em
-`votos/<bloco>/99-cadeira-permanente.md`.
-
----
-
 ## D-APOSENTADORIA-ELENCO-EFEMERO (decisão do dono, 2026-09-07) — cadeira de bloco encerrado sai do diretório vivo
 
 **O que estava acontecendo.** O §C7.4 manda a `agente-fabrica` criar cadeiras sob medida a cada bloco, e o
@@ -1991,6 +1922,16 @@ saem**. Resultado medido em `origin/main@fe2748c8` pelo auditor novo
 `description` (~5.068 tokens)** carregados no contexto de **toda sessão** — 3× o peso dos 24 papéis
 permanentes juntos (6,6 KB). Na branch `demo/investidor` o mesmo número era **33 especialistas / ~43 KB /
 ~11k tokens**, porque lá os 9 jurados do ciclo 4 nunca saíram.
+
+> **Errata (`B-GOV-ELENCO` ciclo 2, fatia A, 2026-09-08) — acréscimo, o parágrafo acima não foi alterado.**
+> Os "**24 papéis permanentes juntos (6,6 KB)**" da linha acima não se reproduzem, e foi a cadeira C1 da
+> junta `J-B-GOV-ELENCO` que mediu (achado `C1-03`, BAIXA). Pelo método do próprio
+> `scripts/audit-agents-skills.mjs` (frontmatter linha a linha, aspas removidas, `String.length`):
+> em `origin/main@fe2748c8` são **23** papéis / 5.563 chars / **5,4 KB**, e no head desta fatia idem
+> (**23** / 5.563 / **5,4 KB**). O peso dos 15 efêmeros é 20.271 chars = **19,8 KB**, logo a razão é
+> **3,64×**, não 3×. **A decisão abaixo não muda**: o número que a sustenta ficou maior, não menor.
+> Registro para o "6,6 KB" não ser reusado como fato — corrigido também no cabeçalho do script, no history
+> do KPI e no Apenso 1 ao `B-GOV-ELENCO-plano.md`.
 
 **A decisão.** Especialista cujo bloco tem **ata fechada e PR mergeado** é **aposentado** do diretório vivo.
 Cadeira de bloco **em voo nunca sai**. A remoção é sempre **por identificador de BLOCO**, nunca por nome de
@@ -2033,49 +1974,3 @@ só no plano, e `decisoes.md` não tinha uma menção.
 **A regra que fica: quórum elevado não se herda por inércia.** Toda subida acima do §C7.1-ter(b) é declarada
 **antes** do primeiro voto, com o motivo escrito, e **registrada aqui**. O ciclo 2 do `B-GOV-ELENCO` mantém a
 unanimidade de 3 por esta decisão; qualquer bloco seguinte volta ao quórum do risco, salvo nova declaração.
-
-
----
-
-## D-FALLBACK-MODELO-FABLE-OPUS (decisão do dono, 2026-09-07) — esgotado o Fable, cai para o Opus, e declara
-
-**O gatilho, dito pelo dono em execução:** *"o limite do fable está acabando, DOCUMENTE que quando o limite do
-fable acabar usar o opus, exatamente espelhado no codex com os modelos correspondentes da openai."*
-
-**O problema real.** Quatro papéis rodam com `model: fable` fixado no frontmatter — os três gates
-(`inspetor-de-terreno-da-junta`, `porteiro-pos-merge`, `cadeira-permanente-backend-review`) e o
-`planejador-mestre`. São exatamente os papéis que **decidem se o trabalho de todos os outros vale**. O Fable
-tem limite de uso, e ele acaba **no meio de rodadas longas** — aconteceu nesta. Até aqui o contrato só dizia
-que "indisponibilidade do modelo vira nota no registro da junta" (`D-PLANEJADOR-MODELO-FABLE`, item 6), sem
-dizer **para onde** cair nem **o que** a nota tem de conter. Uma lacuna assim se resolve sozinha, e sempre
-para baixo: quem invoca pega o modelo da sessão e segue.
-
-**A decisão.** Fable indisponível ou esgotado → o papel roda em **Opus**, o degrau imediatamente abaixo em
-raciocínio e o **único** substituto autorizado. **Nunca** Sonnet, nunca Haiku, nunca "o modelo da sessão".
-
-**Por quê a proibição é mais importante que a permissão.** Gate degradado é **pior que gate ausente**. Um
-parecer de porteiro ou de assento permanente sai com a mesma cara de autoridade independentemente do modelo
-que o produziu — a ata registra `LIBERADO` ou `HOMOLOGADO` do mesmo jeito. A ausência do gate seria visível;
-a degradação, não. Por isso o fallback é para **um** modelo nomeado, e não para "o que estiver disponível".
-
-**A substituição é DECLARADA.** Quem invoca registra, no artefato daquele papel e na ata: **qual papel · qual
-modelo rodou · por que o Fable não estava disponível**. Isto **estende** a cláusula do item 6, dando à nota
-**conteúdo obrigatório** e **destino nomeado**.
-
-**O frontmatter continua dizendo `fable`.** O fallback é do **invocador**, não do arquivo. Trocar o `model:`
-do agente tornaria a degradação **permanente e invisível** para a próxima sessão — exatamente o que o
-`D-PLANEJADOR-MODELO-FABLE` existe para impedir ("para valer independente do modelo da sessão; quem invoca não
-precisa lembrar"). Quem caiu para Opus por esgotamento **volta ao Fable quando o limite renovar**.
-
-**Espelho Codex (`D-INTEROP-CLAUDE-CODEX`).** A regra é a mesma; só o nome do modelo muda. O Codex roda os
-quatro papéis no **modelo de raciocínio máximo** da conta OpenAI e, esgotado esse, **no degrau imediatamente
-abaixo** — nunca num modelo de propósito geral ou rápido. **O par concreto de IDs OpenAI não foi registrado**,
-porque este repositório nunca registrou qual modelo o Codex usa: o `sync-agent-agents.mjs` preserva o `model:`
-verbatim e o Codex o lê, sem tradução em lugar nenhum. Nomear um ID por suposição dentro de um contrato de
-execução seria **hipótese vendida como fato** (§A6), na única classe de arquivo onde isso não pode acontecer.
-Enquanto o dono não nomear o par, vale a regra por **degrau**, e a lacuna vive em
-`P-GOV-MODELO-CODEX-SEM-NOME`.
-
-**Onde vive:** `CLAUDE.md` §C7.6-bis, espelhado em `AGENTS.md`; e o preâmbulo dos quatro agentes com
-`model: fable`, que passam a carregar a linha do fallback junto da linha do modelo fixado — para quem os
-invoca não precisar lembrar de ler o contrato.

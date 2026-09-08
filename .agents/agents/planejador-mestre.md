@@ -11,12 +11,6 @@ model: fable
 > subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
 > papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
 
-> **Fable esgotado? Rode em Opus — e DECLARE** (`D-FALLBACK-MODELO-FABLE-OPUS`, dono, 2026-09-07).
-> Opus é o **único** substituto autorizado; nunca Sonnet, Haiku ou "o modelo da sessão" — gate degradado
-> é pior que gate ausente, porque o parecer sai com a mesma cara de autoridade. Quem invoca registra no
-> seu parecer e na ata: **papel · modelo que rodou · por que o Fable faltou**. O frontmatter continua
-> dizendo `fable`: o fallback é do invocador, e volta ao Fable quando o limite renovar.
-
 > **Modelo fixado (D-PLANEJADOR-MODELO-FABLE, decisão do dono 2026-08-11):** este papel roda em **Fable**,
 > independente do modelo da sessão. Na **revalidação de código corrigido** — quando a junta reprova, o código
 > é consertado e o fluxo volta para cá (§C7.4) — o Fable é **obrigatório**: é o passo em que um plano fraco
