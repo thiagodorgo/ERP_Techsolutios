@@ -2161,3 +2161,44 @@ consequência prática é assimétrica: a linha declarada só muda se o dono mud
 **Fecha o achado `C1-E-02`** da junta `J-B-GOV-ELENCO-ENXUTO` (registro escrito por `dev-rail-enxuto`, agente
 distinto de quem achou e de quem escreveu o defeito — §C7.4-bis). **Não abre pendência:** o que faltava era o
 registro, e ele passa a existir aqui.
+
+
+---
+
+## D-MEDIR-NA-REF-ALVO (decisão do dono, 2026-09-08) — mede-se na ref alvo, e a sessão sai de um worktree na `main`
+
+**O problema, medido em uma única sessão.** Os subagentes são carregados do `.claude/agents/` do
+**diretório da sessão**, e esse diretório estava numa branch **24 commits atrás da `main`**, com 58 caminhos
+sujos de outra sessão. Três contaminações saíram daí:
+
+1. O `inspetor-de-terreno-da-junta` recebeu um item **3.3** mandando **BLOQUEAR** por `§C7.1-quater` —
+   cláusula que **não existia em ref nenhuma** (nem `main`, nem o `HEAD` da branch, nem a branch do assento).
+   Era edição **não commitada** do orquestrador. Ele mediu antes de aplicar e **não aplicou**.
+2. O `porteiro-pos-merge` recebeu um **corpo pré-merge**, byte a byte o da branch da sessão, e a mesma
+   cláusula inexistente pelo prompt. Mediu a origem e reportou.
+3. O orquestrador leu o `.gitignore` daquela árvore e abriu `P-GOV-WORKTREES-NAO-IGNORADAS` — **falsa**: a
+   regra estava no `.gitignore:52` desde `74430cc1`, de **29/08**. Fechada por não-reprodução no mesmo dia.
+
+**O padrão:** os dois **gates** se salvaram porque o contrato deles manda medir antes de aplicar. **Quem
+orquestra não tem gate** — e foi exatamente ele quem publicou a afirmação falsa.
+
+**A decisão, em duas partes.**
+
+**(a) Prevenção — a sessão sai de um worktree que acompanha a `main`.** É o que remove a classe inteira em
+vez de detectá-la caso a caso. A árvore principal fica onde está, com o resíduo de outras sessões intocado —
+**resíduo alheio se reporta, não se varre**.
+
+**(b) Detecção — duas travas escritas.** O `§A7` (espelhado em `AGENTS.md`) fixa que **toda afirmação sobre
+contrato, elenco, skills ou configuração é medida na ref alvo** (`git show <ref>:<caminho>`), nunca no disco
+da sessão, e que **quem afirma diz em qual ref mediu**. E o item **3.3** do `inspetor-de-terreno-da-junta`
+passa a conferir **corpo carregado × corpo julgado** por identidade votante, de forma **EOL-neutra** —
+`md5sum` cru dos dois lados **fabrica divergência** sob `core.autocrlf=true` (§C7.1-ter(c)). Divergência em
+corpo com **VETO** = `BLOQUEADO`.
+
+**Regra que fecha o caso do §C7.1-quater:** **norma citada que não existe na ref julgada NÃO se aplica.**
+Bloquear por cláusula que não está escrita é reprovação por construção — a patologia que a auditoria de
+2026-08-28 mediu em **11 de 16** bloqueantes.
+
+**O que esta decisão NÃO faz:** não move a árvore principal para a `main` (isso esbarraria em edições não
+commitadas de outra sessão, em arquivos que a `main` apagou) e não apaga resíduo alheio. As duas coisas ficam
+para quem for dono daquele trabalho.
