@@ -1,0 +1,148 @@
+{
+  "head_medido": "9c0e6ac9df237b5cfe1a6fe1d16d4128861d7d10",
+  "head_de_codigo": "adc41a54",
+  "base": "fe2748c8 (origin/main)",
+  "cadeira": "C2",
+  "papel": "guardiao-fail-closed",
+  "quorum": "maioria de 3",
+  "veredito": "APROVADO",
+  "participacao_previa": "Votei no ciclo 1 do B-GOV-ELENCO e o REPROVEI (achados C2-01..C2-07: enumeracao de vereditos defendida por exclusao, Bash em quem julga, anulacao sem teto). O diff que julgo agora CONTEM aquele head (25c0112a) e o conserto dele (7facc396). Os defeitos que ESTE bloco conserta sao da A-C2 (inspetor-de-arnes-concorrente), inelegivel; o inspetor mediu e concluiu que nao ha colisao que exija troca de cadeira. Conflito adicional declarado: sou um dos 17 papeis nomeados no AVISO C4-bis Bash tolerado.",
+  "diff_fora_do_head_de_codigo": "apenas agent-orchestration/ (pendencias.md, BRIEFING, 00-inspetor*.md) — nenhum caminho de codigo",
+  "achados": [
+    {
+      "id": "C2E-01",
+      "titulo": "a chave excluida da recusa CANCELA uma acusacao verdadeira (fail-OPEN de exit code)",
+      "gravidade": "MEDIA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia_de_escopo": "scripts/audit-agents-skills.mjs e arquivo NOVO no diff (668 linhas adicionadas vs fe2748c8); o conjunto CHAVES_MEDIDAS_POR_VALOR e a exclusao de description sao decisao deste bloco, datada 2026-09-08 no proprio comentario",
+      "local": [
+        "scripts/audit-agents-skills.mjs:227",
+        "scripts/audit-agents-skills.mjs:220-225",
+        "scripts/audit-agents-skills.mjs:263-264",
+        "scripts/audit-agents-skills.mjs:445"
+      ],
+      "propriedade_ausente": "description E transformada em acusacao BLOQUEIA (:445) e NAO esta em CHAVES_MEDIDAS_POR_VALOR (:227) — a assercao 'e so elas' e falsa por medicao; nada forca a concordancia entre o conjunto protegido pela recusa e o conjunto que vira acusacao. A justificativa da exclusao e unidirecional: verifica que um comentario nao consegue CRIAR diagnostico falso, nao verifica que consegue CANCELAR um verdadeiro.",
+      "mutacao": "1c-08: frontmatter com 'description: # TODO preencher'",
+      "resultado": "AVISO 'description curta (16 chars)', 0 BLOQUEIA, ec=0 — onde o YAML real da valor nulo e a regra do proprio auditor manda BLOQUEIA 'sem description'",
+      "prevalencia": "0 em HEAD (40 arquivos .md sob .claude/) e 0 em fe2748c8 (55 arquivos)",
+      "mitigacao_medida": "o arquivo continua nomeado na saida com um AVISO absurdo; o fail-open e do exit code, nao do relatorio"
+    },
+    {
+      "id": "C2E-02",
+      "titulo": "MODELO_FIXADO e lista de obrigacao sem mecanismo: gate novo nasce NAO CONFERIDO",
+      "gravidade": "MEDIA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "evidencia_de_escopo": "MODELO_FIXADO nasce no arquivo novo do diff; o §C7.6-bis que cria a categoria 'gates da junta' sao as +48 linhas novas de CLAUDE.md/AGENTS.md deste mesmo bloco",
+      "local": [
+        "scripts/audit-agents-skills.mjs:128-132",
+        "CLAUDE.md:437",
+        "AGENTS.md:465"
+      ],
+      "propriedade_ausente": "a mesma verdade (quais papeis tem modelo fixado) vive em 3 lugares — objeto JS de 3 nomes, prosa categorica do contrato, frontmatter — e nada falha quando divergirem",
+      "caminho_que_vence": "o LADO PERMISSIVO: gate novo fora da lista sai verde, contradizendo o texto que este bloco escreveu (gate degradado e pior que gate ausente, CLAUDE.md:449-451)",
+      "mutacao": "M-01: papel novo zzz-gate-novo com model: sonnet, tools de leitura, espelho junto",
+      "resultado": "0 BLOQUEIA, ec=0 (silencio total sobre o modelo). Contraste na mesma bateria: M-02 (model: sonnet) e M-03 (sem model:) no planejador-mestre dao BLOQUEIA C3, ec=1",
+      "cobertura_existente": "C4-ter (:518-527) pega so a direcao inversa (nome na lista sem arquivo) e como AVISO — confirmado por M-04",
+      "prevalencia": "divergencia 0 hoje: os 3 de MODELO_FIXADO == os 3 que o contrato nomeia (§C2.8, §C7.1-bis, §C7.6) == os 3 com model: fable no frontmatter"
+    },
+    {
+      "id": "C2E-03",
+      "titulo": "Bash em quem julga: aresta permissiva, mas nomeada, contada e com dono",
+      "gravidade": "BAIXA",
+      "escopo": "pre-existente",
+      "bloqueia": false,
+      "evidencia_de_escopo": "achado C3-A2 do ciclo 1 do bloco anterior (duas cadeiras chegaram a ele independentemente); registrado como P-GOV-BASH-EM-QUEM-JULGA no DOSSIE-B-GOV-ELENCO.md §7, 2026-09-08 — antecede esta branch",
+      "local": [
+        "scripts/audit-agents-skills.mjs:166",
+        "scripts/audit-agents-skills.mjs:504-515"
+      ],
+      "mutacao": "3-11: papel novo de junta com 'tools: Read, Bash'",
+      "resultado": "ec=0, entra no AVISO C4-bis (17 vira 18) — nessa aresta o default e permitir",
+      "por_que_nao_veta": "TOLERADA_COM_AVISO tem 1 membro literal e NAO absorve membro novo (8 ferramentas desconhecidas atacadas, 8 negadas); o aviso nomeia, conta e lista os papeis, com dono; e o §C7.7 P1/P2 OBRIGA o jurado a escrever evidencia e voto — protocolo sob o qual este proprio arquivo esta sendo escrito"
+    },
+    {
+      "id": "C2E-04",
+      "titulo": "texto do C0 diz 'nada foi auditado' com 11 skills auditadas",
+      "gravidade": "BAIXA",
+      "escopo": "dentro-do-bloco",
+      "bloqueia": false,
+      "local": [
+        "scripts/audit-agents-skills.mjs:402-409"
+      ],
+      "resultado": "cosmetico; erra para o lado seguro (BLOQUEIA, ec=1)"
+    }
+  ],
+  "mutacoes": [
+    {
+      "onde": "copia isolada c2-copia · .claude/agents/validador-mestre.md",
+      "o_que": "1a — comentario no fim da linha tools: (fixture A-C2-02)",
+      "resultado": "BLOQUEIA C1 recusa de medicao, linha 4, ZERO nome de ferramenta fabricado, ec=1"
+    },
+    {
+      "onde": "c2-copia · validador-mestre.md",
+      "o_que": "1b-01 — recusa escondendo Write e Edit",
+      "resultado": "so C1 recusa; C4 escondido; ec=1"
+    },
+    {
+      "onde": "c2-copia · planejador-mestre.md",
+      "o_que": "1b-02 — recusa escondendo name errado e model: opus",
+      "resultado": "so C1 recusa; C2 e C3 escondidos; ec=1"
+    },
+    {
+      "onde": "c2-copia · .claude/skills/cloud-architect/SKILL.md",
+      "o_que": "1b-03 — recusa numa skill",
+      "resultado": "C6 recusa de medicao; C7 escondido; ec=1"
+    },
+    {
+      "onde": "c2-copia · validador-mestre.md",
+      "o_que": "1c-01..1c-16 — 16 construcoes fora do subconjunto (fluxo, ancora, tag, chave duplicada, recuo de 1 espaco, TAB, BOM, description-so-comentario, aspas com cerquilha, mapa aninhado, Tools maiusculo, plain multi-linha, forma escopada Bash(git diff:*), tools vazio, fechamento com reticencias, chave recuada)",
+      "resultado": "15 fecham (recusa ou BLOQUEIA legitimo, ec=1); 1 furo: 1c-08 sai ec=0 — achado C2E-01"
+    },
+    {
+      "onde": "c2-copia · validador-mestre.md e cloud-architect/SKILL.md",
+      "o_que": "2a — 4 links quebrados por arquivo, incluindo destino com espaco (A-C2-05, o unico fail-OPEN da auditoria anterior)",
+      "resultado": "0 BLOQUEIA, ec=0 — o C8 nao existe mais"
+    },
+    {
+      "onde": "worktree (somente leitura, --ref) e copias c2-vazio / c2-meio",
+      "o_que": "2c — alvo vazio total, alvo parcial (0 agentes + 11 skills) e commit raiz 0f17135a",
+      "resultado": "BLOQUEIA C0 nos 3, ec=1 — o piso sobreviveu ao corte"
+    },
+    {
+      "onde": "c2-copia · agentes e espelho",
+      "o_que": "3-01..3-11 — default-deny: papel de nome qualquer com Write; MultiEdit; FooTool; NotebookEdit/TodoWrite/Task/SlashCommand/KillShell/BashOutput; tools ausente; allowlist com Write; allowlist sem tools; so leitura; so no .claude; so no espelho; so Bash",
+      "resultado": "11/11 conforme: membro novo nasce NEGADO (ec=1); allowlist nao acusada; nenhum falso positivo"
+    },
+    {
+      "onde": "c2-copia · .agents/agents/validador-mestre.md",
+      "o_que": "espelho divergente editado a mao (tools: Read, Write, Edit injetado)",
+      "resultado": "sync-agent-agents.mjs --check DIVERGE, ec=1 (mecanismo que falha sozinho, roda na CI em .github/workflows/ci.yml:69-70); o auditor sozinho e cego, ec=0 — e nao precisa ver, o espelho e projecao regeneravel"
+    },
+    {
+      "onde": "c2-copia · agentes",
+      "o_que": "M-01..M-04 — autoridade do modelo",
+      "resultado": "M-01 gate novo com model: sonnet = SILENCIO, ec=0 (C2E-02); M-02/M-03 = BLOQUEIA C3, ec=1; M-04 = AVISO C4-ter, ec=0"
+    }
+  ],
+  "totais": {
+    "mutacoes": 40,
+    "itens": 3,
+    "copias_descartaveis": 3,
+    "mutacao_na_arvore_do_dono": 0
+  },
+  "forma": {
+    "node": "v20.19.5",
+    "autocrlf": "true",
+    "shell": "MINGW64_NT-10.0-22631 (Git Bash)",
+    "baseline": "23 agentes · 11 skills · 0 BLOQUEIA · 1 AVISO · ec=0 (identico no worktree e na copia)"
+  },
+  "nao_executado": [
+    "auditor na CI (nao esta la; exigir seria P-GOV-AUDITOR-FORA-DA-CI)",
+    "a faxina: 32 renames, 30 delecoes, indice do Codex, backfill #380 (cadeira C1)",
+    ".github/**, tests/**, .gitignore, §C7.1-quater, volta da checagem de link",
+    "modo --json contra as mutacoes (so o modo texto e o ec)",
+    "comportamento sob core.autocrlf=false"
+  ]
+}

@@ -124,14 +124,12 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 ## Especialistas do protocolo de reprovação (§C7.4) — subpasta `especialistas/`
 
 Criados pela `agente-fabrica` nos ciclos 1–2 de uma reprovação, **sob medida para o defeito que reprovou**.
-**Entram na junta seguinte e votam**, e permanecem disponíveis pelo resto da rodada. Todos nascem **sem
+**Entram na junta seguinte e votam**, e permanecem **enquanto o bloco está em voo**. Todos nascem **sem
 ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do §C7.4-bis: quem acha não conserta.
 
-| Papel | Poder | Nasceu em | Função |
-|---|---|---|---|
-| `inspetor-fixtures-financeiras-legadas` | **VETO** | B-O6R-02/F6, ciclo 1 | Fixture legada × invariante nova: prova **por execução** que `title_restore_conflict` continua discriminando sem afrouxar `DIN-004`/`title_has_payments`. **Achador/votante: não planeja, não corrige.** |
-| `especialista-maquinas-de-desfazer` | **VETO** | B-O6R-02, ciclo 2 | Enumera **todas** as portas da API que desfazem o mesmo efeito monetário/de estado e prova que **concordam**; caça estado alcançável **sem rota de saída** (guard que fecha a saída sem fechar a entrada); exige invariante de **efeito líquido**, nunca de existência de linha; executa os drills de mutação em fixture. **Achador/votante: não escreve a correção.** |
-| `especialista-arnes-postgres-node` | **VETO** | B-O6R-02, ciclo 2 | Valida o **arranjo** de cada medição (comando, env — inclusive `DATABASE_URL` —, N e forma do job) antes do número; ataca barreira de teste com **decoy**; enumera promessa que pode rejeitar **sem handler**; mede vazamento de catálogo e de dado antes/depois, inclusive em lote **abortado**. Piso: **15/15 na forma exata do job — não se arredonda.** **Achador/votante: não escreve a correção.** |
+Elenco efêmero neste head: **0** — estado correto: cadeira efêmera só existe **enquanto vota**. Quem saiu,
+de qual bloco e em que commit está em `agent-orchestration/controle/aposentadoria-especialistas.md`. Quando
+houver cadeiras vivas, esta seção volta a listá-las numa tabela.
 
 > **Divergência RESOLVIDA (§A2) — corrigida em 2026-09-05, B-O6R-02 ciclo 5.** O `--check` **cobre**
 > `especialistas/`. **Não confira à mão; rode o guard.** Medido neste head:
@@ -140,6 +138,19 @@ ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do
 > O script é **recursivo de propósito** (`scripts/sync-agent-agents.mjs`, `listMd()`), com o motivo no
 > próprio comentário: *"o listing raso já deixou `especialistas/` fora do espelho E do `--check` dois
 > ciclos seguidos"*.
+>
+> **Adendo (`B-GOV-ELENCO` ciclo 2, 2026-09-07).** Os números do parágrafo acima — **34 agentes**, e
+> **11 contra 11** em `especialistas/` — são do head de **2026-09-05**; não são deste head. Medido **agora**,
+> com os mesmos comandos: `node scripts/sync-agent-agents.mjs --check` → `OK — 23 agentes, espelho
+> consistente` (`ec=0`), e a contagem de `especialistas/` nas duas árvores é `0 contra 0`
+> (`.claude/agents/especialistas/*.md` = **0**, `.agents/agents/especialistas/*.md` = **0**) —
+> as 15 cadeiras efêmeras saíram por
+> `D-APOSENTADORIA-ELENCO-EFEMERO`, com o registro nominal em
+> `agent-orchestration/controle/aposentadoria-especialistas.md`. **O que envelheceu foi a medição, não o
+> mecanismo:** o `--check` continua cobrindo `especialistas/`, e é por isso que o texto acima fica de pé.
+> O texto anterior é preservado (§A2 — acrescentar, nunca apagar). Isto fecha
+> `P-GOV-NOTA-KPI-CONGELADA`, **com uma correção escrita**: o texto daquela pendência diz `Kpis/*`, e a
+> nota congelada vive **neste README** — o painel de KPI nunca teve nada a ver com ela.
 >
 > **Por que isto era perigoso, e não apenas desatualizado:** o texto abaixo mandava **desligar um guard
 > que funciona** ("conferir à mão antes da junta") — e conferência manual antes da junta é exatamente o
