@@ -10,7 +10,7 @@
 |---|---|
 | Worktree | `.claude/worktrees/b06` |
 | Branch | `fix/billing-durability` |
-| **Head julgado** | **`deff7bcc`** |
+| **Head julgado** | **MEÇA VOCÊ MESMO** — `gh pr view 385 --json headRefOid --jq '.headRefOid'` (equivalente: `git rev-parse HEAD` no worktree `b06`). **Não confie em literal nesta tabela:** o head avança a cada commit de registro, inclusive os que consertam este briefing. Quando ele foi escrito era `deff7bcc`; o commit que o acrescentou já o tornou `764a3b04`. **Cite no voto o head que VOCÊ mediu, com o comando.** É o §A7 aplicado a si mesmo. |
 | PR | **#385** · `gh pr checks 385` → **7/7 pass** · `mergeable=MERGEABLE` |
 | Head da junta original | `0f0a872a` (código) · ata em `005b522c` |
 | Base absorvida | `origin/main` = `1b8319f9` (o merge é `cc579302`) |
