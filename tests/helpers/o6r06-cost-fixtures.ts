@@ -17,6 +17,31 @@
 // referência somada em `double` teria o mesmo erro que se pretende detectar.
 // -----------------------------------------------------------------------------------------------
 
+/**
+ * JANELA RESERVADA de `o6r06-cost-summary-sum-db` — 2028-02, e SO dela.
+ *
+ * POR QUE UMA RESERVA, e nao so um `importId`. As duas pontas do banco que esta fixture atravessa
+ * filtram por PERIODO, e uma delas NAO aceita escopo por import:
+ *   - `buildLineItemWhere` (cloud-costs) filtra `billing_period_start` e ACEITA `import_id` — logo o
+ *     escopo fecha esta direcao;
+ *   - `listCostLineItems` (cloud-cost-allocation) faz OVERLAP PURO de periodo, SEM `import_id`
+ *     nenhum — nao ha escopo a passar. So a janela disjunta impede que as 10.001 linhas daqui
+ *     caiam no mes que o rateio soma e inflem `totalImportedCost`.
+ * Enquanto os dois arquivos moravam em 2026-06 a colisao era BIDIRECIONAL e intermitente sob
+ * `node --test` paralelo (medido: 1 vermelho em 5 execucoes do par, com `ChecklistService` — servico
+ * da fixture do rateio — aparecendo em `services[]` do resumo).
+ *
+ * A ESCOLHA E POR PRESENCA, nao por chute: varrido `tests/**`, 2026 esta inteiramente ocupado
+ * (2026-06 n=209, 2026-07 n=319) e o ano de 2028 nao aparece em NENHUM literal de data. O unico
+ * "2028" do repositorio e o codigo de erro Prisma `P2028`, que nao e data.
+ *
+ * QUEM GUARDA A RESERVA: `tests/o6r06-janela-reservada-guard.test.ts` — estatico, sem banco. Ele
+ * assere POR PRESENCA que o conjunto de arquivos de `tests/` que contem este literal e EXATAMENTE
+ * a allowlist. Somar um arquivo novo a janela, ou apagar esta constante, deixa aquele guard
+ * vermelho ANTES de a corrida voltar.
+ */
+export const O6R06_JANELA_RESERVADA = new Date("2028-02-01T00:00:00.000Z");
+
 /** Valor de cada uma das 10.000 primeiras linhas, em micro-unidades. */
 export const O6R06_LINHA_COMUM_MICROS = 990_000_000_001n;
 

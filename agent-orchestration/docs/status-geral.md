@@ -4282,3 +4282,46 @@ descartável que só classifica achado contestado** (`dentro-do-bloco` × `pre-e
 pediu aquilo), **sem veredito novo e sem poder vinculante**: registra na ata e a cadeira de mérito decide.
 As **6 ressalvas do porteiro** viajam para o próximo bloco. **Próxima demanda pelo backlog: `B-O6R-06`**
 (Ω6R-DIN-005 e DIN-007), último pré-requisito do gate da CHECKLIST P1.
+
+---
+
+## 2026-09-09 — #382, #383 e #384 registrados a posteriori, e o parecer de regularização que os cobriu
+
+**Por que só agora:** os três mergearam **sem o gate do §C2.8**, e nenhum se registrou aqui. Medido por
+presença: `git grep -l "#382|#383|#384" a01fc014 -- agent-orchestration/` → `ec=1` nos três, com controle
+positivo `#381` → 4 arquivos. O `status-geral.md` parava na entrada do #381 — escrita **pelo** #382, que não
+se registrou. Quem cumprisse o §A4.1 partia de um estado vencido em três PRs.
+
+**O que cada um entregou** (conferido na ref `a01fc014`, não no disco da sessão):
+
+- **#382 (`1b8319f9`)** — parecer do porteiro do #381 e as 6 ressalvas dele fechadas. O backfill de KPI é o
+  mais bem justificado da série: `approved_head 81b977f3` escolhido entre quatro candidatos **com o motivo
+  escrito e medido** (o blob de `audit-agents-skills.mjs` é o mesmo em `9c0e6ac9`, `81b977f3` e `90d30f8a`,
+  logo o código julgado é o que mergeou).
+- **#383 (`72fcdcde`)** — **`§A7 · Onde se MEDE — a ref alvo, nunca a árvore da sessão`**
+  (`D-MEDIR-NA-REF-ALVO`), mais o item 3.3 no `inspetor-de-terreno-da-junta` (corpo carregado × corpo
+  julgado, EOL-neutro). É a regra que nomeia a classe de contaminação que esta rodada mediu **cinco vezes**.
+  Espelhado em `AGENTS.md:112`, idêntico EOL-neutro.
+- **#384 (`a01fc014`)** — skill `backend-review-ts-prisma` nos dois espelhos (SKILL + checklist + repo-erp).
+  Entrou com **zero linha** em `agent-orchestration/` — sem ID de bloco, sem decisão, sem pendência. O
+  conteúdo é o mais honesto dos três (cada fato reproduz na ref); o defeito é só o cartório, e fica
+  registrado aqui como `B-GOV-SKILL-BACKEND-REVIEW` a posteriori.
+
+**A regularização.** Um `porteiro-pos-merge` novo cobriu os três de uma vez:
+`agent-orchestration/omega/juntas/votos/REGULARIZACAO-382-383-384/`. Veredito: **os três LIBERADO COM
+RESSALVA; o repositório está DESTRAVADO** para começar bloco novo. Contagens **reexecutadas** dos logs de CI
+do run sobre o head do #384 (backend 2936/2938, smoke 1126/1126, flutter 864/864, backend-postgres 225/225
+com zero pulos), não copiadas.
+
+**O achado que ninguém tinha visto, e é dele:** `P-GOV-WORKTREES-NAO-IGNORADAS` e
+`P-GOV-INSPETOR-33-SEM-NORMA` declaravam fechamento/rebaixamento no **cabeçalho**, mas a **linha canônica**
+dizia `ABERTA` e `REBAIXADA` — e a regra do gerador é *"a linha vence o cabeçalho"*. As duas eram contadas
+como abertas no balde A, e a contradição era **invisível** porque o detector exige `**FECHADA**` em negrito.
+Corrigidas neste bloco, com o motivo escrito em cada uma.
+
+**E a ironia medida:** o próprio porteiro da regularização recebeu um `CLAUDE.md` contaminado com o
+`§C7.1-quater` — cláusula que não existe em ref nenhuma — e **só não reprovou os três por construção porque
+aplicou o §A7 contra o próprio corpo carregado**. Ele se autodeclara "a quarta instância" da classe que o
+#383 tinha declarado fechada. A detecção do #383 funciona; a **prevenção** dele (sessão nascendo de um
+worktree que acompanha a `main`) ficou **fora do diff** e não tem dono — reaberta em
+`P-GOV-CAMINHO-REPO-SESSAO`, com as três reincidências das últimas 24 h nomeadas.

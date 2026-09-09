@@ -147,7 +147,29 @@ este bloco; alcança quem for abrir aquele gate.
 principal** em vez do worktree do bloco — a armadilha de caminho absoluto. Os dois arquivos foram movidos com
 `cmp` byte a byte **antes** de a origem ser apagada; nada rastreado foi tocado na principal.
 
-## §9 · Homologação da cadeira permanente (§C7.1-quater)
+## §9 · Homologação da cadeira permanente
+
+> **CORREÇÃO DE FUNDAMENTAÇÃO (2026-09-09), feita antes do PR e não depois de cobrada.**
+> Esta seção citava o **`§C7.1-quater`** como base normativa. Medido depois: **essa seção não existe em ref
+> nenhuma** — nem em `origin/main` (`a01fc014`), nem em `fe2748c8`, nem na árvore principal. Ela existe só
+> em `origin/chore/gov-elenco-fatia-b` / `25c0112a`, a branch cujo desenho foi **reprovado em duas juntas e
+> nunca mergeou**. O `CLAUDE.md` carregado pela sessão do orquestrador a continha; o do repositório, não.
+>
+> O `§A7` da ref vigente (`CLAUDE.md:125`, entrado pelo #383) é explícito: **"norma citada que não existe na
+> ref julgada não se aplica"**. Portanto:
+> - **A convocação continua válida** — ela foi **determinação escrita do dono** em 2026-09-08 ("validando o
+>   alegado pela junta"), e decisão do dono é fonte §A1.1, acima do contrato escrito. O que era inválido era
+>   a *citação*, não o *ato*.
+> - **O trabalho da cadeira continua valendo** por si: ela reexecutou 6 suítes da C1, as 2 de resumo da C2,
+>   reproduziu o Δ=+54 e o absoluto 2992 da C3, e as duas ALTAs dela se provaram sozinhas — a colisão de
+>   `blocks_completed` (dois blocos escrevendo 162 a partir da mesma base 161) e o `0 fail` do `npm test` que
+>   não reproduz. Nada disso depende de qual seção autoriza a cadeira.
+> - **Nenhum merge fica condicionado a ela.** A regra "ata sem o parecer dele = merge inválido" pertence à
+>   mesma seção inexistente e **não se aplica**.
+>
+> Confirmado de forma independente pelo `porteiro-pos-merge` da regularização, que recebeu o **mesmo**
+> contrato contaminado, mediu-o contra a ref e registrou o mesmo: `votos/REGULARIZACAO-382-383-384/01-parecer-porteiro.md`.
+> A pendência da classe é `P-GOV-CAMINHO-REPO-SESSAO`, com a reincidência agora registrada.
 
 **Parecer:** `votos/B-O6R-06/99-cadeira-permanente.md` (285 l.) · **medições brutas:**
 `99-cadeira-permanente-medicoes.md` (262 l., M1–M27, apensadas ao vivo).

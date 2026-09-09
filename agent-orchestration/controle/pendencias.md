@@ -7523,9 +7523,17 @@ mostra `.claude/worktrees/` como untracked e nunca staged. É risco, não incide
 repositório e afeta todo trabalho em voo, inclusive os dois worktrees de outras sessões). Consertar aqui
 seria exatamente o alargamento silencioso de escopo que o §C4 proíbe.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (o `.gitignore` nunca teve a
+- **status:** FECHADA · **severidade:** MÉDIA · **escopo:** `pre-existente` (o `.gitignore` nunca teve a
   regra; os worktrees existem desde 26/08) · **dono:** próximo bloco de infraestrutura de repositório ·
   **bloqueia:** nada. **Correção proposta:** uma linha `.claude/worktrees/` no `.gitignore`.
+- **[CORREÇÃO DE REGISTRO, B-O6R-06, 2026-09-09]** a linha acima dizia `ABERTA` e **contradizia o próprio
+  cabeçalho**, que declara FECHADA POR NÃO-REPRODUÇÃO. Achado `G-3` do parecer de regularização do porteiro
+  (`votos/REGULARIZACAO-382-383-384/01-parecer-porteiro.md`): pela regra do gerador
+  (`gerar-indice-pendencias.py:29`) **a linha vence o cabeçalho**, então esta pendência estava sendo contada
+  como ABERTA no balde A — e a contradição era **invisível**, porque o detector `CABEC` (l.48) exige
+  `**FECHADA**` em negrito e o cabeçalho escreve sem. Reconferido antes de corrigir:
+  `git check-ignore -v .claude/worktrees/b06` na árvore do bloco → **ec=0**, `.gitignore:52`, regra presente
+  desde `74430cc1` (2026-08-29). O cabeçalho está certo; a linha era o resíduo.
 
 ---
 
@@ -7864,7 +7872,7 @@ desenho reprovado, e então o §C7.1-quater passa a existir em `CLAUDE.md`/`AGEN
 > commitada da mesma leva. Severidade cai de **ALTA** para **BAIXA**, e o que resta é uma **nota anexada à
 > decisão do assento**: se ele for adotado, o 3.3 entra junto.
 
-- **status:** REBAIXADA · **severidade:** BAIXA (era ALTA) · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
+- **status:** ABERTA · **severidade:** BAIXA (rebaixada de ALTA em 2026-09-08) · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
   `B-GOV-ELENCO`, 2026-09-07, e ficou na branch não-mergeada) · **dono:** decisão do dono ·
   **bloqueia:** nada hoje — o inspetor mediu e não aplicou. Mas cada junta futura paga o custo de re-descobrir.
 
@@ -7976,3 +7984,74 @@ fixo — ele já fez isso ad hoc nesta rodada, e foi assim que a divergência ap
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (o mecanismo de carregamento é do
   runtime, anterior a qualquer bloco) · **dono:** **decisão do dono** · **bloqueia:** nada, mas cada junta
   futura paga o custo de re-descobrir.
+- **[REINCIDÊNCIA MEDIDA, B-O6R-06, 2026-09-09 — a prevenção NÃO foi entregue]** O fechamento do #383
+  declarou dois mecanismos: **detecção** (§A7 + item 3.3 do inspetor), que foi entregue e verificada; e
+  **prevenção** (*"a sessão passa a sair de um worktree que acompanha a `main`"*), que o próprio corpo do PR
+  intitula **"Prevenção (fora do diff)"** e que **nenhum artefato força**. A prevenção é o que remove a
+  classe; a detecção só a nomeia depois do dano. **Três reincidências medidas em 24 h, todas posteriores ao
+  merge do #383:** (1) o orquestrador convocou uma cadeira citando `§C7.1-quater`, cláusula que não existe em
+  ref nenhuma — só em `chore/gov-elenco-fatia-b`/`25c0112a`, branch reprovada; (2) o `porteiro-pos-merge` da
+  regularização recebeu **o mesmo** contrato contaminado e só não reprovou os três PRs por construção porque
+  aplicou o §A7 da ref contra o próprio corpo carregado — ele se autodeclara *"a quarta instância"*
+  (`votos/REGULARIZACAO-382-383-384/01-parecer-porteiro.md`); (3) o plano de correção mediu
+  `git check-ignore .claude/worktrees` na **árvore principal** (`demo/investidor`, 26 commits atrás, sem a
+  regra) e concluiu que os worktrees não estão ignorados — verdadeiro naquela árvore, **falso na `main`**,
+  onde `.gitignore:52` tem a regra desde `74430cc1` (2026-08-29). É a mesma classe que fabricou esta
+  pendência e a `P-GOV-WORKTREES-NAO-IGNORADAS`.
+  **Conformidade parcial medida:** `gov-elenco` está na `main`; `b06` deriva de `1b8319f9`; a árvore
+  principal segue **26 commits atrás** em `demo/investidor` — e é dela que as sessões nascem.
+  **O que fecharia:** a decisão do dono sobre onde as sessões nascem (pergunta 1 do dossiê), com artefato que
+  a force. **Limite honesto:** nenhuma das duas escolhas conserta o `CLAUDE.md` de uma sessão **já aberta** —
+  isso é snapshot de contexto e só sai reiniciando a sessão.
+
+---
+
+## P-O6R-SUITES-DB-SEM-TEARDOWN (2026-09-09) — execuções consecutivas de `npm test` contra o mesmo banco não são independentes — MÉDIA
+
+As suítes `-db` **não limpam o que semeiam**, e pelo menos uma ponta de leitura **não tem escopo por import**.
+O efeito: rodar `npm test` duas vezes seguidas contra o mesmo banco produz vermelho na segunda, em famílias
+que variam conforme o resíduo acumulado.
+
+**Medido, com N e forma.** Cinco execuções consecutivas contra o mesmo cluster descartável (`b06m-pg` :56501,
+`CORE_SAAS_PERSISTENCE=memory`), **sem** recriar o banco entre elas: **5 vermelhas de 5**, em **quatro
+famílias distintas** — `o6r06-cost-summary-sum-db` (fail 1 e 2), `rls-tenant-isolation` (fail 1),
+`financial-entry-delete-reverse-race-db` (fail 1), `o6r06-allocation-basis-rls-db` (fail 4). Denominador
+constante em 2997 nas cinco. **Com o banco recriado antes de cada execução: 3 de 3 verdes, `2997 · pass 2995
+· fail 0 · skipped 2`, `ec=0`, resultados idênticos.**
+
+**O mecanismo, nomeado.** `listCostLineItems(periodStart, periodEnd)`
+(`src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:208-212`) faz **overlap puro de
+período, sem `import_id`**. Qualquer linha de custo deixada em junho/2026 por uma execução anterior entra na
+soma da seguinte. É a mesma propriedade que o `B-O6R-06` fechou **dentro** da sua própria suíte, movendo-a
+para uma janela reservada (`tests/helpers/o6r06-cost-fixtures.ts`, `O6R06_JANELA_RESERVADA` = 2028-02) — mas a
+propriedade continua valendo para o resto da casa.
+
+**Por que a CI não vê.** Cada job nasce com **service container novo** (`ci.yml`, `services: postgres`), então
+toda execução da CI é, por construção, a primeira. O portão é mais frouxo que a máquina de quem desenvolve —
+e essa assimetria é o que faz o defeito só aparecer localmente.
+
+**Duas hipóteses minhas que a execução REFUTOU, registradas para ninguém repeti-las.** (1) *"É nível de
+paralelismo"* — a máquina local tem 8 de `availableParallelism` contra 4 do runner, e
+`scripts/run-backend-tests.mjs:362` faz `spawn` sem `--test-concurrency`. Os dois fatos são verdadeiros e
+**irrelevantes**: em `--test-concurrency=4` as falhas ficaram **determinísticas** (3/3 idênticas, mesmos 4
+testes), o que refuta a hipótese em vez de confirmá-la. (2) *"É regressão do conserto"* — a suíte de rateio
+falhava sozinha, mas passa **10/10** em banco novo, e ela **não importa** o helper que o conserto tocou (cuja
+mudança é puramente aditiva, +25/−0).
+
+**Armadilha de procedimento, medida no caminho e que vale mais que a pendência.** Recriar o **schema**
+(`DROP SCHEMA public CASCADE; CREATE SCHEMA public`) **não** equivale a banco novo: destrói o
+`GRANT USAGE ON SCHEMA public TO PUBLIC` que o `initdb` cria e que o `prisma migrate deploy` **não repõe**.
+Com isso, `auth-login-candidates-fn-db` cai com `42501 permission denied for schema public` no subteste que
+usa papel `NOSUPERUSER` — e parece falha determinística pré-existente. Com reset no **banco**
+(`DROP DATABASE ... WITH (FORCE)` + `CREATE DATABASE`), `nspacl` volta a
+`{pg_database_owner=UC/pg_database_owner,=U/pg_database_owner}` e a suíte sai **11/11 `ec=0`**.
+**O reset é no BANCO, nunca no schema.**
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (a leitura sem escopo de import é
+  de `20260611000000`, anterior a este bloco; o `B-O6R-06` fechou a instância dele e **não** criou a classe) ·
+  **dono:** bloco de arnês de teste a nomear · **bloqueia:** nada — a CI é verde por construção.
+  **Correção proposta:** teardown por `import_id` nas suítes que semeiam custo, **ou** escopo por import em
+  `listCostLineItems`, **ou** convenção de janela reservada por suíte como a que o `B-O6R-06` adotou. A
+  terceira é a mais barata e já tem guard estático (`tests/o6r06-janela-reservada-guard.test.ts`).
+  **Forma da evidência:** as 5 execuções sujas e as 3 limpas estão em `Kpis/kpis-latest.json`, campo
+  `metrics.backend_tests.note`, com comando e N.
