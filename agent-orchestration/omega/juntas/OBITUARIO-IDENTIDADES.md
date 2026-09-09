@@ -29,7 +29,7 @@
 | | |
 |---|---|
 | Identidades registradas | **17** |
-| **SEPULTADAS** | **15** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4) |
+| **SEPULTADAS** | **21** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 6 do `B-O6R-06`) |
 | **RESERVADAS** | **2** (`jurado-c5-arnes-catalogo-postgres` · `critico-c5-adversarial`) |
 | Arquivos apagados por este registro | **0** |
 
@@ -142,3 +142,37 @@ faltava era **a fonte**, não um segundo fiscal. Ela é este arquivo.
 | Bloco | O que fez | Data |
 |---|---|---|
 | **SAN2-3** | Criou este registro com as 17 identidades (15 sepultadas + 2 reservadas); apontou-o no `inspetor-de-terreno-da-junta`; **zero descarte físico** | 2026-08-30 |
+
+---
+
+### 3.4 Caso `B-O6R-06` — durabilidade do faturável · junta concluída 2026-09-07 · **APROVADO 3×0** · PR #385
+
+Ata: `J-B-O6R-06.md` (head de código julgado `0f0a872a`; ata em `005b522c`). Briefing:
+`BRIEFING-B-O6R-06.md`. Votos: `votos/B-O6R-06/`. Todas as seis nasceram em **`e35492ef` (2026-09-07)**.
+
+> **Acrescentado a posteriori, e a dívida é declarada.** O §1.5 manda a linha entrar **no mesmo PR em que a
+> junta fecha**. A junta fechou em `005b522c` e as seis linhas **não** entraram — omissão do orquestrador.
+> Foi o `inspetor-de-terreno-da-junta` que a nomeou, ao **BLOQUEAR** a junta do delta em 2026-09-09: o
+> orquestrador havia convocado estas mesmas seis identidades para votar o delta, sem conferir o obituário.
+> O item que produziu o achado foi o **3.1-bis** ("o obituário é fonte PRIMEIRA, antes do grep") — que
+> faltava no corpo carregado do próprio inspetor, e que ele só foi ler porque aplicou o item 3.3 a si mesmo.
+
+| # | Identidade | Papel | Status | Classe | Evidência | Nasceu em |
+|---|---|---|---|---|---|---|
+| 1 | `jurado-06-banco-atomicidade-rls` | titular, cadeira C1 (veto) — banco/atomicidade/RLS | **SEPULTADA** | `votou` | `votos/B-O6R-06/C1-banco-rls-voto.json` (campo `jurado` nomeia a si mesma) + `C1-banco-rls-evidencia.md` + ata + briefing l.37 | `e35492ef` (2026-09-07) |
+| 2 | `jurado-06-invariante-financeiro-rateio` | titular, cadeira C2 (veto) — invariante financeiro/rateio | **SEPULTADA** | `votou` | `votos/B-O6R-06/C2-financeiro-rateio-voto.json` + `C2-financeiro-rateio-evidencia.md` + ata + briefing l.38 | `e35492ef` (2026-09-07) |
+| 3 | `jurado-06-contrato-regressao-kpi` | titular, cadeira C3 (veto) — contrato/regressão/KPI | **SEPULTADA** | `votou` | `votos/B-O6R-06/C3-contrato-kpi-voto.json` + `C3-contrato-kpi-evidencia.md` + ata + briefing l.39 | `e35492ef` (2026-09-07) |
+| 4 | `jurado-06-suplente-banco-atomicidade-rls` | suplente da cadeira C1 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-B-O6R-06.md` l.37 (coluna suplente) — caso **concluído** | `e35492ef` (2026-09-07) |
+| 5 | `jurado-06-suplente-invariante-financeiro-rateio` | suplente da cadeira C2 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-B-O6R-06.md` l.38 — caso **concluído** | `e35492ef` (2026-09-07) |
+| 6 | `jurado-06-suplente-contrato-regressao-kpi` | suplente da cadeira C3 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-B-O6R-06.md` l.39 — caso **concluído** | `e35492ef` (2026-09-07) |
+
+**O precedente aplicado, e por que ele decide.** O §1.2 diz que não há reabilitação por tempo, por troca de
+bloco nem por "o caso dela era outro". O caso `B-O6R-ARNES` (§3.1) fechou **APROVADO 3×0**, exatamente como
+este, e ainda assim sepultou os 3 titulares (`votou`) **e** os 3 suplentes (`nomeada-e-preparada`). Nesta
+casa o sepultamento decorre de **ter votado** — ou de ter sido nomeada e preparada num caso concluído —,
+nunca de a junta ter reprovado. O argumento "mas foi aprovado, então elas podem votar o delta" já havia sido
+testado e recusado pelo registro antes de eu tentar usá-lo.
+
+**Consequência para o delta:** a junta que julga o delta do `B-O6R-06` precisa de **identidades novas** nas
+três cadeiras, com suplentes novos — o plano de perda de jurado que apontava para os `jurado-06-suplente-*`
+**não é lícito**, porque aponta para a mesma classe queimada.
