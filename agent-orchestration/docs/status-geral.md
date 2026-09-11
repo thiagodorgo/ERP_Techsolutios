@@ -4325,3 +4325,38 @@ aplicou o §A7 contra o próprio corpo carregado**. Ele se autodeclara "a quarta
 #383 tinha declarado fechada. A detecção do #383 funciona; a **prevenção** dele (sessão nascendo de um
 worktree que acompanha a `main`) ficou **fora do diff** e não tem dono — reaberta em
 `P-GOV-CAMINHO-REPO-SESSAO`, com as três reincidências das últimas 24 h nomeadas.
+
+---
+
+## 2026-09-09/11 — `B-O6R-06`: junta do DELTA **APROVADA 3×0** (PR #385), ata persistida
+
+**O que se julgou:** não o mérito (aprovado 3×0 em `J-B-O6R-06.md`), mas o **delta** — o merge de
+`origin/main` com a colisão de `blocks_completed` reconciliada (161 → 162 pelos dois lados → **163**), o
+**conserto de isolamento** da suíte `o6r06-cost-summary-sum-db` (janela reservada `2028-02` + escopo por
+`importId` + isca + guard, **zero linha de `src/`**) e o registro cobrado pelo porteiro da regularização.
+
+**Como se chegou lá, e por que valeu:** o `inspetor-de-terreno-da-junta` **BLOQUEOU** a primeira convocação
+por dois erros do orquestrador — seis identidades **sepultadas** convocadas (as `jurado-06-*`, classes
+`votou`/`nomeada-e-preparada`, obituário §3.4) e junta **sem briefing**. O item que produziu o bloqueio
+(3.1-bis, "o obituário é fonte primeira") **faltava no corpo carregado do próprio inspetor**; ele aplicou o
+item 3.3 a si mesmo, mediu a divergência como aditiva e foi ler o que faltava. Corrigido com seis identidades
+novas (`jurado-06d-*`) e `BRIEFING-B-O6R-06-delta.md`; segunda passada: `LIBERADO COM RESSALVA`.
+
+**Placar:** unanimidade de 3 (o bloco toca dinheiro; nenhum lockfile mudou — as três cadeiras mediram a
+categoria por conta própria). **12 achados, 2 média, 10 baixa, 0 `bloqueia`**; 6 `dentro-do-bloco`, 6
+`pre-existente`, todos com escopo provado por data/origem. `src/` do head julgado é **byte a byte** o que a
+junta original aprovou (hash de árvore `461cfa6b` em 7 refs). KPI reproduz **sob a forma que ele declara**
+(banco recriado antes de cada execução): `2995/2997`, N=3 idênticos — e `fail 0` **não é herdável** (C2
+mediu 1/3 sob contenção de CPU; `P-O6R-SUITES-DB-SEM-TEARDOWN`, emendada).
+
+**Ata:** `agent-orchestration/omega/juntas/J-B-O6R-06-delta.md` · votos e evidências em
+`votos/B-O6R-06-delta/` (6 arquivos). Fechados neste PR os itens de registro que a ata atribuiu ao bloco:
+marcador §C3.3 nas trilhas carregadas, linha 9 do obituário (17 → 21), duas pendências com `status:` em
+negrito (invisível ao gerador), e as pendências "a nomear" abertas com dono
+(`P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT`, `P-O6R-B06-DELTA-RESIDUAIS`).
+
+**A pendência que sai maior do que entrou não é de produto:** três agentes de gate consecutivos (inspetor,
+porteiro da regularização e o consolidador da ata) receberam um `CLAUDE.md` que **não existe em ref nenhuma**
+(marcadores de `25c0112a`, branch reprovada) e só não erraram porque mediram antes de aplicar —
+`P-GOV-CAMINHO-REPO-SESSAO`, decisão nº 1 do dossiê do dono. **Próximo passo:** absorver `#383/#384`
+(sem conflito, sem tocar código), bateria completa, CI, merge, §C5, porteiro pós-merge, backfill.

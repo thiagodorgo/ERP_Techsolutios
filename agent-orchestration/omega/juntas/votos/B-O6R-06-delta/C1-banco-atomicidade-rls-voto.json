@@ -1,0 +1,121 @@
+{
+ "jurado": "jurado-06d-banco-atomicidade-rls (identidade nova — não votei, não planejei, não desenvolvi, não achei o defeito de isolamento; nada herdado das seis identidades sepultadas em OBITUARIO §3.4, do planejador-mestre, do critico-adversarial, do dev general-purpose, do orquestrador-achador, do porteiro-pos-merge, do inspetor-de-terreno-da-junta nem da cadeira-permanente-backend-review; briefing do delta re-executado inteiro)",
+ "lente": "DELTA, não mérito. Janela reservada 2028-02 e as DUAS direções da colisão (listCostLineItems faz overlap puro sem import_id; buildLineItemWhere aceita import) · reexecução de F1 e F2 em cluster descartável próprio com reset no BANCO · onDelete Cascade e o teardown dos DOIS ids, medido por SELECT count(*). Quórum: unanimidade de 3. Não julga: C2 (jurado-06d-invariante-financeiro-rateio) — intocabilidade de src/modules/cloud-costs/** e cloud-cost-allocation/**, ataque à ISCA por mutação e aritmética do Delta; C3 (jurado-06d-contrato-regressao-registro) — escopo por hash de árvore, KPI por reexecução, registro/ata/obituário/índice.",
+ "voto": "APROVADO",
+ "head_medido": "e26eb9e5 (o prompt declarava 764a3b04 — o head se moveu; gh pr view 385 --json headRefOid confirma e26eb9e5)",
+ "itens": {
+  "item_1_janela_reservada_duas_direcoes": "PASSA",
+  "item_2_F1_F2_cluster_proprio_reset_no_banco": "PASSA",
+  "item_3_cascade_teardown_dois_ids_select_count": "PASSA"
+ },
+ "justificativa": "TERRENO. Worktree PRÓPRIO .claude/worktrees/o6r06d-jur-c1 detached em e26eb9e5, head medido por mim (git rev-parse HEAD no b06 + gh pr view 385 --json headRefOid) e DIFERENTE do declarado (764a3b04). npm ci --no-audit --no-fund próprio (ec=0) + npx prisma generate; nenhuma junction criada, e os node_modules de main/b06/o6r06d-jur-c2 seguem com 222 entradas cada DEPOIS da minha remoção. Cluster descartável meu: o6r06d-jc1-pg :56711 e o6r06d-jc1-redis :56712, portas escolhidas após netsh excludedportrange e docker ps (nunca 5432/55432, nunca 56501/56502 do dev). Node v20.19.5. RESET NO BANCO nas 16 execuções: DROP DATABASE erp_jc1 WITH (FORCE) + CREATE DATABASE + prisma migrate deploy (recreate_ec=0 migrate_ec=0), com nspacl conferido depois = {pg_database_owner=UC/pg_database_owner,=U/pg_database_owner} — o GRANT USAGE ao PUBLIC intacto, zero 42501 no meu cluster. Pristino por blob antes e depois (git hash-object x git rev-parse HEAD:) nos três arquivos do delta; git status --porcelain vazio ao sair. git clean NUNCA usado, em forma nenhuma. Base viva erp-postgres/erp-redis nunca tocada, nem para leitura (todo psql foi por docker exec o6r06d-jc1-pg). MEDI A CATEGORIA DO QUÓRUM EU MESMO: git diff --numstat cc579302 e26eb9e5 -- src prisma mobile .github scripts frontend VAZIO e -- package.json package-lock.json VAZIO: sem produção, sem dependência nova, sem serviço pago, logo unanimidade de 3 e não 5/5. || O QUE NÃO COBREI, POR SER REPROVAÇÃO POR CONSTRUÇÃO: mudança em src/ (o conserto tem zero linha de src/ por desenho e o §5 proíbe); prisma/, mobile/, .github/, scripts/, frontend/; alteração em tests/o6r06-allocation-basis-rls-db.test.ts (a outra ponta, deliberadamente não alterada); o ramo completed do reconcile; NÃO baixei --test-concurrency e não o cobrei; não bloqueei por §C7.1-quater nem pelo assento permanente (norma que não existe na ref). || ITEM 1. (a) As duas direções lidas no head, por PRESENÇA (5 sítios enumerados): listCostLineItems tem a MESMA assinatura de 2 Dates na interface (repository.ts:26), na impl memória (:127), na impl prisma (:208) e no único chamador (service.ts:54); o where é { billing_period_end: { gte: periodStart }, billing_period_start: { lte: periodEnd } } — overlap PURO, sem import_id, NÃO HÁ escopo a passar. buildLineItemWhere (aws-cur-prisma.repository.ts:193-209) tem ...(filters.importId ? { import_id: filters.importId } : {}) — aceita. A premissa do conserto é REAL no head que eu medi. (b) MEUS N na varredura de tests/**: 2026-06 = 224 no head e 219 pré-delta (o helper declara 209 — DIVERGE, publico os dois); 2026-07 = 320 e 319 (o helper declara 319 — bate); 2028-02 = 9 no head e 0 pré-delta. Por PRESENÇA e não por ausência de grep: o único 2028 de tests/ antes do delta é tests/mobile-backend-contracts.test.ts (4x), e as 4 são P2028, código de erro Prisma, nascido em 2026-06-14 4b0c40c8 — nenhuma é data. As 9 do head são exatamente os 3 arquivos do delta. Prova mais forte que o literal: grep -rln cloudCostLineItem tests/ devolve EXATAMENTE 2 arquivos, e a outra ponta usa 2026-06-01 a 2026-06-30 (linhas 443-444) — DISJUNTO de 2028-02. A janela NÃO está compartilhada; a colisão não mudou de mês. (c) Guard atacado por mutação, baseline 4/4 pass ec=0: M1 quinto arquivo com o literal deu ec=1 e G1 vermelho NOMEANDO zz-c1-mut-g1.ts; M2 literal deixa de existir no fonte (conjunto esvazia) deu ec=1 e G1 vermelho; M3 consumidor crava new Date(2026-06-01) com a constante intocada deu ec=1 com G2 VERDE e G3 vermelho (é exatamente o desenho: G3 é o falsificador da cegueira de G2); M4 identificador sai da lista de import deu ec=1 e G3 vermelho; M5 varredura em diretório vazio deu ec=1 e G4 vermelho com a varredura achou só 0 arquivo(s). 5 mutações, 5 vermelhas, ZERO verde. Todas revertidas com blob = HEAD: e git status vazio.|| ITEM 2. F1 arquivo sozinho, banco recriado antes de CADA execução, CORE_SAAS_PERSISTENCE=memory, RBAC_DB_PARITY ausente: COM escopo N=3 deu ec 0/0/0, 7 pass 0 fail, skipped 0 (a suíte -db REALMENTE rodou no meu cluster, sem auto-pulo por falta de DATABASE_URL, que seria teatro); SEM escopo (os 4 importId: cenario.importId comentados) N=3 deu ec 1/1/1, 3 pass 4 fail, com os MESMOS 4 casos (S1, S3-linha, S4, S10) nas três execuções, portanto determinístico. Remover o escopo deixa F1 VERMELHA: o escopo mede, e o conserto não é decorativo. F2 par das duas suítes, mesmo comando: head do delta N=5 deu ec 0 0 0 0 0, 17 pass 0 fail nas cinco. VERMELHO-CONTROLE no head intocado 0f0a872a (blobs conferidos 92cf9b4e e 52d71826 iguais aos de 0f0a872a:, controle legítimo porque git diff --numstat 0f0a872a e26eb9e5 -- src prisma package.json package-lock.json é VAZIO), N=5 deu ec 1,1,0,0,0. DIGO COM TODAS AS LETRAS: O CONTROLE REPRODUZIU — 2 vermelhos em 5 execuções, MAIS forte que o 1-em-5 declarado, e em caso DIFERENTE a cada vez (S3-linha na run1, S10 na run2), que é assinatura de corrida e não de defeito determinístico. O mecanismo está colado dos logs: o total sai INFLADO — expected 9900999999010001n contra actual 9901010039010001n, e expected 9900999999.010001 contra actual 9901000039.010001 — linhas estranhas entrando na soma do mês. Confirmei por leitura que pré-conserto a fixture semeava em new Date(2026-06-01T00:00:00.000Z), o mesmo mês da outra suíte, e que grep -c 2028 no helper de 0f0a872a dá 0. CONFIRMO a refutação de regressão do conserto (17/17, cinco vezes) e NÃO reintroduzo a hipótese de paralelismo nem baixei a concorrência.\n || ITEM 3. confdeltype lido do CATÁLOGO e não do schema: cloud_cost_line_items_import_id_fkey com confdeltype = c, de cloud_cost_line_items para cloud_cost_imports — CASCADE real, catálogo e schema Prisma não divergem. Controle negativo do nome da tabela: to_regclass(public.cost_line_items) devolve VAZIO e to_regclass(public.cloud_cost_line_items) devolve a tabela — a tabela cost_line_items do meu mandato NÃO EXISTE, e medir por ela devolveria 0 pela razão errada. Depois da suíte (ec=0, 7/7): count(*) na janela 2028 = 0, cloud_cost_imports = 0, cloud_cost_line_items = 0. Mutações do teardown: T1 (só o primeiro id) deu ec=1 com S11 VERMELHO e S4 junto, e sobraram 21 linhas em 2028 — a isca vira lixo permanente, exatamente a previsão; T2 (sem o deleteMany de cloudCostLineItem, só o do import) deu ec=0 com S11 verde e count 0, ou seja O MECANISMO REAL É O CASCADE DO CATÁLOGO e o deleteMany explícito é redundante hoje, com a limpeza sobrevivendo enquanto a FK mantiver confdeltype igual a c; T3 (throw forçado dentro do try de S1) deu ec=1 com S1 vermelho e a janela AINDA em 0, ou seja o teardown roda em finally nos 7 casos e limpa TAMBÉM no caminho de falha. A classe P-O6R-SUITES-DB-SEM-TEARDOWN não alcança este arquivo.\n || O QUE PASSA: os três itens do meu mandato. O QUE REPROVA: nada dentro da minha lente. || PROPRIEDADES AUSENTES, nomeadas sem conserto (§C7.4-bis): (1) a reserva é verificada pela FORMA TEXTUAL da data e não pelo intervalo — medi que um quinto arquivo escrevendo new Date(Date.UTC(2028, 1, 15)), dentro da janela, deixa o guard VERDE (M6, ec=0, 4/4 pass); hoje a propriedade de fundo está satisfeita, porque o universo medido de escritores é de 2 arquivos, por isso é nota e não bloqueio; (2) a varredura de presença publicada no helper declara 2026-06 n=209 e eu medi 219 no mesmo head pré-delta — a conclusão não muda, o número não confere. || O QUE NÃO MEDI POR SER DE OUTRA CADEIRA: intocabilidade de src/modules/cloud-costs/** e cloud-cost-allocation/**, ataque à ISCA por mutação e a aritmética do Delta são da C2 (jurado-06d-invariante-financeiro-rateio); escopo por hash de árvore, absorção do merge por comparação de árvores, KPI por reexecução, blocks_completed 163, ata/obituário/índice e a fatia S0 são da C3 (jurado-06d-contrato-regressao-registro). || O QUE FICOU SEM EXECUTAR E POR QUÊ: npm test inteiro e sync-agent-agents.mjs --check, que não são do meu núcleo e pertencem à C3; o meu tempo foi para as 16 execuções com reset no banco. Registro por medição própria, sem tratar como achado meu: gh pr checks 385 no MEU instante deu 4 pending (backend, backend-postgres, frontend, flutter) e 2 pass, portanto NÃO é 7/7; e git merge-base HEAD origin/main dá 1b8319f9 com origin/main em a01fc014, ou seja o PR está BEHIND. Os dois são condição de merge e lente da C3, não defeito do conserto de isolamento. || LIMPEZA: worktree próprio removido por git worktree remove --force mais git worktree prune, nunca rm -rf e nunca git clean; containers o6r06d-jc1-pg e o6r06d-jc1-redis derrubados por docker rm -fv e confirmados ausentes em docker ps -a; volumes conferidos em docker volume ls; logs no scratchpad da sessão, fora do worktree. Worktrees alheios intactos: b06 do dev, a árvore principal em demo/investidor, gov-elenco, gov-descuido, e o o6r06d-jur-c2 da C2, que está VIVO com os containers o6r06d-jc2 de pé — reporto, não varro.\n\nVOTO: APROVADO — a janela 2028-02 está livre pela MINHA varredura e fecha as duas direções (o rateio lê por overlap puro, medido no head), o guard morre nas quatro mutações que tentei, F1 fica vermelha sem escopo, F2 dá 5/5 no head do delta e a janela fica em count(*)=0 depois da suíte, inclusive no caminho de falha",
+ "o_que_executei": [
+  {
+   "comando": "git rev-parse HEAD (worktree b06) + gh pr view 385 --json headRefOid,mergeable",
+   "forma": "arvore b06, branch fix/billing-durability",
+   "resultado": "head = e26eb9e5 (o prompt declarava 764a3b04); mergeable=MERGEABLE; merge-base com origin/main (a01fc014) = 1b8319f9, logo BEHIND"
+  },
+  {
+   "comando": "git diff --numstat cc579302 e26eb9e5 -- src prisma mobile .github scripts frontend ; e -- package.json package-lock.json",
+   "forma": "base cc579302 (merge absorvido) ate o head medido por mim",
+   "resultado": "VAZIO nos dois: zero linha de src/ e lockfiles intactos. Categoria do quorum = unanimidade de 3, nao 5/5"
+  },
+  {
+   "comando": "grep -rn listCostLineItems src/ ; leitura de buildLineItemWhere",
+   "forma": "head e26eb9e5, prova por PRESENCA com os 5 sitios enumerados",
+   "resultado": "listCostLineItems(periodStart, periodEnd) em todos; where = overlap puro sem import_id. buildLineItemWhere aceita filters.importId"
+  },
+  {
+   "comando": "grep -rhoE literais YYYY-MM em tests/ | sort | uniq -c",
+   "forma": "head e26eb9e5 e, por git grep, base pre-delta cc579302",
+   "resultado": "2026-06: 224 no head e 219 pre-delta (helper declara 209) ; 2026-07: 320 e 319 (helper declara 319) ; 2028-02: 9 e 0"
+  },
+  {
+   "comando": "git grep -c 2028 cc579302 -- tests ; grep -n 2028 tests/mobile-backend-contracts.test.ts",
+   "forma": "base pre-delta",
+   "resultado": "1 arquivo, 4 ocorrencias, TODAS P2028 (codigo de erro Prisma), nascido 2026-06-14 4b0c40c8. Nenhuma e data"
+  },
+  {
+   "comando": "grep -rln cloudCostLineItem tests/ ; sed -n 443,444p tests/o6r06-allocation-basis-rls-db.test.ts",
+   "forma": "universo finito de escritores da tabela",
+   "resultado": "EXATAMENTE 2 arquivos; a outra ponta usa 2026-06-01 a 2026-06-30, disjunto de 2028-02"
+  },
+  {
+   "comando": "node --test --import tsx tests/o6r06-janela-reservada-guard.test.ts (baseline + M1..M5 + sonda M6)",
+   "forma": "CORE_SAAS_PERSISTENCE=memory, RBAC_DB_PARITY ausente, Node v20.19.5, ec lido por variavel do processo",
+   "resultado": "baseline ec=0 4/4. M1 ec=1 G1 nomeia o intruso; M2 ec=1 G1; M3 ec=1 com G2 VERDE e G3 vermelho; M4 ec=1 G3; M5 ec=1 G4 com 0 arquivos. M6 (data calculada dentro da janela) ec=0 VERDE, fronteira medida. Todas revertidas, blob = HEAD:"
+  },
+  {
+   "comando": "DROP DATABASE erp_jc1 WITH (FORCE) + CREATE DATABASE + npx prisma migrate deploy ; select nspacl from pg_namespace",
+   "forma": "cluster proprio o6r06d-jc1-pg :56711, antes de CADA uma das 16 execucoes",
+   "resultado": "recreate_ec=0 migrate_ec=0 ; nspacl = {pg_database_owner=UC/pg_database_owner,=U/pg_database_owner}, GRANT USAGE ao PUBLIC intacto, zero 42501"
+  },
+  {
+   "comando": "node --test --import tsx tests/o6r06-cost-summary-sum-db.test.ts (F1)",
+   "forma": "N=3 COM escopo e N=3 SEM escopo, banco recriado antes de cada",
+   "resultado": "COM: ec 0/0/0, 7 pass 0 fail, skipped 0. SEM: ec 1/1/1, 3 pass 4 fail, mesmos S1/S3-linha/S4/S10 nas tres"
+  },
+  {
+   "comando": "node --test --import tsx tests/o6r06-cost-summary-sum-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts (F2)",
+   "forma": "N=5 no head do delta e N=5 no head intocado 0f0a872a, blobs 92cf9b4e e 52d71826 conferidos",
+   "resultado": "delta: ec 0 0 0 0 0, 17/0. CONTROLE: ec 1,1,0,0,0 - REPRODUZIU, 2 vermelhos em 5, casos diferentes (S3-linha e S10), total inflado 9901010039010001n contra 9900999999010001n"
+  },
+  {
+   "comando": "SELECT conname, confdeltype FROM pg_constraint WHERE contype=f e conrelid LIKE cost_line_item",
+   "forma": "catalogo do MEU cluster, nao o schema Prisma",
+   "resultado": "cloud_cost_line_items_import_id_fkey | c = CASCADE real no banco"
+  },
+  {
+   "comando": "SELECT to_regclass(public.cost_line_items), to_regclass(public.cloud_cost_line_items)",
+   "forma": "controle negativo do nome da tabela",
+   "resultado": "vazio | cloud_cost_line_items. A tabela do meu mandato NAO existe; todo o SQL usou o nome real do @@map"
+  },
+  {
+   "comando": "SELECT count(*) FROM cloud_cost_line_items na janela 2028, depois da suite",
+   "forma": "conexao propria por docker exec, apos F1 verde",
+   "resultado": "0 ; cloud_cost_imports = 0 ; cloud_cost_line_items = 0"
+  },
+  {
+   "comando": "mutacoes T1/T2/T3 do teardown + count(*) depois de cada",
+   "forma": "banco recriado antes de cada, revertidas com blob = HEAD:",
+   "resultado": "T1 ec=1 S11 VERMELHO e 21 linhas remanescentes; T2 ec=0 S11 verde e count 0, logo o CASCADE e o mecanismo real; T3 ec=1 S1 vermelho e count 0, logo o finally limpa no caminho de falha"
+  },
+  {
+   "comando": "grep -c jurado-06d-banco-atomicidade-rls OBITUARIO-IDENTIDADES.md ; grep -rl em omega/juntas e omega/reprovacoes",
+   "forma": "fonte PRIMEIRA (obituario) mais conferencia complementar por grep",
+   "resultado": "0 no obituario; meu nome so no BRIEFING desta junta. Elegivel. As seis identidades jurado-06 estao sepultadas na secao 3.4"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A varredura de presenca que o helper publica nao confere com a minha no mesmo head: o comentario declara 2026-06 n=209 e eu medi 219 pre-delta (224 no head). 2026-07 bate exato em 319.",
+   "evidencia": "grep -rhoE de literais YYYY-MM em tests/, medido em e26eb9e5 e (por git grep) em cc579302; tests/helpers/o6r06-cost-fixtures.ts:34-36",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "Propriedade ausente: o numero publicado como prova de presenca nao e reprodutivel pelo metodo obvio. A CONCLUSAO (2026 ocupado, 2028 livre) segue verdadeira pela minha propria medicao, por isso e nota e nao bloqueio."
+  },
+  {
+   "defeito": "A reserva e verificada pela FORMA TEXTUAL da data e nao pelo intervalo: um quinto arquivo de tests/ que escreva DENTRO da janela em forma calculada nao acende o guard.",
+   "evidencia": "M6 - tests/zz-c1-mut-g6.ts com new Date(Date.UTC(2028, 1, 15)); node --test do guard deu ec=0, # tests 4 / # pass 4 / # fail 0. Arquivo removido por caminho explicito, git status vazio depois.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "Propriedade ausente, nomeada sem conserto (paragrafo C7.4-bis). Nao bloqueia porque o guard cumpre o que DECLARA guardar (o literal) e morre nas 5 mutacoes dessas formas, e porque a propriedade de fundo esta satisfeita hoje: medi que so 2 arquivos de tests/ escrevem cloudCostLineItem e o outro usa 2026-06."
+  },
+  {
+   "defeito": "listCostLineItems nao aceita escopo por import: a leitura do rateio soma qualquer linha que caia no periodo, venha do import que vier.",
+   "evidencia": "src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:208-212, where = { billing_period_end: { gte }, billing_period_start: { lte } }; assinatura identica nos 5 sitios que enumerei",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "motivo": "EVIDENCIA DE DATA/ORIGEM: git log --diff-filter=A e git log -S da assinatura devolvem ambos Mon Jun 8 21:54:21 2026, commit 6f27faae, feat: add cloud cost allocation engine - a assinatura antecede esta branch em tres meses. Alem disso o paragrafo 5 do delta PROIBE src/**: cobrar isto seria reprovacao por construcao. Vira pendencia a nomear com bloco dono; NAO reprova."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "C2 (jurado-06d-invariante-financeiro-rateio): intocabilidade de src/modules/cloud-costs/** e cloud-cost-allocation/**, ataque a ISCA por mutacao, aritmetica do Delta.",
+  "C3 (jurado-06d-contrato-regressao-registro): escopo por hash de arvore, absorcao do merge por comparacao de arvores, blocks_completed 163, KPI por reexecucao, ata/obituario/indice, e a fatia S0 (sync-agent-agents.mjs --check).",
+  "P-O6R-SUITES-DB-SEM-TEARDOWN - pre-existente, dono a nomear. Medi que NAO alcanca este arquivo: o teardown deste delta limpa os dois ids e limpa tambem no caminho de falha (T3, count 0).",
+  "A ausencia de escopo por import em listCostLineItems - pre-existente (6f27faae, 2026-06-08), fora do escopo permitido do paragrafo 5.",
+  "CI nao estava 7/7 no meu instante (4 checks pending) e o PR esta BEHIND de origin/main (merge-base 1b8319f9 contra origin/main a01fc014) - condicao de merge e lente da C3; quem mergear reexecuta e registra.",
+  "Itens do paragrafo 7 que nao cairam na minha lente ficam A RE-VERIFICAR: censo divergencia para ciencia, obrigatoriedade de billing.meterCompletion por mutacao do tsc, e as 18 de 20 mutacoes do KPI."
+ ],
+ "teardown": "CRIEI: worktree .claude/worktrees/o6r06d-jur-c1 (detached e26eb9e5) com npm ci proprio (ec=0) e prisma generate; containers o6r06d-jc1-pg :56711 e o6r06d-jc1-redis :56712; banco erp_jc1 recriado 16 vezes; logs no scratchpad da sessao, fora do worktree. MUTACOES: 5 no guard (M1-M5) mais 1 sonda de fronteira (M6), 1 em F1 (sem escopo), 3 no teardown (T1-T3) e 1 checkout de controle em 0f0a872a - TODAS revertidas, com blob conferido igual a git rev-parse HEAD: (o6r06-cost-summary-sum-db.test.ts b71c3bf5, o6r06-cost-fixtures.ts a54ac128, guard cd0fbe5d) e git status --porcelain VAZIO. DERRUBEI E CONFIRMEI: git worktree remove --force mais git worktree prune (nunca rm -rf, nunca git clean), e git worktree list ja nao mostra o meu; docker rm -fv o6r06d-jc1-pg o6r06d-jc1-redis, e docker ps -a sem nenhum o6r06d-jc1; docker volume ls sem volume meu remanescente. PRISTINO DEPOIS: sim. Base viva erp-postgres/erp-redis NUNCA tocada, nem para leitura - todo psql foi por docker exec no MEU container e o DATABASE_URL apontou 127.0.0.1:56711. Junction/symlink: nao criei nenhuma, e os node_modules de main, b06 e o6r06d-jur-c2 foram conferidos DEPOIS da minha remocao, com 222 entradas cada, intactos. Worktrees alheios intactos: b06 (do dev, que so ganhou o meu diretorio de voto, sem uma linha de codigo ou de teste), arvore principal em demo/investidor, gov-elenco, gov-descuido, e o o6r06d-jur-c2 da C2, que esta VIVO com os containers o6r06d-jc2 de pe: reporto, nao varro."
+}

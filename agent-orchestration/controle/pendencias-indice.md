@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **308** |
-| IDs distintos | 297 |
-| **ABERTAS** | **236** |
+| Cabecalhos `## P-` | **310** |
+| IDs distintos | 299 |
+| **ABERTAS** | **238** |
 | — das quais **diferidas** (balde C) | 76 |
-| — das quais **ativas nesta rodada** | **160** |
+| — das quais **ativas nesta rodada** | **162** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 70 |
+| FECHADAS | 72 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **308 cabecalhos para 297 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **310 cabecalhos para 299 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -45,12 +45,10 @@
 |---|--:|---|---|
 | `P-Ω4-8-DASHBOARD-FIDELITY` | 1290 | **MÉDIA** | P-Ω4-8-DASHBOARD-FIDELITY — Reduções de composição do dashboard vs financeiro.pn |
 
-## SEM STATUS — nenhuma linha `status:`/`Estado:` (o indice NAO chuta) — 2
+## SEM STATUS — nenhuma linha `status:`/`Estado:` (o indice NAO chuta) — 0
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
-| `P-GOV-NOTA-KPI-CONGELADA` | 7699 | MÉDIA | **a atribuir** | P-GOV-NOTA-KPI-CONGELADA (2026-09-07) — nota de KPI medida num head antigo, apresentada  |
-| `P-GOV-BAIXA-CICLO1-FECHADOS` | 7724 | BAIXA | **a atribuir** | P-GOV-BAIXA-CICLO1-FECHADOS (2026-09-08) — os três achados BAIXA do ciclo 1, fechados na |
 
 ## CONTRADITORIAS — cabecalho e linha de status se opoem — 0
 
@@ -125,7 +123,7 @@
 | `P-GOV-CAMINHO-REPO-SESSAO` | 7961 | ALTA | sim | P-GOV-CAMINHO-REPO-SESSAO (2026-09-08) — o caminho repo→sessão entregou norma inexistent |
 | `P-O6R-SUITES-DB-SEM-TEARDOWN` | 8009 | MÉDIA | sim | P-O6R-SUITES-DB-SEM-TEARDOWN (2026-09-09) — execuções consecutivas de `npm test` contra  |
 
-## ABERTAS · balde B — processo/registro — 97
+## ABERTAS · balde B — processo/registro — 99
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -226,6 +224,8 @@
 | `P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER` | 7473 | BAIXA | sim | P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER (2026-09-07) — competência reutilizável saiu na apos |
 | `P-GOV-SKILLS-RELEVANCIA` | 7540 | BAIXA | sim | P-GOV-SKILLS-RELEVANCIA (2026-09-07) — 5 skills voltaram a carregar; 1 delas não tem rel |
 | `P-GOV-AUDITOR-ARESTAS-MENORES` | 7943 | BAIXA | sim | P-GOV-AUDITOR-ARESTAS-MENORES (2026-09-08) — quatro arestas BAIXA do auditor enxuto — BA |
+| `P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT` | 8070 | BAIXA | sim | P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT (2026-09-09) — a leitura do rateio soma por ov |
+| `P-O6R-B06-DELTA-RESIDUAIS` | 8091 | BAIXA | sim | P-O6R-B06-DELTA-RESIDUAIS (2026-09-09) — dois residuais do conserto de isolamento, nomea |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 76
 
@@ -308,7 +308,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3468 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3512 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 70
+## FECHADAS — 72
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -382,3 +382,5 @@
 | `P-O6R-B07B-STAGING-SEM-UPLOAD` | 6947 | ALTA | sim | P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do depl |
 | `P-GOV-FILA-P1-ANTES-DE-P0` | 7125 | MÉDIA | sim | P-GOV-FILA-P1-ANTES-DE-P0 (2026-09-06) — um P1 executado com 6 P0 abertos, e a agenda da |
 | `P-GOV-WORKTREES-NAO-IGNORADAS` | 7494 | MÉDIA | sim | P-GOV-WORKTREES-NAO-IGNORADAS (2026-09-07) — FECHADA POR NÃO-REPRODUÇÃO em 2026-09-08 —  |
+| `P-GOV-NOTA-KPI-CONGELADA` | 7699 | MÉDIA | **a atribuir** | P-GOV-NOTA-KPI-CONGELADA (2026-09-07) — nota de KPI medida num head antigo, apresentada  |
+| `P-GOV-BAIXA-CICLO1-FECHADOS` | 7724 | BAIXA | **a atribuir** | P-GOV-BAIXA-CICLO1-FECHADOS (2026-09-08) — os três achados BAIXA do ciclo 1, fechados na |

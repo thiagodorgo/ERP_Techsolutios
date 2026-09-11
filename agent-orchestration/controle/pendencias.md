@@ -7714,7 +7714,7 @@ o título "Divergência RESOLVIDA (§A2)", e é ela que publicava `--check → O
 adendo diz também o que **não** envelheceu: o mecanismo. O `--check` continua cobrindo `especialistas/`, e o
 parágrafo que mandava "conferir à mão" segue morto.
 
-- **status:** **FECHADA** · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono original:**
+- **status:** FECHADA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono original:**
   **`B-O6R-02` ciclo 5** (nomeado pela cadeira C1) · **fechada por:** `B-GOV-ELENCO` ciclo 2 fatia A,
   branch `chore/gov-auditoria-elenco` (hash no backfill pós-merge, §C3.5) · **bloqueia:** nada.
 
@@ -7733,7 +7733,7 @@ bloco futuro — que foi a razão pela qual a cadeira C1 os registrou em vez de 
 | `C1-03` | "3× o peso dos **24** papéis permanentes juntos (**6,6 KB**)" | pelo método do próprio script: `fe2748c8` = **23** papéis / 5.563 chars / **5,4 KB**; head da fatia A = **23** / 5.563 / **5,4 KB**; efêmeros = 20.271 chars / 19,8 KB → razão **3,64×** | cabeçalho do script, history do KPI, **Apenso 1**, e linha de errata em `decisoes.md` |
 | `C1-04` | tabela de especialistas com **cabeçalho e zero linhas** em `.agents/agents/README.md` | elenco efêmero neste head = **0** (estado correto) | tabela substituída por frase de estado, apontando `aposentadoria-especialistas.md` |
 
-- **status:** **FECHADA** · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **fechada por:**
+- **status:** FECHADA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **fechada por:**
   `B-GOV-ELENCO` ciclo 2 fatia A, branch `chore/gov-auditoria-elenco` (hash no backfill pós-merge, §C3.5) ·
   **bloqueia:** nada.
 
@@ -8055,3 +8055,55 @@ usa papel `NOSUPERUSER` — e parece falha determinística pré-existente. Com r
   terceira é a mais barata e já tem guard estático (`tests/o6r06-janela-reservada-guard.test.ts`).
   **Forma da evidência:** as 5 execuções sujas e as 3 limpas estão em `Kpis/kpis-latest.json`, campo
   `metrics.backend_tests.note`, com comando e N.
+- **[EMENDA — junta do delta do `B-O6R-06`, 2026-09-09, achado #2 (C2, média, `pre-existente`)]** a cadeira
+  C2 reproduziu `fail` **1 em 3** execuções de `npm test` no terreno dela, **com banco recriado**, vítima
+  `tests/impound-trigger-durability.test.ts` (2026-07-26) — causa nomeada pelo runtime: *"The timeout for
+  this transaction was 5000 ms, however 6096 ms passed"* no teardown, **sob contenção de CPU** (a C1 rodava
+  em paralelo, 18,83% de CPU). Ou seja: além do resíduo entre execuções, há uma **segunda causa** na mesma
+  classe — timeout de transação interativa do Prisma sob máquina disputada — em arquivos de 2026-07-26 e
+  2026-08-10 (`#286/#322`, `#344`), **não tocados** pela autoria nem pelo delta (`numstat` vazio nas duas
+  pontas). O número `2995/2997, N=3, três idênticos` reproduz **sem** contenção; `fail 0` **não é
+  herdável**. Evidência: `votos/B-O6R-06-delta/C2-invariante-financeiro-rateio-evidencia.md` l.278-321.
+
+---
+
+## P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT (2026-09-09) — a leitura do rateio soma por overlap puro de período, sem `import_id` — BAIXA
+
+Achado **#8** da junta do delta do `B-O6R-06` (cadeira C1, `pre-existente` **com origem provada**:
+`6f27faae`, 2026-06-08, três meses antes da branch). `listCostLineItems(periodStart, periodEnd)`
+(`src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:208-212`; interface `:26`;
+impl. memória `:127`; único chamador `cloud-cost-allocation.service.ts:54`) devolve **toda** linha de custo
+cujo período sobreponha a janela pedida — não aceita escopo por `import_id`, ao contrário de
+`buildLineItemWhere` (`aws-cur-prisma.repository.ts:193-208`). Consequência: qualquer linha deixada na
+janela por outra execução (teste ou import real) **entra na base de rateio**. O `B-O6R-06` fechou a
+instância dele movendo a própria suíte para a janela reservada `2028-02`, mas a propriedade continua valendo
+para o resto da casa — é a **direção 2** da colisão que o conserto de isolamento teve de contornar.
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
+  **dono:** próximo bloco de `cloud-cost-allocation` (o `§5` do `B-O6R-06` proíbe `src/**`) ·
+  **bloqueia:** nada. **Correção proposta:** `import_id` opcional em `listCostLineItems`, com o serviço
+  passando o import da run quando houver; **ou** decisão explícita de que o rateio é por período e não por
+  import, escrita no serviço. **Teste de encerramento:** semear duas linhas em dois imports na mesma janela e
+  provar que o rateio de um import não soma o outro (par verde-depois × vermelho-antes).
+
+---
+
+## P-O6R-B06-DELTA-RESIDUAIS (2026-09-09) — dois residuais do conserto de isolamento, nomeados sem conserto — BAIXA
+
+Achados **#3** e **#4** da junta do delta do `B-O6R-06` (cadeira C1, `dentro-do-bloco`), **não corrigidos no
+PR** porque tocam os três arquivos de teste julgados pela junta — corrigir seria alterar código julgado
+depois do voto (§C7.4-bis).
+
+1. **Comentário do helper publica `2026-06 n=209`** como prova de presença; a C1 mediu **219** na base
+   `cc579302` e **224** no head, com o mesmo `grep`. Julho bate exato (319). A **conclusão** ("2026 ocupado,
+   2028 livre") segue verdadeira pela medição própria da cadeira; o número no comentário está desatualizado
+   (`tests/helpers/o6r06-cost-fixtures.ts`, bloco de comentário sobre `O6R06_JANELA_RESERVADA`).
+2. **O guard reserva a janela pela FORMA TEXTUAL da data, não pelo intervalo:** a sonda M6
+   (`new Date(Date.UTC(2028,1,15))`) passa **verde, ec=0** em `tests/o6r06-janela-reservada-guard.test.ts`.
+   O guard cumpre o que declara guardar (o literal), e a propriedade de fundo está satisfeita hoje; falta a
+   propriedade "nenhum outro arquivo escreve custo **no intervalo** 2028-02".
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` (nasceram em `deff7bcc`) ·
+  **dono:** o próximo PR que tocar `tests/helpers/o6r06-cost-fixtures.ts` ou o guard ·
+  **bloqueia:** nada. **Teste de encerramento:** (1) `grep -rhoE '2026-0[67]' tests/** | sort | uniq -c`
+  batendo com o comentário; (2) a sonda M6 ficar **vermelha**.

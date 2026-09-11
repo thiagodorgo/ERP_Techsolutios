@@ -6,7 +6,7 @@
 > encolhe deixa de ser obituário.
 >
 > **O descarte é LÓGICO.** Nenhum arquivo de identidade foi apagado por este registro, em branch nenhuma.
-> As 17 identidades abaixo continuam existindo como arquivo na branch `demo/investidor`
+> As **21** identidades abaixo (17 originais + as 6 do `B-O6R-06`, §3.4, acrescentadas em 2026-09-09 — estas existem em `demo/investidor` como arquivo **untracked**, medido por `git status`) continuam existindo como arquivo na branch `demo/investidor`
 > (`.claude/agents/especialistas/` e o espelho `.agents/agents/especialistas/`) — servem de peça histórica
 > citada por este documento. O que morre é o **direito de sentar numa junta**, não o byte.
 

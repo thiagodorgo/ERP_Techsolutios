@@ -4270,3 +4270,20 @@ O total do S1 na base carrega **os dois defeitos ao mesmo tempo**, e dá para l�
 
 O worktree da base foi **removido** no fechamento; o arquivo de controle vivia só nele e nunca entrou na
 branch.
+
+
+## B-O6R-06 — DELTA julgado e ata persistida (2026-09-09 → 2026-09-11, PR #385)
+
+Sequência real, com o que cada gate pegou: (1) `cadeira-permanente` (retroativa, por determinação do dono)
+homologou o 3×0 com ressalva e mediu que a `main` moveu depois do voto — a colisão de `blocks_completed`
+(161 → 162 nos dois lados) só apareceu por isso; (2) o orquestrador achou a suíte não-paralela medindo
+`npm test` no merge (**5 execuções sujas**, 4 famílias) e **dois alarmes falsos de método** que ele mesmo
+refutou (paralelismo; reset de *schema* em vez de *banco*); (3) dev distinto consertou (janela reservada +
+`importId` + isca + guard), com par verde-depois × vermelho-antes; (4) porteiro de regularização liberou
+#382/#383/#384; (5) inspetor **bloqueou** a primeira junta do delta (seis identidades sepultadas + sem
+briefing), e liberou a segunda; (6) junta do delta **APROVADA 3×0**, 12 achados, 0 `bloqueia`.
+
+Números medidos pelas cadeiras: `2995/2997` (N=3, banco recriado antes de cada execução), Δ +59 = 54 da
+autoria + 5 do conserto, `blocks_completed` 163 conferido em 5 refs, índice de pendências byte-idêntico à
+saída do gerador. Ata em `omega/juntas/J-B-O6R-06-delta.md`. Falta: absorver `#383/#384`, bateria, CI,
+merge, §C5, porteiro, backfill.
