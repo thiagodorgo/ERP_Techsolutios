@@ -4373,23 +4373,32 @@ tree(15ef3fbe)`. O `porteiro-pos-merge` (Fable) reexecutou a suíte no próprio 
 feito (worktree `b06` removido, branch remota apagada); as 12 cadeiras do bloco saem do diretório vivo
 (aposentadoria, rodada 2).
 
-**Inventário SAN3 (7 fatias somente-leitura, medidas em `15ef3fbe`):** as 238 linhas abertas do índice (231
-IDs) e os 32 achados Ω6R. **31 pendências estão FECHADAS no código e o registro as dá como abertas; 25 são
-PARCIAIS sem dizer.** Causa mecânica: o registro é só-apensar e o índice lê só a linha de status — conserto
-feito por outro bloco nunca fecha a entrada original. O PR do plano corrige as linhas.
+**Inventário SAN3 (8 fatias somente-leitura, medidas em `15ef3fbe`):** as 238 linhas abertas do índice (231
+IDs), os 32 achados Ω6R e 140 candidatos a pendência fora do registro. **O registro errava o status de 52 das
+231 entradas (22,5%)** — 31 fechadas no código dadas como abertas, 21 parciais sem dizer — **e faltavam 50
+pendências reais.** Causa mecânica dos flips: o registro é só-apensar e o gerador do índice lê **só a primeira**
+linha de status (medido em bancada: até "RESOLVIDO PARCIAL" sai FECHADA). O PR do plano reescreve as 52 linhas
+canônicas (FECHADAS no índice: 73 → 103) e registra as 50 ausentes.
 
-**Gate da versão vendável:** 23 bloqueantes em **19 blocos, nenhum começado** — além dos 5 P0/P1 da auditoria
-(estoque, despesa, escopo por objeto, antivírus), o inventário trouxe perda de dado no app de campo
-(`B-O6R-11`) e na web (a OS fabricada quando o backend recusa o create), o runtime de produção conectando como
-superusuário (RLS inerte), o menu Financeiro que some para o papel Financeiro, faturamento sem transação única,
-telas de menu com dado inventado e o "Tenant Demo" na demonstração. Mais 6 itens de go-live que dependem do
-dono.
+**Gate da versão vendável: 44 bloqueantes, fechados por 32 blocos, e 6 atos que só o dono pratica** — nenhum
+bloco começado. Além dos P0/P1 da auditoria (estoque, despesa, escopo por objeto, antivírus), o inventário trouxe:
+perda de dado no app de campo e na web (a OS fabricada quando o backend recusa o create); a baixa de título que
+**não existe** pela web; "Minhas OS" listando a organização inteira; entrega do guincho e fluxo Prestador sem
+porta; estoque do técnico inventado no código; item lançado depois do 1º faturamento **nunca cobrado**; o menu
+Financeiro que some para o papel Financeiro; telas de menu e do console da plataforma com dado inventado; e
+nada no repositório que imponha ao runtime um papel de banco sem `BYPASSRLS` (o papel real da produção não foi
+medido — é secret do Fly).
 
-**Viabilidade do prazo de 48 h, registrada como o dono mandou:** não cabe. Melhor caso ~56 h de relógio (3
-frentes, cada bloco G no tempo do mais rápido já medido); realista **5 a 7 dias**. Sem redução de escopo: a
-execução segue pela ordem de risco. Plano: `docs/revisoes/SAN3/PLANO_SAN3.md`; inventário:
-`docs/revisoes/SAN3/inventario/`. Registrados também: `PD-O6R-B07B-CLAMD-INSTREAM` (54 fontes) e
+**Viabilidade do prazo de 48 h, registrada como o dono mandou:** não cabe. Melhor caso **~80–85 h** de relógio
+(4 frentes, cada bloco no tempo do mais rápido já medido, com o porteiro e a reexecução de KPI no caminho
+crítico); realista **10 a 12 dias** (mediana medida dos blocos grandes: 57 h). Sem redução de escopo: a execução
+segue pela ordem de risco, e os atos do dono ficam **dentro** do gate. Plano: `docs/revisoes/SAN3/PLANO_SAN3.md`;
+inventário: `docs/revisoes/SAN3/inventario/`. Registrados também: `PD-O6R-B07B-CLAMD-INSTREAM` (54 fontes) e
 `D-TRACCAR-HTTP-PRIVADO-AWS` (com o conflito com `D-INFRA-PROVIDER`).
 
-**Próximo passo:** a fatia AUSENTES fecha, a correção dos flips entra no índice, `critico-adversarial` ataca o
-plano, inspetor de terreno, junta (maioria de 3), CI, merge, porteiro — e então as três frentes do plano.
+**O crítico adversarial reprovou a 1ª versão do plano** (17 achados, 6 `bloqueia`: objeto incompleto, cinco
+caminhos inexistentes, o degrau "G1/G2" que era redução de escopo não declarada, teste impossível, frentes que
+não eram disjuntas, E2E que não fechava a pendência). A v3 responde item a item (§12 do plano).
+
+**Próximo passo:** as 50 ausentes entram no registro, rodada 2 do crítico sobre o head final, inspetor de
+terreno, junta (maioria de 3), CI, merge, porteiro — e então as quatro frentes do plano.

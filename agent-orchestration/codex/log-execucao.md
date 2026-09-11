@@ -4302,7 +4302,15 @@ reexecutada: 0 linhas; guards de KPI 28/28; `sync-agent-agents --check` 23 agent
 no `pendencias.md` foi entregue a um agente que não achou nenhum deles, com a prova de cada um reconferida por
 presença antes de escrever.
 
-Números: 231 IDs medidos (31 fechados no código × abertos no texto, 25 parciais, 174 abertos, 1 não medido);
-gate com 23 bloqueantes em 19 blocos; melhor caso ~56 h, realista 5–7 dias. A PD do antivírus foi transcrita
+(7) a fatia AUSENTES trouxe 50 pendências fora do registro, 10 bloqueantes; o orquestrador conferiu no código
+os 5 mais pesados antes de aceitar; (8) o `critico-adversarial` reprovou a 1ª versão do plano — 17 achados, 6
+`bloqueia` — e a v3 respondeu item a item, depois de conferir por script **todo** caminho citado contra a árvore
+(não só os cinco que o crítico apontou) e cada fato novo que ele citou; (9) o agente de registro aplicou os 52
+flips numa cópia de bancada com asserção por linha antes de tocar o worktree (FECHADAS 73 → 103; índice
+byte-idêntico à saída do gerador) e mediu em bancada que o gerador lê só a 1ª linha de status.
+
+Números: 231 IDs medidos (31 fechados no código × abertos no texto, 24 parciais — 21 delas sem o texto dizer —,
+175 abertos, 1 não medido; 52 flips); 50 ausentes; gate com 44 bloqueantes, 32 blocos e 6 atos do dono; melhor
+caso ~80–85 h, realista 10–12 dias. A PD do antivírus foi transcrita
 pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escrita e o arquivo de saída ficou
 vazio), sem edição de conteúdo.
