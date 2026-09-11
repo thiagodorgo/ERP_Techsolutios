@@ -7958,7 +7958,22 @@ partir de leitura recusada), todas com prevalência 0 e nenhuma bloqueante:
 
 ---
 
-## P-GOV-CAMINHO-REPO-SESSAO (2026-09-08) — o caminho repo→sessão entregou norma inexistente e corpo pré-merge — ALTA
+## P-GOV-CAMINHO-REPO-SESSAO (2026-09-08) — FECHADA em 2026-09-08 por `D-MEDIR-NA-REF-ALVO`
+
+> **FECHADA no mesmo dia, com decisão do dono.** Prevenção: a sessão passa a sair de um **worktree que
+> acompanha a `main`**. Detecção: **`§A7`** no `CLAUDE.md` e no `AGENTS.md` (mede-se na **ref alvo**, e quem
+> afirma diz em qual ref mediu) + item **3.3** do `inspetor-de-terreno-da-junta` (**corpo carregado × corpo
+> julgado**, EOL-neutro, por identidade votante; divergência em corpo com VETO = `BLOQUEADO`). E a regra que
+> fecha o caso concreto: **norma citada que não existe na ref julgada não se aplica**.
+>
+> **Limpeza já executada:** os 7 arquivos que o orquestrador deixara modificados na árvore da sessão
+> (`CLAUDE.md`, `AGENTS.md`, `decisoes.md`, o corpo do `porteiro-pos-merge` e três espelhos em `.agents/`)
+> foram revertidos — a norma fantasma dá **0 ocorrências** nas duas cópias. **Não foi tocado** o que é de
+> outra sessão: 2 cadeiras modificadas (`critico-c5-adversarial`, `jurado-c5-arnes-catalogo-postgres`, +86 e
+> +96 linhas, **apagadas na `main`**) e 38 arquivos untracked de blocos já encerrados. Resíduo alheio se
+> reporta, não se varre.
+
+### Texto original (2026-09-08)
 
 Ressalva 6 do `porteiro-pos-merge` do #381, e a raiz de **três contaminações medidas na mesma sessão**.
 

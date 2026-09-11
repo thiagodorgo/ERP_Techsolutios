@@ -97,6 +97,31 @@ que está sujo e como você mediu.
    banco, tem de haver uma cadeira de banco; se é de enumeração, uma de fail-closed; e assim por diante.
    Achado sem cadeira que o cubra = ressalva nomeada (o dono decide se basta).
 
+3.3 **CORPO CARREGADO × CORPO JULGADO — o item que fecha a contaminação medida três vezes**
+   (`P-GOV-CAMINHO-REPO-SESSAO`, 2026-09-08). Os subagentes são carregados do `.claude/agents/` do
+   **diretório da SESSÃO**, que muitas vezes **não é** o worktree sob julgamento nem a `main`. Confira, por
+   identidade que vai votar: o corpo carregado é **o mesmo** que o do head julgado?
+
+   ```
+   git -C <wt> show <head>:.claude/agents/<x>.md | tr -d '\r' | md5sum
+   tr -d '\r' < <dir-da-sessao>/.claude/agents/<x>.md | md5sum
+   ```
+
+   **Compare EOL-neutro — nunca `md5sum` cru dos dois lados.** A árvore roda sob `core.autocrlf=true` e
+   chega ao disco com CRLF enquanto o blob tem LF: o hash cru **fabrica divergência** (§C7.1-ter(c)), e
+   isso já quase bloqueou uma fatia por artefato de quebra de linha.
+
+   Divergência = **ressalva nomeada** com o diff colado; divergência no corpo de quem tem **VETO** =
+   **BLOQUEADO**. E confira que **norma citada existe**: se um corpo manda bloquear por uma cláusula, ela
+   tem de existir na ref julgada (`grep` no `CLAUDE.md` do head). **Cláusula inexistente = o item que a cita
+   NÃO se aplica**, e isso entra no parecer — nunca se bloqueia por norma que não está escrita.
+
+   **Por quê, medido em 2026-09-08:** numa só sessão, este caminho entregou ao inspetor um item mandando
+   bloquear por um `§C7.1-quater` **que não existia em ref nenhuma**, entregou ao `porteiro-pos-merge` um
+   **corpo pré-merge**, e entregou ao orquestrador um `.gitignore` de 23 commits atrás — que virou uma
+   **pendência falsa**. Os dois gates se salvaram medindo antes de aplicar. Este item torna isso obrigatório
+   em vez de sorte.
+
 ### 4. Fatias de orquestração que faltaram
 
 4.1 **A fatia S0 do plano foi executada.** Em especial o **espelho Codex dos agentes**: rode
