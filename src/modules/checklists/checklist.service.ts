@@ -257,8 +257,14 @@ export class ChecklistService {
     // D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico) — SÓ audita e publica o evento de domínio quando a run
     // foi REALMENTE inserida. Se o repositório devolveu idempotentemente a run pré-existente (`created:false`,
     // por colisão de `client_run_key`: 2 despachos concorrentes da mesma OS ou 2× POST com a mesma chave),
-    // PULA os dois efeitos — senão `checklist_run.created` sairia 2× e a métrica FATURADA `checklist_runs_count`
-    // (dedup por `event.id`, único por emissão) super-contaria, além de duplicar a auditoria "run created".
+    // PULA os dois efeitos — senão a auditoria "run created" sairia duplicada.
+    //
+    // B-O6R-06 (Omega6R-DIN-005) — A METRICA FATURADA NAO DEPENDE MAIS DESTE `if`. Ela e gravada dentro da
+    // transacao do `repository.createRun` (`cloud-usage.capture.ts`), com chave derivada da RUN, e o ramo
+    // `checklist_run.created` saiu de `cloud-usage.events.ts`. Antes, o unico produtor da unidade era o evento
+    // publicado aqui: uma falha entre o commit da run e a medicao perdia a unidade para sempre, porque o replay
+    // cai em `created:false` e nunca republica. Hoje o `created:false` significa "a unidade ja commitou com a run
+    // do vencedor", e nao "a unidade foi pulada".
     if (created) {
       await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.runCreated, "checklist_run", run.id, {
         templateId: template.id,
@@ -535,7 +541,12 @@ export class ChecklistService {
     assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
 
     const status = input.hasDivergence ? "pending_acknowledgement" : "completed";
-    const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, status);
+    // B-O6R-06 / EMENDA E1.2 — ESTE e o unico dos tres chamadores de `repository.completeRun` que
+    // FATURA hoje (e o unico que publica `checklist_run.completed`). A unidade e gravada DENTRO da
+    // transacao do UPDATE de status, com chave derivada da run — nao mais pelo consumidor do evento.
+    const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, status, {
+      meterCompletion: true,
+    });
 
     if (!run) {
       throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
@@ -548,10 +559,15 @@ export class ChecklistService {
 
     // Junta PR-03 (ALTA do critico-adversarial) — a premissa original estava ERRADA. Quem alimenta
     // a base de rateio FATURADA não é só `checklist_run.created`: `checklist_run.completed` é
-    // metric-key de cobrança em cloud-usage.events e entra em `basisMetricKeys` do rateio
+    // metric-key de cobrança e entra em `basisMetricKeys` do rateio
     // (cloud-cost-allocation.rules). Sem marcar a origem, CONCLUIR a vistoria reaberta contaria
     // como trabalho novo e DOBRARIA a base — cobrando o cliente pela correção de um erro nosso.
     // A conclusão da reabertura vai marcada; quem soma decide sem adivinhar.
+    //
+    // B-O6R-06 — a REGRA E A MESMA, o MECANISMO mudou de lugar: quem grava `quantity 0` para a conclusao
+    // reaberta e o `buildChecklistRunUsageEvents` (`cloud-usage.capture.ts`), a partir de
+    // `run.reopenedFromRunId` LIDO DA PROPRIA LINHA — nao mais de um booleano viajando dentro do payload
+    // do evento. O `isReopenedRun` abaixo continua no evento para notificacao/realtime e auditoria.
     const isReopenedRun = Boolean(run.run.reopenedFromRunId);
 
     await publishDomainEvent(
@@ -682,7 +698,13 @@ export class ChecklistService {
       }
     }
 
-    const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, "pending_acknowledgement");
+    // B-O6R-06 / EMENDA E1.2 — a trilha de DIVERGENCIA (REST e sync do mobile) NUNCA faturou
+    // `checklist_run.completed`: ela publica `checklist_run.divergence_reported`. Continua valendo 0
+    // unidades. Cobrar esta trilha e decisao de PRODUTO, nomeada em
+    // `P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA` — mudar este `false` e o ponto unico onde se muda.
+    const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, "pending_acknowledgement", {
+      meterCompletion: false,
+    });
 
     if (!run) {
       throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
@@ -730,7 +752,13 @@ export class ChecklistService {
       throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");
     }
 
-    const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, "completed_with_divergence");
+    // B-O6R-06 / EMENDA E1.2 — a CIENCIA fecha a vistoria que ja entrou em `pending_acknowledgement`.
+    // Quando ela veio de `service.completeRun(hasDivergence=true)`, a unidade JA foi faturada la (e a
+    // chave estavel deduplicaria de todo modo); quando veio de `registerDivergence`, a trilha vale 0.
+    // Nos dois casos a ciencia NAO fatura — como hoje.
+    const run = await this.repository.completeRun(actor.tenantId, runId, actor.userId, "completed_with_divergence", {
+      meterCompletion: false,
+    });
 
     if (!run) {
       throw new ChecklistError(404, "CHECKLIST_RUN_NOT_FOUND", "checklist_run_not_found", "Checklist run not found.");

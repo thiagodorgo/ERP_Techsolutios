@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
 
+import {
+  appendChecklistRunUsageInMemory,
+  buildChecklistRunUsageEvents,
+} from "../cloud-usage/cloud-usage.capture.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
 import {
   assertChecklistRunCompletionTarget,
@@ -88,6 +92,31 @@ export type RepositoryRunDetails = {
   readonly acknowledgements: readonly ChecklistAcknowledgement[];
 };
 
+// B-O6R-06 / EMENDA E1·2 (achado E2 do `critico-adversarial`) — A INTENÇÃO DE FATURAR VIAJA POR ASSINATURA.
+//
+// `repository.completeRun` tem TRÊS chamadores no serviço, e só UM deles fatura hoje:
+//   · `service.completeRun`      → publica `checklist_run.completed`  → FATURA         → `true`
+//   · `service.registerDivergence` → publica `divergence_reported`    → NÃO fatura     → `false`
+//   · `service.acknowledgeRun`     → publica `acknowledgement_created`→ NÃO fatura     → `false`
+//
+// Capturar a unidade DENTRO do repositório, sem este parâmetro, faria a trilha do mobile
+// (divergência → ciência) passar de 0 para 1 unidade cobrada — mudança de PREÇO que é decisão de
+// produto, não deste bloco (`P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA`).
+//
+// O parâmetro é OBRIGATÓRIO e SEM DEFAULT de propósito: é o compilador (`npm run check`) que recusa um
+// QUARTO chamador que não declare a intenção. Um default silenciaria a decisão exatamente onde ela
+// custa dinheiro. O aceite C6 prova a recusa por execução do `tsc`.
+//
+// ATENÇÃO (ressalva da rodada 2 do crítico): o conjunto "caminhos que levam uma run a estado concluído"
+// é fechado por DUAS travas, em arquivos diferentes — esta assinatura E
+// `assertChecklistRunStatusTransition` (`checklist.run-lifecycle.ts`), que barra com 409 o `updateRun`
+// (REST e sync mobile) de saltar para `completed`/`completed_with_divergence`/`pending_acknowledgement`.
+// Relaxar a segunda faz uma run chegar a concluída SEM métrica. O aceite C7 pina essa segunda trava.
+export type CompleteRunBilling = {
+  /** `true` só no caminho que HOJE publica `checklist_run.completed`. Ver tabela acima. */
+  readonly meterCompletion: boolean;
+};
+
 // D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico) — `createRun` sinaliza se REALMENTE inseriu (`created:true`)
 // ou devolveu idempotentemente a run pré-existente (`created:false`, colisão de `client_run_key`/replay). O
 // serviço PULA a auditoria `runCreated` + o `publishDomainEvent('checklist_run.created')` quando `created` é
@@ -129,7 +158,13 @@ export interface ChecklistRepository {
     relatedEntityId: string,
   ): Promise<readonly ChecklistRun[]>;
   updateRun(data: UpdateRunData): Promise<RepositoryRunDetails | null>;
-  completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null>;
+  completeRun(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    status: ChecklistRunStatus,
+    billing: CompleteRunBilling,
+  ): Promise<RepositoryRunDetails | null>;
   // CHECKLIST P1 PR-03 — cria a NOVA versão da vistoria a partir de uma run concluída (append-only). Devolve
   // null quando a run não existe no tenant (isolamento: nunca vaza existência); lança 409 quando a run não é
   // reabrível ou já foi reaberta.
@@ -332,6 +367,11 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     this.runs.set(run.id, run);
     this.upsertAnswers(data.tenantId, run.id, data.answers, now);
 
+    // B-O6R-06 — DUBLE da captura transacional, pelo MESMO builder do caminho Prisma. `await` de
+    // proposito: a suite em memoria tem de enxergar a unidade JA gravada quando `createRun` retorna,
+    // como o Postgres a enxerga depois do commit. Nao e evidencia de atomicidade (isso e a suite -db).
+    await appendChecklistRunUsageInMemory(buildChecklistRunUsageEvents("created", run));
+
     return { run, created: true };
   }
 
@@ -412,7 +452,13 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     return this.buildRunDetails(updated);
   }
 
-  async completeRun(tenantId: string, runId: string, actorUserId: string, status: ChecklistRunStatus): Promise<RepositoryRunDetails | null> {
+  async completeRun(
+    tenantId: string,
+    runId: string,
+    actorUserId: string,
+    status: ChecklistRunStatus,
+    billing: CompleteRunBilling,
+  ): Promise<RepositoryRunDetails | null> {
     const existing = this.runs.get(runId);
 
     if (!existing || existing.tenantId !== tenantId) {
@@ -433,6 +479,12 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     };
 
     this.runs.set(updated.id, updated);
+
+    // B-O6R-06 / E1.2 — so o chamador que HOJE fatura declara `meterCompletion: true`. A trilha de
+    // divergencia/ciencia do mobile continua valendo 0 unidades, como sempre valeu.
+    if (billing.meterCompletion) {
+      await appendChecklistRunUsageInMemory(buildChecklistRunUsageEvents("completed", updated));
+    }
 
     return this.buildRunDetails(updated);
   }

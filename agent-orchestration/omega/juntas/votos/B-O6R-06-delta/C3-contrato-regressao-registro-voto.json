@@ -1,0 +1,214 @@
+{
+ "jurado": "jurado-06d-contrato-regressao-registro (identidade nova — nao votei, nao planejei, nao desenvolvi, nao achei o defeito de isolamento; nada herdado das seis identidades sepultadas em OBITUARIO §3.4, do planejador-mestre, do critico-adversarial, do dev general-purpose, do orquestrador-achador, do porteiro-pos-merge, do inspetor-de-terreno-da-junta nem da cadeira-permanente-backend-review; briefing do delta re-executado inteiro)",
+ "lente": "DELTA, nao merito. Escopo §C4 por HASH DE ARVORE das pastas proibidas entre fe2748c8 e o head medido e26eb9e5 · KPI por REEXECUCAO (2995/2997 com N e forma — inclusive o passo do banco recriado —, blocks_completed 163 e a reconciliacao da colisao, var FROZEN, guards 16/16 e 6/6) · registro (parecer de regularizacao, as duas linhas de status:, o indice REGENERADO pelo gerador, o obituario §3.4, a fundamentacao da ata). Quorum: unanimidade de 3 — medi que nao ha dependencia nova (package.json/lock byte-identicos), logo nao vira 5/5. Nao julga: C1 jurado-06d-banco-atomicidade-rls (janela reservada nas duas direcoes, F1/F2 em cluster proprio, teardown por SELECT count(*)); C2 jurado-06d-invariante-financeiro-rateio (src/ intocado por mutacao, ataque a isca, aritmetica do delta +54 autoria +5 conserto).",
+ "voto": "APROVADO",
+ "justificativa": "TERRENO. Worktree PROPRIO .claude/worktrees/o6r06d-jur-c3, detached no head que EU medi: gh pr view 385 --json headRefOid -> e26eb9e5 (nao deff7bcc do briefing, nem 764a3b04 do terreno; o §0 do briefing manda medir, e medi). gh pr checks 385 reexecutado por mim as 13:02Z: 7/7 pass, ec=0, mergeable=MERGEABLE, mergeStateStatus=BEHIND. npm ci --no-audit --no-fund PROPRIO (ec=0) + npx prisma generate (ec=0); junction/symlink de node_modules AUSENTE. Node v20.19.5, npm 11.7.0, Python 3.13.14. Cluster descartavel PROPRIO o6r06d-jc3-pg :56701 (postgres 16.15-alpine, 107 migrations) e o6r06d-jc3-redis :56702, portas escolhidas DEPOIS de netsh excludedportrange e docker ps (nao 5432, nao 55432, nao as do dev 56501/56502, nao as de outra cadeira). FORMA DO RESET: no BANCO, nunca no schema — DROP DATABASE ... WITH (FORCE) + CREATE DATABASE + prisma migrate deploy antes de CADA execucao, com nspacl conferido e colado nas tres: {pg_database_owner=UC/pg_database_owner,=U/pg_database_owner}; nenhum 42501, o alarme falso do §8.3 nao se reproduziu. Pristino ANTES e DEPOIS por git status --porcelain VAZIO; os tres arquivos-fantasma conferidos por BLOB e nao por md5 cru (planejador-mestre 151bf048, porteiro-pos-merge 00d75b02, sync-agent-agents 093a6b93 — git hash-object do disco identico ao git rev-parse e26eb9e5:<f>): nao ha mutacao viva. git clean NUNCA usado, em forma nenhuma. Base viva erp-postgres/erp-redis nao recebeu um comando, nem de leitura. Fatia S0 reexecutada por mim: node scripts/sync-agent-agents.mjs --check -> ec=0, OK 35 agentes, espelho consistente.\nREPROVACAO POR CONSTRUCAO — o que eu NAO cobrei: mudanca em src/ (o conserto e zero-src/ por desenho); prisma/**, mobile/**, .github/**, scripts/** (inclusive o runner run-backend-tests.mjs); tests/o6r06-allocation-basis-rls-db.test.ts; o ramo completed do reconcile-checklist-usage.ts (bloqueado por R2-A); baixar --test-concurrency; o assento permanente (§C7.1-quater, norma inexistente na ref — e tambem NAO cobrei que a ata mantivesse a citacao falsa, nem que a correcao anulasse o ato); e P-O6R-SUITES-DB-SEM-TEARDOWN, pre-existente com dono a nomear.\n\nITEM 1 — ESCOPO POR HASH DE ARVORE. Os doze hashes, base fe2748c8 x head e26eb9e5: src 7f626fbc->461cfa6b DIFERE; prisma be98074a IGUAL; frontend 24be761e IGUAL; mobile 3a2ac028 IGUAL; .github 63839597->e98540f0 DIFERE; scripts 08de36f3->3c690511 DIFERE. Tres diferencas — e a DECOMPOSICAO e o que decide, porque fe2748c8 e a base comum dos DOIS lados (git merge-base cc579302^1 cc579302^2 -> fe2748c8), logo esse diff soma merito aprovado 3x0 + main absorvida + delta. Medindo as parcelas: src e .github mudam no lado B06 (ab2540d0) e sao IDENTICOS a 0f0a872a, o head que a junta original julgou — sao MERITO, ja aprovado; scripts nao muda no lado B06 e o head e byte-identico ao 1b8319f9 da main. No corte que responde a pergunta (0f0a872a x e26eb9e5): src 461cfa6b IGUAL, prisma be98074a IGUAL, frontend 24be761e IGUAL, mobile 3a2ac028 IGUAL, .github e98540f0 IGUAL; so scripts difere, e por tres medicoes independentes veio 100% da main (rev-parse 1b8319f9:scripts = e26eb9e5:scripts; diff --numstat 1b8319f9 e26eb9e5 -- scripts/ VAZIO; diff --numstat fe2748c8 1b8319f9 -- scripts/ = 668 0 scripts/audit-agents-skills.mjs; diff --numstat cc579302 deff7bcc -- scripts/ VAZIO). O DELTA TOCOU ZERO DAS SEIS PASTAS PROIBIDAS.\nALVOS NOMINAIS. tests/o6r06-allocation-basis-rls-db.test.ts: numstat 0f0a872a..e26eb9e5 VAZIO e blob identico 91838f4d em 0f0a872a, deff7bcc, 764a3b04 e e26eb9e5 (em fe2748c8 nao existe — informacao, nao erro: quem o criou foi o merito). package.json e package-lock.json: blobs BYTE-IDENTICOS nos tres refs (pkg e572e072, lock 9039d1e8 em fe2748c8, 0f0a872a e e26eb9e5), numstat VAZIO nos dois cortes — ZERO dependencia nova, ZERO linha de lockfile, nenhum passo de deploy: o quorum NAO muda para 5/5, permanece unanimidade de 3.\nRECIPROCA. Merge cc579302: git diff-tree --cc --name-only devolve EXATAMENTE 6 arquivos, exatamente os seis conflitos declarados (Kpis/app.js, kpis-history.json, kpis-history.md, kpis-latest.json, pendencias.md, status-geral.md) — todos dentro do permitido §5. Conserto cc579302..deff7bcc: 12 arquivos, os tres tests/ do §5 (cost-summary-sum-db 177/16, helpers/cost-fixtures 25/0, janela-reservada-guard 132/0 novo) + 3 Kpis + 6 agent-orchestration; e diff --numstat contra src/ prisma/ frontend/ mobile/ .github/ scripts/ package.json package-lock.json sai VAZIO — zero linha de src/ confirmado por medicao. DUAS PONTAS: commitado pelos hashes; arvore de trabalho por git status --porcelain VAZIO antes e depois. ABSORCAO PROVADA POR ARVORE, nao por is-ancestor: prisma, frontend, mobile e scripts do head sao byte-identicos aos de 1b8319f9, e os unicos arquivos fora de registro/kpi/tests no diff 1b8319f9..e26eb9e5 sao os 13 de src/ + ci.yml + docs — todos do merito.\n\nITEM 2 — KPI POR REEXECUCAO. A FORMA PUBLICADA INCLUI O PASSO DO BANCO RECRIADO: SIM, e cito o trecho literal de metrics.backend_tests.note — \"FORMA CANONICA declarada, e a declaracao inclui o passo que a autoria OMITIA: npm test (= node scripts/run-backend-tests.mjs) com o BANCO RECRIADO ANTES DE CADA EXECUCAO (DROP DATABASE ... WITH (FORCE) + CREATE DATABASE + prisma migrate deploy) ... CORE_SAAS_PERSISTENCE=memory (a forma do job backend do CI, ci.yml:16) e RBAC_DB_PARITY ausente ... ec=0 lido do processo e nunca depois de pipe\". MINHA REEXECUCAO, N=3, banco recriado antes de cada uma, ec lido POR VARIAVEL e contagens lidas do TAP NO ARQUIVO: exec 1 NPMTEST_EC=0, # tests 2997 # pass 2995 # fail 0 # skipped 2, not-ok 0; exec 2 identica; exec 3 identica. O NUMERO REPRODUZ, no mesmo N que a nota declara. Os 2 pulados, por nome lidos do TAP (npmtest_1.log:11226 e :11231), sao os 2 do orcamento do runner: permission-catalog-db-parity sob RBAC_DB_PARITY nao e \"1\" — auto-pulo silencioso NENHUM. A note nao carrega bloco anterior em primeira pessoa: diz EXECUCAO REAL DESTE PR e a execucao e deste PR. Trilhas nao tocadas provadas nas DUAS pontas: mobile tree 3a2ac028 e frontend tree 24be761e identicas entre 0f0a872a e e26eb9e5, e git status --porcelain vazio; e o §C3.3 pede a nota NO HISTORY, e a entrada 157 a tem completa.\nBLOCKS_COMPLETED 163. Reproduzi ref a ref: fe2748c8 (base comum) 161; ab2540d0 (lado B06) 162; 1b8319f9 (lado main, #381 -ENXUTO) 162; cc579302 (merge) 163; e26eb9e5 (head) 163. A colisao e real e a reconciliacao e correta — dois blocos distintos subindo o mesmo degrau a partir de 161. SERIE NO HISTORY, ordem do arquivo: pos 154 2026-09-06 B-O6R-07b 161 pr380; pos 155 2026-09-08 B-GOV-ELENCO 161 pr null (nao mergeou, corretamente NAO move); pos 156 2026-09-08 B-GOV-ELENCO-ENXUTO 162 pr381; pos 157 2026-09-08 B-O6R-06 163 pr null. 161-161-162-163. Varredura da serie INTEIRA (158 entradas): violacoes de monotonicidade 0, datas fora de ordem 0. REDATACAO conferida nas duas pontas do merge: em ab2540d0 a entrada do B06 estava na pos 155 datada 2026-09-07 com 162; no head esta na pos 157 datada 2026-09-08 com 163 — redatada E reordenada para depois do -ENXUTO, sem inverter a cronologia de nenhuma outra entrada. Backfill do #380: o head traz o hash COMPLETO fe2748c84cc187a54ebe3fa651fcdc347c5b3494, identico ao da main (o lado B06 trazia o curto fe2748c) — main verbatim, como declarado. A note credita a ressalva 1 da cadeira-permanente-backend-review e o arquivo votos/B-O6R-06/99-cadeira-permanente.md EXISTE nos autos (285 l.) com as medicoes (262 l.): CONFIRO que esta nos autos, NAO adoto as conclusoes dele.\nVAR FROZEN E GUARDS. node scripts/kpi-freeze.mjs --check ec=0, \"em dia (snapshot 2026-09-08)\" — a copia congelada NAO diverge do JSON. node --test --import tsx tests/kpi-dashboard-charts.test.ts ec=0, 16/16. node --test --import tsx tests/kpi-achados-paridade.test.ts ec=0, 6/6. node --check Kpis/app.js ec=0. git diff --check da arvore ec=0. O DIFF DE Kpis/app.js EM TODO O DELTA E SO A LINHA var FROZEN: numstat 0f0a872a..e26eb9e5 = 1 1, e as unicas linhas +/- sao -var FROZEN = {\"snapshot_date\"... e +var FROZEN = {\"snapshot_date\"... — nenhum outro numero cravado no app.js.\n\nITEM 3 — REGISTRO, cinco sub-itens. (a) O parecer de regularizacao ESTA nos autos: votos/REGULARIZACAO-382-383-384/01-parecer-porteiro.md (176 l.) + 00-parecer-incremental-p2.md (61 l.); cobre os tres por contagem de ocorrencias reais (#382=11, #383=13, #384=13), com veredito LIBERADO COM RESSALVA para cada um e a frase \"O repositorio esta DESTRAVADO para comecar bloco novo\"; e os tres aparecem no status-geral.md (4/5/4 ocorrencias, secao dedicada em l.4288). Ele COBROU cinco coisas para a proxima demanda, e daqui sairam literalmente meus itens (b) e (c): rodar o gerador e commitar o indice; corrigir as linhas status: e trocar REBAIXADA; registrar os tres PRs no status-geral; reabrir P-GOV-CAMINHO-REPO-SESSAO; fechar P-GOV-INSPETOR-33-SEM-NORMA. (b) AS DUAS LINHAS CORRIGIDAS, medidas contra 1b8319f9 que e a main que o parecer mediu: P-GOV-WORKTREES-NAO-IGNORADAS passou de \"- **status:** ABERTA · **severidade:** MEDIA\" para \"- **status:** FECHADA · **severidade:** MEDIA\", e agora concorda com o cabecalho que diz FECHADA POR NAO-REPRODUCAO; P-GOV-INSPETOR-33-SEM-NORMA passou de \"- **status:** REBAIXADA · **severidade:** BAIXA (era ALTA)\" para \"- **status:** ABERTA · **severidade:** BAIXA (rebaixada de ALTA em 2026-09-08)\" — REBAIXADA, fora do vocabulario, saiu; o vocabulario esta dentro do permitido. Conferi a terceira por completude: P-GOV-CAMINHO-REPO-SESSAO esta ABERTA/ALTA e o cabecalho nao declara fechamento, logo sem contradicao. (c) O INDICE: RODEI O GERADOR, nao grepei o codigo dele. Copiei gerador e pendencias.md para o scratchpad com o layout relativo que ele espera e conferi os tres blobs por hash-object x rev-parse antes de rodar (pendencias.md 3d3281c7, gerador 53e94d89, indice commitado 671cea9f — os tres identicos). python agent-orchestration/controle/gerar-indice-pendencias.py -> ec=0, stdout \"indice: 308 cabecalhos / 297 IDs | {FECHADA: 70, ABERTA: 236, SEM-STATUS: 2} | baldes {-: 70, C: 76, B: 97, A: 63, ?: 2} | diferidas-materiais 1\". A COMPARACAO QUE DECIDE: git hash-object da saida do gerador = 671cea9f8332ce1316626f290970ab8a709b34d6 = git rev-parse e26eb9e5:agent-orchestration/controle/pendencias-indice.md. BYTE-IDENTICOS — o indice commitado E a saida do gerador, nao esta defasado, e bate com o declarado 308/297, 236 abertas, balde A 63. Regra 4: o gerador emite a secao CONTRADITORIAS e conta 0, e aqui o zero e honesto e nao invisivel, porque as duas linhas que produziam a oposicao foram corrigidas em (b) — a contradicao deixou de existir na fonte. Regra 6: DIFERIDO-LEVE continua ABERTA, presente no cabecalho gerado e aplicada, com o balde C de 76 contado DENTRO das 236 abertas. Os 2 SEM STATUS sao P-GOV-NOTA-KPI-CONGELADA e P-GOV-BAIXA-CICLO1-FECHADOS, e vieram da main. NAO regenerei o arquivo do repositorio: a saida ficou no scratchpad.\n(d) OBITUARIO §3.4: as seis identidades do caso original estao SEPULTADAS, com classe (3 votou + 3 nomeada-e-preparada), evidencia por identidade, e commit de nascimento e35492ef (2026-09-07) que confirmei de forma independente por git log --diff-filter=A; o placar do topo foi atualizado para 21 (6 ARNES + 9 B-O6R-02 c4 + 6 B-O6R-06); e a divida do §1.5 esta DECLARADA em texto, admitindo que as seis linhas nao entraram em 005b522c. E O TESTE QUE IMPORTA PARA A VALIDADE DESTA JUNTA: enumerei POR PRESENCA as 27 identidades nomeadas no obituario e NENHUMA e jurado-06d-*; as seis desta junta dao 0 ocorrencias cada, com controle positivo nas tres jurado-06-* sepultadas. A junta e validamente composta. (e) A FUNDAMENTACAO DA ATA esta corrigida: a §9 de J-B-O6R-06.md traz a CORRECAO DE FUNDAMENTACAO datada de 2026-09-09, e \"quater\" aparece exatamente 1 vez na ata inteira, dentro da propria correcao — nenhuma citacao falsa remanescente. E ela preserva a distincao exigida: \"A convocacao continua valida — ela foi determinacao escrita do dono ... O que era invalido era a CITACAO, nao o ATO\". E suficiente. PAPEIS §C7.4-bis conferidos POR PROVA: ACHOU o orquestrador (conferi na note as 5 execucoes sujas com N e forma e as duas hipoteses refutadas por execucao); PLANEJOU o workflow de 4+4 (a prescricao esta no §4 dos autos; o plano bruto esta em scratchpad — achado C3-A5, nota); DESENVOLVEU um general-purpose (conferi que cc579302..deff7bcc toca exatamente os tres arquivos de tests/); JULGAM as tres cadeiras novas. A ata §1 registra a tabela de papeis e o §7 responde as tres perguntas obrigatorias, inclusive \"quem achou e quem consertou? Nao\". Ata com os papeis registrados: o ciclo nao e invalido por essa via.\n\nO QUE PASSA: as seis pastas proibidas com arvore identica entre o head do merito e o head do delta; nenhuma linha de lockfile; o que o delta escreveu cabe inteiro no permitido §5, com a excecao nominal e nao-bloqueante dos corpos de jurado (C3-A1); 2995/2997 reproduzindo em N=3 sob a forma declarada, que INCLUI o banco recriado; skipped 2 com os dois nomes lidos do TAP; blocks_completed 163 com a colisao medida e a serie monotonica e datada certo; var FROZEN em dia e diff de app.js de uma linha so; guards 16/16 e 6/6; e os cinco itens de registro nos autos, com o indice conferido pela SAIDA DO GERADOR.\nO QUE NAO REPROVA, E POR QUE: cinco achados, nenhum bloqueia. C3-A1 (baixa, dentro-do-bloco) — os 12 corpos jurado-06d-* estao fora da lista literal do §5, mas sao as identidades que ESTA junta exigiu na primeira passada e sem as quais ela nao pode existir, tocam zero pasta proibida e a criacao esta declarada no §1 do briefing: cobrar isso seria reprovar a junta pelo conserto que ela mesma ordenou. C3-A2 (media, dentro-do-bloco) — a reconstrucao do kpis-latest.json no merge fez cinco trilhas nao tocadas perderem o marcador [B-O6R-06:], e o ultimo marcador delas passou a ser o do bloco anterior; nao bloqueia porque o §C3.3 exige a nota NO HISTORY e a entrada 157 a tem completa e com prova nas duas pontas, os valores estao corretos (medi mobile e frontend identicos) e as notas dizem CARREGADO e \"descreve execucao de bloco anterior, NAO deste PR\", logo nao ha afirmacao falsa em primeira pessoa. C3-A3 e C3-A4 sao pre-existentes com evidencia de data/origem e dono nomeado. C3-A5 e nota.\nPROPRIEDADES AUSENTES, NOMEADAS SEM CONSERTO (nao proponho correcao, §C7.4-bis): \"o kpis-latest.json nao registra, nas trilhas carregadas, o marcador §C3.3 deste bloco — o ultimo marcador nomeia o bloco anterior\"; \"o artefato de planejamento dos 4 planejadores e 4 criticos nao esta nos autos, so a prescricao\"; \"a lista de escopo permitido do §5 nao contempla o caminho dos corpos de jurado que a propria junta exigiu criar\".\nO QUE NAO MEDI POR SER DE OUTRA CADEIRA: F1 deterministica, F2 (o par), a janela reservada nas duas direcoes, o teardown por SELECT count(*) e o vermelho-controle no head intocado sao da C1 jurado-06d-banco-atomicidade-rls; o src/ intocado provado por MUTACAO, o ataque a isca e a ARITMETICA do delta (+54 autoria + 5 conserto) sao da C2 jurado-06d-invariante-financeiro-rateio — eu medi o delta apenas como REEXECUCAO, e o absoluto 2997 reproduz. As sete afirmacoes [A RE-VERIFICAR] do §7 nao entraram como fato no meu parecer e nenhuma reprova o delta. Nao li os votos de C1 nem de C2: voto de outra cadeira nao e evidencia da minha.\nO QUE FICOU SEM EXECUTAR E POR QUE: nada do meu nucleo. Registro tres ressalvas sobre mim mesmo. Primeira: cai na armadilha n.3 do meu proprio mandato — git rev-parse <rev>:<caminho> ecoa o argumento no stdout quando o caminho nao existe, e minha varredura inicial de absorcao produziu 30 falsos DIVERGE; detectei ao investigar um caso concreto, refiz com git diff --name-status e git ls-tree, e nenhum achado sobreviveu. Segunda: as ancoras que recebi estavam desatualizadas (deff7bcc no briefing, 764a3b04 no terreno) e o head real do PR e e26eb9e5; medi e voto sobre ele, e registro para que ninguem cite em ata um head que nao e o do PR. Terceira: a note cita ci.yml:16 para CORE_SAAS_PERSISTENCE quando a linha e a 21 — a forma esta certa, so a citacao de linha esta deslocada; nota de precisao, nao achado.\nLIMPEZA: derrubei os dois containers proprios e o worktree proprio por git worktree remove --force + git worktree prune, pelo identificador do BLOCO; git clean nunca usado; a saida do gerador ficou no scratchpad e nunca por cima do arquivo do repo; worktrees alheios (b06, gov-elenco, gov-descuido) intactos; base viva nunca tocada.\n\nVOTO: APROVADO — as seis pastas proibidas tem hash de arvore identico entre fe2748c8 e o head que medi (e26eb9e5), o que mudou esta inteiro dentro do permitido §5, 2995/2997 reproduz no meu cluster sob a forma declarada (que inclui o banco recriado), a serie de blocks_completed e monotonica ate 163 com a colisao explicada, os guards fecham 16/16 e 6/6, e os cinco itens de registro estao nos autos — o indice conferido pela SAIDA DO GERADOR",
+ "o_que_executei": [
+  {
+   "comando": "gh pr view 385 --json headRefOid,mergeable,mergeStateStatus + gh pr checks 385",
+   "forma": "reexecutado por mim 2026-09-09 13:02Z; nao herdei o 7/7 declarado",
+   "resultado": "headRefOid=e26eb9e5 (NAO deff7bcc nem 764a3b04); mergeable=MERGEABLE; mergeStateStatus=BEHIND; gh pr checks -> 7/7 pass, ec=0"
+  },
+  {
+   "comando": "git worktree add --detach .claude/worktrees/o6r06d-jur-c3 e26eb9e5; npm ci --no-audit --no-fund; npx prisma generate",
+   "forma": "worktree PROPRIO no head que medi; npm ci proprio, sem junction",
+   "resultado": "worktree ec=0; npm ci ec=0; prisma generate ec=0; Node v20.19.5, npm 11.7.0; git status --porcelain VAZIO"
+  },
+  {
+   "comando": "git rev-parse <rev>:<pasta> para src prisma frontend mobile .github scripts",
+   "forma": "base fe2748c8 x head e26eb9e5, os doze hashes, MSYS_NO_PATHCONV=1",
+   "resultado": "src 7f626fbc->461cfa6b DIFERE; prisma be98074a IGUAL; frontend 24be761e IGUAL; mobile 3a2ac028 IGUAL; .github 63839597->e98540f0 DIFERE; scripts 08de36f3->3c690511 DIFERE. Os doze com ec=0"
+  },
+  {
+   "comando": "git rev-parse <rev>:<pasta> nas 4 refs (fe2748c8, ab2540d0, 1b8319f9, e26eb9e5) + corte 0f0a872a x e26eb9e5",
+   "forma": "decomposicao merito x main absorvida x delta",
+   "resultado": "0f0a872a x e26eb9e5: src 461cfa6b IGUAL, prisma IGUAL, frontend IGUAL, mobile IGUAL, .github e98540f0 IGUAL; so scripts difere e e byte-identico ao 1b8319f9:scripts. O DELTA TOCOU ZERO DAS SEIS PASTAS PROIBIDAS"
+  },
+  {
+   "comando": "git diff --numstat 1b8319f9 e26eb9e5 -- scripts/ ; fe2748c8 1b8319f9 -- scripts/ ; cc579302 deff7bcc -- scripts/",
+   "forma": "tres medicoes independentes da origem de scripts",
+   "resultado": "VAZIO; 668 0 scripts/audit-agents-skills.mjs; VAZIO -> scripts veio 100% da main absorvida"
+  },
+  {
+   "comando": "git diff --numstat 0f0a872a e26eb9e5 -- tests/o6r06-allocation-basis-rls-db.test.ts + rev-parse nas 5 refs",
+   "forma": "alvo nominal proibido; presenca por numstat",
+   "resultado": "numstat VAZIO; blob identico 91838f4d3ff8e906d0f689bd82713f112c9db7f8 em 0f0a872a, deff7bcc, 764a3b04, e26eb9e5"
+  },
+  {
+   "comando": "git diff --numstat <base> <head> -- package.json package-lock.json + rev-parse dos blobs",
+   "forma": "dependencia nova mudaria o quorum para 5/5",
+   "resultado": "numstat VAZIO nos dois cortes; blobs BYTE-IDENTICOS nos tres refs: pkg e572e072283b4cfb2b5df4aa0a0980010b4a4002, lock 9039d1e8fc85cf17b6123a28f643a8ff9d37f7cd. Quorum permanece unanimidade de 3"
+  },
+  {
+   "comando": "git diff-tree --cc --name-only cc579302",
+   "forma": "resolucao de conflito = o que difere de AMBOS os pais",
+   "resultado": "EXATAMENTE 6 arquivos, os seis conflitos declarados: Kpis/app.js, kpis-history.json, kpis-history.md, kpis-latest.json, pendencias.md, status-geral.md — todos dentro do permitido §5"
+  },
+  {
+   "comando": "git diff --name-status/--numstat cc579302 deff7bcc (+ pathspec das proibidas)",
+   "forma": "isolar o conserto",
+   "resultado": "12 arquivos: os 3 tests/ do §5 (177/16, 25/0, 132/0 novo) + 3 Kpis + 6 agent-orchestration. Pathspec das proibidas -> VAZIO. Zero linha de src/"
+  },
+  {
+   "comando": "git merge-base cc579302^1 cc579302^2 ; git log -1 --format cc579302 ; git merge-base e26eb9e5 1b8319f9 ; comparacao de arvores",
+   "forma": "absorcao por ARVORE, nao por --is-ancestor sozinho",
+   "resultado": "base comum = fe2748c8 (confirmada); pais ab2540d0 + 1b8319f9; merge-base = 1b8319f9; prisma/frontend/mobile/scripts do head byte-identicos aos de 1b8319f9"
+  },
+  {
+   "comando": "node scripts/sync-agent-agents.mjs --check",
+   "forma": "fatia S0 reexecutada por mim",
+   "resultado": "ec=0, OK — 35 agentes, espelho consistente"
+  },
+  {
+   "comando": "DROP DATABASE erp_jc3 WITH (FORCE); CREATE DATABASE erp_jc3; npx prisma migrate deploy; npm test",
+   "forma": "N=3, banco recriado ANTES DE CADA execucao; CORE_SAAS_PERSISTENCE=memory; RBAC_DB_PARITY ausente; cluster proprio :56701/:56702; ec lido POR VARIAVEL, nunca depois de pipe; contagens do TAP NO ARQUIVO",
+   "resultado": "exec1 EC=0 -> # tests 2997 # pass 2995 # fail 0 # skipped 2, not-ok 0; exec2 identica; exec3 identica. nspacl nas tres = {pg_database_owner=UC/pg_database_owner,=U/pg_database_owner}; MIGRATE_EC=0; 107 migrations. O NUMERO REPRODUZ"
+  },
+  {
+   "comando": "grep dos SKIP no TAP (npmtest_1.log)",
+   "forma": "nomes lidos do arquivo, nao da tela",
+   "resultado": "l.11226 ok 2026 - toda permissao do catalogo existe na tabela permissions do banco # SKIP RBAC_DB_PARITY nao e 1; l.11231 ok 2027 - grants do papel GLOBAL x ROLE_PERMISSIONS # SKIP. Sao os 2 do orcamento (permission-catalog-db-parity). Auto-pulo silencioso: nenhum"
+  },
+  {
+   "comando": "leitura de metrics.backend_tests.note no head",
+   "forma": "citar o trecho literal da forma publicada",
+   "resultado": "a forma DECLARA o passo: BANCO RECRIADO ANTES DE CADA EXECUCAO (DROP DATABASE WITH FORCE + CREATE DATABASE + prisma migrate deploy), CORE_SAAS_PERSISTENCE=memory, RBAC_DB_PARITY ausente, ec do processo. Diz EXECUCAO REAL DESTE PR"
+  },
+  {
+   "comando": "git show <ref>:Kpis/kpis-latest.json | node (blocks_completed.value) nas 5 refs",
+   "forma": "a colisao medida, nao adivinhada",
+   "resultado": "fe2748c8=161; ab2540d0=162; 1b8319f9=162; cc579302=163; e26eb9e5=163"
+  },
+  {
+   "comando": "varredura programatica de kpis-history.json (158 entradas)",
+   "forma": "monotonicidade e ordem de data em TODA a serie, ordem do arquivo",
+   "resultado": "pos154 09-06 B-O6R-07b 161 pr380; pos155 09-08 B-GOV-ELENCO 161 pr null; pos156 09-08 B-GOV-ELENCO-ENXUTO 162 pr381; pos157 09-08 B-O6R-06 163 pr null. 161-161-162-163. Violacoes de monotonicidade=0; datas fora de ordem=0"
+  },
+  {
+   "comando": "comparacao da entrada B-O6R-06 em ab2540d0 x cc579302 x e26eb9e5",
+   "forma": "provar a redatacao e a reordenacao nas duas pontas do merge",
+   "resultado": "ab2540d0: pos 155, 2026-09-07, bc=162. head: pos 157, 2026-09-08, bc=163 — redatada E reordenada para depois do -ENXUTO, sem inverter cronologia de outra entrada"
+  },
+  {
+   "comando": "comparacao da entrada B-O6R-07b (backfill #380) head x main x lado b06",
+   "forma": "verbatim da main?",
+   "resultado": "head e main: merge_commit=fe2748c84cc187a54ebe3fa651fcdc347c5b3494 (completo); lado b06 tinha o curto fe2748c. Main verbatim, como declarado"
+  },
+  {
+   "comando": "enumeracao dos marcadores por trilha em kpis-latest.json (head x ab2540d0)",
+   "forma": "classe A-2: a note carrega o marcador do bloco anterior?",
+   "resultado": "head: ultimo marcador = B-GOV-ELENCO-ENXUTO em flutter_tests, frontend_smoke_tests, flutter_modules, mobile_backend_contracts, mobile_core_saas_contracts, e a string B-O6R-06 nao aparece; ab2540d0: ultimo marcador ERA B-O6R-06. Achado C3-A2"
+  },
+  {
+   "comando": "node scripts/kpi-freeze.mjs --check ; node --test --import tsx tests/kpi-dashboard-charts.test.ts ; tests/kpi-achados-paridade.test.ts ; node --check Kpis/app.js ; git diff --check",
+   "forma": "guards e sintaxe, ec lido por variavel",
+   "resultado": "freeze ec=0 em dia (snapshot 2026-09-08); charts ec=0 16/16; paridade ec=0 6/6; node --check ec=0; git diff --check da arvore ec=0"
+  },
+  {
+   "comando": "git diff --numstat / -U0 0f0a872a e26eb9e5 -- Kpis/app.js (e por trecho)",
+   "forma": "o diff do app.js e so a linha var FROZEN?",
+   "resultado": "numstat 1 1; unicas linhas alteradas sao -var FROZEN = ... e +var FROZEN = ... ; por trecho 0f0a872a..cc579302=1 1, cc579302..deff7bcc=1 1, deff7bcc..764a3b04 vazio, 764a3b04..e26eb9e5 vazio"
+  },
+  {
+   "comando": "git ls-tree -r e26eb9e5 -- votos/REGULARIZACAO-382-383-384/ + contagem por grep -o",
+   "forma": "presenca e cobertura dos tres PRs",
+   "resultado": "01-parecer-porteiro.md (176 l.) e 00-parecer-incremental-p2.md (61 l.); #382=11, #383=13, #384=13 ocorrencias; LIBERADO COM RESSALVA nos tres; repositorio DESTRAVADO; no status-geral.md #382=4, #383=5, #384=4, secao dedicada l.4288"
+  },
+  {
+   "comando": "comparacao das linhas **status:** em pendencias.md, head x 1b8319f9",
+   "forma": "as duas linhas que o parecer cobrou",
+   "resultado": "P-GOV-WORKTREES-NAO-IGNORADAS: ABERTA -> FECHADA (agora concorda com o cabecalho); P-GOV-INSPETOR-33-SEM-NORMA: REBAIXADA -> ABERTA com severidade BAIXA. Vocabulario dentro do permitido. P-GOV-CAMINHO-REPO-SESSAO ABERTA/ALTA, cabecalho sem fechamento -> sem contradicao"
+  },
+  {
+   "comando": "git hash-object das copias x git rev-parse; cd <scratch> && python agent-orchestration/controle/gerar-indice-pendencias.py",
+   "forma": "RODEI O GERADOR em copia isolada no scratchpad, blobs conferidos antes; NAO regenerei o arquivo do repo",
+   "resultado": "ec=0. stdout: indice: 308 cabecalhos / 297 IDs | {FECHADA:70, ABERTA:236, SEM-STATUS:2} | baldes {-:70, C:76, B:97, A:63, ?:2} | diferidas-materiais 1. HASH DA SAIDA = 671cea9f8332ce1316626f290970ab8a709b34d6 = HASH DO INDICE COMMITADO. BYTE-IDENTICOS"
+  },
+  {
+   "comando": "leitura da saida do gerador: secoes CONTRADITORIAS, SEM STATUS, DIFERIDO",
+   "forma": "regras 4 e 6 conferidas na SAIDA, nao no codigo",
+   "resultado": "CONTRADITORIAS emitida e = 0 (honesto: as duas linhas foram corrigidas na fonte); DIFERIDO-LEVE continua ABERTA aplicada, balde C=76 dentro das 236 abertas; SEM STATUS=2 (P-GOV-NOTA-KPI-CONGELADA, P-GOV-BAIXA-CICLO1-FECHADOS)"
+  },
+  {
+   "comando": "presenca ref a ref dos 2 SEM STATUS em pendencias.md",
+   "forma": "datar por origem",
+   "resultado": "ausentes em fe2748c8 e ab2540d0 (lado B06); presentes em 1b8319f9 (main absorvida) -> vieram da main. pre-existente"
+  },
+  {
+   "comando": "git show e26eb9e5:OBITUARIO-IDENTIDADES.md + enumeracao por presenca + git log --diff-filter=A",
+   "forma": "obituario e fonte primeira e fail-closed",
+   "resultado": "§3.4 (l.148) com as 6 SEPULTADAS, 3 votou + 3 nomeada-e-preparada, evidencia por identidade, nascimento e35492ef (2026-09-07) CONFIRMADO por diff-filter=A; placar l.32 = 21; divida §1.5 declarada. Enumerei 27 identidades: NENHUMA e jurado-06d-*; as 6 desta junta = 0 ocorrencias; controle positivo nas 3 jurado-06-* presentes"
+  },
+  {
+   "comando": "git show e26eb9e5:J-B-O6R-06.md + contagem de quater + leitura da §9",
+   "forma": "a correcao esta escrita e preserva a distincao?",
+   "resultado": "quater aparece 1 vez na ata inteira, dentro da propria correcao. §9 (l.150): CORRECAO DE FUNDAMENTACAO (2026-09-09) — a convocacao continua valida por determinacao escrita do dono (§A1.1); o invalido era a CITACAO, nao o ATO"
+  },
+  {
+   "comando": "leitura do briefing §3 + ata §1 e §7 + conferencia de cada prova",
+   "forma": "papeis §C7.4-bis por prova, nao por declaracao",
+   "resultado": "ACHOU (note com as 5 execucoes sujas) CONFERE; DESENVOLVEU (os 3 tests/ em deff7bcc) CONFERE; JULGA (as 3 cadeiras novas) CONFERE; PLANEJOU tem a prescricao no §4 mas o plano bruto em scratchpad (C3-A5). Ata §1 registra a tabela e §7 responde as tres perguntas"
+  },
+  {
+   "comando": "git log --diff-filter=A -- C1-banco-rls-evidencia.md + numstat nos tres trechos do delta",
+   "forma": "datar o aviso do git diff --check",
+   "resultado": "nasceu em cae4305a, 2026-09-07 (voto da junta ORIGINAL); numstat VAZIO nos tres trechos do delta -> pre-existente"
+  },
+  {
+   "comando": "git status --porcelain (antes/depois) ; git hash-object dos 3 fantasmas ; docker ps -a ; git worktree list ; docker volume ls",
+   "forma": "duas pontas e teardown confirmado por execucao",
+   "resultado": "porcelain VAZIO antes e depois; fantasmas byte-identicos (151bf048, 00d75b02, 093a6b93); worktree proprio removido por git worktree remove --force + prune; containers proprios removidos; 2 volumes anonimos MEUS removidos; 4 volumes de OUTRA sessao (12:04Z) reportados e NAO varridos; base viva intacta"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "Os 12 corpos de jurado (.claude/agents/especialistas/jurado-06d-*.md e o espelho .agents/agents/especialistas/) estao FORA da lista literal do escopo permitido §5, que enumera os 3 tests/, Kpis/* e agent-orchestration/**",
+   "evidencia": "git diff --name-status deff7bcc 764a3b04 -> 12 A de corpos de agente + briefing + obituario; §5 lido no head em BRIEFING-B-O6R-06-delta.md:104-105 nao inclui .claude/ nem .agents/",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente e a COBERTURA da lista de escopo: o §5 nao contempla o caminho dos corpos de jurado. NAO bloqueia, e cobrar isso seria reprovacao por construcao: sao exatamente as identidades que esta junta exigiu na primeira passada (as seis anteriores estao sepultadas no obituario §3.4 e nao podem votar), sem elas a junta nao pode existir, tocam ZERO pasta proibida, e o §1 do proprio briefing declara a criacao com data e autor"
+  },
+  {
+   "defeito": "Na reconstrucao do kpis-latest.json feita pelo merge, cinco trilhas nao tocadas perderam o marcador §C3.3 deste bloco: o ULTIMO marcador de flutter_tests, frontend_smoke_tests, flutter_modules, mobile_backend_contracts e mobile_core_saas_contracts passou a nomear B-GOV-ELENCO-ENXUTO, o bloco anterior, e a string B-O6R-06 nao aparece nessas notas",
+   "evidencia": "enumeracao dos marcadores por regex nas notas: head e26eb9e5 -> ultimo marcador B-GOV-ELENCO-ENXUTO nas cinco, contem B-O6R-06 = NAO; lado b06 pre-merge ab2540d0 -> ultimo marcador B-O6R-06, contem B-O6R-06 = SIM. O kpis-latest.json e um dos seis arquivos de conflito (git diff-tree --cc cc579302)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente e o MARCADOR DE BLOCO CORRENTE nas trilhas carregadas do kpis-latest.json. NAO bloqueia: o §C3.3 exige a nota explicita NO HISTORY e a entrada 157 a tem, completa e com prova nas duas pontas; os valores carregados estao corretos (medi mobile tree 3a2ac028 e frontend tree 24be761e identicos entre 0f0a872a e e26eb9e5, e git status --porcelain vazio); e as notas dizem CARREGADO e descreve execucao de bloco anterior, NAO deste PR, logo nao ha afirmacao falsa em primeira pessoa"
+  },
+  {
+   "defeito": "new blank line at EOF em agent-orchestration/omega/juntas/votos/B-O6R-06/C1-banco-rls-evidencia.md:359, apontado por git diff --check entre commits",
+   "evidencia": "git diff --check 0f0a872a e26eb9e5 -> ec=2 com 1 aviso nessa linha; git diff --check da ARVORE DE TRABALHO -> ec=0",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "motivo": "EVIDENCIA DE DATA/ORIGEM: git log --diff-filter=A mostra que o arquivo nasceu em cae4305a, 2026-09-07, commit do voto C1 da junta ORIGINAL; e git diff --numstat nos tres trechos do delta (cc579302..deff7bcc, ..764a3b04, ..e26eb9e5) sai VAZIO — nenhum commit do delta tocou o arquivo. BLOCO DONO: B-O6R-06 (merito, ja aprovado 3x0)"
+  },
+  {
+   "defeito": "Duas pendencias sem linha canonica de status: P-GOV-NOTA-KPI-CONGELADA e P-GOV-BAIXA-CICLO1-FECHADOS, reportadas pelo gerador na secao SEM STATUS",
+   "evidencia": "saida do gerador executado por mim: SEM-STATUS: 2, com os dois IDs e as linhas 7699 e 7724; presenca ref a ref em pendencias.md: ausentes em fe2748c8 e ab2540d0, presentes em 1b8319f9",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "motivo": "EVIDENCIA DE ORIGEM: ausentes na base comum (fe2748c8) E no lado B-O6R-06 do merge (ab2540d0), presentes na origin/main absorvida (1b8319f9) — vieram da main, o delta apenas as absorveu. BLOCO DONO: #382/#383 (2026-09-07/08). O gerador se comporta corretamente: reporta e NAO chuta"
+  },
+  {
+   "defeito": "O artefato de planejamento do workflow de 4 planejadores + 4 criticos nao esta nos autos: o briefing §3 o localiza em scratchpad, e so a prescricao sintetizada (§4) e auditavel no repositorio",
+   "evidencia": "BRIEFING-B-O6R-06-delta.md:67 — coluna Prova diz plano em scratchpad; a prescricao (janela reservada + importId + isca + guard) esta reproduzida no §4",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "A propriedade ausente e a RASTREABILIDADE do artefato de quem planejou (§A5/§C6: o materialmente relevante vai para arquivo, nao fica so no chat). NAO bloqueia: o §C7.4-bis exige que a ata registre QUEM ocupou cada papel — e a ata §1 registra, o §7 responde as tres perguntas obrigatorias, e a prescricao esta reproduzida e e conferivel contra o que o dev entregou"
+  }
+ ],
+ "pendencias_que_aceito": [
+  "C1 jurado-06d-banco-atomicidade-rls: F1 deterministica, F2 (o par das duas suites), a janela reservada provada nas DUAS direcoes, o teardown por SELECT count(*) e o vermelho-controle no head intocado",
+  "C2 jurado-06d-invariante-financeiro-rateio: src/ intocado provado por MUTACAO, o ataque a isca, e a ARITMETICA do delta (+54 da autoria + 5 do conserto = +59; 2938+59=2997) — eu medi so o absoluto por reexecucao",
+  "As sete afirmacoes [A RE-VERIFICAR] do §7 do briefing: a unidade faturavel nascendo na mesma transacao da run; a trilha divergencia->ciencia 0->0; billing.meterCompletion obrigatorio e o tsc recusando um 4o chamador; o resumo somando no banco sem teto; 18 das 20 mutacoes vermelhas. Nenhuma entrou como fato no meu parecer e nenhuma reprova o delta",
+  "P-O6R-SUITES-DB-SEM-TEARDOWN: pre-existente, com dono a nomear — as suites -db nao limpam o que semeiam, e por isso o numero so reproduz com o banco recriado. Nao cobrei como defeito do delta",
+  "A divida declarada do §1.5 do obituario: as seis linhas de sepultamento deviam ter entrado no PR em que a junta fechou (005b522c) e nao entraram; o proprio §3.4 admite a omissao",
+  "C3-A3 (pre-existente): blank line at EOF em votos/B-O6R-06/C1-banco-rls-evidencia.md:359 — nasceu em cae4305a (2026-09-07), voto da junta original; bloco dono B-O6R-06 (merito)",
+  "C3-A4 (pre-existente): as 2 pendencias SEM STATUS (P-GOV-NOTA-KPI-CONGELADA, P-GOV-BAIXA-CICLO1-FECHADOS) vieram da main absorvida; bloco dono #382/#383",
+  "C3-A2 (dentro-do-bloco, media, NAO bloqueia): o kpis-latest.json perdeu o marcador §C3.3 deste bloco nas 5 trilhas carregadas; o §C3.3 esta satisfeito no history, os valores estao corretos e nao ha afirmacao falsa em primeira pessoa. Fica como pendencia nomeada para o proximo bloco de KPI",
+  "C3-A5 (nota): o artefato de planejamento dos 4 planejadores + 4 criticos vive em scratchpad e nao nos autos; so a prescricao (§4 do briefing) e auditavel",
+  "Terreno herdado e nao fechado (decisao n.1 do dono): as sessoes continuam nascendo da arvore defasada demo/investidor; o meu proprio briefing chegou com tres ancoras de head desatualizadas. Nao e defeito do delta, e e a razao de o §A7 mandar medir na ref",
+  "PR #385 esta BEHIND em relacao a origin/main (a01fc014); o head absorve ate 1b8319f9. E condicao de MERGE (§8.5), nao de voto — quem mergear reexecuta o CI e registra"
+ ],
+ "teardown": "CRIEI: worktree proprio .claude/worktrees/o6r06d-jur-c3 (detached em e26eb9e5, o head que medi); containers descartaveis PROPRIOS o6r06d-jc3-pg (:56701, postgres:16-alpine) e o6r06d-jc3-redis (:56702, redis:7-alpine); banco erp_jc3 (criado e recriado 3x por DROP DATABASE WITH FORCE + CREATE DATABASE + migrate deploy, 107 migrations); node_modules proprio via npm ci (sem junction/symlink); scratchpad da sessao com os 3 logs de npm test, os logs dos guards, a copia isolada do gerador e a saida dele.\nRODEI E NAO COMMITEI: a saida do gerador de indice foi para o SCRATCHPAD e a comparacao foi feita la por git hash-object x git rev-parse — NUNCA por cima do arquivo do repo. Nao regenerei pendencias-indice.md no repositorio: seria consertar o que estou julgando (§C7.4-bis) e sujaria a arvore que o inspetor mede.\nGIT STATUS LIMPO: git status --porcelain do meu worktree VAZIO antes de medir e VAZIO depois das tres execucoes, conferido imediatamente antes da remocao. Os tres arquivos-fantasma conferidos por BLOB (git hash-object do disco x git rev-parse e26eb9e5:<f>): planejador-mestre 151bf048, porteiro-pos-merge 00d75b02, sync-agent-agents 093a6b93 — identicos, nao ha mutacao viva.\nO QUE DERRUBEI E A CONFIRMACAO EXECUTADA: docker rm -f o6r06d-jc3-pg o6r06d-jc3-redis (os dois pelo identificador do BLOCO, nunca por nome de papel); git worktree remove --force .claude/worktrees/o6r06d-jur-c3 (ec=0) + git worktree prune (ec=0), NUNCA rm -rf. Confirmacao por execucao: git worktree list mostra so a arvore principal e os tres worktrees ALHEIOS (b06 em e26eb9e5, gov-descuido, gov-elenco) — todos intactos; docker ps -a mostra so b06m-pg/b06m-redis (do dev) e erp-postgres/erp-redis (base viva), todos de pe; docker volume ls confirma erp_techsolutios_erp_postgres_data e erp_techsolutios_erp_redis_data intactos.\nVOLUMES: removi APENAS os 2 volumes anonimos criados pelos MEUS containers, identificados por data de criacao (13:02:57Z e 13:02:59Z, o minuto em que subi o cluster). Os 4 volumes dangling de 12:04Z sao de OUTRA sessao — RESIDUO ALHEIO SE REPORTA, NAO SE VARRE, e ficam aqui reportados: 7e32e72f, a2664c09, dfa2a518, fdf2888e.\nBASE VIVA erp-postgres/erp-redis: NUNCA TOCADA, nem para leitura — nenhum comando meu apontou para 5432/6379.\nGIT CLEAN: NUNCA USADO, em forma nenhuma.\nWORKTREES ALHEIOS INTACTOS: nao removi nenhum; nao escrevi codigo no worktree do dev. Os unicos arquivos que escrevi sao os meus dois no diretorio de votos desta junta (C3-contrato-regressao-registro-evidencia.md e C3-contrato-regressao-registro-voto.json), que e a SAIDA da junta e nao o codigo sob julgamento, e onde C1 e C2 ja haviam escrito os seus. NAO COMMITEI NADA — o orquestrador commita evidencia e voto (P2)."
+}

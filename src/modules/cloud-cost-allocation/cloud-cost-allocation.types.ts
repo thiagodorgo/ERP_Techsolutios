@@ -1,5 +1,5 @@
 import type { CloudCostLineItem, CloudCostProvider } from "../cloud-costs/aws-cur.types.js";
-import type { CloudUsageDailyAggregate, CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
+import type { CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
 
 export const CLOUD_COST_ALLOCATION_STATUSES = ["pending", "processing", "completed", "failed"] as const;
 export type CloudCostAllocationStatus = (typeof CLOUD_COST_ALLOCATION_STATUSES)[number];
@@ -109,13 +109,32 @@ export type AllocateCostsForPeriodInput = {
   readonly metadata?: CloudCostAllocationMetadata;
 };
 
+// B-O6R-06 (Omega6R-DIN-005, 2.4-a do plano) — A BASE DE RATEIO VEM DA TABELA DURAVEL, NAO DA PROJECAO.
+//
+// `listUsageDailyAggregates` lia `cloud_usage_daily_aggregates`, uma projecao escrita SO por
+// `aggregateDailyUsage`, exposta pelo job `cloud-usage.aggregate-daily` — que NINGUEM em `src/`
+// enfileira (medido: nenhum `enqueue`, nenhum `enqueueInitial*` no bootstrap). Em producao a base de
+// `checklist_runs_count` seria vazia por construcao -> `missing_usage_basis` -> custo `unallocated`.
+// Durabilizar a metrica e continuar lendo essa projecao seria consertar o P0 no papel.
+//
+// Agora a base e `SUM ... GROUP BY` sobre `cloud_usage_events`, por tenant, sob o contexto RLS do
+// proprio tenant. `listUsageDailyAggregates` FICA (serve `GET /platform/cloud-usage/tenants/:id/daily`);
+// so deixou de ser base de dinheiro. A agenda dela virou `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA`.
+export type UsageBasisRow = {
+  readonly tenantId: string;
+  readonly metricKey: CloudUsageMetricKey;
+  readonly quantity: number;
+  readonly unit: string;
+  readonly sourceType: string;
+};
+
 export type AllocationEngineInput = {
   readonly runId: string;
   readonly periodStart: Date;
   readonly periodEnd: Date;
   readonly strategy: CloudCostAllocationStrategy;
   readonly costLineItems: readonly CloudCostLineItem[];
-  readonly usageAggregates: readonly CloudUsageDailyAggregate[];
+  readonly usageBasis: readonly UsageBasisRow[];
   readonly tenants: readonly CloudCostAllocationTenant[];
 };
 

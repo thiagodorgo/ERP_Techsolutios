@@ -5,6 +5,7 @@ import type {
   CloudCostImportFilters,
   CloudCostLineItem,
   CloudCostLineItemFilters,
+  CloudCostSummaryRows,
   CompleteCloudCostImportInput,
   CreateCloudCostImportInput,
   ParsedAwsCurLineItem,
@@ -135,21 +136,7 @@ export class PrismaCloudCostRepository implements CloudCostRepository {
 
   async listLineItems(filters: CloudCostLineItemFilters = {}): Promise<readonly CloudCostLineItem[]> {
     const records = await this.client.cloudCostLineItem.findMany({
-      where: {
-        ...(filters.importId ? { import_id: filters.importId } : {}),
-        ...(filters.periodStart || filters.periodEnd
-          ? {
-              billing_period_start: {
-                ...(filters.periodStart ? { gte: filters.periodStart } : {}),
-                ...(filters.periodEnd ? { lte: filters.periodEnd } : {}),
-              },
-            }
-          : {}),
-        ...(filters.serviceCode ? { service_code: filters.serviceCode } : {}),
-        ...(filters.usageType ? { usage_type: filters.usageType } : {}),
-        ...(filters.region ? { region: filters.region } : {}),
-        ...(filters.tenantTag ? { tenant_tag: filters.tenantTag } : {}),
-      },
+      where: buildLineItemWhere(filters),
       orderBy: {
         billing_period_start: "asc",
       },
@@ -158,6 +145,78 @@ export class PrismaCloudCostRepository implements CloudCostRepository {
 
     return records.map(mapLineItem);
   }
+
+  // B-O6R-06 (Omega6R-DIN-007) — SOMA E AGRUPAMENTO NO BANCO, sem `take` em lugar nenhum.
+  //
+  // PREMISSA PINADA NA VERSAO (aceite S9): em Prisma 7.8.0 (`package.json`) `aggregate()` IGNORA
+  // `take/skip/cursor/distinct`; o Prisma 8 passa a HONRA-LOS (fix #30067). Um `take` colado aqui hoje
+  // nao faria nada e no upgrade mudaria o total FATURADO sem uma linha deste bloco ser tocada — por
+  // isso o aceite assere, por spy, que o objeto de argumentos NAO contem essas quatro chaves.
+  //
+  // O `where` e LITERALMENTE o mesmo de `listLineItems` (`buildLineItemWhere`): resumo e detalhe nao
+  // podem divergir de filtro, senao o `lineItemCount` deixa de ser conferivel contra a paginacao.
+  async summarizeLineItems(filters: CloudCostLineItemFilters = {}): Promise<CloudCostSummaryRows> {
+    const where = buildLineItemWhere(filters);
+
+    const [aggregated, grouped] = await Promise.all([
+      this.client.cloudCostLineItem.aggregate({
+        where,
+        _sum: { unblended_cost: true },
+        _count: { _all: true },
+      }),
+      this.client.cloudCostLineItem.groupBy({
+        by: ["service_code", "currency"],
+        where,
+        _sum: { unblended_cost: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    return {
+      total: decimalToExactString(aggregated._sum.unblended_cost),
+      lineItemCount: aggregated._count._all,
+      byServiceCurrency: grouped
+        .map((group) => ({
+          serviceCode: group.service_code,
+          currency: group.currency,
+          unblendedCost: decimalToExactString(group._sum.unblended_cost),
+          lineItemCount: group._count._all,
+        }))
+        .sort((a, b) => a.serviceCode.localeCompare(b.serviceCode) || a.currency.localeCompare(b.currency)),
+      currencies: [...new Set(grouped.map((group) => group.currency))].sort(),
+    };
+  }
+}
+
+// FILTRO UNICO do resumo e do detalhe. Extraido para que uma mudanca num lado nao passe a somar um
+// universo diferente do que a pagina mostra (o falsificador do aceite S4 e exatamente diverge-los).
+export function buildLineItemWhere(filters: CloudCostLineItemFilters): Prisma.CloudCostLineItemWhereInput {
+  return {
+    ...(filters.importId ? { import_id: filters.importId } : {}),
+    ...(filters.periodStart || filters.periodEnd
+      ? {
+          billing_period_start: {
+            ...(filters.periodStart ? { gte: filters.periodStart } : {}),
+            ...(filters.periodEnd ? { lte: filters.periodEnd } : {}),
+          },
+        }
+      : {}),
+    ...(filters.serviceCode ? { service_code: filters.serviceCode } : {}),
+    ...(filters.usageType ? { usage_type: filters.usageType } : {}),
+    ...(filters.region ? { region: filters.region } : {}),
+    ...(filters.tenantTag ? { tenant_tag: filters.tenantTag } : {}),
+  };
+}
+
+/**
+ * O `Decimal` do driver -> STRING EXATA, com UMA conversao e nenhum float no meio. Com
+ * `@prisma/adapter-pg` o `numeric` viaja texto -> `Decimal` (decimal.js), entao `toString()` devolve o
+ * valor tal como o banco o somou. `null` (soma de zero linhas) atravessa como `null` DE PROPOSITO: quem
+ * decide o que fazer com ele e o servico, olhando o `lineItemCount`. Nada de `?? 0` aqui.
+ */
+function decimalToExactString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return String(value);
 }
 
 export async function createPrismaCloudCostRepository(): Promise<PrismaCloudCostRepository> {

@@ -82,38 +82,85 @@ export class CloudCostService {
     });
   }
 
+  /**
+   * B-O6R-06 (Omega6R-DIN-007) — o resumo SOMA NO BANCO. Dois defeitos superpostos morrem aqui:
+   *
+   *  1. TRUNCAMENTO (o que o achado nomeia): `normalizeSummaryFilters` cravava `limit: 10_000` e o
+   *     repositorio aplicava `take`. A 10.001a linha — que com `orderBy billing_period_start asc` e a
+   *     MAIS RECENTE — simplesmente nao entrava no total, e `CloudCostSummary` nao carregava contagem
+   *     nem aviso: o painel do investidor exibia um numero subestimado sem ter como saber.
+   *  2. ACUMULACAO EM FLOAT (que o achado NAO nomeia): o laco somava `number` em ponto flutuante. Com
+   *     10.001 linhas na casa de 1e5-1e6 a divergencia medida contra `SUM(numeric)` chega a 1,1e-3, e
+   *     o total (~9,9e9 com 6 casas) ja nem cabe exato num `number`. Por isso `totalUnblendedCostExact`.
+   *
+   * A distincao "janela vazia" x "soma nula" e feita pelo `lineItemCount` (`_count._all`), nunca por um
+   * `?? 0`: `lineItemCount > 0` com `total === null` e combinacao IMPOSSIVEL e falha alto.
+   */
   async getSummary(filters: CloudCostLineItemFilters = {}): Promise<CloudCostSummary> {
     const normalized = normalizeSummaryFilters(filters);
-    const lines = await this.repository.listLineItems(normalized);
-    const groups = new Map<string, { serviceCode: string; unblendedCost: number; currency: string }>();
-    let total = 0;
+    const rows = await this.repository.summarizeLineItems(normalized);
 
-    for (const line of lines) {
-      const key = `${line.serviceCode}|${line.currency}`;
-      const existing = groups.get(key);
-      groups.set(key, {
-        serviceCode: line.serviceCode,
-        currency: line.currency,
-        unblendedCost: (existing?.unblendedCost ?? 0) + line.unblendedCost,
-      });
-      total += line.unblendedCost;
+    const base = {
+      provider: "aws" as const,
+      periodStart: normalized.periodStart?.toISOString() ?? "",
+      periodEnd: normalized.periodEnd?.toISOString() ?? "",
+      generatedAt: new Date().toISOString(),
+    };
+
+    if (rows.lineItemCount === 0) {
+      return {
+        ...base,
+        totalUnblendedCost: 0,
+        totalUnblendedCostExact: "0",
+        lineItemCount: 0,
+        currencies: [],
+        services: [],
+      };
     }
 
     return {
-      provider: "aws",
-      periodStart: normalized.periodStart?.toISOString() ?? "",
-      periodEnd: normalized.periodEnd?.toISOString() ?? "",
-      totalUnblendedCost: roundCost(total),
-      currencies: [...new Set(lines.map((line) => line.currency))].sort(),
-      services: [...groups.values()]
-        .map((item) => ({
-          ...item,
-          unblendedCost: roundCost(item.unblendedCost),
+      ...base,
+      totalUnblendedCost: toBoundedNumber(requireTotal(rows.total, rows.lineItemCount)),
+      totalUnblendedCostExact: requireTotal(rows.total, rows.lineItemCount),
+      lineItemCount: rows.lineItemCount,
+      currencies: [...rows.currencies].sort(),
+      services: rows.byServiceCurrency
+        .map((group) => ({
+          serviceCode: group.serviceCode,
+          currency: group.currency,
+          unblendedCost: toBoundedNumber(requireTotal(group.unblendedCost, group.lineItemCount)),
+          unblendedCostExact: requireTotal(group.unblendedCost, group.lineItemCount),
         }))
-        .sort((a, b) => a.serviceCode.localeCompare(b.serviceCode)),
-      generatedAt: new Date().toISOString(),
+        .sort((a, b) => a.serviceCode.localeCompare(b.serviceCode) || a.currency.localeCompare(b.currency)),
     };
   }
+}
+
+/**
+ * O DISCRIMINADOR, escrito uma vez. `total === null` com `lineItemCount === 0` ja foi tratado pelo
+ * chamador (janela vazia -> zeros explicitos). Chegar aqui com `null` e ter havido linha para somar
+ * significa BUG — e devolver `0` seria publicar um numero de faturamento inventado.
+ */
+function requireTotal(total: string | null, lineItemCount: number): string {
+  if (total === null) {
+    throw new CloudCostError(
+      500,
+      "CLOUD_COST_SUMMARY_INCONSISTENT",
+      "summary_total_missing",
+      `Cloud cost summary returned a null total for ${lineItemCount} aggregated line item(s).`,
+    );
+  }
+
+  return total;
+}
+
+/**
+ * A UNICA conversao para `number` de todo o caminho do resumo — na BORDA do contrato, sobre a string
+ * exata que o banco somou. `roundCost` continua existindo para `importAwsCurCsv`, que soma o que
+ * acabou de criar (sem `take`, correto).
+ */
+function toBoundedNumber(exact: string): number {
+  return Number(exact);
 }
 
 export function sanitizeCloudCostMetadata(metadata: CloudCostMetadata | undefined): CloudCostMetadata {
@@ -181,13 +228,21 @@ function normalizeLimit(limit: number | undefined): number {
   return Math.min(Math.max(Math.trunc(limit), 1), 500);
 }
 
-function normalizeSummaryFilters(filters: CloudCostLineItemFilters): CloudCostLineItemFilters {
+/**
+ * B-O6R-06 — O CAMPO `limit` DEIXOU DE EXISTIR NESTE NORMALIZADOR (aceite C3: `!("limit" in result)`).
+ * Ele era o truncamento silencioso do Omega6R-DIN-007. `normalizeLimit` continua intacto e so serve
+ * `listLineItems` (detalhe paginado, teto 500).
+ *
+ * O periodo default de 30 dias FICA — e do resumo, e o detalhe nao tem default (E9 do parecer do
+ * critico). A diferenca esta documentada no contrato; mudar o default do detalhe muda o painel e e
+ * decisao de contrato, fora deste bloco.
+ */
+export function normalizeSummaryFilters(filters: CloudCostLineItemFilters): CloudCostLineItemFilters {
   const now = new Date();
   return {
     ...filters,
     periodEnd: filters.periodEnd ?? now,
     periodStart: filters.periodStart ?? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-    limit: 10_000,
   };
 }
 

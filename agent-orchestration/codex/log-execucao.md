@@ -4216,3 +4216,74 @@ vai para `P-GOV-FILA-P1-ANTES-DE-P0`.
 Números: suíte plena **2815/2817 → 2936/2938**, `ec=0`, Δ +121 que fecha por arquivo. `blocks_completed`
 160 → 161. Duas PDs novas em `docs/omega-pd.md`, fechadas **antes** da primeira linha dos módulos que
 dependiam delas. Cluster descartável próprio (`:56436`/`:56383`); a base viva não recebeu um comando.
+
+
+## B-O6R-06 — `fix/billing-durability` (2026-09-07, PR na autoria)
+
+**Ω6R-DIN-005 + Ω6R-DIN-007, os dois P0 da `P-O6R-B06`.** Papéis do §C7.4-bis, com identidades distintas:
+achou o `critico-adversarial` (2 rodadas: `PLANO FRÁGIL` → `PLANO ROBUSTO COM RESSALVA`); planejou o
+`planejador-mestre` (corpo + `EMENDA E1`); **implementou este agente**, que não julgou a validade de nenhum
+achado.
+
+**Como o mecanismo mudou de lugar.** O diagnóstico do plano seguiu a cadeia pelo **emissor**
+(`publishDomainEvent`) e o desenho escolheu o ponto de captura pelo **receptor** (o repositório, porque é ele
+que tem a transação). Os dois conjuntos de chamadores **não coincidem** — foi o achado `E2` do crítico, e é a
+razão de o parâmetro `billing` existir e ser obrigatório: o compilador fecha o conjunto para o futuro, e o
+censo `C4` publica o número faturado por trilha, antes e depois.
+
+**Dois defeitos foram achados pelo canário deste próprio bloco, durante a implementação, e corrigidos:**
+`sumUsageBasis` e o `deleteMany` do replace confiavam **só** na RLS para o recorte por tenant — e dev e CI
+rodam como `postgres`, **superusuário**, que ignora RLS. O `groupBy` somava a base de todas as organizações
+num balde só, e a primeira volta do replace teria apagado as alocações de todas elas. `tenant_id` foi para a
+cláusula, além da RLS. O canário que os pegou existe por causa do achado `R2-C` — que pedia canário na
+**leitura**, não na escrita.
+
+**Divergência de escopo registrada, não escolhida em silêncio (§A2):** duas suítes `-db` fora da lista §6
+tiveram de ser tocadas, porque o mecanismo novo as quebra e a alternativa exigiria migration (PROIBIDA) —
+`P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB`. Nenhuma das duas foi afrouxada; a de concorrência ficou **mais
+forte** (passou a ler a tabela em vez do repositório em memória).
+
+**Números:** suíte plena **2936/2938 → 2990/2992**, `ec=0`, Δ +54 que fecha por arquivo. `blocks_completed`
+161 → 162. Cluster descartável próprio (`o6r06-pg` :56446 / `o6r06-redis` :56393); a **base viva não recebeu
+um comando**, nem de leitura. Backfill §C3.5 do #380 pago em 4 lugares, com a pré-condição de diff vazio
+**executada** por quem escreve.
+
+**Não entregue, por bloqueio do crítico:** o script de reconciliação — `P-O6R-B06-RECONCILE-BLOQUEADO`.
+
+
+### Vermelho-controle do B-O6R-06, EXECUTADO na base `fe2748c` (§8.5 do plano)
+
+Worktree separado (`.claude/worktrees/o6r06-base`, `npm ci` próprio, mesmo cluster descartável), com os
+quatro aceites-cabeceira portados. `ec=1`, **4 de 4 vermelhos** — nenhum deles estava medindo o que já era
+verdade:
+
+| Aceite | O que a base devolveu | O que a branch exige |
+|---|---|---|
+| **A1** | `unidades gravadas na tx = 0` | 2 (`checklist_run.created` + `checklist_runs_count`) |
+| **F1** | `runs = 1 · unidades = 0` — a vistoria existe e a unidade **não**: é a janela literal do achado | ou as duas, ou nenhuma |
+| **S1** | `lineItemCount = undefined` (o campo **nem existia**) · a 10.001ª **não** aparece em `services[]` · total `9900000000.01083` | `lineItemCount = 10001`, a 10.001ª presente, exato `9900999999.010001` |
+| **B1** | run `completed` com **0 alocações** e `unallocated = 40` — `missing_usage_basis` | 2 alocações, 3:1 |
+
+O total do S1 na base carrega **os dois defeitos ao mesmo tempo**, e dá para lê-los separados: faltam
+`999999.000001` (a 10.001ª, truncada) **e** as casas decimais estão erradas — `…01083` onde a soma exata das
+10.000 primeiras é `…010000`. O primeiro é o defeito que o achado nomeia; o segundo é o que ele não nomeia.
+
+O worktree da base foi **removido** no fechamento; o arquivo de controle vivia só nele e nunca entrou na
+branch.
+
+
+## B-O6R-06 — DELTA julgado e ata persistida (2026-09-09 → 2026-09-11, PR #385)
+
+Sequência real, com o que cada gate pegou: (1) `cadeira-permanente` (retroativa, por determinação do dono)
+homologou o 3×0 com ressalva e mediu que a `main` moveu depois do voto — a colisão de `blocks_completed`
+(161 → 162 nos dois lados) só apareceu por isso; (2) o orquestrador achou a suíte não-paralela medindo
+`npm test` no merge (**5 execuções sujas**, 4 famílias) e **dois alarmes falsos de método** que ele mesmo
+refutou (paralelismo; reset de *schema* em vez de *banco*); (3) dev distinto consertou (janela reservada +
+`importId` + isca + guard), com par verde-depois × vermelho-antes; (4) porteiro de regularização liberou
+#382/#383/#384; (5) inspetor **bloqueou** a primeira junta do delta (seis identidades sepultadas + sem
+briefing), e liberou a segunda; (6) junta do delta **APROVADA 3×0**, 12 achados, 0 `bloqueia`.
+
+Números medidos pelas cadeiras: `2995/2997` (N=3, banco recriado antes de cada execução), Δ +59 = 54 da
+autoria + 5 do conserto, `blocks_completed` 163 conferido em 5 refs, índice de pendências byte-idêntico à
+saída do gerador. Ata em `omega/juntas/J-B-O6R-06-delta.md`. Falta: absorver `#383/#384`, bateria, CI,
+merge, §C5, porteiro, backfill.

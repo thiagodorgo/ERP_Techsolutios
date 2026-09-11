@@ -4204,6 +4204,42 @@ todo upload** até existir antivírus real — `P-O6R-B07B-SCANNER-AV-REAL` (ALT
 depender **só de `B-O6R-06`**.
 
 
+## 2026-09-07 — B-O6R-06 (`fix/billing-durability`, PR na autoria) — Ω6R-DIN-005 + Ω6R-DIN-007
+
+Os **dois P0** da pendência-mãe `P-O6R-B06` fecham. Ela BLOQUEAVA a trilha CHECKLIST P1 e o cloud billing.
+
+**A unidade faturável passou a commitar com a vistoria.** Antes, a medição rodava fora da transação, em
+`.catch(warn)`, com chave derivada do `event.id` — novo a cada emissão. Uma falha entre o commit da run e a
+gravação perdia a unidade **para sempre**, porque o replay da `client_run_key` devolve `created:false` e o
+serviço nem republicava. Agora o `INSERT` em `cloud_usage_events` roda **dentro** da mesma transação
+(`src/modules/cloud-usage/cloud-usage.capture.ts`, `$executeRaw` com **alvo explícito**), com chave derivada
+da RUN. É **fail-closed por escolha declarada**: se a medição falha, a vistoria não commita.
+
+**A intenção de faturar voltou ao emissor, por assinatura.** `repository.completeRun` tem três chamadores e só
+um fatura. O 5º parâmetro **obrigatório e sem default** `billing: { meterCompletion }` mantém a trilha
+divergência→ciência do app de campo em **0 → 0** (medido antes e depois) e faz o **compilador** recusar um
+quarto chamador que não declare.
+
+**O resumo de custo soma no banco**, sem o teto de 10.000 que cortava justamente a linha mais recente — e o
+segundo defeito, a soma em ponto flutuante, fecha junto (campos aditivos exatos). **A base do rateio** deixou
+de ler uma projeção diária que **nenhum job enfileira** e passou a somar a tabela durável por organização, sob
+o contexto RLS de cada uma; as três operações sobre a tabela de alocações passaram a rodar sob contexto,
+porque sob papel sem `BYPASSRLS` a escrita morria na policy e o `DELETE` apagava zero linhas em silêncio.
+
+Validação: `npm run check` / `lint` / `build` OK · suíte backend **2990/2992** (`ec=0`, 2 skips declarados),
+contra baseline **2936/2938** medido por execução num worktree separado da base `fe2748c` ·
+`npm --prefix frontend run check` e `build` OK · **54 casos novos** permanentes em 7 arquivos (piso do plano:
+≥ 47) + 4 migrados · **18 das 20 mutações** aplicadas, executadas e revertidas, todas vermelhas. Frontend e
+mobile **não tocados**. KPIs atualizados no próprio PR (§C3): `blocks_completed` 161 → 162, `mvp_*` intocados,
+e o **backfill do #380** pago em 4 lugares com a pré-condição executada.
+
+**O que este bloco NÃO entrega, e por quê:** `scripts/reconcile-checklist-usage.ts`. O crítico mediu que o
+ramo `completed` **refaturaria a trilha C que a própria emenda acabou de proteger** — está BLOQUEADO até a
+junta decidir o predicado observável (`P-O6R-B06-RECONCILE-BLOQUEADO`).
+
+**Gate da CHECKLIST P1:** por BLOCO, fica satisfeito com este merge. Por ACHADO, **não**: `Ω6R-SEC-002` (P0)
+segue `parcialmente_superado`, com residual ABERTO em `P-O6R-SUBRECURSO-OBJECT-SCOPE` (dono `B-O6R-07c`), e a
+CHK P1 grava no caminho de criação de OS. Quem abrir o gate precisa tratar esse residual explicitamente.
 ---
 
 ## 2026-09-08 — `B-GOV-ELENCO` (REPROVADO, parou no teto) e `B-GOV-ELENCO-ENXUTO` (#381, mergeado)
@@ -4246,3 +4282,81 @@ descartável que só classifica achado contestado** (`dentro-do-bloco` × `pre-e
 pediu aquilo), **sem veredito novo e sem poder vinculante**: registra na ata e a cadeira de mérito decide.
 As **6 ressalvas do porteiro** viajam para o próximo bloco. **Próxima demanda pelo backlog: `B-O6R-06`**
 (Ω6R-DIN-005 e DIN-007), último pré-requisito do gate da CHECKLIST P1.
+
+---
+
+## 2026-09-09 — #382, #383 e #384 registrados a posteriori, e o parecer de regularização que os cobriu
+
+**Por que só agora:** os três mergearam **sem o gate do §C2.8**, e nenhum se registrou aqui. Medido por
+presença: `git grep -l "#382|#383|#384" a01fc014 -- agent-orchestration/` → `ec=1` nos três, com controle
+positivo `#381` → 4 arquivos. O `status-geral.md` parava na entrada do #381 — escrita **pelo** #382, que não
+se registrou. Quem cumprisse o §A4.1 partia de um estado vencido em três PRs.
+
+**O que cada um entregou** (conferido na ref `a01fc014`, não no disco da sessão):
+
+- **#382 (`1b8319f9`)** — parecer do porteiro do #381 e as 6 ressalvas dele fechadas. O backfill de KPI é o
+  mais bem justificado da série: `approved_head 81b977f3` escolhido entre quatro candidatos **com o motivo
+  escrito e medido** (o blob de `audit-agents-skills.mjs` é o mesmo em `9c0e6ac9`, `81b977f3` e `90d30f8a`,
+  logo o código julgado é o que mergeou).
+- **#383 (`72fcdcde`)** — **`§A7 · Onde se MEDE — a ref alvo, nunca a árvore da sessão`**
+  (`D-MEDIR-NA-REF-ALVO`), mais o item 3.3 no `inspetor-de-terreno-da-junta` (corpo carregado × corpo
+  julgado, EOL-neutro). É a regra que nomeia a classe de contaminação que esta rodada mediu **cinco vezes**.
+  Espelhado em `AGENTS.md:112`, idêntico EOL-neutro.
+- **#384 (`a01fc014`)** — skill `backend-review-ts-prisma` nos dois espelhos (SKILL + checklist + repo-erp).
+  Entrou com **zero linha** em `agent-orchestration/` — sem ID de bloco, sem decisão, sem pendência. O
+  conteúdo é o mais honesto dos três (cada fato reproduz na ref); o defeito é só o cartório, e fica
+  registrado aqui como `B-GOV-SKILL-BACKEND-REVIEW` a posteriori.
+
+**A regularização.** Um `porteiro-pos-merge` novo cobriu os três de uma vez:
+`agent-orchestration/omega/juntas/votos/REGULARIZACAO-382-383-384/`. Veredito: **os três LIBERADO COM
+RESSALVA; o repositório está DESTRAVADO** para começar bloco novo. Contagens **reexecutadas** dos logs de CI
+do run sobre o head do #384 (backend 2936/2938, smoke 1126/1126, flutter 864/864, backend-postgres 225/225
+com zero pulos), não copiadas.
+
+**O achado que ninguém tinha visto, e é dele:** `P-GOV-WORKTREES-NAO-IGNORADAS` e
+`P-GOV-INSPETOR-33-SEM-NORMA` declaravam fechamento/rebaixamento no **cabeçalho**, mas a **linha canônica**
+dizia `ABERTA` e `REBAIXADA` — e a regra do gerador é *"a linha vence o cabeçalho"*. As duas eram contadas
+como abertas no balde A, e a contradição era **invisível** porque o detector exige `**FECHADA**` em negrito.
+Corrigidas neste bloco, com o motivo escrito em cada uma.
+
+**E a ironia medida:** o próprio porteiro da regularização recebeu um `CLAUDE.md` contaminado com o
+`§C7.1-quater` — cláusula que não existe em ref nenhuma — e **só não reprovou os três por construção porque
+aplicou o §A7 contra o próprio corpo carregado**. Ele se autodeclara "a quarta instância" da classe que o
+#383 tinha declarado fechada. A detecção do #383 funciona; a **prevenção** dele (sessão nascendo de um
+worktree que acompanha a `main`) ficou **fora do diff** e não tem dono — reaberta em
+`P-GOV-CAMINHO-REPO-SESSAO`, com as três reincidências das últimas 24 h nomeadas.
+
+---
+
+## 2026-09-09/11 — `B-O6R-06`: junta do DELTA **APROVADA 3×0** (PR #385), ata persistida
+
+**O que se julgou:** não o mérito (aprovado 3×0 em `J-B-O6R-06.md`), mas o **delta** — o merge de
+`origin/main` com a colisão de `blocks_completed` reconciliada (161 → 162 pelos dois lados → **163**), o
+**conserto de isolamento** da suíte `o6r06-cost-summary-sum-db` (janela reservada `2028-02` + escopo por
+`importId` + isca + guard, **zero linha de `src/`**) e o registro cobrado pelo porteiro da regularização.
+
+**Como se chegou lá, e por que valeu:** o `inspetor-de-terreno-da-junta` **BLOQUEOU** a primeira convocação
+por dois erros do orquestrador — seis identidades **sepultadas** convocadas (as `jurado-06-*`, classes
+`votou`/`nomeada-e-preparada`, obituário §3.4) e junta **sem briefing**. O item que produziu o bloqueio
+(3.1-bis, "o obituário é fonte primeira") **faltava no corpo carregado do próprio inspetor**; ele aplicou o
+item 3.3 a si mesmo, mediu a divergência como aditiva e foi ler o que faltava. Corrigido com seis identidades
+novas (`jurado-06d-*`) e `BRIEFING-B-O6R-06-delta.md`; segunda passada: `LIBERADO COM RESSALVA`.
+
+**Placar:** unanimidade de 3 (o bloco toca dinheiro; nenhum lockfile mudou — as três cadeiras mediram a
+categoria por conta própria). **12 achados, 2 média, 10 baixa, 0 `bloqueia`**; 6 `dentro-do-bloco`, 6
+`pre-existente`, todos com escopo provado por data/origem. `src/` do head julgado é **byte a byte** o que a
+junta original aprovou (hash de árvore `461cfa6b` em 7 refs). KPI reproduz **sob a forma que ele declara**
+(banco recriado antes de cada execução): `2995/2997`, N=3 idênticos — e `fail 0` **não é herdável** (C2
+mediu 1/3 sob contenção de CPU; `P-O6R-SUITES-DB-SEM-TEARDOWN`, emendada).
+
+**Ata:** `agent-orchestration/omega/juntas/J-B-O6R-06-delta.md` · votos e evidências em
+`votos/B-O6R-06-delta/` (6 arquivos). Fechados neste PR os itens de registro que a ata atribuiu ao bloco:
+marcador §C3.3 nas trilhas carregadas, linha 9 do obituário (17 → 21), duas pendências com `status:` em
+negrito (invisível ao gerador), e as pendências "a nomear" abertas com dono
+(`P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT`, `P-O6R-B06-DELTA-RESIDUAIS`).
+
+**A pendência que sai maior do que entrou não é de produto:** três agentes de gate consecutivos (inspetor,
+porteiro da regularização e o consolidador da ata) receberam um `CLAUDE.md` que **não existe em ref nenhuma**
+(marcadores de `25c0112a`, branch reprovada) e só não erraram porque mediram antes de aplicar —
+`P-GOV-CAMINHO-REPO-SESSAO`, decisão nº 1 do dossiê do dono. **Próximo passo:** absorver `#383/#384`
+(sem conflito, sem tocar código), bateria completa, CI, merge, §C5, porteiro pós-merge, backfill.

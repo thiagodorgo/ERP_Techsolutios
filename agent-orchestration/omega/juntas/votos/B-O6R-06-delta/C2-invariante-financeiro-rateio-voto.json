@@ -1,0 +1,11 @@
+{
+ "jurado": "jurado-06d-invariante-financeiro-rateio (identidade NOVA - nao votei, nao planejei, nao desenvolvi, nao achei o defeito de isolamento; nada herdado das seis identidades sepultadas em OBITUARIO 3.4, do planejador-mestre, do critico-adversarial, do dev general-purpose, do orquestrador-achador, do porteiro-pos-merge, do inspetor-de-terreno-da-junta nem da cadeira-permanente-backend-review; briefing do delta re-executado inteiro)",
+ "cadeira": "C2 - invariante financeiro e rateio, sobre o DELTA",
+ "head_medido": "e26eb9e5f58578681e994d3f7357a8ef3ee00a33 (gh pr view 385 --json headRefOid, medido por mim; o mandato citava deff7bcc e o terreno citava 764a3b04 - o head SE MOVEU duas vezes)",
+ "quorum": "unanimidade de 3 (C7.1-ter(b): o bloco toca dinheiro). NAO e 5/5: medi que nenhum lockfile mudou.",
+ "voto": "APROVADO",
+ "item_1_src_intocado": "PASSA - 0f0a872a:src == e26eb9e5:src == 461cfa6be796bbb3ab1099e828804e31e38d6959 (hash de arvore). cloud-costs ab484e9a e cloud-cost-allocation bb4fc5bf identicos do head julgado 3x0 ao head do delta. Delta puro cc579302..e26eb9e5 em src/ prisma/ frontend/ mobile/ .github/ scripts/ package.json package-lock.json = SAIDA VAZIA. Lockfiles com blob identico em todas as refs => quorum segue 3, nao 5.",
+ "item_2_isca_por_mutacao": "PASSA - 8/8 vermelhos DETERMINISTICOS nas 4 mutacoes de escopo (S1/S3'/S4/S10, 2 repeticoes cada, ec=1 nas oito). Arrancar a isca deixa S4 vermelho 2/2. CONTROLE (isca=0 + S1 sem importId) fica VERDE 2/2 => a isca e o detector, nao decoracao. 5 vias independentes, todas medidas, zero via morta. Delta do total = 2331000000021 micros = 3 x 777000000007, a quantia exata da isca.",
+ "item_3_aritmetica_2995_2997": "PASSA COM ACHADO PRE-EXISTENTE - Delta +59 fecha por ARQUIVO (7 parcelas medidas por execucao: 15+6+6+6+4+10+7=54, mais guard 4 + S11 1 = 5) E por subtracao de dois numeros MEUS (baseline fe2748c8 medido por mim = 2938; head = 2997). Diff de nomes: 61 novos - 2 mortos = +59, e os 2 mortos morreram na AUTORIA (ausentes ja em ab2540d0) com substituto nomeado. skipped 2 confirmado pelos NOMES em 3/3. fail 0 reproduziu 1/3 no meu terreno, com vitimas diferentes e timeout de 5 s da transacao interativa do Prisma, em arquivos de 2026-07-26 e 2026-08-10 que o delta nao tocou.",
+ "achados_bloqueantes": 0
+}

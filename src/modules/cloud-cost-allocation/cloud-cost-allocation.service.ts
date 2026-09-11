@@ -46,10 +46,17 @@ export class CloudCostAllocationService {
     });
 
     try {
-      const [costLineItems, usageAggregates, tenants] = await Promise.all([
+      // B-O6R-06 — a base de rateio deixa de vir da PROJECAO DIARIA (que ninguem agenda) e passa a ser
+      // somada na TABELA DURAVEL, por tenant, sob o contexto RLS de cada um. `listTenants()` vem antes
+      // porque e ele que define o universo da varredura.
+      const tenants = await this.repository.listTenants();
+      const [costLineItems, usageBasis] = await Promise.all([
         this.repository.listCostLineItems(run.periodStart, run.periodEnd),
-        this.repository.listUsageDailyAggregates(run.periodStart, run.periodEnd),
-        this.repository.listTenants(),
+        this.repository.sumUsageBasis(
+          run.periodStart,
+          run.periodEnd,
+          tenants.map((tenant) => tenant.id),
+        ),
       ]);
       const result = allocateCloudCosts({
         runId: run.id,
@@ -57,7 +64,7 @@ export class CloudCostAllocationService {
         periodEnd: run.periodEnd,
         strategy: run.strategy,
         costLineItems,
-        usageAggregates,
+        usageBasis,
         tenants,
       });
 

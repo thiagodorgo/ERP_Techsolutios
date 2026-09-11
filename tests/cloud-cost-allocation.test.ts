@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
-import type { CloudUsageDailyAggregate } from "../src/modules/cloud-usage/index.js";
+import type { CloudUsageEvent } from "../src/modules/cloud-usage/index.js";
 import {
   CloudCostAllocationService,
   InMemoryCloudCostAllocationRepository,
@@ -49,7 +49,7 @@ test("aloca custo S3 por metrica de storage/download", async () => {
         unblendedCost: 30,
       }),
     ],
-    usageAggregates: [
+    usageEvents: [
       usage("tenant-a", "storage_gb_month", 10),
       usage("tenant-b", "storage_gb_month", 20),
     ],
@@ -74,7 +74,7 @@ test("aloca custo jobs por job.executed", async () => {
         unblendedCost: 8,
       }),
     ],
-    usageAggregates: [
+    usageEvents: [
       usage("tenant-a", "job.executed", 1),
       usage("tenant-b", "job.executed", 3),
     ],
@@ -119,7 +119,7 @@ test("aloca checklist quando ha metrica checklist_runs_count", async () => {
         unblendedCost: 12,
       }),
     ],
-    usageAggregates: [
+    usageEvents: [
       usage("tenant-a", "checklist_runs_count", 1),
       usage("tenant-b", "checklist_runs_count", 2),
     ],
@@ -159,7 +159,7 @@ test("reexecutar run nao duplica allocations indevidamente", async () => {
         unblendedCost: 10,
       }),
     ],
-    usageAggregates: [usage("tenant-a", "storage_gb_month", 1)],
+    usageEvents: [usage("tenant-a", "storage_gb_month", 1)],
   });
   const run = await service.createAllocationRun({ periodStart, periodEnd });
 
@@ -173,13 +173,13 @@ test("reexecutar run nao duplica allocations indevidamente", async () => {
 
 function createService(input: {
   readonly costLineItems?: readonly CloudCostLineItem[];
-  readonly usageAggregates?: readonly CloudUsageDailyAggregate[];
+  readonly usageEvents?: readonly CloudUsageEvent[];
 }) {
   const repository = new InMemoryCloudCostAllocationRepository();
   repository.seed({
     tenants,
     costLineItems: input.costLineItems,
-    usageAggregates: input.usageAggregates,
+    usageEvents: input.usageEvents,
   });
   return {
     repository,
@@ -205,22 +205,24 @@ function costLine(id: string, override: Partial<CloudCostLineItem>): CloudCostLi
   };
 }
 
+// B-O6R-06 — a base de rateio passou a ser somada na TABELA DURAVEL de eventos (`cloud_usage_events`),
+// nao mais na projecao diaria que ninguem agenda. A fixture acompanha o mecanismo: o que se semeia agora
+// e o EVENTO de consumo, que e o que existe em producao.
 function usage(
   tenantId: string,
-  metricKey: CloudUsageDailyAggregate["metricKey"],
+  metricKey: CloudUsageEvent["metricKey"],
   quantity: number,
-): CloudUsageDailyAggregate {
+): CloudUsageEvent {
   return {
     id: `${tenantId}-${metricKey}`,
     tenantId,
-    date: "2026-06-15",
+    sourceType: "test",
     metricKey,
     quantity,
     unit: "count",
-    sourceType: "test",
+    occurredAt: new Date("2026-06-15T12:00:00.000Z"),
     metadata: {},
     createdAt: periodStart,
-    updatedAt: periodStart,
   };
 }
 
