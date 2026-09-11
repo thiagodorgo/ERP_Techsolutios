@@ -273,8 +273,10 @@ O `mvp_vendavel` (88%) e o `mvp_demo` (99%) são estimativas **anteriores** a es
 ```
 frente 1:  B-O6R-04a ► B-O6R-03a ► B-SAN3-02 ► B-SAN3-20 ► B-SAN3-03
 frente 2:  B-SAN3-05 ► B-O6R-07c ► B-SAN3-04 ► B-SAN3-18 ► B-SAN3-09 ► B-O6R-12
-frente 3:  B-SAN3-01 ► B-AV-REAL ► B-SAN3-12 ► B-SAN3-06b ► B-SAN3-11 ► B-SAN3-07 ► B-SAN3-06a ► B-SAN3-08
-           ► B-SAN3-21 ► B-O6R-09 ► B-SAN3-22
+frente 3:  B-SAN3-01 ► B-AV-REAL ► B-SAN3-12 ► B-SAN3-06b ► B-SAN3-11 ► B-O6R-09 ► B-SAN3-07 ► B-SAN3-06a
+           ► B-SAN3-08 ► B-SAN3-21 ► B-SAN3-22
+           (o B-O6R-09 vem antes do B-SAN3-07 porque o 07, o 06a e o 08 esperam o B-SAN3-04 da frente 2,
+           que termina em ≈ 31 h no melhor caso; nesta ordem a frente não espera)
 frente 4:  B-O6R-11 ► B-SAN3-13 ► B-SAN3-14 ► B-SAN3-15 ► B-SAN3-16 ► B-SAN3-17 ► B-O6R-04b ► B-O6R-03b ► B-SAN3-19
 
 arestas entre frentes (mesmo arquivo ou pré-requisito de dado):
