@@ -4310,7 +4310,7 @@ flips numa cópia de bancada com asserção por linha antes de tocar o worktree 
 byte-idêntico à saída do gerador) e mediu em bancada que o gerador lê só a 1ª linha de status.
 
 Números: 231 IDs medidos (31 fechados no código × abertos no texto, 24 parciais — 21 delas sem o texto dizer —,
-175 abertos, 1 não medido; 52 flips); 50 ausentes; gate com 44 bloqueantes, 32 blocos e 6 atos do dono; melhor
+175 abertos, 1 não medido; 52 flips); 49 ausentes registradas (50 da fatia; `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação); gate com 44 bloqueantes, 32 blocos e 6 atos do dono; melhor
 caso ~80–85 h, realista 10–12 dias. A PD do antivírus foi transcrita
 pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escrita e o arquivo de saída ficou
 vazio), sem edição de conteúdo.

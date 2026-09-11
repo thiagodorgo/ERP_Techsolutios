@@ -278,6 +278,7 @@
 - impacto: nenhum; entrega honesta. Falta uma fonte de ultimo login (o modulo auth tem sessoes/audit — um
   bloco futuro pode derivar o ultimo `auth_session`/login por usuario).
 - status: aberto (quando quiser ultimo acesso real, derivar do audit/sessoes de auth). Nao bloqueia F9.
+- **duplicata de:** `P-USERS-LAST-ACCESS` (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -312,6 +313,8 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
+- **emenda (plano SAN3 §4.1 item 43, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-21`.
 
 ## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
 
@@ -391,6 +394,8 @@
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
+- **emenda sobre `P-033` (plano SAN3 §4.1 item 14, 2026-09-11):** a premissa que a fatia C1 usou para descartá-la — permissão em runtime vinda do catálogo — está refutada: vem do banco, `src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts:90-107` → `src/modules/core-saas/repositories/role.repository.ts:118` (crítico SAN3 r1, CR1-15); volta ao gate como condicional, medida no `B-SAN3-04` em modo banco. (`P-033` não tem cabeçalho próprio: está registrada dentro desta entrada.)
 
 ## P-Ω3a (Ω3-a ServiceQuote) — pendências declaradas
 - **Aditivo `quotes[]` no detalhe da OS** (`GET /work-orders/:id`) DEFERIDO para Ω3-e (consumidor natural;
@@ -492,6 +497,8 @@
 - ATUALIZACAO (Ω-INFRA-2, 2026-07-14): o CD de staging (deploy-staging.yml + smoke-staging.mjs) foi ENTREGUE
   como config-as-code (gated por STAGING_DEPLOY_ENABLED). O Playwright e2e bloqueante roda contra o staging APOS a
   ATIVACAO (hand-off: conta Fly + secrets no Environment staging). Ate la, e2e segue fora do gate obrigatorio.
+
+- **emenda (plano SAN3 §4.1 item 38, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-10`.
 
 ## P-SAN-CORE-PRISMA-COV - Adapter prisma do Core SaaS não é exercido pelo gate (Ω-GATE, 2026-07-13)
 - descricao: o gate força `CORE_SAAS_PERSISTENCE=memory`; testes que precisam de banco (auth-*/*-prisma/RLS/
@@ -596,6 +603,7 @@
 - acao: bloco de varredura único acentuando labels + mensagens de `WorkOrderForm.tsx` e
   `work-orders.adapter.ts` (validateWorkOrderForm) de uma vez, destravando a convenção p/ os próximos Ω3F.
 - status: aberto (apontado por cognicao-visual)
+- **duplicata de:** `P-028` — contida nela: os rótulos sem acento do formulário de Nova OS são parte da dívida de acentuação (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -962,6 +970,8 @@ Item novo pós-faturamento permanece editável (invoiced_at NULL); só os já ca
 - **agendamento:** ~~DIFERIDO-LEVE~~ → **RETIRADO DO BALDE C em 2026-08-29** (achado A-5 da junta do SAN2-1)
   <sub>A cadeira de triagem amostrou 6 das 81 diferidas e provou que esta **não é cosmética**: item lançado no Financeiro da OS depois do 1º faturamento **nunca é faturado**: o 2º `POST /invoice` devolve `409 already_invoiced` e o delta fica “a faturar” para sempre. É **receita executada que o produto não consegue cobrar** — produto e dinheiro, não polimento. A etiqueta colada aqui afirmava *“sem consequência de produto, dado, segurança ou número”* — e o próprio texto da pendência desmente. **Não era o adiamento que estava errado, era a etiqueta**, e é ela que o dono lê ao decidir se veta. Volta ao balde por severidade real.</sub>
 
+- **emenda (plano SAN3 §4.1 item 21, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-02`.
+
 
 ## P-Ω4-3-TEST-HERMETIC — createMemoryWorkOrderInvoicingService não é puramente memory (BAIXA)
 O WorkOrderInvoicingService.invoke() alcança createDefaultWorkOrderService()/createDefaultFinancialTitleService()
@@ -1280,6 +1290,8 @@ entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dup
 - **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+- **emenda (plano SAN3 §4.1 item 22, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-20`.
+
 ## P-Ω4-7-CLEAR-RETRO — Compensação retroativa a período fechado (BAIXA)
 O clear sempre usa server-now → competência CORRENTE. Se o banco compensou de fato num mês já FECHADO, a data verdadeira
 não é escriturável (usar now posta no mês corrente, coerente com caixa quando registrado). Política: compensação sempre no
@@ -1343,6 +1355,8 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
   própria, esta entrada é a única coisa que os mantém visíveis — e por isso fica ABERTA.**</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+- **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
+
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
 - **status:** FECHADA · **severidade:** era CRÍTICA · **dono:** encerrado
@@ -1385,6 +1399,8 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** severidade e dono. A linha de status segue com severidade "a classificar" e dono "a atribuir", enquanto o deploy está bloqueado pela J-6R (`Kpis/kpis-latest.json`: `deploy_bloqueado: true`) e o antivírus fail-closed faz produção responder 503 a todo upload (`P-O6R-B07B-SCANNER-AV-REAL`). O plano SAN3 põe o go-live entre os atos do dono dentro do gate (§4.2).
+
 ## P-UI-REFRESH-LIVENESS — indicador sutil de auto-atualização nas telas (WS-UI-REFRESH, 2026-07-19)
 - descricao: WS-UI-REFRESH removeu o botão manual "Atualizar" e ligou auto-refresh silencioso em 30 telas (o dono pediu
   explicitamente "o sistema faz isso automatico"). 29/30 telas NÃO exibem sinal visual de que a tela se atualiza sozinha —
@@ -1419,9 +1435,12 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - status: ABERTA (PARCIAL — fechado: o gate de UI de 2 das 3 cascas, `DispatchConsolePage.tsx:71-74` e `PedidosPage.tsx:31-33` (`0450ae9f`, #257); aberto: a 3ª casca (`TablePage`, usada por `ReportsPage.tsx`) segue sem `usePermissions`, e nenhuma das 3 tem dado real — `ORDER_ROWS`, `ROWS` e KPIs fixos, e o Console de Despacho com a organização fixa "Techsolutions Industrial" (`DispatchConsolePage.tsx:9`)) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; hoje são mocks sem efeito)."
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: mesma causa de `P-PURCHASE-ORDERS-BACKEND-GATE` — telas-casca com dado inventado no menu, e o Console de Despacho com a organização fixa "Techsolutions Industrial".
 - **duplicata de:** `P-PURCHASE-ORDERS-BACKEND-GATE` (mesma causa; inventário SAN3, fatia C2) — tratar junto; bloco dono = o de `P-PURCHASE-ORDERS-BACKEND-GATE`.
+- **cobertura (crítico SAN3 r1, CR1-16, 2026-09-11):** esta entrada cobre `P-PURCHASE-ORDERS-BACKEND-GATE` (Pedidos e Relatórios) **mais** o Console de Despacho — `frontend/src/modules/dispatch/pages/DispatchConsolePage.tsx`, com a organização fixa "Techsolutions Industrial" (`TENANT_NAME`, l.9) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o corpo conta `ChecklistRunsPage` entre "as 2 REAIS (service-backed)", mas ela lista modelos (`frontend/src/modules/checklists/pages/ChecklistRunsPage.tsx:9` importa só `listAvailableChecklists`); e o Console de Despacho não tem porta — `/dispatch/console` não é referenciado em `frontend/src` fora do `App.tsx`.
 
 ## P-RBAC-CATALOG-MATRIZ — divergências pré-existentes catalog.ts × RBAC_MATRIX.md em checklists (2026-07-19)
 - descricao: a junta (coordenador-de-acessos) achou 2 divergências PRÉ-EXISTENTES (não introduzidas pelo gating): (1) matriz
@@ -1464,6 +1483,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: restaurar ações significativas no header (Novo lançamento; Conciliar quando a trilha NF-e existir — cruza com a
   parada NF-e do scale-roadmap). Passada de fidelidade §11.
 - status: aberto (não-bloqueante; cosmético/pré-existente).
+- **duplicata de:** `P-Ω4-8-DASHBOARD-FIDELITY` — contida nela: o cabeçalho sem ações é parte da fidelidade do dashboard financeiro (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -1534,6 +1554,8 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   de escala da Plataforma. So entao os cards viram clicaveis com dado REAL.
 - status: FECHADA — Visão Geral lê `GET /api/v1/platform/overview` (`PlatformOverviewPage.tsx:201`, `usePlatformOverview()`), o Detalhe da Organização lê o `:tenantId` real e Saúde do Sistema mostra só o estado honesto "Monitoramento em preparação"; zero constantes mock (`KPIS/MRR_BARS/ACTIVITY/ORG_ROWS/METRICS/SERVICES/STATS`) nas 3 páginas no head `15ef3fbe`; entregue por `0cbc70d7` (#254) + `179b52c2` (#256) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA (registrada; nao e pendencia funcional do PR2b — e um alvo futuro de dados reais)."
 
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** a entrada ficou defasada quanto à ficção que resta na plataforma: Visão Geral e Detalhe da Organização já têm dado real (3 hooks cada no HEAD); as telas que ainda exibem dado inventado são outras — ver `P-WEB-PLATAFORMA-TELAS-FICCAO` (Planos e Módulos, Auditoria Global, APIs, lista de Organizações).
+
 ## P-SCALE-RBAC-OWNER-APPROVAL - Expansao de RBAC (purchase_orders/reports) requer o dono NOMEAR (2026-07-20, PR-SCALE-1)
 
 - descricao: as permissoes `purchase_orders:read`, `purchase_orders:create` e `reports:read` NAO existem no catalogo
@@ -1591,6 +1613,8 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** a entrada ficou defasada quanto à ficção que resta na plataforma: Visão Geral e Detalhe da Organização já têm dado real (3 hooks cada no HEAD); as telas que ainda exibem dado inventado são outras — ver `P-WEB-PLATAFORMA-TELAS-FICCAO` (Planos e Módulos, Auditoria Global, APIs, lista de Organizações).
 
 ## P-PURCHASE-ORDERS-BACKEND-GATE - Gate server-side de Pedidos/Relatórios pendente (2026-07-21, PR-SCALE-1)
 
@@ -1879,6 +1903,7 @@ TELAS PR-C. O design mostra avatar+nome+perfil do ator; o DTO expõe só `actor_
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+- **duplicata de:** `P-AUDIT-FOLLOWUPS`, item 1 — ator sem nome na tela de Auditoria (crítico SAN3 r1, CR1-16) — tratar junto.
 
 ## P-SUITE-ENV-PERSISTENCE (2026-08-05) — suíte backend depende de `CORE_SAAS_PERSISTENCE=memory` no SHELL (MÉDIA sistêmica)
 
@@ -1939,6 +1964,8 @@ de checklist (app caía nos seeds); a trilha de OS precisa do mesmo tratamento: 
 sem fallback de seed; seeds só em modo demo EXPLÍCITO e rotulado. Candidata ao **PR-08 (reconciliação
 mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
 - status: ABERTA.
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** apagar as OS semente já gravadas no aparelho. Prova no HEAD `c9ed9b91`: `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart` — o `_upsertRemoteOrders` não tem `delete`/`remove`/`clear`, e a semeadura só ocorre com `_remoteApi == null` (l.118-121), então o resíduo fica nos aparelhos que já rodaram o build local. O plano SAN3 põe a purga no gate (§4.1 item 33, `B-SAN3-13`).
 
 ## P-CHK-COMPONENT-TYPE-CHECK (2026-08-08) — CHECK do banco recusava os 3 tipos do PR-01 — **RESOLVIDO (hotfix)**
 
@@ -2016,6 +2043,8 @@ no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: rec
   devolvendo **409** quando não casar. Muda o contrato REST público e afeta todo consumidor do PATCH (web + qualquer
   automação), por isso exige junta antes de ser implementado.
 - status: ABERTA (mitigada no cliente; correção de contrato pendente de junta).
+
+- **emenda (plano SAN3 §4.1 item 6, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-22`.
 
 ## P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA, honestidade de UI)
 
@@ -2403,6 +2432,8 @@ deles (`Ω6R-DAT-001`, `Ω6R-DIN-006`) são do próprio ato de subir em produç�
 - status: ABERTA (índice; nenhum achado fecha aqui — cada bloco `P-O6R-BNN` abaixo é que fecha os seus).
 
 - **emenda de contagem (inventário SAN3, fatia B1, 2026-09-11):** o `docs/revisoes/O6R/achados.jsonl` tem **32** achados — não 29 (cabeçalho) nem 30 (emenda de 2026-08-18); faltavam `Ω6R-DIN-010` e `Ω6R-DIN-011`, achados pela junta do `B-O6R-02`. Recontagem deste aplicador no JSONL do worktree, já com o backfill do #385 (`node`, agrupando `severidade` × `status`): **P0 17** = 13 `fechado` + 1 `parcialmente_superado` (`SEC-002`) + 3 `ativo` (`DIN-009`, `DAT-002`, `DAT-003`); **P1 15** = 2 `fechado` + 2 `parcialmente_superado` (`QUA-004`, `SEC-004`) + 11 `ativo`. A entrada segue aberta (é índice) enquanto houver P0 não fechado.
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** a deliberação dos rascunhos arquiteturais D-001..D-004 não tem dono nem prazo: a J-6R diz que o humano os delibera, e esta entrada não traz campo de dono para essa deliberação.
 
 ## P-O6R-B01 (2026-08-14) — `fix/identity-authority` — Ω6R-SEC-001 + Ω6R-TEN-001 (2 P0) — **BLOQUEIA auth/RBAC/plataforma**
 
@@ -2825,6 +2856,8 @@ se surgir.
 > `"estado": "a_fazer"` e `B-O6R-05` `"estado": "concluido", "pr": 353`; e `production_readiness.fechados`
 > credita `Ω6R-DAT-001`/`Ω6R-DIN-006` ao `B-O6R-05` (PR #353), nunca `DAT-002`/`DAT-003`.
 
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** no `Ω6R-QUA-002`, o `work_order_material.add` também não é drenado: `InventorySyncActionTypes.materialAdd` só aparece em `prestador_repository.dart:125` e `api_contracts.dart:135`, e o serviço de replay não o envia (`sync_replay_service.dart`: 0 ocorrências).
+
 ## P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — **achado ÓRFÃO, sem bloco até hoje**
 
 **Estado:** ABERTO · **Dono:** próximo agente que puxar a trilha `jurisdiction`/`impound` · **PR-alvo:** ainda
@@ -3177,6 +3210,8 @@ independentes, sem transação comum e sem `client_action_id`. Wrapper que abre 
 por etapa do despacho"*, ou seja, trabalho em fila que grava/lê exatamente o agregado defeituoso. Construir
 histórico por etapa sobre um agregado que pode nascer sem evento é construir sobre buraco.
 - status: ABERTA — 1 P1.
+
+- **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
 
 ## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
 
@@ -6949,6 +6984,8 @@ como fonte e passam a citar o que de fato está na `main`. As duas respostas sã
   desde `cae6086`, 2026-09-05; a decisão nunca esteve na `main`) · **dono:** **decisão do dono** — envolve
   consolidar texto entre `demo/investidor` e a `main`, que é dele, não de um bloco de execução
 
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o estado mudou — as branches já estão no remoto (`origin/chore/gov-auditoria-elenco`, `origin/chore/gov-elenco-fatia-b`), e a decisão segue fora da `main`: `D-DURABILIDADE` tem 0 ocorrências no `decisoes.md` do HEAD.
+
 ## P-O6R-B07B-SCANNER-AV-REAL (2026-09-06) — produção e staging recusam TODO upload até haver antivírus real — ALTA
 
 Aberta pelo `B-O6R-07b` no PR que fechou o `Ω6R-SEC-004` como **parcialmente superado**. É o residual nomeado
@@ -8055,6 +8092,8 @@ fixo — ele já fez isso ad hoc nesta rodada, e foi assim que a divergência ap
 
 - **emenda (inventário SAN3, fatia A2, 2026-09-11) — reincidência:** as sessões dos inventariantes do SAN3 carregaram um `CLAUDE.md` sem o §A7 (vai do §A6 direto à PARTE B), isto é, nasceram da árvore principal em `demo/investidor` (`d1fab3bc`); a sessão deste aplicador também. Medido: `git show HEAD:CLAUDE.md | grep -c "^## A7"` → 1 no head `15ef3fbe`; `git show demo/investidor:CLAUDE.md | grep -c "^## A7"` → 0.
 
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o cabeçalho ainda diz "FECHADA em 2026-09-08" enquanto a primeira linha de status diz ABERTA (PARCIAL); o detector de contradição do gerador (`CABEC`) não vê a divergência porque exige negrito (classe G-3 do porteiro).
+
 ---
 
 ## P-O6R-SUITES-DB-SEM-TEARDOWN (2026-09-09) — execuções consecutivas de `npm test` contra o mesmo banco não são independentes — MÉDIA
@@ -8267,3 +8306,861 @@ escrito noutra seção, em ID duplicado ou em `decisoes.md` — 6 (as três `P-�
   `docs/revisoes/O6R/achados.jsonl` para `fechado`, ou escreve "fecha P-…" em commit, PR, emenda ou
   `decisoes.md` — sem editar a linha de status da entrada citada; mutação: PR que fecha um `Ω6R-*` no JSONL sem
   tocar a linha de status do `P-O6R-BNN` dono → vermelho.
+
+---
+
+## Pendências ausentes do registro — inventário SAN3 (2026-09-11)
+
+As pendências que o inventário SAN3 achou nas fontes (síntese de produto, atas, pareceres, auditoria de
+governança, plano, dossiê, `docs/go-live-readiness.md`) e que não existiam no registro. Fonte:
+`docs/revisoes/SAN3/inventario/inventario-AUSENTES.md`, §2a (produto) e §2b (governança); a última entrada
+(`P-SAN3-ROTEIRO-DEMO-OPERACAO`) veio do plano. Quem achou foi o inventariante da fatia AUSENTES; o aplicador
+reconfirmou cada prova por presença no HEAD `c9ed9b91` antes de escrever. Onde o bloco dono da fatia era
+genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o bloco do plano. As parciais
+(§2c) entraram como emenda da pendência que já existia, nunca como ID novo.
+
+## P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com selo "IA"; dados e rotas órfãos — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B1-B3, C1 (selo), C2 (registry), D8
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx`: 245 l., 0 `useEffect/useState/await/fetch/.service`, 0 `onClick`, literal "48,2k", selo `IA` l.181, insights literais l.62; `cloud-billing.{adapter,service,mock}.ts` sem página importadora; `src/modules/navigation/navigation.registry.ts:41` `status: "implemented"`
+- **gravidade:** MÉDIA
+- **origem:** `d5a4ed43` (#111) trocou a versão ligada `4d6e1219` por literais
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** decisão do dono D5/D9 (religar × parada honesta)
+- **dono:** `B-SAN3-06b` (plano SAN3 §4.1 item 40); bloco dono proposto pela fatia: bloco web de plataforma
+- **impacto vendável:** NAO — só `platform_admin` alcança; BLOQUEIA demo honesta
+- **teste de encerramento:** smoke: página chama o adapter real (API mockada), 0 literal monetário no JSX, sem selo "IA" sem fonte; `status` do registry coerente
+
+---
+
+## P-DONO-CLOUD-BILLING-ESCOPO (2026-09-11) — Cobrança de nuvem calculada nunca vira fatura; custo AWS entra só por CSV manual — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B8, C2, D5
+- **situação medida pela fatia:** ATIVO (por desenho, sem decisão)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/cloud-charges/cloud-charge.types.ts:24` status `draft/ready/locked/voided`; `src/modules/cloud-costs/aws-cur.importer.ts:7,24` só `manual_csv/mock_fixture`; `aws-cur.types.ts:4` declara `s3_cur`/`athena_query` sem importador
+- **gravidade:** MÉDIA
+- **origem:** escopo dos blocos cloud ("fora de escopo mantido: fatura…", status-geral:2367)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 4-faturamento/dinheiro
+- **dependências:** decisão do dono; P-WEB-CLOUD-BILLING-CARTAZ
+- **dono:** dono → bloco de produto cloud billing (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — receita da plataforma, não fluxo do cliente
+- **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
+
+---
+
+## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B9, B10, A6
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rl financial-account frontend/src` = 0; `grep -rn "/pay" frontend/src` = 0; front só lista/cria/muda status (`ChargesPage`, `PaymentsPage`, `FinanceiroPage` via `financial-titles.adapter`); backend `financial-entry.routes.ts:95` `POST /financial-titles/:id/pay`, único caminho a `paid` (`financial-title.service.ts:284-286`, sintese)
+- **gravidade:** ALTA
+- **origem:** Ω4-2/Ω4-4 (2026-07): backend sem fatia de front
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo-necessario-para-venda
+- **dependências:** B-O6R-02 (atomicidade do pay) já mergeado; conta antes da baixa
+- **dono:** `B-SAN3-12` (plano SAN3 §4.1 item 26); bloco dono proposto pela fatia: bloco web financeiro ("ciclo do dinheiro")
+- **impacto vendável:** **BLOQUEIA** — pela web um título nunca vira pago nem caixa
+- **teste de encerramento:** smoke: criar conta → emitir título → baixar pela tela → saldo em `GET /financial-accounts/:id/balance`; título `paid`; 403 e estados §7
+
+---
+
+## P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de período e política de comissão sem tela; backend pronto — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B11-B13
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rln /cheques frontend/src` = 0; `grep -rln financial-period frontend/src` = 0; `commissions.service.ts:44,112` consome só `statements/summary`, `my-summary`, `settlements` — `policies`/`basis-events` sem consumidor
+- **gravidade:** MÉDIA
+- **origem:** Ω4-6/Ω4-7, Ω3F-6 (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** conta (linha acima) para cheque
+- **dono:** bloco web financeiro (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1))
+- **impacto vendável:** NAO — não é pré-requisito de venda; condição: comissão configurável vendida → BLOQUEIA
+- **teste de encerramento:** smoke por tela (cheque depositar/compensar; fechar/reabrir; CRUD de política) com 403 por permissão
+
+---
+
+## P-CHK-APLICABILIDADE-SEM-ROTA (2026-09-11) — Motor de aplicabilidade de checklist existe sem rota, permissão nem tela — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B14, A4
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/work-orders/work-order.service.ts:1991` "entre o 04c-A e o 04c-B não existe rota nem permissão", `:2025` "nenhuma linha pode nascer `resolved`"; `grep -c applicab` em `src/app.ts` e `checklist.routes.ts` = 0
+- **gravidade:** MÉDIA
+- **origem:** CHK P1 PR-04c-A (2026-08-14)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** gate da CHK P1 (D10, registrado)
+- **dono:** trilha CHECKLIST P1, PR-04c-B (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1))
+- **impacto vendável:** NAO — execução de checklist funciona; condição: "checklist certo por tipo de serviço" vendido → BLOQUEIA
+- **teste de encerramento:** CRUD de regra com teste RBAC; OS com regra ativa gera `WorkOrderChecklist` `resolved` com `rule_id`
+
+---
+
+## P-WEB-CHK-EXECUCOES-INEXISTENTES (2026-09-11) — "Ver execuções" leva à lista de modelos; execuções não têm tela nem rota — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B16, C3 (PR-05)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `ChecklistEditorPage.tsx:92` `CHECKLIST_RUNS_PATH = "/operations/checklists"`; `App.tsx:701-704` renderiza `ChecklistRunsPage`, que importa só `listAvailableChecklists` (`:9`); `listRuns` só no repositório (`checklist-prisma.repository.ts:585,1019`)
+- **gravidade:** MÉDIA
+- **origem:** CHK P1 PR-02a; PR-05 planejado
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** —
+- **dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — dossiê de pátio mostra runs por processo
+- **teste de encerramento:** rota de runs com escopo por papel + tela §7; botão abre execuções do modelo
+
+---
+
+## P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e lista de Organizações exibem dado inventado — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B17 (residual), B18, D9
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `modules/platform/pages/PlatformPlansModulesPage.tsx` (73 l.), `PlatformAuditPage.tsx` (90), `PlatformApisPage.tsx` (78): 0 hooks; `PlatformTenantsPage.tsx:18-19` ids `ten-sp`/`ten-agromax`, `:81` navega para id fabricado
+- **gravidade:** MÉDIA
+- **origem:** WS-SCALE (2026-07-20)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** D9 (padrão `invoices-nfe-honest-stop`)
+- **dono:** `B-SAN3-06b` (plano SAN3 §4.1 item 40); bloco dono proposto pela fatia: bloco web de plataforma
+- **impacto vendável:** NAO — só operador; BLOQUEIA demo. `P-PLATFORM-MOCK-WIRING`/`P-PLATFORM-TENANTDETAIL-REAL` estão defasadas (Overview e Detalhe já têm 3 hooks cada)
+- **teste de encerramento:** guard "sem número fabricado" por tela; lista de Organizações de `GET /platform/overview`
+
+---
+
+## P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram MFA e auditoria "ligados" por literal — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B19
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `PlatformSettingsPage.tsx:8` `function Toggle({ on }: { on: boolean })`; `:43` "MFA obrigatório para admins … `<Toggle on />`"; `:44` "Auditoria de operações críticas … `<Toggle on />`"
+- **gravidade:** ALTA
+- **origem:** WS-SCALE (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 3-seguranca/permissoes
+- **dependências:** —
+- **dono:** `B-SAN3-06b` (plano SAN3 §4.1 item 16); bloco dono proposto pela fatia: bloco web de plataforma
+- **impacto vendável:** **BLOQUEIA** — UI entregue declara controle de segurança inexistente
+- **teste de encerramento:** teste de render: nenhum toggle de controle sem fonte real (ou ligado a config persistida e testada)
+
+---
+
+## P-WEB-ROTAS-SEM-PORTA (2026-09-11) — Rotas vivas sem menu/link; provisionamento de módulos só por URL digitada — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B20-B22
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `App.tsx:648` `/dispatch/console`, `:640` `/field-operators`, `:674` `/finance/invoices`, `:570` `/controle/usuarios/logs`: nenhuma referência fora do próprio módulo; `/logistics` só no menu não montado; `App.tsx:247` `/platform/tenants/:tenantId/modules` sem `navigate`/`Link`; `DispatchConsolePage.tsx`: 11 botões, 5 `onClick`
+- **gravidade:** MÉDIA
+- **origem:** 2026-07
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** P-WEB-GATE-MODULO-INCOMPLETO
+- **dono:** bloco web de navegação (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — há contorno por URL
+- **teste de encerramento:** teste de alcançabilidade web: toda rota de `App.tsx` tem porta ou está em allowlist nomeada
+
+---
+
+## P-WEB-EVENTBUS-MOCK (2026-09-11) — Provider de eventos cicla mocks a cada 9 s contra rota inexistente — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B23
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `providers/EventProvider.tsx:33` `createPollingClient()`; `services/realtime/pollingClient.ts:2` importa `mockEvents`, `:8` 9000 ms, `:23` `/api/v1/events/stream`; consumidores: `AppProviders.tsx` e `pages/WorkOrderFormPage.tsx` (morta)
+- **gravidade:** BAIXA
+- **origem:** pré-C3 (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** `P-004`
+- **dono:** bloco web de faxina (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — nenhum consumidor vivo exibe
+- **teste de encerramento:** provider na SSE real ou removido; teste: nenhum import de `mocks/` em `providers/`
+
+---
+
+## P-WEB-GATE-MODULO-INCOMPLETO (2026-09-11) — 27 itens do menu fora do gate de módulo; backend não recusa módulo não contratado — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B25, A5
+- **situação medida pela fatia:** ATIVO (lado backend medido por padrões, não exaustivo)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/navigation/navigation.registry.ts`: 36 entradas `path:`; `frontend/src/layouts/appSidebarNav.ts` `MVP_NAV_PATHS` = 51; grep `requireModule|requireTenantModule|assertModuleEnabled|requireFeature|module_disabled` em `src/` só acha flags do bootstrap mobile (`mobile.routes.ts:221-257`)
+- **gravidade:** ALTA
+- **origem:** esconde-fino (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 4-faturamento/dinheiro
+- **dependências:** P-WEB-ROTAS-SEM-PORTA (link de provisionamento); decisão de planos
+- **dono:** `B-SAN3-18` (plano SAN3 §4.1 item 15); bloco dono proposto pela fatia: bloco "gate comercial"
+- **impacto vendável:** **BLOQUEIA** se a venda for por plano/módulo — Starter vê (e, sem recusa por rota, usa) o Enterprise
+- **teste de encerramento:** tenant sem módulo X: item some E rota do módulo X = 403; guard: todo path de `MVP_NAV_PATHS` está no registry
+
+---
+
+## P-API-VERBOS-SEM-CONSUMIDOR (2026-09-11) — Verbos de administração sem nenhuma tela (merge de identidade de veículo) — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B28
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rln vehicle-identities frontend/src mobile/flutter_app/lib` = 0; `identity-links` = 0
+- **gravidade:** BAIXA
+- **origem:** Ω-VID / B-O6R-01
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** —
+- **dono:** backlog de telas de administração (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** tela ou remoção por verbo, com teste de consumidor
+
+---
+
+## P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, materiais) sem porta de entrada — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B30
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `mobile/flutter_app/lib/app/router.dart:159,339` únicos registros de `/work-orders/:id/service`; nenhum `push/go` para ele em `lib/` (o único `go` de `prestador_service_screen.dart:192` sai para `/execute`)
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** P-MOBILE-ESTOQUE-TECNICO-FABRICADO; Ω6R-QUA-005
+- **dono:** `B-SAN3-15` (plano SAN3 §4.1 item 30); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** **BLOQUEIA** — prestador não registra diagnóstico nem material faturável
+- **teste de encerramento:** widget test: OS `serviceType != tow` tem ação que navega a `/service`
+
+---
+
+## P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece, é inalcançável — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B31
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `router.dart:165,345` únicos registros de `/work-orders/:id/conclusion`; zero `push/go` para ela
+- **gravidade:** MÉDIA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** P-MOBILE-PRESTADOR-SEM-PORTA
+- **dono:** `B-SAN3-15` (plano SAN3 §4.1 item 31); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** NAO — comissão acumula no backend (`basis-events`); condição: "comissão no app" vendida → BLOQUEIA
+- **teste de encerramento:** widget test: fim do atendimento navega a `/conclusion`
+
+---
+
+## P-MOBILE-CATALOGO-MODULOS-INERTE (2026-09-11) — Catálogo de módulos nunca renderiza; Estoque sem porta; 2 rotas apontadas inexistem — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B32, B43
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `core/modules/module_resolver.dart:9` `visibleModules` sem chamador; `/inventory` só em `router.dart:236,414` e `bootstrap_repository.dart:160`; `bootstrap_repository.dart:153-155` `tenant_checklist`→`/checklists`, `:170` `/notifications` — nenhum é `path:` do router
+- **gravidade:** MÉDIA
+- **origem:** B-090
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** Ω6R-QUA-002
+- **dono:** bloco mobile "portas" (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — estoque mobile já não sincroniza (Ω6R)
+- **teste de encerramento:** todo `route` do catálogo existe no router; home renderiza `visibleModules`
+
+---
+
+## P-MOBILE-LGPD-GPS-SEM-PORTA (2026-09-11) — Consentimento LGPD de GPS nunca pode ser dado: `/location` sem porta — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B33
+- **situação medida pela fatia:** ATIVO (efeito na captura: HIPÓTESE forte, ramo não lido)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `router.dart:232,410` `/location` → `LocationConsentScreen`; zero `push/go` para `/location`; `core/location/geolocator_device_location_provider.dart:56-59` exige `LocationConsentStore`
+- **gravidade:** ALTA
+- **origem:** era telemetria
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** —
+- **dono:** `B-SAN3-17` (plano SAN3 §4.1 item 17); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** **BLOQUEIA** — sem consentimento a posição do técnico não entra; Mapa/alocação por distância sem dado de campo
+- **teste de encerramento:** widget test: primeiro uso oferece consentimento; unidade: captura só com consentimento, e o aceite é alcançável
+
+---
+
+## P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca acende: sem `kind=delivery` nem passos 3/4 — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B34
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/work_orders/ui/work_order_execute_screen.dart:94` push `/checklists/…/run?workOrderId=` sem `kind`; `router.dart:194,373` "ausência de `?kind=` … = coleta"; `features/work_orders/domain/work_order_steps.dart` (guincho): índice vai de 2 a 5 (`pendingApproval/completed/approved/cancelled => 5`)
+- **gravidade:** ALTA
+- **origem:** era local-first; `kind` na CHK P1 PR-04b
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo-necessario-para-venda
+- **dependências:** P-MOBILE-TESTE-ALCANCABILIDADE
+- **dono:** `B-SAN3-14` (plano SAN3 §4.1 item 29); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** **BLOQUEIA** — o app cobre só a coleta, metade do serviço de guincho
+- **teste de encerramento:** widget test: OS em rota de entrega abre run com `kind=delivery`; passos "Rota entrega"/"Entrega" acendem; comparação coleta×entrega alcançável
+
+---
+
+## P-MOBILE-STUBS-MOCKS-MORTOS (2026-09-11) — Stubs `Pending*` mortos (token local nunca nulo) e mock de sync em produção — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B37, B42
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `core/auth/auth_repository.dart:97` `accessToken: 'dev-token-local'`; `core/sync/sync_providers.dart:80,124` escolhem stub por `accessToken == null`; `sync_providers.dart:41` `MockExpenseSyncApi(SyncApiResult.success)`
+- **gravidade:** BAIXA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** Ω6R-QUA-001 (mesmo arquivo)
+- **dono:** faxina mobile junto do B-O6R-03 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** guard: nenhum `Mock*`/`Pending*` alcançável fora de teste
+
+---
+
+## P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" entram na fila e nunca saem — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B39 (residual não-Ω6R)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): enfileirados em `features/work_orders/data/work_order_repository.dart:474` (`approvalRequest`) e `:637` (`unableToStart`), sem chamada REST paralela; `core/sync/sync_replay_service.dart:625+` drena só `create`, `statusUpdate`, `assign`; backend `src/modules/mobile/mobile-work-order-sync.ts:213-260` aceita `create/assign/mileage/status_change`
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 1-perda/corrupcao-de-dados
+- **dependências:** vocabulário acordado com o backend
+- **dono:** `B-SAN3-16` (plano SAN3 §4.1 item 5); bloco dono proposto pela fatia: bloco mobile de sync (vizinho do B-O6R-11)
+- **impacto vendável:** **BLOQUEIA** — ação do técnico aceita pela UI e mostrada na timeline local some em silêncio
+- **teste de encerramento:** enfileirar os 2 tipos → replay envia → backend persiste ou recusa com código visível; fila vazia ao fim
+
+---
+
+## P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente de 8 SKUs; o endpoint não existe — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B40
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/prestador/data/prestador_repository.dart:38-87` 8 SKUs literais (`ELE-0102`…`FIX-0012`); `grep "technician/stock" src` = 0
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** P-MOBILE-PRESTADOR-SEM-PORTA; Ω6R-QUA-002
+- **dono:** `B-SAN3-15` (plano SAN3 §4.1 item 32); bloco dono proposto pela fatia: bloco mobile + endpoint backend
+- **impacto vendável:** **BLOQUEIA** (junto do Prestador) — material faturável escolhido de lista inventada
+- **teste de encerramento:** `GET /mobile/technician/stock` escopado por custódia + teste; app mostra vazio honesto
+
+---
+
+## P-MOBILE-OCR-ANDAIME-INERTE (2026-09-11) — OCR de recibo: estados, colunas e permissão sem consumidor — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B41
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/expenses/data/expense_repository.dart:341` `markReceiptOcrReviewed` sem chamador em `lib/`
+- **gravidade:** BAIXA
+- **origem:** trilha despesas
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** decisão de OCR (serviço externo)
+- **dono:** backlog mobile (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** andaime removido ou ligado; todo estado de `ReceiptOcrStatus` alcançável
+
+---
+
+## P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, sem filtro de atribuição nem paginação — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B44
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:272` "Minhas OS", `:122` filtra só `tenantId`; `work_order_repository.dart:88` `workOrdersForUser` sem chamador; `work_order_remote_api.dart:74-91` `GET` sem `assignedUserId` nem página
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** `P-MOBILE-OS-SEEDS` (mesma lista)
+- **dono:** `B-SAN3-13` (plano SAN3 §4.1 item 11); bloco dono proposto pela fatia: bloco mobile
+- **impacto vendável:** **BLOQUEIA** — acima de 20 OS abertas (default do backend) a OS do técnico pode sumir, e ele vê as alheias
+- **teste de encerramento:** 25 OS, 1 atribuída → lista mostra a dele, pagina, não mostra as outras
+
+---
+
+## P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico, nome "flutter_app" e README de template — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B45, §6(a6)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:153-154,407` `'${session.user.tenantRole} · …'`; `shared/ui/module_placeholder_screen.dart:42` "Permissao $requiredPermission nao retornou no bootstrap" (`/approvals`, `router.dart:253-255`); `android/app/src/main/AndroidManifest.xml:6` `android:label="flutter_app"`; `README.md` "A new Flutter project."
+- **gravidade:** MÉDIA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** `P-CHK-SEED-DEMO-SUJO` ("Tenant Demo")
+- **dono:** `B-SAN3-19` (plano SAN3 §4.1 item 42); bloco dono proposto pela fatia: faxina mobile
+- **impacto vendável:** **BLOQUEIA** (custo de horas) — viola §3; app não se distribui com nome "flutter_app"
+- **teste de encerramento:** cabeçalho com rótulo de negócio; guard de strings sem permissão/papel técnico; label = nome do produto
+- **emenda (plano SAN3 §4.1 item 42, 2026-09-11):** a tela de sync renderiza "Integracao remota ainda nao ativa" sem condição (`mobile/flutter_app/lib/shared/ui/sync_screen.dart:92,269`).
+
+---
+
+## P-MOBILE-TESTE-ALCANCABILIDADE (2026-09-11) — Nenhum teste prova que toda rota do app tem porta de navegação — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese §6(b)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): medido aqui: `/service`, `/conclusion`, `/location` sem `push/go` em `lib/`, com a suíte Flutter verde (864 no painel) **Nota do aplicador (HEAD `c9ed9b91`):** o único arquivo de teste do app que casa `alcançável|reachab|orphan` é `test/features/checklists/pr_b_dispatch_run_download_test.dart:284` ("backend inalcançável"), que não é teste de rota.
+- **gravidade:** MÉDIA
+- **origem:** —
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** —
+- **dono:** bloco mobile "portas" (1º commit) (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — é a prevenção da classe
+- **teste de encerramento:** teste extrai os `path:` do router e exige alvo de navegação ou allowlist nomeada; vermelho-controle com rota órfã plantada
+
+---
+
+## P-MOBILE-DESPACHO-SEM-PUSH (2026-09-11) — Despacho só chega ao técnico se ele abrir e atualizar o app — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese C3
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `mobile/flutter_app/pubspec.yaml`: 0 ocorrências de `firebase_messaging|flutter_local_notifications|workmanager|web_socket|socket_io`
+- **gravidade:** MÉDIA
+- **origem:** fora do MVP mobile
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** serviço externo (FCM/APNs) → junta-5 + PD
+- **dono:** bloco próprio pós-decisão (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — o dono decide se entra (§10.1))
+- **impacto vendável:** NAO — contorno declarável (despachante avisa; técnico atualiza); objeção comercial forte
+- **teste de encerramento:** despacho criado → notificação entregue (provedor mockado) e abre a OS
+
+---
+
+## P-NOTIF-SEM-CANAL-EXTERNO (2026-09-11) — Notificação só grava linha; não há canal de e-mail, SMS ou push — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B50
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/notifications/notification.jobs.ts:13-14` só `createFromDomainEvent`; grep `nodemailer|sendgrid|twilio|smtp|firebase|fcm|webpush|client-ses|client-sns` em `src`+`package.json` = 0
+- **gravidade:** MÉDIA
+- **origem:** Ω4C Central de Notificações
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** serviço externo → junta-5 + PD
+- **dono:** bloco próprio (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — central in-app funciona; quem não abre o ERP não é avisado
+- **teste de encerramento:** adapter de canal com teste de entrega (mock) e reenvio
+
+---
+
+## P-JOBS-HANDLERS-PLACEHOLDER (2026-09-11) — Dois handlers vazios ("Placeholder") consomem fila a cada evento — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B49
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/infra/jobs/job.registry.ts:47-49,53-55` corpo vazio "Placeholder"; `src/infra/events/domain-event.publisher.ts` `eventJobMap`: `checklist_run.attachment_uploaded`→`checklist-attachment-postprocess`, `audit_log.created`→`audit-log-fanout`
+- **gravidade:** BAIXA
+- **origem:** trilha jobs
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** B-O6R-08
+- **dono:** B-O6R-08 ou faxina (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** handler com corpo testado ou mapeamento removido
+
+---
+
+## P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR (2026-09-11) — Outbox Sivec é escrito por 5 repositórios e nunca lido fora de teste — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B51, A2
+- **situação medida pela fatia:** ATIVO (por desenho: "captura, nunca envio real", `prisma/schema.prisma:3122`)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/impound/impound.outbox.repository.ts`: `listOutboxEventsTx` sem chamador; `listOutboxEventsForTenant` só em `tests/impound-outbox.test.ts`; `appendOutboxEventTx` em 5 repositórios
+- **gravidade:** BAIXA
+- **origem:** Ω5P PR-20
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** decisão de interop Sivec
+- **dono:** trilha Pátios (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — interop fora do MVP; a fila cresce sem poda
+- **teste de encerramento:** decisão registrada; consumidor/poda testado, ou parar de escrever
+
+---
+
+## P-FLEET-ALERTAS-SEM-AGENDADOR (2026-09-11) — Alertas de frota só disparam por botão; nenhum job os agenda — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese A8
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/notifications/fleet-alerts.runner.ts:91`; único chamador `notification.controller.ts:82` (rota `notification.routes.ts:121`); `job.registry.ts` (12 registros) sem job de frota
+- **gravidade:** MÉDIA
+- **origem:** Ω4C Fase 1
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** B-O6R-08 (agenda singleton)
+- **dono:** B-O6R-08 ou notificações (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — disparo manual funciona
+- **teste de encerramento:** job agendado idempotente: vencimento gera alerta sem clique
+
+---
+
+## P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e compara com o código da OS — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese A9
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/work_orders/ui/work_order_detail_screen.dart:918-919` `_expected = wo.code.substring(code.length - 2)`; `:931` "Informe os 2 ultimos digitos da placa"; `:1083` "Digitos nao conferem com a placa do veiculo"
+- **gravidade:** MÉDIA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 3-seguranca/permissoes
+- **dependências:** placa no DTO da OS
+- **dono:** bloco mobile (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — GPS coexiste; mas o controle é ineficaz e o rótulo mente (D-007)
+- **teste de encerramento:** placa `ABC1D23`, código `OS-1042`: "23" aceita, "42" recusa
+
+---
+
+## P-CATALOGO-TELAS-PLANEJADAS-AUSENTES (2026-09-11) — Telas do catálogo nunca feitas: rotas logísticas, disponibilidade, chat, perfil, basemap — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese C3 (telas), D15
+- **situação medida pela fatia:** ATIVO (NAO MEDI por tela; herdado da sintese com fonte)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): web: Rotas Logísticas e Técnicos·Disponibilidade sem rota; app: sem chat/perfil-editar/notificações; mapa do app em `CustomPaint` (`work_order_operational_map_screen.dart:471`); "Organizações·Clientes" sem decisão de aposentadoria
+- **gravidade:** BAIXA
+- **origem:** catálogo de 74 telas
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** decisão de escopo do dono
+- **dono:** roadmap (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** rota + estados §7 por tela, ou saída do catálogo por decisão
+
+---
+
+## P-DOC-CONTRATOS-PROMETEM-INEXISTENTE (2026-09-11) — Contrato promete Cognito e `POST /mobile/ocr/scan`; código tem JWT próprio e nenhuma rota — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese C3 (Cognito, ocr/scan)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `CLAUDE.md` §2.4 "Cognito em prod"; `grep -rni cognito src` → só comentário (`authority-credential.types.ts:2`); `docs/claude-code-handoff/API_CONTRACTS.md:106` `POST /mobile/ocr/scan`
+- **gravidade:** BAIXA
+- **origem:** contrato 2026-07
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** decisão do dono (integrar × escrever "JWT próprio")
+- **dono:** governança de contrato (espelho `CLAUDE.md`/`AGENTS.md`) (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** contrato = código; teste: todo endpoint do `API_CONTRACTS` existe no router
+
+---
+
+## P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca blocos mergeados como "a_fazer" — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese §7
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json` `roadmap.as_of` = 2026-08-19; `B-O6R-02` e `B-O6R-07` `a_fazer` (mergeados em #371 e #369/#380)
+- **gravidade:** MÉDIA
+- **origem:** 2026-08-19
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** —
+- **dono:** próximo PR que tocar `Kpis/` (bloco dono proposto pela fatia; plano SAN3: citada no §7.2 (contagens defasadas: o `roadmap` do painel parado em 2026-08-19), sem bloco)
+- **impacto vendável:** NAO
+- **teste de encerramento:** guard: bloco com `merge_commit` no history não fica `a_fazer`; `as_of` ≥ último merge
+
+---
+
+## P-KPI-MVP-REGUA-CODIGO-ESCRITO (2026-09-11) — `mvp_demo 99`/`mvp_vendavel 88` medem código escrito, não caminho de usuário — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese §7
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json`: `mvp_demo` 99, `mvp_vendavel` 88 e, no mesmo arquivo, `production_readiness.veredito` "REPROVADO PARA PRODUÇÃO", `deploy_bloqueado: true`
+- **gravidade:** MÉDIA
+- **origem:** régua do painel
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** decisão do dono sobre a régua
+- **dono:** `B-SAN3-10` (plano SAN3 §5.5, entrega (f) — `mvp_demo`/`mvp_vendavel` recalculados com método escrito); bloco dono proposto pela fatia: bloco de KPI
+- **impacto vendável:** NAO — não trava venda; induz a crer que está vendável
+- **teste de encerramento:** régua com fonte medida (porta + dado real) ou rótulo "estimativa"; guard de coerência com `production_readiness`
+
+---
+
+## P-DOC-GO-LIVE-READINESS-VENCIDO (2026-09-11) — Documento diz "nenhum código bloqueia o go-live" e manda rotacionar chave dispensada — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** `docs/go-live-readiness.md` §0, §5
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `docs/go-live-readiness.md:76` "**Nenhum código bloqueia o go-live.**"; `:11-14`, `:44` rotação obrigatória (dispensada: `P-GOLIVE-SECRET-ROTATE` FECHADA, `pendencias.md:1330`); contradiz J-6R 5×0 e o AV fail-closed
+- **gravidade:** MÉDIA
+- **origem:** 2026-07-19
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** —
+- **dono:** `B-SAN3-10` (plano SAN3 §4.2 e §5.5 — o bloco atualiza `docs/go-live-readiness.md` e corrige a linha 76); bloco dono proposto pela fatia: dono de `P-GOLIVE-GATES` (hoje "a atribuir")
+- **impacto vendável:** NAO — documento; mas quem o ler conclui que o go-live está pronto
+- **teste de encerramento:** revisão datada no topo apontando J-6R e AV; `rg "Nenhum código bloqueia"` = 0 ou qualificado
+
+---
+
+## P-GOV-MOLDE-SEM-CORPOS-DE-JURADO (2026-09-11) — Molde de plano/briefing não prevê os corpos de jurado que a junta exige criar — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** J-B-O6R-06 §9 ress.3; delta §3 #5 e §5
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `agent-orchestration/codex/comando-template.md` e `docs/claude-code-handoff/comando-template.md`: `grep -c especialistas` = 0, `grep -ci jurado` = 0; reincidiu nas duas juntas do B06 ("12 corpos … fora da lista literal do §5") **Nota do aplicador (HEAD `c9ed9b91`):** o caminho `agent-orchestration/codex/comando-template.md` citado pela fatia não existe no HEAD; os moldes existentes são `comando-template.md` (raiz) e `docs/claude-code-handoff/comando-template.md`, ambos com 0 menções a `especialistas` e a `jurado`.
+- **gravidade:** BAIXA
+- **origem:** 2026-09-07 / 09
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** —
+- **dono:** próximo bloco de governança (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO — processo
+- **teste de encerramento:** molde lista `.claude/agents/especialistas/<id>*.md` + espelho no escopo; checagem falha se o diff tocar `especialistas/` fora do declarado
+
+---
+
+## P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO (2026-09-11) — Ata e votos do B06 com resíduos: plano fora dos autos, ressalva omitida, sem quedas — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** J06 §9 ress.5/6/7; delta §3 #7, #9, #11
+- **situação medida pela fatia:** ATIVO (ress.5 NAO MEDI — não identifiquei os "dois hashes")
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `J-B-O6R-06.md:59` "passada 2 **LIBERADO**" (o inspetor deu COM RESSALVA); `ls votos/B-O6R-06/` sem `00-quedas.md`; `BRIEFING-B-O6R-06-delta.md:67` plano 4+4 "em `scratchpad`"; `votos/B-O6R-06/C1-banco-rls-evidencia.md` termina em linha vazia; par 2-por-2 só descrito no delta §3 #9
+- **gravidade:** BAIXA
+- **origem:** 2026-09-07/09
+- **escopo:** dentro-do-bloco (B-O6R-06, mergeado) (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** —
+- **dono:** próximo PR de registro em `omega/juntas/` (candidato: backfill do #385) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** "LIBERADO COM RESSALVA" na linha do inspetor; `00-quedas.md` ou "quedas: 0"; plano commitado; `git diff --check` limpo
+
+---
+
+## P-GOV-C28-REGULARIZACAO-NAO-ESCRITA (2026-09-11) — §C2.8 trava todo bloco sem parecer e não prevê regularização nem exceção — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** REGULARIZACAO G-1; auditoria A-08; plano §6.3
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `CLAUDE.md:263` "Sem parecer dele, nenhum bloco novo começa"; `grep -n regulariza CLAUDE.md` = 0 (662 l.); o parecer de 2026-09-09 destravou "por este parecer" sem norma (`votos/REGULARIZACAO-382-383-384/01-parecer-porteiro.md:165-166`)
+- **gravidade:** MÉDIA
+- **origem:** 2026-09-08 (#382-#384)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do dono (plano §6.3)
+- **dono:** governança de contrato (espelho `CLAUDE.md`/`AGENTS.md`) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** §C2.8 nomeia a regularização (quem emite, o que mede) ou a proíbe; espelho idêntico
+
+---
+
+## P-GOV-SKILL-384-SEM-DECISAO (2026-09-11) — Skill `backend-review-ts-prisma` (#384) entrou sem decisão registrada — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** REGULARIZACAO G-2 e "fechar (3)"; auditoria M-06
+- **situação medida pela fatia:** ATIVO (parcial: status-geral registrou)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `agent-orchestration/docs/status-geral.md:4305` cita o #384; `grep backend-review-ts-prisma agent-orchestration/controle/decisoes.md` = 0
+- **gravidade:** BAIXA
+- **origem:** #384 (2026-09-08)
+- **escopo:** dentro-do-bloco (#384) (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** —
+- **dono:** próximo PR de governança (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** entrada em `decisoes.md` com ID, data, motivo e escopo
+
+---
+
+## P-GOV-DEVOPS-ESCREVE-E-VOTA (2026-09-11) — `agente-devops-provisionador` pode escrever e se declara votante de junta — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** DOSSIE §7 (`A-C3-01`)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.claude/agents/agente-devops-provisionador.md:4` `tools: Read, Write, Edit, Grep, Glob, Bash`; descrição "Vota nas juntas de infra" (`grep -c` = 1 no head); `.gitattributes` inexistente no head (`git cat-file -e HEAD:.gitattributes` ec=128, relevante à ficha do inspetor); `ci.yml:15` = `DATABASE_URL: postgresql://…` no head (relevante à ficha da skill); `scripts/audit-agents-skills.mjs:150-151` `PODE_ESCREVER` o contém
+- **gravidade:** MÉDIA
+- **origem:** 2026-09-07
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 3-seguranca/permissoes (§C7.4-bis)
+- **dependências:** `P-GOV-BASH-EM-QUEM-JULGA`
+- **dono:** governança de elenco (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** papel escritor não vota (ou votante sem Write/Edit), com checagem no auditor
+
+---
+
+## P-GOV-INSPETOR-RECEITAS-1.1-E-3.3 (2026-09-11) — Receitas do inspetor: md5 cru, falso verde, cegas a skills e a corpo novo — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-06, A-09, A-10, A-13; plano B5b e §5 (`.gitattributes`)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.claude/agents/inspetor-de-terreno-da-junta.md:53-54` md5 cru; `:100-101` pipeline sem ec (ausente nos 2 lados = md5 de vazio = IGUAL); `:94-118` só `.claude/agents/<x>.md` (sem skills, sem `especialistas/`); `:111-112` sem estado para corpo ausente da ref
+- **gravidade:** MÉDIA
+- **origem:** #383 (2026-09-08) e anteriores
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (4 estados); decisão `.gitattributes`
+- **dono:** governança de gate (B5b), agente distinto do que fizer o auditor (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** fixtures: árvore limpa com CRLF → LIBERA; ausente nos 2 lados → AUSENTE (nunca IGUAL); corpo novo com hash no briefing e sem poder normativo → RESSALVA; skill divergente → acusa
+
+---
+
+## P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI (2026-09-11) — Skill afirma que teste `-db` se auto-pula no job `backend`; o `ci.yml` define `DATABASE_URL` — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-07; plano B4
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.claude/skills/backend-review-ts-prisma/references/repo-erp.md:23` "teste `-db` **se auto-pula**"; `SKILL.md:59` "se auto-pula sem `DATABASE_URL`" (idem espelho `.agents/skills/`); contra-fato: `.github/workflows/ci.yml:15` e `scripts/run-backend-tests.mjs:82` `SKIP_BUDGET_DB` (auditoria)
+- **gravidade:** MÉDIA
+- **origem:** #384 (2026-09-08)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** —
+- **dono:** governança de skills (B4), agente de redação técnica (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** `grep "se auto-pula" repo-erp.md` = 0; linha do `ci.yml` citada ainda vale na ref; espelho idêntico EOL-neutro
+
+---
+
+## P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (2026-09-11) — Auditor de elenco só audita a árvore onde o script mora, nunca a da sessão — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-12; plano B5a
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `scripts/audit-agents-skills.mjs:63` `const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")`; `--dir`/`process.cwd` = 0
+- **gravidade:** MÉDIA
+- **origem:** #381
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** `P-GOV-AUDITOR-FORA-DA-CI`
+- **dono:** governança de ferramentas (B5a) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** `--dir <cópia>` acusa corpo intruso como AUSENTE-NA-REF; `--ref a01fc014` mantém a saída de controle
+
+---
+
+## P-GOV-SYNC-AGENTS-ARGV-FROUXO (2026-09-11) — `sync-agent-agents.mjs` com argumento desconhecido cai em modo escrita — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria M-01; plano B5a
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `scripts/sync-agent-agents.mjs:25` `const CHECK = process.argv.includes('--check')`, sem validar argv; os `exit(2)` (`:62-63`, `:81-82`) só cobrem origem vazia
+- **gravidade:** MÉDIA
+- **origem:** anterior ao #381
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** —
+- **dono:** governança de ferramentas (B5a) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** `--naoexiste` → ec≠0 e `git status --porcelain -- .agents` vazio
+
+---
+
+## P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF (2026-09-11) — Segundo "contrato de execução" na ref, sem §C7 e com KPI pós-avaliação humana — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-11; plano §6.4
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `docs/claude-code-handoff/CLAUDE.md` (334 l.): abre como "contrato de execução" (l.1-5), `grep -c C7` = 0, `:207` "## C3. Política de KPI pós-avaliação humana (permanente)"
+- **gravidade:** MÉDIA
+- **origem:** #175
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do dono (some × banner × §A1 nomeia o canônico)
+- **dono:** governança de contrato (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** banner no topo apontando o `CLAUDE.md` da raiz (ou remoção) + §A1/§A7 nomeando o caminho canônico
+
+---
+
+## P-GOV-DECISOES-1968-GATE-INEXISTENTE (2026-09-11) — Decisão viva sustentada pelo parecer de um gate que não existe na ref — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria M-02; plano B6
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `agent-orchestration/controle/decisoes.md:1968` "O `cadeira-permanente-backend-review`, na homologação nº 1, conferiu e mediu" (em `D-QUORUM-B-GOV-ELENCO`)
+- **gravidade:** BAIXA
+- **origem:** 2026-09-08
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do assento (`P-GOV-INSPETOR-33-SEM-NORMA`)
+- **dono:** governança de registro (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** conflito registrado §A2, sem apagar, com remissão à decisão do assento
+
+---
+
+## P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` antes de `1-bis` e numeração aninhada — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria B-03
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `CLAUDE.md:359` (1-ter) antes de `:391` (1-bis); `:476` "…porteiro, inspetor ou assento…"
+- **gravidade:** BAIXA
+- **origem:** #381-#383
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** não fazer junto de P-GOV-INSPETOR-RECEITAS (mesmos arquivos)
+- **dono:** governança de contrato (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** ordem 1-bis < 1-ter; zero "assento" normativo; espelho idêntico
+
+---
+
+## P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo caem juntos na mesma cota — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria §4(b)
+- **situação medida pela fatia:** ATIVO (fato); efeito de diversificar = HIPÓTESE não medida
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.agents/agents/{planejador-mestre,porteiro-pos-merge,inspetor-de-terreno-da-junta}.md:4` `model: fable` (espelho de `.claude/agents/`); 429 do Fable registrado nos pareceres de 2026-09-08/09
+- **gravidade:** BAIXA
+- **origem:** D-PLANEJADOR-MODELO-FABLE; D-FALLBACK-MODELO-FABLE-OPUS
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** `P-GOV-ESGOTADO-SEM-TESTE`
+- **dono:** governança de modelo (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** medir custo e qualidade fora de Fable antes de trocar; decisão registrada
+
+---
+
+## P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos de especialista são versionados ou ignorados — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-02; plano §6.5
+- **situação medida pela fatia:** ATIVO no lado da ref; disco da árvore principal NAO MEDI
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.gitignore:48-52` só `.claude/worktrees/`; o #385 versionou 12 corpos `jurado-06d-*` (delta §3 #5) enquanto a árvore da sessão tem dezenas de `?? .claude/agents/especialistas/*` (git status de abertura desta sessão) **Nota do aplicador (HEAD `c9ed9b91`):** `.claude/agents/especialistas/` tem 0 corpos rastreados no HEAD — os 12 que estavam em `15ef3fbe` foram removidos em `846ac2dc` (2026-09-11); o `.gitignore` segue sem regra para eles, e a política continua não escrita.
+- **gravidade:** BAIXA
+- **origem:** 2026-09-08
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do dono (§6.5); `P-GOV-C10-ENCERRADO`
+- **dono:** governança de elenco (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** regra escrita (versionar tudo ou ignorar com exceção nomeada) + checagem no auditor
+
+---
+
+## P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operação (critério 12 do dono) — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte:** orquestrador do SAN3; plano SAN3 §4.1 item 44 e critério 12 do dono (§2 do plano).
+- **prova** (presença no HEAD `c9ed9b91`): nenhum arquivo de roteiro no repositório (`git ls-tree -r --name-only HEAD | grep -ci roteiro` → 0); o plano cria `docs/ROTEIRO-DEMO-E-OPERACAO.md` como arquivo novo no `B-SAN3-10` (§5.5).
+- **gravidade:** MÉDIA
+- **escopo:** pre-existente (evidência: o roteiro nunca existiu no repositório; o critério 12 é do dono)
+- **dependências:** todos os blocos do §5.1–5.4 do plano (dependência declarada do `B-SAN3-10`).
+- **dono:** `B-SAN3-10` (`test/e2e-no-ci-e-roteiro`, plano SAN3 §4.1 item 44 e §5.5)
+- **impacto vendável:** BLOQUEIA pelo plano — item 44 do gate (critério 12: demonstração, operação e linguagem da UI).
+- **teste de encerramento:** roteiro de demonstração executado por quem não o escreveu; a parte de operação (deploy, restore cronometrado, bootstrap do 1º admin, rotação de segredo) ensaiada fora do ambiente real; a execução no ambiente real é ato do dono.

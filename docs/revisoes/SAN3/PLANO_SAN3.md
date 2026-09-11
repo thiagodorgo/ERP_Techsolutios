@@ -19,8 +19,8 @@
    fechados) e **140 candidatos a pendência que não estavam no registro** foram medidos **pelo código**, nunca
    pelo texto da entrada. As tabelas de 13 campos estão em `docs/revisoes/SAN3/inventario/`, uma por fatia.
 2. **O registro errava o status de 52 das 231 entradas (22,5%)** — 31 fechadas no código que o texto dava como
-   abertas e 21 parciais que o texto não declarava — **e faltavam 50 pendências reais** (35 de produto, 15 de
-   governança). A causa dos flips é mecânica (§7.1). Este PR corrige as linhas de status e registra as ausentes.
+   abertas e 21 parciais que o texto não declarava — **e faltavam 49 pendências reais** (35 de produto, 14 de
+   governança — a fatia confirmou 50; uma caiu na reconfirmação antes de entrar). A causa dos flips é mecânica (§7.1). Este PR corrige as linhas de status e registra as ausentes.
 3. **O gate da versão vendável tem 44 bloqueantes, fechados por 32 blocos, e 6 atos que só o dono pratica**
    (§4). **Nenhum dos 32 blocos começou.** O que o inventário acrescentou à auditoria pesa: pela web um título
    **nunca é baixado**; no app, "Minhas OS" lista a organização inteira, a perna de entrega do guincho e o fluxo
@@ -55,7 +55,8 @@
   texto. E `P-O6R-B07` (A1) é flip no sentido inverso — o texto dizia FECHADA, o código é parcial.
 - **Placar das AUSENTES:** 140 candidatos → **37** já registrados · **8** parcialmente (a pendência existe, falta
   um componente nomeado) · **50 ausentes confirmadas por presença**, com 13 campos (35 produto, 15 governança;
-  **10 bloqueiam** pelo critério da fatia) · 24 superadas · 13 não são pendência.
+  **10 bloqueiam** pelo critério da fatia) · 24 superadas · 13 não são pendência. **Registradas: 49** —
+  `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação: o `AGENTS.md` traz os IDs de modelo desde o #381 (l.524).
 - **A coluna de severidade do `pendencias-indice.md` NÃO é usada para ordenar este plano.** `severidade()`
   (`gerar-indice-pendencias.py:75-80`) devolve a severidade **mais alta mencionada em qualquer ponto do corpo**,
   inclusive em prosa (`P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA`: campo "informativa" → índice ALTA, por "caixa
@@ -176,8 +177,8 @@ Coluna **reclass.**: a fatia dava o item como não bloqueante (ou condicional); 
 
 ### 4.4 O que as AUSENTES trouxeram para o registro
 
-As **50 ausentes** entram no `pendencias.md` neste PR, cada uma com cabeçalho próprio e os campos que a fatia
-mediu; as **8 parciais** entram como emenda da pendência que já existe (nunca como ID novo). As 15 de
+**49 das 50 ausentes** entram no `pendencias.md` neste PR, cada uma com cabeçalho próprio e os campos que a fatia
+mediu; as **8 parciais** entram como emenda da pendência que já existe (nunca como ID novo). As 14 de
 governança vão para a fila do §7.3 — entre elas duas afirmações falsas vivas no head: a skill
 `backend-review-ts-prisma` (`.claude/skills/backend-review-ts-prisma/references/repo-erp.md:23`, "teste `-db` se auto-pula" no job `backend`, quando o
 `ci.yml:15` define `DATABASE_URL`) e as receitas dos itens 1.1 e 3.3 do inspetor, com `md5` cru.
@@ -311,6 +312,8 @@ regenera o índice. A **prevenção** é o `B-GOV-GUARD-DERIVADOS`, pós-gate.
   `P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS`.
 - a coluna "dono" diz `sim` para "a atribuir" (`P-SAN2-2-INDICE-DONO-SEMPRE-SIM`); status em negrito é invisível
   (`P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR`).
+- o ID de pendência com ponto é cortado no índice (`P-GOV-INSPETOR-RECEITAS-1.1-E-3.3` sai
+  `P-GOV-INSPETOR-RECEITAS-1`): a regex do cabeçalho não aceita `.` — mesma dona, `B-REG-GERADOR`.
 - contagens defasadas: `P-O6R-BACKLOG` (29/30 → 32 achados), `P-KPI-RECENT-CONGELADO`, `P-KPI-HISTORY-MD-BACKLOG`,
   `P-SAN-KPI-BACKFILL` (materializado), o `roadmap` do painel parado em 2026-08-19, e `PROJECT_MEMORY.md`
   dizendo que o `B-O6R-02` está no ciclo 5.
@@ -323,12 +326,12 @@ regenera o índice. A **prevenção** é o `B-GOV-GUARD-DERIVADOS`, pós-gate.
 
 `B-O6R-08` (e `B-O6R-09`, se a hipótese cair), `B-O6R-10` (PERF-002), `B-ARNES-2` (inclui a suíte `-db` inteira
 sob papel sem `BYPASSRLS`), `B-REG-GERADOR`, `B-GOV-GUARD-DERIVADOS`, `B-GOV-CI-AUDITOR`, `B-REG-TYPECHECK-TESTS`,
-`B-KPI-F-HISTORY-MD`, as 15 ausentes de governança e as ABERTAS de acabamento e processo, na ordem de prioridade
+`B-KPI-F-HISTORY-MD`, as 14 ausentes de governança e as ABERTAS de acabamento e processo, na ordem de prioridade
 do dono, cada uma com o dono e o teste que a fatia registrou.
 
 ## 8. O que este plano corrige no `PLANO_O6R` (a revisão adversarial, item a item)
 
-1. **O `PLANO_O6R` só cobria os 32 achados da auditoria.** Ignorava as 231 pendências do registro e as 50 que nem
+1. **O `PLANO_O6R` só cobria os 32 achados da auditoria.** Ignorava as 231 pendências do registro e as 49 que nem
    registro tinham. **33 dos 44 bloqueantes** vêm de fora da auditoria.
 2. **O bloco 07 virou três e o plano não sabia.** 07a (#369) e 07b (#380) mergearam; o residual do SEC-002 não tinha
    bloco (`B-O6R-07c`) e o do SEC-004 estava **fora do plano** (`B-AV-REAL`). O painel ainda marca
@@ -343,7 +346,7 @@ do dono, cada uma com o dono e o teste que a fatia registrou.
    `P-028`; e `P-RBAC-GATING-MOCKSHELLS` cobre `P-PURCHASE-ORDERS-BACKEND-GATE` **mais** o Console de Despacho.
    O sync de RDV sem `Authorization` das sínteses de produto **é** o `Ω6R-QUA-001`. O denominador 231 conta cada
    duplicata como entrada distinta — o placar do §1 é do registro como ele está, não de defeitos únicos.
-6. **Pendências que faltavam:** as 50 ausentes (§4.4) e o segundo `take: 100_000` silencioso
+6. **Pendências que faltavam:** as 49 ausentes (§4.4) e o segundo `take: 100_000` silencioso
    (`cloud-charge-prisma.repository.ts:223`) — emenda em `P-O6R-B06-RATEIO-CURSOR-100K`.
 7. **Conflitos mantidos e registrados (§A2), não resolvidos em silêncio:**
    - **As reclassificações `✓` do §4.1** (itens 3, 6, 7, 9, 14, 20–22, 24, 27, 28, 31, 34, 37, 40, 42, 43): as
@@ -431,7 +434,7 @@ nasce antes do gate.**
 
 | Achado | Grav. | Resposta |
 |---|---|---|
-| CR1-01 objeto julgado ≠ objeto mergeado | bloqueia | A correção dos flips, as 50 ausentes e o índice regenerado entram **antes** da rodada 2 e da junta; o texto não declara mais nada "em andamento". |
+| CR1-01 objeto julgado ≠ objeto mergeado | bloqueia | A correção dos flips, as 49 ausentes e o índice regenerado entram **antes** da rodada 2 e da junta; o texto não declara mais nada "em andamento". |
 | CR1-02 caminhos inexistentes | bloqueia | Todo caminho do §5 conferido contra a árvore de `15ef3fbe` (script sobre o próprio plano); "novo" onde o arquivo nasce no bloco. |
 | CR1-03 mediana | ajuste | 28,4 h (8 PRs) e 57,0 h (5 grandes); a subestimação da métrica declarada (§9). |
 | CR1-04 contagens | ajuste | A1 = 3/3/26; flips = 52 (22,5%); "33 dos 44" conferido; bloco sem item (o `SAN3-09`) agora fecha o item 18. |

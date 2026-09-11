@@ -4375,10 +4375,10 @@ feito (worktree `b06` removido, branch remota apagada); as 12 cadeiras do bloco 
 
 **Inventário SAN3 (8 fatias somente-leitura, medidas em `15ef3fbe`):** as 238 linhas abertas do índice (231
 IDs), os 32 achados Ω6R e 140 candidatos a pendência fora do registro. **O registro errava o status de 52 das
-231 entradas (22,5%)** — 31 fechadas no código dadas como abertas, 21 parciais sem dizer — **e faltavam 50
-pendências reais.** Causa mecânica dos flips: o registro é só-apensar e o gerador do índice lê **só a primeira**
+231 entradas (22,5%)** — 31 fechadas no código dadas como abertas, 21 parciais sem dizer — **e faltavam 49
+pendências reais** (a fatia confirmou 50; uma caiu na reconfirmação). Causa mecânica dos flips: o registro é só-apensar e o gerador do índice lê **só a primeira**
 linha de status (medido em bancada: até "RESOLVIDO PARCIAL" sai FECHADA). O PR do plano reescreve as 52 linhas
-canônicas (FECHADAS no índice: 73 → 103) e registra as 50 ausentes.
+canônicas (FECHADAS no índice: 73 → 103) e registra as 49 ausentes (índice: 363 cabeçalhos, 103 FECHADAS, 260 ABERTAS, 0 contraditórias).
 
 **Gate da versão vendável: 44 bloqueantes, fechados por 32 blocos, e 6 atos que só o dono pratica** — nenhum
 bloco começado. Além dos P0/P1 da auditoria (estoque, despesa, escopo por objeto, antivírus), o inventário trouxe:
@@ -4400,5 +4400,5 @@ inventário: `docs/revisoes/SAN3/inventario/`. Registrados também: `PD-O6R-B07B
 caminhos inexistentes, o degrau "G1/G2" que era redução de escopo não declarada, teste impossível, frentes que
 não eram disjuntas, E2E que não fechava a pendência). A v3 responde item a item (§12 do plano).
 
-**Próximo passo:** as 50 ausentes entram no registro, rodada 2 do crítico sobre o head final, inspetor de
+**Próximo passo:** rodada 2 do crítico sobre o head final, inspetor de
 terreno, junta (maioria de 3), CI, merge, porteiro — e então as quatro frentes do plano.
