@@ -4360,3 +4360,36 @@ porteiro da regularização e o consolidador da ata) receberam um `CLAUDE.md` qu
 (marcadores de `25c0112a`, branch reprovada) e só não erraram porque mediram antes de aplicar —
 `P-GOV-CAMINHO-REPO-SESSAO`, decisão nº 1 do dossiê do dono. **Próximo passo:** absorver `#383/#384`
 (sem conflito, sem tocar código), bateria completa, CI, merge, §C5, porteiro pós-merge, backfill.
+
+---
+
+## 2026-09-11 — `B-O6R-06` FECHADO na `main` · rodada SAN3: inventário completo e plano até a versão vendável
+
+**`B-O6R-06` mergeado:** PR #385, squash `15ef3fbe` (2026-09-11T08:10:50Z), CI 7/7, `tree(ca5fd19a) ==
+tree(15ef3fbe)`. O `porteiro-pos-merge` (Fable) reexecutou a suíte no próprio cluster e reproduziu
+**2995/2997** exato; parecer **LIBERADO COM RESSALVA**, com três itens pagos no PR do plano: backfill §C3.5
+(`pr 385` · `merge_commit 15ef3fbe` · `approved_head e26eb9e5`; `p0_fechados` 11 → 13), sepultamento das seis
+`jurado-06d-*` (obituário §3.5) e a linha `status:` da mãe `P-O6R-B06`, que o gerador do índice não lia. §C5
+feito (worktree `b06` removido, branch remota apagada); as 12 cadeiras do bloco saem do diretório vivo
+(aposentadoria, rodada 2).
+
+**Inventário SAN3 (7 fatias somente-leitura, medidas em `15ef3fbe`):** as 238 linhas abertas do índice (231
+IDs) e os 32 achados Ω6R. **31 pendências estão FECHADAS no código e o registro as dá como abertas; 25 são
+PARCIAIS sem dizer.** Causa mecânica: o registro é só-apensar e o índice lê só a linha de status — conserto
+feito por outro bloco nunca fecha a entrada original. O PR do plano corrige as linhas.
+
+**Gate da versão vendável:** 23 bloqueantes em **19 blocos, nenhum começado** — além dos 5 P0/P1 da auditoria
+(estoque, despesa, escopo por objeto, antivírus), o inventário trouxe perda de dado no app de campo
+(`B-O6R-11`) e na web (a OS fabricada quando o backend recusa o create), o runtime de produção conectando como
+superusuário (RLS inerte), o menu Financeiro que some para o papel Financeiro, faturamento sem transação única,
+telas de menu com dado inventado e o "Tenant Demo" na demonstração. Mais 6 itens de go-live que dependem do
+dono.
+
+**Viabilidade do prazo de 48 h, registrada como o dono mandou:** não cabe. Melhor caso ~56 h de relógio (3
+frentes, cada bloco G no tempo do mais rápido já medido); realista **5 a 7 dias**. Sem redução de escopo: a
+execução segue pela ordem de risco. Plano: `docs/revisoes/SAN3/PLANO_SAN3.md`; inventário:
+`docs/revisoes/SAN3/inventario/`. Registrados também: `PD-O6R-B07B-CLAMD-INSTREAM` (54 fontes) e
+`D-TRACCAR-HTTP-PRIVADO-AWS` (com o conflito com `D-INFRA-PROVIDER`).
+
+**Próximo passo:** a fatia AUSENTES fecha, a correção dos flips entra no índice, `critico-adversarial` ataca o
+plano, inspetor de terreno, junta (maioria de 3), CI, merge, porteiro — e então as três frentes do plano.

@@ -4287,3 +4287,22 @@ Números medidos pelas cadeiras: `2995/2997` (N=3, banco recriado antes de cada 
 autoria + 5 do conserto, `blocks_completed` 163 conferido em 5 refs, índice de pendências byte-idêntico à
 saída do gerador. Ata em `omega/juntas/J-B-O6R-06-delta.md`. Falta: absorver `#383/#384`, bateria, CI,
 merge, §C5, porteiro, backfill.
+
+## B-O6R-06 — merge e porteiro; SAN3 — inventário e plano (2026-09-11, branch `docs/san3-plano-saneamento`)
+
+Sequência real: (1) #385 mergeado (`15ef3fbe`), §C5 feito; (2) `porteiro-pos-merge` em Fable, com worktree e
+cluster próprios: `2995/2997` reproduzido, **LIBERADO COM RESSALVA** para a Fase 2, três dívidas nomeadas;
+(3) 8 inventariantes somente-leitura — 7 fatias do registro + os achados Ω6R — e o `agente-pesquisador-web`
+na PD do antivírus; a primeira leva de 8 caiu por limite do Fable às 05:10 e foi relançada em Opus, com
+nota; (4) o orquestrador conferiu no código, antes de aceitar, os três itens que mudam o gate (o `forEach`
+sem `await` do app, o `catch` que fabrica OS na web, o superusuário do `docker-compose.prod.yml`) e o segundo
+`take: 100_000` silencioso; (5) worktree `san3` a partir de `origin/main`, `npm ci` próprio; backfill por
+script com o roundtrip JSON conferido byte a byte e a pré-condição (`git diff --numstat e26eb9e5 ca5fd19a`)
+reexecutada: 0 linhas; guards de KPI 28/28; `sync-agent-agents --check` 23 agentes; (6) a correção dos flips
+no `pendencias.md` foi entregue a um agente que não achou nenhum deles, com a prova de cada um reconferida por
+presença antes de escrever.
+
+Números: 231 IDs medidos (31 fechados no código × abertos no texto, 25 parciais, 174 abertos, 1 não medido);
+gate com 23 bloqueantes em 19 blocos; melhor caso ~56 h, realista 5–7 dias. A PD do antivírus foi transcrita
+pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escrita e o arquivo de saída ficou
+vazio), sem edição de conteúdo.

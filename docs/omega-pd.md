@@ -1309,3 +1309,351 @@ repositório, onde ela ainda existe.
 12. **decimal.js — API docs** — https://mikemcl.github.io/decimal.js/ (2026-09-06). `precision` default 20; arredondamento em `plus`/`minus`/`times`; perda em `toNumber()`.
 13. **prisma/prisma#23505** — https://github.com/prisma/prisma/issues/23505 (2026-09-06). Adapter registra parsers **globais**; valores chegam como string.
 14. **Prisma ORM — Upgrade to Prisma ORM 7** — https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7 (2026-09-06). Driver adapter obrigatório; `@prisma/adapter-pg`.
+
+---
+
+## PD-O6R-B07B-CLAMD-INSTREAM — antivírus real para o gate de upload: protocolo INSTREAM do clamd, limites que dão "limpo" por engano, deploy, licença, custo e semântica fail-closed (2026-09-11)
+
+> **Origem e consumidor.** Pesquisa do `agente-pesquisador-web` (sessão em Opus 5), 2026-09-11, **54 fontes**,
+> todas acessadas nessa data. Consumidor: o bloco `B-AV-REAL`, que fecha o residual do `Ω6R-SEC-004`
+> (`P-O6R-B07B-SCANNER-AV-REAL`: com `NODE_ENV=production` a factory do scanner só tem `noop` ou
+> `unavailable`, e **todo upload de produção e staging responde 503** nas 5 vias). **Esta PD não decide
+> nada.** Serviço novo com custo recorrente é decisão de **junta unânime de 5** (§C7.1); esta página é o insumo
+> dela, registrado **antes** da decisão (§C7.3).
+>
+> **Transcrição.** O `agente-pesquisador-web` só tem WebSearch, WebFetch e Read — não grava arquivo, e o
+> arquivo de saída da tarefa ficou vazio. O texto abaixo é o **retorno final do agente**, transcrito pelo
+> orquestrador **sem edição de conteúdo** (só `&lt;`/`&gt;` convertidos para `<`/`>`). Legenda do próprio
+> agente: **[F]** fato documentado · **[I]** inferência · `Sn` = fonte na §10.
+
+### 0. Síntese
+1. **INSTREAM:** `zINSTREAM\0`, depois chunks `<uint32 big-endian><dados>`, terminando em `00 00 00 00`. A resposta é `stream: OK`, `stream: <assinatura> FOUND` ou `stream: <msg> ERROR`, terminada em `\0`. Health check: `zPING\0` responde `PONG` (S1, S2).
+2. **Dá para aceitar "limpo" por engano.** Acima de MaxFileSize/MaxScanSize a varredura para no limite e o arquivo sai como **OK**, a menos que `AlertExceedsMax yes` esteja ligado (S6). Acima de StreamMaxLength o clamd responde ERROR e fecha a conexão (S2, S46).
+3. **RAM oficial:** mínimo 3 GiB, ideal 4 GiB (cerca de 1,2 GiB só para carregar as assinaturas e 2,4 GiB durante o reload). O boot pode levar minutos: o healthcheck da imagem espera até 6 min (S7, S9).
+4. **Fly:** app privada na rede 6PN (WireGuard, `.internal`), cerca de US$ 25,51/mês com shared-cpu-2x de 4 GB em gru. **AWS:** Fargate em subnet privada com Service Connect TCP, cerca de US$ 38–73/mês, mais NAT se ainda não existir.
+5. **Licença:** GPLv2 falada por socket é tratada como programa separado pelo FAQ da FSF, e a GPLv2 não restringe a execução (S18, S19). Isto não é parecer jurídico.
+6. **Fail-closed:** veredito que depende só do arquivo (FOUND, incluindo `Heuristics.Limits.Exceeded`) vira 422. Falha de infraestrutura ou de protocolo vira 503 com Retry-After. Nunca se deduz OK.
+7. **Recomendação:** ClamAV 1.4 (LTS) com configuração explícita e cliente `node:net` estrito. O GuardDuty S3 é assíncrono e fica só como comparação.
+
+### 1. Protocolo INSTREAM e limites
+- **[F] Framing:** o prefixo `z` usa NUL como terminador (recomendado) e o `n` usa newline. O daemon responde no mesmo estilo; comandos sem prefixo são legado (S1). Depois de `zINSTREAM\0` vêm chunks "4-byte unsigned length in network byte order, followed by that many bytes", e o fim é um chunk de tamanho zero `00 00 00 00` (S1, S2).
+- **[F] Formato das respostas:** os exemplos oficiais são `stream: OK`, `stream: Eicar-Signature FOUND` e `stream: Access denied ERROR` (S1).
+- **[F] Comandos auxiliares:**
+  - `PING` responde `PONG`.
+  - `VERSION` mostra a versão do programa e do banco; pode ser desligado com `EnableVersionCommand`.
+  - `RELOAD` exige `EnableReloadCommand`.
+  - Dentro de `IDSESSION` as respostas podem chegar fora de ordem (S1).
+  - Um formato de VERSION visto na prática é `ClamAV 1.0.7/27547/Wed Feb 12 18:40:34 2025` (versão/daily/data). Isso veio de um trecho de fórum num resultado de busca, fonte secundária.
+- **[I]** Usar uma conexão por varredura, sem IDSESSION. Ler a data que o VERSION devolve para medir a idade do banco.
+- **[F] StreamMaxLength excedido:** o clamd "will reply with INSTREAM size limit exceeded and close the connection" (S2). A string que chega no socket é `INSTREAM size limit exceeded. ERROR`. Um cliente que continua escrevendo leva EPIPE antes de conseguir ler a resposta (S46).
+  - Com clientes Node aparece "INSTREAM: Size limit reached, (requested: 65536, max: 0)" (issue aberta, sem resolução, S47).
+- **[F] Defaults do ClamAV 1.4.x** (S3, iguais no `clamd.conf.sample` da main, S4):
+
+  | Opção | Default |
+  |---|---|
+  | StreamMaxLength | 100M |
+  | MaxFileSize | 100M |
+  | MaxScanSize | 400M |
+  | MaxRecursion | 17 |
+  | MaxFiles | 10000 |
+  | MaxScanTime | 120000 ms |
+  | ReadTimeout | 120 s |
+  | CommandReadTimeout | 30 s |
+  | SendBufTimeout | 500 ms |
+  | MaxThreads / MaxQueue | 10 / 100 |
+  | SelfCheck | 600 s |
+  | ConcurrentDatabaseReload | yes |
+  | AlertExceedsMax | **no** |
+
+  Versões antigas tinham outros valores; ver C1 e C2 na §7.
+- **[F] Limite excedido não gera erro, gera OK.** Texto do man page do clamdscan 1.5.4: "If a file or an archive is larger than the default or configured size (see MaxFileSize and MaxScanSize options in clamd.conf) scanning will abort at the limit, and the file will be marked as "OK"." Com `AlertExceedsMax` ligado, o resultado passa a ser `Heuristics.Limits.Exceeded... FOUND`, e "such a FOUND message does not imply infection" (S6). O alerta cobre MaxFileSize, MaxScanSize e MaxRecursion (S3, S4).
+- **[F] Bugs conhecidos do AlertExceedsMax:**
+  - #670: devolvia "Can't allocate memory ERROR" no lugar da heurística; foi fechada pelo PR #999 (S44).
+  - #1147: na 1.4.3, estouro de MaxScanTime aparecia como MaxScanSize. Isso vem do resumo de busca; não li a issue inteira (S45).
+- **[F]** A seção "Limits" do clamd.conf existe para "protect your system against Denial of Service attacks using archive bombs" (S4).
+- **[I] Resposta direta à pergunta 1:**
+  - Com a configuração default, **sim**, um arquivo pode sair "limpo" por engano.
+  - O caminho não é o StreamMaxLength (esse dá ERROR). É o MaxFileSize, o MaxScanSize, o MaxRecursion e, provavelmente, o MaxScanTime quando `AlertExceedsMax` está desligado.
+  - PDF é contêiner (streams comprimidos, anexos), então MaxScanSize e MaxRecursion valem mesmo para arquivos de 10–20 MB.
+  - Defesa em três camadas:
+    - (a) o ERP recusa o arquivo acima do próprio limite antes de abrir o socket;
+    - (b) StreamMaxLength fica acima do limite do ERP com margem, e MaxFileSize fica acima do StreamMaxLength;
+    - (c) `AlertExceedsMax yes`, com o cliente tratando `Heuristics.Limits.Exceeded*` como não-limpo.
+
+### 2. Deploy
+**2.1 Imagem oficial**
+- **[F] Tags na API do Docker Hub:**
+  - `latest`, `stable`, `1.5` e `1.5.4` apontam para a mesma imagem (158,7 MB, atualizada em 07/09/2026).
+  - `1.4` aponta para a `1.4.6` (155,2 MB).
+  - As variantes `_base` vêm sem banco (45,9 MB).
+  - As imagens Alpine são **só amd64**; as variantes `-debian` têm amd64, arm64 e ppc64le (S8).
+- **[F] Banco embutido:** só as tags `_base` vêm sem banco. "The non-base version will only ever be updated to have newer signature databases" (S7).
+- **[F] Tag recomendada:** a documentação manda escolher a tag da feature release (ex.: `clamav/clamav:1.4`) e desaconselha `latest`/`stable` em produção sem avaliação (S7).
+- **[F] Ciclo de vida:**
+  - A 1.4 é a LTS atual: publicada em 15/08/2024, EOL em 15/08/2027.
+  - A 1.5 é feature release de 07/10/2025, não-LTS.
+  - Versões até a 0.105 são bloqueadas no CDN (S12, S16).
+  - A 1.5 passou a aceitar arquivos `.cvd.sign`; quando eles não existem, volta à verificação antiga (S16).
+- **[F] Container:** roda como `clamav` (UID 100) e expõe as portas 3310 e 7357. O HEALTHCHECK usa `clamdcheck.sh` (manda PING, espera PONG) com start-period de 6 min (S9, S11).
+- **[F] Entrypoint:**
+  - Se não há banco, roda o freshclam antes de subir o clamd.
+  - Depois sobe `freshclam --checks=${FRESHCLAM_CHECKS:-1} --daemon`.
+  - Espera o socket do clamd até `CLAMD_STARTUP_TIMEOUT`, default 1800 s (S7, S10).
+  - `CLAMAV_NO_FRESHCLAMD` desliga o freshclam (S7).
+- **[F] Sem proteção na rede:** "Extreme caution is to be taken when using clamd over TCP as there are no protections on that level. All traffic is un-encrypted." (S7).
+
+**2.2 Memória, boot e reload**
+- **[F] RAM:** "Minimum: 3 GiB; Preferred: 4 GiB". São cerca de 1,2 GiB só para carregar as assinaturas e cerca de 2,4 GiB por um período curto, uma vez por dia, ao carregar novas definições (S7).
+- **[F] Reload:**
+  - Com `ConcurrentDatabaseReload yes` (default), o clamd carrega um segundo motor enquanto continua varrendo com o primeiro (S4).
+  - Com `no`, economiza RAM, mas a varredura fica bloqueada durante o reload (S7).
+  - `TestDatabases no` no freshclam reduz RAM, com o risco de manter um banco quebrado (S7, S15).
+- **[F] Atualização:**
+  - No freshclam.conf 1.4.4, `Checks` tem default de 12 por dia.
+  - `NotifyClamd` avisa o clamd para recarregar (S15).
+  - O `SelfCheck` do clamd verifica o banco a cada 600 s (S3).
+- **[F] CDN:**
+  - HTTP 429 significa rate limit.
+  - 403, 503 e 1020 significam bloqueio, versão EOL ou download feito do jeito errado.
+  - Scripts com curl/wget são recusados (S13).
+  - Espelho privado: cvdupdate com `DatabaseMirror` ou `PrivateMirror` (S14).
+  - A documentação pede volume persistente para não baixar o banco inteiro repetidamente (S7).
+- **[I] Tempo de boot:** não há número oficial. Os valores do próprio empacotamento (start-period de 6 min, timeout de 1800 s) indicam que minutos são esperados. É preciso medir, e não dá para usar autostop nem scale-to-zero.
+
+**2.3 Fly.io (gru)**
+- **[F] Rede 6PN:**
+  - Malha WireGuard em IPv6 entre as apps da mesma organização.
+  - Nomes `<app>.internal`, `<região>.<app>.internal` e `top<N>.nearest.of.<app>.internal`.
+  - Outras organizações ficam bloqueadas.
+  - O serviço precisa escutar em `fly-local-6pn`.
+  - App sem IP público fica privada (S20).
+- **[F] IPv6 no clamd:** o `TCPAddr` "can be specified multiple times... IPv6 is now supported" (S4).
+- **[F] Flycast:** exige bind em `0.0.0.0` e diz "Flycast is HTTP-only" (S21). Mas o Fly Proxy "If you don't specify handlers, we just forward TCP to your app as-is" (S22). Ver C5.
+- **[F] Máquinas:**
+  - A região gru está disponível (S26).
+  - CPU compartilhada tem baseline de 6,25% por vCPU, com burst de até 500 s acumulados (S24).
+  - O máximo de RAM é 2 GB por CPU compartilhada (S25).
+- **[I] Desenho:**
+  - Uma app separada (`erp-clamav`), sem `[[services]]` e sem IP público.
+  - `TCPAddr` em IPv6 na porta 3310.
+  - Volume montado em `/var/lib/clamav` e uma máquina sempre ligada.
+  - O backend conecta em `erp-clamav.internal:3310`, o que evita a ambiguidade do Flycast.
+
+**2.4 AWS (ECS/Fargate)**
+- **[F] Fargate:**
+  - O modo de rede `awsvpc` é obrigatório.
+  - Em subnet privada, puxar a imagem exige NAT ou endpoint do ECR.
+  - ARM64 é suportado (S29).
+  - Combinações válidas: 0,5 vCPU com 1–4 GB e 1 vCPU com 2–8 GB (S29).
+  - 20 GB de disco efêmero estão incluídos; a cobrança é por segundo, com mínimo de 1 min (S30).
+- **[F] Service Connect:**
+  - Usa um namespace do Cloud Map.
+  - O proxy roda dentro da task e divide CPU/RAM com ela.
+  - Não tem custo adicional; TLS é opcional e usa AWS Private CA, que é paga (S27).
+  - Com protocolo TCP só existe `idleTimeout` (default 1 h); não há `perRequestTimeout` (S28).
+- **[F]** Endpoint de gateway para S3 não é cobrado (S32).
+- **[I] Desenho:**
+  - Security Group de entrada na porta 3310 só a partir do SG do backend (prática padrão da AWS, não pesquisei).
+  - O timeout de cada varredura fica no cliente, porque o Service Connect não oferece.
+  - O freshclam sai pela NAT ou por um espelho cvdupdate servido de S3 via endpoint de gateway.
+  - Em Graviton é preciso a tag `-debian`, porque a Alpine é só amd64 (S8).
+
+### 3. Licença e custo
+- **[F] Licença:** "ClamAV is licensed... under the GNU General Public License, Version 2 (GPLv2)". O unrar é carregado em tempo de execução, não linkado (S17).
+- **[F] O que a GPLv2 diz:**
+  - §0: "The act of running the Program is not restricted".
+  - §2: juntar outra obra num mesmo meio de armazenamento ou distribuição não traz essa obra para o escopo da licença (S19).
+- **[F] FAQ da FSF:** "Pipes, sockets and command-line arguments are communication mechanisms normally used between two separate programs..." Ressalva: "if the semantics of the communication are intimate enough, exchanging complex internal data structures, that too could be a basis to consider the two parts as combined" (S18).
+- **[I] Aplicado ao ERP:**
+  - Container oficial sem modificação, falando um protocolo textual (bytes do arquivo e uma string de veredito), são programas separados, sem obrigação para o código do ERP.
+  - (a) Escrever o cliente a partir da documentação, sem copiar código GPL.
+  - (b) Se o ERP um dia **distribuir** a imagem (on-prem ou white-label), as obrigações da GPL passam a valer para o ClamAV distribuído.
+  - (c) Não é parecer jurídico.
+
+**Custos** (mês de 730 h):
+
+| Opção | Base | US$/mês |
+|---|---|---|
+| Fly gru shared-cpu-2x 4 GB | S23 | 25,51 |
+| Fly gru shared-cpu-4x 4 GB | S23 | 27,17 |
+| Fly gru performance-1x 4 GB | S23 | 66,24 |
+| Volume de 1 GB na Fly | S23 (US$ 0,15/GB, preço de referência) | ~0,15 |
+| Fargate sa-east-1 ARM, 0,5 vCPU / 4 GB | S31: US$ 0,0557 por vCPU-h e 0,0061 por GB-h | ~38,1 |
+| Fargate sa-east-1 ARM, 1 vCPU / 4 GB | S31 | ~58,5 |
+| Fargate sa-east-1 x86, 1 vCPU / 4 GB | **não confirmado** (C6) | ~43–73 |
+| NAT Gateway sa-east-1, se ainda não existir | S33 (fonte secundária): US$ 0,093/h + 0,093/GB | ~67,9 + tráfego |
+
+**[I]** Com CPU compartilhada, o reload diário e os PDFs grandes consomem o burst. Se a fila crescer, performance-1x.
+
+### 4. Semântica fail-closed
+**[F] Base normativa:**
+- **ASVS 4.0.3:** 12.4.2 (níveis L1–L3) exige varrer arquivos vindos de fonte não confiável; 12.1.1 exige recusar arquivos grandes; 12.2.1 exige validar o tipo pelo conteúdo (S52).
+- **OWASP:** fail safe é negar por padrão quando há erro (S54). O cheat sheet de upload recomenda antivírus, sandbox ou CDR e limite de tamanho (S53).
+- **RFC 9110:** 503 é "temporariamente incapaz" e SHOULD trazer Retry-After; 422 é "entendi, mas não consigo processar"; 413 é "conteúdo grande demais" (S51).
+- **Node.js:** o timeout de socket "will not be severed"; é preciso chamar `destroy()` (S50).
+
+| Situação | Fonte | Classe [I] | HTTP [I] |
+|---|---|---|---|
+| `stream: OK` exato, arquivo dentro do limite do ERP, `AlertExceedsMax yes` | S1, S6 | limpo | segue |
+| `stream: <assinatura> FOUND` | S1 | rejeitado (malware) | 422 |
+| `stream: Heuristics.Limits.Exceeded* FOUND` | S3, S6 | rejeitado (não verificável), com motivo distinto de malware | 422, terminal |
+| Arquivo acima do limite do ERP | S52, S51 | recusado antes do scanner | 413 (ou o 422 do contrato) |
+| `INSTREAM size limit exceeded. ERROR`, ou EPIPE/ECONNRESET no meio do envio | S2, S46 | configuração divergente; indisponível e dispara alarme | 503 |
+| Qualquer outro `… ERROR` | S1, S44 | indisponível | 503 + Retry-After |
+| Timeout do cliente (com `destroy()`) | S50 | indisponível | 503 |
+| Conexão recusada ou falha de DNS | — | indisponível | 503 |
+| Resposta vazia, sem `\0`, fora do padrão, ou chegando antes do fim do envio | S1 | indisponível; nunca deduzir OK | 503 |
+| `PING` não devolve `PONG` | S1, S11 | indisponível | 503 |
+| Banco mais velho que o limite de idade (data do VERSION) | S1, S15 | indisponível por política | 503 (limite a votar) |
+
+**[I] Regras do cliente e do contrato:**
+- Aceitar só três regex, aplicadas à resposta até o `\0`: `^stream: OK$`, `^stream: (.+) FOUND$`, `^stream: (.+) ERROR$`. Qualquer outra coisa é 503.
+- Para o app offline-first, 503 significa tentar de novo e 422 significa resultado final. Um limite estourado dentro do clamd dá o mesmo resultado a cada reenvio, então vai para 422; se fosse 503, o app reenviaria para sempre.
+- Baixar o `MaxScanTime` para 30–60 s e dar ao cliente um prazo um pouco maior que isso.
+
+### 5. Teste
+- **[F] EICAR:**
+  - São 68 bytes que precisam estar no início do arquivo.
+  - Pode haver espaço em branco depois, até 128 bytes no total.
+  - A EICAR afirma que o arquivo "is not a virus" (S41).
+- **[F] Como o ClamAV detecta o EICAR:**
+  - Por assinatura de hash (`Win.Test.EICAR_HDB-1`), que "will only ever match the exact file - ie, a file or stream consisting of the exact 68 bytes".
+  - Só a assinatura bytecode `Eicar-Signature` pega o EICAR dentro de dados maiores (S42, 2022).
+  - A doc do protocolo usa `stream: Eicar-Signature FOUND` como exemplo (S1).
+  - Na issue #1161, a 1.2.1 devolveu `stdin: OK` para o EICAR enviado pela entrada padrão (S43).
+- **[I] Como testar:**
+  - Montar a string em tempo de execução, juntando duas metades, para que o repositório nunca contenha o arquivo. Exatamente 68 bytes, sem quebra de linha no fim.
+  - Afirmar só que a resposta termina em ` FOUND`, sem fixar o nome da assinatura.
+  - Ter também: um teste de OK com bytes inofensivos, um teste de limite com StreamMaxLength pequeno e um servidor falso em `node:net` que devolve resposta malformada.
+  - Como o gate faz o sniff antes do scanner, um EICAR em texto puro é barrado antes de chegar ao ClamAV. Então o cliente é testado direto contra o clamd real, e o gate é testado com um scanner falso.
+- **[F] GitHub Actions:**
+  - Service containers só rodam em runner Linux.
+  - `options: --health-cmd … --health-interval … --health-retries` faz o job esperar o serviço ficar pronto (S49).
+  - O runner padrão tem 2 vCPU e 8 GB de RAM em repositório privado, e 4 vCPU e 16 GB em público (S48).
+- **[I] Configuração do job de CI:**
+  - 8 GB comportam o clamd.
+  - Usar a tag que já traz o banco (não a `_base`) e `CLAMAV_NO_FRESHCLAMD=true`, para não esbarrar no rate limit do CDN a partir dos IPs compartilhados do GitHub.
+  - Healthcheck com `clamdcheck.sh` e start-period generoso.
+  - Medir o boot no primeiro run.
+
+### 6. Alternativas (só para comparação)
+- **[F] GuardDuty Malware Protection for S3, funcionamento:**
+  - Varre cada objeto novo e pode funcionar sem o GuardDuty completo (S34).
+  - Baixa o objeto por PrivateLink e varre "in an isolated environment in the same Region", numa VPC sem internet; a cópia é apagada depois.
+  - A entrega do resultado é at-least-once.
+  - O resultado vai numa tag: NO_THREATS_FOUND, THREATS_FOUND, UNSUPPORTED, ACCESS_DENIED ou FAILED (S35, S36).
+  - UNSUPPORTED inclui arquivo com senha, compressão extrema e estouro de cota. O objeto pode ter até 100 GB (S36, S37).
+- **[F] GuardDuty Malware Protection for S3, preço:**
+  - US$ 0,09 por GB mais US$ 0,215 por 1.000 objetos, com base em us-east-1 (São Paulo não aparece).
+  - Free tier de 1.000 requisições e 1 GB por mês.
+  - Tags, chamadas S3 e EventBridge são cobrados à parte (S38, S39).
+- **[I] Avaliação do GuardDuty:**
+  - 10.000 uploads de 5 MB por mês custariam cerca de US$ 6–7.
+  - Mas a varredura é **assíncrona e acontece depois do upload**, então não cabe no gate síncrono atual.
+  - Exigiria quarentena e um status "pendente" no contrato mobile, e as evidências precisariam estar em S3.
+  - UNSUPPORTED, ACCESS_DENIED e FAILED têm que contar como não-limpo.
+  - O dado sai do perímetro da conta, mas não da região.
+- **[F] cdk-serverless-clamscan (awslabs):** Lambda com EFS rodando dentro da própria conta, definições atualizadas de hora em hora, disparado por upload no S3 (S40). **[I]** Também é assíncrono.
+- **[F]** A OWASP alerta para vazamento de dados em serviços públicos de varredura como o VirusTotal (S53).
+
+### 7. Contradições entre fontes
+- **C1. Defaults dos limites:** o man page antigo da die.net traz 10M, 25M e 100M (S5); a 1.4.x e a main trazem 100M, 100M e 400M (S3, S4). Declarar tudo explicitamente no clamd.conf do ERP.
+- **C2. Timeouts e recursão:** CommandReadTimeout é 5 s na versão antiga (S5) e 30 s na atual (S3, S4); MaxRecursion é 16 na antiga (S5) e 17 na atual (S4).
+- **C3. Frequência do freshclam:** `Checks` tem default de 12 por dia (S15), mas a imagem sobe com 1 por dia (S7, S10). A imagem prevalece.
+- **C4. EICAR:** a EICAR aceita espaço em branco até 128 bytes (S41), mas o hash do ClamAV só pega os 68 bytes exatos (S42). E a issue #1161 mostra OK via stdin (S43), contra o exemplo FOUND do protocolo (S1).
+- **C5. Flycast:** a página diz "HTTP-only" (S21), mas o Fly Proxy repassa TCP cru quando não há handlers (S22). Não resolvido; usar 6PN direto.
+- **C6. Preço do Fargate x86 em sa-east-1 (não resolvido):**
+  - Uma leitura da tabela oficial de preços deu US$ 0,0408 por vCPU-h e 0,0045 por GB-h, que são praticamente os números de us-east-1.
+  - A segunda leitura não achou linhas x86 (arquivo truncado).
+  - O ARM saiu US$ 0,0557 e 0,0061, o que contradiz o ARM ser cerca de 20% mais barato (S30).
+  - [I] O x86 real deve estar em torno de 0,0696 e 0,0076, mas **não verifiquei**; confirmar na AWS Pricing Calculator antes do voto.
+- **C7. Texto do erro de tamanho:** o man page escreve "INSTREAM size limit exceeded" (S2); o que chega no socket é "… . ERROR" (S46). O cliente deve reconhecer pelo sufixo ` ERROR`, não pelo texto exato.
+- **C8. AlertExceedsMax:** a documentação descreve o alerta (S3, S4, S6), mas há bugs em que ele não sai (S44, S45). A primeira defesa é o limite do próprio ERP.
+- **C9. NAT em São Paulo:** a página oficial só mostra Ohio (US$ 0,045, S32); o valor de São Paulo (US$ 0,093) vem de fonte secundária (S33).
+
+### 8. Recomendação
+Aprovar o ClamAV (clamd) como serviço separado, com cliente INSTREAM próprio em `node:net`, sem dependência npm:
+1. **Imagem:** `clamav/clamav:1.4` (LTS até 15/08/2027), fixada por digest; `1.4-debian` se for ARM.
+2. **clamd.conf explícito:**
+   - `StreamMaxLength` igual ao limite do ERP mais margem (ex.: 25M para um limite de 20M).
+   - `MaxFileSize` maior ou igual ao StreamMaxLength e `MaxScanSize` em torno de 100M.
+   - **`AlertExceedsMax yes`** e `MaxScanTime` entre 30000 e 60000.
+   - `ConcurrentDatabaseReload yes` com 4 GB e `TCPAddr` restrito.
+   - [I] Desligar comandos administrativos que o ERP não usa; os nomes das opções na 1.4 ainda precisam ser conferidos.
+3. **Cliente:**
+   - `zINSTREAM\0`, chunks de até 64 KiB respeitando o evento `drain`.
+   - Prazo por varredura com `destroy()` e leitura até o `\0`.
+   - Regex estrito; resposta antecipada ou EPIPE é falha.
+   - Prontidão por `zPING\0` e idade do banco por `zVERSION\0`.
+4. **Contrato de respostas:** a tabela da §4.
+5. **Implantação agora:** app Fly privada em gru pela rede 6PN (shared-cpu-2x 4 GB). **Destino AWS:** Fargate em subnet privada com Service Connect TCP e Security Group aberto só para o backend.
+6. **CI:** service container com a tag que traz o banco, freshclam desligado e EICAR montado em tempo de execução.
+
+### 9. Riscos para a junta-5 votar
+- **R1. Custo recorrente de serviço 24×7:** cerca de US$ 26–67/mês na Fly, ou US$ 38–73/mês no Fargate mais NAT. O C6 continua pendente.
+- **R2. "Limpo" por engano** pelos limites de varredura e pelos bugs do AlertExceedsMax.
+- **R3. clamd sem autenticação e sem TLS:** a rede privada é o único controle de acesso. Qualquer vizinho na rede consegue causar DoS ou mandar comandos administrativos.
+- **R4. Banco desatualizado:** rate limit do CDN, somado ao limite de idade que vira 503 e derruba todos os uploads. Votar o limite de idade e o alarme.
+- **R5. Ponto único de falha:** com fail-closed, se o clamd cair as 5 vias respondem 503. O boot leva minutos, e duas instâncias dobram o custo.
+- **R6. CPU compartilhada na Fly** (6,25% por vCPU): risco de timeouts, que viram 503.
+- **R7. Ambiguidade do Flycast:** evitada usando o 6PN.
+- **R8. Ganho limitado para JPEG/PNG/WebP:** o antivírus é exigência do ASVS, não resolve tudo; CDR para PDF está fora do escopo.
+- **R9. Premissa de licença sem parecer jurídico:** o quadro muda se o ERP distribuir a imagem.
+- **R10. EICAR só com os 68 bytes exatos:** o precedente da #1161 obriga o CI a provar o FOUND via INSTREAM na versão fixada. Se não detectar, é um achado, não um teste pulado.
+- **R11. Migração para AWS:** o freshclam precisa de NAT ou espelho privado, e o Service Connect não tem timeout por requisição em TCP.
+
+### 10. Fontes (acesso em 2026-09-11)
+- S1 [ClamD Protocol](https://docs.clamav.net/manual/Usage/ClamdProtocol.html): framing z/n, INSTREAM, formato das respostas, PING/VERSION/RELOAD, IDSESSION.
+- S2 [clamd(8), Debian 1.4.4](https://manpages.debian.org/testing/clamav-daemon/clamd.8.en.html): texto do INSTREAM, erro de tamanho que fecha a conexão, recomendação do prefixo `z`.
+- S3 [clamd.conf(5), Debian 1.4.5](https://manpages.debian.org/testing/clamav-daemon/clamd.conf.5.en.html): defaults dos limites e timeouts, AlertExceedsMax.
+- S4 [clamd.conf.sample (main)](https://github.com/Cisco-Talos/clamav/blob/main/etc/clamd.conf.sample): defaults, TCPAddr com IPv6, ConcurrentDatabaseReload, limites como proteção contra DoS.
+- S5 [clamd.conf, die.net (versão antiga)](https://linux.die.net/man/5/clamd.conf): defaults antigos (C1, C2).
+- S6 [clamdscan(1), openSUSE 1.5.4](https://manpages.opensuse.org/Tumbleweed/clamav/clamdscan.1.en.html): arquivo acima do limite sai "OK"; AlertExceedsMax; FOUND não implica infecção.
+- S7 [Docker, docs ClamAV](https://docs.clamav.net/manual/Installing/Docker.html): tags, RAM de 3/4 GiB, variáveis de ambiente, TCP sem criptografia, tag recomendada.
+- S8 [Docker Hub, API de tags](https://hub.docker.com/v2/repositories/clamav/clamav/tags?page_size=40): versões, tamanhos, arquiteturas.
+- S9 [Dockerfile 1.5 alpine](https://github.com/Cisco-Talos/clamav-docker/blob/main/clamav/1.5/alpine/Dockerfile): HEALTHCHECK de 6 min, usuário, portas.
+- S10 [docker-entrypoint.sh](https://github.com/Cisco-Talos/clamav-docker/blob/main/clamav/1.5/alpine/scripts/docker-entrypoint.sh): sequência de boot, `--checks`, timeout de espera.
+- S11 [clamdcheck.sh](https://github.com/Cisco-Talos/clamav-docker/blob/main/clamav/1.5/alpine/scripts/clamdcheck.sh): health check por PING/PONG.
+- S12 [Política de EOL](https://docs.clamav.net/faq/faq-eol.html): 1.4 LTS, 1.5, bloqueio de versões antigas.
+- S13 [FAQ do FreshClam](https://docs.clamav.net/faq/faq-freshclam.html): 429 e 403 do CDN.
+- S14 [Espelho privado](https://docs.clamav.net/appendix/CvdPrivateMirror.html): cvdupdate, DatabaseMirror, PrivateMirror.
+- S15 [freshclam.conf(5), Debian 1.4.4](https://manpages.debian.org/testing/clamav-freshclam/freshclam.conf.5.en.html): Checks 12, NotifyClamd, TestDatabases.
+- S16 [Anúncio do ClamAV 1.5.0](https://blog.clamav.net/2025/10/clamav-150-released.html): data e verificação `.sign`.
+- S17 [README do ClamAV](https://github.com/Cisco-Talos/clamav/blob/main/README.md): GPLv2 e unrar.
+- S18 [FAQ da GPL](https://www.gnu.org/licenses/gpl-faq.html#MereAggregation): pipes e sockets como programas separados, com a ressalva.
+- S19 [Texto da GPLv2](https://opensource.org/license/gpl-2-0): execução livre, agregação.
+- S20 [Fly: rede privada](https://fly.io/docs/networking/private-networking/): 6PN, `.internal`, `fly-local-6pn`.
+- S21 [Fly: Flycast](https://fly.io/docs/networking/flycast/): bind em 0.0.0.0, "HTTP-only".
+- S22 [Fly: serviços](https://fly.io/docs/networking/services/): TCP cru sem handlers.
+- S23 [Fly: preços](https://fly.io/docs/about/pricing/): preços em gru.
+- S24 [Fly: desempenho de CPU](https://fly.io/docs/machines/cpu-performance/): 6,25% e burst de 500 s.
+- S25 [Fly: dimensionamento](https://fly.io/docs/machines/guides-examples/machine-sizing/): limites de RAM.
+- S26 [Fly: regiões](https://fly.io/docs/reference/regions/): gru disponível.
+- S27 [ECS Service Connect](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-connect.html): Cloud Map, proxy, custo.
+- S28 [ECS TimeoutConfiguration](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_TimeoutConfiguration.html): idle de 1 h em TCP, sem timeout por requisição.
+- S29 [Fargate: definição de task](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-tasks-services.html): CPU/RAM, awsvpc, NAT/ECR.
+- S30 [Fargate: preços](https://aws.amazon.com/fargate/pricing/): cobrança por segundo, 20 GB, desconto do Graviton.
+- S31 [Tabela de preços AWS, sa-east-1](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/current/sa-east-1/index.csv): ARM a 0,0557/0,0061 (publicada em 2026-09-11); x86 não resolvido.
+- S32 [VPC: preços](https://aws.amazon.com/vpc/pricing/): endpoint de gateway grátis, NAT em Ohio.
+- S33 [costgoat, NAT (secundária)](https://costgoat.com/pricing/aws-nat-gateway): NAT em sa-east-1 a US$ 0,093.
+- S34 [GuardDuty S3](https://docs.aws.amazon.com/guardduty/latest/ug/gdu-malware-protection-s3.html): uso independente.
+- S35 [GuardDuty S3: funcionamento](https://docs.aws.amazon.com/guardduty/latest/ug/how-malware-protection-for-s3-gdu-works.html): PrivateLink, mesma região, tags.
+- S36 [GuardDuty S3: resultados](https://docs.aws.amazon.com/guardduty/latest/ug/monitoring-malware-protection-s3-scans-gdu.html): significado de cada status.
+- S37 [GuardDuty S3: cotas](https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection-s3-quotas-guardduty.html): 100 GB.
+- S38 [GuardDuty: preços](https://aws.amazon.com/guardduty/pricing/): US$ 0,09/GB e 0,215 por mil objetos.
+- S39 [GuardDuty S3: custos](https://docs.aws.amazon.com/guardduty/latest/ug/pricing-malware-protection-for-s3-guardduty.html): free tier e custos extras.
+- S40 [cdk-serverless-clamscan](https://github.com/awslabs/cdk-serverless-clamscan): alternativa dentro da própria conta.
+- S41 [EICAR](https://www.eicar.org/download-anti-malware-testfile/): a string e as regras de formato.
+- S42 [clamav-users: INSTREAM + EICAR](https://www.mail-archive.com/clamav-users@lists.clamav.net/msg51667.html): hash só pega os 68 bytes exatos.
+- S43 [Issue #1161](https://github.com/Cisco-Talos/clamav/issues/1161): EICAR sai OK via stdin.
+- S44 [Issue #670](https://github.com/Cisco-Talos/clamav/issues/670): bug do AlertExceedsMax.
+- S45 [Issue #1147](https://github.com/Cisco-Talos/clamav/issues/1147): heurística de limite reportada errada.
+- S46 [python-clamd #24](https://github.com/graingert/python-clamd/issues/24): string exata do erro e EPIPE.
+- S47 [Issue #1319](https://github.com/Cisco-Talos/clamav/issues/1319): erro "max: 0" com clientes Node.
+- S48 [GitHub: runners hospedados](https://docs.github.com/en/actions/reference/runners/github-hosted-runners): 8 e 16 GB de RAM.
+- S49 [GitHub: service containers](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers): opções `--health-*`.
+- S50 [Node.js net](https://nodejs.org/api/net.html): setTimeout não fecha a conexão; `drain`.
+- S51 [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html): 503, 422, 413.
+- S52 [OWASP ASVS 4.0.3 V12](https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md): 12.1.1, 12.2.1, 12.4.2.
+- S53 [OWASP: cheat sheet de upload](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html): antivírus, CDR, vazamento em serviços públicos.
+- S54 [OWASP Developer Guide: princípios](https://devguide.owasp.org/en/02-foundations/03-security-principles/): fail safe.

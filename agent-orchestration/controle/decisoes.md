@@ -2202,3 +2202,109 @@ Bloquear por cláusula que não está escrita é reprovação por construção �
 **O que esta decisão NÃO faz:** não move a árvore principal para a `main` (isso esbarraria em edições não
 commitadas de outra sessão, em arquivos que a `main` apagou) e não apaga resíduo alheio. As duas coisas ficam
 para quem for dono daquele trabalho.
+
+---
+
+## D-TRACCAR-HTTP-PRIVADO-AWS (decisão do dono, 2026-09-11) — o Traccar alimenta os módulos que já existem, por HTTP privado dentro da AWS
+
+**A decisão, nas palavras do dono (verbatim):**
+
+> O Traccar será utilizado para alimentar os módulos que já existem no ERP. A comunicação Traccar ↔ ERP será
+> feita por HTTP privado dentro da AWS, sem exposição externa da API do Traccar nem dos endpoints de ingestão
+> do ERP.
+
+> Essa decisão tem precedência sobre hipóteses anteriores de infraestrutura.
+
+**Quando entra: DEPOIS do gate da versão vendável.** O dono fixou dois prazos consecutivos: primeiro concluir
+todas as correções do plano de saneamento e fechar a versão vendável (`docs/revisoes/SAN3/PLANO_SAN3.md`);
+**só então** a integração com o Traccar, em 4 dias. Nenhuma linha de código de integração nasce antes desse
+gate. Registrada pelo PR do plano SAN3, antes de qualquer implementação, como o dono mandou.
+
+### O que a decisão manda, e o que ela proíbe
+
+- **Não existe domínio de negócio "Traccar".** Existe uma **camada de integração** (anti-corrupção):
+  `Traccar DTO → validação/allowlist → DTO interno → serviço de domínio existente`. Os módulos alimentados são
+  os que já existem: `field-location`, `field-ops-realtime`, `telemetry`, `vehicles`, despacho, mapa
+  operacional e — só onde já houver contrato — notificações. **Proibido:** segunda tabela de localização sem
+  necessidade comprovada, segundo mapa, segundo fluxo de despacho, cadastro duplicado de veículo, tela
+  administrativa do Traccar sem requisito, DTO do Traccar vazando para frontend ou domínio.
+- **Fluxo-alvo:** `Dispositivo → Traccar → encaminhamento HTTP JSON privado → adaptador ERP → módulos
+  existentes`. Primário: *position forwarding* e *event forwarding* em JSON (`forward.type=json`,
+  `forward.url` privado, `forward.header` para autenticação interna, retries parametrizados;
+  `event.forward.*` idem). A **REST API** do Traccar serve a cadastro/sincronização de dispositivo,
+  reconciliação, recuperação de lacuna, backfill controlado e health check — **nunca** polling agressivo como
+  caminho principal. **Sem WebSocket** neste requisito.
+- **Rede:** Traccar em subnet privada, sem IP público, sem API pública, sem ALB/NLB internet-facing; DNS
+  privado ou service discovery (ECS Service Connect, Cloud Map ou LB interno, conforme a infra existente);
+  Security Groups origem→destino com porta específica; o endpoint de ingestão do ERP só é alcançável pelo
+  serviço Traccar; a REST API do Traccar só pelo backend/worker autorizado; **nenhuma chamada do navegador ou
+  do Flutter ao Traccar**; credenciais no AWS Secrets Manager (ou o mecanismo já adotado); VPC endpoints se
+  não houver NAT. "Sem acesso externo" vale para a integração e para as APIs administrativas — **os
+  receptores TCP/UDP/HTTP que os rastreadores físicos precisarem alcançar são fronteira SEPARADA**: nenhuma
+  porta pública abre sem decisão, threat model e junta.
+- **Multi-tenant — o Traccar NÃO é autoridade de tenant.** `tenant_id` do payload nunca é contexto
+  confiável; o vínculo é resolvido internamente (`instância Traccar + deviceId/uniqueId → organização →
+  veículo/técnico`), único e auditável; dispositivo sem vínculo vai para **quarentena**, nunca para tenant
+  padrão; vínculo ambíguo **falha fechado**; associação cross-tenant é impossível por construção; toda
+  persistência por `withTenantRls` e contratos tenant-first; testes de isolamento obrigatórios.
+- **Idempotência e ordem:** chave estável por `traccar_instance + deviceId + positionId` (posição) e
+  `traccar_instance + deviceId + eventId` (evento); se a versão adotada não garantir o ID, chave determinística
+  documentada, **nunca só timestamp**. Tratar duplicidade, reentrega, fora de ordem, atraso, `fixTime` ×
+  `deviceTime` × `serverTime`, coordenada inválida, `valid=false`, precisão ruim, relógio errado e replay.
+  **O histórico aceita evento atrasado; a "última posição" não regride em silêncio.**
+- **Segurança do endpoint privado — duas camadas:** restrição de rede **e** autenticação de serviço. **Não
+  inventar suporte a HMAC/SigV4**: investigar se a versão adotada produz assinatura dinâmica; se só fizer
+  header estático — segredo de alta entropia no Secrets Manager, rotação, comparação em tempo constante,
+  nunca logado, limite de payload e timeout, content type estrito. **Allowlist de campos** (o objeto
+  `attributes` não é armazenado inteiro sem análise). Nunca expor token, segredo, IP interno, tenant externo,
+  payload bruto, headers de autenticação ou dados de rede do dispositivo (§2.8). Nenhum token em código, log,
+  query string, frontend ou payload público.
+- **Confiabilidade — semântica de resposta:** `2xx` = aceito de forma **durável** ou já processado
+  idempotentemente (nunca antes da validação mínima e da persistência); `4xx` = payload/autenticação
+  inválidos; `5xx` = falha transitória, para permitir retry. Mais: backoff exponencial, teto conhecido de
+  tentativas, dedupe, timeout, circuit breaker, métrica de última mensagem, atraso `fixTime`→ingestão, taxa de
+  duplicidade, dispositivo sem atualização, falha de autenticação, dispositivo sem vínculo, rejeições,
+  reconciliação periódica pela REST API e alerta de encaminhamento degradado.
+- **Pesquisa antes de código (§C7.3):** versão implantável do Traccar, OpenAPI relevante, formatos reais de
+  position/event forwarding, comportamento de headers, limites de retry, campos de `Device`/`Position`/`Event`
+  — em PD registrada em `docs/omega-pd.md`, com fixtures sanitizadas. Fontes prioritárias:
+  `traccar.org/traccar-api/`, `traccar.org/api-reference/`, `traccar.org/forward/`,
+  `traccar.org/configuration-file` e documentação oficial da AWS. **Servidor público de demonstração nunca
+  em produção.**
+
+### Plano de 4 dias (depois do gate)
+
+Dia 1 — contrato e infraestrutura (PD, versão, rede privada, segredo, threat model, junta); Dia 2 — ingestão
+e reconciliação (adaptador, idempotência, quarentena, semântica 2xx/4xx/5xx); Dia 3 — alimentação dos módulos
+existentes; Dia 4 — endurecimento e demonstração. Cada dia é bloco com junta, CI, KPI e porteiro.
+
+### Quórum que isto vai exigir (§C7.1)
+
+Implantar o Traccar é **serviço/dependência nova** e a integração **toca permissão, isolamento e dado
+pessoal (posição de técnico)**: a PD e a decisão de implantação vão a **junta unânime de 5**; os blocos de
+código, a **unanimidade de 3** (§C7.1-ter(b)).
+
+### Contexto anterior do dono sobre o Traccar (2026-09-08, registrado agora — estava só no chat)
+
+- "o Traccar vai ficar como **rastreador de posição padrão**, nosso sistema vai ser alimentado pela API dele";
+- o eixo é **técnico + veículo**, e **um veículo pode ter rotatividade de técnico** — o vínculo
+  pessoa↔veículo tem de ser por **janela de tempo** (pela OS/despacho), nunca mapa estático, ou o trajeto de
+  um técnico é atribuído a outro (erro de dado **e** exposição de dado pessoal);
+- "vai existir **planos para localização de veículos**, o **técnico fica free** no plano" — rastreamento de
+  veículo é **feature de plano pago** (liga o Traccar ao gate de módulo contratado e ao faturamento);
+- **convivência com o rastreamento atual pelo app** (`geolocator` → `POST /mobile/telemetry`): **em aberto
+  por decisão do dono**, que pediu o custo dos dois caminhos antes de decidir.
+
+### Conflito com decisão anterior, registrado e não consolidado em silêncio (§A2)
+
+`D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
+como provedor primário** e AWS como segundo; o repositório tem `fly.staging.toml` e `fly.production.toml` e
+nenhum IaC de AWS (medido em `15ef3fbe`: `git ls-files` só acha o importador de custo AWS CUR, que é dado,
+não infraestrutura). Uma decisão de junta 5/5 é revista aqui por **decisão do dono**, que está acima dela na
+ordem do §A1. "HTTP privado **dentro da AWS**" entre Traccar e ERP pressupõe o ERP alcançável por rede
+privada AWS. **O dono declarou precedência desta decisão sobre hipóteses anteriores de infraestrutura.** O
+que ainda precisa ser decidido **por escrito, antes do Dia 1 do Traccar**: (a) o ERP inteiro migra para AWS;
+ou (b) só o Traccar vive na AWS e a ponte com o ERP em Fly.io usa um mecanismo privado entre provedores (o que
+não é "dentro da AWS" ao pé da letra). Até lá, **nenhum IaC de Fly.io é apagado** e nenhuma migração de
+provedor começa. A PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`) já traz os dois desenhos (Fly 6PN e
+Fargate privado) para que o `B-AV-REAL` não fique preso a esta escolha.

@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-09-08",
+  "snapshot_date": "2026-09-11",
   "version": "B-O6R-06",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
     "block": "B-O6R-06 (Ω6R-DIN-005 + Ω6R-DIN-007 · 2 P0): a unidade faturável da vistoria passa a nascer DENTRO da transação que cria/conclui a run, com chave derivada da RUN; e o resumo de custo passa a somar NO BANCO, sem o teto de 10.000 que cortava justamente a linha mais recente. ZERO migration, ZERO dependência nova.",
     "title": "O que é dinheiro commita com o fato; o que é soma, soma no banco",
-    "pr": null,
-    "merge_commit": null,
-    "approved_head": null,
+    "pr": 385,
+    "merge_commit": "15ef3fbed57e217b66e6b307f9ae96502777fd09",
+    "approved_head": "e26eb9e5",
     "status": "published_per_pr",
     "summary": "B-O6R-06 — fecha os dois P0 da pendência-mãe P-O6R-B06, que BLOQUEAVA a trilha CHECKLIST P1 e o cloud billing.\n\nΩ6R-DIN-005 — \"a run é confirmada antes da métrica faturável, cuja gravação best-effort absorve falhas\". Havia uma janela entre o COMMIT da run e a gravação da unidade em `cloud_usage_events`, e a unidade perdida ali se perdia PARA SEMPRE: o replay da mesma `client_run_key` devolve `created:false` e o serviço pula a publicação do evento — que era o único produtor da métrica. Agora a linha é inserida na MESMA transação (`cloud-usage.capture.ts`, `$executeRaw` com ALVO EXPLÍCITO `ON CONFLICT (tenant_id, idempotency_key) DO NOTHING`), com chave estável derivada da RUN em vez do `event.id` aleatório por emissão. Se a medição falha, a run não commita e o retry repara — fail-closed por escolha declarada, com o acoplamento faturamento→operação escrito e provado no vermelho (F7).\n\nA INTENÇÃO DE FATURAR VIAJA POR ASSINATURA. `repository.completeRun` tem TRÊS chamadores e só um fatura hoje. Capturar dentro do repositório sem distinguir faria a trilha de DIVERGÊNCIA do app de campo (registrar divergência → ciência) passar de 0 para 1 unidade cobrada — mudança de PREÇO, decisão de produto, não deste bloco. O 5º parâmetro `billing: { meterCompletion }` é OBRIGATÓRIO e SEM DEFAULT: o compilador recusa um 4º chamador que não declare (provado por execução do `tsc` em C6), e a trilha C fica 0 → 0, medida antes e depois (C4).\n\nΩ6R-DIN-007 — \"resumo soma apenas listLineItems limitado silenciosamente a 10.000 linhas\". `SUM`/`GROUP BY` no banco, `where` compartilhado com o detalhe (que segue paginado ≤500), tipos NULÁVEIS com `_count._all` como discriminador entre \"janela vazia\" e \"soma nula\" — `?? 0` incondicional proibido nominalmente. O SEGUNDO defeito, que o enunciado do achado NÃO nomeia, fecha junto: a acumulação em ponto flutuante. Com 10.001 linhas na faixa realista o total (~9,9e9 com 6 casas) nem cabe exato num `number` — daí os campos aditivos `totalUnblendedCostExact`/`unblendedCostExact`.\n\nA BASE DO RATEIO MUDOU DE FONTE. Ela lia uma projeção diária escrita só por um job que NINGUÉM enfileira (medido): em produção seria vazia por construção, e todo custo cairia em `unallocated`. Durabilizar a métrica e continuar lendo essa projeção seria consertar o P0 no papel. Agora soma `cloud_usage_events` por tenant, sob o contexto RLS de cada um, numa única transação — e as TRÊS operações sobre a tabela de alocações (soma da base, escrita e leitura do painel) passaram a rodar sob contexto, porque sob papel sem BYPASSRLS a escrita morria na policy e o DELETE apagava zero linhas EM SILÊNCIO. De brinde, o replace virou atômico.\n\nDOIS DEFEITOS FORAM ACHADOS PELO PRÓPRIO CANÁRIO DESTE BLOCO, durante a implementação: `sumUsageBasis` e o `deleteMany` do replace confiavam SÓ na RLS para o recorte por tenant — e dev e CI rodam como `postgres`, SUPERUSUÁRIO, que IGNORA RLS. O `groupBy` somava a base de TODAS as organizações num balde só. Corrigido com `tenant_id` explícito na cláusula, além da RLS.\n\nBACKFILL §C3.5 DO #380, pago aqui em 4 lugares (`pr 380 · merge_commit fe2748c · approved_head a2988b5`), com a PRÉ-CONDIÇÃO EXECUTADA e não copiada: `git diff --stat a2988b5 c5d63bf -- src tests prisma frontend mobile .github scripts` sai VAZIO, e `tree(c5d63bf) == tree(fe2748c) == 1f957536`. `c5d63bf` fica como `pr_head`.\n\nNÃO ENTREGUE, e por quê: `scripts/reconcile-checklist-usage.ts`. O `critico-adversarial` mediu, na 2ª rodada, que o ramo `completed` do script REFATURARIA a trilha C que a própria emenda acabou de proteger (uma run de divergência→ciência termina com `completed_at` e sem métrica, POR DECISÃO). Está BLOQUEADO até a junta decidir o predicado observável — `P-O6R-B06-RECONCILE-BLOQUEADO`.",
-    "backfill_note": "Backfill §C3.5 PENDENTE para ESTE bloco: `pr`, `merge_commit` e `approved_head` sao `null` na AUTORIA por contrato (so existem pos-merge) e recebem backfill no PR seguinte. NAO ha divida herdada: o #380 (B-O6R-07b) foi backfillado pelo B-GOV-ELENCO e o #381 (B-GOV-ELENCO-ENXUTO) por ele mesmo — os dois ja estao pagos em `origin/main` e este PR os preserva verbatim, sem reescrever."
+    "backfill_note": "Backfill §C3.5 do #385 PAGO em 2026-09-11 pelo PR do plano SAN3 (ressalva 1 do porteiro pos-merge do #385). merge_commit de `gh pr view 385` = `git log origin/main`. approved_head = `e26eb9e5` (completo `e26eb9e5f58578681e994d3f7357a8ef3ee00a33`), o head JULGADO pela junta do delta (`J-B-O6R-06-delta.md` §7). Pre-condicao EXECUTADA pelo porteiro e reexecutada neste PR: `git diff --numstat e26eb9e5 ca5fd19a -- src tests prisma frontend mobile .github scripts` -> 0 linhas. `ca5fd19a` fica como pr_head (o que a CI mediu e o squash consumiu; tree(ca5fd19a) == tree(15ef3fbe) == 7883a59e). snapshot_date 2026-09-08 -> 2026-09-11, alinhado a entrada B-O6R-06 do history (data do merge). Texto anterior, preservado: Backfill §C3.5 PENDENTE para ESTE bloco: `pr`, `merge_commit` e `approved_head` sao `null` na AUTORIA por contrato (so existem pos-merge) e recebem backfill no PR seguinte. NAO ha divida herdada: o #380 (B-O6R-07b) foi backfillado pelo B-GOV-ELENCO e o #381 (B-GOV-ELENCO-ENXUTO) por ele mesmo — os dois ja estao pagos em `origin/main` e este PR os preserva verbatim, sem reescrever."
   },
   "metrics": {
     "flutter_tests": {
@@ -126,8 +126,8 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 17,
-    "p0_fechados": 11,
-    "p0_abertos": 6,
+    "p0_fechados": 13,
+    "p0_abertos": 4,
     "p1_total": 15,
     "p1_fechados": 2,
     "p1_abertos": 13,
@@ -196,19 +196,22 @@
         "id": "Ω6R-SEC-003",
         "por": "B-O6R-01 (núcleo, PR #357) + B-O6R-07a (residuais, PR #369, dc8168b)",
         "em": "2026-09-04"
-      }
-    ],
-    "as_of": "2026-09-06",
-    "source": "docs/revisoes/O6R/achados.jsonl",
-    "aguardando_merge": [
-      {
-        "id": "Ω6R-DIN-005"
       },
       {
-        "id": "Ω6R-DIN-007"
+        "id": "Ω6R-DIN-005",
+        "por": "B-O6R-06 (PR #385, 15ef3fbe)",
+        "em": "2026-09-11"
+      },
+      {
+        "id": "Ω6R-DIN-007",
+        "por": "B-O6R-06 (PR #385, 15ef3fbe)",
+        "em": "2026-09-11"
       }
     ],
-    "nota_aguardando": "Ω6R-DIN-005 e Ω6R-DIN-007 estao `fechado` no registro NA AUTORIA do B-O6R-06 (§C3.5: numero de PR e hash so existem pos-merge). Eles NAO entram em `p0_fechados` nem na lista `fechados` — o painel conta so o que esta na `main`, e e por isso que `p0_fechados` permanece 11."
+    "as_of": "2026-09-11",
+    "source": "docs/revisoes/O6R/achados.jsonl",
+    "aguardando_merge": [],
+    "nota_aguardando": "Nenhum achado aguardando merge em 2026-09-11: Ω6R-DIN-005 e Ω6R-DIN-007 sairam daqui para `fechados` no backfill do #385 (PR do plano SAN3), quando ganharam hash de merge (15ef3fbe). Texto anterior, preservado: Ω6R-DIN-005 e Ω6R-DIN-007 estao `fechado` no registro NA AUTORIA do B-O6R-06 (§C3.5: numero de PR e hash so existem pos-merge). Eles NAO entram em `p0_fechados` nem na lista `fechados` — o painel conta so o que esta na `main`, e e por isso que `p0_fechados` permanece 11."
   },
   "findings": {
     "as_of": "2026-09-06",
