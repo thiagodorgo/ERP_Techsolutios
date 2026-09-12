@@ -1,0 +1,94 @@
+{
+  "cadeira": "C2",
+  "papel": "guardiao-fail-closed (gate de modulo, escopo por objeto e controles de seguranca)",
+  "modelo": "claude-opus-5 (Opus 5) - o corpo nao fixa modelo (R8)",
+  "elegibilidade": "Suplente NOMEADO da C2 no ciclo 1, nunca instanciado (0 votos, 0 achados) - elegivel (R3). Nao achei, nao planejei e nao apliquei nada do ciclo 1 nem da correcao.",
+  "ref_medida": "ecc32712",
+  "veredito": "REPROVADO",
+  "itens": [
+    {"n": 1, "titulo": "Item 16: a contagem 38 confere na ref", "veredito": "NAO CONFERE - 27 + 11 = 38 e aritmetica correta, mas o registro tem 13 entradas de organizacao sem requiredModules (nao 11): 40 pela definicao do proprio item (C2c2-02, ajuste)"},
+    {"n": 2, "titulo": "Guard do B-SAN3-18 fica VERMELHO para entrada do registro sem modulo fora do nucleo (mutacao do desenho)", "veredito": "APROVADO - guard literal contra registro e menu reais: head-base VERMELHO, depois-do-bloco VERDE, M1 (entrada nova sem requiredModules) VERMELHO, M1b (lista vazia) VERMELHO, M2 (caminho novo no menu) VERMELHO. Depende de o nucleo ser literal (M3, C2c2-08 nota)"},
+    {"n": 3, "titulo": "O gate de modulo no BACKEND (enumeracao rota -> modulo) e fail-closed", "veredito": "REPROVADO - M4 (endpoint novo) e M4b (router novo em app.ts) VERDES por construcao; 73 dos 125 endpoints atuais de Patios e Frota sem associacao a modulo; default da rota nao mapeada e da lista nao resolvida sem fixacao (C2c2-01, bloqueia)"},
+    {"n": 4, "titulo": "Fronteira do B-SAN3-18 alcanca o catalogo de modulos e afins", "veredito": "APROVADO COM AJUSTE - platform-modules.service.ts, navigation.service.ts, registro, app.ts e script de provisionamento na fronteira; a concessao das bases criadas por db:seed (prisma/seed.ts: CI, e2e, demo) fica fora (C2c2-04)"},
+    {"n": 5, "titulo": "Censo de vias do B-O6R-07c (itens 11 e 51): regra de saida fail-closed", "veredito": "REPROVADO - nega o esquecimento de DONO, mas fecha o SEC-002 por dono (nao por escopo provado) sobre censo por enumeracao so do sync e piso de teste: 10 rotas mutantes alcancaveis pelo tecnico ficam fora do teste e o predicado de fechamento e verdadeiro com elas sem escopo (C2c2-03, bloqueia)"},
+    {"n": 6, "titulo": "Fronteira do 07c alcanca as vias medidas (vistoria, evidencia, checklist, km)", "veredito": "APROVADO - checklist.routes.ts + checklist.service.ts, mobile-checklist-sync.ts, mobile-evidence-sync.ts (o upload herda o escopo do recibo de sync do mesmo ator), mobile-work-order-sync.ts e work-order.routes.ts na fronteira"},
+    {"n": 7, "titulo": "Itens 52 e 53: teste de encerramento falha com o controle desligado", "veredito": "52 APROVADO (unico escritor de posicao; teste VERMELHO no head-base, que e o controle desligado; C2c2-06 nota) / 53 AJUSTE (discrimina no caminho testado, mas o check-in tem 2 entradas no servidor e a OS pode nao ter placa; C2c2-07)"},
+    {"n": 8, "titulo": "Bloqueantes C2-01, C2-02 e C2-09 do ciclo 1 resolvidos no que prometem (secao 14 da v5)", "veredito": "C2-01 resolvido (item 53 + B-SAN3-26 + recusa no backend), com ajuste C2c2-07 / C2-02 resolvido para o registro e o catalogo (M1 vermelho), NAO no numero (40) nem no lado backend (C2c2-01, C2c2-02) / C2-09 resolvido na classificacao e na fronteira (item 51, 07c, 403 com vermelho-controle), NAO na cobertura do teste (3 de 6 rotas mutantes de vistoria; C2c2-03)"},
+    {"n": 9, "titulo": "Checagens simples re-executadas (R5)", "veredito": "sync-agent-agents --check OK 25 agentes; kpi-freeze --check em dia; node --check Kpis/app.js ec=0, no meu worktree em ecc32712. Os 3 guards de KPI e npm run check NAO rodei (fora do mandato C2; nenhum numero deles e afirmado aqui)"}
+  ],
+  "achados": [
+    {
+      "id": "C2c2-01",
+      "titulo": "O gate de modulo do backend (a razao do B-SAN3-18) nao tem enumeracao fechada: rota de modulo sem classificacao nasce PERMITIDA e o guard do plano nao pode ficar vermelho",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Guard, fronteira e teste do B-SAN3-18 sao texto deste PR (PLANO_SAN3.md:256 @ecc32712; reescritos na v5, git diff a143d2c3 ecc32712 linha +187, como correcao do C2-02). O codigo medido e anterior; a lacuna e do desenho.",
+      "evidencia": "C2-apoio/guard-san3-18.mjs (guard literal do plano contra registro e menu reais): M1/M1b/M2 VERMELHOS, mas M4 (endpoint novo POST /api/v1/impound-processes/:p/export) e M4b (router novo montado em app.ts) VERDES - rotas nao sao entrada do guard. C2-apoio/endpoints2.mjs: 407 endpoints nos 71 routers; Patios 82 (35 sem associacao a modulo em relatedEndpoints, ex.: POST /impound-processes, POST .../transitions, POST .../charges, /tariffs, /vehicle-identities), Frota 38 (38 sem associacao; nenhuma entrada /fleet no registro), Telemetria 5/5. app.ts:114-247 monta todos os routers em /api/v1; o plano fala em \"12 routers\" sem enumera-los (unica ocorrencia PLANO_SAN3.md:256). O teste diz \"organizacao sem o modulo -> rota responde 403\" sem dizer quais rotas nem o default da rota nao mapeada. O unico resolvedor de modulos do modulo navigation devolve undefined no catch (navigation.routes.ts:94-95) e o filtro real trata undefined como sem filtro: C2-apoio/m5-runtime.cjs -> 11/11 itens de Patios e Telemetria com a lista nao resolvida, mesmo depois de ganharem chave.",
+      "motivo": "O plano chama o guard de fail-closed, e ele e - para o registro (UI). A enumeracao que decide o acesso no backend (rota -> modulo), que e o que o bloco promete (fix/gate-de-modulo-no-backend; causa-raiz \"o gate vive so no menu\"), nao tem autoridade escrita nem guard: o endpoint seguinte - e 73 dos 125 atuais de Patios e Frota - so e recusado se alguem lembrar de classifica-lo. Compila + verde + aceito = fail-open; e a classe do C2-02 do ciclo 1 do outro lado da fronteira, e a afirmacao \"fail-closed\" nao tem execucao que a sustente para o backend."
+    },
+    {
+      "id": "C2c2-03",
+      "titulo": "O SEC-002 (item 11) e o item 51 fecham por dono sobre um censo por enumeracao e um piso de teste: rotas mutantes que o tecnico alcanca ficam sem escopo com a suite verde",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "A regra de saida entrou na v5 (f84bc634; plano de correcao secao C, resposta ao C2-08). \"piso: 1, 2 e 10\" nao existe no PLANO_O6R@15ef3fbe (git grep piso -> 0) e esta no PLANO_SAN3 desde a143d2c3 - texto deste PR. O teste do item 51 e o da pendencia registrada neste PR (pendencias.md:9194-9201, 2026-09-12).",
+      "evidencia": "C2-apoio/census-07c.mjs sobre as rotas reais dos 3 routers da fronteira (work-order, work-order-comment, checklist), permissoes resolvidas pelas constantes da ref x as 42 do field_technician (catalog.ts:895-943): 17 rotas mutantes alcancaveis; 2 guardadas pelo 07a (service.update :852, changeStatus :1319); 5 no piso ou no teste do item 51; 10 FORA - POST .../geocode e .../geocode-destination, os 5 de comentarios, e POST /mobile/checklist-runs/:runId/attachments, /markers e /divergence (checklist_runs:update). Predicado do plano - (toda via do censo de SYNC tem dono) e (piso verde) - VERDADEIRO com as 10 sem escopo. Na leitura mais generosa do piso (as 10 vias testadas; piso so para o vermelho-controle) restam as 3 de vistoria (anexar, marcar avaria, registrar divergencia; o catalogo agrupa \"responder/marcar avaria/anexar\" em update, catalog.ts:936). A pendencia que o bloco fecha ja registrou: \"um censo por enumeracao acha o que o autor lembrou de enumerar ... O 07c que repita o metodo, nao a lista\" (pendencias.md:6655-6659).",
+      "motivo": "A regra nega o esquecimento de DONO, mas nao nega (a) a via que o censo de sync nao listar - exatamente como a 10a escapou - nem (b) a via conhecida, dentro da fronteira, sem escopo e fora do teste: dono nao e escopo provado. \"Todas as vias\" e exaustividade alegada sem verificacao executavel; o teste de encerramento nao fica vermelho com o controle desligado em 10 (no minimo 3) rotas que a propria fronteira contem."
+    },
+    {
+      "id": "C2c2-02",
+      "titulo": "A contagem 38 nao confere pela definicao do item 16: sao 40 - o registro tem 13 entradas de organizacao sem requiredModules, nao 11",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Numeros da v5 (PLANO_SAN3.md:130 e :256 @ecc32712; introduzidos entre a143d2c3 e ecc32712, diff +77/+187). O 11 veio do voto C2 do ciclo 1, que mediu os blocos /patios e /telemetria.",
+      "evidencia": "C2-apoio/count.mjs (registro real): 36 entradas; sem requiredModules = 17 - 4 platformOnly e 13 de organizacao, todas no MVP_NAV_PATHS: as 11 de /patios e /telemetria MAIS /controle/notificacoes (tenant.notificationsCentral) e /operations/quotes (operations.quotes). MVP menos registro = 27, disjunto das 13. 27 + 13 = 40.",
+      "motivo": "Afirmacao herdada e nao verificada: o metodo contou por NOME, nao pela propriedade. O guard, se implementado como escrito, acusa as 2 que faltam - por isso nao bloqueia -, mas a lista do bloco (\"os 38 caminhos\") e o numero publicado estao errados."
+    },
+    {
+      "id": "C2c2-04",
+      "titulo": "A fronteira do B-SAN3-18 nao alcanca a concessao de modulos das bases criadas por db:seed: CI, e2e e demo nascem sem as chaves novas",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Fronteira escrita na v5 (PLANO_SAN3.md:256): catalogo, registro, servico, app.ts, appSidebarNav.ts e script aditivo \"para as organizacoes existentes\"; prisma/seed.ts so aparece na trava SAN3-04a -> SAN3-07 (secao 6).",
+      "evidencia": "prisma/seed.ts:196-207 DEMO_TENANT_MODULES (10 chaves; as de Patios, Telemetria e Frota nao existem); .github/workflows/ci.yml ~l.169 npm run db:seed, sem provisionamento de modulo; tenants.modules TEXT[] DEFAULT vazio (migracao 20260722000000). Vocabulario de chaves em 6 ou mais literais sem conferencia entre si (catalogo 19; o registro usa checklists, work_orders, work-orders e logistics, fora do catalogo; mobile.routes.ts; migracao; seed; frontend) - M1c (chave fora do catalogo) VERDE no guard.",
+      "motivo": "Falha pelo lado negado (itens escondidos, 403) - nao abre acesso -, mas trava o bloco ou o B-SAN3-10 (fluxo e2e de patio na base da CI) e a demonstracao; e o C4 do contrato proibe prisma/** sem autorizacao nominal na linha do bloco."
+    },
+    {
+      "id": "C2c2-05",
+      "titulo": "Lista de modulos nao resolvida libera todo item de modulo no menu (catch -> undefined -> sem filtro)",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "navigation.routes.ts:83-95 e navigation.service.ts:37-38 nascem em 84ca113c, 2026-06-09 (feat: add backend navigation menu registry) - git log -S na ref pelos dois trechos.",
+      "evidencia": "C2-apoio/m5-runtime.cjs (navigation.service.ts@ecc32712 transpilado, somente leitura): registro com /patios e /telemetria JA com chave - modules [dashboard] -> 0; [] -> 0; [patios] -> 6; undefined -> 11.",
+      "motivo": "Default que permite o caso nao previsto. Nao reprova (pre-existente): pendencia nomeada, dono candidato B-SAN3-18 (o arquivo esta na fronteira dele). O risco de o middleware novo herdar essa semantica esta no C2c2-01."
+    },
+    {
+      "id": "C2c2-07",
+      "titulo": "Item 53: o check-in no servidor tem duas entradas e a OS pode nao ter placa; o plano nao fixa o ponto de decisao nem o default",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Bloco novo da v5 (B-SAN3-26, PLANO_SAN3.md:284).",
+      "evidencia": "O dialogo gateia enRoute -> arrived (work_order_detail_screen.dart: _openArrivalDialog -> _doStatus(WorkOrderStatus.arrived) -> repo.updateStatus). No servidor: sync work_order.status (mobile-work-order-sync.ts:265 -> service.changeStatus) e web PATCH /work-orders/:id/status (work-order.routes.ts:135-137, work_orders:status, que o tecnico porta; work-order.controller.ts:111-113 -> service.changeStatus). A fronteira deixa escolher src/modules/work-orders/** OU src/modules/mobile/**. WorkOrder nao tem coluna de placa: vehicle_id String? (schema.prisma:2347) e service_details Json? (l.2334-2337).",
+      "motivo": "O teste fica vermelho com o controle desligado no caminho testado (no head-base o servidor aceita arrived sem conferencia). Mas, com a conferencia so no sync, a entrada web segue aceitando com a suite verde; e OS sem placa ou sem numero de serie nao tem default escrito - o caso nao previsto pode nascer aceito."
+    },
+    {
+      "id": "C2c2-06",
+      "titulo": "Item 52: o teste discrimina; a regra de consentimento passa a viver em dois servicos e o ator sem perfil de operador nao esta no teste",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Teste e fronteira do B-SAN3-17 escritos na v5 (PLANO_SAN3.md:283).",
+      "evidencia": "Unico escritor de fieldOperatorLocation: field-location-prisma.repository.ts:19 <- field-location.service.ts:21-38 <- POST field-location.routes.ts:31-35 (field_location:send: technician, operator, field_technician). No head-base grava sem consentimento -> o teste do plano fica VERMELHO. Referencia: telemetry.service.ts exige perfil (422 operator_profile_required) e recusa GPS sem trackingConsent (l.108-111).",
+      "motivo": "Discriminante para a enumeracao atual (2 escritores). Registrado: nada obriga um 3o escritor de posicao a passar pela conferencia, e o default do ator sem perfil deve ser o da referencia (negar)."
+    },
+    {
+      "id": "C2c2-08",
+      "titulo": "A propriedade fail-closed do guard do registro depende de a lista de nucleo ser literal e independente do registro",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Guard escrito na v5 (PLANO_SAN3.md:256).",
+      "evidencia": "C2-apoio/guard-san3-18.mjs, sonda M3: com o nucleo derivado do proprio registro, a entrada nova sem modulo (M1) passa VERDE - tautologia. O plano diz lista fechada de nucleo, sem dizer onde ela vive.",
+      "motivo": "Lista fechada implica literal; registrado para a junta do bloco conferir por mutacao que o nucleo nao e derivado."
+    }
+  ],
+  "limpeza": "Worktree j-san3c2-c2 removido por git worktree remove --force pelo nome (ec=0; worktree list sem ele). Copias extraidas e mutadas (scratchpad/c2g) apagadas; scripts preservados em votos-SAN3-c2/C2-apoio/ com LEIA-ME. Nada escrito em san3, gov-elenco, j-san3c2-c1 nem na arvore principal. Nenhum banco ou container."
+}

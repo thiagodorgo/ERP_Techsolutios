@@ -4316,3 +4316,14 @@ pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escr
 vazio), sem edição de conteúdo.
 
 Ciclo 2 (2026-09-12): junta do plano, ciclo 1, REPROVADO 0×3 (26 achados, 7 `bloqueia`); correção planejada pelo orquestrador (`agent-orchestration/omega/planos/SAN3-plano-ciclo2-correcao.md`) e aplicada por agente distinto, sem commit: itens 50–54, blocos `B-SAN3-25`/`B-SAN3-26` e `B-SAN3-04` dividido (54 bloqueantes, 37 blocos), `D-Ω4-C2` no REGISTRO, as duas pendências do painel de volta a ABERTA (PARCIAL), agenda recalculada por script (0 violações); índice pelo gerador: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS.
+
+Ciclo 2 — junta e parada (2026-09-12): inspetor LIBERADO COM RESSALVA (R1–R9). A R6 — a trilha do `R-` do ciclo 1
+sem o voto da C3, e as perguntas (a)/(b)/(c) sem a C3 — foi corrigida pelo orquestrador num commit só (`ecc32712`),
+com o objeto re-apontado e o delta re-verificado pelo inspetor. C1 e C2 em paralelo, C3 depois (P5): C1 REPROVADO (3
+`bloqueia`), C2 REPROVADO (2 `bloqueia`), C3 APROVADO (0 `bloqueia`, 1 ajuste); nenhuma queda. Antes do dossiê, o
+orquestrador conferiu os cinco bloqueios por comando próprio; numa das conferências, a busca solta por "reconcile"
+devolveu 5 arquivos da web que eram estado de processamento, não chamada — a busca estrita confirmou o zero da C1. Ao
+registrar as pré-existentes, a decisão que a C1 citou para o desenho do consentimento (`D-Ω4C-TELE-CONSENT`) não
+existe em `decisoes.md` e ficou fora da emenda. Registro aplicado por script (32 linhas acrescentadas, 0 apagadas);
+índice pelo gerador: 369 cabeçalhos / 358 IDs, 103 FECHADAS, 266 ABERTAS, byte-idêntico à cópia. Teto: dossiê ao
+dono, sepultamento das duas identidades novas, aposentadoria só depois do merge (`D-APOSENTADORIA-ELENCO-EFEMERO`).

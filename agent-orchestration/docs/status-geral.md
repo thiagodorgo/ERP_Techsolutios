@@ -4406,3 +4406,23 @@ item 9 que tinha sumido) e 7 ajustes; a v4 responde no §13, e os dois conflitos
 segurança, permissão e dinheiro), CI, merge, porteiro — e então as quatro frentes do plano.
 
 **Ciclo 2 (2026-09-12):** a junta do plano (ciclo 1) reprovou a v4 por 0×3 — 26 achados, 7 `bloqueia` (C1 `estrategista`, C2 `coordenador-de-acessos`, C3 `validador-mestre`). A correção (v5), planejada pelo orquestrador e aplicada por agente distinto, soma os itens 50–54, os blocos `B-SAN3-25` e `B-SAN3-26` e divide o `B-SAN3-04` em `04a`/`04b` (54 bloqueantes, 37 blocos); corrige para `D-Ω4-C2` a decisão do conflito do faturamento do delta; devolve as duas pendências do painel a ABERTA (PARCIAL); e recalcula a agenda por script (melhor caso ~120–130 h; realista ≈ 14 dias com 4 frentes, ≈ 20,5 a 21 com 2). Índice pelo gerador: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS. Segue para a junta do ciclo 2.
+
+## 2026-09-12 — PR #386 (plano SAN3) PARADO no teto de dois ciclos · dossiê ao dono
+
+**Junta do ciclo 2 (objeto `ecc32712`): REPROVADO 1 × 2.** C1 `jurado-san3c2-cobertura-de-fluxo` — a cadeira que a
+`agente-fabrica` criou para a competência que faltou ao plano — **REPROVADO** com 3 `bloqueia`: a conciliação é
+prometida pelo painel e pelo contrato e não tem tela nem bloco; faturar não tem porta para o papel Financeiro nem
+depois do `B-SAN3-25` (a aba da OS exige `work_orders:read`, e o `finance` só tem `os.read`); e o teste do `B-SAN3-08`
+depende de permissões que nenhum bloco entrega. C2 `guardiao-fail-closed` **REPROVADO** com 2 `bloqueia`: o gate de
+módulo do backend (`B-SAN3-18`) não tem enumeração rota → módulo — o guard do plano fica vermelho para entrada nova do
+menu e verde para rota ou router novos —, e o `Ω6R-SEC-002` e o item 51 fecham por dono e por piso de teste, não por
+escopo provado. C3 `agente-ci-doutor` **APROVADO** (registro, painel e números coerentes; 1 ajuste). Os cinco bloqueios
+foram conferidos pelo orquestrador por comando próprio. A agenda do §6 e os números do §9 conferiram (C1).
+
+**`D-TETO-DOIS-CICLOS`: não há ciclo 3.** Dossiê: `agent-orchestration/omega/reprovacoes/DOSSIE-SAN3-plano-parada.md`
+— duas perguntas de produto (o `finance` lê OS? o Financeiro monta orçamento?) e quatro opções com custo. O PR segue em
+rascunho; nenhum dos 37 blocos começou; o Traccar espera o gate. Registradas as pendências pré-existentes que as
+cadeiras nomearam — `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU` (dono `B-SAN3-18`),
+`P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` (dono `B-SAN3-04a`) e `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` (dono
+`B-REG-GERADOR`) — e duas emendas; índice pelo gerador: 369 cabeçalhos / 358 IDs, 103 FECHADAS, 266 ABERTAS. As duas
+identidades novas estão sepultadas (obituário §3.6); a aposentadoria delas espera o merge.

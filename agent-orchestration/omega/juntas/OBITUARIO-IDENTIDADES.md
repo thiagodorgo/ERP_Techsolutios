@@ -28,8 +28,8 @@
 
 | | |
 |---|---|
-| Identidades registradas | **29** (17 originais + 6 do `B-O6R-06` mérito, §3.4 + 6 do `B-O6R-06` delta, §3.5) |
-| **SEPULTADAS** | **29** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 2 ex-reservadas do `B-O6R-02` ciclo 5 + 6 do `B-O6R-06` mérito + 6 do `B-O6R-06` delta) |
+| Identidades registradas | **31** (17 originais + 6 do `B-O6R-06` mérito, §3.4 + 6 do `B-O6R-06` delta, §3.5 + 2 do PR #386 ciclo 2, §3.6) |
+| **SEPULTADAS** | **31** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 2 ex-reservadas do `B-O6R-02` ciclo 5 + 6 do `B-O6R-06` mérito + 6 do `B-O6R-06` delta + 2 do PR #386 ciclo 2) |
 | **RESERVADAS** | **0** (as duas do §3.3 participaram do ciclo 5, que rodou e mergeou no #371 — ver a emenda no fim do §3.3) |
 | Arquivos apagados por este registro | **0** |
 
@@ -230,3 +230,26 @@ convocação, que usava as seis `jurado-06-*` do §3.4, já sepultadas.
 **As 12 do `B-O6R-06` saem do diretório vivo neste mesmo PR** (`D-APOSENTADORIA-ELENCO-EFEMERO`, registro
 nominal em `controle/aposentadoria-especialistas.md`, rodada 2). O corpo de cada uma segue lível em
 `15ef3fbe` (`git show 15ef3fbe:.claude/agents/especialistas/<nome>.md`).
+
+---
+
+### 3.6 Caso PR #386 (plano SAN3), ciclo 2 — cobertura de fluxo prometido · junta concluída 2026-09-12 · **REPROVADO 1×2** · PR #386
+
+Ata: `J-SAN3-plano-ciclo2.md` (conteúdo julgado **`ecc32712`**; head na junta `03e4977a`). Briefing:
+`BRIEFING-SAN3-plano-ciclo2.md`. Votos: `votos/SAN3-plano-ciclo2/`. As duas nasceram no commit de branch
+**`f84bc634` (2026-09-12)**, criadas pela `agente-fabrica` pelo protocolo de dificuldade (§C7.4, ciclo 1 → 2) depois
+da reprovação 0×3 do ciclo 1 (`J-SAN3-plano-ciclo1.md`), com a competência que faltou ao plano: cobertura de fluxo
+prometido. **Sepultadas no mesmo PR em que a junta fechou** (§1.5).
+
+| # | Identidade | Papel | Status | Classe | Evidência | Nasceu em |
+|---|---|---|---|---|---|---|
+| 1 | `jurado-san3c2-cobertura-de-fluxo` | titular, cadeira C1 (veto) — cobertura de fluxo prometido, agenda e viabilidade | **SEPULTADA** | `votou` | `votos/SAN3-plano-ciclo2/C1-cobertura-de-fluxo-voto.json` (`veredito: REPROVADO`, `modelo: claude-opus-5`) + evidência + ata | `f84bc634` (2026-09-12) |
+| 2 | `jurado-san3c2-suplente-cobertura-de-fluxo` | suplente da cadeira C1 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-SAN3-plano-ciclo2.md` §1 (tabela de composição, coluna suplente) — caso **concluído** | `f84bc634` (2026-09-12) |
+
+As permanentes que votaram (`guardiao-fail-closed`, `agente-ci-doutor`) e as nomeadas como suplentes
+(`agente-secops`, `agente-dba-guardiao`) **não entram aqui** — o §4 não as cobre.
+
+**A aposentadoria NÃO é neste PR.** A `D-APOSENTADORIA-ELENCO-EFEMERO` exige "ata fechada **e PR mergeado**"; as duas
+saem do diretório vivo no primeiro PR depois do merge do #386 (rodada 3 de `controle/aposentadoria-especialistas.md`),
+com o corpo lível no squash do #386. O §1 do briefing do ciclo 2 dizia "sepultadas e aposentadas no mesmo PR" —
+divergência registrada no §5 da ata.

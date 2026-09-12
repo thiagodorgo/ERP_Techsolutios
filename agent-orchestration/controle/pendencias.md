@@ -5533,6 +5533,7 @@ sem tocar `recent` tem de acender vermelho.
 - **status:** ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`recent.itens` com as entregas do #369 ao #386 e `as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.""
 
 ---
+- **emenda (junta do PR #386, ciclo 2 — C3c2-04, `pre-existente`, 2026-09-12):** o painel diz duas coisas do mesmo merge: o item de `recent` do #357 ("Identidade global: o e-mail deixa de decidir quem você é") está com `pr: null` e data 2026-08-18, enquanto o `roadmap` do `B-O6R-01` dá `pr 357` e o merge é de 2026-08-19T23:30:07Z (`gh pr view 357`). Fica fora do intervalo que esta entrada declara corrigido (#369..#386) e é a mesma classe: seção curada à mão, atrás do history. Conferido pelo orquestrador em `ecc32712`. Dono: o resíduo do item 54 (teste (g) do `B-SAN3-10`).
 
 ## P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stored` do authority aceitam forma não-canônica: ` 1024`, `0x400` e `+1024` passam por `N = 1024`
 
@@ -9208,3 +9209,34 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-17` (plano SAN3 v5, item 18 ampliado ao backend).
 - **bloqueia:** o gate da versão vendável (critério 3; dado pessoal).
 - **teste de encerramento:** envio de posição de operador sem consentimento → recusado e nada gravado; com consentimento → gravado.
+- **emenda (junta do PR #386, ciclo 2 — C1-A8, `pre-existente`, 2026-09-12):** conferir o consentimento no backend não basta sozinho: o consentimento dado no app é local (`mobile/flutter_app/lib/core/location/location_consent_store.dart`), e o backend confere `OperatorProfile.tracking_consent`, que só o `PATCH` do perfil de operador grava (`src/modules/operator-profiles/operator-profile.service.ts:55-57`); nenhuma rota do app grava consentimento. Desenho herdado da telemetria. O teste de encerramento precisa do caminho inteiro: consentimento dado no app → chega ao servidor → posição aceita; sem ele → recusada. Conferido pelo orquestrador em `ecc32712`. Mesmo dono (`B-SAN3-17`).
+
+> Achadas pelas cadeiras da junta do ciclo 2 do plano SAN3 como `pre-existente` (não reprovam; viram pendência
+> nomeada com dono — §C7.1-ter(a)) e conferidas no código pelo orquestrador em `ecc32712`.
+
+## P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU (2026-09-12) — lista de módulos não resolvida libera todo item de módulo no menu — MÉDIA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C2, achado C2c2-05, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- **prova:** `src/modules/navigation/navigation.routes.ts:83-96` — `resolveEnabledModules` devolve `undefined` no `catch` (e para `platform`); `src/modules/navigation/navigation.service.ts` (`filterNavigationByTenantModules`) devolve **todos** os itens quando a lista é `undefined`. Com o registro de `ecc32712`: lista `undefined` → 11 itens de módulo visíveis; `[]` → 0; `["patios"]` → 6 (sonda da C2, `votos/SAN3-plano-ciclo2/C2-apoio/m5-runtime.cjs`).
+- **escopo:** `pre-existente` — os dois trechos nascem em `84ca113c` (2026-06-09, registro de menu do backend).
+- **dono:** `B-SAN3-18` (os dois arquivos estão na fronteira dele; o middleware novo do gate de módulo não pode herdar essa semântica — C2c2-01).
+- **bloqueia:** o gate da versão vendável, com o item 16 (critério 3 — permissão).
+- **teste de encerramento:** falha do resolvedor de módulos → menu sem nenhum item de módulo (default negado), com vermelho-controle no head-base.
+
+## P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz de papéis sem permissão no catálogo — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C1 — lacuna de mandato registrada no voto, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- **prova (N = 4; forma: célula de ação da `RBAC_MATRIX.md` sem permissão correspondente no catálogo; causa: catálogo não convergido com a matriz):** (1) `inventory` sem `checklist_runs:*` (`RBAC_MATRIX.md:44`, leitura/resposta por escopo); (2) `operator` e `inventory` sem escrita em filiais, fornecedores, etiquetas e POIs (`RBAC_MATRIX.md:37`, edição por escopo); (3) `inventory` sem `work_orders:approve` nem outra porta de aprovação (`RBAC_MATRIX.md:46`, aprovação por política); (4) `finance` lê OS só pelo legado `os.read`, que o backend não aceita no lugar de `work_orders:read` (`RBAC_MATRIX.md:45`, leitura). Conferência do orquestrador: as chaves existem no catálogo (`branches|suppliers|tags|pois:create/update`; `work_orders:approve` só no `manager`; `checklist_runs:update` no `manager`, `technician`, `operator` e `field_technician`), e os blocos de `inventory` (`src/modules/core-saas/permissions/catalog.ts:873-894`), `operator` (l.730-808) e `finance` (l.809-872) não têm as nomeadas acima; `requirePermission` compara a permissão exata.
+- **escopo:** `pre-existente` — o catálogo do `finance` é de `b142671ec` (2026-06-11).
+- **dono:** `B-SAN3-04a` (a causa-raiz dele é a convergência catálogo × matriz). O (4) depende da decisão de produto do dossiê do PR #386 (o `finance` passa a ler OS?) e sustenta o C1-A2 da junta.
+- **bloqueia:** o gate da versão vendável (critério 3 — permissão; e o faturamento pelo papel Financeiro).
+- **teste de encerramento:** guard que, para cada célula de ação da matriz, exige a permissão correspondente no catálogo do papel, e fica vermelho por mutação (célula sem permissão).
+
+## P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (2026-09-12) — dois itens do gate só aparecem no índice pela entrada hospedeira — MÉDIA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C3, achado C3c2-05, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- **prova:** a `P-033` (item 14 do gate, permissão) não tem cabeçalho próprio — vive como bullet e emenda dentro da `P-032` (`pendencias.md:387`, emenda l.399), e o índice só lista a `P-032`, sem severidade; a `P-Ω3F6-CANCEL-RACE` (item 23, dinheiro) vive dentro da `P-Ω3F6` (l.1335), que o índice lista com a severidade da hospedeira (a mais baixa da escala).
+- **escopo:** `pre-existente` — o bullet da `P-033` já estava sob a `P-032` em `15ef3fbe`; o da `P-Ω3F6-CANCEL-RACE` desde `3aad5277` (#228, 2026-07-19).
+- **dono:** `B-REG-GERADOR` (a mesma das falhas do gerador no §7.2 do plano).
+- **bloqueia:** não bloqueia o gate por si — o §1 do plano declara que não usa a severidade do índice —, mas quem pergunta ao índice o que está aberto vê um item de permissão sem severidade e um de dinheiro no fim da fila.
+- **teste de encerramento:** todo item do §4.1 do plano aparece no índice como linha própria, com a severidade do item, e um guard fica vermelho quando um item do gate só existe como bullet de outra entrada.
