@@ -107,5 +107,39 @@ nenhum dos seis nomeados na tabela atuou no `B-O6R-06` nem na rodada SAN3.
 ## 5. Plano de perda de jurado
 
 Cadeira que cair sem votar é substituída pelo suplente nomeado na tabela do §1, que **re-executa o mandato
-inteiro** — nada que o titular começou conta. Voto perdido nunca vale como aprovação; a junta não fecha com menos de
-3 votos de mérito. Queda por limite de modelo vira nota no voto (qual papel, qual modelo, por quê).
+inteiro** — nada que o titular começou conta, e a evidência que o caído deixou em arquivo (P1) serve só de roteiro
+de re-execução (P3). Voto perdido nunca vale como aprovação; a junta não fecha com menos de 3 votos de mérito.
+Toda queda vira 1 linha em `votos/SAN3-plano/00-quedas.md` (P6, colunas fixas). Queda por limite de modelo vira
+nota no voto (qual papel, qual modelo, por quê).
+
+## 6. Adendo — as 7 ressalvas do inspetor de terreno e como este briefing as absorve
+
+Parecer: `votos/SAN3-plano/00b-inspetor-terreno.md` (Fable, sem fallback) — **LIBERADO COM RESSALVA**.
+
+- **R1 (corpos defasados na sessão).** Os três papéis que votam aqui têm o corpo da sessão **igual** ao da ref (o
+  inspetor mediu, EOL-neutro). Os defasados são `inspetor-de-terreno-da-junta`, `planejador-mestre` e
+  `porteiro-pos-merge`, que não votam; o porteiro do merge deste PR será invocado **com o corpo da ref** declarado no
+  prompt, como foi o inspetor.
+- **R2 (Docker parado).** Nenhuma cadeira precisa de banco nem de container. Quem precisar, falha alto — e isso é
+  "não consigo medir".
+- **R3 (sem cadeira de invariante financeiro).** A amostra de FECHADA da C3 passa a ser **nominal** e cobre todas
+  as linhas que viraram FECHADA nas classes dinheiro, segurança e permissão: `P-018`, `P-SCALE-RBAC-OWNER-APPROVAL`,
+  `P-WOTS-FRONT-ACCESS`, `P-029`, `P-Ω4-4-REVERSE-IDEM`, `P-Ω4-7-CLEAR-ATOMIC`, `P-Ω4-7-CLEAR-RETRO`,
+  `P-Ω4-7-ENTRY-OWNERSHIP`, `P-Ω3F6-STATUS-BYPASS`, `P-Ω3F6-TERMINAL-GUARD`, `P-Ω3F6-ZERO-ATOMICIDADE` (11, acima do
+  piso N ≥ 10). Cada uma é reconferida por presença **no código da ref** — hash, arquivo:linha ou teste que a fecha —,
+  nunca pela frase da linha de status. A falta de cadeira financeira fica registrada na ata como ressalva, à vista do
+  dono.
+- **R4 (P6 não nomeado).** `votos/SAN3-plano/00-quedas.md` criado neste commit.
+- **R5 ("registradas para não serem remedidas", crítico r2, l.6).** Não é licença: toda medição que o voto usar é
+  re-executada pela cadeira.
+- **R6 (33 corpos sepultados na árvore da sessão).** Não são cadeira de nada; nenhuma cadeira os lê.
+- **R7 (armadilhas de terreno).** (a) crie o seu worktree num caminho curto — `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3-<cadeira>` — com
+  `git -c core.longpaths=true worktree add --detach <caminho> a143d2c3`; (b) `prisma generate` exige `DATABASE_URL`
+  no ambiente (valor fictício serve) — só relevante se alguém rodar `npm run check`, que nenhum mandato exige; (c) os
+  guards de KPI só precisam de `tsx` + builtins (`npm ci` próprio no worktree).
+
+**P1/P2 — onde se grava.** O contrato manda gravar em `votos/<JUNTA>/`. Aqui esse diretório está **dentro do
+worktree do PR, que é o objeto julgado** — gravar lá seria mutar o tabuleiro. A gravação incremental vai para
+`.../scratchpad/votos-SAN3/` (§0), com o **voto nascendo como esqueleto** (itens `EM APURAÇÃO`), cada item gravado ao
+ser medido e a mensagem final de **1 linha** apontando o arquivo; o orquestrador versiona tudo em
+`votos/SAN3-plano/` na consolidação, sem editar o conteúdo.
