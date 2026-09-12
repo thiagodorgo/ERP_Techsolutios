@@ -25,21 +25,29 @@ O C2-09 **não reprova** este PR (a classe antecede o plano: #320 e #344), mas e
 
 **(a) A composição cobre a competência que os achados exigem?** Sim. C1-02 é cobertura de fluxo prometido × blocos
 (ordem e dependência — a cadeira de estratégia o achou); C2-01, C2-02 e C2-09 são da cadeia papel → permissão → menu →
-rota → backend (a cadeira de acessos os achou). A competência que faltava estava **no plano**, não na junta.
+rota → backend (a cadeira de acessos os achou); C3-01, C3-02 e C3-03 são de registro, decisão e painel conferidos por
+execução (a cadeira de validação os achou). A competência que faltava estava **no plano**, não na junta.
 
-**(b) Quem achou é quem consertou?** Não. Quem achou: C1 e C2. Quem planeja a correção: o orquestrador, autor do plano,
-que escreve o plano de correção (`agent-orchestration/omega/planos/SAN3-plano-ciclo2-correcao.md`) a partir dos votos,
-**depois de conferir cada achado no código**. Quem aplica a correção ao `PLANO_SAN3.md` e aos números: um agente
-distinto, que não achou nem planejou. O registro das 3 pendências novas e das 6 emendas foi feito pelo orquestrador
-como **registro** do que as cadeiras mediram (texto das cadeiras, com a conferência), não como correção do plano.
+**(b) Quem achou é quem consertou?** Não. Quem achou: C1, C2 e C3. Quem planeja a correção: o orquestrador, autor do
+plano, que escreve o plano de correção (`agent-orchestration/omega/planos/SAN3-plano-ciclo2-correcao.md`) a partir dos
+votos, **depois de conferir cada achado no código**. Quem aplica a correção ao `PLANO_SAN3.md`, ao registro, ao painel
+e aos números: um agente distinto, que não achou nem planejou (relatório:
+`agent-orchestration/omega/juntas/votos/SAN3-plano-ciclo2/00-aplicador.md`). O registro das 3 pendências novas e das 6
+emendas foi feito pelo orquestrador como **registro** do que as cadeiras mediram (texto das cadeiras, com a
+conferência), não como correção do plano.
 
-**(c) O planejador usou dado podre?** Sim, em duas classes:
+**(c) O planejador usou dado podre?** Sim, em três classes:
 - **Contagem derivada de método inadequado.** O "27" do item 16 veio de `MVP_NAV_PATHS` menos registro, que por
-  construção não enxerga entrada registrada sem módulo. O número estava certo para o método e errado para a pergunta.
+  construção não enxerga entrada registrada sem módulo. O número estava certo para o método e errado para a pergunta
+  (C2-02).
 - **Premissa de teste não medida.** O teste de encerramento do `B-SAN3-10` pressupôs que o passo "faturar" existe na web.
   Nenhuma medição do plano o conferiu — a fatia AUSENTES mediu a baixa (`P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA`), e o
-  plano estendeu a conclusão ao faturamento sem medir.
-- E uma regra aplicada pela metade: o §2 proíbe exceção por mitigação, e o check-in ficou fora por "o GPS coexiste".
+  plano estendeu a conclusão ao faturamento sem medir (C1-02).
+- **Afirmação herdada e não verificada.** A atribuição do conflito do faturamento à `D-Ω4-C1` veio do parecer da rodada
+  2 do crítico e entrou no plano e no `REGISTRO-SAN3-CONFLITOS` sem que o orquestrador lesse `decisoes.md:607-608`
+  (C3-01); e a frase de números do `status-geral.md` foi editada pela metade, sem conferir contra o gerador (C3-02).
+- E duas regras aplicadas pela metade: o §2 proíbe exceção por mitigação, e o check-in ficou fora por "o GPS coexiste"
+  (C2-01); e as duas pendências do painel foram fechadas sem o critério de fechamento que elas mesmas registram (C3-03).
 
 ## 3. O que o protocolo manda agora (§C7.4, ciclo 1)
 
@@ -55,4 +63,6 @@ como **registro** do que as cadeiras mediram (texto das cadeiras, com a conferê
 
 | Quando | O quê |
 |---|---|
-| 2026-09-12 | Ciclo 1: inspetor LIBERADO COM RESSALVA; C1 e C2 reprovam; C3 <A PREENCHER> |
+| 2026-09-12 | Ciclo 1: inspetor LIBERADO COM RESSALVA; C1, C2 e C3 reprovam — placar 0 × 3 (26 achados, 7 `bloqueia`) |
+| 2026-09-12 | Correção planejada pelo orquestrador e aplicada por agente distinto → plano v5 (`f84bc634`); os dois jurados do ciclo 2 criados pela `agente-fabrica` |
+| 2026-09-12 | Inspetor do ciclo 2 (ressalva R6): esta trilha tinha `C3 <A PREENCHER>`, e as perguntas (a)/(b)/(c) omitiam a C3 — completadas no commit seguinte a `f84bc634`, antes da junta do ciclo 2 |
