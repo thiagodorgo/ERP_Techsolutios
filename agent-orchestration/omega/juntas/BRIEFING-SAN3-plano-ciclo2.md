@@ -81,8 +81,8 @@ em `00-quedas.md` (P6).
   `votos/SAN3-plano-ciclo2/00b-inspetor-terreno.md` (versionado junto com a ata).
 - **Re-apontamento (R6).** O inspetor achou `C3 <A PREENCHER>` na trilha do `R-SAN3-plano-ciclo1.md`; ao corrigir, o
   orquestrador achou que as perguntas (a)/(b)/(c) do mesmo registro omitiam a C3. A correção entrou num commit só,
-  depois da v5 (`f84bc634`). **O objeto julgado é `ecc32712`** = `f84bc634` + esse arquivo — medido por
-  `git diff --stat f84bc634 ecc32712`, e re-verificado pelo inspetor antes da convocação.
+  depois da v5 (`f84bc634`). **O objeto julgado é `ecc32712`** = `7ea94a53` (a v5 `f84bc634` + este briefing, como o inspetor o mediu) + esse arquivo — medido por
+  `git diff --stat 7ea94a53 ecc32712` (só o `R-`), e re-verificado pelo inspetor antes da convocação.
 - **Ressalvas que toda cadeira carrega.** R2 — Docker parado: nenhuma cadeira precisa de banco; quem precisar declara
   "não consigo medir". R3 — `guardiao-fail-closed`, `agente-ci-doutor` e `agente-dba-guardiao` foram suplentes nomeados
   no ciclo 1, nunca instanciados (0 votos, 0 achados): elegíveis, e a ata declara a participação prévia. R4 — não há
