@@ -1,0 +1,74 @@
+{
+  "jurado": "coordenador-de-acessos",
+  "cadeira": "C2",
+  "modelo": "claude-opus-5",
+  "head_medido": "a143d2c33674cc2c3562de40cc9d3a95350cabe5",
+  "voto": "REPROVADO",
+  "itens": {
+    "1": "REPROVADO. Itens 9-18 medidos no código: 9, 10, 11, 12, 13 (composição), 15 e 16 são reais; 14 condicional com saída só por ata; 17 e 18 são reais, mas pelo crit. 13 e pelo crit. 7, não pelo 3 (rótulo impreciso, pertença mantida). Um item de segurança das fatias ficou fora do gate sem a condição que o §2 exige: P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (C2-01). O item 15 foi reduzido no plano (C2-04).",
+    "2": "REPROVADO. SAN3-06a, 06b e 13 alcançam o item. SAN3-05 alcança as duas leituras que nomeia, mas a lista medida está incompleta (C2-03). 07c alcança as 10 vias, mas o censo vinculante acha vias fora da fronteira e o plano não dá saída (C2-08). SAN3-04 tem lacunas de fronteira ou de teste (C2-04, C2-05, C2-06). SAN3-18 não alcança o catálogo de módulos, e o método dele deixa 11 itens de menu sem gate (C2-02).",
+    "3": "REPROVADO. Item 13: fail-closed, vermelho-controle possível, saída só por ata. Item 14: saída só por ata, mas a receita do teste (provision + seed) impede o vermelho-controle (C2-07). Item 18: captura fail-closed no cliente e na telemetria, mas field_location aceita posição sem consentimento (C2-12). Item 16: o guard é fail-open para entradas do registro sem requiredModules (C2-02)."
+  },
+  "achados": [
+    {
+      "id": "C2-01", "item": 1, "gravidade": "bloqueia", "escopo": "dentro-do-bloco",
+      "evidencia": "work_order_detail_screen.dart:918-919 _expected = 2 últimos caracteres de wo.code; :931 texto Informe os 2 ultimos digitos da placa; :1083 Digitos nao conferem com a placa do veiculo; backend sem checagem (grep check-in/placa em src/modules/work-orders e src/modules/mobile = 0). pendencias.md:8822-8836 (registrada neste PR): risco 3-seguranca/permissoes; plano SAN3: não nomeada no gate (§4.1); impacto NAO: GPS coexiste; mas o controle é ineficaz e o rótulo mente (D-007). grep CHECKIN no PLANO_SAN3.md = 0.",
+      "motivo": "Item de segurança fora do gate sem condição de inaplicabilidade a cliente novo. GPS coexiste é mitigação, exceção que o §2 proíbe. É a mesma classe do item 17 (UI declara controle de segurança inexistente) e do aviso falso do item 48 (mesmo app), que estão no gate. O defeito de código é de 2026-07-02 (083649b3, B-112); o que se julga aqui é a classificação, escrita neste PR."
+    },
+    {
+      "id": "C2-02", "item": 2, "gravidade": "bloqueia", "escopo": "dentro-do-bloco",
+      "evidencia": "navigation.registry.ts: /telemetria/{quilometragem,acessos,recusas,dispositivos,rastreamento} (L405-462) e /patios/{patios,processos,liberacoes,leiloes,perfis,tarifas} (L481-610) sem requiredModules; os 11 estão em MVP_NAV_PATHS. navigation.service.ts:114-115 hasModule = true quando não há requiredModules, logo aparecem para qualquer organização. platform-modules.service.ts:4-22: 19 chaves de módulo, nenhuma para Pátios, Telemetria ou Frota. comm MVP menos registro = 27, que é o número do plano.",
+      "motivo": "Item 16: o plano mede 27 itens fora do gate de módulo pelo método MVP menos registro, que exclui por construção as 11 entradas registradas sem módulo; o total real é 38. O guard de encerramento do SAN3-18 (todo caminho do menu está no registro) fica verde com Pátios e Telemetria visíveis sem provisionamento, e a fronteira do bloco não inclui o catálogo de módulos, sem o qual esses itens nem têm chave para provisionar. Encerramento pelo teste esconde o defeito. Item visível sem feature provisionável = veto. O código é anterior (#275 de 25/07, #284 de 26/07); a contagem, o método e o guard são deste PR."
+    },
+    {
+      "id": "C2-03", "item": 2, "gravidade": "ajuste", "escopo": "dentro-do-bloco",
+      "evidencia": "cloud-charge-prisma.repository.ts:24-25,166-212,238-240 replaceTenantCharges/listTenantCharges no prisma cru, sem withTenantRls/set_config; migration 20260614000000:158-160 tenant_cloud_charges com USING e WITH CHECK em app.current_tenant_id; tests/rls-tenant-isolation.test.ts:2573-2587 afirma invisível sem contexto.",
+      "motivo": "O §5.2 diz que hoje a lista medida tem estas duas, mas o cálculo e a leitura de cobrança de nuvem também quebram sob o papel sem BYPASSRLS que o item 9 impõe. A lista publicada como medida está incompleta. O fallback (vira pendência nomeada) deixa a regra do §2 proteger o gate; por isso é ajuste."
+    },
+    {
+      "id": "C2-04", "item": 1, "gravidade": "ajuste", "escopo": "dentro-do-bloco",
+      "evidencia": "pendencias.md:1690-1701 P-RBAC-CHECKLIST-DRIFT: manager update+acknowledge e finance/inventory; pendencias.md:1447-1456 (reescrita neste PR) roteia P-RBAC-CATALOG-MATRIZ item 2 (finance/inventory x checklists) ao mesmo dono. catalog.ts:569-574 (o comentário chama update/acknowledge de drift); finance e inventory sem nenhuma permissão de checklist; field_technician sem tenant_checklists:read; matriz l.43-44. Teste do SAN3-04: só manager sem checklist_runs:acknowledge.",
+      "motivo": "O teste fecha 1 das 4 divergências que o próprio PR atribuiu ao item 15. A causa-raiz do bloco (o catálogo se ajusta à matriz) cobre o resto; o teste não."
+    },
+    {
+      "id": "C2-05", "item": 2, "gravidade": "ajuste", "escopo": "dentro-do-bloco",
+      "evidencia": "src/modules/dashboard/*: sem recorte por papel (grep role/scope só em dashboard.types.ts); matriz l.34 finance/inventory = scoped; teste do plano /dashboard/summary 200; a fatia C1 pedia 200 com recorte; fronteira do SAN3-04 sem src/modules/dashboard/**.",
+      "motivo": "O item 12 fecha concedendo painel sem recorte, contra o scoped da matriz. Técnico e suporte já têm painel sem recorte, e isso é anterior a este PR. Tirar o recorte do teste é deste PR."
+    },
+    {
+      "id": "C2-06", "item": 2, "gravidade": "ajuste", "escopo": "dentro-do-bloco",
+      "evidencia": "frontend/src/modules/auth/types.ts:1-9 união UserRole sem rótulo de estoque; appSidebarNav.ts:271-277 roleKindFor decide por rótulo; auth.adapter.ts mapBackendRole sem ramo inventory.",
+      "motivo": "Dar menu próprio ao inventory (item 38) exige editar types.ts, que está fora da fronteira do SAN3-04. O bloco trava ou força rótulo errado."
+    },
+    {
+      "id": "C2-07", "item": 3, "gravidade": "ajuste", "escopo": "dentro-do-bloco",
+      "evidencia": "provision-rbac.ts:58,145 provisiona DEFAULT_ROLES (inclui auditor); seed.ts:252 só STANDARD_ROLES; ci.yml:169 e package.json:22 (test:e2e) rodam só db:seed.",
+      "motivo": "A receita do teste do SAN3-04 (provision + seed) neutraliza a premissa do P-033, então o vermelho-controle é impossível nela e o item sai por ata por construção. O vermelho existe na base só-db:seed. O fail-closed se preserva pela exigência de ata."
+    },
+    {
+      "id": "C2-08", "item": 2, "gravidade": "ajuste", "escopo": "dentro-do-bloco",
+      "evidencia": "mobile-evidence-sync.ts:280-295: evidência de OS exige só work_orders:update + work_order_id, sem atribuição (persistência não medida); mobile-checklist-sync.ts:70-77 só permissões; fronteira do 07c = work-order.routes/service, work-order-comments/**, mobile-work-order-sync.ts.",
+      "motivo": "O censo vinculante da superfície de sync vai achar vias fora da fronteira, e o plano não dá saída (o SAN3-05 tem vira pendência, o 03a tem o bloco para). Não gera fechamento falso, porque o censo é vinculante, mas o bloco trava."
+    },
+    {
+      "id": "C2-09", "item": 2, "gravidade": "bloqueia", "escopo": "pre-existente",
+      "evidencia": "schema.prisma model ChecklistRun sem campo de usuário (só related_entity_type/id); checklist.routes.ts:133-202 responder/concluir/ciência só por permissão; grep assigned/assignee/not_assigned em src/modules/checklists e mobile-checklist-sync.ts = 0; catalog.ts:939-942 field_technician com checklist_runs:update/complete/acknowledge (8a938414, #320, 2026-08-01); matriz l.44 field_technician = answer-assigned.",
+      "motivo": "Técnico responde, conclui e dá ciência em vistoria de OS alheia. É crit. 3, da classe do SEC-002, e não está em nenhuma fatia nem no gate. Anterior ao PR (#320 de 01/08, #344 de 10/08). Não reprova este PR; vira pendência nomeada com dono (candidato: 07c ampliado ou bloco próprio)."
+    },
+    {
+      "id": "C2-10", "item": 2, "gravidade": "nota", "escopo": "pre-existente",
+      "evidencia": "work-order.service.ts:402-418 list() sem escopo por papel, assignedUserId opcional (51238552, 2026-06-09); matriz l.45 field_technician execute/update-assigned; l.19 UI não substitui backend.",
+      "motivo": "O §8.7 tira o item 32 do crit. 3 porque o backend oferece o filtro. Oferecer não é impor. A matriz não concede leitura de todas as OS ao técnico, nem a proíbe explicitamente. Registrar a dúvida."
+    },
+    {
+      "id": "C2-11", "item": 1, "gravidade": "nota", "escopo": "dentro-do-bloco",
+      "evidencia": "PlatformSettingsPage.tsx:43-44 Toggle on literal; grep mfa/totp/2fa em src = 0. geolocator_device_location_provider.dart recusa captura sem consentimento; telemetry.service.ts:108-111 recusa GPS sem consentimento.",
+      "motivo": "Os itens 17 e 18 não violam RBAC validado no backend. A pertença ao gate se sustenta pelo crit. 13 e pelo crit. 7, respectivamente. Corrigir o rótulo."
+    },
+    {
+      "id": "C2-12", "item": 3, "gravidade": "ajuste", "escopo": "pre-existente",
+      "evidencia": "field-location.service.ts:21-38 grava posição sem checar operator_profiles.tracking_consent (15739c1b, 2026-06-09); telemetry.service.ts:108-111 checa (fc7f6be0, 2026-07-24).",
+      "motivo": "O teste do item 18 prova o consentimento só no cliente. O backend, que é a autoridade final, aceita posição por field_location:send sem consentimento. Nomear como pendência."
+    }
+  ]
+}

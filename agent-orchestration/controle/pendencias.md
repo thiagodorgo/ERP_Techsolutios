@@ -339,6 +339,7 @@
 - impacto: os itens Pedidos/Relatorios usam as strings que os guards de rota do App.tsx ja usavam; ate o
   backend adicionar as perms, esses itens so aparecem para quem ja as tiver — honesto, sem fabricar acesso.
 - status: ABERTA (PARCIAL — fechado: `purchase_orders:read` e `reports:read` existem no catálogo (`src/modules/core-saas/permissions/catalog.ts:181,198`, `0450ae9f`, #257); aberto: os blocos `finance` e `inventory` do catálogo seguem sem `dashboard:read` nem `work_orders:read`, contra `RBAC_MATRIX.md:34`, e a home desses papéis abre no erro do `GET /dashboard/summary` (403)) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (**bloco backend de reconciliacao de permissoes**: adicionar `purchase_orders:read`/
+- **junta do PR #386, ciclo 1 (C2-05, 2026-09-12):** a matriz (l.34) dá a Financeiro e Estoque um painel **com recorte por papel** (`scoped`); o conserto concede o painel recortado (`src/modules/dashboard/**`), não o painel inteiro. Plano SAN3 v5: bloco `B-SAN3-04b`.
   `reports:read` ao `PERMISSION_CATALOG` + alinhar grants de dashboard/aprovacoes a matriz). Nao bloqueia F11."
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: Financeiro e Estoque sem `dashboard:read` abrem a home em erro (403 no `GET /dashboard/summary`), contra `RBAC_MATRIX.md:34`; bloqueia a demonstração da persona Financeiro.
 
@@ -482,6 +483,7 @@
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **junta do PR #386, ciclo 1 (C2-03, 2026-09-12):** a lista das leituras de plataforma que quebram sob papel sem `BYPASSRLS` inclui também `replaceTenantCharges`/`listTenantCharges` (`src/modules/cloud-charges/cloud-charge-prisma.repository.ts:24-25,166-212,238-240`, sem contexto; `tenant_cloud_charges` tem policy com `USING` e `WITH CHECK`). Plano SAN3 v5: fronteira do `B-SAN3-05`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 - **emenda (inventário SAN3, fatia B1, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 9, bloco `B-SAN3-05`) a classifica como **bloqueante do gate vendável** pelo critério 2 do dono ("isolamento multi-tenant validado"): nada no repositório impõe `NOSUPERUSER NOBYPASSRLS` ao papel de runtime; o compose de subida/smoke (`docker-compose.prod.yml:35,57`) conecta como `postgres`; o papel real da produção é secret do Fly e **não foi medido**. Corrigido em 2026-09-11 pelo crítico SAN3 (CR1-06, CR2-06): a versão anterior desta emenda afirmava que a produção roda como superusuário e que isso escondeu a soma do #385 — a soma aconteceu em dev/CI. A fatia B1 a dava como não bloqueante por si; o plano registra a reclassificação como alvo do crítico (§A2), sem consolidação silenciosa.
@@ -1698,6 +1700,7 @@ rodada de saneamento de RBAC (§A2 — registradas para não consolidar em silê
 Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, caso a caso.
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **junta do PR #386, ciclo 1 (C2-04, 2026-09-12):** as divergências com a matriz (l.43-44) são quatro — `manager` com `checklist_runs:update` e `acknowledge`; `finance` e `inventory` sem permissão de checklist; `field_technician` sem `tenant_checklists:read`. O teste do `B-SAN3-04` cobre as quatro (plano SAN3 v5).
 - **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 3 lido ao pé da letra — o papel `manager` tem `checklist_runs:acknowledge` no catálogo (`catalog.ts:574`) além do que `RBAC_MATRIX.md:43-44` concede. Bloco `B-SAN3-04`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
@@ -8498,6 +8501,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 ## P-WEB-GATE-MODULO-INCOMPLETO (2026-09-11) — 27 itens do menu fora do gate de módulo; backend não recusa módulo não contratado — ALTA
 
 - status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **junta do PR #386, ciclo 1 (C2-02, 2026-09-12):** a contagem é 38, não 27 — o método `MVP_NAV_PATHS` menos registro exclui as 11 entradas registradas sem `requiredModules` (`/patios/*` ×6, `/telemetria/*` ×5), que `hasModule` (`src/modules/navigation/navigation.service.ts:114-115`) libera para qualquer organização; `src/modules/platform/platform-modules.service.ts` não tem chave de módulo para Pátios, Telemetria nem Frota. Plano SAN3 v5: fronteira e guard do `B-SAN3-18` refeitos.
 - **fonte (fatia AUSENTES, §2a):** sintese B25, A5
 - **situação medida pela fatia:** ATIVO (lado backend medido por padrões, não exaustivo)
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/navigation/navigation.registry.ts`: 36 entradas `path:`; `frontend/src/layouts/appSidebarNav.ts` `MVP_NAV_PATHS` = 51; grep `requireModule|requireTenantModule|assertModuleEnabled|requireFeature|module_disabled` em `src/` só acha flags do bootstrap mobile (`mobile.routes.ts:221-257`)
@@ -8685,6 +8689,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 ## P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, sem filtro de atribuição nem paginação — ALTA
 
 - status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **junta do PR #386, ciclo 1 (C2-10, 2026-09-12):** o backend oferece o filtro `assignedUserId`, mas não impõe escopo por papel na listagem (`src/modules/work-orders/work-order.service.ts:402-418`); a matriz (l.45) dá ao técnico `execute/update-assigned` e não diz se ele lê todas as OS da organização. Pergunta ao dono no plano SAN3 v5 (§10), com default estrito: o técnico lista só as atribuídas, imposto no backend (bloco `B-SAN3-13`).
 - **fonte (fatia AUSENTES, §2a):** sintese B44
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:272` "Minhas OS", `:122` filtra só `tenantId`; `work_order_repository.dart:88` `workOrdersForUser` sem chamador; `work_order_remote_api.dart:74-91` `GET` sem `assignedUserId` nem página
@@ -8822,6 +8827,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 ## P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e compara com o código da OS — MÉDIA
 
 - status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
 - **fonte (fatia AUSENTES, §2a):** sintese A9
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/work_orders/ui/work_order_detail_screen.dart:918-919` `_expected = wo.code.substring(code.length - 2)`; `:931` "Informe os 2 ultimos digitos da placa"; `:1083` "Digitos nao conferem com a placa do veiculo"
@@ -9170,3 +9176,34 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-10` (`test/e2e-no-ci-e-roteiro`, plano SAN3 §4.1 item 44 e §5.5)
 - **impacto vendável:** BLOQUEIA pelo plano — item 44 do gate (critério 12: demonstração, operação e linguagem da UI).
 - **teste de encerramento:** roteiro de demonstração executado por quem não o escreveu; a parte de operação (deploy, restore cronometrado, bootstrap do 1º admin, rotação de segredo) ensaiada fora do ambiente real; a execução no ambiente real é ato do dono.
+
+## Pendências da junta do PR #386 — ciclo 1 (2026-09-12)
+
+> Achadas pelas cadeiras da junta do plano SAN3 e conferidas no código pelo orquestrador antes de entrar no plano (quem achou não conserta; quem planeja mede antes de planejar).
+
+## P-WEB-FATURAR-OS-SEM-TELA (2026-09-12) — a web não fatura OS: a rota existe e nenhuma tela a chama — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 1, cadeira C1, achado C1-02; conferido pelo orquestrador em `a143d2c3`)
+- **prova:** backend `src/modules/work-order-financials/work-order-financial.routes.ts:78` (`POST /work-orders/:workOrderId/invoice`, permissão `financial_titles:create`); `git grep -E "/invoice|faturar" -- frontend/src` → só a rota `/finance/invoices` do `App.tsx`; a aba Financeiro da OS (`frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx`) só tem ações de lançar; `frontend/src/modules/finance/pages/InvoicesPage.tsx:53` afirma que "o faturamento continua disponível no Financeiro" — não está.
+- **escopo:** `pre-existente` — a ação web nunca foi construída desde o Ω4-3 (jul/2026); o título nasce por `POST /work-orders/:id/invoice` (`D-Ω4-GANCHO`).
+- **dono:** `B-SAN3-25` (plano SAN3 v5, §4.1 item 50).
+- **bloqueia:** o gate da versão vendável (critérios 7 e 4 — o `mvp_vendavel` conta "faturamento idempotente" no núcleo vendável).
+- **teste de encerramento:** pela web, OS com itens → faturar → título criado e itens carimbados; refaturar o carimbado → recusado; a frase da `InvoicesPage` passa a ser verdadeira.
+
+## P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO (2026-09-12) — técnico responde, conclui e dá ciência em vistoria de OS alheia — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 1, cadeira C2, achado C2-09; conferido pelo orquestrador em `a143d2c3`)
+- **prova:** `src/modules/checklists/checklist.routes.ts:164-202` (concluir e dar ciência) decidem só por permissão; `git grep -E "assigned|not_assigned" -- src/modules/checklists` → nada; `ChecklistRun` não tem campo de usuário (só a entidade relacionada); `catalog.ts:939-942` dá ao `field_technician` `checklist_runs:update`/`complete`/`acknowledge` (#320, 2026-08-01); a matriz (l.44) diz `answer-assigned`.
+- **escopo:** `pre-existente` (#320 de 2026-08-01, #344 de 2026-08-10) — mesma classe do `Ω6R-SEC-002`.
+- **dono:** `B-O6R-07c` (plano SAN3 v5: escopo por objeto em toda a superfície da OS).
+- **bloqueia:** o gate da versão vendável (critério 3).
+- **teste de encerramento:** técnico não atribuído à OS → 403 ao responder, concluir e dar ciência na vistoria dela, com vermelho-controle no head-base.
+
+## P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição do técnico sem conferir o consentimento — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 1, cadeira C2, achado C2-12; conferido pelo orquestrador em `a143d2c3`)
+- **prova:** `src/modules/field-location/field-location.service.ts:21-38` grava sem checar `tracking_consent`; a telemetria checa (`src/modules/telemetry/telemetry.service.ts:108-111`, RN-TELE-01). O app recusa capturar sem consentimento, mas o backend é a autoridade final.
+- **escopo:** `pre-existente` (`15739c1b`, 2026-06-09).
+- **dono:** `B-SAN3-17` (plano SAN3 v5, item 18 ampliado ao backend).
+- **bloqueia:** o gate da versão vendável (critério 3; dado pessoal).
+- **teste de encerramento:** envio de posição de operador sem consentimento → recusado e nada gravado; com consentimento → gravado.
