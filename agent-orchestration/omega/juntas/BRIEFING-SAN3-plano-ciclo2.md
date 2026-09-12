@@ -6,13 +6,13 @@
 
 ## 0. Terreno (declarado por escrito — §A7)
 
-- **Conteúdo julgado:** `f84bc634` da branch `docs/san3-plano-saneamento` (PR #386). Base: `origin/main@15ef3fbe`.
-  Objeto do ciclo 1: `a143d2c3`. O que mudou entre os dois: `git diff --stat a143d2c3 f84bc634`.
-- **Meça na ref, nunca no disco da sessão:** `git -C <seu-worktree> show f84bc634:<caminho>` (git-bash:
+- **Conteúdo julgado:** `ecc32712` da branch `docs/san3-plano-saneamento` (PR #386). Base: `origin/main@15ef3fbe`.
+  Objeto do ciclo 1: `a143d2c3`. O que mudou entre os dois: `git diff --stat a143d2c3 ecc32712`.
+- **Meça na ref, nunca no disco da sessão:** `git -C <seu-worktree> show ecc32712:<caminho>` (git-bash:
   `export MSYS_NO_PATHCONV=1`). A norma é a do `CLAUDE.md` NA REF. Norma citada que não existe na ref não se aplica.
-- **O PR não toca código:** `git diff --stat 15ef3fbe f84bc634 -- src tests prisma frontend mobile .github scripts` vazio.
+- **O PR não toca código:** `git diff --stat 15ef3fbe ecc32712 -- src tests prisma frontend mobile .github scripts` vazio.
   Nenhuma cadeira precisa de banco nem de container.
-- **Isolamento:** worktree próprio detached em `f84bc634`, em `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-<cadeira>`,
+- **Isolamento:** worktree próprio detached em `ecc32712`, em `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-<cadeira>`,
   criado com `git -c core.longpaths=true worktree add --detach`; `npm ci` próprio se for rodar `node --test`; removido por
   `git worktree remove --force`. Gerador do índice só em cópia fora do repo. Sem junction de `node_modules`; sem
   `git stash/checkout/reset/clean` alheio; base viva fora de alvo.
@@ -74,3 +74,26 @@ Coerência de números entre o plano, `status-geral.md`, `log-execucao.md`, `Kpi
 
 Suplente nomeado re-executa o mandato inteiro; voto perdido não conta; menos de 3 votos de mérito não fecha; toda queda
 em `00-quedas.md` (P6).
+
+## 6. Terreno do ciclo 2 — o parecer do inspetor e o re-apontamento do objeto
+
+- **Inspetor:** `LIBERADO COM RESSALVA` (R1–R9), Fable 5.1, com o corpo da ref aplicado. Parecer:
+  `votos/SAN3-plano-ciclo2/00b-inspetor-terreno.md` (versionado junto com a ata).
+- **Re-apontamento (R6).** O inspetor achou `C3 <A PREENCHER>` na trilha do `R-SAN3-plano-ciclo1.md`; ao corrigir, o
+  orquestrador achou que as perguntas (a)/(b)/(c) do mesmo registro omitiam a C3. A correção entrou num commit só,
+  depois da v5 (`f84bc634`). **O objeto julgado é `ecc32712`** = `f84bc634` + esse arquivo — medido por
+  `git diff --stat f84bc634 ecc32712`, e re-verificado pelo inspetor antes da convocação.
+- **Ressalvas que toda cadeira carrega.** R2 — Docker parado: nenhuma cadeira precisa de banco; quem precisar declara
+  "não consigo medir". R3 — `guardiao-fail-closed`, `agente-ci-doutor` e `agente-dba-guardiao` foram suplentes nomeados
+  no ciclo 1, nunca instanciados (0 votos, 0 achados): elegíveis, e a ata declara a participação prévia. R4 — não há
+  cadeira de invariante financeiro: a C3 confere a C3-01 pelo texto de `decisoes.md:607-608` e pelo índice
+  `financial_titles_wo_direction_active_key`, e a ata registra a lacuna. R5 — forma da bateria, para RE-EXECUTAR e nunca
+  copiar: 3 guards de KPI = 3 arquivos / 28 testes; `kpi-freeze --check`; `node --check Kpis/app.js`;
+  `sync-agent-agents --check` = 25 agentes; gerador = 366 cabeçalhos / 355 IDs / 103 FECHADA / 263 ABERTA / 14
+  diferidas, byte-idêntico; `npm run check` exige `DATABASE_URL` fictício no ambiente e `npm run db:generate` antes
+  (sem isso, 251 falsos `TS2305`). R7 — resíduo alheio inerte (`.claude/worktrees/san2-r` vazio; edições de outras
+  sessões na árvore principal; 23 ` M` fantasma de CRLF no `san3`): não varrer, não ler como mutação. R8 — nenhum dos 6
+  corpos fixa modelo: a ata registra o modelo que rodou em cada cadeira. R9 — worktree com `-c core.longpaths=true`;
+  `git -C` sob `MSYS_NO_PATHCONV=1` exige `C:/...` (um `/c/...` fabrica "FALTA"); medir por `git show` na ref.
+- **R1 (para o orquestrador).** O `porteiro-pos-merge` deste PR recebe o corpo da ref no prompt, e a ata registra
+  papel · modelo · corpo aplicado.
