@@ -90,7 +90,8 @@ Todos com `reclass.` marcado quando a fatia os dava como não bloqueantes (51, 5
 
 ## E. Demais seções
 
-- **§0:** números novos (53 bloqueantes, 37 blocos, faixas recalculadas).
+- **§0:** números novos (54 bloqueantes — os quatro do §A e o do §G.3 —, 37 blocos, faixas recalculadas). *(Corrigido
+  pelo planejador depois da primeira passada do aplicador: esta linha dizia 53.)*
 - **§8.7:** acrescentar as reclassificações 51–53 e a correção de critério dos itens 17 e 18.
 - **§10:** nova pergunta (C2-10): o técnico lê todas as OS da organização ou só as atribuídas? Default: só as atribuídas,
   imposto no backend.

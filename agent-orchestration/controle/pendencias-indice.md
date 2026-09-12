@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **366** |
 | IDs distintos | 355 |
-| **ABERTAS** | **261** |
+| **ABERTAS** | **263** |
 | — das quais **diferidas** (balde C) | 71 |
-| — das quais **ativas nesta rodada** | **190** |
+| — das quais **ativas nesta rodada** | **192** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 105 |
+| FECHADAS | 103 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **366 cabecalhos para 355 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -68,7 +68,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 100
+## ABERTAS · balde A — material — 102
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -96,6 +96,7 @@
 | `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 5054 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
 | `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 5157 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
 | `P-OBITUARIO-DERIVADO-DO-DIRETORIO` | 5258 | MÉDIA | sim | P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` co |
+| `P-KPI-RECENT-CONGELADO` | 5460 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
 | `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5592 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
 | `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` | 6089 | MÉDIA | sim | P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · e |
 | `P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` | 6174 | MÉDIA | sim | P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simul |
@@ -138,40 +139,41 @@
 | `P-WEB-CLOUD-BILLING-CARTAZ` | 8330 | MÉDIA | sim | P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com se |
 | `P-DONO-CLOUD-BILLING-ESCOPO` | 8347 | MÉDIA | sim | P-DONO-CLOUD-BILLING-ESCOPO (2026-09-11) — Cobrança de nuvem calculada nunca vira fatura |
 | `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA` | 8364 | ALTA | sim | P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem te |
-| `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA` | 8381 | MÉDIA | sim | P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de perí |
-| `P-CHK-APLICABILIDADE-SEM-ROTA` | 8399 | MÉDIA | sim | P-CHK-APLICABILIDADE-SEM-ROTA (2026-09-11) — Motor de aplicabilidade de checklist existe |
-| `P-WEB-CHK-EXECUCOES-INEXISTENTES` | 8416 | MÉDIA | sim | P-WEB-CHK-EXECUCOES-INEXISTENTES (2026-09-11) — "Ver execuções" leva à lista de modelos; |
-| `P-WEB-PLATAFORMA-TELAS-FICCAO` | 8433 | MÉDIA | sim | P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e  |
-| `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA` | 8450 | ALTA | sim | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram  |
-| `P-WEB-ROTAS-SEM-PORTA` | 8467 | MÉDIA | sim | P-WEB-ROTAS-SEM-PORTA (2026-09-11) — Rotas vivas sem menu/link; provisionamento de módul |
-| `P-WEB-GATE-MODULO-INCOMPLETO` | 8501 | ALTA | sim | P-WEB-GATE-MODULO-INCOMPLETO (2026-09-11) — 27 itens do menu fora do gate de módulo; bac |
-| `P-MOBILE-PRESTADOR-SEM-PORTA` | 8536 | ALTA | sim | P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, mate |
-| `P-MOBILE-CONCLUSAO-SEM-PORTA` | 8553 | MÉDIA | sim | P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece,  |
-| `P-MOBILE-CATALOGO-MODULOS-INERTE` | 8570 | MÉDIA | sim | P-MOBILE-CATALOGO-MODULOS-INERTE (2026-09-11) — Catálogo de módulos nunca renderiza; Est |
-| `P-MOBILE-LGPD-GPS-SEM-PORTA` | 8587 | ALTA | sim | P-MOBILE-LGPD-GPS-SEM-PORTA (2026-09-11) — Consentimento LGPD de GPS nunca pode ser dado |
-| `P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL` | 8604 | ALTA | sim | P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca a |
-| `P-MOBILE-FILA-OS-NAO-DRENADA` | 8638 | ALTA | sim | P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" en |
-| `P-MOBILE-ESTOQUE-TECNICO-FABRICADO` | 8655 | ALTA | sim | P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente  |
-| `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8689 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
-| `P-MOBILE-FAXINA-TERMOS-TECNICOS` | 8707 | MÉDIA | sim | P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico |
-| `P-MOBILE-TESTE-ALCANCABILIDADE` | 8725 | MÉDIA | sim | P-MOBILE-TESTE-ALCANCABILIDADE (2026-09-11) — Nenhum teste prova que toda rota do app te |
-| `P-MOBILE-DESPACHO-SEM-PUSH` | 8742 | MÉDIA | sim | P-MOBILE-DESPACHO-SEM-PUSH (2026-09-11) — Despacho só chega ao técnico se ele abrir e at |
-| `P-NOTIF-SEM-CANAL-EXTERNO` | 8759 | MÉDIA | sim | P-NOTIF-SEM-CANAL-EXTERNO (2026-09-11) — Notificação só grava linha; não há canal de e-m |
-| `P-FLEET-ALERTAS-SEM-AGENDADOR` | 8810 | MÉDIA | sim | P-FLEET-ALERTAS-SEM-AGENDADOR (2026-09-11) — Alertas de frota só disparam por botão; nen |
-| `P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS` | 8827 | MÉDIA | sim | P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e co |
-| `P-KPI-MVP-REGUA-CODIGO-ESCRITO` | 8896 | MÉDIA | sim | P-KPI-MVP-REGUA-CODIGO-ESCRITO (2026-09-11) — `mvp_demo 99`/`mvp_vendavel 88` medem códi |
-| `P-DOC-GO-LIVE-READINESS-VENCIDO` | 8913 | MÉDIA | sim | P-DOC-GO-LIVE-READINESS-VENCIDO (2026-09-11) — Documento diz "nenhum código bloqueia o g |
-| `P-GOV-C28-REGULARIZACAO-NAO-ESCRITA` | 8964 | MÉDIA | sim | P-GOV-C28-REGULARIZACAO-NAO-ESCRITA (2026-09-11) — §C2.8 trava todo bloco sem parecer e  |
-| `P-GOV-DEVOPS-ESCREVE-E-VOTA` | 8998 | MÉDIA | sim | P-GOV-DEVOPS-ESCREVE-E-VOTA (2026-09-11) — `agente-devops-provisionador` pode escrever e |
-| `P-GOV-INSPETOR-RECEITAS-1` | 9015 | MÉDIA | sim | P-GOV-INSPETOR-RECEITAS-1.1-E-3.3 (2026-09-11) — Receitas do inspetor: md5 cru, falso ve |
-| `P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI` | 9032 | MÉDIA | sim | P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI (2026-09-11) — Skill afirma que teste `-db` se |
-| `P-GOV-AUDITOR-RAIZ-POR-IMPORT-META` | 9049 | MÉDIA | sim | P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (2026-09-11) — Auditor de elenco só audita a árvore o |
-| `P-GOV-SYNC-AGENTS-ARGV-FROUXO` | 9066 | MÉDIA | sim | P-GOV-SYNC-AGENTS-ARGV-FROUXO (2026-09-11) — `sync-agent-agents.mjs` com argumento desco |
-| `P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF` | 9083 | MÉDIA | sim | P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF (2026-09-11) — Segundo "contrato de execução" na ref,  |
-| `P-SAN3-ROTEIRO-DEMO-OPERACAO` | 9168 | MÉDIA | sim | P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operaçã |
-| `P-WEB-FATURAR-OS-SEM-TELA` | 9184 | ALTA | sim | P-WEB-FATURAR-OS-SEM-TELA (2026-09-12) — a web não fatura OS: a rota existe e nenhuma te |
-| `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO` | 9193 | ALTA | sim | P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO (2026-09-12) — técnico responde, conclui e dá |
-| `P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND` | 9202 | ALTA | sim | P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição d |
+| `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA` | 8382 | MÉDIA | sim | P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de perí |
+| `P-CHK-APLICABILIDADE-SEM-ROTA` | 8400 | MÉDIA | sim | P-CHK-APLICABILIDADE-SEM-ROTA (2026-09-11) — Motor de aplicabilidade de checklist existe |
+| `P-WEB-CHK-EXECUCOES-INEXISTENTES` | 8417 | MÉDIA | sim | P-WEB-CHK-EXECUCOES-INEXISTENTES (2026-09-11) — "Ver execuções" leva à lista de modelos; |
+| `P-WEB-PLATAFORMA-TELAS-FICCAO` | 8434 | MÉDIA | sim | P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e  |
+| `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA` | 8451 | ALTA | sim | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram  |
+| `P-WEB-ROTAS-SEM-PORTA` | 8468 | MÉDIA | sim | P-WEB-ROTAS-SEM-PORTA (2026-09-11) — Rotas vivas sem menu/link; provisionamento de módul |
+| `P-WEB-GATE-MODULO-INCOMPLETO` | 8502 | ALTA | sim | P-WEB-GATE-MODULO-INCOMPLETO (2026-09-11) — 27 itens do menu fora do gate de módulo; bac |
+| `P-MOBILE-PRESTADOR-SEM-PORTA` | 8537 | ALTA | sim | P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, mate |
+| `P-MOBILE-CONCLUSAO-SEM-PORTA` | 8554 | MÉDIA | sim | P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece,  |
+| `P-MOBILE-CATALOGO-MODULOS-INERTE` | 8571 | MÉDIA | sim | P-MOBILE-CATALOGO-MODULOS-INERTE (2026-09-11) — Catálogo de módulos nunca renderiza; Est |
+| `P-MOBILE-LGPD-GPS-SEM-PORTA` | 8588 | ALTA | sim | P-MOBILE-LGPD-GPS-SEM-PORTA (2026-09-11) — Consentimento LGPD de GPS nunca pode ser dado |
+| `P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL` | 8605 | ALTA | sim | P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca a |
+| `P-MOBILE-FILA-OS-NAO-DRENADA` | 8639 | ALTA | sim | P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" en |
+| `P-MOBILE-ESTOQUE-TECNICO-FABRICADO` | 8656 | ALTA | sim | P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente  |
+| `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8690 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
+| `P-MOBILE-FAXINA-TERMOS-TECNICOS` | 8708 | MÉDIA | sim | P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico |
+| `P-MOBILE-TESTE-ALCANCABILIDADE` | 8726 | MÉDIA | sim | P-MOBILE-TESTE-ALCANCABILIDADE (2026-09-11) — Nenhum teste prova que toda rota do app te |
+| `P-MOBILE-DESPACHO-SEM-PUSH` | 8743 | MÉDIA | sim | P-MOBILE-DESPACHO-SEM-PUSH (2026-09-11) — Despacho só chega ao técnico se ele abrir e at |
+| `P-NOTIF-SEM-CANAL-EXTERNO` | 8760 | MÉDIA | sim | P-NOTIF-SEM-CANAL-EXTERNO (2026-09-11) — Notificação só grava linha; não há canal de e-m |
+| `P-FLEET-ALERTAS-SEM-AGENDADOR` | 8811 | MÉDIA | sim | P-FLEET-ALERTAS-SEM-AGENDADOR (2026-09-11) — Alertas de frota só disparam por botão; nen |
+| `P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS` | 8828 | MÉDIA | sim | P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e co |
+| `P-KPI-ROADMAP-CONGELADO` | 8880 | MÉDIA | sim | P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca bloc |
+| `P-KPI-MVP-REGUA-CODIGO-ESCRITO` | 8897 | MÉDIA | sim | P-KPI-MVP-REGUA-CODIGO-ESCRITO (2026-09-11) — `mvp_demo 99`/`mvp_vendavel 88` medem códi |
+| `P-DOC-GO-LIVE-READINESS-VENCIDO` | 8914 | MÉDIA | sim | P-DOC-GO-LIVE-READINESS-VENCIDO (2026-09-11) — Documento diz "nenhum código bloqueia o g |
+| `P-GOV-C28-REGULARIZACAO-NAO-ESCRITA` | 8965 | MÉDIA | sim | P-GOV-C28-REGULARIZACAO-NAO-ESCRITA (2026-09-11) — §C2.8 trava todo bloco sem parecer e  |
+| `P-GOV-DEVOPS-ESCREVE-E-VOTA` | 8999 | MÉDIA | sim | P-GOV-DEVOPS-ESCREVE-E-VOTA (2026-09-11) — `agente-devops-provisionador` pode escrever e |
+| `P-GOV-INSPETOR-RECEITAS-1` | 9016 | MÉDIA | sim | P-GOV-INSPETOR-RECEITAS-1.1-E-3.3 (2026-09-11) — Receitas do inspetor: md5 cru, falso ve |
+| `P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI` | 9033 | MÉDIA | sim | P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI (2026-09-11) — Skill afirma que teste `-db` se |
+| `P-GOV-AUDITOR-RAIZ-POR-IMPORT-META` | 9050 | MÉDIA | sim | P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (2026-09-11) — Auditor de elenco só audita a árvore o |
+| `P-GOV-SYNC-AGENTS-ARGV-FROUXO` | 9067 | MÉDIA | sim | P-GOV-SYNC-AGENTS-ARGV-FROUXO (2026-09-11) — `sync-agent-agents.mjs` com argumento desco |
+| `P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF` | 9084 | MÉDIA | sim | P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF (2026-09-11) — Segundo "contrato de execução" na ref,  |
+| `P-SAN3-ROTEIRO-DEMO-OPERACAO` | 9169 | MÉDIA | sim | P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operaçã |
+| `P-WEB-FATURAR-OS-SEM-TELA` | 9185 | ALTA | sim | P-WEB-FATURAR-OS-SEM-TELA (2026-09-12) — a web não fatura OS: a rota existe e nenhuma te |
+| `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO` | 9194 | ALTA | sim | P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO (2026-09-12) — técnico responde, conclui e dá |
+| `P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND` | 9203 | ALTA | sim | P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição d |
 
 ## ABERTAS · balde B — processo/registro — 90
 
@@ -252,21 +254,21 @@
 | `P-GOV-AUDITOR-ARESTAS-MENORES` | 8021 | BAIXA | sim | P-GOV-AUDITOR-ARESTAS-MENORES (2026-09-08) — quatro arestas BAIXA do auditor enxuto — BA |
 | `P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT` | 8167 | BAIXA | sim | P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT (2026-09-09) — a leitura do rateio soma por ov |
 | `P-O6R-B06-DELTA-RESIDUAIS` | 8189 | BAIXA | sim | P-O6R-B06-DELTA-RESIDUAIS (2026-09-09) — dois residuais do conserto de isolamento, nomea |
-| `P-WEB-EVENTBUS-MOCK` | 8484 | BAIXA | sim | P-WEB-EVENTBUS-MOCK (2026-09-11) — Provider de eventos cicla mocks a cada 9 s contra rot |
-| `P-API-VERBOS-SEM-CONSUMIDOR` | 8519 | BAIXA | sim | P-API-VERBOS-SEM-CONSUMIDOR (2026-09-11) — Verbos de administração sem nenhuma tela (mer |
-| `P-MOBILE-STUBS-MOCKS-MORTOS` | 8621 | BAIXA | sim | P-MOBILE-STUBS-MOCKS-MORTOS (2026-09-11) — Stubs `Pending*` mortos (token local nunca nu |
-| `P-MOBILE-OCR-ANDAIME-INERTE` | 8672 | BAIXA | sim | P-MOBILE-OCR-ANDAIME-INERTE (2026-09-11) — OCR de recibo: estados, colunas e permissão s |
-| `P-JOBS-HANDLERS-PLACEHOLDER` | 8776 | BAIXA | sim | P-JOBS-HANDLERS-PLACEHOLDER (2026-09-11) — Dois handlers vazios ("Placeholder") consomem |
-| `P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR` | 8793 | BAIXA | sim | P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR (2026-09-11) — Outbox Sivec é escrito por 5 reposi |
-| `P-CATALOGO-TELAS-PLANEJADAS-AUSENTES` | 8845 | BAIXA | sim | P-CATALOGO-TELAS-PLANEJADAS-AUSENTES (2026-09-11) — Telas do catálogo nunca feitas: rota |
-| `P-DOC-CONTRATOS-PROMETEM-INEXISTENTE` | 8862 | BAIXA | sim | P-DOC-CONTRATOS-PROMETEM-INEXISTENTE (2026-09-11) — Contrato promete Cognito e `POST /mo |
-| `P-GOV-MOLDE-SEM-CORPOS-DE-JURADO` | 8930 | BAIXA | sim | P-GOV-MOLDE-SEM-CORPOS-DE-JURADO (2026-09-11) — Molde de plano/briefing não prevê os cor |
-| `P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO` | 8947 | BAIXA | sim | P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO (2026-09-11) — Ata e votos do B06 com resíduos: plano |
-| `P-GOV-SKILL-384-SEM-DECISAO` | 8981 | BAIXA | sim | P-GOV-SKILL-384-SEM-DECISAO (2026-09-11) — Skill `backend-review-ts-prisma` (#384) entro |
-| `P-GOV-DECISOES-1968-GATE-INEXISTENTE` | 9100 | BAIXA | sim | P-GOV-DECISOES-1968-GATE-INEXISTENTE (2026-09-11) — Decisão viva sustentada pelo parecer |
-| `P-GOV-CONTRATO-HIGIENE-TEXTUAL` | 9117 | BAIXA | sim | P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` ante |
-| `P-GOV-MONOCULTURA-FABLE-NOS-GATES` | 9134 | BAIXA | sim | P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo c |
-| `P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO` | 9151 | BAIXA | sim | P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos  |
+| `P-WEB-EVENTBUS-MOCK` | 8485 | BAIXA | sim | P-WEB-EVENTBUS-MOCK (2026-09-11) — Provider de eventos cicla mocks a cada 9 s contra rot |
+| `P-API-VERBOS-SEM-CONSUMIDOR` | 8520 | BAIXA | sim | P-API-VERBOS-SEM-CONSUMIDOR (2026-09-11) — Verbos de administração sem nenhuma tela (mer |
+| `P-MOBILE-STUBS-MOCKS-MORTOS` | 8622 | BAIXA | sim | P-MOBILE-STUBS-MOCKS-MORTOS (2026-09-11) — Stubs `Pending*` mortos (token local nunca nu |
+| `P-MOBILE-OCR-ANDAIME-INERTE` | 8673 | BAIXA | sim | P-MOBILE-OCR-ANDAIME-INERTE (2026-09-11) — OCR de recibo: estados, colunas e permissão s |
+| `P-JOBS-HANDLERS-PLACEHOLDER` | 8777 | BAIXA | sim | P-JOBS-HANDLERS-PLACEHOLDER (2026-09-11) — Dois handlers vazios ("Placeholder") consomem |
+| `P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR` | 8794 | BAIXA | sim | P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR (2026-09-11) — Outbox Sivec é escrito por 5 reposi |
+| `P-CATALOGO-TELAS-PLANEJADAS-AUSENTES` | 8846 | BAIXA | sim | P-CATALOGO-TELAS-PLANEJADAS-AUSENTES (2026-09-11) — Telas do catálogo nunca feitas: rota |
+| `P-DOC-CONTRATOS-PROMETEM-INEXISTENTE` | 8863 | BAIXA | sim | P-DOC-CONTRATOS-PROMETEM-INEXISTENTE (2026-09-11) — Contrato promete Cognito e `POST /mo |
+| `P-GOV-MOLDE-SEM-CORPOS-DE-JURADO` | 8931 | BAIXA | sim | P-GOV-MOLDE-SEM-CORPOS-DE-JURADO (2026-09-11) — Molde de plano/briefing não prevê os cor |
+| `P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO` | 8948 | BAIXA | sim | P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO (2026-09-11) — Ata e votos do B06 com resíduos: plano |
+| `P-GOV-SKILL-384-SEM-DECISAO` | 8982 | BAIXA | sim | P-GOV-SKILL-384-SEM-DECISAO (2026-09-11) — Skill `backend-review-ts-prisma` (#384) entro |
+| `P-GOV-DECISOES-1968-GATE-INEXISTENTE` | 9101 | BAIXA | sim | P-GOV-DECISOES-1968-GATE-INEXISTENTE (2026-09-11) — Decisão viva sustentada pelo parecer |
+| `P-GOV-CONTRATO-HIGIENE-TEXTUAL` | 9118 | BAIXA | sim | P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` ante |
+| `P-GOV-MONOCULTURA-FABLE-NOS-GATES` | 9135 | BAIXA | sim | P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo c |
+| `P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO` | 9152 | BAIXA | sim | P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 71
 
@@ -344,7 +346,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3536 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3580 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 105
+## FECHADAS — 103
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -441,7 +443,6 @@
 | `P-GOV-MAIN-SEM-PROTECAO` | 4810 | ALTA | sim | P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24) |
 | `P-C7-BIS-TER-FORA-DA-MAIN` | 4900 | MÉDIA | sim | P-C7-BIS-TER-FORA-DA-MAIN (2026-08-30) — MÉDIA · **FECHADA no mesmo PR que a abriu** |
 | `P-SAN2-2-PORTA-55432-RESERVADA` | 4977 | BAIXA | sim | P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produ |
-| `P-KPI-RECENT-CONGELADO` | 5460 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
 | `P-SYNC-AGENTS-NAO-RECURSIVO` | 5661 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
 | `P-O6R-B07A-REGISTRO-A2-DIVIDA-368` | 6523 | — | **a atribuir** | P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do # |
 | `P-O6R-B07B-STAGING-SEM-UPLOAD` | 7022 | ALTA | sim | P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do depl |
@@ -452,4 +453,3 @@
 | `P-GOV-NOTA-KPI-CONGELADA` | 7777 | MÉDIA | **a atribuir** | P-GOV-NOTA-KPI-CONGELADA (2026-09-07) — nota de KPI medida num head antigo, apresentada  |
 | `P-GOV-BAIXA-CICLO1-FECHADOS` | 7802 | BAIXA | **a atribuir** | P-GOV-BAIXA-CICLO1-FECHADOS (2026-09-08) — os três achados BAIXA do ciclo 1, fechados na |
 | `P-GOV-INSPETOR-33-SEM-NORMA` | 7920 | ALTA | sim | P-GOV-INSPETOR-33-SEM-NORMA (2026-09-08) — o contrato do inspetor manda bloquear por nor |
-| `P-KPI-ROADMAP-CONGELADO` | 8879 | MÉDIA | sim | P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca bloc |

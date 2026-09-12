@@ -4306,11 +4306,13 @@ presença antes de escrever.
 os 5 mais pesados antes de aceitar; (8) o `critico-adversarial` reprovou a 1ª versão do plano — 17 achados, 6
 `bloqueia` — e a v3 respondeu item a item, depois de conferir por script **todo** caminho citado contra a árvore
 (não só os cinco que o crítico apontou) e cada fato novo que ele citou; (9) o agente de registro aplicou os 52
-flips numa cópia de bancada com asserção por linha antes de tocar o worktree (FECHADAS 72 → 105 contra a base, com as 2 pendências do painel resolvidas no próprio PR; índice
+flips numa cópia de bancada com asserção por linha antes de tocar o worktree (FECHADAS 72 → 105 contra a base, com as 2 pendências do painel resolvidas no próprio PR — 103 depois do ciclo 2, que as reabriu como PARCIAL; índice
 byte-idêntico à saída do gerador) e mediu em bancada que o gerador lê só a 1ª linha de status.
 
 Números: 231 IDs medidos (31 fechados no código × abertos no texto, 24 parciais — 21 delas sem o texto dizer —,
-175 abertos, 1 não medido; 52 flips); 49 ausentes registradas (50 da fatia; `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação); gate com 49 bloqueantes, 34 blocos e 6 atos do dono; melhor
-caso ~85–95 h, realista 12–14 dias (v4, depois da rodada 2 do crítico, que reprovou a v3 com 2 `bloqueia`). A PD do antivírus foi transcrita
+175 abertos, 1 não medido; 52 flips); 49 ausentes registradas (50 da fatia; `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação); gate com 54 bloqueantes, 37 blocos e 6 atos do dono (v5); melhor
+caso ~120–130 h, realista ≈ 14 dias com 4 frentes e ≈ 20,5 a 21 com 2 (v5, depois da junta do ciclo 1; a v4 respondia à rodada 2 do crítico, que reprovou a v3 com 2 `bloqueia`). A PD do antivírus foi transcrita
 pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escrita e o arquivo de saída ficou
 vazio), sem edição de conteúdo.
+
+Ciclo 2 (2026-09-12): junta do plano, ciclo 1, REPROVADO 0×3 (26 achados, 7 `bloqueia`); correção planejada pelo orquestrador (`agent-orchestration/omega/planos/SAN3-plano-ciclo2-correcao.md`) e aplicada por agente distinto, sem commit: itens 50–54, blocos `B-SAN3-25`/`B-SAN3-26` e `B-SAN3-04` dividido (54 bloqueantes, 37 blocos), `D-Ω4-C2` no REGISTRO, as duas pendências do painel de volta a ABERTA (PARCIAL), agenda recalculada por script (0 violações); índice pelo gerador: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS.

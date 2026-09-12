@@ -5530,7 +5530,7 @@ derivar do `history`, ou um guard permanente fica **vermelho** quando o PR-topo 
 PR-topo do `history`. Prova **por mutação**, como os outros guards de KPI já se provam: mergear uma entrega
 sem tocar `recent` tem de acender vermelho.
 
-- **status:** FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro."
+- **status:** ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`recent.itens` com as entregas do #369 ao #386 e `as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.""
 
 ---
 
@@ -8367,12 +8367,13 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **fonte (fatia AUSENTES, §2a):** sintese B9, B10, A6
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rl financial-account frontend/src` = 0; `grep -rn "/pay" frontend/src` = 0; front só lista/cria/muda status (`ChargesPage`, `PaymentsPage`, `FinanceiroPage` via `financial-titles.adapter`); backend `financial-entry.routes.ts:95` `POST /financial-titles/:id/pay`, único caminho a `paid` (`financial-title.service.ts:284-286`, sintese)
+- **emenda (junta do PR #386, ciclo 1 — C3-04, 2026-09-12):** a prova passa a ser "nenhuma chamada a `/financial-titles/:id/pay` em `frontend/src`" — o `grep "/pay"` cru acha 34 linhas de `/payable`, `/payable-source`, `/payments`, `/payee`, `/payload`.
 - **gravidade:** ALTA
 - **origem:** Ω4-2/Ω4-4 (2026-07): backend sem fatia de front
 - **escopo:** pre-existente (evidência de data/origem: a origem acima)
 - **risco:** 7-fluxo-necessario-para-venda
 - **dependências:** B-O6R-02 (atomicidade do pay) já mergeado; conta antes da baixa
-- **dono:** `B-SAN3-12` (plano SAN3 §4.1 item 26); bloco dono proposto pela fatia: bloco web financeiro ("ciclo do dinheiro")
+- **dono:** `B-SAN3-12` (plano SAN3 §4.1 item 28); bloco dono proposto pela fatia: bloco web financeiro ("ciclo do dinheiro")
 - **impacto vendável:** **BLOQUEIA** — pela web um título nunca vira pago nem caixa
 - **teste de encerramento:** smoke: criar conta → emitir título → baixar pela tela → saldo em `GET /financial-accounts/:id/balance`; título `paid`; 403 e estados §7
 
@@ -8878,7 +8879,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca blocos mergeados como "a_fazer" — MÉDIA
 
-- status: FECHADA — o PR #386 (plano SAN3) atualizou `roadmap.blocos` do painel: `B-O6R-02` → `concluido` (os achados do bloco fecharam no #371) e `B-O6R-07` → `parcial` (07a e 07b mergeados; residuais no `B-O6R-07c` e no `B-AV-REAL`); crítico SAN3 r2, CR2-03; critério 8 do dono. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)"
+- status: ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`roadmap.blocos`: `B-O6R-02` concluido com o PR #371, `B-O6R-07` parcial, `B-O6R-06` com o PR #385; `roadmap.as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — o PR #386 (plano SAN3) atualizou `roadmap.blocos` do painel: `B-O6R-02` → `concluido` (os achados do bloco fecharam no #371) e `B-O6R-07` → `parcial` (07a e 07b mergeados; residuais no `B-O6R-07c` e no `B-AV-REAL`); crítico SAN3 r2, CR2-03; critério 8 do dono. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)""
 - **fonte (fatia AUSENTES, §2a):** sintese §7
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json` `roadmap.as_of` = 2026-08-19; `B-O6R-02` e `B-O6R-07` `a_fazer` (mergeados em #371 e #369/#380)
