@@ -4306,11 +4306,11 @@ presença antes de escrever.
 os 5 mais pesados antes de aceitar; (8) o `critico-adversarial` reprovou a 1ª versão do plano — 17 achados, 6
 `bloqueia` — e a v3 respondeu item a item, depois de conferir por script **todo** caminho citado contra a árvore
 (não só os cinco que o crítico apontou) e cada fato novo que ele citou; (9) o agente de registro aplicou os 52
-flips numa cópia de bancada com asserção por linha antes de tocar o worktree (FECHADAS 73 → 103; índice
+flips numa cópia de bancada com asserção por linha antes de tocar o worktree (FECHADAS 72 → 105 contra a base, com as 2 pendências do painel resolvidas no próprio PR; índice
 byte-idêntico à saída do gerador) e mediu em bancada que o gerador lê só a 1ª linha de status.
 
 Números: 231 IDs medidos (31 fechados no código × abertos no texto, 24 parciais — 21 delas sem o texto dizer —,
-175 abertos, 1 não medido; 52 flips); 49 ausentes registradas (50 da fatia; `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação); gate com 44 bloqueantes, 32 blocos e 6 atos do dono; melhor
-caso ~80–85 h, realista 10–12 dias. A PD do antivírus foi transcrita
+175 abertos, 1 não medido; 52 flips); 49 ausentes registradas (50 da fatia; `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação); gate com 49 bloqueantes, 34 blocos e 6 atos do dono; melhor
+caso ~85–95 h, realista 12–14 dias (v4, depois da rodada 2 do crítico, que reprovou a v3 com 2 `bloqueia`). A PD do antivírus foi transcrita
 pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escrita e o arquivo de saída ficou
 vazio), sem edição de conteúdo.

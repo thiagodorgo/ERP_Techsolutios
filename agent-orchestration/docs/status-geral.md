@@ -4378,9 +4378,9 @@ IDs), os 32 achados Ω6R e 140 candidatos a pendência fora do registro. **O reg
 231 entradas (22,5%)** — 31 fechadas no código dadas como abertas, 21 parciais sem dizer — **e faltavam 49
 pendências reais** (a fatia confirmou 50; uma caiu na reconfirmação). Causa mecânica dos flips: o registro é só-apensar e o gerador do índice lê **só a primeira**
 linha de status (medido em bancada: até "RESOLVIDO PARCIAL" sai FECHADA). O PR do plano reescreve as 52 linhas
-canônicas (FECHADAS no índice: 73 → 103) e registra as 49 ausentes (índice: 363 cabeçalhos, 103 FECHADAS, 260 ABERTAS, 0 contraditórias).
+canônicas (FECHADAS no índice: 72 → 105 contra a base — 31 flips e as 2 pendências do painel que o próprio PR resolve) e registra as 49 ausentes (índice: 363 cabeçalhos, 103 FECHADAS, 260 ABERTAS, 0 contraditórias).
 
-**Gate da versão vendável: 44 bloqueantes, fechados por 32 blocos, e 6 atos que só o dono pratica** — nenhum
+**Gate da versão vendável: 49 bloqueantes, fechados por 34 blocos, e 6 atos que só o dono pratica** — nenhum
 bloco começado. Além dos P0/P1 da auditoria (estoque, despesa, escopo por objeto, antivírus), o inventário trouxe:
 perda de dado no app de campo e na web (a OS fabricada quando o backend recusa o create); a baixa de título que
 **não existe** pela web; "Minhas OS" listando a organização inteira; entrega do guincho e fluxo Prestador sem
@@ -4389,16 +4389,18 @@ Financeiro que some para o papel Financeiro; telas de menu e do console da plata
 nada no repositório que imponha ao runtime um papel de banco sem `BYPASSRLS` (o papel real da produção não foi
 medido — é secret do Fly).
 
-**Viabilidade do prazo de 48 h, registrada como o dono mandou:** não cabe. Melhor caso **~80–85 h** de relógio
+**Viabilidade do prazo de 48 h, registrada como o dono mandou:** não cabe. Melhor caso **~85–95 h** de relógio
 (4 frentes, cada bloco no tempo do mais rápido já medido, com o porteiro e a reexecução de KPI no caminho
-crítico); realista **10 a 12 dias** (mediana medida dos blocos grandes: 57 h). Sem redução de escopo: a execução
+crítico); realista **12 a 14 dias** (mediana medida dos blocos grandes: 57 h). Sem redução de escopo: a execução
 segue pela ordem de risco, e os atos do dono ficam **dentro** do gate. Plano: `docs/revisoes/SAN3/PLANO_SAN3.md`;
 inventário: `docs/revisoes/SAN3/inventario/`. Registrados também: `PD-O6R-B07B-CLAMD-INSTREAM` (54 fontes) e
 `D-TRACCAR-HTTP-PRIVADO-AWS` (com o conflito com `D-INFRA-PROVIDER`).
 
 **O crítico adversarial reprovou a 1ª versão do plano** (17 achados, 6 `bloqueia`: objeto incompleto, cinco
 caminhos inexistentes, o degrau "G1/G2" que era redução de escopo não declarada, teste impossível, frentes que
-não eram disjuntas, E2E que não fechava a pendência). A v3 responde item a item (§12 do plano).
+não eram disjuntas, E2E que não fechava a pendência). A v3 respondeu item a item (§12 do plano). A rodada 2 — a última — reprovou a v3 com 2 `bloqueia` (dois blocos de
+dinheiro cujo conserto colide com decisões registradas, `D-Ω4-C1` e `D-Ω4-7-NO-TITLE`; e um pré-requisito do
+item 9 que tinha sumido) e 7 ajustes; a v4 responde no §13, e os dois conflitos estão registrados em `decisoes.md`.
 
-**Próximo passo:** rodada 2 do crítico sobre o head final, inspetor de
-terreno, junta (maioria de 3), CI, merge, porteiro — e então as quatro frentes do plano.
+**Próximo passo:** inspetor de terreno, junta (unanimidade de 3 — o PR fecha por presença pendências de
+segurança, permissão e dinheiro), CI, merge, porteiro — e então as quatro frentes do plano.

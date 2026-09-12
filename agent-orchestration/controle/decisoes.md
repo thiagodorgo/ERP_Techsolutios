@@ -2308,3 +2308,26 @@ ou (b) só o Traccar vive na AWS e a ponte com o ERP em Fly.io usa um mecanismo 
 não é "dentro da AWS" ao pé da letra). Até lá, **nenhum IaC de Fly.io é apagado** e nenhuma migração de
 provedor começa. A PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`) já traz os dois desenhos (Fly 6PN e
 Fargate privado) para que o `B-AV-REAL` não fique preso a esta escolha.
+
+---
+
+## REGISTRO-SAN3-CONFLITOS (2026-09-11) — duas pendências de dinheiro cujo conserto colide com decisões registradas (§A2)
+
+**Não é decisão.** É o registro, antes de qualquer consolidação, de dois conflitos que o `critico-adversarial` do
+PR #386 mediu (rodada 2, CR2-01) e que o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`) leva ao gate da versão
+vendável pelo critério 4 do dono ("fluxos financeiros preservam dinheiro exato").
+
+1. **`P-Ω4-3-REFATURAR-DELTA` × `D-Ω4-C1` (anti-refaturamento).** Item lançado depois do 1º faturamento de uma OS
+   nunca é faturado: o faturamento carimba os itens incluídos (`D-Ω4-C1`) e o índice único parcial
+   `financial_titles_wo_direction_active_key` (`prisma/migrations/20260811000000_add_invoicing/migration.sql:25-27`)
+   admite **um** título ativo por OS e direção — mesmo com o primeiro já pago. Faturar o delta exige mudar esse
+   índice, ou o desenho do título, **sem perder** o anti-refaturamento do que já foi faturado.
+2. **`P-Ω4-7-DUPLA-CONTAGEM` × `D-Ω4-7-NO-TITLE`.** A decisão tirou `title_id` do cheque ("o registro de cheque é
+   INDEPENDENTE de título") e declarou a dupla contagem "risco de PROCESSO, fora do escopo do backend deste
+   bloco". Travar a dupla porta — baixa do título por `payTitle(payment_method='check')` × compensação do cheque do
+   mesmo dinheiro — exige um vínculo cheque ↔ título que a decisão excluiu.
+
+**Quem resolve e como:** a junta de cada bloco (`B-SAN3-02`, `B-SAN3-20`; unanimidade de 3 + crítico) revê a
+decisão com o desenho medido pelo planejador; a política de produto por trás (faturar o delta; vincular cheque a
+título) está no §10 do plano como pergunta ao dono, com default **sim** — o default não reduz escopo. **Até a
+revisão, as duas decisões seguem valendo** e nenhum código as contraria.

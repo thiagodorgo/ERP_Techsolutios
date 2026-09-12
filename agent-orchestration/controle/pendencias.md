@@ -484,7 +484,7 @@
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
-- **emenda (inventário SAN3, fatia B1, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, tabela de bloqueantes do G1, bloco `B-SAN3-05`) a classifica como **bloqueante do gate vendável** pelo critério 2 do dono ("isolamento multi-tenant validado"): `docker-compose.prod.yml:35,57` conecta como `postgresql://postgres:postgres@…` (superusuário), e a RLS fica inerte — foi o que escondeu a soma entre organizações achada no #385. A fatia B1 a dava como não bloqueante por si; o plano registra a reclassificação como alvo do crítico (§A2), sem consolidação silenciosa.
+- **emenda (inventário SAN3, fatia B1, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 9, bloco `B-SAN3-05`) a classifica como **bloqueante do gate vendável** pelo critério 2 do dono ("isolamento multi-tenant validado"): nada no repositório impõe `NOSUPERUSER NOBYPASSRLS` ao papel de runtime; o compose de subida/smoke (`docker-compose.prod.yml:35,57`) conecta como `postgres`; o papel real da produção é secret do Fly e **não foi medido**. Corrigido em 2026-09-11 pelo crítico SAN3 (CR1-06, CR2-06): a versão anterior desta emenda afirmava que a produção roda como superusuário e que isso escondeu a soma do #385 — a soma aconteceu em dev/CI. A fatia B1 a dava como não bloqueante por si; o plano registra a reclassificação como alvo do crítico (§A2), sem consolidação silenciosa.
 
 ## P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13)
 - descricao: `npm run test:e2e` (Playwright) NÃO entra no gate obrigatório do CI neste PR Ω-GATE — exige app
@@ -1086,6 +1086,7 @@ Fix: índice único parcial (tenant_id, reversal_of) WHERE reversal_of IS NOT NU
 $transaction. Casa com o tratamento de atomicidade do P-Ω4-4-LIQUID-ATOMIC.
 
 - **status:** FECHADA — índice único parcial `financial_entries_reversal_of_active_key` em `(tenant_id, reversal_of)` (`prisma/migrations/20260869000000_add_financial_invariants/migration.sql:38`) + `uow.run`/`findByIdForUpdate` no serviço, com `tests/financial-entry-delete-reverse-race-db.test.ts` no head `15ef3fbe` (entrou em `99f18403`, #371, B-O6R-02 ciclo 5); ressalva do inventário: o índice é condicional — a migração emite WARNING e segue sem ele se houver duplicata legada (`:43`) (inventário SAN3, fatia A1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** MEDIA · **dono:** a atribuir
+- **ressalva (crítico SAN3 r2, CR2-10, 2026-09-11):** o índice único é criado sob condição — numa base com pares de estorno duplicados pré-existentes ele não nasce (`prisma/migrations/20260869000000_add_financial_invariants/migration.sql:43`). Não há base de produção ainda; conferir no go-live (ato do dono, plano SAN3 §4.2).
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-CHOKEPOINT-CLOSING — chokepoint só bloqueia 'closed', não 'closing' — ✅ RESOLVIDO no Ω4-6 (M2)
@@ -1344,6 +1345,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
   para drenar a fila. Não-bloqueante (sistema novo não tem fila legada com cancels).
 
 - **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **plano SAN3 (2026-09-11, crítico r2, CR2-03):** o resíduo `P-Ω3F6-CANCEL-RACE` entra no gate (critério 4: item financeiro criado em OS cancelada; a regra do plano não admite exceção por janela) — bloco `B-SAN3-23`. `P-Ω3F6-CANCEL-IDEM` e `P-Ω3F6-MOBILE-DEADLETTER` ficam fora, com a condição medida no §4.3 do plano.
   <sub>**REABERTA em 2026-08-29 — achado A-1 da junta do SAN2-1, gravidade `bloqueia`.** Esta entrada foi
   marcada FECHADA pela primeira passada da triagem porque o cabeçalho diz "RESOLVIDOS". **Está errado:** o
   cabeçalho fala dos **três** defeitos do cluster, e o corpo, logo abaixo, diz textualmente *"Residuais BAIXA
@@ -1696,6 +1698,7 @@ rodada de saneamento de RBAC (§A2 — registradas para não consolidar em silê
 Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, caso a caso.
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 3 lido ao pé da letra — o papel `manager` tem `checklist_runs:acknowledge` no catálogo (`catalog.ts:574`) além do que `RBAC_MATRIX.md:43-44` concede. Bloco `B-SAN3-04`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-IMPOUND-CHK-VISIBILITY (2026-08-01) — consequência de RBAC no endpoint de custódia (conflito §A2 com D-record da rota impound checklist-runs)
@@ -3293,7 +3296,7 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
   decisão**).
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B2: 2 P1 (`Ω6R-QUA-004`, `Ω6R-QUA-005`), um deles de perda de dado — o material do prestador some no restart (`prestador_repository.dart:121`, `forEach` sem `await`); o detalhe/status/assign remoto da OS lê o envelope errado (`work_order_remote_api.dart:99,115,156`).
 
-- **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, tabela de bloqueantes do G1, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
+- **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -5524,7 +5527,7 @@ derivar do `history`, ou um guard permanente fica **vermelho** quando o PR-topo 
 PR-topo do `history`. Prova **por mutação**, como os outros guards de KPI já se provam: mergear uma entrega
 sem tocar `recent` tem de acender vermelho.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.
+- **status:** FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro."
 
 ---
 
@@ -7379,6 +7382,7 @@ O **rateio** já não depende disso — este bloco o passou a ler por tenant, so
 leituras de plataforma **fora** do rateio.
 
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
+- **plano SAN3 (2026-09-11, crítico r2, CR2-02):** entra no gate como pré-requisito do item 9 — no dia em que o papel de runtime deixar de ter `BYPASSRLS`, estas leituras (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `RlsPrismaCloudUsageRepository`) zeram o resumo de uso da plataforma e a tela Cloud Billing. Bloco `B-SAN3-05`.
   (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
   descartável, papel `NOSUPERUSER NOBYPASSRLS`.
 
@@ -8170,6 +8174,7 @@ instância dele movendo a própria suíte para a janela reservada `2028-02`, mas
 para o resto da casa — é a **direção 2** da colisão que o conserto de isolamento teve de contornar.
 
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
+- **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 4 — uma reimportação do mesmo período soma o custo em dobro no rateio; "há um import por período" é premissa, não trava. Bloco `B-SAN3-03`.
   **dono:** próximo bloco de `cloud-cost-allocation` (o `§5` do `B-O6R-06` proíbe `src/**`) ·
   **bloqueia:** nada. **Correção proposta:** `import_id` opcional em `listCostLineItems`, com o serviço
   passando o import da run quando houver; **ou** decisão explícita de que o rateio é por período e não por
@@ -8373,6 +8378,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 ## P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de período e política de comissão sem tela; backend pronto — MÉDIA
 
 - status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **plano SAN3 (2026-09-11, crítico r2, CR2-12):** entra no gate pelo critério 7 — o `mvp_vendavel` já conta fechamento de período e cheque como núcleo vendável, e o default de escopo não deixa sair o que o produto diz entregar. Bloco `B-SAN3-24`.
 - **fonte (fatia AUSENTES, §2a):** sintese B11-B13
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rln /cheques frontend/src` = 0; `grep -rln financial-period frontend/src` = 0; `commissions.service.ts:44,112` consome só `statements/summary`, `my-summary`, `settlements` — `policies`/`basis-events` sem consumidor
@@ -8866,7 +8872,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca blocos mergeados como "a_fazer" — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — o PR #386 (plano SAN3) atualizou `roadmap.blocos` do painel: `B-O6R-02` → `concluido` (os achados do bloco fecharam no #371) e `B-O6R-07` → `parcial` (07a e 07b mergeados; residuais no `B-O6R-07c` e no `B-AV-REAL`); crítico SAN3 r2, CR2-03; critério 8 do dono. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)"
 - **fonte (fatia AUSENTES, §2a):** sintese §7
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json` `roadmap.as_of` = 2026-08-19; `B-O6R-02` e `B-O6R-07` `a_fazer` (mergeados em #371 e #369/#380)
