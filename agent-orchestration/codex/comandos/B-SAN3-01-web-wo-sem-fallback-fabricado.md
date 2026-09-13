@@ -70,3 +70,18 @@ mergear** depois do #386, carrega as dívidas dele (ver o comando do `B-SAN3-04a
 
 Escopo respeitado · bateria verde · estados §7 · sem termo técnico nem dado inventado na UI · KPI no PR · junta · §C5 ·
 porteiro. ID `B-SAN3-01` · PR # · merge commit · approved head · junta · status.
+
+## Emenda do orquestrador — decisões sobre o plano (2026-09-13)
+
+Plano do bloco: `agent-orchestration/omega/planos/B-SAN3-01-plano.md` (`planejador-mestre`, Fable). Decisões, para a ata:
+
+- **(a) Ratificada a ampliação nominal do §3.2 do plano:** `frontend/src/modules/operations/dispatches/pages/OperationsDispatchesPage.tsx`
+  entra no escopo **só** para `loadDetail` (mesmo módulo do `dispatches.service.ts` nomeado). É o único conserto que fecha a
+  propriedade — nenhuma via da web inventa despacho quando o backend falha; deixar o service intocado fecharia só a instância.
+  Os testes X8/X9 do §6 entram. A `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` nasce já fechada por este bloco (ou não nasce — o plano
+  decide a forma); as demais do §3.4 nascem com os donos propostos.
+- **(b)** A célula do item 4 no §4.1 do `docs/revisoes/SAN3/PLANO_SAN3.md` **não** muda neste PR: o fechamento da `P-008` vai no
+  registro, no `status-geral.md` e no log. O plano SAN3 é a linha de base do gate; a recontagem é do `B-SAN3-10`.
+- **(c)** As dívidas do #386 ficam no `B-SAN3-04a`; se este bloco for o primeiro a mergear, o orquestrador as acrescenta aqui.
+- **(d)** Coordenação: o `B-SAN3-04a` concede `work_orders:create` ao `operator`. Os testes deste bloco usam `tenant_admin` e
+  `manager` (CE-G2, §7 do plano) e não dependem da ordem dos dois merges.
