@@ -620,5 +620,6 @@ A primeira aplicação do §C.7 perdeu o critério `as_of` (teste (g) do `B-SAN3
 **Números:** 56 bloqueantes (eram 54: itens 55 e 56) em 37 blocos e 6 atos do dono; melhor caso e realista inalterados
 (§9); índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. **Quem:** planejou o orquestrador
 (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`); aplicou um agente distinto, que não achou nem
-planejou (§C7.4-bis); **conferência de aplicação: a preencher pela cadeira de registro** (não é ciclo de mérito).
+planejou (§C7.4-bis); **conferência de aplicação** (`agente-ci-doutor`; não é ciclo de mérito): NÃO CONFERE em `042e689e` (abaixo), **CONFERE em
+`bb3f5925`** — `agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`.
 A conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS.
