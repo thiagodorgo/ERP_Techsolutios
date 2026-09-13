@@ -622,3 +622,224 @@ EOL → PLANO LF 623 · pendencias.md CRLF 9297/0 · índice LF 459 · kpis-late
 **Nenhuma** entre plano e árvore. Ficam reportados três pontos: a adaptação das emendas das hospedeiras ("emenda sobre
 `X`"), o achado da propriedade na `P-RBAC-CHECKLIST-DRIFT` e o residual dos itens 2, 19, 24, 30 e 31, que só trazem o
 ID do achado Ω6R.
+
+## 10. Quarta passada — CONF-01 e CONF-02
+
+A conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) deu NÃO CONFERE (CONF-01 bloqueia; CONF-02 nota).
+O planejador assumiu o defeito: a instrução D14 enumerava os donos pela coluna de IDs do §4.1, e a fonte certa são as
+entradas do registro que carregam cada item. Depois, uma emenda da instrução trouxe a **regra do sujeito**: toda entrada
+que tem o item como sujeito nomeia o bloco, e as entradas que só citam o ID no corpo não contam. O critério de fim passou
+a ser a ferramenta calibrada do orquestrador, `<scratchpad>/conferir_donos_pela_fonte.py`.
+
+Worktree `san3` em `042e689e`, limpo no início. Backup do estado de partida em `opB/backup/*.pos-passada3`. Scripts:
+`opB/dono_check3.py` (reescrito para a regra do sujeito; a 1ª versão desta passada nunca foi executada), `opB/indice_dono.py`,
+`opB/reescritas2.py` e `opB/pass4_texto.py`.
+
+### 10.1 A enumeração pela fonte, hospedeira por hospedeira
+
+**Itens com achado `Ω6R-*` na coluna de IDs:** 10 — 1, 2, 3, 7, 11, 19, 24, 27, 30 e 31 (confirmado por script).
+Sujeito = entrada cujo cabeçalho traz o ID, em forma longa ou curta, ou o bullet/emenda "sobre" o ID numa hospedeira.
+Antes (`042e689e`) → depois:
+
+| item | achado → bloco do §4.1 | sujeitos (cabeçalho) | antes | o que foi feito |
+|---|---|---|---|---|
+| 1 | `Ω6R-DAT-002` → `B-O6R-04a` | `P-020` (ID da coluna; já nomeava) · `P-O6R-B04` (não nomeava) | PARCIAL | emenda na `P-O6R-B04` (l.2895) |
+| 2 | `Ω6R-DAT-003` → `B-O6R-04a` | `P-O6R-B04` | FALHA | emenda na `P-O6R-B04` (l.2896) |
+| 3 | `Ω6R-QUA-005` → `B-O6R-11` | `P-O6R-B11` (nomeia; emenda de dono da 3ª passada) | OK | — |
+| 7 | `Ω6R-ARQ-004` → `B-O6R-09` | `P-O6R-B09` (nomeia) | OK | — |
+| 11 | `Ω6R-SEC-002` → `B-O6R-07c` | `P-O6R-B07` (nomeia no texto, ver 10.3) · `P-O6R-SUBRECURSO-OBJECT-SCOPE` (nomeia) | OK | — |
+| 19 | `Ω6R-DIN-009` → `B-O6R-03a` | `P-O6R-B03` | FALHA | emenda na `P-O6R-B03` (l.2830) |
+| 24 | `Ω6R-DAT-004` → `B-O6R-12` | `P-O6R-B12` ("**Dono:** próximo agente…", "sem bloco até hoje") | FALHA + 1 aviso | emenda na `P-O6R-B12` (l.2929), que declara `B-O6R-12` e deixa o antigo como histórico |
+| 27 | `Ω6R-SEC-004` → `B-AV-REAL` | `P-O6R-B07` (não nomeava) · `P-O6R-B07B-SCANNER-AV-REAL` (nomeia) | PARCIAL | emenda na `P-O6R-B07` (l.3092) |
+| 30 | `Ω6R-QUA-001` → `B-O6R-03b` | `P-O6R-B03` | FALHA | emenda na `P-O6R-B03` (l.2831) |
+| 31 | `Ω6R-QUA-002` → `B-O6R-04b` | `P-O6R-B04` | FALHA | emenda na `P-O6R-B04` (l.2897) |
+
+**As 7 emendas (F1)** ficam no fim da hospedeira, **uma por achado**. A necessidade de cada uma foi julgada sobre o texto
+anterior ao F1, por isso a `P-O6R-B04` tem uma para `DAT-002` e outra para `DAT-003`, embora as duas digam `B-O6R-04a`.
+Formato do F2:
+`- **dono:** `<bloco>` (plano SAN3, §4.1 item N — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `<achado>`: o achado `<achado>` (item N) tem dono `<bloco>`.`
+A da `P-O6R-B12` continua: "O dono deste achado passa a ser `B-O6R-12` (item 24); o "Dono: próximo agente…" e o "sem
+bloco até hoje" do cabeçalho ficam como histórico." Nenhum cabeçalho e nenhuma linha de status foram reescritos.
+
+**Adaptação reportada:** "emenda sobre `<achado>`" é o que faz o `conferir_ponteiros.py` atribuir o ponteiro "§4.1 item N"
+ao achado. Sem ela, o ponteiro cairia na `P-O6R-B03/B04/B07/B12`, que não estão no §4.1, e a contagem sairia de 0.
+
+**Entradas que só citam o achado no corpo** não contam para aprovar nem para exigir, pela regra do planejador; ficam
+listadas por completude: `P-O6R-BACKLOG` (catálogo dos 29 achados), `P-GOV-FILA-P1-ANTES-DE-P0`, `P-O6R-B02`,
+`P-O6R-B07-APPROVAL-BY-POLICY`, `P-O6R-B01-RELIGACAO-SEM-REMEDIO`, `P-SAN2-2-INDICE-DONO-SEMPRE-SIM`,
+`P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`, `P-O6R-B07B-DATAURI-NO-VALUE`, `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO`,
+`P-MOBILE-PRESTADOR-SEM-PORTA`, `P-MOBILE-STUBS-MOCKS-MORTOS`, `P-MOBILE-CATALOGO-MODULOS-INERTE` e
+`P-MOBILE-ESTOQUE-TECNICO-FABRICADO`.
+
+### 10.2 CONF-02 — as emendas de dono no formato que o gerador lê (F2)
+
+As 32 emendas de dono da 3ª passada foram reescritas de `- **dono (plano SAN3, §4.1 item N — …):** `<bloco>`…` para
+`- **dono:** `<bloco>` (plano SAN3, §4.1 item N — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13)…`, sem mudar o resto do texto. Isso
+inclui a nota da `P-020` e a da `P-RBAC-CHECKLIST-DRIFT` e, nas duas hospedeiras, "emenda sobre `P-033`" / "emenda sobre
+`P-Ω3F6-CANCEL-RACE`" com o corpo intacto. As 7 do F1 já nasceram nesse formato. O gerador (`gerar-indice-pendencias.py:98`)
+aceita `**dono:**` seguido de qualquer coisa que não seja "a atribuir".
+
+**Índice, coluna "dono", antes (`042e689e`) → depois** (`opB/indice_dono.py`):
+
+| entrada | antes | depois |
+|---|---|---|
+| `P-020` | **a atribuir** | sim |
+| `P-O6R-B11` | **a atribuir** | sim |
+| `P-CHK-PATCH-SEM-LOCK` | **a atribuir** | sim |
+| `P-O6R-B09` | **a atribuir** | sim |
+| `P-MOBILE-OS-SEEDS` | **a atribuir** | sim |
+| `P-SAN-E2E` | **a atribuir** | sim |
+| `P-028` | **a atribuir** | sim |
+| `P-Ω3F2B-ACENTOS` | **a atribuir** | sim |
+
+**As 8 deixam de estar "a atribuir".** No índice inteiro mudaram 20 entradas na coluna dono, e todas são entradas do gate:
+as 8 acima, mais `P-008`, `P-019`, `P-026`, `P-027`, `P-CHK-SEED-DEMO-SUJO`, `P-PURCHASE-ORDERS-BACKEND-GATE`,
+`P-RBAC-GATING-MOCKSHELLS`, `P-SAN-PROD-BOOTSTRAP`, `P-Ω3F4C-ACTIVATION-PROMPT`, `P-O6R-B03`, `P-O6R-B04` e `P-O6R-B07`.
+Nenhuma entrada fora do gate mudou. **Entradas do gate (62 sujeitos) que seguem "a atribuir": 0.**
+
+Notas. `P-032` e `P-Ω3F6` já estavam "sim" em `042e689e`, então o F2 não criou efeito colateral nelas. A `P-O6R-B07`
+passou a "sim" pela emenda do `SEC-004`: o gerador lê qualquer `**dono:**` do corpo, e esse "sim" vem do dono de um achado
+hospedado, não de um dono da entrada-mãe — a classe da `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA`. O placar do índice
+não muda: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS.
+
+### 10.3 Critério de fim pela fonte — as duas ferramentas, item a item
+
+| | antes (`042e689e`) | depois |
+|---|---|---|
+| **orquestrador** (`conferir_donos_pela_fonte.py`; bloco em qualquer ponto do texto do sujeito) | 7 não-OK (FALHA 2, 19, 24, 30, 31; PARCIAL 1, 27) · 1 aviso (`P-O6R-B12`) | **0 não-OK · 0 avisos** |
+| **aplicador** (`dono_check3.py`; mesmos sujeitos, mas o bloco tem de ser o **dono vigente** do sujeito para aquele item) | 8 não-OK (FALHA 2, 19, 24, 30, 31; PARCIAL 1, 11, 27) | 55 OK · **1 PARCIAL: item 11** |
+
+**Concordam em 55 dos 56 itens depois, e em todos os não-OK de antes, exceto o 11.** O porquê do item 11: a `P-O6R-B07`
+é sujeito do `Ω6R-SEC-002` (o cabeçalho o traz) e não tem campo de dono. Ela só nomeia `B-O6R-07c` dentro da segunda linha
+de status, a que o APPEND de 2026-09-06 marca como superada: "- status: FECHADA — … residual P0 em
+`P-O6R-SUBRECURSO-OBJECT-SCOPE`, dono B-O6R-07c" (l.3064-3065 em `042e689e`). A ferramenta do orquestrador aceita porque
+o texto nomeia o bloco. A minha recusa porque exige o bloco como dono vigente e não lê a continuação de uma linha de status
+superada. O item também tem outro sujeito consistente, a `P-O6R-SUBRECURSO-OBJECT-SCOPE`. Não apliquei nada ali: a instrução
+não pede, e o critério de fim é o do orquestrador. Se o planejador quiser as duas iguais, basta uma emenda:
+`- **dono:** `B-O6R-07c` (plano SAN3, §4.1 item 11 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-SEC-002`: o achado `Ω6R-SEC-002` (item 11) tem dono `B-O6R-07c`.`
+
+O aviso da `P-O6R-B12` saiu nas duas: na do orquestrador, porque o texto agora nomeia `B-O6R-12`; na minha, porque a emenda
+"sobre `Ω6R-DAT-004`" é o dono vigente do achado.
+
+`conferir_ponteiros.py` → **79 ponteiros, 0 divergentes** (72 + as 7 do F1). `ponteiros_estendidos.py` → as mesmas 3
+referências deliberadas.
+
+### 10.4 Linhas acrescentadas e reescritas em relação a `042e689e`
+
+`git diff --numstat 042e689e` (por arquivo): `pendencias.md` 40/32 · `pendencias-indice.md` 214/214 (coluna dono e números de
+linha; placar igual) · `PLANO_SAN3.md` 1/0 · `status-geral.md` 2/0 · `log-execucao.md` 1/1. `Kpis/*` e `decisoes.md`
+intocados nesta passada.
+
+**`pendencias.md`, por `opB/reescritas2.py 042e689e --acrescentadas`:** 36 hunks · **32 reescritas**, todas
+"dono: formato do gerador", com bloco, item, alvo "sobre" e texto iguais (conferido por igualdade de string) · **8
+acrescentadas**, que são as 7 emendas do F1 (`P-O6R-B03` l.2830 e 2831; `P-O6R-B04` l.2895, 2896 e 2897; `P-O6R-B12` l.2929;
+`P-O6R-B07` l.3092) e 1 linha em branco na `P-O6R-B12` (a emenda ficou entre brancos, depois do parágrafo "**Severidade P1
+mantida…**"). As 32 reescritas, linha na base → linha agora:
+
+`P-008` 100→100 · `P-019` 241→241 · `P-020` 254→254 · `P-028` 321→321 · `P-026` 335→335 · `P-027` 353→353 · `P-032`
+406→406 (sobre `P-033`) · `P-Ω3a` 425→425 · `P-INFRA-RLS` 499→499 · `P-SAN-E2E` 514→514 · `P-SAN-PROD-BOOTSTRAP` 579→579 ·
+`P-Ω3F2B-ACENTOS` 624→624 · `P-Ω3F4C-ACTIVATION-PROMPT` 698→698 · `P-Ω4-FINANCE-READ-ORFA` 960→960 ·
+`P-Ω4-3-REFATURAR-DELTA` 991→991 · `P-Ω4-3-INVOICE-ATOMIC` 1012→1012 · `P-Ω4-3-INVOICE-TOCTOU-DELETE` 1033→1033 ·
+`P-Ω4-7-DUPLA-CONTAGEM` 1315→1315 · `P-Ω3F6` 1382→1382 (sobre `P-Ω3F6-CANCEL-RACE`) · `P-RBAC-GATING-MOCKSHELLS` 1468→1468 ·
+`P-PURCHASE-ORDERS-BACKEND-GATE` 1658→1658 · `P-RBAC-CHECKLIST-DRIFT` 1728→1728 · `P-MOBILE-OS-SEEDS` 1998→1998 ·
+`P-CHK-PATCH-SEM-LOCK` 2078→2078 · `P-CHK-SEED-DEMO-SUJO` 2156→2156 · `P-CHK-DOSSIE-VERSAO-NA-UI` 2254→2254 · `P-O6R-B09`
+3248→3256 · `P-O6R-B11` 3331→3339 · `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL` 7375→7383 · `P-O6R-B06-BASE-SEM-PRODUTOR` 7399→7407 ·
+`P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` 7426→7434 · `P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT` 8222→8230.
+
+**Em relação a `ec4f34a8` (a aplicação inteira)**, as reescritas continuam as mesmas **18** (14 ponteiros e 4 `dono:` com
+"(antes: …)"; `reescritas2.py ec4f34a8`): as 32 do F2 e as 7 do F1 seguem sendo acréscimos. Registro 81/18.
+
+**Plano e trilha:** o §15 ganhou uma linha, a da reprovação da conferência, com os números medidos no momento pelo gerador,
+pelo `conferir_ponteiros.py` e pela ferramenta do orquestrador. O `status-geral.md` ganhou o parágrafo "Quarta passada …"
+antes de "**Números:**"; a linha da conferência continua a última da entrada. No `log-execucao.md`, a mesma frase foi
+acrescentada ao parágrafo da opção B, que é uma linha só (daí o 1/1). A descrição do PR não foi tocada. §0 e o placar do
+§15 e da trilha continuam 370/359/103/267 (medido; nada a trocar).
+
+### 10.5 Bateria do §F — quarta execução
+
+```
+[F1] git diff --check            → ec=0
+[F2] git diff --name-only        → PLANO_SAN3.md · pendencias.md · pendencias-indice.md · status-geral.md · log-execucao.md
+                                   (só §A); git status sem ?? — o plano de aplicação já está no commit 042e689e
+[F3] laço (contra 042e689e)      → 2 tokens de caminho nas linhas novas, 0 não resolvidos
+[F4] agenda (apoio-opB2)         → violações 0 / 0 · arestas de trava fora da Dep.: nenhuma · pares sobrepostos 0 / 0 ·
+                                   fecho 80,5 / 297
+[F5] check_plano (56)            → 56 itens · ✓ 27 == §8.7 · §2 bate · §8.1 46 dos 56 · 37 blocos G11 M21 P5 · 0 erro · 0 diferença
+[F6] conferir_ponteiros.py       → 56 itens com ID | 68 IDs | 79 ponteiros | divergentes: 0
+     conferir_donos_pela_fonte.py→ itens do gate: 56 | não OK (FALHA ou PARCIAL): 0 | avisos de dono divergente: 0
+     dono_check3.py              → 55 OK, 1 PARCIAL (item 11 — ver 10.3)
+     marcas_check.py             → divergências 0
+[F7] gerador                     → 370 cabecalhos / 359 IDs | FECHADA 103, ABERTA 267 | baldes {'-': 103, 'C': 71, 'B': 90,
+                                   'A': 106} | diferidas-materiais 14; re-run inalterado; cópias CRLF e LF fora do repo:
+                                   BYTE-IDÊNTICO; sha256 701f0df05af9db9a640d…
+[F8] kpi-freeze --check          → "em dia (snapshot 2026-09-11)." ec=0
+[F9] node --check Kpis/app.js    → ec=0
+[F10] 3 guards de KPI            → # tests 28 # pass 28 # fail 0 # skipped 0, ec=0
+[F11] sync-agent-agents --check  → "[agents-sync] OK — 25 agentes, espelho consistente." ec=0
+EOL → PLANO LF 624 · pendencias.md CRLF 9305/0 · índice LF 459 · kpis-latest CRLF 839/0 · app.js CRLF 1676/0 ·
+      status-geral CRLF 4442/0 · log CRLF 4331/0
+```
+
+### 10.6 Incidente meu nesta passada (sem efeito na árvore)
+
+Na primeira execução, o `pass4_texto.py` abortou na própria asserção: conferiu as frases de placar do plano **depois** de
+acrescentar a frase nova, que repete o placar, e achou duas ocorrências. O arquivo só é gravado depois da asserção, então
+nada foi escrito. Corrigido (a conferência vem antes de acrescentar) e rodado de novo: plano e trilha escritos uma vez só,
+com `git diff --check` ec=0.
+
+### 10.7 Divergências novas
+
+Nenhuma entre o plano e a árvore. Ficam reportados três pontos:
+- as duas ferramentas discordam no item 11 (10.3): é diferença de semântica, e há uma emenda de uma linha que as igualaria;
+- a coluna dono da `P-O6R-B07` no índice virou "sim" por um achado hospedado, efeito da leitura do gerador (10.2);
+- as emendas do F1 levam "emenda sobre `Ω6R-…`", adaptação necessária para os ponteiros (10.1).
+
+### 10.8 Adendo — item 11 (decisão do planejador: vale a leitura estrita)
+
+Backup do estado de partida: `opB/backup/*.pre-item11`. Script: `opB/item11.py`. Ele simula as duas formas em cópias fora
+do repo, mede os três critérios em cada uma e aplica a primeira que cumpre todos. Depois vem o `opB/item11_texto.py`, que
+atualiza §15 e trilha com números medidos.
+
+**Medido antes de escrever** (cópias `opB/sim11-A` e `opB/sim11-B`, a linha no fim da `P-O6R-B07`, depois da emenda do
+`SEC-004`):
+
+| variante | ponteiros / divergentes | orquestrador (não-OK / avisos) | aplicador estrito (não-OK / avisos) | concordância | cumpre? |
+|---|---|---|---|---|---|
+| **A — texto literal do planejador**: `- **dono:** `B-O6R-07c` — o `Ω6R-SEC-002` residual (plano SAN3, §4.1 item 11 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).` | 80 / **1** — "l.3093 P-O6R-B07 -> item 11; ID fora da coluna de IDs do §4.1" | 0 / 0 | 0 / 0 | 56/56 | **não** (conferir ≠ 0) |
+| **B — o mesmo conteúdo na estrutura do F1**, com "emenda sobre `Ω6R-SEC-002`" | 80 / **0** | 0 / 0 | 0 / 0 | 56/56 | **sim** |
+
+**Aplicada a B** (l.3093):
+`- **dono:** `B-O6R-07c` (plano SAN3, §4.1 item 11 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-SEC-002`: o `Ω6R-SEC-002` residual tem dono `B-O6R-07c`.`
+Por que não a A: sem "emenda sobre `Ω6R-SEC-002`", o `conferir_ponteiros.py` atribui o "§4.1 item 11" à `P-O6R-B07`, que
+não está no §4.1 — o mesmo motivo da adaptação das emendas do F1 e das hospedeiras. A frase do planejador ("o
+`Ω6R-SEC-002` residual") foi mantida no corpo.
+
+**Depois, no worktree:**
+
+```
+conferir_donos_pela_fonte.py (orquestrador) → itens do gate: 56 | não OK (FALHA ou PARCIAL): 0 | avisos de dono divergente: 0
+dono_check3.py (estrita)  → itens do gate: 56 | OK (todo sujeito com o bloco como DONO vigente): 56 | não OK: 0
+                            item 11 OK: ✓ P-O6R-B07 (cabeçalho) [emenda de dono (novo)] `B-O6R-07c` [item 11]
+                            avisos (sujeito com dono vigente que não nomeia o bloco): 0
+                            orquestrador: não OK 0, avisos 0 | concordância item a item: 56/56 | divergem: []
+conferir_ponteiros.py     → itens do §4.1 com ID: 56 | IDs mapeados: 68 | ponteiros no registro: 80 | divergentes: 0
+reescritas2.py ec4f34a8   → linhas reescritas: 18 {'ponteiro': 14, 'dono (antes: …)': 4} | acrescentadas: 64
+reescritas2.py 042e689e   → reescritas 32 {'dono: formato do gerador': 32} | acrescentadas 9 (as 7 do F1, a branca
+                            da P-O6R-B12 e a do item 11, l.3093)
+git diff --check          → ec=0
+gerador                   → 370 cabecalhos / 359 IDs | FECHADA 103, ABERTA 267 | baldes {'-': 103, 'C': 71, 'B': 90,
+                            'A': 106} | diferidas-materiais 14; re-run inalterado; cópias CRLF e LF fora do repo:
+                            BYTE-IDÊNTICO; sha256 1bd915987c1740268c80…
+EOL                       → PLANO LF 624 · pendencias.md CRLF 9306/0 · índice LF 459 · status-geral CRLF 4442/0 · log CRLF 4331/0
+numstat x 042e689e        → log 1/1 · índice 214/214 · pendencias 41/32 · status-geral 2/0 · PLANO 1/0
+```
+
+**§15 e trilha, pelo número medido** (`item11_texto.py`; uma ocorrência em cada um dos três arquivos): "79 ponteiros do
+registro para o plano, 0 divergentes" → "**80** ponteiros …". "os achados Ω6R dos itens 1, 2, 19, 24, 27, 30 e 31" →
+"… dos itens 1, 2, **11**, 19, 24, 27, 30 e 31" (lista lida do registro: os achados que têm emenda de dono desta
+aplicação). O placar do índice não mudou (370/359/103/267), então §0 e o "**Números:**" ficam como estão. `Kpis/*` e os
+agentes não foram tocados desde a bateria da §10.5, e o `node --test` dos guards de KPI e o `sync-agent-agents` não foram
+reexecutados neste adendo.
+
+**Divergências novas:** nenhuma. Fica reportada uma adaptação: a forma aplicada é a B, porque a A literal deixa 1
+ponteiro divergente, medido.

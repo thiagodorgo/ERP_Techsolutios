@@ -97,7 +97,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 4 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-01`.
+- **dono:** `B-SAN3-01` (plano SAN3, §4.1 item 4 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-009 - Contraste de texto muted (#94A3B8) abaixo de 4.5:1 no DS (2026-07-07)
 
@@ -238,7 +238,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 45 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-06b`.
+- **dono:** `B-SAN3-06b` (plano SAN3, §4.1 item 45 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-08)
 
@@ -251,7 +251,7 @@
   create de movimento, ou uma tabela de saldo materializado com advisory lock). Nao bloqueia F7a.
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: é o mesmo sítio do `Ω6R-DAT-002` (P0, J-6R 5×0) — a saída de estoque checa saldo por agregado e insere sem lock (`src/modules/inventory/inventory-prisma.repository.ts:214-216`); absorvida por `P-O6R-B04`.
 - **duplicata de:** achado `Ω6R-DAT-002`, via `P-O6R-B04` (inventário SAN3, fatia B1) — tratar junto; bloco dono = o de `P-O6R-B04` (`B-O6R-04`, `fix/inventory-consistency`, que nunca começou).
-- **dono (plano SAN3, §4.1 item 1 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-O6R-04a` (a entrada nomeia `B-O6R-04`, nome anterior à divisão em `04a`/`04b`).
+- **dono:** `B-O6R-04a` (plano SAN3, §4.1 item 1 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13) (a entrada nomeia `B-O6R-04`, nome anterior à divisão em `04a`/`04b`).
 
 ## P-021 - F7b: fechar contagem nao duplica ajustes em retry (RESOLVIDO no bloco) (2026-07-09)
 
@@ -318,7 +318,7 @@
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 - **emenda (plano SAN3 §4.1 item 49, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-21`.
-- **dono (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-21`.
+- **dono:** `B-SAN3-21` (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
 
@@ -332,7 +332,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 38 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-04a`.
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 38 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-027 - F11: divergencias matriz x catalog + perms `purchase_orders:read`/`reports:read` ausentes (2026-07-09)
 
@@ -350,7 +350,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 12 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-04b`.
+- **dono:** `B-SAN3-04b` (plano SAN3, §4.1 item 12 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-029 - Ω2-a.2: modal de edicao de Tarifa mantem selects de referencia habilitados, mas o backend os ignora (2026-07-12)
 
@@ -403,7 +403,7 @@
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 - **emenda sobre `P-033` (plano SAN3 §4.1 item 14, 2026-09-11):** a premissa que a fatia C1 usou para descartá-la — permissão em runtime vinda do catálogo — está refutada: vem do banco, `src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts:90-107` → `src/modules/core-saas/repositories/role.repository.ts:118` (crítico SAN3 r1, CR1-15); volta ao gate como condicional, medida no `B-SAN3-04` em modo banco. (`P-033` não tem cabeçalho próprio: está registrada dentro desta entrada.)
-- **dono (plano SAN3, §4.1 item 14 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-033`:** o bullet `P-033` (item 14) tem dono `B-SAN3-04a`.
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 14 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-033`: o bullet `P-033` (item 14) tem dono `B-SAN3-04a`.
 
 ## P-Ω3a (Ω3-a ServiceQuote) — pendências declaradas
 - **Aditivo `quotes[]` no detalhe da OS** (`GET /work-orders/:id`) DEFERIDO para Ω3-e (consumidor natural;
@@ -422,7 +422,7 @@
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: o papel finance não consegue criar orçamento pela UI (sem `service_catalog:read`/`customers:read`, o select de serviço fica vazio) e o select de OS recebe as OS fabricadas de `P-008`, contra `RBAC_MATRIX.md:115`.
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** P2 — o Financeiro monta orçamento: o `B-SAN3-04a` concede ao `finance` `customers:read` e `service_catalog:read` (mais o `work_orders:read` da P1) e atualiza a `RBAC_MATRIX.md` no mesmo bloco (Clientes l.38 e Serviços l.41: `finance` de `none` para `read`); o teste do `B-SAN3-04a` prova as três leituras com as permissões do banco, e o do `B-SAN3-08` cria orçamento como o Financeiro (plano SAN3 v5, §4.1 item 41; condição de entrada CE-5, §5.6). O "Decidir: conceder ... ou aceitar a degradação" desta entrada fica respondido: conceder.
-- **dono (plano SAN3, §4.1 item 41 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-08`.
+- **dono:** `B-SAN3-08` (plano SAN3, §4.1 item 41 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω3b (Ω3-b Despacho endurecido + Comentário/Timeline da OS) — validador-mestre
 - **P-034 (MÉDIA — granularidade RBAC, não isolamento):** o feed `recentEvents` do dashboard
@@ -496,7 +496,7 @@
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 - **emenda (inventário SAN3, fatia B1, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 9, bloco `B-SAN3-05`) a classifica como **bloqueante do gate vendável** pelo critério 2 do dono ("isolamento multi-tenant validado"): nada no repositório impõe `NOSUPERUSER NOBYPASSRLS` ao papel de runtime; o compose de subida/smoke (`docker-compose.prod.yml:35,57`) conecta como `postgres`; o papel real da produção é secret do Fly e **não foi medido**. Corrigido em 2026-09-11 pelo crítico SAN3 (CR1-06, CR2-06): a versão anterior desta emenda afirmava que a produção roda como superusuário e que isso escondeu a soma do #385 — a soma aconteceu em dev/CI. A fatia B1 a dava como não bloqueante por si; o plano registra a reclassificação como alvo do crítico (§A2), sem consolidação silenciosa.
-- **dono (plano SAN3, §4.1 item 9 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-05`.
+- **dono:** `B-SAN3-05` (plano SAN3, §4.1 item 9 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13)
 - descricao: `npm run test:e2e` (Playwright) NÃO entra no gate obrigatório do CI neste PR Ω-GATE — exige app
@@ -511,7 +511,7 @@
   ATIVACAO (hand-off: conta Fly + secrets no Environment staging). Ate la, e2e segue fora do gate obrigatorio.
 
 - **emenda (plano SAN3 §4.1 item 42, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-10`.
-- **dono (plano SAN3, §4.1 item 42 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-10`.
+- **dono:** `B-SAN3-10` (plano SAN3, §4.1 item 42 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SAN-CORE-PRISMA-COV - Adapter prisma do Core SaaS não é exercido pelo gate (Ω-GATE, 2026-07-13)
 - descricao: o gate força `CORE_SAAS_PERSISTENCE=memory`; testes que precisam de banco (auth-*/*-prisma/RLS/
@@ -576,7 +576,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 43 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-09`.
+- **dono:** `B-SAN3-09` (plano SAN3, §4.1 item 43 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
@@ -621,7 +621,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-21`.
+- **dono:** `B-SAN3-21` (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω3F3A-MOEDA-AGREGADO - Total agregado somava moedas heterogêneas (J-OMEGA3F-3A, 2026-07-15) — RESOLVIDO NO PR
 - descricao: o GET de itens financeiros da OS agrega `totalAmount = roundMoney(items.reduce(...))` e emite
@@ -695,7 +695,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 40 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-08`.
+- **dono:** `B-SAN3-08` (plano SAN3, §4.1 item 40 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω3F5-DOC-TYPE - Categoria de documento no upload manual de anexo (Ω3F-5, 2026-07-15)
 - descricao: o back de anexos (Ω3-d) deriva nome=fileName e tipo=mimeType; NÃO tem campo de categoria
@@ -957,7 +957,7 @@ finance_dashboard:read dedicada) quando a FinanceiroPage consumir o backend.
 - **status:** ABERTA (PARCIAL — fechado: a página real (`FinanceiroPage.tsx` com `useFinancialSummary`, `08d00949`, #224) e a guarda de rota (`App.tsx:655-663` aceita `financial_entries:read`, `1bd1ed36`, #227); aberto: o registro de navegação do backend ainda governa `/finance` pela órfã `finance:read` (`navigation.registry.ts:344-356`; filhas `:361-393` com `billing:read`/`invoices:read`/`payments:read`), que o catálogo não concede a `finance` nem a `manager` — em modo real Financeiro/Cobranças/Pagamentos saem do menu desses papéis; provado por composição de leitura, não executado) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia C2: em modo real, o registro de navegação do backend tira Financeiro/Cobranças/Pagamentos do menu dos papéis Financeiro e Gestor (provado por composição de leitura, não executado); bloqueia o vendável.
-- **dono (plano SAN3, §4.1 item 13 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-04a`.
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 13 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-2B-KPI-AGREGADO — KPIs/tabs somam só as linhas carregadas (MÉDIO, Ω4-8 Dashboard)
 Os KPIs e as tabs de Cobranças/Pagamentos somam sobre as linhas carregadas (agora limit=100, antes 20) e
@@ -988,7 +988,7 @@ Item novo pós-faturamento permanece editável (invoiced_at NULL); só os já ca
   <sub>A cadeira de triagem amostrou 6 das 81 diferidas e provou que esta **não é cosmética**: item lançado no Financeiro da OS depois do 1º faturamento **nunca é faturado**: o 2º `POST /invoice` devolve `409 already_invoiced` e o delta fica “a faturar” para sempre. É **receita executada que o produto não consegue cobrar** — produto e dinheiro, não polimento. A etiqueta colada aqui afirmava *“sem consequência de produto, dado, segurança ou número”* — e o próprio texto da pendência desmente. **Não era o adiamento que estava errado, era a etiqueta**, e é ela que o dono lê ao decidir se veta. Volta ao balde por severidade real.</sub>
 
 - **emenda (plano SAN3 §4.1 item 21, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-02`.
-- **dono (plano SAN3, §4.1 item 21 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-02`.
+- **dono:** `B-SAN3-02` (plano SAN3, §4.1 item 21 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 
 ## P-Ω4-3-TEST-HERMETIC — createMemoryWorkOrderInvoicingService não é puramente memory (BAIXA)
@@ -1009,7 +1009,7 @@ Distinto de P-Ω4-3-REFATURAR-DELTA (que é o delta de itens pós-faturamento).
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: dinheiro — título e carimbo dos itens em statements separados, fora do `financial-uow` do #371 (`work-order-financial.service.ts:378,400`); mesma classe do `Ω6R-DIN-001`.
-- **dono (plano SAN3, §4.1 item 20 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-02`.
+- **dono:** `B-SAN3-02` (plano SAN3, §4.1 item 20 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-3-CURRENCY-BRL — Item da OS aceita moeda ≠ BRL, mas faturar exige BRL (MÉDIA-BAIXA)
 work-order-financials (Ω3F) usa parseCurrency da shape compartilhada (aceita QUALQUER ISO de 3 letras) + trava
@@ -1030,7 +1030,7 @@ título↔carimbo). Fix: ler o agregado + carimbar na MESMA $transaction com loc
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: dinheiro — item apagado entre a leitura e o carimbo entra no título a receber (`work-order-financial.service.ts:362-363,378,400`, sem lock nem transação).
-- **dono (plano SAN3, §4.1 item 20 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-02`.
+- **dono:** `B-SAN3-02` (plano SAN3, §4.1 item 20 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-3-INVOICE-LEASTPRIV — Rota invoice não exige work_order_financials:read (BAIXA)
 POST /work-orders/:id/invoice gateia só financial_titles:create mas LÊ os itens financeiros da OS. finance tem
@@ -1312,7 +1312,7 @@ entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dup
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 - **emenda (plano SAN3 §4.1 item 22, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-20`.
-- **dono (plano SAN3, §4.1 item 22 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-20`.
+- **dono:** `B-SAN3-20` (plano SAN3, §4.1 item 22 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-7-CLEAR-RETRO — Compensação retroativa a período fechado (BAIXA)
 O clear sempre usa server-now → competência CORRENTE. Se o banco compensou de fato num mês já FECHADO, a data verdadeira
@@ -1379,7 +1379,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 - **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
-- **dono (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`:** o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
+- **dono:** `B-SAN3-23` (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`: o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
 
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
@@ -1465,7 +1465,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 
 - **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o corpo conta `ChecklistRunsPage` entre "as 2 REAIS (service-backed)", mas ela lista modelos (`frontend/src/modules/checklists/pages/ChecklistRunsPage.tsx:9` importa só `listAvailableChecklists`); e o Console de Despacho não tem porta — `/dispatch/console` não é referenciado em `frontend/src` fora do `App.tsx`.
-- **dono (plano SAN3, §4.1 item 39 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-06a`.
+- **dono:** `B-SAN3-06a` (plano SAN3, §4.1 item 39 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-RBAC-CATALOG-MATRIZ — divergências pré-existentes catalog.ts × RBAC_MATRIX.md em checklists (2026-07-19)
 - descricao: a junta (coordenador-de-acessos) achou 2 divergências PRÉ-EXISTENTES (não introduzidas pelo gating): (1) matriz
@@ -1655,7 +1655,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 39 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-06a`.
+- **dono:** `B-SAN3-06a` (plano SAN3, §4.1 item 39 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SCREEN-REFS-PATH — screen-refs/ na raiz × docs/claude-code-handoff/screen-refs/ (2026-07-28, D-INTEROP-CLAUDE-CODEX)
 
@@ -1725,7 +1725,7 @@ Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, ca
 - **junta do PR #386, ciclo 1 (C2-04, 2026-09-12):** as divergências com a matriz (l.43-44) são quatro — `manager` com `checklist_runs:update` e `acknowledge`; `finance` e `inventory` sem permissão de checklist; `field_technician` sem `tenant_checklists:read`. O teste do `B-SAN3-04` cobre as quatro (plano SAN3 v5).
 - **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 3 lido ao pé da letra — o papel `manager` tem `checklist_runs:acknowledge` no catálogo (`catalog.ts:574`) além do que `RBAC_MATRIX.md:43-44` concede. Bloco `B-SAN3-04`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 15 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-04a` (a entrada nomeia `B-SAN3-04`, nome anterior à divisão em `B-SAN3-04a`/`B-SAN3-04b`).
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 15 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13) (a entrada nomeia `B-SAN3-04`, nome anterior à divisão em `B-SAN3-04a`/`B-SAN3-04b`).
 
 ## P-IMPOUND-CHK-VISIBILITY (2026-08-01) — consequência de RBAC no endpoint de custódia (conflito §A2 com D-record da rota impound checklist-runs)
 
@@ -1995,7 +1995,7 @@ mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
 - status: ABERTA.
 
 - **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** apagar as OS semente já gravadas no aparelho. Prova no HEAD `c9ed9b91`: `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart` — o `_upsertRemoteOrders` não tem `delete`/`remove`/`clear`, e a semeadura só ocorre com `_remoteApi == null` (l.118-121), então o resíduo fica nos aparelhos que já rodaram o build local. O plano SAN3 põe a purga no gate (§4.1 item 33, `B-SAN3-13`).
-- **dono (plano SAN3, §4.1 item 33 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-13`.
+- **dono:** `B-SAN3-13` (plano SAN3, §4.1 item 33 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-COMPONENT-TYPE-CHECK (2026-08-08) — CHECK do banco recusava os 3 tipos do PR-01 — **RESOLVIDO (hotfix)**
 
@@ -2075,7 +2075,7 @@ no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: rec
 - status: ABERTA (mitigada no cliente; correção de contrato pendente de junta).
 
 - **emenda (plano SAN3 §4.1 item 6, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-22`.
-- **dono (plano SAN3, §4.1 item 6 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-22`.
+- **dono:** `B-SAN3-22` (plano SAN3, §4.1 item 6 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA, honestidade de UI)
 
@@ -2153,7 +2153,7 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 47 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-07`.
+- **dono:** `B-SAN3-07` (plano SAN3, §4.1 item 47 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
@@ -2251,7 +2251,7 @@ hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
-- **dono (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-11`.
+- **dono:** `B-SAN3-11` (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
 
@@ -2827,6 +2827,8 @@ manda `Bearer` se houver token (`mobile/flutter_app/lib/core/network/http_client
 mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SEEDS` e
 `P-MOBILE-BANNER-INTEGRACAO` (ambas ABERTAS) — quem abrir o PR-08 fecha este achado junto ou explica por quê.
 - status: ABERTA — 1 P0 + 1 P1.
+- **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
+- **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -2890,6 +2892,9 @@ se surgir.
 > credita `Ω6R-DAT-001`/`Ω6R-DIN-006` ao `B-O6R-05` (PR #353), nunca `DAT-002`/`DAT-003`.
 
 - **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** no `Ω6R-QUA-002`, o `work_order_material.add` também não é drenado: `InventorySyncActionTypes.materialAdd` só aparece em `prestador_repository.dart:125` e `api_contracts.dart:135`, e o serviço de replay não o envia (`sync_replay_service.dart`: 0 ocorrências).
+- **dono:** `B-O6R-04a` (plano SAN3, §4.1 item 1 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-002`: o achado `Ω6R-DAT-002` (item 1) tem dono `B-O6R-04a`.
+- **dono:** `B-O6R-04a` (plano SAN3, §4.1 item 2 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-003`: o achado `Ω6R-DAT-003` (item 2) tem dono `B-O6R-04a`.
+- **dono:** `B-O6R-04b` (plano SAN3, §4.1 item 31 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-002`: o achado `Ω6R-QUA-002` (item 31) tem dono `B-O6R-04b`.
 
 ## P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — **achado ÓRFÃO, sem bloco até hoje**
 
@@ -2920,6 +2925,8 @@ entrada, ou versionar o perfil e referenciar a versão; motores lêem o regime *
 corrente; auditoria campo a campo com valor anterior e novo (todos numéricos/enums, cabem na allowlist §2.8).
 
 **Severidade P1 mantida como registrada** — reclassificar exigiria junta.
+
+- **dono:** `B-O6R-12` (plano SAN3, §4.1 item 24 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-004`: o achado `Ω6R-DAT-004` (item 24) tem dono `B-O6R-12`. O dono deste achado passa a ser `B-O6R-12` (item 24); o "Dono: próximo agente…" e o "sem bloco até hoje" do cabeçalho ficam como histórico.
 
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 
@@ -3082,6 +3089,8 @@ auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/up
   clean") segue verdadeiro fora de produção. E a consequência disso é operacional e visível: **produção e
   staging respondem 503 a TODO upload** até P-O6R-B07B-SCANNER-AV-REAL — ver também
   P-O6R-B07B-STAGING-SEM-UPLOAD (agenda, decisão do dono).
+- **dono:** `B-AV-REAL` (plano SAN3, §4.1 item 27 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-SEC-004`: o achado `Ω6R-SEC-004` (item 27) tem dono `B-AV-REAL`.
+- **dono:** `B-O6R-07c` (plano SAN3, §4.1 item 11 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-SEC-002`: o `Ω6R-SEC-002` residual tem dono `B-O6R-07c`.
 
 ## P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:approve` — MÉDIA
 
@@ -3245,7 +3254,7 @@ histórico por etapa sobre um agregado que pode nascer sem evento é construir s
 - status: ABERTA — 1 P1.
 
 - **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
-- **dono (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-O6R-09`.
+- **dono:** `B-O6R-09` (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
 
@@ -3328,7 +3337,7 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B2: 2 P1 (`Ω6R-QUA-004`, `Ω6R-QUA-005`), um deles de perda de dado — o material do prestador some no restart (`prestador_repository.dart:121`, `forEach` sem `await`); o detalhe/status/assign remoto da OS lê o envelope errado (`work_order_remote_api.dart:99,115,156`).
 
 - **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
-- **dono (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-O6R-11`.
+- **dono:** `B-O6R-11` (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -7372,7 +7381,7 @@ fechar todas as chaves seria o outbox genérico da `Ω6R D-002`, que o dono **op
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
   *feat: add cloud usage metering foundation*) · **dono:** bloco novo `B-O6R-06b`, ou o bloco de outbox
   genérico se a `Ω6R D-002` for deliberada · **forma:** leitura cruzada, reproduzível.
-- **dono (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-03`.
+- **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -7396,7 +7405,7 @@ vermelho. As outras categorias ficam com esta pendência.
 
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
   (2026-06-08) · **dono:** bloco de cloud billing / produto · **forma:** leitura cruzada, reproduzível.
-- **dono (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-03`.
+- **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -7423,7 +7432,7 @@ leituras de plataforma **fora** do rateio.
 - **plano SAN3 (2026-09-11, crítico r2, CR2-02):** entra no gate como pré-requisito do item 9 — no dia em que o papel de runtime deixar de ter `BYPASSRLS`, estas leituras (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `RlsPrismaCloudUsageRepository`) zeram o resumo de uso da plataforma e a tela Cloud Billing. Bloco `B-SAN3-05`.
   (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
   descartável, papel `NOSUPERUSER NOBYPASSRLS`.
-- **dono (plano SAN3, §4.1 item 10 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-05`.
+- **dono:** `B-SAN3-05` (plano SAN3, §4.1 item 10 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -8219,7 +8228,7 @@ para o resto da casa — é a **direção 2** da colisão que o conserto de isol
   passando o import da run quando houver; **ou** decisão explícita de que o rateio é por período e não por
   import, escrita no serviço. **Teste de encerramento:** semear duas linhas em dois imports na mesma janela e
   provar que o rateio de um import não soma o outro (par verde-depois × vermelho-antes).
-- **dono (plano SAN3, §4.1 item 26 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):** `B-SAN3-03`.
+- **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 26 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
