@@ -117,3 +117,24 @@ PR · junta registrada · limpeza §C5 · porteiro.
 ## Rastreabilidade
 
 ID `B-SAN3-04a` · PR # · merge commit · approved head · junta · status `published_per_pr`.
+
+## Emenda do orquestrador — decisões sobre o plano (2026-09-13)
+
+Plano do bloco: `agent-orchestration/omega/planos/B-SAN3-04a-plano.md` (`planejador-mestre`, 2ª instância — a 1ª caiu por limite
+de sessão do Fable), com o gerador do mapa em `agent-orchestration/omega/planos/B-SAN3-04a-apoio/`. Decisões, para a ata:
+
+- **(a) Aceitas as disposições do §3–§4 do plano:** as 9 concessões no catálogo; o menu próprio do Estoque; o Financeiro ganha
+  OS, Clientes, Serviços e Checklists e perde Auditoria (a rota nega `audit:read`, que a matriz não concede sem recorte); o
+  registro de navegação converge às permissões que as rotas comparam (item 13); o seed só para o `auditor` (item 14).
+- **(b) Aceitas as 2 revogações nomeadas do `manager`** (`checklist_runs:update` e `acknowledge`, excedentes à matriz l.44 —
+  item 15) e o passo novo de revogação nomeada em `scripts/provision-rbac.ts` (lista em código com a decisão, idempotente,
+  `--dry-run` só relata). **A revogação só chega à produção no próximo deploy do dono** (`deploy-production.yml:155` roda o
+  provisionamento): o orquestrador a relata ao dono, e o `coordenador-de-acessos` vota nela nominalmente.
+- **(c) Os dois conflitos internos da matriz** (tabela l.37 × tópicos l.131/141–144, `finance` e `inventory` em cadastros):
+  **não concedidos** (fail-closed). Registrados em `decisoes.md` (`D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`) e na pendência
+  `P-SAN3-04A-MATRIZ-L37-X-BULLETS`, dona = decisão do dono — pergunta de produto que **não bloqueia** o bloco.
+- **(d) As concessões atuais sem escopo** (B5–B7: `manager`, `operator`, `field_technician` em execuções de checklist) ficam, com
+  pendências e donos (`B-SAN3-22`, `B-O6R-07c`); revogá-las seria decisão de produto que o item 15 não pediu.
+- **(e) Escopo ratificado:** a regeneração deliberada de `tests/fixtures/role-catalog-contract.snapshot.json` e o teste
+  existente que o §9 do plano nomeia entram no escopo, como consequência direta da mudança do catálogo.
+- **(f)** Este bloco carrega as dívidas do #386 (seção "Dívidas do #386"), salvo aviso em contrário do orquestrador.
