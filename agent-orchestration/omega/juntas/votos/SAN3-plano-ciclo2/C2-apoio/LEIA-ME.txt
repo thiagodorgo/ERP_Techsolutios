@@ -1,0 +1,1 @@
+Scripts da C2 (ciclo 2). Entradas re-extraiveis por `git show ecc32712:<caminho>` para um diretorio S: registry.ts, appSidebarNav.ts, navigation.service.ts, platform-modules.service.ts, app.ts, catalog.ts, checklist.permissions.ts, routes/<todos os *.routes.ts com / trocado por _>. Uso: node <script> <S>.

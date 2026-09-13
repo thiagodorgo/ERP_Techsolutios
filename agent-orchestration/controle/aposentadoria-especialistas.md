@@ -60,3 +60,38 @@ invariante financeira pela EXISTÊNCIA de uma linha em vez do efeito líquido". 
 fechou), mas fica registrado como **`P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER`**: se um bloco voltar a mexer em
 caminho que desfaz dinheiro, o certo é **promovê-lo a papel permanente** em `.claude/agents/` com o corpo
 generalizado — não recriá-lo como cadeira efêmera de novo.
+
+---
+
+## Rodada 2 — 2026-09-11 · bloco `B-O6R-06` · 12 cadeiras
+
+Medido em `origin/main@15ef3fbe` (o squash do #385, onde as 12 entraram). Peso removido do contexto de toda
+sessão: **~24,3 KB de `description` (24.897 caracteres, ~6.224 tokens)**, pelo método do auditor
+(frontmatter linha a linha, aspas removidas, `String.length`). Remoção **por identificador de bloco**: os
+prefixos `jurado-06-` (junta de mérito) e `jurado-06d-` (junta do delta) pertencem só ao `B-O6R-06`, e o
+diretório não tinha nenhum outro arquivo (conferido antes do `git rm`).
+
+| # | Cadeira | Bloco | Ata | PR que fechou | Corpo em |
+|---|---|---|---|---|---|
+| 1 | `jurado-06-banco-atomicidade-rls` | B-O6R-06 mérito | `J-B-O6R-06.md` | #385 | `15ef3fbe` |
+| 2 | `jurado-06-contrato-regressao-kpi` | B-O6R-06 mérito | `J-B-O6R-06.md` | #385 | `15ef3fbe` |
+| 3 | `jurado-06-invariante-financeiro-rateio` | B-O6R-06 mérito | `J-B-O6R-06.md` | #385 | `15ef3fbe` |
+| 4 | `jurado-06-suplente-banco-atomicidade-rls` | B-O6R-06 mérito | `J-B-O6R-06.md` | #385 | `15ef3fbe` |
+| 5 | `jurado-06-suplente-contrato-regressao-kpi` | B-O6R-06 mérito | `J-B-O6R-06.md` | #385 | `15ef3fbe` |
+| 6 | `jurado-06-suplente-invariante-financeiro-rateio` | B-O6R-06 mérito | `J-B-O6R-06.md` | #385 | `15ef3fbe` |
+| 7 | `jurado-06d-banco-atomicidade-rls` | B-O6R-06 delta | `J-B-O6R-06-delta.md` | #385 | `15ef3fbe` |
+| 8 | `jurado-06d-contrato-regressao-registro` | B-O6R-06 delta | `J-B-O6R-06-delta.md` | #385 | `15ef3fbe` |
+| 9 | `jurado-06d-invariante-financeiro-rateio` | B-O6R-06 delta | `J-B-O6R-06-delta.md` | #385 | `15ef3fbe` |
+| 10 | `jurado-06d-suplente-banco-atomicidade-rls` | B-O6R-06 delta | `J-B-O6R-06-delta.md` | #385 | `15ef3fbe` |
+| 11 | `jurado-06d-suplente-contrato-regressao-registro` | B-O6R-06 delta | `J-B-O6R-06-delta.md` | #385 | `15ef3fbe` |
+| 12 | `jurado-06d-suplente-invariante-financeiro-rateio` | B-O6R-06 delta | `J-B-O6R-06-delta.md` | #385 | `15ef3fbe` |
+
+**Elenco de especialistas depois desta rodada: 0** — de novo o estado correto. As 12 também estão **sepultadas**
+no `OBITUARIO-IDENTIDADES.md` (§3.4 e §3.5): aposentar tira do diretório vivo; sepultar tira o direito de voto.
+
+**Observação que a remoção não pode engolir:** as seis `jurado-06d-*` só puderam votar porque o orquestrador as
+**copiou para o diretório de agentes da árvore da sessão** (`demo/investidor`), já que o registro de agentes
+resolve a partir de lá e não do worktree do bloco — mais uma instância de `P-GOV-CAMINHO-REPO-SESSAO`. As cópias
+foram removidas no §C5 do #385 (medido: 0 restantes, 0 arquivo rastreado apagado). **E a dívida do §1.5 do
+obituário se repetiu:** a junta do delta fechou no próprio #385 e as seis não foram sepultadas nele — pago
+aqui, no PR seguinte, com a omissão declarada no §3.5 do obituário.

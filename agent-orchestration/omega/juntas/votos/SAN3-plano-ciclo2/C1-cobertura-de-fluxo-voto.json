@@ -1,0 +1,168 @@
+{
+ "cadeira": "C1",
+ "papel": "jurado-san3c2-cobertura-de-fluxo — cobertura de fluxo prometido, agenda e viabilidade (TITULAR, com veto)",
+ "modelo": "claude-opus-5 (Opus 5); o corpo não fixa modelo (R8)",
+ "ref_medida": "ecc32712 (git rev-parse = ecc32712b626d836c661dfd28b2172fb75a1d475; objeto confirmado: git diff --stat 7ea94a53 ecc32712 = só o R-SAN3-plano-ciclo1.md) · base origin/main 15ef3fbe = merge-base · briefing lido em 03e4977a",
+ "veredito": "REPROVADO",
+ "jurado": "jurado-san3c2-cobertura-de-fluxo (TITULAR, identidade nova — não votei, não planejei, não desenvolvi nada deste caso; nada herdado de critico-adversarial, estrategista, coordenador-de-acessos, validador-mestre, porteiro-pos-merge, planejador-mestre, inspetor-de-terreno-da-junta, do orquestrador nem do agente que aplicou a correção; suplente nomeado: jurado-san3c2-suplente-cobertura-de-fluxo)",
+ "lente": "Cobertura de fluxo prometido — (1) fluxo prometido (notas mvp_*, textos de tela, API_CONTRACTS.md, RBAC_MATRIX.md) x código medido (rota + chamador + tela + porta do papel) x bloco do §5, por censo de rotas x chamadores; (2) passo citado nos testes de encerramento do §5, B-SAN3-10 primeiro, x existência na ref ou construtor anterior na agenda; (3) agenda do §6 x travas de mesmo arquivo, trava de schema e dependências do §5, e §9 derivado da agenda e de gh pr view. Quórum: unanimidade de 3 (não 5/5); meu veto não alcança pre-existente. Não julga: C2 guardiao-fail-closed (gate de módulo fail-closed do item 16/B-SAN3-18, censo de vias do B-O6R-07c itens 11/51, controles de servidor dos itens 52/53) e C3 agente-ci-doutor (diff x regras, KPI por execução, registro e decisões, coerência de números). A exatidão matriz RBAC x catálogo em geral não está no mandato de nenhuma cadeira do ciclo 2 pelo briefing §2 — lacuna para a ata.",
+ "voto": "REPROVADO",
+ "justificativa": "Cadeira TITULAR de cobertura de fluxo prometido, identidade nova; nada de ata, plano, briefing ou voto do ciclo 1 entrou como fato; tenho veto; quórum unanimidade de 3; o veto não alcança pre-existente. TERRENO: worktree próprio detached j-san3c2-c1 em ecc32712, pristino antes e depois (status --porcelain = 0), removido por git worktree remove --force; sem banco, sem container, sem npm ci. PENEIRAS publicadas na evidência (a do corpo = 12 linhas; uma segunda, mais larga = 22); o que escapa delas é limite declarado. CENSO: 75 arquivos com Router( (73 routers + app.ts/portal-app.ts; portal fora do censo), prefixos do app.ts + sub-montagens medidas, rota multi-linha capturada -> 410 rotas, 0 caminho não literal; web 598 arquivos, 294 sítios resolvidos nas 4 portas + fetch cru (32 via helper), 4 não resolvidos (commissions x2, navigation, notificação) = limite; app 39 sítios Dio, 81 constantes de api_contracts.dart, 0 não resolvidos. Cruzamento com regra estrita (segmento estático exige igual; a regra frouxa da 1a passada deu falso positivo e foi descartada): 125 rotas sem chamador. ITEM 1 (18 linhas na tabela da evidência): Contas, Títulos, Caixa/Extrato, Fechamento, Cheque, Dashboard, fila offline, cadastros, execuções, OS, aprovações, estoque, localização = funciona ou bloco; Compras/Relatórios = fora do gate com pergunta ao dono (§10.1, default fora do menu); Estorno = nota. DESCOBERTO: (A1) Conciliação — prometida nas notas mvp_demo/mvp_vendavel (Kpis/kpis-latest.json:51,59) e no API_CONTRACTS.md:435, rota PATCH /financial-entries/:id/reconcile (financial-entry.routes.ts:84) com 0 chamador na web e no app, e nenhum bloco, condição do §4.3 ou pergunta do §10 (grep concilia no plano = 0 na v4 e na v5); (A2) faturar para o papel Financeiro — o B-SAN3-25 põe a ação na aba da OS, cujo carregamento exige work_orders:read no backend, que o finance não recebe (só os.read; requirePermission é igualdade exata, sem alias no backend), e o finance é quem lê a promessa da InvoicesPage.tsx:53; nenhum teste de bloco passa pela porta desse papel. ITEM 2: B-SAN3-10 inteiro decomposto (OS criar, despachar, orçamento->OS, checklist com evidência e pátio existem na ref; faturar, baixar, cheque e fechamento e bootstrap construídos antes na agenda); falha no faturar por persona (A2); (A3) o teste do B-SAN3-08 cita Financeiro criando orçamento com as permissões do banco, mas o formulário lê clientes, catálogo e OS (useServiceQuoteReferences.ts:52-54), o finance tem 0/0/0, e o construtor declarado (B-SAN3-04a) não prova esses grants no teste e segue uma matriz que dá finance=none em Clientes e Serviços. ITEM 3: scripts meus reproduzem a agenda escrita pela regra declarada (0 divergências), 72 pares com arquivo comum, 31 entre frentes, 0 sobrepostos no melhor caso e no realista; cadeia de prisma em série (04a > 03a condicional com parada escrita > SAN3-02 > SAN3-20 > B-O6R-12 > B-O6R-09); 0 dependência invertida; B-SAN3-10 começa em 67,5 = fim do último bloco; §9 deriva número a número (gh: 28,45/57,04/12,83; 54 itens; G11 M21 P5; 120-130 h; 238/213/240/223 e 297; 452 h com 2 frentes); registro de travas incompleto em 2 pares (A4, ajuste). PROPRIEDADES AUSENTES: o fluxo que as notas de KPI e o contrato prometem (conciliação) não tem rota com chamador nem bloco que o construa; o fluxo que a tela promete ao Financeiro (faturar) não tem porta para esse papel e o teste do bloco que o constrói não passa por ela; o teste de encerramento do B-SAN3-08 cita um passo (grants de leitura do Financeiro, do banco) que nem a ref nem o teste do bloco anterior declarado provê. NÃO MEDI (outra cadeira): mérito do gate de módulo, do censo de vias e dos controles 52/53 (C2); KPI, registro e decisões (C3). SEM EXECUTAR: nada do núcleo ficou sem medição.\nVOTO: REPROVADO — fluxo prometido DESCOBERTO (conciliação: rota sem chamador e sem bloco) + faturar sem porta para o papel Financeiro + passo de encerramento do B-SAN3-08 sem construtor | escopo: dentro-do-bloco (o plano omite a conciliação — grep concilia = 0 em a143d2c3 e em ecc32712/f84bc634 de 2026-09-12 — e escreveu os testes do B-SAN3-25 em f84bc634 e do B-SAN3-08 em a27d1c70, 2026-09-11; os defeitos de produto por baixo são de 2026-06-11 a 2026-07-20) | evidência: routes.mjs+callers2.mjs+match.mjs em ecc32712 (PATCH /financial-entries/*/reconcile web=0 app=0; POST /work-orders/*/invoice web=0), catalog.ts:809-872 (finance sem work_orders:read/customers:read/service_catalog:read), rbac.middleware.ts:30, work-order.routes.ts:119-121",
+ "itens": [
+  {
+   "n": 1,
+   "titulo": "Fluxo prometido x bloco (notas mvp_*, textos de tela, API_CONTRACTS.md, RBAC_MATRIX.md x rota + chamador + porta do papel x §5)",
+   "veredito": "REPROVADO — 18 linhas; 2 DESCOBERTO: conciliação (sem chamador e sem bloco) e faturar para o papel Financeiro (sem porta, mesmo depois do B-SAN3-25)"
+  },
+  {
+   "n": 2,
+   "titulo": "Passo citado nos testes de encerramento do §5 x existência na ref ou construtor anterior na agenda (B-SAN3-10 primeiro)",
+   "veredito": "REPROVADO — B-SAN3-10 inteiro decomposto (11 passos) + 13 passos-precondição dos demais blocos; falham: faturar por persona (B-SAN3-10 b) e Financeiro cria orçamento com as permissões do banco (B-SAN3-08), sem construtor cujo teste os prove"
+  },
+  {
+   "n": 3,
+   "titulo": "Agenda do §6 x travas de mesmo arquivo, trava de schema, dependências; §9 derivado",
+   "veredito": "APROVADO COM AJUSTE — 72 pares com arquivo comum, 0 sobrepostos (melhor caso e realista); cadeia de prisma em série; 0 dependência invertida; §9 deriva número a número; registro de travas incompleto em 2 pares (ajuste)"
+  }
+ ],
+ "o_que_executei": [
+  {
+   "comando": "git rev-parse ecc32712 03e4977a origin/main; git merge-base ecc32712 origin/main; git diff --stat 7ea94a53 ecc32712",
+   "forma": "worktree san3 (só leitura), git-bash MSYS_NO_PATHCONV=1",
+   "resultado": "ecc32712b626; base 15ef3fbe; delta = só R-SAN3-plano-ciclo1.md"
+  },
+  {
+   "comando": "git -C san3 -c core.longpaths=true worktree add --detach .../j-san3c2-c1 ecc32712",
+   "forma": "worktree próprio",
+   "resultado": "ec=0, 3381 arquivos, status --porcelain = 0"
+  },
+  {
+   "comando": "gh pr view <n> --json number,createdAt,mergedAt,commits,state para 360 353 359 380 357 369 385 371 386; node times.mjs",
+   "forma": "gh autenticado; authoredDate = committedDate em todos os commits; UTC",
+   "resultado": "1,27 1,43 4,94 12,83 44,06 57,04 102,73 376,70 h; mediana 8 = 28,445; mediana 5 grandes = 57,04, mínimo 12,83; #386 1o commit 2026-09-11T14:54:26Z"
+  },
+  {
+   "comando": "node routes.mjs (git grep -l Router( ecc32712 -- src/ = 75 arquivos)",
+   "forma": "montagem do app.ts + sub-montagens core-saas e platform; regex multi-linha",
+   "resultado": "410 rotas, 0 caminho não literal; POST /api/v1/work-orders/:workOrderId/invoice em work-order-financial.routes.ts:77/78"
+  },
+  {
+   "comando": "node callers2.mjs + helpers.mjs",
+   "forma": "web: apiRequest/apiData/apiFormDataRequest/apiBlobRequest + fetch(apiBaseUrl); app: Dio + api_contracts.dart",
+   "resultado": "web 294 resolvidos (32 via helper), 4 não resolvidos; app 39/39"
+  },
+  {
+   "comando": "node match.mjs (regra estrita)",
+   "forma": "segmento estático exige igual",
+   "resultado": "268 rotas com chamador web, 36 com app, 125 sem nenhum; Financeiro: invoice/pay/reconcile/accounts/entries/periods/cheques = 0"
+  },
+  {
+   "comando": "git grep peneiras (a do corpo e uma mais larga) -- frontend/src mobile/flutter_app/lib",
+   "forma": "classificação afirma x declara ausência",
+   "resultado": "12 e 22 linhas; afirma: InvoicesPage.tsx:53, erp_components.dart:164"
+  },
+  {
+   "comando": "git log -S/--diff-filter=A; git blame catalog.ts:810-813",
+   "forma": "datas de origem",
+   "resultado": "reconcile 1e65b34b 2026-07-18; nota Conciliacao fef73e5b 2026-07-18; InvoicesPage:53 20bcf456 2026-07-20; finance os.read b142671ec 2026-06-11; B-SAN3-25 f84bc634 2026-09-12; teste do SAN3-08 a27d1c70 2026-09-11"
+  },
+  {
+   "comando": "node capcensus.mjs + perms.mjs (rota -> requirePermission -> grants de ROLE_PERMISSIONS)",
+   "forma": "capacidade x papel de negócio",
+   "resultado": "finance sem work_orders:read/customers:read/service_catalog:read; só tenant_admin fatura E abre OS"
+  },
+  {
+   "comando": "node parse.mjs; node frontier.mjs; node sched.mjs; node lockreg.mjs",
+   "forma": "entrada: git show ecc32712:PLANO_SAN3.md + git ls-tree ecc32712",
+   "resultado": "37 blocos G11/M21/P5; 54 itens no §4.1; simulação = agenda escrita (0 divergência); 0 violação; 0 sobreposição; realista 238/213/240/223 -> 297; 2 frentes 452; 2 pares sem trava registrada"
+  },
+  {
+   "comando": "git worktree remove --force .../j-san3c2-c1; git worktree prune; git worktree list",
+   "forma": "teardown pelo nome",
+   "resultado": "ec=0/ec=0; diretório ausente"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C1-A1",
+   "titulo": "Conciliação: fluxo prometido sem chamador e sem bloco (DESCOBERTO)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "Duas datas. Defeito de produto: rota PATCH /financial-entries/:id/reconcile nasceu em 1e65b34b (2026-07-18, #216) sem tela; a promessa entrou na nota mvp_* em fef73e5b (2026-07-18, #226). Omissão do plano: git show <ref>:docs/revisoes/SAN3/PLANO_SAN3.md | grep -c -i concilia = 0 em a143d2c3 (v4) e em ecc32712 (v5 f84bc634, 2026-09-12); o §2 e o §10.1 da própria v5 fixam o default \"tudo o que o produto diz entregar está à venda\" e só tiram item do gate com condição escrita (§4.3).",
+   "evidencia": "Kpis/kpis-latest.json:51 (mvp_demo: \"... Caixa/Extrato, Conciliacao, ...\") e :59 (mvp_vendavel: \"... conciliacao ...\"); API_CONTRACTS.md:435 \"PATCH /financial-entries/:id/reconcile — Concilia lançamento\"; rota em src/modules/financial-entries/financial-entry.routes.ts:84; match.mjs estrito em ecc32712: web=0 app=0; nenhum bloco do §5 a nomeia; o teste do B-SAN3-12 (L263) e o da pendência dona do item 28 não passam por ela; ausente do §4.3 e do §10.1; git grep concilia -- pendencias.md: nenhuma pendência de tela.",
+   "motivo": "O fluxo que as notas de KPI e o contrato prometem não tem rota com chamador nem bloco que o construa, nem condição escrita que o tire do gate."
+  },
+  {
+   "id": "C1-A2",
+   "titulo": "Faturar: sem porta para o papel Financeiro, mesmo depois do B-SAN3-25",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "Defeito de produto: o finance tem só os.read desde b142671ec (2026-06-11, catalog.ts:812); InvoicesPage.tsx:53 desde 20bcf456 (2026-07-20, #249). Texto do plano: fronteira e teste do B-SAN3-25 e o (b) do B-SAN3-10 com \"por persona\" escritos em f84bc634 (2026-09-12) para fechar o C1-02.",
+   "evidencia": "Promessa ao papel: InvoicesPage.tsx:53, exibida sob guard financial_titles:read ou finance:read (App.tsx:674); RBAC_MATRIX.md:50 Billing finance=full, :45 Work orders finance=read. A ação do B-SAN3-25 (L270) vai para FinancialTab.tsx, aba do detalhe da OS (WorkOrderDetailPage.tsx:86), que carrega GET /work-orders/:workOrderId (work-orders.service.ts:57), guardado por work_orders:read (work-order.routes.ts:119-121). O finance não tem work_orders:read (catalog.ts:809-872); requirePermission = includes exato (rbac.middleware.ts:30); nenhuma expansão de os.read no backend (git grep = 0; o alias é só de UI, auth.adapter.ts:375). Quem tem financial_titles:create e work_orders:read ao mesmo tempo: só tenant_admin. A fronteira do B-SAN3-25 não tem catalog.ts; o teste do B-SAN3-04a (L249) não cita o finance lendo OS.",
+   "motivo": "O bloco alcança o arquivo do elo, mas o teste de encerramento não passa pela porta do papel a quem a tela promete o fluxo, e nenhum bloco anterior prova essa porta."
+  },
+  {
+   "id": "C1-A3",
+   "titulo": "B-SAN3-08: o teste cita um passo sem construtor (Financeiro com as permissões do banco para criar orçamento)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "Defeito de produto já registrado: P-Ω3a (pendencias.md:401+, Ω3-a) \"finance tem quotes:read/create/update mas NÃO tem service_catalog:read/customers:read ... Decidir\". Texto do plano: teste e \"os grants chegam pelo SAN3-04a\" desde a27d1c70 (2026-09-11, v3), mantidos na v5.",
+   "evidencia": "Teste do B-SAN3-08 (L269): \"Financeiro cria orçamento na base com as permissões do banco\"; fronteira só frontend. O formulário lê useServiceQuoteReferences.ts:52-54 = service_catalog (service_catalog:read), customers (customers:read), work-orders (work_orders:read); o finance tem 0/0/0 (catalog.ts:809-872). O construtor declarado, B-SAN3-04a, tem catalog.ts na fronteira, mas o teste (L249) não cita esses grants, e a matriz que ele segue (\"o catálogo é que se ajusta\") dá finance=none em Customer registry (RBAC_MATRIX.md:38) e Service catalog (:41).",
+   "motivo": "O teste de encerramento cita um passo (dependência de dado: os grants do Financeiro no banco) que nem a ref nem o teste de um bloco anterior na agenda provê."
+  },
+  {
+   "id": "C1-A4",
+   "titulo": "Registro de travas do §6 incompleto: 2 pares entre frentes com arquivo comum ordenados só pelo relógio",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "A lista \"Travas de mesmo arquivo respeitadas pela agenda\" e a coluna Dep. são texto da v5 (f84bc634).",
+   "evidencia": "lockreg.mjs (alcançabilidade transitiva no grafo Dep. + travas): B-O6R-07c [F2 18-31] x B-SAN3-26 [F4 41-46] em src/modules/work-orders/work-order.routes.ts (fronteira do SAN3-26 = src/modules/work-orders/** ou src/modules/mobile/**); B-O6R-12 [F2 55,5-60,5] x B-SAN3-11 [F3 28-29,5] em src/modules/impound/impound-prisma.repository.ts (+ DTO em src/modules/impound/** se preciso). 0 sobreposição no melhor caso e no realista.",
+   "motivo": "Dois blocos de frentes diferentes tocam o mesmo caminho sem trava nem dependência que os ordene; a regra de agenda do §6 não os separa se o relógio escorregar."
+  },
+  {
+   "id": "C1-A5",
+   "titulo": "§9: âncora do tempo deste PR",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "§9 e §14 C1-03 da v5 (f84bc634).",
+   "evidencia": "§9: \"29 h medidas até 2026-09-12 19:54Z\" (14:54:26Z -> 19:54Z = 29,0 h, confere); §14 C1-03: \"29 h até a v5\"; mas a v5 f84bc634 é de 20:33:31Z (29,65 h) e o objeto ecc32712 de 20:56:08Z (30,03 h); 19:54Z não é instante de commit nenhum (gh pr view 386).",
+   "motivo": "O instante declarado no §9 não coincide com o que o §14 diz medir; diferença menor que a precisão das faixas."
+  },
+  {
+   "id": "C1-A6",
+   "titulo": "B-SAN3-10 (c): fluxos do app sem lista e fora da fronteira",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "Texto do teste (c) do B-SAN3-10 na v5.",
+   "evidencia": "mobile/flutter_app/integration_test = 0 arquivos; test/ = 62 _test.dart; a fronteira do B-SAN3-10 (L295) não alcança mobile/** nem tests/mobile-backend-contracts.test.ts.",
+   "motivo": "O passo não nomeia quais fluxos do app prova; só se cumpre com testes que os blocos da frente 4 escrevem antes."
+  },
+  {
+   "id": "C1-A7",
+   "titulo": "B-SAN3-12: o teste do §5 omite criar conta e a listagem do extrato",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "Coluna Teste do B-SAN3-12 (L263) na v5.",
+   "evidencia": "O §5 diz \"título baixado pela web -> paid e lançamento em caixa; saldo pela rota real\"; a pendência dona (pendencias.md:8364+) diz \"criar conta -> emitir título -> baixar pela tela -> saldo\". GET /financial-entries = 0 chamador.",
+   "motivo": "O teste do plano cobre menos do que o registro que ele diz fechar."
+  },
+  {
+   "id": "C1-A8",
+   "titulo": "B-SAN3-17: o consentimento dado no app não chega ao backend que o confere",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "Desenho herdado da telemetria (D-Ω4C-TELE-CONSENT; Ω4C PR-12/13): no app o consentimento é local (location_consent_store.dart), e o backend lê OperatorProfile.tracking_consent (schema.prisma:2144), gravado só por PATCH /operator-profiles (operator-profile.service.ts:84).",
+   "evidencia": "Nenhuma rota do app grava consentimento; a fronteira do B-SAN3-17 é core/location/**, home_screen, router e field-location.service.ts. Cada asserção do teste é construível isolada.",
+   "motivo": "O elo entre o consentimento dado no app e a conferência no servidor não é passo de nenhum teste — matéria da C2 (controles do item 52)."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "C2 guardiao-fail-closed: gate de módulo fail-closed (item 16, B-SAN3-18), censo de vias do B-O6R-07c (itens 11/51) e os controles de servidor dos itens 52/53 — não medi o mérito.",
+  "C3 agente-ci-doutor: diff x regras, KPI (3 guards, kpi-freeze, app.js, sync-agent-agents), registro, decisões e coerência de números entre plano/status/log/KPI.",
+  "Fora do gate com condição escrita: Compras e Relatórios (§10.1, default fora do menu, B-SAN3-06a); P-CHK-APLICABILIDADE-SEM-ROTA e push de despacho (§4.3/§10.1).",
+  "Rotas sem chamador e sem promessa (nota, leitura 1): Estorno POST /financial-entries/:id/reverse (só a tabela do API_CONTRACTS.md:434), POST /mobile/checklist-runs/:id/reopen, PATCH /work-orders/:id/checklists, rotas de plataforma sem tela.",
+  "Pre-existente, matriz x catálogo (N=4, forma: célula de ação da RBAC_MATRIX sem permissão no catálogo, causa: catálogo não convergido; dono B-SAN3-04a, cuja causa-raiz é essa; nenhum teste do plano as cita e nenhuma cadeira do ciclo 2 tem isso no mandato): inventory sem checklist_runs:* (RBAC:44 read/answer-by-scope); operator e inventory sem escrita em branches/suppliers/tags/pois (RBAC:37 edit-scoped); inventory sem work_orders:approve nem outra porta de aprovação (RBAC:46 approval-by-policy); finance com work_orders:read só pelo legado os.read (RBAC:45 read), desde b142671ec 2026-06-11.",
+  "[A RE-VERIFICAR pela C2] o item 41/P-Ω3a e o C1-A3 dependem de decisão de produto (conceder grants ou aceitar a degradação), registrada em pendencias.md:401+ e não no §10 da v5."
+ ],
+ "teardown": "Criei o worktree detached .../.claude/worktrees/j-san3c2-c1 em ecc32712 (sem npm ci, sem banco, sem container). Scripts e saídas só no scratchpad (c1/). Pristino antes da remoção (status --porcelain = 0). Removido por git worktree remove --force pelo nome (ec=0) e git worktree prune (ec=0); diretório ausente; san3 intacto em 03e4977a. Anomalia reportada, não varrida: o j-san3c2-c2 já não aparece no git worktree list — não o toquei. Nada escrito no repositório além deste voto e da evidência no caminho do briefing. Base viva erp-postgres/erp-redis nunca tocada."
+}

@@ -4287,3 +4287,45 @@ Números medidos pelas cadeiras: `2995/2997` (N=3, banco recriado antes de cada 
 autoria + 5 do conserto, `blocks_completed` 163 conferido em 5 refs, índice de pendências byte-idêntico à
 saída do gerador. Ata em `omega/juntas/J-B-O6R-06-delta.md`. Falta: absorver `#383/#384`, bateria, CI,
 merge, §C5, porteiro, backfill.
+
+## B-O6R-06 — merge e porteiro; SAN3 — inventário e plano (2026-09-11, branch `docs/san3-plano-saneamento`)
+
+Sequência real: (1) #385 mergeado (`15ef3fbe`), §C5 feito; (2) `porteiro-pos-merge` em Fable, com worktree e
+cluster próprios: `2995/2997` reproduzido, **LIBERADO COM RESSALVA** para a Fase 2, três dívidas nomeadas;
+(3) 8 inventariantes somente-leitura — 7 fatias do registro + os achados Ω6R — e o `agente-pesquisador-web`
+na PD do antivírus; a primeira leva de 8 caiu por limite do Fable às 05:10 e foi relançada em Opus, com
+nota; (4) o orquestrador conferiu no código, antes de aceitar, os três itens que mudam o gate (o `forEach`
+sem `await` do app, o `catch` que fabrica OS na web, o superusuário do `docker-compose.prod.yml`) e o segundo
+`take: 100_000` silencioso; (5) worktree `san3` a partir de `origin/main`, `npm ci` próprio; backfill por
+script com o roundtrip JSON conferido byte a byte e a pré-condição (`git diff --numstat e26eb9e5 ca5fd19a`)
+reexecutada: 0 linhas; guards de KPI 28/28; `sync-agent-agents --check` 23 agentes; (6) a correção dos flips
+no `pendencias.md` foi entregue a um agente que não achou nenhum deles, com a prova de cada um reconferida por
+presença antes de escrever.
+
+(7) a fatia AUSENTES trouxe 50 pendências fora do registro, 10 bloqueantes; o orquestrador conferiu no código
+os 5 mais pesados antes de aceitar; (8) o `critico-adversarial` reprovou a 1ª versão do plano — 17 achados, 6
+`bloqueia` — e a v3 respondeu item a item, depois de conferir por script **todo** caminho citado contra a árvore
+(não só os cinco que o crítico apontou) e cada fato novo que ele citou; (9) o agente de registro aplicou os 52
+flips numa cópia de bancada com asserção por linha antes de tocar o worktree (FECHADAS 72 → 105 contra a base, com as 2 pendências do painel resolvidas no próprio PR — 103 depois do ciclo 2, que as reabriu como PARCIAL; índice
+byte-idêntico à saída do gerador) e mediu em bancada que o gerador lê só a 1ª linha de status.
+
+Números: 231 IDs medidos (31 fechados no código × abertos no texto, 24 parciais — 21 delas sem o texto dizer —,
+175 abertos, 1 não medido; 52 flips); 49 ausentes registradas (50 da fatia; `P-GOV-MODELO-CODEX-SEM-NOME` caiu na reconfirmação); gate com 54 bloqueantes, 37 blocos e 6 atos do dono (v5); melhor
+caso ~120–130 h, realista ≈ 14 dias com 4 frentes e ≈ 20,5 a 21 com 2 (v5, depois da junta do ciclo 1; a v4 respondia à rodada 2 do crítico, que reprovou a v3 com 2 `bloqueia`). A PD do antivírus foi transcrita
+pelo orquestrador a partir do retorno do agente (ele não tem ferramenta de escrita e o arquivo de saída ficou
+vazio), sem edição de conteúdo.
+
+Ciclo 2 (2026-09-12): junta do plano, ciclo 1, REPROVADO 0×3 (26 achados, 7 `bloqueia`); correção planejada pelo orquestrador (`agent-orchestration/omega/planos/SAN3-plano-ciclo2-correcao.md`) e aplicada por agente distinto, sem commit: itens 50–54, blocos `B-SAN3-25`/`B-SAN3-26` e `B-SAN3-04` dividido (54 bloqueantes, 37 blocos), `D-Ω4-C2` no REGISTRO, as duas pendências do painel de volta a ABERTA (PARCIAL), agenda recalculada por script (0 violações); índice pelo gerador: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS.
+
+Ciclo 2 — junta e parada (2026-09-12): inspetor LIBERADO COM RESSALVA (R1–R9). A R6 — a trilha do `R-` do ciclo 1
+sem o voto da C3, e as perguntas (a)/(b)/(c) sem a C3 — foi corrigida pelo orquestrador num commit só (`ecc32712`),
+com o objeto re-apontado e o delta re-verificado pelo inspetor. C1 e C2 em paralelo, C3 depois (P5): C1 REPROVADO (3
+`bloqueia`), C2 REPROVADO (2 `bloqueia`), C3 APROVADO (0 `bloqueia`, 1 ajuste); nenhuma queda. Antes do dossiê, o
+orquestrador conferiu os cinco bloqueios por comando próprio; numa das conferências, a busca solta por "reconcile"
+devolveu 5 arquivos da web que eram estado de processamento, não chamada — a busca estrita confirmou o zero da C1. Ao
+registrar as pré-existentes, a decisão que a C1 citou para o desenho do consentimento (`D-Ω4C-TELE-CONSENT`) não
+existe em `decisoes.md` e ficou fora da emenda. Registro aplicado por script (32 linhas acrescentadas, 0 apagadas);
+índice pelo gerador: 369 cabeçalhos / 358 IDs, 103 FECHADAS, 266 ABERTAS, byte-idêntico à cópia. Teto: dossiê ao
+dono, sepultamento das duas identidades novas, aposentadoria só depois do merge (`D-APOSENTADORIA-ELENCO-EFEMERO`).
+
+Opção B (2026-09-13): o dono escolheu o caminho B (`D-SAN3-PLANO-OPCAO-B`; P1 "Sim, lê OS"; P2 "Sim — Financeiro monta orçamento"). O orquestrador planejou a aplicação (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`) e um agente distinto, que não achou nem planejou, a aplicou sem commit, medindo cada fato marcado antes de escrever (item 16 = 27 + 13 = 40; as 10 rotas do CE-2; a rota de conciliação sem chamador, nascida em `1e65b34b`): §5.6 com as condições e as marcas das células de teste geradas por script; itens 55 e 56; travas `07c` → `SAN3-26` e `SAN3-11` → `B-O6R-12` (0 violações); §15; registro com 1 entrada nova, 11 emendas e 14 ponteiros corrigidos pela propriedade (o ponteiro da `P-O6R-B09` para o item 7 está certo e ficou); painel "56 bloqueantes em 37 blocos" e `kpi-freeze`. Índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS, byte-idêntico à cópia fora do repo. Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep. Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status. Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. Conferência de aplicação (`agente-ci-doutor`): NÃO CONFERE em `042e689e`, CONFERE em `bb3f5925` (`agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`).

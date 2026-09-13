@@ -2202,3 +2202,163 @@ Bloquear por cláusula que não está escrita é reprovação por construção �
 **O que esta decisão NÃO faz:** não move a árvore principal para a `main` (isso esbarraria em edições não
 commitadas de outra sessão, em arquivos que a `main` apagou) e não apaga resíduo alheio. As duas coisas ficam
 para quem for dono daquele trabalho.
+
+---
+
+## D-TRACCAR-HTTP-PRIVADO-AWS (decisão do dono, 2026-09-11) — o Traccar alimenta os módulos que já existem, por HTTP privado dentro da AWS
+
+**A decisão, nas palavras do dono (verbatim):**
+
+> O Traccar será utilizado para alimentar os módulos que já existem no ERP. A comunicação Traccar ↔ ERP será
+> feita por HTTP privado dentro da AWS, sem exposição externa da API do Traccar nem dos endpoints de ingestão
+> do ERP.
+
+> Essa decisão tem precedência sobre hipóteses anteriores de infraestrutura.
+
+**Quando entra: DEPOIS do gate da versão vendável.** O dono fixou dois prazos consecutivos: primeiro concluir
+todas as correções do plano de saneamento e fechar a versão vendável (`docs/revisoes/SAN3/PLANO_SAN3.md`);
+**só então** a integração com o Traccar, em 4 dias. Nenhuma linha de código de integração nasce antes desse
+gate. Registrada pelo PR do plano SAN3, antes de qualquer implementação, como o dono mandou.
+
+### O que a decisão manda, e o que ela proíbe
+
+- **Não existe domínio de negócio "Traccar".** Existe uma **camada de integração** (anti-corrupção):
+  `Traccar DTO → validação/allowlist → DTO interno → serviço de domínio existente`. Os módulos alimentados são
+  os que já existem: `field-location`, `field-ops-realtime`, `telemetry`, `vehicles`, despacho, mapa
+  operacional e — só onde já houver contrato — notificações. **Proibido:** segunda tabela de localização sem
+  necessidade comprovada, segundo mapa, segundo fluxo de despacho, cadastro duplicado de veículo, tela
+  administrativa do Traccar sem requisito, DTO do Traccar vazando para frontend ou domínio.
+- **Fluxo-alvo:** `Dispositivo → Traccar → encaminhamento HTTP JSON privado → adaptador ERP → módulos
+  existentes`. Primário: *position forwarding* e *event forwarding* em JSON (`forward.type=json`,
+  `forward.url` privado, `forward.header` para autenticação interna, retries parametrizados;
+  `event.forward.*` idem). A **REST API** do Traccar serve a cadastro/sincronização de dispositivo,
+  reconciliação, recuperação de lacuna, backfill controlado e health check — **nunca** polling agressivo como
+  caminho principal. **Sem WebSocket** neste requisito.
+- **Rede:** Traccar em subnet privada, sem IP público, sem API pública, sem ALB/NLB internet-facing; DNS
+  privado ou service discovery (ECS Service Connect, Cloud Map ou LB interno, conforme a infra existente);
+  Security Groups origem→destino com porta específica; o endpoint de ingestão do ERP só é alcançável pelo
+  serviço Traccar; a REST API do Traccar só pelo backend/worker autorizado; **nenhuma chamada do navegador ou
+  do Flutter ao Traccar**; credenciais no AWS Secrets Manager (ou o mecanismo já adotado); VPC endpoints se
+  não houver NAT. "Sem acesso externo" vale para a integração e para as APIs administrativas — **os
+  receptores TCP/UDP/HTTP que os rastreadores físicos precisarem alcançar são fronteira SEPARADA**: nenhuma
+  porta pública abre sem decisão, threat model e junta.
+- **Multi-tenant — o Traccar NÃO é autoridade de tenant.** `tenant_id` do payload nunca é contexto
+  confiável; o vínculo é resolvido internamente (`instância Traccar + deviceId/uniqueId → organização →
+  veículo/técnico`), único e auditável; dispositivo sem vínculo vai para **quarentena**, nunca para tenant
+  padrão; vínculo ambíguo **falha fechado**; associação cross-tenant é impossível por construção; toda
+  persistência por `withTenantRls` e contratos tenant-first; testes de isolamento obrigatórios.
+- **Idempotência e ordem:** chave estável por `traccar_instance + deviceId + positionId` (posição) e
+  `traccar_instance + deviceId + eventId` (evento); se a versão adotada não garantir o ID, chave determinística
+  documentada, **nunca só timestamp**. Tratar duplicidade, reentrega, fora de ordem, atraso, `fixTime` ×
+  `deviceTime` × `serverTime`, coordenada inválida, `valid=false`, precisão ruim, relógio errado e replay.
+  **O histórico aceita evento atrasado; a "última posição" não regride em silêncio.**
+- **Segurança do endpoint privado — duas camadas:** restrição de rede **e** autenticação de serviço. **Não
+  inventar suporte a HMAC/SigV4**: investigar se a versão adotada produz assinatura dinâmica; se só fizer
+  header estático — segredo de alta entropia no Secrets Manager, rotação, comparação em tempo constante,
+  nunca logado, limite de payload e timeout, content type estrito. **Allowlist de campos** (o objeto
+  `attributes` não é armazenado inteiro sem análise). Nunca expor token, segredo, IP interno, tenant externo,
+  payload bruto, headers de autenticação ou dados de rede do dispositivo (§2.8). Nenhum token em código, log,
+  query string, frontend ou payload público.
+- **Confiabilidade — semântica de resposta:** `2xx` = aceito de forma **durável** ou já processado
+  idempotentemente (nunca antes da validação mínima e da persistência); `4xx` = payload/autenticação
+  inválidos; `5xx` = falha transitória, para permitir retry. Mais: backoff exponencial, teto conhecido de
+  tentativas, dedupe, timeout, circuit breaker, métrica de última mensagem, atraso `fixTime`→ingestão, taxa de
+  duplicidade, dispositivo sem atualização, falha de autenticação, dispositivo sem vínculo, rejeições,
+  reconciliação periódica pela REST API e alerta de encaminhamento degradado.
+- **Pesquisa antes de código (§C7.3):** versão implantável do Traccar, OpenAPI relevante, formatos reais de
+  position/event forwarding, comportamento de headers, limites de retry, campos de `Device`/`Position`/`Event`
+  — em PD registrada em `docs/omega-pd.md`, com fixtures sanitizadas. Fontes prioritárias:
+  `traccar.org/traccar-api/`, `traccar.org/api-reference/`, `traccar.org/forward/`,
+  `traccar.org/configuration-file` e documentação oficial da AWS. **Servidor público de demonstração nunca
+  em produção.**
+
+### Plano de 4 dias (depois do gate)
+
+Dia 1 — contrato e infraestrutura (PD, versão, rede privada, segredo, threat model, junta); Dia 2 — ingestão
+e reconciliação (adaptador, idempotência, quarentena, semântica 2xx/4xx/5xx); Dia 3 — alimentação dos módulos
+existentes; Dia 4 — endurecimento e demonstração. Cada dia é bloco com junta, CI, KPI e porteiro.
+
+### Quórum que isto vai exigir (§C7.1)
+
+Implantar o Traccar é **serviço/dependência nova** e a integração **toca permissão, isolamento e dado
+pessoal (posição de técnico)**: a PD e a decisão de implantação vão a **junta unânime de 5**; os blocos de
+código, a **unanimidade de 3** (§C7.1-ter(b)).
+
+### Contexto anterior do dono sobre o Traccar (2026-09-08, registrado agora — estava só no chat)
+
+- "o Traccar vai ficar como **rastreador de posição padrão**, nosso sistema vai ser alimentado pela API dele";
+- o eixo é **técnico + veículo**, e **um veículo pode ter rotatividade de técnico** — o vínculo
+  pessoa↔veículo tem de ser por **janela de tempo** (pela OS/despacho), nunca mapa estático, ou o trajeto de
+  um técnico é atribuído a outro (erro de dado **e** exposição de dado pessoal);
+- "vai existir **planos para localização de veículos**, o **técnico fica free** no plano" — rastreamento de
+  veículo é **feature de plano pago** (liga o Traccar ao gate de módulo contratado e ao faturamento);
+- **convivência com o rastreamento atual pelo app** (`geolocator` → `POST /mobile/telemetry`): **em aberto
+  por decisão do dono**, que pediu o custo dos dois caminhos antes de decidir.
+
+### Conflito com decisão anterior, registrado e não consolidado em silêncio (§A2)
+
+`D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
+como provedor primário** e AWS como segundo; o repositório tem `fly.staging.toml` e `fly.production.toml` e
+nenhum IaC de AWS (medido em `15ef3fbe`: `git ls-files` só acha o importador de custo AWS CUR, que é dado,
+não infraestrutura). Uma decisão de junta 5/5 é revista aqui por **decisão do dono**, que está acima dela na
+ordem do §A1. "HTTP privado **dentro da AWS**" entre Traccar e ERP pressupõe o ERP alcançável por rede
+privada AWS. **O dono declarou precedência desta decisão sobre hipóteses anteriores de infraestrutura.** O
+que ainda precisa ser decidido **por escrito, antes do Dia 1 do Traccar**: (a) o ERP inteiro migra para AWS;
+ou (b) só o Traccar vive na AWS e a ponte com o ERP em Fly.io usa um mecanismo privado entre provedores (o que
+não é "dentro da AWS" ao pé da letra). Até lá, **nenhum IaC de Fly.io é apagado** e nenhuma migração de
+provedor começa. A PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`) já traz os dois desenhos (Fly 6PN e
+Fargate privado) para que o `B-AV-REAL` não fique preso a esta escolha.
+
+---
+
+## REGISTRO-SAN3-CONFLITOS (2026-09-11) — duas pendências de dinheiro cujo conserto colide com decisões registradas (§A2)
+
+**Não é decisão.** É o registro, antes de qualquer consolidação, de dois conflitos que o `critico-adversarial` do
+PR #386 mediu (rodada 2, CR2-01) e que o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`) leva ao gate da versão
+vendável pelo critério 4 do dono ("fluxos financeiros preservam dinheiro exato").
+
+1. **`P-Ω4-3-REFATURAR-DELTA` × `D-Ω4-C2` (idempotência do faturamento).** Item lançado depois do 1º faturamento
+   de uma OS nunca é faturado: o índice único parcial `financial_titles_wo_direction_active_key`
+   (`prisma/migrations/20260811000000_add_invoicing/migration.sql:25-27`) — o mecanismo da `D-Ω4-C2`
+   (`(tenant_id, work_order_id, direction)`, sem competência na chave) — admite **um** título ativo por OS e
+   direção, mesmo com o primeiro já pago. O carimbo dos itens incluídos (`D-Ω4-C1`) **não** impede faturar os
+   itens ainda não carimbados — quem impede é o índice da `D-Ω4-C2`. Faturar o delta exige mudar esse índice, ou
+   o desenho do título, **sem perder** o anti-refaturamento do que já foi faturado. *Corrigido em 2026-09-12 pela
+   junta do PR #386 (C3-01): a versão anterior atribuía o conflito à `D-Ω4-C1`.*
+2. **`P-Ω4-7-DUPLA-CONTAGEM` × `D-Ω4-7-NO-TITLE`.** A decisão tirou `title_id` do cheque ("o registro de cheque é
+   INDEPENDENTE de título") e declarou a dupla contagem "risco de PROCESSO, fora do escopo do backend deste
+   bloco". Travar a dupla porta — baixa do título por `payTitle(payment_method='check')` × compensação do cheque do
+   mesmo dinheiro — exige um vínculo cheque ↔ título que a decisão excluiu.
+
+**Quem resolve e como:** a junta de cada bloco (unanimidade de 3 + crítico) revê a decisão com o desenho medido
+pelo planejador — a do `B-SAN3-02` revê a `D-Ω4-C2`, a do `B-SAN3-20` revê a `D-Ω4-7-NO-TITLE`; a política de
+produto por trás (faturar o delta; vincular cheque a
+título) está no §10 do plano como pergunta ao dono, com default **sim** — o default não reduz escopo. **Até a
+revisão, as duas decisões seguem valendo** e nenhum código as contraria.
+
+## D-SAN3-PLANO-OPCAO-B (decisão do dono, 2026-09-13) — plano SAN3 aprovado com condições de entrada; o Financeiro lê OS e monta orçamento
+
+**Contexto.** O PR #386 (plano SAN3 até a versão vendável) parou no teto (`D-TETO-DOIS-CICLOS`): ciclo 1 REPROVADO
+0 × 3, ciclo 2 REPROVADO 1 × 2 (`J-SAN3-plano-ciclo2.md`). O dossiê
+(`agent-orchestration/omega/reprovacoes/DOSSIE-SAN3-plano-parada.md`) pôs ao dono um caminho (A/B/C/D) e duas
+perguntas de produto. **Respostas do dono, literais (2026-09-13):** caminho — *"B — aprovo com condições"*; P1 — *"Sim,
+lê OS"*; P2 — *"Sim — Financeiro monta orçamento"*.
+
+**O que a decisão faz.**
+
+1. **O plano v5 fica aprovado pelo dono (fonte §A1.1), com os 5 bloqueios do ciclo 2 escritos como condição de
+   entrada dos blocos afetados** (`B-SAN3-18`, `B-O6R-07c`, `B-SAN3-25`, `B-SAN3-12`, `B-SAN3-08`/`B-SAN3-04a`), mais
+   as condições gerais que fecham as duas classes de defeito em todo o plano, os ajustes do ciclo 2 e a correção dos
+   ponteiros do registro. Aplicação: o orquestrador planeja, um agente distinto aplica (§C7.4-bis), **uma cadeira de
+   registro confere a aplicação — não é ciclo de mérito**. O merge do #386 é autorizado por esta decisão, com a
+   conferência verde e o CI verde; o `porteiro-pos-merge` vem depois, como sempre.
+2. **P1 — o papel `finance` passa a ter `work_orders:read`.** O catálogo converge à `RBAC_MATRIX.md`, que já dá
+   `read` em OS ao Financeiro (l.45). Quem concede: o `B-SAN3-04a`. O faturamento continua na aba da OS (`B-SAN3-25`).
+3. **P2 — o Financeiro monta orçamento.** Recebe `customers:read` e `service_catalog:read` (criar, editar e aprovar
+   orçamento ele já tem). **A `RBAC_MATRIX.md` — arquivo-base, fonte §A1.2 — é atualizada no mesmo bloco que concede**
+   (`B-SAN3-04a`): Clientes (l.38) e Serviços (l.41), `finance` de `none` para `read`. Divergência §A2 registrada aqui:
+   a matriz dizia `none`; vale a decisão do dono, e o arquivo-base muda **no bloco**, não neste PR.
+
+**O que a decisão NÃO muda.** A `D-TETO-DOIS-CICLOS` segue valendo — esta é a intervenção humana que ela prescreve. Cada
+bloco continua com planejador em Fable, crítico nos blocos de invariante, inspetor de terreno e junta com o quórum do
+risco dele, antes de qualquer código. O PR do plano não toca código.

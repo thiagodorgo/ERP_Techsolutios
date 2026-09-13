@@ -6,7 +6,7 @@
 > encolhe deixa de ser obituário.
 >
 > **O descarte é LÓGICO.** Nenhum arquivo de identidade foi apagado por este registro, em branch nenhuma.
-> As **21** identidades abaixo (17 originais + as 6 do `B-O6R-06`, §3.4, acrescentadas em 2026-09-09 — estas existem em `demo/investidor` como arquivo **untracked**, medido por `git status`) continuam existindo como arquivo na branch `demo/investidor`
+> As **29** identidades abaixo (17 originais + 6 do `B-O6R-06` mérito, §3.4 + 6 do `B-O6R-06` delta, §3.5 — as 12 do `B-O6R-06` entraram na `main` pelo squash `15ef3fbe` e saem do diretório vivo no PR que as sepulta; o corpo segue lível em `15ef3fbe`) — as 17 originais continuam existindo como arquivo na branch `demo/investidor`
 > (`.claude/agents/especialistas/` e o espelho `.agents/agents/especialistas/`) — servem de peça histórica
 > citada por este documento. O que morre é o **direito de sentar numa junta**, não o byte.
 
@@ -28,10 +28,16 @@
 
 | | |
 |---|---|
-| Identidades registradas | **17** |
-| **SEPULTADAS** | **21** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 6 do `B-O6R-06`) |
-| **RESERVADAS** | **2** (`jurado-c5-arnes-catalogo-postgres` · `critico-c5-adversarial`) |
+| Identidades registradas | **31** (17 originais + 6 do `B-O6R-06` mérito, §3.4 + 6 do `B-O6R-06` delta, §3.5 + 2 do PR #386 ciclo 2, §3.6) |
+| **SEPULTADAS** | **31** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 2 ex-reservadas do `B-O6R-02` ciclo 5 + 6 do `B-O6R-06` mérito + 6 do `B-O6R-06` delta + 2 do PR #386 ciclo 2) |
+| **RESERVADAS** | **0** (as duas do §3.3 participaram do ciclo 5, que rodou e mergeou no #371 — ver a emenda no fim do §3.3) |
 | Arquivos apagados por este registro | **0** |
+
+> **Correção de placar (2026-09-11, PR do plano SAN3).** A versão anterior dizia **17 registradas** e **21
+> sepultadas** na mesma tabela — contradição introduzida pelo orquestrador ao acrescentar o §3.4 sem recontar a
+> primeira linha. E as 2 reservadas estavam vencidas desde 2026-09-04 (§3.3). A saída das 12 do `B-O6R-06`
+> do diretório vivo é registrada à parte, em `controle/aposentadoria-especialistas.md` (rodada 2): aposentar
+> tira do diretório; sepultar tira o direito de voto — e este arquivo continua não apagando byte nenhum.
 
 **A conta NÃO é "16 queimados + 1 preservado"** — essa lista, herdada do enunciado do bloco, erra em uma
 identidade. Ver §5 (Divergência §A2).
@@ -42,6 +48,11 @@ Colunas: **classe de queima** = `votou` (assinou voto em disco) · `nomeada-e-pr
 como titular ou suplente de um caso já concluído; não assinou voto) · `reservada` (criada para caso que
 ainda não rodou). Todas as 17 vivem, como arquivo, em `demo/investidor` **nas duas pontas do espelho**
 (`.claude/agents/especialistas/<nome>.md` e `.agents/agents/especialistas/<nome>.md`).
+
+> **Nota (2026-09-11):** a frase acima descreve as 17 originais. As 12 do `B-O6R-06` (§3.4 e §3.5) entraram
+> na `main` pelo squash `15ef3fbe` e **saem do diretório vivo no mesmo PR que sepulta as seis do delta**
+> (`D-APOSENTADORIA-ELENCO-EFEMERO`; registro em `controle/aposentadoria-especialistas.md`, rodada 2). O corpo
+> continua lível em `15ef3fbe`.
 
 ### 3.1 Caso `B-O6R-ARNES` — arnês de teste · junta concluída 2026-08-28 · **APROVADO 3×0** · PR #359
 Ata: `J-B-O6R-ARNES.md` (l.3: *"APROVADO por maioria — 3 APROVADO · 0 REPROVADO · 0 voto perdido"*; head
@@ -94,6 +105,22 @@ O plano existe e espera: `agent-orchestration/omega/planos/B-O6R-02-ciclo5-plano
 
 **Alerta ao futuro:** sepultar qualquer uma das duas destrói a composição já pronta do próximo bloco
 financeiro da fila. Foi o erro que este bloco quase cometeu ao herdar a lista de 16.
+
+> **EMENDA (2026-09-11, PR do plano SAN3) — as duas RESERVADAS estão SEPULTADAS, e desde 2026-09-04.** O
+> título desta seção diz "ciclo 5 do `B-O6R-02` (não rodou)". **Rodou**: a junta do ciclo 5 fechou e o bloco
+> mergeou no **#371 (`99f18403`, 2026-09-04)**. Medido nas atas:
+> - `jurado-c5-arnes-catalogo-postgres` ocupou a **cadeira C1** e **votou APROVADO**
+>   (`J-B-O6R-02-ciclo5.md:17`; voto `votos/B-O6R-02-ciclo5/02-C1-arnes-catalogo-postgres.md`) → classe
+>   **`votou`**;
+> - `critico-c5-adversarial` foi o **crítico adversarial** do ciclo (parecer
+>   `votos/B-O6R-02-ciclo5/01-critico-adversarial.md`, 5 achados; objeto do bloqueio da 1ª passada do
+>   inspetor, `J-B-O6R-02-ciclo5.md:78`) → não vota por desenho, mas entrou e trabalhou num caso **concluído**
+>   → classe **`nomeada-e-preparada`**.
+>
+> Pelo §1.2 não há reabilitação. As duas também já constam **aposentadas** do diretório vivo
+> (`controle/aposentadoria-especialistas.md`, rodada 1, linhas 1 e 3). A reserva era para uma junta que já
+> aconteceu; mantê-la seria o §1.3 autorizando uma identidade a sentar numa junta que não existe mais. O texto
+> original desta seção fica como está: o obituário não reescreve linha, acrescenta.
 
 ## 4. Papéis permanentes — o obituário NÃO os cobre
 
@@ -176,3 +203,53 @@ testado e recusado pelo registro antes de eu tentar usá-lo.
 **Consequência para o delta:** a junta que julga o delta do `B-O6R-06` precisa de **identidades novas** nas
 três cadeiras, com suplentes novos — o plano de perda de jurado que apontava para os `jurado-06-suplente-*`
 **não é lícito**, porque aponta para a mesma classe queimada.
+
+### 3.5 Caso `B-O6R-06` DELTA — conserto de isolamento + registro · junta concluída 2026-09-09 · **APROVADO 3×0** · PR #385
+
+Ata: `J-B-O6R-06-delta.md` (head julgado **`e26eb9e5`**; merge `15ef3fbe`). Briefing:
+`BRIEFING-B-O6R-06-delta.md`. Votos: `votos/B-O6R-06-delta/`. As seis nasceram no commit de branch
+**`764a3b04` (2026-09-09)**, criadas pela `agente-fabrica` depois que o inspetor bloqueou a primeira
+convocação, que usava as seis `jurado-06-*` do §3.4, já sepultadas.
+
+> **Acrescentado a posteriori, e é a SEGUNDA vez da mesma dívida.** O §1.5 manda a linha entrar **no mesmo
+> PR em que a junta fecha**. A junta do delta fechou e foi persistida **no próprio #385** — e o orquestrador,
+> que tinha acabado de pagar exatamente esta dívida para as `jurado-06-*` (§3.4), **não sepultou as
+> `jurado-06d-*` no mesmo PR**. Quem nomeou a omissão foi o `porteiro-pos-merge` do #385 (ressalva 2 do
+> parecer de 2026-09-11: "`OBITUARIO-IDENTIDADES.md` tem **0** menções a `jurado-06d-*`"). Pago aqui, no PR
+> seguinte, declarado.
+
+| # | Identidade | Papel | Status | Classe | Evidência | Nasceu em |
+|---|---|---|---|---|---|---|
+| 1 | `jurado-06d-banco-atomicidade-rls` | titular, cadeira C1 (veto) — banco/isolamento | **SEPULTADA** | `votou` | `votos/B-O6R-06-delta/C1-banco-atomicidade-rls-voto.json` (campo `jurado` nomeia a si mesma; `voto: APROVADO`; `head_medido: e26eb9e5`) + evidência + ata §2 | `764a3b04` (2026-09-09) |
+| 2 | `jurado-06d-invariante-financeiro-rateio` | titular, cadeira C2 (veto) — invariante financeiro/rateio | **SEPULTADA** | `votou` | `votos/B-O6R-06-delta/C2-invariante-financeiro-rateio-voto.json` (`voto: APROVADO`, `achados_bloqueantes: 0`) + evidência + ata §2 | `764a3b04` (2026-09-09) |
+| 3 | `jurado-06d-contrato-regressao-registro` | titular, cadeira C3 (veto) — contrato/regressão/registro | **SEPULTADA** | `votou` | `votos/B-O6R-06-delta/C3-contrato-regressao-registro-voto.json` (`voto: APROVADO`) + evidência + ata §2 | `764a3b04` (2026-09-09) |
+| 4 | `jurado-06d-suplente-banco-atomicidade-rls` | suplente da cadeira C1 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-B-O6R-06-delta.md` §1 (tabela de composição, coluna suplente) — caso **concluído** | `764a3b04` (2026-09-09) |
+| 5 | `jurado-06d-suplente-invariante-financeiro-rateio` | suplente da cadeira C2 | **SEPULTADA** | `nomeada-e-preparada` | idem | `764a3b04` (2026-09-09) |
+| 6 | `jurado-06d-suplente-contrato-regressao-registro` | suplente da cadeira C3 | **SEPULTADA** | `nomeada-e-preparada` | idem | `764a3b04` (2026-09-09) |
+
+**As 12 do `B-O6R-06` saem do diretório vivo neste mesmo PR** (`D-APOSENTADORIA-ELENCO-EFEMERO`, registro
+nominal em `controle/aposentadoria-especialistas.md`, rodada 2). O corpo de cada uma segue lível em
+`15ef3fbe` (`git show 15ef3fbe:.claude/agents/especialistas/<nome>.md`).
+
+---
+
+### 3.6 Caso PR #386 (plano SAN3), ciclo 2 — cobertura de fluxo prometido · junta concluída 2026-09-12 · **REPROVADO 1×2** · PR #386
+
+Ata: `J-SAN3-plano-ciclo2.md` (conteúdo julgado **`ecc32712`**; head na junta `03e4977a`). Briefing:
+`BRIEFING-SAN3-plano-ciclo2.md`. Votos: `votos/SAN3-plano-ciclo2/`. As duas nasceram no commit de branch
+**`f84bc634` (2026-09-12)**, criadas pela `agente-fabrica` pelo protocolo de dificuldade (§C7.4, ciclo 1 → 2) depois
+da reprovação 0×3 do ciclo 1 (`J-SAN3-plano-ciclo1.md`), com a competência que faltou ao plano: cobertura de fluxo
+prometido. **Sepultadas no mesmo PR em que a junta fechou** (§1.5).
+
+| # | Identidade | Papel | Status | Classe | Evidência | Nasceu em |
+|---|---|---|---|---|---|---|
+| 1 | `jurado-san3c2-cobertura-de-fluxo` | titular, cadeira C1 (veto) — cobertura de fluxo prometido, agenda e viabilidade | **SEPULTADA** | `votou` | `votos/SAN3-plano-ciclo2/C1-cobertura-de-fluxo-voto.json` (`veredito: REPROVADO`, `modelo: claude-opus-5`) + evidência + ata | `f84bc634` (2026-09-12) |
+| 2 | `jurado-san3c2-suplente-cobertura-de-fluxo` | suplente da cadeira C1 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-SAN3-plano-ciclo2.md` §1 (tabela de composição, coluna suplente) — caso **concluído** | `f84bc634` (2026-09-12) |
+
+As permanentes que votaram (`guardiao-fail-closed`, `agente-ci-doutor`) e as nomeadas como suplentes
+(`agente-secops`, `agente-dba-guardiao`) **não entram aqui** — o §4 não as cobre.
+
+**A aposentadoria NÃO é neste PR.** A `D-APOSENTADORIA-ELENCO-EFEMERO` exige "ata fechada **e PR mergeado**"; as duas
+saem do diretório vivo no primeiro PR depois do merge do #386 (rodada 3 de `controle/aposentadoria-especialistas.md`),
+com o corpo lível no squash do #386. O §1 do briefing do ciclo 2 dizia "sepultadas e aposentadas no mesmo PR" —
+divergência registrada no §5 da ata.

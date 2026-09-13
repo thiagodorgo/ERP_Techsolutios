@@ -4360,3 +4360,83 @@ porteiro da regularização e o consolidador da ata) receberam um `CLAUDE.md` qu
 (marcadores de `25c0112a`, branch reprovada) e só não erraram porque mediram antes de aplicar —
 `P-GOV-CAMINHO-REPO-SESSAO`, decisão nº 1 do dossiê do dono. **Próximo passo:** absorver `#383/#384`
 (sem conflito, sem tocar código), bateria completa, CI, merge, §C5, porteiro pós-merge, backfill.
+
+---
+
+## 2026-09-11 — `B-O6R-06` FECHADO na `main` · rodada SAN3: inventário completo e plano até a versão vendável
+
+**`B-O6R-06` mergeado:** PR #385, squash `15ef3fbe` (2026-09-11T08:10:50Z), CI 7/7, `tree(ca5fd19a) ==
+tree(15ef3fbe)`. O `porteiro-pos-merge` (Fable) reexecutou a suíte no próprio cluster e reproduziu
+**2995/2997** exato; parecer **LIBERADO COM RESSALVA**, com três itens pagos no PR do plano: backfill §C3.5
+(`pr 385` · `merge_commit 15ef3fbe` · `approved_head e26eb9e5`; `p0_fechados` 11 → 13), sepultamento das seis
+`jurado-06d-*` (obituário §3.5) e a linha `status:` da mãe `P-O6R-B06`, que o gerador do índice não lia. §C5
+feito (worktree `b06` removido, branch remota apagada); as 12 cadeiras do bloco saem do diretório vivo
+(aposentadoria, rodada 2).
+
+**Inventário SAN3 (8 fatias somente-leitura, medidas em `15ef3fbe`):** as 238 linhas abertas do índice (231
+IDs), os 32 achados Ω6R e 140 candidatos a pendência fora do registro. **O registro errava o status de 52 das
+231 entradas (22,5%)** — 31 fechadas no código dadas como abertas, 21 parciais sem dizer — **e faltavam 49
+pendências reais** (a fatia confirmou 50; uma caiu na reconfirmação). Causa mecânica dos flips: o registro é só-apensar e o gerador do índice lê **só a primeira**
+linha de status (medido em bancada: até "RESOLVIDO PARCIAL" sai FECHADA). O PR do plano reescreve as 52 linhas
+canônicas (FECHADAS no índice: 72 → 103 contra a base — os 31 flips; as 2 pendências do painel tiveram os dados corrigidos e seguem ABERTAS (PARCIAL) desde o ciclo 2) e registra as 49 ausentes (índice, depois do ciclo 2: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS, 0 contraditórias).
+
+**Gate da versão vendável: 54 bloqueantes, fechados por 37 blocos, e 6 atos que só o dono pratica** — nenhum
+bloco começado. Além dos P0/P1 da auditoria (estoque, despesa, escopo por objeto, antivírus), o inventário trouxe:
+perda de dado no app de campo e na web (a OS fabricada quando o backend recusa o create); a baixa de título que
+**não existe** pela web; "Minhas OS" listando a organização inteira; entrega do guincho e fluxo Prestador sem
+porta; estoque do técnico inventado no código; item lançado depois do 1º faturamento **nunca cobrado**; o menu
+Financeiro que some para o papel Financeiro; telas de menu e do console da plataforma com dado inventado; e
+nada no repositório que imponha ao runtime um papel de banco sem `BYPASSRLS` (o papel real da produção não foi
+medido — é secret do Fly).
+
+**Viabilidade do prazo de 48 h, registrada como o dono mandou:** não cabe. Melhor caso **~120–130 h** de relógio
+(4 frentes, cada bloco no tempo do mais rápido já medido, com o porteiro e a reexecução de KPI no caminho
+crítico, contadas desde a abertura deste PR); realista **≈ 14 dias com 4 frentes e ≈ 20,5 a 21 com 2** (mediana medida dos blocos grandes: 57 h). Sem redução de escopo: a execução
+segue pela ordem de risco, e os atos do dono ficam **dentro** do gate. Plano: `docs/revisoes/SAN3/PLANO_SAN3.md`;
+inventário: `docs/revisoes/SAN3/inventario/`. Registrados também: `PD-O6R-B07B-CLAMD-INSTREAM` (54 fontes) e
+`D-TRACCAR-HTTP-PRIVADO-AWS` (com o conflito com `D-INFRA-PROVIDER`).
+
+**O crítico adversarial reprovou a 1ª versão do plano** (17 achados, 6 `bloqueia`: objeto incompleto, cinco
+caminhos inexistentes, o degrau "G1/G2" que era redução de escopo não declarada, teste impossível, frentes que
+não eram disjuntas, E2E que não fechava a pendência). A v3 respondeu item a item (§12 do plano). A rodada 2 — a última — reprovou a v3 com 2 `bloqueia` (dois blocos de
+dinheiro cujo conserto colide com decisões registradas, `D-Ω4-C2` (a v4 dizia `D-Ω4-C1` — corrigido no ciclo 2, C3-01) e `D-Ω4-7-NO-TITLE`; e um pré-requisito do
+item 9 que tinha sumido) e 7 ajustes; a v4 responde no §13, e os dois conflitos estão registrados em `decisoes.md`.
+
+**Próximo passo:** inspetor de terreno, junta (unanimidade de 3 — o PR fecha por presença pendências de
+segurança, permissão e dinheiro), CI, merge, porteiro — e então as quatro frentes do plano.
+
+**Ciclo 2 (2026-09-12):** a junta do plano (ciclo 1) reprovou a v4 por 0×3 — 26 achados, 7 `bloqueia` (C1 `estrategista`, C2 `coordenador-de-acessos`, C3 `validador-mestre`). A correção (v5), planejada pelo orquestrador e aplicada por agente distinto, soma os itens 50–54, os blocos `B-SAN3-25` e `B-SAN3-26` e divide o `B-SAN3-04` em `04a`/`04b` (54 bloqueantes, 37 blocos); corrige para `D-Ω4-C2` a decisão do conflito do faturamento do delta; devolve as duas pendências do painel a ABERTA (PARCIAL); e recalcula a agenda por script (melhor caso ~120–130 h; realista ≈ 14 dias com 4 frentes, ≈ 20,5 a 21 com 2). Índice pelo gerador: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS. Segue para a junta do ciclo 2.
+
+## 2026-09-12 — PR #386 (plano SAN3) PARADO no teto de dois ciclos · dossiê ao dono
+
+**Junta do ciclo 2 (objeto `ecc32712`): REPROVADO 1 × 2.** C1 `jurado-san3c2-cobertura-de-fluxo` — a cadeira que a
+`agente-fabrica` criou para a competência que faltou ao plano — **REPROVADO** com 3 `bloqueia`: a conciliação é
+prometida pelo painel e pelo contrato e não tem tela nem bloco; faturar não tem porta para o papel Financeiro nem
+depois do `B-SAN3-25` (a aba da OS exige `work_orders:read`, e o `finance` só tem `os.read`); e o teste do `B-SAN3-08`
+depende de permissões que nenhum bloco entrega. C2 `guardiao-fail-closed` **REPROVADO** com 2 `bloqueia`: o gate de
+módulo do backend (`B-SAN3-18`) não tem enumeração rota → módulo — o guard do plano fica vermelho para entrada nova do
+menu e verde para rota ou router novos —, e o `Ω6R-SEC-002` e o item 51 fecham por dono e por piso de teste, não por
+escopo provado. C3 `agente-ci-doutor` **APROVADO** (registro, painel e números coerentes; 1 ajuste). Os cinco bloqueios
+foram conferidos pelo orquestrador por comando próprio. A agenda do §6 e os números do §9 conferiram (C1).
+
+**`D-TETO-DOIS-CICLOS`: não há ciclo 3.** Dossiê: `agent-orchestration/omega/reprovacoes/DOSSIE-SAN3-plano-parada.md`
+— duas perguntas de produto (o `finance` lê OS? o Financeiro monta orçamento?) e quatro opções com custo. O PR segue em
+rascunho; nenhum dos 37 blocos começou; o Traccar espera o gate. Registradas as pendências pré-existentes que as
+cadeiras nomearam — `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU` (dono `B-SAN3-18`),
+`P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` (dono `B-SAN3-04a`) e `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` (dono
+`B-REG-GERADOR`) — e duas emendas; índice pelo gerador: 369 cabeçalhos / 358 IDs, 103 FECHADAS, 266 ABERTAS. As duas
+identidades novas estão sepultadas (obituário §3.6); a aposentadoria delas espera o merge.
+
+## 2026-09-13 — PR #386: decisão do dono (opção B) aplicada ao plano SAN3
+
+**Decisão do dono (`D-SAN3-PLANO-OPCAO-B`):** caminho B — o plano v5 fica aprovado com os 5 bloqueios da junta do ciclo 2 escritos como condição de entrada; P1 — o `finance` lê OS (`work_orders:read`, pelo `B-SAN3-04a`); P2 — o Financeiro monta orçamento (`customers:read` e `service_catalog:read`, com a `RBAC_MATRIX.md` atualizada no mesmo bloco).
+
+**Aplicado** (plano do orquestrador em `agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`; aplicação por agente distinto, sem commit): §5.6 do plano com as condições CE-G1, CE-G2 e CE-1 a CE-7, marcadas por script na célula de teste de 12 dos 37 blocos; item 16 de 38 para 40 (medido por script), com a `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU`; itens novos 55 (`P-WEB-CONCILIACAO-SEM-TELA`, no `B-SAN3-12` ampliado) e 56 (`P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS`, no `B-SAN3-04a`); `SAN3-04a` na Dep. do `B-SAN3-25`; duas travas novas no §6 (agenda inalterada, 0 violações por script); a `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` fora do gate com a condição escrita (§4.3); registro com 1 pendência nova, 11 emendas e 14 ponteiros corrigidos contra o §4.1; painel com "56 bloqueantes em 37 blocos".
+
+Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep.
+
+Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status.
+
+Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS.
+
+**Números:** 56 bloqueantes em 37 blocos e 6 atos do dono; melhor caso e realista inalterados; índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS. **Conferência de aplicação (`agente-ci-doutor`):** NÃO CONFERE em `042e689e` (CONF-01, `bloqueia`; CONF-02, nota), **CONFERE em `bb3f5925`** — `agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`.

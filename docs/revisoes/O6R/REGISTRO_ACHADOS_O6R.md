@@ -117,7 +117,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Pagar 80 de um título de 100 e tentar `PATCH amount=50` e `DELETE`; ambos devem falhar sem alterar título ou lançamentos, inclusive sob concorrência.
 
 ### [Ω6R-DIN-005] Métrica faturável de checklist pode ser perdida definitivamente
-- Status: **fechado** em 2026-09-07 pelo `B-O6R-06` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+- Status: **fechado** em 2026-09-07 pelo `B-O6R-06` (PR #385, `15ef3fbe` — mergeado em 2026-09-11; backfill §C3.5 em 2026-09-11 pelo PR do plano SAN3). Texto anterior, preservado: "PR na autoria; nº e hash no backfill pós-merge — §C3.5".
   **A unidade faturável passou a commitar com a run.** `src/modules/cloud-usage/cloud-usage.capture.ts`
   (`appendChecklistRunUsageInTx`, `$executeRaw` com **alvo explícito** `ON CONFLICT (tenant_id,
   idempotency_key) DO NOTHING`) é chamado de dentro da transação que o `withTenantRls` já abria em
@@ -527,7 +527,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Fixture de contrato para cada ação, replay pelo coordinator e consulta do mesmo estoque Prisma; reiniciar backend e provar persistência/idempotência.
 
 ### [Ω6R-DIN-007] Resumo de custo ignora silenciosamente itens após o limite 10.000
-- Status: **fechado** em 2026-09-07 pelo `B-O6R-06` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+- Status: **fechado** em 2026-09-07 pelo `B-O6R-06` (PR #385, `15ef3fbe` — mergeado em 2026-09-11; backfill §C3.5 em 2026-09-11 pelo PR do plano SAN3). Texto anterior, preservado: "PR na autoria; nº e hash no backfill pós-merge — §C3.5".
   **O resumo soma no banco.** `summarizeLineItems` (`aggregate` + `groupBy`, **sem `take`**) com
   `buildLineItemWhere` **compartilhado** com `listLineItems`, e o campo `limit` **removido** de
   `normalizeSummaryFilters` — era ele o truncamento. O detalhe (`/line-items`) segue paginado ≤500.

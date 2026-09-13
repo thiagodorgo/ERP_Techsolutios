@@ -93,9 +93,11 @@
 - impacto: em modo mock/offline o Detalhe de OS mostra vinculos ilustrativos; o endpoint real continua primario.
   Os testes constroem o detail diretamente (nao dependem do mock).
 - status: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders)
+- **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia C1: o fallback fabrica OS em três casos — lista vazia (6 OS inventadas com aviso falso de "sem conexão"), create recusado pelo backend (navega para `OS-FALLBACK` e o que o operador digitou se perde) e detalhe com erro (`frontend/src/modules/work-orders/work-orders.service.ts:28,46-50,60-72`); bloqueia o vendável.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-01` (plano SAN3, §4.1 item 4 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-009 - Contraste de texto muted (#94A3B8) abaixo de 4.5:1 no DS (2026-07-07)
 
@@ -141,8 +143,8 @@
 - impacto: nao e card morto (nao clicavel, nao engana; replica o padrao aceito dos KPIs do dashboard/OS);
   requisito substantivo (agregados reais, R1.1) cumprido; a tabela de elementos OBRIGATORIOS do mapa nao
   exige navegacao em KPI. Cosmetico/affordance.
-- status: aberto (reavaliar o affordance na F12/cera — tornar o card um atalho para a janela filtrada,
-  ou manter como indicador). Nao bloqueia F1 (veredito APROVADO).
+- status: FECHADA — o tile km/L é clicável: `<ClickableKpiCard detail={kpiDetails.kmL}>` em `frontend/src/modules/fleet/fuel/pages/AbastecimentoPage.tsx:331`, desde `b1559d32` (#248) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (reavaliar o affordance na F12/cera — tornar o card um atalho para a janela filtrada,
+  ou manter como indicador). Nao bloqueia F1 (veredito APROVADO)."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -218,8 +220,8 @@
 - impacto: baixo — o download serve com o mime DECLARADO armazenado (nao text/html), entao payload HTML
   falso nao renderiza (sem stored-XSS); path de storage e sanitizado (sem traversal). Nao e exploravel p/
   escrever fora do diretorio nem executar.
-- status: aberto (hardening futuro do storage compartilhado: sniffing de magic bytes + Content-Disposition
-  attachment + talvez X-Content-Type-Options nosniff). Vale p/ checklist e danos. Nao bloqueia F5.
+- status: FECHADA — os três remédios pedidos estão no código: sniff de assinatura in-house (`src/modules/evidence/content-sniff.ts`), `attachment; filename=…` (`src/modules/evidence/serve-verified-file.ts:90`) e `X-Content-Type-Options: nosniff` (`:149`) nas rotas de download, entregues por `fe2748c8` (#380, B-O6R-07b); o antivírus real segue em `P-O6R-B07B-SCANNER-AV-REAL` (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (hardening futuro do storage compartilhado: sniffing de magic bytes + Content-Disposition
+  attachment + talvez X-Content-Type-Options nosniff). Vale p/ checklist e danos. Nao bloqueia F5."
 
 ## P-019 - Ocorrencias residuais de persona demo "Marina Costa" fora do mapa (2026-07-08)
 
@@ -230,11 +232,13 @@
 - impacto: telas de PLATAFORMA (fora do AppShell do tenant) e persona de login demo — nao violam o D-007
   operacional do tenant, mas sao dados estaticos que eventualmente devem virar reais (mesmo espirito do
   P-011). Renomear agora divergiria das referencias visuais aprovadas.
-- status: aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
-  login e intencional em modo mock). Nao bloqueia F6.
+- status: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
+  login e intencional em modo mock). Nao bloqueia F6."
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: a Auditoria Global da plataforma exibe trilha e contagens inventadas ("0 incidentes") sem rótulo de demonstração; bloqueia a demonstração do console.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-06b` (plano SAN3, §4.1 item 45 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-08)
 
@@ -245,6 +249,9 @@
   estreita e o saldo negativo seria visivel/corrigivel por ajuste. Nao ha lock de linha.
 - status: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
   create de movimento, ou uma tabela de saldo materializado com advisory lock). Nao bloqueia F7a.
+- **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: é o mesmo sítio do `Ω6R-DAT-002` (P0, J-6R 5×0) — a saída de estoque checa saldo por agregado e insere sem lock (`src/modules/inventory/inventory-prisma.repository.ts:214-216`); absorvida por `P-O6R-B04`.
+- **duplicata de:** achado `Ω6R-DAT-002`, via `P-O6R-B04` (inventário SAN3, fatia B1) — tratar junto; bloco dono = o de `P-O6R-B04` (`B-O6R-04`, `fix/inventory-consistency`, que nunca começou).
+- **dono:** `B-O6R-04a` (plano SAN3, §4.1 item 1 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13) (a entrada nomeia `B-O6R-04`, nome anterior à divisão em `04a`/`04b`).
 
 ## P-021 - F7b: fechar contagem nao duplica ajustes em retry (RESOLVIDO no bloco) (2026-07-09)
 
@@ -274,6 +281,7 @@
 - impacto: nenhum; entrega honesta. Falta uma fonte de ultimo login (o modulo auth tem sessoes/audit — um
   bloco futuro pode derivar o ultimo `auth_session`/login por usuario).
 - status: aberto (quando quiser ultimo acesso real, derivar do audit/sessoes de auth). Nao bloqueia F9.
+- **duplicata de:** `P-USERS-LAST-ACCESS` (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -304,10 +312,13 @@
   "Operacao"/"indisponivel"/"Auditoria" espalhados). F12 corrigiu as violacoes de §3 ("tenant"/"inbox") +
   acentos DENTRO dessas strings, mas nao fez a reescrita ampla (fora do escopo do bloco de cera).
 - impacto: cosmetico/§11.1; nao afeta funcao. Concentrado em telas bespoke de plataforma/legado.
-- status: aberto (bloco dedicado de copy/i18n varrendo `frontend/src/**` por acentuacao de UI). Nao bloqueia F12.
+- status: ABERTA (PARCIAL — fechado: "Situacao" zerou em `frontend/src`; aberto: ~50 literais sem acento seguem em `frontend/src`, inclusive em telas vivas — `guards/PermissionGuard.tsx:30` (texto de toda tela de acesso negado), `modules/checklists/pages/ChecklistRuntimePage.tsx`, `work-orders/pages/WorkOrderCreatePage.tsx:37,46` e o rótulo `"Operador Logistico"` (`modules/auth/types.ts:5`)) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (bloco dedicado de copy/i18n varrendo `frontend/src/**` por acentuacao de UI). Nao bloqueia F12."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
+- **emenda (plano SAN3 §4.1 item 49, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-21`.
+- **dono:** `B-SAN3-21` (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
 
@@ -316,10 +327,12 @@
   `allowedRoles`), e o menu VISUAL de `inventory` aproxima (cai no kind `gestor`). A autoridade de acesso e
   o route-guard/backend (correto); so o menu visual nao honra 100% a matriz para esses papeis.
 - impacto: baixo — acesso e correto (permissao); estetica de menu aproxima p/ inventory/support.
-- status: aberto (bloco futuro: adicionar `inventory` (+ representacoes distintas) a `UserRole`+`mapBackendRole`).
+- status: ABERTA (PARCIAL — fechado: `support`→"Supervisor" e `field_dispatcher`→"Operação de Campo" têm rótulos distintos (`frontend/src/modules/auth/auth.adapter.ts:234-235`); aberto: `mapBackendRole` não tem ramo para `inventory` (`auth.adapter.ts:225-238` → `null`), o usuário só `inventory` fica com `roles=[]` e cai no menu do gestor (`layouts/appSidebarNav.ts:271-277`), e `operator`/`field_technician` seguem fundidos em "Operador Logistico") (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (bloco futuro: adicionar `inventory` (+ representacoes distintas) a `UserRole`+`mapBackendRole`)."
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: o usuário só `inventory` recebe o menu inteiro do gestor (`roles=[]` → "gestor"), e o backend nega o que o menu oferece.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 38 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-027 - F11: divergencias matriz x catalog + perms `purchase_orders:read`/`reports:read` ausentes (2026-07-09)
 
@@ -330,11 +343,14 @@
   fixtures do teste e a PERMISSAO real no gate, sem inventar nem tocar `catalog.ts`.
 - impacto: os itens Pedidos/Relatorios usam as strings que os guards de rota do App.tsx ja usavam; ate o
   backend adicionar as perms, esses itens so aparecem para quem ja as tiver — honesto, sem fabricar acesso.
-- status: aberto (**bloco backend de reconciliacao de permissoes**: adicionar `purchase_orders:read`/
-  `reports:read` ao `PERMISSION_CATALOG` + alinhar grants de dashboard/aprovacoes a matriz). Nao bloqueia F11.
+- status: ABERTA (PARCIAL — fechado: `purchase_orders:read` e `reports:read` existem no catálogo (`src/modules/core-saas/permissions/catalog.ts:181,198`, `0450ae9f`, #257); aberto: os blocos `finance` e `inventory` do catálogo seguem sem `dashboard:read` nem `work_orders:read`, contra `RBAC_MATRIX.md:34`, e a home desses papéis abre no erro do `GET /dashboard/summary` (403)) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (**bloco backend de reconciliacao de permissoes**: adicionar `purchase_orders:read`/
+- **junta do PR #386, ciclo 1 (C2-05, 2026-09-12):** a matriz (l.34) dá a Financeiro e Estoque um painel **com recorte por papel** (`scoped`); o conserto concede o painel recortado (`src/modules/dashboard/**`), não o painel inteiro. Plano SAN3 v5: bloco `B-SAN3-04b`.
+  `reports:read` ao `PERMISSION_CATALOG` + alinhar grants de dashboard/aprovacoes a matriz). Nao bloqueia F11."
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: Financeiro e Estoque sem `dashboard:read` abrem a home em erro (403 no `GET /dashboard/summary`), contra `RBAC_MATRIX.md:34`; bloqueia a demonstração da persona Financeiro.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-04b` (plano SAN3, §4.1 item 12 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-029 - Ω2-a.2: modal de edicao de Tarifa mantem selects de referencia habilitados, mas o backend os ignora (2026-07-12)
 
@@ -348,7 +364,7 @@
   re-busca e mostra o estado real). Sem impacto de seguranca/isolamento.
 - correcao sugerida: `disabled={isEdit}` + hint ("referencia nao pode ser alterada; crie outra tarifa")
   nos tres selects em modo edicao — ou 400 no backend para tentativa de alteracao de referencia.
-- status: aberto. Nao bloqueia Ω2-a.2 (veredito APROVADO).
+- status: FECHADA — os 3 selects de referência ficam desabilitados na edição: `disabled={isEdit}` em `frontend/src/modules/registry/tariffs/components/TariffFormModal.tsx:157/181/194` (entrou em `c26467e3`, #165), reconfirmado por presença no head `15ef3fbe` (inventário SAN3, fatia A1, 2026-09-11). Valor anterior, preservado: "aberto. Nao bloqueia Ω2-a.2 (veredito APROVADO)."
 
 ## P-030 - Ω2-a.2: residuais BAIXA do gate (comentario 422 enganoso; mapeamento P2003 especifico nao dispara; A6 fora deste arquivo) (2026-07-12)
 
@@ -362,7 +378,7 @@
   (busca server-side nos selects para tenants >100 registros) esta registrada em D-OMEGA2A-tabela-valores-
   tarifas.md, mas nao espelhada aqui — fica espelhada por esta entrada.
 - impacto: cosmetico/manutencao; nenhum efeito funcional.
-- status: aberto (limpar comentario e ramos mortos num chore; A6 vira bloco de UX quando houver tenant >100).
+- status: ABERTA (PARCIAL — fechado: (a) o comentário "→ 422" enganoso saiu (`frontend/src/modules/registry/tariffs/tariffs.types.ts:74-76`); aberto: (b) o mapeamento P2003 específico segue igual ao original (`src/modules/tariffs/tariff-prisma.repository.ts:213-224`; disparo no Prisma 7 não medido) e (c) a busca server-side A6 nos selects acima de 100 registros, não medida) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (limpar comentario e ramos mortos num chore; A6 vira bloco de UX quando houver tenant >100)."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -372,7 +388,7 @@
 - descricao: working tree contem `.claude/skills/{blockchain-developer,cloud-architect,cloud-devops,
   payment-integration,skill-creator}` untracked, alheios ao diff de Ω2-a.2 (pre-existentes ao gate).
 - impacto: risco de entrarem por acidente num commit futuro (`git add -A`).
-- status: aberto (decidir: versionar deliberadamente em bloco proprio ou adicionar ao .gitignore).
+- status: FECHADA — resolvida pela opção "versionar deliberadamente": as 5 pastas (`blockchain-developer`, `cloud-architect`, `cloud-devops`, `payment-integration`, `skill-creator`) estão rastreadas em `.claude/skills/` no head `15ef3fbe` (`git ls-tree -d HEAD .claude/skills/`), versionadas por `33ee3060` (#305) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (decidir: versionar deliberadamente em bloco proprio ou adicionar ao .gitignore)."
 
 ## P-032 (Ω2-e) — item de menu Configurações ainda gateado por tenant.manage
 - `frontend/src/navigation/tenantNavigation.ts` (item tenant-settings) segue com `tenant.manage`/allowedRoles
@@ -385,6 +401,9 @@
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+
+- **emenda sobre `P-033` (plano SAN3 §4.1 item 14, 2026-09-11):** a premissa que a fatia C1 usou para descartá-la — permissão em runtime vinda do catálogo — está refutada: vem do banco, `src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts:90-107` → `src/modules/core-saas/repositories/role.repository.ts:118` (crítico SAN3 r1, CR1-15); volta ao gate como condicional, medida no `B-SAN3-04` em modo banco. (`P-033` não tem cabeçalho próprio: está registrada dentro desta entrada.)
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 14 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-033`: o bullet `P-033` (item 14) tem dono `B-SAN3-04a`.
 
 ## P-Ω3a (Ω3-a ServiceQuote) — pendências declaradas
 - **Aditivo `quotes[]` no detalhe da OS** (`GET /work-orders/:id`) DEFERIDO para Ω3-e (consumidor natural;
@@ -401,6 +420,9 @@
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: o papel finance não consegue criar orçamento pela UI (sem `service_catalog:read`/`customers:read`, o select de serviço fica vazio) e o select de OS recebe as OS fabricadas de `P-008`, contra `RBAC_MATRIX.md:115`.
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** P2 — o Financeiro monta orçamento: o `B-SAN3-04a` concede ao `finance` `customers:read` e `service_catalog:read` (mais o `work_orders:read` da P1) e atualiza a `RBAC_MATRIX.md` no mesmo bloco (Clientes l.38 e Serviços l.41: `finance` de `none` para `read`); o teste do `B-SAN3-04a` prova as três leituras com as permissões do banco, e o do `B-SAN3-08` cria orçamento como o Financeiro (plano SAN3 v5, §4.1 item 41; condição de entrada CE-5, §5.6). O "Decidir: conceder ... ou aceitar a degradação" desta entrada fica respondido: conceder.
+- **dono:** `B-SAN3-08` (plano SAN3, §4.1 item 41 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω3b (Ω3-b Despacho endurecido + Comentário/Timeline da OS) — validador-mestre
 - **P-034 (MÉDIA — granularidade RBAC, não isolamento):** o feed `recentEvents` do dashboard
@@ -470,7 +492,11 @@
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **junta do PR #386, ciclo 1 (C2-03, 2026-09-12):** a lista das leituras de plataforma que quebram sob papel sem `BYPASSRLS` inclui também `replaceTenantCharges`/`listTenantCharges` (`src/modules/cloud-charges/cloud-charge-prisma.repository.ts:24-25,166-212,238-240`, sem contexto; `tenant_cloud_charges` tem policy com `USING` e `WITH CHECK`). Plano SAN3 v5: fronteira do `B-SAN3-05`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
+- **emenda (inventário SAN3, fatia B1, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 9, bloco `B-SAN3-05`) a classifica como **bloqueante do gate vendável** pelo critério 2 do dono ("isolamento multi-tenant validado"): nada no repositório impõe `NOSUPERUSER NOBYPASSRLS` ao papel de runtime; o compose de subida/smoke (`docker-compose.prod.yml:35,57`) conecta como `postgres`; o papel real da produção é secret do Fly e **não foi medido**. Corrigido em 2026-09-11 pelo crítico SAN3 (CR1-06, CR2-06): a versão anterior desta emenda afirmava que a produção roda como superusuário e que isso escondeu a soma do #385 — a soma aconteceu em dev/CI. A fatia B1 a dava como não bloqueante por si; o plano registra a reclassificação como alvo do crítico (§A2), sem consolidação silenciosa.
+- **dono:** `B-SAN3-05` (plano SAN3, §4.1 item 9 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13)
 - descricao: `npm run test:e2e` (Playwright) NÃO entra no gate obrigatório do CI neste PR Ω-GATE — exige app
@@ -484,6 +510,9 @@
   como config-as-code (gated por STAGING_DEPLOY_ENABLED). O Playwright e2e bloqueante roda contra o staging APOS a
   ATIVACAO (hand-off: conta Fly + secrets no Environment staging). Ate la, e2e segue fora do gate obrigatorio.
 
+- **emenda (plano SAN3 §4.1 item 42, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-10`.
+- **dono:** `B-SAN3-10` (plano SAN3, §4.1 item 42 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
 ## P-SAN-CORE-PRISMA-COV - Adapter prisma do Core SaaS não é exercido pelo gate (Ω-GATE, 2026-07-13)
 - descricao: o gate força `CORE_SAAS_PERSISTENCE=memory`; testes que precisam de banco (auth-*/*-prisma/RLS/
   audit) usam `DATABASE_URL` direto, mas o **adapter prisma do Core SaaS** (`createCoreSaasService` no modo
@@ -492,7 +521,7 @@
   nele passariam pelo gate.
 - acao: bloco futuro adiciona um teste do adapter prisma do core (subir contra Postgres do CI, um smoke de
   createTenant/listUsers no modo prisma) OU decisão explícita de manter o core em memory até a migração completa.
-- status: aberto (cobertura; não bloqueante — modo controlado)
+- status: FECHADA — o adapter prisma do Core SaaS é exercido pelo CI: `tests/core-saas-persistence-restart-db.test.ts` (entrou em `a8901ffe`, #353) está na lista SUITES do job `backend-postgres` (`.github/workflows/ci.yml:189`; `CORE_SAAS_PERSISTENCE: prisma` na `:111`); ressalva do inventário: o teste instancia o adapter direto, sem a fábrica `createCoreSaasService()` (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (cobertura; não bloqueante — modo controlado)"
 
 ## P-SAN-KPI-BACKFILL - Backfill de merge_commit/approved_head nos KPIs pode persistir null (Ω-GOV, 2026-07-13)
 - descricao: na politica KPI-por-PR (D-KPI-PER-PR), `merge_commit`/`approved_head` da entrada de KPI do PR nascem
@@ -502,6 +531,8 @@
   bloco reconciliar. Baixo (o `pr` e o merge sao recuperaveis pelo git/gh).
 - acao: ao encerrar uma rodada/pausa, rodar um backfill final dos campos null das ultimas entradas de KPI.
 - status: aberto (trade-off documentado da politica per-PR)
+
+- **emenda medida (inventário SAN3, fatia B1, 2026-09-11):** o risco se materializou. `node` sobre `Kpis/kpis-history.json` do worktree (158 entradas): 134 têm a chave `merge_commit`, e **35 delas estão `null`** (24 entradas nem têm a chave); `approved_head` é `null` em 35 das 129 que o têm. Das 35 com `merge_commit` nulo, **5 trazem número de PR, e as 5 são de PR mergeado** (`gh pr view <n> --json state`: #204, #226, #305, #307 e #343, todos `MERGED`); **30 não trazem número de PR** e não são verificáveis por `gh`. Entre essas 30: a `B-GOV-ELENCO` (posição 155) é `null` PERMANENTE — a própria entrada diz "ESTA ENTRADA NAO ENTREGOU NADA… Nenhum PR foi aberto" (a fatia B1 a dava como mergeada no #381, que é o `B-GOV-ELENCO-ENXUTO`; divergência registrada, não consolidada); e as duas do `B-O6R-01` (posições 138/139) a fatia B1 atribui ao #357 por commit, sem reconferência por `gh`. A entrada do `B-O6R-06` (#385, posição 157) foi paga neste PR (`merge_commit` `15ef3fbe…`); a contagem da fatia B1, antes desse pagamento, era 36.
 
 ## P-SAN-KRYOS - Descontaminação Kryos (Ω-DOCS, 2026-07-13) — RESOLVIDA
 - descricao: conteudo do projeto Kryos (refrigeracao/SCADA) vazou para o repo (estudo-doutoral-interfaces-10-saas.md
@@ -541,9 +572,11 @@
 - acao: entregar o script de bootstrap dedicado na ATIVACAO (Runbook B), rodado one-shot com `ALLOW_PROD_SEED=1`
   inline (removido em seguida). NUNCA usa `db:seed`/demo.
 - status: aberto (follow-up de ativacao; nao bloqueia o merge da config inerte)
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: sem bootstrap versionado do 1º `platform_admin`, a primeira organização real em produção só nasce por SQL manual fora do repositório; bloqueia o go-live, não a demo.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-09` (plano SAN3, §4.1 item 43 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
@@ -562,7 +595,7 @@
   P-SAN-CORE-PRISMA-COV). (3) `web depends_on: api` sem `condition: service_healthy` → 502 transitório até a api
   subir (cosmético). (4) Custo do Fly na PD levemente otimista pós-cobrança de snapshots (jan/2026, $0.08/GB) —
   não muda o ranking. (5) `/health` cru é liveness; o profundo é `/health/ready` (documentado).
-- status: aberto (nits; nenhum bloqueia)
+- status: ABERTA (PARCIAL — fechado: (2) o compose de produção usa `CORE_SAAS_PERSISTENCE: prisma` (`docker-compose.prod.yml:56`, `a8901ffe`, #353); aberto: (3) o serviço web ainda tem `depends_on: - api` sem `condition: service_healthy` (`docker-compose.prod.yml:97-98`); (1) tamanho da imagem, (4) e (5) não medidos) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (nits; nenhum bloqueia)"
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -572,7 +605,7 @@
   técnico `work_order|checklist_run|evidence` aparece cru na UI ("work_order · OS-123"). PRE-EXISTENTE (veio
   1:1 da página de detalhe antiga; NÃO introduzido pelo Ω3F-1). Apontado por cognicao-visual (J-OMEGA3F-1).
 - acao: humanizar (mapa enum→rótulo PT-BR) no **Ω3F-3** (dono da superfície Financeiro/aprovação).
-- status: aberto (não bloqueia; fora do escopo UI-shell do Ω3F-1)
+- status: FECHADA — o enum é humanizado por `ENTITY_TYPE_LABELS` (`frontend/src/modules/work-orders/approval.types.ts:15-22`, fallback "Registro") e a interpolação crua `{approval.entityType}` não aparece em `frontend/src` (0 ocorrências), desde `5a1b433d` (#188) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (não bloqueia; fora do escopo UI-shell do Ω3F-1)"
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -584,9 +617,11 @@
 - acao: bloco de varredura único acentuando labels + mensagens de `WorkOrderForm.tsx` e
   `work-orders.adapter.ts` (validateWorkOrderForm) de uma vez, destravando a convenção p/ os próximos Ω3F.
 - status: aberto (apontado por cognicao-visual)
+- **duplicata de:** `P-028` — contida nela: os rótulos sem acento do formulário de Nova OS são parte da dívida de acentuação (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-21` (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω3F3A-MOEDA-AGREGADO - Total agregado somava moedas heterogêneas (J-OMEGA3F-3A, 2026-07-15) — RESOLVIDO NO PR
 - descricao: o GET de itens financeiros da OS agrega `totalAmount = roundMoney(items.reduce(...))` e emite
@@ -656,9 +691,11 @@
 - acao: fatia de UX subsequente — diálogo de confirmação no approve coletando modo de acionamento + origem/
   destino (para tipos que exigem, ex. reboque), passando ao corpo do approve. Fecha a fidelidade fina do #7.
 - status: aberto (não-bloqueante).
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: sem o diálogo, orçamento de serviço marcado "Exige endereço de destino" nunca é aprovado pela UI (o approve vai com corpo vazio e o create da OS responde 422 `destination_required`); quebra o fluxo orçamento→OS de reboque quando o cliente liga a flag.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-08` (plano SAN3, §4.1 item 40 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω3F5-DOC-TYPE - Categoria de documento no upload manual de anexo (Ω3F-5, 2026-07-15)
 - descricao: o back de anexos (Ω3-d) deriva nome=fileName e tipo=mimeType; NÃO tem campo de categoria
@@ -758,7 +795,7 @@
   work_order_execute_screen.dart:241` ainda renderiza `allowedTransitions` incluindo `cancelled` (models:67-92) —
   o técnico VÊ o botão "Cancelada", enfileira local-first e só descobre o 403 no sync (a fila rejeita limpo via
   actionErrorResult, não envenena). Remover a afordância no app junto do fechamento do bypass.
-- status: aberto (mitigado; resíduo conhecido).
+- status: FECHADA — `PATCH /status` com `cancelled` responde 422 `cancel_via_status_forbidden` para todos os papéis (`src/modules/work-orders/work-order.service.ts:1337`) e o app tirou `cancelled` das transições permitidas, ambos em `3aad5277` (#228); o fechamento já estava declarado na seção `P-Ω3F6`, que o índice não lê (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (mitigado; resíduo conhecido)."
 
 ## P-Ω3F6-TERMINAL-GUARD - Itens financeiros podem ser lançados em OS cancelada (J-OMEGA3F-6A, 2026-07-17)
 - descricao: `work-order-financial.service.create` só valida a existência da OS (`assertWorkOrder`), sem guarda
@@ -767,7 +804,7 @@
   total=999. Não é regressão deste PR (a porta já existia), mas a invariante é nova.
 - acao: guarda de estado terminal em work-order-financials (e avaliar em service-quote-items): recusar
   create/update quando a OS está `cancelled` (422). Coordenar com Ω4/comissões.
-- status: aberto (não-bloqueante hoje — não há consumidor de comissão ainda).
+- status: FECHADA — create/update/delete de item e faturamento em OS cancelada respondem 422 `work_order_cancelled` (`src/modules/work-order-financials/work-order-financial.service.ts:290-297`), em `3aad5277` (#228); fechamento já declarado na seção `P-Ω3F6` (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante hoje — não há consumidor de comissão ainda)."
 
 ## P-Ω3F6B-MENUITEM-INLINE - `.ui-menu-item` com background inline mata o hover (J-OMEGA3F-6B, 2026-07-17)
 - descricao: a classe `.ui-menu-item` do DS só tinha `:hover`/`:focus-visible`, SEM regra base — então cada
@@ -808,7 +845,7 @@
 - acao: `softDeleteAllByWorkOrder(tenantId, workOrderId, actorUserId)` no repositório de work-order-financials
   (uma query, atômica no Postgres) consumido pelo `zeroFinancialItems` — mata a parcialidade E o N+1 de uma vez.
   Casar com P-Ω3F6-TERMINAL-GUARD (a outra direção do par cancelado↔total 0).
-- status: aberto (N é pequeno hoje; falha no meio é rara — mas o dano é destrutivo e silencioso).
+- status: FECHADA — o `zero` do cancel apaga os itens numa operação só, `softDeleteAllByWorkOrder` (`src/modules/work-order-financials/work-order-financial-prisma.repository.ts:104`, sob `withTenantRls` na `:154-155`), em `3aad5277` (#228); fechamento já declarado na seção `P-Ω3F6` (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (N é pequeno hoje; falha no meio é rara — mas o dano é destrutivo e silencioso)."
 
 ## P-Ω3F6B-MENU-GATE-SEM-TESTE - Gate do menu ⋮ não é coberto (provado por mutação) (pós-análise Ω3F-6, 2026-07-17)
 - descricao: os predicados `canCancelWorkOrder`/`canDuplicateWorkOrder` são testados, mas **nada prova que o
@@ -852,7 +889,7 @@ O badge de atraso do Ω3F-9 é DERIVADO de `scheduled_for` (não há `due_at`/SL
 para adicionar um campo de prazo/SLA real (migration) + recompor o "restantes" fiel ao protótipo. Não é bug;
 é fidelidade adiada por decisão explícita (D-Ω3F-9-BADGE).
 
-- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
+- **status:** ABERTA (PARCIAL — fechado: a fonte de dado existe, `sla_due_at` no schema (`prisma/schema.prisma:2354`, `046939f9`, #258), lida pelo adapter (`work-orders.adapter.ts:313`); aberto: a lista não a usa — `components/WorkOrderDelayBadge.tsx:8` segue binário, derivado de `scheduled_for`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω3F-9-DISPATCH-DTO — Expor "envio ativo" no DTO da lista de OS (aberta, Ω3F-9)
@@ -876,7 +913,7 @@ ausência com mensagem benigna e a corrida GET→PATCH cai em 409/terminal_dispa
 - **(BAIXA) Campos opcionais não podem ser LIMPOS via PATCH** (document/category/account_id="" preserva o
   valor) — consistente entre os dois repos e com o Ω4-1; limitação conhecida, intencional no v1.
 
-- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** ABERTA (PARCIAL — fechado: (1) `closing` passou a travar escrita (`PERIOD_WRITE_BLOCKING_STATUSES = ["closing","closed"]`, `src/modules/financial-titles/financial-title.repository.ts:56`, `99f18403`, #371); aberto: (2) a ordem de erro do request duplamente inválido entre memory e prisma, não medida; (3) PATCH que não limpa opcional, declarado intencional no v1 e não re-medido) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-COMPETENCIA-TZ — RESOLVIDO (fix-omega4-competencia-tz, pré-Ω4-6)
@@ -899,7 +936,7 @@ O resolver de conta (InMemory findById não filtra is_active; Prisma FK aponta p
 soft-delete) aceita account_id de conta desativada. Agenda-se liquidação para conta inativa. Relevante ao Ω4-4
 (Caixa/pagamentos): decidir se a conta de liquidação precisa estar ativa (rejeitar → 400/422).
 
-- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** ABERTA (PARCIAL — fechado: liquidação/lançamento e cheque recusam conta inativa, 422 `account_inactive` (`src/modules/financial-entries/financial-entry.repository.ts:67`, `e11c44a8`, #214; `cheques/cheque.repository.ts:61`); aberto: o título continua aceitando conta inativa (`financial-title.service.ts:353`, "FK satisfeita (independe de is_active)")) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-2A-COBERTURA — Nits menores do Ω4-2a (BAIXA)
@@ -917,8 +954,10 @@ o dashboard-pai /finance (FinanceiroPage, ainda MOCK) e o item de menu FINANCEIR
 finance.read. Resolver no Ω4-8 (dashboard real): trocar o gate por uma perm real (financial_titles:read ou uma
 finance_dashboard:read dedicada) quando a FinanceiroPage consumir o backend.
 
-- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** ABERTA (PARCIAL — fechado: a página real (`FinanceiroPage.tsx` com `useFinancialSummary`, `08d00949`, #224) e a guarda de rota (`App.tsx:655-663` aceita `financial_entries:read`, `1bd1ed36`, #227); aberto: o registro de navegação do backend ainda governa `/finance` pela órfã `finance:read` (`navigation.registry.ts:344-356`; filhas `:361-393` com `billing:read`/`invoices:read`/`payments:read`), que o catálogo não concede a `finance` nem a `manager` — em modo real Financeiro/Cobranças/Pagamentos saem do menu desses papéis; provado por composição de leitura, não executado) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+- **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia C2: em modo real, o registro de navegação do backend tira Financeiro/Cobranças/Pagamentos do menu dos papéis Financeiro e Gestor (provado por composição de leitura, não executado); bloqueia o vendável.
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 13 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-2B-KPI-AGREGADO — KPIs/tabs somam só as linhas carregadas (MÉDIO, Ω4-8 Dashboard)
 Os KPIs e as tabs de Cobranças/Pagamentos somam sobre as linhas carregadas (agora limit=100, antes 20) e
@@ -927,7 +966,7 @@ os N de M" quando total>carregado. Cobertura COMPLETA (endpoint de agregados/sum
 real) fica para o Ω4-8 (Dashboard financeiro real). Relacionado: "Recebidas/Pagos (mês)" usa competencia (mês
 contábil), não a data de baixa (que não existe no DTO — Ω4-4 introduz pagamento/baixa) — rótulo impreciso até lá.
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** ABERTA (PARCIAL — fechado: o Dashboard financeiro usa agregado real do backend (`src/modules/financial-summary/`, #223, consumido por `FinanceiroPage.tsx`); aberto: as abas de títulos ainda somam só as linhas carregadas e avisam isso (`frontend/src/modules/finance/titles/components/TitlesListView.tsx:196-199`)) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-2B-A11Y — Menu ⋮ e modais sem dismiss por Escape/clique-fora + focus-trap (BAIXA)
@@ -948,6 +987,9 @@ Item novo pós-faturamento permanece editável (invoiced_at NULL); só os já ca
 - **agendamento:** ~~DIFERIDO-LEVE~~ → **RETIRADO DO BALDE C em 2026-08-29** (achado A-5 da junta do SAN2-1)
   <sub>A cadeira de triagem amostrou 6 das 81 diferidas e provou que esta **não é cosmética**: item lançado no Financeiro da OS depois do 1º faturamento **nunca é faturado**: o 2º `POST /invoice` devolve `409 already_invoiced` e o delta fica “a faturar” para sempre. É **receita executada que o produto não consegue cobrar** — produto e dinheiro, não polimento. A etiqueta colada aqui afirmava *“sem consequência de produto, dado, segurança ou número”* — e o próprio texto da pendência desmente. **Não era o adiamento que estava errado, era a etiqueta**, e é ela que o dono lê ao decidir se veta. Volta ao balde por severidade real.</sub>
 
+- **emenda (plano SAN3 §4.1 item 21, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-02`.
+- **dono:** `B-SAN3-02` (plano SAN3, §4.1 item 21 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
 
 ## P-Ω4-3-TEST-HERMETIC — createMemoryWorkOrderInvoicingService não é puramente memory (BAIXA)
 O WorkOrderInvoicingService.invoke() alcança createDefaultWorkOrderService()/createDefaultFinancialTitleService()
@@ -966,6 +1008,8 @@ Distinto de P-Ω4-3-REFATURAR-DELTA (que é o delta de itens pós-faturamento).
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: dinheiro — título e carimbo dos itens em statements separados, fora do `financial-uow` do #371 (`work-order-financial.service.ts:378,400`); mesma classe do `Ω6R-DIN-001`.
+- **dono:** `B-SAN3-02` (plano SAN3, §4.1 item 20 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-3-CURRENCY-BRL — Item da OS aceita moeda ≠ BRL, mas faturar exige BRL (MÉDIA-BAIXA)
 work-order-financials (Ω3F) usa parseCurrency da shape compartilhada (aceita QUALQUER ISO de 3 letras) + trava
@@ -985,6 +1029,8 @@ título↔carimbo). Fix: ler o agregado + carimbar na MESMA $transaction com loc
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: dinheiro — item apagado entre a leitura e o carimbo entra no título a receber (`work-order-financial.service.ts:362-363,378,400`, sem lock nem transação).
+- **dono:** `B-SAN3-02` (plano SAN3, §4.1 item 20 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-Ω4-3-INVOICE-LEASTPRIV — Rota invoice não exige work_order_financials:read (BAIXA)
 POST /work-orders/:id/invoice gateia só financial_titles:create mas LÊ os itens financeiros da OS. finance tem
@@ -1005,7 +1051,7 @@ Notas de prontidão do título para a liquidação dirigir partially_paid/paid:
 - **Prontos:** ida-e-volta título↔OS exposto (workOrderId no DTO do título; titleId/invoiced no DTO do item);
   título faturado nasce due_date hoje+30d, status open, competencia derivada, paid_amount 0. Estorno=contra-lançamento.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — GUIA consumido pelo bloco que guiava: o write-path dedicado de liquidação existe (`applyPayment`/`applyPaymentGuarded` em `src/modules/financial-titles/financial-title-prisma.repository.ts:157/213`), entregue por `e11c44a8` (#214, Ω4-4) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-EDGES — Bordas do Ω4-4 (Caixa/Extrato + liquidação) — implementado, com decisões e limites
@@ -1025,7 +1071,7 @@ Entregue no bloco Ω4-4 (branch feat-omega4-4-cash). Decisões e bordas que fica
 - **Paridade InMemory×Prisma** é estrutural (mesmo contrato de repo/DTO/erros); a suíte roda só em memory
   (CORE_SAAS_PERSISTENCE=memory) — o caminho Prisma não é exercido sem banco, como nos vizinhos Ω4-1/4-2a.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** **ATRIBUÍDO em 2026-09-05** — **decisão do dono ou de junta**, não de implementação. **NÃO foi fechada junto com as irmãs**: só a parte `Ω6R-DIN-002` (estorno) foi resolvida pelo #371; o restante desta entrada é uma **lista de limites de desenho aceitos** (moeda BRL-only por allowlist, campos imutáveis do lançamento, erros bi-modais por origem, paridade InMemory×Prisma não exercida sem banco) — nada que um bloco de atomicidade fechasse, e fechá-la por tabela junto das outras duas seria exatamente o erro que a disposição delas evitou. O que falta é **classificar**: quais desses limites viram escopo e quais viram decisão registrada
+- **status:** ABERTA (PARCIAL — fechado: o estorno de liquidação devolve o título (`financial-title-prisma.repository.ts:231-240`, `99f18403`, #371) e a paridade InMemory×Prisma passou a ser exercida por 6 suítes financeiras `-db` no job Postgres do `ci.yml`; aberto: os limites de desenho aceitos ainda sem classificar — moeda só BRL (`financial-account.validators.ts:9`), campos imutáveis do lançamento, erros bi-modais por origem) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** **ATRIBUÍDO em 2026-09-05** — **decisão do dono ou de junta**, não de implementação. **NÃO foi fechada junto com as irmãs**: só a parte `Ω6R-DIN-002` (estorno) foi resolvida pelo #371; o restante desta entrada é uma **lista de limites de desenho aceitos** (moeda BRL-only por allowlist, campos imutáveis do lançamento, erros bi-modais por origem, paridade InMemory×Prisma não exercida sem banco) — nada que um bloco de atomicidade fechasse, e fechá-la por tabela junto das outras duas seria exatamente o erro que a disposição delas evitou. O que falta é **classificar**: quais desses limites viram escopo e quais viram decisão registrada
   <sub>**Disposição de 2026-09-05** (ressalva do `porteiro-pos-merge` de `ed0a692`, achada por cadeira independente): a guarda-chuva `P-O6R-B02` — que o §Reconciliação dela declarava dona desta entrada, dando-lhe *"a severidade e o dono (bloco) que não tinham"* — **FECHOU** em 2026-09-05. Sem esta disposição, esta entrada ficaria ABERTA **sem dono nenhum**, com a matéria já fechada. Quem achou não escreveu esta disposição (§C7.4-bis).</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
@@ -1059,7 +1105,8 @@ liquidação, que tem índice parcial). 2 reverse(A) concorrentes → 2 contra-l
 Fix: índice único parcial (tenant_id, reversal_of) WHERE reversal_of IS NOT NULL AND deleted_at IS NULL +
 $transaction. Casa com o tratamento de atomicidade do P-Ω4-4-LIQUID-ATOMIC.
 
-- **status:** ABERTA · **severidade:** MEDIA · **dono:** a atribuir
+- **status:** FECHADA — índice único parcial `financial_entries_reversal_of_active_key` em `(tenant_id, reversal_of)` (`prisma/migrations/20260869000000_add_financial_invariants/migration.sql:38`) + `uow.run`/`findByIdForUpdate` no serviço, com `tests/financial-entry-delete-reverse-race-db.test.ts` no head `15ef3fbe` (entrou em `99f18403`, #371, B-O6R-02 ciclo 5); ressalva do inventário: o índice é condicional — a migração emite WARNING e segue sem ele se houver duplicata legada (`:43`) (inventário SAN3, fatia A1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** MEDIA · **dono:** a atribuir
+- **ressalva (crítico SAN3 r2, CR2-10, 2026-09-11):** o índice único é criado sob condição — numa base com pares de estorno duplicados pré-existentes ele não nasce (`prisma/migrations/20260869000000_add_financial_invariants/migration.sql:43`). Não há base de produção ainda; conferir no go-live (ato do dono, plano SAN3 §4.2).
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-4-CHOKEPOINT-CLOSING — chokepoint só bloqueia 'closed', não 'closing' — ✅ RESOLVIDO no Ω4-6 (M2)
@@ -1158,7 +1205,7 @@ e resolução manual de linhas não casadas.
   existe, SEM service/endpoints); snapshot de pendências (RN-FIN-008 checklist); fechar atômico ($transaction: snapshot
   + flip status); reabertura exige permissão dedicada + motivo + auditoria (RN-FIN-009/RN-AUD-005). ANTES: resolver P-Ω4-COMPETENCIA-TZ.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — GUIA consumido pelo bloco que guiava: módulo `src/modules/financial-period-closes/` com `financial_period:close`/`:reopen` (`financial-period-close.routes.ts:19-20`), entregue por `ccce19b5` (#219); o M2 já consta como resolvido em `P-Ω4-4-CHOKEPOINT-CLOSING` (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-5-CATEGORY-CASE — Filtro ?category= é case-sensitive (BAIXA, pré-existente Ω4-4)
@@ -1219,7 +1266,7 @@ A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderiza
 - P-Ω4-6-FRONT-RESOLVE-NAME: resolver closedBy/reopenedBy UUID→nome (UserNameResolver do Ω3F-5b) antes de renderizar.
 - P-Ω4-2B-KPI-AGREGADO: os KPIs de Cobranças/Pagamentos somam só a página carregada — o Dashboard deve usar agregados de verdade.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — GUIA consumido: `GET /financial-summary` (`src/modules/financial-summary/`, entrou em `7eb1a814`, #223) consumido por `frontend/src/modules/finance/pages/FinanceiroPage.tsx:49` (`useFinancialSummary`); o que o guia listou e não foi feito tem entrada própria (`P-Ω4-6-FRONT-RESOLVE-NAME`, `P-Ω4-2B-KPI-AGREGADO`, `P-Ω4-8-SUMMARY-SCALE`) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-7-READINESS — Guia do Cheque (Ω4-7)
@@ -1229,7 +1276,7 @@ A futura tela de Fechamento (front) DEVE resolver UUID→nome antes de renderiza
   COMPENSAÇÃO — determina qual período o trava; (b) transições que flipam/revertem um lançamento (bounced) DEVEM ir
   pelo caminho de ESTORNO (chokepoint-guarded), NUNCA update destrutivo de lançamento de período possivelmente fechado.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — GUIA consumido: o módulo `src/modules/cheques/` existe (entrou em `b3ac693a`, #221) e as duas decisões que o guia pedia estão registradas em `decisoes.md` — `D-Ω4-7-COMPETENCIA-CLEAR` (l.678) e `D-Ω4-7-BOUNCE-NEW-ENTRY` (l.681) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-7-CLEAR-ATOMIC — Resíduo de atomicidade do clear/bounce do cheque (BAIXA — espelha P-Ω4-4-LIQUID-ATOMIC)
@@ -1239,7 +1286,7 @@ bounce_entry_id=null) e um lançamento posto sem back-link. Recuperável/detect�
 payTitle (P-Ω4-4-LIQUID-ATOMIC). Ideal futuro: create+attach na MESMA $transaction Prisma (o InMemory já é atômico no
 event-loop). Não bloqueia — a conservação de dinheiro nunca é violada (o post não duplica).
 
-- **status:** ABERTA · **severidade:** MÉDIA (reclassificada) · **dono:** a atribuir
+- **status:** FECHADA — clear e bounce rodam em `uow.run` → `moveMoneyInUnit` (`src/modules/cheques/cheque.service.ts:173/218/242`), com `if (!linked) throw` fail-closed (`:288`) e `tests/cheque-clear-bounce-atomic-db.test.ts` no head `15ef3fbe` (entrou em `99f18403`, #371, B-O6R-02 F5) (inventário SAN3, fatia A1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** MÉDIA (reclassificada) · **dono:** a atribuir
 - **agendamento:** ~~DIFERIDO-LEVE~~ → **RETIRADO DO BALDE C em 2026-08-29** (achado A-5 da junta do SAN2-1)
   <sub>A cadeira de triagem amostrou 6 das 81 diferidas e provou que esta **não é cosmética**: crash entre o create do lançamento e o attach do id deixa o cheque `cleared` com `cleared_entry_id=null` e um lançamento postado sem back-link — **consequência de DADO no razão financeiro**. A própria entrada diz *“Mesma classe do payTitle”* e *“espelha `P-Ω4-4-LIQUID-ATOMIC`”* — e o índice deste mesmo bloco põe `P-Ω4-4-LIQUID-ATOMIC` no **balde A**. O espelho declarado de um item A havia ido para o C. A etiqueta colada aqui afirmava *“sem consequência de produto, dado, segurança ou número”* — e o próprio texto da pendência desmente. **Não era o adiamento que estava errado, era a etiqueta**, e é ela que o dono lê ao decidir se veta. Volta ao balde por severidade real.</sub>
 
@@ -1253,7 +1300,7 @@ contra-lançamento fresco). Fechamento forte (flag owned_by='cheque' bloqueando 
 inverteria a dependência entries→cheques → adiado. Conservação de dinheiro do LEDGER é preservada (o guard de par de
 estorno já impede re-estorno).
 
-- **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** FECHADA — DELETE/REVERSE de lançamento vinculado a cheque recusa com `cheque_entry_immutable` (`src/modules/financial-entries/financial-entry.repository.ts:153`), o "fechamento forte" que a entrada adiava, entregue por `99f18403` (#371, B-O6R-02 ciclo 5, achado `Ω6R-DIN-011`) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-7-DUPLA-CONTAGEM — cheque-register vs payTitle p/ o mesmo dinheiro (BAIXA — risco de PROCESSO)
@@ -1264,12 +1311,15 @@ entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dup
 - **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+- **emenda (plano SAN3 §4.1 item 22, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-20`.
+- **dono:** `B-SAN3-20` (plano SAN3, §4.1 item 22 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
 ## P-Ω4-7-CLEAR-RETRO — Compensação retroativa a período fechado (BAIXA)
 O clear sempre usa server-now → competência CORRENTE. Se o banco compensou de fato num mês já FECHADO, a data verdadeira
 não é escriturável (usar now posta no mês corrente, coerente com caixa quando registrado). Política: compensação sempre no
 período corrente aberto; retroação a período fechado exigiria reabertura (D-Ω4-6). Espelha D-Ω4-POS-FECHAMENTO. Documentado, não é dead-end silencioso (o clear falha com 422 period_closed se o mês corrente estiver fechado → cheque fica 'deposited').
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** FECHADA — a decisão que a reabertura de 2026-08-29 pedia já existia desde 2026-07-18: `D-Ω4-7-COMPETENCIA-CLEAR` (`decisoes.md:678`, "a compensação SEMPRE posta na competência CORRENTE"), e o código a cumpre (`src/modules/cheques/cheque.service.ts:170/215`, `const occurredAt = new Date()`) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** BAIXA · **dono:** a atribuir
   <sub>**REABERTA em 2026-08-29 — achado A-2 da junta do SAN2-1.** Foi marcada FECHADA porque o cabeçalho diz
   *"Compensação retroativa a período **fechado**"* — e o classificador da primeira passada casou a palavra
   "fechado", que ali qualifica o **período contábil**, não a pendência. **Vocabulário de domínio lido como
@@ -1316,6 +1366,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
   para drenar a fila. Não-bloqueante (sistema novo não tem fila legada com cancels).
 
 - **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **plano SAN3 (2026-09-11, crítico r2, CR2-03):** o resíduo `P-Ω3F6-CANCEL-RACE` entra no gate (critério 4: item financeiro criado em OS cancelada; a regra do plano não admite exceção por janela) — bloco `B-SAN3-23`. `P-Ω3F6-CANCEL-IDEM` e `P-Ω3F6-MOBILE-DEADLETTER` ficam fora, com a condição medida no §4.3 do plano.
   <sub>**REABERTA em 2026-08-29 — achado A-1 da junta do SAN2-1, gravidade `bloqueia`.** Esta entrada foi
   marcada FECHADA pela primeira passada da triagem porque o cabeçalho diz "RESOLVIDOS". **Está errado:** o
   cabeçalho fala dos **três** defeitos do cluster, e o corpo, logo abaixo, diz textualmente *"Residuais BAIXA
@@ -1326,6 +1377,9 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
   "RESOLVIDO **PARCIAL**" e ignorava o qualificador. **Enquanto os quatro residuais não tiverem entrada
   própria, esta entrada é a única coisa que os mantém visíveis — e por isso fica ABERTA.**</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+
+- **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
+- **dono:** `B-SAN3-23` (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`: o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
 
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
@@ -1369,6 +1423,8 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** severidade e dono. A linha de status segue com severidade "a classificar" e dono "a atribuir", enquanto o deploy está bloqueado pela J-6R (`Kpis/kpis-latest.json`: `deploy_bloqueado: true`) e o antivírus fail-closed faz produção responder 503 a todo upload (`P-O6R-B07B-SCANNER-AV-REAL`). O plano SAN3 põe o go-live entre os atos do dono dentro do gate (§4.2).
+
 ## P-UI-REFRESH-LIVENESS — indicador sutil de auto-atualização nas telas (WS-UI-REFRESH, 2026-07-19)
 - descricao: WS-UI-REFRESH removeu o botão manual "Atualizar" e ligou auto-refresh silencioso em 30 telas (o dono pediu
   explicitamente "o sistema faz isso automatico"). 29/30 telas NÃO exibem sinal visual de que a tela se atualiza sozinha —
@@ -1377,7 +1433,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: OPCIONAL (não-bloqueante; comportamento silencioso é o que o dono pediu). Se desejado, adicionar um indicador sutil e
   uniforme (chip/spinner via `isRefreshing` ou label "Atualizado às HH:MM") para paridade com o padrão-ouro do mapa e sensação
   de "tela viva". Cruza com WS-UI-CARDS/WS-UI-CHARTS (mesma passada de vitalidade de UI).
-- status: aberto (não-bloqueante; sancionado pela junta como comportamento pedido).
+- status: ABERTA (PARCIAL — fechado: 10 das 37 telas com `useAutoRefresh` exibem o indicador `isRefreshing` ("· atualizando…"), todas telas novas de `88f0a480` (#272) e `b152ebda` (#275); aberto: as 27 restantes, incluindo as originais (OS, Dashboard, Usuários, cadastros, pátios, Financeiro) e `NotificationsPage`) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; sancionado pela junta como comportamento pedido)."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -1400,10 +1456,16 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   PedidosPage — são CASCAS 100% mock (dados hardcoded, sem service/estado); seus botões não fazem nada.
 - acao: gatear essas 3 JUNTO da ligação a dados reais (gate-on-wiring) em WS-SCALE-8TELAS — quando ganharem hook + service +
   usePermissions, aplicar o mesmo padrão (usePermissions + can + render condicional dos botões de escrita).
-- status: aberto (não-bloqueante; hoje são mocks sem efeito).
+- status: ABERTA (PARCIAL — fechado: o gate de UI de 2 das 3 cascas, `DispatchConsolePage.tsx:71-74` e `PedidosPage.tsx:31-33` (`0450ae9f`, #257); aberto: a 3ª casca (`TablePage`, usada por `ReportsPage.tsx`) segue sem `usePermissions`, e nenhuma das 3 tem dado real — `ORDER_ROWS`, `ROWS` e KPIs fixos, e o Console de Despacho com a organização fixa "Techsolutions Industrial" (`DispatchConsolePage.tsx:9`)) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; hoje são mocks sem efeito)."
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: mesma causa de `P-PURCHASE-ORDERS-BACKEND-GATE` — telas-casca com dado inventado no menu, e o Console de Despacho com a organização fixa "Techsolutions Industrial".
+- **duplicata de:** `P-PURCHASE-ORDERS-BACKEND-GATE` (mesma causa; inventário SAN3, fatia C2) — tratar junto; bloco dono = o de `P-PURCHASE-ORDERS-BACKEND-GATE`.
+- **cobertura (crítico SAN3 r1, CR1-16, 2026-09-11):** esta entrada cobre `P-PURCHASE-ORDERS-BACKEND-GATE` (Pedidos e Relatórios) **mais** o Console de Despacho — `frontend/src/modules/dispatch/pages/DispatchConsolePage.tsx`, com a organização fixa "Techsolutions Industrial" (`TENANT_NAME`, l.9) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o corpo conta `ChecklistRunsPage` entre "as 2 REAIS (service-backed)", mas ela lista modelos (`frontend/src/modules/checklists/pages/ChecklistRunsPage.tsx:9` importa só `listAvailableChecklists`); e o Console de Despacho não tem porta — `/dispatch/console` não é referenciado em `frontend/src` fora do `App.tsx`.
+- **dono:** `B-SAN3-06a` (plano SAN3, §4.1 item 39 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-RBAC-CATALOG-MATRIZ — divergências pré-existentes catalog.ts × RBAC_MATRIX.md em checklists (2026-07-19)
 - descricao: a junta (coordenador-de-acessos) achou 2 divergências PRÉ-EXISTENTES (não introduzidas pelo gating): (1) matriz
@@ -1413,7 +1475,8 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   `tenant_checklists:read` a esses papéis → bloqueados já na rota (under-grant vs matriz).
 - acao: reconciliar `catalog.ts` × `RBAC_MATRIX.md` (fonte de verdade da matriz) em WS-SCALE-8TELAS. Nenhuma das duas é
   exposição de ESCRITA — não é risco imediato.
-- status: aberto (não-bloqueante; pré-existente).
+- status: ABERTA (PARCIAL — fechado: item 1, o `manager` não tem mais `checklist_runs:create` no `catalog.ts` (último toque na contagem em `8a938414`, #320, D-CHK-DISPATCH-CREATE); aberto: item 2, `finance` e `inventory` seguem sem `tenant_checklists:read` (`catalog.ts`, blocos l.809-894) contra `RBAC_MATRIX.md:43`) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; pré-existente)."
+- **duplicata de:** `P-RBAC-CHECKLIST-DRIFT` (mesma matéria, o item 2 — `finance`/`inventory` × checklists; inventário SAN3, fatia B1) — tratar junto; bloco dono = o de `P-RBAC-CHECKLIST-DRIFT`.
 
 ## P-CHECKLIST-BUILDER-READONLY — builder interativo no modo "Visualizar" para papel só-leitura (2026-07-19)
 - descricao: em TenantChecklistsPage, ao "Visualizar" um checklist, o builder interno (palette/canvas/inspector) permanece
@@ -1421,7 +1484,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   persistência — "Salvar builder"/"Publicar" já ocultos por canUpdate/canPublish). Comportamento PRÉ-EXISTENTE (view reusa o
   builder), não introduzido por esta fatia.
 - acao: quando houver um modo somente-leitura real do builder, desabilitar as interações locais no view. Cosmético.
-- status: aberto (não-bloqueante; sem persistência).
+- status: FECHADA — o editor esconde as ações de escrita sem `canUpdate` (`editorActionVisibility`, `frontend/src/modules/checklists/pages/ChecklistEditorPage.tsx:109/217`) e mostra o aviso "Você está no modo somente leitura" (`:781`), desde `aff48fbb` (#340, CHK P1 PR-02b) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; sem persistência)."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -1445,6 +1508,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - acao: restaurar ações significativas no header (Novo lançamento; Conciliar quando a trilha NF-e existir — cruza com a
   parada NF-e do scale-roadmap). Passada de fidelidade §11.
 - status: aberto (não-bloqueante; cosmético/pré-existente).
+- **duplicata de:** `P-Ω4-8-DASHBOARD-FIDELITY` — contida nela: o cabeçalho sem ações é parte da fidelidade do dashboard financeiro (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -1500,7 +1564,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   dashboard:read mas SEM work_orders:read (ex.: support) veria o Dashboard mas o gráfico temporal 403. O backend 403 corretamente.
 - acao: no PR frontend do gráfico temporal, tratar o 403/erro com o estado obrigatório §7 ("acesso não permitido"/vazio honesto),
   nunca card quebrado. (A ser feito no próprio PR frontend do gráfico.)
-- status: aberto (tratar no frontend do gráfico).
+- status: FECHADA — sem `work_orders:read` o hook não dispara o GET e devolve `forbidden: true`, e o card mostra "Acesso não permitido" (`frontend/src/modules/dashboard/useWorkOrderTimeseries.ts:24,55`), entregue por `308c9efb` (#247) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (tratar no frontend do gráfico)."
 
 ## P-PLATFORM-MOCK-WIRING - Telas de Plataforma 100% mock hardcoded (2026-07-20, WS-CARDS-CHARTS-F2 PR2b)
 
@@ -1513,7 +1577,9 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - proximo: precisa de WIRING de backend real (agregados de plataforma: contagem de organizacoes/usuarios, saude
   de servicos, MRR) antes de qualquer clicabilidade. Candidato a bloco proprio na trilha WS-SCALE-8TELAS / Onda
   de escala da Plataforma. So entao os cards viram clicaveis com dado REAL.
-- status: ABERTA (registrada; nao e pendencia funcional do PR2b — e um alvo futuro de dados reais).
+- status: FECHADA — Visão Geral lê `GET /api/v1/platform/overview` (`PlatformOverviewPage.tsx:201`, `usePlatformOverview()`), o Detalhe da Organização lê o `:tenantId` real e Saúde do Sistema mostra só o estado honesto "Monitoramento em preparação"; zero constantes mock (`KPIS/MRR_BARS/ACTIVITY/ORG_ROWS/METRICS/SERVICES/STATS`) nas 3 páginas no head `15ef3fbe`; entregue por `0cbc70d7` (#254) + `179b52c2` (#256) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA (registrada; nao e pendencia funcional do PR2b — e um alvo futuro de dados reais)."
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** a entrada ficou defasada quanto à ficção que resta na plataforma: Visão Geral e Detalhe da Organização já têm dado real (3 hooks cada no HEAD); as telas que ainda exibem dado inventado são outras — ver `P-WEB-PLATAFORMA-TELAS-FICCAO` (Planos e Módulos, Auditoria Global, APIs, lista de Organizações).
 
 ## P-SCALE-RBAC-OWNER-APPROVAL - Expansao de RBAC (purchase_orders/reports) requer o dono NOMEAR (2026-07-20, PR-SCALE-1)
 
@@ -1530,7 +1596,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
 - proximo: quando o dono autorizar explicitamente (ex.: "adicione purchase_orders/reports ao catalogo e conceda a X"),
   retomar via `Workflow({scriptPath: '...ws-scale-1-rbac-wf_0efa4abf-aff.js', resumeFromRunId: 'wf_0efa4abf-aff'})` — o plano
   ja esta cacheado; so o dev + junta re-executam.
-- status: ABERTA (bloqueada por autorizacao — nao e falha tecnica).
+- status: FECHADA — o dono autorizou (`decisoes.md:758`, `D-SCALE-RBAC-PURCHASING`) e `purchase_orders:read`/`:create` e `reports:read` estão no catálogo e concedidos (`src/modules/core-saas/permissions/catalog.ts`, 19 linhas), entregue por `0450ae9f` (#257) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA (bloqueada por autorizacao — nao e falha tecnica)."
 
 ## P-AUDIT-FOLLOWUPS - Melhorias de Auditoria (2026-07-20, PR-SCALE-3, todas BAIXA/MEDIA)
 
@@ -1568,10 +1634,12 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   O agregado real /platform/overview (PR-5a) ja da a lista; falta um endpoint de DETALHE por org (tenant + contagem/lista de
   usuarios + modulos) real para wirar o detalhe. Backend: reusar listUsersForTenant(withTenantRls) + listTenantModules; sem
   migracao. MRR/uptime/saude-do-sistema por org = sem fonte (omitir, como no overview).
-- status: ABERTA (follow-up do WS-SCALE; PR-5a entregou o overview; detalhe fica para PR proprio).
+- status: FECHADA — o Detalhe da Organização lê o `:tenantId` real (`useParams` + `usePlatformTenantDetail`, `frontend/src/modules/platform/pages/PlatformTenantDetailPage.tsx:290-291`) contra a rota `/tenants/:tenantId/detail` do backend (`src/modules/platform/platform.routes.ts:65`), entregue por `179b52c2` (#256) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "ABERTA (follow-up do WS-SCALE; PR-5a entregou o overview; detalhe fica para PR proprio)."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** a entrada ficou defasada quanto à ficção que resta na plataforma: Visão Geral e Detalhe da Organização já têm dado real (3 hooks cada no HEAD); as telas que ainda exibem dado inventado são outras — ver `P-WEB-PLATAFORMA-TELAS-FICCAO` (Planos e Módulos, Auditoria Global, APIs, lista de Organizações).
 
 ## P-PURCHASE-ORDERS-BACKEND-GATE - Gate server-side de Pedidos/Relatórios pendente (2026-07-21, PR-SCALE-1)
 
@@ -1583,9 +1651,11 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   aplicar `requirePermission("purchase_orders:*"/"reports:read")` server-side. O catálogo + gating de UI desta fatia já preparam o
   terreno (fecha o gap pré-existente em que App.tsx/navegação referenciavam permissões ausentes do catálogo).
 - status: ABERTA (nasce junto com o endpoint; gating de UI isolado é cosmético mas correto).
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: Pedidos e Relatórios aparecem no menu dos papéis pagantes com linhas e KPIs inventados, gate só no front e nenhum endpoint (`src/**/*.routes.ts` sem `purchase-orders` nem `/reports`); bloqueia o vendável.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-06a` (plano SAN3, §4.1 item 39 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-SCREEN-REFS-PATH — screen-refs/ na raiz × docs/claude-code-handoff/screen-refs/ (2026-07-28, D-INTEROP-CLAUDE-CODEX)
 
@@ -1652,7 +1722,10 @@ rodada de saneamento de RBAC (§A2 — registradas para não consolidar em silê
 Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, caso a caso.
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **junta do PR #386, ciclo 1 (C2-04, 2026-09-12):** as divergências com a matriz (l.43-44) são quatro — `manager` com `checklist_runs:update` e `acknowledge`; `finance` e `inventory` sem permissão de checklist; `field_technician` sem `tenant_checklists:read`. O teste do `B-SAN3-04` cobre as quatro (plano SAN3 v5).
+- **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 3 lido ao pé da letra — o papel `manager` tem `checklist_runs:acknowledge` no catálogo (`catalog.ts:574`) além do que `RBAC_MATRIX.md:43-44` concede. Bloco `B-SAN3-04`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 15 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13) (a entrada nomeia `B-SAN3-04`, nome anterior à divisão em `B-SAN3-04a`/`B-SAN3-04b`).
 
 ## P-IMPOUND-CHK-VISIBILITY (2026-08-01) — consequência de RBAC no endpoint de custódia (conflito §A2 com D-record da rota impound checklist-runs)
 
@@ -1859,6 +1932,7 @@ TELAS PR-C. O design mostra avatar+nome+perfil do ator; o DTO expõe só `actor_
 
 - **status:** ABERTA · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
+- **duplicata de:** `P-AUDIT-FOLLOWUPS`, item 1 — ator sem nome na tela de Auditoria (crítico SAN3 r1, CR1-16) — tratar junto.
 
 ## P-SUITE-ENV-PERSISTENCE (2026-08-05) — suíte backend depende de `CORE_SAAS_PERSISTENCE=memory` no SHELL (MÉDIA sistêmica)
 
@@ -1919,6 +1993,9 @@ de checklist (app caía nos seeds); a trilha de OS precisa do mesmo tratamento: 
 sem fallback de seed; seeds só em modo demo EXPLÍCITO e rotulado. Candidata ao **PR-08 (reconciliação
 mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
 - status: ABERTA.
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** apagar as OS semente já gravadas no aparelho. Prova no HEAD `c9ed9b91`: `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart` — o `_upsertRemoteOrders` não tem `delete`/`remove`/`clear`, e a semeadura só ocorre com `_remoteApi == null` (l.118-121), então o resíduo fica nos aparelhos que já rodaram o build local. O plano SAN3 põe a purga no gate (§4.1 item 33, `B-SAN3-13`).
+- **dono:** `B-SAN3-13` (plano SAN3, §4.1 item 33 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-COMPONENT-TYPE-CHECK (2026-08-08) — CHECK do banco recusava os 3 tipos do PR-01 — **RESOLVIDO (hotfix)**
 
@@ -1997,6 +2074,9 @@ no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: rec
   automação), por isso exige junta antes de ser implementado.
 - status: ABERTA (mitigada no cliente; correção de contrato pendente de junta).
 
+- **emenda (plano SAN3 §4.1 item 6, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-22`.
+- **dono:** `B-SAN3-22` (plano SAN3, §4.1 item 6 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
 ## P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA, honestidade de UI)
 
 Achado da junta do PR-02c (critico + cognicao-visual, convergentes). Os chips "Tipos de veículo aceitos"
@@ -2069,9 +2149,11 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
 - **Cuidado:** limpeza de dados vivos só com teardown escopado por id criado (ver
   [[P-JUNTA-LIMPEZA-BASE-VIVA]]); o caminho seguro é corrigir o SEED e re-semear, não apagar em massa.
 - status: ABERTA.
+- **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: a organização do seed chama-se "Tenant Demo" (`prisma/seed.ts:209-223`) e aparece na barra superior, na seleção de organização e no dossiê impresso (§3/§11.1); bloqueia a demonstração.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-07` (plano SAN3, §4.1 item 47 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
@@ -2169,6 +2251,7 @@ hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **dono:** `B-SAN3-11` (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
 
@@ -2303,7 +2386,7 @@ seria a mesma falha, com prejuízo maior.
 **Fechar:** o dono decide — (a) commitar/aproveitar o que está lá (o conteúdo parece ser evolução da skill de
 auditoria e dos registros de orquestração), ou (b) descartar conscientemente e então
 `git worktree remove` + `git branch -d chore/agent-interoperability`.
-- status: ABERTA — aguarda decisão do dono; ocupa espaço em disco mas NÃO bloqueia nada.
+- status: FECHADA — superada pela seção irmã do MESMO ID logo acima ("RESOLVIDA no mesmo dia: DESCARTADA por decisão do dono", com `status: FECHADA`); no repositório, `git worktree list` não tem caminho com "interop" e `git branch -a --list '*agent-interop*'` volta vazio (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "ABERTA — aguarda decisão do dono; ocupa espaço em disco mas NÃO bloqueia nada."
 
 ## P-O6R-BACKLOG (2026-08-14) — os 29 achados da auditoria Ω6R entram no controle operacional (ÍNDICE)
 
@@ -2380,6 +2463,10 @@ deles (`Ω6R-DAT-001`, `Ω6R-DIN-006`) são do próprio ato de subir em produç�
 `docs/revisoes/O6R/PLANO_O6R.md` (os 11 blocos, dependências e gates transversais) ·
 `docs/revisoes/O6R/PROMPTS_CORRECAO/BLOCO_NN_*.md` (um prompt por bloco) · `docs/revisoes/O6R/ATA_J6R.md`.
 - status: ABERTA (índice; nenhum achado fecha aqui — cada bloco `P-O6R-BNN` abaixo é que fecha os seus).
+
+- **emenda de contagem (inventário SAN3, fatia B1, 2026-09-11):** o `docs/revisoes/O6R/achados.jsonl` tem **32** achados — não 29 (cabeçalho) nem 30 (emenda de 2026-08-18); faltavam `Ω6R-DIN-010` e `Ω6R-DIN-011`, achados pela junta do `B-O6R-02`. Recontagem deste aplicador no JSONL do worktree, já com o backfill do #385 (`node`, agrupando `severidade` × `status`): **P0 17** = 13 `fechado` + 1 `parcialmente_superado` (`SEC-002`) + 3 `ativo` (`DIN-009`, `DAT-002`, `DAT-003`); **P1 15** = 2 `fechado` + 2 `parcialmente_superado` (`QUA-004`, `SEC-004`) + 11 `ativo`. A entrada segue aberta (é índice) enquanto houver P0 não fechado.
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** a deliberação dos rascunhos arquiteturais D-001..D-004 não tem dono nem prazo: a J-6R diz que o humano os delibera, e esta entrada não traz campo de dono para essa deliberação.
 
 ## P-O6R-B01 (2026-08-14) — `fix/identity-authority` — Ω6R-SEC-001 + Ω6R-TEN-001 (2 P0) — **BLOQUEIA auth/RBAC/plataforma**
 
@@ -2740,6 +2827,8 @@ manda `Bearer` se houver token (`mobile/flutter_app/lib/core/network/http_client
 mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SEEDS` e
 `P-MOBILE-BANNER-INTEGRACAO` (ambas ABERTAS) — quem abrir o PR-08 fecha este achado junto ou explica por quê.
 - status: ABERTA — 1 P0 + 1 P1.
+- **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
+- **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -2788,6 +2877,7 @@ se surgir.
 - status: **ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.**
   Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
   a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
+- **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: carrega 2 P0 (`Ω6R-DAT-002`, `Ω6R-DAT-003`) + 1 P1 (`Ω6R-QUA-002`) e o bloco nunca começou; o índice mostrava BAIXA porque lê a severidade por menção no corpo (ver `P-SAN3-INDICE-SEVERIDADE-POR-MENCAO`).
 
 > **CORREÇÃO DE REGISTRO (2026-08-28, bloco de registro).** Esta linha continha, até hoje, o status
 > `FECHADA (2026-08-15, PR #353 a8901ff)` com o texto *"os dois P0 viraram gate de boot: produção recusa
@@ -2800,6 +2890,11 @@ se surgir.
 > Contraprova que fixa a leitura correta: `Kpis/kpis-latest.json` → `roadmap.blocos` marca `B-O6R-04`
 > `"estado": "a_fazer"` e `B-O6R-05` `"estado": "concluido", "pr": 353`; e `production_readiness.fechados`
 > credita `Ω6R-DAT-001`/`Ω6R-DIN-006` ao `B-O6R-05` (PR #353), nunca `DAT-002`/`DAT-003`.
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** no `Ω6R-QUA-002`, o `work_order_material.add` também não é drenado: `InventorySyncActionTypes.materialAdd` só aparece em `prestador_repository.dart:125` e `api_contracts.dart:135`, e o serviço de replay não o envia (`sync_replay_service.dart`: 0 ocorrências).
+- **dono:** `B-O6R-04a` (plano SAN3, §4.1 item 1 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-002`: o achado `Ω6R-DAT-002` (item 1) tem dono `B-O6R-04a`.
+- **dono:** `B-O6R-04a` (plano SAN3, §4.1 item 2 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-003`: o achado `Ω6R-DAT-003` (item 2) tem dono `B-O6R-04a`.
+- **dono:** `B-O6R-04b` (plano SAN3, §4.1 item 31 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-002`: o achado `Ω6R-QUA-002` (item 31) tem dono `B-O6R-04b`.
 
 ## P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — **achado ÓRFÃO, sem bloco até hoje**
 
@@ -2830,6 +2925,8 @@ entrada, ou versionar o perfil e referenciar a versão; motores lêem o regime *
 corrente; auditoria campo a campo com valor anterior e novo (todos numéricos/enums, cabem na allowlist §2.8).
 
 **Severidade P1 mantida como registrada** — reclassificar exigiria junta.
+
+- **dono:** `B-O6R-12` (plano SAN3, §4.1 item 24 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-004`: o achado `Ω6R-DAT-004` (item 24) tem dono `B-O6R-12`. O dono deste achado passa a ser `B-O6R-12` (item 24); o "Dono: próximo agente…" e o "sem bloco até hoje" do cabeçalho ficam como histórico.
 
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 
@@ -2912,7 +3009,7 @@ cobrança** e o truncamento é determinístico. Registrado como P0, com a diverg
 (`docs/revisoes/O6R/ATA_J6R.md`, seção "Severidades contestadas").
 
 **Bloqueia:** feature em cloud billing / cobrança de nuvem / rateio de custo.
-- status: ABERTA — 2 P0.
+- status: FECHADA — os 2 P0 (`Ω6R-DIN-005`, `Ω6R-DIN-007`) fechados pelo `B-O6R-06`, PR #385, merge `15ef3fbe` (2026-09-11), junta `J-B-O6R-06.md` + `J-B-O6R-06-delta.md` (3×0 cada). O **Bloqueia** acima cai com esse merge. Linha reescrita em 2026-09-11 pelo PR do plano SAN3, ressalva 3 do porteiro do #385: o fechamento existia só na emenda da seção "EMENDAS DO `B-O6R-06`" (mais abaixo), que o gerador do índice não lê — ele lê esta linha. Valor anterior, preservado: "ABERTA — 2 P0."
 
 ## P-O6R-B07 (2026-08-14) — `fix/authorization-and-uploads` — Ω6R-SEC-002 (P0) + SEC-003, SEC-004 (2 P1) — **BLOQUEIA OS/aprovações/RBAC, auth e anexos**
 
@@ -2970,11 +3067,11 @@ endurecido, nas **5 vias** medidas (mobile evidence, attachments, checklists, da
 **Consequência de gate, dita em voz alta:** o título "1 P0 + 2 P1" só zera com o 07b, e o gate da CHECKLIST P1
 (`J-CHK-04C-EMENDA`) exige **`B-O6R-06` E os DOIS sub-blocos do `B-O6R-07`** mergeados. O `Bloqueia:` de
 auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/upload mobile **permanece** até o 07b.
-- status: ABERTA — resta 1 P1 (`Ω6R-SEC-004`, sub-bloco 07b). Os outros 2 (1 P0 + 1 P1) fecharam no 07a.
+- status: ABERTA (PARCIAL — fechado: `Ω6R-SEC-003`, lockout de conta (`src/modules/auth/repositories/local-auth-credential.repository.ts:108-118`, #369); `Ω6R-SEC-002` e `Ω6R-SEC-004` só parcialmente superados (#369, #380); aberto: residual do `Ω6R-SEC-002` = `P-O6R-SUBRECURSO-OBJECT-SCOPE` (10 vias, aberta) e residual do `Ω6R-SEC-004` = `P-O6R-B07B-SCANNER-AV-REAL` (produção e staging respondem 503 a todo upload, aberta)) (inventário SAN3, fatia A1, 2026-09-11). Valor anterior, preservado: "ABERTA — resta 1 P1 (`Ω6R-SEC-004`, sub-bloco 07b). Os outros 2 (1 P0 + 1 P1) fecharam no 07a."
 - status: FECHADA — 1 P0 + 2 P1: Omega6R-SEC-002 parcialmente superado no 07a (#369, dc8168b; residual P0 em
   P-O6R-SUBRECURSO-OBJECT-SCOPE, dono B-O6R-07c) · Omega6R-SEC-003 fechado no 07a (#369) · Omega6R-SEC-004
   **parcialmente superado no 07b** (PR na autoria; nº e hash no backfill pós-merge — §C3.5; residual em
-  P-O6R-B07B-SCANNER-AV-REAL, que é quem promove o achado a fechado).
+  P-O6R-B07B-SCANNER-AV-REAL, que é quem promove o achado a fechado). [superada em 2026-09-11 pela linha acima: o código é PARCIAL — inventário SAN3, fatia A1]
   **APPEND de 2026-09-06 (B-O6R-07b) — a linha "- status: ABERTA" logo acima está SUPERADA e fica preservada
   por §A2 (acrescentar, nunca apagar).** O "Bloqueia:" de **evidências/anexos/upload mobile** CAI com o merge
   deste PR — era o que faltava, e o de auth/OS/aprovações/RBAC já havia caído com o 07a. O gate da CHECKLIST P1
@@ -2992,6 +3089,8 @@ auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/up
   clean") segue verdadeiro fora de produção. E a consequência disso é operacional e visível: **produção e
   staging respondem 503 a TODO upload** até P-O6R-B07B-SCANNER-AV-REAL — ver também
   P-O6R-B07B-STAGING-SEM-UPLOAD (agenda, decisão do dono).
+- **dono:** `B-AV-REAL` (plano SAN3, §4.1 item 27 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-SEC-004`: o achado `Ω6R-SEC-004` (item 27) tem dono `B-AV-REAL`.
+- **dono:** `B-O6R-07c` (plano SAN3, §4.1 item 11 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-SEC-002`: o `Ω6R-SEC-002` residual tem dono `B-O6R-07c`.
 
 ## P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:approve` — MÉDIA
 
@@ -3154,6 +3253,9 @@ por etapa do despacho"*, ou seja, trabalho em fila que grava/lê exatamente o ag
 histórico por etapa sobre um agregado que pode nascer sem evento é construir sobre buraco.
 - status: ABERTA — 1 P1.
 
+- **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
+- **dono:** `B-O6R-09` (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
 ## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
 
 Bloco 10 do plano (depende do B05). Aceite: single-flight/Abort no cliente; pipeline de imagem isolado; testes
@@ -3232,6 +3334,10 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
 - status: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.
   Rascunho arquitetural correlato: `docs/revisoes/O6R/D-004-contratos-clientes.md` (**pauta do dono, não
   decisão**).
+- **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B2: 2 P1 (`Ω6R-QUA-004`, `Ω6R-QUA-005`), um deles de perda de dado — o material do prestador some no restart (`prestador_repository.dart:121`, `forEach` sem `await`); o detalhe/status/assign remoto da OS lê o envelope errado (`work_order_remote_api.dart:99,115,156`).
+
+- **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
+- **dono:** `B-O6R-11` (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -3399,7 +3505,7 @@ de escutar a porta. Este bloco completou os cabeçalhos com os **nomes**. Falta 
 (`docs/deployment.md`, seção de ativação) **herdar a mesma lista corrigida**, para não divergir de novo.
 - **Alvo:** hand-off de ativação. status: ABERTA.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** ABERTA (PARCIAL — fechado: o dossiê de produção herdou os 5 segredos `PORTAL_*` (`docs/deployment.md:61-65`, `a8901ffe`, #353); aberto: o dossiê de ativação de staging (`docs/deployment.md:26-33`) lista só DATABASE_URL/REDIS_URL/JWT_*/CORS_ORIGIN, e staging roda `NODE_ENV=production`, que exige `PORTAL_SESSION_SECRET`/`PORTAL_TENANT_ID` (`src/config/env.ts:361-366,392-396`): o boot falha seguindo o dossiê) (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-SUITE-NAO-SUPORTA-ENV-PRISMA (2026-08-15 — bloco B-O6R-05, revelado ao consertar o `npm test`)
@@ -3552,7 +3658,7 @@ contrato de erro de todas as rotas de uma vez e precisa de plano e junta própri
 
 ## P-O6R-ARNES-ISOLAMENTO (2026-08-18) — o arranjo do lote de testes contra Postgres, **anterior ao B-O6R-01**
 
-**Estado:** ABERTO · **Dono:** bloco próprio, ainda não aberto · **Bloqueia:** nada diretamente — mas mantém a
+**Estado:** ABERTA (PARCIAL — fechado: P3, mecanismo único de catálogo (`withRoleCatalogLock` nas 3 suítes, #359 `f081b5d0`); P5-roles (`SWEPT_ROLE_FAMILIES` com 6 famílias, incl. `rls_test`, `tests/helpers/auth-identity-fixture.ts:117-124`, #366 `df496d22`); piso de denominador no runner (#359); `P-O6R-B02-SUITES-LIST-CI` (`ci.yml:249`); aberto: P1, nenhum `--test-concurrency` no runner nem no `ci.yml`; P4, `ALTER TABLE … RENAME COLUMN` em tabela compartilhada (`tests/checklist-applicability-prisma-db.test.ts:355,373`); dados de fixture do aborto duro sem varredor; os +4/+4 identidades por rodada (`P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES`)) (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTO" · **Dono:** bloco próprio, ainda não aberto · **Bloqueia:** nada diretamente — mas mantém a
 CI instável e **envenena tabela append-only a cada execução**.
 
 **Por que é bloco próprio e não parte do B-O6R-01** (decisão de escopo registrada em
@@ -3875,6 +3981,8 @@ evento na trilha append-only, e o teardown apaga o tenant sem conhecer a trilha.
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
+- **emenda (inventário SAN3, fatia B2, 2026-09-11) — contradição de registro, não resolvida aqui:** esta entrada atribui **+4/+4** a `tests/core-saas-prisma.test.ts` por execução (tabela do corpo: "2 execuções isoladas, linear (67→71→75→79)"), e a emenda de precisão do ciclo 5 em `P-O6R-ARNES-ISOLAMENTO` (2026-09-03, "o vazamento +5/+5 tem TABELA nomeada, não ARQUIVO") diz que "os **+4/+4** restantes por rodada completa seguem **sem produtor nomeado**". As duas não podem estar certas. O delta **não foi medido** pelo inventário nem por este aplicador: medir exige rodar as suítes `-db`, fora do terreno.
+
 ## P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO, fora do escopo
 
 **Dono:** próximo bloco que tocar `tests/core-saas-role-authority.test.ts` ou o gate de `DATABASE_URL` das
@@ -3904,6 +4012,7 @@ o gate de `DATABASE_URL` como as suítes `-db`, ou deixa de importar Prisma no l
 
 - **status:** ABERTA · **severidade:** a classificar · **dono:** declarado acima
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **duplicata de:** `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` (inventário SAN3, fatia B2) — tratar junto; bloco dono = o de `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` (trilha do arnês de teste, atribuída em 2026-09-05). Mesmo defeito: `src/database/prisma.ts` lança no load sem `DATABASE_URL`, e `tests/core-saas-role-authority.test.ts` morre em vez de declarar skip.
 
 ## P-ARNES-DIVERGENCIA-RUNNER-SUMICO-NAO-EXISTE-NA-MAIN (2026-08-28) — divergência do plano, registrada ANTES de consolidar (§A2)
 
@@ -3950,7 +4059,7 @@ nunca digitada**, e o diff em `app.js` fica restrito à linha `var FROZEN = …`
 do painel. `Kpis/index.html` **não** precisou mudar: ele hidrata dos JSON em runtime e este bloco não inaugura
 dimensão nova de métrica (§C3) — não mexer nele é a opção honesta, não uma omissão.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — resolvida no próprio #359: `git show f081b5d --numstat -- Kpis/app.js` → `1 1` (só a linha `var FROZEN`, gerada por `kpi-freeze.mjs`), e os planos posteriores passaram a listar `Kpis/app.js` (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-ARNES-AUTO-DEFEITOS-DO-PROPRIO-BLOCO (2026-08-28) — DOIS achados por execução CONTRA a própria correção
@@ -3983,7 +4092,7 @@ decisão do dono prevê.
 
 ---
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — as duas correções estão no head `15ef3fbe`: `limparOuGritar` em `tests/db-catalog-write-guard.test.ts:260` (usada nas `:351`, `:441`…) no lugar do catch engolidor, e `shortenPath` em `scripts/run-backend-tests.mjs:337` (o piso passa a enxergar `tests/`), com a fixture do guard do runner dentro do repo (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## Registros do ciclo 4 do `B-O6R-02`, reconciliados da trilha para a `main` (2026-08-28)
@@ -4011,7 +4120,7 @@ destacar bloco próprio e publicar o número com N e forma honestos. Parada + do
 
 ### Pendências nomeadas pelo ciclo 4 (ajustes A1–A8 da ata; sem correção proposta)
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA — o ciclo 5 foi aprovado e mergeado: `99f18403` (2026-09-04, "fix(financial): atomicidade do razao — 7 P0 fechados…", #371), ancestral de `15ef3fbe`; a guarda-chuva homônima `P-O6R-B02` (2026-08-14) já está FECHADA desde 2026-09-05 (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-OVERCLAIM-ORFA-SQL-CRU (2026-08-28 — cadeira de ataque, ajuste A1) — MÉDIA
@@ -4056,7 +4165,7 @@ delete-first para o validador/ataque) enquanto o plano exige "as DUAS ordens" ve
 ordens deterministicamente. As duas divergências estavam **só no corpo dos commits** `b7de4c9`/`db5b047`; ficam registradas aqui
 e na ata para que ninguém herde "D27/D21 vermelhos como escritos" como fato.
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** FECHADA — o pedido era registrar, e o registro está na ata `omega/juntas/J-B-O6R-02-ciclo4.md:125` (ajuste A3) e nesta entrada; o bloco mergeou (`99f18403`, #371) e os drills D27/D21 deixaram de ser gate pendente (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** BAIXA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-O6R-B02-BATERIA-CANONICAS-1-2 (2026-08-28 — validação, ajuste A4) — MÉDIA
@@ -4573,7 +4682,7 @@ pulados. Quórum deste bloco: **maioria de 3** — não toca dinheiro, seguranç
 
 ---
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** declarado acima
+- **status:** ABERTA (PARCIAL — fechado: opção (a), a divergência foi ratificada como pontual (`omega/juntas/J-B-O6R-REG.md:155`); aberto: opção (b), a carve-out de bloco de registro não está escrita no `CLAUDE.md` nem em `.claude/agents/planejador-mestre.md`) (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** a classificar · **dono:** declarado acima
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-REG-S0-GUARD-FALSO-VERMELHO (2026-08-29) — MÉDIA · **Dono:** próximo bloco que puder tocar `scripts/` — **FECHADA em 2026-08-30**
@@ -5382,6 +5491,7 @@ introduzir um erro de tipo num arquivo de `tests/` deixa `npm run check` vermelh
 - **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir — o trabalho toca
   `tsconfig.json` e potencialmente muitos arquivos de `tests/`; nomear dono sem combinar seria inventar
   compromisso alheio.
+- **duplicata de:** `P-TESTS-FORA-DO-TYPECHECK` (inventário SAN3, fatia B2) — tratar junto; bloco dono = o de `P-TESTS-FORA-DO-TYPECHECK`. Mesmo defeito: `tsconfig.json` inclui só `src/**/*.ts`, e `check` e `lint` são o mesmo `tsc`.
 
 ---
 
@@ -5458,9 +5568,11 @@ derivar do `history`, ou um guard permanente fica **vermelho** quando o PR-topo 
 PR-topo do `history`. Prova **por mutação**, como os outros guards de KPI já se provam: mergear uma entrega
 sem tocar `recent` tem de acender vermelho.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.
+- **status:** ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`recent.itens` com as entregas do #369 ao #386 e `as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.""
 
 ---
+- **emenda (junta do PR #386, ciclo 2 — C3c2-04, `pre-existente`, 2026-09-12):** o painel diz duas coisas do mesmo merge: o item de `recent` do #357 ("Identidade global: o e-mail deixa de decidir quem você é") está com `pr: null` e data 2026-08-18, enquanto o `roadmap` do `B-O6R-01` dá `pr 357` e o merge é de 2026-08-19T23:30:07Z (`gh pr view 357`). Fica fora do intervalo que esta entrada declara corrigido (#369..#386) e é a mesma classe: seção curada à mão, atrás do history. Conferido pelo orquestrador em `ecc32712`. Dono: o resíduo do item 54 (teste (g) do `B-SAN3-10`).
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** critério completo desta entrada — a metade do `recent` do item 54: o `recent` do `Kpis/kpis-latest.json` contém o último merge do history; provado por mutação (mergear uma entrega sem tocar o `recent` acende vermelho) — é o teste (g) do `B-SAN3-10` (plano SAN3 v5, §4.1 item 54). A outra metade — no `roadmap`, bloco com `merge_commit` no history não fica `a_fazer` e `roadmap.as_of` ≥ último merge — está na `P-KPI-ROADMAP-CONGELADO`.
 
 ## P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stored` do authority aceitam forma não-canônica: ` 1024`, `0x400` e `+1024` passam por `N = 1024`
 
@@ -6409,6 +6521,7 @@ ter resposta confiável.
 
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` (nasce com o §3.5/§3.4
   do B-O6R-07a) · **dono:** B-O6R-07a → trilha de infra.
+- **sub-item (inventário SAN3, fatia A1, 2026-09-11):** o residual irmão `P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`, que esta entrada ainda dá como aberto, está FECHADO no código por #369 — `src/modules/auth/services/anonymous-login.service.ts:215-221` passa `{ ipAddress, userAgent }` a `registerFailure`, que chega a `recordLoginFailure` com `...auditContext` no registro (`local-auth-login.service.ts:196`). Não muda o estado desta entrada: os itens 1–3 seguem abertos.
 
 ---
 
@@ -6584,6 +6697,8 @@ do razão para que ninguém volte a ele.
 **Por que a décima escapou, dito para não repetir:** o censo das 9 foi feito **enumerando os routers de OS**
 — e um censo por enumeração acha o que o autor lembrou de enumerar. A décima só apareceu porque uma cadeira
 **executou** em vez de ler. O `07c` que repita o método, não a lista.
+
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** o `Ω6R-SEC-002` e o item 51 fecham por **escopo provado**, não por dono (junta do ciclo 2, C2c2-03; plano SAN3 v5, §4.1 item 11; condição de entrada CE-2 do `B-O6R-07c`, §5.6): o censo é gerado por script das rotas mutantes dos routers da fronteira e do sync mobile, cruzadas com as permissões do `field_technician`; **toda** rota mutante que o técnico alcança tem teste de 403 `not_assigned_to_actor` com vermelho-controle — inclusive as 5 de comentário e as 2 de geocode desta entrada; o piso "1, 2 e 10" deixa de ser critério de fechamento; um guard fica vermelho quando surge rota mutante alcançável pelo técnico sem teste de escopo.
 ## P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem mecanismo — **MÉDIA**
 
 **Dono nomeado: `B-AUTH-KDF-V2`** (bloco de auth a agendar pós-O6R). Consolida dois achados da
@@ -6762,7 +6877,7 @@ alheio **não é** publicar execução alheia* — por isso levar o índice rege
 `pendencias.md` dos dois lados) é legítimo, enquanto transportar **medição** alheia não seria. A linha é
 entre **reproduzir um comando** e **afirmar um resultado**.
 
-- **status:** ABERTA (as três instâncias corrigidas; a classe fica registrada) · **severidade:** MEDIA · **dono:** este PR
+- **status:** ABERTA (PARCIAL — fechado: as 4 instâncias corrigidas por artefato — fechados 13/13 com `por`/`em` em `Kpis/kpis-latest.json` de `15ef3fbe` e as linhas `status:` de `P-O6R-B02-SUITES-LIST-CI` 2× FECHADA; aberto: a classe, sem guard — nenhum teste, CI ou script roda o gerador do índice (`git grep -l "pendencias-indice\|gerar-indice-pendencias" 15ef3fbe -- tests .github scripts` vazio) — e com instância viva em `P-GOV-CAMINHO-REPO-SESSAO` (cabeçalho FECHADA × linha ABERTA)) (inventário SAN3, fatia A2, 2026-09-11). Valor anterior, preservado: "ABERTA (as três instâncias corrigidas; a classe fica registrada)" · **severidade:** MEDIA · **dono:** este PR
 
 ### Apenso a `P-DERIVADO-ESQUECIDO` (2026-09-05) — a QUARTA instância, e ela fecha a série
 
@@ -6916,6 +7031,8 @@ como fonte e passam a citar o que de fato está na `main`. As duas respostas sã
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
   desde `cae6086`, 2026-09-05; a decisão nunca esteve na `main`) · **dono:** **decisão do dono** — envolve
   consolidar texto entre `demo/investidor` e a `main`, que é dele, não de um bloco de execução
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o estado mudou — as branches já estão no remoto (`origin/chore/gov-auditoria-elenco`, `origin/chore/gov-elenco-fatia-b`), e a decisão segue fora da `main`: `D-DURABILIDADE` tem 0 ocorrências no `decisoes.md` do HEAD.
 
 ## P-O6R-B07B-SCANNER-AV-REAL (2026-09-06) — produção e staging recusam TODO upload até haver antivírus real — ALTA
 
@@ -7264,6 +7381,7 @@ fechar todas as chaves seria o outbox genérico da `Ω6R D-002`, que o dono **op
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
   *feat: add cloud usage metering foundation*) · **dono:** bloco novo `B-O6R-06b`, ou o bloco de outbox
   genérico se a `Ω6R D-002` for deliberada · **forma:** leitura cruzada, reproduzível.
+- **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -7287,6 +7405,7 @@ vermelho. As outras categorias ficam com esta pendência.
 
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
   (2026-06-08) · **dono:** bloco de cloud billing / produto · **forma:** leitura cruzada, reproduzível.
+- **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -7310,8 +7429,10 @@ O **rateio** já não depende disso — este bloco o passou a ler por tenant, so
 leituras de plataforma **fora** do rateio.
 
 - **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
+- **plano SAN3 (2026-09-11, crítico r2, CR2-02):** entra no gate como pré-requisito do item 9 — no dia em que o papel de runtime deixar de ter `BYPASSRLS`, estas leituras (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `RlsPrismaCloudUsageRepository`) zeram o resumo de uso da plataforma e a tela Cloud Billing. Bloco `B-SAN3-05`.
   (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
   descartável, papel `NOSUPERUSER NOBYPASSRLS`.
+- **dono:** `B-SAN3-05` (plano SAN3, §4.1 item 10 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -7346,6 +7467,8 @@ construtor (`B5`).
 
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` — origem `6f27faae` (2026-06-08) ·
   **dono:** bloco de cloud-costs.
+
+- **emenda (inventário SAN3, fatia A2, 2026-09-11):** há uma segunda instância silenciosa da mesma classe, fora do rateio — `take: 100_000` sem contagem prévia em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts:223`, dentro de `listAllocationTenantAllocations` (`:219`). Reconfirmado por presença no head `15ef3fbe` (`git show HEAD:src/modules/cloud-charges/cloud-charge-prisma.repository.ts | grep -n "take: 100_000"` → `223`; nenhum `count(` no arquivo). Mesma classe do `Ω6R-DIN-007` (truncamento silencioso); impacto realista pequeno, porque as alocações por run são tenants × categorias, longe de 100 mil.
 
 ---
 
@@ -7412,7 +7535,7 @@ de catálogo — os arquivos **não escrevem catálogo** (pedem ao arnês `creat
 Registrado porque a decisão foi consciente: acrescentar entradas à allowlist teria sido a outra saída, e ela
 tocaria um arquivo também fora do §6 **e** enfraqueceria o ratchet.
 
-- **status:** ABERTA (para a junta ratificar ou não a extensão de escopo) · **severidade:** MÉDIA ·
+- **status:** FECHADA — a junta ratificou a extensão de escopo: `omega/juntas/votos/B-O6R-06/C3-contrato-kpi-voto.json:162` ("ratifico: medi que o diff é exatamente o declarado"), ata `omega/juntas/J-B-O6R-06.md:114` (item 3, "Duas divergências de escopo, declaradas pelo dev e devolvidas à junta"), veredito APROVADO 3×0 e merge `15ef3fbe` (#385) (inventário SAN3, fatia A2, 2026-09-11). Valor anterior, preservado: "ABERTA (para a junta ratificar ou não a extensão de escopo)" · **severidade:** MÉDIA ·
   **escopo:** `dentro-do-bloco` · **dono:** junta do `B-O6R-06` · **forma:** as duas suítes ficam **verdes**
   na bateria (`6/6` e `4/4`), e o diff é de 3 hunks somados.
 
@@ -7431,7 +7554,7 @@ suítes sob `node --test` paralelo e produz `XX000 tuple concurrently updated` �
 `P-O6R-ARNES-ISOLAMENTO`, e a regra vigente diz, com estas letras, que **todo escritor de `tests/**` passa por
 este mecanismo**. Uma regra de arnês do repositório vale mais do que um nome de papel escrito num plano.
 
-- **status:** ABERTA (registro; nada a corrigir) · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` ·
+- **status:** FECHADA — encerrada com o merge, como a própria entrada previa: `15ef3fbe` (#385), sem objeção nas atas `J-B-O6R-06.md`/`J-B-O6R-06-delta.md` (nenhuma menção a `o6r06_app` nem a este ID); o drill usa `createEphemeralRole` (`tests/o6r06-allocation-basis-rls-db.test.ts`, `tests/o6r06-usage-atomic-db.test.ts`) e `o6r06_app` não aparece em `tests/` nem em `src/` (inventário SAN3, fatia B2, 2026-09-11). Valor anterior, preservado: "ABERTA (registro; nada a corrigir)" · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` ·
   **dono:** encerrado com o merge, salvo objeção da junta.
 
 ---
@@ -7872,7 +7995,7 @@ desenho reprovado, e então o §C7.1-quater passa a existir em `CLAUDE.md`/`AGEN
 > commitada da mesma leva. Severidade cai de **ALTA** para **BAIXA**, e o que resta é uma **nota anexada à
 > decisão do assento**: se ele for adotado, o 3.3 entra junto.
 
-- **status:** ABERTA · **severidade:** BAIXA (rebaixada de ALTA em 2026-09-08) · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
+- **status:** FECHADA — o item 3.3 do inspetor na main passou a ser "CORPO CARREGADO × CORPO JULGADO" (`.claude/agents/inspetor-de-terreno-da-junta.md:94`; `git log -S "CORPO CARREGADO"` → `72fcdcde`, 2026-09-08, #383), e o `CLAUDE.md` da main (§A7, l.125) escreve que norma citada que não existe na ref julgada não se aplica (inventário SAN3, fatia A2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** BAIXA (rebaixada de ALTA em 2026-09-08) · **escopo:** `pre-existente` (o 3.3 nasceu no ciclo 1 do
   `B-GOV-ELENCO`, 2026-09-07, e ficou na branch não-mergeada) · **dono:** decisão do dono ·
   **bloqueia:** nada hoje — o inspetor mediu e não aplicou. Mas cada junta futura paga o custo de re-descobrir.
 
@@ -7996,7 +8119,7 @@ julgamento é outra ref. Duas saídas que a sessão levantou, sem decidir: rodar
 na `main`; ou o inspetor passar a conferir **corpo carregado × corpo julgado** de forma EOL-neutra como item
 fixo — ele já fez isso ad hoc nesta rodada, e foi assim que a divergência apareceu.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (o mecanismo de carregamento é do
+- **status:** ABERTA (PARCIAL — fechado: a detecção, entregue em `72fcdcde` (#383) — `CLAUDE.md` §A7 da main e item 3.3 do inspetor ("CORPO CARREGADO × CORPO JULGADO"), e é só a ela que o "FECHADA" do cabeçalho se aplica; aberto: a prevenção, que existe só em texto — o `.claude/` da main tem só `agents/` e `skills/`, nenhum settings ou hook que force a origem da sessão —, com reincidência em 2026-09-11) (inventário SAN3, fatia A2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **severidade:** ALTA · **escopo:** `pre-existente` (o mecanismo de carregamento é do
   runtime, anterior a qualquer bloco) · **dono:** **decisão do dono** · **bloqueia:** nada, mas cada junta
   futura paga o custo de re-descobrir.
 - **[REINCIDÊNCIA MEDIDA, B-O6R-06, 2026-09-09 — a prevenção NÃO foi entregue]** O fechamento do #383
@@ -8018,6 +8141,10 @@ fixo — ele já fez isso ad hoc nesta rodada, e foi assim que a divergência ap
   **O que fecharia:** a decisão do dono sobre onde as sessões nascem (pergunta 1 do dossiê), com artefato que
   a force. **Limite honesto:** nenhuma das duas escolhas conserta o `CLAUDE.md` de uma sessão **já aberta** —
   isso é snapshot de contexto e só sai reiniciando a sessão.
+
+- **emenda (inventário SAN3, fatia A2, 2026-09-11) — reincidência:** as sessões dos inventariantes do SAN3 carregaram um `CLAUDE.md` sem o §A7 (vai do §A6 direto à PARTE B), isto é, nasceram da árvore principal em `demo/investidor` (`d1fab3bc`); a sessão deste aplicador também. Medido: `git show HEAD:CLAUDE.md | grep -c "^## A7"` → 1 no head `15ef3fbe`; `git show demo/investidor:CLAUDE.md | grep -c "^## A7"` → 0.
+
+- **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** o cabeçalho ainda diz "FECHADA em 2026-09-08" enquanto a primeira linha de status diz ABERTA (PARCIAL); o detector de contradição do gerador (`CABEC`) não vê a divergência porque exige negrito (classe G-3 do porteiro).
 
 ---
 
@@ -8095,11 +8222,13 @@ instância dele movendo a própria suíte para a janela reservada `2028-02`, mas
 para o resto da casa — é a **direção 2** da colisão que o conserto de isolamento teve de contornar.
 
 - **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
+- **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 4 — uma reimportação do mesmo período soma o custo em dobro no rateio; "há um import por período" é premissa, não trava. Bloco `B-SAN3-03`.
   **dono:** próximo bloco de `cloud-cost-allocation` (o `§5` do `B-O6R-06` proíbe `src/**`) ·
   **bloqueia:** nada. **Correção proposta:** `import_id` opcional em `listCostLineItems`, com o serviço
   passando o import da run quando houver; **ou** decisão explícita de que o rateio é por período e não por
   import, escrita no serviço. **Teste de encerramento:** semear duas linhas em dois imports na mesma janela e
   provar que o rateio de um import não soma o outro (par verde-depois × vermelho-antes).
+- **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 26 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ---
 
@@ -8122,3 +8251,1056 @@ depois do voto (§C7.4-bis).
   **dono:** o próximo PR que tocar `tests/helpers/o6r06-cost-fixtures.ts` ou o guard ·
   **bloqueia:** nada. **Teste de encerramento:** (1) `grep -rhoE '2026-0[67]' tests/** | sort | uniq -c`
   batendo com o comentário; (2) a sonda M6 ficar **vermelha**.
+
+---
+
+## Pendências novas do inventário SAN3 (2026-09-11)
+
+Três pendências nascidas da aplicação do inventário SAN3 neste registro, cada uma com cabeçalho `## P-` próprio
+para o gerador do índice enxergá-la. Escritas pelo aplicador do inventário, que não achou os flips (os 7
+inventariantes somente-leitura acharam) e só mediu o que está dito como medido.
+
+## P-SAN3-INDICE-SEVERIDADE-POR-MENCAO (2026-09-11) — a coluna de severidade do índice é a palavra mais grave MENCIONADA no corpo, não o campo declarado — MÉDIA
+
+Medido pelos inventariantes das fatias A1, A2 e B1 do SAN3 e reconferido por este aplicador no índice gerado
+antes das correções (head `15ef3fbe` + a edição do orquestrador em `P-O6R-B06`). `severidade()`
+(`agent-orchestration/controle/gerar-indice-pendencias.py:75-80`) percorre CRÍTICA → ALTA → MÉDIA → BAIXA e
+devolve a primeira que casar `\bPALAVRA\b` com `re.I` **em qualquer ponto do corpo** — não lê o campo
+`**severidade:**`. Como a coluna decide o balde (material → A; o resto → B), a menção também move a entrada de
+balde. Casos medidos:
+
+1. `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA` — campo "informativa"; o índice publicava ALTA, por "caixa alta"
+   em prosa.
+2. `P-O6R-B06-RATEIO-CURSOR-100K` — campo MÉDIA; índice ALTA ("recusa alta").
+3. `P-GOV-VEREDITO-SEM-PARSER` — campo MÉDIA; índice ALTA (o corpo cita a gravidade de um componente).
+4. `P-GOV-INSPETOR-33-SEM-NORMA` — campo BAIXA ("rebaixada de ALTA"); índice ALTA.
+5. `P-O6R-B04` — carrega 2 P0; índice BAIXA, porque o corpo não trazia palavra mais grave. Este registro
+   acrescentou "severidade medida: ALTA", e só por isso a coluna mudou.
+6. Esta própria entrada: campo MÉDIA, publicada CRÍTICA pelo índice regenerado, porque o corpo cita a ordem de busca da função (CRÍTICA → ALTA → …) e os casos acima.
+
+As 16 linhas "severidade medida" deste registro só aparecem na coluna porque, em cada corpo, nenhuma palavra
+mencionada era mais grave do que a medida (conferido no índice regenerado: as 16 saíram como pretendido). A
+correção não pode depender dessa sorte.
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (`severidade()` nasceu com o gerador,
+  `87f6ae61`, #362, 2026-08-29) ·
+  **dono:** `B-REG-GERADOR` ·
+  **bloqueia:** nada do produto; distorce a coluna de severidade e, por ela, os baldes A/B que o dono lê.
+  **Teste de encerramento:** o campo declarado vence a menção — entrada com `**severidade:** MÉDIA` e a palavra
+  "alta" em prosa sai MÉDIA; mutação que acrescenta "alta" em prosa a uma entrada com campo declarado não muda a
+  coluna; entrada sem campo declarado sai sem severidade (visível), nunca com a palavra mais grave da prosa.
+
+---
+
+## P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS (2026-09-11) — o índice lê só a primeira linha de status, e a regra de parcialidade não enxerga o qualificador — MÉDIA
+
+Medido por este aplicador em bancada fora do repositório: cópia do `pendencias.md` + o gerador byte-idêntico
+(sha256 `fdce04cd…5f22` nos dois), com 5 entradas de teste apensadas. `classificar()`
+(`gerar-indice-pendencias.py:57-72`) usa `LINHA.search(body)`, isto é, só a PRIMEIRA linha de status do corpo; e
+a regra 2 ("qualificador de parcialidade nunca fecha") roda `PARCIAL.search(m.group(0))`, mas `m.group(0)`
+termina na palavra de status.
+
+```
+$ cd <bancada> && python agent-orchestration/controle/gerar-indice-pendencias.py
+indice: 315 cabecalhos / 304 IDs | {'FECHADA': 76, 'ABERTA': 239} | baldes {'-': 76, 'C': 76, 'B': 100, 'A': 63} | diferidas-materiais 1
+entrada de teste                         1a linha de status                                2a linha            publicada
+P-BANCADA-H1-ABERTA-DEPOIS-FECHADA       ABERTA — primeira linha                           FECHADA — segunda   ABERTA
+P-BANCADA-H1-FECHADA-DEPOIS-ABERTA       FECHADA — primeira linha                          ABERTA — segunda    FECHADA
+P-BANCADA-H2-FECHADA-PARCIALMENTE        FECHADA — parcialmente superado                   —                   FECHADA
+P-BANCADA-H2-CONTROLE-RESOLVIDO-PARCIAL  RESOLVIDO PARCIAL — quatro residuais abertos      —                   FECHADA
+P-BANCADA-H2-CONTROLE-ABERTA-PARCIAL     ABERTA (PARCIAL — fechado: x; aberto: y)          —                   ABERTA
+```
+
+**(h1) confirmada:** numa entrada com duas linhas de status, só a primeira decide, e o conflito não vira
+`CONTRADITORIA`. **(h2) confirmada:** `FECHADA — parcialmente superado` na primeira linha sai FECHADA. O
+controle mostra mais: a forma que o cabeçalho do próprio script diz ter consertado (`RESOLVIDO PARCIAL`) também
+sai FECHADA. Nas cinco formas testadas a regra 2 não disparou nenhuma vez; pela leitura da regex (inferência, não
+medida), `m.group(0)` só contém o marcador, o prefixo `status:` e a palavra de status, e não há posição em que o
+qualificador caiba. Caso real: `P-O6R-B07` saía ABERTA por (h1) — a linha `ABERTA` vem antes da
+`FECHADA … parcialmente superado` —, e não pela regra 2, como o inventário A1 supôs; com as duas linhas na ordem
+inversa, o índice a publicaria FECHADA. Este registro escreveu todo PARCIAL como `ABERTA (PARCIAL — …)` para não
+depender da regra 2.
+
+- **status:** ABERTA · **severidade:** MÉDIA (atribuída por este aplicador por paridade com a irmã
+  `P-SAN3-INDICE-SEVERIDADE-POR-MENCAO`: mesmo gerador, mesma classe — posição ou menção lida como declaração) ·
+  **escopo:** `pre-existente` (`classificar()` e `LINHA` nasceram com o gerador, `87f6ae61`, #362, 2026-08-29) ·
+  **dono:** `B-REG-GERADOR` ·
+  **bloqueia:** nada do produto; uma entrada pode sair FECHADA declarando resolução parcial, e uma linha de status
+  posterior nunca conta. **Teste de encerramento:** as 5 entradas da bancada viram casos permanentes — duas linhas
+  de status opostas → `CONTRADITORIA` (ou vence a mais recente, por decisão escrita); `FECHADA — parcialmente …`
+  e `RESOLVIDO PARCIAL` → ABERTA; `ABERTA (PARCIAL — …)` → ABERTA.
+
+---
+
+## P-SAN3-FLIPS-DE-REGISTRO (2026-09-11) — conserto feito fora da linha de status nunca fecha a entrada — MÉDIA
+
+Causa-raiz dos flips que o inventário SAN3 mediu e que este registro aplicou. O registro é só-apensar (§A2) e o
+índice lê só a primeira linha de status de cada cabeçalho (ver `P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS`).
+Quando o conserto chega por outro bloco, ou quando o fechamento é escrito noutra seção, em `decisoes.md` ou num ID
+duplicado, a linha original não é tocada e a entrada fica aberta para sempre.
+
+**Contagem aplicada neste registro (2026-09-11):** **30 → FECHADA** (A1 3 · A2 2 · B1 15 · B2 5 · C1 2 · C2 3)
+e **21 → `ABERTA (PARCIAL — …)`** (A1 1 · A2 2 · B1 3 · B2 3 · C1 9 · C2 3), mais 1 sub-item fechado sem mudar o
+estado da entrada (`P-O6R-B07A-RASTRO-ANONIMO-SEM-IP`, dentro de `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO`). No mesmo PR,
+o orquestrador aplicou um 31º FECHADA da mesma classe (`P-O6R-B06`). As 30 provas de FECHADA foram reconfirmadas
+por presença no head `15ef3fbe` antes da escrita; nenhuma caiu.
+
+**As três formas, medidas pela fatia B1 (19 flips em 50 entradas):** (a) bloco posterior fecha sem citar a
+entrada — 9 casos (ex.: `P-018`, fechada pelo #380; `P-031`, pelo #305); (b) GUIA consumido pelo próprio bloco
+que guiava — 4 (`P-Ω4-4-READINESS`, `P-Ω4-6-READINESS`, `P-Ω4-7-READINESS`, `P-Ω4-8-READINESS`); (c) fechamento
+escrito noutra seção, em ID duplicado ou em `decisoes.md` — 6 (as três `P-Ω3F6-*`, declaradas fechadas na seção
+`P-Ω3F6`; `P-WORKTREE-INTEROP-ORFAO`, com duas cópias de status opostos; `P-Ω4-7-CLEAR-RETRO`, com a decisão em
+`decisoes.md` desde 2026-07-18; `P-O6R-B06`, com o fechamento só na emenda apensada).
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (o registro só-apensar é o §A2; a
+  leitura só da linha de status é do gerador, desde `87f6ae61`, #362, 2026-08-29) ·
+  **dono:** `B-GOV-GUARD-DERIVADOS` ·
+  **bloqueia:** nada do produto; enquanto durar, "o que está aberto?" responde com entradas já consertadas (30
+  aqui). **Teste de encerramento:** guard que falha quando um PR fecha achado ou pendência — muda
+  `docs/revisoes/O6R/achados.jsonl` para `fechado`, ou escreve "fecha P-…" em commit, PR, emenda ou
+  `decisoes.md` — sem editar a linha de status da entrada citada; mutação: PR que fecha um `Ω6R-*` no JSONL sem
+  tocar a linha de status do `P-O6R-BNN` dono → vermelho.
+
+---
+
+## Pendências ausentes do registro — inventário SAN3 (2026-09-11)
+
+As pendências que o inventário SAN3 achou nas fontes (síntese de produto, atas, pareceres, auditoria de
+governança, plano, dossiê, `docs/go-live-readiness.md`) e que não existiam no registro. Fonte:
+`docs/revisoes/SAN3/inventario/inventario-AUSENTES.md`, §2a (produto) e §2b (governança); a última entrada
+(`P-SAN3-ROTEIRO-DEMO-OPERACAO`) veio do plano. Quem achou foi o inventariante da fatia AUSENTES; o aplicador
+reconfirmou cada prova por presença no HEAD `c9ed9b91` antes de escrever. Onde o bloco dono da fatia era
+genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o bloco do plano. As parciais
+(§2c) entraram como emenda da pendência que já existia, nunca como ID novo.
+
+## P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com selo "IA"; dados e rotas órfãos — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B1-B3, C1 (selo), C2 (registry), D8
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx`: 245 l., 0 `useEffect/useState/await/fetch/.service`, 0 `onClick`, literal "48,2k", selo `IA` l.181, insights literais l.62; `cloud-billing.{adapter,service,mock}.ts` sem página importadora; `src/modules/navigation/navigation.registry.ts:41` `status: "implemented"`
+- **gravidade:** MÉDIA
+- **origem:** `d5a4ed43` (#111) trocou a versão ligada `4d6e1219` por literais
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** decisão do dono D5/D9 (religar × parada honesta)
+- **dono:** `B-SAN3-06b` (plano SAN3 §4.1 item 46); bloco dono proposto pela fatia: bloco web de plataforma
+- **impacto vendável:** NAO — só `platform_admin` alcança; BLOQUEIA demo honesta
+- **teste de encerramento:** smoke: página chama o adapter real (API mockada), 0 literal monetário no JSX, sem selo "IA" sem fonte; `status` do registry coerente
+
+---
+
+## P-DONO-CLOUD-BILLING-ESCOPO (2026-09-11) — Cobrança de nuvem calculada nunca vira fatura; custo AWS entra só por CSV manual — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B8, C2, D5
+- **situação medida pela fatia:** ATIVO (por desenho, sem decisão)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/cloud-charges/cloud-charge.types.ts:24` status `draft/ready/locked/voided`; `src/modules/cloud-costs/aws-cur.importer.ts:7,24` só `manual_csv/mock_fixture`; `aws-cur.types.ts:4` declara `s3_cur`/`athena_query` sem importador
+- **gravidade:** MÉDIA
+- **origem:** escopo dos blocos cloud ("fora de escopo mantido: fatura…", status-geral:2367)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 4-faturamento/dinheiro
+- **dependências:** decisão do dono; P-WEB-CLOUD-BILLING-CARTAZ
+- **dono:** dono → bloco de produto cloud billing (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — receita da plataforma, não fluxo do cliente
+- **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
+
+---
+
+## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B9, B10, A6
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rl financial-account frontend/src` = 0; `grep -rn "/pay" frontend/src` = 0; front só lista/cria/muda status (`ChargesPage`, `PaymentsPage`, `FinanceiroPage` via `financial-titles.adapter`); backend `financial-entry.routes.ts:95` `POST /financial-titles/:id/pay`, único caminho a `paid` (`financial-title.service.ts:284-286`, sintese)
+- **emenda (junta do PR #386, ciclo 1 — C3-04, 2026-09-12):** a prova passa a ser "nenhuma chamada a `/financial-titles/:id/pay` em `frontend/src`" — o `grep "/pay"` cru acha 34 linhas de `/payable`, `/payable-source`, `/payments`, `/payee`, `/payload`.
+- **gravidade:** ALTA
+- **origem:** Ω4-2/Ω4-4 (2026-07): backend sem fatia de front
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo-necessario-para-venda
+- **dependências:** B-O6R-02 (atomicidade do pay) já mergeado; conta antes da baixa
+- **dono:** `B-SAN3-12` (plano SAN3 §4.1 item 28); bloco dono proposto pela fatia: bloco web financeiro ("ciclo do dinheiro")
+- **impacto vendável:** **BLOQUEIA** — pela web um título nunca vira pago nem caixa
+- **teste de encerramento:** smoke: criar conta → emitir título → baixar pela tela → saldo em `GET /financial-accounts/:id/balance`; título `paid`; 403 e estados §7
+
+---
+
+## P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de período e política de comissão sem tela; backend pronto — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **plano SAN3 (2026-09-11, crítico r2, CR2-12):** entra no gate pelo critério 7 — o `mvp_vendavel` já conta fechamento de período e cheque como núcleo vendável, e o default de escopo não deixa sair o que o produto diz entregar. Bloco `B-SAN3-24`.
+- **fonte (fatia AUSENTES, §2a):** sintese B11-B13
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rln /cheques frontend/src` = 0; `grep -rln financial-period frontend/src` = 0; `commissions.service.ts:44,112` consome só `statements/summary`, `my-summary`, `settlements` — `policies`/`basis-events` sem consumidor
+- **gravidade:** MÉDIA
+- **origem:** Ω4-6/Ω4-7, Ω3F-6 (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** conta (linha acima) para cheque
+- **dono:** `B-SAN3-24` (plano SAN3, §4.1 item 29) (antes: bloco web financeiro (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1)))
+- **impacto vendável:** NAO — não é pré-requisito de venda; condição: comissão configurável vendida → BLOQUEIA
+- **teste de encerramento:** smoke por tela (cheque depositar/compensar; fechar/reabrir; CRUD de política) com 403 por permissão
+
+---
+
+## P-CHK-APLICABILIDADE-SEM-ROTA (2026-09-11) — Motor de aplicabilidade de checklist existe sem rota, permissão nem tela — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B14, A4
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/work-orders/work-order.service.ts:1991` "entre o 04c-A e o 04c-B não existe rota nem permissão", `:2025` "nenhuma linha pode nascer `resolved`"; `grep -c applicab` em `src/app.ts` e `checklist.routes.ts` = 0
+- **gravidade:** MÉDIA
+- **origem:** CHK P1 PR-04c-A (2026-08-14)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** gate da CHK P1 (D10, registrado)
+- **dono:** trilha CHECKLIST P1, PR-04c-B (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1))
+- **impacto vendável:** NAO — execução de checklist funciona; condição: "checklist certo por tipo de serviço" vendido → BLOQUEIA
+- **teste de encerramento:** CRUD de regra com teste RBAC; OS com regra ativa gera `WorkOrderChecklist` `resolved` com `rule_id`
+
+---
+
+## P-WEB-CHK-EXECUCOES-INEXISTENTES (2026-09-11) — "Ver execuções" leva à lista de modelos; execuções não têm tela nem rota — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B16, C3 (PR-05)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `ChecklistEditorPage.tsx:92` `CHECKLIST_RUNS_PATH = "/operations/checklists"`; `App.tsx:701-704` renderiza `ChecklistRunsPage`, que importa só `listAvailableChecklists` (`:9`); `listRuns` só no repositório (`checklist-prisma.repository.ts:585,1019`)
+- **gravidade:** MÉDIA
+- **origem:** CHK P1 PR-02a; PR-05 planejado
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** —
+- **dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — dossiê de pátio mostra runs por processo
+- **teste de encerramento:** rota de runs com escopo por papel + tela §7; botão abre execuções do modelo
+
+---
+
+## P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e lista de Organizações exibem dado inventado — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B17 (residual), B18, D9
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `modules/platform/pages/PlatformPlansModulesPage.tsx` (73 l.), `PlatformAuditPage.tsx` (90), `PlatformApisPage.tsx` (78): 0 hooks; `PlatformTenantsPage.tsx:18-19` ids `ten-sp`/`ten-agromax`, `:81` navega para id fabricado
+- **gravidade:** MÉDIA
+- **origem:** WS-SCALE (2026-07-20)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** D9 (padrão `invoices-nfe-honest-stop`)
+- **dono:** `B-SAN3-06b` (plano SAN3 §4.1 item 46); bloco dono proposto pela fatia: bloco web de plataforma
+- **impacto vendável:** NAO — só operador; BLOQUEIA demo. `P-PLATFORM-MOCK-WIRING`/`P-PLATFORM-TENANTDETAIL-REAL` estão defasadas (Overview e Detalhe já têm 3 hooks cada)
+- **teste de encerramento:** guard "sem número fabricado" por tela; lista de Organizações de `GET /platform/overview`
+
+---
+
+## P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram MFA e auditoria "ligados" por literal — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B19
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `PlatformSettingsPage.tsx:8` `function Toggle({ on }: { on: boolean })`; `:43` "MFA obrigatório para admins … `<Toggle on />`"; `:44` "Auditoria de operações críticas … `<Toggle on />`"
+- **gravidade:** ALTA
+- **origem:** WS-SCALE (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 3-seguranca/permissoes
+- **dependências:** —
+- **dono:** `B-SAN3-06b` (plano SAN3 §4.1 item 17); bloco dono proposto pela fatia: bloco web de plataforma
+- **impacto vendável:** **BLOQUEIA** — UI entregue declara controle de segurança inexistente
+- **teste de encerramento:** teste de render: nenhum toggle de controle sem fonte real (ou ligado a config persistida e testada)
+
+---
+
+## P-WEB-ROTAS-SEM-PORTA (2026-09-11) — Rotas vivas sem menu/link; provisionamento de módulos só por URL digitada — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B20-B22
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `App.tsx:648` `/dispatch/console`, `:640` `/field-operators`, `:674` `/finance/invoices`, `:570` `/controle/usuarios/logs`: nenhuma referência fora do próprio módulo; `/logistics` só no menu não montado; `App.tsx:247` `/platform/tenants/:tenantId/modules` sem `navigate`/`Link`; `DispatchConsolePage.tsx`: 11 botões, 5 `onClick`
+- **gravidade:** MÉDIA
+- **origem:** 2026-07
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** P-WEB-GATE-MODULO-INCOMPLETO
+- **dono:** bloco web de navegação (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — há contorno por URL
+- **teste de encerramento:** teste de alcançabilidade web: toda rota de `App.tsx` tem porta ou está em allowlist nomeada
+
+---
+
+## P-WEB-EVENTBUS-MOCK (2026-09-11) — Provider de eventos cicla mocks a cada 9 s contra rota inexistente — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B23
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `providers/EventProvider.tsx:33` `createPollingClient()`; `services/realtime/pollingClient.ts:2` importa `mockEvents`, `:8` 9000 ms, `:23` `/api/v1/events/stream`; consumidores: `AppProviders.tsx` e `pages/WorkOrderFormPage.tsx` (morta)
+- **gravidade:** BAIXA
+- **origem:** pré-C3 (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** `P-004`
+- **dono:** bloco web de faxina (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — nenhum consumidor vivo exibe
+- **teste de encerramento:** provider na SSE real ou removido; teste: nenhum import de `mocks/` em `providers/`
+
+---
+
+## P-WEB-GATE-MODULO-INCOMPLETO (2026-09-11) — 27 itens do menu fora do gate de módulo; backend não recusa módulo não contratado — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **junta do PR #386, ciclo 1 (C2-02, 2026-09-12):** a contagem é 38, não 27 — o método `MVP_NAV_PATHS` menos registro exclui as 11 entradas registradas sem `requiredModules` (`/patios/*` ×6, `/telemetria/*` ×5), que `hasModule` (`src/modules/navigation/navigation.service.ts:114-115`) libera para qualquer organização; `src/modules/platform/platform-modules.service.ts` não tem chave de módulo para Pátios, Telemetria nem Frota. Plano SAN3 v5: fronteira e guard do `B-SAN3-18` refeitos.
+- **fonte (fatia AUSENTES, §2a):** sintese B25, A5
+- **situação medida pela fatia:** ATIVO (lado backend medido por padrões, não exaustivo)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/navigation/navigation.registry.ts`: 36 entradas `path:`; `frontend/src/layouts/appSidebarNav.ts` `MVP_NAV_PATHS` = 51; grep `requireModule|requireTenantModule|assertModuleEnabled|requireFeature|module_disabled` em `src/` só acha flags do bootstrap mobile (`mobile.routes.ts:221-257`)
+- **gravidade:** ALTA
+- **origem:** esconde-fino (2026-07)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 4-faturamento/dinheiro
+- **dependências:** P-WEB-ROTAS-SEM-PORTA (link de provisionamento); decisão de planos
+- **dono:** `B-SAN3-18` (plano SAN3 §4.1 item 16); bloco dono proposto pela fatia: bloco "gate comercial"
+- **impacto vendável:** **BLOQUEIA** se a venda for por plano/módulo — Starter vê (e, sem recusa por rota, usa) o Enterprise
+- **teste de encerramento:** tenant sem módulo X: item some E rota do módulo X = 403; guard: todo path de `MVP_NAV_PATHS` está no registry
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** a contagem é **40**, não 38 (junta do ciclo 2, C2c2-02): os 27 do método `MVP_NAV_PATHS` menos registro mais as **13** entradas de organização registradas sem `requiredModules` — as 11 de `/patios/*` e `/telemetria/*`, `/controle/notificacoes` e `/operations/quotes` (recontado por script sobre o registro e o menu do head `ec4f34a8`). Condição de entrada CE-1 do `B-SAN3-18` (plano SAN3 v5, §4.1 item 16; §5.6): mapa rota → módulo gerado das montagens do `src/app.ts`, rota sem classificação recusada, guard vermelho por mutação para entrada nova do registro, endpoint novo e router novo; `prisma/seed.ts` autorizado só para as chaves de módulo novas em `DEMO_TENANT_MODULES`.
+
+---
+
+## P-API-VERBOS-SEM-CONSUMIDOR (2026-09-11) — Verbos de administração sem nenhuma tela (merge de identidade de veículo) — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B28
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rln vehicle-identities frontend/src mobile/flutter_app/lib` = 0; `identity-links` = 0
+- **gravidade:** BAIXA
+- **origem:** Ω-VID / B-O6R-01
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** —
+- **dono:** backlog de telas de administração (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** tela ou remoção por verbo, com teste de consumidor
+
+---
+
+## P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, materiais) sem porta de entrada — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B30
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `mobile/flutter_app/lib/app/router.dart:159,339` únicos registros de `/work-orders/:id/service`; nenhum `push/go` para ele em `lib/` (o único `go` de `prestador_service_screen.dart:192` sai para `/execute`)
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** P-MOBILE-ESTOQUE-TECNICO-FABRICADO; Ω6R-QUA-005
+- **dono:** `B-SAN3-15` (plano SAN3 §4.1 item 35); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** **BLOQUEIA** — prestador não registra diagnóstico nem material faturável
+- **teste de encerramento:** widget test: OS `serviceType != tow` tem ação que navega a `/service`
+
+---
+
+## P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece, é inalcançável — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B31
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `router.dart:165,345` únicos registros de `/work-orders/:id/conclusion`; zero `push/go` para ela
+- **gravidade:** MÉDIA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** P-MOBILE-PRESTADOR-SEM-PORTA
+- **dono:** `B-SAN3-15` (plano SAN3 §4.1 item 36); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** NAO — comissão acumula no backend (`basis-events`); condição: "comissão no app" vendida → BLOQUEIA
+- **teste de encerramento:** widget test: fim do atendimento navega a `/conclusion`
+
+---
+
+## P-MOBILE-CATALOGO-MODULOS-INERTE (2026-09-11) — Catálogo de módulos nunca renderiza; Estoque sem porta; 2 rotas apontadas inexistem — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B32, B43
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `core/modules/module_resolver.dart:9` `visibleModules` sem chamador; `/inventory` só em `router.dart:236,414` e `bootstrap_repository.dart:160`; `bootstrap_repository.dart:153-155` `tenant_checklist`→`/checklists`, `:170` `/notifications` — nenhum é `path:` do router
+- **gravidade:** MÉDIA
+- **origem:** B-090
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8
+- **dependências:** Ω6R-QUA-002
+- **dono:** bloco mobile "portas" (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — estoque mobile já não sincroniza (Ω6R)
+- **teste de encerramento:** todo `route` do catálogo existe no router; home renderiza `visibleModules`
+
+---
+
+## P-MOBILE-LGPD-GPS-SEM-PORTA (2026-09-11) — Consentimento LGPD de GPS nunca pode ser dado: `/location` sem porta — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B33
+- **situação medida pela fatia:** ATIVO (efeito na captura: HIPÓTESE forte, ramo não lido)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `router.dart:232,410` `/location` → `LocationConsentScreen`; zero `push/go` para `/location`; `core/location/geolocator_device_location_provider.dart:56-59` exige `LocationConsentStore`
+- **gravidade:** ALTA
+- **origem:** era telemetria
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** —
+- **dono:** `B-SAN3-17` (plano SAN3 §4.1 item 18); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** **BLOQUEIA** — sem consentimento a posição do técnico não entra; Mapa/alocação por distância sem dado de campo
+- **teste de encerramento:** widget test: primeiro uso oferece consentimento; unidade: captura só com consentimento, e o aceite é alcançável
+
+---
+
+## P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca acende: sem `kind=delivery` nem passos 3/4 — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B34
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/work_orders/ui/work_order_execute_screen.dart:94` push `/checklists/…/run?workOrderId=` sem `kind`; `router.dart:194,373` "ausência de `?kind=` … = coleta"; `features/work_orders/domain/work_order_steps.dart` (guincho): índice vai de 2 a 5 (`pendingApproval/completed/approved/cancelled => 5`)
+- **gravidade:** ALTA
+- **origem:** era local-first; `kind` na CHK P1 PR-04b
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo-necessario-para-venda
+- **dependências:** P-MOBILE-TESTE-ALCANCABILIDADE
+- **dono:** `B-SAN3-14` (plano SAN3 §4.1 item 34); bloco dono proposto pela fatia: bloco mobile "portas"
+- **impacto vendável:** **BLOQUEIA** — o app cobre só a coleta, metade do serviço de guincho
+- **teste de encerramento:** widget test: OS em rota de entrega abre run com `kind=delivery`; passos "Rota entrega"/"Entrega" acendem; comparação coleta×entrega alcançável
+
+---
+
+## P-MOBILE-STUBS-MOCKS-MORTOS (2026-09-11) — Stubs `Pending*` mortos (token local nunca nulo) e mock de sync em produção — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B37, B42
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `core/auth/auth_repository.dart:97` `accessToken: 'dev-token-local'`; `core/sync/sync_providers.dart:80,124` escolhem stub por `accessToken == null`; `sync_providers.dart:41` `MockExpenseSyncApi(SyncApiResult.success)`
+- **gravidade:** BAIXA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** Ω6R-QUA-001 (mesmo arquivo)
+- **dono:** faxina mobile junto do B-O6R-03 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** guard: nenhum `Mock*`/`Pending*` alcançável fora de teste
+
+---
+
+## P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" entram na fila e nunca saem — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B39 (residual não-Ω6R)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): enfileirados em `features/work_orders/data/work_order_repository.dart:474` (`approvalRequest`) e `:637` (`unableToStart`), sem chamada REST paralela; `core/sync/sync_replay_service.dart:625+` drena só `create`, `statusUpdate`, `assign`; backend `src/modules/mobile/mobile-work-order-sync.ts:213-260` aceita `create/assign/mileage/status_change`
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 1-perda/corrupcao-de-dados
+- **dependências:** vocabulário acordado com o backend
+- **dono:** `B-SAN3-16` (plano SAN3 §4.1 item 5); bloco dono proposto pela fatia: bloco mobile de sync (vizinho do B-O6R-11)
+- **impacto vendável:** **BLOQUEIA** — ação do técnico aceita pela UI e mostrada na timeline local some em silêncio
+- **teste de encerramento:** enfileirar os 2 tipos → replay envia → backend persiste ou recusa com código visível; fila vazia ao fim
+
+---
+
+## P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente de 8 SKUs; o endpoint não existe — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B40
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/prestador/data/prestador_repository.dart:38-87` 8 SKUs literais (`ELE-0102`…`FIX-0012`); `grep "technician/stock" src` = 0
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** P-MOBILE-PRESTADOR-SEM-PORTA; Ω6R-QUA-002
+- **dono:** `B-SAN3-15` (plano SAN3 §4.1 item 37); bloco dono proposto pela fatia: bloco mobile + endpoint backend
+- **impacto vendável:** **BLOQUEIA** (junto do Prestador) — material faturável escolhido de lista inventada
+- **teste de encerramento:** `GET /mobile/technician/stock` escopado por custódia + teste; app mostra vazio honesto
+
+---
+
+## P-MOBILE-OCR-ANDAIME-INERTE (2026-09-11) — OCR de recibo: estados, colunas e permissão sem consumidor — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B41
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/expenses/data/expense_repository.dart:341` `markReceiptOcrReviewed` sem chamador em `lib/`
+- **gravidade:** BAIXA
+- **origem:** trilha despesas
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** decisão de OCR (serviço externo)
+- **dono:** backlog mobile (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** andaime removido ou ligado; todo estado de `ReceiptOcrStatus` alcançável
+
+---
+
+## P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, sem filtro de atribuição nem paginação — ALTA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **junta do PR #386, ciclo 1 (C2-10, 2026-09-12):** o backend oferece o filtro `assignedUserId`, mas não impõe escopo por papel na listagem (`src/modules/work-orders/work-order.service.ts:402-418`); a matriz (l.45) dá ao técnico `execute/update-assigned` e não diz se ele lê todas as OS da organização. Pergunta ao dono no plano SAN3 v5 (§10), com default estrito: o técnico lista só as atribuídas, imposto no backend (bloco `B-SAN3-13`).
+- **fonte (fatia AUSENTES, §2a):** sintese B44
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:272` "Minhas OS", `:122` filtra só `tenantId`; `work_order_repository.dart:88` `workOrdersForUser` sem chamador; `work_order_remote_api.dart:74-91` `GET` sem `assignedUserId` nem página
+- **gravidade:** ALTA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** `P-MOBILE-OS-SEEDS` (mesma lista)
+- **dono:** `B-SAN3-13` (plano SAN3 §4.1 item 32); bloco dono proposto pela fatia: bloco mobile
+- **impacto vendável:** **BLOQUEIA** — acima de 20 OS abertas (default do backend) a OS do técnico pode sumir, e ele vê as alheias
+- **teste de encerramento:** 25 OS, 1 atribuída → lista mostra a dele, pagina, não mostra as outras
+
+---
+
+## P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico, nome "flutter_app" e README de template — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B45, §6(a6)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:153-154,407` `'${session.user.tenantRole} · …'`; `shared/ui/module_placeholder_screen.dart:42` "Permissao $requiredPermission nao retornou no bootstrap" (`/approvals`, `router.dart:253-255`); `android/app/src/main/AndroidManifest.xml:6` `android:label="flutter_app"`; `README.md` "A new Flutter project."
+- **gravidade:** MÉDIA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** `P-CHK-SEED-DEMO-SUJO` ("Tenant Demo")
+- **dono:** `B-SAN3-19` (plano SAN3 §4.1 item 48); bloco dono proposto pela fatia: faxina mobile
+- **impacto vendável:** **BLOQUEIA** (custo de horas) — viola §3; app não se distribui com nome "flutter_app"
+- **teste de encerramento:** cabeçalho com rótulo de negócio; guard de strings sem permissão/papel técnico; label = nome do produto
+- **emenda (plano SAN3 §4.1 item 48, 2026-09-11):** a tela de sync renderiza "Integracao remota ainda nao ativa" sem condição (`mobile/flutter_app/lib/shared/ui/sync_screen.dart:92,269`).
+
+---
+
+## P-MOBILE-TESTE-ALCANCABILIDADE (2026-09-11) — Nenhum teste prova que toda rota do app tem porta de navegação — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese §6(b)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): medido aqui: `/service`, `/conclusion`, `/location` sem `push/go` em `lib/`, com a suíte Flutter verde (864 no painel) **Nota do aplicador (HEAD `c9ed9b91`):** o único arquivo de teste do app que casa `alcançável|reachab|orphan` é `test/features/checklists/pr_b_dispatch_run_download_test.dart:284` ("backend inalcançável"), que não é teste de rota.
+- **gravidade:** MÉDIA
+- **origem:** —
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** —
+- **dono:** bloco mobile "portas" (1º commit) (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — é a prevenção da classe
+- **teste de encerramento:** teste extrai os `path:` do router e exige alvo de navegação ou allowlist nomeada; vermelho-controle com rota órfã plantada
+
+---
+
+## P-MOBILE-DESPACHO-SEM-PUSH (2026-09-11) — Despacho só chega ao técnico se ele abrir e atualizar o app — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese C3
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `mobile/flutter_app/pubspec.yaml`: 0 ocorrências de `firebase_messaging|flutter_local_notifications|workmanager|web_socket|socket_io`
+- **gravidade:** MÉDIA
+- **origem:** fora do MVP mobile
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** serviço externo (FCM/APNs) → junta-5 + PD
+- **dono:** bloco próprio pós-decisão (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — o dono decide se entra (§10.1))
+- **impacto vendável:** NAO — contorno declarável (despachante avisa; técnico atualiza); objeção comercial forte
+- **teste de encerramento:** despacho criado → notificação entregue (provedor mockado) e abre a OS
+
+---
+
+## P-NOTIF-SEM-CANAL-EXTERNO (2026-09-11) — Notificação só grava linha; não há canal de e-mail, SMS ou push — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B50
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/notifications/notification.jobs.ts:13-14` só `createFromDomainEvent`; grep `nodemailer|sendgrid|twilio|smtp|firebase|fcm|webpush|client-ses|client-sns` em `src`+`package.json` = 0
+- **gravidade:** MÉDIA
+- **origem:** Ω4C Central de Notificações
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 7-fluxo
+- **dependências:** serviço externo → junta-5 + PD
+- **dono:** bloco próprio (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — central in-app funciona; quem não abre o ERP não é avisado
+- **teste de encerramento:** adapter de canal com teste de entrega (mock) e reenvio
+
+---
+
+## P-JOBS-HANDLERS-PLACEHOLDER (2026-09-11) — Dois handlers vazios ("Placeholder") consomem fila a cada evento — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B49
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/infra/jobs/job.registry.ts:47-49,53-55` corpo vazio "Placeholder"; `src/infra/events/domain-event.publisher.ts` `eventJobMap`: `checklist_run.attachment_uploaded`→`checklist-attachment-postprocess`, `audit_log.created`→`audit-log-fanout`
+- **gravidade:** BAIXA
+- **origem:** trilha jobs
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** B-O6R-08
+- **dono:** B-O6R-08 ou faxina (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** handler com corpo testado ou mapeamento removido
+
+---
+
+## P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR (2026-09-11) — Outbox Sivec é escrito por 5 repositórios e nunca lido fora de teste — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese B51, A2
+- **situação medida pela fatia:** ATIVO (por desenho: "captura, nunca envio real", `prisma/schema.prisma:3122`)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/impound/impound.outbox.repository.ts`: `listOutboxEventsTx` sem chamador; `listOutboxEventsForTenant` só em `tests/impound-outbox.test.ts`; `appendOutboxEventTx` em 5 repositórios
+- **gravidade:** BAIXA
+- **origem:** Ω5P PR-20
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** decisão de interop Sivec
+- **dono:** trilha Pátios (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — interop fora do MVP; a fila cresce sem poda
+- **teste de encerramento:** decisão registrada; consumidor/poda testado, ou parar de escrever
+
+---
+
+## P-FLEET-ALERTAS-SEM-AGENDADOR (2026-09-11) — Alertas de frota só disparam por botão; nenhum job os agenda — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese A8
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `src/modules/notifications/fleet-alerts.runner.ts:91`; único chamador `notification.controller.ts:82` (rota `notification.routes.ts:121`); `job.registry.ts` (12 registros) sem job de frota
+- **gravidade:** MÉDIA
+- **origem:** Ω4C Fase 1
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** B-O6R-08 (agenda singleton)
+- **dono:** B-O6R-08 ou notificações (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO — disparo manual funciona
+- **teste de encerramento:** job agendado idempotente: vencimento gera alerta sem clique
+
+---
+
+## P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e compara com o código da OS — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
+- **fonte (fatia AUSENTES, §2a):** sintese A9
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/work_orders/ui/work_order_detail_screen.dart:918-919` `_expected = wo.code.substring(code.length - 2)`; `:931` "Informe os 2 ultimos digitos da placa"; `:1083` "Digitos nao conferem com a placa do veiculo"
+- **gravidade:** MÉDIA
+- **origem:** era local-first
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 3-seguranca/permissoes
+- **dependências:** placa no DTO da OS
+- **dono:** `B-SAN3-26` (plano SAN3, §4.1 item 53) (antes: bloco mobile (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1)))
+- **impacto vendável:** NAO — GPS coexiste; mas o controle é ineficaz e o rótulo mente (D-007)
+- **teste de encerramento:** placa `ABC1D23`, código `OS-1042`: "23" aceita, "42" recusa
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** a conferência fica no **ponto único de decisão** do servidor que as duas entradas do check-in usam — `changeStatus` (`src/modules/work-orders/work-order.service.ts:1313`) → `arrived`, pelo sync (`src/modules/mobile/mobile-work-order-sync.ts:265`) e pelo `PATCH /work-orders/:workOrderId/status` (`src/modules/work-orders/work-order.routes.ts:136`) — e o plano do bloco escreve o default para OS sem o dado conferido (placa ou número de série): negar, com exceção só por tipo de serviço nomeado (junta do ciclo 2, C2c2-07; plano SAN3 v5, §4.1 item 53; condição de entrada CE-7 do `B-SAN3-26`, §5.6).
+
+---
+
+## P-CATALOGO-TELAS-PLANEJADAS-AUSENTES (2026-09-11) — Telas do catálogo nunca feitas: rotas logísticas, disponibilidade, chat, perfil, basemap — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese C3 (telas), D15
+- **situação medida pela fatia:** ATIVO (NAO MEDI por tela; herdado da sintese com fonte)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): web: Rotas Logísticas e Técnicos·Disponibilidade sem rota; app: sem chat/perfil-editar/notificações; mapa do app em `CustomPaint` (`work_order_operational_map_screen.dart:471`); "Organizações·Clientes" sem decisão de aposentadoria
+- **gravidade:** BAIXA
+- **origem:** catálogo de 74 telas
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 8-acabamento-web/mobile
+- **dependências:** decisão de escopo do dono
+- **dono:** roadmap (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** rota + estados §7 por tela, ou saída do catálogo por decisão
+
+---
+
+## P-DOC-CONTRATOS-PROMETEM-INEXISTENTE (2026-09-11) — Contrato promete Cognito e `POST /mobile/ocr/scan`; código tem JWT próprio e nenhuma rota — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese C3 (Cognito, ocr/scan)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `CLAUDE.md` §2.4 "Cognito em prod"; `grep -rni cognito src` → só comentário (`authority-credential.types.ts:2`); `docs/claude-code-handoff/API_CONTRACTS.md:106` `POST /mobile/ocr/scan`
+- **gravidade:** BAIXA
+- **origem:** contrato 2026-07
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** decisão do dono (integrar × escrever "JWT próprio")
+- **dono:** governança de contrato (espelho `CLAUDE.md`/`AGENTS.md`) (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **impacto vendável:** NAO
+- **teste de encerramento:** contrato = código; teste: todo endpoint do `API_CONTRACTS` existe no router
+
+---
+
+## P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca blocos mergeados como "a_fazer" — MÉDIA
+
+- status: ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`roadmap.blocos`: `B-O6R-02` concluido com o PR #371, `B-O6R-07` parcial, `B-O6R-06` com o PR #385; `roadmap.as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — o PR #386 (plano SAN3) atualizou `roadmap.blocos` do painel: `B-O6R-02` → `concluido` (os achados do bloco fecharam no #371) e `B-O6R-07` → `parcial` (07a e 07b mergeados; residuais no `B-O6R-07c` e no `B-AV-REAL`); crítico SAN3 r2, CR2-03; critério 8 do dono. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)""
+- **fonte (fatia AUSENTES, §2a):** sintese §7
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json` `roadmap.as_of` = 2026-08-19; `B-O6R-02` e `B-O6R-07` `a_fazer` (mergeados em #371 e #369/#380)
+- **gravidade:** MÉDIA
+- **origem:** 2026-08-19
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** —
+- **dono:** `B-SAN3-10` (plano SAN3, §4.1 item 54) (antes: próximo PR que tocar `Kpis/` (bloco dono proposto pela fatia; plano SAN3: citada no §7.2 (contagens defasadas: o `roadmap` do painel parado em 2026-08-19), sem bloco))
+- **impacto vendável:** NAO
+- **teste de encerramento:** guard: bloco com `merge_commit` no history não fica `a_fazer`; `as_of` ≥ último merge
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** critério completo desta entrada — a metade do `roadmap` do item 54: bloco com `merge_commit` no history não fica `a_fazer` no `roadmap`, e `roadmap.as_of` ≥ o último merge do history; provado por mutação (junta do ciclo 2, C3c2-02: a paráfrase antiga do teste (g) do `B-SAN3-10` perdia a metade por bloco; plano SAN3 v5, §4.1 item 54). A outra metade do teste (g) — o `recent` contém o último merge — está na `P-KPI-RECENT-CONGELADO`.
+
+---
+
+## P-KPI-MVP-REGUA-CODIGO-ESCRITO (2026-09-11) — `mvp_demo 99`/`mvp_vendavel 88` medem código escrito, não caminho de usuário — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** sintese §7
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json`: `mvp_demo` 99, `mvp_vendavel` 88 e, no mesmo arquivo, `production_readiness.veredito` "REPROVADO PARA PRODUÇÃO", `deploy_bloqueado: true`
+- **gravidade:** MÉDIA
+- **origem:** régua do painel
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** decisão do dono sobre a régua
+- **dono:** `B-SAN3-10` (plano SAN3 §5.5, entrega (f) — `mvp_demo`/`mvp_vendavel` recalculados com método escrito); bloco dono proposto pela fatia: bloco de KPI
+- **impacto vendável:** NAO — não trava venda; induz a crer que está vendável
+- **teste de encerramento:** régua com fonte medida (porta + dado real) ou rótulo "estimativa"; guard de coerência com `production_readiness`
+
+---
+
+## P-DOC-GO-LIVE-READINESS-VENCIDO (2026-09-11) — Documento diz "nenhum código bloqueia o go-live" e manda rotacionar chave dispensada — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2a):** `docs/go-live-readiness.md` §0, §5
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `docs/go-live-readiness.md:76` "**Nenhum código bloqueia o go-live.**"; `:11-14`, `:44` rotação obrigatória (dispensada: `P-GOLIVE-SECRET-ROTATE` FECHADA, `pendencias.md:1330`); contradiz J-6R 5×0 e o AV fail-closed
+- **gravidade:** MÉDIA
+- **origem:** 2026-07-19
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** —
+- **dono:** `B-SAN3-10` (plano SAN3 §4.2 e §5.5 — o bloco atualiza `docs/go-live-readiness.md` e corrige a linha 76); bloco dono proposto pela fatia: dono de `P-GOLIVE-GATES` (hoje "a atribuir")
+- **impacto vendável:** NAO — documento; mas quem o ler conclui que o go-live está pronto
+- **teste de encerramento:** revisão datada no topo apontando J-6R e AV; `rg "Nenhum código bloqueia"` = 0 ou qualificado
+
+---
+
+## P-GOV-MOLDE-SEM-CORPOS-DE-JURADO (2026-09-11) — Molde de plano/briefing não prevê os corpos de jurado que a junta exige criar — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** J-B-O6R-06 §9 ress.3; delta §3 #5 e §5
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `agent-orchestration/codex/comando-template.md` e `docs/claude-code-handoff/comando-template.md`: `grep -c especialistas` = 0, `grep -ci jurado` = 0; reincidiu nas duas juntas do B06 ("12 corpos … fora da lista literal do §5") **Nota do aplicador (HEAD `c9ed9b91`):** o caminho `agent-orchestration/codex/comando-template.md` citado pela fatia não existe no HEAD; os moldes existentes são `comando-template.md` (raiz) e `docs/claude-code-handoff/comando-template.md`, ambos com 0 menções a `especialistas` e a `jurado`.
+- **gravidade:** BAIXA
+- **origem:** 2026-09-07 / 09
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9-documentacao/rastreabilidade
+- **dependências:** —
+- **dono:** próximo bloco de governança (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO — processo
+- **teste de encerramento:** molde lista `.claude/agents/especialistas/<id>*.md` + espelho no escopo; checagem falha se o diff tocar `especialistas/` fora do declarado
+
+---
+
+## P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO (2026-09-11) — Ata e votos do B06 com resíduos: plano fora dos autos, ressalva omitida, sem quedas — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** J06 §9 ress.5/6/7; delta §3 #7, #9, #11
+- **situação medida pela fatia:** ATIVO (ress.5 NAO MEDI — não identifiquei os "dois hashes")
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `J-B-O6R-06.md:59` "passada 2 **LIBERADO**" (o inspetor deu COM RESSALVA); `ls votos/B-O6R-06/` sem `00-quedas.md`; `BRIEFING-B-O6R-06-delta.md:67` plano 4+4 "em `scratchpad`"; `votos/B-O6R-06/C1-banco-rls-evidencia.md` termina em linha vazia; par 2-por-2 só descrito no delta §3 #9
+- **gravidade:** BAIXA
+- **origem:** 2026-09-07/09
+- **escopo:** dentro-do-bloco (B-O6R-06, mergeado) (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** —
+- **dono:** próximo PR de registro em `omega/juntas/` (candidato: backfill do #385) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** "LIBERADO COM RESSALVA" na linha do inspetor; `00-quedas.md` ou "quedas: 0"; plano commitado; `git diff --check` limpo
+
+---
+
+## P-GOV-C28-REGULARIZACAO-NAO-ESCRITA (2026-09-11) — §C2.8 trava todo bloco sem parecer e não prevê regularização nem exceção — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** REGULARIZACAO G-1; auditoria A-08; plano §6.3
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `CLAUDE.md:263` "Sem parecer dele, nenhum bloco novo começa"; `grep -n regulariza CLAUDE.md` = 0 (662 l.); o parecer de 2026-09-09 destravou "por este parecer" sem norma (`votos/REGULARIZACAO-382-383-384/01-parecer-porteiro.md:165-166`)
+- **gravidade:** MÉDIA
+- **origem:** 2026-09-08 (#382-#384)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do dono (plano §6.3)
+- **dono:** governança de contrato (espelho `CLAUDE.md`/`AGENTS.md`) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** §C2.8 nomeia a regularização (quem emite, o que mede) ou a proíbe; espelho idêntico
+
+---
+
+## P-GOV-SKILL-384-SEM-DECISAO (2026-09-11) — Skill `backend-review-ts-prisma` (#384) entrou sem decisão registrada — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** REGULARIZACAO G-2 e "fechar (3)"; auditoria M-06
+- **situação medida pela fatia:** ATIVO (parcial: status-geral registrou)
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `agent-orchestration/docs/status-geral.md:4305` cita o #384; `grep backend-review-ts-prisma agent-orchestration/controle/decisoes.md` = 0
+- **gravidade:** BAIXA
+- **origem:** #384 (2026-09-08)
+- **escopo:** dentro-do-bloco (#384) (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** —
+- **dono:** próximo PR de governança (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** entrada em `decisoes.md` com ID, data, motivo e escopo
+
+---
+
+## P-GOV-DEVOPS-ESCREVE-E-VOTA (2026-09-11) — `agente-devops-provisionador` pode escrever e se declara votante de junta — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** DOSSIE §7 (`A-C3-01`)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.claude/agents/agente-devops-provisionador.md:4` `tools: Read, Write, Edit, Grep, Glob, Bash`; descrição "Vota nas juntas de infra" (`grep -c` = 1 no head); `.gitattributes` inexistente no head (`git cat-file -e HEAD:.gitattributes` ec=128, relevante à ficha do inspetor); `ci.yml:15` = `DATABASE_URL: postgresql://…` no head (relevante à ficha da skill); `scripts/audit-agents-skills.mjs:150-151` `PODE_ESCREVER` o contém
+- **gravidade:** MÉDIA
+- **origem:** 2026-09-07
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 3-seguranca/permissoes (§C7.4-bis)
+- **dependências:** `P-GOV-BASH-EM-QUEM-JULGA`
+- **dono:** governança de elenco (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** papel escritor não vota (ou votante sem Write/Edit), com checagem no auditor
+
+---
+
+## P-GOV-INSPETOR-RECEITAS-1.1-E-3.3 (2026-09-11) — Receitas do inspetor: md5 cru, falso verde, cegas a skills e a corpo novo — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-06, A-09, A-10, A-13; plano B5b e §5 (`.gitattributes`)
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.claude/agents/inspetor-de-terreno-da-junta.md:53-54` md5 cru; `:100-101` pipeline sem ec (ausente nos 2 lados = md5 de vazio = IGUAL); `:94-118` só `.claude/agents/<x>.md` (sem skills, sem `especialistas/`); `:111-112` sem estado para corpo ausente da ref
+- **gravidade:** MÉDIA
+- **origem:** #383 (2026-09-08) e anteriores
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (4 estados); decisão `.gitattributes`
+- **dono:** governança de gate (B5b), agente distinto do que fizer o auditor (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** fixtures: árvore limpa com CRLF → LIBERA; ausente nos 2 lados → AUSENTE (nunca IGUAL); corpo novo com hash no briefing e sem poder normativo → RESSALVA; skill divergente → acusa
+
+---
+
+## P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI (2026-09-11) — Skill afirma que teste `-db` se auto-pula no job `backend`; o `ci.yml` define `DATABASE_URL` — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-07; plano B4
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.claude/skills/backend-review-ts-prisma/references/repo-erp.md:23` "teste `-db` **se auto-pula**"; `SKILL.md:59` "se auto-pula sem `DATABASE_URL`" (idem espelho `.agents/skills/`); contra-fato: `.github/workflows/ci.yml:15` e `scripts/run-backend-tests.mjs:82` `SKIP_BUDGET_DB` (auditoria)
+- **gravidade:** MÉDIA
+- **origem:** #384 (2026-09-08)
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** —
+- **dono:** governança de skills (B4), agente de redação técnica (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** `grep "se auto-pula" repo-erp.md` = 0; linha do `ci.yml` citada ainda vale na ref; espelho idêntico EOL-neutro
+
+---
+
+## P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (2026-09-11) — Auditor de elenco só audita a árvore onde o script mora, nunca a da sessão — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-12; plano B5a
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `scripts/audit-agents-skills.mjs:63` `const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")`; `--dir`/`process.cwd` = 0
+- **gravidade:** MÉDIA
+- **origem:** #381
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** `P-GOV-AUDITOR-FORA-DA-CI`
+- **dono:** governança de ferramentas (B5a) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** `--dir <cópia>` acusa corpo intruso como AUSENTE-NA-REF; `--ref a01fc014` mantém a saída de controle
+
+---
+
+## P-GOV-SYNC-AGENTS-ARGV-FROUXO (2026-09-11) — `sync-agent-agents.mjs` com argumento desconhecido cai em modo escrita — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria M-01; plano B5a
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `scripts/sync-agent-agents.mjs:25` `const CHECK = process.argv.includes('--check')`, sem validar argv; os `exit(2)` (`:62-63`, `:81-82`) só cobrem origem vazia
+- **gravidade:** MÉDIA
+- **origem:** anterior ao #381
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 6-contratos/testes
+- **dependências:** —
+- **dono:** governança de ferramentas (B5a) (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** `--naoexiste` → ec≠0 e `git status --porcelain -- .agents` vazio
+
+---
+
+## P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF (2026-09-11) — Segundo "contrato de execução" na ref, sem §C7 e com KPI pós-avaliação humana — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-11; plano §6.4
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `docs/claude-code-handoff/CLAUDE.md` (334 l.): abre como "contrato de execução" (l.1-5), `grep -c C7` = 0, `:207` "## C3. Política de KPI pós-avaliação humana (permanente)"
+- **gravidade:** MÉDIA
+- **origem:** #175
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do dono (some × banner × §A1 nomeia o canônico)
+- **dono:** governança de contrato (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** banner no topo apontando o `CLAUDE.md` da raiz (ou remoção) + §A1/§A7 nomeando o caminho canônico
+
+---
+
+## P-GOV-DECISOES-1968-GATE-INEXISTENTE (2026-09-11) — Decisão viva sustentada pelo parecer de um gate que não existe na ref — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria M-02; plano B6
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `agent-orchestration/controle/decisoes.md:1968` "O `cadeira-permanente-backend-review`, na homologação nº 1, conferiu e mediu" (em `D-QUORUM-B-GOV-ELENCO`)
+- **gravidade:** BAIXA
+- **origem:** 2026-09-08
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do assento (`P-GOV-INSPETOR-33-SEM-NORMA`)
+- **dono:** governança de registro (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** conflito registrado §A2, sem apagar, com remissão à decisão do assento
+
+---
+
+## P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` antes de `1-bis` e numeração aninhada — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria B-03
+- **situação medida pela fatia:** ATIVO
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `CLAUDE.md:359` (1-ter) antes de `:391` (1-bis); `:476` "…porteiro, inspetor ou assento…"
+- **gravidade:** BAIXA
+- **origem:** #381-#383
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** não fazer junto de P-GOV-INSPETOR-RECEITAS (mesmos arquivos)
+- **dono:** governança de contrato (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** ordem 1-bis < 1-ter; zero "assento" normativo; espelho idêntico
+
+---
+
+## P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo caem juntos na mesma cota — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria §4(b)
+- **situação medida pela fatia:** ATIVO (fato); efeito de diversificar = HIPÓTESE não medida
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.agents/agents/{planejador-mestre,porteiro-pos-merge,inspetor-de-terreno-da-junta}.md:4` `model: fable` (espelho de `.claude/agents/`); 429 do Fable registrado nos pareceres de 2026-09-08/09
+- **gravidade:** BAIXA
+- **origem:** D-PLANEJADOR-MODELO-FABLE; D-FALLBACK-MODELO-FABLE-OPUS
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 5-confiabilidade
+- **dependências:** `P-GOV-ESGOTADO-SEM-TESTE`
+- **dono:** governança de modelo (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** medir custo e qualidade fora de Fable antes de trocar; decisão registrada
+
+---
+
+## P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos de especialista são versionados ou ignorados — BAIXA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte (fatia AUSENTES, §2b):** auditoria A-02; plano §6.5
+- **situação medida pela fatia:** ATIVO no lado da ref; disco da árvore principal NAO MEDI
+- **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `.gitignore:48-52` só `.claude/worktrees/`; o #385 versionou 12 corpos `jurado-06d-*` (delta §3 #5) enquanto a árvore da sessão tem dezenas de `?? .claude/agents/especialistas/*` (git status de abertura desta sessão) **Nota do aplicador (HEAD `c9ed9b91`):** `.claude/agents/especialistas/` tem 0 corpos rastreados no HEAD — os 12 que estavam em `15ef3fbe` foram removidos em `846ac2dc` (2026-09-11); o `.gitignore` segue sem regra para eles, e a política continua não escrita.
+- **gravidade:** BAIXA
+- **origem:** 2026-09-08
+- **escopo:** pre-existente (evidência de data/origem: a origem acima)
+- **risco:** 9
+- **dependências:** decisão do dono (§6.5); `P-GOV-C10-ENCERRADO`
+- **dono:** governança de elenco (bloco dono proposto pela fatia; plano SAN3: fila pós-gate (§7.3, "as 15 ausentes de governança"))
+- **impacto vendável:** NAO
+- **teste de encerramento:** regra escrita (versionar tudo ou ignorar com exceção nomeada) + checagem no auditor
+
+---
+
+## P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operação (critério 12 do dono) — MÉDIA
+
+- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fonte:** orquestrador do SAN3; plano SAN3 §4.1 item 44 e critério 12 do dono (§2 do plano).
+- **prova** (presença no HEAD `c9ed9b91`): nenhum arquivo de roteiro no repositório (`git ls-tree -r --name-only HEAD | grep -ci roteiro` → 0); o plano cria `docs/ROTEIRO-DEMO-E-OPERACAO.md` como arquivo novo no `B-SAN3-10` (§5.5).
+- **gravidade:** MÉDIA
+- **escopo:** pre-existente (evidência: o roteiro nunca existiu no repositório; o critério 12 é do dono)
+- **dependências:** todos os blocos do §5.1–5.4 do plano (dependência declarada do `B-SAN3-10`).
+- **dono:** `B-SAN3-10` (`test/e2e-no-ci-e-roteiro`, plano SAN3 §4.1 item 44 e §5.5)
+- **impacto vendável:** BLOQUEIA pelo plano — item 44 do gate (critério 12: demonstração, operação e linguagem da UI).
+- **teste de encerramento:** roteiro de demonstração executado por quem não o escreveu; a parte de operação (deploy, restore cronometrado, bootstrap do 1º admin, rotação de segredo) ensaiada fora do ambiente real; a execução no ambiente real é ato do dono.
+
+## Pendências da junta do PR #386 — ciclo 1 (2026-09-12)
+
+> Achadas pelas cadeiras da junta do plano SAN3 e conferidas no código pelo orquestrador antes de entrar no plano (quem achou não conserta; quem planeja mede antes de planejar).
+
+## P-WEB-FATURAR-OS-SEM-TELA (2026-09-12) — a web não fatura OS: a rota existe e nenhuma tela a chama — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 1, cadeira C1, achado C1-02; conferido pelo orquestrador em `a143d2c3`)
+- **prova:** backend `src/modules/work-order-financials/work-order-financial.routes.ts:78` (`POST /work-orders/:workOrderId/invoice`, permissão `financial_titles:create`); `git grep -E "/invoice|faturar" -- frontend/src` → só a rota `/finance/invoices` do `App.tsx`; a aba Financeiro da OS (`frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx`) só tem ações de lançar; `frontend/src/modules/finance/pages/InvoicesPage.tsx:53` afirma que "o faturamento continua disponível no Financeiro" — não está.
+- **escopo:** `pre-existente` — a ação web nunca foi construída desde o Ω4-3 (jul/2026); o título nasce por `POST /work-orders/:id/invoice` (`D-Ω4-GANCHO`).
+- **dono:** `B-SAN3-25` (plano SAN3 v5, §4.1 item 50).
+- **bloqueia:** o gate da versão vendável (critérios 7 e 4 — o `mvp_vendavel` conta "faturamento idempotente" no núcleo vendável).
+- **teste de encerramento:** pela web, OS com itens → faturar → título criado e itens carimbados; refaturar o carimbado → recusado; a frase da `InvoicesPage` passa a ser verdadeira.
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** P1 — o `finance` passa a ter `work_orders:read`, concedido pelo `B-SAN3-04a` (a `RBAC_MATRIX.md:45` já dá `read` em OS ao Financeiro); o teste de encerramento fatura **como o papel `finance`**, com as permissões do banco depois do `db:provision-rbac`, pela aba da OS — além do `tenant_admin` (plano SAN3 v5, §4.1 item 50; condição de entrada CE-3, §5.6). A Dep. do `B-SAN3-25` ganha `SAN3-04a`.
+
+## P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO (2026-09-12) — técnico responde, conclui e dá ciência em vistoria de OS alheia — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 1, cadeira C2, achado C2-09; conferido pelo orquestrador em `a143d2c3`)
+- **prova:** `src/modules/checklists/checklist.routes.ts:164-202` (concluir e dar ciência) decidem só por permissão; `git grep -E "assigned|not_assigned" -- src/modules/checklists` → nada; `ChecklistRun` não tem campo de usuário (só a entidade relacionada); `catalog.ts:939-942` dá ao `field_technician` `checklist_runs:update`/`complete`/`acknowledge` (#320, 2026-08-01); a matriz (l.44) diz `answer-assigned`.
+- **escopo:** `pre-existente` (#320 de 2026-08-01, #344 de 2026-08-10) — mesma classe do `Ω6R-SEC-002`.
+- **dono:** `B-O6R-07c` (plano SAN3 v5: escopo por objeto em toda a superfície da OS).
+- **bloqueia:** o gate da versão vendável (critério 3).
+- **teste de encerramento:** técnico não atribuído à OS → 403 ao responder, concluir e dar ciência na vistoria dela, com vermelho-controle no head-base.
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** o teste de encerramento cobre **toda** rota mutante de vistoria que o técnico alcança, não só responder, concluir e dar ciência: também anexar (`POST /mobile/checklist-runs/:runId/attachments`), marcar avaria (`POST /mobile/checklist-runs/:runId/markers`) e registrar divergência (`POST /mobile/checklist-runs/:runId/divergence`), as três sob `checklist_runs:update`, que o `field_technician` tem (junta do ciclo 2, C2c2-03; medido por script sobre as rotas e o catálogo do head `ec4f34a8`); fecha por escopo provado (plano SAN3 v5, §4.1 item 51; condição de entrada CE-2, §5.6).
+
+## P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição do técnico sem conferir o consentimento — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 1, cadeira C2, achado C2-12; conferido pelo orquestrador em `a143d2c3`)
+- **prova:** `src/modules/field-location/field-location.service.ts:21-38` grava sem checar `tracking_consent`; a telemetria checa (`src/modules/telemetry/telemetry.service.ts:108-111`, RN-TELE-01). O app recusa capturar sem consentimento, mas o backend é a autoridade final.
+- **escopo:** `pre-existente` (`15739c1b`, 2026-06-09).
+- **dono:** `B-SAN3-17` (plano SAN3, §4.1 item 52) (antes: `B-SAN3-17` (plano SAN3 v5, item 18 ampliado ao backend).)
+- **bloqueia:** o gate da versão vendável (critério 3; dado pessoal).
+- **teste de encerramento:** envio de posição de operador sem consentimento → recusado e nada gravado; com consentimento → gravado.
+- **emenda (junta do PR #386, ciclo 2 — C1-A8, `pre-existente`, 2026-09-12):** conferir o consentimento no backend não basta sozinho: o consentimento dado no app é local (`mobile/flutter_app/lib/core/location/location_consent_store.dart`), e o backend confere `OperatorProfile.tracking_consent`, que só o `PATCH` do perfil de operador grava (`src/modules/operator-profiles/operator-profile.service.ts:55-57`); nenhuma rota do app grava consentimento. Desenho herdado da telemetria. O teste de encerramento precisa do caminho inteiro: consentimento dado no app → chega ao servidor → posição aceita; sem ele → recusada. Conferido pelo orquestrador em `ecc32712`. Mesmo dono (`B-SAN3-17`).
+
+> Achadas pelas cadeiras da junta do ciclo 2 do plano SAN3 como `pre-existente` (não reprovam; viram pendência
+> nomeada com dono — §C7.1-ter(a)) e conferidas no código pelo orquestrador em `ecc32712`.
+
+## P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU (2026-09-12) — lista de módulos não resolvida libera todo item de módulo no menu — MÉDIA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C2, achado C2c2-05, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- **prova:** `src/modules/navigation/navigation.routes.ts:83-96` — `resolveEnabledModules` devolve `undefined` no `catch` (e para `platform`); `src/modules/navigation/navigation.service.ts` (`filterNavigationByTenantModules`) devolve **todos** os itens quando a lista é `undefined`. Com o registro de `ecc32712`: lista `undefined` → 11 itens de módulo visíveis; `[]` → 0; `["patios"]` → 6 (sonda da C2, `votos/SAN3-plano-ciclo2/C2-apoio/m5-runtime.cjs`).
+- **escopo:** `pre-existente` — os dois trechos nascem em `84ca113c` (2026-06-09, registro de menu do backend).
+- **dono:** `B-SAN3-18` (os dois arquivos estão na fronteira dele; o middleware novo do gate de módulo não pode herdar essa semântica — C2c2-01).
+- **bloqueia:** o gate da versão vendável, com o item 16 (critério 3 — permissão).
+- **teste de encerramento:** falha do resolvedor de módulos → menu sem nenhum item de módulo (default negado), com vermelho-controle no head-base.
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** entra no gate pelo item 16, junto da `P-WEB-GATE-MODULO-INCOMPLETO` (plano SAN3 v5, §4.1 item 16); condição de entrada CE-1 do `B-SAN3-18` (§5.6): o default da lista de módulos não resolvida passa a ser negar, e a recusa por módulo no backend nasce de um mapa rota → módulo gerado das montagens do `src/app.ts`.
+
+## P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz de papéis sem permissão no catálogo — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C1 — lacuna de mandato registrada no voto, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- **prova (N = 4; forma: célula de ação da `RBAC_MATRIX.md` sem permissão correspondente no catálogo; causa: catálogo não convergido com a matriz):** (1) `inventory` sem `checklist_runs:*` (`RBAC_MATRIX.md:44`, leitura/resposta por escopo); (2) `operator` e `inventory` sem escrita em filiais, fornecedores, etiquetas e POIs (`RBAC_MATRIX.md:37`, edição por escopo); (3) `inventory` sem `work_orders:approve` nem outra porta de aprovação (`RBAC_MATRIX.md:46`, aprovação por política); (4) `finance` lê OS só pelo legado `os.read`, que o backend não aceita no lugar de `work_orders:read` (`RBAC_MATRIX.md:45`, leitura). Conferência do orquestrador: as chaves existem no catálogo (`branches|suppliers|tags|pois:create/update`; `work_orders:approve` só no `manager`; `checklist_runs:update` no `manager`, `technician`, `operator` e `field_technician`), e os blocos de `inventory` (`src/modules/core-saas/permissions/catalog.ts:873-894`), `operator` (l.730-808) e `finance` (l.809-872) não têm as nomeadas acima; `requirePermission` compara a permissão exata.
+- **escopo:** `pre-existente` — o catálogo do `finance` é de `b142671ec` (2026-06-11).
+- **dono:** `B-SAN3-04a` (a causa-raiz dele é a convergência catálogo × matriz). O (4) depende da decisão de produto do dossiê do PR #386 (o `finance` passa a ler OS?) e sustenta o C1-A2 da junta.
+- **bloqueia:** o gate da versão vendável (critério 3 — permissão; e o faturamento pelo papel Financeiro).
+- **teste de encerramento:** guard que, para cada célula de ação da matriz, exige a permissão correspondente no catálogo do papel, e fica vermelho por mutação (célula sem permissão).
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** entra no gate como item 56 (plano SAN3 v5, §4.1 item 56), pela regra de classificação do §2 do plano — viola o critério 3 no código medido. Dono `B-SAN3-04a`, condição de entrada CE-6 (§5.6): as quatro células convergem à matriz, e onde a matriz diz "por escopo" e o backend não aplica o escopo, a permissão **não** é concedida sem ele — vira pendência nomeada com dono (fail-closed); guard de célula da matriz × catálogo com mutação. O (4) (`finance` sem `work_orders:read`) se resolve pela P1 (CE-3).
+
+## P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (2026-09-12) — dois itens do gate só aparecem no índice pela entrada hospedeira — MÉDIA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C3, achado C3c2-05, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- **prova:** a `P-033` (item 14 do gate, permissão) não tem cabeçalho próprio — vive como bullet e emenda dentro da `P-032` (`pendencias.md:387`, emenda l.399), e o índice só lista a `P-032`, sem severidade; a `P-Ω3F6-CANCEL-RACE` (item 23, dinheiro) vive dentro da `P-Ω3F6` (l.1335), que o índice lista com a severidade da hospedeira (a mais baixa da escala).
+- **escopo:** `pre-existente` — o bullet da `P-033` já estava sob a `P-032` em `15ef3fbe`; o da `P-Ω3F6-CANCEL-RACE` desde `3aad5277` (#228, 2026-07-19).
+- **dono:** `B-REG-GERADOR` (a mesma das falhas do gerador no §7.2 do plano).
+- **bloqueia:** não bloqueia o gate por si — o §1 do plano declara que não usa a severidade do índice —, mas quem pergunta ao índice o que está aberto vê um item de permissão sem severidade e um de dinheiro no fim da fila.
+- **teste de encerramento:** todo item do §4.1 do plano aparece no índice como linha própria, com a severidade do item, e um guard fica vermelho quando um item do gate só existe como bullet de outra entrada.
+- **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** fica **fora do gate**, com a condição escrita no §4.3 do plano SAN3 v5: não viola, no código do produto, nenhum dos 13 critérios — é o índice de registro, e o §1 do plano declara que não usa a severidade dele; o gate é lido no §4.1. Dono `B-REG-GERADOR`, fila pós-gate.
+
+> Registrada pela decisão do dono `D-SAN3-PLANO-OPCAO-B` (2026-09-13) a partir do bloqueante C1-A1 da junta do ciclo 2 do plano SAN3 (a omissão é do plano; o defeito de produto é `pre-existente`), com a prova medida de novo pelo aplicador da opção B.
+
+## P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia: sem extrato nem ação — ALTA
+
+- status: ABERTA (junta do PR #386, ciclo 2, cadeira C1, achado C1-A1; registrada pela decisão do dono `D-SAN3-PLANO-OPCAO-B`; prova medida pelo aplicador em `ec4f34a8`)
+- **prova:** backend `src/modules/financial-entries/financial-entry.routes.ts:84-86` (`PATCH /financial-entries/:financialEntryId/reconcile`, permissão `financial_entries:update`) e l.31-32 (`GET /financial-entries`, `financial_entries:read`); `git grep -n -E "/reconcile|financial-entries" -- frontend/src mobile/flutter_app/lib` → nenhuma linha (a busca solta por "reconcile" acha só estado de processamento, `reconciled`, não chamada); a promessa: notas `mvp_demo`/`mvp_vendavel` do `Kpis/kpis-latest.json` ("Conciliacao") e `API_CONTRACTS.md:435` ("Concilia lançamento").
+- **escopo:** `pre-existente` — a rota nasceu em `1e65b34b` (2026-07-18, #216, "Ω4-5 — Conciliação bancária") e nunca teve chamador na web nem no app; a omissão no plano é do PR #386 (C1-A1).
+- **dono:** `B-SAN3-12` (ampliado — plano SAN3 v5, §4.1 item 55; condição de entrada CE-4, §5.6).
+- **bloqueia:** o gate da versão vendável (critérios 7 e 4 — a conciliação está no núcleo que o `mvp_vendavel` conta).
+- **teste de encerramento:** o do CE-4 — pela web, criar conta → emitir título → baixar pela tela → o lançamento aparece no extrato → conciliar → conciliado; conciliar de novo → a resposta que o contrato define; saldo pela rota real.

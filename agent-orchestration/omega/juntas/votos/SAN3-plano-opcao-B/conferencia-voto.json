@@ -1,0 +1,77 @@
+{
+ "papel": "cadeira de registro — conferência da APLICAÇÃO de D-SAN3-PLANO-OPCAO-B no PR #386 (não é junta de mérito; P1/P2 e o caminho B não reabertos). Declaração: votei no ciclo 2 como C3 (APROVADO) e achei o C3c2-01 (14 ponteiros + 3 donos contraditórios). Conferido aqui: as 14 linhas reescritas são exatamente as 14 do meu achado, cada uma no item certo, e os 3 donos foram fechados (l.8892, l.8841, l.1728).",
+ "modelo": "claude-opus-5",
+ "ref_medida": "042e689e46b1e1989af50526229269ad3218c25b (anterior ec4f34a8); worktree próprio detached conf-san3b com npm ci próprio; gerador em cópia fora do repo; ferramentas próprias (item16.py, cmp_ce.py, marks_own.py, agenda_own.py, reg1-3.py)",
+ "veredito": "NAO CONFERE",
+ "itens": [
+  {
+   "n": 1,
+   "titulo": "Fidelidade da aplicação — §5.6 = §B (só os *(medir)* viraram fato medido e os caminhos completos); CE-n e CE-G1/G2 nas células por script próprio; itens 55/56 com IDs e blocos certos; item 16 = 27 + 13 = 40 recontado; §4.3; travas novas no §6 e na Dep.; seed.ts no B-SAN3-18; teste (g) com as duas metades; zero código e RBAC_MATRIX intocado",
+   "veredito": "CONFERE"
+  },
+  {
+   "n": 2,
+   "titulo": "Registro — entrada nova bem-formada e reproduzida; 11 emendas (10 do §D.2 + D13) no fim das entradas certas; 0 ponteiro vivo divergente (busca estrita 74 e ampla 85, lidas a mão); só 14 ponteiros + 4 dono '(antes: …)' reescritos, 0 outros; índice byte-idêntico; MAS a propriedade de dono não fecha em 5 itens (CONF-01)",
+   "veredito": "NAO CONFERE"
+  },
+  {
+   "n": 3,
+   "titulo": "Números e KPI — 56/37 coerente no plano (§0, §4.1, §8.1, §9, §15), status-geral, log, kpis-latest (nota mvp_vendavel, limitations, recent #386) e corpo do PR; 3 guards 28/28; kpi-freeze --check; node --check; sync --check; agenda 0 violações (script do aplicador e verificação própria sobre a tabela publicada, realista recalculado 238/213/240/223 → 297); §9 inalterado e dizendo por quê",
+   "veredito": "CONFERE"
+  }
+ ],
+ "achados": [
+  {
+   "id": "CONF-01",
+   "titulo": "A propriedade 'toda entrada do gate nomeia o bloco do §4.1' não fecha nos itens 2, 19, 24, 30 e 31: as entradas do registro que hospedam esses achados (P-O6R-B03, P-O6R-B04, P-O6R-B12) não nomeiam B-O6R-03a/03b/04a/04b/12, e a P-O6R-B12 afirma outro dono",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-da-aplicação",
+   "evidencia_escopo": "A obrigação nasceu nesta aplicação: decisão N2 do planejador (relatório do aplicador §9.2, 'o dono do §4.1 escrito em toda entrada do gate'), declarada cumprida no corpo do PR (L8 'todo dono das entradas do gate (58) conferidos por script, 0 divergentes'; L17 'a correção de todos os ponteiros e donos do registro') e na trilha (status-geral e log: 'nas 32 entradas do gate que não o nomeavam'). O item 7, da mesma classe, foi fechado nesta aplicação (D2: '`Ω6R-ARQ-004` (em `P-O6R-B09`)'). O texto defasado é anterior (P-O6R-B03/B04 de 2026-08-14; o da P-O6R-B12 entrou em 0a398246, 2026-08-19, #357), e a coluna Item dos 5 itens já tinha essa forma em ec4f34a8 (a27d1c70, 2026-09-11). Mesmo assim, fechar a classe pela propriedade era o mandato desta aplicação, e o registro está no escopo permitido (§A do plano de aplicação).",
+   "evidencia": "Verificação de hospedeiras, ferramenta própria sobre git show 042e689e:pendencias.md (cabeçalho que carrega o achado, na forma longa ou curta). Itens 2 (Ω6R-DAT-003) e 31 (Ω6R-QUA-002) → P-O6R-B04 (l.2831, 'status: ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.'): cita só B-O6R-01/04/05, sem B-O6R-04a nem 04b em linha nenhuma; o índice diz '**a atribuir**'. Itens 19 (Ω6R-DIN-009) e 30 (Ω6R-QUA-001) → P-O6R-B03 (l.2798, 'status: ABERTA — 1 P0 + 1 P1.'): nenhum B- na entrada, e para o QUA-001 diz 'quem abrir o PR-08 fecha este achado junto'; o índice diz '**a atribuir**'. Item 24 (Ω6R-DAT-004) → P-O6R-B12 (l.2894): cabeçalho 'achado ÓRFÃO, sem bloco até hoje' e l.2896 '**Dono:** próximo agente que puxar a trilha `jurisdiction`/`impound`', enquanto o §4.1 e o §5 dão B-O6R-12 (`fix/jurisdiction-profile-versioning`); o índice diz 'sim', porque lê esse Dono. Para esses 5 itens nenhuma entrada do registro nomeia o bloco: a coluna Item só traz o ID Ω6R. O aplicador os declarou 'fora do alcance … residual, sem ação' (§9.2) com base na premissa de que os achados 'vivem em docs/revisoes/O6R/achados.jsonl' e que 'nenhuma entrada do registro é nomeada por eles'. Medi e a premissa está incompleta: o próprio registro os hospeda, e a P-O6R-BACKLOG os mapeia a B-O6R-03/04. Na leitura estreita (só os IDs escritos na coluna Item), 58/58 conferem, também medido. Controle: P-O6R-B09 (item 7), P-O6R-B11 (item 3) e P-O6R-B07 (item 11, l.3065) nomeiam o bloco.",
+   "motivo": "O mandato manda medir pela propriedade, para os 56 itens. A lição que o plano de aplicação diz obedecer é 'fechar a propriedade, não a instância', e o CE-G1 que ele mesmo escreve exige enumeração gerada da fonte, nunca lista curada. A coluna Item do §4.1 é uma lista curada. Enumerada pela fonte (as entradas do registro que carregam o item do gate), a propriedade falha em 5 itens, e numa delas o registro contradiz o plano ('sem bloco até hoje', 'próximo agente'). É a classe que o D2 fechou no item 7: fechada numa instância, aberta em cinco, enquanto o PR e a trilha afirmam a correção de todos os donos. Por isso não confere."
+  },
+  {
+   "id": "CONF-02",
+   "titulo": "A coluna 'dono' do índice não lê as 32 emendas de dono: 8 entradas do gate seguem '**a atribuir**' no índice depois de recebê-las",
+   "gravidade": "nota",
+   "escopo": "dentro-da-aplicação",
+   "evidencia_escopo": "O formato '- **dono (plano SAN3, §4.1 item N — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13):**' foi escolhido na 3ª passada desta aplicação (32 emendas novas em 042e689e). O detector do gerador é pré-existente e inalterado (gerar-indice-pendencias.py:98; o git diff ec4f34a8 042e689e do gerador vem vazio).",
+   "evidencia": "gerar-indice-pendencias.py:98: `dono = bool(re.search(r'\\*\\*dono:\\*\\*\\s*(?!a atribuir)', body, re.I)) or bool(re.search(r'\\*\\*Dono:?\\*\\*', body))`, que não casa '**dono ('. Entradas do gate nomeadas na coluna Item com '**a atribuir**' no índice: 8 em ec4f34a8 e as mesmas 8 em 042e689e (P-020, P-O6R-B11, P-CHK-PATCH-SEM-LOCK, P-O6R-B09, P-MOBILE-OS-SEEDS, P-SAN-E2E, P-028, P-Ω3F2B-ACENTOS), todas com emenda de dono nesta aplicação. O índice segue byte-idêntico ao gerador.",
+   "motivo": "O índice é a vista que responde 'de quem é' (cabeçalho do gerador). Para 8 entradas do gate ele não se moveu com a aplicação que escreveu o dono. Não reprova: o mandato pede o índice byte-idêntico ao gerador, e ele é; o texto do registro está certo nessas 8. Vizinha da P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (dono B-REG-GERADOR)."
+  }
+ ],
+ "reconferencia_bb3f5925": {
+  "papel": "mesma cadeira de registro, reconferência pedida pelo orquestrador depois do NÃO CONFERE sobre 042e689e. CONF-01: fechado pela fonte, na forma estrita do planejador (sujeito = cabeçalho com o ID; na falta, bullet/emenda 'sobre' na hospedeira; dono atual = última linha de dono relevante). CONF-02: fechado, e corrigi a contagem que eu tinha dado (R-01). A primeira seção deste parecer (NÃO CONFERE sobre 042e689e) fica intacta.",
+  "modelo": "claude-opus-5",
+  "ref_medida": "bb3f59256ee168838e7eeea6a32372899631f4ea (anterior conferido 042e689e; base do registro ec4f34a8); worktree próprio detached conf-san3b-r com npm ci próprio, removido pelo nome; gerador em cópia fora do repo; ferramentas próprias: dono_estrito.py, reformat.py, reg1-3.py, agenda_own.py, marks_own.py, cmp_ce.py, item16.py",
+  "veredito": "CONFERE",
+  "itens": [
+   {
+    "n": 1,
+    "titulo": "Item 2 inteiro, com as minhas ferramentas: donos pela fonte, 56/56 itens (68/68 pares item-ID-sujeito, com as hospedeiras P-O6R-B03/B04/B07/B09/B11/B12 e os bullets P-033 e P-Ω3F6-CANCEL-RACE); ponteiros com 0 vivo divergente (81 vivos na forma estrita, 101 na ampla; o '80' do PR é a contagem da ferramenta do aplicador, e os meus 81 são 79 '§4.1 item N' + 2 'plano SAN3 v5, item 54', ambos certos); reescritas × ec4f34a8 = 18 (14 ponteiros + 4 dono '(antes: …)'), todas bullets '--', o resto acréscimo; 042e689e→bb3f5925: 32 emendas de dono reformatadas iguais em bloco, item, alvo e corpo, mais 9 linhas acrescentadas, 0 apagadas; entrada nova e as 11 emendas da decisão intactas; índice byte-idêntico (sha256 1bd915987c1740268c80); sujeitos do gate 'a atribuir' 20 → 0, com as 8 do CONF-02 em 'sim'",
+    "veredito": "CONFERE"
+   },
+   {
+    "n": 2,
+    "titulo": "Regressão dos itens 1 e 3: no plano, só +1 linha no §15; §B×§5.6, marcas CE (12 blocos), itens 55/56, travas, agenda (0 violações; realista 238/213/240/223 → 297) e item 16 = 40 iguais; RBAC_MATRIX.md e código intocados em relação a 042e689e e a ec4f34a8; Kpis intocado; 56/37 no plano, na trilha, no painel (3×) e no corpo do PR (L9, L11, L17); 3 guards 28/28; kpi-freeze --check; node --check Kpis/app.js; sync-agent-agents --check",
+    "veredito": "CONFERE"
+   },
+   {
+    "n": 3,
+    "titulo": "Isolamento e escopo da passada: só os arquivos anunciados (pendencias, índice, §15, status-geral, log, votos/SAN3-plano-opcao-B/); worktree próprio com npm ci próprio, removido pelo nome; san3 e árvore principal só lidos",
+    "veredito": "CONFERE"
+   }
+  ],
+  "achados": [
+   {
+    "id": "R-01",
+    "titulo": "Correção de medição da própria cadeira: o CONF-02 da 1ª conferência deu 8 entradas do gate 'a atribuir' no índice em 042e689e; eram 20",
+    "gravidade": "nota",
+    "escopo": "pre-existente",
+    "evidencia_escopo": "O erro está no parser da cadeira na 1ª conferência (sobre 042e689e), anterior a esta passada. Não é defeito da aplicação.",
+    "evidencia": "O índice tem a tabela 'Diferidas com severidade MATERIAL' (l.44, '| ID | linha | severidade | titulo |', sem dono) antes das tabelas com coluna dono. Meu parser da 1ª conferência pegava a primeira linha de cada ID: em 9 entradas do gate (P-008, P-019, P-026, P-027, P-CHK-SEED-DEMO-SUJO, P-PURCHASE-ORDERS-BACKEND-GATE, P-RBAC-GATING-MOCKSHELLS, P-SAN-PROD-BOOTSTRAP, P-Ω3F4C-ACTIVATION-PROMPT) ele leu o título no lugar do dono, e ainda deixou de fora P-O6R-B03/B04/B07. Reparse pelo cabeçalho de cada tabela: sujeitos do gate 'a atribuir' = ec4f34a8 20 · 042e689e 20 · bb3f5925 0; as 20 mudanças 042e689e→bb3f5925 são todas sujeitos do gate, 0 fora dele.",
+    "motivo": "Registrado para que o número do CONF-02 não seja herdado como fato. O desfecho não muda: o conserto (as 32 emendas no formato **dono:**) fechou as 20, não só as 8."
+   }
+  ]
+ }
+}

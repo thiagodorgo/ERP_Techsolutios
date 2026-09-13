@@ -1,17 +1,17 @@
 {
-  "snapshot_date": "2026-09-08",
+  "snapshot_date": "2026-09-11",
   "version": "B-O6R-06",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
     "block": "B-O6R-06 (Ω6R-DIN-005 + Ω6R-DIN-007 · 2 P0): a unidade faturável da vistoria passa a nascer DENTRO da transação que cria/conclui a run, com chave derivada da RUN; e o resumo de custo passa a somar NO BANCO, sem o teto de 10.000 que cortava justamente a linha mais recente. ZERO migration, ZERO dependência nova.",
     "title": "O que é dinheiro commita com o fato; o que é soma, soma no banco",
-    "pr": null,
-    "merge_commit": null,
-    "approved_head": null,
+    "pr": 385,
+    "merge_commit": "15ef3fbed57e217b66e6b307f9ae96502777fd09",
+    "approved_head": "e26eb9e5",
     "status": "published_per_pr",
     "summary": "B-O6R-06 — fecha os dois P0 da pendência-mãe P-O6R-B06, que BLOQUEAVA a trilha CHECKLIST P1 e o cloud billing.\n\nΩ6R-DIN-005 — \"a run é confirmada antes da métrica faturável, cuja gravação best-effort absorve falhas\". Havia uma janela entre o COMMIT da run e a gravação da unidade em `cloud_usage_events`, e a unidade perdida ali se perdia PARA SEMPRE: o replay da mesma `client_run_key` devolve `created:false` e o serviço pula a publicação do evento — que era o único produtor da métrica. Agora a linha é inserida na MESMA transação (`cloud-usage.capture.ts`, `$executeRaw` com ALVO EXPLÍCITO `ON CONFLICT (tenant_id, idempotency_key) DO NOTHING`), com chave estável derivada da RUN em vez do `event.id` aleatório por emissão. Se a medição falha, a run não commita e o retry repara — fail-closed por escolha declarada, com o acoplamento faturamento→operação escrito e provado no vermelho (F7).\n\nA INTENÇÃO DE FATURAR VIAJA POR ASSINATURA. `repository.completeRun` tem TRÊS chamadores e só um fatura hoje. Capturar dentro do repositório sem distinguir faria a trilha de DIVERGÊNCIA do app de campo (registrar divergência → ciência) passar de 0 para 1 unidade cobrada — mudança de PREÇO, decisão de produto, não deste bloco. O 5º parâmetro `billing: { meterCompletion }` é OBRIGATÓRIO e SEM DEFAULT: o compilador recusa um 4º chamador que não declare (provado por execução do `tsc` em C6), e a trilha C fica 0 → 0, medida antes e depois (C4).\n\nΩ6R-DIN-007 — \"resumo soma apenas listLineItems limitado silenciosamente a 10.000 linhas\". `SUM`/`GROUP BY` no banco, `where` compartilhado com o detalhe (que segue paginado ≤500), tipos NULÁVEIS com `_count._all` como discriminador entre \"janela vazia\" e \"soma nula\" — `?? 0` incondicional proibido nominalmente. O SEGUNDO defeito, que o enunciado do achado NÃO nomeia, fecha junto: a acumulação em ponto flutuante. Com 10.001 linhas na faixa realista o total (~9,9e9 com 6 casas) nem cabe exato num `number` — daí os campos aditivos `totalUnblendedCostExact`/`unblendedCostExact`.\n\nA BASE DO RATEIO MUDOU DE FONTE. Ela lia uma projeção diária escrita só por um job que NINGUÉM enfileira (medido): em produção seria vazia por construção, e todo custo cairia em `unallocated`. Durabilizar a métrica e continuar lendo essa projeção seria consertar o P0 no papel. Agora soma `cloud_usage_events` por tenant, sob o contexto RLS de cada um, numa única transação — e as TRÊS operações sobre a tabela de alocações (soma da base, escrita e leitura do painel) passaram a rodar sob contexto, porque sob papel sem BYPASSRLS a escrita morria na policy e o DELETE apagava zero linhas EM SILÊNCIO. De brinde, o replace virou atômico.\n\nDOIS DEFEITOS FORAM ACHADOS PELO PRÓPRIO CANÁRIO DESTE BLOCO, durante a implementação: `sumUsageBasis` e o `deleteMany` do replace confiavam SÓ na RLS para o recorte por tenant — e dev e CI rodam como `postgres`, SUPERUSUÁRIO, que IGNORA RLS. O `groupBy` somava a base de TODAS as organizações num balde só. Corrigido com `tenant_id` explícito na cláusula, além da RLS.\n\nBACKFILL §C3.5 DO #380, pago aqui em 4 lugares (`pr 380 · merge_commit fe2748c · approved_head a2988b5`), com a PRÉ-CONDIÇÃO EXECUTADA e não copiada: `git diff --stat a2988b5 c5d63bf -- src tests prisma frontend mobile .github scripts` sai VAZIO, e `tree(c5d63bf) == tree(fe2748c) == 1f957536`. `c5d63bf` fica como `pr_head`.\n\nNÃO ENTREGUE, e por quê: `scripts/reconcile-checklist-usage.ts`. O `critico-adversarial` mediu, na 2ª rodada, que o ramo `completed` do script REFATURARIA a trilha C que a própria emenda acabou de proteger (uma run de divergência→ciência termina com `completed_at` e sem métrica, POR DECISÃO). Está BLOQUEADO até a junta decidir o predicado observável — `P-O6R-B06-RECONCILE-BLOQUEADO`.",
-    "backfill_note": "Backfill §C3.5 PENDENTE para ESTE bloco: `pr`, `merge_commit` e `approved_head` sao `null` na AUTORIA por contrato (so existem pos-merge) e recebem backfill no PR seguinte. NAO ha divida herdada: o #380 (B-O6R-07b) foi backfillado pelo B-GOV-ELENCO e o #381 (B-GOV-ELENCO-ENXUTO) por ele mesmo — os dois ja estao pagos em `origin/main` e este PR os preserva verbatim, sem reescrever."
+    "backfill_note": "Backfill §C3.5 do #385 PAGO em 2026-09-11 pelo PR do plano SAN3 (ressalva 1 do porteiro pos-merge do #385). merge_commit de `gh pr view 385` = `git log origin/main`. approved_head = `e26eb9e5` (completo `e26eb9e5f58578681e994d3f7357a8ef3ee00a33`), o head JULGADO pela junta do delta (`J-B-O6R-06-delta.md` §7). Pre-condicao EXECUTADA pelo porteiro e reexecutada neste PR: `git diff --numstat e26eb9e5 ca5fd19a -- src tests prisma frontend mobile .github scripts` -> 0 linhas. `ca5fd19a` fica como pr_head (o que a CI mediu e o squash consumiu; tree(ca5fd19a) == tree(15ef3fbe) == 7883a59e). snapshot_date 2026-09-08 -> 2026-09-11, alinhado a entrada B-O6R-06 do history (data do merge). Texto anterior, preservado: Backfill §C3.5 PENDENTE para ESTE bloco: `pr`, `merge_commit` e `approved_head` sao `null` na AUTORIA por contrato (so existem pos-merge) e recebem backfill no PR seguinte. NAO ha divida herdada: o #380 (B-O6R-07b) foi backfillado pelo B-GOV-ELENCO e o #381 (B-GOV-ELENCO-ENXUTO) por ele mesmo — os dois ja estao pagos em `origin/main` e este PR os preserva verbatim, sem reescrever."
   },
   "metrics": {
     "flutter_tests": {
@@ -48,7 +48,7 @@
       "value": 99,
       "unit": "%",
       "display": "99%",
-      "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana. [SAN2-4b: INTOCADO — o PR nao move escopo: conserta arnes de teste e endurece um primitivo de autenticacao, sem entregar funcionalidade nova ao usuario (§C3.4).] [SAN2-6: INTOCADO — o bloco não move escopo de produto] [B-O6R-07a: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de autorizacao e autenticacao, sem entregar funcionalidade nova ao usuario.] [B-O6R-07b: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de SEGURANCA (verificacao de conteudo de upload e endurecimento do download), sem entregar funcionalidade nova ao usuario.] [B-GOV-ELENCO-ENXUTO: INTOCADO — o bloco nao move escopo de produto (§C3.4): encolhe uma ferramenta de governanca (o auditor de elenco e skills), sem entregar nem retirar funcionalidade ao usuario.]",
+      "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana. [SAN2-4b: INTOCADO — o PR nao move escopo: conserta arnes de teste e endurece um primitivo de autenticacao, sem entregar funcionalidade nova ao usuario (§C3.4).] [SAN2-6: INTOCADO — o bloco não move escopo de produto] [B-O6R-07a: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de autorizacao e autenticacao, sem entregar funcionalidade nova ao usuario.] [B-O6R-07b: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de SEGURANCA (verificacao de conteudo de upload e endurecimento do download), sem entregar funcionalidade nova ao usuario.] [B-GOV-ELENCO-ENXUTO: INTOCADO — o bloco nao move escopo de produto (§C3.4): encolhe uma ferramenta de governanca (o auditor de elenco e skills), sem entregar nem retirar funcionalidade ao usuario.] [SAN3 plano (PR #386): INTOCADO — o PR nao move escopo de produto (§C3.4). O inventario SAN3 (2026-09-11) mediu telas de menu e do console da plataforma exibindo dado inventado e fluxos do app sem porta de entrada (docs/revisoes/SAN3/PLANO_SAN3.md §4.1): este 99% e estimativa ANTERIOR ao inventario e sera recalculado no B-SAN3-10.]",
       "label": "Escopo demonstrável entregue",
       "caveat": "Também estimado, pela mesma régua."
     },
@@ -56,7 +56,7 @@
       "value": 88,
       "unit": "%",
       "display": "88%",
-      "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana. [SAN2-4b: INTOCADO — o PR nao move escopo: conserta arnes de teste e endurece um primitivo de autenticacao, sem entregar funcionalidade nova ao usuario (§C3.4).] [SAN2-6: INTOCADO — o bloco não move escopo de produto] [B-O6R-07a: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de autorizacao e autenticacao, sem entregar funcionalidade nova ao usuario.] [B-O6R-07b: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de SEGURANCA (verificacao de conteudo de upload e endurecimento do download), sem entregar funcionalidade nova ao usuario.] [B-GOV-ELENCO-ENXUTO: INTOCADO — o bloco nao move escopo de produto (§C3.4): encolhe uma ferramenta de governanca (o auditor de elenco e skills), sem entregar nem retirar funcionalidade ao usuario.]",
+      "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana. [SAN2-4b: INTOCADO — o PR nao move escopo: conserta arnes de teste e endurece um primitivo de autenticacao, sem entregar funcionalidade nova ao usuario (§C3.4).] [SAN2-6: INTOCADO — o bloco não move escopo de produto] [B-O6R-07a: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de autorizacao e autenticacao, sem entregar funcionalidade nova ao usuario.] [B-O6R-07b: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de SEGURANCA (verificacao de conteudo de upload e endurecimento do download), sem entregar funcionalidade nova ao usuario.] [B-GOV-ELENCO-ENXUTO: INTOCADO — o bloco nao move escopo de produto (§C3.4): encolhe uma ferramenta de governanca (o auditor de elenco e skills), sem entregar nem retirar funcionalidade ao usuario.] [SAN3 plano (PR #386): INTOCADO — o PR nao move escopo de produto (§C3.4). MAS o gate da versao vendavel do plano SAN3 v5 (inventario de 2026-09-11 + junta do PR #386) tem 56 bloqueantes em 37 blocos e 6 atos que dependem do dono (docs/revisoes/SAN3/PLANO_SAN3.md §4). Este 88% e estimativa ANTERIOR ao inventario e sera recalculado no B-SAN3-10, o bloco que declara o gate.]",
       "label": "Escopo do produto vendável entregue",
       "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
     },
@@ -118,7 +118,8 @@
     "Download protegido final pendente",
     "Retencao definitiva pendente",
     "Settings web sem backend dedicado (lacuna documentada)",
-    "Piloto Android real ainda precisa validacao em dispositivo fisico"
+    "Piloto Android real ainda precisa validacao em dispositivo fisico",
+    "mvp_vendavel (88%) e mvp_demo (99%) sao estimativas anteriores ao inventario SAN3 (2026-09-11); o gate da versao vendavel do plano v5 tem 56 bloqueantes em 37 blocos; recalculo no B-SAN3-10 — docs/revisoes/SAN3/PLANO_SAN3.md"
   ],
   "production_readiness": {
     "veredito": "REPROVADO PARA PRODUÇÃO",
@@ -126,8 +127,8 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 17,
-    "p0_fechados": 11,
-    "p0_abertos": 6,
+    "p0_fechados": 13,
+    "p0_abertos": 4,
     "p1_total": 15,
     "p1_fechados": 2,
     "p1_abertos": 13,
@@ -196,19 +197,22 @@
         "id": "Ω6R-SEC-003",
         "por": "B-O6R-01 (núcleo, PR #357) + B-O6R-07a (residuais, PR #369, dc8168b)",
         "em": "2026-09-04"
-      }
-    ],
-    "as_of": "2026-09-06",
-    "source": "docs/revisoes/O6R/achados.jsonl",
-    "aguardando_merge": [
-      {
-        "id": "Ω6R-DIN-005"
       },
       {
-        "id": "Ω6R-DIN-007"
+        "id": "Ω6R-DIN-005",
+        "por": "B-O6R-06 (PR #385, 15ef3fbe)",
+        "em": "2026-09-11"
+      },
+      {
+        "id": "Ω6R-DIN-007",
+        "por": "B-O6R-06 (PR #385, 15ef3fbe)",
+        "em": "2026-09-11"
       }
     ],
-    "nota_aguardando": "Ω6R-DIN-005 e Ω6R-DIN-007 estao `fechado` no registro NA AUTORIA do B-O6R-06 (§C3.5: numero de PR e hash so existem pos-merge). Eles NAO entram em `p0_fechados` nem na lista `fechados` — o painel conta so o que esta na `main`, e e por isso que `p0_fechados` permanece 11."
+    "as_of": "2026-09-11",
+    "source": "docs/revisoes/O6R/achados.jsonl",
+    "aguardando_merge": [],
+    "nota_aguardando": "Nenhum achado aguardando merge em 2026-09-11: Ω6R-DIN-005 e Ω6R-DIN-007 sairam daqui para `fechados` no backfill do #385 (PR do plano SAN3), quando ganharam hash de merge (15ef3fbe). Texto anterior, preservado: Ω6R-DIN-005 e Ω6R-DIN-007 estao `fechado` no registro NA AUTORIA do B-O6R-06 (§C3.5: numero de PR e hash so existem pos-merge). Eles NAO entram em `p0_fechados` nem na lista `fechados` — o painel conta so o que esta na `main`, e e por isso que `p0_fechados` permanece 11."
   },
   "findings": {
     "as_of": "2026-09-06",
@@ -473,7 +477,7 @@
     ]
   },
   "roadmap": {
-    "as_of": "2026-08-19",
+    "as_of": "2026-09-11",
     "source": "docs/revisoes/O6R/PLANO_O6R.md + agent-orchestration/omega/juntas/J-CHK-04C-EMENDA-deliberacao-j6r.md",
     "ordem_vinculante": [
       "B-O6R-05",
@@ -511,7 +515,9 @@
         "dep": [
           "B-O6R-01"
         ],
-        "estado": "a_fazer"
+        "estado": "concluido",
+        "pr": 371,
+        "nota": " [SAN3 (PR #386): concluido — os achados do bloco fecharam no #371 (ciclo 5); o a_fazer era o painel congelado (P-KPI-ROADMAP-CONGELADO).]"
       },
       {
         "id": "B-O6R-03",
@@ -562,7 +568,8 @@
           "B-O6R-05"
         ],
         "estado": "concluido",
-        "nota": "Entregue em 2026-09-07 (PR na autoria). Captura transacional da unidade faturavel com chave da RUN + SUM/GROUP BY no banco + base de rateio lida da tabela duravel sob contexto RLS por tenant. O parametro `billing` obrigatorio sem default fecha o conjunto de chamadores pelo compilador. RESIDUAL NOMEADO: o script de reconciliacao NAO foi entregue (bloqueado pelo achado R2-A do critico — refaturaria a trilha de divergencia do mobile): P-O6R-B06-RECONCILE-BLOQUEADO."
+        "pr": 385,
+        "nota": "Mergeado em 2026-09-11 (PR #385, 15ef3fbe). Entregue em 2026-09-07 (PR na autoria). Captura transacional da unidade faturavel com chave da RUN + SUM/GROUP BY no banco + base de rateio lida da tabela duravel sob contexto RLS por tenant. O parametro `billing` obrigatorio sem default fecha o conjunto de chamadores pelo compilador. RESIDUAL NOMEADO: o script de reconciliacao NAO foi entregue (bloqueado pelo achado R2-A do critico — refaturaria a trilha de divergencia do mobile): P-O6R-B06-RECONCILE-BLOQUEADO."
       },
       {
         "id": "B-O6R-07",
@@ -575,7 +582,8 @@
         "dep": [
           "B-O6R-01"
         ],
-        "estado": "a_fazer"
+        "estado": "parcial",
+        "nota": " [SAN3 (PR #386): parcial — 07a (#369) e 07b (#380) mergearam; SEC-003 fechado; SEC-002 e SEC-004 seguem com residual (B-O6R-07c e B-AV-REAL).]"
       },
       {
         "id": "B-O6R-08",
@@ -654,16 +662,65 @@
         }
       ],
       "bloqueada_por": [
-        "B-O6R-06",
         "B-O6R-07"
       ],
-      "fonte": "A deliberação da junta veda features nos módulos atingidos enquanto houver achado crítico aberto neles."
+      "fonte": "A deliberação da junta veda features nos módulos atingidos enquanto houver achado crítico aberto neles.",
+      "nota": "B-O6R-06 retirado em 2026-09-12 (SAN3, PR #386, ciclo 2 — C3-06): mergeado no PR #385 (15ef3fbe, 2026-09-11); a pendência-mãe P-O6R-B06 está FECHADA."
     }
   },
   "recent": {
-    "as_of": "2026-08-28",
+    "as_of": "2026-09-11",
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
+      {
+        "pr": 386,
+        "data": "2026-09-11",
+        "tipo": "auditoria",
+        "titulo": "Inventario completo e o plano ate a versao vendavel",
+        "resumo": "Todas as pendencias do registro foram conferidas contra o codigo: 52 tinham o estado errado e 49 nem existiam no registro. O gate da versao vendavel ficou com 56 bloqueantes em 37 blocos (plano v5), mais 6 atos que dependem do dono; o prazo de 48 h nao cabe, e isso ficou registrado sem cortar escopo."
+      },
+      {
+        "pr": 385,
+        "data": "2026-09-11",
+        "tipo": "correcao_critica",
+        "titulo": "A cobranca de uso da vistoria nao se perde mais",
+        "resumo": "A unidade que gera cobranca da vistoria passou a nascer junto com a vistoria, na mesma transacao: ou as duas existem, ou nenhuma. E o resumo de custo de nuvem passou a somar tudo no banco — antes parava em 10.000 linhas, cortando justamente a mais recente."
+      },
+      {
+        "pr": 381,
+        "data": "2026-09-08",
+        "tipo": "auditoria",
+        "titulo": "O auditor de agentes para de adivinhar",
+        "resumo": "O verificador do elenco de agentes e skills encolheu ate o que da para checar com seguranca e passou a recusar, com nome, o que nao sabe medir. Sairam do diretorio vivo as cadeiras de junta de blocos ja encerrados."
+      },
+      {
+        "pr": 380,
+        "data": "2026-09-07",
+        "tipo": "seguranca",
+        "titulo": "Todo upload passa por um portao unico",
+        "resumo": "Os cinco caminhos de envio de arquivo passaram por uma checagem unica: o tipo e conferido pelos bytes, nao pelo que o cliente diz, e o download sai sem executar conteudo. Efeito declarado: sem antivirus real, producao e homologacao recusam upload ate o bloco B-AV-REAL."
+      },
+      {
+        "pr": 371,
+        "data": "2026-09-05",
+        "tipo": "correcao_critica",
+        "titulo": "O razao financeiro deixa de fabricar dinheiro",
+        "resumo": "Pagamento, estorno, cheque e fechamento de periodo passaram a acontecer numa unidade atomica por organizacao, com trava de linha. Fecharam 7 defeitos criticos de dinheiro — dois deles achados pela propria junta do bloco."
+      },
+      {
+        "pr": 369,
+        "data": "2026-09-04",
+        "tipo": "seguranca",
+        "titulo": "O tecnico nao aprova mais a propria ordem",
+        "resumo": "Aprovar e rejeitar ganharam permissao propria, separada de editar OS, com separacao de funcoes e escopo por objeto; o bloqueio de conta por tentativas virou atomico. Ficou um residuo nomeado: dez caminhos de subrecurso da OS (bloco B-O6R-07c)."
+      },
+      {
+        "pr": null,
+        "data": "2026-09-08",
+        "tipo": "auditoria",
+        "titulo": "Rodada de governanca e registro (21 PRs, #360 a #384)",
+        "resumo": "Entre os blocos de produto, 21 PRs de governanca e registro: a junta passou a sobreviver a queda de quem a executa, as identidades de jurado queimadas viraram registro, o arnes de teste ganhou medicoes proprias, o registro passou a dizer o que a execucao diz e o caminho da sessao ate o repositorio foi fechado."
+      },
       {
         "pr": 359,
         "data": "2026-08-28",

@@ -1,0 +1,54 @@
+{
+  "jurado": "validador-mestre",
+  "cadeira": "C3",
+  "modelo": "claude-opus-5",
+  "head_medido": "a143d2c33674cc2c3562de40cc9d3a95350cabe5",
+  "voto": "REPROVADO",
+  "itens": {
+    "1": "APROVADO. Diff vazio em src/tests/prisma/frontend/mobile/.github/scripts. Backfill §C3.5 do #385 por EXECUCAO no meu worktree (npm ci proprio): 3 guards de KPI 28/28, kpi-freeze --check em dia, node --check Kpis/app.js OK, pre-condicao git diff --numstat e26eb9e5 ca5fd19a = 0 linhas; pr 385 / merge_commit 15ef3fbe / approved_head e26eb9e5 conferem com gh pr view 385 e a ata do delta. Os 24 removidos sao exatamente os 12 jurado-06-* e jurado-06d-* nos 2 espelhos (nada mais no diretorio). Obituario §3.3/§3.4/§3.5 conferido nos votos e atas; aposentadoria rodada 2 com description somada 24897 como declarado; sync-agent-agents --check 23 OK. roadmap.blocos e recent coerentes com achados e merges (25 PRs #360-#384 MERGED, 4 listados a parte, 21 no agregado). Residuos herdados do #385: C3-06.",
+    "2": "REPROVADO. Confere: valor antigo preservado nas 53 linhas reescritas (54 hunks, 0 perdidos); as 58 linhas removidas sao so status; indice commitado BYTE-IDENTICO ao gerador rodado em copia (sha256 604b7fe9, 57604 bytes); as 11 FECHADAS nominais do R3 conferem por presenca no codigo da ref (arquivo:linha, chamadores, testes, hash ancestral de 15ef3fbe); 4 PARCIAIS com as duas metades conferidas; 6 AUSENTES presentes; REGISTRO fiel a D-Omega4-7-NO-TITLE. Reprova: o REGISTRO atribui o conflito do faturamento do delta a D-Omega4-C1 quando o indice de um titulo ativo por OS e direcao e a D-Omega4-C2, que nao aparece em lugar nenhum (C3-01); e duas pendencias do painel foram marcadas FECHADA sem cumprir o criterio de fechamento registrado, e o residuo saiu do conjunto aberto (C3-03).",
+    "3": "REPROVADO. Confere: plano §0/§1/§4/§9, log e kpis-latest coerentes com o gerador (363 cabecalhos; FECHADAS 72->105; 52 flips = 31+21 = 22,5% de 231; 49 ausentes = 35+14; base 238 linhas/231 IDs, A63 B99/92 C76; 49 itens, 34 blocos = 11G+18M+5P; agenda 57/55,5/57/59,5->72,5 igual ao §9; medianas 28,4 e 57,0; mvp_* intocados com nota). Reprova: status-geral.md publica 103 FECHADAS, 260 ABERTAS na mesma frase que diz 72->105, contra 105/258 do gerador (C3-02)."
+  },
+  "achados": [
+    {
+      "id": "C3-01", "item": 2, "gravidade": "bloqueia", "escopo": "dentro-do-bloco",
+      "evidencia": "decisoes.md@a143d2c3:607 D-Omega4-C2 = idempotencia do faturamento = unique parcial (tenant_id, work_order_id, direction) WHERE deleted_at IS NULL, SEM competencia na chave (senao duplo-faturamento entre meses); :608 D-Omega4-C1 = carimbar invoiced_at/title_id nos itens incluidos e rejeitar mutacao de item faturado (422 item_invoiced). REGISTRO-SAN3-CONFLITOS (decisoes.md:2320-2323) item 1 = P-Omega4-3-REFATURAR-DELTA x D-Omega4-C1, descrevendo o indice financial_titles_wo_direction_active_key (migration add_invoicing:25-27), que e o mecanismo da D-Omega4-C2. PLANO_SAN3.md:391 diz D-Omega4-C1 (um titulo ativo por OS e direcao); :231 e :464 mandam a junta do B-SAN3-02 rever a D-Omega4-C1. grep D-Omega4-C2 em pendencias.md, PLANO e REGISTRO = 0. A propria pendencia (pendencias.md:964-967) poe o bloqueio na idempotencia (2o POST /invoice = 409 already_invoiced) e diz que so os ja carimbados travam. Origem: CR2-01 do critico r2, l.21 (grep no plano: D-Omega4-C1 0), adotado sem ler a decisao.",
+      "motivo": "O REGISTRO nomeia a decisao errada. A D-Omega4-C1 (carimbo) nao impede um titulo complementar dos itens nao carimbados; quem impede e a D-Omega4-C2, ratificada e justificada por dinheiro (duplo faturamento entre meses). Assim o B-SAN3-02 fica autorizado a trocar o indice da D-Omega4-C2 com a junta instruida a rever a D-Omega4-C1: e a consolidacao sem conflito escrito que o §A2 proibe, num invariante financeiro, que e o motivo do quorum unanime deste PR."
+    },
+    {
+      "id": "C3-02", "item": 3, "gravidade": "bloqueia", "escopo": "dentro-do-bloco",
+      "evidencia": "Gerador em copia fora do repo @a143d2c3 -> 363 cabecalhos, FECHADA 105 / ABERTA 258. status-geral.md@a143d2c3 (bloco de 2026-09-11): FECHADAS no indice 72 -> 105 ... (indice: 363 cabecalhos, 103 FECHADAS, 260 ABERTAS, 0 contraditorias). Gerador @544ab67f -> 103/260: a frase nasceu verdadeira ali (git log -S data em 544ab67f). git diff -U0 544ab67f a143d2c3 -- status-geral.md: a v4 reescreveu esta mesma linha (73 -> 103 virou 72 -> 105) e manteve 103/260. O critico r2 apontou esta frase (CR2-06, l.49), e o §13 do plano responde status e log com FECHADAS 72 -> 105.",
+      "motivo": "E o numero do registro no documento que o §A4.1 manda ler antes de todo bloco, e ele diverge da execucao do gerador na mesma frase que traz o valor certo. O defeito nasceu numa correcao do proprio PR (§C7.4-bis) e desmente a resposta do §13 ao CR2-06."
+    },
+    {
+      "id": "C3-03", "item": 2, "gravidade": "bloqueia", "escopo": "dentro-do-bloco",
+      "evidencia": "P-KPI-ROADMAP-CONGELADO (pendencias.md:8873-8886, criada e fechada neste PR): teste de encerramento = guard: bloco com merge_commit no history nao fica a_fazer; as_of >= ultimo merge. Mas kpis-latest.json@a143d2c3 roadmap.as_of = 2026-08-19 (ultimo merge 2026-09-11), e nenhum guard novo (diff vazio em tests/). P-KPI-RECENT-CONGELADO (:5524-5528), criterio de fechamento: a atualizacao nao depende de alguem lembrar; ou a secao deriva do history, ou um guard fica vermelho; prova por mutacao. Linha nova (:5530): FECHADA, os dados foram atualizados, a causa fica com o B-GOV-GUARD-DERIVADOS. Entradas ABERTAS que citam recent/roadmap: so P-O6R-B04 (alheia) e P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (criterio de outra secao). A unica ABERTA com dono B-GOV-GUARD-DERIVADOS, P-SAN3-FLIPS-DE-REGISTRO (:8306-8313), testa linha de status, nao o frescor dos paineis.",
+      "motivo": "Duas linhas FECHADA escritas por este PR sem cumprir o criterio de fechamento que a propria entrada registra: metade feita marcada inteira. O mesmo PR marca as outras 21 como ABERTA (PARCIAL), e a regra 2 do indice diz que parcialidade nao fecha. O residuo (o guard) fica so no plano, que o indice nao le, e sai da resposta a o que esta aberto, a mesma classe pela qual a junta do SAN2-1 reprovou o classificador."
+    },
+    {
+      "id": "C3-04", "item": 2, "gravidade": "nota", "escopo": "dentro-do-bloco",
+      "evidencia": "Prova de P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA: grep -rn /pay frontend/src = 0; PLANO_SAN3.md:144 (item 28): = 0, conferido. Medido: git grep -h -o /pay[A-Za-z_-]* a143d2c3 -- frontend/src -> 34 linhas (12 /payable, 14 /payable-source, 5 /payments, 1 /payee, 2 /payload/payloads) e 0 chamadas a /financial-titles/:id/pay.",
+      "motivo": "A pendencia e real, mas a prova escrita nao se reproduz: quem refizer o comando vera 34 onde o registro diz 0."
+    },
+    {
+      "id": "C3-05", "item": 3, "gravidade": "nota", "escopo": "dentro-do-bloco",
+      "evidencia": "PLANO_SAN3.md §1: 140 candidatos -> 37 + 8 + 50 confirmadas + 24 + 13 = 132 impresso. Tabela do inventario-AUSENTES.md §1: 37 + 8 + 58 linhas AUSENTE + 24 + 13 = 140; as 58 linhas somam 50 IDs.",
+      "motivo": "O placar soma IDs (50) com linhas nas demais classes; quem conferir a conta acha 8 candidatos a menos."
+    },
+    {
+      "id": "C3-06", "item": 1, "gravidade": "nota", "escopo": "pre-existente",
+      "evidencia": "kpis-latest.json@a143d2c3 roadmap: a nota do B-O6R-06 diz Entregue em 2026-09-07 (PR na autoria), sem pr, apesar do merge no #385 em 2026-09-11; trilha_bloqueada.bloqueada_por ainda lista B-O6R-06, embora P-O6R-B06 (que BLOQUEAVA a trilha CHECKLIST P1) agora seja FECHADA; B-O6R-02 concluido sem pr 371, enquanto B-O6R-01 e B-O6R-05 tem pr. Texto identico em 15ef3fbe: autoria do #385, anterior a esta branch.",
+      "motivo": "O painel segue dizendo que a trilha de vistorias espera um bloco ja mergeado. Pendencia nomeada para o B-GOV-GUARD-DERIVADOS ou para o proximo PR que tocar Kpis/."
+    },
+    {
+      "id": "C3-07", "item": 2, "gravidade": "nota", "escopo": "dentro-do-bloco",
+      "evidencia": "Diff do pendencias.md: 9 linhas de emenda (inventario SAN3, fatia AUSENTES §2c), uma com o mesmo texto aplicada a duas entradas da plataforma, contra o §4.4 do plano, que diz: as 8 parciais entraram como emenda.",
+      "motivo": "A contagem declarada nao bate com a aplicada; a diferenca e explicavel, mas nao esta escrita."
+    },
+    {
+      "id": "C3-08", "item": 1, "gravidade": "nota", "escopo": "pre-existente",
+      "evidencia": "ls .claude/worktrees/ -> gov-descuido, gov-elenco, san2-r, san3; git worktree list -> san2-r ausente.",
+      "motivo": "Diretorio de worktree orfao em disco, alheio a esta cadeira e a este PR. Reportado, nao varrido."
+    }
+  ]
+}
