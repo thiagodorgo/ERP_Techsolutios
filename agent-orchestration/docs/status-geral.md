@@ -4426,3 +4426,15 @@ cadeiras nomearam — `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU` (dono `B-SAN3-1
 `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` (dono `B-SAN3-04a`) e `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` (dono
 `B-REG-GERADOR`) — e duas emendas; índice pelo gerador: 369 cabeçalhos / 358 IDs, 103 FECHADAS, 266 ABERTAS. As duas
 identidades novas estão sepultadas (obituário §3.6); a aposentadoria delas espera o merge.
+
+## 2026-09-13 — PR #386: decisão do dono (opção B) aplicada ao plano SAN3
+
+**Decisão do dono (`D-SAN3-PLANO-OPCAO-B`):** caminho B — o plano v5 fica aprovado com os 5 bloqueios da junta do ciclo 2 escritos como condição de entrada; P1 — o `finance` lê OS (`work_orders:read`, pelo `B-SAN3-04a`); P2 — o Financeiro monta orçamento (`customers:read` e `service_catalog:read`, com a `RBAC_MATRIX.md` atualizada no mesmo bloco).
+
+**Aplicado** (plano do orquestrador em `agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`; aplicação por agente distinto, sem commit): §5.6 do plano com as condições CE-G1, CE-G2 e CE-1 a CE-7, marcadas por script na célula de teste de 12 dos 37 blocos; item 16 de 38 para 40 (medido por script), com a `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU`; itens novos 55 (`P-WEB-CONCILIACAO-SEM-TELA`, no `B-SAN3-12` ampliado) e 56 (`P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS`, no `B-SAN3-04a`); `SAN3-04a` na Dep. do `B-SAN3-25`; duas travas novas no §6 (agenda inalterada, 0 violações por script); a `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` fora do gate com a condição escrita (§4.3); registro com 1 pendência nova, 11 emendas e 14 ponteiros corrigidos contra o §4.1; painel com "56 bloqueantes em 37 blocos".
+
+Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep.
+
+Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status.
+
+**Números:** 56 bloqueantes em 37 blocos e 6 atos do dono; melhor caso e realista inalterados; índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS. **Conferência de aplicação: a preencher pela cadeira de registro.**

@@ -2335,3 +2335,30 @@ pelo planejador — a do `B-SAN3-02` revê a `D-Ω4-C2`, a do `B-SAN3-20` revê 
 produto por trás (faturar o delta; vincular cheque a
 título) está no §10 do plano como pergunta ao dono, com default **sim** — o default não reduz escopo. **Até a
 revisão, as duas decisões seguem valendo** e nenhum código as contraria.
+
+## D-SAN3-PLANO-OPCAO-B (decisão do dono, 2026-09-13) — plano SAN3 aprovado com condições de entrada; o Financeiro lê OS e monta orçamento
+
+**Contexto.** O PR #386 (plano SAN3 até a versão vendável) parou no teto (`D-TETO-DOIS-CICLOS`): ciclo 1 REPROVADO
+0 × 3, ciclo 2 REPROVADO 1 × 2 (`J-SAN3-plano-ciclo2.md`). O dossiê
+(`agent-orchestration/omega/reprovacoes/DOSSIE-SAN3-plano-parada.md`) pôs ao dono um caminho (A/B/C/D) e duas
+perguntas de produto. **Respostas do dono, literais (2026-09-13):** caminho — *"B — aprovo com condições"*; P1 — *"Sim,
+lê OS"*; P2 — *"Sim — Financeiro monta orçamento"*.
+
+**O que a decisão faz.**
+
+1. **O plano v5 fica aprovado pelo dono (fonte §A1.1), com os 5 bloqueios do ciclo 2 escritos como condição de
+   entrada dos blocos afetados** (`B-SAN3-18`, `B-O6R-07c`, `B-SAN3-25`, `B-SAN3-12`, `B-SAN3-08`/`B-SAN3-04a`), mais
+   as condições gerais que fecham as duas classes de defeito em todo o plano, os ajustes do ciclo 2 e a correção dos
+   ponteiros do registro. Aplicação: o orquestrador planeja, um agente distinto aplica (§C7.4-bis), **uma cadeira de
+   registro confere a aplicação — não é ciclo de mérito**. O merge do #386 é autorizado por esta decisão, com a
+   conferência verde e o CI verde; o `porteiro-pos-merge` vem depois, como sempre.
+2. **P1 — o papel `finance` passa a ter `work_orders:read`.** O catálogo converge à `RBAC_MATRIX.md`, que já dá
+   `read` em OS ao Financeiro (l.45). Quem concede: o `B-SAN3-04a`. O faturamento continua na aba da OS (`B-SAN3-25`).
+3. **P2 — o Financeiro monta orçamento.** Recebe `customers:read` e `service_catalog:read` (criar, editar e aprovar
+   orçamento ele já tem). **A `RBAC_MATRIX.md` — arquivo-base, fonte §A1.2 — é atualizada no mesmo bloco que concede**
+   (`B-SAN3-04a`): Clientes (l.38) e Serviços (l.41), `finance` de `none` para `read`. Divergência §A2 registrada aqui:
+   a matriz dizia `none`; vale a decisão do dono, e o arquivo-base muda **no bloco**, não neste PR.
+
+**O que a decisão NÃO muda.** A `D-TETO-DOIS-CICLOS` segue valendo — esta é a intervenção humana que ela prescreve. Cada
+bloco continua com planejador em Fable, crítico nos blocos de invariante, inspetor de terreno e junta com o quórum do
+risco dele, antes de qualquer código. O PR do plano não toca código.
