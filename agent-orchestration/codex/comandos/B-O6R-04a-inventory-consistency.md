@@ -91,3 +91,25 @@ próprio PR · junta registrada · limpeza §C5 · porteiro.
 ## Rastreabilidade
 
 ID `B-O6R-04a` · PR # · merge commit · approved head · junta · status `published_per_pr`.
+
+## Emenda do orquestrador — decisões sobre o §13 do plano (2026-09-13)
+
+Plano do bloco: `agent-orchestration/omega/planos/B-O6R-04a-plano.md` (`planejador-mestre`, 2ª instância — a 1ª caiu por
+limite de sessão do Fable; §0 do plano). Decisões, uma por linha, para a ata:
+
+- **(a) Ratificado:** o 2º índice único parcial `(tenant_id, cycle_count_id, item_id) WHERE cycle_count_id IS NOT NULL`, na
+  mesma migração aditiva. A linha do bloco no §5 do plano SAN3 nomeia como causa-raiz "fechamento de contagem sem
+  unicidade", e este índice é o backstop de banco dessa unicidade. A autorização nominal de `prisma/` fica estendida a ele
+  (aditivo, down testado); o crítico e a junta o julgam como parte do bloco.
+- **(b)** `Ω6R-DAT-002`/`DAT-003` seguem o precedente do #385: o PR do bloco os leva a `aguardando_merge` em
+  `docs/revisoes/O6R/achados.jsonl` e no `REGISTRO_ACHADOS_O6R.md` (guard `kpi-achados-paridade` verde), e o fechamento vem no
+  backfill pós-merge do PR seguinte. Os dois arquivos entram no escopo permitido.
+- **(c)** As suítes `-db` novas entram na lista `SUITES` de `.github/workflows/ci.yml` **neste bloco** — uma linha por suíte, no
+  lugar reservado e no formato das vizinhas (precedente: decisão E3 do ciclo 5 do `B-O6R-02`). Suíte de invariante que não roda
+  na CI não prova nada. `.github/workflows/ci.yml` entra no escopo **só** para essas linhas; a `P-O6R-B04-SUITES-LIST-CI` não nasce.
+- **(d)** O TOCTOU de `recordEntryCount` (lançar contagem numa contagem que está fechando) é a mesma propriedade do bloco —
+  consistência da contagem sob concorrência: **entra no bloco**, com teste de vermelho-controle próprio. Fechar a propriedade,
+  não a instância (contra a recomendação do plano, que preferia pendência).
+- **(e)** O journal em memória da porta (§3.4 do plano) fica fora; vira pendência só se a junta exigir.
+- **(f)** As dívidas do #386 vão no `B-SAN3-04a`, salvo se este bloco ficar pronto para mergear antes dele — então o orquestrador
+  as acrescenta aqui.
