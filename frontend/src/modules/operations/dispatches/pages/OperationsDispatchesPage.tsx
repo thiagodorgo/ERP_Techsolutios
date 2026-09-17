@@ -41,6 +41,7 @@ export function OperationsDispatchesPage() {
     workOrderId: initialWorkOrderId || undefined,
   });
   const [selectedDispatch, setSelectedDispatch] = useState<DispatchDetail | DispatchListItem | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [quickStatusDispatch, setQuickStatusDispatch] = useState<DispatchListItem | null>(null);
   const [reassignTarget, setReassignTarget] = useState<DispatchListItem | null>(null);
   const [showCreate, setShowCreate] = useState(Boolean(initialWorkOrderId && initialOperatorUserId));
@@ -60,10 +61,14 @@ export function OperationsDispatchesPage() {
     [activeContext, session?.accessToken],
   );
 
+  // B-SAN3-01 (emenda (a) do orquestrador) — o service não fabrica mais despacho no erro: o item da lista já
+  // selecionado fica no painel e a falha vira aviso, nunca `dispatch-000101` com timeline inventada.
   async function loadDetail(dispatch: DispatchListItem) {
     setSelectedDispatch(dispatch);
+    setDetailError(null);
     const detail = await getDispatchFromApi(context, dispatch.id);
-    setSelectedDispatch(detail.dispatch);
+    if (detail.dispatch) setSelectedDispatch(detail.dispatch);
+    else setDetailError("Não foi possível carregar os detalhes deste despacho.");
   }
 
   useEffect(() => {
@@ -136,7 +141,16 @@ export function OperationsDispatchesPage() {
             />
           ) : null}
         </div>
-        {selectedDispatch ? <DispatchDetailPanel dispatch={selectedDispatch} /> : null}
+        {selectedDispatch ? (
+          <div style={{ display: "grid", gap: "var(--space-16)" }}>
+            {detailError ? (
+              <div role="alert" data-state="error">
+                <Alert title="Detalhes indisponíveis" tone="warning">{detailError}</Alert>
+              </div>
+            ) : null}
+            <DispatchDetailPanel dispatch={selectedDispatch} />
+          </div>
+        ) : null}
       </section>
 
       {quickStatusDispatch ? (

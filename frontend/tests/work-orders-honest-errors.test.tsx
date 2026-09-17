@@ -639,8 +639,9 @@ test("[P4] detalhe: not-found / forbidden / error / stale são 4 estados distint
 // =============================== G. Guard estrutural — mock só atrás de isMockMode() ===============================
 
 /**
- * Devolve as linhas que citam `getMock*` FORA de um ramo `isMockMode()` (import excluído). Um ramo é a
- * própria linha `if (isMockMode()) …` ou o bloco `if (isMockMode()) { … }` até a chave que fecha.
+ * Devolve as linhas de CÓDIGO que citam `getMock*` FORA de um ramo `isMockMode()` (import e linha só de
+ * comentário excluídos — comentário não alcança o mock). Um ramo é a própria linha `if (isMockMode()) …` ou o
+ * bloco `if (isMockMode()) { … }` até a chave que fecha.
  */
 function mockLeaks(source: string): number[] {
   const leaks: number[] = [];
@@ -649,7 +650,7 @@ function mockLeaks(source: string): number[] {
     const opensBlock = /if \(isMockMode\(\)\) \{/.test(line);
     const inBlock = depth > 0;
     if (opensBlock || inBlock) depth += (line.match(/\{/g) ?? []).length - (line.match(/\}/g) ?? []).length;
-    const allowed = /^\s*import\b/.test(line) || /isMockMode\(\)/.test(line) || inBlock || opensBlock;
+    const allowed = /^\s*(import\b|\/\/)/.test(line) || /isMockMode\(\)/.test(line) || inBlock || opensBlock;
     if (/getMock/.test(line) && !allowed) leaks.push(index + 1);
     if (depth < 0) depth = 0;
   });
@@ -660,6 +661,9 @@ test("[G1] work-orders.service e dispatches.service: todo getMock* fica atrás d
   // Auto-teste do guard: reintroduzir `?? getMockWorkOrderDetail(id)` fora do ramo mock TEM de ser pego.
   assert.deepEqual(mockLeaks("if (isMockMode()) return getMockX();\nreturn adapt(r) ?? getMockWorkOrderDetail(id);"), [2]);
   assert.deepEqual(mockLeaks("if (isMockMode()) {\n  const c = getMockX();\n  return c;\n}\nreturn adapt(r);"), []);
+  // Comentário não alcança o mock; código com comentário no fim da linha continua sendo código.
+  assert.deepEqual(mockLeaks("// antes: ?? getMockWorkOrderDetail(id)\nreturn adapt(r);"), []);
+  assert.deepEqual(mockLeaks("return adapt(r) ?? getMockWorkOrderDetail(id); // volta do mock"), [1]);
 
   for (const file of ["frontend/src/modules/work-orders/work-orders.service.ts", "frontend/src/modules/operations/dispatches/dispatches.service.ts"]) {
     const source = await readFile(new URL(`../../${file}`, import.meta.url), "utf8");

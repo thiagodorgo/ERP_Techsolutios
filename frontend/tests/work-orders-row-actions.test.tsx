@@ -241,7 +241,8 @@ test("[F1] advanceWorkOrderStatus: envia PATCH /status com o próximo status", a
     url = String(input);
     method = String(init?.method);
     body = JSON.parse(String(init?.body));
-    return new Response(JSON.stringify({ data: { id: "wo-1" } }), { status: 200, headers: { "content-type": "application/json" } });
+    // B-SAN3-01: o 2xx precisa trazer uma OS parseável — o `?? mock` que cobria `{ data: { id } }` saiu do service.
+    return new Response(JSON.stringify({ data: { id: "wo-1", code: "OS-1", title: "x", status: "accepted", priority: "high", created_at: PAST } }), { status: 200, headers: { "content-type": "application/json" } });
   }) as typeof fetch;
   try {
     await advanceWorkOrderStatus({}, "wo-1", "accepted");
@@ -314,7 +315,8 @@ test("[H1] runAdvance: sucesso → refresh, sem erro, busy sobe e desce", async 
   const { runAdvance } = await import("../src/modules/work-orders/work-orders-row.handlers");
   const d = spyDeps();
   const original = globalThis.fetch;
-  globalThis.fetch = (async () => new Response(JSON.stringify({ data: { id: "wo-1" } }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+  // B-SAN3-01: o 2xx precisa trazer uma OS parseável — o `?? mock` que cobria `{ data: { id } }` saiu do service.
+  globalThis.fetch = (async () => new Response(JSON.stringify({ data: { id: "wo-1", code: "OS-1", title: "x", status: "on_site", priority: "high", created_at: PAST } }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
   try {
     await runAdvance(d, ORDER);
     assert.equal(d.refreshed, 1);
@@ -382,7 +384,8 @@ test("[H5] runRevokeConfirm: sucesso → true + refresh; erro → mensagem (sem 
   const original = globalThis.fetch;
   try {
     let refreshed = 0;
-    globalThis.fetch = (async () => new Response(JSON.stringify({ data: { id: "d9" } }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+    // B-SAN3-01: o 2xx precisa trazer um despacho parseável — o `?? mock` que cobria `{ data: { id } }` saiu do service.
+    globalThis.fetch = (async () => new Response(JSON.stringify({ data: { id: "d9", work_order_id: "wo-1", operator_user_id: "u1", status: "cancelled", priority: "high", created_at: PAST } }), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
     const ok = await runRevokeConfirm({ context: {}, refresh: async () => { refreshed += 1; } }, target, "cliente remarcou");
     assert.equal(ok, true);
     assert.equal(refreshed, 1);

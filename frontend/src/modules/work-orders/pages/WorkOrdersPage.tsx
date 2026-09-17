@@ -1,14 +1,16 @@
 import { AlertTriangle, CheckCircle2, Plus, Search, Send, UserRound, Wrench } from "lucide-react";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ClickableKpiCard } from "../../../components/kpi";
+import { ClickableKpiCard, type KpiDetail } from "../../../components/kpi";
 import { KpiStatCard, PageHeader, StatusPill, TablePager, type KpiStatTag } from "../../../components/patterns";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
-import { buildWorkOrdersKpiDetails } from "../work-orders-kpi-detail";
+import { buildWorkOrdersKpiDetails, type WorkOrdersKpiKey } from "../work-orders-kpi-detail";
+import type { WorkOrdersListStatus } from "../work-orders.state";
 import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
+import { StaleDataBanner } from "../components/StaleDataBanner";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
 import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
 import { runAdvance, runRevokeConfirm, runRevokeDiscovery, type RevokeTarget } from "../work-orders-row.handlers";
@@ -130,7 +132,9 @@ const TAG_DONE: KpiStatTag = { label: "finalizadas", bg: "#DCFCE7", fg: "#15803D
 
 export function WorkOrdersPage() {
   const navigate = useNavigate();
-  const { items, loading, source, refresh, context } = useWorkOrders(STABLE_FILTERS);
+  // B-SAN3-01 (P-008) — `status` decide o painel (§7): vazio ≠ erro ≠ sem permissão; `stale` acende a faixa
+  // "dados desatualizados" sem apagar a lista. Nada aqui recebe OS fabricada.
+  const { items, loading, source, status, error, stale, lastUpdatedAt, refresh, context } = useWorkOrders(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
   const { permissions } = usePermissions();
@@ -220,6 +224,8 @@ export function WorkOrdersPage() {
 
   const canDispatch = permissions.includes("field_dispatch:create");
   const kpiSkeleton = loading && items.length === 0;
+  // Erro nunca vira número (§4.3-2): com a lista em erro/sem permissão os KPIs mostram "—", sem pop-up sobre "0".
+  const degraded = status === "error" || status === "forbidden";
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -237,75 +243,12 @@ export function WorkOrdersPage() {
         }
       />
 
-      {/* KPIs de decisão — contagens reais derivadas da própria lista */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12, marginBottom: 14 }} aria-live="polite">
-        {kpiSkeleton ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="pat-kpi" aria-hidden="true">
-              <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
-              <div className="pat-skel" style={{ width: 54, height: 24, marginTop: 12 }} />
-              <div className="pat-skel" style={{ width: "70%", height: 12, marginTop: 8 }} />
-            </div>
-          ))
-        ) : (
-          <>
-            <ClickableKpiCard detail={kpiDetails.abertas}>
-              <KpiStatCard
-                icon={Wrench}
-                iconColor="#2563EB"
-                iconBg="#EFF6FF"
-                value={kpis.abertas}
-                label="OS abertas"
-                hint="ainda não concluídas nem canceladas"
-                tag={kpis.semTecnico > 0 ? { label: `${kpis.semTecnico} sem técnico`, bg: "#FEF3C7", fg: "#B45309" } : undefined}
-              />
-            </ClickableKpiCard>
-            <ClickableKpiCard detail={kpiDetails.andamento}>
-              <KpiStatCard
-                icon={Send}
-                iconColor="#0369A1"
-                iconBg="#F0F9FF"
-                value={kpis.andamento}
-                label="Em andamento"
-                hint="técnico em campo agora"
-                tag={kpis.atrasadasEmCampo === 0 ? TAG_ON_TIME : TAG_LATE}
-              />
-            </ClickableKpiCard>
-            {/* Slot crítico do design ("SLA em risco") ocupado por Atrasadas — precedente do PR-A. */}
-            <ClickableKpiCard detail={kpiDetails.atrasadas}>
-              <KpiStatCard
-                icon={AlertTriangle}
-                iconColor={kpis.atrasadas > 0 ? "#DC2626" : "#15803D"}
-                iconBg={kpis.atrasadas > 0 ? "#FEF2F2" : "#F0FDF4"}
-                value={kpis.atrasadas}
-                label="Atrasadas"
-                hint="agenda vencida e sem conclusão"
-                tag={kpis.atrasadas > 0 ? TAG_ACT_NOW : TAG_UNDER_CONTROL}
-                border={kpis.atrasadas > 0 ? "#FCA5A5" : undefined}
-              />
-            </ClickableKpiCard>
-            <ClickableKpiCard detail={kpiDetails.concluidas}>
-              <KpiStatCard
-                icon={CheckCircle2}
-                iconColor="#15803D"
-                iconBg="#F0FDF4"
-                value={kpis.concluidas}
-                label="Concluídas"
-                hint="no total da lista"
-                tag={TAG_DONE}
-              />
-            </ClickableKpiCard>
-          </>
-        )}
-      </div>
+      {/* KPIs de decisão — contagens reais derivadas da própria lista; "—" quando a lista está em erro */}
+      <WorkOrdersKpiGrid kpis={kpis} kpiDetails={degraded ? null : kpiDetails} skeleton={kpiSkeleton} degraded={degraded} />
 
-      {source === "fallback" ? (
-        <div role="alert" className="pat-banner pat-banner--warning">
-          <AlertTriangle size={14} aria-hidden="true" />
-          <span>Sem conexão com a API — exibindo dados locais.</span>
-          <button type="button" className="pat-link" onClick={() => void refresh()}>
-            Tentar novamente
-          </button>
+      {stale ? (
+        <div style={{ marginBottom: 12 }}>
+          <StaleDataBanner lastUpdatedAt={lastUpdatedAt} onRetry={() => void refresh()} />
         </div>
       ) : source === "mock" ? (
         <div style={{ display: "flex", gap: 7, marginBottom: 12 }}>
@@ -344,8 +287,8 @@ export function WorkOrdersPage() {
               </button>
             ))}
           </div>
-          {/* "atualizado há X min" do design omitido: sem timestamp real exposto pelo hook. */}
-          <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>
+          {/* "atualizado há X min" do design omitido: sem timestamp real exposto pelo hook. Contagem só com lista válida. */}
+          {degraded ? null : <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>}
         </div>
 
         <div className="pat-os-grid pat-os-grid--head" aria-hidden="true">
@@ -368,13 +311,10 @@ export function WorkOrdersPage() {
               <div className="pat-skel" style={{ height: 12 }} />
             </div>
           ))
+        ) : degraded ? (
+          <WorkOrdersLoadState status={status} message={error} onRetry={() => void refresh()} />
         ) : total === 0 ? (
-          <div style={{ padding: "48px 18px", textAlign: "center" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>Nenhuma ordem de serviço</div>
-            <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 4 }}>
-              {q || tab !== "all" ? "Ajuste a busca ou os filtros acima." : "As ordens atribuídas à sua organização aparecem aqui."}
-            </div>
-          </div>
+          <WorkOrdersLoadState status="empty" filtered={Boolean(q) || tab !== "all"} />
         ) : (
           pageItems.map((o: WorkOrderListItem) => {
             const st = STATUS_TONE[o.status];
@@ -474,7 +414,7 @@ export function WorkOrdersPage() {
           })
         )}
 
-        {!loading && total > 0 ? (
+        {!loading && !degraded && total > 0 ? (
           <TablePager
             pageSize={pageSize}
             onPageSize={(size) => {
@@ -499,6 +439,162 @@ export function WorkOrdersPage() {
           onClose={() => setRevoke(null)}
         />
       ) : null}
+    </div>
+  );
+}
+
+export type WorkOrdersKpis = {
+  readonly abertas: number;
+  readonly andamento: number;
+  readonly atrasadas: number;
+  readonly concluidas: number;
+  readonly semTecnico: number;
+  readonly atrasadasEmCampo: number;
+};
+
+const skeletonCard = (index: number) => (
+  <div key={index} className="pat-kpi" aria-hidden="true">
+    <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
+    <div className="pat-skel" style={{ width: 54, height: 24, marginTop: 12 }} />
+    <div className="pat-skel" style={{ width: "70%", height: 12, marginTop: 8 }} />
+  </div>
+);
+
+/**
+ * B-SAN3-01 — os 4 KPIs da lista, extraídos para o harness SSR (work-orders-honest-errors P1). `degraded`
+ * (lista em erro / sem permissão): valor "—", sem selo e sem pop-up — erro nunca vira número (§4.3-2, D-007).
+ */
+export function WorkOrdersKpiGrid({
+  kpis,
+  kpiDetails,
+  skeleton,
+  degraded,
+}: {
+  readonly kpis: WorkOrdersKpis;
+  readonly kpiDetails: Record<WorkOrdersKpiKey, KpiDetail> | null;
+  readonly skeleton: boolean;
+  readonly degraded: boolean;
+}) {
+  const clickable = !degraded && kpiDetails !== null;
+  const value = (n: number) => (degraded ? "—" : n);
+  const wrap = (key: WorkOrdersKpiKey, card: ReactElement) =>
+    clickable ? (
+      <ClickableKpiCard key={key} detail={kpiDetails[key]}>
+        {card}
+      </ClickableKpiCard>
+    ) : (
+      <div key={key}>{card}</div>
+    );
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12, marginBottom: 14 }} aria-live="polite">
+      {skeleton ? (
+        Array.from({ length: 4 }).map((_, index) => skeletonCard(index))
+      ) : (
+        <>
+          {wrap(
+            "abertas",
+            <KpiStatCard
+              icon={Wrench}
+              iconColor="#2563EB"
+              iconBg="#EFF6FF"
+              value={value(kpis.abertas)}
+              label="OS abertas"
+              hint="ainda não concluídas nem canceladas"
+              tag={!degraded && kpis.semTecnico > 0 ? { label: `${kpis.semTecnico} sem técnico`, bg: "#FEF3C7", fg: "#B45309" } : undefined}
+            />,
+          )}
+          {wrap(
+            "andamento",
+            <KpiStatCard
+              icon={Send}
+              iconColor="#0369A1"
+              iconBg="#F0F9FF"
+              value={value(kpis.andamento)}
+              label="Em andamento"
+              hint="técnico em campo agora"
+              tag={degraded ? undefined : kpis.atrasadasEmCampo === 0 ? TAG_ON_TIME : TAG_LATE}
+            />,
+          )}
+          {/* Slot crítico do design ("SLA em risco") ocupado por Atrasadas — precedente do PR-A. */}
+          {wrap(
+            "atrasadas",
+            <KpiStatCard
+              icon={AlertTriangle}
+              iconColor={!degraded && kpis.atrasadas > 0 ? "#DC2626" : "#15803D"}
+              iconBg={!degraded && kpis.atrasadas > 0 ? "#FEF2F2" : "#F0FDF4"}
+              value={value(kpis.atrasadas)}
+              label="Atrasadas"
+              hint="agenda vencida e sem conclusão"
+              tag={degraded ? undefined : kpis.atrasadas > 0 ? TAG_ACT_NOW : TAG_UNDER_CONTROL}
+              border={!degraded && kpis.atrasadas > 0 ? "#FCA5A5" : undefined}
+            />,
+          )}
+          {wrap(
+            "concluidas",
+            <KpiStatCard
+              icon={CheckCircle2}
+              iconColor="#15803D"
+              iconBg="#F0FDF4"
+              value={value(kpis.concluidas)}
+              label="Concluídas"
+              hint="no total da lista"
+              tag={degraded ? undefined : TAG_DONE}
+            />,
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+const statePanel = { padding: "48px 18px", textAlign: "center" } as const;
+const stateTitle = { fontSize: 14, fontWeight: 700, color: "#0F172A" } as const;
+const stateDetail = { fontSize: 12.5, color: "#64748B", marginTop: 4 } as const;
+
+/**
+ * B-SAN3-01 — o corpo da tabela quando NÃO há linhas para mostrar, um painel por estado (§7), marcado por
+ * `data-state` (é por ele que os testes SSR afirmam o estado — comportamento, não cópia):
+ *   error     → a consulta falhou (role="alert" + "Tentar novamente"); NUNCA lista de demonstração
+ *   forbidden → o ator não tem `work_orders:read` — acesso não permitido, não é falha de sistema
+ *   empty     → a organização não tem OS (ou o filtro escondeu todas)
+ */
+export function WorkOrdersLoadState({
+  status,
+  message,
+  filtered = false,
+  onRetry,
+}: {
+  readonly status: Exclude<WorkOrdersListStatus, "loading" | "ready">;
+  readonly message?: string | null;
+  readonly filtered?: boolean;
+  readonly onRetry?: () => void;
+}) {
+  if (status === "error") {
+    return (
+      <div role="alert" data-state="error" style={statePanel}>
+        <div style={stateTitle}>Não foi possível carregar as ordens de serviço</div>
+        <div style={stateDetail}>{message ?? "Tente novamente em instantes."}</div>
+        {onRetry ? (
+          <button type="button" className="pat-link" style={{ marginTop: 12 }} onClick={onRetry}>
+            Tentar novamente
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  if (status === "forbidden") {
+    return (
+      <div data-state="forbidden" style={statePanel}>
+        <div style={stateTitle}>Acesso não permitido</div>
+        <div style={stateDetail}>Você não tem permissão para ver as ordens de serviço desta organização.</div>
+      </div>
+    );
+  }
+  return (
+    <div data-state="empty" style={statePanel}>
+      <div style={stateTitle}>Nenhuma ordem de serviço</div>
+      <div style={stateDetail}>{filtered ? "Ajuste a busca ou os filtros acima." : "As ordens atribuídas à sua organização aparecem aqui."}</div>
     </div>
   );
 }

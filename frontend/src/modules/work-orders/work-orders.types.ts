@@ -173,6 +173,20 @@ export type WorkOrdersData = {
   readonly pagination: WorkOrdersPagination;
   readonly source: WorkOrdersSource;
   readonly fallbackReason?: string;
+  // B-SAN3-01 — 403 distinto de erro de sistema (§7 "acesso não permitido"). Só o caminho real preenche;
+  // `source: "fallback"` + `forbidden: true` = a lista está vazia porque o ator não pode vê-la, não porque falhou.
+  readonly forbidden?: boolean;
+};
+
+// B-SAN3-01 (P-008) — resultado do detalhe SEM OS fabricada. `workOrder: null` com a razão discriminada:
+// `notFound` (404 — inclusive cross-tenant, o backend não vaza existência), `forbidden` (403) ou `fallbackReason`
+// (5xx/rede/2xx sem OS). Espelho de `platform-tenant-detail.types.ts`. O service NUNCA lança.
+export type WorkOrderDetailResult = {
+  readonly workOrder: WorkOrderDetail | null;
+  readonly source: WorkOrdersSource;
+  readonly fallbackReason?: string;
+  readonly notFound?: boolean;
+  readonly forbidden?: boolean;
 };
 
 export type WorkOrdersFilters = {

@@ -113,11 +113,14 @@ function ChecklistSetCell({ workOrder }: { workOrder: WorkOrderDetail }) {
 export function GeneralInfoTab({
   workOrder,
   timeline,
+  timelineUnavailable = false,
   context,
   canDecide,
 }: {
   workOrder: WorkOrderDetail;
   timeline: WorkOrderEvent[];
+  // B-SAN3-01 — a OS carregou, mas o histórico não: distinto de "sem eventos registrados" (nunca 3 eventos inventados).
+  timelineUnavailable?: boolean;
   context: Parameters<typeof listPendingApprovals>[0];
   canDecide: boolean;
 }) {
@@ -168,7 +171,9 @@ export function GeneralInfoTab({
         {/* timeline */}
         <div style={{ ...card, padding: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 14 }}>Histórico</div>
-          {timeline.length === 0 ? (
+          {timelineUnavailable ? (
+            <div data-state="error" style={{ fontSize: 12.5, color: "#B45309" }}>Histórico indisponível no momento.</div>
+          ) : timeline.length === 0 ? (
             <div style={{ fontSize: 12.5, color: "#94A3B8" }}>Sem eventos registrados.</div>
           ) : (
             timeline.map((ev, i) => (
