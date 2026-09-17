@@ -113,3 +113,34 @@ limite de sessão do Fable; §0 do plano). Decisões, uma por linha, para a ata:
 - **(e)** O journal em memória da porta (§3.4 do plano) fica fora; vira pendência só se a junta exigir.
 - **(f)** As dívidas do #386 vão no `B-SAN3-04a`, salvo se este bloco ficar pronto para mergear antes dele — então o orquestrador
   as acrescenta aqui.
+
+## Emenda 2 do orquestrador — rodada 1 do crítico: NÃO (2026-09-17)
+
+Parecer: `agent-orchestration/omega/juntas/votos/B-O6R-04a/00-critico-r1.md` (4 `bloqueia` · 4 ajuste · 3 nota; 13 ataques, 5
+sobreviveram; sondas em `critico-apoio/`). O plano volta ao `planejador-mestre` (Fable, obrigatório no replanejamento — §C7.6)
+para a **v2**; o crítico faz a **rodada 2, a última**. Decisões do orquestrador, além das (a)–(f) da emenda 1, que seguem valendo:
+
+- **(g) A-05 — censo de duplicatas em staging e produção é ATO DO DONO, dentro do gate.** O código atual produz, em 10/10
+  corridas, o dado que faz os dois índices únicos abortarem (`23505`). A migração é escrita **fail-closed**: aborta com mensagem
+  nomeando os grupos duplicados e **nunca deduplica** (qual estorno "vale" é dinheiro — decisão do dono, não do bloco). O bloco
+  entrega o SQL do censo, somente leitura (`scripts/inventory-duplicates-census.sql`, **autorizado nominalmente**), e o roteiro
+  para o dono rodá-lo em staging e produção **antes do próximo deploy**; nasce `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` com dono
+  = ato do dono. O merge do bloco **não** depende do censo; o deploy, sim — e o dono é quem deploya (`deploy-*.yml`). O ato entra
+  na recontagem do `B-SAN3-10` (§4.2 do plano SAN3: eram 6).
+- **(h) A-06 — o fechamento de contagem não pode ficar impossível acima de um teto que o plano não conhece.** O timeout global do
+  Prisma **não** sobe (R2 do plano continua); o planejador desenha o V6 em unidades que cabem no timeout (lotes ou por item,
+  com estado retomável e o invariante de unicidade preservado sob concorrência) e **mede** a duração para N = 250, 500, 1000 e
+  o `SNAPSHOT_LIMIT` (10 000), com o head-base como controle.
+- **(i) A-03 — a ordem de locks é provada por execução, não declarada:** toda via que toma lock (inclusive `open`, `recalculateAbc`
+  e `cancelSession`) na mesma ordem canônica medida, com teste de deadlock (`40P01`) que fica vermelho no head-base do desenho
+  antigo; ou um mecanismo que dispense ordem (o planejador escolhe e justifica).
+- **(j) A-01/A-04 — a decisão (d) fica:** o TOCTOU de `recordEntryCount` entra no bloco **com desenho e teste** na v2; a "1 linha"
+  do §13-d é dado podre e sai do plano.
+- **(k) A-02 —** `cancelSession` entra no mapa e no conserto, com teste de vermelho-controle (cancelar por cima de fechamento
+  aplicado → recusado).
+- **(l) A-07 — a v2 carrega as decisões dentro do próprio plano:** escopo permitido com `.github/workflows/ci.yml` (só as linhas
+  de `SUITES`, no lugar que o N-02 mediu — o "reservado" não existe mais), `docs/revisoes/O6R/achados.jsonl` e
+  `REGISTRO_ACHADOS_O6R.md` (emenda 1-b), o SQL do censo (g); a `P-O6R-B04-SUITES-LIST-CI` não nasce; o 2º índice está
+  ratificado; nada de "só com ratificação".
+- **(m) A-08 — T-D enumera pela propriedade:** todo escritor de `stock_movements` (`create`, `createMany`, `upsert`, SQL cru),
+  gerado do código, com default **negar** (CE-G1(b)); N-03: o plano diz o status HTTP dos perdedores por tempo e por deadlock.
