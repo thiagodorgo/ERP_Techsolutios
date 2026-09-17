@@ -4440,3 +4440,40 @@ Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação
 Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS.
 
 **Números:** 56 bloqueantes em 37 blocos e 6 atos do dono; melhor caso e realista inalterados; índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS. **Conferência de aplicação (`agente-ci-doutor`):** NÃO CONFERE em `042e689e` (CONF-01, `bloqueia`; CONF-02, nota), **CONFERE em `bb3f5925`** — `agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`.
+
+## 2026-09-17 — `B-SAN3-01` implementado (PR na autoria): a web deixa de fabricar OS quando o backend recusa — `P-008` FECHADA
+
+**Primeiro bloco de execução da rodada SAN3** (frente 3, item 4 do gate — perda de dado). Branch
+`fix/web-wo-sem-fallback-fabricado`, base `origin/main@02bd7dab`, plano do `planejador-mestre` (Fable) com a emenda do
+orquestrador ((a) `OperationsDispatchesPage.tsx` só para `loadDetail` + X8/X9; (b) o §4.1 do `PLANO_SAN3.md` não muda;
+(c) as dívidas do #386 ficam no `B-SAN3-04a`; (d) testes com `tenant_admin`/`manager`). Papéis (§C7.4-bis): quem
+achou = inventário SAN3 (fatia C1) e censo do plano; quem planejou = `planejador-mestre`; quem desenvolveu = dev de
+identidade nova (a 1ª instância caiu por 429 sem commit; a 2ª refez tudo).
+
+**Entregue.** `work-orders.service.ts` e `dispatches.service.ts` sem `catch`-mock fora de `isMockMode()` (guard G1 por
+mutação); `work-orders.state.ts` (reducers puros: vazio ≠ erro ≠ sem permissão ≠ não encontrada ≠ desatualizado);
+`work-orders-create.handlers.ts` (`runCreateWorkOrder` — mensagem por `reason`/status, nunca navega sem `id`, digitado
+preservado); hooks com `allSettled`/reducer; `WorkOrdersPage` (KPIs "—" no erro, painéis `data-state`), `WorkOrderCreatePage`
+(alerta na própria página), `WorkOrderDetailPage` (`WorkOrderDetailView` puro; not-found/forbidden/error/stale; banner
+"dados locais" removido), `GeneralInfoTab` (`timelineUnavailable`), `OperationsDispatchesPage.loadDetail` (mantém o item e
+avisa). E2E: caso defasado substituído por E1-E3.
+
+**Números (execução real):** smoke **1126 → 1173/1173** (+47, vermelho-controle no head-base: 43 vermelhos no commit A,
+0 no B) · backend **2995/2997 reexecutado** em cluster descartável próprio (0 fail, 2 skipped `RBAC_DB_PARITY`) · flutter
+carregado 864/864 (diff de `mobile/` vazio) · blocos **163 → 164** · `mvp_*` intocados · `check`/`build`/`kpi-freeze
+--check`/`git diff --check` verdes.
+
+**Registro.** `P-008` FECHADA (linha de status reescrita, agendamento riscado, emenda com a prova);
+`P-SAN3-01-DESPACHO-DETALHE-FABRICADO` FECHADA no mesmo PR; 7 pendências pré-existentes do censo ABERTAS com dono
+(`B-SAN3-06a` ×2, `B-SAN3-08` ×2, fila pós-gate ×3) — uma delas achada pelo dev ao ligar o contrato novo
+(`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`: o alerta de erro de Despachos se intitula "Dados demonstrativos").
+Índice pelo gerador: 378 cabeçalhos / 367 IDs, 105 FECHADAS, 273 ABERTAS.
+
+**Divergências plano × código declaradas pelo dev (para a junta e o orquestrador):** roadmap SAN3 no painel NÃO
+inaugurado (emenda (c) × §8.6 do plano); 3 fixtures de `work-orders-row-actions.test.tsx` trocadas (só passavam pelo
+`?? mock`; asserções intactas); arquivo novo `StaleDataBanner.tsx` e `WorkOrdersKpiGrid` extraído; `detailError` + aviso
+em `OperationsDispatchesPage.tsx`; a 8ª pendência; "Total: 48" do §6.2 é 47.
+
+**Próximo passo:** orquestrador confere e empurra a branch → `inspetor-de-terreno-da-junta` → junta (unanimidade de 3 +
+`cognicao-visual`) → CI → squash → §C5 → porteiro. Ao mergear, abre as travas `SAN3-25` (service de OS) e `SAN3-10`
+(`tests/e2e/**`).

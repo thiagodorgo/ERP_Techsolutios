@@ -92,12 +92,13 @@
   desse escopo.
 - impacto: em modo mock/offline o Detalhe de OS mostra vinculos ilustrativos; o endpoint real continua primario.
   Os testes constroem o detail diretamente (nao dependem do mock).
-- status: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders)
+- status: FECHADA (2026-09-17, PR do `B-SAN3-01` — a web deixou de fabricar OS e despacho quando o backend recusa ou responde vazio: lista vazia → vazio; create recusado → erro na própria página, sem navegar, com o digitado preservado; detalhe 404/403/erro → estado; prova: `frontend/tests/work-orders-honest-errors.test.tsx`, 47 casos, 43 vermelhos no head-base `b2da5ede`. Antes: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders))
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia C1: o fallback fabrica OS em três casos — lista vazia (6 OS inventadas com aviso falso de "sem conexão"), create recusado pelo backend (navega para `OS-FALLBACK` e o que o operador digitou se perde) e detalhe com erro (`frontend/src/modules/work-orders/work-orders.service.ts:28,46-50,60-72`); bloqueia o vendável.
 
-- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+- **agendamento:** ~~DIFERIDO-LEVE~~ (triagem SAN2-1, 2026-08-29; encerrado pelo fechamento de 2026-09-17)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 - **dono:** `B-SAN3-01` (plano SAN3, §4.1 item 4 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **emenda (B-SAN3-01, 2026-09-17 — fechamento):** `frontend/src/modules/work-orders/work-orders.service.ts` sem `catch`/`?? mock` fora de `isMockMode()` (guard estrutural G1, provado por mutação) e `frontend/src/modules/operations/dispatches/dispatches.service.ts` idem — o censo do plano (§2.2, 19 ocorrências da classe "fabrica entidade", 17 na fronteira) achou a MESMA classe nos despachos (4 despachos inventados, consumidos também pelo Dashboard e pela aba Mobile da OS). `useWorkOrders`/`useWorkOrderDetail` decidem o estado por reducers puros (`work-orders.state.ts`: vazio ≠ erro ≠ sem permissão ≠ não encontrada ≠ desatualizado); `WorkOrderCreatePage` envia por `runCreateWorkOrder` (mensagem por `reason`/status, nunca navega sem `id`, formulário intacto). O modo mock EXPLÍCITO (`VITE_USE_MOCKS=true`) permanece por decisão do plano (§1) — matar a ficção é dos blocos `B-SAN3-06a/06b`. O que o censo achou FORA da fronteira virou pendência nomeada: `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` (fechada no mesmo PR pela emenda (a) do orquestrador), `P-SAN3-01-DESPACHO-FORMS-SEM-CATCH`, `P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO`, `P-SAN3-01-ORCAMENTO-SELECTS-SEM-ERRO`, `P-SAN3-01-JURISDICAO-DEFAULTS-LOCAIS`, `P-SAN3-01-OS-LEGADO-MORTO`, `P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO` e `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`. A célula do item 4 no §4.1 do `docs/revisoes/SAN3/PLANO_SAN3.md` NÃO muda neste PR (emenda (b): a recontagem é do `B-SAN3-10`).
 
 ## P-009 - Contraste de texto muted (#94A3B8) abaixo de 4.5:1 no DS (2026-07-07)
 
@@ -9304,3 +9305,75 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-12` (ampliado — plano SAN3 v5, §4.1 item 55; condição de entrada CE-4, §5.6).
 - **bloqueia:** o gate da versão vendável (critérios 7 e 4 — a conciliação está no núcleo que o `mvp_vendavel` conta).
 - **teste de encerramento:** o do CE-4 — pela web, criar conta → emitir título → baixar pela tela → o lançamento aparece no extrato → conciliar → conciliado; conciliar de novo → a resposta que o contrato define; saldo pela rota real.
+
+## P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dispatch-000101` com timeline inventada no erro — ALTA
+
+- status: FECHADA (2026-09-17, no próprio PR do `B-SAN3-01` — a emenda (a) do orquestrador ratificou a ampliação nominal do §3.2 do plano: `getDispatchFromApi` devolve `dispatch: null` + `notFound`/`forbidden`/`fallbackReason`, e `OperationsDispatchesPage.loadDetail` mantém o item da lista já selecionado e avisa "Não foi possível carregar os detalhes deste despacho."; testes X8/X9 com vermelho-controle no head-base)
+- **prova:** `frontend/src/modules/operations/dispatches/dispatches.service.ts:55-67` no head-base `b2da5ede` — `getMockDispatchDetail(id)` = `mockDispatchItems.find ?? [0]` com timeline inventada; consumidor único `OperationsDispatchesPage.tsx:63-67` (`loadDetail`).
+- **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10 — "feat: add field dispatch UI").
+- **dono:** `B-SAN3-01` (fechada no PR do bloco).
+- **bloqueia:** nada (fechada).
+- **teste de encerramento:** X8/X9 de `frontend/tests/work-orders-honest-errors.test.tsx` — 404 → `dispatch === null` + `notFound === true`; 500 → `dispatch === null` + `fallbackReason` string; os dois vermelhos no head-base.
+
+## P-SAN3-01-DESPACHO-FORMS-SEM-CATCH (2026-09-17) — formulários de despacho sem `catch`: recusa real do backend vira rejeição não tratada e o form fica "salvando" — MÉDIA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira do bloco — a emenda (a) limitou `OperationsDispatchesPage.tsx` ao `loadDetail`)
+- **prova:** `frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx:32-42` e `OperationsDispatchesPage.tsx:112-116/152-156/170-174` (numeração do head-base `b2da5ede`): `await onSubmit(...)` sem try/catch; `setSaving(false)` nunca roda no erro. `createDispatch` já não engolia non-2xx antes do bloco; o `throw` novo do 2xx-inválido (`invalid_dispatch_response`) NÃO cria classe nova de falha.
+- **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10).
+- **dono:** `B-SAN3-06a` (único bloco SAN3 que toca `operations/**` da web).
+- **bloqueia:** não bloqueia o gate por si (o item 4 fecha pela OS) — é perda de feedback, não de dado.
+- **teste de encerramento:** POST de despacho recusado (4xx) → mensagem na tela e o botão volta de "salvando"; vermelho-controle no head-base.
+
+## P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO (2026-09-17) — as linhas do orçamento falham e a aba mostra total R$ 0,00 — MÉDIA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; arquivo travado `SAN3-01 → SAN3-08` pelo §6 do plano SAN3 — não tocado neste bloco)
+- **prova:** `frontend/src/modules/work-orders/components/tabs/QuoteTab.tsx:85-87` (head-base `b2da5ede`): o `catch` devolve `{ items: [], totalAmount: 0, currency }` — número no lugar do erro.
+- **escopo:** `pre-existente` (`5c5571b6`, 2026-07-15).
+- **dono:** `B-SAN3-08`.
+- **bloqueia:** o critério 4 do gate (número fabricado) — dentro do `B-SAN3-08`.
+- **teste de encerramento:** linhas do orçamento em 500 → estado de erro na aba, sem total exibido; vermelho-controle no head-base.
+
+## P-SAN3-01-ORCAMENTO-SELECTS-SEM-ERRO (2026-09-17) — erro em qualquer dos 3 services deixa os selects do orçamento vazios, sem mensagem — BAIXA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; `useServiceQuoteReferences.ts` está na fronteira do bloco, mas com zero diff necessário — o contrato da lista de OS continua sem lançar)
+- **prova:** `frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts:50-61`: `Promise.all` sem catch sobre 3 services; `OrcamentosPage.tsx:65` não distingue vazio de erro. Depois do `B-SAN3-01` o select de OS deixa de receber as 6 OS falsas (recebe `items: []`), mas continua sem mensagem.
+- **escopo:** `pre-existente` (`42522f95`, 2026-07-13).
+- **dono:** `B-SAN3-08` (dono de `service-quotes/**`).
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** um dos 3 services em 500 → mensagem de erro no formulário de orçamento; vermelho-controle no head-base.
+
+## P-SAN3-01-JURISDICAO-DEFAULTS-LOCAIS (2026-09-17) — `GET /jurisdiction-defaults` falha e o formulário de perfil novo é pré-preenchido com o baseline local sem avisar — BAIXA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira)
+- **prova:** `frontend/src/modules/patios/profiles/profiles.service.ts:95-99` (head-base `b2da5ede`): o `catch` devolve `resolveLocalDefaults(scope)` — a mesma constante do backend, segundo o comentário l.90-91 —, e o usuário não fica sabendo que a consulta falhou (dado no lugar do erro).
+- **escopo:** `pre-existente` (`11a1f533`, 2026-07-26).
+- **dono:** fila pós-gate (§7.3 do plano do bloco) — nenhum bloco SAN3 toca `patios/profiles`.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** `GET /jurisdiction-defaults` em 500 → aviso no formulário (valores locais assumidos, com a origem declarada); vermelho-controle no head-base.
+
+## P-SAN3-01-OS-LEGADO-MORTO (2026-09-17) — páginas, repositório e mocks legados de OS sem rota — BAIXA
+
+- status: ABERTA (censo §2.2 #19 e §3.3 do plano do `B-SAN3-01`; código morto neutralizado por não ter rota, NÃO removido — remoção é faxina de `frontend/src/pages/**`, fora do permitido)
+- **prova:** `frontend/src/pages/WorkOrdersListPage.tsx`, `WorkOrderFormPage.tsx`, `WorkOrderDetailPage.tsx`, `frontend/src/modules/work-orders/repository.ts` (`mockWorkOrders.find ?? [0]` para qualquer id) e `frontend/src/mocks/work-orders/`; `frontend/src/App.tsx:31-55` importa só `modules/work-orders/pages/*`. Os componentes legados `WorkOrdersTable`/`WorkOrderDetailPanel`/`WorkOrderAssignForm`/`WorkOrderTimeline` só são importados por `frontend/tests/smoke-flow.test.tsx:1322-1323` (modo mock). Nada disso alcança um usuário.
+- **escopo:** `pre-existente` (`fb0ea65b`, 2026-05-26).
+- **dono:** fila pós-gate — sugestão `B-WEB-FAXINA-OS-LEGADO` (frontend, maioria de 3).
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** os arquivos deixam de existir e o `smoke-flow` deixa de importá-los; `check`/`build`/`test:smoke` verdes.
+
+## P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO (2026-09-17) — os contadores do shell viram "0" quando a consulta falha — BAIXA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira)
+- **prova:** `frontend/src/layouts/AppShell.tsx:79,92` (head-base `b2da5ede`): o `catch` faz `setUnread(0)` / `setPendingApprovals(0)` — badge "0" no lugar do erro (não fabrica entidade, mas afirma um número que a consulta não produziu).
+- **escopo:** `pre-existente` (`1a76c913`, 2026-07-02).
+- **dono:** fila pós-gate.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** notificações/aprovações em 500 → badge ausente (não "0"); vermelho-controle no head-base.
+
+## P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (2026-09-17) — o alerta de erro da tela de Despachos se intitula "Dados demonstrativos" — MÉDIA
+
+- status: ABERTA (achada pelo dev do `B-SAN3-01` ao ligar o contrato novo do service; fora do escopo da emenda (a), que limitou `OperationsDispatchesPage.tsx` ao `loadDetail` — reportada, não consertada)
+- **prova:** `frontend/src/modules/operations/dispatches/pages/OperationsDispatchesPage.tsx:98-102` (head-base `b2da5ede`): `{fallbackReason || error ? <Alert title="Dados demonstrativos" tone="warning">{fallbackReason ?? error}</Alert> : null}`. Antes do bloco o título era falso por um motivo (a lista era fabricada e não era "demonstração"); depois dele a lista em erro é VAZIA e o título segue dizendo "demonstrativos" para uma consulta que falhou ou para um 403 ("Sem permissão para consultar os despachos."). Os `DispatchesSummaryCards` recebem `source: "fallback"` e ficam zerados — não fabricam; o defeito é o rótulo do estado.
+- **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10 — o arquivo; o título é o mesmo desde a origem, e o comentário da auditoria de fidelidade §11 na l.80-82 só removeu o chip técnico de fonte).
+- **dono:** `B-SAN3-06a` (dono de `operations/**` da web).
+- **bloqueia:** o critério 4 do gate (estado §7 "erro"/"sem permissão" rotulado como demonstração) — dentro do `B-SAN3-06a`.
+- **teste de encerramento:** `GET /operations/dispatches` em 500 → painel `data-state="error"` sem a palavra "demonstrativos"; 403 → `data-state="forbidden"`; vermelho-controle no head-base.
