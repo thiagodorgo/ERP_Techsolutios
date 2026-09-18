@@ -107,3 +107,23 @@ Relatório: `agent-orchestration/omega/juntas/votos/B-O6R-11/00-dev.md` (1ª ins
   `CLAUDE.md`). Requisito: quando o chamador passa o tenant da sessão, **ele vence** qualquer tenant que venha no corpo; o T1 ganha
   o caso "corpo traz tenant diferente → vence a sessão", vermelho no código atual do bloco e verde depois. Quem achou foi a 2ª
   instância do desenvolvedor; quem conserta é outra instância (§C7.4-bis).
+
+## Emenda 3 do orquestrador — as 4 divergências da 3ª instância e a composição da junta (2026-09-18)
+
+A emenda 2 (i) nomeou três métodos: é a correção por instância que a casa já aprendeu a evitar. A propriedade é "em toda
+leitura de resposta da OS neste arquivo, o tenant da sessão vence o do corpo". Decisões:
+
+- **(j) I3-1 — a lista entra.** `fetchWorkOrders` segue a mesma propriedade, com caso no T1 (vermelho no head `cf075a82`,
+  verde depois). Sem efeito vivo hoje (o DTO do backend não emite tenant), mas é o mesmo arquivo e a mesma regra.
+- **(k) I3-2 — fora da fronteira, pendência com dono.** `checklist_remote_api.dart:397` (`_templateFromRemoteJson`, o corpo vence
+  com o chamador passando o tenant) → `P-MOBILE-CHECKLIST-TENANT-DO-CORPO`, MÉDIA, fila pós-gate (nenhum bloco SAN3 tem
+  `features/checklists/data/**`); `expense_remote_api.dart:216` (`_itemFromJson`, tenant só do corpo) → emenda da
+  `P-MOBILE-EXPENSE-ENVELOPE`, dono `B-O6R-03b`.
+- **(l) I3-3 — a trilha e o registro com o número atual.** As menções a 885, 21 casos e T1 12 no `status-geral.md`, no
+  `log-execucao.md` e na `P-O6R-B11` passam aos números medidos no head final.
+- **(m) I3-4 — tenant vazio vence o corpo, e isso fica escrito em teste.** Chamador que passa `''` não tem sessão estabelecida;
+  adotar o tenant do corpo seria confiar em payload. O resultado `''` deixa a OS invisível, que é o lado fechado.
+- **(n) Composição da junta:** C1 `validador-mestre` (diff × plano, bateria Flutter, KPI e registro; suplente `agente-ci-doutor`);
+  C2 `guardiao-fail-closed` (guard T4 por mutação, vocabulário de status exaustivo, tenant da sessão; suplente
+  `coordenador-de-acessos`); C3 `jurado-o6r11-contrato-mobile-fila`, criado pela `agente-fabrica` para este bloco (envelope, fila
+  offline, B-108, idempotência; suplente `jurado-o6r11-suplente-contrato-mobile-fila`). Unanimidade de 3 (perda de dado).
