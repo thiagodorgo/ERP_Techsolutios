@@ -252,7 +252,8 @@ test("D4 — o fechamento escreve só por unidades (uow.run), com abortClose no 
   }
   for (const outer of ["beginClose(", "finishClose(", "abortClose("]) {
     const at = close.indexOf(outer);
-    assert.ok(at >= 0 && !inside(at), `${outer} tem de estar FORA da unidade`);
+    assert.ok(at >= 0, `close não chama ${outer}`);
+    assert.ok(!inside(at), `${outer} tem de estar FORA da unidade`);
   }
   assert.equal(close.includes("findItemById("), false, "close não lê avg_cost por item (S-02: o total vem do finishClose)");
   assert.equal(/avgCost/.test(close), false, "close não acumula avgCost");
