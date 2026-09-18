@@ -4437,3 +4437,32 @@ do trabalho do dev (conferido no relatório dele); nada rastreado é apagado.
 alcance menor que as raízes). Teto de dois ciclos atingido → dossiê ao dono → decisão `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`
 (opção B): mergeia a correção e abre o `B-SAN3-01b` no gate, bloqueante, com 3 pendências; a fonte Inter vira pendência do
 `B-SAN3-06c`. Votos do ciclo 2 em `omega/juntas/votos/B-SAN3-01-c2/`; ata com os dois ciclos em `omega/juntas/J-B-SAN3-01.md`.
+## B-SAN3-04a — `fix/rbac-catalogo-banco-matriz` (2026-09-17/18, PR na autoria)
+
+**Itens 13, 14, 15, 38 e 56 do gate SAN3; CE-3, CE-5, CE-6, CE-G1, CE-G2.** Plano:
+`agent-orchestration/omega/planos/B-SAN3-04a-plano.md` + emenda (a)–(f) do orquestrador no comando. Implementação em
+duas instâncias de dev: a 2ª deixou o trabalho vivo, sem commit, e caiu com o reboot; a 3ª (Opus 5) tratou esse WIP
+como insumo a medir — tabela passo a passo contra o plano, vermelhos-controle reexecutados num worktree detached próprio
+em `13e3783c` (com `npm ci` próprio, sem junction), correção por edição (nunca `checkout`) — e fechou o bloco.
+
+**Código:** `catalog.ts` (+9 concessões, −2 do `manager`, lista `DELIBERATE_REVOCATIONS`); `provision-rbac.ts` (passo
+3-bis: só a lista nomeada, papel global, idempotente, relatada, `--dry-run` só relata); `navigation.registry.ts`
+(`/finance*` pelas permissões que as rotas comparam); `prisma/seed.ts` (semeia o `auditor`); front (rótulo "Estoque",
+`RoleKind` e menu próprios; Financeiro com OS/Clientes/Serviços/Checklists e sem Auditoria); `RBAC_MATRIX.md` l.38/l.41.
+
+**Testes:** guard matriz × catálogo (14; lê a tabela real e o catálogo importado, lança em célula fora do dicionário e
+em linha sem mapeamento, allowlists que não apodrecem), menu e rotas com as permissões do banco em dois braços declarados
+(26; o app roda sob papel efêmero NOSUPERUSER NOBYPASSRLS com postura asserida — correção da 3ª instância, regra da
+casa), menu do front × catálogo (14), seed do auditor (2), sidebar Estoque/Financeiro no smoke (9). Vermelho-controle no
+head-base: 7/14, 16/26 (nos dois braços), 6/14, 2/2, 8/9. Sete mutações reais nos arquivos-fonte, todas vermelhas e
+restauradas por hash. Seis testes existentes tiveram o sujeito do controle negativo trocado — cada um provado necessário
+rodando a versão do head-base contra o código do bloco (1 vermelho cada).
+
+**Drills (cluster `dev-bsan304a-pg` :5499, bases recriadas; a base viva não recebeu um comando):** D1 head-base só-seed →
+auditor global 0 e 403; D2 head-base provisionada → auditor 56, manager com `update`/`acknowledge`; D3 código do bloco na
+mesma base → `--dry-run` "2 a remover" sem remover, aplica "2 removida(s)", 2ª execução "0 removida(s)", CONVERGIDO,
+paridade `RBAC_DB_PARITY=1` 2/2; D4 base nova só-seed → auditor 56 idêntico ao catálogo, 200.
+
+**Números:** backend 2995/2997 → **3051/3053** (287 arquivos; N=3 idênticas, banco recriado antes de cada uma), smoke
+1126 → **1135**, `blocks_completed` 163 → 164. Divergências plano × código (8) e observações no relatório do dev; o
+registro abriu 13 pendências e fechou 4 + o bullet `P-033`. As dívidas do #386 saíram deste PR por emenda do orquestrador.
