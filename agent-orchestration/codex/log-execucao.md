@@ -4388,3 +4388,48 @@ aceita e revista: rodada SAN3 no gráfico de entregas por rodada; trilha do gate
 `B-SAN3-KPI-TRILHA`; D-10 → `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM`); e2e rastreado morto desde `d5a4ed43` →
 `P-SAN3-01-E2E-LOGIN-DEFASADO` (`B-SAN3-10`); dívidas do #386 pagas neste PR (A1, A2, A3 e o parecer do porteiro); o
 contêiner `bsan301-pg` segue vivo até o merge (a linha de limpeza acima dizia removido).
+
+## B-SAN3-01 — ciclo 2 (2026-09-18, correção da reprovação 2 × 2; o último ciclo)
+
+### Resumo
+
+Plano `agent-orchestration/omega/planos/B-SAN3-01-ciclo2-plano.md` (`planejador-mestre`, Fable) + emenda 3 do comando
+((p) plano aprovado; (q) donos dos pré-existentes; (r) C2-N2 entra; (s) C3-P2 fecha; (t) papéis). Desenvolvedor: agente
+`general-purpose` NOVO (Opus 5) — não achou nem planejou. Worktree `.claude/worktrees/bsan301`, branch
+`fix/web-wo-sem-fallback-fabricado`, base `ec8492fd`. Relatório completo do dev (desenho por propriedade, vermelho/verde,
+tabela de mutação com as saídas, bateria, divergências) no scratchpad da sessão: `DEV-B-SAN3-01-ciclo2.md`.
+
+### Commits (sem push)
+
+- `e3db4d62` test — commit A: F1–F4, N1–N3, L6, G1 (reescrito por alcance/AST), G2 (15 fixtures), G3 (enumeração do disco),
+  W1–W2, V1–V6 → sobre o objeto `# tests 67 · # pass 52 · # fail 15`.
+- `81025f7e` fix P1 (C4-01) · `9869d54c` fix P2 (C4-03, C4-07, C2-N2) · `a826e927` fix P3 (C4-02) · `619fb2b5` fix P5
+  (C3-B1, A1, A2, A3, P2) · `b00cd82d` fix D-C2-1 (vazio no card) · registro · KPI.
+
+### Bateria (execução real, N e forma)
+
+`npm --prefix frontend run check` EXIT 0 · `npm --prefix frontend run build` EXIT 0 · `test:smoke` **1193/1193** ·
+`(frontend) node --test --import tsx tests/work-orders-honest-errors.test.tsx` **67/67** · `tests/approval-frontend-contract.test.ts`
+1/1 · `npm test` **283 arquivos · 2998 testes · pass 2996 · fail 0 · skipped 2** (`RBAC_DB_PARITY`; forma: cluster
+descartável próprio `dev-bsan301-c2-pg` postgres:16 recriado com 107 migrations, `dev-bsan301-c2-redis` com `FLUSHALL`,
+`DATABASE_URL`/`REDIS_URL` exportadas, `CORE_SAAS_PERSISTENCE` não exportada; node v20.19.5; 8m57s) · e2e E1–E3 pela
+cópia avulsa (portas 3398/5298): 3/3 na base vazia e 3/3 com OS · guards de KPI, `kpi-freeze --check`, `node --check
+Kpis/app.js`, `sync-agent-agents --check` e `git diff --check` no relatório do dev.
+
+### Divergências plano × código (reportadas; a junta decide)
+
+1. **D-C2-1** — §2.5: vazio sem OS standalone NO LUGAR do card; medido (commit `619fb2b5`), o E1 fica vermelho numa base
+   recém-semeada (`locator.fill … waiting for getByRole('textbox', { name: /Buscar/ })`); corrigido em `b00cd82d` (vazio
+   embutido no card) → `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD`.
+2. §5 "≥ 69 casos / 22 novos": a enumeração do próprio §5 dá 19; + L6 (emenda 3 (r)) = 20 → **67**.
+3. F1 vermelho no objeto (o plano o dava verde): a cadeia chama `listStatusKind`, que só existe depois do P2.
+4. F403b literal sobre a correção é inerte (o P1 faz a flag decidir antes de `source`); o vermelho vem de F403bR/F403b+R.
+5. NS1/NS2/SRC2: vermelho no `tsc` (o `Record`/`never`); em runtime o status/origem desconhecidos já caem no erro — N1/N2
+   seguem verdes sob NS1/NS2 (o plano §5 dizia N1/N2 vermelhos; o §2.2 dizia o contrário); NS1 deixa L6 vermelho.
+6. G2 com 15 fixtures (a–h do plano + 7 formas do mandato C4 (ii): sombra de `config/env`, `isMockMode` de outro módulo,
+   `!isMockMode()`, barrel, `import * as`, `import()` dinâmico, nome real do barrel).
+7. F403a, F403c, NS1, NS2 re-expressas (o `find` literal do ciclo 1 sumiu com a correção); EOL do `find` normalizado.
+
+Limpeza (§C5): `frontend/dist/` removido depois do build e as cópias temporárias do e2e removidas depois de cada rodada;
+`test-results/`, `playwright-report/` e os contêineres `dev-bsan301-c2-pg`/`dev-bsan301-c2-redis` saem pelo nome no fim
+do trabalho do dev (conferido no relatório dele); nada rastreado é apagado.

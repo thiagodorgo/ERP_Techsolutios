@@ -4488,3 +4488,47 @@ o primeiro de execução a mergear, paga as dívidas do #386: A2 backfill §C3.5
 manchete dos 54 emendada, e o parecer do porteiro versionado. A4 (log do inspetor fora de worktree) já estava ausente em
 2026-09-17. Correção do registro: o contêiner `bsan301-pg` não foi removido pela 2ª instância; segue vivo para a
 conferência e a junta, e sai pelo nome depois do merge.
+
+## 2026-09-18 — `B-SAN3-01` ciclo 2 (o ÚLTIMO — `D-TETO-DOIS-CICLOS`): a correção da reprovação 2 × 2, pronta para a junta
+
+**Ciclo 1 REPROVADO 2 × 2** (C3 `cognicao-visual`: painéis fora da ficha do protótipo; C4 `guardiao-fail-closed`: 403 com
+duas verdades, guard G1 léxico, status novo caindo no vazio — registro `omega/reprovacoes/R-B-SAN3-01-ciclo1.md`).
+Papéis (§C7.4-bis): **acharam** as cadeiras C3/C4 do ciclo 1; **planejou** o `planejador-mestre` (Fable, 2ª instância —
+`omega/planos/B-SAN3-01-ciclo2-plano.md`); **desenvolveu** um agente `general-purpose` NOVO (Opus 5), que implementou só o
+plano aprovado + a emenda 3 (r) e reportou as divergências. Se a junta do ciclo 2 reprovar, o bloco para e vai dossiê ao dono.
+
+**Entregue (commits sem push sobre `ec8492fd`; o orquestrador confere e empurra).** Commit A `e3db4d62` só testes (15
+vermelhos em 67 sobre o código do objeto) → P1 `81025f7e` uma verdade para "sem permissão" (o `forbidden` do resultado
+decide antes de `source` e do segundo plano; o estado só carrega `status`) → P2 `9869d54c` enumeração fechada, default
+ERRO (`Record` exaustivo de lista e detalhe; `never` no `switch` de `source`; 200 sem lista = erro — emenda 3 (r)) → P3
+`a826e927` mock só por alcance (G1 reescrito sobre a AST, escopo enumerado do disco; `work-orders/repository.ts` na forma
+positiva; textos que afirmavam a prova léxica corrigidos) → P5 `619fb2b5` a ficha do protótipo num `StatePanel` único
+(lista e detalhe; KPIs degradados neutros; CTA "Nova OS" no vazio com gate) → `b00cd82d` divergência D-C2-1 (o vazio fica
+no card da tabela). P4 (fiação dos hooks) não pede código: W1/W2 vigiam.
+
+**Números (execução real).** Teste do bloco **47 → 67/67** · smoke **1173 → 1193/1193** · backend **2996/2998
+reexecutado** (283 arquivos, fail 0, skipped 2 `RBAC_DB_PARITY`; banco recriado no cluster descartável do dev, Redis
+descartável, `DATABASE_URL`/`REDIS_URL` exportadas) · flutter 864 carregado (diff de `mobile/` vazio) · blocos **164
+inalterado** (2ª publicação do mesmo bloco, precedente `B-O6R-07a-ciclo2`) · `mvp_*` intocados · E1–E3 da cópia avulsa
+3/3 com a base vazia e 3/3 com OS. Tabela de mutação sobre o código corrigido: 26 formas (as 12 dos jurados + 14 novas),
+todas restauradas; das 12 dos jurados, 9 vermelhas no teste do bloco, 2 vermelhas só no `tsc` (NS2, SRC2 — runtime
+correto) e 1 neutralizada pela própria correção (F403b; o ataque equivalente F403bR fica vermelho).
+
+**Divergências plano × código (para a junta):** D-C2-1 — o §2.5 mandava o vazio sem OS trocar o card inteiro; medido, o
+E1 fica vermelho numa base recém-semeada (a busca some com o card) → o vazio vive EMBUTIDO no card
+(`P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD`); a meta "≥ 69 casos" do §5 não fecha com a enumeração do próprio §5 (19 casos
++ L6 = 20 novos → 67); F1 é vermelho no objeto (depende de `listStatusKind`, novo); G2 tem 15 fixtures (8 do plano + 7
+formas do mandato da C4); 4 mutações do ciclo 1 foram re-expressas porque o `find` literal sumiu com a correção.
+
+**Registro.** `P-008` ganha a emenda do ciclo 2 e a prova do G1 corrigida; `P-SAN3-01-OS-LEGADO-MORTO` e
+`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` reescritas (a 2ª com o defeito inteiro e dono `B-SAN3-06c`); 10 novas —
+`-DASHBOARD-DESPACHOS-ERRO-COMO-VAZIO` (`B-SAN3-06c`), `-LOGISTICS-FICCAO-ROTEADA` (emenda nominal ao `B-SAN3-06a`),
+`-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO` (emenda nominal ao `B-SAN3-15`), `-MOCKMODE-TRES-AUTORIDADES` (`B-SAN3-06b`),
+`-NAV-MENU-DEMO-NO-ERRO` e `-STALE-ICONE-COR` (fila pós-gate), `-NOVA-OS-SEM-GATE-NO-BOTAO` (`B-SAN3-10`),
+`-BATERIA-TSX-CWD` (orquestrador), `-OS-VAZIO-SEM-ACAO` (nasce FECHADA) e `-C2-DIVERGENCIA-VAZIO-NO-CARD` (a junta
+decide); a `P-SAN3-01-LISTA-2XX-MALFORMADO-VIRA-VAZIO` não nasce (emenda 3 (r)). Índice pelo gerador: 391 cabeçalhos /
+380 IDs, 106 FECHADAS, 285 ABERTAS.
+
+**Próximo passo:** orquestrador confere e empurra → `inspetor-de-terreno-da-junta` → junta do ciclo 2 (C1
+`validador-mestre`, C2 `master-teste-telas-rotas`, C3 `frontend-pixel-master`, C4 `coordenador-de-acessos`; unanimidade
+de 4) → CI → squash → §C5 → porteiro. Reprovação = parada + dossiê (`omega/reprovacoes/DOSSIE-B-SAN3-01-parada.md`).
