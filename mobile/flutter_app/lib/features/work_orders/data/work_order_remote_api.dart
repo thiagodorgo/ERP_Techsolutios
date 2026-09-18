@@ -8,16 +8,21 @@ import '../domain/work_order_models.dart';
 
 abstract class WorkOrderRemoteApi {
   Future<List<WorkOrder>> fetchWorkOrders({String? tenantId});
-  Future<WorkOrder> fetchWorkOrder(String workOrderId);
+
+  /// [tenantId] é o da SESSÃO do aparelho: o DTO do backend não emite o identificador da
+  /// organização (§2.8), e uma OS com tenant vazio fica invisível para as leituras por tenant.
+  Future<WorkOrder> fetchWorkOrder(String workOrderId, {String? tenantId});
   Future<WorkOrder> updateWorkOrderStatus(
     String workOrderId,
-    WorkOrderStatus status,
-  );
+    WorkOrderStatus status, {
+    String? tenantId,
+  });
   Future<List<WorkOrderTimelineEvent>> fetchTimeline(String workOrderId);
   Future<WorkOrder> assignWorkOrder(
     String workOrderId,
     String userId, {
     String? note,
+    String? tenantId,
   });
   Future<void> createApprovalRequest(
     String workOrderId,
@@ -35,14 +40,15 @@ class PendingBackendWorkOrderRemoteApi implements WorkOrderRemoteApi {
       Future.error(const ApiNetworkError());
 
   @override
-  Future<WorkOrder> fetchWorkOrder(String workOrderId) =>
+  Future<WorkOrder> fetchWorkOrder(String workOrderId, {String? tenantId}) =>
       Future.error(const ApiNetworkError());
 
   @override
   Future<WorkOrder> updateWorkOrderStatus(
     String workOrderId,
-    WorkOrderStatus status,
-  ) => Future.error(const ApiNetworkError());
+    WorkOrderStatus status, {
+    String? tenantId,
+  }) => Future.error(const ApiNetworkError());
 
   @override
   Future<List<WorkOrderTimelineEvent>> fetchTimeline(String workOrderId) =>
@@ -53,6 +59,7 @@ class PendingBackendWorkOrderRemoteApi implements WorkOrderRemoteApi {
     String workOrderId,
     String userId, {
     String? note,
+    String? tenantId,
   }) => Future.error(const ApiNetworkError());
 
   @override
@@ -90,13 +97,24 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
     }
   }
 
+  // B-O6R-11 (Ω6R-QUA-004) — detalhe, status e atribuição respondem no envelope padrão
+  // `{ data: toWorkOrderDto(...) }` (work-order.controller.ts), em camelCase e SEM `tenantId`.
+  // O parser antigo recebia o envelope INTEIRO, lia snake_case e fazia `json['tenant_id'] as
+  // String`: bastava uma resposta íntegra chegar para o cast estourar (TypeError, fora do
+  // `on DioException`). Os três agora desembrulham `data` e usam o mesmo parser da lista.
   @override
-  Future<WorkOrder> fetchWorkOrder(String workOrderId) async {
+  Future<WorkOrder> fetchWorkOrder(
+    String workOrderId, {
+    String? tenantId,
+  }) async {
     try {
       final resp = await _dio.get<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrder(workOrderId),
       );
-      return _workOrderFromJson(resp.data!);
+      return _workOrderFromRemoteJson(
+        _unwrapData(resp.data),
+        fallbackTenantId: tenantId ?? '',
+      );
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -105,14 +123,21 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
   @override
   Future<WorkOrder> updateWorkOrderStatus(
     String workOrderId,
-    WorkOrderStatus status,
-  ) async {
+    WorkOrderStatus status, {
+    String? tenantId,
+  }) async {
+    // Fora do `try` de propósito: status sem equivalente no backend é erro de programação do
+    // app (ArgumentError), não falha de rede — e nenhum pedido sai.
+    final backendStatus = backendStatusFor(status);
     try {
       final resp = await _dio.patch<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrderStatus(workOrderId),
-        data: {'status': status.name},
+        data: {'status': backendStatus},
       );
-      return _workOrderFromJson(resp.data!);
+      return _workOrderFromRemoteJson(
+        _unwrapData(resp.data),
+        fallbackTenantId: tenantId ?? '',
+      );
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -137,28 +162,36 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
     }
   }
 
+  // O backend lê `operatorId ?? userId` e `message` (work-order.service.ts, `assign`); `user_id` e
+  // `note` não eram lidos → 400 antes de qualquer efeito. `userId` preenche os dois lados da
+  // atribuição: `assigned_operator_id` (pelo fallback) e `assigned_user_id` (o que a lista expõe).
+  // A rota exige `work_orders:assign` — despacho/gestor/admin; o técnico de campo não tem.
   @override
   Future<WorkOrder> assignWorkOrder(
     String workOrderId,
     String userId, {
     String? note,
+    String? tenantId,
   }) async {
     try {
-      final normalizedNote = note?.trim();
+      final message = note?.trim();
       final resp = await _dio.post<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrderAssign(workOrderId),
         data: {
-          'user_id': userId,
-          if (normalizedNote != null && normalizedNote.isNotEmpty)
-            'note': normalizedNote,
+          'userId': userId,
+          if (message != null && message.isNotEmpty) 'message': message,
         },
       );
-      return _workOrderFromJson(resp.data!);
+      return _workOrderFromRemoteJson(
+        _unwrapData(resp.data),
+        fallbackTenantId: tenantId ?? '',
+      );
     } on DioException catch (e) {
       throw mapDioError(e);
     }
   }
 
+  // Rota inexistente no backend (P-MOBILE-APPROVAL-REQUEST-REST-404, dono B-SAN3-16).
   @override
   Future<void> createApprovalRequest(
     String workOrderId,
@@ -220,47 +253,64 @@ WorkOrder _workOrderFromRemoteJson(
   );
 }
 
-WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
-  return WorkOrder(
-    localId: json['local_id'] as String? ?? json['id'] as String,
-    serverId: json['id'] as String?,
-    tenantId: json['tenant_id'] as String,
-    code: json['code'] as String,
-    title: json['title'] as String,
-    customerName: json['customer_name'] as String,
-    customerDocument: json['customer_document'] as String?,
-    customerPhone: json['customer_phone'] as String?,
-    serviceAddress: json['service_address'] as String,
-    status: workOrderStatusFromApiValue(json['status']),
-    priority: WorkOrderPriority.values.firstWhere(
-      (p) => p.name == (json['priority'] as String),
-      orElse: () => WorkOrderPriority.normal,
-    ),
-    assignedUserId: json['assigned_user_id'] as String?,
-    scheduledAt: _parseDate(json['scheduled_at'] as String?),
-    startedAt: _parseDate(json['started_at'] as String?),
-    arrivedAt: _parseDate(json['arrived_at'] as String?),
-    completedAt: _parseDate(json['completed_at'] as String?),
-    checklistId: json['checklist_id'] as String?,
-    syncStatus: SyncStatus.values.firstWhere(
-      (s) => s.name == (json['sync_status'] as String?),
-      orElse: () => SyncStatus.synced,
-    ),
-    createdAt:
-        _parseDate(json['created_at'] as String?) ?? DateTime.now().toUtc(),
-    updatedAt: _parseDate(json['updated_at'] as String?),
-  );
+/// Corpo de uma resposta de objeto único: o conteúdo de `data` quando o backend usa o envelope
+/// padrão, senão o próprio corpo (tolerante, como `registry_options_remote_api._items`).
+Map<String, dynamic> _unwrapData(Map<String, dynamic>? body) {
+  final data = body?['data'];
+  if (data is Map<String, dynamic>) return data;
+  if (data is Map) return Map<String, dynamic>.from(data);
+  return body ?? const <String, dynamic>{};
 }
 
+// B-O6R-11 — vocabulário de status, nos DOIS sentidos. O backend fala `WORK_ORDER_STATUSES`
+// (work-order.types.ts: open, assigned, accepted, on_route, on_site, in_progress, paused,
+// completed, cancelled, rejected); o app, `WorkOrderStatus`. É o espelho do
+// `WorkOrderSyncCodec._backendStatus` (sync_replay_service.dart), que traduz o mesmo vocabulário
+// na fila offline: as duas tabelas não podem divergir, e o teste de paridade do B-O6R-11
+// (bo6r11_os_rest_envelope_e_vocabulario_test.dart, caso 11) fica vermelho se uma mudar sozinha.
+
+/// App → backend (corpo do `PATCH /work-orders/:id/status`). O `switch` é exaustivo: estado novo
+/// no enum não compila sem decisão aqui. Estado que só existe no app lança [ArgumentError] — o
+/// app nunca pede ao backend um estado que ele não tem (seria 400 `invalid_status`).
+String backendStatusFor(WorkOrderStatus status) => switch (status) {
+  WorkOrderStatus.scheduled => 'open',
+  WorkOrderStatus.dispatched => 'assigned',
+  WorkOrderStatus.enRoute => 'on_route',
+  WorkOrderStatus.arrived => 'on_site',
+  WorkOrderStatus.inService => 'in_progress',
+  WorkOrderStatus.paused => 'paused',
+  WorkOrderStatus.completed => 'completed',
+  WorkOrderStatus.cancelled => 'cancelled',
+  WorkOrderStatus.rejected => 'rejected',
+  WorkOrderStatus.pendingApproval ||
+  WorkOrderStatus.approved ||
+  WorkOrderStatus.exception => throw ArgumentError.value(
+    status,
+    'status',
+    'sem equivalente no backend',
+  ),
+};
+
+/// Backend → app. Antes só `pending_approval` era traduzido, e todo o resto do vocabulário do
+/// backend caía em `scheduled` — inclusive na lista viva do B-099: toda OS aparecia "Agendada".
+/// Nome do próprio enum continua valendo (fixtures e cache local); desconhecido continua caindo
+/// em `scheduled` (comportamento anterior, provado pelo b099 2.3).
 WorkOrderStatus workOrderStatusFromApiValue(Object? value) {
   final normalized = value is String ? value.trim() : '';
-  if (normalized == 'pending_approval') {
-    return WorkOrderStatus.pendingApproval;
-  }
-  return WorkOrderStatus.values.firstWhere(
-    (status) => status.name == normalized,
-    orElse: () => WorkOrderStatus.scheduled,
-  );
+  return switch (normalized) {
+    'open' => WorkOrderStatus.scheduled,
+    'assigned' => WorkOrderStatus.dispatched,
+    // Lossy: o app não distingue "atribuída" de "aceita" (P-MOBILE-STATUS-ACCEPTED-LOSSY).
+    'accepted' => WorkOrderStatus.dispatched,
+    'on_route' => WorkOrderStatus.enRoute,
+    'on_site' => WorkOrderStatus.arrived,
+    'in_progress' => WorkOrderStatus.inService,
+    'pending_approval' => WorkOrderStatus.pendingApproval,
+    _ => WorkOrderStatus.values.firstWhere(
+      (status) => status.name == normalized,
+      orElse: () => WorkOrderStatus.scheduled,
+    ),
+  };
 }
 
 /// Traduz o vocabulário do backend (`work_order_created`) para o do app (`created`).
