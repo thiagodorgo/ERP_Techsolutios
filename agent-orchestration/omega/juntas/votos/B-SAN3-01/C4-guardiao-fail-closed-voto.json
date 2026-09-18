@@ -1,0 +1,108 @@
+{
+  "cadeira": "C4",
+  "papel": "guardiao-fail-closed",
+  "modelo": "Opus 5 (claude-opus-5[1m]) — 2a instancia; a 1a caiu por 429 sem medicao",
+  "objeto": "bb540fb3",
+  "head_pr_na_junta": "74f3f7c9 (objeto + 10 arquivos de registro, nao julgados)",
+  "veredito": "REPROVADO",
+  "contagem": {
+    "bloqueia": 3,
+    "ajuste": 3,
+    "nota": 3
+  },
+  "resumo": "Nas 3 mutacoes G1 do mandato o sistema NEGA: o guard G1 e os testes ficam vermelhos. No R1 do reducer tambem. Mas a mutacao do reducer de 403 que o mandato exige passa verde (47/47 e 1173/1173) e mostra VAZIO com KPIs 0. O G1 deixa passar um '?? getMock' reintroduzido: escrito no else de 'if (isMockMode()) {}', com um comentario que cite isMockMode() ou num service novo de OS. E o proximo status da lista nasce como 'vazio'. Os tres casos compilam, a suite fica verde e a tela fabrica.",
+  "achados": [
+    {
+      "id": "C4-01",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "escopo_evidencia": "git blame bb540fb3: work-orders.state.ts:41 e :61 e WorkOrdersPage.tsx:228 nascem em a97a1351 (commit B, 2026-09-17)",
+      "titulo": "403 -> 'vazio' passa verde: mutacao do reducer de 403 do mandato",
+      "evidencia": "F403a (state.ts:61 result.forbidden ? 'empty'): 47/47; 1173/1173; sonda: lista 403 -> painel data-state=empty, KPIs [0,0,0,0]. F403b (service devolve source 'api' com forbidden=true): 47/47; 1173/1173; mesmo painel vazio. F403c (state.ts:145 forbidden -> 'not-found'): 47/47; 1173/1173; sonda: detalhe 403 -> 'Ordem de servico nao encontrada'. Controle sem mutacao: forbidden/forbidden com KPIs '—'.",
+      "motivo": "Nenhum teste liga 403 ao estado 'forbidden' no reducer. R1–R6 nao tem caso forbidden; L3 e D2 afirmam so o service; P2 e P4 so o painel que ja recebe o status pronto. A verdade 'sem permissao' vive em dois campos, e nada exige que concordem: source×forbidden no service e status×forbidden no estado. A pagina e a view leem so status. Quando os campos divergem, vence o lado benigno: vazio com numero, ou 'nao encontrada'. Justamente o 403 que o mandato manda ver vermelho."
+    },
+    {
+      "id": "C4-02",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "escopo_evidencia": "git blame bb540fb3: mockLeaks (work-orders-honest-errors.test.tsx:646-658) nasce em 7b2ab102 (commit A); a regra da l.653 (comentario/isMockMode) muda em a97a1351 (commit B, D-11), 2026-09-17",
+      "titulo": "O guard G1 e lexical: o proximo '?? getMock' nasce permitido",
+      "evidencia": "G1d: dispatches.service.ts getDispatchFromApi com 'adaptDispatchResponse(response) ?? getMockDispatchDetail(dispatchId)' no ramo REAL, escrito como else de 'if (isMockMode()) {'. Resultado: 47/47 e 1173/1173; sonda com 200 {data:{}} -> dispatch-000101 (OS-000101), source api. G1e: mesmo mock no ramo 2xx-invalido, com comentario no fim da linha citando isMockMode(). Resultado: 47/47 e 1173/1173; sonda -> dispatch-000101. G1g: service NOVO modules/work-orders/work-orders-summary.service.ts com catch -> getMockWorkOrderDetail. Resultado: tsc EXIT=0; 47/47; 1173/1173; sonda com 500 -> OS-000101 'Atlas Refrigeracao'. G1f: constante mockDispatchItems no lugar do prefixo getMock. O G1 fica verde; quem pega e o X1 (comportamento). Controle: G1a–G1c na forma do mandato ficam vermelhos (G1 + M1/L5/X4).",
+      "motivo": "A decisao do guard e por coocorrencia de token, nao por alcance. (1) '} else {' soma zero no contador de chaves, e o else do ramo mock vira ramo mock. Isso contraria a propria docstring ('ate a chave que fecha'). (2) allowed = ... || /isMockMode\\(\\)/.test(line): para toda linha com o token, inclusive em comentario, a assercao nao pode falhar. E o comentario alcancando a decisao, o avesso do D-11. (3) O escopo e uma lista literal de 2 arquivos: o proximo service nasce fora da vigilancia. (4) So o prefixo getMock e visto. O fechamento da P-008 ('guard estrutural G1, provado por mutacao') e o cabecalho dos services ('o UNICO caminho que alcanca getMock*') afirmam o que a mutacao desmente. O mandato manda 'bloqueia' para membro novo da classe que nasce permitido sem quebrar teste."
+    },
+    {
+      "id": "C4-03",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "escopo_evidencia": "git blame bb540fb3: WorkOrdersPage.tsx:228 (degraded) e :594-599 (ramo final de WorkOrdersLoadState -> data-state=empty) nascem em a97a1351, 2026-09-17",
+      "titulo": "O proximo status da lista nasce 'vazio': erro vira 0",
+      "evidencia": "NS1: WorkOrdersListStatus ganha 'unavailable' e o reducer o emite no 5xx; a pagina nao e tocada. Resultado: tsc EXIT=0; 47/47; 1173/1173; sonda com 500 -> status unavailable, degraded=false, painel data-state=empty ('Nenhuma ordem de servico'), KPIs [0,0,0,0]. Controle NS2 (mesma mutacao no detalhe): a view cai em data-state=error. Fail-closed em runtime.",
+      "motivo": "degraded reconhece so 2 status de falha, e o ultimo ramo de WorkOrdersLoadState devolve o painel vazio para qualquer outro status. O membro nao classificado cai no lado benigno, e nem o build nem a suite acusam. Isso viola §4.3-1/2 do proprio plano ('vazio ≠ erro', 'erro nunca vira numero'). O detalhe, no mesmo PR, cai no erro por default: a assimetria esta no codigo novo da lista."
+    },
+    {
+      "id": "C4-04",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "escopo_evidencia": "useWorkOrders.ts e useWorkOrderDetail.ts no diff 02bd7dab..bb540fb3 (commit B a97a1351)",
+      "titulo": "A regra 'desatualizado mantem os dados' so e vigiada no reducer; a fiacao do hook nao",
+      "evidencia": "R1a (reducer apaga a lista) -> R1 vermelho; R1b (reducer apaga a OS) -> R4 vermelho. R1c e R1d, com o hook passando 'false' no lugar de background (useWorkOrders.ts e useWorkOrderDetail.ts): 47/47 e 1173/1173.",
+      "motivo": "A regra §4.3-3 so vale enquanto a linha do hook repassar background, e nenhum teste confere isso: o S1 vigia so a fiacao do create. E a licao 'handler testado ≠ ligado' no ponto de volta. Nao fabrica dado (o erro troca a tela), por isso e ajuste."
+    },
+    {
+      "id": "C4-05",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "escopo_evidencia": "origem 528e3601, 2026-07-09 (#149, estoque avancado); modules/inventory fora do escopo permitido do bloco",
+      "titulo": "Membro da classe fora da fronteira e sem pendencia: fechamento de contagem ciclica fabricado",
+      "evidencia": "Sonda adaptCycleCountCloseResponse com 2xx {data:{}}, {} e null -> cycleCount id='' status=concluida entries=0 e relatorio {lines:[],totalVariance:0,adjustmentsGenerated:0}. Consumidor: CycleCountSessionDrawer.tsx:134-137. grep em pendencias.md -> 0.",
+      "motivo": "E a mesma forma dos membros #4/#6 do censo do plano (2xx sem entidade -> entidade e numeros inventados). O censo do plano nao a viu porque so casava '?? <mock|fallback|seed|demo>'. Vira pendencia nomeada. Dono proposto: o bloco SAN3 dono de modules/inventory da web; na falta dele, fila pos-gate."
+    },
+    {
+      "id": "C4-06",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "escopo_evidencia": "o texto da P-SAN3-01-OS-LEGADO-MORTO nasce neste PR (6ae71c0e, 2026-09-17); a ficcao em si e pre-existente (logistics/repository.ts em fb0ea65b, 2026-05-26)",
+      "titulo": "'Nada disso alcanca um usuario' e falso: /logistics serve mocks/work-orders/",
+      "evidencia": "App.tsx:792-796 monta /logistics (PermissionGuard logistics:dispatch, expandido de os.manage em auth.adapter.ts:373); logistics/repository.ts:2 importa mocks/work-orders/workOrders. Sonda com VITE_USE_MOCKS=false -> fetch 0x, 4 OS inventadas (OS-10021, OS-10024, OS-10018, OS-10012).",
+      "motivo": "O registro do bloco trata como morta uma origem de OS fabricada que tem rota viva. A premissa da pendencia (e a severidade BAIXA) nao foi medida. Nao e da classe catch/?? (e ficcao incondicional), por isso e ajuste. Dono proposto da ficcao: B-SAN3-06a (telas roteadas sem dado)."
+    },
+    {
+      "id": "C4-07",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "escopo_evidencia": "work-orders.state.ts:41 nasce em a97a1351",
+      "titulo": "A fonte da lista e classificada por denylist (source !== 'fallback')",
+      "evidencia": "SRC1 (WorkOrdersSource + 'cache') -> tsc EXIT=1, pelo Record exaustivo do KpiDetailModal. SRC2 (o conserto que o erro pede: KpiSourceTag + 'cache') -> tsc ainda EXIT=1 no KpiDetailModal.tsx:12; sonda do reducer com source 'cache' e 1 item -> status=ready, stale=false.",
+      "motivo": "Hoje o build acusa o membro novo (fail-closed incidental, vindo de codigo pre-existente). Mas acusa no modal de KPI, nao no reducer. Depois de classificado la, o reducer o aceita como dado atual."
+    },
+    {
+      "id": "C4-08",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "escopo_evidencia": "62c0edb8 (2026-06-07) e 4d6e1219 (2026-06-08); modules/platform fora da fronteira",
+      "titulo": "'Modo mock' tem 3 autoridades com padrao oposto",
+      "evidencia": "config/env.ts:22-24 isMockMode() (padrao real) × cloud-billing.service.ts:163-165 e platform.service.ts:122-124 shouldUseMocks() (padrao mock). Sonda com VITE_USE_MOCKS ausente ou '0' -> isMockMode()=false e OS real, mas a plataforma NAO chama a API e devolve 3 organizacoes inventadas.",
+      "motivo": "A promessa do bloco (e o G1) confia em isMockMode() como O interruptor. Na divergencia, vence a ficcao. Pendencia proposta com dono B-SAN3-06b (P-WEB-PLATAFORMA-TELAS-FICCAO)."
+    },
+    {
+      "id": "C4-09",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "escopo_evidencia": "50845286, 2026-06-09",
+      "titulo": "catch -> setState(mock) nao entra num censo so de return",
+      "evidencia": "censo AST: navigation/useNavigationMenu.ts:15 monta o menu de demonstracao, que o catch de :47 poe na tela quando o backend falha. O censo de catch que devolve valor nao o conta.",
+      "motivo": "O metodo de censo do plano (e o meu censo2) ve so return; a classe tambem existe como efeito. Registro para quem refizer o censo (C1 / B-SAN3-10)."
+    }
+  ],
+  "fronteira_do_plano": "Fechada no codigo de hoje: pelo AST, 15/15 referencias a getMock* dos dois services estao no then de if(isMockMode()), e nenhum catch/?? de classe A sobrou. O defeito e a GUARDA de amanha (C4-02), nao o codigo de hoje.",
+  "sem_executar": [
+    "npm test da raiz (backend): nao rodado, porque nenhum arquivo de tests/ referencia os arquivos mutados (grep por work-orders.service|work-orders.state|dispatches.service|useWorkOrders|useWorkOrderDetail|WorkOrdersPage em tests/ -> 0). O CI roda essa suite, mas ela nao alcanca as mutacoes.",
+    "e2e (mandato da C2); nenhum Postgres/Redis subido",
+    "WorkOrdersPage completa em SSR pos-fetch (efeitos nao rodam em renderToString). A sonda da lista usa o degraded copiado verbatim de WorkOrdersPage.tsx:228 e renderiza os componentes exportados que a pagina usa"
+  ],
+  "urls_usadas": [],
+  "urls_nota": "Nenhum db:seed/migrate/npm test/e2e rodado: DATABASE_URL e REDIS_URL nao foram usadas, e nenhum conteiner foi criado.",
+  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C4-guardiao-fail-closed-evidencia.md",
+  "scripts_e_resultados": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c4-mut/ (run-mut.mjs, probe*.mts, censo*.mjs, <id>.json, <id>.result.md)",
+  "limpeza": "Worktree .claude/worktrees/j-bsan301-c4 (npm --prefix frontend ci proprio, sem junction) removido por 'git worktree remove --force' pelo nome: worktree list | grep -c j-bsan301-c4 = 0. Toda mutacao restaurada por backup, com 'git status --porcelain' = 0 e 'git diff --quiet' EXIT=0 conferidos apos cada uma (18 execucoes). Nenhum conteiner, volume ou banco criado (docker ps -a | grep -c j-bsan301-c4 = 0). bsan301 intacto (status 0, HEAD 74f3f7c9). Log do npm ci apagado. Mantidos no scratchpad, como evidencia: c4-mut/ (scripts, specs e *.result.md). j-bsan301-c1 e alheio: nao tocado."
+}

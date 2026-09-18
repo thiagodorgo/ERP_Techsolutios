@@ -139,3 +139,27 @@ em dia; os 3 guards de KPI 28/28; `sync-agent-agents --check` OK; índice byte-i
   também o rótulo "E-mail corporativo" sem associação ao campo e os textos de contexto que sumiram do produto — a mesma classe,
   para o mesmo dono. D3-5 resolvida em (e) e (e′): o texto de KPI que atribuía o `roadmap` e as dívidas a outro bloco foi
   reescrito.
+
+## Emenda 3 do orquestrador — ciclo 2, o último (2026-09-18)
+
+Junta do ciclo 1: REPROVADO 2 × 2 (C3 e C4). Registro: `agent-orchestration/omega/reprovacoes/R-B-SAN3-01-ciclo1.md`; votos em
+`votos/B-SAN3-01/`. Plano de correção: `agent-orchestration/omega/planos/B-SAN3-01-ciclo2-plano.md` (`planejador-mestre`, Fable,
+2ª instância; a 1ª caiu por 429). Teto de dois ciclos: se o ciclo 2 reprovar, o bloco para e vai dossiê ao dono. Decisões:
+
+- **(p) O plano de correção está aprovado como escrito**, com os acréscimos de escopo do seu §4, mais o de (r).
+- **(q) Donos dos pré-existentes sem bloco (§3 do plano):** `P-SAN3-01-DASHBOARD-DESPACHOS-ERRO-COMO-VAZIO` e
+  `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` (reescrita) → **bloco novo `B-SAN3-06c` · `fix/web-estados-despachos-e-dashboard`**
+  (frente 3, escopo `frontend/src/pages/DashboardPage.tsx`, `frontend/src/modules/operations/dispatches/pages/**` e
+  `components/DispatchesSummaryCards.tsx`), que **entra no gate** — é a classe do critério 4 (a web não mostra erro como dado) —
+  e é recontado pelo `B-SAN3-10`; `P-SAN3-01-LOGISTICS-FICCAO-ROTEADA` → **emenda nominal ao `B-SAN3-06a`** (rota, menu e os três
+  caminhos `pages/LogisticsPage.tsx`, `modules/logistics/**`, `mocks/logistics/**`; o padrão do §10.1: sai da rota e do menu);
+  `P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO` → **emenda nominal ao `B-SAN3-15`** (`frontend/src/modules/inventory/cycle-counts.adapter.ts`
+  e `CycleCountSessionDrawer.tsx`); `P-SAN3-01-NAV-MENU-DEMO-NO-ERRO` e `P-SAN3-01-STALE-ICONE-COR` → fila pós-gate; os demais,
+  como o §3 do plano propõe.
+- **(r) `C2-N2` entra nesta correção.** 200 sem `items`/`data` virando lista vazia com KPIs "0" é a propriedade P2 do plano
+  (enumeração fechada; o desconhecido cai no erro), está na fronteira (`work-orders.adapter.ts`) e custa poucas linhas. Teste com
+  vermelho-controle; a `P-SAN3-01-LISTA-2XX-MALFORMADO-VIRA-VAZIO` não nasce.
+- **(s) `C3-P2` fecha por §2.5 do plano** (o vazio ganha a ação); sem veto.
+- **(t) Papéis do ciclo 2 (§C7.4-bis):** acharam `cognicao-visual` e `guardiao-fail-closed`; planejou o `planejador-mestre`;
+  desenvolve um agente `general-purpose` NOVO. A junta do ciclo 2: C1 `validador-mestre`, C2 `master-teste-telas-rotas`, C3
+  `frontend-pixel-master` (identidade nova), C4 `coordenador-de-acessos` (identidade nova); unanimidade de 4.

@@ -1,0 +1,71 @@
+{
+ "cadeira": "C1",
+ "papel": "validador-mestre",
+ "modelo": "claude-opus-5[1m] (Opus 5) — 2a instância (a 1a caiu por 429 sem medição; nada dela foi insumo)",
+ "objeto": "bb540fb3",
+ "head_pr": "74f3f7c9 (= objeto + 10 arquivos só de registro da junta; delta medido, zero código)",
+ "base": "origin/main@02bd7dab",
+ "veredito": "APROVADO",
+ "resumo": "Diff = plano + emendas (nada proibido, nada de src/**, OperationsDispatchesPage só loadDetail + aviso); bateria do §8.1 reexecutada no objeto toda verde e igual ao publicado (smoke 1173/1173, backend 2996/2998, bloco 47/47, guards 29/29, E1-E3 3/3 pela cópia idêntica por função); vermelho-controle 43/47 no commit A, com o comportamento de C2-C6 provado à parte; registro, dívidas do #386 e índice conferem. Zero bloqueia; 1 ajuste de prosa defasada no registro de KPI.",
+ "contagem": {
+  "bloqueia": 0,
+  "ajuste": 1,
+  "nota": 5
+ },
+ "mandato": {
+  "item1_diff_x_plano": "VERDE — git diff 02bd7dab bb540fb3: 0 arquivos em src/prisma/mobile/infra/.github/lockfiles/.env/CLAUDE/AGENTS/RBAC_MATRIX; frontend/src só em modules/work-orders/** + dispatches.service.ts + OperationsDispatchesPage.tsx (+16/-2: detailError, loadDetail, Alert — emenda (h)); frontend/src/mocks 0; os 9 arquivos fora de frontend/src, agent-orchestration e Kpis estão no §5 ou nas emendas (e-linha: 4 D jurado-san3c2-*; f: row-actions só fixtures; e: kpi-dashboard-charts; package.json só +1 arquivo no test:smoke).",
+  "item2_bateria": "VERDE — frontend ci/check/build ec=0; test:smoke 1173/1173; honest-errors 47/47; approval-frontend-contract 1/1; 3 guards de KPI 29/29; npm test 283 arq · 2998 · pass 2996 · fail 0 · skip 2 (RBAC_DB_PARITY) = publicado; kpi-freeze --check em dia; node --check ok; git diff --check ec=0; commit A 43 fail / 4 pass (L4 D5 T3 X7); mutação do rótulo SAN3 deixa kpi-dashboard-charts 16/17; G1 fica vermelho com ?? getMock reintroduzido nos dois services e verde com linha só de comentário; e2e cópia 3/3; e2e rastreado 0/13 no login (pré-existente, declarado pela C1).",
+  "item3_registro": "VERDE com ajuste — P-008 FECHADA (índice: seção FECHADAS); 10 P-SAN3-* com data de origem conferida por blame e dono; índice byte-idêntico ao gerador (381/370, FECHADA 105, ABERTA 276, sha256 1ff574e4692d3286…); history append-only 158→159; latest: smoke 1173, backend 2996/2998, blocks 164, mvp intocados, roadmap só as_of 2026-09-17 coerente com o history (5/12 com merge, 0 a_fazer com merge); dívidas do #386: A2 backfill com hashes completos (gh pr view 386 confere), A3 jurado-san3c2-* fora dos dois espelhos + sync-agent-agents --check OK 23 agentes, A1 manchete emendada; CI do PR 7/7 pass."
+ },
+ "achados": [
+  {
+   "id": "A-C1-01",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "Diff estrutural de Kpis/kpis-latest.json (02bd7dab × bb540fb3): metrics.backend_tests = 2996/2998, mas release.summary diz «Backend REEXECUTADO em cluster Postgres descartável próprio: 2995/2997 (0 fail, 2 skipped gated por RBAC_DB_PARITY), mesma forma e número» e a notes[] nova diz «npm test 2995/2997». git diff -- Kpis/kpis-history.md, entrada B-SAN3-01: divergência 1 «a emenda (c) manda deixar as dívidas do #386 para o B-SAN3-04a — o roadmap NÃO mudou neste PR» (roadmap.as_of mudou 2026-09-11→2026-09-17 e a mesma entrada, no fim, diz que o backfill do #386 foi pago aqui), «7 ABERTAS com dono» (o PR abre 10 P-SAN3-*), «Índice pelo gerador: 378 cabeçalhos / 367 IDs, 105 FECHADAS, 273 ABERTAS» (o gerador no objeto dá 381/370/105/276, cmp ec=0). grep em Kpis/app.js fora da linha FROZEN: nenhuma leitura de summary/notes — o painel não exibe essa prosa; os números das métricas estão certos.",
+   "motivo": "O registro de KPI do próprio PR se contradiz: a prosa ficou no estado dos commits C/D (antes do caso novo da guarda, das pendências da emenda 2 e do pagamento das dívidas), e quem audita pelo history lê fato superado como atual."
+  },
+  {
+   "id": "A-C1-02",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "git checkout --detach 7b2ab102 (commit A) no worktree da C1 → node --test tests/work-orders-honest-errors.test.tsx: # tests 47 · pass 4 · fail 43; motivo por teste (TAP): C1-C7 e R1-R6 ERR_MODULE_NOT_FOUND, P1-P4 «Element type is invalid … undefined» = 17; comportamento = 26 (L1-3, L5, D1-4, T1-2, M1-6, X1-6, X8-9, G1, S1). O registro (release.summary, kpis-history.md, log-execucao.md) publica «31 de comportamento + 12 que dependem de módulo novo». Contraprova própria: handler do objeto copiado sobre o service do commit A, filtro C1..C7 → C2/C3/C5/C6 «navigations expected 0 actual 1», C4 «Missing expected rejection» (5 fail).",
+   "motivo": "No commit A o create recusado (a perda de dado do item) não fica vermelho por comportamento, e sim pelo import do handler inexistente; a classificação publicada está imprecisa. O comportamento está provado pela contraprova, por isso não bloqueia."
+  },
+  {
+   "id": "A-C1-03",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia": "frontend/src/App.tsx: Route path=/logistics com PermissionGuard logistics:dispatch → pages/LogisticsPage.tsx → modules/logistics/repository.ts:4-10 devolve sempre mockAssets/mockQueues/mockWorkOrders (frontend/src/mocks/**), sem isMockMode() e sem chamada ao backend. git log --diff-filter=A → fb0ea65b (2026-05-26). grep LogisticsPage, getLogisticsPanel e logistics/repository em pendencias.md, PLANO_SAN3.md e inventario/ → 0; /logistics só aparece em P-WEB-ROTAS-SEM-PORTA (falta de porta).",
+   "motivo": "Uma via roteada da web exibe OS e ativos inventados em modo real; não é «catch que devolve dado» (fabrica sempre), por isso escapa do censo do plano, e não há pendência que nomeie o conteúdo fabricado. Pendência a nomear; dono proposto B-SAN3-06a (telas de ficção roteadas)."
+  },
+  {
+   "id": "A-C1-04",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "git blame 02bd7dab -- frontend/src/layouts/AppShell.tsx: l.80 setUnread(0) → 1a76c913 (2026-07-02); l.92-93 catch/setPendingApprovals(0) → 78bbf4f9 (2026-07-09, #153). P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO cita só 1a76c913 como origem.",
+   "motivo": "Evidência de origem parcial numa pendência nascida neste PR; as duas origens antecedem o bloco, a pré-existência se sustenta."
+  },
+  {
+   "id": "A-C1-05",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "src/modules/work-orders/work-order.validators.ts:120 emite 400 WORK_ORDER_INVALID invalid_date; frontend/src/modules/work-orders/work-orders-create.handlers.ts (novo no bloco) não trata invalid_date → ApiError.safeMessage genérica. P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM declara escopo misto («pré-existente quanto ao contrato; a tabela nasceu no B-SAN3-01»).",
+   "motivo": "A lacuna está em código nascido no bloco, logo a C1 declara dentro-do-bloco; gravidade nota porque a mensagem é honesta, nada é fabricado e o digitado fica. Já registrada (BAIXA, fila pós-gate, emenda 2 (m))."
+  },
+  {
+   "id": "A-C1-06",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia": "npx playwright test -c playwright.config.ts tests/e2e/critical-flows.spec.ts (objeto, cluster j-bsan301-c1-pg, API 3401, web 5401) → 13 failed · 0 passed · EXIT=1, 13× waiting for getByLabel(Tenant ID). d5a4ed43 (2026-07-02, #111) remove o Input «Tenant ID» de LoginPage.tsx; git grep «Tenant ID» 02bd7dab -- frontend/src → 0; o spec na base pede o rótulo nas l.96/312/321; hash por bloco base × objeto: 19 blocos iguais (auxiliares de login intocados).",
+   "motivo": "Declaração de escopo exigida pela R6: o e2e rastreado morre no login desde 2026-07-02, antes do bloco; E1-E3 só são verdes pela cópia avulsa (3/3). Já é P-SAN3-01-E2E-LOGIN-DEFASADO (ALTA, dono B-SAN3-10)."
+  }
+ ],
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://postgres:***@127.0.0.1:56401/erp_jc1 (contêiner j-bsan301-c1-pg, postgres:16) — migrate deploy (107), npm test, db:seed, e2e",
+  "REDIS_URL=redis://127.0.0.1:56402 (contêiner j-bsan301-c1-redis, redis:7-alpine) — npm test e e2e",
+  "E2E_API_PORT=3401 · E2E_FRONTEND_PORT=5401 (livres antes, fora das faixas excluídas)"
+ ],
+ "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C1-validador-mestre-evidencia.md",
+ "limpeza": "FEITA 2026-09-18: git worktree remove --force .claude/worktrees/j-bsan301-c1 (ec=0; worktree list sem j-bsan301-c1; node_modules, test-results, playwright-report, frontend/dist e a copia _jc1-copia.spec.ts sairam com ele); docker rm -f j-bsan301-c1-pg j-bsan301-c1-redis (ec=0; docker ps -a sem j-bsan301-c1); portas 3401/5401 sem listener; bsan301 intocado (status vazio, HEAD 74f3f7c9); nada escrito na arvore principal nem na base viva; logs de evidencia ficam no scratchpad (c1-backend-bb540fb3.log, c1-honest-*.tap, c1-g1-*.tap, c1-e2e/, c1-censo/, c1-indice-regen/)."
+}

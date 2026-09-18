@@ -1,0 +1,129 @@
+{
+ "cadeira": "C3",
+ "papel": "cognicao-visual",
+ "modelo": "claude-opus-5[1m] (Opus 5)",
+ "objeto": "bb540fb3",
+ "head_do_pr_na_junta": "74f3f7c9 (objeto + 10 arquivos de registro; julgado o conteúdo de bb540fb3)",
+ "veredito": "REPROVADO",
+ "motivo_do_veredito": "C3-B1 (bloqueia, dentro-do-bloco): os painéis de erro e de sem permissão da lista de OS nascem neste bloco sem recriar o estado desenhado no protótipo; erro e sem permissão não se distinguem a olho. O comando do bloco pede «error e empty recriados do protótipo».",
+ "confirmado_sem_achado": [
+  "desatualizado (lista e detalhe): faixa #FFFBEB/#FDE68A/#92400E, padding 10px 14px, raio 10, 12.5/600 — bate com ERP Web.dc.html:323; o dado fica na tela; horário real da última atualização",
+  "KPIs da lista em erro/403: os 4 valores «—», sem selo, sem pop-up; «N ordens» some",
+  "criar com 422: não navega, título digitado preservado, Alert danger do repo, mensagem de negócio sem reason/code/status",
+  "detalhe 404 real: estado não encontrada; detalhe 500: erro com Tentar novamente + Voltar; histórico em erro: «Histórico indisponível no momento.» (#B45309) distinto de «Sem eventos registrados.» (#94A3B8)",
+  "nenhum UUID, enum interno, JSON, OS-0001xx, dispatch-0001xx ou OS-FALLBACK no innerText das telas de OS (facts.json)",
+  "Despachos e Dashboard com a API devolvendo vazio: vazio honesto, sem selo e sem ficção"
+ ],
+ "achados": [
+  {
+   "id": "C3-B1",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "git show 02bd7dab:frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx | grep -c para data-state=error, «Acesso não permitido» e «Não foi possível carregar as ordens de serviço» -> 0 cada; em bb540fb3 -> 1 cada (l.551-591). Arquivo no escopo permitido (frontend/src/modules/work-orders/**). Comando B-SAN3-01, Contexto: «Estados obrigatórios (§7): error e empty recriados do protótipo».",
+   "evidencia": "Protótipo ERP Web.dc.html:370-382 (estados da lista, chips woStateChips l.3315): erro = card borda 1px #FECACA, círculo 60px #FEF2F2 com alerta #DC2626, título 16/800 #334155, detalhe 13 #94A3B8, botão primário cheio «Tentar novamente» (padding 10px 20px, raio 10); sem permissão = círculo #F1F5F9 com escudo #94A3B8, título 16/800. Implementação (estilo computado, back+front reais, 403/500 forçados por page.route; shots 02-lista-erro.png e 03-lista-sem-permissao.png contra p-erro.png e p-sem-permissao.png): os dois painéis sem borda, sem ícone, padding 48px 18px, título 14px/700 #0F172A, detalhe 12.5px #64748B; retry = link .pat-link 12px/700. Erro e sem permissão têm forma, cor e peso idênticos — só o texto difere.",
+   "motivo": "Divergência de cor (borda #FECACA, ícone #FEF2F2/#DC2626, título #0F172A contra #334155, detalhe #64748B contra #94A3B8) e de espaçamento (padding horizontal 18 contra 32, 14px fora da tolerância de ±2px) nos dois estados novos; o §7 pede os estados já desenhados recriados, e a distinção erro × sem permissão que o protótipo faz por cor e ícone não chega à tela."
+  },
+  {
+   "id": "C3-A1",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "git show 02bd7dab:.../WorkOrderDetailPage.tsx | grep -c data-state -> 0; em bb540fb3 l.121 (forbidden) e l.138 (error) são novos; l.130 (not-found) é o painel antigo com data-state acrescentado.",
+   "evidencia": "Shots 06-detalhe-nao-encontrada.png e 07-detalhe-sem-permissao.png: mesmo statePanel (padding 40), título 15/800 #0F172A, detalhe 13 #64748B e o mesmo botão azul «Voltar às ordens» — só o texto muda (WorkOrderDetailPage.tsx@bb540fb3:88-92).",
+   "motivo": "Sem permissão e não encontrada no detalhe não se distinguem a olho; o protótipo não desenha os estados do detalhe, mas a gramática da lista (escudo cinza × alerta vermelho) existe e não foi aplicada."
+  },
+  {
+   "id": "C3-A2",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "os 3 botões nascem em bb540fb3 (WorkOrderDetailPage.tsx l.121-141); o botão do não-encontrada que eles clonam é anterior (02bd7dab) e tem o mesmo comportamento.",
+   "evidencia": "scratchpad/c3-hover.cjs (Playwright, estilo computado antes/depois de hover e foco por Tab): detalhe-erro «Tentar novamente», detalhe-erro «Voltar às ordens» e detalhe-403 «Voltar às ordens» -> hoverChanged=false (bg rgb(37,99,235) e rgb(255,255,255) inalterados); foco = anel padrão do navegador «auto 1px rgb(16,16,16)». Referência: ERP Web - Telas Padronizadas.dc.html l.21 button:focus-visible 2px solid #2563EB e style-hover background:#1D4ED8 (l.127). Os retries em .pat-link (lista e faixa) têm hover e foco do padrão.",
+   "motivo": "Elemento interativo novo sem hover e sem o foco do padrão (item hover/foco da tela morta)."
+  },
+  {
+   "id": "C3-A3",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "o ramo degraded de WorkOrdersKpiGrid nasce em bb540fb3.",
+   "evidencia": "WorkOrdersPage.tsx@bb540fb3:524 iconColor={!degraded && kpis.atrasadas > 0 ? #DC2626 : #15803D}; em erro/403 o card Atrasadas mostra «—» com o ícone verde #15803D sobre #F0FDF4 (shots 02/03), a mesma cor que com 0 atrasadas e selo «sob controle» (shot 01).",
+   "motivo": "Cor de sucesso num valor desconhecido: o número virou «—», mas a cor ainda afirma que não há atraso."
+  },
+  {
+   "id": "C3-A4",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "a pendência é registro deste bloco (agent-orchestration/controle/pendencias.md@bb540fb3:9379-9386; escopo permitido agent-orchestration/**).",
+   "evidencia": "Shots 12b/12c (500 e 403 forçados): alerta «Dados demonstrativos» + 7 cards «0» clicáveis + EmptyState «Nenhum despacho encontrado / Ajuste status, prioridade, operador ou busca por OS.» sob o erro (OperationsDispatchesPage.tsx@bb540fb3:104,109,130). A pendência P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS afirma que os cards «ficam zerados — não fabricam», e o teste de encerramento dela não pede nem a ausência do «0» nem a do vazio sob o erro. Dono declarado B-SAN3-06a «(dono de operations/** da web)»; PLANO_SAN3.md@bb540fb3:270 dá ao B-SAN3-06a só purchase-orders/reports, modules/dispatch/pages/DispatchConsolePage.tsx e os arquivos de menu; grep «modules/operations» no plano -> só a l.265 (B-SAN3-01).",
+   "motivo": "Pendência que cobre só parte do defeito medido, com dono que não tem o arquivo no escopo: o critério 4 do gate fica apoiado num dono que não pode consertar."
+  },
+  {
+   "id": "C3-P1",
+   "gravidade": "bloqueia",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "frontend/src/pages/DashboardPage.tsx não tocado (git diff --quiet 02bd7dab bb540fb3 -> ec 0) e fora do escopo permitido (frontend/src/pages/** proibido); selo l.167 nasce em 0a38f1be (2026-08-04, #331); vazio l.496 em dcfa2506 (2026-07-05, #125). Antes do bloco o mesmo erro mostrava 4 despachos inventados com o mesmo selo.",
+   "evidencia": "Shot 13b-dashboard-despachos-erro.png (GET /operations/dispatches 500): selo «Despachos: Fallback local» (termo interno visível; a varredura do innerText acha «Fallback») + painel «Despachos ativos» dizendo «Nenhum despacho ativo no momento.» sobre consulta que falhou. Nenhuma das 10 P-SAN3-01-* registradas cita o Dashboard, embora o §8.2 R1 do plano o tenha previsto e delegado a esta cadeira.",
+   "motivo": "Erro apresentado como vazio e termo técnico na tela (§7, §11 regra 2). Não reprova este bloco: vira pendência.",
+   "pendencia_proposta": "P-SAN3-01-DASHBOARD-DESPACHOS-ERRO-COMO-VAZIO (MÉDIA; bloqueia o critério 4 do gate) — dono proposto: o orquestrador designa, porque nenhum bloco SAN3 tem frontend/src/pages/DashboardPage.tsx no escopo; candidato natural o mesmo dono que receber a P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS, por emenda de escopo."
+  },
+  {
+   "id": "C3-P2",
+   "gravidade": "ajuste",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "git log -S«As ordens atribuídas à sua organização aparecem aqui.» -> 38facb24 (2026-07-03, #117); o bloco só moveu o painel para WorkOrdersLoadState, com a mesma forma.",
+   "evidencia": "Shot 01-lista-real.png contra p-vazia.png: vazio só-texto (14/700 #0F172A, 12.5 #64748B), sem ícone e sem a ação «Nova OS» do protótipo (ERP Web.dc.html:362-368); docs/screen-element-map.md l.5 e l.23: «Toda lista tem os 4 estados (… vazio-com-ação …)» e «Estado vazio -> CTA».",
+   "motivo": "Vazio sem a ação exigida pelo mapa de elementos. Pela letra do §C7.1-ter(a) é pré-existente; registro para a ata que o comando do bloco pedia «empty recriado do protótipo».",
+   "pendencia_proposta": "P-SAN3-01-OS-VAZIO-SEM-ACAO (BAIXA) — dono proposto: o ciclo de correção deste bloco (mesmo arquivo e mesma classe de C3-B1) ou fila pós-gate, a critério do orquestrador."
+  },
+  {
+   "id": "C3-N1",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "WorkOrderForm.tsx não tocado; WorkOrderCreatePage.tsx:45 é linha não tocada; ambos nascem em 9f12ea99 (2026-06-09).",
+   "evidencia": "Shot 04b-criar-422.png: «ORDENS DE SERVICO», «Identificacao», «Titulo», «Descricao», «Media» sem acento, ao lado do alerta novo (que está acentuado).",
+   "motivo": "§11 regra 3 (acentuação) na mesma tela do bloco.",
+   "pendencia_proposta": "fila pós-gate (nenhum bloco SAN3 nomeia WorkOrderForm.tsx)."
+  },
+  {
+   "id": "C3-N2",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "diff 02bd7dab..bb540fb3 em frontend/src: +#BFDBFE (WorkOrderDetailPage.tsx:92) e um #B45309 a mais (GeneralInfoTab.tsx:175).",
+   "evidencia": "grep -c em frontend/src/styles/tokens/tokens.css -> 0 para #BFDBFE e para #B45309. A página já usa hex inline por convenção (pré-existente).",
+   "motivo": "Hex novo em componente em vez de token."
+  },
+  {
+   "id": "C3-N3",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": ".pat-banner--warning em app.css:3309 e o banner antigo de fallback em 02bd7dab já usavam AlertTriangle 14 na cor do texto.",
+   "evidencia": "10b-stale-style (facts.json): svg 14x14 na cor rgb(146,64,14)=#92400E; protótipo ERP Web.dc.html:323: alerta 16px #D97706.",
+   "motivo": "Cor do ícone da faixa diverge do protótipo; o padrão é anterior ao bloco."
+  },
+  {
+   "id": "C3-N4",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "terreno desta junta, não produto.",
+   "evidencia": "Ao começar havia C3-cognicao-visual-voto.json (173 B) e -evidencia.md (228 B) de 10:16 e o worktree j-bsan301-c3 (10:16, node_modules 10:17-10:18) de uma instância anterior da C3 ausente de 00-quedas.md; nenhum processo vivo referenciava o worktree (Get-CimInstance). Sobrescrevi os dois esqueletos antes de lê-los (pelo tamanho, só esqueleto); reusei o worktree com npm ci refeito. scratchpad/c3-npmci.log (10:18) é dela e ficou.",
+   "motivo": "Registro para o P6 (00-quedas.md) e para a ata."
+  }
+ ],
+ "contagem": {
+  "bloqueia": 2,
+  "bloqueia_dentro-do-bloco": 1,
+  "ajuste": 5,
+  "ajuste_dentro-do-bloco": 4,
+  "bloqueia_pre-existente": 1,
+  "ajuste_pre-existente": 1,
+  "nota": 4,
+  "nota_pre-existente": 3,
+  "nota_dentro-do-bloco": 1
+ },
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://postgres:***@127.0.0.1:56413/erp_techsolutions?schema=public (j-bsan301-c3-pg, postgres:16)",
+  "REDIS_URL=redis://127.0.0.1:56414 (j-bsan301-c3-redis, redis:7-alpine)",
+  "API http://127.0.0.1:3213/api/v1 (CORE_SAAS_PERSISTENCE=prisma, NODE_ENV=test); web http://127.0.0.1:5213 (VITE_USE_MOCKS=false)"
+ ],
+ "evidencia_arquivo": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01/C3-cognicao-visual-evidencia.md",
+ "capturas": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c3-shots/ (23 PNG + facts.json)",
+ "limpeza": "servidores 3213/5213 encerrados por PID (0 processos com j-bsan301-c3); docker rm -f j-bsan301-c3-pg j-bsan301-c3-redis (0 restantes); git worktree remove --force j-bsan301-c3 ec 0 (0 na lista); bsan301 intocado (74f3f7c9, porcelain 0); logs de npm/servidor apagados; scripts, capturas e facts.json mantidos no scratchpad como evidência"
+}
