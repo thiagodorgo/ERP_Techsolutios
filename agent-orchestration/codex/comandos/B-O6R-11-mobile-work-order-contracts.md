@@ -127,3 +127,16 @@ leitura de resposta da OS neste arquivo, o tenant da sessão vence o do corpo". 
   C2 `guardiao-fail-closed` (guard T4 por mutação, vocabulário de status exaustivo, tenant da sessão; suplente
   `coordenador-de-acessos`); C3 `jurado-o6r11-contrato-mobile-fila`, criado pela `agente-fabrica` para este bloco (envelope, fila
   offline, B-108, idempotência; suplente `jurado-o6r11-suplente-contrato-mobile-fila`). Unanimidade de 3 (perda de dado).
+
+## Emenda 4 do orquestrador — as 5 divergências da 4ª instância (2026-09-18)
+
+- **(o) Aceitas: I4-1, I4-3 e I4-4.** O caso 3d sobre os quatro leitores segue a propriedade (emenda 3); o teste de encerramento
+  proposto na pendência nova fica rotulado como proposta; a trilha e o painel atualizados além das quatro menções evitam registro
+  que se contradiz.
+- **(p) I4-2 — achado novo, anterior ao bloco:** o backend emite `tenant_id` na resposta de `GET /mobile/checklists/available`
+  (`src/modules/checklists/checklist.dto.ts:70`, `toMobileChecklistTemplateDto`, desde `39412b0c`, 2026-06-15), contra a leitura
+  da casa do §2.8 (o DTO da OS não emite; o `buildChecklistSnapshot` o remove citando o §2.8). Nasce
+  `P-CHECKLIST-DTO-EMITE-TENANT-ID`, MÉDIA, dono `B-SAN3-22` (tem `src/modules/checklists/**` no escopo). A
+  `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` deixa de ser latente: o corpo traz o campo hoje.
+- **(q) I4-5 — os dois jurados novos ficam neste PR** (emenda 3 (n)); a aposentadoria deles vem no PR seguinte ao merge
+  (`D-APOSENTADORIA-ELENCO-EFEMERO`), e o sepultamento no obituário junto da ata.

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **421** |
-| IDs distintos | 410 |
-| **ABERTAS** | **310** |
+| Cabecalhos `## P-` | **422** |
+| IDs distintos | 411 |
+| **ABERTAS** | **311** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **241** |
+| — das quais **ativas nesta rodada** | **242** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 111 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **421 cabecalhos para 410 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **422 cabecalhos para 411 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 139
+## ABERTAS · balde A — material — 140
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -210,6 +210,7 @@
 | `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 9872 | MÉDIA | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
 | `P-MOBILE-FILA-RMW-STORE` | 9887 | MÉDIA | sim | P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instânci |
 | `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` | 9901 | MÉDIA | sim | P-MOBILE-CHECKLIST-TENANT-DO-CORPO (2026-09-18) — o cliente de vistorias do app dá ao mo |
+| `P-CHECKLIST-DTO-EMITE-TENANT-ID` | 9933 | MÉDIA | sim | P-CHECKLIST-DTO-EMITE-TENANT-ID (2026-09-18) — a API de vistorias do app devolve o `tena |
 
 ## ABERTAS · balde B — processo/registro — 102
 
