@@ -2471,7 +2471,7 @@
   {
     "snapshot_date": "2026-09-18",
     "version": "B-O6R-11",
-    "pr": null,
+    "pr": 388,
     "merge_commit": null,
     "approved_head": null,
     "flutter_tests": 888,

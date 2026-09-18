@@ -6,7 +6,7 @@
   "release": {
     "block": "B-O6R-11 (Ω6R-QUA-004 + Ω6R-QUA-005 · 2 P1, item 3 do gate SAN3): o app de campo passa a ler a OS pelo REST no envelope `{ data }` e no vocabulário de status do backend, e o material que o técnico lança só é confirmado depois de gravado na fila local — que passa a executar as mutações uma de cada vez. PR Flutter-only: ZERO migration, ZERO dependência nova, backend intocado.",
     "title": "O que o técnico lança fica gravado; o que o sistema responde, o app entende",
-    "pr": null,
+    "pr": 388,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
@@ -673,7 +673,7 @@
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
       {
-        "pr": null,
+        "pr": 388,
         "data": "2026-09-18",
         "tipo": "correcao",
         "titulo": "O material lancado em campo nao se perde mais",
