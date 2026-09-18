@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 133
+## ABERTAS · balde A — material — 138
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -204,8 +204,13 @@
 | `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` | 9738 | MÉDIA | sim | P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO (2026-09-21) — o Flutter do CI (3.47.5) e o da má |
 | `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` | 9748 | MÉDIA | sim | P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR (2026-09-21) — 33 identidades aposentadas e/ou  |
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9761 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
+| `P-MOBILE-EXPENSE-ENVELOPE` | 9784 | MÉDIA | sim | P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app i |
+| `P-WO-ASSIGN-OPERATOR-ID-TORTO` | 9815 | MÉDIA | sim | P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em |
+| `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` | 9832 | ALTA | sim | P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e  |
+| `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 9859 | MÉDIA | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
+| `P-MOBILE-FILA-RMW-STORE` | 9874 | MÉDIA | sim | P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instânci |
 
-## ABERTAS · balde B — processo/registro — 107
+## ABERTAS · balde B — processo/registro — 102
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -309,13 +314,8 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9547 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9693 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9701 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
-| `P-MOBILE-EXPENSE-ENVELOPE` | 9783 | — | sim | P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app i |
-| `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` | 9799 | BAIXA | sim | P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias d |
-| `P-WO-ASSIGN-OPERATOR-ID-TORTO` | 9813 | — | sim | P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em |
-| `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` | 9829 | — | sim | P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e  |
-| `P-MOBILE-APPROVAL-REQUEST-REST-404` | 9841 | — | sim | P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app po |
-| `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 9853 | — | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
-| `P-MOBILE-FILA-RMW-STORE` | 9867 | — | sim | P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instânci |
+| `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` | 9801 | BAIXA | sim | P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias d |
+| `P-MOBILE-APPROVAL-REQUEST-REST-404` | 9846 | BAIXA | sim | P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app po |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
