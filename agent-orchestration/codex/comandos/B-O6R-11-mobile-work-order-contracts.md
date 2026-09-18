@@ -71,3 +71,20 @@ de execução a mergear** depois do #386, carrega as dívidas dele (ver o comand
 
 Escopo respeitado · bateria verde · contrato do envelope e fila provados · KPI no PR · junta · §C5 · porteiro. ID `B-O6R-11`
 · PR # · merge commit · approved head · junta · status.
+
+## Emenda do orquestrador — decisões sobre o plano (2026-09-18)
+
+Plano do bloco: `agent-orchestration/omega/planos/B-O6R-11-plano.md` (`planejador-mestre`, Fable, 2ª instância; a 1ª caiu no
+começo). Decisões, para a ata:
+
+- **(a) Sem crítico.** O bloco não é de invariante financeiro (§C7.1-ter(b)); o plano segue direto para o desenvolvedor, como o
+  `B-SAN3-01`.
+- **(b) Dono da `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` (P2 do §6):** fila pós-gate. É código morto sem chamador; o próximo
+  bloco que tocar `mobile/flutter_app/lib/features/checklists/data/**` o apaga, com teste que prove a ausência de chamador.
+- **(c) As 7 pendências do §6 são registradas pelo desenvolvedor, no PR deste bloco,** com o texto, a evidência e os donos do
+  §6 (a P3 com dono `B-O6R-07c` provisório, a ratificar pela junta), na seção "Pendências abertas por `B-O6R-11`".
+- **(d) Dívidas do #386: não.** Foram pagas pelo `B-SAN3-01` (#387), o primeiro PR de execução a mergear.
+- **(e) Ordem dos merges.** Este bloco mergeia depois do #387 e do `B-SAN3-04a`. Antes da junta o ramo é rebaseado na `main`, e
+  os números de KPI são reexecutados (§C3.3), nunca somados.
+- **(f) Composição da junta:** a proposta do §14 fica como insumo; o orquestrador a fixa no briefing depois de medir a
+  competência que os achados exigem (contrato mobile B-108 e fila offline).
