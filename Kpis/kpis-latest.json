@@ -6,7 +6,7 @@
   "release": {
     "block": "B-SAN3-04a (itens 13, 14, 15, 38 e 56 do gate SAN3 · CE-3, CE-5, CE-6, CE-G1, CE-G2): o catálogo de permissões, o banco e os dois menus passam a dizer o mesmo que a RBAC_MATRIX.md — nove concessões, duas revogações nomeadas e fail-closed onde a matriz diz \"por escopo\".",
     "title": "Cada papel vê e faz o que a matriz de papéis diz",
-    "pr": null,
+    "pr": 390,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
@@ -673,7 +673,7 @@
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
       {
-        "pr": null,
+        "pr": 390,
         "data": "2026-09-18",
         "tipo": "seguranca",
         "titulo": "Cada papel ve e faz o que a matriz de papeis diz",
