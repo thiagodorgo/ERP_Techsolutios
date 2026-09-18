@@ -163,3 +163,17 @@ Junta do ciclo 1: REPROVADO 2 × 2 (C3 e C4). Registro: `agent-orchestration/ome
 - **(t) Papéis do ciclo 2 (§C7.4-bis):** acharam `cognicao-visual` e `guardiao-fail-closed`; planejou o `planejador-mestre`;
   desenvolve um agente `general-purpose` NOVO. A junta do ciclo 2: C1 `validador-mestre`, C2 `master-teste-telas-rotas`, C3
   `frontend-pixel-master` (identidade nova), C4 `coordenador-de-acessos` (identidade nova); unanimidade de 4.
+
+## Emenda 4 do orquestrador — as 13 divergências da correção do ciclo 2 (2026-09-18)
+
+Relatório do desenvolvedor do ciclo 2 (um agente novo; caiu por 429 depois da bateria completa, antes da mensagem final):
+`agent-orchestration/omega/juntas/votos/B-SAN3-01/00-dev-ciclo2.md`. Decisões:
+
+- **(u) D-C2-1 aceita pelo orquestrador, condicionada à C3.** O vazio embutido no card (a toolbar e a busca ficam, como no
+  protótipo l.306-313) mantém o E1 verde numa base sem OS; o plano ao pé da letra o derrubava (medido). A
+  `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` fecha na ata se a C3 aceitar o vazio embutido contra a ficha.
+- **(v) Aceitas D-C2-2 a D-C2-13.** A contagem de casos e dois vermelhos declarados (D-C2-2, D-C2-3) são o que a medição mostra; a
+  F403b ficar inerte (D-C2-4) é a propriedade P1 funcionando — a forma que quebra a propriedade fica vermelha; o NS1 vermelho no
+  `tsc` (D-C2-5) é mais forte que o vermelho de runtime; o G2 com 15 fixtures (D-C2-6) cobre as formas que o mandato C4 nomeou;
+  as mutações rodadas no `bsan301` com cópia, restauração e `porcelain` conferido (D-C2-7) ficam declaradas, e a C4 as re-executa
+  no próprio worktree; D-C2-8 a D-C2-13 não mudam comportamento nem contrato.
