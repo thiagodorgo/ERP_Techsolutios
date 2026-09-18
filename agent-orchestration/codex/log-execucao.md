@@ -4700,7 +4700,8 @@ contra a cópia de segurança); a 2ª mediu o WIP contra o plano §9/§10, reexe
 
 - `cc3b7247` fix(mobile): REST da OS — `work_order_remote_api.dart` (`_unwrapData`; parser único com tenant da sessão;
   `backendStatusFor` + `workOrderStatusFromApiValue`; PATCH com vocabulário do backend; POST assign `{userId, message?}`;
-  `_workOrderFromJson` removido); fakes `b099`/`b121` só na assinatura; T1 (12 casos).
+  `_workOrderFromJson` removido); fakes `b099`/`b121` só na assinatura; T1 (12 casos neste commit; 15 no head final —
+  3b, 3c e 3d das emendas 2 (i) e 3 (j)/(m), recontados pela 4ª instância).
 - `6865c195` fix(mobile): fila — `prestador_repository.dart` (`for-in` + `await`), `sync_queue_repository.dart`
   (`_serialized`); T2 (4, com reinício sobre Drift), T3 (4), T4 (1, guard fail-closed que varre `lib/`).
 - `e54e5264` docs(kpi): `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md`, `app.js` (`kpi-freeze`).
@@ -4710,11 +4711,15 @@ contra a cópia de segurança); a 2ª mediu o WIP contra o plano §9/§10, reexe
 ### Bateria (execução real, N e forma)
 
 `flutter pub get` (lock intocado) · `dart format --output=none --set-exit-if-changed lib test` → 196 arquivos, 0 mudados ·
-`flutter analyze` → "No issues found!" · T1 `+12` · T2 `+4` · T3 `+4` · T4 `+1` · regressões do §12 do plano `+133` ·
-`flutter test --reporter compact` → **`00:47 +885: All tests passed!`** (N=1; estático 885 em 66 arquivos) ·
+`flutter analyze` → "No issues found!" · T1 `+15` · T2 `+4` · T3 `+4` · T4 `+1` · regressões do §12 do plano `+133`
+(2ª instância) · `flutter test --reporter compact` → **`00:42 +888: All tests passed!`** (N=1; estático 888 em 66
+arquivos; recontados pela 4ª instância no head final — a 2ª mediu T1 `+12` e `00:47 +885`, antes dos casos 3b, 3c e
+3d) ·
 `node --check Kpis/app.js` OK · `node scripts/kpi-freeze.mjs --check` → em dia · guards de KPI 28/28 · `git diff --check`
-OK. Vermelho-controle no head-base `9dea0ef6` (worktree descartável `vc-b-o6r-11`, `pub get` próprio), reexecutado pela 2ª
-instância: T1 10 (8 por asserção/runtime + 2 por compilação) · T2 4 · T3 2 · T4 1 = **17 de 21**; baseline 864/864.
+OK. Vermelho-controle no head-base `9dea0ef6` (worktree descartável, `pub get` próprio), recontado pela 4ª instância
+(`vc4-b-o6r-11`) com os 24 casos finais: T1 13 (9 por asserção/runtime + 4 por compilação) · T2 4 · T3 2 · T4 1 =
+**20 de 24** — os 17 de 21 do plano, que a 2ª instância mediu em `vc-b-o6r-11`, reproduzidos; baseline 864/864 (2ª
+instância).
 Mutações: sem `await` → T4 vermelho (`prestador_repository.dart:137`) e T2 4/4; `user_id` → só o caso 8; `in_progress`
 trocado em `backendStatusFor` → casos 5, 6 e 11; extras: parser `in_progress` → casos 2 e 10; lock desligado → T3 17 e 18
 (T2 segue verde: o `for-in await` sozinho fecha o gate, como o §13 do plano diz). Cada mutação revertida por edição
@@ -4745,3 +4750,18 @@ inversa e conferida por `cmp` do `git diff` contra a cópia de segurança.
 
 Worktree `vc-b-o6r-11` removido por `git worktree remove --force` pelo nome; `mobile/flutter_app/build/` (saída
 regenerável do `flutter test`) removido no b11; `.dart_tool/` mantido (o `pub get` do worktree). Nada rastreado apagado.
+
+### Emendas 2 e 3 do orquestrador (3ª e 4ª instâncias do dev, 2026-09-18)
+
+- `afc12540` fix(mobile) — emenda 2 (i): com o tenant da sessão, o do corpo nunca vence no detalhe, status e atribuição
+  (T1 3b: vermelho no `31bda5f2`, `+12 -1`). `cf075a82` docs(registro) — emenda 2 (h): severidades das 7 pendências,
+  índice pelo gerador, KPI recontado 886/886.
+- `d421e5f1` fix(mobile) — emenda 3 (j): a lista (`fetchWorkOrders`) segue a mesma propriedade (T1 3c: vermelho no
+  `5e95ed6a`, `+13 -1`; verde depois); emenda 3 (m): T1 3d — tenant `''` da sessão também vence o corpo nos quatro
+  leitores de OS (nasce verde; vermelho sob a mutação "vazio conta como ausente", `+14 -1`).
+- Commit de registro da 4ª instância — emenda 3 (k): `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (MÉDIA, fila pós-gate) e
+  emenda da `P-MOBILE-EXPENSE-ENVELOPE` (tenant só do corpo); emenda 3 (l): os números desta entrada, do
+  `status-geral.md` e da `P-O6R-B11` recontados no head final; índice 378 cabeçalhos / 367 IDs, 104 FECHADAS, 274
+  ABERTAS; KPI 888/888.
+- Limpeza da 4ª instância: worktree `vc4-b-o6r-11` removido pelo nome (`git worktree remove --force`);
+  `mobile/flutter_app/build/` removido; sondas temporárias apagadas na mesma linha de comando que as rodou.

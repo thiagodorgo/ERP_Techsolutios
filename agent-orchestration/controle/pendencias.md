@@ -3338,14 +3338,14 @@ read-modify-write: `mobile/flutter_app/lib/core/sync/sync_queue_repository.dart:
 
 **Bloqueia:** feature no app de campo (OS mobile, prestador). Junta-se à fila do **PR-08 (reconciliação
 mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, ambas ABERTAS.
-- status: FECHADA (2026-09-18, PR do `B-O6R-11` — os dois P1 fecham no app de campo: detalhe, status e atribuição da OS pelo REST desembrulham `{ data }`, falam o vocabulário do backend nos dois sentidos e a atribuição envia `{userId, message?}` (`Ω6R-QUA-004`, os 2 componentes restantes + o status da lista viva); o material do prestador só retorna depois de gravado e a fila serializa as mutações (`Ω6R-QUA-005`); prova: 4 arquivos de teste, 21 casos, 17 vermelhos no head-base `9dea0ef6`. Antes: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.)
+- status: FECHADA (2026-09-18, PR do `B-O6R-11` — os dois P1 fecham no app de campo: detalhe, status e atribuição da OS pelo REST desembrulham `{ data }`, falam o vocabulário do backend nos dois sentidos e a atribuição envia `{userId, message?}` (`Ω6R-QUA-004`, os 2 componentes restantes + o status da lista viva); o material do prestador só retorna depois de gravado e a fila serializa as mutações (`Ω6R-QUA-005`); e, nos quatro leitores de OS do cliente REST, o tenant da sessão vence o do corpo (emendas 2 (i) e 3 (j)/(m)); prova: 4 arquivos de teste, 24 casos, 20 que não passam no head-base `9dea0ef6` (16 por asserção/runtime + 4 que não compilam por usarem símbolo novo) — números recontados pela 4ª instância do dev no head final. Antes: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.)
   Rascunho arquitetural correlato: `docs/revisoes/O6R/D-004-contratos-clientes.md` (**pauta do dono, não
   decisão**).
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B2: 2 P1 (`Ω6R-QUA-004`, `Ω6R-QUA-005`), um deles de perda de dado — o material do prestador some no restart (`prestador_repository.dart:121`, `forEach` sem `await`); o detalhe/status/assign remoto da OS lê o envelope errado (`work_order_remote_api.dart:99,115,156`).
 
 - **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
 - **dono:** `B-O6R-11` (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
-- **emenda (B-O6R-11, 2026-09-18 — fechamento):** plano `agent-orchestration/omega/planos/B-O6R-11-plano.md` (`planejador-mestre`, Fable) + emenda (a)–(f) do orquestrador no comando; implementado por dev distinto do planejador e dos achadores (§C7.4-bis). Código (3 arquivos, `mobile/flutter_app/lib/`): `features/work_orders/data/work_order_remote_api.dart` (`_unwrapData`; detalhe/status/atribuição pelo parser único da lista com o tenant da sessão por parâmetro; `backendStatusFor` + `workOrderStatusFromApiValue` nos dois sentidos — `open/assigned/accepted/on_route/on_site/in_progress` deixam de cair em "Agendada" na lista viva do B-099; PATCH `/status` com o vocabulário do backend; POST `/assign` com `{userId, message?}`; `_workOrderFromJson` removido), `features/prestador/data/prestador_repository.dart` (`for-in` com `await` no lugar do `selection.forEach`) e `core/sync/sync_queue_repository.dart` (`enqueue`/`update` encadeados na instância única da fila). `core/local_db/drift_sync_action_store.dart` NÃO foi tocado (§9.4 do plano). Testes: `test/features/work_orders/bo6r11_os_rest_envelope_e_vocabulario_test.dart` (12), `test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart` (4 — o teste do gate: 3 SKUs + reinício sobre Drift → 3 ações pendentes, na ordem), `test/core/sync/bo6r11_fila_serializada_test.dart` (4) e `test/core/sync/bo6r11_guard_enqueue_com_await_test.dart` (1 — guard fail-closed que varre `lib/`); vermelho-controle no head-base `9dea0ef6` (worktree descartável): 17 de 21; mutações do plano executadas e revertidas. Suíte Flutter 864 → 885/885. **O aceite original desta entrada pedia "`enqueueAll` durável"**: o plano (§9.2) o rejeitou com a razão registrada — quebraria 8 fakes de teste sem ganho de propriedade; o `for-in await` cumpre "retornar só depois de gravar"; e a atomicidade do lote é residual nomeado (`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`). O registro de achados O6R (`docs/revisoes/O6R/achados.jsonl`, `REGISTRO_ACHADOS_O6R.md`) **não é deste bloco**: o fechamento de `Ω6R-QUA-004`/`Ω6R-QUA-005` lá é pedido ao porteiro pós-merge. Residuais abertos com dono: a seção "Pendências abertas por `B-O6R-11`" no fim deste arquivo.
+- **emenda (B-O6R-11, 2026-09-18 — fechamento):** plano `agent-orchestration/omega/planos/B-O6R-11-plano.md` (`planejador-mestre`, Fable) + emenda (a)–(f) do orquestrador no comando; implementado por dev distinto do planejador e dos achadores (§C7.4-bis). Código (3 arquivos, `mobile/flutter_app/lib/`): `features/work_orders/data/work_order_remote_api.dart` (`_unwrapData`; detalhe/status/atribuição pelo parser único da lista com o tenant da sessão por parâmetro; `backendStatusFor` + `workOrderStatusFromApiValue` nos dois sentidos — `open/assigned/accepted/on_route/on_site/in_progress` deixam de cair em "Agendada" na lista viva do B-099; PATCH `/status` com o vocabulário do backend; POST `/assign` com `{userId, message?}`; `_workOrderFromJson` removido), `features/prestador/data/prestador_repository.dart` (`for-in` com `await` no lugar do `selection.forEach`) e `core/sync/sync_queue_repository.dart` (`enqueue`/`update` encadeados na instância única da fila). `core/local_db/drift_sync_action_store.dart` NÃO foi tocado (§9.4 do plano). Testes: `test/features/work_orders/bo6r11_os_rest_envelope_e_vocabulario_test.dart` (15 — os 12 do plano + 3b, 3c e 3d das emendas 2 (i) e 3 (j)/(m): o tenant da sessão vence o do corpo nos quatro leitores de OS, `''` inclusive), `test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart` (4 — o teste do gate: 3 SKUs + reinício sobre Drift → 3 ações pendentes, na ordem), `test/core/sync/bo6r11_fila_serializada_test.dart` (4) e `test/core/sync/bo6r11_guard_enqueue_com_await_test.dart` (1 — guard fail-closed que varre `lib/`); vermelho-controle no head-base `9dea0ef6` (worktree descartável), recontado pela 4ª instância do dev com os 24 casos finais: 20 de 24 não passam (16 por asserção/runtime + 4 que não compilam por usarem símbolo novo; os 17 de 21 do plano reproduzidos; o 3d, documentação, nasce verde sobre o código consertado e fica vermelho sob mutação); mutações do plano executadas e revertidas. Suíte Flutter 864 → 888/888 (recontada pela 4ª instância no head final; as contagens anteriores deste PR, 885 e 886, foram antes dos casos 3b, 3c e 3d). **O aceite original desta entrada pedia "`enqueueAll` durável"**: o plano (§9.2) o rejeitou com a razão registrada — quebraria 8 fakes de teste sem ganho de propriedade; o `for-in await` cumpre "retornar só depois de gravar"; e a atomicidade do lote é residual nomeado (`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`). O registro de achados O6R (`docs/revisoes/O6R/achados.jsonl`, `REGISTRO_ACHADOS_O6R.md`) **não é deste bloco**: o fechamento de `Ω6R-QUA-004`/`Ω6R-QUA-005` lá é pedido ao porteiro pós-merge. Residuais abertos com dono: a seção "Pendências abertas por `B-O6R-11`" no fim deste arquivo.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -9780,6 +9780,9 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 > §6 do plano só a declara para a P2; as outras seis ficaram, no registro original, **a classificar pela junta do
 > bloco** (o dev não a atribui). **Atualização (emenda 2 (h) do orquestrador, 2026-09-18):** o orquestrador as classificou — campo
 > **severidade** de cada entrada.
+> **Atualização (emenda 3 (k) do orquestrador, 2026-09-18):** a seção ganha uma 8ª entrada, fora do §6 do plano —
+> `P-MOBILE-CHECKLIST-TENANT-DO-CORPO`, achada pela 3ª instância do dev — e a `P-MOBILE-EXPENSE-ENVELOPE` ganha
+> emenda (tenant só do corpo). Registradas pela 4ª instância do dev.
 
 ## P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app ignoram a forma real da resposta — MÉDIA
 
@@ -9797,6 +9800,16 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente` — `git blame 9dea0ef6` das linhas citadas → `e79616aa` (2026-06-13, "feat(mobile):
   Flutter mobile field ops foundation").
 - **dono:** `B-O6R-03b` (`fix/mobile-rdv-sync`, fronteira `features/expenses/**`).
+- **emenda (emenda 3 (k) do orquestrador no comando do `B-O6R-11`, 2026-09-18 — tenant só do corpo):** além do
+  envelope, `_itemFromJson` (`mobile/flutter_app/lib/features/expenses/data/expense_remote_api.dart:216`, chamado
+  por `createItem`, `:158`) tira o tenant do item SÓ do corpo (`tenantId: json['tenant_id'] as String`), sem
+  parâmetro de sessão — e o `toExpenseItemDto` do backend não emite tenant (`grep -ci tenant
+  src/modules/expense-management/expense-management.dto.ts` → 0): com o envelope consertado, o cast ainda estoura. O
+  conserto do dono segue a propriedade que o `B-O6R-11` fechou nos leitores de OS (emendas 2 (i) e 3 (j)/(m)): o
+  tenant vem da sessão que o chamador passa e vence qualquer tenant do corpo; `''` fica `''`. Achado pela 3ª
+  instância do dev do `B-O6R-11` (censo `grep` das leituras de `tenantId`/`tenant_id` em `mobile/flutter_app/lib`),
+  reexecutado pela 4ª; `git blame 9dea0ef6` de `:216` → `e79616aa` (2026-06-13), `pre-existente`. Dono inalterado:
+  `B-O6R-03b`.
 
 ## P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias do app lê `runId` na raiz de um `sendResult` e não tem chamador — BAIXA
 
@@ -9884,3 +9897,36 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente` — `git blame 9dea0ef6` de `sync_action_store.dart:1-20` e
   `sync_queue_repository.dart:17-34` → `e79616aa` (2026-06-13).
 - **dono:** `B-SAN3-16` (fila drenada; toca `sync_replay_service.dart`).
+
+## P-MOBILE-CHECKLIST-TENANT-DO-CORPO (2026-09-18) — o cliente de vistorias do app dá ao modelo de vistoria o tenant do CORPO da resposta, não o da sessão que o chamador passou — MÉDIA
+
+- status: ABERTA (emenda 3 (k) do comando do `B-O6R-11` — fora da fronteira do bloco; não consertada)
+- **o quê:** `_templateFromRemoteJson` faz `strOpt('tenantId', 'tenant_id') ?? fallbackTenantId`: o chamador
+  (`fetchAvailableChecklists`, `required String tenantId`) sempre passa o tenant da sessão — o repositório passa
+  `_session.activeTenant.tenantId` (`checklist_repository.dart:147` e `:194`) —, e o corpo vence quando traz
+  tenant. É a propriedade que o `B-O6R-11` fechou nos quatro leitores de OS (emendas 2 (i) e 3 (j)/(m)): a
+  organização se resolve pelo ator autenticado, nunca por conteúdo de resposta (§2.8 do `CLAUDE.md`).
+- **prova:** `mobile/flutter_app/lib/features/checklists/data/checklist_remote_api.dart:397` (`tenantId:
+  strOpt('tenantId', 'tenant_id') ?? fallbackTenantId`) e `:179` (`_templateFromRemoteJson(j, fallbackTenantId:
+  tenantId)`), iguais em `9dea0ef6` e no head do bloco (`git diff --quiet 9dea0ef6 HEAD --
+  mobile/flutter_app/lib/features/checklists` → ec=0). Censo da 3ª instância do dev, reexecutado pela 4ª (`grep -rnE
+  "\[['\"](tenantId|tenant_id)['\"]\]|strOpt\(['\"]tenantId" mobile/flutter_app/lib`): fora de login/bootstrap
+  (a própria fonte da sessão) e dos stores locais (não são resposta de rede), as leituras de tenant em corpo de
+  resposta são três — `work_order_remote_api.dart` (consertada pelo `B-O6R-11`), esta, e `expense_remote_api.dart:216`
+  (emenda da `P-MOBILE-EXPENSE-ENVELOPE`); `ChecklistTemplate.fromJson` (`checklist_template_models.dart:390`) não tem
+  chamador em `lib/`.
+- **estado:** vivo — o cliente é construído com sessão autenticada (`checklistRemoteApiProvider`,
+  `checklist_repository.dart:849-855`) e, medido pela 4ª instância, o corpo HOJE traz `tenant_id`: o
+  `toMobileChecklistTemplateDto` do backend o emite (`src/modules/checklists/checklist.dto.ts:70`) e `GET
+  /mobile/checklists/available` responde com ele (`checklist.controller.ts:123`). Os valores coincidem enquanto o
+  backend escopar a consulta pelo ator; o app, porém, confia no payload. A emissão de `tenant_id` pelo backend nessa
+  resposta é, na leitura da casa (o DTO da OS e o `buildChecklistSnapshot` o omitem citando o §2.8), assunto à parte:
+  reportada ao orquestrador pelo dev (relatório da 4ª instância), sem pendência própria aqui.
+- **severidade:** MÉDIA (emenda 3 (k) do orquestrador, 2026-09-18).
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:397` e `:179` → `57b56048` (2026-06-15, "feat(mobile):
+  pull remote checklist templates into local cache").
+- **dono:** fila pós-gate (emenda 3 (k) do comando do `B-O6R-11`, 2026-09-18): nenhum bloco SAN3 tem
+  `mobile/flutter_app/lib/features/checklists/data/**` na fronteira.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** o dos casos 3b/3c/3d do T1 do `B-O6R-11`
+  aplicado ao cliente de vistorias — corpo com `tenantId`/`tenant_id` diferente → vence o da sessão; chamador com
+  `''` → `''`.
