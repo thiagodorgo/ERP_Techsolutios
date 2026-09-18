@@ -230,6 +230,7 @@ function mapBackendRole(role: string): UserRole | null {
   if (normalized === "manager") return "Gestor Operacional";
   if (normalized === "technician" || normalized === "operator" || normalized === "field_technician") return "Operador Logistico";
   if (normalized === "finance") return "Financeiro";
+  if (normalized === "inventory") return "Estoque";
   if (normalized === "auditor" || normalized === "viewer") return "Auditor";
   if (normalized === "support") return "Supervisor";
   if (normalized === "field_dispatcher") return "Operação de Campo";

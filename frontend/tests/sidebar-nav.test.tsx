@@ -375,7 +375,9 @@ test("sidebar visual: support nao ve FROTA/GESTAO/OPERACAO; finance recupera FRO
   assert.equal(financePaths.includes("/fleet/fines"), true, "finance ve Multas");
   assert.equal(financePaths.includes("/fleet/insurance"), true, "finance ve Seguros");
   assert.equal(financePaths.includes("/finance/commissions"), true, "finance ve Remuneracoes");
-  assert.equal(financePaths.includes("/cadastros/clientes"), false, "finance NAO gerencia Clientes");
+  // B-SAN3-04a (P2, D-SAN3-PLANO-OPCAO-B): o Financeiro VÊ Clientes e Serviços (leitura — monta orçamento).
+  assert.equal(financePaths.includes("/cadastros/clientes"), true, "finance VE Clientes (customers:read, P2)");
+  assert.equal(financePaths.includes("/cadastros/servicos"), true, "finance VE Servicos (service_catalog:read, P2)");
   assert.equal(financePaths.includes("/cadastros/viaturas"), false, "finance NAO gerencia Viaturas");
 });
 

@@ -6,6 +6,9 @@ export type UserRole =
   | "Operação de Campo"
   | "Supervisor"
   | "Financeiro"
+  // B-SAN3-04a (item 38, P-026) — o papel inventory ganha rótulo próprio; antes caía em null e o usuário só-Estoque
+  // recebia o menu do gestor (24 de 28 itens negados pelo backend).
+  | "Estoque"
   | "Auditor";
 
 export type AuthUser = {
