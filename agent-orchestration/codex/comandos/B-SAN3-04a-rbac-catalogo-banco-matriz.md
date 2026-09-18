@@ -138,3 +138,33 @@ de sessão do Fable), com o gerador do mapa em `agent-orchestration/omega/planos
 - **(e) Escopo ratificado:** a regeneração deliberada de `tests/fixtures/role-catalog-contract.snapshot.json` e o teste
   existente que o §9 do plano nomeia entram no escopo, como consequência direta da mudança do catálogo.
 - **(f)** Este bloco carrega as dívidas do #386 (seção "Dívidas do #386"), salvo aviso em contrário do orquestrador.
+
+## Emenda 2 do orquestrador — as divergências do desenvolvedor e a ordem dos merges (2026-09-18)
+
+Relatório do desenvolvedor (3ª instância, que mediu e completou o trabalho não commitado da 2ª):
+`agent-orchestration/omega/juntas/votos/B-SAN3-04a/00-dev.md`. Conferência barata do orquestrador no head `c57e7ee8`: nenhum
+arquivo proibido no diff; `RBAC_MATRIX.md` só nas linhas 38 e 41; `prisma/` só no `seed.ts`; `git diff --check` limpo;
+`kpi-freeze --check` em dia; os 3 guards de KPI 28/28; `sync-agent-agents --check` OK; índice byte-idêntico ao gerador numa
+cópia. Decisões:
+
+- **(g) Ordem dos merges.** O `B-SAN3-01` (#387) mergeia primeiro e paga as dívidas do #386; o item 3 da entrega deste bloco
+  foi revogado antes de ser feito (o desenvolvedor foi avisado a tempo; D-8 fica sem efeito). Depois daquele merge, este
+  ramo é rebaseado na `main`, e os números de KPI são **reexecutados** (§C3.3), não somados: backend com Postgres e Redis
+  descartáveis, smoke do frontend, `blocks_completed` a partir do valor da `main`.
+- **(h) D-1 e D-1b aceitas.** O 3º conflito registrado (l.41 × `finance` × `tariffs:read`) fica fechado por padrão: nada é
+  concedido que a decisão do dono não nomeou, e o formulário de orçamento do Financeiro não lê tarifas (medido,
+  `useServiceQuoteReferences.ts:6-8`). A premissa envelhecida do K1 fica na `P-SAN3-04A-MATRIZ-L37-X-BULLETS`, que é
+  decisão do dono.
+- **(i) D-2 aceita.** O `reopen` do `manager` em `checklist_runs` tem decisão do dono anterior (`D-CHK-P1-REOPEN-RBAC`); o
+  registro como excedente conhecido no T1 é a forma certa de não reprovar uma concessão decidida.
+- **(j) D-3 aceita, com conferência obrigatória da C3.** Os 5 testes existentes tocados fora do §6 entram no escopo
+  nominalmente, com a condição que o desenvolvedor declarou e a junta confere: cada um fica vermelho com o código do bloco
+  sem a troca, e nenhuma asserção foi removida — só o sujeito do controle negativo mudou.
+- **(k) D-4 aceita.** O prefixo que o T1 exige é o mesmo.
+- **(l) D-5 aceita.** O T2 sob papel `NOSUPERUSER NOBYPASSRLS` é mais rígido que o plano e é a regra da casa.
+- **(m) D-6 aceita, com conferência da C3.** Fechar a `P-RBAC-CATALOG-MATRIZ` como duplicata declarada da
+  `P-RBAC-CHECKLIST-DRIFT` vale se o item que restava aberto nela for exatamente o que o bloco concede; a C3 confere.
+- **(n) D-7 aceita.** `P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS` nasce com dono `B-SAN3-06a`. O backend continua a
+  autoridade; o mapa estático só molda a UI depois da troca de organização.
+- **(o) Observações O-1 a O-3** ficam registradas como observações; a O-3 (o gerador do índice lista entrada FECHADA como
+  diferida material) é do gerador, não do bloco.
