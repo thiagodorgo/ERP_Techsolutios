@@ -1,0 +1,483 @@
+forma: spec RASTREADO inteiro tests/e2e/critical-flows.spec.ts (HEAD 6ae71c0e + conserto do E2 não commitado) · DATABASE_URL de bsan301-db-url.txt (bsan301-pg, 127.0.0.1:32768/erp_bsan301) · CORE_SAAS_PERSISTENCE=prisma (playwright.config) · E2E_API_PORT=3299 · E2E_FRONTEND_PORT=5199 · seed já aplicado nesta sessão (e2e-dev3-seed.log) · npx playwright test -c playwright.config.ts tests/e2e/critical-flows.spec.ts --reporter=list · 2026-09-18T02:52:22Z
+
+Running 13 tests using 1 worker
+
+  x   1 [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth (45.2s)
+  x   2 [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console (45.3s)
+  x   3 [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed (45.2s)
+  x   4 [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos) (45.2s)
+  x   5 [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC (45.2s)
+  x   6 [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu (45.2s)
+  x   7 [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real (45.2s)
+  x   8 [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados (45.2s)
+  x   9 [chromium] › tests\e2e\critical-flows.spec.ts:346:1 › platform admin acessa Platform Console (45.2s)
+  x  10 [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar (45.2s)
+  x  11 [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos (45.2s)
+  x  12 [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados (45.2s)
+  x  13 [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login (45.2s)
+
+
+  1) [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      94 |   await expect(page).toHaveURL(/\/login$/);
+      95 |
+    > 96 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+         |                                      ^
+      97 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      98 |   await page.getByRole("textbox", { name: /Senha/i }).fill("senha-invalida");
+      99 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:96:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-login-real--e1838-e-rota-protegida-exige-auth-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-login-real--e1838-e-rota-protegida-exige-auth-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-login-real--e1838-e-rota-protegida-exige-auth-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-login-real--e1838-e-rota-protegida-exige-auth-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:113:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-tenant-admi-bfa92-o-e-nao-ve-Platform-Console-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-tenant-admi-bfa92-o-e-nao-ve-Platform-Console-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-tenant-admi-bfa92-o-e-nao-ve-Platform-Console-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-tenant-admi-bfa92-o-e-nao-ve-Platform-Console-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:130:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-tenant-admi-f8e38-cacoes-sem-depender-de-seed-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-tenant-admi-f8e38-cacoes-sem-depender-de-seed-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-tenant-admi-f8e38-cacoes-sem-depender-de-seed-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-tenant-admi-f8e38-cacoes-sem-depender-de-seed-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos) 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:145:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-Mapa-Operac-a9532--filtro-sem-chips-passivos--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-Mapa-Operac-a9532--filtro-sem-chips-passivos--chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-Mapa-Operac-a9532--filtro-sem-chips-passivos--chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-Mapa-Operac-a9532--filtro-sem-chips-passivos--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:181:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-Despachos-O-f2eae-lista-KPIs-e-acoes-por-RBAC-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-Despachos-O-f2eae-lista-KPIs-e-acoes-por-RBAC-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-Despachos-O-f2eae-lista-KPIs-e-acoes-por-RBAC-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-Despachos-O-f2eae-lista-KPIs-e-acoes-por-RBAC-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:207:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-E1-—-lista--cf7ca-stra-é-o-que-a-API-devolveu-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-E1-—-lista--cf7ca-stra-é-o-que-a-API-devolveu-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-E1-—-lista--cf7ca-stra-é-o-que-a-API-devolveu-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-E1-—-lista--cf7ca-stra-é-o-que-a-API-devolveu-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:241:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-E2-—-create-5520d-ceito-navega-para-a-OS-real-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-E2-—-create-5520d-ceito-navega-para-a-OS-real-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-E2-—-create-5520d-ceito-navega-para-a-OS-real-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-E2-—-create-5520d-ceito-navega-para-a-OS-real-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:293:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-E3-—-detalh-7c3d0--erro-são-estados-não-dados-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-E3-—-detalh-7c3d0--erro-são-estados-não-dados-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-E3-—-detalh-7c3d0--erro-são-estados-não-dados-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-E3-—-detalh-7c3d0--erro-são-estados-não-dados-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [chromium] › tests\e2e\critical-flows.spec.ts:346:1 › platform admin acessa Platform Console ──
+
+    Test timeout of 45000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 45000ms exceeded.
+
+      345 |
+      346 | test("platform admin acessa Platform Console", async ({ page }) => {
+    > 347 |   const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu?scope=platform"));
+          |                                   ^
+      348 |   await loginAsPlatformAdmin(page);
+      349 |   await navigationResponse;
+      350 |
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:347:35
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      444 | async function loginAsPlatformAdmin(page: Page): Promise<void> {
+      445 |   await page.goto("/login");
+    > 446 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      447 |   await page.getByLabel("E-mail corporativo").fill(platformEmail);
+      448 |   await page.getByRole("textbox", { name: /Senha/i }).fill(platformPassword);
+      449 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsPlatformAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:446:38)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:348:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-platform-admin-acessa-Platform-Console-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-platform-admin-acessa-Platform-Console-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-platform-admin-acessa-Platform-Console-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-platform-admin-acessa-Platform-Console-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:372:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-PR-02a-Mode-548a9-ova-e-o-builder-sem-quebrar-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-PR-02a-Mode-548a9-ova-e-o-builder-sem-quebrar-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-PR-02a-Mode-548a9-ova-e-o-builder-sem-quebrar-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-PR-02a-Mode-548a9-ova-e-o-builder-sem-quebrar-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:381:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-runtime-web-8ee8c-ia-obrigatorios-incompletos-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-runtime-web-8ee8c-ia-obrigatorios-incompletos-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-runtime-web-8ee8c-ia-obrigatorios-incompletos-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-runtime-web-8ee8c-ia-obrigatorios-incompletos-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:396:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-W03-Configu-f1cdb-tegorias-e-temas-planejados-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-W03-Configu-f1cdb-tegorias-e-temas-planejados-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-W03-Configu-f1cdb-tegorias-e-temas-planejados-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-W03-Configu-f1cdb-tegorias-e-temas-planejados-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Tenant ID')
+
+
+      435 | async function loginAsTenantAdmin(page: Page): Promise<void> {
+      436 |   await page.goto("/login");
+    > 437 |   await page.getByLabel("Tenant ID").fill(demoTenantId);
+          |                                      ^
+      438 |   await page.getByLabel("E-mail corporativo").fill(demoEmail);
+      439 |   await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
+      440 |   await page.getByRole("button", { name: "Entrar" }).click();
+        at loginAsTenantAdmin (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:437:38)
+        at loginAndActivateContext (C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:431:3)
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\critical-flows.spec.ts:421:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\critical-flows-logout-real-0a517-ssao-local-e-volta-ao-login-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\critical-flows-logout-real-0a517-ssao-local-e-volta-ao-login-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\critical-flows-logout-real-0a517-ssao-local-e-volta-ao-login-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\critical-flows-logout-real-0a517-ssao-local-e-volta-ao-login-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13 failed
+    [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth 
+    [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console 
+    [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed 
+    [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos) 
+    [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC 
+    [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu 
+    [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+    [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados 
+    [chromium] › tests\e2e\critical-flows.spec.ts:346:1 › platform admin acessa Platform Console ───
+    [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar 
+    [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos 
+    [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados 
+    [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login 
+EXIT=1

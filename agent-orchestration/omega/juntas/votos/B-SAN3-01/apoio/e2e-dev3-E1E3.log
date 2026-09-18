@@ -1,0 +1,52 @@
+forma: E1-E3 da cópia avulsa (= rastreado no worktree: HEAD 6ae71c0e + conserto do E2 não commitado) + login ajustado · DATABASE_URL de bsan301-db-url.txt (bsan301-pg, 127.0.0.1:32768/erp_bsan301) · CORE_SAAS_PERSISTENCE=prisma (playwright.config) · E2E_API_PORT=3299 · E2E_FRONTEND_PORT=5199 · npm run db:seed antes (EXIT no e2e-dev3-seed.log) · npx playwright test -c playwright.config.ts tests/e2e/_bsan301-adhoc.spec.ts --reporter=list · 2026-09-18T02:49:56Z
+
+Running 3 tests using 1 worker
+
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '6c7b69d0-ef2b-4f86-9fc4-4a03a3a14175',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'a2a1f0d1-ee1e-4070-9d5b-9e73d7d7f964',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+  ok 1 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:29:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu (25.9s)
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '3c5c4703-bd5f-41e7-a826-1601195d02cd',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'ea98cd98-859e-48ff-9b78-f1dc3f5c6e68',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'f8d8ac1f-6086-4fd6-b0e5-d5152a81c50b',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+  ok 2 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real (7.6s)
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '4abfce1b-e956-454b-bcfd-3659420306e9',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'e3058d98-b749-4371-a122-824bd145cedb',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+  ok 3 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:115:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados (7.8s)
+
+  3 passed (1.6m)
+EXIT=0

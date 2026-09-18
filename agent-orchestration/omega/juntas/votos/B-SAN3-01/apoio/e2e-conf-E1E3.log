@@ -1,0 +1,92 @@
+forma: E1-E3 verbatim do head 6ae71c0e + login ajustado · cluster bsan301-pg · CORE_SAAS_PERSISTENCE=prisma · portas 3299/5199 · 2026-09-18T02:39:18Z
+
+Running 3 tests using 1 worker
+
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '42567de8-60a7-4dba-8450-e62d162acb22',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'aa5299c8-b0e1-437b-b1ba-7d795243f151',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+  ok 1 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:29:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu (5.3s)
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '980b055c-0cfb-4d4a-9832-ba66dd0854ce',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'b6df69f3-3abe-48c3-aabb-05e937fdd806',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+  x  2 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real (12.5s)
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: 'ffd2341c-cb28-4c62-b74e-5871488dc17a',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '4bf3a641-2aa9-4767-8f04-91cd2f516c6e',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '2beddcb4-c604-4e3c-a706-e7a724907543',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+  ok 3 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:112:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados (6.8s)
+
+
+  1) [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator: getByLabel(/^Descri[çc][ãa]o$/)
+    Expected: "Descrição digitada pelo operador durante o E2E."
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveValue" with timeout 10000ms
+      - waiting for getByLabel(/^Descri[çc][ãa]o$/)
+
+
+      87 |   await expect(page).toHaveURL(/\/work-orders\/new$/);
+      88 |   await expect(titleField).toHaveValue(title);
+    > 89 |   await expect(descriptionField).toHaveValue(description);
+         |                                  ^
+      90 |   await expect(page.getByRole("button", { name: "Salvar OS" })).toBeEnabled();
+      91 |   await expect(page.getByRole("alert")).not.toContainText(/destination_required|WORK_ORDER_UNPROCESSABLE|422/);
+      92 |   await page.unroute("**/api/v1/work-orders");
+        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\_bsan301-adhoc.spec.ts:89:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\_bsan301-adhoc-E2-—-create-817c8-ceito-navega-para-a-OS-real-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\_bsan301-adhoc-E2-—-create-817c8-ceito-navega-para-a-OS-real-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\_bsan301-adhoc-E2-—-create-817c8-ceito-navega-para-a-OS-real-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\_bsan301-adhoc-E2-—-create-817c8-ceito-navega-para-a-OS-real-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+  2 passed (32.7s)
+EXIT=1

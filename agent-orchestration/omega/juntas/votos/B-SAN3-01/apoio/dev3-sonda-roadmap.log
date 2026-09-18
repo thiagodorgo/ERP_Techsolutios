@@ -1,0 +1,7 @@
+IDs no §5 do PLANO_SAN3 (gerados da tabela): 37 → B-O6R-04a B-O6R-03a B-SAN3-02 B-SAN3-20 B-SAN3-03 B-SAN3-04a B-SAN3-05 B-O6R-07c B-SAN3-04b B-SAN3-09 B-SAN3-22 B-O6R-12 B-SAN3-18 B-SAN3-01 B-SAN3-12 B-SAN3-24 B-AV-REAL B-SAN3-11 B-SAN3-06a B-SAN3-07 B-SAN3-08 B-SAN3-25 B-SAN3-06b B-SAN3-21 B-O6R-11 B-SAN3-13 B-SAN3-14 B-SAN3-15 B-SAN3-16 B-SAN3-17 B-SAN3-26 B-O6R-04b B-O6R-03b B-SAN3-19 B-SAN3-23 B-O6R-09 B-SAN3-10
+IDs já no roadmap.blocos (12): B-O6R-01 B-O6R-02 B-O6R-03 B-O6R-04 B-O6R-05 B-O6R-06 B-O6R-07 B-O6R-08 B-O6R-09 B-O6R-10 B-O6R-11 B-O6R-12
+colisão exata de ID §5 × roadmap: ["B-O6R-12","B-O6R-11","B-O6R-09"]
+campos de roadmap que o app.js lê (grep r.X / roadmap.X): ["snapshot_date","backend_tests","frontend_smoke_tests","frontend_smoke","flutter_tests","blocks_completed","itens","fora","corte","blocos","ordem_vinculante","trilha_bloqueada","source"]
+V0 (atual): cartões no roadmap-list=12 · medidor="4 de 12" · IDs SAN3 do §5 visíveis em QUALQUER elemento=6/37 · IDs duplicados na lista=[] · palavra "SAN3" fora de ID em algum elemento=true
+V1 (roadmap.trilhas hipotético): cartões no roadmap-list=12 · medidor="4 de 12" · IDs SAN3 do §5 visíveis em QUALQUER elemento=6/37 · IDs duplicados na lista=[] · palavra "SAN3" fora de ID em algum elemento=true
+V2 (SAN3 anexado a roadmap.blocos): cartões no roadmap-list=49 · medidor="5 de 49" · IDs SAN3 do §5 visíveis em QUALQUER elemento=37/37 · IDs duplicados na lista=["B-O6R-12","B-O6R-11","B-O6R-09"] · palavra "SAN3" fora de ID em algum elemento=true
