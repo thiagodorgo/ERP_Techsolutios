@@ -6,7 +6,7 @@
   "release": {
     "block": "B-SAN3-01 (P-008 — item 4 do gate SAN3, perda de dado): a web deixa de fabricar OS e despacho quando o backend recusa ou responde vazio; o erro real chega à tela como estado e o que o operador digitou fica onde está. ZERO backend, ZERO migration, ZERO dependência nova.",
     "title": "O erro chega à tela como estado, e o que o operador digitou fica onde está",
-    "pr": null,
+    "pr": 387,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
@@ -674,7 +674,7 @@
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
       {
-        "pr": null,
+        "pr": 387,
         "data": "2026-09-17",
         "tipo": "correcao_critica",
         "titulo": "A web para de inventar ordem de serviço quando o servidor recusa",
