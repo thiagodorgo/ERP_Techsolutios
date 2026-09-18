@@ -6,7 +6,7 @@
   "release": {
     "block": "B-O6R-04a (Ω6R-DAT-002 + Ω6R-DAT-003 · 2 P0, com P-020 absorvida): o saldo de estoque passa a ser decidido sob o lock da linha do item em toda via que debita, e o fechamento de contagem cíclica passa a ser uma máquina de estados com CAS em unidades por item — um vencedor, nenhuma unidade aplicada duas vezes, retomada que conclui e o total da sessão inteira. UMA migration aditiva e fail-closed (2 índices únicos parciais), ZERO dependência nova.",
     "title": "O estoque não fica negativo e a contagem fecha uma vez só",
-    "pr": null,
+    "pr": 389,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
@@ -675,9 +675,16 @@
     }
   },
   "recent": {
-    "as_of": "2026-09-11",
+    "as_of": "2026-09-18",
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
+      {
+        "pr": 389,
+        "data": "2026-09-18",
+        "tipo": "correcao_critica",
+        "titulo": "O estoque nao fica negativo nem estorna duas vezes sob acesso simultaneo",
+        "resumo": "Duas operacoes ao mesmo tempo no mesmo item liam o saldo, decidiam e gravavam sem trava: o estoque podia ficar negativo e um estorno podia sair duas vezes. Agora toda gravacao trava o item antes de decidir. O fechamento da contagem ciclica, que estourava o tempo acima de ~650 itens, roda em partes retomaveis, com um vencedor so e o total certo na tela e na auditoria. No banco, dois indices unicos impedem a duplicata; a migracao para se encontrar duplicata antiga e nunca apaga nada."
+      },
       {
         "pr": 386,
         "data": "2026-09-11",
