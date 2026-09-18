@@ -9466,3 +9466,11 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** o dos casos 3b/3c/3d do T1 do `B-O6R-11`
   aplicado ao cliente de vistorias — corpo com `tenantId`/`tenant_id` diferente → vence o da sessão; chamador com
   `''` → `''`.
+## P-CHECKLIST-DTO-EMITE-TENANT-ID (2026-09-18) — a API de vistorias do app devolve o `tenant_id` da organização no corpo da resposta — MÉDIA
+
+- status: ABERTA (divergência I4-2 do desenvolvedor do `B-O6R-11`; emenda 4 (p) do orquestrador)
+- **prova:** `toMobileChecklistTemplateDto` (`src/modules/checklists/checklist.dto.ts:70`) grava `tenant_id: template.tenantId`, e `GET /mobile/checklists/available` responde com ele (`checklist.controller.ts`). O DTO da OS não emite o campo, e o `buildChecklistSnapshot` o remove citando o §2.8 do `CLAUDE.md` ("nunca exponha `tenant_id` externo em resposta pública"): a casa lê o §2.8 como proibição de emitir o campo nas respostas ao app.
+- **escopo:** `pre-existente` (`39412b0c`, 2026-06-15, "feat(mobile-api): add available checklist templates endpoint").
+- **dono:** `B-SAN3-22` (tem `src/modules/checklists/**` no escopo do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md`).
+- **bloqueia:** não bloqueia o gate; relacionada à `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (o app adota o tenant do corpo).
+- **teste de encerramento:** a resposta de `GET /mobile/checklists/available` não traz `tenant_id` (asserção sobre o corpo serializado); vermelho-controle no head atual.
