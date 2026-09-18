@@ -2942,3 +2942,32 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+## 2026-09-18 — B-O6R-04a (PR na autoria) — o estoque não fica negativo e a contagem fecha uma vez só
+
+Fecha os **dois P0 de estoque** do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020` absorvida.
+
+**Ω6R-DAT-002.** A saída lia o saldo, decidia e escrevia **sem lock**: medido no head-base, 20 saídas
+concorrentes de 1 sobre saldo 10 eram **todas** aceitas (saldo −10). Agora toda via que chega a
+`insertMovement`/`avg_cost` — saída, transferência, estorno, baixa e estorno de baixa por fonte — trava a linha
+do item `FOR UPDATE` **antes** da primeira leitura que decide, e o lock é **tipo**: só `lockItemForUpdate`
+produz o token `ItemWriteLock` que a escrita exige; as leituras sem lock que decidiam deixaram de existir.
+Estorno duplo → **uma** compensação, e no banco um índice único parcial por original.
+
+**Ω6R-DAT-003.** Dois fechamentos concorrentes da mesma contagem aplicavam o ajuste duas vezes. Agora o
+fechamento é `aberta → fechando → concluida` com CAS, **uma unidade por item** (cabe no timeout para qualquer
+tamanho de contagem), **exatamente um 200**, nenhum estado sem saída (falha sem ajuste aplicado devolve a sessão
+a `aberta`; com ajuste, recontar as pendentes e retomar) e o total da sessão **inteira** no 200 e na auditoria.
+Recontar e cancelar decidem sob o lock da sessão; abrir contagem recusa item que já está em outra contagem aberta.
+
+**A migration nunca deduplica.** `20260873000000_add_stock_movements_unique_backstops` cria dois índices únicos
+parciais e aborta com a **contagem real** de grupos duplicados de legado; o censo em staging e produção é **ato do
+dono antes do próximo deploy** (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+
+**Números, por execução real.** `backend_tests` **2995/2997 → 3049/3051** (+54: T-A 16, T-B 20, T-C 7, T-C′ 2,
+T-D 9), forma canônica 3 (banco descartável recriado, `DATABASE_URL` exportada, `CORE_SAAS_PERSISTENCE` não
+exportado), `ec=0`, os 2 pulos são os do orçamento RBAC. As 4 suítes `-db` do bloco: **45/45 em 3 execuções**
+com o banco recriado antes de cada, a 3ª em paralelo. As 7 suítes de estoque em memória: **67/67**.
+Vermelho-controle **executado** no head-base (`cc696f93`): T-A 3/16, T-B 6/20, T-C 1/7, T-C′ 0/2, T-D 2/9 — cada
+vermelho lido do TAP com o motivo. 16 mutações dos guards, todas vermelhas e revertidas.
+`blocks_completed` 163 → 164. `flutter_tests` e `frontend_smoke_tests` **carregados** com marcador (§C3.3): o PR
+não toca `mobile/` nem `frontend/`. `mvp_demo`/`mvp_vendavel` intocados (§C3.4).

@@ -1,5 +1,31 @@
 # Status Geral
 
+## Atualização 2026-09-18 — B-O6R-04a (PR na autoria): o estoque não fica negativo e a contagem fecha uma vez só
+
+**Branch `fix/inventory-consistency`, commits do desenvolvedor sem push** (o orquestrador empurra depois de
+conferir). Fecha, **na autoria**, os dois P0 de estoque do gate — `Ω6R-DAT-002` (saída concorrente deixava o
+saldo negativo: 20 de 20 aceitas sobre saldo 10 no head-base) e `Ω6R-DAT-003` (fechamento de contagem aplicado
+duas vezes) — com a `P-020` absorvida. O painel segue com **13** P0 corrigidos na `main`; os dois ficam em
+`aguardando_merge` até o backfill.
+
+**Desenho, em uma linha por via:** lock `FOR UPDATE` do item antes de toda decisão de saldo (V1–V5, como tipo
+`ItemWriteLock`); fechamento `aberta → fechando → concluida` com CAS em unidades por item, sem estado sem saída e
+com o total da sessão inteira; recontagem e cancelamento sob o lock da sessão; `open` serializado pela linha do
+tenant e recusando item já em contagem aberta. Uma migration aditiva, **fail-closed**, que nunca deduplica.
+
+**Números:** suíte plena **3049/3051** (era 2995/2997), `ec=0`; as 4 suítes `-db` do bloco 45/45 em três
+execuções; vermelho-controle executado no head-base. `blocks_completed` **164**.
+
+**Antes do deploy (não do merge):** o censo de duplicatas em staging e produção é **ato do dono** —
+`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`. Se a variável `STAGING_DEPLOY_ENABLED` for ligada, o merge na `main`
+já é o deploy de staging.
+
+**Para a junta (unanimidade de 3, dado/dinheiro):** dez divergências plano × código reportadas pelo
+desenvolvedor, nenhuma decidida por ele; a que pede ratificação explícita é a `D-1` (commit `cd055802`, teste
+de rota fora da lista do plano) — `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`.
+
+---
+
 ## Atualização 2026-09-05 — B-O6R-02 ciclo 5: APROVADO 3×0, e a bateria reexecutada depois da absorção
 
 **MERGEADO: PR #371, squash `99f1840`, em 2026-09-05T02:27:34Z.** O squash parou um commit

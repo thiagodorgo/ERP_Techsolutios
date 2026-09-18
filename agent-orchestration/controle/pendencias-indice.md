@@ -32,10 +32,16 @@
 | **ABERTAS** | **303** |
 | — das quais **diferidas** (balde C) | 69 |
 | — das quais **ativas nesta rodada** | **234** |
+| Cabecalhos `## P-` | **374** |
+| IDs distintos | 363 |
+| **ABERTAS** | **271** |
+| — das quais **diferidas** (balde C) | 71 |
+| — das quais **ativas nesta rodada** | **200** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 110 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **413 cabecalhos para 402 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **374 cabecalhos para 363 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -207,6 +213,121 @@
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 
 ## ABERTAS · balde B — processo/registro — 100
+## ABERTAS · balde A — material — 109
+
+| ID | linha | severidade | dono | titulo |
+|---|--:|---|---|---|
+| `P-020` | 243 | ALTA | sim | P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-0 |
+| `P-Ω3F3B-UPDATE-VALIDA4` | 644 | MÉDIA | sim | P-Ω3F3B-UPDATE-VALIDA4 - Validação #4 depende da imutabilidade de customer/service no up |
+| `P-Ω4-3-REFATURAR-DELTA` | 980 | MÉDIA | sim | P-Ω4-3-REFATURAR-DELTA — Faturar o delta de itens adicionados após o 1º faturamento (BAI |
+| `P-Ω4-3-CURRENCY-BRL` | 1014 | MÉDIA | sim | P-Ω4-3-CURRENCY-BRL — Item da OS aceita moeda ≠ BRL, mas faturar exige BRL (MÉDIA-BAIXA) |
+| `P-GOLIVE-VALIDATE-CONSTRAINT` | 1409 | MÉDIA | sim | P-GOLIVE-VALIDATE-CONSTRAINT — Operacionalizar VALIDATE CONSTRAINT do CHECK do cancelame |
+| `P-AUDIT-FOLLOWUPS` | 1601 | MÉDIA | **a atribuir** | P-AUDIT-FOLLOWUPS - Melhorias de Auditoria (2026-07-20, PR-SCALE-3, todas BAIXA/MEDIA) |
+| `P-CHK-PRISMA-CLIENT-TYPING` | 1766 | MÉDIA | sim | P-CHK-PRISMA-CLIENT-TYPING (2026-08-02) — repo prisma de checklist descarta os tipos ger |
+| `P-MOBILE-BANNER-INTEGRACAO` | 1972 | MÉDIA | **a atribuir** | P-MOBILE-BANNER-INTEGRACAO (2026-08-06) — banner "Integração remota ainda não ativa" é E |
+| `P-MOBILE-OS-SEEDS` | 1986 | ALTA | sim | P-MOBILE-OS-SEEDS (2026-08-06) — lista de OS do app mostra SEEDS locais como se fossem d |
+| `P-CHK-PATCH-SEM-LOCK` | 2057 | MÉDIA | sim | P-CHK-PATCH-SEM-LOCK (2026-08-07) — PATCH de checklist é last-write-wins sem guarda de v |
+| `P-CHK-CHIPS-SEM-CONSUMIDOR` | 2080 | MÉDIA | **a atribuir** | P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA,  |
+| `P-JUNTA-LIMPEZA-BASE-VIVA` | 2119 | MÉDIA | **a atribuir** | P-JUNTA-LIMPEZA-BASE-VIVA (2026-08-08) — 2º incidente de limpeza ad-hoc por subagente na |
+| `P-O6R-B04` | 2833 | ALTA | sim | P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA |
+| `P-O6R-B07` | 3014 | ALTA | sim | P-O6R-B07 (2026-08-14) — `fix/authorization-and-uploads` — Ω6R-SEC-002 (P0) + SEC-003, S |
+| `P-O6R-B07-APPROVAL-BY-POLICY` | 3095 | MÉDIA | **a atribuir** | P-O6R-B07-APPROVAL-BY-POLICY (2026-09-02) — `finance`/`inventory` sem `work_orders:appro |
+| `P-O6R-B11` | 3291 | ALTA | sim | P-O6R-B11 (2026-08-14) — `fix/mobile-work-order-contracts` — Ω6R-QUA-004, QUA-005 (2 P1) |
+| `P-O6R-B01-RELIGACAO-SEM-REMEDIO` | 3757 | ALTA | sim | P-O6R-B01-RELIGACAO-SEM-REMEDIO (2026-08-19) — **ALTA** · assimetria sem via de saída |
+| `P-O6R-B01-LOGERROR-MORTO` | 3778 | ALTA | sim | P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de |
+| `P-ARNES-RLS-TEST-FORA-DO-SWEEP` | 3876 | MÉDIA | sim | P-ARNES-RLS-TEST-FORA-DO-SWEEP (2026-08-28 — B-O6R-ARNES, C-C) — MÉDIA · decisão CONSCIE |
+| `P-GOV-MAIN-SEM-PROTECAO` | 4881 | MÉDIA | sim | P-GOV-MAIN-SEM-PROTECAO — ATUALIZAÇÃO (2026-08-25): ruleset INSTALADO |
+| `P-SAN2-LEITURA-DAS-79` | 4914 | MÉDIA | sim | P-SAN2-LEITURA-DAS-79 (2026-08-29) — MÉDIA · **Dono:** bloco próprio, DEPOIS do ciclo 5  |
+| `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 5092 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
+| `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 5195 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
+| `P-OBITUARIO-DERIVADO-DO-DIRETORIO` | 5296 | MÉDIA | sim | P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` co |
+| `P-KPI-RECENT-CONGELADO` | 5498 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
+| `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5632 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
+| `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` | 6129 | MÉDIA | sim | P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · e |
+| `P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` | 6214 | MÉDIA | sim | P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simul |
+| `P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA` | 6350 | ALTA | sim | P-METODO-FERRAMENTA-SINTATICA-COMO-PROVA (2026-09-04 — dado de método das rodadas Ω6R si |
+| `P-O6R-B07-RATE-LIMIT-DISTRIBUIDO` | 6485 | MÉDIA | sim | P-O6R-B07-RATE-LIMIT-DISTRIBUIDO (2026-09-02) — freio de login por IP é IN-PROCESS — MÉD |
+| `P-O6R-SUBRECURSO-OBJECT-SCOPE` | 6614 | ALTA | sim | P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 10 vias mutantes sobre OS ALH |
+| `P-AUTH-KDF-ROTACAO-V2` | 6702 | MÉDIA | sim | P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem m |
+| `P-C3-DOIS-PRS-SEM-KPI` | 6810 | MÉDIA | sim | P-C3-DOIS-PRS-SEM-KPI (2026-09-05 — achado da sessão irmã, conferido por execução) — MÉD |
+| `P-DERIVADO-ESQUECIDO` | 6842 | MÉDIA | sim | P-DERIVADO-ESQUECIDO (2026-09-05 — três instâncias em três PRs consecutivos meus) — MÉDI |
+| `P-GOV-REGISTRO-PURO-QUORUM` | 6942 | MÉDIA | sim | P-GOV-REGISTRO-PURO-QUORUM (2026-09-05) — MÉDIA · PR de registro puro: junta de 3 ou uma |
+| `P-GOV-D-DURABILIDADE-FORA-DA-MAIN` | 6998 | MÉDIA | sim | P-GOV-D-DURABILIDADE-FORA-DA-MAIN (2026-09-05) — MÉDIA · a decisão sobre durabilidade só |
+| `P-O6R-B07B-SCANNER-AV-REAL` | 7037 | ALTA | sim | P-O6R-B07B-SCANNER-AV-REAL (2026-09-06) — produção e staging recusam TODO upload até hav |
+| `P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE` | 7101 | ALTA | sim | P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE (2026-09-06) — linha `attachment stored` com cha |
+| `P-O6R-B07B-CHECKLIST-JSON-FILEURL` | 7142 | MÉDIA | sim | P-O6R-B07B-CHECKLIST-JSON-FILEURL (2026-09-06) — ramo JSON do anexo de checklist aceita  |
+| `P-O6R-B07B-DATAURI-NO-VALUE` | 7156 | MÉDIA | sim | P-O6R-B07B-DATAURI-NO-VALUE (2026-09-06) — data-URI base64 persistido no `value` de resp |
+| `P-O6R-B07B-MOBILE-RETRY-PERMANENTE` | 7171 | MÉDIA | sim | P-O6R-B07B-MOBILE-RETRY-PERMANENTE (2026-09-06) — o app re-tenta para sempre o que foi r |
+| `P-O6R-B06-RECONCILE-BLOQUEADO` | 7281 | ALTA | sim | P-O6R-B06-RECONCILE-BLOQUEADO (2026-09-07) — o script de reparação NÃO foi entregue; a j |
+| `P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA` | 7333 | MÉDIA | sim | P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA (2026-09-07) — a trilha de divergência do app  |
+| `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL` | 7360 | ALTA | sim | P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL (2026-09-07) — as chaves de anexo e de job continua |
+| `P-O6R-B06-BASE-SEM-PRODUTOR` | 7388 | ALTA | sim | P-O6R-B06-BASE-SEM-PRODUTOR (2026-09-07) — três categorias de custo caem sempre em `unal |
+| `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` | 7412 | ALTA | sim | P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS (2026-09-07) — leituras de plataforma sem ten |
+| `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA` | 7439 | MÉDIA | sim | P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA (2026-09-07) — ninguém enfileira o job da projeção  |
+| `P-O6R-B06-RATEIO-CURSOR-100K` | 7457 | ALTA | sim | P-O6R-B06-RATEIO-CURSOR-100K (2026-09-07) — o teto do rateio ficou ALTO, mas continua se |
+| `P-GOV-AUDITOR-FORA-DA-CI` | 7685 | MÉDIA | sim | P-GOV-AUDITOR-FORA-DA-CI (2026-09-07) — o auditor de elenco e o `--check` das skills são |
+| `P-GOV-VEREDITO-SEM-PARSER` | 7728 | ALTA | sim | P-GOV-VEREDITO-SEM-PARSER (2026-09-07) — veredito de junta é PROSA, e nenhum gate o lê — |
+| `P-GOV-BASH-EM-QUEM-JULGA` | 7759 | ALTA | sim | P-GOV-BASH-EM-QUEM-JULGA (2026-09-07) — `Bash` dá poder de escrita a todo papel que julg |
+| `P-GOV-ESPELHO-CONTRATO-SEM-GUARD` | 7808 | MÉDIA | sim | P-GOV-ESPELHO-CONTRATO-SEM-GUARD (2026-09-07) — `CLAUDE.md` e `AGENTS.md` podem divergir |
+| `P-GOV-KPI-DISPLAY-SEM-GUARD` | 7866 | MÉDIA | sim | P-GOV-KPI-DISPLAY-SEM-GUARD (2026-09-08) — nenhum guard compara o CARD com o `value` do  |
+| `P-GOV-C10-ENCERRADO` | 7894 | MÉDIA | sim | P-GOV-C10-ENCERRADO (2026-09-08) — a checagem C10 mede PESO e não sabe se o bloco encerr |
+| `P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK` | 7922 | MÉDIA | sim | P-GOV-AUDITOR-SEM-CHECAGEM-DE-LINK (2026-09-08) — o auditor de elenco DEIXOU de conferir |
+| `P-GOV-ESGOTADO-SEM-TESTE` | 8004 | MÉDIA | sim | P-GOV-ESGOTADO-SEM-TESTE (2026-09-08) — "modelo esgotado" é declarado, não provado — MÉD |
+| `P-GOV-RECUSA-CANCELA-ACUSACAO` | 8025 | MÉDIA | sim | P-GOV-RECUSA-CANCELA-ACUSACAO (2026-09-08) — a chave excluída da recusa cancela acusação |
+| `P-GOV-DEFAULT-DENY-POR-NOME-BASE` | 8040 | MÉDIA | sim | P-GOV-DEFAULT-DENY-POR-NOME-BASE (2026-09-08) — a allowlist de escrita é chaveada pelo A |
+| `P-GOV-MODELO-FIXADO-SEM-MECANISMO` | 8054 | MÉDIA | sim | P-GOV-MODELO-FIXADO-SEM-MECANISMO (2026-09-08) — `MODELO_FIXADO` é lista de obrigação se |
+| `P-GOV-CAMINHO-REPO-SESSAO` | 8084 | ALTA | sim | P-GOV-CAMINHO-REPO-SESSAO (2026-09-08) — FECHADA em 2026-09-08 por `D-MEDIR-NA-REF-ALVO` |
+| `P-O6R-SUITES-DB-SEM-TEARDOWN` | 8151 | MÉDIA | sim | P-O6R-SUITES-DB-SEM-TEARDOWN (2026-09-09) — execuções consecutivas de `npm test` contra  |
+| `P-SAN3-INDICE-SEVERIDADE-POR-MENCAO` | 8263 | CRÍTICA | sim | P-SAN3-INDICE-SEVERIDADE-POR-MENCAO (2026-09-11) — a coluna de severidade do índice é a  |
+| `P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS` | 8295 | MÉDIA | sim | P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS (2026-09-11) — o índice lê só a primeira linha |
+| `P-SAN3-FLIPS-DE-REGISTRO` | 8335 | MÉDIA | sim | P-SAN3-FLIPS-DE-REGISTRO (2026-09-11) — conserto feito fora da linha de status nunca fec |
+| `P-WEB-CLOUD-BILLING-CARTAZ` | 8376 | MÉDIA | sim | P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com se |
+| `P-DONO-CLOUD-BILLING-ESCOPO` | 8393 | MÉDIA | sim | P-DONO-CLOUD-BILLING-ESCOPO (2026-09-11) — Cobrança de nuvem calculada nunca vira fatura |
+| `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA` | 8410 | ALTA | sim | P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem te |
+| `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA` | 8428 | MÉDIA | sim | P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de perí |
+| `P-CHK-APLICABILIDADE-SEM-ROTA` | 8446 | MÉDIA | sim | P-CHK-APLICABILIDADE-SEM-ROTA (2026-09-11) — Motor de aplicabilidade de checklist existe |
+| `P-WEB-CHK-EXECUCOES-INEXISTENTES` | 8463 | MÉDIA | sim | P-WEB-CHK-EXECUCOES-INEXISTENTES (2026-09-11) — "Ver execuções" leva à lista de modelos; |
+| `P-WEB-PLATAFORMA-TELAS-FICCAO` | 8480 | MÉDIA | sim | P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e  |
+| `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA` | 8497 | ALTA | sim | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram  |
+| `P-WEB-ROTAS-SEM-PORTA` | 8514 | MÉDIA | sim | P-WEB-ROTAS-SEM-PORTA (2026-09-11) — Rotas vivas sem menu/link; provisionamento de módul |
+| `P-WEB-GATE-MODULO-INCOMPLETO` | 8548 | ALTA | sim | P-WEB-GATE-MODULO-INCOMPLETO (2026-09-11) — 27 itens do menu fora do gate de módulo; bac |
+| `P-MOBILE-PRESTADOR-SEM-PORTA` | 8584 | ALTA | sim | P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, mate |
+| `P-MOBILE-CONCLUSAO-SEM-PORTA` | 8601 | MÉDIA | sim | P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece,  |
+| `P-MOBILE-CATALOGO-MODULOS-INERTE` | 8618 | MÉDIA | sim | P-MOBILE-CATALOGO-MODULOS-INERTE (2026-09-11) — Catálogo de módulos nunca renderiza; Est |
+| `P-MOBILE-LGPD-GPS-SEM-PORTA` | 8635 | ALTA | sim | P-MOBILE-LGPD-GPS-SEM-PORTA (2026-09-11) — Consentimento LGPD de GPS nunca pode ser dado |
+| `P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL` | 8652 | ALTA | sim | P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca a |
+| `P-MOBILE-FILA-OS-NAO-DRENADA` | 8686 | ALTA | sim | P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" en |
+| `P-MOBILE-ESTOQUE-TECNICO-FABRICADO` | 8703 | ALTA | sim | P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente  |
+| `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8737 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
+| `P-MOBILE-FAXINA-TERMOS-TECNICOS` | 8755 | MÉDIA | sim | P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico |
+| `P-MOBILE-TESTE-ALCANCABILIDADE` | 8773 | MÉDIA | sim | P-MOBILE-TESTE-ALCANCABILIDADE (2026-09-11) — Nenhum teste prova que toda rota do app te |
+| `P-MOBILE-DESPACHO-SEM-PUSH` | 8790 | MÉDIA | sim | P-MOBILE-DESPACHO-SEM-PUSH (2026-09-11) — Despacho só chega ao técnico se ele abrir e at |
+| `P-NOTIF-SEM-CANAL-EXTERNO` | 8807 | MÉDIA | sim | P-NOTIF-SEM-CANAL-EXTERNO (2026-09-11) — Notificação só grava linha; não há canal de e-m |
+| `P-FLEET-ALERTAS-SEM-AGENDADOR` | 8858 | MÉDIA | sim | P-FLEET-ALERTAS-SEM-AGENDADOR (2026-09-11) — Alertas de frota só disparam por botão; nen |
+| `P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS` | 8875 | MÉDIA | sim | P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e co |
+| `P-KPI-ROADMAP-CONGELADO` | 8928 | MÉDIA | sim | P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca bloc |
+| `P-KPI-MVP-REGUA-CODIGO-ESCRITO` | 8946 | MÉDIA | sim | P-KPI-MVP-REGUA-CODIGO-ESCRITO (2026-09-11) — `mvp_demo 99`/`mvp_vendavel 88` medem códi |
+| `P-DOC-GO-LIVE-READINESS-VENCIDO` | 8963 | MÉDIA | sim | P-DOC-GO-LIVE-READINESS-VENCIDO (2026-09-11) — Documento diz "nenhum código bloqueia o g |
+| `P-GOV-C28-REGULARIZACAO-NAO-ESCRITA` | 9014 | MÉDIA | sim | P-GOV-C28-REGULARIZACAO-NAO-ESCRITA (2026-09-11) — §C2.8 trava todo bloco sem parecer e  |
+| `P-GOV-DEVOPS-ESCREVE-E-VOTA` | 9048 | MÉDIA | sim | P-GOV-DEVOPS-ESCREVE-E-VOTA (2026-09-11) — `agente-devops-provisionador` pode escrever e |
+| `P-GOV-INSPETOR-RECEITAS-1` | 9065 | MÉDIA | sim | P-GOV-INSPETOR-RECEITAS-1.1-E-3.3 (2026-09-11) — Receitas do inspetor: md5 cru, falso ve |
+| `P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI` | 9082 | MÉDIA | sim | P-GOV-SKILL-BACKEND-REVIEW-MENTE-SOBRE-CI (2026-09-11) — Skill afirma que teste `-db` se |
+| `P-GOV-AUDITOR-RAIZ-POR-IMPORT-META` | 9099 | MÉDIA | sim | P-GOV-AUDITOR-RAIZ-POR-IMPORT-META (2026-09-11) — Auditor de elenco só audita a árvore o |
+| `P-GOV-SYNC-AGENTS-ARGV-FROUXO` | 9116 | MÉDIA | sim | P-GOV-SYNC-AGENTS-ARGV-FROUXO (2026-09-11) — `sync-agent-agents.mjs` com argumento desco |
+| `P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF` | 9133 | MÉDIA | sim | P-GOV-SEGUNDO-CONTRATO-NO-HANDOFF (2026-09-11) — Segundo "contrato de execução" na ref,  |
+| `P-SAN3-ROTEIRO-DEMO-OPERACAO` | 9218 | MÉDIA | sim | P-SAN3-ROTEIRO-DEMO-OPERACAO (2026-09-11) — não existe roteiro de demonstração e operaçã |
+| `P-WEB-FATURAR-OS-SEM-TELA` | 9234 | ALTA | sim | P-WEB-FATURAR-OS-SEM-TELA (2026-09-12) — a web não fatura OS: a rota existe e nenhuma te |
+| `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO` | 9244 | ALTA | sim | P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO (2026-09-12) — técnico responde, conclui e dá |
+| `P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND` | 9254 | ALTA | sim | P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição d |
+| `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU` | 9267 | MÉDIA | sim | P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU (2026-09-12) — lista de módulos não resolvida l |
+| `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9277 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
+| `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` | 9287 | MÉDIA | sim | P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (2026-09-12) — dois itens do gate só apare |
+| `P-WEB-CONCILIACAO-SEM-TELA` | 9299 | ALTA | sim | P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia |
+| `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` | 9308 | ALTA | sim | P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD (2026-09-18) — o censo de duplicatas do estoque  |
+| `P-O6R-B04-CONSUMIDORES-503` | 9324 | MÉDIA | sim | P-O6R-B04-CONSUMIDORES-503 (2026-09-18) — o 503 de estoque e de contagem é contrato novo |
+| `P-O6R-B04-UI-STATUS-FECHANDO` | 9333 | MÉDIA | sim | P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os |
+
+## ABERTAS · balde B — processo/registro — 91
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -310,6 +431,95 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9546 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9692 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
+| `P-INFRA-RLS` | 487 | — | sim | P-INFRA-RLS (transversal — apontado pelo coordenador no Ω3-d) — RLS não enforçada em run |
+| `P-SAN-E2E` | 501 | — | sim | P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13) |
+| `P-SAN-KPI-BACKFILL` | 526 | — | **a atribuir** | P-SAN-KPI-BACKFILL - Backfill de merge_commit/approved_head nos KPIs pode persistir null |
+| `P-Ω3F6-COMISSAO-REVERSAL` | 754 | — | **a atribuir** | P-Ω3F6-COMISSAO-REVERSAL - dual-gate na engine de cálculo + reversão de comissão de OS c |
+| `P-Ω3F6-COMISSAO-PRISMA-COV` | 766 | — | **a atribuir** | P-Ω3F6-COMISSAO-PRISMA-COV - caminho Prisma do gate de supressão só coberto por tsc+revi |
+| `P-Ω3F7B-MAPA-ETAPA` | 860 | — | **a atribuir** | P-Ω3F7B-MAPA-ETAPA - Mapa de posição por etapa: falta a FONTE DE DADOS (Ω3F-7b, 2026-07- |
+| `P-Ω3F7-MOBILETAB-NITS` | 873 | — | **a atribuir** | P-Ω3F7-MOBILETAB-NITS - Nits da pós-análise da MobileTab (Ω3F-7, 2026-07-17) |
+| `P-Ω4-2B-KPI-AGREGADO` | 962 | BAIXA | sim | P-Ω4-2B-KPI-AGREGADO — KPIs/tabs somam só as linhas carregadas (MÉDIO, Ω4-8 Dashboard) |
+| `P-Ω4-3-INVOICE-LEASTPRIV` | 1035 | BAIXA | sim | P-Ω4-3-INVOICE-LEASTPRIV — Rota invoice não exige work_order_financials:read (BAIXA) |
+| `P-Ω4-4-EDGES` | 1057 | — | sim | P-Ω4-4-EDGES — Bordas do Ω4-4 (Caixa/Extrato + liquidação) — implementado, com decisões  |
+| `P-Ω4-5-BATCH` | 1184 | — | sim | P-Ω4-5-BATCH — conciliação em LOTE (importar extrato CSV/OFX → casar N lançamentos) — AD |
+| `P-Ω4-7-DUPLA-CONTAGEM` | 1306 | BAIXA | sim | P-Ω4-7-DUPLA-CONTAGEM — cheque-register vs payTitle p/ o mesmo dinheiro (BAIXA — risco d |
+| `P-Ω3F6` | 1354 | BAIXA | sim | P-Ω3F6 — cluster de cancelamento: STATUS-BYPASS/TERMINAL-GUARD/ZERO-ATOMICIDADE RESOLVID |
+| `P-GOLIVE-GATES` | 1418 | — | sim | P-GOLIVE-GATES — Gates humanos de go-live (R1 provedor, R2 restore cronometrado, smoke a |
+| `P-RBAC-CATALOG-MATRIZ` | 1470 | — | **a atribuir** | P-RBAC-CATALOG-MATRIZ — divergências pré-existentes catalog.ts × RBAC_MATRIX.md em check |
+| `P-SCREEN-REFS-PATH` | 1660 | — | **a atribuir** | P-SCREEN-REFS-PATH — screen-refs/ na raiz × docs/claude-code-handoff/screen-refs/ (2026- |
+| `P-ERP-MOBILE-DC-HTML` | 1667 | — | **a atribuir** | P-ERP-MOBILE-DC-HTML — protótipo `ERP Mobile.dc.html` ausente (2026-07-28) |
+| `P-CLAUDE-COMPANIONS-DRAFTS` | 1674 | — | **a atribuir** | P-CLAUDE-COMPANIONS-DRAFTS — arquivos companheiros criados como drafts fundados (2026-07 |
+| `P-KPI-PR18A-MVP-VENDAVEL` | 1701 | — | **a atribuir** | P-KPI-PR18A-MVP-VENDAVEL — latest 88% × history 92% (2026-07-29) |
+| `P-RBAC-CHECKLIST-DRIFT` | 1714 | — | sim | P-RBAC-CHECKLIST-DRIFT (2026-08-01) — reconciliação residual da matriz de checklist (fol |
+| `P-IMPOUND-CHK-VISIBILITY` | 1730 | — | sim | P-IMPOUND-CHK-VISIBILITY (2026-08-01) — consequência de RBAC no endpoint de custódia (co |
+| `P-CHK-DOSSIE-VERSAO-NA-UI` | 2238 | — | sim | P-CHK-DOSSIE-VERSAO-NA-UI (2026-08-10 — junta do CHK P1 PR-03, 2ª rodada) |
+| `P-CHK-AUTOLINK-FASE-REAL` | 2316 | — | **a atribuir** | P-CHK-AUTOLINK-FASE-REAL (2026-08-11 — junta `J-CHK-P1-PR04B-autolink`, nascida da decis |
+| `P-IMPOUND-LINK-SEM-UNLINK` | 2333 | — | **a atribuir** | P-IMPOUND-LINK-SEM-UNLINK (2026-08-11 — junta `J-CHK-P1-PR04B-autolink`, fato comum aos  |
+| `P-O6R-BACKLOG` | 2391 | — | **a atribuir** | P-O6R-BACKLOG (2026-08-14) — os 29 achados da auditoria Ω6R entram no controle operacion |
+| `P-O6R-B03` | 2798 | — | sim | P-O6R-B03 (2026-08-14) — `fix/expense-sync-atomic` — Ω6R-DIN-009 (P0) + QUA-001 (P1) — * |
+| `P-O6R-B12` | 2899 | — | sim | P-O6R-B12 (2026-08-18) — `fix/jurisdiction-profile-versioning` — Ω6R-DAT-004 (1 P1) — ** |
+| `P-O6R-B08` | 3189 | — | **a atribuir** | P-O6R-B08 (2026-08-14) — `fix/durable-jobs-realtime` — Ω6R-ARQ-001..003 + PERF-001 (4 P1 |
+| `P-O6R-B09` | 3235 | — | sim | P-O6R-B09 (2026-08-14) — `fix/dispatch-atomic-timeline` — Ω6R-ARQ-004 (P1) — **BLOQUEIA  |
+| `P-O6R-B10` | 3259 | — | **a atribuir** | P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — ** |
+| `P-TESTS-FORA-DO-TYPECHECK` | 3342 | — | **a atribuir** | P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A) |
+| `P-CHK-DEFERRED-SEM-LEITURA` | 3360 | BAIXA | **a atribuir** | P-CHK-DEFERRED-SEM-LEITURA (2026-08-14 — ciclo 4 da revisão do CHK P1 PR-04c-A) |
+| `P-O6R-B05-WORKER-EXTERNO-DIFERIDO` | 3468 | — | sim | P-O6R-B05-WORKER-EXTERNO-DIFERIDO (2026-08-15 — bloco B-O6R-05, decisão C4) |
+| `P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO` | 3492 | — | **a atribuir** | P-O6R-B05-HEARTBEAT-NAO-DETECTA-HANDLER-TRAVADO (2026-08-15 — bloco B-O6R-05) |
+| `P-O6R-B05-README-ATIVACAO` | 3500 | — | sim | P-O6R-B05-README-ATIVACAO (2026-08-15 — bloco B-O6R-05) |
+| `P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST` | 3594 | — | sim | P-O6R-B05-DATABASE-URL-SEM-FORMA-NEM-HOST (2026-08-15 — junta do PR #353, ressalva do `a |
+| `P-O6R-B01-ROLE-LITERAIS` | 3630 | — | **a atribuir** | P-O6R-B01-ROLE-LITERAIS (2026-08-18 — ciclo 2 do B-O6R-01, plano §9) |
+| `P-O6R-B01-ROUTE-ERROR-LEAK` | 3648 | — | **a atribuir** | P-O6R-B01-ROUTE-ERROR-LEAK (2026-08-18 — ciclo 2 do B-O6R-01, plano §9; achado B-7 do R- |
+| `P-O6R-ARNES-ISOLAMENTO` | 3659 | — | sim | P-O6R-ARNES-ISOLAMENTO (2026-08-18) — o arranjo do lote de testes contra Postgres, **ant |
+| `P-O6R-B01-ROUTE-ERROR-LEAK` | 3795 | — | sim | P-O6R-B01-ROUTE-ERROR-LEAK — **EMENDA de escopo (2026-08-19)** |
+| `P-O6R-ARNES-ISOLAMENTO` | 3805 | — | sim | P-O6R-ARNES-ISOLAMENTO — **EMENDAS medidas pela junta do ciclo 3** |
+| `P-O6R-ARNES-ISOLAMENTO` | 3827 | — | sim | P-O6R-ARNES-ISOLAMENTO — **EMENDAS do bloco B-O6R-ARNES (2026-08-28)** — o bloco próprio |
+| `P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES` | 3955 | — | sim | P-ARNES-VAZAMENTO-LINEAR-IDENTIDADES — **ATRIBUÍDO POR EXECUÇÃO** (2026-08-28, B-O6R-ARN |
+| `P-ARNES-CANONICA1-VERMELHO-AMBIENTAL` | 3986 | — | sim | P-ARNES-CANONICA1-VERMELHO-AMBIENTAL (2026-08-28 — B-O6R-ARNES) — pré-existente, NOMEADO |
+| `P-O6R-ARNES-ISOLAMENTO` | 4433 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDAS medidas pela junta do ciclo 4 (2026-08-28, cadeira do a |
+| `P-O6R-ARNES-ISOLAMENTO` | 4452 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDAS do bloco `SAN2-4b` (2026-08-31) — mecanismo da orfa e d |
+| `P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE` | 4522 | BAIXA | sim | P-ARNES-CONEXAO-SEM-ASSEVERACAO-DE-IDENTIDADE (2026-08-28) — BAIXA · **Dono:** bloco de  |
+| `P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE` | 4650 | — | sim | P-REG-DIVERGENCIA-SEM-PLANEJADOR-MESTRE (2026-08-28) — divergência de processo, registra |
+| `P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA` | 5386 | — | sim | P-ARNES-RATCHET-POR-CONTAGEM-CEGO-A-PROSA (2026-08-31 — achado do `SAN2-4b`, correcoes C |
+| `P-REG-BATERIA-NAO-TYPECHECA-TESTS` | 5457 | — | sim | P-REG-BATERIA-NAO-TYPECHECA-TESTS (2026-08-31 — achado do `SAN2-4b`, correcao C2) — `pre |
+| `P-AUTHORITY-N-NAO-CANONICO-NO-STORED` | 5577 | BAIXA | sim | P-AUTHORITY-N-NAO-CANONICO-NO-STORED (2026-08-31) — BAIXA · os campos numéricos do `stor |
+| `P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA` | 5831 | BAIXA | sim | P-CLAUDE-ABERTURA-PRECEDENCIA-DESATUALIZADA (2026-09-01 — medido pelo dev do `SAN2-6`, § |
+| `P-ESPELHO-C7-3-MECANISMO-PESQUISADOR` | 5963 | BAIXA | sim | P-ESPELHO-C7-3-MECANISMO-PESQUISADOR (2026-09-02 — achado `C1-A3` da junta `J-SAN2-6`) — |
+| `P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5` | 6007 | BAIXA | sim | P-KPI-CARIMBO-MVP-DEFASADO-SAN2-5 (2026-09-02 — achado `C3-N1` da junta `J-SAN2-6`) — BA |
+| `P-O6R-B02-INDISPUTE-RESTORE` | 6046 | — | sim | P-O6R-B02-INDISPUTE-RESTORE (2026-08-22) — estorno devolve `in_dispute` para `open` |
+| `P-O6R-B02-CHEQUE-UNCLEAR` | 6062 | — | sim | P-O6R-B02-CHEQUE-UNCLEAR (2026-08-22) — não existe des-compensar um cheque compensado po |
+| `P-O6R-ARNES-ISOLAMENTO` | 6107 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDA do ciclo 5 do B-O6R-02 (2026-09-02) — o objeto disputado |
+| `P-O6R-ARNES-ISOLAMENTO` | 6148 | — | sim | P-O6R-ARNES-ISOLAMENTO — EMENDA de PRECISÃO do ciclo 5 (2026-09-03) — o vazamento +5/+5  |
+| `P-O6R-B02-RULINGS-SEM-DESTINO` | 6186 | BAIXA | sim | P-O6R-B02-RULINGS-SEM-DESTINO (2026-09-03 — ACHADO-1 do `critico-c5-adversarial`) — BAIX |
+| `P-KPI-HISTORY-MD-BACKLOG` | 6720 | BAIXA | sim | P-KPI-HISTORY-MD-BACKLOG (registro 4/7, 2026-09-03) — espelho `Kpis/kpis-history.md` com |
+| `P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR` | 6905 | BAIXA | sim | P-STATUS-NEGRITO-INVISIVEL-AO-GERADOR (2026-09-05) — BAIXA · achado ao consertar a quart |
+| `P-O6R-B07B-LEGADO-MIME` | 7194 | BAIXA | sim | P-O6R-B07B-LEGADO-MIME (2026-09-06) — linhas antigas com `mime_type` declarado pelo clie |
+| `P-O6R-B07B-REJEICAO-SEM-AUDIT-LOG` | 7203 | BAIXA | sim | P-O6R-B07B-REJEICAO-SEM-AUDIT-LOG (2026-09-06) — recusa de upload em V2–V5 só em log est |
+| `P-O6R-B07B-CODIGOS-INCONSISTENTES` | 7212 | BAIXA | sim | P-O6R-B07B-CODIGOS-INCONSISTENTES (2026-09-06) — V4 usa `400` onde as irmãs usam `415`/` |
+| `P-O6R-B07B-RECEIPT-CONTENT-TYPE` | 7222 | BAIXA | sim | P-O6R-B07B-RECEIPT-CONTENT-TYPE (2026-09-06) — V1 não cruza o `content_type` do recibo c |
+| `P-O6R-B07B-S3-PREFIXO-LEGADO` | 7232 | BAIXA | sim | P-O6R-B07B-S3-PREFIXO-LEGADO (2026-09-06) — chave S3 gravada com prefixo antigo passa a  |
+| `P-O6R-B06-SEM-PODA-POR-IDADE` | 7475 | BAIXA | sim | P-O6R-B06-SEM-PODA-POR-IDADE (2026-09-07) — `cloud_usage_events` não pode ser podada por |
+| `P-O6R-B06-DECIMAL-NA-BORDA` | 7491 | BAIXA | sim | P-O6R-B06-DECIMAL-NA-BORDA (2026-09-07) — `totalUnblendedCost: number` continua lossy no |
+| `P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER` | 7596 | BAIXA | sim | P-GOV-MAQUINAS-DE-DESFAZER-PROMOVER (2026-09-07) — competência reutilizável saiu na apos |
+| `P-GOV-SKILLS-RELEVANCIA` | 7663 | BAIXA | sim | P-GOV-SKILLS-RELEVANCIA (2026-09-07) — 5 skills voltaram a carregar; 1 delas não tem rel |
+| `P-GOV-AUDITOR-ARESTAS-MENORES` | 8066 | BAIXA | sim | P-GOV-AUDITOR-ARESTAS-MENORES (2026-09-08) — quatro arestas BAIXA do auditor enxuto — BA |
+| `P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT` | 8212 | BAIXA | sim | P-O6R-LISTCOSTLINEITEMS-SEM-ESCOPO-IMPORT (2026-09-09) — a leitura do rateio soma por ov |
+| `P-O6R-B06-DELTA-RESIDUAIS` | 8235 | BAIXA | sim | P-O6R-B06-DELTA-RESIDUAIS (2026-09-09) — dois residuais do conserto de isolamento, nomea |
+| `P-WEB-EVENTBUS-MOCK` | 8531 | BAIXA | sim | P-WEB-EVENTBUS-MOCK (2026-09-11) — Provider de eventos cicla mocks a cada 9 s contra rot |
+| `P-API-VERBOS-SEM-CONSUMIDOR` | 8567 | BAIXA | sim | P-API-VERBOS-SEM-CONSUMIDOR (2026-09-11) — Verbos de administração sem nenhuma tela (mer |
+| `P-MOBILE-STUBS-MOCKS-MORTOS` | 8669 | BAIXA | sim | P-MOBILE-STUBS-MOCKS-MORTOS (2026-09-11) — Stubs `Pending*` mortos (token local nunca nu |
+| `P-MOBILE-OCR-ANDAIME-INERTE` | 8720 | BAIXA | sim | P-MOBILE-OCR-ANDAIME-INERTE (2026-09-11) — OCR de recibo: estados, colunas e permissão s |
+| `P-JOBS-HANDLERS-PLACEHOLDER` | 8824 | BAIXA | sim | P-JOBS-HANDLERS-PLACEHOLDER (2026-09-11) — Dois handlers vazios ("Placeholder") consomem |
+| `P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR` | 8841 | BAIXA | sim | P-IMPOUND-OUTBOX-SIVEC-SEM-CONSUMIDOR (2026-09-11) — Outbox Sivec é escrito por 5 reposi |
+| `P-CATALOGO-TELAS-PLANEJADAS-AUSENTES` | 8894 | BAIXA | sim | P-CATALOGO-TELAS-PLANEJADAS-AUSENTES (2026-09-11) — Telas do catálogo nunca feitas: rota |
+| `P-DOC-CONTRATOS-PROMETEM-INEXISTENTE` | 8911 | BAIXA | sim | P-DOC-CONTRATOS-PROMETEM-INEXISTENTE (2026-09-11) — Contrato promete Cognito e `POST /mo |
+| `P-GOV-MOLDE-SEM-CORPOS-DE-JURADO` | 8980 | BAIXA | sim | P-GOV-MOLDE-SEM-CORPOS-DE-JURADO (2026-09-11) — Molde de plano/briefing não prevê os cor |
+| `P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO` | 8997 | BAIXA | sim | P-O6R-B06-ATA-RESIDUOS-DE-REGISTRO (2026-09-11) — Ata e votos do B06 com resíduos: plano |
+| `P-GOV-SKILL-384-SEM-DECISAO` | 9031 | BAIXA | sim | P-GOV-SKILL-384-SEM-DECISAO (2026-09-11) — Skill `backend-review-ts-prisma` (#384) entro |
+| `P-GOV-DECISOES-1968-GATE-INEXISTENTE` | 9150 | BAIXA | sim | P-GOV-DECISOES-1968-GATE-INEXISTENTE (2026-09-11) — Decisão viva sustentada pelo parecer |
+| `P-GOV-CONTRATO-HIGIENE-TEXTUAL` | 9167 | BAIXA | sim | P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` ante |
+| `P-GOV-MONOCULTURA-FABLE-NOS-GATES` | 9184 | BAIXA | sim | P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo c |
+| `P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO` | 9201 | BAIXA | sim | P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos  |
+| `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` | 9342 | BAIXA | sim | P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da li |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
