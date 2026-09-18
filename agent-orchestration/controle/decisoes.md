@@ -2387,3 +2387,51 @@ reduz a chance de aprovação a cada rodada.
    `B-SAN3-06c`.
 3. O texto de fechamento dos cabeçalhos dos services do `B-SAN3-01` passa a dizer o que o guard prova hoje (as duas raízes
    declaradas, import direto e barrel de um nível), não mais "o único caminho" — a correção do texto vai no `B-SAN3-01b`.
+
+
+## D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO (B-SAN3-04a, 2026-09-18) — o catálogo converge à matriz sem conceder "por escopo" que o backend não aplica; revogação só por lista nomeada
+
+**Contexto.** Itens 13, 14, 15, 38 e 56 do gate SAN3 (dono `B-SAN3-04a`) e as condições de entrada CE-3, CE-5, CE-6,
+CE-G1 e CE-G2 (`D-SAN3-PLANO-OPCAO-B`). Plano do bloco: `agent-orchestration/omega/planos/B-SAN3-04a-plano.md`
+(`planejador-mestre`, Fable), com as decisões (a)–(f) do orquestrador no comando
+`agent-orchestration/codex/comandos/B-SAN3-04a-rbac-catalogo-banco-matriz.md`. A `RBAC_MATRIX.md` é fonte §A1.2: o
+catálogo é que se ajusta.
+
+**O que decide.**
+
+1. **Concede nove permissões**, cada uma com a linha da matriz no comentário do `catalog.ts`: `finance` +
+   `work_orders:read` (l.45 — P1, CE-3), `customers:read` (l.38 — P2, CE-5), `service_catalog:read` (l.41 — P2, CE-5),
+   `tenant_checklists:read` (l.43) e `checklist_runs:read` (l.44); `inventory` + `tenant_checklists:read` (l.43) e
+   `checklist_runs:read` (l.44, só a parte incondicional); `field_technician` + `tenant_checklists:read` (l.43);
+   `operator` + `work_orders:create` (l.45 "create/edit"; `docs/03-atores-papeis.md:268`). A `RBAC_MATRIX.md` muda só nas
+   l.38 e l.41, coluna `finance`, de `none` para `read` (P2).
+2. **Revoga duas, por lista NOMEADA:** `manager` × `checklist_runs:update` e `checklist_runs:acknowledge`, excedentes à
+   l.44 ("read/complete-by-scope") — item 15. O `scripts/provision-rbac.ts` continua aditivo e nunca revoga às cegas; a
+   única remoção é a lista `DELIBERATE_REVOCATIONS` (`src/modules/core-saas/permissions/catalog.ts`), código versionado
+   com a decisão, aplicada ao papel global no passo 3-bis, idempotente (a 2ª execução remove 0), relatada ("revogações
+   deliberadas: N removida(s) — papel → permissão (decisão)") e só relatada em `--dry-run`. O `satisfies` do TypeScript
+   recusa revogação de papel ou permissão fora do catálogo. **Chega à produção só no próximo deploy do dono**
+   (`deploy-production.yml` roda o provisionamento) — emenda (b); o `coordenador-de-acessos` vota nela nominalmente.
+3. **Não concede — fail-closed (CE-6)** onde a matriz diz "por escopo" ou "por política" e o backend não aplica:
+   A5 (`inventory` × l.44 "answer-by-scope" → `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE`, dono `B-O6R-07c`); K2
+   (`operator`/`inventory` × l.37 "edit-scoped" → `P-SAN3-04A-MASTER-DATA-EDIT-SCOPED`); X2 (`inventory` × l.46
+   "approval-by-policy", sem alçada por valor → `P-O6R-B07-APPROVAL-BY-POLICY`, já aberta); K1 (conflito interno da
+   matriz na l.37 → `P-SAN3-04A-MATRIZ-L37-X-BULLETS`, dona a decisão do dono — emenda (c)).
+4. **Mantém, com pendência e dono,** as concessões atuais sem escopo que a matriz nomeia (B5–B7: `manager` `complete`;
+   `operator` `update`/`complete`; `field_technician` `update`/`complete`/`acknowledge`) — revogá-las é decisão de
+   produto que o item 15 não pediu (emenda (d)).
+5. **Guard da propriedade (CE-G1):** `tests/san3-04a-matriz-x-catalogo-guard.test.ts` lê a tabela real da matriz e o
+   catálogo importado; célula fora do dicionário ou linha sem mapeamento lança; célula qualificada concedida fora da
+   allowlist, conflito não registrado e excedente de checklist não registrado reprovam; entrada morta também reprova.
+
+**Divergência §A2 medida pelo dev — registrada, não consolidada em silêncio.** A edição da l.41 (`finance` = `read`,
+P2) se propaga pelos tópicos "mirror of `service_catalog:*`": l.104 (tabelas de valores — a tabela, l.42, diz `none`),
+l.105 (tarifas — sem linha própria) e l.131/141-144 (cadastros mestres — a tabela, l.37, já dava `read` ao `finance`).
+Nada disso foi concedido: o guard registra um 3º conflito (`finance` × `tariffs:read` →
+`P-SAN3-04A-TARIFAS-X-L41-FINANCE`) e mantém a l.37 × `finance` como conflito registrado (a
+`P-SAN3-04A-MATRIZ-L37-X-BULLETS` foi ampliada com a medição). O fluxo que a P2 abre (o Financeiro monta orçamento)
+lê só clientes, serviços e OS (`frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts:6-8`) — não
+depende de nenhuma das leituras não concedidas.
+
+**Rollback.** `git revert` do squash — nenhuma migração; o banco só recebe concessões aditivas e as duas revogações,
+que o provisionamento da versão anterior re-concede.
