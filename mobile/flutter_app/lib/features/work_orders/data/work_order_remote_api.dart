@@ -113,7 +113,8 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
       );
       return _workOrderFromRemoteJson(
         _unwrapData(resp.data),
-        fallbackTenantId: tenantId ?? '',
+        fallbackTenantId: '',
+        sessionTenantId: tenantId,
       );
     } on DioException catch (e) {
       throw mapDioError(e);
@@ -136,7 +137,8 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
       );
       return _workOrderFromRemoteJson(
         _unwrapData(resp.data),
-        fallbackTenantId: tenantId ?? '',
+        fallbackTenantId: '',
+        sessionTenantId: tenantId,
       );
     } on DioException catch (e) {
       throw mapDioError(e);
@@ -184,7 +186,8 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
       );
       return _workOrderFromRemoteJson(
         _unwrapData(resp.data),
-        fallbackTenantId: tenantId ?? '',
+        fallbackTenantId: '',
+        sessionTenantId: tenantId,
       );
     } on DioException catch (e) {
       throw mapDioError(e);
@@ -216,9 +219,15 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
 // Tolerant parser for the backend list/detail DTO (camelCase) and local cache (snake_case).
 // The list endpoint returns {items:[{id, customerName, scheduledFor, ...}], pagination:...}.
 // Fields not present in the list DTO (tenantId) are filled from [fallbackTenantId].
+//
+// B-O6R-11, emenda 2 (i): [sessionTenantId] é o tenant da SESSÃO que o chamador passou. Quando
+// vem, ele VENCE qualquer tenant do corpo — a organização se resolve pelo ator autenticado, nunca
+// por conteúdo de resposta (§2.8). Sem ele, fica o comportamento anterior: o do corpo, se vier,
+// senão [fallbackTenantId]. Hoje só detalhe, status e atribuição o passam.
 WorkOrder _workOrderFromRemoteJson(
   Map<String, dynamic> json, {
   required String fallbackTenantId,
+  String? sessionTenantId,
 }) {
   final serverId = json['id'] as String?;
   String str(String camel, String snake) =>
@@ -228,7 +237,8 @@ WorkOrder _workOrderFromRemoteJson(
   return WorkOrder(
     localId: serverId ?? 'wo-remote-${DateTime.now().millisecondsSinceEpoch}',
     serverId: serverId,
-    tenantId: strOpt('tenantId', 'tenant_id') ?? fallbackTenantId,
+    tenantId:
+        sessionTenantId ?? strOpt('tenantId', 'tenant_id') ?? fallbackTenantId,
     code: str('code', 'code'),
     title: str('title', 'title'),
     customerName: str('customerName', 'customer_name'),
