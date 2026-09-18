@@ -26,8 +26,10 @@ import type {
 // `OS-FALLBACK` (e o que o operador digitou se perdia); detalhe 404/403/5xx virava `OS-000101`; timeline vazia
 // virava 3 eventos; 2xx sem OS nas mutações virava `?? getMockWorkOrderDetail`. Agora o erro real chega à tela
 // como ESTADO (§7: erro · vazio · acesso não permitido · não encontrada · desatualizado). O modo mock EXPLÍCITO
-// (`VITE_USE_MOCKS=true`, interruptor de demonstração) continua — e é o ÚNICO caminho que alcança `getMock*`
-// (o guard G1 em work-orders-honest-errors.test.tsx fiscaliza).
+// (`VITE_USE_MOCKS=true`, interruptor de demonstração) continua. Ciclo 2 (P3): o guard G1 de
+// work-orders-honest-errors.test.tsx (por ALCANCE, sobre a AST) prova por mutação que identificador de origem mock
+// só é alcançável no ramo verdadeiro de `isMockMode()` em todo arquivo de `modules/work-orders/**` e
+// `modules/operations/dispatches/**` — enumerados do disco, arquivo novo incluído.
 //
 // Contrato (§4.2 do plano):
 //   listWorkOrdersFromApi  → nunca lança: 200 com lista → itens (vazio = vazio) · 200 SEM lista → falha + razão (ciclo 2,

@@ -22,7 +22,9 @@ import type {
 // B-SAN3-01 (P-008) — este service NÃO fabrica mais despacho quando o backend recusa ou responde vazio (antes:
 // lista vazia/erro → 4 despachos `dispatch-000101..104`, consumidos também pelo Dashboard e pela aba Mobile da
 // OS; detalhe com erro → `dispatch-000101` com timeline inventada; 2xx sem despacho → `?? mock`). O modo mock
-// EXPLÍCITO (`VITE_USE_MOCKS=true`) continua e é o ÚNICO caminho que alcança `getMock*` (guard G1).
+// EXPLÍCITO (`VITE_USE_MOCKS=true`) continua. Ciclo 2 (P3): o guard G1 (por ALCANCE, sobre a AST) prova por mutação
+// que identificador de origem mock só é alcançável no ramo verdadeiro de `isMockMode()` em todo arquivo destes dois
+// módulos (`work-orders/**` e `operations/dispatches/**`).
 //
 // `dispatches.types.ts` não muda (fora do permitido): o 403 da lista se distingue pela razão; o detalhe ganha o
 // tipo `DispatchDetailResult` aqui mesmo, aditivo.
