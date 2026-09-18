@@ -119,13 +119,17 @@ test("Item planned/future pode aparecer com permissao e status correto", () => {
     userId: "usr-finance",
     tenantId: "ten-a",
     roles: ["tenant_admin"],
-    permissions: ["finance:read", "billing:read"],
+    permissions: ["financial_entries:read", "financial_titles:read"],
     enabledModules: ["finance"],
     scope: "finance",
   });
 
-  assert.equal(menu.find((item) => item.id === "finance.dashboard")?.status, "future");
-  assert.equal(menu.find((item) => item.id === "finance.charges")?.status, "future");
+  // B-SAN3-04a (item 13): /finance, /finance/charges e /finance/payments passaram a "implemented", governados pelas
+  // permissões que as rotas e o App.tsx comparam (financial_entries:read / financial_titles:read); /finance/invoices
+  // segue "future" e continua aparecendo com a permissão — é o caso "future com permissão" que este teste pina.
+  assert.equal(menu.find((item) => item.id === "finance.dashboard")?.status, "implemented");
+  assert.equal(menu.find((item) => item.id === "finance.charges")?.status, "implemented");
+  assert.equal(menu.find((item) => item.id === "finance.invoices")?.status, "future");
 });
 
 test("relatedEndpoints sao retornados sem dados sensiveis", () => {

@@ -145,7 +145,7 @@ type SeedData = {
   readonly managerA: User;
   readonly managerB: User;
   readonly viewerA: User;
-  readonly financeA: User;
+  readonly inventoryA: User;
 };
 
 test("GET audit-logs: 200 com DTO sem tenant_id; actorName resolvido; actorUserId null → actorName null", async () => {
@@ -183,10 +183,11 @@ test("[RBAC] GET audit-logs exige work_orders:read (viewer lê → 200; anon →
     const anon = await req(baseUrl, `/api/v1/work-orders/${wo}/audit-logs`);
     assert.equal(asViewer.status, 200);
     assert.equal(anon.status, 403);
-    // coordenador J-Ω3F-8A: ator AUTENTICADO sem work_orders:read (finance) → 403 (ramo permission_required,
+    // coordenador J-Ω3F-8A: ator AUTENTICADO sem work_orders:read → 403 (ramo permission_required,
     // não só o tenant_required do anônimo) — o backend é a autoridade, não a UI.
-    const asFinance = await req(baseUrl, `/api/v1/work-orders/${wo}/audit-logs`, { headers: h(seed.tenantA, seed.financeA, "finance") });
-    assert.equal(asFinance.status, 403);
+    // B-SAN3-04a (P1): o finance passou a ter work_orders:read (RBAC_MATRIX.md:45); o controle sem a permissão é o inventory.
+    const asInventory = await req(baseUrl, `/api/v1/work-orders/${wo}/audit-logs`, { headers: h(seed.tenantA, seed.inventoryA, "inventory") });
+    assert.equal(asInventory.status, 403);
   });
 });
 
@@ -240,9 +241,10 @@ async function withApi(
   const managerA = core.createUser({ tenantId: tenantA.id, name: "Manager A", email: "woal-manager-a@example.com", roles: ["manager"] });
   const managerB = core.createUser({ tenantId: tenantB.id, name: "Manager B", email: "woal-manager-b@example.com", roles: ["manager"] });
   const viewerA = core.createUser({ tenantId: tenantA.id, name: "Viewer A", email: "woal-viewer-a@example.com", roles: ["viewer"] });
-  // finance NÃO tem work_orders:read — usuário AUTENTICADO sem a permissão (ramo permission_required, não tenant_required).
-  const financeA = core.createUser({ tenantId: tenantA.id, name: "Finance A", email: "woal-finance-a@example.com", roles: ["finance"] });
-  const seed: SeedData = { tenantA, tenantB, managerA, managerB, viewerA, financeA };
+  // inventory NÃO tem work_orders:read — usuário AUTENTICADO sem a permissão (ramo permission_required, não tenant_required).
+  // B-SAN3-04a (P1): era o finance, que passou a ter work_orders:read (RBAC_MATRIX.md:45).
+  const inventoryA = core.createUser({ tenantId: tenantA.id, name: "Inventory A", email: "woal-inventory-a@example.com", roles: ["inventory"] });
+  const seed: SeedData = { tenantA, tenantB, managerA, managerB, viewerA, inventoryA };
 
   const app = createApp(new MemoryCoreSaasAdapter(core));
   const server = app.listen(0);

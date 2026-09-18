@@ -208,8 +208,9 @@ test("rota: 200 série+zero-fill+§2.8; 403 sem work_orders:read; 400 janela/day
 
     const path = "/api/v1/operations/work-orders-timeseries";
     const unauthenticated = await requestJson(baseUrl, path);
-    // finance NÃO tem work_orders:read → 403 (gate por permissão de leitura de OS).
-    const forbidden = await requestJson(baseUrl, path, { headers: authHeaders(seed.tenantA, seed.financeA, "finance") });
+    // inventory NÃO tem work_orders:read → 403 (gate por permissão de leitura de OS).
+    // B-SAN3-04a (P1): o finance passou a ter work_orders:read (RBAC_MATRIX.md:45); o controle sem a permissão é o inventory.
+    const forbidden = await requestJson(baseUrl, path, { headers: authHeaders(seed.tenantA, seed.inventoryA, "inventory") });
     const authorized = await requestJson(baseUrl, `${path}?days=7`, {
       headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
     });
@@ -270,7 +271,7 @@ type SeedData = {
   readonly tenantB: Tenant;
   readonly managerA: User;
   readonly managerB: User;
-  readonly financeA: User;
+  readonly inventoryA: User;
 };
 
 async function withApi(callback: (ctx: { baseUrl: string; seed: SeedData }) => Promise<void>): Promise<void> {
@@ -293,14 +294,14 @@ async function withApi(callback: (ctx: { baseUrl: string; seed: SeedData }) => P
   const tenantB = core.createTenant({ name: "TS B", modules: ["dashboard", "work_orders", "field_operations"] });
   const managerA = core.createUser({ tenantId: tenantA.id, name: "Manager A", email: `ts-mgr-a-${randomUUID()}@e.com`, roles: ["manager"] });
   const managerB = core.createUser({ tenantId: tenantB.id, name: "Manager B", email: `ts-mgr-b-${randomUUID()}@e.com`, roles: ["manager"] });
-  const financeA = core.createUser({ tenantId: tenantA.id, name: "Finance A", email: `ts-fin-a-${randomUUID()}@e.com`, roles: ["finance"] });
+  const inventoryA = core.createUser({ tenantId: tenantA.id, name: "Inventory A", email: `ts-inv-a-${randomUUID()}@e.com`, roles: ["inventory"] });
 
   const app = createApp(new MemoryCoreSaasAdapter(core));
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
 
   try {
-    await callback({ baseUrl, seed: { tenantA, tenantB, managerA, managerB, financeA } });
+    await callback({ baseUrl, seed: { tenantA, tenantB, managerA, managerB, inventoryA } });
   } finally {
     await closeServer(server);
     resetWorkOrderRuntimeForTests();
