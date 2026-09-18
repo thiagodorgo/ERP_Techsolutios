@@ -2602,3 +2602,31 @@ entrega **repete** o acumulado.
 **Nota de backlog deste espelho:** o `B-GOV-ELENCO` (a entrada de 08/09 que **não** entregou) nunca ganhou
 seção aqui — pendência `P-KPI-HISTORY-MD-BACKLOG`, que este bloco **não** fecha. Esta seção é só a do
 próprio bloco.
+
+## 2026-09-18 — B-O6R-11 (PR na autoria) — o que o técnico lança fica gravado; o que o sistema responde, o app entende
+
+Fecha os **dois P1** da pendência-mãe `P-O6R-B11` (item 3 do gate da versão vendável). PR **Flutter-only**:
+backend, frontend e banco intocados.
+
+**Ω6R-QUA-005 — perda de dado.** `PrestadorRepository.addSelection` enfileirava num `selection.forEach`, cujo
+callback é `void`: o método retornava — e avisava a tela — **antes** de qualquer ação gravada, e as N gravações
+(cada uma um read-modify-write da fila inteira) liam o mesmo retrato. No head-base: **N SKUs viram 1**; reinício
+logo após o retorno, **0**. Agora é `for-in` com `await`, e `PersistentSyncQueueRepository` encadeia `enqueue` e
+`update` — a fila é uma instância só, partilhada por replay, conflitos e repositórios, e qualquer par de mutações
+concorrentes podia perder uma linha. O conserto definitivo (upsert atômico no store) é a `P-MOBILE-FILA-RMW-STORE`.
+
+**Ω6R-QUA-004 — o REST da OS.** Detalhe, status e atribuição passavam o envelope `{ data }` inteiro a um parser
+snake_case que exigia `tenant_id`: resposta íntegra = TypeError. O PATCH mandava `inService` (o backend recusa);
+a atribuição mandava `user_id`/`note` (o backend não lê). E a lista viva mostrava toda OS como **Agendada**,
+porque o vocabulário do backend não era traduzido. A tabela de status agora vai nos dois sentidos, com teste de
+paridade contra o codec da fila offline.
+
+**Números, todos executados neste PR:** Flutter **864 → 885/885** (`00:47 +885: All tests passed!`, N=1) — 21
+testes novos em 4 arquivos, **17 vermelhos no head-base** `9dea0ef6` (T1 10 · T2 4 · T3 2 · T4 1); mutações do
+plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
+frontend/` vazio nas duas pontas). `blocks_completed` **163 → 164** a partir de `origin/main` = `02bd7dab`.
+`mvp_*` intocados (§C3.4). `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
+
+**Pendências abertas com dono (7):** `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
+`P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-APPROVAL-REQUEST-REST-404`,
+`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE`.
