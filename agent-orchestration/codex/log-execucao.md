@@ -4329,3 +4329,44 @@ existe em `decisoes.md` e ficou fora da emenda. Registro aplicado por script (32
 dono, sepultamento das duas identidades novas, aposentadoria só depois do merge (`D-APOSENTADORIA-ELENCO-EFEMERO`).
 
 Opção B (2026-09-13): o dono escolheu o caminho B (`D-SAN3-PLANO-OPCAO-B`; P1 "Sim, lê OS"; P2 "Sim — Financeiro monta orçamento"). O orquestrador planejou a aplicação (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`) e um agente distinto, que não achou nem planejou, a aplicou sem commit, medindo cada fato marcado antes de escrever (item 16 = 27 + 13 = 40; as 10 rotas do CE-2; a rota de conciliação sem chamador, nascida em `1e65b34b`): §5.6 com as condições e as marcas das células de teste geradas por script; itens 55 e 56; travas `07c` → `SAN3-26` e `SAN3-11` → `B-O6R-12` (0 violações); §15; registro com 1 entrada nova, 11 emendas e 14 ponteiros corrigidos pela propriedade (o ponteiro da `P-O6R-B09` para o item 7 está certo e ficou); painel "56 bloqueantes em 37 blocos" e `kpi-freeze`. Índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS, byte-idêntico à cópia fora do repo. Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep. Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status. Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. Conferência de aplicação (`agente-ci-doutor`): NÃO CONFERE em `042e689e`, CONFERE em `bb3f5925` (`agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`).
+
+## B-O6R-04a — `fix/inventory-consistency` (2026-09-18, PR na autoria)
+
+**Ω6R-DAT-002 + Ω6R-DAT-003, os dois P0 de estoque do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020`
+absorvida.** Papéis do §C7.4-bis, com identidades distintas: achou o `critico-adversarial` (2 rodadas, as duas
+NÃO; o que sobreviveu à r2 virou requisito na emenda 3); planejou o `planejador-mestre` (Fable, plano v3,
+`756b8c37`); **implementou o desenvolvedor**, em duas instâncias — a 1ª caiu por limite de sessão (429) às
+~12:12 depois de 3 commits (`2b7f8620` migration + censo, `ea36c658` código, `cd055802` regressão em memória)
+e 2 suítes não commitadas; a 2ª mediu cada passo do plano contra o que existia, sem herdar nada como fato, e
+terminou o bloco.
+
+**O que mudou.** V1–V5: `FOR UPDATE` na linha do item antes da primeira leitura que decide, com o token de tipo
+`ItemWriteLock`; `P2002` fora da transação; falha transitória → 503. V6: `aberta → fechando → concluida` com CAS
+em unidades por item (porta `InventoryUnitOfWork`), `abortClose` em toda falha, total da sessão inteira somado no
+banco sob o lock. V7/V8: recontagem e cancelamento sob o lock da sessão. V9: `open` serializado pela linha do
+tenant (`FOR NO KEY UPDATE`) e recusando item já em contagem não terminal. UMA migration aditiva e fail-closed
+(`20260873000000_add_stock_movements_unique_backstops`, 2 índices únicos parciais, nunca deduplica) e o censo
+somente leitura `scripts/inventory-duplicates-census.sql` para o ato do dono.
+
+**Provas, por execução.** 5 suítes novas (T-A 16, T-B 20, T-C 7, T-C′ 2, T-D 9). Suíte plena **2995/2997 →
+3049/3051**, forma canônica 3, `ec=0`. As 4 `-db` do bloco **45/45 em 3 execuções** com o banco recriado antes
+de cada (a 3ª em paralelo). Vermelho-controle **executado** no head-base `cc696f93` (worktree `dev-b04a-base`,
+`npm ci` próprio, base migrada com as 107 do head-base): T-A 3/16, T-B 6/20, T-C 1/7, T-C′ 0/2, T-D 2/9 — A2 e B3
+vermelhos **pela invariante** (saldo −1; contado 5 por cima do carimbo). 16 mutações dos guards, todas vermelhas
+e revertidas por bytes. Drill do M-02 reproduzido (`P3018/P0001` "21 grupo(s)" → `P3009` → `P3009` com dado
+limpo → `migrate resolve --rolled-back` → aplicado). **Sizing com o CÓDIGO REAL** (§10 passo 10; base descartável por lado, papel efêmero; outros clusters de pé mas ociosos — `docker stats` ~0% no início e no fim): bloco N=250/500/1000/10000 → 4 730 / 9 430 / 18 667 / **196 349 ms**, unidade média 18,8 / 18,8 / 18,6 / 19,6 ms, p95 22 / 25 / 23 / 27 ms, máx 153 / 37 / 41 / 156 ms, `totalVarianceValue` exato (−6·N) e `concluida` com N ajustes, N carimbos e 0 duplicata em todos. Head-base nos mesmos N: 4 529 / 8 703 / 17 089 ms `concluida`, e em **N=10 000 → `P2028` em `cycleCountEntry.updateMany()` (o `applyClose`) aos 160 898 ms, sessão `aberta`, 10 000 ajustes gravados e 0 carimbados** — o modo de falha que a emenda 2-h existe para fechar.
+
+**Divergências plano × código, reportadas e não decididas (§A2)** — texto integral no relatório do
+desenvolvedor: D-1 teste de rota fora da lista do §8 tocado para a I9 caber em memória (commit isolado
+`cd055802`; `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`); D-2 `isExitReversed` público permanece (interface
+e `inventory.service.ts` são intocáveis); D-3 forma do `40P01` em query crua; D-4 com a I9 o `open` recusa em vez
+de esperar o lock da unidade (A12/B8(ii)); D-5 outcomes com um ramo a mais; D-6 C6 roda o censo em transação
+READ ONLY na base compartilhada e o censo com grupos foi para o C5′; D-7 T-C ganhou o C0 de postura; D-8 o
+arranjo do B4 para em `fechando`; D-9 o controle v2 do B15 é intercalado deterministicamente; D-10 D1 e D9 são
+verdes no head-base por construção.
+
+**Pendências que nascem:** `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` (ato do dono, antes do próximo deploy),
+`P-O6R-B04-CONSUMIDORES-503`, `P-O6R-B04-UI-STATUS-FECHANDO` e `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`;
+emendas na `P-O6R-B04` (parcial na autoria), `P-020` e `P-021` (fechadas na autoria). `blocks_completed` 163 →
+164. Base viva intocada; cluster e Redis do bloco (`dev-b04a-pg` :58651, `dev-b04a-redis` :58652) e o worktree
+`dev-b04a-base` removidos pelo nome ao fim.
