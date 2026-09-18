@@ -2619,11 +2619,13 @@ concorrentes podia perder uma linha. O conserto definitivo (upsert atômico no s
 snake_case que exigia `tenant_id`: resposta íntegra = TypeError. O PATCH mandava `inService` (o backend recusa);
 a atribuição mandava `user_id`/`note` (o backend não lê). E a lista viva mostrava toda OS como **Agendada**,
 porque o vocabulário do backend não era traduzido. A tabela de status agora vai nos dois sentidos, com teste de
-paridade contra o codec da fila offline.
+paridade contra o codec da fila offline. E o tenant da sessão, quando o chamador o passa, vence qualquer tenant
+que venha no corpo da resposta (emenda 2 (i) do orquestrador).
 
-**Números, todos executados neste PR:** Flutter **864 → 885/885** (`00:47 +885: All tests passed!`, N=1) — 21
-testes novos em 4 arquivos, **17 vermelhos no head-base** `9dea0ef6` (T1 10 · T2 4 · T3 2 · T4 1); mutações do
-plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
+**Números, todos executados neste PR:** Flutter **864 → 886/886** (`00:51 +886: All tests passed!`, N=1; recontada
+depois do caso 3b) — 22 testes novos em 4 arquivos: dos 21 do plano, **17 vermelhos no head-base** `9dea0ef6`
+(T1 10 · T2 4 · T3 2 · T4 1), e o caso 3b do T1 (com o tenant da sessão, o tenant do corpo nunca vence — emenda
+2 (i) do orquestrador) vermelho no `31bda5f2` (`+12 -1`); mutações do plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
 frontend/` vazio nas duas pontas). `blocks_completed` **163 → 164** a partir de `origin/main` = `02bd7dab`.
 `mvp_*` intocados (§C3.4). `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
 

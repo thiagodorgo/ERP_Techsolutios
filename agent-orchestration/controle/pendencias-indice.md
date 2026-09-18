@@ -68,7 +68,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 105
+## ABERTAS · balde A — material — 110
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -177,8 +177,13 @@
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9278 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
 | `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` | 9288 | MÉDIA | sim | P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (2026-09-12) — dois itens do gate só apare |
 | `P-WEB-CONCILIACAO-SEM-TELA` | 9300 | ALTA | sim | P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia |
+| `P-MOBILE-EXPENSE-ENVELOPE` | 9320 | MÉDIA | sim | P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app i |
+| `P-WO-ASSIGN-OPERATOR-ID-TORTO` | 9351 | MÉDIA | sim | P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em |
+| `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` | 9368 | ALTA | sim | P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e  |
+| `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 9395 | MÉDIA | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
+| `P-MOBILE-FILA-RMW-STORE` | 9410 | MÉDIA | sim | P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instânci |
 
-## ABERTAS · balde B — processo/registro — 97
+## ABERTAS · balde B — processo/registro — 92
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -272,13 +277,8 @@
 | `P-GOV-CONTRATO-HIGIENE-TEXTUAL` | 9168 | BAIXA | sim | P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` ante |
 | `P-GOV-MONOCULTURA-FABLE-NOS-GATES` | 9185 | BAIXA | sim | P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo c |
 | `P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO` | 9202 | BAIXA | sim | P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos  |
-| `P-MOBILE-EXPENSE-ENVELOPE` | 9319 | — | sim | P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app i |
-| `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` | 9335 | BAIXA | sim | P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias d |
-| `P-WO-ASSIGN-OPERATOR-ID-TORTO` | 9349 | — | sim | P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em |
-| `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` | 9365 | — | sim | P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e  |
-| `P-MOBILE-APPROVAL-REQUEST-REST-404` | 9377 | — | sim | P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app po |
-| `P-MOBILE-STATUS-ACCEPTED-LOSSY` | 9389 | — | sim | P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no  |
-| `P-MOBILE-FILA-RMW-STORE` | 9403 | — | sim | P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instânci |
+| `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` | 9337 | BAIXA | sim | P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias d |
+| `P-MOBILE-APPROVAL-REQUEST-REST-404` | 9382 | BAIXA | sim | P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app po |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 71
 
