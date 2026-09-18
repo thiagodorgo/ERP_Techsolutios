@@ -11,8 +11,26 @@ import type { WorkOrderDetail, WorkOrderDetailResult, WorkOrderEvent, WorkOrders
 //  · P1 — UMA verdade para "sem permissão": o `forbidden` do RESULTADO do service decide ANTES de qualquer outra
 //    classificação (`source`, refresh em segundo plano). O estado não carrega `forbidden`/`notFound` como campos:
 //    `status` é a única verdade. Permissão revogada em sessão não deixa a lista antiga "desatualizada" — ela sai.
+//  · P2 — enumeração FECHADA: todo status é classificado num `Record` exaustivo (membro novo sem classificação
+//    quebra o `tsc`); em runtime, o que não está classificado é FALHA — nunca vazio, nunca número.
 
 export type WorkOrdersListStatus = "loading" | "ready" | "empty" | "error" | "forbidden";
+
+/** Classe de um status para quem desenha a tela: esperando · com dado (inclusive vazio) · falha (sem número). */
+export type StatusKind = "pending" | "data" | "failure";
+
+export const LIST_STATUS_KIND: Readonly<Record<WorkOrdersListStatus, StatusKind>> = Object.freeze({
+  loading: "pending",
+  ready: "data",
+  empty: "data",
+  error: "failure",
+  forbidden: "failure",
+});
+
+/** Status fora da união (chega em runtime) = falha. `Object.hasOwn` para `toString`/`__proto__` não enganarem. */
+export function listStatusKind(status: WorkOrdersListStatus): StatusKind {
+  return Object.hasOwn(LIST_STATUS_KIND, status) ? LIST_STATUS_KIND[status] : "failure";
+}
 
 export type WorkOrdersListState = {
   readonly data: WorkOrdersData;
@@ -38,6 +56,11 @@ export const initialListState: WorkOrdersListState = {
 const LIST_ERROR = "Não foi possível consultar as ordens de serviço.";
 const LIST_FORBIDDEN = "Sem permissão para consultar as ordens de serviço.";
 
+/** Só compila se `value` já foi exaurido — é o que faz um membro novo de `WorkOrdersSource` quebrar o `tsc`. */
+function unclassified(value: never): string {
+  return String(value);
+}
+
 export function nextListState(
   prev: WorkOrdersListState,
   result: WorkOrdersData,
@@ -56,31 +79,57 @@ export function nextListState(
     };
   }
 
-  if (result.source !== "fallback") {
-    return {
-      data: { items: result.items, pagination: result.pagination, source: result.source, fallbackReason: result.fallbackReason },
-      status: result.items.length > 0 ? "ready" : "empty",
-      error: null,
-      stale: false,
-      lastUpdatedAt: now,
-    };
+  switch (result.source) {
+    case "api":
+    case "mock":
+      return {
+        data: { items: result.items, pagination: result.pagination, source: result.source, fallbackReason: result.fallbackReason },
+        status: result.items.length > 0 ? "ready" : "empty",
+        error: null,
+        stale: false,
+        lastUpdatedAt: now,
+      };
+    case "fallback": {
+      const reason = result.fallbackReason ?? LIST_ERROR;
+      // Falha em segundo plano com dado já carregado: mantém a lista e marca como desatualizada.
+      if (background && prev.lastUpdatedAt !== null) {
+        return { ...prev, error: reason, stale: true };
+      }
+      return {
+        data: { items: [], pagination: result.pagination, source: "fallback", fallbackReason: reason },
+        status: "error",
+        error: reason,
+        stale: false,
+        lastUpdatedAt: prev.lastUpdatedAt,
+      };
+    }
+    default: {
+      // P2 — origem não classificada: `tsc` recusa (acima); em runtime vira ERRO, nunca dado atual.
+      unclassified(result.source);
+      return {
+        data: { items: [], pagination: EMPTY_PAGINATION, source: "fallback", fallbackReason: LIST_ERROR },
+        status: "error",
+        error: LIST_ERROR,
+        stale: false,
+        lastUpdatedAt: prev.lastUpdatedAt,
+      };
+    }
   }
-
-  const reason = result.fallbackReason ?? LIST_ERROR;
-  // Falha em segundo plano com dado já carregado: mantém a lista e marca como desatualizada.
-  if (background && prev.lastUpdatedAt !== null) {
-    return { ...prev, error: reason, stale: true };
-  }
-  return {
-    data: { items: [], pagination: result.pagination, source: "fallback", fallbackReason: reason },
-    status: "error",
-    error: reason,
-    stale: false,
-    lastUpdatedAt: prev.lastUpdatedAt,
-  };
 }
 
 export type WorkOrderDetailStatus = "loading" | "ready" | "not-found" | "forbidden" | "error";
+
+export const DETAIL_STATUS_KIND: Readonly<Record<WorkOrderDetailStatus, StatusKind>> = Object.freeze({
+  loading: "pending",
+  ready: "data",
+  "not-found": "failure",
+  forbidden: "failure",
+  error: "failure",
+});
+
+export function detailStatusKind(status: WorkOrderDetailStatus): StatusKind {
+  return Object.hasOwn(DETAIL_STATUS_KIND, status) ? DETAIL_STATUS_KIND[status] : "failure";
+}
 
 export type WorkOrderDetailState = {
   readonly workOrder: WorkOrderDetail | null;

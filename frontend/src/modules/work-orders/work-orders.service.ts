@@ -1,6 +1,6 @@
 import { isMockMode } from "../../config/env";
 import { ApiError, apiRequest } from "../../services/api/client";
-import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimelineResponse } from "./work-orders.adapter";
+import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimelineResponse, hasWorkOrdersList } from "./work-orders.adapter";
 import type { WorkOrderAuditLog, WorkOrderAuditLogList } from "./audit-logs.types";
 import { getMockWorkOrderDetail, getMockWorkOrdersData, getMockWorkOrderTimeline } from "./work-orders.mock";
 import type {
@@ -30,7 +30,8 @@ import type {
 // (o guard G1 em work-orders-honest-errors.test.tsx fiscaliza).
 //
 // Contrato (§4.2 do plano):
-//   listWorkOrdersFromApi  → nunca lança: 200 → itens (vazio = vazio) · 403 → `forbidden:true` · outro erro → vazio + razão
+//   listWorkOrdersFromApi  → nunca lança: 200 com lista → itens (vazio = vazio) · 200 SEM lista → falha + razão (ciclo 2,
+//                            C2-N2) · 403 → `forbidden:true` · outro erro → vazio + razão
 //   createWorkOrder        → lança ApiError (non-2xx/rede) ou Error("invalid_work_order_response") (2xx sem OS)
 //   getWorkOrderFromApi    → nunca lança: `workOrder:null` + `notFound`/`forbidden`/`fallbackReason`
 //   getWorkOrderTimeline   → lança ApiError; vazio = []
@@ -43,6 +44,10 @@ export async function listWorkOrdersFromApi(context: WorkOrdersApiContext, param
 
   try {
     const response = await apiRequest<unknown>(`/work-orders${buildQuery(params)}`, context);
+    // Ciclo 2 (emenda 3 (r), C2-N2) — 2xx sem lista no corpo não é "vazio": é falha (P2, o desconhecido cai no erro).
+    if (!hasWorkOrdersList(response)) {
+      return { items: [], pagination: EMPTY_PAGINATION, source: "fallback", fallbackReason: "A resposta não trouxe a lista de ordens de serviço. Tente novamente em instantes.", forbidden: false };
+    }
     return adaptWorkOrdersResponse(response, "api");
   } catch (err) {
     // 403 = gate RBAC `work_orders:read` → "acesso não permitido" (não é falha de sistema). Qualquer outro erro

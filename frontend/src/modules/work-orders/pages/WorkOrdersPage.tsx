@@ -8,7 +8,7 @@ import { KpiStatCard, PageHeader, StatusPill, TablePager, type KpiStatTag } from
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { buildWorkOrdersKpiDetails, type WorkOrdersKpiKey } from "../work-orders-kpi-detail";
-import type { WorkOrdersListStatus } from "../work-orders.state";
+import { listStatusKind, type WorkOrdersListStatus } from "../work-orders.state";
 import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
 import { StaleDataBanner } from "../components/StaleDataBanner";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
@@ -224,8 +224,10 @@ export function WorkOrdersPage() {
 
   const canDispatch = permissions.includes("field_dispatch:create");
   const kpiSkeleton = loading && items.length === 0;
-  // Erro nunca vira número (§4.3-2): com a lista em erro/sem permissão os KPIs mostram "—", sem pop-up sobre "0".
-  const degraded = status === "error" || status === "forbidden";
+  // Erro nunca vira número (§4.3-2): com a lista em FALHA os KPIs mostram "—", sem pop-up sobre "0". Ciclo 2 (P2):
+  // a falha vem da classificação EXAUSTIVA do estado (`listStatusKind`) — status não previsto é falha, nunca vazio.
+  const kind = listStatusKind(status);
+  const degraded = kind === "failure";
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -558,6 +560,8 @@ const stateDetail = { fontSize: 12.5, color: "#64748B", marginTop: 4 } as const;
  *   error     → a consulta falhou (role="alert" + "Tentar novamente"); NUNCA lista de demonstração
  *   forbidden → o ator não tem `work_orders:read` — acesso não permitido, não é falha de sistema
  *   empty     → a organização não tem OS (ou o filtro escondeu todas)
+ * Ciclo 2 (P2): `empty` e `forbidden` são ramos EXPLÍCITOS e o `return` final é o ERRO — um status que este
+ * painel não conhece nunca vira "vazio".
  */
 export function WorkOrdersLoadState({
   status,
@@ -565,21 +569,16 @@ export function WorkOrdersLoadState({
   filtered = false,
   onRetry,
 }: {
-  readonly status: Exclude<WorkOrdersListStatus, "loading" | "ready">;
+  readonly status: WorkOrdersListStatus;
   readonly message?: string | null;
   readonly filtered?: boolean;
   readonly onRetry?: () => void;
 }) {
-  if (status === "error") {
+  if (status === "empty") {
     return (
-      <div role="alert" data-state="error" style={statePanel}>
-        <div style={stateTitle}>Não foi possível carregar as ordens de serviço</div>
-        <div style={stateDetail}>{message ?? "Tente novamente em instantes."}</div>
-        {onRetry ? (
-          <button type="button" className="pat-link" style={{ marginTop: 12 }} onClick={onRetry}>
-            Tentar novamente
-          </button>
-        ) : null}
+      <div data-state="empty" style={statePanel}>
+        <div style={stateTitle}>Nenhuma ordem de serviço</div>
+        <div style={stateDetail}>{filtered ? "Ajuste a busca ou os filtros acima." : "As ordens atribuídas à sua organização aparecem aqui."}</div>
       </div>
     );
   }
@@ -592,9 +591,14 @@ export function WorkOrdersLoadState({
     );
   }
   return (
-    <div data-state="empty" style={statePanel}>
-      <div style={stateTitle}>Nenhuma ordem de serviço</div>
-      <div style={stateDetail}>{filtered ? "Ajuste a busca ou os filtros acima." : "As ordens atribuídas à sua organização aparecem aqui."}</div>
+    <div role="alert" data-state="error" style={statePanel}>
+      <div style={stateTitle}>Não foi possível carregar as ordens de serviço</div>
+      <div style={stateDetail}>{message ?? "Tente novamente em instantes."}</div>
+      {onRetry ? (
+        <button type="button" className="pat-link" style={{ marginTop: 12 }} onClick={onRetry}>
+          Tentar novamente
+        </button>
+      ) : null}
     </div>
   );
 }
