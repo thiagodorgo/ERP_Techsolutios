@@ -13,7 +13,9 @@ import {
 import {
   duplicateSkuError,
   stockBaixaReversedError,
+  stockBusyError,
   insufficientBalanceError,
+  transferGroupInconsistentError,
   type AbcClassAssignment,
   type CreateInventoryItemInput,
   type CreateStockExitForSourceInput,
@@ -50,6 +52,32 @@ const OUTFLOW_TYPES = ["saida", "consumo"] as const;
 
 /** Ω4C PR-08 — the default custody bucket (BASE): both typed refs empty. */
 const BASE_CUSTODY: StockCustody = { custodyType: "base" };
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-04a (Ω6R-DAT-002 / P-020) — O LOCK DO ITEM COMO TIPO.
+//
+// A saída lia o saldo, decidia e escrevia SEM lock: 20 saídas concorrentes de 1 sobre saldo 10 eram
+// TODAS aceitas (saldo −10). Agora toda via que chega a `insertMovement`/`avg_cost` (V1–V5) toma
+// `FOR UPDATE` na linha `inventory_items(tenant_id, id)` ANTES da primeira leitura que decide, e toda
+// leitura que decide roda sob esse lock. `FOR UPDATE` (não `NO KEY UPDATE`) porque só ele conflita com o
+// `KEY SHARE` que todo INSERT em `stock_movements` toma na linha do item pela FK — serializa até um
+// escritor que esqueça o lock.
+//
+// O token `ItemWriteLock` é a prova de que o lock foi tomado NESTA transação: só `lockItemForUpdate` o
+// produz, e `insertMovement` + as leituras `*Locked` o exigem. Via nova que escreva sem o lock não compila.
+// As versões SEM lock das leituras que DECIDEM não existem mais neste arquivo (o guard D2 as reprova);
+// antes do lock só há leitura de IDENTIFICAÇÃO (`findMovementById`, `findExitBySource`), que diz QUAL
+// item travar e é relida sob o lock antes de qualquer decisão.
+//
+// I7: toda transação que toma `FOR UPDATE` de item toma EXATAMENTE UM (e, na unidade da contagem, a
+// sessão antes). Perna de transferência de outro item = dado corrompido → 409, nunca 2º lock.
+// -----------------------------------------------------------------------------------------------
+declare const ItemWriteLockBrand: unique symbol;
+
+/** Prova de que a transação corrente segura `FOR UPDATE` no item. SÓ `lockItemForUpdate` produz. */
+export type ItemWriteLock = { readonly [ItemWriteLockBrand]: true; readonly item: InventoryItem };
+
+type ItemRecord = Parameters<typeof mapItemRecord>[0];
 
 export class PrismaInventoryRepository implements InventoryRepository {
   constructor(private readonly client: PrismaExecutor) {}
@@ -149,7 +177,9 @@ export class PrismaInventoryRepository implements InventoryRepository {
     if (!item) return undefined;
 
     const now = new Date();
-    const saldo = await this.saldoOf(tenantId, itemId);
+    // Leitura de EXIBIÇÃO (não decide nada): o mesmo groupBy da listagem — a versão sem lock de `saldoOf`
+    // deixou de existir neste arquivo (B-O6R-04a, D-02).
+    const saldo = (await this.sumByItem(tenantId, [itemId])).get(itemId) ?? 0;
     const usageAbs = await this.usageOf(tenantId, itemId, now);
     const { reorderPoint, needsReorder } = deriveReorder({
       saldo,
@@ -197,29 +227,27 @@ export class PrismaInventoryRepository implements InventoryRepository {
   }
 
   /**
-   * R7.1/R7.3 — runs on the executor it was constructed with; wrapped by the RLS
-   * repository the whole flow lives inside ONE `$transaction`: aggregate the
-   * signed sum → reject an overdraw (409, nothing written) → recompute the
-   * moving average on `entrada` → insert the movement + update `avg_cost`
-   * atomically.
+   * R7.1/R7.3 (V1) — runs on the executor it was constructed with; wrapped by the RLS repository the whole flow
+   * lives inside ONE `$transaction`. B-O6R-04a: o lock do item vem PRIMEIRO; o saldo da custódia, o custo médio
+   * e a escrita decidem sob ele (I1, I4) — a saída concorrente espera o commit desta e relê o saldo novo.
    */
   async createMovement(input: CreateStockMovementInput): Promise<StockMovement | undefined> {
-    const item = await this.findItemById(input.tenantId, input.itemId);
-    if (!item) return undefined;
+    const lock = await this.lockItemForUpdate(input.tenantId, input.itemId);
+    if (!lock) return undefined;
 
     const custody = input.custody ?? BASE_CUSTODY;
 
     // Ω4C PR-08 — the non-negative guard runs against THIS custody's balance (stricter than the legacy global
-    // guard). Runs inside the RLS `$transaction`; the aggregate sees the transaction's own writes.
-    const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, input.itemId, custody);
+    // guard). The aggregate sees the transaction's own writes and, under the lock, every committed one.
+    const custodySaldoBefore = await this.saldoOfCustodyLocked(lock, custody);
 
     if (wouldOverdraw(custodySaldoBefore, input.quantidadeSinalizada)) {
       throw insufficientBalanceError(custodySaldoBefore);
     }
 
     if (input.type === "entrada" && input.unitCost !== undefined) {
-      const globalSaldoBefore = await this.saldoOf(input.tenantId, input.itemId);
-      const avgCost = computeMovingAverage(globalSaldoBefore, item.avgCost, input.quantidadeSinalizada, input.unitCost);
+      const globalSaldoBefore = await this.saldoOfLocked(lock);
+      const avgCost = computeMovingAverage(globalSaldoBefore, lock.item.avgCost, input.quantidadeSinalizada, input.unitCost);
 
       await this.client.inventoryItem.updateMany({
         where: {
@@ -233,57 +261,77 @@ export class PrismaInventoryRepository implements InventoryRepository {
       });
     }
 
-    return this.insertMovement({ ...input, custody });
+    return this.insertMovement({ ...input, custody }, lock);
   }
 
+  /** V2 — as duas pernas (mesmo item) sob UM lock; o guard da ORIGEM decide sob ele. */
   async createTransfer(input: CreateTransferInput): Promise<StockTransferResult | undefined> {
-    const item = await this.findItemById(input.tenantId, input.itemId);
-    if (!item) return undefined;
+    const lock = await this.lockItemForUpdate(input.tenantId, input.itemId);
+    if (!lock) return undefined;
 
     const origin = input.type === "link" ? BASE_CUSTODY : input.custody;
     const destination = input.type === "link" ? input.custody : BASE_CUSTODY;
     const quantity = roundToDecimalPrecision(Math.abs(input.quantity));
 
-    const originSaldo = await this.saldoOfCustody(input.tenantId, input.itemId, origin);
+    const originSaldo = await this.saldoOfCustodyLocked(lock, origin);
     if (wouldOverdraw(originSaldo, -quantity)) {
       throw insufficientBalanceError(originSaldo);
     }
 
     const transferGroupId = randomUUID();
-    const from = await this.insertMovement({
-      tenantId: input.tenantId,
-      itemId: input.itemId,
-      type: input.type,
-      quantidadeSinalizada: -quantity,
-      reason: input.reason,
-      custody: origin,
-      transferGroupId,
-      createdBy: input.createdBy,
-    });
-    const to = await this.insertMovement({
-      tenantId: input.tenantId,
-      itemId: input.itemId,
-      type: input.type,
-      quantidadeSinalizada: quantity,
-      reason: input.reason,
-      custody: destination,
-      transferGroupId,
-      createdBy: input.createdBy,
-    });
+    const from = await this.insertMovement(
+      {
+        tenantId: input.tenantId,
+        itemId: input.itemId,
+        type: input.type,
+        quantidadeSinalizada: -quantity,
+        reason: input.reason,
+        custody: origin,
+        transferGroupId,
+        createdBy: input.createdBy,
+      },
+      lock,
+    );
+    const to = await this.insertMovement(
+      {
+        tenantId: input.tenantId,
+        itemId: input.itemId,
+        type: input.type,
+        quantidadeSinalizada: quantity,
+        reason: input.reason,
+        custody: destination,
+        transferGroupId,
+        createdBy: input.createdBy,
+      },
+      lock,
+    );
 
     return { from, to };
   }
 
+  /**
+   * V3 — `findMovementById` é leitura de IDENTIFICAÇÃO (diz qual item travar). Grupo, estorno anterior e saldo
+   * de cada perna são relidos SOB o lock. A 2ª compensação concorrente espera o commit da 1ª e vê
+   * `already_reversed`; o índice `stock_movements_reversal_active_key` é o cinto para escritor sem lock (o
+   * `P2002` é mapeado FORA da transação, no wrapper — nunca `25P02`).
+   */
   async reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
     const original = await this.findMovementById(input.tenantId, input.movementId);
     if (!original) return { status: "not_found" };
 
+    const lock = await this.lockItemForUpdate(input.tenantId, original.itemId);
+    if (!lock) return { status: "not_found" };
+
     const siblings = original.transferGroupId
-      ? await this.movementsInGroup(input.tenantId, original.transferGroupId)
+      ? await this.movementsInGroupLocked(lock, original.transferGroupId)
       : [original];
+    if (siblings.some((movement) => movement.itemId !== lock.item.id)) {
+      // Um grupo legítimo é sempre do MESMO item. Perna alheia = dado corrompido: recusa, nunca 2º lock (I7).
+      throw transferGroupInconsistentError();
+    }
     const siblingIds = siblings.map((movement) => movement.id);
 
-    if (await this.hasReversalOf(input.tenantId, siblingIds)) {
+    if (await this.hasReversalOfLocked(lock, siblingIds)) {
       return { status: "already_reversed" };
     }
 
@@ -300,23 +348,26 @@ export class PrismaInventoryRepository implements InventoryRepository {
         custodyOperatorProfileId: leg.custodyOperatorProfileId,
         custodyVehicleId: leg.custodyVehicleId,
       };
-      const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, leg.itemId, custody);
+      const custodySaldoBefore = await this.saldoOfCustodyLocked(lock, custody);
       if (wouldOverdraw(custodySaldoBefore, signed)) {
         throw insufficientBalanceError(custodySaldoBefore);
       }
 
       movements.push(
-        await this.insertMovement({
-          tenantId: input.tenantId,
-          itemId: leg.itemId,
-          type: leg.type,
-          quantidadeSinalizada: signed,
-          reason: input.reason,
-          custody,
-          transferGroupId,
-          reversesMovementId: leg.id,
-          createdBy: input.createdBy,
-        }),
+        await this.insertMovement(
+          {
+            tenantId: input.tenantId,
+            itemId: leg.itemId,
+            type: leg.type,
+            quantidadeSinalizada: signed,
+            reason: input.reason,
+            custody,
+            transferGroupId,
+            reversesMovementId: leg.id,
+            createdBy: input.createdBy,
+          },
+          lock,
+        ),
       );
     }
 
@@ -348,6 +399,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
     return { baseQty: roundToDecimalPrecision(baseQty), professionals, vehicles };
   }
 
+  /** Leitura de IDENTIFICAÇÃO (qual EXIT, qual item) — nunca decide escrita sozinha. */
   async findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
     // At most one EXIT row per (tenant, source_type, source_id) thanks to stock_movements_source_active_key.
     const movement = await this.client.stockMovement.findFirst({
@@ -357,19 +409,31 @@ export class PrismaInventoryRepository implements InventoryRepository {
     return movement ? mapMovementRecord(movement) : undefined;
   }
 
+  /**
+   * Membro PÚBLICO de leitura da interface (`InventoryService.findExitBySource` → badge/edição do consumidor).
+   * Não decide escrita nenhuma: as vias que escrevem usam `isExitReversedLocked`, sob o lock do item.
+   */
   async isExitReversed(tenantId: string, movementId: string): Promise<boolean> {
-    return this.hasReversalOf(tenantId, [movementId]);
+    const count = await this.client.stockMovement.count({
+      where: { tenant_id: tenantId, reverses_movement_id: movementId },
+    });
+
+    return count > 0;
   }
 
+  /**
+   * V4 — idempotência ABSOLUTA por origem (no MÁX. 1 EXIT por fonte; já estornada → 409). O lock do item vem
+   * ANTES da releitura da fonte e do saldo BASE: a 2ª baixa concorrente da MESMA fonte espera, relê e devolve o
+   * EXIT vencedor. O `P2002` de `stock_movements_source_active_key` (escritor sem lock) é tratado no wrapper,
+   * FORA da transação — dentro dela o `catch` deixava a transação abortada (`25P02`).
+   */
   async createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined> {
-    const item = await this.findItemById(input.tenantId, input.itemId);
-    if (!item) return undefined;
+    const lock = await this.lockItemForUpdate(input.tenantId, input.itemId);
+    if (!lock) return undefined;
 
-    // Idempotência ABSOLUTA por origem (backstop = stock_movements_source_active_key → P2002 numa corrida): no
-    // MÁX. 1 EXIT por fonte. Já estornada → 409 (re-baixa one-shot, ledger imutável).
-    const existing = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+    const existing = await this.findExitBySourceLocked(lock, input.sourceType, input.sourceId);
     if (existing) {
-      if (await this.isExitReversed(input.tenantId, existing.id)) {
+      if (await this.isExitReversedLocked(lock, existing.id)) {
         throw stockBaixaReversedError();
       }
       return existing;
@@ -377,13 +441,13 @@ export class PrismaInventoryRepository implements InventoryRepository {
 
     // RN-BAIXA-01 — guard de saldo por custódia BASE dentro da tx (EXIT-first no consumidor). BASE fixada.
     const signed = -roundToDecimalPrecision(Math.abs(input.quantity));
-    const custodySaldoBefore = await this.saldoOfCustody(input.tenantId, input.itemId, BASE_CUSTODY);
+    const custodySaldoBefore = await this.saldoOfCustodyLocked(lock, BASE_CUSTODY);
     if (wouldOverdraw(custodySaldoBefore, signed)) {
       throw insufficientBalanceError(custodySaldoBefore);
     }
 
-    try {
-      return await this.insertMovement({
+    return this.insertMovement(
+      {
         tenantId: input.tenantId,
         itemId: input.itemId,
         type: "saida",
@@ -394,36 +458,50 @@ export class PrismaInventoryRepository implements InventoryRepository {
         sourceType: input.sourceType,
         sourceId: input.sourceId,
         createdBy: input.createdBy,
-      });
-    } catch (error) {
-      // Corrida: outro request postou o EXIT da MESMA fonte primeiro → o índice parcial único cravou (P2002).
-      // Devolve o EXIT vencedor (idempotente) em vez de vazar o erro do banco.
-      if (isUniqueViolation(error)) {
-        const raced = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
-        if (raced) return raced;
-      }
-
-      throw error;
-    }
+      },
+      lock,
+    );
   }
 
+  /**
+   * V5 — `findExitBySource` é leitura de IDENTIFICAÇÃO (qual item travar); "já estornada?" é relido SOB o lock.
+   * O 2º estorno concorrente da mesma fonte espera e devolve `undefined` (no-op idempotente).
+   */
   async removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
     const exit = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
     if (!exit) return undefined; // no-op: nunca houve baixa desta fonte.
-    if (await this.isExitReversed(input.tenantId, exit.id)) return undefined; // no-op idempotente.
+
+    const lock = await this.lockItemForUpdate(input.tenantId, exit.itemId);
+    if (!lock) return undefined;
+    if (await this.isExitReversedLocked(lock, exit.id)) return undefined; // no-op idempotente.
 
     // Estorno compensatório: sinal oposto, custódia BASE, source_id NULL (fora do índice parcial) + reverses.
-    return this.insertMovement({
-      tenantId: input.tenantId,
-      itemId: exit.itemId,
-      type: exit.type,
-      quantidadeSinalizada: roundToDecimalPrecision(-exit.quantidadeSinalizada),
-      vehicleId: exit.vehicleId,
-      reason: input.reason ?? exit.reason,
-      custody: BASE_CUSTODY,
-      reversesMovementId: exit.id,
-      createdBy: input.createdBy ?? exit.createdBy,
-    });
+    return this.insertMovement(
+      {
+        tenantId: input.tenantId,
+        itemId: exit.itemId,
+        type: exit.type,
+        quantidadeSinalizada: roundToDecimalPrecision(-exit.quantidadeSinalizada),
+        vehicleId: exit.vehicleId,
+        reason: input.reason ?? exit.reason,
+        custody: BASE_CUSTODY,
+        reversesMovementId: exit.id,
+        createdBy: input.createdBy ?? exit.createdBy,
+      },
+      lock,
+    );
+  }
+
+  /**
+   * B-O6R-04a — `SELECT … FOR UPDATE` na linha do item, tagged (nunca `Unsafe` com string montada). `undefined` =
+   * inexistente ou de outro tenant (a RLS esconde a linha) → 400/404 como antes. É o ÚNICO produtor do token.
+   */
+  private async lockItemForUpdate(tenantId: string, itemId: string): Promise<ItemWriteLock | undefined> {
+    const rows = await this.client.$queryRaw<ItemRecord[]>`
+      SELECT * FROM "inventory_items" WHERE "tenant_id" = ${tenantId}::uuid AND "id" = ${itemId}::uuid FOR UPDATE
+    `;
+
+    return rows[0] ? ({ item: mapItemRecord(rows[0]) } as unknown as ItemWriteLock) : undefined;
   }
 
   private async insertMovement(
@@ -432,7 +510,13 @@ export class PrismaInventoryRepository implements InventoryRepository {
       readonly transferGroupId?: string;
       readonly reversesMovementId?: string;
     },
+    lock: ItemWriteLock,
   ): Promise<StockMovement> {
+    if (input.itemId !== lock.item.id || input.tenantId !== lock.item.tenantId) {
+      // Invariante de programação: o movimento só pode ser do item cujo lock a transação segura.
+      throw new Error("insertMovement: o movimento não é do item travado nesta transação.");
+    }
+
     const movement = await this.client.stockMovement.create({
       data: {
         tenant_id: input.tenantId,
@@ -458,32 +542,61 @@ export class PrismaInventoryRepository implements InventoryRepository {
     return mapMovementRecord(movement);
   }
 
-  private async movementsInGroup(tenantId: string, transferGroupId: string): Promise<StockMovement[]> {
+  /** Todas as pernas do grupo (sem filtrar por item: perna de outro item tem de APARECER para ser recusada). */
+  private async movementsInGroupLocked(lock: ItemWriteLock, transferGroupId: string): Promise<StockMovement[]> {
     const rows = await this.client.stockMovement.findMany({
-      where: { tenant_id: tenantId, transfer_group_id: transferGroupId },
+      where: { tenant_id: lock.item.tenantId, transfer_group_id: transferGroupId },
     });
 
     return rows.map(mapMovementRecord);
   }
 
-  private async hasReversalOf(tenantId: string, movementIds: readonly string[]): Promise<boolean> {
+  private async hasReversalOfLocked(lock: ItemWriteLock, movementIds: readonly string[]): Promise<boolean> {
     if (movementIds.length === 0) return false;
 
     const count = await this.client.stockMovement.count({
-      where: { tenant_id: tenantId, reverses_movement_id: { in: [...movementIds] } },
+      where: { tenant_id: lock.item.tenantId, reverses_movement_id: { in: [...movementIds] } },
     });
 
     return count > 0;
   }
 
-  private async saldoOfCustody(tenantId: string, itemId: string, custody: StockCustody): Promise<number> {
+  private async isExitReversedLocked(lock: ItemWriteLock, movementId: string): Promise<boolean> {
+    return this.hasReversalOfLocked(lock, [movementId]);
+  }
+
+  private async findExitBySourceLocked(
+    lock: ItemWriteLock,
+    sourceType: string,
+    sourceId: string,
+  ): Promise<StockMovement | undefined> {
+    const movement = await this.client.stockMovement.findFirst({
+      where: { tenant_id: lock.item.tenantId, source_type: sourceType, source_id: sourceId },
+    });
+
+    return movement ? mapMovementRecord(movement) : undefined;
+  }
+
+  private async saldoOfCustodyLocked(lock: ItemWriteLock, custody: StockCustody): Promise<number> {
     const aggregate = await this.client.stockMovement.aggregate({
       where: {
-        tenant_id: tenantId,
-        item_id: itemId,
+        tenant_id: lock.item.tenantId,
+        item_id: lock.item.id,
         custody_type: custody.custodyType,
         custody_operator_profile_id: custody.custodyOperatorProfileId ?? null,
         custody_vehicle_id: custody.custodyVehicleId ?? null,
+      },
+      _sum: { quantidade_sinalizada: true },
+    });
+
+    return roundToDecimalPrecision(decimalToNumber(aggregate._sum.quantidade_sinalizada));
+  }
+
+  private async saldoOfLocked(lock: ItemWriteLock): Promise<number> {
+    const aggregate = await this.client.stockMovement.aggregate({
+      where: {
+        tenant_id: lock.item.tenantId,
+        item_id: lock.item.id,
       },
       _sum: { quantidade_sinalizada: true },
     });
@@ -593,18 +706,6 @@ export class PrismaInventoryRepository implements InventoryRepository {
     });
   }
 
-  private async saldoOf(tenantId: string, itemId: string): Promise<number> {
-    const aggregate = await this.client.stockMovement.aggregate({
-      where: {
-        tenant_id: tenantId,
-        item_id: itemId,
-      },
-      _sum: { quantidade_sinalizada: true },
-    });
-
-    return roundToDecimalPrecision(decimalToNumber(aggregate._sum.quantidade_sinalizada));
-  }
-
   /** ONE groupBy resolves the saldos for a whole page of items (no N+1). */
   private async sumByItem(tenantId: string, itemIds: readonly string[]): Promise<Map<string, number>> {
     if (itemIds.length === 0) return new Map();
@@ -663,90 +764,131 @@ function usageSince(now: Date): Date {
   return new Date(now.getTime() - REORDER_USAGE_WINDOW_DAYS * MILLIS_PER_DAY);
 }
 
+// -----------------------------------------------------------------------------------------------
+// B-O6R-04a — O WRAPPER RLS: toda porta pública passa por `this.tx`, que abre a transação tenant-scoped e
+// mapeia a falha TRANSITÓRIA de banco (contenção > timeout, impasse, serialização, trava indisponível,
+// fila de conexões) para 503 `STOCK_UNAVAILABLE/stock_busy` — nada gravado, repetir resolve. Antes, o erro
+// cru chegava ao `sendRouteError` e virava 400 com a mensagem do banco. O guard D7 reprova porta pública
+// que não passe por `this.tx`, e `withTenantRls` chamado fora dele.
+//
+// V3/V4/V5 ainda envolvem `this.tx` num try/catch para a violação de índice único (`P2002`/`23505`):
+// alcançável só por escritor que NÃO segura o lock do item (SQL cru, bug futuro). O mapeamento acontece
+// FORA da transação — dentro dela, o `catch` deixava a transação abortada e o próximo statement caía em
+// `25P02`.
+// -----------------------------------------------------------------------------------------------
 export class RlsPrismaInventoryRepository implements InventoryRepository {
   constructor(private readonly prismaClient: PrismaClient) {}
 
   createItem(input: CreateInventoryItemInput): Promise<InventoryItem> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createItem(input));
+    return this.tx(input.tenantId, (repo) => repo.createItem(input));
   }
 
   listItems(input: ListInventoryItemsInput): Promise<ListInventoryItemsResult> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).listItems(input));
+    return this.tx(input.tenantId, (repo) => repo.listItems(input));
   }
 
   findItemById(tenantId: string, itemId: string): Promise<InventoryItem | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaInventoryRepository(tx).findItemById(tenantId, itemId));
+    return this.tx(tenantId, (repo) => repo.findItemById(tenantId, itemId));
   }
 
   findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaInventoryRepository(tx).findItemWithSaldo(tenantId, itemId),
-    );
+    return this.tx(tenantId, (repo) => repo.findItemWithSaldo(tenantId, itemId));
   }
 
   updateItem(input: UpdateInventoryItemInput): Promise<InventoryItem | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).updateItem(input));
+    return this.tx(input.tenantId, (repo) => repo.updateItem(input));
   }
 
-  /** R7.1 — `withTenantRls` opens the `$transaction`; check + insert + avg update commit or roll back together. */
+  /** R7.1 — `withTenantRls` opens the `$transaction`; lock + check + insert + avg update commit or roll back together. */
   createMovement(input: CreateStockMovementInput): Promise<StockMovement | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createMovement(input));
+    return this.tx(input.tenantId, (repo) => repo.createMovement(input));
   }
 
-  /** Ω4C PR-08 — the transfer pair is written in ONE `$transaction` (guard + two inserts commit or roll back together). */
+  /** Ω4C PR-08 — the transfer pair is written in ONE `$transaction` (lock + guard + two inserts). */
   createTransfer(input: CreateTransferInput): Promise<StockTransferResult | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createTransfer(input));
+    return this.tx(input.tenantId, (repo) => repo.createTransfer(input));
   }
 
-  /** Ω4C PR-08 — the compensating movement(s) are written in ONE `$transaction`. */
-  reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).reverseMovement(input));
+  /** Ω4C PR-08 — the compensating movement(s) are written in ONE `$transaction`; `P2002` → already_reversed, FORA dela. */
+  async reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
+    try {
+      return await this.tx(input.tenantId, (repo) => repo.reverseMovement(input));
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        // Outra compensação do mesmo original commitou por um escritor que não segura o lock do item: o índice
+        // stock_movements_reversal_active_key recusou a nossa. A transação já foi desfeita inteira.
+        return { status: "already_reversed" };
+      }
+
+      throw error;
+    }
   }
 
   getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaInventoryRepository(tx).getCustodySummary(tenantId, itemId));
+    return this.tx(tenantId, (repo) => repo.getCustodySummary(tenantId, itemId));
   }
 
   findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaInventoryRepository(tx).findExitBySource(tenantId, sourceType, sourceId),
-    );
+    return this.tx(tenantId, (repo) => repo.findExitBySource(tenantId, sourceType, sourceId));
   }
 
   isExitReversed(tenantId: string, movementId: string): Promise<boolean> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaInventoryRepository(tx).isExitReversed(tenantId, movementId));
+    return this.tx(tenantId, (repo) => repo.isExitReversed(tenantId, movementId));
   }
 
-  /** Ω4C PR-08b — guard + idempotent EXIT insert commit-or-roll-back in ONE `$transaction`. */
-  createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).createExitForSource(input));
+  /** Ω4C PR-08b — lock + guard + idempotent EXIT insert in ONE `$transaction`; `P2002` → relê a fonte, FORA dela. */
+  async createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined> {
+    try {
+      return await this.tx(input.tenantId, (repo) => repo.createExitForSource(input));
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        // Corrida por escritor sem o lock: outro EXIT da MESMA fonte commitou primeiro. Devolve o vencedor
+        // (idempotente), lido numa transação NOVA — a nossa já foi desfeita.
+        const raced = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+        if (raced) return raced;
+      }
+
+      throw error;
+    }
   }
 
-  /** Ω4C PR-08b — the compensating reversal is written in ONE `$transaction`. */
-  removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).removeExitForSource(input));
+  /** Ω4C PR-08b — the compensating reversal is written in ONE `$transaction`; `P2002` → no-op, FORA dela. */
+  async removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
+    try {
+      return await this.tx(input.tenantId, (repo) => repo.removeExitForSource(input));
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        // O EXIT já tem compensação (commitada por escritor sem o lock): no-op idempotente, como o caminho normal.
+        return undefined;
+      }
+
+      throw error;
+    }
   }
 
   listMovements(input: ListStockMovementsInput): Promise<ListStockMovementsResult> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaInventoryRepository(tx).listMovements(input));
+    return this.tx(input.tenantId, (repo) => repo.listMovements(input));
   }
 
   findMovementById(tenantId: string, movementId: string): Promise<StockMovement | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaInventoryRepository(tx).findMovementById(tenantId, movementId),
-    );
+    return this.tx(tenantId, (repo) => repo.findMovementById(tenantId, movementId));
   }
 
   getConsumptionValues(tenantId: string, since: Date): Promise<readonly ItemConsumptionValue[]> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaInventoryRepository(tx).getConsumptionValues(tenantId, since),
-    );
+    return this.tx(tenantId, (repo) => repo.getConsumptionValues(tenantId, since));
   }
 
   applyAbcClasses(tenantId: string, assignments: readonly AbcClassAssignment[], updatedBy?: string): Promise<void> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaInventoryRepository(tx).applyAbcClasses(tenantId, assignments, updatedBy),
-    );
+    return this.tx(tenantId, (repo) => repo.applyAbcClasses(tenantId, assignments, updatedBy));
+  }
+
+  /** A ÚNICA porta para o banco: transação tenant-scoped + falha transitória → 503 `stock_busy`. */
+  private async tx<T>(tenantId: string, work: (repo: PrismaInventoryRepository) => Promise<T>): Promise<T> {
+    try {
+      return await withTenantRls(this.prismaClient, tenantId, (tx) => work(new PrismaInventoryRepository(tx)));
+    } catch (error) {
+      throw mapTransientDbFailure(error, stockBusyError);
+    }
   }
 }
 
@@ -882,13 +1024,54 @@ function mapMovementRecord(record: {
   };
 }
 
+/**
+ * B-O6R-04a (N-03, emenda 2-m) — falha que o TEMPO resolve vira o erro de domínio `busy()` (503); qualquer outra
+ * passa intacta. Lista FECHADA de códigos (R15: nunca engolir erro determinístico); detecta pelo CÓDIGO, nunca pela
+ * mensagem. Precedente: `checklist-prisma.repository.ts` (isTransientDatabaseFailure).
+ *   P2028  transação interativa expirada (a espera pelo lock passou do timeout de 5 s do `$transaction`)
+ *   P2034  conflito de escrita / impasse (wrapper Prisma)
+ *   P2024  pool esgotado esperando conexão
+ *   40P01  deadlock_detected · 40001 serialization_failure · 55P03 lock_not_available
+ */
+const TRANSIENT_DB_CODES: ReadonlySet<string> = new Set(["P2028", "P2034", "P2024", "40P01", "40001", "55P03"]);
+
+export function mapTransientDbFailure(error: unknown, busy: () => Error): unknown {
+  return databaseErrorCodes(error).some((code) => TRANSIENT_DB_CODES.has(code)) ? busy() : error;
+}
+
+/**
+ * Códigos candidatos de um erro de banco, nas TRÊS formas medidas no Prisma 7 + `@prisma/adapter-pg`:
+ *   · `PrismaClientKnownRequestError.code`                              (ex.: P2028, P2002)
+ *   · query ORM → `DriverAdapterError.cause.code` / `.cause.originalCode` (ex.: 40P01 num updateMany)
+ *   · query crua → `P2010` com `meta.driverAdapterError.cause.code`      (ex.: 40P01 num $queryRaw … FOR UPDATE)
+ * e o `meta.code` do precedente dos checklists, por compatibilidade.
+ */
+export function databaseErrorCodes(error: unknown): readonly string[] {
+  if (typeof error !== "object" || error === null) return [];
+
+  const codes: string[] = [];
+  const push = (value: unknown): void => {
+    if (typeof value === "string" && value !== "") codes.push(value);
+  };
+  const record = error as {
+    readonly code?: unknown;
+    readonly meta?: { readonly code?: unknown; readonly driverAdapterError?: { readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown } } };
+    readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown };
+  };
+
+  push(record.code);
+  push(record.meta?.code);
+  push(record.meta?.driverAdapterError?.cause?.code);
+  push(record.meta?.driverAdapterError?.cause?.originalCode);
+  push(record.cause?.code);
+  push(record.cause?.originalCode);
+
+  return codes;
+}
+
+/** Violação de índice único (Prisma `P2002` / Postgres `23505`), pelo código em qualquer das formas acima. */
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { readonly code?: unknown }).code === "P2002"
-  );
+  return databaseErrorCodes(error).some((code) => code === "P2002" || code === "23505");
 }
 
 function decimalToNumber(value: unknown): number {
