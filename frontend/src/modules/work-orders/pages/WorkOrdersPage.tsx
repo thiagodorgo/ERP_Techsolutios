@@ -229,10 +229,11 @@ export function WorkOrdersPage() {
   // a falha vem da classificação EXAUSTIVA do estado (`listStatusKind`) — status não previsto é falha, nunca vazio.
   const kind = listStatusKind(status);
   const degraded = kind === "failure";
-  // Ciclo 2 (P5) — como no protótipo (`woShowTable` falso em erro/vazio/sem permissão), FALHA e VAZIO SEM OS trocam o
-  // card da tabela pelo card do estado; o vazio POR FILTRO fica dentro do card (a busca desfaz o filtro).
+  // Ciclo 2 (P5) — como no protótipo (`woShowTable` falso em erro/sem permissão), a FALHA troca o card da tabela
+  // pelo card do estado (não há o que buscar num erro). O VAZIO fica dentro do card: no protótipo a busca e os
+  // filtros vivem FORA da tabela e continuam na tela no vazio; aqui a toolbar vive no card (divergência D-C2-1 do
+  // ciclo 2 — o vazio fora do card sumia com a busca e derrubava o E1 do e2e numa base sem OS).
   const showFailure = !loading && degraded;
-  const showEmpty = !loading && kind === "data" && items.length === 0;
   // O CTA do vazio nasce com o gate de criar (não repete a C2-N5 do botão do cabeçalho).
   const canCreate = permissions.includes("work_orders:create");
 
@@ -268,8 +269,6 @@ export function WorkOrdersPage() {
       {/* Tabela padronizada (card 14px) — toolbar: busca real + tabs-pill + contagem real */}
       {showFailure ? (
         <WorkOrdersLoadState status={status} message={error} onRetry={() => void refresh()} />
-      ) : showEmpty ? (
-        <WorkOrdersLoadState status="empty" onCreate={canCreate ? () => navigate("/work-orders/new") : undefined} />
       ) : (
         <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
           <div className="pat-os-toolbar">
@@ -326,7 +325,13 @@ export function WorkOrdersPage() {
               </div>
             ))
           ) : total === 0 ? (
-            <WorkOrdersLoadState status="empty" filtered embedded />
+            // Sem OS nenhuma → "Nenhuma ordem de serviço" + CTA (com o gate); OS escondidas pelo filtro → cópia do filtro.
+            <WorkOrdersLoadState
+              status="empty"
+              embedded
+              filtered={items.length > 0}
+              onCreate={items.length === 0 && canCreate ? () => navigate("/work-orders/new") : undefined}
+            />
           ) : (
             pageItems.map((o: WorkOrderListItem) => {
               const st = STATUS_TONE[o.status];
