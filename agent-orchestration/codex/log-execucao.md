@@ -4687,3 +4687,61 @@ bloco mergear.
   tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
   deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
   **303** ABERTAS.
+## B-O6R-11 — `fix/mobile-work-order-contracts` (2026-09-18, PR na autoria)
+
+### Resumo
+
+Contratos do app de campo com a OS (`Ω6R-QUA-004` + `Ω6R-QUA-005`, pendência-mãe `P-O6R-B11`, item 3 do gate SAN3).
+Plano `agent-orchestration/omega/planos/B-O6R-11-plano.md` + emenda (a)–(f) do orquestrador no comando. Dev de identidade
+distinta (§C7.4-bis); a 1ª instância caiu por HTTP 429 depois do vermelho-controle, sem commit (WIP conferido byte a byte
+contra a cópia de segurança); a 2ª mediu o WIP contra o plano §9/§10, reexecutou o que cita e terminou.
+
+### Entregue (commits na branch, sem push — o orquestrador confere e empurra)
+
+- `cc3b7247` fix(mobile): REST da OS — `work_order_remote_api.dart` (`_unwrapData`; parser único com tenant da sessão;
+  `backendStatusFor` + `workOrderStatusFromApiValue`; PATCH com vocabulário do backend; POST assign `{userId, message?}`;
+  `_workOrderFromJson` removido); fakes `b099`/`b121` só na assinatura; T1 (12 casos).
+- `6865c195` fix(mobile): fila — `prestador_repository.dart` (`for-in` + `await`), `sync_queue_repository.dart`
+  (`_serialized`); T2 (4, com reinício sobre Drift), T3 (4), T4 (1, guard fail-closed que varre `lib/`).
+- `e54e5264` docs(kpi): `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md`, `app.js` (`kpi-freeze`).
+- commit de registro: `pendencias.md` (`P-O6R-B11` FECHADA; 7 pendências novas), índice pelo gerador, `status-geral.md`,
+  este log.
+
+### Bateria (execução real, N e forma)
+
+`flutter pub get` (lock intocado) · `dart format --output=none --set-exit-if-changed lib test` → 196 arquivos, 0 mudados ·
+`flutter analyze` → "No issues found!" · T1 `+12` · T2 `+4` · T3 `+4` · T4 `+1` · regressões do §12 do plano `+133` ·
+`flutter test --reporter compact` → **`00:47 +885: All tests passed!`** (N=1; estático 885 em 66 arquivos) ·
+`node --check Kpis/app.js` OK · `node scripts/kpi-freeze.mjs --check` → em dia · guards de KPI 28/28 · `git diff --check`
+OK. Vermelho-controle no head-base `9dea0ef6` (worktree descartável `vc-b-o6r-11`, `pub get` próprio), reexecutado pela 2ª
+instância: T1 10 (8 por asserção/runtime + 2 por compilação) · T2 4 · T3 2 · T4 1 = **17 de 21**; baseline 864/864.
+Mutações: sem `await` → T4 vermelho (`prestador_repository.dart:137`) e T2 4/4; `user_id` → só o caso 8; `in_progress`
+trocado em `backendStatusFor` → casos 5, 6 e 11; extras: parser `in_progress` → casos 2 e 10; lock desligado → T3 17 e 18
+(T2 segue verde: o `for-in await` sozinho fecha o gate, como o §13 do plano diz). Cada mutação revertida por edição
+inversa e conferida por `cmp` do `git diff` contra a cópia de segurança.
+
+### Divergências plano × código/medição (reportadas, não decididas pelo dev)
+
+1. Vermelho-controle 17/21, o plano previa 15: T2 15 e 16 também ficam vermelhos no head-base (todo caso lê a fila logo
+   após o retorno, e o retorno prematuro zera todos).
+2. Mutação do `in_progress`: o plano previa casos 6 e 11; o caso 5 também cai (assere `in_progress` no fio) — coerente.
+3. O plano §14 pede a descrição do history "nomeando os 4 arquivos de código": são 3 — `drift_sync_action_store.dart`
+   ficou intocado, como o §9.4 previa.
+4. O §6 do plano só dá severidade à P2 (BAIXA); as outras 6 foram registradas "a classificar pela junta" e o índice as
+   põe sem severidade (balde B). Decisão do orquestrador/junta.
+5. Caso 3 do T1 ("o tenant vem do parâmetro da sessão, nunca do corpo"): o parser `_workOrderFromRemoteJson`, reutilizado
+   por ordem do plano §8/§9.1, usa `tenantId`/`tenant_id` do corpo quando existir e a sessão só como `fallbackTenantId`.
+   O DTO do backend não emite o campo (§2.8), então não há efeito vivo; o teste prova "da sessão quando o corpo não tem",
+   não "nunca do corpo". Não alterado.
+6. O aceite original da `P-O6R-B11` pedia "`enqueueAll` durável"; o plano §9.2 o rejeitou com razão registrada —
+   anotado na emenda de fechamento para a junta ver.
+7. Caminhos de teste: T3/T4 em `test/core/sync/` e T1/T2 em subpastas de `test/features/`, exatamente os do plano; o
+   briefing cita a convenção `test/features/<bloco>_<slug>_test.dart`. Seguido o plano.
+8. Head-base do vermelho-controle `9dea0ef6` (plano: `3e05fb5a`): a árvore `mobile/` é a mesma (`3a2ac028`) nos dois.
+9. Guard T4 mais estrito que o texto do plano: casa `\.enqueue\b` (pega também a passagem do método como valor), ignora
+   linhas de comentário e tem piso de 22 ocorrências (o censo do plano).
+
+### Limpeza (§C5)
+
+Worktree `vc-b-o6r-11` removido por `git worktree remove --force` pelo nome; `mobile/flutter_app/build/` (saída
+regenerável do `flutter test`) removido no b11; `.dart_tool/` mantido (o `pub get` do worktree). Nada rastreado apagado.

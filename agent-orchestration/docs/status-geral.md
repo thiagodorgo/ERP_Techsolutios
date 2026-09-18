@@ -4761,3 +4761,39 @@ seguem **carregadas com nota** (§C3.3): o PR continua sem tocar código nem tes
 gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS — a pendência nova é
 `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
 classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.
+## 2026-09-18 — `B-O6R-11` implementado (PR na autoria): o app de campo lê a OS pelo contrato real e o material lançado não some — `P-O6R-B11` FECHADA
+
+**Primeiro bloco da frente 4 do plano SAN3** (app de campo; item 3 do gate — `Ω6R-QUA-005` é perda de dado). Branch
+`fix/mobile-work-order-contracts`, base `origin/main@02bd7dab`, plano do `planejador-mestre` (Fable, 2ª instância) com a
+emenda (a)–(f) do orquestrador no comando. Papéis (§C7.4-bis): quem achou = auditoria Ω6R + censos do plano; quem
+planejou = `planejador-mestre`; quem desenvolveu = dev de identidade distinta (a 1ª instância caiu por HTTP 429 depois do
+vermelho-controle, sem commit; a 2ª mediu o WIP contra o plano, reexecutou tudo o que cita e terminou).
+
+**Entregue (PR Flutter-only).** `work_order_remote_api.dart`: detalhe, status e atribuição desembrulham `{ data }` e usam
+o parser único da lista com o tenant da sessão; tabela de status nos dois sentidos (`backendStatusFor` e
+`workOrderStatusFromApiValue`) — a lista viva deixa de mostrar toda OS como "Agendada"; PATCH `/status` com o vocabulário
+do backend; POST `/assign` com `{userId, message?}`. `prestador_repository.dart`: `for-in` com `await` — o método só
+retorna depois de gravar. `sync_queue_repository.dart`: `enqueue`/`update` encadeados na instância única da fila.
+
+**Números (execução real):** Flutter **864 → 885/885** (`00:47 +885: All tests passed!`, N=1; 21 testes novos em 4
+arquivos, **17 vermelhos no head-base** `9dea0ef6`; mutações do plano executadas e revertidas) · `dart format` e
+`flutter analyze` limpos · regressões do §12 do plano `+133` · backend `2995/2997` e smoke `1126` carregados (diff de
+`src/ tests/ prisma/ frontend/` vazio nas duas pontas) · blocos **163 → 164** · `mvp_*` intocados · guards de KPI 28/28 ·
+`kpi-freeze --check` e `git diff --check` verdes.
+
+**Registro.** `P-O6R-B11` FECHADA (linha de status reescrita + emenda de fechamento, que registra que o aceite original
+pedia `enqueueAll` e o plano §9.2 o rejeitou com razão); 7 pendências novas ABERTAS com dono (`B-O6R-03b`, fila pós-gate,
+`B-O6R-07c` provisório a ratificar pela junta, `B-SAN3-15`, `B-SAN3-16` ×2, `B-SAN3-13/14`). Índice pelo gerador: 377
+cabeçalhos / 366 IDs, 104 FECHADAS, 273 ABERTAS. O `achados.jsonl` O6R não é do bloco: o fechamento de
+`Ω6R-QUA-004`/`Ω6R-QUA-005` lá é pedido ao porteiro.
+
+**Divergências plano × código/medição declaradas pelo dev (para a junta e o orquestrador):** vermelho-controle 17 e não
+15; a mutação do `in_progress` derruba também o caso 5; 3 arquivos de código e não 4 (o store do Drift não precisou);
+severidade de 6 das 7 pendências não dada pelo §6 (registradas "a classificar"); o caso 3 do T1 diz "nunca do corpo", mas
+o parser reutilizado por ordem do plano prefere `tenantId` do corpo quando existir (o DTO não o emite); o aceite
+`enqueueAll` da `P-O6R-B11` × §9.2; caminhos de teste do plano × convenção do briefing; head-base do vermelho-controle
+`9dea0ef6` × `3e05fb5a` do plano (mesma árvore `mobile/`); guard T4 mais estrito que o texto do plano.
+
+**Próximo passo:** orquestrador confere e empurra a branch (rebase na `main` depois do #387 e do `B-SAN3-04a`, com os
+números de KPI reexecutados — emenda (e)) → `inspetor-de-terreno-da-junta` → junta (unanimidade de 3) → CI (inclui o job
+`flutter`) → squash → §C5 → porteiro.

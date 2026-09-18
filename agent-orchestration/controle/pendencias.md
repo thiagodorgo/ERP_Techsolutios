@@ -3338,13 +3338,14 @@ read-modify-write: `mobile/flutter_app/lib/core/sync/sync_queue_repository.dart:
 
 **Bloqueia:** feature no app de campo (OS mobile, prestador). Junta-se à fila do **PR-08 (reconciliação
 mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, ambas ABERTAS.
-- status: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.
+- status: FECHADA (2026-09-18, PR do `B-O6R-11` — os dois P1 fecham no app de campo: detalhe, status e atribuição da OS pelo REST desembrulham `{ data }`, falam o vocabulário do backend nos dois sentidos e a atribuição envia `{userId, message?}` (`Ω6R-QUA-004`, os 2 componentes restantes + o status da lista viva); o material do prestador só retorna depois de gravado e a fila serializa as mutações (`Ω6R-QUA-005`); prova: 4 arquivos de teste, 21 casos, 17 vermelhos no head-base `9dea0ef6`. Antes: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.)
   Rascunho arquitetural correlato: `docs/revisoes/O6R/D-004-contratos-clientes.md` (**pauta do dono, não
   decisão**).
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B2: 2 P1 (`Ω6R-QUA-004`, `Ω6R-QUA-005`), um deles de perda de dado — o material do prestador some no restart (`prestador_repository.dart:121`, `forEach` sem `await`); o detalhe/status/assign remoto da OS lê o envelope errado (`work_order_remote_api.dart:99,115,156`).
 
 - **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
 - **dono:** `B-O6R-11` (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **emenda (B-O6R-11, 2026-09-18 — fechamento):** plano `agent-orchestration/omega/planos/B-O6R-11-plano.md` (`planejador-mestre`, Fable) + emenda (a)–(f) do orquestrador no comando; implementado por dev distinto do planejador e dos achadores (§C7.4-bis). Código (3 arquivos, `mobile/flutter_app/lib/`): `features/work_orders/data/work_order_remote_api.dart` (`_unwrapData`; detalhe/status/atribuição pelo parser único da lista com o tenant da sessão por parâmetro; `backendStatusFor` + `workOrderStatusFromApiValue` nos dois sentidos — `open/assigned/accepted/on_route/on_site/in_progress` deixam de cair em "Agendada" na lista viva do B-099; PATCH `/status` com o vocabulário do backend; POST `/assign` com `{userId, message?}`; `_workOrderFromJson` removido), `features/prestador/data/prestador_repository.dart` (`for-in` com `await` no lugar do `selection.forEach`) e `core/sync/sync_queue_repository.dart` (`enqueue`/`update` encadeados na instância única da fila). `core/local_db/drift_sync_action_store.dart` NÃO foi tocado (§9.4 do plano). Testes: `test/features/work_orders/bo6r11_os_rest_envelope_e_vocabulario_test.dart` (12), `test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart` (4 — o teste do gate: 3 SKUs + reinício sobre Drift → 3 ações pendentes, na ordem), `test/core/sync/bo6r11_fila_serializada_test.dart` (4) e `test/core/sync/bo6r11_guard_enqueue_com_await_test.dart` (1 — guard fail-closed que varre `lib/`); vermelho-controle no head-base `9dea0ef6` (worktree descartável): 17 de 21; mutações do plano executadas e revertidas. Suíte Flutter 864 → 885/885. **O aceite original desta entrada pedia "`enqueueAll` durável"**: o plano (§9.2) o rejeitou com a razão registrada — quebraria 8 fakes de teste sem ganho de propriedade; o `for-in await` cumpre "retornar só depois de gravar"; e a atomicidade do lote é residual nomeado (`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`). O registro de achados O6R (`docs/revisoes/O6R/achados.jsonl`, `REGISTRO_ACHADOS_O6R.md`) **não é deste bloco**: o fechamento de `Ω6R-QUA-004`/`Ω6R-QUA-005` lá é pedido ao porteiro pós-merge. Residuais abertos com dono: a seção "Pendências abertas por `B-O6R-11`" no fim deste arquivo.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -9769,3 +9770,109 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **forma do conserto, para quem pegar:** acrescentar ao `.gitignore` do repositório exceções `!` **por padrão**, geradas do arquivo-fonte e não escritas à mão — para cada um dos 22 padrões sem barra, uma reinclusão restrita aos 4 diretórios —, mantendo a reafirmação de `.claude/worktrees/` **depois** de todas elas (no mesmo arquivo, o último padrão que casa vence). Um guard que **gere a classe da fonte** e falhe quando um padrão novo aparecer no ignore global sem exceção correspondente fecharia a propriedade em vez de a instância.
 - **bloqueia: NÃO** bloqueia o gate nem o próximo bloco — não há efeito sobre código, dado ou permissão, e nenhum arquivo rastreado hoje é afetado.
 - **teste de encerramento:** a sonda gerada da fonte (22 padrões sem barra × 4 diretórios reincluídos, por `git check-ignore -q --no-index`) devolve **0 escondidos**; vermelho-controle: acrescentar um padrão sem barra ao ignore global **sem** a exceção correspondente faz a sonda voltar a achar escondido, e o guard falha nomeando o padrão.
+## Pendências abertas por `B-O6R-11` (2026-09-18)
+
+> As 7 pendências do §6 do plano do `B-O6R-11` (`agent-orchestration/omega/planos/B-O6R-11-plano.md`), registradas
+> pelo desenvolvedor do bloco (emenda (c) do comando), com o texto, a evidência e os donos do §6 — cada uma com
+> cabeçalho `## P-` próprio para o gerador do índice. O dev NÃO as consertou (fora da fronteira). Toda evidência
+> citada abaixo foi reexecutada em 2026-09-18 sobre `9dea0ef6` (mesma árvore `mobile/` e `src/` de
+> `origin/main@02bd7dab`); o escopo `pre-existente` vem de `git blame 9dea0ef6` das linhas citadas. **Severidade:** o
+> §6 do plano só a declara para a P2; as outras seis ficam **a classificar pela junta do bloco** (o dev não a
+> atribui).
+
+## P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app ignoram a forma real da resposta
+
+- status: ABERTA (plano do `B-O6R-11` §6, P1 — fora da fronteira do bloco; não consertada)
+- **o quê:** 8 leituras de `expense_remote_api.dart` (A-17..A-24 do plano): as três listas recebem `{items,
+  pagination}` sem envelope e o app lê a raiz (`_policyFromJson` faz `json['version'] as String`) ou faz `as
+  List<dynamic>` sobre um `Map`; os cinco objetos únicos recebem `{data: dto}` e o app lê o corpo como se fosse o
+  DTO (`ExpenseReportCodec.fromJson`/`_itemFromJson` na raiz) — cast estoura.
+- **prova:** `mobile/flutter_app/lib/features/expenses/data/expense_remote_api.dart:75,85,98,116,128,142,158,170` e
+  `:178-190`; backend `src/modules/expense-management/expense-management.controller.ts:24,31,38` (`body: toListDto(…)`)
+  e `:54,60,67,82,97` (`data: …`); `rg "DioExpenseRemoteApi\(" mobile/flutter_app/lib` → só o construtor (`:67`) —
+  o cliente nunca é construído em `lib/`.
+- **estado (plano §6):** latente.
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` das linhas citadas → `e79616aa` (2026-06-13, "feat(mobile):
+  Flutter mobile field ops foundation").
+- **dono:** `B-O6R-03b` (`fix/mobile-rdv-sync`, fronteira `features/expenses/**`).
+
+## P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias do app lê `runId` na raiz de um `sendResult` e não tem chamador — BAIXA
+
+- status: ABERTA (plano do `B-O6R-11` §6, P2 — fora da fronteira do bloco; não consertada)
+- **o quê:** `checklist_remote_api.dart:243-262` lê `body['runId'] as String` na raiz; a rota passa por `sendResult`
+  (`src/modules/checklists/checklist.routes.ts:124-127`), que envelopa em `{data}` salvo se o controller devolver
+  `body` — `controller.createChecklistRun` **não medido** pelo plano (A-32). Método sem chamador desde o PR-B.
+- **prova:** A-32 do plano; `rg "\.createRun\(" mobile/flutter_app/lib` → 0.
+- **estado (plano §6):** código morto.
+- **severidade:** BAIXA (plano §6).
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:243-262` → `e79616aa` (2026-06-13).
+- **dono:** fila pós-gate (emenda (b) do comando do `B-O6R-11`, 2026-09-18): o próximo bloco que tocar
+  `mobile/flutter_app/lib/features/checklists/data/**` o apaga.
+- **teste de encerramento:** (emenda (b)) teste que prove a ausência de chamador, e o método deixa de existir.
+
+## P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em `assigned_operator_id` pelo fallback `operatorId ?? userId`
+
+- status: ABERTA (plano do `B-O6R-11` §6, P3 — backend, `src/**` proibido ao bloco; não consertada)
+- **o quê:** o backend deveria resolver o perfil do operador a partir do usuário; hoje o id do usuário vai para a
+  coluna do operador. O app, depois do `B-O6R-11`, envia `userId` — o contrato documentado para o app —, que
+  preenche `assigned_operator_id` (pelo fallback) e `assigned_user_id`; o que continua torto é o write do backend.
+- **prova:** `src/modules/work-orders/work-order.service.ts:1684` (`operatorId: parseRequiredUuid(body.operatorId ??
+  body.userId, "operatorId")`) e `:817-827` (guard dual-match; o comentário da l.827 diz "O write continua torto e é
+  do `Ω6R-QUA-004`, que segue ABERTO" — o `Ω6R-QUA-004` fecha no app por este bloco, e o residual de backend fica
+  com este ID).
+- **estado (plano §6):** vivo (backend).
+- **escopo:** `pre-existente` — `git blame 9dea0ef6`: `:1684` → `51238552` (2026-06-09, "feat: add work orders
+  foundation"); `:817-827` → `dc8168b9` (#369, 2026-09-04).
+- **dono:** `B-O6R-07c` — **provisório, a ratificar pela junta do `B-O6R-11`** (emenda (c) do comando; dono do
+  guard dual-match em `service.ts:812-839`).
+
+## P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e depois N ações em transações separadas: um crash entre as duas fases deixa material local sem ação na fila
+
+- status: ABERTA (residual após o `B-O6R-11`; plano §6, P4)
+- **o quê:** mesmo `AppDatabase`, mas `PrestadorLocalStore` e `SyncQueueRepository` não expõem transação; o
+  `B-O6R-11` fez o método esperar cada gravação (fecha o `Ω6R-QUA-005`), não tornou as duas fases uma unidade.
+- **prova:** `mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart:117-133` no head-base
+  `9dea0ef6` (depois do bloco: `saveMaterial` na l.118, `await _syncQueue.enqueue` na l.137).
+- **estado (plano §6):** residual após este bloco.
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:117-133` → `00293319` (2026-07-01, "feat(mobile): fluxo
+  prestador diagnostico/execucao/estoque do tecnico (PR-1.9)").
+- **dono:** `B-SAN3-15` (fronteira `features/prestador/**`; troca também o catálogo semente pelo estoque real).
+
+## P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app posta numa rota que não existe no backend
+
+- status: ABERTA (plano do `B-O6R-11` §6, P5 — não tocada pelo bloco além de 1 linha de comentário)
+- **o quê:** `DioWorkOrderRemoteApi.createApprovalRequest` posta em `/work-orders/:id/approval-requests`; 0
+  chamadores do método remoto (o "pedir aprovação" da tela vai pela fila: `work_order_repository.dart:458`).
+- **prova:** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:162-180` no head-base
+  `9dea0ef6` (depois do bloco: `:194-213`, com o comentário apontando esta pendência na l.194);
+  `rg "approval-requests" src -g '*.ts'` → 0.
+- **estado (plano §6):** código morto.
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:162-180` → `e79616aa` (2026-06-13).
+- **dono:** `B-SAN3-16` (item 5 do gate: "pedir aprovação" pela fila).
+
+## P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita"
+
+- status: ABERTA (decisão de produto; plano do `B-O6R-11` §6, P6)
+- **o quê:** o enum `WorkOrderStatus` do app não tem estado de OS aceita; o parser do `B-O6R-11` mapeia
+  `accepted → dispatched` de propósito (plano §7) — antes do bloco, `accepted` caía em `scheduled`.
+- **prova:** `mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart:14-27` (12 valores, sem
+  `accepted`); `src/modules/work-orders/work-order.types.ts:6-17` (`WORK_ORDER_STATUSES`, 10 valores, com
+  `accepted`); `work_order_remote_api.dart:304` (`'accepted' => WorkOrderStatus.dispatched`, comentário apontando
+  esta pendência); caso 2 do `bo6r11_os_rest_envelope_e_vocabulario_test.dart`.
+- **estado (plano §6):** decisão de produto.
+- **escopo:** a ausência de `accepted` no enum é `pre-existente` (`git blame 9dea0ef6` de `:14-27` → `e79616aa`,
+  2026-06-13); o mapeamento com perda nasce neste bloco, por decisão do plano §7.
+- **dono:** `B-SAN3-13`/`B-SAN3-14`.
+
+## P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instância da fila; o conserto definitivo é append/upsert atômico no `SyncActionStore`
+
+- status: ABERTA (residual; plano do `B-O6R-11` §6, P7)
+- **o quê:** `SyncActionStore` só expõe `load`/`save` da fila inteira; `enqueue`/`update` continuam
+  read-modify-write. O encadeamento do bloco serializa as mutações da instância única
+  (`syncQueueRepositoryProvider`, `sync_providers.dart:32`), não de duas instâncias sobre o mesmo store.
+- **prova:** Medição D do plano (§5); `mobile/flutter_app/lib/core/sync/sync_action_store.dart:8-11` (fora do escopo
+  do bloco); `core/local_db/drift_sync_action_store.dart:32` (`DELETE FROM sync_actions` + INSERT ×N no `save`).
+- **estado (plano §6):** residual.
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `sync_action_store.dart:1-20` e
+  `sync_queue_repository.dart:17-34` → `e79616aa` (2026-06-13).
+- **dono:** `B-SAN3-16` (fila drenada; toca `sync_replay_service.dart`).
