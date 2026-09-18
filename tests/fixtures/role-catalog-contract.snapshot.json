@@ -589,9 +589,7 @@
       "expense_sync:write",
       "tenant_checklists:read",
       "checklist_runs:read",
-      "checklist_runs:update",
       "checklist_runs:complete",
-      "checklist_runs:acknowledge",
       "checklist_runs:reopen"
     ],
     "technician": [
@@ -980,6 +978,7 @@
       "purchase_orders:create",
       "reports:read",
       "work_orders:read",
+      "work_orders:create",
       "work_orders:comment",
       "work_orders:update",
       "work_orders:status",
@@ -1004,6 +1003,11 @@
       "finance.manage",
       "finance.read",
       "os.read",
+      "work_orders:read",
+      "customers:read",
+      "service_catalog:read",
+      "tenant_checklists:read",
+      "checklist_runs:read",
       "notifications:read",
       "notifications:update",
       "fuel_logs:read",
@@ -1073,7 +1077,9 @@
       "reports:read",
       "os.read",
       "notifications:read",
-      "notifications:update"
+      "notifications:update",
+      "tenant_checklists:read",
+      "checklist_runs:read"
     ],
     "field_technician": [
       "dashboard:read",
@@ -1114,6 +1120,7 @@
       "field_dispatch:read",
       "field_dispatch:update",
       "commissions:read_own",
+      "tenant_checklists:read",
       "checklist_runs:read",
       "checklist_runs:update",
       "checklist_runs:complete",
