@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **378** |
-| IDs distintos | 367 |
-| **ABERTAS** | **273** |
+| Cabecalhos `## P-` | **379** |
+| IDs distintos | 368 |
+| **ABERTAS** | **274** |
 | — das quais **diferidas** (balde C) | 70 |
-| — das quais **ativas nesta rodada** | **203** |
+| — das quais **ativas nesta rodada** | **204** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 105 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **378 cabecalhos para 367 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **379 cabecalhos para 368 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 109
+## ABERTAS · balde A — material — 110
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -180,6 +180,7 @@
 | `P-SAN3-01-DESPACHO-FORMS-SEM-CATCH` | 9318 | MÉDIA | sim | P-SAN3-01-DESPACHO-FORMS-SEM-CATCH (2026-09-17) — formulários de despacho sem `catch`: r |
 | `P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO` | 9327 | MÉDIA | sim | P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO (2026-09-17) — as linhas do orçamento falham e a a |
 | `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` | 9372 | MÉDIA | sim | P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (2026-09-17) — o alerta de erro da tela  |
+| `P-SAN3-01-E2E-LOGIN-DEFASADO` | 9381 | ALTA | sim | P-SAN3-01-E2E-LOGIN-DEFASADO (2026-09-17) — os 13 casos do e2e rastreado morrem no login |
 
 ## ABERTAS · balde B — processo/registro — 94
 
