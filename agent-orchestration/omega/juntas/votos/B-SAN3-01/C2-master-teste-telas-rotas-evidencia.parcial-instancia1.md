@@ -62,4 +62,3 @@
 - Classificação: **tier A = 60** (IDs/códigos: chaves `id`, `code`, `workOrderId`, `workOrderCode`, `operatorUserId`, `assigned*Id`, `actorUserId`, `tenantId`, `checklistId`, `aggregateId`, `auditHash` + os literais) — procurados no HTML e no texto; **tier B = 92** (nomes/mensagens: `customerName`, `title`, `message`...) — procurados só no texto visível, com triagem (nomes genéricos podem coincidir com cópia real).
 - Tier A inclui `OS-000101..106`, `11111111-1111-4111-8111-00000000000{1..6}`, `dispatch-000101..104`, `OS-10012/18/21/24`, `wo-100xx`, `usr-ops-0x`.
 - Veredito parcial: lista de busca pronta, gerada do código.
-

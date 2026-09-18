@@ -77,7 +77,7 @@ com Postgres e Redis descartáveis, conferido contra os 2996/2998 publicados. (3
 evidência de data e dono; §C3 (N e forma; `kpi-freeze --check`; os 3 guards de KPI; a rodada SAN3 no gráfico de entregas por rodada, com o caso
 novo da guarda do painel vermelho sem a linha do `app.js`; o `roadmap.as_of` e a coerência dos blocos com o history); as dívidas do #386 contra o parecer do porteiro (backfill com os hashes completos,
 as duas `jurado-san3c2-*` fora dos dois espelhos com `sync-agent-agents --check` verde, a manchete dos 54 emendada); índice
-byte-idêntico ao gerador numa cópia. 
+byte-idêntico ao gerador numa cópia.
 
 **C2 `master-teste-telas-rotas`.** (1) Com back e front reais (cluster próprio, `VITE_USE_MOCKS` desligado), percorre E1–E3 e as
 4 rotas (`/work-orders`, `/work-orders/new`, `/work-orders/:id` real e inexistente) como `tenant_admin` (`admin.demo@example.com`,
