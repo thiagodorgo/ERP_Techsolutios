@@ -567,11 +567,11 @@ export const ROLE_PERMISSIONS = {
     "tenant_checklists:read",
     "checklist_runs:read",
     // D-CHK-DISPATCH-CREATE — manager NÃO cria run (create só operator+admins, conforme RBAC_MATRIX:44
-    // "read/complete-by-scope"). update/acknowledge do manager são drift residual registrado como follow-up
-    // em pendencias.md — NÃO alterados aqui.
-    "checklist_runs:update",
+    // "read/complete-by-scope"). `checklist_runs:update` e `checklist_runs:acknowledge` eram EXCEDENTES à
+    // célula l.44 (P-RBAC-CHECKLIST-DRIFT) — convergido no B-SAN3-04a (item 15): revogados aqui e, no banco
+    // já provisionado, pela lista nomeada DELIBERATE_REVOCATIONS (scripts/provision-rbac.ts, passo 3-bis).
+    // `complete` fica: a matriz o nomeia ("complete-by-scope"; escopo → P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO).
     "checklist_runs:complete",
-    "checklist_runs:acknowledge",
     // CHECKLIST P1 PR-03 (D-CHK-P1-REOPEN-RBAC) — o GESTOR reabre a vistoria concluída (nova versão auditada).
     // É o único papel não-admin com a permissão: quem preenche no campo não destrava a própria assinatura.
     "checklist_runs:reopen",
@@ -784,6 +784,9 @@ export const ROLE_PERMISSIONS = {
     "purchase_orders:create",
     "reports:read",
     "work_orders:read",
+    // B-SAN3-04a (A6) — RBAC_MATRIX.md:45 "create/edit": o Operador CRIA a OS (docs/03-atores-papeis.md:268, V/C/E;
+    // o front já lhe oferecia "Nova OS" pelo alias os.manage — o backend passa a dizer o mesmo).
+    "work_orders:create",
     "work_orders:comment",
     "work_orders:update",
     "work_orders:status",
@@ -810,6 +813,14 @@ export const ROLE_PERMISSIONS = {
     "finance.manage",
     "finance.read",
     "os.read",
+    // B-SAN3-04a — P1/P2 do dono (D-SAN3-PLANO-OPCAO-B; CE-3/CE-5): RBAC_MATRIX.md:45 OS = read; :38 Clientes = read;
+    // :41 Serviços = read. O Financeiro lê OS (fatura na aba da OS — B-SAN3-25) e monta orçamento.
+    "work_orders:read",
+    "customers:read",
+    "service_catalog:read",
+    // B-SAN3-04a — item 15: RBAC_MATRIX.md:43 modelos = read; :44 execuções = read (leitura incondicional, nada "por escopo").
+    "tenant_checklists:read",
+    "checklist_runs:read",
     "notifications:read",
     "notifications:update",
     "fuel_logs:read",
@@ -891,6 +902,12 @@ export const ROLE_PERMISSIONS = {
     "os.read",
     "notifications:read",
     "notifications:update",
+    // B-SAN3-04a — item 15 (cél. 1 do item 56): RBAC_MATRIX.md:43 modelos = read; :44 execuções = "read/answer-by-scope"
+    // → SÓ read. A parte "answer" é POR ESCOPO e o backend não aplica escopo por atribuição ao Estoque
+    // (checklist.service.ts sem `assigned`/`not_assigned_to_actor`) — fail-closed: P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE
+    // (dono B-O6R-07c, que cria o escopo por objeto na vistoria).
+    "tenant_checklists:read",
+    "checklist_runs:read",
   ],
   field_technician: [
     "dashboard:read",
@@ -936,6 +953,8 @@ export const ROLE_PERMISSIONS = {
     // pré-criada pelo despacho: read (baixar a run da OS) + update (responder/marcar avaria/anexar) + complete
     // (concluir) + acknowledge (assinatura de ciência). NÃO recebe `checklist_runs:create` — a criação da run é
     // do despacho (efeito de domínio de field_dispatch:create) e dos caminhos operator/admins.
+    // B-SAN3-04a — item 15 (C2-04): RBAC_MATRIX.md:43 modelos = read para o Técnico de Campo (baixa o modelo publicado).
+    "tenant_checklists:read",
     "checklist_runs:read",
     "checklist_runs:update",
     "checklist_runs:complete",
@@ -1013,6 +1032,25 @@ export const ROLE_PERMISSIONS = {
   // = leitura constrangida, só read). NÃO recebe purchase_orders:create.
   support: ["dashboard:read", "reports:read", "purchase_orders:read", "users.read", "audit.read", "audit:read", "os.read", "notifications:read", "tenant_checklists:read", "checklist_runs:read"],
 } as const satisfies Record<Role, readonly Permission[]>;
+
+// B-SAN3-04a (item 15, P-RBAC-CHECKLIST-DRIFT) — REVOGAÇÕES DELIBERADAS, NOMEADAS. `scripts/provision-rbac.ts` é
+// aditivo e nunca remove concessão (revogar às cegas em deploy derrubaria acesso concedido de propósito). Tirar uma
+// permissão do catálogo, portanto, NÃO a tira de uma base já provisionada (produção, dev). Esta lista é a exceção
+// controlada: cada item é uma revogação DECIDIDA, com a decisão que a nomeia; o passo 3-bis do provisionamento a
+// aplica no papel GLOBAL (`tenant_id IS NULL`), de forma idempotente (2ª execução remove 0), e a relata; `--dry-run`
+// só relata. O `satisfies` recusa papel ou permissão fora do catálogo: revogação órfã não compila.
+export const DELIBERATE_REVOCATIONS = [
+  {
+    role: "manager",
+    permission: "checklist_runs:update",
+    decision: "B-SAN3-04a/item 15 — RBAC_MATRIX.md:44 \"read/complete-by-scope\" não nomeia update",
+  },
+  {
+    role: "manager",
+    permission: "checklist_runs:acknowledge",
+    decision: "B-SAN3-04a/item 15 — RBAC_MATRIX.md:44 \"read/complete-by-scope\" não nomeia acknowledge",
+  },
+] as const satisfies readonly { role: Role; permission: Permission; decision: string }[];
 
 const permissionCatalog = new Set<string>(PERMISSION_CATALOG);
 const roleCatalog = new Set<string>(DEFAULT_ROLES);

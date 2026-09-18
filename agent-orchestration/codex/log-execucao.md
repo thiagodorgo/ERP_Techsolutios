@@ -4329,3 +4329,33 @@ existe em `decisoes.md` e ficou fora da emenda. Registro aplicado por script (32
 dono, sepultamento das duas identidades novas, aposentadoria só depois do merge (`D-APOSENTADORIA-ELENCO-EFEMERO`).
 
 Opção B (2026-09-13): o dono escolheu o caminho B (`D-SAN3-PLANO-OPCAO-B`; P1 "Sim, lê OS"; P2 "Sim — Financeiro monta orçamento"). O orquestrador planejou a aplicação (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`) e um agente distinto, que não achou nem planejou, a aplicou sem commit, medindo cada fato marcado antes de escrever (item 16 = 27 + 13 = 40; as 10 rotas do CE-2; a rota de conciliação sem chamador, nascida em `1e65b34b`): §5.6 com as condições e as marcas das células de teste geradas por script; itens 55 e 56; travas `07c` → `SAN3-26` e `SAN3-11` → `B-O6R-12` (0 violações); §15; registro com 1 entrada nova, 11 emendas e 14 ponteiros corrigidos pela propriedade (o ponteiro da `P-O6R-B09` para o item 7 está certo e ficou); painel "56 bloqueantes em 37 blocos" e `kpi-freeze`. Índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS, byte-idêntico à cópia fora do repo. Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep. Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status. Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. Conferência de aplicação (`agente-ci-doutor`): NÃO CONFERE em `042e689e`, CONFERE em `bb3f5925` (`agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`).
+
+## B-SAN3-04a — `fix/rbac-catalogo-banco-matriz` (2026-09-17/18, PR na autoria)
+
+**Itens 13, 14, 15, 38 e 56 do gate SAN3; CE-3, CE-5, CE-6, CE-G1, CE-G2.** Plano:
+`agent-orchestration/omega/planos/B-SAN3-04a-plano.md` + emenda (a)–(f) do orquestrador no comando. Implementação em
+duas instâncias de dev: a 2ª deixou o trabalho vivo, sem commit, e caiu com o reboot; a 3ª (Opus 5) tratou esse WIP
+como insumo a medir — tabela passo a passo contra o plano, vermelhos-controle reexecutados num worktree detached próprio
+em `13e3783c` (com `npm ci` próprio, sem junction), correção por edição (nunca `checkout`) — e fechou o bloco.
+
+**Código:** `catalog.ts` (+9 concessões, −2 do `manager`, lista `DELIBERATE_REVOCATIONS`); `provision-rbac.ts` (passo
+3-bis: só a lista nomeada, papel global, idempotente, relatada, `--dry-run` só relata); `navigation.registry.ts`
+(`/finance*` pelas permissões que as rotas comparam); `prisma/seed.ts` (semeia o `auditor`); front (rótulo "Estoque",
+`RoleKind` e menu próprios; Financeiro com OS/Clientes/Serviços/Checklists e sem Auditoria); `RBAC_MATRIX.md` l.38/l.41.
+
+**Testes:** guard matriz × catálogo (14; lê a tabela real e o catálogo importado, lança em célula fora do dicionário e
+em linha sem mapeamento, allowlists que não apodrecem), menu e rotas com as permissões do banco em dois braços declarados
+(26; o app roda sob papel efêmero NOSUPERUSER NOBYPASSRLS com postura asserida — correção da 3ª instância, regra da
+casa), menu do front × catálogo (14), seed do auditor (2), sidebar Estoque/Financeiro no smoke (9). Vermelho-controle no
+head-base: 7/14, 16/26 (nos dois braços), 6/14, 2/2, 8/9. Sete mutações reais nos arquivos-fonte, todas vermelhas e
+restauradas por hash. Seis testes existentes tiveram o sujeito do controle negativo trocado — cada um provado necessário
+rodando a versão do head-base contra o código do bloco (1 vermelho cada).
+
+**Drills (cluster `dev-bsan304a-pg` :5499, bases recriadas; a base viva não recebeu um comando):** D1 head-base só-seed →
+auditor global 0 e 403; D2 head-base provisionada → auditor 56, manager com `update`/`acknowledge`; D3 código do bloco na
+mesma base → `--dry-run` "2 a remover" sem remover, aplica "2 removida(s)", 2ª execução "0 removida(s)", CONVERGIDO,
+paridade `RBAC_DB_PARITY=1` 2/2; D4 base nova só-seed → auditor 56 idêntico ao catálogo, 200.
+
+**Números:** backend 2995/2997 → **3051/3053** (287 arquivos; N=3 idênticas, banco recriado antes de cada uma), smoke
+1126 → **1135**, `blocks_completed` 163 → 164. Divergências plano × código (8) e observações no relatório do dev; o
+registro abriu 13 pendências e fechou 4 + o bullet `P-033`. As dívidas do #386 saíram deste PR por emenda do orquestrador.

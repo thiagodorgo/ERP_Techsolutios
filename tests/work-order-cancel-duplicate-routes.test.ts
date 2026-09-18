@@ -215,16 +215,18 @@ test("POST /duplicate: replay do mesmo client_action_id → 409 duplicate_work_o
   });
 });
 
-test("[RBAC] POST /duplicate sem work_orders:create (operator) → 403; dispatcher (tem create) → 201", async () => {
+// B-SAN3-04a (A6): o operator passou a ter work_orders:create (RBAC_MATRIX.md:45 "create/edit"); o exemplo negativo
+// "sem work_orders:create" passa a ser o technician, que segue sem a permissão.
+test("[RBAC] POST /duplicate sem work_orders:create (technician) → 403; dispatcher (tem create) → 201", async () => {
   await withWorkOrderApi(async ({ baseUrl, seed, createWorkOrder }) => {
     const workOrderId = await createWorkOrder(seed.tenantA, seed.managerA);
 
-    const asOperator = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/duplicate`, {
+    const asTechnician = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/duplicate`, {
       method: "POST",
-      headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
+      headers: authHeaders(seed.tenantA, seed.technicianA, "technician"),
       body: {},
     });
-    assert.equal(asOperator.status, 403);
+    assert.equal(asTechnician.status, 403);
 
     const anon = await requestJson(baseUrl, `/api/v1/work-orders/${workOrderId}/duplicate`, {
       method: "POST",
@@ -269,6 +271,7 @@ type SeedData = {
   readonly managerA: User;
   readonly managerB: User;
   readonly operatorA: User;
+  readonly technicianA: User;
   readonly dispatcherA: User;
 };
 
@@ -346,13 +349,14 @@ function seedCoreSaas(service: {
   const managerA = service.createUser({ tenantId: tenantA.id, name: "Manager A", email: "cancel-manager-a@example.com", roles: ["manager"] });
   const managerB = service.createUser({ tenantId: tenantB.id, name: "Manager B", email: "cancel-manager-b@example.com", roles: ["manager"] });
   const operatorA = service.createUser({ tenantId: tenantA.id, name: "Operator A", email: "cancel-operator-a@example.com", roles: ["operator"] });
+  const technicianA = service.createUser({ tenantId: tenantA.id, name: "Technician A", email: "cancel-technician-a@example.com", roles: ["technician"] });
   const dispatcherA = service.createUser({
     tenantId: tenantA.id,
     name: "Dispatcher A",
     email: "cancel-dispatcher-a@example.com",
     roles: ["field_dispatcher"],
   });
-  return { tenantA, tenantB, managerA, managerB, operatorA, dispatcherA };
+  return { tenantA, tenantB, managerA, managerB, operatorA, technicianA, dispatcherA };
 }
 
 function authHeaders(tenant: Tenant, user: User, role: string): Record<string, string> {
