@@ -1,0 +1,27 @@
+{
+  "SIZE": [
+    {
+      "N": 10000,
+      "v3": {
+        "ms": 217618,
+        "status": "concluida",
+        "totalVarianceValue": -60000,
+        "esperado": -60000,
+        "unid_media": 21.62,
+        "unid_p95": 30,
+        "unid_max": 595,
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10000,
+          "somaAjustes": -30000,
+          "entries": 10000,
+          "carimbadas": 10000,
+          "dup": 0
+        }
+      }
+    }
+  ],
+  "fimMs": 220584,
+  "papeisOrfaos": 0
+}

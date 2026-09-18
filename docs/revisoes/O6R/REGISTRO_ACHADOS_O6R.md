@@ -629,6 +629,24 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Crash effect→receipt, duas chamadas concorrentes, dois usuários com mesma chave e mesma chave/payload diferente; exatamente um efeito correto deve persistir.
 
 ### [Ω6R-DAT-002] Saldo de estoque usa check-then-insert sem serialização
+- Status: **fechado** em 2026-09-18 pelo `B-O6R-04a` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+  **A saída decide sob o lock do item.** Toda via que chega a `insertMovement`/`avg_cost` (saída, transferência,
+  estorno, baixa e estorno de baixa por fonte — V1–V5) toma `SELECT … FOR UPDATE` na linha
+  `inventory_items(tenant_id, id)` **antes** da primeira leitura que decide; saldo da custódia, custo médio e
+  "já estornado?" são relidos sob esse lock. O lock é **tipo**: só `lockItemForUpdate` produz o token
+  `ItemWriteLock`, que `insertMovement` e as leituras `*Locked` exigem — via nova sem lock não compila, e as
+  versões sem lock das leituras que decidem deixaram de existir. `FOR UPDATE` (não `NO KEY UPDATE`) porque só
+  ele conflita com o `KEY SHARE` que todo INSERT em `stock_movements` toma no item pela FK.
+  **Unicidade de reversão no banco:** índice único parcial `stock_movements_reversal_active_key (tenant_id,
+  reverses_movement_id) WHERE reverses_movement_id IS NOT NULL`, na migration aditiva
+  `20260873000000_add_stock_movements_unique_backstops` — **fail-closed**: aborta com a contagem real de grupos
+  duplicados de legado e **nunca deduplica**; o censo em staging e produção é ato do dono
+  (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`). O `P2002` de escritor sem lock é mapeado **fora** da transação
+  (nunca `25P02`); contenção acima do timeout vira **503** `stock_busy`, nada gravado.
+  **Prova:** `tests/inventory-balance-lock-race-db.test.ts` (20 saídas concorrentes de 1 sobre saldo 10, × 10
+  corridas → exatamente 10 aceitas e saldo 0; estorno duplo → uma compensação) e
+  `tests/inventory-unique-backstops-db.test.ts`, sob papéis efêmeros sem BYPASSRLS; vermelho-controle executado
+  no head-base (`cc696f93`): 20 aceitas, saldo −1 atrás da barreira, duas compensações.
 - Severidade: P0        Confiança: 0.99
 - Categoria: DAT
 - Módulo: inventory        Lente: A3
@@ -647,6 +665,24 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Vinte retiradas concorrentes e N reversões no PostgreSQL; saldo nunca negativo e exatamente uma compensação por origem.
 
 ### [Ω6R-DAT-003] Fechamento de contagem cíclica pode duplicar ajustes e ficar parcial
+- Status: **fechado** em 2026-09-18 pelo `B-O6R-04a` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+  **O fechamento virou máquina de estados com CAS, em unidades por item.** `aberta → fechando → concluida`:
+  `beginClose` (sessão `FOR UPDATE` + CAS), uma unidade por item divergente (sessão `FOR UPDATE` → item
+  `FOR UPDATE` → ajuste → carimbo, numa transação só) e `finishClose` (total da sessão **inteira** somado no
+  banco sob o lock + CAS final). Dois fechamentos concorrentes → exatamente um 200; nenhuma unidade aplicada
+  duas vezes (índice único parcial `stock_movements_cycle_count_item_key (tenant_id, cycle_count_id, item_id)`);
+  falha no meio → sem ajuste aplicado a sessão volta a `aberta`, com ajuste aplicado fica `fechando` e sai por
+  recontagem das pendentes + retomada (nenhum estado sem saída). Recontagem e cancelamento decidem sob o lock da
+  sessão (TOCTOU fechado; cancelar por cima de ajuste aplicado → 422 `close_in_progress`), e o `open` recusa item
+  que já está numa contagem não terminal (409 `items_in_open_session` — duas sessões sobre o mesmo item aplicavam
+  a variância duas vezes).
+  **Prova:** `tests/inventory-cycle-count-close-units-db.test.ts` e `tests/inventory-migration-drill-db.test.ts`
+  (drill da migration em base própria); vermelho-controle no head-base (`cc696f93`): dois vencedores, recontagem
+  gravada por cima do carimbo, duas sessões sobre o mesmo item.
+- Nota de critério (§A2): o `teste` registrado ("vencedor único e rollback integral") pressupõe transação
+  única; a emenda 2-h do bloco substituiu-a por unidades retomáveis (a transação única é impossível acima de
+  ~650 itens sob o timeout de 5 s do Prisma) — o achado fecha contra vencedor único, nenhuma unidade aplicada
+  duas vezes, retomada que conclui e total correto da sessão inteira. O texto original fica como está.
 - Severidade: P0        Confiança: 1.00
 - Categoria: DAT
 - Módulo: inventory / cycle-count        Lente: A3

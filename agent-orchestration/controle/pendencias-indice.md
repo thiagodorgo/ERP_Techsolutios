@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **370** |
-| IDs distintos | 359 |
-| **ABERTAS** | **267** |
+| Cabecalhos `## P-` | **374** |
+| IDs distintos | 363 |
+| **ABERTAS** | **271** |
 | — das quais **diferidas** (balde C) | 71 |
-| — das quais **ativas nesta rodada** | **196** |
+| — das quais **ativas nesta rodada** | **200** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 103 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **370 cabecalhos para 359 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **374 cabecalhos para 363 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -68,7 +68,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 106
+## ABERTAS · balde A — material — 109
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -178,8 +178,11 @@
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9277 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
 | `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` | 9287 | MÉDIA | sim | P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (2026-09-12) — dois itens do gate só apare |
 | `P-WEB-CONCILIACAO-SEM-TELA` | 9299 | ALTA | sim | P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia |
+| `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` | 9308 | ALTA | sim | P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD (2026-09-18) — o censo de duplicatas do estoque  |
+| `P-O6R-B04-CONSUMIDORES-503` | 9324 | MÉDIA | sim | P-O6R-B04-CONSUMIDORES-503 (2026-09-18) — o 503 de estoque e de contagem é contrato novo |
+| `P-O6R-B04-UI-STATUS-FECHANDO` | 9333 | MÉDIA | sim | P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os |
 
-## ABERTAS · balde B — processo/registro — 90
+## ABERTAS · balde B — processo/registro — 91
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -273,6 +276,7 @@
 | `P-GOV-CONTRATO-HIGIENE-TEXTUAL` | 9167 | BAIXA | sim | P-GOV-CONTRATO-HIGIENE-TEXTUAL (2026-09-11) — Contrato com "assento" solto, `1-ter` ante |
 | `P-GOV-MONOCULTURA-FABLE-NOS-GATES` | 9184 | BAIXA | sim | P-GOV-MONOCULTURA-FABLE-NOS-GATES (2026-09-11) — Os três gates fixados no mesmo modelo c |
 | `P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO` | 9201 | BAIXA | sim | P-GOV-ESPECIALISTAS-SEM-POLITICA-DE-VERSIONAMENTO (2026-09-11) — Não há regra se corpos  |
+| `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` | 9342 | BAIXA | sim | P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da li |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 71
 
