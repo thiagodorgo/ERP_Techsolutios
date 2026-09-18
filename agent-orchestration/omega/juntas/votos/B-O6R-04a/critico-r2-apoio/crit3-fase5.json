@@ -1,0 +1,32 @@
+{
+  "DDL_sem": {
+    "forma": "H (admin) INSERT em stock_movements + segura 5,9 s (como A2/A14/B3); D = DROP INDEX (T-C4); V = createMovement head-base de OUTRO tenant/item (suite paralela)",
+    "D": {
+      "semDDL": true
+    },
+    "V": {
+      "ok": 98
+    },
+    "V_bloqueadoEm": [
+      "<timeout: nao bloqueou>"
+    ]
+  },
+  "DDL_com": {
+    "forma": "H (admin) INSERT em stock_movements + segura 5,9 s (como A2/A14/B3); D = DROP INDEX (T-C4); V = createMovement head-base de OUTRO tenant/item (suite paralela)",
+    "D": {
+      "ok": 5743
+    },
+    "V": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2028",
+        "msg": " Invalid `this.client.stockMovement.create()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\inventory-prisma.repository.ts:436:54 433 readon"
+      },
+      "ms": 5569
+    },
+    "V_bloqueadoEm": [
+      "SELECT SUM(\"quantidade_sinalizada\") AS \"_sum$quantidade_sinalizada\" FROM (SELECT \"public\".\"stock_movements\".\"quantidade_sinalizada\" FROM \"pu"
+    ]
+  },
+  "fimMs": 14118
+}

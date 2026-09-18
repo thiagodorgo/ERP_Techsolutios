@@ -144,3 +144,33 @@ para a **v2**; o crítico faz a **rodada 2, a última**. Decisões do orquestrad
   ratificado; nada de "só com ratificação".
 - **(m) A-08 — T-D enumera pela propriedade:** todo escritor de `stock_movements` (`create`, `createMany`, `upsert`, SQL cru),
   gerado do código, com default **negar** (CE-G1(b)); N-03: o plano diz o status HTTP dos perdedores por tempo e por deadlock.
+
+## Emenda 3 do orquestrador — rodada 2 do crítico: NÃO, e o fim das rodadas (2026-09-18)
+
+Parecer: `agent-orchestration/omega/juntas/votos/B-O6R-04a/00-critico-r2.md` (2 `bloqueia` · 10 ajuste · 4 nota; os 4 `bloqueia`
+da r1 FECHADOS por desenho e pela execução do crítico). O crítico tem no máximo 2 rodadas: **não há rodada 3**. Pelo corpo do
+`critico-adversarial`, o que sobreviveu vira **requisito explícito no plano**. O plano volta ao `planejador-mestre` (Fable,
+obrigatório no replanejamento — §C7.6) para a **v3**, que responde a cada achado da r2 numa tabela "achado → requisito → desenho
+→ teste com vermelho-controle (o cenário do crítico) → medição". A junta do bloco confere cada linha por execução. Papéis
+(§C7.4-bis): achou o `critico-adversarial`; planeja o `planejador-mestre`; desenvolve outro agente. Decisões, além das (a)–(m):
+
+- **(n) S-01 é requisito:** nenhum estado sem saída alcançável por uso comum. Quando uma unidade falha sem ajuste aplicado, a
+  sessão volta a um estado que aceita recontagem e cancelamento; quando já há unidades aplicadas, o plano define a saída e o
+  dono dela DENTRO do bloco (a "saída de abandono a designar" do §13-4 não sobrevive). Vermelho-controle: o cenário `STUCK_*`
+  do crítico (estoque em custódia de viatura, 409 `insufficient_balance`), que prende a v2 em `fechando`.
+- **(o) S-02 é requisito:** o `totalVarianceValue` do 200 e da metadata da auditoria `cycle_count.closed` é o total da sessão
+  inteira — inclusive o das unidades aplicadas em chamadas anteriores — na retomada e sob concorrência. Vermelho-controle: os
+  cenários `TVV_resume` (esperado −30) e `TVV_concorrente` (esperado −60 em 5 de 5) do crítico, com `avg_cost` diferente de zero.
+- **(p) N-OVL entra no bloco.** Duas sessões abertas sobre o mesmo item aplicam a variância duas vezes (saldo 98 com físico 99) —
+  anterior ao bloco (`528e3601`, #149), mas é a propriedade da emenda (d): consistência da contagem sob concorrência. O plano
+  desenha o fechamento da propriedade; o B9 deixa de assentar o saldo errado como esperado.
+- **(q) A-DAT — o critério do `Ω6R-DAT-003` fica superado pela emenda 2 (h), com registro (§A2).** O `teste` registrado em
+  `achados.jsonl` ("rollback integral") pressupõe transação única, que a emenda (h) substituiu por unidades retomáveis porque a
+  transação única é impossível acima de ~650 itens. O DAT-003 fecha contra: vencedor único; nenhuma unidade aplicada duas vezes;
+  retomada que conclui; total correto (o). A divergência entra no registro do achado como nota, sem reescrever o texto original.
+- **(r) Os ajustes T-01 a T-04, D-01, D-02, K-01, M-01 e M-02 são requisitos**, cada um com o teste ou a medição que o fecha:
+  T-01 vermelho pelo motivo certo; T-02 e T-03 exercitando o código real; T-04 o drill de DDL isolado das suítes irmãs; D-01 o
+  guard pela propriedade (as quatro grafias); D-02 guard e desenho coerentes; K-01 `aguardando_merge` e `findings.itens[].status`
+  como no #385, com `kpi-achados-paridade` verde; M-01 a contagem real de grupos na mensagem; M-02 o roteiro com a saída de
+  `prisma migrate resolve --rolled-back` e o aviso do gatilho de deploy do staging.
+- **(s) As notas N-C6, N-I7 e N-E5** corrigem o texto do plano (a regex do T-C6, o enunciado da I7, o nome da emulação do sizing).
