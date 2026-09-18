@@ -4329,3 +4329,62 @@ existe em `decisoes.md` e ficou fora da emenda. Registro aplicado por script (32
 dono, sepultamento das duas identidades novas, aposentadoria só depois do merge (`D-APOSENTADORIA-ELENCO-EFEMERO`).
 
 Opção B (2026-09-13): o dono escolheu o caminho B (`D-SAN3-PLANO-OPCAO-B`; P1 "Sim, lê OS"; P2 "Sim — Financeiro monta orçamento"). O orquestrador planejou a aplicação (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`) e um agente distinto, que não achou nem planejou, a aplicou sem commit, medindo cada fato marcado antes de escrever (item 16 = 27 + 13 = 40; as 10 rotas do CE-2; a rota de conciliação sem chamador, nascida em `1e65b34b`): §5.6 com as condições e as marcas das células de teste geradas por script; itens 55 e 56; travas `07c` → `SAN3-26` e `SAN3-11` → `B-O6R-12` (0 violações); §15; registro com 1 entrada nova, 11 emendas e 14 ponteiros corrigidos pela propriedade (o ponteiro da `P-O6R-B09` para o item 7 está certo e ficou); painel "56 bloqueantes em 37 blocos" e `kpi-freeze`. Índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS, byte-idêntico à cópia fora do repo. Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep. Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status. Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. Conferência de aplicação (`agente-ci-doutor`): NÃO CONFERE em `042e689e`, CONFERE em `bb3f5925` (`agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`).
+
+## B-O6R-11 — `fix/mobile-work-order-contracts` (2026-09-18, PR na autoria)
+
+### Resumo
+
+Contratos do app de campo com a OS (`Ω6R-QUA-004` + `Ω6R-QUA-005`, pendência-mãe `P-O6R-B11`, item 3 do gate SAN3).
+Plano `agent-orchestration/omega/planos/B-O6R-11-plano.md` + emenda (a)–(f) do orquestrador no comando. Dev de identidade
+distinta (§C7.4-bis); a 1ª instância caiu por HTTP 429 depois do vermelho-controle, sem commit (WIP conferido byte a byte
+contra a cópia de segurança); a 2ª mediu o WIP contra o plano §9/§10, reexecutou o que cita e terminou.
+
+### Entregue (commits na branch, sem push — o orquestrador confere e empurra)
+
+- `cc3b7247` fix(mobile): REST da OS — `work_order_remote_api.dart` (`_unwrapData`; parser único com tenant da sessão;
+  `backendStatusFor` + `workOrderStatusFromApiValue`; PATCH com vocabulário do backend; POST assign `{userId, message?}`;
+  `_workOrderFromJson` removido); fakes `b099`/`b121` só na assinatura; T1 (12 casos).
+- `6865c195` fix(mobile): fila — `prestador_repository.dart` (`for-in` + `await`), `sync_queue_repository.dart`
+  (`_serialized`); T2 (4, com reinício sobre Drift), T3 (4), T4 (1, guard fail-closed que varre `lib/`).
+- `e54e5264` docs(kpi): `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md`, `app.js` (`kpi-freeze`).
+- commit de registro: `pendencias.md` (`P-O6R-B11` FECHADA; 7 pendências novas), índice pelo gerador, `status-geral.md`,
+  este log.
+
+### Bateria (execução real, N e forma)
+
+`flutter pub get` (lock intocado) · `dart format --output=none --set-exit-if-changed lib test` → 196 arquivos, 0 mudados ·
+`flutter analyze` → "No issues found!" · T1 `+12` · T2 `+4` · T3 `+4` · T4 `+1` · regressões do §12 do plano `+133` ·
+`flutter test --reporter compact` → **`00:47 +885: All tests passed!`** (N=1; estático 885 em 66 arquivos) ·
+`node --check Kpis/app.js` OK · `node scripts/kpi-freeze.mjs --check` → em dia · guards de KPI 28/28 · `git diff --check`
+OK. Vermelho-controle no head-base `9dea0ef6` (worktree descartável `vc-b-o6r-11`, `pub get` próprio), reexecutado pela 2ª
+instância: T1 10 (8 por asserção/runtime + 2 por compilação) · T2 4 · T3 2 · T4 1 = **17 de 21**; baseline 864/864.
+Mutações: sem `await` → T4 vermelho (`prestador_repository.dart:137`) e T2 4/4; `user_id` → só o caso 8; `in_progress`
+trocado em `backendStatusFor` → casos 5, 6 e 11; extras: parser `in_progress` → casos 2 e 10; lock desligado → T3 17 e 18
+(T2 segue verde: o `for-in await` sozinho fecha o gate, como o §13 do plano diz). Cada mutação revertida por edição
+inversa e conferida por `cmp` do `git diff` contra a cópia de segurança.
+
+### Divergências plano × código/medição (reportadas, não decididas pelo dev)
+
+1. Vermelho-controle 17/21, o plano previa 15: T2 15 e 16 também ficam vermelhos no head-base (todo caso lê a fila logo
+   após o retorno, e o retorno prematuro zera todos).
+2. Mutação do `in_progress`: o plano previa casos 6 e 11; o caso 5 também cai (assere `in_progress` no fio) — coerente.
+3. O plano §14 pede a descrição do history "nomeando os 4 arquivos de código": são 3 — `drift_sync_action_store.dart`
+   ficou intocado, como o §9.4 previa.
+4. O §6 do plano só dá severidade à P2 (BAIXA); as outras 6 foram registradas "a classificar pela junta" e o índice as
+   põe sem severidade (balde B). Decisão do orquestrador/junta.
+5. Caso 3 do T1 ("o tenant vem do parâmetro da sessão, nunca do corpo"): o parser `_workOrderFromRemoteJson`, reutilizado
+   por ordem do plano §8/§9.1, usa `tenantId`/`tenant_id` do corpo quando existir e a sessão só como `fallbackTenantId`.
+   O DTO do backend não emite o campo (§2.8), então não há efeito vivo; o teste prova "da sessão quando o corpo não tem",
+   não "nunca do corpo". Não alterado.
+6. O aceite original da `P-O6R-B11` pedia "`enqueueAll` durável"; o plano §9.2 o rejeitou com razão registrada —
+   anotado na emenda de fechamento para a junta ver.
+7. Caminhos de teste: T3/T4 em `test/core/sync/` e T1/T2 em subpastas de `test/features/`, exatamente os do plano; o
+   briefing cita a convenção `test/features/<bloco>_<slug>_test.dart`. Seguido o plano.
+8. Head-base do vermelho-controle `9dea0ef6` (plano: `3e05fb5a`): a árvore `mobile/` é a mesma (`3a2ac028`) nos dois.
+9. Guard T4 mais estrito que o texto do plano: casa `\.enqueue\b` (pega também a passagem do método como valor), ignora
+   linhas de comentário e tem piso de 22 ocorrências (o censo do plano).
+
+### Limpeza (§C5)
+
+Worktree `vc-b-o6r-11` removido por `git worktree remove --force` pelo nome; `mobile/flutter_app/build/` (saída
+regenerável do `flutter test`) removido no b11; `.dart_tool/` mantido (o `pub get` do worktree). Nada rastreado apagado.
