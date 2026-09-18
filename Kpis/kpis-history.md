@@ -2619,16 +2619,21 @@ concorrentes podia perder uma linha. O conserto definitivo (upsert atômico no s
 snake_case que exigia `tenant_id`: resposta íntegra = TypeError. O PATCH mandava `inService` (o backend recusa);
 a atribuição mandava `user_id`/`note` (o backend não lê). E a lista viva mostrava toda OS como **Agendada**,
 porque o vocabulário do backend não era traduzido. A tabela de status agora vai nos dois sentidos, com teste de
-paridade contra o codec da fila offline. E o tenant da sessão, quando o chamador o passa, vence qualquer tenant
-que venha no corpo da resposta (emenda 2 (i) do orquestrador).
+paridade contra o codec da fila offline. E o tenant da sessão, quando o chamador o passa (`''` inclusive), vence
+qualquer tenant que venha no corpo da resposta — nos quatro leitores de OS, a lista inclusive (emendas 2 (i) e
+3 (j)/(m) do orquestrador).
 
-**Números, todos executados neste PR:** Flutter **864 → 886/886** (`00:51 +886: All tests passed!`, N=1; recontada
-depois do caso 3b) — 22 testes novos em 4 arquivos: dos 21 do plano, **17 vermelhos no head-base** `9dea0ef6`
-(T1 10 · T2 4 · T3 2 · T4 1), e o caso 3b do T1 (com o tenant da sessão, o tenant do corpo nunca vence — emenda
-2 (i) do orquestrador) vermelho no `31bda5f2` (`+12 -1`); mutações do plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
+**Números, todos executados neste PR:** Flutter **864 → 888/888** (`00:42 +888: All tests passed!`, N=1; recontada
+pela 4ª instância do dev depois dos casos 3c e 3d) — 24 testes novos em 4 arquivos (T1 15 · T2 4 · T3 4 · T4 1).
+Vermelho-controle recontado no head-base `9dea0ef6` com os 24: **20 não passam** — 16 por asserção/runtime
+(T1 9 · T2 4 · T3 2 · T4 1) e 4 do T1 que não compilam (usam símbolo novo). Os casos do tenant acrescentados
+depois do plano: 3b (emenda 2 (i)) vermelho no `31bda5f2` (`+12 -1`); 3c (a lista, emenda 3 (j)) vermelho no
+`5e95ed6a` (`+13 -1`); 3d (tenant vazio, emenda 3 (m)) nasce verde e cai sob mutação (`+14 -1`). Mutações do
+plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
 frontend/` vazio nas duas pontas). `blocks_completed` **163 → 164** a partir de `origin/main` = `02bd7dab`.
 `mvp_*` intocados (§C3.4). `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
 
-**Pendências abertas com dono (7):** `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
+**Pendências abertas com dono (8):** `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
 `P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-APPROVAL-REQUEST-REST-404`,
-`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE`.
+`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE` e, pela emenda 3 (k), `P-MOBILE-CHECKLIST-TENANT-DO-CORPO`;
+a `P-MOBILE-EXPENSE-ENVELOPE` ganhou emenda (tenant só do corpo).

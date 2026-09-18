@@ -4455,16 +4455,21 @@ o parser único da lista com o tenant da sessão; tabela de status nos dois sent
 do backend; POST `/assign` com `{userId, message?}`. `prestador_repository.dart`: `for-in` com `await` — o método só
 retorna depois de gravar. `sync_queue_repository.dart`: `enqueue`/`update` encadeados na instância única da fila.
 
-**Números (execução real):** Flutter **864 → 885/885** (`00:47 +885: All tests passed!`, N=1; 21 testes novos em 4
-arquivos, **17 vermelhos no head-base** `9dea0ef6`; mutações do plano executadas e revertidas) · `dart format` e
-`flutter analyze` limpos · regressões do §12 do plano `+133` · backend `2995/2997` e smoke `1126` carregados (diff de
+**Números (execução real; os do Flutter recontados pela 4ª instância do dev no head final):** Flutter **864 →
+888/888** (`00:42 +888: All tests passed!`, N=1; 24 testes novos em 4 arquivos — os 21 do plano + 3b, 3c e 3d das
+emendas 2 (i) e 3 (j)/(m) —; vermelho-controle no head-base `9dea0ef6` recontado com os 24: **20 não passam** (16 por
+asserção/runtime + 4 que não compilam); mutações executadas e revertidas; as contagens anteriores deste PR, 885 e 886,
+foram antes dos casos 3b, 3c e 3d) · `dart format` e `flutter analyze` limpos · regressões do §12 do plano `+133`
+(2ª instância) · backend `2995/2997` e smoke `1126` carregados (diff de
 `src/ tests/ prisma/ frontend/` vazio nas duas pontas) · blocos **163 → 164** · `mvp_*` intocados · guards de KPI 28/28 ·
 `kpi-freeze --check` e `git diff --check` verdes.
 
 **Registro.** `P-O6R-B11` FECHADA (linha de status reescrita + emenda de fechamento, que registra que o aceite original
 pedia `enqueueAll` e o plano §9.2 o rejeitou com razão); 7 pendências novas ABERTAS com dono (`B-O6R-03b`, fila pós-gate,
-`B-O6R-07c` provisório a ratificar pela junta, `B-SAN3-15`, `B-SAN3-16` ×2, `B-SAN3-13/14`). Índice pelo gerador: 377
-cabeçalhos / 366 IDs, 104 FECHADAS, 273 ABERTAS. O `achados.jsonl` O6R não é do bloco: o fechamento de
+`B-O6R-07c` provisório a ratificar pela junta, `B-SAN3-15`, `B-SAN3-16` ×2, `B-SAN3-13/14`), severidades pela emenda 2
+(h); uma 8ª pela emenda 3 (k) — `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (MÉDIA, fila pós-gate) — e a emenda da
+`P-MOBILE-EXPENSE-ENVELOPE` (tenant só do corpo). Índice pelo gerador, recontado pela 4ª instância: 378 cabeçalhos /
+367 IDs, 104 FECHADAS, 274 ABERTAS. O `achados.jsonl` O6R não é do bloco: o fechamento de
 `Ω6R-QUA-004`/`Ω6R-QUA-005` lá é pedido ao porteiro.
 
 **Divergências plano × código/medição declaradas pelo dev (para a junta e o orquestrador):** vermelho-controle 17 e não
@@ -4473,6 +4478,12 @@ severidade de 6 das 7 pendências não dada pelo §6 (registradas "a classificar
 o parser reutilizado por ordem do plano prefere `tenantId` do corpo quando existir (o DTO não o emite); o aceite
 `enqueueAll` da `P-O6R-B11` × §9.2; caminhos de teste do plano × convenção do briefing; head-base do vermelho-controle
 `9dea0ef6` × `3e05fb5a` do plano (mesma árvore `mobile/`); guard T4 mais estrito que o texto do plano.
+
+**Emendas 2 e 3 do orquestrador (3ª e 4ª instâncias do dev).** Emenda 2: severidades das 7 pendências (h); o caso 3 do
+T1 vira requisito (i) — com o tenant da sessão, o do corpo nunca vence no detalhe, status e atribuição (`afc12540`,
+caso 3b). Emenda 3: a lista segue a mesma propriedade (j — caso 3c, `d421e5f1`); tenant `''` da sessão também vence o
+corpo, escrito em teste (m — caso 3d); `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` e a emenda da `P-MOBILE-EXPENSE-ENVELOPE`
+(k); os números desta entrada, do log e da `P-O6R-B11` recontados no head final (l); composição da junta fixada (n).
 
 **Próximo passo:** orquestrador confere e empurra a branch (rebase na `main` depois do #387 e do `B-SAN3-04a`, com os
 números de KPI reexecutados — emenda (e)) → `inspetor-de-terreno-da-junta` → junta (unanimidade de 3) → CI (inclui o job
