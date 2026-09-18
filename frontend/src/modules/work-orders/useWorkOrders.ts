@@ -53,7 +53,7 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
     loading,
     isRefreshing,
     error: state.error,
-    forbidden: state.forbidden,
+    // Ciclo 2 (P1) — sem `forbidden` exposto: `status === "forbidden"` é a única verdade.
     stale: state.stale,
     lastUpdatedAt: state.lastUpdatedAt,
     refresh,
