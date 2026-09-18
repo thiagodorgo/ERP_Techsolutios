@@ -4440,3 +4440,31 @@ Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação
 Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS.
 
 **Números:** 56 bloqueantes em 37 blocos e 6 atos do dono; melhor caso e realista inalterados; índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS. **Conferência de aplicação (`agente-ci-doutor`):** NÃO CONFERE em `042e689e` (CONF-01, `bloqueia`; CONF-02, nota), **CONFERE em `bb3f5925`** — `agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`.
+
+## 2026-09-18 — `B-SAN3-04a` na autoria: catálogo, banco e menu convergem à matriz de papéis (itens 13, 14, 15, 38 e 56)
+
+**Papéis (§C7.4-bis):** acharam as juntas do PR #386 e o inventário SAN3; planejou o `planejador-mestre` (Fable, 2ª
+instância — a 1ª caiu por limite de sessão); implementaram duas instâncias de dev — a 2ª caiu (queda de sessão e reboot)
+com o trabalho vivo e não commitado, e a 3ª (Opus 5) mediu esse trabalho contra o plano passo a passo, reexecutou
+todos os vermelhos-controle no head-base `13e3783c` num worktree próprio, corrigiu o que divergia e terminou.
+
+**O que muda para quem usa:** o Financeiro lê OS, clientes e serviços (P1/P2 do dono) e volta a ver Financeiro,
+Cobranças e Pagamentos no menu; o auditor entra numa base preparada como a CI sem 403; o Estoque tem rótulo e menu
+próprios; o Gestor deixa de responder e dar ciência em vistoria (revogação **nomeada**, que o provisionamento aplica no
+próximo deploy do dono). Onde a matriz diz "por escopo" e o backend não aplica o escopo, nada foi concedido: virou
+pendência com dono (`D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`). Sem migração; `RBAC_MATRIX.md` só nas l.38 e l.41.
+
+**Números (execução real, cluster descartável do bloco):** backend **2995/2997 → 3051/3053** (+56 em 4 arquivos novos;
+N=3 idênticas; baseline remedida no head-base), smoke **1126 → 1135** (+9), `blocks_completed` 163 → 164. Drills do banco
+D1–D5 executados (P-033: 0 → 1 papel global de auditor numa base só-seed, 403 → 200; revogação: 2 removidas, 2ª execução
+0). O teste de menu e rotas com as permissões do banco roda o app sob papel NOSUPERUSER NOBYPASSRLS.
+
+**Registro:** 13 pendências abertas, 4 fechadas (`P-Ω4-FINANCE-READ-ORFA`, `P-RBAC-CHECKLIST-DRIFT`,
+`P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS`, `P-RBAC-CATALOG-MATRIZ`) e o bullet `P-033`; índice pelo gerador: 383
+cabeçalhos / 372 IDs, 107 FECHADAS, 276 ABERTAS. Oito divergências plano × código declaradas à junta no relatório do dev
+(a mais relevante: a edição da l.41 se propaga pelos tópicos "mirror of `service_catalog:*`" da própria matriz —
+tarifas, tabelas de valores e cadastros mestres —, e nada disso foi concedido).
+
+**Fora deste PR (emenda do orquestrador, 2026-09-17):** as dívidas do #386 (backfill §C3.5, aposentadoria da rodada 3,
+parecer do porteiro, linha dos bloqueantes) — o `B-SAN3-01` mergeia primeiro e as carrega. **Próximo:** inspetor de
+terreno, junta com unanimidade de 3 (bloco de permissão) + `coordenador-de-acessos`.
