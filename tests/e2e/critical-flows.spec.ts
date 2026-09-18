@@ -246,7 +246,10 @@ test("E2 — create recusado preserva o digitado e não navega; aceito navega pa
   const title = `E2E-SAN3-01 ${Date.now()}`;
   const description = "Descrição digitada pelo operador durante o E2E.";
   const titleField = page.getByLabel(/^T[ií]tulo$/);
-  const descriptionField = page.getByLabel(/^Descri[çc][ãa]o$/);
+  // Pelo nome acessível, não por getByLabel: a <textarea> controlada vive DENTRO do <label> (WorkOrderForm.tsx) e o
+  // React copia o valor para o texto dela, então o texto do rótulo vira "Descricao<digitado>" e o getByLabel ancorado
+  // deixa de casar depois do preenchimento; o nome acessível continua "Descricao".
+  const descriptionField = page.getByRole("textbox", { name: /^Descri[çc][ãa]o$/ });
   await titleField.fill(title);
   await descriptionField.fill(description);
 
