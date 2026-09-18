@@ -481,3 +481,28 @@ test("painel: o gráfico de rodadas conta entregas reais e DIZ o que ele recorta
     assert.ok(svg.includes(String(r.fora)), "a tela precisa dizer quantas publicações ficaram fora do corte");
   }
 });
+
+test("painel: a rodada SAN3 tem barra própria — entrega `B-SAN3-*` não cai em \"Blocos B\"", async () => {
+  // `docs/revisoes/SAN3/PLANO_SAN3.md` §5.5: "a rodada SAN3 entra no painel com o primeiro bloco que entregar
+  // (§C3.1)". O roadmap não tem segunda trilha (medido no B-SAN3-01), então a rodada entra por aqui — e o
+  // prefixo genérico `B-` a engolia em "Blocos B": a rodada existia no dado e não aparecia em lugar nenhum.
+  const { els, sandbox } = await runDashboard({ withFetch: true });
+  type Rounds = { rounds: { itens: ReadonlyArray<{ label: string; value: number }>; corte: string } };
+  const series = sandbox.buildChartSeries!(HISTORY) as unknown as Rounds;
+
+  const san3 = HISTORY.filter((x) => /^B-SAN3-/i.test(String(x.version ?? "")) && String(x.snapshot_date) >= series.rounds.corte);
+  assert.ok(san3.length > 0, "o kpis-history.json precisa de ao menos uma entrega B-SAN3-* depois do corte — é ela que este teste julga");
+  const barra = series.rounds.itens.find((x) => x.label === "SAN3");
+  assert.equal(barra?.value, san3.length, `as ${san3.length} entregas B-SAN3-* do histórico têm de formar a barra "SAN3"`);
+
+  // Isolada, a entrada B-SAN3 REAL do histórico cai em "SAN3" e em nenhuma outra barra ("Blocos B" incluída).
+  const isolada = sandbox.buildChartSeries!([san3[0]]) as unknown as Rounds;
+  assert.equal(
+    isolada.rounds.itens.map((x) => `${x.label}:${x.value}`).join(" | "),
+    "SAN3:1",
+    `${String(san3[0].version)} tem de cair na rodada "SAN3", não em "Blocos B"`,
+  );
+
+  // E a barra chega à tela: o rótulo "SAN3" é desenhado no gráfico de rodadas.
+  assert.match(els.get("chart-rounds")?.innerHTML ?? "", /class="row-label"[^>]*>SAN3<\/text>/, "a barra SAN3 não foi desenhada no gráfico de rodadas");
+});
