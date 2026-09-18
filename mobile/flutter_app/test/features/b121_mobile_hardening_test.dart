@@ -72,13 +72,21 @@ class _TimelineRemote implements WorkOrderRemoteApi {
   @override
   Future<List<WorkOrder>> fetchWorkOrders({String? tenantId}) async => const [];
   @override
-  Future<WorkOrder> fetchWorkOrder(String id) => throw UnimplementedError();
-  @override
-  Future<WorkOrder> updateWorkOrderStatus(String id, WorkOrderStatus s) =>
+  Future<WorkOrder> fetchWorkOrder(String id, {String? tenantId}) =>
       throw UnimplementedError();
   @override
-  Future<WorkOrder> assignWorkOrder(String id, String userId, {String? note}) =>
-      throw UnimplementedError();
+  Future<WorkOrder> updateWorkOrderStatus(
+    String id,
+    WorkOrderStatus s, {
+    String? tenantId,
+  }) => throw UnimplementedError();
+  @override
+  Future<WorkOrder> assignWorkOrder(
+    String id,
+    String userId, {
+    String? note,
+    String? tenantId,
+  }) => throw UnimplementedError();
   @override
   Future<void> createApprovalRequest(String id, WorkOrderApprovalRequest req) =>
       throw UnimplementedError();
