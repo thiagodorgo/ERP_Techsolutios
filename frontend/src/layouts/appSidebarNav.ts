@@ -54,7 +54,7 @@ import {
 // (Aprovações pendentes, Notificações não lidas) — nunca literais (mata P-011).
 export type NavItem = { label: string; path: string; icon: LucideIcon };
 export type NavGroup = { label: string; items: readonly NavItem[] };
-export type RoleKind = "finance" | "dispatcher" | "admin" | "gestor" | "support";
+export type RoleKind = "finance" | "dispatcher" | "admin" | "gestor" | "support" | "inventory";
 
 // ── Itens canônicos (rótulo → rota) — F11 sidebar-ia.md (IA aprovada) ──
 const DASHBOARD: NavItem = { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard };
@@ -191,10 +191,25 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
   finance: [
     G_VISAO_GERAL,
     // Ω3-a — finance tem service_quotes:read/create/update (matriz RBAC): vê "Orçamentos" (veto V2).
-    { label: "OPERAÇÃO", items: [ORCAMENTOS, APROVACOES] },
+    // B-SAN3-04a (P1/P2 + item 15 — D-SAN3-PLANO-OPCAO-B): o Financeiro lê OS (work_orders:read), Clientes e Serviços
+    // (customers:read / service_catalog:read — monta orçamento) e Checklists (checklist_runs:read / tenant_checklists:read).
+    // AUDITORIA sai: o guard da rota é audit:read, que a matriz (l.56, "scoped") não concede sem recorte — o item só
+    // levava ao 403. O backend é a autoridade; esta camada só molda o menu.
+    { label: "OPERAÇÃO", items: [OS, ORCAMENTOS, APROVACOES, CHECKLISTS] },
     { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS, EXTRATO_PROFISSIONAL] },
-    { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
-    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, AUDITORIA] },
+    { label: "GESTÃO", items: [CLIENTES, SERVICOS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
+    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
+  ],
+  // B-SAN3-04a (item 38, P-026) — Estoque (inventory): menu PRÓPRIO. Antes o papel não tinha rótulo, caía em "gestor"
+  // e o backend negava 24 dos 28 itens que o menu oferecia. Cada item aqui tem guard que o papel TEM
+  // (inventory_items:read, purchase_orders:read, reports:read, notifications:read, checklist_runs:read,
+  // tenant_checklists:read). O Dashboard fica no grupo: o esconde-fino (path governado ausente do menu do backend) o
+  // oculta até o B-SAN3-04b conceder dashboard:read — e aí ele aparece sem mexer aqui.
+  inventory: [
+    G_VISAO_GERAL,
+    { label: "OPERAÇÃO", items: [CHECKLISTS] },
+    { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, RELATORIOS] },
+    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
   ],
   // support — apenas administração limitada (nunca Frota/Cadastros/Operação).
   support: [{ label: "ADMINISTRAÇÃO", items: [USUARIOS, NOTIFICACOES, AUDITORIA] }],
@@ -206,6 +221,7 @@ export const ROLE_SUBTITLE: Record<RoleKind, string> = {
   finance: "Financeiro",
   admin: "Administrador",
   support: "Suporte",
+  inventory: "Estoque",
 };
 
 // Allowlist do escopo web: só rotas com tela real entram na sidebar. F11 expande
@@ -270,6 +286,8 @@ export const MVP_NAV_PATHS = new Set<string>([
 // nota em navigation-matrix.md); a autoridade de acesso é sempre o backend.
 export function roleKindFor(roles: readonly string[]): RoleKind {
   if (roles.includes("Financeiro")) return "finance";
+  // B-SAN3-04a (item 38) — usuário com os dois rótulos: Financeiro vence (precedência declarada).
+  if (roles.includes("Estoque")) return "inventory";
   if (roles.includes("Supervisor")) return "support";
   if (roles.includes("Operador Logistico") || roles.includes("Operação de Campo")) return "dispatcher";
   if (roles.includes("Administrador") && !roles.includes("Gestor Operacional")) return "admin";
