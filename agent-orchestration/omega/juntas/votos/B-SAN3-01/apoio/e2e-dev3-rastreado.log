@@ -17,7 +17,7 @@ Running 13 tests using 1 worker
   x  13 [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login (45.2s)
 
 
-  1) [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth 
+  1) [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth
 
     Test timeout of 45000ms exceeded.
 
@@ -49,7 +49,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  2) [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console 
+  2) [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console
 
     Test timeout of 45000ms exceeded.
 
@@ -82,7 +82,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  3) [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed 
+  3) [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed
 
     Test timeout of 45000ms exceeded.
 
@@ -116,7 +116,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  4) [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos) 
+  4) [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos)
 
     Test timeout of 45000ms exceeded.
 
@@ -150,7 +150,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  5) [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC 
+  5) [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC
 
     Test timeout of 45000ms exceeded.
 
@@ -184,7 +184,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  6) [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu 
+  6) [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu
 
     Test timeout of 45000ms exceeded.
 
@@ -218,7 +218,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  7) [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+  7) [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real
 
     Test timeout of 45000ms exceeded.
 
@@ -252,7 +252,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  8) [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados 
+  8) [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados
 
     Test timeout of 45000ms exceeded.
 
@@ -330,7 +330,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  10) [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar 
+  10) [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar
 
     Test timeout of 45000ms exceeded.
 
@@ -364,7 +364,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  11) [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos 
+  11) [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos
 
     Test timeout of 45000ms exceeded.
 
@@ -398,7 +398,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  12) [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados 
+  12) [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados
 
     Test timeout of 45000ms exceeded.
 
@@ -432,7 +432,7 @@ Running 13 tests using 1 worker
 
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  13) [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login 
+  13) [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login
 
     Test timeout of 45000ms exceeded.
 
@@ -467,17 +467,17 @@ Running 13 tests using 1 worker
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
   13 failed
-    [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth 
-    [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console 
-    [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed 
-    [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos) 
-    [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC 
-    [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu 
-    [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
-    [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados 
+    [chromium] › tests\e2e\critical-flows.spec.ts:92:1 › login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth
+    [chromium] › tests\e2e\critical-flows.spec.ts:112:1 › tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console
+    [chromium] › tests\e2e\critical-flows.spec.ts:129:1 › tenant admin acessa inbox interna de notificacoes sem depender de seed
+    [chromium] › tests\e2e\critical-flows.spec.ts:144:1 › Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos)
+    [chromium] › tests\e2e\critical-flows.spec.ts:180:1 › Despachos Operacionais renderiza lista, KPIs e acoes por RBAC
+    [chromium] › tests\e2e\critical-flows.spec.ts:206:1 › E1 — lista honesta: o que a tela mostra é o que a API devolveu
+    [chromium] › tests\e2e\critical-flows.spec.ts:240:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real
+    [chromium] › tests\e2e\critical-flows.spec.ts:292:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados
     [chromium] › tests\e2e\critical-flows.spec.ts:346:1 › platform admin acessa Platform Console ───
-    [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar 
-    [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos 
-    [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados 
-    [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login 
+    [chromium] › tests\e2e\critical-flows.spec.ts:371:1 › PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar
+    [chromium] › tests\e2e\critical-flows.spec.ts:380:1 › runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos
+    [chromium] › tests\e2e\critical-flows.spec.ts:395:1 › W03 Configuracoes renderiza categorias e temas planejados
+    [chromium] › tests\e2e\critical-flows.spec.ts:420:1 › logout real revoga sessao local e volta ao login
 EXIT=1

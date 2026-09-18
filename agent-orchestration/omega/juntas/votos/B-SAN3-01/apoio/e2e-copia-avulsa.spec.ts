@@ -193,4 +193,3 @@ async function enableWorkOrdersFrontendContext(page: Page): Promise<void> {
     window.localStorage.setItem(key, JSON.stringify(context));
   });
 }
-

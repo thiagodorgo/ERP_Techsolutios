@@ -49,7 +49,7 @@ Running 3 tests using 1 worker
   ok 3 [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:112:1 › E3 — detalhe inexistente e detalhe com erro são estados, não dados (6.8s)
 
 
-  1) [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+  1) [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real
 
     Error: expect(locator).toHaveValue(expected) failed
 
@@ -87,6 +87,6 @@ Running 3 tests using 1 worker
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
   1 failed
-    [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real 
+    [chromium] › tests\e2e\_bsan301-adhoc.spec.ts:63:1 › E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real
   2 passed (32.7s)
 EXIT=1
