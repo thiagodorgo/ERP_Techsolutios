@@ -4380,7 +4380,7 @@ pendências reais** (a fatia confirmou 50; uma caiu na reconfirmação). Causa m
 linha de status (medido em bancada: até "RESOLVIDO PARCIAL" sai FECHADA). O PR do plano reescreve as 52 linhas
 canônicas (FECHADAS no índice: 72 → 103 contra a base — os 31 flips; as 2 pendências do painel tiveram os dados corrigidos e seguem ABERTAS (PARCIAL) desde o ciclo 2) e registra as 49 ausentes (índice, depois do ciclo 2: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS, 0 contraditórias).
 
-**Gate da versão vendável: 54 bloqueantes, fechados por 37 blocos, e 6 atos que só o dono pratica** — nenhum
+**Gate da versão vendável: 54 bloqueantes, fechados por 37 blocos, e 6 atos que só o dono pratica** *(v5 — 56 após a opção B do dono, §15 do plano; emenda de 2026-09-17, ressalva A1 do porteiro do #386)* — nenhum
 bloco começado. Além dos P0/P1 da auditoria (estoque, despesa, escopo por objeto, antivírus), o inventário trouxe:
 perda de dado no app de campo e na web (a OS fabricada quando o backend recusa o create); a baixa de título que
 **não existe** pela web; "Minhas OS" listando a organização inteira; entrega do guincho e fluxo Prestador sem
@@ -4477,3 +4477,14 @@ em `OperationsDispatchesPage.tsx`; a 8ª pendência; "Total: 48" do §6.2 é 47.
 **Próximo passo:** orquestrador confere e empurra a branch → `inspetor-de-terreno-da-junta` → junta (unanimidade de 3 +
 `cognicao-visual`) → CI → squash → §C5 → porteiro. Ao mergear, abre as travas `SAN3-25` (service de OS) e `SAN3-10`
 (`tests/e2e/**`).
+
+**Decisões do orquestrador e dívidas do #386 (emenda 2 do comando, 2026-09-17).** As 11 divergências do desenvolvedor
+foram decididas na emenda 2: D-1 não aceita e revista depois de medida (o painel não tem segunda trilha no `roadmap`:
+a rodada SAN3 entrou pelo gráfico de entregas por rodada, e o acompanhamento do gate virou `P-SAN3-PAINEL-TRILHA-DO-GATE`,
+dono `B-SAN3-KPI-TRILHA`); D-10 vira `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM`; as demais aceitas, com as 5 da 3ª instância. O e2e rastreado está morto desde 2026-07-02 (login
+com "Tenant ID", `d5a4ed43`): `P-SAN3-01-E2E-LOGIN-DEFASADO`, dono `B-SAN3-10`; E1–E3 rodaram por cópia avulsa. Este PR,
+o primeiro de execução a mergear, paga as dívidas do #386: A2 backfill §C3.5 (`merge_commit 02bd7dab` · `approved_head
+764e175d`, na nota da entrada `B-SAN3-01` do history), A3 aposentadoria rodada 3 (as duas `jurado-san3c2-*`), A1 a
+manchete dos 54 emendada, e o parecer do porteiro versionado. A4 (log do inspetor fora de worktree) já estava ausente em
+2026-09-17. Correção do registro: o contêiner `bsan301-pg` não foi removido pela 2ª instância; segue vivo para a
+conferência e a junta, e sai pelo nome depois do merge.

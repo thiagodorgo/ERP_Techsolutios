@@ -2656,3 +2656,5 @@ não consertada); (6) o "Total: 48" do §6.2 é 47 pela própria enumeração do
 `-JURISDICAO-DEFAULTS-LOCAIS`, `-OS-LEGADO-MORTO`, `-SHELL-BADGES-ZERO-NO-ERRO` (fila pós-gate),
 `-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` (B-SAN3-06a). Índice pelo gerador: 378 cabeçalhos / 367 IDs, 105 FECHADAS,
 273 ABERTAS.
+
+**Backfill §C3.5 do #386 (pago por este PR, o primeiro de execução a mergear — ressalva A2 do porteiro):** `pr 386` · `merge_commit 02bd7dab2ffa29999920da8b7da345b6a5958b67` · `approved_head 764e175d8d2ab030da34cd81bf8f18c6576645a4`. O #386 não tem entrada própria no history (precedente #382).

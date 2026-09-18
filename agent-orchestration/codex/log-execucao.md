@@ -4382,3 +4382,9 @@ orquestrador no worktree (declarado).
 7. `createErrorMessage`: `invalid_date` (§4.1) cai no padrão `safeMessage` — a tabela do §4.3-4 não o lista.
 
 Limpeza (§C5): `frontend/dist/` removido após o build; contêiner `bsan301-pg` removido ao fim; nada rastreado apagado.
+
+2026-09-18 — emenda 2 do orquestrador (B-SAN3-01): as 11 divergências da 2ª instância e as 5 da 3ª decididas (D-1 não
+aceita e revista: rodada SAN3 no gráfico de entregas por rodada; trilha do gate → `P-SAN3-PAINEL-TRILHA-DO-GATE`, dono
+`B-SAN3-KPI-TRILHA`; D-10 → `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM`); e2e rastreado morto desde `d5a4ed43` →
+`P-SAN3-01-E2E-LOGIN-DEFASADO` (`B-SAN3-10`); dívidas do #386 pagas neste PR (A1, A2, A3 e o parecer do porteiro); o
+contêiner `bsan301-pg` segue vivo até o merge (a linha de limpeza acima dizia removido).
