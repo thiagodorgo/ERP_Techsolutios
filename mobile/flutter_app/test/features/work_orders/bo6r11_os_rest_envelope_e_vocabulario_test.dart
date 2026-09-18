@@ -247,6 +247,51 @@ void main() {
     );
     // vc:simbolo-novo:fim
 
+    // vc:simbolo-novo:inicio
+    // Emenda 2 (i) do orquestrador: o caso 3 prova "vem da sessão quando o corpo NÃO traz tenant";
+    // este prova "vem da sessão MESMO quando o corpo traz outro". O DTO de hoje não emite tenant
+    // (§2.8), mas o app não pode depender disso: a organização se resolve pelo ator autenticado,
+    // nunca por conteúdo de resposta. Cobre as duas grafias que o parser tolerante lê.
+    test(
+      '3b. com o tenant da sessão, o tenant do corpo nunca vence — detalhe, status e atribuição',
+      () async {
+        final obtidos = <String, String>{};
+        for (final chave in ['tenantId', 'tenant_id']) {
+          Map<String, dynamic> corpo() => {
+            'data': {..._dtoDoBackend(), chave: 't-do-corpo'},
+          };
+
+          final detalhe = await _apiCom(
+            corpo(),
+          ).api.fetchWorkOrder(_id, tenantId: 't-sessao');
+          final status = await _apiCom(corpo()).api.updateWorkOrderStatus(
+            _id,
+            WorkOrderStatus.inService,
+            tenantId: 't-sessao',
+          );
+          final atribuida = await _apiCom(
+            corpo(),
+          ).api.assignWorkOrder(_id, 'user-7', tenantId: 't-sessao');
+
+          obtidos['fetchWorkOrder/$chave'] = detalhe.tenantId;
+          obtidos['updateWorkOrderStatus/$chave'] = status.tenantId;
+          obtidos['assignWorkOrder/$chave'] = atribuida.tenantId;
+        }
+
+        // Uma asserção só, sobre as 6 combinações: no vermelho a mensagem mostra todas.
+        expect(obtidos, {
+          for (final metodo in [
+            'fetchWorkOrder',
+            'updateWorkOrderStatus',
+            'assignWorkOrder',
+          ])
+            for (final chave in ['tenantId', 'tenant_id'])
+              '$metodo/$chave': 't-sessao',
+        });
+      },
+    );
+    // vc:simbolo-novo:fim
+
     test(
       '4. fetchWorkOrder com 404 vira ApiServerError(404) — o mapeamento de erro segue',
       () async {
