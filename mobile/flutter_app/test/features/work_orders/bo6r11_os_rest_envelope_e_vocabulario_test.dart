@@ -146,6 +146,26 @@ Map<String, dynamic> _dtoDoBackend({
   ],
 };
 
+/// Um item EXATO de `toWorkOrderListDto` (work-order.dto.ts:121) — o mesmo formato do caso 10, sem
+/// `tenantId` (§2.8). Os casos 3c e 3d acrescentam um tenant no corpo para provar que ele não vence.
+Map<String, dynamic> _itemDaLista(String id) => {
+  'id': id,
+  'code': 'OS-$id',
+  'title': 'OS $id',
+  'status': 'in_progress',
+  'priority': 'medium',
+  'customerName': 'Cliente $id',
+  'serviceAddress': 'Rua $id',
+  'serviceLatitude': null,
+  'serviceLongitude': null,
+  'assignedOperatorId': null,
+  'assignedUserId': 'user-7',
+  'vehicleId': null,
+  'scheduledFor': null,
+  'slaDueAt': null,
+  'createdAt': '2026-09-18T11:00:00.000Z',
+};
+
 /// Backend → app (os 10 valores de `WORK_ORDER_STATUSES`, work-order.types.ts:6-17).
 const _backendParaApp = <String, WorkOrderStatus>{
   'open': WorkOrderStatus.scheduled,
@@ -287,6 +307,90 @@ void main() {
           ])
             for (final chave in ['tenantId', 'tenant_id'])
               '$metodo/$chave': 't-sessao',
+        });
+      },
+    );
+    // vc:simbolo-novo:fim
+
+    // Emenda 3 (j) do orquestrador: a propriedade é "em toda leitura de resposta da OS neste arquivo,
+    // o tenant da sessão vence o do corpo" — não só nos três métodos do 3b. A lista viva do B-099
+    // (`work_order_repository.dart`, `_pullInBackground`) passa o tenant da sessão ativa. Sem
+    // marca `vc:simbolo-novo`: `fetchWorkOrders({tenantId})` já existia no head-base.
+    test(
+      '3c. a lista também: com o tenant da sessão, o tenant do corpo nunca vence',
+      () async {
+        final obtidos = <String, List<String>>{};
+        for (final chave in ['tenantId', 'tenant_id']) {
+          final (:api, adaptador: _) = _apiCom({
+            'items': [
+              {..._itemDaLista('a'), chave: 't-do-corpo'},
+              _itemDaLista('b'),
+            ],
+            'pagination': {'limit': 20, 'offset': 0, 'total': 2},
+          });
+
+          final lista = await api.fetchWorkOrders(tenantId: 't-sessao');
+
+          obtidos['fetchWorkOrders/$chave'] = [
+            for (final os in lista) os.tenantId,
+          ];
+        }
+
+        // Uma asserção só: no vermelho a mensagem mostra as duas grafias e os dois itens.
+        expect(obtidos, {
+          'fetchWorkOrders/tenantId': ['t-sessao', 't-sessao'],
+          'fetchWorkOrders/tenant_id': ['t-sessao', 't-sessao'],
+        });
+      },
+    );
+
+    // vc:simbolo-novo:inicio
+    // Emenda 3 (m) do orquestrador: chamador que passa `''` não tem sessão estabelecida; adotar o
+    // tenant do corpo seria confiar em payload (§2.8). O resultado `''` deixa a OS invisível para as
+    // leituras por tenant — o lado fechado. "O chamador passa o tenant" = parâmetro não-nulo, vazio
+    // inclusive. Documenta a escolha nos quatro leitores de OS do arquivo (3b + 3c).
+    test(
+      "3d. tenant da sessão vazio ('') também vence o corpo — a OS fica sem organização, nunca com a do corpo",
+      () async {
+        final obtidos = <String, String>{};
+        for (final chave in ['tenantId', 'tenant_id']) {
+          Map<String, dynamic> corpo() => {
+            'data': {..._dtoDoBackend(), chave: 't-do-corpo'},
+          };
+
+          final lista = await _apiCom({
+            'items': [
+              {..._itemDaLista('a'), chave: 't-do-corpo'},
+            ],
+            'pagination': {'limit': 20, 'offset': 0, 'total': 1},
+          }).api.fetchWorkOrders(tenantId: '');
+          final detalhe = await _apiCom(
+            corpo(),
+          ).api.fetchWorkOrder(_id, tenantId: '');
+          final status = await _apiCom(corpo()).api.updateWorkOrderStatus(
+            _id,
+            WorkOrderStatus.inService,
+            tenantId: '',
+          );
+          final atribuida = await _apiCom(
+            corpo(),
+          ).api.assignWorkOrder(_id, 'user-7', tenantId: '');
+
+          obtidos['fetchWorkOrders/$chave'] = lista.single.tenantId;
+          obtidos['fetchWorkOrder/$chave'] = detalhe.tenantId;
+          obtidos['updateWorkOrderStatus/$chave'] = status.tenantId;
+          obtidos['assignWorkOrder/$chave'] = atribuida.tenantId;
+        }
+
+        // Uma asserção só, sobre as 8 combinações: no vermelho a mensagem mostra todas.
+        expect(obtidos, {
+          for (final metodo in [
+            'fetchWorkOrders',
+            'fetchWorkOrder',
+            'updateWorkOrderStatus',
+            'assignWorkOrder',
+          ])
+            for (final chave in ['tenantId', 'tenant_id']) '$metodo/$chave': '',
         });
       },
     );
