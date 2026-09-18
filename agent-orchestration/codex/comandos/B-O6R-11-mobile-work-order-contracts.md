@@ -88,3 +88,22 @@ começo). Decisões, para a ata:
   os números de KPI são reexecutados (§C3.3), nunca somados.
 - **(f) Composição da junta:** a proposta do §14 fica como insumo; o orquestrador a fixa no briefing depois de medir a
   competência que os achados exigem (contrato mobile B-108 e fila offline).
+
+## Emenda 2 do orquestrador — as 9 divergências do desenvolvedor (2026-09-18)
+
+Relatório: `agent-orchestration/omega/juntas/votos/B-O6R-11/00-dev.md` (1ª instância caiu por 429 depois do vermelho-controle; a
+2ª mediu o trabalho vivo e terminou). Decisões:
+
+- **(g) Aceitas: 1, 2, 3, 6, 7, 8 e 9.** Medem mais que o plano (17 vermelhos em 21; M3 derruba 3 casos), seguem o plano
+  (caminhos de teste, 3 arquivos de código, head-base de mesma árvore `mobile/`) ou são mais rígidas que ele (guard T4 com
+  `\.enqueue\b`, comentário ignorado e piso de 22).
+- **(h) Divergência 4 — severidades das pendências do §6:** `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` (P4) **ALTA** — um crash
+  entre as duas transações deixa material local sem ação na fila, e a ação nunca chega ao backend: perda de dado, a 1ª prioridade
+  do gate; `P-MOBILE-EXPENSE-ENVELOPE` (P1), `P-WO-ASSIGN-OPERATOR-ID-TORTO` (P3, backend vivo), `P-MOBILE-STATUS-ACCEPTED-LOSSY`
+  (P6) e `P-MOBILE-FILA-RMW-STORE` (P7) **MÉDIA**; `P-MOBILE-APPROVAL-REQUEST-REST-404` (P5) **BAIXA**; a P2 segue BAIXA.
+- **(i) Divergência 5 NÃO aceita — vira requisito deste bloco.** O T1 caso 3 se chama "o tenant vem do parâmetro da sessão, nunca
+  do corpo", mas `_workOrderFromRemoteJson` faz `corpo ?? sessão`: quando o corpo traz tenant, o corpo vence. O teste promete mais
+  do que prova, e a regra da casa é que o tenant se resolve pelo ator autenticado, nunca por conteúdo de payload (§2.8 do
+  `CLAUDE.md`). Requisito: quando o chamador passa o tenant da sessão, **ele vence** qualquer tenant que venha no corpo; o T1 ganha
+  o caso "corpo traz tenant diferente → vence a sessão", vermelho no código atual do bloco e verde depois. Quem achou foi a 2ª
+  instância do desenvolvedor; quem conserta é outra instância (§C7.4-bis).
