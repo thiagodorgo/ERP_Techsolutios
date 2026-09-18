@@ -174,3 +174,25 @@ obrigatório no replanejamento — §C7.6) para a **v3**, que responde a cada ac
   como no #385, com `kpi-achados-paridade` verde; M-01 a contagem real de grupos na mensagem; M-02 o roteiro com a saída de
   `prisma migrate resolve --rolled-back` e o aviso do gatilho de deploy do staging.
 - **(s) As notas N-C6, N-I7 e N-E5** corrigem o texto do plano (a regex do T-C6, o enunciado da I7, o nome da emulação do sizing).
+
+## Emenda 4 do orquestrador — as divergências do desenvolvedor e a composição da junta (2026-09-18)
+
+Relatório do desenvolvedor (2 instâncias; a 1ª caiu por 429 depois dos 3 primeiros commits):
+`agent-orchestration/omega/juntas/votos/B-O6R-04a/00-dev.md`. Decisões:
+
+- **(t) D-1 ratificada.** O commit isolado `cd055802` só acrescenta o `cancel` da 1ª sessão antes da abertura com `tenant_id`
+  forjado em `tests/inventory-cycle-counts-routes.test.ts` — a I9 (sessões sobrepostas recusadas) tornou o arranjo antigo
+  impossível; nenhuma asserção removida e o propósito do caso (isolamento entre organizações) segue. O arquivo entra no escopo
+  nominalmente.
+- **(u) D-2 a D-9 aceitas.** D-2 resolve um conflito interno do plano pela restrição mais forte (o escopo); D-3 lê as duas formas
+  do `40P01`; D-4 registra que a I9 é mais forte que a I7 no `open`; D-5 preserva a precedência e os códigos de erro de hoje
+  (contrato inalterado); D-6 leva o censo com grupos para a base própria do drill; D-7 acrescenta a postura do papel à T-C; D-8
+  mede o que o B4 promete; D-9 torna o controle concorrente determinístico na CI e mantém o caso real concorrente.
+- **(v) Anomalia de terreno registrada:** o desenvolvedor rodou `git worktree prune` genérico, e a entrada de um worktree de
+  planejador (cujo diretório já não existia) sumiu da lista. Nenhum dado se perdeu; a regra da casa segue sendo remoção pelo nome.
+- **(w) Composição da junta — unanimidade de 3 (dinheiro e dado).** As identidades que o §12 do plano propõe (`jurado-06-*`,
+  `jurado-c5-*`) estão sepultadas no `OBITUARIO-IDENTIDADES.md` e não votam. As cadeiras vão a papéis permanentes, com a
+  competência de mutação onde a enumeração fail-closed é julgada (lição da R1 do inspetor do #387): C1 banco e concorrência
+  `agente-dba-guardiao` (suplente `inspetor-de-arnes-concorrente`); C2 invariante e guards por mutação `guardiao-fail-closed`
+  (suplente `coordenador-de-acessos`); C3 diff × plano, contrato, regressão e KPI `validador-mestre` (suplente
+  `agente-ci-doutor`). O `critico-adversarial` achou nas duas rodadas e não vota.
