@@ -2610,7 +2610,7 @@ próprio bloco.
 | KPI | Valor |
 |-----|-------|
 | Smoke (console web) | **1126 → 1173/1173** — execução real: `npm --prefix frontend run test:smoke` → `# tests 1173 · # pass 1173 · # fail 0 · # skipped 0` (node v20.19.5) |
-| Backend | **2995/2997 — REEXECUTADO** (§C3.3: um contrato lê `.tsx` por texto): `DATABASE_URL` para cluster Postgres descartável próprio (`bsan301-pg`, postgres:16, 107 migrations), `CORE_SAAS_PERSISTENCE` não exportada → 283 arquivos · `# tests 2997 · pass 2995 · fail 0 · skipped 2` (os dois gated por `RBAC_DB_PARITY`). Mesma forma e número |
+| Backend | **2996/2998 — REEXECUTADO pelo orquestrador em 2026-09-18 no head 10eb7049** (+1 caso da rodada SAN3 no gráfico; banco novo e Redis descartável, 283 arquivos, fail 0, skipped 2). Antes, pelo dev: **2995/2997 — REEXECUTADO** (§C3.3: um contrato lê `.tsx` por texto): `DATABASE_URL` para cluster Postgres descartável próprio (`bsan301-pg`, postgres:16, 107 migrations), `CORE_SAAS_PERSISTENCE` não exportada → 283 arquivos · `# tests 2997 · pass 2995 · fail 0 · skipped 2` (os dois gated por `RBAC_DB_PARITY`). Mesma forma e número |
 | Flutter | **864/864 — carregado** (§C3.3): `git diff --name-only origin/main...HEAD -- mobile/` e `git status --porcelain -- mobile/` vazios |
 | Blocos Entregues | **163 → 164** (`B-SAN3-01`, primeiro bloco de execução da rodada SAN3) |
 | mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4) — o bloco fecha um item do gate, não move escopo; recontagem no `B-SAN3-10` |

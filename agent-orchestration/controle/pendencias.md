@@ -3624,6 +3624,13 @@ veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é paylo
 - **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
   explícito e contagem antes/depois, nunca por curinga solto.
 - status: ABERTA.
+- **emenda (2026-09-18, orquestrador, na conferência do `B-SAN3-01`) — a causa, medida:** sem `REDIS_URL` a suíte do backend
+  aponta para `redis://localhost:6379`, que nesta máquina é o Redis vivo (`erp-redis`). Com ele parado depois de um reboot,
+  `npm test` no head `10eb7049` deu `2998 · pass 2990 · fail 6 · skipped 2`: os 6 são `ECONNREFUSED` em
+  `tests/domain-events.test.ts` (2), `tests/job-queue.test.ts` (3) e `tests/worker-heartbeat.test.ts` (1). Com Redis
+  descartável próprio (`REDIS_URL=redis://127.0.0.1:56385`), os 3 arquivos dão 29/29. Ou seja: toda execução da suíte sem
+  `REDIS_URL` escreve na base viva, e é daí que vem o lixo de fila acima. `pre-existente`; o briefing de junta passa a exigir
+  Redis descartável por cadeira. O conserto no arnês (a suíte recusar rodar sem `REDIS_URL` explícita) segue a triagem desta pendência.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>

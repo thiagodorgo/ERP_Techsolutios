@@ -4459,7 +4459,7 @@ preservado); hooks com `allSettled`/reducer; `WorkOrdersPage` (KPIs "—" no err
 avisa). E2E: caso defasado substituído por E1-E3.
 
 **Números (execução real):** smoke **1126 → 1173/1173** (+47, vermelho-controle no head-base: 43 vermelhos no commit A,
-0 no B) · backend **2995/2997 reexecutado** em cluster descartável próprio (0 fail, 2 skipped `RBAC_DB_PARITY`) · flutter
+0 no B) · backend **2996/2998 reexecutado** pelo orquestrador no head `10eb7049`, banco novo e Redis descartável (0 fail, 2 skipped `RBAC_DB_PARITY`; o dev mediu 2995/2997 antes do caso novo da guarda do painel) · flutter
 carregado 864/864 (diff de `mobile/` vazio) · blocos **163 → 164** · `mvp_*` intocados · `check`/`build`/`kpi-freeze
 --check`/`git diff --check` verdes.
 
