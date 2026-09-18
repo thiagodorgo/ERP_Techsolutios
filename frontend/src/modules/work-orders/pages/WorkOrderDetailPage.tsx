@@ -6,6 +6,7 @@ import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useAuth } from "../../../providers/AuthProvider";
 import { StaleDataBanner } from "../components/StaleDataBanner";
+import { StatePanel, StatePanelAction } from "../components/StatePanel";
 import { WorkOrderActionBar } from "../components/WorkOrderActionBar";
 import { WorkOrderTabsShell } from "../components/WorkOrderTabsShell";
 import { AttachmentsTab } from "../components/tabs/AttachmentsTab";
@@ -85,11 +86,7 @@ export type WorkOrderDetailViewProps = {
   readonly onRefresh: () => void;
 };
 
-const statePanel: CSSProperties = { padding: 40, textAlign: "center" };
-const stateTitle: CSSProperties = { fontSize: 15, fontWeight: 800, color: "#0F172A" };
-const stateDetail: CSSProperties = { fontSize: 13, color: "#64748B", marginTop: 6 };
-const primaryButton: CSSProperties = { marginTop: 16, padding: "9px 16px", background: "#2563EB", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" };
-const secondaryButton: CSSProperties = { ...primaryButton, background: "#fff", color: "#2563EB", border: "1px solid #BFDBFE", marginLeft: 8 };
+const loadingPanel: CSSProperties = { padding: 40, textAlign: "center", color: "#64748B" };
 
 export function WorkOrderDetailView({
   workOrder,
@@ -113,34 +110,45 @@ export function WorkOrderDetailView({
   const accessAllowed = canAccessTab(activeTabDef, permissions);
 
   if (loading && !workOrder) {
-    return <div data-state="loading" style={{ ...statePanel, color: "#64748B" }}>Carregando ordem de serviço…</div>;
+    return <div data-state="loading" style={loadingPanel}>Carregando ordem de serviço…</div>;
   }
+  // Ciclo 2 (P5 — C3-A1/A2): os três estados sem OS usam a MESMA ficha da lista (`StatePanel`): sem permissão
+  // (escudo) × não encontrada (prancheta de OS) × erro (alerta vermelho, borda #FECACA, role="alert") se distinguem
+  // a olho, e os botões são os do padrão (hover/foco das classes `.pat-btn`). Status não previsto cai no ERRO.
   if (!workOrder) {
+    const backToList = () => navigate("/work-orders");
     if (status === "forbidden") {
       return (
-        <div data-state="forbidden" style={statePanel}>
-          <div style={stateTitle}>Acesso não permitido</div>
-          <div style={stateDetail}>Você não tem permissão para ver esta ordem de serviço.</div>
-          <button onClick={() => navigate("/work-orders")} style={primaryButton}>Voltar às ordens</button>
-        </div>
+        <StatePanel
+          tone="forbidden"
+          title="Acesso não permitido"
+          detail="Você não tem permissão para ver esta ordem de serviço."
+          actions={<StatePanelAction label="Voltar às ordens" onClick={backToList} />}
+        />
       );
     }
     if (status === "not-found") {
       return (
-        <div data-state="not-found" style={statePanel}>
-          <div style={stateTitle}>Ordem de serviço não encontrada</div>
-          <div style={stateDetail}>Ela pode ter sido removida ou não pertence a esta organização.</div>
-          <button onClick={() => navigate("/work-orders")} style={primaryButton}>Voltar às ordens</button>
-        </div>
+        <StatePanel
+          tone="not-found"
+          title="Ordem de serviço não encontrada"
+          detail="Ela pode ter sido removida ou não pertence a esta organização."
+          actions={<StatePanelAction label="Voltar às ordens" onClick={backToList} />}
+        />
       );
     }
     return (
-      <div role="alert" data-state="error" style={statePanel}>
-        <div style={stateTitle}>Não foi possível carregar a ordem de serviço</div>
-        <div style={stateDetail}>{error ?? "Tente novamente em instantes."}</div>
-        <button onClick={onRefresh} style={primaryButton}>Tentar novamente</button>
-        <button onClick={() => navigate("/work-orders")} style={secondaryButton}>Voltar às ordens</button>
-      </div>
+      <StatePanel
+        tone="error"
+        title="Não foi possível carregar a ordem de serviço"
+        detail={error ?? "Tente novamente em instantes."}
+        actions={
+          <>
+            <StatePanelAction label="Tentar novamente" onClick={onRefresh} />
+            <StatePanelAction label="Voltar às ordens" variant="secondary" onClick={backToList} />
+          </>
+        }
+      />
     );
   }
 
