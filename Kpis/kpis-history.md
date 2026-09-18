@@ -2658,3 +2658,49 @@ não consertada); (6) o "Total: 48" do §6.2 é 47 pela própria enumeração do
 273 ABERTAS.
 
 **Backfill §C3.5 do #386 (pago por este PR, o primeiro de execução a mergear — ressalva A2 do porteiro):** `pr 386` · `merge_commit 02bd7dab2ffa29999920da8b7da345b6a5958b67` · `approved_head 764e175d8d2ab030da34cd81bf8f18c6576645a4`. O #386 não tem entrada própria no history (precedente #382).
+
+## 2026-09-18 — B-SAN3-01 ciclo 2 (PR #387, na autoria) — uma verdade para "sem permissão", o desconhecido cai no erro, e os painéis do protótipo
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Smoke (console web) | **1173 → 1193/1193** — execução real: `npm --prefix frontend run test:smoke` → `# tests 1193 · # pass 1193 · # fail 0 · # skipped 0` (node v20.19.5); +20 casos em `work-orders-honest-errors.test.tsx` (47 → 67) |
+| Backend | **2996/2998 — REEXECUTADO pelo dev do ciclo 2** no código final (`b00cd82d`): banco recriado no cluster descartável próprio (`dev-bsan301-c2-pg`, 107 migrations), Redis descartável próprio com `FLUSHALL`, `DATABASE_URL` e `REDIS_URL` exportadas, `CORE_SAAS_PERSISTENCE` não exportada → 283 arquivos · 2998 · pass 2996 · fail 0 · skipped 2 (`RBAC_DB_PARITY`) |
+| Flutter | **864/864 — carregado** (§C3.3): diff de `mobile/` vazio nas duas pontas |
+| Blocos Entregues | **164 — INALTERADO**: 2ª publicação do MESMO bloco no mesmo PR (precedente `B-O6R-07a-ciclo2`); no gráfico de entregas por rodada conta como 2ª publicação da SAN3 — 2 publicações, 1 bloco |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4) |
+| pr / merge_commit / approved_head | `387` / `null` / `null` na autoria (§C3.5) |
+
+**Por que há um ciclo 2.** A junta do ciclo 1 reprovou 2 × 2 (`omega/reprovacoes/R-B-SAN3-01-ciclo1.md`): a mutação que
+transforma 403 em vazio passava verde (C4-01), o guard G1 era léxico (C4-02), um status novo caía no vazio com KPIs 0
+(C4-03) e os painéis não eram os do protótipo (C3-B1). O plano do ciclo 2 (`omega/planos/B-SAN3-01-ciclo2-plano.md`)
+enuncia cada garantia como PROPRIEDADE; o desenvolvedor (identidade nova) implementou só o plano e a emenda 3 (r).
+
+**Como, por propriedade.** P1 — o `forbidden` do resultado decide antes de `source` e do segundo plano; o estado só
+carrega `status`. P2 — `Record` exaustivo de status (lista e detalhe) + `never` no `switch` de `source`; o não
+classificado é ERRO; 200 sem lista no corpo é erro, não vazio (C2-N2). P3 — G1 por alcance sobre a AST, escopo lido do
+disco, origem pelo import, só o ramo verdadeiro de `isMockMode()` de `config/env`; `repository.ts` na forma positiva.
+P4 — W1/W2 vigiam a fiação dos hooks. P5 — `StatePanel` com a ficha do protótipo (`ERP Web.dc.html` l.362-382) na lista
+e no detalhe; KPIs degradados neutros; CTA "Nova OS" com gate no vazio.
+
+**Vermelho-controle, executado.** Commit A (só testes) sobre o código do objeto: `# tests 67 · # pass 52 · # fail 15`.
+Depois dos commits por propriedade: 67/67. Tabela de mutação sobre o código corrigido: 26 formas, todas restauradas — das
+12 dos jurados do ciclo 1, 9 vermelhas no teste do bloco, 2 vermelhas só no `tsc` (NS2, SRC2; o runtime já é o correto)
+e 1 neutralizada pela própria correção (F403b; a forma que quebra a propriedade, F403bR, fica vermelha); as 14 novas,
+todas vermelhas.
+
+**Divergências declaradas (a junta decide):** D-C2-1 — o vazio sem OS standalone derrubava o E1 numa base recém-semeada
+(a busca sumia com o card); o vazio vive embutido no card (`P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD`); a meta "≥ 69
+casos" do plano × 67 medidos (a enumeração do próprio plano dá 19 + L6); F1 vermelho no objeto; G2 com 15 fixtures;
+quatro mutações do ciclo 1 re-expressas.
+
+**Correção da entrada de 2026-09-17 (A-C1-01).** Aquela prosa ficou no estado dos commits C/D: `npm test 2995/2997` no
+resumo e nas notas (a métrica já era 2996/2998 — o número do dev foi medido antes do caso novo da guarda do painel);
+divergência 1 "o `roadmap` NÃO mudou" (o `roadmap.as_of` avançou 2026-09-11 → 2026-09-17); "7 ABERTAS com dono" (o PR
+abria 10 `P-SAN3-*`); "378 cabeçalhos / 367 IDs, 105 FECHADAS, 273 ABERTAS" (o gerador dava 381/370/105/276). Esta
+entrada a supera; o history é append-only.
+
+**Pendências (ciclo 2).** Reescritas: `P-SAN3-01-OS-LEGADO-MORTO` e `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`
+(dono `B-SAN3-06c`). Novas: 9 ABERTAS com dono (emenda 3 (q)) e `P-SAN3-01-OS-VAZIO-SEM-ACAO` FECHADA. Índice pelo
+gerador: 391 cabeçalhos / 380 IDs, 106 FECHADAS, 285 ABERTAS.
