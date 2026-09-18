@@ -85,3 +85,57 @@ Plano do bloco: `agent-orchestration/omega/planos/B-SAN3-01-plano.md` (`planejad
 - **(c)** As dívidas do #386 ficam no `B-SAN3-04a`; se este bloco for o primeiro a mergear, o orquestrador as acrescenta aqui.
 - **(d)** Coordenação: o `B-SAN3-04a` concede `work_orders:create` ao `operator`. Os testes deste bloco usam `tenant_admin` e
   `manager` (CE-G2, §7 do plano) e não dependem da ordem dos dois merges.
+
+## Emenda 2 do orquestrador — conferência e as 11 divergências do desenvolvedor (2026-09-17)
+
+Relatório do desenvolvedor (2ª e 3ª instâncias): `agent-orchestration/omega/juntas/votos/B-SAN3-01/00-dev.md`. A 2ª
+instância implementou o plano e caiu durante o e2e; a 3ª consertou o E2, rodou E1–E3 e pôs a rodada SAN3 no painel.
+Conferência do orquestrador, por execução, no head `6ae71c0e`: teste do bloco 47/47; nenhum arquivo proibido nem `src/**`
+no diff; `frontend/src` só na fronteira do plano e da emenda (a); `OperationsDispatchesPage.tsx` +16/−2; `kpi-freeze --check`
+em dia; os 3 guards de KPI 28/28; `sync-agent-agents --check` OK; índice byte-idêntico ao gerador numa cópia. Decisões:
+
+- **(e) D-1 NÃO aceita, e revista depois de medida.** O §8.6 do plano manda este PR inaugurar a trilha SAN3 no `roadmap`, e o
+  plano SAN3 (l.312-313) manda a rodada entrar no painel com o primeiro bloco que entregar (§C3.1). O parecer do porteiro do
+  #386 não lista o `roadmap` entre as dívidas: é item deste bloco. A 3ª instância mediu, por leitura e por sonda que executa
+  o `Kpis/app.js` real, que o painel **não tem** segunda trilha no `roadmap` (um campo novo é ignorado; anexar os 37 blocos
+  ao `roadmap.blocos` mistura as rodadas num medidor só e duplica `B-O6R-09`, `B-O6R-11` e `B-O6R-12`) — premissa do §8.6
+  não medida pelo plano. Decisão: **a rodada entra neste PR** pelo gráfico "entregas por rodada" (o prefixo `B-SAN3` ganha
+  rótulo próprio antes de "Blocos B", com asserção no `tests/kpi-dashboard-charts.test.ts` e vermelho-controle), o
+  `roadmap.as_of` avança depois de conferida a coerência dos blocos com o history, e **o acompanhamento do gate no
+  `roadmap`** vira `P-SAN3-PAINEL-TRILHA-DO-GATE`, com bloco de painel próprio (`B-SAN3-KPI-TRILHA`, fora dos 37, sem
+  bloqueante, planejado pelo `planejador-mestre`) na fila da frente 3 logo depois deste merge. Papéis: a limitação do painel
+  foi achada pela 3ª instância; o rótulo da rodada foi decidido pelo orquestrador e implementado por ela.
+- **(e′) As dívidas do #386 vêm para este PR**, pela contingência da emenda (c): o parecer do porteiro manda que só o
+  primeiro PR de execução a mergear as pague (A1, A2, A3), e este é o primeiro. O orquestrador as paga em commit próprio; o
+  desenvolvedor do `B-SAN3-04a` foi avisado para não repetir.
+- **(f) D-2 aceita.** As 3 fixtures de `frontend/tests/work-orders-row-actions.test.tsx` (F1/H1/H5) respondiam 2xx malformado
+  e só passavam pelo `?? mock`: são a própria classe do defeito. Nenhuma asserção mudou. O arquivo entra no escopo
+  nominalmente.
+- **(g) D-3 e D-4 aceitas.** `components/StaleDataBanner.tsx` e a exportação de `WorkOrdersKpiGrid` ficam dentro de
+  `frontend/src/modules/work-orders/**`, a fronteira do plano.
+- **(h) D-5 aceita.** O diff de `OperationsDispatchesPage.tsx` (+16/−2) é o `loadDetail` mais a renderização da mensagem
+  que o §3.2 descreve; a C1 confere que nada além disso mudou.
+- **(i) D-6.** São 47 casos: o "48" do §6.2 é erro de soma do plano, e a enumeração do próprio §6.2 dá 47.
+- **(j) D-7 aceita.** A 8ª pendência, `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`, nasce com dono `B-SAN3-06a`.
+- **(k) D-8 aceita, com um achado.** A forma do e2e (cluster descartável próprio, portas 3299/5199, `chromium_headless_shell-1223`)
+  fica. Achado do orquestrador ao conferir: **o e2e rastreado está morto desde 2026-07-02** — os 13 casos de
+  `critical-flows.spec.ts` morrem no login esperando o campo "Tenant ID", que saiu do formulário em `d5a4ed43` (#111); o e2e
+  não roda no CI (item 42, `B-SAN3-10`). Pré-existente: vira `P-SAN3-01-E2E-LOGIN-DEFASADO` (dono `B-SAN3-10`). E1–E3 rodam por
+  uma cópia avulsa com os casos e os auxiliares idênticos ao rastreado e só o login ajustado; a C2 da junta usa o mesmo método.
+  Segundo achado do orquestrador, **dentro do bloco**: o E2 escrito aqui falhava por seletor, não por produto — o React copia
+  o valor da `textarea` controlada para o texto do `<label>` que a envolve, e o `getByLabel` ancorado deixa de casar depois do
+  preenchimento (sonda: 1 elemento antes, 0 depois; o valor digitado estava preservado na tela). Pela separação de papéis
+  (§C7.4-bis), quem achou foi o orquestrador e quem consertou foi a 3ª instância do desenvolvedor.
+- **(l) D-9 aceita.** Cada cadeira da junta roda `npm ci` e `npm --prefix frontend ci` próprios no seu worktree (o briefing já
+  exige).
+- **(m) D-10 vira pendência.** `invalid_date` (400 de `work-order.validators.ts:120`) cai na mensagem genérica "Não foi
+  possível concluir a operação.": honesto, mas não diz ao operador qual campo corrigir. Nasce
+  `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM` (BAIXA, fila pós-gate).
+- **(n) D-11 aceita.** A propriedade do G1 é sobre código; linha só de comentário não alcança o mock. O auto-teste prova que
+  código com comentário no fim continua vigiado e que `?? getMock…` reintroduzido fica vermelho; a C1 repete a mutação.
+- **(o) Divergências da 3ª instância.** D3-1 (a trilha no `roadmap` parada) decidida em (e). D3-2 aceita: as 3 linhas de
+  comentário no E2 explicam uma causa que não é óbvia e protegem contra a volta do `getByLabel`. D3-3: a numeração "l.305-400"
+  do briefing estava errada (erro do orquestrador); nenhum auxiliar foi tocado. D3-4 aceita: a pendência do login registra
+  também o rótulo "E-mail corporativo" sem associação ao campo e os textos de contexto que sumiram do produto — a mesma classe,
+  para o mesmo dono. D3-5 resolvida em (e) e (e′): o texto de KPI que atribuía o `roadmap` e as dívidas a outro bloco foi
+  reescrito.

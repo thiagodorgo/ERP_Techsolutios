@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **379** |
-| IDs distintos | 368 |
-| **ABERTAS** | **274** |
+| Cabecalhos `## P-` | **381** |
+| IDs distintos | 370 |
+| **ABERTAS** | **276** |
 | — das quais **diferidas** (balde C) | 70 |
-| — das quais **ativas nesta rodada** | **204** |
+| — das quais **ativas nesta rodada** | **206** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 105 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **379 cabecalhos para 368 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **381 cabecalhos para 370 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 110
+## ABERTAS · balde A — material — 111
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -181,8 +181,9 @@
 | `P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO` | 9327 | MÉDIA | sim | P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO (2026-09-17) — as linhas do orçamento falham e a a |
 | `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` | 9372 | MÉDIA | sim | P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (2026-09-17) — o alerta de erro da tela  |
 | `P-SAN3-01-E2E-LOGIN-DEFASADO` | 9381 | ALTA | sim | P-SAN3-01-E2E-LOGIN-DEFASADO (2026-09-17) — os 13 casos do e2e rastreado morrem no login |
+| `P-SAN3-PAINEL-TRILHA-DO-GATE` | 9399 | MÉDIA | sim | P-SAN3-PAINEL-TRILHA-DO-GATE (2026-09-18) — o painel de KPI não acompanha o gate da vers |
 
-## ABERTAS · balde B — processo/registro — 94
+## ABERTAS · balde B — processo/registro — 95
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -280,6 +281,7 @@
 | `P-SAN3-01-JURISDICAO-DEFAULTS-LOCAIS` | 9345 | BAIXA | sim | P-SAN3-01-JURISDICAO-DEFAULTS-LOCAIS (2026-09-17) — `GET /jurisdiction-defaults` falha e |
 | `P-SAN3-01-OS-LEGADO-MORTO` | 9354 | BAIXA | sim | P-SAN3-01-OS-LEGADO-MORTO (2026-09-17) — páginas, repositório e mocks legados de OS sem  |
 | `P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO` | 9363 | BAIXA | sim | P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO (2026-09-17) — os contadores do shell viram "0" quan |
+| `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM` | 9390 | BAIXA | sim | P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM (2026-09-17) — data malformada no create de OS vi |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 70
 

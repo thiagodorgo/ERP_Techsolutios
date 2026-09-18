@@ -9387,3 +9387,20 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-10` (fronteira `tests/e2e/**` + `playwright.config.ts` + job e2e na CI — §5.5 do `docs/revisoes/SAN3/PLANO_SAN3.md`).
 - **bloqueia:** o gate da versão vendável — o `B-SAN3-10` fecha o gate com o e2e verde na CI (item 42) e com os fluxos por persona; a suíte rastreada hoje é 0/13, e os E1-E3 do `B-SAN3-01` só são verdes na cópia avulsa.
 - **teste de encerramento:** `npx playwright test -c playwright.config.ts tests/e2e/critical-flows.spec.ts` contra back e front reais (Postgres descartável + `npm run db:seed`) → 13/13 verdes, com os auxiliares de login e de contexto no formulário atual e a asserção do E2 (o digitado preservado depois do 422) intacta; o `tsc` ad hoc acima sem os 2 erros; e o vermelho-controle que o item 42 exige (um fluxo quebrado de propósito deixa o job vermelho).
+## P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM (2026-09-17) — data malformada no create de OS vira mensagem genérica — BAIXA
+
+- status: ABERTA (divergência D-10 do desenvolvedor do `B-SAN3-01`; emenda 2 (m) do orquestrador)
+- **prova:** o backend recusa data malformada com `400 WORK_ORDER_INVALID` / `invalid_date` (`src/modules/work-orders/work-order.validators.ts:120`); a tabela de `createErrorMessage` do `B-SAN3-01` (§4.3-4 do plano) não lista `invalid_date`, que cai no padrão `ApiError.safeMessage` ("Não foi possível concluir a operação."). Nada é fabricado e o digitado fica; só falta dizer qual campo corrigir.
+- **escopo:** `pre-existente` quanto ao contrato do backend; a tabela nasceu no `B-SAN3-01` (2026-09-17) seguindo o plano.
+- **dono:** fila pós-gate.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** create com `400 invalid_date` → mensagem que nomeia a data; vermelho-controle no head do `B-SAN3-01`.
+
+## P-SAN3-PAINEL-TRILHA-DO-GATE (2026-09-18) — o painel de KPI não acompanha o gate da versão vendável — MÉDIA
+
+- status: ABERTA (divergência D3-1 do desenvolvedor do `B-SAN3-01`; emenda 2 (e) do orquestrador)
+- **prova:** `renderRoadmap` (`Kpis/app.js` l.1458-1546), `renderConclusion` (l.1143-1150) e `DATA.blocosById` (l.898-915) leem só `roadmap.blocos`, `roadmap.ordem_vinculante` e `roadmap.trilha_bloqueada`; o `index.html` (l.143-156) tem um contêiner de cada. Sonda que executa o `app.js` real contra variantes em memória do `kpis-latest.json` (`scratchpad/dev3-sonda-roadmap.log`): um campo de segunda trilha é ignorado (12 cartões, "4 de 12", idêntico ao atual); anexar os 37 blocos do §5 do `PLANO_SAN3.md` ao `roadmap.blocos` dá 49 cartões num medidor só ("5 de 49") e duplica `B-O6R-09`, `B-O6R-11` e `B-O6R-12`, e outros cinco IDs são sub-blocos de blocos O6R (`B-O6R-03a/03b`, `B-O6R-04a/04b`, `B-O6R-07c`). O dono não vê no painel quantos dos 56 bloqueantes e dos 37 blocos já fecharam.
+- **escopo:** `pre-existente` (o painel tem uma trilha desde o `roadmap` da Ω6R; o `PLANO_SAN3.md` l.312-313 mandou a rodada entrar no painel com o primeiro bloco sem medir o contêiner). A RODADA entrou no `B-SAN3-01` pelo gráfico de entregas por rodada.
+- **dono:** `B-SAN3-KPI-TRILHA` — bloco de painel próprio, fora dos 37, sem bloqueante; fila da frente 3, logo depois do merge do `B-SAN3-01`; plano do `planejador-mestre` (desenho da segunda trilha, colisões e sub-blocos, guard).
+- **bloqueia:** não bloqueia o gate; o `B-SAN3-10` (teste (g), frescor do painel) passa a cobrir também a trilha do gate.
+- **teste de encerramento:** o painel mostra o gate (bloqueantes e blocos fechados de N) numa trilha separada da O6R, sem ID duplicado; guard que executa o `app.js` real fica vermelho sem a trilha.
