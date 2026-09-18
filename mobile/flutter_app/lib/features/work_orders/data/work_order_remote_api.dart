@@ -86,10 +86,14 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
       final data = resp.data ?? const <String, dynamic>{};
       final items = (data['items'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
+      // Emenda 3 (j): a lista segue a mesma regra do detalhe — o tenant da sessão vence o do corpo.
       return items
           .map(
-            (j) =>
-                _workOrderFromRemoteJson(j, fallbackTenantId: tenantId ?? ''),
+            (j) => _workOrderFromRemoteJson(
+              j,
+              fallbackTenantId: '',
+              sessionTenantId: tenantId,
+            ),
           )
           .toList();
     } on DioException catch (e) {
@@ -220,10 +224,12 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
 // The list endpoint returns {items:[{id, customerName, scheduledFor, ...}], pagination:...}.
 // Fields not present in the list DTO (tenantId) are filled from [fallbackTenantId].
 //
-// B-O6R-11, emenda 2 (i): [sessionTenantId] é o tenant da SESSÃO que o chamador passou. Quando
-// vem, ele VENCE qualquer tenant do corpo — a organização se resolve pelo ator autenticado, nunca
-// por conteúdo de resposta (§2.8). Sem ele, fica o comportamento anterior: o do corpo, se vier,
-// senão [fallbackTenantId]. Hoje só detalhe, status e atribuição o passam.
+// B-O6R-11, emendas 2 (i) e 3 (j)/(m): [sessionTenantId] é o tenant da SESSÃO que o chamador
+// passou. Quando vem (não-nulo, `''` inclusive), ele VENCE qualquer tenant do corpo — a organização
+// se resolve pelo ator autenticado, nunca por conteúdo de resposta (§2.8); `''` deixa a OS
+// invisível, o lado fechado. Sem ele, fica o comportamento anterior: o do corpo, se vier, senão
+// [fallbackTenantId]. Os quatro leitores de OS deste arquivo (lista, detalhe, status e
+// atribuição) o passam.
 WorkOrder _workOrderFromRemoteJson(
   Map<String, dynamic> json, {
   required String fallbackTenantId,
