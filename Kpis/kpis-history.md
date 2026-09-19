@@ -2602,3 +2602,38 @@ entrega **repete** o acumulado.
 **Nota de backlog deste espelho:** o `B-GOV-ELENCO` (a entrada de 08/09 que **não** entregou) nunca ganhou
 seção aqui — pendência `P-KPI-HISTORY-MD-BACKLOG`, que este bloco **não** fecha. Esta seção é só a do
 próprio bloco.
+
+## 2026-09-18 — B-O6R-11 (PR na autoria) — o que o técnico lança fica gravado; o que o sistema responde, o app entende
+
+Fecha os **dois P1** da pendência-mãe `P-O6R-B11` (item 3 do gate da versão vendável). PR **Flutter-only**:
+backend, frontend e banco intocados.
+
+**Ω6R-QUA-005 — perda de dado.** `PrestadorRepository.addSelection` enfileirava num `selection.forEach`, cujo
+callback é `void`: o método retornava — e avisava a tela — **antes** de qualquer ação gravada, e as N gravações
+(cada uma um read-modify-write da fila inteira) liam o mesmo retrato. No head-base: **N SKUs viram 1**; reinício
+logo após o retorno, **0**. Agora é `for-in` com `await`, e `PersistentSyncQueueRepository` encadeia `enqueue` e
+`update` — a fila é uma instância só, partilhada por replay, conflitos e repositórios, e qualquer par de mutações
+concorrentes podia perder uma linha. O conserto definitivo (upsert atômico no store) é a `P-MOBILE-FILA-RMW-STORE`.
+
+**Ω6R-QUA-004 — o REST da OS.** Detalhe, status e atribuição passavam o envelope `{ data }` inteiro a um parser
+snake_case que exigia `tenant_id`: resposta íntegra = TypeError. O PATCH mandava `inService` (o backend recusa);
+a atribuição mandava `user_id`/`note` (o backend não lê). E a lista viva mostrava toda OS como **Agendada**,
+porque o vocabulário do backend não era traduzido. A tabela de status agora vai nos dois sentidos, com teste de
+paridade contra o codec da fila offline. E o tenant da sessão, quando o chamador o passa (`''` inclusive), vence
+qualquer tenant que venha no corpo da resposta — nos quatro leitores de OS, a lista inclusive (emendas 2 (i) e
+3 (j)/(m) do orquestrador).
+
+**Números, todos executados neste PR:** Flutter **864 → 888/888** (`00:42 +888: All tests passed!`, N=1; recontada
+pela 4ª instância do dev depois dos casos 3c e 3d) — 24 testes novos em 4 arquivos (T1 15 · T2 4 · T3 4 · T4 1).
+Vermelho-controle recontado no head-base `9dea0ef6` com os 24: **20 não passam** — 16 por asserção/runtime
+(T1 9 · T2 4 · T3 2 · T4 1) e 4 do T1 que não compilam (usam símbolo novo). Os casos do tenant acrescentados
+depois do plano: 3b (emenda 2 (i)) vermelho no `31bda5f2` (`+12 -1`); 3c (a lista, emenda 3 (j)) vermelho no
+`5e95ed6a` (`+13 -1`); 3d (tenant vazio, emenda 3 (m)) nasce verde e cai sob mutação (`+14 -1`). Mutações do
+plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
+frontend/` vazio nas duas pontas). `blocks_completed` **163 → 164** a partir de `origin/main` = `02bd7dab`.
+`mvp_*` intocados (§C3.4). `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
+
+**Pendências abertas com dono (8):** `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
+`P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-APPROVAL-REQUEST-REST-404`,
+`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE` e, pela emenda 3 (k), `P-MOBILE-CHECKLIST-TENANT-DO-CORPO`;
+a `P-MOBILE-EXPENSE-ENVELOPE` ganhou emenda (tenant só do corpo).
