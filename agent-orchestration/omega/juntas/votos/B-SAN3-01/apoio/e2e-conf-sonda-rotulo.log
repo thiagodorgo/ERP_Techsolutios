@@ -1,0 +1,20 @@
+
+Running 1 test using 1 worker
+
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '56792d84-a74f-4334-a70e-65def9ca1f2d',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+[WebServer] {
+[WebServer]   eventName: 'audit_log.created',
+[WebServer]   tenantId: '1dd88393-0c43-4c9d-b296-a10518623407',
+[WebServer]   correlationId: '9f23d8ee-5d86-4ab2-af9d-27d8523766a3',
+[WebServer]   error: ''
+[WebServer] } Domain event was not enqueued.
+ANTES  getByLabel=1 getByRole=1 label.textContent="Descricao"
+DEPOIS getByLabel=0 getByRole=1 label.textContent="Descricaoabc digitado" value=abc digitado
+  ok 1 [chromium] › tests\e2e\_bsan301-probe.spec.ts:29:1 › SONDA — rotulo da descricao antes e depois do preenchimento (3.1s)
+
+  1 passed (8.7s)

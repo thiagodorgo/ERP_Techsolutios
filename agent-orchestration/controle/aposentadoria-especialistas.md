@@ -95,3 +95,20 @@ resolve a partir de lá e não do worktree do bloco — mais uma instância de `
 foram removidas no §C5 do #385 (medido: 0 restantes, 0 arquivo rastreado apagado). **E a dívida do §1.5 do
 obituário se repetiu:** a junta do delta fechou no próprio #385 e as seis não foram sepultadas nele — pago
 aqui, no PR seguinte, com a omissão declarada no §3.5 do obituário.
+
+## Rodada 3 — 2026-09-17 · bloco `B-SAN3-01` (primeiro PR de execução da SAN3) · 2 cadeiras
+
+Dívida A3 do parecer do porteiro pós-merge do #386 (`votos/SAN3-plano-opcao-B/00c-porteiro-pos-merge-386.md`), paga pelo
+primeiro PR de execução a mergear. Medido em `origin/main@02bd7dab` (o squash do #386, onde as duas entraram). Peso removido
+do contexto de toda sessão: **3.838 caracteres de `description` (~960 tokens)**, pelo método das rodadas anteriores
+(frontmatter linha a linha, aspas removidas, `String.length`): 1.863 + 1.975. Remoção **por identificador de bloco**: o
+prefixo `jurado-san3c2-` pertence só à junta do ciclo 2 do plano SAN3, e o diretório não tinha nenhum outro arquivo
+(conferido antes do `git rm`).
+
+| # | Cadeira | Bloco | Ata | PR que fechou | Corpo em |
+|---|---|---|---|---|---|
+| 1 | `jurado-san3c2-cobertura-de-fluxo` | plano SAN3, ciclo 2 | `J-SAN3-plano-ciclo2.md` | #386 | `02bd7dab` |
+| 2 | `jurado-san3c2-suplente-cobertura-de-fluxo` | plano SAN3, ciclo 2 | `J-SAN3-plano-ciclo2.md` | #386 | `02bd7dab` |
+
+**Elenco de especialistas depois desta rodada: 0.** As duas já estavam **sepultadas** no `OBITUARIO-IDENTIDADES.md` §3.6,
+no próprio #386: aqui só saem do diretório vivo, e `node scripts/sync-agent-agents.mjs --check` segue verde.

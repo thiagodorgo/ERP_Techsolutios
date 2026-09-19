@@ -4380,7 +4380,7 @@ pendências reais** (a fatia confirmou 50; uma caiu na reconfirmação). Causa m
 linha de status (medido em bancada: até "RESOLVIDO PARCIAL" sai FECHADA). O PR do plano reescreve as 52 linhas
 canônicas (FECHADAS no índice: 72 → 103 contra a base — os 31 flips; as 2 pendências do painel tiveram os dados corrigidos e seguem ABERTAS (PARCIAL) desde o ciclo 2) e registra as 49 ausentes (índice, depois do ciclo 2: 366 cabeçalhos, 103 FECHADAS, 263 ABERTAS, 0 contraditórias).
 
-**Gate da versão vendável: 54 bloqueantes, fechados por 37 blocos, e 6 atos que só o dono pratica** — nenhum
+**Gate da versão vendável: 54 bloqueantes, fechados por 37 blocos, e 6 atos que só o dono pratica** *(v5 — 56 após a opção B do dono, §15 do plano; emenda de 2026-09-17, ressalva A1 do porteiro do #386)* — nenhum
 bloco começado. Além dos P0/P1 da auditoria (estoque, despesa, escopo por objeto, antivírus), o inventário trouxe:
 perda de dado no app de campo e na web (a OS fabricada quando o backend recusa o create); a baixa de título que
 **não existe** pela web; "Minhas OS" listando a organização inteira; entrega do guincho e fluxo Prestador sem
@@ -4440,3 +4440,106 @@ Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação
 Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS.
 
 **Números:** 56 bloqueantes em 37 blocos e 6 atos do dono; melhor caso e realista inalterados; índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS. **Conferência de aplicação (`agente-ci-doutor`):** NÃO CONFERE em `042e689e` (CONF-01, `bloqueia`; CONF-02, nota), **CONFERE em `bb3f5925`** — `agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`.
+
+## 2026-09-17 — `B-SAN3-01` implementado (PR na autoria): a web deixa de fabricar OS quando o backend recusa — `P-008` FECHADA
+
+**Primeiro bloco de execução da rodada SAN3** (frente 3, item 4 do gate — perda de dado). Branch
+`fix/web-wo-sem-fallback-fabricado`, base `origin/main@02bd7dab`, plano do `planejador-mestre` (Fable) com a emenda do
+orquestrador ((a) `OperationsDispatchesPage.tsx` só para `loadDetail` + X8/X9; (b) o §4.1 do `PLANO_SAN3.md` não muda;
+(c) as dívidas do #386 ficam no `B-SAN3-04a`; (d) testes com `tenant_admin`/`manager`). Papéis (§C7.4-bis): quem
+achou = inventário SAN3 (fatia C1) e censo do plano; quem planejou = `planejador-mestre`; quem desenvolveu = dev de
+identidade nova (a 1ª instância caiu por 429 sem commit; a 2ª refez tudo).
+
+**Entregue.** `work-orders.service.ts` e `dispatches.service.ts` sem `catch`-mock fora de `isMockMode()` (guard G1 por
+mutação); `work-orders.state.ts` (reducers puros: vazio ≠ erro ≠ sem permissão ≠ não encontrada ≠ desatualizado);
+`work-orders-create.handlers.ts` (`runCreateWorkOrder` — mensagem por `reason`/status, nunca navega sem `id`, digitado
+preservado); hooks com `allSettled`/reducer; `WorkOrdersPage` (KPIs "—" no erro, painéis `data-state`), `WorkOrderCreatePage`
+(alerta na própria página), `WorkOrderDetailPage` (`WorkOrderDetailView` puro; not-found/forbidden/error/stale; banner
+"dados locais" removido), `GeneralInfoTab` (`timelineUnavailable`), `OperationsDispatchesPage.loadDetail` (mantém o item e
+avisa). E2E: caso defasado substituído por E1-E3.
+
+**Números (execução real):** smoke **1126 → 1173/1173** (+47, vermelho-controle no head-base: 43 vermelhos no commit A,
+0 no B) · backend **2996/2998 reexecutado** pelo orquestrador no head `10eb7049`, banco novo e Redis descartável (0 fail, 2 skipped `RBAC_DB_PARITY`; o dev mediu 2995/2997 antes do caso novo da guarda do painel) · flutter
+carregado 864/864 (diff de `mobile/` vazio) · blocos **163 → 164** · `mvp_*` intocados · `check`/`build`/`kpi-freeze
+--check`/`git diff --check` verdes.
+
+**Registro.** `P-008` FECHADA (linha de status reescrita, agendamento riscado, emenda com a prova);
+`P-SAN3-01-DESPACHO-DETALHE-FABRICADO` FECHADA no mesmo PR; 7 pendências pré-existentes do censo ABERTAS com dono
+(`B-SAN3-06a` ×2, `B-SAN3-08` ×2, fila pós-gate ×3) — uma delas achada pelo dev ao ligar o contrato novo
+(`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`: o alerta de erro de Despachos se intitula "Dados demonstrativos").
+Índice pelo gerador: 378 cabeçalhos / 367 IDs, 105 FECHADAS, 273 ABERTAS.
+
+**Divergências plano × código declaradas pelo dev (para a junta e o orquestrador):** roadmap SAN3 no painel NÃO
+inaugurado (emenda (c) × §8.6 do plano); 3 fixtures de `work-orders-row-actions.test.tsx` trocadas (só passavam pelo
+`?? mock`; asserções intactas); arquivo novo `StaleDataBanner.tsx` e `WorkOrdersKpiGrid` extraído; `detailError` + aviso
+em `OperationsDispatchesPage.tsx`; a 8ª pendência; "Total: 48" do §6.2 é 47.
+
+**Próximo passo:** orquestrador confere e empurra a branch → `inspetor-de-terreno-da-junta` → junta (unanimidade de 3 +
+`cognicao-visual`) → CI → squash → §C5 → porteiro. Ao mergear, abre as travas `SAN3-25` (service de OS) e `SAN3-10`
+(`tests/e2e/**`).
+
+**Decisões do orquestrador e dívidas do #386 (emenda 2 do comando, 2026-09-17).** As 11 divergências do desenvolvedor
+foram decididas na emenda 2: D-1 não aceita e revista depois de medida (o painel não tem segunda trilha no `roadmap`:
+a rodada SAN3 entrou pelo gráfico de entregas por rodada, e o acompanhamento do gate virou `P-SAN3-PAINEL-TRILHA-DO-GATE`,
+dono `B-SAN3-KPI-TRILHA`); D-10 vira `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM`; as demais aceitas, com as 5 da 3ª instância. O e2e rastreado está morto desde 2026-07-02 (login
+com "Tenant ID", `d5a4ed43`): `P-SAN3-01-E2E-LOGIN-DEFASADO`, dono `B-SAN3-10`; E1–E3 rodaram por cópia avulsa. Este PR,
+o primeiro de execução a mergear, paga as dívidas do #386: A2 backfill §C3.5 (`merge_commit 02bd7dab` · `approved_head
+764e175d`, na nota da entrada `B-SAN3-01` do history), A3 aposentadoria rodada 3 (as duas `jurado-san3c2-*`), A1 a
+manchete dos 54 emendada, e o parecer do porteiro versionado. A4 (log do inspetor fora de worktree) já estava ausente em
+2026-09-17. Correção do registro: o contêiner `bsan301-pg` não foi removido pela 2ª instância; segue vivo para a
+conferência e a junta, e sai pelo nome depois do merge.
+
+## 2026-09-18 — `B-SAN3-01` ciclo 2 (o ÚLTIMO — `D-TETO-DOIS-CICLOS`): a correção da reprovação 2 × 2, pronta para a junta
+
+**Ciclo 1 REPROVADO 2 × 2** (C3 `cognicao-visual`: painéis fora da ficha do protótipo; C4 `guardiao-fail-closed`: 403 com
+duas verdades, guard G1 léxico, status novo caindo no vazio — registro `omega/reprovacoes/R-B-SAN3-01-ciclo1.md`).
+Papéis (§C7.4-bis): **acharam** as cadeiras C3/C4 do ciclo 1; **planejou** o `planejador-mestre` (Fable, 2ª instância —
+`omega/planos/B-SAN3-01-ciclo2-plano.md`); **desenvolveu** um agente `general-purpose` NOVO (Opus 5), que implementou só o
+plano aprovado + a emenda 3 (r) e reportou as divergências. Se a junta do ciclo 2 reprovar, o bloco para e vai dossiê ao dono.
+
+**Entregue (commits sem push sobre `ec8492fd`; o orquestrador confere e empurra).** Commit A `e3db4d62` só testes (15
+vermelhos em 67 sobre o código do objeto) → P1 `81025f7e` uma verdade para "sem permissão" (o `forbidden` do resultado
+decide antes de `source` e do segundo plano; o estado só carrega `status`) → P2 `9869d54c` enumeração fechada, default
+ERRO (`Record` exaustivo de lista e detalhe; `never` no `switch` de `source`; 200 sem lista = erro — emenda 3 (r)) → P3
+`a826e927` mock só por alcance (G1 reescrito sobre a AST, escopo enumerado do disco; `work-orders/repository.ts` na forma
+positiva; textos que afirmavam a prova léxica corrigidos) → P5 `619fb2b5` a ficha do protótipo num `StatePanel` único
+(lista e detalhe; KPIs degradados neutros; CTA "Nova OS" no vazio com gate) → `b00cd82d` divergência D-C2-1 (o vazio fica
+no card da tabela). P4 (fiação dos hooks) não pede código: W1/W2 vigiam.
+
+**Números (execução real).** Teste do bloco **47 → 67/67** · smoke **1173 → 1193/1193** · backend **2996/2998
+reexecutado** (283 arquivos, fail 0, skipped 2 `RBAC_DB_PARITY`; banco recriado no cluster descartável do dev, Redis
+descartável, `DATABASE_URL`/`REDIS_URL` exportadas) · flutter 864 carregado (diff de `mobile/` vazio) · blocos **164
+inalterado** (2ª publicação do mesmo bloco, precedente `B-O6R-07a-ciclo2`) · `mvp_*` intocados · E1–E3 da cópia avulsa
+3/3 com a base vazia e 3/3 com OS. Tabela de mutação sobre o código corrigido: 26 formas (as 12 dos jurados + 14 novas),
+todas restauradas; das 12 dos jurados, 9 vermelhas no teste do bloco, 2 vermelhas só no `tsc` (NS2, SRC2 — runtime
+correto) e 1 neutralizada pela própria correção (F403b; o ataque equivalente F403bR fica vermelho).
+
+**Divergências plano × código (para a junta):** D-C2-1 — o §2.5 mandava o vazio sem OS trocar o card inteiro; medido, o
+E1 fica vermelho numa base recém-semeada (a busca some com o card) → o vazio vive EMBUTIDO no card
+(`P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD`); a meta "≥ 69 casos" do §5 não fecha com a enumeração do próprio §5 (19 casos
++ L6 = 20 novos → 67); F1 é vermelho no objeto (depende de `listStatusKind`, novo); G2 tem 15 fixtures (8 do plano + 7
+formas do mandato da C4); 4 mutações do ciclo 1 foram re-expressas porque o `find` literal sumiu com a correção.
+
+**Registro.** `P-008` ganha a emenda do ciclo 2 e a prova do G1 corrigida; `P-SAN3-01-OS-LEGADO-MORTO` e
+`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` reescritas (a 2ª com o defeito inteiro e dono `B-SAN3-06c`); 10 novas —
+`-DASHBOARD-DESPACHOS-ERRO-COMO-VAZIO` (`B-SAN3-06c`), `-LOGISTICS-FICCAO-ROTEADA` (emenda nominal ao `B-SAN3-06a`),
+`-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO` (emenda nominal ao `B-SAN3-15`), `-MOCKMODE-TRES-AUTORIDADES` (`B-SAN3-06b`),
+`-NAV-MENU-DEMO-NO-ERRO` e `-STALE-ICONE-COR` (fila pós-gate), `-NOVA-OS-SEM-GATE-NO-BOTAO` (`B-SAN3-10`),
+`-BATERIA-TSX-CWD` (orquestrador), `-OS-VAZIO-SEM-ACAO` (nasce FECHADA) e `-C2-DIVERGENCIA-VAZIO-NO-CARD` (a junta
+decide); a `P-SAN3-01-LISTA-2XX-MALFORMADO-VIRA-VAZIO` não nasce (emenda 3 (r)). Índice pelo gerador: 391 cabeçalhos /
+380 IDs, 106 FECHADAS, 285 ABERTAS.
+
+**Próximo passo:** orquestrador confere e empurra → `inspetor-de-terreno-da-junta` → junta do ciclo 2 (C1
+`validador-mestre`, C2 `master-teste-telas-rotas`, C3 `frontend-pixel-master`, C4 `coordenador-de-acessos`; unanimidade
+de 4) → CI → squash → §C5 → porteiro. Reprovação = parada + dossiê (`omega/reprovacoes/DOSSIE-B-SAN3-01-parada.md`).
+**Ciclo 2 do `B-SAN3-01` — REPROVADO pela C4, teto atingido, e a decisão do dono (2026-09-19).** A junta do ciclo 2 (objeto
+`8adaaa31`) teve C1, C2 e C3 APROVADO e a C4 `jurado-san3-01c2-fail-closed-web` REPROVADO, com dois bloqueios dentro do bloco: a
+decisão da página não amarrada ao estado (uma linha em `WorkOrdersPage.tsx` faz o 403 virar vazio com KPIs 0, e nada fica vermelho)
+e o alcance do guard menor que as próprias raízes (barrel de dois níveis e entidade fabricada inline em arquivo novo nascem
+permitidos). Pelo `D-TETO-DOIS-CICLOS`, o bloco parou e foi a dossiê
+(`agent-orchestration/omega/reprovacoes/DOSSIE-B-SAN3-01-parada.md`). O dono decidiu a opção B
+(`D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`): **a correção mergeia** — a perda de dado está fechada e provada (bloco 67/67, smoke
+1193/1193, backend 2996/2998, e2e 3/3) — e as duas propriedades viram o bloco **`B-SAN3-01b`**, no gate, bloqueante, com as
+pendências `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` e
+`P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`. A fonte Inter, declarada nos tokens e nunca carregada, virou
+`P-WEB-FONTE-INTER-NAO-CARREGADA` (dono `B-SAN3-06c`). O `B-SAN3-10` reconta o gate com os dois blocos novos.

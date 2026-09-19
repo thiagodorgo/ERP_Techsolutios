@@ -92,12 +92,14 @@
   desse escopo.
 - impacto: em modo mock/offline o Detalhe de OS mostra vinculos ilustrativos; o endpoint real continua primario.
   Os testes constroem o detail diretamente (nao dependem do mock).
-- status: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders)
+- status: FECHADA (2026-09-17, PR do `B-SAN3-01` — a web deixou de fabricar OS e despacho quando o backend recusa ou responde vazio: lista vazia → vazio; create recusado → erro na própria página, sem navegar, com o digitado preservado; detalhe 404/403/erro → estado; prova: `frontend/tests/work-orders-honest-errors.test.tsx`, 47 casos, 43 vermelhos no head-base `b2da5ede`. Antes: aberto (aceito por convencao do modulo; reabrir se o usuario quiser zerar o fallback do work-orders))
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia C1: o fallback fabrica OS em três casos — lista vazia (6 OS inventadas com aviso falso de "sem conexão"), create recusado pelo backend (navega para `OS-FALLBACK` e o que o operador digitou se perde) e detalhe com erro (`frontend/src/modules/work-orders/work-orders.service.ts:28,46-50,60-72`); bloqueia o vendável.
 
-- **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
+- **agendamento:** ~~DIFERIDO-LEVE~~ (triagem SAN2-1, 2026-08-29; encerrado pelo fechamento de 2026-09-17)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 - **dono:** `B-SAN3-01` (plano SAN3, §4.1 item 4 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **emenda (B-SAN3-01, 2026-09-17 — fechamento):** `frontend/src/modules/work-orders/work-orders.service.ts` sem `catch`/`?? mock` fora de `isMockMode()` (guard G1 — no ciclo 2, por ALCANCE sobre a AST: provado pelas mutações G1d–G1i do ciclo 2 e pelos 15 fixtures do G2; a forma léxica do ciclo 1 foi derrubada pela junta, C4-02) e `frontend/src/modules/operations/dispatches/dispatches.service.ts` idem — o censo do plano (§2.2, 19 ocorrências da classe "fabrica entidade", 17 na fronteira) achou a MESMA classe nos despachos (4 despachos inventados, consumidos também pelo Dashboard e pela aba Mobile da OS). `useWorkOrders`/`useWorkOrderDetail` decidem o estado por reducers puros (`work-orders.state.ts`: vazio ≠ erro ≠ sem permissão ≠ não encontrada ≠ desatualizado); `WorkOrderCreatePage` envia por `runCreateWorkOrder` (mensagem por `reason`/status, nunca navega sem `id`, formulário intacto). O modo mock EXPLÍCITO (`VITE_USE_MOCKS=true`) permanece por decisão do plano (§1) — matar a ficção é dos blocos `B-SAN3-06a/06b`. O que o censo achou FORA da fronteira virou pendência nomeada: `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` (fechada no mesmo PR pela emenda (a) do orquestrador), `P-SAN3-01-DESPACHO-FORMS-SEM-CATCH`, `P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO`, `P-SAN3-01-ORCAMENTO-SELECTS-SEM-ERRO`, `P-SAN3-01-JURISDICAO-DEFAULTS-LOCAIS`, `P-SAN3-01-OS-LEGADO-MORTO`, `P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO` e `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`. A célula do item 4 no §4.1 do `docs/revisoes/SAN3/PLANO_SAN3.md` NÃO muda neste PR (emenda (b): a recontagem é do `B-SAN3-10`).
+- **emenda (B-SAN3-01 ciclo 2, 2026-09-18 — o fechamento reprovado 2 × 2 e refeito):** a junta do ciclo 1 (`omega/reprovacoes/R-B-SAN3-01-ciclo1.md`) achou que o fechamento acima prometia mais do que a prova entregava: o G1 era léxico (C4-02), a verdade "sem permissão" vivia em dois campos (C4-01), status novo caía no vazio (C4-03) e os painéis não eram os do protótipo (C3-B1). O ciclo 2 (plano `omega/planos/B-SAN3-01-ciclo2-plano.md`, emenda 3 do comando) enuncia cada garantia como PROPRIEDADE e a prova por mutação contra ela: P1 o `forbidden` do resultado decide antes de `source` e do segundo plano; P2 `Record` exaustivo + default ERRO (inclusive 200 sem lista — emenda 3 (r)); P3 mock só por alcance (AST, escopo enumerado do disco, sem lista de exceção — `work-orders/repository.ts` passou para a forma positiva); P4 fiação dos hooks vigiada; P5 a ficha do protótipo num `StatePanel` único. A tabela de mutação (12 formas dos jurados + 14 novas) está no relatório do desenvolvedor do ciclo 2; o que ela não prova não é afirmado aqui.
 
 ## P-009 - Contraste de texto muted (#94A3B8) abaixo de 4.5:1 no DS (2026-07-07)
 
@@ -319,6 +321,7 @@
 
 - **emenda (plano SAN3 §4.1 item 49, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-21`.
 - **dono:** `B-SAN3-21` (plano SAN3, §4.1 item 49 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **cruzamento (B-SAN3-01 ciclo 1, C3-N1 e C2-N7, registrado no ciclo 2, 2026-09-18):** na tela de criar OS, "Ordens de Servico" (`WorkOrderCreatePage.tsx:45`) e "Identificacao/Titulo/Descricao" e os rótulos de prioridade (`WorkOrderForm.tsx`), de `9f12ea99` (2026-06-09), e "Acesso nao autorizado" (`guards/PermissionGuard.tsx`, `98b4bee3`, 2026-06-06) — `pre-existente`, linhas não tocadas pelo `B-SAN3-01`; mesmo dono.
 
 ## P-026 - F11: front `UserRole` nao cobre os 9 papeis canonicos (menu visual aproxima) (2026-07-09)
 
@@ -3623,6 +3626,13 @@ veredito, mas com disco escasso (§C5) vale uma faxina **escopada** — é paylo
 - **Cuidado:** faxina por padrão de chave em base viva já causou incidente nesta rodada. Fazer com escopo
   explícito e contagem antes/depois, nunca por curinga solto.
 - status: ABERTA.
+- **emenda (2026-09-18, orquestrador, na conferência do `B-SAN3-01`) — a causa, medida:** sem `REDIS_URL` a suíte do backend
+  aponta para `redis://localhost:6379`, que nesta máquina é o Redis vivo (`erp-redis`). Com ele parado depois de um reboot,
+  `npm test` no head `10eb7049` deu `2998 · pass 2990 · fail 6 · skipped 2`: os 6 são `ECONNREFUSED` em
+  `tests/domain-events.test.ts` (2), `tests/job-queue.test.ts` (3) e `tests/worker-heartbeat.test.ts` (1). Com Redis
+  descartável próprio (`REDIS_URL=redis://127.0.0.1:56385`), os 3 arquivos dão 29/29. Ou seja: toda execução da suíte sem
+  `REDIS_URL` escreve na base viva, e é daí que vem o lixo de fila acima. `pre-existente`; o briefing de junta passa a exigir
+  Redis descartável por cadeira. O conserto no arnês (a suíte recusar rodar sem `REDIS_URL` explícita) segue a triagem desta pendência.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -9304,3 +9314,228 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-12` (ampliado — plano SAN3 v5, §4.1 item 55; condição de entrada CE-4, §5.6).
 - **bloqueia:** o gate da versão vendável (critérios 7 e 4 — a conciliação está no núcleo que o `mvp_vendavel` conta).
 - **teste de encerramento:** o do CE-4 — pela web, criar conta → emitir título → baixar pela tela → o lançamento aparece no extrato → conciliar → conciliado; conciliar de novo → a resposta que o contrato define; saldo pela rota real.
+
+## P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dispatch-000101` com timeline inventada no erro — ALTA
+
+- status: FECHADA (2026-09-17, no próprio PR do `B-SAN3-01` — a emenda (a) do orquestrador ratificou a ampliação nominal do §3.2 do plano: `getDispatchFromApi` devolve `dispatch: null` + `notFound`/`forbidden`/`fallbackReason`, e `OperationsDispatchesPage.loadDetail` mantém o item da lista já selecionado e avisa "Não foi possível carregar os detalhes deste despacho."; testes X8/X9 com vermelho-controle no head-base)
+- **prova:** `frontend/src/modules/operations/dispatches/dispatches.service.ts:55-67` no head-base `b2da5ede` — `getMockDispatchDetail(id)` = `mockDispatchItems.find ?? [0]` com timeline inventada; consumidor único `OperationsDispatchesPage.tsx:63-67` (`loadDetail`).
+- **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10 — "feat: add field dispatch UI").
+- **dono:** `B-SAN3-01` (fechada no PR do bloco).
+- **bloqueia:** nada (fechada).
+- **teste de encerramento:** X8/X9 de `frontend/tests/work-orders-honest-errors.test.tsx` — 404 → `dispatch === null` + `notFound === true`; 500 → `dispatch === null` + `fallbackReason` string; os dois vermelhos no head-base.
+
+## P-SAN3-01-DESPACHO-FORMS-SEM-CATCH (2026-09-17) — formulários de despacho sem `catch`: recusa real do backend vira rejeição não tratada e o form fica "salvando" — MÉDIA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira do bloco — a emenda (a) limitou `OperationsDispatchesPage.tsx` ao `loadDetail`)
+- **prova:** `frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx:32-42` e `OperationsDispatchesPage.tsx:112-116/152-156/170-174` (numeração do head-base `b2da5ede`): `await onSubmit(...)` sem try/catch; `setSaving(false)` nunca roda no erro. `createDispatch` já não engolia non-2xx antes do bloco; o `throw` novo do 2xx-inválido (`invalid_dispatch_response`) NÃO cria classe nova de falha.
+- **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10).
+- **dono:** `B-SAN3-06a` (único bloco SAN3 que toca `operations/**` da web).
+- **bloqueia:** não bloqueia o gate por si (o item 4 fecha pela OS) — é perda de feedback, não de dado.
+- **teste de encerramento:** POST de despacho recusado (4xx) → mensagem na tela e o botão volta de "salvando"; vermelho-controle no head-base.
+
+## P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO (2026-09-17) — as linhas do orçamento falham e a aba mostra total R$ 0,00 — MÉDIA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; arquivo travado `SAN3-01 → SAN3-08` pelo §6 do plano SAN3 — não tocado neste bloco)
+- **prova:** `frontend/src/modules/work-orders/components/tabs/QuoteTab.tsx:85-87` (head-base `b2da5ede`): o `catch` devolve `{ items: [], totalAmount: 0, currency }` — número no lugar do erro.
+- **escopo:** `pre-existente` (`5c5571b6`, 2026-07-15).
+- **dono:** `B-SAN3-08`.
+- **bloqueia:** o critério 4 do gate (número fabricado) — dentro do `B-SAN3-08`.
+- **teste de encerramento:** linhas do orçamento em 500 → estado de erro na aba, sem total exibido; vermelho-controle no head-base.
+
+## P-SAN3-01-ORCAMENTO-SELECTS-SEM-ERRO (2026-09-17) — erro em qualquer dos 3 services deixa os selects do orçamento vazios, sem mensagem — BAIXA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; `useServiceQuoteReferences.ts` está na fronteira do bloco, mas com zero diff necessário — o contrato da lista de OS continua sem lançar)
+- **prova:** `frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts:50-61`: `Promise.all` sem catch sobre 3 services; `OrcamentosPage.tsx:65` não distingue vazio de erro. Depois do `B-SAN3-01` o select de OS deixa de receber as 6 OS falsas (recebe `items: []`), mas continua sem mensagem.
+- **escopo:** `pre-existente` (`42522f95`, 2026-07-13).
+- **dono:** `B-SAN3-08` (dono de `service-quotes/**`).
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** um dos 3 services em 500 → mensagem de erro no formulário de orçamento; vermelho-controle no head-base.
+
+## P-SAN3-01-JURISDICAO-DEFAULTS-LOCAIS (2026-09-17) — `GET /jurisdiction-defaults` falha e o formulário de perfil novo é pré-preenchido com o baseline local sem avisar — BAIXA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira)
+- **prova:** `frontend/src/modules/patios/profiles/profiles.service.ts:95-99` (head-base `b2da5ede`): o `catch` devolve `resolveLocalDefaults(scope)` — a mesma constante do backend, segundo o comentário l.90-91 —, e o usuário não fica sabendo que a consulta falhou (dado no lugar do erro).
+- **escopo:** `pre-existente` (`11a1f533`, 2026-07-26).
+- **dono:** fila pós-gate (§7.3 do plano do bloco) — nenhum bloco SAN3 toca `patios/profiles`.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** `GET /jurisdiction-defaults` em 500 → aviso no formulário (valores locais assumidos, com a origem declarada); vermelho-controle no head-base.
+
+## P-SAN3-01-OS-LEGADO-MORTO (2026-09-17) — páginas, repositório e mocks legados de OS sem rota — BAIXA
+
+- status: ABERTA (censo §2.2 #19 e §3.3 do plano do `B-SAN3-01`; reescrita no ciclo 2 — C4-06 e A-C1-03 da junta do ciclo 1 mostraram que a prova anterior afirmava o que o código desmente; remoção é faxina de `frontend/src/pages/**`, fora do permitido)
+- **prova (reescrita no ciclo 2, 2026-09-18):** (i) **legado SEM rota** — `frontend/src/pages/WorkOrdersListPage.tsx`, `WorkOrderFormPage.tsx` e `WorkOrderDetailPage.tsx` importam `modules/work-orders/repository` (l.7/7/14) e nenhuma delas é importada fora de `frontend/src/pages/` (`App.tsx:38` monta `modules/work-orders/pages/WorkOrderDetailPage`); os componentes legados `WorkOrdersTable`/`WorkOrderDetailPanel`/`WorkOrderAssignForm`/`WorkOrderTimeline` só são importados por `frontend/tests/smoke-flow.test.tsx` (modo mock). Desde o ciclo 2 o `repository.ts` está na forma positiva: o mock só é alcançável no ramo verdadeiro de `isMockMode()`; fora dele lança `work_orders_legacy_repository_unavailable` (guard G1 por alcance vigia). (ii) **a frase "nada disso alcança um usuário" era falsa:** `frontend/src/mocks/work-orders/` É servido em modo real pela rota VIVA `/logistics` — saiu para pendência própria, `P-SAN3-01-LOGISTICS-FICCAO-ROTEADA`.
+- **escopo:** `pre-existente` (`fb0ea65b`, 2026-05-26).
+- **dono:** fila pós-gate — sugestão `B-WEB-FAXINA-OS-LEGADO` (frontend, maioria de 3).
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** os arquivos deixam de existir e o `smoke-flow` deixa de importá-los; `check`/`build`/`test:smoke` verdes.
+
+## P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO (2026-09-17) — os contadores do shell viram "0" quando a consulta falha — BAIXA
+
+- status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira)
+- **prova:** `frontend/src/layouts/AppShell.tsx:79,92` (head-base `b2da5ede`): o `catch` faz `setUnread(0)` / `setPendingApprovals(0)` — badge "0" no lugar do erro (não fabrica entidade, mas afirma um número que a consulta não produziu).
+- **escopo:** `pre-existente` (`1a76c913`, 2026-07-02 — `setUnread(0)`; e `78bbf4f9`, 2026-07-09, #153 — `catch`/`setPendingApprovals(0)`: a 2ª origem, acrescentada no ciclo 2 pelo A-C1-04 da junta do ciclo 1, `git blame 02bd7dab -- frontend/src/layouts/AppShell.tsx` l.92-93).
+- **dono:** fila pós-gate.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** notificações/aprovações em 500 → badge ausente (não "0"); vermelho-controle no head-base.
+
+## P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (2026-09-17) — o alerta de erro da tela de Despachos se intitula "Dados demonstrativos" — MÉDIA
+
+- status: ABERTA (achada pelo dev do `B-SAN3-01` ao ligar o contrato novo do service; reescrita no ciclo 2 com o defeito INTEIRO medido pela junta do ciclo 1 — C3-A4 e C2-N3; fora do escopo da emenda (a), que limitou `OperationsDispatchesPage.tsx` ao `loadDetail`)
+- **prova (reescrita no ciclo 2, 2026-09-18):** com `GET /operations/dispatches` em 500 ou 403 a tela mostra, ao mesmo tempo, (1) o alerta âmbar **"Dados demonstrativos"** com a razão ("A consulta aos despachos falhou…" / "Sem permissão para consultar os despachos."); (2) os **7 cards de resumo com "0"**, clicáveis, com pop-up de composição (`DispatchesSummaryCards`); (3) o `EmptyState` **"Nenhum despacho encontrado / Ajuste status, prioridade, operador…"** debaixo do alerta; e (4) **nenhum "Tentar novamente"**. 500 e 403 só se distinguem pelo texto do alerta. Medido pela C3 (shots `12b-despachos-500` / `12c-despachos-403`, `votos/B-SAN3-01/C3-cognicao-visual-evidencia.md` l.63) e pela C2 (sonda X2, `votos/B-SAN3-01/C2-master-teste-telas-rotas-voto.json`, C2-N3). Código em `bb540fb3`: `OperationsDispatchesPage.tsx:103-107` (alerta, título l.104), l.109 (cards), l.130 (`EmptyState`). Nada é fabricado (a lista em erro é vazia), mas o erro sai rotulado como demonstração, com contagem zero e com o vazio.
+- **escopo:** `pre-existente` — alerta e vazio de `5aa14ec8` (2026-06-10, "feat: add field dispatch UI"); cards de `308c9efb` (2026-07-20); a emenda (a) do `B-SAN3-01` limitou a página ao `loadDetail`.
+- **dono:** bloco NOVO `B-SAN3-06c` · `fix/web-estados-despachos-e-dashboard` (emenda 3 (q) do comando do `B-SAN3-01`, 2026-09-18) — frente 3, escopo `frontend/src/pages/DashboardPage.tsx`, `frontend/src/modules/operations/dispatches/pages/**` e `components/DispatchesSummaryCards.tsx`; entra no gate (critério 4) e é recontado pelo `B-SAN3-10`. O dono anterior (`B-SAN3-06a`) não tem o arquivo no §5 do `PLANO_SAN3.md` (l.270: `modules/{purchase-orders,reports}/**`, `DispatchConsolePage.tsx` e menu).
+- **bloqueia:** o gate da versão vendável (critério 4 — a web não mostra erro como dado), dentro do `B-SAN3-06c`.
+- **teste de encerramento:** `GET /operations/dispatches` em 500 → painel `data-state="error"` com "Tentar novamente", os 7 cards em "—" sem pop-up, sem o `EmptyState` e sem a palavra "demonstrativos"; 403 → painel `data-state="forbidden"` (distinto do erro por cor e ícone), cards em "—"; 200 vazio → vazio honesto (regressão); vermelho-controle no head-base.
+
+## P-SAN3-01-E2E-LOGIN-DEFASADO (2026-09-17) — os 13 casos do e2e rastreado morrem no login: o arnês procura o campo "Tenant ID", que saiu do formulário em 2026-07-02 — ALTA
+
+- status: ABERTA (achada pelo orquestrador ao rodar o e2e do `B-SAN3-01` contra back e front reais em 2026-09-17; forma da falha re-medida e registrada pela 3ª instância do dev do bloco em 2026-09-18; fora do §6.4 do plano do bloco, que mantém os auxiliares de login intactos — reportada, não consertada; cruzada no ciclo 2 com C2-N6 e A-C1-06 da junta do ciclo 1, que re-mediram 13 failed · 0 passed)
+- **prova:** execução real, uma rodada, em cluster Postgres descartável (`bsan301-pg`, `npm run db:seed` aplicado, `CORE_SAAS_PERSISTENCE=prisma`, API na 3299 e web na 5199): `npx playwright test -c playwright.config.ts tests/e2e/critical-flows.spec.ts --reporter=list` → **13 failed · 0 passed** (N = 13), cada caso em 45 s (o timeout de teste): 12× `locator.fill: Test timeout of 45000ms exceeded … waiting for getByLabel('Tenant ID')` e 1× (o do admin da plataforma) `page.waitForResponse: Test timeout` com o mesmo `getByLabel('Tenant ID')` pendente em `loginAsPlatformAdmin`. Os três pontos do arquivo (numeração do head do PR do `B-SAN3-01`, já com o conserto do E2): l.96 (caso "login real…"), `loginAsTenantAdmin` l.437 e `loginAsPlatformAdmin` l.446 (l.434 e l.443 em `6ae71c0e`). Causa: `d5a4ed43` (#111, 2026-07-02, "feat(web): fidelidade visual — lote Plataforma + Login") removeu `<Input label="Tenant ID" …/>` de `frontend/src/pages/LoginPage.tsx`; hoje `grep -rn "Tenant ID" frontend/src` → 0. Os auxiliares têm mais defasagens, medidas por leitura e grep, que o dono do conserto precisa ver juntas: o rótulo "E-mail corporativo" (`LoginPage.tsx:98`) não está associado ao `<input>` (l.99 — sem `htmlFor` e fora do `<label>`), então `getByLabel("E-mail corporativo")` (l.97, l.438, l.447) não casaria; o título "Definir tenant, filial e papel ativo" e o botão "Ativar contexto" de `activateFirstContext` (l.454-455) não existem mais em `frontend/src` (grep → 0; a seleção de contexto hoje é o botão "Acessar →", `ContextSelectionPage.tsx:126`). A mensagem "Tenant, e-mail ou senha invalidos." esperada na l.100 ainda existe (`frontend/src/modules/auth/auth.adapter.ts:209`). Contraprova de que o produto está certo e o arnês não: a cópia avulsa do `B-SAN3-01` (E1-E3 idênticos ao rastreado, login pelos `placeholder` do formulário atual + "Acessar") passou **3/3** no mesmo terreno.
+- **nota (tipos):** um `tsc` ad hoc do arquivo (`npx tsc --noEmit --skipLibCheck --strict --module esnext --moduleResolution bundler --target es2022 --types node tests/e2e/critical-flows.spec.ts`) dá exatamente 2 erros, ambos TS2322 em `upsertChecklistComponent`: l.556 (`create`) e l.569 (`update.config`) — `config: Record<string, unknown>` × `InputJsonValue` do Prisma (l.553 e l.566 em `6ae71c0e`, anotados pela 2ª instância do dev do `B-SAN3-01`). Não impedem a execução (o Playwright transpila sem checar tipos) e o projeto não tipa `tests/e2e/**`; entram aqui porque o mesmo dono liga o e2e na CI.
+- **escopo:** `pre-existente` — o login defasado nasceu em `d5a4ed43` (2026-07-02), dois meses e meio antes do bloco, e o tipo de `config` em `69c6e182` (2026-06-08, "feat: harden checklist web runtime"); o e2e não roda na CI (`.github/workflows/ci.yml` sem job e2e — item 42 do plano SAN3), por isso ninguém viu; o `B-SAN3-01` trocou só o caso "com fallback seguro" por E1-E3, e o §6.4 do plano dele manda manter os auxiliares intactos.
+- **dono:** `B-SAN3-10` (fronteira `tests/e2e/**` + `playwright.config.ts` + job e2e na CI — §5.5 do `docs/revisoes/SAN3/PLANO_SAN3.md`).
+- **bloqueia:** o gate da versão vendável — o `B-SAN3-10` fecha o gate com o e2e verde na CI (item 42) e com os fluxos por persona; a suíte rastreada hoje é 0/13, e os E1-E3 do `B-SAN3-01` só são verdes na cópia avulsa.
+- **teste de encerramento:** `npx playwright test -c playwright.config.ts tests/e2e/critical-flows.spec.ts` contra back e front reais (Postgres descartável + `npm run db:seed`) → 13/13 verdes, com os auxiliares de login e de contexto no formulário atual e a asserção do E2 (o digitado preservado depois do 422) intacta; o `tsc` ad hoc acima sem os 2 erros; e o vermelho-controle que o item 42 exige (um fluxo quebrado de propósito deixa o job vermelho).
+## P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM (2026-09-17) — data malformada no create de OS vira mensagem genérica — BAIXA
+
+- status: ABERTA (divergência D-10 do desenvolvedor do `B-SAN3-01`; emenda 2 (m) do orquestrador; cruzada no ciclo 2 com o A-C1-05 da junta do ciclo 1 — mesma lacuna, gravidade nota)
+- **prova:** o backend recusa data malformada com `400 WORK_ORDER_INVALID` / `invalid_date` (`src/modules/work-orders/work-order.validators.ts:120`); a tabela de `createErrorMessage` do `B-SAN3-01` (§4.3-4 do plano) não lista `invalid_date`, que cai no padrão `ApiError.safeMessage` ("Não foi possível concluir a operação."). Nada é fabricado e o digitado fica; só falta dizer qual campo corrigir.
+- **escopo:** `pre-existente` quanto ao contrato do backend; a tabela nasceu no `B-SAN3-01` (2026-09-17) seguindo o plano.
+- **dono:** fila pós-gate.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** create com `400 invalid_date` → mensagem que nomeia a data; vermelho-controle no head do `B-SAN3-01`.
+
+## P-SAN3-PAINEL-TRILHA-DO-GATE (2026-09-18) — o painel de KPI não acompanha o gate da versão vendável — MÉDIA
+
+- status: ABERTA (divergência D3-1 do desenvolvedor do `B-SAN3-01`; emenda 2 (e) do orquestrador)
+- **prova:** `renderRoadmap` (`Kpis/app.js` l.1458-1546), `renderConclusion` (l.1143-1150) e `DATA.blocosById` (l.898-915) leem só `roadmap.blocos`, `roadmap.ordem_vinculante` e `roadmap.trilha_bloqueada`; o `index.html` (l.143-156) tem um contêiner de cada. Sonda que executa o `app.js` real contra variantes em memória do `kpis-latest.json` (`scratchpad/dev3-sonda-roadmap.log`): um campo de segunda trilha é ignorado (12 cartões, "4 de 12", idêntico ao atual); anexar os 37 blocos do §5 do `PLANO_SAN3.md` ao `roadmap.blocos` dá 49 cartões num medidor só ("5 de 49") e duplica `B-O6R-09`, `B-O6R-11` e `B-O6R-12`, e outros cinco IDs são sub-blocos de blocos O6R (`B-O6R-03a/03b`, `B-O6R-04a/04b`, `B-O6R-07c`). O dono não vê no painel quantos dos 56 bloqueantes e dos 37 blocos já fecharam.
+- **escopo:** `pre-existente` (o painel tem uma trilha desde o `roadmap` da Ω6R; o `PLANO_SAN3.md` l.312-313 mandou a rodada entrar no painel com o primeiro bloco sem medir o contêiner). A RODADA entrou no `B-SAN3-01` pelo gráfico de entregas por rodada.
+- **dono:** `B-SAN3-KPI-TRILHA` — bloco de painel próprio, fora dos 37, sem bloqueante; fila da frente 3, logo depois do merge do `B-SAN3-01`; plano do `planejador-mestre` (desenho da segunda trilha, colisões e sub-blocos, guard).
+- **bloqueia:** não bloqueia o gate; o `B-SAN3-10` (teste (g), frescor do painel) passa a cobrir também a trilha do gate.
+- **teste de encerramento:** o painel mostra o gate (bloqueantes e blocos fechados de N) numa trilha separada da O6R, sem ID duplicado; guard que executa o `app.js` real fica vermelho sem a trilha.
+
+## P-SAN3-01-DASHBOARD-DESPACHOS-ERRO-COMO-VAZIO (2026-09-18) — o Dashboard mostra o selo técnico "Despachos: Fallback local" e afirma "Nenhum despacho ativo" quando a consulta de despachos falhou — MÉDIA
+
+- status: ABERTA (achado C3-P1 da junta do ciclo 1 do `B-SAN3-01`, `cognicao-visual`; registrada no ciclo 2 pelo §3 do plano de correção)
+- **prova:** com `GET /operations/dispatches` em 500 o Dashboard mostra a faixa âmbar "Alguns dados de campo estão indisponíveis agora…" **+ o selo "Despachos: Fallback local"** (termo interno visível, §3 do contrato) **+ "Nenhum despacho ativo no momento."** no painel — afirmação de vazio sobre uma consulta que falhou (shot `13b-dashboard-desp-500`, `votos/B-SAN3-01/C3-cognicao-visual-evidencia.md` l.66). Código: `frontend/src/pages/DashboardPage.tsx:167` (selo) e l.496 (vazio). Antes do `B-SAN3-01` o mesmo erro mostrava 4 despachos inventados com o mesmo selo; o bloco trocou a ficção pelo vazio, mas o vazio ainda afirma o que a consulta não produziu.
+- **escopo:** `pre-existente` — selo de `0a38f1be` (2026-08-04, #331; `git blame -L 167,167`), texto do vazio de `dcfa2506` (2026-07-05, #125; `git log -S "Nenhum despacho ativo"` — a linha atual foi reescrita em `0a38f1be`); `git diff --quiet 02bd7dab bb540fb3 -- frontend/src/pages/DashboardPage.tsx` → ec 0; `frontend/src/pages/**` é proibido ao `B-SAN3-01`.
+- **dono:** bloco NOVO `B-SAN3-06c` · `fix/web-estados-despachos-e-dashboard` (emenda 3 (q) do comando do `B-SAN3-01`, 2026-09-18) — frente 3, entra no gate (critério 4), recontado pelo `B-SAN3-10`. Nenhum bloco do §5 do `PLANO_SAN3.md` tinha `frontend/src/pages/DashboardPage.tsx`.
+- **bloqueia:** o gate da versão vendável (critério 4), dentro do `B-SAN3-06c`.
+- **teste de encerramento:** despachos em 500 → o painel do Dashboard mostra o estado de erro (sem "Nenhum despacho ativo" e sem "Fallback"); 403 → estado sem permissão; 200 vazio → "Nenhum despacho ativo" (regressão); vermelho-controle no head-base.
+
+## P-SAN3-01-LOGISTICS-FICCAO-ROTEADA (2026-09-18) — a rota viva `/logistics` serve OS e ativos inventados de `mocks/**` em modo real — MÉDIA
+
+- status: ABERTA (achados C4-06 e A-C1-03 da junta do ciclo 1 do `B-SAN3-01`; registrada no ciclo 2 — separada da `P-SAN3-01-OS-LEGADO-MORTO`, que dizia que nada daquilo alcançava um usuário)
+- **prova:** `frontend/src/App.tsx:792-796` (`<Route path="/logistics">` com `PermissionGuard logistics:dispatch`) e `frontend/src/navigation/tenantNavigation.ts:62-70` (item `tenant-logistics`, `path: "/logistics"`, `moduleKey: "logistics"`) → `frontend/src/pages/LogisticsPage.tsx:5` (`getLogisticsPanel`) → `frontend/src/modules/logistics/repository.ts:1-2` importa `mocks/logistics/logistics` e `mocks/work-orders/workOrders` e devolve sempre `mockAssets`/`mockQueues`/`mockWorkOrders`, sem `isMockMode()` e sem chamar o backend. Não é "catch que devolve dado" (fabrica sempre), por isso escapou do censo do plano do ciclo 1.
+- **escopo:** `pre-existente` — `git log --diff-filter=A -- frontend/src/modules/logistics/repository.ts frontend/src/pages/LogisticsPage.tsx` → `fb0ea65b` (2026-05-26); o `B-SAN3-01` não toca nenhum dos arquivos.
+- **dono:** **emenda nominal ao `B-SAN3-06a`** (emenda 3 (q) do comando do `B-SAN3-01`, 2026-09-18) — rota (`App.tsx`) e menu (`tenantNavigation.ts`), que o §5 já dá ao `06a`, mais os três caminhos `frontend/src/pages/LogisticsPage.tsx`, `frontend/src/modules/logistics/**` e `frontend/src/mocks/logistics/**`; o padrão do §10.1 do plano SAN3: sai da rota e do menu.
+- **bloqueia:** o gate da versão vendável (critério 4 — tela viva com dado inventado em modo real), dentro do `B-SAN3-06a`.
+- **teste de encerramento:** em modo real (`VITE_USE_MOCKS` ≠ "true"), `/logistics` não existe na rota nem no menu (ou, se ficar, não mostra nenhuma entidade de `mocks/**`); o guard G1 do `B-SAN3-01` (alcance por AST) passa a varrer `modules/logistics/**` ou o módulo deixa de existir; vermelho-controle no head-base.
+
+## P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO (2026-09-18) — fechar contagem cíclica com 2xx sem entidade vira contagem "concluída" com relatório zerado — MÉDIA
+
+- status: ABERTA (achado C4-05 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`; registrada no ciclo 2)
+- **prova:** `frontend/src/modules/inventory/cycle-counts.adapter.ts:88-90`: sem `cycleCount` na resposta 2xx, o adapter monta `{ id: "", abcClass: null, status: "concluida", … }`; o consumidor `CycleCountSessionDrawer.tsx:134-137` põe essa contagem e o relatório `{ lines: [], totalVariance: 0, adjustmentsGenerated: 0 }` na tela. Sonda da C4 com 2xx `{data:{}}`, `{}` e `null` → `cycleCount id='' status=concluida entries=0`. É a forma "2xx sem entidade → entidade e números inventados" dos membros #4/#6 do censo do plano do ciclo 1, que só casava `?? <mock|fallback|seed|demo>`.
+- **escopo:** `pre-existente` — `git blame -L 88,90 frontend/src/modules/inventory/cycle-counts.adapter.ts` → `528e3601` (2026-07-09, #149, "Estoque avançado — ABC, ponto de pedido e contagem cíclica (F7b)"); fora da fronteira do `B-SAN3-01`.
+- **dono:** **emenda nominal ao `B-SAN3-15`** (bloco de estoque; emenda 3 (q) do comando do `B-SAN3-01`, 2026-09-18) — `frontend/src/modules/inventory/cycle-counts.adapter.ts` e `CycleCountSessionDrawer.tsx`. O §5 do `PLANO_SAN3.md` dava ao `B-SAN3-15` só o flutter e o backend de `inventory`.
+- **bloqueia:** o gate da versão vendável (critério 4 — número fabricado na tela), dentro do `B-SAN3-15`.
+- **teste de encerramento:** fechamento com 2xx sem `cycleCount` → erro na gaveta (sem contagem "concluída" nem relatório zerado); 2xx válido → regressão verde; vermelho-controle no head-base.
+
+## P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com padrões opostos: sem `VITE_USE_MOCKS` a plataforma mostra 3 organizações inventadas — MÉDIA
+
+- status: ABERTA (achado C4-08 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`, gravidade nota; registrada no ciclo 2)
+- **prova:** `frontend/src/config/env.ts` `isMockMode()` = `VITE_USE_MOCKS === "true"` (padrão REAL) × `shouldUseMocks()` = `readFrontendEnv("VITE_USE_MOCKS", "true") !== "false"` (padrão MOCK) em `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:163-165` e `frontend/src/modules/platform/platform.service.ts:122-124`. Sonda da C4 com `VITE_USE_MOCKS` ausente ou `"0"`: a OS vai ao backend real, mas a plataforma NÃO chama a API e devolve 3 organizações inventadas. A promessa do `B-SAN3-01` (e o guard G1) confia em `isMockMode()` como O interruptor; na divergência, vence a ficção.
+- **escopo:** `pre-existente` — `git blame -L 163,165 …/cloud-billing.service.ts` → `4d6e1219` (2026-06-08); fora da fronteira do `B-SAN3-01`.
+- **dono:** `B-SAN3-06b` (`modules/platform/**` no §5 do `PLANO_SAN3.md`); cruza `P-WEB-PLATAFORMA-TELAS-FICCAO` (item 46).
+- **bloqueia:** o gate da versão vendável (critério 4), dentro do `B-SAN3-06b`.
+- **teste de encerramento:** um único interruptor (`isMockMode()` de `config/env`); com `VITE_USE_MOCKS` ausente, `"0"` ou `"false"` a plataforma chama a API real; guard que fica vermelho com uma segunda autoridade de modo mock em `frontend/src`; vermelho-controle no head-base.
+
+## P-SAN3-01-NAV-MENU-DEMO-NO-ERRO (2026-09-18) — quando o menu do backend falha, a navegação cai no menu de demonstração — BAIXA
+
+- status: ABERTA (achado C4-09 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`, gravidade nota; registrada no ciclo 2)
+- **prova:** `frontend/src/modules/navigation/useNavigationMenu.ts:15` monta `fallbackItems` a partir de `getMockNavigationMenu(scope)` e o `catch` da l.48-49 faz `setItems(fallbackItems)` (re-medido no ciclo 2; o voto citou l.47). Hoje só calcula caminhos escondidos (C1), mas é `setState(mock)` num `catch` — a classe existe como EFEITO, e o censo de "catch que devolve valor" não a conta.
+- **escopo:** `pre-existente` — `git blame -L 15,15 frontend/src/modules/navigation/useNavigationMenu.ts` → `50845286` (2026-06-09).
+- **dono:** fila pós-gate (emenda 3 (q)); registro para quem refizer o censo (`B-SAN3-10`).
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** menu do backend em 500 → estado de erro/menu mínimo honesto, sem itens de `getMockNavigationMenu` em modo real; vermelho-controle no head-base.
+
+## P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (2026-09-18) — o botão "Nova OS" do cabeçalho da lista aparece para quem não tem `work_orders:create` — BAIXA
+
+- status: ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)
+- **prova:** sonda RBAC da C2 como `viewer` (read sim, create não): o botão "Nova OS" do cabeçalho está presente; `/work-orders/new` → guard "Acesso nao autorizado"; `POST /work-orders` direto → 403 `permission_required`. O papel é negado, mas o elemento de ação continua visível. `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (botão do `PageHeader`, l.249-252 no head do ciclo 2). O CTA "Nova OS" do estado vazio, novo no ciclo 2, já nasce com o gate.
+- **escopo:** `pre-existente` — o botão sem gate está na página desde `9f12ea99` (2026-06-09; `02bd7dab` l.233); o diff do `B-SAN3-01` não toca a linha.
+- **dono:** `B-SAN3-10` (fluxos por persona).
+- **bloqueia:** não bloqueia o gate por si (o backend recusa).
+- **teste de encerramento:** papel sem `work_orders:create` → sem o botão do cabeçalho; papel com → botão presente; vermelho-controle no head-base.
+
+## P-SAN3-01-BATERIA-TSX-CWD (2026-09-18) — os testes `.tsx` do frontend só ficam verdes com cwd `frontend/` — BAIXA
+
+- status: ABERTA (achado C2-N1 da junta do ciclo 1 do `B-SAN3-01`; registrada no ciclo 2)
+- **prova:** `node --test --import tsx frontend/tests/work-orders-honest-errors.test.tsx` com cwd na raiz → `# tests 47 # pass 43 # fail 4` (P1–P4, "React is not defined"); o mesmo com cwd `frontend/` → 47/47; `test:smoke` (cwd `frontend/`, o que a CI roda) verde. O `tsconfig.json` da raiz não tem `jsx`; `frontend/tsconfig.json` tem `react-jsx`.
+- **escopo:** `pre-existente` — a classe antecede o bloco: `frontend/tests/work-orders-row-actions.test.tsx` (`656240c7`, 2026-07-17) dá 20/32 rodado da raiz.
+- **dono:** orquestrador (forma das baterias dos próximos planos: rodar os `.tsx` de dentro de `frontend/`, como a CI).
+- **bloqueia:** não bloqueia o gate; não afeta produto nem CI.
+- **teste de encerramento:** as baterias dos comandos novos declaram cwd `frontend/` para os `.tsx` (ou a raiz passa a transpilar JSX) e a forma declarada reproduz o verde.
+
+## P-SAN3-01-STALE-ICONE-COR (2026-09-18) — o ícone da faixa "dados desatualizados" diverge do protótipo — BAIXA
+
+- status: ABERTA (achado C3-N3 da junta do ciclo 1 do `B-SAN3-01`, `cognicao-visual`; registrada no ciclo 2)
+- **prova:** faixa `data-state="stale"`: ícone 14×14 na cor do texto `#92400E` (`.pat-banner--warning`, `frontend/src/styles/app.css:3309`); protótipo `ERP Web.dc.html:323`: alerta 16px `#D97706`.
+- **escopo:** `pre-existente` — o padrão `.pat-banner--warning` e o banner antigo de fallback em `02bd7dab` já usavam `AlertTriangle` 14 na cor do texto; `app.css` fica fora do `B-SAN3-01`.
+- **dono:** fila pós-gate (emenda 3 (q)).
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** ícone da faixa 16px `#D97706` no estilo computado; regressão visual das outras faixas `.pat-banner--warning`.
+
+## P-SAN3-01-OS-VAZIO-SEM-ACAO (2026-09-18) — a lista de OS vazia não oferecia a ação de criar — BAIXA
+
+- status: FECHADA (2026-09-18, ciclo 2 do `B-SAN3-01` — §2.5 do plano de correção e emenda 3 (s): o vazio ganhou o CTA "Nova OS", com o gate `work_orders:create`)
+- **prova:** achado C3-P2 da junta do ciclo 1: vazio só-texto (14/700 `#0F172A`, 12.5 `#64748B`), sem ícone e sem a ação "Nova OS" do protótipo (`ERP Web.dc.html:362-368`); `docs/screen-element-map.md` l.5 ("Toda lista tem os 4 estados (… vazio-com-ação …)") e l.23 ("Estado vazio → CTA").
+- **escopo:** `pre-existente` — `git log -S "As ordens atribuídas à sua organização aparecem aqui."` → `38facb24` (2026-07-03, #117).
+- **dono:** `B-SAN3-01` (fechada no ciclo 2).
+- **bloqueia:** nada (fechada).
+- **teste de encerramento:** V3 de `frontend/tests/work-orders-honest-errors.test.tsx` — com `onCreate` o painel vazio tem 1 botão `pat-btn pat-btn--primary` (`10px 18px`); sem `onCreate`, nenhum; a página só passa `onCreate` com `work_orders:create` e sem OS nenhuma. Vermelho no objeto `bb540fb3`.
+
+## P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§2.5), registrada ANTES de consolidar (§A2) — BAIXA
+
+- status: ABERTA (decisão da junta do ciclo 2 — a C3 mede a ficha; divergência D-C2-1 do desenvolvedor do ciclo 2)
+- **o que o plano mandava:** "vazio SEM filtro (`items.length === 0`) → `StatePanel` standalone `empty`", NO LUGAR do card da tabela (o card leva junto a toolbar com a busca); o risco R1 do plano dava E1–E3 como preservados.
+- **o que foi medido:** implementado ao pé da letra (commit `619fb2b5`), o E1 da cópia avulsa, numa base recém-semeada (107 migrations, `npm run db:seed`, `select count(*) from work_orders` → 0 — o `prisma/seed.ts` não cria OS), falha: `locator.fill: Test timeout of 45000ms exceeded … waiting for getByRole('textbox', { name: /Buscar/ })` — a busca sumiu com o card. No protótipo (`ERP Web.dc.html` l.306-313) a busca e os filtros vivem FORA do card da tabela e continuam na tela no vazio.
+- **o que foi feito (commit `b00cd82d`):** a falha (erro e sem permissão) continua trocando o card inteiro; o vazio passa a ser o `StatePanel` EMBUTIDO no card (toolbar e cabeçalho ficam), com a cópia sem OS + CTA "Nova OS" (gate `work_orders:create`) ou a cópia do filtro. A ficha interna do vazio é a mesma (círculo, prancheta 28, 16/800, 13 max-w 330, `54px 32px`, CTA `10px 18px`); a borda e o raio passam a ser os do card (`1px solid #E2E8F0`, raio 14 contra 13 da ficha). Depois: E1–E3 3/3 com a base vazia e 3/3 com OS.
+- **escopo:** `dentro-do-bloco` (desenho do ciclo 2).
+- **dono:** junta do ciclo 2 do `B-SAN3-01` (aceita a divergência ou reprova).
+- **teste de encerramento:** E1 da cópia avulsa verde numa base sem OS (busca presente e `[data-state="empty"]` visível) e a C3 aceitar o vazio embutido contra a ficha.
+## P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está amarrada ao estado que o reducer produziu — ALTA
+
+- status: ABERTA (achado A-01 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- **prova:** mutação `N-PG-PAINEL` em `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (trocar `status={status}` por `status="empty"` no `WorkOrdersLoadState`) → a página REAL mostra o 403 como `data-state="empty"`, "Nenhuma ordem de serviço" e KPIs `0|0|0|0`, com `node --test tests/work-orders-honest-errors.test.tsx` 67/67, `tsc` ec=0 e `test:smoke` 1193/1193 — nada fica vermelho. Controle `N-PG-SEED`: com o estado certo, `[forbidden]` e KPIs "—".
+- **escopo:** `dentro-do-bloco` (o código da página é do `B-SAN3-01`); os testes amarram o reducer e os componentes com props passados à mão, e ninguém vigia os props que a página passa.
+- **dono:** `B-SAN3-01b` (bloco novo do gate, `fix/web-guarda-por-alcance-e-estado-da-pagina`).
+- **bloqueia:** BLOQUEIA o gate da versão vendável (critério 4 — a tela não mostra erro como dado).
+- **teste de encerramento:** teste que renderiza a página REAL com o backend em 403 e em 5xx e assere o painel e os KPIs; a mutação `N-PG-PAINEL` fica vermelha.
+
+## P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o próximo membro dentro das próprias raízes — ALTA
+
+- status: ABERTA (achado A-02 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- **prova:** mutação `N-BARREL2` (arquivos novos `reexport-a.ts` → `export * from "./work-orders.mock"`, `reexport-b.ts` → `export * from "./reexport-a"`, e um service novo com `catch → getMockWorkOrderDetail` importado de `./reexport-b`) → em modo real (`VITE_USE_MOCKS=false`, backend 500) a tela recebe `OS-000101`, com `[G1]` VERDE, bloco 67/67, `tsc` e smoke verdes; o controle com barrel de UM nível fica vermelho. Mutação `N-LITERAL`: entidade fabricada escrita inline (`id=""`, `code="OS-FALLBACK"`) em arquivo novo das raízes também nasce permitida — a classe é maior que o import de mock.
+- **escopo:** `dentro-do-bloco` (o guard e os cabeçalhos dos services são do `B-SAN3-01`; o cabeçalho afirma um alcance que a mutação desmente).
+- **dono:** `B-SAN3-01b`.
+- **bloqueia:** BLOQUEIA o gate da versão vendável.
+- **teste de encerramento:** guard que resolve import em profundidade arbitrária (barrel de N níveis) e pega entidade fabricada inline dentro das raízes; as mutações `N-BARREL2` e `N-LITERAL` ficam vermelhas; o texto dos cabeçalhos diz o que o guard prova.
+
+## P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são textuais — MÉDIA
+
+- status: ABERTA (achado A-03, ajuste, da cadeira C4 do ciclo 2 do `B-SAN3-01`)
+- **prova:** mutação `N-W1TXT` em `frontend/src/modules/work-orders/useWorkOrders.ts` (embrulhar o `setState` num bloco que redefine `background = false`) mantém as três asserções textuais do `[W1]` satisfeitas, com bloco 67/67, `tsc` e smoke verdes.
+- **escopo:** `dentro-do-bloco`. A quebra vai na direção fail-closed (a falha em 2º plano passa a mostrar o painel de erro em vez de manter o dado com a faixa): não chega dado fabricado à tela — por isso ajuste, não bloqueio.
+- **dono:** `B-SAN3-01b`.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** o vigia da fiação passa a medir COMPORTAMENTO (a falha em 2º plano mantém os dados com a faixa) e a mutação `N-W1TXT` fica vermelha.
+
+## P-WEB-FONTE-INTER-NAO-CARREGADA (2026-09-19) — a web inteira renderiza em Segoe UI, e o protótipo usa Inter — MÉDIA
+
+- status: ABERTA (achado C3c2-A1 da cadeira C3 do ciclo 2 do `B-SAN3-01`)
+- **prova:** `frontend/src/styles/tokens/tokens.css:70` declara `--font-sans: Inter, …` desde `fb0ea65b` (2026-05-26), e `frontend/index.html` (mesma origem) não carrega a fonte (`grep -c -i 'inter|font'` → 0): o peso 800 cai em Segoe UI Black. `git diff --quiet 02bd7dab 8adaaa31 -- frontend/index.html frontend/src/styles` → ec 0 (o bloco não toca).
+- **escopo:** `pre-existente` (`fb0ea65b`, 2026-05-26); transversal a toda a web (§11 do `CLAUDE.md`).
+- **dono:** `B-SAN3-06c` (bloco de acabamento da web), com escopo nominal ampliado a `frontend/index.html`.
+- **bloqueia:** BLOQUEIA o gate da versão vendável (critério 13 — o produto sai polido).
+- **teste de encerramento:** a família tipográfica computada nas telas do gate é Inter; guard que falha se o token declarar uma fonte que o documento não carrega.

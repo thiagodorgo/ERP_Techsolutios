@@ -1,0 +1,98 @@
+{
+ "cadeira": "C2",
+ "papel": "master-teste-telas-rotas",
+ "modelo": "Opus 5 (claude-opus-5[1m])",
+ "objeto": "8adaaa31",
+ "ciclo": 2,
+ "veredito": "APROVADO",
+ "achados": [
+  {
+   "id": "C2c2-N1",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia": "sonda X2 (c2c2/probe-run1.log, probe-results.jsonl): GET /operations/dispatches 500 e 403 → alerta 'Dados demonstrativos' + 'Nenhum despacho encontrado' + 0 'Tentar novamente', 0 entidades de mock. git blame 8adaaa31 OperationsDispatchesPage.tsx l.103-107 → 5aa14ec80 (2026-06-10); o ciclo 2 não toca o arquivo; o bloco só tocou loadDetail.",
+   "motivo": "erro rotulado como demonstração; mesma medição do ciclo 1 (C2-N3). Pendência P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS ABERTA, dono B-SAN3-06c (emenda 3 (q)), com teste de encerramento."
+  },
+  {
+   "id": "C2c2-N2",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia": "RB1 (c2c2/rbac-results.jsonl): viewer (create=não) vê o botão 'Nova OS' do cabeçalho (1); RB2 guard na rota; RB3 POST direto → 403. git blame 8adaaa31 WorkOrdersPage.tsx l.251-252 → d43314bdf (2026-08-04); pendência cita a origem 9f12ea99 (2026-06-09).",
+   "motivo": "elemento de ação visível para papel sem permissão (backend nega). Pendência P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO ABERTA, dono B-SAN3-10. O CTA novo do vazio nasce com gate (RB1b: 0 botões para viewer)."
+  },
+  {
+   "id": "C2c2-N3",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia": "npx playwright test ... critical-flows.spec.ts --grep 'E1 |E2 |E3 ' → 3 failed, os três em getByLabel('Tenant ID') (l.437); d5a4ed43 = 2026-07-02 (#111); LoginPage.tsx@8adaaa31 'Tenant ID' → 0.",
+   "motivo": "os E1–E3 só são verdes pela cópia avulsa. Pendência P-SAN3-01-E2E-LOGIN-DEFASADO ALTA ABERTA, dono B-SAN3-10."
+  },
+  {
+   "id": "C2c2-N4",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "L7 (probe-results.jsonl): vazio de filtro 'Nenhuma OS para os filtros atuais · Ajuste a busca ou os filtros acima — ou crie uma nova ordem de serviço.' com 0 botões no painel; protótipo ERP Web.dc.html l.365-367 tem o botão 'Nova OS' nesse painel; plano do ciclo 2 §2.5 decidiu 'sem CTA' no vazio de filtro.",
+   "motivo": "a cópia convida a uma ação que o painel não oferece (o cabeçalho oferece). Fidelidade é da C3; registro para a ata."
+  },
+  {
+   "id": "C2c2-N5",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "plano B-SAN3-01-plano.md §7 (l.413) cita GET /work-orders em 'routes l.70-72'; em 8adaaa31 l.70-72 é GET /approvals/pending e GET /work-orders é l.103-105 (mesma permissão work_orders:read).",
+   "motivo": "referência de linha errada no plano do bloco (C2-N4 do ciclo 1), não corrigida; conclusão da tabela inalterada."
+  }
+ ],
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://erp:***@127.0.0.1:56411/erp",
+  "REDIS_URL=redis://127.0.0.1:56412"
+ ],
+ "limpeza": {
+  "worktree": "git -C bsan301 worktree remove --force .claude/worktrees/j-bsan301-c2 → exit 0; worktree list | grep -c j-bsan301-c2 → 0; diretório ausente (as 8 cópias/sondas _c2c2-* só existiam nele)",
+  "conteineres": "docker rm -f j-bsan301-c2-pg j-bsan301-c2-redis → exit 0; docker ps -a | grep -c j-bsan301-c2 → 0 (o papel 'finance' e as 2 OS de teste morreram com o cluster)",
+  "intocados": "bsan301 status --porcelain = 0, HEAD 8adaaa31; árvore principal, erp-*, pastrack-*, bsan301-*, j-* de outras juntas e san2-r não tocados; nenhum prune/clean/stash",
+  "disco_depois": "df /c → 15G livres (95%)",
+  "scratchpad_mantido": "votos-B-SAN3-01-c2/C2-*, c2-*.log/.tap e c2c2/ (sondas, logs, jsonl) como evidência"
+ },
+ "declaracoes": {
+  "R-B": "master-teste-telas-rotas votou APROVADO no ciclo 1 nesta mesma cadeira C2 e revota o objeto novo sob D-TETO-DOIS-CICLOS item 2 (identidade nova só na cadeira que reprovou); não achou bloqueio no ciclo 1, não planejou nem consertou nada no bloco.",
+  "R8": "a prova por papel `operator` fica nos testes unitários (CE-G2, §7 do plano: contexto nominal `manager` + casos negativos 403 por stub), não no e2e — nenhum passo do e2e usa `operator` e o seed não cria o papel; a forma read-sim/create-não foi exercida por mim com back real pelo `viewer` (M7).",
+  "inelegibilidade": "não sou planejador-mestre, desenvolvedor, orquestrador, porteiro-pos-merge nem inspetor-de-terreno-da-junta."
+ },
+ "checklist": {
+  "1_clicaveis": "OK — M8 (K1–K11 + CTA do vazio; K6 contraprovado em K6b)",
+  "2_fluxo_ponta_a_ponta": "OK — M3 E1–E3 3/3 base vazia e 3/3 base com OS pela cópia avulsa; M3b vazio embutido com busca e data-state=empty; M4 mutação do seletor do E2 → 1 failed/2 passed",
+  "3_rbac_por_papel": "OK — M6 CE-G2 confere; M7 viewer (403 no POST, guard na rota, CTA do vazio ausente) e revogação em sessão com 403 REAL → forbidden na lista e no detalhe",
+  "4_estados_obrigatorios": "OK — M4b/M5 (skeleton, vazio digno, erro+retry, sem permissão, não encontrada, desatualizado; 2xx sem lista → erro)",
+  "5_regressao_vizinha": "OK — M11 (smoke 1193/1193 cobre os 27 vizinhos; approval-frontend-contract 1/1; dashboard/quotes/aba Mobile/despachos sem entidade fabricada)",
+  "6_cota_200": "OK — M10 (1126 → 1173 → 1193; 21 casos novos para 9 defeitos corrigidos; N=0 → M=47 no bloco)"
+ },
+ "gates": {
+  "npm run check": "exit 0",
+  "frontend check": "exit 0",
+  "frontend build": "exit 0",
+  "test:smoke": "1193/1193",
+  "bloco (cwd frontend)": "67/67",
+  "approval-frontend-contract": "1/1",
+  "migrate deploy": "107 migrations, exit 0",
+  "db:seed": "exit 0",
+  "migrate down": "n/a (bloco não toca prisma/** nem src/**)",
+  "e2e copia base vazia": "3 passed",
+  "e2e copia base com OS": "3 passed",
+  "e2e mutacao seletor E2": "1 failed (E2) · 2 passed",
+  "sonda DOM": "40 passed · 2 failed (X2 despachos 500/403 = C2c2-N1, pré-existente)",
+  "e2e rastreado E1-E3": "3 failed no login (pré-existente)"
+ },
+ "contagem": {
+  "bloqueia": 0,
+  "ajuste": 0,
+  "nota": 5
+ },
+ "mandato_c2_ciclo2": {
+  "E1_E3_copia_avulsa": "base vazia 3/3 e base com OS 3/3 (M3)",
+  "4_rotas": "/work-orders, /work-orders/new, /work-orders/:id real e inexistente (404 real) — M5/M8",
+  "nenhum_id_fabricado": "106 tokens tier A gerados do código (14 arquivos de mock) × DOM de 4 rotas, 9 abas e detalhe de despacho em todos os ramos → 0 entidades (o literal 'Dados demonstrativos' só na tela de Despachos, pré-existente)",
+  "422_404_despacho": "422/400/500/403/200-sem-OS/rede → alert, 16 campos preservados, sem navegar; 404 real → not-found; detalhe de despacho 500/404/200-malformado → mensagem com o item mantido",
+  "mutacao_seletor_E2": "getByLabel de volta → E2 vermelho (element(s) not found), E1/E3 verdes",
+  "D-C2-1": "vazio embutido mantém a busca e o [data-state=empty] no mesmo card (borda #E2E8F0, raio 14), base REAL vazia (M3b)"
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "cadeira": "C2",
+ "papel": "master-teste-telas-rotas",
+ "modelo": "claude-opus-5[1m] (Opus 5)",
+ "objeto": "bb540fb3",
+ "veredito": "EM APURAÇÃO",
+ "achados": [
+  {
+   "id": "C2-N1",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "frontend/tests/work-orders-row-actions.test.tsx nasce em 656240c7 (2026-07-17, #203) e, rodado da raiz, dá 12/32 fail com React is not defined; tsconfig da raiz sem jsx, frontend/tsconfig.json l.17 jsx=react-jsx",
+   "evidencia": "node --test --import tsx frontend/tests/work-orders-honest-errors.test.tsx (cwd raiz) -> tests 47 pass 43 fail 4 (P1-P4 ReferenceError React is not defined); mesmo arquivo com cwd frontend/ -> 47/47; test:smoke 1173/1173",
+   "motivo": "a forma do comando do §8.1 do plano (a partir da raiz) nao reproduz o verde; o verde exige cwd frontend/. Nao afeta produto nem CI (test:smoke roda com cwd frontend). Registro para a C1/ata."
+  },
+  {
+   "id": "C2-N2",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "git log -S: 9f12ea99 (2026-06-09, feat: add work orders UI); na base 02bd7dab WorkOrderCreatePage.tsx:46 ja tem <span>Ordens de Servico</span>; WorkOrderForm.tsx nao esta no diff 02bd7dab..bb540fb3",
+   "evidencia": "snapshot Playwright da /work-orders/new no E2 (M4): text \"Ordens de Servico\", heading \"Identificacao\", textbox \"Titulo\", textbox \"Descricao\", option \"Media\"",
+   "motivo": "copia sem acento (CLAUDE.md §11.3) na tela de criacao; nao nasce neste bloco; mandato de fidelidade e da C3 — registro para a ata."
+  },
+  {
+   "id": "C2-N3",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "plano B-SAN3-01 §4.1 e §7 nascem neste PR (commit b2da5ede)",
+   "evidencia": "awk nas linhas 68-123 de src/modules/work-orders/work-order.routes.ts em bb540fb3: l.70-72 = router.get('/approvals/pending', requirePermission(read)); GET /work-orders = l.103-105",
+   "motivo": "citacao de linha errada no plano (GET /work-orders 'l.70-72'); a permissao comparada (work_orders:read) e a mesma, entao a tabela CE-G2 continua correta. Sem efeito no produto."
+  }
+ ],
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://postgres:***@127.0.0.1:56411/erp_techsolutions (j-bsan301-c2-pg, postgres:16)",
+  "REDIS_URL=redis://127.0.0.1:56412 (j-bsan301-c2-redis, redis:7-alpine)"
+ ],
+ "limpeza": null
+}

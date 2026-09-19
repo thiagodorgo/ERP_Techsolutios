@@ -1,14 +1,17 @@
 import { AlertTriangle, CheckCircle2, Plus, Search, Send, UserRound, Wrench } from "lucide-react";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ClickableKpiCard } from "../../../components/kpi";
+import { ClickableKpiCard, type KpiDetail } from "../../../components/kpi";
 import { KpiStatCard, PageHeader, StatusPill, TablePager, type KpiStatTag } from "../../../components/patterns";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
-import { buildWorkOrdersKpiDetails } from "../work-orders-kpi-detail";
+import { buildWorkOrdersKpiDetails, type WorkOrdersKpiKey } from "../work-orders-kpi-detail";
+import { listStatusKind, type WorkOrdersListStatus } from "../work-orders.state";
 import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
+import { StaleDataBanner } from "../components/StaleDataBanner";
+import { StatePanel, StatePanelAction } from "../components/StatePanel";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
 import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
 import { runAdvance, runRevokeConfirm, runRevokeDiscovery, type RevokeTarget } from "../work-orders-row.handlers";
@@ -130,7 +133,9 @@ const TAG_DONE: KpiStatTag = { label: "finalizadas", bg: "#DCFCE7", fg: "#15803D
 
 export function WorkOrdersPage() {
   const navigate = useNavigate();
-  const { items, loading, source, refresh, context } = useWorkOrders(STABLE_FILTERS);
+  // B-SAN3-01 (P-008) — `status` decide o painel (§7): vazio ≠ erro ≠ sem permissão; `stale` acende a faixa
+  // "dados desatualizados" sem apagar a lista. Nada aqui recebe OS fabricada.
+  const { items, loading, source, status, error, stale, lastUpdatedAt, refresh, context } = useWorkOrders(STABLE_FILTERS);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
   const { permissions } = usePermissions();
@@ -220,6 +225,17 @@ export function WorkOrdersPage() {
 
   const canDispatch = permissions.includes("field_dispatch:create");
   const kpiSkeleton = loading && items.length === 0;
+  // Erro nunca vira número (§4.3-2): com a lista em FALHA os KPIs mostram "—", sem pop-up sobre "0". Ciclo 2 (P2):
+  // a falha vem da classificação EXAUSTIVA do estado (`listStatusKind`) — status não previsto é falha, nunca vazio.
+  const kind = listStatusKind(status);
+  const degraded = kind === "failure";
+  // Ciclo 2 (P5) — como no protótipo (`woShowTable` falso em erro/sem permissão), a FALHA troca o card da tabela
+  // pelo card do estado (não há o que buscar num erro). O VAZIO fica dentro do card: no protótipo a busca e os
+  // filtros vivem FORA da tabela e continuam na tela no vazio; aqui a toolbar vive no card (divergência D-C2-1 do
+  // ciclo 2 — o vazio fora do card sumia com a busca e derrubava o E1 do e2e numa base sem OS).
+  const showFailure = !loading && degraded;
+  // O CTA do vazio nasce com o gate de criar (não repete a C2-N5 do botão do cabeçalho).
+  const canCreate = permissions.includes("work_orders:create");
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -237,75 +253,12 @@ export function WorkOrdersPage() {
         }
       />
 
-      {/* KPIs de decisão — contagens reais derivadas da própria lista */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12, marginBottom: 14 }} aria-live="polite">
-        {kpiSkeleton ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="pat-kpi" aria-hidden="true">
-              <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
-              <div className="pat-skel" style={{ width: 54, height: 24, marginTop: 12 }} />
-              <div className="pat-skel" style={{ width: "70%", height: 12, marginTop: 8 }} />
-            </div>
-          ))
-        ) : (
-          <>
-            <ClickableKpiCard detail={kpiDetails.abertas}>
-              <KpiStatCard
-                icon={Wrench}
-                iconColor="#2563EB"
-                iconBg="#EFF6FF"
-                value={kpis.abertas}
-                label="OS abertas"
-                hint="ainda não concluídas nem canceladas"
-                tag={kpis.semTecnico > 0 ? { label: `${kpis.semTecnico} sem técnico`, bg: "#FEF3C7", fg: "#B45309" } : undefined}
-              />
-            </ClickableKpiCard>
-            <ClickableKpiCard detail={kpiDetails.andamento}>
-              <KpiStatCard
-                icon={Send}
-                iconColor="#0369A1"
-                iconBg="#F0F9FF"
-                value={kpis.andamento}
-                label="Em andamento"
-                hint="técnico em campo agora"
-                tag={kpis.atrasadasEmCampo === 0 ? TAG_ON_TIME : TAG_LATE}
-              />
-            </ClickableKpiCard>
-            {/* Slot crítico do design ("SLA em risco") ocupado por Atrasadas — precedente do PR-A. */}
-            <ClickableKpiCard detail={kpiDetails.atrasadas}>
-              <KpiStatCard
-                icon={AlertTriangle}
-                iconColor={kpis.atrasadas > 0 ? "#DC2626" : "#15803D"}
-                iconBg={kpis.atrasadas > 0 ? "#FEF2F2" : "#F0FDF4"}
-                value={kpis.atrasadas}
-                label="Atrasadas"
-                hint="agenda vencida e sem conclusão"
-                tag={kpis.atrasadas > 0 ? TAG_ACT_NOW : TAG_UNDER_CONTROL}
-                border={kpis.atrasadas > 0 ? "#FCA5A5" : undefined}
-              />
-            </ClickableKpiCard>
-            <ClickableKpiCard detail={kpiDetails.concluidas}>
-              <KpiStatCard
-                icon={CheckCircle2}
-                iconColor="#15803D"
-                iconBg="#F0FDF4"
-                value={kpis.concluidas}
-                label="Concluídas"
-                hint="no total da lista"
-                tag={TAG_DONE}
-              />
-            </ClickableKpiCard>
-          </>
-        )}
-      </div>
+      {/* KPIs de decisão — contagens reais derivadas da própria lista; "—" quando a lista está em erro */}
+      <WorkOrdersKpiGrid kpis={kpis} kpiDetails={degraded ? null : kpiDetails} skeleton={kpiSkeleton} degraded={degraded} />
 
-      {source === "fallback" ? (
-        <div role="alert" className="pat-banner pat-banner--warning">
-          <AlertTriangle size={14} aria-hidden="true" />
-          <span>Sem conexão com a API — exibindo dados locais.</span>
-          <button type="button" className="pat-link" onClick={() => void refresh()}>
-            Tentar novamente
-          </button>
+      {stale ? (
+        <div style={{ marginBottom: 12 }}>
+          <StaleDataBanner lastUpdatedAt={lastUpdatedAt} onRetry={() => void refresh()} />
         </div>
       ) : source === "mock" ? (
         <div style={{ display: "flex", gap: 7, marginBottom: 12 }}>
@@ -314,181 +267,186 @@ export function WorkOrdersPage() {
       ) : null}
 
       {/* Tabela padronizada (card 14px) — toolbar: busca real + tabs-pill + contagem real */}
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
-        <div className="pat-os-toolbar">
-          <div className="pat-os-search">
-            <Search size={15} aria-hidden="true" style={{ flexShrink: 0 }} />
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-              placeholder="Buscar por código, cliente ou endereço…"
-              aria-label="Buscar por código, cliente ou endereço"
-            />
-          </div>
-          <div className="pat-os-tabs">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                className={t.key === tab ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
-                aria-pressed={t.key === tab}
-                onClick={() => {
-                  setTab(t.key);
+      {showFailure ? (
+        <WorkOrdersLoadState status={status} message={error} onRetry={() => void refresh()} />
+      ) : (
+        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
+          <div className="pat-os-toolbar">
+            <div className="pat-os-search">
+              <Search size={15} aria-hidden="true" style={{ flexShrink: 0 }} />
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
                   setPage(0);
                 }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          {/* "atualizado há X min" do design omitido: sem timestamp real exposto pelo hook. */}
-          <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>
-        </div>
-
-        <div className="pat-os-grid pat-os-grid--head" aria-hidden="true">
-          <div>CÓDIGO</div>
-          <div>CLIENTE / SERVIÇO</div>
-          <div>TÉCNICO</div>
-          <div>AGENDA</div>
-          <div>SITUAÇÃO</div>
-          <div style={{ textAlign: "right" }}>AÇÃO</div>
-        </div>
-
-        {loading ? (
-          [0, 1, 2, 3].map((i) => (
-            <div key={i} className="pat-os-grid" style={{ borderBottom: "1px solid #F1F5F9" }} aria-hidden="true">
-              <div className="pat-skel" style={{ height: 12 }} />
-              <div className="pat-skel" style={{ height: 12 }} />
-              <div className="pat-skel" style={{ height: 12 }} />
-              <div className="pat-skel" style={{ height: 12 }} />
-              <div className="pat-skel" style={{ height: 12 }} />
-              <div className="pat-skel" style={{ height: 12 }} />
+                placeholder="Buscar por código, cliente ou endereço…"
+                aria-label="Buscar por código, cliente ou endereço"
+              />
             </div>
-          ))
-        ) : total === 0 ? (
-          <div style={{ padding: "48px 18px", textAlign: "center" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>Nenhuma ordem de serviço</div>
-            <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 4 }}>
-              {q || tab !== "all" ? "Ajuste a busca ou os filtros acima." : "As ordens atribuídas à sua organização aparecem aqui."}
+            <div className="pat-os-tabs">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  className={t.key === tab ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
+                  aria-pressed={t.key === tab}
+                  onClick={() => {
+                    setTab(t.key);
+                    setPage(0);
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
+            {/* "atualizado há X min" do design omitido: sem timestamp real exposto pelo hook. Contagem só com lista válida. */}
+            {degraded ? null : <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>}
           </div>
-        ) : (
-          pageItems.map((o: WorkOrderListItem) => {
-            const st = STATUS_TONE[o.status];
-            const pr = PRIORITY_TONE[o.priority];
-            const agenda = agendaInfo(o.scheduledFor, o.status, now);
-            const svc = [o.title, o.serviceCity ? `${o.serviceCity}${o.serviceState ? `/${o.serviceState}` : ""}` : null]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <div key={o.id} className="pat-os-grid pat-os-row" onClick={() => navigate(`/work-orders/${o.id}`)}>
-                {/* CÓDIGO — mono azul + prioridade com dot */}
-                <div>
-                  <div className="pat-mono" style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{o.code}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: pr.dot, flexShrink: 0 }} aria-hidden="true" />
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: pr.fg }}>{PRIORITY_LABEL[o.priority]}</span>
+
+          <div className="pat-os-grid pat-os-grid--head" aria-hidden="true">
+            <div>CÓDIGO</div>
+            <div>CLIENTE / SERVIÇO</div>
+            <div>TÉCNICO</div>
+            <div>AGENDA</div>
+            <div>SITUAÇÃO</div>
+            <div style={{ textAlign: "right" }}>AÇÃO</div>
+          </div>
+
+          {loading ? (
+            [0, 1, 2, 3].map((i) => (
+              <div key={i} className="pat-os-grid" style={{ borderBottom: "1px solid #F1F5F9" }} aria-hidden="true">
+                <div className="pat-skel" style={{ height: 12 }} />
+                <div className="pat-skel" style={{ height: 12 }} />
+                <div className="pat-skel" style={{ height: 12 }} />
+                <div className="pat-skel" style={{ height: 12 }} />
+                <div className="pat-skel" style={{ height: 12 }} />
+                <div className="pat-skel" style={{ height: 12 }} />
+              </div>
+            ))
+          ) : total === 0 ? (
+            // Sem OS nenhuma → "Nenhuma ordem de serviço" + CTA (com o gate); OS escondidas pelo filtro → cópia do filtro.
+            <WorkOrdersLoadState
+              status="empty"
+              embedded
+              filtered={items.length > 0}
+              onCreate={items.length === 0 && canCreate ? () => navigate("/work-orders/new") : undefined}
+            />
+          ) : (
+            pageItems.map((o: WorkOrderListItem) => {
+              const st = STATUS_TONE[o.status];
+              const pr = PRIORITY_TONE[o.priority];
+              const agenda = agendaInfo(o.scheduledFor, o.status, now);
+              const svc = [o.title, o.serviceCity ? `${o.serviceCity}${o.serviceState ? `/${o.serviceState}` : ""}` : null]
+                .filter(Boolean)
+                .join(" · ");
+              return (
+                <div key={o.id} className="pat-os-grid pat-os-row" onClick={() => navigate(`/work-orders/${o.id}`)}>
+                  {/* CÓDIGO — mono azul + prioridade com dot */}
+                  <div>
+                    <div className="pat-mono" style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{o.code}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: pr.dot, flexShrink: 0 }} aria-hidden="true" />
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: pr.fg }}>{PRIORITY_LABEL[o.priority]}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* CLIENTE / SERVIÇO — cliente ausente vira chip âmbar + "Vincular" (destino real: detalhe da OS) */}
-                <div style={{ minWidth: 0 }}>
-                  {o.customerName ? (
-                    <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.customerName}</div>
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span className="pat-os-noclient">Sem cliente vinculado</span>
+                  {/* CLIENTE / SERVIÇO — cliente ausente vira chip âmbar + "Vincular" (destino real: detalhe da OS) */}
+                  <div style={{ minWidth: 0 }}>
+                    {o.customerName ? (
+                      <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.customerName}</div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span className="pat-os-noclient">Sem cliente vinculado</span>
+                        <button
+                          type="button"
+                          className="pat-link"
+                          style={{ fontSize: 11 }}
+                          onClick={stop(() => navigate(`/work-orders/${o.id}?aba=informacoes-gerais`))}
+                        >
+                          Vincular
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{svc}</div>
+                    {o.checklistId ? (
+                      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+                        <span style={{ fontSize: 9.5, fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: "#EFF6FF", color: "#2563EB" }}>Checklist</span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* TÉCNICO — DTO da lista não traz o NOME do técnico → "Atribuído" sem inventar iniciais;
+                      sem técnico → "Atribuir" leva ao fluxo real de envio (Despachos com a OS pré-selecionada). */}
+                  <div>
+                    {o.assignedOperatorId ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span
+                          style={{ width: 26, height: 26, borderRadius: "50%", background: "#EFF6FF", color: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                          aria-hidden="true"
+                        >
+                          <UserRound size={13} />
+                        </span>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>Atribuído</span>
+                      </div>
+                    ) : !isFinalStatus(o.status) && canDispatch ? (
                       <button
                         type="button"
-                        className="pat-link"
-                        style={{ fontSize: 11 }}
-                        onClick={stop(() => navigate(`/work-orders/${o.id}?aba=informacoes-gerais`))}
+                        className="pat-os-assign"
+                        onClick={stop(() => navigate(`/operations/dispatches?workOrderId=${o.id}`))}
+                        aria-label={`Atribuir técnico à OS ${o.code}`}
                       >
-                        Vincular
+                        <Send size={12} aria-hidden="true" />
+                        Atribuir
                       </button>
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{svc}</div>
-                  {o.checklistId ? (
-                    <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-                      <span style={{ fontSize: 9.5, fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: "#EFF6FF", color: "#2563EB" }}>Checklist</span>
-                    </div>
-                  ) : null}
+                    ) : (
+                      <span style={{ fontSize: 12.5, color: "#94A3B8" }}>Sem técnico</span>
+                    )}
+                  </div>
+
+                  {/* AGENDA — tabular, cor por urgência real; badge de atraso preservado (aria WCAG 1.4.1) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12.5, color: agenda.color, fontWeight: agenda.weight, fontVariantNumeric: "tabular-nums" }}>{agenda.text}</span>
+                    <WorkOrderDelayBadge scheduledFor={o.scheduledFor} status={o.status} />
+                  </div>
+
+                  {/* SITUAÇÃO — pill no tamanho BASE (junta do PR-B, MÉDIA-1: no protótipo a tabela de OS usa 10.5px/3px 9px
+                      — o .pat-pill base; a variante --sm pertence às listas compactas do Dashboard, não a esta tabela). */}
+                  <div>
+                    <StatusPill label={WORK_ORDER_STATUS_LABEL[o.status]} bg={st.bg} fg={st.fg} />
+                  </div>
+
+                  {/* AÇÃO — capacidade preservada: Dar andamento (gate) · Abrir · ⋮ Revogar envio (gate) */}
+                  <WorkOrderRowActions
+                    status={o.status}
+                    permissions={permissions}
+                    busy={rowBusy[o.id] ?? false}
+                    error={rowError[o.id] ?? null}
+                    onOpen={() => navigate(`/work-orders/${o.id}`)}
+                    onAdvance={() => void handleAdvance(o)}
+                    onRevoke={() => void handleRevokeClick(o)}
+                  />
                 </div>
+              );
+            })
+          )}
 
-                {/* TÉCNICO — DTO da lista não traz o NOME do técnico → "Atribuído" sem inventar iniciais;
-                    sem técnico → "Atribuir" leva ao fluxo real de envio (Despachos com a OS pré-selecionada). */}
-                <div>
-                  {o.assignedOperatorId ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span
-                        style={{ width: 26, height: 26, borderRadius: "50%", background: "#EFF6FF", color: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-                        aria-hidden="true"
-                      >
-                        <UserRound size={13} />
-                      </span>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>Atribuído</span>
-                    </div>
-                  ) : !isFinalStatus(o.status) && canDispatch ? (
-                    <button
-                      type="button"
-                      className="pat-os-assign"
-                      onClick={stop(() => navigate(`/operations/dispatches?workOrderId=${o.id}`))}
-                      aria-label={`Atribuir técnico à OS ${o.code}`}
-                    >
-                      <Send size={12} aria-hidden="true" />
-                      Atribuir
-                    </button>
-                  ) : (
-                    <span style={{ fontSize: 12.5, color: "#94A3B8" }}>Sem técnico</span>
-                  )}
-                </div>
-
-                {/* AGENDA — tabular, cor por urgência real; badge de atraso preservado (aria WCAG 1.4.1) */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12.5, color: agenda.color, fontWeight: agenda.weight, fontVariantNumeric: "tabular-nums" }}>{agenda.text}</span>
-                  <WorkOrderDelayBadge scheduledFor={o.scheduledFor} status={o.status} />
-                </div>
-
-                {/* SITUAÇÃO — pill no tamanho BASE (junta do PR-B, MÉDIA-1: no protótipo a tabela de OS usa 10.5px/3px 9px
-                    — o .pat-pill base; a variante --sm pertence às listas compactas do Dashboard, não a esta tabela). */}
-                <div>
-                  <StatusPill label={WORK_ORDER_STATUS_LABEL[o.status]} bg={st.bg} fg={st.fg} />
-                </div>
-
-                {/* AÇÃO — capacidade preservada: Dar andamento (gate) · Abrir · ⋮ Revogar envio (gate) */}
-                <WorkOrderRowActions
-                  status={o.status}
-                  permissions={permissions}
-                  busy={rowBusy[o.id] ?? false}
-                  error={rowError[o.id] ?? null}
-                  onOpen={() => navigate(`/work-orders/${o.id}`)}
-                  onAdvance={() => void handleAdvance(o)}
-                  onRevoke={() => void handleRevokeClick(o)}
-                />
-              </div>
-            );
-          })
-        )}
-
-        {!loading && total > 0 ? (
-          <TablePager
-            pageSize={pageSize}
-            onPageSize={(size) => {
-              setPageSize(size);
-              setPage(0);
-            }}
-            rangeLabel={`${start + 1}–${end} de ${total}`}
-            onPrev={() => setPage(Math.max(0, effectivePage - 1))}
-            onNext={() => setPage(Math.min(maxPage, effectivePage + 1))}
-            canPrev={effectivePage > 0}
-            canNext={end < total}
-          />
-        ) : null}
-      </div>
+          {!loading && !degraded && total > 0 ? (
+            <TablePager
+              pageSize={pageSize}
+              onPageSize={(size) => {
+                setPageSize(size);
+                setPage(0);
+              }}
+              rangeLabel={`${start + 1}–${end} de ${total}`}
+              onPrev={() => setPage(Math.max(0, effectivePage - 1))}
+              onNext={() => setPage(Math.min(maxPage, effectivePage + 1))}
+              canPrev={effectivePage > 0}
+              canNext={end < total}
+            />
+          ) : null}
+        </div>
+      )}
 
       {revoke ? (
         <RevokeDispatchPrompt
@@ -500,6 +458,168 @@ export function WorkOrdersPage() {
         />
       ) : null}
     </div>
+  );
+}
+
+export type WorkOrdersKpis = {
+  readonly abertas: number;
+  readonly andamento: number;
+  readonly atrasadas: number;
+  readonly concluidas: number;
+  readonly semTecnico: number;
+  readonly atrasadasEmCampo: number;
+};
+
+const NEUTRAL_ICON = "#94A3B8";
+const NEUTRAL_BG = "#F1F5F9";
+
+const skeletonCard = (index: number) => (
+  <div key={index} className="pat-kpi" aria-hidden="true">
+    <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
+    <div className="pat-skel" style={{ width: 54, height: 24, marginTop: 12 }} />
+    <div className="pat-skel" style={{ width: "70%", height: 12, marginTop: 8 }} />
+  </div>
+);
+
+/**
+ * B-SAN3-01 — os 4 KPIs da lista, extraídos para o harness SSR (work-orders-honest-errors P1). `degraded`
+ * (lista em erro / sem permissão): valor "—", sem selo e sem pop-up — erro nunca vira número (§4.3-2, D-007).
+ */
+export function WorkOrdersKpiGrid({
+  kpis,
+  kpiDetails,
+  skeleton,
+  degraded,
+}: {
+  readonly kpis: WorkOrdersKpis;
+  readonly kpiDetails: Record<WorkOrdersKpiKey, KpiDetail> | null;
+  readonly skeleton: boolean;
+  readonly degraded: boolean;
+}) {
+  const clickable = !degraded && kpiDetails !== null;
+  const value = (n: number) => (degraded ? "—" : n);
+  // Ciclo 2 (C3-A3) — degradado = tiles NEUTROS: nenhuma cor afirma "sob controle"/"agir agora" sobre "—".
+  const tone = (color: string, bg: string) => (degraded ? { iconColor: NEUTRAL_ICON, iconBg: NEUTRAL_BG } : { iconColor: color, iconBg: bg });
+  const wrap = (key: WorkOrdersKpiKey, card: ReactElement) =>
+    clickable ? (
+      <ClickableKpiCard key={key} detail={kpiDetails[key]}>
+        {card}
+      </ClickableKpiCard>
+    ) : (
+      <div key={key}>{card}</div>
+    );
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12, marginBottom: 14 }} aria-live="polite">
+      {skeleton ? (
+        Array.from({ length: 4 }).map((_, index) => skeletonCard(index))
+      ) : (
+        <>
+          {wrap(
+            "abertas",
+            <KpiStatCard
+              icon={Wrench}
+              {...tone("#2563EB", "#EFF6FF")}
+              value={value(kpis.abertas)}
+              label="OS abertas"
+              hint="ainda não concluídas nem canceladas"
+              tag={!degraded && kpis.semTecnico > 0 ? { label: `${kpis.semTecnico} sem técnico`, bg: "#FEF3C7", fg: "#B45309" } : undefined}
+            />,
+          )}
+          {wrap(
+            "andamento",
+            <KpiStatCard
+              icon={Send}
+              {...tone("#0369A1", "#F0F9FF")}
+              value={value(kpis.andamento)}
+              label="Em andamento"
+              hint="técnico em campo agora"
+              tag={degraded ? undefined : kpis.atrasadasEmCampo === 0 ? TAG_ON_TIME : TAG_LATE}
+            />,
+          )}
+          {/* Slot crítico do design ("SLA em risco") ocupado por Atrasadas — precedente do PR-A. */}
+          {wrap(
+            "atrasadas",
+            <KpiStatCard
+              icon={AlertTriangle}
+              {...tone(kpis.atrasadas > 0 ? "#DC2626" : "#15803D", kpis.atrasadas > 0 ? "#FEF2F2" : "#F0FDF4")}
+              value={value(kpis.atrasadas)}
+              label="Atrasadas"
+              hint="agenda vencida e sem conclusão"
+              tag={degraded ? undefined : kpis.atrasadas > 0 ? TAG_ACT_NOW : TAG_UNDER_CONTROL}
+              border={!degraded && kpis.atrasadas > 0 ? "#FCA5A5" : undefined}
+            />,
+          )}
+          {wrap(
+            "concluidas",
+            <KpiStatCard
+              icon={CheckCircle2}
+              {...tone("#15803D", "#F0FDF4")}
+              value={value(kpis.concluidas)}
+              label="Concluídas"
+              hint="no total da lista"
+              tag={degraded ? undefined : TAG_DONE}
+            />,
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * B-SAN3-01 — o painel da lista quando NÃO há linhas para mostrar, um por estado (§7), marcado por `data-state` no
+ * elemento raiz (é por ele que os testes SSR e o e2e afirmam o estado — comportamento, não cópia):
+ *   empty     → a organização não tem OS (CTA "Nova OS" só com `onCreate`) · `embedded`: o filtro escondeu todas
+ *   forbidden → o ator não tem `work_orders:read` — acesso não permitido, não é falha de sistema
+ *   error     → a consulta falhou (role="alert" + "Tentar novamente"); NUNCA lista de demonstração
+ * Ciclo 2: P2 — `empty` e `forbidden` são ramos EXPLÍCITOS e o `return` final é o ERRO (status que este painel não
+ * conhece nunca vira "vazio"); P5 — a ficha é a do protótipo, via `StatePanel` (ERP Web.dc.html l.362-382).
+ */
+export function WorkOrdersLoadState({
+  status,
+  message,
+  filtered = false,
+  embedded = false,
+  onRetry,
+  onCreate,
+}: {
+  readonly status: WorkOrdersListStatus;
+  readonly message?: string | null;
+  readonly filtered?: boolean;
+  readonly embedded?: boolean;
+  readonly onRetry?: () => void;
+  readonly onCreate?: () => void;
+}) {
+  if (status === "empty") {
+    return (
+      <StatePanel
+        tone="empty"
+        embedded={embedded}
+        title={filtered ? "Nenhuma OS para os filtros atuais" : "Nenhuma ordem de serviço"}
+        detail={filtered ? "Ajuste a busca ou os filtros acima — ou crie uma nova ordem de serviço." : "As ordens atribuídas à sua organização aparecem aqui."}
+        actions={onCreate ? <StatePanelAction label="Nova OS" narrow onClick={onCreate} /> : undefined}
+      />
+    );
+  }
+  if (status === "forbidden") {
+    return (
+      <StatePanel
+        tone="forbidden"
+        embedded={embedded}
+        title="Sem permissão para ver ordens de serviço"
+        detail="Seu perfil não inclui o módulo de OS nesta organização. Solicite acesso ao administrador da organização."
+      />
+    );
+  }
+  return (
+    <StatePanel
+      tone="error"
+      embedded={embedded}
+      title="Não foi possível carregar as ordens"
+      detail={message ?? "Tente novamente em instantes."}
+      actions={onRetry ? <StatePanelAction label="Tentar novamente" onClick={onRetry} /> : undefined}
+    />
   );
 }
 

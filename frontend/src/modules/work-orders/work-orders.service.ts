@@ -1,6 +1,6 @@
 import { isMockMode } from "../../config/env";
-import { apiRequest } from "../../services/api/client";
-import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimelineResponse } from "./work-orders.adapter";
+import { ApiError, apiRequest } from "../../services/api/client";
+import { adaptWorkOrderResponse, adaptWorkOrdersResponse, adaptWorkOrderTimelineResponse, hasWorkOrdersList } from "./work-orders.adapter";
 import type { WorkOrderAuditLog, WorkOrderAuditLogList } from "./audit-logs.types";
 import { getMockWorkOrderDetail, getMockWorkOrdersData, getMockWorkOrderTimeline } from "./work-orders.mock";
 import type {
@@ -8,68 +8,98 @@ import type {
   WorkOrderCancelPayload,
   WorkOrderCreatePayload,
   WorkOrderDetail,
+  WorkOrderDetailResult,
   WorkOrderDuplicatePayload,
   WorkOrderEvent,
   WorkOrderMileageCorrectionPayload,
   WorkOrdersApiContext,
   WorkOrdersData,
   WorkOrdersFilters,
+  WorkOrdersPagination,
   WorkOrderStatus,
   WorkOrderStatusPayload,
   WorkOrderUpdatePayload,
 } from "./work-orders.types";
+
+// B-SAN3-01 (P-008, item 4 do gate SAN3) — este service NÃO fabrica mais OS quando o backend recusa ou responde
+// vazio. Antes: lista vazia virava 6 OS inventadas com aviso falso de "sem conexão"; create recusado virava
+// `OS-FALLBACK` (e o que o operador digitou se perdia); detalhe 404/403/5xx virava `OS-000101`; timeline vazia
+// virava 3 eventos; 2xx sem OS nas mutações virava `?? getMockWorkOrderDetail`. Agora o erro real chega à tela
+// como ESTADO (§7: erro · vazio · acesso não permitido · não encontrada · desatualizado). O modo mock EXPLÍCITO
+// (`VITE_USE_MOCKS=true`, interruptor de demonstração) continua. Ciclo 2 (P3): o guard G1 de
+// work-orders-honest-errors.test.tsx (por ALCANCE, sobre a AST) prova por mutação que identificador de origem mock
+// só é alcançável no ramo verdadeiro de `isMockMode()` em todo arquivo de `modules/work-orders/**` e
+// `modules/operations/dispatches/**` — enumerados do disco, arquivo novo incluído.
+//
+// Contrato (§4.2 do plano):
+//   listWorkOrdersFromApi  → nunca lança: 200 com lista → itens (vazio = vazio) · 200 SEM lista → falha + razão (ciclo 2,
+//                            C2-N2) · 403 → `forbidden:true` · outro erro → vazio + razão
+//   createWorkOrder        → lança ApiError (non-2xx/rede) ou Error("invalid_work_order_response") (2xx sem OS)
+//   getWorkOrderFromApi    → nunca lança: `workOrder:null` + `notFound`/`forbidden`/`fallbackReason`
+//   getWorkOrderTimeline   → lança ApiError; vazio = []
+//   update/advance/assign/cancel/correctMileage → 2xx sem OS lança Error("invalid_work_order_response")
+
+const EMPTY_PAGINATION: WorkOrdersPagination = { limit: 20, offset: 0, total: 0 };
 
 export async function listWorkOrdersFromApi(context: WorkOrdersApiContext, params: Partial<WorkOrdersFilters> = {}): Promise<WorkOrdersData> {
   if (isMockMode()) return getMockWorkOrdersData("mock");
 
   try {
     const response = await apiRequest<unknown>(`/work-orders${buildQuery(params)}`, context);
-    const data = adaptWorkOrdersResponse(response, "api");
-    if (data.items.length === 0) return getMockWorkOrdersData("fallback", "A API retornou lista vazia.");
-    return data;
-  } catch {
-    return getMockWorkOrdersData("fallback", "Nao foi possivel consultar a API de Ordens de Servico.");
+    // Ciclo 2 (emenda 3 (r), C2-N2) — 2xx sem lista no corpo não é "vazio": é falha (P2, o desconhecido cai no erro).
+    if (!hasWorkOrdersList(response)) {
+      return { items: [], pagination: EMPTY_PAGINATION, source: "fallback", fallbackReason: "A resposta não trouxe a lista de ordens de serviço. Tente novamente em instantes.", forbidden: false };
+    }
+    return adaptWorkOrdersResponse(response, "api");
+  } catch (err) {
+    // 403 = gate RBAC `work_orders:read` → "acesso não permitido" (não é falha de sistema). Qualquer outro erro
+    // (5xx, rede) → vazio + razão; a UI mostra o estado de erro e o auto-refresh tenta de novo. Nada fabricado.
+    const forbidden = err instanceof ApiError && err.status === 403;
+    return {
+      items: [],
+      pagination: EMPTY_PAGINATION,
+      source: "fallback",
+      fallbackReason: forbidden
+        ? "Sem permissão para consultar as ordens de serviço."
+        : "A consulta às ordens de serviço falhou. Tente novamente em instantes.",
+      forbidden,
+    };
   }
 }
 
 export async function createWorkOrder(context: WorkOrdersApiContext, payload: WorkOrderCreatePayload): Promise<WorkOrderDetail> {
   if (isMockMode()) return { ...getMockWorkOrderDetail("new"), ...payload, id: "mock-created-work-order", code: "OS-MOCK" };
 
-  try {
-    const response = await apiRequest<unknown>("/work-orders", {
-      ...context,
-      method: "POST",
-      body: payload,
-    });
-    const workOrder = adaptWorkOrderResponse(response);
-    if (workOrder) return workOrder;
-  } catch {
-    return { ...getMockWorkOrderDetail("new"), ...payload, id: "fallback-created-work-order", code: "OS-FALLBACK" };
-  }
-
-  return { ...getMockWorkOrderDetail("new"), ...payload, id: "fallback-created-work-order", code: "OS-FALLBACK" };
+  // Erro do backend (400 vínculo/data inválidos · 422 destination_required · 403 · 5xx) e rede PROPAGAM como
+  // ApiError: a página traduz por `reason`/status (work-orders-create.handlers.ts) e NÃO navega. Sem OS na
+  // resposta 2xx, falhar alto é mais honesto que inventar uma (espelho de duplicateWorkOrder).
+  const response = await apiRequest<unknown>("/work-orders", {
+    ...context,
+    method: "POST",
+    body: payload,
+  });
+  return requireWorkOrder(response);
 }
 
-export async function getWorkOrderFromApi(context: WorkOrdersApiContext, workOrderId: string): Promise<{ workOrder: WorkOrderDetail; source: WorkOrdersData["source"]; fallbackReason?: string }> {
+export async function getWorkOrderFromApi(context: WorkOrdersApiContext, workOrderId: string): Promise<WorkOrderDetailResult> {
   if (isMockMode()) return { workOrder: getMockWorkOrderDetail(workOrderId), source: "mock" };
 
   try {
     const response = await apiRequest<unknown>(`/work-orders/${workOrderId}`, context);
     const workOrder = adaptWorkOrderResponse(response);
     if (workOrder) return { workOrder, source: "api" };
-  } catch {
-    return {
-      workOrder: getMockWorkOrderDetail(workOrderId),
-      source: "fallback",
-      fallbackReason: "Nao foi possivel consultar a OS na API.",
-    };
+    return { workOrder: null, source: "fallback", fallbackReason: "A resposta não trouxe uma ordem de serviço válida." };
+  } catch (err) {
+    if (err instanceof ApiError) {
+      // 404 = OS inexistente (ou de outra organização — o backend não vaza existência) → "não encontrada".
+      if (err.status === 404) return { workOrder: null, source: "api", notFound: true };
+      // 403 = gate RBAC → "acesso não permitido" (não é falha de sistema).
+      if (err.status === 403) {
+        return { workOrder: null, source: "fallback", forbidden: true, fallbackReason: "Sem permissão para consultar esta ordem de serviço." };
+      }
+    }
+    return { workOrder: null, source: "fallback", fallbackReason: "A consulta à ordem de serviço falhou. Tente novamente em instantes." };
   }
-
-  return {
-    workOrder: getMockWorkOrderDetail(workOrderId),
-    source: "fallback",
-    fallbackReason: "A API nao retornou uma OS valida.",
-  };
 }
 
 export async function updateWorkOrder(context: WorkOrdersApiContext, workOrderId: string, payload: WorkOrderUpdatePayload): Promise<WorkOrderDetail> {
@@ -80,7 +110,7 @@ export async function updateWorkOrder(context: WorkOrdersApiContext, workOrderId
     method: "PATCH",
     body: payload,
   });
-  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+  return requireWorkOrder(response);
 }
 
 // Ω3F-6b (coordenador J-Ω3F-6B) — `updateWorkOrderStatus` (PATCH /status) foi REMOVIDO junto do
@@ -93,8 +123,8 @@ export async function updateWorkOrder(context: WorkOrdersApiContext, workOrderId
 // Ω3F-9 (D-Ω3F-9-ANDAMENTO) — "dar andamento" pela linha da lista: avanço de status FORWARD-ONLY reusando
 // PATCH /status. `next` vem SEMPRE do mapa nextForwardStatus (nunca `cancelled` — a porta dos fundos do
 // Ω3F-6b continua fechada). Como cancel/mileage, o ERRO (non-2xx) NÃO é engolido: propaga para a linha
-// mostrar o 409 (transição inválida / corrida). O `?? mock` só cobre um 2xx sem OS parseável (retorno
-// ignorado pelo chamador, que apenas dá refresh). Em mock, devolve a OS já avançada.
+// mostrar o 409 (transição inválida / corrida). B-SAN3-01: um 2xx sem OS parseável também lança
+// (`invalid_work_order_response`) — o chamador (`runAdvance`) já capturava. Em mock, devolve a OS já avançada.
 export async function advanceWorkOrderStatus(
   context: WorkOrdersApiContext,
   workOrderId: string,
@@ -107,7 +137,7 @@ export async function advanceWorkOrderStatus(
     method: "PATCH",
     body: { status: next },
   });
-  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+  return requireWorkOrder(response);
 }
 
 export async function assignWorkOrder(context: WorkOrdersApiContext, workOrderId: string, payload: WorkOrderAssignPayload): Promise<WorkOrderDetail> {
@@ -118,7 +148,7 @@ export async function assignWorkOrder(context: WorkOrdersApiContext, workOrderId
     method: "POST",
     body: payload,
   });
-  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+  return requireWorkOrder(response);
 }
 
 // Ω3F-6b — cancelamento COM decisão financeira (contrato Ω3F-6a):
@@ -148,7 +178,7 @@ export async function cancelWorkOrder(
       reason: payload.reason,
     },
   });
-  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+  return requireWorkOrder(response);
 }
 
 // Ω3F-6b — duplica a OS (contrato Ω3F-6a): POST /work-orders/:id/duplicate → 201 com a OS NOVA (novo code).
@@ -208,7 +238,7 @@ export async function correctMileage(
     method: "PATCH",
     body,
   });
-  return adaptWorkOrderResponse(response) ?? getMockWorkOrderDetail(workOrderId);
+  return requireWorkOrder(response);
 }
 
 // Ω1b-2 — geocodifica a OS sob demanda (botão "Localizar no mapa"). Devolve se localizou + a razão.
@@ -229,16 +259,13 @@ export async function geocodeWorkOrder(
   return { geocoded: data?.geocoded === true, reason: data?.reason };
 }
 
+// B-SAN3-01 — timeline vazia é vazia ("Sem eventos registrados."); erro PROPAGA como ApiError e o hook
+// (`nextDetailState`) o traduz em "Histórico indisponível no momento." — distinto do vazio. Nunca 3 eventos inventados.
 export async function getWorkOrderTimeline(context: WorkOrdersApiContext, workOrderId: string): Promise<WorkOrderEvent[]> {
   if (isMockMode()) return getMockWorkOrderTimeline(workOrderId);
 
-  try {
-    const response = await apiRequest<unknown>(`/work-orders/${workOrderId}/timeline`, context);
-    const timeline = adaptWorkOrderTimelineResponse(response);
-    return timeline.length ? timeline : getMockWorkOrderTimeline(workOrderId);
-  } catch {
-    return getMockWorkOrderTimeline(workOrderId);
-  }
+  const response = await apiRequest<unknown>(`/work-orders/${workOrderId}/timeline`, context);
+  return adaptWorkOrderTimelineResponse(response);
 }
 
 // Ω3F-8a — aba "Logs da OS": leitura da auditoria filtrada pela OS. GET /work-orders/:id/audit-logs.
@@ -251,6 +278,13 @@ export async function listWorkOrderAuditLogs(
 
   const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/audit-logs`, context);
   return adaptAuditLogList(response);
+}
+
+/** 2xx sem OS parseável: falhar alto é mais honesto que inventar uma OS (espelho de duplicateWorkOrder). */
+function requireWorkOrder(response: unknown): WorkOrderDetail {
+  const workOrder = adaptWorkOrderResponse(response);
+  if (!workOrder) throw new Error("invalid_work_order_response");
+  return workOrder;
 }
 
 function adaptAuditLogList(response: unknown): WorkOrderAuditLogList {

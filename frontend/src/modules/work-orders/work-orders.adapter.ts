@@ -89,6 +89,18 @@ const checklistSourceLabels: Record<WorkOrderChecklistSource, string> = {
   manual: "sem regra registrada",
 };
 
+/**
+ * B-SAN3-01 ciclo 2 (emenda 3 (r), C2-N2) — o corpo 2xx TRAZ uma lista? (`[]`, `{ items: [] }`, `{ data: [] }` ou
+ * `{ data: { items: [] } }` — as formas que `adaptWorkOrdersResponse` lê). Sem lista nenhuma a resposta não prova
+ * "a organização não tem OS": é resposta que a web não reconhece, e o service a trata como FALHA (propriedade P2 —
+ * o desconhecido cai no erro, nunca no vazio com KPIs "0").
+ */
+export function hasWorkOrdersList(response: unknown): boolean {
+  if (Array.isArray(response)) return true;
+  const payload = readRecord(response);
+  return (readArray(payload?.items) ?? readArray(payload?.data) ?? readArray(readRecord(payload?.data)?.items)) !== undefined;
+}
+
 export function adaptWorkOrdersResponse(response: unknown, source: WorkOrdersData["source"] = "api", fallbackReason?: string): WorkOrdersData {
   const payload = readRecord(response);
   const itemsSource = Array.isArray(response)

@@ -4329,3 +4329,111 @@ existe em `decisoes.md` e ficou fora da emenda. Registro aplicado por script (32
 dono, sepultamento das duas identidades novas, aposentadoria só depois do merge (`D-APOSENTADORIA-ELENCO-EFEMERO`).
 
 Opção B (2026-09-13): o dono escolheu o caminho B (`D-SAN3-PLANO-OPCAO-B`; P1 "Sim, lê OS"; P2 "Sim — Financeiro monta orçamento"). O orquestrador planejou a aplicação (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`) e um agente distinto, que não achou nem planejou, a aplicou sem commit, medindo cada fato marcado antes de escrever (item 16 = 27 + 13 = 40; as 10 rotas do CE-2; a rota de conciliação sem chamador, nascida em `1e65b34b`): §5.6 com as condições e as marcas das células de teste geradas por script; itens 55 e 56; travas `07c` → `SAN3-26` e `SAN3-11` → `B-O6R-12` (0 violações); §15; registro com 1 entrada nova, 11 emendas e 14 ponteiros corrigidos pela propriedade (o ponteiro da `P-O6R-B09` para o item 7 está certo e ficou); painel "56 bloqueantes em 37 blocos" e `kpi-freeze`. Índice pelo gerador: 370 cabeçalhos / 359 IDs, 103 FECHADAS, 267 ABERTAS, byte-idêntico à cópia fora do repo. Segunda passada (decisões do planejador sobre o relatório do aplicador): item 7 grafado `Ω6R-ARQ-004` (em `P-O6R-B09`); antecessores das travas novas na coluna Dep.; `prisma/seed.ts` na fronteira do `B-SAN3-18` e na trava do §6 (`SAN3-04a` → `SAN3-07` → `SAN3-18`); o critério completo do painel no §4.1 e em emenda nas duas entradas; 4 linhas `dono:` realinhadas ao bloco do §4.1, com o valor antigo preservado; agenda com 0 violações e nenhuma aresta de trava fora da coluna Dep. Terceira passada (decisões do planejador sobre N1 e N2): a primeira aplicação do §C.7 perdeu o critério `as_of`, apontada pelo aplicador e restaurada — o teste (g) do `B-SAN3-10`, o parágrafo do §4.1 e as emendas das duas entradas do painel dizem agora o mesmo critério, inteiro; e o dono do §4.1 ficou escrito, em emenda só-apensar, nas 32 entradas do gate que não o nomeavam (2 delas em hospedeiras, pelo bullet hospedado), sem reescrever linha de status. Quarta passada (conferência de aplicação NÃO CONFERE sobre `042e689e` — CONF-01 e CONF-02): a conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. Conferência de aplicação (`agente-ci-doutor`): NÃO CONFERE em `042e689e`, CONFERE em `bb3f5925` (`agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`).
+
+## B-SAN3-01 — `fix/web-wo-sem-fallback-fabricado` (2026-09-17, PR na autoria)
+
+### Resumo
+
+A web deixa de fabricar OS e despacho quando o backend recusa ou responde vazio (`P-008`, ALTA, item 4 do gate SAN3 —
+perda de dado: o que o operador digitou se perdia no create recusado). Plano `agent-orchestration/omega/planos/B-SAN3-01-plano.md`
++ emenda do orquestrador no comando. Dev de identidade nova (§C7.4-bis); a 1ª instância caiu por HTTP 429 no começo sem
+commit e sem mudança no worktree (medido: `git status` limpo, HEAD `b2da5ede`); a 2ª refez o trabalho inteiro.
+
+### Entregue (commits na branch, sem push — o orquestrador confere e empurra)
+
+- **Commit A (só testes, §6.3):** `frontend/tests/work-orders-honest-errors.test.tsx` (47 casos: L1-L5, C1-C7, D1-D5,
+  T1-T3, M1-M6, X1-X9, R1-R6, P1-P4, G1, S1) + linha do `test:smoke`. Vermelho-controle no head-base `b2da5ede`:
+  `# tests 47 · # pass 4 · # fail 43` (31 de comportamento + 12 que dependem de módulo novo; verdes L4/D5/T3/X7).
+- **Commit B (conserto):** `work-orders.service.ts` (lista vazia = vazia; 403 → `forbidden`; create propaga `ApiError` e
+  lança `invalid_work_order_response` no 2xx sem OS; detalhe → `WorkOrderDetailResult` com `notFound`/`forbidden`; timeline
+  propaga; 5 mutações lançam no 2xx malformado), `work-orders.types.ts` (aditivo), `work-orders.state.ts` (NOVO),
+  `work-orders-create.handlers.ts` (NOVO), `useWorkOrders.ts`, `useWorkOrderDetail.ts` (`allSettled`), `WorkOrdersPage.tsx`
+  (`WorkOrdersKpiGrid` + `WorkOrdersLoadState`, KPIs "—" no erro), `WorkOrderCreatePage.tsx` (`runCreateWorkOrder`, alerta),
+  `WorkOrderDetailPage.tsx` (`WorkOrderDetailView` puro; not-found/forbidden/error/stale; banner "dados locais" removido),
+  `GeneralInfoTab.tsx` (`timelineUnavailable`), `components/StaleDataBanner.tsx` (NOVO), `dispatches.service.ts` (lista
+  honesta; `DispatchDetailResult`; 3 mutações lançam), `OperationsDispatchesPage.tsx` (só `loadDetail` + aviso), 3 fixtures
+  de `work-orders-row-actions.test.tsx` (F1/H1/H5 — entidade parseável no 2xx; asserções intactas), `tests/e2e/critical-flows.spec.ts`
+  (caso "com fallback seguro" → E1-E3).
+- **Commit C (KPI, §C3):** `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md`, `app.js` (`kpi-freeze`).
+- **Commit D (registro):** `pendencias.md` (`P-008` FECHADA; 8 `P-SAN3-01-*`, 1 fechada), índice pelo gerador,
+  `status-geral.md`, este log.
+
+### Bateria (execução real, N e forma)
+
+`npm --prefix frontend run check` OK · `npm --prefix frontend run build` OK (vite, 11,3 s) · `npm --prefix frontend run
+test:smoke` → **1173/1173** (0 fail, 0 skipped) · `node --test --import tsx tests/approval-frontend-contract.test.ts` 1/1 ·
+`npm test` → **283 arquivos · 2997 testes · pass 2995 · fail 0 · skipped 2** (forma: `DATABASE_URL` para cluster Postgres
+descartável próprio `bsan301-pg` postgres:16 com 107 migrations, `CORE_SAAS_PERSISTENCE` não exportada → memory; node
+v20.19.5) · `node --check Kpis/app.js` OK · `node scripts/kpi-freeze.mjs --check` OK · guards de KPI (`kpi-achados-paridade`,
+`kpi-dashboard-charts`, `kpi-dashboard-contraste`) OK · `git diff --check` OK. E2E (`npm run test:e2e` contra o cluster
+descartável, portas 3299/5199 porque a 5173 estava ocupada): resultado registrado no relatório do dev
+(`DEV-B-SAN3-01.md`) e na descrição do PR. `npm --prefix frontend ci` NÃO reexecutado: dependências já instaladas pelo
+orquestrador no worktree (declarado).
+
+### Divergências plano × código (reportadas, não decididas pelo dev)
+
+1. §8.6 do plano manda inaugurar a trilha SAN3 no `roadmap` do painel; a emenda (c) manda deixar as dívidas do #386 para o
+   `B-SAN3-04a` → o `roadmap` NÃO mudou; `release`/`recent`/`metrics`/history atualizados normalmente.
+2. 3 fixtures de `work-orders-row-actions.test.tsx` (arquivo fora do §5) — só passavam pelo `?? mock`.
+3. `components/StaleDataBanner.tsx` novo (dentro do permitido) e `WorkOrdersKpiGrid` além do `WorkOrdersLoadState`.
+4. `OperationsDispatchesPage.tsx`: `detailError` + o aviso, além do `loadDetail` (as 6-8 linhas que o §3.2 previa).
+5. 8ª pendência achada pelo dev: `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`.
+6. "Total: 48" do §6.2 é 47 pela enumeração do próprio plano.
+7. `createErrorMessage`: `invalid_date` (§4.1) cai no padrão `safeMessage` — a tabela do §4.3-4 não o lista.
+
+Limpeza (§C5): `frontend/dist/` removido após o build; contêiner `bsan301-pg` removido ao fim; nada rastreado apagado.
+
+2026-09-18 — emenda 2 do orquestrador (B-SAN3-01): as 11 divergências da 2ª instância e as 5 da 3ª decididas (D-1 não
+aceita e revista: rodada SAN3 no gráfico de entregas por rodada; trilha do gate → `P-SAN3-PAINEL-TRILHA-DO-GATE`, dono
+`B-SAN3-KPI-TRILHA`; D-10 → `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM`); e2e rastreado morto desde `d5a4ed43` →
+`P-SAN3-01-E2E-LOGIN-DEFASADO` (`B-SAN3-10`); dívidas do #386 pagas neste PR (A1, A2, A3 e o parecer do porteiro); o
+contêiner `bsan301-pg` segue vivo até o merge (a linha de limpeza acima dizia removido).
+
+## B-SAN3-01 — ciclo 2 (2026-09-18, correção da reprovação 2 × 2; o último ciclo)
+
+### Resumo
+
+Plano `agent-orchestration/omega/planos/B-SAN3-01-ciclo2-plano.md` (`planejador-mestre`, Fable) + emenda 3 do comando
+((p) plano aprovado; (q) donos dos pré-existentes; (r) C2-N2 entra; (s) C3-P2 fecha; (t) papéis). Desenvolvedor: agente
+`general-purpose` NOVO (Opus 5) — não achou nem planejou. Worktree `.claude/worktrees/bsan301`, branch
+`fix/web-wo-sem-fallback-fabricado`, base `ec8492fd`. Relatório completo do dev (desenho por propriedade, vermelho/verde,
+tabela de mutação com as saídas, bateria, divergências) no scratchpad da sessão: `DEV-B-SAN3-01-ciclo2.md`.
+
+### Commits (sem push)
+
+- `e3db4d62` test — commit A: F1–F4, N1–N3, L6, G1 (reescrito por alcance/AST), G2 (15 fixtures), G3 (enumeração do disco),
+  W1–W2, V1–V6 → sobre o objeto `# tests 67 · # pass 52 · # fail 15`.
+- `81025f7e` fix P1 (C4-01) · `9869d54c` fix P2 (C4-03, C4-07, C2-N2) · `a826e927` fix P3 (C4-02) · `619fb2b5` fix P5
+  (C3-B1, A1, A2, A3, P2) · `b00cd82d` fix D-C2-1 (vazio no card) · registro · KPI.
+
+### Bateria (execução real, N e forma)
+
+`npm --prefix frontend run check` EXIT 0 · `npm --prefix frontend run build` EXIT 0 · `test:smoke` **1193/1193** ·
+`(frontend) node --test --import tsx tests/work-orders-honest-errors.test.tsx` **67/67** · `tests/approval-frontend-contract.test.ts`
+1/1 · `npm test` **283 arquivos · 2998 testes · pass 2996 · fail 0 · skipped 2** (`RBAC_DB_PARITY`; forma: cluster
+descartável próprio `dev-bsan301-c2-pg` postgres:16 recriado com 107 migrations, `dev-bsan301-c2-redis` com `FLUSHALL`,
+`DATABASE_URL`/`REDIS_URL` exportadas, `CORE_SAAS_PERSISTENCE` não exportada; node v20.19.5; 8m57s) · e2e E1–E3 pela
+cópia avulsa (portas 3398/5298): 3/3 na base vazia e 3/3 com OS · guards de KPI, `kpi-freeze --check`, `node --check
+Kpis/app.js`, `sync-agent-agents --check` e `git diff --check` no relatório do dev.
+
+### Divergências plano × código (reportadas; a junta decide)
+
+1. **D-C2-1** — §2.5: vazio sem OS standalone NO LUGAR do card; medido (commit `619fb2b5`), o E1 fica vermelho numa base
+   recém-semeada (`locator.fill … waiting for getByRole('textbox', { name: /Buscar/ })`); corrigido em `b00cd82d` (vazio
+   embutido no card) → `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD`.
+2. §5 "≥ 69 casos / 22 novos": a enumeração do próprio §5 dá 19; + L6 (emenda 3 (r)) = 20 → **67**.
+3. F1 vermelho no objeto (o plano o dava verde): a cadeia chama `listStatusKind`, que só existe depois do P2.
+4. F403b literal sobre a correção é inerte (o P1 faz a flag decidir antes de `source`); o vermelho vem de F403bR/F403b+R.
+5. NS1/NS2/SRC2: vermelho no `tsc` (o `Record`/`never`); em runtime o status/origem desconhecidos já caem no erro — N1/N2
+   seguem verdes sob NS1/NS2 (o plano §5 dizia N1/N2 vermelhos; o §2.2 dizia o contrário); NS1 deixa L6 vermelho.
+6. G2 com 15 fixtures (a–h do plano + 7 formas do mandato C4 (ii): sombra de `config/env`, `isMockMode` de outro módulo,
+   `!isMockMode()`, barrel, `import * as`, `import()` dinâmico, nome real do barrel).
+7. F403a, F403c, NS1, NS2 re-expressas (o `find` literal do ciclo 1 sumiu com a correção); EOL do `find` normalizado.
+
+Limpeza (§C5): `frontend/dist/` removido depois do build e as cópias temporárias do e2e removidas depois de cada rodada;
+`test-results/`, `playwright-report/` e os contêineres `dev-bsan301-c2-pg`/`dev-bsan301-c2-redis` saem pelo nome no fim
+do trabalho do dev (conferido no relatório dele); nada rastreado é apagado.
+2026-09-19 — `B-SAN3-01` ciclo 2: junta REPROVADA pela C4 (2 bloqueia dentro do bloco: página não amarrada ao estado; guard com
+alcance menor que as raízes). Teto de dois ciclos atingido → dossiê ao dono → decisão `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`
+(opção B): mergeia a correção e abre o `B-SAN3-01b` no gate, bloqueante, com 3 pendências; a fonte Inter vira pendência do
+`B-SAN3-06c`. Votos do ciclo 2 em `omega/juntas/votos/B-SAN3-01-c2/`; ata com os dois ciclos em `omega/juntas/J-B-SAN3-01.md`.

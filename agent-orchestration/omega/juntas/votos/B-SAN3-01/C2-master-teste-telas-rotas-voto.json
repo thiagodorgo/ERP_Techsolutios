@@ -1,0 +1,96 @@
+{
+ "cadeira": "C2",
+ "papel": "master-teste-telas-rotas",
+ "modelo": "Opus 5 (claude-opus-5[1m]) — 3ª instância da C2",
+ "objeto": "bb540fb3",
+ "head_pr": "74f3f7c9 (objeto + 10 arquivos de registro; não medido como código)",
+ "base": "origin/main@02bd7dab",
+ "veredito": "APROVADO",
+ "checklist": {
+  "1_elementos_clicaveis": "OK — K1..K9 (M8): linha, 9 abas, Voltar, Nova OS, Cancelar, Atribuir, Vincular, busca/pílulas, not-found/erro/stale com Voltar/Tentar novamente; destino e contexto corretos",
+  "2_fluxo_ponta_a_ponta": "OK — E1 (ramos vazio e com itens), E2, E3 verdes com back e front reais, VITE_USE_MOCKS=false, tenant_admin (M3); mutação do seletor antigo deixa o E2 vermelho (M4)",
+  "3_rbac_por_papel": "OK — CE-G2 confere com catálogo e rotas (M6); papel com read e sem create (viewer, mesma forma do operator) exercido com o back real: guard nega /work-orders/new, POST direto 403, front forçado → 403 real vira mensagem sem perder o digitado (M7)",
+  "4_estados_obrigatorios": "OK — skeleton (36 .pat-skel), vazio, erro + Tentar novamente, sem permissão, não encontrada, desatualizado com os dados mantidos, na lista e no detalhe (M5); histórico indisponível distinto de sem eventos",
+  "5_regressao_vizinha": "OK — test:smoke 1173/1173, approval-frontend-contract 1/1 (o único teste que lê os arquivos tocados), /dashboard, /operations/quotes e aba Mobile sem token fabricado (M5, M11)",
+  "6_cota_200": "OK — N=0 (0 arquivos de teste na base exercitam as 6 funções), M=47; smoke 1126 (remedido em 02bd7dab) → 1173 (+47) (M10)",
+  "mandato_C2_2_nenhum_id_fabricado": "OK — 106 tokens tier A gerados do código (frontend/src/mocks/** + 9 *.mock.ts + 13 literais dos ramos de erro da base); 0 ID/entidade de mock em todas as rotas e ramos (real, 200 vazio, 500, 403, rede caída, 2xx malformado, 404, UUID do mock, rota fabricada antiga, aba Mobile, detalhe de despacho, dashboard, orçamentos); a única ocorrência de literal é o título Dados demonstrativos da tela de Despachos (C2-N3, pendência já aberta)",
+  "mandato_C2_3_create_404_despacho": "OK — create recusado (422/400/500/403/200 sem OS/rede) → alerta na página, sem navegar, 16 campos idênticos; 404 → estado não encontrada; detalhe de despacho 500/404/2xx inválido → Detalhes indisponíveis, item mantido"
+ },
+ "registro_R8": "A prova por papel operator fica nos testes unitários (CE-G2, §7 do plano), não no e2e: nenhum passo do e2e usa operator e o seed nem cria o papel operator no banco (roles semeados: field_dispatcher, manager, super_admin, technician, tenant_admin, viewer). Como extra, exercitei com o back real um papel da mesma forma (viewer: read S, create n) — M7.",
+ "achados": [
+  {
+   "id": "C2-N1",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "a classe (teste SSR .tsx só roda com cwd frontend/) antecede o bloco: frontend/tests/work-orders-row-actions.test.tsx nasce em 656240c7 (2026-07-17) e, rodado da raiz, dá 20/32 com 12 \"React is not defined\"; tsconfig.json da raiz sem a opção jsx; frontend/tsconfig.json:17 jsx = react-jsx",
+   "evidencia": "node --test --import tsx frontend/tests/work-orders-honest-errors.test.tsx (cwd raiz) → # tests 47 # pass 43 # fail 4 (P1–P4 React is not defined); o mesmo com cwd frontend/ → 47/47; test:smoke (cwd frontend, o que a CI roda) → 1173/1173",
+   "motivo": "a forma do comando do §8.1 do plano a partir da raiz não reproduz o verde; não afeta produto nem CI. Pendência proposta: P-SAN3-01-BATERIA-TSX-CWD (dono proposto: orquestrador, na forma das baterias dos próximos planos)"
+  },
+  {
+   "id": "C2-N2",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "work-orders.adapter.ts adaptWorkOrdersResponse (l.92-97, \"?? []\" quando o corpo não tem items/data) nasce em 9f12ea99 (2026-06-09); git diff 02bd7dab bb540fb3 -- frontend/src/modules/work-orders/work-orders.adapter.ts → vazio",
+   "evidencia": "sonda L3 \"200 malformado\" (GET /work-orders forçado a 200 com corpo {inesperado:true}) → data-state=empty, 0 linhas, KPIs \"0\" com selos \"no prazo\", \"sob controle\", \"finalizadas\"; 0 tokens de mock (c2i3-probe-results-run1.jsonl)",
+   "motivo": "um 2xx de forma inesperada é mostrado como lista vazia com contagens 0 e selos de situação, enquanto o detalhe trata 2xx inválido como erro; não fabrica entidade nem perde dado, e o backend real sempre responde {items,pagination}. Pendência proposta: P-SAN3-01-LISTA-2XX-MALFORMADO-VIRA-VAZIO (dono proposto: fila pós-gate)"
+  },
+  {
+   "id": "C2-N3",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "OperationsDispatchesPage.tsx@02bd7dab l.99 (Alert com título \"Dados demonstrativos\") e l.125 (EmptyState \"Nenhum despacho encontrado\"), ambos de 5aa14ec8 (2026-06-10); fora do escopo do bloco (a emenda (a) limitou a página a loadDetail); já registrado como P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (pendencias.md@bb540fb3 l.9379, MÉDIA, ABERTA, dono B-SAN3-06a)",
+   "evidencia": "sonda X2: GET /operations/dispatches forçado a 500 e a 403 → título \"Dados demonstrativos\" + \"Nenhum despacho encontrado\" + 0 botões \"Tentar novamente\"; 200 vazio → vazio honesto sem o título; 0 IDs de mock em todos",
+   "motivo": "erro e sem-permissão na tela de Despachos aparecem rotulados como demonstração, acompanhados do estado vazio (que sugere ajustar filtros) e sem retry. Não fabrica despacho. A pendência existente cobre o título; o vazio co-renderizado e a falta de retry são a mesma classe, para o mesmo dono"
+  },
+  {
+   "id": "C2-N4",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "o plano agent-orchestration/omega/planos/B-SAN3-01-plano.md nasce neste PR (b2da5ede); §4.1 l.182 e §7 l.413",
+   "evidencia": "src/modules/work-orders/work-order.routes.ts@bb540fb3: l.70-72 = router.get de /approvals/pending com requirePermission(read); GET /work-orders = l.103-105; POST l.111-113; GET :id l.119-121; timeline l.203-205",
+   "motivo": "citação de linha errada no plano (GET /work-orders em \"l.70-72\"); a permissão comparada é a mesma (work_orders:read), a tabela CE-G2 continua certa. Sem efeito no produto"
+  },
+  {
+   "id": "C2-N5",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "o botão \"Nova OS\" sem gate por work_orders:create está em WorkOrdersPage.tsx desde 9f12ea99 (2026-06-09; base 02bd7dab l.233); o diff do bloco não toca a linha",
+   "evidencia": "sonda RBAC como viewer (read S, create n): RB1 botão \"Nova OS\" presente (1); RB2 /work-orders/new → guard \"Acesso nao autorizado\", formulário ausente; RB3 POST direto → 403 permission_required",
+   "motivo": "o papel sem permissão é negado (guard no front + 403 no back), mas o elemento de ação continua visível para quem não pode usá-lo. Pendência proposta: P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (dono proposto: B-SAN3-10, fluxos por persona)"
+  },
+  {
+   "id": "C2-N6",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "d5a4ed43 (2026-07-02, #111) tirou \"Tenant ID\" do LoginPage (antes 1, depois 0; git grep em frontend/src@bb540fb3 → 0); já registrado como P-SAN3-01-E2E-LOGIN-DEFASADO (pendencias.md@bb540fb3 l.9388, ALTA, dono B-SAN3-10)",
+   "evidencia": "npx playwright test tests/e2e/critical-flows.spec.ts filtrado para E1, E2 e E3 → 3 failed, todos presos esperando getByLabel(\"Tenant ID\") (l.437, loginAsTenantAdmin); os mesmos casos, idênticos por função (hash por bloco), passam 3/3 pela cópia avulsa",
+   "motivo": "os três casos que o bloco escreveu no spec rastreado só são exercitáveis pela cópia até o B-SAN3-10 consertar o login do arnês; a causa é o login, não os casos"
+  },
+  {
+   "id": "C2-N7",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "\"Ordens de Servico\" (WorkOrderCreatePage.tsx) e \"Identificacao/Titulo/Descricao\" (WorkOrderForm.tsx) de 9f12ea99 (2026-06-09); \"Acesso nao autorizado\" (PermissionGuard.tsx) de 98b4bee3 (2026-06-06); o diff do bloco não toca essas linhas; dívida já registrada (P-028; pendencias.md@bb540fb3 l.621) com dono B-SAN3-21",
+   "evidencia": "snapshots Playwright: kicker \"Ordens de Servico\", \"Identificacao\", textbox \"Titulo\"/\"Descricao\"; guard \"Acesso nao autorizado\" na sonda RB2",
+   "motivo": "cópia sem acento nas telas percorridas (§11.3); fidelidade é mandato da C3 — registro para a ata"
+  }
+ ],
+ "contagem": {
+  "bloqueia": 0,
+  "ajuste": 0,
+  "nota": 7
+ },
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://postgres:***@127.0.0.1:56411/erp_techsolutions (j-bsan301-c2-pg, postgres:16)",
+  "REDIS_URL=redis://127.0.0.1:56412 (j-bsan301-c2-redis, redis:7-alpine)",
+  "E2E_API_PORT=3221 (API http://127.0.0.1:3221/api/v1) · E2E_FRONTEND_PORT=5221 · VITE_USE_MOCKS=false (playwright.config.ts)"
+ ],
+ "incidente_terreno": "Ao criar o esqueleto P1/P2 (10:57) esta instância SOBRESCREVEU o voto (209 B) e a evidência (4332 B) da instância anterior (a 2ª) da C2, sem copiá-los antes; conteúdo não recuperável. Não havia processo vivo dela (Get-CimInstance filtrado por j-bsan301-c2). A 1ª instância segue preservada em *.parcial-instancia1.*. Nada foi herdado das instâncias 1/2: terreno (worktree + contêineres) removido pelo nome e recriado; todas as medições reexecutadas. Registro para o 00-quedas.md (P6).",
+ "limpeza": {
+  "worktree": "git worktree remove --force .claude/worktrees/j-bsan301-c2 → ec=0 (o herdado da instância anterior e o meu, ambos pelo nome); git worktree list filtrado por j-bsan301-c2 → 0",
+  "conteineres": "docker rm -f j-bsan301-c2-pg j-bsan301-c2-redis → ec=0 (duas vezes: herança e fim); docker ps -a filtrado por j-bsan301-c2 → 0",
+  "banco": "a troca de papel do admin (tenant_admin → viewer → tenant_admin) e as OS OS-000001/OS-000002 existiram só no meu cluster descartável, removido",
+  "scratchpad": "mantidos como evidência: c2i3-*.mjs, c2i3-*.spec.ts, c2i3-*.jsonl, c2i3-*.log; removido c2i3-hold/",
+  "alheio": "bsan301 intocado (status --porcelain = 0, HEAD 74f3f7c9); árvore principal, base viva e contêineres de outras cadeiras não tocados"
+ }
+}
