@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -72,6 +73,25 @@ class _AdaptadorFalso implements HttpClientAdapter {
 }
 
 const _id = '6f1c2b8e-2d3a-4c1e-9b7a-1a2b3c4d5e6f';
+
+/// Nome do tipo lancado, ou a descricao do que voltou quando NADA foi lancado -- no vermelho a
+/// mensagem mostra a OS fabricada (`wo-remote-...`/`synced`) em vez de so "esperava throw".
+Future<String> _resultado(Future<Object?> Function() chamada) async {
+  try {
+    final valor = await chamada();
+    if (valor is WorkOrder) {
+      return 'OS ${valor.localId}/${valor.syncStatus.name}';
+    }
+    if (valor is List<WorkOrder>) {
+      return 'lista com ${valor.length} OS';
+    }
+    return 'devolveu ${valor.runtimeType}';
+  } on FormatException {
+    return 'FormatException';
+  } catch (e) {
+    return e.runtimeType.toString();
+  }
+}
 
 /// O corpo EXATO de `toWorkOrderDto` (work-order.dto.ts): camelCase, com `links` e `checklists`
 /// (caminho de detalhe) e SEM `tenantId` — o DTO nunca emite o identificador da organização.
@@ -209,7 +229,7 @@ void main() {
       () async {
         final (:api, :adaptador) = _apiCom({'data': _dtoDoBackend()});
 
-        final os = await api.fetchWorkOrder(_id);
+        final os = await api.fetchWorkOrder(_id, tenantId: 't-1');
 
         expect(adaptador.capturadas.single.method, 'GET');
         expect(adaptador.capturadas.single.path, '/api/v1/work-orders/$_id');
@@ -241,31 +261,12 @@ void main() {
             'data': _dtoDoBackend(status: doBackend),
           });
 
-          final os = await api.fetchWorkOrder(_id);
+          final os = await api.fetchWorkOrder(_id, tenantId: 't-1');
 
           expect(os.status, esperado, reason: 'backend "$doBackend"');
         }
       },
     );
-
-    // vc:simbolo-novo:inicio
-    test(
-      '3. o tenant da OS vem do parâmetro da sessão, nunca do corpo',
-      () async {
-        final (:api, adaptador: _) = _apiCom({'data': _dtoDoBackend()});
-
-        final comSessao = await api.fetchWorkOrder(_id, tenantId: 't-1');
-        final semSessao = await api.fetchWorkOrder(_id);
-
-        expect(comSessao.tenantId, 't-1');
-        expect(
-          semSessao.tenantId,
-          isEmpty,
-          reason: 'o DTO não emite tenant (§2.8); sem sessão, fica vazio',
-        );
-      },
-    );
-    // vc:simbolo-novo:fim
 
     // vc:simbolo-novo:inicio
     // Emenda 2 (i) do orquestrador: o caso 3 prova "vem da sessão quando o corpo NÃO traz tenant";
@@ -404,7 +405,7 @@ void main() {
         }, status: 404);
 
         await expectLater(
-          api.fetchWorkOrder(_id),
+          api.fetchWorkOrder(_id, tenantId: 't-1'),
           throwsA(
             isA<ApiServerError>().having((e) => e.statusCode, 'status', 404),
           ),
@@ -417,7 +418,11 @@ void main() {
       () async {
         final (:api, :adaptador) = _apiCom({'data': _dtoDoBackend()});
 
-        await api.updateWorkOrderStatus(_id, WorkOrderStatus.inService);
+        await api.updateWorkOrderStatus(
+          _id,
+          WorkOrderStatus.inService,
+          tenantId: 't-1',
+        );
 
         final pedido = adaptador.capturadas.single;
         expect(pedido.method, 'PATCH');
@@ -433,7 +438,7 @@ void main() {
             in _appParaBackend.entries) {
           final (:api, :adaptador) = _apiCom({'data': _dtoDoBackend()});
 
-          await api.updateWorkOrderStatus(_id, doApp);
+          await api.updateWorkOrderStatus(_id, doApp, tenantId: 't-1');
 
           expect(adaptador.capturadas.single.data, {
             'status': esperado,
@@ -444,7 +449,7 @@ void main() {
           final (:api, :adaptador) = _apiCom({'data': _dtoDoBackend()});
 
           await expectLater(
-            api.updateWorkOrderStatus(_id, doApp),
+            api.updateWorkOrderStatus(_id, doApp, tenantId: 't-1'),
             throwsArgumentError,
             reason: 'app ${doApp.name} não existe no backend',
           );
@@ -474,6 +479,7 @@ void main() {
         final os = await api.updateWorkOrderStatus(
           _id,
           WorkOrderStatus.arrived,
+          tenantId: 't-1',
         );
 
         expect(os.status, WorkOrderStatus.arrived);
@@ -489,7 +495,12 @@ void main() {
           'data': _dtoDoBackend(status: 'assigned'),
         });
 
-        await api.assignWorkOrder(_id, 'user-7', note: 'Guincho 12');
+        await api.assignWorkOrder(
+          _id,
+          'user-7',
+          note: 'Guincho 12',
+          tenantId: 't-1',
+        );
 
         final pedido = adaptador.capturadas.single;
         expect(pedido.method, 'POST');
@@ -503,7 +514,7 @@ void main() {
         final (api: api2, adaptador: adaptador2) = _apiCom({
           'data': _dtoDoBackend(status: 'assigned'),
         });
-        await api2.assignWorkOrder(_id, 'user-7', note: '   ');
+        await api2.assignWorkOrder(_id, 'user-7', note: '   ', tenantId: 't-1');
         expect(adaptador2.capturadas.single.data, {'userId': 'user-7'});
       },
     );
@@ -513,7 +524,7 @@ void main() {
         'data': _dtoDoBackend(status: 'assigned', assignedUserId: 'user-7'),
       });
 
-      final os = await api.assignWorkOrder(_id, 'user-7');
+      final os = await api.assignWorkOrder(_id, 'user-7', tenantId: 't-1');
 
       expect(os.status, WorkOrderStatus.dispatched);
       expect(os.assignedUserId, 'user-7');
@@ -595,7 +606,7 @@ void main() {
 
           // E o fio do REST é o mesmo valor.
           final (:api, :adaptador) = _apiCom({'data': _dtoDoBackend()});
-          await api.updateWorkOrderStatus(_id, status);
+          await api.updateWorkOrderStatus(_id, status, tenantId: 't-1');
           expect(adaptador.capturadas.single.data, {'status': doRest});
         }
 
@@ -634,5 +645,178 @@ void main() {
         expect(eventos.single.note, 'Atribuída ao técnico');
       },
     );
+
+    // vc:simbolo-novo:inicio
+    // B-O6R-11 ciclo 2, C3-A1: no ciclo 1 uma resposta 200 SEM OS virava OS. A sonda da cadeira
+    // C3 mediu 12 de 12: corpo `{}`, `{data:null}`, `{data:[]}` e `{error:{...}}` produziam um
+    // `WorkOrder(localId: 'wo-remote-<timestamp>', syncStatus: synced)` -- dado inventado e
+    // marcado como sincronizado, que o repositorio guardava no cache local. Agora lanca.
+    test(
+      '13. resposta 200 sem objeto em `data` lanca, nos tres leitores de objeto',
+      () async {
+        final corpos = <String, Object>{
+          'vazio': <String, dynamic>{},
+          'data nulo': <String, dynamic>{'data': null},
+          'data lista': <String, dynamic>{'data': <dynamic>[]},
+          'envelope de erro com 200': <String, dynamic>{
+            'error': <String, dynamic>{
+              'code': 'WORK_ORDER_NOT_FOUND',
+              'reason': 'not_found',
+              'message': 'nao encontrada',
+            },
+          },
+        };
+        final chamadas =
+            <String, Future<WorkOrder> Function(DioWorkOrderRemoteApi)>{
+              'fetchWorkOrder': (api) =>
+                  api.fetchWorkOrder(_id, tenantId: 't-1'),
+              'updateWorkOrderStatus': (api) => api.updateWorkOrderStatus(
+                _id,
+                WorkOrderStatus.inService,
+                tenantId: 't-1',
+              ),
+              'assignWorkOrder': (api) =>
+                  api.assignWorkOrder(_id, 'user-7', tenantId: 't-1'),
+            };
+
+        final obtidos = <String, String>{};
+        for (final MapEntry(key: rotuloCorpo, value: corpo) in corpos.entries) {
+          for (final MapEntry(key: metodo, value: chamar) in chamadas.entries) {
+            obtidos['$metodo/$rotuloCorpo'] = await _resultado(
+              () => chamar(_apiCom(corpo).api),
+            );
+          }
+        }
+
+        // Uma assercao sobre as 12 combinacoes: no vermelho a mensagem mostra todas.
+        expect(obtidos, {
+          for (final rotuloCorpo in corpos.keys)
+            for (final metodo in chamadas.keys)
+              '$metodo/$rotuloCorpo': 'FormatException',
+        });
+      },
+    );
+    // vc:simbolo-novo:fim
+
+    // vc:simbolo-novo:inicio
+    test(
+      '14. objeto sem `id` (ou com `id` vazio) nao vira OS -- nem no detalhe, nem na lista',
+      () async {
+        final semId = Map<String, dynamic>.from(_dtoDoBackend())..remove('id');
+        final itemSemId = Map<String, dynamic>.from(_itemDaLista('a'))
+          ..remove('id');
+
+        final obtidos = <String, String>{
+          'detalhe sem id': await _resultado(
+            () => _apiCom({
+              'data': semId,
+            }).api.fetchWorkOrder(_id, tenantId: 't-1'),
+          ),
+          'detalhe com id vazio': await _resultado(
+            () => _apiCom({
+              'data': {..._dtoDoBackend(), 'id': ''},
+            }).api.fetchWorkOrder(_id, tenantId: 't-1'),
+          ),
+          'lista sem items': await _resultado(
+            () => _apiCom({
+              'pagination': {'limit': 20, 'offset': 0, 'total': 0},
+            }).api.fetchWorkOrders(tenantId: 't-1'),
+          ),
+          'lista com item sem id': await _resultado(
+            () => _apiCom({
+              'items': [itemSemId],
+              'pagination': {'limit': 20, 'offset': 0, 'total': 1},
+            }).api.fetchWorkOrders(tenantId: 't-1'),
+          ),
+        };
+
+        expect(obtidos, {
+          'detalhe sem id': 'FormatException',
+          'detalhe com id vazio': 'FormatException',
+          'lista sem items': 'FormatException',
+          'lista com item sem id': 'FormatException',
+        });
+      },
+    );
+    // vc:simbolo-novo:fim
+
+    // C2-F4: o comentario do parser citava o caso 2.3 do b099 como prova do destino do status
+    // desconhecido; aquele caso constroi `WorkOrder(status: scheduled)` e le o proprio literal --
+    // e tautologico. O destino passa a ser FIXADO aqui, ate
+    // `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` (pre-existente, `e79616aa` de 2026-06-13)
+    // decidir o que fazer com ele. Este teste NAO aprova o comportamento: registra qual e.
+    test(
+      '15. status fora do vocabulario cai em `scheduled` (pre-existente; fixado ate a pendencia decidir)',
+      () {
+        final desconhecidos = <String, Object?>{
+          'awaiting_parts': 'awaiting_parts',
+          'vazio': '',
+          'nulo': null,
+          'numero': 42,
+          'caixa alta': 'ON_SITE',
+          'draft': 'draft',
+        };
+
+        final obtidos = <String, String>{};
+        for (final MapEntry(key: rotulo, value: valor)
+            in desconhecidos.entries) {
+          final status = workOrderStatusFromApiValue(valor);
+          obtidos[rotulo] = '${status.name}/final=${status.isFinal}';
+        }
+
+        expect(obtidos, {
+          for (final rotulo in desconhecidos.keys)
+            rotulo: 'scheduled/final=false',
+        });
+      },
+    );
+
+    // vc:simbolo-novo:inicio
+    // C2-F3 (metade "concordancia"): nada obrigava a tabela do app a acompanhar o vocabulario do
+    // backend -- um status novo la entrava silenciosamente no destino do desconhecido. Aqui o
+    // vocabulario e LIDO do arquivo do backend (o teste nao o altera; `src/**` e proibido ao
+    // bloco) e cada valor tem de ter entrada EXPLICITA em `backendStatusToApp`.
+    test(
+      '16. todo status que o backend emite tem entrada explicita no parser do app',
+      () {
+        final arquivo = File(
+          '../../src/modules/work-orders/work-order.types.ts',
+        );
+        expect(
+          arquivo.existsSync(),
+          isTrue,
+          reason:
+              'o vocabulario do backend e a fonte: sem o arquivo o teste nao mede nada '
+              '(o CI faz checkout do repositorio inteiro e roda em mobile/flutter_app)',
+        );
+
+        final bloco = RegExp(
+          r'WORK_ORDER_STATUSES\s*=\s*\[(.*?)\]\s*as\s+const',
+          dotAll: true,
+        ).firstMatch(arquivo.readAsStringSync());
+        expect(
+          bloco,
+          isNotNull,
+          reason: 'WORK_ORDER_STATUSES mudou de forma em work-order.types.ts',
+        );
+
+        final valores = RegExp(
+          r'"([a-z_]+)"',
+        ).allMatches(bloco!.group(1)!).map((m) => m.group(1)!).toList();
+        expect(
+          valores,
+          hasLength(greaterThanOrEqualTo(10)),
+          reason: 'o backend declara 10 status; achei ${valores.length}',
+        );
+        expect(
+          backendStatusToApp.keys,
+          containsAll(valores),
+          reason:
+              'status novo no backend sem entrada no app cai no destino do desconhecido '
+              '(hoje `scheduled`, caso 15) sem ninguem perceber',
+        );
+      },
+    );
+    // vc:simbolo-novo:fim
   });
 }
