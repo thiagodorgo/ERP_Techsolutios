@@ -4532,3 +4532,14 @@ decide); a `P-SAN3-01-LISTA-2XX-MALFORMADO-VIRA-VAZIO` não nasce (emenda 3 (r))
 **Próximo passo:** orquestrador confere e empurra → `inspetor-de-terreno-da-junta` → junta do ciclo 2 (C1
 `validador-mestre`, C2 `master-teste-telas-rotas`, C3 `frontend-pixel-master`, C4 `coordenador-de-acessos`; unanimidade
 de 4) → CI → squash → §C5 → porteiro. Reprovação = parada + dossiê (`omega/reprovacoes/DOSSIE-B-SAN3-01-parada.md`).
+**Ciclo 2 do `B-SAN3-01` — REPROVADO pela C4, teto atingido, e a decisão do dono (2026-09-19).** A junta do ciclo 2 (objeto
+`8adaaa31`) teve C1, C2 e C3 APROVADO e a C4 `jurado-san3-01c2-fail-closed-web` REPROVADO, com dois bloqueios dentro do bloco: a
+decisão da página não amarrada ao estado (uma linha em `WorkOrdersPage.tsx` faz o 403 virar vazio com KPIs 0, e nada fica vermelho)
+e o alcance do guard menor que as próprias raízes (barrel de dois níveis e entidade fabricada inline em arquivo novo nascem
+permitidos). Pelo `D-TETO-DOIS-CICLOS`, o bloco parou e foi a dossiê
+(`agent-orchestration/omega/reprovacoes/DOSSIE-B-SAN3-01-parada.md`). O dono decidiu a opção B
+(`D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`): **a correção mergeia** — a perda de dado está fechada e provada (bloco 67/67, smoke
+1193/1193, backend 2996/2998, e2e 3/3) — e as duas propriedades viram o bloco **`B-SAN3-01b`**, no gate, bloqueante, com as
+pendências `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` e
+`P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`. A fonte Inter, declarada nos tokens e nunca carregada, virou
+`P-WEB-FONTE-INTER-NAO-CARREGADA` (dono `B-SAN3-06c`). O `B-SAN3-10` reconta o gate com os dois blocos novos.

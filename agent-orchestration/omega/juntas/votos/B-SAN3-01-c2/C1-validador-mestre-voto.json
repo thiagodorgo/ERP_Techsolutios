@@ -1,0 +1,59 @@
+{
+ "cadeira": "C1",
+ "papel": "validador-mestre",
+ "modelo": "claude-opus-5[1m] (Opus 5) — instância única, sem queda",
+ "objeto": "8adaaa31",
+ "head_pr": "8adaaa31f3709e2a01ad81b8154aba0243fa7a66 (gh pr view 387 → headRefOid = objeto; OPEN; CI run 35402044983 no headSha 8adaaa31 = success, 7/7)",
+ "base": "origin/main@02bd7dab",
+ "ciclo": 2,
+ "veredito": "APROVADO",
+ "declaracao_R-B": "Votei APROVADO na C1 do ciclo 1 e revoto na mesma cadeira sob a D-TETO-DOIS-CICLOS item 2 (identidade nova só na cadeira que reprovou — C3 e C4). Não achei os bloqueios do ciclo 1, não planejei nem desenvolvi a correção. Os meus 6 achados do ciclo 1 foram tratados no objeto (A-C1-01 prosa KPI corrigida; A-C1-02 commit A agora vermelho por comportamento, 14/15 AssertionError; A-C1-03 → P-SAN3-01-LOGISTICS-FICCAO-ROTEADA; A-C1-04 2ª origem 78bbf4f9; A-C1-05/06 cruzados).",
+ "resumo": "Correção (ec8492fd..8adaaa31, 20 arquivos) = §4 do plano do ciclo 2 + emenda 3 (r) + registro; nada de src/**, OperationsDispatchesPage intocada, useWorkOrderDetail a menos (D-C2-8). Bateria reexecutada no objeto igual à publicada: smoke 1193/1193, bloco 67/67, backend 2996/2998 com Postgres e Redis descartáveis, check/build/approval/3 guards/kpi-freeze/sync/diff --check verdes; commit A = 15 vermelhos em 67, exatamente os declarados. Registro: donos da emenda 3 (q) conferidos com blame, LISTA-2XX não nasce, OS-VAZIO-SEM-ACAO e P-008 FECHADAS, A-C1-01 corrigido, history append-only, índice byte-idêntico pelo blob. Zero bloqueia, zero ajuste, 4 notas de registro.",
+ "contagem": {
+  "bloqueia": 0,
+  "ajuste": 0,
+  "nota": 4
+ },
+ "mandato": {
+  "item1_diff_x_plano": "VERDE — git diff --name-status ec8492fd 8adaaa31: 20 arquivos, todos no §4 do plano do ciclo 2, na emenda 3 (r) (work-orders.adapter.ts +hasWorkOrdersList; work-orders.service.ts cabeçalho + 4 linhas 200-sem-lista→fallback) ou registro/KPI (Kpis/app.js = só a linha FROZEN do kpi-freeze); dispatches.service.ts só comentário; OperationsDispatchesPage.tsx diff vazio; useWorkOrderDetail.ts ausente (D-C2-8, aceita em 4 (v)); bloco inteiro 02bd7dab..8adaaa31 sem src/, prisma/, mobile/, infra/, .github/, .env, lockfiles, frontend/src/mocks/, styles/ (grep ec=1).",
+  "item2_bateria": "VERDE — no MEU worktree em 8adaaa31 (npm ci 222 + frontend ci 61, sem junction): frontend check EXIT 0; build EXIT 0 (26.18s); test:smoke 1193/1193 fail 0; bloco (cwd frontend/) 67/67; approval-frontend-contract 1/1; 3 guards de KPI 29/29; node --check Kpis/app.js 0; kpi-freeze --check em dia (snapshot 2026-09-18); sync-agent-agents --check OK 23; git diff --check 02bd7dab 8adaaa31 0; npm run check (raiz) 0; npm test 283 arq · 2998 · pass 2996 · fail 0 · skip 2 (RBAC_DB_PARITY) — forma: cluster novo + migrate deploy 107 sem seed + Redis novo + DATABASE_URL/REDIS_URL exportadas + CORE_SAAS_PERSISTENCE não exportada (memory), 2026-09-19T00:02:36Z→00:08:57Z — = 2996/2998 publicado. Vermelho-controle: checkout de e3db4d62 (frontend/src idêntico a ec8492fd e a bb540fb3) → 67 · pass 52 · fail 15 = [L6][F1][F1b][F2b][F3][F4][N1][N2][G1][V1..V6], 14 por AssertionError e F1 por TypeError (D-C2-3). Casos 47→67 (+20, G1 reescrito); e3db4d62..8adaaa31 sem mudança no teste.",
+  "item3_registro_kpi": "VERDE com 4 notas — índice regenerado a partir dos blobs de 8adaaa31 → 391/380, FECHADA 106, ABERTA 285, diferidas 13; cmp ec=0; hash-object --no-filters = b372200c = blob do índice. P-008 e P-SAN3-01-OS-VAZIO-SEM-ACAO em FECHADAS; P-SAN3-01-LISTA-2XX-MALFORMADO-VIRA-VAZIO ausente de pendencias.md e do índice; donos = emenda 3 (q) (06c ×2, emenda nominal 06a e 15, fila pós-gate ×2, 06b, B-SAN3-10, orquestrador, cruzamento P-028); origens re-medidas por blame (0a38f1be, 528e3601, 4d6e1219, 50845286, fb0ea65b, 9f12ea99, 98b4bee3, 5aa14ec8, 308c9efb, 656240c7) e linhas conferidas. KPI: smoke 1193, backend 2996/2998, flutter 864 carregado (mobile/ vazio), blocks 164 inalterado, mvp intocados, pr 387, merge/approved null; A-C1-01 corrigido (2995/2997 só em contexto de correção); history 159→160 append-only; SAN3 = 2 entradas e o guard da barra verde. Amostra P6 por mutação: G1e/G1d/G1i em dispatches.service.ts → [G1] vermelho; linha só de comentário → 67/67; L6M → [L6] vermelho; G2 com 15 fixtures (a)–(o)."
+ },
+ "achados": [
+  {
+   "id": "N-C1-01",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "git grep -n coordenador-de-acessos 8adaaa31 -- agent-orchestration/codex/comandos/B-SAN3-01-web-wo-sem-fallback-fabricado.md agent-orchestration/docs/status-geral.md → comando l.165 (emenda 3 (t): C4 coordenador-de-acessos, identidade nova) e status-geral l.4533 (Próximo passo … C4 coordenador-de-acessos); git grep -c jurado-san3-01c2 8adaaa31 → 0. A C4 que vota é jurado-san3-01c2-fail-closed-web (briefing do ciclo 2, cabeçalho, R-D do inspetor), decidida depois do objeto.",
+   "motivo": "Quem audita pelo repositório lê uma composição de junta que não é a que votou; só a ata do ciclo 2 pode registrar a troca."
+  },
+  {
+   "id": "N-C1-02",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "git grep -c c2dev/ 8adaaa31 -- agent-orchestration Kpis → 11, todas em votos/B-SAN3-01/00-dev-ciclo2.md (commitA.log, run-mut-c2.mjs, mut/*.json, mut/*.result.md, e2e-literal-plan.log, e2e-run1/2*.log, e2e-shots.log, edit-*.py); git ls-tree 8adaaa31 votos/B-SAN3-01/apoio/ → só os 7 arquivos do ciclo 1; ls scratchpad/c2dev/mut | wc -l → 52 (só no disco da sessão). release.summary e kpis-history publicam 26 formas… todas restauradas com base nesses arquivos.",
+   "motivo": "A prova citada pelo registro versionado aponta para disco efêmero; a C4 re-executa as mutações nesta junta, o que re-estabelece o fato, mas a citação do dev não é reproduzível pelo repositório."
+  },
+  {
+   "id": "N-C1-03",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "Emenda 3 (q) cria B-SAN3-06c que entra no gate e move para ele a P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (antes 06a); 5 pendências novas/reescritas com bloqueia: o gate (-DASHBOARD-…, -DESPACHOS-ALERTA-…, -LOGISTICS-…, -INVENTARIO-…, -MOCKMODE-…). git grep -l B-SAN3-06c 8adaaa31 → kpis-history.md, comando do 01, pendencias.md, status-geral.md, 00-dev-ciclo2.md, plano do ciclo 2; docs/revisoes/SAN3/PLANO_SAN3.md e controle/decisoes.md → 0.",
+   "motivo": "Coerente com a emenda (b) (a recontagem do gate é do B-SAN3-10), mas o bloco novo do gate e os bloqueantes acrescidos só são encontráveis pelo registro deste PR; fica nomeado para a recontagem. Não afeta produto."
+  },
+  {
+   "id": "N-C1-04",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia": "Kpis/kpis-history.md, entrada 2026-09-18: Novas: 9 ABERTAS com dono (emenda 3 (q)) e P-SAN3-01-OS-VAZIO-SEM-ACAO FECHADA. No pendencias.md do objeto a P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (uma das 9) tem dono: junta do ciclo 2 do B-SAN3-01 — não é dono da emenda 3 (q). A contagem confere com o índice (ABERTA 276→285, FECHADA 105→106).",
+   "motivo": "Atribuição imprecisa de uma entre nove na prosa do history; os números estão certos."
+  }
+ ],
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://postgres:***@127.0.0.1:56401/erp_jc1 (contêiner j-bsan301-c1-pg, postgres:16) — prisma generate, migrate deploy (107), npm test",
+  "REDIS_URL=redis://127.0.0.1:56402 (contêiner j-bsan301-c1-redis, redis:7-alpine) — npm test",
+  "portas 56401/56402 fora das faixas de netsh excludedportrange e sem listener antes; nenhum e2e rodado por esta cadeira (mandato da C2)"
+ ],
+ "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/C1-validador-mestre-evidencia.md (logs: c1-backend-8adaaa31.log, c1-bateria-8adaaa31.log, c1-bloco-8adaaa31.tap, c1-commitA-e3db4d62.tap, c1-mut/, c1-indice-regen/, c1-migrate.log)",
+ "limpeza": "FEITA 2026-09-19: git -C bsan301 worktree remove --force .claude/worktrees/j-bsan301-c1 → ec=0; worktree list sem j-bsan301-c1; diretório ausente (node_modules, frontend/node_modules e frontend/dist saíram com ele); docker rm -f j-bsan301-c1-pg j-bsan301-c1-redis → ec=0; docker ps -a sem j-bsan301-c1; portas 56401/56402 sem listener; mutações restauradas com porcelain vazio a cada uma e porcelain 0 antes da remoção; bsan301 intocado (status vazio, HEAD 8adaaa31); nada escrito na árvore principal, em bsan301-*, erp-*, pastrack-* ou j-* alheios; df C: 15G livres (95%)."
+}

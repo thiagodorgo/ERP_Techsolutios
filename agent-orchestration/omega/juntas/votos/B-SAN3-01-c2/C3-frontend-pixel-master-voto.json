@@ -1,0 +1,88 @@
+{
+ "cadeira": "C3",
+ "papel": "frontend-pixel-master",
+ "modelo": "Opus 5 (claude-opus-5[1m]) — herdado da sessão (model: inherit), não Fable por contrato (R-E)",
+ "objeto": "8adaaa31",
+ "ciclo": 2,
+ "declaracoes": [
+  "Identidade NOVA nesta cadeira: a C3 do ciclo 1 foi a `cognicao-visual` (achou C3-B1); não sou ela.",
+  "R-C: fui suplente nomeado da C3 no briefing v2 do ciclo 1 e NÃO fui acionado; nada do caso lido antes deste briefing.",
+  "Não achei no ciclo 1, não planejei, não desenvolvi, não consertei nada.",
+  "Somente leitura no código (R-E): escrevi só no scratchpad e no meu worktree j-bsan301-c3 (5 mutações de medida, cada uma restaurada com porcelain 0); nada no objeto, no bsan301 nem na árvore principal."
+ ],
+ "veredito": "APROVADO",
+ "motivo_do_veredito": "Nenhum achado bloqueia dentro do bloco. Medidos por estilo computado com back e front reais: C3-B1 fechado (erro: borda #FECACA, círculo #FEF2F2 + alerta #DC2626 28, título 16/800 #334155, detalhe 13 #94A3B8, botão cheio 10px 20px; sem permissão: círculo #F1F5F9 + escudo 26 #94A3B8; posições iguais ao protótipo com Δ ≤ 1px no texto); C3-A1 fechado (detalhe 404 prancheta × 403 escudo × 500 alerta vermelho); C3-A2 fechado (hover #1D4ED8 e foco 2px solid #2563EB offset 2px em todos os botões novos, por Tab real); C3-A3 fechado (KPI degradado neutro #94A3B8/#F1F5F9, sem selo); C3-P2 fechado (CTA Nova OS no vazio); D-C2-1 ACEITO contra a ficha; nenhuma cópia técnica nem andaime.",
+ "decisao_D-C2-1": "ACEITO. O vazio embutido reproduz o miolo da ficha l.362-368 (padding 54px 32px, círculo 60 #F1F5F9, prancheta 28 #94A3B8, título 16/800 #334155, detalhe 13 #94A3B8 max 330, CTA 10px 18px r10 13/700) com a mesma distância à caixa de padding; o quadro passa a ser o card da tabela (1px #E2E8F0, raio 14 × 13 = 1px) e a busca fica na tela, como no protótipo l.306-313. Ressalvas só de nota (C3c2-N2, C3c2-N3). Para a emenda 4 (u): P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD pode fechar.",
+ "confirmado_sem_achado": [
+  "C3-B1 (lista erro × protótipo l.370-376): card 1156 de largura, borda rgb(254,202,202), r13, 50px 32px, flex coluna gap 10; círculo (548,51) 60×60 rgb(254,242,242)/rgb(220,38,38); lucide-triangle-alert 28 em (564,67); título y121 16/800 rgb(51,65,85); detalhe 13 rgb(148,163,184) max 340 lh 19.5; botão pat-btn--primary #2563EB 10px 20px r10 13/700; role=alert",
+  "C3-B1 (lista 403 × protótipo l.378-382): borda #E2E8F0, círculo #F1F5F9, lucide-shield 26 #94A3B8 em (565,68), título idêntico, sem botão, sem role=alert; 'tenant' → 'organização' (§3)",
+  "C3-A1: detalhe 404 real (prancheta cinza) × 403 (escudo cinza) × 500 (alerta vermelho, borda #FECACA, role=alert) — distintos por ícone, cor e título; nenhum #BFDBFE",
+  "C3-A2: hover rgb(37,99,235)→rgb(29,78,216) e foco por teclado 'solid 2px rgb(37,99,235)' offset 2px em lista-erro, vazio 'Nova OS', detalhe 404/403/500 (primários) e secundário 'Voltar às ordens' (borda e texto → #2563EB no hover)",
+  "C3-A3: com 500 e 403 os 4 tiles de KPI ficam rgb(148,163,184) sobre rgb(241,245,249), valor '—', sem selo, cursor auto",
+  "C3-P2: CTA 'Nova OS' no vazio sem filtro (tenant_admin com work_orders:create), 10px 18px r10 13/700 #2563EB; clique → /work-orders/new",
+  "Lista 200 sem items → data-state error (não vazio)",
+  "Desatualizado: faixa #FFFBEB/#FDE68A/#92400E 10px 14px r10 role=status, a OS real fica na tela; distinto do erro",
+  "Cópia: nenhuma cópia técnica, nenhum UUID, nenhum andaime (TODO/PLANNED/código de tela/rota) no innerText de 7 telas; único 'Tenant' = 'Tenant Demo', nome da organização do seed (prisma/seed.ts:214)",
+  "A ficha é vigiada: 5 mutações visuais no StatePanel (título #0F172A, detalhe #64748B, botão sem pat-btn, sem permissão com prancheta, círculo do erro cinza) → V1–V6 vermelhos (2 a 4 por mutação)",
+  "Despachos e Dashboard com a API real vazia: vazio honesto, 0 mock/'Dados demonstrativos'/'Fallback'"
+ ],
+ "achados": [
+  {
+   "id": "C3c2-A1",
+   "gravidade": "ajuste",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "frontend/src/styles/tokens/tokens.css:70 `--font-sans: Inter, ui-sans-serif, system-ui, …` nasce em fb0ea65b (2026-05-26); frontend/index.html (origem fb0ea65b, 2026-05-26) não carrega Inter (grep -c -i 'inter|font' → 0); `git diff --quiet 02bd7dab 8adaaa31 -- frontend/index.html frontend/src/styles` → ec 0 (o bloco não toca); o comando proíbe 'qualquer outro módulo do frontend'.",
+   "evidencia": "CDP CSS.getPlatformFontsForNode (c3c2-measure3.cjs): protótipo → botão 'Inter-Bold' e título 'Inter-ExtraBold' (isCustomFont true, Google Fonts no .dc.html l.13); app → botão 'SegoeUI-Bold' e título 800 'SegoeUIBlack' (isCustomFont false). document.fonts do app = 0 faces; C:/Windows/Fonts sem Inter. Efeito medido nos painéis: altura de texto +1px e rótulo do botão −4,7px de largura.",
+   "motivo": "A web inteira renderiza em Segoe UI (e o peso 800 cai em Segoe UI Black) onde o protótipo usa Inter: divergência tipográfica transversal (§11), fora do alcance deste bloco. Não reprova; nenhuma pendência a nomeia hoje (grep em pendencias.md → 0) — o orquestrador designa o dono."
+  },
+  {
+   "id": "C3c2-N1",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "StatePanelAction nasce em 619fb2b5 (ciclo 2) com className 'pat-btn pat-btn--primary'; .pat-btn tem 'border: 1px solid' (app.css:3068-3081, origem 0a38f1be 2026-08-04).",
+   "evidencia": "facts.json: botão do protótipo 155.4×36 'border 0px none'; botão do app 152.7×39 'border 1px solid rgb(37,99,235)' (mesma cor do fundo, invisível). Δh +3 = +2 da borda + 1 da fonte (C3c2-A1); Δ de posição dos elementos acima ≤ 1px.",
+   "motivo": "A classe do padrão, usada para herdar hover e foco (C3-A2), soma 2px por eixo ao botão da ficha. Dentro da tolerância de ±2px e sem efeito visível; registro para a ata."
+  },
+  {
+   "id": "C3c2-N2",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "b00cd82d (ciclo 2, D-C2-1) move o vazio para dentro do card da tabela.",
+   "evidencia": "i01-lista-vazia-real-tela.png e i01-card: o vazio embutido fica abaixo do cabeçalho de colunas (CÓDIGO / CLIENTE / SERVIÇO / TÉCNICO / AGENDA / SITUAÇÃO / AÇÃO, .pat-os-grid--head presente) e o quadro é o do card (raio 14). No protótipo o vazio troca o card da tabela inteiro (woShowTable falso, l.3316; card próprio raio 13), sem cabeçalho de colunas.",
+   "motivo": "Diferença de composição que acompanha a D-C2-1, que aceito; o cabeçalho sobre zero linhas não afirma dado nenhum, e a busca fica na tela como no protótipo. Registro para a ata."
+  },
+  {
+   "id": "C3c2-N3",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "evidencia_escopo": "Em 02bd7dab/bb540fb3 o detalhe do vazio por filtro era 'Ajuste a busca ou os filtros acima.' (WorkOrdersPage.tsx:375@02bd7dab); o '— ou crie uma nova ordem de serviço.' entra no ciclo 2.",
+   "evidencia": "i06-vazio-filtro-panel: detalhe 'Ajuste a busca ou os filtros acima — ou crie uma nova ordem de serviço.' e buttons = [] (sem CTA). No protótipo l.362-368 esse mesmo estado leva o botão 'Nova OS'. O 'Nova OS' do cabeçalho segue na página (sem gate: P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO, dono B-SAN3-10).",
+   "motivo": "A cópia convida a criar e o painel não oferece a ação que o protótipo põe ali; o alvo existe no cabeçalho da mesma tela. Registro para a ata."
+  },
+  {
+   "id": "C3c2-N4",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "evidencia_escopo": "`git diff --quiet 02bd7dab 8adaaa31 -- frontend/src/layouts frontend/src/components` → ec 0; o estouro é igual com a lista normal (o768-normal-com-os).",
+   "evidencia": "A 768px: painel de erro 484px sem estouro próprio; a página estoura 44px a partir da topbar (sino, right 812), idêntico no estado normal com OS. A 390px o shell (sidebar) comprime o painel a 106px.",
+   "motivo": "Responsividade do shell, não dos estados do bloco; registro para completar o checklist de responsividade."
+  }
+ ],
+ "contagem": {
+  "bloqueia": 0,
+  "ajuste": 1,
+  "ajuste_pre-existente": 1,
+  "nota": 4,
+  "nota_dentro-do-bloco": 3,
+  "nota_pre-existente": 1
+ },
+ "urls_usadas": [
+  "DATABASE_URL=postgresql://postgres:***@127.0.0.1:56413/erp_techsolutions?schema=public (j-bsan301-c3-pg, postgres:16; 107 migrations; db:seed)",
+  "REDIS_URL=redis://127.0.0.1:56414 (j-bsan301-c3-redis, redis:7-alpine)",
+  "API http://127.0.0.1:3313/api/v1 (CORE_SAAS_PERSISTENCE=prisma, NODE_ENV=test); web http://127.0.0.1:5313 (VITE_USE_MOCKS=false, VITE_DEFAULT_TENANT_ID vazio)",
+  "Protótipo file:///…/j-bsan301-c3/docs/claude-code-handoff/ERP%20Web.dc.html (chips Vazia / Erro de API / Sem permissão)"
+ ],
+ "evidencia_arquivo": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/C3-frontend-pixel-master-evidencia.md",
+ "capturas": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/c3c2-shots/ (PNG + facts.json/facts2.json/facts3.json + sbs-estados.png); scripts em scratchpad/c3c2-measure*.cjs e c3c2-sbs.cjs",
+ "limpeza": "servidores 3313 (PID 26700) e 5313 (PID 19440) encerrados por PID (taskkill), 0 LISTEN nas duas portas, 0 processo com j-bsan301-c3; docker rm -f j-bsan301-c3-pg j-bsan301-c3-redis → 0 restantes; git -C bsan301 worktree remove --force .../j-bsan301-c3 → ec 0, 0 na lista, diretório ausente; bsan301 intocado (HEAD 8adaaa31, porcelain 0); j-bsan301-c2-* (outra cadeira) não tocados; logs de servidor apagados; livre em C: 14 GB (95%)."
+}

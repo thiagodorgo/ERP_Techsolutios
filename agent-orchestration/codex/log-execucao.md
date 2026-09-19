@@ -4433,3 +4433,7 @@ Kpis/app.js`, `sync-agent-agents --check` e `git diff --check` no relatório do 
 Limpeza (§C5): `frontend/dist/` removido depois do build e as cópias temporárias do e2e removidas depois de cada rodada;
 `test-results/`, `playwright-report/` e os contêineres `dev-bsan301-c2-pg`/`dev-bsan301-c2-redis` saem pelo nome no fim
 do trabalho do dev (conferido no relatório dele); nada rastreado é apagado.
+2026-09-19 — `B-SAN3-01` ciclo 2: junta REPROVADA pela C4 (2 bloqueia dentro do bloco: página não amarrada ao estado; guard com
+alcance menor que as raízes). Teto de dois ciclos atingido → dossiê ao dono → decisão `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`
+(opção B): mergeia a correção e abre o `B-SAN3-01b` no gate, bloqueante, com 3 pendências; a fonte Inter vira pendência do
+`B-SAN3-06c`. Votos do ciclo 2 em `omega/juntas/votos/B-SAN3-01-c2/`; ata com os dois ciclos em `omega/juntas/J-B-SAN3-01.md`.

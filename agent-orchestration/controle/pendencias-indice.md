@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **391** |
-| IDs distintos | 380 |
-| **ABERTAS** | **285** |
+| Cabecalhos `## P-` | **395** |
+| IDs distintos | 384 |
+| **ABERTAS** | **289** |
 | — das quais **diferidas** (balde C) | 70 |
-| — das quais **ativas nesta rodada** | **215** |
+| — das quais **ativas nesta rodada** | **219** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 106 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **391 cabecalhos para 380 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **395 cabecalhos para 384 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 115
+## ABERTAS · balde A — material — 119
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -186,6 +186,10 @@
 | `P-SAN3-01-LOGISTICS-FICCAO-ROTEADA` | 9426 | MÉDIA | sim | P-SAN3-01-LOGISTICS-FICCAO-ROTEADA (2026-09-18) — a rota viva `/logistics` serve OS e at |
 | `P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO` | 9435 | MÉDIA | sim | P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO (2026-09-18) — fechar contagem cíclic |
 | `P-SAN3-01-MOCKMODE-TRES-AUTORIDADES` | 9444 | MÉDIA | sim | P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com p |
+| `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` | 9507 | ALTA | sim | P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está ama |
+| `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9516 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
+| `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9525 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
+| `P-WEB-FONTE-INTER-NAO-CARREGADA` | 9534 | MÉDIA | sim | P-WEB-FONTE-INTER-NAO-CARREGADA (2026-09-19) — a web inteira renderiza em Segoe UI, e o  |
 
 ## ABERTAS · balde B — processo/registro — 100
 

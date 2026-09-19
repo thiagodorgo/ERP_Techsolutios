@@ -2362,3 +2362,28 @@ lê OS"*; P2 — *"Sim — Financeiro monta orçamento"*.
 **O que a decisão NÃO muda.** A `D-TETO-DOIS-CICLOS` segue valendo — esta é a intervenção humana que ela prescreve. Cada
 bloco continua com planejador em Fable, crítico nos blocos de invariante, inspetor de terreno e junta com o quórum do
 risco dele, antes de qualquer código. O PR do plano não toca código.
+## D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA (decisão do dono, 2026-09-19) — o #387 mergeia, e as guardas viram bloco no gate
+
+**O que aconteceu.** A junta do `B-SAN3-01` reprovou os dois ciclos que o `D-TETO-DOIS-CICLOS` permite: o ciclo 1 por 2 × 2
+(fidelidade dos estados e fail-closed) e o ciclo 2 pela cadeira C4, com dois bloqueios dentro do bloco — a decisão da página não
+amarrada ao estado e o alcance do guard menor que as próprias raízes. Dossiê:
+`agent-orchestration/omega/reprovacoes/DOSSIE-B-SAN3-01-parada.md`; ata: `omega/juntas/J-B-SAN3-01.md`.
+
+**A decisão, literal (opção B do dossiê):** *mergear a correção e abrir um bloco no gate só para as duas propriedades que
+faltaram.*
+
+**Por quê.** O defeito que motivou o bloco — a web fabricar dado quando o backend recusa, com perda do que o operador digitou —
+está fechado e provado por execução no objeto `8adaaa31`. As duas provas da C4 são MUTAÇÕES: o código de hoje não fabrica; o que
+falta é a garantia de que a próxima linha não reintroduza a fabricação sem nada ficar vermelho. Isso é trabalho de propriedade e
+ganha bloco próprio, em vez de um terceiro ciclo sobre o mesmo objeto — a própria decisão que criou o teto mediu que escalar
+reduz a chance de aprovação a cada rodada.
+
+**O que a decisão obriga.**
+1. O `B-SAN3-01b` (`fix/web-guarda-por-alcance-e-estado-da-pagina`) nasce **no gate**, bloqueante, com as duas propriedades como
+   critério: (i) a decisão da página amarrada ao estado que o reducer produziu, por teste que renderiza a página REAL; (ii) o guard
+   do mock por alcance em profundidade arbitrária de import (barrel de N níveis) e a entidade fabricada inline dentro das raízes.
+   O ajuste A-03 (vigias textuais da fiação dos hooks) entra no mesmo bloco.
+2. As três pendências nascem com esse dono e **BLOQUEIAM** o gate; o `B-SAN3-10` reconta o gate com este bloco e com o
+   `B-SAN3-06c`.
+3. O texto de fechamento dos cabeçalhos dos services do `B-SAN3-01` passa a dizer o que o guard prova hoje (as duas raízes
+   declaradas, import direto e barrel de um nível), não mais "o único caminho" — a correção do texto vai no `B-SAN3-01b`.

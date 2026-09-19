@@ -9504,3 +9504,38 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `dentro-do-bloco` (desenho do ciclo 2).
 - **dono:** junta do ciclo 2 do `B-SAN3-01` (aceita a divergência ou reprova).
 - **teste de encerramento:** E1 da cópia avulsa verde numa base sem OS (busca presente e `[data-state="empty"]` visível) e a C3 aceitar o vazio embutido contra a ficha.
+## P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está amarrada ao estado que o reducer produziu — ALTA
+
+- status: ABERTA (achado A-01 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- **prova:** mutação `N-PG-PAINEL` em `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (trocar `status={status}` por `status="empty"` no `WorkOrdersLoadState`) → a página REAL mostra o 403 como `data-state="empty"`, "Nenhuma ordem de serviço" e KPIs `0|0|0|0`, com `node --test tests/work-orders-honest-errors.test.tsx` 67/67, `tsc` ec=0 e `test:smoke` 1193/1193 — nada fica vermelho. Controle `N-PG-SEED`: com o estado certo, `[forbidden]` e KPIs "—".
+- **escopo:** `dentro-do-bloco` (o código da página é do `B-SAN3-01`); os testes amarram o reducer e os componentes com props passados à mão, e ninguém vigia os props que a página passa.
+- **dono:** `B-SAN3-01b` (bloco novo do gate, `fix/web-guarda-por-alcance-e-estado-da-pagina`).
+- **bloqueia:** BLOQUEIA o gate da versão vendável (critério 4 — a tela não mostra erro como dado).
+- **teste de encerramento:** teste que renderiza a página REAL com o backend em 403 e em 5xx e assere o painel e os KPIs; a mutação `N-PG-PAINEL` fica vermelha.
+
+## P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o próximo membro dentro das próprias raízes — ALTA
+
+- status: ABERTA (achado A-02 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- **prova:** mutação `N-BARREL2` (arquivos novos `reexport-a.ts` → `export * from "./work-orders.mock"`, `reexport-b.ts` → `export * from "./reexport-a"`, e um service novo com `catch → getMockWorkOrderDetail` importado de `./reexport-b`) → em modo real (`VITE_USE_MOCKS=false`, backend 500) a tela recebe `OS-000101`, com `[G1]` VERDE, bloco 67/67, `tsc` e smoke verdes; o controle com barrel de UM nível fica vermelho. Mutação `N-LITERAL`: entidade fabricada escrita inline (`id=""`, `code="OS-FALLBACK"`) em arquivo novo das raízes também nasce permitida — a classe é maior que o import de mock.
+- **escopo:** `dentro-do-bloco` (o guard e os cabeçalhos dos services são do `B-SAN3-01`; o cabeçalho afirma um alcance que a mutação desmente).
+- **dono:** `B-SAN3-01b`.
+- **bloqueia:** BLOQUEIA o gate da versão vendável.
+- **teste de encerramento:** guard que resolve import em profundidade arbitrária (barrel de N níveis) e pega entidade fabricada inline dentro das raízes; as mutações `N-BARREL2` e `N-LITERAL` ficam vermelhas; o texto dos cabeçalhos diz o que o guard prova.
+
+## P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são textuais — MÉDIA
+
+- status: ABERTA (achado A-03, ajuste, da cadeira C4 do ciclo 2 do `B-SAN3-01`)
+- **prova:** mutação `N-W1TXT` em `frontend/src/modules/work-orders/useWorkOrders.ts` (embrulhar o `setState` num bloco que redefine `background = false`) mantém as três asserções textuais do `[W1]` satisfeitas, com bloco 67/67, `tsc` e smoke verdes.
+- **escopo:** `dentro-do-bloco`. A quebra vai na direção fail-closed (a falha em 2º plano passa a mostrar o painel de erro em vez de manter o dado com a faixa): não chega dado fabricado à tela — por isso ajuste, não bloqueio.
+- **dono:** `B-SAN3-01b`.
+- **bloqueia:** não bloqueia o gate.
+- **teste de encerramento:** o vigia da fiação passa a medir COMPORTAMENTO (a falha em 2º plano mantém os dados com a faixa) e a mutação `N-W1TXT` fica vermelha.
+
+## P-WEB-FONTE-INTER-NAO-CARREGADA (2026-09-19) — a web inteira renderiza em Segoe UI, e o protótipo usa Inter — MÉDIA
+
+- status: ABERTA (achado C3c2-A1 da cadeira C3 do ciclo 2 do `B-SAN3-01`)
+- **prova:** `frontend/src/styles/tokens/tokens.css:70` declara `--font-sans: Inter, …` desde `fb0ea65b` (2026-05-26), e `frontend/index.html` (mesma origem) não carrega a fonte (`grep -c -i 'inter|font'` → 0): o peso 800 cai em Segoe UI Black. `git diff --quiet 02bd7dab 8adaaa31 -- frontend/index.html frontend/src/styles` → ec 0 (o bloco não toca).
+- **escopo:** `pre-existente` (`fb0ea65b`, 2026-05-26); transversal a toda a web (§11 do `CLAUDE.md`).
+- **dono:** `B-SAN3-06c` (bloco de acabamento da web), com escopo nominal ampliado a `frontend/index.html`.
+- **bloqueia:** BLOQUEIA o gate da versão vendável (critério 13 — o produto sai polido).
+- **teste de encerramento:** a família tipográfica computada nas telas do gate é Inter; guard que falha se o token declarar uma fonte que o documento não carrega.
