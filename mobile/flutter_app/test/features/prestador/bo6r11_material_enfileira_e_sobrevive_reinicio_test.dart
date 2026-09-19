@@ -142,9 +142,10 @@ void main() {
         final pendentes = await filaAposReinicio.pendingForTenant(_tenant);
 
         expect(pendentes, hasLength(3));
+        const ordemDeCriacao = ['ELE-0031', 'CON-0009', 'ELE-0102'];
         expect(
           pendentes.map((a) => a.payload['sku']).toList(),
-          ['ELE-0031', 'CON-0009', 'ELE-0102'],
+          ordemDeCriacao,
           reason: 'o replay envia na ordem de criação',
         );
         for (final acao in pendentes) {
