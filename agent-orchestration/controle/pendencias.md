@@ -330,12 +330,13 @@
   `allowedRoles`), e o menu VISUAL de `inventory` aproxima (cai no kind `gestor`). A autoridade de acesso e
   o route-guard/backend (correto); so o menu visual nao honra 100% a matriz para esses papeis.
 - impacto: baixo — acesso e correto (permissao); estetica de menu aproxima p/ inventory/support.
-- status: ABERTA (PARCIAL — fechado: `support`→"Supervisor" e `field_dispatcher`→"Operação de Campo" têm rótulos distintos (`frontend/src/modules/auth/auth.adapter.ts:234-235`); aberto: `mapBackendRole` não tem ramo para `inventory` (`auth.adapter.ts:225-238` → `null`), o usuário só `inventory` fica com `roles=[]` e cai no menu do gestor (`layouts/appSidebarNav.ts:271-277`), e `operator`/`field_technician` seguem fundidos em "Operador Logistico") (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (bloco futuro: adicionar `inventory` (+ representacoes distintas) a `UserRole`+`mapBackendRole`)."
+- status: ABERTA (PARCIAL — B-SAN3-04a, 2026-09-18, item 38: FECHADA a parte `inventory` — o papel tem rótulo "Estoque" na união `UserRole` (`frontend/src/modules/auth/types.ts:11`), ramo em `mapBackendRole` (`auth.adapter.ts:233`), `RoleKind` "inventory" com menu PRÓPRIO (`appSidebarNav.ts:203-214`) e subtítulo "Estoque"; o usuário só-Estoque deixou de cair no menu do gestor (24 de 28 itens negados no head-base → 0). SEGUE ABERTO: `operator` e `field_technician` fundidos em "Operador Logistico" (o técnico vê Seguros e Estoque que a rota nega) → `P-SAN3-04A-MENU-RESIDUAL`, dono `B-SAN3-06a`). Valor anterior, preservado: "ABERTA (PARCIAL — fechado: `support`→"Supervisor" e `field_dispatcher`→"Operação de Campo" têm rótulos distintos (`frontend/src/modules/auth/auth.adapter.ts:234-235`); aberto: `mapBackendRole` não tem ramo para `inventory` (`auth.adapter.ts:225-238` → `null`), o usuário só `inventory` fica com `roles=[]` e cai no menu do gestor (`layouts/appSidebarNav.ts:271-277`), e `operator`/`field_technician` seguem fundidos em "Operador Logistico") (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (bloco futuro: adicionar `inventory` (+ representacoes distintas) a `UserRole`+`mapBackendRole`).""
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: o usuário só `inventory` recebe o menu inteiro do gestor (`roles=[]` → "gestor"), e o backend nega o que o menu oferece.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 - **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 38 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **emenda (B-SAN3-04a, 2026-09-18):** o residual desta entrada (fusão `operator`/`field_technician`) passa ao `B-SAN3-06a` pela `P-SAN3-04A-MENU-RESIDUAL`; o guard `tests/san3-04a-menu-front-x-catalogo.test.ts` (`ALLOWLIST_MENU`) nomeia os itens negados que restam e reprova qualquer outro.
 
 ## P-027 - F11: divergencias matriz x catalog + perms `purchase_orders:read`/`reports:read` ausentes (2026-07-09)
 
@@ -407,6 +408,8 @@
 
 - **emenda sobre `P-033` (plano SAN3 §4.1 item 14, 2026-09-11):** a premissa que a fatia C1 usou para descartá-la — permissão em runtime vinda do catálogo — está refutada: vem do banco, `src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts:90-107` → `src/modules/core-saas/repositories/role.repository.ts:118` (crítico SAN3 r1, CR1-15); volta ao gate como condicional, medida no `B-SAN3-04` em modo banco. (`P-033` não tem cabeçalho próprio: está registrada dentro desta entrada.)
 - **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 14 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-033`: o bullet `P-033` (item 14) tem dono `B-SAN3-04a`.
+- **emenda — `P-033` FECHADA (B-SAN3-04a, 2026-09-18, item 14):** `prisma/seed.ts` passa a semear o papel `auditor` (`SEEDED_SYSTEM_ROLES = [...STANDARD_ROLES, "auditor"]`, `prisma/seed.ts:256-258`). Medido em base descartável: head-base `13e3783c`, `migrate deploy` + `db:seed` (a forma da CI) → **0** linhas globais de `auditor` e o auditor recebe **403** `role_required` em `/tags`, `/pois`, `/tenant-settings`; código do bloco, base nova, `migrate deploy` + `db:seed` → **1** linha global com **56** concessões, idênticas às do catálogo, e **200** nas três rotas (drills D1/D4 do relatório do dev). Os outros cinco papéis legados seguem fora do seed por escopo → `P-SAN3-04A-SEED-PAPEIS-LEGADOS`. A `P-032` (menu de Configurações em `tenantNavigation.ts`) **continua aberta** — esta emenda fecha só o bullet `P-033`.
+- **emenda (B-SAN3-04a, 2026-09-18, plano do bloco §5):** `frontend/src/navigation/tenantNavigation.ts:5` mantém `REGISTRY_READ_ROLES` sem "Financeiro" — depois da P2 (`customers:read`/`service_catalog:read` ao `finance`) a paleta de comandos não oferece Clientes/Serviços ao Financeiro. Inerte para o sidebar (que vem de `NAV_BY_ROLE`); arquivo fora do escopo do `B-SAN3-04a` (proibido pelo §9 do plano do bloco). Fica nesta entrada, que já é a de `tenantNavigation.ts`.
 
 ## P-Ω3a (Ω3-a ServiceQuote) — pendências declaradas
 - **Aditivo `quotes[]` no detalhe da OS** (`GET /work-orders/:id`) DEFERIDO para Ω3-e (consumidor natural;
@@ -957,7 +960,7 @@ o dashboard-pai /finance (FinanceiroPage, ainda MOCK) e o item de menu FINANCEIR
 finance.read. Resolver no Ω4-8 (dashboard real): trocar o gate por uma perm real (financial_titles:read ou uma
 finance_dashboard:read dedicada) quando a FinanceiroPage consumir o backend.
 
-- **status:** ABERTA (PARCIAL — fechado: a página real (`FinanceiroPage.tsx` com `useFinancialSummary`, `08d00949`, #224) e a guarda de rota (`App.tsx:655-663` aceita `financial_entries:read`, `1bd1ed36`, #227); aberto: o registro de navegação do backend ainda governa `/finance` pela órfã `finance:read` (`navigation.registry.ts:344-356`; filhas `:361-393` com `billing:read`/`invoices:read`/`payments:read`), que o catálogo não concede a `finance` nem a `manager` — em modo real Financeiro/Cobranças/Pagamentos saem do menu desses papéis; provado por composição de leitura, não executado) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** FECHADA (B-SAN3-04a, 2026-09-18 — item 13: o registro de navegação governa `/finance` por `financial_entries:read` e `/finance/charges`, `/finance/invoices`, `/finance/payments` por `financial_titles:read`, as permissões que as rotas e o `App.tsx` comparam (`src/modules/navigation/navigation.registry.ts:344-400`; nenhuma permissão nova). Provado por EXECUÇÃO, não por composição de leitura: menu do banco (`GET /api/v1/navigation/menu`, `CORE_SAAS_PERSISTENCE=prisma`, app sob papel NOSUPERUSER NOBYPASSRLS) do `finance` ⊇ `/finance`, `/finance/charges`, `/finance/payments` e do `manager` ⊇ os três — `tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts`, vermelho no head-base `13e3783c`). Valor anterior, preservado: "ABERTA (PARCIAL — fechado: a página real (`FinanceiroPage.tsx` com `useFinancialSummary`, `08d00949`, #224) e a guarda de rota (`App.tsx:655-663` aceita `financial_entries:read`, `1bd1ed36`, #227); aberto: o registro de navegação do backend ainda governa `/finance` pela órfã `finance:read` (`navigation.registry.ts:344-356`; filhas `:361-393` com `billing:read`/`invoices:read`/`payments:read`), que o catálogo não concede a `finance` nem a `manager` — em modo real Financeiro/Cobranças/Pagamentos saem do menu desses papéis; provado por composição de leitura, não executado) (inventário SAN3, fatia C2, 2026-09-11). Valor anterior, preservado: "ABERTA" · **agendamento:** DIFERIDO-LEVE · **severidade:** BAIXA · **dono:** a atribuir"
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia C2: em modo real, o registro de navegação do backend tira Financeiro/Cobranças/Pagamentos do menu dos papéis Financeiro e Gestor (provado por composição de leitura, não executado); bloqueia o vendável.
 - **dono:** `B-SAN3-04a` (plano SAN3, §4.1 item 13 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -1478,7 +1481,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   `tenant_checklists:read` a esses papéis → bloqueados já na rota (under-grant vs matriz).
 - acao: reconciliar `catalog.ts` × `RBAC_MATRIX.md` (fonte de verdade da matriz) em WS-SCALE-8TELAS. Nenhuma das duas é
   exposição de ESCRITA — não é risco imediato.
-- status: ABERTA (PARCIAL — fechado: item 1, o `manager` não tem mais `checklist_runs:create` no `catalog.ts` (último toque na contagem em `8a938414`, #320, D-CHK-DISPATCH-CREATE); aberto: item 2, `finance` e `inventory` seguem sem `tenant_checklists:read` (`catalog.ts`, blocos l.809-894) contra `RBAC_MATRIX.md:43`) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; pré-existente)."
+- status: FECHADA (B-SAN3-04a, 2026-09-18 — é duplicata da `P-RBAC-CHECKLIST-DRIFT` e o bloco dono é o dela; o item 2 que restava aberto, `finance` e `inventory` sem `tenant_checklists:read` contra `RBAC_MATRIX.md:43`, foi concedido; o item 1 já estava fechado. Fechamento fora da lista do §4.7 do plano do bloco — declarado como divergência no relatório do dev). Valor anterior, preservado: "ABERTA (PARCIAL — fechado: item 1, o `manager` não tem mais `checklist_runs:create` no `catalog.ts` (último toque na contagem em `8a938414`, #320, D-CHK-DISPATCH-CREATE); aberto: item 2, `finance` e `inventory` seguem sem `tenant_checklists:read` (`catalog.ts`, blocos l.809-894) contra `RBAC_MATRIX.md:43`) (inventário SAN3, fatia B1, 2026-09-11). Valor anterior, preservado: "aberto (não-bloqueante; pré-existente).""
 - **duplicata de:** `P-RBAC-CHECKLIST-DRIFT` (mesma matéria, o item 2 — `finance`/`inventory` × checklists; inventário SAN3, fatia B1) — tratar junto; bloco dono = o de `P-RBAC-CHECKLIST-DRIFT`.
 
 ## P-CHECKLIST-BUILDER-READONLY — builder interativo no modo "Visualizar" para papel só-leitura (2026-07-19)
@@ -1724,7 +1727,7 @@ rodada de saneamento de RBAC (§A2 — registradas para não consolidar em silê
 - **`finance`/`inventory`**: a matriz concede `read`/`read+answer-by-scope`; o catálogo pode não refletir.
 Decidir numa rodada dedicada se a matriz ou o catálogo é a fonte a ajustar, caso a caso.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** FECHADA (B-SAN3-04a, 2026-09-18 — item 15: as quatro divergências com `RBAC_MATRIX.md:43-44` convergem — `manager` perde `checklist_runs:update` e `checklist_runs:acknowledge` (catálogo + revogação NOMEADA no banco, `DELIBERATE_REVOCATIONS` → passo 3-bis de `scripts/provision-rbac.ts`); `finance` e `inventory` ganham `tenant_checklists:read` e `checklist_runs:read` (só a leitura incondicional; a resposta "por escopo" do `inventory` → `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE`); `field_technician` ganha `tenant_checklists:read`. O `complete` do `manager` fica (a matriz o nomeia, "complete-by-scope") com o escopo em `P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO`. Guard da propriedade: `tests/san3-04a-matriz-x-catalogo-guard.test.ts`, casos `[item 15 · l.43]` e `[item 15 · l.44]`, vermelhos no head-base e por mutação). Valor anterior, preservado: "ABERTA · **severidade:** a classificar · **dono:** a atribuir"
 - **junta do PR #386, ciclo 1 (C2-04, 2026-09-12):** as divergências com a matriz (l.43-44) são quatro — `manager` com `checklist_runs:update` e `acknowledge`; `finance` e `inventory` sem permissão de checklist; `field_technician` sem `tenant_checklists:read`. O teste do `B-SAN3-04` cobre as quatro (plano SAN3 v5).
 - **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 3 lido ao pé da letra — o papel `manager` tem `checklist_runs:acknowledge` no catálogo (`catalog.ts:574`) além do que `RBAC_MATRIX.md:43-44` concede. Bloco `B-SAN3-04`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
@@ -3112,6 +3115,7 @@ por herança do catálogo. finance e inventory ficam de fora **por ausência de 
 **Fecha quando:** existir alçada monetária ancorada no agregado (valor da OS/pendência + limite por papel, na
 linha do `APPROVAL_LIMITS.md`) e a concessão puder ser condicionada a ela.
 - status: ABERTA — MÉDIA. Dono natural: o bloco que introduzir alçada por valor.
+- **emenda (B-SAN3-04a, 2026-09-18 — CE-6, cél. 3 do item 56):** esta entrada é a disposição fail-closed da célula `inventory` × `RBAC_MATRIX.md:46` ("approval-by-policy"): `work_orders:approve` segue **não concedido** ao `inventory` (nem ao `finance`, mesma célula) enquanto não existir alçada por valor no agregado de aprovação — conceder hoje seria "aprova sempre". O guard `tests/san3-04a-matriz-x-catalogo-guard.test.ts` a trata como célula qualificada não concedida (nem A nem B). Decisão: `D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`.
 
 ## P-O6R-B07A-PROVISIONAMENTO-DA-CHAVE (2026-09-02) — `work_orders:approve` exige migração e 3 snapshots fora do §5 — **BLOQUEIA o merge do 07a**
 
@@ -8568,6 +8572,16 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** P-WEB-ROTAS-SEM-PORTA (link de provisionamento); decisão de planos
 - **dono:** `B-SAN3-18` (plano SAN3 §4.1 item 16); bloco dono proposto pela fatia: bloco "gate comercial"
+- **emenda (junta do `B-SAN3-04a`, achado C2-03, 2026-09-18 — `bloqueia`/`pre-existente`):** medido por login real no objeto
+  `fbda96b0`, N = **8** pares papel × item visível com módulo NÃO provisionado na organização demo — `finance` × Clientes
+  (`customers`), Aprovações (`approvals`), Estoque (`inventory`), Pedidos (`purchasing`), Relatórios (`reports`); `inventory` ×
+  Estoque, Pedidos, Relatórios. `tenants.modules` da demo = `{dashboard, work_orders, field_operations, logistics, finance,
+  checklists, tenant_checklist, notifications, users, audit}`; o catálogo (`platform-modules.service.ts:3-24`) tem
+  `customers`, `inventory`, `purchasing`, `reports` e `approvals` fora dela (o mapeamento item → módulo por nome é inferência
+  declarada da cadeira). O backend não recusa por módulo em rota nenhuma (`grep requireModule|hasModule src` = só
+  `navigation.service.ts` e `mobile.routes.ts`). **Instância NOVA trazida pelo `B-SAN3-04a`: `finance` × Clientes**
+  (`/cadastros/clientes` já estava entre os 27 caminhos não governados). Não reprovou o bloco: o comando dele diz
+  literalmente "Fica de fora: o gate de módulo (`B-SAN3-18`)", e o `PLANO_SAN3.md` l.130/l.259 já dá a classe ao `B-SAN3-18`.
 - **impacto vendável:** **BLOQUEIA** se a venda for por plano/módulo — Starter vê (e, sem recusa por rota, usa) o Enterprise
 - **teste de encerramento:** tenant sem módulo X: item some E rota do módulo X = 403; guard: todo path de `MVP_NAV_PATHS` está no registry
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** a contagem é **40**, não 38 (junta do ciclo 2, C2c2-02): os 27 do método `MVP_NAV_PATHS` menos registro mais as **13** entradas de organização registradas sem `requiredModules` — as 11 de `/patios/*` e `/telemetria/*`, `/controle/notificacoes` e `/operations/quotes` (recontado por script sobre o registro e o menu do head `ec4f34a8`). Condição de entrada CE-1 do `B-SAN3-18` (plano SAN3 v5, §4.1 item 16; §5.6): mapa rota → módulo gerado das montagens do `src/app.ts`, rota sem classificação recusada, guard vermelho por mutação para entrada nova do registro, endpoint novo e router novo; `prisma/seed.ts` autorizado só para as chaves de módulo novas em `DEMO_TENANT_MODULES`.
@@ -9286,7 +9300,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz de papéis sem permissão no catálogo — ALTA
 
-- status: ABERTA (junta do PR #386, ciclo 2, cadeira C1 — lacuna de mandato registrada no voto, `pre-existente`; conferido pelo orquestrador em `ecc32712`)
+- status: FECHADA (B-SAN3-04a, 2026-09-18 — item 56, CE-6: as quatro células têm disposição, nenhuma "por escopo" concedida sem escopo — (1) `inventory` × l.44: `checklist_runs:read` concedido, a resposta por escopo → `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE` (dono `B-O6R-07c`); (2) `operator`/`inventory` × l.37: escrita por escopo → `P-SAN3-04A-MASTER-DATA-EDIT-SCOPED`, leitura em conflito interno da matriz → `P-SAN3-04A-MATRIZ-L37-X-BULLETS`; (3) `inventory` × l.46: `work_orders:approve` segue não concedido → `P-O6R-B07-APPROVAL-BY-POLICY` (já aberta, emendada); (4) `finance` × l.45: `work_orders:read` concedido (P1/CE-3). O teste de encerramento pedido existe: `tests/san3-04a-matriz-x-catalogo-guard.test.ts` — lê a tabela real e o catálogo importado, lança em célula fora do dicionário e em linha sem mapeamento, e fica vermelho por mutação REAL nos arquivos (drill D5 do dev: 7/7 vermelhos, 7/7 restaurados). Decisão: `D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`). Valor anterior, preservado: "ABERTA (junta do PR #386, ciclo 2, cadeira C1 — lacuna de mandato registrada no voto, `pre-existente`; conferido pelo orquestrador em `ecc32712`)"
 - **prova (N = 4; forma: célula de ação da `RBAC_MATRIX.md` sem permissão correspondente no catálogo; causa: catálogo não convergido com a matriz):** (1) `inventory` sem `checklist_runs:*` (`RBAC_MATRIX.md:44`, leitura/resposta por escopo); (2) `operator` e `inventory` sem escrita em filiais, fornecedores, etiquetas e POIs (`RBAC_MATRIX.md:37`, edição por escopo); (3) `inventory` sem `work_orders:approve` nem outra porta de aprovação (`RBAC_MATRIX.md:46`, aprovação por política); (4) `finance` lê OS só pelo legado `os.read`, que o backend não aceita no lugar de `work_orders:read` (`RBAC_MATRIX.md:45`, leitura). Conferência do orquestrador: as chaves existem no catálogo (`branches|suppliers|tags|pois:create/update`; `work_orders:approve` só no `manager`; `checklist_runs:update` no `manager`, `technician`, `operator` e `field_technician`), e os blocos de `inventory` (`src/modules/core-saas/permissions/catalog.ts:873-894`), `operator` (l.730-808) e `finance` (l.809-872) não têm as nomeadas acima; `requirePermission` compara a permissão exata.
 - **escopo:** `pre-existente` — o catálogo do `finance` é de `b142671ec` (2026-06-11).
 - **dono:** `B-SAN3-04a` (a causa-raiz dele é a convergência catálogo × matriz). O (4) depende da decisão de produto do dossiê do PR #386 (o `finance` passa a ler OS?) e sustenta o C1-A2 da junta.
@@ -9329,7 +9343,18 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira do bloco — a emenda (a) limitou `OperationsDispatchesPage.tsx` ao `loadDetail`)
 - **prova:** `frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx:32-42` e `OperationsDispatchesPage.tsx:112-116/152-156/170-174` (numeração do head-base `b2da5ede`): `await onSubmit(...)` sem try/catch; `setSaving(false)` nunca roda no erro. `createDispatch` já não engolia non-2xx antes do bloco; o `throw` novo do 2xx-inválido (`invalid_dispatch_response`) NÃO cria classe nova de falha.
 - **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10).
-- **dono:** `B-SAN3-06a` (único bloco SAN3 que toca `operations/**` da web).
+- **dono:** `B-SAN3-06c` · `fix/web-estados-despachos-e-dashboard`, com **escopo nominal ampliado** a
+  `frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx`.
+  **Correção do dono (2026-09-20, pré-merge do `B-SAN3-04a`; achado A2 do porteiro pós-merge do #387).** O dono anterior
+  era `B-SAN3-06a` "(único bloco SAN3 que toca `operations/**` da web)" — falso pelo §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md` (l.270): a fronteira do `06a` é `modules/{purchase-orders,reports}/**`,
+  `modules/dispatch/pages/DispatchConsolePage.tsx`, `appSidebarNav.ts`, `tenantNavigation.ts` e `App.tsx`.
+  `frontend/src/modules/dispatch/` e `frontend/src/modules/operations/dispatches/` são diretórios DIFERENTES
+  (`ls` nos dois: o primeiro tem `field-operators.*`, o segundo tem `dispatches.*` e `DispatchCreateForm.tsx`) — o `06a`
+  nunca teve este arquivo. O `B-SAN3-06c` já tem `frontend/src/modules/operations/dispatches/pages/**` no escopo
+  (emenda 3 (q) do comando do `B-SAN3-01`), o que cobre o `OperationsDispatchesPage.tsx` desta prova; o
+  `DispatchCreateForm.tsx` está em `components/` e entra por ampliação nominal, pelo precedente do
+  `frontend/index.html` na `P-WEB-FONTE-INTER-NAO-CARREGADA`. Quem executar o `06c` declara os dois no §5 do comando.
 - **bloqueia:** não bloqueia o gate por si (o item 4 fecha pela OS) — é perda de feedback, não de dado.
 - **teste de encerramento:** POST de despacho recusado (4xx) → mensagem na tela e o botão volta de "salvando"; vermelho-controle no head-base.
 
@@ -9464,9 +9489,32 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - status: ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)
 - **prova:** sonda RBAC da C2 como `viewer` (read sim, create não): o botão "Nova OS" do cabeçalho está presente; `/work-orders/new` → guard "Acesso nao autorizado"; `POST /work-orders` direto → 403 `permission_required`. O papel é negado, mas o elemento de ação continua visível. `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (botão do `PageHeader`, l.249-252 no head do ciclo 2). O CTA "Nova OS" do estado vazio, novo no ciclo 2, já nasce com o gate.
 - **escopo:** `pre-existente` — o botão sem gate está na página desde `9f12ea99` (2026-06-09; `02bd7dab` l.233); o diff do `B-SAN3-01` não toca a linha.
-- **dono:** `B-SAN3-10` (fluxos por persona).
+- **dono:** `B-SAN3-01b` · `fix/web-guarda-por-alcance-e-estado-da-pagina`.
+  **Correção do dono (2026-09-20, pré-merge do `B-SAN3-04a`; achado A2 do porteiro pós-merge do #387).** O dono anterior
+  era `B-SAN3-10`, que não tem arquivo nenhum de `frontend/` no §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` (l.298:
+  `tests/e2e/**`, `playwright.config.ts`, o job e2e da CI, docs e `tests/kpi-painel-frescor.test.ts`) — e o conserto é
+  em `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`. O `B-SAN3-01b` tem ESTE arquivo por
+  `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA` (decisão do dono, fonte §A1.1, acima do plano em §A1.3): a propriedade (i)
+  do bloco é "a decisão da página amarrada ao estado … por teste que renderiza a página REAL", e a
+  `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` nomeia literalmente `WorkOrdersPage.tsx`. Gate do botão e gate do painel
+  são a mesma página e o mesmo bloco — separá-los custaria dois PRs no mesmo arquivo.
+  Divergência declarada: o briefing do pré-merge sugeria o `B-SAN3-06c` como destino quando nenhum bloco tivesse o
+  arquivo; o `06c` é de despachos e dashboard (`operations/dispatches/pages/**`, `DashboardPage.tsx`) e **não** tem
+  `work-orders/`, enquanto o `01b` tem — por isso o `01b`.
 - **bloqueia:** não bloqueia o gate por si (o backend recusa).
 - **teste de encerramento:** papel sem `work_orders:create` → sem o botão do cabeçalho; papel com → botão presente; vermelho-controle no head-base.
+- **emenda (junta do `B-SAN3-04a`, achado C2-05, 2026-09-18 — `ajuste`/`pre-existente`): o mesmo defeito, com um papel a mais e um
+  nome proposto que NÃO virou pendência nova.** A cadeira `coordenador-de-acessos` mediu `WorkOrdersPage.tsx:233-236` (navega
+  para `/work-orders/new` sem checagem), guard de `/work-orders/new` = `work_orders:create` (`App.tsx:776-780`) negando o
+  `finance`, e `POST /work-orders` = 403 — e propôs abrir `P-WEB-NOVA-OS-SEM-GATE` (N = 2 papéis: `finance`, `auditor`;
+  dono `B-SAN3-06a`). **É esta pendência, não uma nova.** A C2 grepou `pendencias.md` na ref dela (`fbda96b0`, base
+  `02bd7dab`) e não achou nada porque esta linha nasceu no #387, que ainda estava OPEN quando a junta votou; o rebase do
+  pré-merge trouxe as duas para a mesma árvore. Abrir `P-WEB-NOVA-OS-SEM-GATE` duplicaria o registro do MESMO botão do MESMO
+  arquivo. Fica registrado: **o `B-SAN3-04a` acrescenta o `finance` à lista de papéis afetados** (o `auditor` já estava desde
+  `9f12ea99`, 2026-06-09), porque o bloco deu `work_orders:read` (sem `create`) ao Financeiro. **Divergência declarada (§A2):**
+  a C2 propôs o nome `P-WEB-NOVA-OS-SEM-GATE` e o dono `B-SAN3-06a`; ficou o nome existente e o dono `B-SAN3-01b` (ver a
+  correção de dono acima, achado A2 do porteiro do #387) — se o orquestrador preferir o que a C2 propôs, é trocar aqui, e a
+  informação das duas fontes está preservada.
 
 ## P-SAN3-01-BATERIA-TSX-CWD (2026-09-18) — os testes `.tsx` do frontend só ficam verdes com cwd `frontend/` — BAIXA
 
@@ -9539,3 +9587,147 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-06c` (bloco de acabamento da web), com escopo nominal ampliado a `frontend/index.html`.
 - **bloqueia:** BLOQUEIA o gate da versão vendável (critério 13 — o produto sai polido).
 - **teste de encerramento:** a família tipográfica computada nas telas do gate é Inter; guard que falha se o token declarar uma fonte que o documento não carrega.
+
+> Abertas pelo `B-SAN3-04a` (plano do bloco §3 e §4.7; decisão `D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`), em 2026-09-18: as
+> disposições fail-closed da convergência catálogo × `RBAC_MATRIX.md` — onde a matriz diz "por escopo" e o backend não
+> aplica o escopo, a permissão não é concedida (CE-6) — e o que ficou fora do escopo autorizado do bloco. A causa de
+> todas é `pre-existente` (catálogo e matriz antecedem o bloco); o que o bloco criou foi o guard que as NOMEIA
+> (`tests/san3-04a-matriz-x-catalogo-guard.test.ts` e `tests/san3-04a-menu-front-x-catalogo.test.ts`: entrada sem
+> pendência reprova, entrada morta reprova). A gravidade de cada uma foi proposta pelo dev — o plano não a fixa — e a
+> junta a confirma. As três últimas (`-TARIFAS-X-L41-FINANCE`, `-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS` e a ampliação da
+> `-MATRIZ-L37-X-BULLETS`) não estavam no §4.7 do plano: nasceram de medição do dev e estão no relatório como divergência.
+
+## P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE (2026-09-18) — o Estoque lê vistorias mas não responde as da sua atribuição — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 A5 e §4.7)
+- **prova (N = 3 permissões — `checklist_runs:update`, `checklist_runs:complete`, `checklist_runs:acknowledge`; forma: `RBAC_MATRIX.md:44` × `inventory` = "read/answer-by-scope"; causa: o backend não aplica escopo por atribuição na vistoria — `git grep -nE "assigned|not_assigned" -- src/modules/checklists` devolve 0 linhas, re-medido em 2026-09-18):** o bloco concedeu só a leitura incondicional (`checklist_runs:read` e `tenant_checklists:read`, `src/modules/core-saas/permissions/catalog.ts:905-910`); a parte "answer" ficou negada.
+- **escopo:** `pre-existente` — a célula e a ausência de escopo antecedem o bloco (a mesma causa da `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO`, #320 de 2026-08-01).
+- **dono:** `B-O6R-07c` (item 51 do gate — cria o escopo por objeto na vistoria).
+- **teste de encerramento:** com o escopo aplicado, o `inventory` atribuído responde a vistoria (2xx) e o não atribuído recebe 403, com vermelho-controle no head-base; o guard passa a exigir a concessão, com a evidência do escopo na allowlist.
+
+## P-SAN3-04A-MASTER-DATA-EDIT-SCOPED (2026-09-18) — Operador e Estoque não editam cadastros mestres "por escopo" — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 K2 e §4.7; cél. 2 do item 56)
+- **prova (N = 8 permissões × 2 papéis — `branches|suppliers|tags|pois` × `create|update`, para `operator` e `inventory`; forma: `RBAC_MATRIX.md:37` Master data = "edit-scoped" (operator) e "read/edit-scoped" (inventory); causa: as rotas comparam só a permissão, sem escopo por filial — `src/modules/branches/branch.routes.ts:18-19`, `src/modules/suppliers/supplier.routes.ts:19`, `src/modules/tags/tag.routes.ts:19`, `src/modules/pois/poi.routes.ts:19`):** não concedidas.
+- **escopo:** `pre-existente` — a célula e as rotas antecedem o bloco.
+- **dono:** fila pós-gate — bloco "escopo de cadastro por filial" (a nomear pelo estrategista).
+- **teste de encerramento:** com escopo por filial no backend, `operator`/`inventory` editam cadastro da própria filial (2xx) e não o de outra (403); o guard exige a concessão com a evidência.
+
+## P-SAN3-04A-MATRIZ-L37-X-BULLETS (2026-09-18) — a matriz se contradiz sobre Financeiro e Estoque em cadastros mestres — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 K1 e §4.7; emenda (c) do orquestrador)
+- **prova (N = 2 células — l.37 × `finance` [read] e l.37 × `inventory` [read/edit-scoped], a parte de leitura; forma: a tabela dá leitura de `branches`, `suppliers`, `tags`, `pois` e `operator_profiles`, e os tópicos `RBAC_MATRIX.md:131,141,142,143,144` dizem "mirror of `service_catalog:*`"; causa: matriz internamente contraditória):** nada concedido (fail-closed); o guard as lista em `CONFLITOS_REGISTRADOS` e asserta que nenhuma das cinco leituras foi concedida.
+- **medido depois da edição da l.41 (P2) — divergência do plano, registrada pelo dev:** com `finance` = `read` na l.41, o espelho dos tópicos passa a dizer o MESMO que a tabela para o `finance` (leitura) — o lado do `finance` deixou de ser conflito e virou falta de cinco leituras que a decisão do dono não nomeia; o lado do `inventory` segue conflito (l.41 × `inventory` = `none`). O guard mantém as duas células como conflito registrado, sem conceder.
+- **escopo:** `pre-existente` — tabela e tópicos antecedem o bloco.
+- **dono:** decisão do dono (pergunta de produto: o Financeiro e o Estoque leem filiais, fornecedores, etiquetas, POIs e profissionais?) — fila pós-gate; não bloqueia o `B-SAN3-04a` (emenda (c)).
+- **teste de encerramento:** decidida a pergunta, a matriz fica coerente (tabela = tópicos) e a entrada sai de `CONFLITOS_REGISTRADOS` (entrada morta reprova o guard).
+
+## P-SAN3-04A-SUPPORT-SEM-POLITICA (2026-09-18) — o Suporte lê seis áreas sem a política de suporte que a matriz exige — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 B1/B3/B4/B8/B11/B13 e §4.7)
+- **prova (N = 6 células × `support` — l.33 `users.read`, l.34 `dashboard:read`, l.43 `tenant_checklists:read`, l.44 `checklist_runs:read`, l.48 `purchase_orders:read`, l.56 `audit:read`; forma: a matriz qualifica "limited-support", "scoped", "support-view" e "support-scoped", e o catálogo concede a leitura sem política; causa: não existe política de suporte no backend):** mantidas, cada uma na `ALLOWLIST_QUALIFICADAS` do guard com esta pendência.
+- **escopo:** `pre-existente` — concessões do `support` antecedem o bloco.
+- **dono:** fila pós-gate (política de suporte).
+- **teste de encerramento:** com a política, as seis saem da allowlist com evidência; sem ela, a concessão é retirada.
+
+## P-SAN3-04A-DASHBOARD-SCOPED (2026-09-18) — o painel do Técnico de Campo é da organização inteira, não do seu recorte — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 B2 e §4.7)
+- **prova (N = 1 hoje — `RBAC_MATRIX.md:34` × `field_technician` = "scoped" com `dashboard:read` sem recorte; +2 quando o `B-SAN3-04b` conceder `dashboard:read` a `finance` e `inventory`, também "scoped" na l.34; causa: o painel não tem recorte por papel no backend):** mantida na `ALLOWLIST_QUALIFICADAS`.
+- **escopo:** `pre-existente`.
+- **dono:** `B-SAN3-04b` (entrega o recorte da matriz).
+- **teste de encerramento:** o painel devolve só o recorte do papel "scoped", com vermelho-controle; a entrada sai da allowlist com evidência.
+
+## P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO (2026-09-18) — Gestor e Operador concluem vistorias sem o escopo que a matriz exige — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 B5/B6 e §4.7; emenda (d) do orquestrador)
+- **prova (N = 3 — `manager` × `checklist_runs:complete` (l.44 "read/complete-by-scope"); `operator` × `checklist_runs:update` e `checklist_runs:complete` (l.44 "create/answer/complete-by-scope"); forma: concessão "por escopo" sem escopo no backend; causa: a vistoria não tem escopo por atribuição):** mantidas (revogar seria decisão de produto que o item 15 não pediu), na `ALLOWLIST_QUALIFICADAS`.
+- **escopo:** `pre-existente`.
+- **dono:** `B-SAN3-22` (checklists).
+- **teste de encerramento:** com o escopo, o papel de escritório conclui/responde só a vistoria do seu escopo (2xx) e recebe 403 fora dele; as entradas saem da allowlist com evidência.
+
+## P-SAN3-04A-AUDIT-SCOPED (2026-09-18) — o Gestor lê a auditoria da organização inteira, não do seu recorte — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 B12 e §4.7)
+- **prova (N = 1 — `RBAC_MATRIX.md:56` × `manager` = "scoped" com `audit:read` sem recorte; causa: a trilha de auditoria não tem recorte por papel):** mantida na `ALLOWLIST_QUALIFICADAS`.
+- **escopo:** `pre-existente`.
+- **dono:** fila pós-gate.
+- **teste de encerramento:** o `manager` lê só o recorte da matriz, com vermelho-controle; a entrada sai da allowlist.
+
+## P-SAN3-04A-SEED-PAPEIS-LEGADOS (2026-09-18) — base preparada só com o seed não tem cinco papéis do catálogo — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 S1 e §4.7)
+- **prova (N = 5 papéis — `finance`, `inventory`, `operator`, `field_technician`, `support`; forma: numa base preparada como a CI (`prisma migrate deploy` + `npm run db:seed`, sem `db:provision-rbac`) não existe linha global desses papéis; causa: `prisma/seed.ts` semeia `STANDARD_ROLES` + `auditor` — o escopo do bloco autorizou só o `auditor`):** medido pelo dev (drill D4, código do bloco): papéis globais = `auditor` 56, `field_dispatcher` 42, `manager` 139, `super_admin` 198, `technician` 44, `tenant_admin` 185, `viewer` 45 — os cinco ausentes.
+- **escopo:** `pre-existente` — o laço do seed é anterior ao bloco.
+- **dono:** `B-SAN3-07` (mesmo arquivo; consumidor `B-SAN3-10`, cujo `test:e2e` roda `db:seed` só).
+- **teste de encerramento:** base nova com `migrate deploy` + `db:seed` tem os 12 papéis provisionáveis com as concessões do catálogo, com vermelho-controle no head-base.
+
+## P-SAN3-04A-PERMISSOES-ORFAS (2026-09-18) — 25 permissões do catálogo que nenhuma rota compara — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 R1 e §4.7)
+- **prova (N = 25 chaves; forma: permissão do catálogo sem nenhuma comparação em `src/` fora de `catalog.ts` e do registro de navegação; causa: chaves legadas ou planejadas sem rota):** `users:read`, `audit:read`, `purchase_orders:read`, `purchase_orders:create`, `field_operator:read`, `field_operator:action`, `logistics:read`, `logistics_routes:read`, `billing:read`, `invoices:read`, `payments:read`, `reports:read`, `expense_report:approve_manager`, `expense_report:approve_finance`, `expense_report:return`, `expense_report:reject`, `expense_report:pay`, `expense_policy:manage`, `expense_receipt:attach`, `expense_audit:read`, `os.manage`, `os.read`, `finance.manage`, `finance.read`, `finance:read`. O caso `[órfãs]` do guard asserta a lista exata — órfã nova ou órfã que ganhou rota move o número com nome. (Item 13 era uma instância: o menu do Financeiro governado por órfãs.)
+- **escopo:** `pre-existente`.
+- **dono:** `B-SAN3-04b` (mesmo arquivo `catalog.ts`, próximo da trava).
+- **emenda (junta do `B-SAN3-04a`, achado C2-04, 2026-09-18 — `ajuste`/`pre-existente`):** a órfã `os.read` tem um EFEITO que esta
+  pendência listava sem nomear. `auth.adapter.ts:375` (`9f12ea99`, 2026-06-09) apelida `os.read` → `work_orders:read` **no front**,
+  e `os.read` está no catálogo de `inventory` e de `support` desde a base `02bd7dab`. Resultado medido por login real,
+  N = **4** pares papel × rota: `inventory` e `support` × `/work-orders` e × `/approvals` — o **guard do front ABRE** e o
+  **backend responde 403**. A autoridade está intacta (o backend nega, §2.4 do `CLAUDE.md`); o que quebra é a promessa do
+  front de não abrir rota fora da matriz do papel. Efeito irmão, já registrado em `P-027` e com dono `B-SAN3-04b`:
+  `dashboard:view` injetado em todo usuário (`auth.adapter.ts:244,251`) faz `finance` e `inventory` abrirem `/dashboard`,
+  que é a home pós-login, com `GET /dashboard/summary` = 403.
+- **teste de encerramento (emenda C2-04):** para os 9 papéis, rota que o papel não tem na matriz → o guard do front nega
+  **antes** do backend; vermelho-controle: reinserir o apelido `os.read` deixa o teste vermelho.
+- **teste de encerramento:** cada órfã ganha rota que a compare ou sai do catálogo; o caso `[órfãs]` do guard acompanha.
+
+## P-SAN3-04A-MENU-RESIDUAL (2026-09-18) — três itens do menu levam a "acesso não permitido" — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §3 F1 e §4.7)
+- **prova (N = 3 itens — `manager` × Sessões (`sessions:read`); `field_technician` × Seguros (`insurance_policies:read`) e Estoque (`inventory_items:read`); forma: item visível no sidebar cujo `PermissionGuard` o papel não passa; causa: `operator`/`field_technician` fundidos em "Operador Logistico" (resíduo da `P-026`) e `manager` sem `sessions:read`):** o guard `tests/san3-04a-menu-front-x-catalogo.test.ts` os lista em `ALLOWLIST_MENU` e reprova qualquer outro negado.
+- **escopo:** `pre-existente`.
+- **dono:** `B-SAN3-06a`.
+- **teste de encerramento:** nenhum item visível negado pelo guard da rota para os 8 papéis de organização; `ALLOWLIST_MENU` vazia.
+
+## P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Financeiro depois da P2 — BAIXA
+
+- status: ABERTA (B-SAN3-04a, plano do bloco §4.6 e §4.7)
+- **prova (N = 2 tópicos — `RBAC_MATRIX.md:101` (customer registry) e `:103` (service catalog) listam "operator, field_technician and auditor read"; forma: texto desatualizado depois que a tabela passou a dar `read` ao `finance` nas l.38 e l.41; causa: o bloco só estava autorizado a editar as l.38 e l.41):** sem efeito em permissão (a tabela é a que o guard lê).
+- **escopo:** `dentro-do-bloco` quanto à defasagem (nasce da edição autorizada da P2); linha proibida neste bloco.
+- **dono:** o próximo bloco que tocar a `RBAC_MATRIX.md`.
+- **teste de encerramento:** os dois tópicos citam o `finance` com leitura.
+
+## P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores "espelham" Serviços, e a P2 mudou Serviços — BAIXA
+
+- status: ABERTA (B-SAN3-04a, medição do dev; fora do §4.7 do plano — divergência declarada)
+- **prova (N = 2 tópicos — `RBAC_MATRIX.md:104` (price tables) e `:105` (tariffs) dizem "mirror of `service_catalog:*` — same role distribution"; forma: com `finance` = `read` na l.41 (P2), o espelho pediria `price_tables:read` e `tariffs:read` ao `finance`, que a decisão do dono não nomeia; causa: a P2 editou a linha espelhada):** nada concedido. O guard registra l.41 × `finance` × `tariffs:read` como o 3º conflito (`CONFLITOS_REGISTRADOS`); a l.104 não aparece nele porque a tabela tem linha própria para tabelas de valores (l.42, `finance` = `none`). Medido: o orçamento do Financeiro lê só clientes, serviços e OS (`frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts:6-8`), cobertos pela P1/P2 — nenhuma tela do fluxo P2 fica sem permissão.
+- **escopo:** `dentro-do-bloco` quanto à origem (a edição autorizada da l.41); a regra de espelho é `pre-existente`.
+- **dono:** decisão do dono (o Financeiro lê tarifas e tabelas de valores?) — fila pós-gate.
+- **teste de encerramento:** decidida a pergunta, tópicos e tabela coerentes e a entrada sai de `CONFLITOS_REGISTRADOS`.
+
+## P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS (2026-09-18) — depois de trocar de organização, o front usa um mapa de permissões por papel desatualizado — MÉDIA
+
+- status: ABERTA (B-SAN3-04a, medição do dev; fora do §4.7 do plano — divergência declarada)
+- **prova (forma: `resolveFrontendPermissions(backendRoles)` monta as permissões do front a partir do mapa estático `rolePermissions` de `frontend/src/modules/auth/auth.adapter.ts:260-356`, e não do catálogo; é o caminho da troca de organização — `frontend/src/modules/context/repository.ts:114` e `:125` — e do login cuja resposta não traga `permissions`, `auth.adapter.ts:133-136`; causa: o mapa nunca acompanhou o catálogo):** medido por script (`import` do catálogo × `resolveFrontendPermissions([papel])`, código do bloco): permissões do catálogo ausentes no mapa — `finance` 55 de 61 (entre elas as quatro do bloco: `customers:read`, `service_catalog:read`, `tenant_checklists:read`, `checklist_runs:read`), `inventory` 12 de 17, `operator` 55 de 68, `field_technician` 38 de 43, `auditor` 47 de 56, `manager` 122 de 139, `support` 4 de 10. Efeito: depois de trocar de organização, o `PermissionGuard` do front nega telas que o backend libera (ex.: Clientes ao Financeiro). O backend segue a autoridade — nada é liberado a mais.
+- **escopo:** `pre-existente` — o mapa antecede o bloco (o `B-SAN3-04a` só pôs o ramo `inventory` em `mapBackendRole`, o que o plano autorizou).
+- **dono:** `B-SAN3-06a` (proposto pelo dev; a junta confirma).
+- **teste de encerramento:** a troca de organização usa as permissões reais do backend (ou o mapa é gerado do catálogo), com um guard que compara, para cada papel, o conjunto do front com o do catálogo.
+
+## P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA (2026-09-18) — `docs/navigation-matrix.md` diverge da matriz efetiva em 40 células — ALTA
+
+- status: ABERTA (achado **C2-01** da junta do `B-SAN3-04a`, cadeira `coordenador-de-acessos`, `bloqueia`/`pre-existente`; ata `omega/juntas/J-B-SAN3-04a.md`)
+- **prova (N = 40 células; forma: célula *papel × tela* do documento diferente do acesso efetivo medido por login real; causa: o documento não é reconciliado desde `aff48fbb`, 2026-08-08):** harness da cadeira C2 sobre a matriz efetiva por login real nos dois heads (objeto `fbda96b0` na base `i2_prov`, head-base `02bd7dab` na base `i2_base`), 42 linhas de tela × 9 papéis, células "M" puladas, acesso sim/não. Saída `c2h/i2-diff-navmatrix.out`, resumo no voto e na evidência da C2 (`votos/B-SAN3-04a/C2-coordenador-de-acessos-evidencia.md` §E5). Decomposição: **7 novas** (criadas por este bloco — ver a divergência §A2 em `decisoes.md`), **33 persistentes** (já na base) e **29 resolvidas** pelo bloco. No head-base o mesmo harness media **62** células divergentes.
+- **escopo:** `pre-existente` — evidência de data e de origem: (i) `git log -1 -- docs/navigation-matrix.md` = `aff48fbb` (2026-08-08), anterior ao bloco; (ii) 33 das 40 já divergiam no head-base `02bd7dab`, medidas pelo mesmo harness; (iii) o comando do `B-SAN3-04a` **não** põe `docs/**` no escopo permitido, então corrigir o documento estava fora do que o bloco podia tocar (§C7.1-ter(a)).
+- **por que não reprova:** as 7 células novas seguem a `RBAC_MATRIX.md` (fonte §A1.2) e a decisão do dono P1/P2; quem ficou velho foi o documento (§A1.3), que se declara "base do teste por papel". Lado certo escolhido, registro faltando — daí `ajuste` no `C2-02` e pendência aqui.
+- **dono:** `B-SAN3-06a` (proposto pela C2 — já é dono de `P-SAN3-04A-MENU-RESIDUAL` e de `P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, e o §5 do `PLANO_SAN3.md` l.270 lhe dá `appSidebarNav.ts` e `tenantNavigation.ts`, os arquivos que decidem o menu). **Ampliação nominal necessária:** `docs/navigation-matrix.md` não está no §5 de bloco nenhum; quem executar o `06a` o declara no §5 do comando (mesmo precedente do `frontend/index.html` na `P-WEB-FONTE-INTER-NAO-CARREGADA`).
+- **bloqueia:** não bloqueia o gate por si — é documento contra realidade, não acesso indevido (o backend é a autoridade e foi medido nas duas pontas). Bloqueia **o método** de quem usar o documento como base de teste por papel.
+- **teste de encerramento:** o documento passa a ser **gerado** (ou conferido por guard) contra a matriz efetiva — o diff doc × efetivo dá 0 célula para os 9 papéis; vermelho-controle: mudar uma célula do documento deixa o guard vermelho.
+
+## P-AUTH-CLAIMS-SEM-TENANT-ROLE (2026-09-18) — o JWT não carrega `tenant_role`/`tenant_roles`/`permissions`/`scope` que o contrato exige — MÉDIA
+
+- status: ABERTA (achado **C2-06** da junta do `B-SAN3-04a`, `ajuste`/`pre-existente`)
+- **prova (N = 4 claims ausentes; forma: claim exigida pelo contrato e ausente do token emitido; causa: o emissor nunca as incluiu):** JWT do login real medido pela C2 = `tenant_id`, `email`, `roles`, `type`, `identity_id`, `sub`, `iat`, `exp`, `iss`, `aud`. Faltam `tenant_role`, `tenant_roles`, `permissions` e `scope`. `RBAC_MATRIX.md` ("Auth and claim alignment") e `CLAUDE.md` §2.4 dizem que `tenant_id` + `tenant_role` são **obrigatórios**. As permissões chegam só no corpo da resposta de login (finance: 61, iguais às do banco).
+- **escopo:** `pre-existente` — evidência de data/origem: `src/modules/auth/**` está **fora** do diff `02bd7dab..fbda96b0` (o bloco não tocou um byte ali) e o último commit da base nesses arquivos é `dc8168b9` (2026-09-04). `grep tenant_role` em `pendencias.md` e `decisoes.md` da ref = 0: a divergência nunca tinha sido registrada.
+- **efeito de autorização medido: NENHUM.** O backend autoriza pela tabela `role_permissions` do banco, não pelas claims — a C2 provou 403/200 reais nos dois heads. O que está aberto é o **contrato**: qualquer consumidor que confie na claim (cliente novo, integração, o próprio app) lê um token que não cumpre o que o arquivo-base promete.
+- **dono:** **fila pós-gate** — o orquestrador o nomeia quando o **primeiro bloco tocar `src/modules/auth/**`**; nenhum bloco do §5 do `PLANO_SAN3.md` tem esse diretório hoje.
+- **bloqueia:** não bloqueia o gate (sem efeito de autorização medido).
+- **teste de encerramento:** login de cada um dos 9 papéis → o token decodificado traz `tenant_id` e `tenant_role` (e `tenant_roles`/`permissions`/`scope` como o contrato define); vermelho-controle: remover a claim do emissor deixa o teste vermelho. **Ou** o `RBAC_MATRIX.md`/`CLAUDE.md` §2.4 é emendado para descrever o que o sistema faz — e aí a decisão é do dono, não do bloco.

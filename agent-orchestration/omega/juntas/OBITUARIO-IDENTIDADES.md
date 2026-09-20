@@ -28,10 +28,11 @@
 
 | | |
 |---|---|
-| Identidades registradas | **31** (17 originais + 6 do `B-O6R-06` mérito, §3.4 + 6 do `B-O6R-06` delta, §3.5 + 2 do PR #386 ciclo 2, §3.6) |
-| **SEPULTADAS** | **31** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 2 ex-reservadas do `B-O6R-02` ciclo 5 + 6 do `B-O6R-06` mérito + 6 do `B-O6R-06` delta + 2 do PR #386 ciclo 2) |
+| Identidades registradas | **33** (17 originais + 6 do `B-O6R-06` mérito, §3.4 + 6 do `B-O6R-06` delta, §3.5 + 2 do PR #386 ciclo 2, §3.6 + 2 do `B-SAN3-01` ciclo 2, §3.7) |
+| **SEPULTADAS** | **33** (6 do `B-O6R-ARNES` + 9 do `B-O6R-02` ciclo 4 + 2 ex-reservadas do `B-O6R-02` ciclo 5 + 6 do `B-O6R-06` mérito + 6 do `B-O6R-06` delta + 2 do PR #386 ciclo 2 + 2 do `B-SAN3-01` ciclo 2) |
 | **RESERVADAS** | **0** (as duas do §3.3 participaram do ciclo 5, que rodou e mergeou no #371 — ver a emenda no fim do §3.3) |
 | Arquivos apagados por este registro | **0** |
+| Arquivos **acrescentados** por este registro | **2** (`jurado-san3-01c2-fail-closed-web` e a suplente, §3.7 — versionadas nas duas pontas do espelho; estavam só em disco) |
 
 > **Correção de placar (2026-09-11, PR do plano SAN3).** A versão anterior dizia **17 registradas** e **21
 > sepultadas** na mesma tabela — contradição introduzida pelo orquestrador ao acrescentar o §3.4 sem recontar a
@@ -169,6 +170,7 @@ faltava era **a fonte**, não um segundo fiscal. Ela é este arquivo.
 | Bloco | O que fez | Data |
 |---|---|---|
 | **SAN2-3** | Criou este registro com as 17 identidades (15 sepultadas + 2 reservadas); apontou-o no `inspetor-de-terreno-da-junta`; **zero descarte físico** | 2026-08-30 |
+| **B-SAN3-04a** (pré-merge) | Versionou nas duas pontas do espelho as 2 identidades da cadeira C4 do ciclo 2 do `B-SAN3-01` — que votaram sem nunca entrar no tree (achado A1 do porteiro do #387) — e as sepultou no §3.7; placar 31 → **33**; aposentadoria fica como dívida do PR seguinte | 2026-09-20 |
 
 ---
 
@@ -253,3 +255,47 @@ As permanentes que votaram (`guardiao-fail-closed`, `agente-ci-doutor`) e as nom
 saem do diretório vivo no primeiro PR depois do merge do #386 (rodada 3 de `controle/aposentadoria-especialistas.md`),
 com o corpo lível no squash do #386. O §1 do briefing do ciclo 2 dizia "sepultadas e aposentadas no mesmo PR" —
 divergência registrada no §5 da ata.
+
+---
+
+### 3.7 Caso `B-SAN3-01` ciclo 2 — fail-closed da web · junta concluída 2026-09-19 · **REPROVADO (1 cadeira de 4)** · PR #387
+
+> **Numeração — divergência declarada (§A2).** O briefing do pré-merge do `B-SAN3-04a` mandou abrir esta seção como
+> **§3.8**. Não existe **§3.7** em lugar nenhum da árvore (`origin/main@83a3c68c`, os PRs #388 e #389 e os três
+> worktrees vivos foram conferidos por `grep '^### 3\.'`): a última seção era a §3.6. Abrir a §3.8 deixaria um
+> buraco num registro que se consulta por número. Fica **§3.7**, contígua, e a divergência fica escrita aqui em vez
+> de resolvida em silêncio.
+
+Ata: `J-B-SAN3-01.md` §Ciclo 2 (objeto julgado **`8adaaa31`**; head do PR = o objeto). Briefing:
+`BRIEFING-B-SAN3-01-ciclo2.md` (scratchpad da sessão). Votos: `votos/B-SAN3-01-c2/`. A titular nasceu da
+`agente-fabrica` pelo protocolo de dificuldade (§C7.4) depois da reprovação 2 × 2 do ciclo 1, com a competência
+que a ressalva R-D do inspetor de terreno exigiu: mutação no corpo, fail-closed da web. **Sepultadas no primeiro PR
+que mergeia depois do #387** — no caso este, o `B-SAN3-04a`.
+
+| # | Identidade | Papel | Status | Classe | Evidência | Nasceu em |
+|---|---|---|---|---|---|---|
+| 1 | `jurado-san3-01c2-fail-closed-web` | titular, cadeira C4 (veto) — fail-closed da web provado por mutação | **SEPULTADA** | `votou` | `votos/B-SAN3-01-c2/C4-jurado-san3-01c2-fail-closed-web-voto.json` (`veredito: REPROVADO`; A-01 e A-02 `bloqueia` dentro do bloco, A-03 ajuste) + evidência + ata | em disco 2026-09-18 21:25; **sem commit até este PR** (achado A1 do porteiro do #387) |
+| 2 | `jurado-san3-01c2-suplente-fail-closed-web` | suplente da cadeira C4 | **SEPULTADA** | `nomeada-e-preparada` | `BRIEFING-B-SAN3-01-ciclo2.md` §1 (composição, coluna suplente) — caso **concluído**; não assinou voto | em disco 2026-09-18 21:25; **sem commit até este PR** |
+
+**Por que elas chegam ao registro só agora (achado A1, GRAVE, do porteiro pós-merge do #387).** O corpo que
+reprovou o ciclo 2 e originou as três `P-SAN3-01B-*` **não estava em nenhum espelho do tree do merge**:
+`git ls-tree -r 83a3c68c .claude/agents .agents/agents | grep san3-01c2` saía vazio. Os dois arquivos viviam só no
+disco da árvore principal, invisíveis ao `git status` por `~/.config/git/ignore:2` (`.claude/`) e sem cópia em
+`.agents/`. Pela `D-DURABILIDADE-BRANCHES-LOCAIS`, **o que só existe num disco não conta como entregue**: o voto
+estava versionado (por isso a §C7.1 se cumpriu e o merge do #387 vale), mas o corpo que votou, não. Este PR
+versiona os dois nas DUAS pontas do espelho — `.claude/agents/especialistas/` (por `git add -f`, o `.gitignore`
+do usuário ignora `.claude/`) e `.agents/agents/especialistas/`, este último **gerado** por
+`node scripts/sync-agent-agents.mjs` (nunca digitado) — e `--check` fica verde com **25 agentes**.
+
+As permanentes que votaram no ciclo 2 (`validador-mestre`, `master-teste-telas-rotas`, `frontend-pixel-master`)
+**não entram aqui** — o §4 não as cobre; a inelegibilidade delas é por caso, nas atas.
+
+**A aposentadoria NÃO é neste PR.** A `D-APOSENTADORIA-ELENCO-EFEMERO` exige "ata fechada **e PR mergeado**", e o
+precedente do #386 (§3.6) é literal: sepultar tira o direito de voto, aposentar tira do diretório vivo, e as duas
+coisas não acontecem no mesmo PR. As duas saem de `.claude/agents/especialistas/` e `.agents/agents/especialistas/`
+no **primeiro PR depois do merge deste** (rodada nova de `controle/aposentadoria-especialistas.md`), com o corpo
+lível no squash do `B-SAN3-04a`.
+
+**Efeito no §4.** Os 23 papéis permanentes de `.claude/agents/*.md` continuam 23 — estas duas entram em
+`especialistas/`, que é o diretório das identidades descartáveis de caso, exatamente o que este §3 cobre. O espelho
+`.agents/agents/` passa a ter 23 papéis na raiz + `README.md` + 2 em `especialistas/`.

@@ -1,0 +1,1964 @@
+{
+ "summary": {
+  "linhas_da_matriz": 27,
+  "celulas": 243,
+  "findings_por_tipo": {
+   "A-falta-incondicional": 7,
+   "B-qualificada-concedida-sem-escopo": 13,
+   "C-none-mas-concedida": 0,
+   "conflito": 2
+  },
+  "findings_por_papel": {
+   "platform_admin": 0,
+   "tenant_admin": 0,
+   "manager": 2,
+   "operator": 3,
+   "finance": 4,
+   "inventory": 3,
+   "field_technician": 4,
+   "auditor": 0,
+   "support": 6
+  },
+  "A": [
+   "l.43 Configurable checklist templates x finance [read] falta: tenant_checklists:read",
+   "l.43 Configurable checklist templates x inventory [read] falta: tenant_checklists:read",
+   "l.43 Configurable checklist templates x field_technician [read] falta: tenant_checklists:read",
+   "l.44 Checklist executions and answers x finance [read] falta: checklist_runs:read",
+   "l.44 Checklist executions and answers x inventory [read/answer-by-scope] falta: checklist_runs:read",
+   "l.45 Work orders / service orders x operator [create/edit] falta: work_orders:create",
+   "l.45 Work orders / service orders x finance [read] falta: work_orders:read"
+  ],
+  "conflito": [
+   "l.37 Master data x finance [read] falta: branches:read, suppliers:read, tags:read, pois:read, operator_profiles:read",
+   "l.37 Master data x inventory [read/edit-scoped] falta: branches:read, suppliers:read, tags:read, pois:read, operator_profiles:read"
+  ],
+  "B": [
+   "l.33 User and role assignment x support [limited-support] concedida: users.read",
+   "l.34 Dashboard and operational overview x field_technician [scoped] concedida: dashboard:read",
+   "l.34 Dashboard and operational overview x support [scoped] concedida: dashboard:read",
+   "l.43 Configurable checklist templates x support [support-view] concedida: tenant_checklists:read",
+   "l.44 Checklist executions and answers x manager [read/complete-by-scope] concedida: checklist_runs:complete",
+   "l.44 Checklist executions and answers x operator [create/answer/complete-by-scope] concedida: checklist_runs:update, checklist_runs:complete",
+   "l.44 Checklist executions and answers x field_technician [answer-assigned] concedida: checklist_runs:update, checklist_runs:complete, checklist_runs:acknowledge",
+   "l.44 Checklist executions and answers x support [support-view] concedida: checklist_runs:read",
+   "l.45 Work orders / service orders x field_technician [execute/update-assigned] concedida: work_orders:update, work_orders:status",
+   "l.47 Inventory movements x operator [request/use] concedida: stock_movements:create",
+   "l.48 Purchasing x support [support-view] concedida: purchase_orders:read",
+   "l.56 Audit logs x manager [scoped] concedida: audit:read",
+   "l.56 Audit logs x support [support-scoped] concedida: audit:read"
+  ],
+  "C": [],
+  "banco": {
+   "platform_admin": {
+    "catalogo": 198,
+    "seed_only": "AUSENTE",
+    "prov_seed": "AUSENTE",
+    "prov_menos_catalogo": null,
+    "catalogo_menos_prov": null
+   },
+   "tenant_admin": {
+    "catalogo": 185,
+    "seed_only": 185,
+    "prov_seed": 185,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "manager": {
+    "catalogo": 141,
+    "seed_only": 141,
+    "prov_seed": 141,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "operator": {
+    "catalogo": 67,
+    "seed_only": "AUSENTE",
+    "prov_seed": 67,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "finance": {
+    "catalogo": 56,
+    "seed_only": "AUSENTE",
+    "prov_seed": 56,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "inventory": {
+    "catalogo": 15,
+    "seed_only": "AUSENTE",
+    "prov_seed": 15,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "field_technician": {
+    "catalogo": 42,
+    "seed_only": "AUSENTE",
+    "prov_seed": 42,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "auditor": {
+    "catalogo": 56,
+    "seed_only": "AUSENTE",
+    "prov_seed": 56,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   },
+   "support": {
+    "catalogo": 10,
+    "seed_only": "AUSENTE",
+    "prov_seed": 10,
+    "prov_menos_catalogo": [],
+    "catalogo_menos_prov": []
+   }
+  },
+  "menu_backend_banco": {
+   "platform_admin": "AUSENTE (papel sem linha global em prov_seed)",
+   "tenant_admin": [
+    "/dashboard",
+    "/administrator/checklists",
+    "/administrator/users",
+    "/administrator/audit",
+    "/notifications",
+    "/controle/notificacoes",
+    "/telemetria/quilometragem",
+    "/telemetria/acessos",
+    "/telemetria/recusas",
+    "/telemetria/dispositivos",
+    "/telemetria/rastreamento",
+    "/operations/checklists",
+    "/operations/checklists/:checklistId/run",
+    "/work-orders",
+    "/operations/map",
+    "/operations/field-operators",
+    "/operations/quotes",
+    "/operations/dispatches",
+    "/patios/patios",
+    "/patios/processos",
+    "/patios/liberacoes",
+    "/patios/leiloes",
+    "/patios/perfis",
+    "/patios/tarifas",
+    "/logistics",
+    "/logistics/routes",
+    "/logistics/map",
+    "/finance",
+    "/finance/charges",
+    "/finance/invoices",
+    "/finance/payments"
+   ],
+   "manager": [
+    "/dashboard",
+    "/administrator/checklists",
+    "/administrator/audit",
+    "/notifications",
+    "/controle/notificacoes",
+    "/telemetria/quilometragem",
+    "/telemetria/acessos",
+    "/telemetria/recusas",
+    "/telemetria/dispositivos",
+    "/telemetria/rastreamento",
+    "/operations/checklists",
+    "/work-orders",
+    "/operations/map",
+    "/operations/field-operators",
+    "/operations/quotes",
+    "/operations/dispatches",
+    "/patios/patios",
+    "/patios/processos",
+    "/patios/liberacoes",
+    "/patios/leiloes",
+    "/patios/perfis",
+    "/patios/tarifas",
+    "/logistics/map"
+   ],
+   "operator": [
+    "/dashboard",
+    "/notifications",
+    "/controle/notificacoes",
+    "/operations/checklists",
+    "/operations/checklists/:checklistId/run",
+    "/work-orders",
+    "/operations/map",
+    "/operations/quotes",
+    "/operations/dispatches",
+    "/patios/patios",
+    "/patios/processos",
+    "/patios/liberacoes",
+    "/patios/leiloes",
+    "/patios/perfis",
+    "/patios/tarifas",
+    "/logistics/map"
+   ],
+   "finance": [
+    "/notifications",
+    "/operations/quotes"
+   ],
+   "inventory": [
+    "/notifications"
+   ],
+   "field_technician": [
+    "/dashboard",
+    "/notifications",
+    "/operations/checklists",
+    "/work-orders",
+    "/operations/quotes",
+    "/operations/dispatches",
+    "/patios/patios",
+    "/patios/processos",
+    "/patios/liberacoes",
+    "/patios/leiloes",
+    "/patios/perfis",
+    "/patios/tarifas"
+   ],
+   "auditor": [
+    "/dashboard",
+    "/administrator/checklists",
+    "/administrator/audit",
+    "/notifications",
+    "/telemetria/quilometragem",
+    "/telemetria/acessos",
+    "/telemetria/recusas",
+    "/telemetria/dispositivos",
+    "/telemetria/rastreamento",
+    "/operations/checklists",
+    "/work-orders",
+    "/operations/map",
+    "/operations/field-operators",
+    "/operations/quotes",
+    "/operations/dispatches",
+    "/patios/patios",
+    "/patios/processos",
+    "/patios/liberacoes",
+    "/patios/leiloes",
+    "/patios/perfis",
+    "/patios/tarifas",
+    "/logistics/map"
+   ],
+   "support": [
+    "/dashboard",
+    "/administrator/checklists",
+    "/administrator/audit",
+    "/notifications",
+    "/operations/checklists"
+   ]
+  },
+  "menu_backend_catalogo_vs_banco_diff": {
+   "platform_admin": "n/a",
+   "tenant_admin": "igual",
+   "manager": "igual",
+   "operator": "igual",
+   "finance": "igual",
+   "inventory": "igual",
+   "field_technician": "igual",
+   "auditor": "igual",
+   "support": "igual"
+  },
+  "sidebar_front": {
+   "tenant_admin": {
+    "labels": [
+     "Administrador"
+    ],
+    "kind": "admin",
+    "visiveis": 50,
+    "negados_pelo_guard": [],
+    "sem_guard": [
+     "/patios/patios"
+    ],
+    "itens": [
+     "VISÃO GERAL/Dashboard",
+     "OPERAÇÃO/Ordens de Serviço",
+     "OPERAÇÃO/Despachos",
+     "OPERAÇÃO/Mapa Operacional",
+     "OPERAÇÃO/Orçamentos",
+     "OPERAÇÃO/Aprovações",
+     "OPERAÇÃO/Checklists",
+     "FROTA/Viaturas",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "FROTA/Extrato do Profissional",
+     "GESTÃO/Clientes",
+     "GESTÃO/Filiais",
+     "GESTÃO/Fornecedores",
+     "GESTÃO/Equipes",
+     "GESTÃO/Profissionais",
+     "GESTÃO/Serviços",
+     "GESTÃO/Tabela de Valores",
+     "GESTÃO/Tarifas",
+     "GESTÃO/Tags",
+     "GESTÃO/Pontos de Interesse",
+     "GESTÃO/Estoque",
+     "GESTÃO/Pedidos",
+     "GESTÃO/Remunerações",
+     "GESTÃO/Relatórios",
+     "GESTÃO/Financeiro",
+     "GESTÃO/Cobranças",
+     "GESTÃO/Pagamentos",
+     "PÁTIOS/Painel",
+     "PÁTIOS/Pátios",
+     "PÁTIOS/Processos",
+     "PÁTIOS/Liberações",
+     "PÁTIOS/Leilões",
+     "PÁTIOS/Perfis Normativos",
+     "PÁTIOS/Tabela de Valores",
+     "TELEMETRIA/Quilometragem",
+     "TELEMETRIA/Acessos",
+     "TELEMETRIA/Recusas",
+     "TELEMETRIA/Dispositivos",
+     "TELEMETRIA/Rastreamento",
+     "ADMINISTRAÇÃO/Usuários",
+     "ADMINISTRAÇÃO/Acessos",
+     "ADMINISTRAÇÃO/Sessões",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Central de Notificações",
+     "ADMINISTRAÇÃO/Modelos de Checklist",
+     "ADMINISTRAÇÃO/Auditoria"
+    ]
+   },
+   "manager": {
+    "labels": [
+     "Gestor Operacional"
+    ],
+    "kind": "gestor",
+    "visiveis": 47,
+    "negados_pelo_guard": [
+     "Sessões (/controle/usuarios/sessoes) guard=sessions:read"
+    ],
+    "sem_guard": [
+     "/patios/patios"
+    ],
+    "itens": [
+     "VISÃO GERAL/Dashboard",
+     "OPERAÇÃO/Ordens de Serviço",
+     "OPERAÇÃO/Despachos",
+     "OPERAÇÃO/Mapa Operacional",
+     "OPERAÇÃO/Orçamentos",
+     "OPERAÇÃO/Aprovações",
+     "OPERAÇÃO/Checklists",
+     "FROTA/Viaturas",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "FROTA/Extrato do Profissional",
+     "GESTÃO/Clientes",
+     "GESTÃO/Filiais",
+     "GESTÃO/Fornecedores",
+     "GESTÃO/Equipes",
+     "GESTÃO/Profissionais",
+     "GESTÃO/Serviços",
+     "GESTÃO/Tabela de Valores",
+     "GESTÃO/Tarifas",
+     "GESTÃO/Tags",
+     "GESTÃO/Pontos de Interesse",
+     "GESTÃO/Estoque",
+     "GESTÃO/Pedidos",
+     "GESTÃO/Remunerações",
+     "GESTÃO/Relatórios",
+     "PÁTIOS/Painel",
+     "PÁTIOS/Pátios",
+     "PÁTIOS/Processos",
+     "PÁTIOS/Liberações",
+     "PÁTIOS/Leilões",
+     "PÁTIOS/Perfis Normativos",
+     "PÁTIOS/Tabela de Valores",
+     "TELEMETRIA/Quilometragem",
+     "TELEMETRIA/Acessos",
+     "TELEMETRIA/Recusas",
+     "TELEMETRIA/Dispositivos",
+     "TELEMETRIA/Rastreamento",
+     "ADMINISTRAÇÃO/Usuários",
+     "ADMINISTRAÇÃO/Acessos",
+     "ADMINISTRAÇÃO/Sessões",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Central de Notificações",
+     "ADMINISTRAÇÃO/Modelos de Checklist",
+     "ADMINISTRAÇÃO/Auditoria"
+    ]
+   },
+   "operator": {
+    "labels": [
+     "Operador Logistico"
+    ],
+    "kind": "dispatcher",
+    "visiveis": 28,
+    "negados_pelo_guard": [],
+    "sem_guard": [
+     "/patios/patios"
+    ],
+    "itens": [
+     "VISÃO GERAL/Dashboard",
+     "OPERAÇÃO/Ordens de Serviço",
+     "OPERAÇÃO/Despachos",
+     "OPERAÇÃO/Mapa Operacional",
+     "OPERAÇÃO/Orçamentos",
+     "OPERAÇÃO/Aprovações",
+     "OPERAÇÃO/Checklists",
+     "FROTA/Viaturas",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "GESTÃO/Clientes",
+     "GESTÃO/Equipes",
+     "GESTÃO/Serviços",
+     "GESTÃO/Tabela de Valores",
+     "GESTÃO/Tarifas",
+     "GESTÃO/Estoque",
+     "PÁTIOS/Painel",
+     "PÁTIOS/Pátios",
+     "PÁTIOS/Processos",
+     "PÁTIOS/Liberações",
+     "PÁTIOS/Leilões",
+     "PÁTIOS/Perfis Normativos",
+     "PÁTIOS/Tabela de Valores",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Central de Notificações"
+    ]
+   },
+   "finance": {
+    "labels": [
+     "Financeiro"
+    ],
+    "kind": "finance",
+    "visiveis": 14,
+    "negados_pelo_guard": [
+     "Aprovações (/approvals) guard=work_orders:read",
+     "Auditoria (/audit) guard=audit:read|audit.read|audit:view"
+    ],
+    "sem_guard": [],
+    "itens": [
+     "OPERAÇÃO/Orçamentos",
+     "OPERAÇÃO/Aprovações",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "FROTA/Extrato do Profissional",
+     "GESTÃO/Estoque",
+     "GESTÃO/Pedidos",
+     "GESTÃO/Remunerações",
+     "GESTÃO/Relatórios",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Auditoria"
+    ]
+   },
+   "inventory": {
+    "labels": [],
+    "kind": "gestor",
+    "visiveis": 28,
+    "negados_pelo_guard": [
+     "Aprovações (/approvals) guard=work_orders:read",
+     "Viaturas (/cadastros/viaturas) guard=vehicles:read",
+     "Abastecimento (/fleet/fuel) guard=fuel_logs:read",
+     "Manutenção (/fleet/maintenance) guard=maintenance_orders:read",
+     "Multas (/fleet/fines) guard=fines:read",
+     "Seguros (/fleet/insurance) guard=insurance_policies:read",
+     "Danos (/fleet/damages) guard=damages:read",
+     "Extrato do Profissional (/fleet/statement) guard=professional_statements:read",
+     "Clientes (/cadastros/clientes) guard=customers:read",
+     "Filiais (/cadastros/filiais) guard=branches:read",
+     "Fornecedores (/cadastros/fornecedores) guard=suppliers:read",
+     "Equipes (/cadastros/equipes) guard=teams:read",
+     "Profissionais (/cadastros/profissionais) guard=operator_profiles:read",
+     "Serviços (/cadastros/servicos) guard=service_catalog:read",
+     "Tabela de Valores (/cadastros/tabelas-valores) guard=price_tables:read",
+     "Tarifas (/cadastros/tarifas) guard=tariffs:read",
+     "Tags (/cadastros/tags) guard=tags:read",
+     "Pontos de Interesse (/cadastros/pontos-interesse) guard=pois:read",
+     "Remunerações (/finance/commissions) guard=commissions:read|commissions:read_own",
+     "Painel (/patios/painel) guard=impound:read",
+     "Usuários (/users) guard=users.read|users:read",
+     "Acessos (/controle/usuarios/acessos) guard=audit:read|audit.read|audit:view",
+     "Sessões (/controle/usuarios/sessoes) guard=sessions:read",
+     "Auditoria (/audit) guard=audit:read|audit.read|audit:view"
+    ],
+    "sem_guard": [],
+    "itens": [
+     "OPERAÇÃO/Aprovações",
+     "FROTA/Viaturas",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "FROTA/Extrato do Profissional",
+     "GESTÃO/Clientes",
+     "GESTÃO/Filiais",
+     "GESTÃO/Fornecedores",
+     "GESTÃO/Equipes",
+     "GESTÃO/Profissionais",
+     "GESTÃO/Serviços",
+     "GESTÃO/Tabela de Valores",
+     "GESTÃO/Tarifas",
+     "GESTÃO/Tags",
+     "GESTÃO/Pontos de Interesse",
+     "GESTÃO/Estoque",
+     "GESTÃO/Pedidos",
+     "GESTÃO/Remunerações",
+     "GESTÃO/Relatórios",
+     "PÁTIOS/Painel",
+     "ADMINISTRAÇÃO/Usuários",
+     "ADMINISTRAÇÃO/Acessos",
+     "ADMINISTRAÇÃO/Sessões",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Auditoria"
+    ]
+   },
+   "field_technician": {
+    "labels": [
+     "Operador Logistico"
+    ],
+    "kind": "dispatcher",
+    "visiveis": 26,
+    "negados_pelo_guard": [
+     "Seguros (/fleet/insurance) guard=insurance_policies:read",
+     "Estoque (/inventory) guard=inventory_items:read"
+    ],
+    "sem_guard": [
+     "/patios/patios"
+    ],
+    "itens": [
+     "VISÃO GERAL/Dashboard",
+     "OPERAÇÃO/Ordens de Serviço",
+     "OPERAÇÃO/Despachos",
+     "OPERAÇÃO/Orçamentos",
+     "OPERAÇÃO/Aprovações",
+     "OPERAÇÃO/Checklists",
+     "FROTA/Viaturas",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "GESTÃO/Clientes",
+     "GESTÃO/Equipes",
+     "GESTÃO/Serviços",
+     "GESTÃO/Tabela de Valores",
+     "GESTÃO/Tarifas",
+     "GESTÃO/Estoque",
+     "PÁTIOS/Painel",
+     "PÁTIOS/Pátios",
+     "PÁTIOS/Processos",
+     "PÁTIOS/Liberações",
+     "PÁTIOS/Leilões",
+     "PÁTIOS/Perfis Normativos",
+     "PÁTIOS/Tabela de Valores",
+     "ADMINISTRAÇÃO/Notificações"
+    ]
+   },
+   "auditor": {
+    "labels": [
+     "Auditor"
+    ],
+    "kind": "gestor",
+    "visiveis": 46,
+    "negados_pelo_guard": [],
+    "sem_guard": [
+     "/patios/patios"
+    ],
+    "itens": [
+     "VISÃO GERAL/Dashboard",
+     "OPERAÇÃO/Ordens de Serviço",
+     "OPERAÇÃO/Despachos",
+     "OPERAÇÃO/Mapa Operacional",
+     "OPERAÇÃO/Orçamentos",
+     "OPERAÇÃO/Aprovações",
+     "OPERAÇÃO/Checklists",
+     "FROTA/Viaturas",
+     "FROTA/Abastecimento",
+     "FROTA/Manutenção",
+     "FROTA/Multas",
+     "FROTA/Seguros",
+     "FROTA/Danos",
+     "FROTA/Extrato do Profissional",
+     "GESTÃO/Clientes",
+     "GESTÃO/Filiais",
+     "GESTÃO/Fornecedores",
+     "GESTÃO/Equipes",
+     "GESTÃO/Profissionais",
+     "GESTÃO/Serviços",
+     "GESTÃO/Tabela de Valores",
+     "GESTÃO/Tarifas",
+     "GESTÃO/Tags",
+     "GESTÃO/Pontos de Interesse",
+     "GESTÃO/Estoque",
+     "GESTÃO/Pedidos",
+     "GESTÃO/Remunerações",
+     "GESTÃO/Relatórios",
+     "PÁTIOS/Painel",
+     "PÁTIOS/Pátios",
+     "PÁTIOS/Processos",
+     "PÁTIOS/Liberações",
+     "PÁTIOS/Leilões",
+     "PÁTIOS/Perfis Normativos",
+     "PÁTIOS/Tabela de Valores",
+     "TELEMETRIA/Quilometragem",
+     "TELEMETRIA/Acessos",
+     "TELEMETRIA/Recusas",
+     "TELEMETRIA/Dispositivos",
+     "TELEMETRIA/Rastreamento",
+     "ADMINISTRAÇÃO/Usuários",
+     "ADMINISTRAÇÃO/Acessos",
+     "ADMINISTRAÇÃO/Sessões",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Modelos de Checklist",
+     "ADMINISTRAÇÃO/Auditoria"
+    ]
+   },
+   "support": {
+    "labels": [
+     "Supervisor"
+    ],
+    "kind": "support",
+    "visiveis": 3,
+    "negados_pelo_guard": [],
+    "sem_guard": [],
+    "itens": [
+     "ADMINISTRAÇÃO/Usuários",
+     "ADMINISTRAÇÃO/Notificações",
+     "ADMINISTRAÇÃO/Auditoria"
+    ]
+   }
+  },
+  "orfas": {
+   "n": 25,
+   "lista": [
+    "users:read",
+    "audit:read",
+    "purchase_orders:read",
+    "purchase_orders:create",
+    "field_operator:read",
+    "field_operator:action",
+    "logistics:read",
+    "logistics_routes:read",
+    "billing:read",
+    "invoices:read",
+    "payments:read",
+    "reports:read",
+    "expense_report:approve_manager",
+    "expense_report:approve_finance",
+    "expense_report:return",
+    "expense_report:reject",
+    "expense_report:pay",
+    "expense_policy:manage",
+    "expense_receipt:attach",
+    "expense_audit:read",
+    "os.manage",
+    "os.read",
+    "finance.manage",
+    "finance.read",
+    "finance:read"
+   ]
+  },
+  "demo_modules": [
+   "dashboard",
+   "work_orders",
+   "field_operations",
+   "logistics",
+   "finance",
+   "checklists",
+   "tenant_checklist",
+   "notifications",
+   "users",
+   "audit"
+  ],
+  "governed_paths_n": 36
+ },
+ "findings": [
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "tenant_admin",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "manager",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "operator",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "finance",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 31,
+   "row": "Platform configuration",
+   "role": "support",
+   "cell": "limited-support",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 33,
+   "row": "User and role assignment",
+   "role": "support",
+   "cell": "limited-support",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "users.read"
+   ]
+  },
+  {
+   "line": 34,
+   "row": "Dashboard and operational overview",
+   "role": "field_technician",
+   "cell": "scoped",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "dashboard:read"
+   ]
+  },
+  {
+   "line": 34,
+   "row": "Dashboard and operational overview",
+   "role": "support",
+   "cell": "scoped",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "dashboard:read"
+   ]
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "tenant_admin",
+   "cell": "tenant-scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "manager",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "operator",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "finance",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "inventory",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "field_technician",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 35,
+   "row": "Backend navigation menu",
+   "role": "support",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 37,
+   "row": "Master data",
+   "role": "finance",
+   "cell": "read",
+   "kind": "conflito",
+   "perms": [
+    "branches:read",
+    "suppliers:read",
+    "tags:read",
+    "pois:read",
+    "operator_profiles:read"
+   ]
+  },
+  {
+   "line": 37,
+   "row": "Master data",
+   "role": "inventory",
+   "cell": "read/edit-scoped",
+   "kind": "conflito",
+   "perms": [
+    "branches:read",
+    "suppliers:read",
+    "tags:read",
+    "pois:read",
+    "operator_profiles:read"
+   ]
+  },
+  {
+   "line": 43,
+   "row": "Configurable checklist templates",
+   "role": "finance",
+   "cell": "read",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "tenant_checklists:read"
+   ]
+  },
+  {
+   "line": 43,
+   "row": "Configurable checklist templates",
+   "role": "inventory",
+   "cell": "read",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "tenant_checklists:read"
+   ]
+  },
+  {
+   "line": 43,
+   "row": "Configurable checklist templates",
+   "role": "field_technician",
+   "cell": "read",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "tenant_checklists:read"
+   ]
+  },
+  {
+   "line": 43,
+   "row": "Configurable checklist templates",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "tenant_checklists:read"
+   ]
+  },
+  {
+   "line": 44,
+   "row": "Checklist executions and answers",
+   "role": "manager",
+   "cell": "read/complete-by-scope",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "checklist_runs:complete"
+   ]
+  },
+  {
+   "line": 44,
+   "row": "Checklist executions and answers",
+   "role": "operator",
+   "cell": "create/answer/complete-by-scope",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "checklist_runs:update",
+    "checklist_runs:complete"
+   ]
+  },
+  {
+   "line": 44,
+   "row": "Checklist executions and answers",
+   "role": "finance",
+   "cell": "read",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "checklist_runs:read"
+   ]
+  },
+  {
+   "line": 44,
+   "row": "Checklist executions and answers",
+   "role": "inventory",
+   "cell": "read/answer-by-scope",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "checklist_runs:read"
+   ]
+  },
+  {
+   "line": 44,
+   "row": "Checklist executions and answers",
+   "role": "field_technician",
+   "cell": "answer-assigned",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "checklist_runs:update",
+    "checklist_runs:complete",
+    "checklist_runs:acknowledge"
+   ]
+  },
+  {
+   "line": 44,
+   "row": "Checklist executions and answers",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "checklist_runs:read"
+   ]
+  },
+  {
+   "line": 45,
+   "row": "Work orders / service orders",
+   "role": "operator",
+   "cell": "create/edit",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "work_orders:create"
+   ]
+  },
+  {
+   "line": 45,
+   "row": "Work orders / service orders",
+   "role": "finance",
+   "cell": "read",
+   "kind": "A-falta-incondicional",
+   "perms": [
+    "work_orders:read"
+   ]
+  },
+  {
+   "line": 45,
+   "row": "Work orders / service orders",
+   "role": "field_technician",
+   "cell": "execute/update-assigned",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "work_orders:update",
+    "work_orders:status"
+   ]
+  },
+  {
+   "line": 47,
+   "row": "Inventory movements",
+   "role": "operator",
+   "cell": "request/use",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "stock_movements:create"
+   ]
+  },
+  {
+   "line": 48,
+   "row": "Purchasing",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "purchase_orders:read"
+   ]
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "tenant_admin",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "manager",
+   "cell": "read",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "operator",
+   "cell": "none",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "finance",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 50,
+   "row": "Billing",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "tenant_admin",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "manager",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "operator",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "finance",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 51,
+   "row": "Cloud usage metering",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "tenant_admin",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "manager",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "operator",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "finance",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 52,
+   "row": "Cloud cost import",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "tenant_admin",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "manager",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "operator",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "finance",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 53,
+   "row": "Cloud cost allocation",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "tenant_admin",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "manager",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "operator",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "finance",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 54,
+   "row": "Cloud charge markup rules",
+   "role": "support",
+   "cell": "support-view",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "tenant_admin",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "manager",
+   "cell": "full",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "operator",
+   "cell": "scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "finance",
+   "cell": "finance-scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "inventory",
+   "cell": "inventory-scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "field_technician",
+   "cell": "field-scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "auditor",
+   "cell": "audit-full-read",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 55,
+   "row": "Reports and analytics",
+   "role": "support",
+   "cell": "support-scoped",
+   "kind": "skip",
+   "perms": []
+  },
+  {
+   "line": 56,
+   "row": "Audit logs",
+   "role": "manager",
+   "cell": "scoped",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "audit:read"
+   ]
+  },
+  {
+   "line": 56,
+   "row": "Audit logs",
+   "role": "support",
+   "cell": "support-scoped",
+   "kind": "B-qualificada-concedida-sem-escopo",
+   "perms": [
+    "audit:read"
+   ]
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "platform_admin",
+   "cell": "full",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "tenant_admin",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "manager",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "operator",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "finance",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "inventory",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "field_technician",
+   "cell": "none",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "auditor",
+   "cell": "read",
+   "kind": "platform",
+   "perms": []
+  },
+  {
+   "line": 57,
+   "row": "Cross-tenant support operations",
+   "role": "support",
+   "cell": "scoped-support-only",
+   "kind": "platform",
+   "perms": []
+  }
+ ],
+ "rows": [
+  {
+   "line": 31,
+   "label": "Platform configuration",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "none",
+    "manager": "none",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "limited-support"
+   }
+  },
+  {
+   "line": 32,
+   "label": "Tenant administration",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "read",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "limited-support"
+   }
+  },
+  {
+   "line": 33,
+   "label": "User and role assignment",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "limited",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "limited-support"
+   }
+  },
+  {
+   "line": 34,
+   "label": "Dashboard and operational overview",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "full",
+    "operator": "full",
+    "finance": "scoped",
+    "inventory": "scoped",
+    "field_technician": "scoped",
+    "auditor": "read",
+    "support": "scoped"
+   }
+  },
+  {
+   "line": 35,
+   "label": "Backend navigation menu",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "tenant-scoped",
+    "manager": "scoped",
+    "operator": "scoped",
+    "finance": "scoped",
+    "inventory": "scoped",
+    "field_technician": "scoped",
+    "auditor": "read",
+    "support": "scoped"
+   }
+  },
+  {
+   "line": 36,
+   "label": "Field operator location",
+   "cells": {
+    "platform_admin": "support-audited",
+    "tenant_admin": "full-tenant",
+    "manager": "read-history",
+    "operator": "send-own/read-tenant",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "send-own",
+    "auditor": "full-read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 37,
+   "label": "Master data",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "approve/edit",
+    "operator": "edit-scoped",
+    "finance": "read",
+    "inventory": "read/edit-scoped",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "read-support"
+   }
+  },
+  {
+   "line": 38,
+   "label": "Customer registry (Cadastros - Clientes)",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "create/edit",
+    "operator": "read",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "none"
+   }
+  },
+  {
+   "line": 39,
+   "label": "Vehicle registry (Cadastros - Viaturas)",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "create/edit",
+    "operator": "read",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "none"
+   }
+  },
+  {
+   "line": 40,
+   "label": "Team registry (Cadastros - Equipes)",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "create/edit",
+    "operator": "read",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "none"
+   }
+  },
+  {
+   "line": 41,
+   "label": "Service catalog (Cadastros - Serviços)",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "create/edit",
+    "operator": "read",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "none"
+   }
+  },
+  {
+   "line": 42,
+   "label": "Price tables (Configurações - Tabela de Valores)",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "create/edit",
+    "operator": "read",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "none"
+   }
+  },
+  {
+   "line": 43,
+   "label": "Configurable checklist templates",
+   "cells": {
+    "platform_admin": "support-audited",
+    "tenant_admin": "create/read/update/delete/publish",
+    "manager": "read",
+    "operator": "none",
+    "finance": "read",
+    "inventory": "read",
+    "field_technician": "read",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 44,
+   "label": "Checklist executions and answers",
+   "cells": {
+    "platform_admin": "support-audited",
+    "tenant_admin": "full-tenant",
+    "manager": "read/complete-by-scope",
+    "operator": "create/answer/complete-by-scope",
+    "finance": "read",
+    "inventory": "read/answer-by-scope",
+    "field_technician": "answer-assigned",
+    "auditor": "full-read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 45,
+   "label": "Work orders / service orders",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "full",
+    "operator": "create/edit",
+    "finance": "read",
+    "inventory": "material-view",
+    "field_technician": "execute/update-assigned",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 46,
+   "label": "Workflow / approvals",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "full",
+    "operator": "request",
+    "finance": "approval-by-policy",
+    "inventory": "approval-by-policy",
+    "field_technician": "request/ack",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 47,
+   "label": "Inventory movements",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "read",
+    "operator": "request/use",
+    "finance": "read",
+    "inventory": "full-operational",
+    "field_technician": "consume/confirm",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 48,
+   "label": "Purchasing",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "request/approve-policy",
+    "operator": "request",
+    "finance": "budget-check",
+    "inventory": "stock-driven-request",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 49,
+   "label": "Finance",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "tenant-finance-admin",
+    "manager": "manager-view",
+    "operator": "none",
+    "finance": "full",
+    "inventory": "stock-cost-view",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 50,
+   "label": "Billing",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "read",
+    "operator": "none",
+    "finance": "full",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 51,
+   "label": "Cloud usage metering",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "none",
+    "manager": "none",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 52,
+   "label": "Cloud cost import",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "none",
+    "manager": "none",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 53,
+   "label": "Cloud cost allocation",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "none",
+    "manager": "none",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 54,
+   "label": "Cloud charge markup rules",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "none",
+    "manager": "none",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "support-view"
+   }
+  },
+  {
+   "line": 55,
+   "label": "Reports and analytics",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "full",
+    "manager": "full",
+    "operator": "scoped",
+    "finance": "finance-scoped",
+    "inventory": "inventory-scoped",
+    "field_technician": "field-scoped",
+    "auditor": "audit-full-read",
+    "support": "support-scoped"
+   }
+  },
+  {
+   "line": 56,
+   "label": "Audit logs",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "read",
+    "manager": "scoped",
+    "operator": "none",
+    "finance": "scoped",
+    "inventory": "scoped",
+    "field_technician": "none",
+    "auditor": "full-read",
+    "support": "support-scoped"
+   }
+  },
+  {
+   "line": 57,
+   "label": "Cross-tenant support operations",
+   "cells": {
+    "platform_admin": "full",
+    "tenant_admin": "none",
+    "manager": "none",
+    "operator": "none",
+    "finance": "none",
+    "inventory": "none",
+    "field_technician": "none",
+    "auditor": "read",
+    "support": "scoped-support-only"
+   }
+  }
+ ]
+}

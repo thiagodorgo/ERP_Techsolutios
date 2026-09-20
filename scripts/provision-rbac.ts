@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 
 import {
   DEFAULT_ROLES,
+  DELIBERATE_REVOCATIONS,
   PERMISSION_CATALOG,
   ROLE_PERMISSIONS,
   type Permission,
@@ -35,7 +36,9 @@ import {
 //  · não APAGA nem reescreve concessão existente — divergência (concessão no banco que o catálogo
 //    não declara) é RELATADA, nunca removida: revogar às cegas em produção derrubaria acesso
 //    concedido de propósito fora do catálogo, e revogação é ato deliberado, não efeito colateral
-//    de deploy;
+//    de deploy. A ÚNICA exceção é NOMEADA: `DELIBERATE_REVOCATIONS` (catalog.ts) — revogações
+//    DECIDIDAS, em código versionado com a decisão, aplicadas no passo 3-bis ao papel GLOBAL
+//    (idempotente; `--dry-run` só relata). B-SAN3-04a, item 15;
 //  · não renomeia papel existente nem reescreve descrição de permissão existente (ver DESCRIÇÕES).
 //
 // DESCRIÇÕES (degradação declarada — D-007): o texto curado de cada permissão vive hoje no mapa
@@ -83,6 +86,7 @@ type Relatorio = {
   readonly papeisFaltando: readonly string[];
   readonly concessoesFaltando: number;
   readonly concessoesJaExistentes: number;
+  readonly revogacoesDeliberadas: readonly string[];
   readonly concessoesForaDoCatalogo: readonly string[];
   readonly permissoesForaDoCatalogo: readonly string[];
 };
@@ -201,7 +205,25 @@ async function provisionar(): Promise<Relatorio> {
         await tx.rolePermission.createMany({ data: concessoesFaltando, skipDuplicates: true });
       }
 
-      // ---- 4) Divergências: relatadas, JAMAIS removidas ---------------------------------
+      // ---- 3-bis) Revogações DELIBERADAS (B-SAN3-04a, item 15) — a ÚNICA remoção deste script ----
+      // Não é revogação às cegas: a lista é código versionado, NOMEADA, com a decisão (DELIBERATE_REVOCATIONS,
+      // catalog.ts). Só o papel GLOBAL (`tenant_id IS NULL` — os ids em `idPorPapel` são exatamente esses);
+      // papéis da organização são dela. Idempotente: a 2ª execução não encontra a concessão e remove 0.
+      // Em --dry-run só relata (o que SERIA removido).
+      const revogacoesDeliberadas: string[] = [];
+      const revogadas = new Set<string>();
+      for (const revogacao of DELIBERATE_REVOCATIONS) {
+        const papelId = idPorPapel.get(revogacao.role);
+        const permissaoId = idPorPermissao.get(revogacao.permission);
+        if (!papelId || !permissaoId || !concessoesExistentes.has(chaveDaConcessao(papelId, permissaoId))) continue;
+        revogacoesDeliberadas.push(`${revogacao.role} → ${revogacao.permission} (${revogacao.decision})`);
+        revogadas.add(`${revogacao.role} → ${revogacao.permission}`);
+        if (APPLY_MODE) {
+          await tx.rolePermission.deleteMany({ where: { role_id: papelId, permission_id: permissaoId } });
+        }
+      }
+
+      // ---- 4) Divergências: relatadas, JAMAIS removidas (fora as revogações nomeadas do 3-bis) ---
       const chavePorId = new Map([...idPorPapel].map(([chave, id]) => [id, chave]));
       const permissaoPorId = new Map([...idPorPermissao].map(([chave, id]) => [id, chave]));
       const declaradas = new Set<string>();
@@ -217,7 +239,7 @@ async function provisionar(): Promise<Relatorio> {
           const permissao = permissaoPorId.get(concessao.permission_id);
           return papel && permissao ? `${papel} → ${permissao}` : null;
         })
-        .filter((item): item is string => item !== null && !declaradas.has(item));
+        .filter((item): item is string => item !== null && !declaradas.has(item) && !revogadas.has(item));
 
       const catalogo = new Set<string>(PERMISSION_CATALOG);
       const permissoesForaDoCatalogo = [...idPorPermissao.keys()].filter((chave) => !catalogo.has(chave));
@@ -232,6 +254,7 @@ async function provisionar(): Promise<Relatorio> {
         // existem, então a concessão não tem ids para virar linha, mas continua faltando.
         concessoesFaltando: pendentes.length,
         concessoesJaExistentes: concessoesNoBanco.length,
+        revogacoesDeliberadas,
         concessoesForaDoCatalogo,
         permissoesForaDoCatalogo,
       } satisfies Relatorio;
@@ -282,6 +305,10 @@ async function main(): Promise<void> {
       `${relatorio.papeisFaltando.length > 0 ? `: ${amostra(relatorio.papeisFaltando, 15)}` : ""}`,
   );
   log(`concessões: ${relatorio.concessoesFaltando} ${verbo} · ${relatorio.concessoesJaExistentes} já existiam`);
+  log(
+    `revogações deliberadas: ${relatorio.revogacoesDeliberadas.length} ${APPLY_MODE ? "removida(s)" : "a remover"}` +
+      `${relatorio.revogacoesDeliberadas.length > 0 ? ` — ${relatorio.revogacoesDeliberadas.join("; ")}` : ""}`,
+  );
 
   if (relatorio.concessoesForaDoCatalogo.length > 0) {
     // Não é erro: pode ser concessão deliberada fora do catálogo. É informação para auditoria.

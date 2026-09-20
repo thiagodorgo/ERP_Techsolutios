@@ -35,10 +35,10 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Backend navigation menu | full | tenant-scoped | scoped | scoped | scoped | scoped | scoped | read | scoped |
 | Field operator location | support-audited | full-tenant | read-history | send-own/read-tenant | none | none | send-own | full-read | support-view |
 | Master data | full | full | approve/edit | edit-scoped | read | read/edit-scoped | read | read | read-support |
-| Customer registry (Cadastros - Clientes) | full | full | create/edit | read | none | none | read | read | none |
+| Customer registry (Cadastros - Clientes) | full | full | create/edit | read | read | none | read | read | none |
 | Vehicle registry (Cadastros - Viaturas) | full | full | create/edit | read | none | none | read | read | none |
 | Team registry (Cadastros - Equipes) | full | full | create/edit | read | none | none | read | read | none |
-| Service catalog (Cadastros - Serviços) | full | full | create/edit | read | none | none | read | read | none |
+| Service catalog (Cadastros - Serviços) | full | full | create/edit | read | read | none | read | read | none |
 | Price tables (Configurações - Tabela de Valores) | full | full | create/edit | read | none | none | read | read | none |
 | Configurable checklist templates | support-audited | create/read/update/delete/publish | read | none | read | read | read | read | support-view |
 | Checklist executions and answers | support-audited | full-tenant | read/complete-by-scope | create/answer/complete-by-scope | read | read/answer-by-scope | answer-assigned | full-read | support-view |

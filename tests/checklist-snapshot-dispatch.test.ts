@@ -211,9 +211,10 @@ test("[GET run-por-OS] cross-tenant → 200 vazio; sem workOrderId → 422; sem 
     assert.equal(missing.status, 422);
     assert.equal(missing.body.error.reason, "work_order_id_required");
 
-    // ator sem checklist_runs:read (finance) → 403.
+    // ator sem checklist_runs:read → 403. B-SAN3-04a (item 15): o finance passou a ler execuções (RBAC_MATRIX.md:44);
+    // o controle sem a permissão é o field_dispatcher (único papel de organização sem checklist_runs:read).
     const forbidden = await req(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${wo.id}`, {
-      headers: headers(seed, "finance"),
+      headers: headers(seed, "field_dispatcher"),
     });
     assert.equal(forbidden.status, 403);
     assert.equal(forbidden.body.error.reason, "permission_required");

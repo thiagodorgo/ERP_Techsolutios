@@ -143,13 +143,20 @@ jobs:
       # casam ZERO linhas, ficam marcadas como aplicadas e nunca mais rodam — o técnico de campo
       # nasceria sem checklist e `checklist_runs:reopen` sem concessão, PARA SEMPRE. Migração é tiro
       # único; este passo CONVERGE o RBAC com o catálogo em código a cada deploy.
-      # É ADITIVO (nunca apaga concessão — divergência é relatada, não removida), IDEMPOTENTE (2ª
-      # execução não cria nada) e NÃO semeia dado de demonstração (não é o seed; a guarda
-      # `assertSeedAllowed` segue valendo). Falha só em erro real de escrita/conexão — nunca por
-      # divergência esperada. Drill da prova: `bash scripts/rbac-provision-drill.sh`.
+      # É ADITIVO, com UMA remoção e ela é NOMEADA: concessão que o catálogo não declara é RELATADA
+      # e nunca removida — MENOS as revogações DELIBERADAS da lista `DELIBERATE_REVOCATIONS`
+      # (`src/modules/core-saas/permissions/catalog.ts`), que o passo 3-bis do script aplica ao papel
+      # GLOBAL (`tenant_id IS NULL`). Hoje são 2, ambas do `manager`: `checklist_runs:update` e
+      # `checklist_runs:acknowledge` (B-SAN3-04a, item 15 — a RBAC_MATRIX.md não as nomeia). Ou seja:
+      # este passo PODE diminuir `role_permissions`, em exatamente essas linhas e em nenhuma outra, e
+      # relata `revogações deliberadas: N removida(s)` no log. É IDEMPOTENTE (2ª execução não cria nada
+      # e remove 0) e NÃO semeia dado de demonstração (não é o seed; a guarda `assertSeedAllowed` segue
+      # valendo). Com `--dry-run` o script só RELATA e não escreve — é assim que se confere antes do
+      # deploy. Falha só em erro real de escrita/conexão — nunca por divergência esperada.
+      # Drill da prova: `bash scripts/rbac-provision-drill.sh`.
       # O `prisma generate` é necessário porque a CLI/pipeline não herda o client gerado da imagem
       # runtime slim (mesmo motivo do migrate rodar aqui, e não dentro do container).
-      - name: Provision RBAC (papéis + permissões + concessões — aditivo e idempotente)
+      - name: Provision RBAC (papéis + permissões + concessões — aditivo, idempotente, e revoga as 2 concessões nomeadas)
         run: |
           npx prisma generate
           npm run db:provision-rbac

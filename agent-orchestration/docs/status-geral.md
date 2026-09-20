@@ -4543,3 +4543,75 @@ permitidos). Pelo `D-TETO-DOIS-CICLOS`, o bloco parou e foi a dossiê
 pendências `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` e
 `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`. A fonte Inter, declarada nos tokens e nunca carregada, virou
 `P-WEB-FONTE-INTER-NAO-CARREGADA` (dono `B-SAN3-06c`). O `B-SAN3-10` reconta o gate com os dois blocos novos.
+## 2026-09-18 — `B-SAN3-04a` na autoria: catálogo, banco e menu convergem à matriz de papéis (itens 13, 14, 15, 38 e 56)
+
+**Papéis (§C7.4-bis):** acharam as juntas do PR #386 e o inventário SAN3; planejou o `planejador-mestre` (Fable, 2ª
+instância — a 1ª caiu por limite de sessão); implementaram duas instâncias de dev — a 2ª caiu (queda de sessão e reboot)
+com o trabalho vivo e não commitado, e a 3ª (Opus 5) mediu esse trabalho contra o plano passo a passo, reexecutou
+todos os vermelhos-controle no head-base `13e3783c` num worktree próprio, corrigiu o que divergia e terminou.
+
+**O que muda para quem usa:** o Financeiro lê OS, clientes e serviços (P1/P2 do dono) e volta a ver Financeiro,
+Cobranças e Pagamentos no menu; o auditor entra numa base preparada como a CI sem 403; o Estoque tem rótulo e menu
+próprios; o Gestor deixa de responder e dar ciência em vistoria (revogação **nomeada**, que o provisionamento aplica no
+próximo deploy do dono). Onde a matriz diz "por escopo" e o backend não aplica o escopo, nada foi concedido: virou
+pendência com dono (`D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`). Sem migração; `RBAC_MATRIX.md` só nas l.38 e l.41.
+
+**Números (execução real, cluster descartável do bloco):** backend **2995/2997 → 3051/3053** (+56 em 4 arquivos novos;
+N=3 idênticas; baseline remedida no head-base), smoke **1126 → 1135** (+9), `blocks_completed` 163 → 164. Drills do banco
+D1–D5 executados (P-033: 0 → 1 papel global de auditor numa base só-seed, 403 → 200; revogação: 2 removidas, 2ª execução
+0). O teste de menu e rotas com as permissões do banco roda o app sob papel NOSUPERUSER NOBYPASSRLS.
+
+**Registro:** 13 pendências abertas, 4 fechadas (`P-Ω4-FINANCE-READ-ORFA`, `P-RBAC-CHECKLIST-DRIFT`,
+`P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS`, `P-RBAC-CATALOG-MATRIZ`) e o bullet `P-033`; índice pelo gerador: 383
+cabeçalhos / 372 IDs, 107 FECHADAS, 276 ABERTAS. Oito divergências plano × código declaradas à junta no relatório do dev
+(a mais relevante: a edição da l.41 se propaga pelos tópicos "mirror of `service_catalog:*`" da própria matriz —
+tarifas, tabelas de valores e cadastros mestres —, e nada disso foi concedido).
+
+**Fora deste PR (emenda do orquestrador, 2026-09-17):** as dívidas do #386 (backfill §C3.5, aposentadoria da rodada 3,
+parecer do porteiro, linha dos bloqueantes) — o `B-SAN3-01` mergeia primeiro e as carrega. **Próximo:** inspetor de
+terreno, junta com unanimidade de 3 (bloco de permissão) + `coordenador-de-acessos`.
+
+## 2026-09-20 — `B-SAN3-04a` julgado **APROVADO 3 × 0** e pronto para merge (PR #390): rebase, recontagem e as dívidas do #387
+
+**A junta.** Ciclo 1, 2026-09-18, **APROVADO 3 × 0** (`omega/juntas/J-B-SAN3-04a.md`; votos e evidências em
+`votos/B-SAN3-04a/`), quórum de **unanimidade de 3** por ser bloco de permissão. Inspetor de terreno
+`LIBERADO COM RESSALVA` (R1 obrigatória: o briefing afirmava um rebase que não tinha acontecido — corrigido antes do
+disparo). C1 `agente-dba-guardiao` APROVADO (drills D1–D4 verdes, paridade 2/2, snapshot batendo com o §4.1 linha a
+linha); C2 `coordenador-de-acessos` (veto) APROVADO; C3 `agente-ci-doutor` APROVADO. O limite de sessão das 16h (HTTP
+429) derrubou 16 de 17 agentes das três juntas em curso; os titulares foram relançados às 19h36 e os suplentes que o
+workflow acionou sozinho **não** ficam inelegíveis, porque não mediram (`votos/B-SAN3-04a/00-quedas.md`).
+
+**A regra do escopo (§C7.1-ter(a)) pagou o que prometia.** A cadeira de veto trouxe **2 achados `bloqueia`** e
+**nenhum reprovou**: os dois são `pre-existente` com evidência de data e de origem — `docs/navigation-matrix.md` sem
+commit desde 2026-08-08 e com 33 das 40 células já divergentes na base; e o gate de módulo, que o comando do bloco
+exclui por escrito e o `PLANO_SAN3.md` dá ao `B-SAN3-18`. `bloqueia_dentro_do_bloco` = **0** nas três cadeiras. Antes
+da regra, o bloco teria sido reprovado por defeito que ele não criou e que o próprio plano o proibia de consertar.
+
+**O pré-merge (hoje).** O ramo foi rebaseado sobre a `main` (`83a3c68c`, com o #387) e **os números foram
+reexecutados** (§C3.3): backend **2996/2998 → 3052/3054** e smoke **1193 → 1202**, com Postgres e Redis descartáveis
+próprios; `blocks_completed` **164 → 165**, recontado a partir da `main`. Todo conflito foi resolvido por **união** —
+inclusive a linha do `test:smoke`, que ficou com os testes dos dois PRs — e o `pendencias-indice.md` foi **regerado
+pelo gerador**. O código que a junta julgou **não mudou**, provado nas duas direções por `cmp` de patch (2002 linhas
+idênticas de um lado, 3633 do outro). Um guard pegou defeito de verdade no caminho: a primeira passada do `npm test`
+deu 1 fail em `kpi-dashboard-charts` porque o rebase deixou o `FROZEN` do painel divergindo do JSON — `kpi-freeze.mjs`
+regenerou e a passada final ficou limpa.
+
+**Os dois ajustes que a ata mandou.** (C1-A1) `docs/deployment.md` e o texto do passo do CD em
+`deploy-production.yml` diziam que o provisionamento **nunca apaga concessão** — e desde este bloco ele apaga 2, as
+nomeadas em `DELIBERATE_REVOCATIONS`. Os dois textos passam a dizer isso, com o `--dry-run` que só relata; nenhuma
+mudança de comportamento do workflow. (C2-02) as **7 divergências** que o bloco criou com `docs/navigation-matrix.md`
+estão registradas em `controle/decisoes.md` pela §A2, com a célula, o que o documento diz, o que o sistema faz e a
+linha da `RBAC_MATRIX.md` que manda.
+
+**As dívidas do #387, pagas aqui** (parecer do porteiro pós-merge, `LIBERADO COM RESSALVA`): **A4** backfill §C3.5 do
+#387 nas entradas 158 e 159; **A1** as duas identidades da cadeira C4 do ciclo 2 da web — que votaram e originaram as
+três `P-SAN3-01B-*` sem nunca entrar no tree — versionadas nos **dois** espelhos e sepultadas no
+`OBITUARIO-IDENTIDADES.md` §3.7 (a aposentadoria fica como dívida do PR seguinte, pelo precedente do #386); **A7** o
+registro P6 do ciclo 2 do `B-SAN3-01`, que fechou sem linha de quedas; **A2** os donos de duas pendências que não
+tinham o arquivo no §5 do plano.
+
+**Pendências.** Novas: `P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA` (ALTA, 40 células, dono `B-SAN3-06a`) e
+`P-AUTH-CLAIMS-SEM-TENANT-ROLE` (MÉDIA, fila pós-gate). Emendadas com a medição da junta:
+`P-WEB-GATE-MODULO-INCOMPLETO` (N=8, `B-SAN3-18`), `P-SAN3-04A-PERMISSOES-ORFAS` (efeito do apelido `os.read`, N=4,
+`B-SAN3-04b`) e `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` (o achado C2-05 é esta pendência, que a junta não podia ver
+porque nasceu no #387 — o `finance` entra na lista de papéis afetados). Índice pelo gerador.

@@ -249,7 +249,13 @@ async function main(): Promise<void> {
     permissions.set(permission, permissionRecord);
   }
 
-  for (const role of STANDARD_ROLES) {
+  // B-SAN3-04a (item 14, P-033): uma base preparada como a CI (migrate + seed, sem db:provision-rbac) não tinha linha
+  // global de `auditor`, e o gate lê o BANCO em CORE_SAAS_PERSISTENCE=prisma → 403 em /tags, /pois, /tenant-settings.
+  // Escopo autorizado: SÓ o auditor. Os outros legados (finance, inventory, operator, field_technician, support)
+  // continuam vindo do db:provision-rbac → P-SAN3-04A-SEED-PAPEIS-LEGADOS (dono B-SAN3-07).
+  const SEEDED_SYSTEM_ROLES = [...STANDARD_ROLES, "auditor"] as const satisfies readonly Role[];
+
+  for (const role of SEEDED_SYSTEM_ROLES) {
     const roleRecord = await upsertSystemRole(role);
     roles.set(role, roleRecord);
 

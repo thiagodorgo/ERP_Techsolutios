@@ -2387,3 +2387,90 @@ reduz a chance de aprovação a cada rodada.
    `B-SAN3-06c`.
 3. O texto de fechamento dos cabeçalhos dos services do `B-SAN3-01` passa a dizer o que o guard prova hoje (as duas raízes
    declaradas, import direto e barrel de um nível), não mais "o único caminho" — a correção do texto vai no `B-SAN3-01b`.
+
+
+## D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO (B-SAN3-04a, 2026-09-18) — o catálogo converge à matriz sem conceder "por escopo" que o backend não aplica; revogação só por lista nomeada
+
+**Contexto.** Itens 13, 14, 15, 38 e 56 do gate SAN3 (dono `B-SAN3-04a`) e as condições de entrada CE-3, CE-5, CE-6,
+CE-G1 e CE-G2 (`D-SAN3-PLANO-OPCAO-B`). Plano do bloco: `agent-orchestration/omega/planos/B-SAN3-04a-plano.md`
+(`planejador-mestre`, Fable), com as decisões (a)–(f) do orquestrador no comando
+`agent-orchestration/codex/comandos/B-SAN3-04a-rbac-catalogo-banco-matriz.md`. A `RBAC_MATRIX.md` é fonte §A1.2: o
+catálogo é que se ajusta.
+
+**O que decide.**
+
+1. **Concede nove permissões**, cada uma com a linha da matriz no comentário do `catalog.ts`: `finance` +
+   `work_orders:read` (l.45 — P1, CE-3), `customers:read` (l.38 — P2, CE-5), `service_catalog:read` (l.41 — P2, CE-5),
+   `tenant_checklists:read` (l.43) e `checklist_runs:read` (l.44); `inventory` + `tenant_checklists:read` (l.43) e
+   `checklist_runs:read` (l.44, só a parte incondicional); `field_technician` + `tenant_checklists:read` (l.43);
+   `operator` + `work_orders:create` (l.45 "create/edit"; `docs/03-atores-papeis.md:268`). A `RBAC_MATRIX.md` muda só nas
+   l.38 e l.41, coluna `finance`, de `none` para `read` (P2).
+2. **Revoga duas, por lista NOMEADA:** `manager` × `checklist_runs:update` e `checklist_runs:acknowledge`, excedentes à
+   l.44 ("read/complete-by-scope") — item 15. O `scripts/provision-rbac.ts` continua aditivo e nunca revoga às cegas; a
+   única remoção é a lista `DELIBERATE_REVOCATIONS` (`src/modules/core-saas/permissions/catalog.ts`), código versionado
+   com a decisão, aplicada ao papel global no passo 3-bis, idempotente (a 2ª execução remove 0), relatada ("revogações
+   deliberadas: N removida(s) — papel → permissão (decisão)") e só relatada em `--dry-run`. O `satisfies` do TypeScript
+   recusa revogação de papel ou permissão fora do catálogo. **Chega à produção só no próximo deploy do dono**
+   (`deploy-production.yml` roda o provisionamento) — emenda (b); o `coordenador-de-acessos` vota nela nominalmente.
+3. **Não concede — fail-closed (CE-6)** onde a matriz diz "por escopo" ou "por política" e o backend não aplica:
+   A5 (`inventory` × l.44 "answer-by-scope" → `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE`, dono `B-O6R-07c`); K2
+   (`operator`/`inventory` × l.37 "edit-scoped" → `P-SAN3-04A-MASTER-DATA-EDIT-SCOPED`); X2 (`inventory` × l.46
+   "approval-by-policy", sem alçada por valor → `P-O6R-B07-APPROVAL-BY-POLICY`, já aberta); K1 (conflito interno da
+   matriz na l.37 → `P-SAN3-04A-MATRIZ-L37-X-BULLETS`, dona a decisão do dono — emenda (c)).
+4. **Mantém, com pendência e dono,** as concessões atuais sem escopo que a matriz nomeia (B5–B7: `manager` `complete`;
+   `operator` `update`/`complete`; `field_technician` `update`/`complete`/`acknowledge`) — revogá-las é decisão de
+   produto que o item 15 não pediu (emenda (d)).
+5. **Guard da propriedade (CE-G1):** `tests/san3-04a-matriz-x-catalogo-guard.test.ts` lê a tabela real da matriz e o
+   catálogo importado; célula fora do dicionário ou linha sem mapeamento lança; célula qualificada concedida fora da
+   allowlist, conflito não registrado e excedente de checklist não registrado reprovam; entrada morta também reprova.
+
+**Divergência §A2 medida pelo dev — registrada, não consolidada em silêncio.** A edição da l.41 (`finance` = `read`,
+P2) se propaga pelos tópicos "mirror of `service_catalog:*`": l.104 (tabelas de valores — a tabela, l.42, diz `none`),
+l.105 (tarifas — sem linha própria) e l.131/141-144 (cadastros mestres — a tabela, l.37, já dava `read` ao `finance`).
+Nada disso foi concedido: o guard registra um 3º conflito (`finance` × `tariffs:read` →
+`P-SAN3-04A-TARIFAS-X-L41-FINANCE`) e mantém a l.37 × `finance` como conflito registrado (a
+`P-SAN3-04A-MATRIZ-L37-X-BULLETS` foi ampliada com a medição). O fluxo que a P2 abre (o Financeiro monta orçamento)
+lê só clientes, serviços e OS (`frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts:6-8`) — não
+depende de nenhuma das leituras não concedidas.
+
+**Rollback.** `git revert` do squash — nenhuma migração; o banco só recebe concessões aditivas e as duas revogações,
+que o provisionamento da versão anterior re-concede.
+
+## §A2 — `RBAC_MATRIX.md` × `docs/navigation-matrix.md`: as 7 divergências que o `B-SAN3-04a` criou (2026-09-18, registrada no pré-merge em 2026-09-20)
+
+**Achado `C2-02` da junta do `B-SAN3-04a`** (`coordenador-de-acessos`, `ajuste`/`dentro-do-bloco`; ata
+`agent-orchestration/omega/juntas/J-B-SAN3-04a.md`, emenda 3 (z) do comando). A regra §A2 manda registrar o conflito
+entre fontes **antes** de consolidar, e o registro (`agent-orchestration/**`) estava dentro do escopo do bloco; o bloco
+consolidou e não registrou. Isto é o registro.
+
+**O conflito.** `RBAC_MATRIX.md` é fonte **§A1.2** (arquivo-base da raiz). `docs/navigation-matrix.md` é fonte
+**§A1.3** (documentação em `docs/`) e se declara "base do teste por papel". Ao fazer o catálogo convergir à matriz, o
+`B-SAN3-04a` moveu 7 células *papel × tela* para longe do que o documento diz. **Vale a `RBAC_MATRIX.md`** (§A1.2 acima
+de §A1.3) somada às decisões do dono P1 ("Sim, o Financeiro lê OS") e P2 ("o Financeiro monta orçamento"), que são
+fonte **§A1.1**. O documento é que ficou velho — `git log -1 -- docs/navigation-matrix.md` = `aff48fbb`, **2026-08-08**.
+
+**As 7 células novas** (medidas por login real com as permissões do banco, objeto `fbda96b0` na base `i2_prov`;
+harness e saída em `votos/B-SAN3-04a/C2-coordenador-de-acessos-evidencia.md` §E5 e `c2h/i2-diff-navmatrix.out`):
+
+| # | Papel | Tela | `navigation-matrix.md` diz | Efetivo no objeto | Linha da `RBAC_MATRIX.md` que manda |
+|---|---|---|---|---|---|
+| 1 | `finance` | `/operations/checklists` | — | acessa | l.41 (`checklist_runs:read` ao Financeiro) |
+| 2 | `inventory` | `/operations/checklists` | — | acessa | l.41 (`checklist_runs:read` ao Estoque) |
+| 3 | `finance` | `/cadastros/clientes` | — | acessa | l.37/l.38 (`customers:read`) + P2 do dono |
+| 4 | `finance` | `/cadastros/servicos` | — | acessa | l.38 (`service_catalog:read`) + P2 do dono |
+| 5 | `finance` | `/administrator/checklists` | — | acessa | l.41 (`tenant_checklists:read`) |
+| 6 | `inventory` | `/administrator/checklists` | — | acessa | l.41 (`tenant_checklists:read`) |
+| 7 | `field_technician` | `/administrator/checklists` | — | **sem item no menu**; por URL o guard abre e `GET /tenant/checklists` = 200 | l.43 (`tenant_checklists:read` ao Técnico de Campo) |
+
+A célula 7 não tem item no sidebar (o `kind` `dispatcher` não traz "Modelos de Checklist") — a divergência é de **rota
+acessível**, não de menu; o Técnico lê modelos para dar baixa no app, e o item web não é exigido (achado `C2-11`).
+
+**O que este registro NÃO faz.** Não corrige `docs/navigation-matrix.md`: `docs/**` está **fora** do escopo permitido
+do comando do `B-SAN3-04a`, e mexer nele aqui seria exatamente o que o §C4 proíbe. A correção do documento inteiro —
+**40** células, as 7 acima + 33 que já divergiam no head-base — é a pendência
+`P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA` (ALTA, dono `B-SAN3-06a`). O bloco também **resolveu 29** células que o
+documento já descrevia certo e a base contrariava; no head-base o mesmo harness media **62** divergentes, contra 40 no
+objeto — o bloco aproximou o sistema do documento em 22 células líquidas enquanto criava estas 7.
+
+**Consequência para quem lê o documento hoje:** ele não serve como base de teste por papel até ser reconciliado. A
+matriz efetiva confiável é a medida por login real; a fonte normativa é a `RBAC_MATRIX.md`.

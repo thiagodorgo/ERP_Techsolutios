@@ -1,0 +1,69 @@
+{
+  "cadeira": "C1",
+  "papel": "agente-dba-guardiao",
+  "modelo": "Opus 5 (claude-opus-5[1m])",
+  "objeto": "fbda96b0",
+  "base": "origin/main@02bd7dab",
+  "veredito": "APROVADO",
+  "mandato": {
+    "1_drills_D1_D4": "VERDE — D1 (head-base, migrate+db:seed): auditor_global=0, auditor 403 role_required em /tags|/pois|/tenant-settings|/audit-events, finance 403 em GET /work-orders; D2 (head-base, +db:provision-rbac): 12 papéis, manager TEM checklist_runs:update/acknowledge, finance 403 permission_required; D3 (código do bloco, mesma base): --dry-run relata 2 e não escreve (md5 role_permissions igual), aplica 'revogações deliberadas: 2 removida(s)', manager sem as duas, 2ª execução '0 removida(s)', CONVERGIDO, finance 200; D4 (código do bloco, base nova só seed): auditor_global=1 com 56 == catálogo, auditor 200. Evidência E4-E8.",
+    "2_T2_e_paridade": "VERDE — T2 braço 1 (c1_old convergida) 26/26; T2 braço 2 (c1_mig só-migrada) 26/26; vermelho-controle: braço 1 com o código do bloco na base antiga 26·10·16, braço 2 com o código do head-base 26·10·16; RBAC_DB_PARITY=1 permission-catalog-db-parity 2/2, 0 skip. Evidência E6, E7, E13.",
+    "3_snapshot_e_revogacao": "VERDE — diff do snapshot = exatamente as 11 mudanças do §4.1 (finance +5, inventory +2, field_technician +1, operator +1, manager −2), nenhum outro campo; blob == regeneração pelo comando do §12, byte a byte; passo 3-bis nomeado (DELIBERATE_REVOCATIONS com decisão, guard T1 [§4.4] verde), idempotente (2ª execução 0), --dry-run só relata (md5 igual), mesma transação e advisory lock, só papel global (papel de organização intacto, E11). Evidência E2, E3, E6, E11, E14."
+  },
+  "achados": [
+    {
+      "id": "C1-A1",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "O passo 3-bis que apaga concessão nasce neste diff (scripts/provision-rbac.ts, 02bd7dab..fbda96b0); docs/deployment.md não muda desde 0a398246 (2026-08-19) e deploy-production.yml desde 287bda36 (2026-08-10); nenhuma pendência do diff registra a divergência. Os dois arquivos estão fora do escopo permitido do comando, mas o registro (agent-orchestration/**) está dentro.",
+      "evidencia": "docs/deployment.md:49 'db:provision-rbac — aditivo, idempotente'; :107 'Nunca apaga nem reescreve concessão'; :110-111 'quem precisa revogar entrega uma migração de revogação explícita (com o DELETE no runbook…)'; .github/workflows/deploy-production.yml:146 'É ADITIVO (nunca apaga concessão…)' e :152 step 'Provision RBAC (… — aditivo e idempotente)'. Medido (E6): o mesmo `npm run db:provision-rbac` com o código do bloco → 'revogações deliberadas: 2 removida(s)'. `git diff 02bd7dab fbda96b0 | grep deployment.md` → só uma citação num comentário de teste. D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO registra a exceção em controle/, mas o runbook e o step do CD seguem com o contrato antigo.",
+      "motivo": "O runbook de produção (fonte DBA §5) e o próprio step do CD dizem ao operador que o provisionamento nunca apaga concessão e que revogação vem por migração explícita; o próximo deploy de produção vai apagar 2 concessões por outro caminho. Quem lê o runbook para rodar ou auditar o deploy recebe uma descrição falsa do passo. Não reprova: as 2 remoções são nomeadas, relatadas no log, idempotentes, reversíveis (E12) e recuperáveis do backup (E11)."
+    },
+    {
+      "id": "C1-N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "A revogação e o seu alcance nascem neste diff; antes dele não havia revogação a propagar. O laço aditivo do seed (upsert … update: {}) e o deploy-staging.yml sem provision (4a2db09b, 2026-07-14) são anteriores.",
+      "evidencia": "E9: base c1_stg na forma de deploy-staging.yml:42-53 (migrate deploy + db:seed:demo, sem provision) semeada pelo head-base e re-semeada pelo código do bloco → finance=61 (concessões chegam) mas manager=141 com checklist_runs:acknowledge e :update; RBAC_DB_PARITY=1 → 'not ok 2' ('manager tem checklist_runs:update/acknowledge no banco e o catálogo NÃO concede'); sonda: manager POST …/acknowledgement|divergence|markers → 400 (passa do gate). grep 'staging|seed:demo|seed-users' no diff de pendencias.md, decisoes.md, 00-dev.md, plano e comando → 0. Staging hoje inativo: `gh run list --workflow deploy-staging.yml` → 3 últimas 'skipped' (gate STAGING_DEPLOY_ENABLED).",
+      "motivo": "O alcance da revogação declarado (emenda (b): produção via deploy-production.yml:155; plano §4.4: bases provisionadas) não diz que uma base persistente preparada só com seed (dev local; staging quando for ativado sobre base antiga) mantém as 2 concessões do manager indefinidamente. Hoje afeta só bases locais de dev; a paridade com RBAC_DB_PARITY=1 já as acusa."
+    },
+    {
+      "id": "C1-N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "Texto de rollback do plano do bloco (§13) e de D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO, ambos neste diff.",
+      "evidencia": "E12: em c1_old convergida, provision do head-base (= o 'script anterior' do rollback) → 'concessões: 2 criada(s)' (manager recupera update/acknowledge) e 'divergência (NÃO removida, apenas relatada): 9 concessão(ões) … operator → work_orders:create, finance → work_orders:read, … field_technician → tenant_checklists:read'; finance continua com 61. Plano §13 linha do work_orders:create do operator: 'rollback: 1 linha do catálogo'.",
+      "motivo": "Numa base já provisionada (produção depois do deploy), git revert + script anterior devolve as 2 revogações mas deixa as 9 concessões novas no banco (o script é aditivo). O texto de rollback do plano (e o 'rollback: 1 linha do catálogo') descreve o catálogo, não o banco."
+    }
+  ],
+  "fora_do_mandato": "Backup/PITR/pg_dump agendado de produção: o bloco não tem migração nem promoção; não medido e não usado no voto. O único dado que o bloco apaga (2 linhas de role_permissions) teve backup+restore em banco vazio + app + login provados (E11).",
+  "urls_usadas": [
+    "postgresql://postgres:***@127.0.0.1:56441/c1_old (D1→D2→D3, T2 braço 1, paridade, rollback, drill do runbook)",
+    "postgresql://postgres:***@127.0.0.1:56441/c1_new (D4)",
+    "postgresql://postgres:***@127.0.0.1:56441/c1_mig (T2 braço 2 e vermelho-controle)",
+    "postgresql://postgres:***@127.0.0.1:56441/c1_stg (forma de staging)",
+    "postgresql://postgres:***@127.0.0.1:56441/c1_restore (restore do dump pré-D3, isolamento, login)",
+    "postgresql://postgres:***@127.0.0.1:56441/erp_provision_drill (criado e apagado por scripts/rbac-provision-drill.sh)",
+    "redis://127.0.0.1:56442/0"
+  ],
+  "contagens": {
+    "drills": "D1-D4 4/4",
+    "T2_braco1": "26/26",
+    "T2_braco2": "26/26",
+    "T2_vermelho_controle": "16 fail nos dois braços",
+    "paridade": "2/2",
+    "T1_T4": "16/16",
+    "drill_runbook": "VERDE",
+    "achados": {
+      "bloqueia": 0,
+      "ajuste": 1,
+      "nota": 2
+    }
+  },
+  "limpeza": {
+    "contêineres": "docker rm -f j-bsan304a-c1-pg j-bsan304a-c1-redis → removidos; restantes com o nome: 0 (bancos c1_old/c1_new/c1_mig/c1_stg/c1_restore e o dump /tmp/c1_old_preD3.dump foram junto, eram do contêiner)",
+    "worktree": "git worktree remove --force C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan304a-c1 → ec=0; diretório e .git/worktrees/j-bsan304a-c1 ausentes; status do meu worktree era 0 antes de remover (arquivo temporário do vermelho-controle já apagado)",
+    "scratchpad": "40 arquivos _c1-* (logs, TAPs, sondas) apagados; ficaram só este voto e a evidência",
+    "intactos": "bsan304a em fbda96b0 com status 0; worktrees e contêineres de outras cadeiras/juntas (j-bsan304a-c2*, j-b04a-*, j-b11-c3, bsan301-*, dev-bsan301-c2-*, erp-postgres-alt, pastrack-*) não tocados"
+  }
+}

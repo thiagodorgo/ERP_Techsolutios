@@ -1,0 +1,159 @@
+{
+  "cadeira": "C2",
+  "papel": "coordenador-de-acessos",
+  "modelo": "claude-opus-5[1m] (Opus 5) — 2a instância (a 1a caiu por HTTP 429 ~16:43; parcial preservado em *.parcial-instancia1.*)",
+  "objeto": "fbda96b0",
+  "base": "02bd7dab",
+  "participacao_previa_R2": "coordenador-de-acessos foi C2 do ciclo 1 da junta do plano SAN3 (#386); o achado C2-04 moldou o critério 'o teste do item 15 cobre as quatro divergências'. Medido pela ref: T1 + 5 mutações do item 15 (M2, M15a-d), todas vermelhas (E4).",
+  "veredito": "APROVADO",
+  "voto_nominal_revogacao_emenda_b": "APROVO as 2 revogações nomeadas do manager (checklist_runs:update, checklist_runs:acknowledge): RBAC_MATRIX.md:44 'read/complete-by-scope' não as nomeia; drill no i2_base com o script do objeto: --dry-run só relata (banco intacto), aplicar remove 2 e só elas, 2a execução remove 0, CONVERGIDO; o gate responde 403 ao manager e 400 ao tenant_admin; nenhum fluxo web do gestor as consome (ChecklistRuntimePage exige checklist_runs:create) (E3, E6).",
+  "mandato": {
+    "1_concessoes_revogacoes_failclosed": "CUMPRIDO — as 9 concessões são células incondicionais da matriz (l.38/41/43/44/45); nenhuma destrava mutação (só GET + flags do bootstrap mobile + destinatário de notificação); K1, K2, A5, X2 não concedidos, provados por 403 real nos dois heads e por mutação vermelha. Nenhum 'por escopo' concedido sem escopo aplicado no backend: veto NÃO acionado (E1, E3, E4).",
+    "2_tabela_s7_CE_G2_CE3_CE5": "CUMPRIDO — 52 passos com login real e permissões do banco, objeto × head-base: só os passos esperados mudam; CE-3 (finance GET /work-orders 403→200, POST 403) e CE-5 (finance GET /customers e /service-catalog 403→200; inventory 403) provados; grep das linhas citadas confere a permissão exata (2 citações de linha imprecisas, C2-08) (E3).",
+    "3_menu_mutacoes_smoke": "CUMPRIDO — T1+T3+T4 30/30; 27 mutações reais, 25 vermelhas + 2 equivalentes explicadas (esconde-fino), 0 resíduo; menus do Estoque e do Financeiro = §4.5 por login real; nenhum termo técnico novo; test:smoke 1135/1135 (base 1126/1126, Δ +9 = T5) (E2, E4, E6)."
+  },
+  "matriz_efetiva": "evidência E5 (tabela papel × itens visíveis × rotas acessíveis; c2h/i2-matriz-efetiva-obj.json e -base.json; diff em c2h/i2-diff-navmatrix.out)",
+  "achados": [
+    {
+      "id": "C2-01",
+      "gravidade": "bloqueia",
+      "escopo": "pre-existente",
+      "titulo": "docs/navigation-matrix.md diverge da matriz efetiva em 40 células no objeto (7 criadas pelo bloco + 33 já na base)",
+      "evidencia": "c2h/i2-diff-navmatrix.mjs sobre as matrizes efetivas por login real (E5): novas = finance × /operations/checklists, /cadastros/clientes, /cadastros/servicos, /administrator/checklists; inventory × /operations/checklists, /administrator/checklists; field_technician × /administrator/checklists por URL (guard abre, GET /tenant/checklists 200). Persistentes 33; resolvidas pelo bloco 29.",
+      "evidencia_escopo": "(i) o comando do bloco não põe docs/** no escopo permitido — a correção do doc está fora do escopo (critério literal do §C7.1-ter(a)); (ii) a classe antecede o bloco: 62 células divergentes no head-base 02bd7dab, medidas pelo mesmo harness (33 persistem + 29 resolvidas); doc sem commit desde aff48fbb, 2026-08-08.",
+      "motivo": "O corpo do coordenador-de-acessos manda o diff contra docs/navigation-matrix.md e trata divergência como veto. As 7 novas seguem a RBAC_MATRIX.md (fonte §A1.2) e a decisão do dono P1/P2 — é o doc (§A1.3) que ficou velho, e ele se declara 'base do teste por papel'. Não reprova (pré-existente e fora do escopo); vira pendência com N=40, forma 'célula papel × tela do doc diferente do acesso efetivo por login real', causa 'doc não reconciliado desde 2026-08-08'.",
+      "pendencia_proposta": {
+        "nome": "P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA",
+        "dono_proposto": "B-SAN3-06a (menu; já dono de P-SAN3-04A-MENU-RESIDUAL e -FRONT-PERMISSOES-POR-PAPEL-DEFASADAS)",
+        "N": 40
+      }
+    },
+    {
+      "id": "C2-02",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "titulo": "O bloco criou 7 divergências com docs/navigation-matrix.md e não as registrou (§A2)",
+      "evidencia": "grep -c navigation-matrix na ref: 00-dev.md 0, comando 0, plano 2 (só a evidência B10), pendencias.md 2 (P-027 e uma de 2026-07), decisoes.md 2 (antigas); git diff 02bd7dab fbda96b0 | grep navigation-matrix = evidência B10 + 1 comentário de código (E5).",
+      "motivo": "§A2: conflito entre fontes (RBAC_MATRIX.md × docs/navigation-matrix.md) se registra em controle/ antes de consolidar; o registro (agent-orchestration/**) está no escopo do bloco. O lado escolhido é o certo (§A1), por isso ajuste e não bloqueio: falta o registro das 7 células (C2-01)."
+    },
+    {
+      "id": "C2-03",
+      "gravidade": "bloqueia",
+      "escopo": "pre-existente",
+      "titulo": "Itens visíveis com módulo não provisionado na organização demo",
+      "evidencia": "tenants.modules demo = {dashboard,work_orders,field_operations,logistics,finance,checklists,tenant_checklist,notifications,users,audit}; platform-modules.service.ts:3-24 tem customers/inventory/purchasing/reports/approvals, não provisionados; visíveis por login real: finance × Clientes, Aprovações, Estoque, Pedidos, Relatórios; inventory × Estoque, Pedidos, Relatórios (mapeamento item→módulo por nome = inferência); são caminhos não governados (27 = MVP_NAV_PATHS 51 − registro 36, medido); backend sem recusa por módulo (grep requireModule|hasModule) (E5).",
+      "evidencia_escopo": "PLANO_SAN3.md l.130 (item 16: P-WEB-GATE-MODULO-INCOMPLETO + P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU) e l.259 (dono B-SAN3-18, com a lista dos 27 caminhos); comando do bloco: 'Fica de fora: o gate de módulo (B-SAN3-18)'. Instância nova trazida pelo bloco: finance × Clientes (/cadastros/clientes já está entre os 27).",
+      "motivo": "Corpo: item visível com feature não provisionada = veto. Classe anterior e fora do escopo por exclusão expressa; não reprova.",
+      "pendencia_proposta": {
+        "nome": "P-WEB-GATE-MODULO-INCOMPLETO (existente)",
+        "dono_proposto": "B-SAN3-18",
+        "N": "8 papel × item nos 2 papéis do bloco"
+      }
+    },
+    {
+      "id": "C2-04",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "titulo": "Rota fora da matriz do papel com guard do front ABERTO e backend 403",
+      "evidencia": "Login real (E2/E5): inventory e support × /work-orders e /approvals (apelido os.read → work_orders:read, auth.adapter.ts:375, 9f12ea99 2026-06-09; os.read no catálogo de inventory/support em 02bd7dab); finance e inventory × /dashboard (dashboard:view injetado em todo usuário, auth.adapter.ts:244,251; home pós-login = /dashboard → GET /dashboard/summary 403).",
+      "evidencia_escopo": "apelido e concessão os.read anteriores ao bloco (blame/grep na base); /dashboard já registrado em P-027 (home abre no erro), dono B-SAN3-04b.",
+      "motivo": "Corpo item 4: rota fora da matriz = guard nega no front E backend 403. O backend nega (autoridade intacta); o front abre. P-SAN3-04A-PERMISSOES-ORFAS lista os.read como órfã mas não nomeia este efeito.",
+      "pendencia_proposta": {
+        "nome": "emenda em P-SAN3-04A-PERMISSOES-ORFAS (efeito do apelido os.read: N=4 papel × rota)",
+        "dono_proposto": "B-SAN3-04b"
+      }
+    },
+    {
+      "id": "C2-05",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "titulo": "'Nova OS' sem gate na lista de OS — o Financeiro passa a ver um botão que leva a 'acesso não permitido'",
+      "evidencia": "WorkOrdersPage.tsx:233-236 (navega para /work-orders/new sem checagem); guard de /work-orders/new = work_orders:create (App.tsx:776-780) nega o finance; POST /work-orders = 403 (E3). As demais telas novas gateiam as ações de escrita (E6).",
+      "evidencia_escopo": "git blame na base: d43314bd, 2026-08-04; na base o auditor (work_orders:read sem create) já via o botão; WorkOrdersPage.tsx fora do escopo permitido do bloco. Nenhuma pendência sobre o gate do botão (grep em pendencias.md da ref).",
+      "motivo": "Botão × papel que o aciona (classe da lição do #386). Sem risco de autorização (front e backend negam), mas é botão morto para o papel que o bloco passou a atender.",
+      "pendencia_proposta": {
+        "nome": "P-WEB-NOVA-OS-SEM-GATE",
+        "dono_proposto": "B-SAN3-06a",
+        "N": "2 papéis hoje (finance, auditor)"
+      }
+    },
+    {
+      "id": "C2-06",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "titulo": "Claims do JWT sem tenant_role/tenant_roles/permissions/scope, contra RBAC_MATRIX.md 'Auth and claim alignment' e CLAUDE.md §2.4",
+      "evidencia": "JWT do login real = tenant_id, email, roles, type, identity_id, sub, iat, exp, iss, aud; permissões só no corpo do login (finance 61 = banco) (E6).",
+      "evidencia_escopo": "src/modules/auth/** fora do diff 02bd7dab..fbda96b0; último commit na base dc8168b9, 2026-09-04. grep tenant_role em pendencias.md/decisoes.md da ref = 0 (não registrado).",
+      "motivo": "Corpo item 2. O backend autoriza pelo banco (sem efeito de autorização medido), mas o contrato diz tenant_role obrigatório e nada registra a divergência.",
+      "pendencia_proposta": {
+        "nome": "P-AUTH-CLAIMS-SEM-TENANT-ROLE",
+        "dono_proposto": "orquestrador nomeia na fila pós-gate (primeiro bloco que tocar src/modules/auth/**)"
+      }
+    },
+    {
+      "id": "C2-07",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "titulo": "Efeito não declarado: finance e inventory passam a ser destinatários de checklist_run.completed",
+      "evidencia": "notification.recipient-resolver.ts:30 (checklist_runs:read ⇒ destinatário); candidatos em created_at asc com teto de 20 (notification-prisma.repository.ts:180-182; recipient-resolver.ts:21). Ausente do §7 do plano e do 00-dev.md (E6).",
+      "motivo": "Coerente com a matriz (leitura de execuções). Deslocamento de gestores pelo teto numa organização com mais de 20 elegíveis é hipótese, não medida."
+    },
+    {
+      "id": "C2-08",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "titulo": "Duas citações de linha imprecisas no §7 do plano (CE-G2)",
+      "evidencia": "work-order.routes.ts:72 é o gate de GET /approvals/pending (o de GET /work-orders é l.105); checklist.routes.ts:34 é o de GET /tenant/checklist-components (o de GET /tenant/checklists é l.42) (E3).",
+      "motivo": "A permissão citada é a certa e o passo, executado, dá o código esperado; só a linha erra."
+    },
+    {
+      "id": "C2-09",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "titulo": "Pedidos e Relatórios (2 dos 6 itens do menu do Estoque) são telas com dado fixo e sem backend",
+      "evidencia": "PedidosPage.tsx ORDER_ROWS; ReportsPage.tsx ROWS e KPIs fixos; nenhum endpoint (E5).",
+      "evidencia_escopo": "P-PURCHASE-ORDERS-BACKEND-GATE (2026-07-21) e P-RBAC-GATING-MOCKSHELLS, MÉDIA, dono B-SAN3-06a; na base o inventory já as via (kind gestor), e o finance também.",
+      "motivo": "Corpo item 3 (backend autorizando o papel) não se verifica sem backend; classe registrada."
+    },
+    {
+      "id": "C2-10",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "titulo": "Menu após troca de organização: itens novos do Financeiro/Estoque negados pelo mapa estático do front",
+      "evidencia": "resolveFrontendPermissions([papel]) (mapa estático) nega /operations/checklists, /administrator/checklists, /cadastros/clientes, /cadastros/servicos e /inventory para finance e inventory (c2h/i2-static-map.mts).",
+      "evidencia_escopo": "P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS (aberta pelo bloco, emenda (n), dono B-SAN3-06a); o mapa antecede o bloco (inventory × /inventory já negado pelo mapa na base).",
+      "motivo": "Confirmação por medição da pendência registrada; nada a acrescentar além do N por item."
+    },
+    {
+      "id": "C2-11",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "titulo": "Feature provisionada sem item no sidebar (relatar)",
+      "evidencia": "Menu do backend × sidebar por login real (E5): field_technician ganha /administrator/checklists no backend sem item; finance/manager/auditor ganham /finance/invoices (status future) sem item.",
+      "motivo": "Corpo item 3: relatar. O field_technician lê modelos pela matriz l.43 (baixa no app); o item web não é exigido."
+    }
+  ],
+  "contagem": {
+    "bloqueia": 2,
+    "ajuste": 4,
+    "nota": 5,
+    "bloqueia_dentro_do_bloco": 0
+  },
+  "urls_usadas": [
+    "postgresql://postgres:***@127.0.0.1:56443/i2_prov (objeto: migrate + provision + seed + seed:users)",
+    "postgresql://postgres:***@127.0.0.1:56443/i2_seed (objeto: migrate + seed, forma da CI)",
+    "postgresql://postgres:***@127.0.0.1:56443/i2_base (head-base: migrate + provision + seed + seed:users; depois o drill de revogação com o script do objeto)",
+    "postgresql://ficticio:***@localhost:1/ficticio (T1/T3/T4 e mutações, sem banco)",
+    "redis://127.0.0.1:56444 (j-bsan304a-c2-redis)",
+    "http://127.0.0.1:56447/api/v1 (API do objeto) · http://127.0.0.1:56448/api/v1 (API do head-base)"
+  ],
+  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-04a/C2-coordenador-de-acessos-evidencia.md",
+  "limpeza": {
+    "containers": "docker rm -f j-bsan304a-c2-pg j-bsan304a-c2-redis -> removidos (0 com esse nome em docker ps -a); com eles as bases i2_prov, i2_seed, i2_base e as c2_* da 1a instancia",
+    "api_desta_instancia": "as 2 APIs que subi (:56447 objeto, :56448/:56449 base) encerradas por taskkill /T das arvores que eu criei (PIDs 10576->18588, 22356->10092)",
+    "worktrees": "git worktree remove --force j-bsan304a-c2 e j-bsan304a-c2-base (pelo nome completo): DESREGISTRADOS (git worktree list e .git/worktrees sem j-bsan304a-c2*), mas os DIRETORIOS FICARAM (erro 'failed to delete ... Invalid argument', ec=255): arquivos presos por processos da 1a instancia",
+    "residuo_pendente": "2 arvores de processo da 1a instancia desta cadeira seguem vivas e prendem os diretorios: PIDs 22856->24488 (tsx src/server.ts em j-bsan304a-c2, :56445 e :3100) e 10812->896 (idem em j-bsan304a-c2-base, :56446). O taskkill delas foi NEGADO pelo classificador de permissao (Interfere With Workloads); nao contornei. Depois de encerradas, apagar os 2 diretorios (sem junction: cmd dir /AL vazio na raiz e em frontend/ dos dois, medido). Nao usei git worktree prune.",
+    "worktree_do_bloco_e_arvore_principal": "somente leitura; bsan304a intacto em fbda96b0; nenhum git stash/checkout/reset/clean",
+    "scratchpad": "mantidos como evidencia citada: scratchpad/c2h/i2-* (JSON das matrizes, TAPs, logs, scripts) e os *.parcial-instancia1.* do voto"
+  }
+}

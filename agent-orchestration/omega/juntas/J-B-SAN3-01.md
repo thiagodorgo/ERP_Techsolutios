@@ -25,6 +25,10 @@
   tela como vazio, com KPIs 0, e bloco 67/67, `tsc` e smoke 1193/1193 seguem verdes; (A-02) o guard G1 não pega o próximo membro
   DENTRO das próprias raízes — barrel de dois níveis e entidade fabricada inline em arquivo novo nascem permitidos, e o cabeçalho dos
   services afirma um alcance que a mutação desmente. O ajuste (A-03): os vigias W1/W2 da fiação dos hooks são textuais.
+- **Quedas (P6):** `votos/B-SAN3-01-c2/00-quedas.md` — a 1ª instância da C4 caiu por 429 (parcial de 2.645 B usado só como
+  roteiro; a 2ª reexecutou tudo) e a 1ª do `planejador-mestre` caiu por 429 no replanejamento (parcial de 11.827 B). Nenhum
+  suplente acionado. **Linha acrescentada no pré-merge do `B-SAN3-04a` (2026-09-20)** — achado A7 do porteiro pós-merge do
+  #387: a seção do ciclo 2 fechou sem registro de queda, e o `00-quedas-ciclo1.md` da pasta é cópia do ciclo 1.
 - **Papéis (§C7.4-bis):** planejador `planejador-mestre` (Fable); desenvolvedor do ciclo 2, agente novo; quem achou no ciclo 1
   (`cognicao-visual`, `guardiao-fail-closed`) não sentou no ciclo 2; nenhum deles votou.
 - **Teto (`D-TETO-DOIS-CICLOS`): dois ciclos reprovados → parada e dossiê ao dono**, em

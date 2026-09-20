@@ -112,3 +112,29 @@ prefixo `jurado-san3c2-` pertence só à junta do ciclo 2 do plano SAN3, e o dir
 
 **Elenco de especialistas depois desta rodada: 0.** As duas já estavam **sepultadas** no `OBITUARIO-IDENTIDADES.md` §3.6,
 no próprio #386: aqui só saem do diretório vivo, e `node scripts/sync-agent-agents.mjs --check` segue verde.
+
+---
+
+## Rodada 4 — ANUNCIADA aqui, EXECUTADA no PR seguinte · bloco `B-SAN3-01` ciclo 2 · 2 cadeiras
+
+Dívida **A1** do parecer do porteiro pós-merge do #387 (`PORTEIRO-387.md`, achado A1 — REGISTRO GRAVE), na parte que
+o `B-SAN3-04a` (este PR) **não** pode pagar: a `D-APOSENTADORIA-ELENCO-EFEMERO` exige "ata fechada **e PR mergeado**",
+e o precedente do #386 (rodada 3 acima) é literal — **sepultar** tira o direito de voto, **aposentar** tira do diretório
+vivo, e as duas coisas não acontecem no mesmo PR.
+
+O que este PR faz: **versiona** as duas nas duas pontas do espelho (`.claude/agents/especialistas/` por `git add -f` e
+`.agents/agents/especialistas/` gerado pelo `sync-agent-agents.mjs`) e as **sepulta** no `OBITUARIO-IDENTIDADES.md`
+§3.7. Até aqui elas viviam só no disco da árvore principal — invisíveis ao `git status`, sem cópia em `.agents/` —
+e o `--check` ficava verde justamente porque não estavam no tree.
+
+| # | Cadeira | Bloco | Ata | PR que versionou o corpo | PR que deve aposentar |
+|---|---|---|---|---|---|
+| 1 | `jurado-san3-01c2-fail-closed-web` | `B-SAN3-01` ciclo 2 | `J-B-SAN3-01.md` §Ciclo 2 | `B-SAN3-04a` (este) | o primeiro a mergear depois deste |
+| 2 | `jurado-san3-01c2-suplente-fail-closed-web` | `B-SAN3-01` ciclo 2 | `J-B-SAN3-01.md` §Ciclo 2 | `B-SAN3-04a` (este) | o primeiro a mergear depois deste |
+
+**Elenco de especialistas depois deste PR: 2** — o primeiro elenco não vazio desde a rodada 3, e é de propósito:
+o corpo precisa estar no tree antes de poder ser aposentado com o corpo lível num squash. Peso no contexto enquanto
+durar: os dois arquivos somam **100.138 bytes** em `.claude/agents/especialistas/` (48.295 + 51.843).
+**Remoção por identificador de BLOCO** (nunca por nome de cadeira): o prefixo `jurado-san3-01c2-` pertence só à
+junta do ciclo 2 do `B-SAN3-01`; quem executar confere que o diretório não ganhou arquivo de outra sessão antes do
+`git rm`.

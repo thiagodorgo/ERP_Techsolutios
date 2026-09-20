@@ -46,8 +46,9 @@ App e banco **distintos** do staging, no **Fly.io/gru**. Config-as-code JA no re
   `vars.PROD_DEPLOY_ENABLED == 'true'`, `environment: production`, `concurrency: deploy-production`. **Promocao por
   IMAGEM** (`flyctl deploy --image ghcr.io/<owner>/erp-backend:<promote_sha>` — o MESMO artefato validado em
   staging pelo SHA; nao rebuilda). Migrate `deploy` forward-only da pipeline; **sem `db:seed`**; em seguida
-  **provisionamento de RBAC** (`npm run db:provision-rbac` — aditivo, idempotente, sem dado de demonstração; ver
-  secao dedicada abaixo). Smoke de produção
+  **provisionamento de RBAC** (`npm run db:provision-rbac` — aditivo e idempotente, sem dado de demonstração, e
+  **aplicando as revogações NOMEADAS** da lista `DELIBERATE_REVOCATIONS` do catálogo (hoje 2); `--dry-run` só
+  relata, sem escrever; ver secao dedicada abaixo). Smoke de produção
   (`scripts/smoke-production.mjs`): readiness + **worker de jobs `up`** (polling do corpo de `/health/worker`)
   + prova de CORS restritivo + login opcional (usuario de smoke real).
 - **Trava dupla** (nao usa required-reviewers humano; tres selos maquinaveis no CD): **(a)** ata de go-live
@@ -103,12 +104,22 @@ silêncio. (Achado B1/ALTA do `agente-dba-guardiao` na junta do CHECKLIST P1 PR-
 
 **Contrato do passo (é o que o torna seguro na fronteira de produção):**
 
-- **Aditivo** — cria o que falta em `permissions`, `roles` (papéis de sistema, `tenant_id NULL`) e
-  `role_permissions`. **Nunca apaga nem reescreve concessão**: concessão presente no banco fora do catálogo é
-  **relatada** no log, jamais removida (revogar acesso é ato deliberado, não efeito colateral de deploy).
-  **Consequência a assumir:** tirar uma permissão de um papel no catálogo **não** a retira do banco — quem
-  precisa revogar entrega uma migração de revogação explícita (com o `DELETE` no runbook, como as migrações
-  `20260861`/`20260862` já documentam o próprio rollback). O provisionamento converge o que FALTA, não o que sobra.
+- **Aditivo, com UMA remoção e ela é NOMEADA** — cria o que falta em `permissions`, `roles` (papéis de sistema,
+  `tenant_id NULL`) e `role_permissions`. Concessão presente no banco que o catálogo não declara é **relatada**
+  no log e **jamais removida** — revogar às cegas é efeito colateral de deploy, e isso continua proibido.
+  **A exceção, desde o `B-SAN3-04a` (item 15):** o passo **3-bis** aplica a lista `DELIBERATE_REVOCATIONS` de
+  `src/modules/core-saas/permissions/catalog.ts` — revogações **decididas, nomeadas, em código versionado junto
+  com a decisão que as justifica**. Hoje são **2**, as duas do papel `manager`: `checklist_runs:update` e
+  `checklist_runs:acknowledge` (`RBAC_MATRIX.md:44` diz "read/complete-by-scope" e não nomeia nenhuma das duas).
+  A remoção atinge **só o papel GLOBAL** (`tenant_id IS NULL`); papel de organização não é tocado. É **idempotente**
+  (a 2ª execução remove 0) e é **relatada** no log (`revogações deliberadas: N removida(s)`). Com `--dry-run` o passo
+  **só relata o que removeria e não escreve nada** — é assim que se confere antes de um deploy.
+  **Consequência a assumir:** tirar uma permissão de um papel no catálogo, **sozinho**, continua não a retirando do
+  banco — quem quer que ela saia de uma base já provisionada acrescenta a linha em `DELIBERATE_REVOCATIONS` (ou
+  entrega uma migração de revogação explícita, com o `DELETE` no runbook, como as migrações `20260861`/`20260862`
+  já documentam o próprio rollback). Fora dessa lista, o provisionamento converge o que FALTA, não o que sobra.
+  **Para quem audita um deploy:** o passo pode diminuir `role_permissions` — em exatamente as linhas da lista, e em
+  nenhuma outra. `git log -p` de `DELIBERATE_REVOCATIONS` é o registro de toda revogação que o CD já aplicou.
 - **Idempotente** — a 2ª execução não cria nada. Papel de sistema é diferenciado por leitura + `pg_advisory_xact_lock`
   (o `UNIQUE (key, tenant_id)` **não** protege papel global: no PostgreSQL dois `NULL` são distintos, então sem o
   lock duas execuções simultâneas criariam papéis duplicados).
