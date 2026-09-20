@@ -2704,3 +2704,54 @@ entrada a supera; o history é append-only.
 **Pendências (ciclo 2).** Reescritas: `P-SAN3-01-OS-LEGADO-MORTO` e `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`
 (dono `B-SAN3-06c`). Novas: 9 ABERTAS com dono (emenda 3 (q)) e `P-SAN3-01-OS-VAZIO-SEM-ACAO` FECHADA. Índice pelo
 gerador: 391 cabeçalhos / 380 IDs, 106 FECHADAS, 285 ABERTAS.
+
+## 2026-09-20 — B-SAN3-04a (PR #390) — cada papel vê e faz o que a matriz de papéis diz
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Smoke (console web) | **1193 → 1202/1202** — REEXECUTADO no pré-merge, no head rebaseado sobre `origin/main@83a3c68c`: `npm --prefix frontend run test:smoke` → `# tests 1202 · # pass 1202 · # fail 0 · # skipped 0`, ec=0, 37,8 s (node v20.19.5). +9 = `frontend/tests/san3-04a-sidebar-estoque-financeiro.test.tsx`. A autoria media 1135 sobre a base 1126, antes do #387 |
+| Backend | **2996/2998 → 3052/3054** — REEXECUTADO no pré-merge: `npm test` com Postgres (`dev-bsan304a-pm-pg`, postgres:16 :56811) e Redis (`dev-bsan304a-pm-redis`, redis:7-alpine :56812) DESCARTÁVEIS PRÓPRIOS, banco novo `erp_bsan304a_pm` (`prisma migrate deploy` ec=0), `DATABASE_URL`/`REDIS_URL` exportadas → 287 arquivos · 3054 · pass 3052 · fail 0 · skipped 2 (`RBAC_DB_PARITY`) · 264 s. A base viva não recebeu um comando. A autoria media 3051/3053 sobre a base 2995/2997 |
+| Flutter | **864/864 — carregado** (§C3.3): este PR não toca `mobile/` |
+| Blocos Entregues | **164 → 165** — recontado a partir do valor da `main` DEPOIS do rebase; `B-SAN3-01` e `B-SAN3-04a` são blocos distintos. A autoria escrevera 164 a partir de `02bd7dab` (163), quando o #387 ainda estava OPEN |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco converge permissão, não move escopo de produto |
+| pr / merge_commit / approved_head | `390` / `null` / `null` na autoria (§C3.5) |
+
+**O que o bloco entrega.** O catálogo de permissões, o banco e os dois menus passam a dizer o mesmo que a
+`RBAC_MATRIX.md`: 9 concessões (o Financeiro lê OS, clientes, serviços, modelos e execuções de checklist; o Estoque lê
+modelos e execuções; o Técnico de Campo lê modelos; o Operador cria OS) e **2 revogações NOMEADAS** do Gestor
+(`checklist_runs:update` e `checklist_runs:acknowledge` — a matriz diz "read/complete-by-scope" e não as nomeia). O
+registro de navegação passa a governar `/finance*` pelas permissões que as rotas de fato comparam (fim das órfãs), o
+seed semeia o `auditor` (`P-033`: 0 → 1 papel global com 56 concessões numa base só-seed; 403 → 200) e o Estoque ganha
+rótulo e menu próprios — antes caía no menu do gestor, com 24 de 28 itens negados. Onde a matriz diz "por escopo" e o
+backend não aplica o escopo, **nada foi concedido**: virou pendência com dono (`D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`).
+
+**Junta: APROVADO 3 × 0** (`omega/juntas/J-B-SAN3-04a.md`; votos em `votos/B-SAN3-04a/`), quórum de unanimidade de 3
+por ser bloco de permissão. A cadeira de veto (`coordenador-de-acessos`) trouxe 2 achados `bloqueia` e **nenhum**
+reprovou: os dois são `pre-existente` com evidência de data e de origem, e `bloqueia_dentro_do_bloco` = 0 nas três
+cadeiras — a regra de escopo do `D-JUNTA-ESCOPO-E-CALIBRACAO` funcionando como desenhada.
+
+**Pré-merge (2026-09-20).** Rebase sobre a `main`, conflitos resolvidos por **união** (inclusive a linha do
+`test:smoke`, que ficou com os testes dos dois PRs) e `pendencias-indice.md` **regerado pelo gerador**. O código
+julgado não mudou, provado nas duas direções por `cmp` de patch: `git diff 02bd7dab fbda96b0` × `git diff 83a3c68c HEAD`
+= 2002 linhas idênticas, e `git diff fbda96b0 HEAD` × `git diff 02bd7dab 83a3c68c` = 3633 linhas idênticas. Entraram os
+dois ajustes que a ata mandou (C1-A1, só texto do runbook e do passo do CD; C2-02, as 7 divergências com
+`docs/navigation-matrix.md` registradas pela §A2) e as 5 pendências dos pré-existentes.
+
+**Guard que pegou algo de verdade.** A primeira passada do `npm test` no head rebaseado deu **1 fail**:
+`tests/kpi-dashboard-charts.test.ts`, "a cópia congelada é IDÊNTICA ao `kpis-latest.json`". O rebase deixou o `FROZEN`
+do `app.js` (vindo do ramo) divergindo do `kpis-latest.json` (unido com a `main`) — exatamente a classe que o guard
+existe para pegar. `node scripts/kpi-freeze.mjs` regenerou o embutido a partir do JSON real e a passada final deu
+3052/3054 com fail 0. O número publicado é o da passada final.
+
+**Backfill §C3.5 do #387 (pago por este PR, o primeiro a mergear depois dele — achado A4 do porteiro pós-merge):**
+`pr 387` · `merge_commit 83a3c68ce50129d96d0357b3e7ab6ff725b9659d` · `approved_head 8adaaa31f3709e2a01ad81b8154aba0243fa7a66`.
+Escrito nas entradas **158** (`B-SAN3-01`, 1173) e **159** (`B-SAN3-01-ciclo2`, 1193) do `kpis-history.json`, as duas do
+PR #387. O `approved_head` é o head **julgado** no ciclo 2; o head do PR no merge (`f999adb2`) é esse objeto mais um
+commit só de registro, com delta de código vazio (medido pelo porteiro). O backfill do #386 foi pago pelo #387 e segue
+registrado acima.
+
+**Divergência declarada (§C3.1).** A autoria do bloco atualizou `kpis-latest.json`, `kpis-history.json` e `app.js`, mas
+**não** apensou entrada em `Kpis/kpis-history.md` — o §C3.1 pede os três. Esta entrada fecha a lacuna; nenhum número
+foi inventado para cobri-la (todos vêm da reexecução do pré-merge).
