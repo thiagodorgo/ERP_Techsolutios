@@ -196,3 +196,36 @@ que acontece depois do merge do #387:
   `.claude/agents/especialistas/**` e `.agents/agents/especialistas/**` (A1),
   `agent-orchestration/omega/juntas/**` (ata, votos, obituário, quedas do ciclo 2 da web) e
   `agent-orchestration/controle/**` (A2, A4, C2-02 e as pendências dos pré-existentes).
+
+## Emenda 4 do orquestrador — as 8 divergências do pré-merge, decididas (2026-09-20)
+
+> O desenvolvedor do pré-merge reportou 8 divergências em vez de resolvê-las sozinho (§C7.4-bis). Decisão do
+> orquestrador, item a item. Objeto: `0bc8eb00`, rebaseado em `origin/main@83a3c68c`.
+
+- **(dd) D-1 — a seção do obituário fica `### 3.7`, não 3.8.** ACEITO: não existe §3.7 em árvore nenhuma (o registro
+  parava em 3.6), e abrir 3.8 deixaria um buraco num documento que se consulta por número. **Consequência registrada
+  aqui:** a seção preparada para as 6 identidades do ciclo 5 do `B-O6R-02` passa a ser **§3.8**, e entra com a ata do
+  `B-O6R-04a` (#389).
+- **(ee) D-2 — dono de `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` é `B-SAN3-01b`, não `B-SAN3-06c`.** ACEITO, com o
+  raciocínio do dev: a `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA` (decisão do dono, §A1.1) entregou
+  `WorkOrdersPage.tsx` ao `B-SAN3-01b`; o `06c` é de despachos e dashboard e não tem `work-orders/`. Gate do botão e
+  gate do painel são a mesma página e o mesmo bloco.
+- **(ff) D-3 — o C2-05 vira emenda na pendência existente, não pendência nova.** ACEITO: a cadeira C2 estava certa
+  **para a ref dela** (a `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` nasceu no #387, ainda OPEN quando ela votou), e o
+  rebase pôs as duas na mesma árvore. Mesmo botão, mesmo arquivo, mesma prova: duplicar o registro é que seria o erro.
+  O nome e o dono que a C2 propunha ficam escritos na própria pendência, para poderem ser revertidos.
+- **(gg) D-4 — a entrada que faltava em `Kpis/kpis-history.md` é apensada no pré-merge.** ACEITO: o §C3.1 pede
+  `latest` + `history.*` + `index.html` no mesmo PR, e a autoria tocou só os dois JSON. Números da reexecução, com a
+  lacuna declarada dentro da própria entrada — nada inventado para cobri-la.
+- **(hh) D-5 — espaço no fim de 6 linhas do parcial da C2, removido ao versionar.** ACEITO: `diff --cached --check`
+  é trava, e nenhum caractere visível, número ou afirmação mudou; a nota no topo do arquivo diz quais linhas e por
+  quê, e o original intocado fica no scratchpad.
+- **(ii) D-6 — o ignore global do usuário ignora `.agents/` além de `.claude/`.** ACEITO como fato de ambiente
+  (`~/.config/git/ignore:2` e `:27`): o `git add -f` vale para os **dois** espelhos, e é isto que explica por que o
+  espelho Codex de `especialistas/` nunca entrava sozinho. Vale para todo bloco daqui em diante.
+- **(jj) D-7 — a contradição de horário da queda da C4 fica registrada, não harmonizada.** ACEITO: o cabeçalho da 2ª
+  instância data a queda antes de medições que o parcial da 1ª carrega. Com o que sobrou não dá para decidir, e
+  inventar a hora seria pior que registrar a dúvida; o que basta está provado — a 1ª não votou e a 2ª reexecutou tudo.
+- **(kk) D-8 — "25 agentes" do inspetor contra 23 no tree é o próprio achado A1, não erro de medição.** ACEITO como
+  reportado: a diferença são exatamente os 2 corpos que existiam em disco e não no tree. Depois deste PR os dois
+  números coincidem em 25.
