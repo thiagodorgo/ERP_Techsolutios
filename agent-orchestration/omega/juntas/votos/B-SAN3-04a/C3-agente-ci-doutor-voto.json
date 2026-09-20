@@ -1,0 +1,59 @@
+{
+  "cadeira": "C3",
+  "papel": "agente-ci-doutor",
+  "modelo": "claude-opus-5[1m] (Opus 5)",
+  "instancia": "2a (a 1a caiu por HTTP 429 sem deixar nada, 00-quedas.md)",
+  "participacao_previa": "R2: agente-ci-doutor foi C3 do ciclo 2 da junta do plano SAN3 (#386, APROVADO) e fez a conferencia da aplicacao da opcao B. Objeto diferente (o plano); este voto mede o bloco pela ref fbda96b0.",
+  "objeto": "fbda96b0",
+  "base": "origin/main@02bd7dab (sem rebase; R1: nao-evento, nao julgado)",
+  "veredito": "APROVADO",
+  "mandato": {
+    "1_diff_x_escopo": "CONFERE. 34 arquivos, 0 delecoes; 0 caminhos proibidos (schema, migrations, mobile, infra, .github, .env, lockfiles, tenantNavigation.ts, permission-catalog-db-parity.test.ts, run-backend-tests.mjs, .claude, .agents, CLAUDE.md, AGENTS.md); src/ so catalog.ts e navigation.registry.ts; prisma/ so seed.ts (so o auditor); RBAC_MATRIX.md so hunks -38 e -41 (finance none para read); frontend/package.json so +1 arquivo na test:smoke; snapshot = exatamente 9 concessoes + 2 revogacoes e byte-identico ao comando de regeneracao do plano; os 5 testes existentes extras cobertos pela emenda (j). Evidencia M1, M10, M11.",
+    "2_C3_reexecucao": "CONFERE. npm test N=2 local (banco recriado, forma do job backend) = 287 arquivos, 3053 testes, pass 3051, fail 0, skipped 2 (os 2 de paridade), identico a CI real (run 35381265287) e ao KPI 3051/3053; T1+T3+T4 30/30; T2 26/26 em braco 1 (c3_prov) e 26/26 em braco 2 (c3_mig); regressoes nomeadas + paridade RBAC_DB_PARITY=1 201/201 (paridade 2/2, 0 skip); reproducao do job backend-postgres (seed so, 38 suites do ci.yml da ref) 263/263, 0 skip = CI; check/lint/build ec=0; front check/build ec=0 e test:smoke 1135/1135 = KPI = CI; kpi-freeze --check em dia; node --check Kpis/app.js ok; 3 guards de KPI 28/28; sync-agent-agents --check OK; git diff --check vazio. Tempo: CI real 9m34s de parede (backend 6m47s); local npm test 6m37s e 7m50s sob carga de outras juntas. Evidencia M4, M5, M8, M9, M12 a M15.",
+    "3_registro": "CONFERE. 13 pendencias novas (as 11 do plano 4.7 + D-1 + D-7), cada uma com N, forma, causa, escopo, dono e teste de encerramento; donos batem com o plano; afirmacoes mediveis reexecutadas (grep 0 em checklists; linhas das rotas de cadastro; topicos l.104/105; D-7 finance 55/61 etc. reproduzido exato); fechamentos P-OMEGA4-FINANCE-READ-ORFA, P-RBAC-CHECKLIST-DRIFT, P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS, P-RBAC-CATALOG-MATRIZ + bullet P-033; emendas P-026, P-O6R-B07-APPROVAL-BY-POLICY, P-032; decisao D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO presente; dividas do #386 NAO carregadas (0 git rm; history 158 para 159 com prefixo identico e 0 entrada pr 386/02bd7dab/764e175d; recent: 15 anteriores identicos; linha dos 54 bloqueantes intocada); D-3 conferida (6/6 vermelhos em exatamente 1 caso com a versao da base; 0 assercao removida) e D-6 conferida (o item que restava aberto e exatamente o concedido); indice regenerado numa copia BYTE-IDENTICO (383/372, 107 FECHADA, 276 ABERTA; base 370/359, 103/267). Evidencia M2, M3, M6, M7, M11, M16."
+  },
+  "achados": [
+    {
+      "id": "C3-N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "git diff -U0 02bd7dab fbda96b0 nos 6 testes, linhas assert removidas: em navigation-menu sai status future de finance.dashboard/charges (entra implemented + invoices future); em frontend sidebar-nav sai [finance NAO gerencia Clientes] (false) e entra true + Servicos. Versoes da base contra o codigo do bloco: navigation-menu 9/8/1 (expected future), sidebar-nav 14/13/1 (expected false, actual true).",
+      "motivo": "A emenda 2 (j) e o relatorio do dev (D-3) descrevem as trocas como [so o sujeito do controle negativo mudou]. Vale para 4 dos 6 arquivos; em navigation-menu e sidebar-nav o que mudou foi o VALOR ESPERADO, acompanhando mudanca de origem autorizada (plano 4.2, status implemented; P2 do dono). As condicoes de efeito da emenda se cumprem (vermelho sem a troca; 0 assercao removida; asserts 16 para 17 e 29 para 30) e a propriedade segue pinada (invoices future; Viaturas negada). Nao e expectativa alterada para esconder defeito. A ata deve registrar a descricao exata."
+    },
+    {
+      "id": "C3-N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "CI run 35381265287, job backend: 50 diagnosticos [braco 2 - base SO-MIGRADA] do T2; ci.yml da ref: T2 fora das 38 suites do backend-postgres; c3_cipg (migrate + seed, forma do backend-postgres) tem papeis globais so auditor/field_dispatcher/manager/super_admin/technician/tenant_admin/viewer (sem finance), entao mesmo ali o T2 cairia em braco 2.",
+      "motivo": "Na CI o T2 so roda o braco 2, tautologico com o catalogo por construcao (declarado no plano 13); o braco 1, o que reprova uma base antiga com o manager nao revogado, so e exercido por dev e junta. Limitacao declarada, amarrada a escopo proibido (.github) e a P-SAN3-04A-SEED-PAPEIS-LEGADOS (dono B-SAN3-07); em producao o provision-rbac confere a convergencia no deploy. Nao reprova."
+    },
+    {
+      "id": "C3-N3",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "fbda96b0:agent-orchestration/controle/pendencias.md, entrada P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS: bullet [prova (forma ...; causa ...)] sem o rotulo [N =]; os 7 numeros por papel estao no texto e reproduzem exatamente (d7.mts: finance 55/61, inventory 12/17, operator 55/68, field_technician 38/43, auditor 47/56, manager 122/139, support 4/10).",
+      "motivo": "Forma do registro: as outras 12 entradas novas trazem [N =] explicito; esta traz as contagens sem o rotulo. Conteudo correto e medido; so forma."
+    }
+  ],
+  "anomalias_de_terreno": [
+    "MINHA - colisao de porta com a C2 (cerca de 19:48 a 19:50:30): subi j-bsan304a-c3-pg em 127.0.0.1:56445 e j-bsan304a-c3-redis em 127.0.0.1:56446 (portas do prompt) sem olhar netstat; os servidores da C2 (PID 24488 node, worktree j-bsan304a-c2, src/server.ts em 0.0.0.0:56445; PID 896 node, worktree j-bsan304a-c2-base, src/server.ts em 0.0.0.0:56446) ja escutavam nelas. Requisicoes da C2 a 127.0.0.1:56445/56446 nessa janela podem ter caido nos meus conteineres (netstat mostrou TIME_WAIT de clientes locais). Removi os dois pelo nome as 19:50:30; nenhum teste meu rodou neles. A C2 deve tratar como suspeita e re-medir qualquer requisicao a esses dois servidores nessa janela. Passei a 45445/45446 (fora da faixa dinamica 49152-65535 e das excluidas; netstat vazio).",
+    "MINHA - processo travado: cmd //c dir /AL (PID 27920, lancado por mim com cwd no meu worktree) ficou interativo; o taskkill foi negado pelo classificador de permissao (nao insisti). Ele segura o diretorio VAZIO .claude/worktrees/j-bsan304a-c3 (ja desregistrado do git). A tarefa de fundo e encerrada no fim do meu turno; o rmdir desse diretorio vazio fica para o orquestrador, pelo nome.",
+    "Visto e nao tocado: worktrees j-bsan304a-c2 e j-bsan304a-c2-base e conteineres j-bsan304a-c2-pg/-redis (56443/56444) vivos; j-b04a-*, j-b11-*, bsan301-*, pastrack-*, erp-postgres-alt (exited, 55432), .claude/worktrees/san2-r; arquivos c3-capture*/c3-hover*/c3-proto*/c3-shots no scratchpad (de outra cadeira C3)."
+  ],
+  "urls_usadas": [
+    "postgresql://ficticio:***@localhost:1/ficticio (so prisma generate)",
+    "postgresql://postgres:***@127.0.0.1:45445/c3_npmtest?schema=public (npm test r1/r2, recriado entre as duas)",
+    "postgresql://postgres:***@127.0.0.1:45445/c3_prov?schema=public (migrate + provision-rbac + seed: T2 braco 1, regressoes, paridade)",
+    "postgresql://postgres:***@127.0.0.1:45445/c3_mig?schema=public (so migrate: T2 braco 2)",
+    "postgresql://postgres:***@127.0.0.1:45445/c3_cipg?schema=public (migrate + seed: reproducao do job backend-postgres)",
+    "redis://127.0.0.1:45446",
+    "abortado sem uso: 127.0.0.1:56445/56446 (colisao com a C2, ver anomalias)"
+  ],
+  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-04a/C3-agente-ci-doutor-evidencia.md (medicoes M0-M16; logs e TAPs em scratchpad/c3-bsan304a/; ci-run.log apagado, refazivel por gh run view 35381265287 --log)",
+  "limpeza": {
+    "conteineres": "docker rm -f j-bsan304a-c3-pg j-bsan304a-c3-redis (2 vezes: 56445/56446 as 19:50:30; 45445/45446 ao fim); docker ps -a --filter name=j-bsan304a-c3 = 0",
+    "worktree": "git worktree remove --force C:/.../j-bsan304a-c3: desregistrado (worktree list 0; .git/worktrees sem a entrada; arquivos, node_modules, dist e frontend/dist apagados), mas o DIRETORIO VAZIO ficou (Device or resource busy pelo cmd.exe PID 27920, ver anomalias). Residuo inerte a remover pelo nome depois do fim do meu turno.",
+    "worktree_do_bloco": "bsan304a intocado: HEAD fbda96b0, status --porcelain vazio",
+    "scratchpad": "scratchpad/c3-bsan304a/ (cerca de 5 MB de logs/TAPs de evidencia) mantido; ci-run.log apagado"
+  }
+}

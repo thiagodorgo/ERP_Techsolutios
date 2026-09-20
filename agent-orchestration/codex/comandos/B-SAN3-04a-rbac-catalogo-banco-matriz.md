@@ -168,3 +168,31 @@ cópia. Decisões:
   autoridade; o mapa estático só molda a UI depois da troca de organização.
 - **(o) Observações O-1 a O-3** ficam registradas como observações; a O-3 (o gerador do índice lista entrada FECHADA como
   diferida material) é do gerador, não do bloco.
+
+## Emenda 3 do orquestrador — o veredito da junta e o pré-merge (2026-09-18)
+
+Junta: **APROVADO 3 × 0** (`agent-orchestration/omega/juntas/J-B-SAN3-04a.md`; votos em `votos/B-SAN3-04a/`). Decisões para o pré-merge,
+que acontece depois do merge do #387:
+
+- **(x) Rebase e recontagem.** O ramo é rebaseado na `main` depois do merge do #387; os conflitos de KPI e registro se resolvem pela
+  união das entradas, e os números de KPI são REEXECUTADOS (§C3.3). O orquestrador confere, antes do merge, que a árvore de `src/`,
+  `frontend/`, `prisma/`, `scripts/`, `tests/` e `RBAC_MATRIX.md` do objeto rebaseado é idêntica à julgada (`fbda96b0`) somada ao
+  que a `main` trouxe.
+- **(y) C1-A1 entra antes do merge:** `docs/deployment.md` (l.49, l.107, l.110-111) e o texto do passo do CD em
+  `.github/workflows/deploy-production.yml` (l.146 e o nome do passo na l.152) passam a dizer que o provisionamento concede de
+  forma aditiva e **revoga as concessões nomeadas** em `DELIBERATE_REVOCATIONS` (hoje 2), com `--dry-run` que só relata. O
+  `.github/workflows/deploy-production.yml` entra no escopo **só para esse texto** — nenhuma mudança de comportamento do workflow.
+- **(z) C2-02 entra antes do merge:** as 7 divergências que o bloco criou com `docs/navigation-matrix.md` ficam registradas em
+  `agent-orchestration/controle/` (§A2), junto da pendência do C2-01, que cobre as 40 células.
+- **(aa) Pendências dos pré-existentes** com os donos que a C2 propôs (C2-01, C2-03 → `B-SAN3-18`, C2-04 → `B-SAN3-04b`, C2-05 →
+  `B-SAN3-06a`, C2-06 → fila pós-gate).
+- **(bb) Dívidas do #387, por decisão do porteiro pós-merge** (`LIBERADO COM RESSALVA`): este PR, o primeiro a mergear depois
+  do #387, paga **A4** (backfill §C3.5 do #387: `merge_commit 83a3c68ce50129d96d0357b3e7ab6ff725b9659d` ·
+  `approved_head 8adaaa31f3709e2a01ad81b8154aba0243fa7a66`), **A1** (versiona nos dois espelhos e sepulta
+  `jurado-san3-01c2-fail-closed-web` + suplente; a **aposentadoria** fica para o PR seguinte, pelo precedente do #386),
+  **A7** (registro P6 do ciclo 2 do `B-SAN3-01`) e **A2** (donos sem o arquivo no §5 do `PLANO_SAN3.md`).
+- **(cc) Escopo do pré-merge, ampliado só onde a ata e o porteiro mandaram:** `docs/deployment.md` e o **texto** do passo do CD
+  em `.github/workflows/deploy-production.yml` (emenda (y) — nenhuma mudança de comportamento do workflow),
+  `.claude/agents/especialistas/**` e `.agents/agents/especialistas/**` (A1),
+  `agent-orchestration/omega/juntas/**` (ata, votos, obituário, quedas do ciclo 2 da web) e
+  `agent-orchestration/controle/**` (A2, A4, C2-02 e as pendências dos pré-existentes).
