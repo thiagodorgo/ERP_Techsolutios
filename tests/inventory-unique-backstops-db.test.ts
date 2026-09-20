@@ -265,27 +265,102 @@ if (!connectionString) {
     assert.equal(count!.n, 20);
   });
 
-  test("C6 [censo] · somente leitura: sem comentários, zero palavra de escrita; executa numa transação READ ONLY com as colunas do contrato", async () => {
+  test("C6 [censo] · somente leitura (sem comentários e sem meta-comandos); READ ONLY com as colunas do contrato pelo admin; e sob o papel da aplicação RECUSA com 42501 em vez de responder `0|0`", async () => {
     const h = await harness();
     const raw = readFileSync(path.join(ROOT, CENSUS), "utf8").replace(/\r\n/g, "\n");
-    const code = stripSqlComments(raw);
+    // Ciclo 2 (C1-F1): o censo passou a ter meta-comandos do psql (`\set ON_ERROR_STOP on`) e a guarda de
+    // visibilidade (`SET row_security = off`). O que este caso confere continua sendo: NENHUMA escrita.
+    const code = stripSqlComments(raw)
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("\\"))
+      .join("\n");
     assert.deepEqual(code.match(SQL_WRITE_WORD) ?? [], [], "o censo não pode conter escrita/DDL fora de comentário");
     // Controle de dentes do guard: a mesma regex sobre o censo com UMA escrita acrescentada tem de casar.
     assert.ok((stripSqlComments(`${raw}\nDELETE FROM stock_movements;\n`).match(SQL_WRITE_WORD) ?? []).length >= 1, "a regex fail-closed tem dentes");
-    assert.match(raw.split("\n")[0]!, /SOMENTE LEITURA: o arquivo contém apenas consultas \(SELECT\); nada é gravado\./);
+    assert.match(raw, /SOMENTE LEITURA: o arquivo contém apenas consultas \(SELECT\); nada é gravado\./);
+    assert.match(raw.split("\n")[0]!, /PRE-CONDICAO DE PAPEL/, "a 1ª linha declara a pré-condição de papel (C1-F1)");
+    assert.match(raw, /^\\set ON_ERROR_STOP on$/m, "o censo para na 1ª falha (nunca segue cego)");
 
     const statements = code.split(";").map((statement) => statement.trim()).filter(Boolean);
-    assert.equal(statements.length, 2, "duas consultas: os grupos duplicados e o resumo");
+    assert.equal(statements.length, 4, "a guarda de visibilidade + três consultas (grupos, resumo, R19)");
+    assert.match(statements[0]!, /^SET row_security = off$/);
     // Base compartilhada COM os índices: grupo duplicado é impossível aqui (o censo com 21 grupos semeados
     // roda no drill, em base própria sem os índices — C5′). O que se prova aqui: roda em READ ONLY.
     const result = await h.admin.$transaction(async (tx: any) => {
       await tx.$executeRawUnsafe("SET TRANSACTION READ ONLY");
-      const groups = await tx.$queryRawUnsafe(statements[0]!);
-      const summary = await tx.$queryRawUnsafe(statements[1]!);
-      return { groups, summary };
+      await tx.$executeRawUnsafe(statements[0]!);
+      const groups = await tx.$queryRawUnsafe(statements[1]!);
+      const summary = await tx.$queryRawUnsafe(statements[2]!);
+      const overlaps = await tx.$queryRawUnsafe(statements[3]!);
+      return { groups, summary, overlaps };
     });
     assert.deepEqual(result.groups, [], "com os índices únicos no lugar, zero grupo duplicado");
     assert.deepEqual(Object.keys((result.summary as Array<Record<string, unknown>>)[0]!).sort(), ["ajustes_de_contagem", "estornos"]);
+    assert.ok(Array.isArray(result.overlaps), "a R19 (sessões sobrepostas) responde");
+
+    // O PAPEL DA APLICAÇÃO (NOSUPERUSER, sem BYPASSRLS, o mesmo do C0): sob FORCE RLS ele enxergaria um
+    // universo filtrado; com a guarda, o motor RECUSA. Antes deste ciclo, a resposta era uma linha `0|0`.
+    let refused: unknown;
+    let rows: unknown;
+    try {
+      rows = await (h.roleB.client as any).$transaction(async (tx: any) => {
+        await tx.$executeRawUnsafe(statements[0]!);
+        return tx.$queryRawUnsafe(statements[1]!);
+      });
+    } catch (caught) {
+      refused = caught;
+    }
+    assert.ok(refused, "o censo tinha de RECUSAR sob o papel da aplicação");
+    assert.equal(rows, undefined, "nenhuma linha — nunca um `0|0` cego");
+    assert.match(errorText(refused), /42501|row-level security/i);
+  });
+
+  test("C9 [catálogo] · cada índice de STOCK_MOVEMENT_UNIQUE_INDEXES existe com EXATAMENTE as colunas declaradas, o conjunto identifica UM só índice, e a violação real devolve essa identidade", async () => {
+    const h = await harness();
+    const inv = await import("../src/modules/inventory/inventory-prisma.repository.js");
+    const uniqueIndexes = (await h.admin.$queryRawUnsafe(
+      `SELECT i.relname AS name, pg_get_indexdef(x.indexrelid) AS def
+         FROM pg_index x JOIN pg_class i ON i.oid = x.indexrelid JOIN pg_class t ON t.oid = x.indrelid
+        WHERE t.relname = 'stock_movements' AND x.indisunique ORDER BY 1`,
+    )) as Array<{ name: string; def: string }>;
+    const columnsOf = (def: string): string[] =>
+      (/ON public\.stock_movements USING \w+ \(([^)]*)\)/.exec(def)?.[1] ?? "")
+        .split(",")
+        .map((column) => column.trim().replace(/^"|"$/g, ""))
+        .filter(Boolean);
+    const byName = new Map(uniqueIndexes.map((index) => [index.name, columnsOf(index.def)]));
+    console.log(`[C9] índices únicos de stock_movements: ${[...byName].map(([name, columns]) => `${name}(${columns.join(",")})`).join(" · ")}`);
+
+    for (const [key, index] of Object.entries(inv.STOCK_MOVEMENT_UNIQUE_INDEXES)) {
+      const columns = byName.get(index.name);
+      assert.ok(columns, `${key}: o índice ${index.name} não existe no catálogo`);
+      assert.deepEqual([...columns!].sort(), [...index.columns].sort(), `${key}: colunas divergentes do catálogo`);
+      // Ambiguidade = vermelho: o conjunto de colunas TEM de identificar um índice só (é ele a identidade
+      // que o driver expõe quando a escrita falha direto).
+      const sameShape = [...byName].filter(([, other]) => other.length === columns!.length && [...other].sort().join("|") === [...columns!].sort().join("|"));
+      assert.equal(sameShape.length, 1, `${key}: ${sameShape.length} índices únicos com o mesmo conjunto de colunas (ambíguo)`);
+    }
+
+    // E a identidade que o driver entrega numa violação REAL (pelo ORM, o caminho de insertMovement).
+    const t = await newTenant(h, "c9");
+    const x = await newItem(h, t, 0);
+    const original = await rawMovement(h.admin, t, x, "saida", -3);
+    await rawMovement(h.admin, t, x, "saida", 3, { reverses: original });
+    let violation: unknown;
+    try {
+      await rawMovement(h.admin, t, x, "saida", 3, { reverses: original });
+    } catch (caught) {
+      violation = caught;
+    }
+    assert.ok(violation, "a duplicata tinha de ser recusada pelo índice");
+    assert.deepEqual(
+      [...(inv.uniqueViolationColumns(violation) ?? [])].sort(),
+      [...inv.STOCK_MOVEMENT_UNIQUE_INDEXES.reversal.columns].sort(),
+      "a violação carrega as colunas do índice de estorno",
+    );
+    assert.equal(inv.isUniqueViolationOf(violation, inv.STOCK_MOVEMENT_UNIQUE_INDEXES.reversal), true);
+    assert.equal(inv.isUniqueViolationOf(violation, inv.STOCK_MOVEMENT_UNIQUE_INDEXES.sourceActive), false, "não confunde com outro índice");
+    assert.equal(inv.isUniqueViolationOf(new Error("qualquer erro"), inv.STOCK_MOVEMENT_UNIQUE_INDEXES.reversal), false, "erro sem identidade não é classificado");
   });
 
   test("C7 [mapeamento V3] (T-02) · escritor SEM o lock do item × reverseMovement real → B bloqueia no índice, 409 movement_already_reversed FORA da tx, UMA compensação", async () => {

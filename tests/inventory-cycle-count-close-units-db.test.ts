@@ -1068,6 +1068,79 @@ if (!connectionString) {
     assert.equal(describe(await captureSettled(h.cycleA.cancel(actorOf(t), stamped.id))), "422|close_in_progress");
     assert.equal((await state(h, t, stamped.id)).status, "fechando");
   });
+
+  // ---------------------------------------------------------------------------------------------
+  // CICLO 2 · C2-03 — STATUS NÃO CLASSIFICADO CAI NO LADO FECHADO.
+  //
+  // `cycle_counts.status` é TEXT sem CHECK: um status que a enumeração não conhece (aqui `suspensa`,
+  // semeado por SQL cru — a mutação do jurado) EXISTE no banco. A I9 era ALLOWLIST do lado aberto
+  // (`IN ('aberta','fechando')`), logo esse status LIBERAVA o item: o `open` do mesmo item era aceito e
+  // duas sessões não terminais passavam a segurá-lo (o N-OVL reaberto). Agora o predicado é o lado
+  // FECHADO (`NOT IN (terminais)`), derivado da única tabela de classificação.
+  // ---------------------------------------------------------------------------------------------
+  test("B18 [status não classificado · Prisma] · sessão `suspensa` semeada segurando X → o open real é 409 items_in_open_session (UMA sessão sobre X); recontar/fechar/cancelar a `suspensa` é 422", async () => {
+    const h = await harness();
+    const t = await newTenant(h, "b18");
+    const x = await newItem(h, t, { base: 10 });
+    const suspended = await rawSession(h, t, [{ item: x, system: 10 }], "suspensa");
+
+    const reopened = await captureSettled(h.cycleA.open(actorOf(t), {}));
+    assert.equal(describe(reopened), "409|items_in_open_session", "um status desconhecido SEGURA o item");
+    const [sessions] = await h.admin.$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT count(*)::int AS n FROM cycle_counts WHERE tenant_id = $1::uuid`,
+      t,
+    );
+    assert.equal(sessions!.n, 1, "exatamente UMA sessão sobre X (antes: 2)");
+
+    // E o lado da escrita: `suspensa` não é membro `non_terminal` da enumeração → recusa (fail-closed).
+    assert.equal(
+      describe(await captureSettled(h.cycleA.recordEntry(actorOf(t), suspended.id, suspended.entries[0]!, { counted_quantity: 7 }))),
+      "422|invalid_status_transition",
+    );
+    assert.equal(describe(await captureSettled(h.cycleA.close(actorOf(t), suspended.id))), "422|invalid_status_transition");
+    assert.equal(describe(await captureSettled(h.cycleA.cancel(actorOf(t), suspended.id))), "422|invalid_status_transition");
+    assert.equal((await state(h, t, suspended.id)).status, "suspensa", "nada mudou na sessão desconhecida");
+
+    // Terminal continua LIBERANDO: com a sessão `concluida`, o open volta a ser aceito.
+    await h.admin.$executeRawUnsafe(`UPDATE cycle_counts SET status = 'concluida' WHERE id = $1::uuid`, suspended.id);
+    assert.equal(describe(await captureSettled(h.cycleA.open(actorOf(t), {}))), "ok", "sessão terminal não segura o item");
+  });
+
+  test("B18m [status não classificado · memória] · o dublê em memória segura o item do mesmo jeito: 2º open → 409", async () => {
+    const h = await harness();
+    const repository = h.ccService.getMemoryCycleCountRepositoryForTests() as any;
+    const tenantId = randomUUID();
+    const itemId = randomUUID();
+    const opened = await repository.createSession({ tenantId, entries: [{ itemId, systemQuantity: 10 }] });
+
+    // A mutação do jurado no dublê: o status vira um membro que a enumeração não classifica.
+    const sessions = (repository as { sessions: Map<string, { status: string }> }).sessions;
+    const session = sessions.get(opened.id)!;
+    sessions.set(opened.id, { ...session, status: "suspensa" });
+    assert.equal((await repository.findSession(tenantId, opened.id))!.status, "suspensa");
+
+    let refused: unknown;
+    try {
+      await repository.createSession({ tenantId, entries: [{ itemId, systemQuantity: 10 }] });
+    } catch (caught) {
+      refused = caught;
+    }
+    assert.ok(refused, "o 2º open tinha de ser recusado (antes: aceito)");
+    assert.equal((refused as { statusCode?: number }).statusCode, 409);
+    assert.equal((refused as { reason?: string }).reason, "items_in_open_session");
+
+    // E o lado da escrita, como no Prisma.
+    assert.deepEqual(await repository.recordEntryCount({ tenantId, cycleCountId: opened.id, entryId: opened.entries[0]!.id, countedQuantity: 7 }), {
+      status: "not_open",
+      current: "suspensa",
+    });
+    assert.deepEqual(await repository.cancelSession(tenantId, opened.id), { status: "not_open", current: "suspensa" });
+
+    // Terminal libera.
+    sessions.set(opened.id, { ...sessions.get(opened.id)!, status: "concluida" });
+    const second = await repository.createSession({ tenantId, entries: [{ itemId, systemQuantity: 10 }] });
+    assert.ok(second.id, "sessão terminal não segura o item");
+  });
 }
 
 /** Teardown ESCOPADO por tenant_id do próprio arquivo, em ordem de FK — nunca wildcard (lição do PR-05 Ω5P). */
