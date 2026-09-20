@@ -140,3 +140,22 @@ leitura de resposta da OS neste arquivo, o tenant da sessão vence o do corpo". 
   `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` deixa de ser latente: o corpo traz o campo hoje.
 - **(q) I4-5 — os dois jurados novos ficam neste PR** (emenda 3 (n)); a aposentadoria deles vem no PR seguinte ao merge
   (`D-APOSENTADORIA-ELENCO-EFEMERO`), e o sepultamento no obituário junto da ata.
+
+## Emenda 5 do orquestrador — as divergências da correção do ciclo 2 (2026-09-20)
+
+Relatório: `.../scratchpad/DEV-B-O6R-11-ciclo2.md` (2 instâncias; a 1ª caiu por 429 depois de 3 commits, medidos e continuados pela
+2ª). Decisões:
+
+- **(r) D1 aceita, e é a forma certa.** O `docs/revisoes/SAN3/PLANO_SAN3.md` está fora do escopo deste bloco: desfazer por edição
+  inversa a alteração que a 1ª instância fizera nele, guardando o patch, e **reescrever os textos das pendências para que nenhuma
+  afirme uma fronteira que não existe** é o caminho do §5.4 do plano. Consequência registrada: `P-MOBILE-FILA-RMW-STORE` fica em
+  fila pós-gate (nenhum bloco do §5 tem `sync_action_store.dart`, `drift_sync_action_store.dart` nem `sync_queue_repository.dart`);
+  as demais ficam com o dono do arquivo principal e a nota "fronteira a ampliar no comando do dono"; a
+  `P-CI-FLUTTER-SEM-PIN` fica no `B-SAN3-10` com a ressalva de que a autorização escrita lá é só para o job e2e. **A ampliação das
+  fronteiras do §5 é ato de registro do `B-SAN3-10`**, na recontagem do gate — não deste bloco.
+- **(s) D2, D3, D4 e D5 aceitas.** São 15 mutações (o texto do plano dizia 14 e a tabela listava 15), e as 15 ficam vermelhas; o
+  espelho de agentes está consistente com os corpos que existem hoje (os jurados do ciclo 2 são da `agente-fabrica`, não do dev — e
+  a fábrica os nomeou `jurado-o6r11-c2-fail-closed-dart` e `jurado-o6r11-c2-suplente-fail-closed-dart`, não
+  `jurado-o6r11-fail-closed-dart-flutter` como o §8 do plano antecipava: vale o nome real, e a junta o confere por nome);
+  `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` nasce como pré-existente com prova executada e dono fila pós-gate; a normalização de
+  fim de linha do `pendencias.md` de volta a LF deixa o diff do commit com o conteúdo, não com o arquivo inteiro.
