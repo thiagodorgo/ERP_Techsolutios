@@ -4466,3 +4466,39 @@ paridade `RBAC_DB_PARITY=1` 2/2; D4 base nova só-seed → auditor 56 idêntico 
 **Números:** backend 2995/2997 → **3051/3053** (287 arquivos; N=3 idênticas, banco recriado antes de cada uma), smoke
 1126 → **1135**, `blocks_completed` 163 → 164. Divergências plano × código (8) e observações no relatório do dev; o
 registro abriu 13 pendências e fechou 4 + o bullet `P-033`. As dívidas do #386 saíram deste PR por emenda do orquestrador.
+
+## B-SAN3-04a — junta e pré-merge (2026-09-18 → 2026-09-20, PR #390)
+
+**Junta (ciclo 1, 2026-09-18): APROVADO 3 × 0.** Quórum de unanimidade de 3 (bloco de permissão, §C7.1-ter(b)); sem
+crítico adversarial. Inspetor de terreno `LIBERADO COM RESSALVA` (R1–R6). C1 `agente-dba-guardiao` (1ª instância),
+C2 `coordenador-de-acessos` e C3 `agente-ci-doutor` (2ªs instâncias — a janela das 16h derrubou 16 de 17 agentes por
+429). Ata `omega/juntas/J-B-SAN3-04a.md`; votos, evidências, parecer do inspetor e quedas em `votos/B-SAN3-04a/`
+(os logs brutos e os JSON de harness ficam no scratchpad, fora do tree). Emenda 3 do orquestrador no comando.
+
+**Achados e destino.** 2 `bloqueia`, os dois `pre-existente` com evidência de data/origem (não reprovam, §C7.1-ter(a)):
+C2-01 `docs/navigation-matrix.md` × matriz efetiva (40 células) e C2-03 gate de módulo. 4 ajustes: C1-A1 e C2-02
+dentro do bloco (resolvidos no pré-merge), C2-04 e C2-05 pré-existentes (emendas em pendências que já existiam),
+C2-06 pré-existente (pendência nova). 10 notas.
+
+**Pré-merge (2026-09-20), por um dev que não julgou o bloco.**
+- Rebase de `fbda96b0` sobre `origin/main@83a3c68c`; 9 commits reaplicados; 9 arquivos em conflito, **todos resolvidos
+  por união** (`frontend/package.json` `test:smoke` = 142 arquivos sem duplicata; `Kpis/*`; `decisoes.md`;
+  `pendencias.md`; `log-execucao.md`; `status-geral.md`), e `pendencias-indice.md` **regerado pelo gerador**.
+- **Prova de que o código julgado não mudou, nas duas direções:** `git diff 02bd7dab fbda96b0` × `git diff 83a3c68c HEAD`
+  sobre `src frontend/src prisma scripts tests RBAC_MATRIX.md frontend/tests` = 2002 linhas cada, `cmp` idêntico; e
+  `git diff fbda96b0 HEAD` × `git diff 02bd7dab 83a3c68c` nos mesmos caminhos = 3633 linhas cada, `cmp` idêntico.
+- **Números REEXECUTADOS** (§C3.3) no head rebaseado, com `dev-bsan304a-pm-pg` (:56811) e `dev-bsan304a-pm-redis`
+  (:56812) próprios e banco `erp_bsan304a_pm` novo: backend **3052/3054** (287 arquivos, fail 0, skipped 2, 264 s),
+  smoke **1202/1202**, `blocks_completed` **165** (a partir da `main`), Flutter 864 carregado. A primeira passada deu
+  1 fail no guard `kpi-dashboard-charts` (o `FROZEN` do painel divergindo do JSON depois do rebase) — `kpi-freeze.mjs`
+  regenerou, a passada final ficou limpa, e o episódio está escrito na nota da métrica.
+- **Dívidas do #387:** A4 (backfill §C3.5 nas entradas 158/159), A1 (`jurado-san3-01c2-fail-closed-web` + suplente
+  versionadas nos dois espelhos por `git add -f` + `sync-agent-agents.mjs`, `--check` OK **25 agentes**, e sepultadas
+  no `OBITUARIO-IDENTIDADES.md` §3.7; aposentadoria = dívida do PR seguinte, rodada 4 de
+  `controle/aposentadoria-especialistas.md`), A7 (`votos/B-SAN3-01-c2/00-quedas.md` novo + linha de quedas na ata do
+  ciclo 2 + cabeçalho do `00-quedas-ciclo1.md` dizendo que é do ciclo 1), A2 (donos corrigidos contra o §5 real).
+- **Divergências declaradas pelo pré-merge** (não resolvidas em silêncio): a seção do obituário ficou **§3.7** e não
+  §3.8, porque §3.7 não existe em árvore nenhuma; o dono de `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` ficou `B-SAN3-01b`
+  (que tem o arquivo pela decisão do dono) e não `B-SAN3-06c`; o achado C2-05 virou **emenda** nessa pendência em vez
+  de `P-WEB-NOVA-OS-SEM-GATE` nova, para não duplicar o mesmo botão do mesmo arquivo; e a autoria do bloco não tinha
+  apensado entrada em `Kpis/kpis-history.md` (§C3.1) — o pré-merge apensou.
