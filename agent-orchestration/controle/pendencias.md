@@ -9783,6 +9783,22 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 > **Atualização (emenda 3 (k) do orquestrador, 2026-09-18):** a seção ganha uma 8ª entrada, fora do §6 do plano —
 > `P-MOBILE-CHECKLIST-TENANT-DO-CORPO`, achada pela 3ª instância do dev — e a `P-MOBILE-EXPENSE-ENVELOPE` ganha
 > emenda (tenant só do corpo). Registradas pela 4ª instância do dev.
+> **Atualização (ciclo 2 do `B-O6R-11`, 2026-09-19/20 — reprovação 1 × 2 da junta do ciclo 1):** a seção passa de 9
+> para **15** entradas. As **6 novas** são pré-existentes: cinco a junta nomeou (§6 do plano do ciclo 2) —
+> `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`, `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`,
+> `P-MOBILE-CODEC-FILA-STATUS-CRU`, `P-CI-FLUTTER-SEM-PIN` e `P-MOBILE-DISCARDED-FUTURES` — e a sexta,
+> `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`, o dev do ciclo 2 mediu ao rodar a bateria (corrida no `stop()` da
+> telemetria, provada com o teste SOZINHO sob carga, em arquivo que este PR não toca). Nenhuma consertada
+> neste PR, todas com escopo `pre-existente` datado e dono escolhido contra a fronteira do §5 do
+> `docs/revisoes/SAN3/PLANO_SAN3.md` **como ela está hoje** (C3-A4). O `PLANO_SAN3.md` é fonte de verdade FORA do
+> escopo deste bloco e **não foi tocado neste PR**: onde nenhum bloco do §5 tem o arquivo que a pendência nomeia, o
+> dono é `fila pós-gate` ou leva a nota "fronteira a ampliar no comando do dono". As quatro ampliações de fronteira
+> que o §5.4 do plano do ciclo 2 propõe (`B-SAN3-13` + o enum da OS, `B-SAN3-15` + os dois stores Drift,
+> `B-SAN3-16` + `sync_action_store`/`drift_sync_action_store`, `B-SAN3-10` + o job `flutter` do CI) estão
+> **reportadas ao orquestrador como divergência**, para ele ratificar na emenda — não aplicadas aqui. Ganharam emenda no ciclo 2: `P-MOBILE-EXPENSE-ENVELOPE` (C2-F5 — o censo esquecera o
+> `ExpenseReportCodec`), `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (censo por USO, e a pendência própria do DTO agora
+> nomeada), `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` e `P-MOBILE-FILA-RMW-STORE` (C3-A5 — magnitude MEDIDA),
+> `P-MOBILE-APPROVAL-REQUEST-REST-404` e `P-MOBILE-STATUS-ACCEPTED-LOSSY` (C3-A4 — dono que tem o arquivo).
 
 ## P-MOBILE-EXPENSE-ENVELOPE (2026-09-18) — 8 leituras do cliente REST de despesas do app ignoram a forma real da resposta — MÉDIA
 
@@ -9810,6 +9826,17 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   instância do dev do `B-O6R-11` (censo `grep` das leituras de `tenantId`/`tenant_id` em `mobile/flutter_app/lib`),
   reexecutado pela 4ª; `git blame 9dea0ef6` de `:216` → `e79616aa` (2026-06-13), `pre-existente`. Dono inalterado:
   `B-O6R-03b`.
+- **emenda (B-O6R-11 ciclo 2, C2-F5 da junta — o censo esqueceu o codec de RESPOSTA, 2026-09-19):** a emenda acima
+  nomeia só `expense_remote_api.dart:216`, mas o parser das RESPOSTAS de relatório é
+  `ExpenseReportCodec.fromJson`, que mora no arquivo de nome "local store" e tira o tenant só do corpo em
+  **quatro** linhas: `mobile/flutter_app/lib/features/expenses/data/expense_local_store.dart:112` (relatório),
+  `:122` (adiantamento, `advance['tenant_id'] as String`), `:150` (item, `_itemFromJson`) e `:212` (recibo) — todas
+  `json['tenant_id'] as String`. Reexecutado pelo dev do ciclo 2 em 2026-09-19:
+  `grep -n "ExpenseReportCodec" mobile/flutter_app/lib/features/expenses/data/expense_remote_api.dart` → o codec é
+  chamado sobre `response.data` em `:101` (lista), `:116`, `:128`, `:142` e `:170` — é parser de resposta de rede,
+  não de cache. A exclusão "dos stores locais" pelo NOME do arquivo foi o erro do censo original. `git blame` de
+  `:112,122,150,212` → `e79616aa` (2026-06-13), `pre-existente`. Dono inalterado: `B-O6R-03b` (fronteira
+  `features/expenses/**` contém o arquivo).
 
 ## P-MOBILE-CHECKLIST-CREATE-RUN-MORTO (2026-09-18) — `createRun` do cliente de vistorias do app lê `runId` na raiz de um `sendResult` e não tem chamador — BAIXA
 
@@ -9854,7 +9881,16 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   sem ação na fila, e a ação nunca chega ao backend: perda de dado, a 1ª prioridade do gate.
 - **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:117-133` → `00293319` (2026-07-01, "feat(mobile): fluxo
   prestador diagnostico/execucao/estoque do tecnico (PR-1.9)").
-- **dono:** `B-SAN3-15` (fronteira `features/prestador/**`; troca também o catálogo semente pelo estoque real).
+- **magnitude (B-O6R-11 ciclo 2, C3-A5 — medida, não estimada):** sonda da cadeira C3 da junta do ciclo 1
+  (`c3_fila_test.dart`, `addSelection` real com N=8 SKUs, `save` falhando na k-ésima chamada, k=1..8): **8 materiais
+  gravados e k−1 ações** em todo k — de **1 a 8 materiais sem ação** na fila; o `StateError` chega ao chamador e
+  `notifyListeners` não é chamado. Faixa da perda: **1..N**, com N = número de SKUs do lote.
+- **dono:** `B-SAN3-15` (fronteira `features/prestador/**`, que contém o `prestador_repository.dart` desta prova;
+  troca também o catálogo semente pelo estoque real). **Fronteira a ampliar no comando do dono (C3-A4, medido no
+  ciclo 2 do `B-O6R-11`):** o conserto definitivo exige transação única sobre os DOIS stores Drift
+  (`core/local_db/drift_prestador_local_store.dart` e `core/local_db/drift_sync_action_store.dart`), e nenhum bloco
+  do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` os tem na fronteira — o arquivo é fonte de verdade fora do escopo
+  deste bloco e não foi tocado; a ampliação está reportada ao orquestrador como divergência.
 
 ## P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app posta numa rota que não existe no backend — BAIXA
 
@@ -9867,7 +9903,11 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **estado (plano §6):** código morto.
 - **severidade:** BAIXA (emenda 2 (h) do orquestrador, 2026-09-18).
 - **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:162-180` → `e79616aa` (2026-06-13).
-- **dono:** `B-SAN3-16` (item 5 do gate: "pedir aprovação" pela fila).
+- **dono:** **`B-SAN3-13`** (troca de dono no `B-O6R-11` ciclo 2, C3-A4 da junta): o arquivo que esta pendência
+  nomeia é `work_order_remote_api.dart`, que está na fronteira do `B-SAN3-13` (`docs/revisoes/SAN3/PLANO_SAN3.md` §5)
+  e **não** na do `B-SAN3-16` (que tem `sync_replay_service.dart` e `work_order_repository.dart`). O "pedir aprovação
+  pela fila" continua sendo o item 5 do gate, no `B-SAN3-16` — quem apagar o método REST morto confere com ele.
+  *(até 2026-09-18 o dono era `B-SAN3-16`, que não tem o arquivo.)*
 
 ## P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita" — MÉDIA
 
@@ -9882,7 +9922,12 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **severidade:** MÉDIA (emenda 2 (h) do orquestrador, 2026-09-18).
 - **escopo:** a ausência de `accepted` no enum é `pre-existente` (`git blame 9dea0ef6` de `:14-27` → `e79616aa`,
   2026-06-13); o mapeamento com perda nasce neste bloco, por decisão do plano §7.
-- **dono:** `B-SAN3-13`/`B-SAN3-14`.
+- **dono:** **`B-SAN3-13`** (fixado no `B-O6R-11` ciclo 2, C3-A4): é o único bloco cuja fronteira do §5 tem
+  `work_order_remote_api.dart`, um dos dois arquivos desta prova. **Fronteira a ampliar no comando do dono:** o
+  enum `features/work_orders/domain/work_order_models.dart` não está na fronteira de bloco algum do §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md` (medido no ciclo 2); o arquivo é fonte de verdade fora do escopo deste bloco e
+  não foi tocado — a ampliação está reportada ao orquestrador como divergência. *(até 2026-09-18 o dono era
+  `B-SAN3-13`/`B-SAN3-14`, e nenhum dos dois tinha o arquivo do enum.)*
 
 ## P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instância da fila; o conserto definitivo é append/upsert atômico no `SyncActionStore` — MÉDIA
 
@@ -9896,7 +9941,18 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **severidade:** MÉDIA (emenda 2 (h) do orquestrador, 2026-09-18).
 - **escopo:** `pre-existente` — `git blame 9dea0ef6` de `sync_action_store.dart:1-20` e
   `sync_queue_repository.dart:17-34` → `e79616aa` (2026-06-13).
-- **dono:** `B-SAN3-16` (fila drenada; toca `sync_replay_service.dart`).
+- **magnitude (B-O6R-11 ciclo 2, C3-A5 — medida, não estimada):** **0 vivo hoje** — o censo do caso 21 do
+  `bo6r11_fila_serializada_test.dart` (varredura da AST de `lib/`) acha **exatamente 1** construção de
+  `PersistentSyncQueueRepository` em runtime (`core/sync/sync_providers.dart:33`), e fica vermelho na segunda. Sob
+  DUAS instâncias no mesmo store, medido pela cadeira C3 da junta do ciclo 1 (N=20 por arranjo): Drift em memória e
+  em arquivo perdem **60 de 120 ações (50 %) e 20 de 20 atualizações (100 %)**; store lento, **43 de 120**.
+- **dono:** **fila pós-gate** (fixado no `B-O6R-11` ciclo 2, C3-A4): os arquivos que esta pendência nomeia —
+  `core/sync/sync_action_store.dart`, `core/local_db/drift_sync_action_store.dart` e
+  `core/sync/sync_queue_repository.dart` — não estão na fronteira de bloco algum do §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md` (só na do próprio `B-O6R-11`, que encerra aqui). O bloco vizinho é o
+  `B-SAN3-16` (fila drenada, tem `sync_replay_service.dart`), e a ampliação da fronteira dele está reportada ao
+  orquestrador como divergência — o `PLANO_SAN3.md` é fonte de verdade fora do escopo deste bloco e não foi tocado.
+  *(até 2026-09-18 o dono era `B-SAN3-16`, que não tem nenhum dos arquivos.)*
 
 ## P-MOBILE-CHECKLIST-TENANT-DO-CORPO (2026-09-18) — o cliente de vistorias do app dá ao modelo de vistoria o tenant do CORPO da resposta, não o da sessão que o chamador passou — MÉDIA
 
@@ -9909,19 +9965,29 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **prova:** `mobile/flutter_app/lib/features/checklists/data/checklist_remote_api.dart:397` (`tenantId:
   strOpt('tenantId', 'tenant_id') ?? fallbackTenantId`) e `:179` (`_templateFromRemoteJson(j, fallbackTenantId:
   tenantId)`), iguais em `9dea0ef6` e no head do bloco (`git diff --quiet 9dea0ef6 HEAD --
-  mobile/flutter_app/lib/features/checklists` → ec=0). Censo da 3ª instância do dev, reexecutado pela 4ª (`grep -rnE
-  "\[['\"](tenantId|tenant_id)['\"]\]|strOpt\(['\"]tenantId" mobile/flutter_app/lib`): fora de login/bootstrap
-  (a própria fonte da sessão) e dos stores locais (não são resposta de rede), as leituras de tenant em corpo de
-  resposta são três — `work_order_remote_api.dart` (consertada pelo `B-O6R-11`), esta, e `expense_remote_api.dart:216`
-  (emenda da `P-MOBILE-EXPENSE-ENVELOPE`); `ChecklistTemplate.fromJson` (`checklist_template_models.dart:390`) não tem
-  chamador em `lib/`.
+  mobile/flutter_app/lib/features/checklists` → ec=0). **Censo refeito no ciclo 2 (C2-F5 da junta), gerado por comando e classificado por USO, não por nome de
+  arquivo** — `git grep -nE "'tenant_id'|'tenantId'|\"tenant_id\"" -- mobile/flutter_app/lib` → **48 linhas**
+  (reexecutado pelo dev do ciclo 2 em 2026-09-19, sobre o head da correção):
+  **(i) leitura de tenant em RESPOSTA DE REDE — 6 linhas em 3 arquivos:** `checklist_remote_api.dart:397` (esta
+  pendência), `expense_remote_api.dart:216` e `expense_local_store.dart:112,122,150,212` (`ExpenseReportCodec.fromJson`,
+  chamado sobre `response.data` em `expense_remote_api.dart:101,116,128,142,170` — emenda da
+  `P-MOBILE-EXPENSE-ENVELOPE`). Eram 7 em 4 arquivos: `work_order_remote_api.dart:247` saiu no ciclo 2 (o parâmetro
+  virou `required` e a leitura do corpo foi removida; o arquivo tem hoje 2 menções a tenant, **ambas em comentário**).
+  **(ii) fonte da SESSÃO (não é payload de terceiro):** `auth_repository.dart:282`,
+  `bootstrap_repository.dart:198,202,208,386`. **(iii) persistência LOCAL (grava e relê o que o próprio aparelho
+  escreveu):** `auth_token_storage.dart:123`, `bootstrap_codec.dart:94`, `sync_action_store.dart:95` e 12
+  `row.read('tenant_id')` do Drift. **(iv) sem chamador em `lib/`:** `ChecklistTemplate.fromJson`
+  (`checklist_template_models.dart:390`). **(v) não-leitura:** `sync_replay_service.dart:1180`. O resto são ESCRITAS
+  de JSON/query.
 - **estado:** vivo — o cliente é construído com sessão autenticada (`checklistRemoteApiProvider`,
   `checklist_repository.dart:849-855`) e, medido pela 4ª instância, o corpo HOJE traz `tenant_id`: o
   `toMobileChecklistTemplateDto` do backend o emite (`src/modules/checklists/checklist.dto.ts:70`) e `GET
   /mobile/checklists/available` responde com ele (`checklist.controller.ts:123`). Os valores coincidem enquanto o
   backend escopar a consulta pelo ator; o app, porém, confia no payload. A emissão de `tenant_id` pelo backend nessa
   resposta é, na leitura da casa (o DTO da OS e o `buildChecklistSnapshot` o omitem citando o §2.8), assunto à parte:
-  reportada ao orquestrador pelo dev (relatório da 4ª instância), sem pendência própria aqui.
+  pendência própria: `P-CHECKLIST-DTO-EMITE-TENANT-ID` (emenda 4 (p) do comando; entrada logo abaixo nesta
+  seção). *(correção do ciclo 2, C1-A1 da junta: até 2026-09-18 esta linha dizia "sem pendência própria aqui" e a
+  pendência já existia.)*
 - **severidade:** MÉDIA (emenda 3 (k) do orquestrador, 2026-09-18).
 - **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:397` e `:179` → `57b56048` (2026-06-15, "feat(mobile):
   pull remote checklist templates into local cache").
@@ -9938,3 +10004,166 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-22` (tem `src/modules/checklists/**` no escopo do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md`).
 - **bloqueia:** não bloqueia o gate; relacionada à `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (o app adota o tenant do corpo).
 - **teste de encerramento:** a resposta de `GET /mobile/checklists/available` não traz `tenant_id` (asserção sobre o corpo serializado); vermelho-controle no head atual.
+
+## P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA (2026-09-19) — status do backend fora do vocabulário do app vira "Agendada", e a tela oferece "Iniciar rota" em cima disso — MÉDIA
+
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C2-F3 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** `workOrderStatusFromApiValue` termina em `orElse: () => WorkOrderStatus.scheduled`. Status que o app não
+  conhece — um valor novo do backend, um typo, um `''`, um número — não é recusado nem sinalizado: vira `scheduled`,
+  que é um estado **acionável**. O técnico vê "Agendada" e a tela oferece "Iniciar rota" sobre um estado que ninguém
+  confirmou.
+- **prova:** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart` (o `orElse` do
+  `firstWhere` por nome de enum, hoje na l.366 depois da correção do ciclo 2);
+  `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart:800` (`label: const Text('Iniciar
+  rota')`). O destino está FIXADO pelo caso 15 do `bo6r11_os_rest_envelope_e_vocabulario_test.dart` (o teste
+  registra qual é o comportamento, não o aprova), e a metade "concordância" do achado foi fechada pelo caso 16
+  (todo valor de `WORK_ORDER_STATUSES` tem entrada explícita em `backendStatusToApp`).
+- **escopo:** `pre-existente`. Medido pelo dev do ciclo 2 em 2026-09-19 contra a base `02bd7dab`:
+  `git log -S 'orElse: () => WorkOrderStatus.scheduled' 02bd7dab -- <arquivo>` → três commits, o mais antigo
+  `e79616aa` (2026-06-13, "feat(mobile): Flutter mobile field ops foundation"), depois `3b56da1a` (2026-06-14) e
+  `9801172c` (2026-06-19, "feat(approvals): add operational approval flow"), que é a quem o `git blame 02bd7dab`
+  atribui a linha atual. *(O §6 do plano do ciclo 2 cita só `e79616aa`; as duas datas ficam registradas — a origem
+  do comportamento é de 13/06, a última escrita da linha é de 19/06.)*
+- **severidade:** MÉDIA.
+- **dono:** `B-SAN3-13` (o §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `work_order_remote_api.dart` na fronteira).
+- **bloqueia:** não bloqueia o `B-O6R-11`; é decisão de produto — precedente `P-CHK-FLUTTER-KIND-COLAPSA`, resolvida
+  na PR-04b.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** status desconhecido não vira estado
+  acionável — ou um estado próprio ("desconhecida", sem ações), ou erro visível; o caso 15 do T1 muda junto, com
+  vermelho-controle.
+
+## P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL (2026-09-19) — OS urgente aparece "Normal" na lista do técnico — MÉDIA
+
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C3-A6 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** o backend fala `WORK_ORDER_PRIORITIES = ["low","medium","high","urgent"]`; o enum do app é
+  `{low, normal, high, critical}`. O parser casa por NOME e cai em `normal` no resto: `urgent` e `medium` — dois dos
+  quatro valores — viram `normal`. É a mesma classe do achado do vocabulário de status que o `B-O6R-11` consertou,
+  na coluna ao lado, e vale na lista VIVA do B-099.
+- **prova:** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:264-267`
+  (`WorkOrderPriority.values.firstWhere((p) => p.name == (json['priority'] as String?), orElse: () =>
+  WorkOrderPriority.normal)`); `mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart:29`
+  (`enum WorkOrderPriority { low, normal, high, critical }`); `src/modules/work-orders/work-order.types.ts:19`
+  (`WORK_ORDER_PRIORITIES`). Reexecutado pelo dev do ciclo 2 em 2026-09-19.
+- **escopo:** `pre-existente` — `git blame 02bd7dab` do `orElse` → `3b56da1a` (2026-06-14, "feat(mobile): pull real
+  work orders into drift cache"); do enum → `e79616aa` (2026-06-13).
+- **severidade:** MÉDIA.
+- **dono:** `B-SAN3-13` (o §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `work_order_remote_api.dart` na fronteira
+  dele, onde mora o `orElse` desta prova). **Fronteira a ampliar no comando do dono:** o enum
+  `features/work_orders/domain/work_order_models.dart` não está na fronteira de bloco algum do §5 — a ampliação
+  está reportada ao orquestrador como divergência (o arquivo não foi tocado por este PR).
+- **bloqueia:** não bloqueia o `B-O6R-11`.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** o espelho do caso 16 do T1 para prioridade —
+  todo valor de `WORK_ORDER_PRIORITIES` lido do arquivo do backend tem entrada explícita no app, e `urgent` não
+  aparece como "Normal" na lista.
+
+## P-MOBILE-CODEC-FILA-STATUS-CRU (2026-09-19) — a fila offline manda ao backend três status que ele recusa com 400 — BAIXA
+
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C3-A7 / C2-N2 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** `WorkOrderSyncCodec._backendStatus` traduz o vocabulário do app para o do backend com `_ => status` no
+  fim: `pendingApproval`, `approved` e `exception` viajam CRUS no payload da fila. O REST do mesmo app recusa esses
+  três antes de sair (`backendStatusFor` lança `ArgumentError`, caso 6 do T1); a fila não — ela envia, e o backend
+  devolve 400 `invalid_status`.
+- **prova:** `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:472-480` e `:508` (`_ => status`);
+  `src/modules/work-orders/work-order.validators.ts:74-82` (`parseWorkOrderStatus` → `WorkOrderError(400,
+  "WORK_ORDER_INVALID", "invalid_status", ...)` para qualquer valor fora de `WORK_ORDER_STATUSES`). Reexecutado pelo
+  dev do ciclo 2 em 2026-09-19.
+- **escopo:** `pre-existente` — `git blame 02bd7dab` das duas linhas `_ => status` → `d8a28153` (2026-06-16).
+- **severidade:** BAIXA (a ação fica na fila e o erro é visível; não há perda silenciosa).
+- **dono:** `B-SAN3-16` (o §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `sync_replay_service.dart` na fronteira).
+- **bloqueia:** não bloqueia o `B-O6R-11`; toca o item 5 do gate ("a fila drenada").
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** o codec da fila recusa os estados sem
+  equivalente antes de enfileirar, como o REST já faz, e o caso 11 do T1 (paridade REST × fila) passa a cobrir os
+  três; vermelho-controle no head atual.
+
+## P-CI-FLUTTER-SEM-PIN (2026-09-19) — o job `flutter` do CI instala o canal `stable` sem versão, e a versão muda entre dois runs do mesmo PR — MÉDIA
+
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C1-A3 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** `subosito/flutter-action@v2` com `channel: stable` e **sem** `flutter-version:`. O runner instala o que
+  for `stable` no dia: neste PR, 3.47.4 e depois 3.47.5 entre dois runs. A máquina do time tem 3.41.6 (Dart 3.11.4)
+  e o CI, Dart 3.13.3 — e o `dart format` das duas versões produz formas INCOMPATÍVEIS para o mesmo trecho (cada
+  uma desfaz a da outra). O commit `f1975256` deste PR existe por causa disso.
+- **prova:** `.github/workflows/ci.yml:332-357` (job `flutter`: `channel: stable`, sem `flutter-version`; depois
+  `flutter pub get` → `dart format --output=none --set-exit-if-changed lib test` → `flutter analyze` →
+  `flutter test --reporter compact`, todos com `working-directory: mobile/flutter_app`). Reexecutado pelo dev do
+  ciclo 2 em 2026-09-19, que mediu o mesmo formatador do CI num contêiner `dart:3.13.3` descartável.
+- **escopo:** `pre-existente` — `git blame 02bd7dab -L 332,345 -- .github/workflows/ci.yml` → `8c93a525`
+  (2026-07-02) em todas as linhas do passo `Setup Flutter`.
+- **severidade:** MÉDIA — o CI pode ficar vermelho (ou verde) por motivo que ninguém mudou no PR.
+- **dono:** `B-SAN3-10` — único bloco com `.github/workflows/ci.yml` na fronteira do §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md`. **Ressalva:** a autorização escrita lá é "só para o job e2e"; fixar
+  `flutter-version:` no job `flutter` exige ampliá-la, e a ampliação está reportada ao orquestrador como
+  divergência — o `PLANO_SAN3.md` não foi tocado por este PR. Se o dono preferir, a pendência vai para a
+  `fila pós-gate` em vez do `B-SAN3-10`.
+- **bloqueia:** não bloqueia o `B-O6R-11`.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** `flutter-version:` fixo no job, e o mesmo
+  `dart format` local e no CI (a divergência deixa de ser possível por construção); vermelho-controle: subir a
+  versão do pin e ver o job acusar a diferença de forma, não uma surpresa.
+
+## P-MOBILE-DISCARDED-FUTURES (2026-09-19) — 16 `Future`s descartadas em função síncrona mantêm o lint `discarded_futures` desligado — BAIXA
+
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; medida pelo dev do ciclo 2 — não consertada neste PR)
+- **o quê:** o ciclo 2 liga `unawaited_futures` (custo zero) como 2ª camada da propriedade P-FILA-AWAIT, mas
+  **não** liga `discarded_futures`: ele acusa 16 `Future`s descartadas fora de corpo `async` — a classe que o guard
+  sobre a AST não vê, porque a propagação de portadora dele é por ARQUIVO. Enquanto o lint estiver desligado, essa
+  classe fica sem rede nenhuma.
+- **prova:** medido pelo dev do ciclo 2 em 2026-09-19, num worktree descartável: `discarded_futures: true` em
+  `mobile/flutter_app/analysis_options.yaml` → `flutter analyze` ec=1, **16 infos**, **todas em `lib/`** (0 em
+  `test/`), em **11 arquivos**: `app/app.dart:66,79` · `core/auth/auth_notifier.dart:111` ·
+  `core/network/connectivity_bridge.dart:100` · `core/sync/auto_sync_coordinator.dart:56` ·
+  `features/auth/login_screen.dart:129,147` · `features/checklists/ui/checklist_damage_map_screen.dart:42` ·
+  `features/checklists/ui/checklist_run_screen.dart:98,475` · `features/inventory/ui/stock_entry_screen.dart:35,118` ·
+  `features/inventory/ui/stock_exit_screen.dart:34,113` · `features/location/ui/location_consent_screen.dart:32` ·
+  `features/work_orders/ui/work_order_execute_screen.dart:94`. Nenhuma delas está num repositório: são raízes de
+  evento (timer, listener de conectividade, telemetria "best-effort") e handlers de UI. Medição revertida por edição
+  inversa; o `analysis_options.yaml` do bloco ficou byte-idêntico ao commitado.
+- **escopo:** `pre-existente` — nenhum dos 11 arquivos é tocado por este PR (o diff do bloco não os inclui).
+- **severidade:** BAIXA — é o residual DECLARADO do guard P-FILA-AWAIT, com magnitude medida; não há perda de dado
+  conhecida nos sítios listados.
+- **dono:** **fila pós-gate** — nenhum bloco do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem os 11 arquivos na
+  fronteira (`B-SAN3-19`, o mais próximo, tem só `shared/ui/{home_screen,module_placeholder_screen,sync_screen}.dart`).
+  Ampliar quatro fronteiras para cobrir 11 arquivos de UI seria reescrever o plano do dono, não registrar uma
+  pendência.
+- **bloqueia:** não bloqueia o `B-O6R-11`.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** os 16 sítios resolvidos (com `await`,
+  `unawaited(...)` explícito ou tratamento de erro declarado), `discarded_futures: true` ligado no
+  `analysis_options.yaml` e `flutter analyze` em "No issues found!"; vermelho-controle: descartar uma `Future` num
+  handler e ver o analisador acusar.
+
+
+## P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK (2026-09-20) — o `stop()` da telemetria não espera o tick em voo: um ponto é capturado DEPOIS do stop, e o teste que prova o "foreground-only" cai quando a máquina está carregada — MÉDIA
+
+- status: ABERTA (medida pelo dev do ciclo 2 do `B-O6R-11` em 2026-09-20 — não consertada neste PR: `core/telemetry/**` está fora do escopo do bloco)
+- **o quê:** `TelemetryCaptureService.stop()` (`mobile/flutter_app/lib/core/telemetry/telemetry_capture_service.dart:100-106`)
+  cancela o `Timer.periodic` e põe `_active = false`, mas **não espera o `_onTick` que já está em voo**. O `_onTick`
+  (`:108-114`) testa `_active` na entrada e só depois faz `await captureHeartbeat(...)`: um tick que passou pelo teste
+  antes do `stop()` e está suspenso no `await` grava **depois** dele. O comentário logo acima do `stop()` promete o
+  contrário — "Nenhum ponto é capturado após o stop — prova de foreground-only (RN-TELE-MOBILE-05)" —, e é a mesma
+  classe de promessa falsa no cabeçalho que a junta do ciclo 1 reprovou neste bloco (o guard textual que dizia
+  "default negar").
+- **prova (executada pelo dev do ciclo 2 em 2026-09-20, Flutter 3.41.6):**
+  1. suíte inteira no head da correção, máquina carregada (duas execuções, 01:17 e 01:24 de parede):
+     `01:17 +893 -1` / `01:24 +893 -1`, sempre o mesmo caso —
+     `test/features/telemetry/telemetry_test.dart` "16. foreground-only: stop interrompe a captura (sem background)",
+     `Expected: <3> / Actual: <4>` (`telemetry_test.dart:348`, o `expect(afterBackground, afterStop)`);
+  2. a mesma suíte, mesma árvore, **máquina ociosa**: `00:49 +894: All tests passed!`;
+  3. **o teste SOZINHO, sem nenhum arquivo deste bloco envolvido, sob carga artificial** (12 laços de CPU em
+     paralelo): `00:13 +24 -1`, `Expected: <3> / Actual: <4>` — a corrida está no código de produção intocado, não
+     no arranjo da suíte;
+  4. objeto do PR (`f1975256`, antes da correção), máquina ociosa: `00:46 +888: All tests passed!` — o defeito não
+     aparece quando a janela da corrida é estreita, e é por isso que ele nunca foi visto antes.
+- **escopo:** `pre-existente`. `git diff --stat 02bd7dab HEAD -- mobile/flutter_app/lib/core/telemetry/
+  mobile/flutter_app/test/features/telemetry/` → **vazio** (nenhuma das duas pontas deste PR toca telemetria);
+  `git log -1 -- .../telemetry_capture_service.dart` → `2c916222` (PR-13 da rodada Ω4C, #274). O ciclo 2 do
+  `B-O6R-11` só **aumentou a carga** da suíte (o guard sobre a AST analisa `lib/` inteiro: 00:44 sem ele, 01:17–01:24
+  com ele), o que **alarga a janela** da corrida — não a criou.
+- **severidade:** MÉDIA — o job `flutter` do CI pode ficar vermelho por carga do runner, sem que ninguém tenha
+  mudado o comportamento; e a invariante RN-TELE-MOBILE-05 ("nada é capturado em background") é **falsa** na borda,
+  com dado de localização, que é dado pessoal.
+- **dono:** **fila pós-gate** — nenhum bloco do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `core/telemetry/**` na
+  fronteira (`grep -n telemetry docs/revisoes/SAN3/PLANO_SAN3.md` → nenhuma linha).
+- **bloqueia:** não bloqueia o `B-O6R-11` (o defeito é anterior e independente), mas **pode deixar o CI vermelho**
+  neste PR e em qualquer outro que carregue a suíte.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** `stop()` vira `Future<void>` e aguarda o tick
+  em voo (ou o `_onTick` reconfere `_active` **depois** de cada `await`, antes de gravar), e o caso 16 deixa de
+  depender de relógio: contagem estável sob carga. Vermelho-controle: rodar o caso 16 com a carga do item (3) da
+  prova e vê-lo verde, e reintroduzir a gravação pós-stop e vê-lo vermelho.
