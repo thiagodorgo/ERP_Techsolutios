@@ -342,3 +342,38 @@ git diff --check origin/main...HEAD ec=0
 4. Base viva (`erp-postgres`, `erp-redis`, `erp-postgres-alt`) e `pastrack-*`/`bsan301-*`/`j-*`/`plan-*`/`crit-*`: nenhum comando.
 
 **Não executado (fora da bateria do briefing):** `npm test` na forma canônica 1 (sem `DATABASE_URL`; o §9 prevê +9 pass e +4 pulos declarados) e o `frontend check` (o PR não toca `frontend/`). **Sem push** (o orquestrador empurra). Dívidas do #386: não (pagas pelo #387).
+
+---
+
+## APPEND — ciclo 2 (2026-09-20, desenvolvedor da correção, 2ª instância): C3-A1, a frase condicional medida na hora
+
+O texto acima (última linha da seção anterior) diz **“Dívidas do #386: não (pagas pelo #387)”** no indicativo. A cadeira
+`validador-mestre` levantou isso no ciclo 1 (achado **C3-A1**): quando a frase foi escrita, o **#387 estava OPEN** — logo
+“pagas” era uma **condição**, não um fato. O texto original fica onde está (regra de append, §A2); **esta é a leitura que
+vale**, e ela cita a medição de agora, não a memória:
+
+```
+$ gh pr view 387 --json number,state,headRefOid,mergedAt,title
+{"headRefOid":"f999adb28272291d7be4a36db6f70f060aca02e7","mergedAt":"2026-09-19T11:35:24Z","number":387,
+ "state":"MERGED","title":"fix(web): a web deixa de fabricar dado quando o backend recusa (B-SAN3-01)"}
+
+$ gh pr view 389 --json number,state,headRefOid,mergeStateStatus
+{"headRefOid":"c84a76a8c973fd3e04a409ae81cedbc463e19ece","mergeStateStatus":"DIRTY","number":389,"state":"OPEN"}
+
+$ git rev-parse origin/main      → 83a3c68ce50129d96d0357b3e7ab6ff725b9659d
+$ git merge-base HEAD origin/main → 02bd7dab2ffa29999920da8b7da345b6a5958b67   (= o #386)
+```
+
+**Leitura:** a condição se resolveu para o lado “nada a fazer” do plano (§6, C3-A1). O **#387 MERGEOU primeiro**
+(2026-09-19 11:35Z), **antes** do #389 — que segue OPEN. Logo as 4 dívidas do #386 entraram na `main` pelo #387, e este
+PR **não** as carrega nem precisa carregá-las: a emenda 1-f (“se o #389 for o primeiro PR de execução a mergear depois
+do #386, o orquestrador acrescenta as dívidas aqui antes do merge”) **não dispara**. A frase original passou de
+condição a fato — mas por medição de hoje, não por ter sido afirmada ontem.
+
+**Consequência nova, para o orquestrador (não decido, reporto — §C7.4-bis):** com o #387 na `main`, o **#389 ficou
+`DIRTY`** (era CLEAN quando o planejador mediu). Os conflitos previstos por `git merge-tree --write-tree --name-only
+HEAD origin/main` (leitura pura, nada escrito na árvore) são **7 arquivos, todos de registro/KPI, nenhum de código nem
+de teste**: `Kpis/app.js`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md`, `Kpis/kpis-latest.json`,
+`agent-orchestration/codex/log-execucao.md`, `agent-orchestration/controle/pendencias-indice.md`,
+`agent-orchestration/controle/pendencias.md`. O KPI deste ciclo foi recontado **sobre a base da branch** (o objeto), como
+o plano §10 manda; a reconciliação com o que o #387 já publicou é do orquestrador, no rebase que anteceder o merge.
