@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import { roundToDecimalPrecision } from "./inventory.calculations.js";
@@ -6,7 +7,9 @@ import { mapTransientDbFailure } from "./inventory-prisma.repository.js";
 import type { InventoryAbcClass } from "./inventory.types.js";
 import {
   cycleCountBusyError,
+  isWritableCycleCountStatus,
   itemsInOpenSessionError,
+  TERMINAL_CYCLE_COUNT_STATUSES,
   type AbortCloseOutcome,
   type BeginCloseOutcome,
   type CancelOutcome,
@@ -50,13 +53,15 @@ export class PrismaCycleCountRepository implements CycleCountRepository {
     //     token) — nunca um parâmetro do cliente. `tenants` não tem RLS: a linha aparece em qualquer contexto.
     await this.client.$queryRaw`SELECT id FROM "tenants" WHERE id = ${input.tenantId}::uuid FOR NO KEY UPDATE`;
 
-    // (2) Sobreposição (I9): algum item já está numa sessão `aberta|fechando` desta organização?
+    // (2) Sobreposição (I9): algum item já está numa sessão NÃO TERMINAL desta organização? O predicado é o lado
+    //     FECHADO — `NOT IN (terminais)`, derivado de CYCLE_COUNT_STATUS_KIND (nenhum literal de status aqui).
+    //     Um status não classificado (TEXT sem CHECK) SEGURA o item, em vez de liberá-lo (C2-03).
     const itemIds = input.entries.map((entry) => entry.itemId);
     if (itemIds.length > 0) {
       const overlapping = await this.client.$queryRaw<Array<{ item_id: string }>>`
         SELECT DISTINCT e.item_id FROM cycle_count_entries e
           JOIN cycle_counts c ON c.tenant_id = e.tenant_id AND c.id = e.cycle_count_id
-         WHERE e.tenant_id = ${input.tenantId}::uuid AND c.status IN ('aberta', 'fechando') AND e.item_id = ANY(${itemIds}::uuid[])
+         WHERE e.tenant_id = ${input.tenantId}::uuid AND c.status NOT IN (${Prisma.join(TERMINAL_CYCLE_COUNT_STATUSES)}) AND e.item_id = ANY(${itemIds}::uuid[])
       `;
       if (overlapping.length > 0) {
         throw itemsInOpenSessionError(overlapping.length);
@@ -132,7 +137,7 @@ export class PrismaCycleCountRepository implements CycleCountRepository {
   async recordEntryCount(input: RecordEntryCountInput): Promise<RecordEntryOutcome> {
     const status = await this.sessionStatus(input.tenantId, input.cycleCountId, "share");
     if (status === undefined) return { status: "not_found" };
-    if (status !== "aberta" && status !== "fechando") return { status: "not_open", current: status };
+    if (!isWritableCycleCountStatus(status)) return { status: "not_open", current: status };
 
     const updated = await this.client.cycleCountEntry.updateManyAndReturn({
       where: {
@@ -268,7 +273,7 @@ export class PrismaCycleCountRepository implements CycleCountRepository {
   async cancelSession(tenantId: string, cycleCountId: string, updatedBy?: string): Promise<CancelOutcome> {
     const current = await this.sessionStatus(tenantId, cycleCountId, "update");
     if (current === undefined) return { status: "not_found" };
-    if (current !== "aberta" && current !== "fechando") return { status: "not_open", current };
+    if (!isWritableCycleCountStatus(current)) return { status: "not_open", current };
 
     if (current === "fechando") {
       const stamped = await this.stampedCount(tenantId, cycleCountId);

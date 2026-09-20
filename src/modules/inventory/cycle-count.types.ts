@@ -10,6 +10,43 @@ import type { InventoryAbcClass } from "./inventory.types.js";
 export const CYCLE_COUNT_STATUSES = ["aberta", "fechando", "concluida", "cancelada"] as const;
 export type CycleCountStatus = (typeof CYCLE_COUNT_STATUSES)[number];
 
+/**
+ * B-O6R-04a ciclo 2 (C2-03) — A CLASSIFICAÇÃO DE STATUS É UMA SÓ, E EXAUSTIVA POR CONSTRUÇÃO.
+ *
+ * Antes, os dois lados da I9 eram ALLOWLIST do lado aberto (`IN ('aberta','fechando')` no SQL e um `Set` em
+ * memória): um status não classificado — `suspensa` semeada por SQL, `cycle_counts.status` é TEXT sem CHECK —
+ * era tratado como TERMINAL e LIBERAVA o item para uma 2ª sessão (medido: o predicado segurava 0 itens).
+ * Aqui há UMA tabela; o `satisfies Record<CycleCountStatus, …>` faz um membro novo da enumeração SEM
+ * classificação QUEBRAR O BUILD (`TS1360`), e os dois lados fechados nascem dela:
+ *   · segurar item (I9)      = NÃO terminal  → o desconhecido SEGURA;
+ *   · aceitar escrita (V7/V8) = membro `non_terminal` → o desconhecido RECUSA (`not_open`).
+ * Nenhuma lista de status é escrita à mão em nenhum outro arquivo (guard D8).
+ */
+export const CYCLE_COUNT_STATUS_KIND = {
+  aberta: "non_terminal",
+  fechando: "non_terminal",
+  concluida: "terminal",
+  cancelada: "terminal",
+} as const satisfies Record<CycleCountStatus, "terminal" | "non_terminal">;
+
+/** Derivado da tabela acima — nunca escrito à mão. */
+export const TERMINAL_CYCLE_COUNT_STATUSES = CYCLE_COUNT_STATUSES.filter(
+  (status) => CYCLE_COUNT_STATUS_KIND[status] === "terminal",
+);
+
+/** Derivado da tabela acima — nunca escrito à mão. */
+export const WRITABLE_CYCLE_COUNT_STATUSES = CYCLE_COUNT_STATUSES.filter(
+  (status) => CYCLE_COUNT_STATUS_KIND[status] === "non_terminal",
+);
+
+/** Terminal = a sessão não segura mais os seus itens. Status desconhecido NÃO é terminal (ele segura). */
+export const isTerminalCycleCountStatus = (status: string): boolean =>
+  (TERMINAL_CYCLE_COUNT_STATUSES as readonly string[]).includes(status);
+
+/** Escrevível = membro `non_terminal` da enumeração. Status desconhecido NÃO é escrevível (recusa). */
+export const isWritableCycleCountStatus = (status: string): status is "aberta" | "fechando" =>
+  (WRITABLE_CYCLE_COUNT_STATUSES as readonly string[]).includes(status);
+
 export type CycleCountActorContext = {
   readonly tenantId: string;
   readonly userId: string;

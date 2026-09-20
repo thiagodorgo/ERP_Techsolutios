@@ -15,6 +15,7 @@ import {
   cycleCountNotFound,
   cycleCountNotOpen,
   entryAlreadyAdjustedError,
+  isTerminalCycleCountStatus,
   type CycleCount,
   type CycleCountActorContext,
   type CycleCountEntry,
@@ -130,7 +131,7 @@ export class CycleCountService {
     if (!session) {
       throw cycleCountNotFound();
     }
-    if (session.status === "concluida" || session.status === "cancelada") {
+    if (isTerminalCycleCountStatus(session.status)) {
       throw cycleCountNotOpen(session.status);
     }
 

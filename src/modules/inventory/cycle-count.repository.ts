@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { roundToDecimalPrecision } from "./inventory.calculations.js";
 import {
+  isTerminalCycleCountStatus,
+  isWritableCycleCountStatus,
   itemsInOpenSessionError,
   type AbortCloseOutcome,
   type BeginCloseOutcome,
@@ -55,9 +57,6 @@ export interface CycleCountRepository {
 /** Resolvedor do custo médio VIGENTE do item — o total do `finishClose` em memória (S-02). */
 export type AvgCostResolver = (tenantId: string, itemId: string) => Promise<number>;
 
-/** Estados em que a sessão ainda segura os seus itens (I9). */
-const NON_TERMINAL_STATUSES: ReadonlySet<string> = new Set(["aberta", "fechando"]);
-
 /**
  * Dublê em memória: a MESMA máquina de estados, sem lock (mono-thread). Não prova atomicidade — a prova é a suíte
  * `-db` contra o Postgres; aqui só o contrato.
@@ -75,7 +74,9 @@ export class InMemoryCycleCountRepository implements CycleCountRepository {
     const overlapping = new Set(
       [...this.entries.values()]
         .filter((entry) => entry.tenantId === input.tenantId && wanted.has(entry.itemId))
-        .filter((entry) => NON_TERMINAL_STATUSES.has(this.sessions.get(entry.cycleCountId)?.status ?? ""))
+        // I9 pelo lado FECHADO: a sessão segura o item enquanto o status NÃO for terminal (status
+        // desconhecido segura — C2-03). A classificação vive só em cycle-count.types.ts.
+        .filter((entry) => !isTerminalCycleCountStatus(this.sessions.get(entry.cycleCountId)?.status ?? ""))
         .map((entry) => entry.itemId),
     );
     if (overlapping.size > 0) {
@@ -148,7 +149,7 @@ export class InMemoryCycleCountRepository implements CycleCountRepository {
   async recordEntryCount(input: RecordEntryCountInput): Promise<RecordEntryOutcome> {
     const session = await this.findSession(input.tenantId, input.cycleCountId);
     if (!session) return { status: "not_found" };
-    if (session.status !== "aberta" && session.status !== "fechando") {
+    if (!isWritableCycleCountStatus(session.status)) {
       return { status: "not_open", current: session.status };
     }
 
@@ -259,7 +260,7 @@ export class InMemoryCycleCountRepository implements CycleCountRepository {
   async cancelSession(tenantId: string, cycleCountId: string, updatedBy?: string): Promise<CancelOutcome> {
     const session = await this.findSession(tenantId, cycleCountId);
     if (!session) return { status: "not_found" };
-    if (session.status !== "aberta" && session.status !== "fechando") {
+    if (!isWritableCycleCountStatus(session.status)) {
       return { status: "not_open", current: session.status };
     }
     if (session.status === "fechando") {
