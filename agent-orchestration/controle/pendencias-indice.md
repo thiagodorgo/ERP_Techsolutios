@@ -37,8 +37,11 @@
 | Cabecalhos `## P-` | **375** |
 | IDs distintos | 364 |
 | **ABERTAS** | **271** |
+| Cabecalhos `## P-` | **376** |
+| IDs distintos | 365 |
+| **ABERTAS** | **272** |
 | — das quais **diferidas** (balde C) | 71 |
-| — das quais **ativas nesta rodada** | **200** |
+| — das quais **ativas nesta rodada** | **201** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 110 |
 
@@ -46,7 +49,7 @@
 > O placar conta **cabecalhos**, nao pendencias distintas: **374 cabecalhos para 363 IDs**, porque
 | FECHADAS | 104 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **375 cabecalhos para 364 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **376 cabecalhos para 365 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -220,6 +223,7 @@
 ## ABERTAS · balde B — processo/registro — 100
 ## ABERTAS · balde A — material — 109
 ## ABERTAS · balde A — material — 110
+## ABERTAS · balde A — material — 111
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -333,6 +337,7 @@
 | `P-O6R-B04-CONSUMIDORES-503` | 9325 | MÉDIA | sim | P-O6R-B04-CONSUMIDORES-503 (2026-09-18) — o 503 de estoque e de contagem é contrato novo |
 | `P-O6R-B04-UI-STATUS-FECHANDO` | 9335 | MÉDIA | sim | P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os |
 | `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` | 9344 | MÉDIA | sim | P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N den |
+| `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` | 9363 | MÉDIA | sim | P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz qu |
 
 ## ABERTAS · balde B — processo/registro — 90
 

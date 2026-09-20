@@ -9824,6 +9824,15 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **teste de encerramento:** a decisão registrada na ata da junta, com o commit mantido ou revertido.
 - **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, achado C3-N1 da cadeira `validador-mestre`) — FECHADA.** A ratificação que esta pendência esperava **já existe, noutro documento**: a **emenda 4-(t)** do comando (`agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md:183`) ratifica o commit `cd055802` nominalmente ("o arquivo entra no escopo nominalmente"), e o registro da reprovação do ciclo 1 (`R-B-O6R-04a-ciclo1`) mostra a C3 **aprovando** o objeto `c84a76a8`, que contém esse commit. Uma pendência que se declara "bloqueia: o merge até a ratificação" enquanto a ratificação já foi dada é um bloqueio fantasma — era exatamente o achado. **status: FECHADA** (o campo `status:` acima fica como nasceu; esta linha é a que vale, regra de append). Nada a reverter: o commit `cd055802` permanece.
 
+## P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz que o censo de duplicatas roda antes, nem sob qual papel — MÉDIA
+
+- status: ABERTA (divergência D-C2-6 do desenvolvedor do ciclo 2 do `B-O6R-04a`; emenda 5 (z) do orquestrador)
+- **prova:** o `B-O6R-04a` entrega `scripts/inventory-duplicates-census.sql` e uma migração que **aborta** se houver grupo duplicado (`23505` com a contagem), e o ato do dono `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` manda rodar o censo em staging e produção antes do deploy. O `docs/deployment.md` não menciona nem o censo nem a pré-condição de papel: sob FORCE RLS, um papel sem `BYPASSRLS` enumera um universo vazio e o censo responde "0 grupos" (achado C1-F1 do ciclo 1, fechado no código, mas não no runbook).
+- **escopo:** `pre-existente` quanto ao runbook; a necessidade nasce com este bloco. `docs/**` é escopo PROIBIDO do comando do `B-O6R-04a`.
+- **dono:** `B-SAN3-10` (roteiro de operação: deploy, restore, bootstrap, rotação de segredo).
+- **bloqueia:** não bloqueia o merge; **é pré-condição do próximo deploy**, junto do ato do dono.
+- **teste de encerramento:** o `docs/deployment.md` descreve o censo, o papel sob o qual ele tem de rodar e o que fazer quando a migração aborta (`prisma migrate resolve --rolled-back`), e o ensaio do roteiro cobre esse caminho.
+
 ## EMENDAS DO `B-O6R-04a` a pendências existentes (2026-09-18) — APPEND, nunca reescrita
 
 **`P-O6R-B04` (a pendência-mãe, 2026-08-14) → PARCIAL na autoria.** Os dois P0 que ela carrega estão `fechado`
