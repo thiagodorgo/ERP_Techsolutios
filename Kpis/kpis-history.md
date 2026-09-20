@@ -2972,7 +2972,64 @@ plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS**
 frontend/` vazio nas duas pontas). `blocks_completed` **163 → 164** a partir de `origin/main` = `02bd7dab`.
 `mvp_*` intocados (§C3.4). `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
 
-**Pendências abertas com dono (8):** `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
+**Pendências abertas com dono — 15 no PR inteiro** (`git diff 02bd7dab -- pendencias.md | grep -c '^+## P-'`
+= 15; índice pelo gerador no head final: **385 cabeçalhos / 374 IDs, 104 FECHADAS, 281 ABERTAS**).
+*Ciclo 1 (9):* `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
 `P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-APPROVAL-REQUEST-REST-404`,
-`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE` e, pela emenda 3 (k), `P-MOBILE-CHECKLIST-TENANT-DO-CORPO`;
-a `P-MOBILE-EXPENSE-ENVELOPE` ganhou emenda (tenant só do corpo).
+`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE`, `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (emenda 3 (k)) e
+`P-CHECKLIST-DTO-EMITE-TENANT-ID` (emenda 4 (p)). *Ciclo 2 (6):* `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`,
+`P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`, `P-MOBILE-CODEC-FILA-STATUS-CRU`, `P-CI-FLUTTER-SEM-PIN`,
+`P-MOBILE-DISCARDED-FUTURES` e `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` — esta última **medida pelo dev na própria
+bateria do ciclo 2**. Emendadas no ciclo 2: `P-MOBILE-EXPENSE-ENVELOPE` (o censo esquecia o `ExpenseReportCodec`, que é
+parser de RESPOSTA apesar do nome "local store"), `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (censo refeito por comando e
+classificado por USO: 48 linhas, 6 leituras de tenant em resposta de rede em 3 arquivos),
+`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` e `P-MOBILE-FILA-RMW-STORE` (magnitude MEDIDA, não estimada),
+`P-MOBILE-APPROVAL-REQUEST-REST-404` e `P-MOBILE-STATUS-ACCEPTED-LOSSY` (dono que TEM o arquivo).
+
+## 2026-09-20 — B-O6R-11 ciclo 2 (o último, `D-TETO-DOIS-CICLOS`) — a rede de proteção deixa de prometer o que não cumpria
+
+A junta do ciclo 1 reprovou **1 × 2**. Três coisas voltam fechadas **por propriedade, não por lista**:
+
+1. **O guard da fila.** Era regex por linha e prometia "default negar" no cabeçalho; a junta mediu **15 formas** de
+   descartar a `Future` do `enqueue` que ele deixava passar (callback `async` entregue a `forEach`/`map`/`then`,
+   tear-off, `unawaited(...)`, `.ignore()`, IIFE, invólucro `async` chamado sem `await`). O arquivo foi **apagado** —
+   manter os dois seria manter a promessa falsa — e substituído por um guard sobre a **AST do Dart**
+   (`package:analyzer`, já resolvido no lock: **zero dependência nova**, `pubspec.*` intocados) que varre `lib/`
+   inteiro e nega 5 classes de descarte, com as 15 mutações da junta viradas **fixtures permanentes**. 2ª camada:
+   `unawaited_futures: true` (custo medido: 0 issues pré-existentes; `discarded_futures` ficou de fora — 16 infos em
+   11 arquivos fora do escopo, agora com pendência). O próprio teste imprime o inventário: 42 escritas na fila,
+   fronteira de UI de 43 arquivos (as 4 telas fora dos caminhos em lista explícita — widget novo em arquivo de dados
+   deixa o guard **vermelho** até ser declarado), 1 raiz de evento com teto, **0 violações**.
+2. **O tenant da OS.** Era `String?`: quem não passasse a sessão deixava o corpo da resposta decidir o tenant. Agora é
+   `{required String tenantId}` nos quatro leitores — **omitir não compila** (no objeto, compilava e a suíte ficava
+   verde) — e o parser perdeu `fallbackTenantId`, `sessionTenantId` e a leitura do corpo: não há mais caminho nenhum.
+3. **Resposta 200 sem OS.** `{}`, `{data: null}`, `{data: []}` e `{error: …}` viravam uma OS fabricada
+   (`wo-remote-<timestamp>`) marcada **`synced`** — 12 de 12 na sonda da junta. Agora `data` tem de ser objeto, `id`
+   tem de ser `String` não-vazia e `items` tem de ser lista: `FormatException` com mensagem **constante** (§2.8, nada
+   do payload ecoado). Mais: o destino do status desconhecido ficou **fixado por teste** e a concordância com
+   `WORK_ORDER_STATUSES` passou a ser provada lendo o arquivo do backend, sem tocar `src/`.
+
+**Números, executados no head final:** Flutter **888 → 894/894** (`00:49 +894: All tests passed!`, Flutter 3.41.6);
+delta por arquivo: T1 15 → 18 (−1 caso 3, +4 casos 13/14/15/16), T3 4 → 5, guard 1 → 3 (arquivo substituído), T2 4 → 4.
+`dart format` ec=0 **nas duas versões** — 3.41.6 local e **3.13.3 do CI**, em contêiner descartável
+(`Formatted 196 files (0 changed)`) —, `flutter analyze` **No issues found!** com o lint novo ligado. Backend
+`2995/2997` e smoke `1126` **CARREGADOS** (§C3.3; diff de `src/ tests/ prisma/ frontend/` vazio nas duas pontas);
+`blocks_completed` **164**; `mvp_*` intocados; `pr` 388, `merge_commit`/`approved_head` `null` na autoria.
+
+**Vermelho-controle reexecutado contra o código corrigido** (worktree descartável próprio, revertido por edição
+inversa): as 15 mutações da junta → guard **vermelho com 23 violações**; regra do guard afrouxada → fixtures
+**vermelhas**; `tenantId` omitido → `flutter analyze` **ec=1**; `orElse → cancelled` e `WORK_ORDER_STATUSES +=
+awaiting_parts` → casos 15 e 16 **vermelhos** (as duas deixavam a suíte **verde** no objeto); 2ª construção da fila →
+censo **vermelho**.
+
+**N = 3 execuções da suíte inteira, e a honestidade do número:** 1 verde (894/894, máquina ociosa) e 2 vermelhas
+(`+893 -1`, máquina carregada), sempre no mesmo caso — `telemetry_test.dart` "16. foreground-only", que este PR **não
+toca**. Medido que é corrida **pré-existente** no `stop()` da telemetria: o arquivo tem diff vazio contra `02bd7dab` e
+contra o objeto do PR (última escrita `2c916222`, #274); a suíte sem o guard novo passa 891/891; o objeto passa
+888/888; e **o teste sozinho, sem nenhum arquivo deste bloco, cai com a mesma assinatura sob carga artificial de CPU**.
+O guard sobre a AST encarece a suíte e **alarga a janela** da corrida — não a criou. Aberta como
+`P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`.
+
+**Divergência declarada:** `docs/revisoes/SAN3/PLANO_SAN3.md` **não foi tocado** (fonte de verdade fora do escopo do
+bloco). As 4 ampliações de fronteira que o plano do ciclo 2 propunha vão ao orquestrador como divergência, e os donos
+das pendências foram escritos contra o §5 **como ele está hoje**.
