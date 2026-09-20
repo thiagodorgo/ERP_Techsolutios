@@ -2971,3 +2971,67 @@ Vermelho-controle **executado** no head-base (`cc696f93`): T-A 3/16, T-B 6/20, T
 vermelho lido do TAP com o motivo. 16 mutações dos guards, todas vermelhas e revertidas.
 `blocks_completed` 163 → 164. `flutter_tests` e `frontend_smoke_tests` **carregados** com marcador (§C3.3): o PR
 não toca `mobile/` nem `frontend/`. `mvp_demo`/`mvp_vendavel` intocados (§C3.4).
+
+## 2026-09-20 — B-O6R-04a CICLO 2 (o último, mesmo PR #389) — os guards deixam de ser lista e viram propriedade; o censo do deploy nunca mais conta cego
+
+A junta do ciclo 1 **REPROVOU 1 × 2** com 5 bloqueios. `D-TETO-DOIS-CICLOS`: este é o **último** ciclo. A lição
+que atravessa os cinco é a mesma, pela terceira vez na rodada — *correção por INSTÂNCIA, não pela PROPRIEDADE*:
+cada guarda estava escrita como **lista** (de nomes, de grafias, de status) e cada lista tinha um lado de fora.
+
+**C1-F1 — o portão do deploy enumerava um universo vazio em silêncio.** Com 17 grupos duplicados na tabela e um
+papel `NOSUPERUSER NOBYPASSRLS` (o papel da aplicação), o censo respondia `0|0`, o bloco `DO` ficava mudo e o
+`migrate deploy` saía com `23505` cru — fail-open no último portão antes do dado de produção. O conserto é o
+interruptor do próprio Postgres: `row_security = off` faz o motor **RECUSAR** (`42501`) toda consulta a que uma
+política se aplicaria, em vez de filtrar. Ou o papel enxerga TODAS as linhas, ou a migração **aborta** com
+*“censo CEGO sob o papel…”* — **nunca “0 grupos”**. Consequência **declarada**: na topologia “quem migra é quem
+serve”, esta migration só aplica depois de um ato do dono sobre o papel. É caro, e é o preço de não contar cego.
+
+**C2-01 e C2-02 — o guard de via de escrita era texto.** O D1 enumerava **grafias** de `stockMovement.<m>(` depois
+de um `stripComments` caseiro (um *regex literal* no fonte abria “comentário” e apagava o escritor seguinte); o D2
+classificava “leitura que decide” por **lista de nomes**. Agora o T-D monta um `ts.createProgram` sobre as 785
+raízes e pergunta ao **checker**: escritor é membro não-leitor de um receptor cujo TIPO é `StockMovementDelegate`
+(alias, `?.`, `["stockMovement"]`, cadeia em N linhas — dá no mesmo), escrita **aninhada** é reconhecida pelo
+**tipo do input** (`^StockMovement\w*(Create|Update|Upsert|Delete)`), SQL cru é lido no **template inteiro** e
+tabela interpolada = **negar**. Comentário não é nó: o escape do regex literal morreu com o `stripComments`.
+
+**C2-03 — status não classificado liberava o item.** `cycle_counts.status` é TEXT sem CHECK; uma sessão `suspensa`
+semeada segurava **0** itens porque a I9 perguntava `IN ('aberta','fechando')`. Agora a classificação é **uma**
+(`CYCLE_COUNT_STATUS_KIND` com `satisfies`): membro novo da enumeração sem classificação **quebra o build**
+(`TS1360`), e os dois lados fechados nascem da mesma tabela — o desconhecido **segura** o item e **recusa** escrita.
+
+**C2-04 — qualquer violação de unicidade virava “já estornado”.** Com um índice único alheio sobre
+`stock_movements`, `removeExitForSource` devolvia `undefined` — **sucesso silencioso sem estorno nenhum**: saldo 7
+onde devia ser 10 e o consumidor seguindo em frente. Agora a classificação é pela **identidade do índice** (as
+colunas que o driver expõe; ou o **nome** da restrição, no caminho em que a escrita esperou na tupla concorrente e
+o erro chega sem colunas — medido nas duas formas), pinada ao catálogo pelo caso **C9**. Índice não classificado:
+**propaga**. Nunca 2xx sobre estorno que não aconteceu.
+
+**C2-05 e C2-06 — contados por método, não por transação / só na classe dona.** O lock agora é contado por
+**transação** (chamada em laço conta 99; callback de `uow.run` aceita no máximo uma escrita de item) e o guard de
+contagem cíclica varre **todo** `src/`, não só o repositório dono.
+
+**Mudança de código além dos guards:** nada lido antes do lock sobrevive a ele — V3 e V5 relêem sob o lock
+(`findMovementByIdLocked`, novo). A leitura pré-lock só escolhe **qual item travar**.
+
+### Números, por execução real (2026-09-20, dev do ciclo 2, 2ª instância)
+
+| KPI | Valor |
+|-----|-------|
+| `backend_tests` | **3049/3051 → 3058/3060** (+9: B18, B18m, C9, C6′, C7′, C8′, C10′, D1′, D2′). Forma canônica 3, cluster descartável próprio, `ec=0`, 288 arquivos, os 2 pulos são os do orçamento |
+| Suítes `-db` do bloco | **45 → 52** (16 + 22 + 8 + 6) — os 45 do ciclo 1 seguem **verdes** |
+| T-D (guards) | **9 → 11** casos, 17,3 s (orçamento declarado 60 s) |
+| Estoque em memória | **67/67** — inalterado |
+| Consumidores (`fuel-logs`, `maintenance-order-items`, `fleet-alerts-notifications`, `fuel-logs-routes`) | **64/64** — inalterado |
+| `blocks_completed` | **164 — INTOCADO**: é o MESMO bloco, o ciclo 2 é correção dentro do PR #389 |
+| `flutter_tests` / `frontend_smoke_tests` | **carregados** com marcador (§C3.3) — o ciclo 2 não toca `mobile/` nem `frontend/` |
+| `mvp_demo` / `mvp_vendavel` | **intocados** (§C3.4) |
+
+**Defeito do próprio ciclo 2, achado e corrigido na autoria — registrado porque a lição é do processo.** O primeiro
+`npm test` completo veio com **1 fail**: os papéis efêmeros que os casos novos do drill exigem faziam `ALTER ROLE`
+**fora** do `withRoleCatalogLock`, e o *ratchet de catálogo* do arnês (`tests/db-catalog-write-guard.test.ts`, do
+`B-O6R-ARNES` #359) reprovou — exatamente como foi desenhado para fazer. O `ALTER ROLE` entrou no lock (catálogo de
+cluster é compartilhado por todo o lote paralelo) e o arquivo foi registrado na allowlist congelada com a
+**composição escrita** (ALTER ROLE 2 · GRANT 1 · OWNER TO 1). O plano do ciclo 2 previu o papel efêmero e o helper
+do arnês; **não previu o ratchet**, que nasceu depois, noutro bloco. Um guard de outro bloco pegou o descuido deste.
+
+`merge_commit` / `approved_head` **null na autoria** (§C3.5) — backfill pós-merge.
