@@ -1,4 +1,9 @@
-# B-SAN3-01 — registro de quedas da junta (P6)
+# B-SAN3-01 — registro de quedas da junta (P6) — **CICLO 1**
+
+> **Este arquivo é do CICLO 1, não do ciclo 2.** É cópia byte-a-byte de
+> `votos/B-SAN3-01/00-quedas.md` (md5 `982a023d…`), deixada nesta pasta por engano no PR #387: a pasta
+> `votos/B-SAN3-01-c2/` é a do ciclo 2, e nada aqui descreve queda do ciclo 2. O registro P6 do ciclo 2
+> está ao lado, em `00-quedas.md` — achado **A7** do porteiro pós-merge do #387, pago pelo `B-SAN3-04a`.
 
 | # | Cadeira | Papel | Instância | Quando | Causa | O que deixou | Conta como voto? |
 |---|---|---|---|---|---|---|---|
