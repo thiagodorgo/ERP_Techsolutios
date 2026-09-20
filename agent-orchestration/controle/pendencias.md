@@ -8572,6 +8572,16 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** P-WEB-ROTAS-SEM-PORTA (link de provisionamento); decisão de planos
 - **dono:** `B-SAN3-18` (plano SAN3 §4.1 item 16); bloco dono proposto pela fatia: bloco "gate comercial"
+- **emenda (junta do `B-SAN3-04a`, achado C2-03, 2026-09-18 — `bloqueia`/`pre-existente`):** medido por login real no objeto
+  `fbda96b0`, N = **8** pares papel × item visível com módulo NÃO provisionado na organização demo — `finance` × Clientes
+  (`customers`), Aprovações (`approvals`), Estoque (`inventory`), Pedidos (`purchasing`), Relatórios (`reports`); `inventory` ×
+  Estoque, Pedidos, Relatórios. `tenants.modules` da demo = `{dashboard, work_orders, field_operations, logistics, finance,
+  checklists, tenant_checklist, notifications, users, audit}`; o catálogo (`platform-modules.service.ts:3-24`) tem
+  `customers`, `inventory`, `purchasing`, `reports` e `approvals` fora dela (o mapeamento item → módulo por nome é inferência
+  declarada da cadeira). O backend não recusa por módulo em rota nenhuma (`grep requireModule|hasModule src` = só
+  `navigation.service.ts` e `mobile.routes.ts`). **Instância NOVA trazida pelo `B-SAN3-04a`: `finance` × Clientes**
+  (`/cadastros/clientes` já estava entre os 27 caminhos não governados). Não reprovou o bloco: o comando dele diz
+  literalmente "Fica de fora: o gate de módulo (`B-SAN3-18`)", e o `PLANO_SAN3.md` l.130/l.259 já dá a classe ao `B-SAN3-18`.
 - **impacto vendável:** **BLOQUEIA** se a venda for por plano/módulo — Starter vê (e, sem recusa por rota, usa) o Enterprise
 - **teste de encerramento:** tenant sem módulo X: item some E rota do módulo X = 403; guard: todo path de `MVP_NAV_PATHS` está no registry
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** a contagem é **40**, não 38 (junta do ciclo 2, C2c2-02): os 27 do método `MVP_NAV_PATHS` menos registro mais as **13** entradas de organização registradas sem `requiredModules` — as 11 de `/patios/*` e `/telemetria/*`, `/controle/notificacoes` e `/operations/quotes` (recontado por script sobre o registro e o menu do head `ec4f34a8`). Condição de entrada CE-1 do `B-SAN3-18` (plano SAN3 v5, §4.1 item 16; §5.6): mapa rota → módulo gerado das montagens do `src/app.ts`, rota sem classificação recusada, guard vermelho por mutação para entrada nova do registro, endpoint novo e router novo; `prisma/seed.ts` autorizado só para as chaves de módulo novas em `DEMO_TENANT_MODULES`.
@@ -9333,7 +9343,18 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - status: ABERTA (censo §2.3 do plano do `B-SAN3-01`; fora da fronteira do bloco — a emenda (a) limitou `OperationsDispatchesPage.tsx` ao `loadDetail`)
 - **prova:** `frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx:32-42` e `OperationsDispatchesPage.tsx:112-116/152-156/170-174` (numeração do head-base `b2da5ede`): `await onSubmit(...)` sem try/catch; `setSaving(false)` nunca roda no erro. `createDispatch` já não engolia non-2xx antes do bloco; o `throw` novo do 2xx-inválido (`invalid_dispatch_response`) NÃO cria classe nova de falha.
 - **escopo:** `pre-existente` (`5aa14ec8`, 2026-06-10).
-- **dono:** `B-SAN3-06a` (único bloco SAN3 que toca `operations/**` da web).
+- **dono:** `B-SAN3-06c` · `fix/web-estados-despachos-e-dashboard`, com **escopo nominal ampliado** a
+  `frontend/src/modules/operations/dispatches/components/DispatchCreateForm.tsx`.
+  **Correção do dono (2026-09-20, pré-merge do `B-SAN3-04a`; achado A2 do porteiro pós-merge do #387).** O dono anterior
+  era `B-SAN3-06a` "(único bloco SAN3 que toca `operations/**` da web)" — falso pelo §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md` (l.270): a fronteira do `06a` é `modules/{purchase-orders,reports}/**`,
+  `modules/dispatch/pages/DispatchConsolePage.tsx`, `appSidebarNav.ts`, `tenantNavigation.ts` e `App.tsx`.
+  `frontend/src/modules/dispatch/` e `frontend/src/modules/operations/dispatches/` são diretórios DIFERENTES
+  (`ls` nos dois: o primeiro tem `field-operators.*`, o segundo tem `dispatches.*` e `DispatchCreateForm.tsx`) — o `06a`
+  nunca teve este arquivo. O `B-SAN3-06c` já tem `frontend/src/modules/operations/dispatches/pages/**` no escopo
+  (emenda 3 (q) do comando do `B-SAN3-01`), o que cobre o `OperationsDispatchesPage.tsx` desta prova; o
+  `DispatchCreateForm.tsx` está em `components/` e entra por ampliação nominal, pelo precedente do
+  `frontend/index.html` na `P-WEB-FONTE-INTER-NAO-CARREGADA`. Quem executar o `06c` declara os dois no §5 do comando.
 - **bloqueia:** não bloqueia o gate por si (o item 4 fecha pela OS) — é perda de feedback, não de dado.
 - **teste de encerramento:** POST de despacho recusado (4xx) → mensagem na tela e o botão volta de "salvando"; vermelho-controle no head-base.
 
@@ -9468,9 +9489,32 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - status: ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)
 - **prova:** sonda RBAC da C2 como `viewer` (read sim, create não): o botão "Nova OS" do cabeçalho está presente; `/work-orders/new` → guard "Acesso nao autorizado"; `POST /work-orders` direto → 403 `permission_required`. O papel é negado, mas o elemento de ação continua visível. `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (botão do `PageHeader`, l.249-252 no head do ciclo 2). O CTA "Nova OS" do estado vazio, novo no ciclo 2, já nasce com o gate.
 - **escopo:** `pre-existente` — o botão sem gate está na página desde `9f12ea99` (2026-06-09; `02bd7dab` l.233); o diff do `B-SAN3-01` não toca a linha.
-- **dono:** `B-SAN3-10` (fluxos por persona).
+- **dono:** `B-SAN3-01b` · `fix/web-guarda-por-alcance-e-estado-da-pagina`.
+  **Correção do dono (2026-09-20, pré-merge do `B-SAN3-04a`; achado A2 do porteiro pós-merge do #387).** O dono anterior
+  era `B-SAN3-10`, que não tem arquivo nenhum de `frontend/` no §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` (l.298:
+  `tests/e2e/**`, `playwright.config.ts`, o job e2e da CI, docs e `tests/kpi-painel-frescor.test.ts`) — e o conserto é
+  em `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`. O `B-SAN3-01b` tem ESTE arquivo por
+  `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA` (decisão do dono, fonte §A1.1, acima do plano em §A1.3): a propriedade (i)
+  do bloco é "a decisão da página amarrada ao estado … por teste que renderiza a página REAL", e a
+  `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` nomeia literalmente `WorkOrdersPage.tsx`. Gate do botão e gate do painel
+  são a mesma página e o mesmo bloco — separá-los custaria dois PRs no mesmo arquivo.
+  Divergência declarada: o briefing do pré-merge sugeria o `B-SAN3-06c` como destino quando nenhum bloco tivesse o
+  arquivo; o `06c` é de despachos e dashboard (`operations/dispatches/pages/**`, `DashboardPage.tsx`) e **não** tem
+  `work-orders/`, enquanto o `01b` tem — por isso o `01b`.
 - **bloqueia:** não bloqueia o gate por si (o backend recusa).
 - **teste de encerramento:** papel sem `work_orders:create` → sem o botão do cabeçalho; papel com → botão presente; vermelho-controle no head-base.
+- **emenda (junta do `B-SAN3-04a`, achado C2-05, 2026-09-18 — `ajuste`/`pre-existente`): o mesmo defeito, com um papel a mais e um
+  nome proposto que NÃO virou pendência nova.** A cadeira `coordenador-de-acessos` mediu `WorkOrdersPage.tsx:233-236` (navega
+  para `/work-orders/new` sem checagem), guard de `/work-orders/new` = `work_orders:create` (`App.tsx:776-780`) negando o
+  `finance`, e `POST /work-orders` = 403 — e propôs abrir `P-WEB-NOVA-OS-SEM-GATE` (N = 2 papéis: `finance`, `auditor`;
+  dono `B-SAN3-06a`). **É esta pendência, não uma nova.** A C2 grepou `pendencias.md` na ref dela (`fbda96b0`, base
+  `02bd7dab`) e não achou nada porque esta linha nasceu no #387, que ainda estava OPEN quando a junta votou; o rebase do
+  pré-merge trouxe as duas para a mesma árvore. Abrir `P-WEB-NOVA-OS-SEM-GATE` duplicaria o registro do MESMO botão do MESMO
+  arquivo. Fica registrado: **o `B-SAN3-04a` acrescenta o `finance` à lista de papéis afetados** (o `auditor` já estava desde
+  `9f12ea99`, 2026-06-09), porque o bloco deu `work_orders:read` (sem `create`) ao Financeiro. **Divergência declarada (§A2):**
+  a C2 propôs o nome `P-WEB-NOVA-OS-SEM-GATE` e o dono `B-SAN3-06a`; ficou o nome existente e o dono `B-SAN3-01b` (ver a
+  correção de dono acima, achado A2 do porteiro do #387) — se o orquestrador preferir o que a C2 propôs, é trocar aqui, e a
+  informação das duas fontes está preservada.
 
 ## P-SAN3-01-BATERIA-TSX-CWD (2026-09-18) — os testes `.tsx` do frontend só ficam verdes com cwd `frontend/` — BAIXA
 
@@ -9624,6 +9668,16 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **prova (N = 25 chaves; forma: permissão do catálogo sem nenhuma comparação em `src/` fora de `catalog.ts` e do registro de navegação; causa: chaves legadas ou planejadas sem rota):** `users:read`, `audit:read`, `purchase_orders:read`, `purchase_orders:create`, `field_operator:read`, `field_operator:action`, `logistics:read`, `logistics_routes:read`, `billing:read`, `invoices:read`, `payments:read`, `reports:read`, `expense_report:approve_manager`, `expense_report:approve_finance`, `expense_report:return`, `expense_report:reject`, `expense_report:pay`, `expense_policy:manage`, `expense_receipt:attach`, `expense_audit:read`, `os.manage`, `os.read`, `finance.manage`, `finance.read`, `finance:read`. O caso `[órfãs]` do guard asserta a lista exata — órfã nova ou órfã que ganhou rota move o número com nome. (Item 13 era uma instância: o menu do Financeiro governado por órfãs.)
 - **escopo:** `pre-existente`.
 - **dono:** `B-SAN3-04b` (mesmo arquivo `catalog.ts`, próximo da trava).
+- **emenda (junta do `B-SAN3-04a`, achado C2-04, 2026-09-18 — `ajuste`/`pre-existente`):** a órfã `os.read` tem um EFEITO que esta
+  pendência listava sem nomear. `auth.adapter.ts:375` (`9f12ea99`, 2026-06-09) apelida `os.read` → `work_orders:read` **no front**,
+  e `os.read` está no catálogo de `inventory` e de `support` desde a base `02bd7dab`. Resultado medido por login real,
+  N = **4** pares papel × rota: `inventory` e `support` × `/work-orders` e × `/approvals` — o **guard do front ABRE** e o
+  **backend responde 403**. A autoridade está intacta (o backend nega, §2.4 do `CLAUDE.md`); o que quebra é a promessa do
+  front de não abrir rota fora da matriz do papel. Efeito irmão, já registrado em `P-027` e com dono `B-SAN3-04b`:
+  `dashboard:view` injetado em todo usuário (`auth.adapter.ts:244,251`) faz `finance` e `inventory` abrirem `/dashboard`,
+  que é a home pós-login, com `GET /dashboard/summary` = 403.
+- **teste de encerramento (emenda C2-04):** para os 9 papéis, rota que o papel não tem na matriz → o guard do front nega
+  **antes** do backend; vermelho-controle: reinserir o apelido `os.read` deixa o teste vermelho.
 - **teste de encerramento:** cada órfã ganha rota que a compare ou sai do catálogo; o caso `[órfãs]` do guard acompanha.
 
 ## P-SAN3-04A-MENU-RESIDUAL (2026-09-18) — três itens do menu levam a "acesso não permitido" — MÉDIA
@@ -9657,3 +9711,23 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente` — o mapa antecede o bloco (o `B-SAN3-04a` só pôs o ramo `inventory` em `mapBackendRole`, o que o plano autorizou).
 - **dono:** `B-SAN3-06a` (proposto pelo dev; a junta confirma).
 - **teste de encerramento:** a troca de organização usa as permissões reais do backend (ou o mapa é gerado do catálogo), com um guard que compara, para cada papel, o conjunto do front com o do catálogo.
+
+## P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA (2026-09-18) — `docs/navigation-matrix.md` diverge da matriz efetiva em 40 células — ALTA
+
+- status: ABERTA (achado **C2-01** da junta do `B-SAN3-04a`, cadeira `coordenador-de-acessos`, `bloqueia`/`pre-existente`; ata `omega/juntas/J-B-SAN3-04a.md`)
+- **prova (N = 40 células; forma: célula *papel × tela* do documento diferente do acesso efetivo medido por login real; causa: o documento não é reconciliado desde `aff48fbb`, 2026-08-08):** harness da cadeira C2 sobre a matriz efetiva por login real nos dois heads (objeto `fbda96b0` na base `i2_prov`, head-base `02bd7dab` na base `i2_base`), 42 linhas de tela × 9 papéis, células "M" puladas, acesso sim/não. Saída `c2h/i2-diff-navmatrix.out`, resumo no voto e na evidência da C2 (`votos/B-SAN3-04a/C2-coordenador-de-acessos-evidencia.md` §E5). Decomposição: **7 novas** (criadas por este bloco — ver a divergência §A2 em `decisoes.md`), **33 persistentes** (já na base) e **29 resolvidas** pelo bloco. No head-base o mesmo harness media **62** células divergentes.
+- **escopo:** `pre-existente` — evidência de data e de origem: (i) `git log -1 -- docs/navigation-matrix.md` = `aff48fbb` (2026-08-08), anterior ao bloco; (ii) 33 das 40 já divergiam no head-base `02bd7dab`, medidas pelo mesmo harness; (iii) o comando do `B-SAN3-04a` **não** põe `docs/**` no escopo permitido, então corrigir o documento estava fora do que o bloco podia tocar (§C7.1-ter(a)).
+- **por que não reprova:** as 7 células novas seguem a `RBAC_MATRIX.md` (fonte §A1.2) e a decisão do dono P1/P2; quem ficou velho foi o documento (§A1.3), que se declara "base do teste por papel". Lado certo escolhido, registro faltando — daí `ajuste` no `C2-02` e pendência aqui.
+- **dono:** `B-SAN3-06a` (proposto pela C2 — já é dono de `P-SAN3-04A-MENU-RESIDUAL` e de `P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, e o §5 do `PLANO_SAN3.md` l.270 lhe dá `appSidebarNav.ts` e `tenantNavigation.ts`, os arquivos que decidem o menu). **Ampliação nominal necessária:** `docs/navigation-matrix.md` não está no §5 de bloco nenhum; quem executar o `06a` o declara no §5 do comando (mesmo precedente do `frontend/index.html` na `P-WEB-FONTE-INTER-NAO-CARREGADA`).
+- **bloqueia:** não bloqueia o gate por si — é documento contra realidade, não acesso indevido (o backend é a autoridade e foi medido nas duas pontas). Bloqueia **o método** de quem usar o documento como base de teste por papel.
+- **teste de encerramento:** o documento passa a ser **gerado** (ou conferido por guard) contra a matriz efetiva — o diff doc × efetivo dá 0 célula para os 9 papéis; vermelho-controle: mudar uma célula do documento deixa o guard vermelho.
+
+## P-AUTH-CLAIMS-SEM-TENANT-ROLE (2026-09-18) — o JWT não carrega `tenant_role`/`tenant_roles`/`permissions`/`scope` que o contrato exige — MÉDIA
+
+- status: ABERTA (achado **C2-06** da junta do `B-SAN3-04a`, `ajuste`/`pre-existente`)
+- **prova (N = 4 claims ausentes; forma: claim exigida pelo contrato e ausente do token emitido; causa: o emissor nunca as incluiu):** JWT do login real medido pela C2 = `tenant_id`, `email`, `roles`, `type`, `identity_id`, `sub`, `iat`, `exp`, `iss`, `aud`. Faltam `tenant_role`, `tenant_roles`, `permissions` e `scope`. `RBAC_MATRIX.md` ("Auth and claim alignment") e `CLAUDE.md` §2.4 dizem que `tenant_id` + `tenant_role` são **obrigatórios**. As permissões chegam só no corpo da resposta de login (finance: 61, iguais às do banco).
+- **escopo:** `pre-existente` — evidência de data/origem: `src/modules/auth/**` está **fora** do diff `02bd7dab..fbda96b0` (o bloco não tocou um byte ali) e o último commit da base nesses arquivos é `dc8168b9` (2026-09-04). `grep tenant_role` em `pendencias.md` e `decisoes.md` da ref = 0: a divergência nunca tinha sido registrada.
+- **efeito de autorização medido: NENHUM.** O backend autoriza pela tabela `role_permissions` do banco, não pelas claims — a C2 provou 403/200 reais nos dois heads. O que está aberto é o **contrato**: qualquer consumidor que confie na claim (cliente novo, integração, o próprio app) lê um token que não cumpre o que o arquivo-base promete.
+- **dono:** **fila pós-gate** — o orquestrador o nomeia quando o **primeiro bloco tocar `src/modules/auth/**`**; nenhum bloco do §5 do `PLANO_SAN3.md` tem esse diretório hoje.
+- **bloqueia:** não bloqueia o gate (sem efeito de autorização medido).
+- **teste de encerramento:** login de cada um dos 9 papéis → o token decodificado traz `tenant_id` e `tenant_role` (e `tenant_roles`/`permissions`/`scope` como o contrato define); vermelho-controle: remover a claim do emissor deixa o teste vermelho. **Ou** o `RBAC_MATRIX.md`/`CLAUDE.md` §2.4 é emendado para descrever o que o sistema faz — e aí a decisão é do dono, não do bloco.
