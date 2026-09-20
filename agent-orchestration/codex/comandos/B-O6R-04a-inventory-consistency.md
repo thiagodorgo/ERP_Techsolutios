@@ -196,3 +196,22 @@ Relatório do desenvolvedor (2 instâncias; a 1ª caiu por 429 depois dos 3 prim
   `agente-dba-guardiao` (suplente `inspetor-de-arnes-concorrente`); C2 invariante e guards por mutação `guardiao-fail-closed`
   (suplente `coordenador-de-acessos`); C3 diff × plano, contrato, regressão e KPI `validador-mestre` (suplente
   `agente-ci-doutor`). O `critico-adversarial` achou nas duas rodadas e não vota.
+
+## Emenda 5 do orquestrador — as divergências da correção do ciclo 2 (2026-09-20)
+
+Relatório: `.../scratchpad/DEV-B-O6R-04a-ciclo2.md` (2 instâncias; a 1ª caiu por 429 com 12 arquivos vivos, medidos e continuados
+pela 2ª). Decisões:
+
+- **(x) D-C2-1 aceita, com escopo nominal.** `tests/db-catalog-write-guard.test.ts` entra no escopo **só** para a entrada de
+  allowlist que o próprio ratchet manda registrar (motivo e contagem congelada 4 = `ALTER ROLE` 2 · `GRANT` 1 · `OWNER TO` 1);
+  nenhuma regra afrouxada, nenhum padrão removido, nenhuma contagem alheia tocada, e o `ALTER ROLE` dentro do
+  `withRoleCatalogLock`. A junta confere isso por execução.
+- **(y) D-C2-2 a D-C2-5 aceitas.** Classificar a violação de unicidade por colunas **ou** pelo nome da restrição lido do
+  `originalMessage` do driver é o que o caso concorrente exige (vermelho-controle: C7 e C8 ficam vermelhos sem esse caminho); o D8
+  endurecido para perguntar pela propriedade (qualquer construto que agrupe ≥ 2 status) é a própria lição do ciclo 1; o N das
+  suítes `-db` é 52, não 54 (aritmética do plano: D1′ e D2′ vivem no T-D); o rebase na `main` nova é do orquestrador, depois do
+  merge do #390, com conflito previsto só em registro e KPI.
+- **(z) D-C2-6 — o parágrafo do runbook não entra aqui.** `docs/**` é proibido pelo comando deste bloco, e o runbook de operação é
+  território do `B-SAN3-10`: nasce `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` (MÉDIA, dono `B-SAN3-10`) — o `docs/deployment.md`
+  passa a dizer que o censo de duplicatas roda antes do deploy e que a migração aborta se houver grupo duplicado, com a
+  pré-condição de papel (o censo cega sob RLS quando o papel não enxerga as linhas).
