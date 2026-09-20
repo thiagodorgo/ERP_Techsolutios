@@ -310,17 +310,24 @@ export class PrismaInventoryRepository implements InventoryRepository {
   }
 
   /**
-   * V3 — `findMovementById` é leitura de IDENTIFICAÇÃO (diz qual item travar). Grupo, estorno anterior e saldo
-   * de cada perna são relidos SOB o lock. A 2ª compensação concorrente espera o commit da 1ª e vê
+   * V3 — `findMovementById` é leitura de IDENTIFICAÇÃO: diz QUAL item travar, e NADA do que ela leu é usado
+   * depois do lock (R5, ciclo 2). O próprio movimento é RELIDO sob o lock (`findMovementByIdLocked`); grupo,
+   * estorno anterior e saldo de cada perna também. A 2ª compensação concorrente espera o commit da 1ª e vê
    * `already_reversed`; o índice `stock_movements_reversal_active_key` é o cinto para escritor sem lock (o
    * `P2002` é mapeado FORA da transação, no wrapper — nunca `25P02`).
    */
   async reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult> {
-    const original = await this.findMovementById(input.tenantId, input.movementId);
-    if (!original) return { status: "not_found" };
+    const identified = await this.findMovementById(input.tenantId, input.movementId);
+    if (!identified) return { status: "not_found" };
 
-    const lock = await this.lockItemForUpdate(input.tenantId, original.itemId);
+    const lock = await this.lockItemForUpdate(input.tenantId, identified.itemId);
     if (!lock) return { status: "not_found" };
+
+    const original = await this.findMovementByIdLocked(lock, input.movementId);
+    if (!original) {
+      // Sob o lock, o movimento não é (mais) do item travado: dado corrompido, nunca um 2º lock (I7).
+      throw transferGroupInconsistentError();
+    }
 
     const siblings = original.transferGroupId
       ? await this.movementsInGroupLocked(lock, original.transferGroupId)
@@ -464,15 +471,19 @@ export class PrismaInventoryRepository implements InventoryRepository {
   }
 
   /**
-   * V5 — `findExitBySource` é leitura de IDENTIFICAÇÃO (qual item travar); "já estornada?" é relido SOB o lock.
-   * O 2º estorno concorrente da mesma fonte espera e devolve `undefined` (no-op idempotente).
+   * V5 — `findExitBySource` é leitura de IDENTIFICAÇÃO: diz QUAL item travar, e nada do que ela leu é usado
+   * depois do lock (R5, ciclo 2). A baixa é RELIDA sob o lock (`findExitBySourceLocked`), e "já estornada?"
+   * também. O 2º estorno concorrente da mesma fonte espera e devolve `undefined` (no-op idempotente).
    */
   async removeExitForSource(input: RemoveStockExitForSourceInput): Promise<StockMovement | undefined> {
-    const exit = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
-    if (!exit) return undefined; // no-op: nunca houve baixa desta fonte.
+    const identified = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
+    if (!identified) return undefined; // no-op: nunca houve baixa desta fonte.
 
-    const lock = await this.lockItemForUpdate(input.tenantId, exit.itemId);
+    const lock = await this.lockItemForUpdate(input.tenantId, identified.itemId);
     if (!lock) return undefined;
+
+    const exit = await this.findExitBySourceLocked(lock, input.sourceType, input.sourceId);
+    if (!exit || exit.itemId !== lock.item.id) return undefined; // sumiu ou é de outro item: no-op.
     if (await this.isExitReversedLocked(lock, exit.id)) return undefined; // no-op idempotente.
 
     // Estorno compensatório: sinal oposto, custódia BASE, source_id NULL (fora do índice parcial) + reverses.
@@ -563,6 +574,15 @@ export class PrismaInventoryRepository implements InventoryRepository {
 
   private async isExitReversedLocked(lock: ItemWriteLock, movementId: string): Promise<boolean> {
     return this.hasReversalOfLocked(lock, [movementId]);
+  }
+
+  /** Releitura do movimento SOB o lock (R5): `undefined` se ele não for do item travado nesta transação. */
+  private async findMovementByIdLocked(lock: ItemWriteLock, movementId: string): Promise<StockMovement | undefined> {
+    const movement = await this.client.stockMovement.findFirst({
+      where: { tenant_id: lock.item.tenantId, id: movementId, item_id: lock.item.id },
+    });
+
+    return movement ? mapMovementRecord(movement) : undefined;
   }
 
   private async findExitBySourceLocked(
@@ -814,9 +834,10 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
     try {
       return await this.tx(input.tenantId, (repo) => repo.reverseMovement(input));
     } catch (error) {
-      if (isUniqueViolation(error)) {
+      if (isUniqueViolationOf(error, STOCK_MOVEMENT_UNIQUE_INDEXES.reversal)) {
         // Outra compensação do mesmo original commitou por um escritor que não segura o lock do item: o índice
         // stock_movements_reversal_active_key recusou a nossa. A transação já foi desfeita inteira.
+        // Violação de QUALQUER OUTRO índice não é isto: propaga (C2-04).
         return { status: "already_reversed" };
       }
 
@@ -841,9 +862,10 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
     try {
       return await this.tx(input.tenantId, (repo) => repo.createExitForSource(input));
     } catch (error) {
-      if (isUniqueViolation(error)) {
+      if (isUniqueViolationOf(error, STOCK_MOVEMENT_UNIQUE_INDEXES.sourceActive)) {
         // Corrida por escritor sem o lock: outro EXIT da MESMA fonte commitou primeiro. Devolve o vencedor
-        // (idempotente), lido numa transação NOVA — a nossa já foi desfeita.
+        // (idempotente), lido numa transação NOVA — a nossa já foi desfeita. Violação de qualquer OUTRO índice
+        // propaga (C2-04): a releitura da fonte não responde por ela.
         const raced = await this.findExitBySource(input.tenantId, input.sourceType, input.sourceId);
         if (raced) return raced;
       }
@@ -857,8 +879,10 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
     try {
       return await this.tx(input.tenantId, (repo) => repo.removeExitForSource(input));
     } catch (error) {
-      if (isUniqueViolation(error)) {
+      if (isUniqueViolationOf(error, STOCK_MOVEMENT_UNIQUE_INDEXES.reversal)) {
         // O EXIT já tem compensação (commitada por escritor sem o lock): no-op idempotente, como o caminho normal.
+        // Violação de OUTRO índice não é "já estornado": propaga — o no-op de sucesso silencioso sem estorno
+        // nenhum (saldo que não volta, consumidor seguindo em frente) foi exatamente o C2-04.
         return undefined;
       }
 
@@ -1072,6 +1096,117 @@ export function databaseErrorCodes(error: unknown): readonly string[] {
 /** Violação de índice único (Prisma `P2002` / Postgres `23505`), pelo código em qualquer das formas acima. */
 function isUniqueViolation(error: unknown): boolean {
   return databaseErrorCodes(error).some((code) => code === "P2002" || code === "23505");
+}
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-04a ciclo 2 (C2-04) — A VIOLAÇÃO DE UNICIDADE É CLASSIFICADA PELA IDENTIDADE DO ÍNDICE.
+//
+// Antes, os wrappers de V3/V4/V5 liam só o CÓDIGO (`P2002`/`23505`): QUALQUER índice único violado virava
+// "estorno já existe" — 409, releitura ou, no V5, `undefined` de SUCESSO sem estorno nenhum (medido: baixa não
+// estornada, saldo 7 onde devia ser 10, consumidor seguindo como se o estoque tivesse voltado).
+//
+// Identidade disponível — MEDIDA nos dois caminhos que o bloco produz (sonda do dev, ciclo 2):
+//   · escrita que falha DIRETO (ORM `create` ou SQL cru, sem espera): o driver (`@prisma/adapter-pg`, Prisma 7.8)
+//     expõe `meta.driverAdapterError.cause.constraint = { fields: [colunas] }` — `P2002` no ORM, `P2010` no cru;
+//   · escrita que ESPERA na tupla concorrente e só falha quando a outra transação commita (o caso C7/C8, o único
+//     que o escritor sem o lock alcança): o mesmo erro chega SEM `constraint` — só
+//     `{ originalCode: "23505", kind: "UniqueConstraintViolation", originalMessage: 'duplicate key value violates
+//     unique constraint "stock_movements_reversal_active_key"' }`.
+// Logo a identidade é lida em DUAS formas, nesta ordem: o CONJUNTO DE COLUNAS quando exposto; senão o NOME da
+// restrição, extraído do `originalMessage` do driver (token entre aspas, nunca da mensagem renderizada do
+// Prisma). Nome e colunas são pinados um ao outro pelo catálogo no teste C9 (ambiguidade de conjunto = vermelho).
+//
+// Violação NÃO classificada (outro índice, ou erro sem restrição NEM nome) **propaga**: nunca 2xx, nunca no-op.
+// -----------------------------------------------------------------------------------------------
+export const STOCK_MOVEMENT_UNIQUE_INDEXES = {
+  /** no máximo UMA compensação ativa por movimento original */
+  reversal: { name: "stock_movements_reversal_active_key", columns: ["tenant_id", "reverses_movement_id"] },
+  /** no máximo UM EXIT por fonte */
+  sourceActive: { name: "stock_movements_source_active_key", columns: ["tenant_id", "source_type", "source_id"] },
+  /** no máximo UM ajuste por (sessão de contagem, item) */
+  cycleCountItem: { name: "stock_movements_cycle_count_item_key", columns: ["tenant_id", "cycle_count_id", "item_id"] },
+} as const;
+
+export type StockMovementUniqueIndex = (typeof STOCK_MOVEMENT_UNIQUE_INDEXES)[keyof typeof STOCK_MOVEMENT_UNIQUE_INDEXES];
+
+function stringArray(value: unknown): readonly string[] | undefined {
+  return Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === "string")
+    ? (value as readonly string[])
+    : undefined;
+}
+
+/** As COLUNAS da restrição única violada, nas formas que o driver expõe; `undefined` = não identificada. */
+export function uniqueViolationColumns(error: unknown): readonly string[] | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+
+  const record = error as {
+    readonly meta?: {
+      readonly target?: unknown;
+      readonly driverAdapterError?: { readonly cause?: { readonly constraint?: unknown } };
+    };
+    readonly cause?: { readonly constraint?: unknown };
+  };
+  const constraints = [record.meta?.driverAdapterError?.cause?.constraint, record.cause?.constraint];
+  for (const constraint of constraints) {
+    if (typeof constraint === "object" && constraint !== null) {
+      const fields = stringArray((constraint as { readonly fields?: unknown }).fields);
+      if (fields) return fields;
+    }
+  }
+
+  return stringArray(record.meta?.target);
+}
+
+/**
+ * O NOME da restrição única violada: a string que o driver expõe em `constraint`, ou o token entre aspas do
+ * `originalMessage` dele (`… unique constraint "<nome>"`). Nunca a mensagem renderizada do Prisma — ela traz o
+ * TRECHO DE CÓDIGO do chamador e um nome de índice citado ali seria lido como identidade.
+ */
+export function uniqueViolationConstraintName(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+
+  const record = error as {
+    readonly meta?: {
+      readonly driverAdapterError?: { readonly cause?: { readonly constraint?: unknown; readonly originalMessage?: unknown } };
+    };
+    readonly cause?: { readonly constraint?: unknown; readonly originalMessage?: unknown };
+  };
+  const causes = [record.meta?.driverAdapterError?.cause, record.cause];
+  for (const cause of causes) {
+    const constraint = cause?.constraint;
+    if (typeof constraint === "string" && constraint !== "") return constraint;
+    if (typeof constraint === "object" && constraint !== null) {
+      const named = (constraint as { readonly name?: unknown }).name;
+      if (typeof named === "string" && named !== "") return named;
+    }
+  }
+  for (const cause of causes) {
+    const original = cause?.originalMessage;
+    if (typeof original !== "string") continue;
+    const quoted = /unique constraint "([^"]+)"/i.exec(original);
+    if (quoted) return quoted[1];
+  }
+
+  return undefined;
+}
+
+/**
+ * A violação é do índice DADO? Exige o código (`P2002`/`23505`) **e** a identidade da restrição. Sem identidade,
+ * ou com a identidade de OUTRO índice, a resposta é `false` — e o chamador propaga o erro (fail-closed).
+ */
+export function isUniqueViolationOf(error: unknown, index: { readonly name: string; readonly columns: readonly string[] }): boolean {
+  if (!isUniqueViolation(error)) return false;
+
+  const columns = uniqueViolationColumns(error);
+  if (columns !== undefined) {
+    const found = [...columns].sort();
+    const expected = [...index.columns].sort();
+
+    return found.length === expected.length && found.every((column, position) => column === expected[position]);
+  }
+
+  // Sem as colunas (o caminho da escrita que ESPEROU na tupla concorrente), a identidade é o nome.
+  return uniqueViolationConstraintName(error) === index.name;
 }
 
 function decimalToNumber(value: unknown): number {
