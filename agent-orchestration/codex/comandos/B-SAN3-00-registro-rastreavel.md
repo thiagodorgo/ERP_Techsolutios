@@ -195,3 +195,35 @@ omitido.
 - **Junta:** `agent-orchestration/omega/juntas/J-B-SAN3-00.md`
 - **Status:** `published_per_pr`
 - **Contrato(s) versionado(s):** nenhum — o bloco não toca API.
+
+## Emenda 2 do orquestrador — as 4 divergências que o executor devolveu (2026-09-21)
+
+> O desenvolvedor reportou quatro divergências em vez de resolvê-las sozinho (§C7.4-bis). Decisão do
+> orquestrador, item a item, **antes** da junta.
+
+- **(a) A contagem dele (41/138) diverge da 1ª instância (43/146): ACEITA, e não muda nada.** Os dois arquivos
+  de diferença são o par `jurado-san3-01c2-*`, que **está** na `main` e que a **dívida 2 remove neste mesmo
+  PR** — por isso ele os conta de um jeito e a 1ª instância de outro. O conjunto das **33** sepultadas/
+  aposentadas e o veredito (**nada perdido, não versionar**) são **idênticos** nas duas medições
+  independentes. Duas medições que discordam no denominador e concordam na conclusão **reforçam** a
+  conclusão; a junta confere o conjunto, não o denominador.
+- **(b) `docs/navigation-matrix.md` entrou na ampliação do `B-SAN3-06a` além do que a dívida 3 nomeava:
+  ACEITO.** A ampliação **não foi invenção do executor** — a própria pendência já a prescrevia verbatim, e
+  ele transcreveu em vez de inventar. Fica assim, e a junta **confere a transcrição contra o texto da
+  pendência**: se divergir de uma palavra, é achado.
+- **(c) Quórum: MAIORIA DE 3** (o executor propôs, com ressalva de subir para unanimidade). Razão escrita: o
+  bloco **não** toca dinheiro, permissão de produto nem dado — o §5 do `PLANO_SAN3.md` é **declaração de
+  escopo de bloco**, não concessão de permissão no produto, e §C7.1-ter(b) reserva a unanimidade para
+  dinheiro/segurança/permissão/perda de dado. **Mas** o `.gitignore` mexe na superfície do que o git mostra e
+  esconde, e isso merece um olho de segurança: por isso o **`agente-secops` ocupa uma das três cadeiras**,
+  sem mudar o quórum. Composição: `validador-mestre` (diff × plano, escopo, KPI, registro) · `agente-secops`
+  (o `.gitignore`: o que passou a aparecer, o que continua escondido, e se algum rastreado sumiu) ·
+  `agente-ci-doutor` (bateria, regressão e contagens).
+- **(d) O espelho `.agents/` do disco tem 39 contra 41 do `.claude/`: ACEITO como lacuna de disco**, não
+  perda — a branch `43557a17` tem os dois completos. Entra na descrição da pendência
+  `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR`, que já é sobre o resíduo daquela árvore.
+
+**Nota de método, que vale além deste bloco.** A Emenda 1 nasceu de o **executor falsificar a premissa de quem
+planejou** — e a premissa era minha. O §C7.4-bis costuma ser lido como proteção contra quem acha consertar o
+que achou; aqui ele funcionou na direção inversa e **evitou dano**: versionar os 33 corpos teria desfeito três
+decisões escritas e ressuscitado justamente o que a dívida 2 manda enterrar.
