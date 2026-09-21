@@ -2755,3 +2755,73 @@ registrado acima.
 **Divergência declarada (§C3.1).** A autoria do bloco atualizou `kpis-latest.json`, `kpis-history.json` e `app.js`, mas
 **não** apensou entrada em `Kpis/kpis-history.md` — o §C3.1 pede os três. Esta entrada fecha a lacuna; nenhum número
 foi inventado para cobri-la (todos vêm da reexecução do pré-merge).
+
+## 2026-09-21 — B-SAN3-B1 (PR #391) — a junta passa a julgar um SHA que a máquina executou
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | **3052/3054 — CARREGADO** (§C3.3): o PR não toca `src/`, `tests/` nem `prisma/`. `git diff --name-only origin/main...HEAD` devolve apenas `.github/workflows/ci.yml`, `CLAUDE.md`, `AGENTS.md`, os dois corpos do inspetor, o comando do bloco e `Kpis/*` — zero arquivo de código ou de teste. Sem reexecução desta trilha |
+| Smoke (console web) | **1202/1202 — CARREGADO** (§C3.3): o PR não toca `frontend/` |
+| Flutter | **864/864 — CARREGADO** (§C3.3): o PR não toca `mobile/`. A mudança do job `flutter` é na FIXAÇÃO DA VERSÃO do SDK no CI, não no app |
+| Blocos Entregues | **165 → 166** — a partir do valor publicado na `origin/main` (`aadaa6d5`, #390 = 165). **Atenção:** o `B-SAN3-00` corre em paralelo no worktree `san300` e também soma um degrau; se ele mergear antes, a recontagem é deste bloco no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): infraestrutura de CI e contrato de governança; o bloco não move escopo de produto |
+| pr / merge_commit / approved_head | `391` / `null` / `null` na autoria (§C3.5) |
+
+**Bateria que ESTE PR exerceu** (a que faz sentido para um PR sem código de produto), toda exit 0: `npm run check`,
+`npm run build`, `npm --prefix frontend run check`, `node --check Kpis/app.js`, `node scripts/kpi-freeze.mjs --check`,
+os três guards de KPI e `node scripts/sync-agent-agents.mjs --check` (**25 agentes**, espelho consistente). O worktree
+`sanb1` recebeu `npm ci` PRÓPRIO na raiz e no `frontend` (nunca junction — lição de 2026-08-26) e `prisma generate`
+com `DATABASE_URL` só no ambiente. A base viva (`erp-postgres`, `erp-redis`) não recebeu um comando.
+
+**O que o bloco entrega.** O único gatilho de PR era `pull_request`, que exige `refs/pull/N/merge`. PR de bloco
+**conflita com a `main`** — todo bloco apensa nos mesmos registros de `agent-orchestration/` —, então não há merge ref
+e **não nasce check-run**: os PRs **#388 e #389 foram julgados por juntas com ZERO check-run no head**. Entram gatilho
+`push` em `fix/**`, `feat/**`, `chore/**`, `docs/**` + `workflow_dispatch`, e `concurrency` por
+**(workflow, evento, ref)** — agrupar só por `github.ref` **não dedupa** (em `pull_request` o ref é
+`refs/pull/N/merge`), e agrupar por SHA **cruzando eventos** faria um cancelar o outro, deixando o SHA julgado com
+check-run `cancelled`, que é exatamente o estado a eliminar.
+
+**Por que as duas mudanças são inseparáveis.** O passo do CD se chama *"push to GHCR only on main"*, mas a condição
+era `github.event_name == 'push'` — **não olhava o ramo**. Sem corrigi-lo, o gatilho novo faria **todo push de ramo
+publicar `erp-backend:<sha>` e sobrescrever `:latest`** com código que junta nenhuma julgou. **Alcance MEDIDO** — e
+mais preciso do que "alcançaria produção": `deploy-production.yml` é `workflow_dispatch` puro e deploya por **SHA
+explícito**, nunca por `:latest`; `deploy-staging.yml` dispara **só em push para `main`**, logo o gatilho novo não o
+alcança; e `:latest` **não é lido por caminho de deploy nenhum** do repositório. **Mas** a trava (c) do
+`deploy-production.yml` (l.117-118) checa apenas que a imagem do SHA **existe**, e a própria mensagem de erro dela diz
+*"Garanta que o SHA foi mergeado na main e publicado no GHCR"*: ela **assume que existir no GHCR implica ter sido
+mergeado na main**. Publicar por ramo **quebraria essa premissa em silêncio e esvaziaria uma das três travas de
+produção** — as outras duas (ata na `main` e smoke de staging verde no mesmo SHA) continuam de pé. É por isso que a
+correção do portão **não é acessório**, e é assim que a divergência foi reportada em vez de repetida.
+
+**Globs conferidos contra `git branch -r` REAL**, não inventados: `feature/` tem **78 ramos** — o maior namespace —
+mas é **convenção morta** (commit mais recente em 2026-06-19) e não está no §8.2 do contrato; `codex/` parou em
+2026-05-26 e `test/` em 2026-06-10. Os vivos são `chore/` (2026-09-21), `fix/` (2026-09-20), `docs/` (2026-08-29) e
+`feat/`, que o §8.2 nomeia. `demo/` ficou **fora de propósito**: é ramo de demonstração e junta nenhuma o julga.
+
+**Deriva do Flutter, medida por execução própria** no caminho `/opt/hostedtoolcache/flutter/stable-<versão>-x64` dos
+logs: `3.47.4` até **2026-09-18T18:37Z** (runs `35380369290`, `35381265287`) e `3.47.5` a partir de
+**2026-09-19T00:26Z** (run `35409352362`). **A deriva aconteceu DENTRO desta rodada**, e foi dela que veio a
+divergência de `dart format` que deixou o CI vermelho no **#388**. `flutter-version: 3.47.5` fixado mantendo
+`channel: stable`; **subir a versão passa a ser ato deliberado**, visível no diff.
+
+**Contrato.** O §C7.1-bis ganha, em `CLAUDE.md` **e** no espelho `AGENTS.md` (mesmo trabalho, texto idêntico — regra
+de espelhamento), o item que faltava: **o objeto da junta é um SHA com check-runs CONCLUÍDOS**; CI vermelho é
+**insumo do voto**, mas **ausência de CI BLOQUEIA o start**, e `cancelled`/`queued` conta como ausente. Os dois corpos
+do `inspetor-de-terreno-da-junta` ganham o item **4.3** com o comando que o prova.
+
+**Fora de escopo, declarado e intocado:** `deploy-production.yml`, `deploy-staging.yml`, `backup-database.yml` e
+`uptime-check.yml`; o **job `e2e`** (é do `B-SAN3-10`, autorizado nominalmente só para ele no §10.6 do
+`PLANO_SAN3.md`); e **proteção de ramo / check exigido no GitHub**, que é **ato do dono** e segue pergunta aberta no
+§10.6.
+
+**Backfill §C3.5 do #390 (pago por este PR):** `pr 390` · `merge_commit aadaa6d51be950e152ca6a6f15327bc9989039de` ·
+`approved_head fbda96b016ac65f88fe99d695295329e83938bea` — o `merge_commit` medido por `gh pr view 390` e o
+`approved_head` lido da ata `omega/juntas/J-B-SAN3-04a.md` (l.5: objeto do ciclo 1 = `fbda96b0`); o head do PR no
+merge (`a62d04e2`) é esse objeto mais os commits de registro do pré-merge. Nada herdado. **Ressalva:** o `B-SAN3-00`
+corre em paralelo e também é candidato a pagar este backfill — os valores seriam os mesmos, e a absorção da `main` no
+pré-merge resolve por união.
+
+**Pendência nomeada (não resolvida aqui):** a máquina do dono tem **Flutter 3.41.6 / Dart 3.11.4** e o CI passa a ter
+**3.47.5** — a divergência local × CI **continua existindo**, agora explícita em vez de móvel.
