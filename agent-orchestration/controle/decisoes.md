@@ -2474,3 +2474,74 @@ objeto — o bloco aproximou o sistema do documento em 22 células líquidas enq
 
 **Consequência para quem lê o documento hoje:** ele não serve como base de teste por papel até ser reconciliado. A
 matriz efetiva confiável é a medida por login real; a fonte normativa é a `RBAC_MATRIX.md`.
+
+
+## REGISTRO-SAN3-00-CORPOS-DE-JURADO (2026-09-21) — **registro de PREMISSA FALSIFICADA (§A2), não decisão do dono**
+
+**O que estava prescrito.** O mandato do `B-SAN3-00` mandava **versionar 41 corpos de jurado "fora do tree"** —
+o remédio para o achado **A1** do porteiro pós-merge do **#387** (o corpo que reprovou o ciclo 2 do `B-SAN3-01`
+votou sem estar em commit nenhum). O diagnóstico está certo; **a prescrição não sobreviveu à medição**, e o §A2
+proíbe consolidar um lado em silêncio. Este registro existe para que a decisão fique escrita antes de qualquer
+consolidação — e para que a emenda do orquestrador tenha a medição embaixo dela, não a memória de um agente.
+
+**Como foi medido** (worktree `san300` em `aadaa6d5`; a árvore principal foi **só lida**, nunca tocada):
+`git rev-list --objects --all` (varredura **exaustiva** de todo objeto alcançável de **toda** ref, não só dos
+138 *ref tips*) → **314 blobs distintos** sob `.claude/agents/**` e `.agents/agents/**`; `git hash-object` de
+cada corpo no disco da árvore principal (que está em `demo/investidor`) contra esse conjunto.
+
+**As três medições que derrubam a prescrição.**
+
+1. **NENHUM corpo existe só em disco — zero perda de durabilidade.** Dos **129** corpos no disco da árvore
+   principal, **80** estão em caminhos que a `origin/main` não rastreia (**41** cadeiras no espelho `.claude/`,
+   **39** no `.agents/`). Desses 80, **80 têm blob alcançável em alguma ref** e **0 está perdido**. O "fora do
+   tree" do mandato só é verdadeiro com a palavra **`main`** no lugar de **`tree`**.
+
+2. **33 dos 41 já foram SEPULTADOS e/ou APOSENTADOS por três rodadas escritas** — versioná-los na `main`
+   **desfaria** essas decisões. Classificação dos 41, um a um, contra
+   `omega/juntas/OBITUARIO-IDENTIDADES.md` (sepultura = perde o direito de voto) e
+   `controle/aposentadoria-especialistas.md` (aposentadoria = sai do diretório vivo):
+
+   | Classe | N |
+   |---|---|
+   | sepultada **e** aposentada | 10 |
+   | só sepultada | 13 |
+   | só aposentada | 10 |
+   | **subtotal — decisão escrita já tomada** | **33** |
+   | nem uma nem outra | 8 |
+
+   Os **8** restantes não são resíduo: são **exatamente** as cadeiras dos dois blocos **EM VOO** — `jurado-o6r04a-c2-*`
+   (4, PR **#389**, objeto `738ff531`) e `jurado-o6r11-*` (4, PR **#388**, objeto `43557a17`). Conferidos **por
+   hash, um a um**: os corpos do disco são **byte-idênticos** ao blob rastreado na branch que a junta julga
+   (14 comparações, 14 iguais). Versioná-los na `main` **duplicaria** o que os PRs deles já trazem, e daria
+   conflito no merge.
+
+3. **O custo de contexto é o que as rodadas 1–3 mediram e removeram.** Versionar os 33 devolveria ao `description`
+   de **toda sessão** o peso que a `D-APOSENTADORIA-ELENCO-EFEMERO` tirou de propósito. E **duas** dos 41
+   (`jurado-san3-01c2-*`, que já estão na `main`) são justamente as que a **dívida 2** do porteiro do #390 manda
+   **REMOVER** — versionar contradiria a dívida no mesmo PR que a paga.
+
+**O que se conserta, então: o MECANISMO — e ele está consertado neste bloco.** O `~/.config/git/ignore` do
+usuário ignora `.claude/` (l.2) e `.agents/` (l.27) **inteiros**, logo corpo **novo** nunca aparece como `??` e
+só entra no tree se alguém lembrar de `git add -f`. Essa é a causa do A1, e ela reincide a cada junta. O
+`.gitignore` **do repositório** (que tem precedência sobre o global) passa a reincluir os dois diretórios de
+agentes e os dois de skill, excluindo o resto do conteúdo. Provado por execução, por *exit code*: corpo novo e
+`SKILL.md` novo aparecem como `??` nos dois espelhos; `.claude/worktrees/**`, `.claude/settings.local.json`,
+`.agents/*` e `node_modules/**/SKILL.md` seguem ignorados; e **0 arquivo rastreado hoje passa a ser ignorado**
+(`git ls-files -z | git check-ignore -z --stdin` → vazio).
+
+**O que este registro NÃO decide.** Não decide o destino dos **33** corpos aposentados/sepultados que continuam
+no diretório vivo da árvore de `demo/investidor`. O dev **não** os versionou e **não** os apagou — apagar
+diretório vivo de outra árvore é resíduo alheio, que se **reporta**, não se varre
+(`feedback-remocao-por-identificador-de-bloco`). Fica como pendência nomeada
+`P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR`, com a proposta e a justificativa do dev, para a junta decidir.
+
+**Divergência de contagem registrada (não herdada em silêncio).** A 1ª instância deste bloco publicou "43 corpos
+/ 146 ref tips"; a re-medição desta instância dá **41 / 138**. Os 2 de diferença são o par `jurado-san3-01c2-*`,
+que **está** na `main` e por isso não pertence ao conjunto "fora da `main`"; a diferença de tips é de momento de
+medição. **O conjunto dos 33 e o veredito (0 perdido) são os mesmos nas duas medições.**
+
+**Achado lateral, medido de passagem (não bloqueia):** o espelho `.agents/` do disco da árvore principal tem
+**39** corpos contra **41** do `.claude/` — faltam as cópias de `jurado-o6r11-contrato-mobile-fila` e da sua
+suplente. **Não é perda:** a branch `43557a17` (#388) tem **os dois espelhos completos**, conferido por
+`git ls-tree`. É lacuna do **disco** de `demo/investidor`, não do tree — mais uma instância de
+`P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
