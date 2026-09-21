@@ -1,0 +1,100 @@
+{
+  "cadeira": "C3",
+  "identidade": "validador-mestre",
+  "modelo": "Opus 5 (claude-opus-5[1m])",
+  "bloco": "B-SAN3-B1",
+  "pr": 391,
+  "objeto": "3a0ea095cbbac36af0c21ba967e938fbe5375e83",
+  "base": "aadaa6d51be950e152ca6a6f15327bc9989039de",
+  "foco": "diff x plano, escopo, KPI (C3.5), o C7.1-bis espelhado em CLAUDE.md e AGENTS.md mais os dois corpos do inspetor, e o registro",
+  "corpo_aplicado": "O corpo que apliquei E o do head julgado: md5 EOL-neutro 804d89f01d920ed72c23e5e24c062501, identico em 3a0ea095, na raiz da sessao, no worktree san300 e no meu worktree. A ressalva R1 do inspetor nao alcanca esta cadeira.",
+  "terreno": "Worktree detached proprio em C:/c/Users/AMP/w-j-sanb1-c3 @ 3a0ea095, caminho curto, sem junction, criado e removido por mim. Nenhum conteiner subido; a base viva nao recebeu um comando. Residuo de outra sessao (R4/R5) reportado pelo inspetor e NAO varrido por mim.",
+  "veredito": "APROVADO",
+  "resumo": "O diff entrega exatamente os cinco itens que o plano-mestre declara para este bloco, em 14 arquivos, todos no escopo permitido, com o escopo proibido vazio por pathspec explicito e os quatro workflows de deploy byte-identicos a base. O KPI cumpre o C3.5 na forma da autoria, as metricas de trilha sao carregadas com nota datada e so blocks_completed se move; o espelhamento CLAUDE.md/AGENTS.md e byte-identico por md5 e o indice de pendencias e saida verificada do gerador. Nenhum achado bloqueia: dois ajustes de registro e cinco notas.",
+  "achados": [
+    {
+      "id": "C3-01",
+      "titulo": "O comando rastreado e o corpo do PR declaram quorum MENOR do que o plano-mestre que autorizou o bloco",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Comando do bloco l.152-153 (arquivo NOVO deste PR): 'o bloco NAO toca dinheiro, permissao nem perda de dado; toca pipeline ... Maioria de 3 (C7.1-ter(b))'. Corpo do PR #391 l.71 repete: 'Quorum: maioria de 3 (C7.1-ter(b) - nao toca dinheiro, permissao nem perda de dado)'. Mas o C7.1-ter(b) no head julgado (CLAUDE.md l.374-375) lista QUATRO gatilhos: 'Unanimidade de 3 quando o bloco toca dinheiro, SEGURANCA, permissao ou perda de dado'. A enumeracao do comando cita tres e omite exatamente o que se aplica. E o plano-mestre l.264 classifica este bloco por escrito: 'seguranca/pipeline -> unanimidade 3 + agente-secops'.",
+      "motivo": "O artefato rastreado do bloco contradiz o plano que o autorizou, num bloco cujo assunto inteiro e um portao de credencial e de publicacao de artefato. Sem efeito nesta junta - o orquestrador convocou unanimidade de 3, o quorum certo -, mas o comando e o registro duravel: fica como precedente falso para o proximo bloco de pipeline, e esta rodada ja pagou quatro ciclos por quorum mal escrito, que e o proprio 'por que' do C7.1-ter(b). Nao bloqueia porque o portao efetivamente aplicado foi o mais estrito e a substancia da entrega esta provada."
+    },
+    {
+      "id": "C3-02",
+      "titulo": "A divergencia declarada do npm test nao existe em nenhum arquivo rastreado - vive so no relatorio do scratchpad",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "O comando do bloco (rastreado, criado por este PR) prescreve npm test na bateria da secao 9, l.116. A declaracao de que ele NAO rodou localmente, e de que quem executou a suite foi o CI, esta so em DEV-B-SAN3-B1.md secao 6.2 (scratchpad, nao rastreado). Medido: nas linhas adicionadas pelo diff nao ha nenhuma que declare a divergencia; grep por 'npm test|suite' no corpo do PR = 0 ocorrencias; log-execucao.md e status-geral.md nao a mencionam. A nota C3.3 das metricas lista a bateria 'que ESTE PR exerceu' (npm run check, npm run build, npm --prefix frontend run check, guards de KPI, sync-agent-agents --check) - honesta por omissao, mas sem dizer por que npm test nao esta na lista.",
+      "motivo": "Secao A5: o materialmente relevante vai para arquivo, nao fica so no chat nem so no corpo do PR. Esta e justamente a divergencia que o briefing manda a junta julgar; se ela merge sem registro, o porteiro pos-merge e o dono auditando pelo history leem um comando cuja bateria prescreve npm test sem nenhum sinal de como foi satisfeita. A substancia esta certa - eu medi o run e a suite saiu 3052/3054 com fail 0 no proprio SHA julgado. O que falta e uma linha na trilha com o run e os numeros."
+    },
+    {
+      "id": "C3-03",
+      "titulo": "A prova do concurrency citada no relatorio do dev e falsa (C2-01 re-medido, confirmado e estendido)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DEV-B-SAN3-B1.md secao 5.c afirma: 'nao cruza eventos - o run pull_request do mesmo head seguiu vivo'. Medido por mim: gh api .../commits/16d39b41/check-runs devolve os DOIS backend e os DOIS docker como completed/cancelled (so authority-portal, backend-postgres, flutter, frontend e owner-portal saem success). Em e0dd6af4 o padrao se repete em backend e docker. A causa e que um push tambem atualiza refs/pull/391/merge, disparando um pull_request novo que cancela o anterior DENTRO do proprio grupo.",
+      "motivo": "O DESENHO continua correto e esta provado pelo head final (14/14 success, re-medido por mim), mas a frase citada como prova nao prova. Registro como nota, e nao como ajuste, porque medi onde a frase parou: ela NAO esta no corpo do PR, nem no comentario do concurrency no ci.yml, nem no KPI, nem no log-execucao (l.4516), nem no status-geral (l.4629), nem no comando - todos dizem apenas o racional de desenho, que e correto. Nada que mergeia carrega a afirmacao falsa. Precisa ficar na ata para que nenhum ciclo futuro a herde como fato, e vale notar que o que eu medi REFORCA o item 4.3 que o bloco inaugura: um head que nao e o ultimo push perde os check-runs nos DOIS eventos, nao so no push."
+    },
+    {
+      "id": "C3-04",
+      "titulo": "A nota C3.3 das metricas enumera APENAS 10 dos 14 arquivos do diff",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "A nota repetida nas 7 metricas de trilha diz que o diff devolve APENAS ci.yml, CLAUDE.md, AGENTS.md, os dois corpos do inspetor, o comando do bloco e Kpis/*. O diff real tem 14 arquivos; a enumeracao omite log-execucao.md, status-geral.md, pendencias.md e pendencias-indice.md.",
+      "motivo": "A conclusao substantiva da nota - zero arquivo em src/, tests/, frontend/, mobile/ ou prisma/ - e VERDADEIRA (re-medida por mim com pathspec explicito, saida vazia) e e ela que sustenta o carregamento dos valores. Os quatro omitidos sao registro/trilha, nenhum e codigo ou teste, logo a justificativa do C3.3 nao se altera. E imprecisao de enumeracao num campo que se le como exaustivo, nao numero errado."
+    },
+    {
+      "id": "C3-05",
+      "titulo": "Censo de ramos: chore/ e 11 hoje, nao 9 (C2-03 re-medido)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Re-medido apos git fetch --prune: feature/ 78 (2026-06-19), feat/ 26 (2026-07-05), fix/ 12 (2026-09-20), chore/ 11 (2026-09-21), docs/ 3 (2026-08-29), codex/ 4 (2026-05-26), test/ 1 (2026-06-10), demo/ 1 (2026-08-29). Relatorio, comando e corpo do PR dizem chore/ = 9. Listei os 11 nomes: os dois excedentes sao chore/ci-ve-o-sha-julgado (o ramo DESTE bloco, empurrado depois do censo) e chore/corpos-de-jurado-rastreados (o #392, nascido em paralelo).",
+      "motivo": "Nove das dez linhas do censo batem exatamente, numero e data. A unica que se moveu, moveu-se pelo proprio bloco: o censo estava certo quando foi medido. A conclusao (os quatro globs cobrem todo ramo vivo de bloco) nao se altera, e o comentario RASTREADO no ci.yml nao publica o numero 9 - cita so 78/4/1 dos namespaces mortos, os tres reconfirmados por mim. Nota de frescor, nao numero errado."
+    },
+    {
+      "id": "C3-06",
+      "titulo": "ACHADO PROPRIO: o concurrency novo e de workflow e tambem cancela run de push na main, podendo deixar um SHA mergeado sem imagem no GHCR",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "No ci.yml julgado o bloco concurrency: esta na coluna 0 (l.26-28), antes de jobs: - e de workflow, logo alcanca todo evento, inclusive push em refs/heads/main, agrupando por workflow + event_name + ref com cancel-in-progress true. Antes deste PR NAO havia concurrency (a chave e adicionada pelo diff): dois merges na main dentro da janela rodavam ate o fim e cada um publicava a sua imagem. Agora o segundo merge cancela o run do primeiro, e com ele o job docker. A trava (c) do deploy-production.yml exige docker manifest inspect da imagem do SHA promovido, l.117-118.",
+      "motivo": "E efeito NOVO do bloco, na fronteira de publicacao de artefato, e ninguem o mediu - nem o relatorio, nem as duas cadeiras que ja votaram. Um SHA mergeado cujo run foi cancelado ficaria impromovivel ate alguem reexecutar. Nao bloqueia por tres razoes medidas: o remedio entra NESTE mesmo PR (o workflow_dispatch novo permite reexecutar o CI no SHA e publicar); merges na main desta casa sao serializados pelo processo de junta e a janela exige dois merges em minutos; e o estado anterior era estritamente pior, com todo push de ramo publicando. Registro para a ata e para o porteiro."
+    },
+    {
+      "id": "C3-07",
+      "titulo": "O relatorio do dev chama 16d39b41 de head final; o head julgado e 3a0ea095",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "DEV-B-SAN3-B1.md, secao Commits, lista dois commits e marca 16d39b41 como head final. A ramificacao tem tres commits (git log aadaa6d5..3a0ea095): e0dd6af4, 16d39b41 e 3a0ea095 (style(governanca): requebra a linha do C7.1-bis na largura do arquivo). O proprio item 5.d do relatorio mede corretamente o head final como 3a0ea095.",
+      "motivo": "Inconsistencia interna do relatorio (nao rastreado): a lista de commits ficou defasada do terceiro commit. Sem efeito em artefato nenhum - o PR, o KPI e a trilha apontam para o objeto certo, e o objeto julgado bate com o head do PR. Fica na ata so para que ninguem leia a lista de commits do relatorio como o conteudo da entrega."
+    }
+  ],
+  "condicoes_do_voto": [
+    "PRE-MERGE (C3, ja declarada pelo proprio bloco): se o #392 (B-SAN3-00) mergear antes, blocks_completed 165 -> 166 tem de ser RECONTADO a partir da main de entao. Medido por mim agora: #392 OPEN com mergedAt null, #391 OPEN e MERGEABLE - logo 166 esta correto neste instante. A nota da metrica ja nomeia a obrigacao e o dono.",
+    "Os dois ajustes (C3-01 e C3-02) sao correcoes de uma linha cada, em arquivo rastreado, e nao exigem tocar o ci.yml nem re-rodar a suite. Mas, se o head mudar para aplica-las, o objeto julgado muda e os check-runs precisam CONCLUIR no head novo antes do merge - item 4.3, que este bloco inaugura."
+  ],
+  "numeros_remedidos": {
+    "arquivos_no_diff": 14,
+    "escopo_proibido_por_pathspec": "vazio",
+    "workflows_de_deploy_byte_identicos_a_base": 4,
+    "check_runs_no_head_julgado": "14 total, 14 completed, 14 success, 0 cancelled/queued/in_progress",
+    "check_runs_em_16d39b41": "14 total, backend x2 e docker x2 = cancelled",
+    "log_in_to_ghcr_no_head_julgado": "skipped",
+    "build_backend_image": "success",
+    "container_smoke": "success",
+    "suite_backend_no_SHA_julgado": "tests 3054, pass 3052, fail 0, cancelled 0, skipped 2; 'not ok' no log = 0",
+    "guards_de_kpi_no_SHA_julgado": "3/3 arquivos executados e verdes, por sonda de nome de teste",
+    "kpi_freeze_check": "EXIT 0 (em dia, snapshot 2026-09-21)",
+    "node_check_kpis_app_js": "EXIT 0",
+    "sync_agent_agents_check_no_worktree_julgado": "EXIT 0, 25 agentes",
+    "md5_do_texto_c71bis_adicionado": "631e97f5e59128a18e3157d52990e706 em CLAUDE.md E em AGENTS.md",
+    "md5_do_paragrafo_c71bis_inteiro": "6fd3f8d920f13a228b20f92d7522f2b4 nos dois arquivos, 19 linhas cada",
+    "corpos_do_inspetor": "12/0 nos dois, linhas adicionadas identicas, 0 removidas",
+    "indice_de_pendencias": "saida do gerador re-executado; md5 EOL-neutro f5d030e4fe77ff935fb3c7a3b378dc5b identico ao commitado; 411 cabecalhos / 400 IDs / 301 abertas",
+    "metricas_kpi_que_mudaram": "1 de 10 (blocks_completed 165 -> 166); mvp_demo 99 e mvp_vendavel 88 intocados",
+    "kpi_c35_na_autoria": "pr=391, merge_commit=null, approved_head=null, status=published_per_pr",
+    "backfill_do_390_conferido_na_fonte": "merge_commit aadaa6d5 por gh pr view 390, approved_head fbda96b0 pela ata J-B-SAN3-04a",
+    "censo_de_ramos_chore": "11 (relatorio: 9; os 2 excedentes nasceram durante o bloco)",
+    "itens_de_escopo_do_plano_l264_entregues": "5 de 5, e nenhum sexto"
+  }
+}

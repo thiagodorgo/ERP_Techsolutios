@@ -177,7 +177,47 @@ Não se aplica — o bloco **não tem tela**. Não toca `frontend/**` nem `mobil
 - **PR #:** a preencher após abrir o PR
 - **merge commit:** `null` na autoria → backfill pós-merge
 - **approved head:** `null` na autoria → backfill pós-merge
-- **Gate:** junta (maioria de 3, `agente-secops` obrigatório) + `porteiro-pos-merge`
+- **Gate:** junta (**unanimidade de 3**, `agente-secops` obrigatório) + `porteiro-pos-merge` — ver emenda 1 (a)
 - **Status:** `published_per_pr`
 - **Evidência da sonda:** ramo `chore/ci-probe`, commit `27eae4b0`, run `35624685955` (6 check-runs,
   `Log in to GHCR` = `skipped`). O ramo da sonda é apagado depois que este bloco mergear.
+
+## Emenda 1 do orquestrador — os 2 ajustes da junta, aplicados antes do merge (2026-09-21)
+
+> Junta APROVADO 3 × 0 (unanimidade): `agente-secops` (C1), `agente-devops-provisionador` (C2),
+> `validador-mestre` (C3), com inspetor de terreno `LIBERADO COM RESSALVA` antes do voto. Os dois `ajuste`
+> da C3 são sobre o **registro contradizer o que aconteceu** — corrigidos aqui, no próprio ramo.
+
+- **(a) O quórum declarado estava MENOR que o convocado.** O comando dizia *"maioria de 3"*; a junta que
+  rodou foi **unanimidade de 3 com `agente-secops` obrigatório**, que é o que o §C7.1-ter(b) manda (ele lista
+  **quatro** gatilhos — dinheiro, **segurança**, permissão, perda de dado — e a enumeração do comando omitia
+  justamente o que se aplica) e o que o plano-mestre já classificava por escrito: *"segurança/pipeline →
+  unanimidade 3 + agente-secops"*. **Sem dano nesta junta**, porque o quórum estrito foi o convocado; mas o
+  comando é o registro durável, e registro que diz menos do que aconteceu vira precedente errado.
+- **(b) A divergência do `npm test` não existia em arquivo rastreado.** A bateria §9 prescreve `npm test`, e
+  a declaração de que **ele não rodou localmente** vivia só no relatório do desenvolvedor, no scratchpad —
+  §A5 exige arquivo. Fica dito aqui: **quem executou a suíte inteira foi o CI, no SHA julgado**
+  (run `35655315031`, job `backend` `success`, `# tests 3054 / pass 3052 / fail 0 / skipped 2`, com Postgres
+  e Redis reais, zero `not ok` no log inteiro, e os 3 guards de KPI do §C3.1 rodando no mesmo run). Duas
+  cadeiras independentes julgaram que **basta**, e a razão é do bloco: o diff não toca `src/` nem `tests/`,
+  muda só **quando e onde** a suíte roda, e a evidência é auditável por terceiro — que é a tese do próprio
+  bloco. A condição, dita pela C3: isso só vale **porque o bloco não toca código**.
+
+### O que a junta mediu e não estava no mandato (vai para o porteiro)
+- **A prova do desenvolvedor sobre o `concurrency` era falsa, com o desenho certo.** Ele afirmou que o
+  agrupamento não cruza tipos de evento; num head intermediário (`16d39b41`) os **dois** runs saíram
+  `cancelled`, porque um push **também atualiza** `refs/pull/391/merge`. Duas cadeiras re-mediram e
+  confirmaram. O desenho final está provado pelo head julgado (2 runs vivos, zero `cancelled`), e a frase
+  falsa **não está em nenhum arquivo que mergeia** — por isso `nota`, não `ajuste`.
+- **O `concurrency` alcança `push` na `main`** (é chave de workflow, coluna 0), e antes deste PR não havia
+  `concurrency` nenhum. Consequência: um segundo merge dentro da janela (~9 min) cancela o run do primeiro e,
+  com ele, o job `docker` — aquele SHA fica sem `erp-backend:<sha>` no GHCR e a **trava (c)** do
+  `deploy-production.yml` passa a **recusá-lo**. É **fail-closed** (deixa de promover, não promove errado), o
+  remédio entra no mesmo PR (`workflow_dispatch` re-executa), merges são serializados, e a C2 mediu **0 de 39**
+  intervalos recentes da `main` abaixo de 9 min. **Conferência do porteiro no primeiro run da `main`.**
+- **Disparo manual na `main` agora publica no GHCR**, o que o portão antigo por tipo de evento não fazia. O
+  invariante *"só código da `main` vira artefato"* **continua válido** (o dispatch recebe uma ref, não um SHA
+  arbitrário) e não há escalada — quem pode disparar já pode empurrar na `main`. Fica **documentado aqui**,
+  porque não estava em lugar nenhum.
+- **O lado que ABRE o portão só pode ser provado pós-merge.** Se falhar, falha **fechada** (deixa de publicar,
+  e a trava (c) barra a promoção). **Conferência do porteiro no primeiro run da `main`.**
