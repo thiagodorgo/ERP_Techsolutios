@@ -2847,12 +2847,47 @@ reafirmando `.claude/worktrees/` **depois** das reinclusões (no mesmo arquivo, 
 **Provado por EXIT CODE, nos dois sentidos** (`git check-ignore -q`, porque `-v` imprime o padrão de **negação**
 também e isso já enganou a leitura uma vez nesta sessão): corpo novo e `SKILL.md` novo aparecem como `??` nos dois
 espelhos — conferido com arquivo **real**, criado e removido sem resquício; `.claude/worktrees/**`,
-`.claude/settings.local.json`, `.agents/*` e `node_modules/**/SKILL.md` **seguem ignorados**; e
-`git ls-files -z | git check-ignore -z --stdin` sai **vazio** — **0 arquivo rastreado hoje** passa a ser ignorado.
+`.claude/settings.local.json`, `.agents/*` e `node_modules/**/SKILL.md` **seguem ignorados**.
+
+**"0 arquivo rastreado passou a ser ignorado" — a prova foi REFEITA no pré-merge, pela forma que PODE falhar.**
+A forma publicada na autoria (`git ls-files -z | git check-ignore -z --stdin`) era **vazia por construção**: sem
+`--no-index`, `git check-ignore` consulta o **índice** e **nunca** reporta caminho rastreado como ignorado, logo o
+`N=0` sai por construção e um `.gitignore` que de fato escondesse rastreado passaria nesse teste **em verde**.
+Medido no pré-merge: a forma antiga devolve **N=0 com o `.gitignore` do objeto E N=0 com o `.gitignore` da base** —
+o **mesmo** número para os dois, que é a definição de prova que não pode falhar. Contra-exemplo que separa as duas
+formas: `CLAUDE.md` é rastreado (`git ls-files --error-unmatch` ec=0) e casa o ignore global;
+`git check-ignore -q CLAUDE.md` dá **ec=1** (diz **não** ignorado) e `git check-ignore -q --no-index CLAUDE.md` dá
+**ec=0** (ignorado).
+
+**Forma falsificável, e é esta que vale:** `git check-ignore -z --no-index --stdin` sobre **todos** os caminhos
+rastreados, **nas duas pontas**, universo único (os **3501** rastreados do objeto do pré-merge), com o `.gitignore`
+da base reposto no disco, **prova de substituição lida ANTES do resultado** (md5 EOL-neutro
+`2ad3f3f41aed2bc8b1a31cd646a3de25` = blob `2c75ea5b` da base; `!.claude/agents/` com **0** ocorrências) e **prova
+de restauração depois** (md5 `d965d5a903bbfdbeb63ceda1a486efb2` = blob `43fd5ee9` do objeto;
+`git status --porcelain -uall` **vazio**).
+**Resultado:** rastreados ignorados com o `.gitignore` da **base = 128**; com o do **objeto = 3** — `AGENTS.md`,
+`CLAUDE.md` e `docs/claude-code-handoff/CLAUDE.md`, os três pelo ignore **GLOBAL** que este bloco não toca e os três
+**já ignorados na base**. `comm -23` (objeto − base) = **0 passaram a ser ignorados**; `comm -13` = **125
+deixaram** de ser.
+**Reconciliação com as duas cadeiras da junta, sem divergência:** a C2 publicou **132** medindo sobre o universo da
+**base** e a C1 publicou **128** medindo sobre o do **objeto**; a diferença de **4** são exatamente os corpos
+`jurado-san3-01c2-*` que a dívida 2 remove (**128 + 4 = 132**). O pré-merge reproduziu as **três** contagens: 132
+sobre o universo de `aadaa6d5` (3494 rastreados), 132 sobre o de `b8cd22df` (3503) e 128 sobre o do objeto (3501).
 
 **As 5 dívidas do porteiro do #390, pagas pelo primeiro PR a mergear depois dele.**
 (1) **Backfill §C3.5 do #390** na entrada **160** do `kpis-history.json`:
-`merge_commit aadaa6d51be950e152ca6a6f15327bc9989039de` · `approved_head a62d04e2bbe42533e58639643a19104bdccc0ab6`.
+`merge_commit aadaa6d51be950e152ca6a6f15327bc9989039de` · `approved_head fbda96b016ac65f88fe99d695295329e83938bea`.
+**Correção do pré-merge (achado C1-A2 da junta):** a autoria publicou `approved_head a62d04e2bbe4…`, que é o **head
+do PR no merge** (`gh pr view 390 --json headRefOid`), e não o **objeto que a junta aprovou**. `approved_head` é,
+por definição do §C3.5 e por precedente medido, o objeto julgado: a ata `J-B-SAN3-04a.md:5` diz literalmente
+*"Objeto: `fbda96b0` (PR #390); head na junta = o objeto"*, e no #387 o head do PR no merge (`f999adb2`) e o
+`approved_head` publicado (`8adaaa31`, o objeto da ata `J-B-SAN3-01.md:18`) **divergem** pela mesma razão.
+**A origem do valor errado é o orquestrador**, que o transcreveu do parecer do porteiro do #390 para o seu arquivo
+de dívidas sem conferir contra a definição; o dev executou instrução escrita. O parecer do porteiro é documento
+histórico e **não se edita** — a correção vive aqui e em `controle/decisoes.md`. **Régua declarada, porque as duas
+convivem hoje no registro:** `merge_commit` = o commit de merge na `main` (`gh pr view <n> --json mergeCommit`);
+`approved_head` = **o objeto que a ata da junta nomeia**, nunca `--json headRefOid`. Onde houver pré-merge, os dois
+**divergem por construção**, e publicar o head do merge apaga a informação de *o que foi julgado*.
 (2) **Aposentadoria rodada 4 EXECUTADA:** as 2 cadeiras `jurado-san3-01c2-*` saem dos **dois** espelhos, por
 identificador de **BLOCO** e nunca por nome de cadeira. Conferido **antes** do `git rm`: o tree de `aadaa6d5` tinha
 **exatamente 4** arquivos em `especialistas/` (2 cadeiras × 2 espelhos), **todos** do bloco, **nenhum de outra
@@ -2896,8 +2931,11 @@ alheio se **reporta**.
 erro dela) publicou "**43** corpos / **146** ref tips"; a re-medição da 2ª dá **41 / 138**. Os 2 de diferença são o
 par `jurado-san3-01c2-*`, que **está** na `main` — e que a dívida 2 remove. **O conjunto dos 33 e o veredito
 (0 perdido) são os mesmos nas duas medições.** Também divergiu, a favor da segurança, o "rastreados que passariam a
-ser ignorados": a 1ª escreveu "0, só `CLAUDE.md`/`AGENTS.md` que já eram", e a medição por
-`git ls-files -z | git check-ignore -z --stdin` dá **0 absoluto**.
+ser ignorados": a 1ª escreveu "0, só `CLAUDE.md`/`AGENTS.md` que já eram" e a 2ª publicou "**0 absoluto**" por
+`git ls-files -z | git check-ignore -z --stdin`. **As duas erraram a FORMA**, e o pré-merge refez a medição (acima):
+pela forma falsificável os rastreados ignorados **no objeto são 3** — `AGENTS.md`, `CLAUDE.md` e
+`docs/claude-code-handoff/CLAUDE.md` —, a 1ª subcontava em **1** e a 2ª usava instrumento que não podia devolver
+outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **global**: **0 passaram a ser ignorados**.
 
 **Achado lateral, medido de passagem (não bloqueia).** O espelho `.agents/` do **disco** da árvore principal tem
 **39** corpos contra **41** do `.claude/`: faltam as cópias de `jurado-o6r11-contrato-mobile-fila` e da sua

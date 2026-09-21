@@ -2526,8 +2526,25 @@ só entra no tree se alguém lembrar de `git add -f`. Essa é a causa do A1, e e
 `.gitignore` **do repositório** (que tem precedência sobre o global) passa a reincluir os dois diretórios de
 agentes e os dois de skill, excluindo o resto do conteúdo. Provado por execução, por *exit code*: corpo novo e
 `SKILL.md` novo aparecem como `??` nos dois espelhos; `.claude/worktrees/**`, `.claude/settings.local.json`,
-`.agents/*` e `node_modules/**/SKILL.md` seguem ignorados; e **0 arquivo rastreado hoje passa a ser ignorado**
-(`git ls-files -z | git check-ignore -z --stdin` → vazio).
+`.agents/*` e `node_modules/**/SKILL.md` seguem ignorados; e **0 arquivo rastreado hoje passa a ser ignorado**.
+
+**A FORMA da última prova foi trocada no pré-merge (achado C1-A1 da junta), e a conclusão não mudou.** A autoria
+publicava `git ls-files -z | git check-ignore -z --stdin` → vazio. Sem `--no-index`, `git check-ignore` consulta o
+**índice** e **nunca** reporta caminho rastreado como ignorado: o `N=0` sai **por construção**, e um `.gitignore`
+que de fato escondesse rastreado passaria nesse teste em verde. Medido: a forma antiga devolve `N=0` **com o
+`.gitignore` do objeto e também com o da base** — o mesmo número para os dois. **Forma que passa a valer, e que
+todo bloco futuro deve copiar:** `git check-ignore -z --no-index --stdin` sobre **todos** os caminhos rastreados,
+**nas duas pontas**, universo único, com prova de substituição do `.gitignore` **antes** de ler o resultado e prova
+de restauração depois. Resultado no pré-merge, universo de **3501** rastreados: base **128** ignorados, objeto
+**3** (`AGENTS.md`, `CLAUDE.md`, `docs/claude-code-handoff/CLAUDE.md` — os três pelo ignore **global**, que este
+bloco não toca, e os três já ignorados na base); `comm -23` = **0 passaram a ser ignorados**, `comm -13` = **125
+deixaram**. As duas cadeiras da junta chegaram ao mesmo por caminhos independentes (**128** sobre o universo do
+objeto, **132** sobre o da base; a diferença de **4** são os corpos que a dívida 2 remove).
+
+**Lição de método, que é por que isto virou decisão e não só conserto de texto:** prova cuja forma **não pode
+falhar** não é prova. Antes de publicar um número, pergunte qual mutação o deixaria vermelho — aqui, o
+contra-exemplo é `CLAUDE.md`, rastreado e casando o ignore global: `git check-ignore -q` diz **não ignorado**
+(ec=1) e `git check-ignore -q --no-index` diz **ignorado** (ec=0).
 
 **O que este registro NÃO decide.** Não decide o destino dos **33** corpos aposentados/sepultados que continuam
 no diretório vivo da árvore de `demo/investidor`. O dev **não** os versionou e **não** os apagou — apagar

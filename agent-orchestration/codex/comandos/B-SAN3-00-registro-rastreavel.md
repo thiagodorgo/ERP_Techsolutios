@@ -94,7 +94,15 @@ repetiria o achado **A2** do porteiro do #387. **A junta nomeia.**
 1. **Mecanismo (Emenda 1):** o `.gitignore` reinclui `.claude/agents/`, `.claude/skills/`, `.agents/agents/`,
    `.agents/skills/` e os `SKILL.md` dos dois diretórios de skill, reafirmando `.claude/worktrees/` **depois**
    das reinclusões (dentro do mesmo arquivo, o último padrão que casa vence). Provar por *exit code* de
-   `git check-ignore -q`, nos dois sentidos, e provar que **0 arquivo rastreado hoje** passa a ser ignorado.
+   `git check-ignore -q`, nos dois sentidos (o `-v` imprime também o padrão de **negação**, então "saiu texto"
+   não é "ignorado" — a régua é o exit code).
+   **INSTRUMENTO CORRIGIDO pela Emenda 3 (achado C1-A1) — não copie a forma antiga.** Para a pergunta *"algum
+   arquivo rastreado passou a ser ignorado?"*, `git check-ignore` **sem `--no-index`** consulta o índice e
+   **nunca** responde "sim": o `N=0` sai **por construção** e a prova não pode falhar. A forma obrigatória é
+   `git check-ignore -z --no-index --stdin` sobre **todos** os caminhos rastreados (`git ls-tree -r --name-only -z`),
+   **nas duas pontas** — `.gitignore` da base e do objeto —, em **universo único**, com prova de substituição do
+   `.gitignore` lida **antes** do resultado (md5 EOL-neutro contra o blob) e prova de restauração depois
+   (`git status --porcelain -uall` vazio); o veredito é `comm -23 objeto base`, que tem de dar **0**.
 2. **Dois registros em BINÁRIO** (`J-CHK-P1-PR04-aplicabilidade.md`, 1 byte NUL; `B-GOV-ELENCO-ciclo2-plano.md`,
    1 CR solto): byte cru vira escape em texto. Prova: `git ls-files --eol` dos `.md` sem nenhuma linha `-text`.
 3. **Dívida 2:** `git rm` das 2 cadeiras `jurado-san3-01c2-*` **nos dois espelhos**, conferindo **antes** que o
@@ -150,7 +158,9 @@ omitido.
 - `merge_commit`/`approved_head` deste PR: **`null` na autoria** (§C3.5); `pr` após o `gh pr create`.
 - **Dívida 1 — backfill §C3.5 do #390:** a entrada **#160** do `kpis-history.json` (e o eco no
   `kpis-history.md`) recebe `merge_commit aadaa6d51be950e152ca6a6f15327bc9989039de` e
-  `approved_head a62d04e2bbe42533e58639643a19104bdccc0ab6`.
+  `approved_head fbda96b016ac65f88fe99d695295329e83938bea` (**corrigido pela Emenda 3, achado C1-A2**: a autoria
+  publicou `a62d04e2…`, o head do PR no merge; `approved_head` é o **objeto que a ata da junta nomeia** —
+  `J-B-SAN3-04a.md:5`).
 - `Kpis/app.js` é regenerado por `node scripts/kpi-freeze.mjs` — **a cópia congelada nunca é digitada**
   (`D-KPI-INDEX-PAINEL`). O painel não ganha dimensão nova, logo não há visualização nova a entregar.
 

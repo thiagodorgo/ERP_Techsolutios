@@ -4566,7 +4566,12 @@ tocados** — worktree alheio se reporta, nunca se varre.
 teste, provado por `git diff --name-only`. `blocks_completed` **165 → 166**, com a ressalva escrita de que o
 `B-SAN3-00` corre em paralelo e também soma um degrau (se mergear antes, a recontagem é deste bloco no pré-merge).
 `mvp_*` intocados (§C3.4). `merge_commit`/`approved_head` **`null` na autoria**. Este PR **pagou o backfill §C3.5
-do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`, medidos por `gh pr view` e pela ata, não herdados).
+do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`). **[Procedência CORRIGIDA pelo #392, achado A3 do
+porteiro pós-merge do #391 — o texto original dizia "medidos por `gh pr view` e pela ata".** `gh pr view 390`
+devolve `mergeCommit aadaa6d5…` (o `merge_commit`, correto) e `headRefOid a62d04e2…`, que **não** é o valor
+escrito. A fonte real do `approved_head fbda96b0…` é a **ata** `agent-orchestration/omega/juntas/J-B-SAN3-04a.md:5`,
+que nomeia o objeto julgado. O número estava certo; a citação da medição, não — e apontava para um instrumento que
+devolveria o número errado.] **Régua declarada (§C3.5), porque as duas convivem hoje no registro e foi isso que gerou o conflito:** `merge_commit` = o commit de merge na `main` (`gh pr view <n> --json mergeCommit`); `approved_head` = **o objeto que a ata da junta nomeia**, nunca `--json headRefOid`. Onde houver pré-merge, os dois divergem por construção.
 
 **Pendência nova:** `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` (MÉDIA, dono `B-SAN3-A2`) — o CI parou de derivar, mas
 a máquina do dono segue em 3.41.6 / Dart 3.11.4. Índice regerado **pelo gerador**.
@@ -4586,7 +4591,18 @@ bloco mergear.
   `.claude/skills/`, `.agents/agents/`, `.agents/skills/` e os `SKILL.md` dos dois diretórios de skill, e
   **reafirma** `.claude/worktrees/` depois das reinclusões. Provado por `git check-ignore -q` (exit code — o
   `-v` imprime o padrão de **negação** também, e isso enganou a primeira leitura desta instância), com arquivo real
-  criado e removido sem resquício, e `git ls-files -z | git check-ignore -z --stdin` **vazio**.
+  criado e removido sem resquício.
+- **"0 rastreado passou a ser ignorado" — PROVA REFEITA no pré-merge (achado C1-A1 da junta).** A forma da autoria
+  (`git ls-files -z | git check-ignore -z --stdin`) é **vazia por construção**: sem `--no-index`, `check-ignore`
+  consulta o índice e **nunca** reporta rastreado como ignorado. Medido: ela devolve **N=0 com o `.gitignore` do
+  objeto E N=0 com o da base** — mesmo número para os dois, logo não pode falhar. Forma falsificável, que passa a
+  valer: `git check-ignore -z --no-index --stdin` sobre **todos** os rastreados, **nas duas pontas**, universo único
+  (**3501** rastreados do objeto), com substituição do `.gitignore` **provada antes** de ler resultado (md5
+  EOL-neutro `2ad3f3f4…` = blob da base) e **restauração provada depois** (`d965d5a9…` = blob do objeto,
+  `git status --porcelain -uall` vazio). **Base = 128 ignorados · objeto = 3** (`AGENTS.md`, `CLAUDE.md`,
+  `docs/claude-code-handoff/CLAUDE.md`, os três pelo ignore **global** e os três já ignorados na base);
+  `comm -23` = **0 passaram a ser ignorados**, `comm -13` = **125 deixaram**. Reconcilia com as duas cadeiras sem
+  divergência: **128 (universo do objeto) + 4 corpos que a dívida 2 remove = 132 (universo da base)**.
 - **Item 1 REVOGADO por medição, registrado pela §A2** em `controle/decisoes.md`
   (`REGISTRO-SAN3-00-CORPOS-DE-JURADO`): `git rev-list --objects --all` (toda ref, não só os 138 tips) = 314
   blobs; 129 corpos no disco da árvore principal, **80** fora da `main` (41 no `.claude/`, 39 no `.agents/`),

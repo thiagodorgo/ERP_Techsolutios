@@ -4679,7 +4679,10 @@ tocados** — worktree alheio se reporta, nunca se varre.
 teste, provado por `git diff --name-only`. `blocks_completed` **165 → 166**, com a ressalva escrita de que o
 `B-SAN3-00` corre em paralelo e também soma um degrau (se mergear antes, a recontagem é deste bloco no pré-merge).
 `mvp_*` intocados (§C3.4). `merge_commit`/`approved_head` **`null` na autoria**. Este PR **pagou o backfill §C3.5
-do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`, medidos por `gh pr view` e pela ata, não herdados).
+do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`). **[Procedência CORRIGIDA pelo #392, achado A3 do
+porteiro pós-merge do #391:** o texto dizia "medidos por `gh pr view` e pela ata"; `gh pr view 390 --json headRefOid`
+devolve `a62d04e2…`, que **não** é o valor escrito. A fonte do `approved_head` é a ata `J-B-SAN3-04a.md:5`. Número
+certo, citação errada.] **Régua declarada (§C3.5), porque as duas convivem hoje no registro e foi isso que gerou o conflito:** `merge_commit` = o commit de merge na `main` (`gh pr view <n> --json mergeCommit`); `approved_head` = **o objeto que a ata da junta nomeia**, nunca `--json headRefOid`. Onde houver pré-merge, os dois divergem por construção.
 
 **Pendência nova:** `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` (MÉDIA, dono `B-SAN3-A2`) — o CI parou de derivar, mas
 a máquina do dono segue em 3.41.6 / Dart 3.11.4. Índice regerado **pelo gerador**.
@@ -4711,7 +4714,9 @@ dos blocos **em voo** (#388 e #389), byte-idênticas ao blob da branch que a jun
 vivo da árvore de `demo/investidor` virou `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` (MÉDIA, não bloqueia), com
 **dono a nomear pela junta** — o dev propõe e justifica, e não decide (§C7.4-bis).
 
-**As 5 dívidas do #390.** (1) backfill §C3.5 do #390 na entrada 160 (`aadaa6d5…` / `a62d04e2…`); (2)
+**As 5 dívidas do #390.** (1) backfill §C3.5 do #390 na entrada 160 (`aadaa6d5…` / `fbda96b0…` — a autoria
+publicara `a62d04e2…`, o **head do PR no merge**; o pré-merge corrigiu para o **objeto que a junta aprovou**,
+achado **C1-A2**, e a origem do valor errado é o orquestrador, não o dev); (2)
 **aposentadoria rodada 4 EXECUTADA** — as 2 cadeiras `jurado-san3-01c2-*` fora dos dois espelhos, por identificador
 de BLOCO, elenco de volta a **0**, `sync-agent-agents --check` verde com 23 agentes, 100.138 bytes removidos do
 contexto; (3) **dono real confirmado** nas duas pendências, com a ampliação nominal deixando de ser promessa e virando
