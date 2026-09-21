@@ -423,11 +423,17 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    viva não é alvo de ninguém); insumos do briefing presentes (parecer do crítico + PD nos ciclos ≥3);
    afirmações da ata anterior marcadas "a re-verificar" e não herdadas como fato; inelegibilidade dos papéis
    conferida por nome; **fatia S0 executada** (espelho Codex consistente por `sync-agent-agents.mjs --check`);
-   baseline honesto medido; e plano de perda de jurado declarado. **Sem o `LIBERADO` dele a junta não
-   começa.** Por quê: três ciclos julgaram bem e falharam sempre no terreno — a contaminação entre jurados
+   baseline honesto medido; **o objeto da junta é um SHA com check-runs CONCLUÍDOS**
+   (`gh api repos/<owner>/<repo>/commits/<sha>/check-runs`) — CI **vermelho é insumo do voto**, mas
+   **ausência de CI BLOQUEIA o start**, e `cancelled`/`queued` conta como ausente até concluir; e plano de
+   perda de jurado declarado. **Sem o `LIBERADO` dele a junta não começa.** Por quê: três ciclos julgaram
+   bem e falharam sempre no terreno — a contaminação entre jurados
    "encerrada" num ciclo voltou no seguinte, a fatia S0 faltou dois ciclos seguidos, e uma premissa falsa da
-   ata anterior foi herdada como fato. O inspetor é para a junta o que o cluster descartável é para o jurado
-   de banco: a condição de o voto significar algo.
+   ata anterior foi herdada como fato. E os PRs **#388 e #389 foram julgados com ZERO check-run no head**:
+   o gatilho do CI era só `pull_request`, que exige `refs/pull/N/merge`, e PR de bloco conflita com a `main`
+   (todo bloco apensa nos mesmos registros), logo não nascia run nenhum — a junta votava sobre um objeto que
+   máquina nenhuma executou (`B-SAN3-B1`, 2026-09-21). O inspetor é para a junta o que o cluster descartável
+   é para o jurado de banco: a condição de o voto significar algo.
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → subagente pesquisador web (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.

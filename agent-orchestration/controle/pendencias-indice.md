@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **410** |
-| IDs distintos | 399 |
-| **ABERTAS** | **300** |
+| Cabecalhos `## P-` | **411** |
+| IDs distintos | 400 |
+| **ABERTAS** | **301** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **231** |
+| — das quais **ativas nesta rodada** | **232** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 110 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **410 cabecalhos para 399 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **411 cabecalhos para 400 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 131
+## ABERTAS · balde A — material — 132
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -202,6 +202,7 @@
 | `P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS` | 9707 | MÉDIA | sim | P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS (2026-09-18) — depois de trocar de organ |
 | `P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA` | 9715 | ALTA | sim | P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA (2026-09-18) — `docs/navigation-matrix.md` diverge |
 | `P-AUTH-CLAIMS-SEM-TENANT-ROLE` | 9725 | MÉDIA | sim | P-AUTH-CLAIMS-SEM-TENANT-ROLE (2026-09-18) — o JWT não carrega `tenant_role`/`tenant_rol |
+| `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` | 9735 | MÉDIA | sim | P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO (2026-09-21) — o Flutter do CI (3.47.5) e o da má |
 
 ## ABERTAS · balde B — processo/registro — 100
 

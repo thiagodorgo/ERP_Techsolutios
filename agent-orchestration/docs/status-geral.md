@@ -4615,3 +4615,74 @@ tinham o arquivo no §5 do plano.
 `P-WEB-GATE-MODULO-INCOMPLETO` (N=8, `B-SAN3-18`), `P-SAN3-04A-PERMISSOES-ORFAS` (efeito do apelido `os.read`, N=4,
 `B-SAN3-04b`) e `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` (o achado C2-05 é esta pendência, que a junta não podia ver
 porque nasceu no #387 — o `finance` entra na lista de papéis afetados). Índice pelo gerador.
+
+## B-SAN3-B1 (PR #391) — o CI passa a existir no SHA que a junta julga, e o GHCR fecha por ramo
+
+**O defeito que o bloco fecha.** O único gatilho de PR do `ci.yml` era `pull_request`, que exige
+`refs/pull/N/merge`. PR de bloco **conflita com a `main`** — todo bloco apensa nos mesmos registros de
+`agent-orchestration/` —, então o GitHub não produz merge ref e **nenhum run nasce**: os PRs **#388 e #389 foram
+julgados por juntas com ZERO check-run no head**. A junta estava votando sobre um objeto que máquina nenhuma
+executou.
+
+**O que entrou.** Gatilho `push` em `fix/**`, `feat/**`, `chore/**`, `docs/**` + `workflow_dispatch`, e
+`concurrency` por **(workflow, evento, ref)** com `cancel-in-progress`. Agrupar só por `github.ref` **não dedupa**
+(em `pull_request` o ref é `refs/pull/N/merge` e em `push` é `refs/heads/<ramo>`); agrupar por SHA **cruzando
+eventos** faria um cancelar o outro e deixaria o SHA julgado com check-run `cancelled` — o estado que o bloco
+existe para eliminar.
+
+**A correção do GHCR não é acessório — é inseparável.** O passo do CD se chama *"push to GHCR only on main"*, mas a
+condição era `github.event_name == 'push'`, que **não olha o ramo**. Com o gatilho novo e sem essa correção, **todo
+push de ramo de bloco publicaria `erp-backend:<sha>` e sobrescreveria `:latest`** com código que junta nenhuma
+julgou. Os **dois** portões (o `if` do login e o `push:` do build) passam a testar `github.ref ==
+'refs/heads/main'`.
+
+**Divergência REPORTADA, não repetida (§A2).** O mandato do bloco dizia que a imagem não julgada "alcançaria
+produção". **Medi e o alcance é outro, mais preciso:** `deploy-production.yml` é `workflow_dispatch` puro e deploya
+por **SHA explícito**, nunca por `:latest`; `deploy-staging.yml` dispara **só em push para `main`**, logo o gatilho
+novo não o alcança; e `:latest` **não é lido por caminho de deploy nenhum** do repositório — só é escrito pelo
+`ci.yml`. **Mas** a trava (c) do `deploy-production.yml` (l.117-118) checa apenas que a imagem do SHA **existe**, e
+a própria mensagem de erro dela diz *"Garanta que o SHA foi mergeado na main e publicado no GHCR"*: ela **assume
+que existir no GHCR implica ter sido mergeado na main**. Publicar por ramo **quebraria essa premissa em silêncio e
+esvaziaria uma das três travas de produção** — as outras duas (ata na `main`, staging verde no mesmo SHA) ficam de
+pé. Não é "alcança produção direto"; é **uma trava de produção invalidada sem ninguém perceber**, que é motivo
+suficiente e verdadeiro.
+
+**Globs conferidos contra o real.** O mandato mandou conferir, não inventar. `git branch -r`: `feature/` tem **78
+ramos** — o maior namespace — mas é **convenção morta** desde 2026-06-19 e não está no §8.2; `codex/` parou em
+2026-05-26, `test/` em 2026-06-10. Vivos: `chore/` (2026-09-21), `fix/` (2026-09-20), `docs/` (2026-08-29) e
+`feat/`, que o §8.2 nomeia. `demo/` ficou **fora de propósito** (ramo de demonstração; junta nenhuma o julga). A
+medição ficou escrita em comentário no próprio `ci.yml`, para o próximo não ter de refazê-la.
+
+**Flutter fixado.** `channel: stable` **sem versão** resolvia o que o canal servisse no dia. Medido por execução
+própria: `3.47.4` até 2026-09-18T18:37Z, `3.47.5` a partir de 2026-09-19T00:26Z — **a deriva aconteceu dentro
+desta rodada**, e foi dela que veio a divergência de `dart format` que deixou o CI vermelho no #388.
+`flutter-version: 3.47.5`; subir a versão passa a ser **ato deliberado**.
+
+**Contrato (§C7.1-bis), nos dois espelhos.** `CLAUDE.md` e `AGENTS.md` alterados **no mesmo trabalho**, com texto
+idêntico (regra de espelhamento — conferido por `diff` da seção): o checklist fail-closed do
+`inspetor-de-terreno-da-junta` passa a exigir que **o objeto da junta seja um SHA com check-runs CONCLUÍDOS**; CI
+vermelho é **insumo do voto**, **ausência de CI BLOQUEIA o start**, e `cancelled`/`queued` conta como ausente. Os
+dois corpos do agente (`.claude/agents/` e `.agents/agents/`, `git add -f` nos dois) ganham o item **4.3** com o
+comando que o prova. `sync-agent-agents.mjs --check` OK, **25 agentes**.
+
+**Fora de escopo, declarado e intocado.** `deploy-production.yml`, `deploy-staging.yml`, `backup-database.yml`,
+`uptime-check.yml`; o **job `e2e`** (é do `B-SAN3-10`, autorizado nominalmente só para ele no §10.6 do
+`PLANO_SAN3.md`); e **proteção de ramo / check exigido no GitHub**, que é **ato do dono** e segue pergunta aberta
+no §10.6. Nenhuma linha de `src/`, `frontend/`, `mobile/`, `tests/` ou `prisma/`.
+
+**Terreno.** Worktree `sanb1` com `npm ci` **próprio** na raiz e no `frontend` (nunca junction — lição de
+2026-08-26) e `prisma generate` com `DATABASE_URL` só no ambiente. A base viva (`erp-postgres`, `erp-redis`) **não
+recebeu um comando**. O worktree `san300` (`B-SAN3-00`, registro), `b04a`, `b11` e a árvore principal **não foram
+tocados** — worktree alheio se reporta, nunca se varre.
+
+**KPI (§C3).** Métricas de trilha **carregadas** com nota explícita (§C3.3) — o PR não toca código de produto nem
+teste, provado por `git diff --name-only`. `blocks_completed` **165 → 166**, com a ressalva escrita de que o
+`B-SAN3-00` corre em paralelo e também soma um degrau (se mergear antes, a recontagem é deste bloco no pré-merge).
+`mvp_*` intocados (§C3.4). `merge_commit`/`approved_head` **`null` na autoria**. Este PR **pagou o backfill §C3.5
+do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`, medidos por `gh pr view` e pela ata, não herdados).
+
+**Pendência nova:** `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` (MÉDIA, dono `B-SAN3-A2`) — o CI parou de derivar, mas
+a máquina do dono segue em 3.41.6 / Dart 3.11.4. Índice regerado **pelo gerador**.
+
+**Pós-merge:** o ramo `chore/ci-probe` (sonda S2, commit `27eae4b0`) é apagado — vivia só como evidência até este
+bloco mergear.

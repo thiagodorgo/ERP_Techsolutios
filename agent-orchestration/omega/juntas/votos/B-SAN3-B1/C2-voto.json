@@ -1,0 +1,85 @@
+{
+  "bloco": "B-SAN3-B1",
+  "pr": 391,
+  "objeto_julgado": "3a0ea095cbbac36af0c21ba967e938fbe5375e83",
+  "base": "aadaa6d5",
+  "cadeira": "C2",
+  "identidade": "agente-devops-provisionador",
+  "modelo": "Opus 5 (claude-opus-5[1m])",
+  "corpo_aplicado": "md5 EOL-neutro 1aa2acf73d986b6389537fe671333ca4 — IDENTICO no head julgado, no worktree san300 e na arvore principal; a ressalva R1 do inspetor nao me alcanca (medido por mim, nao herdado)",
+  "data": "2026-09-21",
+  "lente": "o pipeline: gatilhos e globs conferidos contra os ramos REAIS; a chave de concurrency e as duas armadilhas (so github.ref nao dedupa; SHA cruzando eventos deixaria o SHA julgado cancelled); a versao do Flutter fixada e a convivencia channel x flutter-version; o job docker rodando em ramo com push:false; e a execucao dupla push+pull_request no mesmo SHA. NAO julguei: o portao do GHCR na perspectiva de segredo/credencial/fronteira de artefato (C1) nem diff x plano, escopo, KPI, texto normativo e registro (C3).",
+  "veredito": "APROVADO",
+  "quorum": "unanimidade de 3 — este voto nao reprova",
+  "resumo_do_voto": "Os cinco itens da minha lente passam POR EXECUCAO, nao por leitura: os quatro globs cobrem 40/40 dos PRs mais recentes e os 4 PRs abertos agora; a chave de concurrency escapa das DUAS armadilhas nomeadas no mandato, e a prova material e que os dois runs do SHA julgado sobreviveram (14/14 success, zero cancelled); o pin do Flutter pegou (stable-3.47.5-x64 no head, sem aviso, unico setup de Flutter do repositorio) e a deriva que o justifica eu re-medi nos dois runs historicos; e o job docker em ramo fecha o portao (Log in to GHCR = skipped, zero export ao registry, push: false nos tres build-push-action) E ainda prova que o processo sobe (12 asserts do smoke de conteiner: grava, reinicia, o processo e outro, o worker volta, o dado sobreviveu). A execucao dupla e real, medida e conscientemente aceita, com custo faturado ZERO (repositorio publico). Voto APROVADO com duas pendencias ajuste nomeadas: uma frase de evidencia FALSA no relatorio do dev sobre o concurrency (C2-01) e um efeito novo do cancel-in-progress sobre a main que o texto do bloco nao cobre (C2-02). Nenhum achado bloqueia.",
+  "achados": [
+    {
+      "id": "C2-01",
+      "titulo": "A evidencia que o dev usa para provar que o concurrency NAO cruza eventos e falsa: no head intermediario 16d39b41 os DOIS runs foram cancelled, nao so o de push",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "O relatorio do dev, §5.c, afirma: 'o run pull_request do mesmo head seguiu vivo'. Medido por mim: gh api '.../actions/runs?head_sha=<16d39b41>' -> 35654817500 push completed CANCELLED e 35654825104 pull_request completed CANCELLED. E gh api '.../commits/16d39b41/check-runs' -> backend CANCELLED (x2) e docker CANCELLED (x2); os demais ficaram success porque ja tinham terminado. Causa medida: o push seguinte (3a0ea095) atualiza tambem refs/pull/391/merge, o que cria um run pull_request NOVO que cancela o anterior DENTRO DO MESMO grupo (ci-ci-pull_request-refs/pull/391/merge). A conclusao de desenho continua verdadeira e esta provada por outro caminho: no head FINAL os dois runs sobreviveram (35655315031 push success + 35655321306 pull_request success, 14/14 check-runs success, zero cancelled).",
+      "motivo": "O artefato esta certo; a PROVA citada nao prova o que diz provar. O head intermediario demonstra a dedup DENTRO do evento (armadilha (a) vencida), e nao a ausencia de cancelamento CRUZANDO eventos (armadilha (b)). Uma ata que herde essa frase registra como medido um fato que a medicao contradiz — exatamente a classe de defeito que o §C7.1-bis deste bloco existe para impedir, e que a casa ja pagou caro (premissa falsa da ata anterior herdada como fato). Nao reprova porque o artefato nao depende dela e a conclusao tem prova independente e mais forte."
+    },
+    {
+      "id": "C2-02",
+      "titulo": "cancel-in-progress: true e chave NOVA e alcanca push na main: um merge dentro da janela de ~9 min cancela o run do merge anterior, e aquele SHA fica sem imagem no GHCR — a Trava (c) do deploy-production passa a recusa-lo",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "A base NAO tinha a chave: grep -n concurrency no ci.yml de aadaa6d5 devolve uma unica linha (184), que e o NOME de um arquivo de teste (tests/checklist-run-create-concurrency-db.test.ts), nao a chave YAML; o on: da base e pull_request[main] + push[main], sem concurrency. Janela medida: os 12 ultimos runs de ci em push/main duram de 7m38 a 9m39 (ex.: 35521761719 16:08:23->16:17:05; 35440526835 11:35:26->11:44:56). Cadencia medida: git log origin/main -40 -> menor intervalo entre commits consecutivos = 13 min; 1 de 39 intervalos abaixo de 20 min; ZERO abaixo de 9 min. Dependencia medida na ref julgada: deploy-staging.yml NAO depende do GHCR (flyctl deploy --config fly.staging.toml --remote-only, build na Fly), mas deploy-production.yml Trava (c), l.117-118, roda docker manifest inspect ghcr.io/${OWNER}/erp-backend:${SHA} e aborta com 'Garanta que o SHA foi mergeado na main e publicado no GHCR'.",
+      "motivo": "Efeito colateral novo deste diff sobre um ramo que o bloco nao estava mirando. Na main o run de CI nao e feedback: e o PRODUTOR do artefato que a promocao exige. O texto que o proprio bloco escreve (§C7.1-bis) so diz que cancelled conta como ausente PARA O START DA JUNTA — nao cobre o caso da main. Fica ajuste e nao bloqueia porque o efeito e fail-closed (a producao recusa promover, nunca promove o artefato errado), porque a serie medida nao tem nenhum intervalo dentro da janela (0/39 abaixo de 9 min) e porque o run cancelado e re-executavel pela via normal. Precisa de dono nomeado, nao de reprovacao."
+    },
+    {
+      "id": "C2-03",
+      "titulo": "Censo dos globs: chore/ tem 11 ramos, nao 9 como o relatorio e o comando declaram",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "git fetch origin --prune; git for-each-ref refs/remotes/origin/chore/* -> 11 (ultimo commit 2026-09-21). Os outros batem: feature 78 (ultimo 2026-06-19), feat 26 (2026-07-05), fix 12 (2026-09-20), codex 4 (2026-05-26), docs 3 (2026-08-29), test 1 (2026-06-10), demo 1 (2026-08-29). Causa da diferenca: chore/ci-ve-o-sha-julgado, chore/ci-probe e chore/corpos-de-jurado-rastreados nasceram durante a propria rodada, depois da contagem do dev. A conclusao nao muda: chore/** cobre os 11.",
+      "motivo": "Numero publicado em comentario no ci.yml e no comando; registro a diferenca para que a ata nao carregue como medido um valor que ja nao se reproduz. Contagem viva envelhece — e por isso que o que vale e o teste de cobertura, nao o numero: medi gh pr list --limit 40 e os 40 PRs mais recentes usam SO os quatro prefixos cobertos (chore 23, fix 12, feat 3, docs 2), e os 4 PRs abertos agora (#388 #389 #391 #392) tambem."
+    },
+    {
+      "id": "C2-04",
+      "titulo": "Execucao dupla (push + pull_request no mesmo SHA) acontece, custa 2 runs / 14 jobs / ~31 job-min por push — e e escolha consciente e declarada, com custo faturado zero",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "gh api '.../actions/runs?head_sha=3a0ea095...' -> 35655315031 (push, 21:07:37Z) e 35655321306 (pull_request, 21:07:41Z), ambos completed/success, 7 jobs cada. check-runs: 14 total, 14 success. Soma das duracoes de job: 15 min (push) + 16 min (pull_request). gh api '.../runs/<id>/timing' --jq .billable -> UBUNTU total_ms = 0 min nos DOIS runs, porque gh api repos/... -> private=false, visibility=public. Declaracao do desenho: comentario nas linhas 21-24 do ci.yml julgado ('agrupar por SHA CRUZANDO eventos faria um cancelar o outro, deixando o SHA julgado com check-run cancelled') + §Passos do comando + o §C7.1-bis novo ('cancelled/queued conta como ausente ate concluir'). Sem paths/paths-ignore no on: — e isso e exigido pela propria clausula nova, senao um head so de registro teria zero check-run e a junta ficaria bloqueada.",
+      "motivo": "O mandato manda dizer se o desenho aceita a duplicacao conscientemente. Aceita, e esta escrito no artefato e no comando — nao e efeito nao percebido. A duplicacao e o preco de nao cancelar cruzando eventos, e o preco medido em dinheiro e zero (repositorio publico). O custo que sobra e slot de concorrencia (14 jobs por push, com duas juntas vivas empurrando); nao observei fila hoje (primeiro job 38 s apos a criacao do run)."
+    },
+    {
+      "id": "C2-05",
+      "titulo": "O portao novo por ramo faz o workflow_dispatch na main PUBLICAR no GHCR, coisa que o portao antigo por tipo de evento nao fazia",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Antes: if/push: github.event_name == 'push' — um workflow_dispatch nunca satisfazia a condicao. Depois: github.ref == 'refs/heads/main' — um dispatch escolhido na main satisfaz, e publica :<sha> e :latest. O gatilho workflow_dispatch e acrescentado por este mesmo diff. Contexto medido: gh api repos/.../branches/main/protection -> 404 'Branch not protected', ou seja quem pode despachar o workflow ja pode empurrar direto na main; e o dispatch so alcanca o tip do ref escolhido (em ramo de bloco, github.ref = refs/heads/<ramo> e o portao fecha).",
+      "motivo": "Mudanca de comportamento real, coerente com o nome do passo ('push to GHCR only on main') e sem escalada de privilegio observavel, mas que ninguem declarou por escrito. Registro com a medicao porque a lente do portao de artefato e da C1 e ela precisa do fato na mesa; pela minha lente e nota, nao defeito: o que se publica por esse caminho e o tip da main, que e codigo ja julgado e mergeado."
+    }
+  ],
+  "numeros_remedidos": {
+    "check_runs_no_head_julgado": "14 total · 14 completed · 14 success · 0 cancelled · 0 queued (7 nomes de job x 2 eventos) — CONFERE com o briefing",
+    "runs_no_head_julgado": "2 — 35655315031 (push) e 35655321306 (pull_request), ambos completed/success",
+    "jobs_por_run": "7 + 7, todos success, lidos um a um pela API",
+    "passos_do_job_docker_nos_2_eventos": "Log in to GHCR = skipped · Build backend image = success · Load into daemon = success · Load builder = success · Container smoke = success",
+    "publicacao_em_ramo": "0 — 3 ocorrencias de 'push: false' no log, 0 de 'exporting to registry|pushing manifest|pushing layers', 0 de 'Login Succeeded'; o buildx roda sem --push e sem --output type=registry",
+    "smoke_de_conteiner_em_ramo": "12 asserts VERDE (grava organizacao, le antes do restart, reinicia, processo e OUTRO, readiness 200, worker sobe no processo novo, organizacao sobreviveu) + teardown com -v",
+    "flutter_no_head_julgado": "/opt/hostedtoolcache/flutter/stable-3.47.5-x64 (unico no log), FLUTTER_ROOT idem, zero ::warning/::error",
+    "deriva_do_flutter_re_medida": "run 35381265287 (2026-09-18T18:37:30Z) = stable-3.47.4 · run 35409352362 (2026-09-19T00:26:19Z) = stable-3.47.5",
+    "setups_de_flutter_no_repositorio": "1 (varridos os 5 workflows da ref julgada)",
+    "suite_backend_no_SHA_julgado": "3054 tests · 3052 pass · 0 fail · 0 cancelled · 2 skipped, com service containers Postgres+Redis (job backend do run 35655315031)",
+    "censo_de_ramos_remotos": "137 ramos + symref origin/HEAD — feature 78 / feat 26 / fix 12 / chore 11 / codex 4 / docs 3 / test 1 / demo 1 / main",
+    "cobertura_dos_globs": "40/40 dos PRs mais recentes e 4/4 dos PRs abertos casam com os quatro globs",
+    "workflows_alcancados_pelo_gatilho_novo": "1 de 5 (so o ci.yml; deploy-staging so push/main, deploy-production e workflow_dispatch, backup e uptime sao schedule+dispatch)",
+    "duracao_do_ci_em_push_main": "7m38 a 9m39 nos 12 ultimos runs",
+    "cadencia_da_main": "menor intervalo 13 min; 1 de 39 intervalos < 20 min; 0 de 39 < 9 min",
+    "custo": "15 + 16 job-min por push; billable UBUNTU = 0 min (repositorio publico: private=false)",
+    "meu_corpo": "1aa2acf73d986b6389537fe671333ca4 identico nos tres locais (head julgado, san300, arvore principal)"
+  },
+  "o_que_nao_medi": [
+    "0 check-runs nos PRs #388/#389 (numero do briefing) — nao usei no voto",
+    "A2 na parte de portao de artefato/segredo/credencial em log — lente da C1; medi so que a Trava (c) le o GHCR e que em ramo nao ha login nem export",
+    "KPI, escopo do diff fora de .github/, §C7.1-bis espelhado no AGENTS.md, registro e trilha — lente da C3",
+    "A4 no universal: li os 5 workflows e nao vi leitura de :latest, mas nao varri infra/, docker-compose* nem scripts — nao afirmo o universal",
+    "Fila de concorrencia com as duas juntas empurrando ao mesmo tempo — nao houve evento hoje para medir"
+  ],
+  "terreno_e_limpeza": "Medicoes somente leitura (git show / git for-each-ref / git log / gh api) a partir do worktree san300, lendo a ref julgada por git show 3a0ea095:<caminho>. Nao criei worktree, nao subi conteiner, nao toquei a base viva (erp-postgres/erp-redis seguem parados, sem um comando meu), nao rodei clean/prune/stash/checkout/reset/gc. Unico comando de escrita: git fetch origin --prune -q (atualiza refs remotas, nao muta arvore de trabalho) — declarado. Nenhum arquivo rastreado alterado. Residuo alheio reportado e NAO varrido: worktree w-s1 (sonda S2) e a mutacao viva de outra sessao na arvore principal seguem intactos. Artefatos meus: C2-voto.json, C2-evidencia.md e os logs brutos em scratchpad/logs-C2/ (fora da pasta de votos).",
+  "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-B1/C2-evidencia.md"
+}

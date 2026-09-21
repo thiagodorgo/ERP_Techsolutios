@@ -127,6 +127,18 @@ que está sujo e como você mediu.
    `npm run check` **exit 0** (exit por variável, nunca por pipe — `cmd > arq 2>&1; ec=$?`). Se o baseline já
    está vermelho, nenhum voto vale, e é **BLOQUEADO** com a saída colada.
 
+4.3 **O objeto da junta é um SHA com CHECK-RUNS CONCLUÍDOS** (`B-SAN3-B1`, 2026-09-21). No head a julgar:
+   `gh api repos/<owner>/<repo>/commits/<sha>/check-runs --jq '.total_count'`. **Zero check-run = BLOQUEADO**
+   — a junta estaria votando sobre um objeto que máquina nenhuma executou. **CI vermelho NÃO bloqueia:** é
+   **insumo do voto**, e vai para o briefing com a conclusão de cada job nomeada. Check-run `cancelled` ou
+   ainda `queued`/`in_progress` conta como **ausente** até concluir.
+
+   **Por quê:** os PRs **#388 e #389** foram julgados com **zero check-run** no head. O gatilho do CI era só
+   `pull_request`, que exige `refs/pull/N/merge`; PR de bloco conflita com a `main` (todo bloco apensa nos
+   mesmos registros), não há merge ref, e nenhum run nasce. O `B-SAN3-B1` acrescentou o gatilho `push` por
+   ramo de bloco — mas o gatilho só garante que o run **exista**; quem garante que a junta não vote **sem
+   ele** é este item.
+
 ### 5. Quórum — o que o voto perdido do ciclo 3 expôs
 
 5.1 **Plano de perda de jurado declarado.** O briefing tem de dizer o que acontece se um jurado cair por erro

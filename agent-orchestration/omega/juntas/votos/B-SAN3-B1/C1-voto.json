@@ -1,0 +1,98 @@
+{
+  "cadeira": "C1",
+  "identidade": "agente-secops",
+  "bloco": "B-SAN3-B1",
+  "pr": 391,
+  "objeto": "3a0ea095cbbac36af0c21ba967e938fbe5375e83",
+  "modelo": "claude-opus-5[1m]",
+  "corpo_aplicado": "head julgado 3a0ea095 (.claude/agents/agente-secops.md, md5 EOL-neutro dc1a2974877dc56f04a5e3cb43668c75 — IDENTICO em head, base, raiz e san300; a ressalva R1 nao alcanca esta cadeira)",
+  "veredito": "APROVADO",
+  "fundamento": "O bloco fecha a fronteira de artefato que ele proprio abriria. As DUAS unicas condicoes do ci.yml que dependiam do tipo de evento eram os dois portoes do GHCR, e as duas foram corrigidas — medido por contagem nas duas pontas (base: 2 ocorrencias de github.event_name, ambas o portao; head: 1, e e o concurrency; e UM UNICO if: no arquivo inteiro). Nao sobrou condicao com o sentido trocado. Nenhum dos outros quatro workflows tem gatilho de push em ramo, e no SHA julgado so rodaram 2 runs, ambos ci. O portao fechando esta provado por execucao que eu mesmo reli: Log in to GHCR = skipped nos dois eventos, com build e smoke de conteiner success. Zero segredo versionado no diff e higiene de .env correta. Nenhum criterio de VETO desta cadeira foi acionado.",
+  "achados": [
+    {
+      "id": "A-C1-01",
+      "titulo": "workflow_dispatch na main passa a publicar no GHCR (alargamento nao documentado)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "ci.yml head l.19 acrescenta workflow_dispatch: (sem filtro de ramo) e l.415/426 trocam o portao de github.event_name para github.ref. Tabela-verdade (M2-bis da evidencia): com o portao antigo um dispatch NUNCA publicava (event_name vale workflow_dispatch, nao push); com o novo, dispatch na main satisfaz github.ref == refs/heads/main e executa o login e publica a tag do SHA e a latest. Unica celula alargada das cinco.",
+      "motivo": "Nao bloqueia porque o invariante desta cadeira (so codigo da main vira artefato) continua valido: workflow_dispatch recebe um REF, nunca um SHA arbitrario, logo dispatch na main publica o tip da main, codigo ja mergeado e julgado; dispatch em ramo cai no portao. Exige acesso de escrita, que ja permitiria empurrar para a main. Registro porque e consequencia real do cruzamento das duas mudancas e nao esta escrita no comentario do ci.yml, no relatorio do dev nem no comando do bloco."
+    },
+    {
+      "id": "A-C1-02",
+      "titulo": "o lado main do portao novo nao esta provado por execucao",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Os dois runs do head julgado provam o portao FECHANDO (Log in to GHCR = skipped). O portao ABRINDO na main nao tem run que o prove antes do merge. Medi o comportamento sob o portao antigo no ultimo push na main (run 35521761719, head aadaa6d5): Log in to GHCR => success, Build backend image => success. Hoje a main publica; se a expressao nova estivesse errada, a main pararia de publicar.",
+      "motivo": "Nao bloqueia porque a direcao da falha e fail-closed: se github.ref nao casasse, o efeito seria deixar de publicar, e a jusante a trava (c) do deploy-production.yml falharia e barraria a promocao — nunca publicar a mais. Risco funcional visivel no primeiro deploy, nao risco de seguranca. Fica como verificacao pos-merge: o porteiro confere, no primeiro run da main, que Log in to GHCR = success."
+    },
+    {
+      "id": "A-C1-03",
+      "titulo": "permissions packages: write segue concedido nos runs de ramo, sem uso",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia": "ci.yml head l.397-399 (job docker): permissions contents: read / packages: write. EVIDENCIA DE ORIGEM: o trecho ja existe na BASE aadaa6d5 (l.373) e NAO aparece no diff — git diff aadaa6d5 3a0ea095 -- .github/workflows/ci.yml filtrado por permissions sai vazio. Vem do Omega-INFRA-1 e ja valia para os runs de pull_request antes deste bloco; o bloco so amplia o contexto em que o privilegio e concedido sem uso.",
+      "motivo": "Privilegio concedido nao publica sozinho: publicar exige o login (medido skipped) e push: true (medido false); o GITHUB_TOKEN com packages: write nunca e apresentado a registry nenhum nos runs de ramo. Defesa em profundidade pediria condicionar o escopo, mas nao ha caminho executavel a partir do que este objeto entrega. Pendencia nomeada; dono sugerido: o proximo bloco que revisitar o job docker."
+    },
+    {
+      "id": "A-C1-04",
+      "titulo": "conteudo de workflow controlado por ramo passa a executar sem PR",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia": "Com o gatilho push em ramo, o ci.yml da propria branch e o que executa. Verifiquei se e classe nova: NAO e. O gatilho pull_request ja executava o ci.yml do merge ref (que inclui as alteracoes do proprio PR ao ci.yml), com segredos disponiveis por ser PR do mesmo repositorio — e o bloco permissions que o acompanha tambem e da base (A-C1-03). Muda a VISIBILIDADE (antes exigia abrir PR, agora basta o push), nao a barreira de acesso.",
+      "motivo": "Classe pre-existente, mesma exigencia de acesso de escrita, e o portao que este bloco instala e imune a ela na direcao que importa: um ramo que nao mexa no ci.yml nao publica. E a resposta explicita a pergunta do mandato desta cadeira — sobrou caminho em que push de ramo produza publicacao? — e a resposta honesta e: somente alterando o proprio portao, o que ja era possivel antes pelo outro gatilho."
+    },
+    {
+      "id": "A-C1-05",
+      "titulo": "cache-to type gha mode max passa a ser escrito por runs de ramo",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "ci.yml l.433-434 (passo Build backend image): cache-from type gha e cache-to type gha mode max — linhas ja presentes na base (l.407-408). O que o bloco muda e o CONTEXTO: o passo passa a escrever cache de Actions a partir de ramos de bloco, onde antes so main e pull_request escreviam.",
+      "motivo": "O escopo de cache do Actions isola por ref: um run de ramo escreve no escopo do proprio ramo; caches da main sao legiveis pelos ramos, mas um ramo nao sobrescreve a entrada da main — logo nao ha envenenamento ramo para main da imagem que a main publica. O dado em cache e camada de build do Dockerfile, sem segredo (o unico segredo do arquivo nao entra em camada). Consumo de cota, nao risco de artefato. Declaro no limite M12 que o modelo de isolamento do cache e conhecimento de plataforma, nao medicao minha — por isso nota, e nao ajuste."
+    },
+    {
+      "id": "A-C1-06",
+      "titulo": "a trava (c) de producao promete imagem anterior existe mas inspeciona a imagem ATUAL",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia": "deploy-production.yml l.110: nome do passo = Trava (c) rollback ensaiado + imagem anterior existe, e a mensagem final diz rollback simetrico possivel. Mas o unico docker manifest inspect do passo (l.117) e sobre erp-backend com a tag do SHA PROMOVIDO, nao a N-1 para a qual o rollback voltaria; nenhuma linha consulta a imagem anterior. EVIDENCIA DE ORIGEM: deploy-production.yml NAO esta no diff deste bloco — git diff --name-only aadaa6d5 3a0ea095 -- .github/** devolve somente .github/workflows/ci.yml.",
+      "motivo": "Encontrado ao ler o arquivo por ordem do briefing (conferir a correcao do alcance). Compoe com o defeito que este bloco conserta: a trava (c) ja era a mais fraca das tres, e a promessa que o nome dela faz (simetria de rollback verificada) nao esta implementada. Pre-existente nao reprova (C7.1-ter(a)); pendencia nomeada, dono sugerido: o bloco da trilha de infra/go-live que revisitar deploy-production.yml."
+    }
+  ],
+  "numeros_remedidos": {
+    "check_runs_no_head_julgado": "14 total_count / 14 completed / 14 success / 0 cancelled / 0 queued (7 nomes x 2 eventos) — CONFERE com o briefing",
+    "check_runs_PR_388": "0 (head 43557a17) — CONFERE; o inspetor declarou nao ter medido este",
+    "check_runs_PR_389": "0 (head 738ff531) — CONFERE; o inspetor declarou nao ter medido este",
+    "log_in_to_ghcr_run_push_35655315031": "skipped — A1 CONFIRMADA por medicao propria",
+    "log_in_to_ghcr_run_pull_request_35655321306": "skipped — A1 CONFIRMADA tambem no segundo evento",
+    "build_backend_image_ambos_os_runs": "success",
+    "container_smoke_ambos_os_runs": "success",
+    "runs_no_sha_julgado": "2, ambos do workflow ci (push + pull_request); zero run de deploy-staging, deploy-production, backup-database ou uptime-check",
+    "condicoes_por_tipo_de_evento_na_base": "2 (ci.yml l.389 e l.400), ambas o portao do GHCR",
+    "condicoes_por_tipo_de_evento_no_head": "0 em portao; 1 unica ocorrencia de github.event_name, no concurrency (l.27)",
+    "total_de_if_no_ci_yml_do_head": "1 (l.415, o portao do GHCR)",
+    "linhas_ghcr_io_no_repositorio": "3 no ci.yml (todas no job docker, sob o mesmo portao) + 3 no deploy-production.yml (workflow_dispatch puro, por SHA)",
+    "escritores_da_tag_latest": "1 (ci.yml l.429)",
+    "leitores_da_tag_latest_em_deploy": "0 — A4 CONFIRMADA; producao promove so pela tag do SHA",
+    "linhas_adicionadas_no_diff": "528",
+    "ocorrencias_de_padrao_de_credencial_no_diff": "0",
+    "arquivos_env_rastreados_no_head": "1 (.env.example apenas); .gitignore cobre .env e .env.*",
+    "arquivos_no_diff": "14, sendo 1 workflow (ci.yml); zero em src/, tests/, prisma/, infra/ e lockfiles"
+  },
+  "afirmacoes_do_dev_re_verificadas_por_esta_cadeira": {
+    "A1_passos_do_job_docker": "CONFIRMADA por medicao propria, nos DOIS eventos",
+    "A2_alcance_corrigido_do_defeito": "CONFIRMADA lendo deploy-production.yml na ref (M9): travas (a) e (b) sao independentes do GHCR, e (b) so e satisfeita por SHA que passou pela main, porque deploy-staging.yml nao tem outro gatilho; o defeito esvazia a trava (c), que trata existencia da imagem como prova de merge — a propria mensagem de erro (l.118) declara a premissa por escrito. O enquadramento corrigido e mais preciso, nao mais brando: uma trava que passa a aprovar sem discriminar e pior que uma que falha, porque nao avisa.",
+    "A3_deploy_staging_so_em_push_na_main": "CONFIRMADA (on: push, branches: [main])",
+    "A4_latest_nao_e_lido_por_deploy": "CONFIRMADA (zero ocorrencia da tag latest em deploy-production.yml, deploy-staging.yml e fly*.toml)",
+    "A7_npm_test_nao_rodou_localmente": "ACEITO — o diff nao toca src/ nem tests/, e a suite rodou no SHA julgado (job backend = success nos dois runs). Execucao por maquina no SHA julgado e evidencia mais forte, e auditavel por terceiro, que a execucao local do dev; exigir a local seria preferir a afirmacao nao verificavel a prova verificavel. Sem achado.",
+    "A5_A6_A12_globs_flutter_concurrency": "NAO medidas por esta cadeira — materia da C2 (limite M12)",
+    "A8_A9_A10_A11_kpi_backfill_yaml_escopo": "NAO medidas por esta cadeira — materia da C3, exceto o recorte de escopo (diff --name-only) que usei como evidencia de origem dos achados pre-existentes"
+  },
+  "criterios_de_veto_desta_cadeira": {
+    "segredo_ou_credencial_versionada": "NAO — 0 ocorrencia em 528 linhas adicionadas; .env ignorado, so .env.example rastreado",
+    "gate_de_producao_do_env_ts_afrouxado": "NAO SE APLICA — o diff nao toca src/ (14 arquivos, nenhum em src/); env.ts intocado",
+    "cors_asterisco_ou_tls_off_em_producao": "NAO SE APLICA — o diff nao toca codigo de aplicacao nem configuracao de ambiente",
+    "segredo_ou_pii_em_resposta_log_ou_auditoria": "NAO — nenhuma rota, resposta ou log de aplicacao e alterado; o unico segredo do ci.yml (GITHUB_TOKEN) esta dentro do passo gated, que nao executou nos runs de ramo",
+    "publicacao_de_artefato_por_push_de_ramo": "FECHADA — provado por execucao (Log in to GHCR = skipped nos dois eventos) e por leitura (push: false; unico if: do arquivo; nenhum outro publicador no repositorio)"
+  },
+  "limpeza": "Worktree proprio C:/Users/AMP/w-j-sanb1-c1 criado e removido por identificador MEU ao fim. Nenhum conteiner subido; base viva nunca foi alvo; nenhum prune/clean/stash/checkout/reset em arvore alguma. Residuo alheio (mutacao viva da raiz, worktree w-s1) reportado pelo inspetor e NAO varrido por mim."
+}
