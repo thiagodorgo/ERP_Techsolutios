@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **412** |
-| IDs distintos | 401 |
-| **ABERTAS** | **302** |
+| Cabecalhos `## P-` | **413** |
+| IDs distintos | 402 |
+| **ABERTAS** | **303** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **233** |
+| — das quais **ativas nesta rodada** | **234** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 110 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **412 cabecalhos para 401 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **413 cabecalhos para 402 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 133
+## ABERTAS · balde A — material — 134
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -204,6 +204,7 @@
 | `P-AUTH-CLAIMS-SEM-TENANT-ROLE` | 9727 | MÉDIA | sim | P-AUTH-CLAIMS-SEM-TENANT-ROLE (2026-09-18) — o JWT não carrega `tenant_role`/`tenant_rol |
 | `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` | 9737 | MÉDIA | sim | P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO (2026-09-21) — o Flutter do CI (3.47.5) e o da má |
 | `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` | 9747 | MÉDIA | sim | P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR (2026-09-21) — 33 identidades aposentadas e/ou  |
+| `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 
 ## ABERTAS · balde B — processo/registro — 100
 

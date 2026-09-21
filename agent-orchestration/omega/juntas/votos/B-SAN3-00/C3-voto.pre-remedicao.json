@@ -1,0 +1,134 @@
+{
+  "cadeira": "C3",
+  "identidade": "agente-ci-doutor",
+  "foco": "bateria, regressao e contagens",
+  "bloco": "B-SAN3-00",
+  "pr": 392,
+  "objeto": "7822deaf9afabd076d1095eaf48a6dfb635e5401",
+  "base": "aadaa6d51be950e152ca6a6f15327bc9989039de",
+  "veredito": "APROVADO",
+  "modelo": "claude-opus-5[1m]",
+  "corpo_aplicado": ".claude/agents/agente-ci-doutor.md, md5 EOL-neutro 55979e2cc21a1e6aba6bfe36899454a0 - IDENTICO no head 7822deaf, no meu worktree e na raiz demo/investidor (medido por mim, nao herdado do inspetor)",
+  "terreno": {
+    "worktree": "C:/Users/AMP/w-j-san300-c3 (detached @ 7822deaf) - o caminho que SAIU do git worktree add e o pedido, conferido por worktree list; nao houve a resolucao para C:/c/Users/... que o briefing avisou",
+    "npm_ci_proprio": "raiz ec=0 e frontend/ ec=0",
+    "junction": "NENHUMA - fsutil reparsepoint query nos dois node_modules devolve: nao e um ponto de nova analise",
+    "env": "SEM .env no worktree (ls -la .env devolve No such file or directory); DATABASE_URL e REDIS_URL so no ambiente",
+    "conteineres": "j-san300-c3-pg (postgres:16, 127.0.0.1:56840) e j-san300-c3-redis (redis:7-alpine, 127.0.0.1:56841), banco NOVO erp_c3 com prisma migrate deploy ec=0",
+    "base_viva": "NUNCA foi alvo - erp-postgres segue Exited (255) 10 days ago e erp-redis Exited (255) 3 days ago, antes E depois da minha bateria; carimbos que um docker start teria zerado. 5432 e 5433 sao de outros projetos e nao foram tocadas; portas fora da faixa 58284-58483",
+    "residuo_alheio": "REPORTADO, NAO VARRIDO - worktrees alheios vivos (b04a, b11, gov-descuido, gov-elenco, san300, sanb1, w-s1) e a arvore principal em demo/investidor com mutacao viva de outra sessao. Removi so o que tem o MEU identificador"
+  },
+  "declaracao_participacao_previa": {
+    "resposta_ao": "R-2 do orquestrador",
+    "declaro": "SIM - a identidade agente-ci-doutor ja votou sobre o PLANO_SAN3.md: cadeira C3 do CICLO 2, voto APROVADO (J-SAN3-plano-ciclo2.md, l.16). No CICLO 1 eu era SUPLENTE do validador-mestre (J-SAN3-plano-ciclo1.md, l.15) e nao votei. Este bloco emenda o §5 daquele plano.",
+    "prova_por_execucao": "git show 7822deaf de J-SAN3-plano-ciclo2.md com grep por agente-ci-doutor - lido da REF julgada, nunca do meu proprio texto",
+    "por_que_nao_morde_minha_superficie": "medido, nao argumentado: extrai o §5 inteiro do PLANO_SAN3.md no head (109 linhas) e o grep por bateria, npm test, 3052, 3054, 1202 e contagem de teste devolve 1 UNICA linha - a l.79, generica sobre encerramento de bloco, que o bloco NAO MUDOU. O que o bloco mudou no §5 sao 3 linhas de tabela (git diff --numstat 3/2): a linha do B-SAN3-01b e as duas ampliacoes nominais. Nenhuma fala de bateria, contagem ou numero de teste. Nao ha conclusao minha anterior a confirmar ou desdizer.",
+    "efeito_no_quorum": "como NAO reprovo, maioria-3 e unanimidade-3 dao o mesmo resultado pela minha cadeira (R-3)"
+  },
+  "achados": [
+    {
+      "id": "C3-01",
+      "titulo": "O check-run backend-postgres e cego a FALHA do subconjunto roteado: node --test canalizado para tee sob bash -e SEM pipefail, e o unico guard le so a linha de skipped, nunca a de fail",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "evidencia": "ci.yml l.255 roteia com: node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap. O LOG DO PROPRIO JOB no objeto julgado declara o shell do step: shell: /usr/bin/bash -e {0} - MEDIDO no log, nao suposto (o ci.yml nao tem defaults/run/shell: o grep devolve nada). Semantica provada por execucao minha: bash -e com um false canalizado para tee devolve ec=0 (mascarado); o mesmo com set -eo pipefail devolve ec=1 (propaga). O step seguinte le APENAS a contagem de pulos (grep da linha de skipped no postgres-subset.tap, e falha se for diferente de 0) - nao ha grep da linha de fail. IMPACTO NESTE OBJETO: NENHUM - o log do job saiu com 263 tests / 263 pass / 0 fail / 0 skipped, nada foi mascarado. EVIDENCIA DE ESCOPO nas duas formas exigidas: (origem) git diff --name-only aadaa6d5..7822deaf -- .github devolve VAZIO, e .github/ esta no escopo PROIBIDO do proprio comando do bloco; (data) git log -S da linha do tee em .github/workflows/ci.yml devolve 287bda36, 2026-08-10, PR #344 - 42 dias antes da base deste bloco.",
+      "motivo": "Muda o que o veredito do CI significa: 6 dos 7 check-runs verdes provam o que parecem provar; o backend-postgres verde prova apenas que nenhuma suite roteada PULOU, nao que todas PASSARAM. E a classe prova-que-nao-prova que este ciclo foi mandado cacar - so que do lado do arnes, e ANTERIOR ao bloco. Por D-JUNTA-ESCOPO-E-CALIBRACAO 1-ter(a) NAO REPROVA: vira pendencia nomeada, com bloco dono a nomear pela junta. Nao proponho correcao (§C7.4-bis)."
+    },
+    {
+      "id": "C3-02",
+      "titulo": "A bateria §9 declarada no comando e subconjunto estrito do §9 do CLAUDE.md para a trilha front: falta npm --prefix frontend run build (e o test:smoke)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "o bloco de bateria do comando B-SAN3-00-registro-rastreavel.md (13 linhas) tem npm --prefix frontend run check e NAO tem npm --prefix frontend run build nem test:smoke. CLAUDE.md §9, trilha Frontend: npm --prefix frontend run check + npm --prefix frontend run build (+ test:smoke quando existir). Rodei os dois faltantes no head julgado: frontend build ec=0; test:smoke ec=0 com 1202/1202, fail 0, skipped 0, em 63 s.",
+      "motivo": "Sem consequencia pratica aqui: o job frontend do CI roda check + test:smoke + build de toda forma (li os steps do ci.yml), o dev rodou o smoke por conta propria e eu rodei os dois. Nomeio para que um bloco que TOQUE frontend/ nao copie a bateria estreita de uma trilha doc/KPI."
+    },
+    {
+      "id": "C3-03",
+      "titulo": "A nota de backend_tests diz que o PR nao exerceu esta trilha; medi que a suite LE arquivos que o PR mudou",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "tests/kpi-dashboard-charts.test.ts e tests/kpi-dashboard-contraste.test.ts leem Kpis/* (mudado pelo PR) e tests/kpi-achados-paridade.test.ts le agent-orchestration/controle/pendencias* (mudado pelo PR). Que isso pode ficar VERMELHO por causa de um PR assim ja aconteceu, e esta escrito na propria nota do KPI: no pre-merge do B-SAN3-04a a primeira passada deu 3051/3054 com 1 FAIL em kpi-dashboard-charts. Reproduzi a falsificabilidade por controle vermelho - ver numeros_remedidos.controle_vermelho.",
+      "motivo": "O erro pende para o lado seguro - o dev NAO reivindica a contagem como medicao do PR, que e o que o §C3.3 proibe - e a imprecisao tem um efeito colateral bom: prova que a regressao e falsificavel, e portanto que o verde dela vale alguma coisa. Nada a corrigir no numero."
+    },
+    {
+      "id": "C3-04",
+      "titulo": "Regenerar o indice de pendencias no Windows deixa o arquivo como modificado no git status com git diff --numstat VAZIO",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia": "o gerador abre a saida com newline vazio e escreve LF; o checkout entrega CRLF (core.autocrlf=true). Depois de rodar: o git status mostra o arquivo modificado; git diff --numstat devolve VAZIO; git ls-files --eol devolve i/lf w/lf (era w/crlf); e o md5 EOL-neutro do disco e igual ao md5 do blob de 7822deaf (8dd1f459323c410fd3a1b4a06625126d). Restaurei com git checkout -- NA MINHA ARVORE e o status voltou a vazio.",
+      "motivo": "Registro de terreno, nao defeito do bloco: a proxima cadeira que rodar o gerador para conferir o indice vera o arquivo modificado e pode ler como mutacao viva. E a classe reference-phantom-modified-files-autocrlf, que ja fez um inspetor emitir ressalva sobre premissa falsa."
+    }
+  ],
+  "numeros_remedidos": {
+    "npm_test": {
+      "publicado_pelo_dev": "287 arquivos, 3054 testes, pass 3052, fail 0, skipped 2, 383 s",
+      "ci_no_objeto_7822deaf": "287 arquivos, tests 3054, pass 3052, fail 0, cancelled 0, skipped 2, todo 0, duration_ms 325906 (job backend 106522395433, run 35656811954)",
+      "minha_reexecucao": "287 arquivos, tests 3054, pass 3052, fail 0, cancelled 0, skipped 2, todo 0, ec=0, 399 s",
+      "veredito": "BATEM - tres execucoes independentes, tres bases descartaveis distintas"
+    },
+    "frontend_smoke": {
+      "publicado_pelo_dev": "1202/1202, fail 0, 50,4 s",
+      "ci_no_objeto_7822deaf": "tests 1202, pass 1202, fail 0, skipped 0, duration_ms 50865 (job frontend 106522395679)",
+      "minha_reexecucao": "tests 1202, pass 1202, fail 0, skipped 0, ec=0, 63 s",
+      "veredito": "BATEM"
+    },
+    "denominador_igual_ao_ci": "SIM. O job backend roda npm test = o MESMO node scripts/run-backend-tests.mjs (expansao em JS, nao depende de shell); o job frontend roda npm --prefix frontend run test:smoke = a MESMA lista explicita de 142 arquivos do frontend/package.json. O ci.yml nao tem UM filtro de paths e nao tem UM if de job - o grep por paths, paths-ignore e if devolve so a l.389, dentro de um STEP do docker. O gate roda a suite INTEIRA, nao subconjunto: backend-postgres e job ADICIONAL, nao substituto.",
+    "skips": {
+      "n": 2,
+      "quais": "ok 2027 (toda permissao do catalogo existe na tabela permissions do banco) e ok 2028 (os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS nas duas direcoes), os dois de tests/permission-catalog-db-parity.test.ts, com a MESMA diretiva SKIP por RBAC_DB_PARITY na minha execucao e na do CI, e no MESMO ordinal",
+      "orcamento": "SKIP_BUDGET_DB = 2 no fonte do runner, com os dois testes NOMEADOS por extenso; guard MONOTONICO - com DATABASE_URL presente, skipped acima de 2 REPROVA",
+      "cobertura": "NAO ficam sem cobertura: o job backend-postgres roteia tests/permission-catalog-db-parity.test.ts com RBAC_DB_PARITY=1 e no log do CI do objeto os dois saem VERDES (ok 158 e ok 159), com 263 tests / 263 pass / 0 fail / 0 skipped e o guard imprimindo testes pulados: 0",
+      "veredito": "ZERO teste silenciado no gate"
+    },
+    "ci_check_runs": {
+      "total": 7,
+      "conclusions": "7 completed / 7 success (docker, owner-portal, frontend, authority-portal, flutter, backend-postgres, backend)",
+      "jobs_declarados_no_ci_yml": 7,
+      "job_que_deveria_ter_rodado_e_nao_rodou": "NENHUM - 7 declarados = 7 executados; os outros 4 workflows do tree (backup-database, deploy-production, deploy-staging, uptime-check) nao disparam em pull_request (cron, push-na-main ou gated por repo variable), conferido nos gatilhos",
+      "tempo_de_ci": "9 min 51 s de ponta a ponta (primeiro job 21:22:47 UTC; docker termina 21:32:38 UTC)"
+    },
+    "tres_trilhas_carregadas_com_nota": {
+      "ponta_1_diff": "git diff --name-only aadaa6d5..7822deaf -- src tests frontend mobile prisma scripts .github devolve VAZIO (re-executado por mim)",
+      "ponta_2_valor": "backend 3052/3054, smoke 1202/1202 e flutter 864/864 IDENTICOS entre o kpis-latest.json do base aadaa6d5 e o do head 7822deaf; mvp_demo 99 e mvp_vendavel 88 INTOCADOS; blocks_completed 165 para 166; pr, merge_commit e approved_head null na autoria",
+      "nota_da_trilha_nao_executada": "flutter_tests diz, em voz alta: SEM confirmacao por regressao, a trilha Flutter NAO foi reexecutada neste PR, para que ninguem leia a confirmacao das outras duas trilhas como se valesse para esta - nomeada, nao escondida",
+      "backfill_divida_1": "a entrada do B-SAN3-04a no kpis-history.json (162 entradas) traz pr 390, merge_commit aadaa6d51be950e152ca6a6f15327bc9989039de e approved_head a62d04e2bbe42533e58639643a19104bdccc0ab6 - APLICADO",
+      "formato_novo_conferido": "a entrada nova gravou frontend_smoke_tests e flutter_tests como STRING (1202/1202 e 864/864) onde as anteriores usavam numero. Rodei o parser REAL do painel (metricPass, extraido do proprio Kpis/app.js) sobre as 4 ultimas entradas do history: a serie sai 3052, 1202 e 864 - normaliza certo, o grafico nao quebra e nao aparece ponto zero nem NaN"
+    },
+    "indice_de_pendencias": {
+      "forma": "saida do GERADOR (agent-orchestration/controle/gerar-indice-pendencias.py), comparada por md5 EOL-NEUTRO porque diff cru mente sob CRLF",
+      "md5_commitado": "8dd1f459323c410fd3a1b4a06625126d",
+      "md5_regerado_por_mim": "8dd1f459323c410fd3a1b4a06625126d",
+      "saida_literal_do_gerador": "indice: 411 cabecalhos / 400 IDs | FECHADA 110, ABERTA 301 | baldes: fechadas 110, C 69, B 100, A 132 | diferidas-materiais 13",
+      "veredito": "os numeros publicados (411, 400, 110 e 301) saem da boca do gerador, nao de varredura propria"
+    },
+    "bateria_9_reexecutada_por_mim": {
+      "npm_run_check": "ec=0",
+      "npm_run_lint": "ec=0",
+      "npm_test": "ec=0",
+      "npm_run_build": "ec=0",
+      "npm_prefix_frontend_run_check": "ec=0",
+      "kpi_freeze_check": "ec=0 - kpi-freeze: em dia (snapshot 2026-09-21)",
+      "guard_kpi_dashboard_charts": "ec=0 - 17/17, fail 0",
+      "guard_kpi_dashboard_contraste": "ec=0 - 6/6, fail 0",
+      "guard_kpi_achados_paridade": "ec=0 - 6/6, fail 0",
+      "sync_agent_agents_check": "ec=0 - OK, 23 agentes, espelho consistente",
+      "node_check_kpis_app_js": "ec=0",
+      "git_diff_check_no_range": "ec=0 - sem erro de whitespace",
+      "alem_do_comando_por_CLAUDE_md_9": "npm --prefix frontend run build ec=0; npm --prefix frontend run test:smoke ec=0"
+    },
+    "controle_vermelho": {
+      "o_que_fiz": "adulterei na MINHA arvore descartavel o numero publicado de backend (o value 3052 virou 3053) - exatamente a mentira que caberia na minha superficie",
+      "prova_de_que_a_mutacao_landou": "md5 do kpis-latest.json passou de 8a4160f61e1364887b03de333d4b6460 para 0c823717a89e0a6feee3b294f20030aa; git diff --numstat 1/1; o grep pelo valor novo casou; e o script de mutacao aborta com exit 9 se a substituicao nao casar - a armadilha da ancora que nao substitui e devolve verde falso",
+      "resultado": "node scripts/kpi-freeze.mjs --check devolveu ec=1 (a copia congelada do app.js DIVERGE do kpis-latest.json); tests/kpi-dashboard-charts.test.ts devolveu ec=1, com 17 tests / 16 pass / 1 fail",
+      "restauracao": "md5 de volta a 8a4160f61e1364887b03de333d4b6460; kpi-freeze --check ec=0; charts 17/17; git status --porcelain -uall VAZIO",
+      "conclusao": "os guards NAO saem por construcao - numero publicado que divergisse da copia congelada REPROVA"
+    },
+    "delta_entre_a_bateria_do_dev_e_o_objeto": "o relatorio do dev cobre 9 commits (ate 04f4837b) e o objeto e 7822deaf, um DECIMO commit. Medi: git diff --name-only 04f4837b..7822deaf devolve SO agent-orchestration/codex/comandos/B-SAN3-00-registro-rastreavel.md (+32 linhas). Nada de Kpis/, de codigo ou de teste - a bateria do dev nao foi invalidada pelo delta; e eu re-executei tudo NO head julgado de toda forma",
+    "forma_do_dev_auditavel": "PARCIAL, e digo os dois lados: os conteineres do dev ja foram removidos na limpeza dele (portas 56820 e 56821 livres agora), entao NAO posso auditar a forma dele diretamente. O que posso, medi: (a) a afirmacao de que a base viva nao recebeu um comando e VERIFICAVEL e VERDADEIRA - os carimbos Exited de 10 e de 3 dias nao zeraram; (b) o RESULTADO dele esta confirmado por DUAS execucoes independentes (o CI no objeto e eu). A forma nao auditavel nao contamina a conclusao, porque a conclusao nao depende dela"
+  },
+  "limpeza": {
+    "criei": "worktree C:/Users/AMP/w-j-san300-c3 (npm ci proprio na raiz e no frontend, client Prisma gerado) e os conteineres j-san300-c3-pg e j-san300-c3-redis",
+    "derrubei_pelo_nome": "ver a secao LIMPEZA do C3-evidencia.md",
+    "nao_toquei": "nenhuma arvore alheia, nenhum conteiner alheio; nenhum git clean, prune, stash, reset ou checkout fora da MINHA arvore; a base viva nao recebeu um comando"
+  }
+}

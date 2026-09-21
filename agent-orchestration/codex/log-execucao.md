@@ -4635,3 +4635,55 @@ bloco mergear.
 - **KPI (§C3):** 3 trilhas **carregadas com nota**, `blocks_completed` 165 → 166, `mvp_*` intocados,
   `merge_commit`/`approved_head` **null** na autoria, backfill do #390 na entrada 160, e `app.js` regenerado
   por `kpi-freeze` (nunca digitado). Índice de pendências **pelo gerador**: 411/400, 110 FECHADAS, 301 ABERTAS.
+
+### Pré-merge do `B-SAN3-00` (#392) — 2026-09-21, junta APROVADO 2 × 1
+
+- **Quem:** desenvolvedor do pré-merge, `general-purpose` em **Opus 5 (1M)** (`claude-opus-5[1m]`), instância que
+  **não votou e não julgou** (§C7.4-bis). Worktree `san300`, sem junction. **Sem push** — o orquestrador empurra.
+- **Rebase** do objeto julgado `7822deaf` sobre a `main` nova `b8cd22df` (#391 mergeou **durante** a junta):
+  10 commits reaplicados, **8 arquivos em conflito** (`Kpis/*` x4, `pendencias.md`, `pendencias-indice.md`,
+  `status-geral.md`, `log-execucao.md`), **todos resolvidos por UNIÃO** — os três de append puro
+  (`kpis-history.md`, `log-execucao.md`, `status-geral.md`) reconstruídos como `base + cauda da main + cauda do
+  bloco`, o `kpis-history.json` como `array da main + a entrada do bloco`, e o `pendencias-indice.md` **pelo
+  gerador**.
+- **Prova de que o conteúdo julgado NÃO mudou** (blob a blob, não por leitura): `.gitignore` `43fd5ee9…`,
+  `J-CHK-P1-PR04-aplicabilidade.md` `3bec416d…` e `B-GOV-ELENCO-ciclo2-plano.md` `873bdae4…` — **idênticos** aos
+  de `7822deaf`; as **4** remoções da dívida 2 seguem ausentes do tree; `git diff --name-only b8cd22df <head>`
+  nos 15 caminhos proibidos = **vazio**; os **20** arquivos do diff são os mesmos de antes.
+- **`C1-A1` — a prova do `.gitignore` trocou de FORMA (a conclusão não mudou).** A publicada
+  (`git ls-files -z | git check-ignore -z --stdin`) era vazia **por construção** e devolve `N=0` para os **dois**
+  `.gitignore`. Forma falsificável, medida por mim: `git check-ignore -z --no-index --stdin` sobre **todos** os
+  rastreados, nas duas pontas, universo único (**3501** do objeto), com substituição provada **antes** de ler
+  resultado (md5 EOL-neutro `2ad3f3f4…`) e restauração provada depois (`d965d5a9…`, `status -uall` vazio).
+  **Base 128 → objeto 3** (`AGENTS.md`, `CLAUDE.md`, `docs/claude-code-handoff/CLAUDE.md`, os três pelo ignore
+  **global** e os três já ignorados na base); `comm -23` = **0**, `comm -13` = **125**. **Zero divergência com as
+  cadeiras:** 128 (universo do objeto) + 4 corpos que a dívida 2 remove = **132** (universo da base, idêntico nas
+  bases `aadaa6d5` e `b8cd22df`). A **prescrição** do passo 1 do comando também foi corrigida.
+- **`C1-A2` / `C1-A3` / `C1-A5`:** `approved_head` do #390 `a62d04e2` → **`fbda96b0…`**; `blocks_completed`
+  **166 → 167**; coluna Junta do `B-SAN3-07` → **`unanimidade + coordenador-de-acessos`**.
+- **Backfill §C3.5 do #391:** `merge_commit b8cd22df…` · `approved_head` **`3a0ea095…`** — o objeto que a ata
+  `J-B-SAN3-B1.md:3` nomeia. **DIVERGÊNCIA DECLARADA:** o mandato e a dívida D5 prescreviam `09dc4345…`, que medi
+  ser o **head do PR no merge**, um commit **acima** do objeto julgado; publicá-lo repetiria o defeito `C1-A2` no
+  mesmo PR que o conserta. Régua escrita em `decisoes.md` (`REGISTRO-SAN3-00-APPROVED-HEAD`); o head mergeado
+  fica registrado na nota, para nenhuma das duas informações se perder.
+- **Dívidas D1–D6 do `porteiro-pos-merge` do #391:** todas dentro deste PR. **D4** versionou os pareceres do
+  **#390** e do **#391**; **D6** corrigiu o `A1` (duas linhas do comando do `B-SAN3-B1` se contradiziam sobre o
+  quórum e a **errada era a normativa** — causa: `grep` sensível a caixa; varri por **propriedade**, com
+  `grep -in`) e o `A3` (a frase *"medidos por `gh pr view 390`"*, em três arquivos que mergearam, credita a uma
+  medição um valor que a medição contradiz).
+- **Pendência nova** `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a
+  nomear** — o pré-merge propõe e justifica): classe **gerada do arquivo-fonte**, 22 padrões sem barra do ignore
+  global x 4 diretórios reincluídos = **88 sondas, 86 escondidas**; as 2 visíveis são exatamente a exceção
+  nominal de `SKILL.md`. A C2 publicara 8/8 escritas à mão — mesmo veredito, denominador maior, declarado com N,
+  forma e causa.
+- **Rito versionado:** ata `omega/juntas/J-B-SAN3-00.md` (com a contagem da C3 **corrigida** para 4 nota + 1
+  retirado, conferida contra os votos e não contra o rascunho) e `omega/juntas/votos/B-SAN3-00/` com os 3 votos,
+  as 3 evidências, o parecer do inspetor e a cópia `C3-voto.pre-remedicao.json` do achado retirado. **Sem logs
+  brutos** — ficam no scratchpad. **Emenda 3** acrescentada ao comando.
+- **Defeito do próprio pré-merge, declarado:** ao resolver o conflito li o `kpis-history.json` como `latin1` e o
+  reescrevi como UTF-8, duplo-codificando **112** linhas de acento. Reconstruí o arquivo em UTF-8 (prefixo
+  byte-idêntico ao da `main`, última entrada byte-idêntica à do objeto julgado) e reapliquei as correções.
+- **KPI (§C3):** `blocks_completed` **167**; as 3 trilhas seguem **carregadas com nota** — o PR continua sem
+  tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
+  deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
+  **303** ABERTAS.

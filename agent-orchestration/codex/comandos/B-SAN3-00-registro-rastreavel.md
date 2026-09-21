@@ -131,6 +131,7 @@ npm run lint
 npm test
 npm run build
 npm --prefix frontend run check
+npm --prefix frontend run build
 node scripts/kpi-freeze.mjs --check
 node --test --import tsx tests/kpi-dashboard-charts.test.ts
 node --test --import tsx tests/kpi-dashboard-contraste.test.ts
@@ -237,3 +238,76 @@ omitido.
 planejou** — e a premissa era minha. O §C7.4-bis costuma ser lido como proteção contra quem acha consertar o
 que achou; aqui ele funcionou na direção inversa e **evitou dano**: versionar os 33 corpos teria desfeito três
 decisões escritas e ressuscitado justamente o que a dívida 2 manda enterrar.
+
+---
+
+## Emenda 3 do pré-merge — o que a junta exigiu, o que o porteiro do #391 acrescentou, e as 3 divergências declaradas (2026-09-21)
+
+> Junta **APROVADO 2 × 1** por maioria de 3 (`J-B-SAN3-00.md`): `validador-mestre` (C1) **REPROVADO** com
+> 2 bloqueia · 3 ajuste · 3 nota; `agente-secops` (C2) **APROVADO** com 0 · 1 · 1; `agente-ci-doutor` (C3)
+> **APROVADO** com 0 · 0 · **4 nota + 1 retirado**. Inspetor de terreno: `LIBERADO COM RESSALVA`, 8 ressalvas.
+> O objeto julgado é `7822deaf`; o head que mergeia é o rebase dele sobre a `main` `b8cd22df` **mais** as
+> correções abaixo. Quem executou o pré-merge **não votou e não julgou** (§C7.4-bis).
+
+**(a) `C1-A1` — a prova do `.gitignore` troca de FORMA, e a prescrição do passo 1 deste comando foi corrigida.**
+A forma publicada (`git ls-files -z | git check-ignore -z --stdin`) era **vazia por construção**: sem
+`--no-index`, `git check-ignore` consulta o índice e **nunca** reporta rastreado como ignorado. Medido: ela
+devolve `N=0` com o `.gitignore` do objeto **e** com o da base. A forma obrigatória passa a ser
+`git check-ignore -z --no-index --stdin` sobre **todos** os rastreados, **nas duas pontas**, universo único, com
+prova de substituição do `.gitignore` lida **antes** do resultado e prova de restauração depois. **Resultado
+medido no pré-merge:** base **128** → objeto **3**; `comm -23` = **0 passaram a ser ignorados**; `comm -13` =
+**125 deixaram**. **Sem divergência com as cadeiras:** 128 (universo do objeto, 3501) + os 4 corpos que a dívida
+2 remove = 132 (universo da base, medido nas duas bases).
+
+**(b) `C1-A2` — `approved_head` do #390: `a62d04e2` → `fbda96b016ac65f88fe99d695295329e83938bea`.** A régua está
+escrita em `controle/decisoes.md` (`REGISTRO-SAN3-00-APPROVED-HEAD`): `approved_head` é **o objeto que a ata da
+junta nomeia**, nunca `gh pr view --json headRefOid`. A origem do valor errado é o **orquestrador**; o parecer do
+porteiro do #390 é documento histórico e **não se edita**.
+
+**(c) `C1-A3` — `blocks_completed` 165→166 envelheceu: passa a `166 → 167`**, porque o #391 mergeou durante a
+junta e a `main` já publica 166. Eco no `status-geral.md`.
+
+**(d) `C1-A4` — o objeto não mergeava.** Rebase sobre `b8cd22df`, 8 conflitos de registro/KPI resolvidos por
+**união** (nenhuma das duas pontas perdida). **Prova de que o conteúdo julgado não mudou:** `.gitignore`,
+`J-CHK-P1-PR04-aplicabilidade.md` e `B-GOV-ELENCO-ciclo2-plano.md` com **blob idêntico** ao de `7822deaf`; as 4
+remoções da dívida 2 seguem removidas; `git diff --name-only b8cd22df <head> -- src tests frontend mobile prisma
+migrations scripts .github infra .env package-lock.json CLAUDE.md AGENTS.md pubspec.yaml` **vazio**.
+
+**(e) `C1-A5` — a coluna Junta do `B-SAN3-07` passa a `unanimidade + coordenador-de-acessos`**, porque a
+ampliação nominal que este bloco declarou o leva a semear cinco papéis globais com as concessões do catálogo
+(§C7.1-ter(b): **permissão**).
+
+**(f) `C2-A2` — pendência aberta** `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não
+bloqueia, **dono a nomear**): dentro dos diretórios reincluídos o ignore global ainda esconde arquivo novo por
+padrão de **nome**. Medida com a classe **gerada do arquivo-fonte** — 22 padrões sem barra × 4 diretórios =
+**88 sondas, 86 escondidas**, e as 2 visíveis são exatamente a exceção nominal de `SKILL.md` que o bloco abriu.
+
+**(g) Dívidas D1–D6 do `porteiro-pos-merge` do #391**, todas dentro deste PR. **D4** versionou os pareceres do
+**#390** *e* do **#391** em `omega/juntas/votos/<bloco>/00c-porteiro-pos-merge-<pr>.md`. **D5** é o backfill do
+#391. **D6** corrigiu duas instâncias da mesma classe que este bloco existe para atacar: o **A1** (o comando
+`B-SAN3-B1-ci-ve-o-sha-julgado.md` tinha **duas linhas se contradizendo** sobre o quórum, e a **errada era a
+normativa**; a causa do conserto pela metade foi `grep` **sensível a caixa** — `"maioria de 3"` × `"Maioria de
+3"` —, e a varredura da correção foi feita **por propriedade, com `grep -in`**, no arquivo inteiro) e o **A3**
+(a frase *"medidos por `gh pr view 390`"*, que mergeou em três arquivos, credita a uma medição um valor que a
+medição **contradiz**).
+
+**(h) As 3 divergências que o pré-merge DECLAROU em vez de escolher em silêncio (§A2):**
+
+1. **`approved_head` do #391.** O mandato e a dívida D5 prescreviam `09dc4345951a35cb88daa4457226f64192dba87c`.
+   Medido: esse é o **head do PR no merge** (`gh pr view 391 --json headRefOid`), **um commit acima** do objeto
+   julgado — `09dc4345` é *"docs(junta): ata do B-SAN3-B1, votos das 3 cadeiras e a emenda com os 2 ajustes"*,
+   escrito **depois** de a junta votar. Publicado **`3a0ea095cbbac36af0c21ba967e938fbe5375e83`**, o objeto que a
+   ata `J-B-SAN3-B1.md:3` nomeia, porque o contrário repetiria o defeito `C1-A2` **no mesmo PR que o conserta**.
+   O porteiro deixou a escolha aberta e pediu a régua declarada; ela está. O head mergeado fica registrado na
+   nota da entrada do #391.
+2. **Contagem da C3:** o rascunho da ata dizia "5 nota"; o voto traz **4 nota + 1 retirado**. Corrigido na ata.
+3. **N da classe residual:** a C2 publicou **8/8** sondas escritas à mão; o pré-merge gerou a classe da fonte e
+   mediu **86 de 88**. Mesmo veredito, denominador maior, publicado com N, forma e causa.
+
+**(i) Defeito do próprio pré-merge, declarado em vez de sumir no diff.** Ao resolver o conflito eu li o
+`Kpis/kpis-history.json` como `latin1` e o reescrevi como UTF-8, o que duplo-codificou **112** linhas de acento.
+Reconstruí o arquivo do zero em UTF-8 — prefixo **byte-idêntico** ao da `main` e última entrada **byte-idêntica**
+à do objeto julgado — e reapliquei as correções. O commit que o conserta diz isso no corpo.
+
+**(j) Bateria: o `npm --prefix frontend run build` entra**, como a nota da C3 apontou (a bateria deste comando
+era subconjunto estrito do §9 do `CLAUDE.md` na trilha front).

@@ -4731,3 +4731,33 @@ diffável — `git ls-files --eol` dos `.md` não lista mais nenhum `-text`.
 exerceu trilha nenhuma, e nenhum número é apresentado como execução dele. `blocks_completed` **165 → 166**.
 `mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). Índice de pendências **pelo gerador**: 411 cabeçalhos / 400 IDs,
 110 FECHADAS, 301 ABERTAS.
+
+### Pré-merge do `B-SAN3-00` (#392) — a junta aprovou 2 x 1, e as correções que ela exigiu entraram
+
+O **#391 mergeou durante a junta** e o objeto `7822deaf` ficou `CONFLICTING`. O pré-merge rebaseou sobre
+`b8cd22df`, resolveu os **8** conflitos de registro e KPI **por união** e **provou que o conteúdo julgado não
+mudou**: `.gitignore` e os dois registros que voltaram de binário com **blob idêntico** ao do objeto julgado, as
+4 remoções da dívida 2 ainda removidas, e diff **vazio** nos 15 caminhos proibidos.
+
+**Os 2 bloqueios da C1, corrigidos.** A prova de que nenhum arquivo rastreado passou a ser ignorado **trocou de
+forma**: a publicada não podia falhar (devolvia `N=0` para os **dois** `.gitignore`); a nova é
+`git check-ignore -z --no-index --stdin` sobre **todos** os rastreados, **nas duas pontas** — base **128** →
+objeto **3**, `comm -23` = **0 passaram a ser ignorados**, **125 deixaram**. Reproduziu as duas cadeiras **sem
+divergência** (128 + os 4 corpos que a dívida 2 remove = 132). E o `approved_head` do #390 passou de `a62d04e2`
+(head do PR no merge) para **`fbda96b0`** (o objeto que a ata nomeia), com a **régua escrita** em
+`controle/decisoes.md`: onde houver pré-merge, os dois **divergem por construção**.
+
+**Backfill do #391 com a régua declarada, e uma divergência assumida em voz alta.** `merge_commit b8cd22df…` ·
+`approved_head` **`3a0ea095…`** — o objeto da ata, **não** o `09dc4345…` que o mandato prescrevia e que é o head
+do PR no merge. Publicar o head repetiria, no mesmo PR que o conserta, o defeito que a junta acabou de pegar.
+
+**As 6 dívidas do `porteiro-pos-merge` do #391** entraram todas, inclusive as duas de texto: o comando do
+`B-SAN3-B1` tinha **duas linhas se contradizendo sobre o quórum** — e a errada era a normativa —, e três
+arquivos creditavam o backfill do #390 a uma medição que devolve o valor **errado**. Os dois pareceres de
+porteiro que faltavam (**#390** e **#391**) estão versionados.
+
+**KPI.** `blocks_completed` **166 → 167** (o 165 → 166 da autoria envelheceu com o merge do #391). As 3 trilhas
+seguem **carregadas com nota** (§C3.3): o PR continua sem tocar código nem teste. Índice de pendências **pelo
+gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS — a pendência nova é
+`P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
+classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.
