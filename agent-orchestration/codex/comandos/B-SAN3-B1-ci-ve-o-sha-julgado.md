@@ -149,8 +149,20 @@ Não se aplica — o bloco **não tem tela**. Não toca `frontend/**` nem `mobil
 
 ## Junta (§C7)
 
-- **Quórum:** o bloco **não** toca dinheiro, permissão nem perda de dado; toca **pipeline**, logo
-  `agente-secops` é obrigatório por gatilho. **Maioria de 3** (§C7.1-ter(b)).
+- **Quórum: UNANIMIDADE DE 3** (§C7.1-ter(b)) — o bloco toca **segurança** (o portão de publicação de imagem
+  no GHCR) e o **pipeline**, logo `agente-secops` é obrigatório por gatilho e tem **veto**.
+  **[CORRIGIDO pelo #392 — achado A1 do `porteiro-pos-merge` do #391.** Esta linha dizia *"o bloco **não** toca
+  dinheiro, permissão nem perda de dado … **Maioria de 3**"*, e a **emenda 1 (a)**, 38 linhas abaixo, declara essa
+  exata frase como o defeito: a enumeração do §C7.1-ter(b) tem **quatro** gatilhos — dinheiro, **segurança**,
+  permissão, perda de dado — e a do comando omitia justamente o que se aplica. A junta que rodou foi
+  **unanimidade de 3 com `agente-secops`**, provada pela ata `J-B-SAN3-B1.md:4` e pelos três votos; a correção
+  da emenda entrou **só** na linha de Rastreabilidade (`Gate:`) e na prosa, deixando **duas linhas do mesmo
+  arquivo rastreado se contradizerem sobre o quórum — e a errada era a normativa**, que é a que o próximo bloco
+  copia. Causa do conserto pela metade: a trava do orquestrador conferia `"maioria de 3"` em **minúscula** e o
+  arquivo tinha `"Maioria de 3"` — `grep` sensível a caixa. A varredura desta correção foi feita por
+  **propriedade e sem depender de caixa** (`grep -in` por `maioria|unanim|quorum|quórum|junta` no arquivo
+  inteiro): as demais ocorrências — l.180 (`Gate:`) e l.187/191-195 (emenda 1) — **já dizem unanimidade** e não
+  contradizem esta.]**
 - **Obrigatório por gatilho (com VETO):** `agente-secops` — toca pipeline e o portão de publicação de imagem.
 - **Composição sugerida (≥3):** `agente-secops` · `agente-devops-provisionador` · `agente-ci-doutor`.
 - Todo voto declara **`escopo`** (`dentro-do-bloco` | `pre-existente`, este com evidência de data/origem)

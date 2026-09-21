@@ -2562,3 +2562,44 @@ medição. **O conjunto dos 33 e o veredito (0 perdido) são os mesmos nas duas 
 suplente. **Não é perda:** a branch `43557a17` (#388) tem **os dois espelhos completos**, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, não do tree — mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+
+
+## REGISTRO-SAN3-00-APPROVED-HEAD (2026-09-21) — **a régua do `approved_head`, e de onde veio o valor errado (§A2)**
+
+- status: **aplicada no pré-merge do #392**; origem do defeito **nomeada**, não consolidada em silêncio.
+- achado que a produziu: **C1-A2** da junta do `B-SAN3-00` (`validador-mestre`, gravidade `bloqueia`), confirmado
+  pelo achado **A3** do `porteiro-pos-merge` do #391.
+
+**A régua, escrita para parar de divergir.** `merge_commit` = o commit de **merge na `main`**
+(`gh pr view <n> --json mergeCommit`). `approved_head` = **o objeto que a ATA da junta nomeia** — nunca
+`gh pr view <n> --json headRefOid`. **Onde houver pré-merge, os dois divergem POR CONSTRUÇÃO**, porque o pré-merge
+acrescenta commits (rebase, recontagem, dívidas, ata) *depois* de a junta ter votado; publicar o head do merge no
+lugar do objeto julgado **apaga a informação de o que foi julgado**.
+
+**Precedentes medidos, que já viviam na `main` e que a régua apenas nomeia:**
+
+| PR | head do PR no merge (`headRefOid`) | `approved_head` publicado | ata que nomeia o objeto |
+|---|---|---|---|
+| #387 | `f999adb2…` | `8adaaa31…` | `J-B-SAN3-01.md:18` |
+| #390 | `a62d04e2…` | `fbda96b0…` | `J-B-SAN3-04a.md:5` |
+| #391 | `09dc4345…` | `3a0ea095…` | `J-B-SAN3-B1.md:3` |
+
+**De onde veio o valor errado — e a origem é o orquestrador, não o dev.** O parecer do `porteiro-pos-merge` do #390
+prescreveu `approved_head a62d04e2…`; o orquestrador **transcreveu esse valor para o seu arquivo de dívidas** sem
+conferir contra a definição do §C3.5, e o dev do bloco **executou instrução escrita**. A `main` já publicava
+`fbda96b0…` (o #391 backfillou pela ata), então os dois lados **conflitavam no mesmo campo escalar** — e união não
+resolve escalar em conflito. O **parecer do porteiro é documento histórico e não se edita**: a correção vive aqui, no
+`Kpis/kpis-history.json`, no `Kpis/kpis-history.md`, no `status-geral.md`, no `log-execucao.md` e no comando do bloco.
+
+**Divergência declarada no backfill do #391, em vez de escolhida em silêncio (§A2 + §C7.4-bis).** O mandato do
+pré-merge e a dívida **D5** do porteiro do #391 prescreviam `approved_head 09dc4345951a35cb88daa4457226f64192dba87c`.
+Medi (`gh pr view 391 --json headRefOid`) que esse é o **head do PR no merge**, **um commit acima** do objeto julgado —
+`09dc4345` é *"docs(junta): ata do B-SAN3-B1, votos das 3 cadeiras e a emenda com os 2 ajustes"*, escrito **depois** de
+a junta votar. Publicá-lo repetiria, **no mesmo PR que o conserta**, exatamente o defeito C1-A2. O porteiro do #391
+deixou a escolha **aberta** e pediu a régua declarada; a régua está declarada e é esta. O head mergeado `09dc4345…`
+**fica registrado** na nota da entrada do #391, para que nenhuma das duas informações se perca.
+
+**Lição de método (a mesma classe que este PR existe para atacar).** A frase *"medidos por `gh pr view 390`"*, que
+mergeou em três arquivos com o #391, credita a uma medição um valor que **a medição contradiz**. Número certo,
+citação errada — e a citação aponta para o instrumento que devolveria o número **errado**. Antes de publicar
+procedência, execute o comando citado e confira que ele devolve o número escrito.
