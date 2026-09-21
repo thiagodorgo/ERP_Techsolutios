@@ -4573,3 +4573,49 @@ a máquina do dono segue em 3.41.6 / Dart 3.11.4. Índice regerado **pelo gerado
 
 **Pós-merge:** o ramo `chore/ci-probe` (sonda S2, commit `27eae4b0`) é apagado — vivia só como evidência até este
 bloco mergear.
+
+## B-SAN3-00 — o registro para de perder o que a junta precisa ler (na autoria, 2026-09-21)
+
+- **Worktree próprio** `.claude/worktrees/san300`, ramo `chore/corpos-de-jurado-rastreados`, base
+  `origin/main@aadaa6d5` (#390). Sem junction de `node_modules`. Dev em Opus 5 (1M), `claude-opus-5[1m]`.
+  **Duas instâncias:** a 1ª parou pelo cão-de-guarda (sem progresso por 600 s), **não** por erro dela; a 2ª leu o
+  parcial inteiro e **reproduziu** o que era barato antes de continuar — o `.gitignore` nos dois sentidos, os dois
+  registros binários, as 4 deleções staged e a conferência do diretório de especialistas.
+- **Mecanismo (o conserto real do achado A1 do #387).** `~/.config/git/ignore` l.2 (`.claude/`) e l.27
+  (`.agents/`) ignoram os diretórios INTEIROS. O `.gitignore` do repo reinclui `.claude/agents/`,
+  `.claude/skills/`, `.agents/agents/`, `.agents/skills/` e os `SKILL.md` dos dois diretórios de skill, e
+  **reafirma** `.claude/worktrees/` depois das reinclusões. Provado por `git check-ignore -q` (exit code — o
+  `-v` imprime o padrão de **negação** também, e isso enganou a primeira leitura desta instância), com arquivo real
+  criado e removido sem resquício, e `git ls-files -z | git check-ignore -z --stdin` **vazio**.
+- **Item 1 REVOGADO por medição, registrado pela §A2** em `controle/decisoes.md`
+  (`REGISTRO-SAN3-00-CORPOS-DE-JURADO`): `git rev-list --objects --all` (toda ref, não só os 138 tips) = 314
+  blobs; 129 corpos no disco da árvore principal, **80** fora da `main` (41 no `.claude/`, 39 no `.agents/`),
+  **80/80 com blob alcançável — 0 perdido**; **33 dos 41** sepultados e/ou aposentados (10 + 13 + 10); os **8**
+  restantes são os blocos em voo (#389 `738ff531`, #388 `43557a17`) e batem **por hash** com o blob da branch que
+  a junta julga (14 de 14). Nada foi versionado e nada foi apagado de árvore alheia.
+- **Divergências declaradas, não resolvidas em silêncio:** (i) a 1ª instância publicou "43 corpos / 146 tips" e a
+  re-medição dá **41 / 138** — os 2 extras são o par `jurado-san3-01c2-*`, que ESTÁ na `main` e que a dívida 2
+  remove; o conjunto dos 33 e o veredito são os mesmos; (ii) "rastreados que passariam a ser ignorados" é **0
+  absoluto**, não "0 fora `CLAUDE.md`/`AGENTS.md`"; (iii) achado lateral — o espelho `.agents/` do **disco** da
+  árvore principal tem 39 contra 41 do `.claude/`, mas a branch `43557a17` tem os dois espelhos completos: é
+  lacuna de disco (`P-GOV-CAMINHO-REPO-SESSAO`), não perda.
+- **Dívida 2 executada com a conferência que o anúncio exigia:** o tree de `aadaa6d5` tinha **exatamente 4**
+  arquivos em `especialistas/` (2 cadeiras × 2 espelhos), **todos** com o identificador de BLOCO
+  `jurado-san3-01c2-`; nenhum de outra sessão. Índice depois do `git rm`: **vazio**.
+  `node scripts/sync-agent-agents.mjs --check` → `OK — 23 agentes, espelho consistente` (ec=0). Peso removido:
+  **100.138 bytes** (bate ao byte com o anunciado) e **4.091 chars** de `description`.
+- **Armadilha de terreno registrada:** `agent-orchestration/controle/aposentadoria-especialistas.md` está
+  `i/lf w/crlf` sob `core.autocrlf=true`, e a primeira tentativa de edição por âncora exata **falhou** (0
+  ocorrências) porque as linhas do disco terminam em `\r`. O script passou a detectar o CR e a preservá-lo — o
+  diff saiu com 3 linhas alteradas, não com o arquivo inteiro. É a mesma classe de
+  `reference-phantom-modified-files-autocrlf`.
+- **Resíduo alheio visto e NÃO tocado** (reporta-se, não se varre): worktrees `b04a` (`738ff531`), `b11`
+  (`43557a17`), `sanb1`, `gov-descuido`, `gov-elenco`; a árvore principal em `demo/investidor@d1fab3bc`,
+  com 4 arquivos ` M` **reais** (apensos do ciclo 5, trabalho de outra sessão).
+- **Dívidas 3 e 4:** as ampliações nominais e a linha do `B-SAN3-01b` foram **derivadas** de decisão escrita
+  (`D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`) e do texto das próprias pendências, nunca inventadas; a
+  `P-SAN3-04A-NAVIGATION-MATRIX-DEFASADA` já prescrevia a ampliação verbatim, e ela entrou junto por ser a mesma
+  classe, no mesmo bloco dono.
+- **KPI (§C3):** 3 trilhas **carregadas com nota**, `blocks_completed` 165 → 166, `mvp_*` intocados,
+  `merge_commit`/`approved_head` **null** na autoria, backfill do #390 na entrada 160, e `app.js` regenerado
+  por `kpi-freeze` (nunca digitado). Índice de pendências **pelo gerador**: 411/400, 110 FECHADAS, 301 ABERTAS.

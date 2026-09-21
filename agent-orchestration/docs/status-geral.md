@@ -4686,3 +4686,43 @@ a máquina do dono segue em 3.41.6 / Dart 3.11.4. Índice regerado **pelo gerado
 
 **Pós-merge:** o ramo `chore/ci-probe` (sonda S2, commit `27eae4b0`) é apagado — vivia só como evidência até este
 bloco mergear.
+
+## B-SAN3-00 (na autoria, 2026-09-21) — o registro para de perder o que a junta precisa ler
+
+Primeiro PR depois do #390, e por isso o que paga as **5 dívidas** que o porteiro pós-merge dele deixou. Bloco de
+**registro/governança**: não fecha item do §4.1 do `PLANO_SAN3.md` e **não toca código nem teste** — o diff não traz
+um arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`.
+
+**O defeito que ele conserta é de MECANISMO.** O `~/.config/git/ignore` do usuário ignora `.claude/` (l.2) e
+`.agents/` (l.27) **inteiros**, então corpo de jurado **novo** nunca aparece como `??` e só entra no tree se
+alguém lembrar de `git add -f`. Foi assim que a cadeira que **reprovou** o ciclo 2 do `B-SAN3-01` votou sem estar
+em commit nenhum (achado **A1** do porteiro do #387) — e isso reincidiria a cada junta. O `.gitignore` do
+repositório, que tem precedência sobre o global, passa a reincluir os dois diretórios de agentes e os dois de skill,
+excluindo o resto do conteúdo. Provado por **exit code**, nos dois sentidos, com arquivo real: corpo novo e
+`SKILL.md` novo aparecem; `worktrees`, `settings.local.json` e `node_modules` seguem ignorados; e **0 arquivo
+rastreado hoje** passa a ser ignorado.
+
+**A premissa do mandato caiu, e a queda está registrada (§A2).** O item 1 mandava **versionar 41 corpos** "fora do
+tree" — e está **REVOGADO**, com o registro em `controle/decisoes.md` (`REGISTRO-SAN3-00-CORPOS-DE-JURADO`).
+Varredura exaustiva sobre toda ref (314 blobs) contra o hash de cada corpo do disco: dos **129** corpos, **80** estão
+fora da `main` e **80 de 80** têm blob alcançável — **zero perdido**; **33 dos 41** já foram sepultados e/ou
+aposentados por três rodadas escritas, e versioná-los **desfaria** essas decisões; os **8** restantes são as cadeiras
+dos blocos **em voo** (#388 e #389), byte-idênticas ao blob da branch que a junta julga. O resíduo das 33 no diretório
+vivo da árvore de `demo/investidor` virou `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` (MÉDIA, não bloqueia), com
+**dono a nomear pela junta** — o dev propõe e justifica, e não decide (§C7.4-bis).
+
+**As 5 dívidas do #390.** (1) backfill §C3.5 do #390 na entrada 160 (`aadaa6d5…` / `a62d04e2…`); (2)
+**aposentadoria rodada 4 EXECUTADA** — as 2 cadeiras `jurado-san3-01c2-*` fora dos dois espelhos, por identificador
+de BLOCO, elenco de volta a **0**, `sync-agent-agents --check` verde com 23 agentes, 100.138 bytes removidos do
+contexto; (3) **dono real confirmado** nas duas pendências, com a ampliação nominal deixando de ser promessa e virando
+**linha do §5** (`auth.adapter.ts` e `docs/navigation-matrix.md` ao `B-SAN3-06a`; `prisma/seed.ts` também para
+os 5 papéis legados ao `B-SAN3-07`); (4) **linha do `B-SAN3-01b` no §5**, derivada da decisão do dono e das 4
+pendências que lhe pertencem; (5) parecer do porteiro do #390 versionado.
+
+**De quebra:** dois registros que o git tratava como **binário** (1 byte NUL e 1 CR solto) voltaram a ser texto
+diffável — `git ls-files --eol` dos `.md` não lista mais nenhum `-text`.
+
+**KPI.** Backend **3052/3054**, smoke **1202/1202** e Flutter **864/864** **CARREGADOS com nota** (§C3.3) — o PR não
+exerceu trilha nenhuma, e nenhum número é apresentado como execução dele. `blocks_completed` **165 → 166**.
+`mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). Índice de pendências **pelo gerador**: 411 cabeçalhos / 400 IDs,
+110 FECHADAS, 301 ABERTAS.
