@@ -2825,3 +2825,82 @@ pré-merge resolve por união.
 
 **Pendência nomeada (não resolvida aqui):** a máquina do dono tem **Flutter 3.41.6 / Dart 3.11.4** e o CI passa a ter
 **3.47.5** — a divergência local × CI **continua existindo**, agora explícita em vez de móvel.
+
+## 2026-09-21 — B-SAN3-00 (PR na autoria) — o registro para de perder o que a junta precisa ler
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend / Smoke / Flutter | **CARREGADOS** (§C3.3) — 3052/3054, 1202/1202, 864/864. Este PR **não toca código nem teste**: o diff não traz um arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, do `B-SAN3-04a` (#390); **nenhum foi reexecutado e nenhum é apresentado como execução deste PR** |
+| Blocos Entregues | **165 → 166** — +1 bloco de registro/governança, contado a partir do valor publicado na `origin/main` (`aadaa6d5`, #390 = 165) |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — não há tela nova, rota nova nem regra nova |
+| pr / merge_commit / approved_head | `null` / `null` / `null` **na autoria** (§C3.5); `pr` depois do `gh pr create` |
+
+**O que o bloco entrega.** O `~/.config/git/ignore` do usuário ignora `.claude/` (l.2) e `.agents/` (l.27)
+**inteiros**. A consequência é que **corpo de jurado novo nunca aparece como `??`** — e foi assim que a cadeira
+que reprovou o ciclo 2 do `B-SAN3-01` votou **sem estar em commit nenhum** (achado **A1** do porteiro pós-merge do
+#387). O `.gitignore` **do repositório**, que tem precedência sobre o global, passa a reincluir `.claude/agents/`,
+`.claude/skills/`, `.agents/agents/`, `.agents/skills/` e os `SKILL.md` dos dois diretórios de skill,
+reafirmando `.claude/worktrees/` **depois** das reinclusões (no mesmo arquivo, o último padrão que casa vence).
+
+**Provado por EXIT CODE, nos dois sentidos** (`git check-ignore -q`, porque `-v` imprime o padrão de **negação**
+também e isso já enganou a leitura uma vez nesta sessão): corpo novo e `SKILL.md` novo aparecem como `??` nos dois
+espelhos — conferido com arquivo **real**, criado e removido sem resquício; `.claude/worktrees/**`,
+`.claude/settings.local.json`, `.agents/*` e `node_modules/**/SKILL.md` **seguem ignorados**; e
+`git ls-files -z | git check-ignore -z --stdin` sai **vazio** — **0 arquivo rastreado hoje** passa a ser ignorado.
+
+**As 5 dívidas do porteiro do #390, pagas pelo primeiro PR a mergear depois dele.**
+(1) **Backfill §C3.5 do #390** na entrada **160** do `kpis-history.json`:
+`merge_commit aadaa6d51be950e152ca6a6f15327bc9989039de` · `approved_head a62d04e2bbe42533e58639643a19104bdccc0ab6`.
+(2) **Aposentadoria rodada 4 EXECUTADA:** as 2 cadeiras `jurado-san3-01c2-*` saem dos **dois** espelhos, por
+identificador de **BLOCO** e nunca por nome de cadeira. Conferido **antes** do `git rm`: o tree de `aadaa6d5` tinha
+**exatamente 4** arquivos em `especialistas/` (2 cadeiras × 2 espelhos), **todos** do bloco, **nenhum de outra
+sessão**. Elenco de especialistas de volta a **0**; `node scripts/sync-agent-agents.mjs --check` →
+`OK — 23 agentes, espelho consistente`, ec=0. Peso removido: **100.138 bytes** (bate **ao byte** com o anunciado) e
+**4.091 caracteres** de `description`.
+(3) **Dono real confirmado** nas duas pendências, com a **ampliação nominal deixando de ser promessa e virando linha
+do §5** do `PLANO_SAN3.md`: `frontend/src/modules/auth/auth.adapter.ts` (só o mapa `rolePermissions`) e
+`docs/navigation-matrix.md` ao `B-SAN3-06a`; o mesmo `prisma/seed.ts` **também** para os 5 papéis legados
+(aditivo — nada é removido nem revogado) ao `B-SAN3-07`.
+(4) **Linha do `B-SAN3-01b` no §5**, derivada de `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA` e das 4 pendências que lhe
+pertencem, com as 4 mutações da cadeira C4 (`N-PG-PAINEL`, `N-BARREL2`, `N-LITERAL`, `N-W1TXT`) como teste de
+encerramento.
+(5) **Parecer do porteiro do #390 versionado** em `votos/B-SAN3-04a/00c-porteiro-pos-merge-390.md`.
+
+**Dois registros que estavam em BINÁRIO voltaram a ser texto diffável:**
+`J-CHK-P1-PR04-aplicabilidade.md` (1 byte **NUL** no offset 19109) e `B-GOV-ELENCO-ciclo2-plano.md` (1 **CR** solto
+no offset 59973) — byte cru trocado por escape em texto, 1 linha alterada em cada, e
+`git ls-files --eol` dos `.md` não lista mais nenhuma linha `-text`.
+
+**A premissa do item 1 foi FALSIFICADA — e está registrada, não consolidada em silêncio (§A2).** O mandato mandava
+versionar **41 corpos "fora do tree"**; o item está **REVOGADO**, com o registro em `controle/decisoes.md`
+(`REGISTRO-SAN3-00-CORPOS-DE-JURADO`). Método: `git rev-list --objects --all` — varredura **exaustiva** de todo
+objeto alcançável de **toda** ref, não só dos 138 *ref tips* — dando **314 blobs** distintos sob os dois espelhos,
+contra `git hash-object` de cada corpo do disco. **(a)** Dos **129** corpos no disco da árvore principal, **80**
+estão em caminhos que a `origin/main` não rastreia (41 cadeiras no `.claude/`, 39 no `.agents/`) — e **80 de 80**
+têm blob alcançável: **ZERO perdido**. **(b)** **33 dos 41** já foram **sepultados e/ou aposentados** por três
+rodadas escritas (10 sepultados **e** aposentados · 13 só sepultados · 10 só aposentados); versioná-los **desfaria**
+essas decisões e devolveria ~44 KB de `description` ao contexto de **toda sessão**. **(c)** Os **8** restantes são
+**exatamente** as cadeiras dos blocos **em voo** (`jurado-o6r04a-c2-*` no #389/`738ff531`; `jurado-o6r11-*` no
+#388/`43557a17`) e são **byte-idênticas** ao blob da branch que a junta julga (14 comparações por hash, 14 iguais) —
+versioná-las duplicaria o que esses PRs já trazem. E **2 dos 41** são justamente as que a **dívida 2 manda remover**.
+
+**O que ficou aberto, e para quem.** O resíduo de **33** identidades no diretório vivo da árvore de
+`demo/investidor` virou `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` (MÉDIA, **não bloqueia**), com **dono a nomear
+pela junta**: o dev **propõe e justifica** e **não** nomeia bloco dono, porque nenhum bloco do §5 tem aquela árvore na
+fronteira e inventar um repetiria o achado **A2** do porteiro do #387. Nada foi apagado de árvore alheia — resíduo
+alheio se **reporta**.
+
+**Divergência de contagem registrada, não herdada.** A 1ª instância deste bloco (parada pelo cão-de-guarda, não por
+erro dela) publicou "**43** corpos / **146** ref tips"; a re-medição da 2ª dá **41 / 138**. Os 2 de diferença são o
+par `jurado-san3-01c2-*`, que **está** na `main` — e que a dívida 2 remove. **O conjunto dos 33 e o veredito
+(0 perdido) são os mesmos nas duas medições.** Também divergiu, a favor da segurança, o "rastreados que passariam a
+ser ignorados": a 1ª escreveu "0, só `CLAUDE.md`/`AGENTS.md` que já eram", e a medição por
+`git ls-files -z | git check-ignore -z --stdin` dá **0 absoluto**.
+
+**Achado lateral, medido de passagem (não bloqueia).** O espelho `.agents/` do **disco** da árvore principal tem
+**39** corpos contra **41** do `.claude/`: faltam as cópias de `jurado-o6r11-contrato-mobile-fila` e da sua
+suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
+`git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
+`P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
