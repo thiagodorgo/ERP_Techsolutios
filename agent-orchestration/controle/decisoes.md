@@ -2603,3 +2603,27 @@ deixou a escolha **aberta** e pediu a régua declarada; a régua está declarada
 mergeou em três arquivos com o #391, credita a uma medição um valor que **a medição contradiz**. Número certo,
 citação errada — e a citação aponta para o instrumento que devolveria o número **errado**. Antes de publicar
 procedência, execute o comando citado e confira que ele devolve o número escrito.
+
+---
+
+## `REGISTRO-SAN3-00-APPROVED-HEAD-DUAS-VEZES` — o orquestrador errou a mesma régua duas vezes, e a segunda foi no PR que a conserta (§A2, 2026-09-21)
+
+**O fato.** O `approved_head` é, por definição do §C3.5 e por precedente medido (#387), **o head que a JUNTA
+aprovou** — não o head do PR no merge. Onde há pré-merge, os dois **divergem por construção**, e publicar o
+segundo apaga a informação de *o que foi julgado*.
+
+**A primeira vez.** Para o #390, o orquestrador transcreveu `a62d04e2` (head do PR no merge) do parecer do
+porteiro para o arquivo de dívidas, sem conferir contra a definição. O valor correto é `fbda96b0`, que a ata
+`J-B-SAN3-04a.md:5` nomeia. Achado **C1-A2** da junta deste bloco.
+
+**A segunda vez, no mandato do pré-merge DESTE PR.** Ao escrever o backfill do #391, o orquestrador passou
+`09dc4345` — de novo o **head do PR no merge**, um commit acima do objeto `3a0ea095` que a ata
+`J-B-SAN3-B1.md:3` nomeia. **O desenvolvedor recusou o valor e declarou a divergência** em vez de obedecer;
+publicou `3a0ea095` com a régua escrita, e registrou o head mergeado na nota. Se tivesse obedecido, o PR que
+conserta o defeito o teria cometido de novo.
+
+**Por que isto fica escrito.** Não é a régua que faltava — ela estava na definição e no precedente. O que
+faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas vezes, sendo que a segunda
+aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
+do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
+ata** antes de publicá-lo.
