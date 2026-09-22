@@ -4679,10 +4679,85 @@ tocados** — worktree alheio se reporta, nunca se varre.
 teste, provado por `git diff --name-only`. `blocks_completed` **165 → 166**, com a ressalva escrita de que o
 `B-SAN3-00` corre em paralelo e também soma um degrau (se mergear antes, a recontagem é deste bloco no pré-merge).
 `mvp_*` intocados (§C3.4). `merge_commit`/`approved_head` **`null` na autoria**. Este PR **pagou o backfill §C3.5
-do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`, medidos por `gh pr view` e pela ata, não herdados).
+do #390** (`merge_commit aadaa6d5…`, `approved_head fbda96b0…`). **[Procedência CORRIGIDA pelo #392, achado A3 do
+porteiro pós-merge do #391:** o texto dizia "medidos por `gh pr view` e pela ata"; `gh pr view 390 --json headRefOid`
+devolve `a62d04e2…`, que **não** é o valor escrito. A fonte do `approved_head` é a ata `J-B-SAN3-04a.md:5`. Número
+certo, citação errada.] **Régua declarada (§C3.5), porque as duas convivem hoje no registro e foi isso que gerou o conflito:** `merge_commit` = o commit de merge na `main` (`gh pr view <n> --json mergeCommit`); `approved_head` = **o objeto que a ata da junta nomeia**, nunca `--json headRefOid`. Onde houver pré-merge, os dois divergem por construção.
 
 **Pendência nova:** `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` (MÉDIA, dono `B-SAN3-A2`) — o CI parou de derivar, mas
 a máquina do dono segue em 3.41.6 / Dart 3.11.4. Índice regerado **pelo gerador**.
 
 **Pós-merge:** o ramo `chore/ci-probe` (sonda S2, commit `27eae4b0`) é apagado — vivia só como evidência até este
 bloco mergear.
+
+## B-SAN3-00 (na autoria, 2026-09-21) — o registro para de perder o que a junta precisa ler
+
+Primeiro PR depois do #390, e por isso o que paga as **5 dívidas** que o porteiro pós-merge dele deixou. Bloco de
+**registro/governança**: não fecha item do §4.1 do `PLANO_SAN3.md` e **não toca código nem teste** — o diff não traz
+um arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`.
+
+**O defeito que ele conserta é de MECANISMO.** O `~/.config/git/ignore` do usuário ignora `.claude/` (l.2) e
+`.agents/` (l.27) **inteiros**, então corpo de jurado **novo** nunca aparece como `??` e só entra no tree se
+alguém lembrar de `git add -f`. Foi assim que a cadeira que **reprovou** o ciclo 2 do `B-SAN3-01` votou sem estar
+em commit nenhum (achado **A1** do porteiro do #387) — e isso reincidiria a cada junta. O `.gitignore` do
+repositório, que tem precedência sobre o global, passa a reincluir os dois diretórios de agentes e os dois de skill,
+excluindo o resto do conteúdo. Provado por **exit code**, nos dois sentidos, com arquivo real: corpo novo e
+`SKILL.md` novo aparecem; `worktrees`, `settings.local.json` e `node_modules` seguem ignorados; e **0 arquivo
+rastreado hoje** passa a ser ignorado.
+
+**A premissa do mandato caiu, e a queda está registrada (§A2).** O item 1 mandava **versionar 41 corpos** "fora do
+tree" — e está **REVOGADO**, com o registro em `controle/decisoes.md` (`REGISTRO-SAN3-00-CORPOS-DE-JURADO`).
+Varredura exaustiva sobre toda ref (314 blobs) contra o hash de cada corpo do disco: dos **129** corpos, **80** estão
+fora da `main` e **80 de 80** têm blob alcançável — **zero perdido**; **33 dos 41** já foram sepultados e/ou
+aposentados por três rodadas escritas, e versioná-los **desfaria** essas decisões; os **8** restantes são as cadeiras
+dos blocos **em voo** (#388 e #389), byte-idênticas ao blob da branch que a junta julga. O resíduo das 33 no diretório
+vivo da árvore de `demo/investidor` virou `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` (MÉDIA, não bloqueia), com
+**dono a nomear pela junta** — o dev propõe e justifica, e não decide (§C7.4-bis).
+
+**As 5 dívidas do #390.** (1) backfill §C3.5 do #390 na entrada 160 (`aadaa6d5…` / `fbda96b0…` — a autoria
+publicara `a62d04e2…`, o **head do PR no merge**; o pré-merge corrigiu para o **objeto que a junta aprovou**,
+achado **C1-A2**, e a origem do valor errado é o orquestrador, não o dev); (2)
+**aposentadoria rodada 4 EXECUTADA** — as 2 cadeiras `jurado-san3-01c2-*` fora dos dois espelhos, por identificador
+de BLOCO, elenco de volta a **0**, `sync-agent-agents --check` verde com 23 agentes, 100.138 bytes removidos do
+contexto; (3) **dono real confirmado** nas duas pendências, com a ampliação nominal deixando de ser promessa e virando
+**linha do §5** (`auth.adapter.ts` e `docs/navigation-matrix.md` ao `B-SAN3-06a`; `prisma/seed.ts` também para
+os 5 papéis legados ao `B-SAN3-07`); (4) **linha do `B-SAN3-01b` no §5**, derivada da decisão do dono e das 4
+pendências que lhe pertencem; (5) parecer do porteiro do #390 versionado.
+
+**De quebra:** dois registros que o git tratava como **binário** (1 byte NUL e 1 CR solto) voltaram a ser texto
+diffável — `git ls-files --eol` dos `.md` não lista mais nenhum `-text`.
+
+**KPI.** Backend **3052/3054**, smoke **1202/1202** e Flutter **864/864** **CARREGADOS com nota** (§C3.3) — o PR não
+exerceu trilha nenhuma, e nenhum número é apresentado como execução dele. `blocks_completed` **165 → 166**.
+`mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). Índice de pendências **pelo gerador**: 411 cabeçalhos / 400 IDs,
+110 FECHADAS, 301 ABERTAS.
+
+### Pré-merge do `B-SAN3-00` (#392) — a junta aprovou 2 x 1, e as correções que ela exigiu entraram
+
+O **#391 mergeou durante a junta** e o objeto `7822deaf` ficou `CONFLICTING`. O pré-merge rebaseou sobre
+`b8cd22df`, resolveu os **8** conflitos de registro e KPI **por união** e **provou que o conteúdo julgado não
+mudou**: `.gitignore` e os dois registros que voltaram de binário com **blob idêntico** ao do objeto julgado, as
+4 remoções da dívida 2 ainda removidas, e diff **vazio** nos 15 caminhos proibidos.
+
+**Os 2 bloqueios da C1, corrigidos.** A prova de que nenhum arquivo rastreado passou a ser ignorado **trocou de
+forma**: a publicada não podia falhar (devolvia `N=0` para os **dois** `.gitignore`); a nova é
+`git check-ignore -z --no-index --stdin` sobre **todos** os rastreados, **nas duas pontas** — base **128** →
+objeto **3**, `comm -23` = **0 passaram a ser ignorados**, **125 deixaram**. Reproduziu as duas cadeiras **sem
+divergência** (128 + os 4 corpos que a dívida 2 remove = 132). E o `approved_head` do #390 passou de `a62d04e2`
+(head do PR no merge) para **`fbda96b0`** (o objeto que a ata nomeia), com a **régua escrita** em
+`controle/decisoes.md`: onde houver pré-merge, os dois **divergem por construção**.
+
+**Backfill do #391 com a régua declarada, e uma divergência assumida em voz alta.** `merge_commit b8cd22df…` ·
+`approved_head` **`3a0ea095…`** — o objeto da ata, **não** o `09dc4345…` que o mandato prescrevia e que é o head
+do PR no merge. Publicar o head repetiria, no mesmo PR que o conserta, o defeito que a junta acabou de pegar.
+
+**As 6 dívidas do `porteiro-pos-merge` do #391** entraram todas, inclusive as duas de texto: o comando do
+`B-SAN3-B1` tinha **duas linhas se contradizendo sobre o quórum** — e a errada era a normativa —, e três
+arquivos creditavam o backfill do #390 a uma medição que devolve o valor **errado**. Os dois pareceres de
+porteiro que faltavam (**#390** e **#391**) estão versionados.
+
+**KPI.** `blocks_completed` **166 → 167** (o 165 → 166 da autoria envelheceu com o merge do #391). As 3 trilhas
+seguem **carregadas com nota** (§C3.3): o PR continua sem tocar código nem teste. Índice de pendências **pelo
+gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS — a pendência nova é
+`P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
+classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.

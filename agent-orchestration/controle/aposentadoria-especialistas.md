@@ -115,7 +115,7 @@ no próprio #386: aqui só saem do diretório vivo, e `node scripts/sync-agent-a
 
 ---
 
-## Rodada 4 — ANUNCIADA aqui, EXECUTADA no PR seguinte · bloco `B-SAN3-01` ciclo 2 · 2 cadeiras
+## Rodada 4 — **EXECUTADA em 2026-09-21 pelo `B-SAN3-00`** (anunciada pelo `B-SAN3-04a`/#390) · bloco `B-SAN3-01` ciclo 2 · 2 cadeiras
 
 Dívida **A1** do parecer do porteiro pós-merge do #387 (`PORTEIRO-387.md`, achado A1 — REGISTRO GRAVE), na parte que
 o `B-SAN3-04a` (este PR) **não** pode pagar: a `D-APOSENTADORIA-ELENCO-EFEMERO` exige "ata fechada **e PR mergeado**",
@@ -129,8 +129,8 @@ e o `--check` ficava verde justamente porque não estavam no tree.
 
 | # | Cadeira | Bloco | Ata | PR que versionou o corpo | PR que deve aposentar |
 |---|---|---|---|---|---|
-| 1 | `jurado-san3-01c2-fail-closed-web` | `B-SAN3-01` ciclo 2 | `J-B-SAN3-01.md` §Ciclo 2 | `B-SAN3-04a` (este) | o primeiro a mergear depois deste |
-| 2 | `jurado-san3-01c2-suplente-fail-closed-web` | `B-SAN3-01` ciclo 2 | `J-B-SAN3-01.md` §Ciclo 2 | `B-SAN3-04a` (este) | o primeiro a mergear depois deste |
+| 1 | `jurado-san3-01c2-fail-closed-web` | `B-SAN3-01` ciclo 2 | `J-B-SAN3-01.md` §Ciclo 2 | `B-SAN3-04a` (#390, `aadaa6d5`) | **`B-SAN3-00` — EXECUTADA** |
+| 2 | `jurado-san3-01c2-suplente-fail-closed-web` | `B-SAN3-01` ciclo 2 | `J-B-SAN3-01.md` §Ciclo 2 | `B-SAN3-04a` (#390, `aadaa6d5`) | **`B-SAN3-00` — EXECUTADA** |
 
 **Elenco de especialistas depois deste PR: 2** — o primeiro elenco não vazio desde a rodada 3, e é de propósito:
 o corpo precisa estar no tree antes de poder ser aposentado com o corpo lível num squash. Peso no contexto enquanto
@@ -138,3 +138,28 @@ durar: os dois arquivos somam **100.138 bytes** em `.claude/agents/especialistas
 **Remoção por identificador de BLOCO** (nunca por nome de cadeira): o prefixo `jurado-san3-01c2-` pertence só à
 junta do ciclo 2 do `B-SAN3-01`; quem executar confere que o diretório não ganhou arquivo de outra sessão antes do
 `git rm`.
+
+### Execução da rodada 4 — `B-SAN3-00`, 2026-09-21
+
+Paga a **dívida 2** do parecer do porteiro pós-merge do #390 (`votos/B-SAN3-04a/00c-porteiro-pos-merge-390.md`),
+pelo primeiro PR a mergear depois dele. O anúncio acima previa exatamente isto: **sepultar** tira o direito de
+voto, **aposentar** tira do diretório vivo, e as duas coisas não acontecem no mesmo PR.
+
+- **Medido em `origin/main@aadaa6d5` (o squash do #390), ANTES do `git rm`:** o tree tinha **exatamente 4**
+  arquivos sob `especialistas/` — as 2 cadeiras × os 2 espelhos —, **todos** com o identificador de BLOCO
+  `jurado-san3-01c2-`. **Nenhum arquivo de outra sessão no diretório** — a conferência que o próprio anúncio
+  acima exige antes da remoção.
+- **Remoção por identificador de BLOCO**, nunca por nome de cadeira solto
+  (`feedback-remocao-por-identificador-de-bloco`): o prefixo `jurado-san3-01c2-` pertence só à junta do
+  ciclo 2 do `B-SAN3-01`.
+- **Nos dois espelhos**, como a dívida manda. `git diff --cached --numstat`: `0/503` e `0/533` em
+  `.claude/agents/especialistas/`; `0/509` e `0/539` em `.agents/agents/especialistas/`.
+- **`node scripts/sync-agent-agents.mjs --check` DEPOIS da remoção:** `OK — 23 agentes, espelho consistente`,
+  `ec=0`.
+- **Elenco de especialistas depois desta rodada: 0** — de volta ao estado correto; o índice de
+  `especialistas/` fica vazio.
+- **Peso removido do contexto de toda sessão:** arquivos **48.295 + 51.843 = 100.138 bytes** (bate **ao byte**
+  com o número anunciado) · `description` **2.020 + 2.071 = 4.091 caracteres**.
+- **As duas já estavam sepultadas** no `OBITUARIO-IDENTIDADES.md` §3.7, pelo próprio #390: aqui elas só saem
+  do diretório vivo. Os corpos continuam legíveis para sempre —
+  `git show aadaa6d5:.claude/agents/especialistas/<nome>.md`.

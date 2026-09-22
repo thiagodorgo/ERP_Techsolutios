@@ -51,3 +51,25 @@ postgres-subset.tap
 # tentaria versionar arvores inteiras dentro da propria arvore.
 .claude/worktrees/
 .tmp-demo/
+
+# Corpos de agente e skills: o ignore GLOBAL do usuario os esconde do `git status` (B-SAN3-00).
+# Medido em 2026-09-21: `~/.config/git/ignore` l.2 (`.claude/`) e l.27 (`.agents/`) ignoram os dois
+# diretorios INTEIROS. Consequencia: corpo de jurado novo NUNCA aparece como `??`, e so entra no tree
+# se alguem lembrar de `git add -f`. Foi assim que o corpo que reprovou o ciclo 2 do `B-SAN3-01` votou
+# sem estar em commit nenhum (achado A1 do porteiro pos-merge do #387, OBITUARIO-IDENTIDADES.md §3.7).
+# `.gitignore` do repo tem precedencia sobre o ignore global, entao o par "reincluir o diretorio +
+# excluir o resto do seu conteudo" devolve a visibilidade sem expor settings.local.json nem worktrees.
+!.claude/
+.claude/*
+!.claude/agents/
+!.claude/skills/
+!.agents/
+.agents/*
+!.agents/agents/
+!.agents/skills/
+# `SKILL.md` solto no ignore global (l.34) esconderia toda skill NOVA dos dois espelhos, embora o
+# repositorio rastreie 24 delas; a reinclusao e restrita aos dois diretorios de skill.
+!.claude/skills/**/SKILL.md
+!.agents/skills/**/SKILL.md
+# Reafirmado DEPOIS das reinclusoes acima (dentro do mesmo arquivo, o ultimo padrao que casa vence):
+.claude/worktrees/

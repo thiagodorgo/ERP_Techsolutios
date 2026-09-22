@@ -2474,3 +2474,156 @@ objeto — o bloco aproximou o sistema do documento em 22 células líquidas enq
 
 **Consequência para quem lê o documento hoje:** ele não serve como base de teste por papel até ser reconciliado. A
 matriz efetiva confiável é a medida por login real; a fonte normativa é a `RBAC_MATRIX.md`.
+
+
+## REGISTRO-SAN3-00-CORPOS-DE-JURADO (2026-09-21) — **registro de PREMISSA FALSIFICADA (§A2), não decisão do dono**
+
+**O que estava prescrito.** O mandato do `B-SAN3-00` mandava **versionar 41 corpos de jurado "fora do tree"** —
+o remédio para o achado **A1** do porteiro pós-merge do **#387** (o corpo que reprovou o ciclo 2 do `B-SAN3-01`
+votou sem estar em commit nenhum). O diagnóstico está certo; **a prescrição não sobreviveu à medição**, e o §A2
+proíbe consolidar um lado em silêncio. Este registro existe para que a decisão fique escrita antes de qualquer
+consolidação — e para que a emenda do orquestrador tenha a medição embaixo dela, não a memória de um agente.
+
+**Como foi medido** (worktree `san300` em `aadaa6d5`; a árvore principal foi **só lida**, nunca tocada):
+`git rev-list --objects --all` (varredura **exaustiva** de todo objeto alcançável de **toda** ref, não só dos
+138 *ref tips*) → **314 blobs distintos** sob `.claude/agents/**` e `.agents/agents/**`; `git hash-object` de
+cada corpo no disco da árvore principal (que está em `demo/investidor`) contra esse conjunto.
+
+**As três medições que derrubam a prescrição.**
+
+1. **NENHUM corpo existe só em disco — zero perda de durabilidade.** Dos **129** corpos no disco da árvore
+   principal, **80** estão em caminhos que a `origin/main` não rastreia (**41** cadeiras no espelho `.claude/`,
+   **39** no `.agents/`). Desses 80, **80 têm blob alcançável em alguma ref** e **0 está perdido**. O "fora do
+   tree" do mandato só é verdadeiro com a palavra **`main`** no lugar de **`tree`**.
+
+2. **33 dos 41 já foram SEPULTADOS e/ou APOSENTADOS por três rodadas escritas** — versioná-los na `main`
+   **desfaria** essas decisões. Classificação dos 41, um a um, contra
+   `omega/juntas/OBITUARIO-IDENTIDADES.md` (sepultura = perde o direito de voto) e
+   `controle/aposentadoria-especialistas.md` (aposentadoria = sai do diretório vivo):
+
+   | Classe | N |
+   |---|---|
+   | sepultada **e** aposentada | 10 |
+   | só sepultada | 13 |
+   | só aposentada | 10 |
+   | **subtotal — decisão escrita já tomada** | **33** |
+   | nem uma nem outra | 8 |
+
+   Os **8** restantes não são resíduo: são **exatamente** as cadeiras dos dois blocos **EM VOO** — `jurado-o6r04a-c2-*`
+   (4, PR **#389**, objeto `738ff531`) e `jurado-o6r11-*` (4, PR **#388**, objeto `43557a17`). Conferidos **por
+   hash, um a um**: os corpos do disco são **byte-idênticos** ao blob rastreado na branch que a junta julga
+   (14 comparações, 14 iguais). Versioná-los na `main` **duplicaria** o que os PRs deles já trazem, e daria
+   conflito no merge.
+
+3. **O custo de contexto é o que as rodadas 1–3 mediram e removeram.** Versionar os 33 devolveria ao `description`
+   de **toda sessão** o peso que a `D-APOSENTADORIA-ELENCO-EFEMERO` tirou de propósito. E **duas** dos 41
+   (`jurado-san3-01c2-*`, que já estão na `main`) são justamente as que a **dívida 2** do porteiro do #390 manda
+   **REMOVER** — versionar contradiria a dívida no mesmo PR que a paga.
+
+**O que se conserta, então: o MECANISMO — e ele está consertado neste bloco.** O `~/.config/git/ignore` do
+usuário ignora `.claude/` (l.2) e `.agents/` (l.27) **inteiros**, logo corpo **novo** nunca aparece como `??` e
+só entra no tree se alguém lembrar de `git add -f`. Essa é a causa do A1, e ela reincide a cada junta. O
+`.gitignore` **do repositório** (que tem precedência sobre o global) passa a reincluir os dois diretórios de
+agentes e os dois de skill, excluindo o resto do conteúdo. Provado por execução, por *exit code*: corpo novo e
+`SKILL.md` novo aparecem como `??` nos dois espelhos; `.claude/worktrees/**`, `.claude/settings.local.json`,
+`.agents/*` e `node_modules/**/SKILL.md` seguem ignorados; e **0 arquivo rastreado hoje passa a ser ignorado**.
+
+**A FORMA da última prova foi trocada no pré-merge (achado C1-A1 da junta), e a conclusão não mudou.** A autoria
+publicava `git ls-files -z | git check-ignore -z --stdin` → vazio. Sem `--no-index`, `git check-ignore` consulta o
+**índice** e **nunca** reporta caminho rastreado como ignorado: o `N=0` sai **por construção**, e um `.gitignore`
+que de fato escondesse rastreado passaria nesse teste em verde. Medido: a forma antiga devolve `N=0` **com o
+`.gitignore` do objeto e também com o da base** — o mesmo número para os dois. **Forma que passa a valer, e que
+todo bloco futuro deve copiar:** `git check-ignore -z --no-index --stdin` sobre **todos** os caminhos rastreados,
+**nas duas pontas**, universo único, com prova de substituição do `.gitignore` **antes** de ler o resultado e prova
+de restauração depois. Resultado no pré-merge, universo de **3501** rastreados: base **128** ignorados, objeto
+**3** (`AGENTS.md`, `CLAUDE.md`, `docs/claude-code-handoff/CLAUDE.md` — os três pelo ignore **global**, que este
+bloco não toca, e os três já ignorados na base); `comm -23` = **0 passaram a ser ignorados**, `comm -13` = **125
+deixaram**. As duas cadeiras da junta chegaram ao mesmo por caminhos independentes (**128** sobre o universo do
+objeto, **132** sobre o da base; a diferença de **4** são os corpos que a dívida 2 remove).
+
+**Lição de método, que é por que isto virou decisão e não só conserto de texto:** prova cuja forma **não pode
+falhar** não é prova. Antes de publicar um número, pergunte qual mutação o deixaria vermelho — aqui, o
+contra-exemplo é `CLAUDE.md`, rastreado e casando o ignore global: `git check-ignore -q` diz **não ignorado**
+(ec=1) e `git check-ignore -q --no-index` diz **ignorado** (ec=0).
+
+**O que este registro NÃO decide.** Não decide o destino dos **33** corpos aposentados/sepultados que continuam
+no diretório vivo da árvore de `demo/investidor`. O dev **não** os versionou e **não** os apagou — apagar
+diretório vivo de outra árvore é resíduo alheio, que se **reporta**, não se varre
+(`feedback-remocao-por-identificador-de-bloco`). Fica como pendência nomeada
+`P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR`, com a proposta e a justificativa do dev, para a junta decidir.
+
+**Divergência de contagem registrada (não herdada em silêncio).** A 1ª instância deste bloco publicou "43 corpos
+/ 146 ref tips"; a re-medição desta instância dá **41 / 138**. Os 2 de diferença são o par `jurado-san3-01c2-*`,
+que **está** na `main` e por isso não pertence ao conjunto "fora da `main`"; a diferença de tips é de momento de
+medição. **O conjunto dos 33 e o veredito (0 perdido) são os mesmos nas duas medições.**
+
+**Achado lateral, medido de passagem (não bloqueia):** o espelho `.agents/` do disco da árvore principal tem
+**39** corpos contra **41** do `.claude/` — faltam as cópias de `jurado-o6r11-contrato-mobile-fila` e da sua
+suplente. **Não é perda:** a branch `43557a17` (#388) tem **os dois espelhos completos**, conferido por
+`git ls-tree`. É lacuna do **disco** de `demo/investidor`, não do tree — mais uma instância de
+`P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+
+
+## REGISTRO-SAN3-00-APPROVED-HEAD (2026-09-21) — **a régua do `approved_head`, e de onde veio o valor errado (§A2)**
+
+- status: **aplicada no pré-merge do #392**; origem do defeito **nomeada**, não consolidada em silêncio.
+- achado que a produziu: **C1-A2** da junta do `B-SAN3-00` (`validador-mestre`, gravidade `bloqueia`), confirmado
+  pelo achado **A3** do `porteiro-pos-merge` do #391.
+
+**A régua, escrita para parar de divergir.** `merge_commit` = o commit de **merge na `main`**
+(`gh pr view <n> --json mergeCommit`). `approved_head` = **o objeto que a ATA da junta nomeia** — nunca
+`gh pr view <n> --json headRefOid`. **Onde houver pré-merge, os dois divergem POR CONSTRUÇÃO**, porque o pré-merge
+acrescenta commits (rebase, recontagem, dívidas, ata) *depois* de a junta ter votado; publicar o head do merge no
+lugar do objeto julgado **apaga a informação de o que foi julgado**.
+
+**Precedentes medidos, que já viviam na `main` e que a régua apenas nomeia:**
+
+| PR | head do PR no merge (`headRefOid`) | `approved_head` publicado | ata que nomeia o objeto |
+|---|---|---|---|
+| #387 | `f999adb2…` | `8adaaa31…` | `J-B-SAN3-01.md:18` |
+| #390 | `a62d04e2…` | `fbda96b0…` | `J-B-SAN3-04a.md:5` |
+| #391 | `09dc4345…` | `3a0ea095…` | `J-B-SAN3-B1.md:3` |
+
+**De onde veio o valor errado — e a origem é o orquestrador, não o dev.** O parecer do `porteiro-pos-merge` do #390
+prescreveu `approved_head a62d04e2…`; o orquestrador **transcreveu esse valor para o seu arquivo de dívidas** sem
+conferir contra a definição do §C3.5, e o dev do bloco **executou instrução escrita**. A `main` já publicava
+`fbda96b0…` (o #391 backfillou pela ata), então os dois lados **conflitavam no mesmo campo escalar** — e união não
+resolve escalar em conflito. O **parecer do porteiro é documento histórico e não se edita**: a correção vive aqui, no
+`Kpis/kpis-history.json`, no `Kpis/kpis-history.md`, no `status-geral.md`, no `log-execucao.md` e no comando do bloco.
+
+**Divergência declarada no backfill do #391, em vez de escolhida em silêncio (§A2 + §C7.4-bis).** O mandato do
+pré-merge e a dívida **D5** do porteiro do #391 prescreviam `approved_head 09dc4345951a35cb88daa4457226f64192dba87c`.
+Medi (`gh pr view 391 --json headRefOid`) que esse é o **head do PR no merge**, **um commit acima** do objeto julgado —
+`09dc4345` é *"docs(junta): ata do B-SAN3-B1, votos das 3 cadeiras e a emenda com os 2 ajustes"*, escrito **depois** de
+a junta votar. Publicá-lo repetiria, **no mesmo PR que o conserta**, exatamente o defeito C1-A2. O porteiro do #391
+deixou a escolha **aberta** e pediu a régua declarada; a régua está declarada e é esta. O head mergeado `09dc4345…`
+**fica registrado** na nota da entrada do #391, para que nenhuma das duas informações se perca.
+
+**Lição de método (a mesma classe que este PR existe para atacar).** A frase *"medidos por `gh pr view 390`"*, que
+mergeou em três arquivos com o #391, credita a uma medição um valor que **a medição contradiz**. Número certo,
+citação errada — e a citação aponta para o instrumento que devolveria o número **errado**. Antes de publicar
+procedência, execute o comando citado e confira que ele devolve o número escrito.
+
+---
+
+## `REGISTRO-SAN3-00-APPROVED-HEAD-DUAS-VEZES` — o orquestrador errou a mesma régua duas vezes, e a segunda foi no PR que a conserta (§A2, 2026-09-21)
+
+**O fato.** O `approved_head` é, por definição do §C3.5 e por precedente medido (#387), **o head que a JUNTA
+aprovou** — não o head do PR no merge. Onde há pré-merge, os dois **divergem por construção**, e publicar o
+segundo apaga a informação de *o que foi julgado*.
+
+**A primeira vez.** Para o #390, o orquestrador transcreveu `a62d04e2` (head do PR no merge) do parecer do
+porteiro para o arquivo de dívidas, sem conferir contra a definição. O valor correto é `fbda96b0`, que a ata
+`J-B-SAN3-04a.md:5` nomeia. Achado **C1-A2** da junta deste bloco.
+
+**A segunda vez, no mandato do pré-merge DESTE PR.** Ao escrever o backfill do #391, o orquestrador passou
+`09dc4345` — de novo o **head do PR no merge**, um commit acima do objeto `3a0ea095` que a ata
+`J-B-SAN3-B1.md:3` nomeia. **O desenvolvedor recusou o valor e declarou a divergência** em vez de obedecer;
+publicou `3a0ea095` com a régua escrita, e registrou o head mergeado na nota. Se tivesse obedecido, o PR que
+conserta o defeito o teria cometido de novo.
+
+**Por que isto fica escrito.** Não é a régua que faltava — ela estava na definição e no precedente. O que
+faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas vezes, sendo que a segunda
+aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
+do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
+ata** antes de publicá-lo.
