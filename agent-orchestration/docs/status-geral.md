@@ -4761,3 +4761,40 @@ seguem **carregadas com nota** (§C3.3): o PR continua sem tocar código nem tes
 gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS — a pendência nova é
 `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
 classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.
+
+### `B-GOV-MANDATO` (#393) — o mandato do orquestrador passa a ser verificável por máquina (autoria, 2026-09-25)
+
+**Peça 1 do circuito do `PLANO_SAN3.md`, e a única mecânica:** *"a premissa entra pelo mandato do orquestrador,
+escrita como fato"*. A regra *"a prova tem de poder falhar"* **já estava escrita** e foi violada dez vezes numa
+rodada — a pior na **linha 8** do mandato do ciclo 3 do `B-O6R-11` (*"a perda **MEDIDA** é `0/N`"*, número herdado
+da ata anterior), treze linhas acima de o mesmo arquivo exigir do planejador *"para CADA critério, a mutação que o
+deixaria vermelho"*. Entram `scripts/mandato-refs.sh` (o orquestrador **nunca digita SHA**; `approved_head` **lido
+da ata**, nunca de `gh pr view`), `scripts/mandato-preflight.sh` (o mandato só sai em duas seções, **MEDIDO** com
+`medido por:` e **HIPOTESE** com `derruba com:`) e `tests/mandato-refs.test.ts` (6 casos, com as **3 regressões do
+matcher** como fixture e um **vermelho-controle**). **3 arquivos novos, nenhum alterado**; diff de `src`, `prisma`,
+`frontend`, `mobile` e `.github` **vazio**.
+
+**O mandato deste bloco foi o primeiro escrito no formato novo, e uma hipótese CAIU.** Dos **8** itens de `MEDIDO`, **7
+bateram** e **1 estava vencido** — o head (`f8d5a2c8` no papel, `1ae82626` na medição), porque o ramo andou
+depois de o mandato sair; é exatamente por isso que a âncora se **mede**. Das **4 hipóteses**, **3 sobreviveram** — a suíte em **3058/3060**
+(medida, não herdada), smoke/Flutter carregáveis por §C3.3 (N=0 nos dois caminhos), e o pré-voo **sem** falso
+positivo em caminho relativo ao app Flutter (com vermelho-controle rejeitando nas 5). **Caiu a quarta** — *"o
+índice não muda, porque o bloco não abre nem fecha pendência"* —, e caiu **pelo mecanismo funcionando**: a sonda
+escrita para atacar a terceira encontrou a propriedade **vizinha** e um defeito real no próprio pré-voo. A
+checagem de caminho decide *"existe arquivo com este **nome**"* e não *"existe arquivo neste **caminho**"*:
+classe gerada da fonte, **20 de 20** caminhos errados com basename real **aceitos**, vermelho-controle **5 de 5**
+com basename inexistente **rejeitados**. Virou `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (**BAIXA**, não
+bloqueia, escopo `dentro-do-bloco`, **dono a nomear pela junta**) — **quem achou não consertou** (§C7.4-bis), e há
+razão técnica além da regra: a cláusula existe para aceitar o `lib/…` do app Flutter, e apertá-la errado faria o
+pré-voo rejeitar mandato correto.
+
+**KPI.** Backend **3052/3054 → 3058/3060 REEXECUTADO** (Δ +6, **todos** de `tests/mandato-refs.test.ts`, testes
+1557–1562 da ordem TAP; 2 skips **pré-existentes** de `RBAC_DB_PARITY`; Postgres e Redis descartáveis próprios, a
+base viva intocada). Smoke **1202/1202** **CARREGADO com nota e CONFIRMADO POR REGRESSÃO** (`npm ci --prefix frontend` próprio do
+worktree, `test:smoke` → 1202/1202, ec=0 — exatamente o valor carregado) e Flutter **864/864** **CARREGADO com
+nota, SEM** confirmação por regressão (§C3.3) — dito assim para ninguém ler a confirmação de uma trilha como
+valendo para a outra.
+`blocks_completed` **167 → 168**. `mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). Índice de pendências **pelo
+gerador**: **414** cabeçalhos / **403** IDs, **110** FECHADAS, **304** ABERTAS. **Backfill §C3.5 do #392 pago com
+a própria ferramenta nova** — `merge_commit fc3363e3…` e `approved_head `7822deaf…`` lido da **ata**, não o head
+do PR no merge (`5cfcd7d3…`), que é o par que o orquestrador já trocou duas vezes.
