@@ -127,14 +127,31 @@ if (!connectionString) {
     return rows[0]!.id;
   }
 
-  async function newItem(h: Harness, tenantId: string, options: { id?: string; base?: number; avg?: number } = {}): Promise<string> {
+  /**
+   * Carimbos EXPLÍCITOS de `created_at`, em ordem de criação (o último é o mais NOVO). A ordem que
+   * `listItems` devolve (`orderBy: created_at desc`, `inventory-prisma.repository.ts`) passa a ser DADO
+   * DO FIXTURE em vez de corrida de relógio: some a dependência da resolução do `now()` entre dois
+   * INSERTs — e com ela o `sleep(20)` que existia só para separá-los.
+   */
+  function createdAtSeries(n: number): string[] {
+    const base = Date.now() - n * 1000;
+    return Array.from({ length: n }, (_, index) => new Date(base + index * 1000).toISOString());
+  }
+
+  async function newItem(
+    h: Harness,
+    tenantId: string,
+    options: { id?: string; base?: number; avg?: number; createdAt?: string } = {},
+  ): Promise<string> {
     const id = options.id ?? randomUUID();
     await h.admin.$executeRawUnsafe(
-      `INSERT INTO inventory_items (id, tenant_id, sku, name, unit, avg_cost) VALUES ($1::uuid, $2::uuid, $3, $3, 'un', $4::numeric)`,
+      `INSERT INTO inventory_items (id, tenant_id, sku, name, unit, avg_cost, created_at)
+       VALUES ($1::uuid, $2::uuid, $3, $3, 'un', $4::numeric, COALESCE($5::timestamptz, now()))`,
       id,
       tenantId,
       `SKU-${id.slice(0, 13)}`,
       options.avg ?? 0,
+      options.createdAt ?? null,
     );
     if (options.base) await rawMovement(h, tenantId, id, "entrada", options.base, { unitCost: options.avg ?? 1 });
     return id;
@@ -660,9 +677,12 @@ if (!connectionString) {
     const setup = async (tag: string, withConsumption: boolean) => {
       const t = await newTenant(h, tag);
       const [low, high] = [randomUUID(), randomUUID()].sort();
-      const x = await newItem(h, t, { id: low, base: 100, avg: 1 });
-      await sleep(20); // Y criado depois: `listItems` (created_at desc) põe Y antes de X no INSERT das entradas do open
-      const y = await newItem(h, t, { id: high, base: 100, avg: 1 });
+      // Y nasce DEPOIS de X por CARIMBO EXPLÍCITO — `listItems` (created_at desc) põe Y antes de X no
+      // INSERT das entradas do open. Era um `sleep(20)` torcendo pela resolução do relógio entre dois
+      // INSERTs; agora a ordem é dado do fixture e não depende de a máquina estar livre.
+      const [olderX, newerY] = createdAtSeries(2);
+      const x = await newItem(h, t, { id: low, base: 100, avg: 1, createdAt: olderX });
+      const y = await newItem(h, t, { id: high, base: 100, avg: 1, createdAt: newerY });
       if (withConsumption) {
         // consumo Y 50 > X 1 → o recálculo ABC atualiza Y ANTES de X
         await rawMovement(h, t, x, "saida", -1, { unitCost: 1 });
