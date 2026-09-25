@@ -1,0 +1,651 @@
+{
+  "PRE": {
+    "A": {
+      "u": "o6r_b01_1789735783010_e04ef8675d8ab",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "app": "plan4-A"
+    },
+    "B": {
+      "u": "o6r_b01_1789735783536_caf1515f2f273",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "app": "plan4-B"
+    },
+    "iso": "read committed",
+    "tenantLock_linhas": {
+      "comContexto": 1,
+      "semContexto": 1,
+      "contextoDeOutroTenant": 1
+    },
+    "tenantsTemRls": {
+      "relrowsecurity": false,
+      "relforcerowsecurity": false
+    },
+    "tenantNoKeyUpdate_vs_insertMovimento": {
+      "ok_ms": 70
+    }
+  },
+  "STUCK_headbase": {
+    "forma": "item 10 no total (BASE 4 + viatura 6); open real; contado 2 (variancia -8); ajuste vai para a BASE",
+    "systemQuantity": 10,
+    "saldoBase": 4,
+    "close": {
+      "name": "InventoryError",
+      "code": "STOCK_INVALID",
+      "status": 409,
+      "reason": "insufficient_balance",
+      "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 4."
+    },
+    "aposClose": {
+      "status": "aberta",
+      "is_active": true,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    },
+    "recontagem": "ok contado=4",
+    "cancel": "ok cancelada",
+    "final": {
+      "status": "cancelada",
+      "is_active": false,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    }
+  },
+  "STUCK_v2": {
+    "forma": "item 10 no total (BASE 4 + viatura 6); open real; contado 2 (variancia -8); ajuste vai para a BASE",
+    "systemQuantity": 10,
+    "saldoBase": 4,
+    "close": {
+      "name": "InventoryError",
+      "code": "STOCK_INVALID",
+      "status": 409,
+      "reason": "insufficient_balance",
+      "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 4."
+    },
+    "aposClose": {
+      "status": "fechando",
+      "is_active": true,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    },
+    "recontagem": {
+      "status": "not_open",
+      "current": "fechando"
+    },
+    "cancel": {
+      "status": "not_open",
+      "current": "fechando"
+    },
+    "close2": {
+      "name": "InventoryError",
+      "code": "STOCK_INVALID",
+      "status": 409,
+      "reason": "insufficient_balance",
+      "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 4."
+    },
+    "final": {
+      "status": "fechando",
+      "is_active": true,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    }
+  },
+  "STUCK_v3": {
+    "forma": "item 10 no total (BASE 4 + viatura 6); open real; contado 2 (variancia -8); ajuste vai para a BASE",
+    "systemQuantity": 10,
+    "saldoBase": 4,
+    "close": {
+      "name": "InventoryError",
+      "code": "STOCK_INVALID",
+      "status": 409,
+      "reason": "insufficient_balance",
+      "abort": {
+        "status": "reverted"
+      },
+      "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 4."
+    },
+    "aposClose": {
+      "status": "aberta",
+      "is_active": true,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    },
+    "recontagem": {
+      "status": "ok",
+      "phase": "aberta"
+    },
+    "cancel": {
+      "status": "ok",
+      "from": "aberta"
+    },
+    "final": {
+      "status": "cancelada",
+      "is_active": false,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    }
+  },
+  "STUCK_v3_recount_close": {
+    "forma": "item 10 no total (BASE 4 + viatura 6); open real; contado 2 (variancia -8); ajuste vai para a BASE",
+    "systemQuantity": 10,
+    "saldoBase": 4,
+    "close": {
+      "name": "InventoryError",
+      "code": "STOCK_INVALID",
+      "status": 409,
+      "reason": "insufficient_balance",
+      "abort": {
+        "status": "reverted"
+      },
+      "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 4."
+    },
+    "aposClose": {
+      "status": "aberta",
+      "is_active": true,
+      "ajustes": 0,
+      "somaAjustes": 0,
+      "entries": 1,
+      "carimbadas": 0,
+      "dup": 0
+    },
+    "recontagem": {
+      "status": "ok",
+      "phase": "aberta"
+    },
+    "close2": {
+      "status": "concluida",
+      "beginStatus": "started",
+      "totalVarianceValue": -2,
+      "applied": 1,
+      "skipped": 0,
+      "reused": 0
+    },
+    "saldoBaseFinal": 2,
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -2,
+      "entries": 1,
+      "carimbadas": 1,
+      "dup": 0
+    }
+  },
+  "STUCK_partial_v3": {
+    "close": {
+      "name": "InventoryError",
+      "code": "STOCK_INVALID",
+      "status": 409,
+      "reason": "insufficient_balance",
+      "abort": {
+        "status": "kept",
+        "stamped": 1
+      },
+      "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 4."
+    },
+    "aposClose": {
+      "status": "fechando",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -3,
+      "entries": 2,
+      "carimbadas": 1,
+      "dup": 0
+    },
+    "recontagemY_naoCarimbada": {
+      "status": "ok",
+      "phase": "fechando"
+    },
+    "recontagemX_carimbada": {
+      "status": "entry_adjusted"
+    },
+    "cancel": {
+      "status": "close_in_progress",
+      "stamped": 1
+    },
+    "close2": {
+      "status": "concluida",
+      "beginStatus": "resumed",
+      "totalVarianceValue": -5,
+      "applied": 1,
+      "skipped": 0,
+      "reused": 0
+    },
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -5,
+      "entries": 2,
+      "carimbadas": 2,
+      "dup": 0
+    },
+    "saldoBaseY": 2,
+    "entries": [
+      {
+        "item_id": "0a6d507a-9741-4b93-87cc-db9502dfee11",
+        "contado": 7,
+        "variance": -3,
+        "carimbada": true
+      },
+      {
+        "item_id": "851bca0f-f8c6-4bdd-a55e-8a0c4afc492d",
+        "contado": 8,
+        "variance": -2,
+        "carimbada": true
+      }
+    ]
+  },
+  "TVV_resume_headbase": {
+    "close1": {
+      "err": {
+        "name": "InventoryError",
+        "code": "STOCK_INVALID",
+        "status": 409,
+        "reason": "insufficient_balance",
+        "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 1."
+      }
+    },
+    "aposFalha": {
+      "status": "aberta",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -6,
+      "entries": 5,
+      "carimbadas": 0,
+      "dup": 0
+    },
+    "close2": {
+      "status": "concluida",
+      "totalVarianceValue": -30
+    },
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 5,
+      "somaAjustes": -15,
+      "entries": 5,
+      "carimbadas": 5,
+      "dup": 0
+    },
+    "esperado": -30
+  },
+  "TVV_resume_v2": {
+    "close1": {
+      "err": {
+        "name": "InventoryError",
+        "code": "STOCK_INVALID",
+        "status": 409,
+        "reason": "insufficient_balance",
+        "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 1."
+      }
+    },
+    "aposFalha": {
+      "status": "fechando",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -6,
+      "entries": 5,
+      "carimbadas": 2,
+      "dup": 0
+    },
+    "close2": {
+      "status": "concluida",
+      "beginStatus": "resumed",
+      "totalVarianceValue": -18,
+      "applied": 3,
+      "skipped": 0,
+      "reused": 0
+    },
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 5,
+      "somaAjustes": -15,
+      "entries": 5,
+      "carimbadas": 5,
+      "dup": 0
+    },
+    "esperado": -30
+  },
+  "TVV_resume_v3": {
+    "close1": {
+      "err": {
+        "name": "InventoryError",
+        "code": "STOCK_INVALID",
+        "status": 409,
+        "reason": "insufficient_balance",
+        "abort": {
+          "status": "kept",
+          "stamped": 2
+        },
+        "msg": "Saldo insuficiente para o movimento: o saldo atual do item é 1."
+      }
+    },
+    "aposFalha": {
+      "status": "fechando",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -6,
+      "entries": 5,
+      "carimbadas": 2,
+      "dup": 0
+    },
+    "close2": {
+      "status": "concluida",
+      "beginStatus": "resumed",
+      "totalVarianceValue": -30,
+      "applied": 3,
+      "skipped": 0,
+      "reused": 0
+    },
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 5,
+      "somaAjustes": -15,
+      "entries": 5,
+      "carimbadas": 5,
+      "dup": 0
+    },
+    "esperado": -30
+  },
+  "TVV_concorrente_v2": {
+    "esperado": -60,
+    "iters": [
+      {
+        "st": [
+          {
+            "ok": "concluida",
+            "begin": "started",
+            "applied": 8,
+            "skipped": 2,
+            "totalVarianceValue": -48
+          },
+          {
+            "err": "422|invalid_status_transition"
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      },
+      {
+        "st": [
+          {
+            "ok": "concluida",
+            "begin": "started",
+            "applied": 5,
+            "skipped": 5,
+            "totalVarianceValue": -30
+          },
+          {
+            "err": "422|invalid_status_transition"
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      },
+      {
+        "st": [
+          {
+            "ok": "concluida",
+            "begin": "started",
+            "applied": 5,
+            "skipped": 5,
+            "totalVarianceValue": -30
+          },
+          {
+            "err": "422|invalid_status_transition"
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      }
+    ]
+  },
+  "TVV_concorrente_v3": {
+    "esperado": -60,
+    "iters": [
+      {
+        "st": [
+          {
+            "err": "422|invalid_status_transition"
+          },
+          {
+            "ok": "concluida",
+            "begin": "resumed",
+            "applied": 9,
+            "skipped": 0,
+            "totalVarianceValue": -60
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      },
+      {
+        "st": [
+          {
+            "err": "422|invalid_status_transition"
+          },
+          {
+            "ok": "concluida",
+            "begin": "resumed",
+            "applied": 6,
+            "skipped": 3,
+            "totalVarianceValue": -60
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      },
+      {
+        "st": [
+          {
+            "ok": "concluida",
+            "begin": "started",
+            "applied": 4,
+            "skipped": 6,
+            "totalVarianceValue": -60
+          },
+          {
+            "err": "422|invalid_status_transition"
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      },
+      {
+        "st": [
+          {
+            "ok": "concluida",
+            "begin": "started",
+            "applied": 5,
+            "skipped": 5,
+            "totalVarianceValue": -60
+          },
+          {
+            "err": "422|invalid_status_transition"
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      },
+      {
+        "st": [
+          {
+            "ok": "concluida",
+            "begin": "started",
+            "applied": 3,
+            "skipped": 7,
+            "totalVarianceValue": -60
+          },
+          {
+            "err": "422|invalid_status_transition"
+          }
+        ],
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 10,
+          "somaAjustes": -30,
+          "entries": 10,
+          "carimbadas": 10,
+          "dup": 0
+        }
+      }
+    ]
+  },
+  "B3_headbase": {
+    "bloqueadoEm": [
+      "UPDATE \"public\".\"cycle_count_entries\" SET \"counted_quantity\" = $1, \"updated_at\" = $2 WHERE (\"public\".\"cycle_count_entries\".\"tenant_id\" = $3 "
+    ],
+    "barreira": {
+      "tenant_id": "casou",
+      "cycle_counts": "FALHOU: timeout esperando statement bloqueado em cycle_counts para plan4-B — B3 (bloqueios no cluster inteiro com esse texto: 0)"
+    },
+    "B": {
+      "ok": "contado=5",
+      "at": 13271
+    },
+    "entryFinal": {
+      "contado": 5,
+      "variance": -3
+    },
+    "invarianteContado7": false,
+    "sessao": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -3,
+      "entries": 1,
+      "carimbadas": 1,
+      "dup": 0
+    },
+    "marks": [
+      [
+        "admin: carimbo+concluida (nao commitado)",
+        11034
+      ],
+      [
+        "B: recordEntry headbase contado=5",
+        11225
+      ],
+      [
+        "admin: commit",
+        13260
+      ]
+    ]
+  },
+  "B3_v3": {
+    "bloqueadoEm": [
+      "SELECT status FROM cycle_counts WHERE tenant_id=$1::uuid AND id=$2::uuid FOR SHARE"
+    ],
+    "barreira": {
+      "tenant_id": "casou",
+      "cycle_counts": "casou"
+    },
+    "B": {
+      "status": "not_open",
+      "current": "concluida",
+      "at": 13549
+    },
+    "entryFinal": {
+      "contado": 7,
+      "variance": -3
+    },
+    "invarianteContado7": true,
+    "sessao": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -3,
+      "entries": 1,
+      "carimbadas": 1,
+      "dup": 0
+    },
+    "marks": [
+      [
+        "admin: carimbo+concluida (nao commitado)",
+        13304
+      ],
+      [
+        "B: recordEntry v3 contado=5",
+        13504
+      ],
+      [
+        "admin: commit",
+        13543
+      ]
+    ]
+  },
+  "fimMs": 13554,
+  "papeisOrfaos": 0
+}

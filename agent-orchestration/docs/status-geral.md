@@ -1,5 +1,67 @@
 # Status Geral
 
+## Atualização 2026-09-20 — B-O6R-04a CICLO 2 (o último): os guards viram propriedade e o censo do deploy recusa contar cego
+
+**Mesma branch `fix/inventory-consistency`, mesmo PR #389, commits sem push.** A junta do ciclo 1 **REPROVOU
+1 × 2** (`R-B-O6R-04a-ciclo1`): 5 bloqueios — C1-F1 (`agente-dba-guardiao`) e C2-01 a C2-04 (`guardiao-fail-closed`);
+a cadeira C3 (`validador-mestre`) aprovou com 1 ajuste. `D-TETO-DOIS-CICLOS`: **este ciclo é o último** — nova
+reprovação para o bloco e vira dossiê ao dono. Papéis (§C7.4-bis): **achou** = C1/C2 do ciclo 1; **planejou** =
+`planejador-mestre` em Fable (`PLANO-B-O6R-04a-ciclo2.md`); **desenvolveu** = agente novo (2 instâncias — a 1ª caiu
+por 429 sem commitar; a 2ª mediu o WIP dela item a item antes de continuar, sem herdar fato).
+
+**A lição única dos cinco bloqueios** é a de `feedback-correcao-por-instancia-nao-propriedade`, pela terceira vez
+na rodada: toda guarda estava escrita como **lista** — de nomes, de grafias, de status, de códigos de erro — e toda
+lista tinha um lado de fora. O ciclo 2 troca cada lista pela **propriedade gerada da fonte**:
+
+- **C1-F1** — `row_security = off` no bloco `DO` da migration e no `scripts/inventory-duplicates-census.sql`: sob
+  FORCE RLS, o papel sem superusuário/BYPASSRLS recebe **42501 do motor** e a migration **aborta** com “censo CEGO”;
+  nunca mais “0 grupos” com 17 grupos na tabela. **Consequência declarada:** na topologia “quem migra é quem serve”,
+  a migration só aplica depois de um ato do dono sobre o papel (passo **0** novo no roteiro da pendência do censo).
+- **C2-01 / C2-02** — o T-D passou a montar `ts.createProgram` + checker: escritor de `stock_movements` é **membro
+  não-leitor de um receptor de tipo `StockMovementDelegate`** em qualquer forma sintática, escrita aninhada vem do
+  **tipo do input**, SQL cru é lido no **template inteiro** e tabela interpolada nega. Sem `stripComments`.
+- **C2-03** — `CYCLE_COUNT_STATUS_KIND` com `satisfies`: status novo sem classificação **quebra o build**; o
+  desconhecido **segura** o item e **recusa** escrita.
+- **C2-04** — violação de unicidade classificada pela **identidade do índice**, pinada ao catálogo; índice alheio
+  **propaga** em vez de virar sucesso silencioso sem estorno.
+- **C2-05 / C2-06** — lock contado por **transação**; guard de contagem cíclica **global**.
+
+**Números por execução real:** `backend_tests` **3049/3051 → 3058/3060**; suítes `-db` do bloco **45 → 52**; T-D
+**9 → 11** casos em 17 s; estoque em memória **67/67** e consumidores **64/64** inalterados; `blocks_completed`
+**164 intocado** (é o mesmo bloco). Registro: passo 0 do censo, `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` **nasce**
+(pré-existente, dono `B-SAN3-15`), `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` **fecha** (a ratificação já
+existia na emenda 4-(t)), e a frase condicional do C3-A1 foi medida na hora — **o #387 mergeou primeiro**
+(2026-09-19 11:35Z), logo as dívidas do #386 já estão na `main` e a emenda 1-f não dispara.
+
+**Para o orquestrador:** com o #387 na `main`, o **#389 ficou `DIRTY`**. Conflitos previstos (`git merge-tree`,
+leitura pura): 7 arquivos, **todos de registro/KPI**, nenhum de código nem de teste.
+
+## Atualização 2026-09-18 — B-O6R-04a (PR na autoria): o estoque não fica negativo e a contagem fecha uma vez só
+
+**Branch `fix/inventory-consistency`, commits do desenvolvedor sem push** (o orquestrador empurra depois de
+conferir). Fecha, **na autoria**, os dois P0 de estoque do gate — `Ω6R-DAT-002` (saída concorrente deixava o
+saldo negativo: 20 de 20 aceitas sobre saldo 10 no head-base) e `Ω6R-DAT-003` (fechamento de contagem aplicado
+duas vezes) — com a `P-020` absorvida. O painel segue com **13** P0 corrigidos na `main`; os dois ficam em
+`aguardando_merge` até o backfill.
+
+**Desenho, em uma linha por via:** lock `FOR UPDATE` do item antes de toda decisão de saldo (V1–V5, como tipo
+`ItemWriteLock`); fechamento `aberta → fechando → concluida` com CAS em unidades por item, sem estado sem saída e
+com o total da sessão inteira; recontagem e cancelamento sob o lock da sessão; `open` serializado pela linha do
+tenant e recusando item já em contagem aberta. Uma migration aditiva, **fail-closed**, que nunca deduplica.
+
+**Números:** suíte plena **3049/3051** (era 2995/2997), `ec=0`; as 4 suítes `-db` do bloco 45/45 em três
+execuções; vermelho-controle executado no head-base. `blocks_completed` **164**.
+
+**Antes do deploy (não do merge):** o censo de duplicatas em staging e produção é **ato do dono** —
+`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`. Se a variável `STAGING_DEPLOY_ENABLED` for ligada, o merge na `main`
+já é o deploy de staging.
+
+**Para a junta (unanimidade de 3, dado/dinheiro):** dez divergências plano × código reportadas pelo
+desenvolvedor, nenhuma decidida por ele; a que pede ratificação explícita é a `D-1` (commit `cd055802`, teste
+de rota fora da lista do plano) — `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`.
+
+---
+
 ## Atualização 2026-09-05 — B-O6R-02 ciclo 5: APROVADO 3×0, e a bateria reexecutada depois da absorção
 
 **MERGEADO: PR #371, squash `99f1840`, em 2026-09-05T02:27:34Z.** O squash parou um commit

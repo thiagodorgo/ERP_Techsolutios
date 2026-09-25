@@ -2942,3 +2942,125 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+## 2026-09-25 — B-O6R-04a (PR na autoria; autoria em 2026-09-18, REDATADA no pré-merge) — o estoque não fica negativo e a contagem fecha uma vez só
+
+Fecha os **dois P0 de estoque** do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020` absorvida.
+
+**Ω6R-DAT-002.** A saída lia o saldo, decidia e escrevia **sem lock**: medido no head-base, 20 saídas
+concorrentes de 1 sobre saldo 10 eram **todas** aceitas (saldo −10). Agora toda via que chega a
+`insertMovement`/`avg_cost` — saída, transferência, estorno, baixa e estorno de baixa por fonte — trava a linha
+do item `FOR UPDATE` **antes** da primeira leitura que decide, e o lock é **tipo**: só `lockItemForUpdate`
+produz o token `ItemWriteLock` que a escrita exige; as leituras sem lock que decidiam deixaram de existir.
+Estorno duplo → **uma** compensação, e no banco um índice único parcial por original.
+
+**Ω6R-DAT-003.** Dois fechamentos concorrentes da mesma contagem aplicavam o ajuste duas vezes. Agora o
+fechamento é `aberta → fechando → concluida` com CAS, **uma unidade por item** (cabe no timeout para qualquer
+tamanho de contagem), **exatamente um 200**, nenhum estado sem saída (falha sem ajuste aplicado devolve a sessão
+a `aberta`; com ajuste, recontar as pendentes e retomar) e o total da sessão **inteira** no 200 e na auditoria.
+Recontar e cancelar decidem sob o lock da sessão; abrir contagem recusa item que já está em outra contagem aberta.
+
+**A migration nunca deduplica.** `20260873000000_add_stock_movements_unique_backstops` cria dois índices únicos
+parciais e aborta com a **contagem real** de grupos duplicados de legado; o censo em staging e produção é **ato do
+dono antes do próximo deploy** (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+
+**Números, por execução real.** `backend_tests` **2995/2997 → 3049/3051** (+54: T-A 16, T-B 20, T-C 7, T-C′ 2,
+T-D 9), forma canônica 3 (banco descartável recriado, `DATABASE_URL` exportada, `CORE_SAAS_PERSISTENCE` não
+exportado), `ec=0`, os 2 pulos são os do orçamento RBAC. As 4 suítes `-db` do bloco: **45/45 em 3 execuções**
+com o banco recriado antes de cada, a 3ª em paralelo. As 7 suítes de estoque em memória: **67/67**.
+Vermelho-controle **executado** no head-base (`cc696f93`): T-A 3/16, T-B 6/20, T-C 1/7, T-C′ 0/2, T-D 2/9 — cada
+vermelho lido do TAP com o motivo. 16 mutações dos guards, todas vermelhas e revertidas.
+`blocks_completed` 163 → 164. `flutter_tests` e `frontend_smoke_tests` **carregados** com marcador (§C3.3): o PR
+não toca `mobile/` nem `frontend/`. `mvp_demo`/`mvp_vendavel` intocados (§C3.4).
+
+## 2026-09-25 — B-O6R-04a CICLO 2 (o último, mesmo PR #389; autoria em 2026-09-20, REDATADA no pré-merge) — os guards deixam de ser lista e viram propriedade; o censo do deploy nunca mais conta cego
+
+A junta do ciclo 1 **REPROVOU 1 × 2** com 5 bloqueios. `D-TETO-DOIS-CICLOS`: este é o **último** ciclo. A lição
+que atravessa os cinco é a mesma, pela terceira vez na rodada — *correção por INSTÂNCIA, não pela PROPRIEDADE*:
+cada guarda estava escrita como **lista** (de nomes, de grafias, de status) e cada lista tinha um lado de fora.
+
+**C1-F1 — o portão do deploy enumerava um universo vazio em silêncio.** Com 17 grupos duplicados na tabela e um
+papel `NOSUPERUSER NOBYPASSRLS` (o papel da aplicação), o censo respondia `0|0`, o bloco `DO` ficava mudo e o
+`migrate deploy` saía com `23505` cru — fail-open no último portão antes do dado de produção. O conserto é o
+interruptor do próprio Postgres: `row_security = off` faz o motor **RECUSAR** (`42501`) toda consulta a que uma
+política se aplicaria, em vez de filtrar. Ou o papel enxerga TODAS as linhas, ou a migração **aborta** com
+*“censo CEGO sob o papel…”* — **nunca “0 grupos”**. Consequência **declarada**: na topologia “quem migra é quem
+serve”, esta migration só aplica depois de um ato do dono sobre o papel. É caro, e é o preço de não contar cego.
+
+**C2-01 e C2-02 — o guard de via de escrita era texto.** O D1 enumerava **grafias** de `stockMovement.<m>(` depois
+de um `stripComments` caseiro (um *regex literal* no fonte abria “comentário” e apagava o escritor seguinte); o D2
+classificava “leitura que decide” por **lista de nomes**. Agora o T-D monta um `ts.createProgram` sobre as 785
+raízes e pergunta ao **checker**: escritor é membro não-leitor de um receptor cujo TIPO é `StockMovementDelegate`
+(alias, `?.`, `["stockMovement"]`, cadeia em N linhas — dá no mesmo), escrita **aninhada** é reconhecida pelo
+**tipo do input** (`^StockMovement\w*(Create|Update|Upsert|Delete)`), SQL cru é lido no **template inteiro** e
+tabela interpolada = **negar**. Comentário não é nó: o escape do regex literal morreu com o `stripComments`.
+
+**C2-03 — status não classificado liberava o item.** `cycle_counts.status` é TEXT sem CHECK; uma sessão `suspensa`
+semeada segurava **0** itens porque a I9 perguntava `IN ('aberta','fechando')`. Agora a classificação é **uma**
+(`CYCLE_COUNT_STATUS_KIND` com `satisfies`): membro novo da enumeração sem classificação **quebra o build**
+(`TS1360`), e os dois lados fechados nascem da mesma tabela — o desconhecido **segura** o item e **recusa** escrita.
+
+**C2-04 — qualquer violação de unicidade virava “já estornado”.** Com um índice único alheio sobre
+`stock_movements`, `removeExitForSource` devolvia `undefined` — **sucesso silencioso sem estorno nenhum**: saldo 7
+onde devia ser 10 e o consumidor seguindo em frente. Agora a classificação é pela **identidade do índice** (as
+colunas que o driver expõe; ou o **nome** da restrição, no caminho em que a escrita esperou na tupla concorrente e
+o erro chega sem colunas — medido nas duas formas), pinada ao catálogo pelo caso **C9**. Índice não classificado:
+**propaga**. Nunca 2xx sobre estorno que não aconteceu.
+
+**C2-05 e C2-06 — contados por método, não por transação / só na classe dona.** O lock agora é contado por
+**transação** (chamada em laço conta 99; callback de `uow.run` aceita no máximo uma escrita de item) e o guard de
+contagem cíclica varre **todo** `src/`, não só o repositório dono.
+
+**Mudança de código além dos guards:** nada lido antes do lock sobrevive a ele — V3 e V5 relêem sob o lock
+(`findMovementByIdLocked`, novo). A leitura pré-lock só escolhe **qual item travar**.
+
+### Números, por execução real (2026-09-20, dev do ciclo 2, 2ª instância)
+
+| KPI | Valor |
+|-----|-------|
+| `backend_tests` | **3049/3051 → 3058/3060** (+9: B18, B18m, C9, C6′, C7′, C8′, C10′, D1′, D2′). Forma canônica 3, cluster descartável próprio, `ec=0`, 288 arquivos, os 2 pulos são os do orçamento |
+| Suítes `-db` do bloco | **45 → 52** (16 + 22 + 8 + 6) — os 45 do ciclo 1 seguem **verdes** |
+| T-D (guards) | **9 → 11** casos, 17,3 s (orçamento declarado 60 s) |
+| Estoque em memória | **67/67** — inalterado |
+| Consumidores (`fuel-logs`, `maintenance-order-items`, `fleet-alerts-notifications`, `fuel-logs-routes`) | **64/64** — inalterado |
+| `blocks_completed` | **164 — INTOCADO**: é o MESMO bloco, o ciclo 2 é correção dentro do PR #389 |
+| `flutter_tests` / `frontend_smoke_tests` | **carregados** com marcador (§C3.3) — o ciclo 2 não toca `mobile/` nem `frontend/` |
+| `mvp_demo` / `mvp_vendavel` | **intocados** (§C3.4) |
+
+**Defeito do próprio ciclo 2, achado e corrigido na autoria — registrado porque a lição é do processo.** O primeiro
+`npm test` completo veio com **1 fail**: os papéis efêmeros que os casos novos do drill exigem faziam `ALTER ROLE`
+**fora** do `withRoleCatalogLock`, e o *ratchet de catálogo* do arnês (`tests/db-catalog-write-guard.test.ts`, do
+`B-O6R-ARNES` #359) reprovou — exatamente como foi desenhado para fazer. O `ALTER ROLE` entrou no lock (catálogo de
+cluster é compartilhado por todo o lote paralelo) e o arquivo foi registrado na allowlist congelada com a
+**composição escrita** (ALTER ROLE 2 · GRANT 1 · OWNER TO 1). O plano do ciclo 2 previu o papel efêmero e o helper
+do arnês; **não previu o ratchet**, que nasceu depois, noutro bloco. Um guard de outro bloco pegou o descuido deste.
+
+`merge_commit` / `approved_head` **null na autoria** (§C3.5) — backfill pós-merge.
+
+### PRÉ-MERGE / REBASE (2026-09-25) — os números foram REEXECUTADOS, nunca somados
+
+O ramo foi **rebaseado sobre `origin/main@fc3363e3`** (o #387, #390, #391 e #392 mergearam depois da autoria) e
+as duas entradas acima foram **redatadas para 2026-09-25**, a data da medição — as datas de autoria (2026-09-18 e
+2026-09-20) ficam registradas no próprio cabeçalho, e nada foi apagado.
+
+| KPI | Autoria (base `02bd7dab`) | Pré-merge (base `fc3363e3`) | Como |
+|-----|---------------------------|------------------------------|------|
+| `backend_tests` | 3049/3051 → 3058/3060 | **3115/3117** | reexecutado, N=2 completas, denominador 3117 nas duas, `fail 0 · skipped 2`, 292 arquivos, 335 s, ec=0 |
+| `frontend_smoke_tests` | 1126 | **1202** | CARREGADO do último oficial da `main` — `git diff --name-only fc3363e3 HEAD -- frontend mobile` = **0 arquivos** |
+| `flutter_tests` | 864 | **864** | CARREGADO (§C3.3) — trilha não reexecutada, e está dito |
+| `blocks_completed` | 164 | **168** | recontado a partir do **167** que a `main` publica em `fc3363e3` |
+| `mvp_demo` / `mvp_vendavel` | 99 / 88 | **99 / 88** | INTOCADOS (§C3.4) — o rebase não move escopo de produto |
+
+**Forma da medição:** worktree `.claude/worktrees/b04a`; Postgres `dev-b04a-rebase-pg` (postgres:16, 127.0.0.1:57411)
+e Redis `dev-b04a-rebase-redis` (redis:7-alpine, 127.0.0.1:57412) **descartáveis próprios** — a base viva
+`erp-postgres`/`erp-redis` **não recebeu um comando**; banco `erp_b04a_rebase` derrubado e recriado antes da medição
+(`DROP DATABASE ... WITH (FORCE)` + `CREATE DATABASE` + `prisma migrate deploy`, 108 migrations) e `FLUSHALL` no Redis;
+`DATABASE_URL`/`REDIS_URL` exportadas, `CORE_SAAS_PERSISTENCE` não exportada; node v20.19.5.
+
+**A 1ª das 2 execuções veio com `fail 2`, e os 2 vermelhos eram os guards do próprio painel** — a cópia congelada
+divergia do `kpis-latest.json` e o acumulado ainda trazia o 164 da autoria, porque o KPI ainda estava no meio do
+rebase. **Não foi intermitência: foi o guard funcionando.** Depois da recontagem, `fail 0`.
+
+**O CÓDIGO JULGADO NÃO MUDOU**, provado nas duas direções sobre `src tests prisma frontend mobile scripts`:
+`git diff 02bd7dab 738ff531` × `git diff fc3363e3 HEAD` = 6468 linhas cada, `cmp` idêntico (md5
+`4508831fa7639e220659549e13ddd7cf`); e `git diff 738ff531 HEAD` × `git diff 02bd7dab fc3363e3` = 5671 linhas cada,
+`cmp` idêntico. `merge_commit` / `approved_head` seguem **null** na autoria (§C3.5).

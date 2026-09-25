@@ -128,6 +128,14 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
       },
     ],
     [
+      "inventory-migration-drill-db.test.ts",
+      {
+        count: 4,
+        reason:
+          "B-O6R-04a ciclo 2 (C1-F1): o drill passou a provar o censo e o `migrate deploy` SOB O PAPEL REAL (C6′/C7′/C8′) — papel efêmero pelo `createEphemeralRole` do arnês (o único CREATE ROLE/GRANT de cluster fica lá dentro, dentro do lock). Composição das 4: ALTER ROLE 2 (1 SQL — repor senha conhecida para o processo filho, DENTRO de `withRoleCatalogLock`; 1 na prosa que explica por quê) · GRANT 1 · OWNER TO 1 — estes dois são ACL de esquema e dono de tabela da BASE PRÓPRIA E DESCARTÁVEL do drill (`CREATE DATABASE` por execução, nunca a base compartilhada: guard D9 de `tests/inventory-write-paths-guard.test.ts`), não catálogo de cluster — a varredura é lexical e os conta do mesmo jeito, então ficam congelados aqui",
+      },
+    ],
+    [
       "auth-identity-revocation-db.test.ts",
       {
         count: 1,

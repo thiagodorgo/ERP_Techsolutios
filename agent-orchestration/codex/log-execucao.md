@@ -1,3 +1,76 @@
+## 2026-09-20 - B-O6R-04a CICLO 2 - os guards deixam de ser lista e viram propriedade gerada da fonte
+
+### Resumo
+
+Ciclo 2 do bloco de consistencia do estoque (branch `fix/inventory-consistency`, PR #389, objeto
+`c84a76a8`). O ciclo 1 foi REPROVADO 1 x 2 (vetos C1/banco-e-concorrencia e C2/invariante-por-mutacao;
+C3 aprovou com 1 ajuste) e este e o ULTIMO ciclo (`D-TETO-DOIS-CICLOS`). Plano:
+`PLANO-B-O6R-04a-ciclo2.md`, por `planejador-mestre` em Fable. Papeis (§C7.4-bis): quem ACHOU = cadeiras
+C1/C2 do ciclo 1; quem PLANEJOU = o planejador; quem DESENVOLVEU = agente general-purpose novo, em 2
+instancias (a 1a caiu por 429 sem commitar; a 2a mediu o WIP dela contra o plano item a item,
+reexecutando tudo o que citou, antes de continuar).
+
+### Entregue
+
+- **C1-F1 (bloqueia).** `PERFORM set_config('row_security','off',true)` + `EXCEPTION WHEN
+  insufficient_privilege` no bloco `DO $censo$` da migration
+  `20260873000000_add_stock_movements_unique_backstops`, e `ON_ERROR_STOP` + `SET row_security = off` no
+  `scripts/inventory-duplicates-census.sql` (mais a 3a consulta, a R19, com o lado fechado
+  `NOT IN ('concluida','cancelada')`). Sob FORCE RLS o papel sem superusuario/BYPASSRLS recebe 42501 do
+  motor e a migration ABORTA com "censo CEGO sob o papel"; nunca mais "0 grupos" com 17 grupos semeados.
+  Provas: C6' (bloco DO nas 3 posturas), C7' (o script), C8' (`migrate deploy` sob o papel, com 17 grupos
+  E com 0 grupos), C6 ajustado (sob `roleA` recusa com 42501).
+- **C2-01 e C2-02 (bloqueiam).** `tests/inventory-write-paths-guard.test.ts` reescrito sobre `typescript`:
+  programa com as 785 raizes + checker. D1 = escritor e membro fora do conjunto de leitura de um receptor
+  de tipo `StockMovementDelegate` (alias, optional chaining, indice por string, cadeia multilinha), escrita
+  aninhada pelo TIPO do input, SQL cru pelo template inteiro, tabela interpolada = negar. D2 = regras R1 a
+  R6 geradas da propria classe (universo por alcance a `insertMovement`; leitura de identificacao gerada;
+  nada lido antes do lock sobrevive a ele). D1' e D2' provam os classificadores contra as formas do jurado
+  em fixture compilada EM MEMORIA, sem tocar `src/`.
+- **C2-03 (bloqueia).** `CYCLE_COUNT_STATUS_KIND` com `satisfies`: membro novo da enumeracao sem
+  classificacao quebra o BUILD (TS1360, reexecutado). `NOT IN` derivado com `Prisma.join` no SQL e
+  `isTerminalCycleCountStatus`/`isWritableCycleCountStatus` na memoria e no servico; `NON_TERMINAL_STATUSES`
+  morreu. Status desconhecido SEGURA o item e RECUSA escrita (B18, B18m).
+- **C2-04 (bloqueia).** `STOCK_MOVEMENT_UNIQUE_INDEXES` + `uniqueViolationColumns` /
+  `uniqueViolationConstraintName` / `isUniqueViolationOf`: os 3 catch de V3/V4/V5 classificam pela
+  identidade do indice. Indice alheio PROPAGA (C10': saldo 7 mantido e o chamador sabe, em vez de
+  `undefined` de sucesso). C9 pina nome-para-colunas ao catalogo e reprova ambiguidade; D6 proibe o
+  `isUniqueViolation` generico nesses catch.
+- **C2-05 e C2-06 (ajustes).** R1 conta locks por TRANSACAO (chamada em laco = 99) e R6 limita o callback
+  de `InventoryUnitOfWork.run` a uma escrita de item; D5 passou a varrer TODO `src/`/`prisma/`/`scripts/`.
+- **C3-A1 e C3-N1 (ajustes, registro).** A frase condicional sobre as dividas do #386 foi medida na hora e
+  anexada em append ao `00-dev.md` (#387 MERGED em 2026-09-19 11:35Z, logo a emenda 1-f nao dispara); a
+  pendencia `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` fechou citando a emenda 4-(t) do comando, que
+  ja a ratificava.
+- **Pre-existente nomeado.** `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` (MEDIA) nasce com dono `B-SAN3-15` - o
+  unico bloco posterior com `src/modules/inventory/**` no escopo (PLANO_SAN3 §5 l.284 e a trava do §6 l.356).
+
+### Defeito do proprio ciclo, achado e corrigido na autoria
+
+O primeiro `npm test` completo veio com 1 fail: os papeis efemeros que C6'/C7'/C8' exigem faziam
+`ALTER ROLE` FORA do `withRoleCatalogLock`, e o ratchet de catalogo do arnes
+(`tests/db-catalog-write-guard.test.ts`, B-O6R-ARNES #359) reprovou - como foi desenhado para fazer. O
+`ALTER ROLE` entrou no lock e o arquivo foi registrado na allowlist congelada com a composicao escrita
+(ALTER ROLE 2 - GRANT 1 - OWNER TO 1). O plano do ciclo 2 previu o papel efemero e o helper do arnes;
+NAO previu o ratchet, que nasceu depois, noutro bloco.
+
+### Numeros (execucao real, 2026-09-20)
+
+`backend_tests` 3049/3051 -> **3058/3060** (288 arquivos, forma canonica 3, cluster descartavel proprio,
+ec 0). Suites `-db` do bloco 45 -> **52** (16 + 22 + 8 + 6); T-D 9 -> **11** casos em 17,3 s (orcamento
+60 s); estoque em memoria **67/67** e consumidores **64/64** inalterados; `blocks_completed` **164
+INTOCADO** (mesmo bloco). KPI no proprio PR (§C3): `kpis-latest.json`, append em `kpis-history.json` e
+`.md`, `app.js` por `kpi-freeze.mjs`, `--check` em dia; os 3 guards de KPI verdes.
+
+### Para o orquestrador
+
+Com o #387 na `main` (mergeado em 2026-09-19), o **#389 ficou `DIRTY`**: `git merge-tree` (leitura pura)
+preve conflito em 7 arquivos, TODOS de registro/KPI (`Kpis/*`, `log-execucao.md`, `pendencias*.md`) e
+NENHUM de codigo ou de teste. A reconciliacao e do rebase que anteceder o merge. Divergencia declarada,
+nao decidida: `tests/db-catalog-write-guard.test.ts` esta fora da lista "PERMITIDO (e so isto)" do §8 do
+plano e foi tocado (uma entrada de allowlist com motivo) porque o proprio guard manda faze-lo - ratificar
+na emenda.
+
 ## 2026-09-03 - B-O6R-07a CICLO 2 - reversao do SEC-002, cobranca unica pos-veredicto, dual-match no guard de objeto
 
 ### Resumo
@@ -4687,3 +4760,85 @@ bloco mergear.
   tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
   deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
   **303** ABERTAS.
+## B-O6R-04a — `fix/inventory-consistency` (2026-09-18, PR na autoria)
+
+**Ω6R-DAT-002 + Ω6R-DAT-003, os dois P0 de estoque do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020`
+absorvida.** Papéis do §C7.4-bis, com identidades distintas: achou o `critico-adversarial` (2 rodadas, as duas
+NÃO; o que sobreviveu à r2 virou requisito na emenda 3); planejou o `planejador-mestre` (Fable, plano v3,
+`756b8c37`); **implementou o desenvolvedor**, em duas instâncias — a 1ª caiu por limite de sessão (429) às
+~12:12 depois de 3 commits (`2b7f8620` migration + censo, `ea36c658` código, `cd055802` regressão em memória)
+e 2 suítes não commitadas; a 2ª mediu cada passo do plano contra o que existia, sem herdar nada como fato, e
+terminou o bloco.
+
+**O que mudou.** V1–V5: `FOR UPDATE` na linha do item antes da primeira leitura que decide, com o token de tipo
+`ItemWriteLock`; `P2002` fora da transação; falha transitória → 503. V6: `aberta → fechando → concluida` com CAS
+em unidades por item (porta `InventoryUnitOfWork`), `abortClose` em toda falha, total da sessão inteira somado no
+banco sob o lock. V7/V8: recontagem e cancelamento sob o lock da sessão. V9: `open` serializado pela linha do
+tenant (`FOR NO KEY UPDATE`) e recusando item já em contagem não terminal. UMA migration aditiva e fail-closed
+(`20260873000000_add_stock_movements_unique_backstops`, 2 índices únicos parciais, nunca deduplica) e o censo
+somente leitura `scripts/inventory-duplicates-census.sql` para o ato do dono.
+
+**Provas, por execução.** 5 suítes novas (T-A 16, T-B 20, T-C 7, T-C′ 2, T-D 9). Suíte plena **2995/2997 →
+3049/3051**, forma canônica 3, `ec=0`. As 4 `-db` do bloco **45/45 em 3 execuções** com o banco recriado antes
+de cada (a 3ª em paralelo). Vermelho-controle **executado** no head-base `cc696f93` (worktree `dev-b04a-base`,
+`npm ci` próprio, base migrada com as 107 do head-base): T-A 3/16, T-B 6/20, T-C 1/7, T-C′ 0/2, T-D 2/9 — A2 e B3
+vermelhos **pela invariante** (saldo −1; contado 5 por cima do carimbo). 16 mutações dos guards, todas vermelhas
+e revertidas por bytes. Drill do M-02 reproduzido (`P3018/P0001` "21 grupo(s)" → `P3009` → `P3009` com dado
+limpo → `migrate resolve --rolled-back` → aplicado). **Sizing com o CÓDIGO REAL** (§10 passo 10; base descartável por lado, papel efêmero; outros clusters de pé mas ociosos — `docker stats` ~0% no início e no fim): bloco N=250/500/1000/10000 → 4 730 / 9 430 / 18 667 / **196 349 ms**, unidade média 18,8 / 18,8 / 18,6 / 19,6 ms, p95 22 / 25 / 23 / 27 ms, máx 153 / 37 / 41 / 156 ms, `totalVarianceValue` exato (−6·N) e `concluida` com N ajustes, N carimbos e 0 duplicata em todos. Head-base nos mesmos N: 4 529 / 8 703 / 17 089 ms `concluida`, e em **N=10 000 → `P2028` em `cycleCountEntry.updateMany()` (o `applyClose`) aos 160 898 ms, sessão `aberta`, 10 000 ajustes gravados e 0 carimbados** — o modo de falha que a emenda 2-h existe para fechar.
+
+**Divergências plano × código, reportadas e não decididas (§A2)** — texto integral no relatório do
+desenvolvedor: D-1 teste de rota fora da lista do §8 tocado para a I9 caber em memória (commit isolado
+`cd055802`; `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`); D-2 `isExitReversed` público permanece (interface
+e `inventory.service.ts` são intocáveis); D-3 forma do `40P01` em query crua; D-4 com a I9 o `open` recusa em vez
+de esperar o lock da unidade (A12/B8(ii)); D-5 outcomes com um ramo a mais; D-6 C6 roda o censo em transação
+READ ONLY na base compartilhada e o censo com grupos foi para o C5′; D-7 T-C ganhou o C0 de postura; D-8 o
+arranjo do B4 para em `fechando`; D-9 o controle v2 do B15 é intercalado deterministicamente; D-10 D1 e D9 são
+verdes no head-base por construção.
+
+**Pendências que nascem:** `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` (ato do dono, antes do próximo deploy),
+`P-O6R-B04-CONSUMIDORES-503`, `P-O6R-B04-UI-STATUS-FECHANDO` e `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`;
+emendas na `P-O6R-B04` (parcial na autoria), `P-020` e `P-021` (fechadas na autoria). `blocks_completed` 163 →
+164. Base viva intocada; cluster e Redis do bloco (`dev-b04a-pg` :58651, `dev-b04a-redis` :58652) e o worktree
+`dev-b04a-base` removidos pelo nome ao fim.
+
+### PRÉ-MERGE — rebase sobre a `main` nova (2026-09-25), para o CI existir no SHA que a junta vai julgar
+
+**Por quê.** O #389 tinha **ZERO check-run** no head `738ff531`: o gatilho `push` em `fix/**` que o `B-SAN3-B1`
+(#391) criou **não dispara sozinho** num SHA que já estava no `origin` antes de o gatilho existir, e o §C7.1-bis
+(que o #391 mergeou) obriga o `inspetor-de-terreno-da-junta` a devolver **BLOQUEADO** enquanto for assim. É o
+rebase que gera head novo, e é o head novo que gera o check-run. Escopo **estritamente mecânico**: zero mudança de
+produto, de teste ou de comportamento.
+
+**O rebase.** `git rebase fc3363e3` (base do ramo: `02bd7dab`), **27 commits**. Conflito em **4 paradas**, **todas**
+em registro e KPI — **zero** em `src/`, `tests/`, `prisma/`, `frontend/` ou `mobile/`; a interseção dos dois conjuntos
+de arquivos alterados (`comm -12`) era de exatamente 9 arquivos, e nenhum de código. Resolução por **UNIÃO** nos
+arquivos de append (`pendencias.md`, `log-execucao.md`, `kpis-history.md/json`, `decisoes.md`, `recent.itens` do
+painel); nos **escalares** (`kpis-latest.json`, a cópia `var FROZEN` do `app.js`) ficou a ponta do bloco e os números
+foram **recontados**. `pendencias-indice.md` **regerado pelo gerador** (`gerar-indice-pendencias.py`):
+**419 cabeçalhos / 408 IDs · FECHADA 111 · ABERTA 308**.
+
+**`.github/workflows/ci.yml` carrega as duas pontas**, conferido por presença: gatilho `push: fix/**`, `workflow_dispatch`,
+`concurrency`, `flutter-version: 3.47.5` e os dois portões do GHCR por `refs/heads/main` (da `main`); e as 4 suítes
+`-db` do bloco na lista `SUITES` (do bloco).
+
+**O código julgado não mudou**, provado nas duas direções sobre `src tests prisma frontend mobile scripts`:
+`git diff 02bd7dab 738ff531` × `git diff fc3363e3 HEAD` = **6468 linhas cada, `cmp` idêntico** (md5
+`4508831fa7639e220659549e13ddd7cf`); `git diff 738ff531 HEAD` × `git diff 02bd7dab fc3363e3` = **5671 linhas cada,
+`cmp` idêntico**.
+
+**KPI reexecutado (§C3.3), nunca somado:** `backend_tests` **3058/3060 → 3115/3117** (N=2 execuções completas,
+denominador 3117 nas duas, `fail 0 · skipped 2`, 292 arquivos, 335 s, ec=0; Postgres e Redis descartáveis próprios
+`dev-b04a-rebase-pg` :57411 e `dev-b04a-rebase-redis` :57412, banco recriado com 108 migrations — a base viva não
+recebeu um comando). `frontend_smoke_tests` **1126 → 1202** (CARREGADO do oficial da `main`; o bloco segue sem tocar
+`frontend/` nem `mobile/`). `blocks_completed` **167 → 168**, recontado a partir do valor da `main`. `mvp_*` intocados.
+`npm run check`, `lint`, `build` e `npm --prefix frontend run check` ec=0; `kpi-freeze --check` em dia; os 3 guards
+de KPI verdes (charts 17/17, contraste 6/6, achados-paridade 6/6).
+
+**DIVERGÊNCIA REPORTADA, não decidida pelo desenvolvedor (§C7.4-bis).** Ao medir o terreno, `git status` no worktree
+`b04a` devolveu **um** arquivo modificado e **não-commitado**: `controle/decisoes.md`, +37 linhas, com a decisão do
+dono **`D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL`** (2026-09-20). Medida em cinco lugares, ela **não existia em
+nenhum**: nem na `main`, nem no head do ramo, nem na árvore principal, nem em commit algum de ref alguma
+(`git log --all -S` vazio) — só naquele disco. Foi **preservada** byte a byte antes de qualquer operação e commitada
+**verbatim, em commit separado** (`f4d5226d` na fila original), porque o rebase reescreveria a história por baixo dela
+e `git stash`/`checkout`/`reset` alheios são proibidos. É registro, não produto. **O orquestrador descarta sozinho se
+quiser: é um commit só, e nada mais do bloco depende dele.**

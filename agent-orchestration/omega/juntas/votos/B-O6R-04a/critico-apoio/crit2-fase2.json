@@ -1,0 +1,482 @@
+{
+  "role_A": {
+    "u": "o6r_b01_1789682019705_7c294efcd25bc",
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "app": "crit2-A"
+  },
+  "role_B": {
+    "u": "o6r_b01_1789682020012_fd75596cff951",
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "app": "crit2-B"
+  },
+  "premissas": {
+    "isolation": "read committed",
+    "forUpdateComContexto": 1,
+    "forUpdateSemContexto": 0,
+    "forUpdateContextoDeOutroTenant": 0
+  },
+  "LO_open_forUpdate": {
+    "modoA": "FOR UPDATE",
+    "ordemA": "X(menor id, mais antigo) depois Y",
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      },
+      "at": 3622
+    },
+    "B": {
+      "ok": "sessao entries=[Y,X]",
+      "at": 3635
+    },
+    "marks": [
+      [
+        "A: 1o item travado",
+        1091
+      ],
+      [
+        "B: inicia open (codigo real)",
+        1389
+      ],
+      [
+        "A: pede 2o item",
+        2598
+      ]
+    ]
+  },
+  "LO_open_controleKeyShare": {
+    "modoA": "FOR KEY SHARE",
+    "ordemA": "X(menor id, mais antigo) depois Y",
+    "A": {
+      "ok": "A-ok",
+      "at": 5240
+    },
+    "B": {
+      "ok": "sessao entries=[Y,X]",
+      "at": 4057
+    },
+    "marks": [
+      [
+        "A: 1o item travado",
+        3722
+      ],
+      [
+        "B: inicia open (codigo real)",
+        4022
+      ],
+      [
+        "A: pede 2o item",
+        5234
+      ],
+      [
+        "A: 2o item travado",
+        5236
+      ]
+    ]
+  },
+  "LO_abc_forUpdate": {
+    "modoA": "FOR UPDATE",
+    "ordemA": "X(menor id, mais antigo) depois Y",
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      },
+      "at": 7860
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}",
+      "at": 7863
+    },
+    "marks": [
+      [
+        "A: 1o item travado",
+        5343
+      ],
+      [
+        "B: inicia abc (codigo real)",
+        5642
+      ],
+      [
+        "A: pede 2o item",
+        6855
+      ]
+    ]
+  },
+  "LO_abc_controleKeyShare": {
+    "modoA": "FOR KEY SHARE",
+    "ordemA": "X(menor id, mais antigo) depois Y",
+    "A": {
+      "ok": "A-ok",
+      "at": 9468
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}",
+      "at": 8284
+    },
+    "marks": [
+      [
+        "A: 1o item travado",
+        7959
+      ],
+      [
+        "B: inicia abc (codigo real)",
+        8264
+      ],
+      [
+        "A: pede 2o item",
+        9462
+      ],
+      [
+        "A: 2o item travado",
+        9464
+      ]
+    ]
+  },
+  "E3_codigo_atual": {
+    "variante": "codigo_atual",
+    "B": {
+      "ok": "contado=5",
+      "elapsedMs": 21,
+      "terminouAntesDoCommitDeA": true
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 11035
+    },
+    "final": {
+      "entry": {
+        "contado": 5,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "soma": -3
+      },
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A: leu contado=7, gravou ajuste -3",
+        9514
+      ],
+      [
+        "B: recordEntry(codigo_atual) contado=5",
+        9793
+      ],
+      [
+        "B: terminou",
+        9814
+      ],
+      [
+        "A: carimbou entry + CAS concluida count=1",
+        11030
+      ],
+      [
+        "A: commit",
+        11030
+      ]
+    ]
+  },
+  "E3_filtro_13d": {
+    "variante": "filtro_relacional_13d",
+    "B": {
+      "ok": "count=1",
+      "elapsedMs": 13,
+      "terminouAntesDoCommitDeA": true
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 12608
+    },
+    "final": {
+      "entry": {
+        "contado": 5,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "soma": -3
+      },
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A: leu contado=7, gravou ajuste -3",
+        11086
+      ],
+      [
+        "B: recordEntry(filtro_relacional_13d) contado=5",
+        11371
+      ],
+      [
+        "B: terminou",
+        11384
+      ],
+      [
+        "A: carimbou entry + CAS concluida count=1",
+        12603
+      ],
+      [
+        "A: commit",
+        12603
+      ]
+    ]
+  },
+  "E4_cancel": {
+    "B": {
+      "ok": "status=cancelada",
+      "elapsedMs": 1245
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 14185
+    },
+    "final": {
+      "entry": {
+        "contado": 7,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "cancelada",
+        "is_active": false
+      },
+      "ajustes": {
+        "n": 1,
+        "soma": -3
+      },
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A: leu contado=7, gravou ajuste -3",
+        12661
+      ],
+      [
+        "A: carimbou entry + CAS concluida count=1",
+        12665
+      ],
+      [
+        "B: cancel() codigo atual",
+        12945
+      ],
+      [
+        "A: commit",
+        14179
+      ],
+      [
+        "B: terminou",
+        14190
+      ]
+    ]
+  },
+  "E5": [
+    {
+      "n": 250,
+      "forma": "1 tx withTenantRls (opcoes default = timeout 5000 ms), por item: FOR UPDATE + aggregate + INSERT + UPDATE entry",
+      "ms": 2193,
+      "itensAntesDoFim": 250,
+      "erro": null,
+      "ajustesGravados": 250,
+      "status": "concluida"
+    },
+    {
+      "n": 500,
+      "forma": "1 tx withTenantRls (opcoes default = timeout 5000 ms), por item: FOR UPDATE + aggregate + INSERT + UPDATE entry",
+      "ms": 3920,
+      "itensAntesDoFim": 500,
+      "erro": null,
+      "ajustesGravados": 500,
+      "status": "concluida"
+    },
+    {
+      "n": 1000,
+      "forma": "1 tx withTenantRls (opcoes default = timeout 5000 ms), por item: FOR UPDATE + aggregate + INSERT + UPDATE entry",
+      "ms": 5015,
+      "itensAntesDoFim": 651,
+      "erro": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2028",
+        "msg": " Invalid `this.client.stockMovement.aggregate()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\inventory-prisma.repository.ts:480:55 477 } 478 479 private async"
+      },
+      "ajustesGravados": 0,
+      "status": "aberta",
+      "controleHeadBase": {
+        "forma": "CycleCountService.close REAL (head-base, N+3 tx)",
+        "ms": 21776,
+        "erro": null,
+        "ajustesGravados": 1000,
+        "status": "concluida"
+      }
+    }
+  ],
+  "V1_plano": {
+    "forma": "10 iter x 20 saidas de 1 com FOR UPDATE do item ANTES do aggregate (emulacao do 3.3-V1), A+B",
+    "iters": [
+      {
+        "i": 0,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 262
+      },
+      {
+        "i": 1,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 148
+      },
+      {
+        "i": 2,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 158
+      },
+      {
+        "i": 3,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 147
+      },
+      {
+        "i": 4,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 154
+      },
+      {
+        "i": 5,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 146
+      },
+      {
+        "i": 6,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 167
+      },
+      {
+        "i": 7,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 151
+      },
+      {
+        "i": 8,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 169
+      },
+      {
+        "i": 9,
+        "ok": 10,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0": 10
+        },
+        "saldo": 0,
+        "ms": 171
+      }
+    ],
+    "negativas": 0,
+    "p2028": 0
+  },
+  "P11_headbase": {
+    "B": "createMovement REAL (head-base)",
+    "bloqueioDeB": {
+      "n": 1,
+      "queries": [
+        "INSERT INTO \"public\".\"stock_movements\" (\"tenant_id\",\"item_id\",\"type\",\"quantidade_sinalizad"
+      ]
+    },
+    "resultadoB": {
+      "ok": "gravou",
+      "at": 49465
+    },
+    "saldoFinal": -1,
+    "marks": [
+      [
+        "A: FOR UPDATE + INSERT -10 sem commit",
+        49219
+      ],
+      [
+        "B bloqueado em: INSERT INTO \"public\".\"stock_movements\" (\"tenant_id\",\"item_id\",\"type\",\"quantidade_sinalizad",
+        49454
+      ],
+      [
+        "A: commit",
+        49454
+      ]
+    ]
+  },
+  "P11_plano": {
+    "B": "V1 do plano (lock antes da leitura)",
+    "bloqueioDeB": {
+      "n": 1,
+      "queries": [
+        "SELECT * FROM inventory_items WHERE tenant_id=$1::uuid AND id=$2::uuid FOR UPDATE"
+      ]
+    },
+    "resultadoB": {
+      "err": "STOCK_INVALID|409|insufficient_balance|insufficient_balance saldo=0",
+      "at": 49734
+    },
+    "saldoFinal": 0,
+    "marks": [
+      [
+        "A: FOR UPDATE + INSERT -10 sem commit",
+        49490
+      ],
+      [
+        "B bloqueado em: SELECT * FROM inventory_items WHERE tenant_id=$1::uuid AND id=$2::uuid FOR UPDATE",
+        49722
+      ],
+      [
+        "A: commit",
+        49722
+      ]
+    ]
+  },
+  "fimMs": 49737
+}
