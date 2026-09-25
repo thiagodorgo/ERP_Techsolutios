@@ -9,6 +9,7 @@ import {
   assertApplicationNamePropagated,
   buildApplicationName,
   captureSettled,
+  createGate,
   waitForOwnBlockedStatement,
   withApplicationName,
   type SettledOutcome,
@@ -696,16 +697,28 @@ if (!connectionString) {
     for (const kind of ["open", "abc"] as const) {
       const { t, x, y } = await setup(`b8-v1-${kind}`, kind === "abc");
       const control = await rawSession(h, t, []);
+      const gate = createGate({ label: `B8(i) ${kind}` });
       const a = captureSettled(
         h.withTenantRls(h.roleA.client, t, async (tx: any) => {
           await tx.$queryRawUnsafe(SESSION_FOR_UPDATE, t, control.id);
           await tx.$queryRawUnsafe(`SELECT id FROM inventory_items WHERE tenant_id = $1::uuid AND id = $2::uuid FOR UPDATE`, t, x);
-          await sleep(1500);
+          await gate.hold();
           await tx.$queryRawUnsafe(`SELECT id FROM inventory_items WHERE tenant_id = $1::uuid AND id = $2::uuid FOR UPDATE`, t, y);
         }),
       );
-      await sleep(300);
+      // O impasse do controle v1 passa a ser CONSTRUÍDO em vez de torcido: A já tem a sessão e X
+      // quando B larga, e só quando B está PROVADAMENTE bloqueado (logo já segurando o que A vai
+      // pedir) A avança para Y e o ciclo se fecha. Eram `sleep(300)` e `sleep(1500)` — duas apostas.
+      await gate.arrived;
       const b = captureSettled(kind === "open" ? h.cycleB.open(actorOf(t), {}) : h.inventoryB.recalculateAbc(actorOf(t)));
+      // O texto do statement bloqueado é DIFERENTE nos dois caminhos, e foi MEDIDO (não deduzido):
+      //   open → `INSERT INTO "public"."cycle_count_entries" …` — o KEY SHARE do item é pedido pela
+      //          própria INSERT, por causa da FK, logo o texto NÃO menciona `inventory_items`;
+      //   abc  → `UPDATE "public"."inventory_items" SET "abc_class" = …`.
+      // Usar "inventory_items" nos dois deixava o `open` esperando por um texto que nunca aparece.
+      const blockedOn = kind === "open" ? "cycle_count_entries" : "inventory_items";
+      await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: blockedOn, label: `B8(i) ${kind}` });
+      gate.release();
       const [ra, rb] = await Promise.all([a, b]);
       const described = [describe(ra), describe(rb)];
       assert.ok(
@@ -722,13 +735,15 @@ if (!connectionString) {
         { item: x, system: 99, counted: 98 },
         { item: y, system: 50, counted: 49 },
       ]);
-      const a = captureSettled(
-        h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: async ({ itemId }: { itemId: string }) => (itemId === x ? sleep(1500) : undefined) } as any),
-      );
-      await sleep(300);
+      const gate = createGate({ label: "B8(ii) abc" });
+      const a = captureSettled(h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: gate.hookFor({ itemId: x }) } as any));
+      await gate.arrived;
       const b = captureSettled(h.inventoryB.recalculateAbc(actorOf(t)));
       await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "inventory_items", label: "B8(ii) abc" });
+      // A leitura do QUE B está bloqueado tem de acontecer enquanto ele ainda está bloqueado — por
+      // isso o refém só sai depois dela.
       const blocked = await blockedQueries(h, appB);
+      gate.release();
       const [ra, rb] = await Promise.all([a, b]);
       assertNoDeadlockOrTimeout([ra, rb], "B8(ii) abc");
       assert.deepEqual([describe(ra), describe(rb)], ["ok", "ok"]);
@@ -743,18 +758,23 @@ if (!connectionString) {
         { item: x, system: 100, counted: 99 },
         { item: y, system: 100, counted: 99 },
       ]);
-      const a = captureSettled(
-        h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: async ({ itemId }: { itemId: string }) => (itemId === x ? sleep(1500) : undefined) } as any),
-      );
-      await sleep(300);
+      const gate = createGate({ label: "B8(ii) open" });
+      const a = captureSettled(h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: gate.hookFor({ itemId: x }) } as any));
+      let aSettled = false;
+      void a.then(() => void (aSettled = true));
+      await gate.arrived;
       const startedB = Date.now();
       const rb = await captureSettled(h.cycleB.open(actorOf(t), {}));
       const elapsedB = Date.now() - startedB;
+      // ASSERÇÃO DE ORDEM, não de duração: A AINDA segurava a unidade quando B foi recusado — logo o
+      // open não esperou o lock. O `elapsedB < 1200` media relógio de parede e caía por vizinhança.
+      assert.equal(aSettled, false, `o open esperou o fechamento terminar em vez de ser recusado sob o lock (${elapsedB} ms)`);
+      console.log(`[B8(ii) open] B recusado em ${elapsedB} ms com A ainda segurando a unidade`);
+      gate.release();
       const ra = await a;
       assertNoDeadlockOrTimeout([ra, rb], "B8(ii) open");
       assert.equal(describe(ra), "ok");
       assert.equal(describe(rb), "409|items_in_open_session");
-      assert.ok(elapsedB < 1200, `o open recusado não espera o lock da unidade (${elapsedB} ms)`);
     }
   });
 
@@ -797,11 +817,17 @@ if (!connectionString) {
       { item: y!, system: 100, counted: 99 },
       { item: x!, system: 100, counted: 99 },
     ]);
-    const hold = { beforeUnitCommit: () => sleep(300) } as any;
-    const outcomes = await raceTwo(
-      () => h.cycleA.close(actorOf(t), s1.id, hold),
-      () => h.cycleB.close(actorOf(t), s2.id, hold),
-    );
+    // O fechamento ordena as unidades POR ITEM (cycle-count.service.ts: a ordem das entradas semeadas
+    // NÃO é a ordem das unidades), logo as duas sessões cruzadas atacam o MESMO item primeiro. A
+    // sobreposição deixa de ser provável (300 ms de sono por unidade) e passa a ser CONSTRUÍDA: s1
+    // segura a 1ª unidade e s2 fica PROVADAMENTE bloqueada na linha do item antes de s1 sair.
+    const gate = createGate({ label: "B9b s1" });
+    const a = captureSettled(h.cycleA.close(actorOf(t), s1.id, { beforeUnitCommit: gate.hookFor({ index: 0 }) } as any));
+    await gate.arrived;
+    const b = captureSettled(h.cycleB.close(actorOf(t), s2.id));
+    await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "inventory_items", label: "B9b" });
+    gate.release();
+    const outcomes = await Promise.all([a, b]);
     assertNoDeadlockOrTimeout(outcomes, "B9b");
     assert.deepEqual(outcomes.map(describe), ["ok", "ok"]);
     for (const session of [s1, s2]) {
@@ -840,8 +866,17 @@ if (!connectionString) {
     const units = stamps.map((stamp, index) => stamp - (index === 0 ? startedAt : stamps[index - 1]!)).sort((left, right) => left - right);
     const p95 = units[Math.min(units.length - 1, Math.floor(0.95 * units.length))];
     const mean = Math.round((units.reduce((sum, value) => sum + value, 0) / Math.max(1, units.length)) * 10) / 10;
-    console.log(`[B10] N=${N}: total ${elapsed} ms; unidade média ${mean} ms · p95 ${p95} ms · máx ${units[units.length - 1]} ms`);
-    assert.ok((units[units.length - 1] ?? 0) < 5000, "toda unidade cabe no timeout de 5 s");
+    // A PROPRIEDADE — "toda unidade cabe no orçamento da transação" — já é afirmada pelo DESFECHO,
+    // algumas linhas acima: se não coubesse, o `$transaction` estouraria, o produto mapearia para 503
+    // e o `assert.equal(describe(closed), "ok")` reprovaria. A asserção de duração era REDUNDANTE com
+    // ela e era a única das duas que falhava por CARGA — media a máquina, não o produto. Vira medição
+    // publicada, com a margem: é assim que se vê tendência sem fabricar vermelho por vizinhança.
+    const slowest = units[units.length - 1] ?? 0;
+    const unitMargin = slowest <= 0 ? "> 5000" : (5000 / slowest).toFixed(1);
+    console.log(
+      `[B10] N=${N}: total ${elapsed} ms; unidade média ${mean} ms · p95 ${p95} ms · máx ${slowest} ms ` +
+        `(margem ${unitMargin}x do orçamento de 5000 ms da transação)`,
+    );
   });
 
   test("B11 [S-01 parcial] · X aplicado, Y 409 → `fechando` com 1 carimbo; recontar Y 200, recontar X 422, cancel 422, `close` conclui com −5", async () => {
@@ -1033,11 +1068,17 @@ if (!connectionString) {
 
     for (let it = 0; it < RACE_N; it += 1) {
       const { t, session } = await scenario("b15");
-      const hold = { beforeUnitCommit: () => sleep(25) } as any;
-      const outcomes = await raceTwo(
-        () => h.cycleA.close(actorOf(t), session.id, hold),
-        () => sleep(15).then(() => h.cycleB.close(actorOf(t), session.id, hold)),
-      );
+      // O intercalamento passa a ser CONSTRUÍDO: A está DENTRO da 1ª unidade (já fez `beginClose`,
+      // segurando a sessão `FOR UPDATE`) e B fica PROVADAMENTE na fila dessa linha antes de A sair.
+      // Eram `sleep(25)` por unidade e `sleep(15)` antes de B — dois palpites para tornar provável o
+      // que agora é garantido.
+      const gate = createGate({ label: `B15 it=${it}` });
+      const a = captureSettled(h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: gate.hookFor({ index: 0 }) } as any));
+      await gate.arrived;
+      const b = captureSettled(h.cycleB.close(actorOf(t), session.id));
+      await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "cycle_counts", label: `B15 it=${it}` });
+      gate.release();
+      const outcomes = await Promise.all([a, b]);
       assertNoDeadlockOrTimeout(outcomes, `B15 it=${it}`);
       assert.deepEqual(outcomes.map(describe).sort(), ["422|invalid_status_transition", "ok"], `B15 it=${it}`);
       assert.equal(outcomes.map(totalOf).find((total) => total !== undefined), -60, `B15 it=${it}: o único 200 traz a sessão inteira`);
@@ -1053,13 +1094,13 @@ if (!connectionString) {
       { item: x!, system: 10, counted: 7 },
       { item: y!, system: 10, counted: 7 },
     ]);
-    const a = captureSettled(
-      h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: async ({ itemId }: { itemId: string }) => (itemId === x ? sleep(1500) : undefined) } as any),
-    );
-    await sleep(300);
+    const gate = createGate({ label: "B16" });
+    const a = captureSettled(h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: gate.hookFor({ itemId: x }) } as any));
+    await gate.arrived;
     const b = captureSettled(h.cycleB.recordEntry(actorOf(t), session.id, session.entries[1]!, { counted_quantity: 5 }));
     await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "cycle_counts", label: "B16" });
     const blocked = await blockedQueries(h, appB);
+    gate.release();
     const [ra, rb] = await Promise.all([a, b]);
     assertNoDeadlockOrTimeout([ra, rb], "B16");
     assert.equal(describe(rb), "ok", "a entrada ainda não carimbada aceita a recontagem");

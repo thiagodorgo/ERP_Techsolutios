@@ -232,6 +232,12 @@ export type UnitGate = {
   release(): void;
   /** Quanto o refém segurou, em ms; `undefined` enquanto não soltou (ou se soltou antes da chegada). */
   heldMs(): number | undefined;
+  /**
+   * A forma CRUA: sinaliza a chegada e aguarda `release()`. É o que `hookFor` faz por dentro, exposto
+   * para os casos que NÃO passam pelo gancho do produto — por exemplo as emulações em SQL cru
+   * ("CONTROLE VERMELHO"), que seguram uma transação do próprio teste.
+   */
+  hold(): Promise<void>;
   /** O gancho para passar em `beforeUnitCommit`: sinaliza a chegada e aguarda `release()`. */
   hookFor(match?: UnitGateMatch): UnitGateHook;
 };
@@ -269,6 +275,17 @@ export function createGate(options: { readonly label: string; readonly timeoutMs
 
   const opened = new Promise<void>((resolve) => (openGate = resolve));
 
+  // Função autônoma, não método: `hookFor` devolve um closure que a chama, e se ela fosse alcançada
+  // por `this` o portão quebraria ao ser desestruturado (`const { hookFor } = gate`).
+  const hold = async (): Promise<void> => {
+    if (arrivedAt === undefined) {
+      arrivedAt = Date.now();
+      clearTimeout(timer);
+      signalArrived();
+    }
+    await opened;
+  };
+
   return {
     arrived,
     heldMs: () => held,
@@ -288,16 +305,12 @@ export function createGate(options: { readonly label: string; readonly timeoutMs
       }
       openGate();
     },
+    hold,
     hookFor(match) {
       return async (unit) => {
         if (match?.itemId !== undefined && unit.itemId !== match.itemId) return;
         if (match?.index !== undefined && unit.index !== match.index) return;
-        if (arrivedAt === undefined) {
-          arrivedAt = Date.now();
-          clearTimeout(timer);
-          signalArrived();
-        }
-        await opened;
+        await hold();
       };
     },
   };
