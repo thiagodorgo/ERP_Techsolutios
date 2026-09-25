@@ -2942,7 +2942,7 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
-## 2026-09-18 — B-O6R-04a (PR na autoria) — o estoque não fica negativo e a contagem fecha uma vez só
+## 2026-09-25 — B-O6R-04a (PR na autoria; autoria em 2026-09-18, REDATADA no pré-merge) — o estoque não fica negativo e a contagem fecha uma vez só
 
 Fecha os **dois P0 de estoque** do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020` absorvida.
 
@@ -2972,7 +2972,7 @@ vermelho lido do TAP com o motivo. 16 mutações dos guards, todas vermelhas e r
 `blocks_completed` 163 → 164. `flutter_tests` e `frontend_smoke_tests` **carregados** com marcador (§C3.3): o PR
 não toca `mobile/` nem `frontend/`. `mvp_demo`/`mvp_vendavel` intocados (§C3.4).
 
-## 2026-09-20 — B-O6R-04a CICLO 2 (o último, mesmo PR #389) — os guards deixam de ser lista e viram propriedade; o censo do deploy nunca mais conta cego
+## 2026-09-25 — B-O6R-04a CICLO 2 (o último, mesmo PR #389; autoria em 2026-09-20, REDATADA no pré-merge) — os guards deixam de ser lista e viram propriedade; o censo do deploy nunca mais conta cego
 
 A junta do ciclo 1 **REPROVOU 1 × 2** com 5 bloqueios. `D-TETO-DOIS-CICLOS`: este é o **último** ciclo. A lição
 que atravessa os cinco é a mesma, pela terceira vez na rodada — *correção por INSTÂNCIA, não pela PROPRIEDADE*:
@@ -3035,3 +3035,32 @@ cluster é compartilhado por todo o lote paralelo) e o arquivo foi registrado na
 do arnês; **não previu o ratchet**, que nasceu depois, noutro bloco. Um guard de outro bloco pegou o descuido deste.
 
 `merge_commit` / `approved_head` **null na autoria** (§C3.5) — backfill pós-merge.
+
+### PRÉ-MERGE / REBASE (2026-09-25) — os números foram REEXECUTADOS, nunca somados
+
+O ramo foi **rebaseado sobre `origin/main@fc3363e3`** (o #387, #390, #391 e #392 mergearam depois da autoria) e
+as duas entradas acima foram **redatadas para 2026-09-25**, a data da medição — as datas de autoria (2026-09-18 e
+2026-09-20) ficam registradas no próprio cabeçalho, e nada foi apagado.
+
+| KPI | Autoria (base `02bd7dab`) | Pré-merge (base `fc3363e3`) | Como |
+|-----|---------------------------|------------------------------|------|
+| `backend_tests` | 3049/3051 → 3058/3060 | **3115/3117** | reexecutado, N=2 completas, denominador 3117 nas duas, `fail 0 · skipped 2`, 292 arquivos, 335 s, ec=0 |
+| `frontend_smoke_tests` | 1126 | **1202** | CARREGADO do último oficial da `main` — `git diff --name-only fc3363e3 HEAD -- frontend mobile` = **0 arquivos** |
+| `flutter_tests` | 864 | **864** | CARREGADO (§C3.3) — trilha não reexecutada, e está dito |
+| `blocks_completed` | 164 | **168** | recontado a partir do **167** que a `main` publica em `fc3363e3` |
+| `mvp_demo` / `mvp_vendavel` | 99 / 88 | **99 / 88** | INTOCADOS (§C3.4) — o rebase não move escopo de produto |
+
+**Forma da medição:** worktree `.claude/worktrees/b04a`; Postgres `dev-b04a-rebase-pg` (postgres:16, 127.0.0.1:57411)
+e Redis `dev-b04a-rebase-redis` (redis:7-alpine, 127.0.0.1:57412) **descartáveis próprios** — a base viva
+`erp-postgres`/`erp-redis` **não recebeu um comando**; banco `erp_b04a_rebase` derrubado e recriado antes da medição
+(`DROP DATABASE ... WITH (FORCE)` + `CREATE DATABASE` + `prisma migrate deploy`, 108 migrations) e `FLUSHALL` no Redis;
+`DATABASE_URL`/`REDIS_URL` exportadas, `CORE_SAAS_PERSISTENCE` não exportada; node v20.19.5.
+
+**A 1ª das 2 execuções veio com `fail 2`, e os 2 vermelhos eram os guards do próprio painel** — a cópia congelada
+divergia do `kpis-latest.json` e o acumulado ainda trazia o 164 da autoria, porque o KPI ainda estava no meio do
+rebase. **Não foi intermitência: foi o guard funcionando.** Depois da recontagem, `fail 0`.
+
+**O CÓDIGO JULGADO NÃO MUDOU**, provado nas duas direções sobre `src tests prisma frontend mobile scripts`:
+`git diff 02bd7dab 738ff531` × `git diff fc3363e3 HEAD` = 6468 linhas cada, `cmp` idêntico (md5
+`4508831fa7639e220659549e13ddd7cf`); e `git diff 738ff531 HEAD` × `git diff 02bd7dab fc3363e3` = 5671 linhas cada,
+`cmp` idêntico. `merge_commit` / `approved_head` seguem **null** na autoria (§C3.5).

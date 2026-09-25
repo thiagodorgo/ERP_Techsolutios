@@ -4800,3 +4800,45 @@ verdes no head-base por construção.
 emendas na `P-O6R-B04` (parcial na autoria), `P-020` e `P-021` (fechadas na autoria). `blocks_completed` 163 →
 164. Base viva intocada; cluster e Redis do bloco (`dev-b04a-pg` :58651, `dev-b04a-redis` :58652) e o worktree
 `dev-b04a-base` removidos pelo nome ao fim.
+
+### PRÉ-MERGE — rebase sobre a `main` nova (2026-09-25), para o CI existir no SHA que a junta vai julgar
+
+**Por quê.** O #389 tinha **ZERO check-run** no head `738ff531`: o gatilho `push` em `fix/**` que o `B-SAN3-B1`
+(#391) criou **não dispara sozinho** num SHA que já estava no `origin` antes de o gatilho existir, e o §C7.1-bis
+(que o #391 mergeou) obriga o `inspetor-de-terreno-da-junta` a devolver **BLOQUEADO** enquanto for assim. É o
+rebase que gera head novo, e é o head novo que gera o check-run. Escopo **estritamente mecânico**: zero mudança de
+produto, de teste ou de comportamento.
+
+**O rebase.** `git rebase fc3363e3` (base do ramo: `02bd7dab`), **27 commits**. Conflito em **4 paradas**, **todas**
+em registro e KPI — **zero** em `src/`, `tests/`, `prisma/`, `frontend/` ou `mobile/`; a interseção dos dois conjuntos
+de arquivos alterados (`comm -12`) era de exatamente 9 arquivos, e nenhum de código. Resolução por **UNIÃO** nos
+arquivos de append (`pendencias.md`, `log-execucao.md`, `kpis-history.md/json`, `decisoes.md`, `recent.itens` do
+painel); nos **escalares** (`kpis-latest.json`, a cópia `var FROZEN` do `app.js`) ficou a ponta do bloco e os números
+foram **recontados**. `pendencias-indice.md` **regerado pelo gerador** (`gerar-indice-pendencias.py`):
+**419 cabeçalhos / 408 IDs · FECHADA 111 · ABERTA 308**.
+
+**`.github/workflows/ci.yml` carrega as duas pontas**, conferido por presença: gatilho `push: fix/**`, `workflow_dispatch`,
+`concurrency`, `flutter-version: 3.47.5` e os dois portões do GHCR por `refs/heads/main` (da `main`); e as 4 suítes
+`-db` do bloco na lista `SUITES` (do bloco).
+
+**O código julgado não mudou**, provado nas duas direções sobre `src tests prisma frontend mobile scripts`:
+`git diff 02bd7dab 738ff531` × `git diff fc3363e3 HEAD` = **6468 linhas cada, `cmp` idêntico** (md5
+`4508831fa7639e220659549e13ddd7cf`); `git diff 738ff531 HEAD` × `git diff 02bd7dab fc3363e3` = **5671 linhas cada,
+`cmp` idêntico**.
+
+**KPI reexecutado (§C3.3), nunca somado:** `backend_tests` **3058/3060 → 3115/3117** (N=2 execuções completas,
+denominador 3117 nas duas, `fail 0 · skipped 2`, 292 arquivos, 335 s, ec=0; Postgres e Redis descartáveis próprios
+`dev-b04a-rebase-pg` :57411 e `dev-b04a-rebase-redis` :57412, banco recriado com 108 migrations — a base viva não
+recebeu um comando). `frontend_smoke_tests` **1126 → 1202** (CARREGADO do oficial da `main`; o bloco segue sem tocar
+`frontend/` nem `mobile/`). `blocks_completed` **167 → 168**, recontado a partir do valor da `main`. `mvp_*` intocados.
+`npm run check`, `lint`, `build` e `npm --prefix frontend run check` ec=0; `kpi-freeze --check` em dia; os 3 guards
+de KPI verdes (charts 17/17, contraste 6/6, achados-paridade 6/6).
+
+**DIVERGÊNCIA REPORTADA, não decidida pelo desenvolvedor (§C7.4-bis).** Ao medir o terreno, `git status` no worktree
+`b04a` devolveu **um** arquivo modificado e **não-commitado**: `controle/decisoes.md`, +37 linhas, com a decisão do
+dono **`D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL`** (2026-09-20). Medida em cinco lugares, ela **não existia em
+nenhum**: nem na `main`, nem no head do ramo, nem na árvore principal, nem em commit algum de ref alguma
+(`git log --all -S` vazio) — só naquele disco. Foi **preservada** byte a byte antes de qualquer operação e commitada
+**verbatim, em commit separado** (`f4d5226d` na fila original), porque o rebase reescreveria a história por baixo dela
+e `git stash`/`checkout`/`reset` alheios são proibidos. É registro, não produto. **O orquestrador descarta sozinho se
+quiser: é um commit só, e nada mais do bloco depende dele.**
