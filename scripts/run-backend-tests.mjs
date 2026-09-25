@@ -64,6 +64,8 @@ const TEST_SUFFIX = ".test.ts";
 
 const PERSISTENCE_VAR = "CORE_SAAS_PERSISTENCE";
 
+const CONCURRENCY_VAR = "BACKEND_TEST_CONCURRENCY";
+
 // B-O6R-02 ciclo 4 · C5.3 (fecha o P8: o detector do skip era CEGO ao auto-pulo) — ORÇAMENTO DE SKIP
 // COM BANCO PRESENTE. Com `DATABASE_URL` no ambiente, as suítes `-db` DEVEM RODAR, não pular. Se o
 // número de pulados passar deste orçamento, uma suíte `-db` se auto-pulou em silêncio — exatamente o
@@ -198,6 +200,48 @@ export function resolvePersistenceMode(sourceEnv = process.env) {
   }
 
   return { mode: PERSISTENCE_FALLBACK, origin: "runner" };
+}
+
+/**
+ * B-O6R-04a · bateria — ORÇAMENTO DE PARALELISMO, OPCIONAL, COM O PADRÃO PRESERVADO.
+ *
+ * O runner nunca passou `--test-concurrency`, então o paralelismo é `availableParallelism() - 1`:
+ * quantos processos de teste pesados disputam os núcleos não é escolha do repositório, é efeito
+ * colateral do hardware de quem roda. Medido nesta bancada (8 núcleos), com a unidade mais lenta de
+ * uma suíte `-db` como régua: 72 ms rodando 4 arquivos, 273 ms rodando os 37 `-db` juntos — ou seja
+ * **3,8x de margem consumida pelo próprio lote**, sem carga externa nenhuma.
+ *
+ * Por que OPCIONAL, e não um valor cravado: na mesma medição, a degradação que vem de FORA do lote é
+ * muito maior — 984 ms sob 8 processos CPU-bound (13,7x) e 1.153 ms na forma fiel (16x). Nenhum
+ * valor de `--test-concurrency` recupera carga que não é do lote, e serializar a suíte multiplicaria
+ * o tempo de parede de TODA a equipe, TODO dia, para comprar 3,8x num bloco só. Então a variável
+ * existe para quem está com a máquina disputada, e SEM ela a linha de comando do filho é IDÊNTICA à
+ * de hoje — nenhuma bateria muda de comportamento por causa deste bloco.
+ *
+ * Valor inválido NÃO vira silêncio (nem paralelismo padrão disfarçado): o runner recusa e sai 1.
+ * `--test-timeout` ficou DE FORA de propósito (pendência `P-RUNNER-SEM-TEST-TIMEOUT`): é global,
+ * atinge os 292 arquivos e converteria qualquer lentidão de CI em vermelho em massa — exatamente a
+ * classe de defeito que esta bateria combate.
+ *
+ * @returns {{ ok: boolean, args: string[], declared: boolean, value: number|string|null }}
+ */
+export function resolveTestConcurrency(sourceEnv = process.env) {
+  const exported = sourceEnv[CONCURRENCY_VAR];
+
+  if (typeof exported !== "string" || exported.trim() === "") {
+    return { ok: true, args: [], declared: false, value: null };
+  }
+
+  // Dígitos decimais e nada mais. `Number("1e3")` é 1000 e passaria por "inteiro válido" — aceitar
+  // notação científica aqui seria surpresa gratuita numa variável de ambiente; melhor recusar e
+  // dizer o motivo do que executar 1000 processos porque alguém digitou um `e`.
+  const raw = exported.trim();
+  const value = /^[0-9]+$/.test(raw) ? Number(raw) : Number.NaN;
+  if (!Number.isInteger(value) || value < 1) {
+    return { ok: false, args: [], declared: true, value: raw };
+  }
+
+  return { ok: true, args: [`--test-concurrency=${value}`], declared: true, value };
 }
 
 /**
@@ -357,6 +401,19 @@ function main(argv = process.argv.slice(2)) {
     process.exit(1);
   }
 
+  const concurrency = resolveTestConcurrency();
+  if (!concurrency.ok) {
+    console.error(
+      `[run-backend-tests] ${CONCURRENCY_VAR} inválido: ${JSON.stringify(concurrency.value)} — ` +
+        "use um inteiro >= 1, ou remova a variável para o padrão do Node. Valor inválido não vira silêncio: " +
+        "seguir com o paralelismo padrão faria a bateria mentir sobre a forma em que foi medida.",
+    );
+    process.exit(1);
+  }
+  if (concurrency.declared) {
+    console.error(`[run-backend-tests] orçamento de paralelismo: --test-concurrency=${concurrency.value} (pedido por ${CONCURRENCY_VAR})`);
+  }
+
   console.error(`[run-backend-tests] ${files.length} arquivo(s) de teste — executando...`);
 
   const child = spawn(
@@ -367,6 +424,8 @@ function main(argv = process.argv.slice(2)) {
       "tsx",
       "--test-reporter=tap",
       "--test-reporter-destination=stdout",
+      // Vazio quando a variável não existe: a linha de comando do filho fica IDÊNTICA à de sempre.
+      ...concurrency.args,
       ...files,
     ],
     {

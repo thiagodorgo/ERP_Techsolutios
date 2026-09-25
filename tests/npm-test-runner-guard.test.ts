@@ -13,6 +13,7 @@ import {
   findSilentTestFiles,
   parseTapSummary,
   resolvePersistenceMode,
+  resolveTestConcurrency,
 } from "../scripts/run-backend-tests.mjs";
 
 // B-O6R-05 / N1 — guard do runner da suíte (`P-NPM-TEST-VERDE-VAZIO-NO-WINDOWS`).
@@ -670,4 +671,102 @@ test("main(): arquivo com skip DECLARADO ⇒ VERDE (é o arranjo da canônica 1,
     assert.doesNotMatch(run.stderr, /PISO DE DENOMINADOR/i);
     assert.match(run.stderr, /skipped 1/);
   });
+});
+
+// ------------------------------------------------------------------------------------------------
+// Guard 5 (B-O6R-04a · bateria) — ORÇAMENTO DE PARALELISMO, OPCIONAL, COM O PADRÃO PRESERVADO.
+//
+// A medição que motivou: o runner nunca passou `--test-concurrency`, então o paralelismo é
+// `availableParallelism() - 1`. Com a unidade mais lenta de uma suíte `-db` como régua (8 núcleos):
+// 72 ms rodando 4 arquivos e 273 ms rodando os 37 `-db` juntos — 3,8x de margem consumida pelo
+// PRÓPRIO lote, sem carga externa. A variável recupera essa parcela para quem está com a máquina
+// disputada; ela NÃO recupera a carga de fora (13,7x a 16x na mesma medição), e por isso nada é
+// cravado: um valor fixo multiplicaria o tempo de parede de todo mundo, todo dia, por 3,8x num bloco.
+//
+// A promessa que estes casos defendem é o DEFAULT PRESERVADO: sem a variável, a linha de comando do
+// filho é idêntica à de hoje. E ela é verificada onde importa — DENTRO do processo que roda o teste,
+// por `process.execArgv`, não pelo que o runner imprime. Medido: com a flag, o `execArgv` do arquivo
+// de teste é `["--test-concurrency=1","--import","tsx"]`; sem ela, `["--import","tsx"]`.
+
+function fixtureQueAfereParalelismo(esperado: string | null): string[] {
+  const corpo =
+    esperado === null
+      ? '  assert.deepEqual(flags, [], "o runner passou --test-concurrency sem ninguem pedir: " + flags.join(","));'
+      : `  assert.deepEqual(flags, ["${esperado}"], "linha de comando do filho: " + process.execArgv.join(" "));`;
+  return [
+    'import test from "node:test";',
+    'import assert from "node:assert/strict";',
+    'test("fixture: paralelismo na linha de comando do filho", () => {',
+    '  const flags = process.execArgv.filter((arg) => arg.startsWith("--test-concurrency"));',
+    corpo,
+    "});",
+  ];
+}
+
+test("main(): SEM BACKEND_TEST_CONCURRENCY ⇒ a linha de comando do filho é IDÊNTICA à de sempre", () => {
+  // MUTAÇÃO QUE ESTE CASO MATA: o orçamento deixar de ser opcional (um valor cravado, ou a leitura da
+  // variável virando um default diferente de "nada"). Se isso acontecer, TODA bateria do repositório
+  // muda de comportamento por causa de um bloco de inventário — e a fixture fica vermelha aqui.
+  withTempDir((dir) => {
+    writeFixture(dir, "paralelismo.test.ts", fixtureQueAfereParalelismo(null));
+
+    const run = runRunner(dir, { BACKEND_TEST_CONCURRENCY: undefined });
+
+    assert.equal(run.status, 0, `o runner passou --test-concurrency sem ninguém pedir: ${run.stdout || run.stderr}`);
+    assert.doesNotMatch(run.stderr, /orçamento de paralelismo/i, "sem a variável o runner não deve nem declarar orçamento");
+  });
+});
+
+test("main(): BACKEND_TEST_CONCURRENCY=1 ⇒ `--test-concurrency=1` CHEGA à linha de comando do filho", () => {
+  // MUTAÇÃO QUE ESTE CASO MATA: o runner LER a variável, DECLARAR na saída e não repassar a flag ao
+  // filho — o pedido viraria uma linha de log bonita e paralelismo inalterado. A fixture não olha o
+  // log: olha o `execArgv` do próprio processo de teste.
+  withTempDir((dir) => {
+    writeFixture(dir, "paralelismo.test.ts", fixtureQueAfereParalelismo("--test-concurrency=1"));
+
+    const run = runRunner(dir, { BACKEND_TEST_CONCURRENCY: "1" });
+
+    assert.equal(run.status, 0, `a flag não chegou ao filho: ${run.stdout || run.stderr}`);
+    assert.match(run.stderr, /--test-concurrency=1/, "o runner tem de DECLARAR o orçamento pedido");
+  });
+});
+
+test("main(): BACKEND_TEST_CONCURRENCY inválido ⇒ runner VERMELHO nomeando o valor (não vira silêncio)", () => {
+  // Valor inválido seguir com o paralelismo padrão seria o pior dos mundos: a bateria mentiria sobre a
+  // FORMA em que foi medida, e é a forma que dá sentido ao número (um "N=10" sem paralelismo declarado
+  // é número sem forma). Quatro formas de inválido, todas executadas.
+  for (const invalido of ["0", "-3", "2.5", "abc"]) {
+    withTempDir((dir) => {
+      writeFixture(dir, "paralelismo.test.ts", UM_TESTE_QUE_PASSA);
+
+      const run = runRunner(dir, { BACKEND_TEST_CONCURRENCY: invalido });
+
+      assert.notEqual(run.status, 0, `o valor inválido ${invalido} passou como se nada fosse`);
+      assert.match(run.stderr, /BACKEND_TEST_CONCURRENCY inválido/, `o runner tem de nomear a variável (valor ${invalido})`);
+      assert.ok(run.stderr.includes(JSON.stringify(invalido)), `o runner tem de ECOAR o valor recusado (${invalido})`);
+    });
+  }
+});
+
+test("resolveTestConcurrency: ausente e vazio contam como NÃO pedido; inteiro >= 1 vira a flag", () => {
+  // Puro, sem processo filho — o mesmo par que `resolvePersistenceMode`/`evaluateDbSkipBudget` já têm.
+  assert.deepEqual(resolveTestConcurrency({}), { ok: true, args: [], declared: false, value: null });
+  assert.deepEqual(resolveTestConcurrency({ BACKEND_TEST_CONCURRENCY: "   " }), { ok: true, args: [], declared: false, value: null });
+  assert.deepEqual(resolveTestConcurrency({ BACKEND_TEST_CONCURRENCY: "1" }), {
+    ok: true,
+    args: ["--test-concurrency=1"],
+    declared: true,
+    value: 1,
+  });
+  assert.deepEqual(resolveTestConcurrency({ BACKEND_TEST_CONCURRENCY: " 4 " }), {
+    ok: true,
+    args: ["--test-concurrency=4"],
+    declared: true,
+    value: 4,
+  });
+  for (const invalido of ["0", "-3", "2.5", "abc", "1e3"]) {
+    const resolved = resolveTestConcurrency({ BACKEND_TEST_CONCURRENCY: invalido });
+    assert.equal(resolved.ok, false, `valor inválido aceito: ${invalido}`);
+    assert.deepEqual(resolved.args, [], `valor inválido não pode produzir flag: ${invalido}`);
+  }
 });
