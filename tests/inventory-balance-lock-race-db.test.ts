@@ -9,6 +9,7 @@ import {
   assertApplicationNamePropagated,
   buildApplicationName,
   captureSettled,
+  createGate,
   waitForOwnBlockedStatement,
   withApplicationName,
   type SettledOutcome,
@@ -117,6 +118,25 @@ if (!connectionString) {
   });
 
   // ------------------------------------------------------------------ semeadura (admin, SQL cru)
+  /**
+   * ESTÍMULO DO A14 — a única espera fixa desta suíte, ISENTA POR NOME na catraca de higiene do T-D
+   * (isenção anônima seria o mesmo buraco com outra roupa).
+   *
+   * MEDIDO NESTA BANCADA, e contradiz "basta esperar o desfecho de B": com o refém segurando, B NÃO
+   * liquida sozinho — ficou bloqueado **60.042 ms**, até o refém morrer de velho na própria janela
+   * de 60 s. A causa tem duas metades, as duas verificadas: (i) o produto não define `lock_timeout`
+   * (`grep -rn lock_timeout src/` devolve ZERO), logo o statement espera indefinidamente no
+   * Postgres; (ii) o timeout da transação interativa do Prisma NÃO interrompe um statement que está
+   * esperando LOCK no banco — ele só é notado quando o controle volta ao cliente.
+   *
+   * Logo a duração é a VARIÁVEL INDEPENDENTE deste caso, não um encontro por relógio: o que produz o
+   * 503 é a contenção durar MAIS que o orçamento da transação; esperar menos devolveria 201. A
+   * margem é para CIMA (carga só faz esperar mais, nunca menos) e o teto de 60 s do refém dá 10x de
+   * folga — é por isto que este caso é FEIO, não frágil. O orçamento em si é IMPLÍCITO em
+   * `src/database/rls.ts`, que abre `$transaction` sem opções: enquanto não for nomeado lá
+   * (pendência `P-RLS-TX-TIMEOUT-IMPLICITO`), nenhum teste pode LER o número — só reproduzi-lo.
+   */
+  const A14_CONTENTION_MS = 5_500;
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   const actorOf = (tenantId: string) => ({ tenantId, userId: randomUUID(), roles: [], permissions: [] }) as any;
 
@@ -528,12 +548,16 @@ if (!connectionString) {
         { item: x, system: 99, counted: 98 },
         { item: y, system: 50, counted: 49 },
       ]);
-      const a = captureSettled(
-        h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: async ({ itemId }: { itemId: string }) => (itemId === x ? sleep(1500) : undefined) }),
-      );
-      await sleep(300);
+      const gate = createGate({ label: "A12 abc" });
+      const a = captureSettled(h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: gate.hookFor({ itemId: x }) }));
+      // A largada de B é CAUSADA pela chegada de A ao lock. Antes era `sleep(300)` torcendo para que
+      // A já tivesse chegado: se A se atrasasse mais que isso, os papéis se invertiam.
+      await gate.arrived;
       const b = captureSettled(h.inventoryB.recalculateAbc(actorOf(t)));
       await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "abc_class", label: "A12 abc" });
+      // B está PROVADAMENTE bloqueado ⇒ o refém já cumpriu o papel e sai no ato. Ele dura o mínimo
+      // necessário, em vez de 1.500 ms fixos dentro do orçamento de 5 s da transação da unidade.
+      gate.release();
       const [ra, rb] = await Promise.all([a, b]);
       assertNoDeadlockOrTimeout([ra, rb], "A12 abc");
       assert.deepEqual([describe(ra), describe(rb)], ["ok", "ok"]);
@@ -551,18 +575,26 @@ if (!connectionString) {
         { item: x, system: 100, counted: 99 },
         { item: y, system: 100, counted: 99 },
       ]);
-      const a = captureSettled(
-        h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: async ({ itemId }: { itemId: string }) => (itemId === x ? sleep(1500) : undefined) }),
-      );
-      await sleep(300);
+      const gate = createGate({ label: "A12 open" });
+      const a = captureSettled(h.cycleA.close(actorOf(t), session.id, { beforeUnitCommit: gate.hookFor({ itemId: x }) }));
+      // `aSettled` é o espelho literal do `loserSettled === false` de financial-pay-title-atomic-db.
+      let aSettled = false;
+      void a.then(() => void (aSettled = true));
+      await gate.arrived;
       const startedB = Date.now();
       const rb = await captureSettled(h.cycleB.open(actorOf(t), {}));
       const elapsedB = Date.now() - startedB;
+      // ASSERÇÃO DE ORDEM, não de duração. A propriedade é "o open recusado NÃO espera o lock da
+      // unidade", e ela se lê assim: no instante em que B liquidou, A AINDA segurava (`aSettled`
+      // falso, porque o refém só sai no `release()` abaixo). O `elapsedB < 1200` que vivia aqui media
+      // relógio de parede e ficava vermelho por vizinhança, sem dizer nada sobre o produto.
+      assert.equal(aSettled, false, `o open esperou o fechamento terminar em vez de ser recusado sob o lock (${elapsedB} ms)`);
+      console.log(`[A12 open] B recusado em ${elapsedB} ms com A ainda segurando a unidade`);
+      gate.release();
       const ra = await a;
       assertNoDeadlockOrTimeout([ra, rb], "A12 open");
       assert.equal(describe(ra), "ok");
       assert.equal(describe(rb), "409|items_in_open_session");
-      assert.ok(elapsedB < 1200, `o open recusado não espera o lock da unidade (${elapsedB} ms)`);
     }
   });
 
@@ -587,12 +619,29 @@ if (!connectionString) {
       await tx.$queryRawUnsafe(`SELECT id FROM inventory_items WHERE tenant_id = $1::uuid AND id = $2::uuid FOR UPDATE`, t, item);
     });
     await holder.locked;
+    const startedB = Date.now();
     const b = captureSettled(h.repoB.createMovement({ tenantId: t, itemId: item, type: "saida", quantidadeSinalizada: -1 }));
     await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "tenant_id", label: "A14" });
-    await sleep(5500);
+    // A contenção é o ESTÍMULO (ver `A14_CONTENTION_MS`): é ela que tem de durar mais que o orçamento
+    // da transação para o produto traduzir em 503. Medida a partir do instante em que B está
+    // PROVADAMENTE bloqueado, não do início do caso.
+    const blockedAt = Date.now();
+    await sleep(A14_CONTENTION_MS);
+    const contendedMs = Date.now() - blockedAt;
     holder.release();
-    await holder.done;
     const outcome = await b;
+    const elapsedB = Date.now() - startedB;
+    // ASSERÇÃO DE ORDEM — e ela PODE falhar, que é o que a torna prova: o refém segura numa transação
+    // de janela 60 s. Se B tivesse demorado mais do que ela, a transação do refém teria morrido e
+    // `holder.done` chegaria REJEITADA. É assim que "B liquidou DENTRO da janela do refém, pelo
+    // timeout do produto" vira asserção em vez de comentário.
+    const holderOutcome = await holder.done;
+    assert.equal(
+      holderOutcome.status,
+      "fulfilled",
+      `o refém não sobreviveu à espera de B (${elapsedB} ms): não dá para afirmar que foi o orçamento do produto que encerrou B`,
+    );
+    console.log(`[A14] contenção de ${contendedMs} ms (estímulo ${A14_CONTENTION_MS} ms); B liquidou em ${elapsedB} ms, dentro da janela de 60000 ms do refém`);
     assert.equal(describe(outcome), "503|stock_busy", "contenção acima do timeout vira 503 de domínio, nunca o erro cru");
     assert.equal((outcome as any).reason?.code, "STOCK_UNAVAILABLE");
     const rows = await h.admin.$queryRawUnsafe<Array<{ n: number }>>(`SELECT count(*)::int AS n FROM stock_movements WHERE item_id = $1::uuid`, item);
