@@ -2627,3 +2627,39 @@ faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas
 aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
 do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
 ata** antes de publicá-lo.
+---
+
+## `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` — a classe se resolve uma vez (decisão do dono, 2026-09-20)
+
+**Contexto.** Em 2026-09-20 **dois** blocos bateram no teto da `D-TETO-DOIS-CICLOS` **pela mesma causa**:
+`B-O6R-11` (#388, app de campo) e `B-O6R-04a` (#389, estoque). Em ambos, o ciclo 2 fechou as instâncias que os
+jurados do ciclo 1 nomearam, e em ambos a defesa continuou sendo **reconhecimento de forma** — lista de nomes,
+catálogo de tipos de nó, regex sobre texto, piso de censo que é igualdade disfarçada — em vez de **propriedade
+enunciada a partir do código**. No estoque, 10 de 26 mutações ficaram verdes com a mutação viva e três gravaram dado
+errado (saldo 0 → −15; e o defeito de concorrência do ciclo 1 voltou inteiro, saldo −9 em 3 de 3 corridas, só por a
+via ser escrita como propriedade em vez de método).
+
+**Decisão do dono: bloco transversal + conserto imediato da bateria.** Recusada a repetição de um ciclo por bloco.
+
+**O que a decisão faz.**
+
+1. **A bateria não-determinista do `B-O6R-04a` é consertada já**, porque não é risco futuro: é defeito real e a
+   classe **não antecede o bloco**. `npm test` deu 3057 · 3057 · 3058 em N=3, e as suítes de banco 52 · 51 · 52 — três
+   falhas distintas em seis execuções, todas por relógio. Os três arquivos pré-existentes de dinheiro que usam a mesma
+   espera têm **zero** `sleep` fixo (encontro de duas pontas, refém solto explicitamente); os dois deste bloco têm
+   **12** e **7**. O CI roda os mesmos 288 arquivos, **sem retry e em runner mais fraco**, e **nunca rodou** neste head.
+2. **A força do guarda sai dos blocos e vira UM bloco transversal:** a **norma escrita** de como se escreve um guarda
+   neste repositório (propriedade gerada do código — AST do TypeScript, AST do Dart, catálogo do banco — e não lista,
+   regex ou nome), mais o **mecanismo único** que a implementa, que o estoque e o app de campo **adotam**. A classe
+   se fecha uma vez.
+3. **O ciclo 3 do `B-O6R-11`** (`D-O6R-11-CICLO-3-POR-EXCECAO`) **continua**, e é onde o desenho está sendo forjado:
+   lista de **permitidos** sobre um token de escrita único, em vez de lista de proibidos. O que sair dele, depois de
+   sobreviver ao crítico, é a matéria-prima da norma.
+4. **Nada do #389 entra na `main`** até a bateria estar determinista. O que a cadeira de banco provou continua de pé
+   e não se reabre: o censo que respondia `0` com duplicatas agora aborta com o número e diz "censo cego" sob o papel
+   da aplicação; as 6 vias travam antes da primeira leitura que decide; a contagem retoma sem aplicar unidade duas
+   vezes, mesmo com a conexão morta no meio.
+
+**O que a decisão NÃO muda.** O teto de dois ciclos segue valendo; esta é a segunda intervenção humana que ele
+prescreve no mesmo dia, e ela trocou "mais um ciclo por bloco" por "fechar a classe". As cinco dívidas que o porteiro
+do #390 nomeou continuam com o primeiro PR que mergear.
