@@ -2667,3 +2667,52 @@ ciclo 3 passar por junta.
 **O que a decisão NÃO muda.** O `B-O6R-04a` (#389) segue o seu próprio caminho e passa a ser o próximo candidato a
 mergear — e, se mergear primeiro, paga as cinco dívidas que o porteiro do #390 nomeou. Nenhuma outra exceção ao teto
 fica aberta: esta vale para este bloco e este ciclo.
+
+---
+
+## `D-O6R-11-ESCOPO-DIVIDIDO` — o ciclo 3 não cabe inteiro, e a divisão é esta (decisão do dono, 2026-09-25)
+
+**Como se chegou aqui.** O ciclo 3 foi aberto por exceção ao teto (`D-O6R-11-CICLO-3-POR-EXCECAO`). O plano v1
+foi **derrubado** pelo `critico-adversarial`; o v2 trocou de alvo (consertar a raiz em vez de mais um guarda) e
+foi **derrubado também**, na rodada 1 de 2 — o crítico escreveu uma implementação de 15 linhas **conforme à
+interface nova** que perde **119 de 120**, com o guarda do plano verde por cima. O v3 respondeu por escrito a
+pergunta que o orquestrador impôs — *isto ainda cabe neste ciclo?* — e a resposta foi **não**.
+
+**O que a medição do v3 mudou, e é a razão da divisão.** Re-medindo os vermelhos-controle **no head de hoje**
+em vez de herdá-los da ata do ciclo 1, o planejador achou que **uma instância dá 120/120** — e produção tem
+**uma só**. Ou seja: **o v2 estava consertando a classe que NÃO perde dado hoje**, e deixando de fora as duas
+que perdem. E achou um par de produção que **executa**: a tela de conflito lê a fila uma vez no `build()` e
+grava as 10 colunas no toque do técnico; o `server_id` preenchido no meio é **destruído**, a ação **encalha
+para sempre** invisível ao replay, e a interface segue contando `1/1`. Janela humana, caminho comum.
+
+**Decisão do dono: aceitar a divisão proposta no §0.4 do plano v3.**
+
+**Entra neste ciclo:**
+1. **Vocabulário de escrita por intenção** — 8 verbos mais um de varredura, **um comando SQL cada**. Fecha a
+   **raiz** (`save(List)` obriga todo escritor a declarar a fila inteira) **e** a **escrita cega** (`UPDATE` de
+   10 colunas a partir de retrato velho) **no mesmo refactor**. CAS com coluna nova saiu por exigir migração;
+   CAS sem coluna saiu por criar modo de falha em 20 sítios. Provado executável hoje, **sem dependência nova**.
+2. **Máquina de conformidade em três camadas** — informação (assinatura dos verbos), implementação (drill por
+   implementação) e enumeração (nenhuma implementação fora da suíte), cada uma com mutação própria. **A vacina:**
+   o `JsonStorePortado` que o crítico escreveu vira **fixture**, e o drill assere que ele **REPROVA** — o que
+   mede a capacidade de detecção do próprio drill, não só o código.
+3. **`reclaimStuckSyncing`** — a varredura de arranque que resgata o lote preso em `syncing` para sempre
+   (achado B4 do crítico: 5 linhas, **0** visíveis ao replay, sem varredura nenhuma hoje).
+4. **O sítio da vistoria** (`checklist_run_screen.dart:98`) e **os três obrigatórios da emenda 6 (D)**.
+
+**Sai, com nome e dono — bloco `B-O6R-11b`:** a origem da escrita (`SyncOrigin`) e o lint `discarded_futures`
+com os 16 avisos. Nenhum dos dois perde dado hoje; os dois são rede contra regressão futura.
+
+**Por que a divisão não deixa o produto pior:** o que entra é exatamente o que **perde trabalho do técnico
+hoje**, medido; o que sai é rede para o amanhã, nomeada e com dono. O contrário — entregar tudo — foi
+desaconselhado **pelo próprio planejador**, que registrou não acreditar que feche com uma única rodada de
+ataque restante.
+
+**Erros corrigidos no caminho, que ficam registrados para não virarem fato herdado:**
+- Do **mandato do orquestrador**: "`JsonFileSyncActionStore` não está ligado" (tem 4 usos em 3 testes de
+  durabilidade) e "morte de processo deixa de ser o buraco" (é o B4, e o B2 destrói escrita **sem** morte).
+- Do **parecer do crítico**: o par de produção que ele nomeou para o B2 (`sync_replay_service.dart:148` ×
+  `:782`/`:818`/`:825`) **não reproduz** — são duas classes distintas, e o serviço real faz duas passadas com o
+  `server_id` sobrevivendo. **O defeito é real; a instância nomeada não era.** Ele declarou aquilo como leitura
+  de código e não execução, e **foi essa declaração que impediu o erro de virar fato** — é o §C7.4-bis
+  funcionando na forma mais barata possível.
