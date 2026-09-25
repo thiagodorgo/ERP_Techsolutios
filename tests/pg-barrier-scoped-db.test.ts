@@ -8,6 +8,7 @@ import {
   buildApplicationName,
   captureSettled,
   countBlockedStatements,
+  createGate,
   expectAllFulfilled,
   waitForOwnBlockedStatement,
   withApplicationName,
@@ -35,6 +36,61 @@ const connectionString = process.env.DATABASE_URL;
 // O par advisory-lock é de propósito: não toca tabela nenhuma do domínio, então o controle não tem
 // teardown de dados — nada é criado, nada é apagado.
 // -----------------------------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-04a · bateria — CONTROLE PERMANENTE DO PORTÃO DE UNIDADE (`createGate`).
+//
+// O portão é o que substituiu os encontros POR RELÓGIO das suítes `-db` do estoque (`sleep(300)` para
+// "A já chegou", `sleep(1500)` para "A ainda segura"). Ele não toca o banco: é ORDEM entre promessas.
+// Por isso estes dois casos rodam SEM `DATABASE_URL` — e por isso a prova é determinística e não
+// depende de carga: `setImmediate` é um CEDER do laço de eventos, não uma espera com duração. Um
+// controle que só ficasse vermelho quando a máquina colabora não seria controle.
+// -----------------------------------------------------------------------------------------------
+test("portão de unidade — `arrived` só resolve DEPOIS de o gancho entrar, e o refém não sai sem `release()`", async () => {
+  const drain = () => new Promise<void>((resolve) => setImmediate(resolve));
+  const gate = createGate({ label: "controle do portão" });
+
+  let arrived = false;
+  void gate.arrived.then(() => (arrived = true));
+  await drain();
+  await drain();
+  // (i) ninguém chegou ⇒ `arrived` continua PENDENTE. Se resolvesse aqui, o teste que espera a
+  // chegada de A lançaria B antes de A existir — que é o defeito que o portão fecha.
+  assert.equal(arrived, false, "`arrived` resolveu ANTES de o gancho entrar");
+
+  const hook = gate.hookFor({ itemId: "item-x" });
+
+  // Unidade de OUTRO item não é o refém: passa direto e NÃO sinaliza chegada.
+  await hook({ index: 0, itemId: "item-y" });
+  await drain();
+  assert.equal(arrived, false, "unidade de outro item sinalizou a chegada do refém");
+
+  // (ii) o refém entra: `arrived` resolve, e o gancho FICA preso.
+  let hookReturned = false;
+  const held = hook({ index: 1, itemId: "item-x" }).then(() => void (hookReturned = true));
+  await gate.arrived;
+  assert.equal(arrived, true, "`arrived` não resolveu com o gancho DENTRO da unidade");
+  await drain();
+  await drain();
+  assert.equal(hookReturned, false, "o refém saiu sem `release()` — a unidade não estaria sendo segurada");
+  assert.equal(gate.heldMs(), undefined, "`heldMs` só existe depois do release");
+
+  gate.release();
+  await held;
+  assert.equal(hookReturned, true, "o refém não saiu nem com `release()`");
+  assert.ok((gate.heldMs() ?? -1) >= 0, "o tempo segurado tem de existir — é a série [M2] do orçamento da transação");
+});
+
+test("portão de unidade — gancho que nunca chega FALHA com diagnóstico, em vez de pendurar o lote", async () => {
+  // O runner não passa `--test-timeout` (pendência `P-RUNNER-SEM-TEST-TIMEOUT`): sem teto, trocar um
+  // `sleep` por espera infinita trocaria um vermelho por um TRAVAMENTO mudo da bateria inteira.
+  const gate = createGate({ label: "ninguém chega", timeoutMs: 50 });
+  await assert.rejects(
+    () => gate.arrived,
+    /o gancho não chegou em 50 ms/,
+    "a espera pela chegada precisa de teto — senão o portão troca vermelho por travamento",
+  );
+});
 
 if (!connectionString) {
   test("Barreira escopada por application_name exige DATABASE_URL e um banco migrado", {

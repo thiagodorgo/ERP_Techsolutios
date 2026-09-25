@@ -185,3 +185,120 @@ export function expectAllFulfilled(outcomes: ReadonlyArray<SettledOutcome<unknow
     `${label}: promessa(s) que deveriam liquidar limpo rejeitaram`,
   );
 }
+
+// -----------------------------------------------------------------------------------------------
+// B-O6R-04a · bateria — PORTÃO DE UNIDADE (ADITIVO: nenhuma função acima foi alterada).
+//
+// O DEFEITO QUE ELE FECHA. As suítes `-db` do estoque encontravam-se POR RELÓGIO: lançavam A, dormiam
+// um tempo FIXO *torcendo* para que A já tivesse chegado ao lock, e só então lançavam B — enquanto A
+// segurava a transação por outro tempo fixo (`sleep(1500)`), torcendo para que B já estivesse
+// bloqueado. São duas apostas contra o relógio de parede, pagas com o orçamento de 5 s da transação
+// do produto. Sob carga a aposta perde: se A se atrasar mais que o sono, os papéis se INVERTEM (B
+// pega o lock, A bloqueia atrás dele) e a barreira estoura acusando "deadlock/timeout" — um
+// diagnóstico que culpa o PRODUTO por uma conta que o TESTE pagou.
+//
+// A PROPRIEDADE. O portão troca as duas apostas por CAUSALIDADE: o gancho SINALIZA que chegou
+// (`arrived`), e o refém só sai quando o teste SOLTA (`release()`), depois de B estar provadamente
+// bloqueado. O teste não adivinha mais quando A chegou — ele é AVISADO; e não escolhe mais por quanto
+// tempo A segura — ele SOLTA. É o mesmo desenho que `tests/financial-pay-title-atomic-db.test.ts` já
+// usa nas suítes de dinheiro (`winnerReady` + `winnerMayCommit`), sem um único `sleep`.
+//
+// POR QUE COM TETO. Trocar um `sleep` por espera INFINITA seria piorar: o runner não passa
+// `--test-timeout` (pendência `P-RUNNER-SEM-TEST-TIMEOUT`), logo um gancho que nunca chega penduraria
+// a bateria inteira — sem vermelho e sem diagnóstico. `arrived` REJEITA em `timeoutMs` dizendo quem
+// não chegou, e o lote falha em vez de travar.
+//
+// O RESÍDUO, DECLARADO (não escondido). O portão encurta o refém ao mínimo necessário; não o torna
+// grátis. Enquanto segura, a transação da unidade consome o orçamento de 5 s do `$transaction` —
+// `src/database/rls.ts` o abre SEM OPÇÕES, logo o teto é o default do Prisma: IMPLÍCITO, invisível
+// para quem lê e ilegível para um teste (pendência `P-RLS-TX-TIMEOUT-IMPLICITO`; nomeá-lo exigiria
+// tocar `src/**`, proibido neste bloco). Por isso `release()` PUBLICA quanto do orçamento o refém
+// consumiu: quando a CI ficar lenta, o TAP passa a dizer POR QUÊ em vez de acusar contenção.
+// -----------------------------------------------------------------------------------------------
+
+/** Orçamento da transação interativa do Prisma (default — `src/database/rls.ts` abre sem opções). */
+const PRODUCT_TX_BUDGET_MS = 5_000;
+
+/** Qual unidade o portão segura. Sem filtro, segura a primeira que entrar (e as seguintes passam). */
+export type UnitGateMatch = { readonly itemId?: string; readonly index?: number };
+
+/** A forma do `beforeUnitCommit` do produto (`src/modules/inventory/cycle-count.service.ts`). */
+export type UnitGateHook = (unit: { readonly index: number; readonly itemId: string }) => Promise<void>;
+
+export type UnitGate = {
+  /** Resolve quando o gancho CHEGA; REJEITA em `timeoutMs` (espera infinita penduraria o lote). */
+  readonly arrived: Promise<void>;
+  /** Solta o refém e PUBLICA quanto do orçamento da transação ele consumiu. Idempotente. */
+  release(): void;
+  /** Quanto o refém segurou, em ms; `undefined` enquanto não soltou (ou se soltou antes da chegada). */
+  heldMs(): number | undefined;
+  /** O gancho para passar em `beforeUnitCommit`: sinaliza a chegada e aguarda `release()`. */
+  hookFor(match?: UnitGateMatch): UnitGateHook;
+};
+
+export function createGate(options: { readonly label: string; readonly timeoutMs?: number }): UnitGate {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  let signalArrived!: () => void;
+  let failArrival!: (error: Error) => void;
+  let openGate!: () => void;
+  let arrivedAt: number | undefined;
+  let held: number | undefined;
+  let released = false;
+
+  const arrived = new Promise<void>((resolve, reject) => {
+    signalArrived = resolve;
+    failArrival = reject;
+  });
+  const timer = setTimeout(() => {
+    failArrival(
+      new Error(
+        `portão de unidade "${options.label}": o gancho não chegou em ${timeoutMs} ms — a unidade não ` +
+          "entrou na transação (item ou índice errado no hookFor?) ou o fechamento falhou antes dela",
+      ),
+    );
+  }, timeoutMs);
+  // O temporizador NÃO é `unref()`: medido nesta bancada, com ele desreferenciado o laço de
+  // eventos esvazia antes de o teto disparar e o `node --test` derruba o arquivo inteiro com
+  // "Promise resolution is still pending but the event loop has already resolved", CANCELANDO as
+  // suítes vizinhas — troca-se um travamento por um vermelho que não nomeia a causa. Referenciado,
+  // ele segura o laço até no máximo `timeoutMs` e falha DIZENDO quem não chegou. É limpo na chegada
+  // e no `release()`, que são as duas saídas normais.
+  // Handler anexado NA CRIAÇÃO: `arrived` nunca vira `unhandledRejection` se ninguém a esperar, e
+  // quem a espera continua recebendo a rejeição (mesma disciplina do `captureSettled` acima).
+  arrived.catch(() => undefined);
+
+  const opened = new Promise<void>((resolve) => (openGate = resolve));
+
+  return {
+    arrived,
+    heldMs: () => held,
+    release() {
+      if (released) return;
+      released = true;
+      clearTimeout(timer);
+      if (arrivedAt === undefined) {
+        console.log(`[M2] ${options.label}: release() ANTES da chegada — o refém não chegou a segurar a transação`);
+      } else {
+        held = Date.now() - arrivedAt;
+        const margin = held <= 0 ? "> 5000" : (PRODUCT_TX_BUDGET_MS / held).toFixed(1);
+        console.log(
+          `[M2] ${options.label}: refém segurou ${held} ms do orçamento de ${PRODUCT_TX_BUDGET_MS} ms da ` +
+            `transação da unidade (margem ${margin}x — o trabalho da própria unidade soma a isto)`,
+        );
+      }
+      openGate();
+    },
+    hookFor(match) {
+      return async (unit) => {
+        if (match?.itemId !== undefined && unit.itemId !== match.itemId) return;
+        if (match?.index !== undefined && unit.index !== match.index) return;
+        if (arrivedAt === undefined) {
+          arrivedAt = Date.now();
+          clearTimeout(timer);
+          signalArrived();
+        }
+        await opened;
+      };
+    },
+  };
+}
