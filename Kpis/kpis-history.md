@@ -2942,3 +2942,62 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+
+## 2026-09-25 — B-GOV-MANDATO (PR #393) — o mandato do orquestrador passa a ser verificável por máquina
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | **3052/3054 → 3058/3060** — **REEXECUTADO** neste PR (o bloco acrescenta casos à suíte, logo a trilha é medição e não carga). `npm test` no worktree próprio `w-mandato`, head `1ae82626`, com Postgres `pg-mandato393` (postgres:16-alpine, 127.0.0.1:55432) e Redis `redis-mandato393` (redis:7-alpine, 127.0.0.1:56379) **descartáveis próprios**, banco `erp_test` com `prisma migrate deploy` (ec=0) — a base viva não recebeu um comando. TAP: `# tests 3060 · # pass 3058 · # fail 0 · # skipped 2`, ec=0, `not ok` = **0**. **Δ +6, todos** de `tests/mandato-refs.test.ts` (testes **1557–1562** da ordem TAP). Os **2 skips** são os mesmos da base (`RBAC_DB_PARITY`, só ligam no job `backend-postgres` do CI) |
+| Smoke | **1202/1202 — CARREGADO com nota (§C3.3) e CONFIRMADO POR REGRESSÃO.** `npm ci --prefix frontend` **próprio** do worktree (nada de junction entre worktrees) e `npm --prefix frontend run test:smoke` → `# tests 1202 · # pass 1202 · # fail 0 · # skipped 0`, ec=0 — **exatamente** o valor carregado. A regressão prova que o valor herdado ainda é verdade no head do bloco; **não** é medição do trabalho do PR |
+| Flutter | **864/864 — CARREGADO com nota** (§C3.3), **sem** confirmação por regressão: a trilha Flutter não foi reexecutada. `git diff --name-only fc3363e3 1ae82626 -- frontend mobile` sai **vazio** (N=0) e `git status --porcelain -- frontend mobile` também; nenhum dos dois foi reexecutado e nenhum é apresentado como execução deste PR |
+| Blocos Entregues | **167 → 168** — +1 bloco de orquestração/governança, contado a partir do valor publicado na `origin/main` (`fc3363e3`, #392 = 167), que é também a merge-base deste PR |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco entrega ferramenta de orquestração, não funcionalidade ao usuário — não há tela nova, rota nova nem regra nova |
+| pr / merge_commit / approved_head | **393** / `null` / `null` **na autoria** (§C3.5). O `mandato-refs.sh` devolve `<NAO ENCONTRADO NA ATA>` para o `approved_head`, que é o comportamento **correto**: a junta ainda não votou |
+
+**O que o bloco entrega.** A **peça 1** do circuito do `PLANO_SAN3.md` — *"a premissa entra pelo mandato do
+orquestrador, escrita como fato"* — e a única mecânica. A regra *"a prova tem de poder falhar"* **já estava
+escrita** e foi violada dez vezes numa rodada; a pior está na **linha 8** do mandato do ciclo 3 do `B-O6R-11`
+(*"a perda **MEDIDA** é `0/N`"*, número **herdado da ata anterior**), treze linhas acima de o **mesmo arquivo**
+exigir do planejador *"para CADA critério, a mutação que o deixaria vermelho"*.
+
+**`scripts/mandato-refs.sh`.** O orquestrador **nunca digita SHA**: head, base, merge-base, merge commit,
+check-runs e o `approved_head` **lido da ata**. O matcher errou **três vezes a mesma classe** — a ferramenta que
+responde à pergunta **vizinha** — e as três viraram fixture: casar pelo **ramo** (falso-negativo no #390, cuja ata
+cita "PR #390" e não cita o ramo); casar por *"o **documento** menciona #PR"* (devolvia a ata do #392 para os três
+PRs, porque ela menciona #390 e #391 ao pagar dívidas deles — **mencionar ≠ ser sobre**); e casar pelas **primeiras
+8 linhas** (**janela, não propriedade**). Discriminador final: **título + linha do objeto**, e nenhuma outra linha
+vota.
+
+**`scripts/mandato-preflight.sh`.** Seis checagens, e a de SHA exige **presença na saída do `mandato-refs.sh`**:
+**resolver não basta** — `a62d04e2` resolvia e estava errado, e SHA **velho** também passa por `cat-file`.
+
+**O mandato deste bloco foi o primeiro escrito no formato que o bloco cria**, validado pelo pré-voo antes de sair,
+com **4 hipóteses** e o comando que derruba cada uma. **Três sobreviveram à execução do dev e uma CAIU** — e a que
+caiu, caiu **pelo mecanismo funcionando**.
+
+- **H1 (backend 3058/3060): SOBREVIVEU.** O valor publicado é o **medido**; a coincidência com a suposição não foi
+  herdada — a hipótese foi executada.
+- **H2 (smoke e Flutter carregáveis por §C3.3): SOBREVIVEU** — N=0 nos dois caminhos.
+- **H3 (o pré-voo não dá falso positivo em caminho relativo ao app Flutter): SOBREVIVEU** —
+  `lib/core/sync/sync_action_store.dart` é **aceito**, e o **vermelho-controle** (basename inexistente) é
+  **rejeitado** nas 5 sondas. Sem o vermelho-controle, o "PRE-VOO OK" não provaria nada.
+- **H4 (o índice de pendências não muda, porque o bloco não abre nem fecha pendência): CAIU.** A sonda escrita para
+  atacar a H3 encontrou a propriedade **vizinha**: a checagem de caminho do pré-voo discrimina por **basename** e
+  não por **caminho**. Medido com a classe **gerada da fonte** (`git ls-files` de `scripts/*.mjs`, `tests/*.ts`,
+  `src/config/*.ts`), **20 de 20** caminhos errados com basename real são **aceitos**; vermelho-controle, **5 de 5**
+  com basename inexistente são **rejeitados**. Virou `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (**BAIXA**, não
+  bloqueia, escopo `dentro-do-bloco`, **dono a nomear pela junta**), e o índice foi de **413 → 414** cabeçalhos,
+  **402 → 403** IDs, **303 → 304** ABERTAS.
+
+**Backfill §C3.5 do #392, pago com a própria ferramenta nova.** A entrada do `B-SAN3-00` estava com os três campos
+`null`. Medidos por `bash scripts/mandato-refs.sh 392`: `pr 392`, `merge_commit
+fc3363e38aabd77f54e6b53034128182f8000571` e `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401`. **O par é
+exatamente o que o orquestrador já trocou duas vezes:** o head do PR no merge é `5cfcd7d35f1fbb7027c8d1811898a1c0e3216188`
+e **não** é o objeto julgado — o `approved_head` foi **lido da ata** `J-B-SAN3-00.md`, como manda a régua de
+`REGISTRO-SAN3-00-APPROVED-HEAD`. Onde houve pré-merge os dois **divergem por construção**.
+
+**Nota de terreno.** O head do PR **andou durante a autoria** (`f8d5a2c8` → `1ae82626`, o commit que conserta a
+extração de SHA colando dois num só). Todas as âncoras deste registro foram **medidas** por
+`bash scripts/mandato-refs.sh 393` no momento da execução, não copiadas do mandato.
