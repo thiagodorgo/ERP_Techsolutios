@@ -159,3 +159,40 @@ Relatório: `.../scratchpad/DEV-B-O6R-11-ciclo2.md` (2 instâncias; a 1ª caiu p
   `jurado-o6r11-fail-closed-dart-flutter` como o §8 do plano antecipava: vale o nome real, e a junta o confere por nome);
   `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` nasce como pré-existente com prova executada e dono fila pós-gate; a normalização de
   fim de linha do `pendencias.md` de volta a LF deixa o diff do commit com o conteúdo, não com o arquivo inteiro.
+
+## Emenda 6 do orquestrador — o ciclo 3 por decisão do dono (2026-09-20)
+
+> A junta do ciclo 2 REPROVOU (cadeira C2 de 3; C1 e C3 aprovaram). Teto atingido → dossiê ao dono
+> (`omega/reprovacoes/DOSSIE-B-O6R-11-parada.md`) → **decisão do dono `D-O6R-11-CICLO-3-POR-EXCECAO`**: ciclo 3,
+> por exceção ao teto, **antes** de mergear. Esta emenda fixa o que o ciclo 3 pode tocar e o que ele tem de fechar.
+
+- **(A) Alvo do ciclo 3 — a propriedade, não mais uma forma.** A defesa hoje reconhece formas conhecidas (heurística
+  no nome do receptor + `unawaited_futures`, que só vale dentro de corpo `async`). O ciclo 3 entrega **negação por
+  padrão** da gravação de fila cuja escrita não é esperada, e um critério de censo que **não seja igualdade
+  disfarçada de mínimo** (hoje o piso é exatamente o número atual, 42, e duas escritas de enfeite o anulam).
+- **(B) `mobile/flutter_app/analysis_options.yaml` fica AUTORIZADO nominalmente** (achado C1-A1 do ciclo 2: entrou no
+  ciclo 2 **sem autorização escrita** — o plano o pediu três vezes e nenhuma das 5 emendas o deu). O orquestrador
+  autoriza agora, porque o lint é camada **load-bearing** (é ele que pega a 5ª forma), e **registra que entrou antes
+  de ser autorizado** em vez de fingir que sempre esteve no escopo.
+- **(C) Escopo permitido do ciclo 3:** `mobile/flutter_app/lib/**`, `mobile/flutter_app/test/**`,
+  `mobile/flutter_app/analysis_options.yaml`, `Kpis/*`, `agent-orchestration/**`, `docs/revisoes/**`.
+  **Proibido:** `pubspec.yaml`/`pubspec.lock`, `src/**`, `prisma/**`, `frontend/**`, `.github/**`, `CLAUDE.md`,
+  `AGENTS.md`, lockfiles JS. Dependência nova **não** entra sem junta de 5 (§C7.1).
+- **(D) Três correções obrigatórias, que valiam para qualquer opção do dossiê:**
+  1. **CI de verdade no código do ciclo 3** — hoje há **zero check-runs** nos 6 commits do ciclo 2, porque o PR está
+     em conflito com a `main` desde o #387 e sem `refs/pull/388/merge` o workflow não dispara. O `flutter analyze`
+     com o lint novo **na versão do CI (3.47.x / Dart 3.13.3)** é **não-medido** e tem de ser medido.
+  2. **Os quatro números errados do registro:** "888/888" onde é **894/894** e "8 pendências novas" onde são **15** —
+     corpo do PR #388, `log-execucao.md`, a entrada do ciclo 1 no `status-geral.md` e a `P-O6R-B11` (marcada FECHADA,
+     citando um arquivo que o ciclo 2 apagou). O painel de KPI já está correto.
+  3. **O texto da `P-MOBILE-DISCARDED-FUTURES`**, que afirma não haver perda de dado conhecida nos sítios listados —
+     e `checklist_run_screen.dart:98` (`e79616aa`, 2026-06-13, **pré-existente e fora do diff**) enfileira a
+     **resposta de vistoria do técnico** de uma função síncrona, sem camada nenhuma vendo.
+- **(E) Rito, sem atalho:** plano pelo `planejador-mestre` **em Fable (obrigatório**, §C7.6); **`critico-adversarial`
+  ataca o plano antes de qualquer código** (§C7.4 no ciclo 3, e o bloco toca perda de dado); desenvolvedor distinto
+  de quem achou e de quem planejou (§C7.4-bis); inspetor de terreno; junta de 3 com **unanimidade**, com
+  **identidade nova na cadeira que reprovou** — a C2 passa ao suplente `jurado-o6r11-c2-suplente-fail-closed-dart`,
+  e o titular `jurado-o6r11-c2-fail-closed-dart` fica **inelegível** neste ciclo.
+- **(F) O que NÃO se reabre.** Os 3 bloqueios do ciclo 1 estão fechados como propriedade, provados por mutações
+  inéditas de **duas** cadeiras independentes; o tenant e o vocabulário de status estão fechados e medidos. Cobrá-los
+  de novo é reprovar sem defeito.

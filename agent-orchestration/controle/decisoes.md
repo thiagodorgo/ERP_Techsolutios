@@ -2627,3 +2627,43 @@ faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas
 aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
 do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
 ata** antes de publicá-lo.
+---
+
+## `D-O6R-11-CICLO-3-POR-EXCECAO` — o app de campo ganha um ciclo 3 (decisão do dono, 2026-09-20)
+
+**Contexto.** O `B-O6R-11` (PR #388, contratos do app de campo com a OS) bateu no teto da `D-TETO-DOIS-CICLOS`:
+ciclo 1 REPROVADO 1 × 2, correção planejada em Fable e feita por agente novo, ciclo 2 **REPROVADO** pela cadeira C2
+(`jurado-o6r11-c2-fail-closed-dart`, identidade nova) com dois bloqueios dentro do bloco. Dossiê ao dono em
+`agent-orchestration/omega/reprovacoes/DOSSIE-B-O6R-11-parada.md`, com quatro opções e custo. O orquestrador
+recomendou a opção B (mergear e abrir bloco no gate).
+
+**Decisão do dono: opção C — CICLO 3, por exceção ao teto, antes de mergear.** Nada do #388 entra na `main` até o
+ciclo 3 passar por junta.
+
+**O que a decisão faz.**
+
+1. **Abre o ciclo 3** do `B-O6R-11`, por exceção explícita à `D-TETO-DOIS-CICLOS`. O teto continua valendo como
+   norma; esta é a intervenção humana que a própria regra prescreve, e ela escolheu gastar a rodada em vez de
+   carregar a dívida.
+2. **O alvo do ciclo 3 é a PROPRIEDADE, não mais uma forma.** A defesa hoje **reconhece formas conhecidas**
+   (heurística no nome do receptor + lint que só vale dentro de corpo `async`); o ciclo 3 tem de **negar por
+   padrão** a gravação de fila cuja escrita não é esperada, e trocar o piso de censo — que hoje é igualdade
+   disfarçada de mínimo — por um critério que não afrouxe quando o app cresce.
+3. **Rito do ciclo 3, sem atalho:** plano pelo `planejador-mestre` **em Fable (obrigatório**, §C7.6 — é o passo em
+   que um plano fraco reintroduz o defeito que a junta acabou de pegar); **`critico-adversarial` ataca o plano antes
+   de qualquer código** (§C7.4, ciclo 3 — e o bloco toca perda de dado); desenvolvedor **distinto** de quem achou e
+   de quem planejou (§C7.4-bis); inspetor de terreno; junta de 3 com **unanimidade** e **identidade nova na cadeira
+   que reprovou** — a C2 passa ao suplente `jurado-o6r11-c2-suplente-fail-closed-dart`.
+4. **Três coisas que o ciclo 3 fecha de todo jeito**, porque valiam para qualquer opção:
+   **(a)** o **CI nunca rodou** no código do ciclo 2 (zero check-runs nos 6 commits; o PR está em conflito com a
+   `main` desde o #387 e sem `refs/pull/388/merge` o workflow não dispara) — logo o `flutter analyze` com o lint novo
+   **na versão do CI** é não-medido, e é justamente a camada que pega uma das formas;
+   **(b)** os **números errados no registro** — "888/888" onde é 894/894 e "8 pendências" onde são 15, em quatro
+   lugares, inclusive numa pendência marcada FECHADA que cita um arquivo que o ciclo 2 apagou;
+   **(c)** o texto da `P-MOBILE-DISCARDED-FUTURES`, que afirma não haver perda de dado conhecida nos sítios listados
+   — e um deles, vivo e pré-existente (`checklist_run_screen.dart:98`, `e79616aa`, 2026-06-13), enfileira a
+   **resposta de vistoria do técnico** sem ninguém esperar.
+
+**O que a decisão NÃO muda.** O `B-O6R-04a` (#389) segue o seu próprio caminho e passa a ser o próximo candidato a
+mergear — e, se mergear primeiro, paga as cinco dívidas que o porteiro do #390 nomeou. Nenhuma outra exceção ao teto
+fica aberta: esta vale para este bloco e este ciclo.
