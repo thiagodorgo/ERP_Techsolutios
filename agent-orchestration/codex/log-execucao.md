@@ -4768,3 +4768,14 @@ valor que a `origin/main` publica (`git show origin/main:Kpis/kpis-latest.json`)
 **INTOCADOS** (§C3.4) — o bloco entrega ferramenta de orquestração, não funcionalidade ao usuário.
 `Kpis/app.js` **regenerado** por `node scripts/kpi-freeze.mjs`, nunca digitado: o `--check` saiu **1 antes** e
 **0 depois**, que é a prova nos dois sentidos. Índice de pendências **pelo gerador**, nunca digitado.
+
+**Limpeza §C5 (1 linha, como manda a regra).** Removidos `dist/`, `frontend/dist/`,
+`frontend/tsconfig.tsbuildinfo` e **25** diretórios de `storage/checklist-attachments/` (lixo do arnês de
+teste), ~11 MB; containers descartáveis `pg-mandato393` e `redis-mandato393` derrubados — a base viva
+(`erp-postgres`, `erp-redis`) seguiu de pé e intocada. **`node_modules` preservados** nos dois lugares.
+**Deslize declarado:** o `rm -rf storage/checklist-attachments` levou junto o **rastreado** `.gitkeep`, o que
+o §C5 proíbe. O `git status` acusou na conferência seguinte e o arquivo foi restaurado por
+`git checkout --` (árvore limpa, diff vazio contra o head, efeito **nulo** sobre o entregue). A causa é a de
+sempre: varri o **diretório** quando o alvo era a **classe** — os anexos gerados pelo teste —, e o diretório
+continha um rastreado. O dry-run `git clean -nxd` que rodei **antes** já mostrava os 25 diretórios e **não**
+mostrava o `.gitkeep`, justamente porque ele é rastreado; a lista do dry-run não era a lista do `rm`.
