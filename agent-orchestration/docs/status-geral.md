@@ -4761,3 +4761,126 @@ seguem **carregadas com nota** (§C3.3): o PR continua sem tocar código nem tes
 gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS — a pendência nova é
 `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
 classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.
+## 2026-09-18 — `B-O6R-11` implementado (PR na autoria): o app de campo lê a OS pelo contrato real e o material lançado não some — `P-O6R-B11` FECHADA
+
+**Primeiro bloco da frente 4 do plano SAN3** (app de campo; item 3 do gate — `Ω6R-QUA-005` é perda de dado). Branch
+`fix/mobile-work-order-contracts`, base `origin/main@02bd7dab`, plano do `planejador-mestre` (Fable, 2ª instância) com a
+emenda (a)–(f) do orquestrador no comando. Papéis (§C7.4-bis): quem achou = auditoria Ω6R + censos do plano; quem
+planejou = `planejador-mestre`; quem desenvolveu = dev de identidade distinta (a 1ª instância caiu por HTTP 429 depois do
+vermelho-controle, sem commit; a 2ª mediu o WIP contra o plano, reexecutou tudo o que cita e terminou).
+
+**Entregue (PR Flutter-only).** `work_order_remote_api.dart`: detalhe, status e atribuição desembrulham `{ data }` e usam
+o parser único da lista com o tenant da sessão; tabela de status nos dois sentidos (`backendStatusFor` e
+`workOrderStatusFromApiValue`) — a lista viva deixa de mostrar toda OS como "Agendada"; PATCH `/status` com o vocabulário
+do backend; POST `/assign` com `{userId, message?}`. `prestador_repository.dart`: `for-in` com `await` — o método só
+retorna depois de gravar. `sync_queue_repository.dart`: `enqueue`/`update` encadeados na instância única da fila.
+
+**Números (execução real; os do Flutter recontados pela 4ª instância do dev no head final):** Flutter **864 →
+888/888** (`00:42 +888: All tests passed!`, N=1; 24 testes novos em 4 arquivos — os 21 do plano + 3b, 3c e 3d das
+emendas 2 (i) e 3 (j)/(m) —; vermelho-controle no head-base `9dea0ef6` recontado com os 24: **20 não passam** (16 por
+asserção/runtime + 4 que não compilam); mutações executadas e revertidas; as contagens anteriores deste PR, 885 e 886,
+foram antes dos casos 3b, 3c e 3d) · `dart format` e `flutter analyze` limpos · regressões do §12 do plano `+133`
+(2ª instância) · backend `2995/2997` e smoke `1126` carregados (diff de
+`src/ tests/ prisma/ frontend/` vazio nas duas pontas) · blocos **163 → 164** · `mvp_*` intocados · guards de KPI 28/28 ·
+`kpi-freeze --check` e `git diff --check` verdes.
+
+**Registro.** `P-O6R-B11` FECHADA (linha de status reescrita + emenda de fechamento, que registra que o aceite original
+pedia `enqueueAll` e o plano §9.2 o rejeitou com razão); 7 pendências novas ABERTAS com dono (`B-O6R-03b`, fila pós-gate,
+`B-O6R-07c` provisório a ratificar pela junta, `B-SAN3-15`, `B-SAN3-16` ×2, `B-SAN3-13/14`), severidades pela emenda 2
+(h); uma 8ª pela emenda 3 (k) — `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (MÉDIA, fila pós-gate) — e a emenda da
+`P-MOBILE-EXPENSE-ENVELOPE` (tenant só do corpo). Índice pelo gerador, recontado pela 4ª instância: 378 cabeçalhos /
+367 IDs, 104 FECHADAS, 274 ABERTAS. O `achados.jsonl` O6R não é do bloco: o fechamento de
+`Ω6R-QUA-004`/`Ω6R-QUA-005` lá é pedido ao porteiro.
+
+**Divergências plano × código/medição declaradas pelo dev (para a junta e o orquestrador):** vermelho-controle 17 e não
+15; a mutação do `in_progress` derruba também o caso 5; 3 arquivos de código e não 4 (o store do Drift não precisou);
+severidade de 6 das 7 pendências não dada pelo §6 (registradas "a classificar"); o caso 3 do T1 diz "nunca do corpo", mas
+o parser reutilizado por ordem do plano prefere `tenantId` do corpo quando existir (o DTO não o emite); o aceite
+`enqueueAll` da `P-O6R-B11` × §9.2; caminhos de teste do plano × convenção do briefing; head-base do vermelho-controle
+`9dea0ef6` × `3e05fb5a` do plano (mesma árvore `mobile/`); guard T4 mais estrito que o texto do plano.
+
+**Emendas 2 e 3 do orquestrador (3ª e 4ª instâncias do dev).** Emenda 2: severidades das 7 pendências (h); o caso 3 do
+T1 vira requisito (i) — com o tenant da sessão, o do corpo nunca vence no detalhe, status e atribuição (`afc12540`,
+caso 3b). Emenda 3: a lista segue a mesma propriedade (j — caso 3c, `d421e5f1`); tenant `''` da sessão também vence o
+corpo, escrito em teste (m — caso 3d); `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` e a emenda da `P-MOBILE-EXPENSE-ENVELOPE`
+(k); os números desta entrada, do log e da `P-O6R-B11` recontados no head final (l); composição da junta fixada (n).
+
+**Próximo passo:** orquestrador confere e empurra a branch (rebase na `main` depois do #387 e do `B-SAN3-04a`, com os
+números de KPI reexecutados — emenda (e)) → `inspetor-de-terreno-da-junta` → junta (unanimidade de 3) → CI (inclui o job
+`flutter`) → squash → §C5 → porteiro.
+
+## 2026-09-20 — `B-O6R-11` ciclo 2 (o último, `D-TETO-DOIS-CICLOS`): o guard da fila vira propriedade sobre a AST, o tenant da OS fecha pelo compilador, e resposta 200 sem OS deixa de virar OS
+
+**Por que houve ciclo 2.** A junta do ciclo 1 reprovou **1 x 2** (`agent-orchestration/omega/reprovacoes/R-B-O6R-11-ciclo1.md`):
+o guard T4 era regex por linha e deixava passar **15 formas** de descartar a `Future` do `enqueue` (C2-F1 = C3-A3), e o
+`tenantId` opcional deixava o corpo da resposta vencer quando o chamador não passava nada (C2-F2 = C3-A2) — mais 6
+ajustes dentro do bloco. Plano do ciclo 2 pelo `planejador-mestre` em **Fable** (obrigatório, §C7.6). Papéis
+(§C7.4-bis): **quem achou** = as três cadeiras da junta do ciclo 1 (não consertam); **quem planejou** =
+`planejador-mestre`; **quem desenvolveu** = dev novo — a 1ª instância caiu por HTTP 429 depois de 3 commits, a 2ª
+**mediu os 3 commits contra o plano antes de seguir** (nada herdado como fato) e terminou o registro e o KPI.
+
+**Entregue (ainda PR Flutter-only; `pubspec.yaml`/`pubspec.lock` intocados).**
+- **P-FILA-AWAIT como propriedade sobre a AST.** `test/core/sync/bo6r11_guard_fila_await_ast_test.dart` (novo, casos
+  21/22/23) analisa `lib/` inteiro com `package:analyzer` (transitivo do lock — opção A do plano §3.4) e nega 5 classes
+  de descarte (V1–V5), com as mutações da junta como **fixtures permanentes**; o guard textual
+  `bo6r11_guard_enqueue_com_await_test.dart` foi **apagado** (o cabeçalho dele prometia "default negar" e a junta provou
+  o contrário). Inventário impresso pelo caso 21: ESCRITAS 42, fronteira de UI 43 arquivos (4 por herança fora dos
+  caminhos, em lista explícita), portadoras em 11 arquivos, 1 raiz de evento com teto, **0 violações**. 2ª camada:
+  `unawaited_futures: true` no `analysis_options.yaml` (custo medido: 0 issues).
+- **Tenant da OS fechado pelo compilador.** Os 4 leitores de OS (`fetchWorkOrders`, `fetchWorkOrder`,
+  `updateWorkOrderStatus`, `assignWorkOrder`) passam a exigir `{required String tenantId}` na interface, no stub, no Dio
+  e nos 2 fakes; o parser perdeu `fallbackTenantId`, `sessionTenantId` e a leitura `strOpt('tenantId','tenant_id')` — o
+  corpo **não tem mais caminho nenhum** para o tenant (o arquivo sai do censo de leituras de tenant do corpo).
+- **Resposta 200 sem OS lança.** `data` tem de ser objeto, `id` tem de ser `String` não-vazia, `items` tem de ser lista:
+  `FormatException` com mensagem **constante** (§2.8, nada do payload ecoado) no lugar da OS fabricada
+  `wo-remote-<timestamp>` marcada `synced` (a sonda da junta media 12 de 12 fabricadas).
+- **Vocabulário provado.** A tabela virou `const Map<String, WorkOrderStatus> backendStatusToApp` pública (11 entradas);
+  o caso 15 **fixa** o destino do status desconhecido (`scheduled`, pré-existente) e o caso 16 lê
+  `src/modules/work-orders/work-order.types.ts` e exige entrada explícita para todo valor de `WORK_ORDER_STATUSES` —
+  fecha a metade "nada força a concordância" sem tocar `src/`. Comentário tautológico ("provado pelo b099 2.3") removido.
+- **Censo da fila (T3-21).** Exatamente 1 construção de `PersistentSyncQueueRepository` em `lib/`, medida sobre a AST —
+  é o que mantém honesta a magnitude "0 vivo hoje" da `P-MOBILE-FILA-RMW-STORE`.
+
+**Números (execução real do ciclo 2, no head final, Flutter 3.41.6 / Dart 3.11.4).** Flutter **888 -> 894/894**
+(`00:49 +894: All tests passed!`) — delta por arquivo: T1 15 -> 18 (−1 do caso 3, +4 dos casos 13/14/15/16), T3 4 -> 5,
+guard 1 -> 3 (arquivo substituído), T2 4 -> 4. **N = 3 execuções da suíte inteira: 1 verde e 2 vermelhas**, sempre no
+mesmo caso pré-existente e por carga de máquina — ver a divergência (1) abaixo. `dart format` ec=0 **nas duas versões**
+(3.41.6 local e **3.13.3 do CI**, em contêiner descartável `dev-b11-c2-fmt`, removido ao fim: "Formatted 196 files (0
+changed)"); `flutter analyze` "No issues found!" **com `unawaited_futures` ligado**. Backend `2995/2997` e smoke `1126`
+**CARREGADOS** (diff de `src/ tests/ prisma/ frontend/` vazio nas duas pontas); blocos **164**; `mvp_*` intocados;
+`pr` 388, `merge_commit`/`approved_head` `null` na autoria (§C3.5).
+
+**Registro.** A seção `Pendências abertas por B-O6R-11` passa de 9 para **15** entradas: 5 pré-existentes que a junta
+nomeou (`P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`, `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`,
+`P-MOBILE-CODEC-FILA-STATUS-CRU`, `P-CI-FLUTTER-SEM-PIN`, `P-MOBILE-DISCARDED-FUTURES`) e uma **medida pelo dev na
+própria bateria** (`P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`). Emendadas: `P-MOBILE-EXPENSE-ENVELOPE` (o censo
+esquecia o `ExpenseReportCodec`, que é parser de RESPOSTA apesar do nome "local store"),
+`P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (censo refeito por comando e classificado por USO: 48 linhas — 6 leituras de tenant
+em resposta de rede, em 3 arquivos), `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` e `P-MOBILE-FILA-RMW-STORE` (magnitude
+MEDIDA, não estimada), `P-MOBILE-APPROVAL-REQUEST-REST-404` e `P-MOBILE-STATUS-ACCEPTED-LOSSY` (dono que TEM o arquivo).
+**Índice pelo gerador, no head final: 385 cabeçalhos / 374 IDs, 104 FECHADAS, 281 ABERTAS; 15 pendências novas neste PR**
+(`git diff 02bd7dab -- pendencias.md | grep -c '^+## P-'`).
+
+**Divergências plano x execução declaradas pelo dev (para a junta e o orquestrador):**
+1. **A suíte inteira caiu em 2 de 3 execuções** no caso 16 de `test/features/telemetry/telemetry_test.dart`
+   (`Expected: <3> / Actual: <4>`), arquivo que este PR **não toca** (diff vazio contra `02bd7dab` e contra `f1975256`;
+   última escrita `2c916222`, #274). Medido: com a máquina ociosa a suíte passa 894/894 em 00:49; sem o guard novo,
+   891/891 em 00:44; o objeto do PR passa 888/888 em 00:46; **e o teste SOZINHO, sem nenhum arquivo deste bloco, cai com
+   a mesma assinatura sob carga artificial de CPU**. É corrida pré-existente no `stop()` da telemetria (não espera o
+   tick em voo); o guard sobre a AST só **alarga a janela** ao encarecer a suíte. Aberta como
+   `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` (MÉDIA, fila pós-gate) — escopo `pre-existente` pelo §C7.1-ter (a), com
+   evidência de data e de origem.
+2. **`docs/revisoes/SAN3/PLANO_SAN3.md` NÃO foi tocado.** O §5.4 do plano pedia 4 ampliações de fronteira para que P4,
+   P6, P7 e a `P-CI-FLUTTER-SEM-PIN` tivessem dono com o arquivo; o arquivo está **fora do escopo** do bloco e o
+   orquestrador mandou reportar em vez de consolidar. A 1ª instância havia editado as 4 linhas; a edição foi **desfeita
+   pela edição inversa** e guardada fora do repo. As pendências foram escritas contra o §5 **como ele está**: P7 ->
+   `fila pós-gate`; P4 e P6 mantêm o dono com a nota "fronteira a ampliar no comando do dono"; a
+   `P-CI-FLUTTER-SEM-PIN` fica no `B-SAN3-10` com a ressalva de que a autorização escrita lá é "só para o job e2e".
+3. **15 mutações da junta, não 14.** A tabela do §2 do plano diz "14" no texto e lista 15 linhas; as 15 foram
+   reexecutadas contra o código corrigido e as 15 ficaram vermelhas (reportado, não corrigido no plano).
+4. A `P-MOBILE-DISCARDED-FUTURES` (residual declarado do guard) tem dono **fila pós-gate**: ampliar 4 fronteiras para
+   cobrir 11 arquivos de UI seria reescrever o plano do dono, não registrar uma pendência.
+
+**Próximo passo:** orquestrador confere, copia plano/registro/votos do ciclo 1 para `agent-orchestration/omega/` e
+empurra -> `inspetor-de-terreno-da-junta` -> junta (unanimidade de 3, composição do §11 do plano) -> CI (job `flutter`)
+-> squash -> §C5 -> porteiro. **Se a junta reprovar, o bloco para e vai dossiê ao dono (`D-TETO-DOIS-CICLOS`).**

@@ -24,7 +24,7 @@ class _FakeRemoteApi implements WorkOrderRemoteApi {
   int callCount = 0;
 
   @override
-  Future<List<WorkOrder>> fetchWorkOrders({String? tenantId}) async {
+  Future<List<WorkOrder>> fetchWorkOrders({required String tenantId}) async {
     callCount++;
     final err = _error;
     if (err != null) throw err;
@@ -32,16 +32,24 @@ class _FakeRemoteApi implements WorkOrderRemoteApi {
   }
 
   @override
-  Future<WorkOrder> fetchWorkOrder(String id) => throw UnimplementedError();
-  @override
-  Future<WorkOrder> updateWorkOrderStatus(String id, WorkOrderStatus s) =>
+  Future<WorkOrder> fetchWorkOrder(String id, {required String tenantId}) =>
       throw UnimplementedError();
+  @override
+  Future<WorkOrder> updateWorkOrderStatus(
+    String id,
+    WorkOrderStatus s, {
+    required String tenantId,
+  }) => throw UnimplementedError();
   @override
   Future<List<WorkOrderTimelineEvent>> fetchTimeline(String id) =>
       throw UnimplementedError();
   @override
-  Future<WorkOrder> assignWorkOrder(String id, String userId, {String? note}) =>
-      throw UnimplementedError();
+  Future<WorkOrder> assignWorkOrder(
+    String id,
+    String userId, {
+    String? note,
+    required String tenantId,
+  }) => throw UnimplementedError();
   @override
   Future<void> createApprovalRequest(String id, WorkOrderApprovalRequest req) =>
       throw UnimplementedError();

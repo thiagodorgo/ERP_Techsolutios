@@ -4687,3 +4687,151 @@ bloco mergear.
   tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
   deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
   **303** ABERTAS.
+## B-O6R-11 — `fix/mobile-work-order-contracts` (2026-09-18, PR na autoria)
+
+### Resumo
+
+Contratos do app de campo com a OS (`Ω6R-QUA-004` + `Ω6R-QUA-005`, pendência-mãe `P-O6R-B11`, item 3 do gate SAN3).
+Plano `agent-orchestration/omega/planos/B-O6R-11-plano.md` + emenda (a)–(f) do orquestrador no comando. Dev de identidade
+distinta (§C7.4-bis); a 1ª instância caiu por HTTP 429 depois do vermelho-controle, sem commit (WIP conferido byte a byte
+contra a cópia de segurança); a 2ª mediu o WIP contra o plano §9/§10, reexecutou o que cita e terminou.
+
+### Entregue (commits na branch, sem push — o orquestrador confere e empurra)
+
+- `cc3b7247` fix(mobile): REST da OS — `work_order_remote_api.dart` (`_unwrapData`; parser único com tenant da sessão;
+  `backendStatusFor` + `workOrderStatusFromApiValue`; PATCH com vocabulário do backend; POST assign `{userId, message?}`;
+  `_workOrderFromJson` removido); fakes `b099`/`b121` só na assinatura; T1 (12 casos neste commit; 15 no head final —
+  3b, 3c e 3d das emendas 2 (i) e 3 (j)/(m), recontados pela 4ª instância).
+- `6865c195` fix(mobile): fila — `prestador_repository.dart` (`for-in` + `await`), `sync_queue_repository.dart`
+  (`_serialized`); T2 (4, com reinício sobre Drift), T3 (4), T4 (1, guard fail-closed que varre `lib/`).
+- `e54e5264` docs(kpi): `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md`, `app.js` (`kpi-freeze`).
+- commit de registro: `pendencias.md` (`P-O6R-B11` FECHADA; 7 pendências novas), índice pelo gerador, `status-geral.md`,
+  este log.
+
+### Bateria (execução real, N e forma)
+
+`flutter pub get` (lock intocado) · `dart format --output=none --set-exit-if-changed lib test` → 196 arquivos, 0 mudados ·
+`flutter analyze` → "No issues found!" · T1 `+15` · T2 `+4` · T3 `+4` · T4 `+1` · regressões do §12 do plano `+133`
+(2ª instância) · `flutter test --reporter compact` → **`00:42 +888: All tests passed!`** (N=1; estático 888 em 66
+arquivos; recontados pela 4ª instância no head final — a 2ª mediu T1 `+12` e `00:47 +885`, antes dos casos 3b, 3c e
+3d) ·
+`node --check Kpis/app.js` OK · `node scripts/kpi-freeze.mjs --check` → em dia · guards de KPI 28/28 · `git diff --check`
+OK. Vermelho-controle no head-base `9dea0ef6` (worktree descartável, `pub get` próprio), recontado pela 4ª instância
+(`vc4-b-o6r-11`) com os 24 casos finais: T1 13 (9 por asserção/runtime + 4 por compilação) · T2 4 · T3 2 · T4 1 =
+**20 de 24** — os 17 de 21 do plano, que a 2ª instância mediu em `vc-b-o6r-11`, reproduzidos; baseline 864/864 (2ª
+instância).
+Mutações: sem `await` → T4 vermelho (`prestador_repository.dart:137`) e T2 4/4; `user_id` → só o caso 8; `in_progress`
+trocado em `backendStatusFor` → casos 5, 6 e 11; extras: parser `in_progress` → casos 2 e 10; lock desligado → T3 17 e 18
+(T2 segue verde: o `for-in await` sozinho fecha o gate, como o §13 do plano diz). Cada mutação revertida por edição
+inversa e conferida por `cmp` do `git diff` contra a cópia de segurança.
+
+### Divergências plano × código/medição (reportadas, não decididas pelo dev)
+
+1. Vermelho-controle 17/21, o plano previa 15: T2 15 e 16 também ficam vermelhos no head-base (todo caso lê a fila logo
+   após o retorno, e o retorno prematuro zera todos).
+2. Mutação do `in_progress`: o plano previa casos 6 e 11; o caso 5 também cai (assere `in_progress` no fio) — coerente.
+3. O plano §14 pede a descrição do history "nomeando os 4 arquivos de código": são 3 — `drift_sync_action_store.dart`
+   ficou intocado, como o §9.4 previa.
+4. O §6 do plano só dá severidade à P2 (BAIXA); as outras 6 foram registradas "a classificar pela junta" e o índice as
+   põe sem severidade (balde B). Decisão do orquestrador/junta.
+5. Caso 3 do T1 ("o tenant vem do parâmetro da sessão, nunca do corpo"): o parser `_workOrderFromRemoteJson`, reutilizado
+   por ordem do plano §8/§9.1, usa `tenantId`/`tenant_id` do corpo quando existir e a sessão só como `fallbackTenantId`.
+   O DTO do backend não emite o campo (§2.8), então não há efeito vivo; o teste prova "da sessão quando o corpo não tem",
+   não "nunca do corpo". Não alterado.
+6. O aceite original da `P-O6R-B11` pedia "`enqueueAll` durável"; o plano §9.2 o rejeitou com razão registrada —
+   anotado na emenda de fechamento para a junta ver.
+7. Caminhos de teste: T3/T4 em `test/core/sync/` e T1/T2 em subpastas de `test/features/`, exatamente os do plano; o
+   briefing cita a convenção `test/features/<bloco>_<slug>_test.dart`. Seguido o plano.
+8. Head-base do vermelho-controle `9dea0ef6` (plano: `3e05fb5a`): a árvore `mobile/` é a mesma (`3a2ac028`) nos dois.
+9. Guard T4 mais estrito que o texto do plano: casa `\.enqueue\b` (pega também a passagem do método como valor), ignora
+   linhas de comentário e tem piso de 22 ocorrências (o censo do plano).
+
+### Limpeza (§C5)
+
+Worktree `vc-b-o6r-11` removido por `git worktree remove --force` pelo nome; `mobile/flutter_app/build/` (saída
+regenerável do `flutter test`) removido no b11; `.dart_tool/` mantido (o `pub get` do worktree). Nada rastreado apagado.
+
+### Emendas 2 e 3 do orquestrador (3ª e 4ª instâncias do dev, 2026-09-18)
+
+- `afc12540` fix(mobile) — emenda 2 (i): com o tenant da sessão, o do corpo nunca vence no detalhe, status e atribuição
+  (T1 3b: vermelho no `31bda5f2`, `+12 -1`). `cf075a82` docs(registro) — emenda 2 (h): severidades das 7 pendências,
+  índice pelo gerador, KPI recontado 886/886.
+- `d421e5f1` fix(mobile) — emenda 3 (j): a lista (`fetchWorkOrders`) segue a mesma propriedade (T1 3c: vermelho no
+  `5e95ed6a`, `+13 -1`; verde depois); emenda 3 (m): T1 3d — tenant `''` da sessão também vence o corpo nos quatro
+  leitores de OS (nasce verde; vermelho sob a mutação "vazio conta como ausente", `+14 -1`).
+- Commit de registro da 4ª instância — emenda 3 (k): `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (MÉDIA, fila pós-gate) e
+  emenda da `P-MOBILE-EXPENSE-ENVELOPE` (tenant só do corpo); emenda 3 (l): os números desta entrada, do
+  `status-geral.md` e da `P-O6R-B11` recontados no head final; índice 378 cabeçalhos / 367 IDs, 104 FECHADAS, 274
+  ABERTAS; KPI 888/888.
+- Limpeza da 4ª instância: worktree `vc4-b-o6r-11` removido pelo nome (`git worktree remove --force`);
+  `mobile/flutter_app/build/` removido; sondas temporárias apagadas na mesma linha de comando que as rodou.
+
+## B-O6R-11 — ciclo 2 (2026-09-19/20, PR #388, branch `fix/mobile-work-order-contracts`)
+
+### Resumo
+
+Ciclo 2 = o **último** (`D-TETO-DOIS-CICLOS`). A junta do ciclo 1 reprovou 1 x 2 (`R-B-O6R-11-ciclo1`): 2 bloqueios
+(C2-F1 = C3-A3, guard da fila fail-open em 15 formas; C2-F2 = C3-A2, `tenantId` opcional deixa o corpo vencer) e 6
+ajustes dentro do bloco. Plano do `planejador-mestre` em Fable (`PLANO-B-O6R-11-ciclo2.md`, 12 seções). Papéis
+(§C7.4-bis): quem achou = as 3 cadeiras da junta do ciclo 1; quem planejou = `planejador-mestre`; quem desenvolveu =
+dev novo, em 2 instâncias (a 1ª caiu por HTTP 429 depois de 3 commits; a 2ª mediu esses 3 commits contra o plano antes
+de seguir, reexecutou as 15 mutações da junta contra o código corrigido e fechou registro, KPI e bateria).
+
+### Entregue (commits na branch, sem push)
+
+- `9b002e80` test(mobile): guard `P-FILA-AWAIT` sobre a AST substitui o guard textual — `bo6r11_guard_fila_await_ast_test.dart`
+  (casos 21/22/23; `package:analyzer` pelo lock, opção A do §3.4, sem tocar `pubspec.*`); `bo6r11_guard_enqueue_com_await_test.dart`
+  apagado; `unawaited_futures: true` no `analysis_options.yaml`.
+- `4b84070b` fix(mobile): tenant da OS obrigatório (`{required String tenantId}` nos 4 leitores, interface, stub, Dio e
+  2 fakes; parser sem `fallbackTenantId`/`sessionTenantId`/`strOpt('tenantId','tenant_id')`), resposta sem OS lança
+  `FormatException` de mensagem constante (`data` objeto, `id` não-vazio, `items` lista), `backendStatusToApp` pública
+  com 11 entradas, casos 13/14/15/16 do T1 e caso 3 apagado (a metade que restava não compila mais, por construção).
+- `7708824d` test(mobile): censo de instâncias da fila persistente (T3-21) sobre a AST — 1 construção em `lib/`.
+- Commit de registro da 2ª instância: `pendencias.md` (15 entradas na seção do bloco: 5 pré-existentes que a junta
+  nomeou + `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`, medida na própria bateria; 6 emendas), `pendencias-indice.md`
+  pelo gerador, trilha em `status-geral.md` e neste log.
+- Commit de KPI: `kpis-latest.json`, `kpis-history.json` (entrada do bloco reescrita — o prefixo de 158 entradas fica
+  byte-idêntico), `kpis-history.md` e `Kpis/app.js` por `kpi-freeze`.
+
+### Bateria (execução real, N e forma)
+
+- `flutter pub get` (pubspec.lock intocado) · `dart format --output=none --set-exit-if-changed lib test` ec=0 em
+  **3.41.6** e em **3.13.3 do CI** (contêiner descartável `dev-b11-c2-fmt`, `Formatted 196 files (0 changed)`,
+  removido ao fim) · `flutter analyze` **No issues found!** (com `unawaited_futures` ligado).
+- Testes do bloco: guard `00:07 +3` (inventário: ESCRITAS 42, UI 43, portadoras em 11 arquivos, 1 raiz, 0 violações);
+  T1+T2+T3 juntos `00:12 +27` (T1 18, T2 4, T3 5).
+- Suíte inteira: **N=3** — `00:49 +894: All tests passed!` (máquina ociosa) e duas execuções `+893 -1` sob carga, sempre
+  no mesmo caso pré-existente de telemetria (ver Divergências). Sem o guard novo: `00:44 +891`. Objeto `f1975256`:
+  `00:46 +888`.
+- `node --check Kpis/app.js` · `node scripts/kpi-freeze.mjs --check` · os 3 guards de KPI · `sync-agent-agents --check` ·
+  gerador do índice com `git diff --exit-code` do índice · `git diff --check origin/main HEAD` — saídas no relatório do dev.
+
+### Vermelho-controle reexecutado pela 2ª instância (contra o código corrigido, em worktree descartável próprio)
+
+- **15 de 15 mutações da junta** aplicadas a `lib/` -> caso 21 vermelho com 23 violações (V1 x 6, V2/V4 x 8 pares,
+  V3 x 1, V5 x 3), uma linha por sítio.
+- `_consumida` afrouxada (aceitar `ArgumentList`) -> caso 22 vermelho nomeando A3b e o controle M2e.
+- `tenantId` omitido no chamador vivo -> `flutter analyze` ec=1, `missing_required_argument` (no objeto isso compilava).
+- `orElse -> cancelled` -> caso 15 vermelho; `WORK_ORDER_STATUSES += awaiting_parts` (só no descartável) -> caso 16
+  vermelho — as duas deixavam a suíte VERDE no objeto.
+- 2ª construção de `PersistentSyncQueueRepository` -> caso 21 do T3 vermelho.
+- Todas revertidas por edição inversa; nenhum `git checkout`/`reset`/`stash`/`clean` em worktree algum.
+
+### Divergências (reportadas, não decididas pelo dev)
+
+1. Caso 16 de `test/features/telemetry/telemetry_test.dart` cai sob carga (`Expected: <3> / Actual: <4>`) — corrida
+   pré-existente no `stop()` da telemetria, provada com o teste SOZINHO sob carga artificial e com o arquivo intocado
+   pelas duas pontas do PR (`2c916222`, #274). Aberta como `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`.
+2. `docs/revisoes/SAN3/PLANO_SAN3.md` não foi tocado (fora do escopo): as 4 ampliações de fronteira do §5.4 do plano
+   ficam como divergência; a edição que a 1ª instância havia feito foi desfeita pela edição inversa e guardada fora do
+   repo. Donos escritos contra o §5 como ele está (P7 -> fila pós-gate; P4/P6 com nota; `P-CI-FLUTTER-SEM-PIN` no
+   `B-SAN3-10` com ressalva).
+3. O §2 do plano diz "14 mutações" no texto e lista 15; as 15 foram reexecutadas e as 15 ficam vermelhas.
+4. `P-MOBILE-DISCARDED-FUTURES` fica com dono `fila pós-gate` (11 arquivos de UI, nenhum bloco do §5 os tem).
+
+### Limpeza (§C5)
+
+Worktree de mutação `dev-b11-c2-mut` removido pelo nome ao fim (`git worktree remove --force`), com o conteúdo medido
+antes; contêiner `dev-b11-c2-fmt` com `--rm` (nenhum contêiner do bloco em `docker ps -a`); nenhum contêiner de banco
+criado (o bloco é Flutter; `DATABASE_URL`/`REDIS_URL` não entram em comando algum); logs e patches fora do repo, no
+scratchpad da sessão.

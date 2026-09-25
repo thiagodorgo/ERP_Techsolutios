@@ -2942,3 +2942,133 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+## 2026-09-18 — B-O6R-11 (PR na autoria) — o que o técnico lança fica gravado; o que o sistema responde, o app entende
+
+Fecha os **dois P1** da pendência-mãe `P-O6R-B11` (item 3 do gate da versão vendável). PR **Flutter-only**:
+backend, frontend e banco intocados.
+
+**Ω6R-QUA-005 — perda de dado.** `PrestadorRepository.addSelection` enfileirava num `selection.forEach`, cujo
+callback é `void`: o método retornava — e avisava a tela — **antes** de qualquer ação gravada, e as N gravações
+(cada uma um read-modify-write da fila inteira) liam o mesmo retrato. No head-base: **N SKUs viram 1**; reinício
+logo após o retorno, **0**. Agora é `for-in` com `await`, e `PersistentSyncQueueRepository` encadeia `enqueue` e
+`update` — a fila é uma instância só, partilhada por replay, conflitos e repositórios, e qualquer par de mutações
+concorrentes podia perder uma linha. O conserto definitivo (upsert atômico no store) é a `P-MOBILE-FILA-RMW-STORE`.
+
+**Ω6R-QUA-004 — o REST da OS.** Detalhe, status e atribuição passavam o envelope `{ data }` inteiro a um parser
+snake_case que exigia `tenant_id`: resposta íntegra = TypeError. O PATCH mandava `inService` (o backend recusa);
+a atribuição mandava `user_id`/`note` (o backend não lê). E a lista viva mostrava toda OS como **Agendada**,
+porque o vocabulário do backend não era traduzido. A tabela de status agora vai nos dois sentidos, com teste de
+paridade contra o codec da fila offline. E o tenant da sessão, quando o chamador o passa (`''` inclusive), vence
+qualquer tenant que venha no corpo da resposta — nos quatro leitores de OS, a lista inclusive (emendas 2 (i) e
+3 (j)/(m) do orquestrador).
+
+**Números, todos executados neste PR:** Flutter **864 → 888/888** (`00:42 +888: All tests passed!`, N=1; recontada
+pela 4ª instância do dev depois dos casos 3c e 3d) — 24 testes novos em 4 arquivos (T1 15 · T2 4 · T3 4 · T4 1).
+Vermelho-controle recontado no head-base `9dea0ef6` com os 24: **20 não passam** — 16 por asserção/runtime
+(T1 9 · T2 4 · T3 2 · T4 1) e 4 do T1 que não compilam (usam símbolo novo). Os casos do tenant acrescentados
+depois do plano: 3b (emenda 2 (i)) vermelho no `31bda5f2` (`+12 -1`); 3c (a lista, emenda 3 (j)) vermelho no
+`5e95ed6a` (`+13 -1`); 3d (tenant vazio, emenda 3 (m)) nasce verde e cai sob mutação (`+14 -1`). Mutações do
+plano executadas e revertidas. Backend `2995/2997` e smoke `1126` **CARREGADOS** (diff de `src/ tests/ prisma/
+frontend/` vazio nas duas pontas). `blocks_completed` **163 → 164** a partir de `origin/main` = `02bd7dab`.
+`mvp_*` intocados (§C3.4). `pr`/`merge_commit`/`approved_head` **null na autoria** (§C3.5).
+
+**Pendências abertas com dono — 15 no PR inteiro** (`git diff 02bd7dab -- pendencias.md | grep -c '^+## P-'`
+= 15; índice pelo gerador no head final: **385 cabeçalhos / 374 IDs, 104 FECHADAS, 281 ABERTAS**).
+*Ciclo 1 (9):* `P-MOBILE-EXPENSE-ENVELOPE`, `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO`,
+`P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-APPROVAL-REQUEST-REST-404`,
+`P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-FILA-RMW-STORE`, `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (emenda 3 (k)) e
+`P-CHECKLIST-DTO-EMITE-TENANT-ID` (emenda 4 (p)). *Ciclo 2 (6):* `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`,
+`P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`, `P-MOBILE-CODEC-FILA-STATUS-CRU`, `P-CI-FLUTTER-SEM-PIN`,
+`P-MOBILE-DISCARDED-FUTURES` e `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` — esta última **medida pelo dev na própria
+bateria do ciclo 2**. Emendadas no ciclo 2: `P-MOBILE-EXPENSE-ENVELOPE` (o censo esquecia o `ExpenseReportCodec`, que é
+parser de RESPOSTA apesar do nome "local store"), `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (censo refeito por comando e
+classificado por USO: 48 linhas, 6 leituras de tenant em resposta de rede em 3 arquivos),
+`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` e `P-MOBILE-FILA-RMW-STORE` (magnitude MEDIDA, não estimada),
+`P-MOBILE-APPROVAL-REQUEST-REST-404` e `P-MOBILE-STATUS-ACCEPTED-LOSSY` (dono que TEM o arquivo).
+
+## 2026-09-20 — B-O6R-11 ciclo 2 (o último, `D-TETO-DOIS-CICLOS`) — a rede de proteção deixa de prometer o que não cumpria
+
+A junta do ciclo 1 reprovou **1 × 2**. Três coisas voltam fechadas **por propriedade, não por lista**:
+
+1. **O guard da fila.** Era regex por linha e prometia "default negar" no cabeçalho; a junta mediu **15 formas** de
+   descartar a `Future` do `enqueue` que ele deixava passar (callback `async` entregue a `forEach`/`map`/`then`,
+   tear-off, `unawaited(...)`, `.ignore()`, IIFE, invólucro `async` chamado sem `await`). O arquivo foi **apagado** —
+   manter os dois seria manter a promessa falsa — e substituído por um guard sobre a **AST do Dart**
+   (`package:analyzer`, já resolvido no lock: **zero dependência nova**, `pubspec.*` intocados) que varre `lib/`
+   inteiro e nega 5 classes de descarte, com as 15 mutações da junta viradas **fixtures permanentes**. 2ª camada:
+   `unawaited_futures: true` (custo medido: 0 issues pré-existentes; `discarded_futures` ficou de fora — 16 infos em
+   11 arquivos fora do escopo, agora com pendência). O próprio teste imprime o inventário: 42 escritas na fila,
+   fronteira de UI de 43 arquivos (as 4 telas fora dos caminhos em lista explícita — widget novo em arquivo de dados
+   deixa o guard **vermelho** até ser declarado), 1 raiz de evento com teto, **0 violações**.
+2. **O tenant da OS.** Era `String?`: quem não passasse a sessão deixava o corpo da resposta decidir o tenant. Agora é
+   `{required String tenantId}` nos quatro leitores — **omitir não compila** (no objeto, compilava e a suíte ficava
+   verde) — e o parser perdeu `fallbackTenantId`, `sessionTenantId` e a leitura do corpo: não há mais caminho nenhum.
+3. **Resposta 200 sem OS.** `{}`, `{data: null}`, `{data: []}` e `{error: …}` viravam uma OS fabricada
+   (`wo-remote-<timestamp>`) marcada **`synced`** — 12 de 12 na sonda da junta. Agora `data` tem de ser objeto, `id`
+   tem de ser `String` não-vazia e `items` tem de ser lista: `FormatException` com mensagem **constante** (§2.8, nada
+   do payload ecoado). Mais: o destino do status desconhecido ficou **fixado por teste** e a concordância com
+   `WORK_ORDER_STATUSES` passou a ser provada lendo o arquivo do backend, sem tocar `src/`.
+
+**Números, executados no head final:** Flutter **888 → 894/894** (`00:49 +894: All tests passed!`, Flutter 3.41.6);
+delta por arquivo: T1 15 → 18 (−1 caso 3, +4 casos 13/14/15/16), T3 4 → 5, guard 1 → 3 (arquivo substituído), T2 4 → 4.
+`dart format` ec=0 **nas duas versões** — 3.41.6 local e **3.13.3 do CI**, em contêiner descartável
+(`Formatted 196 files (0 changed)`) —, `flutter analyze` **No issues found!** com o lint novo ligado. Backend
+`2995/2997` e smoke `1126` **CARREGADOS** (§C3.3; diff de `src/ tests/ prisma/ frontend/` vazio nas duas pontas);
+`blocks_completed` **164**; `mvp_*` intocados; `pr` 388, `merge_commit`/`approved_head` `null` na autoria.
+
+**Vermelho-controle reexecutado contra o código corrigido** (worktree descartável próprio, revertido por edição
+inversa): as 15 mutações da junta → guard **vermelho com 23 violações**; regra do guard afrouxada → fixtures
+**vermelhas**; `tenantId` omitido → `flutter analyze` **ec=1**; `orElse → cancelled` e `WORK_ORDER_STATUSES +=
+awaiting_parts` → casos 15 e 16 **vermelhos** (as duas deixavam a suíte **verde** no objeto); 2ª construção da fila →
+censo **vermelho**.
+
+**N = 3 execuções da suíte inteira, e a honestidade do número:** 1 verde (894/894, máquina ociosa) e 2 vermelhas
+(`+893 -1`, máquina carregada), sempre no mesmo caso — `telemetry_test.dart` "16. foreground-only", que este PR **não
+toca**. Medido que é corrida **pré-existente** no `stop()` da telemetria: o arquivo tem diff vazio contra `02bd7dab` e
+contra o objeto do PR (última escrita `2c916222`, #274); a suíte sem o guard novo passa 891/891; o objeto passa
+888/888; e **o teste sozinho, sem nenhum arquivo deste bloco, cai com a mesma assinatura sob carga artificial de CPU**.
+O guard sobre a AST encarece a suíte e **alarga a janela** da corrida — não a criou. Aberta como
+`P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`.
+
+**Divergência declarada:** `docs/revisoes/SAN3/PLANO_SAN3.md` **não foi tocado** (fonte de verdade fora do escopo do
+bloco). As 4 ampliações de fronteira que o plano do ciclo 2 propunha vão ao orquestrador como divergência, e os donos
+das pendências foram escritos contra o §5 **como ele está hoje**.
+
+## 2026-09-25 — B-O6R-11 (REBASE sobre a `main` nova, PR #388 na autoria) — os números reconciliados com `fc3363e3`
+
+**Por que esta entrada existe.** O PR #388 estava **CONFLITANTE** com a `main` e com **ZERO check-run** no head
+`43557a17` — e o §C7.1-bis obriga o inspetor de terreno a devolver BLOQUEADO enquanto for assim, o que impedia a junta
+do bloco de começar. O gatilho `push` que o #391 criou **não dispara sozinho** num SHA que já estava no `origin` antes
+de o gatilho existir: é o **head novo** do rebase que faz o CI existir. Rebase **estritamente mecânico**: produto e
+teste **não foram tocados**.
+
+**Prova de que o produto não mudou** (duas formas independentes): a árvore de `mobile/` é a MESMA antes e depois
+(`5a4b79e8bef13aa5c16ca9bc9f28b872e4551861`), e os patches `git diff <base> <head> -- mobile/` de antes e depois são
+**byte a byte iguais** (`cmp` sem diferença, md5 `34d169c4a4a1c36356bc441ff8f45abb`). Isso vale porque a `main` **não
+tocou** `mobile/`: a árvore de `mobile/` em `02bd7dab` e em `fc3363e3` é a mesma (`3a2ac028`).
+
+**Números reconciliados (§C3.3), medidos, nunca somados:**
+- `blocks_completed` **167 → 168**, a partir da `main` `fc3363e3` (antes era 164, degrau contado da base antiga
+  `02bd7dab`; a própria nota daquele degrau previa que "quem mergear depois rebaseia e reconcilia").
+- `backend_tests` **3052/3054** e `frontend_smoke_tests` **1202/1202**: **CARREGADOS** da `main`, e isso foi MEDIDO
+  por hash de árvore, não afirmado — `src` (`21e1c4f2`), `tests` (`2854a3ec`), `prisma` (`e906ac2e`) e `frontend`
+  (`0742d122`) são IDÊNTICAS entre `fc3363e3` e o head do rebase; só `mobile` difere. Os valores anteriores
+  (`2995/2997` e `1126`) estavam defasados por serem os últimos oficiais da base antiga.
+- `flutter_tests` **893/894**, medido por mim no head do rebase, **N = 3 execuções da suíte inteira**:
+  `01:03 +893 -1`, `01:05 +893 -1`, `01:13 +893 -1`, `ec=1` nas três, Flutter 3.41.6 / Dart 3.11.4.
+  `dart format` → `196 files (0 changed)`; `flutter analyze` → `No issues found!`.
+- `mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). `merge_commit`/`approved_head` **`null` na autoria** (§C3.5).
+
+**O `-1`, publicado e não escondido.** É sempre o MESMO teste e é **pré-existente, fora do diff do bloco**:
+`test/features/telemetry/telemetry_test.dart` — *"16. foreground-only: stop interrompe a captura (sem background)"*.
+Último commit do arquivo: `2c916222`, **2026-07-24** (PR #274), dois meses antes deste bloco; e
+`git diff --name-only fc3363e3 HEAD -- mobile/flutter_app/test/features/telemetry/` sai **vazio**. **Isolado ele
+passa**: `+25`, `ec=0`, em N=3. A asserção é temporal (`expect(afterBackground, afterStop)` após
+`Future.delayed(120ms)`, l.348) — a forma que cai sob carga de CPU. Já estava aberta como
+`P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`.
+
+**Divergência declarada quanto ao número publicado:** o valor tido por oficial é **894/894**, medido por instância
+anterior em máquina ociosa. **Eu não o reproduzi em 3 tentativas** e publiquei **o que medi (893/894)**, porque o
+§C3.3 proíbe copiar contagem do bloco anterior. O denominador **894 é constante** nas três execuções (sem variação de
+denominador). Se o orquestrador preferir a convenção da entrada do ciclo 2 (publicar o verde e declarar as vermelhas
+na nota), é troca de uma linha — mas ela seria uma asserção que **esta** execução não sustenta.
