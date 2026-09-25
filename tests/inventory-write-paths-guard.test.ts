@@ -44,8 +44,23 @@ const CYCLE_COUNT_SERVICE = "src/modules/inventory/cycle-count.service.ts";
 const CYCLE_COUNT_TYPES = "src/modules/inventory/cycle-count.types.ts";
 const UOW_PRISMA = "src/modules/inventory/inventory-uow-prisma.ts";
 
-/** Orçamento declarado (plano §3): a criação do programa + todas as análises do T-D. */
-const PROGRAM_BUDGET_MS = 60_000;
+/**
+ * DETECTOR DE TRAVAMENTO — NÃO é orçamento de desempenho (plano da bateria §2.6c).
+ *
+ * O que vivia aqui era `PROGRAM_BUDGET_MS = 60_000` afirmado contra `analysis.ms`. A análise é CPU
+ * pura (cria o programa do TypeScript e varre `src/`), logo o número mede a VIZINHANÇA, não o
+ * produto. Medido no head `bc3e736b`: 11.861 ms sem carga e 45.772 ms com a máquina disputada —
+ * margem de 1,31x contra os 60 s, a mais fina do bloco. Um vermelho ali não diria nada sobre o
+ * código: diria que outro processo estava usando os núcleos.
+ *
+ * O teto não sai de vez porque o runner NÃO passa `--test-timeout` (pendência
+ * `P-RUNNER-SEM-TEST-TIMEOUT`): sem rede nenhuma, uma análise que não termina pendura a bateria
+ * inteira PARA SEMPRE — sem vermelho e sem diagnóstico. Então a propriedade afirmada muda de "a
+ * análise é rápida" para "a análise TERMINA", contra um teto de outra ordem de grandeza: 13x acima
+ * do pior valor já medido, que carga plausível nenhuma alcança. "A análise é rápida" vira SÉRIE
+ * PUBLICADA (a linha `[T-D]` de toda execução), que é como se vê tendência sem fabricar vermelho.
+ */
+const PROGRAM_HANG_TIMEOUT_MS = 600_000;
 
 function read(relative: string): string {
   return readFileSync(path.join(ROOT, relative), "utf8").replace(/\r\n/g, "\n");
@@ -390,7 +405,12 @@ function analyze(): Analysis {
   const checker = program.getTypeChecker();
   const writers = collectWriters(program, checker);
   analysisMemo = { program, checker, writers, ms: Date.now() - startedAt, files: roots.length };
-  console.log(`[T-D] programa: ${roots.length} raízes, ${analysisMemo.ms} ms (orçamento ${PROGRAM_BUDGET_MS} ms)`);
+  // A DURAÇÃO é publicada, nunca afirmada (§2.6c): é a série que mostra tendência. A margem sai
+  // junto para que "a análise dobrou de tempo" seja legível no TAP sem ninguém ter de calcular.
+  console.log(
+    `[T-D] programa: ${roots.length} raízes, ${analysisMemo.ms} ms ` +
+      `(detector de travamento ${PROGRAM_HANG_TIMEOUT_MS} ms · margem ${(PROGRAM_HANG_TIMEOUT_MS / Math.max(1, analysisMemo.ms)).toFixed(1)}x)`,
+  );
   return analysisMemo;
 }
 
@@ -916,7 +936,12 @@ test("D1 — todo escritor de stock_movements (delegate em qualquer forma, escri
   });
   assert.deepEqual(suspicious, [], "script sem checker mencionando stock_movements/stockMovement");
 
-  assert.ok(analysis.ms < PROGRAM_BUDGET_MS, `T-D fora do orçamento: ${analysis.ms} ms`);
+  // DETECTOR DE TRAVAMENTO, não orçamento de desempenho (ver `PROGRAM_HANG_TIMEOUT_MS`): o que se
+  // afirma aqui é que a análise TERMINA. Quanto ela demorou está na linha `[T-D]` de toda execução.
+  assert.ok(
+    analysis.ms < PROGRAM_HANG_TIMEOUT_MS,
+    `T-D não terminou dentro do detector de travamento: ${analysis.ms} ms de ${PROGRAM_HANG_TIMEOUT_MS} ms`,
+  );
 });
 
 test("D1′ — o classificador contra as formas do jurado: 18 escritores flagrados em arquivo novo, 4 leituras de controle não", () => {
