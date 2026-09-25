@@ -11,7 +11,7 @@ import {
   assertApplicationNamePropagated,
   buildApplicationName,
   captureSettled,
-  countBlockedStatements,
+  waitForOwnBlockedStatement,
   withApplicationName,
   type SettledOutcome,
 } from "./helpers/pg-barrier.js";
@@ -110,7 +110,8 @@ if (!connectionString) {
     }
   });
 
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  // (o auxiliar `sleep` saiu com a última espera fixa desta suíte; a catraca de higiene do T-D
+  //  afirma que a contagem aqui é ZERO, e deixá-lo declarado seria convite a reintroduzir uma)
   const actorOf = (tenantId: string) => ({ tenantId, userId: randomUUID(), roles: [], permissions: [] }) as any;
 
   async function newTenant(h: Harness, tag: string): Promise<string> {
@@ -175,15 +176,9 @@ if (!connectionString) {
     return `${reason?.code ?? reason?.name ?? "erro"}${causeCode ? `/${causeCode}` : ""}`;
   }
 
-  /** Espera (sem falhar) um statement da própria suíte bloqueado com `fragment`; devolve se bloqueou. */
-  async function blockedWithin(h: Harness, fragment: string, timeoutMs: number): Promise<boolean> {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      if ((await countBlockedStatements(h.admin as any, { fragment, applicationName: appB })) >= 1) return true;
-      if (Date.now() > deadline) return false;
-      await sleep(25);
-    }
-  }
+  // (`blockedWithin` saiu — ver o comentário em C7. Era uma segunda barreira, com teto de 3 s e
+  //  passo de polling próprios, ao lado da barreira escopada do módulo. O teto de 3 s era o SEGUNDO
+  //  mecanismo mais apertado do bloco e o único cuja espera real não era observável.)
 
   /** Transação do admin que grava a compensação CRUA (sem o lock do item) e SEGURA até `release()`. */
   function holdRawCompensation(h: Harness, tenantId: string, otherItem: string, reverses: string) {
@@ -372,8 +367,13 @@ if (!connectionString) {
     const holder = holdRawCompensation(h, t, z, original);
     await holder.written;
     const b = captureSettled(h.inventoryB.reverseMovement(actorOf(t), original, {}));
-    const blocked = await blockedWithin(h, "stock_movements", 3000);
-    await sleep(200);
+    // Era `blockedWithin(…, 3000)`: um teto de 3 s que NÃO falhava — devolvia `false` para uma
+    // asserção lá embaixo — e cuja espera real ninguém conseguia ver. Sob carga a duração total
+    // deste caso já ocupava 2.265 ms desses 3.000. Agora a espera é a barreira escopada do módulo:
+    // teto padrão de 15 s, falha COM diagnóstico (quantos bloqueios existem no cluster com esse
+    // texto) e PUBLICA quanto esperou. O teto de barreira vira último recurso, não mecanismo.
+    // O `sleep(200)` que vinha depois era superstição: a barreira JÁ provou o bloqueio.
+    await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "stock_movements", label: "C7" });
     holder.release();
     assert.equal((await holder.done).status, "fulfilled");
     const outcome = await b;
@@ -383,8 +383,9 @@ if (!connectionString) {
     assert.deepEqual(compensations, [{ item: z }], "UMA compensação — a do escritor cru; a de B foi desfeita inteira");
     assert.equal(describe(outcome), "409|movement_already_reversed");
     assert.equal(/25P02/.test(errorText((outcome as { reason?: unknown }).reason ?? {})), false, "nunca 25P02");
-    // 2ª asserção = o desenho: B esperou na tupla concorrente do índice único.
-    assert.equal(blocked, true, "B bloqueou no INSERT em stock_movements");
+    // 2ª asserção = o desenho: B esperou na tupla concorrente do índice único. Ela agora é a própria
+    // barreira acima — que FALHA nomeando a causa, em vez de devolver `false` para um `assert.equal`
+    // que só dizia "expected true, actual false".
   });
 
   test("C8 [mapeamento V5] (T-02) · escritor SEM o lock do item × removeExitForSource real → B bloqueia no índice, `undefined` FORA da tx, UMA compensação", async () => {
@@ -397,15 +398,15 @@ if (!connectionString) {
     const holder = holdRawCompensation(h, t, z, exit);
     await holder.written;
     const b = captureSettled(h.repoB.removeExitForSource({ tenantId: t, sourceType: "fuel_log", sourceId }));
-    const blocked = await blockedWithin(h, "stock_movements", 3000);
-    await sleep(200);
+    // Mesma troca do C7: barreira escopada do módulo, que falha com diagnóstico e publica a espera.
+    await waitForOwnBlockedStatement(h.admin as any, { applicationName: appB, fragment: "stock_movements", label: "C8" });
     holder.release();
     assert.equal((await holder.done).status, "fulfilled");
     const outcome = await b;
 
     assert.deepEqual(await compensationsOf(h, exit), [{ item: z }], "UMA compensação — a do escritor cru");
     assert.equal(describe(outcome), "undefined", "no-op idempotente");
-    assert.equal(blocked, true, "B bloqueou no INSERT em stock_movements");
+    // "B bloqueou no INSERT em stock_movements" é afirmado pela barreira acima.
   });
 }
 

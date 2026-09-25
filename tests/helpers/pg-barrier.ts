@@ -97,10 +97,20 @@ export async function waitForOwnBlockedStatement(
     readonly timeoutMs?: number;
   },
 ): Promise<void> {
-  const deadline = Date.now() + (options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const startedAt = Date.now();
+  const deadline = startedAt + timeoutMs;
   for (;;) {
     const own = await countBlockedStatements(client, { fragment: options.fragment, applicationName: options.applicationName });
-    if (own >= 1) return;
+    if (own >= 1) {
+      // PUBLICA quanto esperou (B-O6R-04a · bateria). Sem este número, "quanto falta para o teto da
+      // barreira estourar" não era observável: o plano teve de LIMITAR a espera pela duração total do
+      // teste (2.265 ms de um teto de 3.000 sob carga) e registrar a margem como PISO, não medida.
+      const waited = Date.now() - startedAt;
+      const margin = waited <= 0 ? `> ${timeoutMs}` : (timeoutMs / waited).toFixed(1);
+      console.log(`[barreira] ${options.label}: bloqueio da própria suíte visto em ${waited} ms (teto ${timeoutMs} ms · margem ${margin}x)`);
+      return;
+    }
     if (Date.now() > deadline) {
       const clusterWide = await countBlockedStatements(client, { fragment: options.fragment });
       assert.fail(
