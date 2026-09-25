@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **413** |
-| IDs distintos | 402 |
-| **ABERTAS** | **303** |
+| Cabecalhos `## P-` | **414** |
+| IDs distintos | 403 |
+| **ABERTAS** | **304** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **234** |
+| — das quais **ativas nesta rodada** | **235** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 110 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **413 cabecalhos para 402 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **414 cabecalhos para 403 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -206,7 +206,7 @@
 | `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` | 9747 | MÉDIA | sim | P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR (2026-09-21) — 33 identidades aposentadas e/ou  |
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 
-## ABERTAS · balde B — processo/registro — 100
+## ABERTAS · balde B — processo/registro — 101
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -310,6 +310,7 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9546 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9692 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
+| `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` | 9773 | BAIXA | **a atribuir** | P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME (2026-09-25) — a checagem de caminho do pré |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
