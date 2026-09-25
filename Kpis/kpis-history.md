@@ -3064,3 +3064,79 @@ rebase. **Não foi intermitência: foi o guard funcionando.** Depois da recontag
 `git diff 02bd7dab 738ff531` × `git diff fc3363e3 HEAD` = 6468 linhas cada, `cmp` idêntico (md5
 `4508831fa7639e220659549e13ddd7cf`); e `git diff 738ff531 HEAD` × `git diff 02bd7dab fc3363e3` = 5671 linhas cada,
 `cmp` idêntico. `merge_commit` / `approved_head` seguem **null** na autoria (§C3.5).
+
+---
+
+## `B-O6R-04a` — BATERIA (2026-09-25, PR #389, entrada nova no mesmo PR)
+
+**O que se conserta aqui é o ARNÊS, não o produto.** A junta do ciclo 2 aprovou o produto com zero bloqueios, e
+`src/**` não foi reaberto. O que ficou de fora era a **bateria não-determinista** do próprio bloco.
+
+**O reenquadramento veio do planejador, e ele mudou o que conta como pronto.** Ele **não conseguiu reproduzir** o
+defeito em quatro formas de carga — e disse isso, em vez de fingir. O que existe não é um defeito denso: é uma
+**margem que fecha**. Daí a consequência que governou este trabalho: a bateria já estava **verde 7 vezes seguidas**
+antes de a primeira linha ser escrita, logo "rodei N vezes e passou" **não prova nada**. O aceite foi
+**estrutural + vermelho-controle determinístico**.
+
+### Os números, todos reexecutados por mim
+
+| métrica | antes | agora | forma |
+|---|---|---|---|
+| `backend_tests` | 3115/3117 | **3123/3125** | `npm test` completo, 292 arquivos, 300 s, ec=0, N=1 |
+| espera fixa nas 37 suítes `-db` (censo AST) | 22 | **4** | 1 nomeada (estímulo do A14) + 3 pré-existentes congeladas |
+| asserção de duração nas suítes `-db` | 3 | **0** | em TODAS as 37, não só nas do bloco |
+| refém dentro da transação do produto | 1.500 ms fixos | **23–45 ms** | margem 1,88x → **106x–217x**, publicada em `[M2]` |
+| teto do programa do guard T-D | 60 s (margem 1,31x sob carga) | **600 s**, rotulado detector de travamento | a duração vira série `[T-D]` |
+| espera real da barreira do C7 | não observável | **99 ms** (margem 151,5x) | fecha `P-MARGEM-BARREIRA-NAO-MEDIDA` |
+
+O `+8` é decomposto por arquivo, não somado de cabeça: `pg-barrier-scoped-db` 2→4 (controles do portão),
+`inventory-write-paths-guard` 11→13 (catraca D10 e D10′), `npm-test-runner-guard` 29→33 (orçamento de paralelismo).
+As 3 suítes `-db` do bloco **mantêm o denominador** (16+22+8=46): a bateria trocou o MECANISMO dos casos, não a
+quantidade. Os 2 `skipped` são os dois conhecidos do orçamento do runner, inalterados.
+
+**Terreno:** cluster Postgres (`dev-b04a-bat-pg`, 127.0.0.1:57621) e Redis (`dev-b04a-bat-redis`, :57622)
+**descartáveis meus**, criados e removidos por mim. A base viva (`erp-postgres`, `erp-redis`) **não recebeu um
+comando**; a porta 5432 é de outro projeto. `DATABASE_URL`/`REDIS_URL` exportadas; node v20.19.5.
+
+### Os 12 drills, executados — e o vermelho-controle dos dois lados
+
+Todos com a mutação **aplicada de verdade** (substituição provada, nunca "âncora que não casou") e a árvore
+revertida limpa depois de cada um: D1 portão, D2 refém solto antes da barreira, D3′ carimbos invertidos, D4
+asserção de ordem, D5 A14, D6 filtro `application_name`, D7/D8 catraca **nos dois sentidos**, D9 suíte `-db` nova,
+D10 asserção de duração, D11 detector de travamento, D12 flag não repassada ao filho.
+
+O **Piso 2** exige os dois lados, e os dois foram executados **sem carga nenhuma**, com o fixture pesado de 40
+unidades: com `sleep(0)` → **VERMELHO** (`timeout esperando statement bloqueado em abc_class … bloqueios no cluster
+inteiro com esse texto: 0`); com o portão → **VERDE, 16/16**.
+
+### Três divergências do plano — medidas, e reportadas em vez de decididas
+
+1. **A premissa do §2.4 é falsa.** O plano mandava trocar o `sleep(5500)` do A14 por `await b`, porque "B liquida
+   sozinho quando o orçamento do produto expira". Implementei exatamente isso e **ficou vermelho**: B ficou
+   **60.042 ms** bloqueado e só liquidou quando o refém morreu na própria janela de 60 s. Causa, nas duas metades
+   verificadas: o produto **não define `lock_timeout`** (`grep -rn lock_timeout src/` = **zero**) e o timeout da
+   transação interativa do Prisma **não interrompe** statement parado em lock no banco. A espera do A14 nunca foi
+   encontro: é **estímulo**. Ficou — agora como `A14_CONTENTION_MS`, medida a partir do instante em que B está
+   provadamente bloqueado, publicada em `[A14]` e **isenta POR NOME** na catraca. Isso confirma o §1.4 do próprio
+   plano ("o A14 é FEIO, não frágil").
+2. **O vermelho-controle da prosa do §4 não reproduz.** Fixture pesado + `sleep(300)` = **16/16 verde**. Razão
+   estrutural: a barreira espera bloqueio com o texto `abc_class`, e B percorre TODOS os itens — aos 300 ms A
+   segura um item de enchimento e B bloqueia NELE, satisfazendo a barreira. O discriminador real não é "X por
+   último": é **B largar antes de A ter travado qualquer coisa**. A forma da TABELA de drills (`sleep(0)`)
+   reproduz, e foi a usada.
+3. **O drill D3 na forma do plano não fica vermelho**: 0 vermelhos em **20 execuções**. Os dois `INSERT` são
+   statements separados, então `now()` já os separa — o `sleep(20)` nunca foi o que garantia a ordem. Substituído
+   pela **inversão dos carimbos**, que é determinística e reprova com o diagnóstico certo.
+
+Cada uma tem pendência própria em `agent-orchestration/controle/pendencias.md`, com o índice **regerado pelo
+gerador**, nunca digitado.
+
+### Regressão
+
+As **6** suítes `-db` que compartilham `tests/helpers/pg-barrier.ts` (as 5 de dinheiro mais o controle do módulo):
+**53/53**, com 9 publicações `[barreira]` novas. `npm run check`, `npm run build`, `npm --prefix frontend run check`,
+`node --check Kpis/app.js` e `git diff --check` verdes.
+
+`blocks_completed` **168 INTOCADO** — é o mesmo bloco, já contado. `flutter_tests` e `frontend_smoke_tests`
+**CARREGADOS com marcador** (§C3.3): a bateria só toca `tests/**` e `scripts/run-backend-tests.mjs`.
+`mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). `merge_commit`/`approved_head` **null na autoria** (§C3.5).

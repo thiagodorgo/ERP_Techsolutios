@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **419** |
-| IDs distintos | 408 |
-| **ABERTAS** | **308** |
+| Cabecalhos `## P-` | **427** |
+| IDs distintos | 416 |
+| **ABERTAS** | **314** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **239** |
+| — das quais **ativas nesta rodada** | **245** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 111 |
+| FECHADAS | 113 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **419 cabecalhos para 408 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **427 cabecalhos para 416 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 139
+## ABERTAS · balde A — material — 143
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -210,8 +210,12 @@
 | `P-O6R-B04-UI-STATUS-FECHANDO` | 9799 | MÉDIA | sim | P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os |
 | `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` | 9808 | MÉDIA | sim | P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N den |
 | `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` | 9827 | MÉDIA | sim | P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz qu |
+| `P-RLS-TX-TIMEOUT-IMPLICITO` | 9874 | ALTA | sim | P-RLS-TX-TIMEOUT-IMPLICITO (2026-09-25) — o orçamento da transação do produto é implícit |
+| `P-RUNNER-SEM-TEST-TIMEOUT` | 9884 | MÉDIA | sim | P-RUNNER-SEM-TEST-TIMEOUT (2026-09-25) — `run-backend-tests.mjs` não passa `--test-timeo |
+| `P-BATERIA-VERMELHO-CONTROLE-DO-PLANO` | 9922 | MÉDIA | sim | P-BATERIA-VERMELHO-CONTROLE-DO-PLANO (2026-09-25) — a forma do vermelho-controle do §4 n |
+| `P-BATERIA-A14-NAO-LIQUIDA-SOZINHO` | 9935 | MÉDIA | sim | P-BATERIA-A14-NAO-LIQUIDA-SOZINHO (2026-09-25) — a premissa do §2.4 do plano é falsa por |
 
-## ABERTAS · balde B — processo/registro — 100
+## ABERTAS · balde B — processo/registro — 102
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -315,6 +319,8 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9546 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9692 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
+| `P-DB-SLEEPS-PRE-EXISTENTES` | 9895 | BAIXA | sim | P-DB-SLEEPS-PRE-EXISTENTES (2026-09-25) — três esperas fixas em suítes `-db` anteriores  |
+| `P-BATERIA-DRILL-D3-NAO-REPRODUZ` | 9945 | BAIXA | sim | P-BATERIA-DRILL-D3-NAO-REPRODUZ (2026-09-25) — o drill D3 na forma do plano não fica ver |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -390,7 +396,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3581 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3625 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 111
+## FECHADAS — 113
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -505,3 +511,5 @@
 | `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` | 9332 | ALTA | sim | P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dis |
 | `P-SAN3-01-OS-VAZIO-SEM-ACAO` | 9537 | BAIXA | sim | P-SAN3-01-OS-VAZIO-SEM-ACAO (2026-09-18) — a lista de OS vazia não oferecia a ação de cr |
 | `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` | 9817 | BAIXA | sim | P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da li |
+| `P-BATERIA-CENSO-DO-BRIEFING` | 9905 | MÉDIA | sim | P-BATERIA-CENSO-DO-BRIEFING (2026-09-25) — o briefing do orquestrador contava 19 esperas |
+| `P-MARGEM-BARREIRA-NAO-MEDIDA` | 9914 | MÉDIA | sim | P-MARGEM-BARREIRA-NAO-MEDIDA (2026-09-25) — FECHADA: a espera da barreira do C7/C8 agora |

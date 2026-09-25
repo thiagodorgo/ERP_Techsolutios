@@ -9870,3 +9870,83 @@ nenhuma suíte sua faz DDL na base compartilhada.
 entraram na lista `SUITES` do `ci.yml` neste PR), o journal em memória da porta (emenda 1-e) e a pendência de
 sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo da
 `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+
+## P-RLS-TX-TIMEOUT-IMPLICITO (2026-09-25) — o orçamento da transação do produto é implícito, e por isso inafirmável por um teste — ALTA
+
+- status: ABERTA (nasce na bateria do `B-O6R-04a`; plano da bateria §7)
+- **prova (medida, não lida):** `src/database/rls.ts:34` abre `client.$transaction(async (tx) => …)` **sem opções**, logo valem os defaults do Prisma — `timeout: 5000 ms`, `maxWait: 2000 ms`. Não existe constante exportada com esses números, e `grep -rn "lock_timeout" src/` devolve **zero**. Consequência medida nesta bancada, no A14: com um escritor cru segurando a linha do item, o cliente bloqueado **NÃO liquidou sozinho** — ficou **60.042 ms** esperando, até a transação do refém morrer na própria janela de 60 s. Duas causas, as duas verificadas: (i) sem `lock_timeout`, o statement espera indefinidamente no Postgres; (ii) o timeout da transação interativa do Prisma **não interrompe** um statement parado em lock dentro do banco — ele só é notado quando o controle volta ao cliente.
+- **por que importa para a bateria:** enquanto o número for implícito, nenhum teste pode LÊ-LO — só reproduzi-lo. É por isso que a única espera fixa que sobrou nas suítes `-db` deste bloco (`A14_CONTENTION_MS`, em `tests/inventory-balance-lock-race-db.test.ts`) não pode virar causal: ela é o ESTÍMULO que faz a contenção durar mais que o orçamento, e é isso que o produto traduz em 503 `stock_busy`. Esperar menos devolveria 201.
+- **escopo:** `pre-existente` — `src/database/rls.ts:34` antecede este bloco, e `src/**` está fora do escopo permitido da bateria. Não reprova o bloco (§C7.1-ter(a)).
+- **dono:** bloco transversal de infraestrutura (mesmo perímetro de `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL`).
+- **bloqueia:** não bloqueia o merge. Bloqueia tornar causal a última espera fixa do bloco.
+- **teste de encerramento:** o orçamento existe como constante exportada em `src/`, um teste o LÊ em vez de reproduzi-lo, e a catraca de higiene do T-D passa a exigir ZERO espera fixa em `tests/inventory-balance-lock-race-db.test.ts`.
+
+## P-RUNNER-SEM-TEST-TIMEOUT (2026-09-25) — `run-backend-tests.mjs` não passa `--test-timeout`: teste travado pendura a bateria para sempre — MEDIA
+
+- status: ABERTA (nasce na bateria do `B-O6R-04a`; plano da bateria §7)
+- **prova:** `scripts/run-backend-tests.mjs` monta a linha do filho com `--test`, `--import tsx` e os dois reporters; **não** há `--test-timeout`. Sem ele, o timeout por teste é infinito: um arquivo que trave não produz vermelho nem diagnóstico — produz uma bateria pendurada. Medido de raspão nesta bancada: com o temporizador do portão de unidade `unref()`, o laço de eventos esvaziou antes do teto e o `node --test` derrubou o arquivo inteiro com `Promise resolution is still pending but the event loop has already resolved`, **cancelando 3 suítes vizinhas** — a falta de teto por teste transforma um defeito local em silêncio ou em vermelho que não nomeia a causa.
+- **por que NÃO entrou neste bloco:** `--test-timeout` é global — atinge os 292 arquivos e converteria qualquer lentidão de CI em vermelho em massa, exatamente a classe de defeito que esta bateria existe para combater. A decisão é de perímetro do runner, não de um bloco de inventário.
+- **efeito colateral já pago:** é por causa desta pendência que o teto do programa do guard T-D **não foi removido**; ele virou DETECTOR DE TRAVAMENTO (`PROGRAM_HANG_TIMEOUT_MS = 600_000`) em vez de orçamento de desempenho, e o portão de unidade ganhou teto próprio com diagnóstico.
+- **escopo:** `pre-existente` (o runner antecede o bloco).
+- **dono:** bloco transversal do runner.
+- **bloqueia:** não bloqueia o merge.
+- **teste de encerramento:** o runner passa um `--test-timeout` decidido com N e forma medidos sobre a suíte real, com caso próprio em `tests/npm-test-runner-guard.test.ts`.
+
+## P-DB-SLEEPS-PRE-EXISTENTES (2026-09-25) — três esperas fixas em suítes `-db` anteriores ao bloco — BAIXA
+
+- status: ABERTA (nasce na bateria do `B-O6R-04a`; plano da bateria §7)
+- **prova (censo por AST, reexecutado):** `tests/auth-login-candidates-fn-db.test.ts` (`setTimeout(_, 50)`), `tests/checklist-run-create-concurrency-db.test.ts` (`setTimeout(_, 400)`) e `tests/pg-barrier-scoped-db.test.ts` (`setTimeout(_, 25)`, passo de polling do controle negativo do decoy). São as 3 esperas que restam em suítes `-db` fora do bloco, num universo de 37 arquivos.
+- **tratamento:** **CONGELADAS**, não consertadas. Estão declaradas uma a uma, com o motivo, no livro-razão `FIXED_WAIT_LEDGER` de `tests/inventory-write-paths-guard.test.ts` (guard D10), e a catraca é uma IGUALDADE: mexer numa delas sem atualizar o livro-razão reprova, nos dois sentidos (drills D7 e D8, executados).
+- **escopo:** `pre-existente`, com data — as três suítes antecedem a bateria.
+- **dono:** o bloco que tocar cada suíte.
+- **bloqueia:** nada.
+- **teste de encerramento:** cada uma vira encontro causal e sai do livro-razão; a catraca acusa a remoção se o mapa não for atualizado junto.
+
+## P-BATERIA-CENSO-DO-BRIEFING (2026-09-25) — o briefing do orquestrador contava 19 esperas em 2 arquivos; o censo acha 22 em 3 — MEDIA
+
+- status: FECHADA na autoria (o censo correto foi usado; o registro fica para não se perder a causa)
+- **prova:** censo por AST no head `bc3e736b`, reexecutado por mim e independente do censo do planejador: **22 esperas fixas em 3 arquivos** — 12 em `inventory-cycle-count-close-units-db`, 7 em `inventory-balance-lock-race-db` e **3 em `inventory-unique-backstops-db`**, que o briefing não listava. Mais **2 orçamentos de barreira** de 3 s (`blockedWithin`) no terceiro arquivo, também ausentes da tabela do briefing — e um deles era apontado como o 2º mecanismo mais apertado do bloco.
+- **desfecho:** o escopo executado foi o do plano (22 em 3), não o do briefing. As 3 esperas do terceiro arquivo foram removidas (P7) e os 2 orçamentos de barreira trocados pela barreira escopada do módulo.
+- **escopo:** `dentro-do-bloco` (é o escopo do próprio trabalho).
+- **dono:** orquestrador da junta (fica sabendo que o briefing subcontava).
+- **bloqueia:** nada.
+
+## P-MARGEM-BARREIRA-NAO-MEDIDA (2026-09-25) — FECHADA: a espera da barreira do C7/C8 agora é publicada, e o número desmente a estimativa — MEDIA
+
+- status: FECHADA na autoria pela bateria do `B-O6R-04a` (nasceu e fechou no mesmo trabalho); backfill pós-merge.
+- **prova:** `waitForOwnBlockedStatement` (`tests/helpers/pg-barrier.ts`) passou a PUBLICAR quanto esperou até ver o bloqueio da própria suíte. Medido: `[barreira] C7: bloqueio da própria suíte visto em 99 ms (teto 15000 ms · margem 151.5x)` e `[barreira] C8: … 42 ms … margem 357.1x`.
+- **o que o número corrige:** o plano da bateria classificou este mecanismo (M4) como o **2º mais fino do bloco**, com margem `>= 1,3x`, e disse explicitamente que era um PISO e não uma medida — a espera real não era observável, então foi limitada pela duração TOTAL do caso (2.265 ms de um teto de 3.000 sob carga). Com a espera medida, a margem contra o teto ANTIGO de 3 s era de **~30x**, não 1,3x: o M4 nunca foi o 2º mecanismo mais apertado. A estimativa era pessimista por construção, porque media o caso inteiro em vez da espera.
+- **escopo:** `dentro-do-bloco`.
+- **dono:** este bloco (fechada por ele).
+
+## P-BATERIA-VERMELHO-CONTROLE-DO-PLANO (2026-09-25) — a forma do vermelho-controle do §4 não reproduz; a do §4-D1 reproduz — MEDIA
+
+- status: ABERTA (divergência REPORTADA, não decidida por mim — §C7.4-bis)
+- **prova (as duas formas executadas, sem carga, com o fixture pesado do §4 — 40 unidades, X por último):**
+  - **`sleep(300)` (a forma da prosa do §4): VERDE, 16/16.** Não reproduz.
+  - **`sleep(0)` (a forma da tabela de drills, D1): VERMELHO determinístico** — `timeout esperando statement bloqueado em abc_class … (bloqueios no cluster inteiro com esse texto: 0)`.
+  - **portão, mesmo fixture pesado: VERDE, 16/16** — o outro lado exigido pelo Piso 2.
+- **por que a prosa do §4 não reproduz (causa estrutural, não acaso):** a barreira do A12 abc espera por um bloqueio com o texto `abc_class`, e B (`recalculateAbc`) percorre TODOS os itens do tenant. Com 39 itens de enchimento, aos 300 ms A está segurando um item de enchimento qualquer — e B bloqueia NESSE item, satisfazendo a barreira. O discriminador real não é "X por último": é **B largar antes de A ter travado QUALQUER coisa**, que é o que `sleep(0)` produz. "X por último" atrasa a chegada a X, mas não atrasa a chegada ao primeiro lock.
+- **consequência para o aceite:** o Piso 2 do plano (vermelho-controle determinístico, os dois lados executados) está **cumprido** — pela forma D1, com evidência colada. O que não se sustenta é a explicação da prosa.
+- **escopo:** `dentro-do-bloco`.
+- **dono:** orquestrador da junta (decide se emenda o §4 do plano).
+- **bloqueia:** nada.
+
+## P-BATERIA-A14-NAO-LIQUIDA-SOZINHO (2026-09-25) — a premissa do §2.4 do plano é falsa por execução — MEDIA
+
+- status: ABERTA (divergência REPORTADA, não decidida por mim — §C7.4-bis)
+- **prova:** o plano (§2.4) mandava trocar o `sleep(5500)` do A14 por `await b`, pela premissa de que "B liquida sozinho quando o orçamento do produto expira". Implementei exatamente isso e **o caso ficou VERMELHO**: `o refém não sobreviveu à espera de B (60042 ms)`. B ficou bloqueado 60.042 ms e só liquidou quando a transação do refém morreu na própria janela de 60 s — ver `P-RLS-TX-TIMEOUT-IMPLICITO` para as duas causas medidas.
+- **o que foi entregue no lugar:** a espera FICA, mas deixa de ser mágica — vira `A14_CONTENTION_MS`, medida a partir do instante em que B está PROVADAMENTE bloqueado, publicada em `[A14]`, e ISENTA POR NOME no livro-razão da catraca (um `sleep(300)` anônimo de volta naquela suíte reprova mesmo mantendo a contagem). Isto **confirma** o §1.4 do próprio plano, que já dizia que o A14 é "FEIO, não frágil": a margem é para cima (carga só faz esperar mais) e há 10x de folga contra a janela de 60 s do refém.
+- **ganho real do caso:** o A14 passou a ter uma asserção de ordem que PODE falhar — `holder.done` fulfilled prova que B liquidou DENTRO da janela do refém. Foi exatamente ela que pegou a premissa falsa.
+- **escopo:** `dentro-do-bloco`.
+- **dono:** orquestrador da junta (decide se emenda o §2.4 do plano).
+- **bloqueia:** nada.
+
+## P-BATERIA-DRILL-D3-NAO-REPRODUZ (2026-09-25) — o drill D3 na forma do plano não fica vermelho em 20 execuções — BAIXA
+
+- status: ABERTA (divergência REPORTADA — §C7.4-bis)
+- **prova:** o D3 do plano manda "remover o `createdAt` do fixture do B8 e rodar 20x: a ordem de `listItems` deixa de ser garantida". Executado: **0 vermelhos em 20 execuções**. Os dois `INSERT` são statements separados, logo `now()` (timestamptz de microssegundos) já os separa — o `sleep(20)` nunca foi o que garantia a ordem.
+- **o que foi executado no lugar, e é determinístico:** INVERTER os carimbos explícitos (X passa a ser o mais novo). Resultado: **VERMELHO**, com o diagnóstico certo — `B8(i) open: o controle v1 tinha de reproduzir o impasse — ok, ok`. Isso prova a propriedade que importa: a ordem de `listItems` é load-bearing para o caso, e agora é DADO DO FIXTURE, controlado, em vez de efeito colateral do relógio.
+- **escopo:** `dentro-do-bloco`.
+- **dono:** orquestrador da junta.
+- **bloqueia:** nada.
