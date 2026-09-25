@@ -3033,3 +3033,42 @@ O guard sobre a AST encarece a suíte e **alarga a janela** da corrida — não 
 **Divergência declarada:** `docs/revisoes/SAN3/PLANO_SAN3.md` **não foi tocado** (fonte de verdade fora do escopo do
 bloco). As 4 ampliações de fronteira que o plano do ciclo 2 propunha vão ao orquestrador como divergência, e os donos
 das pendências foram escritos contra o §5 **como ele está hoje**.
+
+## 2026-09-25 — B-O6R-11 (REBASE sobre a `main` nova, PR #388 na autoria) — os números reconciliados com `fc3363e3`
+
+**Por que esta entrada existe.** O PR #388 estava **CONFLITANTE** com a `main` e com **ZERO check-run** no head
+`43557a17` — e o §C7.1-bis obriga o inspetor de terreno a devolver BLOQUEADO enquanto for assim, o que impedia a junta
+do bloco de começar. O gatilho `push` que o #391 criou **não dispara sozinho** num SHA que já estava no `origin` antes
+de o gatilho existir: é o **head novo** do rebase que faz o CI existir. Rebase **estritamente mecânico**: produto e
+teste **não foram tocados**.
+
+**Prova de que o produto não mudou** (duas formas independentes): a árvore de `mobile/` é a MESMA antes e depois
+(`5a4b79e8bef13aa5c16ca9bc9f28b872e4551861`), e os patches `git diff <base> <head> -- mobile/` de antes e depois são
+**byte a byte iguais** (`cmp` sem diferença, md5 `34d169c4a4a1c36356bc441ff8f45abb`). Isso vale porque a `main` **não
+tocou** `mobile/`: a árvore de `mobile/` em `02bd7dab` e em `fc3363e3` é a mesma (`3a2ac028`).
+
+**Números reconciliados (§C3.3), medidos, nunca somados:**
+- `blocks_completed` **167 → 168**, a partir da `main` `fc3363e3` (antes era 164, degrau contado da base antiga
+  `02bd7dab`; a própria nota daquele degrau previa que "quem mergear depois rebaseia e reconcilia").
+- `backend_tests` **3052/3054** e `frontend_smoke_tests` **1202/1202**: **CARREGADOS** da `main`, e isso foi MEDIDO
+  por hash de árvore, não afirmado — `src` (`21e1c4f2`), `tests` (`2854a3ec`), `prisma` (`e906ac2e`) e `frontend`
+  (`0742d122`) são IDÊNTICAS entre `fc3363e3` e o head do rebase; só `mobile` difere. Os valores anteriores
+  (`2995/2997` e `1126`) estavam defasados por serem os últimos oficiais da base antiga.
+- `flutter_tests` **893/894**, medido por mim no head do rebase, **N = 3 execuções da suíte inteira**:
+  `01:03 +893 -1`, `01:05 +893 -1`, `01:13 +893 -1`, `ec=1` nas três, Flutter 3.41.6 / Dart 3.11.4.
+  `dart format` → `196 files (0 changed)`; `flutter analyze` → `No issues found!`.
+- `mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). `merge_commit`/`approved_head` **`null` na autoria** (§C3.5).
+
+**O `-1`, publicado e não escondido.** É sempre o MESMO teste e é **pré-existente, fora do diff do bloco**:
+`test/features/telemetry/telemetry_test.dart` — *"16. foreground-only: stop interrompe a captura (sem background)"*.
+Último commit do arquivo: `2c916222`, **2026-07-24** (PR #274), dois meses antes deste bloco; e
+`git diff --name-only fc3363e3 HEAD -- mobile/flutter_app/test/features/telemetry/` sai **vazio**. **Isolado ele
+passa**: `+25`, `ec=0`, em N=3. A asserção é temporal (`expect(afterBackground, afterStop)` após
+`Future.delayed(120ms)`, l.348) — a forma que cai sob carga de CPU. Já estava aberta como
+`P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK`.
+
+**Divergência declarada quanto ao número publicado:** o valor tido por oficial é **894/894**, medido por instância
+anterior em máquina ociosa. **Eu não o reproduzi em 3 tentativas** e publiquei **o que medi (893/894)**, porque o
+§C3.3 proíbe copiar contagem do bloco anterior. O denominador **894 é constante** nas três execuções (sem variação de
+denominador). Se o orquestrador preferir a convenção da entrada do ciclo 2 (publicar o verde e declarar as vermelhas
+na nota), é troca de uma linha — mas ela seria uma asserção que **esta** execução não sustenta.
