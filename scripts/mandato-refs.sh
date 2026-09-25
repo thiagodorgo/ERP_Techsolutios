@@ -80,8 +80,8 @@ if [ -n "$OBJ_FULL" ]; then
   echo "                 ^ LIDO DA ATA: $ATA"
 else
   echo "approved_head:   <NAO ENCONTRADO NA ATA>"
-  echo "                 ^ nenhuma ata em agent-orchestration/omega/juntas/ cita o ramo '$RAMO'"
-  echo "                   com linha '- **Objeto julgado:**' ou '- **Objeto:**'."
+  echo "                 ^ nenhuma ata tem '#$PR' nem o ramo '$RAMO' no TITULO ou na linha"
+  echo "                   '- **Objeto julgado:**' / '- **Objeto:**'. Mencao no corpo NAO conta."
   echo "                   NAO invente: se a junta ainda nao votou, nao ha approved_head."
 fi
 echo

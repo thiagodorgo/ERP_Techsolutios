@@ -43,7 +43,7 @@ sem_h=$(awk '/^## +HIPOTESE/{s=1;next} /^## /{s=0} s && /^[-*] /{ if ($0 !~ /der
 # 4) todo SHA citado tem de vir de mandato-refs.sh — resolver NAO basta (o a62d04e2 resolvia)
 # So conta hex entre crases ou isolado por espaco. Fragmento DENTRO de caminho nao e SHA:
 # o diretorio do scratchpad tem '3ad1b87d' e '1068e01c5d64' no nome, e a 1a versao os acusou.
-SHAS=$(grep -oE '(`|[[:space:]])[0-9a-f]{7,40}(`|[[:space:]]|$)' "$F" | tr -d '`' | tr -d '[:space:]' | sort -u)
+SHAS=$(grep -oE '(`|[[:space:]])[0-9a-f]{7,40}(`|[[:space:]]|$)' "$F" | sed 's/[^0-9a-f]//g' | sort -u)
 if [ -n "$SHAS" ]; then
   if [ -n "$PR" ]; then
     LEG=$(bash "$RAIZ/scripts/mandato-refs.sh" "$PR" --sha-only 2>/dev/null)
