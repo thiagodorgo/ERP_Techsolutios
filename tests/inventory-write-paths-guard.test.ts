@@ -1272,3 +1272,205 @@ test("D9 — nenhuma suíte -db do bloco faz DDL fora do drill em base própria"
     assert.equal(/DROP\s+INDEX|CREATE\s+(UNIQUE\s+)?INDEX|ALTER\s+TABLE/i.test(text), false, `${suite} faz DDL na base compartilhada`);
   }
 });
+
+// ------------------------------------------------------------------ D10: catraca de higiene da bateria
+//
+// B-O6R-04a · bateria — ESPERA FIXA E ASSERÇÃO DE DURAÇÃO NAS SUÍTES `-db`.
+//
+// O que esta catraca impede de voltar: as suítes `-db` deste bloco se encontravam POR RELÓGIO —
+// lançavam A, dormiam um tempo fixo torcendo para que A já tivesse chegado ao lock, e afirmavam
+// propriedades comparando relógio de parede com constante. Nenhuma das duas formas mede o produto:
+// medem a VIZINHANÇA. Um vermelho delas diz que a máquina estava ocupada.
+//
+// A propriedade é GERADA DO CÓDIGO pela AST (mesma disciplina dos guards acima: a identidade nunca
+// vem da grafia), e é uma IGUALDADE, não um teto:
+//
+//   · subir reprova — espera fixa nova em qualquer suíte `-db`;
+//   · DESCER sem atualizar o livro-razão também reprova — senão o mapa vira documentação morta;
+//   · a comparação é por FORMA, não por contagem: trocar a espera declarada por outra, do mesmo
+//     tamanho, reprova;
+//   · suíte `-db` NOVA nasce com orçamento ZERO (não está no livro-razão ⇒ tem de ter nenhuma).
+//
+// As isenções são NOMEADAS, uma a uma, com o motivo. Isenção anônima seria o mesmo buraco com outra
+// roupa — é a lição que o próprio runner já escreveu sobre o orçamento de skip.
+
+type FixedWait = { readonly line: number; readonly form: string };
+
+/**
+ * Censo de espera fixa e de asserção de duração num arquivo de teste, pela AST.
+ *
+ * `setImmediate` e `setTimeout(_, 0)` NÃO contam: são um CEDER do laço de eventos, sem duração — é
+ * por isso que o controle permanente do portão de unidade prova ordem sem entrar neste censo. E a
+ * DEFINIÇÃO do auxiliar (`const sleep = (ms) => new Promise((r) => setTimeout(r, ms))`) não é uma
+ * espera: as CHAMADAS dele é que são. Sem essa exclusão o censo acusaria o próprio auxiliar e todo
+ * arquivo ficaria com um +1 permanente, que é ruído, não propriedade.
+ */
+function fixedWaitsIn(relative: string): { readonly waits: readonly FixedWait[]; readonly clockAsserts: readonly string[] } {
+  const text = read(relative);
+  const sourceFile = ts.createSourceFile(relative, text, ts.ScriptTarget.Latest, true);
+
+  const helperRanges: Array<readonly [number, number]> = [];
+  const markHelpers = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "sleep") {
+      helperRanges.push([node.getStart(sourceFile), node.getEnd()] as const);
+    }
+    ts.forEachChild(node, markHelpers);
+  };
+  markHelpers(sourceFile);
+  const insideHelperDefinition = (position: number): boolean => helperRanges.some(([from, to]) => position >= from && position <= to);
+
+  const waits: FixedWait[] = [];
+  const clockAsserts: string[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+
+      // (a) toda chamada do auxiliar `sleep`, com QUALQUER argumento. Contar só literais numéricos
+      //     deixaria `sleep(UMA_CONSTANTE)` passar — a mesma espera com outra roupa.
+      if (node.expression.text === "sleep" && node.arguments.length === 1) {
+        waits.push({ line, form: `sleep(${node.arguments[0]!.getText(sourceFile)})` });
+      }
+
+      // (b) `setTimeout(_, atraso)` com atraso que não seja o literal 0.
+      if (
+        node.expression.text === "setTimeout" &&
+        node.arguments.length >= 2 &&
+        !(ts.isNumericLiteral(node.arguments[1]!) && Number(node.arguments[1]!.text) === 0) &&
+        !insideHelperDefinition(node.getStart(sourceFile))
+      ) {
+        waits.push({ line, form: `setTimeout(_, ${node.arguments[1]!.getText(sourceFile)})` });
+      }
+    }
+
+    // (c) asserção de DURAÇÃO: `assert.*` comparando uma expressão com um literal em escala de
+    //     relógio (>= 1000 ms). É a forma que afirma "foi rápido" e reprova quando o vizinho
+    //     consome CPU. A propriedade que ela queria afirmar é sempre afirmável pelo DESFECHO.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === "assert"
+    ) {
+      const comparisons = [
+        ts.SyntaxKind.LessThanToken,
+        ts.SyntaxKind.LessThanEqualsToken,
+        ts.SyntaxKind.GreaterThanToken,
+        ts.SyntaxKind.GreaterThanEqualsToken,
+      ];
+      for (const argument of node.arguments) {
+        if (!ts.isBinaryExpression(argument) || !comparisons.includes(argument.operatorToken.kind)) continue;
+        const literal = ts.isNumericLiteral(argument.right)
+          ? argument.right
+          : ts.isNumericLiteral(argument.left)
+            ? argument.left
+            : undefined;
+        if (literal && Number(literal.text) >= 1000) {
+          clockAsserts.push(`${relative}:${sourceFile.getLineAndCharacterOfPosition(argument.getStart(sourceFile)).line + 1} ${argument.getText(sourceFile)}`);
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return { waits, clockAsserts };
+}
+
+/** As três suítes `-db` de base compartilhada do bloco — as que a bateria reescreveu. */
+const BLOCK_DB_SUITES = [
+  "inventory-balance-lock-race-db.test.ts",
+  "inventory-cycle-count-close-units-db.test.ts",
+  "inventory-unique-backstops-db.test.ts",
+] as const;
+
+/**
+ * LIVRO-RAZÃO das esperas fixas que sobrevivem em suíte `-db`, uma a uma, com o motivo. Suíte que
+ * não aparece aqui tem orçamento ZERO.
+ */
+const FIXED_WAIT_LEDGER: ReadonlyArray<{ readonly file: string; readonly forms: readonly string[]; readonly why: string }> = [
+  {
+    file: "inventory-cycle-count-close-units-db.test.ts",
+    forms: [],
+    why: "zero — todos os encontros passaram ao portão de unidade (chegada sinalizada, refém solto pelo teste).",
+  },
+  {
+    file: "inventory-unique-backstops-db.test.ts",
+    forms: [],
+    why: "zero — a segunda barreira (`blockedWithin`, teto de 3 s) saiu inteira, e com ela o passo de polling.",
+  },
+  {
+    file: "inventory-balance-lock-race-db.test.ts",
+    forms: ["sleep(A14_CONTENTION_MS)"],
+    why:
+      "ESTÍMULO do A14, não encontro — e a isenção é POR NOME: a forma declarada é a constante, logo " +
+      "um `sleep(300)` anônimo de volta nesta suíte reprova mesmo mantendo a contagem. Medido: com o " +
+      "refém segurando, B NÃO liquida sozinho — ficou 60.042 ms bloqueado, até o refém morrer na " +
+      "própria janela de 60 s — porque o produto não define `lock_timeout` e o timeout da transação " +
+      "interativa do Prisma não interrompe statement parado em lock no banco. O 503 só existe se a " +
+      "contenção durar MAIS que o orçamento: a duração é a variável independente do caso.",
+  },
+  {
+    file: "auth-login-candidates-fn-db.test.ts",
+    forms: ["setTimeout(_, 50)"],
+    why: "PRÉ-EXISTENTE, anterior a este bloco: CONGELADO aqui, não consertado (pendência P-DB-SLEEPS-PRE-EXISTENTES).",
+  },
+  {
+    file: "checklist-run-create-concurrency-db.test.ts",
+    forms: ["setTimeout(_, 400)"],
+    why: "PRÉ-EXISTENTE, anterior a este bloco: congelado, idem.",
+  },
+  {
+    file: "pg-barrier-scoped-db.test.ts",
+    forms: ["setTimeout(_, 25)"],
+    why:
+      "PASSO DE POLLING do controle negativo do decoy (o mesmo papel do POLL_INTERVAL_MS da barreira) " +
+      "e PRÉ-EXISTENTE: congelado, idem.",
+  },
+];
+
+test("D10 — catraca de higiene: espera fixa em suíte -db só existe onde o livro-razão DECLARA, e por forma", () => {
+  const suites = readdirSync(path.join(ROOT, "tests"))
+    .filter((name) => /-db\.test\.ts$/.test(name))
+    .sort();
+  assert.ok(suites.length >= 30, `o censo tem de enxergar as suítes -db do repositório (viu ${suites.length})`);
+
+  // As três do bloco têm de existir com o nome que o livro-razão usa: renomear uma não pode
+  // esvaziar a catraca em silêncio.
+  assert.deepEqual(BLOCK_DB_SUITES.filter((file) => !suites.includes(file)), [], "suíte -db do bloco sumiu ou foi renomeada");
+  const declared = new Map(FIXED_WAIT_LEDGER.map((entry) => [entry.file, entry.forms] as const));
+  assert.deepEqual([...declared.keys()].filter((file) => !suites.includes(file)), [], "o livro-razão declara suíte -db que não existe mais");
+
+  const observed: string[] = [];
+  const expected: string[] = [];
+  let total = 0;
+  for (const suite of suites) {
+    const forms = fixedWaitsIn(`tests/${suite}`).waits.map((wait) => wait.form).sort();
+    total += forms.length;
+    observed.push(`${suite}: ${forms.join(" · ") || "—"}`);
+    expected.push(`${suite}: ${[...(declared.get(suite) ?? [])].sort().join(" · ") || "—"}`);
+  }
+  console.log(`[D10] espera fixa nas suítes -db (${total} em ${suites.length} arquivos):\n  ${observed.filter((line) => !line.endsWith("—")).join("\n  ")}`);
+
+  // IGUALDADE NOS DOIS SENTIDOS: subir reprova (espera nova, inclusive em arquivo `-db` novo, que
+  // nasce com orçamento zero); descer sem atualizar o livro-razão reprova também.
+  assert.deepEqual(observed, expected, "espera fixa em suíte -db diverge do livro-razão declarado");
+});
+
+test("D10′ — nenhuma asserção de DURAÇÃO nas suítes -db do bloco", () => {
+  const everywhere = readdirSync(path.join(ROOT, "tests"))
+    .filter((name) => /-db\.test\.ts$/.test(name))
+    .flatMap((name) => [...fixedWaitsIn(`tests/${name}`).clockAsserts]);
+  const inBlock = BLOCK_DB_SUITES.flatMap((suite) => [...fixedWaitsIn(`tests/${suite}`).clockAsserts]);
+
+  // O número do repositório inteiro é PUBLICADO, não afirmado: informação para quem vier, sem impor
+  // catraca nova sobre bloco alheio (`escopo = pre-existente`).
+  console.log(`[D10′] asserções de duração — suítes do bloco: ${inBlock.length}; todas as suítes -db: ${everywhere.length}`);
+
+  assert.deepEqual(
+    inBlock,
+    [],
+    "asserção de duração compara relógio de parede com constante: reprova por vizinhança, não por defeito do produto. " +
+      "A propriedade que ela quer afirmar é sempre afirmável pelo DESFECHO (o 503 que o produto devolveria).",
+  );
+});
