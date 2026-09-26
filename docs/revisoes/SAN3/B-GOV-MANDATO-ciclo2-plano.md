@@ -157,7 +157,7 @@ não doze.
 |---|---|---|
 | H1 *o teste exercita o artefato real; o padrão já existe na main* | **CONFIRMADA, com uma correção** | `npm-test-runner-guard` e `agents-mirror-guard` usam `spawnSync(process.execPath, …)` sobre o script REAL em `mkdtemp`; `o6r06-billing-census` usa `execFileSync`. **Nenhum** deles cria repositório git em tmpdir nem shima `gh` — o arnês de §2.E1 é **novo** nesses dois pontos. Protótipo executado (§0.6): funciona no Windows |
 | H2 *cada checagem enuncia a PROPRIEDADE; mata C1-01, acento, `.sh`, vizinhanças e basename de uma vez* | **CONFIRMADA** | protótipos §0.6: uma regra de unidade reprova 8/8 formas erradas e aceita o correto; uma tokenização pega as 11 vizinhanças sem falso positivo no caminho do scratchpad nem no UUID; uma checagem de existência exata fecha extensão + basename |
-| H3 *`approved_head` fail-closed: lê, ou declara que não consegue* | **REFINADA — dois estados não bastam** | com dois estados, "ausente" continua mentindo para 102/107 atas e para a ata **deste** PR (§0.3). Precisa de **três**: LIDO / AUSENTE (nenhuma ata nomeia nem menciona o PR) / **NÃO DETERMINÁVEL** (ambíguo, ata sem Objeto, menção só no corpo, ata só no ramo) — com código de saída próprio |
+| H3 *`approved_head` fail-closed: lê, ou declara que não consegue* | **REFINADA — dois estados não bastam** | com dois estados, "ausente" continua mentindo para 102/107 atas e para a ata **deste** PR (§0.3). Precisa de **três**: LIDO / AUSENTE (nenhuma ata nomeia nem menciona o PR) / **NÃO DETERMINÁVEL** (ambíguo, ata sem Objeto, menção só no corpo, ata só no ramo) — com código de saída próprio; e LIDO exige a linha explícita `approved_head` (adendo A1) |
 | H4 *dependências declaradas e código de saída honesto* | **CONFIRMADA, e mais barata que parecia** | `gh --jq` embutido substitui o `python` inteiro: `gh pr view 393 --json … --jq '[…]\|@tsv'` devolveu 7 campos, ec=0 (gh 2.89.0). Zero dependência nova |
 | H-secundária *fazer as 107 atas conformarem é OUTRO bloco* | **CONFIRMADA e endurecida** | a ata mais nova (a deste bloco, no ramo) também não é legível pela ferramenta; o template não rastreado de outra sessão não tem linha de Objeto. O ritual é o dono — §3, bloco `B-GOV-ATA-CABECALHO` |
 | *"quatro mudanças estruturais, não doze remendos"* | **CONFIRMADA; acrescento uma quinta** | E3.c: fonte das atas = `origin/$BASE` **∪ head do PR**. Sem ela a ferramenta afirma "a junta não votou" sobre o PR para o qual foi construída (§0.3) |
@@ -283,12 +283,15 @@ derruba **todos** os casos; reescrever só comentários não derruba **nenhum**.
 
 **Fixtures (mínimo):** `ATA_390` e `ATA_392` **verbatim do ciclo 1** (as duas regressões reais); `ATA_MULTI` (duas
 linhas de Objeto, SHAs distintos — o caso `J-B-SAN3-01`); `ATA_SEM_OBJETO` (título com `(PR #N)`, sem linha de
-Objeto — a classe das 102); `ATA_MENCAO` (menciona `#N` só no corpo). Os SHAs das fixtures são **commits reais do
+Objeto — a classe das 102); `ATA_MENCAO` (menciona `#N` só no corpo); `ATA_REPROVADA_UNICA`, `ATA_APROVADA` (com a linha
+`- **approved_head:**`) e `ATA_CONTRADITORIA` (adendo A1). Os SHAs das fixtures são **commits reais do
 repo tmp** (o `rev-parse` expande de verdade).
 
 **Critérios de aceite:**
-- **[A1]** 390 → `fbda96b0…` expandido, `LIDO DA ATA: …J-B-SAN3-04a.md`; 392 → `7822deaf…`, `…J-B-SAN3-00.md`; ec=0.
-  **⇄ mutação:** trocar o discriminador do `.sh` para "documento inteiro" (l.53 → `grep` sobre `$C`) → 390 devolve a
+- **[A1]** 390 → objeto declarado `fbda96b0…` (expandido) **de `J-B-SAN3-04a.md`**, estado NÃO DETERMINÁVEL (sem linha
+  `approved_head` — adendo A1), ec=3; 392 → `7822deaf…` **de `J-B-SAN3-00.md`**, idem; `ATA_APROVADA` (com a linha) →
+  **LIDO**, ec=0. O que se assere é **de qual ata e de qual linha** veio o objeto — o discriminador.
+  **⇄ mutação:** trocar o discriminador do `.sh` para "documento inteiro" (l.53 → `grep` sobre `$C`) → 390 lista o objeto da
   ata do 392 → A1 vermelho. (No ciclo 1 essa mutação deixou 6/6 verde — é o vermelho-controle da C2, agora no teste.)
 - **[A2]** script renomeado/apagado → **0 casos passam** (`status` ≠ 0 e stdout vazio em todos). **⇄ mutação:** é a
   própria medição; no ciclo 1 deu 4/6 verdes.
@@ -298,9 +301,9 @@ repo tmp** (o `rev-parse` expande de verdade).
   a validação de `$RAMO` (E3) → o #393-fixture recebe SHA de outra ata → A4 vermelho (é C2-02 reproduzido no arnês).
 - **[A5]** `gh` que sai 1 → ec=1, `--sha-only` com **0 linhas e ec=1**. **⇄ mutação:** `2>/dev/null || true` no lugar
   do `PARADO` → ec=0 → vermelho.
-- **[A6]** os casos de E3 (multi, sem-objeto, menção, ata só no head do PR, flag inválida, paridade `--sha-only`) —
+- **[A6]** os casos de E3 (multi, sem-objeto, menção, reprovada-única, aprovada, contraditória, ata só no head do PR, flag inválida, paridade `--sha-only`) —
   listados lá, exercitados **aqui**, no mesmo arnês.
-- **Contagem:** ≥ 10 casos, todos por `spawnSync` do artefato.
+- **Contagem:** ≥ 12 casos, todos por `spawnSync` do artefato.
 
 **Drill e fronteira:** o drill (A1–A5) corre **deste lado** da fronteira: o `gh` é shimado com a forma real datada. **Não
 atravessa:** a API do GitHub e o binário `gh` reais. Medição deste lado: A1–A5. Do outro lado, a execução **viva**
@@ -354,16 +357,28 @@ l.67 (o absoluto é excluído na tokenização — a linha inalcançável deixa 
 - **[B7]** `scripts/zzz-inexistente.sh` entre crases e **sem** crases → rejeitado nas duas; `tests/x.test.ts (novo)` →
   aceito; `docs/revisoes/SAN3/` → aceito; `src/**` → ignorado. **⇄ mutação:** voltar à lista de extensões → `.sh` passa → vermelho.
 
+**Checagem 7 — rótulo `approved_head` no mandato só com LIDO (adendo A1, o consumidor da E3).** Se o mandato contém o
+token `approved_head` seguido, **na mesma unidade**, de um SHA, o pré-voo roda o refs em **modo completo** e exige estado
+LIDO **com esse mesmo SHA**; estado ≠ LIDO, ou SHA ≠ → `REJEITADO: o mandato rotula <sha> como approved_head, mas a
+ferramenta diz <estado>`. Sem SHA após o rótulo, nada a conferir. Sem esta checagem, a checagem 4 aceitaria o objeto
+reprovado (que **está** na proveniência, E3.g) rotulado como aprovado — a classe, uma camada acima.
+- **[B8]** `approved_head: 7462b75b` sob `MANDATO_REFS` em estado NÃO DETERMINÁVEL → rejeita; sob LIDO com o mesmo SHA →
+  aceita; sob LIDO com outro SHA → rejeita. **⇄ mutação:** remover a checagem → o objeto reprovado passa rotulado → vermelho.
+  (O shim `MANDATO_REFS` responde aos **dois** modos: `--sha-only` e completo.)
+
 **Drill e fronteira (E2):** os drills B1–B7 correm sobre **fixtures no tmpdir** com `MANDATO_REFS` shimado — **não
 atravessam** o `mandato-refs.sh` real (é E3/E4) nem a rede. As 8 formas e as 11 vizinhanças são **amostras** da
 propriedade, não a propriedade: a regra não as enumera. Do outro lado ficam, com dono `B-GOV-MANDATO-2` (§3): SHA dentro
 de URL (token com `/` → não é SHA), `Select-String`/`findstr`, nomes de arquivo sem `/`.
 
-### E3 — `scripts/mandato-refs.sh`: `approved_head` em TRÊS estados — lê, declara ausente, ou declara que NÃO consegue (fecha C2-02, C2-04, e a lacuna §0.3)
+### E3 — `scripts/mandato-refs.sh`: `approved_head` em TRÊS estados — lê, declara ausente, ou declara que NÃO consegue (fecha C2-02, C2-04, a lacuna §0.3 e a lacuna A1 do adendo)
 
-**Propriedade:** *o valor impresso como `approved_head` foi LIDO de uma linha de uma ata que se declara sobre este PR;
-"não há" só é afirmado quando nenhuma ata nomeia nem menciona o PR; toda outra situação é declarada NÃO DETERMINÁVEL,
-com a lista do que foi visto.* Nada é escolhido em silêncio.
+**Propriedade:** *o valor impresso como `approved_head` foi LIDO de uma linha em que a JUNTA declara o head que
+APROVOU, numa ata que se declara sobre este PR; "não há" só é afirmado quando nenhuma ata nomeia nem menciona o PR;
+toda outra situação — inclusive "a ata declara um objeto mas não declara aprovação" — é NÃO DETERMINÁVEL, com a lista
+do que foi visto.* Nada é escolhido em silêncio. **Objeto julgado ≠ objeto aprovado** (adendo A1): uma ata REPROVADA
+tem `Objeto julgado` e **não** tem `approved_head` — a versão `ca5e1071` deste plano imprimiria o objeto dela como
+aprovado, respondendo "que objeto esta ata nomeia?" em vez de "que objeto a junta aprovou?".
 
 **Contrato:**
 - **a) Insumos validados ANTES do laço** (mata C2-02 na raiz): `PR` numérico; `HEAD_PR` casa `^[0-9a-f]{40}$`; `RAMO` e
@@ -372,40 +387,55 @@ com a lista do que foi visto.* Nada é escolhido em silêncio.
   linhas de Objeto votam (não só `-m1`); o ramo casa **delimitado** (crase, espaço, vírgula, fim de linha), nunca
   substring — e nunca vazio (garantido por a).
 - **c) Fonte = `origin/$BASE` ∪ `$HEAD_PR`** (após fetch): a ata do PR corrente vive no ramo (§0.3). Mesmo caminho nos
-  dois → vale o do head do PR (o mais novo); a saída registra `LIDO DA ATA: <f> @ <ref>`.
-- **d) Coleta TODOS os candidatos** `(ata, linha, SHA)` — sem `break`, sem `head -1`; todos os SHAs de cada linha.
+  dois → vale o do head do PR (o mais novo); a saída registra `@ <ref>`.
+- **d) Coleta TUDO, sem `break`, sem `head -1`:** **objetos** = todos os SHAs de todas as linhas `- **Objeto…:**`;
+  **aprovações** = todas as linhas no formato `- **approved_head:** <sha entre crases, 7–40 hex>` em coluna 0 — a
+  linha em que a junta declara o head aprovado, **único insumo que responde "que objeto a junta APROVOU"**. Vocabulário
+  de veredito (`Resultado:`, `VEREDITO:`, `## Ciclo N — … — APROVADO`) **não é lido**: são 3 grafias em 10/107 atas,
+  uma delas com APROVADO e REPROVADO na mesma linha (adendo A1.2) — lê-las seria reconhecer forma, a classe deste bloco.
 - **e) Estados e códigos de saída:**
   | estado | condição | stdout | ec |
   |---|---|---|---|
-  | **LIDO** | exatamente 1 candidato | `approved_head: <40>` + `LIDO DA ATA: f @ ref` | 0 |
+  | **LIDO** | exatamente 1 ata casa; nela, exatamente 1 linha `approved_head`; o SHA dela (expandido) é igual a um dos objetos declarados na mesma ata | `approved_head: <40>` + `LIDO DA ATA: f:linha @ ref` | 0 |
   | **AUSENTE** | 0 atas casam no cabeçalho **e** 0 mencionam `#PR` no corpo, nas duas fontes | `approved_head: AUSENTE — nenhuma ata nomeia nem menciona #PR (junta não votou, ou a ata não está em origin/BASE nem no head do PR)` | 0 |
-  | **NÃO DETERMINÁVEL** | >1 candidato · ou ata casa no título sem linha de Objeto · ou atas mencionam `#PR` só no corpo | `approved_head: NAO DETERMINAVEL (motivo)` + lista `f:linha → sha` / `f (sem Objeto)` / `f (menção no corpo)` | 3 |
+  | **NÃO DETERMINÁVEL** | qualquer outra: ata casa mas **sem** linha `approved_head` (objetos listados como *"declarado, aprovação não legível por máquina"*) · >1 linha `approved_head` · `approved_head` ≠ todo objeto (contradição) · >1 ata casa · ata casa no título sem Objeto · menção só no corpo | `approved_head: NAO DETERMINAVEL (motivo)` + lista `f:linha → sha` / `f (sem Objeto)` / `f (menção no corpo)` | 3 |
 - **f) Expansão:** `git rev-parse --verify "$S^{commit}"`; se não resolve → imprime o SHA **como lido** com `(não resolvido
   localmente — fetch?)`; nunca completa dígitos.
-- **g) `--sha-only`:** imprime `head`, `merge-base`, `merge commit` (os lidos) e `approved_head` **só se LIDO**; ec = o do
-  estado; diagnóstico só no stderr. Consequência assumida: mandato de bloco multi-ciclo com ata ambígua **não cita**
-  `approved_head` até a ata ser legível — é fail-closed, e é o que empurra o conserto para o ritual (§3).
+- **g) `--sha-only`:** imprime **todo SHA que a ferramenta LEU** — head, merge-base, merge commit, cada objeto declarado e
+  cada `approved_head` de ata que casa —, um por linha, nada mais. É o conjunto de **proveniência** que a checagem 4 do
+  pré-voo consome (o mandato do ciclo 2 cita legitimamente o objeto reprovado `7462b75b`). O **rótulo** `approved_head`
+  vive só no modo completo, e a **checagem 7** do pré-voo (E2) fecha o consumidor: rotular sem LIDO é rejeitado. ec = o do estado.
+- **h) Custo declarado:** **0/107 atas têm a linha `approved_head` hoje** (medido, A1.2). Com o corpus atual LIDO é
+  inalcançável; #390/#391/#392 passam de "lidos" a NÃO DETERMINÁVEL com o objeto listado — eram lidos **certos por sorte
+  do veredito** (os três são APROVADO; a ferramenta não sabia). O backfill de `approved_head` segue sendo leitura, como
+  já é para 102/107. A linha nasce no ritual (`B-GOV-ATA-CABECALHO`, §3); a junta 2 pode escrevê-la na seção do ciclo 2
+  desta ata (A1.4) — seria o primeiro LIDO vivo.
 
 **Critérios (exercitados no arnês de E1):**
 - **[C1]** `headRefName:null` → ec=1, stdout sem `approved_head` (= A4). **⇄ mutação:** remover a); vermelho.
-- **[C2]** `ATA_MULTI` → ec=3, stderr lista **2** candidatos com `arquivo:linha`. **⇄ mutação:** reintroduzir `break` →
-  ec=0 com o 1º → vermelho. (É o #387 real: hoje devolve o objeto do ciclo **REPROVADO** em silêncio.)
+- **[C2]** `ATA_MULTI` (2 Objetos, 0 `approved_head`) → ec=3, lista **2** objetos com `arquivo:linha`. **⇄ mutação:**
+  tratar o 1º objeto como aprovado → ec=0 → vermelho. (É o #387 real: hoje devolve o objeto do ciclo **REPROVADO**.)
 - **[C3]** `ATA_SEM_OBJETO` (título com `(PR #N)`) → ec=3 nomeando a ata "sem linha de Objeto". **⇄ mutação:** tratar
   como AUSENTE → ec=0 → vermelho.
 - **[C4]** `ATA_MENCAO` (só no corpo) → ec=3 "menção no corpo, sem cabeçalho". **⇄ mutação:** ignorar o corpo → AUSENTE → vermelho.
-- **[C5]** nenhuma ata nomeia nem menciona → `AUSENTE`, ec=0. **⇄ mutação:** trocar por ec=3 → vermelho (o critério
-  discrimina AUSENTE de NÃO DETERMINÁVEL nos dois sentidos).
-- **[C6]** ata **só no head do PR** (commit fora de `origin/main` no repo tmp) → LIDO `@ <head>`. **⇄ mutação:** listar só
-  `origin/$BASE` → AUSENTE → vermelho. (É o #393 hoje.)
-- **[C7]** `--sha-only` × completo: mesmos SHAs, um por linha, **nada** além deles no stdout. **⇄ mutação:** imprimir o
-  `AVISO` no stdout → vermelho.
+- **[C5]** nenhuma ata nomeia nem menciona → `AUSENTE`, ec=0. **⇄ mutação:** trocar por ec=3 → vermelho.
+- **[C6]** `ATA_APROVADA` **só no head do PR** (commit fora de `origin/main` no repo tmp) → LIDO `@ <head>`. **⇄ mutação:**
+  listar só `origin/$BASE` → AUSENTE → vermelho. (É o #393 hoje.)
+- **[C7]** `--sha-only` = **exatamente** o conjunto de SHAs que o modo completo imprime como lidos, um por linha, nada além.
+  **⇄ mutação:** imprimir o `AVISO` no stdout → vermelho; omitir os objetos declarados → vermelho.
+- **[C8] (adendo A1)** `ATA_REPROVADA_UNICA` — título `(PR #N)`, linha `- **Objeto julgado:**` com SHA, linha
+  `## VEREDITO: **REPROVADO — 2 × 1**`, **sem** linha `approved_head` (a forma exata da ata do ciclo 1 deste bloco),
+  única a casar → ec=3; stdout **sem** `approved_head: <sha>`; lista "objeto declarado sha (f:l) — aprovação não legível".
+  **⇄ mutação:** LIDO por linha de Objeto (o desenho de `ca5e1071`) → ec=0 com o objeto reprovado → vermelho.
+- **[C9] (adendo A1)** `ATA_APROVADA` (Objeto + linha `- **approved_head:**` com o mesmo SHA) → LIDO, ec=0;
+  `ATA_CONTRADITORIA` (`approved_head` ≠ todo objeto) → ec=3 "contradição". **⇄ mutação:** remover a coerência
+  approved_head ∈ objetos → LIDO com SHA fora dos objetos → vermelho.
 
-**Drill e fronteira (E3):** o drill mede a **leitura** (estados, ec, lista). **Não atravessa** a **forma das atas**: com o
-corpus de hoje, 102/107 atas caem em NÃO DETERMINÁVEL ou AUSENTE — a ferramenta passa a **dizer isso** em vez de
-"a junta não votou". Deste lado a propriedade vale (C1–C7). Do outro lado — template rastreado com cabeçalho legível,
-convenção para multi-ciclo (linha `approved_head` explícita ou arquivo por ciclo) e retrofit — o dono é
-**`B-GOV-ATA-CABECALHO`** (§3). Medida-ponte: o orquestrador escreve a seção do ciclo 2 de `J-B-GOV-MANDATO.md` com
-`(PR #393)` no título — está no escopo dele, não do dev.
+**Drill e fronteira (E3):** o drill mede a **leitura** (estados, ec, lista). **Não atravessa** a **forma das atas** nem o
+**veredito em prosa**: com o corpus de hoje, 107/107 atas caem em NÃO DETERMINÁVEL ou AUSENTE — a ferramenta passa a
+**dizer isso** em vez de "a junta não votou" ou de imprimir objeto como aprovado. Deste lado a propriedade vale (C1–C9).
+Do outro lado — template rastreado que **emite** `- **approved_head:**`, convenção multi-ciclo, retrofit — o dono é
+**`B-GOV-ATA-CABECALHO`** (§3). Medida-ponte: A1.4.
 
 ### E4 — dependências declaradas e código de saída honesto (fecha C2-03, C2-05, a morte silenciosa do check-runs e do fetch)
 
@@ -428,9 +458,9 @@ convenção para multi-ciclo (linha `approved_head` explícita ou arquivo por ci
 - Mesmo padrão de E1: `mkdtempSync` com fixtures `.md` escritas pelo teste; `spawnSync("bash", [RAIZ/scripts/mandato-preflight.sh,
   fixture, pr], {env: {MANDATO_REFS: shim}})`. Shim `MANDATO_REFS`: imprime SHAs canônicos e sai 0; variante que sai 1
   (ferramenta morta); variante que sai 3 (não determinável) com stderr.
-- **Casos (≥ 12):** B1 (8 formas + `correto`), B2 (tabela real), B3 (11 vizinhanças + 3 controles negativos), B4 (refs
+- **Casos (≥ 15):** B1 (8 formas + `correto`), B2 (tabela real), B3 (11 vizinhanças + 3 controles negativos), B4 (refs
   morta → causa certa), B5 (5 casos do `-i`), B6 (≥ 20 basenames gerados de `git ls-files` **do repo real** + Flutter +
-  5 inexistentes), B7 (`.sh` com/sem crases, `(novo)`, diretório, glob), + o ec do refs = 3 → `AVISO`, não `REJEITADO`.
+  5 inexistentes), B7 (`.sh` com/sem crases, `(novo)`, diretório, glob), + o ec do refs = 3 → `AVISO`, não `REJEITADO`; + **B8** (checagem 7: 3 casos, adendo A1).
 - **[E1]** apagar `mandato-preflight.sh` → 0 casos passam. **⇄ mutação:** é a medição. **[E2]** o arquivo aparece na
   lista do runner (`npm test -- tests/mandato-preflight.test.ts` roda; a suíte inteira o conta) — **sem** tocar
   `.github/**`. **⇄ mutação:** nome fora do sufixo `.test.ts` → o runner não o lista → vermelho.
@@ -455,6 +485,7 @@ convenção para multi-ciclo (linha `approved_head` explícita ou arquivo por ci
 | C2-04 `-m1`/`head -1` (#387 → ciclo REPROVADO) | ajuste | E3.d/e | C2 |
 | C2-05 flag inválida silenciosa | nota | E4 | D3 |
 | C2-06 5/107 atas com Objeto | nota · pre-existente | E3.e declara; **ritual → `B-GOV-ATA-CABECALHO`** (§3) | C3, C4 |
+| **A1 (adendo)** objeto declarado ≠ objeto aprovado — ata única REPROVADA sairia como `approved_head` | bloquearia (achado do orquestrador como leitor) | E3.d/e (LIDO só por linha `approved_head`) + E2 checagem 7 | C8, C9, B8 |
 | §0.3 ata só no ramo (achado do planejador) | — | E3.c | C6 |
 | P-…-CAMINHO-POR-BASENAME | pendência (dono: este ciclo) | E2 checagem 6 | **B6 = teste de encerramento** |
 | C3-01 escopo não declarado (corpos de jurado) | ajuste | §4 declara os corpos da junta 2 no permitido | — |
@@ -469,7 +500,7 @@ convenção para multi-ciclo (linha `approved_head` explícita ou arquivo por ci
 risco — o arnês git+shim no Windows e no ubuntu — já foi **executado** em protótipo (§0.6(d)). Se a medição do dev
 disser que não cabe, a ordem de corte é a de §9/R1 (fallback do arnês), **nunca** encolher um critério.
 
-**Entra (E1–E5):** 4 bloqueantes, 5 ajustes, 3 notas, a pendência do basename, a lacuna §0.3. Tudo da **mesma classe**
+**Entra (E1–E5):** 4 bloqueantes, 5 ajustes, 3 notas, a pendência do basename, a lacuna §0.3 e a lacuna A1 (adendo). Tudo da **mesma classe**
 ou do **mesmo arquivo**; consertar em separado repetiria o erro diagnosticado (R-1).
 
 **Sai, com dono nomeado** (o orquestrador abre as pendências em `controle/pendencias.md` e os blocos em
@@ -478,8 +509,8 @@ ou do **mesmo arquivo**; consertar em separado repetiria o erro diagnosticado (R
 | o que fica de fora | por que é de outro dono | dono |
 |---|---|---|
 | Template de ata **rastreado** com cabeçalho legível (`# J-… (PR #N)` + `- **Objeto…:** \`sha\``) — o `TEMPLATE-J-ata.md` de 07/09 é alheio, não rastreado e não tem a linha | é o **ritual da junta**, não a ferramenta; a ferramenta não define a forma da ata unilateralmente | **`B-GOV-ATA-CABECALHO`** (novo) |
-| Convenção para atas **multi-ciclo** (linha `approved_head` explícita, ou um arquivo por ciclo) + o leitor correspondente em `mandato-refs.sh` | idem — e sem convenção o leitor seria adivinhação | `B-GOV-ATA-CABECALHO` |
-| Retrofit das 102 atas sem Objeto (e das 92 sem `#N` no título) | tocar 102 atas históricas é decisão do dono; a ferramenta agora **declara** o que não lê (E3.e) | `B-GOV-ATA-CABECALHO` — **opcional, decisão do dono** |
+| O template **emite** a linha `- **approved_head:**` quando o veredito é APROVADO (a única que a E3 lê como aprovação — adendo A1) + convenção para atas **multi-ciclo** (um arquivo por ciclo, ou a linha na seção do ciclo aprovado) | é o ritual — e sem convenção o leitor seria adivinhação | `B-GOV-ATA-CABECALHO` |
+| Retrofit das 102 atas sem Objeto (e das 92 sem `#N` no título), e da linha `approved_head` nas 4 APROVADAS com Objeto (#390/#391/#392/O6R-B05) | tocar 102 atas históricas é decisão do dono; a ferramenta agora **declara** o que não lê (E3.e) | `B-GOV-ATA-CABECALHO` — **opcional, decisão do dono** |
 | A seção do ciclo 2 em `J-B-GOV-MANDATO.md` com `(PR #393)` no título | é escrita pela **junta/orquestrador**, não pelo dev — mas entra **neste PR** | orquestrador (autor da ata) |
 | SHA dentro de URL (`…/commit/7462b75b` → token com `/` → não é conferido) | propriedade **vizinha** da checagem 4 ("SHA citado como identificador"), declarada | `B-GOV-MANDATO-2` (fila §7.3) |
 | `Select-String`/`findstr` (PowerShell) na checagem 5 | a checagem enuncia `grep`/`rg`; a casa usa bash nos mandatos | `B-GOV-MANDATO-2` |
@@ -548,8 +579,8 @@ git e GitHub, e os testes escrevem só em `mkdtemp`.
 
 - **N (o bloco, ciclo 1):** 6 casos em `tests/mandato-refs.test.ts` — **todos sobre réplica**; 4 sobrevivem ao artefato
   apagado (§0.2). Contam como zero cobertura do artefato.
-- **Meta M:** ≥ 10 em `mandato-refs.test.ts` + ≥ 12 em `mandato-preflight.test.ts` = **≥ 22 casos, 100 % por
-  `spawnSync` do script real** (≥ 3,6 × N). Critério de contagem honesto: **[F1]** cada arquivo, com o seu script
+- **Meta M:** ≥ 12 em `mandato-refs.test.ts` + ≥ 15 em `mandato-preflight.test.ts` = **≥ 27 casos, 100 % por
+  `spawnSync` do script real** (≥ 4,5 × N). Critério de contagem honesto: **[F1]** cada arquivo, com o seu script
   apagado, passa **0** casos. ⇄ mutação: é a medição.
 - **`backend_tests`:** baseline da `main` **3052/3054** (medido pela C3 e pelo dev do ciclo 1 — **herdado com fonte; o dev
   do ciclo 2 re-mede**); head do ciclo 1 3058/3060 (+6). Ciclo 2: 3052 + (casos novos) — o dev publica o número **da
@@ -581,9 +612,9 @@ node --test --import tsx tests/kpi-dashboard-charts.test.ts
 node scripts/sync-agent-agents.mjs --check
 node --check Kpis/app.js
 python agent-orchestration/controle/gerar-indice-pendencias.py && git diff --stat -- agent-orchestration/controle/pendencias-indice.md
-bash scripts/mandato-refs.sh 392 ; echo ec=$?      # VIVO: LIDO 7822deaf… @ origin/main, ec=0 — saida colada
-bash scripts/mandato-refs.sh 393 ; echo ec=$?      # VIVO: NAO DETERMINAVEL ou LIDO @ head (conforme a ata do ciclo 2) — colada
-bash scripts/mandato-refs.sh 387 ; echo ec=$?      # VIVO: ec=3 com 2 candidatos (J-B-SAN3-01) — colada
+bash scripts/mandato-refs.sh 392 ; echo ec=$?      # VIVO: NAO DETERMINAVEL ec=3 — objeto 7822deaf… (J-B-SAN3-00.md) SEM linha approved_head — colada (adendo A1)
+bash scripts/mandato-refs.sh 393 ; echo ec=$?      # VIVO: ec=3 (objeto 7462b75b @ head do PR, sem approved_head) — ou LIDO se a junta 2 ja escreveu a linha (A1.4) — colada
+bash scripts/mandato-refs.sh 387 ; echo ec=$?      # VIVO: ec=3 com 2 objetos (J-B-SAN3-01), nenhum approved_head — colada
 bash scripts/mandato-preflight.sh <relatorio-do-dev.md> 393 ; echo ec=$?   # DOGFOODING: o relatorio passa pelo pre-voo
 git diff --cached --check || exit 1
 ```
@@ -613,7 +644,7 @@ com `git hash-object` = blob do head antes e depois, e **saída colada** no rela
 | R1 | o arnês git em tmpdir se comporta diferente no ubuntu do CI (`safe.directory`, `user.*`, `autocrlf`, `init.defaultBranch`) | `-c` em **toda** invocação de git do teste; fixtures LF; protótipo já executado no Windows (§0.6(d)); o CI roda no primeiro push e o dev lê o log | se em < 1 h de tentativa o arnês não subir no CI: **fallback declarado** = costura `MANDATO_ATAS_DIR` (lista `J-*.md` de um diretório) **ainda exercitando o script real** (estados, ec, matcher); a listagem por `ls-tree` fica coberta só pela execução viva → **pendência com dono `B-GOV-MANDATO-2`**. **Proibido**: voltar à réplica |
 | R2 | a regra de unidade rejeita prosa legítima quebrada em 2 linhas sem indentação | é o desenho: continuação **indentada** (estilo do repo) ou linha em branco + nova unidade com evidência; documentado no cabeçalho do script | nenhum — custo aceito e declarado (E2) |
 | R3 | a checagem 5 sem vocabulário rejeita `grep -c` legítimo de contagem | `-i` ou `caixa-exata:` na unidade; documentado | nenhum — custo aceito |
-| R4 | ec=3 trava o `approved_head` de blocos multi-ciclo (inclusive **este**, na ata do ciclo 2) até a ata ser legível | é fail-closed e desejado; o orquestrador escreve a seção do ciclo 2 com `(PR #393)` no título; a convenção multi-ciclo tem dono (`B-GOV-ATA-CABECALHO`) | nenhum — declarar `NAO DETERMINAVEL` é o produto |
+| R4 | ec=3 vira a resposta para **todas** as atas de hoje (0/107 têm a linha `approved_head`), inclusive #390/#391/#392 que o ciclo 1 "lia" | é fail-closed e desejado: eram lidas certas por sorte do veredito; o backfill segue sendo leitura, como já é para 102/107; o orquestrador põe `(PR #393)` no título **agora** (A1.4) e a junta 2 pode escrever a primeira linha `approved_head` viva; a convenção tem dono (`B-GOV-ATA-CABECALHO`) | nenhum — declarar `NAO DETERMINAVEL` é o produto |
 | R5 | o ramo continua andando durante o desenvolvimento (aconteceu 3× comigo) | o dev mede o head no início e no fim; o inspetor confere; o objeto da junta 2 é o head que **cada cadeira resolve** | — |
 | R6 | o `gh` do shim não é executável no runner (modo de arquivo) | `chmodSync(0o755)` + shebang `#!/usr/bin/env bash`; no MSYS o shebang basta | invocar o shim como `bash "$MANDATO_GH"` — decisão do dev, documentada |
 | R7 | reintroduzir a classe **na correção** (as 4 instâncias do painel de KPI nasceram em correções — `D-JUNTA-SEPARACAO-DE-PAPEIS`) | cada critério tem mutação executada por **outro** agente (a junta 2 re-executa A–F); o `medidor-de-cobertura-do-artefato` mede o que o dev afirmou | reprovação abre ciclo 3 sob as regras vigentes (§0.1) |
@@ -648,8 +679,74 @@ importa. `git revert` do squash devolve a `main` ao estado de `fc3363e3` para es
 
 ## §11 — A linha
 
-**Cabe num ciclo: SIM — 5 entregas (E1–E5) cobrindo os 4 bloqueantes, 5 ajustes, 3 notas, a pendência do basename e uma
-lacuna nova (§0.3); 9 itens saem com dono nomeado (`B-GOV-ATA-CABECALHO` ×3 + orquestrador ×1 + `B-GOV-MANDATO-2` ×5), por
-pertencerem a outro dono — nenhum por prazo; nenhuma hipótese do orquestrador derrubada: H3 refinada (três estados, não
-dois), H1 corrigida (o arnês git+shim é inédito na casa) e uma quinta mudança estrutural acrescentada (fonte das atas =
-`origin/BASE` ∪ head do PR — hoje a ferramenta diz "a junta não votou" sobre o próprio #393, cuja ata está no ramo).**
+**Cabe num ciclo: SIM — 5 entregas (E1–E5) cobrindo os 4 bloqueantes, 5 ajustes, 3 notas, a pendência do basename, uma
+lacuna nova do planejador (§0.3) e a lacuna A1 do orquestrador-leitor (adendo: objeto declarado ≠ objeto aprovado); 9 itens saem
+com dono nomeado (`B-GOV-ATA-CABECALHO` ×3 + orquestrador ×1 + `B-GOV-MANDATO-2` ×5), por pertencerem a outro dono — nenhum por
+prazo; nenhuma hipótese do orquestrador derrubada no plano (H3 refinada para três estados e, no adendo, LIDO só por linha
+explícita `approved_head`; H1 corrigida; quinta mudança estrutural: fonte das atas = `origin/BASE` ∪ head do PR); uma premissa
+dele derrubada no adendo (a ordem: `(PR #393)` no título entra AGORA, não depois do merge — a ferramenta atual nunca lê o ramo).**
+
+---
+
+## ADENDO A1 — pergunta de escopo do orquestrador sobre a E3 (2026-09-26, após `ca5e1071`)
+
+### A1.1 A pergunta
+A E3 fechava a **ambiguidade** (vários candidatos → declarar). E o caso **não-ambíguo**: uma ata única, que casa o PR
+sem concorrente, com veredito **REPROVADO**? Pelo texto de `ca5e1071`, a E3 devolveria o objeto dela como
+`approved_head`, porque o critério era "a ata nomeia este PR", não "a junta APROVOU este objeto". Caso concreto: a ata
+do ciclo 1 deste bloco (`J-B-GOV-MANDATO.md`, `REPROVADO 2 × 1`, objeto `7462b75b`). O orquestrador não decide: é o dev
+do código original.
+
+### A1.2 Medição (planejador, `w-mandato@ca5e1071`, só leitura)
+1. **A lacuna existe como enunciada.** E3.e (`ca5e1071`): *LIDO = exatamente 1 candidato (ata, linha, SHA)*; nenhum de
+   C1–C7 lia veredito. Ata única REPROVADA → LIDO com o objeto reprovado. **Confirmado por leitura do próprio plano.**
+2. **Veredito não é legível por máquina sem reconhecer forma:**
+   ```
+   total=107 com_linha_VEREDITO_estrutural=10 exatamente_1=9 como_heading=7 | na 1a linha: APROVADO_puro=1 REPROVADO=3 ambas=3
+   J-B-SAN3-00.md:6   - **Resultado: APROVADO 2 × 1.**
+   J-B-SAN3-01.md:3   ## Ciclo 1 — 2026-09-18 — REPROVADO 2 × 2        (l.8-9: linha de votos com APROVADO e REPROVADO)
+   J-B-SAN3-04a.md:3  ## Ciclo 1 — 2026-09-18 — APROVADO 3 × 0
+   J-B-SAN3-B1.md:5   - **Resultado: APROVADO 3 × 0.**
+   J-O6R-B05…md:8     - **Resultado: APROVADO COM CORREÇÕES OBRIGATÓRIAS — 5×0.** Nenhum parecer REPROVADO.   <- as DUAS palavras
+   J-B-GOV-MANDATO.md:10 (ramo)  ## VEREDITO: **REPROVADO — 2 × 1**
+   ```
+   Três grafias (`Resultado:`, `VEREDITO:`, `## Ciclo N — … — X`), uma linha com APROVADO e REPROVADO juntos, e atas
+   com o veredito no heading **e** na linha de votos. Ler isso = enumerar formas = a classe.
+3. **Linha explícita `approved_head`:** `linha_estrutural_approved_head=0` de 107 (23 citam o termo em prosa, sobre
+   backfill). Com o corpus de hoje, LIDO por essa linha é **inalcançável** — declarado em E3.h.
+4. **A premissa de ordem do orquestrador ("pôr `(PR #393)` antes da E3 cria uma falha viva") é FALSA — derrubada por
+   código e execução:** `scripts/mandato-refs.sh` l.48 lista atas só em `origin/$BASE`; `grep -c HEAD_PR` nas linhas de
+   `ls-tree|git show` = **0**; com a ata no ramo desde `1b66b444`, `bash scripts/mandato-refs.sh 393` →
+   `approved_head:   <NAO ENCONTRADO NA ATA>`. A ferramenta atual **nunca vê o ramo**; e este PR merge **com** a E3 —
+   não existe janela.
+
+### A1.3 Decisão: **ENTRA na E3** (+ checagem 7 no pré-voo); o lado do ritual sai com dono `B-GOV-ATA-CABECALHO`
+- **Por que entra e não sai com dono:** o campo se chama `approved_head` e a ferramenta existe para **não o inventar**
+  (cabeçalho do script, l.12-14). Imprimir o objeto de uma ata REPROVADA sob esse rótulo **é inventar** — mesma classe
+  dos 4 bloqueantes, mesmo arquivo, e o R-1 já disse que consertar a classe por instância repete o erro.
+- **Por que não ler o veredito:** A1.2 item 2 — seria forma. A única leitura honesta de "a junta aprovou X" é uma linha
+  em que a junta **escreve** `approved_head: X`. E3.d passa a ler só essa linha; as linhas de Objeto viram **evidência
+  listada** (e proveniência para a checagem 4), nunca `approved_head`.
+- **Custo, declarado e aceito:** #390/#391/#392 deixam de ser "lidos" — eram certos por sorte do veredito. O primeiro
+  LIDO vivo depende de uma ata escrever a linha; a junta 2 pode ser a primeira (A1.4).
+- **O que sai com dono (`B-GOV-ATA-CABECALHO`, §3):** o template **emite** a linha `- **approved_head:**` quando o
+  veredito é APROVADO; convenção multi-ciclo; retrofit (opcional, decisão do dono) das 4 atas APROVADAS com Objeto.
+- **Cabe no ciclo:** sim — E3 muda **o que LIDO exige** (uma linha a mais para ler, uma coerência a conferir), 2 critérios
+  novos (C8, C9), 1 checagem nova no pré-voo (B8). Nada disto é dimensionado pelo teto (`D-NOITE-SEM-TETO` não entra).
+
+### A1.4 Ordem para o orquestrador — a inclinação "só depois do merge" está **invertida**
+1. **AGORA, antes de o dev começar:** `(PR #393)` no **título do arquivo** `J-B-GOV-MANDATO.md`, com uma linha de emenda
+   datada ("título emendado em 2026-09-26 para nomear o PR — E3.c; veredito e objeto intocados"). **Sem janela** (A1.2
+   item 4). Ganho: o `bash scripts/mandato-refs.sh 393` da bateria (§8) exercita NÃO DETERMINÁVEL **sobre ata real**
+   (objeto `7462b75b`, sem linha `approved_head`) — o C8 vivo.
+2. **Junta 2, ao escrever a seção do ciclo 2:** linha `- **Objeto julgado:**` com o head julgado e, **se APROVADO**, linha
+   `- **approved_head:**` com o mesmo head (40 hex). Resultado: 2 objetos, 1 `approved_head` coerente com o 2º → **LIDO** —
+   o primeiro vivo, e o porteiro confere. Se REPROVADO: sem a linha → NÃO DETERMINÁVEL com os 2 objetos listados — correto.
+3. **Nunca "só depois do merge":** deixaria a ata do #393 ilegível na `main` até outro PR tocar ata, e perderia o caso vivo.
+
+### A1.5 O que este adendo mudou no plano (edições por âncora em `w-mandato`, não commitadas)
+E3 reescrita (propriedade, d, e, g, h; C7 ajustado; C8 e C9 novos) · E2 ganha a **checagem 7** e o critério **B8** ·
+E1: [A1] passa a asserir *de qual ata/linha* veio o objeto (estado NÃO DETERMINÁVEL) e ganha as fixtures
+`ATA_REPROVADA_UNICA`, `ATA_APROVADA`, `ATA_CONTRADITORIA`; contagem ≥ 12 · E5: casos B8 (≥ 15) · §3: a linha
+`approved_head` no template e o retrofit nomeados para `B-GOV-ATA-CABECALHO` · §7: meta ≥ 27 · §8: saídas vivas
+esperadas corrigidas (392 → ec=3, não LIDO) · §9 R4 · mapa achado→entrega: linha A1 · §11.
