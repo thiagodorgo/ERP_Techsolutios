@@ -1,6 +1,10 @@
 # Briefing da junta — `B-GOV-MANDATO` (PR #393)
 
-- **Objeto julgado:** `1c5437daa` — head medido por `scripts/mandato-refs.sh 393`, nunca digitado.
+- **Objeto julgado:** o head de `chore/mandato-refs-e-preflight`, que **cada cadeira resolve por si**
+  (`git rev-parse HEAD` no seu worktree, conferido contra `scripts/mandato-refs.sh 393`). **O briefing não
+  crava SHA de propósito:** a primeira versão dele trazia `1c5437daa` — nove caracteres, completados de
+  cabeça pelo orquestrador, que **não resolve** (`fatal: Needed a single revision`). Era a sexta instância
+  da classe que este bloco existe para fechar, cometida no briefing do próprio bloco. Identificador se LÊ.
 - **Base:** `origin/main` em `fc3363e3`. **CI:** 14/14 verdes no objeto, 0 pendente, 0 ruim.
 - **Quórum: MAIORIA DE 3, SEM crítico.** Justificativa §C7.1-ter(b): o bloco **não toca** dinheiro,
   segurança, permissão nem perda de dado — é ferramenta de processo. `src/`, `prisma/`, `migrations/`,
