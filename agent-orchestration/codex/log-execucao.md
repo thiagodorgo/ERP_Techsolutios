@@ -4687,3 +4687,150 @@ bloco mergear.
   tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
   deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
   **303** ABERTAS.
+
+## B-GOV-MANDATO — o mandato do orquestrador passa a ser verificável por máquina (na autoria, 2026-09-25, PR #393)
+
+- **Ramo** `chore/mandato-refs-e-preflight` · base `origin/main@fc3363e3` (#392) · head medido na autoria
+  **`1ae82626`**. **O head andou durante a autoria** (`f8d5a2c8` → `1ae82626`): o mandato trazia o valor antigo, e
+  todas as âncoras deste registro foram **medidas** por `bash scripts/mandato-refs.sh 393`, não copiadas do papel.
+  `approved_head` = `<NAO ENCONTRADO NA ATA>`, que é o **comportamento correto** — a junta ainda não votou.
+- **O diff são 3 arquivos NOVOS e nenhum alterado** (`git diff --name-status fc3363e3 1ae82626`):
+  `scripts/mandato-refs.sh`, `scripts/mandato-preflight.sh`, `tests/mandato-refs.test.ts` (+274 linhas).
+  Fronteira conferida: `git diff --name-only fc3363e3 1ae82626 -- src prisma frontend mobile .github` **vazio**.
+- **Terreno:** worktree próprio `C:/Users/AMP/w-mandato`, com Postgres `pg-mandato393` (postgres:16-alpine,
+  127.0.0.1:**55432**) e Redis `redis-mandato393` (redis:7-alpine, 127.0.0.1:**56379**) **descartáveis próprios**,
+  `DATABASE_URL`/`REDIS_URL` explícitas, banco `erp_test` com `npx prisma migrate deploy` (ec=0). A base viva
+  (`erp-postgres`, `erp-redis`) **não recebeu um comando**. Portas escolhidas fora da faixa 58284–58483 excluída
+  pelo Windows e fora da 5432, que é de outro projeto; conferidas livres antes de subir.
+  **Armadilha do worktree novo, confirmada:** sem `npx prisma generate` com `DATABASE_URL` no ambiente o
+  `npm run check` acusa erro de Prisma que **não é do bloco**.
+
+### O mandato foi o primeiro escrito no formato que o bloco cria — e uma hipótese CAIU
+
+O mandato veio em `MEDIDO` (afirmação + `medido por:`) e `HIPOTESE` (afirmação + `derruba com:`), validado pelo
+pré-voo antes de sair. Dos **8** itens de `MEDIDO`, **7 bateram** na conferência e **1 estava VENCIDO** — o head, que o mandato dava
+como `f8d5a2c8` e que a medição devolveu `1ae82626`, porque o ramo andou depois de o papel ser escrito. Não é
+erro do mandato nem do formato: é a razão de a regra mandar **medir a âncora** em vez de copiá-la. Das **4**
+hipóteses, **3 sobreviveram e 1 caiu**.
+
+- **H1 — a suíte vai a 3058/3060: SOBREVIVEU.** Medido: `# tests 3060 · # pass 3058 · # fail 0 · # skipped 2 ·
+  # duration_ms 366905`, ec=0, `not ok` = **0**. Modo declarado pelo runner: `CORE_SAAS_PERSISTENCE=memory`
+  (padrão, nada exportado — mesma configuração do job `backend` da CI). **Δ +6, todos** de
+  `tests/mandato-refs.test.ts`, testes **1557–1562** da ordem TAP, nomeados um a um. Os **2 skips** são os
+  **mesmos da base** (`RBAC_DB_PARITY`, só ligam no `backend-postgres`). **O número publicado é o medido** — a
+  coincidência com a suposição do mandato não foi herdada. **Denominador constante entre execuções, N=2:** a
+  bateria rodou duas vezes no mesmo head, antes e depois de escrever registro e KPI, e as duas devolveram
+  `3060 / 3058 / 0 / 2` (durações 366905 ms e 303055 ms). Denominador que varia entre execuções é achado;
+  aqui não variou.
+- **H2 — smoke e Flutter carregáveis por §C3.3: SOBREVIVEU.** `git diff --name-only fc3363e3 1ae82626 -- frontend
+  mobile` **N=0** e `git status --porcelain -- frontend mobile` **N=0**. O smoke foi **reexecutado mesmo assim**,
+  com `npm ci --prefix frontend` **próprio** do worktree: **1202/1202**, ec=0 — exatamente o valor carregado. O
+  Flutter **não** foi reexecutado, e isto está dito para ninguém ler a confirmação de uma trilha como valendo
+  para a outra.
+- **H3 — o pré-voo não dá falso positivo em caminho relativo ao app Flutter: SOBREVIVEU.** Sonda citando
+  `lib/core/sync/sync_action_store.dart`: `PRE-VOO OK`, ec=0. **Vermelho-controle** (basename inexistente):
+  **rejeitado nas 5**, ec=1. Sem o vermelho-controle o "OK" não provaria nada.
+- **H4 — o índice não muda, porque o bloco não abre nem fecha pendência: CAIU**, e caiu **pelo mecanismo
+  funcionando**. Rodado **antes** de qualquer escrita, o gerador devolveu o índice **byte-idêntico** (md5
+  EOL-neutro `7d4134e9…` nas duas pontas; o ` M` do `git status` era **stat-cache**, e o blob é o mesmo —
+  `f48e3b66…` no índice e no disco). Mas a sonda escrita para atacar a **H3** achou a propriedade **vizinha**, e
+  isso abriu pendência: o índice foi de **413 → 414** cabeçalhos, **402 → 403** IDs, **303 → 304** ABERTAS.
+
+### O defeito que a sonda da H3 achou no próprio pré-voo
+
+A checagem 6 do `mandato-preflight.sh` decide *"existe um arquivo com este **nome**"*, não *"existe um arquivo
+neste **caminho**"* — a última cláusula é `find "$RAIZ" -name "$(basename "$c")" -print -quit`. Medido com a
+classe **gerada da fonte** (`git ls-files 'scripts/*.mjs' 'tests/*.ts' 'src/config/*.ts' | head -20`): **20 de 20**
+caminhos `src/diretorio/que/nao/existe/<basename real>` são **aceitos** (ec=0); **vermelho-controle**, **5 de 5**
+com basename inexistente são **rejeitados** (ec=1). A checagem **funciona e discrimina** — só decide a propriedade
+vizinha. Virou `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (**BAIXA**, não bloqueia, escopo
+**`dentro-do-bloco`** — o script é arquivo novo deste bloco, `git diff --name-status` marca `A`).
+**O dev não consertou o que achou** (§C7.4-bis), e há razão técnica além da regra: a cláusula existe para aceitar
+caminho relativo à raiz do app Flutter (`lib/…` sem o prefixo `mobile/flutter_app/`), que é hábito corrente e que a
+própria H3 mediu funcionar. A forma proposta — `find … -path "*/$c"` — preserva o uso legítimo e fecha o buraco,
+mas **quem decide é a junta**: exigir caminho exato faria o pré-voo rejeitar mandato correto, que é o pior modo de
+falha para uma trava de saída.
+
+### Backfill §C3.5 do #392, pago com a ferramenta que este bloco entrega
+
+A entrada do `B-SAN3-00` no `kpis-history.json` estava com **`pr`, `merge_commit` e `approved_head` os três
+`null`**. Medidos por `bash scripts/mandato-refs.sh 392`: `pr 392`, `merge_commit `fc3363e3…`` e `approved_head
+`7822deaf…``. **O par é exatamente o que o orquestrador já trocou duas vezes:** o head do PR no merge é
+`5cfcd7d3…` e **não** é o objeto julgado; o `approved_head` foi **lido da ata** `J-B-SAN3-00.md`, como manda
+`REGISTRO-SAN3-00-APPROVED-HEAD`. Onde houve pré-merge os dois **divergem por construção** — e aqui a ferramenta
+nova emitiu, sozinha, o `AVISO: merge commit != approved_head`.
+
+### KPI (§C3)
+
+`backend_tests` **3052/3054 → 3058/3060 REEXECUTADO** (N e forma acima, Δ decomposto por arquivo); `smoke`
+**1202/1202** e `flutter` **864/864** **CARREGADOS com nota** (§C3.3); `blocks_completed` **167 → 168**, contado do
+valor que a `origin/main` publica (`git show origin/main:Kpis/kpis-latest.json`); `mvp_demo`/`mvp_vendavel`
+**INTOCADOS** (§C3.4) — o bloco entrega ferramenta de orquestração, não funcionalidade ao usuário.
+`Kpis/app.js` **regenerado** por `node scripts/kpi-freeze.mjs`, nunca digitado: o `--check` saiu **1 antes** e
+**0 depois**, que é a prova nos dois sentidos. Índice de pendências **pelo gerador**, nunca digitado.
+
+**Limpeza §C5 (1 linha, como manda a regra).** Removidos `dist/`, `frontend/dist/`,
+`frontend/tsconfig.tsbuildinfo` e **25** diretórios de `storage/checklist-attachments/` (lixo do arnês de
+teste), ~11 MB; containers descartáveis `pg-mandato393` e `redis-mandato393` derrubados — a base viva
+(`erp-postgres`, `erp-redis`) seguiu de pé e intocada. **`node_modules` preservados** nos dois lugares.
+**Deslize declarado:** o `rm -rf storage/checklist-attachments` levou junto o **rastreado** `.gitkeep`, o que
+o §C5 proíbe. O `git status` acusou na conferência seguinte e o arquivo foi restaurado por
+`git checkout --` (árvore limpa, diff vazio contra o head, efeito **nulo** sobre o entregue). A causa é a de
+sempre: varri o **diretório** quando o alvo era a **classe** — os anexos gerados pelo teste —, e o diretório
+continha um rastreado. O dry-run `git clean -nxd` que rodei **antes** já mostrava os 25 diretórios e **não**
+mostrava o `.gitkeep`, justamente porque ele é rastreado; a lista do dry-run não era a lista do `rm`.
+
+## B-GOV-MANDATO — CICLO 2 (PR #393, 2026-09-26) — a correção da reprovação 2 × 1
+
+**O que a junta reprovou, e por que é UMA coisa.** A ata `agent-orchestration/omega/juntas/J-B-GOV-MANDATO.md`
+reprovou o ciclo 1 por **quatro bloqueantes de uma classe única**: *guarda que reconhece uma FORMA CONHECIDA
+em vez de enunciar a PROPRIEDADE* (C1-01, C2-01 e o basename) e *insumo não validado tratado com a confiança
+do caminho feliz* (C2-02, C2-03). O `R-B-GOV-MANDATO-1` registrou que consertar por instância repetiria o erro
+que custou o #386.
+
+**Os quatro, reproduzidos pelo dev do ciclo 2 antes de escrever uma linha.** C1-01: as **mesmas** 8 afirmações
+numéricas, zero `medido por:`, dentro de `## MEDIDO` — como bullets `ec=1`, **como tabela `ec=0`, PRE-VOO OK**.
+C2-01: o guard passa **4 dos 6** casos com o `.sh` **apagado** (rodada de controle com o script no lugar:
+6/6, provando que o arnês não é a variável; `git hash-object` dos dois rastreados igual ao blob do head).
+C2-02 e C2-03 entram reproduzidos **dentro** do guard novo, como os casos `[A4]` e `[D1]`.
+
+**O conserto, por propriedade.** `scripts/mandato-preflight.sh`: a checagem 3 parte o documento em **unidades**
+(a forma da linha deixa de existir como conceito — tabela, parágrafo, lista numerada, citação e item recuado
+são unidades como as outras); a 4 classifica **tokens** (as 11 vizinhanças do SHA deixam de esconder, e o
+caminho do scratchpad, o UUID e `deadbeef.md` continuam de fora porque o token inteiro não é hexadecimal); a 5
+exige `-i` no **comando** (acento, aspas e o truque `via-interna` deixam de existir); a 6 exige **existência no
+caminho citado** — morrem a lista de 10 extensões e o `find -name <basename>`; nasce a **checagem 7**, que
+confronta o rótulo `approved_head` do mandato com o que a ferramenta consegue LER.
+`scripts/mandato-refs.sh`: `approved_head` em **três estados** — LIDO (ec 0), AUSENTE (ec 0) e **NÃO
+DETERMINÁVEL (ec 3)** —, insumo validado **antes** do laço, fonte = `origin/$BASE` **∪ head do PR**, e o
+`python` substituído pelo `--jq` embutido do próprio `gh` (zero dependência nova).
+
+**A decisão que mais muda a vida de quem usa: objeto JULGADO deixa de ser objeto APROVADO.** Uma ata REPROVADA
+declara objeto e **não** declara aprovação; ler o veredito em prosa seria reconhecer forma (três grafias em
+10 das 107 atas, e numa delas APROVADO e REPROVADO na MESMA linha). Só a linha `- **approved_head:**` conta.
+**Custo medido, declarado e aceito:** `linha_estrutural_approved_head` = **0 de 107** em `origin/main@fc3363e3`
+(0 de 108 no head do ramo) — **LIDO é inalcançável no corpus de hoje**, e #390/#391/#392 deixam de sair como
+"lidos": passam a NÃO DETERMINÁVEL com o objeto listado. Estavam certos **por sorte do veredito**. O ritual que
+faz nascer a linha tem dono: `P-GOV-ATA-APPROVED-HEAD-LINHA` → bloco `B-GOV-ATA-CABECALHO`.
+
+**Os guards passam a exercitar o artefato.** `tests/mandato-refs.test.ts` reescrito (**18** casos) e
+`tests/mandato-preflight.test.ts` novo (**33**) — **51 casos, 100 % por `spawnSync` do `.sh` real**, em arnês
+com repositório git em `mkdtemp`, `gh` shimado por PR e uma ata que vive **só no ramo**. Zero réplica, zero
+asserção sobre comentário. Com o script apagado, cada arquivo passa **0**; reescrevendo só comentários, passa
+**tudo**. **30 mutações** executadas em arnês isolado no scratchpad, cada critério com a sua, com rodada de
+controle antes e depois — e a rodada com o artefato apagado **pegou um buraco no próprio guard**: dois casos
+(`[C7]` e `[D1]`) sobreviviam por serem **comparações relativas**, vacuamente verdadeiras com os dois lados
+vazios. Ganharam âncora absoluta; a re-medição deu 0/18.
+
+**KPI.** Backend **3058/3060 → 3103/3105 REEXECUTADO** (Δ +45 sobre o ciclo 1, +51 sobre a `origin/main`;
+decomposto: `mandato-refs` 6 → 18 e `mandato-preflight` 0 → 33; **N=2 execuções com denominador idêntico**,
+Postgres `pg-dev393` e Redis `redis-dev393` descartáveis próprios, a base viva intocada; os 2 skips são os
+`RBAC_DB_PARITY` pré-existentes). Smoke **1202/1202** e Flutter **864/864** **carregados com nota** (§C3.3),
+provados nos dois sentidos. `blocks_completed` **168, inalterado** — o ciclo 2 é correção do MESMO bloco.
+`mvp_demo`/`mvp_vendavel` **intocados**. Índice de pendências **pelo gerador**: fecha
+`P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (com o teste de encerramento colado) e abre três com dono —
+`P-GOV-ATA-CABECALHO-TEMPLATE`, `P-GOV-ATA-APPROVED-HEAD-LINHA` e `P-GOV-MANDATO-2-FRONTEIRAS`.
+
+**Fica devendo, e é do orquestrador** (o §4 do plano do ciclo 2 põe esses caminhos fora do escopo do dev):
+nomear `B-GOV-ATA-CABECALHO` e `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e
+escrever a seção do ciclo 2 na ata.

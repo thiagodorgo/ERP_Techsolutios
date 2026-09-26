@@ -2627,3 +2627,52 @@ faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas
 aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
 do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
 ata** antes de publicá-lo.
+
+---
+
+## `D-NOITE-SEM-TETO` — o teto de ciclos fica SUSPENSO até 2026-09-26 07:00 (decisão do dono)
+
+> **REVOGAÇÃO COM HORA MARCADA, nas palavras do dono:** *"amanhã às 7:00 horas da manhã essa decisão será
+> revogada."* Instante exato: **2026-09-26, 07:00 local (BRT, UTC−3) = 10:00Z**. A partir daí,
+> `D-TETO-DOIS-CICLOS` volta a valer integralmente, sem necessidade de nova decisão.
+>
+> **Regra de corte, conservadora:** ciclo **já em curso** às 07:00 segue até concluir — nasceu sob a
+> suspensão. **Nenhum ciclo novo abre depois das 07:00** sem o teto normal. Verificável por `date -u`
+> contra `2026-09-26T10:00:00Z`; na dúvida, aplica-se o teto.
+
+**O que o dono decidiu, nas palavras dele:** *"não tem limite de rodada para os ciclos essa noite, achou erro
+tá valendo e pode continuar."* Fonte §A1.1 — decisão aprovada explicitamente pelo usuário, acima de qualquer
+regra deste contrato.
+
+**O que muda.** O `D-TETO-DOIS-CICLOS` **não se aplica** aos blocos trabalhados nesta noite. Reprovação de
+junta **não** manda o bloco a dossiê nem para a execução: abre-se ciclo seguinte, com os papéis recompostos
+pelo §C7.4-bis (quem acha ≠ quem planeja ≠ quem desenvolve) e o registro `R-<entrega>-<ciclo>.md` de sempre.
+
+**O ESCOPO É A NOITE, e isto não vira permanente por omissão.** Palavras do dono, em mensagem posterior que
+**estreita** o que eu havia registrado: *"a decisão só vale para hoje à noite, amanhã de manhã o teto volta ao
+normal"* — depois precisada para **07:00**, ver o bloco de revogação no topo. Eu tinha escrito "até o dono retomar a conversa", o que deixaria a suspensão aberta se ele não
+escrevesse cedo. **Vale a formulação dele.**
+
+**Leitura operacional, deliberadamente conservadora:** a suspensão cobre os ciclos **já iniciados durante a
+madrugada**. Ciclo que não tiver começado ao amanhecer nasce sob o `D-TETO-DOIS-CICLOS` normal. **Na dúvida
+sobre o alcance de uma permissão, aplica-se a regra mais estrita** — permissão ambígua se lê pelo lado
+estreito, nunca pelo largo.
+
+**O que NÃO muda — e é a maior parte.** Continuam valendo: junta com registro (junta sem ata = merge inválido),
+CI verde, KPI por PR com contagem de execução real, inspetor de terreno fail-closed antes de cada junta,
+porteiro pós-merge, limpeza §C5, isolamento multi-tenant e as **paradas imediatas irredutíveis do §C7.5**
+(migração destrutiva, exposição de segredo, ação irreversível em produção sem junta unânime prévia).
+Continua valendo também a regra do dono de 2026-09-21: **falha que não se resolve limpo = parar e reportar**,
+sem laço de repetição. E `prisma/**`/`migrations/**` seguem exigindo autorização nominal e unanimidade de 3
+com o `agente-dba-guardiao` — o teto suspenso não afrouxa quórum.
+
+**Por que o dono decidiu assim, e o risco que fica declarado.** O teto existe contra o loop, e foi ele que
+trouxe ao dono as decisões do #388 e do #389. Sem ele, um bloco que não converge pode consumir a noite —
+ainda mais porque a resposta do §C7.4 à reprovação é **escalar**, o que torna cada ciclo seguinte mais difícil.
+Mitigação assumida pelo orquestrador, que **não é um teto disfarçado**: cada ciclo é registrado, e se um ciclo
+produzir **a mesma classe de defeito sem informação nova**, isso é relatado como ausência de convergência — em
+vez de simplesmente tentar de novo.
+
+**Regra de custo, reafirmada aqui porque a suspensão do teto a torna mais tentadora** (`D-CUSTO-NAO-E-CRITERIO`,
+mesma data): o consumo medido é dado de planejamento do dono e de escalonamento do orquestrador. **Nunca** entra
+em prompt de agente, **nunca** escolhe quórum e **nunca** afrouxa limiar de `bloqueia`.

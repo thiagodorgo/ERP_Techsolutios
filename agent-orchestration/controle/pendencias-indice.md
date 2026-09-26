@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **413** |
-| IDs distintos | 402 |
-| **ABERTAS** | **303** |
+| Cabecalhos `## P-` | **417** |
+| IDs distintos | 406 |
+| **ABERTAS** | **306** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **234** |
+| — das quais **ativas nesta rodada** | **237** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 110 |
+| FECHADAS | 111 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **413 cabecalhos para 402 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **417 cabecalhos para 406 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 134
+## ABERTAS · balde A — material — 136
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -205,8 +205,10 @@
 | `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` | 9737 | MÉDIA | sim | P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO (2026-09-21) — o Flutter do CI (3.47.5) e o da má |
 | `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` | 9747 | MÉDIA | sim | P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR (2026-09-21) — 33 identidades aposentadas e/ou  |
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
+| `P-GOV-ATA-CABECALHO-TEMPLATE` | 9802 | MÉDIA | sim | P-GOV-ATA-CABECALHO-TEMPLATE (2026-09-26) — não existe template RASTREADO de ata com cab |
+| `P-GOV-ATA-APPROVED-HEAD-LINHA` | 9812 | MÉDIA | sim | P-GOV-ATA-APPROVED-HEAD-LINHA (2026-09-26) — nenhuma das 107 atas escreve a linha `- **a |
 
-## ABERTAS · balde B — processo/registro — 100
+## ABERTAS · balde B — processo/registro — 101
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -310,6 +312,7 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9546 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9692 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
+| `P-GOV-MANDATO-2-FRONTEIRAS` | 9823 | BAIXA | sim | P-GOV-MANDATO-2-FRONTEIRAS (2026-09-26) — as OITO fronteiras que o pré-voo e o refs DECL |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -385,7 +388,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3581 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3625 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 110
+## FECHADAS — 111
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -499,3 +502,4 @@
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9301 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
 | `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` | 9332 | ALTA | sim | P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dis |
 | `P-SAN3-01-OS-VAZIO-SEM-ACAO` | 9537 | BAIXA | sim | P-SAN3-01-OS-VAZIO-SEM-ACAO (2026-09-18) — a lista de OS vazia não oferecia a ação de cr |
+| `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` | 9773 | BAIXA | sim | P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME (2026-09-25) — a checagem de caminho do pré |
