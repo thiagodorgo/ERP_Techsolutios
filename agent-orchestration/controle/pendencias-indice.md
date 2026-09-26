@@ -312,7 +312,7 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9546 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9692 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
-| `P-GOV-MANDATO-2-FRONTEIRAS` | 9823 | BAIXA | sim | P-GOV-MANDATO-2-FRONTEIRAS (2026-09-26) — as cinco fronteiras que o pré-voo e o refs DEC |
+| `P-GOV-MANDATO-2-FRONTEIRAS` | 9823 | BAIXA | sim | P-GOV-MANDATO-2-FRONTEIRAS (2026-09-26) — as OITO fronteiras que o pré-voo e o refs DECL |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
