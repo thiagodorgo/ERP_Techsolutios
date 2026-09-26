@@ -2630,7 +2630,15 @@ ata** antes de publicá-lo.
 
 ---
 
-## `D-NOITE-SEM-TETO` — o teto de ciclos fica SUSPENSO na noite de 2026-09-25/26 (decisão do dono)
+## `D-NOITE-SEM-TETO` — o teto de ciclos fica SUSPENSO até 2026-09-26 07:00 (decisão do dono)
+
+> **REVOGAÇÃO COM HORA MARCADA, nas palavras do dono:** *"amanhã às 7:00 horas da manhã essa decisão será
+> revogada."* Instante exato: **2026-09-26, 07:00 local (BRT, UTC−3) = 10:00Z**. A partir daí,
+> `D-TETO-DOIS-CICLOS` volta a valer integralmente, sem necessidade de nova decisão.
+>
+> **Regra de corte, conservadora:** ciclo **já em curso** às 07:00 segue até concluir — nasceu sob a
+> suspensão. **Nenhum ciclo novo abre depois das 07:00** sem o teto normal. Verificável por `date -u`
+> contra `2026-09-26T10:00:00Z`; na dúvida, aplica-se o teto.
 
 **O que o dono decidiu, nas palavras dele:** *"não tem limite de rodada para os ciclos essa noite, achou erro
 tá valendo e pode continuar."* Fonte §A1.1 — decisão aprovada explicitamente pelo usuário, acima de qualquer
@@ -2642,7 +2650,7 @@ pelo §C7.4-bis (quem acha ≠ quem planeja ≠ quem desenvolve) e o registro `R
 
 **O ESCOPO É A NOITE, e isto não vira permanente por omissão.** Palavras do dono, em mensagem posterior que
 **estreita** o que eu havia registrado: *"a decisão só vale para hoje à noite, amanhã de manhã o teto volta ao
-normal."* Eu tinha escrito "até o dono retomar a conversa", o que deixaria a suspensão aberta se ele não
+normal"* — depois precisada para **07:00**, ver o bloco de revogação no topo. Eu tinha escrito "até o dono retomar a conversa", o que deixaria a suspensão aberta se ele não
 escrevesse cedo. **Vale a formulação dele.**
 
 **Leitura operacional, deliberadamente conservadora:** a suspensão cobre os ciclos **já iniciados durante a
