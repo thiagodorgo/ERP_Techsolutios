@@ -2640,8 +2640,15 @@ regra deste contrato.
 junta **não** manda o bloco a dossiê nem para a execução: abre-se ciclo seguinte, com os papéis recompostos
 pelo §C7.4-bis (quem acha ≠ quem planeja ≠ quem desenvolve) e o registro `R-<entrega>-<ciclo>.md` de sempre.
 
-**O ESCOPO É A NOITE, e isto não vira permanente por omissão.** Vale para os ciclos iniciados até o dono
-retomar a conversa. Depois disso, `D-TETO-DOIS-CICLOS` volta a valer integralmente, salvo nova decisão escrita.
+**O ESCOPO É A NOITE, e isto não vira permanente por omissão.** Palavras do dono, em mensagem posterior que
+**estreita** o que eu havia registrado: *"a decisão só vale para hoje à noite, amanhã de manhã o teto volta ao
+normal."* Eu tinha escrito "até o dono retomar a conversa", o que deixaria a suspensão aberta se ele não
+escrevesse cedo. **Vale a formulação dele.**
+
+**Leitura operacional, deliberadamente conservadora:** a suspensão cobre os ciclos **já iniciados durante a
+madrugada**. Ciclo que não tiver começado ao amanhecer nasce sob o `D-TETO-DOIS-CICLOS` normal. **Na dúvida
+sobre o alcance de uma permissão, aplica-se a regra mais estrita** — permissão ambígua se lê pelo lado
+estreito, nunca pelo largo.
 
 **O que NÃO muda — e é a maior parte.** Continuam valendo: junta com registro (junta sem ata = merge inválido),
 CI verde, KPI por PR com contagem de execução real, inspetor de terreno fail-closed antes de cada junta,
