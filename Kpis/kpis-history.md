@@ -3006,7 +3006,7 @@ extração de SHA colando dois num só). Todas as âncoras deste registro foram 
 
 | métrica | antes | depois | origem |
 |---|---|---|---|
-| `backend_tests` | 3058/3060 | **3103/3105** | medido por: `npm test` no worktree próprio `C:/Users/AMP/w-dev393`, **N=2 execuções**, denominador idêntico |
+| `backend_tests` | 3058/3060 | **3103/3105** | medido por: `npm test` no worktree próprio `C:/Users/AMP/w-dev393`, **N=4 execuções**, denominador idêntico nas quatro; e o job `backend` do CI verde no head final |
 | `frontend_smoke_tests` | 1202/1202 | 1202/1202 | carregado com nota §C3.3 — medido por: `git diff --name-only origin/main HEAD -- frontend mobile` = 0 e `git status --porcelain -- frontend mobile` = 0 |
 | `flutter_tests` | 864/864 | 864/864 | carregado com nota §C3.3 — mesma medição |
 | `blocks_completed` | 168 | **168 (inalterado)** | medido por: leitura do `Kpis/kpis-latest.json` do head do ciclo 1 — o ciclo 2 é correção do MESMO bloco, não bloco novo |
