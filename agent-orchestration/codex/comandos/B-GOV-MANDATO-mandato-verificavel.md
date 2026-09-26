@@ -182,3 +182,74 @@ omitido.
 - **Junta:** `agent-orchestration/omega/juntas/J-B-GOV-MANDATO.md`
 - **Status:** `published_per_pr`
 - **Contrato(s) versionado(s):** nenhum — o bloco não toca API.
+
+---
+
+# EMENDA — CICLO 2 (2026-09-26), depois da reprovação 2 × 1
+
+> Escrita pelo **desenvolvedor do ciclo 2** (identidade nova), a partir de
+> `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo2-plano.md` — o plano é o contrato; esta emenda só registra no
+> comando o que ele mudou. Quem achou (cadeiras C1 e C2) não planejou nem consertou; o planejador não
+> desenvolveu; o orquestrador está **inelegível como dev** (escreveu o código original).
+
+## O que o ciclo 1 entregou, e por que foi reprovado
+
+Ata `agent-orchestration/omega/juntas/J-B-GOV-MANDATO.md` — **REPROVADO 2 × 1**, quatro bloqueantes de uma
+**classe única**: *guarda que reconhece uma FORMA CONHECIDA em vez de enunciar a PROPRIEDADE* (C1-01, C2-01,
+o basename) e *insumo não validado tratado com a confiança do caminho feliz* (C2-02, C2-03).
+
+## Emenda 1 — Escopo PERMITIDO ganha **um** arquivo, nominalmente
+
+`tests/mandato-preflight.test.ts` — **NOVO**. Isto **diverge** da linha do Escopo PROIBIDO acima
+("qualquer outro arquivo de `scripts/` ou `tests/` além dos três nomeados"), e a divergência está
+**declarada de propósito**: é a lição do achado C3-01 do ciclo 1, em que seis corpos de jurado ficaram fora
+do permitido sem ninguém declarar. O §4 do plano do ciclo 2 autoriza **exatamente este arquivo** e nada mais.
+Tudo o mais do Escopo PROIBIDO segue de pé, e o plano acrescenta: `.gitattributes`, **as 106 outras atas** de
+`agent-orchestration/omega/juntas/`, o `TEMPLATE-J-ata.md` (alheio e não rastreado — reportar, não tocar) e
+os três corpos `jurado-mandato-c{1,2,3}-*` do ciclo 1 (identidades julgadas).
+
+## Emenda 2 — Bateria: três linhas novas
+
+```bash
+node --test --import tsx tests/mandato-preflight.test.ts    # NOVO
+bash scripts/mandato-refs.sh 392 ; echo ec=$?               # VIVO: esperado ec=3 (NAO DETERMINAVEL)
+bash scripts/mandato-refs.sh 393 ; echo ec=$?               # VIVO: esperado ec=3 — o caso C8 sobre ata REAL
+bash scripts/mandato-refs.sh 387 ; echo ec=$?               # VIVO: esperado ec=3 (ata múltipla)
+bash scripts/mandato-preflight.sh <relatorio-do-dev.md> 393 # DOGFOODING do próprio relatório
+python agent-orchestration/controle/gerar-indice-pendencias.py   # o gerador NÃO está em scripts/
+```
+
+## Emenda 3 — o que os artefatos passam a prometer
+
+| artefato | promessa nova | onde ela mora agora |
+|---|---|---|
+| `tests/mandato-refs.test.ts` | vermelho se — e só se — o **comportamento** do artefato muda | `spawnSync("bash", [<o .sh>, …])` em 100 % dos casos; zero réplica, zero leitura de comentário |
+| `scripts/mandato-preflight.sh` | cada checagem enuncia **propriedade sobre o documento** | unidade (3) · token (4) · comando (5) · existência exata (6) · rótulo confrontado (7, nova) |
+| `scripts/mandato-refs.sh` | `approved_head` em **três estados**: LIDO · AUSENTE · NÃO DETERMINÁVEL | ec 0/0/3; insumo validado antes do laço; fonte = `origin/$BASE` ∪ head do PR |
+| `tests/mandato-preflight.test.ts` | o pré-voo entra no CI | o runner lista `tests/*.test.ts` por `expandTestFiles` — **sem tocar `.github/`** |
+
+## Emenda 4 — códigos de saída do `mandato-refs.sh` (contrato novo, documentado no cabeçalho)
+
+`0` LIDO ou AUSENTE · `1` PARADO (insumo do ambiente) · `2` USO (chamada errada) · `3` NÃO DETERMINÁVEL.
+Consumidor: a checagem 4 do pré-voo lê o `ec` — `1`/`2` viram `REJEITADO: referências indisponíveis` (e
+**nunca** "SHA velho", que era culpar o mandato pela morte da ferramenta), e `3` vira `AVISO`.
+
+## Emenda 5 — custo declarado que a junta 2 precisa ver antes de votar
+
+`linha_estrutural_approved_head = 0` em **107** atas de `origin/main@fc3363e3` (e 0 em 108 no head do ramo).
+Logo **LIDO é inalcançável no corpus de hoje**, e #390/#391/#392 deixam de sair como "lidos": passam a
+`NÃO DETERMINÁVEL` com o objeto listado. Eles estavam certos **por sorte do veredito** — os três foram
+aprovados, e a ferramenta não sabia. O ritual que faz nascer a linha tem dono:
+`P-GOV-ATA-APPROVED-HEAD-LINHA` → bloco `B-GOV-ATA-CABECALHO`.
+
+## Emenda 6 — rastreabilidade do ciclo 2
+
+- **Head do ciclo 1 (objeto reprovado):** `7462b75bfb7768556a2da2ee13f9ac92e9198872`
+- **Head em que o ciclo 2 começou:** `9aa8fc7ebec95914722a9bbe15b907b8c788f7f2` (`git rev-parse`, conferido
+  contra `git rev-parse origin/chore/mandato-refs-e-preflight`)
+- **Merge commit / approved head:** `null` na autoria → backfill pós-merge (§C3.5)
+- **Pendência fechada:** `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (teste de encerramento colado nela)
+- **Pendências abertas:** `P-GOV-ATA-CABECALHO-TEMPLATE`, `P-GOV-ATA-APPROVED-HEAD-LINHA`,
+  `P-GOV-MANDATO-2-FRONTEIRAS`
+- **Fica devendo, e é do orquestrador (não do dev, §4 do plano):** nomear `B-GOV-ATA-CABECALHO` e
+  `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e escrever a seção do ciclo 2 na ata.

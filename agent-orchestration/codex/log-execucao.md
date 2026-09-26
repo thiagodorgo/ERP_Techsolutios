@@ -4779,3 +4779,58 @@ o §C5 proíbe. O `git status` acusou na conferência seguinte e o arquivo foi r
 sempre: varri o **diretório** quando o alvo era a **classe** — os anexos gerados pelo teste —, e o diretório
 continha um rastreado. O dry-run `git clean -nxd` que rodei **antes** já mostrava os 25 diretórios e **não**
 mostrava o `.gitkeep`, justamente porque ele é rastreado; a lista do dry-run não era a lista do `rm`.
+
+## B-GOV-MANDATO — CICLO 2 (PR #393, 2026-09-26) — a correção da reprovação 2 × 1
+
+**O que a junta reprovou, e por que é UMA coisa.** A ata `agent-orchestration/omega/juntas/J-B-GOV-MANDATO.md`
+reprovou o ciclo 1 por **quatro bloqueantes de uma classe única**: *guarda que reconhece uma FORMA CONHECIDA
+em vez de enunciar a PROPRIEDADE* (C1-01, C2-01 e o basename) e *insumo não validado tratado com a confiança
+do caminho feliz* (C2-02, C2-03). O `R-B-GOV-MANDATO-1` registrou que consertar por instância repetiria o erro
+que custou o #386.
+
+**Os quatro, reproduzidos pelo dev do ciclo 2 antes de escrever uma linha.** C1-01: as **mesmas** 8 afirmações
+numéricas, zero `medido por:`, dentro de `## MEDIDO` — como bullets `ec=1`, **como tabela `ec=0`, PRE-VOO OK**.
+C2-01: o guard passa **4 dos 6** casos com o `.sh` **apagado** (rodada de controle com o script no lugar:
+6/6, provando que o arnês não é a variável; `git hash-object` dos dois rastreados igual ao blob do head).
+C2-02 e C2-03 entram reproduzidos **dentro** do guard novo, como os casos `[A4]` e `[D1]`.
+
+**O conserto, por propriedade.** `scripts/mandato-preflight.sh`: a checagem 3 parte o documento em **unidades**
+(a forma da linha deixa de existir como conceito — tabela, parágrafo, lista numerada, citação e item recuado
+são unidades como as outras); a 4 classifica **tokens** (as 11 vizinhanças do SHA deixam de esconder, e o
+caminho do scratchpad, o UUID e `deadbeef.md` continuam de fora porque o token inteiro não é hexadecimal); a 5
+exige `-i` no **comando** (acento, aspas e o truque `via-interna` deixam de existir); a 6 exige **existência no
+caminho citado** — morrem a lista de 10 extensões e o `find -name <basename>`; nasce a **checagem 7**, que
+confronta o rótulo `approved_head` do mandato com o que a ferramenta consegue LER.
+`scripts/mandato-refs.sh`: `approved_head` em **três estados** — LIDO (ec 0), AUSENTE (ec 0) e **NÃO
+DETERMINÁVEL (ec 3)** —, insumo validado **antes** do laço, fonte = `origin/$BASE` **∪ head do PR**, e o
+`python` substituído pelo `--jq` embutido do próprio `gh` (zero dependência nova).
+
+**A decisão que mais muda a vida de quem usa: objeto JULGADO deixa de ser objeto APROVADO.** Uma ata REPROVADA
+declara objeto e **não** declara aprovação; ler o veredito em prosa seria reconhecer forma (três grafias em
+10 das 107 atas, e numa delas APROVADO e REPROVADO na MESMA linha). Só a linha `- **approved_head:**` conta.
+**Custo medido, declarado e aceito:** `linha_estrutural_approved_head` = **0 de 107** em `origin/main@fc3363e3`
+(0 de 108 no head do ramo) — **LIDO é inalcançável no corpus de hoje**, e #390/#391/#392 deixam de sair como
+"lidos": passam a NÃO DETERMINÁVEL com o objeto listado. Estavam certos **por sorte do veredito**. O ritual que
+faz nascer a linha tem dono: `P-GOV-ATA-APPROVED-HEAD-LINHA` → bloco `B-GOV-ATA-CABECALHO`.
+
+**Os guards passam a exercitar o artefato.** `tests/mandato-refs.test.ts` reescrito (**18** casos) e
+`tests/mandato-preflight.test.ts` novo (**33**) — **51 casos, 100 % por `spawnSync` do `.sh` real**, em arnês
+com repositório git em `mkdtemp`, `gh` shimado por PR e uma ata que vive **só no ramo**. Zero réplica, zero
+asserção sobre comentário. Com o script apagado, cada arquivo passa **0**; reescrevendo só comentários, passa
+**tudo**. **30 mutações** executadas em arnês isolado no scratchpad, cada critério com a sua, com rodada de
+controle antes e depois — e a rodada com o artefato apagado **pegou um buraco no próprio guard**: dois casos
+(`[C7]` e `[D1]`) sobreviviam por serem **comparações relativas**, vacuamente verdadeiras com os dois lados
+vazios. Ganharam âncora absoluta; a re-medição deu 0/18.
+
+**KPI.** Backend **3058/3060 → 3103/3105 REEXECUTADO** (Δ +45 sobre o ciclo 1, +51 sobre a `origin/main`;
+decomposto: `mandato-refs` 6 → 18 e `mandato-preflight` 0 → 33; **N=2 execuções com denominador idêntico**,
+Postgres `pg-dev393` e Redis `redis-dev393` descartáveis próprios, a base viva intocada; os 2 skips são os
+`RBAC_DB_PARITY` pré-existentes). Smoke **1202/1202** e Flutter **864/864** **carregados com nota** (§C3.3),
+provados nos dois sentidos. `blocks_completed` **168, inalterado** — o ciclo 2 é correção do MESMO bloco.
+`mvp_demo`/`mvp_vendavel` **intocados**. Índice de pendências **pelo gerador**: fecha
+`P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (com o teste de encerramento colado) e abre três com dono —
+`P-GOV-ATA-CABECALHO-TEMPLATE`, `P-GOV-ATA-APPROVED-HEAD-LINHA` e `P-GOV-MANDATO-2-FRONTEIRAS`.
+
+**Fica devendo, e é do orquestrador** (o §4 do plano do ciclo 2 põe esses caminhos fora do escopo do dev):
+nomear `B-GOV-ATA-CABECALHO` e `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e
+escrever a seção do ciclo 2 na ata.
