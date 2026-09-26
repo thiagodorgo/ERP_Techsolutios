@@ -97,8 +97,24 @@ anterior. **A cadeira nova não herda medição, conclusão nem amostra da bloqu
 ## Os três enunciados que faltavam (bloqueio B2), agora em arquivo
 
 1. **A base viva (`erp-postgres`, `erp-redis`) NUNCA é alvo de NENHUM jurado** — não só do dev. Quem precisar
-   de banco sobe cluster **descartável próprio**, com `DATABASE_URL`/`REDIS_URL` explícitas e porta declarada
-   (a 5432 é de outro projeto; a faixa **58284–58483** é excluída pelo Windows).
+   de banco sobe cluster **descartável próprio**, com `DATABASE_URL`/`REDIS_URL` explícitas e porta declarada.
+
+   > **CORREÇÃO DE FATO (orquestrador, 2026-09-26) — eu vinha afirmando duas coisas FALSAS, e o
+   > `inspetor-de-terreno-da-junta` da junta 2 as derrubou por execução (ressalva R2 FORTE).**
+   >
+   > **(a) "a 5432 é de outro projeto" é FALSO — e era falso na direção perigosa.** Medido agora:
+   > `docker ps` mostra **`erp-postgres` em `0.0.0.0:5432`** e **`erp-redis` em `0.0.0.0:6379`**. São a
+   > **BASE VIVA DESTE PROJETO**. A conduta que eu pedia (não usar a 5432) estava certa, mas **pela razão
+   > errada** — e a razão errada podia inverter a conduta: uma cadeira que lesse "é de outro projeto"
+   > poderia concluir que a 5432 não é a base viva e usá-la. **Nenhuma cadeira usa 5432 nem 6379.**
+   >
+   > **(b) "a faixa 58284–58483 é excluída pelo Windows" é FALSO.** `netsh int ipv4 show
+   > excludedportrange protocol=tcp` **não a lista**. As exclusões reais medidas incluem `5357`,
+   > `49152-49251`, `49680-49979` e `50000-50259`.
+   >
+   > **Regra que substitui a faixa inventada:** escolha a porta que quiser e **PROVE que ela ligou** —
+   > publique o comando e a saída. Não confie em faixa declarada por mim nem por ninguém; uma porta que
+   > não liga aparece como falha do drill, e aí o número vira ruído em vez de medição.
 2. **A junta não fecha com menos de 3 votos de mérito.** Não há suplente nomeado: queda por infra ou cota
    **relança a mesma identidade**, e nada que a cadeira tenha começado conta como voto. **Voto perdido nunca
    conta como aprovação.** Por isso cada cadeira grava **evidência incremental a cada item**.
