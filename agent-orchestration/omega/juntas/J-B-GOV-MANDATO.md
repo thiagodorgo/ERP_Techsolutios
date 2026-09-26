@@ -1,4 +1,11 @@
-# J-B-GOV-MANDATO — ciclo 1
+# J-B-GOV-MANDATO (PR #393) — ciclo 1
+
+> *Título emendado em 2026-09-26 pelo orquestrador, autor da ata, para **nomear o PR** — exigência E3.c do
+> plano do ciclo 2. **Veredito e objeto intocados.** Sem o `#393` no título, `mandato-refs.sh` não acha esta
+> ata; com ele, a ata vira o caso vivo do critério C8 (ata única REPROVADA → `NÃO DETERMINÁVEL`, nunca
+> `approved_head`). A ferramenta atual lista atas só em `origin/$BASE` e não enxerga o ramo, logo esta
+> emenda não abre janela de falha — medido pelo `planejador-mestre`, que derrubou a premissa contrária do
+> orquestrador.*
 
 - **Objeto julgado:** `7462b75bfb7768556a2da2ee13f9ac92e9198872`, resolvido **independentemente pelas três
   cadeiras** (`git rev-parse`, cruzado por C2 com `mandato-refs.sh 393` e `gh pr view --json headRefOid`).
