@@ -3001,3 +3001,36 @@ e **não** é o objeto julgado — o `approved_head` foi **lido da ata** `J-B-SA
 **Nota de terreno.** O head do PR **andou durante a autoria** (`f8d5a2c8` → `1ae82626`, o commit que conserta a
 extração de SHA colando dois num só). Todas as âncoras deste registro foram **medidas** por
 `bash scripts/mandato-refs.sh 393` no momento da execução, não copiadas do mandato.
+
+## 2026-09-26 — B-GOV-MANDATO **ciclo 2** (PR #393) — `published_per_pr`
+
+| métrica | antes | depois | origem |
+|---|---|---|---|
+| `backend_tests` | 3058/3060 | **3103/3105** | medido por: `npm test` no worktree próprio `C:/Users/AMP/w-dev393`, **N=2 execuções**, denominador idêntico |
+| `frontend_smoke_tests` | 1202/1202 | 1202/1202 | carregado com nota §C3.3 — medido por: `git diff --name-only origin/main HEAD -- frontend mobile` = 0 e `git status --porcelain -- frontend mobile` = 0 |
+| `flutter_tests` | 864/864 | 864/864 | carregado com nota §C3.3 — mesma medição |
+| `blocks_completed` | 168 | **168 (inalterado)** | medido por: leitura do `Kpis/kpis-latest.json` do head do ciclo 1 — o ciclo 2 é correção do MESMO bloco, não bloco novo |
+| `mvp_demo` / `mvp_vendavel` | — | **intocados** | §C3.4 — o PR não move escopo |
+
+**Por que o número subiu +45 sobre o ciclo 1 (e +51 sobre a `origin/main`).** `tests/mandato-refs.test.ts`
+foi **reescrito**: 6 → **18** casos. Os 6 antigos mediam uma **réplica em TypeScript** do matcher, e **quatro
+deles passavam com o `.sh` APAGADO** — é o bloqueante C2-01 da ata. Os 18 novos passam **100 % por
+`spawnSync("bash", [scripts/mandato-refs.sh, …])`** num arnês com repositório git em `mkdtemp`,
+`git update-ref refs/remotes/origin/main`, uma ata que vive **só no ramo** e um `gh` shimado que responde
+**por PR**. E `tests/mandato-preflight.test.ts` **nasce** com **33** casos: o pré-voo tinha **zero** cobertura
+automatizada no ciclo 1 (medido: `grep -rn 'mandato-preflight' tests/` → nada). 12 + 33 = **45**.
+
+**Prova de que a contagem é honesta (critério [F1] do plano).** Com o seu script apagado, cada arquivo passa
+**ZERO** casos — `mandato-refs` 18 → **0/18**, `mandato-preflight` 33 → **0/33** —, e a rodada de **controle**
+com o script no lugar reproduz 18/18 e 33/33 dentro do mesmo arnês, provando que o arnês não é a variável.
+Na primeira medição **dois** casos de `mandato-refs` sobreviveram ao artefato apagado (`[C7]` e `[D1]`, os
+dois **comparações relativas** que ficam vacuamente verdadeiras quando os dois lados saem vazios); os dois
+ganharam **âncora absoluta** e a re-medição deu 0/18. O critério pegou um buraco no próprio guard.
+
+**Os 2 SKIP não são deste bloco:** são os mesmos `RBAC_DB_PARITY` da base, que só ligam no job
+`backend-postgres` do CI.
+
+**`merge_commit` e `approved_head`: `null` na autoria** (§C3.5), com backfill pós-merge. E há uma razão nova
+para o segundo: a ferramenta deste próprio bloco passou a responder **`NÃO DETERMINÁVEL` (ec=3)** para o
+#393 — ata única, **REPROVADA**, sem a linha `- **approved_head:**`. É o caso C8 vivo, e é o comportamento
+correto: objeto **julgado** não é objeto **aprovado**.
