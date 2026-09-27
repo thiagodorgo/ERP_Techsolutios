@@ -2627,3 +2627,46 @@ faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas
 aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
 do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
 ata** antes de publicá-lo.
+
+---
+
+## `D-SEM-TETO-AUDITORIA-NO-3` — o teto de ciclos cai; no ciclo 3 audita-se a MÁQUINA (decisão do dono, 2026-09-27)
+
+**O que o dono decidiu, nas palavras dele:** *"vamos remover a trava de dois ciclos; se rodar três ciclos e
+encontrar mais erro, faremos uma auditoria na orquestração e na junta para garantir que está tudo normal e
+continuaremos. Se está encontrando erro está tudo certo."* Fonte §A1.1.
+
+**REVOGA `D-TETO-DOIS-CICLOS`** (2026-08-29), que revogara o teto de 5. Não há mais teto por contagem.
+
+**O que muda.** Reprovação de junta deixa de parar o bloco. No lugar do teto entra um gatilho de natureza
+diferente: **no ciclo 3 com achado `bloqueia`, audita-se a orquestração e a junta antes do ciclo 4** — a
+máquina, não o bloco. Texto operante no §C7.4 item 4 do `CLAUDE.md` e no espelho do `AGENTS.md`.
+
+**Por que a troca é uma melhora de desenho, e não um afrouxamento.** O teto por contagem pergunta *"o bloco
+gastou o orçamento?"*. A pergunta útil é *"a máquina está achando defeito de verdade?"*. Foi o próprio
+`B-GOV-MANDATO` que mostrou a diferença: nos dois ciclos, as juntas acharam defeitos **reais e medidos por
+mutação** — a trava que só via bullets, o guard que testava uma réplica em vez do artefato, e o conserto do
+`approved_head` que não tinha teste nenhum e cuja remoção fazia a ferramenta **voltar a inventar o valor**
+com o guard verde. Parar ali por contagem descartaria uma máquina que estava funcionando.
+
+**Contexto medido que o dono tinha na mão ao decidir.** `B-GOV-MANDATO` ciclo 1 REPROVADO 2×1, ciclo 2
+REPROVADO 2×1. O ciclo 2 **fechou** o defeito central do ciclo 1 (0 de 51 casos sobrevivem ao artefato
+apagado, contra 4 de 6), fechou a pendência do basename **duas vezes com amostras independentes**, e publicou
+a primeira medição de cobertura que este artefato já teve: **87%**, sobre 195 pontos enumerados da fonte.
+Os bloqueantes novos são de uma classe nomeada: **o remédio nasceu com a doença** — a checagem 7, escrita no
+ciclo 2 para fechar o ciclo 1, é literalmente *"bullet rejeita, tabela passa"*.
+
+**O que NÃO muda.** §C7.4-bis (quem acha ≠ quem planeja ≠ quem desenvolve) · identidade nova nas cadeiras que
+votaram · inspetor de terreno fail-closed antes de cada junta · quórum por risco (§C7.1-ter(b)) · junta com
+ata registrada · CI verde · KPI por PR com execução real · limpeza §C5 · porteiro pós-merge · e as **paradas
+imediatas irredutíveis** do §C7.5 (migração destrutiva, exposição de segredo, ação irreversível em produção).
+
+**Risco assumido e sua mitigação, declarados.** Sem teto por contagem, um bloco que não converge pode consumir
+indefinidamente — e a resposta do §C7.4 à reprovação é **escalar**, o que torna cada ciclo mais caro. A
+mitigação não é um teto disfarçado: é o orquestrador **relatar, a cada ciclo, se a classe de defeito se
+repetiu sem informação nova**. Classe repetida sem informação nova é o sinal de não-convergência, e é isso
+que a auditoria do ciclo 3 existe para examinar.
+
+**Blocos em voo.** O `B-GOV-MANDATO`, que havia parado no teto revogado, **retoma no ciclo 3** sob esta
+decisão. Como o ciclo 3 é exatamente o do gatilho, se ele produzir achado `bloqueia` a auditoria da máquina é
+obrigatória antes do ciclo 4.

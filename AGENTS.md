@@ -437,23 +437,32 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → subagente pesquisador web (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
-4. **Protocolo de dificuldade — TETO DE DOIS CICLOS (decisão do dono, 2026-08-29, `D-TETO-DOIS-CICLOS`).**
-   **REVOGA o teto de 5 ciclos** que esta seção trazia (ciclos 1–2 fábrica · ciclo 3 crítico reabre premissa ·
-   ciclos 4–5 junta ampliada · parada só após o 5). O teto agora é **2**:
-   - **Ciclo 1** — entrega, junta, veredito.
-   - **Ciclo 2** — se reprovado: corrige (com §C7.4-bis intacto — **quem achou não conserta**) e volta à junta
-     com **identidade nova** na cadeira que reprovou.
-   - **Reprovou no ciclo 2 → PARA. Não há ciclo 3.** **Dossiê ao dono**, com o que foi entregue, o que cada
-     junta achou, o que foi corrigido, **por que a correção não bastou** e as opções com custo.
-   - A `agente-fabrica` **continua** criando especialistas — mas **dentro dos dois ciclos**, nunca como forma
-     de adiar a parada.
-   - Registro dos ciclos segue em `omega/reprovacoes/R-<entrega>-<ciclo>.md`. As **paradas imediatas
-     irredutíveis** (§C7.5) são independentes deste teto.
-   - **Blocos em voo sob o teto antigo — aplicação, transcrita de `D-TETO-DOIS-CICLOS`
-     (`agent-orchestration/controle/decisoes.md`):** blocos **novos** nascem sob o teto de 2; e
-     "**`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
-     última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto."
-     **Não há ciclo 6.** Após reprovação no teto, o único caminho é o dossiê ao dono.
+4. **Protocolo de dificuldade — SEM TETO DE CICLOS; AUDITORIA DA MÁQUINA NO CICLO 3 (decisão do dono,
+   2026-09-27, `D-SEM-TETO-AUDITORIA-NO-3`).** **REVOGA o `D-TETO-DOIS-CICLOS`** (2026-08-29), que por sua vez
+   já revogara o teto de 5. **Não há mais teto por contagem de ciclos.**
+   - **Reprovação de junta NÃO para o bloco.** Abre-se o ciclo seguinte, com os papéis recompostos pelo
+     §C7.4-bis (quem achou ≠ quem planeja ≠ quem desenvolve), identidade nova nas cadeiras que votaram, e o
+     registro `omega/reprovacoes/R-<entrega>-<ciclo>.md` de sempre.
+   - **GATILHO NO CICLO 3 — auditoria da MÁQUINA, não do bloco.** Se o ciclo 3 também produzir achado
+     `bloqueia`, **antes de abrir o ciclo 4** é OBRIGATÓRIA uma auditoria da **orquestração e da junta**, que
+     responde **por execução**: (a) os achados são **defeitos reais do produto**, ou artefatos do processo
+     (critério impossível de passar, premissa herdada como fato, amostra do próprio autor, guarda que
+     reconhece forma em vez de enunciar propriedade)? (b) a **composição** cobre a competência que os achados
+     exigem, e a **inelegibilidade** foi conferida por nome? (c) o **planejador** está usando dado podre?
+     (d) o **mandato do orquestrador** passou no pré-voo? (e) o **terreno** foi limpo em cada ciclo, e o
+     inspetor liberou cada junta? Conduz a auditoria uma identidade que **não votou, não planejou e não
+     desenvolveu** no bloco.
+   - **Depois da auditoria, CONTINUA-SE.** Ela é checagem de saúde da máquina, **não uma parada**: máquina sã
+     → o ciclo 4 abre; máquina defeituosa → conserta-se a máquina primeiro, e então o ciclo 4 abre.
+   - **A razão do dono, nas palavras dele:** ***"se está encontrando erro está tudo certo."*** Achado é a
+     junta funcionando. O que merece vigilância não é o bloco que reprova três vezes — é a possibilidade de a
+     máquina estar **fabricando** achados, ou **deixando de ver** os reais.
+   - **Risco assumido, declarado:** sem teto por contagem, um bloco que não converge pode consumir
+     indefinidamente. A mitigação é o gatilho do ciclo 3, **melhor dirigido que uma contagem** — ele pergunta
+     se a máquina está certa, não se o orçamento acabou. O orquestrador relata, a cada ciclo, se a classe de
+     defeito **se repetiu sem informação nova**, que é o sinal de não-convergência.
+   - A `agente-fabrica` continua criando especialistas por ciclo. As **paradas imediatas irredutíveis**
+     (§C7.5) são independentes disto e continuam valendo integralmente.
 
    **Por quê, medido:** o `B-O6R-01` levou 3 ciclos; o `B-O6R-02` chegou ao **ciclo 5** com **16 identidades de
    jurado queimadas**, e a auditoria de 28/08 mediu **3 blocos consumindo 24% de todos os ciclos**. A resposta
