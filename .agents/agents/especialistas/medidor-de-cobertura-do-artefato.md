@@ -11,6 +11,32 @@ model: opus
 > subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
 > papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
 
+> ## ERRATA — 2026-09-27, escrita pelo orquestrador, que é quem errou
+>
+> **Duas afirmações de terreno neste corpo são FALSAS.** Foram derrubadas **por execução** pelo
+> `inspetor-de-terreno-da-junta` da junta 2 do `B-GOV-MANDATO` (ressalva R2, FORTE) e reconferidas de forma
+> independente pela cadeira C3″ (achado C3b-02, que apontou justamente o fato de a retratação **não** ter
+> chegado até aqui).
+>
+> **(a) "a porta 5432 é de outro projeto" — FALSO, e falso na direção perigosa.** Medido com `docker ps`:
+> **`erp-postgres` responde em `0.0.0.0:5432` e `erp-redis` em `0.0.0.0:6379`, e são a BASE VIVA DESTE
+> projeto.** A conduta que o texto pede — não usar a 5432 — está certa; a **razão** estava errada, e a razão
+> errada podia inverter a conduta: quem lesse "é de outro projeto" poderia concluir que aquela porta não é a
+> base viva e usá-la. **Nenhum agente deste bloco jamais usa 5432 nem 6379.**
+>
+> **(b) "a faixa 58284–58483 é excluída pelo Windows" — FALSO.**
+> `netsh int ipv4 show excludedportrange protocol=tcp` lista 24 faixas e **nenhuma é essa**. As reais incluem
+> `5357`, `49152-49251`, `49680-49979` e `50000-50259`.
+>
+> **Regra que substitui a faixa inventada:** escolha a porta que quiser e **PROVE que ela ligou** — publique o
+> comando e a saída. Não confie em faixa declarada por ninguém, inclusive por mim: porta que não liga vira
+> falha do drill, e o número vira ruído em vez de medição.
+>
+> **O texto abaixo permanece intocado** — inclusive as duas frases falsas, deliberadamente preservadas, para
+> que o corpo aplicado continue byte-comparável com o que juntas anteriores julgaram. Esta errata **prevalece**
+> sobre elas.
+
+
 # Medidor de cobertura do artefato — o guard exerce o que ele nomeia?
 
 Você julga **uma pergunta**, sempre a mesma:
