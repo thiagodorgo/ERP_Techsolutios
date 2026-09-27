@@ -14,6 +14,39 @@
   isolado do scratchpad (`…/scratchpad/plan393c/`). Os pareceres foram lidos como **hipóteses a reproduzir**; onde a minha
   medição diverge do parecer, o §0 diz.
 
+> **v2 — 2026-09-27, após o parecer do `critico-adversarial` (rodada 1 de 2; `scratchpad/CRITICO-CICLO3.md`).** Ele derrubou os
+> mecanismos (1), (2), (4) e (5) da v1 — **e tinha razão nos quatro, por execução**: reproduzi os cinco escapes dele contra o meu
+> próprio protótipo (`<<< NADA >>>` em 5/5) e o abuso da colagem (`PASTE` absolvendo um SHA fabricado). O que muda na v2, cada
+> item com a prova em §0.6(d) e o critério que o derruba em §2:
+> 1. **Mecanismo (2) refeito de raiz — `approved_head` vira TOKEN RESERVADO.** Detectar "afirmação" em prosa é reconhecer forma,
+>    em qualquer unidade (linha, parágrafo, seção); o crítico mostrou que a unidade seguinte é sempre a que escapa. A propriedade
+>    que se enuncia sem forma é outra: **o nome do campo é da ferramenta; o autor não o escreve** — a única via de o
+>    `approved_head` aparecer num mandato é a colagem verbatim (igualdade linha a linha, bloco inteiro) da saída atual do
+>    `mandato-refs.sh`. Sem partição, sem co-ocorrência, sem `nao-rotula:`. 5/5 escapes do crítico, o abuso (acima e abaixo), a
+>    colagem velha e a reordenada → REJ; grafias (`approved-head`, `approvedHead`, `approved_`+quebra+`head`, em cerca, inline,
+>    célula) → REJ. O residual (sinônimo em prosa: "o head que a junta aprovou é X") é **declarado impossível sem vocabulário**,
+>    com dono, e **asserido como OK de propósito** no guard para ficar visível.
+> 2. **Princípio novo em §0.5, que responde à pergunta do crítico ("o que o gatilho trata como fronteira, e quem a testa?"):**
+>    partição é segura para regras **universais** ("toda unidade tem X" — partir só rejeita mais) e insegura para regras de
+>    **co-ocorrência** ("a unidade tem A e B" — partir esconde). Toda checagem do pré-voo é classificada; nenhuma ∃ sobrevive.
+> 3. **Mecanismos (4) e (5) unificados num INVENTÁRIO de isenções e máquinas de estado** (E2.i): cada isenção é *estrutural por
+>    igualdade* (colagem) ou *declarada e visível* (`caixa-exata:`, `(novo)` — contadas em AVISO), cobre **exatamente** o que
+>    nomeia, e tem o **teste recíproco de sobre-isenção** [F-ISO-*]; cada máquina de estados tem o caso não previsto nomeado e a
+>    saída fail-closed testada [F-SM-*]. Duas isenções do ciclo 2 que eram escapes caem: cabeçalho de tabela (vira unidade) e
+>    `>`/`###` fora das seções (só `# título` fica) — protótipos de 1 linha executados, compatíveis com os 33 casos protegidos.
+> 4. **Mecanismo (1) sem fallback.** Dois devs é **condição de início**, conferida pelo inspetor; não há "um dev commita os testes
+>    primeiro". Não há prazo que o justifique.
+> 5. **E4 fica, sem corte, e o custo é multiplicado:** ≈6 h serial pela minha conta (≈7 h pela do crítico), ≈1,5–2 h com
+>    `--jobs 4` (8 cores medidos). §3 reescrito: **nada sai por caber ou não** — não há teto (`D-SEM-TETO-AUDITORIA-NO-3`).
+> 6. **§1.1 ganha A11** ("o arnês muda o comportamento, não o conteúdo" — controle diferencial arnês × árvore real) **e A12**
+>    ("número unitário publicado sem a multiplicação que o contexto exige" — o meu ≈2 h).
+>
+> **O que derrubo do crítico: nada de substância.** Uma precisão de número: o custo da E4 não é ≈7 h com o unitário medido —
+> é ≈6 h; a diferença é o unitário do pré-voo (0,47 s × ~230 casos ≈ 110 s/execução, e não os 3 min que o meu R8 projetou). O
+> número que vale é o que o Dev-S publicar na 1ª rodada. **Terreno da v2:** editada em `C:/Users/AMP/w-mandato` sobre o blob
+> commitado em `61302337` (disco = blob `078fb17e…`, LF, CR=0, conferido antes de editar); `w-mandato` mostra dezenas de ` M
+> .agents/agents/*.md` que **não são meus** — reporto, não toco. Base viva nunca alvo; nada da v2 precisou de banco.
+
 ---
 
 ## §0 — Terreno e LINHA DE BASE (medida por mim, comando + saída)
@@ -180,36 +213,49 @@ diferentes).
 | P-6 | *existência exata no caminho citado* (pre l.61-74) | l.283 `(novo)` por **linha**; l.288 `d="${c##*:}"` | `(novo)` isenta tokens que não declara; e "o que vem depois do último `:`" trata **qualquer** prefixo como revisão — `falso.ts:package.json` passa porque `package.json` existe |
 | P-7 | *o guard fica vermelho se — e só se — o comportamento muda* (testes l.9-15) | 51 casos, escritos pelo **mesmo autor** do script, nas **formas que ele imaginou** | "vermelho sse comportamento muda" foi provado para **ausência do artefato** (0/51) e **no-ops** (4/4), não para **cobertura**: 16 pontos mudam o comportamento com o guard verde. Cobertura foi **narrada** ("51 casos"), não **medida** |
 
-### 0.5 Por que o remédio nasceu com a doença duas vezes — o MECANISMO, e o que este plano faz contra ele
+### 0.5 Por que o remédio nasceu com a doença duas vezes — o MECANISMO, e o que este plano faz contra ele (v2)
 
 Os dois ciclos têm a mesma anatomia, e ela não é "o dev errou":
 
-1. **Uma mente, duas peças.** Quem escreveu a checagem escreveu o guard; as fixtures são as formas que **esse** autor imaginou. O
-   guard do ciclo 1 media a réplica que o autor escreveu; o do ciclo 2 exercita o rótulo **na forma em que o autor o escreveu**
-   (`- approved_head: <sha>`, 3×). Um guard escrito pela mesma mente **não consegue ver** a forma que a mente não viu.
+1. **Uma mente, duas peças.** Quem escreveu a checagem escreveu o guard; as fixtures são as formas que **esse** autor imaginou. Um
+   guard escrito pela mesma mente **não consegue ver** a forma que a mente não viu.
 2. **Divergência do plano decidida sob pressão de dogfooding, na direção da FORMA.** O plano do ciclo 2 dizia "na mesma UNIDADE"; o
-   dev mediu um falso-positivo real e **estreitou** para "linha + `:`/`=`". Declarou (bem), mas ninguém reexecutou o drill de
-   propriedade contra o desenho divergente — e o desenho estreitado era uma forma. **Estreitar para caber no caso que doeu é o
-   gesto que produz "bullet rejeita, tabela passa".**
-3. **Cobertura por narrativa.** "51 casos, 100 % pelo `.sh`" é verdade e **não diz nada** sobre quais decisões do `.sh` têm caso.
-   Sem medição de cobertura por mutação, 6 de 7 cláusulas do conserto central ficaram sem guard — e os "30 mutantes em arnês" do
-   KPI eram infalsificáveis (C2′-08).
-4. **Máquina com estado não fechado.** A máquina de unidades ganhou um estado (`fence`) sem regra de saída; o caso não previsto
-   (cerca aberta) nasceu **permitido**, em silêncio — o oposto de fail-closed.
+   dev mediu um falso-positivo real e **estreitou** para "linha + `:`/`=`". **Estreitar para caber no caso que doeu é o gesto que
+   produz "bullet rejeita, tabela passa".** E a v1 deste plano **reencenou o gesto** (achado A-1 do crítico): medi a partição por
+   linha vazia no sentido do falso-positivo (a colagem partia em dois parágrafos), ajustei a isenção, e **não perguntei o que a
+   mesma partição fazia no sentido do falso-negativo**.
+3. **Cobertura por narrativa.** "51 casos, 100 % pelo `.sh`" não diz quais decisões têm caso; 6 de 7 cláusulas ficaram sem guard.
+4. **Máquina com estado não fechado.** A máquina de unidades ganhou um estado (`fence`) sem regra de saída.
+5. **A unidade em si nunca é variada — só o que está dentro dela.** (Achado do crítico, e é o que unifica os quatro acima.) Ciclo 1:
+   gatilho = marcador, escapou a tabela. Ciclo 2: gatilho = linha, escaparam tabela/quebra/prosa. v1 deste plano: gatilho =
+   parágrafo, laço de 14 formas **dentro** do parágrafo, escapou **a fronteira do parágrafo** (lista frouxa, `<details>`, cerca após
+   vazia — 5/5 executados). *"O que o meu gatilho trata como fronteira, e quem testa essa fronteira?"* — a v1 não perguntou.
 
-**O que impede o remédio deste ciclo de repetir o padrão — por CONSTRUÇÃO, não por lembrete:**
+**A resposta à pergunta, que vira regra de desenho para todo o pré-voo:**
 
-| mecanismo do defeito | o que muda de ESTRUTURA (não de conteúdo) | onde |
-|---|---|---|
-| uma mente, duas peças | **autor do guard ≠ autor do script.** Dev-T escreve E1/E3 **a partir deste plano** e commita **antes**: os casos novos ficam VERMELHOS contra os artefatos do ciclo 2 (é o vermelho-controle) e os 51 antigos VERDES. Dev-S escreve E2/E4 até o verde e **não edita teste**. A ordem dos commits é conferível no `git log` | §2 (ordem), §4, §10 |
-| formas imaginadas pelo autor | **invariância de forma como propriedade TESTADA.** O guard renderiza cada semente em **todas** as formas de uma lista compartilhada `FORMAS` e assere que o **veredito é o mesmo** em todas, salvo isenções **listadas com motivo dentro do teste**. O autor não escolhe a forma porque o laço escolhe todas; checagem nova entra no **mesmo laço**; a junta acrescenta formas próprias e o veredito tem de continuar invariante | E3 [F-*] |
-| cobertura narrada | **cobertura MEDIDA por mutação, com ferramenta rastreada** (`scripts/mandato-mutantes.sh`): enumera pontos de decisão da fonte, gera 1 mutante por ponto com operadores declarados, roda o guard em cópia isolada e publica `N · K · não-cobertos`. Critério: não-cobertos = vazio, ou cada um com prova de equivalência | E4 [M-*] |
-| divergência estreita para a forma | **divergência só por falsificação escrita** (comando + saída) devolvida ao planejador. O dev do script **não estreita**: se um caso legítimo é rejeitado, o remédio é uma **isenção nomeada e greppável** (`nao-rotula:`, colagem verbatim), nunca um gatilho mais estreito | E2 regra 3, §8 |
-| estado sem saída | **toda máquina de estados do pré-voo tem saída fail-closed:** cerca aberta no fim do arquivo = REJEITADO nomeando a linha; e cada estado novo exige o caso "não previsto nasce negado" | E2 (cerca), [F-8] |
+| tipo de regra | exemplo | partição em unidades é… | por quê |
+|---|---|---|---|
+| **∀ (universal)** — "toda unidade tem X" | checagem 3 (`medido por:`), 5 (`-i` por invocação), 6 (todo caminho existe), 4 (todo SHA na proveniência) | **segura** | partir uma unidade em duas só cria mais uma unidade que precisa de X: **rejeita a mais**, nunca a menos (fail-closed por construção) |
+| **∃ / co-ocorrência** — "a unidade tem A **e** B" | checagem 7 v1 ("rótulo + SHA no mesmo parágrafo") | **insegura** | partir a unidade separa A de B e o gatilho não dispara: **escape silencioso**, e a forma que parte é sempre a que ninguém listou |
+| **isenção** — "se a unidade tem T, não se cobra X" | `nao-rotula:`, `caixa-exata:`, `(novo)`, colagem | insegura quando o **escopo** absolvido é maior do que o **objeto** que a justifica | a colagem (2 linhas) absolvia o parágrafo (n linhas) — A-2 |
 
-**Onde a propriedade passa a morar** (resposta prévia; a segunda, pelo remédio executado, em §0.6): no **laço de formas** do guard
-(a forma deixa de existir como conceito **no teste**, não só no script), na **matriz de mutação** (cobertura vira número
-reproduzível) e na **separação de autores** (o guard não herda a imaginação do script).
+**Consequência para a v2:** nenhuma regra ∃ sobrevive no pré-voo. A checagem 7 vira ∀ **lexical sobre o documento inteiro**
+("nenhuma ocorrência do token fora da colagem"); toda isenção cobre **exatamente** o objeto que a justifica e tem teste
+recíproco; toda partição que sobra é de regra ∀.
+
+**O que impede o remédio deste ciclo de repetir o padrão — por CONSTRUÇÃO (v2):**
+
+| mecanismo do defeito | o que muda de ESTRUTURA | onde | o que o crítico derrubou na v1 → o que mudou |
+|---|---|---|---|
+| uma mente, duas peças | **autor do guard ≠ autor do script — condição de início, sem fallback.** Dev-T escreve E1/E3 a partir deste plano e commita **antes** (vermelhos contra os artefatos do ciclo 2); Dev-S escreve E2/E4 até o verde e **não edita teste**. O inspetor confere Dev-T ≠ Dev-S **nomeados** antes do 1º commit | §2, §4, §10 | A-6: o fallback "um dev, testes primeiro" trocava independência por ordem de commit → **removido**; sem segundo dev o bloco espera |
+| formas imaginadas pelo autor | **a forma deixa de poder produzir ESCAPE:** checagens ∃ viram ∀ lexicais (token reservado) e as ∀ partem só para rejeitar mais. O laço `FORMAS` (≥19, com as 5 fronteiras do crítico verbatim) passa a provar o **outro lado** — que nenhuma forma legítima é rejeitada indevidamente — e a junta acrescenta **fronteiras**, não enfeites | E2.b, E3 [F-INV]/[F-EXT] | A-1: o laço era uma lista e não variava a fronteira do gatilho → **o gatilho deixou de ter fronteira**; o laço mudou de função |
+| cobertura narrada | **cobertura MEDIDA por ferramenta rastreada** (`scripts/mandato-mutantes.sh`, com `--jobs`), matriz commitada, controle contra a baseline sabidamente furada | E4 [M-*] | único mecanismo que o crítico validou → **fica, sem corte** (A-3/A-4) |
+| divergência estreita para a forma | **o dev não estreita e não inventa isenção:** só isenções **inventariadas** (E2.i) ou falsificação escrita ao planejador | E2 regra 3, E2.i, §8 | A-7: isenção também pode ser fail-open → toda isenção tem escopo exato + teste recíproco [F-ISO-*]; `nao-rotula:` **eliminada** |
+| estado sem saída | **inventário de máquinas de estado** (cerca, seção, unidade, tabela, colagem, token): caso não previsto nomeado + saída fail-closed + teste [F-SM-*] | E2.i | A-8: enunciado universal, instância única → **seis instâncias, cada uma com teste** |
+
+**Onde a propriedade passa a morar** (segunda resposta, pelo remédio executado, em §0.6(d)): no **léxico do documento inteiro**
+(o token é da ferramenta), na **igualdade com a ferramenta** (a colagem é reconhecida por ser idêntica, não por parecer), no
+**inventário** (isenção fora dele não existe) e na **matriz de mutação** (cobertura vira número).
 
 ### 0.6 Protótipos no scratchpad — "onde mora a propriedade?" SEGUNDA resposta, pelo remédio executado
 
@@ -227,7 +273,7 @@ cerca-til                ok   cercas balanceadas (~~~ envolve ``` colada)       
 **Onde a propriedade passa a morar:** no rastreador de cerca com **saída obrigatória** — o documento com cerca aberta **não
 sai**, nomeando a linha. A paridade invertida deixa de ser silenciosa; o autor tem dois contornos honestos (```` ou ~~~).
 
-**(b) Checagem 7 por PARÁGRAFO, cerca-consciente, com duas isenções por propriedade** (`proto/ah.awk`, `TOOL` = saída **real** do
+**(b) [SUPERADO na v2 — ver (d); fica como registro do erro que o crítico pegou em A-1/A-2] Checagem 7 por PARÁGRAFO, cerca-consciente, com duas isenções por propriedade** (`proto/ah.awk`, `TOOL` = saída **real** do
 `mandato-refs.sh` para o PR-sonda #777, estado LIDO `6852cd84…`):
 ```
 ah-bullet / ah-tabela / ah-quebra / ah-prosa / ah-heading   CLAIM l.3 approved_head = <sha>    <- as CINCO formas, o MESMO veredito (era 1 de 4)
@@ -249,6 +295,54 @@ verbatim* (a colagem canônica é reconhecida por **igualdade com a ferramenta**
 não regra do pré-voo — a prova deles é a própria execução na bateria (vermelho-controle: E3 contra os artefatos do ciclo 2 tem de
 ficar vermelho nos critérios novos; E4 contra os artefatos do ciclo 2 tem de listar ≥ os 5 pontos de §0.3). Não há nada a
 discriminar antes disso.
+
+**(d) v2 — TOKEN RESERVADO, executado contra os fixtures DO CRÍTICO (`scratchpad/crit393c/B`, `TOOL` = o `tool.txt` dele) e
+contra grafias/fronteiras minhas** (`proto/reserved.awk`; primeiro a reprodução dos achados dele no meu protótipo v1):
+
+```
+== (A-1/A-2) os escapes dele contra o MEU proto v1 ah.awk (por paragrafo):
+f-bullet / f-tabela / f-quebra / f-prosa / f-heading      CLAIM   (as 5 formas de paragrafo unico: o v1 funciona nelas)
+x-lista-frouxa / x-details / x-definicao-frouxa / x-citacao-apos / x-cerca-apos     <<< NADA >>>   (5/5 escapes CONFIRMADOS)
+x-paste-abuso   PASTE l.1 — nao e afirmacao     (o SHA fabricado acima da colagem e ABSOLVIDO: A-2 CONFIRMADO)
+
+== v2 reserved.awk — os mesmos 12 fixtures do critico:
+f-bullet f-tabela f-quebra f-prosa f-heading                       5/5  REJ l.N: token reservado approved_head fora da colagem
+x-lista-frouxa x-details x-definicao-frouxa x-citacao-apos x-cerca-apos   5/5  REJ  (os 5 escapes)
+x-paste-abuso                                                     REJ l.1  (a afirmacao fabricada; as 2 linhas da colagem isentas)
+f-paste-puro                                                      ok   nenhum approved_head fora da colagem
+== grafias e fronteiras novas (esperado: todas REJ):
+g-hifen (approved-head) · g-camel (approvedHead) · g-maiusc-espaco (APPROVED HEAD) · g-dentro-de-cerca · g-inline-code · g-tabela   6/6 REJ
+g-partido (`approved_` + quebra + `  head`)                       REJ l.3-4: token reservado approved_head partido entre duas linhas
+g-grep-dogfooding (`medido por: grep -ic approved_head J.md` + saida colada)   REJ l.3 e l.4   <- CUSTO declarado (contorno: 'approved_h[e]ad')
+== negativas e sobre-isencao:
+n-so-colagem (colagem indentada, sem cerca, com a linha vazia da propria saida)   ok
+n-colagem-cerca (a mesma dentro de ```)                                            ok
+n-sem-token                                                                        ok  (+AVISO sem colagem)
+n-sinonimo ("o head que a junta aprovou e `<sha>`")                                ok  <- ESCAPE POR CONSTRUCAO (fronteira 11; asserido de proposito)
+n-cruzamento ("o PR foi approved" + linha seguinte "head do ramo: x")             REJ l.3-4  <- falso-positivo ACEITO e declarado
+x-colagem-velha (1 SHA trocado)                                                    REJ l.6
+x-colagem-desordem (2 linhas trocadas)                                             REJ l.6 (linha igual a um campo, mas a colagem nao bate inteira: parcial ou DESATUALIZADA)
+x-abuso-abaixo (afirmacao fabricada DEPOIS da colagem)                             REJ l.6
+```
+**Onde a propriedade passa a morar:** no **léxico do documento inteiro** — não há unidade, logo não há fronteira a escapar; e na
+**igualdade com a ferramenta** — a colagem é isenta por ser idêntica (bloco inteiro, na ordem), e cobre só as suas linhas.
+**O que fica de fora por construção, e é dito:** sinônimo em prosa (fronteira 11). Detectá-lo é vocabulário. Não há remédio
+form-free para isso, e o plano não finge que há.
+
+**(e) v2 — duas sobre-isenções do ciclo 2 que ninguém tinha atacado, fechadas com 1 linha cada** (cópia pristina `git show
+34969a81:scripts/mandato-preflight.sh`, md5 `1b65dc3c`; `diff` = 1 linha em cada):
+```
+== checagem 3 — cabecalho de tabela vira UNIDADE (l.222: `continue` -> abre unidade):
+h-claim-no-header  `| suite 3103/3105 e CI 14/14 | valor |` + sep + linha com evidencia   pristino PRE-VOO OK  ->  v2 REJEITOU 1   (afirmacao escondida no cabecalho)
+h-header-sem-coluna `| item | valor |` + sep + linha com evidencia                          pristino PRE-VOO OK  ->  v2 REJEITOU 1   (custo: tabela em MEDIDO tem coluna de evidencia)
+h-header-com-coluna `| afirmacao | medido por: |` + sep + linha                            pristino OK          ->  v2 OK
+   compatibilidade [P-0]: os 6 cabecalhos das fixtures protegidas sao `| afirmacao | medido por: |` (4), `| hipotese | derruba com: |` (1) e o de [A4] — todos nomeiam a coluna
+== checagem 2 — fora das secoes so `# titulo` (l.112: tira `/^#/` e `/^>/`, deixa `/^# /`):
+o-citacao-antes  `> suite 3103/3105 verde e CI 14/14` antes de ## MEDIDO   pristino PRE-VOO OK  ->  v2 REJEITOU 1
+o-h3-antes       `### suite 3103/3105 verde` antes                          pristino PRE-VOO OK  ->  v2 REJEITOU 1
+o-titulo         `# Mandato do bloco X`                                     pristino OK          ->  v2 OK
+   compatibilidade [P-0]: `grep -n 'bruto('` nas fixtures: nenhuma usa `>` nem `###` fora das secoes
+```
 
 ---
 
@@ -282,7 +376,8 @@ o critério falhar — é o insumo da auditoria do §C7.4.4 novo, e a junta 3 o 
 | A7 premissa herdada como fato | "5432 é de outro projeto"; "faixa excluída" | toda afirmação do ciclo anterior marcada "a re-verificar"; porta **prova que ligou** |
 | A8 critério impossível de passar | LIDO 0/107 — **declarado** de propósito | cada critério deste plano traz a mutação que o deixa vermelho **e** o controle positivo que o deixa verde |
 | A9 cor lida do terminal, não do arquivo | contagem parcial de saída rolada | `--test-reporter=tap` para arquivo; ler `# tests/pass/fail` **do arquivo** |
-| A10 comando truncado pela ferramenta de execução | **hoje**: dois appends deste plano falharam por tamanho do comando, sem executar nada | conferir o efeito (linhas do arquivo antes/depois), nunca presumir que "rodou" |
+\g<1>| A11 **o arnês muda o COMPORTAMENTO, não o conteúdo** (achado A-5 do crítico) | o crítico mediu 4 810 ms por invocação no arnês (o `RAIZ` não era repositório git) contra 467 ms na árvore real — bytes idênticos (`hash-object` = blob), comportamento 10× diferente; o meu `R6` já sabia que `<rev>:<caminho>` depende de `git rev-parse` em `$RAIZ` | **controle DIFERENCIAL**: o mesmo comando, sobre o mesmo insumo fixo, no arnês **e** na árvore real (worktree próprio); saídas iguais (menos caminho/data) ou o arnês é uma variável e a diferença é **nomeada** (repo git, PATH, cwd, EOL). Obrigatório em E4 (`--controle` inclui) e em toda medição do §0 de qualquer cadeira |
+| A12 **número unitário publicado sem a multiplicação que o contexto exige** (achado A-3, contra mim) | "≈2 h" usava o guard de 30 s enquanto outra seção do mesmo plano projetava 3 min para o guard novo; ninguém multiplicou | todo custo/contagem projetado vem com a **fórmula** (unitário × N, com os dois medidos ou marcados "projetado") e é **re-multiplicado por outro papel** antes de decidir algo com ele (aqui: o crítico) |
 
 Regra de classificação para a junta 3: um achado é **defeito real** se (i) reproduz na cópia pristina verificada, (ii) o comportamento
 muda **antes** de se olhar a cor do guard, (iii) sobrevive à 2ª execução em cwd/arnês distinto e (iv) nenhum controle da tabela
@@ -295,8 +390,7 @@ o dissolve. É **artefato** se algum controle o dissolve — e isso também se r
 **Ordem obrigatória (mecanismo 1 de §0.5):** E1 e E3 (testes, **Dev-T**) → commit → E2 e E4 (script e ferramenta, **Dev-S**) →
 commit → E5 (registro, Dev-S) + dívidas do orquestrador. Dev-T **não lê** o script que Dev-S vai escrever (não existe ainda);
 Dev-S **não edita** `tests/**`. Se Dev-S medir que um teste está errado, escreve a falsificação (comando + saída) e **para** —
-volta ao planejador (§8, regra 1). *Fallback declarado* se só houver um dev disponível: o mesmo dev escreve e **commita os testes
-primeiro** (vermelhos), e só então o script; a junta confere no `git log` que nenhum commit toca `tests/**` e `scripts/**` juntos.
+volta ao planejador (§8, regra 1). **Sem fallback (A-6):** dois devs **nomeados e distintos** é **condição de início**, conferida pelo inspetor antes do 1º commit; se só há um, o bloco espera o segundo. Ordem de commit é verificável; independência de imaginação é o que funciona — e o mecanismo é a segunda.
 
 ### E1 — `tests/mandato-refs.test.ts`: o bloco de validação de insumo ganha guard, cláusula a cláusula (fecha C2′-01, C2′-04, C2′-05, C2′-06)
 
@@ -333,125 +427,174 @@ normaliza e o ponto não discrimina: lição da sonda C2′ nova3).
 **Drill e fronteira:** igual ao ciclo 2 — `gh` real e API **não** atravessados (forma do TSV colada e datada). Deste lado:
 V1–V15. Do outro: drift do JSON (`P-GOV-MANDATO-2-FRONTEIRAS` 5, dono `B-GOV-MANDATO-2`); execução viva 392/393/387 na bateria.
 
-### E2 — `scripts/mandato-preflight.sh`: cerca com saída, checagem 7 por parágrafo, e os quatro ajustes da mesma classe (fecha (4), (5), C1′ 3-5-7, C2′-02/03 pelo lado do script)
+### E2 — `scripts/mandato-preflight.sh`: cerca com saída, `approved_head` como TOKEN RESERVADO, inventário de isenções e máquinas, e os ajustes da mesma classe (fecha (4), (5), C1′ 3-5-7, C2′-02/03; e A-1/A-2/A-7/A-8 do crítico)
 
 **Regra 3 para o Dev-S (mecanismo 4 de §0.5):** nenhuma checagem fica **mais estreita** do que este contrato para acomodar um caso
-que doeu; se um caso legítimo é rejeitado, o remédio é **isenção nomeada e greppável** ou **falsificação escrita ao planejador**.
-Os casos legítimos que hoje se conhecem estão nos critérios positivos abaixo — o dogfooding não inventa regra.
+que doeu; se um caso legítimo é rejeitado, o remédio é uma isenção **já inventariada** em (i) — ou falsificação escrita ao
+planejador. **Isenção nova fora do inventário = divergência não autorizada.**
 
 **(a) Cerca — estrutura, uma vez, para todos.** Um único rastreador calcula, por linha, se ela está dentro de cerca: abre com o
 primeiro token não-branco ≥3 crases **ou** ≥3 tils; **fecha só com o mesmo caractere e comprimento ≥ ao da abertura** (CommonMark
-§4.5). A máquina de unidades (checagem 3) e o particionador de parágrafos (checagens 5 e 7) **usam esse flag**, nunca um toggle
-próprio. **Saída fail-closed:** cerca ainda aberta no fim do arquivo → `REJEITADO  cerca aberta desde l.N (<char> x<k>) sem
-fechamento até o fim do arquivo — tudo depois dela seria lido como código`. Enquanto aberta, `## ` não troca seção (mantido) —
-agora sem colapso silencioso, porque o documento não sai.
+§4.5). A máquina de unidades (checagem 3) e a checagem 5 **usam esse flag**, nunca um toggle próprio. **Saída fail-closed:** cerca
+ainda aberta no fim do arquivo → `REJEITADO  cerca aberta desde l.N (<char> x<k>) sem fechamento até o fim do arquivo — tudo
+depois dela seria lido como código`. Enquanto aberta, `## ` não troca seção (mantido) — agora sem colapso silencioso.
 - **[F-8a]** `cerca-aberta` → REJ nomeando l.4; **[F-8b]** `cerca-paridade` (``` colada dentro de ```) → REJ l.8; **[F-8c]**
-  ```` envolvendo ``` → OK; **[F-8d]** `~~~` envolvendo ``` → OK; **[F-8e]** `cerca-fechada` → **exatamente 3** rejeições (não 0, não 4).
-  ⇄ remover a checagem de EOF → 8a/8b `PRE-VOO OK` → vermelho. ⇄ voltar ao toggle sem comprimento → 8c rejeita → vermelho.
+  ```` envolvendo ``` → OK; **[F-8d]** `~~~` envolvendo ``` → OK; **[F-8e]** `cerca-fechada` → **exatamente 3** rejeições.
+  ⇄ remover a checagem de EOF → 8a/8b `PRE-VOO OK` → vermelho. ⇄ toggle sem comprimento → 8c rejeita → vermelho.
   ◐ artefato se a fixture tiver CR (`od`) ou espaço após as crases mudando o token; real se reproduz com fixture LF gerada pelo teste.
 
-**(b) Checagem 7 por PARÁGRAFO, com isenções por propriedade.** *Parágrafo* = corrida máxima de linhas não vazias (linha vazia
-**dentro de cerca não parte**), sobre o arquivo inteiro. *Afirmação* = parágrafo com o token `approved_head` (caixa indiferente) e
-≥1 token SHA (tokenização da checagem 4). **Isenções, só estas duas:** (i) o parágrafo contém, como subsequência **contígua e
-na ordem** de linhas normalizadas (trim; vazias ignoradas), **todas as linhas de campo** (nem `#`, nem vazias) da saída **atual** de
-`bash "$REFS" "$PR"` — é a colagem canônica, reconhecida por **igualdade com a ferramenta**, não por aparência; (ii) o parágrafo
-contém `nao-rotula:` → `AVISO  l.N: co-ocorrência de approved_head e SHA sob nao-rotula: (confiança declarada)`. Fora das
-isenções, **cada** SHA do parágrafo exige estado LIDO com esse SHA (prefixo ≥7); senão `REJEITADO  l.N: o parágrafo rotula <sha>
-como approved_head, mas a ferramenta diz <estado>` / `LEU <sha>`; refs ec 1/2 → `… a ferramenta está indisponível (ec=N) — nada
-foi verificado`. **Custo declarado:** parágrafo que afirma `approved_head` só carrega o SHA aprovado; outros SHAs → outro parágrafo
-ou `nao-rotula:`.
-- **[F-7a]** rótulo em **bullet, tabela, quebra de linha, prosa e `###`** sob refs ND → **as cinco REJ** (mesmo veredito, 1 cada);
-  **[F-7b]** as cinco sob LIDO **do mesmo** SHA → OK; **[F-7c]** sob LIDO de **outro** SHA → REJ `LEU`; **[F-7d]** saída do shim
-  colada (com **e** sem cerca, **gerada pelo teste a partir do próprio shim**, nunca à mão) sob ND → OK e nenhum REJ da checagem 7;
-  **[F-7e]** a mesma colagem com 1 SHA trocado, e com 2 linhas trocadas de ordem → REJ; **[F-7f]** `nao-rotula:` → AVISO + OK;
-  **[F-7g]** rótulo + refs **morto** → REJ nomeando `indisponível (ec=1)` (o m074 do C2′); **[F-7h]** parágrafo sob LIDO com o SHA
-  aprovado **e** um segundo SHA → REJ (o custo é testado, não só declarado).
-  ⇄ voltar a `rotulo_ah` por linha + `:`/`=` → 7a tabela/quebra/prosa/`###` `PRE-VOO OK` → vermelho. ⇄ remover a isenção (i) → 7d
-  REJ → vermelho. ⇄ comparar só o 1º SHA → 7h OK → vermelho. ⇄ isenção (i) por prefixo `approved_head:` em vez de igualdade → 7e OK → vermelho.
-  ◐ **artefato se a fixture de colagem foi escrita à mão** (a "colagem velha" seria do teste, não do script) — o teste gera a
-  fixture chamando o shim; real se reproduz com a fixture gerada.
+**(b) Checagem 7 — `approved_head` é TOKEN RESERVADO (substitui "rotular é afirmar", que era regra ∃ e por isso escapava).**
+*Propriedade:* o nome do campo pertence à ferramenta; **o autor do mandato não o escreve.** Normalização: cada linha reduzida a
+`[A-Za-z0-9]` minúsculo; o token é a substring `approvedhead` — em qualquer grafia (`approved_head`, `approved-head`,
+`approvedHead`, `APPROVED HEAD`), em qualquer lugar (prosa, tabela, título, citação, `<details>`, inline code, **dentro de
+cerca**) e **partido entre duas linhas consecutivas** (janela de 2). **Sem partição, sem co-ocorrência com SHA, sem unidade: a
+presença basta.** **Única isenção — estrutural, por IGUALDADE:** um bloco de linhas do mandato que, após trim e ignorando vazias, é
+igual **na ordem e por inteiro** às linhas de campo (nem `#`, nem vazias) da saída **atual** de `bash "$REFS" "$PR"`. A isenção
+cobre **exatamente essas linhas** — não a de cima, não a de baixo, não outra do mesmo parágrafo. Colagem parcial, desatualizada ou
+reordenada **não é colagem**: cada linha dela com o token é rejeitada com a dica *"linha igual a um campo da ferramenta, mas a
+colagem não bate inteira: parcial ou DESATUALIZADA"*. `nao-rotula:` **não existe** (era isenção declarada que desarmava a checagem
+inteira — A-7). Sem `PR` + token → REJ ("cite o PR para a colagem poder ser conferida"). Refs ec 1/2 + token → REJ nomeando a
+indisponibilidade. **Sem colagem no mandato → `AVISO  sem colagem da ferramenta`** (visível, não bloqueante — exigir quebraria 12/33
+fixtures protegidas; fronteira 16, §3). *Custos declarados e testados:* o mandato não cita o campo do KPI (`approved_head: null`),
+nem a linha da ata, nem `grep approved_head` em `medido por:` — escreve "campo de aprovação do KPI", cita `J-X.md:4` por caminho,
+usa `grep -ic 'approved_h[e]ad'`; e "…approved" no fim de uma linha + "head…" no início da seguinte é rejeitado (falso-positivo
+aceito, raro, nomeado).
+- **[F-7a]** os 5 escapes do crítico **verbatim** (lista frouxa, `<details>`, definição frouxa, citação após vazia, cerca após
+  vazia) + as 5 formas de parágrafo único (bullet, tabela, quebra, prosa, `###`) → **10/10 REJ** nomeando a linha, sob **qualquer**
+  shim (LIDO, ND, AUSENTE). ⇄ voltar a qualquer detector por unidade (linha, parágrafo) → os 5 frouxos `PRE-VOO OK` → vermelho.
+- **[F-7b]** grafias: `approved-head`, `approvedHead`, `APPROVED HEAD`, `approved_`+quebra+`head`, em cerca, inline, célula → 7/7
+  REJ. ⇄ normalizar só caixa → hífen/camel passam → vermelho. ⇄ sem janela de 2 → partido passa → vermelho.
+- **[F-7c]** colagem verbatim (gerada **pelo teste** chamando o shim em modo completo; indentada, e também dentro de cerca) sob
+  LIDO, ND e AUSENTE → 0 REJ da checagem 7 e **nenhum** AVISO de "sem colagem". ⇄ exigir igualdade também das linhas `#` (`gerado
+  em: <data>`) → a colagem legítima REJ → vermelho.
+- **[F-7d] sobre-isenção (A-2/A-7):** colagem verbatim **com uma afirmação acima** (`- approved_head deste bloco: <fabricado>`),
+  **abaixo**, e **no meio** (linha inserida) → REJ nomeando **só** a linha estranha; colagem **com 1 SHA trocado** e **com 2 linhas
+  trocadas** → REJ com a dica de "parcial ou DESATUALIZADA". ⇄ isenção por parágrafo (o protótipo v1) → "acima" e "abaixo" passam →
+  vermelho. ⇄ isenção por prefixo de linha em vez de igualdade do bloco → "1 SHA trocado" passa → vermelho.
+- **[F-7e]** sem `PR` + token → REJ; refs morto + token → REJ nomeando `indisponível (ec=1)`. ⇄ m074 → vermelho.
+- **[F-7f]** negativas: sem o token → OK (+AVISO); **"o head que a junta aprovou é `<sha>`" → OK — escape POR CONSTRUÇÃO**
+  (sinônimo; fronteira 11), **asserido como OK de propósito** para que quem fechar a fronteira veja o caso mudar de cor.
+  ◐ se [F-7f] ficar REJ é over-rejection: conferir se a normalização pegou "approved"+"head" cruzando linhas (custo declarado) ou se
+  o dev estreitou além do contrato.
+- ◐ para F-7*: artefato se a fixture de colagem foi escrita à mão (o teste **gera** chamando o shim), se o `TOOL` que o teste usa
+  não é o mesmo shim que o script chama (`MANDATO_REFS` do `roda()`), ou se a fixture tem CR (`od`). Real se reproduz com fixture
+  gerada e `od` limpo.
 
 **(c) Tokenização (checagem 4):** `..` (dois ou mais pontos) **parte** tokens — é operador de intervalo, nunca identificador; `.`
 inicial sai em `limpa`. **Não** se parte em `_` (custo medido: 587 caminhos rastreados com `_` deixariam de ser conferidos pela
-checagem 6) — fronteira declarada (§3).
-- **[F-4a]** `git log <legítimo>..<fabricado>` → REJ do fabricado; controle `git log <legítimo>..<legítimo2>` → OK; **[F-4b]**
-  `.<fabricado>` → REJ. ⇄ remover o split → 4a OK → vermelho.
+checagem 6) — fronteira 10.
+- **[F-4a]** `git log <legítimo>..<fabricado>` → REJ do fabricado; controle `<legítimo>..<legítimo2>` → OK; **[F-4b]** `.<fabricado>`
+  → REJ. ⇄ remover o split → 4a OK → vermelho.
 
-**(d) Checagem 5 por INVOCAÇÃO:** a linha é partida em segmentos pelos separadores de shell (`|`, `||`, `&&`, `;`, `$(`, crase);
-a família é todo comando cujo nome **termina em `grep`** ou é `rg` (cobre `egrep`/`fgrep`/`zgrep`/`git grep`); o `-i`
-(isolado, agrupado `-[A-Za-z]*i[A-Za-z]*`, ou `--ignore-case`) tem de estar **no mesmo segmento**; `caixa-exata:` isenta o parágrafo.
+**(d) Checagem 5 por INVOCAÇÃO:** a linha é partida em segmentos pelos separadores de shell (`|`, `||`, `&&`, `;`, `$(`, crase); a
+família é todo comando cujo nome **termina em `grep`** ou é `rg`; o `-i` (isolado, agrupado `-[A-Za-z]*i[A-Za-z]*`, ou
+`--ignore-case`) tem de estar **no mesmo segmento**; `caixa-exata:` isenta **a unidade que a contém** (I2).
 - **[F-5a]** `egrep`/`fgrep` sem `-i` → REJ; **[F-5b]** `sort -ui lista && grep "x" f` → REJ; **[F-5c]** `grep -i x f | sort -u` →
-  OK; **[F-5d]** `grep --ignore-case x f` → OK (fecha o item 2 de `P-GOV-MANDATO-2-FRONTEIRAS` **em parte**; `Select-String` segue
-  fora); **[F-5e]** `docker ps -id && rg x f` → REJ.
-  ⇄ `-i` por linha → 5b/5e OK → vermelho. ⇄ família `grep|rg` literal → 5a OK → vermelho. ⇄ sem `--ignore-case` → 5d REJ → vermelho.
+  OK; **[F-5d]** `grep --ignore-case x f` → OK; **[F-5e]** `docker ps -id && rg x f` → REJ.
+  ⇄ `-i` por linha → 5b/5e OK → vermelho. ⇄ família literal `grep|rg` → 5a OK → vermelho. ⇄ sem `--ignore-case` → 5d REJ → vermelho.
 
 **(e) Checagem 6:** `(novo)` isenta **o token de caminho imediatamente anterior** (crase/aspas/parêntese de fecho podem estar entre
 os dois), não a linha; `<prefixo>:<caminho>` só é revisão se `git -C "$RAIZ" rev-parse --verify -q "<prefixo>^{commit}"` (ou
 `^{tree}`) resolve — senão o **token inteiro** é caminho e tem de existir.
-- **[F-6a]** `tests/novo.test.ts (novo) e li src/zzz/nao/existe/falso.ts` → **1** REJ (o segundo); **[F-6b]** `` `tests/novo.test.ts` (novo) `` →
-  OK; **[F-6c]** `src/zzz/nao/existe/falso.ts:package.json` → REJ; **[F-6d]** `HEAD:package.json` → OK; **[F-6e]** `docs/nao/existe/`
-  → REJ e `docs/revisoes/SAN3/` → OK (o m034).
-  ⇄ `(novo)` por linha → 6a OK → vermelho. ⇄ `d="${c##*:}"` → 6c OK → vermelho. ⇄ m034 → 6e OK → vermelho.
+- **[F-6a]** `tests/novo.test.ts (novo) e li src/zzz/nao/existe/falso.ts` → **1** REJ (o segundo); **[F-6b]** `` `tests/novo.test.ts` (novo) ``
+  → OK; **[F-6c]** `src/zzz/nao/existe/falso.ts:package.json` → REJ; **[F-6d]** `HEAD:package.json` → OK; **[F-6e]** `docs/nao/existe/`
+  → REJ e `docs/revisoes/SAN3/` → OK (o m034). ⇄ `(novo)` por linha → 6a OK → vermelho. ⇄ `d="${c##*:}"` → 6c OK → vermelho. ⇄ m034 → 6e OK → vermelho.
 
 **(f) Checagem 1 nas duas metades:** **[F-1b]** sem `## HIPOTESE` → REJ (o m003). ⇄ m003 → vermelho.
-**(g) Limite declarado, testado como simetria:** **[F-3s]** `medido por: -` em bullet **e** em célula → os dois OK, e o teste assere
-que os vereditos são **iguais**. ⇄ apertar um lado só → vermelho — é o propósito: aperto assimétrico não passa despercebido.
 
-**Cabeçalho do script** documenta o ciclo 3 e os custos: escopo de parágrafo do rótulo; `_` não parte; conteúdo de `medido por:`
-não verificado; `###` isento da checagem 3 (e **não** das 4-7). **Drill e fronteira:** F-* correm sobre fixtures geradas no
-tmpdir com `MANDATO_REFS` shimado — não atravessam o refs real (E1) nem formas fora de `FORMAS` (E3 [F-EXT] é a medição do outro
-lado, pela junta). Fora, com dono `B-GOV-MANDATO-2`: as fronteiras 1-8 vigentes (menos a parte de `--ignore-case`) e as novas de §3.
+**(g) Checagem 3 — cabeçalho de tabela vira UNIDADE (sobre-isenção que eu não tinha visto e o crítico não atacou; §0.6(e)):** a
+linha de cabeçalho (a que precede um separador) deixa de ser isenta: é unidade como as outras — a que nomeia a coluna `medido
+por:`/`derruba com:` satisfaz o requisito trivialmente (contém o token); a que não nomeia é rejeitada. Uma afirmação numérica
+escondida em `| suite 3103/3105 e CI 14/14 | valor |` passa hoje → REJ; os 6 cabeçalhos das fixtures protegidas nomeiam a coluna →
+inalterados. **Custo:** tabela em MEDIDO/HIPOTESE tem coluna de evidência. `###` dentro das seções **continua isento** (exceção
+(b), fronteira 13, visível por `grep -n '^###'`, asserido de propósito em [F-ISO-7]).
+- **[F-3h]** cabeçalho com afirmação e sem coluna → REJ; `| item | valor |` → REJ; `| afirmação | medido por: |` → OK. ⇄ restaurar o
+  `continue` do cabeçalho → vermelho.
+- **[F-3s]** `medido por: -` em bullet **e** em célula → os dois OK, vereditos **iguais** (limite declarado, testado como simetria).
 
-### E3 — `tests/mandato-preflight.test.ts`: o laço de FORMAS (invariância de forma como propriedade testada) + os casos de E2
+**(h) Checagem 2 — fora das seções só sobra o título (§0.6(e)):** `>` e `##+` fora de MEDIDO/HIPOTESE deixam de ser isentos; só
+`# …` (um sustenido — o título do documento) e vazias. `> suite 3103/3105 verde` antes de `## MEDIDO` passa hoje → REJ.
+- **[F-2a]** citação e `###` antes de `## MEDIDO` → REJ nomeando a linha; **[F-2b]** `# Título` → OK. ⇄ restaurar `/^>/` → vermelho.
 
-**Propriedade:** *para cada semente de rejeição, o veredito do pré-voo é o MESMO em todas as formas de `FORMAS`, salvo isenções
-listadas com motivo no próprio teste; e para a gêmea positiva da semente, o veredito é OK em todas.* Os 33 casos atuais ficam
-**verbatim** (protege C1-01 e o basename fechados); o laço é **acrescentado**.
+**(i) INVENTÁRIO de isenções, partições e máquinas de estado — mecanismos (4) e (5) instanciados em TODOS (A-7/A-8).** Isenção ou
+estado que não esteja nestas tabelas **não existe**; o Dev-S que precisar de um novo escreve a falsificação e para.
 
-**`FORMAS` (≥ 12, compartilhada por todas as sementes; cada uma recebe `(cabeca, cauda)` e devolve linhas):** `bullet` (`- `),
-`plus` (`+ `), `numerada` (`1. `), `tarefa` (`- [x] `), `paragrafo`, `citacao` (`> `), `recuada` (`  - `), **`quebra`** (`- cabeca`
-+ `  cauda`), **`tabela`** (cabeçalho sem coluna de evidência + separador + `| cabeca cauda |  |`), `tabelaEvid` (coluna
-`medido por:` e a cauda na célula), `definicao` (`termo` / `: cabeca cauda`), `html` (`<li>…</li>`), **`cabecalho`** (`### `),
-`cercado` (``` / linha / ```). **Meta-critério [F-MIN]:** o teste assere `Object.keys(FORMAS).length >= 12` **e** que `tabela`,
-`quebra`, `paragrafo` e `cabecalho` estão presentes — são as quatro que escaparam nos ciclos 1 e 2. ⇄ remover uma → vermelho.
+| # | isenção / partição | tipo | escopo EXATO que cobre | ∀ ou ∃ | teste de disparo | teste RECÍPROCO (sobre-isenção) |
+|---|---|---|---|---|---|---|
+| I1 | colagem verbatim da ferramenta (chk 7) | estrutural, por igualdade | só as linhas iguais, na ordem, ao bloco inteiro | isenção de ∀ | F-7c | F-7d (acima/abaixo/meio/velha/desordem) |
+| I2 | `caixa-exata:` (chk 5) | declarada, **visível** (`AVISO` com contagem) | a unidade que a contém | isenção de ∀ | [B5e] | **[F-ISO-2]** `caixa-exata:` na unidade A não cobre o `grep` da unidade B → REJ |
+| I3 | `(novo)` (chk 6) | declarada, **visível** (`AVISO` com contagem) | o token de caminho imediatamente anterior | isenção de ∀ | [B7b] | F-6a (2º caminho da linha → REJ) |
+| I4 | `<rev>:<caminho>` (chk 6) | estrutural (`rev-parse` resolve) | o prefixo que resolve | classificação | F-6d | F-6c (prefixo que não resolve → token inteiro) |
+| I5 | separador `\|---\|` (chk 3) | estrutural (não carrega conteúdo) | a linha do separador | — | [B1-correto] | **[F-ISO-5]** `\|--- x ---\|` não é separador → unidade → REJ |
+| I6 | cabeçalho de tabela (chk 3) | **REMOVIDA** — vira unidade | — | — | F-3h | F-3h |
+| I7 | `###` dentro das seções (chk 3) | declarada, visível (`grep -n '^###'`) | a linha do título | isenção de ∀ — **fronteira 13** | [B1-correto] | **[F-ISO-7]** assere que `### 87,4% em 12 rotas` passa **de propósito** (muda de cor quando a fronteira fechar) |
+| I8 | `# título` fora das seções (chk 2) | estrutural (1 sustenido) | a linha | — | F-2b | F-2a (`>`/`###` fora → REJ) |
+| I9 | token não-SHA por classe (URL, caminho, UUID) (chk 4) | classificação | o token | — | [B3-neg] | F-4a/b (`..` parte; `.` inicial sai) |
+| I10 | linha em branco fecha unidade (chk 3) | partição | — | **∀ — segura** | [B1-recuada] | **[F-ISO-10]** afirmação partida em 2 unidades por linha vazia → **2** REJ (nunca 0) |
+| I11 | segmento de shell (chk 5) | partição | — | **∀ — segura** (over-rejection aceita) | F-5b/e | **[F-ISO-11]** `grep \` com `-i` só na linha de continuação → REJ (custo); controle: `-i` no mesmo segmento → OK |
 
-**Sementes (cada uma = negativa + gêmea positiva + shim + isenções declaradas):**
-| semente | negativa (`cabeca` · `cauda`) | positiva | shim | isenções (motivo) |
+| máquina de estados | estados | caso NÃO previsto | saída fail-closed | teste |
 |---|---|---|---|---|
-| S3 checagem 3 | `cobertura 87,4% em 12 de 13 rotas` · `` | cauda `medido por: true` | `REFS_OK` | `cabecalho` (título não é afirmação — exceção (b) declarada) |
-| S4 checagem 4 | `cite` · `<FAKE>` | cauda `<SHA_A>` | `REFS_OK`, pr 393 | nenhuma |
-| S5 checagem 5 | `nao existe, medido por:` · `grep "ausente" f` | cauda `grep -i "ausente" f` | `REFS_OK` | nenhuma |
-| S6 checagem 6 | `li` · `src/zzz/nao/existe/falso.ts, medido por: true` | cauda `scripts/mandato-refs.sh, medido por: true` | `REFS_OK` | nenhuma |
-| S7 checagem 7 | `approved_head` · `` `<SHA_A>` medido por: true `` | mesma cauda | neg `REFS_ND` · pos `REFS_LIDO_A` | nenhuma |
-| S7′ checagem 7 | idem S7 | — | `REFS_LIDO_B` (outro SHA) | nenhuma (todas REJ `LEU`) |
+| cerca | fora / dentro(char, k) | aberta no EOF; fechamento com char ou comprimento errado | REJ nomeando a abertura | F-8a-e |
+| seção | nenhuma / M / H / X | `## OUTRA` no meio; conteúdo antes da 1ª seção | X → chk 2 rejeita; `>`/`###` já não isentos | F-2a, [A2] |
+| unidade | fechada / aberta(ustart) | linha indentada sem unidade aberta; cabeçalho de tabela | vira unidade nova (precisa de evidência) | [B1-recuada], F-3h, **[F-SM-3]** linha indentada como 1ª linha da seção → REJ |
+| tabela | fora / cabeçalho(tabCol) / linhas | tabela sem separador; `\|` após linha sem `\|`; célula vazia | sem separador = unidades normais; `tabCol=0` ao sair; célula vazia = REJ | [B1-tabela-uma-sem], **[F-SM-4]** tabela sem separador → cada linha é unidade → REJ das sem evidência |
+| colagem (chk 7) | não-casando / casando(j) | bloco parcial; vazia no meio; bloco repetido | parcial = não isenta (REJ com dica); vazias ignoradas; repetido = 2 blocos isentos | F-7d, **[F-SM-7]** colagem repetida 2× → OK |
+| token (chk 7) | — | partido entre linhas; grafia; em cerca | janela de 2; normalização alnum; cerca não isenta | F-7b |
 
-- **[F-INV]** para cada semente: `{status, rejeicoes>0}` das negativas **fora das isenções** formam um conjunto de tamanho **1** e
-  valem `{1, true}`; as isenções valem `{0, false}` **e estão nomeadas**; todas as positivas valem `{0, false}`. ⇄ é o que o script
-  do ciclo 2 **falha** em S7 (tabela/quebra/prosa/`###` = `{0,false}`) — vermelho-controle histórico. ⇄ para S3, remover a isenção
-  do `cabecalho` da lista → vermelho (a isenção é **testada**, não só escrita).
-  ◐ se uma forma falha **na positiva**, correr a mesma positiva pelo script do ciclo 2: se os dois rejeitam, suspeitar da renderização
-  (artefato do teste, ex.: linha fora das seções) e conferir contra CommonMark; se só o novo rejeita, é **defeito real** (over-rejection).
-- **[F-EXT] (critério da junta, não do dev):** a cadeira C1‴ acrescenta **≥ 2 formas próprias** a `FORMAS` numa cópia (ex.:
-  `<details>`, recuo por TAB, `* `, lista com dois níveis) e [F-INV] continua verde; se ficar vermelho, é achado `bloqueia` — **e o
-  motivo é forma**, exatamente a classe. ◐ artefato se a forma nova põe conteúdo **fora** das seções (checagem 2) — conferir antes.
+**Cabeçalho do script** documenta o ciclo 3: o token reservado e o porquê (três ciclos de "a unidade seguinte escapa"); a colagem
+como única via; os custos (KPI/ata/grep; cruzamento de linha; cabeçalho de tabela; `>`/`###` fora); `_` não parte; conteúdo de
+`medido por:` não verificado; `###` dentro isento. **Drill e fronteira:** F-* correm sobre fixtures geradas no tmpdir com
+`MANDATO_REFS` shimado — não atravessam o refs real nem o vocabulário (sinônimos). Fora, com dono `B-GOV-MANDATO-2`: fronteiras
+1-8 (menos `--ignore-case`) e as novas de §3.
 
-**Casos específicos (um `test` cada, todos por `spawnSync`):** F-8a…e (cerca) · F-7a…h · F-4a/b · F-5a…e · F-6a…e · F-1b · F-3s.
-As fixtures de colagem (F-7d/e) são **geradas no teste** chamando o shim `REFS_*` em modo completo e indentando/cercando a saída —
-nunca coladas como string literal (◐ de E2.b). **[F-0]** apagar `mandato-preflight.sh` → 0 casos passam (mantido; E4 confirma).
+### E3 — `tests/mandato-preflight.test.ts`: o laço de FORMAS (agora contra OVER-REJECTION), os escapes do crítico como casos, e os testes recíprocos do inventário
 
-**Vermelho-controle da E3 contra os artefatos do ciclo 2 (o Dev-T executa e cola antes de commitar):** arnês com
-`git -c core.autocrlf=false archive 34969a81 scripts | tar -x` + estes testes → **VERMELHOS esperados:** F-INV(S7), F-8a, F-8b,
-F-8c, F-8d, F-7a (4 formas), F-7d, F-7g, F-4a, F-4b, F-5a, F-5b, F-5d, F-5e, F-6a, F-6c; **VERDES esperados:** os 33 antigos, F-1b,
-F-6e, F-3s, F-7b/c/f (o script velho já os satisfaz — o vermelho-controle **deles** é a mutação m003/m034/…, não o script velho).
-Uma lista diferente da esperada é achado a reportar, não a corrigir.
+**Reenquadramento (A-1):** na v1 o laço `FORMAS` era o mecanismo contra escapes — e um laço é uma lista. Na v2 os escapes por forma
+são impossíveis **por construção** nas checagens ∃ (7: token reservado, sem unidade) e só rejeitam a mais nas ∀ (3, 5, 6: partição
+segura). O que o laço passa a provar é o **outro lado**: que nenhuma forma legítima é **rejeitada indevidamente** (gêmeas
+positivas) e que as ∀ rejeitam **em toda forma** (negativas). A forma que o autor não imaginou aparece como over-rejection na
+positiva — fail-closed e visível — nunca como escape silencioso. Os 33 casos atuais ficam **verbatim** ([P-0]).
 
-**Drill e fronteira:** mede o pré-voo **como script** sobre fixtures; não atravessa mandatos reais (o dogfooding da bateria, §8, é
-a única medição sobre mandato real — e agora inclui **o mandato do orquestrador para os devs**, item (d) da auditoria).
+**`FORMAS` (≥ 19; cada uma recebe `(cabeca, cauda)` e devolve linhas):** as 14 da v1 (`bullet`, `plus`, `numerada`, `tarefa`,
+`paragrafo`, `citacao`, `recuada`, `quebra`, `tabela`, `tabelaEvid`, `definicao`, `html`, `cabecalho`, `cercado`) **mais as 5
+fronteiras do crítico, verbatim**: `listaFrouxa` (cabeca + vazia + cauda indentada), `detailsFrouxo` (`<details><summary>cabeca
+</summary>` + vazia + cauda + vazia + `</details>`), `definicaoFrouxa` (cabeca + vazia + `: cauda`), `citacaoAposVazia`,
+`cercaAposVazia`. **[F-MIN]:** `Object.keys(FORMAS).length >= 19` e as 9 nomeadas (`tabela`, `quebra`, `paragrafo`, `cabecalho` +
+as 5 frouxas) presentes. ⇄ remover uma → vermelho.
 
-**Uma forma que ninguém testou nos dois ciclos: o fim de linha.** O pré-voo vai rodar sobre mandatos escritos no Windows; blob LF
-× working tree CRLF é a armadilha A3. **[F-EOL]** para cada semente, a negativa e a positiva gravadas com `\r\n` produzem **o mesmo
-veredito** que com `\n` (o teste escreve as duas variantes; `od` do fixture prova o CR). ⇄ não há mutação a fazer — se falhar é
-defeito real do script (regex ancorada em `$` sem tolerar `\r`); ◐ artefato se o `writeFileSync` normalizou o EOL (conferir por `od`).
+**Sementes:**
+| semente | negativa (`cabeca` · `cauda`) | positiva | shim | isenções nomeadas (motivo) |
+|---|---|---|---|---|
+| S3 chk 3 | `cobertura 87,4% em 12 de 13 rotas` · `` | cauda `medido por: true` | `REFS_OK` | `cabecalho` (I7, fronteira 13); nas 5 frouxas a negativa dá **≥2** REJ (partição ∀: rejeita a mais — asserido `>=1`, nunca 0) |
+| S4 chk 4 | `cite` · `<FAKE>` | cauda `<SHA_A>` | `REFS_OK`, pr 393 | nenhuma |
+| S5 chk 5 | `nao existe, medido por:` · `grep "ausente" f` | cauda `grep -i "ausente" f` | `REFS_OK` | nenhuma |
+| S6 chk 6 | `li` · `src/zzz/nao/existe/falso.ts, medido por: true` | cauda `scripts/mandato-refs.sh, medido por: true` | `REFS_OK` | nenhuma |
+| **S7 chk 7** | `approved_head` · `` `<SHA_A>` medido por: true `` — **nas 19 formas × 1 grafia** e **em 8 grafias × 1 forma** (ortogonais, declarado: 27 casos, não 152) | a **colagem verbatim gerada do shim** nas formas `paragrafo`, `recuada`, `cercado` | negativas sob **LIDO, ND e AUSENTE** (o estado é irrelevante por construção); positivas idem | nenhuma |
+
+- **[F-INV]** por semente: `{status, rejeicoes>0}` das negativas **fora das isenções** forma um conjunto de tamanho **1** =
+  `{1, true}`; isenções = `{0, false}` **nomeadas**; positivas = `{0, false}`. ⇄ S7: reintroduzir detector por parágrafo → as 5
+  frouxas `{0,false}` → vermelho (é o `<<< NADA >>>` do crítico dentro do guard). ⇄ S3: tirar I7 da lista → vermelho.
+  ◐ se uma forma falha **na positiva**, correr a mesma positiva pelo script do ciclo 2: se os dois rejeitam, suspeitar da
+  renderização (conteúdo fora das seções → F-2a rejeita por outra razão — ler a mensagem); se só o novo rejeita, é over-rejection
+  real (achado).
+- **[F-EXT] (junta, C1‴) — reescrito:** acrescenta **≥3 formas próprias que variem a FRONTEIRA** (linha vazia, seção, cerca, fim de
+  arquivo) e **≥2 grafias próprias** do token; [F-INV] continua verde. Variar só o enfeite (TAB, `* `, dois níveis) **não conta** —
+  o crítico mostrou que isso não alcança nada. ◐ artefato se a forma nova põe conteúdo fora das seções (conferir a mensagem).
+
+**Casos específicos (um `test` cada, todos por `spawnSync`):** F-8a…e · F-7a…f · F-4a/b · F-5a…e · F-6a…e · F-1b · F-3h · F-3s ·
+F-2a/b · **[F-ISO-2/5/7/10/11]** · **[F-SM-3/4/7]** · **[F-EOL]** (cada semente gravada em `\r\n` → mesmo veredito que em `\n`;
+`od` prova o CR; ◐ artefato se o `writeFileSync` normalizou) · **[F-0]** (script apagado → 0 casos passam). Fixtures de colagem
+**geradas** chamando o shim em modo completo — nunca string literal.
+
+**Vermelho-controle da E3 contra os artefatos de `34969a81` (Dev-T executa e cola antes de commitar):** VERMELHOS esperados —
+F-INV(S7) (as 5 frouxas, tabela, quebra, prosa, `###`, e as grafias exceto `approved_head:` em bullet, que o script velho já
+pega), F-7a, F-7b, F-7d (acima/abaixo), F-8a-d, F-4a/b, F-5a/b/d/e, F-6a/c, F-3h, F-2a, F-ISO-5, F-SM-4; VERDES esperados — os 33
+antigos, F-1b, F-6e, F-3s, F-7c, F-7f, F-ISO-2/7/10/11, F-SM-3/7, F-2b (o script velho já os satisfaz — o vermelho **deles** é a
+mutação). Lista diferente da esperada = achado a reportar, não a corrigir.
+
+**Drill e fronteira:** mede o pré-voo como script sobre fixtures; não atravessa mandatos reais (dogfooding §8 — inclui o mandato do
+orquestrador para os devs, item (d) da auditoria) nem sinônimos (fronteira 11, asserida em F-7f).
 
 ### E4 — `scripts/mandato-mutantes.sh` (NOVO, autorização nominal §4): cobertura por mutação MEDIDA e reproduzível (fecha (3), C2′-08)
 
@@ -460,7 +603,7 @@ um mutante por ponto com operador DECLARADO, guard executado contra cada mutante
 VERDES.* O que a C2′ construiu no scratchpad vira ferramenta rastreada — para o próximo "30 mutações executadas" não ser
 infalsificável.
 
-**Contrato:** `bash scripts/mandato-mutantes.sh <refs|preflight> [--only <linhas>] [--equivalentes <arquivo>] [--controle]`
+**Contrato:** `bash scripts/mandato-mutantes.sh <refs|preflight> [--only <linhas>] [--equivalentes <arquivo>] [--controle] [--jobs N]` (com `--jobs N`, mutantes em paralelo, cada um em cópia própria)
 1. `mktemp -d` → copia `scripts/mandato-*.sh`, `tests/mandato-*.test.ts` e as dependências das fixtures (**lista declarada no
    cabeçalho**: `mobile/flutter_app/lib/core/sync/sync_action_store.dart`, `docs/revisoes/SAN3/`, `CLAUDE.md`, `package.json`,
    `src/config/`, `scripts/*.mjs`, `tests/*.ts`); `git init` + commit (o `[B6]` usa `git ls-files`). **Nunca toca rastreado.**
@@ -476,9 +619,7 @@ infalsificável.
 5. Resumo: `N=<mutantes provados> K=<vermelhos> NAO-COBERTOS=<n> EXCLUIDOS=<m>`; lista dos não-cobertos com a linha; ec=1 se
    `NAO-COBERTOS − equivalentes-declarados > 0`. `--equivalentes` recebe um arquivo `id: justificativa (fixture que tentou
    discriminar)` — sem fixture nomeada a linha é ignorada (A6).
-6. `--controle`: injeta na cópia do artefato uma cláusula `[ -n "$SONDA_INEXISTENTE" ] || parado "sonda"` **sem guard** e exige
-   que ela apareça como NAO-COBERTA — a ferramenta **sabe achar buraco**; e roda os 4 no-ops do C2′ (comentários reescritos)
-   exigindo VERDE — a ferramenta **não acusa texto**.
+\g<1> E **controle diferencial (A11):** roda o pristino sobre um insumo fixo na cópia **e** na árvore real (`RAIZ` do repositório) e exige saídas idênticas (menos caminho/data) — se diferirem, o arnês é uma variável e a rodada **não conta** até a diferença ser nomeada.
 
 **Critérios:**
 - **[M-1]** sobre o head do ciclo 3: `NAO-COBERTOS − equivalentes = 0` nos dois artefatos, com o arquivo de equivalentes
@@ -487,15 +628,21 @@ infalsificável.
 - **[M-2] (vermelho-controle histórico)** sobre os artefatos de `34969a81` (cópia via `git archive`) com os guards de `34969a81`:
   a lista de NAO-COBERTOS **contém** as linhas 105 e 196 do pré-voo e 135, 142 e 153 do refs (os cinco de §0.3). ⇄ é a medição —
   se a ferramenta não os acha, ela não mede.
-- **[M-3]** `--controle` → sonda NAO-COBERTA **e** no-ops VERDES, ec=0. ⇄ quebrar o `diff` obrigatório → a sonda "coberta" → vermelho.
+- **[M-3]** `--controle` → sonda NAO-COBERTA **e** no-ops VERDES **e** diferencial arnês × árvore idêntico (A11), ec=0. ⇄ quebrar o `diff` obrigatório → a sonda "coberta" → vermelho.
 - **[M-4]** nenhum arquivo rastreado muda durante a execução (`git status --porcelain` igual antes/depois; `hash-object` dos 4 = blob).
 - ◐ para todos: artefato se o `#fail` veio do terminal e não do log (A9), se o `diff` do mutante tem ≠1 linha (A1/A2), ou se o
   guard rodou com `cwd` errado e o `tsx` não resolveu (todos "vermelhos" por erro de import — conferir que o pristino dá 0 fail
   **na mesma invocação** antes de cada lote).
 
-**Custo medido e declarado:** guard do refs ≈ 90 s e do pré-voo ≈ 30 s por execução nesta máquina (medido hoje no job de fundo:
-5 execuções do refs + 3 do pré-voo em ~9 min). Com ~60 e ~85 mutantes, **≈ 2 h por rodada completa**. Roda na **bateria**, não no
-CI; `--only` serve à iteração. É a **entrega designada para o corte** se a medição do dev disser que o ciclo não cabe (§3).
+**Custo MEDIDO e MULTIPLICADO (A-3 — a v1 publicou o unitário do guard velho e projetou o novo noutra seção sem multiplicar):**
+unitário do pré-voo na árvore real = **0,47 s**/invocação (medido pelo crítico, 5 repetições; a minha base de 30 s/33 casos bate
+com ele); guard do refs ≈ **2 min**/execução com 18 casos (estimado do meu job de fundo: 4 execuções em > 5 min — o Dev-S publica
+o real). Guard **novo**: pré-voo ≈ 230 casos × 0,47 s + arranque ≈ **110 s**; refs ≈ 33 casos ≈ **220 s**. Mutantes: ≈ 85
+(pré-voo) e ≈ 60 (refs). **Serial: 85 × 110 s + 60 × 220 s ≈ 2,6 h + 3,7 h ≈ 6,3 h** (o crítico chegou a ≈ 7 h com os 3 min do
+meu R8; a diferença é só o unitário do pré-voo). Com **`--jobs 4`** (8 cores medidos por `nproc`; mutantes independentes, cada um
+em cópia própria): ≈ **1,5–2 h**, e o Dev-S publica o tempo real da 1ª rodada como `medido por:`. Roda na **bateria** (uma vez
+por entrega, mais a reexecução da C2‴), em background enquanto E5 é escrita; `--only` para iteração. **Não é entrega de corte**
+(§3): sem ela o bloqueante (3) reabre e `[M-3]`/`[M-EXT]` — a mitigação do R10 — deixam de existir (A-4).
 
 **Drill e fronteira:** mede o guard **contra mutantes sintáticos de 1 linha**; não atravessa mutantes semânticos de várias linhas
 nem a equivalência automática (a classificação é humana/agente, com fixture). Do outro lado: a cadeira C2‴ gera **≥10 mutantes
@@ -550,7 +697,15 @@ fora do código; texto de PR, errata e registro são função dele (§C7.4-bis n
 | C3b-01 — `decisoes.md` sem autorização | ajuste | §4 (orquestrador) | linha nominal | sim: 49 inserções |
 | C3b-02 — retratação não propagou | ajuste | E5 (orquestrador) | errata × 6 blobs | sim: 6 blobs |
 | C3b-03 — `§7.3`/106 | nota | E5 (orquestrador + comando) | errata | herdado do C3″ (não medi o `§5.3`; a conferência é dela) |
-| **remédio nasce com a doença** (fato central) | — | §0.5 mecanismos 1–5 | ordem de commits · F-INV/F-MIN/F-EXT · M-1/M-2/M-3 · regra 3 · F-8 | — |
+\g<1>| **crítico A-1** — o laço `FORMAS` não varia a fronteira do parágrafo (5 escapes) | bloqueia | E2.b (token reservado — sem fronteira) + E3 (5 frouxas verbatim em `FORMAS`) | F-7a, F-INV(S7), F-EXT | sim: 5/5 `<<< NADA >>>` no meu v1; 5/5 REJ no v2 |
+| **crítico A-2** — a isenção da colagem absolve o parágrafo (SHA fabricado) | bloqueia | E2.b (isenção por igualdade, linha a linha) + E2.i I1 | F-7d | sim: `PASTE` no v1; REJ l.1 no v2 (acima e abaixo) |
+| **crítico A-3** — custo da E4 ≈6–7 h, não ≈2 h | bloqueia | E4 (custo multiplicado; `--jobs`) + §1.1 A12 | — | sim: 8 cores; unitário 0,47 s dele |
+| **crítico A-4** — o corte da E4 reabre o bloqueante (3) | bloqueia | §3 (sem corte) + §9 R3/R10 | M-1/M-2/M-3 | — |
+| **crítico A-5** — arnês muda comportamento, não conteúdo | média | §1.1 A11 + E4 `--controle` diferencial | M-3 | herdado dele (4 810 ms × 467 ms); não re-medi |
+| **crítico A-6** — fallback anula o mecanismo (1) | alta | §2 (sem fallback; condição de início) + §9 R4 | inspetor | — |
+| **crítico A-7** — isenções testadas só no sentido que dispara | bloqueia | E2.i (teste recíproco por isenção) | F-ISO-2/5/7/10/11, F-7d | — |
+| **crítico A-8** — mecanismo (5) instanciado uma vez | alta | E2.i (6 máquinas, cada uma com caso não previsto e saída) | F-SM-3/4/7, F-8, F-2a, F-7b | — |
+| **planejador v2** — cabeçalho de tabela com afirmação escapa; `>`/`###` antes de `## MEDIDO` escapam | (achado meu, sobre o ciclo 2) | E2.g, E2.h | F-3h, F-2a | sim: §0.6(e), 1 linha cada, pristino OK → v2 REJ |
 
 **O que ESTÁ fechado e este plano PROTEGE (não reabre):** C2-01 (0/51 ao artefato apagado) → [F-0]/[V15] + E4 ausência; guard não
 preso ao texto → `--controle` no-ops; C1-01 forma da linha → 33 casos verbatim + F-INV(S3); basename → `[B6]`/`[B6b]`/`[B6c]`
@@ -560,41 +715,43 @@ verbatim; KPI 2× → §7; LIDO 0/107 declarado → inalterado, dono `B-GOV-ATA-
 
 ---
 
-## §3 — Cabe num ciclo? SIM, com uma entrega designada para o corte. O que SAI, sai por ter OUTRO DONO — nunca por prazo
+## §3 — Cabe num ciclo? SIM. Nada sai por prazo — não há prazo. O que SAI, sai por ter OUTRO DONO
 
-**Estimativa de engenharia (dois devs, sequenciais):** Dev-T: E1 +15 casos (~170 linhas) e E3 (laço + ~30 casos, ~300 linhas) —
-uma sessão. Dev-S: E2 (~+90 linhas líquidas no pré-voo: rastreador de cerca, particionador de parágrafos, checagem 7 nova,
-tokenizador, segmentos da checagem 5, adjacência e revisão na 6) — uma sessão; E4 (~180 linhas de bash/awk) + E5 — meia a uma
-sessão, **mais ≈2 h de execução** da matriz completa (§E4, custo medido). Total: 2,5–3 sessões de dev + as dívidas do orquestrador
-(1 h). **Não há teto** (`D-SEM-TETO-AUDITORIA-NO-3`); o dimensionamento é pela engenharia.
+**Não há corte.** A v1 designava a E4 para sair "se a medição do dev disser que não cabe"; o crítico mostrou (A-4) que isso devolve
+exatamente o objeto reprovado em C2′-08 (número narrado num scratchpad que o §C5 manda apagar), apaga `[M-3]`/`[M-EXT]` que o
+R10 invoca, e contradiz o título desta seção. E não existe mais teto (`D-SEM-TETO-AUDITORIA-NO-3`): um ciclo termina quando a
+junta vota, não quando uma sessão acaba. **Se a entrega honesta precisa de dois devs sequenciais e de ≈2 h de máquina, ela tem os
+dois devs e as 2 h.** Encolher critério **ou entrega** para caber é o gesto que este plano proíbe (§0.5, mecanismo 4).
 
-**Se a medição do dev disser que não cabe:** a **única** entrega que sai é **E4** (a ferramenta rastreada), com dono
-`B-GOV-MANDATO-2` e pendência `P-GOV-MANDATO-MUTANTES-RASTREADOS`; nesse caso o Dev-S produz a matriz **no scratchpad** com o
-mesmo método (operadores declarados, diff de 1 linha, `#fail` do log) e commita a matriz em `…-ciclo3-mutantes.md` — o número
-continua **medido**, só não fica **reproduzível por comando**. **Nada mais sai.** Encolher um critério de E1–E3 para caber é o gesto
-que este plano proíbe (§0.5, mecanismo 4).
+**Estimativa de engenharia (dois devs, sequenciais; sessões quantas forem):** Dev-T — E1 (+15 casos, ~170 linhas) e E3 (laço de 19
+formas × 6 sementes ≈ 180 casos gerados + ~45 específicos, ~420 linhas): 1–2 sessões. Dev-S — E2 (~+110 linhas líquidas: cerca,
+token reservado com colagem por igualdade, tokenizador, segmentos, adjacência, revisão, cabeçalho-unidade, checagem 2): 1 sessão;
+E4 (~200 linhas bash/awk, com `--jobs`) + E5: 1 sessão + **≈2 h de máquina** em background. Orquestrador: dívidas (1 h). O
+inspetor confere Dev-T ≠ Dev-S **antes** de qualquer commit (condição de início — §2).
 
-**Entra:** 5 bloqueantes (C2′-01/02/03/04 + C1′-1 + C1′-2 — seis achados `bloqueia`, cinco classes), 6 ajustes, 3 notas, as 4 dívidas
-do orquestrador (dele), e os **mecanismos estruturais** de §0.5 — que são a resposta ao fato central e não têm forma de "sair".
+**Entra:** os 6 achados `bloqueia` do ciclo 2 (5 classes), 7 ajustes, 3 notas, **os 8 achados do crítico (A-1…A-8 — todos absorvidos
+como desenho; nenhum sai com dono)**, as 5 dívidas do orquestrador, e os mecanismos estruturais de §0.5 v2.
 
-**Sai, com dono nomeado** (o Dev-S abre a pendência; o orquestrador **não** precisa tocar `PLANO_SAN3.md` — `B-GOV-MANDATO-2` já
-está na fila, **§5.3** l.269, conferido pela C3″):
+**Sai, com dono nomeado** (o Dev-S abre `P-GOV-MANDATO-3-FRONTEIRAS`; `B-GOV-MANDATO-2` já está na fila, §5.3 l.269):
 
 | o que fica de fora | por que é de OUTRO dono (e a medição deste lado) | dono |
 |---|---|---|
-| Conteúdo de `medido por:`/`derruba com:` não é verificado (`-`, `n/a`, `TODO` passam **em toda forma**) | verificar o conteúdo = reconhecer comando (forma). Deste lado: F-3s prova a **simetria**; o limite fica declarado no cabeçalho | `B-GOV-MANDATO-2` (fronteira 9) |
-| `_<sha>` (SHA colado por sublinhado) não é SHA | partir em `_` mataria a checagem 6 para **587** caminhos rastreados com `_` (medido) | `B-GOV-MANDATO-2` (fronteira 10) |
-| Sinônimos em prosa de `approved_head` ("o head aprovado é X") | vocabulário — a classe que o bloco fecha; o token `approved_head` é o **nome do campo** | `B-GOV-MANDATO-2` (fronteira 11) |
-| Escopo de parágrafo do rótulo: um parágrafo que afirma `approved_head` não pode carregar outro SHA | custo do desenho fail-closed, **testado** em F-7h; o contorno (parágrafo separado ou `nao-rotula:`) é declarado | `B-GOV-MANDATO-2` (fronteira 12) |
-| `###` isento da checagem 3 (não das 4-7) | exceção (b) do ciclo 2, testada como isenção nomeada em F-INV(S3) | `B-GOV-MANDATO-2` (fronteira 13) |
-| Existência medida no **disco** (`$RAIZ`), não no git (`node_modules/.package-lock.json` aceito) | decisão de escopo: mandatos citam arquivos gerados legitimamente; conferir só rastreados rejeitaria isso | `B-GOV-MANDATO-2` (fronteira 14) |
-| `Select-String`/`findstr` (restante da fronteira 2) | a casa usa bash nos mandatos | `B-GOV-MANDATO-2` (já declarada) |
-| Template de ata rastreado; linha `approved_head` emitida pelo ritual; retrofit | é o ritual da junta — **inalterado** do ciclo 2 | `B-GOV-ATA-CABECALHO` |
-| Drift do JSON do `gh` | fronteira 5 vigente | `B-GOV-MANDATO-2` |
+| **Sinônimo em prosa de `approved_head`** ("o head que a junta aprovou é X") | detectar afirmação em prosa **é reconhecer forma** — três ciclos provaram que a unidade seguinte escapa; a v2 reserva o **nome do campo** (form-free) e **assere o sinônimo como OK de propósito** (F-7f) para a fronteira ficar visível no guard. Fechar isto exige vocabulário, e vocabulário é a classe. **Digo por escrito: não há remédio form-free para isto** | `B-GOV-MANDATO-2` (fronteira 11, agora com o porquê medido) |
+| Homoglifos/zero-width no token | adversarial, não erro honesto; a normalização é ASCII | `B-GOV-MANDATO-2` (fronteira 15) |
+| Colagem da ferramenta **obrigatória** em todo mandato (hoje `AVISO`) | exigir quebra 12/33 fixtures protegidas ([P-0]); decisão de escopo | `B-GOV-MANDATO-2` (fronteira 16) |
+| Conteúdo de `medido por:` (`-`, `n/a`) — em toda forma | verificar conteúdo = reconhecer comando; F-3s prova a simetria | `B-GOV-MANDATO-2` (fronteira 9) |
+| `_<sha>` não é SHA | partir em `_` mata a checagem 6 para 587 caminhos (medido) | `B-GOV-MANDATO-2` (fronteira 10) |
+| `###` dentro das seções isento da checagem 3 | exceção (b) do ciclo 2; visível por grep; F-ISO-7 a assere de propósito | `B-GOV-MANDATO-2` (fronteira 13) |
+| Existência no disco, não no git | mandatos citam gerados legítimos | `B-GOV-MANDATO-2` (fronteira 14) |
+| `Select-String`/`findstr` | a casa usa bash | `B-GOV-MANDATO-2` (fronteira 2, restante) |
+| Template de ata; linha `approved_head` pelo ritual; retrofit | ritual da junta | `B-GOV-ATA-CABECALHO` |
+| Drift do JSON do `gh` | fronteira 5 | `B-GOV-MANDATO-2` |
 
-**Fronteira de cada drill, resumida:** E1 não atravessa a API real · E2/E3 não atravessam formas fora de `FORMAS` (a junta mede o
-outro lado em [F-EXT]) nem mandatos reais (dogfooding §8) · E4 não atravessa mutantes semânticos nem equivalência automática
-([M-EXT] pela junta). Em cada uma a propriedade foi medida deste lado, e o outro lado tem dono na tabela.
+(A fronteira 12 da v1 — "parágrafo com dois SHAs" — e a isenção `nao-rotula:` **deixam de existir**: a v2 não tem parágrafo nem
+`nao-rotula:`. `P-GOV-MANDATO-3-FRONTEIRAS` nasce com as fronteiras 9, 10, 11, 13, 14, 15 e 16.)
+
+**Fronteira de cada drill:** E1 não atravessa a API real · E2/E3 não atravessam sinônimos nem mandatos reais (dogfooding §8;
+[F-EXT] pela junta varia **fronteiras**, não enfeites) · E4 não atravessa mutantes semânticos nem equivalência automática ([M-EXT]).
 
 ---
 
@@ -666,8 +823,8 @@ ferramenta de mutação escrevem só em `mkdtemp`. Decimal/timestamptz/delete l�
 - **N (head do ciclo 2, medido por mim):** 18 + 33 = **51** casos, 0 sobrevivem ao artefato apagado (C2′), **16 pontos de decisão
   sem cobertura** (C2′; 5 reproduzidos em §0.3).
 - **Meta M ≥ 2N = 102, com o critério honesto declarado:** o número que importa é **[M-1] não-cobertos = 0**, não a contagem —
-  o laço de formas gera casos por construção (6 sementes × ≥12 formas × 2 lados ≈ 150) e seria fácil "bater a meta" sem cobrir
-  nada. Estimativa: refs 18 → ≥ 33; pré-voo 33 → ≥ 190 (laço + F-EOL + específicos); total ≈ 220. **[F-0]/[V15]:** cada arquivo,
+  o laço de formas gera casos por construção (19 formas × 4 sementes ∀ × 2 lados ≈ 152, mais S7) e seria fácil "bater a meta" sem cobrir
+  nada. Estimativa: refs 18 → ≥ 33; pré-voo 33 → ≥ 220 (laço ≈152 + S7 27+3 + ≈45 específicos + F-EOL); total ≈ 255. **[F-0]/[V15]:** cada arquivo,
   com o seu script apagado, passa **0**.
 - **`backend_tests`:** baseline do head do ciclo 2 **3103/3105** (C3″, N=2, denominador constante — **herdado com fonte; o Dev-S
   re-mede N=2** em cluster descartável próprio, porta **provada** por `pg_isready` + `netstat`, `CORE_SAAS_PERSISTENCE` não
@@ -697,9 +854,9 @@ npm run build
 npm --prefix frontend run check
 npm --prefix frontend run build
 node --test --import tsx --test-reporter=tap tests/mandato-refs.test.ts      > refs.tap      # >= 33, 0 fail
-node --test --import tsx --test-reporter=tap tests/mandato-preflight.test.ts > pre.tap       # >= 190, 0 fail
-bash scripts/mandato-mutantes.sh refs      | tee mut-refs.txt      # NAO-COBERTOS - equivalentes = 0
-bash scripts/mandato-mutantes.sh preflight | tee mut-pre.txt       # idem
+node --test --import tsx --test-reporter=tap tests/mandato-preflight.test.ts > pre.tap       # >= 220, 0 fail
+bash scripts/mandato-mutantes.sh refs      --jobs 4 | tee mut-refs.txt      # NAO-COBERTOS - equivalentes = 0
+bash scripts/mandato-mutantes.sh preflight --jobs 4 | tee mut-pre.txt       # idem
 bash scripts/mandato-mutantes.sh preflight --controle              # sonda NAO-COBERTA, no-ops VERDES
 # [M-2] historico: os artefatos e guards de 34969a81 -> a lista contem pre l.105/196 e refs l.135/142/153
 node scripts/kpi-freeze.mjs --check
@@ -728,28 +885,28 @@ por construção; as de teste — [F-MIN], [P-0] — em cópia do `.test.ts`), c
 5. **Mutante = `diff` de exatamente 1 linha, md5 do pristino antes e depois; cor lida do arquivo TAP.** Mutante com 0 ou 2+ linhas
    de diff é ANOMALIA e não conta (A1/A2/A9 — o meu m034 de hoje).
 6. **Divergência do plano ≠ decisão do dev.** O ciclo 2 estreitou "unidade" para "linha" com boa razão e reintroduziu a forma. Se
-   um caso legítimo é rejeitado, a saída é isenção nomeada **já prevista** (`nao-rotula:`, colagem verbatim, `caixa-exata:`,
-   `(novo)`) ou falsificação ao planejador — **nunca** um gatilho mais estreito.
+   um caso legítimo é rejeitado, a saída é isenção **inventariada em E2.i** (colagem verbatim por igualdade, `caixa-exata:`, `(novo)` — `nao-rotula:` **não existe**) ou falsificação ao planejador — **nunca** um gatilho mais estreito.
 7. Nunca tocam ata, corpo de jurado, `.github/`, `.gitattributes`. Nunca `stash`/`clean`/`checkout` alheio/`prune`. Resíduo alheio
    se reporta. Removem o que criaram **pelo nome** (`git worktree remove --force C:/Users/AMP/w-dev?393`, `docker rm -f
    pg-dev?393 redis-dev?393`) e reportam a limpeza §C5 em 1 linha nominal.
-8. Toda afirmação numérica do relatório vem com `medido por:` **na mesma unidade** — e nenhum `approved_head` + SHA fora da colagem
-   verbatim da ferramenta (a checagem 7 nova vai cobrar isso do próprio relatório).
+8. Toda afirmação numérica do relatório vem com `medido por:` **na mesma unidade** — e o token `approved_head` **só** dentro da colagem verbatim da ferramenta (a checagem 7 nova cobra isso do próprio relatório — inclusive em `medido por: grep …`; escreva `approved_h[e]ad`).
 
-## §9 — Riscos e rollback
+## §9 — Riscos e rollback (v2)
 
 | # | risco | mitigação | rollback / corte (com dono) |
 |---|---|---|---|
-| R1 | o laço `FORMAS` rejeita uma forma **legítima** nova (over-rejection) — o preço de invariância | a gêmea **positiva** de cada semente corre nas mesmas formas: over-rejection aparece como vermelho na positiva, com a forma nomeada; ◐ de E3 separa renderização malformada de defeito | nenhum: é o desenho; forma legítima rejeitada é **achado**, não custo |
-| R2 | checagem 7 por parágrafo rejeita **colagem parcial** da ferramenta (só as linhas `approved_head`/`objeto`) | é fail-closed e desejado — colagem parcial é como se produz afirmação enganosa; a mensagem de REJEITADO diz o contorno ("cole a saída inteira ou declare `nao-rotula:`") | nenhum — custo declarado (fronteira 12) |
-| R3 | E4 leva ≈2 h por rodada completa (medido) | `--only` para iteração; roda na bateria, não no CI; matriz commitada | **corte designado**: E4 sai com dono `B-GOV-MANDATO-2`; a matriz é produzida no scratchpad com o mesmo método e commitada (§3) |
-| R4 | só um dev disponível (mecanismo 1 exige dois) | fallback: o mesmo dev commita **testes primeiro** (vermelhos), depois o script; a junta confere no `git log` que nenhum commit toca `tests/**` e `scripts/**` juntos | registrar no briefing como ressalva; C1‴ acrescenta ≥ 3 formas em [F-EXT] em vez de 2 |
-| R5 | o ramo anda durante o desenvolvimento (13× no ciclo 2) | os devs medem o head no início e no fim; o objeto da junta 3 é o head que **cada cadeira resolve** | — |
-| R6 | `<rev>:<caminho>` chama `git rev-parse` em `$RAIZ`; fora de repositório o prefixo nunca é revisão | fail-closed: sem repo, o token inteiro é caminho e tem de existir; o arnês de E4 e o CI são repositórios | nenhum |
-| R7 | reintroduzir a classe **na correção** (aconteceu 2× neste bloco e 4× no painel de KPI) | os cinco mecanismos de §0.5, cada um com critério executável; a junta 3 re-executa F-INV/F-EXT e M-1/M-2/M-EXT | reprovação → ciclo 4 **precedido da auditoria da máquina** (§C7.4.4 novo); a coluna ◐ é o insumo dela |
-| R8 | o laço torna a suíte lenta (≈150 spawns) | medido hoje: pré-voo ≈ 30 s/33 casos → ≈ 3 min/190; aceitável no CI; se passar de 5 min, `FORMAS` divide em dois `describe` paralelos (node:test `concurrency`) | nenhum |
-| R9 | mandato em CRLF se comporta diferente do LF | [F-EOL] em E3 | se falhar, é defeito real do script — conserta-se em E2 (tolerar `\r` nas âncoras `$`) |
-| R10 | a ferramenta E4 tem defeito próprio (mede errado) | [M-2] contra baseline **sabidamente defeituosa** (34969a81: tem de achar os 5 de §0.3) e [M-3] `--controle` (acha buraco injetado; não acusa no-op); C2‴ re-gera ≥10 mutantes fora dela | E4 sai (R3) e a matriz manual fica |
+| R1 | o laço `FORMAS` rejeita uma forma **legítima** nova (over-rejection) — o preço de partição ∀ | a gêmea **positiva** corre nas mesmas 19 formas: over-rejection aparece como vermelho na positiva, com a forma nomeada; ◐ de E3 separa renderização malformada de defeito | nenhum: é o desenho; forma legítima rejeitada é **achado**, não custo |
+| R2 | token reservado rejeita usos legítimos do nome do campo (KPI `approved_head: null`, citação da ata, `grep approved_head` em `medido por:`; "approved"/"head" cruzando linhas) | custos **declarados e testados** (F-7b/f, g-grep-dogfooding); contornos no cabeçalho do script e na mensagem de REJEITADO; o dogfooding do relatório do Dev-S vai bater nisto primeiro | nenhum: uso legítimo novo = **fronteira nova com dono**, nunca isenção nova (E2.i) |
+| R3 | E4 leva ≈6 h serial (medido e multiplicado) | `--jobs 4` (≈1,5–2 h em 8 cores), `--only` para iteração, roda em background na bateria | **nenhum — E4 fica.** Se a máquina do dev não aguenta, roda noutra sessão; nunca matriz narrada (A-4) |
+| R4 | só um dev disponível | **não há fallback**: Dev-T ≠ Dev-S é condição de início; o inspetor bloqueia sem os dois nomeados | o bloco espera o segundo dev; registrado no briefing |
+| R5 | o ramo anda durante o desenvolvimento (13× no ciclo 2; 3× durante o parecer do crítico) | os devs medem o head no início e no fim; o objeto da junta 3 é o head que **cada cadeira resolve** | — |
+| R6 | `<rev>:<caminho>` chama `git rev-parse` em `$RAIZ`; fora de repositório o prefixo nunca é revisão (**e o arnês muda o comportamento — A11**) | fail-closed: sem repo, o token inteiro é caminho; o arnês de E4 é repositório; controle diferencial arnês × árvore (A11) em `--controle` | nenhum |
+| R7 | reintroduzir a classe **na correção** (2× neste bloco; 4× no painel de KPI; **1× na v1 deste plano**) | os cinco mecanismos v2, cada um com critério executável; a junta 3 re-executa F-INV/F-EXT/F-ISO/F-SM e M-1/M-2/M-EXT; **rodada 2 do crítico sobre a v2** (§10) | reprovação → ciclo 4 **precedido da auditoria da máquina** (§C7.4.4); a coluna ◐ é o insumo |
+| R8 | a suíte fica lenta (≈230 spawns no pré-voo) | 230 × 0,47 s ≈ 110 s; aceitável no CI; se passar de 5 min, `FORMAS` em dois `describe` com `concurrency` | nenhum |
+| R9 | mandato em CRLF se comporta diferente do LF | [F-EOL] em E3 | se falhar é defeito real do script — conserta-se em E2 (tolerar `\r` nas âncoras `$`) |
+| R10 | a ferramenta E4 tem defeito próprio (mede errado) | [M-2] contra baseline **sabidamente furada** (34969a81: tem de achar os 5 de §0.3); [M-3] `--controle` (acha buraco injetado; não acusa no-op; **diferencial arnês × árvore**); C2‴ gera ≥10 mutantes fora dela | **conserta-se a E4** — é código do bloco, coberto pelos próprios controles; nunca "sai e fica a matriz manual" |
+| R11 | a isenção por igualdade (I1) falha por diferença de EOL/trim entre a saída do shim e a colagem (Windows) | igualdade após trim; [F-EOL] cobre a colagem em `\r\n`; a dica de "parcial ou DESATUALIZADA" nomeia a linha | se rejeitar colagem legítima, é achado de E2 (não se afrouxa a igualdade) |
+| R12 | a normalização alnum do token gera falso-positivo em prosa ("…approved" + "head…" em linhas consecutivas) | custo declarado, raro; mensagem diz "partido entre duas linhas" e a linha; contorno: reescrever | nenhum — fail-closed aceito e nomeado |
 
 **Rollback global:** os cinco arquivos de código são **novos no bloco** (`A` no diff contra `fc3363e3`); nada de produto os importa.
 `git revert` do squash devolve a `main` ao estado de `fc3363e3` para esses caminhos. Sem migração, sem dado.
@@ -763,15 +920,16 @@ por construção; as de teste — [F-MIN], [P-0] — em cópia do `.test.ts`), c
 
 **Quórum:** maioria de 3 (§C7.1-ter(b)) — o bloco não toca dinheiro, segurança, permissão nem perda de dado; a C3‴ confere no diff
 (`git diff --name-only fc3363e3 HEAD -- src prisma frontend mobile .github` = 0, com controle positivo `-- scripts tests` > 0).
-Sem veto individual. **Antes do código, uma rodada do `critico-adversarial`** (elegível: não votou) sobre **este plano**, com
-pergunta única: *"qual dos cinco mecanismos de §0.5 pode ser satisfeito na letra e ainda reintroduzir a forma?"* — o parecer entra
-no briefing. Recomendado, não obrigatório pelo §C7.1-ter; obrigatório pelo histórico deste bloco, na minha leitura.
+Sem veto individual. **Antes do código, a rodada 2 do `critico-adversarial` sobre ESTA v2** (a rodada 1 derrubou a v1 — 5 bloqueia,
+2 alta, 1 média, todos absorvidos), com pergunta única: *"sobrou alguma regra ∃ no pré-voo, ou alguma isenção que absolva mais
+do que nomeia, ou alguma máquina de estados fora do inventário de E2.i?"* — o parecer entra no briefing. Obrigatório pelo
+histórico deste bloco (o remédio nasceu com a doença **três** vezes contando a v1), na minha leitura.
 
 **Cadeiras — três identidades NOVAS (fábrica), corpos versionados nos dois espelhos ANTES da inspeção:**
 
 | cadeira | identidade (nome sugerido) | competência | itens que julga por EXECUÇÃO própria (nunca com as amostras deste plano) |
 |---|---|---|---|
-| **C1‴** | `jurado-mandato-c1c-invariancia-de-forma` | propriedade × forma; máquinas de estado fail-closed | [F-INV] com **≥2 formas próprias** acrescentadas a `FORMAS` ([F-EXT]); cerca F-8 + 2 variantes próprias (cerca com info-string ```` ```bash ````, cerca dentro de citação); checagem 7 F-7 + colagem **parcial** (espera REJ e mensagem com o contorno); F-4/F-5/F-6 com amostras próprias; **[F-EOL]** |
+| **C1‴** | `jurado-mandato-c1c-invariancia-de-forma` | propriedade × forma; **fronteiras de partição**; máquinas de estado fail-closed | [F-EXT] com **≥3 formas próprias que variem a FRONTEIRA** (linha vazia, seção, cerca, EOF) e **≥2 grafias próprias** do token — enfeite de linha não conta; cerca F-8 + 2 variantes próprias (info-string ```` ```bash ````, cerca dentro de citação); token reservado: colagem **parcial**, **velha**, **com abuso acima/abaixo/meio** próprias (espera REJ com a linha certa) e colagem legítima própria (espera OK); F-ISO-*/F-SM-* com amostras próprias; **tenta uma isenção não inventariada** e mede que não existe; **[F-EOL]** |
 | **C2‴** | `jurado-mandato-c2c-cobertura-por-mutacao` | cobertura por mutação; arnês isolado; controles | reexecuta E4 nos dois artefatos (`N/K` devem bater com `…-mutantes.md`; divergência é achado); [M-2] histórico; [M-3]; **[M-EXT] ≥10 mutantes próprios fora da tabela** (multi-linha, semânticos); reclassifica os "equivalentes" com fixture própria; 0/N ao artefato apagado; 4 no-ops |
 | **C3‴** | `jurado-mandato-c3c-fronteira-numero-registro` | escopo por geração; número; registro; **ordem dos commits** | §4 por laço (diff → declaração); KPI 2× em cluster descartável (porta provada); índice pelo gerador; **`git log`: commits de `tests/**` antes dos de `scripts/**`, nenhum tocando os dois**; as 4 dívidas do orquestrador por execução (corpo do PR × head; ERRATA em 6 blobs com hash do texto abaixo; `§5.3`; 107); `R-B-GOV-MANDATO-2.md` existe |
 
@@ -786,7 +944,7 @@ verbatim), 3103/3105 (C3″ N=2 — Dev-S re-mede), `§5.3` l.269 (C3″ — C3�
 caminho curto por cadeira; cluster descartável para quem rodar a suíte, **porta provada**; **ERRATAs nos 3 corpos e corpo do PR
 reescrito ANTES** de as cadeiras lerem qualquer coisa (C3b-02: cadeira nova não lê falsidade "na direção perigosa");
 **este §0 marcado "a re-verificar"**; inelegibilidade pela lista acima; **Dev-T e Dev-S nomeados no briefing** (ressalva R2 do
-ciclo 2); plano de perda (sem suplente; queda relança a mesma identidade; voto perdido nunca é aprovação; evidência incremental);
+ciclo 2) **e distintos — condição de início, sem fallback (A-6)**; plano de perda (sem suplente; queda relança a mesma identidade; voto perdido nunca é aprovação; evidência incremental);
 `R-B-GOV-MANDATO-2.md` presente; e **o mandato do orquestrador para os devs passou no pré-voo** (colado).
 
 **Gatilho de auditoria (`D-SEM-TETO-AUDITORIA-NO-3`, §C7.4.4 novo):** se a junta 3 produzir achado `bloqueia`, **antes do ciclo 4**
@@ -805,22 +963,26 @@ controle de §1.1 foi aplicado.
 registro de reprovação do ciclo 2 **não existe** no head `34969a81` (só `R-B-GOV-MANDATO-1.md`). O §C7.4 exige um por ciclo; o
 inspetor bloqueia sem ele.
 
-## §11 — A linha
+## §11 — A linha (v2)
 
-**Cabe num ciclo: SIM — 5 entregas (E1–E5) em dois devs sequenciais, com E4 designada para o corte se a medição do dev disser que
-não cabe (e nada mais sai por prazo). Entram 16 achados dos pareceres (6 `bloqueia`, 7 ajustes, 3 notas) + as 4 dívidas do
-orquestrador (ficam com ele, no mesmo PR); saem 9 itens com dono nomeado (6 fronteiras novas + 1 restante + template + drift →
-`B-GOV-MANDATO-2` ×8, `B-GOV-ATA-CABECALHO` ×1). O que impede o remédio deste ciclo de nascer com a doença, como nos dois
-anteriores: (1) o guard é escrito por outro autor e commitado ANTES, vermelho contra os artefatos do ciclo 2 — o teste não herda a
-imaginação do script; (2) a invariância de forma vira propriedade TESTADA num laço de ≥12 formas compartilhado por todas as
-checagens, e a junta acrescenta formas próprias; (3) a cobertura vira número reproduzível por ferramenta rastreada, com controle
-contra a baseline sabidamente furada; (4) o dev não estreita gatilho para caber num caso — só isenção nomeada ou falsificação ao
-planejador; (5) toda máquina de estados tem saída fail-closed. Cada um tem critério executável e a mutação que o derruba.**
+**Cabe num ciclo: SIM — 5 entregas (E1–E5) em dois devs sequenciais, sem corte algum (não há prazo; a E4 fica com o custo
+multiplicado: ≈6 h serial, ≈1,5–2 h com `--jobs 4`). Entram os 16 achados do ciclo 2, os 8 do crítico (todos absorvidos como
+desenho) e 5 dívidas do orquestrador; saem 10 itens com dono (`B-GOV-MANDATO-2` ×9, `B-GOV-ATA-CABECALHO` ×1), e um deles é
+declarado por escrito como impossível sem vocabulário (sinônimo em prosa). O que derrubo do crítico: nada de substância — só a
+multiplicação (≈6 h, não ≈7 h, com o unitário dele). O que impede o remédio deste ciclo de nascer com a doença, agora que a v1
+também nasceu com ela: (1) dois devs como condição de início, sem fallback; (2) **o gatilho deixou de ter fronteira** —
+`approved_head` é token reservado, regra ∀ lexical sobre o documento inteiro, isenção só por igualdade com a ferramenta, linha a
+linha; o laço de formas muda de função (prova over-rejection, com as 5 fronteiras do crítico dentro) e a junta varia fronteiras,
+não enfeites; (3) cobertura por ferramenta rastreada, com controle diferencial arnês × árvore; (4) e (5) num inventário: toda
+isenção tem escopo exato e teste recíproco, toda máquina de estados tem o caso não previsto nomeado e a saída fail-closed testada
+— e o princípio que os unifica está escrito: partição é segura para regras ∀ e insegura para ∃; nenhuma ∃ sobrou.**
 
 ---
 
-*Limpeza §C5 do planejador (1 linha):* removidos pelo nome o worktree `C:/Users/AMP/w-plan393c` (`git worktree remove --force`), o arnês
-`scratchpad/plan393c/H`, o repo-sonda `plan393c/R`, os mutantes `plan393c/mut`, as partes `plan393c/parts` e `plan393c-npmci.log`;
-**mantidos de propósito como evidência** (declarado, como a C1′ fez): `plan393c/proto/` (2 awk) e `plan393c/fx/` (fixtures de §0.3/§0.6);
-nenhum rastreado tocado; resíduo alheio (`b04a`, `b11`, `gov-descuido`, `gov-elenco`, `w-mandato`, `w-teto`, `TEMPLATE-J-ata.md`) só
+*Limpeza §C5 do planejador (v1 + v2, 1 linha):* removidos pelo nome o worktree `C:/Users/AMP/w-plan393c` (`git worktree remove
+--force`), o arnês `scratchpad/plan393c/H`, o repo-sonda `plan393c/R`, os mutantes `plan393c/mut`, as partes `plan393c/parts` e
+`plan393c-npmci.log`; **mantidos de propósito como evidência** (declarado): `plan393c/proto/` (`ah.awk` v1, `fence.awk`,
+`reserved.awk` v2, cópias pristinas `pre.pristino.sh`/`pre.v2-*.sh` de 1 linha), `plan393c/fx/` e `plan393c/fx2/` (fixtures de
+§0.3/§0.6) e `plan393c/v2/` (partes desta v2); nenhum rastreado tocado; resíduo alheio (`b04a`, `b11`, `gov-descuido`,
+`gov-elenco`, `w-mandato` com os ` M` de `.agents/agents/*.md` que não são meus, `w-teto`, `crit393c/`, `TEMPLATE-J-ata.md`) só
 reportado. Base viva nunca alvo.
