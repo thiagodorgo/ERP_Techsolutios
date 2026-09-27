@@ -750,3 +750,20 @@ E1: [A1] passa a asserir *de qual ata/linha* veio o objeto (estado NÃO DETERMIN
 `ATA_REPROVADA_UNICA`, `ATA_APROVADA`, `ATA_CONTRADITORIA`; contagem ≥ 12 · E5: casos B8 (≥ 15) · §3: a linha
 `approved_head` no template e o retrofit nomeados para `B-GOV-ATA-CABECALHO` · §7: meta ≥ 27 · §8: saídas vivas
 esperadas corrigidas (392 → ec=3, não LIDO) · §9 R4 · mapa achado→entrega: linha A1 · §11.
+
+---
+
+## ERRATA C3b-03 — 2026-09-27, orquestrador
+
+Dois ponteiros deste plano divergem do conjunto enumerado. Achado da cadeira C3″ da junta 2, mesma classe do
+"cinco contra oito" que eu havia acabado de consertar na pendência das fronteiras.
+
+- **Seção de destino dos blocos novos:** o texto manda `B-GOV-ATA-CABECALHO` e `B-GOV-MANDATO-2` para o
+  **"§7.3"** do `PLANO_SAN3.md`. **O lugar certo é o §5.3** — e é onde eles estão, desde `5ea761a6`. O §7.3
+  existe e é outra coisa.
+- **Contagem de atas:** onde se lê **"as 106 outras atas"**, o conjunto enumerado é **107** (108 arquivos
+  `J-*.md` no head, um deles deste bloco; 107 no merge-base). **107** é o número que a pendência e a E3.h
+  usam, e é o correto.
+
+Nenhuma decisão do plano muda: os dois blocos têm dono e estão na fila; o `linha_estrutural_approved_head` =
+**0/107** segue sendo o custo declarado da E3.
