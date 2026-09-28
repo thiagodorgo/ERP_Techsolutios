@@ -253,3 +253,64 @@ aprovados, e a ferramenta não sabia. O ritual que faz nascer a linha tem dono:
   `P-GOV-MANDATO-2-FRONTEIRAS`
 - **Fica devendo, e é do orquestrador (não do dev, §4 do plano):** nomear `B-GOV-ATA-CABECALHO` e
   `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e escrever a seção do ciclo 2 na ata.
+
+---
+
+# EMENDA — CICLO 3 (2026-09-28), depois da 2ª reprovação
+
+## O que o ciclo 2 entregou, e por que foi reprovado de novo
+
+O ciclo 2 moveu cada checagem de FORMA para PROPRIEDADE e os guards passaram a exercitar o `.sh` de
+verdade. A junta 2 reprovou por uma classe ainda mais estreita: **cada checagem tinha o seu próprio
+reconhecedor de seção e de cerca**, e a agregação de unidades era decidida por *aparência da linha*
+em vez de pela **estrutura** do documento. Daí saíam os dois lados: uma evidência absolvia cinco
+afirmações (sobre-isenção) e um cabeçalho de seção virava unidade (sobre-rejeição).
+
+## Emenda 1 — o que o ciclo 3 mudou nos artefatos
+
+1. **Oráculo único** de seção e de cerca: um só reconhecedor, consultado por todas as checagens.
+2. **Agregação limitada pela ESTRUTURA**, não pela forma da linha: linha de tabela nunca agrega, e
+   linha indentada **depois** do token de evidência abre unidade nova.
+3. **O campo `approved_head` passa a ser TOKEN RESERVADO de documento inteiro.** Detectar
+   "afirmação" em prosa é reconhecer forma; a v3 inverte o ônus — o token é proibido, e a **única**
+   forma de ele aparecer num mandato é a **colagem verbatim** da saída da ferramenta (isenção I1).
+4. **Inventário COMPLETO de isenções I1–I20**, cada uma com escopo exato e recíproco nos dois lados
+   (entre unidades e dentro da unidade). "Isenção fora do inventário não existe" passa a ser
+   verdadeiro, e verificável.
+5. **`scripts/mandato-mutantes.sh` (E4, novo):** a cobertura por mutação deixa de ser adjetivo. O
+   ciclo 2 publicou "30 mutações executadas" e ninguém reproduzia o número. Agora é um comando, com
+   os pontos de decisão **enumerados da fonte**, um mutante por ponto com operador declarado, e a
+   **lista dos sobreviventes** publicada em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`.
+
+## Emenda 2 — ERRATA do §E4.6 do plano do ciclo 3 (medida, não opinada)
+
+A receita literal da sonda de controle — `[ -n "$SONDA_INEXISTENTE" ] || parado "sonda"` — **não
+serve**. Com a variável ausente o teste `-n` é FALSO, o `||` dispara e o artefato **pristino** passa a
+abortar sempre, destruindo a linha de base contra a qual todo mutante é comparado. A sonda entregue
+usa a polaridade que preserva o pristino (`-z` com `${…:-}`): pristino no-op, mutante M1 no-op, guard
+verde, sonda **NÃO-COBERTA** — que é exatamente o que o controle existe para provar.
+
+## Emenda 3 — ERRATA da regra 8 do §8 (medida)
+
+A regra manda escrever o nome do campo reservado com **uma letra entre colchetes** para não disparar a
+checagem 7. A E2.b normaliza o documento a alfanuméricos **antes** de procurar o token, e os colchetes
+caem: a grafia de contorno é rejeitada com a **mesma mensagem, na mesma linha**, do nome escrito por
+inteiro. Não existe hoje escape documentado; o contorno real é **não escrever o nome** (dizer "o campo
+reservado" e elidir a linha de TAP que o contém). Registrado como a **nona** fronteira em
+`P-GOV-MANDATO-2-FRONTEIRAS`.
+
+## Emenda 4 — o que o ciclo 3 NÃO fecha, e por quê
+
+`[B8b]` e `[F-EOL/s7-neg]` exigem vereditos **opostos** do **mesmo** insumo — as fixtures são byte a
+byte iguais. Nenhum artefato satisfaz os dois. Pelo contrato (plano v3 l.21/24/310/340/525/1007 e
+§12.3 l.1158) quem está certo é o `s7-neg`: o `[B8b]` pede aceitação da forma em item de lista, que é
+o critério da **v2**, revogado pela v3. Fechá-lo exigiria uma isenção **fora do inventário** e
+estreitaria o gatilho da checagem 7. O desenvolvedor do artefato **não toca `tests/**`** (§4), então
+**reporta**: `P-GOV-MANDATO-3-B8B-CONTRADICAO`, ALTA, **bloqueia o merge** (CI vermelho em 1 de 3385).
+
+## Emenda 5 — rastreabilidade do ciclo 3
+
+- **Bloco:** `B-GOV-MANDATO` ciclo 3 · **PR:** #393 · **status:** `published_per_pr`
+- **`merge_commit` / `approved_head`:** `null` na autoria (§C3.5), com backfill pós-merge.
+- **KPI:** `backend_tests` 3103/3105 → **3382/3385**, execução real no job `backend` do CI, delta
+  decomposto por arquivo (guards 51 → 331 casos) e o único vermelho nomeado.

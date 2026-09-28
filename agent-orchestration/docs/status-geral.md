@@ -4853,3 +4853,46 @@ provados nos dois sentidos. `blocks_completed` **168, inalterado** — o ciclo 2
 **Fica devendo, e é do orquestrador** (o §4 do plano do ciclo 2 põe esses caminhos fora do escopo do dev):
 nomear `B-GOV-ATA-CABECALHO` e `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e
 escrever a seção do ciclo 2 na ata.
+
+---
+
+## B-GOV-MANDATO — ciclo 3 (PR #393, na autoria)
+
+**O que a junta 2 reprovou.** Não a falta de propriedade — o ciclo 2 já tinha movido cada checagem de
+FORMA para PROPRIEDADE — mas o fato de **cada checagem ter o seu próprio reconhecedor de seção e de
+cerca**, com a agregação de unidades decidida pela *aparência da linha*. Os dois lados saíam disso: uma
+evidência absolvia cinco afirmações, e um cabeçalho de seção virava unidade.
+
+**O que o ciclo 3 entrega.** `scripts/mandato-preflight.sh` v3 com **oráculo único** de seção/cerca,
+agregação limitada pela **estrutura**, o campo `approved_head` como **token reservado de documento
+inteiro** (a colagem verbatim da ferramenta é a única forma inventariada — isenção I1) e o **inventário
+completo I1–I20** com recíproco nos dois lados. `scripts/mandato-refs.sh` só ganhou cabeçalho (21
+linhas, **zero** não-comentário; guard 33/33 verde depois). E `scripts/mandato-mutantes.sh` **novo**: a
+cobertura por mutação deixa de ser adjetivo e passa a ser um comando, com os pontos de decisão
+**enumerados da fonte**, um mutante por ponto com operador declarado e a **lista dos sobreviventes**
+publicada em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`.
+
+**Guards.** Pré-voo **33 → 298** casos, refs **18 → 33** — os dois escritos pelo Dev-T, **outra
+identidade**, **antes** do artefato e vermelhos de propósito. Conferido que `tests/**` ficou byte a byte
+intocado (`hash-object` com caminho absoluto = blob do head; `git diff --name-only <head-do-Dev-T> HEAD
+-- tests` vazio). **Matriz de ausência reexecutada:** com cada artefato apagado **e** renomeado, o guard
+do artefato ausente passa **0** (pré-voo 0/298, refs 0/33, nos dois modos), e a rodada de controle no
+arnês pristino reproduz 297/298 e 33/33.
+
+**O achado do ciclo, e ele não fecha aqui.** `[B8b]` e `[F-EOL/s7-neg]` levam ao artefato a **mesma
+fixture** — byte a byte igual, `md5` idêntico — e exigem vereditos **opostos**. É contradição por
+construção, não dificuldade de implementação. Pelo contrato quem está certo é o `s7-neg`; o `[B8b]` é o
+critério da **v2**, que a v3 revoga ao tornar o token proibido fora da colagem. Fechá-lo exigiria
+isenção **fora do inventário** e **estreitaria o gatilho** — então o dev do artefato, que **não toca
+`tests/**`**, reportou: `P-GOV-MANDATO-3-B8B-CONTRADICAO`, **ALTA**, **bloqueia o merge** (job `backend`
+do CI vermelho com **1** not-ok em 3385, o único da suíte).
+
+**KPI.** Backend **3103/3105 → 3382/3385** por execução real no CI, delta decomposto (guards 51 → 331
+casos: +280 no denominador, +279 no numerador, porque um caso novo nasce vermelho). Smoke e Flutter
+**carregados com nota**, provados nos dois sentidos. `blocks_completed` **168, inalterado**; `mvp_*`
+**intocados**.
+
+**Fica devendo, e é do orquestrador dividir.** A rodada completa de mutação do **pré-voo** (184 pontos)
+não cabe numa sessão: medido nesta máquina, cada execução do guard do pré-voo custa ~3–4 min (298 casos,
+um processo `bash` por caso no Windows). O **refs** (99 pontos) fechou; o parcial do pré-voo está
+publicado **rotulado como parcial**, com denominador e taxa, para o próximo bloco retomar.

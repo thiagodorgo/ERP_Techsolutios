@@ -142,21 +142,36 @@ echo "== pontos de decisao enumerados da fonte: $(wc -l < "$PONTOS" | tr -d ' ')
 
 # --- 3) o operador: aplica no arquivo $1, linha $2; imprime o id do operador, ou vazio ------------
 aplica() {
-  local f=$1 n=$2 l par a b
+  local f=$1 n=$2 l par a b CTX_TESTE
   l=$(sed -n "${n}p" "$f")
   if printf '%s' "$l" | grep -qE '\|\|[[:space:]]*(parado|falha|uso|exit|echo|\{)'; then
     # o ramo de recusa vira no-op. Em funcao de UMA linha (`ver() { ... || parado "..."; }`) engolir
     # ate o fim da linha levaria o `; }` embora e o mutante nao compilaria — viraria ANOMALIA-SINTAXE
     # e o ponto ficaria sem medicao. Entao PRESERVO o fechamento quando ele existe, e so caio no
     # corte ate o fim da linha quando nao ha o que preservar.
-    if printf '%s' "$l" | grep -qE ';[[:space:]]*\}[[:space:]]*$'; then
+    #
+    # MAS a preservacao so vale quando o `{` que o `}` fecha esta ANTES do `||` (corpo de funcao).
+    # Quando o `{` e do PROPRIO ramo (`... || { echo uso; exit 1; }`), preservar o `}` deixa uma
+    # chave sem par e o mutante nao compila. Foi assim que a l.115 do pre-voo saiu ANOMALIA-SINTAXE
+    # na 1a rodada: o controle `bash -n` pegou, em vez de a ferramenta contar erro como cobertura.
+    if printf '%s' "$l" | grep -qE ';[[:space:]]*\}[[:space:]]*$' \
+       && printf '%s' "${l%%'||'*}" | grep -q '{'; then
       sed -i "${n}s/||[[:space:]]*\(parado\|falha\|uso\|exit\|echo\|{\).*;[[:space:]]*}[[:space:]]*\$/|| true; }/" "$f"
     else
       sed -i "${n}s/||[[:space:]]*\(parado\|falha\|uso\|exit\|echo\|{\).*\$/|| true/" "$f"
     fi
     echo M1; return; fi
+  # M3. Os numericos (`-eq`…`-ge`) sao exclusivos de teste. Os de arquivo e de cadeia (`-n -z -f -d`)
+  # NAO sao: `mktemp -d`, `grep -f`, `sort -n` usam as MESMAS letras como BANDEIRA de comando. Medido
+  # na 1a rodada: a l.124 do pre-voo (`TMPD=$(mktemp -d …)`) virou mutante `mktemp -f` e foi publicada
+  # como ponto NAO-COBERTO — ponto de decisao que nao existe. Por isso esses quatro so se aplicam
+  # quando a linha tem CONTEXTO DE TESTE (`[ ` ou `[[`); sem ele o ponto cai para o proximo operador
+  # e, nao havendo nenhum, e listado como EXCLUIDO — que e a resposta honesta.
+  CTX_TESTE=0
+  printf '%s' "$l" | grep -qE '\[\[|\[ ' && CTX_TESTE=1
   for par in '-eq:-ne' '-ne:-eq' '-gt:-le' '-le:-gt' '-lt:-ge' '-ge:-lt' '-n:-z' '-z:-n' '-f:-d' '-d:-f'; do
     a="${par%%:*}"; b="${par##*:}"
+    case "$a" in -n|-z|-f|-d) [ "$CTX_TESTE" = 1 ] || continue ;; esac
     if printf '%s' "$l" | grep -qE "(^|[^[:alnum:]_-])$a[[:space:]]"; then
       sed -i "${n}s/\\([^[:alnum:]_-]\\)$a\\([[:space:]]\\)/\\1$b\\2/" "$f"; echo "M3($a>$b)"; return; fi
   done
