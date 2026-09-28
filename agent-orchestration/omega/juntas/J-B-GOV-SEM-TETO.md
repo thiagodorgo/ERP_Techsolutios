@@ -28,8 +28,12 @@ orquestrador ~7 min depois de lançada, **sem veredito**; os parciais foram pres
 **nenhuma segunda instância os herdou** (C2 declara não ter aberto o seu). Voto perdido não contou como nada.
 Todas as cadeiras são `model: opus` no próprio corpo — não houve substituição de modelo.
 
-Evidência completa de cada voto (comandos, saídas, mutações, JSON dos achados) ficou no scratchpad da sessão do
-orquestrador (`VOTO-394-C{1,2,3}.md`); o que segue é o que a junta entrega ao registro.
+Evidência completa de cada voto (comandos, saídas, mutações, JSON dos achados) em
+`agent-orchestration/omega/juntas/votos/B-GOV-SEM-TETO/` — `C{1,2,3}-evidencia.md`, o parecer do inspetor
+`00-inspetor-terreno.md`, as primeiras instâncias caídas `C{1,2,3}-evidencia.pre-queda.md` e o parecer do porteiro
+`PORTEIRO-394.md`. *Ponteiro emendado pelo PR de registro do #394 (ressalva R1 do porteiro): na autoria desta ata
+a evidência ficou só no scratchpad do orquestrador, o que o §C7.7 P1 não admite.* O que segue é o que a junta
+entrega ao registro.
 
 ## O que cada cadeira mediu (resumo, com o número)
 

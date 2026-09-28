@@ -9823,3 +9823,45 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** o próximo PR que tocar `Kpis/*` — o #393, na integração da `main` (recontagem do KPI).
 - **bloqueia:** não.
 - **teste de encerramento:** as quatro métricas carregam nota do PR corrente no `kpis-latest.json` e no history.
+
+## P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388 e #389 dizem ao jurado que o ciclo 2 é o último — MÉDIA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-2-2** da junta do `B-GOV-SEM-TETO` e da ressalva **R6** do porteiro do #394)
+- **prova (N = 6 corpos, 12 arquivos nos dois espelhos; forma: `git grep -l -i "CICLO 2 — o ÚLTIMO"` no head de cada PR; causa: os corpos foram escritos sob o `D-TETO-DOIS-CICLOS`, que o #394 revogou em `b3f0af5f`, e vivem em ramos que ainda não integraram a `main`):**
+  - **#389** (`B-O6R-04a`, head `bc3e736b`): `jurado-o6r04a-c2-banco-rls`, `jurado-o6r04a-c2-fail-closed-backend`, `jurado-o6r04a-c2-suplente-banco-rls`, `jurado-o6r04a-c2-suplente-fail-closed-backend` (× `.claude/` e `.agents/`).
+  - **#388** (`B-O6R-11`, head `a24f58b5`): `jurado-o6r11-c2-fail-closed-dart`, `jurado-o6r11-c2-suplente-fail-closed-dart` (× 2 espelhos).
+- **escopo:** `pre-existente` — evidência de data: corpos de 2026-09-20, anteriores ao #394 (2026-09-28); nenhum foi tocado por ele.
+- **efeito medido:** a premissa falsa está **dentro do corpo do jurado** ("reprovar aqui manda o bloco a dossiê ao dono") e muda a aposta do voto; e, quando os PRs mergearem, os corpos entram na `main` com regra revogada — o teste de encerramento da `P-GOV-CICLOS-CORPOS-ORFAOS` os reencontraria.
+- **dono:** cada bloco o seu — **`B-O6R-04a` (#389)** e **`B-O6R-11` (#388)**: ERRATA nos corpos, versionada nos dois espelhos, e integração da `main` pós-#394, **antes da junta** de cada um (não antes do start). O orquestrador lança; a fábrica escreve; o inspetor da junta confere por propriedade.
+- **bloqueia:** a **junta** do #389 e a do #388 — não o trabalho anterior a ela.
+- **teste de encerramento:** no head julgado de cada PR, a busca pela propriedade (teto ou "último ciclo" por contagem, `git grep -n -i`) nos corpos das cadeiras devolve 0 linhas vivas; vermelho-controle: reintroduzir "CICLO 2 — o ÚLTIMO" num corpo faz a busca achá-lo.
+
+## P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o número do ciclo do briefing, não do repositório — MÉDIA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-3-6** da junta do `B-GOV-SEM-TETO` e da ressalva **R3** do porteiro do #394)
+- **prova (N = 1 entrada de trava; forma: `grep` no corpo do `inspetor-de-terreno-da-junta` por instrução de contar `R-<entrega>-<ciclo>` ou atas — nenhuma; o item 2.1 só confere a ata do ciclo ANTERIOR declarado; causa: o método do inspetor é anterior à trava e usa o ciclo que o briefing declara):** o item 2.2 (`dd79c96f`, 2026-09-28) liga a trava em "ciclo ≥ 4"; o número vem de quem escreve o briefing.
+- **escopo:** `pre-existente` quanto ao método (item 2.1 e o fail-closed: `d2839039` 2026-08-30 / `72fcdcde` 2026-09-08); o uso como trava é do #394.
+- **efeito medido:** um briefing que declare o ciclo errado desliga a trava sem que nada a contradiga. Nenhum bloco está em ciclo ≥ 4 hoje.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (mesmo dono da `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA`).
+- **bloqueia:** não.
+- **teste de encerramento:** o corpo do inspetor deriva o número do ciclo do repositório (`omega/reprovacoes/R-<entrega>-<n>.md` + atas) e sai `BLOQUEADO` quando o briefing diverge; vermelho-controle: briefing declarando ciclo 3 com três `R-*` no repositório.
+
+## P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatória antes de todo bloco, ainda fala do teto do §C7.4 — BAIXA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-2-1** da junta do `B-GOV-SEM-TETO` e da ressalva **R3** do porteiro do #394)
+- **prova (N = 1 linha; forma: `git show b3f0af5f:PROJECT_MEMORY.md | sed -n 37p`; causa: snapshot datado, não re-gerado desde 2026-08-29):** `| B-O6R-02 atomicidade do financeiro | 5 P0 + QUA-003 | 🚧 ciclo 5 — **teto do §C7.4** |`.
+- **escopo:** `pre-existente` — evidência de data: último commit no arquivo `74430cc1`, 2026-08-29.
+- **efeito medido:** histórico pelo critério da C2 (não manda ninguém agir), mas em documento que o `CLAUDE.md` manda ler antes de todo bloco.
+- **dono:** `B-GOV-CICLOS-RESIDUAIS`.
+- **bloqueia:** não.
+- **teste de encerramento:** `PROJECT_MEMORY.md` sem menção a teto de ciclos como regra vigente (`grep -n -i "teto"` só em trecho marcado como histórico).
+
+## P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro de worktree de outro bloco — BAIXA
+
+- status: ABERTA (aberta pelo PR de registro do #394, ressalva **R4** do porteiro do #394; observada pelo orquestrador na limpeza do #394)
+- **prova (N = 1 arquivo apagado em 1 execução; forma: `bash scripts/post-merge-cleanup.sh` na árvore principal em 2026-09-28; causa: `scripts/post-merge-cleanup.sh:39` roda `find . -type f -name "*.tsbuildinfo" -not -path "*/node_modules/*" -delete`, que desce em `.claude/worktrees/`):** apagou `./.claude/worktrees/b04a/frontend/tsconfig.tsbuildinfo` (worktree do `B-O6R-04a`).
+- **escopo:** `pre-existente` — evidência de origem: a linha nasceu em `db4370cc` (#251, 2026-07-20).
+- **efeito medido:** cache regenerável do `tsc`; nenhum arquivo rastreado, nenhum dado. O defeito é a **fronteira**: o script de limpeza alcança worktree alheio, contra a regra "resíduo alheio se reporta, não se varre".
+- **dono:** o orquestrador — bloco de ferramenta próprio (identificador proposto `B-CHORE-CLEANUP-FRONTEIRA`), com teste que prove a fronteira.
+- **bloqueia:** não.
+- **teste de encerramento:** com um `*.tsbuildinfo` semeado em `.claude/worktrees/<x>/`, o script não o apaga; vermelho-controle: a versão atual o apaga.

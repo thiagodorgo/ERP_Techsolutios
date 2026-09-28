@@ -2472,13 +2472,13 @@
     "snapshot_date": "2026-09-28",
     "version": "B-GOV-SEM-TETO",
     "pr": 394,
-    "merge_commit": null,
-    "approved_head": null,
+    "merge_commit": "b3f0af5f82aca23502326f18b644a28df3236b5a",
+    "approved_head": "7ad08690bad5e9cbc4d34fe6905b14c6ac634046",
     "flutter_tests": "864/864",
     "backend_tests": "3052/3054",
     "frontend_smoke_tests": "1202/1202",
     "blocks_completed": 168,
     "description": "B-GOV-SEM-TETO — transcreve para o contrato a decisão do dono de 2026-09-27 (`D-SEM-TETO-AUDITORIA-NO-3`): cai o teto de dois ciclos de reprovação; se o ciclo 3 reprovar, audita-se a orquestração e a junta antes do ciclo 4, e continua-se. O texto de 27/09 (orquestrador) foi medido incompleto pelo plano do bloco, e a emenda (desenvolvedor de identidade nova, §C7.4-bis) alinhou as regras vivas que contradiziam a decisão — V-01 §C7.7, V-02 cauda do item 4, V-03 §C7.1-bis, V-04 item 2.2 do `inspetor-de-terreno-da-junta` (que bloquearia por construção a junta 3 do #393), V-05 o lado Codex, V-06 o protocolo de junta resiliente —, deu ao gatilho as peças mínimas para operar com maquinaria que já existe (T-21 trava no inspetor + convocação; T-22 registro `R-*` e forma do veredito; T-23 pergunta (d) sem depender do #393; T-24 disparo sem ambiguidade; T-25 conserto registrado), e nomeou com dono o que não desenhou: `P-GOV-CICLOS-CORPOS-ORFAOS` (5 regras pré-existentes em corpos e no `EXECUTION_MODEL.md`) e `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` (5 perguntas do mecanismo). Espelho `CLAUDE.md` × `AGENTS.md` idêntico por md5 EOL-neutro nas três regiões tocadas. Sem código nem teste; métricas de teste CARREGADAS (§C3.3); `mvp_*` intocados (§C3.4); `blocks_completed` 167 -> 168.",
-    "backfill_note": "pr 394 (o PR já existia na autoria da emenda); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. Este PR PAGA o backfill §C3.5 do #392 na entrada anterior. Se o #393 (B-GOV-MANDATO) mergear antes, `blocks_completed` e este backfill se RECONTAM no pré-merge a partir da `main` de então (C1-A3 do #392)."
+    "backfill_note": "pr 394 (o PR já existia na autoria da emenda); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. Este PR PAGA o backfill §C3.5 do #392 na entrada anterior. Se o #393 (B-GOV-MANDATO) mergear antes, `blocks_completed` e este backfill se RECONTAM no pré-merge a partir da `main` de então (C1-A3 do #392). [BACKFILL pos-merge (§C3.5) pago no PR de registro do #394 (precedente #382), por ressalva R2 do porteiro do #394. merge_commit = gh pr view 394 --json mergeCommit (squash de 2026-09-28). approved_head = o 'Objeto julgado' e a linha 'approved_head' da ata agent-orchestration/omega/juntas/J-B-GOV-SEM-TETO.md (junta APROVADA 3x0) — NAO o head no merge (3f791a7d), que so acrescentou a ata, duas pendencias e o indice depois do voto. Nenhuma contagem muda.]"
   }
 ]
