@@ -10,6 +10,8 @@
 # USO
 #   bash scripts/mandato-mutantes.sh <refs|preflight> [--only <l1,l2,...>] [--equivalentes <arq>]
 #                                    [--controle] [--jobs N]
+#   ec=0 nenhum NAO-COBERTO alem dos equivalentes declarados · ec=1 ha NAO-COBERTO · ec=2 PARADO: a
+#   medicao nao aconteceu (arnes invalido, LINHA DE BASE SUJA, copia pristina alterada, opcao errada)
 #
 # NUNCA TOCA RASTREADO. Tudo acontece numa copia em `mktemp -d`. O artefato da arvore e lido, nunca
 # escrito; no fim a ferramenta confere que o `git status` do repositorio nao mudou ([M-4]).
@@ -37,18 +39,27 @@
 # Ponto sem operador aplicavel e LISTADO como EXCLUIDO, com a linha — nunca somado ao denominador.
 #
 # VEREDITO POR MUTANTE. VERMELHO = o guard reagiu (`# fail` acima da LINHA DE BASE). VERDE = o guard
-# nao reagiu: o ponto esta NAO-COBERTO. A linha de base NAO e presumida zero — e MEDIDA na copia
-# pristina antes do primeiro mutante, porque um guard pode ter vermelho legitimo conhecido (neste
-# repositorio o pre-voo tem 1: a contradicao [B8b] x [F-EOL/s7-neg], declarada no ciclo 3).
+# nao reagiu: o ponto esta NAO-COBERTO. A linha de base NAO e presumida: e MEDIDA na copia pristina
+# antes do primeiro mutante, e TEM de dar `fail=0`. Se nao der, a ferramenta ABORTA com ec=2 ("linha
+# de base suja — corrija o guard antes de medir") e nao mede nada (plano §13.5). Tolerar um vermelho
+# "conhecido" nao e neutro: com a base em fail=K, o caso que ja esta vermelho fica CEGO — um mutante
+# cujo efeito so ele pegaria continua em fail=K e sai VERDE falso, e um mutante que conserta um caso e
+# quebra outro tambem. A matriz do pre-voo medida com fail=1 (o [B8b] do ciclo 3) foi descartada por
+# isso; a ferramenta se recusa a repetir a medicao sem significado.
 #
 # CONTROLES (o que impede esta ferramenta de ser teatro). Com `--controle`:
 #   (a) SONDA: injeta no artefato uma clausula SEM guard e exige que ela apareca NAO-COBERTA — a
-#       ferramenta sabe achar buraco. DIVERGENCIA DECLARADA do plano: a receita literal do §E4.6
-#       (`[ -n "$SONDA_INEXISTENTE" ] || parado "sonda"`) NAO serve — com a variavel ausente o teste
-#       `-n` e FALSO, o `||` dispara e o artefato PRISTINO passa a abortar sempre, destruindo a
-#       linha de base. A sonda usa a polaridade que preserva o pristino (`-z` com `${...:-}`): o
-#       pristino e no-op, o mutante M1 tambem, logo o guard fica verde e a sonda sai NAO-COBERTA,
-#       que e exatamente o que o controle quer provar.
+#       ferramenta sabe achar buraco. A POLARIDADE e a do §E4.6 corrigido (§13 D-S-4): `-z`, que so
+#       dispara se alguem EXPORTAR a variavel — o pristino e no-op, o mutante M1 tambem, o guard
+#       fica verde e a sonda sai NAO-COBERTA, que e o que o controle quer provar (a forma `-n` da v3
+#       abortava o pristino sempre). A GRAFIA diverge da literal do §E4.6 em dois pontos, medidos
+#       sob `set -u` (a sonda entra na linha logo abaixo dele, nos dois artefatos):
+#         `"$SONDA_INEXISTENTE"` sem `:-`  -> "unbound variable", ec=1: o pristino MORRE de novo,
+#                                             por outra via — por isso `"${SONDA_INEXISTENTE:-}"`;
+#         `|| parado "sonda"`              -> com a variavel exportada, "parado: command not found"
+#                                             e o script SEGUE (ec=0): no pre-voo `parado` nao
+#                                             existe, e no refs so e definida DEPOIS (l.114) — por
+#                                             isso `|| exit 9`. O M1 casa as duas grafias.
 #   (b) NO-OPS: reescreve 4 comentarios e exige VERDE — a ferramenta nao acusa TEXTO.
 #   (c) DIFERENCIAL (A11): roda o artefato pristino sobre um insumo fixo na COPIA e na ARVORE REAL e
 #       exige saidas identicas (menos caminho e data). Se diferirem, o arnes e uma variavel e a
@@ -120,6 +131,12 @@ echo "== head: $(git rev-parse HEAD)  rastreados na copia: $RASTREADOS (o [B6] e
 LB=$(roda_guard "$PRIS"); LB_FAIL=${LB%% *}; LB_TESTS=${LB##* }
 echo "== LINHA DE BASE medida na copia pristina: fail=$LB_FAIL de tests=$LB_TESTS"
 [ "$LB_TESTS" -gt 0 ] || { echo "PARADO: a copia pristina nao registrou teste — arnes invalido" >&2; exit 2; }
+# Linha de base SUJA = medicao sem significado (ver VEREDITO no cabecalho): aborta, nomeando os casos.
+if [ "$LB_FAIL" -ne 0 ]; then
+  echo "PARADO: linha de base suja — corrija o guard antes de medir (copia pristina: fail=$LB_FAIL de tests=$LB_TESTS; nenhum mutante foi medido)" >&2
+  grep '^not ok ' "$PRIS/.tap" | head -10 | sed 's/^/   /' >&2
+  exit 2
+fi
 
 # --- 2) pontos de decisao, enumerados DA FONTE ----------------------------------------------------
 PONTOS="$BASE/pontos.txt"

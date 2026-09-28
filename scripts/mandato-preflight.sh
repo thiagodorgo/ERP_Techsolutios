@@ -94,8 +94,13 @@
 #               Diferente -> REJ nomeando o bloco (parcial, editado ou DESATUALIZADO: o head andou).
 #               refs morto para o N daquele bloco -> REJ nomeando o #N; nada foi verificado.
 #               Sem colagem nenhuma no mandato -> AVISO (fronteira 16).
-#               O sub-teste de ROTULO do ciclo 2 (`approved_head:` + SHA na mesma linha, conferido
-#               contra o estado LIDO da ferramenta) CONTINUA de pe, nas linhas nao isentas.
+#               O token e o UNICO mecanismo da checagem 7: ele SUBSTITUI o sub-teste de ROTULO do
+#               ciclo 2 (`approved_head:` + SHA na mesma linha, conferido contra o estado LIDO da
+#               ferramenta), que SAIU no ciclo 3 (plano §13.1). Era redundante por construcao — toda
+#               linha que ele pegava o token ja tinha pego — e rejeitava a MESMA linha DUAS vezes: uma
+#               maquina de forma fora do inventario I1..I20. O estado da ferramenta (LIDO, NAO
+#               DETERMINAVEL, AUSENTE) nao muda o veredito: o MESMO corpo recebe UMA rejeicao, a do
+#               token. O AVISO de ec=3 fica: ele e da checagem 4 (proveniencia), nao desta.
 #
 # CUSTOS E FRONTEIRAS (declarados; dono `B-GOV-MANDATO-2`)
 #   - o conteudo da saida cercada NAO e verificado: a cerca e convencao visivel (fronteira 18).
@@ -264,7 +269,7 @@ done < "$TMPD/blocos"
 
 # =================================================================================================
 # PASSADA 2 — le o ORACULO e o documento. Unidades (chk 3), tokens (chk 4 e 6), segmentos (chk 5),
-# token reservado e rotulo (chk 7). Nenhum reconhecedor de secao ou cerca aqui: `fe` e `sec` vem do
+# token reservado (chk 7). Nenhum reconhecedor de secao ou cerca aqui: `fe` e `sec` vem do
 # oraculo, e `EX` traz as linhas isentas pela colagem VERIFICADA.
 # =================================================================================================
 REC=$(awk -v OFS="$TAB" -v EX="$EXENTAS" '
@@ -302,26 +307,6 @@ function coletaGrep(num, l,   t, nseg, seg, j, c, k5) {
     if (index(seg[j], "caixa-exata:") > 0) { print "AVI5", num, c; continue }
     for (k5=1;k5<=c;k5++) print "REJ5", num, seg[j]
   }
-}
-# `approved_head` seguido de `:` ou `=` e, depois dele, um SHA na MESMA linha: o sub-teste de ROTULO
-# do ciclo 2, que continua de pe (o token reservado e uma camada ACIMA dele, nao um substituto).
-function primeirosha(s,   t,u) {
-  while (match(s, /[A-Za-z0-9_.\/:-]+/)) {
-    t=substr(s,RSTART,RLENGTH); s=substr(s,RSTART+RLENGTH)
-    u=limpaS(t); if (length(u)>=7 && length(u)<=40 && ehex(u)) return tolower(u)
-  }
-  return ""
-}
-function rotulo_ah(l,   i, resto, j, c) {
-  i = index(l, "approved_head")
-  if (i == 0) return ""
-  resto = substr(l, i + length("approved_head"))
-  for (j = 1; j <= length(resto); j++) {
-    c = substr(resto, j, 1)
-    if (c == ":" || c == "=") return primeirosha(substr(resto, j + 1))
-    if (c != "*" && c != "\140" && c != ")" && c != "\042" && c != "\047" && c != " ") return ""
-  }
-  return ""
 }
 function colunaDeEvidencia(l,   c,n,i) {
   n = split(l, c, "|")
@@ -394,8 +379,6 @@ NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
     }
   }
   for (ip=1; ip<=np; ip++) print "PATH", FNR, pt[ip], (pex[ip]==1) ? 1 : 0
-  ahl = rotulo_ah($0)
-  if (ahl != "") print "AH", FNR, ahl
 }
 END {
   n = FNR
@@ -545,37 +528,13 @@ while IFS="$TAB" read -r ln c nv; do
 done < "$TMPD/r6"
 
 # 7) `approved_head` e TOKEN RESERVADO: o nome do campo e da FERRAMENTA, o autor nao o escreve.
-#    A unica isencao e a colagem VERIFICADA (I1), cujas linhas ja sairam em `EXENTAS`.
+#    A unica isencao e a colagem VERIFICADA (I1), cujas linhas ja sairam em `EXENTAS`. E o UNICO
+#    mecanismo desta checagem: o rotulo nao e conferido contra o estado da ferramenta (§13.1).
 pega AH7 | cut -f2 | sort -n -u > "$TMPD/r7"
 while IFS= read -r ln; do
   [ -n "${ln:-}" ] || continue
   falha "l.$ln: token reservado approved_head fora da colagem da ferramenta"
 done < "$TMPD/r7"
-
-# 7-bis) o sub-teste de ROTULO do ciclo 2: `approved_head: <SHA>` conferido contra o estado LIDO
-AHS=$(pega AH | cut -f2,3 | sort -u)
-if [ -n "$AHS" ] && [ -n "$PR" ]; then
-  OUT=$(bash "$REFS" "$PR" 2>/dev/null); RC7=$?
-  case "$OUT" in
-    *"LIDO DA ATA"*)       EST7=LIDO ;;
-    *"NAO DETERMINAVEL"*)  EST7="NAO DETERMINAVEL" ;;
-    *"AUSENTE"*)           EST7=AUSENTE ;;
-    *)                     EST7="desconhecido (mandato-refs.sh ec=$RC7)" ;;
-  esac
-  LIDOSHA=$(printf '%s\n' "$OUT" | awk '/^approved_head:/{print tolower($2); exit}')
-  printf '%s\n' "$AHS" > "$TMPD/r7b"
-  while IFS="$TAB" read -r ln s; do
-    [ -n "${ln:-}" ] || continue
-    if [ "$EST7" != "LIDO" ]; then
-      falha "l.$ln: o mandato rotula $s como approved_head, mas a ferramenta diz $EST7"
-    else
-      case "$LIDOSHA" in
-        "$s"*) : ;;
-        *) falha "l.$ln: o mandato rotula $s como approved_head, mas a ferramenta LEU $LIDOSHA" ;;
-      esac
-    fi
-  done < "$TMPD/r7b"
-fi
 
 echo
 if [ "$ERROS" = "0" ]; then echo "PRE-VOO OK — $F"; exit 0; fi
