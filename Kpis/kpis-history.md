@@ -3034,3 +3034,55 @@ ganharam **âncora absoluta** e a re-medição deu 0/18. O critério pegou um bu
 para o segundo: a ferramenta deste próprio bloco passou a responder **`NÃO DETERMINÁVEL` (ec=3)** para o
 #393 — ata única, **REPROVADA**, sem a linha `- **approved_head:**`. É o caso C8 vivo, e é o comportamento
 correto: objeto **julgado** não é objeto **aprovado**.
+
+## 2026-09-28 — B-GOV-MANDATO **ciclo 3** (PR #393) — `published_per_pr`
+
+| métrica | antes | depois | origem |
+|---|---|---|---|
+| `backend_tests` | 3103/3105 | **3382/3385** | **execução real** no job `backend` do CI do head `616fd4fa`, TAP lido do **log do job** (`gh api …/actions/jobs/108797802526/logs`): `# tests 3385 / # pass 3382 / # fail 1 / # skipped 2` |
+| `frontend_smoke_tests` | 1202/1202 | 1202/1202 | carregado com nota §C3.3 — `git diff --name-only fc3363e3 HEAD -- frontend mobile` = **0 linhas** e o MESMO comando `-- scripts tests` = **5 linhas** (o zero não é pathspec vazio) |
+| `flutter_tests` | 864/864 | 864/864 | carregado com nota §C3.3 — mesma medição |
+| `blocks_completed` | 168 | **168 (inalterado)** | o ciclo 3 é correção do MESMO bloco, não bloco novo |
+| `mvp_demo` / `mvp_vendavel` | — | **intocados** | §C3.4 — o PR não move escopo |
+
+**O delta fecha exatamente, e o numerador explica o próprio buraco.** Os dois guards do mandato
+passaram de **51** para **331** casos (`mandato-refs` 18 → 33 pela E1, `mandato-preflight` 33 → 298
+pela E3): **+280** no denominador, e 3105 + 280 = **3385**. O numerador sobe **+279**, não +280,
+porque **um** dos casos novos nasce **vermelho**: `not ok 1584 - [B8b]` — o **único** not-ok da suíte
+inteira. Não é regressão nem defeito do artefato (ver abaixo).
+
+**Cobertura por mutação deixou de ser adjetivo (E4).** `scripts/mandato-mutantes.sh` enumera os pontos
+de decisão **da fonte**, gera 1 mutante por ponto com operador declarado e publica **quem sobreviveu**.
+Rodada **completa** do `mandato-refs.sh`: **N=46 K=41 NÃO-COBERTOS=5 EXCLUÍDOS=52 ANOMALIAS=1** —
+**89 %** dos mutantes provados, com os 5 sobreviventes **nomeados por linha** em
+`docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`. Quatro deles são recusa por **ambiente**
+(binário ausente do PATH, fora de repositório, shim como arquivo × comando); o quinto, l.379, é o
+**aviso de divergência entre o commit de merge e o head aprovado** — precisamente o erro que originou
+este bloco. Os três controles [M-3] saíram verdes (diferencial arnês × árvore **IDÊNTICO**, sonda sem
+guard **NÃO-COBERTA**, 4 no-ops **VERDES**) e o [M-4] passou na rodada feita com a árvore limpa.
+
+**Os controles da E4 reprovaram a própria E4 — e é isso que faz o número valer.** Na primeira rodada,
+o `bash -n` recusou um mutante que **não compilava** em vez de contá-lo como cobertura (operador M1
+engolindo o `}` do próprio ramo; pré-voo l.115: `ANOMALIA-SINTAXE` → `VERMELHO fail=2`), e um ponto
+**falso** foi pego antes de virar número publicado (M3 tratando `mktemp -d` — uma **bandeira de
+comando** — como comparação; pré-voo l.124: `NÃO-COBERTO` → `EXCLUÍDO`). Publicar buraco falso é pior
+do que não medir: manda a próxima cadeira caçar fantasma.
+
+**Custo MEDIDO, com a fórmula — não estimativa republicada como medição.** Com a máquina livre e o
+relógio lido a cada execução: guard do `refs` = **98 s** (N=3: 98, 98, 99); guard do `pré-voo` ≈ 3–4 min
+(298 casos, **um processo `bash` por caso** — é essa escolha que torna o guard honesto, e ela custa).
+`custo = unitário × mutantes-que-rodam-guard`. A rodada do **pré-voo** (184 pontos medidos, 14
+executados) projeta **≈ 4,9 h serial** / **≈ 1,2 h com `--jobs 4`**, dentro da faixa que o plano
+estimou. Fica como `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`, com dono — é **trabalho, não dúvida**.
+
+**O que NÃO fechou, e por que não deve fechar aqui.** `[B8b]` e `[F-EOL/s7-neg]` levam ao artefato a
+**mesma fixture** — 133 bytes, `md5` idêntico, `cmp` sem diferença, mesmo argumento de PR e mesmo shim
+— e exigem vereditos **opostos**. Nenhum artefato possível satisfaz os dois: é contradição **por
+construção**. Pelo contrato quem está certo é o `s7-neg` (o plano v3 põe o campo como token reservado
+de documento inteiro e manda as **cinco** formas do rótulo terem o **mesmo** veredito de rejeição); o
+`[B8b]` pede aceitação da forma em item de lista, que é o critério da **v2**, revogado pela v3.
+Fechá-lo exigiria uma isenção **fora do inventário I1–I20** — das 20, **uma** cobre a checagem 7 — e
+**estreitaria o gatilho**. O desenvolvedor do artefato **não toca `tests/**`** (§4 do plano): reportou.
+`P-GOV-MANDATO-3-B8B-CONTRADICAO`, **ALTA**, **bloqueia o merge**.
+
+**`merge_commit` e `approved_head`: `null` na autoria** (§C3.5), com backfill pós-merge.

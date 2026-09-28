@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **418** |
-| IDs distintos | 407 |
-| **ABERTAS** | **307** |
+| Cabecalhos `## P-` | **420** |
+| IDs distintos | 409 |
+| **ABERTAS** | **309** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **238** |
+| — das quais **ativas nesta rodada** | **240** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 111 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **418 cabecalhos para 407 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **420 cabecalhos para 409 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 137
+## ABERTAS · balde A — material — 139
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -208,6 +208,8 @@
 | `P-GOV-ATA-CABECALHO-TEMPLATE` | 9802 | MÉDIA | sim | P-GOV-ATA-CABECALHO-TEMPLATE (2026-09-26) — não existe template RASTREADO de ata com cab |
 | `P-GOV-ATA-APPROVED-HEAD-LINHA` | 9812 | MÉDIA | sim | P-GOV-ATA-APPROVED-HEAD-LINHA (2026-09-26) — nenhuma das 107 atas escreve a linha `- **a |
 | `P-GOV-MANDATO-3-B8B-CONTRADICAO` | 9841 | ALTA | sim | P-GOV-MANDATO-3-B8B-CONTRADICAO (2026-09-28) — `[B8b]` e `[F-EOL/s7-neg]` exigem veredit |
+| `P-GOV-MANDATO-3-MUTANTES-REFS` | 9854 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` |
+| `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` | 9871 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 1 |
 
 ## ABERTAS · balde B — processo/registro — 101
 

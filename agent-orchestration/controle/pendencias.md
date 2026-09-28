@@ -9850,3 +9850,30 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **bloqueia:** **BLOQUEIA o merge** — o §8.7 dos rails proíbe merge com CI vermelho. Não bloqueia o julgamento do mérito do artefato, que é o que esta pendência existe para separar.
 - **o que fecha:** o `[B8b]` passa a exigir `ec=1` com a mensagem de token reservado (alinhando-o ao `s7-neg` e ao §12.3), **ou** a junta decide por escrito que a v3 não revoga o critério da v2 e então o inventário ganha a isenção I21 com escopo exato e recíproco nos dois lados. Uma das duas — nunca as duas.
 - **teste de encerramento:** `node --test --import tsx --test-reporter=tap tests/mandato-preflight.test.ts` sai `# fail 0` **sem** que `scripts/mandato-preflight.sh` passe a aceitar o token fora da colagem — conferível pelo vermelho-controle: o documento com o rótulo em item de lista continua `ec=1`.
+
+## P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` que sobrevivem à mutação com o guard 33/33 verde — MÉDIA
+
+- status: ABERTA
+- **dono:** o papel que escreve `tests/mandato-refs.test.ts` (o Dev-T do ciclo 3, ou quem o suceder). O dev do artefato **não toca `tests/**`** (§4 do plano), e fechar isto é **acrescentar caso**, não mudar comportamento.
+- **o que é:** a rodada completa de cobertura por mutação do `mandato-refs.sh` (entrega E4 do ciclo 3) mediu **99 pontos de decisão** extraídos da fonte e deixou **5 não-cobertos**: o guard fica **33/33 verde** com a decisão invertida. Não é defeito de comportamento do artefato — é **ausência de caso no guard**.
+- **medição (2026-09-28, pelo dev do ciclo 3, 2ª instância):** `bash scripts/mandato-mutantes.sh refs --controle --jobs 4` no head `1466c7d9` → `N=46 K=41 NAO-COBERTOS=5 EXCLUIDOS=52 ANOMALIAS=1`. Linha de base medida na cópia pristina: `fail=0 de tests=33`. Matriz completa, com as 99 linhas, em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md` §3.
+- **os cinco, com linha e o que deixou de ser recusado:**
+  1. **l.115** (`ver()`, operador M1) — a recusa por **binário ausente do PATH**. Nenhum caso exercita "o `gh` não está instalado".
+  2. **l.116** (`ghc()`, M3 `-f`→`-d`) — o ramo que decide invocar o shim **como arquivo** em vez de como comando.
+  3. **l.119** (`[ -f "$GH_BIN" ] || ver "$GH_BIN"`, M3 `-f`→`-d`) — mesma classe da 116.
+  4. **l.160** (`git rev-parse --git-dir … || parado`, M1) — a recusa por **não estar dentro de um repositório**.
+  5. **l.379** (`[ "$ESTADO_AH" = LIDO ] && [ -n "$MERGE" ] && [ "$MERGE" != "$AH" ]`, M3 `-n`→`-z`) — **o aviso de divergência entre o commit de merge e o head aprovado**.
+- **leitura:** quatro são a mesma família — **caminhos de recusa por ambiente**, que o arnês nunca alcança porque ele constrói sempre um ambiente bom (repositório criado, shim presente). O quinto (l.379) é de outra natureza e é o mais sério: é o **aviso de domínio** sobre exatamente o erro que originou este bloco (`REGISTRO-SAN3-00-APPROVED-HEAD-DUAS-VEZES`, o head do merge publicado no lugar do head julgado).
+- **escopo:** `dentro-do-bloco` para a l.379 (a cláusula nasceu no ciclo 2 deste bloco); `pre-existente` para as outras quatro, que são o preâmbulo de ambiente do script desde o ciclo 1.
+- **bloqueia:** **não bloqueia** — nenhuma delas muda o comportamento do artefato, e as quatro de ambiente são fail-closed por desenho (a recusa existe e funciona; o que falta é o caso que a prova).
+- **teste de encerramento:** para cada um dos 5, um caso novo em `tests/mandato-refs.test.ts` que fique **vermelho** quando o operador correspondente é aplicado — conferível reexecutando `bash scripts/mandato-mutantes.sh refs --only 115,116,119,160,379` e obtendo `NAO-COBERTOS=0`. O vermelho-controle: com os casos novos e o artefato **pristino**, o guard continua verde.
+
+## P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 14 de 184 pontos e NÃO cabe numa sessão — MÉDIA
+
+- status: ABERTA
+- **dono:** `B-GOV-MANDATO` ciclo 4 (ou o bloco que o orquestrador nomear ao dividir a E4).
+- **o que é:** a entrega E4 do ciclo 3 mede cobertura por mutação dos dois artefatos. O `mandato-refs.sh` **fechou** (99 pontos, rodada completa). O `mandato-preflight.sh` tem **184 pontos de decisão** medidos e só **14** foram executados antes de a sessão acabar — o resto é **trabalho, não dúvida**.
+- **medição (2026-09-28, pelo dev do ciclo 3, 2ª instância):** denominador `== pontos de decisao enumerados da fonte: 184`; parcial 14 pontos = 4 VERMELHO, 2 VERDE, 7 EXCLUÍDO, 1 ANOMALIA. Custo medido com a máquina livre: o guard do refs custa **98 s** por execução (N=3: 98, 98, 99); o do pré-voo é ~3–4 min (298 casos, **um processo `bash` por caso**). Fórmula `unitário × mutantes-que-rodam-guard`, com a proporção de exclusão do refs (52/99) → ≈ 86 mutantes → **≈ 4,9 h serial** e **≈ 1,2 h com `--jobs 4`**. Bate com a faixa do plano (4,2–5,0 h / 1,0–1,3 h).
+- **por que não é só "rodar mais":** a rodada tem de ser feita numa **árvore limpa** do começo ao fim, porque o critério [M-4] compara o `git status` antes e depois. Nesta sessão as duas primeiras rodadas foram contaminadas **por mim** (editei arquivos rastreados enquanto elas corriam) e o [M-4] as reprovou corretamente; a rodada final do refs foi feita com a árvore limpa e o [M-4] passou.
+- **bloqueia:** **não bloqueia** — a E4 é declarada no §3 do plano como entrega **que não é de corte**. A ferramenta está entregue, rastreada e com os três controles verdes; o que falta é tempo de máquina.
+- **teste de encerramento:** `bash scripts/mandato-mutantes.sh preflight --controle --jobs 4` termina com `[M-4] nenhum rastreado mudou` e a matriz das **184** linhas colada em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md` §4, com os não-cobertos nomeados ou declarados equivalentes com fixture.
