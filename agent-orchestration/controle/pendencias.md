@@ -9799,3 +9799,27 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** o **orquestrador** — leva ao dono as que são decisão dele (M-05 e o prazo de M-04) e transcreve as respostas no mesmo bloco de governança da `P-GOV-CICLOS-CORPOS-ORFAOS` (identificador proposto `B-GOV-CICLOS-RESIDUAIS`).
 - **bloqueia:** não bloqueia o #394 nem a junta 3 do #393.
 - **teste de encerramento:** cada uma das cinco tem `arquivo:linha` no contrato ou no corpo de um gate que a responde, **ou** uma decisão do dono registrada em `decisoes.md` que a dispensa.
+
+## P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO sobre o texto que tirou o teto de ciclos — MÉDIA
+
+- status: ABERTA (aberta pelo orquestrador na ata `agent-orchestration/omega/juntas/J-B-GOV-SEM-TETO.md`, junta APROVADA 3 × 0 sobre `7ad08690`; os quatro são `ajuste`, `dentro-do-bloco`, e **não** reprovaram)
+- **prova (N = 4 achados de 3 cadeiras; forma: `ajuste` com `arquivo:linha` no voto; causa comum: o texto do §C7.4 item 4 acrescenta mecanismo às palavras do dono e o mecanismo ficou incompleto em pontos que a emenda nomeou em vez de desenhar):**
+  - **C1-A1** — `CLAUDE.md` l.413–445 (= `AGENTS.md` l.441–473), sob o rótulo "(decisão do dono, 2026-09-27)": 16 proposições acrescentam ator, obrigação, condição ou restrição **sem marca local** de que são do transcritor; a separação só existe em `decisoes.md` ("nenhuma é palavra do dono").
+  - **C1-A2** — `CLAUDE.md` l.432–435: no ramo "máquina defeituosa", o "continuaremos" depende de um conserto **sem executor, sem prazo e sem desfecho alternativo** (condição explícita; é a M-04 da `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` vista pelo lado do dono).
+  - **C2-3-1** — `inspetor-de-terreno-da-junta.md` item 2.2 (l.73–76, `dd79c96f`) × item 3.3 (l.110–112, `72fcdcde`, 2026-09-08): contra uma ref julgada **anterior** ao #394, a leitura "cláusula inexistente = o item não se aplica" desliga a trava do ciclo 4. Medido nos heads `c32f77b5` (#393), `a24f58b5` (#388) e `bc3e736b` (#389): `LIBERADO` numa leitura, `BLOQUEADO` na outra; com ref pós-#394, `BLOQUEADO` nas duas.
+  - **C3-A1** — o diff pôs no item 4 ~8 linhas normativas (T-21, T-22, T-24, T-25) que o §6 do plano `docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` proibia; o plano não foi emendado e `decisoes.md` diz "implementa aquele plano" sem registrar a divergência. Declarada na ata pelo orquestrador, que mandou a emenda.
+- **escopo:** `dentro-do-bloco` (todos nasceram no #394).
+- **efeito medido:** nenhum hoje — nenhum bloco está em ciclo ≥ 4. C2-3-1 é o único com efeito operável próximo; **conduta do orquestrador enquanto aberta** (registrada na ata, não é norma nova): nenhum PR vai a junta de ciclo ≥ 3 sem antes integrar a `main` pós-#394.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (proposto no plano do #394 §3.3(b); mesmo dono da `P-GOV-CICLOS-CORPOS-ORFAOS` e da `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`), aberto pelo orquestrador.
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393 (esta, sob a conduta acima).
+- **teste de encerramento:** (C1-A1) cada proposição do item 4 que não é palavra do dono tem marca local no contrato; (C1-A2) o ramo "máquina defeituosa" nomeia executor, prazo e desfecho, ou o dono dispensa em `decisoes.md`; (C2-3-1) com uma ref julgada pré-#394, o inspetor sai `BLOQUEADO` no ciclo 4 sem parecer, provado por mutação; (C3-A1) a divergência do §6 fica registrada em `decisoes.md`.
+
+## P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas sem nota do PR corrente desde o #392 — BAIXA
+
+- status: ABERTA (aberta pelo orquestrador a partir da nota **C3-N6** da junta do `B-GOV-SEM-TETO`, ata `J-B-GOV-SEM-TETO.md`)
+- **prova (N = 4 métricas; forma: métrica carregada do último valor oficial cuja nota no `Kpis/kpis-latest.json` é de um PR anterior, contra o §C3.3 que exige nota explícita do PR corrente; causa: o #392 devolveu ao texto do #390 as notas que o #391 tinha escrito):** `backend_contract_tests_focused` 34, `flutter_modules` 17, `mobile_backend_contracts` 18, `mobile_core_saas_contracts` 21 — medido por `difflib` entre `b8cd22df` (#391) e `fc3363e3` (#392).
+- **escopo:** `pre-existente` — evidência de origem: regressão entre `b8cd22df` e `fc3363e3`, anterior ao #394, que só carregou o que recebeu.
+- **efeito medido:** o painel mostra os números certos; a nota de procedência é que está velha.
+- **dono:** o próximo PR que tocar `Kpis/*` — o #393, na integração da `main` (recontagem do KPI).
+- **bloqueia:** não.
+- **teste de encerramento:** as quatro métricas carregam nota do PR corrente no `kpis-latest.json` e no history.
