@@ -2942,3 +2942,39 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
+
+## 2026-09-28 — B-GOV-SEM-TETO (PR #394, na autoria) — o teto de ciclos cai; no ciclo 3 audita-se a máquina
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) |
+| Blocos Entregues | **167 → 168** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`fc3363e3`, #392 = 167). O #393 publica 168 no ramo dele: quem mergear depois **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos blocos, não o produto |
+| pr / merge_commit / approved_head | `394` / `null` / `null` **na autoria** (§C3.5) |
+
+**O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-09-27
+(`D-SEM-TETO-AUDITORIA-NO-3`): **cai o teto de dois ciclos** de reprovação; se o ciclo 3 reprovar, **audita-se a
+orquestração e a junta** antes do ciclo 4, e **continua-se**. O texto de 27/09 foi escrito pelo orquestrador; o
+plano do bloco o mediu incompleto e a **emenda** (desenvolvedor de identidade nova — quem escreveu não emenda o
+próprio texto, §C7.4-bis) fez três coisas:
+
+1. **Alinhou as regras vivas que contradiziam a decisão** — o §C7.7 e a cauda do item 4 nos dois contratos, o
+   §C7.1-bis (que exigia "crítico + PD nos ciclos ≥3", protocolo do teto de 5), o item 2.2 do
+   `inspetor-de-terreno-da-junta` (o mesmo insumo, que **bloquearia por construção a junta 3 do #393**), o lado
+   Codex (`.agents/agents/README.md`) e o protocolo de junta resiliente.
+2. **Deu ao gatilho as peças mínimas para operar**, com maquinaria que já existe, cada uma declarada como
+   elaboração do transcritor (T-21…T-25 em `decisoes.md`): o inspetor passa a travar a junta do ciclo 4 sem o
+   parecer da auditoria; o parecer tem caminho `R-*` e veredito **máquina sã / defeituosa**; a pergunta (d) deixa
+   de citar ferramenta que só existe no #393; o disparo fica sem ambiguidade; o conserto fica registrado.
+3. **Nomeou com dono o que não desenhou**: `P-GOV-CICLOS-CORPOS-ORFAOS` (5 regras pré-existentes, em 4 corpos
+   e no `EXECUTION_MODEL.md`) e `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` (5 perguntas do mecanismo).
+
+**Espelho:** `CLAUDE.md` × `AGENTS.md` com hunks idênticos e md5 EOL-neutro igual nas três regiões tocadas;
+`sync-agent-agents.mjs --check` verde.
+
+**Backfill §C3.5 do #392, pago por este PR** (o primeiro a mergear depois dele), na entrada do #392 do
+`kpis-history.json`: `pr 392` · `merge_commit fc3363e38aabd77f54e6b53034128182f8000571` (de
+`gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
+`J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
