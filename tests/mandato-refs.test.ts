@@ -33,6 +33,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 // CICLO 3 (E1): import proprio, em linha nova -- [P-0] exige SO adicoes neste arquivo.
 import { readFileSync } from "node:fs";
+// CICLO 3 (Dev-T-3, §13.4): idem -- as ancoras de [V17] (nome que nao e arquivo) e [V18] (modo sem x).
+import { existsSync, statSync } from "node:fs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const SCRIPT = path.join(RAIZ, "scripts/mandato-refs.sh");
@@ -696,4 +698,132 @@ test("[V15] guarda do guard: zero leitura da FONTE do artefato, e a rota E o art
   // (c) controle positivo, na MESMA rota: com o artefato presente, sai relatorio.
   const presente = roda("392");
   assert.match(presente.out, /^approved_head:/m);
+});
+
+// =================================================================================================
+// CICLO 3 -- Dev-T-3 (plano §13.4, pendencia P-GOV-MANDATO-3-MUTANTES-REFS). Os 5 pontos de decisao
+// que a matriz de mutacao do refs publicou como NAO-COBERTOS ganham insumo e caso. O l.379 vem
+// PRIMEIRO porque e o erro que fundou este bloco: `approved_head` e `merge commit` sao o par que o
+// orquestrador trocou duas vezes (REGISTRO-SAN3-00-APPROVED-HEAD-DUAS-VEZES), e o AVISO que os separa
+// sobrevivia a mutacao com o guard inteiro verde.
+//
+// Mesma regra do bloco E1: todo caso roda o `.sh` de verdade por `spawnSync`; cada titulo traz a
+// mutacao (⇄) de UMA linha do artefato que o deixa vermelho; e onde o mutante tambem termina em ec=1
+// (V17, V19), o que discrimina e a CAUSA nomeada no stderr -- com a clausula neutralizada o script
+// segue e para mais adiante pela causa ERRADA, e "ec=1" sozinho seria uma sonda fraca.
+// =================================================================================================
+
+/** `gh` shimado para o #383 (ata J-APROVADA: objeto = approved_head = S1) no estado MERGED. */
+function shimMergeado(nome: string, merge: string): string {
+  return shim(
+    nome,
+    CABECA_SHIM +
+      `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  case "\${3:-}" in
+    383) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "${COMMIT_HEAD}" "fix/aprovada" "main" "MERGED" "false" "UNKNOWN" "${merge}" ;;
+    *) exit 9 ;;
+  esac
+  exit 0
+fi
+` +
+      API_OK,
+  );
+}
+const SHIM_MERGE_OUTRO = shimMergeado("gh-merge-outro.sh", S6);
+const SHIM_MERGE_IGUAL = shimMergeado("gh-merge-igual.sh", S1);
+
+test("[V16] PR MERGED, ata APROVADA, merge commit != approved_head: AVISO — ⇄ l.379 (`-n` -> `-z`; `!=` -> `=`; `= LIDO` -> `!= LIDO`)", () => {
+  // o par que o bloco existe para separar: approved_head (da ATA) = S1, merge commit (do gh) = S6.
+  const difere = roda("383", [], SHIM_MERGE_OUTRO);
+  assert.equal(difere.status, 0, difere.out + difere.err);
+  assert.match(difere.out, new RegExp(`^approved_head: +${S1}$`, "m"), "ancora: o approved_head tem de ser LIDO da ata");
+  assert.match(difere.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+  assert.match(difere.out, new RegExp(`^merge commit: +${S6}$`, "m"));
+  assert.match(difere.out, /^AVISO: merge commit != approved_head\./m, "o par trocado duas vezes saiu SEM aviso");
+  // controle 1 (`!=` -> `=`): merge commit == approved_head -> NENHUM aviso.
+  const igual = roda("383", [], SHIM_MERGE_IGUAL);
+  assert.equal(igual.status, 0, igual.out + igual.err);
+  assert.match(igual.out, new RegExp(`^merge commit: +${S1}$`, "m"));
+  assert.match(igual.out, /\^ LIDO DA ATA/);
+  assert.doesNotMatch(igual.out, /AVISO: merge commit/, "aviso com os dois SHAs IGUAIS");
+  // controle 2 (`-n` -> `-z`): LIDO mas ainda nao mergeado (merge commit vazio) -> NENHUM aviso.
+  const aberto = roda("383");
+  assert.equal(aberto.status, 0, aberto.out + aberto.err);
+  assert.match(aberto.out, /^merge commit: +<ainda nao mergeado>$/m);
+  assert.doesNotMatch(aberto.out, /AVISO: merge commit/, "aviso sem merge commit nenhum");
+  // controle 3 (`= LIDO` -> `!= LIDO`): MERGED mas approved_head NAO DETERMINAVEL -> NENHUM aviso,
+  // porque nao ha approved_head LIDO com que comparar (o #390 do SHIM_OK: MERGED em S6, ata sem aprovacao).
+  const nd = roda("390");
+  assert.equal(nd.status, 3, nd.out + nd.err);
+  assert.match(nd.out, new RegExp(`^merge commit: +${S6}$`, "m"));
+  assert.doesNotMatch(nd.out, /AVISO: merge commit/, "aviso comparando o merge commit com um approved_head que ninguem leu");
+});
+
+test("[V17] `gh` que nao e arquivo nem comando: PARADO ec=1 nomeando-o, stdout vazio — ⇄ l.115 (`|| parado` -> `|| true`)", () => {
+  const nome = "nao-existe-8877";
+  // ◐ ancoras: o nome nao pode ser ARQUIVO no cwd do script (seria invocado como `bash <arquivo>`) nem
+  // COMANDO no PATH -- em qualquer dos dois o caso passaria pela razao errada.
+  assert.equal(existsSync(path.join(repo, nome)), false, "o arnes tem um arquivo com o nome — o caso nao discrimina");
+  const noPath = spawnSync("bash", ["-c", `command -v ${nome}`], { cwd: repo, encoding: "utf8" });
+  assert.notEqual(noPath.status, 0, `'${nome}' existe no PATH — o caso nao discrimina`);
+  const r = roda("383", [], nome);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "dependencia ausente: nada pode sair no stdout");
+  assert.match(r.err, /PARADO: falta 'nao-existe-8877' no PATH/);
+  // com l.115 neutralizada o script segue, o `gh pr view` falha e ele para pela causa ERRADA:
+  assert.doesNotMatch(r.err, /nao li o PR/, "parou pela causa errada: o binario ausente nao foi nomeado");
+});
+
+test(
+  "[V18] shim de `gh` SEM bit de execucao: o script o invoca como `bash <arquivo>` e le a ata — ⇄ l.116/l.119 (`-f` -> `-d`)",
+  {
+    // SKIP POR PLATAFORMA, NAO POR CONVENIENCIA (fronteira 23, plano §13.4). No Windows/MSYS nao existe
+    // bit de execucao: um arquivo com shebang EXECUTA direto, logo o mutante `-f` -> `-d` (que manda
+    // executar o arquivo em vez de `bash <arquivo>`) produz a MESMA saida do pristino -- e EQUIVALENTE
+    // ali, e nenhum caso pode discrimina-lo. No ubuntu do CI o bit manda: o pristino passa e os dois
+    // mutantes param (l.116: execucao direta -> Permission denied -> "nao li o PR"; l.119: `command -v`
+    // de arquivo sem x falha -> "falta ... no PATH"). O caso roda la, e so la ele mede alguma coisa.
+    skip:
+      process.platform === "win32"
+        ? "equivalente em win32 (fronteira 23): sem bit x o mutante `-f`->`-d` nao muda o comportamento; discrimina no CI ubuntu"
+        : false,
+  },
+  () => {
+    const alvo = path.join(repo, "bin", "gh-sem-bit-x.sh");
+    writeFileSync(alvo, CABECA_SHIM + PR_VIEW + API_OK, { encoding: "utf8", mode: 0o644 });
+    chmodSync(alvo, 0o644); // `mode` do writeFileSync so vale na CRIACAO: o chmod explicito garante
+    // ◐ ancora: SEM nenhum bit x. Com um deles o mutante executaria o arquivo direto e o caso nao discriminaria.
+    assert.equal(statSync(alvo).mode & 0o111, 0, "o shim nasceu com bit de execucao — o caso nao discrimina");
+    const r = roda("383", [], alvo);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.match(r.out, new RegExp(`^approved_head: +${S1}$`, "m"));
+    assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+  },
+);
+
+test("[V19] cwd FORA de repositorio git: PARADO ec=1, stdout vazio — ⇄ l.160 (`|| parado` -> `|| true`)", () => {
+  const fora = mkdtempSync(path.join(tmpdir(), "mandato-refs-sem-git-"));
+  try {
+    // o teto impede o git de subir do tmpdir e achar um repositorio acima dele (no CI e aqui nao ha,
+    // mas o caso nao pode depender disso); GIT_DIR/GIT_WORK_TREE herdados furariam a sonda.
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      MANDATO_GH: SHIM_OK,
+      MANDATO_REPO: "t/t",
+      GIT_CEILING_DIRECTORIES: path.dirname(fora),
+    };
+    delete env.GIT_DIR;
+    delete env.GIT_WORK_TREE;
+    // ◐ ancora: sob o MESMO ambiente, o git NAO acha repositorio a partir de `fora`.
+    const sonda = spawnSync("git", ["rev-parse", "--git-dir"], { cwd: fora, encoding: "utf8", env });
+    assert.notEqual(sonda.status, 0, `o tmpdir esta dentro de um repositorio (${(sonda.stdout ?? "").trim()}) — o caso nao discrimina`);
+    const r = spawnSync("bash", [SCRIPT, "383"], { cwd: fora, encoding: "utf8", env });
+    assert.equal(r.status, 1, (r.stdout ?? "") + (r.stderr ?? ""));
+    assert.equal((r.stdout ?? "").trim(), "", "fora de repositorio nada pode sair no stdout");
+    assert.match(r.stderr ?? "", /PARADO: nao estou dentro de um repositorio git/);
+    // com l.160 neutralizada o script segue e para no `origin/main` inexistente -- a causa ERRADA:
+    assert.doesNotMatch(r.stderr ?? "", /ref 'origin\/main' nao existe/, "parou pela causa errada");
+  } finally {
+    rmSync(fora, { recursive: true, force: true });
+  }
 });

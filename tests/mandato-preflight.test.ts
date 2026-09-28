@@ -379,23 +379,62 @@ test("[B7c] razao numerica e caminho absoluto nao sao caminho do repositorio", (
   assert.equal(r.status, 0, r.out);
 });
 
-// --- checagem 7: rotular é afirmar (adendo A1) -------------------------------------------------
-test("[B8a] rotular approved_head com a ferramenta em NAO DETERMINAVEL: rejeita", () => {
-  const r = roda(mandato("f-ah-nd", [`- approved_head: \`${SHA_A}\` medido por: true`]), "393", REFS_ND);
-  assert.equal(r.status, 1, r.out);
-  assert.match(r.out, new RegExp(`rotula ${SHA_A} como approved_head, mas a ferramenta diz NAO DETERMINAVEL`));
+// --- checagem 7 (v3): `approved_head` e TOKEN RESERVADO — rotular deixou de ser afirmar --------
+// CICLO 3, Dev-T-3 (plano §13.1/§13.2). Estes tres casos encodavam a semantica da v2 ("rotular e
+// afirmar": o rotulo era conferido contra o estado LIDO da ferramenta e ACEITO quando o SHA batia).
+// A v3 REVOGOU isso — E2.b [F-7a]: "10/10 REJ nomeando a linha, sob QUALQUER shim (LIDO, ND,
+// AUSENTE)". O nome do campo e da FERRAMENTA; a unica via de `approved_head` aparecer num mandato e
+// a colagem verbatim. PROPRIEDADE: o ESTADO da ferramenta e a FORMA da linha sao irrelevantes — o
+// MESMO corpo tem o MESMO veredito, e o veredito e UMA rejeicao, a do token. A mensagem do detector
+// do ciclo 2 (`rotula X como approved_head, mas a ferramenta ...`) nao pode aparecer: se aparece, a
+// mesma linha e rejeitada DUAS vezes por uma maquina de forma que o inventario da E2.i nao lista.
+// Os quatro casos usam o MESMO byte de rotulo; so o shim (estado) ou a moldura (forma) variam.
+// ⇄ mutacoes que os deixam vermelhos (medidas numa COPIA do script, fora de `scripts/`):
+//   - o detector do ciclo 2 (`rotulo_ah`) vivo — e o script do head 399ce357 — -> [B8a]/[B8c]
+//     VERMELHOS: 2 REJ na mesma linha e a mensagem velha. Nascem vermelhos de proposito: so ficam
+//     verdes quando o detector sai (Dev-S-2, §13.1);
+//   - o token reservado desligado (nenhum `AH7`) -> [B8a]..[B8d] VERMELHOS (sob LIDO-A: ec=0);
+//   - o token restrito a item de lista -> [B8d] VERMELHO (tabela e prosa escapam).
+const AH_ROTULO = `approved_head: \`${SHA_A}\``;
+function vereditoTokenReservado(r: ReturnType<typeof roda>, linha: number, onde: string): void {
+  assert.equal(r.status, 1, `${onde}: o token reservado tem de rejeitar\n${r.out}`);
+  assert.equal(r.rejeicoes, 1, `${onde}: exatamente UMA rejeicao (a do token) — nunca a mesma linha duas vezes\n${r.out}`);
+  assert.match(r.out, /token reservado/, `${onde}: caiu por OUTRA checagem\n${r.out}`);
+  assert.match(r.out, /fora da colagem/, `${onde}: caiu por OUTRA checagem\n${r.out}`);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}l\\.${linha}: [^\\n]*token reservado`, "m"), `${onde}: a REJ nao nomeia a l.${linha}\n${r.out}`);
+  assert.doesNotMatch(r.out, /rotula .* como approved_head/, `${onde}: a mensagem do detector do ciclo 2 (v2, revogada) apareceu\n${r.out}`);
+}
+
+test("[B8a] rotulo approved_head com a ferramenta em NAO DETERMINAVEL: 1 REJ, a do token reservado", () => {
+  const r = roda(mandato("f-ah-nd", [`- ${AH_ROTULO} medido por: true`]), "393", REFS_ND);
+  vereditoTokenReservado(r, 3, "ND");
 });
 
-test("[B8b] rotular approved_head com LIDO do MESMO SHA: aceita", () => {
-  const r = roda(mandato("f-ah-ok", [`- approved_head: \`${SHA_A}\` medido por: true`]), "393", REFS_LIDO_A);
-  assert.equal(r.rejeicoes, 0, r.out);
-  assert.equal(r.status, 0, r.out);
+test("[B8b] rotulo approved_head com LIDO do MESMO SHA: 1 REJ — o SHA bater NAO isenta (v2 revogada)", () => {
+  const r = roda(mandato("f-ah-lido-a", [`- ${AH_ROTULO} medido por: true`]), "393", REFS_LIDO_A);
+  vereditoTokenReservado(r, 3, "LIDO-A");
 });
 
-test("[B8c] rotular approved_head com LIDO de OUTRO SHA: rejeita", () => {
-  const r = roda(mandato("f-ah-outro", [`- approved_head: \`${SHA_A}\` medido por: true`]), "393", REFS_LIDO_B);
-  assert.equal(r.status, 1, r.out);
-  assert.match(r.out, new RegExp(`rotula ${SHA_A} como approved_head, mas a ferramenta LEU ${SHA_B}`));
+test("[B8c] rotulo approved_head com LIDO de OUTRO SHA: 1 REJ, a do token reservado", () => {
+  const r = roda(mandato("f-ah-lido-b", [`- ${AH_ROTULO} medido por: true`]), "393", REFS_LIDO_B);
+  vereditoTokenReservado(r, 3, "LIDO-B");
+});
+
+test("[B8d] o MESMO rotulo em TABELA e em PROSA sob LIDO-A: o MESMO veredito do item de lista", () => {
+  const lista = roda(mandato("f-ah-d-lista", [`- ${AH_ROTULO} medido por: true`]), "393", REFS_LIDO_A);
+  const tabela = roda(
+    mandato("f-ah-d-tabela", ["| afirmacao | medido por: |", "|---|---|", `| ${AH_ROTULO} | true |`]),
+    "393",
+    REFS_LIDO_A,
+  );
+  const prosa = roda(mandato("f-ah-d-prosa", [`O ${AH_ROTULO} deste ciclo, medido por: true`]), "393", REFS_LIDO_A);
+  vereditoTokenReservado(lista, 3, "lista");
+  vereditoTokenReservado(tabela, 5, "tabela");
+  vereditoTokenReservado(prosa, 3, "prosa");
+  // "o mesmo veredito" e literal: as linhas REJEITADO das tres formas, sem o numero da linha, sao iguais.
+  const rej = (s: string) => s.split("\n").filter((l) => l.startsWith("REJEITADO")).map((l) => l.replace(/l\.\d+/, "l.N"));
+  assert.deepEqual(rej(tabela.out), rej(lista.out), `tabela x lista\n${tabela.out}\n--\n${lista.out}`);
+  assert.deepEqual(rej(prosa.out), rej(lista.out), `prosa x lista\n${prosa.out}\n--\n${lista.out}`);
 });
 
 // --- checagens 1 e 2, que o ciclo 1 já tinha e que continuam de pé -----------------------------
