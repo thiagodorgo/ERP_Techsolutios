@@ -14,6 +14,27 @@
 # informação de *o que foi julgado*.
 #
 # -----------------------------------------------------------------------------------------------
+# O QUE MUDOU NO CICLO 3 (mesmo bloco, mesmo PR #393): NADA no comportamento — e isso é o registro
+#
+# O ciclo 3 não reescreveu este script. O que mudou em volta dele, e que vale escrito aqui porque
+# muda o que se pode AFIRMAR sobre ele:
+#
+#  1. O guard deste artefato passou de 18 para 33 casos (E1: o bloco de validação de insumo ganhou
+#     caso por cláusula). Os 33 exercitam o `.sh` de verdade por `spawnSync`, e com o script apagado
+#     ou renomeado passam ZERO — reexecutado no ciclo 3, nos dois modos.
+#
+#  2. A cobertura deste artefato deixou de ser adjetivo: `scripts/mandato-mutantes.sh refs` enumera
+#     os pontos de decisão DESTA fonte, muta um por um e publica os que o guard não pega. A matriz
+#     completa e a lista de não-cobertos vivem em
+#     `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`. O número deixa de ser uma frase e passa
+#     a ser um comando que qualquer cadeira reproduz.
+#
+#  3. O primeiro buraco que essa medição achou está NESTE arquivo e fica DECLARADO em vez de
+#     escondido: a cláusula `ver()` (a que recusa quando falta um binário no PATH) sobrevive à
+#     mutação com o guard 33/33 verde — nenhum caso exercita "o `gh` não está instalado". Não é
+#     defeito de comportamento; é ausência de caso, e tem dono na pendência do ciclo 3.
+#
+# -----------------------------------------------------------------------------------------------
 # O QUE MUDOU NO CICLO 2 (bloco B-GOV-MANDATO, PR #393), E POR QUÊ
 #
 # A junta reprovou o ciclo 1 (`J-B-GOV-MANDATO.md`, 2 × 1). A classe única dos achados: *guarda que
