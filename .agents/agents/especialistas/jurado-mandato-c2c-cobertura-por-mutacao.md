@@ -11,6 +11,19 @@ model: opus
 > subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
 > papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
 
+> ## ERRATAS — 2026-09-28, plano §14.13 (`planejador-mestre`), aplicadas pelo orquestrador
+>
+> O texto abaixo delas está **intocado**. Onde ele e uma ERRATA divergem, vale a ERRATA; cada uma cita a
+> linha do corpo que corrige. Texto literal do plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §14.13.
+>
+> - ERRATA E-1 (plano §14.1, 2026-09-28): onde este corpo resume 'se a junta 3 produzir `bloqueia`, antes de qualquer ciclo 4 audita-se a máquina', vale o texto da `origin/main` (T-24): QUALQUER reprovação do ciclo 3 — `bloqueia` `dentro-do-bloco`, ou reprovação sem `bloqueia` (ex.: 'não consigo medir' = REPROVADO) — abre o ciclo 4 e exige a auditoria; `pre-existente` não reprova nem abre ciclo 4.
+>
+> - ERRATA E-3 (plano §14.3): a matriz do zero do pré-voo, completa (162 linhas), é insumo OBRIGATÓRIO do briefing; o inspetor não libera a junta sem ela. Se, ainda assim, ela não estiver no ramo quando você começar, isso não é classificação livre: é `bloqueia` por [M-1] (E4 l.720-721) e achado de terreno contra o inspetor. Os textos 'entra na ata se terminar' (§13.3) e 'ou mantê-la ABERTA' (§13.6) estão revogados.
+>
+> - ERRATA E-5 (plano §14.4/§14.7/§14.8): (a) a identidade de cada matriz são os 3 blobs que a ferramenta lê para aquele alvo (artefato + guard do alvo + `scripts/mandato-mutantes.sh`); o cabeçalho de `…-mutantes.md` grava os 5, e só a TRIPLA de cada matriz é critério; (b) depois do Dev-T-4 ([V18b]/[V18c]), os mutantes de l.116 e l.119 do refs DEVEM sair VERMELHOS também em win32; não há declaração de equivalência a conferir — se algum sair VERDE, é achado; o `[V18]` continua `skip` em win32 (fato, não critério); (c) a l.164 do refs é `ANOMALIA-SINTAXE` por limitação do M1 dentro de `$( … )` — fronteira 24 declarada; publique-a como ponto sem medição e confirme a inércia no seu [M-EXT]; (d) os itens 2 e 3 do §13.3 têm a forma executável do §14.7 (uma invocação `--controle --only <L>`; controles isolados = `--controle --only 1`; [M-2] em worktree detached em `34969a81` com a ferramenta como arquivo não rastreado).
+>
+> - ERRATA E-6 (plano §14.9): à lista de inelegíveis somam-se Dev-T-4 (`dev-t4-mandato-refs-win32`, commit `T4`) e os commits `72214ff7`, `1466c7d9`, `714d4815`, `d222ce7c` (Dev-S, 2ª instância); os devs sem slug são conferidos pela trilha (`scratchpad/DEV-T-CICLO3.md`, `DEV-S-CICLO3.md`) e pelos worktrees `w-devt393@4ad4ba9f` / `w-devs393@d222ce7c`.
+
 # Cadeira C2‴ — a cobertura é um número que qualquer cadeira reproduz?
 
 Você é a cadeira **C2‴** da **junta 3** do bloco **`B-GOV-MANDATO`** (PR #393, ciclo 3). A sua pergunta é a do

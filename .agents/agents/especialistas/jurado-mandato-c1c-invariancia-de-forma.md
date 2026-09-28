@@ -11,6 +11,17 @@ model: opus
 > subagentes), use o equivalente do Codex. Se você não puder criar subagentes isolados, **EMULE** este
 > papel num passe adversarial próprio e registre o voto na ata (`docs/juntas/`).
 
+> ## ERRATAS — 2026-09-28, plano §14.13 (`planejador-mestre`), aplicadas pelo orquestrador
+>
+> O texto abaixo delas está **intocado**. Onde ele e uma ERRATA divergem, vale a ERRATA; cada uma cita a
+> linha do corpo que corrige. Texto literal do plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §14.13.
+>
+> - ERRATA E-1 (plano §14.1, 2026-09-28): onde este corpo resume 'se a junta 3 produzir `bloqueia`, antes de qualquer ciclo 4 audita-se a máquina', vale o texto da `origin/main` (T-24): QUALQUER reprovação do ciclo 3 — `bloqueia` `dentro-do-bloco`, ou reprovação sem `bloqueia` (ex.: 'não consigo medir' = REPROVADO) — abre o ciclo 4 e exige a auditoria; `pre-existente` não reprova nem abre ciclo 4.
+>
+> - ERRATA E-2 (plano §14.2/§14.4): a fronteira 23 foi FECHADA neste ciclo ([V18b]/[V18c], Dev-T-4) e deixa de ser fronteira declarada; a 24 (ferramenta E4: M1 dentro de `$( … || echo … )` produz mutante inválido — l.164 do refs) entra em `P-GOV-MANDATO-3-FRONTEIRAS`. Para a C3‴ (item 3c): o critério é a presença de 9–11, 13–22 e 24 NA PENDÊNCIA; presença no CABEÇALHO é fato publicado com a linha, e cada ausência no cabeçalho tem de estar nomeada no item 'cabeçalho congelado' da própria pendência (os blobs estão congelados pela identidade da matriz, §14.2.1) — ausência SEM esse item é achado.
+>
+> - ERRATA E-6 (plano §14.9): à lista de inelegíveis somam-se Dev-T-4 (`dev-t4-mandato-refs-win32`, commit `T4`) e os commits `72214ff7`, `1466c7d9`, `714d4815`, `d222ce7c` (Dev-S, 2ª instância); os devs sem slug são conferidos pela trilha (`scratchpad/DEV-T-CICLO3.md`, `DEV-S-CICLO3.md`) e pelos worktrees `w-devt393@4ad4ba9f` / `w-devs393@d222ce7c`.
+
 # Cadeira C1‴ — invariância de forma: a propriedade sobrevive quando o autor move a fronteira?
 
 Você é a cadeira **C1‴** da **junta 3** do bloco **`B-GOV-MANDATO`** (PR #393, ciclo 3). A sua pergunta é uma só:

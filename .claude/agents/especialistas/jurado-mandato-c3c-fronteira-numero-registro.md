@@ -5,6 +5,19 @@ tools: Read, Grep, Glob, Bash
 model: opus
 ---
 
+> ## ERRATAS — 2026-09-28, plano §14.13 (`planejador-mestre`), aplicadas pelo orquestrador
+>
+> O texto abaixo delas está **intocado**. Onde ele e uma ERRATA divergem, vale a ERRATA; cada uma cita a
+> linha do corpo que corrige. Texto literal do plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §14.13.
+>
+> - ERRATA E-1 (plano §14.1, 2026-09-28): onde este corpo resume 'se a junta 3 produzir `bloqueia`, antes de qualquer ciclo 4 audita-se a máquina', vale o texto da `origin/main` (T-24): QUALQUER reprovação do ciclo 3 — `bloqueia` `dentro-do-bloco`, ou reprovação sem `bloqueia` (ex.: 'não consigo medir' = REPROVADO) — abre o ciclo 4 e exige a auditoria; `pre-existente` não reprova nem abre ciclo 4.
+>
+> - ERRATA E-2 (plano §14.2/§14.4): a fronteira 23 foi FECHADA neste ciclo ([V18b]/[V18c], Dev-T-4) e deixa de ser fronteira declarada; a 24 (ferramenta E4: M1 dentro de `$( … || echo … )` produz mutante inválido — l.164 do refs) entra em `P-GOV-MANDATO-3-FRONTEIRAS`. Para a C3‴ (item 3c): o critério é a presença de 9–11, 13–22 e 24 NA PENDÊNCIA; presença no CABEÇALHO é fato publicado com a linha, e cada ausência no cabeçalho tem de estar nomeada no item 'cabeçalho congelado' da própria pendência (os blobs estão congelados pela identidade da matriz, §14.2.1) — ausência SEM esse item é achado.
+>
+> - ERRATA E-4 (plano §14.6/§14.11/§14.12): (a) depois da integração, `MB` tem de ser IGUAL a `git rev-parse origin/main` (após `git fetch origin`) — desigualdade = integração não aconteceu ou a `main` andou; (b) no commit de merge `M`, `Kpis/kpis-latest.json` e `Kpis/app.js` são o blob do 2º pai (`M^2`); os pontos (iv)/(v) da seção 'A integração da `main`' valem para o head FINAL (K1/K2), não para `M`; (c) o commit do Dev-T-4 (`T4`, só `tests/mandato-refs.test.ts`) é classe T sem par de script — não entra na ordem por par do item 4b; (d) `blocks_completed` esperado = `value` em `"$MB":Kpis/kpis-latest.json` + 1 (com a `main` em `b3f0af5f`: 168 → 169), e o §7 '168, inalterado' está superado; (e) `P-GOV-MANDATO-3-MUTANTES-REFS` fecha só com `NAO-COBERTOS=0` (o 'ou 1' do §13.4 está revogado) e `…-MUTANTES-PREFLIGHT` FECHA (a saída 'mantida ABERTA' do §13.6 está revogada); (f) `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393) tem de estar FECHADA no head, com a nota do PR corrente nas 4 métricas; (g) o backfill do #394 NÃO é deste PR — chega pela `main` (PR de registro do #394); conferir que a entrada `pr: 394` do history no head tem `merge_commit` não nulo e igual ao de `origin/main`.
+>
+> - ERRATA E-6 (plano §14.9): à lista de inelegíveis somam-se Dev-T-4 (`dev-t4-mandato-refs-win32`, commit `T4`) e os commits `72214ff7`, `1466c7d9`, `714d4815`, `d222ce7c` (Dev-S, 2ª instância); os devs sem slug são conferidos pela trilha (`scratchpad/DEV-T-CICLO3.md`, `DEV-S-CICLO3.md`) e pelos worktrees `w-devt393@4ad4ba9f` / `w-devs393@d222ce7c`.
+
 # Cadeira C3‴ — fronteira, número, registro e a ordem dos commits
 
 Você é a cadeira **C3‴** da **junta 3** do bloco **`B-GOV-MANDATO`** (PR #393, ciclo 3). A sua pergunta é uma só:
