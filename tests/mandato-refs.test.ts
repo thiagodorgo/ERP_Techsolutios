@@ -31,6 +31,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+// CICLO 3 (E1): import proprio, em linha nova -- [P-0] exige SO adicoes neste arquivo.
+import { readFileSync } from "node:fs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const SCRIPT = path.join(RAIZ, "scripts/mandato-refs.sh");
@@ -182,6 +184,59 @@ escreve(
   ].join("\n"),
 );
 
+// --- CICLO 3 (E1): fixtures novas -- todas ANTES do commit que vira `origin/main` ---------------
+// [V8] os dois delimitadores de `RE_PR`: `#3901` (vizinho pela direita) e `#1390` (pela esquerda)
+// NAO sao `#390`. Nenhuma das duas cita `#390` no corpo -- se citasse, viraria MENCAO e o caso
+// deixaria de discriminar o delimitador (e o artefato de processo que a ◐ do plano nomeia).
+escreve(
+  "agent-orchestration/omega/juntas/J-3901.md",
+  [
+    "# J-3901 — junta do bloco `B-3901` (PR #3901)",
+    "",
+    `- **Objeto julgado:** \`${c7(S4)}\`; bloco de numero vizinho pela DIREITA.`,
+    "",
+  ].join("\n"),
+);
+escreve(
+  "agent-orchestration/omega/juntas/J-1390.md",
+  [
+    "# J-1390 — junta do bloco `B-1390` (PR #1390)",
+    "",
+    `- **Objeto julgado:** \`${c7(S5)}\`; bloco de numero vizinho pela ESQUERDA.`,
+    "",
+  ].join("\n"),
+);
+// [V9] duas linhas `approved_head` na MESMA ata: a ferramenta nao escolhe uma delas.
+escreve(
+  "agent-orchestration/omega/juntas/J-DUAS-APH.md",
+  [
+    "# J-DUAS-APH (PR #3955) — dois ciclos, duas linhas de aprovacao",
+    "",
+    `- **Objeto julgado:** \`${c7(S1)}\`.`,
+    `- **approved_head:** \`${c7(S1)}\``,
+    "",
+    "## Ciclo 2",
+    "",
+    `- **Objeto julgado:** \`${c7(S2)}\`.`,
+    `- **approved_head:** \`${c7(S2)}\``,
+    "",
+  ].join("\n"),
+);
+// [V10] a caixa do SHA e indiferente. O hex NAO e commit deste repo DE PROPOSITO: com um commit
+// real o `git rev-parse` expandiria os dois lados e a comparacao deixaria de discriminar a caixa
+// (licao da sonda C2' nova3 -- a sonda fraca que devolve "equivalente").
+const HEX_NAO_COMMIT = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
+escreve(
+  "agent-orchestration/omega/juntas/J-CAIXA.md",
+  [
+    "# J-CAIXA (PR #3956) — o mesmo head, escrito em duas caixas",
+    "",
+    `- **Objeto julgado:** \`${HEX_NAO_COMMIT}\`.`,
+    `- **approved_head:** \`${HEX_NAO_COMMIT.toUpperCase()}\``,
+    "",
+  ].join("\n"),
+);
+
 const COMMIT_BASE = commit("atas em origin/main");
 git("update-ref", "refs/remotes/origin/main", COMMIT_BASE);
 
@@ -216,6 +271,10 @@ const PRS: Record<string, { ramo: string; estado: string; rascunho: string; merg
   "382": { ramo: "fix/reprovada", estado: "OPEN", rascunho: "true", merge: "" },
   "381": { ramo: "fix/mencao", estado: "OPEN", rascunho: "false", merge: "" },
   "380": { ramo: "fix/sem-objeto", estado: "OPEN", rascunho: "false", merge: "" },
+  "3901": { ramo: "fix/vizinho-pela-direita", estado: "OPEN", rascunho: "false", merge: "" },
+  "1390": { ramo: "fix/vizinho-pela-esquerda", estado: "OPEN", rascunho: "false", merge: "" },
+  "3955": { ramo: "fix/duas-linhas-de-aprovacao", estado: "OPEN", rascunho: "false", merge: "" },
+  "3956": { ramo: "fix/caixa-do-sha", estado: "OPEN", rascunho: "false", merge: "" },
   "999": { ramo: "fix/nenhuma-ata-fala-disto", estado: "OPEN", rascunho: "false", merge: "" },
 };
 
@@ -267,6 +326,33 @@ const SHIM_API_MORTA = shim(
   "gh-api-morta.sh",
   CABECA_SHIM + PR_VIEW + 'if [ "${1:-}" = "api" ]; then exit 1; fi\nexit 9\n',
 );
+
+// --- CICLO 3 (E1): um shim por CLAUSULA do bloco de validacao de insumo -------------------------
+// O ciclo 2 tinha 4 shims e so `headRefName` vazio alcancava o bloco; as outras seis clausulas
+// nao tinham insumo que as disparasse. `shimTsv` produz a MESMA forma de TSV dos shims acima
+// (sete campos, capturada em 2026-09-26), trocando so o campo sob ataque.
+function shimTsv(nome: string, head: string, base: string, cr: string = "14 0 0"): string {
+  return shim(
+    nome,
+    CABECA_SHIM +
+      `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${head}" "fix/insumo" "${base}" "OPEN" "false" "UNKNOWN" ""
+  exit 0
+fi
+if [ "\${1:-}" = "api" ]; then printf '%s\n' "${cr}"; exit 0; fi
+exit 9
+`,
+  );
+}
+const SHIM_HEAD_VAZIO = shimTsv("gh-head-vazio.sh", "", "main");
+const SHIM_HEAD_NAO_HEX = shimTsv("gh-head-nao-hex.sh", "z".repeat(40), "main");
+const SHIM_HEAD_CURTO = shimTsv("gh-head-curto.sh", "a".repeat(39), "main");
+const SHIM_BASE_VAZIA = shimTsv("gh-base-vazia.sh", COMMIT_HEAD, "");
+const SHIM_BASE_INEXISTENTE = shimTsv("gh-base-inexistente.sh", COMMIT_HEAD, "nao-existe");
+const SHIM_CR_LIXO = shimTsv("gh-cr-lixo.sh", COMMIT_HEAD, "main", "lixo");
+const SHIM_CR_ZERO = shimTsv("gh-cr-zero.sh", COMMIT_HEAD, "main", "0 0 0");
+const SHIM_CR_PENDENTE = shimTsv("gh-cr-pendente.sh", COMMIT_HEAD, "main", "14 0 2");
+const SHIM_HEAD_NAO_LOCAL = shimTsv("gh-head-nao-local.sh", "c".repeat(40), "main");
 
 // --- o invocador: TODO caso passa por aqui, e aqui roda o ARTEFATO ------------------------------
 function roda(pr: string, args: string[] = [], gh: string = SHIM_OK) {
@@ -459,4 +545,155 @@ test("[D3b] PR ausente ou nao-numerico: ec=2 com uso; nunca ec=0", () => {
   const naoNumerico = roda("--sha-only");
   assert.equal(naoNumerico.status, 2);
   assert.match(naoNumerico.err, /PR nao-numerico/);
+});
+
+// =================================================================================================
+// CICLO 3 -- E1. PROPRIEDADE: *cada clausula que PARA a ferramenta tem um insumo que a dispara e um
+// caso que assere ec=1, stdout VAZIO e a CAUSA no stderr; cada estado/aviso que a ferramenta emite
+// tem um caso que o exige.*
+//
+// POR QUE: no ciclo 2 o bloco de validacao de insumo tinha SETE clausulas `parado` e SEIS delas nao
+// tinham nenhum insumo que as alcancasse. Neutralizar tres (m021 `origin/$BASE` inexistente, m016
+// `headRefOid` sem 40 hex, m025 check-runs malformado) mudava o comportamento -- ec 1 -> 0, com
+// `LIDO DA ATA` impresso sob premissa quebrada -- e o guard continuava 18/18 VERDE. E o bloqueante
+// C2'-01: o que nao tem teste nao e promessa, e estado atual.
+//
+// Cada caso traz no titulo a mutacao (⇄) de UMA linha do artefato que o deixa vermelho. Nenhum caso
+// le a fonte do script: todos passam por `roda()`, que e `spawnSync` do `.sh` de verdade.
+// =================================================================================================
+
+test("[V1] headRefOid VAZIO: PARADO ec=1, stdout vazio — ⇄ m014 (`|| parado` -> `|| true`)", () => {
+  const r = roda("383", [], SHIM_HEAD_VAZIO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com o insumo quebrado nada pode sair no stdout");
+  assert.match(r.err, /PARADO: campo 'headRefOid' VAZIO/);
+  assert.doesNotMatch(r.out, /approved_head/);
+});
+
+test("[V2] headRefOid nao-hexadecimal: PARADO ec=1 — ⇄ m015 (`|| parado` -> `|| true`)", () => {
+  const r = roda("383", [], SHIM_HEAD_NAO_HEX);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "");
+  assert.match(r.err, /PARADO: campo 'headRefOid' nao e hexadecimal/);
+});
+
+test("[V3] headRefOid com 39 hex: PARADO ec=1 — ⇄ m016 (a clausula que o §0.3 mediu: ec 1->0)", () => {
+  const r = roda("383", [], SHIM_HEAD_CURTO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com m016 vivo o mutante imprime `head do PR: <lixo>` e segue");
+  assert.match(r.err, /PARADO: campo 'headRefOid' nao tem 40 hex/);
+});
+
+test("[V4] baseRefName VAZIO: PARADO ec=1 — ⇄ m018 (`|| parado` -> `|| true`)", () => {
+  const r = roda("383", [], SHIM_BASE_VAZIA);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "");
+  assert.match(r.err, /PARADO: campo 'baseRefName' VAZIO/);
+});
+
+test("[V5] base inexistente COM ata que seria LIDA: ec=1 e stdout vazio — ⇄ m021 (§0.3 (1a))", () => {
+  // ◐ (discriminacao): se o repo temporario tivesse `refs/remotes/origin/nao-existe` por residuo,
+  // o caso passaria pela razao errada. A ancora abaixo mata essa leitura antes de culpar o script.
+  const ref = spawnSync("git", ["show-ref", "refs/remotes/origin/nao-existe"], { cwd: repo, encoding: "utf8" });
+  assert.notEqual(ref.status, 0, "o arnes tem a ref que o caso supoe inexistente — o caso nao discrimina");
+  // A ata do #383 (J-APROVADA) existe e seria LIDO DA ATA. Ela esta aqui DE PROPOSITO: e o que o
+  // mutante m021 tem para inventar quando a clausula nao para a ferramenta.
+  const controle = roda("383");
+  assert.equal(controle.status, 0, controle.out + controle.err);
+  assert.match(controle.out, /LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:/);
+  const r = roda("383", [], SHIM_BASE_INEXISTENTE);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com m021 vivo o mutante imprime `approved_head: … ^ LIDO DA ATA`");
+  assert.match(r.err, /PARADO: ref 'origin\/nao-existe' nao existe localmente/);
+});
+
+test("[V6] check-runs malformado: PARADO ec=1 — ⇄ m025 (`*) parado …` -> `*) : ;;`)", () => {
+  const r = roda("383", [], SHIM_CR_LIXO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com m025 vivo o mutante imprime `check-runs: total=lixo`");
+  assert.match(r.err, /PARADO: resposta de check-runs malformada: 'lixo'/);
+});
+
+test("[V7] argumento extra depois de --sha-only: ec=2 com uso — ⇄ m006", () => {
+  const r = roda("392", ["--sha-only", "extra"]);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.match(r.err, /uso: mandato-refs\.sh/);
+  assert.equal(r.out.trim(), "");
+});
+
+test("[V8] `#3901` e `#1390` nao casam `#390` — ⇄ nova2 (tirar `(^|[^0-9])`/`([^0-9]|$)`)", () => {
+  const r = roda("390");
+  assert.equal(r.status, 3, r.out + r.err);
+  // ancora positiva: a ata que DEVE casar casou (sem ela, o `doesNotMatch` passaria com o script morto)
+  assert.match(r.out, /J-B-SAN3-04a\.md:4/);
+  assert.doesNotMatch(r.out, /J-3901\.md/, "o vizinho pela direita (#3901) casou como se fosse #390");
+  assert.doesNotMatch(r.out, /J-1390\.md/, "o vizinho pela esquerda (#1390) casou como se fosse #390");
+});
+
+test("[V9] duas linhas `approved_head` na mesma ata: ec=3 nomeando as 2 — ⇄ m046 (`-gt 1` -> `-le 1`)", () => {
+  const r = roda("3955");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL \(2 linhas '- \*\*approved_head:\*\*' na mesma ata\)/);
+  assert.match(r.out, new RegExp(`approved_head declarado ${S1} \\(agent-orchestration/omega/juntas/J-DUAS-APH\\.md:4`));
+  assert.match(r.out, new RegExp(`approved_head declarado ${S2} \\(agent-orchestration/omega/juntas/J-DUAS-APH\\.md:9`));
+  assert.doesNotMatch(r.out, /\^ LIDO DA ATA/, "escolher uma das duas seria inventar");
+});
+
+test("[V10] caixa do SHA indiferente: objeto minusculo, approved_head MAIUSCULO -> LIDO — ⇄ nova3 (tirar o `tr` de `mesmo()`)", () => {
+  const r = roda("3956");
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-CAIXA\.md:4/);
+  assert.doesNotMatch(r.out, /contradicao/, "sem o `tr` os dois lados divergem e a ata vira contradicao");
+});
+
+test("[V11] ZERO check-run: AVISO no stdout, ec=0 — ⇄ m055", () => {
+  const r = roda("383", [], SHIM_CR_ZERO);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /check-runs: +total=0 nao-verdes=0 pendentes=0/);
+  assert.match(r.out, /AVISO: ZERO check-run no head/);
+});
+
+test("[V12] check-runs ainda rodando: AVISO com a CONTAGEM, ec=0 — ⇄ m056", () => {
+  const r = roda("383", [], SHIM_CR_PENDENTE);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /check-runs: +total=14 nao-verdes=0 pendentes=2/);
+  assert.match(r.out, /AVISO: 2 check-run\(s\) ainda rodando/);
+});
+
+test("[V13] repo sem remoto: o fetch que falha vira AVISO no stderr, nunca silencio — ⇄ m020", () => {
+  const r = roda("392");
+  assert.equal(r.status, 3, r.out + r.err); // ancora positiva: a execucao produziu o relatorio
+  assert.match(r.err, /AVISO: fetch falhou \(offline\?\)/);
+});
+
+test("[V14] head do PR que nao existe localmente: AVISO no stderr e a ata da BASE e lida — ⇄ inverter HEAD_LOCAL", () => {
+  const r = roda("383", [], SHIM_HEAD_NAO_LOCAL);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.err, /AVISO: o head do PR \(c{40}\) nao existe localmente/);
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4 @origin\/main/);
+  assert.match(r.out, /merge-base: +<vazio>/);
+});
+
+test("[V15] guarda do guard: zero leitura da FONTE do artefato, e a rota E o artefato", () => {
+  // (a) o arquivo nunca abre a fonte do script -- foi assim que o ciclo 1 ficou vermelho ao reescrever
+  //     um comentario, e assim que 4 de 6 casos sobreviveram ao script APAGADO (bloqueante C2-01).
+  const fonte = readFileSync(import.meta.filename, "utf8");
+  assert.doesNotMatch(fonte, /readFileSync\(\s*SCRIPT/, "ler a fonte do artefato prende o guard ao texto");
+  assert.doesNotMatch(fonte, /readFileSync\([^)]*mandato-refs\.sh/);
+  assert.equal(
+    (fonte.match(/"scripts\/mandato-refs\.sh"/g) ?? []).length,
+    1,
+    "o caminho do artefato so pode aparecer numa string: a que monta SCRIPT (as outras 3 ocorrencias sao comentario)",
+  );
+  // (b) a rota E o artefato: pela MESMA invocacao, com o `.sh` ausente nada sai e o ec nao e 0.
+  const ausente = spawnSync("bash", [`${SCRIPT}.NAO-EXISTE`, "392"], {
+    cwd: repo,
+    encoding: "utf8",
+    env: { ...process.env, MANDATO_GH: SHIM_OK, MANDATO_REPO: "t/t" },
+  });
+  assert.notEqual(ausente.status, 0, "sem o artefato a invocacao nao pode terminar em 0");
+  assert.equal((ausente.stdout ?? "").trim(), "");
+  // (c) controle positivo, na MESMA rota: com o artefato presente, sai relatorio.
+  const presente = roda("392");
+  assert.match(presente.out, /^approved_head:/m);
 });
