@@ -4895,6 +4895,7 @@ idêntica à do nome por inteiro. É a **nona** fronteira de `P-GOV-MANDATO-2-FR
 
 **Fica devendo, e é do orquestrador dividir** (§C7.4 / mandato do dev): a rodada completa de mutação do
 **pré-voo** (184 pontos de decisão) não cabe numa sessão — medido nesta máquina, o guard do pré-voo
-custa ~3–4 min por execução (298 casos, cada um gerando um processo `bash` no Windows), logo ~7 h
-serial. O **refs** (99 pontos) fechou. O parcial do pré-voo está publicado **rotulado como parcial**,
+custa **531 s** por execução (N=2: 514 e 548; 298 casos, um processo `bash` por caso no Windows),
+logo **≈ 12,7 h serial** e **≈ 5,1 h com `--jobs 4`** — ~2,5× acima do que o plano estimou, porque o
+plano usou 0,52–0,64 s por caso e o medido a 298 casos é 1,78 s. O **refs** (99 pontos) fechou. O parcial do pré-voo está publicado **rotulado como parcial**,
 com o denominador e a taxa medida, para o próximo bloco retomar sem remedir o que já foi medido.

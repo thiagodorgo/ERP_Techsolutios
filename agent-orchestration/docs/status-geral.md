@@ -4893,6 +4893,7 @@ casos: +280 no denominador, +279 no numerador, porque um caso novo nasce vermelh
 **intocados**.
 
 **Fica devendo, e é do orquestrador dividir.** A rodada completa de mutação do **pré-voo** (184 pontos)
-não cabe numa sessão: medido nesta máquina, cada execução do guard do pré-voo custa ~3–4 min (298 casos,
-um processo `bash` por caso no Windows). O **refs** (99 pontos) fechou; o parcial do pré-voo está
+não cabe numa sessão: medido nesta máquina, cada execução do guard do pré-voo custa **531 s** (N=2: 514 e
+548; 298 casos, um processo `bash` por caso), logo **≈ 12,7 h serial** / **≈ 5,1 h com `--jobs 4`** —
+~2,5× acima da faixa do plano, que usou 0,52–0,64 s por caso. O **refs** (99 pontos) fechou; o parcial do pré-voo está
 publicado **rotulado como parcial**, com denominador e taxa, para o próximo bloco retomar.

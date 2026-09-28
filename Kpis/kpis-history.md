@@ -3069,11 +3069,13 @@ comando** — como comparação; pré-voo l.124: `NÃO-COBERTO` → `EXCLUÍDO`)
 do que não medir: manda a próxima cadeira caçar fantasma.
 
 **Custo MEDIDO, com a fórmula — não estimativa republicada como medição.** Com a máquina livre e o
-relógio lido a cada execução: guard do `refs` = **98 s** (N=3: 98, 98, 99); guard do `pré-voo` ≈ 3–4 min
-(298 casos, **um processo `bash` por caso** — é essa escolha que torna o guard honesto, e ela custa).
+relógio lido a cada execução: guard do `refs` = **98 s** (N=3: 98, 98, 99); guard do `pré-voo` = **531 s**
+(N=2: 514 e 548; 298 casos, **um processo `bash` por caso** — é essa escolha que torna o guard
+honesto, e ela custa: **1,78 s por caso**).
 `custo = unitário × mutantes-que-rodam-guard`. A rodada do **pré-voo** (184 pontos medidos, 14
-executados) projeta **≈ 4,9 h serial** / **≈ 1,2 h com `--jobs 4`**, dentro da faixa que o plano
-estimou. Fica como `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`, com dono — é **trabalho, não dúvida**.
+executados) projeta **≈ 12,7 h serial** / **≈ 5,1 h com `--jobs 4`** (ganho de 2,5× medido na
+rodada do refs). **Estoura a faixa do plano por ~2,5×** — o plano usou 0,52–0,64 s por caso, medidos
+num guard pequeno, e a 298 casos o real é 1,78 s. Publico o medido, não o estimado. Fica como `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`, com dono — é **trabalho, não dúvida**.
 
 **O que NÃO fechou, e por que não deve fechar aqui.** `[B8b]` e `[F-EOL/s7-neg]` levam ao artefato a
 **mesma fixture** — 133 bytes, `md5` idêntico, `cmp` sem diferença, mesmo argumento de PR e mesmo shim

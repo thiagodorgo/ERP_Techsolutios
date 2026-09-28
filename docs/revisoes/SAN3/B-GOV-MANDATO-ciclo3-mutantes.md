@@ -237,8 +237,8 @@ artefato; todos são **ausência de caso no guard**, e têm dono em `P-GOV-MANDA
   Os dois VERDE da rodada parcial foram **reclassificados** depois dos consertos do §5: a l.124 era
   **falso** (bandeira de comando lida como comparação) e hoje sai `EXCLUIDO`; a l.160 (`if (sec=="-"
   || sec=="X") print "FORA" …`) permanece um **não-coberto real**.
-- **Por que parou:** custo. Ver §6 — a rodada completa do pré-voo projeta **≈ 4,9 h serial** nesta
-  máquina.
+- **Por que parou:** custo. Ver §6 — a rodada completa do pré-voo projeta **≈ 12,7 h serial** / **≈ 5,1 h com `--jobs 4`**
+  nesta máquina (unitário medido, §6).
 
 O parcial fica registrado para o bloco sucessor **retomar sem remedir**: a ferramenta aceita
 `--only <linhas>`, e as 184 linhas do denominador estão em
@@ -267,15 +267,18 @@ Unitário do guard, medido nesta máquina com a máquina **livre**, lendo o rel�
 | guard | casos | N execuções | unitário medido |
 |---|---|---|---|
 | `mandato-refs` | 33 | 3 | **98 s** (98, 98, 99 — σ ≈ 0,5 s) |
-| `mandato-preflight` | 298 | ver nota | ~3–4 min (298 processos `bash`, um por caso) |
+| `mandato-preflight` | 298 | 2 | **531 s** (514 e 548 — ~8,9 min; **1,78 s por caso**) |
 
 **Fórmula:** `custo = unitário × mutantes-que-rodam-guard`.
 
 - **refs:** 46 mutantes + 1 base + 7 dos controles = **54 execuções × 98 s ≈ 88 min serial**; com
   `--jobs 4`, a rodada real levou **≈ 35 min** (inclui a cópia do arnês por mutante).
 - **pré-voo (projeção declarada como projeção):** 184 pontos, com a mesma proporção de exclusão do
-  refs (52/99) → **≈ 86 mutantes** que rodam guard. A 205 s de unitário: **≈ 4,9 h serial**, **≈ 1,2 h
-  com `--jobs 4`**. Bate com a faixa que o plano estimou (4,2–5,0 h / 1,0–1,3 h).
+  refs (46 de 99) → **≈ 86 mutantes** que rodam guard. Ao unitário **medido** de 531 s:
+  **≈ 12,7 h serial**; aplicando o ganho de **2,5×** que a rodada do refs mostrou de fato (88 min
+  serial → 35 min com `--jobs 4`), **≈ 5,1 h com `--jobs 4`**. **Isto ESTOURA a faixa do plano
+  (4,2–5,0 h / 1,0–1,3 h) por ~2,5×**, e a causa é medível: o plano usou 0,52–0,64 s por caso,
+  medidos num guard pequeno; a 298 casos o custo por caso é **1,78 s**. Publico o medido.
 
 **Por que o unitário é tão alto para um guard de 33 casos:** cada caso faz `spawnSync("bash", …)` do
 `.sh` de verdade — é essa a escolha que torna o guard honesto (com o script apagado passa **zero**),
