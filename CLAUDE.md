@@ -392,7 +392,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`
    (Fable por contrato). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
    viva; **worktree próprio para cada jurado que muta** e **cluster Postgres descartável por jurado** (a base
-   viva não é alvo de ninguém); insumos do briefing presentes (parecer do crítico + PD nos ciclos ≥3);
+   viva não é alvo de ninguém); insumos do briefing presentes (do ciclo 4 em diante, o parecer da
+   auditoria da máquina do §C7.4 e, se ela achou a máquina defeituosa, o registro do conserto);
    afirmações da ata anterior marcadas "a re-verificar" e não herdadas como fato; inelegibilidade dos papéis
    conferida por nome; **fatia S0 executada** (espelho Codex consistente por `sync-agent-agents.mjs --check`);
    baseline honesto medido; **o objeto da junta é um SHA com check-runs CONCLUÍDOS**
@@ -409,31 +410,38 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
-4. **Protocolo de dificuldade — TETO DE DOIS CICLOS (decisão do dono, 2026-08-29, `D-TETO-DOIS-CICLOS`).**
-   **REVOGA o teto de 5 ciclos** que esta seção trazia (ciclos 1–2 fábrica · ciclo 3 crítico reabre premissa ·
-   ciclos 4–5 junta ampliada · parada só após o 5). O teto agora é **2**:
-   - **Ciclo 1** — entrega, junta, veredito.
-   - **Ciclo 2** — se reprovado: corrige (com §C7.4-bis intacto — **quem achou não conserta**) e volta à junta
-     com **identidade nova** na cadeira que reprovou.
-   - **Reprovou no ciclo 2 → PARA. Não há ciclo 3.** **Dossiê ao dono**, com o que foi entregue, o que cada
-     junta achou, o que foi corrigido, **por que a correção não bastou** e as opções com custo.
-   - A `agente-fabrica` **continua** criando especialistas — mas **dentro dos dois ciclos**, nunca como forma
-     de adiar a parada.
-   - Registro dos ciclos segue em `omega/reprovacoes/R-<entrega>-<ciclo>.md`. As **paradas imediatas
-     irredutíveis** (§C7.5) são independentes deste teto.
-   - **Blocos em voo sob o teto antigo — aplicação, transcrita de `D-TETO-DOIS-CICLOS`
-     (`agent-orchestration/controle/decisoes.md`):** blocos **novos** nascem sob o teto de 2; e
-     "**`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
-     última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto."
-     **Não há ciclo 6.** Após reprovação no teto, o único caminho é o dossiê ao dono.
-
-   **Por quê, medido:** o `B-O6R-01` levou 3 ciclos; o `B-O6R-02` chegou ao **ciclo 5** com **16 identidades de
-   jurado queimadas**, e a auditoria de 28/08 mediu **3 blocos consumindo 24% de todos os ciclos**. A resposta
-   do protocolo à reprovação era **escalar** (mais agentes, quórum maior), o que **reduz** a chance de
-   aprovação a cada rodada em vez de aumentar. E o `SAN2-1` mostrou a forma barata do mesmo mal: o ciclo 2
-   corrigiu seis achados e **reintroduziu um defeito ao corrigir outro**. Ciclo que conserta e reintroduz é
-   sinal de que a premissa precisa de **gente**, não de mais uma rodada. O dono passa a ser chamado quando a
-   informação vale mais — com **dois** conjuntos de achados na mesa, não cinco.
+4. **Protocolo de dificuldade — SEM TETO DE CICLOS; AUDITORIA DA MÁQUINA NO CICLO 3 (decisão do dono,
+   2026-09-27, `D-SEM-TETO-AUDITORIA-NO-3`).** **REVOGA o `D-TETO-DOIS-CICLOS`** (2026-08-29), que por sua vez
+   já revogara o teto de 5. **Não há mais teto por contagem de ciclos.**
+   - **Reprovação de junta NÃO para o bloco.** Abre-se o ciclo seguinte, com os papéis recompostos pelo
+     §C7.4-bis (quem achou ≠ quem planeja ≠ quem desenvolve), identidade nova nas cadeiras que votaram, e o
+     registro `omega/reprovacoes/R-<entrega>-<ciclo>.md` de sempre.
+   - **GATILHO NO CICLO 3 — auditoria da MÁQUINA, não do bloco.** Se o ciclo 3 também produzir achado
+     `bloqueia`, **antes de abrir o ciclo 4** é OBRIGATÓRIA uma auditoria da **orquestração e da junta**, que
+     responde **por execução**: (a) os achados são **defeitos reais do produto**, ou artefatos do processo
+     (critério impossível de passar, premissa herdada como fato, amostra do próprio autor, guarda que
+     reconhece forma em vez de enunciar propriedade)? (b) a **composição** cobre a competência que os achados
+     exigem, e a **inelegibilidade** foi conferida por nome? (c) o **planejador** está usando dado podre?
+     (d) o **mandato do orquestrador** foi conferido antes do voto? (e) o **terreno** foi limpo em cada
+     ciclo, e o inspetor liberou cada junta? Conduz a auditoria uma identidade que **não votou, não planejou
+     e não desenvolveu** no bloco. Conta o `bloqueia` que reprova o ciclo 3 — o `pre-existente` não reprova
+     (§C7.1-ter(a)) nem abre ciclo 4 —, e a auditoria é a do ciclo 3: o parecer dela serve aos ciclos
+     seguintes. O orquestrador a convoca. O parecer vai para `omega/reprovacoes/R-<entrega>-ciclo3-auditoria.md`,
+     com o comando executado em cada pergunta e o veredito **máquina sã** ou **máquina defeituosa**; sem ele
+     no briefing, o `inspetor-de-terreno-da-junta` não libera junta de ciclo 4 ou seguinte (§C7.1-bis).
+   - **Depois da auditoria, CONTINUA-SE.** Ela é checagem de saúde da máquina, **não uma parada**: máquina sã
+     → o ciclo 4 abre; máquina defeituosa → conserta-se a máquina primeiro, e então o ciclo 4 abre. Quem
+     auditou não conserta (§C7.4-bis); o conserto fica registrado no mesmo arquivo do parecer, e sem esse
+     registro o inspetor também não libera o ciclo 4.
+   - **A razão do dono, nas palavras dele:** ***"se está encontrando erro está tudo certo."*** Achado é a
+     junta funcionando. O que merece vigilância não é o bloco que reprova três vezes — é a possibilidade de a
+     máquina estar **fabricando** achados, ou **deixando de ver** os reais.
+   - **Risco assumido, declarado:** sem teto por contagem, um bloco que não converge pode consumir
+     indefinidamente. A mitigação é o gatilho do ciclo 3, **melhor dirigido que uma contagem** — ele pergunta
+     se a máquina está certa, não se o orçamento acabou. O orquestrador relata, a cada ciclo, se a classe de
+     defeito **se repetiu sem informação nova**, que é o sinal de não-convergência.
+   - A `agente-fabrica` continua criando especialistas por ciclo. As **paradas imediatas irredutíveis**
+     (§C7.5) são independentes disto e continuam valendo integralmente.
 
 4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
    `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
@@ -518,8 +526,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
    `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
    `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md` (a fonte; em divergência, ela vale).
-   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** — quóruns, vetos, identidade nova,
-   separação de papéis (§C7.4-bis) e o teto de dois ciclos ficam intactos.
+   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** — quóruns, vetos, identidade nova e
+   separação de papéis (§C7.4-bis) ficam intactos.
 
    - **P1 — Evidência incremental.** Após **CADA item medido**, apensar a
      `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` três linhas: **comando

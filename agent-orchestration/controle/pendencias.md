@@ -9877,3 +9877,99 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **por que não é só "rodar mais":** a rodada tem de ser feita numa **árvore limpa** do começo ao fim, porque o critério [M-4] compara o `git status` antes e depois. Nesta sessão as duas primeiras rodadas foram contaminadas **por mim** (editei arquivos rastreados enquanto elas corriam) e o [M-4] as reprovou corretamente; a rodada final do refs foi feita com a árvore limpa e o [M-4] passou.
 - **bloqueia:** **não bloqueia** — a E4 é declarada no §3 do plano como entrega **que não é de corte**. A ferramenta está entregue, rastreada e com os três controles verdes; o que falta é tempo de máquina.
 - **teste de encerramento:** `bash scripts/mandato-mutantes.sh preflight --controle --jobs 4` termina com `[M-4] nenhum rastreado mudou` e a matriz das **184** linhas colada em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md` §4, com os não-cobertos nomeados ou declarados equivalentes com fixture.
+
+## P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda falam de protocolo de ciclos revogado — MÉDIA
+
+- status: ABERTA (aberta pelo `B-GOV-SEM-TETO`, PR #394 — classe (b) do plano `docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` §3.3; o bloco **não** as corrige: o §6 do plano as proíbe a ele)
+- **prova (N = 5 regras; forma: linha de corpo de agente, ou de companheiro nomeado pelo contrato, que limita ou condiciona o número de ciclos de reprovação a um protocolo que o `D-SEM-TETO-AUDITORIA-NO-3` revoga; causa: foram escritas sob o teto de 5 ou antes dele, e nenhuma revogação posterior as alcançou — o `D-TETO-DOIS-CICLOS` não as tocou e este bloco, por escopo, também não). Linhas e origem medidas por `grep -n` e `git log -S --reverse` no head do #394:**
+  - **V-07** `.claude/agents/validador-mestre.md:100` (espelho `.agents/agents/validador-mestre.md:106`): *"Máximo 2 ciclos de reprovação por PR; na 3ª falha = CONDIÇÃO DE PARADA"* — `bed17db3`, 2026-07-08 (#141).
+  - **V-08** `.claude/agents/critico-adversarial.md:3` e `:6` (espelho `:3` e `:13`): *"Nos ciclos 4–5 do protocolo de reprovação … reabre a premissa desde o objetivo"* — `21fdf516`, 2026-07-10 (#158).
+  - **V-09** `.claude/agents/avaliador-mapas.md:17` (espelho `:24`): *"ciclo 3 reabre premissa com pesquisa ≥5"* — `56a6077b`, 2026-07-13 (#178).
+  - **V-10** `.claude/agents/agente-fabrica.md:8` (espelho `:15`): *"Especialistas do ciclo 3 do protocolo de reprovação"* — `21fdf516`, 2026-07-10 (#158).
+  - **V-11** `EXECUTION_MODEL.md:273–278`: a tabela do protocolo de **cinco** ciclos, *"após 5 falho → parada + dossiê ao humano"* — `39eb46cc`, 2026-07-28; último commit no arquivo `7fada65e`, 2026-08-15.
+- **escopo:** `pre-existente` — evidência de data: as cinco antecedem o `D-TETO-DOIS-CICLOS` (2026-08-29) e o `D-SEM-TETO-AUDITORIA-NO-3` (2026-09-27); nenhuma foi escrita nem tocada pelo #394.
+- **efeito medido:** nenhum desses cinco papéis tem cadeira na junta 3 do #393. O efeito é **latente**: na primeira vez que um deles participar de um ciclo ≥3, lerá regra de protocolo revogado — o `validador-mestre`, que tem veto, mandaria parar na 3ª falha.
+- **dono:** o **orquestrador**, que abre um bloco de governança próprio para os cinco (identificador proposto: `B-GOV-CICLOS-RESIDUAIS`; plano do #394 §3.3(b)), antes de qualquer junta de ciclo ≥3 em que um desses papéis tenha cadeira.
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393.
+- **teste de encerramento:** a busca pela propriedade (teto ou parada por contagem de ciclos, ou passo obrigatório de protocolo revogado em ciclo numerado), com `grep -n -i`, nos corpos dos dois espelhos e no `EXECUTION_MODEL.md`, devolve 0 linhas vivas; vermelho-controle: reintroduzir *"na 3ª falha = CONDIÇÃO DE PARADA"* num corpo faz a busca voltar a achá-la.
+
+## P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 opera, mas cinco perguntas do mecanismo ficaram sem resposta — MÉDIA
+
+- status: ABERTA (aberta pelo `B-GOV-SEM-TETO`, PR #394. O plano do bloco, §4, mediu dez peças ausentes no gatilho, M-01…M-10; a emenda do bloco fechou as que tornam o gatilho operável com maquinaria que já existe — o inspetor, o registro `R-*` — e as declarou como elaborações T-21…T-25 na entrada `D-SEM-TETO-AUDITORIA-NO-3` de `decisoes.md`. Estas ficam **nomeadas**, não desenhadas: desenhá-las seria legislar além das palavras do dono)
+- **prova (N = 5 perguntas; forma: elemento do mecanismo sem `arquivo:linha` que o responda no contrato nem no corpo de um gate; causa: o texto de 27/09 não as tratou, e a emenda só acrescentou o mínimo para a auditoria acontecer, ficar registrada e travar o ciclo 4):**
+  - **M-02** — corpo, papel e modelo do auditor. O contrato diz só quem **não** pode conduzir (quem votou, planejou ou desenvolveu no bloco); não há corpo de auditor em `.claude/agents/` nem modelo fixado.
+  - **M-04 (resto)** — quem confere que o conserto da máquina de fato consertou, e o que limita a espera enquanto ela está defeituosa. O gate confere a **presença** do registro do conserto, não o mérito dele.
+  - **M-05** — o texto opera com **uma** auditoria por bloco, a do ciclo 3, cujo parecer serve aos ciclos seguintes. Se um bloco que continue reprovando deve ser auditado de novo mais adiante, as palavras do dono não dizem — é pergunta **para o dono**.
+  - **M-06** — o relato do orquestrador "a cada ciclo" sobre classe de defeito repetida sem informação nova: onde fica e quem o lê.
+  - **M-09** — as perguntas (b) e (c) da auditoria repetem as (a) e (c) que o §C7.4-bis já manda responder a cada reprovação: somam ou substituem?
+- **escopo:** `dentro-do-bloco` quanto ao tema, **deixadas abertas por decisão escrita** (plano §4 e briefing §9: o mecanismo completo não está nas palavras do dono; o que se julga é se o transcritor as calou — aqui estão ditas).
+- **efeito medido:** nenhuma das cinco impede a primeira auditoria: com T-21…T-25 ela é convocada, conduzida por quem é elegível, registrada em caminho fixo e trava o ciclo 4. O que falta é padronização (M-02, M-06, M-09), atestação do conserto e prazo (M-04), e a recorrência (M-05).
+- **dono:** o **orquestrador** — leva ao dono as que são decisão dele (M-05 e o prazo de M-04) e transcreve as respostas no mesmo bloco de governança da `P-GOV-CICLOS-CORPOS-ORFAOS` (identificador proposto `B-GOV-CICLOS-RESIDUAIS`).
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393.
+- **teste de encerramento:** cada uma das cinco tem `arquivo:linha` no contrato ou no corpo de um gate que a responde, **ou** uma decisão do dono registrada em `decisoes.md` que a dispensa.
+
+## P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO sobre o texto que tirou o teto de ciclos — MÉDIA
+
+- status: ABERTA (aberta pelo orquestrador na ata `agent-orchestration/omega/juntas/J-B-GOV-SEM-TETO.md`, junta APROVADA 3 × 0 sobre `7ad08690`; os quatro são `ajuste`, `dentro-do-bloco`, e **não** reprovaram)
+- **prova (N = 4 achados de 3 cadeiras; forma: `ajuste` com `arquivo:linha` no voto; causa comum: o texto do §C7.4 item 4 acrescenta mecanismo às palavras do dono e o mecanismo ficou incompleto em pontos que a emenda nomeou em vez de desenhar):**
+  - **C1-A1** — `CLAUDE.md` l.413–445 (= `AGENTS.md` l.441–473), sob o rótulo "(decisão do dono, 2026-09-27)": 16 proposições acrescentam ator, obrigação, condição ou restrição **sem marca local** de que são do transcritor; a separação só existe em `decisoes.md` ("nenhuma é palavra do dono").
+  - **C1-A2** — `CLAUDE.md` l.432–435: no ramo "máquina defeituosa", o "continuaremos" depende de um conserto **sem executor, sem prazo e sem desfecho alternativo** (condição explícita; é a M-04 da `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` vista pelo lado do dono).
+  - **C2-3-1** — `inspetor-de-terreno-da-junta.md` item 2.2 (l.73–76, `dd79c96f`) × item 3.3 (l.110–112, `72fcdcde`, 2026-09-08): contra uma ref julgada **anterior** ao #394, a leitura "cláusula inexistente = o item não se aplica" desliga a trava do ciclo 4. Medido nos heads `c32f77b5` (#393), `a24f58b5` (#388) e `bc3e736b` (#389): `LIBERADO` numa leitura, `BLOQUEADO` na outra; com ref pós-#394, `BLOQUEADO` nas duas.
+  - **C3-A1** — o diff pôs no item 4 ~8 linhas normativas (T-21, T-22, T-24, T-25) que o §6 do plano `docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` proibia; o plano não foi emendado e `decisoes.md` diz "implementa aquele plano" sem registrar a divergência. Declarada na ata pelo orquestrador, que mandou a emenda.
+- **escopo:** `dentro-do-bloco` (todos nasceram no #394).
+- **efeito medido:** nenhum hoje — nenhum bloco está em ciclo ≥ 4. C2-3-1 é o único com efeito operável próximo; **conduta do orquestrador enquanto aberta** (registrada na ata, não é norma nova): nenhum PR vai a junta de ciclo ≥ 3 sem antes integrar a `main` pós-#394.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (proposto no plano do #394 §3.3(b); mesmo dono da `P-GOV-CICLOS-CORPOS-ORFAOS` e da `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`), aberto pelo orquestrador.
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393 (esta, sob a conduta acima).
+- **teste de encerramento:** (C1-A1) cada proposição do item 4 que não é palavra do dono tem marca local no contrato; (C1-A2) o ramo "máquina defeituosa" nomeia executor, prazo e desfecho, ou o dono dispensa em `decisoes.md`; (C2-3-1) com uma ref julgada pré-#394, o inspetor sai `BLOQUEADO` no ciclo 4 sem parecer, provado por mutação; (C3-A1) a divergência do §6 fica registrada em `decisoes.md`.
+
+## P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas sem nota do PR corrente desde o #392 — BAIXA
+
+- status: ABERTA (aberta pelo orquestrador a partir da nota **C3-N6** da junta do `B-GOV-SEM-TETO`, ata `J-B-GOV-SEM-TETO.md`)
+- **prova (N = 4 métricas; forma: métrica carregada do último valor oficial cuja nota no `Kpis/kpis-latest.json` é de um PR anterior, contra o §C3.3 que exige nota explícita do PR corrente; causa: o #392 devolveu ao texto do #390 as notas que o #391 tinha escrito):** `backend_contract_tests_focused` 34, `flutter_modules` 17, `mobile_backend_contracts` 18, `mobile_core_saas_contracts` 21 — medido por `difflib` entre `b8cd22df` (#391) e `fc3363e3` (#392).
+- **escopo:** `pre-existente` — evidência de origem: regressão entre `b8cd22df` e `fc3363e3`, anterior ao #394, que só carregou o que recebeu.
+- **efeito medido:** o painel mostra os números certos; a nota de procedência é que está velha.
+- **dono:** o próximo PR que tocar `Kpis/*` — o #393, na integração da `main` (recontagem do KPI).
+- **bloqueia:** não.
+- **teste de encerramento:** as quatro métricas carregam nota do PR corrente no `kpis-latest.json` e no history.
+
+## P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388 e #389 dizem ao jurado que o ciclo 2 é o último — MÉDIA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-2-2** da junta do `B-GOV-SEM-TETO` e da ressalva **R6** do porteiro do #394)
+- **prova (N = 6 corpos, 12 arquivos nos dois espelhos; forma: `git grep -l -i "CICLO 2 — o ÚLTIMO"` no head de cada PR; causa: os corpos foram escritos sob o `D-TETO-DOIS-CICLOS`, que o #394 revogou em `b3f0af5f`, e vivem em ramos que ainda não integraram a `main`):**
+  - **#389** (`B-O6R-04a`, head `bc3e736b`): `jurado-o6r04a-c2-banco-rls`, `jurado-o6r04a-c2-fail-closed-backend`, `jurado-o6r04a-c2-suplente-banco-rls`, `jurado-o6r04a-c2-suplente-fail-closed-backend` (× `.claude/` e `.agents/`).
+  - **#388** (`B-O6R-11`, head `a24f58b5`): `jurado-o6r11-c2-fail-closed-dart`, `jurado-o6r11-c2-suplente-fail-closed-dart` (× 2 espelhos).
+- **escopo:** `pre-existente` — evidência de data: corpos de 2026-09-20, anteriores ao #394 (2026-09-28); nenhum foi tocado por ele.
+- **efeito medido:** a premissa falsa está **dentro do corpo do jurado** ("reprovar aqui manda o bloco a dossiê ao dono") e muda a aposta do voto; e, quando os PRs mergearem, os corpos entram na `main` com regra revogada — o teste de encerramento da `P-GOV-CICLOS-CORPOS-ORFAOS` os reencontraria.
+- **dono:** cada bloco o seu — **`B-O6R-04a` (#389)** e **`B-O6R-11` (#388)**: ERRATA nos corpos, versionada nos dois espelhos, e integração da `main` pós-#394, **antes da junta** de cada um (não antes do start). O orquestrador lança; a fábrica escreve; o inspetor da junta confere por propriedade.
+- **bloqueia:** a **junta** do #389 e a do #388 — não o trabalho anterior a ela.
+- **teste de encerramento:** no head julgado de cada PR, a busca pela propriedade (teto ou "último ciclo" por contagem, `git grep -n -i`) nos corpos das cadeiras devolve 0 linhas vivas; vermelho-controle: reintroduzir "CICLO 2 — o ÚLTIMO" num corpo faz a busca achá-lo.
+
+## P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o número do ciclo do briefing, não do repositório — MÉDIA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-3-6** da junta do `B-GOV-SEM-TETO` e da ressalva **R3** do porteiro do #394)
+- **prova (N = 1 entrada de trava; forma: `grep` no corpo do `inspetor-de-terreno-da-junta` por instrução de contar `R-<entrega>-<ciclo>` ou atas — nenhuma; o item 2.1 só confere a ata do ciclo ANTERIOR declarado; causa: o método do inspetor é anterior à trava e usa o ciclo que o briefing declara):** o item 2.2 (`dd79c96f`, 2026-09-28) liga a trava em "ciclo ≥ 4"; o número vem de quem escreve o briefing.
+- **escopo:** `pre-existente` quanto ao método (item 2.1 e o fail-closed: `d2839039` 2026-08-30 / `72fcdcde` 2026-09-08); o uso como trava é do #394.
+- **efeito medido:** um briefing que declare o ciclo errado desliga a trava sem que nada a contradiga. Nenhum bloco está em ciclo ≥ 4 hoje.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (mesmo dono da `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA`).
+- **bloqueia:** não.
+- **teste de encerramento:** o corpo do inspetor deriva o número do ciclo do repositório (`omega/reprovacoes/R-<entrega>-<n>.md` + atas) e sai `BLOQUEADO` quando o briefing diverge; vermelho-controle: briefing declarando ciclo 3 com três `R-*` no repositório.
+
+## P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatória antes de todo bloco, ainda fala do teto do §C7.4 — BAIXA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-2-1** da junta do `B-GOV-SEM-TETO` e da ressalva **R3** do porteiro do #394)
+- **prova (N = 1 linha; forma: `git show b3f0af5f:PROJECT_MEMORY.md | sed -n 37p`; causa: snapshot datado, não re-gerado desde 2026-08-29):** `| B-O6R-02 atomicidade do financeiro | 5 P0 + QUA-003 | 🚧 ciclo 5 — **teto do §C7.4** |`.
+- **escopo:** `pre-existente` — evidência de data: último commit no arquivo `74430cc1`, 2026-08-29.
+- **efeito medido:** histórico pelo critério da C2 (não manda ninguém agir), mas em documento que o `CLAUDE.md` manda ler antes de todo bloco.
+- **dono:** `B-GOV-CICLOS-RESIDUAIS`.
+- **bloqueia:** não.
+- **teste de encerramento:** `PROJECT_MEMORY.md` sem menção a teto de ciclos como regra vigente (`grep -n -i "teto"` só em trecho marcado como histórico).
+
+## P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro de worktree de outro bloco — BAIXA
+
+- status: ABERTA (aberta pelo PR de registro do #394, ressalva **R4** do porteiro do #394; observada pelo orquestrador na limpeza do #394)
+- **prova (N = 1 arquivo apagado em 1 execução; forma: `bash scripts/post-merge-cleanup.sh` na árvore principal em 2026-09-28; causa: `scripts/post-merge-cleanup.sh:39` roda `find . -type f -name "*.tsbuildinfo" -not -path "*/node_modules/*" -delete`, que desce em `.claude/worktrees/`):** apagou `./.claude/worktrees/b04a/frontend/tsconfig.tsbuildinfo` (worktree do `B-O6R-04a`).
+- **escopo:** `pre-existente` — evidência de origem: a linha nasceu em `db4370cc` (#251, 2026-07-20).
+- **efeito medido:** cache regenerável do `tsc`; nenhum arquivo rastreado, nenhum dado. O defeito é a **fronteira**: o script de limpeza alcança worktree alheio, contra a regra "resíduo alheio se reporta, não se varre".
+- **dono:** o orquestrador — bloco de ferramenta próprio (identificador proposto `B-CHORE-CLEANUP-FRONTEIRA`), com teste que prove a fronteira.
+- **bloqueia:** não.
+- **teste de encerramento:** com um `*.tsbuildinfo` semeado em `.claude/worktrees/<x>/`, o script não o apaga; vermelho-controle: a versão atual o apaga.
