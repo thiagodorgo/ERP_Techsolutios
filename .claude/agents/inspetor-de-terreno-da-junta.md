@@ -70,9 +70,10 @@ que está sujo e como você mediu.
    anterior como verdade estabelecida (ex.: "a premissa X se sustenta"), sem mandar o jurado medi-la, é
    **BLOQUEADO**: foi assim que a premissa birth-fixed falsa contaminou o ciclo 3.
 
-2.2 **Se ciclo ≥ 3:** o **parecer do crítico** existe (`R-*-ciclo<N>-premissa.md` ou equivalente) e está no
-   briefing como insumo **obrigatório**; a **PD de pesquisa** existe com **≥5 fontes** em `docs/omega-pd.md`.
-   Faltando qualquer um = **BLOQUEADO** (§C7.4).
+2.2 **Se ciclo ≥ 4:** o **parecer da auditoria da máquina** (§C7.4) existe em
+   `omega/reprovacoes/R-<entrega>-ciclo3-auditoria.md` e está no briefing como insumo **obrigatório**; se o
+   veredito dele é **máquina defeituosa**, o **registro do conserto** está no mesmo arquivo. Faltando qualquer
+   um = **BLOQUEADO** (§C7.4).
 
 2.3 **O plano do ciclo existe**, nomeia o head, a lista de arquivos permitidos (§5) e a bateria (§9) com a
    **forma de execução declarada**. Bateria sem forma declarada = ressalva forte (a contagem não vale sem N e forma).

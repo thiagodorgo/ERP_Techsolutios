@@ -56,11 +56,13 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 4. **Junta (passes de veto INDEPENDENTES — cada um é um passe adversarial próprio, não um carimbo):**
    rode os revisores aplicáveis ao PR; cada um emite **APROVADO/REPROVADO** com achados por severidade.
    Dinheiro/alienação/superfície pública/migração ⇒ os obrigatórios abaixo **têm de** rodar.
-5. **Reprovação — teto de DOIS ciclos (`D-TETO-DOIS-CICLOS`; o teto de 5 está REVOGADO):** no ciclo 2
-   corrige-se (quem achou NÃO conserta — §C7.4-bis) e volta-se à junta com **identidade nova** na
-   cadeira que reprovou; **reprovou no ciclo 2 → PARA e vira dossiê ao dono — não há ciclo 3.**
-   Registre em `agent-orchestration/omega/reprovacoes/R-<entrega>-<ciclo>.md`. Em voo: o `B-O6R-02`
-   está no ciclo 5, que já era o teto dele — **o ciclo 5 é a última tentativa**; se reprovar, para.
+5. **Reprovação — sem teto de ciclos (`D-SEM-TETO-AUDITORIA-NO-3`; revoga o `D-TETO-DOIS-CICLOS`):**
+   reprovar **não para o bloco** — abre-se o ciclo seguinte: corrige-se (quem achou NÃO conserta —
+   §C7.4-bis) e volta-se à junta com **identidade nova** nas cadeiras que votaram. Registre em
+   `agent-orchestration/omega/reprovacoes/R-<entrega>-<ciclo>.md`. **Se o ciclo 3 também produzir achado
+   `bloqueia`, antes do ciclo 4 audita-se a orquestração e a junta** — perguntas, registro e trava no §C7.4
+   do `AGENTS.md`; sem o parecer (e, se ele achar a máquina defeituosa, sem o registro do conserto), o
+   `inspetor-de-terreno-da-junta` não libera junta de ciclo 4 ou seguinte.
 6. **Registrar a ata** — votos + justificativa em `docs/juntas/` (ou `agent-orchestration/omega/juntas/`).
    **Junta sem registro = merge inválido.** Verde da junta + CI verde = merge (§C7.1).
 
@@ -119,11 +121,11 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 | Papel | Função |
 |---|---|
 | `agente-pesquisador-web` | Pesquisa exclusiva na net sob dúvida (não escreve código) — regra da dúvida §C7.3. |
-| `agente-fabrica` | Cria novos agentes/especialistas sob medida durante o protocolo de reprovação (ciclos 1–2). |
+| `agente-fabrica` | Cria novos agentes/especialistas sob medida durante o protocolo de reprovação (a cada ciclo). |
 
 ## Especialistas do protocolo de reprovação (§C7.4) — subpasta `especialistas/`
 
-Criados pela `agente-fabrica` nos ciclos 1–2 de uma reprovação, **sob medida para o defeito que reprovou**.
+Criados pela `agente-fabrica` a cada ciclo de uma reprovação, **sob medida para o defeito que reprovou**.
 **Entram na junta seguinte e votam**, e permanecem **enquanto o bloco está em voo**. Todos nascem **sem
 ferramenta de escrita** (`Read`/`Grep`/`Glob`/`Bash`) — reforço estrutural do §C7.4-bis: quem acha não conserta.
 
