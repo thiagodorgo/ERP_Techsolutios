@@ -2,8 +2,8 @@
 
 > Norma permanente para TODA junta, inspeção de terreno e porteiro. Nasce do postmortem das **14 quedas de
 > agente em ~28 disparos (~50%)** da sessão de 28–29/08 — `omega/POSTMORTEM-QUEDAS-2026-08-29.md`.
-> O que este protocolo NÃO muda: quóruns, vetos, identidade nova por ciclo, separação de papéis
-> (§C7.4-bis) e o teto de dois ciclos (`D-TETO-DOIS-CICLOS`). Ele muda **como o trabalho sobrevive à morte
+> O que este protocolo NÃO muda: quóruns, vetos, identidade nova por ciclo e separação de papéis
+> (§C7.4-bis). Ele muda **como o trabalho sobrevive à morte
 > de quem o fez**.
 
 ## P1 — Evidência incremental: escrever no disco a cada item, nunca só no fim

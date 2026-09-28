@@ -2670,3 +2670,68 @@ que a auditoria do ciclo 3 existe para examinar.
 **Blocos em voo.** O `B-GOV-MANDATO`, que havia parado no teto revogado, **retoma no ciclo 3** sob esta
 decisão. Como o ciclo 3 é exatamente o do gatilho, se ele produzir achado `bloqueia` a auditoria da máquina é
 obrigatória antes do ciclo 4.
+
+**Emenda de 2026-09-28 — o que entrou além do texto de 27/09, e por quê (§A2: nada em silêncio).** Quem
+escreve: `dev-semteto-emenda`, desenvolvedor da emenda do #394, identidade nova. O orquestrador escreveu o texto
+de 27/09 e **não emenda o próprio texto** (§C7.4-bis); o `planejador-mestre` do bloco mediu que ele estava
+incompleto (`docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` §3–§5 e §7), e esta emenda implementa aquele plano.
+**Nada abaixo muda o que o dono decidiu.** O que remove regra é consistência; o que acrescenta está numerado
+na sequência das T-01…T-20 do plano (§2), para a cadeira C1 julgar uma a uma contra as palavras do dono.
+
+*Regras vivas que contradiziam a decisão — classe (a) do plano §3.3, nos dois contratos quando é contrato:*
+- **V-01** §C7.7: saiu *"e o teto de dois ciclos"* da lista do que o protocolo resiliente não muda. Só deleção.
+- **V-02** cauda do item 4 (*"Por quê, medido … com dois conjuntos de achados na mesa, não cinco"*): saiu
+  inteira. Era a justificativa da decisão **revogada**; cada fato dela já está nesta casa, na entrada
+  `D-TETO-DOIS-CICLOS` acima (B-O6R-01 em 3 ciclos, B-O6R-02 no ciclo 5 com 16 identidades, 24% dos ciclos,
+  escalar reduz a chance de aprovar, o SAN2-1 que reintroduziu defeito, *"dois conjuntos de achados, não
+  cinco"*). Só deleção; nada se perde.
+- **V-03** §C7.1-bis: o insumo *"parecer do crítico + PD nos ciclos ≥3"* era do protocolo do teto de 5, que a
+  regra nova reativaria sem prescrever. Virou *"do ciclo 4 em diante, o parecer da auditoria da máquina do §C7.4
+  e, se ela achou a máquina defeituosa, o registro do conserto"* — é a T-21 abaixo.
+- **V-04** `inspetor-de-terreno-da-junta`, **só o item 2.2** (+ espelho `.agents/`, regenerado por
+  `sync-agent-agents.mjs`): a mesma troca, por **exceção escrita** do plano §3.3(a) — era o único remanescente
+  que bloquearia **por construção** a junta 3 do #393. Diff de 1 hunk; os demais itens do corpo intactos.
+- **V-05** `.agents/agents/README.md` passo 5 e l.122/126: o lado Codex repete o item 4 (sem teto; auditoria no
+  ciclo 3; a fábrica cria especialistas a cada ciclo). **V-06** `PROTOCOLO-JUNTA-RESILIENTE.md` l.6: só deleção,
+  a mesma de V-01.
+
+*Elaborações NOVAS desta emenda — continuam a numeração do plano; nenhuma é palavra do dono:*
+- **T-21** `[acrésc]` **A trava e a convocação** — adotada a opção §4.2(ii) do plano, declarada aqui como
+  **mecanismo do transcritor**: o inspetor, no item 2.2 e no §C7.1-bis, não libera junta de ciclo 4 ou seguinte
+  sem o parecer da auditoria; *"O orquestrador a convoca"*. Mede-se contra W3 (*"faremos uma auditoria"*) e o
+  *"OBRIGATÓRIA"* da T-06. **Efeito, dito para não ser descoberto:** o gate é o último ponto em que a ausência é
+  detectável por máquina — ele trava a **junta** do ciclo 4, não o planejamento dele; a regra continua sendo
+  *"antes de abrir o ciclo 4"*. Fecha M-01 e M-08.
+- **T-22** `[acrésc]` **O registro e a forma do veredito** — o parecer vai para
+  `omega/reprovacoes/R-<entrega>-ciclo3-auditoria.md` (o registro `R-*` que já existe), com o comando executado
+  em cada pergunta e o veredito **máquina sã** ou **máquina defeituosa** (as duas palavras que o texto de 27/09
+  já usava). Quem decide o veredito é quem conduz; quórum de uma identidade, como o texto já dizia. Fecha M-03.
+- **T-23** `[interp]` **A pergunta (d) reescrita** — *"passou no pré-voo?"* virou *"foi conferido antes do
+  voto?"*. O "pré-voo" só existe no #393 (`scripts/mandato-preflight.sh`, ausente da `main`); a propriedade não
+  depende da ferramenta, e quando o pré-voo por máquina estiver na `main` ele passa a ser a forma de conferir
+  sem reescrever o contrato (plano §4.1). A T-09 continua sendo julgada como elaboração. Fecha M-07.
+- **T-24** `[interp]` **O disparo, sem ambiguidade** — *"Conta o `bloqueia` que reprova o ciclo 3 — o
+  `pre-existente` não reprova (§C7.1-ter(a)) nem abre ciclo 4 —, e a auditoria é a do ciclo 3: o parecer dela
+  serve aos ciclos seguintes."* Não é regra nova: é o que *"no ciclo 3 … antes de abrir o ciclo 4"* já implicava
+  somado ao §C7.1-ter(a), dito por extenso. Mede-se contra W2 (*"se rodar três ciclos e encontrar mais erro"*).
+  **Efeito:** reprovação sem achado `bloqueia` (ex.: *"não consigo medir"*) abre o ciclo 4 e, pelo gate, também
+  exige a auditoria. Se o dono quer nova auditoria mais adiante, isso **não** está decidido aqui — é M-05, aberta.
+  Fecha M-10.
+- **T-25** `[acrésc]` **O conserto da máquina** — *"Quem auditou não conserta (§C7.4-bis); o conserto fica
+  registrado no mesmo arquivo do parecer, e sem esse registro o inspetor também não libera o ciclo 4."* Dá
+  executor e lugar ao *"conserta-se a máquina primeiro"* da T-11, com maquinaria que já existe. **Não** diz quem
+  atesta que o conserto consertou nem quanto a espera pode durar — isso fica em M-04, aberta. Fecha M-04 em parte.
+
+*As dez peças do plano §4:* **M-01** T-21 · **M-02** aberta · **M-03** T-22 · **M-04** parte T-25, resto aberto ·
+**M-05** aberta (pergunta ao dono) · **M-06** aberta · **M-07** T-23 · **M-08** V-03/V-04 · **M-09** aberta ·
+**M-10** T-24. As abertas estão **nomeadas com dono** em `pendencias.md` →
+`P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`.
+
+*Fora deste bloco, com dono — classe (b) do plano §3.3:* V-07 `validador-mestre:100`, V-08
+`critico-adversarial:3,6`, V-09 `avaliador-mapas:17`, V-10 `agente-fabrica:8` e V-11 `EXECUTION_MODEL.md:273–278`,
+pré-existentes por data (2026-07-08 a 2026-08-15), sem cadeira na junta 3 do #393 →
+`P-GOV-CICLOS-CORPOS-ORFAOS`.
+
+*KPI (§C3):* `blocks_completed` 167 → 168, recontado da `origin/main` (`fc3363e3`); métricas de teste carregadas
+com nota (§C3.3); `mvp_*` intocados; e o backfill §C3.5 do #392 pago (`merge_commit fc3363e3…`, `approved_head
+7822deaf…` lido da ata `J-B-SAN3-00.md:3`, não de `gh pr view`).
