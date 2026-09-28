@@ -4687,3 +4687,22 @@ bloco mergear.
   tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
   deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
   **303** ABERTAS.
+
+## B-GOV-SEM-TETO (PR #394) — o teto de ciclos cai; no ciclo 3 audita-se a máquina — MERGEADO `b3f0af5f` (2026-09-28)
+
+- **Decisão transcrita:** `D-SEM-TETO-AUDITORIA-NO-3` (dono, 2026-09-27) — sem teto de dois ciclos; se o ciclo 3
+  reprovar, audita-se a orquestração e a junta antes do ciclo 4, e continua-se. O texto do orquestrador foi medido
+  incompleto pelo plano (11 regras vivas, 20 elaborações — 16 não declaradas) e corrigido por emenda de dev de
+  identidade nova (V-01…V-06, T-21…T-25, trava do ciclo 4 no item 2.2 do inspetor).
+- **Junta:** APROVADO **3 × 0** (maioria de 3) sobre `7ad08690` — 0 bloqueia, 5 ajuste, 21 nota; segunda instância
+  das três cadeiras (a primeira caiu com a sessão, sem veredito, nada herdado). Ata `omega/juntas/J-B-GOV-SEM-TETO.md`;
+  votos, inspetor e porteiro em `omega/juntas/votos/B-GOV-SEM-TETO/`.
+- **Porteiro:** `LIBERADO COM RESSALVA` (R1–R6). R1–R4 pagas pelo PR de registro do #394 (evidência versionada,
+  backfill §C3.5 `b3f0af5f`/`7ad08690`, 4 pendências novas, este registro). R5 e R6 são condição das próximas juntas:
+  o #393 integra a `main` por merge e o inspetor da junta 3 mede `merge-base --is-ancestor b3f0af5f <objeto>`; o #389
+  e o #388 emendam os corpos de jurado que dizem "CICLO 2 — o ÚLTIMO" antes das juntas deles.
+- **Abertas, com dono:** `P-GOV-CICLOS-CORPOS-ORFAOS`, `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`,
+  `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA`, `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO`, `P-GOV-PROJECT-MEMORY-TETO-VELHO`
+  (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
+  `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
+- **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
