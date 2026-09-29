@@ -780,7 +780,7 @@ test(
     // SKIP POR PLATAFORMA, NAO POR CONVENIENCIA (fronteira 23, plano §13.4). No Windows/MSYS nao existe
     // bit de execucao: um arquivo com shebang EXECUTA direto, logo o mutante `-f` -> `-d` (que manda
     // executar o arquivo em vez de `bash <arquivo>`) produz a MESMA saida do pristino -- e EQUIVALENTE
-    // ali, e nenhum caso pode discrimina-lo. No ubuntu do CI o bit manda: o pristino passa e os dois
+    // ali PARA ESTA fixture -- [V18b]/[V18c] (plano §14.4) o discriminam em win32. No ubuntu do CI o bit manda: o pristino passa e os dois
     // mutantes param (l.116: execucao direta -> Permission denied -> "nao li o PR"; l.119: `command -v`
     // de arquivo sem x falha -> "falta ... no PATH"). O caso roda la, e so la ele mede alguma coisa.
     skip:
@@ -825,5 +825,136 @@ test("[V19] cwd FORA de repositorio git: PARADO ec=1, stdout vazio — ⇄ l.160
     assert.doesNotMatch(r.stderr ?? "", /ref 'origin\/main' nao existe/, "parou pela causa errada");
   } finally {
     rmSync(fora, { recursive: true, force: true });
+  }
+});
+
+// =================================================================================================
+// CICLO 3 -- Dev-T-4 (plano §14.4, identidade `dev-t4-mandato-refs-win32`). A matriz de mutacao do
+// refs (E4) publicou l.116 e l.119 como NAO-COBERTOS (`-f` -> `-d` sobre `$GH_BIN`), e o [V18], que os
+// mira pelo bit x, e `skip` em win32. O planejador mediu que os dois sao discriminaveis TAMBEM em
+// win32 -- e no ubuntu --, cada um por uma fixture propria:
+//   - l.119 (`[ -f "$GH_BIN" ] || ver "$GH_BIN"`): shim SEM shebang passado por CAMINHO. Sem shebang
+//     (e sem bit x no ubuntu) `command -v <caminho>` falha: o pristino nao chama `ver` e le a ata; o
+//     mutante chama `ver` e PARA com "falta '<caminho>' no PATH". -> [V18b]
+//   - l.116 (`ghc()`: `-f` -> `bash "$GH_BIN"`, senao `"$GH_BIN"`): ARQUIVO regular no cwd do script x
+//     COMANDO de mesmo nome num diretorio prefixado ao PATH, com `MANDATO_GH` = o nome NU. O pristino
+//     roda o arquivo do cwd; o mutante roda o comando do PATH. -> [V18c], discriminado pelo SHA que
+//     cada um responde, nunca so pelo `ec` (os dois terminam em 0).
+// Mesma regra dos blocos anteriores: todo caso passa pelo `.sh` de verdade por `spawnSync`, e as
+// ancoras (◐) rodam no MESMO ambiente do spawn -- se uma delas cair, o caso diz que nao discrimina
+// em vez de passar pela razao errada.
+// =================================================================================================
+
+/**
+ * `roda()` com o `env` ESTENDIDO (Dev-T-4). `roda()` fixa o ambiente; o [V18c] precisa prefixar um
+ * diretorio ao PATH do spawn, e as ancoras precisam do MESMO objeto de ambiente que o script recebe.
+ * A chave do PATH e procurada sem caixa: no Windows o Node pode herdar `Path`, e acrescentar `PATH`
+ * ao lado dela deixaria duas chaves -- qual delas o filho herda nao e garantido.
+ */
+function ambienteCom(gh: string, prefixoPath?: string): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, MANDATO_GH: gh, MANDATO_REPO: "t/t" };
+  if (prefixoPath !== undefined) {
+    const chaves = Object.keys(env).filter((k) => k.toUpperCase() === "PATH");
+    const chave = chaves[0] ?? "PATH";
+    const atual = env[chave] ?? "";
+    for (const k of chaves) delete env[k];
+    env[chave] = `${prefixoPath}${path.delimiter}${atual}`;
+  }
+  return env;
+}
+function rodaNoAmbiente(pr: string, env: NodeJS.ProcessEnv) {
+  const r = spawnSync("bash", [SCRIPT, pr], { cwd: repo, encoding: "utf8", env });
+  return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
+}
+/**
+ * A sonda `command -v`, com o alvo como ARGUMENTO POSICIONAL. Medido pelo Dev-T-4 em win32: com o
+ * caminho interpolado no texto do `-c` (`command -v C:\Users\...`) o bash come as `\` e a sonda falha
+ * para QUALQUER arquivo -- ate para um shim executavel --, e a ancora do [V18b] passaria pela razao
+ * errada. Por isso o [V18b] tambem assere o controle da sonda (o `SHIM_OK` tem de resolver).
+ */
+function commandV(alvo: string, env: NodeJS.ProcessEnv) {
+  return spawnSync("bash", ["-c", 'command -v "$1"', "_", alvo], { cwd: repo, encoding: "utf8", env });
+}
+/** RegExp que casa `s` literalmente (o caminho do Windows tem `\`, que em RegExp e escape). */
+function literal(s: string): RegExp {
+  return new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+}
+/** Corpo de `gh` para o #383 MERGED (ata J-APROVADA: approved_head = S1) com o merge commit dado. */
+function corpoGh383Mergeado(merge: string): string {
+  return (
+    CABECA_SHIM +
+    `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  case "\${3:-}" in
+    383) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "${COMMIT_HEAD}" "fix/aprovada" "main" "MERGED" "false" "UNKNOWN" "${merge}" ;;
+    *) exit 9 ;;
+  esac
+  exit 0
+fi
+` +
+    API_OK
+  );
+}
+
+test("[V18b] shim de `gh` SEM shebang passado por CAMINHO: `bash <arquivo>` le a ata — ⇄ l.119 (`-f` -> `-d`: `ver` para com \"falta '<caminho>' no PATH\")", () => {
+  const alvo = path.join(repo, "bin", "gh-sem-shebang.sh");
+  // o MESMO corpo do SHIM_OK, sem a linha `#!`: `bash <arquivo>` nao precisa dela.
+  writeFileSync(alvo, "set -u\n" + PR_VIEW + API_OK, { encoding: "utf8", mode: 0o644 });
+  chmodSync(alvo, 0o644); // `mode` do writeFileSync so vale na CRIACAO
+  const env = ambienteCom(alvo);
+  // ◐ ancoras -- a fixture e a que o plano descreve:
+  assert.equal(existsSync(alvo), true, "o shim nao foi gravado");
+  assert.equal(readFileSync(alvo, "utf8").startsWith("#!"), false, "o shim tem shebang — o caso nao discrimina");
+  assert.equal(statSync(alvo).mode & 0o111, 0, "o shim tem bit de execucao — o caso nao discrimina");
+  // ◐ controle da SONDA: a mesma forma resolve um shim executavel. Sem isto, uma sonda quebrada daria
+  // status != 0 para qualquer arquivo e a ancora de baixo nao provaria nada.
+  const controle = commandV(SHIM_OK, env);
+  assert.equal(controle.status, 0, `a sonda nao resolve nem o SHIM_OK — ela esta quebrada: ${controle.stderr ?? ""}`);
+  // ◐ a ancora do plano: `command -v <caminho>` FALHA para este shim -- e e isso que faz o mutante parar.
+  const sonda = commandV(alvo, env);
+  assert.notEqual(sonda.status, 0, `\`command -v\` resolve o shim sem shebang (${(sonda.stdout ?? "").trim()}) — o caso nao discrimina`);
+  const r = rodaNoAmbiente("383", env);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, new RegExp(`^approved_head: +${S1}$`, "m"));
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+  // com l.119 mutada o script PARA antes de ler o PR, nomeando o caminho -- a causa que o caso mede:
+  assert.doesNotMatch(r.err, literal(`falta '${alvo}' no PATH`), "o pristino chamou `ver` sobre um shim que e ARQUIVO");
+});
+
+test("[V18c] ARQUIVO no cwd x COMANDO no PATH com o mesmo nome nu: o script roda o ARQUIVO — ⇄ l.116 (`-f` -> `-d`: roda o COMANDO; discriminado pelo SHA)", () => {
+  const nome = "gh-arquivo-x-comando";
+  const S_A = S4; // merge commit que o ARQUIVO do cwd responde
+  const S_B = S5; // merge commit que o COMANDO do PATH responde
+  const noCwd = path.join(repo, nome);
+  const dirPath = mkdtempSync(path.join(tmpdir(), "mandato-refs-path-"));
+  const noPath = path.join(dirPath, nome);
+  try {
+    writeFileSync(noCwd, corpoGh383Mergeado(S_A), { encoding: "utf8", mode: 0o644 });
+    chmodSync(noCwd, 0o644); // arquivo REGULAR, sem bit x
+    writeFileSync(noPath, corpoGh383Mergeado(S_B), "utf8");
+    try {
+      chmodSync(noPath, 0o755); // comando: com bit x no ubuntu; no MSYS e o shebang que o torna executavel
+    } catch {
+      /* Windows */
+    }
+    const env = ambienteCom(nome, dirPath);
+    // ◐ ancoras, no MESMO ambiente do spawn:
+    assert.equal(existsSync(noCwd), true, "o arquivo do cwd nao existe — o pristino nao teria o que rodar");
+    assert.equal(statSync(noCwd).mode & 0o111, 0, "o arquivo do cwd tem bit x — o caso mediria outra coisa");
+    // `command -v <nome>` resolve para o diretorio do PATH e NAO para o cwd. Codigos: 7 = nao resolve,
+    // 8 = resolve para outro lugar que nao o diretorio do PATH, 9 = resolve para o arquivo do cwd.
+    const resolve = spawnSync(
+      "bash",
+      ["-c", 'p=$(command -v "$1") || exit 7; [ "$p" -ef "$2" ] || exit 8; [ "$p" -ef "$3" ] && exit 9; exit 0', "_", nome, noPath, noCwd],
+      { cwd: repo, encoding: "utf8", env },
+    );
+    assert.equal(resolve.status, 0, `\`command -v ${nome}\` nao resolve para o diretorio do PATH (status ${resolve.status}) — o caso nao discrimina`);
+    const r = rodaNoAmbiente("383", env);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.match(r.out, new RegExp(`^approved_head: +${S1}$`, "m"), "ancora positiva: o relatorio foi produzido");
+    assert.match(r.out, new RegExp(`^merge commit: +${S_A}$`, "m"), "o script nao rodou o ARQUIVO do cwd");
+    assert.doesNotMatch(r.out, new RegExp(S_B), "o script rodou o COMANDO do PATH em vez do ARQUIVO do cwd");
+  } finally {
+    rmSync(noCwd, { force: true });
+    rmSync(dirPath, { recursive: true, force: true });
   }
 });
