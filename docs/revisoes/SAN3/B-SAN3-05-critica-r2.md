@@ -224,11 +224,61 @@ Docker; `psql` no PATH do Git Bash é HIPÓTESE), a contagem de KPI e a regress�
 
 ## 3. Critérios A1–A20 × mutação × teste
 
-EM APURAÇÃO
+Mutantes da trava gerados de `$S2/guard-v2-plano.sql` por substituição textual provada (`grep -c session_user`: original 5, semi-mutante
+atributo 3, semi-mutante posse 2); papéis `cr2_*` no banco `cr2_i3`.
+```
+                      membro de BYPASSRLS | membro do DONO | postgres (via/rolname/is_self)
+trava v2               1                  | 1              | atributo/cr2_bypass/f atributo/cr2_super2/f atributo/postgres/t posse/cr2_owner/f posse/postgres/t
+mut-A3 (r.rolname=cu)  0  ← T8 vermelho   | 1              | …
+mut-A4 (sem posse)     1                  | 0 ← T8b verm.  | só atributo/*
+sem r.rolsuper, sob cr2_super2: linhas is_self = 0 (v2: atributo|cr2_super2|t|f|t)  ← T7 vermelho
+semi-mutante A5 "session_user→current_user só na metade atributo":
+   cenário do T8c (login postgres, options role=cr2_clean) → 2 linhas (RECUSA: o mutante SOBREVIVE)
+   login cr2_mbyp (NOSUPERUSER, membro de cr2_bypass e de cr2_clean), options role=cr2_clean → 0 linhas (PASSA)
+   …e a porta nessa mesma sessão: cr2_mbyp|cr2_clean|0 ; SET ROLE cr2_bypass ; SELECT count(*) FROM t_force → 4
+semi-mutante "só na metade posse": T8c → 3 linhas (SOBREVIVE); login cr2_mown (membro do dono) + role=cr2_clean → 0 (PASSA)
+```
 
-## 4. Decisão de posse → recusa × §11 / compose / CI
+| A | Mutação declarada existe e o teste declarado a pega? | Evidência |
+|---|---|---|
+| A1 | sim (T6 asserta `via=atributo ∧ is_self ∧ rolsuper`; sem a metade atributo só sobram linhas `posse`) | tabela acima, linha `postgres` |
+| A2 | sim (T7) | `is_self` some sem `r.rolsuper` |
+| A3 | sim (T8) | mut-A3 → 0 sob membro de BYPASSRLS |
+| A4 | sim (T8b) | mut-A4 → 0 sob membro do dono |
+| A5 | **parcial**: a mutação escrita ("nas duas ocorrências") é pega; a substituição em **uma** metade sobrevive ao cenário único do T8c (login superusuário é membro de tudo, então a outra metade recusa por ele). A §2.1(a) é conjunção das duas metades para `session_user`; o teste não mata cada metade. (Nota: o SQL tem **5** ocorrências de `session_user`, não "duas".) | semi-mutantes acima → **F2-07 (ajuste)** |
+| A6 | sim (T9 varredura do log; `$disconnect` pelo espião do T4) | leitura; r1 item 4.3 |
+| A7 | sim (T1/T3, `safeParse`) | mecanismo dos gates existentes |
+| A8 | sim (T2 em processo filho) | 2.2(d): mecanismo vê a mutação quando a âncora casa |
+| A9 | sim | `deploy-manifest-parity` 28/28, `production-runtime-gates` 63/63 no head (executados aqui) |
+| A10/A11 | sim para "tirar a reordenação" (semente intercalada: concatenação `false`, reordenada `true`; agregados `[15,14]` `false`) e para "tirar o setter" | `node -e` executado aqui; **mas** a soma "de 2 organizações" via `listEvents({janela})` sem tenant lê todas as organizações do banco compartilhado → F2-03 |
+| A12 | a mutação declarada (sem laço) é pega **nessa rota**; nada além dela | 2.2(b)/(c) → F2 aberto, F2-03 |
+| A13/A14 | sim, pelo precedente (proxy do B-O6R-06) | leitura |
+| A15 | sim para as 17 + "sumida"; **não** para N01–N09 | 2.1 → F2 aberto |
+| A16 | sim (compose: `api`→`postgres` faz a trava recusar); o boot sob `erp_runtime` passa — simulado sem Docker (§4 abaixo) | §4 |
+| A17 | as 2 mutações escritas são pegas; T14a executa o `DO` pelo **Prisma administrativo** (superusuário) — os cenários de migrador não-super (iv, iv-b, iv-c) exigem cliente não-super, que é papel `LOGIN CREATEROLE` criado pelo teste (F2-01); T14b "pula declarando" reprova o `npm test` (F2-06) | 2.3, 2.6 |
+| A18 | sim (documental, por comando) | — |
+| A19 | frágil: "`rg -c 'P-SAN3-05-' pendencias.md` ≥ 6" conta **linhas**, e o §13 nomeia **5** IDs `P-SAN3-05-*`; omitir uma pendência pode manter ≥ 6 | leitura → **N2-04** |
+| A20 | a mutação "apagar a chamada" fica vermelha **por timeout** do teste (o filho não sai), não pela 1ª linha trazer `RedisCommandError` | 2.2(e) → N2-02 |
 
-EM APURAÇÃO
+
+## 4. A decisão de posse virar RECUSA × §11, compose e CI — medida
+
+```
+# compose simulado sem Docker, banco novo cr2_compose no 54354:
+1. init, modo initdb.d (POSTGRES_DB/POSTGRES_USER, socket), DB_MIGRATOR_ROLE=postgres → DO / erp_runtime_c|f|f|f|0|0 / ec=0
+2. DATABASE_URL=…postgres@…/cr2_compose npx prisma migrate deploy → All migrations have been successfully applied.
+3. trava v2 sob erp_runtime_c → 0 linhas (PASSA) ; DML em 115/115 tabelas de public ; FORCE de posse/pertença = 0 ; 0 sequências em public
+4. INSERT/DELETE em tenants como erp_runtime_c → ok
+# §11 (papel que o script produz): (i) e (iv) acima → linha f|f|f|0 ; trava v2 sob o papel → 0 linhas
+# CI job backend: roda como postgres com NODE_ENV≠production (trava desligada por default); T6 espera a recusa sob postgres
+```
+**Veredito do item 4: a RECUSA por posse não inviabiliza o §11, o compose (simulado) nem a CI.** O que resta é o que a v2 já declara
+como hipótese: H1 (entrypoint real do `postgres:16`), H2/H3 (papel real de produção). Risco latente, não achado de bloqueio: o CD de
+staging (`deploy-staging.yml:11-22`) roda a cada push na `main` quando `STAGING_DEPLOY_ENABLED == 'true'`; hoje está **desligado**
+(API do GitHub: as 8 execuções mais recentes, inclusive a do `3b1fe0f9` em 2026-09-28, `conclusion: skipped`). No dia em que for ligado,
+o primeiro deploy sobe com `NODE_ENV=production` (`fly.staging.toml:31`) e a trava ativa — o §11 não amarra a ativação do CD de staging
+aos Atos 1–2 de staging. **Nota N2-05.**
+
 
 ## 5. Tabela de achados
 
