@@ -122,6 +122,106 @@ o guard lexical (o próprio guard documenta o buraco `["GRANT","SELECT"].join(" 
 (critério impossível dentro do próprio escopo). **Achado F2-01.**
 
 
+### 2.4 O procedimento (Apêndice C) executado — reproduz nos cenários do plano; vaza a senha nova; tem um 4º modo de falha
+
+Bancos `cr2_i3` (executor `postgres`) e `cr2_i4` (dono `cr2_mig` `LOGIN CREATEROLE NOSUPERUSER NOBYPASSRLS`), criados por mim no 54354.
+Execução sempre por `env -i PATH=/usr/bin:/bin HOME=/root PGHOST=127.0.0.1 PGPORT=54354 PGUSER=… PGDATABASE=… DB_RUNTIME_*=… bash $S2/db-runtime-role-apC.sh`.
+
+```
+(i)   postgres, papel novo            → DO / erp_runtime|f|f|f|0|2 / ec=0
+(ii)  2ª execução                     → mesma linha, ec=0; diff de pg_roles/pg_default_acl/pg_auth_members/relacl → IDEMPOTENTE
+(iii) pré-existente SUPERUSER BYPASSRLS CREATEDB + membro de cr2_bypass + dono de t_own FORCE
+      → ERROR: papel erp_runtime ainda escapa de RLS (1 via(s) … POSSE …) / ec=3 ; depois: t|t|t|membros=1 (NADA persistiu)
+(iii-b) OWNER TO postgres; de novo     → erp_runtime|f|f|f|0|3 / ec=0 ; f|f|f, membros=0
+(iv)  cr2_mig (não-super, dono) cria erp_rt2 → erp_rt2|f|f|f|0|1 / ec=0 ; pg_default_acl: cr2_mig|S, cr2_mig|r
+```
+Os cenários do §R.4 **reproduzem** (roteiro re-executado, não herdado). O que o plano não executou:
+
+**(a) A senha nova sai em claro no terminal, no log do servidor e no `argv` do `psql`.**
+```
+# modo 1 do PRÓPRIO §11 passo 3 ("permission denied to create role"): executor cr2_nocr (LOGIN NOCREATEROLE)
+ERROR:  permission denied to create role
+CONTEXT:  SQL statement "CREATE ROLE erp_rt4 LOGIN NOINHERIT PASSWORD 'Senha-Nova-Modo1-cr2'"          ec=3
+$ grep -c 'Senha-Nova-Modo1-cr2' /var/lib/postgresql/san3_05_critico_r2/server.log   → 1
+# 4º modo (abaixo, (b)): CONTEXT: SQL statement "ALTER ROLE erp_rt3 WITH LOGIN NOINHERIT PASSWORD 'pw-cr2-3'"
+$ grep -n 'pw-cr2-3' …/server.log → 127: … CONTEXT:  SQL statement "ALTER ROLE erp_rt3 WITH LOGIN NOINHERIT PASSWORD 'pw-cr2-3'"
+# argv: shim $S2/shim/psql que só grava "$@" (sem conectar), DB_RUNTIME_PASSWORD=Senha-Nova-Argv-cr2
+$ grep -n Senha-Nova-Argv-cr2 $S2/shim/argv.txt → 8:password=Senha-Nova-Argv-cr2
+```
+Configuração do cluster = default do PG16 (`log_min_messages=warning`, `log_min_error_statement=error`, `log_statement=none`). O plano diz
+"`DB_RUNTIME_PASSWORD` (obrigatória; **nunca ecoada**)" (§4.1, cabeçalho do Apêndice C) e o §11 passo 2 diz que a senha "**não** vai para o
+repositório nem para o chat". Medido: em **todo** modo de falha dentro do `DO` que passe por `CREATE/ALTER ROLE` (inclusive o modo 1
+que o próprio §11 manda o dono esperar e ler), o PL/pgSQL põe o SQL dinâmico — com `PASSWORD '<senha nova>'` — no `CONTEXT` do erro, que
+vai ao terminal do dono **e** ao log do servidor gerenciado (retenção do provedor, fora do controle do dono); e em **toda** execução a senha
+está no `argv` do `psql` (`-v password=…`), legível por `ps`/`/proc/<pid>/cmdline` enquanto ele roda. Exposição de segredo é parada
+irredutível do contrato (§C7.5) e regra de ouro (§2.8). **Achado F2-02 (bloqueia).**
+
+**(b) Papel pré-existente que o migrador não-super NÃO criou — mesmo LIMPO — derruba o script com erro cru; é um 4º modo, fora do §11.**
+```
+$ psql -U postgres -c "CREATE ROLE erp_rt3 LOGIN PASSWORD 'x' NOSUPERUSER NOBYPASSRLS"       (limpo; criado por outro executor)
+$ … PGUSER=cr2_mig PGDATABASE=cr2_i4 DB_RUNTIME_ROLE=erp_rt3 … bash db-runtime-role-apC.sh
+ERROR:  permission denied to alter role
+DETAIL:  Only roles with the CREATEROLE attribute and the ADMIN option on role "erp_rt3" may alter this role.      ec=3
+```
+No PG16 o `ALTER ROLE … PASSWORD` do ramo "papel já existe" exige `ADMIN OPTION`; quem tem é só quem criou o papel. O §11 passo 3 lista
+três modos; o modo 2 ("já existia um papel com esse nome e um atributo que o migrador não pode tirar") **nunca aparece** para papel que o
+migrador não criou — o `ALTER … PASSWORD` falha antes, com a mensagem crua acima. A "idempotência" do §11 ("rodar N vezes converge")
+só vale para o mesmo executor que criou o papel. É a classe do F8 da r1 (migrador não-super recusado num `ALTER ROLE` que o plano não
+previu), agora no ramo do papel pré-existente. **F8 → aberto (parcial), ajuste.**
+
+**(c) Pertença INDIRETA a papel que escapa: o script falha fechado, mas manda o dono consertar a coisa errada.**
+```
+$ GRANT cr2_bypass TO cr2_mid; GRANT cr2_mid TO erp_runtime            (cadeia de 2 níveis; erp_runtime não é dono de nada)
+WARNING:  role "erp_runtime" has not been granted membership in role "cr2_bypass" by role "postgres"
+ERROR:  papel erp_runtime ainda escapa de RLS (1 via(s): …). Posse nao se corrige aqui: reatribua o dono ao migrador (ALTER TABLE ... OWNER TO postgres) e rode de novo     ec=3
+```
+O laço de `REVOKE` só revoga pertença direta ao papel que escapa; a intermediária fica, e a mensagem final atribui à **posse**. O dono,
+seguindo o §11 passo 3 (modo 3), procuraria tabela para reatribuir e não acharia. **Achado F2-04 (ajuste).**
+
+**(d) CRLF.** `git ls-files '.gitattributes'` → 0 na ref; o manual de terreno (§2.6) registra `core.autocrlf=true` no Windows do dono.
+Cópia CRLF do Apêndice C sob bash de Linux, executada e sourced sob `set -Eeo pipefail`: `line 81: syntax error near unexpected token ')'`,
+`ec=2` nos dois modos. Vale para o `bash` do contêiner `postgres:16` lendo um bind-mount de um checkout Windows (compose local-prod do
+dono — HIPÓTESE, sem Docker aqui; comando: `git ls-files --eol scripts/db-runtime-role.sh` e `docker compose -f docker-compose.prod.yml up
+postgres` na máquina do dono). **Não** afirmo quebra no `bash` do Git for Windows: o MSYS2 é corrigido para ignorar CR
+([msys2/MSYS2-packages#6660](https://github.com/msys2/MSYS2-packages/issues/6660); relato de quebra em Git Bash:
+[mindcockpit-ai/cognitive-core#58](https://github.com/mindcockpit-ai/cognitive-core/issues/58)). A CI faz checkout LF. **Nota N2-03.**
+
+### 2.5 A trava v2 e a auto-verificação aprovam dois papéis que escapam com UM comando
+
+Mesmo cluster, banco `cr2_i3`, tabela `t_force` FORCE com 4 linhas (3 organizações + o marcador `segredo-tenant-b-cr2`), a trava =
+`$S2/guard-v2-plano.sql` (extraída do §2.2, = `plano-v2/guard-v2.sql`).
+```
+# (a) pertença ao papel predefinido pg_execute_server_program (NOSUPERUSER NOBYPASSRLS, dono de nada)
+trava v2 sob cr2_prog                          → 0 linhas (PASSA)
+SELECT count(*) FROM t_force  (sem GUC)        → 0
+COPY cr2_dump FROM PROGRAM 'psql -h 127.0.0.1 -p 54354 -U postgres -d cr2_i3 -XAtc "select tenant_id from t_force order by id"'
+SELECT string_agg(v, ',') FROM cr2_dump        → a,b,c,segredo-tenant-b-cr2
+# (b) atributo REPLICATION num papel pré-existente: o script CONVERGE e aprova
+script (executor postgres)                     → DO / erp_runtime|f|f|f|0|3 / ec=0 ; pg_roles.rolreplication = t (mantido)
+trava v2 sob erp_runtime                       → 0 linhas (PASSA)
+pg_basebackup -h 127.0.0.1 -p 54354 -U erp_runtime -D $S2/bb -Ft -X none -c fast   → ec=0, base.tar 48 MB
+grep -a -c 'segredo-tenant-b-cr2' $S2/bb/base.tar → 2          (backup apagado em seguida)
+```
+O §1 promete que o processo "só sobe se a identidade … **não puder escapar de RLS**", e o §11 passo 5 diz "A trava é a prova — **agora
+inteira**". O §2.1(a) lista o que fica fora (`SECURITY DEFINER`, `pg_read_all_data` que não escapa, `SET FALSE`) e não nomeia
+`pg_execute_server_program`/`pg_read_server_files`/`pg_write_server_files` nem `REPLICATION`. O script (Apêndice C) corrige
+`SUPERUSER/BYPASSRLS/CREATEDB/CREATEROLE` e deixa `REPLICATION` intacto com a linha de go/no-go `f|f|f|0`. É a classe do F5 da r1 (a trava
+aprova um papel que escapa com um comando a mais); a exposição é menor (nenhum dos dois vem do `CREATE ROLE` do script; o pg_hba de um
+gerenciado pode não aceitar replicação). **Achado F2-05 (ajuste).**
+
+### 2.6 O "pula declarando" do T14b estoura o orçamento de pulos do runner
+
+```
+# fixture $S2/skipfix/a.test.ts: 2 pulos "conhecidos" + o pulo do T14b ("psql: ausente") + 1 teste; DATABASE_URL exportada
+$ node scripts/run-backend-tests.mjs $S2/skipfix
+[run-backend-tests] GUARD DE SKIP (P8): DATABASE_URL presente e 3 teste(s) pulados > orçamento 2. …      ec=1
+# sem o pulo do T14b → ec=0
+```
+`SKIP_BUDGET_DB = 2` (`scripts/run-backend-tests.mjs:82`, fora do §6). O §8 (T14b) e o R13 dizem que, sem `psql` no PATH, o T14b
+"pula **declarando**" e que isso mitiga a H7 falsa. Medido: com `DATABASE_URL` presente, o pulo declarado reprova o `npm test` inteiro.
+Onde houver banco e não houver `psql` (a máquina onde juntas e porteiro rodam — manual de terreno §1.2 — é Windows com Postgres em
+Docker; `psql` no PATH do Git Bash é HIPÓTESE), a contagem de KPI e a regressão do porteiro ficam vermelhas. **Achado F2-06 (ajuste).**
+
 ## 3. Critérios A1–A20 × mutação × teste
 
 EM APURAÇÃO
