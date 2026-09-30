@@ -2735,3 +2735,67 @@ pré-existentes por data (2026-07-08 a 2026-08-15), sem cadeira na junta 3 do #3
 *KPI (§C3):* `blocks_completed` 167 → 168, recontado da `origin/main` (`fc3363e3`); métricas de teste carregadas
 com nota (§C3.3); `mvp_*` intocados; e o backfill §C3.5 do #392 pago (`merge_commit fc3363e3…`, `approved_head
 7822deaf…` lido da ata `J-B-SAN3-00.md:3`, não de `gh pr view`).
+
+## D-DURABILIDADE-BRANCHES-LOCAIS (decisão do dono, 2026-08-29) — o que só existe num disco não conta como entregue
+
+**Contexto.** A sessão de 28–29/08 começou porque a máquina foi **desligada sem aviso** no meio de uma
+rodada. O levantamento pós-desligamento mediu, e o `porteiro-pos-merge` do #360 confirmou por execução
+(`git rev-list --count`, `git ls-remote`), que **82 commits viviam em três branches locais sem upstream** e
+que uma edição de três dias atrás nunca fora commitada:
+
+| O que | Tamanho | Estado antes |
+|---|---|---|
+| `feat/o6r-b02-financial-uow` | **35 commits** | sem upstream, 0 refs no origin — **é o insumo do ciclo 5 do financeiro** |
+| `docs/governanca-porteiro-pre-merge-sol` | **46 commits** | idem |
+| `chore/ressalvas-porteiro-357` | 1 commit | idem |
+| `scripts/porteiro-pre-merge.mjs` no worktree `gov-descuido` | +26/−6 | **não commitado**, vivo só no disco desde 26/08 |
+
+**Decisão.** O dono ordenou **pushar as três branches** e **commitar a edição na própria branch**. As três
+ganharam upstream; a edição virou `497d360` em `docs/governanca-porteiro-pre-merge-sol`. Medição pós-ordem:
+`git rev-list --count origin/<b>..<b>` = **0 nas quatro branches** — nada mais existe apenas neste disco.
+
+**O que isto NÃO é.** Não abre PR, não move a `main`, não muda uma linha de produto. É **durabilidade da
+prova e do insumo**, exatamente como o porteiro do #359 fez com a `demo/investidor` em 28/08 e pelo mesmo
+motivo. Reversível por `git push --delete`.
+
+**Por que virou decisão, e não rotina silenciosa.** O `porteiro-pos-merge` do #360 elevou isto a **primeiro
+ato do ciclo 5** (achado B do parecer), com um argumento que o registro deve preservar: *"obter a ordem de
+push — ou o registro da recusa — **antes** de gastar a junta ampliada sobre um insumo que um disco pode
+apagar"*. O ciclo 5 é o **teto do §C7.4**: se aquela junta reprovar, não há ciclo 6. Montar a junta mais cara
+do protocolo sobre 35 commits que existiam em cópia única seria apostar o teto num disco.
+
+**Regra que fica.** Branch de bloco em curso **ganha upstream assim que tiver commit que doa perder** — não
+se espera o PR. O push é barato e reversível; a perda não é.
+
+> **Portada para a `main` em 2026-09-30, por decisão do dono** ("regra viva: portar para a main"). O texto
+> abaixo é o **verbatim** da definição que vivia só no ramo `demo/investidor` (`d1fab3bc`, 2026-08-29) — nenhuma
+> palavra alterada. Fecha a `P-GOV-D-DURABILIDADE-FORA-DA-MAIN`. A comparação arquivo a arquivo dos 49 commits
+> do ramo (30/09) mediu que esta é a **única** regra viva dele ausente da `main`
+> (`agent-orchestration/docs/conhecimento-de-terreno.md` §4).
+
+
+## D-DEMO-UX-NUVEM (decisão do dono, 2026-09-30) — o produto de demo/UX do `demo/investidor` vai para a nuvem, e o que toca trabalho fica em pasta separada
+
+**Palavras do dono:** "o Produto (demo + UX) por padrao manda tudo pra nuvem arquivos que pode que tocar em
+trabalho fica na nuvem tambem mas em pasta separada com seu comportamento e previsão no papel".
+
+**Contexto medido (30/09).** O ramo `demo/investidor` tem 49 commits fora da `main` (23–29/08). Arquivo a arquivo,
+**275 arquivos de produto** (demo para investidor e acabamento de UX: seeds da demo, vídeos de fluxo, painel de
+pátios, tabela de preços, clique-na-linha, consistência visual, dossiê do veículo, fidelidade do app de campo)
+não estão na `main`. Cruzados por script com os PRs em voo (#388, #389, #393) e com os caminhos que cada bloco do
+`PLANO_SAN3` §5 declara: **156 não tocam nada em curso nem planejado; 119 tocam**.
+
+**Decisão.**
+1. **Por padrão, tudo vai para a nuvem** (sessões em claude.ai/code): plano, crítico e desenvolvimento, **por
+   tema**, cada tema como bloco com plano, crítico, junta e porteiro — nunca merge direto do `demo/investidor`.
+2. **O que toca trabalho em curso ou planejado também vai para a nuvem, mas em pasta separada**
+   (`docs/revisoes/DEMO-UX/trilha-em-espera/`), com o **comportamento** de cada tema e a **previsão** de entrada
+   escritos — o bloco que o destrava e a ordem. Não mergeia antes do bloco que o destrava.
+3. A trilha livre fica em `docs/revisoes/DEMO-UX/trilha-livre/`. O manifesto arquivo a arquivo
+   (`docs/revisoes/DEMO-UX/manifesto.tsv`) é gerado por script (`gerar-manifesto.py`, na mesma pasta), nunca
+   escrito à mão.
+4. O merge continua **só pela sessão local** do orquestrador, depois de junta e CI (um orquestrador só).
+
+**O que isto NÃO autoriza.** Não traz nenhum arquivo do `demo/investidor` para a `main` por si; não passa por
+cima da ordem do dono (perda de dado → multi-tenant → segurança → dinheiro → confiabilidade → contratos →
+fluxos de venda → acabamento → documentação); não permite à nuvem mergear.
