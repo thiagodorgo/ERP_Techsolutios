@@ -112,7 +112,62 @@ Veredito parcial: **P1–P7 reproduzem** (`0` sob papel limpo; P6 `42501`). O ca
 
 ## Item 3 — `scripts/db-runtime-role.sh` (SQL do §4.1) executado de verdade; `ALTER DEFAULT PRIVILEGES`; `docker-entrypoint` do `postgres:16`
 
-EM APURAÇÃO
+Banco `critico_i3` criado por mim no cluster 54351. SQL extraído **verbatim** das l.391-408 do plano (`$S/role.sql`, 18 linhas, md5 `ffb3a039aff8b07b30aeb1a11f2bb9cf`).
+
+**3.1 — o SQL não roda como está escrito, com as variáveis que o plano declara.**
+```
+$ psql -h 127.0.0.1 -p 54351 -U postgres -d critico_i3 -v ON_ERROR_STOP=1 -v role=erp_runtime -v password=senha-x -v migrator=postgres -f $S/role.sql
+ERROR:  syntax error at or near ":"
+LINE 2: ...OT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'role') T...
+psql ec=3
+```
+O `psql` **não interpola** `:'role'`/`:'password'` dentro de corpo *dollar-quoted* (`DO $$ … $$`): o servidor recebe `:'role'` literal. O **primeiro** comando do procedimento falha. Tirando o bloco `DO` (arnês meu, só para medir o resto; papel pré-criado à mão):
+```
+$ psql … -v ON_ERROR_STOP=1 -v role=erp_runtime -v password=senha-x -v migrator=postgres -f $S/role-sem-do.sql
+ALTER ROLE
+ERROR:  syntax error at or near ":"
+LINE 1: GRANT CONNECT ON DATABASE :"db" TO "erp_runtime";
+psql ec=3
+```
+`:"db"` é usado na l.397 mas **não** está na lista `-v role=… -v password=… -v migrator=…` da l.386 nem nas entradas por ambiente (l.383-385). Com `-v db=critico_i3` o resto roda (`ec=0`). O §0.2 (l.81) afirma "**Toda premissa de banco deste plano está MEDIDA** sob um papel `NOSUPERUSER NOBYPASSRLS` real"; o SQL do procedimento — que o §11 manda o dono executar em produção — nunca foi executado (o P-l mediu só o `ALTER DEFAULT PRIVILEGES` isolado). Veredito parcial: achado **F6**.
+
+**3.2 — idempotência e "corrige papel pré-existente com `BYPASSRLS`": atributo sim, pertença não; e a auto-verificação não consegue falhar.**
+```
+# 2ª × 3ª execução (com o arnês de 3.1): pg_roles, pg_default_acl e pg_auth_members idênticos
+role|erp_runtime|f|f|f|f|t|f · defacl|postgres|r|{erp_runtime=arwd/postgres} · defacl|postgres|S|{erp_runtime=rU/postgres} · members|0   → IDEMPOTENTE
+# papel pré-existente: ALTER ROLE erp_runtime SUPERUSER BYPASSRLS; GRANT c2_bypass TO erp_runtime; dono de t_own (FORCE)
+$ psql … -v ON_ERROR_STOP=1 … -f $S/role-sem-do.sql ; echo ec=$?
+ erp_runtime | f | f | t | 1          (rolsuper, rolbypassrls, escapa, tabelas_force_de_posse)
+psql ec=0
+```
+Atributos corrigidos (`f|f`). Mas: (i) a pertença a `c2_bypass` **continua** (`escapa = t`) — o procedimento não revoga pertença; (ii) com `escapa = t` **e** posse `= 1`, o `psql` sai **0**: a "auto-verificação" do §4.1 é um `SELECT`, e um `SELECT` que devolve `t` não é erro para `ON_ERROR_STOP`. O §4.1 ("o script sai com erro se o papel escapar") e o §11 passo 2 ("Qualquer `t`, ou posse `> 0`, e ele sai com erro — não siga para o Ato 2") descrevem um mecanismo que o SQL prescrito não tem. (O §11 também diz que ele imprime `erp_runtime|f|f|f|0`; sem `-At` o `psql` imprime tabela.) T14 como descrito ("auto-verificação sai ≠0 se `escapa`") ficaria vermelho contra este SQL — logo o teste existe para a metade `escapa`; **não** existe critério para a pertença não revogada (A14 só fala de atributo). Veredito parcial: achado **F7**.
+
+**3.3 — migrador NÃO-superusuário (a forma do banco gerenciado): o `ALTER ROLE` é recusado mesmo sem mudar nada.**
+```
+$ psql -U postgres … -c "CREATE ROLE c3_mig LOGIN CREATEROLE NOSUPERUSER NOBYPASSRLS" …
+$ psql -U c3_mig -d critico_i3 -c "CREATE ROLE erp_rt2 LOGIN PASSWORD 'x'"        → ok (CREATE ROLE permitido)
+$ psql -U c3_mig … -v ON_ERROR_STOP=1 -v role=erp_rt2 … -v migrator=c3_mig -v db=critico_i3 -f $S/role-sem-do.sql
+ERROR:  permission denied to alter role
+DETAIL:  Only roles with the SUPERUSER attribute may change the SUPERUSER attribute.        psql ec=3
+# isolando: NOCREATEDB → "Only roles with the CREATEDB attribute…"; NOBYPASSRLS → "Only roles with the BYPASSRLS attribute…"
+```
+O PG16 recusa **nomear** `NOSUPERUSER`/`NOCREATEDB`/`NOBYPASSRLS` para quem não tem o atributo, mesmo quando o valor já é o pedido. O §11 passo 3 só prevê "`CREATE ROLE` recusado"; aqui o `CREATE ROLE` passa e o procedimento morre na linha seguinte, deixando um papel com `LOGIN PASSWORD` e sem grants. Provedor: `docs/deployment.md:189` nomeia **Fly.io Postgres gerenciado** (fallback AWS RDS). **HIPÓTESE** (não medida — segredo do dono): o migrador de produção não é superusuário. Fontes web (a busca devolveu; `fly.io`/`community.fly.io` estão bloqueados pelo proxy de saída, então só os resumos): no Managed Postgres do Fly o admin é `fly-user` com papel "Schema Admin", "o mais próximo de superusuário" (https://fly.io/docs/mpg/cluster-configuration/ ; https://community.fly.io/t/managed-postgres-can-the-admin-user-have-createrole-and-bypassrls-no-superuser/28697); no RDS o usuário mestre é membro de `rds_superuser`, que **não** é superusuário (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.Roles.rds_superuser.html). Comando que mede: `psql "$PROD_DATABASE_URL" -Atc "SELECT rolsuper, rolcreaterole, rolcreatedb, rolbypassrls FROM pg_roles WHERE rolname = current_user"`. Veredito parcial: achado **F8**.
+
+**3.4 — `ALTER DEFAULT PRIVILEGES` cobre só (tabela criada pelo migrador NOMEADO) ∧ (mesmo banco).**
+```
+tabela        | criada por | banco      | erp_runtime DML + USAGE na sequência?
+t_by_postgres | postgres   | critico_i3 | t
+t_by_c3mig    | c3_mig     | critico_i3 | f
+t_other_db    | postgres   | critico_i2 | f      (default privileges foram definidos em critico_i3)
+```
+Veredito parcial: P-l se confirma **e** mostra dois limites que o plano não enuncia: tabela criada por outro papel (ex.: um `db:provision-rbac`/seed que crie tabela sob outra credencial) fica sem grant (R2 só cobre "migrador"), e o procedimento precisa estar conectado **ao banco da aplicação** — o que leva a 3.5.
+
+**3.5 — o `docker-entrypoint` do `postgres:16` (fonte oficial, `docker-library/postgres` `16/bookworm/docker-entrypoint.sh`, 389 linhas, md5 `c416efc410e681254f4733ca159eea5a`, baixado agora).**
+- l.180-188: `*.sh` **executável** → executado; senão → **sourced** (`. "$f"`) no shell do entrypoint (`set -Eeo pipefail`, l.2).
+- `git ls-files -s -- 'scripts/*.sh'` → **os três** `.sh` do repo (`post-merge-cleanup`, `rbac-provision-drill`, `restore-drill`) são `100644`. O "padrão da casa" que o §4.1 manda seguir produz arquivo **sem** bit de execução ⇒ **sourced é o caminho padrão**, não o caso de borda "checkout Windows" do R7. O modelo citado (`rbac-provision-drill.sh`) usa `trap … EXIT` (l.43) e `exit 1` (l.48); sourced, um `exit` mata o entrypoint antes de `docker_temp_server_stop`.
+- Variáveis: `POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB` são **exportadas** por `file_env` (l.23, l.238); `PGPASSWORD` exportada (l.359); `PGUSER` só inline para `pg_ctl` (l.302, **não** exportada); `PGHOST`/`PGDATABASE` **não** definidas; servidor temporário só em socket (`listen_addresses=''`, l.297). Logo um `psql` que dependa das "variáveis padrão `PG*`" (l.385 do plano) conecta como o usuário do SO ao banco **`postgres`**, não a `erp_techsolutions` — e (3.4) grants e default privileges ficariam no banco errado. O §4.1 lista as duas formas de conexão sem dizer como o script escolhe.
+- **HIPÓTESE** (sem daemon docker aqui): o compose sobe com o papel certo no banco certo. Comando: `docker compose -f docker-compose.prod.yml down -v && docker compose -f docker-compose.prod.yml up -d postgres && docker compose -f docker-compose.prod.yml logs postgres | grep -E 'running|sourcing' && docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d erp_techsolutions -Atc "SELECT defaclrole::regrole, defaclobjtype FROM pg_default_acl"` → esperado uma linha `postgres|r` e uma `postgres|S` **em `erp_techsolutions`**. É o H1 do plano, com o banco explicitado.
+Veredito parcial: **nota** (N3: sourced é o padrão da casa) + o risco de banco errado fica como hipótese que o job `docker` mede.
 
 ## Item 4 — Trava de boot × `env.ts`, pontos de entrada, H6/paridade
 
