@@ -880,10 +880,8 @@ e ela custa um processo por caso, no sistema operacional em que processo é caro
    `BASE`) + caso `[F-6j]`. Até lá: rodada cujo guard alcança a l.522 declara o ambiente (§0) e roda **sem** a
    variável (ERRATA E-11).
 
-**Fato medido no K2b (2026-09-30), SEM número — a numeração e o dono são do planejador: a ferramenta não confere o
-id do arquivo de equivalentes.** Ela CONTA as linhas `^[0-9]+:.*\(.+\)` (l.309-311) e sai `ec=0` quando
-`NAO-COBERTOS − contagem ≤ 0`. Medido com arquivos FORA do repo, ambiente `MSYS_NO_PATHCONV exportadas=0`, head
-`4b164396`: `--only 245 --equivalentes <só "999: … (fixture: nenhuma, …)">` → `N=1 K=0 NAO-COBERTOS=1 … EQUIVALENTES-DECLARADOS=1`,
-**`ec=0`** (o id 999 não é ponto de rodada nenhuma, e absolveu o 245); controle, o mesmo id sem fixture entre
-parênteses → `EQUIVALENTES-DECLARADOS=0`, `ec=1`; base `fail=0 de tests=312` e `[M-4]` ok nas duas. Na matriz publicada o
-efeito não ocorre: os ids do arquivo são exatamente os NÃO-COBERTOS da rodada B, provado por script (§4.5).
+10. **O equivalente é contado, não conferido — fronteira 28, plano §14.20(1).** O arquivo `--equivalentes` é contado por linhas com fixture (l.311) e subtraído dos NÃO-COBERTOS (l.324) sem conferência de id: uma linha com id inexistente, ou de ponto já coberto, abate um não-coberto real e o `ec=0` sai falso.
+    Gravidade `ajuste`, escopo `dentro-do-bloco` (a ferramenta nasceu em `616fd4fa`, E4 deste ciclo): a direção é
+    fail-open para o verde falso. Fato medido no K2b (2026-09-30), arquivos FORA do repo, `MSYS_NO_PATHCONV exportadas=0`, head `4b164396`: `--only 245` com um arquivo só `999: … (fixture: nenhuma, …)` → `N=1 K=0 NAO-COBERTOS=1 … EQUIVALENTES-DECLARADOS=1`, **`ec=0`**; controle, o mesmo id sem parênteses → `EQUIVALENTES-DECLARADOS=0`, `ec=1`; base `fail=0 de tests=312` e `[M-4]` ok nas duas. Na matriz publicada o efeito é nulo: os ids do arquivo (245, 318, 336) são exatamente os NÃO-COBERTOS da rodada B, provado por script (§4.5) — e o [M-1] = 0 publicado é DERIVADO da matriz e dessa prova de conjuntos, nunca do `ec` da ferramenta (ERRATA E-12). Não se conserta agora (o blob
+    `37549262` está em todas as triplas). Conserto, dono `B-GOV-MANDATO-2`: `EQN = |ids do arquivo ∩ NÃO-COBERTOS da rodada|`; id declarado que **não** está entre os não-cobertos → linha `ANOMALIA-EQUIV <id>` (declaração morta ou ponto já coberto) e **não abate**; o resumo imprime os dois conjuntos e `EQUIVALENTES-CONFERIDOS`. Teste de
+    encerramento: o `t-inventado` do K2b: `--only 245` com `999: … (f)` → `NAO-COBERTOS=1 EQUIVALENTES-CONFERIDOS=0`, **`ec=1`** (hoje `ec=0`), e o controle sem parênteses inalterado. *(Registrado no K2b como fato sem número; numerado no K2c, 2026-09-30, pelo §14.20.)*

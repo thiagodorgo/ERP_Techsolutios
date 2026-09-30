@@ -207,11 +207,11 @@
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 | `P-GOV-ATA-CABECALHO-TEMPLATE` | 9802 | MÉDIA | sim | P-GOV-ATA-CABECALHO-TEMPLATE (2026-09-26) — não existe template RASTREADO de ata com cab |
 | `P-GOV-ATA-APPROVED-HEAD-LINHA` | 9812 | MÉDIA | sim | P-GOV-ATA-APPROVED-HEAD-LINHA (2026-09-26) — nenhuma das 107 atas escreve a linha `- **a |
-| `P-GOV-CICLOS-CORPOS-ORFAOS` | 9942 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
-| `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9957 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
-| `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9972 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
-| `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9997 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
-| `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 10009 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
+| `P-GOV-CICLOS-CORPOS-ORFAOS` | 9943 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
+| `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9958 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
+| `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9973 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
+| `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9998 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
+| `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 10010 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
 
 ## ABERTAS · balde B — processo/registro — 104
 
@@ -319,8 +319,8 @@
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
 | `P-GOV-MANDATO-2-FRONTEIRAS` | 9823 | BAIXA | sim | P-GOV-MANDATO-2-FRONTEIRAS (2026-09-26) — as OITO fronteiras que o pré-voo e o refs DECL |
 | `P-GOV-MANDATO-3-FRONTEIRAS` | 9891 | BAIXA | sim | P-GOV-MANDATO-3-FRONTEIRAS (2026-09-29) — as fronteiras que os artefatos do ciclo 3 decl |
-| `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 10019 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
-| `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 10029 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
+| `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 10020 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
+| `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 10030 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -514,4 +514,4 @@
 | `P-GOV-MANDATO-3-B8B-CONTRADICAO` | 9842 | ALTA | sim | P-GOV-MANDATO-3-B8B-CONTRADICAO (2026-09-28) — `[B8b]` e `[F-EOL/s7-neg]` exigem veredit |
 | `P-GOV-MANDATO-3-MUTANTES-REFS` | 9856 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` |
 | `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` | 9874 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 1 |
-| `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9986 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
+| `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9987 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
