@@ -776,19 +776,15 @@ test("[V17] `gh` que nao e arquivo nem comando: PARADO ec=1 nomeando-o, stdout v
 
 test(
   "[V18] shim de `gh` SEM bit de execucao: o script o invoca como `bash <arquivo>` e le a ata — ⇄ l.116/l.119 (`-f` -> `-d`)",
-  {
-    // SKIP POR PLATAFORMA, NAO POR CONVENIENCIA (fronteira 23, plano §13.4). No Windows/MSYS nao existe
-    // bit de execucao: um arquivo com shebang EXECUTA direto, logo o mutante `-f` -> `-d` (que manda
-    // executar o arquivo em vez de `bash <arquivo>`) produz a MESMA saida do pristino -- e EQUIVALENTE
-    // ali PARA ESTA fixture -- [V18b]/[V18c] (plano §14.4) o discriminam em win32. No ubuntu do CI o bit manda: o pristino passa e os dois
-    // mutantes param (l.116: execucao direta -> Permission denied -> "nao li o PR"; l.119: `command -v`
-    // de arquivo sem x falha -> "falta ... no PATH"). O caso roda la, e so la ele mede alguma coisa.
-    skip:
-      process.platform === "win32"
-        ? "equivalente em win32 (fronteira 23): sem bit x o mutante `-f`->`-d` nao muda o comportamento; discrimina no CI ubuntu"
-        : false,
-  },
   () => {
+    // RODA EM TODA PLATAFORMA (plano §14.16) -- sem `skip` e sem `return` antecipado. Discrimina o mutante
+    // `-f` -> `-d` so onde ha bit x (ubuntu do CI): la o pristino passa e os dois mutantes param (l.116:
+    // execucao direta -> Permission denied -> "nao li o PR"; l.119: `command -v` de arquivo sem x falha ->
+    // "falta ... no PATH"). No Windows/MSYS nao ha bit x e um arquivo com shebang EXECUTA direto, logo ESTA
+    // fixture nao discrimina ali: em win32 a cobertura das l.116/l.119 e de [V18b]/[V18c] (plano §14.4).
+    // A fronteira 23 esta fechada. O caso roda assim mesmo: o pristino passa em win32 (a ancora abaixo
+    // tambem -- `statSync().mode` = 0o100666, medido na §14.16), e um `skip` aqui era o 3o skip que o
+    // GUARD DE SKIP (P8) do runner recusa com DATABASE_URL (orcamento 2, nomeado).
     const alvo = path.join(repo, "bin", "gh-sem-bit-x.sh");
     writeFileSync(alvo, CABECA_SHIM + PR_VIEW + API_OK, { encoding: "utf8", mode: 0o644 });
     chmodSync(alvo, 0o644); // `mode` do writeFileSync so vale na CRIACAO: o chmod explicito garante
