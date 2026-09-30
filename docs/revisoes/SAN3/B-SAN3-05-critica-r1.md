@@ -299,8 +299,49 @@ Uma `DATABASE_URL` cujo **login** é superusuário, com `options=-c role=<papel 
 
 ## Tabela de achados
 
-EM APURAÇÃO
+Escopo: todos os `dentro-do-bloco` são defeitos **deste plano** (critério, SQL, gerador, formalização ou teste que ele escreve); nenhum é classe anterior que o bloco herdou. O único `pre-existente` tem origem datada.
+
+| id | gravidade | escopo (+ evidência) | seção/critério afetado | defeito, em uma linha |
+|---|---|---|---|---|
+| F1 | **bloqueia** | dentro-do-bloco | A12, T13, C3(1), §0.4 sítio 7, §6 | "L2b = ∅" é impossível: com o remédio prescrito e `cloud-cost-allocation/**` PROIBIDO, o gerador verbatim continua listando `cloud-cost-allocation-prisma.repository.ts:238` (item 1.3) |
+| F2 | **bloqueia** | dentro-do-bloco | A12, T13, R9, "default negar" | o guard (L2b ∧ L1 `CRU`=0) fica verde para 16 de 17 sítios crus reais (alias, desestruturação, índice, `$transaction` sem setter, client raiz dentro do callback, `new` como argumento, subclasse, função livre, SQL em constante, campo arrow, fábrica com parâmetro `tx`, getter, membro não previsto, helper `tx`, objeto literal, `updateManyAndReturn`); só a mutação citada pelo plano fica vermelha (item 1.4) |
+| F3 | ajuste | dentro-do-bloco | Apêndice A l.858, residual (i) do §0.4 | `classify` converte `$transaction-SEM-setter` em `SOB-CONTEXTO`; "hoje zero casos" é falso (`work-order-prisma.repository.ts:541`) (item 1.5a) |
+| F4 | ajuste | dentro-do-bloco | Apêndice A `OPS`, §0.4 "L1 = 642" | `updateManyAndReturn` fora do `OPS`: 68 acessos FORCE invisíveis; L1 real ≥ 710 (item 1.5b, item 6) |
+| F5 | **bloqueia** | dentro-do-bloco | §1 objetivo (9), §2.1(a) "exatamente", §2.2 sonda de posse, §4.1 auto-verificação, §11 passo 2, H3 | papel membro do papel DONO (não-super, sem BYPASSRLS) passa na trava, a sonda de posse diz 0, e ele lê tudo sem GUC após `ALTER TABLE … NO FORCE ROW LEVEL SECURITY` (item 2.2) |
+| F6 | **bloqueia** | dentro-do-bloco | §4.1 (SQL do procedimento), E4, §11 Ato 1, §0.2 "toda premissa de banco MEDIDA" | o SQL não roda: `psql` não interpola `:'role'` dentro de `DO $$…$$` (erro no 1º comando) e `:"db"` não está entre as variáveis declaradas (item 3.1) |
+| F7 | ajuste | dentro-do-bloco | §4.1 "sai com erro", §11 passo 2, A14 | a auto-verificação é um `SELECT`: com `escapa=t` e posse `=1` o `psql` sai 0; a pertença a papel `BYPASSRLS` de um papel pré-existente não é revogada e nenhum critério a cobre (item 3.2) |
+| F8 | ajuste | dentro-do-bloco (procedimento); provedor = HIPÓTESE | §11 Ato 1 passos 2–3, E4 "serve ao banco gerenciado" | com migrador `NOSUPERUSER CREATEROLE` (forma do gerenciado; staging = Fly MPG, `fly.staging.toml:5`) o `CREATE ROLE` passa e o `ALTER ROLE … NOSUPERUSER NOCREATEDB … NOBYPASSRLS` é recusado mesmo sem mudar nada; o §11 só prevê `CREATE ROLE` recusado (item 3.3) |
+| F9 | **bloqueia** | dentro-do-bloco | A5, A13, T2, E1 (`server.ts`), E2 (default no export) | a fiação de produção da trava não tem critério: "default de produção → `skip`" e "apagar a chamada em `main()`" deixam T1–T14 e o smoke verdes; o precedente que o E2 manda espelhar é cego à mesma mutação (104/104 verde sob o mutante) (item 4.5) |
+| F10 | ajuste | dentro-do-bloco | H6, A6 | "22/22" é `grep test(`; executado no head: 28/28. A mutação de A6 fica vermelha por `ZodError` no import, não pela lista derivada (item 4.4) |
+| F11 | ajuste | dentro-do-bloco | A1, T6, T7 | a mutação de A1 (apagar `r.rolsuper`) não deixa T6 nem T7 vermelhos: o bootstrap `postgres` tem `BYPASSRLS` e superusuário é membro de todo papel (item 5) |
+| F12 | ajuste | dentro-do-bloco | A7, A8, T10, Apêndice B (semente) | "remover a reordenação" não tem dado que a mate: a semente usa o mesmo `occurred_at`/`date` para todas as linhas (item 5) |
+| F13 | **bloqueia** | dentro-do-bloco | §2.1(a), §2.2 `RUNTIME_ROLE_GUARD_SQL`, §11 passo 5 "a trava é a prova", A1–A4 | a trava julga `current_user`; login superusuário com `options=-c role=<limpo>` na URL passa a trava e escapa com `SET ROLE NONE` na mesma conexão (medido pelo PrismaPg) (item 6.2) |
+| F14 | ajuste | dentro-do-bloco | T13 ("mutação num diretório temporário"), E6 | o gerador verbatim resolve `typescript` a partir do alvo: numa cópia fora da árvore do repo ele morre com `Cannot find module 'typescript'`; o precedente citado (`db-catalog-write-guard`) não usa diretório temporário (item 5) |
+| N1 | nota | dentro-do-bloco | §4.2 | falso positivo seguro: `GRANT … WITH INHERIT FALSE, SET FALSE` (PG16) é recusado sem poder `SET ROLE` |
+| N2 | nota | dentro-do-bloco | Apêndice B | `const REPO = "/home/user/ERP_Techsolutios"` cravado; lá não há `node_modules` nesta máquina — o verbatim não reproduz sem editar |
+| N3 | nota | dentro-do-bloco | §4.1, R7 | os três `.sh` do repo são `100644`: "sourced" é o caminho padrão do entrypoint, não borda; o modelo citado usa `trap … EXIT`/`exit 1` |
+| N4 | nota | dentro-do-bloco | §2.2, A4, T9 | "sem `$disconnect` o processo não morre" é falso (morre em ~11,5 s); a mutação de A4 é pega pelo espião do T4, não pelo T9 |
+| N5 | nota | dentro-do-bloco | §3 | `deploy-production.yml:141` fala de linhas da tabela RBAC `roles`, não de papel PostgreSQL |
+| N6 | nota | dentro-do-bloco | A2, A9/T11, T12, C3(2) | A2 literal é pego pelo T5, não pelo T7; A9/T11 sem vermelho-controle; o vermelho-controle de T12 no head-base é falha de import (`RlsPrismaCloudChargeRepository` não existe), não a propriedade |
+| N7 | nota | dentro-do-bloco | A15, A16 | critérios sem mutação escrita |
+| N8 | nota | dentro-do-bloco | P-a, P-f, §8 N | P-a mede 8 linhas/1 executável (não 12/2); P-f omite `permissions`, `role_permissions`; N = 4 omite `rls-tenant-isolation.test.ts` (mesmas tabelas, papel NOSUPERUSER) |
+| P1 | ajuste | **pre-existente** — `tests/o6r07b-scanner-failclosed.test.ts` e o default `EVIDENCE_SCANNER` nascem em `fe2748c` (2026-09-06, #380, B-O6R-07b) | M-B7.1 (fora deste bloco) | o teste do default do scanner reescreve a regra em vez de ler o export: o mutante "produção → noop" fica 13/13 verde. Vira pendência com dono B-O6R-07b; não reprova este bloco |
+
+**Contagem:** `bloqueia` 6 (F1, F2, F5, F6, F9, F13) · `ajuste` 9 (F3, F4, F7, F8, F10, F11, F12, F14, P1) · `nota` 8 (N1–N8). Dentro do bloco: 22; pré-existente: 1.
+
+**O que se sustentou (medido, não herdado):** o gerador reproduz byte a byte a saída do plano e os 7 sítios conferem; o Apêndice B reproduz 22/22 no meu cluster; a trava recusa superusuário, super renomeado e pertença a `BYPASSRLS` (direta, `NOINHERIT`, cadeia de 2 níveis); a consulta ingênua do §5.2 é cega à pertença; `ALTER DEFAULT PRIVILEGES` cobre as tabelas futuras do migrador nomeado; o default `production → enforce` não quebra teste existente; não há outro ponto de entrada de produção fora de `main()`; o processo sai com código 1 após a recusa; P-k, P-m, P-n, P-p e §8/§9 reproduzem.
+
+**Limpeza (provada):** bancos `critico_i2` e `critico_i3` derrubados; 16 papéis `c2_*`, `c3_mig`, `erp_runtime`, `erp_rt2` derrubados → papéis não-sistema no cluster = `postgres`; bancos = `erp_critico, postgres, template0, template1`; `erp_critico`: 115 tabelas, 106 FORCE, `pg_default_acl` = 0, `tenants` = 0, `cloud_usage_events` = 0; papéis `san3_05%` = 0. Edições temporárias em `src/config/env.ts` revertidas (`cmp` = original; `git status --short` = 0 linhas). Scratch: cópias do repo removidas (844K restantes, só scripts e saídas).
 
 ## Veredito
 
-EM APURAÇÃO
+**VOLTA AO PLANO.** Seis `bloqueia` dentro do bloco:
+
+1. **F1** — A12/T13/C3(1) exigem "L2b = ∅" e o próprio escopo do plano torna isso impossível (sítio 7 em arquivo PROIBIDO).
+2. **F2** — o guard gerado não enuncia a propriedade: 16 de 17 sítios crus reais ficam verdes; "default negar" é falso.
+3. **F5** — "não escapa de RLS" ≠ a consulta da trava: pertença ao papel dono escapa, e a sonda de posse, o script e o go/no-go do §11 medem o nome do dono, não o poder de agir como dono.
+4. **F6** — o SQL do procedimento que o dono vai rodar em produção não executa como está escrito, e o plano afirma ter medido toda premissa de banco.
+5. **F9** — a fiação de produção da trava (chamada em `main()` + default do export) não tem critério que a prenda; a mutação que A5 diz pegar passa.
+6. **F13** — a trava julga `current_user`; um login superusuário com `options=-c role=…` passa e escapa com `SET ROLE NONE`.
+
+Pela regra de papéis (§C7.4-bis), o conserto é de **quem planeja**, não deste crítico: aqui estão o defeito, a evidência executada e o motivo.
