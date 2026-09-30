@@ -827,7 +827,7 @@ test("[V19] cwd FORA de repositorio git: PARADO ec=1, stdout vazio — ⇄ l.160
 // =================================================================================================
 // CICLO 3 -- Dev-T-4 (plano §14.4, identidade `dev-t4-mandato-refs-win32`). A matriz de mutacao do
 // refs (E4) publicou l.116 e l.119 como NAO-COBERTOS (`-f` -> `-d` sobre `$GH_BIN`), e o [V18], que os
-// mira pelo bit x, e `skip` em win32. O planejador mediu que os dois sao discriminaveis TAMBEM em
+// mira pelo bit x, ERA `skip` em win32 até o T5 (plano §14.16) — desde então roda em toda plataforma. O planejador mediu que os dois sao discriminaveis TAMBEM em
 // win32 -- e no ubuntu --, cada um por uma fixture propria:
 //   - l.119 (`[ -f "$GH_BIN" ] || ver "$GH_BIN"`): shim SEM shebang passado por CAMINHO. Sem shebang
 //     (e sem bit x no ubuntu) `command -v <caminho>` falha: o pristino nao chama `ver` e le a ata; o
