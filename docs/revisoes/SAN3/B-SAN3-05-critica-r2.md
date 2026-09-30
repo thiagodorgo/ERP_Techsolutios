@@ -202,12 +202,21 @@ trava v2 sob erp_runtime                       → 0 linhas (PASSA)
 pg_basebackup -h 127.0.0.1 -p 54354 -U erp_runtime -D $S2/bb -Ft -X none -c fast   → ec=0, base.tar 48 MB
 grep -a -c 'segredo-tenant-b-cr2' $S2/bb/base.tar → 2          (backup apagado em seguida)
 ```
+```
+# (c) view futura do migrador, concedida pelo PRÓPRIO "ALTER DEFAULT PRIVILEGES … ON TABLES" do script (TABLES inclui views)
+views em public na ref (erp_critico_r2, migrações de 3b1fe0f9)   → 0   (hoje não há; é porta latente)
+cr2_i3, migrador = postgres (a forma do compose): CREATE VIEW v_relatorio AS SELECT id, tenant_id FROM t_force
+has_table_privilege('erp_runtime','v_relatorio','SELECT') → t ; trava v2 sob erp_runtime → 0 linhas
+SELECT count(*) FROM t_force (sem GUC) → 0 ; SELECT count(*) FROM v_relatorio (sem GUC) → 4
+contraste, cr2_i4, migrador cr2_mig NÃO-super (dono sujeito a FORCE): view concedida = t ; erp_rt2 lê v_rel sem GUC → 0
+```
 O §1 promete que o processo "só sobe se a identidade … **não puder escapar de RLS**", e o §11 passo 5 diz "A trava é a prova — **agora
 inteira**". O §2.1(a) lista o que fica fora (`SECURITY DEFINER`, `pg_read_all_data` que não escapa, `SET FALSE`) e não nomeia
 `pg_execute_server_program`/`pg_read_server_files`/`pg_write_server_files` nem `REPLICATION`. O script (Apêndice C) corrige
 `SUPERUSER/BYPASSRLS/CREATEDB/CREATEROLE` e deixa `REPLICATION` intacto com a linha de go/no-go `f|f|f|0`. É a classe do F5 da r1 (a trava
 aprova um papel que escapa com um comando a mais); a exposição é menor (nenhum dos dois vem do `CREATE ROLE` do script; o pg_hba de um
-gerenciado pode não aceitar replicação). **Achado F2-05 (ajuste).**
+gerenciado pode não aceitar replicação; a porta (c) só abre quando o migrador escapa — o `postgres` do compose, ou um migrador de produção
+superusuário/`BYPASSRLS` —, e o §2.1(a) declara fora só `SECURITY DEFINER`, não view de dono que escapa). **Achado F2-05 (ajuste).**
 
 ### 2.6 O "pula declarando" do T14b estoura o orçamento de pulos do runner
 
