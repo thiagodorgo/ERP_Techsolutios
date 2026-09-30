@@ -70,7 +70,45 @@ Veredito parcial: achados **F3** (a) e **F4** (b).
 
 ## Item 2 — `RUNTIME_ROLE_GUARD_SQL` sob papel real (super, super renomeado, limpo, membro de BYPASSRLS c/ NOINHERIT e 2 níveis) e a consulta ingênua
 
-EM APURAÇÃO
+Banco `critico_i2` criado por mim no cluster 54351 (derrubado no fim). A consulta é a do §2.2, byte a byte (`$S/guard.sql`).
+Cada papel conecta **como ele mesmo** (`psql -U <papel>`, trust), e além da trava meço a porta real (`SET ROLE c2_bypass` + `SELECT count(*) FROM t_force` sem GUC; tabela FORCE com 3 linhas).
+
+```
+papel                                   | trava  | consulta ingênua §5.2 | SET ROLE c2_bypass → linhas
+postgres (super)                        | RECUSA | t|t                   | 3
+c2_super2 (SUPERUSER, outro nome)       | RECUSA | t|f                   | 3
+c2_clean (NOSUPERUSER NOBYPASSRLS)      | PASSA  | f|f                   | (SET ROLE negado) 0
+c2_member_direct (GRANT c2_bypass)      | RECUSA | f|f                   | 3
+c2_member_noinherit (NOINHERIT + GRANT) | RECUSA | f|f                   | 3
+c2_member_chain (→ c2_mid → c2_bypass)  | RECUSA | f|f                   | 3
+c2_member_chain_noinh (NOINHERIT → c2_mid2 NOINHERIT → c2_bypass) | RECUSA | f|f | 3
+c2_member_noset (GRANT … WITH INHERIT FALSE, SET FALSE — PG16)    | RECUSA | f|f | (SET ROLE negado) 0
+c2_app_ownermember (GRANT c2_mig TO app; c2_mig = dono NÃO-super de t_force) | PASSA | f|f | (SET ROLE negado) 0
+c2_app_owner (dono direto de t_force2)  | PASSA  | f|f                   | —
+```
+Veredito parcial (casos do mandato a–e): **a trava se sustenta** para atributo e para pertença a papel que escapa (direta, `NOINHERIT`, cadeia de 2 níveis) e a consulta ingênua é cega em todos os casos de pertença (G4c reproduzido). `c2_member_noset` é **falso positivo** (recusa um papel que não consegue `SET ROLE`) — direção segura, **nota** (N1).
+
+**2.2 — mas "isso é EXATAMENTE" (§2.1(a)) é falso: pertença ao papel DONO das tabelas escapa, e a trava e a sonda de posse dizem 0.**
+```
+$ psql -U c2_app_ownermember -d critico_i2      # membro de c2_mig (NOSUPERUSER NOBYPASSRLS, dono de t_force FORCE RLS)
+owned_force_rls_tables (a sonda do §2.2/§4.1: relowner = current_user) → 0
+SELECT count(*) FROM t_force;                            → 0     (RLS vale)
+BEGIN; ALTER TABLE t_force NO FORCE ROW LEVEL SECURITY;  → ALTER TABLE   (dono por pertença)
+SELECT count(*) FROM t_force;                            → 3     (sem GUC, mesma sessão do app)
+ROLLBACK;
+$ psql -U c2_app_owner … (dono direto de t_force2): sonda → 1 ; NO FORCE → 2 linhas sem GUC ; ROLLBACK
+```
+O §2.1(a) enuncia a propriedade como "não consegue ler ou gravar linha de tabela FORCE RLS sem o GUC" e afirma que "em PostgreSQL isso é **exatamente**" a consulta da trava. Medido: um papel que a trava **aprova** e cuja posse a sonda reporta **0** lê tudo sem GUC com um único `ALTER TABLE` — a mesma classe de escape (um comando a mais) que a pertença a `BYPASSRLS` (um `SET ROLE` a mais), que o plano recusa. A decisão declarada do plano (posse **reportada, não recusada** — §2.2, R5) não cobre isto: o que se reporta é `relowner = current_user`, que é **forma** (nome literal do dono), não a propriedade (poder agir como dono). O mesmo predicado está na auto-verificação do §4.1 (`pg_get_userbyid(c.relowner) = :'role'`), no go/no-go do dono no §11 passo 2 ("posse > 0 → não siga") e no H3. Veredito parcial: achado **F5**.
+
+**2.3 — as leituras de plataforma sob papel limpo (sítios do §0.4), no MEU cluster.**
+O Apêndice B verbatim tem `const REPO = "/home/user/ERP_Techsolutios"` cravado; aqui essa árvore está em `3b1fe0f9` mas **sem `node_modules`**, então o script verbatim não roda nesta máquina. Rodei cópia com **só** essa linha trocada (`diff` = 1 linha), cwd = worktree (`git diff --stat origin/main HEAD -- src prisma package.json` vazio):
+```
+$ ADMIN_URL=postgresql://postgres@127.0.0.1:54351/erp_critico?schema=public PATH=/opt/node20/bin:$PATH npx tsx $S/medir-papel.ts ; echo ec=$?
+ec=0 … # 22 itens, 0 fora do esperado   (M0, G1–G4c, O1/O2, P1–P7c, R1 idênticos à tabela do §0.5)
+$ psql … -Atc "…LIKE 'san3_05%'…; …slug LIKE 'san3-05-%'…; count(*) cloud_usage_events; count(*) tenant_cloud_charges"
+0 / 0 / 0 / 0
+```
+Veredito parcial: **P1–P7 reproduzem** (`0` sob papel limpo; P6 `42501`). O caminho cravado no apêndice é **nota** de reprodutibilidade (N2).
 
 ## Item 3 — `scripts/db-runtime-role.sh` (SQL do §4.1) executado de verdade; `ALTER DEFAULT PRIVILEGES`; `docker-entrypoint` do `postgres:16`
 
