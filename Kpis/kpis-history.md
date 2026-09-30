@@ -3166,3 +3166,31 @@ termina; vaga morta pelo orquestrador em 29/09 20:36:07), reclassificado no K2 e
 **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5), com backfill pós-merge. O backfill do
 #394 **não** é deste PR — chegou pela `main` (#395); o que o #393 paga é a linha do `.md` da entrada do
 #394, acima (R-A do porteiro do #395).
+
+**Nota do K1b (2026-09-30), plano §14.16(1):** o `ec=1` das duas execuções acima foi o GUARD DE SKIP (P8) do runner — 3º skip = `[V18]` em win32 —, **corrigido em T5** (`190e2300`). Estes números ficam como o vermelho-controle do conserto; a recontagem seguinte está na entrada abaixo.
+
+## 2026-09-30 — B-GOV-MANDATO **ciclo 3 — recontagem após T5/T6/T7** (PR #393) — `published_per_pr`
+
+| métrica | K1 (`a737250a`) | agora (`9e8cf1cd`) | origem |
+|---|---|---|---|
+| `backend_tests` | 3389/3392 | **3403/3405** | **N=2 execuções reais locais** de `npm test` (worktree próprio, Postgres 16 e Redis 7 descartáveis próprios em portas provadas, `CORE_SAAS_PERSISTENCE` não exportado → o runner declara `memory`): RUN1 `3405/3403/0/2` (tests/pass/fail/skipped), 817 s, `ec=0` · RUN2 `3405/3403/0/2` (tests/pass/fail/skipped), 880 s, `ec=0`; sem a linha do GUARD DE SKIP (P8). CI no mesmo head: `3405/3403/0/2` |
+| `frontend_smoke_tests` · `flutter_tests` | 1202/1202 · 864/864 | idem | carregados com nota §C3.3 — `git diff --name-only $MB HEAD -- frontend mobile` = 0 (re-medido) |
+| `blocks_completed` | 169 | **169** | MB + 1, e o MB não andou (`3b1fe0f9` = `origin/main`) |
+| `mvp_demo` / `mvp_vendavel` | — | **intocados** | §C3.4 |
+| pr / merge_commit / approved_head | — | `393` / `null` / `null` **na autoria** (§C3.5) | backfill pós-merge |
+
+**O que mudou desde o K1, e o que cada commit fez ao número.** **T5** (`190e2300`, Dev-T-5): o `[V18]` deixou de
+pular em win32 — o 3º skip some e o GUARD DE SKIP (P8) do runner não dispara mais; o `ec=1` do K1 é o
+vermelho-controle. **T6** (`396643aa`, Dev-T-4): só o comentário do guard do refs que ficou falso com o T5
+(nenhum caso a mais). **T7** (`9e8cf1cd`, Dev-T-6): o guard do pré-voo ganhou **13** casos, um por ponto
+não-coberto da rodada A da E4 (plano §14.18) — 299 → 312.
+
+**O denominador fecha exato.** Contra o `$MB`: 3054 + 312 + 39 = **3405**; contra o ciclo 2
+(`34969a81`, 3103/3105): 3105 + 279 + 21 = **3405**. Contagens por arquivo lidas do TAP (blocos
+delimitados pelo primeiro e o último caso de cada fonte).
+
+**Mutação (E4) — N/K brutos, a publicar como matriz no K2** (`docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`):
+refs **E4-refs-3** `N=46 K=46 NAO-COBERTOS=0 ANOMALIAS=1`; pré-voo **rodada A** `N=103 K=87 NAO-COBERTOS=16
+EXCLUIDOS=57 ANOMALIAS=2` (161 TIMEOUT, 340 ANOMALIA-DIFF) — os 16 viraram 13 casos novos (T7) e 3 equivalentes
+declarados (K2a, `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-equivalentes.txt`); a rodada delta **B** mede os 16 na tripla
+nova. **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
