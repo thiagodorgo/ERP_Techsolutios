@@ -177,8 +177,8 @@ Nenhuma cadeira propõe correção (§C7.4-bis).
 | cadeira | identidade | competência (corpo + ERRATAs do topo) |
 |---|---|---|
 | **C1‴** | `jurado-mandato-c1c-invariancia-de-forma` | propriedade × forma; partir **e** juntar; `[B8b]` por propriedade — ERRATAs E-1, E-2, E-6, E-9(e), E-10(c), E-11 |
-| **C2‴** | `jurado-mandato-c2c-cobertura-por-mutacao` | E4 no escopo do §13.3 com a forma do §14.7; identidade da matriz = tripla (+ ambiente) — ERRATAs E-1, E-3, E-5, E-6, E-8, E-9, E-10, E-11 |
-| **C3‴** | `jurado-mandato-c3c-fronteira-numero-registro` | escopo por geração, KPI 2×, registro, ordem por par, merge de integração contra os dois pais — ERRATAs E-1, E-2, E-4, E-6, E-7, E-8, E-9, E-10, E-11 |
+| **C2‴** | `jurado-mandato-c2c-cobertura-por-mutacao` | E4 no escopo do §13.3 com a forma do §14.7; identidade da matriz = tripla (+ ambiente) — ERRATAs E-1, E-3, E-5, E-6, E-8, E-9, E-10, E-11, E-12 |
+| **C3‴** | `jurado-mandato-c3c-fronteira-numero-registro` | escopo por geração, KPI 2×, registro, ordem por par, merge de integração contra os dois pais — ERRATAs E-1, E-2, E-4, E-6, E-7, E-8, E-9, E-10, E-11, E-12 |
 
 Os corpos estão versionados nos dois espelhos (`sync-agent-agents.mjs --check` ec=0). **Cada cadeira declara
 o md5 EOL-neutro do corpo que aplicou**: o diretório de agentes da sessão do orquestrador está velho e não
@@ -228,11 +228,12 @@ variável. O falsificador dessa neutralidade é a amostra da C2‴ rodada **sem*
 
 ## Reprovação por construção — cobrar isto não é achado
 
-- As fronteiras **9–11, 13–22 e 24–27** estão declaradas em `P-GOV-MANDATO-3-FRONTEIRAS`, com dono
+- As fronteiras **9–11, 13–22 e 24–28** estão declaradas em `P-GOV-MANDATO-3-FRONTEIRAS`, com dono
   `B-GOV-MANDATO-2`. Entre elas:
   - 25: sem timeout por mutante na ferramenta nem por caso no guard;
   - 26: o `next$` da ferramenta;
-  - 27: o pré-voo sob `MSYS_NO_PATHCONV=1`.
+  - 27: o pré-voo sob `MSYS_NO_PATHCONV=1`;
+  - 28: o equivalente contado sem conferir id — por isso o [M-1] se confere **por conjuntos**, nunca pelo `ec` (ERRATA E-12).
 - Os blobs dos artefatos estão **congelados** pela identidade da matriz (§14.2.1). Cobrar o conserto da l.121
   neste bloco é reprovação por construção (E-10(b)).
 - **Flutter e smoke web** não são tocados pelo bloco: o KPI os carrega com nota.
