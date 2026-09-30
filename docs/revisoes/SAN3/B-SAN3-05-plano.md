@@ -306,15 +306,15 @@ depende de **docker** (o compose local-prod) e ao que depende de **produção** 
 
 | # | Premissa | Estado | Comando → saída |
 |---|---|---|---|
-| P-a | Nada no repositório impõe `NOSUPERUSER NOBYPASSRLS` ao papel de runtime (item 9) | **MEDIDO — verdadeira** | `git grep -n -i -E 'rolbypassrls\|rolsuper\|BYPASSRLS' origin/main -- src` → 12 linhas: 10 são comentários; as 2 executáveis são `src/modules/auth/services/login-readiness.ts:202-204` (a sonda do B-O6R-01 pergunta pelo **dono da função** `auth_login_candidates`, não pelo papel corrente, e "não derruba o boot", l.7-8). `src/server.ts` (48 linhas) não consulta o banco antes do `listen`. `src/config/env.ts` tem os gates G1, G2, G3, G5, G-EVIDENCE-SCANNER, G-EVIDENCE-SNIFFABLE (grep `NODE_ENV === "production"`, l.318-556) — nenhum sobre papel de banco. |
+| P-a | Nada no repositório impõe `NOSUPERUSER NOBYPASSRLS` ao papel de runtime (item 9) | **MEDIDO — verdadeira** (números corrigidos, N8) | `git grep -n -i -E 'rolbypassrls\|rolsuper\|BYPASSRLS' origin/main -- src \| wc -l` → **8** linhas: 7 comentários; a **única** executável é `src/modules/auth/services/login-readiness.ts:202` (a sonda do B-O6R-01 pergunta pelo **dono da função** `auth_login_candidates`, não pelo papel corrente, e "não derruba o boot", l.7-8). `src/server.ts` (48 linhas) não consulta o banco antes do `listen`. `src/config/env.ts` tem os gates G1, G2, G3, G5, G-EVIDENCE-SCANNER, G-EVIDENCE-SNIFFABLE — nenhum sobre papel de banco. |
 | P-b | O compose de subida/smoke conecta como `postgres` (`docker-compose.prod.yml:35,57`) | **MEDIDO — verdadeira** | `git show origin/main:docker-compose.prod.yml \| cat -n` → l.35 `DATABASE_URL: postgresql://postgres:postgres@postgres:5432/erp_techsolutions?schema=public` (serviço `migrate`); l.57 idem (serviço `api`, `NODE_ENV: production` na l.51). |
 | P-c | Dev e CI rodam como `postgres` (superusuário) — o defeito do item 10 é invisível na suíte | **MEDIDO — verdadeira** | `.github/workflows/ci.yml:34,128` (`postgresql://postgres:postgres@localhost:5432/…`), `docker-compose.yml:7` (`POSTGRES_USER: postgres`), `.env.example:12`. E `postgres\|t\|t` no cluster (§0.2). |
 | P-d | O papel real da produção é secret do Fly e **não foi medido** | **HIPÓTESE** (por construção: é segredo) | comando do dono em §0.6 H2. `fly.production.toml:9` declara só o NOME `DATABASE_URL`; `deploy-production.yml:136-138` roda `prisma migrate deploy` com `secrets.PROD_DATABASE_URL` — **outro** secret (GitHub Environment), l.164 idem para `db:provision-rbac`. |
 | P-e | `docs/deployment.md` afirma em prosa o que nenhum mecanismo garante | **MEDIDO — conflito registrado (§A2)** | `docs/deployment.md:458`: "Em PRODUCAO o app conecta com role NAO-superuser (o `app_user`, sem BYPASSRLS) — nunca `postgres` —, … Confirmar na ativacao." e `:472-473` (runbook B-O6R-01): "O nome `app_user` acima é convenção em prosa, não fato". Prosa ≠ trava: este plano substitui a frase por mecanismo + procedimento (E4, E5). |
-| P-f | `FORCE ROW LEVEL SECURITY` nas 4 tabelas de nuvem (e em quantas mais) | **MEDIDO — 106 tabelas, ENABLE = FORCE** | gerador L0 (§0.4): `ENABLE=106 FORCE=106`; no cluster: `relforcerowsecurity` = 106; `diff` nome a nome entre a lista das migrações e a do catálogo → **IDÊNTICAS**. Inclui `cloud_usage_events`, `cloud_usage_daily_aggregates`, `tenant_cloud_cost_allocations`, `tenant_cloud_charges`. **Sem RLS:** `tenants`, `cloud_charge_rules`, `cloud_charge_calculation_runs`, `cloud_cost_allocation_runs`, `cloud_cost_imports`, `cloud_cost_line_items` (os 115 − 106 − `_prisma_migrations`…). |
+| P-f | `FORCE ROW LEVEL SECURITY` nas 4 tabelas de nuvem (e em quantas mais) | **MEDIDO — 106 tabelas, ENABLE = FORCE** | gerador L0 (§0.4): `ENABLE=106 FORCE=106`; no cluster: `relforcerowsecurity` = 106; `diff` nome a nome entre a lista das migrações e a do catálogo → **IDÊNTICAS**. Inclui `cloud_usage_events`, `cloud_usage_daily_aggregates`, `tenant_cloud_cost_allocations`, `tenant_cloud_charges`. **Sem FORCE (as 9, medidas — N8):** `_prisma_migrations`, `cloud_charge_calculation_runs`, `cloud_charge_rules`, `cloud_cost_allocation_runs`, `cloud_cost_imports`, `cloud_cost_line_items`, `permissions`, `role_permissions`, `tenants`. |
 | P-g | A policy é `tenant_id = current_setting('app.current_tenant_id', true)`; sem GUC ela é falsa | **MEDIDO** | `prisma/migrations/20260614000000_add_cloud_charge_markup_rules/migration.sql:158-160`: `USING ("tenant_id"::text = current_setting('app.current_tenant_id', true)) WITH CHECK (…)`; `20260611000000…:60,67` e `20260613000000…:91` mesma forma. Sem GUC: `current_setting(…, true)` = `NULL` → comparação `NULL` → linha invisível e `INSERT` recusado (P6 em §0.5). |
 | P-h | Item 10: as leituras de plataforma devolvem **zero** sob papel sem `BYPASSRLS` — e o remédio por tenant funciona no mesmo papel | **MEDIDO — 22/22** | §0.5 (P1…P7 = `0`; controles positivos por tenant = `3`, `2`, `1`, `2`; remédio R1 = `5`). |
-| P-i | A consulta do teste de encerramento do §5.2 (`SELECT rolsuper, rolbypassrls … WHERE rolname = current_user`) basta | **MEDIDO — falsa (incompleta)** | G4c em §0.5: um papel `false:false` que é **MEMBRO** de um papel `BYPASSRLS` passa nela — e G4b prova que a porta é real (`SET ROLE` + `SELECT` sem GUC devolve os 5 eventos). É exatamente o "GRANT <role_dona> TO <app> — NUNCA" que `docs/deployment.md:498-500` proíbe **em prosa**. A trava deste plano usa `pg_has_role` (§2, §4.2). |
+| P-i | A consulta do teste de encerramento do §5.2 (`SELECT rolsuper, rolbypassrls … WHERE rolname = current_user`) basta | **MEDIDO — falsa (incompleta) — e a consulta da v1 também era** | G4c em §0.5: um papel `false:false` que é **MEMBRO** de um papel `BYPASSRLS` passa nela — e G4b prova que a porta é real. A crítica mediu mais duas portas que a consulta **da v1** deixava abertas: pertença ao **dono** (`ALTER TABLE … NO FORCE`, F5) e login superusuário com `options=-c role=…` (F13). A trava desta v2 usa `pg_has_role` sobre atributo **e** posse, para `session_user` **e** `current_user` (§2, §R.1). |
 | P-j | Migrador e app podem ser papéis **distintos** sem tocar a pipeline | **MEDIDO — verdadeira** | `deploy-production.yml:136-138,162-164` (`PROD_DATABASE_URL`, GitHub Environment) × `fly.production.toml:9` (`DATABASE_URL`, Fly secret): já são **dois** segredos. O ato do dono (§11) troca só o segundo. |
 | P-k | O app não precisa de privilégio além de `SELECT/INSERT/UPDATE/DELETE` + `USAGE/SELECT` em sequências | **MEDIDO no estático; residual em §0.6 H4** | `git grep -n -i -E '\b(TRUNCATE\|LISTEN\|pg_notify\|NOTIFY\|REFRESH MATERIALIZED\|COPY .* FROM\|LOCK TABLE\|CREATE TEMP\|SET ROLE\|SET SESSION AUTHORIZATION)\b' origin/main -- src` → 0 ocorrências executáveis (os hits são nomes de job `impound.notify-due` e a coluna `SET role = …` de um `UPDATE` em `checklist-prisma.repository.ts:574`). O `pg_advisory_xact_lock` (`src/database/financial-period-lock.ts`) e o `set_config` não exigem privilégio. A única `SECURITY DEFINER` (`auth_login_candidates`, `REVOKE ALL FROM PUBLIC`) é ato humano do runbook B-O6R-01 — fica `inert_no_execute` até o GRANT (esperado; §11 passo 4). |
 | P-l | `ALTER DEFAULT PRIVILEGES` cobre as tabelas que o migrador criar **depois** | **MEDIDO — verdadeira** | no cluster: `CREATE ROLE h6_runtime …; ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO h6_runtime; … ON SEQUENCES …; CREATE TABLE h6_depois(id serial primary key); SELECT has_table_privilege('h6_runtime','h6_depois','SELECT,INSERT,UPDATE,DELETE'), has_sequence_privilege('h6_runtime','h6_depois_id_seq','USAGE'), has_table_privilege('h6_runtime','tenants','SELECT')` → `t\|t\|f`. Logo o procedimento precisa das **duas** coisas: `GRANT … ON ALL TABLES` (as existentes) **e** `ALTER DEFAULT PRIVILEGES` (as futuras). |
@@ -322,28 +322,47 @@ depende de **docker** (o compose local-prod) e ao que depende de **produção** 
 | P-n | "15 suítes exigem `CREATEROLE`/dono de tabela" (§5.2, fora do bloco → `B-ARNES-2`) | **MEDIDO — 13 + 8** | `git grep -l -E 'createEphemeralRole\|CREATE ROLE\|withRoleCatalogLock\|createSyntheticOrphanRole' origin/main -- tests` (sem `helpers/`) → **13** suítes escrevem catálogo; `git grep -l -E 'TRUNCATE\|ALTER TABLE\|DROP TABLE\|CREATE EXTENSION\|DISABLE TRIGGER' … -- tests` → **8** fazem DDL de dono. O número "15" do §5.2 não se reproduz assim; a classe está confirmada e continua **fora deste bloco** (§13). |
 | P-o | A lista "hoje medida" do §5.2 tem **quatro** leituras | **MEDIDO — são sete sítios, em cinco métodos; um deles fora da fronteira** | §0.4. |
 | P-p | Origem (§C7.1-ter(a)) | **MEDIDO** | `git log --diff-filter=A --date=short -- <arquivo>` devolve `f4ef511 2026-08-11` para os quatro arquivos de código **e** para as três migrações — `f4ef511` é a **raiz** do histórico (`git rev-list --max-parents=0 origin/main`). A datação útil vem das migrações (`20260611`, `20260613`, `20260614`) e das pendências (`P-INFRA-RLS`: Ω3-d; `P-O6R-B06-…`: 2026-09-07, medida no #386). Tudo **antecede** este bloco. |
+| P-q | (v1) "posse pode ser só reportada" | **MEDIDO — falsa (F5)** | §R.1: membro do dono lê 3 linhas sem GUC após `ALTER TABLE … NO FORCE`; a v2 recusa posse. |
+| P-r | (v1) "julgar `current_user` basta" | **MEDIDO — falsa (F13)** | §R.1: `options=-c role=p2_clean` com login `postgres` passa na v1 e escapa com `SET ROLE NONE`; a v2 julga `session_user` e `current_user`. |
+| P-s | (v1) "o SQL do procedimento roda como escrito" | **MEDIDO — falsa (F6)**; substituído e executado | §R.4: 7 cenários, `ec` por cenário. |
 
-### 0.4 A LISTA FECHADA — gerada por script, pela PROPRIEDADE (CE-G1)
+### 0.4 O INVENTÁRIO — gerado por script, pela PROPRIEDADE (CE-G1) — v2
 
 A propriedade **não é** "estes quatro métodos"; é: *acesso (leitura ou escrita) a uma tabela sob `FORCE ROW LEVEL
 SECURITY`, executado por um executor **sem** `app.current_tenant_id` — que só devolve linhas (ou só grava) quando o
-papel de banco é superusuário ou tem `BYPASSRLS`*. O gerador (Apêndice A, **verbatim**; o desenvolvedor o commita
-como `scripts/san3-05-acessos-de-plataforma.mjs`) deriva tudo da fonte, em três camadas — L0 tabelas FORCE ←
-`prisma/migrations/**` e tabela→model→acessor ← `prisma/schema.prisma`; L1 todo call-site Prisma e todo
-`$queryRaw*/$executeRaw*` sobre essas tabelas em `src/**/*.ts`, com receptor e envoltório de contexto lidos da
-**AST** (`typescript` 5.9.3, já em `node_modules`); L2 para receptor injetado (`this.client`), quem instancia a
-classe e com quê. Comando e cabeçalho da saída, no head:
+papel de banco escapa de RLS*. O gerador v2 (Apêndice A, **verbatim**, md5 `293b3746ad7e4dea1c11e16c794e7aa3`; o
+desenvolvedor o commita como `scripts/san3-05-acessos-de-plataforma.mjs`) deriva tudo da fonte, em três camadas: L0 tabelas
+FORCE ← `prisma/migrations/**`, tabela→model→acessor ← `prisma/schema.prisma`, e **os ops Prisma ← o client gerado**
+(`node_modules/.prisma/client/index.d.ts`: 17 métodos do `*Delegate`, incluindo `updateManyAndReturn` — F4); L1 todo
+`<recv>.<acessor>.<op>(…)`, `<recv>["<acessor>"].<op>(…)`, `<acessor>.<op>(…)` (identificador solto) e todo
+`$queryRaw*/$executeRaw*` — com a tabela citada **ou OPACO** (SQL fora do literal) — em `src/**/*.ts`, com receptor e
+envoltório lidos da AST; L2 para receptor injetado (`this.client`…), quem instancia a classe **e suas subclasses**
+(`extends`), e com quê. `typescript` e o client são resolvidos a partir **do próprio script**, nunca do alvo (F14).
+
+**Classificação v2 — default NEGAR (F2):** só `SOB-CONTEXTO` (receptor `tx` de um envoltório que seta o GUC, ou
+`$transaction` com `setTenantRlsContext` **antes** do sítio) e `INJETADO` **resolvido em L2 para contexto** ficam fora do
+inventário suspeito. Tudo o mais entra: `CRU`, `OUTRO(<recv>)`, `TX-SEM-ENVOLTORIO?`, `$TRANSACTION-SEM-SETTER` (F3),
+`$TRANSACTION-SETTER-DEPOIS?`, `CRU-DENTRO-DE-ENVOLTORIO` (client raiz usado dentro do callback), `INJETADO-DENTRO-DE-ENVOLTORIO`,
+`INJETADO-SEM-CLASSE` (função livre), `IDENTIFICADOR-ACESSOR` (desestruturação), `RAW-SQL OPACO`. Comando e cabeçalho no
+head `3b1fe0f9`:
 
 ```
-$ node scripts/san3-05-acessos-de-plataforma.mjs .        # (nesta sessão: node <scratchpad>/leituras-de-plataforma.mjs .)
-# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · src/**/*.ts=777
-# L1: call-sites sobre tabelas FORCE = 642
-# L1 por classificação: {"TX-SEM-ENVOLTORIO?":6,"INJETADO":584,"SOB-CONTEXTO":52}
+$ node scripts/san3-05-acessos-de-plataforma.mjs .        # (nesta sessão: node $SP/gerador-v2.mjs .)
+# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · OPS(derivados)=17 · src/**/*.ts=777
+# L1: call-sites sobre tabelas FORCE (+ RAW opacos) = 720
+# L1 por classificação: {"TX-SEM-ENVOLTORIO?":12,"INJETADO-SEM-CLASSE":8,"INJETADO":646,"SOB-CONTEXTO":51,"$TRANSACTION-SEM-SETTER":2,"CRU":1}
 # L2: classes com executor injetado = 70; instanciações achadas = 451
-# L2 por classificação do argumento: {"SOB-CONTEXTO":424,"TX-SEM-ENVOLTORIO?":14,"CRU":4,"OUTRO()":4,"INJETADO":5}
+# L2 por classificação do argumento: {"SOB-CONTEXTO":423,"TX-SEM-ENVOLTORIO?":14,"CRU":4,"OUTRO()":4,"$TRANSACTION-SETTER-DEPOIS?":1,"INJETADO":5}
+# INVENTÁRIO SUSPEITO (L1+L2): 48 chaves · sha1=147d41c209a5f3bbce9fc7d208fd33a02e6bd8d2 · L2b (derivado, informativo) = 65
 ```
 
-**A lista fechada (L2b — sítios alcançáveis a partir de instanciações com client cru), no head `3b1fe0f9`:**
+**O inventário suspeito (48 chaves, Apêndice A) é o que o ratchet T13 congela**, por chave **sem número de linha** (arquivo ·
+classe.método · receptor · acessor.op · tabela · contexto · classe): chave nova **ou** chave sumida = vermelho; mudar o
+congelado é ato consciente que a junta vê no diff, com uma linha de motivo por chave (a forma de
+`tests/db-catalog-write-guard.test.ts`). Os L2b (65, com linha) são **derivados** de L2 e ficam fora do congelado (§R.2).
+
+**A lista fechada do REMÉDIO (item 10) — os sítios alcançáveis de instanciação `CRU`, no head `3b1fe0f9`: os mesmos 7 da v1**
+(a crítica conferiu linha, método, tabela e fronteira nos 7 — item 1.2 da r1):
 
 | # | Sítio | Método | Tabela FORCE | Como chega ao client cru | Fronteira |
 |--:|---|---|---|---|---|
@@ -352,8 +371,8 @@ $ node scripts/san3-05-acessos-de-plataforma.mjs .        # (nesta sessão: node
 | 3 | `src/modules/cloud-charges/cloud-charge-prisma.repository.ts:167` | `PrismaCloudChargeRepository.replaceTenantCharges` (`deleteMany`) | `tenant_cloud_charges` | `:240` `createPrismaCloudChargeRepository()` devolve `new PrismaCloudChargeRepository(prisma)` — **fábrica crua, sem envoltório `Rls*`** | **dentro** |
 | 4 | `…/cloud-charge-prisma.repository.ts:171` | `replaceTenantCharges` (`create`) | `tenant_cloud_charges` | idem | **dentro** |
 | 5 | `…/cloud-charge-prisma.repository.ts:202` | `listTenantCharges` (`findMany`) | `tenant_cloud_charges` | idem | **dentro** |
-| 6 | `…/cloud-charge-prisma.repository.ts:220` | `listAllocationTenantAllocations` (`findMany`) | `tenant_cloud_cost_allocations` | idem — **não estava na lista do §5.2**; é a leitura que alimenta `executeCalculationRun` (`cloud-charge.service.ts:85`): sob papel sem bypass a cobrança calcula **zero** cobranças com `status: completed` | **dentro** (mesmo arquivo do §5.2) |
-| 7 | `src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:238` | `PrismaCloudCostAllocationRepository.listUsageDailyAggregates` | `cloud_usage_daily_aggregates` | `:413` fábrica crua | **FORA** (arquivo fora do §5.2) — e **sem chamador em `src/`**: `git grep -n listUsageDailyAggregates origin/main -- src tests` só devolve a interface, a implementação, um comentário de `.types.ts` e a sonda do teste `o6r06-allocation-basis-rls-db.test.ts:59`. Vira pendência nomeada (§13). |
+| 6 | `…/cloud-charge-prisma.repository.ts:220` | `listAllocationTenantAllocations` (`findMany`) | `tenant_cloud_cost_allocations` | idem — **não estava na lista do §5.2**; alimenta `executeCalculationRun` (`cloud-charge.service.ts:85`): sob papel sem bypass a cobrança calcula **zero** cobranças com `status: completed` | **dentro** (mesmo arquivo do §5.2) |
+| 7 | `src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:238` | `PrismaCloudCostAllocationRepository.listUsageDailyAggregates` | `cloud_usage_daily_aggregates` | `:413` fábrica crua | **FORA** — e **sem chamador em `src/`** (`git grep -n listUsageDailyAggregates origin/main -- src tests` só devolve a interface, a implementação, um comentário de `.types.ts` e a sonda `o6r06-allocation-basis-rls-db.test.ts:59`). Fica **nominalmente no congelado** do T13 (chave `L2 … new PrismaCloudCostAllocationRepository(prisma) … CRU`) até o dono `B-O6R-08` a resolver (§13); sumir dessa chave sem atualizar o congelado é vermelho (F1) |
 
 **Quem chama os cinco métodos de dentro (fluxo até a superfície):** `cloud-usage.service.ts:114` (`summarizeEvents` ←
 `getPlatformUsageSummary` ← `GET /platform/cloud-usage/summary`, `cloud-usage.routes.ts:12-17`) e `:49`
@@ -362,29 +381,36 @@ $ node scripts/san3-05-acessos-de-plataforma.mjs .        # (nesta sessão: node
 chamada direta sem tenant); `cloud-charge.service.ts:85,104,155,178` (`executeCalculationRun`, `listTenantCharges`,
 `getCloudChargeSummary` ← `GET /platform/cloud-charges/...`, `cloud-charge.routes.ts:88-119`).
 
-**O que o gerador mostra que NÃO é leak (para a junta conferir o critério, não a lista):**
-- **6 sítios `TX-SEM-ENVOLTORIO?`** (receptor `tx` recebido como **parâmetro** de helper): `src/database/rls.ts:57`
-  (dentro de `setIdentityRlsContext`, que seta o GUC de tenant na l.51 **antes**); `identity-link.service.ts:613` e
-  `identity-resolver.ts:22` (helpers chamados em `identity-link.service.ts:98,179,189,194,195,315`, todos após
-  `setTenantRlsContext`/`setIdentityRlsContext` — lido nas l.85-100, 168-192, 305-316); `session-admin.service.ts:163`
-  (`resolveUserLabels`, chamado na l.80 dentro de `this.runWithTenantContext(actor.tenantId, …)`, cujo valor de
-  produção é `(tenantId, work) => withTenantRls(prisma, tenantId, work)` — `session-admin.service.ts:288`,
-  `auth-runtime.ts:82`); `financial-period-close-prisma.repository.ts:111,115` (`readCompetencia`, chamado de
-  `close`/`reopen` dentro de `withTenantRls`, l.59 e 66). **Contexto herdado do chamador — verificado por leitura.**
-- **4 instanciações `OUTRO()`** — `prisma-core-saas.store.ts:38-41` (`new UserRepository()` etc., default = client
+**O que está no congelado e NÃO é vazamento (para a junta conferir o critério, não a lista) — verificado por leitura:**
+- **L1 `TX-SEM-ENVOLTORIO?` (9 chaves, 12 sítios)** — helpers que recebem `tx` do chamador: `src/database/rls.ts` (o setter
+  e `setIdentityRlsContext`), `identity-link.service.ts:613`, `identity-resolver.ts` (chamados em `identity-link.service.ts:98,179,189,194,195,315`,
+  após `setTenantRlsContext`/`setIdentityRlsContext`), `session-admin.service.ts:163` (`resolveUserLabels`, chamado na l.80
+  dentro de `this.runWithTenantContext(actor.tenantId, …)` = `withTenantRls(prisma, …)`, `auth-runtime.ts:82`),
+  `financial-period-close-prisma.repository.ts:111,115` (`readCompetencia`, dentro de `withTenantRls`, l.59 e 66),
+  `financial-period-lock.ts` (advisory lock, sem tabela).
+- **L1 `$TRANSACTION-SEM-SETTER` (2 sítios, F3)** — `work-order-prisma.repository.ts` `assign` (`workOrderAssignment.create`
+  e `workOrder.updateManyAndReturn`, l.541 e vizinha): o `$transaction` não seta o GUC porque `assign` é chamado **dentro** de
+  `withTenantRls` (`:669`, lido pela crítica) — contexto herdado; o gerador rotula pelo motivo certo agora, e a chave fica congelada.
+- **L1 `INJETADO-SEM-CLASSE` (8)** — funções livres com `client`/`executor` como parâmetro (`identity-link.repository.ts`,
+  `login-candidates.repository.ts`, `login-readiness.ts`, `cloud-usage.capture.ts`, `work-order-cancellation.gate.ts`,
+  `impound.outbox.repository.ts`, `rls.ts`): o chamador decide o contexto — por isso são **suspeitas** e congeladas, não absolvidas.
+- **L1 `CRU` (1)** — `health.routes.ts` `$queryRawUnsafe` opaco (`SELECT 1`-like; sem tabela).
+- **L2 `TX-SEM-ENVOLTORIO?` (14)** — `new XRepository(tx)` em helpers de `auth-runtime.ts`, `identity-link.service.ts`,
+  `identity-resolver.ts`, `local-auth-credential.service.ts`, `session-admin.service.ts`, `financial-title-prisma.repository.ts`
+  (mesmo padrão acima). **L2 `OUTRO()` (4)** — `prisma-core-saas.store.ts:38-41` (`new UserRepository()` etc., default = client
   cru): os campos **não têm chamada** (`campo users → (sem chamada)`); todo uso passa por `new XRepository(tx)` sob
-  `withTenantRls` (l.102-106, 176-180, 246-337) e `this.tenants.*` lê `tenants`, que não tem RLS.
-- **5 instanciações `INJETADO`→`INJETADO`** (`impound-prisma.repository.ts:165,211,500,721`,
-  `release-prisma.repository.ts:445`): transitivas — as 35 instanciações de `PrismaImpoundRepository`/
-  `PrismaReleaseRepository` são todas `SOB-CONTEXTO` (`--all`, coluna 4).
+  `withTenantRls`. **L2 `INJETADO` (5)** — `impound-prisma.repository.ts:165,211,500,721`, `release-prisma.repository.ts:445`:
+  transitivas — as 35 instanciações de `PrismaImpoundRepository`/`PrismaReleaseRepository` são todas `SOB-CONTEXTO` (`--all`).
+  **L2 `$TRANSACTION-SETTER-DEPOIS?` (1)** — `prisma-core-saas.store.ts:47`. **L2 `CRU` (4)** — os sítios 1–7 acima.
 
-**Residual declarado do gerador (é aproximação estática, não prova):** (i) `$transaction` cujo `set_config` esteja
-em helper chamado dentro do callback aparece como `$transaction-SEM-setter` — hoje **zero** casos; (ii) receptor com
-nome fora de `prisma|this.prismaClient|this.prisma|client|this.client|executor|tx` cai em `OUTRO(...)` — hoje só os
-4 acima; (iii) SQL montado por concatenação sem o nome literal da tabela não é visto. O árbitro final é a
-**medição dinâmica** (§0.5), e é ela que o teste de encerramento repete (T10–T13).
+**Residual declarado do gerador (é aproximação estática, não prova):** acessor dinâmico (`prisma[nome]`), `Object.values(prisma)`,
+SQL cru montado fora do arquivo e client obtido por caminho sem nome de acessor Prisma não são vistos — e são as formas que
+o ratchet **não** enuncia. O árbitro da propriedade é a **medição dinâmica**: §0.5 (repositório) e §R.3 (superfície HTTP,
+o T11-diferencial), que o teste de encerramento repete (T10–T12).
 
 ### 0.5 A MEDIÇÃO sob papel `NOSUPERUSER NOBYPASSRLS` real — 22 itens, 0 fora do esperado
+
+> **v2:** re-executado nesta sessão no cluster `54353` com a única emenda N2 (`REPO` por `cwd`): `22 itens, 0 fora do esperado`, limpeza `0 0 0 0` (§R.6). A r1 também reproduziu 22/22 no cluster dela. Os itens G1–G4 medem a trava **v1**; a trava **v2** (posse + `session_user`) está medida em §R.1 sob 11 papéis, e a superfície HTTP em §R.3.
 
 Script em Apêndice B (**verbatim**), executado com `ADMIN_URL=postgresql://postgres@127.0.0.1:54329/erp_san3_05?schema=public
 npx tsx <scratchpad>/medir-papel.ts` a partir da raiz do repo, importando **as classes reais** de
@@ -430,12 +456,12 @@ por tenant sob contexto (R1) funciona no **mesmo** papel — logo o bloco não p
 
 | id | Hipótese | Por que não foi medida | Comando que a mede |
 |---|---|---|---|
-| H1 | O script do papel, montado em `/docker-entrypoint-initdb.d/`, roda na **primeira** subida do volume do `postgres:16` e cria o papel **antes** do `migrate` (então os `ALTER DEFAULT PRIVILEGES` cobrem as tabelas das migrações — P-l) | sem daemon docker nesta máquina | `docker compose -f docker-compose.prod.yml down -v && docker compose -f docker-compose.prod.yml up -d postgres && docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d erp_techsolutions -Atc "SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname='erp_runtime'"` → esperado `erp_runtime\|f\|f`. E, na CI, o job `docker` (`ci.yml:394-477`) com `scripts/smoke-compose-persistence.mjs` verde no head. |
+| H1 | O script do papel, montado em `/docker-entrypoint-initdb.d/`, roda na **primeira** subida do volume do `postgres:16`, **no banco da app** (`POSTGRES_DB`, via `--username "$POSTGRES_USER" --dbname "$POSTGRES_DB"` — o entrypoint exporta `POSTGRES_USER/POSTGRES_DB/PGPASSWORD`, não `PGDATABASE`; medido na fonte pela r1, item 3.5) e **antes** do `migrate` (então os `ALTER DEFAULT PRIVILEGES` cobrem as tabelas das migrações — P-l) | sem daemon docker nesta máquina | `docker compose -f docker-compose.prod.yml down -v && docker compose -f docker-compose.prod.yml up -d postgres && docker compose -f docker-compose.prod.yml logs postgres \| grep -E 'running\|sourcing\|erp_runtime' && docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d erp_techsolutions -Atc "SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname='erp_runtime'; SELECT defaclrole::regrole, defaclobjtype FROM pg_default_acl"` → esperado `erp_runtime\|f\|f` e as linhas `postgres\|r`, `postgres\|S` **em `erp_techsolutions`**. E, na CI, o job `docker` (`ci.yml:394-477`) com `scripts/smoke-compose-persistence.mjs` verde no head. |
 | H2 | O papel **de produção** hoje é superusuário/`BYPASSRLS` (ou não) | é segredo do Fly; ninguém mediu (`P-INFRA-RLS`, emenda de 2026-09-11) | pelo dono, com a URL do secret: `psql "$DATABASE_URL" -Atc "SELECT current_user, r.rolsuper, r.rolbypassrls, EXISTS (SELECT 1 FROM pg_roles b WHERE (b.rolsuper OR b.rolbypassrls) AND pg_has_role(current_user, b.oid, 'MEMBER')) AS escapa FROM pg_roles r WHERE r.rolname = current_user"`. Qualquer `t` ⇒ a trava vai recusar o boot ⇒ §11 antes do deploy. |
-| H3 | Em produção, o migrador (`PROD_DATABASE_URL`) é o **dono** das 106 tabelas FORCE, e o papel do app não é dono de nenhuma | idem | `psql "$DATABASE_URL" -Atc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relforcerowsecurity AND pg_get_userbyid(c.relowner)=current_user"` → esperado `0` sob o papel do app. A trava **reporta** (log), não recusa (§2.2, §12 R5). |
+| H3 | Em produção, o migrador (`PROD_DATABASE_URL`) é o **dono** das 106 tabelas FORCE, e o papel do app não é dono **nem membro do dono** de nenhuma | idem | **é a trava que mede**, no boot (via `posse`, §2.2): se o papel do app for dono ou membro do dono, o boot recusa e o log traz `posse/<dono>`. Pelo dono, antes do deploy: a linha final do script (§11 passo 2) tem `posse = 0`. |
 | H4 | O caminho do smoke de contêiner (`smoke-compose-persistence.mjs`: readiness → worker → grava organização → restart → relê) só exige DML + `USAGE` em sequências sob o papel novo | sem docker; e SQL dinâmico não é visto pelo grep de P-k | o mesmo job `docker` da CI no head: se o papel faltar privilégio, o smoke cai com `42501` no passo "grava organização" (o script já redige `DATABASE_URL`/`postgresql://` da saída — `smoke-compose-persistence.mjs:72-81`). |
-| H5 | Boot recusado no Fly vira **restart em laço** até o dono trocar o secret (não "meio de pé") | sem ambiente | `fly logs -c fly.production.toml` após um deploy com papel errado: linha `Failed to start ERP Techsolutions API` + `RUNTIME_ROLE_CAN_BYPASS_RLS`, máquina reiniciando; `fly status` sem máquina `started` passando no check. É o comportamento **desejado** (deployment.md:78-81: "configuracao incompleta nao degrada — ela reprova o boot"). |
-| H6 | `tests/deploy-manifest-parity.test.ts` continua verde sem tocar manifesto nem `.env.example`, porque a chave nova é **opcional com default seguro** (não entra em `deriveRequiredInProduction()`, l.280-287; `.env.example` só precisa nomear chaves **exigidas**, l.431-434) | é consequência do desenho E2, medível só no diff | `node --test --import tsx tests/deploy-manifest-parity.test.ts` no head da entrega → 22/22. Mutação que a derruba: tornar `DATABASE_RUNTIME_ROLE_GUARD` obrigatória. |
+| H5 | Boot recusado no Fly vira **restart em laço** até o dono trocar o secret (não "meio de pé") | sem ambiente | `fly logs -c fly.production.toml` após um deploy com papel errado: linha `Failed to start ERP Techsolutions API` com `code: RUNTIME_ROLE_CAN_BYPASS_RLS` e as `escapes`, máquina reiniciando; `fly status` sem máquina `started` passando no check. Localmente, o **T15** mede a metade que dá para medir: o processo real sai com `exit 1` em segundos, antes de tocar o Redis (hoje ele passa e morre no Redis aos ~18 s — §R.5). É o comportamento **desejado** (deployment.md:78-81: "configuracao incompleta nao degrada — ela reprova o boot"). |
+| H6 | `tests/deploy-manifest-parity.test.ts` continua verde sem tocar manifesto nem `.env.example`, porque a chave nova é **opcional com default seguro** (não entra em `deriveRequiredInProduction()`, l.274-287, que só itera `PROD_BASELINE`; `.env.example` só precisa nomear chaves **exigidas**, l.431-434) | é consequência do desenho E2, medível só no diff | `node --test --import tsx tests/deploy-manifest-parity.test.ts` no head da entrega → **28/28** (executado no head-base: 28/28 — F10). Mutação que a derruba: tornar `DATABASE_RUNTIME_ROLE_GUARD` obrigatória — fica vermelha porque `envSchema.parse(process.env)` explode no import (`ZodError`), não pela lista derivada (mecanismo medido pela r1, item 4.4). |
 
 ---
 
@@ -443,36 +469,43 @@ por tenant sob contexto (R1) funciona no **mesmo** papel — logo o bloco não p
 
 **Objetivo.** Fechar os itens 9 e 10 do gate vendável (`PLANO_SAN3.md` §4.1) com **mecanismo**, não prosa:
 (9) o processo da API **só sobe em produção** se a identidade com que fala ao banco **não puder escapar de RLS** —
-nem por atributo (`rolsuper`, `rolbypassrls`), nem por pertença (`SET ROLE` para um papel que escapa) —, e existe um
-**procedimento versionado** que cria esse papel (para o compose local-prod e para o banco gerenciado do dono);
+nem por atributo (`rolsuper`, `rolbypassrls`), nem por pertença (`SET ROLE` para um papel que escapa), nem por **posse**
+(ser dono, ou membro do dono, de tabela `FORCE RLS` — um `ALTER TABLE … NO FORCE` e a política some; F5) — avaliado para
+**`session_user` e `current_user`** (a URL pode trazer `options=-c role=…`; F13) —, e existe um **procedimento versionado e
+executado** que cria esse papel (compose local-prod **e** banco gerenciado do dono, inclusive com migrador não-superusuário; F6–F8);
 (10) as leituras e escritas **de plataforma** sobre tabelas `FORCE RLS` deixam de depender de bypass: rodam **por
 organização, sob o contexto dela**, e somam — de modo que, no dia em que o papel de produção for trocado (ato do
-dono, §11), o resumo de uso da plataforma, o Cloud Billing e a cobrança de nuvem **não zerem**.
+dono, §11), o resumo de uso da plataforma, o Cloud Billing e a cobrança de nuvem **não zerem** — e a propriedade fica
+**guardada** por um diferencial superusuário × papel sem bypass na superfície (T11) e por um ratchet de forma (T13).
 
 **Ator.** Não há ator de negócio: é infraestrutura de segurança. Os papéis de plataforma (`platform_admin`,
 permissões `platform:cloud-usage:read`, `platform:cloud-charges:*`) são os que **veem** o efeito do item 10; o
 **dono** é quem pratica o ato do §4.2 (l.192).
 
 **Fluxo origem → destino.**
-1. `node dist/server.js` → `main()` → **[NOVO] trava do papel** (§2.2 E1) → `createCoreSaasService()` → … → `listen`.
-   Recusa ⇒ exceção nomeada **antes** do `listen`, conexão fechada, `process.exitCode = 1` (o `main().catch` que já
-   existe em `src/server.ts:45-48`).
+1. `node dist/server.js` → `main()` → **[NOVO] trava do papel** (§2.2 E1; `session_user` ∧ `current_user`; atributo ∨ pertença ∨
+   posse) → `createCoreSaasService()` → … → `listen`. Recusa ⇒ exceção nomeada **antes** do `listen` e antes de qualquer
+   conexão ao Redis (medido: hoje o boot só morre no Redis, aos ~18 s — §R.5), conexão fechada, `process.exitCode = 1`
+   (o `main().catch` que já existe em `src/server.ts:45-48`). **A fiação é medida pelo T15** (o servidor real, num filho).
 2. `GET /platform/cloud-usage/summary` → `getPlatformUsageSummary` → `summarizeEvents` → `listEvents({sem tenant})`
-   → **[NOVO] laço por organização sob contexto** → soma. Idem `aggregateDailyUsage` (job) e `listDailyAggregates`.
+   → **[NOVO] laço por organização sob contexto** → soma, reordenada. Idem `aggregateDailyUsage` (job) e `listDailyAggregates`.
 3. `POST /platform/cloud-charges/calculation-runs` → `executeCalculationRun` → `listAllocationTenantAllocations`
    **[NOVO por tenant]** → cálculo → `replaceTenantCharges` **[NOVO por tenant, uma transação]**; `GET …/summary`
    → `listTenantCharges` **[NOVO por tenant]**.
-4. Compose local-prod: `postgres` (init cria `erp_runtime` via o script) → `migrate` (como `postgres`) → `api`
-   (como `erp_runtime`, `NODE_ENV=production` ⇒ trava ativa ⇒ boot **prova** a postura) → smoke da CI.
-5. Produção: o dono roda o script no banco gerenciado com a credencial do migrador, troca o secret `DATABASE_URL`
-   do Fly para o papel novo, faz deploy; a trava é a prova (§11).
+4. Compose local-prod: `postgres` (init executa `scripts/db-runtime-role.sh` → cria `erp_runtime` **no banco da app**) →
+   `migrate` (como `postgres`) → `api` (como `erp_runtime`, `NODE_ENV=production` ⇒ trava ativa ⇒ boot **prova** a postura) → smoke da CI.
+5. Produção: o dono roda o script no banco gerenciado com a credencial do migrador (o script **falha nomeando** o que não
+   puder corrigir), troca o secret `DATABASE_URL` do Fly para o papel novo, faz deploy; a trava é a prova (§11).
 
 **Contrato.** Nenhuma rota, payload ou código HTTP muda. Contratos que mudam de **semântica** sob papel sem bypass:
 `GET /platform/cloud-usage/summary` e `GET /platform/cloud-usage/tenants/:id/daily` (passam a devolver os números
-reais); `GET /platform/cloud-charges/summary`, `GET /platform/cloud-charges/calculation-runs/:id/charges` e o cálculo
-(idem). Boot: nova causa de recusa em produção, nomeada `RUNTIME_ROLE_CAN_BYPASS_RLS` (item 9, `P-INFRA-RLS`).
-Env: chave nova **opcional** `DATABASE_RUNTIME_ROLE_GUARD` = `enforce` | `skip` (§2.2 E2). **`/health/*` não muda**
+reais — hoje, mesmo seed: `quantity: 50` sob superusuário, `metrics: []` sob papel limpo, §R.3); `GET /platform/cloud-charges/summary`,
+`GET /platform/cloud-charges/calculation-runs/:id/charges` e o cálculo (idem). Boot: nova causa de recusa em produção,
+nomeada `RUNTIME_ROLE_CAN_BYPASS_RLS` (item 9, `P-INFRA-RLS`), com **razões** no log (`via`: `atributo` | `posse`; `rolname`;
+`is_self`). Env: chave nova **opcional** `DATABASE_RUNTIME_ROLE_GUARD` = `enforce` | `skip` (§2.2 E2). **`/health/*` não muda**
 (corpo público inalterado — §2.8; a postura do papel vai só ao log estruturado do servidor).
+
+---
 
 ---
 
@@ -482,14 +515,25 @@ Env: chave nova **opcional** `DATABASE_RUNTIME_ROLE_GUARD` = `enforce` | `skip` 
 
 A propriedade tem duas metades, e as duas são **do banco**, não do código de negócio:
 
-- **(a) Identidade.** *A única identidade com que a API fala ao banco em produção não consegue ler ou gravar linha
-  de tabela `FORCE RLS` sem o GUC do tenant.* Em PostgreSQL isso é exatamente: `¬∃ r ∈ pg_roles : (r.rolsuper ∨
-  r.rolbypassrls) ∧ pg_has_role(current_user, r, 'MEMBER')` — o próprio papel não escapa **e** não pode `SET ROLE`
-  para quem escapa (G4/G4b/G4c provam que só a primeira metade não basta). Hoje **nada** no repositório enuncia isso
-  (P-a); `docs/deployment.md:458` enuncia em prosa e pede "confirmar na ativação".
+- **(a) Identidade.** *A identidade com que a API fala ao banco em produção não consegue ler ou gravar linha de tabela
+  `FORCE RLS` sem o GUC do tenant — nem com um comando a mais.* Em PostgreSQL 16, as vias **medidas** (§R.1) são três, e a
+  formalização da v2 cobre as três, para os **dois** nomes da sessão:
+  `¬∃ r ∈ pg_roles : (r.rolsuper ∨ r.rolbypassrls) ∧ (pg_has_role(session_user, r, 'MEMBER') ∨ pg_has_role(current_user, r, 'MEMBER'))`
+  **∧** `¬∃ c ∈ pg_class : c.relforcerowsecurity ∧ (pg_has_role(session_user, c.relowner, 'MEMBER') ∨ pg_has_role(current_user, c.relowner, 'MEMBER'))`.
+  A v1 formalizava só a primeira conjunção, só para `current_user` — e a crítica **mediu** dois escapes que ela aprovava:
+  a pertença ao dono (`ALTER TABLE … NO FORCE` → 3 linhas sem GUC, F5) e o login superusuário com `options=-c role=<limpo>`
+  (`SET ROLE NONE` → 3 linhas, F13). Hoje **nada** no repositório enuncia isso (P-a); `docs/deployment.md:458` enuncia em
+  prosa e pede "confirmar na ativação".
+  **O que fica fora, declarado:** (i) funções `SECURITY DEFINER` de dono que escapa e executáveis pelo papel — hoje só
+  `auth_login_candidates(text)` (`REVOKE ALL FROM PUBLIC`; o `GRANT EXECUTE` é ato humano do runbook B-O6R-01) — a trava
+  **não** as enumera; comando que as mede: `SELECT p.proname, pg_get_userbyid(p.proowner) FROM pg_proc p JOIN pg_roles o ON
+  o.oid = p.proowner WHERE p.prosecdef AND (o.rolsuper OR o.rolbypassrls) AND has_function_privilege(current_user, p.oid, 'EXECUTE')`
+  (→ pendência `P-SAN3-05-SECURITY-DEFINER-INVENTARIO`, §13); (ii) `pg_read_all_data`/`pg_write_all_data` **não** escapam
+  (medido: membro de `pg_read_all_data` lê `0` linhas sem GUC — §R.1); (iii) `GRANT … WITH SET FALSE` é recusado sem poder
+  `SET ROLE` — falso positivo **seguro**, aceito (N1).
 - **(b) Contexto.** *Todo acesso a tabela `FORCE RLS` que precise de linhas de N organizações roda N vezes, cada uma
   sob o GUC da organização, e não uma vez sem GUC.* Hoje sete sítios violam isso (§0.4), e violam **em silêncio**
-  (`0` linhas, `ec=0`) — o único que grita é a escrita (P6).
+  (`0` linhas, `ec=0`) — o único que grita é a escrita (P6). Na superfície: mesma rota, mesmo seed, `50` × vazio (§R.3).
 
 A metade (a) sem a (b) **zera** o painel de plataforma no dia da troca (é o item 10 como pré-requisito do 9). A (b)
 sem a (a) é cosmética: sob superusuário o laço por tenant devolve o mesmo que a leitura crua. **Por isso são um
@@ -499,40 +543,55 @@ bloco só.**
 
 **(a) → `src/database/runtime-role.ts` + `src/database/runtime-role.bootstrap.ts` + 1 linha em `src/server.ts` + gate em `src/config/env.ts`.**
 
-- `RUNTIME_ROLE_GUARD_SQL` (constante **única**, o mesmo texto do G1–G4 do §0.5 — a junta confere byte a byte):
+- `RUNTIME_ROLE_GUARD_SQL` (constante **única**, o mesmo texto de `$SP/guard-v2.sql` medido em §R.1 — a junta confere byte a byte):
   ```sql
-  SELECT r.rolname, r.rolsuper, r.rolbypassrls, (r.rolname = current_user) AS is_self
-  FROM pg_roles r
-  WHERE (r.rolsuper OR r.rolbypassrls) AND pg_has_role(current_user, r.oid, 'MEMBER')
-  ORDER BY r.rolname
+  SELECT via, rolname, rolsuper, rolbypassrls, is_self, tabelas_force
+  FROM (
+    SELECT 'atributo'::text AS via, r.rolname::text, r.rolsuper, r.rolbypassrls,
+           (r.rolname = session_user OR r.rolname = current_user) AS is_self, NULL::int AS tabelas_force
+    FROM pg_roles r
+    WHERE (r.rolsuper OR r.rolbypassrls)
+      AND (pg_has_role(session_user, r.oid, 'MEMBER') OR pg_has_role(current_user, r.oid, 'MEMBER'))
+    UNION ALL
+    SELECT 'posse', o.rolname::text, o.rolsuper, o.rolbypassrls,
+           (o.rolname = session_user OR o.rolname = current_user), count(*)::int
+    FROM pg_class c JOIN pg_roles o ON o.oid = c.relowner
+    WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity
+      AND (pg_has_role(session_user, c.relowner, 'MEMBER') OR pg_has_role(current_user, c.relowner, 'MEMBER'))
+    GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
+  ) x ORDER BY via, rolname
   ```
-  `probeRuntimeRolePosture(client)` devolve `{ roleName: current_user, bypassing: linhas acima, ownedForceRlsTables:
-  count(*) de pg_class … relforcerowsecurity … relowner = current_user }`. `assertRuntimeRolePosture(posture)` lança
-  `RuntimeRoleGuardError` (`code = "RUNTIME_ROLE_CAN_BYPASS_RLS"`) se `bypassing.length > 0`. A **posse** é
-  **reportada** no log (`owned_force_rls_tables`), **não recusa** — decisão declarada: exigir dono ≠ app no boot
-  tornaria impossível o próprio ato do dono num provedor que só ofereça um papel até o segundo existir; a topologia
-  dono ≠ app segue sendo medida na ativação (deployment.md:489-495) e H3.
+  `probeRuntimeRolePosture(client)` devolve `{ sessionUser, currentUser, escapes: linhas acima }` (mais `SELECT session_user,
+  current_user`). `assertRuntimeRolePosture(posture)` lança `RuntimeRoleGuardError` (`code = "RUNTIME_ROLE_CAN_BYPASS_RLS"`,
+  `escapes` no erro) se `escapes.length > 0` — **qualquer via recusa**, inclusive `posse`. **Decisão revertida em relação à v1**
+  (que só reportava posse): a pertença ao dono é um escape de um comando (§R.1), da mesma classe que a pertença a `BYPASSRLS`;
+  e o cenário "provedor com um papel só" é exatamente o app rodando como migrador, que a trava recusa **de propósito** (o
+  segundo papel é o ato do dono, §11). A trava não conhece **nomes**: `postgres`, `erp_runtime`, `fly-user` são indiferentes (G3).
 - `assertRuntimeDatabaseRoleIfEnforced({ enforce = env.DATABASE_RUNTIME_ROLE_GUARD === "enforce", logger, loadClient,
   attempts = 5, backoffMs = 2000 })` — padrão de `src/infra/jobs/job-worker.bootstrap.ts` (dependências injetáveis,
-  testável sem `server.ts`). Com `enforce`: abre o client (`src/database/prisma.ts`), sonda (com retry só para erro de
-  **conexão**; um veredito de postura não é retentado), loga em `info` `{ role, bypassing: 0, owned_force_rls_tables }`
-  **sem URL, sem senha, sem host** e retorna; se recusar: loga em `error` `{ role, bypassing: [{rolname, rolsuper,
-  rolbypassrls, is_self}] }`, `await client.$disconnect()` (senão o pool segura o event loop e o processo não
-  morre), e **lança**. Sem `enforce`: retorna `{ enforced: false }` e loga uma linha `info` dizendo que a trava está
-  desligada (dev/test) — nunca silêncio (lição do B-O6R-05: "o retorno MUDO era o modo de falha").
+  testável sem `server.ts`). Com `enforce`: abre o client (`src/database/prisma.ts`), sonda (retry só para erro de
+  **conexão**; um veredito de postura não é retentado), loga em `info` `{ session_user, current_user, escapes: 0 }`
+  **sem URL, sem senha, sem host** e retorna; se recusar: loga em `error` `{ session_user, current_user, escapes:
+  [{via, rolname, rolsuper, rolbypassrls, is_self, tabelas_force}] }`, `await client.$disconnect()` (o pool fecha limpo e a saída
+  é imediata — sem ele o processo **também** morre, ~11 s depois, quando o pool ocioso fecha: medido pela r1, N4), e **lança**.
+  Sem `enforce`: retorna `{ enforced: false }` e loga uma linha `info` dizendo que a trava está desligada (dev/test) — nunca
+  silêncio (lição do B-O6R-05: "o retorno MUDO era o modo de falha").
 - `src/server.ts` `main()`: **primeira** instrução `await assertRuntimeDatabaseRoleIfEnforced({ logger });` — antes de
   `createCoreSaasService()` abrir Redis ou qualquer handle. Uma linha + import, exatamente como o B-O6R-05 fez com
   `startJobWorkerIfEnabled` (l.19). `src/server.ts` não está na linha do §5.2; entra no PERMITIDO **nominalmente e só
-  para essa linha** (§6), porque uma trava de boot que ninguém chama antes do `listen` é trava no nome (o mesmo
-  argumento do G3 em `env.ts:509-511`).
+  para essa linha** (§6). **Quem prova que a linha existe e roda antes do Redis é o T15** (F9): o servidor real num processo
+  filho, `NODE_ENV=production`, `DATABASE_URL` de superusuário → a primeira linha `Failed to start` traz `RUNTIME_ROLE_CAN_BYPASS_RLS`,
+  nenhuma linha do worker antes, `exit 1` em segundos; hoje a mesma execução morre no Redis aos ~18 s (§R.5).
 - **Gate `G-DB-ROLE` em `src/config/env.ts`** (a parte **síncrona** da trava — o schema não consulta banco):
   `DATABASE_RUNTIME_ROLE_GUARD: z.enum(["enforce", "skip"]).optional()`; no `export const env`, default por ambiente
-  **espelhando `EVIDENCE_SCANNER` (l.631-638)**: `production` → `"enforce"`, `development`/`test` → `"skip"`
+  **espelhando a forma de `EVIDENCE_SCANNER` (l.637-638)**: `production` → `"enforce"`, `development`/`test` → `"skip"`
   (dev/CI rodam como `postgres` — P-c — e não podem recusar o boot de todo mundo); no `superRefine`, `production ∧
   "skip"` → issue em `DATABASE_RUNTIME_ROLE_GUARD` com mensagem nomeando `P-INFRA-RLS`/item 9. **Não existe valor
-  que afrouxe em produção**; `skip` só serve para dev/test **explicitarem** o que já é o default, e `enforce` em
-  dev/test serve ao teste T5 (boot sob papel efêmero). Chave opcional com default seguro ⇒ não entra na lista
-  derivada de exigidas ⇒ `fly.*.toml`, compose e `.env.example` **não** precisam declará-la (H6).
+  que afrouxe em produção**. **O default do export é medido por processo filho** (T2′, F9): `NODE_ENV=production` + PROD_OK →
+  `import("src/config/env.ts")` → `env.DATABASE_RUNTIME_ROLE_GUARD === "enforce"` — não pela regra reescrita no teste (a cegueira
+  do precedente `o6r07b`, P1, medida em §R.5). Chave opcional com default seguro ⇒ não entra na lista derivada de exigidas
+  (`deriveRequiredInProduction()` só itera `PROD_BASELINE`, l.274-287) ⇒ `fly.*.toml`, compose e `.env.example` **não**
+  precisam declará-la (H6, 28/28).
 
 **(b) → `src/database/rls.ts` (o laço) + os dois repositórios de nuvem (quem o usa).**
 
@@ -543,14 +602,14 @@ bloco só.**
   B-O6R-06, `cloud-cost-allocation-prisma.repository.ts:168-178`). Os dois são o padrão já provado pelo B-O6R-06
   (`forEachTenantInOneTx`, l.340-368 daquele arquivo) **promovidos ao lar único** de `src/database/rls.ts`; a cópia
   privada da alocação **fica** (arquivo fora da fronteira) e vira pendência de deduplicação (§13). O GUC de
-  identidade não é tocado (a constante `IDENTITY_RLS_GUC` e seu guard de varredura continuam intactos).
+  identidade não é tocado. `forEachTenantRls` já consta dos envoltórios de contexto do gerador (Apêndice A, `CONTEXT_WRAPPERS`).
 - **`RlsPrismaCloudUsageRepository`** (`cloud-usage-prisma.repository.ts:166-174, 190-198`): o ramo **sem
   `tenantId`** deixa de instanciar o repositório cru com `this.prismaClient` e passa a: `ids = tenant.findMany({select:{id}})`
   (tabela sem RLS — P-f; mesma leitura de `platform-overview-prisma.repository.ts:23-33`), `forEachTenantRls(ids,
   (tx, id) => new PrismaCloudUsageRepository(tx).listEvents({...filters, tenantId: id}))`, canário por volta, e a
   concatenação **reordenada** por `occurredAt asc` (o contrato do método era `orderBy occurred_at asc`; a concatenação
-  por tenant quebraria a ordem global). `listDailyAggregates` idem, reordenando por `date asc`. Custo N+1 declarado
-  (o mesmo aceite de `platform-overview-prisma.repository.ts:15-16`).
+  por tenant quebraria a ordem global — e a semente do teste é **intercalada** para que "não reordenar" fique vermelho, F12).
+  `listDailyAggregates` idem, reordenando por `date asc`. Custo N+1 declarado (o mesmo aceite de `platform-overview-prisma.repository.ts:15-16`).
 - **`cloud-charge-prisma.repository.ts`**: nasce **`RlsPrismaCloudChargeRepository implements CloudChargeRepository`**
   (mesmo desenho `Prisma*` cru + `Rls*` envoltório dos outros módulos), delegando ao cru **tudo** que toca tabela
   **sem** RLS (`cloud_charge_rules`, `cloud_charge_calculation_runs`, `cloud_cost_allocation_runs`, `tenants`) e
@@ -563,13 +622,16 @@ bloco só.**
   — todos os tenants, por volta `findMany({allocation_run_id, tenant_id: id})` + canário, sem `take` global (espelha
   `listTenantAllocations` do B-O6R-06, l.180-200; o `take: 100_000` da versão crua deixa de existir —
   **decisão declarada**, a junta ratifica ou pede o teto por tenant). `createPrismaCloudChargeRepository()` passa a
-  devolver o envoltório; o tipo de retorno vira a **interface** `CloudChargeRepository` (chamadores: grep no §8
-  passo 3 — o serviço já depende da interface).
+  devolver o envoltório; o tipo de retorno vira a **interface** `CloudChargeRepository` (o serviço já depende da interface,
+  `cloud-charge.service.ts:35`). **T12 importa a fábrica**, que existe no head-base — é o que torna o vermelho-controle
+  válido (N6).
 
 **O que NÃO é lar da propriedade (e por isso não entra):** `src/routes/health.routes.ts` (reportar a postura no
 `/health/ready` seria útil, mas corpo público de saúde é §2.8 e o arquivo está fora do §5.2 — §13);
-`cloud-cost-allocation-prisma.repository.ts` (fora do §5.2; o sítio 7 é morto — §13); `fly.*.toml` (a chave nova
-não é exigida; H6).
+`cloud-cost-allocation-prisma.repository.ts` (fora do §5.2; o sítio 7 é morto e fica **congelado nominalmente** no T13 — §13);
+`fly.*.toml` (a chave nova não é exigida; H6).
+
+---
 
 ---
 
@@ -845,7 +907,7 @@ reproduz localmente se não tiver docker; a junta lê o run.
   produção (H3, ato) e para qualquer sítio que o gerador **não** veja hoje (residual §0.4) — com evidência de data
   (migrações `202606xx`; `f4ef511` é a raiz).
 - **P1–P6:** evidência incremental em `omega/juntas/votos/B-SAN3-05/<cadeira>-evidencia.md`; voto-arquivo-primeiro
-  (`<cadeira>-voto.json`, esqueleto `EM APURAÇÃO` item a item); ≤2 jurados em paralelo; `00-quedas.md`; ata
+  (`<cadeira>-voto.json`, esqueleto item a item, cada item gravado ao ser medido); ≤2 jurados em paralelo; `00-quedas.md`; ata
   `omega/juntas/J-B-SAN3-05.md`.
 - **Porteiro pós-merge** (`porteiro-pos-merge`, Fable): revalida promessa × diff, reexecuta o gerador e a contagem de
   KPI, confere A16 e a limpeza §C5, e **libera** (ou não) o próximo alvo da frente 2 (`B-O6R-07c`).
