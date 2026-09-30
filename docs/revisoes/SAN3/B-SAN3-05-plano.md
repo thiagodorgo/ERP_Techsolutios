@@ -32,39 +32,209 @@
 
 > Regra desta seção: **cada achado tem uma linha**; a coluna "o que mudou" aponta a seção da v2; a coluna "evidência"
 > é comando + saída **executados nesta sessão** (roteiro de re-execução: os scripts da crítica r1, re-rodados, não
-> herdados); o estado é um de **incorporado** · **falsificado com medição** · **pendência nomeada**. `EM APURAÇÃO`
-> é o esqueleto (P2): some quando o item é medido. Detalhe de cada medição em §R.1–§R.6 logo abaixo da tabela.
+> herdados); o estado é um de **incorporado** · **falsificado com medição** · **pendência nomeada**. Nenhum achado foi
+> recusado por argumento. Detalhe de cada medição em §R.1–§R.7, logo abaixo da tabela. Scratch desta sessão:
+> `<scratchpad>/plano-v2/` (abaixo `$SP`); o da crítica, `<scratchpad>/critico-r1/` (abaixo `$S`).
 
 | id | gravidade | achado (resumo da r1) | o que mudou na v2 (seção) | evidência executada | estado |
 |---|---|---|---|---|---|
-| F1 | bloqueia | A12/T13/C3(1): "L2b = ∅" impossível com o sítio 7 em arquivo PROIBIDO | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F2 | bloqueia | guard gerado verde para 16/17 sítios crus reais; "default negar" falso | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F3 | ajuste | `classify` engole `$transaction-SEM-setter`; "hoje zero casos" é falso | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F4 | ajuste | `updateManyAndReturn` fora do `OPS`: 68 acessos FORCE invisíveis | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F5 | bloqueia | pertença ao papel DONO escapa (`ALTER TABLE … NO FORCE`); trava e sonda de posse dizem 0 | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F6 | bloqueia | o SQL do procedimento não roda (`:'role'` em `DO $$`, `:"db"` não declarada) | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F7 | ajuste | auto-verificação é `SELECT` (sai 0 com `escapa=t`); pertença não revogada | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F8 | ajuste | migrador `NOSUPERUSER CREATEROLE`: `ALTER ROLE … NOSUPERUSER …` recusado | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F9 | bloqueia | fiação de produção da trava sem critério (default→`skip`; chamada em `main()` apagada) | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F10 | ajuste | "22/22" era `grep`; executado 28/28; mutação de A6 vermelha por `ZodError` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F11 | ajuste | mutação de A1 (apagar `r.rolsuper`) não deixa T6/T7 vermelhos | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F12 | ajuste | semente com `occurred_at`/`date` iguais: "remover a reordenação" não fica vermelho | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F13 | bloqueia | trava julga `current_user`; login super + `options=-c role=<limpo>` passa e escapa com `SET ROLE NONE` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| F14 | ajuste | gerador resolve `typescript` a partir do alvo; cópia fora da árvore morre | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N1 | nota | `GRANT … WITH SET FALSE` recusado sem poder `SET ROLE` (falso positivo seguro) | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N2 | nota | `REPO` cravado no Apêndice B | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N3 | nota | os três `.sh` do repo são `100644`: sourced é o caminho padrão do entrypoint | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N4 | nota | "sem `$disconnect` o processo não morre" é falso (~11,5 s); A4 é pega pelo espião do T4 | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N5 | nota | `deploy-production.yml:141` fala da tabela RBAC `roles`, não de papel PostgreSQL | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N6 | nota | A2 pega por T5 não T7; A9/T11 sem vermelho-controle; T12 vermelho-controle por import | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N7 | nota | A15/A16 sem mutação escrita | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| N8 | nota | P-a 8 linhas/1 executável; P-f omite `permissions`, `role_permissions`; N omite `rls-tenant-isolation` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| P1 | ajuste (pre-existente) | teste do default do `EVIDENCE_SCANNER` reescreve a regra (mutante 13/13 verde) — `fe2748c` 2026-09-06 | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F1 | bloqueia | A12/T13/C3(1): "L2b = ∅" impossível com o sítio 7 em arquivo PROIBIDO | O guard deixa de exigir "∅" e vira **RATCHET**: o inventário suspeito (L1+L2, chave sem número de linha) é **congelado** no head da entrega, **com o sítio 7 nominalmente dentro** (ligado à pendência `P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA`); linha nova **ou sumida** = vermelho (§0.4, §2.2(b), A12, T13, Apêndice A). `cloud-cost-allocation/**` continua PROIBIDO (§6) — razão em §R.2 | §R.2: gerador v2 no head → 48 chaves congeladas, sítio 7 entre elas; mutação "sítio novo" (Ml) → `+1` vermelho; mutação "a fábrica do sítio 7 mudou por fora" → `sumidas: 1` vermelho | **incorporado** |
+| F2 | bloqueia | guard gerado verde para 16/17 sítios crus reais; "default negar" falso | Dois guards com alcance **declarado**: (1) o ratchet estático com **default negar de verdade** — toda forma que o analisador não prova sob contexto entra no congelado (`OUTRO`, `TX-SEM-ENVOLTORIO?`, `$TRANSACTION-SEM-SETTER`, `CRU-DENTRO-DE-ENVOLTORIO`, `INJETADO-SEM-CLASSE`, `RAW OPACO`, identificador desestruturado, acesso por índice, subclasse); (2) o guard **da propriedade**, dinâmico: **T11-diferencial** — a mesma rota de plataforma, mesmo seed, sob superusuário × papel efêmero, tem de devolver o **mesmo** corpo (§2.2(b), §7 A9, §8 T11) | §R.2: as 17 mutações da r1 (`$S/muts/*.ts`, re-rodadas) contra o gerador v2 → **17/17 VERMELHAS** (`+1` chave cada); §R.3: `GET /platform/cloud-usage/summary` no app real, mesmo seed: super → `quantity: 50`, papel sem bypass → `metrics: []` (vermelho-controle do T11-diferencial no head) | **incorporado** |
+| F3 | ajuste | `classify` engole `$transaction-SEM-setter`; "hoje zero casos" é falso | `$transaction-SEM-setter` vira classe própria `$TRANSACTION-SEM-SETTER` (suspeita, congelada); o residual (i) do §0.4 é reescrito com o número medido | §R.2: head → `"$TRANSACTION-SEM-SETTER":2` (`work-order-prisma.repository.ts` `assign`: `workOrderAssignment.create` **e** `workOrder.updateManyAndReturn`); mutação Md → `+1` vermelho | **incorporado** |
+| F4 | ajuste | `updateManyAndReturn` fora do `OPS`: 68 acessos FORCE invisíveis | `OPS` deixa de ser digitado: é **derivado do client gerado** (`node_modules/.prisma/client/index.d.ts`, métodos do primeiro `*Delegate`) — 17 ops, incluindo `updateManyAndReturn` e `createManyAndReturn` | §R.2: `OPS(derivados)=17`; L1 sobe de 642 para **720** (os 68 + 10 RAW opacos); mutação Mq → `+1` vermelho | **incorporado** |
+| F5 | bloqueia | pertença ao papel DONO escapa (`ALTER TABLE … NO FORCE`); trava e sonda de posse dizem 0 | A propriedade (§2.1(a)) ganha a terceira via — **posse, direta ou por pertença** (`pg_has_role(<quem>, c.relowner, 'MEMBER')` sobre toda tabela `FORCE`) — e a trava passa a **RECUSAR** posse (era "reportar"; decisão revertida, razão em §R.1). Mesmo predicado na auto-verificação do script (§4.1), no go/no-go do §11 e em H3 | §R.1: `p2_app_ownermember` (membro de `p2_mig`, dono de `t_force`): v1 `0` linhas (PASSA), sonda v1 `0`; `SET ROLE p2_mig; ALTER TABLE t_force NO FORCE ROW LEVEL SECURITY; SELECT count(*)` → **3** sem GUC; v2 → `posse/p2_mig` (RECUSA). Dono direto `p2_app_owner`: v2 RECUSA (`posse/p2_app_owner/self=t`) | **incorporado** |
+| F6 | bloqueia | o SQL do procedimento não roda (`:'role'` em `DO $$`, `:"db"` não declarada) | Procedimento **reescrito e executado**: variáveis do `psql` entram por `set_config('san3.*')` (lidas com `current_setting` dentro de um único `DO`), banco = `current_database()`, migrador default = `current_user`; o `.sh` inteiro está no Apêndice C (md5 `189ddf8a093934cf1c1baa61ba80f5c8`) e é o que o dono e o compose rodam | §R.4: 7 cenários executados no cluster — papel novo `ec=0` linha `erp_runtime\|f\|f\|f\|0\|2`; 2ª execução **idêntica** (`pg_roles`, `pg_default_acl`, `pg_auth_members`, `relacl` por `diff`); migrador não-super **dono** `ec=0`; falhas nomeadas (§R.4 iii, iv-b, iv-c) | **incorporado** |
+| F7 | ajuste | auto-verificação é `SELECT` (sai 0 com `escapa=t`); pertença não revogada | A verificação é `RAISE EXCEPTION` dentro do `DO` (⇒ `psql` **ec=3** e **ROLLBACK** de tudo); pertença a papel que escapa **ou** a dono de tabela FORCE é **revogada** (`REVOKE`, que falha se o executor não tiver ADMIN — falha, não silêncio); posse não se corrige (mensagem diz o `ALTER … OWNER TO`) | §R.4 (iii): papel pré-existente `SUPERUSER BYPASSRLS CREATEDB` + membro de `p3_bypass` + dono de `t_own` → `ERROR: papel erp_runtime ainda escapa … POSSE …`, `ec=3`, e **nada persistiu** (`t\|t\|t\|1` depois); reatribuída a posse → `ec=0`, `f\|f\|f\|0` (atributos corrigidos, pertença revogada) | **incorporado** |
+| F8 | ajuste | migrador `NOSUPERUSER CREATEROLE`: `ALTER ROLE … NOSUPERUSER …` recusado | `CREATE ROLE` sem nomear `NOSUPERUSER/NOCREATEDB/NOBYPASSRLS` (são os defaults); `ALTER` só do atributo que **está** ligado e só se o executor **tiver** o atributo — senão **falha nomeando o atributo**; §11 passo 3 reescrito com os três modos de falha | §R.4 (iv): `p3_mig` (`LOGIN CREATEROLE NOSUPERUSER NOBYPASSRLS`, dono do banco e das tabelas) cria `erp_rt2` → `ec=0`, `f\|f\|f\|f`, default privileges `p3_mig\|r`/`p3_mig\|S`; (iv-b) `erp_rt2` pré-existente com `BYPASSRLS` → `ERROR: papel erp_rt2 tem BYPASSRLS e p3_mig nao pode remover (precisa de BYPASSRLS)`, `ec=3` | **incorporado** |
+| F9 | bloqueia | fiação de produção da trava sem critério (default→`skip`; chamada em `main()` apagada) | Dois critérios novos: **A5′/T2′** — o export `env.DATABASE_RUNTIME_ROLE_GUARD` é lido num **processo filho** sob `NODE_ENV=production` + PROD_OK (não `safeParse`, não regra reescrita); **A17/T15** — o `src/server.ts` **real** sobe num processo filho sob `NODE_ENV=production` com `DATABASE_URL` de superusuário e tem de morrer com `RUNTIME_ROLE_CAN_BYPASS_RLS` **antes** do Redis (§7, §8) | §R.5: `le-export.sh EVIDENCE_SCANNER` → `production unavailable`; mutante `production ? "noop"` → filho imprime `production noop` (**vermelho**) enquanto o precedente segue `13/13` verde; `boot.sh` (server real, super, Redis do PROD_OK) → hoje passa da trava e morre em `RedisCommandError` aos ~18 s — vermelho-controle do T15 | **incorporado** |
+| F10 | ajuste | "22/22" era `grep`; executado 28/28; mutação de A6 vermelha por `ZodError` | Números trocados pelos executados; A6 reescrito com o mecanismo real (`envSchema.parse` explode no import) | `node --test … deploy-manifest-parity` → `# tests 28 # pass 28`; `production-runtime-gates` → `63/63` (grep: 22 e 30) | **incorporado** |
+| F11 | ajuste | mutação de A1 (apagar `r.rolsuper`) não deixa T6/T7 vermelhos | A trava devolve **a razão** por linha (`via`, `rolname`, `rolsuper`, `rolbypassrls`, `is_self`); T7 asserta a razão (`is_self ∧ rolsuper` presente), não só "recusou" | §R.1: sob `p2_super2` (`SUPERUSER NOBYPASSRLS`) v2 → 5 linhas incl. `atributo/p2_super2/is_self=t`; mutante sem `r.rolsuper` → a linha `is_self` **some** (restam `p2_bypass`, `postgres`, posses) ⇒ T7 vermelho | **incorporado** |
+| F12 | ajuste | semente com `occurred_at`/`date` iguais: "remover a reordenação" não fica vermelho | Semente **intercalada**: A = 01h,03h,05h; B = 02h,04h (`date`: A = 15, B = 14) | `node -e` (§R.6): concatenação v1 "ordenada? **true**" (mutante passa); v2 "ordenada? **false**" → mutante vermelho; agregados `[A:15,B:14]` → `false` | **incorporado** |
+| F13 | bloqueia | trava julga `current_user`; login super + `options=-c role=<limpo>` passa e escapa com `SET ROLE NONE` | A trava julga **`session_user` e `current_user`** (a pertença é avaliada para os dois; `SET ROLE NONE` volta a `session_user`) — §2.1(a), §2.2(a); §11 passo 5 reescrito | §R.1: `PGOPTIONS='-c role=p2_clean' psql -U postgres` → `session_user=postgres, current_user=p2_clean`; v1 `0` (PASSA); v2 **5 linhas** (RECUSA); `SET ROLE NONE` → 3 linhas sem GUC. Pelo **PrismaPg** (`$SP/options-url.mts`, URL com `options=-c%20role%3Dp2_clean`): v1 PASSA, v2 RECUSA; URL de login `p2_clean` → v2 PASSA | **incorporado** |
+| F14 | ajuste | gerador resolve `typescript` a partir do alvo; cópia fora da árvore morre | Resolução a partir do **próprio script** (`import.meta.url` → `scripts/` → `node_modules` do repo), depois do `cwd`, nunca do alvo; T13 copia `src`+`prisma` para diretório temporário **sem** `node_modules` | §R.2: `cd /tmp && node $SP/fake-repo/scripts/gerador-v2.mjs <cópia sem node_modules>` → `ec=0`, cabeçalho L0 idêntico; o v1 no mesmo cenário → `Cannot find module` | **incorporado** |
+| N1 | nota | `GRANT … WITH SET FALSE` recusado sem poder `SET ROLE` (falso positivo seguro) | Declarado em §4.2 como falso positivo **aceito** (direção segura; o remédio é `REVOKE`) | §R.1: `p2_member_noset` → v2 `atributo/p2_bypass` (RECUSA) | **incorporado** |
+| N2 | nota | `REPO` cravado no Apêndice B | `const REPO = process.env.REPO ?? process.cwd();` (única linha alterada); re-executado aqui | §R.6: `npx tsx $SP/medir-papel.ts` no cluster `54353` → `22 itens, 0 fora do esperado`; limpeza `0 0 0 0` | **incorporado** |
+| N3 | nota | os três `.sh` do repo são `100644`: sourced é o caminho padrão do entrypoint | O corpo do `.sh` roda numa **função em subshell** (nada de `set -u`/`exit` vaza para o entrypoint) **e** o arquivo é versionado `100755` (`git update-index --chmod=+x`; a junta C1 confere `git ls-files -s`) | §R.4 (vi): `fake-entrypoint.sh` (`set -Eeo pipefail`, executa se `-x`, senão `source`) nos **dois** modos → o entrypoint "continua vivo", `ec=0` | **incorporado** |
+| N4 | nota | "sem `$disconnect` o processo não morre" é falso (~11,5 s); A4 é pega pelo espião do T4 | Justificativa reescrita (o `$disconnect` encurta a saída de ~11 s para imediata e fecha o pool limpo); A4 aponta o **espião do T4** | medição da r1 (item 4.3), aceita como executada; não re-medida | **incorporado** |
+| N5 | nota | `deploy-production.yml:141` fala da tabela RBAC `roles`, não de papel PostgreSQL | Citação trocada pela medição: `git grep -n -i -E 'CREATE ROLE\|CREATE USER' origin/main -- prisma/migrations` → **0** | executado (§R.7) | **incorporado** |
+| N6 | nota | A2 pega por T5 não T7; A9/T11 sem vermelho-controle; T12 vermelho-controle por import | A2 reatribuído a T5/T8; T11 ganha vermelho-controle **executado aqui** (§R.3); T12 importa a **fábrica** `createPrismaCloudChargeRepository()` (existe no head-base) e não a classe nova | §R.3 | **incorporado** |
+| N7 | nota | A15/A16 sem mutação escrita | A15/A16 viram checagens por **comando** com mutação (`rg` que fica vazio se a doc não mudar; `FECHADA` em vez de `EM ANDAMENTO` reprova) | §7 | **incorporado** |
+| N8 | nota | P-a 8 linhas/1 executável; P-f omite `permissions`, `role_permissions`; N omite `rls-tenant-isolation` | Números corrigidos: P-a **8/1**; P-f lista as **9** tabelas sem FORCE; baseline **N = 5** (o `test(` de `rls-tenant-isolation.test.ts:19` cobre as 4 tabelas de nuvem sob papel `NOSUPERUSER`, l.44 e 2460-2680) | §R.7: `git grep … \| wc -l` → 8; `psql … NOT relforcerowsecurity` → 9 nomes; `grep -n` no arquivo | **incorporado** |
+| P1 | ajuste (pre-existente) | teste do default do `EVIDENCE_SCANNER` reescreve a regra (mutante 13/13 verde) — `fe2748c` 2026-09-06 | **Pendência nomeada** `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` (§13), dono `B-O6R-07b`/segurança; **fora do escopo** deste bloco. O mecanismo que a fecha é o mesmo do A5′ (leitura do export em processo filho) — a pendência aponta para ele | §R.5: reproduzido (mutante `production ? "noop"` → `13/13` verde) | **pendência nomeada** |
 
 ### §R.0 — Roteiro de re-execução (o que re-rodei da crítica antes de decidir)
 
-EM APURAÇÃO
+Re-executados (não herdados) no cluster `54353`/Node 20: o gerador v1 verbatim (`$S/gerador.mjs`: `ec=0`, cabeçalho
+`106/106/106/777 · 642 · 70/451`, L2b = 7 linhas — igual à r1); o Apêndice B com a emenda N2 (22/22); a trava v1
+(`$S/guard.sql`) sob 11 papéis (coluna "v1" da tabela de §R.1 — reproduz os 10 casos da r1 e acrescenta `pg_read_all_data`);
+o SQL v1 do procedimento (`$S/role.sql`) não foi re-rodado — o defeito é sintático e a v2 o substitui por inteiro
+(§R.4 executa o substituto); as 17 mutações (`$S/muts/*.ts`) contra o gerador v2 (§R.2); o mutante `EVIDENCE_SCANNER`
+do item 4.5 (§R.5). Medição da r1 aceita sem re-execução: N4 (tempo de saída sem `$disconnect`).
 
+### §R.1 — A trava v2 sob 11 papéis (F5, F11, F13, N1) — banco `plano_i2`, criado e derrubado por mim
+
+`$SP/guard-v2.sql` (= `RUNTIME_ROLE_GUARD_SQL` do §2.2(a), byte a byte); `guard-v2-sem-rolsuper.sql` = mutante de A1;
+`guard-v1.sql` = o da r1. Tabela `t_force` (FORCE, 3 linhas, dona `p2_mig`, não-super) e `t_force2` (dona `p2_app_owner`).
+
+```
+papel                                   | v1 | v2 (via/rolname/is_self)                                                        | mutante sem rolsuper
+postgres                                | 3  | 5: atributo/p2_bypass/f atributo/p2_super2/f atributo/postgres/t posse/p2_app_owner/f(1) posse/p2_mig/f(1) | 4 (some atributo/p2_super2)
+p2_super2 (SUPERUSER NOBYPASSRLS)       | 3  | 5: … atributo/p2_super2/t …                                                     | 4: a linha is_self=t SOME  ← T7 vermelho
+p2_clean                                | 0  | 0                                                                               | 0
+p2_member_direct / _noinherit / _chain  | 1  | 1: atributo/p2_bypass/f                                                         | 1
+p2_member_noset (INHERIT FALSE, SET FALSE) | 1 | 1: atributo/p2_bypass/f   (N1: falso positivo seguro)                          | 1
+p2_app_ownermember (membro do DONO)     | 0  | 1: posse/p2_mig/f(1)          ← F5: v1 passava                                  | 1
+p2_app_owner (dono direto de t_force2)  | 0  | 1: posse/p2_app_owner/t(1)                                                      | 1
+p2_read_all (membro de pg_read_all_data)| 0  | 0   (e SELECT count(*) FROM t_force sem GUC → 0: não escapa)                    | 0
+p2_mig (o migrador, dono)               | 0  | 1: posse/p2_mig/t(1)          (o app NUNCA roda como migrador — correto)         | 1
+```
+
+A porta do dono, executada: `psql -U p2_app_ownermember … BEGIN; SET LOCAL ROLE p2_mig; ALTER TABLE t_force NO FORCE ROW
+LEVEL SECURITY; SELECT count(*) FROM t_force; ROLLBACK;` → `ALTER TABLE` / **`3`** (a sonda v1 `relowner = current_user`
+dizia `0`). F13: `PGOPTIONS='-c role=p2_clean' psql -U postgres` → `postgres|p2_clean`; v1 → `0`; v2 → 5 linhas;
+`SET ROLE NONE; SELECT count(*) FROM t_force` → `postgres|3`. Pelo app: `U='…/plano_i2?options=-c%20role%3Dp2_clean'
+npx tsx $SP/options-url.mts` → `trava v1: PASSA | trava v2: RECUSA (5 linhas)`; `SET LOCAL ROLE NONE → {"c":"postgres","n":3}`;
+URL de login `p2_clean` → `v2: PASSA`.
+
+**Por que posse passa a RECUSAR (mudança de decisão da v1):** a v1 reportava posse para não impedir "o próprio ato do dono
+num provedor que só ofereça um papel". Medido: quem é dono (ou membro do dono) lê tudo com **um** `ALTER TABLE` — a mesma
+classe de escape que a pertença a `BYPASSRLS` (um `SET ROLE`), que a v1 já recusava. Aceitar uma e recusar a outra era
+incoerente; e o cenário "um papel só" **já** é o cenário em que o app roda como migrador, que a trava v2 recusa de propósito
+(`p2_mig` acima). O ato do dono (§11) cria o segundo papel; a trava é a prova de que ele foi feito.
+
+### §R.2 — O gerador v2 e o ratchet (F1, F2, F3, F4, F14) — `$SP/gerador-v2.mjs`, md5 `293b3746ad7e4dea1c11e16c794e7aa3`
+
+```
+$ cd /home/user/wt-plano && PATH=/opt/node20/bin:$PATH node $SP/gerador-v2.mjs .
+# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · OPS(derivados)=17 · src/**/*.ts=777
+# L1: call-sites sobre tabelas FORCE (+ RAW opacos) = 720
+# L1 por classificação: {"TX-SEM-ENVOLTORIO?":12,"INJETADO-SEM-CLASSE":8,"INJETADO":646,"SOB-CONTEXTO":51,"$TRANSACTION-SEM-SETTER":2,"CRU":1}
+# L2: classes com executor injetado = 70; instanciações achadas = 451
+# L2 por classificação do argumento: {"SOB-CONTEXTO":423,"TX-SEM-ENVOLTORIO?":14,"CRU":4,"OUTRO()":4,"$TRANSACTION-SETTER-DEPOIS?":1,"INJETADO":5}
+# INVENTÁRIO SUSPEITO (L1+L2): 48 chaves · sha1=147d41c209a5f3bbce9fc7d208fd33a02e6bd8d2 · L2b (derivado, informativo) = 65
+```
+
+As **48 chaves** congeladas (L1: 9 `TX-SEM-ENVOLTORIO?` · 8 `INJETADO-SEM-CLASSE` · 2 `$TRANSACTION-SEM-SETTER` · 1 `CRU`;
+L2: 14 `TX-SEM-ENVOLTORIO?` · 5 `INJETADO` · 4 `CRU` · 4 `OUTRO()` · 1 `$TRANSACTION-SETTER-DEPOIS?`) estão no Apêndice A com
+a saída completa. O sítio 7 está lá: `L2 src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts
+new PrismaCloudCostAllocationRepository(prisma) (nenhum) CRU`. Os L2b (65, com linha) são **derivados** de L2 e ficam fora
+do congelado: a raiz (a instanciação) já está na chave, e congelar o derivado faria o ratchet reprovar todo método novo de
+toda classe injetada, sem informação nova.
+
+Harness (`cp -r src prisma` para `$SP/mut/base`, **sem** `node_modules`; por mutação, `src/modules/zz-mut/mut.ts` = o
+arquivo da r1; `comm` do inventário congelado):
+
+```
+Ma_alias:+1 Mb_destructure:+1 Mc_element:+1 Md_tx_sem_setter:+1 Me_root_dentro_wrapper:+1 Mf_new_como_argumento:+1
+Mg_subclasse:+1 Mh_funcao_livre_client:+1 Mi_sql_em_constante:+1 Mj_campo_arrow:+1 Mk_fabrica_param_tx:+1
+Ml_mutacao_do_plano:+1 Mm_getter_prisma:+1 Mn_membro_nao_previsto:+1 Mo_tx_param_helper:+1
+Mp_this_client_fora_de_classe_injetada:+1 Mq_updateManyAndReturn:+1
+VERMELHAS: 17/17
+```
+
+Cada `+1` é a chave que a mutação acrescenta (ex.: Mb → `L1 … (identificador) cloudUsageEvent.findMany … OUTRO(identificador)`;
+Mc → `prisma ["cloudUsageEvent"].findMany … CRU`; Md → `tx cloudUsageEvent.findMany $TRANSACTION-SEM-SETTER`; Me → `prisma …
+CRU-DENTRO-DE-ENVOLTORIO`; Mg → `L2 new Sub(prisma) … CRU` (fecho por `extends`); Mh → `client … INJETADO-SEM-CLASSE`;
+Mi → `prisma RAW-SQL($queryRawUnsafe) OPACO CRU`; Mq → `L2 new Rep(prisma) … CRU`). **Linha sumida** também reprova: mutação
+que altera a fábrica do sítio 7 por fora (`prisma` → `prisma as never`) → `novas: 1 · sumidas: 1 → VERMELHO`.
+F14: `cd /tmp && node $SP/fake-repo/scripts/gerador-v2.mjs $SP/mut/base` (script em `scripts/`, cwd sem `package.json`, alvo
+sem `node_modules`) → `ec=0`; o v1 → `Cannot find module`.
+
+**Alcance declarado do ratchet (o que ele NÃO enuncia):** é aproximação **estática** — acessor dinâmico (`prisma[nome]`),
+`Object.values(prisma)`, SQL cru montado fora do arquivo e client obtido por caminho que não passe por um nome de
+acessor Prisma continuam invisíveis. Por isso ele é o guard de **forma**, e o guard da **propriedade** é o T11-diferencial
+(§R.3) — a junta C3 mede os dois.
+
+### §R.3 — T11-diferencial: a propriedade, medida no app real (F2, N6)
+
+`$SP/diff-http.mts` (padrão `san3-04a`: `createEphemeralRole` pelo arnês, `globalThis.prisma` **antes** de importar o app,
+`createApp(PrismaCoreSaasService(…))`, seed de 2 organizações com `occurred_at` intercalados sob `withTenantRls`, cabeçalho
+legado de plataforma em `NODE_ENV=test`; papel efêmero e seed derrubados no `finally`):
+
+```
+$ ROLE=super   ADMIN_URL=… npx tsx $SP/diff-http.mts
+{"role":"super","papel":{"u":"postgres","rolsuper":true,"rolbypassrls":true},"status":200,"resumo":{…,"metrics":[{"metricKey":"storage_bytes","quantity":50,"unit":"bytes","sourceType":"medicao"}],…}}
+$ ROLE=runtime ADMIN_URL=… npx tsx $SP/diff-http.mts
+{"role":"runtime","papel":{"u":"o6r_b01_…","rolsuper":false,"rolbypassrls":false},"status":200,"resumo":{…,"metrics":[],…}}
+$ psql … → 0 0 0   (tenants do diff, eventos, papéis efêmeros restantes)
+```
+
+É o item 10 pela superfície: **mesmo seed, mesma rota, `50` × vazio**. O T11 da v2 é este diferencial (corpo igual, com
+`generatedAt` normalizado), com JWT `platform_admin` (CE-G2) no lugar do cabeçalho legado; o vermelho-controle no head-base
+é a saída acima. T12 usa `createPrismaCloudChargeRepository()` (existe no head-base) para o mesmo fim.
+
+### §R.4 — O procedimento do papel, executado (F6, F7, F8, N3) — bancos `plano_i3` (super) e `plano_i4` (dono `p3_mig`)
+
+Script: Apêndice C (`$SP/db-runtime-role.sh`, md5 `189ddf8a093934cf1c1baa61ba80f5c8`, 82 linhas). `PGHOST/PGPORT` do cluster;
+`PGUSER`/`PGDATABASE` por cenário; `DB_RUNTIME_PASSWORD` sempre presente (nunca ecoada).
+
+```
+(i)   PGUSER=postgres PGDATABASE=plano_i3 DB_RUNTIME_PASSWORD=… bash db-runtime-role.sh → DO / erp_runtime|f|f|f|0|2 / ec=0
+(ii)  2ª execução → mesma linha, ec=0; diff dos snapshots (pg_roles, pg_default_acl, pg_auth_members, relacl) → IDEMPOTENTE
+(iii) ALTER ROLE erp_runtime SUPERUSER BYPASSRLS CREATEDB; GRANT p3_bypass TO erp_runtime; t_own (FORCE) OWNER TO erp_runtime
+      → ERROR: papel erp_runtime ainda escapa de RLS (1 via(s) … POSSE …): reatribua o dono ao migrador (ALTER TABLE ... OWNER TO postgres) … / ec=3
+      → depois: t|t|t|1  (NADA persistiu: o DO é uma transação; ROLLBACK)
+(iii-b) ALTER TABLE t_own OWNER TO postgres; rodar de novo → erp_runtime|f|f|f|0|3 / ec=0 ; pg_roles: f|f|f, membros=0
+(iv)  p3_mig = LOGIN CREATEROLE NOSUPERUSER NOBYPASSRLS, dono de plano_i4 e das tabelas (a forma do gerenciado):
+      PGUSER=p3_mig PGDATABASE=plano_i4 DB_RUNTIME_ROLE=erp_rt2 … → erp_rt2|f|f|f|0|2 / ec=0 ; pg_default_acl: p3_mig|r, p3_mig|S
+(iv-b) ALTER ROLE erp_rt2 BYPASSRLS (pelo super) → como p3_mig: ERROR: papel erp_rt2 tem BYPASSRLS e p3_mig nao pode remover (precisa de BYPASSRLS) / ec=3
+(iv-c) tabela public.t_alheia de OUTRO dono → ERROR: tabela/sequencia public.t_alheia pertence a p3_outro e p3_mig nao pode conceder DML nela: ALTER ... OWNER TO p3_mig … / ec=3
+(v)   CREATE TABLE t_depois (por p3_mig, DEPOIS do script) → has_table_privilege('erp_rt2', 't_depois', 'SELECT,INSERT,UPDATE,DELETE') = t; USAGE na sequência = t
+(vi)  trava v2 sob erp_rt2 em plano_i4 → 0 linhas (o papel que o script produz PASSA na trava)
+(vii) fake-entrypoint.sh (set -Eeo pipefail; executa se -x, senão source): modo 100755 e modo 100644 → "entrypoint: continua vivo", ec=0
+      sem DB_RUNTIME_PASSWORD → "DB_RUNTIME_PASSWORD obrigatória", ec=1
+```
+
+Limite medido e **declarado** (3.4 da r1): `ALTER DEFAULT PRIVILEGES` cobre só tabelas criadas pelo **migrador nomeado** e
+**neste banco**. Tabela criada por outro papel fica sem grant → o script **falha nomeando a tabela** (iv-c); tabela futura de
+outro papel só aparece como `42501` no primeiro acesso (R2). O plano exige que **todo DDL** (migrações, `db:provision-rbac`)
+rode como o migrador — é o que a pipeline já faz (`PROD_DATABASE_URL`, §0.3 P-j).
+
+### §R.5 — Fiação de produção (F9, P1)
+
+`$SP/le-export.sh <CHAVE>`: `env -i` + PROD_OK do teste + `NODE_ENV=production` + `DOTENV_CONFIG_PATH=/dev/null`, `node --import
+tsx -e "import('./src/config/env.ts').then(m => console.log(m.env.NODE_ENV + ' ' + m.env['<CHAVE>']))"`.
+
+```
+$ bash le-export.sh EVIDENCE_SCANNER                       → production unavailable   (ec=0)
+$ sed -i 's/production ? "unavailable" : "noop"/production ? "noop" : "noop"/' src/config/env.ts   (mutação temporária)
+$ bash le-export.sh EVIDENCE_SCANNER                       → production noop          ← o filho VÊ a mutação
+$ node --test --import tsx tests/o6r07b-scanner-failclosed.test.ts   → # pass 13 # fail 0   ← o precedente NÃO vê (P1)
+$ git checkout -- src/config/env.ts && cmp … && git status --short | wc -l → revertido, 0
+```
+
+`$SP/boot.sh <DATABASE_URL> 3457 3458`: `src/server.ts` **real** num filho, `NODE_ENV=production`, PROD_OK (Redis =
+`redis.interno.exemplo.com`, inalcançável; o gate `Ω6R-DAT-001` recusa host local em produção — medido: `ZodError REDIS_URL`
+com `127.0.0.1`), `DATABASE_URL` = superusuário do cluster:
+
+```
+{"level":50,"error":{"name":"RedisCommandError"},"msg":"Failed to start ERP Techsolutions API"}   … "Job worker tick failed" ×N   t=18s
+```
+
+Hoje o boot **passa** do ponto onde a trava viverá e morre no Redis. Com a trava (E1): a primeira linha `Failed to start` tem de
+trazer `RUNTIME_ROLE_CAN_BYPASS_RLS`, **antes** de qualquer linha do worker, com `exit 1` em segundos — T15; e a mutação
+"apagar a chamada em `main()`" reproduz exatamente a saída acima (Redis, não a trava) ⇒ vermelho.
+
+### §R.6 — Semente e ordem (F12) e Apêndice B re-executado (N2)
+
+```
+$ node -e '…'  → semente v1: concatenação A,A,A,B,B ordenada por occurredAt? true   (mutante sem reordenar PASSA = F12)
+                 semente v2: concatenação A(1,3,5),B(2,4) ordenada? false → mutante VERMELHO; reordenada: true
+                 agregados v1 [A:15,B:15] ordenado? true | v2 [A:15,B:14] ordenado? false
+$ ADMIN_URL=postgresql://postgres@127.0.0.1:54353/erp_plano?schema=public npx tsx $SP/medir-papel.ts → # 22 itens, 0 fora do esperado (ec=0)
+$ psql … → 0 0 0 0   (papéis san3_05, tenants, eventos, cobranças)
+```
+
+### §R.7 — Números (N5, N8, F10)
+
+```
+$ git grep -n -i -E 'CREATE ROLE|CREATE USER' origin/main -- prisma/migrations | wc -l      → 0
+$ git show origin/main:.github/workflows/deploy-production.yml | sed -n 141p → "# `migrate deploy` NÃO cria papel: nenhuma migração insere em `roles`, e produção nunca semeia."  (tabela RBAC — N5)
+$ git grep -n -i -E 'rolbypassrls|rolsuper|BYPASSRLS' origin/main -- src | wc -l            → 8 (1 executável: login-readiness.ts:202)
+$ psql … "… NOT relforcerowsecurity" → _prisma_migrations, cloud_charge_calculation_runs, cloud_charge_rules, cloud_cost_allocation_runs, cloud_cost_imports, cloud_cost_line_items, permissions, role_permissions, tenants
+$ node --test … deploy-manifest-parity → 28/28 · production-runtime-gates → 63/63 (grep `test(`: 22 · 30)
+$ grep -n -E '^\s*test\(|cloudUsageEvent|NOSUPERUSER' tests/rls-tenant-isolation.test.ts → test( l.15 (só declaração de pulo), l.19; NOSUPERUSER l.44; tabelas de nuvem l.2460-2680 e 3053-3068
+```
 
 ---
 
