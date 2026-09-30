@@ -382,6 +382,17 @@ A rodada r2 é a última permitida pelo corpo do crítico. Pela regra de papéis
 executada e motivo. O conserto é de **quem planeja**.
 
 
-## 8. Limpeza do cluster
+## 8. Limpeza do cluster (provada)
 
-EM APURAÇÃO
+```
+DROP DATABASE cr2_compose, cr2_i3, cr2_i4 WITH (FORCE) → 3 × DROP DATABASE
+DROP OWNED BY <cada papel> em erp_critico_r2 ; DROP ROLE dos 16 papéis cr2_*/erp_rt*/erp_runtime* → DROP ROLE
+bancos:  erp_critico_r2 postgres template0 template1
+papéis não-sistema: postgres
+erp_critico_r2: 115 tabelas · 106 FORCE · pg_default_acl 0 · tenants 0 · cloud_usage_events 0 · tenant_cloud_charges 0 · views 0
+papéis o6r_b01_% / san3_05% / cr2% restantes: 0      Redis 63854: dbsize 0 (não usado)
+processos node de server/gerador/tsx vivos: 0
+```
+Edições temporárias no worktree (mutação do `env.ts`, sonda do catalog-guard, gerador em `scripts/`) revertidas/removidas por `trap`;
+`cmp` do `env.ts` = original; `git status --short` = 0 linhas fora do commit deste arquivo. Scratch: cópias de `src`+`prisma`, o
+`pg_basebackup` (48 MB) e o `argv` capturado apagados; restam 400 KB de scripts e saídas (roteiro de re-execução).
