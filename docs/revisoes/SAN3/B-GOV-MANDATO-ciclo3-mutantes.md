@@ -68,15 +68,38 @@ E no fim da mesma rodada, com a árvore limpa:
 copia pristina intacta (md5 igual)
 ```
 
-### 2.1 ERRATA do §E4.6 do plano — a sonda literal não serve (medido)
+### 2.1 ERRATA do §E4.6 do plano — a sonda do plano não serve; a grafia REAL é a da fonte
 
-O plano manda injetar `[ -n "$SONDA_INEXISTENTE" ] || parado "sonda"`. **Isso não funciona, e a falha
-é silenciosa no sentido pior:** com a variável ausente, `-n` é **falso**, o `||` **dispara**, e o
-artefato **pristino** passa a abortar em toda invocação — a linha de base contra a qual todo mutante
-é comparado vai a zero e a rodada inteira perde sentido. A sonda entregue usa a polaridade que
-**preserva** o pristino (`-z` com `${…:-}`): pristino no-op, mutante M1 no-op, guard verde, sonda
-**NÃO-COBERTA** — que é exatamente o que o controle existe para provar. É por isso que o controle (a)
-acima consegue passar.
+**A linha que a ferramenta injeta**, transcrita da fonte (`scripts/mandato-mutantes.sh`, blob `37549262`,
+l.255-257 — o plano do ciclo 3 §14.10 manda citá-la daqui, não do plano):
+
+```
+LSET=$(grep -n '^set -u' "$SD/$ART" | head -1 | cut -d: -f1)
+sed -i "${LSET}a [ -z \"\${SONDA_INEXISTENTE:-}\" ] || exit 9" "$SD/$ART"
+SLINHA=$((LSET+1))
+```
+
+Isto é: logo abaixo do primeiro `set -u` do artefato entra **`[ -z "${SONDA_INEXISTENTE:-}" ] || exit 9`**.
+
+**O plano escreveu duas grafias, e nenhuma serve** (errata do §E4.6 l.715 e do §13.7 D-S-4 l.1303, plano
+§14.10). Medido no K1 (2026-09-29), três scripts de três linhas sob `set -u` — a sonda entra logo abaixo
+dele nos dois artefatos:
+
+| grafia | variável ausente (o pristino) | variável exportada |
+|---|---|---|
+| v3, §E4.6 l.715: `[ -n "$SONDA_INEXISTENTE" ] \|\| parado "sonda"` | `ec=1`, *unbound variable* — o pristino morre | `ec=0`: a sonda não dispara |
+| §13.7 D-S-4 l.1303: `[ -z "$SONDA_INEXISTENTE" ] \|\| parado "sonda"` | `ec=1`, *unbound variable* — o pristino morre por outra via | `ec=0`: `parado: command not found`, e o script SEGUE |
+| **fonte, l.256:** `[ -z "${SONDA_INEXISTENTE:-}" ] \|\| exit 9` | `ec=0` — no-op, pristino intacto | `ec=9` — dispara |
+
+A **polaridade** `-z` do §13 está certa; a **grafia** não: sem `:-`, o `set -u` mata o pristino antes de o
+teste ser avaliado; e `parado` não existe no pré-voo (no refs só é definida na l.114, **depois** da sonda).
+Por isso a fonte usa `${…:-}` e `exit 9` — e o M1 casa a forma do `||` das duas. O controle (a) do §2 passa
+porque é **esta** linha que entra no artefato (cabeçalho da ferramenta, l.50-62, documenta a divergência).
+
+*Registro anterior desta seção (28/09), resumido e preservado:* citava só a grafia v3 (`-n`) e explicava que,
+com a variável ausente, o `-n` falso fazia o `||` disparar. Sob `set -u` o pristino morre **antes**, por
+*unbound variable*; o efeito que o registro anterior descrevia — pristino abortado, linha de base
+destruída — é o mesmo.
 
 ---
 
@@ -298,3 +321,11 @@ e ela custa um processo por caso, no sistema operacional em que processo é caro
    cobertura: a fração publicada tem esses pontos **fora** do denominador, e eles estão listados.
 5. **A ferramenta mede o guard, não o produto.** Um mutante VERMELHO diz que *algum* caso reagiu —
    não diz que o caso testa a coisa certa.
+6. **M1 dentro de substituição de comando produz mutante inválido (fronteira 24, plano §14.4).** Em
+   `$( … || echo … )` o M1 corta até o fim da linha e come o `)` de fechamento: o mutante não compila, o
+   `bash -n` pega, e o ponto sai `ANOMALIA-SINTAXE` — **sem medição**, fora de K e fora de NÃO-COBERTOS.
+   Instância de hoje: a l.164 do `mandato-refs.sh` (`MB=$(git merge-base … 2>/dev/null || echo "")`),
+   semanticamente inerte (`$(x || echo "")` ≡ `$(x || true)`: `MB` vazio nos dois). Re-derivado no K1 com o
+   `aplica()` real da ferramenta sobre cópia: mutante `… 2>/dev/null || true` sem o `)`, `bash -n` `ec=2`
+   (*unexpected EOF while looking for matching `)'*); pristino `ec=0`. Declarada também em
+   `P-GOV-MANDATO-3-FRONTEIRAS` (dono `B-GOV-MANDATO-2`).

@@ -314,3 +314,55 @@ estreitaria o gatilho da checagem 7. O desenvolvedor do artefato **não toca `te
 - **`merge_commit` / `approved_head`:** `null` na autoria (§C3.5), com backfill pós-merge.
 - **KPI:** `backend_tests` 3103/3105 → **3382/3385**, execução real no job `backend` do CI, delta
   decomposto por arquivo (guards 51 → 331 casos) e o único vermelho nomeado.
+
+## Emenda 6 — escopo nominal pós-§14 (a "Emenda 4 — escopo nominal pós-§14" do plano §14.14)
+
+> Escrita pelo **Dev-S-2** (`dev-s2-mandato-registro`) no K1 do ciclo 3 (2026-09-29), a partir do plano
+> `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §4, §13.2, §14.4, §14.8, §14.12 e §14.14 — o plano é o
+> contrato; esta emenda registra no comando o que ele mudou. **Divergência de numeração, declarada:** o §14.14
+> manda acrescentar uma "Emenda 4" e diz que esta seção tinha "Emendas 1–3"; medido na fonte, ela já tinha
+> **1–5** quando o §14.14 foi escrito (`c7eef1fd`; as 4 e 5 entraram em `1466c7d9`, 2026-09-28 03:25). Uma
+> segunda "Emenda 4" duplicaria o número; esta é a **6**, com o título do plano preservado acima.
+
+**Escopo PERMITIDO — acréscimos nominais do ciclo 3 além do escopo do comando original** (cada linha com a
+fonte no plano; a C3‴ confere que estão também aqui, ERRATA E-7(b)):
+
+| arquivo | ação | quem / commit | fonte no plano |
+|---|---|---|---|
+| `scripts/mandato-mutantes.sh` | NOVO (E4). **Diverge** da linha do Escopo PROIBIDO ("qualquer outro arquivo de `scripts/` ou `tests/`"), declarado como na Emenda 1 do ciclo 2 | Dev-S do ciclo 3 (`616fd4fa`, `1466c7d9`); Dev-S-2 fase 1 (`c32f77b5`: aborta com linha de base suja) | §4, §13.5 |
+| `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md` | NOVO — matriz, equivalentes, controles, [M-2] | Dev-S; K1 e K2 do Dev-S-2 | §4, §14.12 |
+| `tests/mandato-preflight.test.ts` | **só** os hunks de `[B8a]`/`[B8b]`/`[B8c]` + o `[B8d]` novo (semântica v3) | Dev-T-3 (`dev-t3-mandato-b8-refs`, `9d3de5dd`) | §13.1, §13.2 |
+| `tests/mandato-refs.test.ts` | **só adições** contra `34969a81` ([P-0]): `[V16]`–`[V19]`; depois `[V18b]`/`[V18c]` e a frase do comentário do skip do `[V18]` | Dev-T-3 (`9d3de5dd`); **Dev-T-4** (`dev-t4-mandato-refs-win32`, `395d07c9`) | §13.2, §13.4, §14.4 |
+| `agent-orchestration/omega/juntas/votos/B-GOV-SEM-TETO/PORTEIRO-395.md` | NOVO, byte a byte, md5 EOL-neutro `9cd7cb00020f0577044eb2ed3de4e3b8` (na mensagem do commit e no corpo do PR) | orquestrador / commit de registro da junta (passo 6 do §14.12) | §14.14 R-D, R-E |
+| `Kpis/kpis-history.md` — a linha `pr / merge_commit / approved_head` da entrada do #394 | 1 linha reescrita: `394` / `b3f0af5f…` / `7ad08690…` (os valores do JSON), com a marca do backfill | Dev-S-2 / K1 | §14.14 R-A |
+| `agent-orchestration/controle/pendencias.md` — as 2 ocorrências de `dd79c96f` (item 2.2 do inspetor) | âncora → `b3f0af5f` (o squash do #394 na `main`), data mantida, marca escrita | Dev-S-2 / K1 | §14.14 R-B |
+
+`pendencias-indice.md` continua **só pelo gerador**; `Kpis/app.js` **só por `kpi-freeze`**; nada do Dev-S-2 toca
+`tests/**` (o fase 1 tocou só `scripts/**`; o K1, só registro). `J-B-GOV-SEM-TETO.md` e `votos/B-GOV-SEM-TETO/*`,
+vindos da `main`, também citam `dd79c96f` e ficam **intocados** — registro de outro bloco.
+
+**Identidade da matriz E4 (plano §14.8; emenda o "4 artefatos" do §13.5).** A identidade de **cada** matriz são os
+**3 blobs que a ferramenta lê para aquele alvo** — refs: `scripts/mandato-refs.sh` + `tests/mandato-refs.test.ts` +
+`scripts/mandato-mutantes.sh`; pré-voo: `scripts/mandato-preflight.sh` + `tests/mandato-preflight.test.ts` +
+`scripts/mandato-mutantes.sh`. O cabeçalho de `…-mutantes.md` grava os 5 blobs; só a **tripla** de cada matriz é
+critério. Blobs no head deste K1 (`git rev-parse <head>:<caminho>`): refs `474c7521` · pré-voo `faa408c8` ·
+ferramenta `37549262` · guard do refs `9e680314` (Dev-T-4) · guard do pré-voo `3d875a54`. Os blobs ficam
+**congelados** da rodada E4 ao voto da junta 3 — a matriz é indexada por número de linha —, exceto o guard do
+refs, cuja matriz é reexecutada no blob novo (E4-refs-2) (§14.2.1, §14.4).
+
+**ERRATA à Emenda 1 do ciclo 2 (entrega E5 do plano do ciclo 3).** Onde a Emenda 1 do ciclo 2 diz *"as 106 outras
+atas"*, leia-se **107**: medido por `git ls-tree -r --name-only <ref> agent-orchestration/omega/juntas/ | grep -cE
+'/J-[^/]*\.md$'` — `fc3363e3` = **107** (nenhuma delas é a deste bloco). Depois da integração: `3b1fe0f9` (o `$MB`) =
+**108** (a 108ª é `J-B-GOV-SEM-TETO.md`, do #394) e o head = **109** (com a deste bloco) — logo, hoje, **108 outras
+atas**, todas no Escopo PROIBIDO. O texto da Emenda 1 fica intocado.
+
+**Rastreabilidade pós-integração (K1).** Integração da `main` por merge: `7d02d8da` (pais `e27fbe14` e `3b1fe0f9`);
+`$MB` = `git merge-base origin/main HEAD` = `3b1fe0f9` = `origin/main` (§14.6.1 satisfeito). A Emenda 4 acima ("o que
+o ciclo 3 NÃO fecha") está **superada**: `P-GOV-MANDATO-3-B8B-CONTRADICAO` fecha pelo plano §13.1 (Dev-T-3 `9d3de5dd`
++ Dev-S-2 `c32f77b5`). KPI recontado: `backend_tests` **3389/3392** por N=2 execuções reais locais (RUN1 `3392/3389/0/3` (tests/pass/fail/skipped), 1750 s, `ec=1` · RUN2 `3392/3389/0/3` (tests/pass/fail/skipped), 1527 s, `ec=1`)
+— CI no mesmo head `3392/3390/0/2` —; o `ec=1` local é o guard de skip (P8) do runner, pelo `[V18]` que pula em win32;
+`blocks_completed` **168 → 169** (MB + 1); `merge_commit`/`approved_head` `null` na autoria. Pendências: abre
+`P-GOV-MANDATO-3-FRONTEIRAS`; fecha `P-GOV-MANDATO-3-B8B-CONTRADICAO` e `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392`;
+atualiza `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` (rodada do zero em curso, TIMEOUT na l.161); anota
+`P-GOV-MANDATO-2-FRONTEIRAS` item 2 (`--ignore-case`). **Fica para o K2:** as matrizes (E4-refs-2 e pré-voo completa)
+e o fechamento de `…-MUTANTES-REFS` e `…-MUTANTES-PREFLIGHT`.

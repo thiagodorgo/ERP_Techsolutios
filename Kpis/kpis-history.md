@@ -3098,7 +3098,7 @@ Fechá-lo exigiria uma isenção **fora do inventário I1–I20** — das 20, **
 | Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) |
 | Blocos Entregues | **167 → 168** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`fc3363e3`, #392 = 167). O #393 publica 168 no ramo dele: quem mergear depois **reconta** no pré-merge |
 | mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos blocos, não o produto |
-| pr / merge_commit / approved_head | `394` / `null` / `null` **na autoria** (§C3.5) |
+| pr / merge_commit / approved_head | `394` / `b3f0af5f82aca23502326f18b644a28df3236b5a` / `7ad08690bad5e9cbc4d34fe6905b14c6ac634046` — backfill §C3.5 do #394: JSON pago pelo #395, `.md` pago aqui pelo #393 (R-A do porteiro do #395; valores lidos da entrada `pr: 394` do `kpis-history.json`) |
 
 **O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-09-27
 (`D-SEM-TETO-AUDITORIA-NO-3`): **cai o teto de dois ciclos** de reprovação; se o ciclo 3 reprovar, **audita-se a
@@ -3124,3 +3124,45 @@ próprio texto, §C7.4-bis) fez três coisas:
 `kpis-history.json`: `pr 392` · `merge_commit fc3363e38aabd77f54e6b53034128182f8000571` (de
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
+
+## 2026-09-29 — B-GOV-MANDATO **ciclo 3 — recontagem pós-integração** (PR #393) — `published_per_pr`
+
+| métrica | `$MB` (`3b1fe0f9`) | ciclo 3 na autoria | agora | origem |
+|---|---|---|---|---|
+| `backend_tests` | 3052/3054 | 3382/3385 | **3389/3392** | **N=2 execuções reais locais** de `npm test` (worktree próprio no head `ade74d09`, Postgres 16 e Redis 7 descartáveis próprios em portas provadas, `CORE_SAAS_PERSISTENCE` não exportado → o runner declara `memory`): RUN1 `3392/3389/0/3` (tests/pass/fail/skipped), 1750 s, `ec=1` · RUN2 `3392/3389/0/3` (tests/pass/fail/skipped), 1527 s, `ec=1`. CI no mesmo head: `3392/3390/0/2` |
+| `frontend_smoke_tests` | 1202/1202 | 1202/1202 | 1202/1202 | carregado com nota §C3.3 — `git diff --name-only $MB HEAD -- frontend mobile` = **0** e o MESMO comando `-- scripts tests` = **5**; último oficial #390, reconfirmado no #392 |
+| `flutter_tests` | 864/864 | 864/864 | 864/864 | carregado com nota §C3.3 — mesma medição; último oficial #357 |
+| `blocks_completed` | 168 | 168 | **169** | `value` do `$MB` + 1 (plano §14.6 Decisão 2); o #395 não moveu o campo |
+| `backend_contract_tests_focused` · `flutter_modules` · `mobile_backend_contracts` · `mobile_core_saas_contracts` | 34 · 17 · 18 · 21 | idem | idem | carregados; nota do PR corrente com o último oficial (#359 · #98 · #103 · #103) — fecha `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` |
+| `mvp_demo` / `mvp_vendavel` | — | — | **intocados** | §C3.4 — o PR não move escopo |
+| pr / merge_commit / approved_head | — | — | `393` / `null` / `null` **na autoria** (§C3.5) | backfill pós-merge |
+
+**O denominador fecha exato, contra as duas bases.** Contra o `$MB` só entram dois arquivos de teste
+(`git diff --name-status 3b1fe0f9 HEAD -- tests src scripts prisma`: os dois guards `A`, mais os três
+scripts): `tests/mandato-preflight.test.ts` **299** e `tests/mandato-refs.test.ts` **39** —
+3054 + 338 = **3392**. Contra o ciclo 2 (`34969a81`, 3103/3105), os mesmos dois mudam: pré-voo
+33 → 299 e refs 18 → 39 (18 → 37 pelo Dev-T e o Dev-T-3; → 39 com os **+2 do Dev-T-4**, `[V18b]`/`[V18c]`):
+3105 + 287 = **3392**. As contagens por arquivo foram lidas do TAP da execução (blocos
+delimitados pelo primeiro e pelo último caso de cada fonte — o runner despeja arquivo a arquivo) e
+batem com as linhas de base que a ferramenta E4 mediu nos mesmos blobs (299 e 39).
+
+**O `ec=1` das duas execuções, dito por inteiro.** Nenhum teste falhou e nada estourou tempo: o runner
+tem um **guard de skip (P8)** — com `DATABASE_URL` presente, mais de **2** pulados é tratado como suíte
+`-db` que se auto-pulou em silêncio — e localmente há **3**: os 2 orçados (RBAC_DB_PARITY) e o `[V18]`,
+que pula por **plataforma** em win32 e roda no ubuntu (no CI, 2 skips e `ec=0`). O `[V18]` nasceu neste
+bloco (`9d3de5dd`, Dev-T-3). Fato medido e reportado; o conserto não é de quem registra.
+
+**Integração e o que mudou desde a autoria do ciclo 3.** `7d02d8da` integrou a `main` (`3b1fe0f9`, o #395)
+por merge; `9d3de5dd` (Dev-T-3) e `c32f77b5` (Dev-S-2 fase 1) fecharam a contradição do `[B8b]` pela
+semântica v3 — **`P-GOV-MANDATO-3-B8B-CONTRADICAO` FECHA**; `395d07c9` (Dev-T-4) discriminou as l.116/l.119
+do refs também em win32 (fronteira 23 retirada).
+
+**Mutação (E4) — N/K brutos da ferramenta, e o TIMEOUT à parte** (`docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`):
+refs, rodada de 28/09 (base `fail=0 de tests=37`) — `N=46 K=44 NAO-COBERTOS=2 EXCLUIDOS=52 ANOMALIAS=1`.
+A E4-refs-2 (guard com os casos do Dev-T-4) e a do pré-voo (162 pontos, base `fail=0 de tests=299`)
+estão **em curso — matriz publicada no K2**. À parte: **1 TIMEOUT** (l.161 do pré-voo, M10 — o mutante não
+termina; vaga morta pelo orquestrador em 29/09 20:36:07), reclassificado no K2 e declarado como fronteira 25.
+
+**`merge_commit` e `approved_head`: `null` na autoria** (§C3.5), com backfill pós-merge. O backfill do
+#394 **não** é deste PR — chegou pela `main` (#395); o que o #393 paga é a linha do `.md` da entrada do
+#394, acima (R-A do porteiro do #395).

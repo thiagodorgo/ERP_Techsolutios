@@ -4916,3 +4916,43 @@ publicado **rotulado como parcial**, com denominador e taxa, para o próximo blo
   (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+## B-GOV-MANDATO — ciclo 3, pós-integração (PR #393) — K1 do Dev-S-2: KPI recontado e registro (2026-09-29)
+
+**O que aconteceu desde a autoria do ciclo 3** (`git log --first-parent 616fd4fa..ade74d09`):
+- `9d3de5dd` — **Dev-T-3** (`dev-t3-mandato-b8-refs`): `[B8a]`/`[B8b]`/`[B8c]` na semântica v3 (o rótulo em item de
+  lista sob ND, LIDO-A e LIDO-B dá **1** REJ, a do token reservado), `[B8d]` novo, e `[V16]`–`[V19]` para os
+  não-cobertos do refs (plano §13.1, §13.2, §13.4).
+- `c32f77b5` — **Dev-S-2 fase 1** (`dev-s2-mandato-registro`): o detector do ciclo 2 (`rotulo_ah`) sai do pré-voo —
+  o token reservado é o único mecanismo da checagem 7 — e a E4 **aborta** (`ec=2`) com linha de base suja (§13.1,
+  §13.5). `P-GOV-MANDATO-3-B8B-CONTRADICAO` fecha por esses dois.
+- `7d02d8da` — **integração da `main` por merge** (orquestrador; pais `e27fbe14` e `3b1fe0f9`, o #395 que registrou o
+  #394), 9 arquivos resolvidos (§14.14). `$MB` = `3b1fe0f9` = `origin/main`.
+- `395d07c9` — **Dev-T-4** (`dev-t4-mandato-refs-win32`): `[V18b]`/`[V18c]` discriminam as l.116/l.119 do refs também
+  em win32; a fronteira 23 é retirada (§14.4).
+- Plano §14, §14.14 e §14.15 e ERRATAs E-1…E-8 nos corpos da junta 3 (planejador e orquestrador).
+- **E4 em curso:** a do pré-voo, do zero, em `w-e4` (tripla `faa408c8`·`3d875a54`·`37549262`, base `fail=0 de
+  tests=299`, 162 pontos; o mutante M10 da l.161 **não termina** — vaga morta pelo orquestrador em 29/09 20:36:07,
+  `TIMEOUT`, fronteira 25); e a E4-refs-2 em `w-e4b` (guard `9e680314`, base `fail=0 de tests=39`).
+
+**K1 — o que este registro fez.**
+- **KPI** (`Kpis/*`, `app.js` por `kpi-freeze`): `backend_tests` **3389/3392**, N=2 execuções reais locais em
+  cluster descartável próprio (RUN1 `3392/3389/0/3` (tests/pass/fail/skipped), 1750 s, `ec=1` · RUN2 `3392/3389/0/3` (tests/pass/fail/skipped), 1527 s, `ec=1`); CI no mesmo head `3392/3390/0/2`. O `ec=1` local é o **guard de skip (P8)** do
+  runner — 3 pulados > orçamento 2 com banco —, porque o `[V18]` (nascido neste bloco, `9d3de5dd`) pula por
+  plataforma em win32; nenhum teste falhou. Δ por arquivo: contra o `$MB`, +299 (`tests/mandato-preflight.test.ts`)
+  e +39 (`tests/mandato-refs.test.ts`); contra o ciclo 2 (`34969a81`), 33 → 299 e 18 → 39 (inclui os +2 do
+  Dev-T-4). `blocks_completed` **168 → 169** (MB + 1). Smoke e Flutter carregados com nota. Entrada nova no
+  history: "ciclo 3 — recontagem pós-integração".
+- **Pendências:** abre `P-GOV-MANDATO-3-FRONTEIRAS` (9–11, 13–22, 24 e 25, com o item "cabeçalho congelado" e a 23
+  como retirada; BAIXA, dono `B-GOV-MANDATO-2`); fecha `P-GOV-MANDATO-3-B8B-CONTRADICAO` e
+  `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392`; atualiza `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` (rodada do zero em curso,
+  tripla, TIMEOUT); anota o fechamento parcial do item 2 de `P-GOV-MANDATO-2-FRONTEIRAS` (`--ignore-case`).
+- **R-A e R-B do porteiro do #395:** a linha `pr / merge_commit / approved_head` da entrada do #394 no
+  `Kpis/kpis-history.md` passa a `394` / `b3f0af5f…` / `7ad08690…`; as 2 âncoras do item 2.2 do inspetor em
+  `pendencias.md` passam ao squash do #394 na `main`, `b3f0af5f`.
+- **Comando:** Emenda 6 (o escopo nominal pós-§14, a identidade por tripla e a errata 106 → 107 das atas).
+- **`…-mutantes.md`:** §2.1 com a grafia real da sonda, transcrita da fonte; §7 item 6 (fronteira 24).
+
+**Fica para o K2:** §3 (matriz E4-refs-2) e §4 (matriz do pré-voo completa, com o `TIMEOUT` reclassificado) do
+`…-mutantes.md`, §5 e §7 item 7 (fronteira 25); fechar `P-GOV-MANDATO-3-MUTANTES-REFS` e
+`P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`; fechar a citação N/K do history.
