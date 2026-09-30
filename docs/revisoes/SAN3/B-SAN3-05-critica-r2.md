@@ -53,7 +53,50 @@ ocorrência textual de `setTenantRlsContext(` antes do sítio, inclusive num `if
 `SOB-CONTEXTO` (N05, N06, N09). N05 é **a forma exata do defeito original do item 10** (ramo sem `tenantId`). A prova dinâmica de que N05/N06
 leem sem GUC está em 2.2.
 
-### 2.2 EM APURAÇÃO — prova dinâmica de N05/N06; T11 como guard da propriedade
+### 2.2 As formas novas são sítios crus de verdade; o T11 não as vê; T2 e T15 re-medidos
+
+**(a) Prova dinâmica** (`$S2/dyn-novas.mts`, `setTenantRlsContext`/`withTenantRls` reais do head, cluster 54354, papel `cr2_clean`
+`NOSUPERUSER NOBYPASSRLS` + DML, 2 organizações com 3+2 eventos; papel e semente derrubados no fim — contagem `0 0 0`):
+```
+superusuario {"N02_alias":5,"N05_setter_condicional":5,"N06_setter_cliente_errado":5,"controle_withTenantRls_A":5}
+papel_limpo  {"N02_alias":0,"N05_setter_condicional":0,"N06_setter_cliente_errado":0,"controle_withTenantRls_A":3}
+```
+Os três leem **sem GUC**: 5 sob bypass, 0 sob papel limpo — a assinatura exata do item 10. O gerador classifica N05 e N06 como
+`SOB-CONTEXTO` (regex de texto) e N02 não vê.
+
+**(b) O T11-diferencial não é guard da propriedade — é teste de UMA rota.** Re-executado o roteiro do planejador (`plano-v2/diff-http.mts`,
+cwd = meu worktree, cluster 54354): `super → 200 [{"metricKey":"storage_bytes","quantity":50,…}]` · `runtime (o6r_b01_…, f/f) → 200 []`;
+limpeza `0 0 0`. **Reproduz o §R.3.** Mas a rota é só `GET /platform/cloud-usage/summary` (`diff-http.mts:36`), que alcança só
+`RlsPrismaCloudUsageRepository.listEvents`. Qualquer uma das formas N01–N09 posta em qualquer outro módulo passa no ratchet (2.1) **e** no
+T11. O plano (§R.2, R9, §10 C3) chama o T11 de "o guard da propriedade" e faz dele a rede do residual; o que ele guarda é o sítio 1.
+
+**(c) O T11 como escrito é exposto ao lote paralelo.** `npm test` roda os arquivos em paralelo (`scripts/run-backend-tests.mjs:362-370`:
+um `node --test` com todos os arquivos, concorrência default; `ci.yml:136-138` registra a poluição do paralelismo). A rota soma
+`quantity` de **todas** as organizações na janela (`cloud-usage.service.ts:112-131`). `captureCloudUsage` grava `occurred_at = new Date()`
+por default (`cloud-usage.capture.ts:187`) e é exercida por ≥13 suítes `-db` (checklist, financeiro…). O protótipo usou a janela
+`2026-09-01..2026-09-30`, que contém "hoje" (2026-09-30). "Corpos iguais" entre duas chamadas separadas no tempo, num banco onde
+outras suítes gravam na mesma janela, fica vermelho por concorrência, não pela propriedade. O plano não fixa janela isolada nem
+serialização. **Achado F2-03 (ajuste).**
+
+**(d) T2 — o mecanismo funciona, o comando colado não.** `le-export.sh EVIDENCE_SCANNER` (roteiro do planejador, `cd` trocado) →
+`production unavailable`. O `sed` do §R.5 (l.200), verbatim, casa **0** vezes: o texto é `=== "production" ? "unavailable" : "noop"`
+(aspas entre `production` e `?`). Com âncora que casa (1 substituição, provada): filho → `production noop`, precedente
+`o6r07b-scanner-failclosed` → `13/13` verde. Revertido (`cmp` = original; `git status` 0). O **mecanismo** do T2 se sustenta e o P1 reproduz;
+a evidência colada no §R.5 não pode ter produzido a saída que o plano mostra. **Nota N2-01.**
+
+**(e) T15 — o vermelho-controle descrito é falso; a mutação ainda fica vermelha, por outro motivo.** `$S2/boot.sh` (= `plano-v2/boot.sh`,
+`cd` trocado, saída inteira em arquivo, `timeout 40`), `DATABASE_URL` = superusuário do cluster, `src/server.ts` do head:
+```
+ec=124   (morto pelo timeout aos 40 s — o processo NÃO sai)
++6,8 s  {"level":50,…,"error":{"name":"RedisCommandError"},"msg":"Failed to start ERP Techsolutions API"}
+depois: 33 × "Job worker tick failed." (RedisCommandError), sem "In-process job worker started"; nenhum processo órfão depois (ps)
+```
+O plano diz, em §R.5, §1 (fluxo 1), H5 e A20, que hoje o boot "morre no Redis aos ~18 s". Medido: falha aos 6,8 s e **não morre** —
+`startJobWorkerIfEnabled` (`server.ts:19`) já ligou `setInterval`/heartbeat antes do primeiro enqueue estourar, e o `main().catch`
+só põe `exitCode` (`server.ts:45-48`). Consequência para o T15: a mutação "apagar a chamada em `main()`" fica vermelha **por timeout do
+teste** (R12: 30 s), não por "a primeira linha traz `RedisCommandError`". Continua vermelha; o motivo declarado é que está errado.
+**Nota N2-02.**
+
 
 ### 2.3 O `db-catalog-write-guard` reprova as suítes que o próprio plano manda escrever, e o arquivo que resolve isso está fora do §6
 
