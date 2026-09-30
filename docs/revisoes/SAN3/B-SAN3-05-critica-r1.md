@@ -171,7 +171,48 @@ Veredito parcial: **nota** (N3: sourced é o padrão da casa) + o risco de banco
 
 ## Item 4 — Trava de boot × `env.ts`, pontos de entrada, H6/paridade
 
-EM APURAÇÃO
+**4.1 — o default `production → enforce` quebra algum teste/job que suba o servidor sob superusuário?** Não achei.
+```
+$ grep -rln -E "server\.(js|ts)['\"]|dist/server|src/server" tests scripts   → tests/job-worker-bootstrap.test.ts (só comentário/histórico; testa startJobWorkerIfEnabled por injeção)
+$ grep -rn 'NODE_ENV.*production' tests/*.ts (fora das suítes de gate) → authority-env, env-geocoding (envSchema.safeParse), checklist-routes:306 e platform-routes:94 (setam process.env DEPOIS do import de env) , seed-guard (função pura)
+```
+Nenhum chama `main()`. O único processo que chama `main()` sob `NODE_ENV=production` é o `api` do compose local-prod (job `docker`, `ci.yml:472-477`) — que o plano troca para `erp_runtime`. Veredito parcial: **premissa se sustenta** (por varredura; não há como rodar o compose aqui).
+
+**4.2 — outro ponto de entrada de produção que fale ao banco sem passar por `main()`?** Não achei.
+`Dockerfile:48` `CMD ["node", "dist/server.js"]` (único); `fly.production.toml`/`fly.staging.toml` sem `release_command` nem `[processes]`; worker de jobs e portal são in-process (`server.ts:19,36`; `env.ts` G3 diz "não existe entrypoint dedicado além de src/server.ts"); `migrate`/`db:provision-rbac`/`db:seed:demo`/backup rodam na pipeline com `PROD_DATABASE_URL`/`STAGING_DATABASE_URL` (`deploy-production.yml:136-164`, `deploy-staging.yml:44-52`, `backup-database.yml:54`) — o migrador, não o app. Veredito parcial: **premissa se sustenta**.
+
+**4.3 — H5: recusada a trava, o processo morre?** Reproduzi o grafo de import de `src/server.ts` (`$S/boot-exit.ts`: importa `app`, `portal-app`, `env`, `job-worker.bootstrap`, `core-saas/index`, abre o client de `src/database/prisma.ts`, roda a consulta da trava como `postgres`, `$disconnect`, lança; `.catch` põe `exitCode=1`):
+```
+CORE_SAAS_PERSISTENCE=memory → catch t+2779ms · EXIT code 1 t+3092ms
+CORE_SAAS_PERSISTENCE=prisma → catch t+1503ms · EXIT code 1 t+1691ms
+MUTANTE A4 (sem $disconnect) → catch t+1519ms · EXIT code 1 t+11526ms       (não pendura: o pool pg fecha ocioso em ~10 s)
+```
+Veredito parcial: H5 **se sustenta** localmente. A justificativa do §2.2 ("senão o pool segura o event loop e o processo não morre") é **falsa** — morre ~10 s depois; o mutante de A4 só é pego pelo espião do T4 (`chama $disconnect`), não por "o processo/loop encerra" (A4 aponta T9, cuja descrição no §8 é só de campos de log). **Nota** N4.
+
+**4.4 — H6 e A6: a chave opcional não entra em `deriveRequiredInProduction()`.**
+```
+$ node --test --import tsx tests/deploy-manifest-parity.test.ts   (head)                         → # tests 28 # pass 28
+$ grep -c -E '^\s*test\(' tests/deploy-manifest-parity.test.ts                                   → 22
+# simulação temporária em env.ts (revertida, cmp = original, git status vazio):
+(a) + DATABASE_RUNTIME_ROLE_GUARD: z.enum(["enforce","skip"]).optional()  → # tests 28 # pass 28
+(b) MUTAÇÃO A6: mesma chave SEM .optional()                              → ZodError no import de env.ts ("DATABASE_RUNTIME_ROLE_GUARD") · not ok (arquivo inteiro)
+```
+`deriveRequiredInProduction()` (l.274-287) só itera as chaves **de `PROD_BASELINE`** — uma chave nova nunca é examinada. H6 **se sustenta** na substância. Mas: (i) "22/22" (H6 e A6) é **contagem de `grep test(`, não de execução**: executado no head dá **28/28**; a junta que rodar A6 "22/22" encontrará 28 — **ajuste** F10; (ii) a mutação de A6 fica vermelha, mas **não** pelo mecanismo escrito ("a lista derivada passa a exigi-la e o compose não a tem"): fica vermelha porque `envSchema.parse(process.env)` explode no import. Mesma nota para `production-runtime-gates.test.ts` (grep 30 × executados **63**).
+
+**4.5 — a fiação de PRODUÇÃO da trava não é observável por nenhum critério.**
+O item 9 só existe em produção por duas coisas: a linha nova em `main()` e o default `production → "enforce"` no **export** `env` (não no schema — §2.2 "espelhando `EVIDENCE_SCANNER` (l.631-638)"). Medi o precedente citado com a mutação que A5 diz pegar:
+```
+# mutação temporária (revertida; cmp = original): env.ts l.638  production ? "unavailable" : "noop"  →  production ? "noop" : "noop"
+$ node --test --import tsx tests/o6r07b-scanner-failclosed.test.ts tests/production-runtime-gates.test.ts tests/deploy-manifest-parity.test.ts
+# tests 104 # pass 104 # fail 0            (base: 104/104)
+$ grep -rl EVIDENCE_SCANNER tests  → só tests/o6r07b-scanner-failclosed.test.ts → 13/13 verde sob o mutante
+```
+O teste do precedente (`o6r07b…:54-56`) **reescreve a regra dentro do teste** (`const resolved = result.data.NODE_ENV === "production" ? "unavailable" : "noop"`) em vez de ler o export — reconhece a forma, não enuncia a propriedade. O T2 do plano ("`production` sem a chave → aceito, export = `enforce`") mora em `production-runtime-gates.test.ts`, cujo único acesso ao export é `await import("../src/config/env.js")` (l.282) — avaliado sob o `NODE_ENV` do processo de teste, nunca `production`. Consequências, por mecanismo:
+- **Mutação "default de produção → `skip`"** (listada em A5 como pega por T1–T3): T1–T3 são `envSchema.safeParse` (o default não mora no schema); T4/T5 injetam `enforce` explicitamente; A13 (compose) sobe `api` como `erp_runtime`, que **passa** a trava — com ou sem trava ligada, o smoke fica verde. **Nenhum** critério fica vermelho.
+- **Mutação "apagar a chamada em `main()`"**: idem — nenhum A1–A16 exercita `server.ts`; o próprio §2.2 diz que "uma trava de boot que ninguém chama antes do `listen` é trava no nome".
+Veredito parcial: achado **F9**.
+
+**4.6 — citação que não sustenta o que o plano diz.** O §3 (l.373-374) apoia "o papel … é objeto de cluster e nunca entra em migração" em `deploy-production.yml:141`, "`migrate deploy` NÃO cria papel". Lido: a l.141 é "`migrate deploy` NÃO cria papel: nenhuma migração insere em **`roles`**" — fala de **linhas da tabela RBAC `roles`**, não de papel PostgreSQL. **Nota** N5. E `fly.staging.toml:5` diz "Postgres gerenciado (**Fly MPG**) de staging" — reforça F8 (o Ato 1 de staging roda sob o admin do MPG).
 
 ## Item 5 — A1–A16 × T1–T14: a mutação que derruba cada critério existe?
 
