@@ -8,9 +8,22 @@
 - **Cluster:** Postgres 16.13 descartável `127.0.0.1:54354` (banco `erp_critico_r2`), Redis `127.0.0.1:63854`.
 - **Regra de papéis (§C7.4-bis):** este documento ACHA. Não propõe correção, não escreve plano, não escreve código de produto.
 
-## 1. Fechamento dos 23 achados da r1
+## 1. Fechamento dos 23 achados da r1 — os 6 bloqueios refeitos contra a v2
 
-EM APURAÇÃO
+Roteiros re-executados (não herdados): gerador v2, 17 fixtures, "sumida", `diff-http.mts`, `le-export.sh`, `boot.sh`, `options-url.mts`,
+Apêndice B (`22 itens, 0 fora do esperado`, limpeza `0 0 0 0`), Apêndice C nos cenários (i), (ii), (iii), (iii-b), (iv).
+
+| r1 | cenário/mutação que derrubou, refeito contra a v2 | saída | estado |
+|---|---|---|---|
+| **F1** | sítio 7 em arquivo PROIBIDO tornava "L2b = ∅" impossível | a v2 congela; a chave `L2 …cloud-cost-allocation… new PrismaCloudCostAllocationRepository(prisma) … CRU` está entre as 48 do head; mutação "sumida" (`prisma as never`) → `novas=1 sumidas=1 VERMELHO`; controle sem mutação → `0/0 VERDE` | **fechado** |
+| **F2** | forma crua nova tem de deixar o guard vermelho | as 17 da r1 → 17/17 VERMELHO; **9 formas novas → 9/9 VERDE** (2.1), 3 provadas cruas dinamicamente (5 × 0 linhas, 2.2(a)); T11 só cobre `GET /platform/cloud-usage/summary` (2.2(b)) | **aberto** (bloqueia) |
+| **F5** | papel membro do DONO (não-super) | `cr2_ownermember`: trava v2 → `posse|cr2_owner|f|f|f|1` (RECUSA); a porta segue real: `SET LOCAL ROLE cr2_owner; ALTER TABLE t_f5 NO FORCE …; SELECT count(*)` → `3` | **fechado** |
+| **F6** | o SQL do procedimento não executava | Apêndice C verbatim: (i) `DO / erp_runtime|f|f|f|0|2 / ec=0`; (ii) idempotente por `diff`; (iv) migrador não-super `ec=0` | **fechado** |
+| **F9** | "default de produção → skip" e "apagar a chamada em `main()`" passavam | T2: filho lê o export e vê a mutação (`production noop`) quando a âncora casa (2.2(d)); T15: sem a chamada, o filho não sai (ec=124 aos 40 s) → vermelho por timeout (2.2(e), N2-02) | **fechado** |
+| **F13** | login superusuário + `options=-c role=<limpo>` | psql: v2 → linhas (RECUSA), login limpo → 0; PrismaPg (`options-url.mts`): `{"s":"postgres","c":"cr2_clean"} | trava v1: PASSA | trava v2: RECUSA (5 linhas…)`; `SET LOCAL ROLE NONE → {"c":"postgres","n":4}`; login `cr2_clean` → PASSA | **fechado** (a semi-mutação de uma metade sobrevive ao T8c — F2-07, ajuste novo) |
+
+Os outros 17 estão na tabela da seção 6.
+
 
 ## 2. Achados novos da v2 (e re-medição do que a v2 afirma)
 
@@ -289,17 +302,85 @@ o primeiro deploy sobe com `NODE_ENV=production` (`fly.staging.toml:31`) e a tra
 aos Atos 1–2 de staging. **Nota N2-05.**
 
 
-## 5. Tabela de achados
+## 5. Tabela de achados desta rodada
 
-EM APURAÇÃO
+| id | gravidade | escopo + evidência | seção/critério | defeito, em uma linha |
+|---|---|---|---|---|
+| **F2** (r1 → **aberto**) | **bloqueia** | dentro-do-bloco — o gerador v2 (Apêndice A, md5 `293b3746…`) e as afirmações do §0.4/§R.2/§10 C3 nascem nesta v2 (`c727156`) | A15/T13, §0.4 "default NEGAR" e residual declarado, §R.2, R9, §10 C3(1), A12/T11 | 9 formas cruas novas ficam VERDES no ratchet (N01–N09, 2.1), inclusive formas que o §0.4 diz ver (destructuring, subclasse) e a forma exata do defeito original (N05, setter condicional); 3 provadas cruas por execução (2.2(a)); o "guard da propriedade" (T11) é uma rota só; e o C3(1) faz o "não reprova" depender de o T11 pegar a forma do jurado, onde quer que ele a ponha |
+| **F2-01** | **bloqueia** | dentro-do-bloco — §6 PERMITIDO e T7/T8/T8b/T14 do §8 são desta v2 | §6, §8 (l.856-858, 875), A2–A5, A17 | as suítes que o plano manda escrever têm SQL de catálogo e reprovam `tests/db-catalog-write-guard.test.ts` (medido: sonda → `FORA da allowlist`, fail 1); a allowlist e o arnês (`tests/helpers/auth-identity-fixture.ts`, que só cria papel limpo) estão fora do §6 |
+| **F2-02** | **bloqueia** | dentro-do-bloco — Apêndice C (md5 `189ddf8a…`) nasce nesta v2 | §4.1 "nunca ecoada", cabeçalho do Apêndice C, §11 passos 2–3 | a senha nova sai em claro no `CONTEXT` do erro (terminal e `server.log`) no modo 1 do próprio §11 e no 4º modo, e no `argv` do `psql` em toda execução |
+| F2-03 | ajuste | dentro-do-bloco | A10–A12, T10, T11 | "soma de 2 organizações" e "corpos iguais" sobre banco compartilhado, sujo e em lote paralelo; a janela do protótipo contém "hoje" e `captureCloudUsage` grava `now()` |
+| F2-04 | ajuste | dentro-do-bloco | Apêndice C (laço de `REVOKE`, `RAISE`), §11 passo 3 | pertença indireta a papel que escapa: falha fechada com a mensagem de **posse** ("reatribua o dono"), que manda consertar a coisa errada |
+| F2-05 | ajuste | dentro-do-bloco | §1 objetivo (9), §2.1(a) "o que fica fora", §2.2(a), Apêndice C, §11 passo 5 "agora inteira" | a trava aprova e o script converge com `f|f|f|0` para papéis que escapam com 1 comando: `pg_execute_server_program` (`COPY … FROM PROGRAM` → 4 linhas), `REPLICATION` (mantido pelo script; `pg_basebackup` com o marcador do tenant B), e view futura de migrador que escapa (concedida pelo `ALTER DEFAULT PRIVILEGES` do próprio script → 4 linhas) |
+| F2-06 | ajuste | dentro-do-bloco (o orçamento `SKIP_BUDGET_DB = 2` é pré-existente, `run-backend-tests.mjs:82`; o desenho "pula declarando" do T14b/R13 é desta v2) | T14b, R13, H7 | com `DATABASE_URL` presente, o pulo declarado do T14b reprova o `npm test` (ec=1); a mitigação do R13 não vale |
+| F2-07 | ajuste | dentro-do-bloco | A5, T8c | a substituição `session_user→current_user` em **uma** metade da trava sobrevive ao cenário único do T8c (login superusuário); com login não-super membro de BYPASSRLS o semi-mutante passa e `SET ROLE` lê 4 linhas |
+| **F8** (r1 → **aberto, parcial**) | ajuste | dentro-do-bloco | §11 passo 3 (três modos), Apêndice C ramo "papel já existe" | papel pré-existente que o migrador não-super não criou (mesmo limpo) → `permission denied to alter role` cru; o modo 2 do §11 nunca aparece nesse caso |
+| N2-01 | nota | dentro-do-bloco | §R.5 l.200 | o `sed` colado como evidência casa 0 vezes com o `env.ts` da ref; a saída mostrada não pode ter saído dele (o mecanismo, refeito com âncora que casa, funciona) |
+| N2-02 | nota | dentro-do-bloco (a descrição; o comportamento do boot é de `server.ts:15-48`, anterior) | §R.5, §1 fluxo 1, H5, A20 | hoje o boot falha aos 6,8 s e o processo **não morre** (ec=124 aos 40 s, worker ticando); "morre no Redis aos ~18 s" é falso; o T15 fica vermelho por timeout |
+| N2-03 | nota | dentro-do-bloco | Apêndice C, R7, §4.3 | sem `.gitattributes` na ref e com `core.autocrlf=true` no Windows do dono, o `.sh` CRLF quebra no bash de Linux (contêiner `postgres:16` num bind-mount) — HIPÓTESE para a máquina do dono |
+| N2-04 | nota | dentro-do-bloco | A19 | "`rg -c 'P-SAN3-05-'` ≥ 6" conta linhas; o §13 nomeia 5 IDs |
+| N2-05 | nota | dentro-do-bloco | §11, `deploy-staging.yml:11-22` | o CD de staging (hoje `skipped`) sobe com a trava ativa no dia em que for ligado; o §11 não amarra a ativação aos Atos 1–2 de staging |
+| N2-06 | nota | dentro-do-bloco | §8 l.860 | "as **três** suítes `-db` novas"; o §5 tem duas |
 
-## 6. Tabela de fechamento r1
+**Contagem:** `bloqueia` **3** (F2, F2-01, F2-02) · `ajuste` **6** (F2-03, F2-04, F2-05, F2-06, F2-07, F8) · `nota` **6** (N2-01 a N2-06).
+Todos dentro do bloco; nenhum pré-existente novo (o único componente anterior citado — o orçamento de pulos — está datado no próprio F2-06
+e não é o defeito).
 
-EM APURAÇÃO
+**O que se sustentou (medido, não herdado):** Apêndices A, B, C e a trava conferem com o md5 declarado; o gerador reproduz byte a byte
+(48 chaves, sha1 `147d41c2…`); 17/17 + "sumida"; OPS derivados = embutidos (17); a varredura dos pontos cegos no head acha **0** sítio cru
+existente escondido neles (a lista fechada dos 7 se sustenta contra N01–N09); §R.3 reproduz (`50` × `[]`); T2 funciona como mecanismo;
+F5, F11, F13 fecham por execução, inclusive pelo PrismaPg; A1–A4 têm mutante que os derruba; (i)–(iv) do Apêndice C reproduzem,
+inclusive idempotência e rollback total do `DO`; o sourcing em subshell não vaza (LF); o compose simulado sem Docker sobe com a trava
+PASSANDO e DML em 115/115; a RECUSA por posse não inviabiliza §11, compose nem CI; 3000 organizações numa transação cabem no default de 5 s
+(1,9 s); `deploy-manifest-parity` 28/28 e `production-runtime-gates` 63/63 no head; P-a = 8; nenhum `CREATE ROLE` em migração.
+
+
+## 6. Tabela de fechamento dos 23 da r1
+
+| r1 | estado | evidência (nesta rodada) |
+|---|---|---|
+| F1 | fechado | chave do sítio 7 no congelado; "sumida" → VERMELHO |
+| F2 | **aberto (bloqueia)** | 9/9 formas novas VERDES; T11 = 1 rota (2.1, 2.2) |
+| F3 | fechado | `$TRANSACTION-SEM-SETTER` = 2 no head; Md → +1 (a absolvição por texto de N05/N06/N09 é parte do F2 aberto) |
+| F4 | fechado | OPS derivados 17 = embutidos; Mq → +1; L1 = 720 |
+| F5 | fechado | `posse|cr2_owner` (RECUSA); porta real `3` |
+| F6 | fechado | (i) ec=0; (ii) idempotente; (iv) ec=0 |
+| F7 | fechado | (iii) ec=3 e nada persistiu (`t|t|t|1`); (iii-b) `membros=0` (a pertença indireta é F2-04) |
+| F8 | **aberto (parcial, ajuste)** | (iv) ec=0; papel pré-existente não criado pelo migrador → `permission denied to alter role` |
+| F9 | fechado | T2 vê a mutação; T15 fica vermelho (por timeout — N2-02) |
+| F10 | fechado | 28/28 e 63/63 executados |
+| F11 | fechado | sem `r.rolsuper`: linhas `is_self` sob `cr2_super2` = 0 |
+| F12 | fechado | concatenação v2 ordenada? `false`; agregados `[15,14]` `false` |
+| F13 | fechado | psql e PrismaPg: v1 PASSA, v2 RECUSA; login limpo PASSA |
+| F14 | fechado | gerador em `scripts/` do repo, `cwd=/`, alvo sem `node_modules` → ec=0 (arquivo temporário removido; `git status` 0) |
+| N1 | fechado | declarado no §4.2 |
+| N2 | fechado | Apêndice B `REPO` por `cwd`; 22/22 aqui |
+| N3 | fechado | sourced (LF) sob `set -Eeo pipefail`: "entrypoint continua vivo"; falha interna propaga ec=1 (CRLF é N2-03) |
+| N4 | fechado | texto reescrito (não re-medido nesta rodada; a medição de saída é da r1) |
+| N5 | fechado | `git grep 'CREATE ROLE|CREATE USER' prisma/migrations` → 0 |
+| N6 | fechado | T11 com vermelho-controle (§R.3 reproduz); T12 pela fábrica que existe no head-base |
+| N7 | fechado | A18/A19 por comando (fragilidade do A19 = N2-04) |
+| N8 | fechado | P-a = 8; baseline N = 5 declarado |
+| P1 | fechado como **pendência nomeada** (pré-existente, `fe2748c`) | mutante do scanner → precedente 13/13 verde (reproduz); `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` no §13 e no A19 |
+
+**Resumo:** 21 fechados (P1 como pendência), **2 abertos** (F2 bloqueia; F8 parcial, ajuste).
+
 
 ## 7. Veredito
 
-EM APURAÇÃO
+**VOLTA AO PLANO.** Três `bloqueia` dentro do bloco:
+
+1. **F2 (r1, aberto)** — o ratchet não enuncia "default negar": 9 formas cruas novas, fora do residual declarado e em parte **dentro**
+   do que o §0.4 diz ver, ficam verdes; uma delas é a forma do defeito original (ramo sem `tenantId`). O T11, apresentado como o guard da
+   propriedade, cobre uma rota; e o C3(1) da junta depende dele para decidir se a forma nova de um jurado reprova ou não.
+2. **F2-01** — T7, T8, T8b e T14 não podem ser escritos sem reprovar o `db-catalog-write-guard`, e o arquivo que resolve isso (ou o arnês)
+   está fora do PERMITIDO do §6: a entrega não consegue cumprir "escopo respeitado" e "bateria verde" ao mesmo tempo.
+3. **F2-02** — o procedimento que o dono roda em produção expõe a senha nova do papel no terminal e no log do servidor gerenciado, em modo
+   de falha que o próprio §11 manda esperar, e no `argv` do `psql` em toda execução — contra o "nunca ecoada" do plano e a §2.8/§C7.5.
+
+A rodada r2 é a última permitida pelo corpo do crítico. Pela regra de papéis (§C7.4-bis), este documento **acha**: defeito, evidência
+executada e motivo. O conserto é de **quem planeja**.
+
 
 ## 8. Limpeza do cluster
 
