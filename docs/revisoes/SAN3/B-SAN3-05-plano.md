@@ -892,91 +892,108 @@ Mais: `grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.tom
 
 - `Kpis/kpis-latest.json`, `Kpis/kpis-history.json` (append) e `Kpis/kpis-history.md` (append) no mesmo PR; o painel
   `Kpis/index.html` hidrata dos JSON — **nenhuma** dimensão nova (não se toca `app.js`/`index.html`).
-- `backend_tests`: **reexecução real** (`DATABASE_URL=<descartável> npm test`, TAP), nunca copiado do `3052/3054`.
-  `frontend_smoke_tests` e `flutter_tests`: **carregados com nota** (§C3.3 — o PR não toca `frontend/` nem `mobile/`;
-  `git diff --name-only origin/main...HEAD -- frontend mobile` vazio, colado na nota).
-- `mvp_demo`/`mvp_vendavel`: **intocados** (o PR não move escopo; fecha itens do gate por mecanismo, mas os itens 9 e
-  10 só contam fechados após o ato do dono — §4.2).
+- `backend_tests`: **reexecução real** (`DATABASE_URL=<descartável> npm test`, TAP, **Node 20**), nunca copiado do
+  `3052/3054` vigente (lido de `Kpis/kpis-latest.json` em `origin/main`). `frontend_smoke_tests` (`1202`) e `flutter_tests`
+  (`864`): **carregados com nota** (§C3.3 — o PR não toca `frontend/` nem `mobile/`; `git diff --name-only origin/main...HEAD
+  -- frontend mobile` vazio, colado na nota).
+- `mvp_demo` (`99`) / `mvp_vendavel` (`88`): **intocados** (o PR não move escopo; fecha itens do gate por mecanismo, mas os itens
+  9 e 10 só contam fechados após o ato do dono — §4.2).
 - `blocks_completed`: 168 → **169**. `release.block`: "B-SAN3-05 (itens 9 e 10 do §4.1 — código; fecho depende do ato
   do dono)"; `pr` após `gh pr create`; `merge_commit`/`approved_head` **`null` na autoria** (§C3.5; backfill pós-merge
   pelo bloco seguinte); `status: "published_per_pr"`.
 - History: 1 linha de justificativa por métrica carregada; menção explícita de que a lista do §5.2 ("quatro") foi
-  medida como **sete sítios / cinco métodos dentro + um fora**.
+  medida como **sete sítios / cinco métodos dentro + um fora**; e de que este plano é a **v2** após a crítica r1
+  (6 bloqueios incorporados com medição — nenhum recusado).
 
 ---
 
 ## §10 — Junta (§C7) — quórum, composição, papéis, terreno, resiliência
 
 - **Quórum: unanimidade de 3** (§C7.1-ter(b): o bloco toca **segurança e permissão** — papel de banco, gate de boot,
-  isolamento). Sem `critico-adversarial` (reservado aos blocos de invariante financeiro; aqui o dinheiro só é
-  **lido**). O `§5.2` pede `agente-dba-guardiao` + `agente-secops`; a terceira cadeira é o `guardiao-fail-closed`
-  (a lista fechada e o guard são exatamente "enumeração decide privilégio" + "prova por mutação").
+  isolamento). O `critico-adversarial` já atuou **no plano** (r1, `critico-b-san3-05`, Opus 5.5 declarado); na junta do PR
+  não tem cadeira (reservado aos blocos de invariante financeiro; aqui o dinheiro só é **lido**). O `§5.2` pede
+  `agente-dba-guardiao` + `agente-secops`; a terceira cadeira é o `guardiao-fail-closed`.
 - **Objeto:** o SHA do head da entrega com check-runs **concluídos** (`gh api repos/<owner>/<repo>/commits/<sha>/check-runs`)
-  — inclusive o job `docker` (é ele que prova E4). Sem CI concluída, o inspetor **bloqueia** o start (§C7.1-bis).
+  — inclusive o job `docker` (é ele que prova E4/H1). Sem CI concluída, o inspetor **bloqueia** o start (§C7.1-bis).
 - **Cadeiras (≤3 itens cada — P4; medir ≠ julgar onde a medição é pesada):**
 
 | Cadeira | Identidade (nova) | Itens | Veto |
 |---|---|---|---|
-| C1 papel, grants e compose | `agente-dba-guardiao` | (1) `scripts/db-runtime-role.sh` num cluster **descartável próprio**: idempotência, `NOBYPASSRLS` reafirmado, default privileges medidos como em P-l; (2) G1–G4 **reexecutados** com a constante `RUNTIME_ROLE_GUARD_SQL` do head (não a do plano); (3) compose: `api` ≠ `migrate`, run do job `docker` verde no SHA julgado, `down -v` documentado | sim (§C7.1) |
-| C2 segurança do gate e do segredo | `agente-secops` | (1) `G-DB-ROLE` não afrouxável: T1–T3 rodados + mutação própria (default de produção → `skip` deve reprovar); paridade 22/22 sem manifesto tocado; (2) zero segredo: placeholders rotulados e distintos, log da trava sem URL/senha/host (T9 + leitura do código), `/health/*` sem mudança; (3) diff × escopo §6 (nada em PROIBIDO; `server.ts` só a linha) e o registro A16 | **sim** |
-| C3 lista fechada e remédio | `guardiao-fail-closed` | (1) gerador rodado no head: L2b = ∅, L1 `CRU` = 0, e **mutação nova** de autoria própria (um sítio cru injetado em módulo que não o de nuvem) fica vermelha em T13; (2) T10–T12 rodados sob papel efêmero **com vermelho-controle no head-base** (mesmo teste, `origin/main`, saída colada); canário por mutação; (3) `aggregateDailyUsage` e `executeCalculationRun` sob o papel: agregam/calculam 2 organizações (a via do job e a via da cobrança, não só o resumo) | sim |
+| C1 papel, grants e compose | `agente-dba-guardiao` | (1) `scripts/db-runtime-role.sh` do **head** num cluster **descartável próprio**: os **7 cenários de §R.4** re-executados (`ec` por cenário, `diff` de idempotência, rollback do que escapa, migrador não-super dono, tabela alheia nomeada) e `git ls-files -s scripts/db-runtime-role.sh` = `100755`; (2) `RUNTIME_ROLE_GUARD_SQL` do head (não a do plano) sob os **11 papéis de §R.1**, incluindo `options=-c role=` pelo PrismaPg e a porta do dono (`NO FORCE` → linhas); (3) compose: `api` ≠ `migrate`, run do job `docker` verde no SHA julgado, papel criado **no banco da app** (`pg_default_acl` em `erp_techsolutions`), `down -v` documentado | sim (§C7.1) |
+| C2 fiação, segredo e escopo | `agente-secops` | (1) **fiação**: T2 e T15 rodados no head **e** duas mutações próprias (default do export → `skip`; chamada em `main()` apagada) — cada uma tem de reprovar T2/T15; paridade 28/28 sem manifesto tocado; (2) zero segredo: placeholders rotulados e distintos, log da trava sem URL/senha/host (T9 + leitura), `/health/*` sem mudança; (3) diff × escopo §6 (fixtures só em `tests/fixtures/san3-05-mutacoes/`; `server.ts` só a linha; nada em PROIBIDO) e A18/A19 **por comando** | **sim** |
+| C3 inventário e remédio | `guardiao-fail-closed` | (1) **ratchet**: gerador do head rodado; inventário == congelado; diff contra as **48 chaves do head-base** (Apêndice A) explicado chave a chave no teste; os 18 subtestes de mutação verdes-por-vermelho **e uma mutação nova de autoria própria** (forma não listada) — se o ratchet não a pegar, é o **residual declarado** (§0.4) e vira pendência nomeada, **não reprova**, desde que o T11-diferencial pegue a versão dinâmica dela; (2) T10–T12 rodados sob papel efêmero **com vermelho-controle no head-base** (mesmo teste, `origin/main`, saída colada) e o **T11-diferencial** (corpo igual super × efêmero, `metrics` não vazio); (3) `aggregateDailyUsage` e `executeCalculationRun` sob o papel: agregam/calculam 2 organizações (a via do job e a via da cobrança, não só o resumo) | sim |
 
 - **Inspetor de terreno** (`inspetor-de-terreno-da-junta`, Fable) antes do voto: worktree por jurado que muta, **cluster
   descartável por jurado** (cada um o seu, porta própria — este plano mostra como subir um sem docker, §0.2),
   `sync-agent-agents.mjs --check` verde, check-runs concluídos no objeto, inelegibilidade por nome, plano de perda.
-- **Papéis (§C7.4-bis):** **quem acha** = as três cadeiras (identidades novas; nenhuma participou deste plano);
-  **quem planeja** = este `planejador-mestre` (Fable; na revalidação pós-correção o Fable é **obrigatório**, §C7.6);
-  **quem desenvolve** = desenvolvedor de identidade nova nomeado pelo orquestrador no comando do bloco, que não vota.
-  Ciclo de reprovação → `omega/reprovacoes/R-B-SAN3-05-<ciclo>.md`; no ciclo 3 com `bloqueia`, auditoria da máquina
-  antes do ciclo 4 (`D-SEM-TETO-AUDITORIA-NO-3`).
-- **Escopo do voto (§C7.1-ter(a)):** `dentro-do-bloco` para os sítios 1–6 e a trava; `pre-existente` (não reprova,
-  vira pendência com dono) para o sítio 7, para a suíte `-db` sob papel real (`B-ARNES-2`), para a posse dono ≠ app em
-  produção (H3, ato) e para qualquer sítio que o gerador **não** veja hoje (residual §0.4) — com evidência de data
-  (migrações `202606xx`; `f4ef511` é a raiz).
+- **Papéis (§C7.4-bis):** **quem achou** = `critico-b-san3-05` (r1) e, no PR, as três cadeiras (identidades novas; nenhuma
+  participou deste plano); **quem planeja** = este `planejador-mestre` (Fable — obrigatório nesta revalidação, §C7.6; a v1
+  e a v2 são do mesmo papel, instâncias distintas); **quem desenvolve** = desenvolvedor de identidade nova nomeado pelo
+  orquestrador no comando do bloco, que não vota e **não julga a validade dos achados** — implementa a v2. Ciclo de reprovação
+  → `omega/reprovacoes/R-B-SAN3-05-<ciclo>.md`; no ciclo 3 com `bloqueia`, auditoria da máquina antes do ciclo 4
+  (`D-SEM-TETO-AUDITORIA-NO-3`).
+- **Escopo do voto (§C7.1-ter(a)):** `dentro-do-bloco` para os sítios 1–6, a trava, o procedimento, a fiação e o ratchet;
+  `pre-existente` (não reprova, vira pendência com dono) para o sítio 7, para a suíte `-db` sob papel real (`B-ARNES-2`),
+  para funções `SECURITY DEFINER` (§2.1), para o teste cego do `EVIDENCE_SCANNER` (P1, `fe2748c` 2026-09-06) e para
+  qualquer forma que o ratchet **declaradamente** não veja (§0.4 residual) — com evidência de data (migrações `202606xx`;
+  `f4ef511` é a raiz).
 - **P1–P6:** evidência incremental em `omega/juntas/votos/B-SAN3-05/<cadeira>-evidencia.md`; voto-arquivo-primeiro
   (`<cadeira>-voto.json`, esqueleto item a item, cada item gravado ao ser medido); ≤2 jurados em paralelo; `00-quedas.md`; ata
   `omega/juntas/J-B-SAN3-05.md`.
-- **Porteiro pós-merge** (`porteiro-pos-merge`, Fable): revalida promessa × diff, reexecuta o gerador e a contagem de
-  KPI, confere A16 e a limpeza §C5, e **libera** (ou não) o próximo alvo da frente 2 (`B-O6R-07c`).
+- **Porteiro pós-merge** (`porteiro-pos-merge`, Fable): revalida promessa × diff, reexecuta o gerador (inventário == congelado)
+  e a contagem de KPI, confere A19 e a limpeza §C5, e **libera** (ou não) o próximo alvo da frente 2 (`B-O6R-07c`).
 
 ---
 
 ## §11 — ATOS DO DONO — o que só você faz, escrito para você ler
 
-> O bloco entrega **pronto**: a trava, o procedimento, o compose e a documentação. Os itens 9 e 10 **só fecham** quando
-> a trava estiver **verde no ambiente** — e isso depende de dois atos que o repositório não pode praticar por você
-> (`PLANO_SAN3.md` §4.2, l.192). O plano **não decide** nome do papel, senha, nem provedor; abaixo vão os defaults e o
-> comando de cada passo. **Nada disto é feito pelo PR. Nada disto é feito antes do merge do PR.**
+> O bloco entrega **pronto**: a trava, o procedimento (executado em sete cenários, §R.4), o compose e a documentação. Os
+> itens 9 e 10 **só fecham** quando a trava estiver **verde no ambiente** — e isso depende de dois atos que o repositório
+> não pode praticar por você (`PLANO_SAN3.md` §4.2, l.192). O plano **não decide** nome do papel, senha, nem provedor;
+> abaixo vão os defaults e o comando de cada passo. **Nada disto é feito pelo PR. Nada disto é feito antes do merge do PR.**
 
 **Ato 1 — criar o papel de runtime no banco gerenciado de produção (e de staging).**
-1. Conecte-se ao banco com a credencial **do migrador** — a mesma URL que está em `PROD_DATABASE_URL` no GitHub
-   Environment `production` (é ela que roda `prisma migrate deploy` e `db:provision-rbac`, e é ela que **fica** como
-   migrador; para staging, `STAGING_DATABASE_URL`).
+1. Conecte-se ao banco **da aplicação** com a credencial **do migrador** — a mesma URL que está em `PROD_DATABASE_URL` no
+   GitHub Environment `production` (é ela que roda `prisma migrate deploy` e `db:provision-rbac`, e é ela que **fica**
+   como migrador; para staging, `STAGING_DATABASE_URL`). `PGDATABASE` tem de ser o banco da app: grants e default
+   privileges são **por banco**.
 2. Escolha o nome do papel (default `erp_runtime`) e uma senha nova, forte, que **não** vai para o repositório nem
    para o chat. Rode, a partir da raiz do repo, no SHA mergeado:
    ```bash
-   PGHOST=<host do gerenciado> PGPORT=5432 PGUSER=<usuário do migrador> PGPASSWORD=<senha do migrador> PGDATABASE=<banco> \
-   DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD='<senha nova>' DB_MIGRATOR_ROLE=<usuário do migrador> \
+   PGHOST=<host do gerenciado> PGPORT=5432 PGUSER=<usuário do migrador> PGPASSWORD=<senha do migrador> PGDATABASE=<banco da app> \
+   DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD='<senha nova>' \
    bash scripts/db-runtime-role.sh
    ```
-   O script termina imprimindo **uma** linha: `erp_runtime|f|f|f|0` (rolsuper, rolbypassrls, escapa por pertença,
-   tabelas FORCE de posse). Qualquer `t`, ou posse `> 0`, e ele sai com erro — não siga para o Ato 2.
-3. Se o provedor **não** deixar criar papel (`CREATE ROLE` recusado): pare e registre em
-   `agent-orchestration/controle/` — é decisão de provedor (§10.2 do PLANO_SAN3), não deste bloco.
+   (`DB_MIGRATOR_ROLE` não precisa ser passado: o default é o usuário desta conexão.) O script termina imprimindo **uma**
+   linha: `erp_runtime|f|f|f|0|<n>` — rolsuper, rolbypassrls, escapa por pertença, tabelas FORCE de posse (direta **ou por
+   pertença**), e quantas tabelas de `public` o papel pode ler e escrever (`<n>` = o total de tabelas da app). Se o papel
+   escapar por qualquer via, o script **sai com erro (`ec=3`) e não deixa nada persistido** — não siga para o Ato 2.
+3. Os **três** modos de falha, e o que cada um pede de você (todos medidos em §R.4):
+   - `ERROR: permission denied to create role` — o migrador não tem `CREATEROLE`: **decisão de provedor** (§10.2 do
+     PLANO_SAN3); pare e registre em `agent-orchestration/controle/`.
+   - `ERROR: papel <X> tem <SUPERUSER|BYPASSRLS|CREATEDB|CREATEROLE> e <migrador> nao pode remover` — já existia um papel com
+     esse nome e um atributo que o migrador não pode tirar: use **outro nome** (`DB_RUNTIME_ROLE=…`) ou corrija o papel com a
+     credencial administrativa do provedor, e rode de novo.
+   - `ERROR: tabela/sequencia public.<t> pertence a <outro> …` ou `… ainda escapa de RLS … POSSE …` — há tabela `FORCE` que não é
+     do migrador (ou é do próprio papel): `ALTER TABLE public.<t> OWNER TO <migrador>;` com a credencial que puder, e rode de
+     novo (o script é idempotente: rodar N vezes converge, medido em §R.4 ii).
 
 **Ato 2 — trocar o secret do app (e só ele).**
 4. `fly secrets set DATABASE_URL='postgresql://erp_runtime:<senha nova>@<host>:5432/<banco>?schema=public' -c fly.production.toml`
    (staging: `-c fly.staging.toml`). **Não** troque `PROD_DATABASE_URL`/`STAGING_DATABASE_URL` no GitHub: o migrador
-   continua sendo o dono das tabelas (é isso que mantém "dono ≠ app", `docs/deployment.md:489-495`).
-5. Faça o deploy pela pipeline de sempre. A trava é a prova: **o app sobe** ⇒ o papel não escapa de RLS. Confira no log
-   (`fly logs -c fly.production.toml`) a linha `runtime database role verified` com `bypassing: 0` e `owned_force_rls_tables: 0`.
-   Se o app **não** subir e o log disser `RUNTIME_ROLE_CAN_BYPASS_RLS`, o secret ainda aponta para um papel que escapa
-   (H2): volte ao passo 4; a máquina anterior continua servindo até um deploy bem-sucedido (H5).
+   continua sendo o dono das tabelas (é isso que mantém "dono ≠ app", `docs/deployment.md:489-495`). **Não** use
+   `options=-c role=…` na URL para "virar" outro papel: a trava julga também o usuário de login (F13) e vai recusar.
+5. Faça o deploy pela pipeline de sempre. A trava é a prova — agora inteira: **o app sobe** ⇒ o usuário de login **e** o
+   papel corrente não escapam de RLS por atributo, por pertença nem por posse. Confira no log
+   (`fly logs -c fly.production.toml`) a linha `runtime database role verified` com `session_user`, `current_user` e
+   `escapes: 0`. Se o app **não** subir e o log disser `RUNTIME_ROLE_CAN_BYPASS_RLS`, as `escapes` dizem **qual porta**
+   (`via: atributo|posse`, `rolname`, `is_self`): volte ao passo 2 ou 4; a máquina anterior continua servindo até um deploy
+   bem-sucedido (H5).
 6. Depois, os dois efeitos que você deve **ver**: `GET /api/v1/platform/cloud-usage/summary` (como admin de plataforma)
-   continua somando as organizações (item 10 — antes deste bloco ele zeraria neste exato momento); e `login_without_org`
-   no `/health/ready` passa a `inactive`/`inert_no_execute` **até** o passo 5 do runbook B-O6R-01 conceder
-   `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime` — decisão sua, registrada em ata,
-   como o runbook já pede (`docs/deployment.md:461-500`).
+   continua somando as organizações (item 10 — antes deste bloco ele zeraria neste exato momento: medido, `50` × vazio,
+   §R.3); e `login_without_org` no `/health/ready` passa a `inactive`/`inert_no_execute` **até** o passo 5 do runbook
+   B-O6R-01 conceder `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime` — decisão sua, registrada
+   em ata, como o runbook já pede (`docs/deployment.md:461-500`).
 
 **O que muda no registro quando os dois atos estiverem feitos:** `P-INFRA-RLS` e `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS`
 passam de `EM ANDAMENTO` para `FECHADA`, com a linha do log do passo 5 como evidência; os itens 9 e 10 do §4.1
@@ -988,16 +1005,19 @@ fecham. Até lá, o PR mergeado é **código pronto, ato pendente** — e é ass
 
 | R | Risco | Mitigação | Rollback |
 |---|---|---|---|
-| R1 | A trava recusa o boot em produção porque o secret ainda é o papel antigo (H2) | é o comportamento desejado; §11 antes do deploy; H5 mostra o que se vê | `fly secrets set DATABASE_URL=<anterior>` **ou** `flyctl deploy --image <sha-anterior>` (Runbook A) — o código anterior não tem trava |
-| R2 | Tabela nova de uma migração futura sem grant para o papel (`42501` no 1º acesso) | `ALTER DEFAULT PRIVILEGES FOR ROLE <migrador>` (P-l, `t`); o script pede o migrador **explicitamente** | rodar o script de novo (idempotente) — regrant das existentes |
+| R1 | A trava recusa o boot em produção porque o secret ainda é o papel antigo (H2) | é o comportamento desejado; §11 antes do deploy; H5 mostra o que se vê; o log diz a porta | `fly secrets set DATABASE_URL=<anterior>` **ou** `flyctl deploy --image <sha-anterior>` (Runbook A) — o código anterior não tem trava |
+| R2 | Tabela nova criada **por outro papel** (não o migrador) ou **noutro banco** fica sem grant (`42501` no 1º acesso) — limite medido do `ALTER DEFAULT PRIVILEGES` (§R.4 v, r1 3.4) | todo DDL roda como o migrador (é o que a pipeline faz); o script **falha nomeando** tabela alheia existente | rodar o script de novo (idempotente) após `OWNER TO <migrador>` |
 | R3 | `N+1` por organização no resumo de plataforma e no cálculo de cobrança | precedente aceito (`platform-overview`, B-O6R-06); uma transação por chamada; nota de escala no código | — (é leitura) |
 | R4 | Blip do banco no boot vira crash-loop (5 tentativas/62 s e recusa) | trade-off declarado: fail-closed > subir sem saber com quem fala; Fly reinicia; readiness já era 503 nesse blip | — |
-| R5 | Posse dono = app em algum ambiente (a trava **reporta**, não recusa) | log `owned_force_rls_tables`; H3 na ativação; deployment.md:489-495 | ato do dono (dono dedicado) — fora do bloco |
+| R5 | **Posse agora RECUSA** (mudança da v1): num ambiente em que o app seja dono (ou membro do dono) de tabela `FORCE`, o boot não sobe | é a intenção (§R.1: dono lê tudo com um `ALTER TABLE`); o script diz o `OWNER TO`; o segundo papel é o ato do dono | secret anterior (R1) |
 | R6 | Compose com volume antigo sem o papel (init só na 1ª subida) | comentário no compose; CI faz `down -v` | `docker compose -f docker-compose.prod.yml down -v` |
-| R7 | O `.sh` montado em `initdb.d` sem bit de execução (checkout Windows) é **sourced** pelo entrypoint | script auto-contido, sem `exit` em caminho feliz, `set -euo pipefail` compatível com o entrypoint (`-Eeo pipefail`) | H1 na CI |
+| R7 | O `.sh` montado em `initdb.d` sem bit de execução é **sourced** pelo entrypoint (é o caminho padrão para os `.sh` da casa, `100644` — N3) | corpo em função-subshell (nada vaza; medido nos dois modos, §R.4 vii) **e** modo `100755` no git | H1 na CI |
 | R8 | `login_without_org` fica `inactive` após a troca até o GRANT humano | é o desenho do B-O6R-01 (janela longa e reportada, `health.routes.ts:40-45`) | passo 6 do §11 |
-| R9 | O gerador (aproximação estática) não vê um sítio cru novo com receptor de nome exótico | residual declarado (§0.4); T13 tem mutação **nova** por jurado; a medição dinâmica é o árbitro | — |
+| R9 | O ratchet (aproximação estática) não vê uma forma nova de acesso cru (acessor dinâmico, SQL montado fora do arquivo…) | residual **declarado** (§0.4); o guard da propriedade é o T11-diferencial; a junta C3 tenta uma forma própria; a suíte `-db` inteira sob papel real (`B-ARNES-2`) é o que fecha a classe | — |
 | R10 | `take: 100_000` retirado de `listAllocationTenantAllocations` | espelha o B-O6R-06; a junta ratifica ou pede teto por tenant (decisão declarada, não silenciosa) | reintroduzir por tenant |
+| R11 | O ratchet reprova PR alheio que acrescente um helper `tx` legítimo (chave nova em `TX-SEM-ENVOLTORIO?`) | custo declarado: atualizar o congelado **com motivo** é o ato consciente que o ratchet existe para exigir (a forma de `db-catalog-write-guard`); o congelado é curto (48 chaves) e sem número de linha | — |
+| R12 | T15 depende de `tsx` no processo filho e de duas portas livres; Redis do PROD_OK é inalcançável de propósito | o teste escolhe portas por `listen(0)` e fecha antes; o caso (a) termina **antes** do Redis; o caso (b) mata o filho após a linha `verified` (não espera `listen`); timeout de 30 s por caso | — |
+| R13 | H7 falsa (runner sem `psql`) | T14a (o `DO` pelo Prisma) é a prova obrigatória; T14b pula **declarando**; o `.sh` inteiro é provado pelo job `docker` (H1) | — |
 
 **Rollback do PR inteiro:** `git revert` do squash — nenhuma migração, nenhum objeto de banco criado pelo código; o
 papel criado pelo dono (se já criado) é inerte enquanto o secret não o usar.
@@ -1008,143 +1028,136 @@ papel criado pelo dono (se já criado) é inerte enquanto o secret não o usar.
 
 | Pendência (a abrir no PR) | O quê | Dono proposto |
 |---|---|---|
-| `P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA` | sítio 7: `cloud-cost-allocation-prisma.repository.ts:238` (`listUsageDailyAggregates`) lê `cloud_usage_daily_aggregates` sem contexto e **não tem chamador** em `src/` (só a sonda de teste); remover ou envolver | `B-O6R-08` (dono da projeção diária, `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA`) |
+| `P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA` | sítio 7: `cloud-cost-allocation-prisma.repository.ts:238` (`listUsageDailyAggregates`) lê `cloud_usage_daily_aggregates` sem contexto e **não tem chamador** em `src/` (só a sonda de teste); remover ou envolver — e, ao fazê-lo, **atualizar o congelado** do T13 (a chave `L2 … new PrismaCloudCostAllocationRepository(prisma) … CRU` some) | `B-O6R-08` (dono da projeção diária, `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA`) |
 | `P-SAN3-05-LACO-POR-TENANT-DUPLICADO` | `forEachTenantInOneTx`/`assertRowsBelongToTenant` privados em `cloud-cost-allocation-prisma.repository.ts:340-380` × os públicos novos em `src/database/rls.ts` — a mesma verdade em dois lugares | `B-SAN3-03` (próximo a tocar os repositórios de nuvem, §6 do PLANO_SAN3) |
-| `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` | a suíte `-db` inteira sob papel `NOSUPERUSER NOBYPASSRLS` (13 suítes escrevem catálogo, 8 fazem DDL — P-n); `SUITES` do job `backend-postgres` para as 3 suítes novas | `B-ARNES-2` (já nomeado no §5.2) |
+| `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` | a suíte `-db` inteira sob papel `NOSUPERUSER NOBYPASSRLS` (13 suítes escrevem catálogo, 8 fazem DDL — P-n); `SUITES` do job `backend-postgres` para as 3 suítes novas; **é o que fecha o residual do ratchet** (R9: formas que a análise estática não vê só aparecem dinamicamente) | `B-ARNES-2` (já nomeado no §5.2) |
 | `P-SAN3-05-POSTURA-NO-HEALTH` | reportar a postura do papel (`database_role: isolated`) no `/health/ready` **fora** de `checks`, como o `login_without_org` — corpo público, `src/routes/health.routes.ts` fora da fronteira | bloco de observabilidade (a nomear pelo orquestrador) |
-| `P-SAN3-05-POSSE-DONO-DIFERENTE-DO-APP` | exigir (não só reportar) dono ≠ app no boot, quando todo ambiente tiver dois papéis | `B-SAN3-10` (go-live; H3 é passo da ativação) |
-| (registro, não pendência) | o `§5.2` diz "quatro leituras"; medido: sete sítios, cinco métodos dentro + um fora; a consulta do teste de encerramento do §5.2 é cega à pertença (G4c) — este plano a substitui por `pg_has_role` | ata da junta + emenda em `pendencias.md` (`P-INFRA-RLS`) |
+| `P-SAN3-05-SECURITY-DEFINER-INVENTARIO` | a trava não enumera funções `SECURITY DEFINER` de dono que escapa e executáveis pelo papel (hoje só `auth_login_candidates`, por ato humano); inventário por comando (§2.1) e decisão de reportar/recusar no boot | `B-SAN3-10` (go-live) |
+| `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` (**P1 da r1, pré-existente**: `tests/o6r07b-scanner-failclosed.test.ts` M-B7.1 e o default nascem em `fe2748c`, 2026-09-06, #380) | o teste reescreve a regra (`resolved = NODE_ENV === "production" ? "unavailable" : "noop"`) em vez de ler o export: mutante `production → noop` fica 13/13 verde (medido em §R.5). Conserto = o mecanismo do T2 deste plano (export lido em processo filho) | `B-O6R-07b` / segurança (a nomear pelo orquestrador) |
+| (registro, não pendência) | o `§5.2` diz "quatro leituras"; medido: sete sítios, cinco métodos dentro + um fora; a consulta do teste de encerramento do §5.2 é cega à pertença (G4c), e a **da v1 deste plano** era cega à posse (F5) e ao `session_user` (F13) — a v2 usa `pg_has_role` sobre atributo e posse, para os dois nomes | ata da junta + emenda em `pendencias.md` (`P-INFRA-RLS`) |
 
 Também fora: mudar o usuário de `db:provision-rbac`/`migrate` (continuam com o migrador); `docker-compose.yml` de
-dev; qualquer mudança em `.github/workflows/**`; `.env.example` (chave opcional); os `fly.*.toml`.
+dev; qualquer mudança em `.github/workflows/**`; `.env.example` (chave opcional); os `fly.*.toml`; o conserto de P1.
 
 ---
 
 ## §14 — Comando do bloco (para o orquestrador colar em `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md`)
 
-`# B-SAN3-05 — o papel de runtime não escapa de RLS (itens 9 e 10)` · **Objetivo** §1 · **Fontes** §0 deste plano ·
-**Regras** §2 e §4 (o SQL da trava é o do §2.2, byte a byte; nenhum privilégio além de DML+USAGE; nada em `/health`) ·
-**Escopo PERMITIDO/PROIBIDO** §6 · **Rito** §10 (inspetor → dev → junta unânime de 3 → porteiro) · **Teste de
-encerramento** §7 A1–A16 com T1–T14 · **Bateria** §8 · **KPI** §9 · **DoD** §10 do contrato + A16 · **Atos do dono**
-§11 (fora do PR) · **Rastreabilidade**: `pr`, `merge_commit`, `approved_head`, `J-B-SAN3-05.md`, `published_per_pr`.
+`# B-SAN3-05 — o papel de runtime não escapa de RLS (itens 9 e 10)` · **Plano:** esta **v2** (`docs/plano-b-san3-05`), que
+responde à crítica r1 — a v1 (`c3f57e9`) **não** vale mais · **Objetivo** §1 · **Fontes** §0 e a seção "Resposta à crítica
+r1" · **Regras** §2 e §4 (o SQL da trava é o do §2.2, byte a byte — atributo ∨ pertença ∨ posse, `session_user` ∧
+`current_user`; o `.sh` é o Apêndice C, byte a byte, `100755`; o gerador é o Apêndice A, byte a byte; nenhum privilégio
+além de DML+USAGE; nada em `/health`) · **Escopo PERMITIDO/PROIBIDO** §6 · **Rito** §10 (inspetor → dev de identidade nova
+→ junta unânime de 3 → porteiro) · **Teste de encerramento** §7 A1–A20 com T1–T15 · **Bateria** §8 (Node 20) · **KPI** §9 ·
+**DoD** §10 do contrato + A19 · **Atos do dono** §11 (fora do PR) · **Rastreabilidade**: `pr`, `merge_commit`,
+`approved_head`, `J-B-SAN3-05.md`, `published_per_pr`.
 
 ---
 
 ## Apêndices
 
-- **A** — o gerador da lista fechada, verbatim, e a saída completa no head `3b1fe0f9`.
-- **B** — o script de medição sob papel real, verbatim, e a saída completa (22 itens).
+- **A** — o gerador v2 do inventário (ratchet), verbatim, e a saída completa no head `3b1fe0f9` (48 chaves congeladas).
+- **B** — o script de medição sob papel real, verbatim (com a emenda N2), e a saída completa (22 itens) — re-executado aqui.
+- **C** — `scripts/db-runtime-role.sh`, verbatim, executado em 7 cenários (§R.4).
+- **D** — as 17 fixtures de mutação do T13 (as da r1, verbatim).
 
 ---
 
-## Apêndice A — o gerador da lista fechada (verbatim) e a saída no head `3b1fe0f9`
+## Apêndice A — o gerador v2 do inventário (verbatim) e a saída no head `3b1fe0f9`
 
-Arquivo que o desenvolvedor commita como `scripts/san3-05-acessos-de-plataforma.mjs` (uso: `node scripts/san3-05-acessos-de-plataforma.mjs . [--all]`). Dependência única: o `typescript` já presente em `node_modules` (5.9.3). md5 do fonte medido: `e8861755e1c960bbf41a48ce270ac445`.
+Arquivo que o desenvolvedor commita como `scripts/san3-05-acessos-de-plataforma.mjs` (uso: `node scripts/san3-05-acessos-de-plataforma.mjs <raiz> [--all]`, com `cwd` = raiz do repo — `typescript` e o client gerado resolvem a partir do script, depois do `cwd`, nunca do alvo). md5 do fonte medido: `293b3746ad7e4dea1c11e16c794e7aa3`. Diferenças para o v1 (`e8861755…`, r1): OPS derivados do client gerado (F4); `$transaction-SEM-setter` é classe própria (F3); receptor raiz/injetado dentro de envoltório, função livre, identificador desestruturado, acesso por índice, RAW opaco e subclasse são vistos (F2); o inventário suspeito (L1+L2, chave sem linha) é a saída que o ratchet congela (F1); resolução de módulos fora do alvo (F14).
 
 ```js
 #!/usr/bin/env node
-// B-SAN3-05 — GERADOR da lista fechada de acessos de PLATAFORMA a tabelas sob FORCE ROW LEVEL SECURITY.
+// B-SAN3-05 (v2) — INVENTÁRIO, gerado da fonte, dos acessos a tabelas sob FORCE ROW LEVEL SECURITY que NÃO estão
+// comprovadamente sob contexto de tenant. Serve a um RATCHET (teste T13): o inventário suspeito é congelado por chave
+// (sem número de linha); linha NOVA ou linha SUMIDA é vermelho — default NEGAR. O que é "suspeito" é toda forma que
+// o analisador NÃO consegue provar sob contexto — não só "receptor cru".
 //
-// PROPRIEDADE (não lista de nomes): "acesso (leitura ou escrita) a uma tabela com FORCE RLS executado num
-// executor SEM contexto de tenant (`app.current_tenant_id`) — que só devolve linhas (ou só grava) quando o
-// papel de banco é superusuário ou tem BYPASSRLS".
+// O QUE ISTO É: aproximação ESTÁTICA (AST do TypeScript). O árbitro da propriedade "sob papel sem bypass a superfície
+// de plataforma devolve o mesmo que sob superusuário" é a medição DINÂMICA (T10–T12, T11-diferencial). Este inventário
+// pega REGRESSÃO de forma; a dinâmica pega regressão de comportamento.
 //
-// Método, em 3 camadas, todas GERADAS da fonte:
-//   L0  tabelas com FORCE RLS  ← prisma/migrations/**/migration.sql  (ALTER TABLE … FORCE ROW LEVEL SECURITY)
-//       tabela → model → acessor Prisma (lcfirst(model)) ← prisma/schema.prisma (@@map)
-//   L1  todo call-site `<recv>.<acessor>.<op>(…)` e todo `$queryRaw*/$executeRaw*` cujo SQL cite a tabela,
-//       em src/**/*.ts, com o RECEPTOR e o ENVOLTÓRIO de contexto (AST do TypeScript, não regex de linha).
-//   L2  para receptores injetados (`this.client`/`this.prismaClient`/`this.prisma`), os sítios `new Classe(arg)`
-//       e a classificação do `arg` (tx de contexto × client cru).
-//
-// Saída: TSV `file:line | receptor | acessor.op | tabela | contexto | classificação`
-//   contexto  = withTenantRls | forEachTenantInOneTx | $transaction+setTenantRlsContext | (nenhum)
-//   classificação:
-//     SOB-CONTEXTO         receptor é o tx de um envoltório que seta o GUC
-//     CRU                  receptor é o client raiz (prisma / this.prismaClient / this.prisma / client raiz)
-//     INJETADO             receptor é executor injetado (this.client) — decidido em L2 por quem instancia
-//     RAW-SQL              SQL cru citando tabela FORCE (classificação pelo receptor idem)
-//
-// Uso: node leituras-de-plataforma.mjs <repo-root> [--all]   (sem --all: só CRU/INJETADO-cru e RAW-SQL cru)
-import { readFileSync, readdirSync, statSync } from "node:fs";
+// Camadas (todas derivadas da fonte):
+//   L0  tabelas FORCE ← prisma/migrations/**/migration.sql; tabela → model → acessor ← prisma/schema.prisma (@@map);
+//       OPS (métodos de delegate Prisma) ← node_modules/.prisma/client/index.d.ts (o client GERADO), não digitados.
+//   L1  todo `<recv>.<acessor>.<op>(…)`, `<recv>["<acessor>"].<op>(…)`, `<acessor>.<op>(…)` (identificador solto,
+//       ex.: desestruturado) e todo `$queryRaw*/$executeRaw*` (com tabela FORCE citada, ou OPACO — SQL fora do literal).
+//   L2  para classes cujo executor é injetado (`this.client`…), INCLUINDO subclasses (`extends`), quem as instancia e com quê.
+// Resolução de `typescript`/client: a partir DESTE arquivo, depois do cwd — nunca do alvo (o alvo pode ser cópia temporária).
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 
 const repo = path.resolve(process.argv[2] ?? ".");
 const showAll = process.argv.includes("--all");
-const require = createRequire(path.join(repo, "package.json"));
-const ts = require("typescript");
+let req = null;
+for (const base of [import.meta.url, path.join(process.cwd(), "package.json"), path.join(repo, "package.json")]) {
+  try { const r = createRequire(base); r.resolve("typescript"); req = r; break; } catch { /* próximo */ }
+}
+if (!req) throw new Error("typescript não resolvido a partir do script, do cwd nem do alvo");
+const ts = req("typescript");
 
 // ---------- L0 ----------
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = path.join(dir, entry);
     const st = statSync(full);
-    if (st.isDirectory()) walk(full, out);
-    else out.push(full);
+    if (st.isDirectory()) walk(full, out); else out.push(full);
   }
   return out;
 }
-
-const migrationFiles = walk(path.join(repo, "prisma/migrations")).filter((f) => f.endsWith("migration.sql"));
-const FORCE = new Set();
-const ENABLE = new Set();
-for (const f of migrationFiles) {
+const FORCE = new Set(); const ENABLE = new Set();
+for (const f of walk(path.join(repo, "prisma/migrations")).filter((f) => f.endsWith("migration.sql"))) {
   const sql = readFileSync(f, "utf8");
   for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+FORCE ROW LEVEL SECURITY/gi)) FORCE.add(m[1].toLowerCase());
   for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+ENABLE ROW LEVEL SECURITY/gi)) ENABLE.add(m[1].toLowerCase());
   for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+NO FORCE ROW LEVEL SECURITY/gi)) FORCE.delete(m[1].toLowerCase());
   for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+DISABLE ROW LEVEL SECURITY/gi)) ENABLE.delete(m[1].toLowerCase());
 }
-
 const schema = readFileSync(path.join(repo, "prisma/schema.prisma"), "utf8");
-const modelToTable = new Map();
-let current = null;
+const modelToTable = new Map(); let current = null;
 for (const line of schema.split(/\r?\n/)) {
-  const m = line.match(/^model\s+(\w+)\s*\{/);
-  if (m) current = m[1];
-  const map = line.match(/@@map\("([^"]+)"\)/);
-  if (map && current) modelToTable.set(current, map[1]);
+  const m = line.match(/^model\s+(\w+)\s*\{/); if (m) current = m[1];
+  const map = line.match(/@@map\("([^"]+)"\)/); if (map && current) modelToTable.set(current, map[1]);
 }
 const accessorToTable = new Map();
-for (const [model, table] of modelToTable) {
-  if (FORCE.has(table)) accessorToTable.set(model[0].toLowerCase() + model.slice(1), table);
-}
+for (const [model, table] of modelToTable) if (FORCE.has(table)) accessorToTable.set(model[0].toLowerCase() + model.slice(1), table);
 
-const OPS = new Set([
-  "findMany", "findFirst", "findFirstOrThrow", "findUnique", "findUniqueOrThrow", "count", "aggregate",
-  "groupBy", "create", "createMany", "createManyAndReturn", "update", "updateMany", "upsert", "delete",
-  "deleteMany",
-]);
+// OPS derivados do client gerado: os métodos do primeiro `*Delegate` de node_modules/.prisma/client/index.d.ts
+let OPS = null;
+try {
+  const clientDir = path.dirname(req.resolve("@prisma/client"));
+  const dts = path.join(clientDir, "..", "..", ".prisma", "client", "index.d.ts");
+  const text = readFileSync(dts, "utf8");
+  const start = text.search(/export interface \w+Delegate</);
+  const body = text.slice(start, text.indexOf("\n  }\n", start));
+  OPS = new Set([...body.matchAll(/^    (\w+)</gm)].map((m) => m[1]));
+} catch { /* sem client gerado: cai na lista abaixo */ }
+if (!OPS || OPS.size < 10) {
+  OPS = new Set(["findMany","findFirst","findFirstOrThrow","findUnique","findUniqueOrThrow","count","aggregate","groupBy",
+    "create","createMany","createManyAndReturn","update","updateMany","updateManyAndReturn","upsert","delete","deleteMany"]);
+  console.error("# aviso: OPS não derivado do client gerado; usando lista embutida");
+}
 const RAW = new Set(["$queryRaw", "$queryRawUnsafe", "$executeRaw", "$executeRawUnsafe"]);
-// Envoltórios de contexto: os nomeados em src/database/rls.ts e os que o repositório injeta como "runner"
-// (`runWithTenantContext`, cujo valor de produção é `(tenantId, work) => withTenantRls(prisma, tenantId, work)`
-// em src/modules/auth/auth-runtime.ts:82 e session-admin.service.ts:288). Qualquer método/função cujo corpo
-// chame withTenantRls/setTenantRlsContext e receba callback também conta (coletado por arquivo, abaixo).
-const CONTEXT_WRAPPERS = new Set([
-  "withTenantRls", "forEachTenantInOneTx", "withIdentityRls", "withTenantContext", "runWithTenantContext",
-]);
+const CONTEXT_WRAPPERS = new Set(["withTenantRls", "forEachTenantInOneTx", "forEachTenantRls", "withIdentityRls", "withTenantContext", "runWithTenantContext"]);
 const CONTEXT_SETTERS = /setTenantRlsContext\(|setIdentityRlsContext\(|app\.current_tenant_id/;
+const ROOT = /^(prisma|this\.prismaClient|this\.prisma|prismaClient|this\.db|db)$/;
+const TXLIKE = /^(tx|trx|transaction)$/;
+const INJ = /^(this\.client|this\.executor|client|executor)$/;
 
 // ---------- L1 ----------
 const srcFiles = walk(path.join(repo, "src")).filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts"));
-const rows = [];
-const injectedClasses = new Map(); // className -> Set(file)
-
-function isFunctionLike(n) {
-  return ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isMethodDeclaration(n) || ts.isFunctionDeclaration(n);
-}
-
+const rows = []; const injectedClasses = new Map(); const extendsOf = new Map(); // class -> base
+function isFunctionLike(n) { return ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isMethodDeclaration(n) || ts.isFunctionDeclaration(n); }
 function contextOf(node, sf) {
-  // sobe até a função envolvente mais próxima; se ela é argumento de um envoltório de contexto, ou de
-  // `$transaction` cujo corpo seta o GUC ANTES (posição) do sítio, o sítio está SOB CONTEXTO.
   let n = node;
   while (n) {
     if (isFunctionLike(n)) {
       const parent = n.parent;
       if (parent && ts.isCallExpression(parent) && parent.arguments.includes(n)) {
-        const callee = parent.expression.getText(sf);
-        const name = callee.split(".").pop();
+        const name = parent.expression.getText(sf).split(".").pop();
         if (CONTEXT_WRAPPERS.has(name)) return name;
         if (name === "$transaction") {
           const body = n.body.getText(sf);
@@ -1154,94 +1167,82 @@ function contextOf(node, sf) {
           return "$transaction-SEM-setter";
         }
       }
-      // método de classe / função nomeada: continua subindo só se for callback; método → para.
       if (ts.isMethodDeclaration(n) || ts.isFunctionDeclaration(n)) return null;
     }
     n = n.parent;
   }
   return null;
 }
-
+// classificação v2: tudo que NÃO está provado sob contexto é suspeito (default negar)
 function classify(recv, ctx) {
-  if (ctx && ctx !== "$transaction-SEM-setter" && ctx !== "$transaction+setter-depois?") return "SOB-CONTEXTO";
-  if (/^(tx|trx|transaction)$/.test(recv)) return ctx ? "SOB-CONTEXTO" : "TX-SEM-ENVOLTORIO?";
-  if (/^this\.client$/.test(recv) || /^this\.executor$/.test(recv) || /^client$/.test(recv) || /^executor$/.test(recv)) return "INJETADO";
-  if (/^(prisma|this\.prismaClient|this\.prisma|prismaClient|this\.db|db)$/.test(recv)) return "CRU";
+  recv = recv.replace(/^\((.*)\)$/s, "$1").replace(/\s+as\s+[\s\S]*$/, "").trim(); // cast não muda o objeto
+  if (ctx === "$transaction-SEM-setter") return "$TRANSACTION-SEM-SETTER";
+  if (ctx === "$transaction+setter-depois?") return "$TRANSACTION-SETTER-DEPOIS?";
+  if (ctx) {
+    if (ROOT.test(recv)) return "CRU-DENTRO-DE-ENVOLTORIO";
+    if (INJ.test(recv)) return "INJETADO-DENTRO-DE-ENVOLTORIO";
+    if (TXLIKE.test(recv)) return "SOB-CONTEXTO";
+    return "OUTRO-DENTRO-DE-ENVOLTORIO(" + recv + ")";
+  }
+  if (TXLIKE.test(recv)) return "TX-SEM-ENVOLTORIO?";
+  if (INJ.test(recv)) return "INJETADO";
+  if (ROOT.test(recv)) return "CRU";
+  if (recv === "(identificador)") return "IDENTIFICADOR-ACESSOR";
   return "OUTRO(" + recv + ")";
 }
-
+const SUSPEITO_L1 = (cls) => cls !== "SOB-CONTEXTO" && cls !== "INJETADO"; // INJETADO se decide em L2
 for (const file of srcFiles) {
   const text = readFileSync(file, "utf8");
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const rel = path.relative(repo, file).replace(/\\/g, "/");
-  let enclosingClass = null;
-  let enclosingMethod = null;
-
+  let enclosingClass = null; let enclosingMethod = null;
+  function push(recv, what, table, node, extra = {}) {
+    const ctx = contextOf(node, sf); let cls = classify(recv, ctx);
+    if (cls === "INJETADO" && !enclosingClass) cls = "INJETADO-SEM-CLASSE";
+    const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+    rows.push({ loc: `${rel}:${line}`, file: rel, recv, what, table, ctx: ctx ?? "(nenhum)", cls, klass: enclosingClass, method: enclosingMethod, ...extra });
+    if (cls === "INJETADO" && enclosingClass) { if (!injectedClasses.has(enclosingClass)) injectedClasses.set(enclosingClass, new Set()); injectedClasses.get(enclosingClass).add(rel); }
+  }
   function visit(node) {
     if (ts.isClassDeclaration(node) && node.name) {
-      const prev = enclosingClass;
-      enclosingClass = node.name.text;
-      ts.forEachChild(node, visit);
-      enclosingClass = prev;
-      return;
+      const prev = enclosingClass; enclosingClass = node.name.text;
+      for (const h of node.heritageClauses ?? []) if (h.token === ts.SyntaxKind.ExtendsKeyword) for (const t of h.types) extendsOf.set(enclosingClass, t.expression.getText(sf));
+      ts.forEachChild(node, visit); enclosingClass = prev; return;
     }
-    if (ts.isMethodDeclaration(node) && node.name) {
-      const prev = enclosingMethod;
-      enclosingMethod = node.name.getText(sf);
-      ts.forEachChild(node, visit);
-      enclosingMethod = prev;
-      return;
+    if ((ts.isMethodDeclaration(node) || (ts.isPropertyDeclaration(node) && node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)))) && node.name) {
+      const prev = enclosingMethod; enclosingMethod = node.name.getText(sf); ts.forEachChild(node, visit); enclosingMethod = prev; return;
     }
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
-      const op = node.expression.name.text;
-      const target = node.expression.expression;
-      if (OPS.has(op) && ts.isPropertyAccessExpression(target)) {
-        const accessor = target.name.text;
-        const table = accessorToTable.get(accessor);
-        if (table) {
-          const recv = target.expression.getText(sf);
-          const ctx = contextOf(node, sf);
-          const cls = classify(recv, ctx);
-          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
-          rows.push({ loc: `${rel}:${line}`, recv, what: `${accessor}.${op}`, table, ctx: ctx ?? "(nenhum)", cls, klass: enclosingClass, method: enclosingMethod });
-          if (cls === "INJETADO" && enclosingClass) {
-            if (!injectedClasses.has(enclosingClass)) injectedClasses.set(enclosingClass, new Set());
-            injectedClasses.get(enclosingClass).add(rel);
-          }
+      const op = node.expression.name.text; const target = node.expression.expression;
+      if (OPS.has(op)) {
+        if (ts.isPropertyAccessExpression(target) && accessorToTable.has(target.name.text)) {
+          push(target.expression.getText(sf), `${target.name.text}.${op}`, accessorToTable.get(target.name.text), node);
+        } else if (ts.isElementAccessExpression(target) && ts.isStringLiteralLike(target.argumentExpression) && accessorToTable.has(target.argumentExpression.text)) {
+          push(target.expression.getText(sf), `["${target.argumentExpression.text}"].${op}`, accessorToTable.get(target.argumentExpression.text), node);
+        } else if (ts.isIdentifier(target) && accessorToTable.has(target.text)) {
+          push("(identificador)", `${target.text}.${op}`, accessorToTable.get(target.text), node);
         }
       }
       if (RAW.has(op)) {
-        const full = node.getText(sf);
-        for (const table of FORCE) {
-          if (new RegExp(`\\b${table}\\b`).test(full)) {
-            const recv = target.getText(sf);
-            const ctx = contextOf(node, sf);
-            const cls = classify(recv, ctx);
-            const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
-            rows.push({ loc: `${rel}:${line}`, recv, what: `RAW-SQL(${op})`, table, ctx: ctx ?? "(nenhum)", cls, klass: enclosingClass, method: enclosingMethod });
-          }
-        }
+        const full = node.getText(sf); let hit = false;
+        for (const table of FORCE) if (new RegExp(`\\b${table}\\b`).test(full)) { hit = true; push(target.getText(sf), `RAW-SQL(${op})`, table, node); }
+        if (!hit) push(target.getText(sf), `RAW-SQL(${op}) OPACO`, "?", node);
       }
     }
-    // tagged template: prisma.$queryRaw`...`
     if (ts.isTaggedTemplateExpression(node) && ts.isPropertyAccessExpression(node.tag) && RAW.has(node.tag.name.text)) {
-      const full = node.getText(sf);
-      for (const table of FORCE) {
-        if (new RegExp(`\\b${table}\\b`).test(full)) {
-          const recv = node.tag.expression.getText(sf);
-          const ctx = contextOf(node, sf);
-          const cls = classify(recv, ctx);
-          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
-          rows.push({ loc: `${rel}:${line}`, recv, what: `RAW-SQL(${node.tag.name.text})`, table, ctx: ctx ?? "(nenhum)", cls, klass: enclosingClass, method: enclosingMethod });
-        }
-      }
+      const full = node.getText(sf); let hit = false;
+      for (const table of FORCE) if (new RegExp(`\\b${table}\\b`).test(full)) { hit = true; push(node.tag.expression.getText(sf), `RAW-SQL(${node.tag.name.text})`, table, node); }
+      if (!hit) push(node.tag.expression.getText(sf), `RAW-SQL(${node.tag.name.text}) OPACO`, "?", node);
     }
     ts.forEachChild(node, visit);
   }
   visit(sf);
 }
+// fecho por herança: subclasse de classe com executor injetado também é injetada
+let grew = true;
+while (grew) { grew = false; for (const [k, base] of extendsOf) if (injectedClasses.has(base) && !injectedClasses.has(k)) { injectedClasses.set(k, new Set(["(extends " + base + ")"])); grew = true; } }
 
-// ---------- L2: quem instancia as classes com executor injetado ----------
+// ---------- L2 ----------
 const instantiations = [];
 for (const file of srcFiles) {
   const text = readFileSync(file, "utf8");
@@ -1250,126 +1251,205 @@ for (const file of srcFiles) {
   function visit(node) {
     if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && injectedClasses.has(node.expression.text)) {
       const arg = node.arguments?.[0]?.getText(sf) ?? "";
-      const ctx = contextOf(node, sf);
-      const cls = classify(arg, ctx);
+      const ctx = contextOf(node, sf); const cls = classify(arg, ctx);
       const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
-      // USO da instância: método encadeado, variável local, campo de classe ou retorno de fábrica.
-      let usage = "?";
-      const p = node.parent;
-      if (p && ts.isPropertyAccessExpression(p) && p.expression === node) {
-        usage = `.${p.name.text}()`;
-      } else if (p && ts.isVariableDeclaration(p) && ts.isIdentifier(p.name)) {
-        const v = p.name.text;
-        let scope = p; while (scope && !isFunctionLike(scope) && !ts.isSourceFile(scope)) scope = scope.parent;
+      let usage = "?"; const p = node.parent;
+      if (p && ts.isPropertyAccessExpression(p) && p.expression === node) usage = `.${p.name.text}()`;
+      else if (p && ts.isVariableDeclaration(p) && ts.isIdentifier(p.name)) {
+        const v = p.name.text; let scope = p; while (scope && !isFunctionLike(scope) && !ts.isSourceFile(scope)) scope = scope.parent;
         const body = scope.getText(sf).slice(node.getEnd() - scope.getStart(sf));
         const ms = [...body.matchAll(new RegExp(`\\b${v}\\.(\\w+)\\(`, "g"))].map((m) => m[1]);
         usage = ms.length ? `var ${v} → .${[...new Set(ms)].join("() .")}()` : `var ${v} → (sem chamada)`;
       } else if (p && (ts.isPropertyDeclaration(p) || ts.isParameter(p)) && ts.isIdentifier(p.name)) {
-        const fld = p.name.text;
-        let cls_ = p; while (cls_ && !ts.isClassDeclaration(cls_)) cls_ = cls_.parent;
+        const fld = p.name.text; let cls_ = p; while (cls_ && !ts.isClassDeclaration(cls_)) cls_ = cls_.parent;
         const body = cls_ ? cls_.getText(sf) : "";
         const ms = [...body.matchAll(new RegExp(`this\\.${fld}\\.(\\w+)\\(`, "g"))].map((m) => m[1]);
         usage = ms.length ? `campo ${fld} → .${[...new Set(ms)].join("() .")}()` : `campo ${fld} → (sem chamada)`;
-      } else if (p && (ts.isReturnStatement(p) || ts.isArrowFunction(p) || ts.isAwaitExpression(p))) {
-        usage = "FÁBRICA/retorno → todos os métodos (quem consome decide)";
-      }
-      instantiations.push({ loc: `${rel}:${line}`, klass: node.expression.text, arg, ctx: ctx ?? "(nenhum)", cls, usage });
+      } else if (p && (ts.isReturnStatement(p) || ts.isArrowFunction(p) || ts.isAwaitExpression(p))) usage = "FÁBRICA/retorno → todos os métodos";
+      else usage = "ARGUMENTO/LITERAL → todos os métodos (quem recebe decide)";
+      instantiations.push({ loc: `${rel}:${line}`, file: rel, klass: node.expression.text, arg, ctx: ctx ?? "(nenhum)", cls, usage });
     }
     ts.forEachChild(node, visit);
   }
   visit(sf);
 }
+const SUSPEITO_L2 = (cls) => cls !== "SOB-CONTEXTO";
+// L2b: call-sites INJETADO alcançáveis a partir de instanciações suspeitas
+const reach = new Map();
+for (const i of instantiations.filter((i) => SUSPEITO_L2(i.cls))) {
+  if (!reach.has(i.klass)) reach.set(i.klass, new Set());
+  if (/FÁBRICA|ARGUMENTO|\?$/.test(i.usage) || i.usage === "?") reach.get(i.klass).add("*");
+  for (const m of [...i.usage.matchAll(/\.(\w+)\(\)/g)].map((m) => m[1])) reach.get(i.klass).add(m);
+}
+function reachKlass(k) { let c = k; while (c) { if (reach.has(c)) return c; c = extendsOf.get(c); } return null; }
+const l2b = [];
+for (const r of rows.filter((r) => r.cls === "INJETADO")) {
+  // a classe do call-site pode ser base de uma subclasse instanciada crua
+  for (const [k, set] of reach) { let c = k; while (c && c !== r.klass) c = extendsOf.get(c); if (!c) continue;
+    if (set.has("*") || set.has(r.method)) l2b.push({ ...r, via: k === r.klass ? (set.has("*") ? "via fábrica/argumento" : "via chamada direta") : `via subclasse ${k}` }); }
+}
 
 // ---------- saída ----------
-console.log(`# L0: tabelas ENABLE=${ENABLE.size} FORCE=${FORCE.size} · acessores Prisma em FORCE=${accessorToTable.size} · src/**/*.ts=${srcFiles.length}`);
-console.log(`# L1: call-sites sobre tabelas FORCE = ${rows.length}`);
-const byCls = {};
-for (const r of rows) byCls[r.cls] = (byCls[r.cls] ?? 0) + 1;
+const byCls = {}; for (const r of rows) byCls[r.cls] = (byCls[r.cls] ?? 0) + 1;
+const instByCls = {}; for (const i of instantiations) instByCls[i.cls] = (instByCls[i.cls] ?? 0) + 1;
+console.log(`# L0: tabelas ENABLE=${ENABLE.size} FORCE=${FORCE.size} · acessores Prisma em FORCE=${accessorToTable.size} · OPS(derivados)=${OPS.size} · src/**/*.ts=${srcFiles.length}`);
+console.log(`# L1: call-sites sobre tabelas FORCE (+ RAW opacos) = ${rows.length}`);
 console.log(`# L1 por classificação: ${JSON.stringify(byCls)}`);
 console.log(`# L2: classes com executor injetado = ${injectedClasses.size}; instanciações achadas = ${instantiations.length}`);
-const instByCls = {};
-for (const i of instantiations) instByCls[i.cls] = (instByCls[i.cls] ?? 0) + 1;
 console.log(`# L2 por classificação do argumento: ${JSON.stringify(instByCls)}`);
-console.log("");
-console.log("## L1 — call-sites CRUS (receptor = client raiz, sem envoltório de contexto)");
-for (const r of rows.filter((r) => r.cls === "CRU" || r.cls.startsWith("OUTRO") || r.cls.startsWith("TX-SEM") )) {
-  console.log(`${r.loc}\t${r.recv}\t${r.what}\t${r.table}\t${r.ctx}\t${r.cls}`);
-}
-console.log("");
-console.log("## L2 — instanciações de classes com executor INJETADO usando client CRU (todo método dessas classes que toque tabela FORCE roda sem contexto)");
-for (const i of instantiations.filter((i) => i.cls === "CRU" || i.cls.startsWith("OUTRO") || i.cls === "INJETADO")) {
-  console.log(`${i.loc}\tnew ${i.klass}(${i.arg})\t${i.ctx}\t${i.cls}\t${i.usage}`);
-}
-console.log("");
-console.log("## L2b — call-sites sobre tabela FORCE ALCANÇÁVEIS a partir das instanciações CRUS (método usado × método do call-site)");
-const reach = new Map(); // klass -> Set(method) | "*"
-for (const i of instantiations.filter((i) => i.cls === "CRU" || i.cls.startsWith("OUTRO"))) {
-  const ms = [...i.usage.matchAll(/\.(\w+)\(\)/g)].map((m) => m[1]);
-  if (!reach.has(i.klass)) reach.set(i.klass, new Set());
-  if (i.usage.startsWith("FÁBRICA")) reach.get(i.klass).add("*");
-  for (const m of ms) reach.get(i.klass).add(m);
-}
-for (const r of rows.filter((r) => r.cls === "INJETADO" && reach.has(r.klass))) {
-  const set = reach.get(r.klass);
-  if (set.has("*") || set.has(r.method)) console.log(`${r.loc}\t${r.klass}.${r.method}\t${r.recv}\t${r.what}\t${r.table}\t${set.has("*") ? "via fábrica" : "via chamada direta"}`);
-}
+// INVENTÁRIO SUSPEITO — chave SEM número de linha, com multiplicidade; é isto que o ratchet congela
+const keys = new Map();
+const add = (k) => keys.set(k, (keys.get(k) ?? 0) + 1);
+for (const r of rows.filter((r) => SUSPEITO_L1(r.cls))) add(`L1\t${r.file}\t${r.klass ?? "-"}.${r.method ?? "-"}\t${r.recv}\t${r.what}\t${r.table}\t${r.ctx}\t${r.cls}`);
+for (const i of instantiations.filter((i) => SUSPEITO_L2(i.cls))) add(`L2\t${i.file}\tnew ${i.klass}(${i.arg})\t${i.ctx}\t${i.cls}\t${i.usage}`);
+// L2b NÃO entra no congelado: é DERIVADO de L2 (a raiz já está na chave) e mudaria a cada método novo de classe injetada.
+const inv = [...keys].map(([k, n]) => `${k}\t×${n}`).sort();
+console.log(`# INVENTÁRIO SUSPEITO (L1+L2): ${inv.length} chaves · sha1=${createHash("sha1").update(inv.join("\n")).digest("hex")} · L2b (derivado, informativo) = ${l2b.length}`);
+console.log(""); console.log("## INVENTÁRIO SUSPEITO (ratchet: chave sem número de linha; linha nova OU sumida = vermelho)");
+for (const k of inv) console.log(k);
+console.log(""); console.log("## L2b — call-sites INJETADO alcançáveis de instanciações suspeitas (com linha)");
+for (const r of l2b) console.log(`${r.loc}\t${r.klass}.${r.method}\t${r.recv}\t${r.what}\t${r.table}\t${r.via}`);
 if (showAll) {
-  console.log("");
-  console.log("## TODOS os call-sites (--all)");
-  for (const r of rows) console.log(`${r.loc}\t${r.recv}\t${r.what}\t${r.table}\t${r.ctx}\t${r.cls}\t${r.klass ?? ""}`);
-  console.log("");
-  console.log("## TODAS as instanciações (--all)");
-  for (const i of instantiations) console.log(`${i.loc}\tnew ${i.klass}(${i.arg})\t${i.ctx}\t${i.cls}`);
+  console.log(""); console.log("## TODOS os call-sites (--all)");
+  for (const r of rows) console.log(`${r.loc}\t${r.recv}\t${r.what}\t${r.table}\t${r.ctx}\t${r.cls}\t${r.klass ?? ""}.${r.method ?? ""}`);
+  console.log(""); console.log("## TODAS as instanciações (--all)");
+  for (const i of instantiations) console.log(`${i.loc}\tnew ${i.klass}(${i.arg})\t${i.ctx}\t${i.cls}\t${i.usage}`);
 }
 ```
 
-**Saída completa** (`node <gerador> .`, sem `--all`, sobre `origin/main@3b1fe0f9`; colunas separadas por TAB):
+**Saída completa** (`node <gerador> .`, sem `--all`, sobre `origin/main@3b1fe0f9`; colunas separadas por TAB; o bloco `## INVENTÁRIO SUSPEITO` é o que o T13 congela — 48 chaves; o `## L2b` é informativo):
 
 ```text
-# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · src/**/*.ts=777
-# L1: call-sites sobre tabelas FORCE = 642
-# L1 por classificação: {"TX-SEM-ENVOLTORIO?":6,"INJETADO":584,"SOB-CONTEXTO":52}
+# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · OPS(derivados)=17 · src/**/*.ts=777
+# L1: call-sites sobre tabelas FORCE (+ RAW opacos) = 720
+# L1 por classificação: {"TX-SEM-ENVOLTORIO?":12,"INJETADO-SEM-CLASSE":8,"INJETADO":646,"SOB-CONTEXTO":51,"$TRANSACTION-SEM-SETTER":2,"CRU":1}
 # L2: classes com executor injetado = 70; instanciações achadas = 451
-# L2 por classificação do argumento: {"SOB-CONTEXTO":424,"TX-SEM-ENVOLTORIO?":14,"CRU":4,"OUTRO()":4,"INJETADO":5}
+# L2 por classificação do argumento: {"SOB-CONTEXTO":423,"TX-SEM-ENVOLTORIO?":14,"CRU":4,"OUTRO()":4,"$TRANSACTION-SETTER-DEPOIS?":1,"INJETADO":5}
+# INVENTÁRIO SUSPEITO (L1+L2): 48 chaves · sha1=147d41c209a5f3bbce9fc7d208fd33a02e6bd8d2 · L2b (derivado, informativo) = 65
 
-## L1 — call-sites CRUS (receptor = client raiz, sem envoltório de contexto)
-src/database/rls.ts:57	tx	RAW-SQL($queryRaw)	auth_identity_links	(nenhum)	TX-SEM-ENVOLTORIO?
-src/modules/auth/services/identity-link.service.ts:613	tx	RAW-SQL($queryRaw)	auth_identity_links	(nenhum)	TX-SEM-ENVOLTORIO?
-src/modules/auth/services/identity-resolver.ts:22	tx	RAW-SQL($queryRaw)	auth_identity_links	(nenhum)	TX-SEM-ENVOLTORIO?
-src/modules/auth/services/session-admin.service.ts:163	tx	user.findMany	users	(nenhum)	TX-SEM-ENVOLTORIO?
-src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:111	tx	financialTitle.findMany	financial_titles	(nenhum)	TX-SEM-ENVOLTORIO?
-src/modules/financial-period-closes/financial-period-close-prisma.repository.ts:115	tx	financialEntry.findMany	financial_entries	(nenhum)	TX-SEM-ENVOLTORIO?
+## INVENTÁRIO SUSPEITO (ratchet: chave sem número de linha; linha nova OU sumida = vermelho)
+L1	src/database/financial-period-lock.ts	-.-	tx	RAW-SQL($executeRaw) OPACO	?	(nenhum)	TX-SEM-ENVOLTORIO?	×2
+L1	src/database/rls.ts	-.-	client	RAW-SQL($executeRaw) OPACO	?	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/database/rls.ts	-.-	tx	RAW-SQL($executeRaw) OPACO	?	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/database/rls.ts	-.-	tx	RAW-SQL($queryRaw)	auth_identity_links	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/modules/auth/repositories/identity-link.repository.ts	-.-	client	authIdentity.createMany	auth_identities	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/auth/repositories/login-candidates.repository.ts	-.-	client	RAW-SQL($queryRaw) OPACO	?	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/auth/services/identity-link.service.ts	IdentityLinkService.selectLinkOfPairForUpdate	tx	RAW-SQL($queryRaw)	auth_identity_links	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/modules/auth/services/identity-resolver.ts	-.-	tx	RAW-SQL($executeRaw) OPACO	?	(nenhum)	TX-SEM-ENVOLTORIO?	×3
+L1	src/modules/auth/services/identity-resolver.ts	-.-	tx	RAW-SQL($queryRaw)	auth_identity_links	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/modules/auth/services/login-readiness.ts	-.-	client	RAW-SQL($queryRaw) OPACO	?	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/auth/services/session-admin.service.ts	SessionAdminService.resolveUserLabels	tx	user.findMany	users	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/modules/cloud-usage/cloud-usage.capture.ts	-.-	client	RAW-SQL($executeRaw)	cloud_usage_events	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/commissions/work-order-cancellation.gate.ts	-.-	executor	workOrder.findFirst	work_orders	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/financial-period-closes/financial-period-close-prisma.repository.ts	PrismaFinancialPeriodCloseStore.readCompetencia	tx	financialEntry.findMany	financial_entries	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/modules/financial-period-closes/financial-period-close-prisma.repository.ts	PrismaFinancialPeriodCloseStore.readCompetencia	tx	financialTitle.findMany	financial_titles	(nenhum)	TX-SEM-ENVOLTORIO?	×1
+L1	src/modules/impound/impound.outbox.repository.ts	-.-	client	impoundOutboxEvent.create	impound_outbox_events	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/impound/impound.outbox.repository.ts	-.-	client	impoundOutboxEvent.findMany	impound_outbox_events	(nenhum)	INJETADO-SEM-CLASSE	×1
+L1	src/modules/work-orders/work-order-prisma.repository.ts	PrismaWorkOrderRepository.assign	tx	workOrder.updateManyAndReturn	work_orders	$transaction-SEM-setter	$TRANSACTION-SEM-SETTER	×1
+L1	src/modules/work-orders/work-order-prisma.repository.ts	PrismaWorkOrderRepository.assign	tx	workOrderAssignment.create	work_order_assignments	$transaction-SEM-setter	$TRANSACTION-SEM-SETTER	×1
+L1	src/routes/health.routes.ts	-.-	prisma	RAW-SQL($queryRawUnsafe) OPACO	?	(nenhum)	CRU	×1
+L2	src/modules/auth/auth-runtime.ts	new AuditLogRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	ARGUMENTO/LITERAL → todos os métodos (quem recebe decide)	×1
+L2	src/modules/auth/auth-runtime.ts	new AuditLogRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	FÁBRICA/retorno → todos os métodos	×1
+L2	src/modules/auth/auth-runtime.ts	new LocalAuthCredentialRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	ARGUMENTO/LITERAL → todos os métodos (quem recebe decide)	×1
+L2	src/modules/auth/auth-runtime.ts	new UserRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	ARGUMENTO/LITERAL → todos os métodos (quem recebe decide)	×1
+L2	src/modules/auth/auth-runtime.ts	new UserRoleRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	ARGUMENTO/LITERAL → todos os métodos (quem recebe decide)	×1
+L2	src/modules/auth/services/identity-link.service.ts	new AuditLogRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	FÁBRICA/retorno → todos os métodos	×1
+L2	src/modules/auth/services/identity-link.service.ts	new AuthSessionRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.revokeAllActiveByUserForTenant()	×1
+L2	src/modules/auth/services/identity-link.service.ts	new IdentityLinkEventRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.append()	×1
+L2	src/modules/auth/services/identity-link.service.ts	new IdentityLinkRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.moveToIdentity()	×1
+L2	src/modules/auth/services/identity-resolver.ts	new IdentityLinkEventRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.append()	×1
+L2	src/modules/auth/services/identity-resolver.ts	new IdentityLinkRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.createForPair()	×1
+L2	src/modules/auth/services/local-auth-credential.service.ts	new LocalAuthCredentialRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.updatePassword()	×1
+L2	src/modules/auth/services/session-admin.service.ts	new AuditLogRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	FÁBRICA/retorno → todos os métodos	×1
+L2	src/modules/cloud-charges/cloud-charge-prisma.repository.ts	new PrismaCloudChargeRepository(prisma)	(nenhum)	CRU	FÁBRICA/retorno → todos os métodos	×1
+L2	src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts	new PrismaCloudCostAllocationRepository(prisma)	(nenhum)	CRU	FÁBRICA/retorno → todos os métodos	×1
+L2	src/modules/cloud-usage/cloud-usage-prisma.repository.ts	new PrismaCloudUsageRepository(this.prismaClient)	(nenhum)	CRU	.listDailyAggregates()	×1
+L2	src/modules/cloud-usage/cloud-usage-prisma.repository.ts	new PrismaCloudUsageRepository(this.prismaClient)	(nenhum)	CRU	.listEvents()	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new AuditLogRepository()	(nenhum)	OUTRO()	campo auditLogs → (sem chamada)	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new AuditLogRepository(tx)	$transaction+setter-depois?	$TRANSACTION-SETTER-DEPOIS?	var txAudit → (sem chamada)	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new RoleRepository()	(nenhum)	OUTRO()	campo roles → (sem chamada)	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new UserRepository()	(nenhum)	OUTRO()	campo users → (sem chamada)	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new UserRoleRepository()	(nenhum)	OUTRO()	campo userRoles → (sem chamada)	×1
+L2	src/modules/financial-titles/financial-title-prisma.repository.ts	new PrismaFinancialPeriodCloseRepository(tx)	(nenhum)	TX-SEM-ENVOLTORIO?	.isPeriodClosed()	×1
+L2	src/modules/impound/impound-prisma.repository.ts	new PrismaImpoundChecklistLinkRepository(this.client)	(nenhum)	INJETADO	var linkRepo → .createLink()	×1
+L2	src/modules/impound/impound-prisma.repository.ts	new PrismaVehicleIdentityRepository(this.client)	(nenhum)	INJETADO	var identityRepo → .resolveOrCreateByPlateKey()	×1
+L2	src/modules/impound/impound-prisma.repository.ts	new PrismaVehicleIdentityRepository(this.client)	(nenhum)	INJETADO	var identityRepo → .resolveOrCreateByPlateKey() .createProvisionalUnidentified()	×1
+L2	src/modules/impound/impound-prisma.repository.ts	new PrismaYardRepository(this.client)	(nenhum)	INJETADO	FÁBRICA/retorno → todos os métodos	×1
+L2	src/modules/release/release-prisma.repository.ts	new PrismaYardRepository(this.client)	(nenhum)	INJETADO	.vacate()	×1
 
-## L2 — instanciações de classes com executor INJETADO usando client CRU (todo método dessas classes que toque tabela FORCE roda sem contexto)
-src/modules/cloud-charges/cloud-charge-prisma.repository.ts:240	new PrismaCloudChargeRepository(prisma)	(nenhum)	CRU	FÁBRICA/retorno → todos os métodos (quem consome decide)
-src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:413	new PrismaCloudCostAllocationRepository(prisma)	(nenhum)	CRU	FÁBRICA/retorno → todos os métodos (quem consome decide)
-src/modules/cloud-usage/cloud-usage-prisma.repository.ts:173	new PrismaCloudUsageRepository(this.prismaClient)	(nenhum)	CRU	.listEvents()
-src/modules/cloud-usage/cloud-usage-prisma.repository.ts:197	new PrismaCloudUsageRepository(this.prismaClient)	(nenhum)	CRU	.listDailyAggregates()
-src/modules/core-saas/store/prisma-core-saas.store.ts:38	new UserRepository()	(nenhum)	OUTRO()	campo users → (sem chamada)
-src/modules/core-saas/store/prisma-core-saas.store.ts:39	new RoleRepository()	(nenhum)	OUTRO()	campo roles → (sem chamada)
-src/modules/core-saas/store/prisma-core-saas.store.ts:40	new UserRoleRepository()	(nenhum)	OUTRO()	campo userRoles → (sem chamada)
-src/modules/core-saas/store/prisma-core-saas.store.ts:41	new AuditLogRepository()	(nenhum)	OUTRO()	campo auditLogs → (sem chamada)
-src/modules/impound/impound-prisma.repository.ts:165	new PrismaVehicleIdentityRepository(this.client)	(nenhum)	INJETADO	var identityRepo → .resolveOrCreateByPlateKey() .createProvisionalUnidentified()
-src/modules/impound/impound-prisma.repository.ts:211	new PrismaImpoundChecklistLinkRepository(this.client)	(nenhum)	INJETADO	var linkRepo → .createLink()
-src/modules/impound/impound-prisma.repository.ts:500	new PrismaVehicleIdentityRepository(this.client)	(nenhum)	INJETADO	var identityRepo → .resolveOrCreateByPlateKey()
-src/modules/impound/impound-prisma.repository.ts:721	new PrismaYardRepository(this.client)	(nenhum)	INJETADO	FÁBRICA/retorno → todos os métodos (quem consome decide)
-src/modules/release/release-prisma.repository.ts:445	new PrismaYardRepository(this.client)	(nenhum)	INJETADO	.vacate()
-
-## L2b — call-sites sobre tabela FORCE ALCANÇÁVEIS a partir das instanciações CRUS (método usado × método do call-site)
-src/modules/cloud-charges/cloud-charge-prisma.repository.ts:167	PrismaCloudChargeRepository.replaceTenantCharges	this.client	tenantCloudCharge.deleteMany	tenant_cloud_charges	via fábrica
-src/modules/cloud-charges/cloud-charge-prisma.repository.ts:171	PrismaCloudChargeRepository.replaceTenantCharges	this.client	tenantCloudCharge.create	tenant_cloud_charges	via fábrica
-src/modules/cloud-charges/cloud-charge-prisma.repository.ts:202	PrismaCloudChargeRepository.listTenantCharges	this.client	tenantCloudCharge.findMany	tenant_cloud_charges	via fábrica
-src/modules/cloud-charges/cloud-charge-prisma.repository.ts:220	PrismaCloudChargeRepository.listAllocationTenantAllocations	this.client	tenantCloudCostAllocation.findMany	tenant_cloud_cost_allocations	via fábrica
-src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:238	PrismaCloudCostAllocationRepository.listUsageDailyAggregates	this.client	cloudUsageDailyAggregate.findMany	cloud_usage_daily_aggregates	via fábrica
+## L2b — call-sites INJETADO alcançáveis de instanciações suspeitas (com linha)
+src/modules/auth/repositories/auth-session.repository.ts:113	AuthSessionRepository.revokeAllActiveByUserForTenant	this.client	authSession.updateMany	auth_sessions	via chamada direta
+src/modules/auth/repositories/identity-link-event.repository.ts:31	IdentityLinkEventRepository.append	this.client	authIdentityLinkEvent.createMany	auth_identity_link_events	via chamada direta
+src/modules/auth/repositories/identity-link.repository.ts:88	IdentityLinkRepository.createForPair	this.client	authIdentityLink.create	auth_identity_links	via chamada direta
+src/modules/auth/repositories/identity-link.repository.ts:101	IdentityLinkRepository.moveToIdentity	this.client	authIdentityLink.updateMany	auth_identity_links	via chamada direta
+src/modules/auth/repositories/local-auth-credential.repository.ts:27	LocalAuthCredentialRepository.create	this.client	localAuthCredential.create	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:39	LocalAuthCredentialRepository.upsertForUser	this.client	localAuthCredential.upsert	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:66	LocalAuthCredentialRepository.findByEmailForTenant	this.client	localAuthCredential.findUnique	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:78	LocalAuthCredentialRepository.findByUserForTenant	this.client	localAuthCredential.findUnique	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:89	LocalAuthCredentialRepository.updatePassword	this.client	localAuthCredential.update	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:112	LocalAuthCredentialRepository.incrementFailedAttempts	this.client	RAW-SQL($executeRaw)	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:125	LocalAuthCredentialRepository.resetFailedAttempts	this.client	localAuthCredential.updateMany	local_auth_credentials	via fábrica/argumento
+src/modules/auth/repositories/local-auth-credential.repository.ts:138	LocalAuthCredentialRepository.markSuccessfulLogin	this.client	localAuthCredential.updateMany	local_auth_credentials	via fábrica/argumento
+src/modules/cloud-charges/cloud-charge-prisma.repository.ts:167	PrismaCloudChargeRepository.replaceTenantCharges	this.client	tenantCloudCharge.deleteMany	tenant_cloud_charges	via fábrica/argumento
+src/modules/cloud-charges/cloud-charge-prisma.repository.ts:171	PrismaCloudChargeRepository.replaceTenantCharges	this.client	tenantCloudCharge.create	tenant_cloud_charges	via fábrica/argumento
+src/modules/cloud-charges/cloud-charge-prisma.repository.ts:202	PrismaCloudChargeRepository.listTenantCharges	this.client	tenantCloudCharge.findMany	tenant_cloud_charges	via fábrica/argumento
+src/modules/cloud-charges/cloud-charge-prisma.repository.ts:220	PrismaCloudChargeRepository.listAllocationTenantAllocations	this.client	tenantCloudCostAllocation.findMany	tenant_cloud_cost_allocations	via fábrica/argumento
+src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts:238	PrismaCloudCostAllocationRepository.listUsageDailyAggregates	this.client	cloudUsageDailyAggregate.findMany	cloud_usage_daily_aggregates	via fábrica/argumento
 src/modules/cloud-usage/cloud-usage-prisma.repository.ts:61	PrismaCloudUsageRepository.listEvents	this.client	cloudUsageEvent.findMany	cloud_usage_events	via chamada direta
 src/modules/cloud-usage/cloud-usage-prisma.repository.ts:120	PrismaCloudUsageRepository.listDailyAggregates	this.client	cloudUsageDailyAggregate.findMany	cloud_usage_daily_aggregates	via chamada direta
+src/modules/core-saas/repositories/audit-log.repository.ts:20	AuditLogRepository.listByTenant	this.client	auditLog.findMany	audit_logs	via fábrica/argumento
+src/modules/core-saas/repositories/audit-log.repository.ts:34	AuditLogRepository.listByEntity	this.client	auditLog.findMany	audit_logs	via fábrica/argumento
+src/modules/core-saas/repositories/audit-log.repository.ts:48	AuditLogRepository.create	this.client	auditLog.create	audit_logs	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:18	UserRoleRepository.listByTenant	this.client	userRoleAssignment.findMany	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:34	UserRoleRepository.listByUserForTenant	this.client	userRoleAssignment.findMany	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:50	UserRoleRepository.findAssignmentByIdForTenant	this.client	userRoleAssignment.findFirst	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:71	UserRoleRepository.assignRole	this.client	userRoleAssignment.findFirst	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:84	UserRoleRepository.assignRole	this.client	userRoleAssignment.create	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:95	UserRoleRepository.removeAssignment	this.client	userRoleAssignment.deleteMany	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:106	UserRoleRepository.removeAllForUser	this.client	userRoleAssignment.deleteMany	user_role_assignments	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:117	UserRoleRepository.assertUserBelongsToTenant	this.client	user.findFirst	users	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:133	UserRoleRepository.assertRoleIsAssignableToTenant	this.client	role.findFirst	roles	via fábrica/argumento
+src/modules/core-saas/repositories/user-role.repository.ts:156	UserRoleRepository.assertBranchBelongsToTenant	this.client	branch.findFirst	branches	via fábrica/argumento
+src/modules/core-saas/repositories/user.repository.ts:19	UserRepository.listByTenant	this.client	user.findMany	users	via fábrica/argumento
+src/modules/core-saas/repositories/user.repository.ts:41	UserRepository.findByIdForTenant	this.client	user.findFirst	users	via fábrica/argumento
+src/modules/core-saas/repositories/user.repository.ts:61	UserRepository.findByIdWithRoleAssignmentsForTenant	this.client	user.findFirst	users	via fábrica/argumento
+src/modules/core-saas/repositories/user.repository.ts:81	UserRepository.create	this.client	user.create	users	via fábrica/argumento
+src/modules/core-saas/repositories/user.repository.ts:96	UserRepository.updateProfile	this.client	user.update	users	via fábrica/argumento
+src/modules/core-saas/repositories/user.repository.ts:108	UserRepository.createWithRoleAssignments	this.client	user.create	users	via fábrica/argumento
+src/modules/financial-titles/financial-title-prisma.repository.ts:260	PrismaFinancialPeriodCloseRepository.isPeriodClosed	this.client	financialPeriodClose.findFirst	financial_period_closes	via chamada direta
+src/modules/impound/impound.checklist-link-prisma.repository.ts:25	PrismaImpoundChecklistLinkRepository.createLink	this.client	impoundProcessChecklistLink.upsert	impound_process_checklist_links	via chamada direta
+src/modules/vehicle-identities/vehicle-identity-prisma.repository.ts:352	PrismaVehicleIdentityRepository.resolveOrCreateByPlateKey	this.client	thirdPartyVehicleIdentity.findFirst	third_party_vehicle_identities	via chamada direta
+src/modules/vehicle-identities/vehicle-identity-prisma.repository.ts:361	PrismaVehicleIdentityRepository.resolveOrCreateByPlateKey	this.client	thirdPartyVehicleIdentity.create	third_party_vehicle_identities	via chamada direta
+src/modules/vehicle-identities/vehicle-identity-prisma.repository.ts:387	PrismaVehicleIdentityRepository.createProvisionalUnidentified	this.client	thirdPartyVehicleIdentity.create	third_party_vehicle_identities	via chamada direta
+src/modules/yard/yard-prisma.repository.ts:41	PrismaYardRepository.createYard	this.client	yard.create	yards	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:63	PrismaYardRepository.listYards	this.client	yard.findMany	yards	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:64	PrismaYardRepository.listYards	this.client	yard.count	yards	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:70	PrismaYardRepository.findYardById	this.client	yard.findFirst	yards	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:76	PrismaYardRepository.updateYard	this.client	yard.updateManyAndReturn	yards	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:96	PrismaYardRepository.createArea	this.client	yardArea.create	yard_areas	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:116	PrismaYardRepository.listAreasByYard	this.client	yardArea.findMany	yard_areas	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:124	PrismaYardRepository.findAreaById	this.client	yardArea.findFirst	yard_areas	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:130	PrismaYardRepository.updateArea	this.client	yardArea.updateManyAndReturn	yard_areas	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:147	PrismaYardRepository.createSpot	this.client	yardSpot.create	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:167	PrismaYardRepository.listSpotsByArea	this.client	yardSpot.findMany	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:175	PrismaYardRepository.listSpotsByYard	this.client	yardSpot.findMany	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:183	PrismaYardRepository.findSpotById	this.client	yardSpot.findFirst	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:188	PrismaYardRepository.updateSpot	this.client	yardSpot.findFirst	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:194	PrismaYardRepository.updateSpot	this.client	yardSpot.update	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:223	PrismaYardRepository.allocate	this.client	yardSpot.update	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:244	PrismaYardRepository.vacate	this.client	yardSpot.update	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:260	PrismaYardRepository.move	this.client	yardSpot.findFirst	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:264	PrismaYardRepository.move	this.client	yardSpot.findFirst	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:277	PrismaYardRepository.move	this.client	yardSpot.update	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:281	PrismaYardRepository.move	this.client	yardSpot.update	yard_spots	via fábrica/argumento
+src/modules/yard/yard-prisma.repository.ts:289	PrismaYardRepository.lockSpot	this.client	RAW-SQL($queryRaw)	yard_spots	via fábrica/argumento
 ```
 
 ---
 
-## Apêndice B — a medição sob papel real (verbatim) e a saída completa
+## Apêndice B — a medição sob papel real (verbatim, com a emenda N2) e a saída completa
 
-Executado nesta sessão com `cd <repo> && ADMIN_URL=postgresql://postgres@127.0.0.1:54329/erp_san3_05?schema=public npx tsx <scratchpad>/medir-papel.ts` (Postgres 16.13 descartável, migrações de `3b1fe0f9` aplicadas; cria e derruba os papéis `san3_05_*` e a semente; nenhum segredo). É o roteiro dos testes T6–T12: o desenvolvedor **não** o commita como está — o converte em testes pelo arnês único (`createEphemeralRole`), como o §8 pede.
+Executado na v1 com `ADMIN_URL=postgresql://postgres@127.0.0.1:54329/erp_san3_05?schema=public npx tsx <scratchpad>/medir-papel.ts` e **re-executado nesta v2** com `cd /home/user/wt-plano && ADMIN_URL=postgresql://postgres@127.0.0.1:54353/erp_plano?schema=public PATH=/opt/node20/bin:$PATH npx tsx $SP/medir-papel.ts` → `22 itens, 0 fora do esperado` (§R.6). **Única linha alterada** em relação à v1 (N2): `const REPO = process.env.REPO ?? process.cwd();` — md5 do arquivo emendado: `6204643a81fb5d2305f09ff38b89f9de` (v1: `e93baadc88ffa101f11ecfd6d69361a8`). Postgres 16.13 descartável, migrações de `3b1fe0f9` aplicadas; cria e derruba os papéis `san3_05_*` e a semente; nenhum segredo. Mede a trava **v1** (G1–G4); a v2 está em §R.1. É o roteiro dos testes T6–T12: o desenvolvedor **não** o commita como está — o converte em testes pelo arnês único (`createEphemeralRole`), como o §8 pede.
 
 ```ts
 // B-SAN3-05 — MEDIÇÃO sob papel real `NOSUPERUSER NOBYPASSRLS` num Postgres 16 descartável.
@@ -1377,7 +1457,7 @@ Executado nesta sessão com `cd <repo> && ADMIN_URL=postgresql://postgres@127.0.
 // Não toca o repositório. Cria e derruba os papéis `san3_05_*`. Nada aqui é segredo (cluster local, trust auth).
 import { createRequire } from "node:module";
 
-const REPO = "/home/user/ERP_Techsolutios";
+const REPO = process.env.REPO ?? process.cwd();
 const require = createRequire(`${REPO}/package.json`);
 const { PrismaPg } = require("@prisma/adapter-pg") as typeof import("@prisma/adapter-pg");
 const { PrismaClient } = require("@prisma/client") as typeof import("@prisma/client");
@@ -1599,3 +1679,235 @@ main().catch((e) => { console.error(e); process.exitCode = 2; });
 | R1 | REMÉDIO (protótipo): laço por tenant sob contexto, mesmo papel, soma os eventos das 2 organizações | `5` | `5` | ✓ |
 
 # 22 itens, 0 fora do esperado
+
+---
+
+## Apêndice C — `scripts/db-runtime-role.sh` (verbatim) — executado em 7 cenários (§R.4)
+
+md5 medido: `189ddf8a093934cf1c1baa61ba80f5c8` · 82 linhas · versionar com modo `100755` (`git update-index --chmod=+x scripts/db-runtime-role.sh`). Uso: `DB_RUNTIME_PASSWORD=… [DB_RUNTIME_ROLE=erp_runtime] [DB_MIGRATOR_ROLE=<default: usuário da conexão>] bash scripts/db-runtime-role.sh`, com `PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE` (fora do initdb.d) ou `POSTGRES_USER/POSTGRES_DB` (dentro dele).
+
+```bash
+#!/usr/bin/env bash
+# B-SAN3-05 — cria/converge o PAPEL DE RUNTIME da API: LOGIN, NOSUPERUSER, NOBYPASSRLS, sem posse de tabela FORCE RLS,
+# sem pertença a papel que escape de RLS; só DML + USAGE em sequências. Idempotente. FALHA (psql ec=3) se o papel
+# escapar de RLS por atributo, pertença ou posse e este script não puder corrigir — nunca "aceita" um papel que escapa.
+#
+# Entradas (ambiente): DB_RUNTIME_ROLE (default erp_runtime) · DB_RUNTIME_PASSWORD (obrigatória; nunca ecoada)
+#   · DB_MIGRATOR_ROLE (default: o usuário desta conexão — é quem cria as tabelas; ALTER DEFAULT PRIVILEGES é dele)
+# Conexão: no initdb.d do postgres:16 usa POSTGRES_USER/POSTGRES_DB (socket local); fora dele, PGHOST/PGPORT/PGUSER/
+#   PGPASSWORD/PGDATABASE (PGDATABASE obrigatória: os GRANTs e os DEFAULT PRIVILEGES são POR BANCO — o banco da app).
+# Todo o corpo roda numa FUNÇÃO em SUBSHELL: quando o entrypoint do postgres:16 faz `source` deste arquivo (modo 100644),
+#   nenhum `set -u`/`exit` vaza para o shell dele. O arquivo é versionado com modo 100755 (executado, não sourced).
+db_runtime_role_main() (
+  set -euo pipefail
+  : "${DB_RUNTIME_PASSWORD:?DB_RUNTIME_PASSWORD obrigatória}"
+  local role="${DB_RUNTIME_ROLE:-erp_runtime}" migrator="${DB_MIGRATOR_ROLE:-}"
+  local -a conn=()
+  if [ -n "${POSTGRES_DB:-}" ]; then conn=(--username "${POSTGRES_USER:-postgres}" --dbname "$POSTGRES_DB")
+  else : "${PGDATABASE:?PGDATABASE obrigatória (o banco da aplicação)}"; fi
+  psql -X -v ON_ERROR_STOP=1 -At "${conn[@]}" \
+    -v role="$role" -v password="$DB_RUNTIME_PASSWORD" -v migrator="$migrator" <<'SQL'
+SELECT set_config('san3.role', :'role', false), set_config('san3.password', :'password', false),
+       set_config('san3.migrator', coalesce(nullif(:'migrator', ''), current_user::text), false) \gset _
+DO $$
+DECLARE
+  v_role     text := current_setting('san3.role');
+  v_password text := current_setting('san3.password');
+  v_migrator text := current_setting('san3.migrator');
+  me pg_roles%ROWTYPE; alvo pg_roles%ROWTYPE; r record; n int;
+BEGIN
+  SELECT * INTO me FROM pg_roles WHERE rolname = current_user;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = v_role) THEN
+    -- CREATE ROLE sem nomear NOSUPERUSER/NOCREATEDB/NOBYPASSRLS (são os defaults; nomeá-los exige o atributo — PG16)
+    EXECUTE format('CREATE ROLE %I LOGIN NOINHERIT PASSWORD %L', v_role, v_password);
+  ELSE
+    EXECUTE format('ALTER ROLE %I WITH LOGIN NOINHERIT PASSWORD %L', v_role, v_password);
+  END IF;
+  SELECT * INTO alvo FROM pg_roles WHERE rolname = v_role;
+  -- atributos que escapam: corrige se este executor puder; senão FALHA nomeando o atributo
+  IF alvo.rolsuper     THEN IF me.rolsuper     THEN EXECUTE format('ALTER ROLE %I NOSUPERUSER', v_role); ELSE RAISE EXCEPTION 'papel % tem SUPERUSER e % nao pode remover (precisa de SUPERUSER): corrija com outro executor ou use outro nome', v_role, current_user; END IF; END IF;
+  IF alvo.rolbypassrls THEN IF me.rolbypassrls THEN EXECUTE format('ALTER ROLE %I NOBYPASSRLS', v_role); ELSE RAISE EXCEPTION 'papel % tem BYPASSRLS e % nao pode remover (precisa de BYPASSRLS)', v_role, current_user; END IF; END IF;
+  IF alvo.rolcreatedb  THEN IF me.rolcreatedb  THEN EXECUTE format('ALTER ROLE %I NOCREATEDB', v_role);  ELSE RAISE EXCEPTION 'papel % tem CREATEDB e % nao pode remover', v_role, current_user; END IF; END IF;
+  IF alvo.rolcreaterole THEN IF me.rolcreaterole THEN EXECUTE format('ALTER ROLE %I NOCREATEROLE', v_role); ELSE RAISE EXCEPTION 'papel % tem CREATEROLE e % nao pode remover', v_role, current_user; END IF; END IF;
+  -- pertença a papel que escapa (atributo) ou que é DONO de tabela FORCE RLS: REVOKE (falha se este executor não tiver ADMIN)
+  FOR r IN SELECT DISTINCT b.rolname FROM pg_roles b
+           WHERE b.rolname <> v_role AND pg_has_role(v_role, b.oid, 'MEMBER')
+             AND (b.rolsuper OR b.rolbypassrls
+                  OR EXISTS (SELECT 1 FROM pg_class c WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity AND c.relowner = b.oid))
+  LOOP EXECUTE format('REVOKE %I FROM %I', r.rolname, v_role); END LOOP;
+  -- privilégios: só DML + USAGE/SELECT em sequências (existentes) e DEFAULT PRIVILEGES do migrador (futuras)
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', current_database(), v_role);
+  EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', v_role);
+  -- GRANT tabela a tabela: só nas que este executor pode conceder (dono, ou membro do dono; superusuário = todas).
+  -- Tabela de OUTRO dono em `public` é FALHA NOMEADA (o app receberia 42501 nela): reatribua o dono ao migrador.
+  FOR r IN SELECT c.relname, c.relkind, pg_get_userbyid(c.relowner) AS dono, pg_has_role(current_user, c.relowner, 'USAGE') AS posso
+           FROM pg_class c JOIN pg_namespace ns ON ns.oid = c.relnamespace
+           WHERE ns.nspname = 'public' AND c.relkind IN ('r','p','S') ORDER BY c.relname
+  LOOP
+    IF NOT r.posso THEN RAISE EXCEPTION 'tabela/sequencia public.% pertence a % e % nao pode conceder DML nela: ALTER ... OWNER TO % e rode de novo', r.relname, r.dono, current_user, v_migrator; END IF;
+    IF r.relkind = 'S' THEN EXECUTE format('GRANT USAGE, SELECT ON SEQUENCE public.%I TO %I', r.relname, v_role);
+    ELSE EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO %I', r.relname, v_role); END IF;
+  END LOOP;
+  EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I', v_migrator, v_role);
+  EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO %I', v_migrator, v_role);
+  -- AUTO-VERIFICAÇÃO (a mesma propriedade da trava de boot, avaliada para o papel): qualquer linha ⇒ EXCEÇÃO ⇒ psql ec=3
+  SELECT count(*) INTO n FROM (
+    SELECT 1 FROM pg_roles b WHERE (b.rolsuper OR b.rolbypassrls) AND pg_has_role(v_role, b.oid, 'MEMBER')
+    UNION ALL
+    SELECT 1 FROM pg_class c WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity AND pg_has_role(v_role, c.relowner, 'MEMBER')
+  ) q;
+  IF n > 0 THEN
+    RAISE EXCEPTION 'papel % ainda escapa de RLS (% via(s): atributo, pertenca ou POSSE de tabela FORCE RLS). Posse nao se corrige aqui: reatribua o dono ao migrador (ALTER TABLE ... OWNER TO %) e rode de novo', v_role, n, v_migrator;
+  END IF;
+END $$;
+-- linha final (uma só, -At): rolname|rolsuper|rolbypassrls|escapa_por_pertenca|tabelas_force_de_posse_ou_pertenca|tabelas_com_dml
+SELECT r.rolname, r.rolsuper, r.rolbypassrls,
+       EXISTS (SELECT 1 FROM pg_roles b WHERE (b.rolsuper OR b.rolbypassrls) AND pg_has_role(r.oid, b.oid, 'MEMBER')) AS escapa,
+       (SELECT count(*) FROM pg_class c WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity AND pg_has_role(r.oid, c.relowner, 'MEMBER')) AS posse,
+       (SELECT count(*) FROM pg_tables t WHERE t.schemaname = 'public' AND has_table_privilege(r.oid, format('%I.%I', t.schemaname, t.tablename), 'SELECT,INSERT,UPDATE,DELETE')) AS dml
+FROM pg_roles r WHERE r.rolname = :'role';
+SQL
+)
+db_runtime_role_main "$@"
+```
+
+---
+
+## Apêndice D — as 17 fixtures de mutação do T13 (`tests/fixtures/san3-05-mutacoes/`, verbatim — as da crítica r1)
+
+Cada arquivo é copiado pelo T13 para `src/modules/zz-mut/mut.ts` numa cópia temporária de `src`+`prisma` (sem `node_modules`); o gerador tem de acrescentar **≥ 1** chave ao inventário suspeito (medido: 17/17, §R.2). O 18º subteste ("sumida") altera por `sed` a fábrica do sítio 7 na cópia (`new PrismaCloudCostAllocationRepository(prisma)` → `(prisma as never)`) e espera chave sumida/nova.
+
+**`Ma_alias.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { const db2 = prisma; return db2.cloudUsageEvent.findMany({}); }
+```
+
+**`Mb_destructure.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { const { cloudUsageEvent } = prisma; return cloudUsageEvent.findMany({}); }
+```
+
+**`Mc_element.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { return prisma["cloudUsageEvent"].findMany({}); }
+```
+
+**`Md_tx_sem_setter.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { return prisma.$transaction(async (tx) => tx.cloudUsageEvent.findMany({})); }
+```
+
+**`Me_root_dentro_wrapper.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { withTenantRls } from "../../database/rls.js";
+export async function platformList(id: string) { return withTenantRls(prisma, id, async (_tx) => prisma.cloudUsageEvent.findMany({})); }
+```
+
+**`Mf_new_como_argumento.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { PrismaCloudUsageRepository } from "../cloud-usage/cloud-usage-prisma.repository.js";
+class Svc { constructor(readonly repo: PrismaCloudUsageRepository) {} run() { return this.repo.listEvents({}); } }
+export function build() { return new Svc(new PrismaCloudUsageRepository(prisma)); }
+```
+
+**`Mg_subclasse.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { PrismaCloudChargeRepository } from "../cloud-charges/cloud-charge-prisma.repository.js";
+class Sub extends PrismaCloudChargeRepository {}
+export function make() { return new Sub(prisma); }
+```
+
+**`Mh_funcao_livre_client.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+async function listAll(client: typeof prisma) { return client.cloudUsageEvent.findMany({}); }
+export function run() { return listAll(prisma); }
+```
+
+**`Mi_sql_em_constante.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+const SQL_TODOS = "SELECT * FROM cloud_usage_events";
+export async function platformList() { return prisma.$queryRawUnsafe(SQL_TODOS); }
+```
+
+**`Mj_campo_arrow.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+class K { constructor(private readonly client: typeof prisma) {} listAll = async () => this.client.cloudUsageEvent.findMany({}); }
+export function run() { return new K(prisma).listAll(); }
+```
+
+**`Mk_fabrica_param_tx.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { PrismaCloudUsageRepository } from "../cloud-usage/cloud-usage-prisma.repository.js";
+const make = (tx: typeof prisma) => new PrismaCloudUsageRepository(tx);
+export function run() { return make(prisma).listEvents({}); }
+```
+
+**`Ml_mutacao_do_plano.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { PrismaCloudUsageRepository } from "../cloud-usage/cloud-usage-prisma.repository.js";
+export function run() { return new PrismaCloudUsageRepository(prisma).listEvents({}); }
+```
+
+**`Mm_getter_prisma.ts`**
+
+```ts
+import { getPrisma } from "../../database/prisma.js";
+export async function platformList() { return getPrisma().cloudUsageEvent.findMany({}); }
+```
+
+**`Mn_membro_nao_previsto.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+class K { constructor(private readonly conn: typeof prisma) {} async listAll() { return this.conn.cloudUsageEvent.findMany({}); } }
+export function run() { return new K(prisma).listAll(); }
+```
+
+**`Mo_tx_param_helper.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+async function helper(tx: typeof prisma) { return tx.tenantCloudCharge.findMany({}); }
+export function run() { return helper(prisma); }
+```
+
+**`Mp_this_client_fora_de_classe_injetada.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { PrismaCloudChargeRepository } from "../cloud-charges/cloud-charge-prisma.repository.js";
+export const repos = { charges: new PrismaCloudChargeRepository(prisma) };
+export function run() { return repos.charges.listTenantCharges("x"); }
+```
+
+**`Mq_updateManyAndReturn.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+class Rep { constructor(private readonly client: typeof prisma) {} async fechar(id: string) { return this.client.tenantCloudCharge.updateManyAndReturn({ where: { id }, data: { status: "void" } }); } }
+export function run() { return new Rep(prisma).fechar("x"); }
+```
