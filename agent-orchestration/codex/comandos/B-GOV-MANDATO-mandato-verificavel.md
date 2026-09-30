@@ -366,3 +366,25 @@ o ciclo 3 NÃO fecha") está **superada**: `P-GOV-MANDATO-3-B8B-CONTRADICAO` fec
 atualiza `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` (rodada do zero em curso, TIMEOUT na l.161); anota
 `P-GOV-MANDATO-2-FRONTEIRAS` item 2 (`--ignore-case`). **Fica para o K2:** as matrizes (E4-refs-2 e pré-voo completa)
 e o fechamento de `…-MUTANTES-REFS` e `…-MUTANTES-PREFLIGHT`.
+
+## Emenda 7 — K2b: o arquivo de equivalentes, o ambiente na identidade da matriz e os fechamentos (plano §14.18, §14.19)
+
+> Escrita pelo **Dev-S-2** (`dev-s2-mandato-registro`) no K2b (2026-09-30), a partir do plano do ciclo 3 §14.18 e
+> §14.19 — o plano é o contrato; esta emenda o registra no comando.
+
+**Escopo PERMITIDO — acréscimo nominal (ERRATA E-10 v2 (b)):**
+
+| arquivo | ação | quem / commit | fonte no plano |
+|---|---|---|---|
+| `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-equivalentes.txt` | NOVO — os 3 mutantes equivalentes do pré-voo (245, 318, 336), no formato que a ferramenta lê (`id: justificativa (fixture que tentou discriminar)`) | Dev-S-2 / K2a `371961ac` (blob `9c691363`) | §14.18(1); desvio de ordem do orquestrador: entrou antes da delta B, que o lê com `--equivalentes` |
+
+**Identidade da matriz — 4º elemento (plano §14.19(1); emenda a "identidade por tripla" da Emenda 6):** para toda
+rodada cujo guard alcança a l.522 do pré-voo, o **ambiente** entra na identidade — Git Bash, `MSYS_NO_PATHCONV` **não**
+exportado, versões de git e node, `uname -srm` —, gravado no cabeçalho do log da rodada. ERRATA E-11: nunca exportar
+a variável no shell que roda artefato, guard ou ferramenta; `ref:caminho` que precise dela leva prefixo por comando.
+
+**Rastreabilidade do K2b.** Matriz do refs publicada = E4-refs-3 (`N=46 K=46 NAO-COBERTOS=0`) → `P-GOV-MANDATO-3-MUTANTES-REFS`
+**fecha**. Matriz do pré-voo publicada = composta A + delta B, unida pelo lema do §14.18(3) com a premissa (g) do
+§14.19; resumo recomposto derivado por script: `N=103 K=100 NAO-COBERTOS=3 (equivalentes declarados e conferidos por id: 3) EXCLUIDOS=57 ANOMALIAS=2` → **[M-1] = 0** → `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` **fecha**.
+`P-GOV-MANDATO-3-FRONTEIRAS` ganha a **26** (M7 e `next` em fim de linha) e a **27** (o ambiente na medição).
+Fato medido no K2b, sem número (a numeração é do planejador): a ferramenta CONTA as linhas de `--equivalentes` e não confere o id — um arquivo fora do repo com o id inventado `999` absolveu o não-coberto 245 (`EQUIVALENTES-DECLARADOS=1`, `ec=0`; controle sem fixture: `ec=1`); na matriz publicada os ids == NÃO-COBERTOS da rodada B, provado por script.

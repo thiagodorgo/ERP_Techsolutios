@@ -3194,3 +3194,5 @@ refs **E4-refs-3** `N=46 K=46 NAO-COBERTOS=0 ANOMALIAS=1`; pré-voo **rodada A**
 EXCLUIDOS=57 ANOMALIAS=2` (161 TIMEOUT, 340 ANOMALIA-DIFF) — os 16 viraram 13 casos novos (T7) e 3 equivalentes
 declarados (K2a, `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-equivalentes.txt`); a rodada delta **B** mede os 16 na tripla
 nova. **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
+
+**Citação N/K fechada no K2b (2026-09-30), plano §14.12 passo 5:** as matrizes estão publicadas em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md` — refs E4-refs-3 `N=46 K=46 NAO-COBERTOS=0` (tripla `474c7521`·`d455ae1a`·`37549262`); pré-voo COMPOSTA A + delta B (triplas `faa408c8`·`3d875a54`·`37549262` e `faa408c8`·`7a52d37c`·`37549262`, B com `MSYS_NO_PATHCONV` não exportado), resumo recomposto derivado por script `N=103 K=100 NAO-COBERTOS=3 (3 equivalentes conferidos por id) EXCLUIDOS=57 ANOMALIAS=2` → [M-1] = 0; à parte, 1 TIMEOUT (l.161) e 1 ANOMALIA-DIFF (l.340)..

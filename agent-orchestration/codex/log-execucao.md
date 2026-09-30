@@ -4958,3 +4958,23 @@ com o denominador e a taxa medida, para o próximo bloco retomar sem remedir o q
 **Fica para o K2:** §3 (matriz E4-refs-2) e §4 (matriz do pré-voo completa, com o `TIMEOUT` reclassificado) do
 `…-mutantes.md`, §5 e §7 item 7 (fronteira 25); fechar `P-GOV-MANDATO-3-MUTANTES-REFS` e
 `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`; fechar a citação N/K do history.
+
+## B-GOV-MANDATO — ciclo 3 (PR #393): K2a, K1b e K2b do Dev-S-2 (2026-09-30) — as matrizes publicadas
+
+- **K2a** (`371961ac`): `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-equivalentes.txt` — os 3 equivalentes do pré-voo (245, 318,
+  336), provados com a própria ferramenta (`--only 245,318,336 --equivalentes`: base `fail=0 de tests=312`, 3 VERDE,
+  `EQUIVALENTES-DECLARADOS=3`, `ec=0`).
+- **K1b** (`4794169a`): backend **3403/3405** REEXECUTADO (N=2 locais em cluster descartável; `skipped 2`, `ec=0`, sem o
+  GUARD DE SKIP (P8) — o `[V18]` roda em win32 desde o T5; CI no mesmo head igual); `blocks_completed` 169.
+- **Delta B abortada e refeita:** a primeira delta B (`E4D`) abortou pela trava do §13.5 (base `fail=2 de tests=312`,
+  `[F-6i/520]`/`[F-6i/523]`) porque o runner exportava `MSYS_NO_PATHCONV=1` — ambiente errado, não defeito no ambiente
+  de uso (fronteira 27, plano §14.19); refeita (`E4E`) com a variável não exportada: `N=16 K=13 NAO-COBERTOS=3
+  EQUIVALENTES-DECLARADOS=3`, `ec=0`.
+- **K2b:** `…-ciclo3-mutantes.md` §0 (identidade: tripla + ambiente), §3 = matriz E4-refs-3 (`N=46 K=46
+  NAO-COBERTOS=0`), §4 = matriz do pré-voo COMPOSTA (A: 146 linhas, B: 16), com o lema e as premissas (a)-(g), e o
+  resumo recomposto derivado por script: `N=103 K=100 NAO-COBERTOS=3 (equivalentes declarados e conferidos por id: 3) EXCLUIDOS=57 ANOMALIAS=2` → **[M-1] = 0**; ids do arquivo de equivalentes == NÃO-COBERTOS de B
+  (provado por script); §5 e §7 itens 7, 8, 9 (fronteiras 25, 26, 27). Pendências: **fecham**
+  `P-GOV-MANDATO-3-MUTANTES-REFS` e `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`; `P-GOV-MANDATO-3-FRONTEIRAS` ganha 26 e 27 e o
+  fato do K2b (sem número): a ferramenta CONTA as linhas de `--equivalentes` e não confere o id — um arquivo fora do repo com o id inventado `999` absolveu o não-coberto 245 (`EQUIVALENTES-DECLARADOS=1`, `ec=0`; controle sem fixture: `ec=1`); na matriz publicada os ids == NÃO-COBERTOS da rodada B, provado por script.
+- **KPI:** valores inalterados (3403/3405, 169); o history fecha a citação N/K que o K1 e o K1b deixaram marcada
+  "matriz publicada no K2" (plano §14.12 passo 5).
