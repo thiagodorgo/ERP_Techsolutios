@@ -15,6 +15,12 @@ model: opus
 > - ERRATA E-2 (plano §14.2/§14.4): a fronteira 23 foi FECHADA neste ciclo ([V18b]/[V18c], Dev-T-4) e deixa de ser fronteira declarada; a 24 (ferramenta E4: M1 dentro de `$( … || echo … )` produz mutante inválido — l.164 do refs) entra em `P-GOV-MANDATO-3-FRONTEIRAS`. Para a C3‴ (item 3c): o critério é a presença de 9–11, 13–22 e 24 NA PENDÊNCIA; presença no CABEÇALHO é fato publicado com a linha, e cada ausência no cabeçalho tem de estar nomeada no item 'cabeçalho congelado' da própria pendência (os blobs estão congelados pela identidade da matriz, §14.2.1) — ausência SEM esse item é achado.
 >
 > - ERRATA E-6 (plano §14.9): à lista de inelegíveis somam-se Dev-T-4 (`dev-t4-mandato-refs-win32`, commit `T4`) e os commits `72214ff7`, `1466c7d9`, `714d4815`, `d222ce7c` (Dev-S, 2ª instância); os devs sem slug são conferidos pela trilha (`scratchpad/DEV-T-CICLO3.md`, `DEV-S-CICLO3.md`) e pelos worktrees `w-devt393@4ad4ba9f` / `w-devs393@d222ce7c`.
+>
+> - ERRATA E-9 (plano §14.16/§14.17) — para a C1‴ vale só o item: (e) [os 3 corpos] inelegível a mais: Dev-T-5 (`dev-t5-mandato-v18-win32`, commit `T5`); o Dev-T-4 já consta.
+>
+> - ERRATA E-10 (plano §14.18/§14.19) — para a C1‴ vale só o item: (c) [os 3 corpos] inelegível a mais: Dev-T-6 (`dev-t6-mandato-preflight-16`, commit `T7`).
+>
+> - ERRATA E-11 (plano §14.19): NUNCA `export MSYS_NO_PATHCONV=1` no shell que executa o artefato, o guard ou a ferramenta. O pré-voo calcula `RAIZ` em POSIX (l.121) e o entrega ao `git.exe` (l.522): com a variável exportada a rev nunca resolve, `rev:caminho/…` é rejeitado, [F-6i/520] e [F-6i/523] ficam vermelhos no PRISTINO e a ferramenta aborta com 'linha de base suja' (foi assim que a delta B abortou em 30/09). Onde um `ref:caminho` com `/` na ref precisar dela, use PREFIXO POR COMANDO (`MSYS_NO_PATHCONV=1 git show origin/main:x`) ou `git cat-file -p <sha>:<caminho>`. Antes de rodar artefato/guard/ferramenta, publique `env | grep -c '^MSYS_NO_PATHCONV='` = 0, `git --version`, `node -v` e `uname -srm` — o ambiente é parte da identidade da medição. Caminhos para git/node continuam `C:/…` onde você os escreve; o que muda é não envenenar o ambiente do que você mede.
 
 # Cadeira C1‴ — invariância de forma: a propriedade sobrevive quando o autor move a fronteira?
 
