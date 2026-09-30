@@ -639,76 +639,83 @@ bloco só.**
 
 | E | Entrega | Arquivos | Fecha |
 |---|---|---|---|
-| E1 | Trava de boot: sonda + asserção + bootstrap + chamada em `main()` | `src/database/runtime-role.ts` (novo), `src/database/runtime-role.bootstrap.ts` (novo), `src/server.ts` (1 linha + import) | item 9 (mecanismo) |
-| E2 | Gate `G-DB-ROLE`: chave `DATABASE_RUNTIME_ROLE_GUARD`, default por ambiente, recusa de `skip` em produção | `src/config/env.ts` | item 9 (não afrouxável) |
-| E3 | Laço por organização sob contexto + canário no lar único; os cinco métodos da lista fechada passam a usá-lo | `src/database/rls.ts`, `src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` | item 10 |
-| E4 | Procedimento do papel (idempotente; serve ao compose **e** ao banco gerenciado) + compose local-prod sobe com `api` no papel de runtime | `scripts/db-runtime-role.sh` (novo), `docker-compose.prod.yml` | item 9 (procedimento) + §4.2 "o que os blocos entregam pronto" |
-| E5 | Documentação: seção "Papel de banco de runtime", linha `G-DB-ROLE` na tabela dos gates (deployment.md:71-76), a frase da l.458 trocada por mecanismo + procedimento, o runbook B-O6R-01 passo 0/5 apontando para o papel de runtime | `docs/deployment.md` | §4.2 (procedimento que o dono lê) |
-| E6 | Guard **gerado** (CE-G1): o gerador versionado + teste que o executa e exige lista fechada **vazia** | `scripts/san3-05-acessos-de-plataforma.mjs` (novo, = Apêndice A), `tests/san3-05-acessos-de-plataforma-guard.test.ts` (novo) | item 10 (não regride) |
-| E7 | Testes T1–T14 (§8) | `tests/production-runtime-gates.test.ts` (+ casos), `tests/san3-05-runtime-role-guard-db.test.ts` (novo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (novo), `tests/san3-05-runtime-role-bootstrap.test.ts` (novo) | DoD |
-| E8 | KPI e registro no próprio PR (§9, §C3) + comando do bloco + registro em `agent-orchestration/` | `Kpis/*`, `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` (novo), `agent-orchestration/controle/pendencias.md` (emendas de status + pendências novas), `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md` | §C3, §C6 |
+| E1 | Trava de boot **v2**: sonda (`RUNTIME_ROLE_GUARD_SQL` do §2.2 — atributo ∨ pertença ∨ posse, para `session_user` ∧ `current_user`) + asserção com **razões** + bootstrap + chamada em `main()` **medida pelo T15** | `src/database/runtime-role.ts` (novo), `src/database/runtime-role.bootstrap.ts` (novo), `src/server.ts` (1 linha + import) | item 9 (mecanismo) |
+| E2 | Gate `G-DB-ROLE`: chave `DATABASE_RUNTIME_ROLE_GUARD`, default por ambiente **medido no export por processo filho** (T2), recusa de `skip` em produção | `src/config/env.ts` | item 9 (não afrouxável) |
+| E3 | Laço por organização sob contexto + canário no lar único; os cinco métodos da lista fechada passam a usá-lo; concatenação reordenada | `src/database/rls.ts`, `src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` | item 10 |
+| E4 | Procedimento do papel **executado** (Apêndice C, verbatim, md5 `189ddf8a093934cf1c1baa61ba80f5c8`; modo `100755`; idempotente; falha nomeando o que não corrige) + compose local-prod com `api` no papel de runtime | `scripts/db-runtime-role.sh` (novo), `docker-compose.prod.yml` | item 9 (procedimento) + §4.2 "o que os blocos entregam pronto" |
+| E5 | Documentação: seção "Papel de banco de runtime", linha `G-DB-ROLE` na tabela dos gates (deployment.md:71-76), a frase da l.458 trocada por mecanismo + procedimento, o runbook B-O6R-01 passo 0/5 apontando para o papel de runtime, os **três modos de falha** do script | `docs/deployment.md` | §4.2 (procedimento que o dono lê) |
+| E6 | Guard **gerado** (CE-G1) **como ratchet**: o gerador v2 versionado (Apêndice A) + teste que o executa, compara o inventário suspeito com o **congelado** (chave a chave, com motivo) e executa as **17 mutações da r1 + a "sumida"** como fixtures | `scripts/san3-05-acessos-de-plataforma.mjs` (novo, = Apêndice A), `tests/san3-05-acessos-de-plataforma-guard.test.ts` (novo), `tests/fixtures/san3-05-mutacoes/*.ts` (17, novos, = Apêndice D) | item 10 (não regride por forma) |
+| E7 | Testes T1–T15 (§8), incluindo o **diferencial HTTP** (T11) e o **boot real** (T15) | `tests/production-runtime-gates.test.ts` (+ casos), `tests/san3-05-runtime-role-guard-db.test.ts` (novo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (novo), `tests/san3-05-runtime-role-bootstrap.test.ts` (novo) | DoD |
+| E8 | KPI e registro no próprio PR (§9, §C3) + comando do bloco + registro em `agent-orchestration/` (inclui as pendências novas do §13, entre elas a P1 da r1) | `Kpis/*`, `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` (novo), `agent-orchestration/controle/pendencias.md` (emendas de status + pendências novas), `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md` | §C3, §C6 |
 
 O que **não** muda de propósito: `docker-compose.yml` (dev continua `postgres`: as 13 suítes de catálogo precisam de
 `CREATEROLE`, P-n), `.github/workflows/ci.yml` (idem; e o job `docker` já roda o compose local-prod — é ele que
 prova o E4), `fly.production.toml`/`fly.staging.toml` (nenhuma chave nova exigida; o segredo `DATABASE_URL` muda de
 **valor**, não de nome — ato do dono), `prisma/**` (sem migração: não há objeto de banco novo além do **papel**, que
-é objeto de **cluster** e nunca entra em migração — decisão consistente com `deploy-production.yml:141`, "`migrate
-deploy` NÃO cria papel").
+é objeto de **cluster** e nunca entra em migração — medido: `git grep -n -i -E 'CREATE ROLE|CREATE USER' origin/main --
+prisma/migrations` → **0**; a l.141 de `deploy-production.yml` fala da tabela RBAC `roles`, não disto — N5).
 
 ---
 
 ## §4 — Modelagem
 
-### 4.1 Sem migração. O objeto novo é um PAPEL de cluster, criado por procedimento
+### 4.1 Sem migração. O objeto novo é um PAPEL de cluster, criado por procedimento — EXECUTADO (F6, F7, F8)
 
-`scripts/db-runtime-role.sh` (bash, `set -euo pipefail`, padrão de `scripts/rbac-provision-drill.sh` /
-`restore-drill.sh`): entradas por ambiente — `DB_RUNTIME_ROLE` (default `erp_runtime`), `DB_RUNTIME_PASSWORD`
-(**obrigatória**, nunca ecoada), `DB_MIGRATOR_ROLE` (default: o usuário da conexão — é quem cria as tabelas), conexão
-pelas variáveis padrão `PG*`/`psql` (no initdb.d do `postgres:16`: `--username "$POSTGRES_USER" --dbname
-"$POSTGRES_DB"`, socket local). SQL via `psql -v ON_ERROR_STOP=1 -v role=… -v password=… -v migrator=…`, **idempotente**
-(rodar N vezes = mesmo estado; a segunda execução **reafirma** os atributos, para que um papel pré-existente com
-`BYPASSRLS` seja corrigido, não aceito):
+`scripts/db-runtime-role.sh` é o Apêndice C, **verbatim** (md5 `189ddf8a093934cf1c1baa61ba80f5c8`, 82 linhas), executado
+em sete cenários no cluster desta sessão (§R.4). Desenho, e por que cada peça está lá:
 
-```sql
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'role') THEN
-    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', :'role', :'password');
-  END IF;
-END $$;
-ALTER ROLE :"role" WITH LOGIN PASSWORD :'password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
-GRANT CONNECT ON DATABASE :"db" TO :"role";
-GRANT USAGE ON SCHEMA public TO :"role";
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :"role";          -- as existentes (P-l: 'f' sem isto)
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO :"role";
-ALTER DEFAULT PRIVILEGES FOR ROLE :"migrator" IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :"role";  -- as futuras (P-l: 't')
-ALTER DEFAULT PRIVILEGES FOR ROLE :"migrator" IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO :"role";
--- auto-verificação: o script sai com erro se o papel escapar de RLS por atributo ou por pertença
-SELECT rolname, rolsuper, rolbypassrls,
-       EXISTS (SELECT 1 FROM pg_roles b WHERE (b.rolsuper OR b.rolbypassrls) AND pg_has_role(:'role', b.oid, 'MEMBER')) AS escapa,
-       (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-         WHERE n.nspname='public' AND c.relkind='r' AND c.relforcerowsecurity AND pg_get_userbyid(c.relowner) = :'role') AS tabelas_force_de_posse
-FROM pg_roles WHERE rolname = :'role';
-```
+- **Entradas por ambiente:** `DB_RUNTIME_ROLE` (default `erp_runtime`), `DB_RUNTIME_PASSWORD` (**obrigatória**; nunca ecoada;
+  sem ela o script para com `ec=1` antes de conectar), `DB_MIGRATOR_ROLE` (default: **`current_user` da conexão**, resolvido
+  dentro do SQL — é quem cria as tabelas, e é dele o `ALTER DEFAULT PRIVILEGES`). Conexão: no `initdb.d` do `postgres:16`,
+  `--username "$POSTGRES_USER" --dbname "$POSTGRES_DB"` (o entrypoint exporta essas duas e `PGPASSWORD`; **não** exporta
+  `PGDATABASE` — r1 item 3.5); fora dele, `PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE`, com `PGDATABASE` **obrigatória**,
+  porque grants e default privileges são **por banco** (limite 3.4 da r1, medido).
+- **Variáveis do `psql` não entram em `DO $$`** (F6): o script faz `SELECT set_config('san3.role', :'role', false), …` e o
+  `DO` lê `current_setting('san3.*')`. O banco é `current_database()`. **Um `DO` = uma transação**: se qualquer passo falhar,
+  **nada persiste** (§R.4 iii: o papel que escapava continuou como estava, `t|t|t|1`).
+- **Criação sem nomear atributos default** (F8): `CREATE ROLE %I LOGIN NOINHERIT PASSWORD %L` — `NOSUPERUSER`, `NOCREATEDB`,
+  `NOCREATEROLE`, `NOBYPASSRLS` são os defaults e **nomeá-los exige o atributo** no PG16. Papel pré-existente: `ALTER ROLE …
+  LOGIN NOINHERIT PASSWORD` e, **só para o atributo que estiver ligado**, `ALTER ROLE … NOxxx` **se o executor tiver o
+  atributo** — senão `RAISE EXCEPTION 'papel X tem BYPASSRLS e Y nao pode remover (precisa de BYPASSRLS)'` (§R.4 iv-b).
+- **Pertença revogada** (F7): para todo papel `b` de que o alvo é membro e que escapa (`rolsuper ∨ rolbypassrls`) **ou** é dono
+  de tabela `FORCE`, `REVOKE b FROM alvo` — falha (não silencia) se o executor não tiver ADMIN.
+- **Privilégios: tabela a tabela**, só nas que o executor pode conceder (`pg_has_role(current_user, c.relowner, 'USAGE')`);
+  tabela ou sequência de **outro dono** em `public` é **falha nomeada** (§R.4 iv-c: `tabela/sequencia public.t_alheia pertence a
+  p3_outro e p3_mig nao pode conceder DML nela: ALTER ... OWNER TO p3_mig`) — o app receberia `42501` nela. Depois, `ALTER DEFAULT
+  PRIVILEGES FOR ROLE <migrador> IN SCHEMA public` para tabelas e sequências **futuras** (P-l; §R.4 v: `t|t`).
+- **Auto-verificação = a propriedade da trava, avaliada para o papel** (F7): atributo ∨ pertença a papel que escapa ∨ posse
+  (direta ou por pertença) de tabela `FORCE` → `RAISE EXCEPTION` ⇒ `psql` **ec=3** ⇒ rollback. Posse **não se corrige aqui**
+  (seria `REASSIGN`/`OWNER TO` — decisão do dono); a mensagem diz o comando.
+- **Linha final, uma só, `-At`:** `rolname|rolsuper|rolbypassrls|escapa|posse|dml` — ex.: `erp_runtime|f|f|f|0|106` (o último
+  número é quantas tabelas de `public` o papel pode `SELECT,INSERT,UPDATE,DELETE`).
+- **Sourcing seguro (N3):** o corpo inteiro é uma **função em subshell** `db_runtime_role_main() ( set -euo pipefail; … )`;
+  quando o entrypoint do `postgres:16` faz `source` (arquivo sem bit de execução), nenhum `set -u` nem `exit` vaza (§R.4 vii,
+  nos dois modos). **E** o arquivo é versionado `100755` (`git update-index --chmod=+x scripts/db-runtime-role.sh`; junta C1
+  confere `git ls-files -s scripts/db-runtime-role.sh` → `100755`) — os três `.sh` da casa são `100644` (medido pela r1),
+  logo o padrão da casa **não** serve de espelho neste ponto.
 
 **O que o procedimento NÃO faz, de propósito:** não concede `EXECUTE` em `auth_login_candidates(text)` (é o passo 5 do
 runbook B-O6R-01, ato humano com decisão registrada); não dá `CREATEROLE`, `TRUNCATE`, DDL nem posse; não toca
-`pg_hba`. **`NOINHERIT`** como no arnês da casa (`auth-identity-fixture.ts:337`); a trava cobre a pertença de
-qualquer modo.
+`pg_hba`; não reatribui posse.
 
-### 4.2 A trava (E1) — o SQL é o do §2.2, e só ele
+### 4.2 A trava (E1) — o SQL é o do §2.2, e só ele; os 11 casos medidos
 
-Comportamento por caso (os quatro medidos em §0.5): superusuário (G1) → recusa; papel limpo (G2) → passa; superusuário
-com outro nome (G3) → recusa; papel limpo membro de `BYPASSRLS` (G4) → recusa. Erro de conexão → até 5 tentativas
-(2 s, 4 s, 8 s, 16 s, 32 s) e então **recusa** (fail-closed: não se sobe sem saber com quem se fala; H5 diz o que isso
-vira no Fly). Log do veredito: `role`, `bypassing` (n e, na recusa, as linhas `{rolname, rolsuper, rolbypassrls,
-is_self}`), `owned_force_rls_tables` — **nunca** URL, host, senha (§2.8).
+Comportamento por caso (§R.1): superusuário (`postgres`) → recusa (`atributo`, `is_self`); papel limpo → **passa**;
+superusuário com outro nome → recusa (`atributo … is_self`, e some se `r.rolsuper` for apagado — T7); papel limpo membro
+de `BYPASSRLS` (direta, `NOINHERIT`, cadeia de 2 níveis, `SET FALSE`) → recusa (`atributo/<bypass>`; o último é falso positivo
+**seguro**, aceito — N1); papel limpo **membro do dono** de tabela `FORCE` → recusa (`posse/<dono>`); **dono direto** →
+recusa (`posse/<self>`); o **migrador** → recusa (`posse`; correto — o app nunca roda como migrador); membro de
+`pg_read_all_data` → passa (não escapa, medido); login superusuário com `options=-c role=<limpo>` → recusa (`session_user`).
+Erro de conexão → até 5 tentativas (2 s, 4 s, 8 s, 16 s, 32 s) e então **recusa** (fail-closed). Log do veredito:
+`session_user`, `current_user`, `escapes` (n e, na recusa, as linhas `{via, rolname, rolsuper, rolbypassrls, is_self,
+tabelas_force}`) — **nunca** URL, host, senha (§2.8).
 
 ### 4.3 O compose (E4)
 
 `postgres`: `environment` ganha `DB_RUNTIME_ROLE: erp_runtime`, `DB_RUNTIME_PASSWORD:
 local-prod-validation-db-runtime-not-a-secret`, `DB_MIGRATOR_ROLE: postgres`; `volumes` ganha
-`./scripts/db-runtime-role.sh:/docker-entrypoint-initdb.d/10-runtime-role.sh:ro` (H1). `migrate`: **inalterado**
-(`postgres`, o dono das tabelas). `api`: `DATABASE_URL:
+`./scripts/db-runtime-role.sh:/docker-entrypoint-initdb.d/10-runtime-role.sh:ro` (H1 — o script detecta `POSTGRES_DB` e cria o
+papel **no banco da app**). `migrate`: **inalterado** (`postgres`, o dono das tabelas). `api`: `DATABASE_URL:
 postgresql://erp_runtime:local-prod-validation-db-runtime-not-a-secret@postgres:5432/erp_techsolutions?schema=public`
 (placeholder **rotulado**, mesma classe dos cinco secrets da l.62-68; o smoke redige `postgresql://` da saída). A
 senha aparece **duas** vezes (init e `api`) — literal de propósito e idêntico, como os `JWT_*` (l.63-66 explica por
@@ -723,19 +730,20 @@ que não se interpola o `.env`). Comentário no compose: "volume já iniciado se
 | `src/database/runtime-role.ts` | novo | `src/modules/auth/services/login-readiness.ts:196-206` (a consulta a `pg_roles` com timeout; aqui sem "best-effort") |
 | `src/database/runtime-role.bootstrap.ts` | novo | `src/infra/jobs/job-worker.bootstrap.ts` (injeção, `started/enforced`, log que nunca é mudo) |
 | `src/server.ts` | +1 linha em `main()` + import | `src/server.ts:19` (`startJobWorkerIfEnabled`) |
-| `src/config/env.ts` | +1 campo no schema, +1 gate no `superRefine`, +1 default no export | `EVIDENCE_SCANNER` (l.263-265, 540-553, 631-638) — o **mesmo** desenho fail-closed |
+| `src/config/env.ts` | +1 campo no schema, +1 gate no `superRefine`, +1 default no export | `EVIDENCE_SCANNER` (l.263-265, 540-553, 637-638) — a **forma**; o **teste** do default é o do T2 (processo filho), não o do precedente (P1) |
 | `src/database/rls.ts` | +`forEachTenantRls`, +`assertRowsBelongToTenant` | `cloud-cost-allocation-prisma.repository.ts:340-368,372-…` (B-O6R-06) |
 | `src/modules/cloud-usage/cloud-usage-prisma.repository.ts` | ramos sem tenant de `listEvents`/`listDailyAggregates` (l.166-174, 190-198) | `platform-overview-prisma.repository.ts` (leitura de `tenants` + N+1 sob contexto) |
-| `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` | +`RlsPrismaCloudChargeRepository`; fábrica l.238-241 devolve o envoltório | `RlsPrismaCloudUsageRepository` (mesmo arquivo de uso, l.142-199) |
-| `scripts/db-runtime-role.sh` | novo | `scripts/rbac-provision-drill.sh`, `scripts/restore-drill.sh` |
-| `scripts/san3-05-acessos-de-plataforma.mjs` | novo (= Apêndice A) | `scripts/audit-agents-skills.mjs` (varredura gerada) |
+| `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` | +`RlsPrismaCloudChargeRepository`; fábrica l.238-241 devolve o envoltório; tabelas sem RLS lidas direto no `prismaClient` (sem instanciar o cru com client cru) | `RlsPrismaCloudUsageRepository` (mesmo arquivo de uso, l.142-199) |
+| `scripts/db-runtime-role.sh` | novo, **= Apêndice C**, modo `100755` | `scripts/rbac-provision-drill.sh` (estilo); **não** no modo nem no `exit` (N3) |
+| `scripts/san3-05-acessos-de-plataforma.mjs` | novo, **= Apêndice A** | `scripts/audit-agents-skills.mjs` (varredura gerada) |
+| `tests/fixtures/san3-05-mutacoes/*.ts` | 17 novos, **= Apêndice D** (as mutações da r1, verbatim) | `tests/db-catalog-write-guard.test.ts` (mutação executada pelo teste) |
 | `docker-compose.prod.yml` | `postgres` (env + volume), `api` (URL) | — |
-| `docs/deployment.md` | seção nova; tabela dos gates; l.458; runbook B-O6R-01 passos 0 e 5 | — |
-| `tests/production-runtime-gates.test.ts` | + casos do `G-DB-ROLE` | o próprio arquivo (baseline PROD_OK) |
-| `tests/san3-05-runtime-role-bootstrap.test.ts` | novo | `tests/o6r05-…` do bootstrap do worker (injeção) |
-| `tests/san3-05-runtime-role-guard-db.test.ts` | novo | `tests/o6r06-usage-atomic-db.test.ts:610-633` (`createRoleWithoutBypassRls` pelo **arnês único**) |
-| `tests/san3-05-leituras-de-plataforma-db.test.ts` | novo | `tests/o6r06-allocation-basis-rls-db.test.ts` (B2′, B7, B8, B11) |
-| `tests/san3-05-acessos-de-plataforma-guard.test.ts` | novo | `tests/db-catalog-write-guard.test.ts` (ratchet com mutação) |
+| `docs/deployment.md` | seção nova; tabela dos gates; l.458; runbook B-O6R-01 passos 0 e 5; três modos de falha do script | — |
+| `tests/production-runtime-gates.test.ts` | + casos do `G-DB-ROLE` (T1, T3) | o próprio arquivo (baseline PROD_OK) |
+| `tests/san3-05-runtime-role-bootstrap.test.ts` | novo (T2 por processo filho, T4) | `tests/o6r05-…` do bootstrap do worker (injeção) |
+| `tests/san3-05-runtime-role-guard-db.test.ts` | novo (T5–T9, T14, T15) | `tests/o6r06-usage-atomic-db.test.ts:610-633` (`createRoleWithoutBypassRls` pelo **arnês único**); `san3-04a-…-db.test.ts:64-70` (`globalThis.prisma`) |
+| `tests/san3-05-leituras-de-plataforma-db.test.ts` | novo (T10–T12) | `tests/o6r06-allocation-basis-rls-db.test.ts` (B2′, B7, B8, B11) |
+| `tests/san3-05-acessos-de-plataforma-guard.test.ts` | novo (T13) | `tests/db-catalog-write-guard.test.ts` (ratchet congelado com motivo por chave) |
 | `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md` | §C3 | — |
 | `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` | novo (molde `comando-template.md`) | `B-SAN3-04a-rbac-catalogo-banco-matriz.md` |
 | `agent-orchestration/controle/pendencias.md`, `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md` | emendas | — |
@@ -744,12 +752,21 @@ que não se interpola o `.env`). Comentário no compose: "volume já iniciado se
 
 ## §6 — Escopo (§C4) — PERMITIDO e PROIBIDO, caminhos exatos
 
+**O que mudou em relação à v1, e por quê:** entra **um** caminho novo no PERMITIDO — `tests/fixtures/san3-05-mutacoes/**`
+(as 17 mutações da r1 como fixtures do T13; sem elas o ratchet não executa a mutação que o derruba). **Nada saiu.**
+`src/modules/cloud-cost-allocation/**` **continua PROIBIDO**, e a razão é medida, não de conveniência: o sítio 7 não tem
+chamador (§0.4), logo não zera nada em produção; o arquivo é do `B-O6R-08` (`P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA`) e do
+`B-SAN3-03` (`PLANO_SAN3.md` l.246 — que já é sucessor deste bloco na trava de mesmo arquivo); e o F1 se resolve pelo
+ratchet (o sítio 7 fica **congelado nominalmente** e sair dele sem atualizar o congelado é vermelho), não por ampliar a
+fronteira a um terceiro módulo com interface e sonda de teste próprias. Nenhum caminho do §C4 (`prisma/**`, `migrations/**`,
+`infra/**`, `.env*`, lockfiles, `pubspec*`, `.github/workflows/**`) entra.
+
 **PERMITIDO** (e nada mais):
 `src/database/**` · `src/config/env.ts` · `src/server.ts` (**nominalmente**: a linha da chamada + import, nada
 além) · `src/modules/cloud-usage/cloud-usage-prisma.repository.ts` · `src/modules/cloud-charges/cloud-charge-prisma.repository.ts`
-· `docker-compose.prod.yml` · `docs/deployment.md` · `scripts/db-runtime-role.sh` (novo) ·
+· `docker-compose.prod.yml` · `docs/deployment.md` · `scripts/db-runtime-role.sh` (novo, `100755`) ·
 `scripts/san3-05-acessos-de-plataforma.mjs` (novo) · `tests/production-runtime-gates.test.ts` · `tests/san3-05-*.test.ts`
-(novos) · `Kpis/kpis-latest.json` · `Kpis/kpis-history.json` · `Kpis/kpis-history.md` ·
+(novos) · `tests/fixtures/san3-05-mutacoes/**` (novos) · `Kpis/kpis-latest.json` · `Kpis/kpis-history.json` · `Kpis/kpis-history.md` ·
 `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` (novo) · `agent-orchestration/controle/pendencias.md`
 · `agent-orchestration/controle/pendencias-indice.md` (se o gerador de índice o exigir) · `agent-orchestration/docs/status-geral.md`
 · `agent-orchestration/codex/log-execucao.md` · `agent-orchestration/omega/juntas/**` (ata, votos — do orquestrador,
@@ -760,11 +777,12 @@ não do dev).
 `package.json`, `package-lock.json`, `frontend/package-lock.json`, `pubspec.*` · `.github/workflows/**` (a CI já
 roda o compose; se o smoke ficar vermelho, o conserto é no compose/script/código, nunca no workflow) ·
 `fly.production.toml`, `fly.staging.toml`, `frontend/fly.*.toml` · `Dockerfile`, `docker-compose.yml` (dev) ·
-`src/routes/health.routes.ts` (corpo público; §13) · `src/modules/cloud-cost-allocation/**` (sítio 7 → pendência) ·
+`src/routes/health.routes.ts` (corpo público; §13) · `src/modules/cloud-cost-allocation/**` (sítio 7 → congelado + pendência) ·
 `src/modules/auth/**` (a sonda do login e o `runWithTenantContext` ficam como estão) · qualquer outro `src/modules/**`
 · `frontend/**`, `mobile/**` · `CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.agents/**` · `Kpis/index.html`, `Kpis/app.js`
 (nenhuma dimensão nova: o painel hidrata dos JSON) · `docs/revisoes/SAN3/PLANO_SAN3.md` (o §5.2 fala em "quatro"; a
-diferença para "sete/cinco métodos" fica registrada na ata e em `pendencias.md`, não editando o plano-mãe).
+diferença para "sete/cinco métodos" fica registrada na ata e em `pendencias.md`, não editando o plano-mãe) ·
+`tests/o6r07b-scanner-failclosed.test.ts` (P1 é pré-existente e tem dono; este bloco não o conserta).
 
 **Trava de mesmo arquivo (§6 do PLANO_SAN3):** este bloco **precede** `B-SAN3-03` nos dois repositórios de nuvem e
 `B-AV-REAL` em `src/config/env.ts`. Nenhum dos dois pode abrir ramo antes do merge deste. P-m confirma que hoje
@@ -772,71 +790,79 @@ ninguém está nesses arquivos.
 
 ---
 
-## §7 — Critérios de aceite — cada um com a MUTAÇÃO que o deixa vermelho
+## §7 — Critérios de aceite — cada um com a MUTAÇÃO que o deixa vermelho, o teste que a pega e a evidência já executada
 
-| # | Critério (verde) | Mutação que o deixa VERMELHO | Onde é medido |
-|---|---|---|---|
-| A1 | Sob superusuário (`postgres`), a trava recusa: `RuntimeRoleGuardError` `RUNTIME_ROLE_CAN_BYPASS_RLS`, `bypassing ≥ 1`, `is_self = true` | apagar a cláusula `r.rolsuper` da consulta | T6 |
-| A2 | Sob superusuário com **outro nome**, recusa (a trava é por atributo) | trocar a consulta por `WHERE rolname = 'postgres'` | T7 |
-| A3 | Sob papel `NOSUPERUSER NOBYPASSRLS` que é **membro** de papel `BYPASSRLS`, recusa; após `REVOKE`, passa | trocar por `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user` (a do §5.2) — G4c prova que fica verde-cego | T8 |
-| A4 | Sob papel efêmero limpo (arnês `createEphemeralRole`), passa e o log traz `role`, `bypassing: 0`, `owned_force_rls_tables: 0` — e **nenhum** campo com `postgresql://`, `password`, host | remover `$disconnect` na recusa (T9 mede que o processo/loop encerra); logar a `DATABASE_URL` | T9, T4 |
-| A5 | `envSchema`: `production` + `skip` → issue em `DATABASE_RUNTIME_ROLE_GUARD`; `production` sem a chave → aceito e `env.DATABASE_RUNTIME_ROLE_GUARD === "enforce"`; `development`/`test` sem a chave → `"skip"`; `test` + `enforce` → aceito | trocar o default de produção para `skip`; apagar o gate do `superRefine`; aceitar um terceiro valor | T1–T3 |
-| A6 | `tests/deploy-manifest-parity.test.ts` continua 22/22 **sem** editar manifesto nem `.env.example` | tornar a chave obrigatória (`z.enum(...)` sem `.optional()`) — a lista derivada passa a exigi-la e o compose não a tem | bateria §8 (H6) |
-| A7 | Sob papel efêmero, `RlsPrismaCloudUsageRepository.listEvents({janela})` soma os eventos de **2** organizações (hoje `0` — **vermelho-controle no head-base obrigatório**) e devolve ordenado por `occurredAt` | remover `setTenantRlsContext` de dentro do laço; remover a reordenação (asserção de ordem) | T10 |
-| A8 | Idem `listDailyAggregates({})` → 2 agregados | idem | T10 |
-| A9 | `GET /platform/cloud-usage/summary` via HTTP, app montado com o client do papel efêmero (padrão `san3-04a-…-db.test.ts:64-70`, `globalThis.prisma = efemera.client`), soma `quantity` das 2 organizações | idem A7 | T11 |
-| A10 | Sob papel efêmero, `RlsPrismaCloudChargeRepository`: `listAllocationTenantAllocations(run)` → 2; `listTenantCharges(run)` → 2 (e `{tenantId: A}` → 1); `replaceTenantCharges(run, [A, B])` grava 2 e `replace(run, [A])` **apaga a de B** (órfã zero — B7); falha injetada na 2ª volta não deixa linha da 1ª (B8) | apagar `deleteMany` da volta; tirar a transação única (duas transações) | T12 |
-| A11 | Canário: uma volta que **não** trocou o GUC lança `rows_from_another_tenant` (mutação executada pelo teste, como o B6′/B9 do B-O6R-06) | remover `assertRowsBelongToTenant` | T12 |
-| A12 | Guard gerado (CE-G1): `node scripts/san3-05-acessos-de-plataforma.mjs .` no head da entrega tem **L2b = ∅** e L1 `CRU` = 0; o teste executa o gerador (processo filho) e falha se qualquer linha aparecer; default do membro não previsto = **negar** (linha nova = vermelho) | inserir `new PrismaCloudUsageRepository(this.prismaClient).listEvents(...)` em qualquer ramo; instanciar `PrismaCloudChargeRepository(prisma)` fora do envoltório | T13 |
-| A13 | Compose local-prod: `api` conecta como `erp_runtime` (≠ `migrate`), o smoke da CI (`ci.yml:472-477`) passa **com a trava ativa** (`NODE_ENV=production` já está na l.51) | apontar `api.DATABASE_URL` de volta para `postgres` — o boot recusa e o smoke cai na readiness (H1/H4 medem na CI) | job `docker` no head |
-| A14 | `scripts/db-runtime-role.sh` é idempotente: 2ª execução = mesmo estado (`pg_roles`, grants, default privileges), e corrige um papel pré-existente com `BYPASSRLS` | rodar com papel pré-criado `BYPASSRLS` e omitir o `ALTER ROLE … NOBYPASSRLS` | T14 (num cluster descartável, `psql` real) |
-| A15 | `docs/deployment.md`: a l.458 deixa de afirmar sem mecanismo; a tabela dos gates ganha `G-DB-ROLE`; o runbook B-O6R-01 nomeia o papel de runtime como alvo do `GRANT EXECUTE` | — (documental; a junta lê) | C2 |
-| A16 | Registro: pendências `P-INFRA-RLS` e `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` **não** fecham no PR — ficam `EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11)`, como o §4.2 exige ("só fecham com a trava verde no ambiente"); pendências novas do §13 abertas com dono | — | C2/C3 |
+| # | Critério (verde) | Mutação que o deixa VERMELHO | Teste | Evidência executada nesta sessão |
+|---|---|---|---|---|
+| A1 | Sob superusuário (`postgres`), a trava recusa: `RuntimeRoleGuardError` `RUNTIME_ROLE_CAN_BYPASS_RLS`, e `escapes` contém uma linha `via=atributo, is_self=true, rolsuper=true` | apagar a metade `via='atributo'` do `UNION` (sobra só `posse`) — a linha `atributo … is_self` some | T6 | §R.1: `postgres` → 5 linhas, uma `atributo/postgres/is_self=t` |
+| A2 | Sob superusuário com **outro nome** (`SUPERUSER NOBYPASSRLS`, dono de nada), recusa **com** a linha `atributo … is_self=true, rolsuper=true` | apagar `r.rolsuper` do predicado — sobram `postgres` (bypass) e posses, a linha `is_self` **some** (F11) | T7 | §R.1: `p2_super2` v2 → `atributo/p2_super2/t`; mutante sem `rolsuper` → linha ausente |
+| A3 | Sob papel `NOSUPERUSER NOBYPASSRLS` **membro** de papel `BYPASSRLS` (direta, `NOINHERIT`, cadeia), recusa com `atributo/<bypass>/is_self=false`; após `REVOKE`, passa; a consulta ingênua do §5.2 diz `false:false` no mesmo estado | trocar `pg_has_role(…, 'MEMBER')` por `r.rolname = current_user` | T8 | §R.1 (3 formas de pertença → 1 linha cada); G4c em §0.5 |
+| A4 | **Posse (F5):** papel limpo **dono** de tabela `FORCE` → recusa `posse/<self>/is_self=true, tabelas_force=n`; papel limpo **membro do dono** → recusa `posse/<dono>/is_self=false`; após `ALTER TABLE … OWNER TO <migrador>` / `REVOKE`, passa | apagar a metade `via='posse'` do `UNION` | T8b | §R.1: `p2_app_ownermember` → `posse/p2_mig`; `p2_app_owner` → `posse/p2_app_owner/t`; e a porta: `NO FORCE` → 3 linhas sem GUC |
+| A5 | **`session_user` (F13):** client cuja URL tem `options=-c role=<efêmero limpo>` com login superusuário → recusa; URL de login efêmero → passa | trocar `session_user` por `current_user` nas duas ocorrências do SQL | T8c (PrismaPg, a URL do app) | §R.1: `options-url.mts` → v1 PASSA, v2 RECUSA (5 linhas); login limpo → PASSA |
+| A6 | Sob papel efêmero limpo, passa e o log traz `session_user`, `current_user`, `escapes: 0` — e **nenhum** campo com `postgresql://`, `password`, host; na recusa, `$disconnect` é chamado | logar a `DATABASE_URL` → T9; remover `$disconnect` → o **espião** do T4 (N4: o processo morre de qualquer modo, ~11 s depois) | T9, T4 | r1 item 4.3 (aceito) |
+| A7 | `envSchema`: `production` + `skip` → issue em `DATABASE_RUNTIME_ROLE_GUARD`; valor fora do enum rejeitado; `test` + `enforce` aceito | apagar o gate do `superRefine`; aceitar um terceiro valor | T1, T3 (`safeParse`) | — (mecanismo `safeParse`, como os gates existentes) |
+| A8 | **Default do export por processo filho (F9):** `NODE_ENV=production` + PROD_OK → o filho imprime `enforce`; `NODE_ENV=test` e `development` → `skip` | trocar o default de produção para `skip` no **export** | T2 (`node --import tsx -e "import('./src/config/env.ts')…"` com `env -i` + PROD_OK) | §R.5: o mesmo mecanismo com `EVIDENCE_SCANNER` vê a mutação que o precedente não vê |
+| A9 | `tests/deploy-manifest-parity.test.ts` continua **28/28** sem editar manifesto nem `.env.example` | tornar a chave obrigatória (sem `.optional()`) — `envSchema.parse(process.env)` explode no import (`ZodError`) | bateria §8 (H6) | §R.7: 28/28 no head-base |
+| A10 | Sob papel efêmero, `RlsPrismaCloudUsageRepository.listEvents({janela})` soma os eventos de **2** organizações (semente **intercalada**: A = 01h,03h,05h; B = 02h,04h; hoje `0` — **vermelho-controle no head-base**) e devolve ordenado por `occurredAt asc` | remover `setTenantRlsContext` de dentro do laço (soma 0); remover a reordenação (a concatenação A,A,A,B,B **não** está ordenada — F12) | T10 | §0.5 P1/R1 (0 × 5); §R.6 (ordem) |
+| A11 | Idem `listDailyAggregates({})` → 2 agregados ordenados por `date asc` (A = 15, B = 14) | idem | T10 | §R.6 |
+| A12 | **T11-diferencial (F2):** `GET /platform/cloud-usage/summary` via HTTP, app montado duas vezes (client do papel efêmero × client administrativo; `generatedAt` normalizado), mesmo seed, como `platform_admin` por JWT (CE-G2): corpos **iguais** e `metrics` **não vazio** | idem A10 (sem laço, o efêmero devolve `metrics: []` ≠ `quantity: 50`) | T11 (vermelho-controle no head-base = §R.3) | §R.3: `50` × `[]` |
+| A13 | Sob papel efêmero, via `createPrismaCloudChargeRepository()` (a fábrica, que existe no head-base — N6): `listAllocationTenantAllocations(run)` → 2; `listTenantCharges(run)` → 2 (e `{tenantId: A}` → 1); `replaceTenantCharges(run, [A, B])` grava 2 e `replace(run, [A])` **apaga a de B** (B7); falha injetada na 2ª volta não deixa linha da 1ª (B8) | apagar `deleteMany` da volta; tirar a transação única | T12 | §0.5 P3/P4/P6 (hoje 0 / `42501`) |
+| A14 | Canário: uma volta que **não** trocou o GUC lança `rows_from_another_tenant` (mutação executada pelo teste, como B6′/B9 do B-O6R-06) | remover `assertRowsBelongToTenant` | T12 | precedente lido (r1 item 5) |
+| A15 | **Ratchet (F1, F2):** `node scripts/san3-05-acessos-de-plataforma.mjs .` no head da entrega tem inventário suspeito **igual ao congelado** do teste (chave a chave, com motivo por chave; o sítio 7 está nele, ligado à pendência); o teste executa o gerador (processo filho) e falha em chave **nova ou sumida** | (a) cada uma das **17 fixtures** de `tests/fixtures/san3-05-mutacoes/` copiada para `src/modules/zz-mut/mut.ts` numa cópia temporária de `src`+`prisma` → `+1`; (b) a fábrica do sítio 7 alterada por fora → chave sumida | T13 (18 subtestes) | §R.2: 17/17 `+1`; sumida → vermelho |
+| A16 | Compose local-prod: `api` conecta como `erp_runtime` (≠ `migrate`), o smoke da CI (`ci.yml:472-477`) passa **com a trava ativa** (`NODE_ENV=production` já está na l.51); o papel nasce **no banco da app** | apontar `api.DATABASE_URL` de volta para `postgres` — o boot recusa e o smoke cai na readiness (H1/H4 medem na CI; **a fiação em si é o T15**, não este) | job `docker` no head | HIPÓTESE H1 |
+| A17 | `scripts/db-runtime-role.sh`: os **7 cenários de §R.4** reproduzem (papel novo; 2ª execução idêntica; pré-existente que escapa → `ec≠0` e nada persiste; posse reatribuída → corrige e revoga; migrador não-super dono → `ec=0`; pré-existente `BYPASSRLS` sob não-super → falha nomeada; tabela alheia → falha nomeada) | omitir o `REVOKE` da pertença → cenário (iii-b) fica com `membros=1`; trocar o `RAISE` por `SELECT` → (iii) sai `ec=0` | T14 (a: o bloco `DO` extraído do `.sh` e executado pelo Prisma, sempre; b: o `.sh` por `bash`+`psql` quando `psql` estiver no PATH — H7) | §R.4 |
+| A18 | `docs/deployment.md`: `rg -c 'G-DB-ROLE' docs/deployment.md` ≥ 2; `rg -n 'Confirmar na ativacao' docs/deployment.md` **vazio** na l.458; o runbook B-O6R-01 nomeia `erp_runtime` como alvo do `GRANT EXECUTE` (`rg -n 'TO erp_runtime' docs/deployment.md` ≥ 1) | não editar a doc (os `rg` ficam 0 / não vazio) | C2 (comando na ata) | — (documental) |
+| A19 | Registro: `rg -n 'P-INFRA-RLS' agent-orchestration/controle/pendencias.md` mostra `EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11)`, nunca `FECHADA`; idem `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS`; as pendências do §13 abertas com dono (`rg -c 'P-SAN3-05-' pendencias.md` ≥ 6; `rg -c 'P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT'` ≥ 1) | marcar `FECHADA` no PR; omitir a P1 | C2 (comando na ata) | — |
+| A20 | **Boot real (F9):** `src/server.ts` num processo filho, `NODE_ENV=production`, PROD_OK, `DATABASE_URL` de superusuário → `exit 1`; a **primeira** linha `Failed to start ERP Techsolutions API` traz `code: RUNTIME_ROLE_CAN_BYPASS_RLS`; **nenhuma** linha do worker/Redis antes; com `DATABASE_URL` do papel efêmero limpo → aparece `runtime database role verified` com `escapes: 0` e nenhuma recusa (o filho é morto em seguida) | apagar a chamada em `main()` → o filho passa e morre no Redis (`RedisCommandError`, ~18 s); default do export → `skip` → idem | T15 (vermelho-controle no head-base = §R.5) | §R.5 |
 
 **CE-G2 (papel × passo):** os passos HTTP de T11 rodam como `platform_admin` com `platform:cloud-usage:read`
 (`src/modules/platform/platform-permissions.ts:15`; rota `platform.routes.ts:45` + `cloud-usage.routes.ts:12`) — permissão
 que o papel já tem (`RBAC_MATRIX.md`, `platform_admin` = tudo de plataforma); token assinado com `signAccessToken`
-como em `san3-04a-menu-com-permissoes-do-banco-db.test.ts:79,179`.
+como em `san3-04a-menu-com-permissoes-do-banco-db.test.ts:79,179` (o protótipo de §R.3 usou o cabeçalho legado de
+`NODE_ENV=test` só para medir o diferencial).
 
 ---
 
 ## §8 — Testes: baseline N, meta M ≥ 2N, e a bateria
 
-**Baseline N = 4** — testes que hoje executam código dos arquivos deste bloco (ou as mesmas tabelas) **sob papel real
-sem bypass**: `o6r06-usage-atomic-db.test.ts` A7 (l.211: "sem contexto nenhum" → documenta o `0`) e A17 (l.544);
-`o6r06-allocation-basis-rls-db.test.ts` B2′ (l.68) e B11 (l.342). Nenhum deles cobre a **trava** (0 testes) nem o
-**remédio** dos cinco métodos (0). Contagem de `test(` nas suítes que o bloco estende, para a régua do §C3:
-`production-runtime-gates.test.ts` 30 · `deploy-manifest-parity.test.ts` 22 · `o6r06-usage-atomic-db.test.ts` 16 ·
-`o6r06-allocation-basis-rls-db.test.ts` 11. Suíte inteira em `origin/main`: 287 arquivos `tests/*.test.ts`, 33 `-db`;
-KPI vigente `backend_tests 3052/3054`.
+**Baseline N = 5** (N8) — testes que hoje executam código dos arquivos deste bloco (ou as mesmas tabelas) **sob papel real
+sem bypass**: `o6r06-usage-atomic-db.test.ts` A7 (l.211) e A17 (l.544); `o6r06-allocation-basis-rls-db.test.ts` B2′ (l.68)
+e B11 (l.342); `rls-tenant-isolation.test.ts:19` (papel `NOSUPERUSER` da l.44; as 4 tabelas de nuvem em l.2460-2680 e
+3053-3068). Nenhum deles cobre a **trava** (0), o **remédio** dos cinco métodos (0), nem a **fiação** (0). Contagem
+**executada** das suítes que o bloco estende (F10): `production-runtime-gates.test.ts` **63** · `deploy-manifest-parity.test.ts`
+**28** · `o6r06-usage-atomic-db.test.ts` 15 · `o6r06-allocation-basis-rls-db.test.ts` 10 (as duas últimas no cluster da r1).
+Suíte inteira em `origin/main`: 287 arquivos `tests/*.test.ts`, 33 `-db`; KPI vigente `backend_tests 3052/3054`.
 
-**Meta M ≥ 8 (2N).** O bloco entrega **14**:
+**Meta M ≥ 10 (2N).** O bloco entrega **15 testes** (T1–T15; com subtestes, ≥ 40 casos):
 
 | T | Teste | Arquivo | Banco |
 |---|---|---|---|
 | T1 | `G-DB-ROLE`: `production` + `skip` rejeitado (issue path exato) | `production-runtime-gates.test.ts` | não |
-| T2 | `production` sem a chave → aceito, export = `enforce`; `test`/`development` sem a chave → `skip` | idem | não |
-| T3 | valor fora do enum rejeitado em qualquer ambiente; `test` + `enforce` aceito | idem | não |
-| T4 | bootstrap com client **injetado** (fake): `enforce=false` → `{enforced:false}` + log info; `enforce=true` + posture limpa → passa e loga sem URL/senha; `enforce=true` + `bypassing` → lança `RUNTIME_ROLE_CAN_BYPASS_RLS` **e** chama `$disconnect`; erro de conexão → 5 tentativas e recusa | `san3-05-runtime-role-bootstrap.test.ts` | não |
+| T2 | **Default do export por processo filho** (A8): `env -i` + PROD_OK + `NODE_ENV=production` → `enforce`; `test`/`development` → `skip` (`spawnSync(node, ["--import","tsx","-e", "import('./src/config/env.ts').then(m => console.log(m.env.DATABASE_RUNTIME_ROLE_GUARD))"])`, `DOTENV_CONFIG_PATH=/dev/null`) | `san3-05-runtime-role-bootstrap.test.ts` | não |
+| T3 | valor fora do enum rejeitado em qualquer ambiente; `test` + `enforce` aceito | `production-runtime-gates.test.ts` | não |
+| T4 | bootstrap com client **injetado** (fake): `enforce=false` → `{enforced:false}` + log info; `enforce=true` + postura limpa → passa e loga sem URL/senha; `enforce=true` + `escapes` → lança `RUNTIME_ROLE_CAN_BYPASS_RLS` **e** chama `$disconnect` (espião); erro de conexão → 5 tentativas e recusa | `san3-05-runtime-role-bootstrap.test.ts` | não |
 | T5 | boot de verdade: `assertRuntimeDatabaseRoleIfEnforced({ enforce: true })` com `globalThis.prisma = efemera.client` (padrão `san3-04a`) → passa; com o client `postgres` → recusa | `san3-05-runtime-role-guard-db.test.ts` | sim |
-| T6 | A1 (superusuário) | idem | sim |
-| T7 | A2 (superusuário com outro nome — papel criado pelo arnês sob `withRoleCatalogLock`, `SUPERUSER`, derrubado no `finally`) | idem | sim |
-| T8 | A3 (pertença: `GRANT bypass TO efêmero` → recusa; `REVOKE` → passa; e a consulta ingênua **passa** no mesmo estado — o vermelho-controle da mutação) | idem | sim |
-| T9 | A4 (log: campos exatos; ausência de `postgresql://`/`password`/host por varredura do JSON do log, padrão `auth-identity-exposure-scan.test.ts`) | idem | sim |
-| T10 | A7 + A8 com **vermelho-controle no head-base** (o teste roda o repositório do head-base? não: o teste é novo; o vermelho-controle é a **execução do mesmo teste contra `origin/main` antes do diff**, colada na ata — `git stash`/worktree do jurado) | `san3-05-leituras-de-plataforma-db.test.ts` | sim |
-| T11 | A9 (HTTP, app sob papel efêmero, `platform_admin`) | idem | sim |
-| T12 | A10 + A11 (cobrança: 2 lidas, órfã zero, atomicidade, canário por mutação executada) | idem | sim |
-| T13 | A12 (gerador como processo filho; L2b = ∅; **mutação executada pelo próprio teste** num diretório temporário com um sítio cru injetado → o gerador o lista → o guard fica vermelho — a forma do `db-catalog-write-guard`) | `san3-05-acessos-de-plataforma-guard.test.ts` | não |
-| T14 | A14 (script do papel: 2 execuções, estado idêntico; papel pré-existente `BYPASSRLS` corrigido; auto-verificação sai `≠0` se `escapa`) — precisa de `psql` no PATH (a CI `backend-postgres` tem o cliente do `postgres:16`? **conferir**: se não tiver, T14 roda o mesmo SQL pelo Prisma cru e o `.sh` é provado só pelo job `docker`) | `san3-05-runtime-role-guard-db.test.ts` | sim |
+| T6 | A1 (superusuário, razão `atributo … is_self`) | idem | sim |
+| T7 | A2 (superusuário com outro nome — `SUPERUSER NOBYPASSRLS`, criado pelo arnês sob `withRoleCatalogLock`, derrubado no `finally`; asserta a linha `is_self ∧ rolsuper`) | idem | sim |
+| T8 | A3 (pertença: `GRANT bypass TO efêmero` → recusa; `REVOKE` → passa; consulta ingênua **passa** no mesmo estado) · **T8b** A4 (posse: tabela `FORCE` temporária `OWNER TO efêmero` → recusa `posse/self`; `GRANT dono TO efêmero` → recusa `posse/dono`; desfeito → passa) · **T8c** A5 (`PrismaPg` com `options=-c%20role%3D<efêmero>` e login administrativo → recusa; login efêmero → passa) | idem | sim |
+| T9 | A6 (log: campos exatos; ausência de `postgresql://`/`password`/host por varredura do JSON do log, padrão `auth-identity-exposure-scan.test.ts`) | idem | sim |
+| T10 | A10 + A11, semente intercalada, com **vermelho-controle no head-base** (execução do mesmo teste contra `origin/main` antes do diff, colada na ata — worktree do jurado) | `san3-05-leituras-de-plataforma-db.test.ts` | sim |
+| T11 | A12 — **diferencial HTTP** (dois processos ou dois `createApp` com `globalThis.prisma` trocado **antes** do import — o padrão `san3-04a`; a forma de dois processos é a de §R.3) | idem | sim |
+| T12 | A13 + A14 (cobrança via **fábrica**: 2 lidas, órfã zero, atomicidade, canário por mutação executada) | idem | sim |
+| T13 | A15 — ratchet: gerador como processo filho (`cwd` = raiz do repo, alvo = `.`), inventário == congelado; **18 subtestes de mutação** (17 fixtures + sumida) sobre cópia temporária de `src`+`prisma` (`fs.mkdtempSync`, sem `node_modules` — F14) | `san3-05-acessos-de-plataforma-guard.test.ts` | não |
+| T14 | A17 — script do papel: (a) o bloco `DO $$…$$` extraído do `.sh` (regex) + `set_config` feitos pelo teste, executados pelo Prisma administrativo num **banco descartável próprio** (`CREATE DATABASE` sob `withRoleCatalogLock`), 7 cenários; (b) o `.sh` inteiro por `bash` + `psql` **se `psql` estiver no PATH** — senão pula **declarando** (o job `docker` executa o `.sh` de verdade pelo entrypoint — H1) | `san3-05-runtime-role-guard-db.test.ts` | sim |
+| T15 | A20 — **boot real**: `spawn(node, ["--import","tsx","src/server.ts"])` com `env -i`-equivalente (PROD_OK + `NODE_ENV=production` + `DATABASE_URL` + `REDIS_URL` do PROD_OK + `PORT`/`PORTAL_PORT` livres + `DOTENV_CONFIG_PATH=/dev/null`); (a) superusuário → `exit 1` ≤ 15 s, 1ª linha `Failed to start` com o código, sem linha do worker; (b) efêmero → linha `verified` com `escapes: 0`, então `SIGTERM` | idem | sim |
 
 **Regras dos testes `-db`:** papel efêmero **só** pelo arnês (`createEphemeralRole`/`withRoleCatalogLock`;
-`o6r06-usage-atomic-db.test.ts:610-618` explica o `XX000 tuple concurrently updated`); os que criam papel entram no
+`o6r06-usage-atomic-db.test.ts:610-618` explica o `XX000 tuple concurrently updated`); os que criam papel/banco entram no
 ratchet `db-catalog-write-guard` com contagem congelada (ou pedem ao arnês, que é o caminho preferido); **falha é
 vermelho, nunca skip** sob `DATABASE_URL` presente (guard de zero pulos, `ci.yml:274-279` do job `backend-postgres` —
 as suítes novas entram na lista `SUITES` **daquele job**… que está em `.github/workflows/ci.yml`, PROIBIDO). **Decisão:**
 as três suítes `-db` novas seguem a convenção "auto-pula **declarando** sem `DATABASE_URL`" e rodam no job `backend`
 (que tem `DATABASE_URL`, l.34) — o job `backend-postgres` com `SUITES` fica para o bloco que possa tocar o workflow
-(`B-ARNES-2`), registrado em §13. A junta confere que **rodaram** no head (TAP colado).
+(`B-ARNES-2`), registrado em §13. A junta confere que **rodaram** no head (TAP colado). **H7 (HIPÓTESE):** o runner
+`ubuntu-latest` tem `psql` (fonte: `actions/runner-images`, `Ubuntu2404-Readme.md`, "PostgreSQL 16"); comando que mede:
+o próprio T14b imprime `psql: <caminho ou ausente>` no TAP.
 
 **Bateria de validação (§9 do contrato), na ordem, com `timeout` e `ec` por variável:**
 
@@ -846,18 +872,19 @@ npm run lint
 node --test --import tsx tests/production-runtime-gates.test.ts tests/deploy-manifest-parity.test.ts tests/o6r07b-scanner-failclosed.test.ts tests/cors-env.test.ts tests/portal-env.test.ts     # regressão dos gates (B-O6R-05/07b)
 node --test --import tsx tests/san3-05-runtime-role-bootstrap.test.ts tests/san3-05-acessos-de-plataforma-guard.test.ts
 DATABASE_URL=<descartável> node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts tests/san3-05-leituras-de-plataforma-db.test.ts
-DATABASE_URL=<descartável> node --test --import tsx tests/o6r06-usage-atomic-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts tests/o6r06-cost-summary-sum-db.test.ts tests/rls-tenant-isolation.test.ts tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts tests/cloud-usage.test.ts tests/cloud-usage-routes.test.ts tests/cloud-charge-routes.test.ts tests/cloud-charge-markup-rules.test.ts   # regressões dos blocos anteriores
-node scripts/san3-05-acessos-de-plataforma.mjs .            # L2b vazio; saída colada na ata
+DATABASE_URL=<descartável> node --test --import tsx tests/o6r06-usage-atomic-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts tests/o6r06-cost-summary-sum-db.test.ts tests/rls-tenant-isolation.test.ts tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts tests/cloud-usage.test.ts tests/cloud-usage-routes.test.ts tests/cloud-charge-routes.test.ts tests/cloud-charge-markup-rules.test.ts tests/db-catalog-write-guard.test.ts   # regressões dos blocos anteriores
+node scripts/san3-05-acessos-de-plataforma.mjs .            # inventário suspeito (== congelado do T13); cabeçalho + inventário colados na ata
+git ls-files -s scripts/db-runtime-role.sh                  # 100755
 DATABASE_URL=<descartável> npm test                         # suíte inteira (contagem real → KPI)
 npm run build
 node --check Kpis/app.js && node --test --import tsx tests/kpi-dashboard-charts.test.ts
 git diff --check
 ```
 
-Mais: `grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.toml .env.example` → **vazio** (A6);
+Mais: `grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.toml .env.example` → **vazio** (A9);
 `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO (§6); `git grep -n 'PrismaCloudChargeRepository(prisma)' -- src` →
-só dentro do envoltório. O compose/smoke é provado pelo job `docker` da CI no head (H1/H4) — o dev **não** o
-reproduz localmente se não tiver docker; a junta lê o run.
+**vazio** (o envoltório instancia o cru só com `tx`). O compose/smoke é provado pelo job `docker` da CI no head (H1/H4) — o dev
+**não** o reproduz localmente se não tiver docker; a junta lê o run. Tudo em **Node 20** (o do CI; `node -v` colado).
 
 ---
 
