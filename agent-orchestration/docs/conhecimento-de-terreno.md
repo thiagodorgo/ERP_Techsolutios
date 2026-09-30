@@ -123,6 +123,10 @@ Declare no §0 de todo plano ou relatório: `uname -a`, `node -v`, `git --versio
   `Kpis/app.js` só se gera por `node scripts/kpi-freeze.mjs`; o índice de pendências só pelo gerador
   `agent-orchestration/controle/gerar-indice-pendencias.py`.
 - **`approved_head` é o objeto que a JUNTA julgou**, lido da ata — não o head do PR no merge.
+- **Sessão de nuvem acrescenta linhas de atribuição por padrão.** Em 30/09 um commit de plano saiu com
+  `Co-Authored-By` e `Claude-Session` e com e-mail de autor inventado (refeito com a mesma árvore). O projeto não usa
+  linha de atribuição: antes de empurrar, confira `git log -1 --format=%B` e o autor. Num PR de **um commit só**, o
+  squash do GitHub mantém o autor original desse commit na `main`.
 
 ### 2.5 Agentes e modelos
 
