@@ -1,10 +1,20 @@
-# B-SAN3-05 — PLANO — o papel de runtime não escapa de RLS (itens 9 e 10 do §4.1) — ciclo 1
+# B-SAN3-05 — PLANO v2 — o papel de runtime não escapa de RLS (itens 9 e 10 do §4.1) — ciclo 1, replanejado após a crítica r1
 
 > **Papel:** `planejador-mestre` (identidade nova, sessão na nuvem) · **modelo:** Fable 5.1 (`claude-fable-5-1`, o
 > fixado no frontmatter — sem fallback) · **medido em:** `origin/main` = `3b1fe0f91d5304a721aa47d6661c4eb7cba39b1c`
 > (resolvido por `git rev-parse origin/main` em 2026-09-30; a árvore da sessão está nesse SHA, `git status` vazio) ·
 > **ramo deste plano:** `docs/plano-b-san3-05`, criado desse SHA · **bloco:** `B-SAN3-05` ·
 > **branch da entrega:** `fix/runtime-role-sem-bypass` (§5.2 do `PLANO_SAN3.md`).
+>
+> **v2 (esta revisão):** `planejador-mestre` (instância NOVA desta sessão — não achou nem desenvolve; §C7.4-bis) ·
+> **modelo em que roda de fato:** Fable 5.1 (`claude-fable-5-1`), o fixado no frontmatter — **sem fallback** (§C7.6: replanejamento
+> após crítica, Fable obrigatório) · corpo `.claude/agents/planejador-mestre.md` @ `origin/main@3b1fe0f9`, md5 EOL-neutro
+> `4c912f69a93f07b14d8fd1c49539c778` (conferido por mim) · **responde a** `docs/revisoes/SAN3/B-SAN3-05-critica-r1.md`
+> (`critico-b-san3-05`, head `c7d1e95d62102b267f1636ce1ed715578d2242ae`) · **v1 recuperável em** `c3f57e9` · **máquina:**
+> `uname -a` = `Linux vm 6.18.44-fc-v50 #1 SMP PREEMPT_DYNAMIC @0 x86_64 x86_64 x86_64 GNU/Linux`; `PATH=/opt/node20/bin:$PATH node -v`
+> = `v20.20.2` (o do CI); Postgres 16.13 descartável `127.0.0.1:54353`, banco `erp_plano` (115 tabelas, 106 FORCE, medido ao abrir).
+> Tudo o que a v2 afirma de novo foi **medido aqui**, na seção "Resposta à crítica r1"; o que a v1 afirmava e a crítica
+> **reproduziu** (gerador byte a byte, Apêndice B 22/22, trava G1–G4, P-k/P-m/P-n/P-p) fica como estava.
 >
 > **Fonte do bloco:** `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 itens 9 e 10, §4.2 (l.192, "Papel de banco da
 > produção"), §5.2 (linha `B-SAN3-05`), §6 (l.366: trava de mesmo arquivo `SAN3-05 → SAN3-03` nos dois
@@ -15,6 +25,46 @@
 > + saída, nesta sessão, sobre `origin/main@3b1fe0f9` ou sobre um Postgres 16.13 descartável com as migrações
 > dessa ref aplicadas. **HIPÓTESE** = não medido aqui, com o comando exato que a derruba (§0.6). Nenhum SHA foi
 > digitado; nenhum número foi copiado de bloco anterior.
+
+---
+
+## Resposta à crítica r1 — todos os achados, um a um (medido aqui, no cluster `54353`)
+
+> Regra desta seção: **cada achado tem uma linha**; a coluna "o que mudou" aponta a seção da v2; a coluna "evidência"
+> é comando + saída **executados nesta sessão** (roteiro de re-execução: os scripts da crítica r1, re-rodados, não
+> herdados); o estado é um de **incorporado** · **falsificado com medição** · **pendência nomeada**. `EM APURAÇÃO`
+> é o esqueleto (P2): some quando o item é medido. Detalhe de cada medição em §R.1–§R.6 logo abaixo da tabela.
+
+| id | gravidade | achado (resumo da r1) | o que mudou na v2 (seção) | evidência executada | estado |
+|---|---|---|---|---|---|
+| F1 | bloqueia | A12/T13/C3(1): "L2b = ∅" impossível com o sítio 7 em arquivo PROIBIDO | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F2 | bloqueia | guard gerado verde para 16/17 sítios crus reais; "default negar" falso | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F3 | ajuste | `classify` engole `$transaction-SEM-setter`; "hoje zero casos" é falso | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F4 | ajuste | `updateManyAndReturn` fora do `OPS`: 68 acessos FORCE invisíveis | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F5 | bloqueia | pertença ao papel DONO escapa (`ALTER TABLE … NO FORCE`); trava e sonda de posse dizem 0 | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F6 | bloqueia | o SQL do procedimento não roda (`:'role'` em `DO $$`, `:"db"` não declarada) | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F7 | ajuste | auto-verificação é `SELECT` (sai 0 com `escapa=t`); pertença não revogada | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F8 | ajuste | migrador `NOSUPERUSER CREATEROLE`: `ALTER ROLE … NOSUPERUSER …` recusado | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F9 | bloqueia | fiação de produção da trava sem critério (default→`skip`; chamada em `main()` apagada) | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F10 | ajuste | "22/22" era `grep`; executado 28/28; mutação de A6 vermelha por `ZodError` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F11 | ajuste | mutação de A1 (apagar `r.rolsuper`) não deixa T6/T7 vermelhos | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F12 | ajuste | semente com `occurred_at`/`date` iguais: "remover a reordenação" não fica vermelho | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F13 | bloqueia | trava julga `current_user`; login super + `options=-c role=<limpo>` passa e escapa com `SET ROLE NONE` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| F14 | ajuste | gerador resolve `typescript` a partir do alvo; cópia fora da árvore morre | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N1 | nota | `GRANT … WITH SET FALSE` recusado sem poder `SET ROLE` (falso positivo seguro) | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N2 | nota | `REPO` cravado no Apêndice B | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N3 | nota | os três `.sh` do repo são `100644`: sourced é o caminho padrão do entrypoint | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N4 | nota | "sem `$disconnect` o processo não morre" é falso (~11,5 s); A4 é pega pelo espião do T4 | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N5 | nota | `deploy-production.yml:141` fala da tabela RBAC `roles`, não de papel PostgreSQL | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N6 | nota | A2 pega por T5 não T7; A9/T11 sem vermelho-controle; T12 vermelho-controle por import | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N7 | nota | A15/A16 sem mutação escrita | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| N8 | nota | P-a 8 linhas/1 executável; P-f omite `permissions`, `role_permissions`; N omite `rls-tenant-isolation` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| P1 | ajuste (pre-existente) | teste do default do `EVIDENCE_SCANNER` reescreve a regra (mutante 13/13 verde) — `fe2748c` 2026-09-06 | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+
+### §R.0 — Roteiro de re-execução (o que re-rodei da crítica antes de decidir)
+
+EM APURAÇÃO
+
 
 ---
 
