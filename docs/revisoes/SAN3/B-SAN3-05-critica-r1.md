@@ -216,11 +216,84 @@ Veredito parcial: achado **F9**.
 
 ## Item 5 — A1–A16 × T1–T14: a mutação que derruba cada critério existe?
 
-EM APURAÇÃO
+Medições específicas deste item (além das dos itens 1–4):
+```
+# A1 — mutante: consulta da trava SEM "r.rolsuper" (WHERE r.rolbypassrls AND pg_has_role(...))
+$ psql -U postgres -d critico_i2 -Atc "SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname='postgres'"   → postgres|t|t
+mutante sob postgres  → RECUSA [c2_bypass…; postgres|t|t|t]
+mutante sob c2_super2 → RECUSA [c2_bypass…; postgres|t|t|f]      (superusuário é "membro" de todo papel; o bootstrap tem BYPASSRLS)
+mutante sob c2_clean  → PASSA
+# A2 — mutante literal "WHERE rolname = 'postgres'": postgres RECUSA · c2_super2 RECUSA · c2_clean RECUSA
+#      variante por nome "…AND current_user = 'postgres'": postgres RECUSA · c2_super2 PASSA · c2_clean PASSA
+# reuso do client após $disconnect (PrismaPg): "reuso após $disconnect: OK 2"  (T5/T6 podem compartilhar client)
+# T13 — gerador verbatim numa cópia FORA da árvore do repo ($SP/t13-XXXX, sem node_modules acima):
+Error: Cannot find module 'typescript'        ec=1        (createRequire(<alvo>/package.json), l.766-767)
+$ grep -n -E 'tmp|mkdtemp|cp\(|copy|spawn|execFile' tests/db-catalog-write-guard.test.ts   → (vazio: o precedente não usa diretório temporário)
+# A7/A8 — semente do Apêndice B: occurred_at = day para os 5 eventos (l.1136); date = 2026-09-15 para os 2 agregados (l.1138)
+$ node -e '…concatenação A,A,A,B,B com o mesmo occurredAt…'  → "sem reordenar (mutante) passa na asserção de ordem? true"
+```
+
+| A | Mutação declarada no plano | Existe (algum teste proposto fica vermelho)? | Evidência |
+|---|---|---|---|
+| A1 | apagar `r.rolsuper` | **NÃO** — T6 (postgres) e T7 (super renomeado) continuam RECUSA | acima; mutante equivalente em qualquer cluster cujo bootstrap tenha `BYPASSRLS` (padrão do `initdb`) → **F11** |
+| A2 | "trocar por `WHERE rolname = 'postgres'`" | sim, mas pelo **T5/G2** (papel limpo passa a ser recusado), não pelo T7 | acima → N6 |
+| A3 | consulta ingênua | **sim** (T8) | item 2: ingênua `f|f` para todo membro; trava RECUSA |
+| A4 | remover `$disconnect`; logar a URL | sim — `$disconnect` pelo **espião do T4** (não pelo T9: o processo sai mesmo assim, 11,5 s); URL pelo T9 se ele varrer os dois caminhos de log | item 4.3 → N4 |
+| A5 | default de produção → `skip` | **NÃO** | item 4.5 → **F9** |
+| A5 | apagar o gate do `superRefine` / aceitar 3º valor | sim (T1 / T3) | mecanismo: `envSchema.safeParse` |
+| A6 | chave obrigatória | sim, mas por explosão do import (`ZodError`), não pela lista derivada; e o número é 28, não 22 | item 4.4 → **F10** |
+| A7 | remover `setTenantRlsContext` do laço | sim (soma 0 ≠ 5; e o canário) | R1 do §0.5 |
+| A7/A8 | remover a reordenação | **NÃO** com a semente do Apêndice B (todos os `occurredAt`/`date` iguais ⇒ a concatenação já "está ordenada") | acima → **F12** |
+| A9 | "idem A7" | sim, se o teste rodar de fato sob o papel efêmero; **sem** vermelho-controle exigido | N6 |
+| A10 | apagar `deleteMany`; duas transações | sim — B7/B8 do precedente, com proxy que atravessa `$transaction` (`o6r06-allocation-basis-rls-db.test.ts:600-660`) | lido |
+| A11 | remover o canário | sim — mesmo proxy (B9/B11 do precedente, l.229-240, 359-370) | lido |
+| A12 | sítio cru inserido | **impossível** de ficar verde no head (sítio 7) e **cego** a 16/17 formas | item 1 → **F1**, **F2**, **F14** |
+| A13 | `api.DATABASE_URL` → `postgres` | sim, **se** a trava estiver fiada; as mutações de fiação passam no mesmo smoke | item 4.5 → F9 |
+| A14 | omitir `NOBYPASSRLS` | sim (T14, com `psql`; runner `ubuntu-24.04` traz psql — HIPÓTESE, fonte https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md). O fallback "o mesmo SQL pelo Prisma cru" (§8 T14) é inexequível: `:'role'`/`:"db"` são sintaxe do `psql` | item 3 → F6, F7 |
+| A15 | — (documental) | sem mutação | → N7 |
+| A16 | — | sem mutação (existe uma: "fechar `P-INFRA-RLS` no PR" — mas não está escrita) | → N7 |
+
+Veredito parcial: **A1, A5 (default), A7/A8 (ordem), A12 não têm mutação que os derrube** pelo mecanismo proposto; A13 só pega a mutação que ele nomeia. T12 com "vermelho-controle no head-base" (C3 item 2) fica vermelho por **motivo errado**: `RlsPrismaCloudChargeRepository` não existe em `origin/main` (import falha), então o controle não prova a propriedade (N6).
 
 ## Item 6 — Outras premissas (contagens, linhas, P-a…P-p, §6×§5, §9)
 
-EM APURAÇÃO
+```
+P-a  $ git grep -n -i -E 'rolbypassrls|rolsuper|BYPASSRLS' origin/main -- src | wc -l   → 8 linhas (10 ocorrências); 7 comentários + 1 executável (login-readiness.ts:202)
+     plano: "12 linhas: 10 comentários; 2 executáveis (202-204)"                         → número não reproduz; conclusão (nada impõe a postura) se sustenta
+P-f  $ psql … "SELECT string_agg(relname…) … NOT relforcerowsecurity"
+     _prisma_migrations, cloud_charge_calculation_runs, cloud_charge_rules, cloud_cost_allocation_runs, cloud_cost_imports, cloud_cost_line_items, permissions, role_permissions, tenants
+     (o plano lista 6 + "…"; faltam permissions, role_permissions — sem efeito no remédio)
+P-k  reproduz (hits = nomes de job impound.notify-due e a coluna `SET role = …`); setval/nextval = 0
+P-m  $ laço sobre refs/remotes/origin × fronteira do bloco  → nenhum ramo toca os arquivos (reproduz)
+P-n  catálogo 13 · DDL 8   (reproduz)
+P-p  raiz = f4ef511 (reproduz)
+§8   287 tests/*.test.ts · 33 -db (reproduz) · o6r06-usage-atomic-db 15/15 · o6r06-allocation-basis-rls-db 10/10 no meu cluster
+     baseline N = 4 omite tests/rls-tenant-isolation.test.ts, que grava/lê cloud_usage_events, cloud_usage_daily_aggregates,
+     tenant_cloud_cost_allocations e tenant_cloud_charges (l.434-519, 836-921) sob papel NOSUPERUSER criado na l.44
+§9   Kpis/kpis-latest.json @ origin/main: blocks_completed 168 · backend_tests 3052/3054 · mvp_demo 99 · mvp_vendavel 88 (reproduz); Kpis/kpis-history.md existe
+§6×§5 todos os arquivos do §5 cabem no PERMITIDO; agent-orchestration/controle/pendencias-indice.md existe
+§2.2 CloudChargeService depende do TIPO CloudChargeRepository (cloud-charge.service.ts:35; cloud-charge.repository.ts:21-38) — reproduz
+CE-G2 platform-permissions.ts:15, platform.routes.ts:45, cloud-usage.routes.ts:12-17 — reproduzem; setTenantRlsContext usa set_config(…, true) (rls.ts:26)
+Blind spots × estado de HOJE: gerador com `updateManyAndReturn` no OPS → L1 710 (+68), L2b idêntico (7) ; linhas SOB-CONTEXTO com receptor raiz = 0 ;
+     instanciações cruas de classes Prisma* fora do L2 (authority-*, portal-*, financial-period-close…) → todos os acessos FORCE delas estão sob withTenantRls/$transaction+setter.
+     ⇒ os pontos cegos do gerador (F2–F4) não escondem vazamento EXISTENTE; eles tornam o guard (A12) incapaz de pegar REGRESSÃO.
+```
+Veredito parcial: premissas numéricas quase todas reproduzem; P-a e o baseline N têm números errados (**nota** N8).
+
+**6.2 — a trava julga `current_user`; o escape por `SET ROLE` é decidido por `session_user`.**
+```
+$ PGOPTIONS='-c role=c2_clean' psql -U postgres -d critico_i2
+identidade|postgres|c2_clean          (session_user | current_user)
+trava|0                               → PASSA
+linhas sem GUC|0
+SET ROLE NONE;  → apos SET ROLE NONE|postgres|postgres|3     (3 linhas de t_force sem GUC)
+# pelo caminho do APP (PrismaClient + PrismaPg, URL …/critico_i2?options=-c%20role%3Dc2_clean), $S/options-url.mts:
+URL com options=-c role=c2_clean → {"s":"postgres","c":"c2_clean"} | trava: PASSA
+mesma conexão, SET LOCAL ROLE NONE → {"c":"postgres","n":3}
+```
+Uma `DATABASE_URL` cujo **login** é superusuário, com `options=-c role=<papel limpo>`, sobe com a trava verde e escapa de RLS com um comando. O §2.1(a) formaliza a propriedade sobre `current_user`; quem decide se a sessão pode `SET ROLE` (inclusive `SET ROLE NONE`) é `session_user`. O §11 passo 5 ("A trava é a prova: o app sobe ⇒ o papel não escapa de RLS") fica falso nessa configuração — e ela é exatamente a "solução" tentadora para um provedor que só entrega um usuário admin (F8). Nenhum A/T a cobre. Veredito parcial: achado **F13**.
+
+**6.3 — precedente cego (pré-existente).** O teste que o E2 manda espelhar (`tests/o6r07b-scanner-failclosed.test.ts` M-B7.1, l.49-57) não prende o default do export (item 4.5: mutante 13/13 verde). Origem: `git log --diff-filter=A … -- tests/o6r07b-scanner-failclosed.test.ts` → `fe2748c 2026-09-06` (#380, B-O6R-07b); o default no `env.ts` nasce no mesmo commit. **Pré-existente** → P1 (não reprova este bloco; o dono é o B-O6R-07b/segurança).
 
 ---
 
