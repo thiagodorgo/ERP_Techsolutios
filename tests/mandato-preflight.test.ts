@@ -1724,3 +1724,248 @@ test("[F-0] guarda do guard: zero leitura da FONTE do artefato, e com o `.sh` au
   const presente = roda(mandato("f0-controle", ["- x, medido por: true"]));
   assert.match(presente.out, /PRE-VOO OK/);
 });
+
+// =================================================================================================
+// CICLO 3 -- §14.18 do plano (Dev-T-6, passo T7). A E4 do pre-voo (rodada A, tripla
+// faa408c8/3d875a54/37549262) terminou com 16 NAO-COBERTOS. Treze ganham caso aqui, UM POR PONTO,
+// cada um com a fixture que o planejador mediu (pristino x mutante DIFERE); 245, 318 e 336 sao
+// EQUIVALENTES (arquivo proprio, do Dev-S-2); 161 e TIMEOUT (§14.15) e nunca entra em `--only`.
+// SO ADICOES -- as premissas (b)-(d) do lema do §14.18(3): nenhuma linha acima foi tocada, nenhuma
+// declaracao de topo e repetida, e nada roda no carregamento do modulo (os shims novos nascem DENTRO
+// dos casos). Cada caso nomeia a linha do artefato (blob faa408c8) que discrimina e o operador da
+// ferramenta de mutacao que o deixa vermelho.
+// =================================================================================================
+
+/** [F-2d] cerca INTEIRA fora das secoes, antes de `## MEDIDO`: abre l.1, conteudo l.2, VAZIA l.3, fecha l.4. */
+function cercaForaDasSecoes(nome: string): string {
+  return bruto(nome, [
+    "```",
+    "conteudo",
+    "",
+    "```",
+    "",
+    "## MEDIDO",
+    "",
+    "- x, medido por: true",
+    "",
+    "## HIPOTESE",
+    "",
+    "- y. derruba com: true",
+  ]);
+}
+/** A listagem da checagem 2 (recuo de 11 colunas + `N: texto`), como pares [linha, texto]. */
+function foraListadas(out: string): Array<[number, string]> {
+  const pares: Array<[number, string]> = [];
+  for (const m of out.replace(/\r/g, "").matchAll(/^ {11}(\d+): (.*)$/gm)) pares.push([Number(m[1]), m[2] ?? ""]);
+  return pares;
+}
+/** Precondicao de fixture: o que ha em `RAIZ/<rel>` -- "arquivo", ou o codigo do erro (ENOENT, EISDIR). */
+function tipoNaRaiz(rel: string): string {
+  try {
+    readFileSync(path.join(RAIZ, rel));
+    return "arquivo";
+  } catch (e) {
+    return String((e as { code?: unknown }).code ?? "sem-codigo");
+  }
+}
+
+// --- [F-2d] cerca fora das secoes: a listagem de conteudo fora nomeia abertura, conteudo e fechamento,
+// e NAO a linha vazia. Um caso por ponto do artefato; o REJ e o mesmo nos 4 mutantes -- so a LISTAGEM
+// muda, e e ela que cada caso cobra.
+test("[F-2d/165] cerca fora das secoes: a ABERTURA (l.1) e listada como conteudo fora — ⇄ M10 na l.165 do artefato", () => {
+  const r = roda(cercaForaDasSecoes("t6-2d-165"));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /linha\(s\) de conteudo fora de MEDIDO\/HIPOTESE:/, r.out);
+  assert.deepEqual(
+    foraListadas(r.out).filter(([n]) => n === 1),
+    [[1, "```"]],
+    `a linha que ABRE a cerca fora das secoes e conteudo fora, e tem de ser nomeada\n${r.out}`,
+  );
+});
+
+test("[F-2d/182] cerca fora das secoes: o FECHAMENTO (l.4) e listado como conteudo fora — ⇄ M10 na l.182 do artefato", () => {
+  const r = roda(cercaForaDasSecoes("t6-2d-182"));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /linha\(s\) de conteudo fora de MEDIDO\/HIPOTESE:/, r.out);
+  assert.deepEqual(
+    foraListadas(r.out).filter(([n]) => n === 4),
+    [[4, "```"]],
+    `a linha que FECHA a cerca fora das secoes e conteudo fora, e tem de ser nomeada\n${r.out}`,
+  );
+});
+
+test("[F-2d/189] cerca fora das secoes: a linha VAZIA do corpo (l.3) NAO e listada; a de conteudo (l.2) e — ⇄ M4 na l.189 do artefato", () => {
+  const r = roda(cercaForaDasSecoes("t6-2d-189"));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  const listadas = foraListadas(r.out);
+  assert.deepEqual(listadas.filter(([n]) => n === 3), [], `linha vazia nao e conteudo: lista-la troca a causa\n${r.out}`);
+  assert.deepEqual(listadas.filter(([n]) => n === 2), [[2, "conteudo"]], `o conteudo da cerca tem de ser o listado\n${r.out}`);
+});
+
+test("[F-2d/190] cerca fora das secoes: o CONTEUDO do corpo (l.2) e listado como conteudo fora — ⇄ M10 na l.190 do artefato", () => {
+  const r = roda(cercaForaDasSecoes("t6-2d-190"));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /linha\(s\) de conteudo fora de MEDIDO\/HIPOTESE:/, r.out);
+  assert.deepEqual(
+    foraListadas(r.out).filter(([n]) => n === 2),
+    [[2, "conteudo"]],
+    `a linha de conteudo DENTRO da cerca fora das secoes tem de ser nomeada\n${r.out}`,
+  );
+});
+
+// --- [F-1e-linha] / [F-1f]: secao engolida por cerca, com OUTRA linha antes dela na cerca -- a checagem 1
+// nomeia a linha EXATA do cabecalho engolido, nao a primeira linha da cerca. O rotulo do §14.18 para o
+// caso de MEDIDO e `[F-1e]`, mas `[F-1e]` ja nomeia o caso de secao VAZIA (acima, ciclo 3 -- E3); este
+// ganha o sufixo `-linha` para que nenhum rotulo nomeie dois casos.
+test("[F-1e-linha] `## MEDIDO` engolido por cerca com outra linha antes dele: a checagem 1 nomeia a l.7 EXATA — ⇄ M4 na l.187 do artefato", () => {
+  const r = roda(
+    verbatim("t6-1e-medido-engolido", ["# Mandato", "", "## HIPOTESE", "- h. derruba com: true", "```", "linha", "## MEDIDO", "outra", "```"]),
+  );
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(
+    r.out,
+    /falta a secao '## MEDIDO'[^\n]*DENTRO de cerca, l\.7(?!\d)/,
+    `o cabecalho engolido esta na l.7; a l.6 e a outra linha da cerca\n${r.out}`,
+  );
+});
+
+test("[F-1f] `## HIPOTESE` engolido por cerca com outra linha antes dele: a checagem 1 nomeia a l.7 EXATA — ⇄ M4 na l.188 do artefato", () => {
+  const r = roda(
+    verbatim("t6-1f-hipotese-engolido", ["# Mandato", "", "## MEDIDO", "- x, medido por: true", "```", "linha", "## HIPOTESE", "outra", "```"]),
+  );
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(
+    r.out,
+    /falta a secao '## HIPOTESE'[^\n]*DENTRO de cerca, l\.7(?!\d)/,
+    `o cabecalho engolido esta na l.7; a l.6 e a outra linha da cerca\n${r.out}`,
+  );
+});
+
+// --- [F-AGG-9] a cerca como PRIMEIRA coisa da secao abre a unidade (I19 + checagem 3). Os outros casos de
+// I19 tem uma linha de prosa antes da cerca, e ai a unidade ja estava aberta quando a cerca chegou.
+test("[F-AGG-9] cerca como PRIMEIRA coisa de MEDIDO, sem `medido por:`: exatamente 2 REJ (I19 + unidade sem token), ec=1 — ⇄ M10 na l.393 do artefato", () => {
+  const r = roda(mandato("t6-agg9-cerca-primeira", ["```", "saida colada", "```"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 2, r.out);
+  assert.match(r.out, /unidade de MEDIDO sem 'medido por: <comando>'[^\n]*l\.3:/, `a unidade que a cerca abre (l.3) cai pela checagem 3\n${r.out}`);
+  assert.match(r.out, /saida colada sem comando[^\n]*l\.3:/, `e pela I19: cerca numa unidade sem comando\n${r.out}`);
+});
+
+// --- [F-7j] / [F-7k]: a colagem da ferramenta, por PR, com o refs consultado UMA vez por N ------------
+test("[F-7j] o refs e consultado UMA vez por PR por documento: shim com ESTADO, 2 blocos iguais -> 2 COLAGEM, 0 REJ — ⇄ M3 na l.249 do artefato", () => {
+  // Shim com ESTADO: a 1a chamada devolve o estado A, as seguintes o estado B (o head "andou"). O
+  // contador vive no `dir` deste guard; o caminho vai com `/` porque e o bash que o le e escreve.
+  // O corpo vai como ARRAY de linhas (nenhuma linha nova em coluna 0 fora de test(/function).
+  const contador = path.join(dir, "bin", "refs-estado.cont").replace(/\\/g, "/");
+  const estadoA = "c".repeat(40);
+  const estadoB = "d".repeat(40);
+  const refs = shim(
+    "refs-estado.sh",
+    [
+      "#!/usr/bin/env bash",
+      "set -u",
+      `C="${contador}"`,
+      `k=$(cat "$C" 2>/dev/null || echo 0); k=$((k+1)); printf '%s' "$k" > "$C"`,
+      `if [ "$k" -eq 1 ]; then H="${estadoA}"; else H="${estadoB}"; fi`,
+      `if [ "\${2:-}" = "--sha-only" ]; then printf '%s\\n' "$H"; exit 0; fi`,
+      `printf '# refs do PR #%s — GERADO por scripts/mandato-refs.sh, para COLAR no mandato\\n' "\${1:-}"`,
+      `printf '# gerado em: %s\\n' "$$"`,
+      "printf '\\n'",
+      "printf 'ramo:            fix/x\\n'",
+      `printf 'head do PR:      %s\\n' "$H"`,
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  writeFileSync(contador, "0", "utf8");
+  const corpo = saidaDoRefs("712", refs); // a colagem e GERADA da 1a chamada: estado A
+  assert.ok(corpo.some((l) => l.includes(estadoA)), `a colagem nao nasceu do estado A\n${corpo.join("\n")}`);
+  const bloco = ["  ```", ...corpo.map((l) => (l === "" ? "" : `  ${l}`)), "  ```"];
+  writeFileSync(contador, "0", "utf8"); // a 1a chamada do PRE-VOO ve o MESMO estado A
+  const r = roda(mandato("t6-7j-paste2", [UNIDADE_COLAGEM("712"), ...bloco, "", UNIDADE_COLAGEM("712"), ...bloco]), undefined, refs);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.equal((r.out.match(/^COLAGEM {4}/gm) ?? []).length, 2, `os DOIS blocos conferem com a MESMA consulta\n${r.out}`);
+  assert.doesNotMatch(r.out, /DESATUALIZADO/, r.out);
+  assert.equal(readFileSync(contador, "utf8").trim(), "1", "o pre-voo consultou o refs mais de uma vez para o MESMO N");
+  // controle NA MESMA rodada: o shim tem estado de verdade -- a chamada seguinte ja devolve o B. Sem
+  // isto, um contador que nao grava deixaria o caso verde tambem sob o mutante (sonda fraca).
+  assert.ok(saidaDoRefs("712", refs).some((l) => l.includes(estadoB)), "o shim com estado nao mudou de estado");
+});
+
+test("[F-7k] refs MORTO para o N de DOIS blocos: a REJ nomeia a indisponibilidade de #666 em cada um e NUNCA 'NAO bate'/'DESATUALIZADO' — ⇄ M7 na l.255 do artefato", () => {
+  const bloco = colagem("701").map((l) => l.replace("#701", "#666"));
+  const r = roda(
+    mandato("t6-7k-paste2-morto", [UNIDADE_COLAGEM("666"), ...bloco, "", UNIDADE_COLAGEM("666"), ...bloco]),
+    "393",
+    REFS_COMPLETO,
+  );
+  assert.equal(r.status, 1, r.out);
+  const indisponiveis = r.out.match(/^REJEITADO {2}l\.\d+-\d+: referencias indisponiveis para #666 \(mandato-refs\.sh ec=1\)/gm) ?? [];
+  assert.equal(indisponiveis.length, 2, `uma REJ de indisponibilidade por bloco\n${r.out}`);
+  assert.doesNotMatch(
+    r.out,
+    /NAO bate|DESATUALIZADO/,
+    `com o refs morto nada foi comparado: acusar "colagem desatualizada" e culpar o mandato pela ferramenta\n${r.out}`,
+  );
+});
+
+// --- [F-6g] / [F-6h] / [F-6i]: checagem 6, os caminhos LEGITIMOS que o artefato aceita por um ramo so ----
+test("[F-6g] diretorio que existe SO sob mobile/flutter_app/ (`lib/core/sync/`): OK — ⇄ M3 na l.514 do artefato", () => {
+  // precondicao: se `lib/core/sync/` existisse na RAIZ, o caso passaria sem atravessar a l.514.
+  assert.equal(tipoNaRaiz("lib/core/sync"), "ENOENT", "precondicao: `lib/core/sync` nao pode existir na raiz");
+  assert.equal(tipoNaRaiz("mobile/flutter_app/lib/core/sync"), "EISDIR", "precondicao: o diretorio existe sob o app Flutter");
+  const r = roda(mandato("t6-6g-dir-flutter", ["- `lib/core/sync/` medido por: true"]));
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  // controle NA MESMA rodada: diretorio que nao existe em nenhuma das duas raizes cai.
+  const c = roda(mandato("t6-6g-controle", ["- `lib/core/naoexiste-8851/` medido por: true"]));
+  assert.equal(c.status, 1, c.out);
+  assert.equal(c.rejeicoes, 1, c.out);
+  assert.match(c.out, /diretorio citado nao existe: lib\/core\/naoexiste-8851\//, c.out);
+});
+
+test("[F-6h] `HEAD:<dir>/` existente (`HEAD:docs/revisoes/SAN3/`): OK — ⇄ M3 na l.515 do artefato", () => {
+  const r = roda(mandato("t6-6h-rev-dir", ["- `HEAD:docs/revisoes/SAN3/` medido por: true"]));
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  // controle NA MESMA rodada: `HEAD:` na frente de um diretorio que nao existe nao o salva.
+  const c = roda(mandato("t6-6h-controle", ["- `HEAD:docs/revisoes/naoexiste-8852/` medido por: true"]));
+  assert.equal(c.status, 1, c.out);
+  assert.equal(c.rejeicoes, 1, c.out);
+  assert.match(c.out, /diretorio citado nao existe: HEAD:docs\/revisoes\/naoexiste-8852\//, c.out);
+});
+
+// [F-6i] vira DOIS casos, um por ponto: a l.520 decide ENTRAR no ramo da revisao (a rev tem de resolver);
+// a l.523 decide pela EXISTENCIA do caminho sob a rev que resolveu, na raiz OU sob o app Flutter.
+// `HEAD:package.json` NAO serve: sem `/` o token nao e caminho (I13) e nao chega a ser conferido.
+test("[F-6i/520] `HEAD:<caminho/com/barra>` existente: OK, e a MESMA citacao com rev que nao resolve cai — ⇄ M3 na l.520 do artefato", () => {
+  const r = roda(mandato("t6-6i-520", ["- li `HEAD:scripts/mandato-refs.sh`, medido por: true"]));
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  const c = roda(mandato("t6-6i-520-controle", ["- li `naoexiste-rev:scripts/mandato-refs.sh`, medido por: true"]));
+  assert.equal(c.status, 1, c.out);
+  assert.equal(c.rejeicoes, 1, c.out);
+  assert.match(c.out, /caminho citado nao existe: naoexiste-rev:scripts\/mandato-refs\.sh/, c.out);
+});
+
+test("[F-6i/523] sob rev que resolve, a EXISTENCIA decide — na raiz e sob mobile/flutter_app/: OK; inexistente cai — ⇄ M7 na l.523 do artefato", () => {
+  const r = roda(
+    mandato("t6-6i-523", [
+      "- li `HEAD:scripts/mandato-refs.sh`, medido por: true",
+      "- e `HEAD:lib/core/sync/sync_action_store.dart`, medido por: true",
+    ]),
+  );
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  const c = roda(mandato("t6-6i-523-controle", ["- li `HEAD:scripts/naoexiste-8853.sh`, medido por: true"]));
+  assert.equal(c.status, 1, c.out);
+  assert.equal(c.rejeicoes, 1, c.out);
+  assert.match(c.out, /caminho citado nao existe: HEAD:scripts\/naoexiste-8853\.sh/, c.out);
+});
