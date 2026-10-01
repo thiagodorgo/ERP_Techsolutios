@@ -149,3 +149,114 @@ Leitura paralela que muda o gerador v3: `src/modules/auth/services/local-auth-lo
 
 ### HIPOTESE
 - H2b-a: embrulhar cada `EXECUTE` que carrega a senha num bloco `BEGIN … EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION '<msg sem senha>: %', SQLERRM; END` descarta o CONTEXT interno (a re-emissao tem contexto proprio, "at RAISE"), e `\set password` por backtick (`printf` builtin do sh) tira a senha do argv — derruba com os mesmos tres `grep -c` ≠ 0 no §4.
+
+## §2-ter — Queda e retomada (P6/P3) (2026-10-01T23:26Z)
+
+| agente | modelo (pin/herdado) | mandato | fase da morte | erro | custo do redo |
+|---|---|---|---|---|---|
+| `planejador-b-san3-05-v3` | Fable (pin do frontmatter) | 1 (plano v3 + relatorio) | ~22:5x UTC, com as medicoes dos §3–§5 executadas e gravadas SO no scratch (relatorio ate §2-bis empurrado em `de70f2d`) | 429 — limite de sessao do Fable; renovou 23:20 UTC | ZERO redo de medicao: o scratch sobreviveu (`ls $SCR` → gerador-v3.mjs md5 `81d9259571391eded68255391a99fb61`, `v3/db-runtime-role.sh` `810c1c4a2552665d4947bf0ef4e93670`, `v3/guard-v3.sql` `36650de53be8504c76deef74ecc78811`, saidas `gen-v3-*.txt`, `v3/cenarios*.out`, `boot-head.out`, `apxB.out`); o que se perdeu foi o PROCESSO do cluster (`pgrep -c -x postgres` → 0; `postmaster.pid` obsoleto em disco) |
+
+Retomada (mesma identidade, mesmo mandato): `git rev-parse HEAD` = `de70f2d` = `origin/docs/plano-b-san3-05`; `git status --short | wc -l` → 0; worktree `/home/user/wt-plan-v3` em `de70f2d`, `node_modules` com 222 entradas, `.prisma/client/index.d.ts` e `.bin/tsx` presentes. O cluster e religado em §6 (prova nova da porta) e um subconjunto dos cenarios e re-executado la; as secoes §3–§5 abaixo relatam as medicoes feitas ANTES da queda, com os artefatos nomeados — nada e herdado de outra identidade.
+
+## §3 — F2 (bloqueia): gerador v3 SEMANTICO — 26/26 formas vermelhas, "sumida" vermelha, inventario do head (2026-10-01T22:35Z–22:58Z)
+
+### MEDIDO
+
+Gerador v3 = `$SCR/gerador-v3.mjs` (353 linhas, md5 `81d9259571391eded68255391a99fb61`; vai verbatim para o Apendice A do plano v3). Mecanismo, em uma linha cada: delegate pelo TIPO (`checker.getResolvedSignature(call).declaration` dentro de uma interface `*Delegate` do client gerado, com 2a tentativa pelo tipo da expressao — cobre o tipo estrutural `PrismaChecklistClient` de `checklist-prisma.repository.ts:72`); classe pelo SIMBOLO/TIPO (`checker.getTypeAtLocation(new.expression).symbol` → `ClassDeclaration`; heranca pelo simbolo da base; `await import()` desestruturado resolvido pelo export do modulo); `$transaction` so absolvido se a PRIMEIRA instrucao do callback e `await setTenantRlsContext(<o mesmo tx>, …)` (AST + identidade de simbolo); envoltorio confiado so pelo SIMBOLO declarado em `src/database/rls.ts` ou o `forEachTenantInOneTx` de `cloud-cost-allocation-prisma.repository.ts:340`; receptor classificado pela DECLARACAO do simbolo raiz; `any`/`unknown` com metodo de delegate → `TIPO-DESCONHECIDO` (suspeito); fixtures como ARQUIVOS VIRTUAIS (`--mutant`, `--override`) num CompilerHost proprio — sem copia de `src`, sem symlink de `node_modules`; L2 em lista de trabalho (classe que so REPASSA o campo injetado tambem e injetada; 2 rodadas no head); transitividade em L2 (`new K(this.<campo de J>)` so e contexto se TODA instanciacao de J em `src` o for).
+
+```
+$ cd /home/user/ERP_Techsolutios && PATH=/opt/node20/bin:$PATH node $SCR/gerador-v3.mjs .     (21 s; stderr vazio apos o conserto do bloco solto de OPS)
+# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · OPS(derivados)=17 · arquivos no programa=777 (virtuais=0) · erros sintaticos=0
+# L1: call-sites sobre tabelas FORCE (+ RAW) = 720 · por como: {"opaco":10,"literal":104,"semantico":578,"sintatico":28}
+# L1 por classificação: {"PARAMETRO":22,"INJETADO":646,"$TRANSACTION-SEM-SETTER-PROVADO":6,"SOB-CONTEXTO":45,"CRU":1}
+# L2: classes com executor injetado = 72; instanciações achadas = 452; rodadas L2 = 2
+# L2 por classificação do argumento: {"SOB-CONTEXTO":416,"INJETADO-TRANSITIVO:SUSPEITO-ACIMA":2,"CRU":7,"PARAMETRO":20,"$TRANSACTION-SEM-SETTER-PROVADO":7}
+# INVENTÁRIO SUSPEITO (L1+L2): 53 chaves · sha1=5c566532986c533416e880e70350fb5ea692f9e2
+```
+(720 call-sites = o mesmo total da v2, agora 578 resolvidos pelo tipo; 452 instanciacoes ≈ 451 da v2 + `new RlsPrismaCloudUsageRepository(prisma)` de `cloud-usage-prisma.repository.ts:204`, que a v2 nao via porque a classe so repassa o client.) OPS derivado do programa: 114 interfaces `*Delegate` em `node_modules/.prisma/client/index.d.ts` → 17 metodos (medido em separado: `ifaces 114 OPS 17`).
+
+Inventario do head = `$SCR/gen-v3-head-inv.txt` (53 chaves, sem numero de linha). Diferencas de classificacao em relacao a v2, por leitura do `--all` (`$SCR/gen-v3-head-all.txt`):
+- `$TRANSACTION-SEM-SETTER-PROVADO` = 6 sitios L1 (v2: 2): `identity-link.service.ts:323,362` (`unlink`), `:412` (`handlePasswordChange`), `prisma-core-saas.service.ts:368` (`listTenantsForIdentity`), `work-order-prisma.repository.ts:525,541` (`assign`) — a v2 absolvia os quatro primeiros por REGEX de texto (`CONTEXT_SETTERS.test(before)`); a v3 exige setter-primeiro no mesmo `tx`. Ficam CONGELADOS com nota de leitura (a junta C3 le os 6).
+- `PARAMETRO` = 22 L1 + 20 L2 (v2: `TX-SEM-ENVOLTORIO?` 12+14 e `INJETADO-SEM-CLASSE` 8): inclui `auth-session.service.ts` e `session-admin.service.ts` (`tx de callback de runWithTenantContext`) — o runner injetado cujo default e `work()` (§2-bis). Congelados.
+- `CRU` L1 = 1 (`health.routes.ts:115`, `$queryRawUnsafe` opaco via `const { prisma } = await import(…)`); `CRU` L2 = 7 (as 4 fabricas sem argumento de `prisma-core-saas.store.ts`, as fabricas cruas de `cloud-charges` e `cloud-cost-allocation`, e `new RlsPrismaCloudUsageRepository(prisma)`); `INJETADO-TRANSITIVO:SUSPEITO-ACIMA` = 2 (`new PrismaCloudUsageRepository(this.prismaClient)` ×2 — os sitios 1 e 2 do remedio).
+- `TIPO-DESCONHECIDO` = 0 no head.
+
+Fixtures — 17 da r1 (Apendice D, extraidas) + 9 da r2 (escritas por mim) num SO programa (`--mutant` ×26; 24,6 s):
+```
+$ node $SCR/gerador-v3.mjs . --mutant fix/Ma_alias.ts … --mutant novas/N09_setter_em_comentario.ts | …  → 78 chaves
+$ chaves fora de src/modules/zz-mut/ == inventario do head (sem linhas em branco)? → SIM   (as fixtures nao alteram o veredito de nenhum sitio do head)
+$ por fixture (chaves atribuidas ao proprio arquivo): 26 × VERMELHO (+1 cada; detalhe em $SCR/v3-fixtures-result.txt)
+N01 ev → CRU (via desestruturacao) · N02 ev → CRU (via alias) · N03 new PrismaCloudUsageRepository(prisma) CRU (namespace) · N04 idem (import renomeado) ·
+N05/N06/N09 tx.cloudUsageEvent.findMany → $TRANSACTION-SEM-SETTER-PROVADO · N07 d.findMany → PARAMETRO(d) · N08 new Sub extends PrismaCloudChargeRepository(prisma) → CRU
+```
+"Sumida" (fabrica do sitio 7 alterada por fora, `--override …cloud-cost-allocation-prisma.repository.ts=<copia com 'prisma as never'>`): `novas=1 sumidas=1` → VERMELHO (a chave `new PrismaCloudCostAllocationRepository(prisma) CRU` some e nasce `(prismaasnever)`).
+
+### HIPOTESE
+- H3-a: o T13 do plano v3 (gerador em processo filho, 2 programas: head+26 virtuais e head+override) roda em < 60 s no runner — derruba com `time node --test … tests/san3-05-acessos-de-plataforma-guard.test.ts` > 60 s (aqui: 21 s + 25 s).
+- H3-b: nenhum sitio do head muda de classe entre `origin/main` (`5bcdcc58`) e o head da entrega fora dos arquivos do PERMITIDO — derruba com `comm` do inventario do head da entrega contra o congelado mostrando chave nova fora de `cloud-usage`/`cloud-charges`/`src/database`.
+
+Veredito parcial §3: F2 RESPONDIDO por troca de mecanismo (nome/texto → tipo/simbolo), com 26/26 + sumida vermelhas e o inventario do head reproduzivel (53 chaves, sha1 `5c566532…`). O residual que resta e SEMANTICO (envoltorio confiado que nao sete GUC; `tenantId` errado) — nao e forma; so a medicao dinamica o ve (§4 do plano: T10–T12 na superficie fechada de plataforma; B-ARNES-2 no resto).
+
+## §4 — F2-02 / F2-04 / F2-05 / F8 (script v3 do papel) e F2-07 / F13 (trava v3) — executados no cluster 54371 antes da queda (2026-10-01T22:40Z–23:05Z)
+
+### MEDIDO
+Script v3 = `$SCR/v3/db-runtime-role.sh` (115 linhas, md5 `810c1c4a2552665d4947bf0ef4e93670`; Apendice C do plano v3). Trava v3 = `$SCR/v3/guard-v3.sql` (md5 `36650de53be8504c76deef74ecc78811`; 8 ocorrencias de `session_user`; §2.2 do plano v3). Roteiros: `$SCR/v3/cenarios.sh` e `cenarios2.sh`; saidas integrais em `$SCR/v3/cenarios.out` e `cenarios2.out`. Senhas: aleatorias por cenario (`pw-v3-<cen>-<rand>`), nunca neste relatorio; `grep -c -F "<senha>"` e feito contra o terminal capturado e contra `/var/lib/postgresql/san3_05_plan_v3/server.log`.
+```
+(i')   postgres, banco v3_i5 (TEMPLATE erp_v3, 115 tabelas), papel novo erp_rt5 → ec=0 | erp_rt5|f|f|f|f|0|0|115 ; trava v3 sob erp_rt5 → 0 linhas ; DML 115/115
+(i)/(ii) v3_i3: ec=0 ; 2a execucao com OUTRA senha → ec=0, snapshots (pg_roles, pg_default_acl, pg_auth_members, relacl) IDENTICOS ; pg_authid.rolpassword = 'SCRAM-SHA-256$…' e o verificador MUDOU (a senha fluiu pelo \set com backtick)
+(iii)  pre-existente SUPERUSER BYPASSRLS CREATEDB REPLICATION + membro de v3_bypass + dono de t_own FORCE → ec=3 "ainda escapa de RLS por 1 via(s): posse:erp_runtime … (MODO 3)" ; depois: true|true|true|true, membros=1 (NADA persistiu)
+(iii-b) OWNER TO postgres; de novo → ec=0 | f|f|f|f|0|0|2 ; pg_roles false|false|false|false, membros=0 (SUPERUSER/BYPASSRLS/REPLICATION/CREATEDB corrigidos; pertenca revogada)
+(iii-c) F2-04 cadeia v3_bypass → v3_mid → erp_runtime: trava ANTES → atributo|v3_bypass|f|t|f ; script → ec=0 ; membros diretos de erp_runtime DEPOIS = (nenhum) — o 1o salto (v3_mid) foi revogado; v3_mid segue membro de v3_bypass (1)
+(iii-d) F2-05 GRANT pg_execute_server_program TO erp_runtime: trava ANTES → atributo|pg_execute_server_program ; script → ec=0 e trava DEPOIS → 0 linhas
+(iii-e) F2-05 view de dono que escapa: CREATE VIEW v_rel (dono postgres) sobre t_force_v3 + GRANT SELECT TO erp_runtime → porta REAL: como erp_runtime sem GUC, t_force_v3 → 0 linhas, v_rel → 3 ; trava → view|postgres|t|t|f|1 ; script → ec=3 "1 via(s): view:v_rel … (MODO 6)" ; REVOKE SELECT ON v_rel → ec=0 ; trava → 0
+(vii)  F2-02 MODO 1 (executor v3_nocr sem CREATEROLE): ec=3 "MODO 1 — nao foi possivel criar o papel erp_rt_m1 (42501 permission denied to create role): o executor v3_nocr precisa de CREATEROLE — decisao de provedor" ; senha no terminal 0 · no server.log 0 · unico CONTEXT: "PL/pgSQL function inline_code_block line 9 at RAISE"
+(viii) F2-02 argv (shim psql que grava "$@"): ec=0 ; senha no argv 0 ; `-v password=` no argv 0
+(ix)   MODO 0: ALTER SYSTEM SET log_statement='all' → script ec=3 "MODO 0 — o servidor registra o texto de todo statement (log_statement=all, log_min_duration_statement=-1): a senha nova iria ao log…" ; senha no server.log 0 ; com DB_RUNTIME_ALLOW_LOG_ALL=1 → ec=0 e senha no server.log 1 (a exposicao que o dono ACEITA explicitamente) ; RESET → none
+(iv)   migrador NAO-super v3_mig (LOGIN CREATEROLE NOSUPERUSER NOBYPASSRLS, dono de v3_i4 e das 115 tabelas) cria erp_rt2 → ec=0 | erp_rt2|f|f|f|f|0|0|115 ; pg_has_role('v3_mig','erp_rt2','MEMBER WITH ADMIN OPTION') = t (ADMIN OPTION implicita do criador, PG16)
+(iv-b) MODO 2: erp_rt2 com BYPASSRLS (pelo super) → ec=3 "papel erp_rt2 tem BYPASSRLS e v3_mig nao pode remover (precisa de BYPASSRLS)" ; com REPLICATION → ec=3 "…tem REPLICATION… (precisa de SUPERUSER)"
+(iv-c) MODO 3 tabela alheia → ec=3 "tabela/sequencia public.t_alheia pertence a v3_outro e v3_mig nao pode conceder DML nela: ALTER ... OWNER TO v3_mig e rode de novo"
+(iv-d) F8/MODO 4: erp_rt3 LIMPO criado por postgres; v3_mig roda → ec=3 "MODO 4 — o papel erp_rt3 ja existe e v3_mig nao tem ADMIN OPTION sobre ele (foi criado por outro executor): use outro nome (DB_RUNTIME_ROLE) ou, com a credencial que o criou, GRANT erp_rt3 TO v3_mig WITH ADMIN OPTION…" ; senha no terminal 0 · server.log 0 (a v2 dava `permission denied to alter role` CRU com a senha no CONTEXT) ; apos o GRANT WITH ADMIN OPTION → ec=0 | erp_rt3|f|f|f|f|0|0|115
+(iv-e) MODO 5: GRANT v3_bypass4 TO erp_rt2 pelo super; v3_mig roda → ec=3 "MODO 5 — a pertenca de erp_rt2 a v3_bypass4 (que leva a papel que escapa de RLS) nao pode ser revogada por v3_mig (42501 permission denied to revoke role…)" ; REVOKE pelo super → ec=0
+(v)    CREATE TABLE t_depois por v3_mig DEPOIS → has_table_privilege(erp_rt2, DML)=t, has_sequence_privilege(USAGE)=t
+(vi)   trava v3 sob erp_rt2 em v3_i4 → 0 linhas
+(x)    entrypoint falso (set -Eeo pipefail; executa se -x, senao source), SEM senha: script direto ec=1 ; via entrypoint (exec) ec=1 ; via entrypoint (source, modo 644) ec=1 — a falha PROPAGA e o entrypoint morre (fail-closed), nos dois modos. [A 1a medicao mostrou "ec=0": artefato do meu arnes — `$(basename $f)` zerou `$?` antes do `ec=$?`; refeito sem substituicao de comando antes do `$?`.]
+```
+Trava v3 sob papeis (banco v3_i3; `t_force_v3` FORCE com 3 linhas; `v_rel` view do super sobre ela):
+```
+postgres → 12 linhas (atributo|postgres t|t|t, os 3 papeis de servidor, posse de tudo, view) · v3_super2 → 12 · v3_clean (sem SELECT na view) → 0 PASSA ·
+v3_member_direct/noinherit/chain/noset → atributo|v3_bypass (noset = falso positivo seguro, N1) · v3_app_ownermember → posse|v3_own|…|1 · v3_app_owner → posse|v3_app_owner|f|f|t|1 ·
+v3_read_all → view|postgres (pg_read_all_data NAO escapa pela tabela: count(*) t_force_v3 → 0; mas LE a view do super) · v3_repl → atributo|v3_repl|f|f|t + view · v3_prog → atributo|pg_execute_server_program + view · v3_viewer → view|postgres|t|t|f|1
+PORTAS REAIS (sem GUC): v3_prog `COPY d FROM PROGRAM 'psql … select tenant_id from t_force_v3'` → a,b,segredo-tenant-b-v3 · v3_viewer `SELECT count(*) FROM v_rel` → 3 · v3_app_ownermember: count(*) t_own2 → 0; `SET LOCAL ROLE v3_own; ALTER TABLE t_own2 NO FORCE ROW LEVEL SECURITY; SELECT count(*)` → 2 · v3_repl `pg_basebackup -U v3_repl -D … -Ft` → ec=0, base.tar 82M, `grep -a -c 'segredo-tenant-b-v3'` → 1 (apagado em seguida)
+```
+F13 + F2-07 — login X com `PGOPTIONS='-c role=v3_clean'`; semi-mutantes gerados por `sed` da trava v3 (mutA: so `current_user` na metade atributo; mutP: idem posse; mutV: idem view; `session_user` 8 → 7 em cada):
+```
+login postgres (o cenario unico do T8c da v2)   | orig: 12 | mutA: 4  | mutP: 9 | mutV: 11   ← os tres semi-mutantes SOBREVIVEM (superusuario e membro de tudo): confirma a critica
+login v3_mbyp (membro de BYPASSRLS, dono de nada) | orig: 1 (atributo|v3_bypass) | mutA: 0 PASSA ← mata mutA | mutP: 1 | mutV: 1 ; porta: `SET ROLE v3_bypass; SELECT count(*) FROM t_force_v3` → 3
+login v3_mown (membro do DONO v3_own)            | orig: 1 (posse|v3_own)        | mutA: 1 | mutP: 0 PASSA ← mata mutP | mutV: 1
+login v3_viewer (SELECT na view do super)         | orig: 1 (view|postgres)       | mutA: 1 | mutP: 1 | mutV: 0 PASSA ← mata mutV ; porta: `SET ROLE NONE; SELECT count(*) FROM v_rel` → 3
+```
+Apendice B da v2 (md5 extraido `6204643a81fb5d2305f09ff38b89f9de` = declarado), re-executado por mim no worktree contra `erp_v3`: `# 22 itens, 0 fora do esperado` (ec=0); limpeza `0 0 0 0` (papeis san3_05%, tenants san3-05-%, cloud_usage_events, tenant_cloud_charges).
+
+### HIPOTESE
+- H4-a: no PG16 gerenciado do Fly/RDS, `pg_has_role(current_user, <papel>, 'MEMBER WITH ADMIN OPTION')` e verdadeiro para o papel que o migrador CRIOU (como aqui) — derruba com o proprio script dando MODO 4 na 2a execucao pelo mesmo executor.
+- H4-b: `/proc/<pid>/environ` do psql e a unica exposicao residual da senha fora de `log_statement=all` — derruba com `grep -c <senha>` em qualquer outro artefato (argv, stdout, server.log) ≠ 0 nos cenarios acima.
+
+Veredito parcial §4: F2-02 RESPONDIDO (0/0/0 nas tres vias; MODO 0 fail-closed); F2-04 RESPONDIDO (1o salto revogado; MODO 5 nomeado); F2-05 RESPONDIDO (REPLICATION, 3 papeis de servidor e view de dono que escapa recusados pela trava e tratados pelo script — portas provadas reais); F8 RESPONDIDO (MODO 4 nomeado, sem vazamento); F2-07 RESPONDIDO (T8c ganha os cenarios v3_mbyp/v3_mown/v3_viewer, cada um matando o seu semi-mutante).
+
+## §5 — F2-01, F2-03, F2-06, N2-01, N2-02, N2-03 (2026-10-01T22:50Z–23:10Z)
+
+### MEDIDO
+```
+F2-01  worktree: sonda tests/san3-05-runtime-role-guard-db.test.ts com 1 CREATE ROLE + 1 GRANT (em comentario) → db-catalog-write-guard: "2 ocorrência(s) … FORA da allowlist — escritor novo" fail 1 ;
+       entrada na FROZEN_ALLOWLIST {count: 2, reason} → pass 1 ; contagem errada (3) → "contagem 2 difere da congelada 3 — mudar exige atualização CONSCIENTE" fail 1 ; revertido (cp do original; rm da sonda; git status 0)
+F2-03  src/modules/cloud-usage/cloud-usage.capture.ts:176 `occurred_at,` (default = agora, por leitura das l.170-190) ; `grep -rln '2001-0' tests src prisma` → 0 arquivos (ninguem grava na janela 2001) ; suites que chamam captura: 4 ; rotas aceitam periodStart/periodEnd (cloud-usage.routes.ts parseFilters)
+F2-06  scripts/run-backend-tests.mjs:82 `SKIP_BUDGET_DB = 2`; :90-94 `exceeded = dbPresent && skipped > budget` (teto duro) ; .github/workflows/ci.yml: 0 ocorrencias de psql; runs-on ubuntu-latest ; README da imagem 24.04 (baixado, 16328 B): "PostgreSQL 16.15 … service is disabled by default" (binario presente; servico desligado)
+N2-01  src/config/env.ts:638 = `parsedEnv.EVIDENCE_SCANNER ?? (parsedEnv.NODE_ENV === "production" ? "unavailable" : "noop")` ; ancora da v2 (`production ? "unavailable"`) casa 0 ; ancora correta (`"production" ? "unavailable" : "noop"`) casa 1 ;
+       $SCR/le-export.sh EVIDENCE_SCANNER (worktree, env -i + PROD_OK + NODE_ENV=production) → `production unavailable` ; sed com a ancora correta (1 substituicao) → `production noop` ; tests/o6r07b-scanner-failclosed.test.ts sob o mutante → # tests 13 # pass 13 (P1 reproduz) ; revertido (cmp = original; git status 0)
+N2-02  $SCR/boot.sh (src/server.ts REAL no worktree, env -i + PROD_OK, DATABASE_URL = superusuario do cluster, REDIS_URL inalcancavel, timeout --kill-after=5 40):
+       ec=124 aos 40,0 s (o processo NAO sai) ; 1a linha `Failed to start ERP Techsolutions API` com error.name=RedisCommandError aos 7,5 s do inicio do processo ; 289 linhas (1 JSON + stack) ; 'Job worker tick failed' = 0 nesta execucao ; 2 processos node orfaos ficaram apos o 1o `timeout` (mortos pelo caminho ancorado `^node --import tsx src/server.ts`; --kill-after=5 no 2o) → confirma N2-02: "morre no Redis aos ~18 s" e falso; falha aos ~7 s e NAO morre
+N2-03  clone no scratch com core.autocrlf=true: `git ls-files --eol scripts/db-runtime-role.sh` → i/lf w/crlf ; `od -c | grep -c '\r'` → 73 ; com `.gitattributes` = `scripts/db-runtime-role.sh text eol=lf` → i/lf w/lf, 0 CR ; bash de Linux sobre a copia CRLF → `line 81: syntax error near unexpected token ')'` ec=2
+```
+### HIPOTESE
+- H5-a: `psql` esta no PATH do job `backend` do CI (o pacote esta na imagem) — derruba com `which psql` vazio no job (o T14b imprime e FALHA nomeando, nunca pula).
+Veredito parcial §5: F2-01 → allowlist e o caminho (arquivo entra no PERMITIDO nominalmente, so a entrada do Map); F2-03 → janela fixa em 2001 + soma exata; F2-06 → T14b FALHA sem psql (psql vira pre-requisito declarado da suite -db; sem pulo); N2-01/N2-02/N2-03 → textos corrigidos com as medicoes acima e `.gitattributes` (1 linha) entra no PERMITIDO.
