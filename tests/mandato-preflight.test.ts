@@ -24,6 +24,8 @@ import path from "node:path";
 // CICLO 3 (E3): import proprio, em linha nova -- o [P-0] so admite adicoes neste arquivo
 // (mais as DUAS fixtures reescritas na FORMA, declaradas no plano).
 import { readFileSync } from "node:fs";
+// CICLO 4 (E1, Dev-T4): idem -- a ancora de alcance dos shims da A15 e do [F-25].
+import { existsSync } from "node:fs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const SCRIPT = path.join(RAIZ, "scripts/mandato-preflight.sh");
@@ -101,7 +103,8 @@ exit 0
 
 function roda(fixture: string, pr?: string, refs: string = REFS_OK) {
   const args = pr === undefined ? [SCRIPT, fixture] : [SCRIPT, fixture, pr];
-  const r = spawnSync("bash", args, { encoding: "utf8", env: { ...process.env, MANDATO_REFS: refs } });
+  const r = spawnSync("bash", args, { encoding: "utf8", env: { ...process.env, MANDATO_REFS: refs }, timeout: 60_000 });
+  assert.equal(r.signal, null, "artefato nao terminou em 60 s");
   const out = r.stdout ?? "";
   return {
     status: r.status,
@@ -1020,7 +1023,7 @@ test("[F-1c] `## HIPOTESE` engolido por cerca BALANCEADA (fixture m3 do critico,
   assert.match(r.out, /DENTRO de cerca/i, "a mensagem tem de nomear a ocorrencia engolida — e o ∃ que o grep -q enxerga e a maquina nao");
 });
 
-test("[F-1c-controle] a MESMA fixture sem a cerca (m3-controle do critico): PRE-VOO OK", () => {
+test("[F-1c-controle] a fixture do [F-1c] sem a cerca E com 'derruba com:' na HIPOTESE (difere do m3-controle do critico, que nao o tem): PRE-VOO OK", () => {
   const r = roda(
     verbatim("m3-controle-sem-cerca", [
       "# Mandato",
@@ -1036,7 +1039,7 @@ test("[F-1c-controle] a MESMA fixture sem a cerca (m3-controle do critico): PRE-
   assert.equal(r.status, 0, r.out);
 });
 
-test("[F-1d] `## MEDIDO` engolido por cerca: REJ pela MESMA razao — ⇄ manter o `grep -q` na checagem 1", () => {
+test("[F-1d] `## MEDIDO` engolido por cerca: REJ 'falta a secao ## MEDIDO' (so a falta; o 'DENTRO de cerca' e asserido pelo [F-1e-linha]) — ⇄ manter o `grep -q` na checagem 1", () => {
   const r = roda(
     verbatim("m3-medido-engolido", [
       "```",
@@ -1286,7 +1289,7 @@ test("[F-6c] `<caminho-inexistente>:<caminho-existente>`: so e revisao se o pref
   assert.match(r.out, /falso\.ts/, r.out);
 });
 
-test("[F-6d] `<rev>:<caminho>` com rev que resolve: aceita", () => {
+test("[F-6d] `HEAD:package.json` (sem `/`: pela I13 nao e caminho e nao chega a checagem 6): aceita — o ramo `<rev>:<caminho>` e o [F-6i/520]", () => {
   const r = roda(mandato("f6d", ["- li HEAD:package.json, medido por: true"]));
   assert.equal(r.rejeicoes, 0, r.out);
   assert.equal(r.status, 0, r.out);
@@ -1648,7 +1651,7 @@ test("[F-EXT/fronteira-2] a unidade atravessa o EOF: ultima linha do arquivo, se
   assert.match(r.out, /3058\/3060/, `a unidade do EOF e que cai\n${r.out}`);
 });
 
-test("[F-EXT/fronteira-3] cabecalho de secao REPETIDO: o oraculo troca de secao de novo, sem perder conteudo", () => {
+test("[F-EXT/fronteira-3] cabecalho de secao REPETIDO, com unidade valida em cada trecho: PRE-VOO OK (so o veredito; a unidade do 2o `## MEDIDO` ser cobrada e o [F-EXT/fronteira-2])", () => {
   const r = roda(
     bruto("fext3", ["## MEDIDO", "", "- x, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true", "", "## MEDIDO", "", "- suite 3058/3060, medido por: true"]),
   );
@@ -1690,7 +1693,7 @@ test("[F-EXT/juntar-2] DOIS greps num segmento so, com um `caixa-exata:`: os doi
   assert.equal(doisSegmentos.rejeicoes, 1, doisSegmentos.out);
 });
 
-test("[F-EXT/juntar-3] `## HIPOTESE` dentro de cerca ABERTA: a cerca aberta e o defeito dominante, e ele e nomeado", () => {
+test("[F-EXT/juntar-3] `## HIPOTESE` dentro de cerca ABERTA: REJ 'cerca aberta' e a secao HIPOTESE citada na saida (o 'DENTRO de cerca' e asserido pelo [F-1c]/[F-1f])", () => {
   const r = roda(
     bruto("fext6", ["## MEDIDO", "", "- x, medido por: true", "", "```", "## HIPOTESE", "", "- h. derruba com: true"]),
   );
@@ -1968,4 +1971,515 @@ test("[F-6i/523] sob rev que resolve, a EXISTENCIA decide — na raiz e sob mobi
   assert.equal(c.status, 1, c.out);
   assert.equal(c.rejeicoes, 1, c.out);
   assert.match(c.out, /caminho citado nao existe: HEAD:scripts\/naoexiste-8853\.sh/, c.out);
+});
+
+// =================================================================================================
+// CICLO 4 -- E1 (plano §15.2/§15.3; identidade `dev-tests-ciclo4-b-gov-mandato`). Os bloqueantes do
+// ciclo 3 que sao do PRE-VOO (C1c-01..04), a fixture que discrimina o ponto 336 (C2c-02), a classe A15
+// (fail-closed inclui a propria MORTE de um componente), C1c-05/06, os quatro [M-EXT] sobreviventes
+// da C2''' que sao deste artefato (C2c-03: X07, X08, X09, X11) e as fronteiras 25 ([F-25]) e 27
+// ([F-6j]). Cada titulo diz a mutacao (⇄) que deixa o caso vermelho.
+// Os casos que ATACAM um defeito do pre-voo do head nascem vermelhos contra ele (vermelho-controle
+// historico, §15.8). Ficam verdes no head, e continuam verdes depois do conserto: os controles
+// positivos ([C1c-01d], [C1c-02c], [C1c-03c], [C1c-04e], [A15/refs], [A15/stderr-limpo]) e os que
+// atacam um MUTANTE do artefato, nao o artefato ([C2c-02/336], [X07], [X08], [X09], [X11]) ou o
+// proprio guard ([F-25]). Nenhum caso le a fonte do artefato: todos passam por `roda()` ou
+// `rodaComPath()` -- `spawnSync` do `.sh` de verdade, com o mesmo limite de 60 s.
+// =================================================================================================
+
+/**
+ * `roda()` com um diretorio PREFIXADO ao PATH do spawn (A15: o shim que mata UM componente) e/ou com
+ * variaveis extras no ambiente ([F-6j]); o mesmo limite de 60 s e a mesma forma de retorno de `roda()`.
+ * A chave do PATH e procurada sem caixa: no Windows o Node herda `Path`, e acrescentar `PATH` ao lado
+ * dela deixaria duas chaves -- qual delas o filho herda nao e garantido (e o `ambienteCom` do guard do
+ * refs, pelo mesmo motivo).
+ */
+function rodaComPath(
+  fixture: string,
+  dirDoShim: string | undefined,
+  opcoes: { pr?: string; refs?: string; env?: Record<string, string> } = {},
+) {
+  const env: NodeJS.ProcessEnv = { ...process.env, MANDATO_REFS: opcoes.refs ?? REFS_OK, ...(opcoes.env ?? {}) };
+  if (dirDoShim !== undefined) {
+    const chaves = Object.keys(env).filter((k) => k.toUpperCase() === "PATH");
+    const chave = chaves[0] ?? "PATH";
+    const atual = env[chave] ?? "";
+    for (const k of chaves) delete env[k];
+    env[chave] = `${dirDoShim}${path.delimiter}${atual}`;
+  }
+  const args = opcoes.pr === undefined ? [SCRIPT, fixture] : [SCRIPT, fixture, opcoes.pr];
+  const r = spawnSync("bash", args, { encoding: "utf8", env, timeout: 60_000 });
+  assert.equal(r.signal, null, "artefato nao terminou em 60 s");
+  const out = r.stdout ?? "";
+  return { status: r.status, out, err: r.stderr ?? "", rejeicoes: (out.match(/^REJEITADO {2}/gm) ?? []).length };
+}
+
+/** [C2c-02/336] `## MEDIDO`, unidade valida, linhas vazias, `## HIPOTESE`, unidade valida: `linhas` no total. */
+function docGrande(nome: string, linhas = 1_000_003): string {
+  const alvo = path.join(dir, `${nome}.md`);
+  const cabeca = ["## MEDIDO", "", "- x, medido por: true"];
+  const cauda = ["## HIPOTESE", "", "- nada. derruba com: true"];
+  const vazias = linhas - cabeca.length - cauda.length;
+  writeFileSync(alvo, cabeca.join("\n") + "\n" + "\n".repeat(vazias) + cauda.join("\n") + "\n", "utf8");
+  return alvo;
+}
+
+/**
+ * [F-25] um `mandato-refs.sh` que NAO termina: dorme ate `segundos`, ou ate o caso criar o arquivo de
+ * PARADA -- e assim que o caso encerra o orfao (o `spawnSync` mata so o filho direto; o shim e NETO, o
+ * pre-voo o chama). Ao sair, grava o arquivo de FIM: e por ele que o caso prova que nao deixou processo.
+ */
+function shimQueDorme(nome: string, segundos = 120): { caminho: string; para: string; fim: string } {
+  const para = path.join(dir, "bin", `${nome}.PARA`);
+  const fim = path.join(dir, "bin", `${nome}.FIM`);
+  const caminho = shim(
+    nome,
+    [
+      "#!/usr/bin/env bash",
+      `i=0; while [ "$i" -lt ${segundos} ]; do [ -f "${para.split(path.sep).join("/")}" ] && break; sleep 1; i=$((i+1)); done`,
+      `: > "${fim.split(path.sep).join("/")}"`,
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  return { caminho, para, fim };
+}
+
+// --- C1c-01: a isencao I1 cobre EXATAMENTE as linhas cuja igualdade foi verificada --------------------
+test("[C1c-01a] linha `# gerado em: … <SHA fabricado>` INSERIDA na colagem: REJ 'NAO bate' e o SHA que a prosa cita e cobrado — ⇄ voltar ao `grep -v '^# gerado em:'`", () => {
+  const fab = FAKE(51);
+  const prosa = `- o head aprovado verdadeiro e ${fab}, medido por: true`;
+  const bloco = colagem("701", "  ", (l) => [...l.slice(0, 2), `# gerado em: o head aprovado verdadeiro e ${fab}`, ...l.slice(2)]);
+  assert.equal(bloco.filter((l) => l.includes(fab)).length, 1, "◐ a linha injetada nao entrou no bloco (A2)");
+  const r = roda(mandato("c1c01a-gerado-em-inj", [UNIDADE_COLAGEM("701"), ...bloco, "", prosa]), "393", REFS_COMPLETO);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}l\.\d+-\d+: bloco '# refs do PR #701' NAO bate com a saida atual/m, r.out);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${fab}' nao esta na saida`, "m"), r.out);
+  assert.doesNotMatch(r.out, /^COLAGEM/m, `bloco com linha nao conferida nao e colagem verificada\n${r.out}`);
+  // controle NA MESMA rodada (o par do voto): sem a linha injetada a colagem confere, e o MESMO SHA da
+  // prosa cai pela checagem 4 -- era a linha injetada, e so ela, que o lavava.
+  const par = roda(mandato("c1c01a-par", [UNIDADE_COLAGEM("701"), ...colagem("701"), "", prosa]), "393", REFS_COMPLETO);
+  assert.equal(par.status, 1, par.out);
+  assert.equal(par.rejeicoes, 1, par.out);
+  assert.match(par.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #701 confere/m, par.out);
+  assert.match(par.out, new RegExp(`^REJEITADO {2}SHA '${fab}' nao esta na saida`, "m"), par.out);
+});
+
+test("[C1c-01b] a linha de CARIMBO editada com um SHA (sem a forma de carimbo): REJ 'NAO bate' — ⇄ voltar ao `grep -v '^# gerado em:'`", () => {
+  const bloco = colagem("701", "  ", (l) => l.map((x) => (x.startsWith("# gerado em:") ? `# gerado em: ${FAKE(52)} · repo: t/t` : x)));
+  assert.equal(bloco.filter((l) => l.includes(FAKE(52))).length, 1, "◐ a edicao nao foi aplicada (A2)");
+  const r = roda(mandato("c1c01b-gerado-em-edit", [UNIDADE_COLAGEM("701"), ...bloco]), "393", REFS_COMPLETO);
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}l\.\d+-\d+: bloco '# refs do PR #701' NAO bate com a saida atual/m, r.out);
+  assert.doesNotMatch(r.out, /^COLAGEM/m, r.out);
+});
+
+test("[C1c-01c] SHA fabricado no info string da ABERTURA da cerca: a colagem confere e a checagem 4 cobra o SHA da abertura — ⇄ `EXENTAS` de `ini` a `fim`", () => {
+  const bloco = colagem("701");
+  bloco[0] = `  \`\`\`${FAKE(53)}`;
+  const r = roda(mandato("c1c01c-info-string", [UNIDADE_COLAGEM("701"), ...bloco]), "393", REFS_COMPLETO);
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #701 confere/m, `o corpo do bloco e o da ferramenta: a colagem confere\n${r.out}`);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${FAKE(53)}' nao esta na saida`, "m"), r.out);
+});
+
+test("[C1c-01d] colagem LEGITIMA com carimbo DIFERENTE do da execucao do pre-voo: COLAGEM confere, 0 REJ — controle positivo: ⇄ tirar a normalizacao do carimbo", () => {
+  const bloco = colagem("701");
+  const doBloco = bloco.find((l) => l.trim().startsWith("# gerado em:"));
+  const agora = saidaDoRefs("701").find((l) => l.startsWith("# gerado em:"));
+  assert.ok(doBloco !== undefined && agora !== undefined, "◐ o shim nao produziu a linha de carimbo");
+  assert.notEqual(doBloco.trim(), agora, "◐ o shim repetiu o carimbo: o caso nao discrimina a normalizacao");
+  const r = roda(mandato("c1c01d-colagem-legitima", [UNIDADE_COLAGEM("701"), ...bloco]), "393", REFS_COMPLETO);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #701 confere/m, r.out);
+});
+
+// --- C1c-02: a classificacao SHA/caminho e por TOKEN, e `:` nao esconde um SHA -----------------------
+test("[C1c-02a] `<SHA fabricado>:CLAUDE.md`, com 40 e com 8 hex: 1 REJ da checagem 4 em cada — ⇄ nao partir no `:` / emitir SHA so com 40 hex", () => {
+  for (const fab of [FAKE(54), "deadbe57"]) {
+    const r = roda(mandato(`c1c02a-${fab.length}`, [`- o objeto julgado e ${fab}:CLAUDE.md, medido por: true`]), "393");
+    assert.equal(r.status, 1, r.out);
+    assert.equal(r.rejeicoes, 1, r.out);
+    assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${fab}' nao esta na saida`, "m"), r.out);
+  }
+  // controle NA MESMA rodada (o par do voto): com espaco no lugar do `:`, o MESMO SHA ja cai hoje.
+  const par = roda(mandato("c1c02a-par", [`- o objeto julgado e ${FAKE(54)} CLAUDE.md, medido por: true`]), "393");
+  assert.equal(par.rejeicoes, 1, par.out);
+  assert.match(par.out, new RegExp(`^REJEITADO {2}SHA '${FAKE(54)}' nao esta na saida`, "m"), par.out);
+});
+
+test("[C1c-02b] `<SHA fabricado>:<caminho que existe>`: 2 REJ — a checagem 4 (proveniencia) E a 6 (a revisao nao existe) — ⇄ `rev-parse --verify` na checagem 6", () => {
+  const fab = FAKE(55);
+  const r = roda(mandato("c1c02b", [`- o objeto julgado e ${fab}:scripts/mandato-preflight.sh, medido por: true`]), "393");
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 2, r.out);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${fab}' nao esta na saida`, "m"), r.out);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}(?=[^\\n]*nao existe)(?=[^\\n]*${fab})`, "m"), `a checagem 6 tem de recusar a revisao que nao existe\n${r.out}`);
+});
+
+test("[C1c-02c] `<HEAD da raiz>:scripts/mandato-refs.sh` com esse SHA na proveniencia: 0 REJ — controle positivo: o conserto nao pode recusar a citacao legitima", () => {
+  const head = execFileSync("git", ["-C", RAIZ, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  assert.match(head, /^[0-9a-f]{40}$/, "◐ a raiz do guard nao e repositorio git com HEAD");
+  const refs = shim("refs-c1c02c.sh", `#!/usr/bin/env bash\nif [ "\${2:-}" = "--sha-only" ]; then printf '%s\\n' "${head}"; exit 0; fi\nexit 0\n`);
+  const r = roda(mandato("c1c02c", [`- li ${head}:scripts/mandato-refs.sh, medido por: true`]), "393", refs);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+});
+
+test("[C1c-02d] `<HEAD da raiz>:scripts/mandato-refs.sh` FORA da proveniencia: exatamente 1 REJ, da checagem 4 — nenhuma da 6 (a revisao existe) — ⇄ nao partir no `:`", () => {
+  const head = execFileSync("git", ["-C", RAIZ, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  assert.match(head, /^[0-9a-f]{40}$/, "◐ a raiz do guard nao e repositorio git com HEAD");
+  const r = roda(mandato("c1c02d", [`- li ${head}:scripts/mandato-refs.sh, medido por: true`]), "393");
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${head}' nao esta na saida`, "m"), r.out);
+  assert.doesNotMatch(r.out, /nao existe/, `a revisao EXISTE: a checagem 6 nao pode recusar\n${r.out}`);
+});
+
+test("[C1c-02e] `<SHA fabricado>:scripts/mandato-refs.sh` COM o fabricado na proveniencia: 1 REJ, da checagem 6 (a revisao nao existe) — ⇄ `rev-parse --verify` de volta (aceita qualquer 40-hex)", () => {
+  const fab = FAKE(56);
+  const existe = spawnSync("git", ["-C", RAIZ, "cat-file", "-e", fab], { encoding: "utf8" });
+  assert.notEqual(existe.status, 0, "◐ o SHA 'fabricado' existe na raiz: o caso nao discrimina");
+  const refs = shim("refs-c1c02e.sh", `#!/usr/bin/env bash\nif [ "\${2:-}" = "--sha-only" ]; then printf '%s\\n' "${fab}"; exit 0; fi\nexit 0\n`);
+  const r = roda(mandato("c1c02e", [`- li ${fab}:scripts/mandato-refs.sh, medido por: true`]), "393", refs);
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}(?=[^\\n]*nao existe)(?=[^\\n]*${fab})`, "m"), r.out);
+  assert.doesNotMatch(r.out, /nao esta na saida/, `o fabricado esta na proveniencia: a checagem 4 nao pode cobra-lo\n${r.out}`);
+});
+
+// --- C1c-03: a cerca e SAIDA, nunca COMANDO ------------------------------------------------------------
+test("[C1c-03a] `medido por:` SO dentro da cerca: exatamente 2 REJ (unidade sem token + saida colada sem comando) — ⇄ `satisfeita()` sobre o texto com as linhas cercadas", () => {
+  const r = roda(mandato("c1c03a", ["- cobertura 87,4% em 12 de 13 rotas", "  ```", "  medido por: true", "  ```"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 2, r.out);
+  assert.match(r.out, /^REJEITADO {2}unidade de MEDIDO sem 'medido por: <comando>' — l\.3: - cobertura 87,4%/m, r.out);
+  assert.match(r.out, /^REJEITADO {2}saida colada sem comando — l\.3:/m, r.out);
+});
+
+test("[C1c-03b] saida de `grep` colada que CONTEM a string `medido por:`: exatamente 2 REJ — ⇄ `satisfeita()` sobre o texto com as linhas cercadas", () => {
+  const r = roda(mandato("c1c03b", ["- o relatorio cita o token", "  ```", "  relatorio.md:12:- x, medido por: true", "  ```"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 2, r.out);
+  assert.match(r.out, /^REJEITADO {2}unidade de MEDIDO sem 'medido por: <comando>' — l\.3: - o relatorio cita o token/m, r.out);
+  assert.match(r.out, /^REJEITADO {2}saida colada sem comando — l\.3:/m, r.out);
+});
+
+test("[C1c-03c] o MESMO conteudo cercado com o token na PROSA: 0 REJ — controle positivo (e o [B1-correto])", () => {
+  const r = roda(mandato("c1c03c", ["- cobertura 87,4% em 12 de 13 rotas, medido por: true", "  ```", "  medido por: true", "  ```"]));
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+});
+
+// --- C1c-04: o cabecalho de secao e EXATAMENTE o nome; toda outra linha `## …` e conteudo ------------
+test("[C1c-04a] `## MEDIDO — <afirmacao>` nao e o cabecalho: REJ 'falta a secao' E a linha listada como conteudo fora — ⇄ reconhecedor por prefixo", () => {
+  const linha = "## MEDIDO — cobertura 87,4% em 12 de 13 rotas";
+  const r = roda(bruto("c1c04a", [linha, "", "- a, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true"]));
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}falta a secao '## MEDIDO'/m, r.out);
+  assert.match(r.out, /^REJEITADO {2}linha\(s\) de conteudo fora de MEDIDO\/HIPOTESE:/m, r.out);
+  assert.ok(foraListadas(r.out).some(([n, t]) => n === 1 && t.startsWith(linha)), `a linha do cabecalho com texto e conteudo, e tem de ser nomeada\n${r.out}`);
+});
+
+test("[C1c-04b] `## MEDIDO medido por: grep -c …` nao e o cabecalho: REJ 'falta a secao' E a linha listada como conteudo fora — ⇄ reconhecedor por prefixo", () => {
+  const linha = '## MEDIDO medido por: grep -c "naoaparece" CLAUDE.md';
+  const r = roda(bruto("c1c04b", [linha, "", "- a, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true"]));
+  assert.equal(r.status, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}falta a secao '## MEDIDO'/m, r.out);
+  assert.match(r.out, /^REJEITADO {2}linha\(s\) de conteudo fora de MEDIDO\/HIPOTESE:/m, r.out);
+  assert.ok(foraListadas(r.out).some(([n, t]) => n === 1 && t.startsWith(linha)), r.out);
+});
+
+test("[C1c-04c] `## Resumo — <afirmacao>` ANTES de `## MEDIDO`: conteudo fora das secoes, 1 REJ nomeando a linha — ⇄ `## X` sem `FORA`", () => {
+  const linha = "## Resumo — suite 3103/3105 verde e CI 14/14";
+  const resto = ["", "## MEDIDO", "", "- a, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true"];
+  const r = roda(bruto("c1c04c", [linha, ...resto]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.ok(foraListadas(r.out).some(([n, t]) => n === 1 && t.startsWith(linha)), r.out);
+  // controle NA MESMA rodada (o do voto): com `###` a MESMA linha ja e conteudo fora hoje.
+  const ctrl = roda(bruto("c1c04c-h3", [`#${linha}`, ...resto]));
+  assert.equal(ctrl.rejeicoes, 1, ctrl.out);
+  assert.ok(foraListadas(ctrl.out).some(([n, t]) => n === 1 && t.startsWith(`#${linha}`)), ctrl.out);
+});
+
+test("[C1c-04d] `## Conclusao — <afirmacao>` DEPOIS de `## HIPOTESE`: 1 REJ nomeando a linha — ⇄ `## X` sem `FORA`", () => {
+  const linha = "## Conclusao — suite 3103/3105 verde e CI 14/14";
+  const r = roda(mandato("c1c04d", ["- a, medido por: true"], ["- h. derruba com: true", "", linha]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.ok(foraListadas(r.out).some(([n, t]) => n === 9 && t.startsWith(linha)), r.out);
+});
+
+test("[C1c-04e] `## MEDIDO`/`## HIPOTESE` com espacos finais, e em CRLF: 0 REJ — controle positivo: ⇄ `$` sem `[[:space:]]*`", () => {
+  const espacos = roda(bruto("c1c04e-espacos", ["## MEDIDO   ", "", "- a, medido por: true", "", "## HIPOTESE  ", "", "- h. derruba com: true"]));
+  assert.equal(espacos.rejeicoes, 0, espacos.out);
+  assert.equal(espacos.status, 0, espacos.out);
+  const alvo = mandatoCrLf("c1c04e-crlf", ["- a, medido por: true"]);
+  assert.ok(readFileSync(alvo).includes(0x0d), "◐ a fixture CRLF nasceu sem CR (classe A3)");
+  const crlf = roda(alvo);
+  assert.equal(crlf.rejeicoes, 0, crlf.out);
+  assert.equal(crlf.status, 0, crlf.out);
+});
+
+test("[C1c-04f] secao `## OUTRA` com conteudo: 1 REJ listando o CABECALHO e o conteudo (M2 revogada pela forma A) — ⇄ `## X` sem `FORA`", () => {
+  const r = roda(mandato("c1c04f", ["- a, medido por: true"], ["- h. derruba com: true", "", "## OUTRA", "", "- conteudo da outra secao, medido por: true"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  const listadas = foraListadas(r.out);
+  assert.ok(listadas.some(([n, t]) => n === 9 && t.startsWith("## OUTRA")), `o cabecalho de secao estranha e conteudo fora\n${r.out}`);
+  assert.ok(listadas.some(([n, t]) => n === 11 && t.startsWith("- conteudo da outra secao")), r.out);
+});
+
+// --- C2c-02: o ponto 336 tem fixture que discrimina -----------------------------------------------------
+test("[C2c-02/336] documento de 1 000 003 linhas, sem SHA e sem PR: PRE-VOO OK — ⇄ M7(next) na l.336 do artefato (blob faa408c8): o numero de linha >= 1000000 do oraculo vira SHA", () => {
+  const alvo = docGrande("c2c02-336-um-milhao");
+  let linhas = 0;
+  for (const b of readFileSync(alvo)) if (b === 0x0a) linhas++;
+  assert.equal(linhas, 1_000_003, "◐ o documento nao tem as 1 000 003 linhas");
+  const r = roda(alvo, undefined, REFS_MORTO);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /PRE-VOO OK/, r.out);
+  assert.doesNotMatch(r.out, /cita SHA/, r.out);
+});
+
+// --- A15: fail-closed inclui a propria morte (§1.5 do parecer; P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA) ---
+// Um shim no PATH mata UM componente: o awk so na invocacao cujo programa contem o marcador (o oraculo,
+// a passada 2, os filtros peg/pega), tr/sed/git sempre. Cada caso exige ec=1, UMA rejeicao, a que NOMEIA
+// o componente, e nunca PRE-VOO OK. A ancora de alcance (◐) e o arquivo que o shim grava ao morrer: sem
+// ele o caso diz que nao mediu a morte. E o controle NA MESMA rodada -- a mesma fixture sem o shim -- sai
+// PRE-VOO OK, logo a morte e a unica variavel. [A15/refs] e [A15/stderr-limpo] vem em seguida.
+type ComponenteA15 = {
+  id: string;
+  comando: string;
+  marcador?: string;
+  codigo: number;
+  nomeia: RegExp;
+  fixture: (nome: string) => string;
+  pr?: string;
+  refs?: string;
+};
+const A15_POSITIVA = (nome: string) => mandato(nome, ["- suite 3103/3105 verde e CI 14/14, medido por: true"]);
+const COMPONENTES_A15: ComponenteA15[] = [
+  { id: "awk1", comando: "awk", marcador: "marcaChar", codigo: 2, nomeia: /^REJEITADO {2}componente interno morreu: awk[^\n]*oraculo/m, fixture: A15_POSITIVA },
+  { id: "awk2", comando: "awk", marcador: "isento(num)", codigo: 2, nomeia: /^REJEITADO {2}componente interno morreu: awk[^\n]*passada[ -]?2/m, fixture: A15_POSITIVA },
+  { id: "awkfiltro", comando: "awk", marcador: "$1==t", codigo: 2, nomeia: /^REJEITADO {2}componente interno morreu: awk[^\n]*filtro/m, fixture: A15_POSITIVA },
+  { id: "tr", comando: "tr", codigo: 2, nomeia: /^REJEITADO {2}componente interno morreu: tr\b/m, fixture: A15_POSITIVA },
+  {
+    id: "sed",
+    comando: "sed",
+    codigo: 2,
+    nomeia: /^REJEITADO {2}componente interno morreu: sed\b/m,
+    fixture: (nome) => mandato(nome, [UNIDADE_COLAGEM("777"), ...colagem("777")]),
+    pr: "393",
+    refs: REFS_COMPLETO,
+  },
+  {
+    id: "git",
+    comando: "git",
+    codigo: 128,
+    nomeia: /^REJEITADO {2}componente interno morreu: git\b/m,
+    fixture: (nome) => mandato(nome, ["- li `HEAD:scripts/mandato-refs.sh`, medido por: true"]),
+  },
+];
+for (const c of COMPONENTES_A15) {
+  const como = c.marcador === undefined ? "morto" : `morto so na invocacao com '${c.marcador}'`;
+  test(`[A15/${c.id}] ${c.comando} ${como}: ec=1, 1 REJ que NOMEIA o componente, nunca PRE-VOO OK — ⇄ ler a saida vazia do componente morto como 'nada a rejeitar'`, () => {
+    const controle = roda(c.fixture(`a15-${c.id}-controle`), c.pr, c.refs ?? REFS_OK);
+    assert.equal(controle.status, 0, `◐ sem o shim a fixture nao sai PRE-VOO OK: a morte nao seria a unica variavel\n${controle.out}`);
+    const pasta = path.join(dir, "bin", `a15-${c.id}`);
+    mkdirSync(pasta, { recursive: true });
+    const alcancado = path.join(pasta, "ALCANCADO");
+    const morre = [
+      `echo '${c.comando}: morte sintetica${c.marcador === undefined ? "" : ` (${c.marcador})`}' >&2`,
+      `: > "${alcancado.split(path.sep).join("/")}"`,
+      `exit ${c.codigo}`,
+    ];
+    let corpo = ["#!/usr/bin/env bash", ...morre, ""];
+    if (c.marcador !== undefined) {
+      const real = (spawnSync("bash", ["-c", `command -v ${c.comando}`], { encoding: "utf8" }).stdout ?? "").trim();
+      assert.ok(real.startsWith("/"), `◐ nao achei o ${c.comando} real para o shim delegar: ${JSON.stringify(real)}`);
+      corpo = [
+        "#!/usr/bin/env bash",
+        `for a in "$@"; do case "$a" in *'${c.marcador}'*) ${morre.join("; ")} ;; esac; done`,
+        `exec "${real}" "$@"`,
+        "",
+      ];
+    }
+    shim(`a15-${c.id}/${c.comando}`, corpo.join("\n"));
+    const r = rodaComPath(c.fixture(`a15-${c.id}`), pasta, { pr: c.pr, refs: c.refs });
+    assert.ok(existsSync(alcancado), `◐ o shim de ${c.comando} nao foi alcancado: o caso nao mediu a morte\n${r.out}\n${r.err}`);
+    assert.equal(r.status, 1, r.out);
+    assert.doesNotMatch(r.out, /PRE-VOO OK/, `componente morto e veredito positivo: fail-open\n${r.out}`);
+    assert.equal(r.rejeicoes, 1, r.out);
+    assert.match(r.out, c.nomeia, `a rejeicao tem de NOMEAR o componente que morreu\n${r.out}`);
+  });
+}
+
+test("[A15/refs] mandato-refs.sh morto nos DOIS pontos em que e chamado (colagem e --sha-only): 2 REJ nomeando a ferramenta, nunca 'NAO bate'/'SHA nao esta' — o [B4] estendido a colagem", () => {
+  const alcancado = path.join(dir, "bin", "a15-refs.ALCANCADO");
+  const refs = shim("a15-refs-morto.sh", ["#!/usr/bin/env bash", `: >> "${alcancado.split(path.sep).join("/")}"`, 'echo "PARADO: nao li o PR" >&2', "exit 1", ""].join("\n"));
+  const r = roda(
+    mandato("a15-refs", [
+      UNIDADE_COLAGEM("701"),
+      "  ```",
+      "  # refs do PR #701 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato",
+      "  ramo:            fix/x",
+      "  ```",
+      "",
+      `- head \`${SHA_A}\`, medido por: true`,
+    ]),
+    "393",
+    refs,
+  );
+  assert.ok(existsSync(alcancado), "◐ o refs morto nao foi alcancado");
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 2, r.out);
+  assert.match(r.out, /^REJEITADO {2}l\.\d+-\d+: referencias indisponiveis para #701 \(mandato-refs\.sh ec=1\)/m, r.out);
+  assert.match(r.out, /^REJEITADO {2}referencias indisponiveis \(mandato-refs\.sh ec=1\)/m, r.out);
+  assert.doesNotMatch(r.out, /PRE-VOO OK|NAO bate|DESATUALIZADO|nao esta na saida/, r.out);
+});
+
+test("[A15/stderr-limpo] 5 controles positivos (bullets, tabela, colagem, rev:caminho, CRLF): PRE-VOO OK com o stderr do artefato VAZIO — ⇄ componente que morre com diagnostico (o `syntax error` dos mutantes)", () => {
+  const casos: Array<[string, ReturnType<typeof roda>]> = [
+    ["bullets", roda(mandato("a15-limpo-bullets", ["- suite 3058/3060, medido por: npm test", "- CI 14/14, medido por: gh pr checks"]))],
+    ["tabela", roda(mandato("a15-limpo-tabela", ["| afirmacao | medido por: |", "|---|---|", "| CI 14/14 | gh pr checks |"]))],
+    ["colagem", roda(mandato("a15-limpo-colagem", [UNIDADE_COLAGEM("777"), ...colagem("777")]), "393", REFS_COMPLETO)],
+    ["rev:caminho", roda(mandato("a15-limpo-rev", ["- li `HEAD:scripts/mandato-refs.sh`, medido por: true"]))],
+    ["crlf", roda(mandatoCrLf("a15-limpo-crlf", ["- suite 3058/3060, medido por: npm test"]))],
+  ];
+  for (const [nome, r] of casos) {
+    assert.equal(r.status, 0, `${nome}: ${r.out}`);
+    assert.equal(r.rejeicoes, 0, `${nome}: ${r.out}`);
+    assert.equal(r.err, "", `${nome}: o artefato escreveu no stderr num caso positivo\n${r.err}`);
+  }
+});
+
+// --- C1c-05 / C1c-06 ------------------------------------------------------------------------------------
+test("[C1c-05] grep invocado por CAMINHO (`/usr/bin/grep -c`) e com EXTENSAO (`grep.exe -c`), sem -i: 2 REJ da checagem 5 — ⇄ familia que nao aceita caminho/extensao antes do nome", () => {
+  const r = roda(
+    mandato("c1c05", ['- nao aparece, medido por: /usr/bin/grep -c "naoaparece" CLAUDE.md', '- nem aqui, medido por: grep.exe -c "naoaparece" CLAUDE.md']),
+  );
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 2, r.out);
+  assert.match(r.out, /^REJEITADO {2}invocacao de grep\/rg SEM -i[^\n]*l\.3:[^\n]*\/usr\/bin\/grep -c/m, r.out);
+  assert.match(r.out, /^REJEITADO {2}invocacao de grep\/rg SEM -i[^\n]*l\.4:[^\n]*grep\.exe -c/m, r.out);
+  // controle NA MESMA rodada: o -i no MESMO segmento continua valendo para as duas formas.
+  const ctrl = roda(
+    mandato("c1c05-ctrl", ['- nao aparece, medido por: /usr/bin/grep -ic "naoaparece" CLAUDE.md', '- nem aqui, medido por: grep.exe -ic "naoaparece" CLAUDE.md']),
+  );
+  assert.equal(ctrl.rejeicoes, 0, ctrl.out);
+  assert.equal(ctrl.status, 0, ctrl.out);
+});
+
+test("[C1c-06] `\\|` escapado numa celula e literal, nao fronteira: a celula de evidencia VAZIA cai — 1 REJ — ⇄ `split` sem trocar o `\\|`", () => {
+  const cab = ["| afirmacao | medido por: |", "|---|---|"];
+  const r = roda(mandato("c1c06", [...cab, "| suite 3103/3105 \\| CI 14/14 |  |"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}unidade de MEDIDO sem 'medido por: <comando>' — l\.5:[^\n]*3103\/3105/m, r.out);
+  // controle NA MESMA rodada: o MESMO pipe escapado com a celula de evidencia cheia passa.
+  const ctrl = roda(mandato("c1c06-ctrl", [...cab, "| suite 3103/3105 \\| CI 14/14 | npm test |"]));
+  assert.equal(ctrl.rejeicoes, 0, ctrl.out);
+  assert.equal(ctrl.status, 0, ctrl.out);
+});
+
+// --- C2c-03 (pre-voo): os [M-EXT] da C2''' que mudavam o comportamento com o guard VERDE ----------------
+test("[X07] colagem cujo refs sai ec=2: 'referencias indisponiveis … ec=2', nunca 'NAO bate'/'DESATUALIZADO' — ⇄ X07: a condicao RCN=2 sai da l.253 do artefato", () => {
+  const refs = shim("refs-ec2.sh", '#!/usr/bin/env bash\necho "uso: mandato-refs.sh <PR> [--sha-only]" >&2\nexit 2\n');
+  const r = roda(
+    mandato("x07-refs-ec2", [
+      UNIDADE_COLAGEM("667"),
+      "  ```",
+      "  # refs do PR #667 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato",
+      "  ramo:            fix/x",
+      "  ```",
+    ]),
+    undefined,
+    refs,
+  );
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}l\.\d+-\d+: referencias indisponiveis para #667 \(mandato-refs\.sh ec=2\)/m, r.out);
+  assert.doesNotMatch(r.out, /NAO bate|DESATUALIZADO/, r.out);
+});
+
+test("[X08] --sha-only que sai ec=2: 'referencias indisponiveis (mandato-refs.sh ec=2)', nunca 'SHA … nao esta na saida' — ⇄ X08: a condicao RC=2 sai da l.473 do artefato", () => {
+  const refs = shim("refs-ec2.sh", '#!/usr/bin/env bash\necho "uso: mandato-refs.sh <PR> [--sha-only]" >&2\nexit 2\n');
+  const r = roda(mandato("x08-sha-only-ec2", [`- head \`${SHA_A}\`, medido por: true`]), "393", refs);
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}referencias indisponiveis \(mandato-refs\.sh ec=2\)/m, r.out);
+  assert.doesNotMatch(r.out, /nao esta na saida/, r.out);
+});
+
+test("[X09] SHA de 7 hex numa colagem VERIFICADA entra na proveniencia: a prosa que o cita passa — ⇄ X09: `length($0)>=7` -> `>=8` na l.263 do artefato", () => {
+  const curto = "abcdef1";
+  const refs = shim(
+    "refs-x09.sh",
+    [
+      "#!/usr/bin/env bash",
+      `if [ "\${2:-}" = "--sha-only" ]; then printf '%s\\n' "${SHA_A}"; exit 0; fi`,
+      `printf '# refs do PR #%s — GERADO por scripts/mandato-refs.sh, para COLAR no mandato\\n' "\${1:-}"`,
+      "printf '# gerado em: 2026-10-01T00:00Z · repo: t/t\\n'",
+      "printf '\\n'",
+      "printf 'ramo:            fix/x\\n'",
+      `printf 'merge commit:    %s\\n' "${curto}"`,
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  const corpo = saidaDoRefs("713", refs);
+  assert.ok(corpo.some((l) => l.includes(curto)), `◐ a colagem nao traz o SHA curto\n${corpo.join("\n")}`);
+  const bloco = ["  ```", ...corpo.map((l) => (l === "" ? "" : `  ${l}`)), "  ```"];
+  const r = roda(mandato("x09-sha-curto", [UNIDADE_COLAGEM("713"), ...bloco, "", `- o merge do #713 e \`${curto}\`, medido por: true`]), "393", refs);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #713 confere/m, r.out);
+});
+
+test("[X11] unidade sem token DEPOIS de linha em branco: a REJ sai SEM a dica 'apos o comando' — ⇄ X11: tirar `ultimaSat=0` da linha em branco (l.399 do artefato)", () => {
+  const r = roda(mandato("x11-apos-branco", ["- x, medido por: true", "", "- suite 3058/3060 sem evidencia"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}unidade de MEDIDO sem 'medido por: <comando>' — l\.5: - suite 3058\/3060 sem evidencia$/m, r.out);
+  assert.doesNotMatch(r.out, /ap[oó]s o comando/i, r.out);
+  // controle NA MESMA rodada: COLADA ao comando (sem a linha em branco), a MESMA unidade leva a dica.
+  const ctrl = roda(mandato("x11-ctrl", ["- x, medido por: true", "- suite 3058/3060 sem evidencia"]));
+  assert.equal(ctrl.rejeicoes, 1, ctrl.out);
+  assert.match(ctrl.out, /ap[oó]s o comando/i, ctrl.out);
+});
+
+// --- fronteiras 25 e 27 ---------------------------------------------------------------------------------
+test("[F-25] artefato que NAO TERMINA (refs que dorme 120 s): `roda()` falha em 60 s nomeando a causa, em vez de travar a suite — ⇄ tirar o `timeout` de `roda()`", () => {
+  const dorme = shimQueDorme("refs-dorme-f25.sh");
+  try {
+    assert.throws(
+      () => roda(mandato("f25-refs-dorme", [`- head \`${SHA_A}\`, medido por: true`]), "393", dorme.caminho),
+      /artefato nao terminou em 60 s/,
+    );
+  } finally {
+    writeFileSync(dorme.para, "", "utf8");
+  }
+  // ◐ o shim e NETO do spawn: sem a parada ele seguiria vivo ate 120 s. O caso so termina quando ele
+  // gravou o arquivo de fim -- nenhum processo deste caso fica para tras.
+  const espera = spawnSync(
+    "bash",
+    ["-c", 'for i in $(seq 100); do [ -f "$1" ] && exit 0; sleep 0.2; done; exit 1', "_", dorme.fim.split(path.sep).join("/")],
+    { encoding: "utf8" },
+  );
+  assert.equal(espera.status, 0, "o shim que dorme continuou vivo depois do caso");
+});
+
+test("[F-6j] `HEAD:scripts/mandato-refs.sh` com MSYS_NO_PATHCONV=1 no ambiente do spawn: segue OK — ⇄ `RAIZ` em forma POSIX (`/c/...`), que o git.exe recusa sem a conversao do MSYS (fronteira 27)", () => {
+  const corpo = ["- li `HEAD:scripts/mandato-refs.sh`, medido por: true"];
+  const r = rodaComPath(mandato("f6j-sem-pathconv", corpo), undefined, { env: { MSYS_NO_PATHCONV: "1" } });
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  // controle NA MESMA rodada: sem a variavel, a MESMA citacao passa (e o [F-6i/520]).
+  const ctrl = roda(mandato("f6j-ctrl", corpo));
+  assert.equal(ctrl.status, 0, ctrl.out);
 });

@@ -362,7 +362,9 @@ function roda(pr: string, args: string[] = [], gh: string = SHIM_OK) {
     cwd: repo,
     encoding: "utf8",
     env: { ...process.env, MANDATO_GH: gh, MANDATO_REPO: "t/t" },
+    timeout: 60_000,
   });
+  assert.equal(r.signal, null, "artefato nao terminou em 60 s");
   return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
 }
 /** Todo SHA de 40 hex que a saída imprime, como conjunto ordenado. */
@@ -953,4 +955,139 @@ test("[V18c] ARQUIVO no cwd x COMANDO no PATH com o mesmo nome nu: o script roda
     rmSync(noCwd, { force: true });
     rmSync(dirPath, { recursive: true, force: true });
   }
+});
+
+// =================================================================================================
+// CICLO 4 -- E1 (plano §15.2/§15.3; identidade `dev-tests-ciclo4-b-gov-mandato`). Os quatro [M-EXT]
+// sobreviventes da C2''' que sao deste artefato (C2c-03: Y02..Y05) e a fronteira 25 ([F-25]). O
+// `mandato-refs.sh` NAO muda no ciclo 4 (so cabecalho, plano §15.6): estes casos sao VERDES contra ele e
+// ficam vermelhos com a mutacao (⇄) que a C2''' mediu -- cobrem comportamento que o guard nao via.
+// As atas novas entram num commit FILHO do COMMIT_HEAD montado por plumbing (indice temporario proprio):
+// o HEAD, o indice e a arvore de trabalho do arnes nao mudam, e nenhum caso anterior ve as atas novas.
+// =================================================================================================
+
+/** Commit filho do COMMIT_HEAD com `atas` (caminho -> conteudo), sem mexer em HEAD, indice nem arvore. */
+function commitComAtas(nome: string, atas: Record<string, string>): string {
+  const pasta = mkdtempSync(path.join(tmpdir(), "mandato-refs-indice-"));
+  const env: NodeJS.ProcessEnv = { ...process.env, GIT_INDEX_FILE: path.join(pasta, "indice") };
+  const g = (args: string[], input?: string): string =>
+    execFileSync(
+      "git",
+      ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "core.autocrlf=false", "-c", "commit.gpgsign=false", ...args],
+      { cwd: repo, encoding: "utf8", env, input },
+    )
+      .toString()
+      .trim();
+  try {
+    g(["read-tree", COMMIT_HEAD]);
+    for (const [rel, conteudo] of Object.entries(atas)) {
+      const blob = g(["hash-object", "-w", "--stdin"], conteudo);
+      g(["update-index", "--add", "--cacheinfo", `100644,${blob},${rel}`]);
+    }
+    return g(["commit-tree", g(["write-tree"]), "-p", COMMIT_HEAD, "-m", nome]);
+  } finally {
+    rmSync(pasta, { recursive: true, force: true });
+  }
+}
+
+/**
+ * [F-25] um `gh` que NAO termina: dorme ate `segundos`, ou ate o caso criar o arquivo de PARADA -- e
+ * assim que o caso encerra o orfao (o `spawnSync` mata so o filho direto; o shim e NETO, o script o
+ * chama). Ao sair, grava o arquivo de FIM: e por ele que o caso prova que nao deixou processo vivo.
+ */
+function shimQueDorme(nome: string, segundos = 120): { caminho: string; para: string; fim: string } {
+  const para = path.join(repo, "bin", `${nome}.PARA`);
+  const fim = path.join(repo, "bin", `${nome}.FIM`);
+  const caminho = shim(
+    nome,
+    [
+      "#!/usr/bin/env bash",
+      `i=0; while [ "$i" -lt ${segundos} ]; do [ -f "${para.split(path.sep).join("/")}" ] && break; sleep 1; i=$((i+1)); done`,
+      `: > "${fim.split(path.sep).join("/")}"`,
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  return { caminho, para, fim };
+}
+
+test("[Y02] Objeto de 40 hex e approved_head com os 8 primeiros (e o inverso), SHAs que NAO existem localmente: LIDO pelos dois lados do prefixo — ⇄ Y02: `mesmo()` sem o casamento por prefixo (l.193/l.194)", () => {
+  const X40 = "ab".repeat(20);
+  const Y40 = "cd".repeat(20);
+  for (const s of [X40, Y40]) {
+    assert.notEqual(spawnSync("git", ["cat-file", "-e", s], { cwd: repo }).status, 0, `◐ ${s} existe no arnes: o \`expande()\` resolveria e o prefixo nao seria exercitado`);
+  }
+  const head = commitComAtas("y02", {
+    "agent-orchestration/omega/juntas/J-PREFIXO-A.md": ["# J-PREFIXO-A (PR #4411) — ciclo 1", "", `- **Objeto julgado:** \`${X40}\`.`, `- **approved_head:** \`${X40.slice(0, 8)}\``, ""].join("\n"),
+    "agent-orchestration/omega/juntas/J-PREFIXO-B.md": ["# J-PREFIXO-B (PR #4412) — ciclo 1", "", `- **Objeto julgado:** \`${Y40.slice(0, 8)}\`.`, `- **approved_head:** \`${Y40}\``, ""].join("\n"),
+  });
+  const gh = shimTsv("gh-y02.sh", head, "main");
+  // approved_head CURTO, Objeto LONGO: e a l.194 que casa.
+  const a = roda("4411", [], gh);
+  assert.equal(a.status, 0, a.out + a.err);
+  assert.match(a.out, new RegExp(`^approved_head: +${X40.slice(0, 8)}$`, "m"), a.out);
+  assert.match(a.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-PREFIXO-A\.md:4 @head-do-PR/, a.out);
+  // approved_head LONGO, Objeto CURTO: e a l.193 que casa.
+  const b = roda("4412", [], gh);
+  assert.equal(b.status, 0, b.out + b.err);
+  assert.match(b.out, new RegExp(`^approved_head: +${Y40}$`, "m"), b.out);
+  assert.match(b.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-PREFIXO-B\.md:4 @head-do-PR/, b.out);
+});
+
+test("[Y03] approved_head que e SHA de ARVORE (a do proprio objeto): ec=3 contradicao, nunca LIDO, e o declarado sai como foi escrito — ⇄ Y03: `expande()` sem `^{commit}` (l.186) expande a arvore", () => {
+  const T40 = git("rev-parse", `${S1}^{tree}`).trim();
+  const T8 = T40.slice(0, 8);
+  // ◐ ancoras: o prefixo resolve UNICO para a arvore (e o que o mutante expandiria) e NAO resolve como
+  // commit (o pristino nao expande) -- sem as duas o caso nao discrimina a l.186.
+  const comoObjeto = spawnSync("git", ["rev-parse", "--verify", "-q", T8], { cwd: repo, encoding: "utf8" });
+  assert.equal((comoObjeto.stdout ?? "").trim(), T40, "◐ o prefixo da arvore nao resolve unico para ela");
+  const comoCommit = spawnSync("git", ["rev-parse", "--verify", "-q", `${T8}^{commit}`], { cwd: repo, encoding: "utf8" });
+  assert.notEqual(comoCommit.status, 0, "◐ o prefixo da arvore resolve como commit");
+  const head = commitComAtas("y03", {
+    "agent-orchestration/omega/juntas/J-ARVORE.md": ["# J-ARVORE (PR #4421) — ciclo 1", "", `- **Objeto julgado:** \`${c7(S1)}\`.`, `- **approved_head:** \`${T8}\``, ""].join("\n"),
+  });
+  const r = roda("4421", [], shimTsv("gh-y03.sh", head, "main"));
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL \(contradicao/, r.out);
+  assert.doesNotMatch(r.out, /LIDO DA ATA/, "SHA de arvore nao e head aprovado");
+  assert.match(r.out, new RegExp(`approved_head declarado ${T8} \\(agent-orchestration/omega/juntas/J-ARVORE\\.md:4 @head-do-PR\\)`), r.out);
+});
+
+test("[Y04] DUAS atas casam o PR no cabecalho: ec=3 '2 atas casam', nunca AUSENTE — ⇄ Y04: `-gt 1` -> `-gt 2` na l.317", () => {
+  const head = commitComAtas("y04", {
+    "agent-orchestration/omega/juntas/J-DUPLA-A.md": ["# J-DUPLA-A (PR #4431) — ciclo 1", "", `- **Objeto julgado:** \`${c7(S1)}\`.`, ""].join("\n"),
+    "agent-orchestration/omega/juntas/J-DUPLA-B.md": ["# J-DUPLA-B (PR #4431) — ciclo 2", "", `- **Objeto julgado:** \`${c7(S2)}\`.`, ""].join("\n"),
+  });
+  const r = roda("4431", [], shimTsv("gh-y04.sh", head, "main"));
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL \(2 atas casam #4431 no cabecalho/, r.out);
+  assert.doesNotMatch(r.out, /AUSENTE/, "duas atas casando nao e 'nenhuma ata'");
+});
+
+test("[Y05] --sha-only inclui o SHA da linha approved_head mesmo quando ele NAO e objeto (ata contraditoria do #384) — ⇄ Y05: apagar a l.336", () => {
+  const completo = roda("384");
+  assert.equal(completo.status, 3, completo.out + completo.err);
+  assert.match(completo.out, new RegExp(`approved_head declarado ${S5} `), "◐ o modo completo nao lista o approved_head declarado");
+  const so = roda("384", ["--sha-only"]);
+  assert.equal(so.status, 3, so.out + so.err);
+  const linhas = so.out.split("\n").filter((l) => l.trim() !== "");
+  assert.ok(linhas.includes(S5), `--sha-only perdeu o SHA da linha approved_head: ${JSON.stringify(linhas)}`);
+  assert.deepEqual([...linhas].sort(), shas(completo.out), "os dois modos divergem no #384");
+});
+
+test("[F-25] artefato que NAO TERMINA (gh que dorme 120 s): `roda()` falha em 60 s nomeando a causa, em vez de travar a suite — ⇄ tirar o `timeout` de `roda()`", () => {
+  const dorme = shimQueDorme("gh-dorme-f25.sh");
+  try {
+    assert.throws(() => roda("383", [], dorme.caminho), /artefato nao terminou em 60 s/);
+  } finally {
+    writeFileSync(dorme.para, "", "utf8");
+  }
+  // ◐ o shim e NETO do spawn: sem a parada ele seguiria vivo ate 120 s. O caso so termina quando ele
+  // gravou o arquivo de fim -- nenhum processo deste caso fica para tras.
+  const espera = spawnSync(
+    "bash",
+    ["-c", 'for i in $(seq 100); do [ -f "$1" ] && exit 0; sleep 0.2; done; exit 1', "_", dorme.fim.split(path.sep).join("/")],
+    { encoding: "utf8" },
+  );
+  assert.equal(espera.status, 0, "o shim que dorme continuou vivo depois do caso");
 });
