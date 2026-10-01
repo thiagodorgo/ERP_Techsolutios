@@ -577,12 +577,37 @@
   idempotente, verificado contra banco prod-like. Fora do escopo do PR6 (config-as-code) — apontado por critico (C9).
 - acao: entregar o script de bootstrap dedicado na ATIVACAO (Runbook B), rodado one-shot com `ALLOW_PROD_SEED=1`
   inline (removido em seguida). NUNCA usa `db:seed`/demo.
-- status: aberto (follow-up de ativacao; nao bloqueia o merge da config inerte)
+- status: **EM ANDAMENTO** — script entregue no B-SAN3-09 (2026-10-01, branch `feat/bootstrap-platform-admin`); PR pendente de criação e merge. Entregues: E1 (`scripts/bootstrap-platform-admin.ts`, md5 `a5f5383dfbbabde9a63205bd40f64782`), E2 (23 testes sem banco), E3 (11 testes com banco de drill), E4 (Runbook B reescrito). Pós-merge: D2 (CI verde) e D3 (porteiro pós-merge) devem confirmar o fechamento desta pendência.
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: sem bootstrap versionado do 1º `platform_admin`, a primeira organização real em produção só nasce por SQL manual fora do repositório; bloqueia o go-live, não a demo.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
-  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **EM ANDAMENTO desde 2026-10-01** — B-SAN3-09 entregou o script; fechamento confirmado pelo porteiro pós-merge.</sub>
 - **dono:** `B-SAN3-09` (plano SAN3, §4.1 item 43 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
+---
+
+### Pendências abertas por B-SAN3-09 (2026-10-01)
+
+#### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE
+- descricao: o console web ainda não exibe o tenant `platform` criado pelo bootstrap; o menu e a lista de organizações do `platform_admin` precisam mostrar esse tenant.
+- acao: cobrir na tela de Organizações/Detalhe do B-SAN3-06a ou bloco equivalente.
+- status: aberto
+- severidade: MÉDIA — sem isso o `platform_admin` não vê o próprio tenant no console.
+- dono: B-SAN3-06a (a nomear na junta)
+
+#### P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP
+- descricao: `.env.example` não documenta `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD`, `PLATFORM_ADMIN_NAME` nem `ALLOW_PROD_BOOTSTRAP`.
+- acao: adicionar as quatro variáveis com comentário ao `.env.example` num bloco de housekeeping.
+- status: aberto
+- severidade: BAIXA — script funciona sem; afeta só onboarding de novos devs.
+- dono: bloco housekeeping (a nomear)
+
+#### P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG
+- descricao: `scripts/bootstrap-platform-admin.ts` usa `--skipLibCheck` no `tsc --noEmit`; o `tsconfig.json` raiz pode não incluir `scripts/` na compilação padrão.
+- acao: verificar e, se necessário, criar `scripts/tsconfig.json` incluindo o diretório.
+- status: aberto
+- severidade: BAIXA — tsc direto no arquivo passa; afeta só o build da IDE.
+- dono: bloco housekeeping (a nomear)
 
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem

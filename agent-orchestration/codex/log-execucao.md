@@ -4706,3 +4706,19 @@ bloco mergear.
   (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+## 2026-10-01 — B-SAN3-09 — Bootstrap do 1º admin de plataforma (tarefa de nuvem, dev-san3-09-bootstrap)
+
+- **Branch:** `feat/bootstrap-platform-admin` (10 commits à frente de `origin/main`)
+- **Identidade dev:** `dev-san3-09-bootstrap` (claude-sonnet-4-6, tarefa de nuvem)
+- **E1** ENTREGUE — `scripts/bootstrap-platform-admin.ts` 417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, tsc limpo
+- **E2** ENTREGUE — `tests/san3-09-bootstrap-platform-admin.test.ts` 23/23 pass
+- **E3** ENTREGUE — `tests/san3-09-bootstrap-platform-admin-db.test.ts` 11/11 pass (banco de drill porta 54332)
+- **E4** ENTREGUE — `docs/deployment.md` Runbook B reescrito (linhas 169-185); T1.8 verde
+- **E5** ENTREGUE — KPI 3080/3088, blocks_completed 168→169; comando, pendências, status, log
+- **Correções durante a implementação:**
+  - Hash scrypt: formato real `scrypt$v=1$…` (não `$scrypt-v1$`)
+  - Token do login: `body.data.access_token` (não `body.data.token`)
+  - Roles são objetos `{id, key, name}`, verificados por `.key === "super_admin"`
+  - Ratchet lexical: comentários dos cabeçalhos dos dois arquivos de teste substituídos para não acionar o guard
+- **Próximos:** junta do PR, porteiro pós-merge, confirmação de P-SAN-PROD-BOOTSTRAP

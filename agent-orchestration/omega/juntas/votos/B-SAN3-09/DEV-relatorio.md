@@ -72,6 +72,31 @@ Saída: 23/23 pass (incluindo `ok 23 - T1.8 doc-guard Runbook B`)
 
 Veredito parcial: E4 verde — Runbook B atualizado, T1.8 verde, `git diff --check` limpo.
 
-## §E5 — EM APURACAO (KPI + registro)
+## §E5 — ENTREGUE — KPI + registro (2026-10-01T02:30Z aprox.)
 
-## §bateria — EM APURACAO
+`kpis-latest.json`: `snapshot_date=2026-10-01`, `version=B-SAN3-09`, `blocks_completed=169`, `backend_tests=3080/3088`.
+`kpis-history.json`: entrada B-SAN3-09 appended.
+`kpis-history.md`: seção B-SAN3-09 appended.
+`node scripts/kpi-freeze.mjs` → `cópia congelada reinjetada (snapshot 2026-10-01, 99009 bytes)`.
+`node --check Kpis/app.js` → OK.
+`node --test --import tsx tests/kpi-dashboard-charts.test.ts` → 17/17 pass.
+`agent-orchestration/codex/comandos/B-SAN3-09-bootstrap-platform-admin.md` → criado.
+`agent-orchestration/controle/pendencias.md` → P-SAN-PROD-BOOTSTRAP → EM ANDAMENTO; 3 novas pendências abertas.
+`agent-orchestration/docs/status-geral.md` → seção B-SAN3-09 appended.
+`agent-orchestration/codex/log-execucao.md` → entrada B-SAN3-09 appended.
+`git diff --check` → (vazio) ✓
+
+Veredito parcial: E5 verde — KPI e registro entregues.
+
+## §bateria — CONCLUÍDA (2026-10-01T02:30Z aprox.)
+
+| Teste | Resultado |
+|-------|-----------|
+| `tests/san3-09-bootstrap-platform-admin.test.ts` | 23/23 pass ✓ |
+| `tests/san3-09-bootstrap-platform-admin-db.test.ts` | 11/11 pass ✓ |
+| `tests/db-catalog-write-guard.test.ts` | 5/5 pass ✓ |
+| `tests/kpi-dashboard-charts.test.ts` | 17/17 pass ✓ |
+| `npm test` (DATABASE_URL drill) | 3088 total, 3080 pass, 6 fail (Redis ausente), 2 skip ✓ |
+| `git diff --check` | (vazio) ✓ |
+| `node --check Kpis/app.js` | OK ✓ |
+| `node scripts/kpi-freeze.mjs --check` | em dia ✓ |

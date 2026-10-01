@@ -2978,3 +2978,22 @@ próprio texto, §C7.4-bis) fez três coisas:
 `kpis-history.json`: `pr 392` · `merge_commit fc3363e38aabd77f54e6b53034128182f8000571` (de
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
+
+## 2026-10-01 — B-SAN3-09 (PR null, na autoria) — Bootstrap do 1º admin de plataforma: script idempotente, guard de produção, runbook B
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | **3052/3054 → 3080/3088** — reexecução real (`DATABASE_URL=postgresql://postgres@127.0.0.1:54332/erp_san3_09_dev npm test`); +34 casos (+23 E2 + 11 E3); 6 fail pré-existentes por Redis ausente no cluster de drill |
+| Smoke / Flutter | **CARREGADOS** (§C3.3) — 1202/1202, 864/864. `git diff --name-only origin/main...HEAD -- frontend/ mobile/` vazio |
+| Blocos Entregues | **168 → 169** — +1 bloco de implementação, contado a partir do valor publicado na `origin/main` (`b3f0af5f`, #394 = 168) |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — entrega script de operação, não funcionalidade do produto |
+| pr / merge_commit / approved_head | `null` / `null` / `null` **na autoria** (§C3.5) |
+
+**O que o bloco entrega.**
+
+- **E1** — `scripts/bootstrap-platform-admin.ts` (417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, `tsc --noEmit --strict` limpo): script idempotente de provisionamento do 1º tenant `platform` + usuário `super_admin`. Trava `pg_advisory_xact_lock(20260909n)`. Guard `ALLOW_PROD_BOOTSTRAP` strict-bool (`1/true/yes/on`; variável independente do `ALLOW_PROD_SEED`). Senha nunca via argv (`PASSWORD_IN_ARGV` exit 2). 8 passos em transação com `setTenantRlsContext`. CE-G1 import allowlist. `--dry-run`, `--password-stdin`, `--reset-password`.
+- **E2** — `tests/san3-09-bootstrap-platform-admin.test.ts` T1.1–T1.8, 23/23 pass sem banco. T1.8 doc-guard verde após E4.
+- **E3** — `tests/san3-09-bootstrap-platform-admin-db.test.ts` T2.1–T2.10, 11/11 pass com banco de drill descartável (porta 54332). Papéis efêmeros NOSUPERUSER NOBYPASSRLS via `createEphemeralRole`. RLS com `setTenantRlsContext` verificado (sem GUC: 0 usuários visíveis). Idempotência e concorrência com `Promise.allSettled`.
+- **E4** — `docs/deployment.md` Runbook B (linhas 169-185) reescrito com todos os termos exigidos pelo T1.8: `ALLOW_PROD_BOOTSTRAP`, `scripts/bootstrap-platform-admin.ts`, `--dry-run`, `--password-stdin`, `PRODUCTION_OPT_IN_MISSING`, `B-O6R-01`.
