@@ -302,19 +302,27 @@ Veredito parcial §7: A12 ganha base propria (nao herdada) e a superficie fechad
 
 **ERRATA ao §7 (2026-10-01T23:50Z):** a linha "P-n → 13 suites escrevem catalogo, 8 fazem DDL de dono" foi escrita a partir do numero da v2 ANTES de a saida chegar; a saida REAL do meu comando foi **13 + 10** (`git grep -l -E 'TRUNCATE|ALTER TABLE|DROP TABLE|CREATE EXTENSION|DISABLE TRIGGER' origin/main -- tests | wc -l` → 10). O plano v3 publica 13 + 10. Licao registrada: numero so entra no texto DEPOIS de lido da saida.
 
-**ERRATA 2 ao §7 (2026-10-01T23:58Z):** o "10" de DDL inclui `tests/helpers/auth-identity-fixture.ts` e `tests/helpers/upload-fixtures.ts` (o comando de catalogo filtrava `helpers/`; o de DDL nao). Sem `helpers/` = **8** — o numero da v2 REPRODUZ. O plano publica "13 + 8 (10 com os 2 helpers)".
+**ERRATA 2 ao §7 (2026-10-01T23:44Z — hora corrigida: o "23:58Z" antes aqui foi digitado, nao lido; o commit que gravou esta linha, `e78e5bc`, e de 23:44:28Z):** o "10" de DDL inclui `tests/helpers/auth-identity-fixture.ts` e `tests/helpers/upload-fixtures.ts` (o comando de catalogo filtrava `helpers/`; o de DDL nao). Sem `helpers/` = **8** — o numero da v2 REPRODUZ. O plano publica "13 + 8 (10 com os 2 helpers)".
 
-## §8 — Baseline N, A24 (tipo `any`), P7 por ref, KPI vigente (2026-10-01T23:58Z)
+## §8 — Baseline N, A24 (tipo `any`), P7 por ref, KPI vigente (2026-10-01T23:44Z — hora corrigida pelo commit `e78e5bc`; o §9 abaixo, 23:50Z, veio depois)
 
 ### MEDIDO
 ```
-$ grep -c -E '^\s*test\(' tests/o6r06-usage-atomic-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts tests/rls-tenant-isolation.test.ts  → (saida acima: contagens por arquivo)
-$ grep -n NOSUPERUSER tests/rls-tenant-isolation.test.ts → l.44 (papel real sem bypass)   · o6r06-*: createRoleWithoutBypassRls/createEphemeralRole (saida acima)
+$ grep -c -E '^\s*test\(' tests/o6r06-usage-atomic-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts tests/rls-tenant-isolation.test.ts
+tests/o6r06-usage-atomic-db.test.ts:16
+tests/o6r06-allocation-basis-rls-db.test.ts:11
+tests/rls-tenant-isolation.test.ts:2
+$ grep -n -E 'createRoleWithoutBypassRls|createEphemeralRole' tests/o6r06-usage-atomic-db.test.ts → l.215 (A7), l.547 (A17), l.610/619 (definicao: "PAPEL SEM BYPASSRLS pelo ARNES UNICO")
+$ grep -n NOSUPERUSER tests/rls-tenant-isolation.test.ts → l.44: `CREATE ROLE "${roleName}" LOGIN PASSWORD '…' NOSUPERUSER…` (papel real sem bypass); l.2872 (comentario)
   → baseline N = 5 testes sob papel real que exercem as mesmas tabelas (A7, A17 de usage-atomic; B2′, B11 de allocation-basis; rls-tenant-isolation l.19) — o numero da v2 (N8 da r1) reproduz pela mesma leitura; nenhum cobre trava, remedio ou fiacao
 $ for r in HEAD origin/main 513937b; do git show $r:CLAUDE.md | grep -c 'P7 — Pausa ordenada'; done → HEAD(ramo): 0 · origin/main: 1 · 513937b: 1
   → o P7 (D-PAUSA-GRAVA-E-PARA) EXISTE em origin/main (#397) e NAO no CLAUDE.md do ramo (base 5b6e1036, anterior ao #397): o plano cita P7 com a ref origin/main; a integracao da main e do orquestrador
-$ node $SCR/gerador-v3.mjs . --mutant $SCR/novas/N10_any.ts | grep zz-mut/N10 → (saida acima) — fixture `(prisma as any).cloudUsageEvent.findMany({})`
-$ git show origin/main:Kpis/kpis-latest.json | node -e '…' → (saida acima: chaves de cima e numeros)
+$ node $SCR/gerador-v3.mjs . --mutant $SCR/novas/N10_any.ts | grep zz-mut/N10 — fixture `(prisma as any).cloudUsageEvent.findMany({})`
+L1	src/modules/zz-mut/N10_any.ts	-.platformList	(prismaasany).cloudUsageEvent	cloudUsageEvent.findMany	cloud_usage_events	CRU	×1
+  → +1 (VERMELHO), classe CRU: o `as any` e descascado e o acessor NOMEADO e reconhecido pela sintaxe; TIPO-DESCONHECIDO (0 no head) fica para o caso sem nome de acessor (declarado sem fixture — A24 do plano)
+$ git show origin/main:Kpis/kpis-latest.json | node -e '…'  (chaves de cima: snapshot_date,version,source,scope,release,metrics,policy,notes,limitations,production_readiness,findings,roadmap,recent,series_breaks)
+release.pr = 397 · release.merge_commit = 513937b0555e2a6175e7e89d8ae9e44dbc995f8a · release.approved_head = 67c2c280612cb644f246af0b5410cab59afe028d
+metrics.blocks_completed.value = 169 · metrics.backend_tests = 3052/3054 · metrics.frontend_smoke_tests = 1202/1202 · metrics.flutter_tests = 864/864 · metrics.mvp_demo.value = 99 · metrics.mvp_vendavel.value = 88 · metrics.backend_contract_tests_focused = 34/34
 ```
 
 ## §9 — Entrega, limpeza provada e o que ficou de fora (2026-10-01T23:50Z)
@@ -338,3 +346,19 @@ git status --short | wc -l → 0 (nada fora dos dois arquivos entregues foi toca
 - O **papel real** do Fly (H2/H3/H5): segredo do dono — hipotese com comando.
 - O T11b (job diario) e T11c (cobranca) **nao** foram executados por mim na superficie HTTP (so o T11a, 50 × vazio); a base deles e o Apendice B (P2, P3, P4, P6 = 0/42501) re-executado por mim — ficam como vermelho-controle a colar na ata pelo dev/junta.
 - O `deploy-manifest-parity` (28/28) e os numeros de `production-runtime-gates` (63) nao foram re-executados por mim: a r2 os executou no head cuja arvore `tests` e identica (declarado com proveniencia no §0.3/§8 do plano).
+
+## §10 — Correcoes pedidas pelo orquestrador apos a entrega: as duas suites que eu NAO tinha executado, e o que fica declarado como herdado (2026-10-02T00:12Z)
+
+### MEDIDO
+```
+$ PATH=/opt/node20/bin:$PATH node -v → v20.20.0
+$ PATH=/opt/node20/bin:$PATH timeout 300 node --test --import tsx tests/deploy-manifest-parity.test.ts   → ec=0 · # tests 28 · # pass 28 · # fail 0 · # skipped 0 · # duration_ms 1105.323348
+$ PATH=/opt/node20/bin:$PATH timeout 300 node --test --import tsx tests/production-runtime-gates.test.ts → ec=0 · # tests 63 · # pass 63 · # fail 0 · # skipped 0 · # duration_ms 450.926079
+$ grep -c -E '^\s*test\(' tests/deploy-manifest-parity.test.ts tests/production-runtime-gates.test.ts → 22 · 30   (grep ≠ execucao: 28 e 63 executados — a licao F10 da r1 se repete e e por isso que o plano publica o numero EXECUTADO)
+```
+H6/A9 do plano passam a citar **28/28 medido por mim**; §8 do plano cita **63 medido por mim**. Os dois arquivos TAP ficam em `$SCR/suite-*.tap`.
+
+### O que FICA herdado, dito exatamente (corrige a frase do cabecalho do plano "nenhum numero herdado")
+- **T11b e T11c** (job `cloud-usage.aggregate-daily` e a cadeia `POST calculation-runs → tenant-charges → summary` sob papel efemero na superficie HTTP/job): **nao foram executados por ninguem** — nem v2, nem r2 (o §R.3 da v2 e o §2.2(b) da r2 so mediram `GET /cloud-usage/summary`), nem eu (so o T11a, §7: 50 × vazio). A base deles e o Apendice B (P2/P3/P4/P6 = 0/0/0/42501), que EU re-executei (§4). No plano isso vira hipotese H7-a/H7-b com o vermelho-controle a colar na ata pelo dev e conferir pela junta C3 — nao e numero herdado, e numero AUSENTE, declarado.
+- **P-j, P-m, P-p** (§0.3 do plano): medidos pela v2/r1/r2 em `3b1fe0f9` (arvore `src/tests/scripts/prisma` identica a `origin/main`), **nao re-medidos por mim** — ja declarados com proveniencia na tabela do §0.3; o cabecalho do plano passa a dizer isso em vez de "nenhum".
+- **N4** (tempo de saida sem `$disconnect`, ~11 s): medicao da r1, aceita na v2 e nesta v3 sem re-execucao (declarado em A6).
