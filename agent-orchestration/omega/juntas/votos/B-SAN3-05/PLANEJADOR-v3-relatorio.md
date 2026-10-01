@@ -299,3 +299,5 @@ Premissas da v2 re-medidas (baratas, no `origin/main`): P-a → 8 linhas (1 exec
 ### HIPOTESE
 - H7-a: o job `cloud-usage.aggregate-daily` sob papel efemero agrega 0 linhas hoje (mesma classe de P1/P2 do Apendice B) — derruba com o T11b do plano devolvendo agregados > 0 sob efemero no head-base.
 Veredito parcial §7: A12 ganha base propria (nao herdada) e a superficie fechada do §2.3 esta enumerada da fonte.
+
+**ERRATA ao §7 (2026-10-01T23:50Z):** a linha "P-n → 13 suites escrevem catalogo, 8 fazem DDL de dono" foi escrita a partir do numero da v2 ANTES de a saida chegar; a saida REAL do meu comando foi **13 + 10** (`git grep -l -E 'TRUNCATE|ALTER TABLE|DROP TABLE|CREATE EXTENSION|DISABLE TRIGGER' origin/main -- tests | wc -l` → 10). O plano v3 publica 13 + 10. Licao registrada: numero so entra no texto DEPOIS de lido da saida.
