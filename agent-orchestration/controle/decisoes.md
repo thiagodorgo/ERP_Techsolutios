@@ -2799,3 +2799,25 @@ não estão na `main`. Cruzados por script com os PRs em voo (#388, #389, #393) 
 **O que isto NÃO autoriza.** Não traz nenhum arquivo do `demo/investidor` para a `main` por si; não passa por
 cima da ordem do dono (perda de dado → multi-tenant → segurança → dinheiro → confiabilidade → contratos →
 fluxos de venda → acabamento → documentação); não permite à nuvem mergear.
+
+## D-MANDATO-FORMA (decisão do dono, 2026-09-30) — o mandato que lança um agente é um documento de campos declarados
+
+**Palavras do dono:** `"1=a"` — resposta à pergunta da §8.8 de `agent-orchestration/omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md`,
+transcrita pelo orquestrador.
+
+**Decisão.** O mandato de lançamento de um agente (cadeira, dev, gate, planejador, auditor) é um **documento de campos
+declarados** — a forma **(A)** da §8.8: duas seções, `## MEDIDO` (toda afirmação com `medido por: <comando>` e a saída em
+cerca) e `## HIPOTESE` (toda afirmação com o comando que a derruba); a instrução ("julgue X") vira hipótese com o comando
+que a derrubaria; a prosa narrativa que não é afirmação nem hipótese **sai** do mandato. O pré-voo do `B-GOV-MANDATO`
+(`scripts/mandato-preflight.sh`) é o instrumento inteiro — nenhuma ferramenta nova.
+
+**O que isto fixa (do conserto da máquina, §8.3, válido nas duas respostas e agora na forma A):** o mandato existe como
+**arquivo versionado antes do lançamento** (`omega/juntas/votos/<bloco>-ciclo<N>/00-mandatos/<papel>.md`), passa pelo
+instrumento **no head do lançamento** com o veredito gravado (`ec`, head, blob, UTC), o agente declara `mandato_md5`, e o
+inspetor **re-executa** o instrumento no head do objeto — veredito gravado é insumo, não fato.
+
+**Consequência imediata:** os mandatos do ciclo 4 do `B-GOV-MANDATO` deixam de ser "forma provisória" e saem na forma A em
+definitivo; o passo 5 da §8.6 fica como está. Fecha `P-GOV-MANDATO-FORMA`.
+
+**O que NÃO decide:** não muda o contrato (`CLAUDE.md`) por si — o corpo do inspetor (item 2.4) e a frase na ata (§C7.1) são
+peças do `B-GOV-CICLOS-RESIDUAIS`/`B-GOV-MAQUINA-PRE-JUNTA` (`P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO`).
