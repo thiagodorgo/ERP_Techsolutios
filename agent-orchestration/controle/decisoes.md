@@ -2872,3 +2872,87 @@ definitivo; o passo 5 da §8.6 fica como está. Fecha `P-GOV-MANDATO-FORMA`.
 
 **O que NÃO decide:** não muda o contrato (`CLAUDE.md`) por si — o corpo do inspetor (item 2.4) e a frase na ata (§C7.1) são
 peças do `B-GOV-CICLOS-RESIDUAIS`/`B-GOV-MAQUINA-PRE-JUNTA` (`P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO`).
+
+## D-PAUSA-GRAVA-E-PARA (decisão do dono, 2026-10-01) — sob ordem de pausa, o agente grava o estado e para sozinho
+
+**Palavras do dono (verbatim):** `"documente, quando eu mandar uma ordem de pausa, o agente grava o estado e para sozinho.
+publique nos documentos e deixe isso como padrão"`. A ordem que a motivou, minutos antes: `"pause tudo, o limite esta perto
+do teto, nao use mais tokens ate os limites serem resetados, assim eu planejo nao perde contexto e retorno rapido quando a
+seção estiver ok"`.
+
+**Decisão.** Ordem de pausa do dono é **corte limpo, não morte**. Todo agente vivo, ao recebê-la (repassada pelo
+orquestrador em 1 linha, `PAUSA`), termina o comando em curso, grava `## PAUSA <hora UTC>` no seu arquivo de evidência
+(head medido · feito, com comando e saída · falta · próximo comando exato · arquivos meio-escritos nomeados) e **para
+sozinho**, com mensagem final de 1 linha apontando o arquivo. Não inicia item novo. O orquestrador dá o tempo de gravar,
+só então para quem não respondeu, para os vigias, declara quais jobs locais sem modelo ficam vivos (rodada de mutação, CI)
+e registra o roteiro de retomada antes de encerrar o turno. A retomada é pela **mesma identidade, do mesmo mandato**, com
+a seção `## PAUSA` como roteiro (P3), medindo o que ficou meio-escrito antes de confiar.
+
+**Onde vive.** Norma **P7** do protocolo de junta resiliente — `CLAUDE.md` §C7.7, espelhada byte a byte em `AGENTS.md`
+(regra de espelhamento), fonte longa em `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md`; o modelo de
+mandato colado no disparo de cada agente ganha a linha `[P7]`; lição em `agent-orchestration/docs/conhecimento-de-terreno.md`
+§2.2.
+
+**Por quê (medido).** Em 01/10/2026 06:4x, sob a ordem de pausa, o orquestrador **matou** o Dev-T4 do ciclo 4 do
+`B-GOV-MANDATO` (`TaskStop`) no meio de uma conversão LF→CRLF de `tests/mandato-preflight.test.ts`: parcial possivelmente
+inconsistente, ~20–40 min de redo. A pausa estava certa (as fases caras — E4 de 5–6 h e a junta — ainda viriam); o corte
+é que foi sujo. A ordem de pausa **autoriza o gasto mínimo de gravar** — um comando — porque é mais barato que o redo.
+
+**O que NÃO decide.** Não altera P1–P6 (quando a pausa não chega — 429, queda, suspensão do PC — é a evidência incremental
+que salva); não para job local sem modelo; não dispensa a junta do PR que publica esta decisão (§C7.1).
+
+**Emenda de 2026-10-01 — o que entrou além do texto do orquestrador, e por quê (§A2: nada em silêncio).** Quem
+escreve: `dev-pausa-emenda`, desenvolvedor da emenda do #397, identidade nova (Opus 5.5). O orquestrador escreveu o
+texto acima e **não emenda o próprio texto** (§C7.4-bis); o `planejador-mestre` do bloco mediu sete achados dentro do
+bloco (`docs/revisoes/SAN3/B-GOV-PAUSA-plano.md` §5: S-01, S-02, S-03, S-04, S-05, S-07, S-11), e esta emenda
+implementa a **propriedade** de cada um, sem julgar se o achado procede. **Toda frase abaixo é elaboração do
+desenvolvedor da emenda, não palavra do dono** — as palavras do dono continuam sendo só as duas citações verbatim do
+início desta entrada. A numeração continua a das elaborações T-01…T-17 do plano (§3), para a cadeira C1 julgar uma
+a uma.
+
+- **T-18** (S-01) `[consist]` A abertura do item 7 do §C7 dizia *"P1–P6, inline"* e *"as seis normas abaixo"* — com
+  a P7 são sete. Passa a dizer *"P1–P7"* e *"as sete normas"*, e o cabeçalho do item cita as duas decisões
+  (`D-JUNTA-RESILIENTE`, `D-PAUSA-GRAVA-E-PARA`). `CLAUDE.md` e `AGENTS.md`, mesmo commit, hunks idênticos.
+- **T-19** (S-02) `[consist]` O escopo declarado do protocolo — item 7 nos dois contratos e cabeçalho do
+  `PROTOCOLO-JUNTA-RESILIENTE.md` — dizia *"toda junta, inspeção de terreno e porteiro"* e que o protocolo muda
+  *"como o trabalho sobrevive à morte de quem o fez"*; a P7 alcança *"cada agente vivo"* e diz *"não é morte"*.
+  Passa a dizer que a P7 alcança, além deles, **todo agente vivo — dev, planejador, fábrica — e o orquestrador**, que
+  a origem medida das 14 quedas é a de **P1–P6**, e que o protocolo cobre a morte (P1–P6) **e a pausa ordenada pelo
+  dono** (P7, que não é morte).
+- **T-20** (S-03) `[espelho]` O lado Codex (`.agents/agents/README.md`, bloco *"Resiliência de junta"*) passa a
+  *"P1–P7"* e descreve o mesmo comportamento da P7, inclusive o destino de quem não tem arquivo de evidência e a
+  frase *"Pausa não é morte nem parada"*.
+- **T-21** (S-04) `[acrésc]` **Destino da seção `## PAUSA` para cada sujeito.** O texto dizia *"no seu arquivo de
+  evidência"*, que dev, planejador e fábrica não têm. Passa a dizer: o `<cadeira>-evidencia.md` do P1 (jurado,
+  inspetor e porteiro, que já o têm por P1); quem não tem um usa **o arquivo de saída que o seu mandato nomeia** (o
+  plano, o relatório — os mandatos versionados em `votos/<BLOCO>/00-mandatos/` já o fazem: o do planejador do #397
+  diz "no plano", o deste dev diz "no relatório"); e, se o mandato não nomear nenhum, **o orquestrador nomeia um no
+  disparo**. Mínimo: nenhum artefato novo; o modelo de mandato (linha `[P7]`, escrita para cadeira) fica intacto.
+- **T-22** (S-05) `[acrésc]` **Destino do roteiro de retomada.** O texto mandava registrá-lo *"no custo/trilha"* (e
+  *"no arquivo de custo/trilha"* na fonte), artefato que não existe na ref (`git grep -i 'custo/trilha'` só achava
+  os cinco arquivos deste PR). Passa a ser **uma seção `## PAUSA <hora UTC>` de
+  `agent-orchestration/docs/status-geral.md`** — arquivo que existe e que o §A4 item 1 manda ler **antes de cada
+  bloco**, logo o lugar onde a sessão que retoma o encontra sem regra nova de leitura. O conteúdo do roteiro não foi
+  desenhado aqui.
+- **T-23** (S-07) `[consist]` A lista de jobs locais sem modelo passa a ser a da fonte (`rodada de mutação, CI,
+  cluster descartável`, `PROTOCOLO-JUNTA-RESILIENTE.md`, que *"em divergência, vale"*) nos dois contratos (diziam
+  `rodada de mutação, CI`) e no `conhecimento-de-terreno.md` (dizia `E4, CI` — `E4` é nome de fase do #393, não
+  categoria).
+- **T-24** (S-11) `[consist]`+`[acrésc]` *"pare"* sai dos exemplos de ordem de pausa (contratos e fonte): não está
+  em nenhuma das duas ordens do dono e é o verbo de **parada** no §C7.5 e no §C7.6-bis (*"PARA."*). Uma frase nova
+  separa os dois: *"Também não é parada (§C7.5, §C7.6-bis), que nasce de regra e devolve a decisão ao dono: a pausa
+  nasce da ordem do dono e se retoma."* O *"para sozinho"* do texto e o *"pare sozinho"* da linha `[P7]` ficam: são
+  o verbo do dono (W3).
+
+**O parágrafo *Decisão.* acima fica como o orquestrador o transcreveu** — é registro, e §A2 não apaga em silêncio.
+Onde ele difere do texto vivo (*"no seu arquivo de evidência"* sem destino para quem não tem um; a lista
+`(rodada de mutação, CI)`), **vale o texto vivo**: `CLAUDE.md` §C7.7, o espelho `AGENTS.md` e a fonte
+`PROTOCOLO-JUNTA-RESILIENTE.md`.
+
+**KPI.** O commit `3b00cae9` dizia *"`Kpis/*` intocados: registro sem bloco, precedente #396"*. O plano (§6) mediu
+o precedente de mesma natureza — o #394 mudou o contrato, tem ID de bloco e junta, e contou bloco; o #396 não tem
+nenhuma das três. Esta emenda segue o plano: o bloco atualiza `Kpis/*` no próprio PR (§C3.1), com as trilhas de
+teste carregadas (§C3.3) e `blocks_completed` recontado contra a `origin/main` no instante do commit.
+
+**Pendências nomeadas pelo plano (§7 E2c), abertas por esta emenda com dono:** `P-GOV-OBITUARIO-SEMTETO`
+(pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10) — em `controle/pendencias.md`, índice pelo gerador.

@@ -4976,3 +4976,19 @@ publicado **rotulado como parcial**, com denominador e taxa, para o próximo blo
   fato do K2b (sem número): a ferramenta CONTA as linhas de `--equivalentes` e não confere o id — um arquivo fora do repo com o id inventado `999` absolveu o não-coberto 245 (`EQUIVALENTES-DECLARADOS=1`, `ec=0`; controle sem fixture: `ec=1`); na matriz publicada os ids == NÃO-COBERTOS da rodada B, provado por script.
 - **KPI:** valores inalterados (3403/3405, 169); o history fecha a citação N/K que o K1 e o K1b deixaram marcada
   "matriz publicada no K2" (plano §14.12 passo 5).
+
+## B-GOV-PAUSA (PR #397, na autoria, 2026-10-01) — sob ordem de pausa, o agente grava o estado e para sozinho
+
+- **Decisão transcrita:** `D-PAUSA-GRAVA-E-PARA` (dono, 2026-10-01) — vira a norma **P7** do protocolo de junta
+  resiliente (`CLAUDE.md` §C7.7, espelho `AGENTS.md`, fonte `PROTOCOLO-JUNTA-RESILIENTE.md`, linha `[P7]` no modelo de
+  mandato, lição no `conhecimento-de-terreno.md` §2.2). Texto do orquestrador medido pelo plano
+  (`docs/revisoes/SAN3/B-GOV-PAUSA-plano.md`: 17 elaborações, 7 achados dentro do bloco) e emendado por dev de
+  identidade nova (`dev-pausa-emenda`): S-01, S-02, S-03, S-04, S-05, S-07 e S-11, declarados como T-18…T-24 em
+  `controle/decisoes.md`.
+- **Junta:** maioria de 3, sem crítico (plano §8; briefing `omega/juntas/BRIEFING-B-GOV-PAUSA.md`) — **ainda não
+  votou**; é a primeira junta sob a P7.
+- **Abertas, com dono:** `P-GOV-OBITUARIO-SEMTETO` (pré-existente; próximo bloco de registro ou este, por decisão na
+  ata) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10; `B-GOV-CICLOS-RESIDUAIS`). Índice pelo gerador: **423** cabeçalhos /
+  **412** IDs, **111** FECHADAS, **312** ABERTAS.
+- **KPI:** `blocks_completed` 168 → 169 (recontado contra a `origin/main` `5b6e1036`); trilhas de teste carregadas com
+  nota (nenhum código nem teste tocado); `pr 397`, `merge_commit`/`approved_head` `null` na autoria.

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **433** |
-| IDs distintos | 422 |
-| **ABERTAS** | **316** |
+| Cabecalhos `## P-` | **435** |
+| IDs distintos | 424 |
+| **ABERTAS** | **318** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **247** |
+| — das quais **ativas nesta rodada** | **249** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 117 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **433 cabecalhos para 422 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **435 cabecalhos para 424 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -215,7 +215,7 @@
 | `P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO` | 10050 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não |
 | `P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA` | 10061 | ALTA | sim | P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato  |
 
-## ABERTAS · balde B — processo/registro — 104
+## ABERTAS · balde B — processo/registro — 106
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -323,6 +323,8 @@
 | `P-GOV-MANDATO-3-FRONTEIRAS` | 9891 | BAIXA | sim | P-GOV-MANDATO-3-FRONTEIRAS (2026-09-29) — as fronteiras que os artefatos do ciclo 3 decl |
 | `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 10020 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
 | `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 10030 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
+| `P-GOV-OBITUARIO-SEMTETO` | 10082 | BAIXA | sim | P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no O |
+| `P-GOV-PAUSA-ESCADA-C76BIS` | 10092 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 

@@ -10078,3 +10078,23 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** o orquestrador leva ao dono e registra `D-MANDATO-FORMA` em `decisoes.md`.
 - **bloqueia:** não (a forma provisória é executável hoje).
 - **teste de encerramento:** entrada `D-MANDATO-FORMA` em `decisoes.md` com a resposta literal do dono; passo 5 da §8.6 ajustado.
+
+## P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no OBITUÁRIO de identidades — BAIXA
+
+- status: ABERTA (aberta pelo `B-GOV-PAUSA` (#397), emenda do `dev-pausa-emenda`, a partir do plano do bloco `docs/revisoes/SAN3/B-GOV-PAUSA-plano.md` §4 e §7 E2c)
+- **prova (N = 3 identidades; forma: `grep -c -i semteto agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` = **0** contra a ata `agent-orchestration/omega/juntas/J-B-GOV-SEM-TETO.md` l.21–23, que as nomeia votantes do #394 (APROVADO 3 × 0); causa: o PR de registro do #394 (#395, `3b1fe0f9`) versionou votos, inspetor e porteiro e não acrescentou as linhas de sepultamento — o último commit no OBITUÁRIO é `aadaa6d5`, 2026-09-20, anterior ao voto de 2026-09-28):** `jurado-semteto-c1-fidelidade-transcricao`, `jurado-semteto-c2-consistencia-normativa`, `jurado-semteto-c3-escopo-registro` — os três corpos seguem no diretório vivo (`.claude/agents/especialistas/` e o espelho `.agents/agents/especialistas/`).
+- **escopo:** `pre-existente` — evidência de data: voto de 2026-09-28 (`J-B-GOV-SEM-TETO.md`) e OBITUÁRIO parado em 2026-09-20 (`aadaa6d5`); o #397 não toca nenhum dos dois arquivos.
+- **efeito medido:** a conferência de inelegibilidade por nome (§C7.1-bis), que tem o OBITUÁRIO como "fonte primeira", não as acha; hoje o inspetor tem de conferi-las pela ata (o briefing do #397, §2, manda fazer isso).
+- **dono:** o próximo bloco de registro (sepultamento = linha nova no OBITUÁRIO, append-only, e saída dos corpos do diretório vivo, como o próprio OBITUÁRIO faz com as do `B-O6R-06`) — ou o próprio `B-GOV-PAUSA`, se o orquestrador decidir pagar, com a decisão declarada na ata `J-B-GOV-PAUSA.md`.
+- **bloqueia:** não.
+- **teste de encerramento:** `grep -c -i semteto agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` ≥ 3, com as linhas anteriores intactas (append-only: `git diff` do arquivo sem linha removida).
+
+## P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a pausa ordenada (P7) registram o trabalho em voo sem forma comum — BAIXA
+
+- status: ABERTA (aberta pelo `B-GOV-PAUSA` (#397), emenda do `dev-pausa-emenda`, a partir da nota **S-10** do plano `docs/revisoes/SAN3/B-GOV-PAUSA-plano.md` §5 e §7 E2c)
+- **prova (N = 2 regras; forma: `tr -d '\r' < CLAUDE.md | tr '\n' ' ' | grep -o 'o trabalho em *voo é \*\*registrado onde está\*\* ([^)]*)'` devolve 1 ocorrência — o §C7.6-bis manda registrar, na parada por Opus esgotado, "o trabalho em voo é registrado onde está (evidência P1, votos parciais, head medido)" sem citar a P7 nem a seção `## PAUSA`; a P7 cita o §C7.6-bis só para dizer que pausa não é parada (frase da emenda, T-24); causa: as duas nasceram em decisões diferentes — `D-FALLBACK-MODELO-FABLE-OPUS` (2026-09-07/08) e `D-PAUSA-GRAVA-E-PARA` (2026-10-01) — e ligar uma à outra não está nas palavras do dono):** a parada por esgotamento registra o trabalho em voo sem forma prescrita; a P7 dá forma (`## PAUSA <hora UTC>` com head · feito · falta · próximo comando · meio-escritos) ao mesmo ato só sob ordem do dono.
+- **escopo:** nota S-10 do plano — as duas regras são coerentes hoje (nenhuma nega a outra); a ligação seria elaboração nova, fora das palavras do dono, e por isso não entrou no #397.
+- **efeito medido:** nenhum operável hoje; o custo é de forma — uma parada por esgotamento pode deixar o trabalho registrado num formato que a retomada da P7 não reconhece.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (já dono da fila residual de governança do #394), salvo o orquestrador nomear outro na ata; se a ligação for normativa, com decisão do dono em `decisoes.md`.
+- **bloqueia:** não.
+- **teste de encerramento:** o §C7.6-bis diz em que forma o trabalho em voo é registrado na parada por esgotamento (a seção `## PAUSA` da P7 ou outra, declarada), espelhado no `AGENTS.md`; ou o dono dispensa em `decisoes.md`.
