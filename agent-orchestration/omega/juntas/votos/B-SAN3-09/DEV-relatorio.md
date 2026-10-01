@@ -41,7 +41,22 @@ Autor git corrigido: thiagodorgo / 42915563+thiagodorgo@users.noreply.github.com
 
 Veredito parcial: E2 verde — 22 testes sem banco, 1 doc-guard (T1.8) aguarda E4.
 
-## §E3 — EM APURACAO (testes com banco de drill)
+## §E3 — ENTREGUE — tests/san3-09-bootstrap-platform-admin-db.test.ts (2026-10-01T22:30Z)
+
+Comando: `DATABASE_URL=postgresql://postgres@127.0.0.1:54332/erp_san3_09_dev node --test --import tsx tests/san3-09-bootstrap-platform-admin-db.test.ts 2>&1 | grep -E '# (pass|fail)'`
+Saída: `# pass 11` / `# fail 0` ✓ (10 subtestes T2.1–T2.10, 1 outer test)
+
+Ratchet lexical (db-catalog-write-guard): 0 ocorrências ✓
+
+Correções aplicadas durante a implementação:
+- Hash scrypt: formato real é `scrypt$v=1$…` (não `$scrypt-v1$`) — password_algorithm="scrypt-v1", mas o hash inicia com `scrypt$v=1$`
+- Resposta do login: token em `body.data.access_token` (não `body.data.token`); roles são objetos `{id, key, name}`, verificado por `.key === "super_admin"`
+
+Banco de drill: `erp_san3_09_dev` em `/var/lib/postgresql/erp_san3_09_dev/data`, porta 54332, já provisionado com RBAC.
+Papel efêmero (T2.7): criado via `createEphemeralRole` (arnês — `tests/helpers/auth-identity-fixture.ts`), NOSUPERUSER NOBYPASSRLS provado por execução.
+
+Veredito parcial: E3 verde — 10/10 subtestes, banco de drill descartável por subtest (T2.7/T2.9/T2.10), teardown `DROP DATABASE … WITH (FORCE)`.
+
 
 ## §E4 — EM APURACAO (Runbook B em docs/deployment.md)
 

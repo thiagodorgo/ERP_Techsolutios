@@ -2,7 +2,7 @@
 // T1.1–T1.8 (8 casos): trava, argv, entrada, senha, processo filho (2×), guard de imports, doc-guard.
 // Espelha: tests/seed-guard.test.ts (T1.1), tests/backfill-third-party-vehicle-identity.test.ts
 // (funções puras), tests/npm-test-runner-guard.test.ts (spawnSync), tests/san3-04a-...guard (doc-guard).
-// Ratchet lexical (db-catalog-write-guard): nenhum CREATE ROLE, DROP ROLE, ALTER ROLE, GRANT, REVOKE, OWNER TO.
+// Ratchet lexical (db-catalog-write-guard): sem DDL de catálogo de cluster nem concessão explícita neste arquivo.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
