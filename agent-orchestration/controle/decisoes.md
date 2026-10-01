@@ -2821,3 +2821,31 @@ definitivo; o passo 5 da §8.6 fica como está. Fecha `P-GOV-MANDATO-FORMA`.
 
 **O que NÃO decide:** não muda o contrato (`CLAUDE.md`) por si — o corpo do inspetor (item 2.4) e a frase na ata (§C7.1) são
 peças do `B-GOV-CICLOS-RESIDUAIS`/`B-GOV-MAQUINA-PRE-JUNTA` (`P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO`).
+
+## D-PAUSA-GRAVA-E-PARA (decisão do dono, 2026-10-01) — sob ordem de pausa, o agente grava o estado e para sozinho
+
+**Palavras do dono (verbatim):** `"documente, quando eu mandar uma ordem de pausa, o agente grava o estado e para sozinho.
+publique nos documentos e deixe isso como padrão"`. A ordem que a motivou, minutos antes: `"pause tudo, o limite esta perto
+do teto, nao use mais tokens ate os limites serem resetados, assim eu planejo nao perde contexto e retorno rapido quando a
+seção estiver ok"`.
+
+**Decisão.** Ordem de pausa do dono é **corte limpo, não morte**. Todo agente vivo, ao recebê-la (repassada pelo
+orquestrador em 1 linha, `PAUSA`), termina o comando em curso, grava `## PAUSA <hora UTC>` no seu arquivo de evidência
+(head medido · feito, com comando e saída · falta · próximo comando exato · arquivos meio-escritos nomeados) e **para
+sozinho**, com mensagem final de 1 linha apontando o arquivo. Não inicia item novo. O orquestrador dá o tempo de gravar,
+só então para quem não respondeu, para os vigias, declara quais jobs locais sem modelo ficam vivos (rodada de mutação, CI)
+e registra o roteiro de retomada antes de encerrar o turno. A retomada é pela **mesma identidade, do mesmo mandato**, com
+a seção `## PAUSA` como roteiro (P3), medindo o que ficou meio-escrito antes de confiar.
+
+**Onde vive.** Norma **P7** do protocolo de junta resiliente — `CLAUDE.md` §C7.7, espelhada byte a byte em `AGENTS.md`
+(regra de espelhamento), fonte longa em `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md`; o modelo de
+mandato colado no disparo de cada agente ganha a linha `[P7]`; lição em `agent-orchestration/docs/conhecimento-de-terreno.md`
+§2.2.
+
+**Por quê (medido).** Em 01/10/2026 06:4x, sob a ordem de pausa, o orquestrador **matou** o Dev-T4 do ciclo 4 do
+`B-GOV-MANDATO` (`TaskStop`) no meio de uma conversão LF→CRLF de `tests/mandato-preflight.test.ts`: parcial possivelmente
+inconsistente, ~20–40 min de redo. A pausa estava certa (as fases caras — E4 de 5–6 h e a junta — ainda viriam); o corte
+é que foi sujo. A ordem de pausa **autoriza o gasto mínimo de gravar** — um comando — porque é mais barato que o redo.
+
+**O que NÃO decide.** Não altera P1–P6 (quando a pausa não chega — 429, queda, suspensão do PC — é a evidência incremental
+que salva); não para job local sem modelo; não dispensa a junta do PR que publica esta decisão (§C7.1).

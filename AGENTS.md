@@ -588,6 +588,22 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      colunas fixas: `agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do
      redo`. *Caso:* a hipótese "pinar modelo reduz queda" (1/5 × ~13/23 no postmortem) tem n pequeno
      demais — só a série decide; sem ela, cada sessão redescobre o problema.
+   - **P7 — Pausa ordenada: grava o estado e para sozinho (decisão do dono, 2026-10-01 —
+     `D-PAUSA-GRAVA-E-PARA`).** Ordem de pausa do dono ("pause tudo", "pare", "não use mais tokens") **não é
+     morte**: é um corte limpo. O orquestrador a **repassa a cada agente vivo** (`SendMessage`, 1 linha: `PAUSA`);
+     cada agente **termina o comando em curso, grava uma seção `## PAUSA <hora UTC>`** no seu arquivo de evidência
+     — head medido, o que está feito (comando e saída), o que falta, o **próximo comando** exato, arquivos
+     meio-escritos nomeados — e **para sozinho**, com a mensagem final de 1 linha apontando o arquivo (P2). Não
+     inicia item novo. O orquestrador dá o tempo de gravar (ordem de minutos), só então para quem não respondeu,
+     para os vigias, registra o roteiro de retomada no custo/trilha e encerra o turno em 1 linha. **Jobs locais
+     sem modelo** (rodada de mutação, CI) **não são alvo** de uma pausa de tokens — o orquestrador declara quais
+     ficam vivos. **Retomada:** a mesma identidade nasce do mesmo mandato e usa a seção `## PAUSA` como roteiro
+     (P3: re-executa o que está registrado, mede a cauda; arquivo meio-escrito se **mede** antes de se confiar).
+     A ordem **autoriza o gasto mínimo de gravar** — custa um comando e economiza o redo. *Caso:* em 01/10 o
+     dono mandou pausar com o limite perto do teto e o orquestrador **matou** o Dev-T4 no meio de uma conversão
+     LF→CRLF de um arquivo de teste — parcial possivelmente inconsistente e ~20–40 min de redo; com P7 o corte
+     teria sido limpo. P7 **não substitui** P1/P2: quando a pausa não chega (429, queda), é a evidência
+     incremental que salva.
 
    **Modelo de mandato (colar no disparo de cada cadeira — verbatim da fonte):**
    ```
@@ -596,11 +612,15 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    Máximo 3 itens; logs longos só no arquivo de evidência.  [P4]
    Se você substituir um caído: re-execute cada comando do <cadeira>-evidencia.md dele e compare, depois
    meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
+   Se receber PAUSA: termine o comando em curso, grave `## PAUSA <hora UTC>` em <cadeira>-evidencia.md
+   (head · feito · falta · próximo comando · arquivos meio-escritos) e pare sozinho com 1 linha apontando
+   o arquivo. Não inicie item novo.  [P7]
    ```
    **Do orquestrador (não do agente):** dispara ≤2 em paralelo e aplica a pausa de janela instável (P5);
    commita evidência e voto após cada conclusão (agente não commita); preenche `00-quedas.md` no momento
    da perda (P6); na ata, consigna quedas, custo real de redo e o que o suplente re-executou vs mediu de
-   novo.
+   novo; **sob ordem de pausa, repassa `PAUSA` a cada agente vivo, dá o tempo de gravar, para os vigias e
+   registra o roteiro de retomada antes de encerrar (P7)**.
 
 ---
 
