@@ -10036,3 +10036,45 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** o orquestrador — bloco de ferramenta próprio (identificador proposto `B-CHORE-CLEANUP-FRONTEIRA`), com teste que prove a fronteira.
 - **bloqueia:** não.
 - **teste de encerramento:** com um `*.tsbuildinfo` semeado em `.claude/worktrees/<x>/`, o script não o apaga; vermelho-controle: a versão atual o apaga.
+
+## P-GOV-MAQUINA-393-D-M1-DOIS-LADOS (2026-09-30) — o número de uma ferramenta de medição entra na junta sem conferência dos dois lados — MÉDIA
+
+- status: ABERTA (aberta pelo orquestrador a partir do conserto da máquina do ciclo 3 do `B-GOV-MANDATO`, `agent-orchestration/omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md` §8.2 e §8.9; defeito de máquina **D-M1** do parecer da auditoria)
+- **prova (N = 34 pontos; forma: histograma dos `#fail` da matriz publicada do pré-voo — `fail=196` ×29, `192` ×4, `210` ×1 — que coincide ponto a ponto com os 33 mutantes awk inválidos do achado C2c-01 ∪ {541}, por `comm` nas duas direções; causa: o planejador do ciclo 3 (§14.18) verificou por comportamento só os 16 não-cobertos e nenhum dos 87 cobertos; Dev-S-2, orquestrador e inspetor contaram categorias; a classe A14 da §1.1 do plano não estava atribuída a papel nenhum para a matriz):** o `[M-1] = 0` do §14.20 e o `K=100` do K2b nasceram daí — "reproduzível e errado ao mesmo tempo" (ata, ciclo 3).
+- **escopo:** `dentro-do-bloco` quanto ao ciclo 3; a **propriedade** é da máquina (plano e corpo do `planejador-mestre`), não do bloco.
+- **peça permanente:** 3 linhas no corpo do `planejador-mestre` (P1b: amostra dos dois lados, verde incluído, com semente e por identidade ≠ runner ≠ dev; P1c: tabela §1.1 com coluna "papel por artefato"; "número de ferramenta sem causa por ponto não é fato"), nos dois espelhos. **Para o ciclo 4** a mesma propriedade entra no plano (§0/§1.1) e no briefing, como condição 3 da §8.6 — isso o inspetor confere antes de liberar a junta 4.
+- **dono:** bloco de governança novo **`B-GOV-MAQUINA-PRE-JUNTA`** (o `B-GOV-CICLOS-RESIDUAIS` proíbe esse corpo no §6 do seu plano), aberto pelo orquestrador.
+- **bloqueia:** não bloqueia o ciclo 4 (a peça do ciclo 4 é do plano, não do corpo).
+- **teste de encerramento:** corpo nos 2 espelhos; vermelho-controle: apagar a linha "dois lados" do corpo → um plano-fixture com amostra de um lado só **passa** no corpo mutado e **reprova** no corpo certo, por execução de uma identidade que leia o corpo.
+
+## P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não é artefato, e o inspetor não o confere — MÉDIA
+
+- status: ABERTA (aberta pelo orquestrador a partir de `R-B-GOV-MANDATO-ciclo3-auditoria.md` §8.3 e §8.9; defeito de máquina **D-M2**)
+- **prova (N = 3 execuções do instrumento do próprio bloco, `bash scripts/mandato-preflight.sh <arquivo> 393`, no head `968d15b4`; forma: o briefing versionado do ciclo 3 → `ec=1, 43 REJEITADO`; o mandato transcrito do planejador do conserto → `ec=1, 9 REJ`; um mandato de dev que **passou** no ciclo 1 (`mandato-dev-393.md`) → hoje `ec=1, 6 REJ` "SHA VELHO: o ramo anda"; causa: nenhum prompt de lançamento é versionado; o corpo do `inspetor-de-terreno-da-junta` não tem item "mandato" (`grep -c mandato` = 0 na `main` e no objeto, md5 `de80b2a9`); o precedente B2 do ciclo 2 — "instrução que vive só no chat não é regra" — não é cumprido para o ato que lança as cadeiras):** a pergunta (d) da auditoria ficou **irrespondível** para o prompt.
+- **escopo:** `dentro-do-bloco` quanto ao ciclo 3; a propriedade é do gate (inspetor) e da ata.
+- **peça para o ciclo 4 (condições 2, 4 e 5 da §8.6, atos do orquestrador):** todo mandato de lançamento é **arquivo versionado** em `agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo4/00-mandatos/<papel>.md` **antes** de o agente nascer, passa pelo pré-voo no head do lançamento com o veredito gravado em cerca (`ec`, head, blob, UTC), o agente declara `mandato_md5` na 1ª linha, e o inspetor **re-executa** o pré-voo no head do objeto — veredito gravado é insumo, não fato (medido: o mandato que passou em `f8d5a2c8` dá 6 REJ hoje).
+- **peça permanente:** item **2.4** no corpo do inspetor e `mandato_md5` na ata (§C7.1, uma frase).
+- **dono:** `B-GOV-CICLOS-RESIDUAIS`, por emenda de escopo de uma linha, a decidir pelo planejador dele; fallback `B-GOV-MAQUINA-PRE-JUNTA`.
+- **bloqueia:** o ciclo 4 **só** na parte do orquestrador (condições 2, 4, 5), que o inspetor confere; a peça permanente não bloqueia.
+- **teste de encerramento:** simulador com mandato ausente / SHA trocado / md5 divergente → inspetor `BLOQUEADO` ×3; vermelho-controle: tudo presente → não bloqueia.
+
+## P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato → fail-open" não existe no catálogo nem em mandato de cadeira — ALTA
+
+- status: ABERTA (aberta pelo orquestrador a partir de `R-B-GOV-MANDATO-ciclo3-auditoria.md` §1.5, §8.4 e §8.9; defeito de máquina **D-M3**)
+- **prova (N = 2 pontos do pré-voo, l.305 e l.298; forma: cópia LF com `hash-object --no-filters` = `faa408c8`, mutante de 1 linha (`continue` → `:`) com `bash -n` ok; documento negativo `neg.md` (afirmação numérica sem `medido por:`): pristino → `PRE-VOO REJEITOU 1 item(ns)`, `ec=1`; mutante → `PRE-VOO OK`, `ec=0`, com `awk: syntax error` no stderr; controle positivo `pos.md` `ec=0` nos três; causa: `REC=$(awk …)` sem conferência de status, sem `set -e`/`pipefail`; **três juntas** (C1 ciclo 1, C1′ `guardiao-fail-closed`, C1‴ invariância) não a nomearam; a C2‴ viu o `syntax error` e leu a cor do guard):** quando a 2ª passada morre, o pré-voo aprova qualquer documento. É o "deixando de ver os reais" nomeado pelo dono.
+- **escopo:** `dentro-do-bloco` quanto ao artefato (o conserto do pré-voo — REC com status, `pipefail`, caso awk-morto — é do bloco, ciclo 4); a **propriedade** "fail-closed inclui a própria morte: componente interno que falha ⇒ `ec≠0` nomeando-o, nunca o veredito positivo" é da máquina: classe **A15** do catálogo de artefatos de processo.
+- **peça para o ciclo 4 (condições 3 e 4 da §8.6):** A15 na tabela §1.1 do plano do ciclo 4; item "morte interna" no corpo da cadeira de fail-closed do ciclo 4 — a cadeira prova **matando** cada componente (awk/sed/git/refs/binário), não só com insumo adversarial — com vermelho-controle histórico sobre `faa408c8`.
+- **peça permanente:** item "morte interna" no `guardiao-fail-closed`; catálogo A1–A15 citado pelo `planejador-mestre`; §2.7 em `agent-orchestration/docs/conhecimento-de-terreno.md` (pelo orquestrador, no PR #396).
+- **dono:** `B-GOV-MAQUINA-PRE-JUNTA` (corpos); o §2.7 pelo orquestrador no #396.
+- **bloqueia:** o ciclo 4 na parte do plano e do corpo da cadeira (condições 3 e 4); a peça permanente não bloqueia.
+- **teste de encerramento:** uma identidade com o corpo novo, sobre `faa408c8`, reporta o fail-open da l.305 **sem ser mandada**.
+
+## P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declarados ou texto livre com ficha? — decisão do dono — MÉDIA
+
+- status: ABERTA (aberta pelo orquestrador a partir de `R-B-GOV-MANDATO-ciclo3-auditoria.md` §8.8; pergunta ao dono)
+- **prova (forma: a mesma classe "forma × propriedade" reprovou os ciclos 1, 2 e 3 do `B-GOV-MANDATO`; o pré-voo só aceita `## MEDIDO`/`## HIPOTESE` e rejeita o briefing do ciclo 3 com 43 itens; causa: a decisão de forma do mandato nunca foi tomada — o instrumento nasceu para uma forma e os mandatos seguem em outra):**
+- **a pergunta, como o dono vai ler:** o mandato que lança um agente passa a ser **(A) um documento de campos declarados** (`## MEDIDO`/`## HIPOTESE`; a instrução vira hipótese com o comando que a derruba; o pré-voo é o instrumento inteiro, sem ferramenta nova; a prosa narrativa sai), **ou (B) continua texto livre com uma ficha de fatos anexa** (o pré-voo roda sobre a ficha, e um passo de cobertura gerado da prosa confere que nada escapou — dois artefatos e uma fronteira forma × propriedade nova)?
+- **até a resposta:** os mandatos do ciclo 4 saem na forma **(A)**, marcados `forma provisória até D-MANDATO-FORMA`; a resposta muda só o passo 5 da §8.6.
+- **dono:** o orquestrador leva ao dono e registra `D-MANDATO-FORMA` em `decisoes.md`.
+- **bloqueia:** não (a forma provisória é executável hoje).
+- **teste de encerramento:** entrada `D-MANDATO-FORMA` em `decisoes.md` com a resposta literal do dono; passo 5 da §8.6 ajustado.

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **429** |
-| IDs distintos | 418 |
-| **ABERTAS** | **314** |
+| Cabecalhos `## P-` | **433** |
+| IDs distintos | 422 |
+| **ABERTAS** | **318** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **245** |
+| — das quais **ativas nesta rodada** | **249** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 115 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **429 cabecalhos para 418 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **433 cabecalhos para 422 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 141
+## ABERTAS · balde A — material — 145
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -212,6 +212,10 @@
 | `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9973 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
 | `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9998 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
 | `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 10010 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
+| `P-GOV-MAQUINA-393-D-M1-DOIS-LADOS` | 10040 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M1-DOIS-LADOS (2026-09-30) — o número de uma ferramenta de medição e |
+| `P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO` | 10050 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não |
+| `P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA` | 10061 | ALTA | sim | P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato  |
+| `P-GOV-MANDATO-FORMA` | 10072 | MÉDIA | sim | P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declara |
 
 ## ABERTAS · balde B — processo/registro — 104
 
