@@ -58,7 +58,19 @@ Papel efêmero (T2.7): criado via `createEphemeralRole` (arnês — `tests/helpe
 Veredito parcial: E3 verde — 10/10 subtestes, banco de drill descartável por subtest (T2.7/T2.9/T2.10), teardown `DROP DATABASE … WITH (FORCE)`.
 
 
-## §E4 — EM APURACAO (Runbook B em docs/deployment.md)
+## §E4 — ENTREGUE — docs/deployment.md (Runbook B reescrito) (2026-10-01T22:45Z)
+
+Reescreveu as linhas 169-185 de `docs/deployment.md` (Runbook B, após o cabeçalho `#### Runbook B`),
+mantendo a linha 168 (`#### Runbook B — bootstrap do 1º administrador de plataforma (...)`) intacta.
+
+Elementos adicionados: `ALLOW_PROD_BOOTSTRAP`, `scripts/bootstrap-platform-admin.ts`, `--dry-run`,
+`--password-stdin`, `PRODUCTION_OPT_IN_MISSING`, `B-O6R-01` — todos exigidos por T1.8.
+
+Verificação T1.8:
+`node --test --import tsx tests/san3-09-bootstrap-platform-admin.test.ts 2>&1 | grep -E '^(ok|not ok|# (pass|fail))'`
+Saída: 23/23 pass (incluindo `ok 23 - T1.8 doc-guard Runbook B`)
+
+Veredito parcial: E4 verde — Runbook B atualizado, T1.8 verde, `git diff --check` limpo.
 
 ## §E5 — EM APURACAO (KPI + registro)
 
