@@ -2500,3 +2500,75 @@ test("[F-6j] `HEAD:scripts/mandato-refs.sh` com MSYS_NO_PATHCONV=1 no ambiente d
   const ctrl = roda(mandato("f6j-ctrl", corpo));
   assert.equal(ctrl.status, 0, ctrl.out);
 });
+
+// =================================================================================================
+// CICLO 4 -- T4c-3 (errata §15.15(c4)/(d); identidade `dev-tests-ciclo4-b-gov-mandato`). Quatro casos
+// [M-EXT] para os pontos 298, 305, 364 e 405: a matriz do ciclo 3 os publicou como cobertos com mutantes
+// que nao compilam, e as versoes VIAVEIS (X04, X02, V364, V405 da C2 do ciclo 3) deixavam o guard verde
+// com o comportamento mudado. Os quatro asseram o comportamento CERTO -- verdes no head e no S4a --, e o
+// vermelho-controle e POR MUTACAO: cada um fica vermelho com a forma viavel do seu ponto (titulo).
+// So adicoes; a lista historica de vermelhos (os 24) nao muda.
+// =================================================================================================
+
+test("[V298] linha com `grep` sem -i DENTRO de uma colagem VERIFICADA e isenta da checagem 5: COLAGEM confere, 0 REJ — ⇄ X04: `if (isento(num)) return` -> `if (0) return` em coletaGrep", () => {
+  const refs = shim(
+    "refs-v298.sh",
+    [
+      "#!/usr/bin/env bash",
+      `printf '# refs do PR #%s — GERADO por scripts/mandato-refs.sh, para COLAR no mandato\\n' "\${1:-}"`,
+      `printf '# gerado em: %s-%s · repo: t/t\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$$"`,
+      "printf '\\n'",
+      "printf 'ramo:            fix/x\\n'",
+      `printf 'dica:            grep -c "aprovado" J-%s.md\\n' "\${1:-}"`,
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  const corpo = saidaDoRefs("714", refs);
+  assert.ok(corpo.some((l) => /grep -c "aprovado"/.test(l)), `◐ a colagem nao traz a linha com grep sem -i\n${corpo.join("\n")}`);
+  const bloco = ["  ```", ...corpo.map((l) => (l === "" ? "" : `  ${l}`)), "  ```"];
+  const r = roda(mandato("v298-grep-na-colagem", [UNIDADE_COLAGEM("714"), ...bloco]), undefined, refs);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #714 confere/m, r.out);
+  // controle NA MESMA rodada: a MESMA linha FORA da colagem e cobrada pela checagem 5.
+  const ctrl = roda(mandato("v298-ctrl", ['- dica, medido por: grep -c "aprovado" J-714.md']));
+  assert.equal(ctrl.rejeicoes, 1, ctrl.out);
+  assert.match(ctrl.out, /^REJEITADO {2}invocacao de grep\/rg SEM -i/m, ctrl.out);
+});
+
+test("[V305] `caixa-exata:` num segmento SEM grep nao isenta nada e nao gera AVISO: PRE-VOO OK sem 'caixa-exata: isenta' — ⇄ X02: `if (c == 0) continue` -> `if (c == 0) ;` em coletaGrep", () => {
+  const r = roda(mandato("v305-caixa-sem-grep", ["- x, medido por: `true # caixa-exata: nada a isentar`"]));
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.doesNotMatch(r.out, /caixa-exata: isenta/, `segmento sem invocacao nao tem o que isentar\n${r.out}`);
+  // controle NA MESMA rodada: com UM grep no segmento, o AVISO existe e conta 1.
+  const ctrl = roda(mandato("v305-ctrl", ["- x, medido por: grep -c NAOAPARECE CLAUDE.md caixa-exata: literal"]));
+  assert.equal(ctrl.status, 0, ctrl.out);
+  assert.match(ctrl.out, /^AVISO {6}caixa-exata: isenta 1 invocacao\(oes\) sem -i — l\.3/m, ctrl.out);
+});
+
+test("[V364] corrida hexadecimal de 41 caracteres: EXATAMENTE 1 REJ, a de corrida, e ela nunca vira SHA para a proveniencia — ⇄ V364: sem o `continue` do ramo HEXLONGO", () => {
+  const corrida = `${SHA_A}a`;
+  assert.equal(corrida.length, 41, "◐ a corrida nao tem 41 hex");
+  const r = roda(mandato("v364-hex41", [`- head ${corrida} medido por: true`]), "393");
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}corrida hexadecimal de 41 caracteres/m, r.out);
+  assert.doesNotMatch(r.out, /nao esta na saida/, `a corrida longa nao e SHA: a checagem 4 nao pode cobra-la\n${r.out}`);
+  // controle NA MESMA rodada: um SHA de 40 fabricado, com o MESMO PR e o MESMO shim, cai pela checagem 4.
+  const ctrl = roda(mandato("v364-ctrl", [`- head ${FAKE(57)} medido por: true`]), "393");
+  assert.equal(ctrl.rejeicoes, 1, ctrl.out);
+  assert.match(ctrl.out, new RegExp(`^REJEITADO {2}SHA '${FAKE(57)}' nao esta na saida`, "m"), ctrl.out);
+});
+
+test("[V405] o CABECALHO de tabela e UMA unidade: `grep` sem -i nele da EXATAMENTE 1 REJ, nomeando a l.3 — ⇄ V405: sem o `continue` final do ramo do cabecalho (ele cai tambem como linha de tabela)", () => {
+  const r = roda(mandato("v405-cabecalho-grep", ["| conta `grep -c foo x` | medido por: |", "|---|---|", "| CI 14/14 | gh pr checks |"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}invocacao de grep\/rg SEM -i[^\n]*l\.3:/m, r.out);
+  // controle NA MESMA rodada: o MESMO cabecalho com -i nao cai (o cabecalho nomeia a coluna de evidencia).
+  const ctrl = roda(mandato("v405-ctrl", ["| conta `grep -ic foo x` | medido por: |", "|---|---|", "| CI 14/14 | gh pr checks |"]));
+  assert.equal(ctrl.rejeicoes, 0, ctrl.out);
+  assert.equal(ctrl.status, 0, ctrl.out);
+});
