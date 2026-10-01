@@ -100,3 +100,32 @@ $ sed -n 324,352p tests/helpers/auth-identity-fixture.ts → createEphemeralRole
 - H1-b: o `psql` do runner esta no PATH do job (o README lista o pacote; nao lista o PATH) — derruba com `which psql` no job (o T14b imprime isso no TAP).
 
 Veredito parcial §1: terreno pronto; os tres bloqueantes tem os fatos de head que o desenho precisa: (F2-01) a allowlist e por arquivo+contagem+motivo — o caminho honesto e REGISTRAR, logo `tests/db-catalog-write-guard.test.ts` entra no PERMITIDO nominalmente; (F2-06) o teto de pulos e duro — o T14b nao pode pular; (F2-02) defaults de log do PG16 confirmados para reproduzir e depois provar o conserto.
+
+## §2 — Reproducao da critica r2 (F2) no head, por re-execucao propria — nunca herdada (2026-10-01T22:14Z)
+
+### MEDIDO
+
+Apendices do plano v2 extraidos por `awk` e conferidos contra o md5 declarado:
+```
+$ awk '/^```js$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum → 293b3746ad7e4dea1c11e16c794e7aa3  (= declarado, Apendice A)
+$ awk '/^```bash$/…' → 189ddf8a093934cf1c1baa61ba80f5c8 · 82 linhas (= declarado, Apendice C)
+$ (Apendice D: 17 blocos ```ts extraidos para $SCR/fix/) → 17 arquivos (Ma_alias.ts … Mq_updateManyAndReturn.ts)
+```
+As 9 formas N01–N09 foram ESCRITAS POR MIM a partir das descricoes da critica (§2.1 dela), em `$SCR/novas/` — os scripts dela viviam em outra sessao e nao existem aqui.
+Arnes `$SCR/mut-v2.sh`: copia de `src`+`prisma` SEM `node_modules`, mutacao em `src/modules/zz-mut/mut.ts`, gerador v2 com cwd = repo, `comm` contra o inventario do head.
+```
+$ node $SCR/apx/gerador-v2.mjs . | sed -n 6p → # INVENTÁRIO SUSPEITO (L1+L2): 48 chaves · sha1=147d41c209a5f3bbce9fc7d208fd33a02e6bd8d2 · L2b = 65   (= v2 e = critica)
+$ mut-v2.sh gerador-v2.mjs -            → novas=0 sumidas=0 VERDE   (controle)
+$ for f in fix/*.ts  → 17 × VERMELHO      (as 17 da r1 reproduzem)
+$ for f in novas/*.ts →
+N01_destructure_renomeado.ts novas=0 sumidas=0 VERDE · N02_alias_do_delegate.ts VERDE · N03_new_via_namespace.ts VERDE · N04_import_renomeado.ts VERDE ·
+N05_setter_condicional.ts VERDE · N06_setter_no_cliente_errado.ts VERDE · N07_delegate_como_argumento.ts VERDE · N08_subclasse_via_namespace.ts VERDE · N09_setter_em_comentario.ts VERDE
+```
+**9/9 VERDES — o F2 da critica reproduz integralmente no head `origin/main` (arvores `src/prisma` = `5b6e1036` = `3b1fe0f9`, §0).**
+
+Mecanismo, lido no Apendice A (nao herdado — as linhas sao do arquivo extraido): L1 so reconhece acessor por NOME (`accessorToTable.has(target.name.text)` / identificador literal, l.1218-1223 do plano); L2 so reconhece `new <Identificador>` com o texto do nome da classe (`ts.isIdentifier(node.expression) && injectedClasses.has(node.expression.text)`, l.1252) e `extends` pelo TEXTO (`t.expression.getText(sf)`, l.1209); `$transaction` e absolvido por REGEX de texto (`CONTEXT_SETTERS.test(before)`, l.1165) — qualquer ocorrencia textual do setter antes do sitio, inclusive em `if`, com o client errado ou em comentario.
+
+### HIPOTESE (a derrubar pelo gerador v3, §3)
+- H2-a: um analisador que resolva o delegate pelo TIPO (type checker), a classe pelo SIMBOLO (aliases, namespaces, heranca via `getSymbolAtLocation`/`getAliasedSymbol`) e o setter por AST + identidade de simbolo (primeira instrucao do callback, mesmo parametro) deixa as 26 formas (17 + 9) VERMELHAS sem alterar o veredito de nenhum sitio do head alem de reclassificar o que hoje e absolvido por texto — derruba com: qualquer fixture `novas=0` no arnes v3 (§3).
+
+Veredito parcial §2: F2 confirmado por execucao; a resposta nao pode ser "mais regex" — tem de trocar o mecanismo (nome/texto → tipo/simbolo). Continua em §3.
