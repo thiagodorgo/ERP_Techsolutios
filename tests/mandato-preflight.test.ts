@@ -487,8 +487,8 @@ test("[A4] o HIPOTESE tambem e por unidade: tabela sem 'derruba com:' reprova", 
 
 // --- o shim de refs em modo COMPLETO: e dele que as colagens sao GERADAS, nunca literais ---------
 // A 1a linha e a 1a linha real da saida do `mandato-refs.sh` (capturada do artefato em 2026-09-27).
-// `# gerado em:` carrega o PID: muda a CADA invocacao, DE PROPOSITO -- o contrato manda ignorar essa
-// linha na comparacao, e um `# gerado em:` fixo deixaria a regra sem teste.
+// `# gerado em:` carrega o PID: muda a CADA invocacao, DE PROPOSITO -- no ciclo 4 so o CARIMBO dela e
+// normalizado e a linha e COMPARADA (§15.14); um `# gerado em:` fixo deixaria a normalizacao sem teste.
 const PR_SHA = (n: string, papel: 0 | 1) => (papel === 0 ? "a" : "b").repeat(4) + n.padStart(4, "0").repeat(9);
 const PRS_COLAGEM = ["701", "702", "777", "393"] as const;
 const REFS_COMPLETO = shim(
@@ -1878,7 +1878,7 @@ test("[F-7j] o refs e consultado UMA vez por PR por documento: shim com ESTADO, 
       `if [ "$k" -eq 1 ]; then H="${estadoA}"; else H="${estadoB}"; fi`,
       `if [ "\${2:-}" = "--sha-only" ]; then printf '%s\\n' "$H"; exit 0; fi`,
       `printf '# refs do PR #%s — GERADO por scripts/mandato-refs.sh, para COLAR no mandato\\n' "\${1:-}"`,
-      `printf '# gerado em: %s\\n' "$$"`,
+      `printf '# gerado em: %s-%s · repo: t/t\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$$"`,
       "printf '\\n'",
       "printf 'ramo:            fix/x\\n'",
       `printf 'head do PR:      %s\\n' "$H"`,
@@ -2148,6 +2148,23 @@ test("[C1c-02e] `<SHA fabricado>:scripts/mandato-refs.sh` COM o fabricado na pro
   assert.equal(r.rejeicoes, 1, r.out);
   assert.match(r.out, new RegExp(`^REJEITADO {2}(?=[^\\n]*nao existe)(?=[^\\n]*${fab})`, "m"), r.out);
   assert.doesNotMatch(r.out, /nao esta na saida/, `o fabricado esta na proveniencia: a checagem 4 nao pode cobra-lo\n${r.out}`);
+});
+
+// ERRATA §15.14(c), T4c-2: o ramo de DIRETORIO da checagem 6 e instancia da MESMA propriedade
+// da C1c-02(ii) ("a revisao so resolve se existe"). A rev NAO-hex isola a checagem 6 (nenhuma REJ da 4).
+test("[C1c-02f] `<rev inexistente>:<diretorio que existe>/`: 1 REJ da checagem 6, e `HEAD:` no mesmo diretorio passa — ⇄ ramo `*/)` sem a conferencia da revisao", () => {
+  assert.equal(tipoNaRaiz("docs/revisoes/SAN3"), "EISDIR", "◐ o diretorio citado tem de existir na raiz do guard");
+  const rev = spawnSync("git", ["-C", RAIZ, "rev-parse", "--verify", "--quiet", "naoexiste-rev-8891^{commit}"], { encoding: "utf8" });
+  assert.notEqual(rev.status, 0, "◐ a revisao 'inexistente' resolve na raiz: o caso nao discrimina");
+  const r = roda(mandato("c1c02f-rev-dir", ["- li `naoexiste-rev-8891:docs/revisoes/SAN3/`, medido por: true"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, /^REJEITADO {2}(?=[^\n]*nao existe)(?=[^\n]*naoexiste-rev-8891:docs\/revisoes\/SAN3\/)/m, r.out);
+  assert.doesNotMatch(r.out, /componente interno morreu/, `revisao inexistente nao e morte do git\n${r.out}`);
+  // controle NA MESMA rodada (o par do [F-6h]): `HEAD:` no MESMO diretorio passa.
+  const ctrl = roda(mandato("c1c02f-ctrl", ["- li `HEAD:docs/revisoes/SAN3/`, medido por: true"]));
+  assert.equal(ctrl.rejeicoes, 0, ctrl.out);
+  assert.equal(ctrl.status, 0, ctrl.out);
 });
 
 // --- C1c-03: a cerca e SAIDA, nunca COMANDO ------------------------------------------------------------
