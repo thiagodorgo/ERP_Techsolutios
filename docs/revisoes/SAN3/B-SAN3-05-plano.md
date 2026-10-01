@@ -57,7 +57,7 @@ Nuvem Linux (`6.18.44-fc-v51`), Node **20.20.0** (`/opt/node20`), Postgres **16.
 | P-k | o app só precisa de DML + USAGE | **MEDIDO** — script v3 (i'): 115/115 com só DML; Apêndice B R1 = 5 | §4 (v3) |
 | P-l | `ALTER DEFAULT PRIVILEGES` cobre tabelas futuras do migrador nomeado, no mesmo banco | **MEDIDO** — (v): `t\|t` | §4 (v3) |
 | P-m | nenhum ramo em voo toca a fronteira | **MEDIDO pela v2/r2** (laço sobre refs remotas); não re-medido | v2 §0.3 |
-| P-n | suítes que exigem catálogo/DDL | **MEDIDO** — 13 + 8 | §7 (v3) |
+| P-n | suítes que exigem catálogo/DDL | **MEDIDO** — **13 + 10** (a v2 dizia 8; lido da saída do meu comando, errata no relatório §7) | §7 (v3) |
 | P-p | origem antecede o bloco (`f4ef511` é a raiz; migrações 202606xx) | **MEDIDO pela v2/r1**; não re-medido | v2 §0.3 |
 | P-q/P-r/P-s | posse só reportada / `current_user` basta / SQL roda | **FALSAS** (r1), substituídas e re-medidas | §4 (v3) |
 | **P-t** (nova) | a análise estática por NOME/TEXTO enuncia "default negar" | **FALSA** — 9/9 formas verdes no gerador v2 reproduzidas | §2 (v3) |
@@ -136,19 +136,79 @@ Cabeçalho no `origin/main`: `L1 = 720` (578 pelo tipo, 28 pela sintaxe, 104 RAW
 
 ## §3 — Entregas
 
-EM APURAÇÃO
+| E | Entrega | Arquivos | Fecha |
+|---|---|---|---|
+| E1 | Trava de boot **v3**: sonda (`RUNTIME_ROLE_GUARD_SQL` = Apêndice E — atributo ∨ posse ∨ view, `session_user ∧ current_user`) + asserção com **razões** + bootstrap + chamada em `main()` medida pelo T15 | `src/database/runtime-role.ts` (novo), `src/database/runtime-role.bootstrap.ts` (novo), `src/server.ts` (1 linha + import) | item 9 (mecanismo) |
+| E2 | Gate `G-DB-ROLE`: chave `DATABASE_RUNTIME_ROLE_GUARD`, default por ambiente no export (medido por processo filho, T2), recusa de `skip` em produção | `src/config/env.ts` | item 9 (não afrouxável) |
+| E3 | Laço por organização sob contexto + canário no lar único; os cinco métodos passam a usá-lo; concatenação reordenada | `src/database/rls.ts`, `src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` | item 10 |
+| E4 | Procedimento do papel **v3** (Apêndice C, verbatim, md5 `810c1c4a2552665d4947bf0ef4e93670`, modo `100755`, **eol=lf** via `.gitattributes`): seis modos nomeados, senha nunca exposta, idempotente | `scripts/db-runtime-role.sh` (novo), `.gitattributes` (novo, 1 linha), `docker-compose.prod.yml` | item 9 (procedimento) + §4.2 do PLANO_SAN3 |
+| E5 | Documentação: seção "Papel de banco de runtime" (três vias, seis modos, pré-requisito `psql` da suíte `-db`, `STAGING_DEPLOY_ENABLED` amarrado aos Atos 1–2), linha `G-DB-ROLE` nos gates, l.458 trocada, runbook B-O6R-01 passos 0/5 | `docs/deployment.md` | §4.2 (o que o dono lê) |
+| E6 | Ratchet **semântico** (CE-G1): gerador v3 versionado + T13 que o executa com as **26 fixtures** (virtuais) + "sumida" e compara o inventário com o congelado (chave a chave, motivo por chave) | `scripts/san3-05-acessos-de-plataforma.mjs` (novo, = Apêndice A), `tests/san3-05-acessos-de-plataforma-guard.test.ts` (novo), `tests/fixtures/san3-05-mutacoes/*.ts` (26 novos, = Apêndice D) | item 10 (não regride por forma dentro do alcance declarado) |
+| E7 | Testes T1–T16 (§8): diferencial da **superfície fechada** (T11a–d), boot real (T15), script em 18 cenários sem vazamento (T14), trava sob 13 papéis + semi-mutantes (T6–T8d) | `tests/production-runtime-gates.test.ts` (+ casos), `tests/san3-05-runtime-role-guard-db.test.ts` (novo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (novo), `tests/san3-05-runtime-role-bootstrap.test.ts` (novo), **`tests/db-catalog-write-guard.test.ts` (só a entrada da `FROZEN_ALLOWLIST`)** | DoD |
+| E8 | KPI e registro no próprio PR (§9, §C3) + comando do bloco + pendências novas do §13 (seis) | `Kpis/*`, `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` (novo), `agent-orchestration/controle/pendencias.md`, `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md` | §C3, §C6 |
+
+O que **não** muda de propósito: `docker-compose.yml` (dev, `postgres`: as 13 suítes de catálogo precisam de `CREATEROLE` — P-n), `.github/workflows/ci.yml` (o job `docker` já roda o compose local-prod — é ele que prova E4/H1), `fly.*.toml` (chave nova não exigida; o segredo muda de **valor** — ato do dono), `prisma/**` (sem migração: o papel é objeto de **cluster** — `git grep -i -E 'CREATE ROLE|CREATE USER' origin/main -- prisma/migrations` → **0**, re-medido), `scripts/run-backend-tests.mjs` (o orçamento de pulos é um teto duro **por desenho**; esta v3 não pede pulo nenhum), `tests/helpers/auth-identity-fixture.ts` (o arnês não ganha função nova: as suítes escrevem catálogo **dentro** de `withRoleCatalogLock` importado dele, e registram-se na allowlist).
 
 ## §4 — Modelagem: o papel (script v3), a trava (v3) e o compose
 
-EM APURAÇÃO
+### 4.1 Sem migração. O objeto novo é um PAPEL de cluster, criado por procedimento — v3, executado em 18 cenários (relatório §4, §6)
+
+`scripts/db-runtime-role.sh` é o Apêndice C, **verbatim** (115 linhas, md5 `810c1c4a2552665d4947bf0ef4e93670`). O que mudou da v2 e por quê (cada peça com o cenário que a mede):
+- **A senha nunca sai (F2-02).** (1) Entra no `psql` por `\set password \`printf '%s' "$DB_RUNTIME_PASSWORD"\`` — `printf` é builtin do `sh`: nenhum `exec`, nenhum argv (cenário viii: shim de `psql` → 0 ocorrências; nenhum `-v password=`). (2) Vai ao servidor **uma** vez, num `SELECT set_config('san3.password', …)` — statement que o PG16 só registra sob `log_statement=all` ou `log_min_duration_statement=0`; por isso o **MODO 0** lê os dois GUCs e **recusa antes de enviar** (ix: `ec=3`, 0 no log), salvo `DB_RUNTIME_ALLOW_LOG_ALL=1` — decisão consciente do dono, e aí a senha **vai** ao log (ix: 1 — exposição **declarada**, não escondida). (3) Dentro do `DO`, cada `EXECUTE` que carrega a senha fica em bloco `BEGIN … EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION '<mensagem sem senha> (% %)', SQLSTATE, SQLERRM; END` — o CONTEXT do erro re-emitido é "PL/pgSQL function inline_code_block line N at RAISE", **sem o SQL dinâmico** (vii: MODO 1 → 0 no terminal, 0 no `server.log`). (4) A senha é definida **por último**, depois de tudo o que podia falhar; o `CREATE ROLE` nasce **sem** senha. (5) Residual declarado: `/proc/<pid>/environ` do `psql` (mesma classe de `PGPASSWORD`; só o mesmo usuário/root lê).
+- **Seis modos de falha, todos nomeados na mensagem (F8, F2-04, F2-05):** MODO 1 (sem `CREATEROLE` — decisão de provedor) · MODO 2 (atributo `SUPERUSER|BYPASSRLS|REPLICATION|CREATEDB|CREATEROLE` que o executor não pode tirar; nomeia o atributo e o privilégio que faltou) · MODO 3 (tabela/sequência alheia em `public`, ou POSSE de tabela FORCE → `ALTER … OWNER TO <migrador>`) · **MODO 4** (papel já existe e o executor não tem `ADMIN OPTION` — pré-checagem `me.rolsuper ∨ pg_has_role(current_user, v_role, 'MEMBER WITH ADMIN OPTION')`; remédio: `GRANT <papel> TO <migrador> WITH ADMIN OPTION` pela credencial que o criou, ou outro nome; iv-d) · **MODO 5** (pertença que o executor não pode revogar; iv-e) · **MODO 6** (view de dono que escapa com SELECT para o papel; iii-e).
+- **Pertença: o primeiro salto de toda cadeia (F2-04).** O laço itera `pg_auth_members WHERE member = alvo` e revoga o papel **direto** `m` sempre que `m` leva (por `pg_has_role(m, b, 'MEMBER')`) a papel que escapa (atributo, servidor) **ou** a dono de tabela FORCE — iii-c: cadeia `v3_bypass → v3_mid → erp_runtime` → `v3_mid` revogado, `v3_mid` segue membro de `v3_bypass` (não é nosso), escapa=f.
+- **Atributos (F2-05):** `REPLICATION` corrigido (só superusuário pode) ou MODO 2; os três papéis de servidor entram no predicado de "escapa" do REVOKE e da verificação.
+- **Verificação = a propriedade da trava v3 avaliada para o papel, com a VIA de cada linha** (`atributo:X, posse:Y, view:Z`) → `RAISE EXCEPTION` ⇒ `ec=3` ⇒ **ROLLBACK de tudo** (iii: `true|true|true|true`, membros=1 depois — nada persistiu).
+- **Idempotência** (ii): 2.ª execução com **outra** senha → catálogo idêntico (`pg_roles`, `pg_default_acl`, `pg_auth_members`, `relacl` por `diff`); só o verificador SCRAM muda (prova de que a senha fluiu pelo backtick).
+- **Linha final** (`-At`): `rolname|rolsuper|rolbypassrls|rolreplication|escapa|posse|views|dml` — ex.: `erp_rt5|f|f|f|f|0|0|115` (i': 115/115 DML no banco com as tabelas da app).
+- **Sourcing seguro + CRLF (N3, N2-03):** corpo em função-subshell; **a falha propaga** (x: direto `ec=1`; via entrypoint exec `ec=1`; via `source` `ec=1` — o contêiner **morre**, fail-closed); modo `100755` + `.gitattributes` `scripts/db-runtime-role.sh text eol=lf` (sem ela, `core.autocrlf=true` → `w/crlf`, 73 CR, `bash` quebra na l.81).
+
+**O que o procedimento NÃO faz, de propósito:** não concede `EXECUTE` em `auth_login_candidates(text)` (runbook B-O6R-01); não dá `CREATEROLE`/DDL/posse; não toca `pg_hba`; não reatribui posse; não revoga SELECT em view (diz o comando — MODO 6).
+
+### 4.2 A trava (E1) — o SQL é o Apêndice E, e só ele; os 13 papéis + 4 cenários de `options=` medidos
+Superusuário → recusa (`atributo … is_self`, 12 linhas: é membro de tudo); super com outro nome → recusa; papel limpo **sem** SELECT em view de dono que escapa → **passa** (0 linhas); membro de `BYPASSRLS` (direta, `NOINHERIT`, cadeia, `SET FALSE`) → `atributo/<bypass>`; membro do dono → `posse/<dono>/…/1`; dono direto → `posse/<self>/is_self=t`; `REPLICATION` → `atributo/<self>`; membro de `pg_execute_server_program` → `atributo/pg_execute_server_program`; SELECT em view do super → `view/postgres/t/t/f/1`; `pg_read_all_data` → passa pela tabela (count 0) mas **`view`** se houver view de dono que escapa; login não-super com `options=-c role=<limpo>` → recusa pela metade que o **login** aciona (`session_user`). Erro de conexão → 5 tentativas (2–32 s) e recusa. Log do veredito: `session_user`, `current_user`, `escapes` (`via, rolname, rolsuper, rolbypassrls, is_self, objetos`) — **nunca** URL/host/senha.
+
+### 4.3 O compose (E4)
+`postgres`: `environment` ganha `DB_RUNTIME_ROLE: erp_runtime`, `DB_RUNTIME_PASSWORD: local-prod-validation-db-runtime-not-a-secret`, `DB_MIGRATOR_ROLE: postgres`; `volumes` ganha `./scripts/db-runtime-role.sh:/docker-entrypoint-initdb.d/10-runtime-role.sh:ro` (H1). `migrate`: inalterado. `api`: `DATABASE_URL: postgresql://erp_runtime:local-prod-validation-db-runtime-not-a-secret@postgres:5432/erp_techsolutions?schema=public` (placeholder **rotulado**, mesma classe dos cinco secrets da l.62-68). Comentário: "volume já iniciado sem o papel ⇒ `down -v`". **Nota medida:** o migrador do compose é `postgres` (superusuário) — qualquer **view** futura criada por migração sobre tabela FORCE abriria a via `view` (0 views hoje; a trava recusaria o boot da `api`, e o job `docker` ficaria vermelho **de propósito**: é o MODO 6 aparecendo no smoke, não um defeito do smoke).
 
 ## §5 — Arquivos tocados e regra do espelho
 
-EM APURAÇÃO
+| Arquivo | Ação | Módulo de referência (espelho) |
+|---|---|---|
+| `src/database/runtime-role.ts` | novo | `src/modules/auth/services/login-readiness.ts:196-206` (consulta a `pg_roles` com timeout; aqui sem "best-effort") |
+| `src/database/runtime-role.bootstrap.ts` | novo | `src/infra/jobs/job-worker.bootstrap.ts` (injeção, log nunca mudo) |
+| `src/server.ts` | +1 linha em `main()` + import | `src/server.ts:19` (`startJobWorkerIfEnabled`) |
+| `src/config/env.ts` | +campo no schema, +gate no `superRefine`, +default no export | `EVIDENCE_SCANNER` (l.266, 546-551, 637-638) — a **forma**; o teste do default é o T2 (processo filho) |
+| `src/database/rls.ts` | +`forEachTenantRls` (setter como **primeira** instrução de cada volta), +`assertRowsBelongToTenant` | `cloud-cost-allocation-prisma.repository.ts:340-368` (B-O6R-06) |
+| `src/modules/cloud-usage/cloud-usage-prisma.repository.ts` | ramos sem tenant de `listEvents`/`listDailyAggregates` (l.166-174, 190-198) | `platform-overview-prisma.repository.ts` (l.14-41: `tenant.findMany` + N+1 sob contexto) |
+| `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` | +`RlsPrismaCloudChargeRepository`; fábrica l.238-241 devolve o envoltório | `RlsPrismaCloudUsageRepository` (l.142-204) |
+| `scripts/db-runtime-role.sh` | novo, **= Apêndice C**, `100755` | `scripts/rbac-provision-drill.sh` (estilo); **não** no modo nem no `exit` (N3) |
+| `.gitattributes` | novo, **1 linha**: `scripts/db-runtime-role.sh text eol=lf` | — (N2-03; medido: `w/crlf` → `w/lf`) |
+| `scripts/san3-05-acessos-de-plataforma.mjs` | novo, **= Apêndice A** (gerador v3) | `scripts/audit-agents-skills.mjs` (varredura gerada) |
+| `tests/fixtures/san3-05-mutacoes/*.ts` | **26** novos, **= Apêndice D** (17 da r1 + 9 da r2, verbatim) | `tests/db-catalog-write-guard.test.ts` (mutação executada pelo teste) |
+| `docker-compose.prod.yml` | `postgres` (env + volume), `api` (URL) | — |
+| `docs/deployment.md` | seção nova; tabela dos gates; l.458; runbook B-O6R-01 passos 0 e 5; seis modos; pré-requisito `psql`; `STAGING_DEPLOY_ENABLED` | — |
+| `tests/production-runtime-gates.test.ts` | + casos do `G-DB-ROLE` (T1, T3) | o próprio arquivo (PROD_OK) |
+| `tests/san3-05-runtime-role-bootstrap.test.ts` | novo (T2 por processo filho, T4) | `tests/o6r05-…` do bootstrap do worker |
+| `tests/san3-05-runtime-role-guard-db.test.ts` | novo (T5–T9, T14, T15) — **escreve catálogo dentro de `withRoleCatalogLock`** | `tests/rls-tenant-isolation.test.ts` (escritor registrado na allowlist, l.44) e `san3-04a-…-db.test.ts:64-70` (`globalThis.prisma`) |
+| `tests/san3-05-leituras-de-plataforma-db.test.ts` | novo (T10–T12, incl. T11a–d) | `tests/o6r06-allocation-basis-rls-db.test.ts` (B2′, B7, B8, B11) + `san3-04a` (app + JWT) |
+| `tests/san3-05-acessos-de-plataforma-guard.test.ts` | novo (T13) | `tests/db-catalog-write-guard.test.ts` (ratchet congelado com motivo por chave) |
+| `tests/db-catalog-write-guard.test.ts` | **só** +1 entrada no `FROZEN_ALLOWLIST` (`san3-05-runtime-role-guard-db.test.ts`, contagem **medida** no head da entrega, motivo) | o próprio arquivo (as 8 entradas existentes) |
+| `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md` | §C3 | — |
+| `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` | novo (molde `comando-template.md`) | `B-SAN3-04a-rbac-catalogo-banco-matriz.md` |
+| `agent-orchestration/controle/pendencias.md`, `…/docs/status-geral.md`, `…/codex/log-execucao.md` | emendas | — |
 
 ## §6 — Escopo (§C4): PERMITIDO e PROIBIDO
 
-EM APURAÇÃO
+**O que mudou em relação à v2, e por quê (medido):** entram **três** caminhos no PERMITIDO — `tests/db-catalog-write-guard.test.ts` (**nominalmente: só a entrada nova do `FROZEN_ALLOWLIST`**; sem ela T7/T8/T8b/T8d/T14 não existem — F2-01, medido: sonda reprova, registrada passa, contagem errada reprova), `.gitattributes` (**nominalmente: 1 linha** — N2-03, medido), e `tests/fixtures/san3-05-mutacoes/**` passa de 17 para **26** arquivos. **Nada saiu.** `src/modules/cloud-cost-allocation/**` **continua PROIBIDO** (sítio 7 sem chamador; dono `B-O6R-08`; congelado nominalmente — e o gerador v3 continua vendo-o: chave `new PrismaCloudCostAllocationRepository(prisma) CRU`; "sumida" é vermelho). `scripts/run-backend-tests.mjs` e `tests/helpers/auth-identity-fixture.ts` **não** entram (§3, última linha).
+
+**PERMITIDO** (e nada mais):
+`src/database/**` · `src/config/env.ts` · `src/server.ts` (nominalmente: a linha + import) · `src/modules/cloud-usage/cloud-usage-prisma.repository.ts` · `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` · `docker-compose.prod.yml` · `docs/deployment.md` · `scripts/db-runtime-role.sh` (novo, `100755`) · `.gitattributes` (novo, 1 linha) · `scripts/san3-05-acessos-de-plataforma.mjs` (novo) · `tests/production-runtime-gates.test.ts` · `tests/san3-05-*.test.ts` (novos) · `tests/fixtures/san3-05-mutacoes/**` (26 novos) · `tests/db-catalog-write-guard.test.ts` (nominalmente: a entrada do Map) · `Kpis/kpis-latest.json` · `Kpis/kpis-history.json` · `Kpis/kpis-history.md` · `agent-orchestration/codex/comandos/B-SAN3-05-runtime-role-sem-bypass.md` (novo) · `agent-orchestration/controle/pendencias.md` · `agent-orchestration/controle/pendencias-indice.md` (só pelo gerador de índice) · `agent-orchestration/docs/status-geral.md` · `agent-orchestration/codex/log-execucao.md` · `agent-orchestration/omega/juntas/**` (ata, votos — do orquestrador).
+
+**PROIBIDO** (§C4 + fronteira):
+`prisma/**` · `.env`, `.env.*`, `.env.example` · `package.json`, lockfiles, `pubspec.*` · `.github/workflows/**` · `fly.*.toml` · `Dockerfile`, `docker-compose.yml` · `src/routes/health.routes.ts` · `src/modules/cloud-cost-allocation/**` · `src/modules/auth/**` · qualquer outro `src/modules/**` · `frontend/**`, `mobile/**` · `CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.agents/**` · `Kpis/index.html`, `Kpis/app.js` · `docs/revisoes/SAN3/PLANO_SAN3.md` · `tests/o6r07b-scanner-failclosed.test.ts` (P1 tem dono) · `scripts/run-backend-tests.mjs` (o teto de pulos é desenho) · `tests/helpers/auth-identity-fixture.ts` (o arnês não muda) · em `tests/db-catalog-write-guard.test.ts`, **qualquer linha fora da entrada nova do Map** (a junta C2 confere o diff do arquivo: só o bloco `["san3-05-runtime-role-guard-db.test.ts", {count, reason}]`).
+
+**Trava de mesmo arquivo (§6 do PLANO_SAN3):** este bloco **precede** `B-SAN3-03` nos dois repositórios de nuvem e `B-AV-REAL` em `src/config/env.ts`.
 
 ## §7 — Critérios de aceite A1–A24, cada um com a mutação que o deixa vermelho
 
