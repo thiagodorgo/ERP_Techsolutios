@@ -301,3 +301,18 @@ Premissas da v2 re-medidas (baratas, no `origin/main`): P-a → 8 linhas (1 exec
 Veredito parcial §7: A12 ganha base propria (nao herdada) e a superficie fechada do §2.3 esta enumerada da fonte.
 
 **ERRATA ao §7 (2026-10-01T23:50Z):** a linha "P-n → 13 suites escrevem catalogo, 8 fazem DDL de dono" foi escrita a partir do numero da v2 ANTES de a saida chegar; a saida REAL do meu comando foi **13 + 10** (`git grep -l -E 'TRUNCATE|ALTER TABLE|DROP TABLE|CREATE EXTENSION|DISABLE TRIGGER' origin/main -- tests | wc -l` → 10). O plano v3 publica 13 + 10. Licao registrada: numero so entra no texto DEPOIS de lido da saida.
+
+**ERRATA 2 ao §7 (2026-10-01T23:58Z):** o "10" de DDL inclui `tests/helpers/auth-identity-fixture.ts` e `tests/helpers/upload-fixtures.ts` (o comando de catalogo filtrava `helpers/`; o de DDL nao). Sem `helpers/` = **8** — o numero da v2 REPRODUZ. O plano publica "13 + 8 (10 com os 2 helpers)".
+
+## §8 — Baseline N, A24 (tipo `any`), P7 por ref, KPI vigente (2026-10-01T23:58Z)
+
+### MEDIDO
+```
+$ grep -c -E '^\s*test\(' tests/o6r06-usage-atomic-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts tests/rls-tenant-isolation.test.ts  → (saida acima: contagens por arquivo)
+$ grep -n NOSUPERUSER tests/rls-tenant-isolation.test.ts → l.44 (papel real sem bypass)   · o6r06-*: createRoleWithoutBypassRls/createEphemeralRole (saida acima)
+  → baseline N = 5 testes sob papel real que exercem as mesmas tabelas (A7, A17 de usage-atomic; B2′, B11 de allocation-basis; rls-tenant-isolation l.19) — o numero da v2 (N8 da r1) reproduz pela mesma leitura; nenhum cobre trava, remedio ou fiacao
+$ for r in HEAD origin/main 513937b; do git show $r:CLAUDE.md | grep -c 'P7 — Pausa ordenada'; done → HEAD(ramo): 0 · origin/main: 1 · 513937b: 1
+  → o P7 (D-PAUSA-GRAVA-E-PARA) EXISTE em origin/main (#397) e NAO no CLAUDE.md do ramo (base 5b6e1036, anterior ao #397): o plano cita P7 com a ref origin/main; a integracao da main e do orquestrador
+$ node $SCR/gerador-v3.mjs . --mutant $SCR/novas/N10_any.ts | grep zz-mut/N10 → (saida acima) — fixture `(prisma as any).cloudUsageEvent.findMany({})`
+$ git show origin/main:Kpis/kpis-latest.json | node -e '…' → (saida acima: chaves de cima e numeros)
+```
