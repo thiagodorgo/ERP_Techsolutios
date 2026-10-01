@@ -22,6 +22,29 @@
 # token. Era por ai que UMA evidencia cobria CINCO afirmacoes (achado B-1 do critico).
 #
 # -----------------------------------------------------------------------------------------------
+# O QUE MUDOU NO CICLO 4 (mesmo bloco, PR #393), E POR QUE
+#
+# A junta 3 reprovou o ciclo 3 (2 x 1) com seis bloqueantes, quatro deles aqui, e a auditoria da
+# maquina nomeou uma classe que tres juntas nao viram (A15). Cada conserto enuncia a PROPRIEDADE; o
+# caso do guard e a instancia que a junta achou (plano §15.2 e errata §15.14):
+#   C1c-01  a isencao da colagem cobre EXATAMENTE as linhas cuja igualdade foi verificada: toda linha
+#           do corpo do bloco e comparada, e a unica variacao admitida e o CARIMBO de `# gerado em:`
+#           (so quando tem a forma de carimbo). Ate o ciclo 3 a linha inteira saia da comparacao, e
+#           uma linha `# gerado em: <SHA fabricado>` inserida no bloco LAVAVA o SHA.
+#   C1c-02  a classificacao SHA/caminho e por TOKEN, e `:` nao esconde um SHA: `<sha>:CLAUDE.md` e
+#           partido no 1o `:` e a esquerda hex de 7..40 e SHA; e a revisao de `<rev>:<caminho>` so
+#           resolve se EXISTE como commit, nos DOIS ramos da checagem 6 (arquivo e diretorio).
+#   C1c-03  a cerca e SAIDA, nunca COMANDO: `medido por:` dentro de cerca nao satisfaz a unidade.
+#   C1c-04  o cabecalho de secao e EXATAMENTE `## MEDIDO`/`## HIPOTESE`; qualquer outro `## …` (e o que
+#           vem embaixo dele) e conteudo fora das secoes — `## MEDIDO — <afirmacao>` deixou de ser
+#           cabecalho que carregava uma afirmacao sem comando.
+#   C1c-05  `grep` invocado por caminho (`/usr/bin/grep`) ou com extensao (`grep.exe`) e da familia.
+#   C1c-06  `\|` numa celula de tabela e pipe literal, nao fronteira de coluna.
+#   A15     fail-closed inclui a propria MORTE: todo subprocesso tem o status lido, e a morte de um
+#           componente sai como UMA rejeicao que o nomeia, `exit 1`, nunca PRE-VOO OK (secao A15).
+#   fr. 27  FECHADA: `RAIZ` na forma que o `git.exe` aceita mesmo com MSYS_NO_PATHCONV=1.
+#
+# -----------------------------------------------------------------------------------------------
 # O QUE MUDOU NO CICLO 3 (bloco B-GOV-MANDATO, PR #393), E POR QUE
 #
 # A junta reprovou o ciclo 2. As duas classes:
@@ -76,7 +99,9 @@
 #               sufixo `:NN` cai. Ele tem de existir em `$RAIZ/<caminho>` ou em
 #               `$RAIZ/mobile/flutter_app/<caminho>` (o app Flutter e raiz propria nos mandatos).
 #               `(novo)` isenta o token de caminho IMEDIATAMENTE ANTERIOR — nao a linha toda.
-#               `<revisao>:<caminho>` so e revisao se o prefixo RESOLVE (`git rev-parse`).
+#               `<revisao>:<caminho>` so e revisao se a revisao EXISTE como commit — no ciclo 4,
+#               `rev-parse --verify --quiet "<rev>^{commit}"` com o status LIDO, nos dois ramos
+#               (arquivo e diretorio); o `rev-parse --verify` NU do ciclo 3 aceitava qualquer 40-hex.
 #               CUSTO ACEITO E DECLARADO: caminho SEM extensao e SEM barra final (`src/modules/x`)
 #               nao e conferido — pela estrutura ele e indistinguivel de `e/ou` e de `14/14`.
 #               Dono: `B-GOV-MANDATO-2`.
@@ -88,9 +113,11 @@
 #               UNICA ISENCAO — estrutural, por IGUALDADE, por BLOCO: um bloco CERCADO cuja 1a
 #               linha nao vazia e `# refs do PR #N — ...` (a 1a linha real da saida da ferramenta).
 #               O pre-voo le o N DO BLOCO, roda `mandato-refs.sh N` e compara TODAS as linhas do
-#               bloco (trim; ignorando vazias e `# gerado em:`), na ORDEM e por INTEIRO. Igual -> o
-#               bloco e SAIDA DA FERRAMENTA: as suas linhas ficam isentas das checagens 4, 5, 6 e 7,
-#               os SHAs dele entram na proveniencia da checagem 4, e sai a linha `COLAGEM`.
+#               bloco (trim; ignorando vazias), na ORDEM e por INTEIRO — no ciclo 4 a linha
+#               `# gerado em:` tambem e comparada, e so o CARIMBO dela e normalizado (C1c-01). Igual ->
+#               o bloco e SAIDA DA FERRAMENTA: as linhas do CORPO (nunca as de marcador da cerca)
+#               ficam isentas das checagens 4, 5, 6 e 7, os SHAs delas (menos o carimbo) entram na
+#               proveniencia da checagem 4, e sai a linha `COLAGEM`.
 #               Diferente -> REJ nomeando o bloco (parcial, editado ou DESATUALIZADO: o head andou).
 #               refs morto para o N daquele bloco -> REJ nomeando o #N; nada foi verificado.
 #               Sem colagem nenhuma no mandato -> AVISO (fronteira 16).
@@ -109,6 +136,21 @@
 #     (fronteira 11): nao ha remedio livre de forma para isso.
 #   - um segmento com 2 `grep` e 1 `caixa-exata:` isenta os 2 (fronteira 20) — o AVISO conta.
 #   - caminho sem extensao e sem barra final nao e conferido (fronteira 4).
+#   - fronteira 9: o CONTEUDO de `medido por:` / da celula de evidencia (`-`, `n/a`) nao e
+#     verificado — verificar conteudo seria reconhecer comando.
+#   - fronteira 14: a existencia e conferida no DISCO, nao no git — mandatos citam arquivos gerados.
+#   - fronteira 15: homoglifos e caracteres de largura zero no token — a normalizacao e ASCII.
+#   - fronteira 19 (regra da junta): a colagem e retrato, nao historico. REJ cuja UNICA causa e
+#     `DESATUALIZADO` num documento escrito para um head anterior nao e defeito do documento:
+#     reexecuta-se o pre-voo num worktree NO HEAD CERTO.
+#   - fronteira 22: hash de blob e md5 nao tem canal de proveniencia na checagem 4 — publique o
+#     VEREDITO da comparacao (`IDENTICO`/`DIVERGE`), nao o hash.
+#   - fronteira 27: FECHADA no ciclo 4 (`RAIZ` por `cygpath -m` quando existe; caso [F-6j]).
+#   - a esquerda de `:` que e hex de MAIS de 40 caracteres (`<80 hex>:x`) nao e cobrada: a C1c-02
+#     parte so a esquerda de 7 a 40 (o plano a prescreve assim); a corrida longa INTEIRA ja e REJ.
+#
+# CODIGO DE SAIDA: 0 = PRE-VOO OK · 1 = rejeitou (inclusive quando um componente interno MORREU — a
+# rejeicao o nomeia e nada foi julgado) · uso errado tambem sai 1, com a linha `uso:` no stderr.
 #
 # COSTURAS (para o guard; nenhuma muda o comportamento em producao)
 #   MANDATO_REFS  caminho do `mandato-refs.sh` a usar. Default: `$RAIZ/scripts/mandato-refs.sh`.
@@ -116,11 +158,16 @@
 #
 # Uso:  bash scripts/mandato-preflight.sh <arquivo.md> [PR]
 set -u
+set -o pipefail
 F="${1:-}"; PR="${2:-}"
 [ -n "$F" ] && [ -f "$F" ] || { echo "uso: mandato-preflight.sh <arquivo.md> [PR]" >&2; exit 1; }
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
+# Fronteira 27 FECHADA (ciclo 4): o `git.exe` do Windows recusa `RAIZ` em forma POSIX (`/c/...`) quando
+# o ambiente traz MSYS_NO_PATHCONV=1, e a checagem 6 rejeitava `rev:caminho` legitimo. Na forma mista
+# (`C:/...`) os binarios nativos e os do MSYS a aceitam igual. Sem `cygpath` (Linux), RAIZ fica como esta.
+if command -v cygpath >/dev/null 2>&1; then RAIZ=$(cygpath -m "$RAIZ" 2>/dev/null || printf '%s' "$RAIZ"); fi
 REFS="${MANDATO_REFS:-$RAIZ/scripts/mandato-refs.sh}"
-TAB=$(printf '\t')
+TAB=$'\t'
 ERROS=0
 falha() { printf 'REJEITADO  %s\n' "$1"; ERROS=$((ERROS+1)); }
 aviso() { printf 'AVISO      %s\n' "$1"; }
@@ -130,11 +177,51 @@ TMPD=$(mktemp -d 2>/dev/null || printf '%s' "${TMPDIR:-/tmp}/mandato-preflight.$
 mkdir -p "$TMPD" 2>/dev/null || true
 trap 'rm -rf "$TMPD" 2>/dev/null || true' EXIT
 
+# =================================================================================================
+# A15 — FAIL-CLOSED INCLUI A PROPRIA MORTE (ciclo 4). Ate o ciclo 3 o status de cada subprocesso (awk,
+# sed, tr, sort, grep, git) NAO era lido, e a saida VAZIA de um componente morto valia como "nada a
+# rejeitar": com o awk da passada 2 morto o pre-voo dizia PRE-VOO OK para qualquer documento. Agora
+# todo componente roda por UM de dois portoes, ambos chamados no shell PRINCIPAL (nunca dentro de
+# `$( … )`, onde o `exit` mataria so o subshell):
+#   corre    <componente> <saida> <comando…>   ec 0 = ok; qualquer outro = MORTE
+#   veredito <componente> <saida> <comando…>   ec 0 e 1 sao a RESPOSTA (casou / nao casou, existe / nao
+#                                              existe); ec >= 2 = MORTE (inclui 127 ausente, 128 git)
+# A morte sai por `morreu`: UMA rejeicao que NOMEIA o componente, com a 1a linha do stderr dele, e
+# `exit 1` NA HORA — o veredito nunca e positivo com um componente morto. O stderr de todo componente
+# vai para arquivo: num documento valido o stderr do pre-voo fica VAZIO. O `mandato-refs.sh` tem
+# contrato proprio (0 · 1 PARADO · 2 USO · 3 NAO DETERMINAVEL): 1 e 2 seguem "referencias
+# indisponiveis", e qualquer codigo FORA do contrato (126, 127, 128+n) e morte nomeada `refs` — antes
+# caia na comparacao e saia `NAO bate`, pela causa errada (plano §15.15(b)).
+# =================================================================================================
+ERRC="$TMPD/componente.err"
+morreu() { # $1 componente  $2 ec  $3 arquivo com o stderr do componente
+  local det=""
+  [ -s "${3:-}" ] && IFS= read -r det < "$3"
+  printf 'REJEITADO  componente interno morreu: %s (ec=%s)%s\n' "$1" "$2" "${det:+ — $det}"
+  printf '\nPRE-VOO REJEITOU — um componente interno morreu e NADA foi julgado. O mandato NAO sai.\n'
+  exit 1
+}
+corre() {
+  local nome=$1 saida=$2 rc
+  shift 2
+  "$@" > "$saida" 2> "$ERRC"
+  rc=$?
+  [ "$rc" -eq 0 ] || { morreu "$nome" "$rc" "$ERRC"; }
+}
+veredito() {
+  local nome=$1 saida=$2 rc
+  shift 2
+  "$@" > "$saida" 2> "$ERRC"
+  rc=$?
+  [ "$rc" -le 1 ] || { morreu "$nome" "$rc" "$ERRC"; }
+  return "$rc"
+}
+
 # O CR de fim de linha e ruido de plataforma, nao conteudo: contar CR por grep e `cat -A` sao cegos
 # a ele e so o `od -c` o mostra. Normalizar aqui (sem mexer na NUMERACAO das linhas) faz o veredito
 # em CRLF ser identico ao de LF por CONSTRUCAO, em vez de por coincidencia.
 NORM="$TMPD/mandato.norm"
-tr -d '\r' < "$F" > "$NORM"
+corre "tr (normaliza o CR)" "$NORM" tr -d '\r' < "$F"
 
 # =================================================================================================
 # O ORACULO — UMA passada. Emite, por linha do documento, `<i> <fe> <sec>`:
@@ -146,7 +233,8 @@ tr -d '\r' < "$F" > "$NORM"
 # =================================================================================================
 ORACULO="$TMPD/oraculo"
 : > "$ORACULO"
-ESTRUT=$(awk -v OFS="$TAB" -v ORAC="$ORACULO" '
+ESTRUT="$TMPD/estrutura"
+corre "awk (oraculo)" "$ESTRUT" awk -v OFS="$TAB" -v ORAC="$ORACULO" '
 function semIndent(s) { sub(/^[[:space:]]+/, "", s); return s }
 function trim(s) { sub(/^[[:space:]]+/,"",s); sub(/[[:space:]]+$/,"",s); return s }
 function marcaChar(l,   s,c) { s=semIndent(l); c=substr(s,1,1); if (c!="\140" && c!="~") return ""; return c }
@@ -165,9 +253,15 @@ END {
         if (sec=="-" || sec=="X") print "FORA", i, l; else cont[sec]++
         continue
       }
-      if (l ~ /^## +MEDIDO/)   { vistoM=1; sec="M"; print i, 0, sec, 1 > ORAC; continue }
-      if (l ~ /^## +HIPOTESE/) { vistoH=1; sec="H"; print i, 0, sec, 1 > ORAC; continue }
-      if (l ~ /^## /)          { sec="X"; print i, 0, sec, 1 > ORAC; continue }
+      # C1c-04: o cabecalho de secao e EXATAMENTE o nome (so espaco depois). Qualquer outra linha `## `
+      # — inclusive `## MEDIDO <texto>` — e CONTEUDO fora das secoes, e o que vem embaixo dela tambem.
+      if (l ~ /^## +MEDIDO[[:space:]]*$/)   { vistoM=1; sec="M"; print i, 0, sec, 1 > ORAC; continue }
+      if (l ~ /^## +HIPOTESE[[:space:]]*$/) { vistoH=1; sec="H"; print i, 0, sec, 1 > ORAC; continue }
+      if (l ~ /^## /) {
+        sec="X"; print i, 0, sec, 1 > ORAC
+        print "FORA", i, l "   <- nao e cabecalho: secao e so `## MEDIDO` ou `## HIPOTESE`, o NOME sozinho na linha; texto apos o nome e conteudo"
+        continue
+      }
       print i, 0, sec, 0 > ORAC
       if (l ~ /[^[:space:]]/) {
         if (sec=="-" || sec=="X") { if (l !~ /^# /) print "FORA", i, l }   # I8: `# titulo` e isento
@@ -184,8 +278,8 @@ END {
       continue
     }
     print i, 1, sec, 0 > ORAC
-    if (l ~ /^## +MEDIDO/)   print "SWALLOW", "MEDIDO", i          # ENGOLIDO pela cerca
-    if (l ~ /^## +HIPOTESE/) print "SWALLOW", "HIPOTESE", i
+    if (l ~ /^## +MEDIDO[[:space:]]*$/)   print "SWALLOW", "MEDIDO", i          # ENGOLIDO pela cerca
+    if (l ~ /^## +HIPOTESE[[:space:]]*$/) print "SWALLOW", "HIPOTESE", i
     if (l ~ /[^[:space:]]/) {
       if (sec=="-" || sec=="X") print "FORA", i, l; else cont[sec]++
     }
@@ -194,35 +288,42 @@ END {
   if (vistoM) print "SEC", "MEDIDO",   cont["M"]+0
   if (vistoH) print "SEC", "HIPOTESE", cont["H"]+0
 }
-' "$NORM")
+' "$NORM"
 
-peg() { printf '%s\n' "$ESTRUT" | awk -F"$TAB" -v t="$1" '$1==t'; }
+# o FILTRO da saida estruturada: as linhas de um tipo vao para "$TMPD/peg.<tipo>"; morte = morte nomeada
+peg() { corre "awk (filtro peg $1)" "$TMPD/peg.$1" awk -F"$TAB" -v t="$1" '$1==t' "$ESTRUT"; }
 
 # 1) as duas secoes existem — e se a unica ocorrencia esta DENTRO de cerca, a mensagem o diz
+peg SEC
+peg SWALLOW
 for s in MEDIDO HIPOTESE; do
-  if [ -z "$(peg SEC | awk -F"$TAB" -v s="$s" '$2==s')" ]; then
-    eng=$(peg SWALLOW | awk -F"$TAB" -v s="$s" '$2==s { print $3; exit }')
+  corre "awk (secao $s)" "$TMPD/sec.$s" awk -F"$TAB" -v s="$s" '$2==s { print $3; exit }' "$TMPD/peg.SEC"
+  q=""; IFS= read -r q < "$TMPD/sec.$s"
+  if [ -z "$q" ]; then
+    corre "awk (secao $s engolida)" "$TMPD/eng.$s" awk -F"$TAB" -v s="$s" '$2==s { print $3; exit }' "$TMPD/peg.SWALLOW"
+    eng=""; IFS= read -r eng < "$TMPD/eng.$s"
     if [ -n "$eng" ]; then
       falha "falta a secao '## $s' — a unica ocorrencia esta DENTRO de cerca, l.$eng"
     else
       falha "falta a secao '## $s'"
     fi
   else
-    q=$(peg SEC | awk -F"$TAB" -v s="$s" '$2==s { print $3; exit }')
     [ "${q:-0}" = "0" ] && aviso "secao $s sem unidades"
   fi
 done
 
 # 1-bis) cerca ABERTA no fim do arquivo: estado de saida, nomeando a ABERTURA
-peg ABERTA > "$TMPD/aberta"
+peg ABERTA
 while IFS="$TAB" read -r _t ln ch k; do
   [ -n "${ln:-}" ] || continue
   falha "cerca aberta desde l.$ln ($ch x$k) sem fechamento ate o fim do arquivo"
-done < "$TMPD/aberta"
+done < "$TMPD/peg.ABERTA"
 
 # 2) nenhuma linha de conteudo fora das duas secoes (uma linha de cerca fora delas e conteudo)
-fora=$(peg FORA | awk -F"$TAB" '{ print $2": "$3 }')
-[ -n "$fora" ] && { falha "linha(s) de conteudo fora de MEDIDO/HIPOTESE:"; printf '%s\n' "$fora" | head -5 | sed 's/^/           /'; }
+peg FORA
+corre "awk (lista o conteudo fora)" "$TMPD/fora" awk -F"$TAB" 'NR <= 5 { print "           " $2 ": " $3 }' "$TMPD/peg.FORA"
+fora=""; IFS= read -r fora < "$TMPD/fora"
+[ -n "$fora" ] && { falha "linha(s) de conteudo fora de MEDIDO/HIPOTESE:"; while IFS= read -r x; do printf '%s\n' "$x"; done < "$TMPD/fora"; }
 
 # =================================================================================================
 # A COLAGEM DA FERRAMENTA (checagem 7, isencao I1) — por BLOCO cercado, por IGUALDADE, por PR.
@@ -230,41 +331,58 @@ fora=$(peg FORA | awk -F"$TAB" '{ print $2": "$3 }')
 # checagens 4, 5, 6 e 7 e quais SHAs entram na proveniencia da checagem 4.
 # =================================================================================================
 EXENTAS=":"
-PROVCOL=""
+COLSHAS=()
 NCOLAGENS=0
-significativas() { sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | grep -v '^# gerado em:'; }
+# C1c-01 — a isencao cobre EXATAMENTE as linhas cuja igualdade foi verificada. As linhas SIGNIFICATIVAS
+# de um bloco (trim, vazias fora) sao TODAS comparadas, nos dois lados; a UNICA variacao admitida e o
+# CARIMBO que a ferramenta grava: em `# gerado em: <carimbo> · repo: <x>`, o `<carimbo>` vira um marcador
+# fixo SO quando tem a forma de carimbo (AAAA-MM-DDThh:mm[:ss]Z, com `-<pid>` opcional) e e seguido de
+# espaco ou fim de linha. `# gerado em:` com qualquer outro conteudo e comparada LITERALMENTE.
+SIGNIF='{ sub(/^[[:space:]]+/, ""); sub(/[[:space:]]+$/, "") }
+index($0, "# gerado em: ") == 1 && match(substr($0, 14), /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9:]+Z(-[0-9]+)?/) {
+  depois = substr($0, 14 + RLENGTH)
+  if (depois == "" || substr(depois, 1, 1) == " ") $0 = "# gerado em: <carimbo>" depois
+}
+NF'
+# e a proveniencia da colagem sai das linhas COMPARADAS, menos a do carimbo: corridas hex de 7 a 40
+PROVSHA='index($0, "# gerado em: <carimbo>") != 1 { n = split($0, h, /[^0-9A-Fa-f]+/); for (j = 1; j <= n; j++) if (length(h[j]) >= 7 && length(h[j]) <= 40) print tolower(h[j]) }'
 
-peg BLOCO > "$TMPD/blocos"
+peg BLOCO
 while IFS="$TAB" read -r _t ini fim; do
   [ -n "${ini:-}" ] && [ -n "${fim:-}" ] || continue
   [ "$fim" -gt "$((ini+1))" ] || continue                        # bloco sem corpo nao e colagem
-  sed -n "$((ini+1)),$((fim-1))p" "$NORM" > "$TMPD/bloco.raw"
-  prim=$(significativas < "$TMPD/bloco.raw" | head -1)
+  corre "sed (extrai o bloco l.$ini-$fim)" "$TMPD/bloco.raw" sed -n "$((ini+1)),$((fim-1))p" "$NORM"
+  corre "awk (normaliza o bloco l.$ini-$fim)" "$TMPD/bloco.sig" awk "$SIGNIF" "$TMPD/bloco.raw"
+  prim=""; IFS= read -r prim < "$TMPD/bloco.sig"
   case "$prim" in
     "# refs do PR #"*) ;;
     *) continue ;;                                               # sem a 1a linha real: NAO e colagem
   esac
-  N=$(printf '%s' "$prim" | sed -n 's/^# refs do PR #\([0-9][0-9]*\).*/\1/p')
+  N="${prim#"# refs do PR #"}"; N="${N%%[!0-9]*}"
   [ -n "$N" ] || continue
   if [ ! -f "$TMPD/refs.$N.rc" ]; then
     bash "$REFS" "$N" > "$TMPD/refs.$N.out" 2>"$TMPD/refs.$N.err"; echo $? > "$TMPD/refs.$N.rc"
   fi
-  RCN=$(cat "$TMPD/refs.$N.rc")
-  if [ "$RCN" = "1" ] || [ "$RCN" = "2" ]; then
-    falha "l.$ini-$fim: referencias indisponiveis para #$N (mandato-refs.sh ec=$RCN) — nada foi verificado"
+  RCN=""; IFS= read -r RCN < "$TMPD/refs.$N.rc"
+  # o contrato do refs e 0 LIDO/AUSENTE · 1 PARADO · 2 USO · 3 NAO DETERMINAVEL. Qualquer outro codigo
+  # (126 nao executavel, 127 ausente, 128+n sinal) e MORTE do componente, nunca "NAO bate" (§15.15(b)).
+  case "$RCN" in
+    0|3) ;;
+    1|2) falha "l.$ini-$fim: referencias indisponiveis para #$N (mandato-refs.sh ec=$RCN) — nada foi verificado"; continue ;;
+    *) morreu "refs (mandato-refs.sh $N, colagem l.$ini-$fim)" "$RCN" "$TMPD/refs.$N.err" ;;
+  esac
+  corre "awk (normaliza a saida do refs #$N)" "$TMPD/refs.$N.sig" awk "$SIGNIF" "$TMPD/refs.$N.out"
+  if [ "$(< "$TMPD/bloco.sig")" != "$(< "$TMPD/refs.$N.sig")" ]; then
+    falha "l.$ini-$fim: bloco '# refs do PR #$N' NAO bate com a saida atual de mandato-refs.sh $N (parcial, editado ou DESATUALIZADO: o head andou?)"
     continue
   fi
-  if [ "$(significativas < "$TMPD/bloco.raw")" = "$(significativas < "$TMPD/refs.$N.out")" ]; then
-    paste_ok "l.$ini-$fim: refs do PR #$N confere com a saida atual"
-    NCOLAGENS=$((NCOLAGENS+1))
-    i="$ini"
-    while [ "$i" -le "$fim" ]; do EXENTAS="$EXENTAS$i:"; i=$((i+1)); done
-    PROVCOL="$PROVCOL
-$(tr -c '0-9A-Fa-f' '\n' < "$TMPD/bloco.raw" | awk 'length($0)>=7 && length($0)<=40 { print tolower($0) }')"
-  else
-    falha "l.$ini-$fim: bloco '# refs do PR #$N' NAO bate com a saida atual de mandato-refs.sh $N (parcial, editado ou DESATUALIZADO: o head andou?)"
-  fi
-done < "$TMPD/blocos"
+  paste_ok "l.$ini-$fim: refs do PR #$N confere com a saida atual"
+  NCOLAGENS=$((NCOLAGENS+1))
+  i=$((ini+1))                                                    # as linhas-marcador NUNCA sao isentas
+  while [ "$i" -lt "$fim" ]; do EXENTAS="$EXENTAS$i:"; i=$((i+1)); done
+  corre "awk (SHAs da colagem l.$ini-$fim)" "$TMPD/col.$ini.sha" awk "$PROVSHA" "$TMPD/bloco.sig"
+  COLSHAS+=("$TMPD/col.$ini.sha")
+done < "$TMPD/peg.BLOCO"
 [ "$NCOLAGENS" = "0" ] && aviso "sem colagem da ferramenta (cole a saida de: bash scripts/mandato-refs.sh <PR>)"
 
 # =================================================================================================
@@ -272,7 +390,8 @@ done < "$TMPD/blocos"
 # token reservado (chk 7). Nenhum reconhecedor de secao ou cerca aqui: `fe` e `sec` vem do
 # oraculo, e `EX` traz as linhas isentas pela colagem VERIFICADA.
 # =================================================================================================
-REC=$(awk -v OFS="$TAB" -v EX="$EXENTAS" '
+REC="$TMPD/rec"
+corre "awk (passada 2)" "$REC" awk -v OFS="$TAB" -v EX="$EXENTAS" '
 function isento(num) { return (index(EX, ":" num ":") > 0) }
 function limpaP(s) { sub(/^[:-]+/,"",s); sub(/[.:-]+$/,"",s); return s }     # caminho: `.` inicial FICA
 function limpaS(s) { sub(/^[.:-]+/,"",s); sub(/[.:-]+$/,"",s); return s }    # SHA: o `.` inicial SAI
@@ -287,7 +406,8 @@ function temI(s) {
 }
 function contaGrep(s,   c) {
   c = 0
-  while (match(s, /(^|[^A-Za-z0-9_.\/-])[A-Za-z]*(grep|rg)([[:space:]]|$)/)) {
+  # C1c-05: a invocacao por CAMINHO (`/usr/bin/grep`) e com EXTENSAO (`grep.exe`) e da mesma familia
+  while (match(s, /(^|[^A-Za-z0-9_.\/-])([A-Za-z0-9_.-]*\/)*[A-Za-z]*(grep|rg)(\.exe)?([[:space:]]|$)/)) {
     c++; s = substr(s, RSTART + RLENGTH)
   }
   return c
@@ -308,29 +428,34 @@ function coletaGrep(num, l,   t, nseg, seg, j, c, k5) {
     for (k5=1;k5<=c;k5++) print "REJ5", num, seg[j]
   }
 }
+# C1c-06: `\|` numa celula e o pipe LITERAL do Markdown, nao fronteira de coluna — sai antes do `split`
 function colunaDeEvidencia(l,   c,n,i) {
+  gsub(/\\[|]/, "\001", l)
   n = split(l, c, "|")
   for (i = 2; i < n; i++) if (c[i] ~ /medido por:|derruba com:/) return i
   return 0
 }
 function celulaCheia(l, idx,   c,n) {
+  gsub(/\\[|]/, "\001", l)
   n = split(l, c, "|")
   if (idx < 2 || idx > n) return 0
   return (c[idx] ~ /[^[:space:]]/)
 }
 function tokenUnidade() { return (secU=="H") ? "derruba com:" : "medido por:" }
-function satisfeita() { return (uok || index(utext, tokenUnidade()) > 0) }
-function abre(i, l, apos) { ustart=i; ufirst=l; utext=l; uok=0; uapos=apos; ucerca=0; secU=sec }
+# C1c-03: a cerca e SAIDA, nunca COMANDO. A unidade guarda dois textos: `utext` (tudo, para mensagem) e
+# `uprosa` (so as linhas NAO cercadas). O token so satisfaz a unidade se estiver na PROSA.
+function satisfeita() { return (uok || index(uprosa, tokenUnidade()) > 0) }
+function abre(i, l, apos, cercada) { ustart=i; ufirst=l; utext=l; uprosa=(cercada ? "" : l); uok=0; uapos=apos; ucerca=0; secU=sec }
 function fecha() {
   if (ustart > 0) {
     if (!satisfeita()) {
       if (secU=="H") print "REJ3H", ustart, ufirst, uapos
       else           print "REJ3M", ustart, ufirst, uapos
     }
-    if (ucerca && index(utext, tokenUnidade()) == 0) print "REJ19", ustart, ufirst
+    if (ucerca && index(uprosa, tokenUnidade()) == 0) print "REJ19", ustart, ufirst
     ultimaSat = satisfeita() ? 1 : 0
   }
-  ustart=0; ufirst=""; utext=""; uok=0; uapos=0; ucerca=0
+  ustart=0; ufirst=""; utext=""; uprosa=""; uok=0; uapos=0; ucerca=0
 }
 # --- 1o arquivo: o ORACULO ---------------------------------------------------------------------
 NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
@@ -364,6 +489,14 @@ NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
         if (length(us) > 40) { print "HEXLONGO", FNR, length(us); continue }
         if (length(us) >= 7) { print "SHA", FNR, tolower(us); continue }
       }
+      # C1c-02: `:` nao esconde um SHA. O token com `:` e partido no PRIMEIRO `:`; a esquerda que e hex
+      # de 7 a 40 vai para a checagem 4 como SHA, e o token INTEIRO segue abaixo para a checagem 6
+      # (nada muda para `HEAD:…`, `C:/…`, `https://…`, que nao tem hex a esquerda).
+      kc = index(usuf, ":")
+      if (kc > 1) {
+        ls = limpaS(substr(usuf, 1, kc - 1))
+        if (ls != "" && ehex(ls) && length(ls) >= 7 && length(ls) <= 40) print "SHA", FNR, tolower(ls)
+      }
       up = limpaP(u)
       if (up == "") continue
       sub(/:[0-9]+$/, "", up); up = limpaP(up)
@@ -382,7 +515,7 @@ NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
 }
 END {
   n = FNR
-  sec=""; ustart=0; ufirst=""; utext=""; uok=0; uapos=0; ucerca=0; tabCol=0; ultimaSat=0; secU=""
+  sec=""; ustart=0; ufirst=""; utext=""; uprosa=""; uok=0; uapos=0; ucerca=0; tabCol=0; ultimaSat=0; secU=""
   for (i=1;i<=n;i++) {
     l = L[i]; fe = FE[i]+0; novaSec = SC[i]
     if (novaSec != sec) { fecha(); sec = novaSec; tabCol=0; ultimaSat=0 }
@@ -390,7 +523,7 @@ END {
     if (sec != "M" && sec != "H") continue
     # --- cerca: marcador e corpo pertencem a unidade, em QUALQUER posicao (I19) ---------------
     if (fe == 1 || fe == 2) {
-      if (ustart == 0) abre(i, l, ultimaSat)
+      if (ustart == 0) abre(i, l, ultimaSat, 1)
       else utext = utext "\n" l
       ucerca = 1
       coletaGrep(i, l)
@@ -409,8 +542,8 @@ END {
       coletaGrep(i, l); fecha(); continue                                   # NUNCA agrega
     }
     if (l ~ /^[[:space:]]/) {
-      if (ustart > 0 && index(utext, tokenUnidade()) == 0 && !uok) {
-        utext = utext "\n" l; coletaGrep(i, l); continue                    # I20: antes do token
+      if (ustart > 0 && index(uprosa, tokenUnidade()) == 0 && !uok) {
+        utext = utext "\n" l; uprosa = uprosa "\n" l; coletaGrep(i, l); continue   # I20: antes do token
       }
       fecha(); abre(i, l, ultimaSat); coletaGrep(i, l); continue            # depois: unidade NOVA
     }
@@ -433,54 +566,64 @@ END {
     p = p + k - 1 + 12
   }
 }
-' "$ORACULO" "$NORM")
+' "$ORACULO" "$NORM"
 
-pega() { printf '%s\n' "$REC" | awk -F"$TAB" -v t="$1" '$1==t'; }
+# o FILTRO da saida da passada 2, pelo mesmo portao: `$TMPD/pega.<tipo>`
+pega() { corre "awk (filtro pega $1)" "$TMPD/pega.$1" awk -F"$TAB" -v t="$1" '$1==t' "$REC"; }
 DICA_APOS=" (linha apos o comando fora de cerca: saida colada vai em cerca; continuacao de prosa vai ANTES do 'medido por:')"
 
 # 3) toda UNIDADE de MEDIDO tem 'medido por:'; toda de HIPOTESE tem 'derruba com:'
-pega REJ3M > "$TMPD/r3m"
+pega REJ3M
 while IFS="$TAB" read -r _t ln txt apos; do
   [ -n "${ln:-}" ] || continue
   if [ "${apos:-0}" = "1" ]; then d="$DICA_APOS"; else d=""; fi
   falha "unidade de MEDIDO sem 'medido por: <comando>' — l.$ln: $txt$d"
-done < "$TMPD/r3m"
-pega REJ3H > "$TMPD/r3h"
+done < "$TMPD/pega.REJ3M"
+pega REJ3H
 while IFS="$TAB" read -r _t ln txt apos; do
   [ -n "${ln:-}" ] || continue
   if [ "${apos:-0}" = "1" ]; then d="$DICA_APOS"; else d=""; fi
   falha "unidade de HIPOTESE sem 'derruba com: <comando>' — l.$ln: $txt$d"
-done < "$TMPD/r3h"
+done < "$TMPD/pega.REJ3H"
 # 3-bis) I19, o outro lado da convencao: cerca numa unidade SEM comando
-pega REJ19 > "$TMPD/r19"
+pega REJ19
 while IFS="$TAB" read -r _t ln txt; do
   [ -n "${ln:-}" ] || continue
   falha "saida colada sem comando — l.$ln: cerca numa unidade sem 'medido por:' — $txt"
-done < "$TMPD/r19"
+done < "$TMPD/pega.REJ19"
 
 # 4) todo SHA citado tem de vir de mandato-refs.sh — resolver NAO basta (o a62d04e2 resolvia)
-pega HEXLONGO | sort -u > "$TMPD/hexlongo"
+pega HEXLONGO
+corre "sort (corridas hex longas)" "$TMPD/hexlongo" sort -u "$TMPD/pega.HEXLONGO"
 while IFS="$TAB" read -r _t ln len; do
   [ -n "${ln:-}" ] || continue
   falha "corrida hexadecimal de $len caracteres (SHAs colados?) — l.$ln"
 done < "$TMPD/hexlongo"
 
-SHAS=$(pega SHA | cut -f3 | sort -u)
-if [ -n "$SHAS" ]; then
+pega SHA
+corre "awk (SHAs citados)" "$TMPD/shas.raw" awk -F"$TAB" '{ print $3 }' "$TMPD/pega.SHA"
+corre "sort (SHAs citados)" "$TMPD/shas" sort -u "$TMPD/shas.raw"
+NSHAS=0; while IFS= read -r _s; do NSHAS=$((NSHAS+1)); done < "$TMPD/shas"
+if [ "$NSHAS" -gt 0 ]; then
   if [ -n "$PR" ]; then
-    LEG=$(bash "$REFS" "$PR" --sha-only 2>"$TMPD/refs.arg.err"); RC=$?
-    DET=$(head -3 "$TMPD/refs.arg.err" 2>/dev/null | tr '\n' ' ')
+    bash "$REFS" "$PR" --sha-only > "$TMPD/leg" 2>"$TMPD/refs.arg.err"; RC=$?
+    case "$RC" in
+      0|1|2|3) ;;
+      *) morreu "refs (mandato-refs.sh $PR --sha-only)" "$RC" "$TMPD/refs.arg.err" ;;
+    esac
+    corre "awk (detalhe do refs)" "$TMPD/det" awk 'NR <= 3 { printf "%s ", $0 }' "$TMPD/refs.arg.err"
+    DET=""; IFS= read -r DET < "$TMPD/det"
     if [ "$RC" = 1 ] || [ "$RC" = 2 ]; then
       falha "referencias indisponiveis (mandato-refs.sh ec=$RC): ${DET:-<stderr vazio>} — NADA foi verificado: a ferramenta de referencias morreu, o mandato nao chegou a ser julgado"
     else
       [ "$RC" = 3 ] && aviso "approved_head NAO DETERMINAVEL (mandato-refs.sh ec=3) — a proveniencia dos SHAs vale; rode 'bash $REFS $PR' para ver o que a ferramenta viu. ${DET}"
       # A proveniencia e a UNIAO: a saida da ferramenta para o PR + os SHAs de TODA colagem
       # VERIFICADA do documento (citar o head de outro PR e legitimo quando o bloco dele esta colado).
-      PROV=$(printf '%s\n%s\n' "$LEG" "$PROVCOL" | tr 'A-F' 'a-f' | grep -v '^$' | sort -u)
-      for s in $SHAS; do
-        printf '%s\n' "$PROV" | grep -qi "^${s}" \
+      corre "awk (proveniencia)" "$TMPD/prov" awk 'NF { print tolower($0) }' "$TMPD/leg" ${COLSHAS[@]+"${COLSHAS[@]}"}
+      while IFS= read -r s; do
+        veredito "grep (proveniencia do SHA)" /dev/null grep -qi "^${s}" "$TMPD/prov" \
           || falha "SHA '$s' nao esta na saida de mandato-refs.sh $PR (resolver nao basta — e pode ser SHA VELHO: o ramo anda)"
-      done
+      done < "$TMPD/shas"
     fi
   else
     falha "o mandato cita SHA mas nao recebeu o numero do PR — rode: mandato-preflight.sh $F <PR>"
@@ -488,40 +631,50 @@ if [ -n "$SHAS" ]; then
 fi
 
 # 5) assercao de ausencia tem de ser insensivel a caixa (o 'Maioria de 3' passou por isso)
-pega REJ5 > "$TMPD/r5"
+pega REJ5
 while IFS="$TAB" read -r _t ln seg; do
   [ -n "${ln:-}" ] || continue
   falha "invocacao de grep/rg SEM -i (e o segmento nao declara 'caixa-exata:') — l.$ln: $seg"
-done < "$TMPD/r5"
-pega AVI5 | sort -u > "$TMPD/a5"
+done < "$TMPD/pega.REJ5"
+pega AVI5
+corre "sort (isencoes caixa-exata)" "$TMPD/a5" sort -u "$TMPD/pega.AVI5"
 while IFS="$TAB" read -r _t ln c; do
   [ -n "${ln:-}" ] || continue
   aviso "caixa-exata: isenta $c invocacao(oes) sem -i — l.$ln"
 done < "$TMPD/a5"
 
 # 6) todo caminho do repositorio citado existe NO CAMINHO CITADO
-pega PATH | cut -f2,3,4 | sort -u > "$TMPD/r6"
-while IFS="$TAB" read -r ln c nv; do
+# A revisao de `<rev>:<caminho>` so "resolve" se EXISTE como commit (C1c-02 e errata §15.14): o
+# `rev-parse --verify --quiet` NU aceita qualquer 40-hex; com `^{commit}` ele parte POR ec — 1 = nao
+# existe (ou nao e commit), >= 2 = o git morreu (A15: morte nomeada, nunca "nao existe"). UMA funcao,
+# chamada nos DOIS ramos (arquivo e diretorio), ANTES de olhar se o caminho existe.
+revExiste() { veredito "git (chk 6, revisao '$1')" /dev/null git -C "$RAIZ" rev-parse --verify --quiet "${1}^{commit}"; }
+pega PATH
+corre "sort (caminhos citados)" "$TMPD/r6" sort -u "$TMPD/pega.PATH"
+while IFS="$TAB" read -r _t ln c nv; do
   [ -n "${c:-}" ] || continue
   [ "${nv:-0}" = "1" ] && continue                     # '(novo)': declarado a criar (I3)
   # `<revisao>:<caminho>` é citação corrente na casa (`git show origin/main:docs/x.md`). O que o
-  # mandato afirma ali é sobre o CAMINHO, e a revisão só conta como revisão se ela RESOLVE.
+  # mandato afirma ali é sobre o CAMINHO, e a revisão só conta como revisão se ela EXISTE.
   d="$c"
   case "$c" in *:*) d="${c##*:}" ;; esac
   case "$c" in
     */)
       [ -d "$RAIZ/$c" ] && continue
       [ -d "$RAIZ/mobile/flutter_app/$c" ] && continue
-      [ -n "$d" ] && [ "$d" != "$c" ] && { [ -d "$RAIZ/$d" ] || [ -d "$RAIZ/mobile/flutter_app/$d" ]; } && continue
+      if [ -n "$d" ] && [ "$d" != "$c" ]; then
+        rev="${c%:*}"
+        revExiste "$rev" || { falha "diretorio citado nao existe: $c (a revisao '$rev' nao existe localmente ou nao e commit — git fetch?)"; continue; }
+        { [ -d "$RAIZ/$d" ] || [ -d "$RAIZ/mobile/flutter_app/$d" ]; } && continue
+      fi
       falha "diretorio citado nao existe: $c (conferido em \$RAIZ/ e em \$RAIZ/mobile/flutter_app/)" ;;
     *)
       [ -e "$RAIZ/$c" ] && continue
       [ -e "$RAIZ/mobile/flutter_app/$c" ] && continue
       if [ -n "$d" ] && [ "$d" != "$c" ]; then
         rev="${c%:*}"
-        if git -C "$RAIZ" rev-parse --verify --quiet "$rev" >/dev/null 2>&1; then
-          { [ -e "$RAIZ/$d" ] || [ -e "$RAIZ/mobile/flutter_app/$d" ]; } && continue
-        fi
+        revExiste "$rev" || { falha "caminho citado nao existe: $c (a revisao '$rev' nao existe localmente ou nao e commit — git fetch?)"; continue; }
+        { [ -e "$RAIZ/$d" ] || [ -e "$RAIZ/mobile/flutter_app/$d" ]; } && continue
       fi
       falha "caminho citado nao existe: $c (conferido em \$RAIZ/ e em \$RAIZ/mobile/flutter_app/ — nao ha busca por basename)" ;;
   esac
@@ -530,8 +683,9 @@ done < "$TMPD/r6"
 # 7) `approved_head` e TOKEN RESERVADO: o nome do campo e da FERRAMENTA, o autor nao o escreve.
 #    A unica isencao e a colagem VERIFICADA (I1), cujas linhas ja sairam em `EXENTAS`. E o UNICO
 #    mecanismo desta checagem: o rotulo nao e conferido contra o estado da ferramenta (§13.1).
-pega AH7 | cut -f2 | sort -n -u > "$TMPD/r7"
-while IFS= read -r ln; do
+pega AH7
+corre "sort (token reservado)" "$TMPD/r7" sort -t "$TAB" -k2,2n -u "$TMPD/pega.AH7"
+while IFS="$TAB" read -r _t ln; do
   [ -n "${ln:-}" ] || continue
   falha "l.$ln: token reservado approved_head fora da colagem da ferramenta"
 done < "$TMPD/r7"
