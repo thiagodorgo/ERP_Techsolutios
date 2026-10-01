@@ -14,6 +14,23 @@
 # informação de *o que foi julgado*.
 #
 # -----------------------------------------------------------------------------------------------
+# O QUE MUDOU NO CICLO 4 (mesmo bloco, mesmo PR #393): de novo NADA no comportamento — só este cabeçalho
+#
+#  1. O guard deste artefato passou de 39 para 44 casos (T4c): [Y02]–[Y05] fixam o que a C2 do
+#     ciclo 3 mediu e o guard não via (objeto de 40 hex com o campo de aprovação abreviado; campo
+#     de aprovação que é SHA de TREE; duas atas casando; o `--sha-only` com o campo de aprovação), e
+#     o [F-25] dá limite de tempo ao `roda()` do guard. Os 5 passam contra este artefato como está:
+#     o vermelho deles é a mutação de 1 linha, não um defeito daqui (plano §15.15(c1)).
+#  2. Os CÓDIGOS DE SAÍDA abaixo (0 · 1 · 2 · 3) passaram a ser CONTRATO também do lado de quem
+#     chama: o pré-voo lê 1 e 2 como "referências indisponíveis", 0 e 3 como resposta, e QUALQUER
+#     outro código (126 não executável, 127 ausente, 128+n sinal) como MORTE do componente `refs`,
+#     nunca como "a colagem não bate" (plano §15.15(b)). Código novo aqui exige mudar os dois lados.
+#  3. A cobertura deste artefato é medida pela ferramenta do ciclo 4, que COMPILA cada programa awk
+#     do mutante antes de olhar o guard: os mutantes das l.240 e l.251 (M10 que gera `if (0))`), que
+#     o ciclo 3 contou como cobertos, saem MUTANTE-INVALIDO — fora do denominador. A fronteira 24
+#     (M1 dentro de `$( … || echo … )`, l.164) continua: ANOMALIA-SINTAXE, ponto listado.
+#
+# -----------------------------------------------------------------------------------------------
 # O QUE MUDOU NO CICLO 3 (mesmo bloco, mesmo PR #393): NADA no comportamento — e isso é o registro
 #
 # O ciclo 3 não reescreveu este script. O que mudou em volta dele, e que vale escrito aqui porque
