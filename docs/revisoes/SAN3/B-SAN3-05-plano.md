@@ -870,16 +870,16 @@ db_runtime_role_main() (
 SELECT set_config('san3.role', :'role', false), set_config('san3.allow_log_all', :'allow_log_all', false),
        set_config('san3.migrator', coalesce(nullif(:'migrator', ''), current_user::text), false) \gset _
 -- (0) ANTES de a senha ir ao servidor: ele registraria o texto de todo statement?
-DO $ BEGIN
+DO $$ BEGIN
   IF current_setting('san3.allow_log_all') IS DISTINCT FROM '1'
      AND (current_setting('log_statement') = 'all' OR current_setting('log_min_duration_statement') = '0') THEN
     RAISE EXCEPTION 'MODO 0 — o servidor registra o texto de todo statement (log_statement=%, log_min_duration_statement=%): a senha nova iria ao log. Desligue isso (superusuario: ALTER SYSTEM SET ... / ALTER DATABASE ... SET ...) ou aceite conscientemente com DB_RUNTIME_ALLOW_LOG_ALL=1', current_setting('log_statement'), current_setting('log_min_duration_statement');
-  END IF; END $;
+  END IF; END $$;
 -- (1) a senha entra pelo psql, nao pelo argv
 \set password `printf '%s' "$DB_RUNTIME_PASSWORD"`
 SELECT set_config('san3.password', :'password', false) \gset _
 \unset password
-DO $
+DO $$
 DECLARE
   v_role text := current_setting('san3.role'); v_password text := current_setting('san3.password'); v_migrator text := current_setting('san3.migrator');
   me pg_roles%ROWTYPE; alvo pg_roles%ROWTYPE; r record; n int; vias text;
@@ -940,7 +940,7 @@ BEGIN
   -- SENHA POR ULTIMO: tudo o que podia falhar ja passou; um erro aqui e re-emitido SEM o SQL dinamico
   BEGIN EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', v_role, v_password);
   EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'nao foi possivel definir a senha do papel % (% %)', v_role, SQLSTATE, SQLERRM; END;
-END $;
+END $$;
 SELECT set_config('san3.password', '', false) \gset _
 -- linha final (uma so, -At): rolname|rolsuper|rolbypassrls|rolreplication|escapa_por_pertenca|posse_force|views_de_dono_que_escapa|tabelas_com_dml
 SELECT r.rolname, r.rolsuper, r.rolbypassrls, r.rolreplication,
