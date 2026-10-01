@@ -238,7 +238,7 @@ Superusuário → recusa (`atributo … is_self`, 12 linhas: é membro de tudo);
 | **A21** | `FROZEN_ALLOWLIST` tem `san3-05-runtime-role-guard-db.test.ts` com a contagem **medida** no head da entrega e motivo; o guard passa | contagem ±1 ou entrada ausente → o guard reprova | `db-catalog-write-guard.test.ts` (bateria) | §5 F2-01 (fail → pass → fail) |
 | **A22** | `git ls-files -s scripts/db-runtime-role.sh` → `100755`; `git -c core.autocrlf=true` checkout do head → `git ls-files --eol` → `w/lf` | remover a linha do `.gitattributes` → `w/crlf` (e o bash quebra na l.81) | C1 (comando na ata) | §5 N2-03 |
 | **A23** | Sem `psql` no PATH e com `DATABASE_URL`, o T14b **falha** (TAP `psql: ausente — pré-requisito da suíte -db`) e `skipped` **não** cresce; com `psql`, imprime o caminho e roda | trocar a falha por `skip` → com os 2 pulos conhecidos o runner reprova pelo orçamento (P8) — o vermelho muda de "teste" para "orçamento": sinal de que o desenho regrediu | T14b + runner | §5 F2-06 (teto duro l.82/90-94) |
-| **A24** | Tipo `any` com método de delegate entra no inventário como `TIPO-DESCONHECIDO` (fixture `N10_any`: `(prisma as any).cloudUsageEvent.findMany({})`) | tirar a regra do `any` → +0 | T13 (27.ª fixture, se a medição do relatório §8 confirmar +1; senão fica como pendência nomeada e a fixture sai) | relatório §8 |
+| **A24** | Receptor com cast `any` **entra** no inventário: fixture `N10_any` (`(prisma as any).cloudUsageEvent.findMany({})`) → **+1**, classe `CRU` — o `as any` é descascado (`unwrap`) e o acessor **nomeado** é reconhecido pela sintaxe; `TIPO-DESCONHECIDO` cobre o caso sem nome de acessor (`(x as any)[nome].findMany`), **declarado sem fixture** (medido: 0 no head) | tirar o `unwrap` de `AsExpression` → +0; tirar a regra do `any` → o caso sem nome passa a +0 | T13 (27.ª fixture) | relatório §8: `zz-mut/N10_any.ts … cloudUsageEvent.findMany … CRU ×1` |
 
 **CE-G2 (papel × passo):** os passos HTTP de T11a–d rodam como `platform_admin` por JWT (`signAccessToken({…, roles: ["platform_admin"]})`, `platform-permissions.ts:33-54`), como no diferencial do relatório §7.
 
@@ -288,7 +288,12 @@ Mais: `grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.tom
 
 ## §9 — KPI (§C3)
 
-EM APURAÇÃO
+- `Kpis/kpis-latest.json`, `Kpis/kpis-history.json` (append) e `Kpis/kpis-history.md` (append) no mesmo PR; o painel hidrata dos JSON — **nenhuma** dimensão nova.
+- Vigente em `origin/main` (lido por mim de `Kpis/kpis-latest.json`, relatório §8): `metrics.blocks_completed.value` **169** · `metrics.backend_tests` **3052/3054** · `frontend_smoke_tests` 1202 · `flutter_tests` 864 · `mvp_demo` 99 · `mvp_vendavel` 88 · `release.pr` 397.
+- `backend_tests`: **reexecução real** (`DATABASE_URL=<descartável> npm test`, TAP, Node 20, `skipped ≤ 2`), nunca copiado. `frontend_smoke_tests` (1202) e `flutter_tests` (864): **carregados com nota** (§C3.3; `git diff --name-only origin/main...HEAD -- frontend mobile` vazio, colado).
+- `mvp_demo` (99) / `mvp_vendavel` (88): **intocados** (os itens 9 e 10 só contam fechados após o ato do dono — §4.2 do PLANO_SAN3).
+- `blocks_completed`: 169 → **170**. `release.block`: "B-SAN3-05 (itens 9 e 10 do §4.1 — código; fecho depende do ato do dono)"; `pr` após `gh pr create`; `merge_commit`/`approved_head` **`null` na autoria** (§C3.5); `status: "published_per_pr"`.
+- History: 1 linha por métrica carregada; menção de que a lista do §5.2 ("quatro") foi medida como **sete sítios / cinco métodos dentro + um fora**; e de que este plano é a **v3** após as críticas r1 e r2 (todos os achados respondidos com medição; nenhum recusado).
 
 ## §10 — Junta (§C7): quórum, cadeiras, o C3(1) reescrito, papéis
 
@@ -308,24 +313,807 @@ EM APURAÇÃO
 
 ## §11 — Atos do dono (seis modos de falha nomeados)
 
-EM APURAÇÃO
+> O bloco entrega **pronto**: trava, procedimento (18 cenários), compose e documentação. Os itens 9 e 10 **só fecham** com a trava **verde no ambiente** — dois atos que o repositório não pratica por você (`PLANO_SAN3.md` §4.2, l.192). **Nada disto é feito pelo PR, nem antes do merge.**
+
+**Ato 0 — não ligue o CD de staging antes dos Atos 1–2 de staging (N2-05).** `deploy-staging.yml` roda a cada push na `main` quando `STAGING_DEPLOY_ENABLED == 'true'` (hoje `skipped` — medido pela r2); `fly.staging.toml` sobe com `NODE_ENV=production` ⇒ trava ativa. **Mantenha a variável desligada** até o papel de staging existir e o secret estar trocado; a amarração é procedimental (o workflow é PROIBIDO neste bloco) e fica registrada em `docs/deployment.md` e em `P-SAN3-05-STAGING-CD-AMARRACAO` (§13).
+
+**Ato 1 — criar o papel de runtime no banco gerenciado (produção e staging).**
+1. Conecte-se ao banco **da aplicação** com a credencial **do migrador** (`PROD_DATABASE_URL` / `STAGING_DATABASE_URL` do GitHub Environment — é ela que roda `prisma migrate deploy` e `db:provision-rbac`, e **fica** como migrador). `PGDATABASE` = o banco da app (grants e default privileges são **por banco**).
+2. Escolha o nome (default `erp_runtime`) e uma senha nova, forte, **sem quebra de linha**, que **não** vai ao repositório nem ao chat. Rode, na raiz do repo no SHA mergeado:
+   ```bash
+   PGHOST=<host> PGPORT=5432 PGUSER=<migrador> PGPASSWORD=<senha do migrador> PGDATABASE=<banco da app> \
+   DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD='<senha nova>' \
+   bash scripts/db-runtime-role.sh
+   ```
+   A senha nova **não aparece** no terminal, no `argv` nem no log do servidor em nenhum modo de falha (medido nos modos 1 e 4; a única exposição residual é `/proc/<pid>/environ` enquanto o `psql` roda — a mesma classe de `PGPASSWORD`). O script termina com **uma** linha: `erp_runtime|f|f|f|f|0|0|<n>` — `rolsuper`, `rolbypassrls`, `rolreplication`, escapa por pertença, posse de tabela FORCE, views de dono que escapa, tabelas com DML (`<n>` = total de tabelas da app). Qualquer via de escape ⇒ **`ec=3`, nada persiste** — não siga ao Ato 2.
+3. **Os seis modos de falha**, cada um com o que pede de você (todos executados, relatório §4):
+   - **MODO 0** — `log_statement=all`/`log_min_duration_statement=0` no servidor: a senha iria ao log. Desligue (superusuário/console do provedor) **ou** aceite conscientemente com `DB_RUNTIME_ALLOW_LOG_ALL=1` (aí a senha **vai** ao log do provedor — rotacione depois).
+   - **MODO 1** — `permission denied to create role`: o migrador não tem `CREATEROLE` → **decisão de provedor** (§10.2 do PLANO_SAN3); pare e registre.
+   - **MODO 2** — `papel X tem <SUPERUSER|BYPASSRLS|REPLICATION|CREATEDB|CREATEROLE> e <migrador> nao pode remover`: use **outro nome** (`DB_RUNTIME_ROLE`) ou corrija com a credencial administrativa e rode de novo.
+   - **MODO 3** — `tabela/sequencia public.<t> pertence a <outro>…` ou `…escapa … posse:<dono>`: `ALTER TABLE public.<t> OWNER TO <migrador>;` com a credencial que puder; rode de novo (idempotente — ii).
+   - **MODO 4** — `o papel X ja existe e <migrador> nao tem ADMIN OPTION sobre ele`: outro nome, **ou** `GRANT X TO <migrador> WITH ADMIN OPTION` pela credencial que criou X; rode de novo.
+   - **MODO 5** — `a pertenca de X a Y … nao pode ser revogada por <migrador>`: `REVOKE Y FROM X` com credencial que tenha `ADMIN OPTION` sobre Y; rode de novo.
+   - **MODO 6** — `…escapa … view:<v>`: há view/matview de dono superusuário/`BYPASSRLS` sobre tabela FORCE com SELECT para o papel: `REVOKE SELECT ON <v> FROM erp_runtime` ou troque o dono da view; rode de novo.
+
+**Ato 2 — trocar o secret do app (e só ele).**
+4. `fly secrets set DATABASE_URL='postgresql://erp_runtime:<senha nova>@<host>:5432/<banco>?schema=public' -c fly.production.toml` (staging: `-c fly.staging.toml`). **Não** troque `PROD_DATABASE_URL`/`STAGING_DATABASE_URL`. **Não** use `options=-c role=…` (a trava julga o login — F13).
+5. Deploy pela pipeline. **A trava é a prova — inteira:** o app sobe ⇒ login **e** papel corrente não escapam por atributo, pertença, posse **nem view**. Confira `runtime database role verified` com `escapes: 0`. Se não subir e o log disser `RUNTIME_ROLE_CAN_BYPASS_RLS`, as `escapes` dizem a porta (`via: atributo|posse|view`, `rolname`, `is_self`, `objetos`): volte ao passo 2 ou 4; a máquina anterior continua servindo (H5).
+6. Depois: `GET /api/v1/platform/cloud-usage/summary` continua somando as organizações (item 10 — antes deste bloco zeraria: 50 × vazio, relatório §7); `login_without_org` no `/health/ready` fica `inactive`/`inert_no_execute` **até** o passo 5 do runbook B-O6R-01 (`GRANT EXECUTE … TO erp_runtime`), decisão sua em ata.
+
+**Registro quando os dois atos estiverem feitos:** `P-INFRA-RLS` e `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` passam de `EM ANDAMENTO` para `FECHADA` com a linha do log como evidência; itens 9 e 10 fecham. Até lá: **código pronto, ato pendente**.
 
 ## §12 — Riscos e rollback
 
-EM APURAÇÃO
+| R | Risco | Mitigação | Rollback |
+|---|---|---|---|
+| R1 | trava recusa o boot porque o secret ainda é o papel antigo (H2) | comportamento desejado; §11 antes do deploy; o log diz a porta | `fly secrets set DATABASE_URL=<anterior>` ou `flyctl deploy --image <sha-anterior>` |
+| R2 | tabela nova de **outro papel** ou **outro banco** sem grant (`42501`) | todo DDL roda como o migrador; o script falha nomeando tabela alheia (MODO 3) | rodar o script de novo após `OWNER TO` |
+| R3 | N+1 por organização | precedente aceito (platform-overview, B-O6R-06); uma transação por chamada | — |
+| R4 | blip do banco no boot vira crash-loop (5 tentativas/62 s) | fail-closed > subir sem saber com quem fala | — |
+| R5 | posse RECUSA; **view de dono que escapa RECUSA** (nova): um migrador superusuário que crie view sobre tabela FORCE derruba o boot da `api` | é a intenção (porta real: `v_rel` → 3 sem GUC); MODO 6 diz o comando; no compose (migrador `postgres`) hoje há **0 views** | REVOKE SELECT na view / secret anterior |
+| R6 | compose com volume antigo sem o papel | comentário no compose; CI faz `down -v` | `down -v` |
+| R7 | `.sh` sourced pelo entrypoint / CRLF | corpo em função-subshell; **falha propaga** (ec=1 nos dois modos); `100755` + `.gitattributes eol=lf` | H1 na CI |
+| R8 | `login_without_org` `inactive` até o GRANT humano | desenho do B-O6R-01 | passo 6 |
+| R9 | ratchet não vê **semântica** de contexto (envoltório confiado que não sete GUC; `tenantId` errado) | residual **declarado por construção** (§2.2(c)); a superfície de plataforma é guardada dinamicamente (T11a–d); o resto é `B-ARNES-2` | — |
+| R10 | `take: 100_000` retirado | espelha o B-O6R-06; junta ratifica ou pede teto por tenant | reintroduzir por tenant |
+| R11 | ratchet reprova PR alheio com helper `tx` legítimo | atualizar o congelado **com motivo** é o ato consciente; 53 chaves, sem linha | — |
+| R12 | T15 depende de `tsx`, portas livres e de **matar o filho** | portas por `listen(0)`; `SIGKILL` após o timeout; `pgrep` pelo padrão ancorado (`^node --import tsx src/server.ts`) antes de terminar — medido: o `timeout` sem `--kill-after` deixou 2 órfãos | — |
+| R13 | runner/máquina sem `psql` | T14b **falha** nomeando (nunca skip); pré-requisito declarado; inspetor confere por jurado | instalar o cliente 16 |
+| R14 | MODO 0 bloqueia o dono num gerenciado com `log_statement=all` que ele não pode mudar | override `DB_RUNTIME_ALLOW_LOG_ALL=1` **declarado** no §11 (a senha vai ao log do provedor; rotacionar depois) | — |
+| R15 | T13 lento (2 programas TypeScript, ~21 s + ~25 s aqui) | medido; abaixo de 60 s; roda no job `backend` sem banco | — |
+
+**Rollback do PR inteiro:** `git revert` do squash — nenhuma migração; o papel criado pelo dono é inerte enquanto o secret não o usar.
 
 ## §13 — O que este plano NÃO pega (pendências nomeadas, com dono)
 
-EM APURAÇÃO
+| Pendência (a abrir no PR; **6** IDs `P-SAN3-05-*` — A19) | O quê | Dono |
+|---|---|---|
+| `P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA` | sítio 7 (`cloud-cost-allocation-prisma.repository.ts:238`, sem chamador em `src`); ao resolver, **atualizar o congelado** (a chave `new PrismaCloudCostAllocationRepository(prisma) CRU` some) | `B-O6R-08` |
+| `P-SAN3-05-LACO-POR-TENANT-DUPLICADO` | `forEachTenantInOneTx`/canário privados da alocação × os públicos de `rls.ts` (o gerador v3 confia nos dois pelo símbolo) | `B-SAN3-03` |
+| `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` | a suíte `-db` inteira sob papel real (13 escrevem catálogo; 8 fazem DDL — 10 com helpers); `SUITES` do `backend-postgres`; **é o que fecha o residual semântico do ratchet (R9) e a propriedade fora da superfície de plataforma (§2.1(c))** | `B-ARNES-2` |
+| `P-SAN3-05-POSTURA-NO-HEALTH` | postura do papel no `/health/ready` fora de `checks` (corpo público, arquivo fora da fronteira) | observabilidade (orquestrador nomeia) |
+| `P-SAN3-05-SECURITY-DEFINER-INVENTARIO` | funções `SECURITY DEFINER` de dono que escapa, executáveis pelo papel (hoje só `auth_login_candidates`, por ato humano) | `B-SAN3-10` |
+| `P-SAN3-05-STAGING-CD-AMARRACAO` (**nova**, N2-05) | amarrar mecanicamente `STAGING_DEPLOY_ENABLED` aos Atos 1–2 de staging (hoje procedimental: `.github/workflows/**` é PROIBIDO aqui) | bloco que toque workflows (`B-SAN3-10` ou `B-ARNES-2`) |
+| `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` (**P1 da r1, pré-existente** — `fe2748c`, 2026-09-06, #380) | o teste reescreve a regra em vez de ler o export (mutante 13/13 verde — re-medido no relatório §5); conserto = o mecanismo do T2 | `B-O6R-07b`/segurança |
+| (registro) | §5.2 diz "quatro leituras"; medido: sete sítios/cinco métodos + um fora; a consulta do §5.2 é cega a pertença, posse, `session_user`, REPLICATION/servidor/view | ata + emenda em `pendencias.md` (`P-INFRA-RLS`) |
+
+**Dito por escrito, o que a v3 não responde com mecanismo e por quê:** (1) a **semântica** do contexto no ratchet — só a suíte `-db` sob papel real a vê (`B-ARNES-2`); (2) a senha em `/proc/<pid>/environ` do `psql` — mesma classe de `PGPASSWORD`, declarada no cabeçalho do script; (3) o CD de staging — procedimental porque o workflow é PROIBIDO; (4) o conserto de P1 — tem dono.
 
 ## §14 — Comando do bloco
 
-EM APURAÇÃO
+`# B-SAN3-05 — o papel de runtime não escapa de RLS (itens 9 e 10)` · **Plano:** esta **v3** (`docs/plano-b-san3-05`), que responde às críticas r1 e r2 — v1 (`c3f57e9`) e v2 (`c727156`) **não** valem mais · **Objetivo** §1 · **Fontes** §0 e "Resposta à crítica r2" · **Regras** §2 e §4 (trava = Apêndice E byte a byte, md5 `36650de53be8504c76deef74ecc78811`; `.sh` = Apêndice C byte a byte, md5 `810c1c4a2552665d4947bf0ef4e93670`, `100755`, `eol=lf`; gerador = Apêndice A byte a byte, md5 `81d9259571391eded68255391a99fb61`; fixtures = Apêndice D; nenhum privilégio além de DML+USAGE; nada em `/health`; nenhum pulo de teste) · **Escopo** §6 · **Rito** §10 (inspetor → dev de identidade nova → junta unânime de 3 → porteiro) · **Teste de encerramento** §7 A1–A24 com T1–T15 · **Bateria** §8 (Node 20, `psql` presente) · **KPI** §9 · **DoD** §10 do contrato + A19 · **Atos do dono** §11 · **Rastreabilidade**: `pr`, `merge_commit`, `approved_head`, `J-B-SAN3-05.md`, `published_per_pr`.
 
 ## §15 — Próximo papel depois desta v3
 
-EM APURAÇÃO
+**Medido nas refs (§A7):** o corpo do crítico em `HEAD` do ramo (`git show HEAD:.claude/agents/critico-adversarial.md`, l.3 e l.6) fixa "**máx 2 rodadas** de ataque/defesa; o que sobreviver vira **requisito explícito no plano**" — r1 e r2 estão feitas; não há r3. O `PLANO_SAN3.md` (l.9-10, mesma ref) segue o mesmo rito: "Revisão adversarial: `critico-adversarial`, 2 rodadas … Junta do PR". O contrato (`CLAUDE.md` §C2 e §C7.4-bis, medido em `HEAD` e em `origin/main`) manda: comando do bloco → **desenvolvedor de identidade nova** (que não votou, não planejou, não achou) → `inspetor-de-terreno-da-junta` (Fable) → junta unânime de 3 → `porteiro-pos-merge`.
+
+**Logo, o próximo papel é o orquestrador escrever o comando (§14) e nomear o desenvolvedor de identidade nova**, que implementa esta v3 **sem julgar a validade dos achados** (§C7.4-bis). Esta v3 **não passa por crítica r3**; o que nela é novo e **não foi re-medido por terceiros** está nomeado para a junta medir, cadeira a cadeira (§10): o gerador v3 e as 27 fixtures (C3), o script v3 nos 18 cenários e a trava v3 nos 13 papéis + semi-mutantes (C1), a fiação e o não-vazamento (C2). Se a junta reprovar, abre-se o ciclo 2 com `R-B-SAN3-05-2.md` e papéis recompostos — e, se o planejamento voltar, volta para o `planejador-mestre` em **Fable** (obrigatório na revalidação, §C7.6), identidade nova.
 
 ## Apêndices
 
-EM APURAÇÃO — A (gerador v3 verbatim + inventário congelado do head, 53 chaves) · B (medição sob papel real: referência ao blob da v2 + re-execução) · C (`scripts/db-runtime-role.sh` v3 verbatim) · D (fixtures: as 17 da r1 por referência ao blob da v2 + as 9 da r2 verbatim) · E (trava v3, idêntica ao §2.2).
+- **A** — gerador v3 (semântico), verbatim, md5 `81d9259571391eded68255391a99fb61`, e o inventário congelado do `origin/main` (53 chaves).
+- **B** — medição sob papel real (22 itens): por referência ao blob da v2 + re-execução nesta v3.
+- **C** — `scripts/db-runtime-role.sh` v3, verbatim, md5 `810c1c4a2552665d4947bf0ef4e93670`.
+- **D** — fixtures de mutação: 17 da r1 (por referência ao blob da v2, com md5 por arquivo) + as 10 novas (N01–N10), verbatim.
+- **E** — `RUNTIME_ROLE_GUARD_SQL` v3, verbatim, md5 `36650de53be8504c76deef74ecc78811`.
+
+---
+
+## Apêndice A — gerador v3 do inventário (verbatim) e o inventário congelado no `origin/main`
+
+Arquivo que o desenvolvedor commita como `scripts/san3-05-acessos-de-plataforma.mjs` (uso: `node scripts/san3-05-acessos-de-plataforma.mjs <raiz> [--all] [--mutant <arquivo.ts>]… [--override <rel>=<arquivo>]…`, com `cwd` = raiz do repo, que tem `node_modules`). md5 do fonte: `81d9259571391eded68255391a99fb61` (353 linhas). Extração para conferência: `awk '/^```js$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`.
+
+```js
+#!/usr/bin/env node
+// B-SAN3-05 (v3) — INVENTÁRIO SEMÂNTICO, gerado da fonte, dos acessos a tabelas sob FORCE ROW LEVEL SECURITY que NÃO
+// estão provadamente sob contexto de tenant. Serve a um RATCHET (teste T13): o inventário suspeito é congelado por
+// chave (sem número de linha); chave NOVA ou SUMIDA é vermelho — default NEGAR.
+//
+// O QUE MUDOU DA v2 (crítica r2, F2 — 9 formas verdes por reconhecimento de NOME e REGEX DE TEXTO):
+//   • o delegate é reconhecido pelo TIPO (type checker: a assinatura resolvida da chamada mora numa interface
+//     `<Model>Delegate` do client gerado), não pelo nome do acessor — alias, desestruturação renomeada, delegate
+//     passado como argumento e acesso por índice resolvem para o mesmo tipo;
+//   • a classe instanciada é reconhecida pelo SÍMBOLO (import renomeado, namespace, subclasse via namespace, herança
+//     pelo símbolo da base), não pelo texto do identificador;
+//   • o `$transaction` só é absolvido se a PRIMEIRA instrução do callback é `await setTenantRlsContext(<o mesmo tx>, …)`
+//     (AST + identidade de símbolo) — nunca por regex, nunca por comentário, nunca condicional, nunca com outro client;
+//   • o envoltório de contexto só é confiado pelo SÍMBOLO declarado nos arquivos listados em WRAPPERS; um runner injetado
+//     com o mesmo nome (ex.: `runWithTenantContext`, cujo default em local-auth-login.service.ts é `work()`) NÃO absolve;
+//   • o receptor é classificado pela DECLARAÇÃO do seu símbolo raiz (parâmetro de callback de envoltório → SOB-CONTEXTO;
+//     campo injetado → INJETADO, decidido em L2; parâmetro de função comum → PARAMETRO; variável de módulo → CRU;
+//     alias/desestruturação seguem o inicializador); o que não resolve é OUTRO (suspeito);
+//   • tipo `any`/`unknown` com método de delegate (`.findMany(` …) → TIPO-DESCONHECIDO (suspeito): o que não se prova
+//     que não é tabela FORCE entra no inventário;
+//   • fixtures de mutação entram como ARQUIVOS VIRTUAIS (`--mutant <arquivo>` → src/modules/zz-mut/<nome>.ts) e sobrescritas
+//     (`--override <rel>=<arquivo>`) num CompilerHost próprio: sem cópia de `src`, sem symlink de `node_modules`.
+//
+// O QUE ISTO É: aproximação ESTÁTICA com resolução de tipos. Residual DECLARADO (o que fica fora por construção):
+//   (i) a SEMÂNTICA do contexto — um envoltório confiado que não sete o GUC, um `tenantId` errado, um `tx` usado após
+//       o fim da transação — só a medição dinâmica (T10–T12 na superfície de plataforma; B-ARNES-2 no resto) vê;
+//   (ii) código fora de `src/**` (helpers de teste, scripts) e acesso ao banco fora do Prisma (pg direto) — não varridos;
+//   (iii) `$queryRaw*` com SQL que não cite literalmente a tabela é OPACO → SUSPEITO (não é residual: está no inventário).
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
+
+const args = process.argv.slice(2);
+const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--mutant" && args[i - 1] !== "--override");
+const repo = path.resolve(positional[0] ?? ".");
+const showAll = args.includes("--all");
+const mutants = []; const overrides = new Map();
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === "--mutant") mutants.push(path.resolve(args[++i]));
+  if (args[i] === "--override") { const s = args[++i]; const k = s.indexOf("="); overrides.set(s.slice(0, k).replace(/\\/g, "/"), path.resolve(s.slice(k + 1))); }
+}
+let req = null;
+for (const base of [import.meta.url, path.join(process.cwd(), "package.json"), path.join(repo, "package.json")]) {
+  try { const r = createRequire(base); r.resolve("typescript"); req = r; break; } catch { /* próximo */ }
+}
+if (!req) throw new Error("typescript não resolvido a partir do script, do cwd nem do alvo");
+const ts = req("typescript");
+
+// ---------- L0: tabelas FORCE ← migrações; tabela→model→acessor ← schema; OPS ← client gerado ----------
+function walk(dir, out = []) { for (const e of readdirSync(dir)) { const f = path.join(dir, e); if (statSync(f).isDirectory()) walk(f, out); else out.push(f); } return out; }
+const FORCE = new Set(); const ENABLE = new Set();
+for (const f of walk(path.join(repo, "prisma/migrations")).filter((f) => f.endsWith("migration.sql"))) {
+  const sql = readFileSync(f, "utf8");
+  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+FORCE ROW LEVEL SECURITY/gi)) FORCE.add(m[1].toLowerCase());
+  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+ENABLE ROW LEVEL SECURITY/gi)) ENABLE.add(m[1].toLowerCase());
+  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+NO FORCE ROW LEVEL SECURITY/gi)) FORCE.delete(m[1].toLowerCase());
+  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+DISABLE ROW LEVEL SECURITY/gi)) ENABLE.delete(m[1].toLowerCase());
+}
+const schema = readFileSync(path.join(repo, "prisma/schema.prisma"), "utf8");
+const modelToTable = new Map(); let current = null;
+for (const line of schema.split(/\r?\n/)) {
+  const m = line.match(/^model\s+(\w+)\s*\{/); if (m) current = m[1];
+  const map = line.match(/@@map\("([^"]+)"\)/); if (map && current) modelToTable.set(current, map[1]);
+}
+const accessorToTable = new Map();
+for (const [model, table] of modelToTable) if (FORCE.has(table)) accessorToTable.set(model[0].toLowerCase() + model.slice(1), table);
+let OPS = null; // derivado do PROGRAMA (abaixo), não de regex sobre o d.ts
+const RAW = new Set(["$queryRaw", "$queryRawUnsafe", "$executeRaw", "$executeRawUnsafe"]);
+// Envoltórios CONFIADOS — pelo SÍMBOLO declarado nestes arquivos (a junta lê os corpos: ambos setam o GUC a cada volta).
+const WRAPPERS = [
+  { name: "withTenantRls", file: /src[\\/]database[\\/]rls\.ts$/ },
+  { name: "forEachTenantRls", file: /src[\\/]database[\\/]rls\.ts$/ },
+  { name: "forEachTenantInOneTx", file: /cloud-cost-allocation-prisma\.repository\.ts$/ },
+];
+const SETTERS = [{ name: "setTenantRlsContext", file: /src[\\/]database[\\/]rls\.ts$/ }, { name: "setIdentityRlsContext", file: /src[\\/]database[\\/]rls\.ts$/ }];
+
+// ---------- Programa TypeScript (arquivos virtuais para mutantes e sobrescritas) ----------
+const cfg = ts.readConfigFile(path.join(repo, "tsconfig.json"), ts.sys.readFile);
+const parsed = ts.parseJsonConfigFileContent(cfg.config, ts.sys, repo);
+const options = { ...parsed.options, noEmit: true, skipLibCheck: true };
+const virtual = new Map();
+for (const m of mutants) virtual.set(path.normalize(path.join(repo, "src/modules/zz-mut", path.basename(m))), readFileSync(m, "utf8"));
+for (const [rel, file] of overrides) virtual.set(path.normalize(path.join(repo, rel)), readFileSync(file, "utf8"));
+const realSrc = walk(path.join(repo, "src")).filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts")).map((f) => path.normalize(f));
+const rootNames = [...new Set([...realSrc, ...virtual.keys()])];
+const host = ts.createCompilerHost(options, true);
+const _gsf = host.getSourceFile.bind(host), _fe = host.fileExists.bind(host), _rf = host.readFile.bind(host);
+host.fileExists = (f) => virtual.has(path.normalize(f)) || _fe(f);
+host.readFile = (f) => (virtual.has(path.normalize(f)) ? virtual.get(path.normalize(f)) : _rf(f));
+host.getSourceFile = (f, lang, onError, create) => (virtual.has(path.normalize(f)) ? ts.createSourceFile(f, virtual.get(path.normalize(f)), lang, true, ts.ScriptKind.TS) : _gsf(f, lang, onError, create));
+const program = ts.createProgram({ rootNames, options, host });
+const checker = program.getTypeChecker();
+// OPS ← métodos das interfaces *Delegate do client GERADO, pelo próprio programa (F4 da r1, agora sem regex de texto)
+OPS = new Set();
+for (const sf of program.getSourceFiles()) if (sf.fileName.replace(/\\/g, "/").endsWith("/.prisma/client/index.d.ts")) sf.forEachChild(function look(n) {
+  if (ts.isInterfaceDeclaration(n) && /Delegate$/.test(n.name.text)) for (const m of n.members) if (ts.isMethodSignature(m) && m.name) OPS.add(m.name.getText());
+  else ts.forEachChild(n, look);
+});
+if (OPS.size < 10) {
+  OPS = new Set(["findMany","findFirst","findFirstOrThrow","findUnique","findUniqueOrThrow","count","aggregate","groupBy","create","createMany","createManyAndReturn","update","updateMany","updateManyAndReturn","upsert","delete","deleteMany"]);
+  console.error("# aviso: OPS não derivado do client gerado; usando lista embutida");
+}
+const rel = (f) => path.relative(repo, f).replace(/\\/g, "/");
+const GENERATED = /[\\/](\.prisma|@prisma)[\\/]client[\\/]/;
+
+// ---------- utilitários semânticos ----------
+function unwrap(e) { while (e && (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression?.(e) || ts.isTypeAssertionExpression(e))) e = e.expression; return e; }
+function realSymbol(sym) { return sym && (sym.flags & ts.SymbolFlags.Alias) ? checker.getAliasedSymbol(sym) : sym; }
+function symbolOf(node) { return realSymbol(checker.getSymbolAtLocation(node)); }
+function moduleExportOfBinding(d) { // d: BindingElement de `const { x } = await import("m")` ou `const [{ x }, …] = await Promise.all([import("m"), …])`
+  let p = d.parent; while (p && !ts.isVariableDeclaration(p)) p = p.parent; if (!p?.initializer) return null;
+  let init = unwrap(p.initializer); if (ts.isAwaitExpression(init)) init = unwrap(init.expression);
+  let importCall = null;
+  if (ts.isCallExpression(init) && init.expression.kind === ts.SyntaxKind.ImportKeyword) importCall = init;
+  else if (ts.isCallExpression(init) && /Promise\.all$/.test(init.expression.getText()) && init.arguments[0] && ts.isArrayLiteralExpression(init.arguments[0]) && ts.isArrayBindingPattern(p.name)) {
+    const elem = d.parent?.parent; const i = elem ? p.name.elements.indexOf(elem) : -1;
+    const cand = i >= 0 ? unwrap(init.arguments[0].elements[i]) : null;
+    if (cand && ts.isCallExpression(cand) && cand.expression.kind === ts.SyntaxKind.ImportKeyword) importCall = cand;
+  }
+  if (!importCall || !importCall.arguments[0]) return null;
+  const modSym = checker.getSymbolAtLocation(importCall.arguments[0]); if (!modSym) return null;
+  const name = (d.propertyName ?? d.name).getText();
+  const exp = checker.getExportsOfModule(modSym).find((s) => s.name === name);
+  return exp ? realSymbol(exp) : null;
+}
+function deepSymbol(node) { const s = symbolOf(node); const d = s?.declarations?.[0]; if (d && ts.isBindingElement(d)) { const m = moduleExportOfBinding(d); if (m) return m; } return s; }
+function declOf(node) { const s = deepSymbol(node); return s?.declarations?.[0] ?? null; }
+function isFunctionLike(n) { return ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isMethodDeclaration(n) || ts.isFunctionDeclaration(n) || ts.isConstructorDeclaration(n) || ts.isGetAccessorDeclaration(n); }
+function enclosing(node) {
+  let klass = null, method = null;
+  for (let n = node.parent; n; n = n.parent) {
+    if (!method && (ts.isMethodDeclaration(n) || ts.isFunctionDeclaration(n) || ts.isGetAccessorDeclaration(n)) && n.name) method = n.name.getText();
+    if (!method && ts.isPropertyDeclaration(n) && n.initializer && (ts.isArrowFunction(n.initializer) || ts.isFunctionExpression(n.initializer))) method = n.name.getText();
+    if (!method && ts.isVariableDeclaration(n) && n.initializer && (ts.isArrowFunction(n.initializer) || ts.isFunctionExpression(n.initializer))) method = n.name.getText();
+    if (ts.isClassDeclaration(n) || ts.isClassExpression(n)) { klass = n.name?.text ?? "(anonima)"; break; }
+  }
+  return { klass, method };
+}
+function nameOfCallee(call) { const c = unwrap(call.expression); return ts.isPropertyAccessExpression(c) ? c.name.text : ts.isIdentifier(c) ? c.text : c.getText().slice(0, 30); }
+function isTrustedSymbol(node, list) {
+  const c = unwrap(node); const target = ts.isPropertyAccessExpression(c) ? c.name : c;
+  const s = deepSymbol(target); const d = s?.declarations?.[0]; if (!s || !d) return false;
+  return list.some((w) => w.name === s.name && w.file.test(d.getSourceFile().fileName));
+}
+function wrapperKind(call) {
+  if (nameOfCallee(call) === "$transaction") return "$transaction";
+  if (isTrustedSymbol(call.expression, WRAPPERS)) return "wrapper";
+  return null;
+}
+// $transaction: absolvido só se a PRIMEIRA instrução do callback é `await <setter confiado>(<o mesmo tx>, …)`
+function setterFirst(fn, param) {
+  if (!fn.body || !ts.isBlock(fn.body)) return false;
+  const st = fn.body.statements[0]; if (!st || !ts.isExpressionStatement(st)) return false;
+  let e = unwrap(st.expression); if (ts.isAwaitExpression(e)) e = unwrap(e.expression);
+  if (!ts.isCallExpression(e) || !isTrustedSymbol(e.expression, SETTERS)) return false;
+  const a0 = e.arguments[0] ? unwrap(e.arguments[0]) : null;
+  if (!a0 || !ts.isIdentifier(a0)) return false;
+  return checker.getSymbolAtLocation(a0) === checker.getSymbolAtLocation(param.name);
+}
+const injected = new Map(); // ClassDeclaration node -> Set<índice do parâmetro do construtor>
+function classDeclOf(expr) {
+  const c = unwrap(expr); const target = ts.isPropertyAccessExpression(c) ? c.name : c;
+  const t = checker.getTypeAtLocation(c); const ts_ = t?.getSymbol?.() ?? t?.symbol; const td = ts_?.declarations?.[0];
+  if (td && (ts.isClassDeclaration(td) || ts.isClassExpression(td))) return td;
+  const d = declOf(target); return d && (ts.isClassDeclaration(d) || ts.isClassExpression(d)) ? d : null;
+}
+function classChain(decl) {
+  const out = []; let d = decl; const seen = new Set();
+  while (d && !seen.has(d)) { seen.add(d); out.push(d); let base = null;
+    for (const h of d.heritageClauses ?? []) if (h.token === ts.SyntaxKind.ExtendsKeyword) base = classDeclOf(h.types[0].expression);
+    d = base; }
+  return out;
+}
+function ctorOf(decl) { return decl.members.find((m) => ts.isConstructorDeclaration(m)) ?? null; }
+function classifyParam(param, name, depth) {
+  const fn = param.parent; const idx = fn.parameters.indexOf(param); const call = fn.parent;
+  if (call && ts.isCallExpression(call) && call.arguments.includes(fn)) {
+    const w = wrapperKind(call);
+    if (w === "wrapper") return idx === 0 ? { cls: "SOB-CONTEXTO", note: nameOfCallee(call) } : { cls: `PARAMETRO(${name} #${idx} de callback de ${nameOfCallee(call)})` };
+    if (w === "$transaction") return idx === 0 && setterFirst(fn, param) ? { cls: "SOB-CONTEXTO", note: "$transaction+setter-primeiro" } : { cls: "$TRANSACTION-SEM-SETTER-PROVADO" };
+    return { cls: `PARAMETRO(${name} de callback de ${nameOfCallee(call)})` };
+  }
+  if (ts.isConstructorDeclaration(fn)) return { cls: "INJETADO", index: idx, klass: fn.parent };
+  return { cls: `PARAMETRO(${name})`, note: fn.name?.getText() ?? "(anonima)" };
+}
+function classifyField(expr, depth) { // expr = this.<campo>
+  const field = expr.name.text; let k = expr; while (k && !ts.isClassDeclaration(k) && !ts.isClassExpression(k)) k = k.parent;
+  if (!k) return { cls: `OUTRO(this.${field} fora de classe)` };
+  for (const c of classChain(k)) {
+    const ctor = ctorOf(c);
+    const pp = ctor?.parameters.find((p) => ts.isIdentifier(p.name) && p.name.text === field && (p.modifiers?.length ?? 0) > 0);
+    if (pp) return { cls: "INJETADO", index: ctor.parameters.indexOf(pp), klass: c };
+    const prop = c.members.find((m) => ts.isPropertyDeclaration(m) && m.name.getText() === field);
+    if (prop) {
+      if (prop.initializer) { const r = classify(prop.initializer, depth + 1); return { ...r, cls: r.cls === "INJETADO" ? "INJETADO" : `CAMPO-INICIALIZADO:${r.cls}`, note: `this.${field} =` }; }
+      let assigned = null;
+      ctor?.body?.forEachChild(function look(n) { if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isPropertyAccessExpression(n.left) && n.left.expression.kind === ts.SyntaxKind.ThisKeyword && n.left.name.text === field) assigned = n.right; else ts.forEachChild(n, look); });
+      if (assigned) { const r = classify(assigned, depth + 1); if (r.cls === "INJETADO") return r; return { ...r, cls: `CAMPO-ATRIBUIDO:${r.cls}`, note: `this.${field} = (construtor)` }; }
+      return { cls: `CAMPO-NAO-RASTREADO(this.${field})` };
+    }
+  }
+  return { cls: `CAMPO-NAO-RASTREADO(this.${field})` };
+}
+function classify(expr, depth = 0) {
+  if (!expr || depth > 8) return { cls: "OUTRO(profundidade)" };
+  const e = unwrap(expr);
+  if (ts.isPropertyAccessExpression(e) && accessorToTable.has(e.name.text)) return classify(e.expression, depth + 1);
+  if (ts.isElementAccessExpression(e) && ts.isStringLiteralLike(e.argumentExpression) && accessorToTable.has(e.argumentExpression.text)) return classify(e.expression, depth + 1);
+  if (ts.isPropertyAccessExpression(e) && e.expression.kind === ts.SyntaxKind.ThisKeyword) return classifyField(e, depth);
+  if (ts.isIdentifier(e)) {
+    const d = declOf(e); if (!d) return { cls: `OUTRO(${e.text} sem declaracao)` };
+    if (ts.isParameter(d)) return classifyParam(d, e.text, depth);
+    if (ts.isVariableDeclaration(d)) {
+      const st = d.parent?.parent;
+      if (st && ts.isVariableStatement(st) && ts.isSourceFile(st.parent)) return { cls: "CRU", note: `modulo ${rel(d.getSourceFile().fileName)}:${e.text}` };
+      if (d.initializer) { const r = classify(d.initializer, depth + 1); return { ...r, note: `via alias ${e.text}${r.note ? " ← " + r.note : ""}` }; }
+      return { cls: `OUTRO(${e.text} sem inicializador)` };
+    }
+    if (ts.isBindingElement(d)) {
+      let p = d.parent; while (p && !ts.isVariableDeclaration(p) && !ts.isParameter(p)) p = p.parent;
+      if (p && ts.isVariableDeclaration(p) && p.initializer) { const r = classify(p.initializer, depth + 1); return { ...r, note: `via desestruturacao ${e.text}` }; }
+      if (p && ts.isParameter(p)) return classifyParam(p, e.text, depth);
+      return { cls: "OUTRO(desestruturacao)" };
+    }
+    return { cls: `OUTRO(${e.text}:${ts.SyntaxKind[d.kind]})` };
+  }
+  if (ts.isAwaitExpression(e)) return classify(e.expression, depth + 1);
+  if (ts.isCallExpression(e)) return { cls: `OUTRO(chamada ${nameOfCallee(e)}())` };
+  if (ts.isNewExpression(e)) return { cls: "CRU", note: `new ${e.expression.getText()}` };
+  if (ts.isPropertyAccessExpression(e)) return { cls: `OUTRO(${e.getText().replace(/\s+/g, "").slice(0, 40)})` };
+  return { cls: `OUTRO(${ts.SyntaxKind[e.kind]})` };
+}
+function literalTablesIn(text) { const hit = []; for (const t of FORCE) if (new RegExp(`\\b${t}\\b`).test(text)) hit.push(t); return hit; }
+function rawTables(node) { // tabelas citadas no SQL literal, ou numa constante string referenciada
+  let text = node.getText(); const args = ts.isCallExpression(node) ? node.arguments : [];
+  for (const a of args) { const u = unwrap(a); if (ts.isIdentifier(u)) { const d = declOf(u); if (d && ts.isVariableDeclaration(d) && d.initializer && ts.isStringLiteralLike(d.initializer)) text += " " + d.initializer.text; } }
+  return literalTablesIn(text);
+}
+
+// ---------- L1: toda chamada a método de delegate de tabela FORCE, ou RAW ----------
+const rows = []; const pushRow = (r) => rows.push(r);
+for (const sf of program.getSourceFiles()) {
+  if (sf.isDeclarationFile || !rootNames.includes(path.normalize(sf.fileName))) continue;
+  const file = rel(sf.fileName);
+  function emit(node, clientExpr, what, table, how) {
+    const c = classify(clientExpr); const { klass, method } = enclosing(node);
+    const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+    const recv = unwrap(clientExpr).getText(sf).replace(/\s+/g, "").slice(0, 40);
+    const row = { loc: `${file}:${line}`, file, klass, method, recv, what, table, cls: c.cls, note: c.note ?? "", how };
+    if (c.cls === "INJETADO") { row.klassNode = c.klass; row.index = c.index; if (!injected.has(c.klass)) injected.set(c.klass, new Set()); injected.get(c.klass).add(c.index); }
+    pushRow(row);
+  }
+  function visit(node) {
+    if (ts.isCallExpression(node) && (ts.isPropertyAccessExpression(node.expression) || ts.isElementAccessExpression(node.expression))) {
+      const callee = node.expression;
+      const op = ts.isPropertyAccessExpression(callee) ? callee.name.text : ts.isStringLiteralLike(callee.argumentExpression) ? callee.argumentExpression.text : null;
+      const target = unwrap(callee.expression);
+      if (op && RAW.has(op)) { const tabs = rawTables(node); if (tabs.length) for (const t of tabs) emit(node, target, `RAW-SQL(${op})`, t, "literal"); else emit(node, target, `RAW-SQL(${op}) OPACO`, "?", "opaco"); }
+      else if (op) {
+        let model = null; const sig = checker.getResolvedSignature(node); const d = sig?.declaration;
+        if (d) { let p = d.parent; while (p && !ts.isInterfaceDeclaration(p)) p = p.parent; if (p && /Delegate$/.test(p.name.text) && GENERATED.test(p.getSourceFile().fileName)) model = p.name.text.replace(/Delegate$/, ""); }
+        if (!model) { const ty = checker.getTypeAtLocation(callee.expression); const sy = ty?.getSymbol?.() ?? ty?.symbol; const sd = sy?.declarations?.[0]; if (sy && /Delegate$/.test(sy.name) && sd && GENERATED.test(sd.getSourceFile().fileName) && OPS.has(op)) model = sy.name.replace(/Delegate$/, ""); }
+        let acc = null; if (ts.isPropertyAccessExpression(target)) acc = target.name.text; else if (ts.isElementAccessExpression(target) && ts.isStringLiteralLike(target.argumentExpression)) acc = target.argumentExpression.text; else if (ts.isIdentifier(target)) acc = target.text;
+        if (model) { const t = modelToTable.get(model); if (t && FORCE.has(t)) emit(node, target, `${model[0].toLowerCase() + model.slice(1)}.${op}`, t, "semantico"); }
+        else if (acc && accessorToTable.has(acc) && OPS.has(op)) emit(node, target, `${acc}.${op}`, accessorToTable.get(acc), "sintatico");
+        else if (OPS.has(op)) { const ty = checker.getTypeAtLocation(callee.expression); if (ty.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) emit(node, target, `?.${op}`, "?", "TIPO-DESCONHECIDO"); }
+      }
+    }
+    if (ts.isTaggedTemplateExpression(node) && ts.isPropertyAccessExpression(node.tag) && RAW.has(node.tag.name.text)) {
+      const tabs = literalTablesIn(node.getText()); const target = unwrap(node.tag.expression);
+      if (tabs.length) for (const t of tabs) emit(node, target, `RAW-SQL(${node.tag.name.text})`, t, "literal"); else emit(node, target, `RAW-SQL(${node.tag.name.text}) OPACO`, "?", "opaco");
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sf);
+}
+for (const r of rows) if (r.how === "TIPO-DESCONHECIDO" && !/^(SOB-CONTEXTO)$/.test(r.cls)) r.cls = `TIPO-DESCONHECIDO/${r.cls}`;
+
+// ---------- L2: instanciações de classes (ou subclasses) com executor injetado, pelo SÍMBOLO ----------
+const inst = []; let rodada = 0; let antes = -1;
+while (injected.size !== antes && rodada < 4) { // lista de trabalho: classe que so REPASSA o campo injetado vira injetada e precisa de nova passada
+rodada++; inst.length = 0; antes = injected.size;
+for (const sf of program.getSourceFiles()) {
+  if (sf.isDeclarationFile || !rootNames.includes(path.normalize(sf.fileName))) continue;
+  const file = rel(sf.fileName);
+  function visit(node) {
+    if (ts.isNewExpression(node)) {
+      const decl = classDeclOf(node.expression);
+      if (decl) {
+        const chain = classChain(decl);
+        for (const c of chain) {
+          if (!injected.has(c)) continue;
+          for (const idx of injected.get(c)) {
+            let arg = node.arguments?.[idx] ?? null; let note = "";
+            // subclasse com construtor próprio: segue o super(...) até o argumento de `new`
+            const own = ctorOf(decl);
+            if (c !== decl && own) { let sup = null; own.body?.forEachChild(function look(n) { if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.SuperKeyword) sup = n; else ts.forEachChild(n, look); });
+              const sa = sup?.arguments?.[idx] ? unwrap(sup.arguments[idx]) : null;
+              if (sa && ts.isIdentifier(sa)) { const d = declOf(sa); if (d && ts.isParameter(d) && d.parent === own) { arg = node.arguments?.[own.parameters.indexOf(d)] ?? null; note = "via super()"; } else { arg = sa; note = "super() literal"; } }
+              else if (sa) { arg = sa; note = "super() literal"; } }
+            let r;
+            if (arg) r = classify(arg); else { const p = ctorOf(c)?.parameters[idx]; r = p?.initializer ? { ...classify(p.initializer), note: "default do construtor" } : { cls: "OUTRO(sem argumento)" }; }
+            const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+            if (r.cls === "INJETADO" && r.klass) { if (!injected.has(r.klass)) injected.set(r.klass, new Set()); injected.get(r.klass).add(r.index); }
+            inst.push({ loc: `${file}:${line}`, file, klass: decl.name?.text ?? "(anonima)", base: c === decl ? "" : ` extends ${c.name?.text}`, arg: arg ? arg.getText(sf).replace(/\s+/g, "").slice(0, 40) : "", cls: r.cls, note: [r.note, note].filter(Boolean).join(" · "), injClass: c, injIdx: idx, upKlass: r.klass ?? null, upIdx: r.index ?? null });
+          }
+          break; // a primeira classe injetada na cadeia decide
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sf);
+}
+
+}
+// transitividade: `new K(this.<campo injetado de J>)` é SOB-CONTEXTO só se TODA instanciação de J em src o for (recursivo, com guarda)
+function cleanUpstream(K, j, seen) {
+  const ups = inst.filter((e) => e.injClass === K && e.injIdx === j); if (!ups.length) return "SEM-INSTANCIACAO-EM-SRC";
+  for (const e of ups) {
+    if (e.cls === "SOB-CONTEXTO" || e.cls.startsWith("SOB-CONTEXTO")) continue;
+    if (e.cls === "INJETADO" && e.upKlass && !seen.has(e.upKlass)) { const r = cleanUpstream(e.upKlass, e.upIdx, new Set([...seen, K])); if (r === "ok") continue; return r; }
+    return `SUSPEITO-ACIMA(${e.file}:new ${e.klass}(${e.arg}) ${e.cls})`;
+  }
+  return "ok";
+}
+for (const i of inst) if (i.cls === "INJETADO" && i.upKlass) { const r = cleanUpstream(i.upKlass, i.upIdx, new Set([i.injClass])); i.cls = r === "ok" ? `SOB-CONTEXTO(transitivo via ${i.upKlass.name?.text})` : `INJETADO-TRANSITIVO:${r}`; }
+
+// ---------- saída ----------
+const SUSPEITO_L1 = (cls) => cls !== "SOB-CONTEXTO" && cls !== "INJETADO";
+const SUSPEITO_L2 = (cls) => !cls.startsWith("SOB-CONTEXTO");
+const byCls = {}; for (const r of rows) byCls[r.cls.replace(/\(.*$/, "")] = (byCls[r.cls.replace(/\(.*$/, "")] ?? 0) + 1;
+const instByCls = {}; for (const i of inst) instByCls[i.cls.replace(/\(.*$/, "")] = (instByCls[i.cls.replace(/\(.*$/, "")] ?? 0) + 1;
+const diag = program.getSyntacticDiagnostics().length;
+console.log(`# L0: tabelas ENABLE=${ENABLE.size} FORCE=${FORCE.size} · acessores Prisma em FORCE=${accessorToTable.size} · OPS(derivados)=${OPS.size} · arquivos no programa=${rootNames.length} (virtuais=${virtual.size}) · erros sintaticos=${diag}`);
+console.log(`# L1: call-sites sobre tabelas FORCE (+ RAW) = ${rows.length} · por como: ${JSON.stringify(rows.reduce((a, r) => ((a[r.how] = (a[r.how] ?? 0) + 1), a), {}))}`);
+console.log(`# L1 por classificação: ${JSON.stringify(byCls)}`);
+console.log(`# L2: classes com executor injetado = ${injected.size}; instanciações achadas = ${inst.length}; rodadas L2 = ${rodada}`);
+console.log(`# L2 por classificação do argumento: ${JSON.stringify(instByCls)}`);
+const keys = new Map(); const add = (k) => keys.set(k, (keys.get(k) ?? 0) + 1);
+for (const r of rows.filter((r) => SUSPEITO_L1(r.cls))) add(`L1\t${r.file}\t${r.klass ?? "-"}.${r.method ?? "-"}\t${r.recv}\t${r.what}\t${r.table}\t${r.cls}`);
+for (const i of inst.filter((i) => SUSPEITO_L2(i.cls))) add(`L2\t${i.file}\tnew ${i.klass}${i.base}(${i.arg})\t${i.cls}`);
+const inv = [...keys].map(([k, n]) => `${k}\t×${n}`).sort();
+console.log(`# INVENTÁRIO SUSPEITO (L1+L2): ${inv.length} chaves · sha1=${createHash("sha1").update(inv.join("\n")).digest("hex")}`);
+console.log(""); console.log("## INVENTÁRIO SUSPEITO (ratchet: chave sem número de linha; chave nova OU sumida = vermelho)");
+for (const k of inv) console.log(k);
+if (showAll) {
+  console.log(""); console.log("## TODOS os call-sites (--all)");
+  for (const r of rows) console.log(`${r.loc}\t${r.recv}\t${r.what}\t${r.table}\t${r.cls}\t${r.klass ?? ""}.${r.method ?? ""}\t${r.how}\t${r.note}`);
+  console.log(""); console.log("## TODAS as instanciações (--all)");
+  for (const i of inst) console.log(`${i.loc}\tnew ${i.klass}${i.base}(${i.arg})\t${i.cls}\t${i.note}`);
+}
+```
+
+**Saída no `origin/main` (`5bcdcc58`; árvore `src/prisma` = `5b6e1036` = `3b1fe0f9`) — cabeçalho e as 53 chaves que o T13 congela (TAB-separado; ×n = multiplicidade):**
+
+```text
+# L0: tabelas ENABLE=106 FORCE=106 · acessores Prisma em FORCE=106 · OPS(derivados)=17 · arquivos no programa=777 (virtuais=0) · erros sintaticos=0
+# L1: call-sites sobre tabelas FORCE (+ RAW) = 720 · por como: {"opaco":10,"literal":104,"semantico":578,"sintatico":28}
+# L1 por classificação: {"PARAMETRO":22,"INJETADO":646,"$TRANSACTION-SEM-SETTER-PROVADO":6,"SOB-CONTEXTO":45,"CRU":1}
+# L2: classes com executor injetado = 72; instanciações achadas = 452; rodadas L2 = 2
+# L2 por classificação do argumento: {"SOB-CONTEXTO":416,"INJETADO-TRANSITIVO:SUSPEITO-ACIMA":2,"CRU":7,"PARAMETRO":20,"$TRANSACTION-SEM-SETTER-PROVADO":7}
+# INVENTÁRIO SUSPEITO (L1+L2): 53 chaves · sha1=5c566532986c533416e880e70350fb5ea692f9e2
+
+L1	src/database/financial-period-lock.ts	-.acquirePeriodLockExclusive	tx	RAW-SQL($executeRaw) OPACO	?	PARAMETRO(tx)	×1
+L1	src/database/financial-period-lock.ts	-.acquirePeriodLockShared	tx	RAW-SQL($executeRaw) OPACO	?	PARAMETRO(tx)	×1
+L1	src/database/rls.ts	-.setIdentityRlsContext	tx	RAW-SQL($executeRaw) OPACO	?	PARAMETRO(tx)	×1
+L1	src/database/rls.ts	-.setIdentityRlsContext	tx	RAW-SQL($queryRaw)	auth_identity_links	PARAMETRO(tx)	×1
+L1	src/database/rls.ts	-.setTenantRlsContext	client	RAW-SQL($executeRaw) OPACO	?	PARAMETRO(client)	×1
+L1	src/modules/auth/repositories/identity-link.repository.ts	-.insertAuthIdentity	client.authIdentity	authIdentity.createMany	auth_identities	PARAMETRO(client)	×1
+L1	src/modules/auth/repositories/login-candidates.repository.ts	-.listLoginCandidatesViaFunction	client	RAW-SQL($queryRaw) OPACO	?	PARAMETRO(client)	×1
+L1	src/modules/auth/services/auth-session.service.ts	AuthSessionService.refreshSession	tx.user	user.findFirst	users	PARAMETRO(tx de callback de runWithTenantContext)	×1
+L1	src/modules/auth/services/auth-session.service.ts	AuthSessionService.refreshSession	tx.userRoleAssignment	userRoleAssignment.findMany	user_role_assignments	PARAMETRO(tx de callback de runWithTenantContext)	×1
+L1	src/modules/auth/services/identity-link.service.ts	IdentityLinkService.handlePasswordChange	tx	RAW-SQL($queryRaw)	auth_identity_links	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L1	src/modules/auth/services/identity-link.service.ts	IdentityLinkService.selectLinkOfPairForUpdate	tx	RAW-SQL($queryRaw)	auth_identity_links	PARAMETRO(tx)	×1
+L1	src/modules/auth/services/identity-link.service.ts	IdentityLinkService.unlink	tx	RAW-SQL($queryRaw)	auth_identity_links	$TRANSACTION-SEM-SETTER-PROVADO	×2
+L1	src/modules/auth/services/identity-resolver.ts	-.normalizePairIdentity	tx	RAW-SQL($executeRaw) OPACO	?	PARAMETRO(tx)	×3
+L1	src/modules/auth/services/identity-resolver.ts	-.resolveIdentityIdForPair	tx	RAW-SQL($queryRaw)	auth_identity_links	PARAMETRO(tx)	×1
+L1	src/modules/auth/services/login-readiness.ts	-.classifyLoginReadiness	client	RAW-SQL($queryRaw) OPACO	?	PARAMETRO(client)	×1
+L1	src/modules/auth/services/session-admin.service.ts	SessionAdminService.resolveUserLabels	tx.user	user.findMany	users	PARAMETRO(tx)	×1
+L1	src/modules/cloud-usage/cloud-usage.capture.ts	-.appendChecklistRunUsageInTx	client	RAW-SQL($executeRaw)	cloud_usage_events	PARAMETRO(client)	×1
+L1	src/modules/commissions/work-order-cancellation.gate.ts	-.readWorkOrderCancellationPrisma	executor.workOrder	workOrder.findFirst	work_orders	PARAMETRO(executor)	×1
+L1	src/modules/core-saas/services/prisma-core-saas.service.ts	PrismaCoreSaasService.listTenantsForIdentity	tx.user	user.findFirst	users	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L1	src/modules/financial-period-closes/financial-period-close-prisma.repository.ts	PrismaFinancialPeriodCloseStore.readCompetencia	tx.financialEntry	financialEntry.findMany	financial_entries	PARAMETRO(tx)	×1
+L1	src/modules/financial-period-closes/financial-period-close-prisma.repository.ts	PrismaFinancialPeriodCloseStore.readCompetencia	tx.financialTitle	financialTitle.findMany	financial_titles	PARAMETRO(tx)	×1
+L1	src/modules/impound/impound.outbox.repository.ts	-.appendOutboxEventTx	client.impoundOutboxEvent	impoundOutboxEvent.create	impound_outbox_events	PARAMETRO(client)	×1
+L1	src/modules/impound/impound.outbox.repository.ts	-.listOutboxEventsTx	client.impoundOutboxEvent	impoundOutboxEvent.findMany	impound_outbox_events	PARAMETRO(client)	×1
+L1	src/modules/work-orders/work-order-prisma.repository.ts	PrismaWorkOrderRepository.assign	tx.workOrder	workOrder.updateManyAndReturn	work_orders	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L1	src/modules/work-orders/work-order-prisma.repository.ts	PrismaWorkOrderRepository.assign	tx.workOrderAssignment	workOrderAssignment.create	work_order_assignments	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L1	src/routes/health.routes.ts	-.checkPostgres	prisma	RAW-SQL($queryRawUnsafe) OPACO	?	CRU	×1
+L2	src/modules/auth/auth-runtime.ts	new AuditLogRepository(tx)	PARAMETRO(tx)	×2
+L2	src/modules/auth/auth-runtime.ts	new LocalAuthCredentialRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/auth-runtime.ts	new UserRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/auth-runtime.ts	new UserRoleRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/auth-session.service.ts	new AuthSessionRepository(tx)	PARAMETRO(tx de callback de runWithTenantContext)	×3
+L2	src/modules/auth/services/identity-link.service.ts	new AuditLogRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/identity-link.service.ts	new AuthSessionRepository(tx)	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L2	src/modules/auth/services/identity-link.service.ts	new AuthSessionRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/identity-link.service.ts	new IdentityLinkEventRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/identity-link.service.ts	new IdentityLinkRepository(tx)	$TRANSACTION-SEM-SETTER-PROVADO	×4
+L2	src/modules/auth/services/identity-link.service.ts	new IdentityLinkRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/identity-resolver.ts	new IdentityLinkEventRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/identity-resolver.ts	new IdentityLinkRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/local-auth-credential.service.ts	new LocalAuthCredentialRepository(tx)	PARAMETRO(tx de callback de handlePasswordChange)	×1
+L2	src/modules/auth/services/session-admin.service.ts	new AuditLogRepository(tx)	PARAMETRO(tx)	×1
+L2	src/modules/auth/services/session-admin.service.ts	new AuthSessionRepository(tx)	PARAMETRO(tx de callback de runWithTenantContext)	×3
+L2	src/modules/cloud-charges/cloud-charge-prisma.repository.ts	new PrismaCloudChargeRepository(prisma)	CRU	×1
+L2	src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts	new PrismaCloudCostAllocationRepository(prisma)	CRU	×1
+L2	src/modules/cloud-usage/cloud-usage-prisma.repository.ts	new PrismaCloudUsageRepository(this.prismaClient)	INJETADO-TRANSITIVO:SUSPEITO-ACIMA(src/modules/cloud-usage/cloud-usage-prisma.repository.ts:new RlsPrismaCloudUsageRepository(prisma) CRU)	×2
+L2	src/modules/cloud-usage/cloud-usage-prisma.repository.ts	new RlsPrismaCloudUsageRepository(prisma)	CRU	×1
+L2	src/modules/core-saas/services/prisma-core-saas.service.ts	new IdentityLinkRepository(tx)	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new AuditLogRepository()	CRU	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new AuditLogRepository(tx)	$TRANSACTION-SEM-SETTER-PROVADO	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new RoleRepository()	CRU	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new UserRepository()	CRU	×1
+L2	src/modules/core-saas/store/prisma-core-saas.store.ts	new UserRoleRepository()	CRU	×1
+L2	src/modules/financial-titles/financial-title-prisma.repository.ts	new PrismaFinancialPeriodCloseRepository(tx)	PARAMETRO(tx)	×1
+```
+
+---
+
+## Apêndice B — medição sob papel real (22 itens) — referência e re-execução
+
+O script é o **Apêndice B da v2**, inalterado: `git show c727156:docs/revisoes/SAN3/B-SAN3-05-plano.md | awk '/^## Apêndice B/{d=1} d&&/^```ts$/{f=1;next} d&&f&&/^```$/{exit} d&&f' | md5sum` → `6204643a81fb5d2305f09ff38b89f9de` (extraído e conferido por mim). Re-executado nesta v3 (relatório §4): `cd /home/user/wt-plan-v3 && ADMIN_URL=postgresql://postgres@127.0.0.1:54371/erp_v3?schema=public npx tsx <arquivo>` → `# 22 itens, 0 fora do esperado` (ec=0); limpeza `0 0 0 0`. Mede a trava **v1** (G1–G4) e os sítios P1–P7/R1; a trava **v3** está medida no relatório §4 (xi)/(xii) e no §4.2 deste plano. O roteiro HTTP (T11a) está no relatório §7 (`$SCR/diff-http.mts`: 50 × vazio).
+
+---
+
+## Apêndice C — `scripts/db-runtime-role.sh` v3 (verbatim)
+
+md5: `810c1c4a2552665d4947bf0ef4e93670` · 115 linhas · modo `100755` · `.gitattributes`: `scripts/db-runtime-role.sh text eol=lf`. Extração: `awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`. Executado em 18 cenários (relatório §4, §6).
+
+```bash
+#!/usr/bin/env bash
+# B-SAN3-05 (v3) — cria/converge o PAPEL DE RUNTIME da API: LOGIN, NOSUPERUSER, NOBYPASSRLS, NOREPLICATION, sem posse de
+# tabela FORCE RLS, sem pertenca (direta ou por cadeia) a papel que escape de RLS, sem SELECT em view de dono que escapa;
+# so DML + USAGE em sequencias. Idempotente. FALHA (psql ec=3, ROLLBACK de tudo) nomeando o MODO se nao puder corrigir.
+#
+# A SENHA NOVA NUNCA aparece em argv, no terminal nem no log do servidor (critica r2, F2-02):
+#   - entra no psql por `\set` com backtick (`printf` builtin do sh — nao ha exec, nao ha argv);
+#   - vai ao servidor UMA vez, num `set_config` (statement que so e logado sob log_statement=all / log_min_duration_statement=0,
+#     que este script RECUSA antes de enviar a senha, salvo DB_RUNTIME_ALLOW_LOG_ALL=1 — decisao consciente do dono);
+#   - os EXECUTE que a carregam ficam em bloco proprio BEGIN/EXCEPTION: o CONTEXT do erro re-emitido nao traz o SQL dinamico;
+#   - e definida POR ULTIMO, depois de tudo o que podia falhar;
+#   - exposicao residual DECLARADA: /proc/<pid>/environ do psql (mesma classe de PGPASSWORD; legivel so pelo mesmo usuario/root).
+# Entradas (ambiente): DB_RUNTIME_ROLE (default erp_runtime) · DB_RUNTIME_PASSWORD (obrigatoria; sem quebra de linha)
+#   · DB_MIGRATOR_ROLE (default: o usuario desta conexao) · DB_RUNTIME_ALLOW_LOG_ALL (default 0)
+# Conexao: no initdb.d do postgres:16 usa POSTGRES_USER/POSTGRES_DB (socket local); fora dele, PGHOST/PGPORT/PGUSER/
+#   PGPASSWORD/PGDATABASE (PGDATABASE obrigatoria: GRANTs e DEFAULT PRIVILEGES sao POR BANCO — o banco da app).
+# Modos de falha (todos nomeados na mensagem, nenhum com a senha): MODO 1 sem CREATEROLE · MODO 2 atributo que o executor nao
+#   pode tirar · MODO 3 tabela/sequencia alheia ou POSSE de tabela FORCE · MODO 4 papel ja existe e o executor nao tem ADMIN
+#   OPTION · MODO 5 pertenca que o executor nao pode revogar · MODO 6 view de dono que escapa com SELECT para o papel.
+# Todo o corpo roda numa FUNCAO em SUBSHELL (source pelo entrypoint nao vaza set -u/exit); versionar com modo 100755 e
+#   `.gitattributes` eol=lf (CRLF quebra o bash do conteiner — critica r2, N2-03).
+db_runtime_role_main() (
+  set -euo pipefail
+  : "${DB_RUNTIME_PASSWORD:?DB_RUNTIME_PASSWORD obrigatória}"
+  local role="${DB_RUNTIME_ROLE:-erp_runtime}" migrator="${DB_MIGRATOR_ROLE:-}" allow_log_all="${DB_RUNTIME_ALLOW_LOG_ALL:-0}"
+  local -a conn=()
+  if [ -n "${POSTGRES_DB:-}" ]; then conn=(--username "${POSTGRES_USER:-postgres}" --dbname "$POSTGRES_DB")
+  else : "${PGDATABASE:?PGDATABASE obrigatória (o banco da aplicação)}"; fi
+  export DB_RUNTIME_PASSWORD
+  psql -X -v ON_ERROR_STOP=1 -At "${conn[@]}" -v role="$role" -v migrator="$migrator" -v allow_log_all="$allow_log_all" <<'SQL'
+SELECT set_config('san3.role', :'role', false), set_config('san3.allow_log_all', :'allow_log_all', false),
+       set_config('san3.migrator', coalesce(nullif(:'migrator', ''), current_user::text), false) \gset _
+-- (0) ANTES de a senha ir ao servidor: ele registraria o texto de todo statement?
+DO $ BEGIN
+  IF current_setting('san3.allow_log_all') IS DISTINCT FROM '1'
+     AND (current_setting('log_statement') = 'all' OR current_setting('log_min_duration_statement') = '0') THEN
+    RAISE EXCEPTION 'MODO 0 — o servidor registra o texto de todo statement (log_statement=%, log_min_duration_statement=%): a senha nova iria ao log. Desligue isso (superusuario: ALTER SYSTEM SET ... / ALTER DATABASE ... SET ...) ou aceite conscientemente com DB_RUNTIME_ALLOW_LOG_ALL=1', current_setting('log_statement'), current_setting('log_min_duration_statement');
+  END IF; END $;
+-- (1) a senha entra pelo psql, nao pelo argv
+\set password `printf '%s' "$DB_RUNTIME_PASSWORD"`
+SELECT set_config('san3.password', :'password', false) \gset _
+\unset password
+DO $
+DECLARE
+  v_role text := current_setting('san3.role'); v_password text := current_setting('san3.password'); v_migrator text := current_setting('san3.migrator');
+  me pg_roles%ROWTYPE; alvo pg_roles%ROWTYPE; r record; n int; vias text;
+BEGIN
+  SELECT * INTO me FROM pg_roles WHERE rolname = current_user;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = v_role) THEN
+    BEGIN EXECUTE format('CREATE ROLE %I LOGIN NOINHERIT', v_role);
+    EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'MODO 1 — nao foi possivel criar o papel % (% %): o executor % precisa de CREATEROLE — decisao de provedor', v_role, SQLSTATE, SQLERRM, current_user; END;
+  ELSIF NOT (me.rolsuper OR pg_has_role(current_user, v_role, 'MEMBER WITH ADMIN OPTION')) THEN
+    RAISE EXCEPTION 'MODO 4 — o papel % ja existe e % nao tem ADMIN OPTION sobre ele (foi criado por outro executor): use outro nome (DB_RUNTIME_ROLE) ou, com a credencial que o criou, GRANT % TO % WITH ADMIN OPTION e rode de novo', v_role, current_user, v_role, current_user;
+  END IF;
+  SELECT * INTO alvo FROM pg_roles WHERE rolname = v_role;
+  -- atributos que escapam ou excedem: corrige se este executor puder; senao FALHA nomeando (MODO 2)
+  IF alvo.rolsuper       THEN IF me.rolsuper       THEN EXECUTE format('ALTER ROLE %I NOSUPERUSER', v_role);   ELSE RAISE EXCEPTION 'MODO 2 — papel % tem SUPERUSER e % nao pode remover (precisa de SUPERUSER): corrija com outro executor ou use outro nome', v_role, current_user; END IF; END IF;
+  IF alvo.rolbypassrls   THEN IF me.rolbypassrls   THEN EXECUTE format('ALTER ROLE %I NOBYPASSRLS', v_role);   ELSE RAISE EXCEPTION 'MODO 2 — papel % tem BYPASSRLS e % nao pode remover (precisa de BYPASSRLS)', v_role, current_user; END IF; END IF;
+  IF alvo.rolreplication THEN IF me.rolsuper       THEN EXECUTE format('ALTER ROLE %I NOREPLICATION', v_role); ELSE RAISE EXCEPTION 'MODO 2 — papel % tem REPLICATION e % nao pode remover (precisa de SUPERUSER)', v_role, current_user; END IF; END IF;
+  IF alvo.rolcreatedb    THEN IF me.rolcreatedb    THEN EXECUTE format('ALTER ROLE %I NOCREATEDB', v_role);    ELSE RAISE EXCEPTION 'MODO 2 — papel % tem CREATEDB e % nao pode remover', v_role, current_user; END IF; END IF;
+  IF alvo.rolcreaterole  THEN IF me.rolcreaterole  THEN EXECUTE format('ALTER ROLE %I NOCREATEROLE', v_role);  ELSE RAISE EXCEPTION 'MODO 2 — papel % tem CREATEROLE e % nao pode remover', v_role, current_user; END IF; END IF;
+  EXECUTE format('ALTER ROLE %I WITH LOGIN NOINHERIT', v_role);
+  -- pertenca: revoga o PRIMEIRO SALTO de toda cadeia que leve a papel que escapa (atributo, papel de servidor, dono de tabela FORCE)
+  FOR r IN SELECT m.roleid::regrole::text AS direto FROM pg_auth_members m WHERE m.member = alvo.oid
+             AND (EXISTS (SELECT 1 FROM pg_roles b WHERE (b.rolsuper OR b.rolbypassrls OR b.rolreplication OR b.rolname IN ('pg_execute_server_program','pg_read_server_files','pg_write_server_files')) AND pg_has_role(m.roleid, b.oid, 'MEMBER'))
+                  OR EXISTS (SELECT 1 FROM pg_class c WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity AND pg_has_role(m.roleid, c.relowner, 'MEMBER')))
+  LOOP
+    BEGIN EXECUTE format('REVOKE %s FROM %I', r.direto, v_role);
+    EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'MODO 5 — a pertenca de % a % (que leva a papel que escapa de RLS) nao pode ser revogada por % (% %): com credencial que tenha ADMIN OPTION sobre %, REVOKE % FROM % e rode de novo', v_role, r.direto, current_user, SQLSTATE, SQLERRM, r.direto, r.direto, v_role; END;
+  END LOOP;
+  -- privilegios: so DML + USAGE/SELECT em sequencias (existentes) e DEFAULT PRIVILEGES do migrador (futuras)
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', current_database(), v_role);
+  EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', v_role);
+  FOR r IN SELECT c.relname, c.relkind, pg_get_userbyid(c.relowner) AS dono, pg_has_role(current_user, c.relowner, 'USAGE') AS posso
+           FROM pg_class c JOIN pg_namespace ns ON ns.oid = c.relnamespace
+           WHERE ns.nspname = 'public' AND c.relkind IN ('r','p','S') ORDER BY c.relname
+  LOOP
+    IF NOT r.posso THEN RAISE EXCEPTION 'MODO 3 — tabela/sequencia public.% pertence a % e % nao pode conceder DML nela: ALTER ... OWNER TO % e rode de novo', r.relname, r.dono, current_user, v_migrator; END IF;
+    IF r.relkind = 'S' THEN EXECUTE format('GRANT USAGE, SELECT ON SEQUENCE public.%I TO %I', r.relname, v_role);
+    ELSE EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO %I', r.relname, v_role); END IF;
+  END LOOP;
+  EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I', v_migrator, v_role);
+  EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO %I', v_migrator, v_role);
+  -- AUTO-VERIFICACAO = a propriedade da trava de boot (v3), avaliada para o papel, com a VIA de cada linha
+  SELECT string_agg(via || ':' || nome, ', ' ORDER BY via, nome), count(*) INTO vias, n FROM (
+    SELECT 'atributo' AS via, b.rolname::text AS nome FROM pg_roles b
+     WHERE (b.rolsuper OR b.rolbypassrls OR b.rolreplication OR b.rolname IN ('pg_execute_server_program','pg_read_server_files','pg_write_server_files')) AND pg_has_role(alvo.oid, b.oid, 'MEMBER')
+    UNION ALL
+    SELECT DISTINCT 'posse', o.rolname::text FROM pg_class c JOIN pg_roles o ON o.oid = c.relowner
+     WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity AND pg_has_role(alvo.oid, c.relowner, 'MEMBER')
+    UNION ALL
+    SELECT DISTINCT 'view', v.relname::text FROM pg_class v JOIN pg_roles o ON o.oid = v.relowner
+      JOIN pg_rewrite rw ON rw.ev_class = v.oid
+      JOIN pg_depend d ON d.classid = 'pg_rewrite'::regclass AND d.objid = rw.oid AND d.refclassid = 'pg_class'::regclass
+      JOIN pg_class t ON t.oid = d.refobjid AND t.relkind IN ('r','p') AND t.relforcerowsecurity
+     WHERE v.relkind IN ('v','m') AND (o.rolsuper OR o.rolbypassrls) AND has_table_privilege(alvo.oid, v.oid, 'SELECT')
+  ) q;
+  IF n > 0 THEN
+    RAISE EXCEPTION 'papel % ainda escapa de RLS por % via(s): %. posse → ALTER TABLE ... OWNER TO % e rode de novo (MODO 3); view de dono que escapa → REVOKE SELECT ON <view> FROM % ou troque o dono da view (MODO 6)', v_role, n, vias, v_migrator, v_role;
+  END IF;
+  -- SENHA POR ULTIMO: tudo o que podia falhar ja passou; um erro aqui e re-emitido SEM o SQL dinamico
+  BEGIN EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', v_role, v_password);
+  EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'nao foi possivel definir a senha do papel % (% %)', v_role, SQLSTATE, SQLERRM; END;
+END $;
+SELECT set_config('san3.password', '', false) \gset _
+-- linha final (uma so, -At): rolname|rolsuper|rolbypassrls|rolreplication|escapa_por_pertenca|posse_force|views_de_dono_que_escapa|tabelas_com_dml
+SELECT r.rolname, r.rolsuper, r.rolbypassrls, r.rolreplication,
+       EXISTS (SELECT 1 FROM pg_roles b WHERE (b.rolsuper OR b.rolbypassrls OR b.rolreplication OR b.rolname IN ('pg_execute_server_program','pg_read_server_files','pg_write_server_files')) AND pg_has_role(r.oid, b.oid, 'MEMBER')) AS escapa,
+       (SELECT count(*) FROM pg_class c WHERE c.relkind IN ('r','p') AND c.relforcerowsecurity AND pg_has_role(r.oid, c.relowner, 'MEMBER')) AS posse,
+       (SELECT count(DISTINCT v.oid) FROM pg_class v JOIN pg_roles o ON o.oid = v.relowner JOIN pg_rewrite rw ON rw.ev_class = v.oid JOIN pg_depend d ON d.classid = 'pg_rewrite'::regclass AND d.objid = rw.oid AND d.refclassid = 'pg_class'::regclass JOIN pg_class t ON t.oid = d.refobjid AND t.relkind IN ('r','p') AND t.relforcerowsecurity WHERE v.relkind IN ('v','m') AND (o.rolsuper OR o.rolbypassrls) AND has_table_privilege(r.oid, v.oid, 'SELECT')) AS views,
+       (SELECT count(*) FROM pg_tables t WHERE t.schemaname = 'public' AND has_table_privilege(r.oid, format('%I.%I', t.schemaname, t.tablename), 'SELECT,INSERT,UPDATE,DELETE')) AS dml
+FROM pg_roles r WHERE r.rolname = :'role';
+SQL
+)
+db_runtime_role_main "$@"
+```
+
+---
+
+## Apêndice D — fixtures de mutação do T13 (`tests/fixtures/san3-05-mutacoes/`)
+
+**As 17 da r1** são as do Apêndice D da v2, verbatim — extraíveis de `git show c727156:docs/revisoes/SAN3/B-SAN3-05-plano.md` (blocos ```ts após "## Apêndice D"); md5 de cada arquivo extraído por mim:
+
+```text
+Ma_alias.ts 6cf8d7e8374ef2ea23f1523aa7c3d615
+Mb_destructure.ts 2e2c30e81d9cb94001a85875879bce15
+Mc_element.ts a19c1b30b8bde23c3c29654fd95361e3
+Md_tx_sem_setter.ts 039c509874d6db6b4ff169a24140a029
+Me_root_dentro_wrapper.ts f98a4d11a94949d748755a625f51fb4c
+Mf_new_como_argumento.ts 0c9c319f68147f0399ba0f332ac4ab4e
+Mg_subclasse.ts 633f2fcbe3bc9936a1868c25ba7ed46e
+Mh_funcao_livre_client.ts d0d6aaa82e8e8a7aad2d6927ee3bde78
+Mi_sql_em_constante.ts 8773c3307ff13f566f82b895c91278bc
+Mj_campo_arrow.ts e96c1c91779c9145216f96a14e40fe5a
+Mk_fabrica_param_tx.ts db99d6d69a88dada89fb693119ac6c7b
+Ml_mutacao_do_plano.ts 999b52b114ae0cc36c628b4722bd61f4
+Mm_getter_prisma.ts 8095b4256cfbddd4c3ba09e20185fd98
+Mn_membro_nao_previsto.ts 6e17d142ac5ad8b1140663fedfc83430
+Mo_tx_param_helper.ts 4b6e8320893f28667af0fee2252b758c
+Mp_this_client_fora_de_classe_injetada.ts b1c9374be29e766d33ba3d302ec5b662
+Mq_updateManyAndReturn.ts e66e0c0a17b6eb55eb096162cef83ec6
+```
+
+**As 10 novas** (N01–N09 escritas a partir das descrições da r2, §2.1; N10 do A24), verbatim; md5:
+
+```text
+N01_destructure_renomeado.ts 009892f92d808c44f2b15e73ecaa3b5d
+N02_alias_do_delegate.ts ef740e96f7ce43e000bae847d163c85c
+N03_new_via_namespace.ts b3b77ae89236786a409bfed34753b82f
+N04_import_renomeado.ts f731eefd9e26c17f3ccd216fd6997fc5
+N05_setter_condicional.ts e8f756a3b5ea2e3f9556c8f000ce5968
+N06_setter_no_cliente_errado.ts ba050b712e25543ffc8d0c4027d5ba99
+N07_delegate_como_argumento.ts 6360b8bd8ee5c61c60d7ee16c0213c56
+N08_subclasse_via_namespace.ts 9df45de0d1dfcb8439e2b46f81f56b5d
+N09_setter_em_comentario.ts 65c3053864e1bd0de2a05c955888598d
+N10_any.ts 578a3a6d3d26aea7343f0c3fa6f49275
+```
+
+**`N01_destructure_renomeado.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { const { cloudUsageEvent: ev } = prisma; return ev.findMany({}); }
+```
+
+**`N02_alias_do_delegate.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { const ev = prisma.cloudUsageEvent; return ev.findMany({}); }
+```
+
+**`N03_new_via_namespace.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import * as cu from "../cloud-usage/cloud-usage-prisma.repository.js";
+export function run() { return new cu.PrismaCloudUsageRepository(prisma).listEvents({}); }
+```
+
+**`N04_import_renomeado.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { PrismaCloudUsageRepository as UsageRepo } from "../cloud-usage/cloud-usage-prisma.repository.js";
+export function run() { return new UsageRepo(prisma).listEvents({}); }
+```
+
+**`N05_setter_condicional.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { setTenantRlsContext } from "../../database/rls.js";
+export async function platformList(tenantId?: string) {
+  return prisma.$transaction(async (tx) => { if (tenantId) await setTenantRlsContext(tx, tenantId); return tx.cloudUsageEvent.findMany({}); });
+}
+```
+
+**`N06_setter_no_cliente_errado.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import { setTenantRlsContext } from "../../database/rls.js";
+export async function platformList(id: string) {
+  return prisma.$transaction(async (tx) => { await setTenantRlsContext(prisma, id); return tx.cloudUsageEvent.findMany({}); });
+}
+```
+
+**`N07_delegate_como_argumento.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+function paginate(d: typeof prisma.cloudUsageEvent) { return d.findMany({ take: 50 }); }
+export function run() { return paginate(prisma.cloudUsageEvent); }
+```
+
+**`N08_subclasse_via_namespace.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+import * as cc from "../cloud-charges/cloud-charge-prisma.repository.js";
+class Sub extends cc.PrismaCloudChargeRepository {}
+export function run() { return new Sub(prisma).listTenantCharges("x"); }
+```
+
+**`N09_setter_em_comentario.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() {
+  return prisma.$transaction(async (tx) => {
+    // sem setTenantRlsContext( aqui
+    return tx.cloudUsageEvent.findMany({});
+  });
+}
+```
+
+**`N10_any.ts`**
+
+```ts
+import { prisma } from "../../database/prisma.js";
+export async function platformList() { return (prisma as any).cloudUsageEvent.findMany({}); }
+```
+
+Cada arquivo é servido ao gerador como arquivo **virtual** em `src/modules/zz-mut/<nome>.ts` (`--mutant`), num só programa; o gerador tem de atribuir **≥ 1** chave a cada um (medido: 27/27). O 28.º subteste ("sumida") usa `--override src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts=<cópia com 'prisma as never'>` e espera `novas=1 sumidas=1`.
+
+---
+
+## Apêndice E — `RUNTIME_ROLE_GUARD_SQL` v3 (verbatim; = §2.2(a))
+
+md5: `36650de53be8504c76deef74ecc78811` · `grep -c session_user` → 8. Extração: `awk '/^```sql$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`.
+
+```sql
+SELECT via, rolname, rolsuper, rolbypassrls, is_self, objetos
+FROM (
+  SELECT 'atributo'::text AS via, r.rolname::text, r.rolsuper, r.rolbypassrls,
+         (r.rolname = session_user OR r.rolname = current_user) AS is_self, NULL::int AS objetos
+  FROM pg_roles r
+  WHERE (r.rolsuper OR r.rolbypassrls OR r.rolreplication
+         OR r.rolname IN ('pg_execute_server_program', 'pg_read_server_files', 'pg_write_server_files'))
+    AND (pg_has_role(session_user, r.oid, 'MEMBER') OR pg_has_role(current_user, r.oid, 'MEMBER'))
+  UNION ALL
+  SELECT 'posse', o.rolname::text, o.rolsuper, o.rolbypassrls,
+         (o.rolname = session_user OR o.rolname = current_user), count(*)::int
+  FROM pg_class c JOIN pg_roles o ON o.oid = c.relowner
+  WHERE c.relkind IN ('r', 'p') AND c.relforcerowsecurity
+    AND (pg_has_role(session_user, c.relowner, 'MEMBER') OR pg_has_role(current_user, c.relowner, 'MEMBER'))
+  GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
+  UNION ALL
+  SELECT 'view', o.rolname::text, o.rolsuper, o.rolbypassrls,
+         (o.rolname = session_user OR o.rolname = current_user), count(DISTINCT v.oid)::int
+  FROM pg_class v JOIN pg_roles o ON o.oid = v.relowner
+  JOIN pg_rewrite rw ON rw.ev_class = v.oid
+  JOIN pg_depend d ON d.classid = 'pg_rewrite'::regclass AND d.objid = rw.oid AND d.refclassid = 'pg_class'::regclass
+  JOIN pg_class t ON t.oid = d.refobjid AND t.relkind IN ('r', 'p') AND t.relforcerowsecurity
+  WHERE v.relkind IN ('v', 'm') AND (o.rolsuper OR o.rolbypassrls)
+    AND (has_table_privilege(session_user, v.oid, 'SELECT') OR has_table_privilege(current_user, v.oid, 'SELECT'))
+  GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
+) x ORDER BY via, rolname
+```
