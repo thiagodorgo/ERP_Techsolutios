@@ -252,7 +252,7 @@ aprovados, e a ferramenta não sabia. O ritual que faz nascer a linha tem dono:
 - **Pendências abertas:** `P-GOV-ATA-CABECALHO-TEMPLATE`, `P-GOV-ATA-APPROVED-HEAD-LINHA`,
   `P-GOV-MANDATO-2-FRONTEIRAS`
 - **Fica devendo, e é do orquestrador (não do dev, §4 do plano):** nomear `B-GOV-ATA-CABECALHO` e
-  `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e escrever a seção do ciclo 2 na ata.
+  `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §5.3, e escrever a seção do ciclo 2 na ata. *(ciclo 4, C3c-03: era `§7.3`; os dois blocos estão no §5.3, l.268-269.)*
 
 ---
 
@@ -388,3 +388,126 @@ a variável no shell que roda artefato, guard ou ferramenta; `ref:caminho` que p
 §14.19; resumo recomposto derivado por script: `N=103 K=100 NAO-COBERTOS=3 (equivalentes declarados e conferidos por id: 3) EXCLUIDOS=57 ANOMALIAS=2` → **[M-1] = 0** → `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` **fecha**.
 `P-GOV-MANDATO-3-FRONTEIRAS` ganha a **26** (M7 e `next` em fim de linha) e a **27** (o ambiente na medição).
 **A fronteira 28 (plano §14.20(1); registrada no K2b como fato sem número, numerada no K2c):** o arquivo `--equivalentes` é contado por linhas com fixture (l.311) e subtraído dos NÃO-COBERTOS (l.324) sem conferência de id: uma linha com id inexistente, ou de ponto já coberto, abate um não-coberto real e o `ec=0` sai falso. `ajuste`, `dentro-do-bloco`, dono `B-GOV-MANDATO-2`; conserto: `EQN = |ids do arquivo ∩ NÃO-COBERTOS da rodada|`; id declarado que **não** está entre os não-cobertos → linha `ANOMALIA-EQUIV <id>` (declaração morta ou ponto já coberto) e **não abate**; o resumo imprime os dois conjuntos e `EQUIVALENTES-CONFERIDOS`; teste de encerramento: o `t-inventado` do K2b: `--only 245` com `999: … (f)` → `NAO-COBERTOS=1 EQUIVALENTES-CONFERIDOS=0`, **`ec=1`** (hoje `ec=0`), e o controle sem parênteses inalterado. Na matriz publicada o efeito é nulo: os ids do arquivo (245, 318, 336) são exatamente os NÃO-COBERTOS da rodada B, provado por script (§4.5) — e o [M-1] = 0 publicado é DERIVADO da matriz e dessa prova de conjuntos, nunca do `ec` da ferramenta (ERRATA E-12).
+
+---
+
+# EMENDA — CICLO 4 (2026-10-01), depois da 3ª reprovação (junta 3, 2 × 1) e da auditoria da máquina
+
+> Escrita pelo **Dev-S4** (`dev-scripts-ciclo4-b-gov-mandato`) no D4 do ciclo 4, a partir do plano
+> `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §15 (§15.2, §15.3, §15.6, §15.7, §15.8) e das erratas §15.14 e
+> §15.15 — o plano é o contrato; esta emenda o registra no comando. Ela traz, de propósito, os três elementos que a
+> C3‴ cobrou da emenda do ciclo 3 e não estavam lá (**C3c-01**): a **bateria**, os **códigos de saída** e a
+> **autorização nominal de `decisoes.md`**; e a rastreabilidade de KPI com o último K, marcando a superada (**C3c-N5**).
+
+## O que o ciclo 3 entregou, e por que foi reprovado de novo
+
+O ciclo 3 deu ao pré-voo um oráculo único, agregação por estrutura e o token reservado, e criou a ferramenta de
+mutação. A junta 3 reprovou (2 × 1) com **seis bloqueantes** — quatro do pré-voo (C1c-01 isenção da colagem maior
+que a igualdade verificada; C1c-02 `:` escondendo SHA e revisão "resolvida" sem existir; C1c-03 `medido por:` dentro
+de cerca satisfazendo a unidade; C1c-04 cabeçalho de seção reconhecido por prefixo) e dois da ferramenta (C2c-01
+mutante que **não compila** contado como coberto — 33 no pré-voo, 2 no refs; C2c-02 equivalente `336`
+discriminável). A auditoria do ciclo 3 (`omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md`) achou a classe que
+três juntas não viram — **A15, falha interna lida como veredito**: com o awk da passada 2 morto, o pré-voo dizia
+`PRE-VOO OK` para qualquer documento.
+
+## Emenda 1 — o que o ciclo 4 mudou nos artefatos
+
+| commit | quem | o que |
+|---|---|---|
+| T4c `5b6f4f4a` · T4c-2 `738f0736` · T4c-3 `dd0d409d` | Dev-T4 (`dev-tests-ciclo4-b-gov-mandato`), só `tests/**` | 45 entradas novas de TAP nos dois guards (pré-voo 312 → 352; refs 39 → 44), as 9 linhas existentes trocadas declaradas (§15.3, §15.14) |
+| S4a `2ca15eb0` | Dev-S4, só `scripts/mandato-preflight.sh` | A15 (`corre`/`veredito`/`morreu`: todo subprocesso com o status lido, morte = 1 REJ que nomeia o componente, `exit 1`; refs fora do contrato 0..3 = morte nomeada, §15.15(b)); C1c-01 (só o carimbo de `# gerado em:` é normalizado; isenção = corpo do bloco); C1c-02 (split no 1º `:`; revisão conferida por `rev-parse --verify --quiet "<rev>^{commit}"` numa função só, nos dois ramos — errata §15.14); C1c-03 (cerca é saída); C1c-04 (cabeçalho exato); C1c-05; C1c-06; fronteira 27 fechada |
+| S4b `7a156a62` | Dev-S4, `scripts/mandato-mutantes.sh` + cabeçalho de `scripts/mandato-refs.sh` | ferramenta: portões 1-4 com `MUTANTE-INVALIDO`/`TIMEOUT`, causa por ponto, histograma `ATENCAO modal`, controles fail-closed (`ec=2`), diferencial antes da base com insumo que percorre RAIZ, `--timeout` por mutante com morte da vaga pela marca, M7(next) em qualquer posição, equivalentes por id (`ANOMALIA-EQUIV`); refs: **só comentários** (o diff fora de comentário é vazio) |
+| D4 · K4 (os dois commits seguintes ao S4b, nesta ordem) | Dev-S4, só docs/registro/KPI | esta emenda, `…-ciclo4-mutantes.md` (esqueleto: identidade, procedimento, drills, custo), `…-ciclo4-equivalentes.txt`, pendências e índice, trilha; KPI |
+
+## Emenda 2 — escopo nominal do ciclo 4 (plano §15.6)
+
+| papel | PERMITIDO (nominal) |
+|---|---|
+| Dev-T4 | `tests/mandato-preflight.test.ts`, `tests/mandato-refs.test.ts` — adições e as modificações declaradas; só `tests/**` |
+| Dev-S4 | `scripts/mandato-preflight.sh`, `scripts/mandato-mutantes.sh`, `scripts/mandato-refs.sh` (só cabeçalho); `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` (NOVO), `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-equivalentes.txt` (NOVO); este comando (esta emenda e a correção `§7.3`→`§5.3` da l.255, C3c-03); `agent-orchestration/controle/pendencias.md` (§15.7, inclusive as 3 linhas `§7.3` do próprio bloco) + `pendencias-indice.md` **só pelo gerador**; `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md`; `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md` (por script do Dev-S4, round-trip conferido) e `Kpis/app.js` **só por `node scripts/kpi-freeze.mjs`** |
+| orquestrador / fábrica / junta | os mandatos `votos/B-GOV-MANDATO-ciclo4/00-mandatos/*.md`, a conferência, o inspetor, as evidências das cadeiras; briefing e ata (seção do ciclo 4); os 4 corpos novos nos dois espelhos; a §9 do parecer da auditoria; o plano (só a §15); o corpo do PR |
+
+**PROIBIDO (a todos):** `src/**` · `prisma/**` · `migrations/**` · `frontend/**` · `mobile/**` · `.github/**` · `infra/**`
+· `.env` · lockfiles · `pubspec.*` · `CLAUDE.md` · `AGENTS.md` · arquivos-base da raiz · `.gitattributes` · qualquer
+outro `scripts/*` ou `tests/*` · as outras atas `J-*.md` · os corpos das 9 cadeiras dos ciclos 1–3 · `PLANO_SAN3.md` ·
+**`tests/**` para o Dev-S4 e `scripts/**` para o Dev-T4**.
+
+## Emenda 3 — bateria do ciclo 4 (plano §15.8, por papel)
+
+```bash
+# worktree PROPRIO em caminho curto, npm ci proprio, SEM junction; MSYS_NO_PATHCONV NUNCA exportada;
+# base viva (5432/6379) NUNCA alvo; TAP em arquivo; ec por variavel; `timeout` em tudo que executa artefato mutado
+# --- Dev-T4, antes de commitar: vermelho-controle historico (guard novo x artefatos do head, arnes pristino)
+timeout 2700 node --test --import tsx --test-reporter=tap "$TW/tests/mandato-preflight.test.ts" > vc-pre.tap 2>&1   # not ok == os 24 que atacam o head (§15.15(c2))
+timeout 900  node --test --import tsx --test-reporter=tap "$TW/tests/mandato-refs.test.ts"      > vc-refs.tap 2>&1  # 0 not ok: o refs nao muda no ciclo 4 (§15.15(c1))
+# --- bateria completa (Dev-S4 no fim)
+DATABASE_URL=<descartavel> npx prisma generate ; npm run check ; npm run lint ; npm test (2x, TAP em arquivo) ; npm run build ; npm --prefix frontend run check ; npm --prefix frontend run build
+timeout 900  node --test --import tsx --test-reporter=tap tests/mandato-refs.test.ts      > refs.tap   # 44, 0 fail, 0 skip
+timeout 2700 node --test --import tsx --test-reporter=tap tests/mandato-preflight.test.ts > pre.tap    # 352, 0 fail
+bash -n scripts/mandato-preflight.sh && bash -n scripts/mandato-mutantes.sh
+# drills da FERRAMENTA, cada um com o vermelho-controle historico (a mesma invocacao sobre 37549262) ao lado:
+timeout 1800 bash scripts/mandato-mutantes.sh preflight --only 298,305 --jobs 2                          # t-invalido: 2x MUTANTE-INVALIDO, K=0
+timeout 1800 bash scripts/mandato-mutantes.sh preflight --only 245 --equivalentes <arq-com-999> --jobs 1 # t-inventado: ANOMALIA-EQUIV 999, ec=1
+timeout 1800 bash scripts/<copia-rc-texto>.sh refs --controle --only 1                                  # t-controle: FALHA DO CONTROLE -> ec=2
+timeout 1800 bash scripts/mandato-mutantes.sh preflight --only 161 --timeout 120 --jobs 1               # t-timeout: 161 | TIMEOUT, rodada segue
+timeout 1800 bash scripts/mandato-mutantes.sh preflight --only 340 --jobs 1                             # t-next: mutante gerado, VERMELHO
+timeout 1800 bash scripts/mandato-mutantes.sh preflight --controle --only 1                             # t-diferencial: IDENTICO; copia sem docs/revisoes/SAN3 -> DIVERGE
+# A15 por componente, com shims PROPRIOS no PATH (forma POSIX) sobre o pre-voo novo e sobre faa408c8 (vermelho-controle)
+node scripts/kpi-freeze.mjs --check ; node --test --import tsx tests/kpi-dashboard-charts.test.ts ; node scripts/sync-agent-agents.mjs --check ; node --check Kpis/app.js
+python agent-orchestration/controle/gerar-indice-pendencias.py && git diff --stat -- agent-orchestration/controle/pendencias-indice.md
+bash scripts/mandato-refs.sh 393 ; echo ec=$?                                 # VIVO, colado em CERCA no relatorio
+bash scripts/mandato-preflight.sh <relatorio-do-dev>.md 393 ; echo ec=$?     # DOGFOODING: Dev-S4 com o pre-voo NOVO
+git diff --cached --check || exit 1
+```
+
+Os números de linha dos drills (`298`, `305`, `245`, `161`, `340`) são do pré-voo do ciclo 3 (`faa408c8`): os drills
+rodam num arnês com os artefatos do ciclo 3 e a ferramenta nova, para que a mesma invocação sobre a ferramenta do
+head seja o vermelho-controle. Regras 1–9 do §8 do plano valem integralmente.
+
+## Emenda 4 — códigos de saída (contrato novo do ciclo 4)
+
+- **`scripts/mandato-preflight.sh`:** `0` = `PRE-VOO OK`; `1` = rejeitou — **inclusive** quando um componente interno
+  morreu (`REJEITADO  componente interno morreu: <componente> (ec=<n>) — <1ª linha do stderr dele>`, seguido de
+  `PRE-VOO REJEITOU — um componente interno morreu e NADA foi julgado`; nada é julgado depois da morte) e quando o
+  `mandato-refs.sh` sai com código fora do contrato `0..3` (126/127/128+n ⇒ morte nomeada `refs`, nunca `NAO bate`);
+  uso errado continua `1` com a linha `uso:` no stderr.
+- **`scripts/mandato-mutantes.sh`:** `0` = nenhum NÃO-COBERTO além dos equivalentes **conferidos por id**; `1` = há
+  NÃO-COBERTO; `2` = PARADO (arnês inválido, linha de base suja, **FALHA DO CONTROLE**, insumo fixo que o pristino não
+  executa limpo, cópia pristina alterada, opção errada). `MUTANTE-INVALIDO`, `TIMEOUT` e `ANOMALIA-EQUIV` são
+  publicados e **não** mudam o `ec`. A última linha impressa é `== ec=<n>`.
+- **`scripts/mandato-refs.sh`:** inalterado (`0` LIDO/AUSENTE · `1` PARADO · `2` USO · `3` NÃO DETERMINÁVEL) — e agora
+  contrato também do lado do pré-voo (Emenda 4 acima e o cabeçalho do refs).
+
+## Emenda 5 — `agent-orchestration/controle/decisoes.md`
+
+O Dev-S4 **não** escreve em `decisoes.md`. A autorização nominal do plano (§4, C3b-01: *"`decisoes.md` — autorizado
+nominalmente: já contém `D-NOITE-SEM-TETO` neste ramo; se houver linha nova neste ciclo, a emenda do comando a
+declara"*) é repetida aqui, como a C3c-01 cobrou. **Linha nova no ramo desde a integração do #396:** uma —
+`a3e52e37` (orquestrador, 2026-09-30, ressalva R2 do porteiro do #396): os totais do manifesto da demo passam a ser os
+do gerador (`275 → 281` arquivos; `119 → 125` em espera), com a nota da troca — medido por `git log --oneline
+5b6e1036..HEAD -- agent-orchestration/controle/decisoes.md`. Contra o `$MB` do ciclo 4 (`5bcdcc58`), `git diff --stat 5bcdcc58 HEAD --
+agent-orchestration/controle/decisoes.md` = **53 inserções, 2 remoções** = o `D-NOITE-SEM-TETO` do ciclo 3 (49 inserções,
+já declarado no §4 do plano) + o `a3e52e37` (4 inserções, 2 remoções); as linhas que a integração do #397/#398 trouxe
+(`D-PAUSA-GRAVA-E-PARA`) são da `main` e não entram nesse diff.
+
+## Emenda 6 — rastreabilidade do ciclo 4 (KPI e pendências)
+
+- **Bloco:** `B-GOV-MANDATO` ciclo 4 · **PR:** #393 · **status:** `published_per_pr` · **`merge_commit` /
+  `approved_head`:** `null` na autoria (§C3.5), backfill pós-merge.
+- **KPI, todos os K do bloco (C3c-N5):** ciclo 2 `3103/3105` → **Emenda 5 do ciclo 3 (`3382/3385`, CI): SUPERADA** →
+  K1 `3389/3392` (N=2, `ec=1` pelo guard de skip P8) → K1b `3403/3405` (N=2, `ec=0`) → **ciclo 4: o K4** (N=2,
+  números no commit K4 e em `Kpis/kpis-latest.json`). `blocks_completed` **169 → 170**: a `origin/main` integrada no ramo
+  (`5bcdcc58`, #398, depois do #397 que publicou 169) + 1.
+- **Pendências (§15.7):** abre `P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA` e as fronteiras **29/30/31** em
+  `P-GOV-MANDATO-3-FRONTEIRAS`; fecha nela as **25, 26, 27, 28** (com o teste de encerramento executado) e paga o
+  item "cabeçalho congelado"; **reabre** `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` e `P-GOV-MANDATO-3-MUTANTES-REFS` (o
+  `[M-1] = 0` do ciclo 3 contava mutante que não compila) — fecham de novo no **K4b**, com a matriz do ciclo 4.
+- **Integração da `main` no ramo (orquestrador, por merge, antes do E3):** `26730e2b` (#397) e `b7f27fe1` (#398); o
+  `$MB` do ciclo 4 é `5bcdcc58` = `git merge-base origin/main HEAD`.
+- **Achados da C3‴ fechados por este registro:** **C3c-01** (esta emenda traz bateria, códigos e `decisoes.md`);
+  **C3c-N5** (a linha de KPI acima); **C3c-03** (`§7.3` → `§5.3` na l.255 deste comando e nas 3 pendências do bloco —
+  os dois blocos estão no `PLANO_SAN3.md` §5.3, l.268-269); **C3c-02** já estava pago (`log-execucao.md`,
+  "Limpeza §C5 do ciclo 3") — anotado.
+- **Fica para o K4b (mesma identidade, depois da E4 do orquestrador):** as duas matrizes verbatim no
+  `…-ciclo4-mutantes.md`, o `[M-1]` derivado por conjuntos e por fixture, o fechamento das duas pendências de
+  mutação e a citação N/K/INVALIDOS/TIMEOUT no history.

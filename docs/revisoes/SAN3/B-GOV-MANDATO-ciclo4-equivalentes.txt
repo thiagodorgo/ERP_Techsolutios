@@ -1,0 +1,34 @@
+# B-GOV-MANDATO ciclo 4 — mutantes EQUIVALENTES declarados do pre-voo (scripts/mandato-preflight.sh do S4a, commit 2ca15eb0)
+# Lido por: bash scripts/mandato-mutantes.sh preflight --controle --jobs 4 --timeout 1800 --equivalentes docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-equivalentes.txt
+# Formato: `id: justificativa (fixture que tentou discriminar)`. O id e a LINHA do ponto no pre-voo DO S4a — as linhas
+# mudaram desde o ciclo 3 (o arquivo do ciclo 3 fala do blob faa408c8 e NAO vale para esta rodada). A ferramenta do
+# ciclo 4 confere POR ID (fronteira 28 fechada): id que nao estiver entre os NAO-COBERTOS da rodada sai ANOMALIA-EQUIV
+# e NAO abate; linha sem fixture nomeada entre parenteses e IGNORADA (A6); linha com `#` e comentario e nao conta.
+# Fonte: plano §15.2 C2c-02 e §15.0(d); mapeamento ciclo 3 -> S4a feito POR CONTEUDO (grep -n -F -x da linha do faa408c8
+# no pre-voo do S4a), nunca por numero; cada equivalencia re-tentada com fixture PROPRIA do Dev-S4
+# (dev-scripts-ciclo4-b-gov-mandato) sobre o S4a. Quem confere com fixture propria: o conferente dos dois lados e a C2.
+#
+# O que SAIU da lista do ciclo 3, e por que:
+#   ciclo 3 `245` = S4a `359` (`*) continue ;;` no laco das colagens) — NAO e mais equivalente: no S4a o numero do PR
+#     sai por expansao de parametro (`${prim#"# refs do PR #"}`), que NAO exige o prefixo; sem o `continue`, um bloco
+#     cercado cuja 1a linha comeca por digitos chama o refs com esse numero. Fixture que DISCRIMINA (Dev-S4, f359a:
+#     `- a suite, medido por: npm test` + cerca com `3058 de 3060`): pristino PRE-VOO OK, mutante REJ "NAO bate #3058".
+#     Se a rodada do ciclo 4 o der NAO-COBERTO, e ponto descoberto de verdade (R1 da §15.10), nunca equivalente.
+#   ciclo 3 `336` = S4a `461` (`NR==FNR {...; next}`) — discriminavel pelo documento de 1 000 003 linhas (C2c-02);
+#     coberto agora pelo caso [C2c-02/336] do guard (T4c).
+441: M10 em `celulaCheia` (`if (idx < 2 || idx > n) return 0` -> `if (0) return 0`, ciclo 3 `318`) e equivalente — em awk, `c[idx]` fora do intervalo e "" e `~ /[^[:space:]]/` da falso, o mesmo 0; e a linha de tabela comeca por `|`, logo `c[1]` e vazio (fixtures que tentaram e falharam: tabela.md do planejador do ciclo 3; f441a, linha `| x |` com uma celula a menos que o cabecalho, e f441b, `| x | npm test |` com a coluna de evidencia fora do intervalo, do Dev-S4 sobre o S4a — pristino x mutante IGUAIS nas duas, ec e saida)
+#
+# Os 8 pontos que a C2 do ciclo 3 deixou "nao classificados" (§15.0(d)) — NAO entram como linha `id:` porque, na
+# ferramenta do ciclo 4, o mutante DESTES pontos nao compila (o operador M7(salto)/M10 gera awk invalido) e sai
+# MUTANTE-INVALIDO, fora dos NAO-COBERTOS: declarar o id faria a ferramenta imprimir ANOMALIA-EQUIV sem nada a abater.
+# A equivalencia registrada e a da versao VIAVEL do mesmo operador (`continue` -> `;`; `if (0)` balanceado), medida pelo
+# dev de testes do ciclo 4 (DEVT4C, 13:52Z): 3 fixtures dirigidas por ponto, sem PR e com PR 393, ec/stdout/stderr
+# IGUAIS em 48 de 48. Quem as re-mede com fixture propria e o conferente (item 4 da §15.5: 100% dos MUTANTE-INVALIDO).
+#   ciclo 3 280 -> S4a 399  `if (length(s) < 1) return 0` em ehex          (fixtures f280a, f280b, f280c; inalcancavel por construcao: `us != ""` antes)
+#   ciclo 3 349 -> S4a 474  `(novo)` isenta o token anterior              (fixtures f349a, f349b, f349c)
+#   ciclo 3 356 -> S4a 481  `if (u == "") continue`                        (fixtures f356a, f356b, f356c)
+#   ciclo 3 365 -> S4a 490  `if (length(us) >= 7) {...; continue}`         (fixtures f365a, f365b, f365c)
+#   ciclo 3 368 -> S4a 501  `if (up == "") continue` (1o)                  (fixtures f368a, f368b, f368c)
+#   ciclo 3 370 -> S4a 503  `if (up == "") continue` (2o)                  (fixtures f370a, f370b, f370c)
+#   ciclo 3 371 -> S4a 504  `if (index(up, "/") == 0) continue` (I13)      (fixtures f371a, f371b, f371c)
+#   ciclo 3 375 -> S4a 508  `if (index(up, "<") > 0) continue` (I16)       (fixtures f375a, f375b, f375c)

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **437** |
-| IDs distintos | 426 |
-| **ABERTAS** | **320** |
+| Cabecalhos `## P-` | **438** |
+| IDs distintos | 427 |
+| **ABERTAS** | **323** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **251** |
+| — das quais **ativas nesta rodada** | **254** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 117 |
+| FECHADAS | 115 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **437 cabecalhos para 426 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **438 cabecalhos para 427 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 143
+## ABERTAS · balde A — material — 145
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -206,16 +206,18 @@
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 | `P-GOV-ATA-CABECALHO-TEMPLATE` | 9802 | MÉDIA | sim | P-GOV-ATA-CABECALHO-TEMPLATE (2026-09-26) — não existe template RASTREADO de ata com cab |
 | `P-GOV-ATA-APPROVED-HEAD-LINHA` | 9812 | MÉDIA | sim | P-GOV-ATA-APPROVED-HEAD-LINHA (2026-09-26) — nenhuma das 107 atas escreve a linha `- **a |
-| `P-GOV-CICLOS-CORPOS-ORFAOS` | 9943 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
-| `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9958 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
-| `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9973 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
-| `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9998 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
-| `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 10010 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
-| `P-GOV-MAQUINA-393-D-M1-DOIS-LADOS` | 10040 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M1-DOIS-LADOS (2026-09-30) — o número de uma ferramenta de medição e |
-| `P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO` | 10050 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não |
-| `P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA` | 10061 | ALTA | sim | P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato  |
+| `P-GOV-MANDATO-3-MUTANTES-REFS` | 9856 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` |
+| `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` | 9874 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 1 |
+| `P-GOV-CICLOS-CORPOS-ORFAOS` | 9946 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
+| `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9961 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
+| `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9976 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
+| `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 10001 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
+| `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 10013 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
+| `P-GOV-MAQUINA-393-D-M1-DOIS-LADOS` | 10043 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M1-DOIS-LADOS (2026-09-30) — o número de uma ferramenta de medição e |
+| `P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO` | 10053 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não |
+| `P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA` | 10064 | ALTA | sim | P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato  |
 
-## ABERTAS · balde B — processo/registro — 108
+## ABERTAS · balde B — processo/registro — 109
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -321,12 +323,13 @@
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
 | `P-GOV-MANDATO-2-FRONTEIRAS` | 9823 | BAIXA | sim | P-GOV-MANDATO-2-FRONTEIRAS (2026-09-26) — as OITO fronteiras que o pré-voo e o refs DECL |
 | `P-GOV-MANDATO-3-FRONTEIRAS` | 9891 | BAIXA | sim | P-GOV-MANDATO-3-FRONTEIRAS (2026-09-29) — as fronteiras que os artefatos do ciclo 3 decl |
-| `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 10020 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
-| `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 10030 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
-| `P-GOV-OBITUARIO-SEMTETO` | 10082 | BAIXA | sim | P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no O |
-| `P-GOV-PAUSA-ESCADA-C76BIS` | 10092 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
-| `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` | 10102 | BAIXA | sim | P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquest |
-| `P-GOV-PAUSA-CASO-SEM-FONTE` | 10112 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
+| `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 10023 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
+| `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 10033 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
+| `P-GOV-OBITUARIO-SEMTETO` | 10085 | BAIXA | sim | P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no O |
+| `P-GOV-PAUSA-ESCADA-C76BIS` | 10095 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
+| `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` | 10105 | BAIXA | sim | P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquest |
+| `P-GOV-PAUSA-CASO-SEM-FONTE` | 10115 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
+| `P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA` | 10125 | BAIXA | sim | P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA (2026-10-01) — `scripts/mandato-mutantes.sh` não tem |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -402,7 +405,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3581 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3625 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 117
+## FECHADAS — 115
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -519,7 +522,5 @@
 | `P-SAN3-01-OS-VAZIO-SEM-ACAO` | 9537 | BAIXA | sim | P-SAN3-01-OS-VAZIO-SEM-ACAO (2026-09-18) — a lista de OS vazia não oferecia a ação de cr |
 | `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` | 9773 | BAIXA | sim | P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME (2026-09-25) — a checagem de caminho do pré |
 | `P-GOV-MANDATO-3-B8B-CONTRADICAO` | 9842 | ALTA | sim | P-GOV-MANDATO-3-B8B-CONTRADICAO (2026-09-28) — `[B8b]` e `[F-EOL/s7-neg]` exigem veredit |
-| `P-GOV-MANDATO-3-MUTANTES-REFS` | 9856 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` |
-| `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` | 9874 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 1 |
-| `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9987 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
-| `P-GOV-MANDATO-FORMA` | 10072 | MÉDIA | sim | P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declara |
+| `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9990 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
+| `P-GOV-MANDATO-FORMA` | 10075 | MÉDIA | sim | P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declara |
