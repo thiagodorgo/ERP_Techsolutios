@@ -7042,7 +7042,7 @@ o que o §A2 proíbe.
 como fonte e passam a citar o que de fato está na `main`. As duas respostas são legítimas; a ausência não
 é, porque hoje seis arquivos apontam para um alvo que não existe na linha em que eles vivem.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
+- **status:** FECHADA (2026-09-30 — a decisão foi portada VERBATIM para a `main` em `agent-orchestration/controle/decisoes.md`, por decisão do dono, no PR #396; md5 EOL-neutro da seção igual ao de `demo/investidor` `d1fab3bc`) · antes: ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
   desde `cae6086`, 2026-09-05; a decisão nunca esteve na `main`) · **dono:** **decisão do dono** — envolve
   consolidar texto entre `demo/investidor` e a `main`, que é dele, não de um bloco de execução
 
