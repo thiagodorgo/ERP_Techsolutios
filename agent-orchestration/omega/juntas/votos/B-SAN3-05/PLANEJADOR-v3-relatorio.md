@@ -129,3 +129,23 @@ Mecanismo, lido no Apendice A (nao herdado — as linhas sao do arquivo extraido
 - H2-a: um analisador que resolva o delegate pelo TIPO (type checker), a classe pelo SIMBOLO (aliases, namespaces, heranca via `getSymbolAtLocation`/`getAliasedSymbol`) e o setter por AST + identidade de simbolo (primeira instrucao do callback, mesmo parametro) deixa as 26 formas (17 + 9) VERMELHAS sem alterar o veredito de nenhum sitio do head alem de reclassificar o que hoje e absolvido por texto — derruba com: qualquer fixture `novas=0` no arnes v3 (§3).
 
 Veredito parcial §2: F2 confirmado por execucao; a resposta nao pode ser "mais regex" — tem de trocar o mecanismo (nome/texto → tipo/simbolo). Continua em §3.
+
+## §2-bis — Reproducao do F2-02 (senha vaza) com o script v2, no meu cluster (2026-10-01T22:20Z)
+
+### MEDIDO
+Banco `v3_i3`; executor `v3_nocr` (`LOGIN NOCREATEROLE NOSUPERUSER NOBYPASSRLS`) = o modo 1 do §11 da v2. A senha nova e aleatoria e vive SO em `$SCR/.pw_m1` (nunca neste relatorio).
+```
+$ env -i PATH=/usr/bin:/bin HOME=/root PGHOST=127.0.0.1 PGPORT=54371 PGUSER=v3_nocr PGDATABASE=v3_i3 DB_RUNTIME_ROLE=erp_rt_m1 DB_RUNTIME_PASSWORD=<senha> bash $SCR/apx/db-runtime-role-v2.sh → ec=3
+$ grep -c -F "<senha>" $SCR/v2-m1.out                              → 1    (terminal do dono)
+$ grep -c -F "<senha>" /var/lib/postgresql/san3_05_plan_v3/server.log → 1  (log do servidor, defaults do PG16)
+  ERROR:  permission denied to create role
+  CONTEXT:  SQL statement "CREATE ROLE erp_rt_m1 LOGIN NOINHERIT PASSWORD '<SENHA>'"
+$ (shim $SCR/shim/psql que so grava "$@") … bash db-runtime-role-v2.sh → ec=0 ; grep -c -F "<senha>" $SCR/shim/argv.txt → 1 (l.8: `password=<SENHA>`)
+$ psql … "SELECT count(*) FROM pg_roles WHERE rolname='erp_rt_m1'" → 0  (nada persistiu — o DO fez rollback, como a v2 dizia)
+```
+**F2-02 reproduz nas tres vias** (CONTEXT no terminal, server.log, argv). A fonte do CONTEXT e o PL/pgSQL, que poe o SQL DINAMICO executado — com o valor interpolado por `%L` — no contexto de todo erro nao capturado; a fonte do argv e o `-v password="$DB_RUNTIME_PASSWORD"` da l.1709 do plano.
+
+Leitura paralela que muda o gerador v3: `src/modules/auth/services/local-auth-login.service.ts:106` → `private readonly runWithTenantContext: TenantContextRunner = async (_tenantId, work) => work()` — o "envoltorio" `runWithTenantContext` que a v2 absolvia PELO NOME (`CONTEXT_WRAPPERS`) e um runner INJETADO cujo default NAO seta GUC; so em `auth-runtime.ts:82` ele vira `withTenantRls`. Default-negar exige confiar apenas no SIMBOLO declarado em `src/database/rls.ts` (e no `forEachTenantInOneTx` privado de `cloud-cost-allocation-prisma.repository.ts:340`, cujo corpo seta o GUC — a junta le os dois).
+
+### HIPOTESE
+- H2b-a: embrulhar cada `EXECUTE` que carrega a senha num bloco `BEGIN … EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION '<msg sem senha>: %', SQLERRM; END` descarta o CONTEXT interno (a re-emissao tem contexto proprio, "at RAISE"), e `\set password` por backtick (`printf` builtin do sh) tira a senha do argv — derruba com os mesmos tres `grep -c` ≠ 0 no §4.
