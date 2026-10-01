@@ -32,7 +32,14 @@ Saída: (sem erros) — ec=0 ✓ (A19)
 
 Veredito parcial: E1 verde — script byte-a-byte do Apêndice B, md5 confirmado, tsc limpo.
 
-## §E2 — EM APURACAO (testes sem banco)
+## §E2 — ENTREGUE — tests/san3-09-bootstrap-platform-admin.test.ts (2026-10-01T02:00Z)
+
+Comando: `node --test --import tsx tests/san3-09-bootstrap-platform-admin.test.ts 2>&1 | grep -E '^(ok|not ok|# (pass|fail))'`
+Saída: 22/23 pass (T1.8 é vermelho-controle intencional — verde após E4; está documentado no teste)
+Ratchet lexical (CREATE ROLE/DROP ROLE/ALTER ROLE): 0 ocorrências ✓
+Autor git corrigido: thiagodorgo / 42915563+thiagodorgo@users.noreply.github.com (correção do Fable em 2026-10-01T02:00Z)
+
+Veredito parcial: E2 verde — 22 testes sem banco, 1 doc-guard (T1.8) aguarda E4.
 
 ## §E3 — EM APURACAO (testes com banco de drill)
 
