@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **421** |
 | IDs distintos | 410 |
-| **ABERTAS** | **311** |
+| **ABERTAS** | **310** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **242** |
+| — das quais **ativas nesta rodada** | **241** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 110 |
+| FECHADAS | 111 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **421 cabecalhos para 410 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 139
+## ABERTAS · balde A — material — 138
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -106,7 +106,6 @@
 | `P-C3-DOIS-PRS-SEM-KPI` | 6824 | MÉDIA | sim | P-C3-DOIS-PRS-SEM-KPI (2026-09-05 — achado da sessão irmã, conferido por execução) — MÉD |
 | `P-DERIVADO-ESQUECIDO` | 6856 | MÉDIA | sim | P-DERIVADO-ESQUECIDO (2026-09-05 — três instâncias em três PRs consecutivos meus) — MÉDI |
 | `P-GOV-REGISTRO-PURO-QUORUM` | 6956 | MÉDIA | sim | P-GOV-REGISTRO-PURO-QUORUM (2026-09-05) — MÉDIA · PR de registro puro: junta de 3 ou uma |
-| `P-GOV-D-DURABILIDADE-FORA-DA-MAIN` | 7012 | MÉDIA | sim | P-GOV-D-DURABILIDADE-FORA-DA-MAIN (2026-09-05) — MÉDIA · a decisão sobre durabilidade só |
 | `P-O6R-B07B-SCANNER-AV-REAL` | 7051 | ALTA | sim | P-O6R-B07B-SCANNER-AV-REAL (2026-09-06) — produção e staging recusam TODO upload até hav |
 | `P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE` | 7115 | ALTA | sim | P-O6R-B07B-ATTACHMENT-STORED-DO-CLIENTE (2026-09-06) — linha `attachment stored` com cha |
 | `P-O6R-B07B-CHECKLIST-JSON-FILEURL` | 7156 | MÉDIA | sim | P-O6R-B07B-CHECKLIST-JSON-FILEURL (2026-09-06) — ramo JSON do anexo de checklist aceita  |
@@ -393,7 +392,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3581 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3625 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 110
+## FECHADAS — 111
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -496,6 +495,7 @@
 | `P-SAN2-2-PORTA-55432-RESERVADA` | 5029 | BAIXA | sim | P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produ |
 | `P-SYNC-AGENTS-NAO-RECURSIVO` | 5715 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
 | `P-O6R-B07A-REGISTRO-A2-DIVIDA-368` | 6577 | — | **a atribuir** | P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do # |
+| `P-GOV-D-DURABILIDADE-FORA-DA-MAIN` | 7012 | MÉDIA | sim | P-GOV-D-DURABILIDADE-FORA-DA-MAIN (2026-09-05) — MÉDIA · a decisão sobre durabilidade só |
 | `P-O6R-B07B-STAGING-SEM-UPLOAD` | 7078 | ALTA | sim | P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do depl |
 | `P-GOV-FILA-P1-ANTES-DE-P0` | 7256 | MÉDIA | sim | P-GOV-FILA-P1-ANTES-DE-P0 (2026-09-06) — um P1 executado com 6 P0 abertos, e a agenda da |
 | `P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB` | 7523 | MÉDIA | sim | P-O6R-B06-DIVERGENCIA-ESCOPO-TESTES-DB (2026-09-07) — duas suítes fora da lista §6 tiver |
