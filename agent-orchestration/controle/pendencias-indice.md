@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **423** |
-| IDs distintos | 412 |
-| **ABERTAS** | **312** |
+| Cabecalhos `## P-` | **425** |
+| IDs distintos | 414 |
+| **ABERTAS** | **314** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **243** |
+| — das quais **ativas nesta rodada** | **245** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 111 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **423 cabecalhos para 412 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **425 cabecalhos para 414 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -210,7 +210,7 @@
 | `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9827 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
 | `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 9839 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
 
-## ABERTAS · balde B — processo/registro — 105
+## ABERTAS · balde B — processo/registro — 107
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -319,6 +319,8 @@
 | `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 9859 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
 | `P-GOV-OBITUARIO-SEMTETO` | 9869 | BAIXA | sim | P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no O |
 | `P-GOV-PAUSA-ESCADA-C76BIS` | 9879 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
+| `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` | 9889 | BAIXA | sim | P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquest |
+| `P-GOV-PAUSA-CASO-SEM-FONTE` | 9899 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
