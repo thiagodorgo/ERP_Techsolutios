@@ -2978,3 +2978,41 @@ próprio texto, §C7.4-bis) fez três coisas:
 `kpis-history.json`: `pr 392` · `merge_commit fc3363e38aabd77f54e6b53034128182f8000571` (de
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
+
+## 2026-10-01 — B-GOV-PAUSA (PR #397, na autoria) — sob ordem de pausa, o agente grava o estado e para sozinho
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) e carregados pelo `B-GOV-SEM-TETO` (#394) |
+| Blocos Entregues | **168 → 169** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`5b6e1036`, #396; o último PR que contou bloco foi o #394 = 168). O #393 também publica bloco no ramo dele: quem mergear depois **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos agentes, não o produto |
+| pr / merge_commit / approved_head | `397` / `null` / `null` **na autoria** (§C3.5) |
+
+**O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-10-01
+(`D-PAUSA-GRAVA-E-PARA`): **sob ordem de pausa do dono, o agente grava o estado e para sozinho** — a norma **P7**
+do protocolo de junta resiliente. O texto foi escrito pelo orquestrador; o plano do bloco o mediu (17 elaborações,
+7 achados dentro do bloco) e a **emenda** (desenvolvedor de identidade nova — quem escreveu não emenda o próprio
+texto, §C7.4-bis) implementou a propriedade de cada achado:
+
+1. **O protocolo passa a se descrever inteiro** — a abertura do item 7 diz *P1–P7* e *sete normas* (S-01); o escopo
+   declarado, nos dois contratos e na fonte, cobre todo agente vivo e a pausa, não só junta, inspeção, porteiro e a
+   morte (S-02); o lado Codex (`.agents/agents/README.md`) ganha a P7 (S-03).
+2. **Toda peça que a P7 nomeia tem destino na ref** — a seção `## PAUSA` vai para o `<cadeira>-evidencia.md` do P1
+   ou, para quem não tem um, para o arquivo de saída que o mandato nomeia (S-04); o roteiro de retomada vai para
+   uma seção `## PAUSA` de `agent-orchestration/docs/status-geral.md`, que o §A4 manda ler antes de cada bloco — o
+   "custo/trilha" do texto de origem não existia na ref (S-05).
+3. **Vocabulário e listas coerentes** — a lista de jobs sem modelo é a da fonte nos três textos (S-07); "pare" sai
+   dos exemplos de ordem de pausa e uma frase separa pausa de **parada** (§C7.5, §C7.6-bis) (S-11).
+
+Cada frase nova está declarada como **elaboração do dev** (T-18…T-24) num parágrafo datado da entrada
+`D-PAUSA-GRAVA-E-PARA` de `decisoes.md`; o parágrafo *Decisão.* do orquestrador fica como foi transcrito. Pendências
+abertas com dono: `P-GOV-OBITUARIO-SEMTETO` (pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10); índice pelo
+gerador.
+
+**Espelho:** `CLAUDE.md` × `AGENTS.md` com hunks idênticos e o item 7 inteiro com md5 EOL-neutro igual; modelo de
+mandato idêntico nos três textos.
+
+**Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
+pagos pelo #395.
