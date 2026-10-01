@@ -260,3 +260,42 @@ N2-03  clone no scratch com core.autocrlf=true: `git ls-files --eol scripts/db-r
 ### HIPOTESE
 - H5-a: `psql` esta no PATH do job `backend` do CI (o pacote esta na imagem) — derruba com `which psql` vazio no job (o T14b imprime e FALHA nomeando, nunca pula).
 Veredito parcial §5: F2-01 → allowlist e o caminho (arquivo entra no PERMITIDO nominalmente, so a entrada do Map); F2-03 → janela fixa em 2001 + soma exata; F2-06 → T14b FALHA sem psql (psql vira pre-requisito declarado da suite -db; sem pulo); N2-01/N2-02/N2-03 → textos corrigidos com as medicoes acima e `.gitattributes` (1 linha) entra no PERMITIDO.
+
+## §6 — Cluster religado e re-confirmacao (2026-10-01T23:30Z)
+
+### MEDIDO
+```
+$ head -1 /var/lib/postgresql/san3_05_plan_v3/data/postmaster.pid → 1503 ; kill -0 1503 → nao (pid morto; arquivo obsoleto)
+$ runuser -u postgres -- pg_ctl -D …/data -o "-p 54371 -k … -c listen_addresses=127.0.0.1" -l …/server.log -w start → server started ; grep -c 'database system was interrupted|automatic recovery' server.log → 2 (recuperacao automatica)
+$ psql -h 127.0.0.1 -p 54371 -U postgres -d postgres -Atc "SELECT version(); …" → PostgreSQL 16.14 ; bancos: erp_v3,postgres,v3_i3,v3_i4,v3_i5 ; papeis nao-sistema: 27 ; log_statement: none   (porta provada pela conexao)
+trava v3 (login + PGOPTIONS='-c role=v3_clean'): v3_clean → 0 ; v3_mbyp → atributo|v3_bypass ; v3_mown → posse|v3_own|…|1 ; v3_viewer → view|postgres|t|t|f|1 ; mutA sob v3_mbyp → 0 ; mutP sob v3_mown → 0 ; mutV sob v3_viewer → 0   (= §4 (xii))
+MODO 1 (v3_nocr) de novo → ec=3, senha terminal 0, server.log 0 ; MODO 4 (erp_rt6 criado pelo super, v3_mig roda) → ec=3, senha 0/0
+gerador v3 no head de novo → 53 chaves · sha1=5c566532986c533416e880e70350fb5ea692f9e2   (= §3)
+```
+Veredito parcial §6: o estado do cluster e do codigo e o mesmo de antes da queda; nada do §3–§5 precisou ser refeito.
+
+## §7 — T11 re-medido por mim (diferencial HTTP com janela fixa), superficie de plataforma enumerada da fonte, premissas baratas (2026-10-01T23:38Z)
+
+### MEDIDO
+`$SCR/diff-http.mts` (meu; padrao `san3-04a`: `createEphemeralRole` do arnes, `globalThis.prisma` ANTES de importar o app, `createApp(PrismaCoreSaasService(…))`, JWT `signAccessToken({…, roles: ["platform_admin"]})`), seed de 2 organizacoes com `occurred_at` INTERCALADO em 2001-01-01 (A: 01h,03h,05h; B: 02h,04h; quantity 10), cwd = worktree, cluster 54371 / `erp_v3`:
+```
+$ ROLE=super   ADMIN_URL=… npx tsx $SCR/diff-http.mts → {"role":"super","papel":{"u":"postgres","rolsuper":true,"rolbypassrls":true},"status":200,"metrics":[{"metricKey":"storage_bytes","quantity":50,"unit":"bytes","sourceType":"medicao"}]}
+$ ROLE=runtime ADMIN_URL=… npx tsx $SCR/diff-http.mts → {"role":"runtime","papel":{"u":"o6r_b01_…","rolsuper":false,"rolbypassrls":false},"status":200,"metrics":[]}
+$ psql … → 0 0 0   (tenants san3-05v3-%, cloud_usage_events, papeis o6r_b01_% restantes)
+```
+GET `/api/v1/platform/cloud-usage/summary?periodStart=2001-01-01T00:00:00.000Z&periodEnd=2001-01-02T00:00:00.000Z`: **50 × vazio** — o item 10 pela superficie, agora com janela isolada (F2-03) e valor exato esperado.
+
+Superficie de plataforma que toca tabela FORCE, enumerada da fonte (rotas montadas sob `/api/v1/platform`, `app.ts:126` → `platform.routes.ts` l.3-6):
+```
+cloud-usage.routes.ts      GET /cloud-usage/summary (listEvents SEM tenant → cloud_usage_events)  ·  GET /cloud-usage/tenants/:id/summary (com tenant)  ·  GET /cloud-usage/tenants/:id/daily (com tenant)
+cloud-charge.routes.ts     GET/POST/PATCH /cloud-charge-rules… (cloud_charge_rules: SEM FORCE) · GET /cloud-charges/calculation-runs, GET …/:runId (cloud_charge_calculation_runs: SEM FORCE) ·
+                           POST /cloud-charges/calculation-runs (executeCalculationRun → listAllocationTenantAllocations + replaceTenantCharges: FORCE) · GET …/:runId/tenant-charges (listTenantCharges: FORCE) · GET /cloud-charges/summary (listTenantCharges: FORCE)
+cloud-cost-allocation.routes.ts  GET/POST /runs, GET /runs/:runId, GET /runs/:runId/tenant-allocations (ja por tenant — B-O6R-06), GET /summary
+platform.routes.ts         GET /overview (platform-overview-prisma.repository.ts: `tenant.findMany` + contagens DENTRO de withTenantRls — l.14,24,41) · GET /tenants/:id … (tenant-detail idem)
+jobs                       `cloud-usage.aggregate-daily` (job.registry.ts:50 → aggregateDailyUsage, cloud-usage.service.ts:46: listEvents SEM tenant → grava cloud_usage_daily_aggregates)
+```
+Premissas da v2 re-medidas (baratas, no `origin/main`): P-a → 8 linhas (1 executavel, `login-readiness.ts:202`) ; N5 → 0 `CREATE ROLE|USER` em migracoes ; P-n → 13 suites escrevem catalogo, 8 fazem DDL de dono ; P-b → 2 (l.35 e 57 do compose com `postgres:postgres@postgres`) ; suite: 287 `tests/*.test.ts`, 33 `-db` ; KPI vigente lido de `Kpis/kpis-latest.json`.
+
+### HIPOTESE
+- H7-a: o job `cloud-usage.aggregate-daily` sob papel efemero agrega 0 linhas hoje (mesma classe de P1/P2 do Apendice B) — derruba com o T11b do plano devolvendo agregados > 0 sob efemero no head-base.
+Veredito parcial §7: A12 ganha base propria (nao herdada) e a superficie fechada do §2.3 esta enumerada da fonte.
