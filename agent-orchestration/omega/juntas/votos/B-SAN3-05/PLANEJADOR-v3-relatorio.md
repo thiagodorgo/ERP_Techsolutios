@@ -347,7 +347,7 @@ git status --short | wc -l → 0 (nada fora dos dois arquivos entregues foi toca
 - O T11b (job diario) e T11c (cobranca) **nao** foram executados por mim na superficie HTTP (so o T11a, 50 × vazio); a base deles e o Apendice B (P2, P3, P4, P6 = 0/42501) re-executado por mim — ficam como vermelho-controle a colar na ata pelo dev/junta.
 - O `deploy-manifest-parity` (28/28) e os numeros de `production-runtime-gates` (63) nao foram re-executados por mim: a r2 os executou no head cuja arvore `tests` e identica (declarado com proveniencia no §0.3/§8 do plano).
 
-## §10 — Correcoes pedidas pelo orquestrador apos a entrega: as duas suites que eu NAO tinha executado, e o que fica declarado como herdado (2026-10-02T00:12Z)
+## §10 — Correcoes pedidas pelo orquestrador apos a entrega: as duas suites que eu NAO tinha executado, e o que fica declarado como herdado (2026-10-01T23:54Z — hora corrigida pelo commit `fe3d140`, 23:54:35Z; a anterior foi digitada)
 
 ### MEDIDO
 ```
@@ -362,3 +362,19 @@ H6/A9 do plano passam a citar **28/28 medido por mim**; §8 do plano cita **63 m
 - **T11b e T11c** (job `cloud-usage.aggregate-daily` e a cadeia `POST calculation-runs → tenant-charges → summary` sob papel efemero na superficie HTTP/job): **nao foram executados por ninguem** — nem v2, nem r2 (o §R.3 da v2 e o §2.2(b) da r2 so mediram `GET /cloud-usage/summary`), nem eu (so o T11a, §7: 50 × vazio). A base deles e o Apendice B (P2/P3/P4/P6 = 0/0/0/42501), que EU re-executei (§4). No plano isso vira hipotese H7-a/H7-b com o vermelho-controle a colar na ata pelo dev e conferir pela junta C3 — nao e numero herdado, e numero AUSENTE, declarado.
 - **P-j, P-m, P-p** (§0.3 do plano): medidos pela v2/r1/r2 em `3b1fe0f9` (arvore `src/tests/scripts/prisma` identica a `origin/main`), **nao re-medidos por mim** — ja declarados com proveniencia na tabela do §0.3; o cabecalho do plano passa a dizer isso em vez de "nenhum".
 - **N4** (tempo de saida sem `$disconnect`, ~11 s): medicao da r1, aceita na v2 e nesta v3 sem re-execucao (declarado em A6).
+
+## §11 — Fechamento: heads empurrados e como conferir (2026-10-01T23:55Z, hora lida de `date -u`, nao digitada)
+
+### MEDIDO
+```
+$ git rev-parse HEAD   (antes deste commit de fechamento; = plano v3 final e relatorio ate §10)
+fe3d140a6c89f6b0df39099f6917c50872dcc142
+$ git rev-parse origin/docs/plano-b-san3-05
+fe3d140a6c89f6b0df39099f6917c50872dcc142
+$ git log -1 --format='%h %an %cI' fe3d140a6c89f6b0df39099f6917c50872dcc142 → fe3d140 planejador-b-san3-05-v3 2026-10-01T23:54:35+00:00
+$ git diff --name-only 9a808491 fe3d140a6c89f6b0df39099f6917c50872dcc142 → agent-orchestration/omega/juntas/votos/B-SAN3-05/PLANEJADOR-v3-relatorio.md docs/revisoes/SAN3/B-SAN3-05-plano.md
+$ git log --format=%B origin/main..fe3d140a6c89f6b0df39099f6917c50872dcc142 | grep -icE '^(co-authored-by|claude-session)' → 0
+```
+- **Plano v3:** `docs/revisoes/SAN3/B-SAN3-05-plano.md` no head `fe3d140a6c89f6b0df39099f6917c50872dcc142` (1121 linhas; Apendices A/C/E conferem por md5 com os comandos ancorados do proprio plano).
+- **Relatorio:** este arquivo; ate o §10 esta em `fe3d140a6c89f6b0df39099f6917c50872dcc142`; esta §11 entra no commit de fechamento, cujo SHA **nao pode estar aqui** — nenhum arquivo contem o SHA do proprio commit. O head final confere-se por: `git ls-remote origin refs/heads/docs/plano-b-san3-05` (deve ser igual a `git rev-parse HEAD` no ramo e ao SHA que a mensagem final deste agente informa).
+- Fora do repositorio nao resta nada vivo: cluster 54371 derrubado e removido, worktree removido, 0 processos pelo caminho (§9).
