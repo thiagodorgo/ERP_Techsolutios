@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **433** |
 | IDs distintos | 422 |
-| **ABERTAS** | **317** |
+| **ABERTAS** | **316** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **248** |
+| — das quais **ativas nesta rodada** | **247** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 116 |
+| FECHADAS | 117 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **433 cabecalhos para 422 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 144
+## ABERTAS · balde A — material — 143
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -214,7 +214,6 @@
 | `P-GOV-MAQUINA-393-D-M1-DOIS-LADOS` | 10040 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M1-DOIS-LADOS (2026-09-30) — o número de uma ferramenta de medição e |
 | `P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO` | 10050 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não |
 | `P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA` | 10061 | ALTA | sim | P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato  |
-| `P-GOV-MANDATO-FORMA` | 10072 | MÉDIA | sim | P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declara |
 
 ## ABERTAS · balde B — processo/registro — 104
 
@@ -399,7 +398,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3581 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3625 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 116
+## FECHADAS — 117
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -519,3 +518,4 @@
 | `P-GOV-MANDATO-3-MUTANTES-REFS` | 9856 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` |
 | `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` | 9874 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 1 |
 | `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9987 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
+| `P-GOV-MANDATO-FORMA` | 10072 | MÉDIA | sim | P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declara |

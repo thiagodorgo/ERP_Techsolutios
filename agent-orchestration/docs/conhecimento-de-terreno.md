@@ -53,7 +53,8 @@ Declare no §0 de todo plano ou relatório: `uname -a`, `node -v`, `git --versio
 
 - **O que só existe num disco não conta como entregue.** Commit que doa perder ganha upstream **na hora**, não no
   PR. Origem: decisão do dono de 29/08 (`D-DURABILIDADE-BRANCHES-LOCAIS`, texto em `demo/investidor` `d1fab3bc`;
-  ainda **não** está na `main` — pendência `P-GOV-D-DURABILIDADE-FORA-DA-MAIN`). Em 28/08, 82 commits viviam
+  **portada para a `main` em 30/09 pelo PR #396**, verbatim, fechando a `P-GOV-D-DURABILIDADE-FORA-DA-MAIN`;
+  esta linha dizia o contrário no mesmo commit, e o porteiro do #396 a pegou — R4). Em 28/08, 82 commits viviam
   só em três ramos locais.
 - **Trava de MERGED antes de destruir.** Em 13/09 um `gh pr merge` falhou (SHA curto no `--match-head-commit`,
   e um pipe escondeu o código de saída), a cadeia apagou os ramos e o GitHub fechou o PR. Regra: use o SHA

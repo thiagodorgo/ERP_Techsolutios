@@ -2829,10 +2829,12 @@ se espera o PR. O push é barato e reversível; a perda não é.
 trabalho fica na nuvem tambem mas em pasta separada com seu comportamento e previsão no papel".
 
 **Contexto medido (30/09).** O ramo `demo/investidor` tem 49 commits fora da `main` (23–29/08). Arquivo a arquivo,
-**275 arquivos de produto** (demo para investidor e acabamento de UX: seeds da demo, vídeos de fluxo, painel de
+**281 arquivos de produto** (demo para investidor e acabamento de UX: seeds da demo, vídeos de fluxo, painel de
 pátios, tabela de preços, clique-na-linha, consistência visual, dossiê do veículo, fidelidade do app de campo)
 não estão na `main`. Cruzados por script com os PRs em voo (#388, #389, #393) e com os caminhos que cada bloco do
-`PLANO_SAN3` §5 declara: **156 não tocam nada em curso nem planejado; 119 tocam**.
+`PLANO_SAN3` §5 declara: **156 na trilha livre; 125 em espera** — números do gerador `docs/revisoes/DEMO-UX/gerar-manifesto.py`
+(o texto original desta entrada dizia 275/119, contados à mão antes da geração; o `conhecimento-de-terreno.md` §4 dizia
+~227 por outro recorte — o porteiro do #396 pegou os três totais, R2; vale o gerador).
 
 **Decisão.**
 1. **Por padrão, tudo vai para a nuvem** (sessões em claude.ai/code): plano, crítico e desenvolvimento, **por

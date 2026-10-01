@@ -10071,7 +10071,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declarados ou texto livre com ficha? — decisão do dono — MÉDIA
 
-- status: ABERTA (aberta pelo orquestrador a partir de `R-B-GOV-MANDATO-ciclo3-auditoria.md` §8.8; pergunta ao dono)
+- status: FECHADA (2026-09-30 — o dono respondeu `1=a`: campos declarados; registrada como `D-MANDATO-FORMA` em `decisoes.md` pelo PR #396, mergeado em `5b6e1036`; o passo 5 da §8.6 fica como está) · antes: ABERTA (aberta pelo orquestrador a partir de `R-B-GOV-MANDATO-ciclo3-auditoria.md` §8.8; pergunta ao dono)
 - **prova (forma: a mesma classe "forma × propriedade" reprovou os ciclos 1, 2 e 3 do `B-GOV-MANDATO`; o pré-voo só aceita `## MEDIDO`/`## HIPOTESE` e rejeita o briefing do ciclo 3 com 43 itens; causa: a decisão de forma do mandato nunca foi tomada — o instrumento nasceu para uma forma e os mandatos seguem em outra):**
 - **a pergunta, como o dono vai ler:** o mandato que lança um agente passa a ser **(A) um documento de campos declarados** (`## MEDIDO`/`## HIPOTESE`; a instrução vira hipótese com o comando que a derruba; o pré-voo é o instrumento inteiro, sem ferramenta nova; a prosa narrativa sai), **ou (B) continua texto livre com uma ficha de fatos anexa** (o pré-voo roda sobre a ficha, e um passo de cobertura gerado da prosa confere que nada escapou — dois artefatos e uma fronteira forma × propriedade nova)?
 - **até a resposta:** os mandatos do ciclo 4 saem na forma **(A)**, marcados `forma provisória até D-MANDATO-FORMA`; a resposta muda só o passo 5 da §8.6.
