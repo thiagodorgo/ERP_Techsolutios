@@ -401,7 +401,7 @@ Mais: `grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.tom
 
 ## Apêndice A — gerador v3 do inventário (verbatim) e o inventário congelado no `origin/main`
 
-Arquivo que o desenvolvedor commita como `scripts/san3-05-acessos-de-plataforma.mjs` (uso: `node scripts/san3-05-acessos-de-plataforma.mjs <raiz> [--all] [--mutant <arquivo.ts>]… [--override <rel>=<arquivo>]…`, com `cwd` = raiz do repo, que tem `node_modules`). md5 do fonte: `81d9259571391eded68255391a99fb61` (353 linhas). Extração para conferência: `awk '/^```js$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`.
+Arquivo que o desenvolvedor commita como `scripts/san3-05-acessos-de-plataforma.mjs` (uso: `node scripts/san3-05-acessos-de-plataforma.mjs <raiz> [--all] [--mutant <arquivo.ts>]… [--override <rel>=<arquivo>]…`, com `cwd` = raiz do repo, que tem `node_modules`). md5 do fonte: `81d9259571391eded68255391a99fb61` (353 linhas). Extração para conferência (ancorada no cabeçalho do apêndice): `awk '/^## Apêndice A/{d=1} d&&/^```js$/{f=1;next} d&&f&&/^```$/{exit} d&&f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`.
 
 ```js
 #!/usr/bin/env node
@@ -834,7 +834,7 @@ O script é o **Apêndice B da v2**, inalterado: `git show c727156:docs/revisoes
 
 ## Apêndice C — `scripts/db-runtime-role.sh` v3 (verbatim)
 
-md5: `810c1c4a2552665d4947bf0ef4e93670` · 115 linhas · modo `100755` · `.gitattributes`: `scripts/db-runtime-role.sh text eol=lf`. Extração: `awk '/^```bash$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`. Executado em 18 cenários (relatório §4, §6).
+md5: `810c1c4a2552665d4947bf0ef4e93670` · 115 linhas · modo `100755` · `.gitattributes`: `scripts/db-runtime-role.sh text eol=lf`. Extração (ancorada: o primeiro bloco ```bash do plano é o snippet do §11, **não** este apêndice): `awk '/^## Apêndice C/{d=1} d&&/^```bash$/{f=1;next} d&&f&&/^```$/{exit} d&&f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`. Executado em 18 cenários (relatório §4, §6).
 
 ```bash
 #!/usr/bin/env bash
@@ -1087,7 +1087,7 @@ Cada arquivo é servido ao gerador como arquivo **virtual** em `src/modules/zz-m
 
 ## Apêndice E — `RUNTIME_ROLE_GUARD_SQL` v3 (verbatim; = §2.2(a))
 
-md5: `36650de53be8504c76deef74ecc78811` · `grep -c session_user` → 8. Extração: `awk '/^```sql$/{f=1;next} f&&/^```$/{exit} f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`.
+md5: `36650de53be8504c76deef74ecc78811` · `grep -c session_user` → 8. Extração (ancorada): `awk '/^## Apêndice E/{d=1} d&&/^```sql$/{f=1;next} d&&f&&/^```$/{exit} d&&f' docs/revisoes/SAN3/B-SAN3-05-plano.md | md5sum`.
 
 ```sql
 SELECT via, rolname, rolsuper, rolbypassrls, is_self, objetos
