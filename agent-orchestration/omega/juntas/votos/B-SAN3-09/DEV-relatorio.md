@@ -19,7 +19,18 @@ $ git rev-parse origin/main
 Ramo: `feat/bootstrap-platform-admin`. HEAD está 5 commits à frente de origin/main.
 Diferença vs origin/main: apenas arquivos de orquestração, plano e mandato. Código-alvo (scripts/, tests/, docs/deployment.md, Kpis/) intocado — campo limpo para as entregas E1–E5.
 
-## §E1 — EM APURACAO (script bootstrap-platform-admin.ts)
+## §E1 — ENTREGUE — scripts/bootstrap-platform-admin.ts (2026-10-01T01:45Z)
+
+Comando: `tr -d '\r' < scripts/bootstrap-platform-admin.ts | md5sum`
+Saída: `a5f5383dfbbabde9a63205bd40f64782  -` ✓ (bate com plano §0.5, 417 linhas)
+
+Comando: `wc -l < scripts/bootstrap-platform-admin.ts`
+Saída: `417` ✓
+
+Comando: `npx tsc --noEmit --strict --module NodeNext --moduleResolution NodeNext --target ES2022 --esModuleInterop --skipLibCheck --types node scripts/bootstrap-platform-admin.ts`
+Saída: (sem erros) — ec=0 ✓ (A19)
+
+Veredito parcial: E1 verde — script byte-a-byte do Apêndice B, md5 confirmado, tsc limpo.
 
 ## §E2 — EM APURACAO (testes sem banco)
 
