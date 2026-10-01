@@ -316,3 +316,25 @@ $ for r in HEAD origin/main 513937b; do git show $r:CLAUDE.md | grep -c 'P7 — 
 $ node $SCR/gerador-v3.mjs . --mutant $SCR/novas/N10_any.ts | grep zz-mut/N10 → (saida acima) — fixture `(prisma as any).cloudUsageEvent.findMany({})`
 $ git show origin/main:Kpis/kpis-latest.json | node -e '…' → (saida acima: chaves de cima e numeros)
 ```
+
+## §9 — Entrega, limpeza provada e o que ficou de fora (2026-10-01T23:50Z)
+
+### MEDIDO — o que foi entregue (todos os commits empurrados em fast-forward para `origin/docs/plano-b-san3-05`; autor `planejador-b-san3-05-v3 <thiagodorgo@gmail.com>`; 0 linhas de atribuicao)
+- **Plano v3** em `docs/revisoes/SAN3/B-SAN3-05-plano.md` (substitui a v2; v2 em `c727156`, v1 em `c3f57e9`): 1119 linhas; `head -3 | grep -ic mandato_md5` → 2; `grep -ic 'critica-r2\|crítica r2'` → 5; `grep -ic 'proximo papel\|próximo papel'` → 2; `EM APURAÇÃO` → 0. Apendices extraidos pelos comandos ancorados do proprio plano: A `81d9259571391eded68255391a99fb61` · C `810c1c4a2552665d4947bf0ef4e93670` · E `36650de53be8504c76deef74ecc78811` (= os md5 dos artefatos medidos: gerador v3 `81d9259571391eded68255391a99fb61`, script v3 `810c1c4a2552665d4947bf0ef4e93670`, trava v3 `36650de53be8504c76deef74ecc78811`). Licao registrada: `String.replace` com string de substituicao come `$$` (dollar-quoting) — o Apendice C saiu corrompido no 1o commit e foi restaurado por concatenacao literal; **todo apendice verbatim se confere por md5 depois de extraido do arquivo versionado, nao do buffer**.
+- Respostas aos 15 achados da r2 (3 bloqueia, 6 ajustes, 6 notas): todas com secao, criterio, mutacao e evidencia medida por mim; **nenhum recusado por argumento**; o que a v3 nao responde com mecanismo esta dito no §13 do plano (residual semantico → B-ARNES-2; `/proc/<pid>/environ`; CD de staging procedimental; P1 com dono).
+- **Proximo papel** (§15 do plano, medido em `HEAD` do ramo e `origin/main`): comando do bloco pelo orquestrador → desenvolvedor de identidade nova → inspetor → junta unanime de 3 → porteiro; **nao ha r3** (corpo do critico: "max 2 rodadas").
+- Este relatorio (P1): 318 linhas, secoes §0–§9 com hora UTC, MEDIDO/HIPOTESE, queda/retomada em §2-ter, erratas em §7.
+
+### MEDIDO — limpeza
+```
+pg_ctl -D /var/lib/postgresql/san3_05_plan_v3/data -m fast -w stop → server stopped ; rm -rf /var/lib/postgresql/san3_05_plan_v3 → "No such file or directory" ; psql -p 54371 → connection refused ; pgrep -af san3_05_plan_v3 → 0 ; pgrep -a -x postgres → (vazio)
+pgrep -fc '^node --import tsx src/server.ts' → 0 ; pgrep -af /home/user/wt-plan-v3 (sem este shell) → 0 ; git worktree remove --force /home/user/wt-plan-v3 → removido ; git worktree list → 1 (so a arvore principal) ; git worktree prune
+scratch: 95M → 776K (copias de src/prisma, clone CRLF, pg_basebackup e a senha do modo 1 apagados; ficam os roteiros e saidas: gerador-v3.mjs, v3/*.sh, v3/*.sql, v3/cenarios*.out, gen-v3-*.txt, fix/, novas/, diff-http.mts, boot.sh, le-export.sh, apxB.out) — efemero, nao conta como entregue
+git status --short | wc -l → 0 (nada fora dos dois arquivos entregues foi tocado em src/, tests/, scripts/, prisma/, CLAUDE.md, AGENTS.md, Kpis/, controle/) ; node_modules do checkout mantido (regeneravel, gitignored)
+```
+
+### O que ficou de fora, e por que
+- O **job `docker`/compose** (H1/H4): sem Docker na nuvem — hipotese com comando, como na v2.
+- O **papel real** do Fly (H2/H3/H5): segredo do dono — hipotese com comando.
+- O T11b (job diario) e T11c (cobranca) **nao** foram executados por mim na superficie HTTP (so o T11a, 50 × vazio); a base deles e o Apendice B (P2, P3, P4, P6 = 0/42501) re-executado por mim — ficam como vermelho-controle a colar na ata pelo dev/junta.
+- O `deploy-manifest-parity` (28/28) e os numeros de `production-runtime-gates` (63) nao foram re-executados por mim: a r2 os executou no head cuja arvore `tests` e identica (declarado com proveniencia no §0.3/§8 do plano).
