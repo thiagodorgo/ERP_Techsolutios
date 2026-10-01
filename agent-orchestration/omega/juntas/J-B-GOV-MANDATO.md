@@ -207,3 +207,116 @@ contêiner de jurado desta noite existe.
 - **Quem NÃO pode julgar o ciclo 3:** C1′, C2′ e C3″ — todas votaram (precedente `J-B-O6R-02-ciclo4`).
 - **Teto:** `D-NOITE-SEM-TETO` suspende o `D-TETO-DOIS-CICLOS` até **2026-09-26T10:00Z**. Este ciclo nasceu sob
   ela. **O teto não entrou em nenhum voto.**
+
+---
+
+# Ciclo 3 — junta 3 (PR #393)
+
+- **Objeto julgado:** `28b4defdc067387f384e06614e033e0976e9912b` — resolvido **independentemente** pelas três
+  cadeiras (`git ls-remote` × `gh pr view 393 --json headRefOid`); não andou do início ao fim do voto, nem
+  durante a queda e a retomada da C2‴. Base `origin/main` em `3b1fe0f9`, integrada **por merge** em `7d02d8da`;
+  `merge-base` = `origin/main`, conferido por C3‴. **CI 14/14 no objeto.**
+- **Legalidade do ciclo 3:** `D-SEM-TETO-AUDITORIA-NO-3` em `origin/main` (`b3f0af5f`), conferida por C1‴ e C2‴.
+- **Inspetor de terreno:** `LIBERADO COM RESSALVA` (0 bloqueios, 5 ressalvas; Fable 5.1, corpo `de80b2a9…`).
+- **Quórum:** maioria de 3, sem veto, sem suplente (§C7.1-ter(b)).
+
+## VEREDITO: **REPROVADO — 2 × 1**
+
+| cadeira | identidade | md5 do corpo | modelo | voto | achados |
+|---|---|---|---|---|---|
+| C1‴ — invariância de forma | `jurado-mandato-c1c-invariancia-de-forma` | `35765f76…` | Opus 5.5 | **REPROVADO** | 4 bloqueia · 3 ajuste · 3 nota |
+| C2‴ — cobertura por mutação | `jurado-mandato-c2c-cobertura-por-mutacao` | `71415699…` | Opus 5.5 | **REPROVADO** | 2 bloqueia · 3 ajuste · 1 nota |
+| C3‴ — fronteira, número e registro | `jurado-mandato-c3c-fronteira-numero-registro` | `f12be570…` | Opus 5.5 | APROVADO | 0 bloqueia · 3 ajuste · 7 nota |
+
+**Todos os achados `bloqueia` e `ajuste` são `dentro-do-bloco`**; só duas notas da C3‴ são `pre-existente`.
+
+### Terreno da votação — declarado, porque muda o que a ata pode afirmar
+- As três cadeiras votaram em **2ª instância**: a 1ª de cada uma **morreu por volta das 06:50 de 30/09 sem
+  veredito e sem notificação do harness**. O orquestrador só percebeu às 13:11, pela lista de agentes do
+  harness, e relatou "votando" por 6 h. Os parciais da 1ª instância foram preservados fora do repositório e
+  **nenhuma 2ª instância os leu**.
+- A **C2‴ (2ª instância) foi interrompida pelo limite semanal da conta (HTTP 429)** no fim do mandato e
+  **retomada na mesma instância** às 21:34, depois de medido que nenhum job dela sobrevivera (0 processos);
+  ela re-verificou no disco o que estava incompleto e reexecutou. A retomada preserva o contexto só das
+  medições dela mesma. Está registrada na evidência dela com a hora.
+
+## O que ESTÁ fechado — medido pelas cadeiras
+- **`[B8b]` fechado por propriedade** (C1‴): item de lista com o token reservado sob `LIDO` → `ec=1` com
+  exatamente 1 REJ no head; vermelho-controle no pai do Dev-S-2 (2/1/2).
+- **A E4 do `refs` é reproduzível**: C2‴ rodou o `refs` inteiro e obteve `N=46 K=46 NC=0`, **igual à
+  E4-refs-3 linha a linha, os 99 `#fail` iguais**. A amostra do pré-voo (34 pontos: os 16 de B + 18 dos 87
+  VERMELHOS de A, semente `20260930393`, tripla B, sem `MSYS_NO_PATHCONV`) deu **0 divergência** com a matriz
+  publicada; o `[M-2]` histórico achou os 5 pontos do §0.3.
+- **KPI íntegro** (C3‴): 2 execuções em cluster descartável próprio (portas 55493/56493 provadas):
+  `# tests 3405 · # pass 3403 · # fail 0 · # skipped 2 · ec=0`, igual ao CI; refs 39 e pré-voo 312 por
+  arquivo; `blocks_completed` 169 = MB 168 + 1.
+- **Escopo**: 0 de 41 arquivos fora de autorização (lista proibida gerada, 22 entradas, vermelhos-controle
+  acusando). **Merge `7d02d8da`** conferido contra os dois pais: 9 arquivos resolvidos, nenhuma entrada
+  perdida, índice = gerador, `Kpis/*` = 2º pai.
+- **A legalidade, a ancestralidade, os blobs congelados e as 12 ERRATAs** nos corpos, conferidos.
+
+## Os bloqueantes
+
+**C2c-01 — a ferramenta de mutação publica como "coberto" mutante que nem compila.** `bash -n` (l.226)
+valida o shell, não o programa awk embutido: M7 (`continue`/`break` → `:`) e M10 com parênteses aninhados
+geram awk inválido, que derruba o guard por erro e sai VERMELHO. **33 dos 100 VERMELHOS do pré-voo e 2 dos
+46 do `refs`** são dessa classe. Refeitos com mutante **viável**, **4 pontos publicados como cobertos não
+são** (l.298, 305, 364, 405): guard 312/312 verde com cada um mutado, confirmado em 2 arneses distintos.
+
+**C2c-02 — o ponto 336 declarado equivalente é discriminável.** Documento de 1.000.003 linhas: pristino
+`OK`, mutante `REJ`. Logo o `[M-1]` derivado por conjuntos é **1**, não 0 (≥ 5 somando C2c-01).
+
+**C1c-01 — a isenção da colagem absolve o que não verificou.** Linhas `# gerado em:` são ignoradas na
+igualdade (l.235) mas isentas das checagens 4/5/6/7 (l.260-261) e **lidas para a proveniência**; a linha de
+abertura da cerca idem. Linha injetada ou editada dentro da colagem passa, e um SHA fabricado nela entra na
+proveniência e absolve prosa fora do bloco. Nasceu no ciclo 3 (`33356358`); o script de `34969a81`
+rejeitava as quatro formas.
+
+**C1c-02 — a checagem 4 não é invariante a JUNTAR o SHA a um caminho por `:`.** `<sha>:CLAUDE.md` tira o
+SHA da checagem 4 (o token deixa de ser hex); com `/` a checagem 6 aceita, porque `git rev-parse --verify`
+(l.522) aceita **qualquer** 40-hex — um SHA fabricado passa.
+
+**C1c-03 — a cerca, declarada SAÍDA, é usada como COMANDO.** `satisfeita()` (l.322) busca o token em texto
+que inclui as linhas cercadas (l.394): uma afirmação FORA da cerca é satisfeita por um `medido por:` DENTRO
+dela, e "saída colada sem comando" silencia.
+
+**C1c-04 — a linha de cabeçalho `## …` escapa das checagens 2, 3 e 5** sem entrada no inventário (o oráculo
+nunca a emite como FORA, l.170; a REC a pula, l.389).
+
+Em cada bloqueante há um **par `ec=0` × `ec=1` que difere só na variável atacada**, reproduzido na árvore
+real, e **o guard inteiro (312/312) passa verde com os seis presentes**. Controles da §1.1 (i)–(iv) aplicados
+e declarados em cada um.
+
+## Ajustes e notas (viram pendência, não reprovam)
+- **C2‴:** 8 mutantes próprios ([M-EXT]) que mudam comportamento deixam o guard verde fora do alcance da
+  ferramenta (10 de 19 sobrevivem no total) · controle que falha não muda o `ec` da ferramenta (só o texto
+  acusa) · o insumo fixo do diferencial (c) não percorre o que o arnês altera.
+- **C1‴:** família da checagem 5 não reconhece `/usr/bin/grep` nem `grep.exe` · pipe escapado `\|` em célula
+  é lido como fronteira · CR solitário apagado por `tr -d '\r'` junta duas linhas · `approved&#95;head`
+  escapa do token · `` ```a``` `` abre cerca que a CommonMark não abre.
+- **C3‴:** a EMENDA — CICLO 3 do comando não traz a bateria §8, "códigos de saída inalterados" nem a
+  autorização de `decisoes.md` (E5) · falta a linha §C5 de limpeza do ciclo 3 · o ponteiro `§7.3` segue vivo
+  no comando (l.255) e em 3 pendências. Notas: 2 `pre-existente` (mecanismo 1 do ciclo 1; registro do 2º pai).
+
+## A classe se repetiu? — o relato que o §C7.4 manda o orquestrador fazer
+**Sim, com informação nova.** Pela terceira vez a classe é *"guarda que reconhece forma em vez de enunciar
+propriedade"* (C1c-01…04 no pré-voo; C2c-01 na ferramenta — ela mede se o guard ficou vermelho, não se o
+mutante é um programa). A informação nova deste ciclo: a classe agora está **na ferramenta de medição**, não
+só no artefato medido, e o número publicado ([M-1] = 0, 100% de K) era **reproduzível e errado ao mesmo
+tempo** — a reprodução da C2‴ bateu linha a linha, e é por isso que o processo precisou de um mutante viável,
+não de mais reprodução. Este é o sinal de não-convergência que o §C7.4 manda relatar, e é o gatilho da
+auditoria da máquina.
+
+## §C7.4-bis — quem ocupou cada papel no ciclo 3
+| papel | quem |
+|---|---|
+| planejador | `planejador-mestre` (Fable 5.1): v3, §12, §13, §14 a §14.20 |
+| achadores (pareceres e votos) | o inspetor; C1‴, C2‴, C3‴ |
+| devs | Dev-T, Dev-S (ciclo 3), Dev-T-3, Dev-S-2 (K1, K2a, K1b, K2b, K2c), Dev-T-4 (T4, T6), Dev-T-5 (T5), Dev-T-6 (T7) |
+| orquestrador | registro, integração (`M`), versionamento de corpos e erratas, medições da E4; **não escreveu código** |
+
+**O que acontece agora (texto da `main`, §C7.4 item 4):** reprovação do ciclo 3 com `bloqueia` → **antes de
+abrir o ciclo 4**, auditoria da orquestração e da junta, por identidade que não votou, não planejou e não
+desenvolveu, respondendo (a)–(e) **por execução**, com parecer em
+`omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md`. Sem ele, o inspetor não libera o ciclo 4.
+Evidência das cadeiras e do inspetor em `agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo3/`.
