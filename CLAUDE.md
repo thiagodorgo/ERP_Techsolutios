@@ -521,13 +521,16 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    `GPT-5.5` **não são fallback de gate em hipótese alguma** — para eles vale a parada.
 
 
-7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`) — P1–P6, inline.**
-   Toda junta, inspeção de terreno e porteiro seguem as seis normas abaixo. Origem medida: **14 quedas de
+7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`; P7 por decisão do dono,
+   2026-10-01 — `D-PAUSA-GRAVA-E-PARA`) — P1–P7, inline.**
+   Toda junta, inspeção de terreno e porteiro seguem as sete normas abaixo; a **P7** alcança, além deles, **todo
+   agente vivo** — dev, planejador, fábrica — e o orquestrador. Origem medida de P1–P6: **14 quedas de
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
    `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
    `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md` (a fonte; em divergência, ela vale).
-   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** — quóruns, vetos, identidade nova e
-   separação de papéis (§C7.4-bis) ficam intactos.
+   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** (P1–P6) **e à pausa ordenada pelo
+   dono** (P7, que não é morte) — quóruns, vetos, identidade nova e separação de papéis (§C7.4-bis) ficam
+   intactos.
 
    - **P1 — Evidência incremental.** Após **CADA item medido**, apensar a
      `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` três linhas: **comando
@@ -561,15 +564,20 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      redo`. *Caso:* a hipótese "pinar modelo reduz queda" (1/5 × ~13/23 no postmortem) tem n pequeno
      demais — só a série decide; sem ela, cada sessão redescobre o problema.
    - **P7 — Pausa ordenada: grava o estado e para sozinho (decisão do dono, 2026-10-01 —
-     `D-PAUSA-GRAVA-E-PARA`).** Ordem de pausa do dono ("pause tudo", "pare", "não use mais tokens") **não é
-     morte**: é um corte limpo. O orquestrador a **repassa a cada agente vivo** (`SendMessage`, 1 linha: `PAUSA`);
-     cada agente **termina o comando em curso, grava uma seção `## PAUSA <hora UTC>`** no seu arquivo de evidência
-     — head medido, o que está feito (comando e saída), o que falta, o **próximo comando** exato, arquivos
-     meio-escritos nomeados — e **para sozinho**, com a mensagem final de 1 linha apontando o arquivo (P2). Não
-     inicia item novo. O orquestrador dá o tempo de gravar (ordem de minutos), só então para quem não respondeu,
-     para os vigias, registra o roteiro de retomada no custo/trilha e encerra o turno em 1 linha. **Jobs locais
-     sem modelo** (rodada de mutação, CI) **não são alvo** de uma pausa de tokens — o orquestrador declara quais
-     ficam vivos. **Retomada:** a mesma identidade nasce do mesmo mandato e usa a seção `## PAUSA` como roteiro
+     `D-PAUSA-GRAVA-E-PARA`).** Ordem de pausa do dono ("pause tudo", "não use mais tokens") **não é
+     morte**: é um corte limpo. Também **não é parada** (§C7.5, §C7.6-bis), que nasce de regra e devolve a
+     decisão ao dono: a pausa nasce da ordem do dono e se retoma. O orquestrador a **repassa a cada agente vivo**
+     (`SendMessage`, 1 linha: `PAUSA`); cada agente **termina o comando em curso, grava uma seção
+     `## PAUSA <hora UTC>`** no seu arquivo de evidência (o `<cadeira>-evidencia.md` do P1; quem não tem um —
+     dev, planejador, fábrica — usa o arquivo de saída que o seu mandato nomeia, e o orquestrador nomeia um no
+     disparo se o mandato não o fizer) — head medido, o que está feito (comando e saída), o que falta, o
+     **próximo comando** exato, arquivos meio-escritos nomeados — e **para sozinho**, com a mensagem final de
+     1 linha apontando o arquivo (P2). Não inicia item novo. O orquestrador dá o tempo de gravar (ordem de
+     minutos), só então para quem não respondeu, para os vigias, registra o roteiro de retomada numa seção
+     `## PAUSA <hora UTC>` de `agent-orchestration/docs/status-geral.md` (lido antes de cada bloco, §A4) e
+     encerra o turno em 1 linha. **Jobs locais sem modelo** (rodada de mutação, CI, cluster descartável) **não
+     são alvo** de uma pausa de tokens — o orquestrador declara quais ficam vivos. **Retomada:** a mesma
+     identidade nasce do mesmo mandato e usa a seção `## PAUSA` como roteiro
      (P3: re-executa o que está registrado, mede a cauda; arquivo meio-escrito se **mede** antes de se confiar).
      A ordem **autoriza o gasto mínimo de gravar** — custa um comando e economiza o redo. *Caso:* em 01/10 o
      dono mandou pausar com o limite perto do teto e o orquestrador **matou** o Dev-T4 no meio de uma conversão

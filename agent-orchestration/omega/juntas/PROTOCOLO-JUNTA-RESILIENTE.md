@@ -1,10 +1,12 @@
-# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29)
+# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29; P7: `D-PAUSA-GRAVA-E-PARA`, 2026-10-01)
 
-> Norma permanente para TODA junta, inspeção de terreno e porteiro. Nasce do postmortem das **14 quedas de
-> agente em ~28 disparos (~50%)** da sessão de 28–29/08 — `omega/POSTMORTEM-QUEDAS-2026-08-29.md`.
+> Norma permanente para TODA junta, inspeção de terreno e porteiro (P1–P7); a **P7** alcança, além deles, todo
+> agente vivo — dev, planejador, fábrica — e o orquestrador. P1–P6 nascem do postmortem das **14 quedas de
+> agente em ~28 disparos (~50%)** da sessão de 28–29/08 — `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; a P7, da
+> ordem de pausa do dono de 2026-10-01.
 > O que este protocolo NÃO muda: quóruns, vetos, identidade nova por ciclo e separação de papéis
 > (§C7.4-bis). Ele muda **como o trabalho sobrevive à morte
-> de quem o fez**.
+> de quem o fez** (P1–P6) **e à pausa ordenada pelo dono** (P7, que não é morte).
 
 ## P1 — Evidência incremental: escrever no disco a cada item, nunca só no fim
 
@@ -79,17 +81,21 @@ palpite; a série do P6 confirma ou descarta.
 
 ## P7 — Pausa ordenada: o agente grava o estado e para sozinho (decisão do dono, 2026-10-01, `D-PAUSA-GRAVA-E-PARA`)
 
-Uma ordem de pausa do dono ("pause tudo", "pare", "não use mais tokens até o limite voltar") **não é morte de
-agente**: é um **corte limpo**, e o protocolo o trata como tal.
+Uma ordem de pausa do dono ("pause tudo", "não use mais tokens até o limite voltar") **não é morte de
+agente**: é um **corte limpo**, e o protocolo o trata como tal. Também **não é parada** (§C7.5 e §C7.6-bis do
+`CLAUDE.md`), que nasce de regra e devolve a decisão ao dono: a pausa nasce da ordem do dono e se retoma.
 
-**O agente:** termina o comando em curso (nunca começa item novo), grava no seu arquivo de evidência uma seção
+**O agente:** termina o comando em curso (nunca começa item novo), grava no seu arquivo de evidência — o
+`<cadeira>-evidencia.md` do P1; quem não tem um (dev, planejador, fábrica) usa o arquivo de saída que o seu
+mandato nomeia, e o orquestrador nomeia um no disparo se o mandato não o fizer — uma seção
 `## PAUSA <hora UTC>` com (1) o head medido, (2) o que está feito, com comando e saída, (3) o que falta,
 (4) o **próximo comando exato** que executaria, (5) os arquivos que ficaram **meio-escritos**, nomeados — e
 **para sozinho**, com a mensagem final de 1 linha apontando o arquivo (P2).
 
 **O orquestrador:** repassa a ordem a cada agente vivo (`SendMessage`, 1 linha: `PAUSA`); dá o tempo de gravar
 (ordem de minutos) e só então para quem não respondeu; para os vigias (um vigia que dispara re-invoca o
-orquestrador e gasta tokens); registra o **roteiro de retomada** no arquivo de custo/trilha; encerra o turno em
+orquestrador e gasta tokens); registra o **roteiro de retomada** numa seção `## PAUSA <hora UTC>` de
+`agent-orchestration/docs/status-geral.md` (lido antes de cada bloco, §A4 do `CLAUDE.md`); encerra o turno em
 1 linha. **Jobs locais sem modelo** — rodada de mutação, CI, cluster descartável — **não são alvo** de uma pausa
 de tokens; o orquestrador declara quais ficam vivos e por quê.
 

@@ -90,8 +90,9 @@ Declare no §0 de todo plano ou relatório: `uname -a`, `node -v`, `git --versio
   nada — confira a condição **antes** de armar.
 - **Pausa ordenada é corte limpo, não morte (P7, `D-PAUSA-GRAVA-E-PARA`, 01/10).** Ordem de pausa do dono: o
   orquestrador repassa `PAUSA` a cada agente vivo; o agente termina o comando em curso, grava `## PAUSA <hora UTC>`
-  na evidência (head · feito · falta · próximo comando · meio-escritos) e para sozinho em 1 linha. Só se mata quem
-  não respondeu; job sem modelo (E4, CI) não é alvo. Em 01/10 um `TaskStop` no meio de uma conversão LF→CRLF
+  na evidência (head · feito · falta · próximo comando · meio-escritos) — quem não tem uma, no arquivo de saída
+  que o mandato nomeia — e para sozinho em 1 linha. Só se mata quem não respondeu; job sem modelo (rodada de
+  mutação, CI, cluster descartável) não é alvo. Em 01/10 um `TaskStop` no meio de uma conversão LF→CRLF
   custou um parcial suspeito e ~30 min de redo — a pausa estava certa, o corte não. Um vigia parado também: vigia
   que dispara re-invoca o orquestrador e gasta tokens.
 
