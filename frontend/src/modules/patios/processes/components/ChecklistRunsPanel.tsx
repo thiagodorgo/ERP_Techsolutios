@@ -62,7 +62,8 @@ export function ChecklistRunsPanel({
             </Alert>
           ) : null}
           <p style={{ ...legendStyle, marginBottom: 10 }}>
-            Preenchido em campo pelo guincheiro (aplicativo). Esta é a visão de acompanhamento — somente leitura.
+            Preenchido em campo pelo guincheiro (aplicativo). Esta é a visão de acompanhamento — somente leitura.{" "}
+            Vistoria reaberta gera uma nova versão; a anterior fica preservada e marcada como substituída.
           </p>
           <div className="ui-table-wrap">
             <table className="ui-table">
@@ -75,23 +76,54 @@ export function ChecklistRunsPanel({
                 </tr>
               </thead>
               <tbody>
-                {runs.map((run) => (
-                  <tr key={run.id}>
-                    <td>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {/* Ω-VID PR-08 (junta, MÉDIA) — identidade real da linha pelo NOME do formulário; fallback ao
-                            rótulo genérico só quando o backend não resolve o nome. */}
-                        <span style={primaryStyle}>{run.templateName ?? "Checklist do guincho"}</span>
-                        <small style={legendStyle}>{`Formulário v${run.templateVersion}`}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <Chip tone={getChecklistRunStatusTone(run.status)}>{getChecklistRunStatusLabel(run.status)}</Chip>
-                    </td>
-                    <td style={numCell}>{formatDateTime(run.startedAt)}</td>
-                    <td style={numCell}>{run.completedAt ? formatDateTime(run.completedAt) : "—"}</td>
-                  </tr>
-                ))}
+                {runs.map((run) => {
+                  const isSuperseded = run.supersededByRunId !== null;
+                  const isReopenedCurrent = !isSuperseded && run.reopenedFromRunId !== null;
+                  const currentInList = isSuperseded ? (runs.find((r) => r.id === run.currentRunId) ?? null) : null;
+                  const previousInList = isReopenedCurrent ? (runs.find((r) => r.id === run.reopenedFromRunId) ?? null) : null;
+                  return (
+                    <tr key={run.id} id={`vistoria-${run.id}`} tabIndex={-1}>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {/* Ω-VID PR-08 (junta, MÉDIA) — identidade real da linha pelo NOME do formulário; fallback ao
+                              rótulo genérico só quando o backend não resolve o nome. */}
+                          <span style={primaryStyle}>{run.templateName ?? "Checklist do guincho"}</span>
+                          <small style={legendStyle}>{`Formulário v${run.templateVersion}`}</small>
+                          {isSuperseded && currentInList && (
+                            <small style={legendStyle}>
+                              {`Versão vigente: ${currentInList.templateName ?? "Checklist do guincho"} · Formulário v${currentInList.templateVersion} · iniciada em ${formatDateTime(currentInList.startedAt)}`}{" "}
+                              <a href={`#vistoria-${run.currentRunId}`}>Ver versão vigente</a>
+                            </small>
+                          )}
+                          {isSuperseded && !currentInList && (
+                            <small style={legendStyle}>A versão vigente desta vistoria não está vinculada a este dossiê.</small>
+                          )}
+                          {isReopenedCurrent && (
+                            <small style={legendStyle}>
+                              Versão atual — substitui uma vistoria anterior.{" "}
+                              {previousInList && (
+                                <a href={`#vistoria-${run.reopenedFromRunId}`}>Ver versão anterior</a>
+                              )}
+                            </small>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {isSuperseded ? (
+                          <>
+                            <Chip tone="default">Versão substituída</Chip>
+                            <br />
+                            <small style={legendStyle}>{`Situação na época: ${getChecklistRunStatusLabel(run.status)}`}</small>
+                          </>
+                        ) : (
+                          <Chip tone={getChecklistRunStatusTone(run.status)}>{getChecklistRunStatusLabel(run.status)}</Chip>
+                        )}
+                      </td>
+                      <td style={numCell}>{formatDateTime(run.startedAt)}</td>
+                      <td style={numCell}>{run.completedAt ? formatDateTime(run.completedAt) : "—"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

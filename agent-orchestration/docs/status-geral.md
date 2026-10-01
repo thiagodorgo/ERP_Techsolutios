@@ -4780,3 +4780,16 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
   (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+## Atualização 2026-10-01 — B-SAN3-11: em execução (branch fix/dossie-versao-da-vistoria)
+
+**Bloco em branch**, não mergeado. Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
+
+- **E1–E3**: tipo +3 campos, adapter +3 campos, painel três estados ✓
+- **E4**: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) ✓
+- **E5**: 16 testes novos `patios-dossie-versao.smoke.test.tsx` ✓
+- **E6**: KPIs atualizados (169 blocos, 1218/1218 smoke) ✓
+- **Bateria**: `check` ✓ · `test:smoke` 1218/1218 ✓ · `build` ✓ · guard exit 0 ✓ · `diff --check` ✓
+- **Novas pendências**: P-SAN3-11-VIGENTE-NAO-VINCULADA, P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (ambas não-bloqueantes)
+
+Próximo: push do branch → PR → junta.

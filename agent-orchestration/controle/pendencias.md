@@ -2255,8 +2255,13 @@ antes do PR-03.
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **status:** **RESOLVIDA em B-SAN3-11 (2026-10-01)** · branch `fix/dossie-versao-da-vistoria`
+  - E1: `processes.types.ts` +3 campos obrigatórios (`reopenedFromRunId`, `supersededByRunId`, `currentRunId`)
+  - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos (null quando ausente)
+  - E3: `ChecklistRunsPanel.tsx` três estados: substituída ("Versão substituída" chip default, link para vigente), vigente de reabertura ("Versão atual", link para anterior), única (sem marcação)
+  - E4: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) — exit 1 se campo descartado ou ponto sem consulta em JSX
+  - E5: 16 testes novos `patios-dossie-versao.smoke.test.tsx` (T1–T14 com T5b e T7b)
+  - Bateria: `check` ✓, `test:smoke` 1218/1218 ✓, `build` ✓, guard exit 0 ✓, `git diff --check` ✓
 - **dono:** `B-SAN3-11` (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
@@ -9865,3 +9870,29 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** o orquestrador — bloco de ferramenta próprio (identificador proposto `B-CHORE-CLEANUP-FRONTEIRA`), com teste que prove a fronteira.
 - **bloqueia:** não.
 - **teste de encerramento:** com um `*.tsbuildinfo` semeado em `.claude/worktrees/<x>/`, o script não o apaga; vermelho-controle: a versão atual o apaga.
+
+## P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11)
+
+Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (processo aberto antes da
+reabertura), o painel exibe "A versão vigente desta vistoria não está vinculada a este dossiê." sem link nem
+identificação. O usuário sabe que existe uma versão mais recente, mas não sabe qual é nem onde encontrar —
+informação incompleta, potencialmente confusa.
+
+Causa: o backend emite `currentRunId` (id da vigente), mas a vigente só aparece na lista se foi ligada ao
+mesmo processo de custódia. Se a reabertura gerou uma nova order que não aparece no `GET /impound-processes/:id/checklist-runs`,
+o frontend não tem como exibir mais dados.
+
+**status:** ABERTA · **severidade:** baixa (informação parcial, sem dado errado) · **dono:** B-SAN3-12 ou
+bloco dedicado — depende de decisão de backend (expor a run vigente mesmo de OS diferente, ou aceitar a
+limitação).
+- **bloqueia:** não — a UI já é honesta ("não está vinculada").
+
+## P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11)
+
+O painel exibe as runs na ordem recebida (sem reordenar). O adapter ordena por `startedAt` DESC, mas a
+especificação do endpoint não garante essa ordem. Se o backend entregar numa ordem diferente, a lógica de
+navegação (âncoras para versão vigente/anterior) continua correta, mas a apresentação pode confundir.
+
+**status:** ABERTA · **severidade:** baixa · **dono:** a definir (pode ser documentação de contrato ou
+`order_by=started_at:desc` no endpoint).
+- **bloqueia:** não.

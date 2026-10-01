@@ -543,6 +543,9 @@ function adaptChecklistRun(input: unknown): ChecklistRunSummaryItem | null {
     relatedEntityId: readString(record, ["relatedEntityId", "related_entity_id"]) ?? null,
     startedAt,
     completedAt: readString(record, ["completedAt", "completed_at"]) ?? null,
+    reopenedFromRunId: readString(record, ["reopenedFromRunId", "reopened_from_run_id"]) ?? null,
+    supersededByRunId: readString(record, ["supersededByRunId", "superseded_by_run_id"]) ?? null,
+    currentRunId: readString(record, ["currentRunId", "current_run_id"]) ?? null,
   };
 }
 

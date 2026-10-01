@@ -34,6 +34,9 @@ const RUNS: ChecklistRunSummaryItem[] = [
     relatedEntityId: RELATED_ID,
     startedAt: "2026-07-20T09:00:00.000Z",
     completedAt: "2026-07-20T09:40:00.000Z",
+    reopenedFromRunId: null,
+    supersededByRunId: null,
+    currentRunId: null,
   },
   {
     id: "run-novo",
@@ -45,6 +48,9 @@ const RUNS: ChecklistRunSummaryItem[] = [
     relatedEntityId: RELATED_ID,
     startedAt: "2026-07-25T14:00:00.000Z",
     completedAt: null,
+    reopenedFromRunId: null,
+    supersededByRunId: null,
+    currentRunId: null,
   },
 ];
 
@@ -121,7 +127,7 @@ test("painel lista as runs pelo NOME do formulário (identidade real) + situaç�
 
 test("painel — sem nome de template (backend não resolveu) cai no rótulo genérico honesto", () => {
   const html = renderPanel({
-    runs: [{ id: "r", templateId: TEMPLATE_ID, templateName: null, templateVersion: 1, status: "in_progress", relatedEntityType: null, relatedEntityId: null, startedAt: "2026-07-20T09:00:00.000Z", completedAt: null }],
+    runs: [{ id: "r", templateId: TEMPLATE_ID, templateName: null, templateVersion: 1, status: "in_progress", relatedEntityType: null, relatedEntityId: null, startedAt: "2026-07-20T09:00:00.000Z", completedAt: null, reopenedFromRunId: null, supersededByRunId: null, currentRunId: null }],
   });
   assert.match(html, /Checklist do guincho/);
   assert.match(html, /Em preenchimento/);

@@ -2978,3 +2978,18 @@ próprio texto, §C7.4-bis) fez três coisas:
 `kpis-history.json`: `pr 392` · `merge_commit fc3363e38aabd77f54e6b53034128182f8000571` (de
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
+
+## B-SAN3-11 — 2026-10-01
+
+**Bloco**: B-SAN3-11 · **PR**: (null na autoria — backfill pós-merge) · **Data**: 2026-10-01
+
+| Métrica | Anterior | Este PR | Δ |
+|---|---|---|---|
+| `blocks_completed` | 168 | **169** | +1 |
+| `frontend_smoke_tests` | 1202/1202 | **1218/1218** | +16 |
+| `flutter_tests` | 864/864 | 864/864 (carregado §C3.3) | 0 |
+| `backend_tests` | 3052/3054 | 3052/3054 (carregado §C3.3) | 0 |
+
+**Descrição**: Corrige o dossiê de custódia para rotular vistorias substituídas (`supersededByRunId`/`reopenedFromRunId`/`currentRunId`). E1: tipo +3 campos, E2: adapter +3 campos, E3: painel três estados, E4: guard CE-G1, E5: 16 testes novos (T1-T14). Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
+
+`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5).

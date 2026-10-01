@@ -4706,3 +4706,20 @@ bloco mergear.
   (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+---
+
+## B-SAN3-11 — 2026-10-01 — branch fix/dossie-versao-da-vistoria
+
+- **Objetivo:** fechar `P-CHK-DOSSIE-VERSAO-NA-UI` — o frontend descartava `supersededByRunId`/`reopenedFromRunId`/`currentRunId` e exibia substituídas como "Concluído" (verde).
+- **Entregas:**
+  - E1: `processes.types.ts` +3 campos obrigatórios
+  - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos
+  - E3: `ChecklistRunsPanel.tsx` três estados (substituída/atual/única)
+  - E4: `scripts/san3-11-dossie-vistoria-censo.mjs` guard AST CE-G1
+  - E5: `frontend/tests/patios-dossie-versao.smoke.test.tsx` 16 testes (T1–T14)
+  - E6: KPIs, pendências, status, log
+- **Bateria:** `check` ✓ · `test:smoke` 1218/1218 ✓ · `build` ✓ · guard exit 0 ✓ · `diff --check` ✓
+- **Pendências fechadas:** `P-CHK-DOSSIE-VERSAO-NA-UI`
+- **Pendências abertas (não-bloqueantes):** `P-SAN3-11-VIGENTE-NAO-VINCULADA`, `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA`
+- **KPI:** `blocks_completed` 168 → 169; `frontend_smoke_tests` 1202 → 1218 (execução real)
