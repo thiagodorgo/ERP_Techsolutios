@@ -353,6 +353,47 @@ os cobrem, e **você mede**. **Vermelho:** inválido histórico publicado como V
 comportamento** com o guard **VERDE** (é um NÃO-COBERTO escondido atrás de um inválido — `bloqueia`); inválido novo
 que a ferramenta não marca (ex.: `syntax error` no stderr de um VERMELHO da sua amostra).
 
+**Emenda da errata 15.15 (plano §15.15(c4) e (d)) — 298/305/364/405: as quatro formas viáveis e o esperado.** A frase
+do §15.9 transcrita acima (*"… cobertos pelos casos de C2c-03/A15 e pela isenção exata; a cadeira mede"*) lê-se agora:
+298/305/364/405 **não** são vistos por nenhum caso verde do head (o planejador mediu, sobre o `T4c-2`, 4 formas
+viáveis de 1 linha cada com `A-MAIS = ∅` — os mesmos 24 vermelhos e os mesmos 324 verdes do pristino; **[A
+RE-VERIFICAR]**); e "coberto pela isenção exata" **não existe**: a isenção I1 (l.260-261) não passa por `coletaGrep`
+(l.298), por `c == 0` (l.305), por `HEXLONGO` (l.364) nem pelo cabeçalho de tabela (l.405). A cobertura no artefato
+final é decidida por **execução**: você roda as **4 formas viáveis** abaixo — os `diff` da errata, reaplicados sobre o
+`preflight@S4a`, **linhas re-localizadas por conteúdo, nunca por número** (os números são os do `faa408c8`) — e exige
+**≥ 1 caso vermelho nomeado por forma**; forma que sobreviver com comportamento diferente é **NÃO-COBERTO** e entra no
+`[M-1]` por conjuntos (`bloqueia`, plano l.720). As formas, verbatim da errata (original → mutante; as colunas de
+medição do planejador ficam na errata):
+
+```
+V298  l.298  if (isento(num)) return                                              →  if (0) return
+V305  l.305  if (c == 0) continue                                                 →  if (c == 0) ;
+V364  l.364  if (length(us) > 40) { print "HEXLONGO", FNR, length(us); continue } →  … { print "HEXLONGO", FNR, length(us) }
+V405  l.405  abre(i, l, 0); coletaGrep(i, l); fecha(); continue                  →  abre(i, l, 0); coletaGrep(i, l); fecha()
+```
+
+Cada forma segue a ordem obrigatória do item 3 (mutante com `diff` publicado → é programa? → o comportamento muda? →
+só então a cor do guard, do TAP em arquivo). O que o plano espera do guard — hipótese **[A RE-VERIFICAR]**, derruba com
+o TAP (emenda da errata 15.15(d)): o commit **`T4c-3`** do Dev-T4 (só adições em `tests/mandato-preflight.test.ts`)
+acrescenta **4 casos `[M-EXT]`**, verdes no head e no S4a, cada um vermelho com a sua forma (vermelho-controle por
+mutação, não histórico; a lista dos 24 vermelhos históricos não muda): **`[V298]`** *linhas de colagem VERIFICADA são
+isentas da checagem 5* — colagem gerada do shim com uma linha `grep -c x` sem `-i` no corpo → `COLAGEM … confere`, 0
+REJ (⇄ `if (0) return` → REJ5 nessa linha); **`[V305]`** *`AVISO caixa-exata` só quando isenta ≥ 1 invocação* —
+unidade `true # caixa-exata: nada a isentar` sem `grep` → stdout sem `AVISO      caixa-exata` (⇄ `if (c == 0) ;` →
+`isenta 0 invocacao(oes)`); **`[V364]`** *corrida hexadecimal > 40 produz EXATAMENTE 1 REJ, a de corrida, e nunca
+entra na proveniência* — 41 hex com PR e shim → `rejeicoes 1`, `match(/corrida hexadecimal de 41/)`,
+`doesNotMatch(/nao esta na saida/)` (⇄ sem o `continue` a corrida vira SHA e a chk 4 cobra); **`[V405]`** *o cabeçalho
+de tabela é UMA unidade* — cabeçalho com `grep -c` sem `-i` na célula → exatamente **1** REJ5 (⇄ sem o `continue`
+final o cabeçalho cai também na l.407 e o `grep` é cobrado duas vezes). O caso vermelho nomeado por forma pode ser
+esses ou outros: o que conta é o que **você** mede.
+
+**E a lacuna geral, decidida na mesma letra (d) — versão viável não coberta** (emenda da errata 15.15). Versão viável
+de um `MUTANTE-INVALIDO` que **compila, muda comportamento e deixa o guard verde** é **NÃO-COBERTO** da matriz: a
+ferramenta não a enumera; o conferente a publica como `VIAVEL-NAO-COBERTA <ponto>` na conferência, com a fixture em
+que o comportamento difere → o Dev-T4 acrescenta o caso (só adições) antes do inspetor; o **`[M-1]` por conjuntos =
+`NAO-COBERTOS da ferramenta ∪ VIAVEL-NAO-COBERTA − equivalentes com fixture`**, e quem julga o `[M-1]` final, por
+reexecução, é você (item 5).
+
 ## Item 5 — [M-1] por CONJUNTOS e por FIXTURE PRÓPRIA nos equivalentes (§15.9 (3), fronteira 28)
 
 - **Por conjuntos:** os ids de `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-equivalentes.txt` são **exatamente** os
@@ -506,7 +547,7 @@ Parecer em **JSON**, na **mensagem final** (você não escreve no repositório; 
  "item_1_matriz_publicada": "triplas × blobs · ambiente · rodada completa sem lema · fail=0 nos dois guards · INVALIDOS/TIMEOUT/histograma/EQUIVALENTES-CONFERIDOS/causa por ponto presentes · recontagem N/K/… × resumo · custo publicado (não critério)",
  "item_2_refs_inteiro": "forma exata · N/K/NAO-COBERTOS/EXCLUIDOS/ANOMALIAS/INVALIDOS/TIMEOUT seus × publicados · divergências linha a linha · 240/251 MUTANTE-INVALIDO · l.116/119 VERMELHOS em win32 · [V18] no CI",
  "item_3_pre_voo_amostra": "controles · semente · lista de entrada · lista sorteada (≥ 20 % VERMELHOS) · 100 % VERDES/equivalentes/INVALIDOS/TIMEOUT · por ponto: programa? comportamento? cor · veredito e causa seus × publicados · TIMEOUT à mão sob timeout · histograma recomputado",
- "item_4_invalidos_e_viaveis": "lista recontada dos 35 · MUTANTE-INVALIDO no head, nenhum outro · versão viável de cada um: comportamento + cor · 298/305/364/405 medidos",
+ "item_4_invalidos_e_viaveis": "lista recontada dos 35 · MUTANTE-INVALIDO no head, nenhum outro · versão viável de cada um: comportamento + cor · 298/305/364/405 medidos (emenda da errata 15.15: as 4 formas V298/V305/V364/V405 sobre o S4a, linhas re-localizadas por conteúdo · programa? comportamento? caso vermelho nomeado por forma · sobrevivente com comportamento diferente = NÃO-COBERTO no [M-1] · VIAVEL-NAO-COBERTA da conferência)",
  "item_5_m1": "diff dos conjuntos (vazio) · vermelho-controle 999 (diff acusa; ferramenta ANOMALIA-EQUIV, ec=1; em 37549262 ec=0) · cada equivalente com a sua fixture: discriminou? · 336 fora do arquivo e VERMELHO com documento seu · os 8 não classificados",
  "item_6_conferente_executou": "arquivo no head, data < inspetor · identidade ≠ runner/dev/planejador/cadeira · semente/comandos/saída por ponto/veredito · 1 ponto de cada lado reexecutado com os comandos dela (bateu?) · vermelhos",
  "item_7_m_ext": "≥ 10 mutantes (quantos no pré-voo, quantos no refs) · critério de escolha · diff · comportamento mudou? · cor · sobreviventes",

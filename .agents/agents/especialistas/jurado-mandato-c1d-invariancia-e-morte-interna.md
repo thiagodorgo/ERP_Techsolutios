@@ -400,7 +400,12 @@ inventariada.
 não a cobre; medir que o escape é mais largo do que ela declara é achado.
 
 **3c. Título × asserção dos casos novos (A14).** Para os **casos novos** da E1 (§15.3: C1c-01 ×4, C1c-02 ×5,
-C1c-03 ×3, C1c-04 ×6, C2c-02/336 ×1, A15 ×8, C1c-05 ×1, C1c-06 ×1, C2c-03 ×8, F-25 ×1, F-6j ×1 = 40; e os 5 títulos
+C1c-03 ×3, C1c-04 ×6, C2c-02/336 ×1, A15 ×8, C1c-05 ×1, C1c-06 ×1, C2c-03 ×8, F-25 ×1, F-6j ×1 = **41** entradas de
+TAP (**45 com o `T4c-3`**) *(emenda da errata 15.15(c3)/(d): era "= 40", número herdado da §15.3, não critério. A soma
+item a item desta lista dá 39 identificadores; a §15.14 acrescentou o `[C1c-02f]` → 40 identificadores, e o `[F-25]`
+existe nos dois guards → 41 entradas, 36 no pré-voo e 5 no refs; o `T4c-3` acrescenta ao pré-voo os 4 `[M-EXT]`
+`[V298]`, `[V305]`, `[V364]`, `[V405]` → 45 entradas (44 identificadores). Hipótese, como todo número do plano: o N
+que vale é o do TAP, contado por você)*; e os 5 títulos
 reescritos de C1c-10 — [F-EXT/fronteira-3], [F-1d], [F-EXT/juntar-3], [F-6d], [F-1c-controle] — e o `roda()` com
 `timeout`/`signal`), confira por leitura e, onde a leitura levantar dúvida, **por execução**: o caso assere a
 **mensagem contratual e a contagem exata**? Ele pode passar (ou cair) por outra causa que não a do título? Para cada
