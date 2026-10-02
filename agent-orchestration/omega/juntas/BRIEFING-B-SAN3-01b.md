@@ -11,9 +11,13 @@
 - **O código do bloco é o de `b02745b7`** (o fechamento do dev de nuvem). Os commits depois dele são só registro da
   junta: mandatos, o parecer do inspetor, a queda (P6), o mandato e o corpo da cadeira nova, este briefing. A cadeira
   confere isso por `git diff --name-only b02745b7 <objeto>` (ressalva R1 do inspetor).
-- **A cerca dos mandatos C1, C3 e do inspetor diz `head=b02745b7`** e a dos mandatos novos diz o head em que foram
-  gerados. A norma da cerca vive no PR #393, ainda aberto, e não é norma da `main`: a cadeira resolve o objeto por
-  conta própria e não bloqueia por cerca diferente do objeto.
+- **A cerca de cada mandato diz o head em que ele foi gerado**, que fica atrás do objeto porque o registro da junta
+  continua entrando no ramo (o próprio mandato, os pareceres, as quedas). A norma da cerca vive no PR #393, ainda
+  aberto, e não é norma da `main`: a cadeira resolve o objeto por conta própria, confere que o delta entre a cerca e
+  o objeto é só registro, e não bloqueia por cerca diferente do objeto.
+- **O inspetor liberou com ressalva na segunda passada** (`votos/B-SAN3-01b/00-inspetor-terreno-passada2.md`). A
+  ressalva forte P2-R1 é do disparo da C2: o corpo dela não está no diretório de agentes da sessão, então ela roda
+  como agente geral com o corpo do objeto, e a 1ª linha da evidência dela traz o md5 EOL-neutro desse corpo.
 
 ## Quórum e cadeiras
 
