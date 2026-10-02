@@ -1,5 +1,43 @@
 # Status Geral
 
+## Atualização 2026-10-02 — B-SAN3-01b (tarefa de nuvem, dev): as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE no ramo, aguarda inspetor/junta/PR
+
+**Ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`, desenvolvido na NUVEM** (claude.ai/code, Linux, Node 22.22.0 + Node 20.20.0
+para paridade com a CI) pelo `dev-b-san3-01b` (identidade nova, §C7.4-bis), a partir do plano
+`docs/revisoes/SAN3/B-SAN3-01b-plano.md` e do mandato `omega/juntas/votos/B-SAN3-01b/00-mandatos/dev.md`. **Sem PR, sem merge**
+(a nuvem só empurra o ramo; o orquestrador local abre o PR, convoca o inspetor e a junta — unanimidade de 3, §C7.1-ter(b)).
+Relatório incremental do dev, com comando e saída de cada medição: `omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+
+**Entregue (E1–E7 do plano):** (i) `frontend/tests/work-orders-page-live.test.tsx` (novo, 13 casos) — a `WorkOrdersPage` REAL
+com o hook REAL rodando efeitos sobre um DOM mínimo escrito no próprio teste (zero dependência), `fetch` com os bytes do
+backend; `[W1]`/`[W2]` por comportamento (lista e detalhe), `[GB1]`–`[GB3]` com os 13 papéis de `ROLE_PERMISSIONS` executado;
+(ii) `[G1]` de `work-orders-honest-errors.test.tsx` por alcance em profundidade arbitrária + fecho de import + arquivo de
+fronteira, `[G1b]` novo (entidade fabricada inline), `[G2]` 29 formas, `[G3]` em disco; os `[W1]`/`[W2]` de regex saem;
+(iii) os três cabeçalhos dizem o que o guard prova e o que não prova (só comentário); (iv) "Nova OS" do cabeçalho só com
+`work_orders:create`; (v) `test:smoke` ganha o arquivo novo; (vi) KPI no próprio PR; (vii) este registro.
+
+**Medido no head da entrega:** bloco **79/79** (13 + 66), `tsc` ec=0, smoke **1214/1214** (Node 22 E Node 20), build ec=0;
+`[G1]` raízes=81 (64/16 + 1), fecho=48, 20 referências guardadas, 0 vazamentos; `[G1b]` 19 literais legítimos, 0 com identidade.
+**Vermelho-controle no head-base:** arquivo vivo 11/13 — `[GB1]`/`[GB2]` vermelhos, 7 papéis (`technician, viewer, finance,
+inventory, field_technician, auditor, support`). **Mutações do §7** (runner em `DEV-relatorio.md` §M, com restauro provado por hash):
+`N-PG-PAINEL`, `N-PG-KPI`, `N-W1TXT`, `N-W2TXT`, `N-BARREL2`, `N-LITERAL`, `N-FORA-RAIZ` — todas VERDES no head-base do `B-SAN3-01`
+— ficam VERMELHAS no bloco e no smoke; `N-S1ERR` fica verde (§13 N2, pendência nomeada).
+
+**Falsificações do plano, registradas (nenhum desvio silencioso):** a `origin/main` avançou de `3b1fe0f9` para `4ab9d232`
+(#397/#398) — a linha de base reproduz (67 · 1202), mas `blocks_completed` publicado é 169, logo o KPI conta **169 → 170**;
+a 1ª versão do arnês vivo contaminava os casos seguintes de um caso vermelho (corrigido com `withPage()`; só o arquivo de teste).
+
+**Pendências:** FECHADAS `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES`,
+`P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`, `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO`; ABERTAS com dono `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL`
+(`B-SAN3-10`), `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` (fila pós-gate), `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA`
+(`B-SAN3-06a`). **Travas de mesmo arquivo (§12 R6 do plano):** `SAN3-08`, `SAN3-25` e `SAN3-21` não abrem ramo antes do merge deste.
+
+**Próximo passo (orquestrador local):** `gh pr create` (preencher `release.pr` no KPI) → `inspetor-de-terreno-da-junta` (check-runs
+concluídos no head) → junta C1 `guardiao-fail-closed` · C2 `coordenador-de-acessos` (inelegibilidade a conferir: achou o C2-05)
+· C3 `cognicao-visual` → CI verde → squash → §C5 → porteiro.
+
+---
+
 ## Atualização 2026-09-05 — B-O6R-02 ciclo 5: APROVADO 3×0, e a bateria reexecutada depois da absorção
 
 **MERGEADO: PR #371, squash `99f1840`, em 2026-09-05T02:27:34Z.** O squash parou um commit
