@@ -2653,3 +2653,33 @@ test("[P612] refs MORTO fora do contrato (127 ausente; 126 binario) no --sha-onl
     assert.doesNotMatch(r.out, /nao esta na saida|referencias indisponiveis|PRE-VOO OK/, `${ec}: a morte do refs virou outro veredito\n${r.out}`);
   }
 });
+
+// =================================================================================================
+// CICLO 4 -- T4c-5 (errata §15.17(f)/(g), passo 2-quater; identidade `dev-tests-ciclo4-b-gov-mandato`). O
+// achado CONF-01 da conferencia dos dois lados: a versao VIAVEL do M7(salto) no ponto 263 do pre-voo do S4a
+// (`continue` -> `;` no ramo `## X` do oraculo) faz a linha `## <outro>` sair DUAS vezes na listagem da
+// checagem 2 e, com 5 ou mais linhas fora, empurra a 5a linha real para fora da janela -- e nenhum caso via,
+// porque os [C1c-04a-f] asseram PRESENCA (`some`), nunca CARDINALIDADE. Este caso enuncia a propriedade: cada
+// linha fora das secoes e nomeada NO MAXIMO uma vez, e a janela de 5 so carrega linhas distintas, em ordem.
+// NAO assere a presenca do `## X` (isso e do [C1c-04c]/[C1c-04f]: juntos, exatamente uma vez). Verde no head e
+// no pre-voo de antes do S4a ([M-EXT]); o vermelho-controle e POR MUTACAO (a forma viavel, no titulo).
+// So adicoes; a lista historica (os 26 da §15.16) nao muda.
+// =================================================================================================
+
+test("[V263] cada linha fora das secoes e nomeada NO MAXIMO uma vez, e a janela de 5 so carrega linhas distintas, em ordem — `## X` com prosa e `## MEDIDO — <texto>` — ⇄ V263: sem o `continue` do ramo `## X` do oraculo (l.263 do S4a: `continue` -> `;`)", () => {
+  // A propriedade numa linha so (o vermelho-controle da PROPRIA assercao, §15.17(f) ⇄ (2), troca ESTA linha):
+  // estritamente crescente pelo numero da linha E nenhum numero repetido.
+  const umaVezEmOrdem = (pares: Array<[number, string]>) => pares.every(([n], k) => k === 0 || n > (pares[k - 1]?.[0] ?? Number.POSITIVE_INFINITY)) && new Set(pares.map(([n]) => n)).size === pares.length;
+  // forma fF: cabecalho estranho na l.1 e 5 linhas de prosa fora ANTES de `## MEDIDO` (6 linhas fora: a janela enche).
+  const prosa = ["p1 prosa fora das secoes", "p2 prosa fora das secoes", "p3 prosa fora das secoes", "p4 prosa fora das secoes", "p5 prosa fora das secoes"];
+  const r = roda(bruto("v263-janela", ["## X", ...prosa, "", "## MEDIDO", "", "- a, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true"]));
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  const ns = foraListadas(r.out).map(([n]) => n);
+  assert.equal(ns.length, 5, `a janela da checagem 2 tem de vir cheia: 6 linhas fora, 5 nomeadas\n${r.out}`);
+  assert.ok(umaVezEmOrdem(foraListadas(r.out)), `linha nomeada mais de uma vez, ou fora de ordem: [${ns.join(",")}]\n${r.out}`);
+  // forma fB: o cabecalho-com-texto na l.1 -- o outro emissor do mesmo ramo; a MESMA assercao de unicidade.
+  const b = roda(bruto("v263-cabecalho-com-texto", ["## MEDIDO — afirmacao no cabecalho, suite 3103/3105", "", "- a, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true"]));
+  const nb = foraListadas(b.out).map(([n]) => n);
+  assert.ok(umaVezEmOrdem(foraListadas(b.out)), `linha nomeada mais de uma vez, ou fora de ordem: [${nb.join(",")}]\n${b.out}`);
+});
