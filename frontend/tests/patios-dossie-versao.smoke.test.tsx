@@ -264,9 +264,19 @@ function runCenso(root: string, env?: Record<string, string>): { exitCode: numbe
   const result = spawnSync(process.execPath, [CENSO_SCRIPT, root], {
     env: { ...process.env, TS_ROOT: FRONTEND_ROOT, ...env },
     encoding: "utf8",
-    timeout: 30000,
+    // SEM teto (ERRATA 1, §15.2 P-A): o relógio não é veredito. O tempo é do runner/CI, de fora, e uma morte lá aparece como morte.
   });
-  return { exitCode: result.status ?? 1, stdout: result.stdout ?? "" };
+  if (result.error) throw new Error(`gerador não executou: ${result.error.message}`);
+  if (result.status === null) throw new Error(`gerador morto por sinal ${result.signal} — não é veredito (ERRATA 1)`);
+  return { exitCode: result.status, stdout: result.stdout ?? "" };
+}
+
+// Mutação de texto-fonte em qualquer EOL de checkout, com PROVA de que aplicou antes de o gerador correr (ERRATA 1, §15.2 P-B).
+function mutate(path: string, fn: (src: string) => string): void {
+  const original = readFileSync(path, "utf8").replace(/\r\n/g, "\n"); // qualquer EOL de checkout → LF (ERRATA 1, P-B)
+  const mutated = fn(original);
+  if (mutated === original) throw new Error(`mutação não aplicou em ${path} (ERRATA 1)`);
+  writeFileSync(path, mutated);
 }
 
 test("T12: gerador no head → DESCARTADAS 0, pontos sem consulta 0, exit 0", () => {
@@ -285,19 +295,9 @@ test("T13: mutação 1 — ponto novo sem consulta em DossiePrintDocument → ge
       join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts"), { recursive: true });
     cpSync(join(REPO_ROOT, "frontend", "src"), join(tmp, "frontend", "src"), { recursive: true });
     writeFileSync(join(tmp, "frontend", "package.json"), readFileSync(join(FRONTEND_ROOT, "package.json")));
-    // Injeta ponto de apresentação sem consulta em DossiePrintDocument
+    // Injeta ponto de apresentação sem consulta em DossiePrintDocument — UMA mutação, sobre o elemento real (runs=), com prova (ERRATA 1)
     const printPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx");
-    const printSrc = readFileSync(printPath, "utf8");
-    const injected = printSrc.replace(
-      "checklistRuns={checklistRuns}",
-      `checklistRuns={checklistRuns}>{checklistRuns.map((run) => React.createElement("span", {key: run.id}, run.status))}</`,
-    );
-    if (injected === printSrc) {
-      // fallback: append antes do último </
-      writeFileSync(printPath, printSrc.replace(/(<ChecklistRunsPanel[^>]*\/>)/, `$1\n{checklistRuns.map((run) => React.createElement("span", {key: run.id}, run.status))}`));
-    } else {
-      writeFileSync(printPath, injected);
-    }
+    mutate(printPath, (s) => s.replace(/(<ChecklistRunsPanel[^>]*\/>)/, `$1\n{checklistRuns.map((run) => React.createElement("span", {key: run.id}, run.status))}`));
     const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
     assert.strictEqual(exitCode, 1, `mutação 1 deve deixar gerador vermelho; stdout:\n${stdout}`);
     assert.match(stdout, /pontos sem consulta=[1-9]/, "deve reportar ponto sem consulta");
@@ -315,9 +315,7 @@ test("T14: mutação 2 — adapter sem supersededByRunId → DESCARTADAS pelo ad
     writeFileSync(join(tmp, "frontend", "package.json"), readFileSync(join(FRONTEND_ROOT, "package.json")));
     // Remove supersededByRunId do adapter
     const adapterPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "processes.adapter.ts");
-    const adapterSrc = readFileSync(adapterPath, "utf8");
-    const modified = adapterSrc.replace(/\s*supersededByRunId:.*\n/, "\n");
-    writeFileSync(adapterPath, modified);
+    mutate(adapterPath, (s) => s.replace(/\s*supersededByRunId:.*\n/, "\n"));
     const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
     assert.strictEqual(exitCode, 1, `mutação 2 deve deixar gerador vermelho; stdout:\n${stdout}`);
     assert.match(stdout, /DESCARTADAS pelo adapter \([1-9]/, "deve reportar chave descartada");
