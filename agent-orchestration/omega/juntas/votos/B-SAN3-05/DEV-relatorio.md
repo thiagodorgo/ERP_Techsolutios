@@ -199,8 +199,57 @@ diff <53 do origin/main> <53 do head>:
    ao envoltorio contem a substring. Medido: o grep literal casa `l.324: return new RlsPrismaCloudChargeRepository(prisma);`;
    a forma delimitada `git grep -nE '\bnew PrismaCloudChargeRepository\(prisma\)' -- src` → vazio (ec=1). E esta que mede o
    que o plano quer (o cru nao e mais instanciado com o client raiz).
-## §4 — E4 script do papel + .gitattributes + compose — EM APURACAO
-## §5 — E5 documentacao — EM APURACAO
+## §4 — E4 script do papel + .gitattributes + compose — 2026-10-02T04:01Z
+
+### MEDIDO
+
+```
+cp <Apendice C extraido> scripts/db-runtime-role.sh && chmod 755 … ; printf 'scripts/db-runtime-role.sh text eol=lf\n' > .gitattributes
+md5sum scripts/db-runtime-role.sh            → 810c1c4a2552665d4947bf0ef4e93670 (= Apendice C) · 115 linhas
+git ls-files -s scripts/db-runtime-role.sh   → 100755 ca05cea51da8a1e9d2e08c5713a1dec1208ab76b 0
+git ls-files --eol scripts/db-runtime-role.sh .gitattributes → i/lf w/lf attr/text eol=lf · i/lf w/lf attr/
+bash -n scripts/db-runtime-role.sh           → ec=0
+```
+`docker-compose.prod.yml`: `postgres` ganha `DB_RUNTIME_ROLE: erp_runtime`, o placeholder ROTULADO de validacao local-prod
+(`local-prod-validation-db-runtime-not-a-secret`, mesma classe dos placeholders da `api`, l.62-68) e `DB_MIGRATOR_ROLE: postgres`,
+e o volume `./scripts/db-runtime-role.sh:/docker-entrypoint-initdb.d/10-runtime-role.sh:ro`; a `api` conecta como
+`erp_runtime`; o `migrate` fica como `postgres`; comentario do `down -v`. Leitura declarada: o mandato proibe o segredo do
+papel em arquivo; o que o compose leva e o PLACEHOLDER rotulado que o §4.3 do plano manda versionar (nao e credencial de
+ambiente nenhum — o compose e o de VALIDACAO local-prod, cuja credencial do superusuario versionada na l.11 ja e `postgres`).
+
+Regressao imediata dos leitores do compose/env: `deploy-manifest-parity` → `# tests 28 # pass 28 # fail 0` (A9/H6);
+`production-runtime-gates` → `# tests 63 # pass 63` (antes dos casos novos do T1/T3);
+`grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.toml .env.example` → vazio (ec=1).
+
+**Substituto local do H1 (sem Docker), na ORDEM do compose:** banco vazio `erp_h1` → script no modo initdb.d
+(`POSTGRES_DB=erp_h1 POSTGRES_USER=postgres`, papel `erp_runtime_h1`, migrador `postgres`, segredo aleatorio gerado no shell
+e nunca impresso) → `prisma migrate deploy` como `postgres` → conferencia:
+```
+script                                → ec=0 · linha final: erp_runtime_h1|f|f|f|f|0|0|0   (0 tabelas: o init roda ANTES do migrate)
+grep -c <segredo> saida-do-script server.log → 0 · 0
+migrate deploy                        → All migrations have been successfully applied.
+DML do papel / tabelas public         → 115|115   (DEFAULT PRIVILEGES do migrador cobriram as tabelas criadas DEPOIS — P-l)
+login erp_runtime_h1: SELECT session_user, current_user; <RUNTIME_ROLE_GUARD_SQL> → erp_runtime_h1|erp_runtime_h1 ; 0 linhas
+boot real (src/server.ts, PROD_OK, DATABASE_URL = erp_runtime_h1, timeout 12 s) →
+  {"level":30,…,"guard":"enforce","session_user":"erp_runtime_h1","current_user":"erp_runtime_h1","escapes":0,"msg":"runtime database role verified"}
+  grep -c 'postgresql://|erp_h1?schema' no log → 0 · pgrep -fc '^node --import tsx src/server.ts' → 0 apos o timeout
+```
+### HIPOTESE
+- H1 (o initdb.d do `postgres:16` executa o script no banco da app antes do `migrate`, e o smoke `docker` fica verde com a
+  `api` como `erp_runtime`) — derruba com o job `docker` da CI no SHA da entrega vermelho (sem Docker nesta nuvem).
+
+## §5 — E5 documentacao — 2026-10-02T04:01Z
+
+### MEDIDO
+
+`docs/deployment.md`: linha `G-DB-ROLE` na tabela dos gates; secao nova "Papel de banco de runtime" (tres vias, a trava,
+o procedimento, MODO 0–6, compose, pre-requisito `psql` da suite `-db`, Atos 0–2 com `STAGING_DEPLOY_ENABLED` desligada ate
+os Atos 1–2 de staging); a l.458 trocada (o app conecta como `erp_runtime`; a trava substitui a conferencia manual); runbook
+B-O6R-01 passos 0 e 5 apontando o papel de runtime.
+```
+grep -c 'G-DB-ROLE' → 3 · grep -c 'Confirmar na ativacao' → 0 · grep -c 'TO erp_runtime' → 1 · grep -cE 'MODO [0-6]' → 8 ·
+grep -c 'psql' → 5 · grep -c 'STAGING_DEPLOY_ENABLED' → 5            (A18: ≥2 · 0 · ≥1 · ≥7 · ≥1 · ≥1)
+```
 ## §6 — E6 ratchet semantico (gerador + T13 + fixtures) — EM APURACAO
 ## §7 — E7 testes T1–T15 e criterios A1–A24 com mutacao — EM APURACAO
 ## §8 — Bateria do §8 — EM APURACAO
