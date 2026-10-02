@@ -370,7 +370,7 @@ Cada forma segue a ordem obrigatória do item 3 (mutante com `diff` publicado �
 só então a cor do guard, do TAP em arquivo). O que o plano espera do guard — hipótese **[A RE-VERIFICAR]**, derruba com
 o TAP (emenda da errata 15.15(d)): o commit **`T4c-3`** do Dev-T4 (só adições em `tests/mandato-preflight.test.ts`)
 acrescenta **4 casos `[M-EXT]`**, verdes no head e no S4a, cada um vermelho com a sua forma (vermelho-controle por
-mutação, não histórico; a lista dos 24 vermelhos históricos não muda **com o `T4c-3`**; com o `T4c-4` passa a **26** — `[P372]`/`[P612]` têm os dois controles, §15.16 — *emenda da errata 15.16(d)*): **`[V298]`** *linhas de colagem VERIFICADA são
+mutação, não histórico; a lista dos 24 vermelhos históricos não muda **com o `T4c-3`**; com o `T4c-4` passa a **26**; o `[V263]` do `T4c-5` é `[M-EXT]` — 26 fica, §15.17 — `[P372]`/`[P612]` têm os dois controles, §15.16 — *emenda da errata 15.16(d)*): **`[V298]`** *linhas de colagem VERIFICADA são
 isentas da checagem 5* — colagem gerada do shim com uma linha `grep -c x` sem `-i` no corpo → `COLAGEM … confere`, 0
 REJ (⇄ `if (0) return` → REJ5 nessa linha); **`[V305]`** *`AVISO caixa-exata` só quando isenta ≥ 1 invocação* —
 unidade `true # caixa-exata: nada a isentar` sem `grep` → stdout sem `AVISO      caixa-exata` (⇄ `if (c == 0) ;` →
