@@ -2483,6 +2483,19 @@
   },
   {
     "snapshot_date": "2026-10-01",
+    "version": "B-GOV-PAUSA",
+    "pr": 397,
+    "merge_commit": "513937b0555e2a6175e7e89d8ae9e44dbc995f8a",
+    "approved_head": "67c2c280612cb644f246af0b5410cab59afe028d",
+    "flutter_tests": "864/864",
+    "backend_tests": "3052/3054",
+    "frontend_smoke_tests": "1202/1202",
+    "blocks_completed": 169,
+    "description": "B-GOV-PAUSA — transcreve para o contrato a decisão do dono de 2026-10-01 (`D-PAUSA-GRAVA-E-PARA`): sob ordem de pausa do dono, o agente grava o estado e para sozinho — norma P7 do protocolo de junta resiliente (`CLAUDE.md` §C7.7, espelho `AGENTS.md`, fonte `PROTOCOLO-JUNTA-RESILIENTE.md`, linha `[P7]` no modelo de mandato, lição no `conhecimento-de-terreno.md`). O texto do orquestrador foi medido pelo plano do bloco (17 elaborações, 7 achados dentro do bloco), e a emenda (desenvolvedor de identidade nova, §C7.4-bis) implementou a propriedade de cada achado — S-01 a abertura do item 7 diz P1–P7 e sete normas; S-02 o escopo declarado cobre todo agente vivo e a pausa (não só a morte); S-03 o lado Codex (`.agents/agents/README.md`) ganha a P7; S-04 a seção `## PAUSA` tem destino para cada sujeito (evidência do P1, ou o arquivo de saída que o mandato nomeia); S-05 o roteiro de retomada vai para `status-geral.md` (o \"custo/trilha\" não existia na ref); S-07 a lista de jobs sem modelo é a da fonte; S-11 \"pare\" sai dos exemplos e pausa fica distinta de parada —, cada frase nova declarada como elaboração do dev (T-18…T-24) na entrada de `decisoes.md`; e abriu com dono `P-GOV-OBITUARIO-SEMTETO` (pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10). Sem código nem teste; métricas de teste CARREGADAS (§C3.3); `mvp_*` intocados (§C3.4); `blocks_completed` 168 -> 169.",
+    "backfill_note": "`pr 397` (o PR já existia na autoria da emenda); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. Nenhum backfill devido por este PR: a última entrada da `main` (#394) já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`, pagos pelo #395. Se o #393 (B-GOV-MANDATO) mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então. As quatro métricas com nota de PR anterior (`backend_contract_tests_focused`, `flutter_modules`, `mobile_backend_contracts`, `mobile_core_saas_contracts`) seguem sob `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393) — este PR não as toca. [BACKFILL §C3.5 DO #397, pago pelo PR de registro `docs/registro-397` (2026-10-01): `merge_commit 513937b0555e2a6175e7e89d8ae9e44dbc995f8a` de `gh pr view 397 --json mergeCommit`; `approved_head 67c2c280612cb644f246af0b5410cab59afe028d` LIDO DA ATA `J-B-GOV-PAUSA.md` (linha \"approved_head\"), não de `gh pr view` — o head do PR no merge era `5fed0a55`, o objeto aprovado mais o commit de registro da própria junta.]"
+  },
+  {
+    "snapshot_date": "2026-10-01",
     "version": "B-SAN3-11",
     "pr": null,
     "merge_commit": null,

@@ -1,0 +1,102 @@
+{
+ "jurado": "jurado-pausa-c3-escopo-registro-kpi (identidade nova; nenhum numero, lista ou SHA do plano, do briefing ou do PR herdado como fato)",
+ "cadeira": "C3 — escopo, registro, KPI e terreno",
+ "mandato_md5": "6bb2ccfd33b0eec1bce54347edfe1fc7 (medido, EOL-neutro e cru iguais) · declarado no disparo: 6bb2ccfd33b0eec1bce54347edfe1fc7 — IGUAL",
+ "modelo": "Opus (claude-opus-5-5) — o do frontmatter (model: opus); sem substituicao",
+ "corpo_md5": "06172f527763ae5c71e1e2d56a5fd8a8 (EOL-neutro, blob 67c2c280:.claude/agents/especialistas/jurado-pausa-c3-escopo-registro-kpi.md) · corpo recebido como general-purpose (R1): o mesmo blob, md5 06172f527763ae5c71e1e2d56a5fd8a8 — IGUAL; obedecido tools: Read, Grep, Glob, Bash (escrevi so C3-evidencia.md e C3-voto.json, por Bash)",
+ "head_medido": "67c2c280612cb644f246af0b5410cab59afe028d (git rev-parse origin/docs/gov-pausa-grava-e-para = gh pr view 397 headRefOid) · merge-base 5b6e103638f398d6074eecc5daebdf2d3bcd2252 = origin/main: sim · head no fim (20:29:37Z): igual",
+ "quorum": "maioria de 3 (BRIEFING-B-GOV-PAUSA.md l.15-18 do head; nao subiu)",
+ "leitura_de_outras_cadeiras": "nao li nenhum arquivo c1-*/C1-* nem c2-*/C2-* antes de gravar este voto (so os NOMES apareceram no git status da limpeza)",
+ "pausa": "nenhuma",
+ "item1_escopo": "VERDE — head 67c2c280612cb644f246af0b5410cab59afe028d (git = gh); 28/28 no permitido (23 entradas extraidas do §7); 0 casamentos efetivos no proibido; ausente so J-B-GOV-PAUSA.md (pos-voto); API=local 28; par CLAUDE/AGENTS; 6 corpos; sync --check ec=0 N=29; controles acusaram",
+ "item2_kpi": "VERDE — natureza 4 contrato/6 corpo/4 KPI/14 registro, 0 codigo/teste; precedente main N=12 (CLAUDE.md): 10/12 tocaram Kpis, governanca com junta recente 4/4 contou; plano SIM coerente e head o cumpre; blocks 169 = origin/main 168 +1; trilhas carregadas com nota; mvp inalterado; null na autoria; history append puro 164->165; freeze/node --check ec=0; guards 29/29 (17/6/6); nenhum backfill devido; controles acusaram",
+ "item3_registro_terreno": "VERDE — P-GOV-OBITUARIO-SEMTETO e P-GOV-PAUSA-ESCADA-C76BIS com ID/gravidade/escopo/dono; indice = gerador (hash-object = blob; controle: linha apagada e reescrita); decisoes.md 84/0, ^## D-PAUSA-GRAVA-E-PARA = 1, paragrafo datado de E2 presente; status-geral 3 ocorrencias, honesto; diff --check ec=0; EOL uniforme (0 misto); 28/28 disco=blob; 0 artefato; check-runs 14/14 verdes; H6.1 = 7 conflitos com #393 (informativo)",
+ "voto": "APROVADO",
+ "justificativa": "TERRENO: worktree proprio detached C:/Users/AMP/w-jur-pz3 no objeto (test -e .git ok, porcelain 0), npm ci --no-audit --no-fund proprio sem junction (1a ec=124 timeout, 2a ec=1 ECONNRESET no postinstall de @prisma/engines, 3a ec=0 'added 326 packages in 48s'), node v20.19.5, Python 3.13.14, MSYS_NO_PATHCONV so por prefixo, base viva 5432/6379 nunca tocada, sem Docker. ITEM 1: permitido EXTRAIDO por parse da tabela 'Arquivos tocados' do §7 do plano do head = 23 entradas (expansao publicada: <c1,c2,c3>/<…> -> 3 nomes; token sem / herda dir da celula; omega/ e votos/ -> agent-orchestration/...; docs/status-geral.md -> agent-orchestration/docs/status-geral.md por git cat-file; /** = prefixo). git diff --name-only origin/main...67c2c280 = 28; laco: 28/28 no permitido, 0 fora (tabela arquivo | entrada na evidencia). Promessas: E1 3b00cae9, E2a/E2b f8b787de, E2c 45008e8f, E3 a55975b5, E4 4a0a4fe8+ed61f998+mandatos; unica entrada ausente J-B-GOV-PAUSA.md, que o plano poe DEPOIS do voto. API (gh pr view 397 --json files) = local, 28 = 28. Par CLAUDE.md <=> AGENTS.md: 1/1, mesmos commits. Proibido GERADO (plano §7 + §C4 do CLAUDE.md do head + itens nomeados): 0 casamentos efetivos (o token BRIEFING-* isolado casa o briefing DESTE bloco; a entrada qualificada 'de outro bloco' da 0). 6 corpos jurado-pausa-c[123] no head (ls-tree), 0 em origin/main; sync-agent-agents.mjs --check ec=0, N=29. ITEM 2: natureza por script (regra publicada) = contrato 4, corpo-de-agente 6, painel-KPI 4, registro 14, codigo 0, teste 0. §C3 citado do head: l.271 (C3.1), l.291-293 (C3.3), l.294 (C3.4), l.295-299 (C3.5), l.300 (C3.6 'Todo PR atualiza Kpis/*'). Precedente na main (N=12 ultimos que tocaram CLAUDE.md + #395 + #396): 10/12 tocaram Kpis; 6/12 subiram blocks; os de governanca com ID+junta recentes (#394, #391, #381, #368) 4/4 subiram; #395/#396 sem contrato e sem junta (0 arquivos). Decisao do plano (SIM, 168->169) coerente com a natureza e o precedente dominante, com razao escrita (§6); head cumpre o plano. Numeros (blobs, contra origin/main 5b6e1036 de agora): release.pr 397; merge_commit/approved_head null (§C3.5); status published_per_pr; blocks_completed 169 = 168+1 (value e display); backend 3052/3054, smoke 1202/1202, flutter 864/864 iguais com nota B-GOV-PAUSA §C3.3 'CARREGADO, SEM reexecucao'; mvp_demo 99 / mvp_vendavel 88 inalterados; history.json 164->165 com head[:-1]==main (append puro), ultima entrada pr 397 null/null; history.md +38/-0 com '## 2026-10-01 — B-GOV-PAUSA (PR #397, na autoria)'; app.js so a var FROZEN. node --check ec=0; kpi-freeze --check ec=0; require dos JSON ec=0; guards 29/29 ec=0 (charts 17/17, contraste 6/6, paridade 6/6, cada um ec=0). Backfill: ultima entrada da main = 394 b3f0af5f82aca23502326f18b644a28df3236b5a 7ad08690bad5e9cbc4d34fe6905b14c6ac634046 -> nenhum devido. #393 tambem publica 169: quem mergear segundo reconta (declarado no backfill_note e no plano H6.1). ITEM 3: P-GOV-OBITUARIO-SEMTETO (BAIXA, pre-existente com data, dono: proximo bloco de registro ou este por decisao na ata) e P-GOV-PAUSA-ESCADA-C76BIS (BAIXA, dono B-GOV-CICLOS-RESIDUAIS) no pendencias.md do head; gerador lido e rodado no meu worktree (ec=0; 423 cabecalhos/412 IDs, 111 FECHADA/312 ABERTA): ' M' fantasma (LF x CRLF), hash-object da1a08c4... = blob -> zero diff residual. decisoes.md 84/0 (nenhuma linha removida), cabecalho D-PAUSA-GRAVA-E-PARA = 1 (main 0), paragrafo datado 'Emenda de 2026-10-01 — o que entrou além do texto do orquestrador, e por quê' presente; status-geral.md 3 ocorrencias (main 0), 16/0, diz que a junta 'ainda não votou' e publica numeros que batem com a minha execucao. git diff --check ec=0; EOL por arquivo (python rb, blobs dos dois lados): 28/28 LF-puro, 0 misto introduzido; md5 EOL-neutro disco = blob 28/28; 0 artefato solto; check-runs no head total 14 | nao-verdes 0 | pendentes 0 (2 suites x authority-portal, owner-portal, frontend, flutter, backend-postgres, backend, docker; ultimo 16:38:42Z). H6.1: merge-tree com origin/chore/mandato-refs-e-preflight ec=1, 7 conflitos (4 Kpis + pendencias, indice, status-geral) — informativo, nao defeito do #397. VERMELHO-CONTROLE (todos acusaram): item 1 — CLAUDE.md injetado na proibida -> N=1, TOTAL 1->2; diff fabricado com 6 caminhos proibidos -> todas as regras nomeadas acusaram (TOTAL 12); pathspec vazio com irmao nao-vazio (invariantes 0 / CLAUDE.md 1; Kpis/index|styles|README 0 / app.js 1; corpos alem dos 3 = 0 / todos 7); grep jurado-pausa-c9- = 0; sync --check com espelho mutado -> ec=1 DIVERGE, restaurado (hash = blob). Item 2 — blocks_completed 169->170 por ancora CRLF provada -> kpi-freeze --check ec=1 e a minha comparacao ACUSA; restaurado (ec2969da... = blob); backfill sobre copia com merge_commit null -> 'BACKFILL DEVIDO para o PR 394'; natureza com src/x.ts + tests/y.test.ts -> codigo 1, teste 1. Item 3 — sonda a CRLF b CRLF c LF -> contador python (2 CRLF, 1 so-LF), grep -c com CR literal -> 3 (cego/errado); git diff --no-index --check com espaco no fim -> ec=3; filtro de check-runs sobre JSON fabricado (success+failure+queued) -> 1 nao-verde, 1 pendente; linha do indice apagada -> gerador a reescreve (hash volta ao blob); regex de artefato com results.txt + jur-probe.ts -> 2. SEM MEDIR: nada do mandato ficou sem execucao. Fora do meu escopo (C1/C2): fidelidade das T-18..T-24 e se os destinos de P7 existem. LIMPEZA: 0 processos com w-jur-pz3; git worktree remove --force C:/Users/AMP/w-jur-pz3 ec=0 (node_modules dentro), worktree list 0; mutacoes restauradas com hash-object = blob; copias em SCRATCH/c3pz descartadas; base viva intocada; w-pausa so com os meus 2 arquivos; residuo alheio so reportado. VOTO: APROVADO — fronteira provada por laco sobre o §7 do plano e o §C4 gerado (0 casamentos no proibido, e o controle acusou a entrada injetada), 6 corpos no head e --check verde com 29 agentes, KPI tocado coerente com a natureza e o precedente medido (blocks_completed 168+1, trilhas carregadas com nota, null na autoria, nenhum backfill devido), guards 29/29 e kpi-freeze --check verdes, pendencias e indice iguais ao gerador, terreno limpo (diff --check 0, EOL uniforme, sem artefato) e check-runs 14/14 concluidos verdes",
+ "o_que_executei": [
+  {
+   "comando": "git fetch origin; git rev-parse origin/docs/gov-pausa-grava-e-para; gh pr view 397 --json headRefOid,headRefName,baseRefName,state,isDraft,mergeable; git merge-base origin/main <head>",
+   "forma": "cwd arvore principal (so leitura); inicio 19:51:42Z e fim 20:29:37Z",
+   "resultado": "67c2c280612cb644f246af0b5410cab59afe028d nas duas fontes, nas duas horas; OPEN, MERGEABLE; merge-base = origin/main 5b6e1036"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-jur-pz3 67c2c280; timeout 598 npm ci --no-audit --no-fund (3 tentativas)",
+   "forma": "worktree proprio; sem junction",
+   "resultado": "worktree ec=0; npm ci ec=124, ec=1 (ECONNRESET), ec=0 (326 pacotes, 48s)"
+  },
+  {
+   "comando": "python permitido.py <plano do head>; git diff --name-only origin/main...67c2c280; python laco.py; gh pr view 397 --json files; diff api local",
+   "forma": "blob 67c2c280:docs/revisoes/SAN3/B-GOV-PAUSA-plano.md; N=23 entradas, N=28 arquivos",
+   "resultado": "28/28 no permitido; ausente so J-B-GOV-PAUSA.md (pos-voto); API = local (diff ec=0)"
+  },
+  {
+   "comando": "python proibido.py <plano> <CLAUDE.md do head> diff.txt [CLAUDE.md]; idem sobre diff fabricado",
+   "forma": "lista gerada (22 tokens de crase + 5 nomeadas)",
+   "resultado": "0 casamentos efetivos; injecao -> 1; fabricado -> 12"
+  },
+  {
+   "comando": "git ls-tree -r --name-only 67c2c280 -- .claude/agents/especialistas/ .agents/agents/especialistas/ | grep -c jurado-pausa-c[123]-; timeout 120 node scripts/sync-agent-agents.mjs --check",
+   "forma": "cwd w-jur-pz3",
+   "resultado": "6; ec=0 (29 agentes, espelho consistente); controle c9 -> 0; espelho mutado -> ec=1"
+  },
+  {
+   "comando": "python natureza.py diff.txt; grep -n do §C3 no CLAUDE.md do head; git log origin/main -n 12 -- CLAUDE.md + 3b1fe0f9 + 5b6e1036 com diff-tree, blocks antes/depois e git grep -lE (numero do PR) -- agent-orchestration/omega/juntas",
+   "forma": "N=12+2 commits da main",
+   "resultado": "0 codigo/0 teste; 10/12 tocaram Kpis; governanca com junta recente 4/4 contou"
+  },
+  {
+   "comando": "timeout 60 node --check Kpis/app.js; timeout 120 node scripts/kpi-freeze.mjs --check; node -e require(JSONs); timeout 400 node --test --import tsx tests/kpi-dashboard-charts.test.ts tests/kpi-dashboard-contraste.test.ts tests/kpi-achados-paridade.test.ts (+ cada um separado, timeout 300)",
+   "forma": "cwd w-jur-pz3, node v20.19.5, saida em arquivo, ec por variavel",
+   "resultado": "ec=0 ec=0 ec=0; 29/29 (17/6/6), fail 0"
+  },
+  {
+   "comando": "python kpicmp.py / kpinote.py (blobs head x origin/main de Kpis/kpis-latest.json e kpis-history.json); node backfill.js <history da main> e <copia com merge_commit null>",
+   "forma": "origin/main 5b6e1036",
+   "resultado": "pr 397, null/null, published_per_pr, blocks 169=168+1, trilhas iguais com nota, mvp inalterado, append puro 164->165; nenhum backfill devido; controle -> DEVIDO"
+  },
+  {
+   "comando": "mutacao restauravel blocks_completed 169->170 + kpi-freeze --check",
+   "forma": "ancora CRLF assertada count==1; cp pristino; hash-object x rev-parse",
+   "resultado": "--check ec=1; comparacao ACUSA; restaurado ec2969da = blob"
+  },
+  {
+   "comando": "timeout 120 python agent-orchestration/controle/gerar-indice-pendencias.py (cwd w-jur-pz3) + controle de linha apagada",
+   "forma": "gerador lido antes; hash-object x blob",
+   "resultado": "ec=0; M fantasma, hash da1a08c4 = blob; linha apagada reescrita pelo gerador"
+  },
+  {
+   "comando": "git diff --numstat/-U0 origin/main...67c2c280 -- decisoes.md; grep -c ^## D-PAUSA-GRAVA-E-PARA; git grep -c B-GOV-PAUSA -- status-geral.md",
+   "forma": "blobs head e main",
+   "resultado": "84/0, 0 linhas removidas; 1 (main 0); paragrafo datado de E2 presente; status-geral 3 (main 0)"
+  },
+  {
+   "comando": "git diff --check origin/main...67c2c280; python eol.py (rb); md5 EOL-neutro disco x blob; regex de artefato; gh api commits/<head>/check-runs?per_page=100 + cr.py; git merge-tree --write-tree --name-only <head> origin/chore/mandato-refs-e-preflight",
+   "forma": "28 arquivos; filtro de check-runs publicado",
+   "resultado": "ec=0; 28/28 LF-puro, 0 misto; 28/28 iguais; 0 artefato; 14/0/0; merge-tree ec=1 com 7 conflitos (informativo)"
+  },
+  {
+   "comando": "Get-CimInstance Win32_Process (CommandLine contendo w-jur-pz3); git worktree remove --force C:/Users/AMP/w-jur-pz3",
+   "forma": "remocao pelo nome",
+   "resultado": "0 processos; ec=0; worktree list 0"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A pendencia nova P-GOV-PAUSA-ESCADA-C76BIS declara o campo escopo fora do vocabulario da casa (nota S-10 do plano, em vez de dentro-do-bloco | pre-existente); ID, gravidade BAIXA, dono B-GOV-CICLOS-RESIDUAIS e teste de encerramento estao presentes.",
+   "evidencia": "git diff -U0 origin/main...67c2c280 -- agent-orchestration/controle/pendencias.md, entrada P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01), linha do escopo: nota S-10 do plano; a vizinha P-GOV-OBITUARIO-SEMTETO usa pre-existente com evidencia de data",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (a entrada nasce no commit 45008e8f deste ramo)",
+   "motivo": "o registro da pendencia nao diz em qual das duas classes de escopo da casa ela cai, com evidencia"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [],
+ "pendencias_que_aceito": [
+  "P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (pre-existente; registrada 2026-09-28, origem #392, dono #393): 4 metricas (backend_contract_tests_focused, flutter_modules, mobile_backend_contracts, mobile_core_saas_contracts) carregam valor igual a main sem nota do PR corrente — mesma forma da main; o backfill_note do head declara.",
+  "P-GOV-OBITUARIO-SEMTETO (pre-existente, dono declarado) — o que medi e que esta registrada com dono (E2c), nao o pagamento.",
+  "H6.1: o #397 conflita com o #393 (chore/mandato-refs-e-preflight 2ca15eb0) em 7 arquivos, e os dois publicam blocks_completed 169 sobre a base 168 — quem mergear segundo reconta (plano §6/§9; backfill_note do head). Nao e defeito do #397.",
+  "Para a C2 (consistencia normativa), se quiser: o §C3.1 literal manda atualizar tambem Kpis/index.html \"no mesmo PR\", e o plano §7 o PROIBE; a pratica da main e a do plano (ultimo toque em Kpis/index.html: 1e248b14 #356, 2026-08-18; os PRs de KPI posteriores nao o tocam; §C3.6 \"hidrata dos JSON\"). Tensao textual pre-existente, nao do #397.",
+  "Para a C1/C2: fidelidade das T-18..T-24 da emenda e a existencia dos destinos de P7 (inclusive a secao ## PAUSA do status-geral.md citada em T-22).",
+  "Terreno (informativo): npm ci instavel nesta maquina (timeout e ECONNRESET no postinstall de @prisma/engines antes do verde); residuo alheio (R2 do inspetor) apenas reportado."
+ ],
+ "teardown": "worktree C:/Users/AMP/w-jur-pz3 removido por git worktree remove --force (so o meu, com o node_modules dentro; 0 processos vivos antes) · mutacoes restauradas com hash-object = blob (espelho c3 a2396c0d, kpis-latest ec2969da, indice da1a08c4) · copias de SCRATCH/c3pz descartadas · base viva nunca tocada · w-pausa e w-devt4 so observados · residuo ALHEIO apenas reportado"
+}

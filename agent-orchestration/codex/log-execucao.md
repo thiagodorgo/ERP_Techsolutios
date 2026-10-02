@@ -4707,6 +4707,29 @@ bloco mergear.
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
 
+## B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho — MERGEADO `513937b0` (2026-10-01)
+
+- **Decisão transcrita:** `D-PAUSA-GRAVA-E-PARA` (dono, 2026-10-01) — norma **P7** do protocolo de junta resiliente. O
+  texto do orquestrador foi medido pelo plano (`planejador-b-gov-pausa`, Fable: 17 elaborações, 7 achados dentro do
+  bloco, KPI pelo precedente do #394 — o commit de abertura citava o #396, errado) e emendado por dev de identidade nova
+  (`dev-pausa-emenda`, Opus: S-01…S-05, S-07, S-11 como T-18…T-24).
+- **Junta:** APROVADO **3 × 0** sobre `67c2c280` (C1 2 ajuste + 2 nota, C2 4 nota, C3 1 nota); inspetor `LIBERADO COM
+  RESSALVA` (as cadeiras rodaram como `general-purpose` lendo o corpo do objeto — o diretório de agentes da sessão não
+  as registrava). Merge squash `513937b0` fixado no SHA do head `5fed0a55`; estado `MERGED` lido antes de limpar.
+- **Registro #398** (`5bcdcc58`, registro puro): parecer do porteiro do #397, backfill §C3.5, `P-GOV-PAUSA-ELABORACOES-DO-
+  TRANSCRITOR` e `P-GOV-PAUSA-CASO-SEM-FONTE` (dono `B-GOV-CICLOS-RESIDUAIS`), fonte do caso do Dev-T4 versionada, errata
+  pós-merge no corpo do #397. Porteiro do #398: `LIBERADO COM RESSALVA` (ciclo 4 do #393 e as tarefas de nuvem 05/09/11).
+- **Limpeza §C5 — correção do orquestrador (ressalva do porteiro do #398):** o mandato do porteiro do #397 dizia que o
+  `scripts/post-merge-cleanup.sh` não rodou "porque o `docker volume prune` derrubaria o cluster de KPI de um dev vivo do
+  #393". **Errado:** o script só toca Docker sob `DEEP_CLEAN=1`; a limpeza padrão não toca container nem volume. Medido
+  depois (01/10, ~19:05): a limpeza padrão não teria removido nada na árvore principal — nenhum `frontend/dist`, `dist`,
+  `coverage`, `mobile/flutter_app/build` nem `*.tsbuildinfo` fora de `node_modules` e de `.claude/worktrees/*`, nenhuma
+  branch local mergeada; `git remote prune` feito. O que a limpeza fez de fato, nos dois merges: worktrees do PR
+  removidos pelo nome (0 processos antes), ramo apagado local e remoto depois de provar árvores iguais, `main` local
+  avançada. O `find` de `*.tsbuildinfo` do script desce em `.claude/worktrees/*` de outras sessões — classe já aberta em
+  `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
+- **KPI:** `blocks_completed` 168 → 169; trilhas de teste carregadas com nota; backfill pago pelo #398.
+
 ---
 
 ## B-SAN3-11 — 2026-10-01 — branch fix/dossie-versao-da-vistoria
