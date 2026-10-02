@@ -9,14 +9,19 @@
 
 - **O head do PR #401**, resolvido pela própria cadeira por `git` e por `gh pr view 401 --json headRefOid`, com os
   check-runs concluídos. Nunca um SHA digitado.
-- **O código do bloco termina no head do dev da errata** (`6cb53df0`, seção ERRATA 1 do `DEV-relatorio.md`). Os commits
-  depois dele são só registro da junta: este briefing, os mandatos novos, os pareceres. A cadeira confere isso por
-  `git diff --name-only 6cb53df0 <objeto>`.
+- **O que o bloco muda é o diff do PR contra a `main`:** `git diff --name-only origin/main...<objeto>`. O código do bloco
+  terminou no head do dev da errata (`6cb53df0`, seção ERRATA 1 do `DEV-relatorio.md`). Depois dele entraram três coisas,
+  e nenhuma é código novo do bloco:
+  - **A integração da `main` com o #402** (`B-SAN3-01b`, `3e40a256`), por merge do dev da errata. O único conflito fora
+    de registro foi a linha do `test:smoke` em `frontend/package.json`, resolvida pela união dos dois acréscimos (o teste
+    do #402 e o deste bloco), provada por conjunto. O KPI foi recontado contra essa `main`.
+  - **A integração do registro do #402** (#403, `f03b883f`), por merge do orquestrador: só registro e KPI, sem mudar
+    número, provada por multiconjunto.
+  - **Registro da junta:** este briefing, os mandatos, os pareceres.
 - **A cerca de cada mandato diz o head em que ele foi gerado**, que fica atrás do objeto porque o registro continua
   entrando no ramo. A norma da cerca vive no PR #393, ainda aberto, e não é norma da `main`: a cadeira resolve o objeto
-  por conta própria, confere que o delta é só registro e não bloqueia por cerca diferente do objeto.
-- **A `main` de agora (`4ab9d232`) está integrada no ramo** por merge, feito pelo dev da errata. O PR deixou de conflitar
-  e o CI roda pelos dois gatilhos.
+  por conta própria, confere que o delta é só integração e registro e não bloqueia por cerca diferente do objeto.
+- **A `main` de agora (`f03b883f`) está integrada no ramo.** O merge-base do objeto com a `main` é a própria `main`.
 
 ## O que mudou desde o primeiro inspetor
 
@@ -39,8 +44,13 @@ e do fim de linha do checkout (regex de mutação que não casava com CRLF). O C
 | CRLF (`core.autocrlf=true`, o desta máquina) | 583 | 16/16 | 1218/1218 |
 | LF (`core.autocrlf=false`) | 0 | 16/16 | 1218/1218 |
 
-  A varredura v2 no head final deu `TETO=0 · NULL=0 · CP=1 · EOL=3`. O KPI ficou `blocks_completed` 170 contra a `main`
-  `4ab9d232` e `frontend_smoke_tests` 1218/1218. Esses números são do dev: a cadeira mede de novo o que usar.
+  A varredura v2 no head final deu `TETO=0 · NULL=0 · CP=1 · EOL=3`. Depois da integração com o #402, o dev recontou
+  por execução real: `blocks_completed` **171** (a `main` com o #402 tem 170) e `frontend_smoke_tests` **1230/1230** (os
+  testes do #402 e os deste bloco somados). Esses números são do dev: a cadeira mede de novo o que usar.
+- **Nota de terreno, pré-existente:** num head intermediário deste ramo, o job `backend` do gatilho de push falhou no teste
+  do portal de autoridade "§2.8: resposta OK = allowlist {session, authorityName}"; o mesmo job passou no gatilho de pull
+  request e na reexecução. É intermitente e alheio ao bloco. Um vermelho igual no objeto é insumo do voto, e a cadeira
+  classifica o escopo com a evidência de origem.
 
 ## Quórum e cadeiras
 
