@@ -2255,7 +2255,7 @@ antes do PR-03.
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
 
-- **status:** **RESOLVIDA em B-SAN3-11 (2026-10-01)** · branch `fix/dossie-versao-da-vistoria`
+- **status:** RESOLVIDA em B-SAN3-11 (2026-10-01) · branch `fix/dossie-versao-da-vistoria`
   - E1: `processes.types.ts` +3 campos obrigatórios (`reopenedFromRunId`, `supersededByRunId`, `currentRunId`)
   - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos (null quando ausente)
   - E3: `ChecklistRunsPanel.tsx` três estados: substituída ("Versão substituída" chip default, link para vigente), vigente de reabertura ("Versão atual", link para anterior), única (sem marcação)
