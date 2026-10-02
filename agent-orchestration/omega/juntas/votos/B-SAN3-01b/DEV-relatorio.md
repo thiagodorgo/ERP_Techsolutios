@@ -323,3 +323,49 @@ node --check Kpis/app.js · kpi-freeze --check    → ec=0 · em dia (snapshot 2
 tests/kpi-*.test.ts (3 arquivos)                 → # tests 29 # pass 29 # fail 0
 git diff --check                                 → ec=0
 ```
+
+## §FIM — Encerramento da tarefa de nuvem (2026-10-02T06:41Z)
+
+**Head empurrado:** o commit que versiona esta seção, filho de `aad37ae28a8b8ddee4436963acde40a28bc20a72` (`aad37ae`, que já contém TODO o código, os testes, o KPI e o
+registro); conferir com `git ls-remote origin refs/heads/fix/web-guarda-por-alcance-e-estado-da-pagina` e `git log --oneline origin/main..`.
+Commits do dev neste ramo (todos Conventional, autor `thiagodorgo <42915563+thiagodorgo@users.noreply.github.com>`, zero linha de atribuição):
+`5fbe01b` relatório §0 · `239e1a5` E1/E4/E5 · `7d8bea4` E2/E3 · `43432ad` isolamento do arnês + KPI (E6) · `056ef5d` registro (E7) ·
+`aad37ae` duas falsificações por mutação corrigidas + §M/§A3/§A16/§BAT · este.
+
+**Entregue (E1–E7 do plano, nem mais nem menos):** E1 `frontend/tests/work-orders-page-live.test.tsx` (13 casos, DOM mínimo sem dependência,
+página real + hook real, `[W1]`/`[W2]` por comportamento, `[GB1]`–`[GB3]` × 13 papéis) · E2 `[G1]` por alcance em qualquer profundidade + fecho +
+fronteira, `[G1b]`, `[G2]` 29 formas, `[G3]` em disco, `[W1]`/`[W2]` de regex removidos · E3 três cabeçalhos (só comentário) · E4 gate do "Nova OS" ·
+E5 lista do smoke · E6 KPI (1214/1214 real; 170; `pr`/`merge_commit`/`approved_head` null) · E7 registro (4 FECHADAS, 3 ABERTAS com dono, índice
+gerado, status-geral, log). Provas: vermelho-controle no head-base (§E1/E4), 29 mutações do §7 com restauro por hash (§M, §M-bis), oráculo de
+sítios 32/41 com os 9 verdes previstos (§A3), bateria do §8 verde em Node 22 e 20 no head final (§BAT), escopo ⊆ PERMITIDO (§A16).
+
+**Ficou de fora, e por quê (declarado, nada em silêncio):**
+- **PR, `release.pr`, inspetor, junta, CI, merge, porteiro** — não são do dev de nuvem (mandato: "nunca pull request, nunca merge"); o
+  orquestrador local abre o PR e preenche `pr` no KPI (§C3.5), convoca o `inspetor-de-terreno-da-junta` e a junta (unanimidade de 3).
+- **A11 "trocar a classe do botão"** fica VERDE no teste por desenho (§M): a igualdade byte a byte do HTML do cabeçalho para quem tem
+  `create` é medida pela cadeira C3 (§10 do plano) com a sonda do Apêndice B, não por asserção do repositório.
+- **`N-S1ERR`** fica VERDE (§13 N2 do plano): `WorkOrderCreatePage.tsx` é PROIBIDO neste bloco; pendência `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL`
+  aberta com dono `B-SAN3-10` (job e2e).
+- **9 sítios de fiação de interação** (§A3) não distinguidos sem evento de usuário: `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` (fila pós-gate).
+- **`work-orders.service.ts`** não foi tocado (fora da fronteira, §2.3 do plano): o 3º texto de alcance vira verdadeiro pelo E2 — se a junta
+  entender que a decisão do dono exige reescrevê-lo, é ampliação nominal do orquestrador no comando (§14), não do dev.
+- **H1/H2 do plano** continuam hipóteses: H1 (o DOM mínimo roda na CI ubuntu + Node 20 do `setup-node`) só se mede no job `frontend` do PR —
+  aqui rodou em Node 20.20.0 Linux; H2 (Windows do dono, `core.autocrlf=true`) não há Windows aqui.
+
+**Falsificações registradas nesta tarefa (plano × terreno, e do próprio arnês):** `origin/main` `3b1fe0f9` → `4ab9d232` (KPI 169 → 170, §0/§E6) ·
+`else` pendurado no ponto fixo (§E2) · contaminação entre casos do arquivo vivo (§E1-bis) · denominador do arquivo de fronteira iterando a
+própria lista (§M-bis) · clicabilidade dos KPIs não asserida (§A3). Todas corrigidas e remedidas; nenhuma mudou código de produção além do E4.
+
+**Limpeza §C5 (1 linha):** removidos `frontend/dist` e `frontend/tsconfig.tsbuildinfo` após cada build/check; nenhum arquivo de mutação ficou
+no worktree (`git status --porcelain --untracked-files=all` limpo antes de cada commit); rascunhos (runner, gerador, logs) só no scratchpad da sessão.
+
+**Os comandos do mandato que derrubam cada hipótese, executados agora (saída = contagem):**
+```
+head -1 DEV-relatorio.md | grep -ic 'mandato_md5'                                   → 1   (1 = declarado)
+git diff --name-only origin/main HEAD | grep -icE '^(src|prisma|mobile|.github|.claude|.agents)/|^(CLAUDE|AGENTS).md$|package-lock' → 0   (0 = escopo respeitado)
+grep -ic 'mutacao\|mutação' DEV-relatorio.md                                          → 7   (≥1 = prova por mutação)
+git log -1 --format=%s -- Kpis/kpis-latest.json | grep -ic 'san3-01b'                 → 1   (1 = KPI recontado neste bloco)
+grep -ic 'uname' DEV-relatorio.md                                                     → 1   (≥1 = terreno declarado)
+git log --format=%B origin/main..HEAD | grep -icE '^(co-authored-by|claude-session)'  → 0   (0 = sem atribuição)
+git ls-remote origin refs/heads/fix/web-guarda-por-alcance-e-estado-da-pagina | wc -l → 1   (1 = ramo empurrado)
+```
