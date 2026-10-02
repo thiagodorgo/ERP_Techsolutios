@@ -250,7 +250,38 @@ B-O6R-01 passos 0 e 5 apontando o papel de runtime.
 grep -c 'G-DB-ROLE' → 3 · grep -c 'Confirmar na ativacao' → 0 · grep -c 'TO erp_runtime' → 1 · grep -cE 'MODO [0-6]' → 8 ·
 grep -c 'psql' → 5 · grep -c 'STAGING_DEPLOY_ENABLED' → 5            (A18: ≥2 · 0 · ≥1 · ≥7 · ≥1 · ≥1)
 ```
-## §6 — E6 ratchet semantico (gerador + T13 + fixtures) — EM APURACAO
+## §6 — E6 ratchet semantico (gerador + T13 + fixtures) — 2026-10-02T04:12Z
+
+### MEDIDO
+
+```
+cp <Apendice A extraido> scripts/san3-05-acessos-de-plataforma.mjs ; md5sum → 81d9259571391eded68255391a99fb61 (= Apendice A)
+cp <27 fixtures extraidas> tests/fixtures/san3-05-mutacoes/ ; md5sum *.ts × tabela do Apendice D → 27/27 iguais
+```
+Os dois programas do T13, rodados a mao antes de escrever o teste (head = E1–E3):
+```
+programa 1: node scripts/san3-05-acessos-de-plataforma.mjs . --mutant <27 fixtures>   (18,7 s, ec=0)
+  # L0: … arquivos no programa=806 (virtuais=27) · INVENTÁRIO SUSPEITO: 80 chaves
+  chaves atribuidas a src/modules/zz-mut/<fixture>: 27 fixtures × 1 chave cada · fixtures com 0 chave: 0
+  chaves FORA de zz-mut/ == inventario do head (53) → identicas (as fixtures nao mudam o veredito de sitio nenhum do head)
+programa 2: … --override src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts=<copia com 'prisma as never'>   (18,9 s, ec=0)
+  - L2 …cloud-cost-allocation-prisma.repository.ts  new PrismaCloudCostAllocationRepository(prisma)          CRU ×1
+  + L2 …cloud-cost-allocation-prisma.repository.ts  new PrismaCloudCostAllocationRepository(prismaasnever)   CRU ×1
+  novas=1 sumidas=1 · git status --short src → vazio (o arquivo real nao foi tocado)
+```
+`tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13): o congelado = as 53 chaves do `origin/main` (geradas da saida, nao
+digitadas) − 3 SUMIDAS + 3 NOVAS, cada uma com UMA linha de motivo (o §3 acima); chave nova/sumida sem motivo, "sumida" que nao
+existia, "nova" que ja existia → vermelho; 27 subtestes de forma; 1 "sumida".
+```
+PATH=/opt/node20/bin:$PATH node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts
+→ ec=0 · # tests 30 # pass 30 # fail 0 # skipped 0 · 36,9 s   (< 60 s: R15/H3-a)
+grep -cE '<padroes do db-catalog-write-guard>' tests/san3-05-acessos-de-plataforma-guard.test.ts → 0
+```
+
+### FALSIFICACAO (plano × plano)
+- §5/§6 dizem "26 fixtures"; o Apendice D lista 27 md5 e o A24 manda a 27a (`N10_any.ts`). Entram as **27** (o A24 e o
+  criterio; o PERMITIDO e `tests/fixtures/san3-05-mutacoes/**`). A15 diz "28 subtestes", C3(1) diz "27 subtestes": aqui sao
+  **29 subtestes** (1 congelado + 27 formas + 1 sumida) sob 1 teste-pai = `# tests 30`.
 ## §7 — E7 testes T1–T15 e criterios A1–A24 com mutacao — EM APURACAO
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
