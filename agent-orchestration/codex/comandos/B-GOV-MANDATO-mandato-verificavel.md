@@ -511,3 +511,19 @@ já declarado no §4 do plano) + o `a3e52e37` (4 inserções, 2 remoções); as 
 - **Fica para o K4b (mesma identidade, depois da E4 do orquestrador):** as duas matrizes verbatim no
   `…-ciclo4-mutantes.md`, o `[M-1]` derivado por conjuntos e por fixture, o fechamento das duas pendências de
   mutação e a citação N/K/INVALIDOS/TIMEOUT no history.
+
+## Emenda 7 — K4b (2026-10-02): as matrizes do ciclo 4 publicadas
+
+> Escrita pelo **Dev-S4** (`dev-scripts-ciclo4-b-gov-mandato`) no K4b, depois da E4 do orquestrador (plano §15.4, §15.7,
+> §15.10 passo 5).
+
+- **E4 do ciclo 4** (orquestrador, worktree `w-e4f` no K4 `bb641b77`, variável não exportada, 6 h 30 min de relógio):
+  refs `N=44 K=44 NAO-COBERTOS=0 EXCLUIDOS=52 ANOMALIAS=1 INVALIDOS=2 TIMEOUT=0` → `[M-1] = 0`; pré-voo `N=84 K=80 NAO-COBERTOS=4 EXCLUIDOS=60 ANOMALIAS=0 INVALIDOS=37 TIMEOUT=1 EQUIVALENTES-DECLARADOS=1 EQUIVALENTES-CONFERIDOS=1` → `[M-1]` por conjuntos = **{359, 372, 612}**. Saídas verbatim, cabeçalho do log (identidade + ambiente), resumo derivado e custo re-multiplicado em
+  `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §0, §3, §4, §4.1 e §6.1.
+- **O 441** é equivalente conferido por id (fronteira 28) e por fixture (três fixtures, uma nova que alcança `idx > n`).
+  **359, 372 e 612** são NÃO-COBERTOS reais, cada um discriminado por fixture — `[M-1]` **EM ABERTO até a delta** da R1
+  (§15.10): casos novos do Dev-T4 (`T4c-4`, só adições) e a rodada `--only 359,372,612` do orquestrador.
+- **Pendências:** `P-GOV-MANDATO-3-MUTANTES-REFS` **fecha de novo** com a matriz do ciclo 4; `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`
+  **continua ABERTA** até a delta, com o teste de encerramento nela; `P-GOV-MANDATO-3-FRONTEIRAS` ganha a **32** (a coluna de
+  causa da ferramenta é cortada por bytes — UTF-8 inválido em 2 linhas da matriz, publicadas verbatim; cosmético).
+- **KPI:** nenhum número muda; a entrada do ciclo 4 no history ganha a citação N/K/INVALIDOS/TIMEOUT e o `[M-1]` (§15.7).

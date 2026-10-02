@@ -3265,3 +3265,5 @@ acima, passa a trazer os valores que o `kpis-history.json` já tinha (pagos pelo
 como está. As quatro métricas carregadas de trilha mobile (`backend_contract_tests_focused`, `flutter_modules`,
 `mobile_backend_contracts`, `mobile_core_saas_contracts`) voltam a ter a nota §C3.3 do #393, que a integração da
 `main` tinha levado embora.
+
+**Citação N/K fechada no K4b (2026-10-02), plano §15.7:** Matriz de mutação do ciclo 4 publicada no K4b (2026-10-02), `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §3-§4 (identidade NOVA: triplas `e1ed8f0d`·`a8bd601b`·`373e5728` e `093499a8`·`2275bea0`·`373e5728` + ambiente; rodada completa do orquestrador, 6 h 30 min): refs `N=44 K=44 NAO-COBERTOS=0 EXCLUIDOS=52 ANOMALIAS=1 INVALIDOS=2 TIMEOUT=0 EQUIVALENTES-DECLARADOS=0 EQUIVALENTES-CONFERIDOS=0` → [M-1] = 0; pré-voo `N=84 K=80 NAO-COBERTOS=4 EXCLUIDOS=60 ANOMALIAS=0 INVALIDOS=37 TIMEOUT=1 EQUIVALENTES-DECLARADOS=1 EQUIVALENTES-CONFERIDOS=1` → [M-1] por conjuntos = {359, 372, 612} (o 441 é equivalente conferido por id e por fixture), EM ABERTO até a delta da R1 (§15.10: casos do Dev-T4 no T4c-4 e a rodada `--only 359,372,612`).

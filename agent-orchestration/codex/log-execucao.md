@@ -5008,3 +5008,18 @@ com o denominador e a taxa medida, para o próximo bloco retomar sem remedir o q
   por fixture, o fechamento das duas pendências de mutação e a citação N/K/INVALIDOS/TIMEOUT no history.
 
 **Limpeza §C5 do ciclo 4 — Dev-S4, até o K4 (2026-10-01):** removidos pelo nome — os worktrees `C:/Users/AMP/w-dv4a` (arnês dos drills, com os 7 arquivos de drill não rastreados) e `C:/Users/AMP/w-dvs4c` (só para o commit do S4b), ambos com 0 processo vivo com o nome na linha de comando antes; os conteineres `pg-devs4` e `redis-devs4` (dois conjuntos, um por N=2, removidos pelo próprio script ao fim de cada um); o diretório da rodada de controle que eu invalidei e matei pela marca (`tmp.tMR09C2QgJ`, 11 processos, 27 MB); as cópias de arnês e de mutante no scratchpad. Ficam, como evidência reexecutável, o scratchpad `devs4c/` e os relatórios `DEVS4C.md`/`DEVS4C.trilha.md`, e o worktree `C:/Users/AMP/w-devs4`, mantido para a retomada do K4b (matrizes verbatim depois da E4). Base viva (5432/6379) nunca alvo; `MSYS_NO_PATHCONV` nunca exportada; resíduo alheio só reportado.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b do Dev-S4 (2026-10-02) — as matrizes publicadas
+
+- **E4** (orquestrador, `w-e4f` no K4, 21:39 → 04:09, 6 h 30 min): refs `N=44 K=44 NAO-COBERTOS=0 EXCLUIDOS=52 ANOMALIAS=1 INVALIDOS=2 TIMEOUT=0` → `[M-1] = 0`; pré-voo `N=84 K=80 NAO-COBERTOS=4 EXCLUIDOS=60 ANOMALIAS=0 INVALIDOS=37 TIMEOUT=1 EQUIVALENTES-DECLARADOS=1 EQUIVALENTES-CONFERIDOS=1` → `[M-1]` por conjuntos = **{359, 372, 612}**.
+- **K4b** (Dev-S4): as duas matrizes VERBATIM (bytes conferidos contra as saídas da E4) em
+  `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md`, com o cabeçalho do log, o resumo por conjuntos e por fixture (441
+  equivalente; 359/372/612 discriminados) e o custo medido re-multiplicado — a fórmula com os 7 guards seriais dos controles
+  erra −3,4 % (refs) e −0,5 % (pré-voo); a projeção do D4, que os omitia, fica com ERRATA no próprio arquivo.
+- **Pendências:** MUTANTES-REFS fechada de novo; MUTANTES-PREFLIGHT ABERTA até a delta (R1: T4c-4 do Dev-T4 + `--only
+  359,372,612` do orquestrador); fronteira 32 (corte por bytes na coluna de causa). Índice pelo gerador.
+- **KPI:** só a citação da matriz na entrada do ciclo 4 do history; nenhum número muda; `kpi-freeze --check` em dia.
+
+**Limpeza §C5 do K4b:** nenhum worktree, conteiner ou diretório de rodada criado no K4b além do arnês descartável do
+scratchpad (`devs4c/k4b/arn`, removido pelo nome ao fim); o worktree `C:/Users/AMP/w-devs4` segue mantido (a delta e a
+conferência podem pedir retomada); 0 processo vivo com os nomes do Dev-S4 na linha de comando; base viva nunca alvo.
