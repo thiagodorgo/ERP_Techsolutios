@@ -65,3 +65,48 @@ leitura do arquivo: `[G1]` l.1068, `[G2]` l.1109, `[G3]` l.1117, `[W1]` l.1147, 
 **Licao de terreno desta sessao (registrada para quem vier depois):** chamadas de shell em PARALELO com `cd` diferentes
 compartilham o diretorio corrente da sessao — um `npm run test:smoke` disparou na raiz (`Missing script`) e um `npm run check`
 rodou o `tsc` do backend. Toda medicao cwd-sensivel abaixo roda SEQUENCIAL, com caminho absoluto ou `npm --prefix frontend`.
+
+## §E1/E4/E5 — Teste vivo da página, gate do botão, lista do smoke (MEDIDO, 2026-10-02T05:40Z–05:46Z)
+
+**E1 — `frontend/tests/work-orders-page-live.test.tsx` (novo, 13 casos).** DOM mínimo escrito no próprio arquivo (sem
+dependência nova: `frontend/package.json` só ganha a linha da lista; `package-lock.json` intocado), `react-dom/client` +
+`React.act`, provedores reais (`MemoryRouter › AuthProvider › TenantProvider › PermissionProvider`), páginas reais
+(`WorkOrdersPage`, `WorkOrderDetailPage` via `Routes`), único dublê = `fetch` na borda com os BYTES do backend
+(`toWorkOrderListDto` `{items, pagination}` camelCase · 403 de `rbac.middleware.ts` · 500 genérico de `sendRouteError` ·
+detalhe `{data: toWorkOrderDto}` · timeline `{data: []}` · `approvals/pending` `{data: []}`); rota não prevista LANÇA.
+Cláusulas (a)–(f) do §4.1 do plano cumpridas (DOM instalado ANTES de qualquer `await import` de React/roteador/provedores/
+páginas; `navigator` só se ausente; `setInterval` capturado e nunca disparado sozinho; `IS_REACT_ACT_ENVIRONMENT`; unmount em
+`act` + `localStorage` limpo por caso). H3: espião de `console.error` — todo caso assere zero chamadas no fim, e um `after()`
+assere zero no arquivo inteiro. Casos: `[MD0]`, `[PV1]`–`[PV7]`, `[W1]`, `[W2]`, `[GB1]`–`[GB3]` — os do §8 do plano, nem mais
+nem menos. `[GB*]` iteram `ROLE_PERMISSIONS` importado de `../../src/modules/core-saas/permissions/catalog` (executado, sem
+import algum), com denominador (≥ 9 papéis, há papel COM e SEM `create`).
+
+**Vermelho-controle no head-base (obrigatório, §8 do plano) — o arquivo novo sobre o código de `origin/main`
+(WorkOrdersPage.tsx = blob `dbae6f9`, antes do E4):**
+
+```
+$ (cd frontend && VITE_USE_MOCKS=false node --test --import tsx tests/work-orders-page-live.test.tsx)    # Node 22.22.0
+# tests 13 # pass 11 # fail 2      ec=1
+not ok 11 - [GB1] 'Nova OS' do cabeçalho presente SSE o papel tem work_orders:create — para CADA papel de ROLE_PERMISSIONS (lista com 3 OS)
+not ok 12 - [GB2] no VAZIO, total de 'Nova OS' (cabeçalho + CTA) = 2 com work_orders:create e 0 sem — para CADA papel do catálogo
+   papéis cujo cabeçalho diverge da régua da rota POST /work-orders (work_orders:create, includes estrito):
+   technician · viewer · finance · inventory · field_technician · auditor · support   (7 — os 7 do Apêndice E do plano)
+ok  1 [MD0] · ok 2–8 [PV1]–[PV7] · ok 9 [W1] · ok 10 [W2] · ok 13 [GB3]    ← o código de hoje está certo nesses; a prova de que
+                                                                              eles PEGAM é por mutação (§7, seção §M abaixo)
+$ (… PATH=/opt/node20/bin:$PATH …)   # Node 20.20.0
+# tests 13 # pass 11 # fail 2      ec=1  — os mesmos 2 vermelhos
+```
+
+**E4 — `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`:** `actions={canCreate ? (<button …>Nova OS</button>) : undefined}`
+reusando o `canCreate` (l.238) que o CTA do vazio já usa; o comentário da l.237 passa a dizer que cabeçalho e CTA dividem o gate
+(`git diff -U1` → 11 inserções / 6 remoções, só nas l.237-238 e l.246-253 — espelho `PatiosPage.tsx:163-167`).
+
+```
+$ (cd frontend && VITE_USE_MOCKS=false node --test --import tsx tests/work-orders-page-live.test.tsx)    # Node 22, com E4
+# tests 13 # pass 13 # fail 0      ec=0
+$ (… Node 20 …)
+# tests 13 # pass 13 # fail 0      ec=0
+```
+
+**E5 — `frontend/package.json`:** só `scripts["test:smoke"]`, +1 caminho logo depois de `tests/work-orders-honest-errors.test.tsx`
+(`git diff -U0 | grep -c '^[-+][^-+]'` → 2 linhas; posição 102 da lista; 142 → 143 arquivos).
