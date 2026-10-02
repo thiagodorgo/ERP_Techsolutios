@@ -2572,3 +2572,84 @@ test("[V405] o CABECALHO de tabela e UMA unidade: `grep` sem -i nele da EXATAMEN
   assert.equal(ctrl.rejeicoes, 0, ctrl.out);
   assert.equal(ctrl.status, 0, ctrl.out);
 });
+
+// =================================================================================================
+// CICLO 4 -- T4c-4 (R1 da §15.10: a E4 do ciclo 4 revelou NAO-COBERTOS; identidade
+// `dev-tests-ciclo4-b-gov-mandato`). Tres pontos do pre-voo do S4a sem caso que os visse: l.359 (o `*)
+// continue ;;` que diz "sem a 1a linha real: NAO e colagem") e os dois bracos `*) morreu "refs …"` (l.372 e
+// l.612) — o contrato do refs e 0/1/2/3, e codigo FORA dele (126 nao executavel, 127 ausente) e MORTE nomeada,
+// nunca outro veredito (A15; plano §15.15(b)). Os tres sao verdes no head; o vermelho-controle e POR MUTACAO
+// (a forma que a ferramenta gera, no titulo). So adicoes; a lista historica dos 24 nao muda.
+// =================================================================================================
+
+/** shim de refs que REGISTRA cada chamada e so responde ao #715; o resto sai vazio, ec 0. */
+function refsQueRegistra(nome: string): { caminho: string; registro: string } {
+  const registro = path.join(dir, "bin", `${nome}.chamadas`);
+  const caminho = shim(
+    nome,
+    [
+      "#!/usr/bin/env bash",
+      `printf '%s\\n' "\${1:-}" >> "${registro.split(path.sep).join("/")}"`,
+      'if [ "${1:-}" = "715" ]; then',
+      `  printf '# refs do PR #%s — GERADO por scripts/mandato-refs.sh, para COLAR no mandato\\n' "\${1:-}"`,
+      `  printf '# gerado em: %s-%s · repo: t/t\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$$"`,
+      "  printf '\\n'",
+      "  printf 'ramo:            fix/x\\n'",
+      "fi",
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  return { caminho, registro };
+}
+
+test("[P359] bloco cercado cuja 1a linha comeca por DIGITOS nao e colagem: o refs nunca e chamado e sai PRE-VOO OK — ⇄ M7(salto) na l.359 do S4a: `*) continue ;;` -> `*) : ;;` (o numero do bloco vira PR)", () => {
+  const { caminho, registro } = refsQueRegistra("refs-p359.sh");
+  // controle NA MESMA rodada: numa colagem de verdade o shim E chamado, e o registro o mostra.
+  const corpo = saidaDoRefs("715", caminho);
+  rmSync(registro, { force: true });
+  const bloco = ["  ```", ...corpo.map((l) => (l === "" ? "" : `  ${l}`)), "  ```"];
+  const ctrl = roda(mandato("p359-ctrl", [UNIDADE_COLAGEM("715"), ...bloco]), undefined, caminho);
+  assert.equal(ctrl.status, 0, ctrl.out);
+  assert.match(ctrl.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #715 confere/m, ctrl.out);
+  assert.equal(existsSync(registro) ? readFileSync(registro, "utf8").trim() : "", "715", "◐ o registro de chamadas do shim nao funciona");
+  rmSync(registro, { force: true });
+  const r = roda(mandato("p359-digitos", ["- a suite, medido por: npm test", "  ```", "  3058 de 3060", "  ```"]), undefined, caminho);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+  assert.doesNotMatch(r.out, /NAO bate|referencias indisponiveis/, r.out);
+  assert.equal(existsSync(registro), false, `bloco que nao e colagem consultou o refs: ${existsSync(registro) ? readFileSync(registro, "utf8").trim() : ""}`);
+});
+
+test("[P372] refs MORTO fora do contrato (127 ausente; 126 binario) para o N de uma colagem: 1 REJ 'componente interno morreu: refs', nunca 'NAO bate' — ⇄ M8 na l.372 do S4a: `*) morreu …` -> `__NUNCA_CASA__*) morreu …`", () => {
+  const binario = spawnSync("bash", ["/bin/false"], { encoding: "utf8" });
+  assert.equal(binario.status, 126, `◐ 'bash /bin/false' nao sai 126 nesta plataforma: ${binario.status}`);
+  const morto127 = shim("refs-p372-127.sh", '#!/usr/bin/env bash\necho "refs: morte sintetica 127" >&2\nexit 127\n');
+  const corpo = [
+    UNIDADE_COLAGEM("716"),
+    "  ```",
+    "  # refs do PR #716 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato",
+    "  ramo:            fix/x",
+    "  ```",
+  ];
+  for (const [ec, refs] of [["127", morto127], ["126", "/bin/false"]] as const) {
+    const r = roda(mandato(`p372-${ec}`, corpo), undefined, refs);
+    assert.equal(r.status, 1, `${ec}: ${r.out}`);
+    assert.equal(r.rejeicoes, 1, `${ec}: ${r.out}`);
+    assert.match(r.out, new RegExp(`^REJEITADO {2}componente interno morreu: refs \\(mandato-refs\\.sh 716, colagem l\\.\\d+-\\d+\\) \\(ec=${ec}\\)`, "m"), `${ec}: ${r.out}`);
+    assert.doesNotMatch(r.out, /NAO bate|DESATUALIZADO|PRE-VOO OK/, `${ec}: a morte do refs virou outro veredito\n${r.out}`);
+  }
+});
+
+test("[P612] refs MORTO fora do contrato (127 ausente; 126 binario) no --sha-only: 1 REJ 'componente interno morreu: refs', nunca 'SHA … nao esta na saida' — ⇄ M8 na l.612 do S4a: `*) morreu …` -> `__NUNCA_CASA__*) morreu …`", () => {
+  const binario = spawnSync("bash", ["/bin/false"], { encoding: "utf8" });
+  assert.equal(binario.status, 126, `◐ 'bash /bin/false' nao sai 126 nesta plataforma: ${binario.status}`);
+  const morto127 = shim("refs-p612-127.sh", '#!/usr/bin/env bash\necho "refs: morte sintetica 127" >&2\nexit 127\n');
+  for (const [ec, refs] of [["127", morto127], ["126", "/bin/false"]] as const) {
+    const r = roda(mandato(`p612-${ec}`, [`- head \`${SHA_A}\`, medido por: true`]), "393", refs);
+    assert.equal(r.status, 1, `${ec}: ${r.out}`);
+    assert.equal(r.rejeicoes, 1, `${ec}: ${r.out}`);
+    assert.match(r.out, new RegExp(`^REJEITADO {2}componente interno morreu: refs \\(mandato-refs\\.sh 393 --sha-only\\) \\(ec=${ec}\\)`, "m"), `${ec}: ${r.out}`);
+    assert.doesNotMatch(r.out, /nao esta na saida|referencias indisponiveis|PRE-VOO OK/, `${ec}: a morte do refs virou outro veredito\n${r.out}`);
+  }
+});
