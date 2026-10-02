@@ -282,7 +282,33 @@ grep -cE '<padroes do db-catalog-write-guard>' tests/san3-05-acessos-de-platafor
 - §5/§6 dizem "26 fixtures"; o Apendice D lista 27 md5 e o A24 manda a 27a (`N10_any.ts`). Entram as **27** (o A24 e o
   criterio; o PERMITIDO e `tests/fixtures/san3-05-mutacoes/**`). A15 diz "28 subtestes", C3(1) diz "27 subtestes": aqui sao
   **29 subtestes** (1 congelado + 27 formas + 1 sumida) sob 1 teste-pai = `# tests 30`.
-## §7 — E7 testes T1–T15 e criterios A1–A24 com mutacao — EM APURACAO
+## §7 — E7 testes T1–T15 e criterios A1–A24 com mutacao — PARCIAL — 2026-10-02T04:10Z
+
+### MEDIDO — entregue e empurrado
+
+- **T1/T3** (`tests/production-runtime-gates.test.ts`, +9 casos G-DB-ROLE): `# tests 72 # pass 72 # fail 0` (era 63).
+- **T2/T4** (`tests/san3-05-runtime-role-bootstrap.test.ts`, novo): `# tests 12 # pass 12 # fail 0` (1,6 s). T2 le o EXPORT de
+  `src/config/env.ts` num processo filho a partir de um diretorio temporario vazio (o `config()` do dotenv 16.6.1 no topo do
+  `env.ts` le o `.env` do cwd e IGNORA `DOTENV_CONFIG_PATH` — medido no fonte do dotenv; o `DOTENV_CONFIG_PATH=/dev/null` do plano
+  nao isolaria nada na maquina do dono).
+- **T10–T12** (`tests/san3-05-leituras-de-plataforma-db.test.ts`, novo), cluster 54405, Node 20:
+  `# tests 11 # pass 11 # fail 0` (2,4 s); limpeza conferida: tenants `san3-05-%` 0, papeis `o6r_b01_%` 0, eventos/rateios de 2001 0.
+  **Vermelho-controle no head-base** (`origin/main` `4ab9d232`, worktree descartavel `/home/user/wt-san3-05-base` com `npm ci`
+  proprio, o mesmo arquivo de teste): `# tests 11 # pass 2 # fail 9` —
+  T10 eventos `[]` e agregados `[]`; **T11a efemero soma 0** (o "50 × vazio"); **T11b efemero agrega `[]` (H7-a medido: 0)**;
+  **T11c efemero `[]` cobrancas (H7-b medido: 0)**; T12 alocacoes `[]` pela fabrica, B8/A14 sem a classe nova;
+  **T11d controles VERDES no head-base** (os dois) — o diferencial nao e cego nem sempre-vermelho.
+  A enumeracao do router em runtime acha as 32 rotas de `/api/v1/platform`, todas etiquetadas, com o FORCE de cada tabela
+  conferido no catalogo.
+
+### FICOU DE FORA NESTE PONTO — e por que
+
+- **T5–T9, T14 (a/b) e T15** (`tests/san3-05-runtime-role-guard-db.test.ts`) e a entrada da `FROZEN_ALLOWLIST` (A21) **nao foram
+  entregues**. A escrita desse arquivo foi interrompida nesta sessao por um bloqueio da ferramenta, e o rascunho nao commitado
+  foi descartado (nada dele entrou no ramo). Consequencia: os criterios A1–A5, A4b, A6 (parte -db), A17, A20, A21 e A23 ainda
+  nao tem teste no ramo; o que existe deles e a medicao manual do §2 (boot real) e do §4 (substituto do H1).
+- A rodada de mutacoes (cada A# visto vermelho com a sua mutacao), a bateria completa do §8, o `npm test` para o KPI e o E8 (KPI e
+  registro) **ainda nao foram feitos**.
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
