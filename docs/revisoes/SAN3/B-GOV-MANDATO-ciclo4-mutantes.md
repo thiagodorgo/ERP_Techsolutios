@@ -4,8 +4,9 @@
 > mesma identidade (`dev-scripts-ciclo4-b-gov-mandato`, o Dev-S4) **depois** da E4 do orquestrador, com as duas matrizes
 > VERBATIM (§3 e §4), o resumo derivado e o custo medido (plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §15.3,
 > §15.4, §15.7 e §15.10 passo 5). **Resumo:** refs `N=44 K=44 NAO-COBERTOS=0` → `[M-1] = 0`; pré-voo `N=84 K=80
-> NAO-COBERTOS=4`, um equivalente conferido (441) → **`[M-1] = {359, 372, 612}`, EM ABERTO até a delta** da R1 da §15.10
-> (casos novos do Dev-T4 no T4c-4 e a rodada `--only 359,372,612` do orquestrador).
+> NAO-COBERTOS=4`, um equivalente conferido (441) → `[M-1] = {359, 372, 612}`, que ficou em aberto até a delta da R1 da
+> §15.10. **K4b-2 (2026-10-02):** os casos novos do Dev-T4 (T4c-4) e a delta `--only 359,372,612` do orquestrador
+> (`N=3 K=3 NAO-COBERTOS=0`, sob o lema do §14.18(3) com as premissas medidas — §4.2) → **`[M-1] = ∅`**.
 
 ## 0. Identidade das matrizes do ciclo 4 — tripla + ambiente (plano §15.4; §14.8 e §14.19)
 
@@ -581,7 +582,7 @@ copia pristina intacta (md5 igual)
 - **612** (M8 no braço `*) morreu "refs …"` do `--sha-only`) — **NÃO-COBERTO real**: SHA citado com o refs saindo `127` →
   pristino `… morreu: refs (… --sha-only) (ec=127)`, mutante `REJEITADO  SHA '…' nao esta na saida`.
 
-**Estado: `[M-1] = {359, 372, 612}` — EM ABERTO até a delta.** Pela R1 da §15.10: o Dev-T4 acrescenta os casos (só
+**Estado no K4b: `[M-1] = {359, 372, 612}` — EM ABERTO até a delta.** *(K4b-2: fechado pela delta — §4.2.)* Pela R1 da §15.10: o Dev-T4 acrescenta os casos (só
 adições, `T4c-4`) e o orquestrador roda a delta `bash scripts/mandato-mutantes.sh preflight --only 359,372,612 --jobs 3
 --timeout 1800 --equivalentes …` sobre o artefato e a ferramenta INALTERADOS (o lema do §14.18(3) passa a valer para a
 delta: artefato e ferramenta iguais; muda só o guard). **Não é fechado aqui.**
@@ -591,6 +592,102 @@ delta: artefato e ferramenta iguais; muda só o guard). **Não é fechado aqui.*
 fechada). **37 `MUTANTE-INVALIDO`** — os MESMOS 37 ids que os portões 1-3 do Dev-S4 contaram antes da rodada (§6),
 conferido por `comm` (0 diferença); versões viáveis com o conferente (§15.5 item 4). **Histograma:** `fail=1 ×15` e
 `fail=2 ×9` marcados `ATENCAO modal` — informação para a amostra P1b, não desqualificação.
+
+### 4.2 A delta da R1 (§15.10) — os 3 NÃO-COBERTOS com o guard do T4c-4, sob o lema do §14.18(3) (K4b-2)
+
+O Dev-T4 acrescentou `[P359]`, `[P372]` e `[P612]` (T4c-4, `3778faaf`, só adições) e o orquestrador rodou a delta no
+worktree `w-e4g` detached nesse commit, `npm ci` próprio, variável não exportada. **Cabeçalho do log (verbatim,
+`scratchpad/E4G/log.txt`):**
+
+```
+[04:36:17] worktree em 3778faaf4745aa8bde62868b637cb431aaaf5519
+[04:36:17] AMBIENTE (4o elemento da identidade, §15.4): MSYS_NO_PATHCONV exportadas=0 | git version 2.53.0.windows.2 | node v20.19.5 | MINGW64_NT-10.0-22631 3.6.6-1cdd4371.x86_64 x86_64
+[04:36:17] CABECALHO — identidade do objeto medido, por blob (git rev-parse HEAD:<caminho>, nunca digitado):
+[04:36:17]   e1ed8f0d  scripts/mandato-refs.sh
+[04:36:17]   093499a8  scripts/mandato-preflight.sh
+[04:36:17]   373e5728  scripts/mandato-mutantes.sh
+[04:36:17]   a8bd601b  tests/mandato-refs.test.ts
+[04:36:18]   9483be74  tests/mandato-preflight.test.ts
+[04:36:18]   123e6afd  docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-equivalentes.txt
+[04:36:39] npm ci ok
+[04:36:39] INICIO preflight DELTA (--controle --only 359,372,612 --jobs 3 --timeout 1800 --equivalentes docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-equivalentes.txt) — lema §14.18(3): confira no cabecalho que os blobs de scripts/* sao os da rodada completa
+[05:41:10] FIM preflight ec=0 | N=3 K=3 NAO-COBERTOS=0 EXCLUIDOS=0 ANOMALIAS=0 INVALIDOS=0 TIMEOUT=0 EQUIVALENTES-DECLARADOS=1 EQUIVALENTES-CONFERIDOS=0
+[05:41:12] limpeza: worktree C:/Users/AMP/w-e4g removido pelo nome
+[05:41:12] FIM refs=0 preflight=0
+```
+
+**O lema do §14.18(3) aplicado — "para todo ponto fora dos 3, o veredito da delta é o da rodada completa" — e as premissas
+MEDIDAS pelo Dev-S4 (o que falsificaria cada uma, em parêntese):**
+
+| premissa | completa (K4 `bb641b77`) | delta (T4c-4 `3778faaf`) | medido por |
+|---|---|---|---|
+| (a) artefato e ferramenta iguais | pré-voo `093499a8`, refs `e1ed8f0d`, ferramenta `373e5728`, equivalentes `123e6afd` | **os mesmos 4** | `git rev-parse <commit>:<caminho>` nos dois (blob diferente derrubaria) |
+| o que mudou | guard do pré-voo `2275bea0` | guard do pré-voo **`9483be74`** (o guard do refs `a8bd601b` não mudou) | idem |
+| (b) o guard só ganhou linhas | — | `git diff --numstat 2275bea0 9483be74` = **`81 0`**; linhas `-` = **0** | (uma remoção ou modificação de caso existente derrubaria) |
+| (c) nenhuma declaração de topo duplicada | — | `grep -oE '^(function\|const\|let\|var) …' \| sort \| uniq -d` no `9483be74` = **0** | (redeclarar `roda`/`mandato` mudaria casos existentes) |
+| (d) toda linha `+` de topo é `test(`, `function` nova, comentário ou fecho | — | 3 `test(` (`[P359]`, `[P372]`, `[P612]`), 1 `function refsQueRegistra` (0 ocorrências antes), comentários e fechos | (escrever num binding pré-existente no carregamento derrubaria) |
+| (e) base `fail=0` com o guard INTEIRO na delta | `fail=0 de tests=352` | **`fail=0 de tests=355`** (impressa pela ferramenta, abaixo) | a linha de base da rodada |
+| ambiente (4º elemento) | `MSYS_NO_PATHCONV exportadas=0`, git 2.53.0.windows.2, node v20.19.5, MINGW64 | **o mesmo** | os dois cabeçalhos |
+
+A premissa (f) do lema — a amostra de VERMELHOS da completa re-executada na delta — é da C2⁗ e do conferente, não deste
+registro.
+
+**Saída verbatim da delta (`scratchpad/E4G/preflight.txt`, 04:36:39 → 05:41:10, `--controle --only 359,372,612 --jobs 3
+--timeout 1800 --equivalentes …`):**
+
+```
+== mandato-mutantes: alvo=preflight artefato=scripts/mandato-preflight.sh guard=tests/mandato-preflight.test.ts
+== head: 3778faaf4745aa8bde62868b637cb431aaaf5519  rastreados na copia: 339 (o [B6] exige >= 20)
+== timeout por mutante: 1800 s (guard) · 60 s por insumo fixo · awk compila sem executar: sim
+== instrumento no pristino: 13 programa(s) awk compilam; insumos fixos ec=0/1
+
+== CONTROLE (c) DIFERENCIAL arnes x arvore real (A11) — o insumo percorre RAIZ
+   insumo 1: IDENTICO (ec=0)
+   insumo 2: IDENTICO (ec=1)
+   IDENTICO (copia e arvore dao a mesma saida nos 2 insumos; o arnes nao e a variavel)
+== LINHA DE BASE medida na copia pristina: fail=0 de tests=355 (em 411 s)
+== --only: 3 linhas pedidas, 3 sao pontos de decisao
+== pontos de decisao enumerados da fonte: 3
+
+== CONTROLE (a) SONDA sem guard: tem de sair NAO-COBERTA
+   pristino-com-sonda: fail=0 tests=355 (tem de bater a linha de base fail=0)
+   mutante da sonda  : operador=M1 fail=0 tests=355
+   SONDA NAO-COBERTA — a ferramenta acha buraco
+
+== CONTROLE (b) 4 NO-OPS (comentarios reescritos): tem de sair VERDE — nao se acusa TEXTO
+   l.3 VERDE (fail=0 de 355)
+   l.5 VERDE (fail=0 de 355)
+   l.7 VERDE (fail=0 de 355)
+   l.9 VERDE (fail=0 de 355)
+   no-ops verdes: 4 de 4
+
+== MATRIZ  linha | operador | #fail | veredito | causa
+359 | M7(salto) | fail=1 | VERMELHO | 1o not ok: [P359] bloco cercado cuja 1a linha comeca por DIGITOS nao e colagem: o refs nunca e chamado e sai PR | stderr: -
+372 | M8 | fail=1 | VERMELHO | 1o not ok: [P372] refs MORTO fora do contrato (127 ausente; 126 binario) para o N de uma colagem: 1 REJ 'compon | stderr: -
+612 | M8 | fail=1 | VERMELHO | 1o not ok: [P612] refs MORTO fora do contrato (127 ausente; 126 binario) no --sha-only: 1 REJ 'componente inter | stderr: -
+
+N=3 K=3 NAO-COBERTOS=0 EXCLUIDOS=0 ANOMALIAS=0 INVALIDOS=0 TIMEOUT=0 EQUIVALENTES-DECLARADOS=1 EQUIVALENTES-CONFERIDOS=0
+-- conjuntos (fronteira 28): NAO-COBERTOS = {  } · equivalentes declarados com fixture = { 441 } · conferidos = {  }
+-- histograma de fail= dos VERMELHOS (multiplicidade >= 10% de N = ATENCAO modal: informacao para a amostra P1b, nao desqualificacao):
+   fail=1 x3   <- ATENCAO modal
+[M-4] nenhum rastreado mudou durante a execucao
+copia pristina intacta (md5 igual)
+== ec=0
+```
+
+**`[M-1]` por conjuntos, re-derivado:** NÃO-COBERTOS da completa {359, 372, 441, 612} − VERMELHOS da delta {359, 372, 612}
+(`fail=1` cada, causa = o caso novo de cada um) − equivalente conferido por id e por fixture na completa {441} = **∅**. Nesta
+rodada a ferramenta imprime `EQUIVALENTES-CONFERIDOS=0` porque o 441 está fora do `--only`; a conferência dele é a da
+rodada completa (§4.1).
+
+**Achado na leitura desta saída — defeito da ferramenta, meu (S4b), registrado e NÃO consertado:** a ferramenta deveria
+imprimir `ANOMALIA-EQUIV 441` (um id declarado que não está entre os NÃO-COBERTOS da rodada) e **não imprimiu**. Causa,
+reproduzida isolada: o laço `awk 'NR==FNR{nc[$1]=1; next} …' nc.ids eq.ids` trata o arquivo de equivalentes como se
+fosse o primeiro quando o de NÃO-COBERTOS está VAZIO (`NR==FNR` vale no 1º arquivo NÃO VAZIO) — com NÃO-COBERTOS = ∅ a
+lista de anomalias sai vazia. O `EQUIVALENTES-CONFERIDOS` e o `ec` saem certos nos dois casos (0 e o número de
+NÃO-COBERTOS), logo **nada abate e nada fica verde por isso**: o efeito é uma ANOMALIA que deixa de ser mostrada. Fica como
+fronteira 33 (§7 item 7 e `P-GOV-MANDATO-3-FRONTEIRAS`); consertar agora mudaria o blob da ferramenta e a identidade das
+duas matrizes.
 
 ## 5. A ferramenta nova, medida pelos drills (Dev-S4) — cada um com o vermelho-controle histórico ao lado
 
@@ -687,3 +784,8 @@ e o excesso cobriu os controles que faltavam. A fórmula certa é a da tabela ac
    (`EXCLUIDO`, `NAO-COBERTO`) deixa ESPAÇO FINAL quando cai logo depois de um espaço — 4 linhas desta rodada, que o
    `git diff --check` recusaria; nelas o espaço final está grafado `⎵` (§3, §4). Consertar agora mudaria o blob da
    ferramenta e a identidade da matriz (§0); fica como **fronteira 32** em `P-GOV-MANDATO-3-FRONTEIRAS`.
+7. **`ANOMALIA-EQUIV` some quando NÃO-COBERTOS é vazio** (achado no K4b-2, na leitura da delta): o `awk 'NR==FNR…'` que
+   cruza os ids trata o arquivo de equivalentes como o primeiro quando o de NÃO-COBERTOS está vazio, e a lista de anomalias
+   sai vazia. `EQUIVALENTES-CONFERIDOS` e `ec` continuam certos (nada é abatido); só a anomalia deixa de ser mostrada.
+   Instância: a delta do §4.2 (441 declarado, fora do `--only`, sem a linha). **Fronteira 33** em
+   `P-GOV-MANDATO-3-FRONTEIRAS`; conserto: ler os NÃO-COBERTOS por `FILENAME`/`ARGIND` e não por `NR==FNR`.

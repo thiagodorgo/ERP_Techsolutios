@@ -5035,3 +5035,15 @@ publicado **rotulado como parcial**, com denominador e taxa, para o próximo blo
 **Limpeza §C5 do K4b:** nenhum worktree, conteiner ou diretório de rodada criado no K4b além do arnês descartável do
 scratchpad (`devs4c/k4b/arn`, removido pelo nome ao fim); o worktree `C:/Users/AMP/w-devs4` segue mantido (a delta e a
 conferência podem pedir retomada); 0 processo vivo com os nomes do Dev-S4 na linha de comando; base viva nunca alvo.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b-2 do Dev-S4 (2026-10-02) — a delta da R1 e o KPI recontado
+
+- **Delta** (orquestrador, 04:36 → 05:41): `N=3 K=3 NAO-COBERTOS=0` sob o lema do §14.18(3), premissas (a)-(e) medidas →
+  **`[M-1]` do pré-voo = ∅**; publicada verbatim em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §4.2.
+  `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` FECHADA com o teste de encerramento executado; fronteira 33 aberta (`ANOMALIA-EQUIV`
+  calado com NÃO-COBERTOS vazio — defeito da minha ferramenta, só de exibição). Índice pelo gerador.
+- **KPI:** o T4c-4 acrescentou 3 casos ao guard do pré-voo depois do K4 → backend **3451/3453** por N=2 reais em
+  Postgres e Redis descartáveis próprios (RUN1 `3453/3451/0/2`, 691 s, `ec=0` · RUN2 `3453/3451/0/2`, 698 s, `ec=0`); pré-voo 355, refs 44; `blocks_completed` 170.
+
+**Limpeza §C5 do K4b-2:** os conteineres `pg-devs4`/`redis-devs4` do N=2 removidos pelo nome pelo próprio script; nenhum
+worktree novo; o `C:/Users/AMP/w-devs4` segue mantido; 0 processo vivo com os nomes do Dev-S4; base viva nunca alvo.

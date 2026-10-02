@@ -527,3 +527,15 @@ já declarado no §4 do plano) + o `a3e52e37` (4 inserções, 2 remoções); as 
   **continua ABERTA** até a delta, com o teste de encerramento nela; `P-GOV-MANDATO-3-FRONTEIRAS` ganha a **32** (a coluna de
   causa da ferramenta é cortada por bytes — UTF-8 inválido em 2 linhas da matriz, publicadas verbatim; cosmético).
 - **KPI:** nenhum número muda; a entrada do ciclo 4 no history ganha a citação N/K/INVALIDOS/TIMEOUT e o `[M-1]` (§15.7).
+
+## Emenda 8 — K4b-2 (2026-10-02): a delta da R1 fecha o `[M-1]` do pré-voo, e o KPI recontado depois do T4c-4
+
+- **Delta** (orquestrador, `w-e4g` no T4c-4 `3778faaf`, `--controle --only 359,372,612 --jobs 3 --timeout 1800`):
+  `N=3 K=3 NAO-COBERTOS=0`, `ec=0`, base `fail=0 de tests=355`. Lema do §14.18(3) com as premissas (a)-(e) medidas: artefato,
+  ferramenta e equivalentes com os mesmos blobs da completa; só o guard do pré-voo mudou (`2275bea0` → `9483be74`, `81 0`).
+  **`[M-1]` por conjuntos = ∅** — `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §4.2.
+- **Pendências:** `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` **FECHADA** com o teste de encerramento executado (a delta);
+  `P-GOV-MANDATO-3-FRONTEIRAS` ganha a **33** (a ferramenta cala `ANOMALIA-EQUIV` quando os NÃO-COBERTOS são vazios — o
+  `awk 'NR==FNR…'` com 1º arquivo vazio; `ec` e conferidos certos; achado e reproduzido pelo Dev-S4 na leitura da delta).
+- **KPI recontado (o T4c-4 mudou o denominador depois do K4):** backend **3451/3453** por N=2 (RUN1 `3453/3451/0/2`, 691 s, `ec=0` · RUN2 `3453/3451/0/2`, 698 s, `ec=0`); pré-voo
+  355, refs 44; `blocks_completed` 170 inalterado; entrada nova no history, por último.
