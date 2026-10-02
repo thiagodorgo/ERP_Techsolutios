@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **428** |
-| IDs distintos | 417 |
-| **ABERTAS** | **313** |
+| Cabecalhos `## P-` | **432** |
+| IDs distintos | 421 |
+| **ABERTAS** | **317** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **244** |
+| — das quais **ativas nesta rodada** | **248** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 115 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **428 cabecalhos para 417 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **432 cabecalhos para 421 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 136
+## ABERTAS · balde A — material — 138
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -207,8 +207,10 @@
 | `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9827 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
 | `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 9839 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
 | `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 9912 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
+| `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 9943 | MÉDIA | **a atribuir** | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
+| `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 9963 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
 
-## ABERTAS · balde B — processo/registro — 108
+## ABERTAS · balde B — processo/registro — 110
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -320,6 +322,8 @@
 | `P-GOV-PAUSA-CASO-SEM-FONTE` | 9899 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
 | `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` | 9921 | BAIXA | sim | P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da  |
 | `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` | 9930 | BAIXA | sim | P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de  |
+| `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` | 9953 | BAIXA | **a atribuir** | P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa |
+| `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 9973 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
