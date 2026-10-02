@@ -343,3 +343,46 @@ test("regressão: produção + Nominatim público continua REJEITANDO", () => {
     "GEOCODING_ENABLED",
   );
 });
+
+// ── G-DB-ROLE · B-SAN3-05 (item 9) — a trava de boot do papel de banco não se desliga em produção ───────────
+//
+// T1/T3 do plano v3. O default por ambiente (`production` → `enforce`) vive no EXPORT de `src/config/env.ts`, e
+// por isso é medido por processo filho em `tests/san3-05-runtime-role-bootstrap.test.ts` (T2) — aqui o que se
+// prova é o SCHEMA: `skip` em produção é recusado no caminho exato, e o enum não aceita terceiro valor.
+
+test("G-DB-ROLE (T1): produção com DATABASE_RUNTIME_ROLE_GUARD='skip' → REJEITA no caminho exato", () => {
+  rejectsOn({ DATABASE_RUNTIME_ROLE_GUARD: "skip" }, "DATABASE_RUNTIME_ROLE_GUARD");
+});
+
+test("G-DB-ROLE (T1): a mensagem da recusa nomeia a pendência P-INFRA-RLS", () => {
+  const result = envSchema.safeParse(merge({ DATABASE_RUNTIME_ROLE_GUARD: "skip" }));
+  assert.equal(result.success, false);
+  if (!result.success) {
+    const issue = result.error.issues.find((item) => item.path.includes("DATABASE_RUNTIME_ROLE_GUARD"));
+    assert.match(issue?.message ?? "", /P-INFRA-RLS/);
+  }
+});
+
+test("G-DB-ROLE (T1): produção SEM a variável (default do export = enforce) e com 'enforce' explícito → ACEITA", () => {
+  accepts({ DATABASE_RUNTIME_ROLE_GUARD: undefined });
+  accepts({ DATABASE_RUNTIME_ROLE_GUARD: "enforce" });
+});
+
+for (const invalido of ["off", "ENFORCE", "true", ""]) {
+  test(`G-DB-ROLE (T3): produção com DATABASE_RUNTIME_ROLE_GUARD='${invalido}' (fora do enum) → REJEITA`, () => {
+    rejectsOn({ DATABASE_RUNTIME_ROLE_GUARD: invalido }, "DATABASE_RUNTIME_ROLE_GUARD");
+  });
+}
+
+test("G-DB-ROLE (T3): fora de produção o enum também vale ('disabled' em desenvolvimento → REJEITA)", () => {
+  const result = envSchema.safeParse({ NODE_ENV: "development", DATABASE_RUNTIME_ROLE_GUARD: "disabled" });
+  assert.equal(result.success, false);
+  if (!result.success) {
+    assert.ok(result.error.issues.some((issue) => issue.path.includes("DATABASE_RUNTIME_ROLE_GUARD")));
+  }
+});
+
+test("G-DB-ROLE (T3): teste com 'enforce' e desenvolvimento com 'skip' → ACEITA (só produção barra o skip)", () => {
+  assert.equal(envSchema.safeParse({ NODE_ENV: "test", DATABASE_RUNTIME_ROLE_GUARD: "enforce" }).success, true);
+  assert.equal(envSchema.safeParse({ NODE_ENV: "development", DATABASE_RUNTIME_ROLE_GUARD: "skip" }).success, true);
+});
