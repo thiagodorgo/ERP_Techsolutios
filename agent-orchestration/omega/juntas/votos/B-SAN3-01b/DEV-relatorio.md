@@ -209,3 +209,117 @@ $ (cd frontend && VITE_USE_MOCKS=false node --test --import tsx tests/work-order
 $ sed N-PG-PAINEL in place → node --test … work-orders-page-live.test.tsx → # tests 13 # pass 10 # fail 3   ec=1
 not ok 2 [PV1] · not ok 3 [PV2] · not ok 7 [PV6]        ← exatamente os casos que leem o painel; restauro hash=544c781ce0b3=blob
 ```
+
+## §M — Mutações do §7, no head da entrega (MEDIDO, runner `mut/run.mjs` adaptado do Apêndice D; 2026-10-02T06:04Z–06:30Z, Node 22.22.0)
+
+Cada mutação foi aplicada IN PLACE, medida nos três gates do job `frontend` (bloco = os 2 arquivos do bloco · `tsc` · `test:smoke`)
+e RESTAURADA com prova (`git hash-object` = blob do HEAD; arquivos criados removidos; `git status` limpo fora de relatório/KPI/registro).
+"Vermelho" = bloco **e** smoke com `# fail ≥ 1`. Log integral: rascunho da sessão (`mut/run.log`); as linhas `[id]`, `diff`, `bloco`,
+`smoke`, `restauro` de cada uma estão resumidas abaixo. A 1ª rodada (contaminada pelo arnês, §E1-bis) está em `mut/run-1a-rodada-contaminada.log`
+e **não é insumo**; esta é a rodada completa pós-correção.
+
+| mutação | esperado | bloco (tests/pass/fail) · vermelhos | tsc | smoke (tests/pass/fail) | restauro |
+|---|---|---|---|---|---|
+| `N-PG-PAINEL` | VERMELHO | 79/76/3 · [PV1] [PV2] [PV6] | 0 | 1214/1211/3 · [PV1] [PV2] [PV6] | OK (WorkOrdersPage.tsx OK) |
+| `N-PG-KPI` | VERMELHO | 79/76/3 · [PV1] [PV2] [PV6] | 0 | 1214/1211/3 · [PV1] [PV2] [PV6] | OK (WorkOrdersPage.tsx OK) |
+| `S20-message-undefined` | VERMELHO | 79/78/1 · [PV2] | 0 | 1214/1213/1 · [PV2] | OK (WorkOrdersPage.tsx OK) |
+| `N-W1TXT` | VERMELHO | 79/78/1 · [W1] | 0 | 1214/1213/1 · [W1] | OK (useWorkOrders.ts OK) |
+| `N-W1TXT-linha` | VERMELHO | 79/78/1 · [W1] | 0 | 1214/1213/1 · [W1] | OK (useWorkOrders.ts OK) |
+| `N-W2TXT` | VERMELHO | 79/78/1 · [W2] | 0 | 1214/1213/1 · [W2] | OK (useWorkOrderDetail.ts OK) |
+| `N-BARREL1-controle` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/modules/work-orders/reexport-a.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `N-BARREL2` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/modules/work-orders/reexport-a.ts existe=false · src/modules/work-orders/reexport-b.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `N-BARREL3-renome` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/modules/work-orders/reexport-a.ts existe=false · src/modules/work-orders/reexport-b.ts existe=false · src/modules/work-orders/reexport-c.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `C7-reexport-local` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/modules/work-orders/reexport-a.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `C10-default-reexport` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/modules/work-orders/reexport-a.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `C12-dinamico-via-barrel2` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/modules/work-orders/reexport-a.ts existe=false · src/modules/work-orders/reexport-b.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `C6-helper-fora-das-raizes` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (src/lib/wo-demo2.ts existe=false · src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `N-FORA-RAIZ` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | OK (useServiceQuoteReferences.ts OK) |
+| `N-LITERAL` | VERMELHO | 79/78/1 · [G1b] | 0 | 1214/1213/1 · [G1b] | OK (src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `C11-literal-em-??` | VERMELHO | 79/78/1 · [G1b] | 0 | 1214/1213/1 · [G1b] | OK (src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `C9-guardado-negativo` | VERDE (negativo) | 79/79/0 · (nenhum) | 0 | 1214/1214/0 ·  | OK (src/modules/work-orders/mut-summary.service.ts existe=false) |
+| `A10-resolveModule-null` | VERMELHO | 79/76/3 · [G1] [G2] [G3] | 0 | 1214/1211/3 · [G1] [G2] [G3] | OK (work-orders-honest-errors.test.tsx OK) |
+| `A10-GUARDED_FILES-vazio` | VERMELHO | 79/79/0 · (nenhum) | 0 | 1214/1214/0 ·  | OK (work-orders-honest-errors.test.tsx OK) |
+| `A10-varredor-pula-catch` | VERMELHO | 79/76/3 · [G1b] [G2] [G3] | 0 | 1214/1211/3 · [G1b] [G2] [G3] | OK (work-orders-honest-errors.test.tsx OK) |
+| `A11-desfazer-E4` | VERMELHO | 79/77/2 · [GB1] [GB2] | 0 | 1214/1212/2 · [GB1] [GB2] | OK (WorkOrdersPage.tsx OK) |
+| `A11-canCreate-read` | VERMELHO | 79/77/2 · [GB1] [GB2] | 0 | 1214/1212/2 · [GB1] [GB2] | OK (WorkOrdersPage.tsx OK) |
+| `A11-CTA-sem-canCreate` | VERMELHO | 79/78/1 · [GB2] | 0 | 1214/1213/1 · [GB2] | OK (WorkOrdersPage.tsx OK) |
+| `A11-classe-do-botao` | VERDE no teste — pego pela C3 (HTML byte-idêntico do cabeçalho, §10) | 79/79/0 · (nenhum) | 0 | 1214/1214/0 ·  | OK (WorkOrdersPage.tsx OK) |
+| `A12-canDispatch-true` | VERMELHO | 79/78/1 · [GB3] | 0 | 1214/1213/1 · [GB3] | OK (WorkOrdersPage.tsx OK) |
+| `A13-React.act-undefined` | VERMELHO (mensagem nomeia a causa) | 79/66/13 · [MD0] [PV1] [PV2] [PV3] [PV4] [PV5] [PV6] [PV7] [W1] [W2] [GB1] [GB2] [GB3] | 0 | 1214/1201/13 · [MD0] [PV1] [PV2] [PV3] [PV4] [PV5] [PV6] [PV7] [W1] [W2] [GB1] [GB2] [GB3] | OK (work-orders-page-live.test.tsx OK) |
+| `A13-setInterval-dispara` | VERMELHO | 79/78/1 · [MD0] | 0 | 1214/1213/1 · [MD0] | OK (work-orders-page-live.test.tsx OK) |
+| `A15a-smoke-sem-arquivo-novo` | smoke 1201 ≠ 1214 (o arquivo vivo deixa de rodar na CI) | — ·  | — | 1201/1201/0 ·  | OK (package.json OK) |
+| `N-S1ERR` | VERDE (§13 N2 — pendência P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL) | 79/79/0 · (nenhum) | 0 | 1214/1214/0 ·  | OK (WorkOrderCreatePage.tsx OK) |
+
+**Leitura por critério do §7:** A1/A2 `N-PG-PAINEL`, `N-PG-KPI` → `[PV1]` `[PV2]` `[PV6]`; S20 → `[PV2]` (o texto do service) · A4 `N-W1TXT`,
+`N-W1TXT'` → `[W1]` · A5 `N-W2TXT` → `[W2]` (sem tocar o hook na entrega) · A6 `N-BARREL2`, `N-BARREL3`+renome, C7, C10, C12 → `[G1]`
+(todas VERDES no head-base do `B-SAN3-01`, §0.6 do plano; só o controle `N-BARREL1` já era vermelho) · A7 C6 → `[G1]` pelo **fecho** ("alcançável …
+fecho de import das raízes") · A8 `N-FORA-RAIZ` → `[G1]` · A9 `N-LITERAL`, C11 → `[G1b]` (e o negativo `{ id, workOrder: null }` no mesmo arquivo
+passa; C9 guardado fica VERDE) · A10 ver abaixo · A11 desfazer-E4 (= vermelho-controle no head-base) e `canCreate=read` → `[GB1]` `[GB2]`;
+CTA sem `canCreate` → `[GB2]`; classe do botão → VERDE no teste **por desenho** (a igualdade de HTML do cabeçalho é da C3, §10 do plano)
+· A12 → `[GB3]` · A13 `React.act` ausente → 13/13 vermelhos com o 1º erro nomeando a causa; `setInterval` disparando → `[MD0]`
+· A15(a) lista sem o arquivo novo → smoke **1201/1201** (≠ 1214: o arquivo vivo deixaria de rodar na CI) · `N-S1ERR` → VERDE (§13 N2,
+`P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL`, dono `B-SAN3-10`).
+
+### §M-bis — A10: uma mutação ficou VERDE e falsificou o guard; corrigido e remedido (06:31Z–06:34Z)
+
+`A10-GUARDED_FILES-vazio` (`GUARDED_FILES = []`, a forma `ROOT_FILES = []` do plano) ficou **VERDE** na rodada acima (`79/79/0`,
+smoke `1214/1214/0`): o denominador "arquivo de fronteira presente" iterava a PRÓPRIA lista (`for (const file of GUARDED_FILES)`) — lista
+vazia, laço vazio, nada asserido. É a classe que o §7 A10 existe para pegar (guard que não olha). Correção (só no arquivo de teste):
+`BOUNDARY_FILE` nomeado em constante própria, `GUARDED_FILES = [BOUNDARY_FILE]`, e o `[G1]` assere `GUARDED_FILES.length >= 1` **e**
+`scan.roots.includes(BOUNDARY_FILE)` — o caminho literal não depende da lista. Reexecução das três A10 (`mut/run-a10-rerun.log`):
+
+| mutação | esperado | bloco (tests/pass/fail) · vermelhos | tsc | smoke (tests/pass/fail) | restauro |
+|---|---|---|---|---|---|
+| `A10-resolveModule-null` | VERMELHO | 79/76/3 · [G1] [G2] [G3] | 0 | 1214/1211/3 · [G1] [G2] [G3] | **DIVERGE** (work-orders-honest-errors.test.tsx DIVERGE) |
+| `A10-GUARDED_FILES-vazio` | VERMELHO | 79/78/1 · [G1] | 0 | 1214/1213/1 · [G1] | **DIVERGE** (work-orders-honest-errors.test.tsx DIVERGE) |
+| `A10-varredor-pula-catch` | VERMELHO | 79/76/3 · [G1b] [G2] [G3] | 0 | 1214/1211/3 · [G1b] [G2] [G3] | **DIVERGE** (work-orders-honest-errors.test.tsx DIVERGE) |
+
+(`restauro: DIVERGE` nessa rerun é esperado e correto: o blob do HEAD ainda era o da versão anterior do arquivo de teste — a correção
+estava no disco, não commitada; o runner restaurou a cópia corrigida, `hash=ba05e0c4586d`, que é a que este commit versiona.)
+
+## §A3 — Oráculo de sítios de decisão da página (MEDIDO, `gen/sitios-pagina.mjs` verbatim do Apêndice C; 06:34Z–06:37Z)
+
+```
+$ (cd frontend && VITE_USE_MOCKS=false node $S/gen/sitios-pagina.mjs . --oracle "node --test --import tsx tests/work-orders-page-live.test.tsx")
+# sementes (hook/permissões): items, loading, source, status, error, stale, lastUpdatedAt, refresh, context, permissions
+# contaminados (ponto fixo): handleAdvance, handleRevokeClick, target, handleRevokeConfirm, result, kpis, kpiDetails, filtered, total, maxPage, effectivePage, start, end, pageItems, canDispatch, kpiSkeleton, kind, degraded, showFailure, canCreate
+# SÍTIOS DE DECISÃO: 41          ← 39 no head-base do plano + 2 do E4 (o `?:` de `canCreate` nas ações e o atributo `actions`)
+# oráculo "…work-orders-page-live.test.tsx": VERMELHO em 32/41 · restauro por hash a cada mutação (blob 544c781ce0b3)
+VERDES (9): S18 attr onRetry (StaleDataBanner) · S28 attr filtered · S33 attr onAdvance · S34 attr onRevoke · S37 attr onPrev · S38 attr onNext
+            · S39 attr canPrev · S40 attr canNext · S41 attr onConfirm   ← EXATAMENTE os 9 tipos de fiação de interação que o A3 permite
+```
+
+**Falsificação do próprio teste, achada pela 1ª passada do oráculo (06:34Z–06:35Z) e corrigida:** a 1ª passada deu `VERMELHO em 30/41`, com
+**S12 `attr kpiDetails` → `kpiDetails={null}`** e **S13 `?:` `degraded ? null : kpiDetails`** VERDES — fora da lista permitida → critério
+reprovado por construção (default negar). Causa: o teste vivo não asseria a clicabilidade dos KPIs (a sonda do plano media `kpiClicavel`).
+Correção (só no arquivo de teste): `read().kpiClickable` (= `ClickableKpiCard`, `role="button"` + `aria-haspopup="dialog"`) e asserções
+`0` em `[PV1]`/`[PV2]` (degradado não abre pop-up sobre "—"), `4` em `[PV3]`/`[PV4]`/`[W1]`. 2ª passada: 32/41, os 9 verdes acima.
+Controle do controle (plano §0.5 L2): o mesmo oráculo com o teste de HOJE do `B-SAN3-01` deu 0/39.
+
+## §A14/§A16 — Cabeçalhos por comando e escopo (MEDIDO, 06:0xZ)
+
+A14 — laço do §7 nos 3 cabeçalhos → `ok` ×3; `grep -c 'em mock/erro voltam vazios'` → 0 (saídas em §E2/E3). Vermelho-controle: o plano
+mediu os 3 `VERMELHO` no head-base (`profundidade=0 fecho=0 nao-prova=0`) e `grep -c` = 1 — reproduzido por leitura de `git show origin/main:`.
+
+A16 — `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO do §6: `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` ·
+`frontend/tests/work-orders-page-live.test.tsx` (novo) · `frontend/tests/work-orders-honest-errors.test.tsx` · os 3 cabeçalhos (só comentário,
+0 linhas não-comentário) · `frontend/package.json` (2 linhas, SÓ `scripts["test:smoke"]`) · `Kpis/{app.js,kpis-latest.json,kpis-history.json,
+kpis-history.md}` · registro (`pendencias.md`, `pendencias-indice.md` gerado, `status-geral.md`, `log-execucao.md`, este relatório; o comando
+e o mandato já estavam no ramo). PROIBIDO tocado: **nenhum** — `grep -icE '^(src|prisma|mobile|\.github|\.claude|\.agents)/|^(CLAUDE|AGENTS)\.md$|package-lock'`
+→ 0; `package-lock.json`, `frontend/package-lock.json`, `package.json` da raiz, hooks, `App.tsx`, `work-orders.service.ts`, `Kpis/index.html`
+byte-iguais à `origin/main`.
+
+## §BAT — Bateria do §8 no HEAD FINAL (os dois arquivos de teste mudaram depois da bateria do §E2/E3) — MEDIDO, 06:37:33Z–06:39:44Z
+
+```
+bloco (cwd frontend, VITE_USE_MOCKS=false) Node 22.22.0 → # tests 79 # pass 79 # fail 0   ec=0
+  # [G1] raízes=81 (64/16 + 1) · fecho=48 · refs=20 (guardadas=20) · vazamentos 0/0   # [G1b] vistos=19 · com identidade=0
+bloco Node 20.20.0                              → # tests 79 # pass 79 # fail 0   ec=0
+npm --prefix frontend run check                  → ec=0
+npm --prefix frontend run test:smoke (Node 22)   → # tests 1214 # pass 1214 # fail 0 # skipped 0   ec=0
+test:smoke (Node 20)                             → # tests 1214 # pass 1214 # fail 0 # skipped 0   ec=0
+npm --prefix frontend run build                  → ✓ built in 9.66s   ec=0 ; dist e tsbuildinfo removidos (§C5)
+node --check Kpis/app.js · kpi-freeze --check    → ec=0 · em dia (snapshot 2026-10-02)
+tests/kpi-*.test.ts (3 arquivos)                 → # tests 29 # pass 29 # fail 0
+git diff --check                                 → ec=0
+```

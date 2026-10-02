@@ -476,6 +476,8 @@ function read(container: MiniElement) {
     dataStates: all.filter((el) => el.hasAttribute("data-state")).map((el) => el.getAttribute("data-state")!),
     kpiValues: all.filter((el) => hasClass(el, "pat-kpi__value")).map(text),
     kpiSkeletonCards: all.filter((el) => hasClass(el, "pat-kpi") && el.getAttribute("aria-hidden") === "true").length,
+    // `ClickableKpiCard` (role="button" + aria-haspopup="dialog"): só com dado E `kpiDetails` — em falha o KPI não abre pop-up sobre "—".
+    kpiClickable: all.filter((el) => el.getAttribute("role") === "button" && el.getAttribute("aria-haspopup") === "dialog").length,
     rows: all.filter((el) => hasClass(el, "pat-os-row")).length,
     rowSkeletons: all.filter((el) => hasClass(el, "pat-os-grid") && !hasClass(el, "pat-os-grid--head") && el.getAttribute("aria-hidden") === "true").length,
     alerts: all.filter((el) => el.getAttribute("role") === "alert").length,
@@ -563,6 +565,7 @@ test("[PV1] 403 do backend → um único data-state, 'forbidden'; 4 KPIs sem dí
     assert.deepEqual(r.dataStates, ["forbidden"], page.html());
     assert.equal(r.kpiValues.length, 4);
     assert.ok(noDigit(r.kpiValues), `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
+    assert.equal(r.kpiClickable, 0, "KPI degradado não abre pop-up sobre \"—\"");
     assert.equal(r.rows, 0);
     assert.equal(r.alerts, 0, "sem permissão não é falha de sistema: sem role=alert");
     assert.deepEqual(r.count, [], "sem contagem de ordens");
@@ -581,6 +584,7 @@ test("[PV2] 500 do backend → 'error' com role=alert, 1 'Tentar novamente', KPI
     assert.equal(r.retry, 1);
     assert.equal(r.kpiValues.length, 4);
     assert.ok(noDigit(r.kpiValues), `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
+    assert.equal(r.kpiClickable, 0, "KPI degradado não abre pop-up sobre \"—\"");
     assert.equal(r.rows, 0);
     assert.ok(r.panelDetail.flat().includes(SERVICE_ERROR_TEXT), `o painel mostra a razão do service: ${JSON.stringify(r.panelDetail)}`);
   });
@@ -594,6 +598,7 @@ test("[PV3] 200 vazio → 'empty' EMBUTIDO (busca presente), KPIs 0, '0 ordens',
     assert.deepEqual(r.dataStates, ["empty"], page.html());
     assert.equal(r.search, 1, "o vazio fica dentro do card: a busca continua na tela");
     assert.deepEqual(r.kpiValues, ["0", "0", "0", "0"]);
+    assert.equal(r.kpiClickable, 4, "com dado (vazio legítimo) os 4 KPIs abrem o pop-up de participação");
     assert.deepEqual(r.count, ["0 ordens"]);
     assert.equal(r.novaOs, 2, "cabeçalho + CTA do vazio");
     assert.equal(r.rows, 0);
@@ -610,6 +615,7 @@ test("[PV4] 200 com 3 → 3 linhas, KPIs das linhas, paginador '1–3 de 3', '3 
     assert.deepEqual(r.dataStates, [], page.html());
     assert.equal(r.rows, 3);
     assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "abertas · em andamento · atrasadas · concluídas, derivadas das 3 linhas");
+    assert.equal(r.kpiClickable, 4, "com dado os 4 KPIs abrem o pop-up de participação");
     assert.deepEqual(r.pagerRange, ["1–3 de 3"]);
     assert.deepEqual(r.count, ["3 ordens"]);
     assert.equal(r.alerts, 0);
@@ -672,6 +678,7 @@ test("[W1] lista: 3 OS, depois 500 no tick do auto-refresh → data-state 'stale
     assert.deepEqual(r.dataStates, ["stale"], page.html());
     assert.equal(r.rows, 3, "falha em 2º plano MANTÉM as 3 linhas");
     assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "KPIs continuam os das linhas");
+    assert.equal(r.kpiClickable, 4, "desatualizado NÃO degrada os KPIs");
     assert.equal(r.alerts, 0, "a tela NÃO é trocada pelo erro");
     assert.equal(r.stale.length, 1);
     assert.match(r.stale[0], /Dados desatualizados — última atualização às \d{2}:\d{2}/, "a faixa diz quando foi a última atualização boa");

@@ -1212,7 +1212,10 @@ const GUARDED_DIRS = [
   fileURLToPath(new URL("../src/modules/work-orders/", import.meta.url)),
   fileURLToPath(new URL("../src/modules/operations/dispatches/", import.meta.url)),
 ];
-const GUARDED_FILES = [fileURLToPath(new URL("../src/modules/registry/service-quotes/useServiceQuoteReferences.ts", import.meta.url))];
+// O arquivo de fronteira é nomeado DUAS vezes de propósito: na lista de raízes E no denominador do [G1] (`BOUNDARY_FILE`).
+// Mutação `GUARDED_FILES = []` (A10 do plano) ficou VERDE na 1ª versão — o denominador iterava a própria lista (laço vazio).
+const BOUNDARY_FILE = fileURLToPath(new URL("../src/modules/registry/service-quotes/useServiceQuoteReferences.ts", import.meta.url));
+const GUARDED_FILES = [BOUNDARY_FILE];
 // Sítio SABIDO (denominador de [G1]): `work-orders.service.ts` referencia `getMockWorkOrdersData` atrás de `isMockMode()`.
 const KNOWN_SITE = { file: "src/modules/work-orders/work-orders.service.ts", name: "getMockWorkOrdersData" };
 
@@ -1228,7 +1231,8 @@ test("[G1] alcance real: em work-orders/**, operations/dispatches/**, no arquivo
   // Denominadores: a varredura tem de ENXERGAR as raízes, o arquivo de fronteira, o fecho e as referências legítimas ao mock
   // (as que ficam atrás de isMockMode()) — e um sítio SABIDO. Um guard que não resolve import nenhum passaria "verde" sem olhar nada.
   assert.ok(scan.filesPerDir.every((n) => n > 0), `arquivos varridos por pasta-raiz: ${scan.filesPerDir.join(" / ")}`);
-  for (const file of GUARDED_FILES) assert.ok(scan.roots.includes(file), `arquivo de fronteira presente nas raízes: ${slash(relative(FRONTEND_ROOT, file))}`);
+  assert.ok(GUARDED_FILES.length >= 1, "há arquivo-raiz avulso declarado (o de fronteira)");
+  assert.ok(scan.roots.includes(BOUNDARY_FILE), `arquivo de fronteira presente nas raízes: ${slash(relative(FRONTEND_ROOT, BOUNDARY_FILE))}`);
   assert.ok(scan.closure.length > 0, `fecho de import fora das raízes: ${scan.closure.length} arquivo(s)`);
   assert.ok(scan.rootRefs.length >= 10, `referências de origem mock vistas nas raízes: ${scan.rootRefs.length}`);
   const known = scan.rootRefs.find((ref) => ref.where.startsWith(`${KNOWN_SITE.file}:`) && ref.name === KNOWN_SITE.name);
