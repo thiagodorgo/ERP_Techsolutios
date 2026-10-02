@@ -156,7 +156,49 @@ linha 2: level 50 "Failed to start ERP Techsolutions API" · error.code = RUNTIM
 exige CINCO esperas, o que com cinco sondas so fecha esperando depois da ultima falha (sem nova sonda). Implementei a leitura
 que o teste T4 do plano nomeia — **5 sondas** — com espera dobrando ENTRE elas (2, 4, 8, 16 s = 30 s ate a recusa). Quem
 quiser os 62 s literais muda `attempts`; o T4 fixa 5 sondas.
-## §3 — E3 laco por organizacao (rls.ts + repositorios de nuvem) — EM APURACAO
+## §3 — E3 laco por organizacao (rls.ts + repositorios de nuvem) — 2026-10-02T03:52Z
+
+### MEDIDO — o que foi escrito
+
+- `src/database/rls.ts`: `forEachTenantRls(client, tenantIds, work)` — UMA transacao (timeout 60 s, o do precedente
+  B-O6R-06), `await setTenantRlsContext(tx, tenantId)` como 1a instrucao de cada volta, concatenacao na ordem de `tenantIds`;
+  `assertRowsBelongToTenant(rows, tenantId, table)` → `TenantRowsLeakError` com `code = "rows_from_another_tenant"`.
+- `cloud-usage-prisma.repository.ts`: os ramos SEM `tenantId` de `listEvents`/`listDailyAggregates` passam a
+  `tenant.findMany` → `forEachTenantRls` → `new PrismaCloudUsageRepository(tx).listX({ ...filters, tenantId })` + canario +
+  reordenacao (`occurredAt asc` / `date asc`). O `tenantId` vai TAMBEM no filtro: superusuario ignora a politica (a mesma
+  nota do precedente `cloud-cost-allocation-prisma.repository.ts`, `sumUsageBasis`).
+- `cloud-charge-prisma.repository.ts`: nasce `RlsPrismaCloudChargeRepository implements CloudChargeRepository`; os 10 metodos
+  de tabelas SEM FORCE (regras, runs de calculo, run de rateio, organizacoes) delegam ao cru (`semForceRls()`); reescritos:
+  `replaceTenantCharges` (todas as organizacoes ∪ as das cobrancas; `deleteMany` + `create` por volta com `tenant_id` no
+  filtro; uma transacao; devolve na ordem de entrada), `listTenantCharges` (por organizacao + canario, `createdAt asc`),
+  `listAllocationTenantAllocations` (por organizacao + canario, sem o `take: 100_000` global — R10). O `data` do `create`
+  virou `buildTenantChargeData` (o cru e o envoltorio usam a mesma funcao). `createPrismaCloudChargeRepository()` devolve
+  o envoltorio, tipo de retorno = a interface `CloudChargeRepository`.
+
+`npm run check` → ec=0.
+
+Inventario do gerador v3 sobre o head com E1–E3 (o congelado do T13 vai ser este, com motivo por chave):
+```
+# L1: call-sites … = 725 (+5) · L2: instanciações = 453 (+1) · INVENTÁRIO SUSPEITO: 53 chaves · sha1=79e1d86e89ad11230b0c8967d2368a939a0c6d6b
+diff <53 do origin/main> <53 do head>:
+- L2 cloud-charge…  new PrismaCloudChargeRepository(prisma)  CRU ×1                                   (sitios 3–6: a fabrica crua sumiu)
+- L2 cloud-usage…   new PrismaCloudUsageRepository(this.prismaClient)  INJETADO-TRANSITIVO:SUSPEITO-ACIMA(… RlsPrismaCloudUsageRepository(prisma) CRU) ×2   (sitios 1–2)
+- L2 cloud-usage…   new RlsPrismaCloudUsageRepository(prisma)  CRU ×1                                  (o envoltorio deixou de repassar o client a construtor de classe injetada)
++ L1 src/database/runtime-role.ts  probeRuntimeRolePosture  client  RAW-SQL($queryRawUnsafe) OPACO ? PARAMETRO(client) ×2   (sonda de catalogo pg_roles/pg_class; nao toca tabela FORCE)
++ L2 cloud-charge…  new PrismaCloudChargeRepository(this.prismaClient)  INJETADO-TRANSITIVO:SUSPEITO-ACIMA(… new RlsPrismaCloudChargeRepository(prisma) CRU) ×1   (delegacao ao cru so para tabelas sem FORCE)
++ L2 cloud-charge…  new RlsPrismaCloudChargeRepository(prisma)  CRU ×1                                 (o envoltorio recebe o client raiz por desenho — mesma forma da chave de uso que existia)
+```
+
+### FALSIFICACOES (plano × medido)
+
+1. **"nascem so SOB-CONTEXTO (nao suspeitas)" (§2.2(b))** — falso para o desenho que o proprio plano manda ("delegando ao cru
+   so o que toca tabela sem RLS"): delegar ao cru com o client raiz faz do envoltorio uma classe injetada, e nascem as duas
+   chaves `+ L2 cloud-charge…` acima. A terceira chave nova (`runtime-role.ts`) e a sonda SQL da trava (toda RAW sem tabela
+   literal e OPACA → suspeita, por desenho do gerador). As tres entram no congelado com motivo, como o A15(c) exige.
+2. **`git grep -n 'PrismaCloudChargeRepository(prisma)' -- src` → vazio (§8)** — falso por construcao: o nome que o plano da
+   ao envoltorio contem a substring. Medido: o grep literal casa `l.324: return new RlsPrismaCloudChargeRepository(prisma);`;
+   a forma delimitada `git grep -nE '\bnew PrismaCloudChargeRepository\(prisma\)' -- src` → vazio (ec=1). E esta que mede o
+   que o plano quer (o cru nao e mais instanciado com o client raiz).
 ## §4 — E4 script do papel + .gitattributes + compose — EM APURACAO
 ## §5 — E5 documentacao — EM APURACAO
 ## §6 — E6 ratchet semantico (gerador + T13 + fixtures) — EM APURACAO
