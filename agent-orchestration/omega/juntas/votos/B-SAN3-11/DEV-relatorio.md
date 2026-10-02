@@ -194,3 +194,29 @@ não lia); depois `FECHADA 112 · ABERTA 315 · SEM-STATUS 0`. Delta do índice 
 
 **Registro:** 1 linha em `codex/log-execucao.md` e 1 em `docs/status-geral.md`. Pendências novas: nenhuma. Evidência incremental (P1): `scratchpad/DEV-ERRATA1-401.md`
 da sessão do orquestrador, seções R0–R6.
+
+## Integração da main pós-#402 — 2026-10-02T23:00Z
+
+**Quem:** `dev-errata1-b-san3-11` (local, Opus 5.5). 1ª tentativa (mandato `00-mandatos/dev-integracao.md`, md5 `b3c9ca17…`) PAROU sem commitar: o merge
+conflitava também em `frontend/package.json` (linha `test:smoke`), fora de "registro e KPI". 2ª tentativa sob o mandato emendado
+`00-mandatos/dev-integracao2.md` (md5 EOL-neutro `f32aa97109b764bd379b6db9ba8ace53`, versionado em `5e3c525a`): essa linha pela UNIÃO dos dois acréscimos.
+
+**Terreno:** worktree próprio `C:/Users/AMP/w-dev11i` (detached, CRLF, `core.autocrlf=true`, CR no adapter 583), `npm ci` próprio na raiz e em `frontend/`, sem junction; Node v20.19.5.
+
+```
+merge  5c8efa08 = 5e3c525a (ramo) + 3e40a256 (main, #402); nunca rebase; os mesmos 8 conflitos da 1ª tentativa, nenhum novo
+  registro (as duas entradas, a do bloco por último; numstat resolvido×main = delta do ramo×base, resolvido×ramo = delta da main×base):
+    log-execucao.md 18 0 | 15 0 · pendencias.md 33 2 | 34 4 · kpis-history.md 20 0 | 39 0 — nenhuma linha que a main introduziu foi removida
+  pendencias-indice.md: pelo gerador (inalterado na main) → 430 cabeçalhos / 419 IDs | FECHADA 116 · ABERTA 314 · SEM STATUS 0 · CONTRADITÓRIAS 0
+  status-geral.md: mesclou sozinho (a main pôs a atualização do #402 no TOPO; o bloco no fim)
+  frontend/package.json, só test:smoke: base 142 · bloco +patios-dossie-versao.smoke.test.tsx · main +work-orders-page-live.test.tsx → final 144
+    final = base ∪ {main} ∪ {bloco}; final\{bloco} = lista da main; final\{main} = lista do bloco; ordem do base preservada; nenhuma outra chave muda
+  KPI no merge: history = main (166) + a entrada do bloco por último → 167; latest = o da main + notas do bloco (transitório até a recontagem)
+  trava: git diff --cached --check origin/main → ec=0 (os avisos contra o ramo são os de votos/B-SAN3-01b/C2-evidencia.md, trazidos pela main)
+execução real @5c8efa08 (CRLF): check ec=0 · arquivo do bloco 16/16 ec=0 (morto por sinal 0) · test:smoke # tests 1230 # pass 1230 # fail 0 ec=0 (1214 + 16)
+recontagem 53d7f8e3: blocks_completed 170 (main) → 171 · frontend_smoke_tests 1230/1230 (TAP) · version B-SAN3-11 · pr 401 · mc/ah null · history n 167 (a do bloco por último)
+  kpi-freeze --check ec=0 · app.js: 2 linhas [-+]var FROZEN · guards kpi-dashboard-charts 17/17 · contraste 6/6 · achados-paridade 6/6
+```
+
+**Backfill:** a entrada do #402 está na main com `pr`/`merge_commit`/`approved_head` = null (merge `3e40a256`; ata `J-B-SAN3-01b.md` na main). O mandato de integração
+não inclui pagá-lo: está declarado como devido e não pago no `backfill_note` e no `kpis-history.md`. Não decidido aqui. Evidência incremental: `scratchpad/DEV-INTEG-401.md` (I0–I2, J0–J5).
