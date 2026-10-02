@@ -234,7 +234,9 @@ export function WorkOrdersPage() {
   // filtros vivem FORA da tabela e continuam na tela no vazio; aqui a toolbar vive no card (divergência D-C2-1 do
   // ciclo 2 — o vazio fora do card sumia com a busca e derrubava o E1 do e2e numa base sem OS).
   const showFailure = !loading && degraded;
-  // O CTA do vazio nasce com o gate de criar (não repete a C2-N5 do botão do cabeçalho).
+  // B-SAN3-01b (P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO) — UMA régua para criar OS, a do backend (`POST /work-orders` →
+  // `requirePermission("work_orders:create")`, `includes` estrito): o botão "Nova OS" do cabeçalho e o CTA do vazio
+  // dividem este mesmo gate. Provado papel a papel pelo catálogo executado (`work-orders-page-live.test.tsx` [GB1]/[GB2]).
   const canCreate = permissions.includes("work_orders:create");
 
   return (
@@ -245,11 +247,14 @@ export function WorkOrdersPage() {
         subtitle="Atribuição, execução, SLA e rastreabilidade de cada atendimento em campo."
         actions={
           // "Filtrar" omitido (filtros reais são inline na toolbar) e "Exportar" omitido
-          // (sem ação de exportação real nesta tela) — nunca botão morto.
-          <button type="button" className="pat-btn pat-btn--primary" onClick={() => navigate("/work-orders/new")}>
-            <Plus size={15} aria-hidden="true" />
-            Nova OS
-          </button>
+          // (sem ação de exportação real nesta tela) — nunca botão morto. Sem `work_orders:create` não há ação:
+          // o `PageHeader` omite o contêiner de ações (um botão que o backend recusa também é botão morto).
+          canCreate ? (
+            <button type="button" className="pat-btn pat-btn--primary" onClick={() => navigate("/work-orders/new")}>
+              <Plus size={15} aria-hidden="true" />
+              Nova OS
+            </button>
+          ) : undefined
         }
       />
 

@@ -22,9 +22,14 @@ import type {
 // B-SAN3-01 (P-008) — este service NÃO fabrica mais despacho quando o backend recusa ou responde vazio (antes:
 // lista vazia/erro → 4 despachos `dispatch-000101..104`, consumidos também pelo Dashboard e pela aba Mobile da
 // OS; detalhe com erro → `dispatch-000101` com timeline inventada; 2xx sem despacho → `?? mock`). O modo mock
-// EXPLÍCITO (`VITE_USE_MOCKS=true`) continua. Ciclo 2 (P3): o guard G1 (por ALCANCE, sobre a AST) prova por mutação
-// que identificador de origem mock só é alcançável no ramo verdadeiro de `isMockMode()` em todo arquivo destes dois
-// módulos (`work-orders/**` e `operations/dispatches/**`).
+// EXPLÍCITO (`VITE_USE_MOCKS=true`) continua. B-SAN3-01b: os guards `[G1]`/`[G1b]` de `work-orders-honest-errors.test.tsx`
+// (por ALCANCE, sobre a AST) provam por mutação que identificador de origem mock só é alcançável no ramo verdadeiro de
+// `isMockMode()` — re-export em profundidade arbitrária (barrel de N níveis, re-export local, `default`, namespace,
+// `import()`), nas três raízes enumeradas do disco (`work-orders/**`, `operations/dispatches/**` e
+// `registry/service-quotes/useServiceQuoteReferences.ts`) e em todo o FECHO de import delas — e que nenhuma raiz inventa
+// entidade inline (`id`/`code` constante) em ramo de falha (`catch`/`.catch(`/`??`/`||`). O que o guard não prova: ramo de
+// falha escrito de outra forma (ex.: `if (!ok) return {…}`), identidade por outra chave ou valor não constante, e dado de
+// demonstração fora da convenção `*.mock.ts`/`mocks/`.
 //
 // `dispatches.types.ts` não muda (fora do permitido): o 403 da lista se distingue pela razão; o detalhe ganha o
 // tipo `DispatchDetailResult` aqui mesmo, aditivo.

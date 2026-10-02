@@ -4730,6 +4730,21 @@ bloco mergear.
   `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168 → 169; trilhas de teste carregadas com nota; backfill pago pelo #398.
 
+## B-SAN3-01b — as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE NO RAMO pela tarefa de nuvem (2026-10-02), PR a abrir
+
+- **Quem:** `dev-b-san3-01b` (identidade nova; Fable 5.1 `claude-fable-5-1`, declarado na 1ª linha do relatório), tarefa de nuvem
+  no ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`; mandato `omega/juntas/votos/B-SAN3-01b/00-mandatos/dev.md`
+  (md5 EOL-neutro `1c8e3b9d650880a0f8ff5bd3fb1fb44b`, conferido); relatório `omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+- **Entregas:** E1 teste vivo (13 casos, DOM mínimo sem dependência) · E2 `[G1]` por alcance em qualquer profundidade + fecho +
+  fronteira, `[G1b]`, `[G2]` 29 formas, `[G3]` · E3 três cabeçalhos (só comentário) · E4 gate do "Nova OS" · E5 lista do smoke ·
+  E6 KPI (smoke 1214/1214 real; `blocks_completed` 169 → 170; `pr`/`merge_commit`/`approved_head` null na autoria) · E7 registro.
+- **Bateria §8:** bloco 79/79 · `tsc` 0 · smoke 1214/1214 (Node 22 e 20) · build 0 · `kpi-freeze --check` em dia · 3 guards de KPI
+  29/29 · `git diff --check` limpo. Mutações do §7 com restauro por hash: relatório §M.
+- **Escopo (§6):** `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO; `src/`, `prisma/`, lockfiles, hooks, `App.tsx`,
+  `work-orders.service.ts`, `.github/`, `Kpis/index.html` intocados.
+- **Pendências:** 4 FECHADAS (as do bloco), 3 ABERTAS com dono (`B-SAN3-10`, fila pós-gate, `B-SAN3-06a`); índice regenerado.
+- **Fica para o orquestrador local:** `gh pr create` + `release.pr`, inspetor, junta (unanimidade de 3), CI, squash, §C5, porteiro.
+
 ---
 
 ## B-SAN3-11 — 2026-10-01 — branch fix/dossie-versao-da-vistoria

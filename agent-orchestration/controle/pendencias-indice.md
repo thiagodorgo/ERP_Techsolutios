@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **427** |
-| IDs distintos | 416 |
-| **ABERTAS** | **315** |
+| Cabecalhos `## P-` | **430** |
+| IDs distintos | 419 |
+| **ABERTAS** | **314** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **246** |
+| — das quais **ativas nesta rodada** | **245** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 112 |
+| FECHADAS | 116 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **427 cabecalhos para 416 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **430 cabecalhos para 419 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 138
+## ABERTAS · balde A — material — 136
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -184,9 +184,6 @@
 | `P-SAN3-01-LOGISTICS-FICCAO-ROTEADA` | 9456 | MÉDIA | sim | P-SAN3-01-LOGISTICS-FICCAO-ROTEADA (2026-09-18) — a rota viva `/logistics` serve OS e at |
 | `P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO` | 9465 | MÉDIA | sim | P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO (2026-09-18) — fechar contagem cíclic |
 | `P-SAN3-01-MOCKMODE-TRES-AUTORIDADES` | 9474 | MÉDIA | sim | P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com p |
-| `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` | 9560 | ALTA | sim | P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está ama |
-| `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9569 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
-| `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9578 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
 | `P-WEB-FONTE-INTER-NAO-CARREGADA` | 9587 | MÉDIA | sim | P-WEB-FONTE-INTER-NAO-CARREGADA (2026-09-19) — a web inteira renderiza em Segoe UI, e o  |
 | `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE` | 9605 | MÉDIA | sim | P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE (2026-09-18) — o Estoque lê vistorias mas não respon |
 | `P-SAN3-04A-MASTER-DATA-EDIT-SCOPED` | 9613 | MÉDIA | sim | P-SAN3-04A-MASTER-DATA-EDIT-SCOPED (2026-09-18) — Operador e Estoque não editam cadastro |
@@ -209,8 +206,9 @@
 | `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9808 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
 | `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9832 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
 | `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 9844 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
+| `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 9917 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
 
-## ABERTAS · balde B — processo/registro — 108
+## ABERTAS · balde B — processo/registro — 109
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -307,7 +305,6 @@
 | `P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO` | 9402 | BAIXA | sim | P-SAN3-01-SHELL-BADGES-ZERO-NO-ERRO (2026-09-17) — os contadores do shell viram "0" quan |
 | `P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM` | 9429 | BAIXA | sim | P-SAN3-01-CREATE-INVALID-DATE-MENSAGEM (2026-09-17) — data malformada no create de OS vi |
 | `P-SAN3-01-NAV-MENU-DEMO-NO-ERRO` | 9483 | BAIXA | sim | P-SAN3-01-NAV-MENU-DEMO-NO-ERRO (2026-09-18) — quando o menu do backend falha, a navegaç |
-| `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` | 9492 | BAIXA | sim | P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (2026-09-18) — o botão "Nova OS" do cabeçalho da lis |
 | `P-SAN3-01-BATERIA-TSX-CWD` | 9524 | BAIXA | sim | P-SAN3-01-BATERIA-TSX-CWD (2026-09-18) — os testes `.tsx` do frontend só ficam verdes co |
 | `P-SAN3-01-STALE-ICONE-COR` | 9533 | BAIXA | sim | P-SAN3-01-STALE-ICONE-COR (2026-09-18) — o ícone da faixa "dados desatualizados" diverge |
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9551 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
@@ -320,8 +317,10 @@
 | `P-GOV-PAUSA-ESCADA-C76BIS` | 9884 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
 | `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` | 9894 | BAIXA | sim | P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquest |
 | `P-GOV-PAUSA-CASO-SEM-FONTE` | 9904 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
-| `P-SAN3-11-VIGENTE-NAO-VINCULADA` | 9914 | BAIXA | sim | P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11) |
-| `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` | 9930 | BAIXA | sim | P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11) |
+| `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` | 9926 | BAIXA | sim | P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da  |
+| `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` | 9935 | BAIXA | sim | P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de  |
+| `P-SAN3-11-VIGENTE-NAO-VINCULADA` | 9944 | BAIXA | sim | P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11) |
+| `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` | 9960 | BAIXA | sim | P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11) |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -397,7 +396,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3586 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3630 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 112
+## FECHADAS — 116
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -512,4 +511,8 @@
 | `P-GOV-INSPETOR-33-SEM-NORMA` | 7984 | ALTA | sim | P-GOV-INSPETOR-33-SEM-NORMA (2026-09-08) — o contrato do inspetor manda bloquear por nor |
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9306 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
 | `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` | 9337 | ALTA | sim | P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dis |
+| `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` | 9492 | BAIXA | sim | P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (2026-09-18) — o botão "Nova OS" do cabeçalho da lis |
 | `P-SAN3-01-OS-VAZIO-SEM-ACAO` | 9542 | BAIXA | sim | P-SAN3-01-OS-VAZIO-SEM-ACAO (2026-09-18) — a lista de OS vazia não oferecia a ação de cr |
+| `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` | 9560 | ALTA | sim | P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está ama |
+| `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9569 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
+| `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9578 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
