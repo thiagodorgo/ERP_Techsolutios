@@ -1,0 +1,107 @@
+{
+ "jurado": "jurado-san3-01b-c2-cadeia-de-acesso (identidade nova; nenhum número, conjunto, SHA ou arquivo:linha do plano, do relatório do dev, do inspetor ou deste corpo herdado como fato)",
+ "cadeira": "C2 — cadeia de acesso do gate 'Nova OS' (papel → permissões → rota → backend)",
+ "mandato_md5": "5bbd674c86da11b42f9dae1465631c41 · declarado no disparo: 5bbd674c86da11b42f9dae1465631c41",
+ "modelo": "claude-opus-5-5 (Opus 5.5; frontmatter model: opus; sem substituição)",
+ "corpo_md5": "14a07abc81f8e0f37db1b584129c588c · corpo recebido no prompt: 14a07abc81f8e0f37db1b584129c588c",
+ "objeto": "cdf370dcb4c817e1c4292aed1204140951616971 (git ls-remote do ramo = gh pr view 402 headRefOid) · merge-base 4ab9d232d2c6705ad39cf6bd4313ca5c91b222a9 = origin/main: sim · cerca do mandato 2cfd4f4895d1a2c932f2e1abaf362cc5ec114e11 e delta só registro (7 arquivos agent-orchestration/**; código desde b02745b7: 0 arquivos fora de registro) · objeto no fim (21:48:52Z): igual",
+ "legalidade": "parecer do inspetor que vale: votos/B-SAN3-01b/00-inspetor-terreno-passada2.md, 2ª passada, 21:06Z (objeto dela f1b1190a; delta f1b1190a..cdf370dc = 3 arquivos de registro) · veredito LIBERADO COM RESSALVA · confere este nome (3.1) e este corpo (3.3): sim · check-runs no objeto 14 | 0 não-verdes | 0 pendentes",
+ "quorum": "unanimidade de 3, com veto (corpo l.84 e BRIEFING l.24, §C7.1-ter(b))",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo C1-* nem C3-* antes de gravar este voto",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "item1": "VERDE — catálogo executado: 13 papéis; work_orders:create COM(6)={field_dispatcher,manager,operator,platform_admin,super_admin,tenant_admin} SEM(7)={auditor,field_technician,finance,inventory,support,technician,viewer}; matriz l.45 × catálogo nos 9 canônicos: 0 divergências (regra publicada; 4 papéis sem coluna: field_dispatcher,super_admin,technician,viewer); rotas: GET /work-orders work_orders:read (work-order.routes.ts:103), POST /work-orders work_orders:create (:111), GET /:id read (:119), POST /operations/dispatches field_dispatch:create (field-dispatch.routes.ts:44), montadas em app.ts:137/:235; [GB1]/[GB2]/[GB3] ok no objeto (13/13/0, ec=0), lendo o catálogo executado (l.326/l.763) com includes da permissão certa; CE-G2 F0 (forma do teste): 0 células front≠backend; F1 (login real): 0 no botão, lista inventory/support pre-existente (P-SAN3-04A-PERMISSOES-ORFAS C2-04); F2 (após troca de organização): botão escondido p/ super_admin/platform_admin com POST aceitando → graduado em 2(e). Controles acusaram: viewer, finance, irmão do diff, 10 células.",
+ "item2": "VERDE — página (parse do blob): 1 'const canCreate' = permissions.includes(\"work_orders:create\") (l.240), permissions de usePermissions() (l.141), 0 can/hasAny/isPlatformAdmin; usos: PageHeader actions (l.252) e onCreate do vazio (l.338); renders de 'Nova OS': 2 (l.253-255 e l.606), irmão com comentários: 4. Backend (lido): POST /work-orders → requirePermission(create) → requireAnyPermission → some(includes) (rbac.middleware.ts:30), 403 l.32-39/76-88; grep isPlatformAdmin|platform: no middleware = 0 (irmão types.ts = 4); permissões de persistent RBAC (resolveForActor) semeadas do catálogo (seed.ts:256-262; legados → P-SAN3-04A-SEED-PAPEIS-LEGADOS, B-SAN3-07); forma LIDA (execução isolada não feita: sem npm ci da raiz). Mutações: M2a 13/11/2 GB1+GB2 = {auditor,field_technician,finance,technician,viewer}; M2b 13/12/1 GB2 = SEM create (7); M2c-i 13/13/0 (não separa com o catálogo de hoje); M2c-ii 13/11/2 GB1+GB2 = {zz_sonda_plataforma} (separa com papel separador); M2c-iii 13/13/0 (sonda entra no laço e é negada); restauros com hash-object = blob. N5: 0 papéis hoje (F0/F1/F2), sonda acusada; pendência P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA conferida (pre-existente, B-SAN3-06a, bloqueia não, teste escrito); guard de 9f12ea99 2026-06-09. 2(e): carga A→B não ocorre pelo caminho de troca (sessão substituída antes); conjunto comparado ≠ backend em F2 para super_admin/platform_admin (botão ausente, POST aceita) — nota pre-existente.",
+ "item3": "VERDE — merge-base 4ab9d232 = origin/main; página do merge-base dbae6f97 (objeto 544c781c); diff MB..objeto -- frontend/src src: 4 arquivos, 3 só comentário/vazio (11/9/10 linhas, 0 não-comentário), a página 10 não-comentário (controle acusou), src/ vazio (irmão 4). Forma A: troca provada (hash-object = dbae6f97 = blob MB ≠ blob objeto; diff 21 linhas); arquivo vivo no head-base ec=1 13/11/2 com exatamente [GB1] e [GB2] not ok e [GB3] ok; S_GB1 = S_GB2 = SEM_create gerado = [auditor, field_technician, finance, inventory, support, technician, viewer], diferença simétrica [] nos dois; restauro hash-object = 544c781c, porcelain 0, rerun ec=0 13/13/0. Controles: TAP fabricado → [alfa_papel, beta_papel]; lista fabricada → ['auditor','operator'].",
+ "justificativa": "Terreno: worktree próprio C:/Users/AMP/w-j01bc2 detached em cdf370dc, npm --prefix frontend ci próprio (ec=0, sem junction), Node v20.19.5, MSYS_NO_PATHCONV nunca exportado (contagem no env = 0), base viva intocada. Catálogo executado: 13 papéis; DEFAULT_ROLES = keys(ROLE_PERMISSIONS); work_orders:create COM (6) = field_dispatcher, manager, operator, platform_admin, super_admin, tenant_admin; SEM (7) = auditor, field_technician, finance, inventory, support, technician, viewer; work_orders:read SEM = inventory, support; field_dispatch:create COM (5) = field_dispatcher, manager, platform_admin, super_admin, tenant_admin; platform:tenants:read COM = platform_admin, super_admin. Regra célula para read/create: full e create/edit dão read+create, read e execute/update-assigned dão read, material-view e support-view dão nada (justificadas por RBAC_MATRIX l.25, l.65, l.68); catálogo x matriz l.45 nos 9 canônicos: 0 divergências; sem coluna na matriz: field_dispatcher, super_admin, technician, viewer; diff MB..objeto -- src/ RBAC_MATRIX.md vazio (irmão não-vazio). Rotas (parse, literal resolvido): GET /work-orders work_orders:read work-order.routes.ts:103; POST /work-orders work_orders:create :111; GET /work-orders/:workOrderId work_orders:read :119; POST /operations/dispatches field_dispatch:create field-dispatch.routes.ts:44; montagem app.ts:137 e :235. [GB1]-[GB3] no objeto: ec=0, 13/13/0; leem o catálogo executado (l.326, l.763), predicados includes da permissão certa (l.782, l.800, l.818), denominador assertCatalogSeen (piso 9, COM e SEM), sessão zerada e papel no contexto (l.421-422). CE-G2 efetiva (catálogo, isPlatformAdmin e adapter reais executados): forma do teste F0 = 0 células front x backend; login real F1 = 0 no botão (lista inventory/support pre-existente, P-SAN3-04A-PERMISSOES-ORFAS C2-04); depois da troca de organização F2 = botão e CTA ausentes para super_admin e platform_admin com POST aceitando (nota pre-existente, classe P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS, dono B-SAN3-06a); menu informativo. Régua da página: 1 const canCreate = permissions.includes(\"work_orders:create\") (l.240), usos l.252 e l.338, renders de Nova OS = 2 (l.253-255, l.606), 0 can/hasAny/isPlatformAdmin. Backend LIDO: requireAnyPermission com some(includes) (rbac.middleware.ts:30), sem atalho de plataforma (grep 0, irmão 4); tenantContext.permissions do RBAC persistente semeado do catálogo (STANDARD_ROLES + auditor; legados em P-SAN3-04A-SEED-PAPEIS-LEGADOS, B-SAN3-07). Mutações: M2a acusou GB1 e GB2 com auditor, field_technician, finance, technician, viewer; M2b acusou GB2 com os 7 SEM create; M2c-i verde (não separa com o catálogo de hoje); M2c-ii acusou exatamente zz_sonda_plataforma; M2c-iii verde (a sonda entra no laço e é negada) — graduado como nota. N5: 0 papéis hoje admitidos pelo guard de /new e recusados pelo POST (F0, F1, F2), sonda acusada; pendência P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA presente (pre-existente, B-SAN3-06a, bloqueia não, teste escrito); guard de 9f12ea99 (2026-06-09). União sessão + contexto (2e): não leva create de A para B pelo caminho de troca (switchTenantContext substitui a sessão antes do setActiveContext) — lido. Head-base: equivalência provada (3 arquivos só comentário, a página não, src vazio); forma A com troca provada (dbae6f97 = blob MB, diferente de 544c781c); ec=1, 13/11/2, exatamente GB1 e GB2 not ok e GB3 ok; S_GB1 = S_GB2 = SEM_create gerado, diferença simétrica vazia; restauro com hash-object = blob, porcelain 0, verde 13/13/0. Vermelho-controle de cada item acusou: viewer, finance, parse de rota, 10 células, sonda, irmãos de grep e de comentário, M2a, M2b, M2c-ii, controle da equivalência, TAP fabricado, lista fabricada, prova de troca. Sem medir: execução isolada do middleware (lido, declarado) e o fluxo de troca de organização (lido). Limpeza: worktree removido com 0 processos vivos, mutações restauradas com hash, nada commitado, só os meus 2 arquivos em w-nuv01b.\nVOTO: APROVADO — o botão e o CTA existem sse work_orders:create pelo catálogo executado (13 papéis, conjuntos iguais à matriz nos 9 canônicos e à rota POST /work-orders), régua da página = includes estrito do backend (M2a/M2b acusaram; M2c: não separa com o catálogo de hoje, separa com papel separador — graduado como nota), N5 registrada com dono e impacto 0 hoje, head-base com [GB1]/[GB2] vermelhos acusando exatamente o conjunto SEM create gerado e verde depois do restauro",
+ "o_que_executei": [
+  {
+   "comando": "node --import tsx $SCRATCH/papeis.mts <wt>/src/modules/core-saas/permissions/catalog.ts",
+   "forma": "cwd w-j01bc2/frontend, Node v20.19.5, catálogo do objeto cdf370dc, N=13",
+   "resultado": "ec=0; conjuntos COM/SEM das 4 permissões"
+  },
+  {
+   "comando": "PYTHONIOENCODING=utf-8 python $SCRATCH/item1.py (parse de RBAC_MATRIX.md, work-order.routes.ts, field-dispatch.routes.ts, app.ts por git show cdf370dc)",
+   "forma": "9 canônicos, 4 rotas",
+   "resultado": "ec=0; 0 divergências; controles acusaram finance/viewer/parse"
+  },
+  {
+   "comando": "VITE_USE_MOCKS=false timeout 300 node --test --import tsx tests/work-orders-page-live.test.tsx",
+   "forma": "cwd w-j01bc2/frontend, Node v20.19.5, objeto",
+   "resultado": "ec=0; tests 13 pass 13 fail 0; GB1/GB2/GB3 ok"
+  },
+  {
+   "comando": "node --import tsx $SCRATCH/ceg2.mts <wt> (catálogo + isPlatformAdmin + canAccessNavigationItem + auth.adapter reais)",
+   "forma": "13 papéis × 3 formas × 4 passos",
+   "resultado": "ec=0; F0 0 células; 10 células em F1/F2"
+  },
+  {
+   "comando": "PYTHONIOENCODING=utf-8 python $SCRATCH/item2a.py page-obj.tsx (blob cdf370dc)",
+   "forma": "parse com exclusão de comentário publicada",
+   "resultado": "ec=0; 1 decl, 2 usos, 2 renders (4 com comentários)"
+  },
+  {
+   "comando": "mutate.py M2a|M2b|M2ci|SONDA + runlive.sh (node --test do arquivo vivo) + extract.py",
+   "forma": "worktree w-j01bc2, Node v20.19.5, âncora em bytes, diff provado, restauro por cp com hash-object = blob",
+   "resultado": "M2a ec=1 13/11/2; M2b ec=1 13/12/1; M2c-i ec=0 13/13/0; M2c-ii ec=1 13/11/2 {zz_sonda_plataforma}; M2c-iii ec=0 13/13/0"
+  },
+  {
+   "comando": "node --import tsx $SCRATCH/ceg2.mts <wt> ceg2-sonda.json sonda",
+   "forma": "14 papéis (13 + sonda em memória) × 3 formas",
+   "resultado": "ec=0; /new guard admite e POST recusa só a sonda (F0,F1)"
+  },
+  {
+   "comando": "PYTHONIOENCODING=utf-8 python $SCRATCH/item3a.py w-j01bc2 4ab9d232 cdf370dc",
+   "forma": "git diff -U0 por arquivo, regra comentário/vazio publicada",
+   "resultado": "ec=0; 3 só comentário, página não (controle)"
+  },
+  {
+   "comando": "forma A: git show 4ab9d232:<página> (CRLF) → runlive.sh BASE → extract.py → cmpsets.py",
+   "forma": "worktree w-j01bc2 no objeto, só a página trocada, Node v20.19.5",
+   "resultado": "ec=1 13/11/2; GB1,GB2 not ok; S_GB1=S_GB2=SEM_create, Δ=[]"
+  },
+  {
+   "comando": "cp pristino → runlive.sh RESTAURADO",
+   "forma": "hash-object = blob do objeto, porcelain 0",
+   "resultado": "ec=0 13/13/0"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "a prova do gate é extensional sobre o catálogo de hoje: não separa includes de atalho de plataforma (M2c-i verde); separa assim que existe papel separador (M2c-ii acusa exatamente a sonda); o atalho por RÓTULO 'Super Admin' não é exercitável pelo arnês (papel montado pela chave)",
+   "evidencia": "runlive M2ci ec=0 13/13/0; M2cii ec=1 GB1/GB2={zz_sonda_plataforma}; live.tsx l.422 (role = chave); types.ts l.107",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a propriedade 'régua = includes estrito' é provada por parse (2a) e pela sonda, não pelo catálogo de hoje"
+  },
+  {
+   "defeito": "o conjunto de permissões comparado na página não é o da organização ativa depois da troca de organização: com o mapa fixo do adapter, 'Nova OS' e o CTA do vazio somem para super_admin e platform_admin enquanto POST /work-orders os aceita (N=2 papéis, forma F2, falso negativo, nada liberado a mais)",
+   "evidencia": "ceg2.mts (adapter real executado): F2_troca super_admin/platform_admin novaOs_pagina=false novaOs_POST=true; repository.ts l.114/l.125; adapter l.261-290; diff 4ab9d232..cdf370dc dos 4 arquivos = 0 (irmão 1); git log -S: 98b4bee3 2026-06-06 (união), 0b1a7dfb 2026-07-02 (troca); git blame adapter l.261 4d6e1219 2026-06-08; todos ancestrais do merge-base",
+   "gravidade": "nota",
+   "escopo": "pre-existente — classe P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS, dono B-SAN3-06a (a prova dela mede 7 papéis e não nomeia super_admin/platform_admin nem este botão); arquivos no PROIBIDO do plano §6",
+   "motivo": "o gate novo herda um conjunto de permissões que não é o do backend para a organização ativa"
+  },
+  {
+   "defeito": "outro botão 'Nova OS' → /work-orders/new existe sem gate de work_orders:create em DashboardPage.tsx:365-368 (fora da página do bloco)",
+   "evidencia": "git show cdf370dc:frontend/src/pages/DashboardPage.tsx l.365-368; diff 4ab9d232..cdf370dc -- DashboardPage.tsx = 0; último commit antes da base 0a38f1be 2026-08-04; grep em pendencias.md por DashboardPage + 'Nova OS' = 0",
+   "gravidade": "nota",
+   "escopo": "pre-existente — arquivo fora do PERMITIDO do plano §6; B-SAN3-06c já é dono de DashboardPage.tsx por outras pendências (pendencias.md l.9411/l.9447)",
+   "motivo": "um elemento visível a papel que a rota recusa, noutra superfície; sem pendência que o nomeie"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "2(e): a resposta 'a união não leva work_orders:create de A para B' é leitura com arquivo:linha (ContextSelectionPage l.41-44, repository.ts l.107-115), sem execução do fluxo de troca nem controle que a fizesse falhar",
+  "2(b): o elo 'catálogo = permissões efetivas do backend' é LIDO; a execução isolada opcional do requireAnyPermission não foi feita (exigiria npm ci da raiz)"
+ ],
+ "pendencias_que_aceito": [
+  "N5 — P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (pre-existente, B-SAN3-06a): impacto 0 hoje, medido",
+  "P-SAN3-04A-SEED-PAPEIS-LEGADOS (B-SAN3-07): seed dos papéis legados",
+  "P-SAN3-04A-PERMISSOES-ORFAS emenda C2-04 (B-SAN3-04b): inventory e support abrem /work-orders no front e o GET dá 403",
+  "P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS (B-SAN3-06a): membro novo medido aqui — após troca de organização, 'Nova OS' e CTA ausentes para super_admin e platform_admin (N=2) com POST aceitando; a prova da pendência não os nomeia",
+  "'Nova OS' sem gate em DashboardPage.tsx:365-368 (pre-existente; B-SAN3-06c é dono do arquivo por outras pendências; sem pendência que o nomeie)",
+  "C1: estado da página, PV/W/G1/G1b, sítios, bateria, escopo A16, KPI — não julgados por mim",
+  "C3: aparência do cabeçalho com e sem botão, HTML byte-idêntico, classe e estilo, PNG, linguagem — não julgados por mim"
+ ],
+ "teardown": "worktree C:/Users/AMP/w-j01bc2 removido por git worktree remove --force (ec=0; só o meu, com o frontend/node_modules dentro) depois de contar 0 processos com w-j01bc2 na linha de comando (Get-CimInstance, 328 lidos) e porcelain 0 · mutações da página (5) e do catálogo (2, sonda) restauradas com hash-object = blob do objeto (544c781c / 8228581b) · nenhuma sonda em disco · .pristino do SCRATCH apagados (logs mantidos como evidência) · base viva nunca tocada · w-nuv01b só com os meus dois arquivos de voto (C1-* não rastreados lá são de outra cadeira, não lidos) · nada commitado",
+ "escopo": "achados: 1 nota dentro-do-bloco (prova extensional); 2 notas pre-existentes com evidência de origem (F2 após troca de organização; 'Nova OS' sem gate no Dashboard); nenhum bloqueia"
+}
