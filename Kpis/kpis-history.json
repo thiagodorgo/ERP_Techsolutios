@@ -2495,17 +2495,18 @@
     "backfill_note": "`pr 397` (o PR já existia na autoria da emenda); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. Nenhum backfill devido por este PR: a última entrada da `main` (#394) já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`, pagos pelo #395. Se o #393 (B-GOV-MANDATO) mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então. As quatro métricas com nota de PR anterior (`backend_contract_tests_focused`, `flutter_modules`, `mobile_backend_contracts`, `mobile_core_saas_contracts`) seguem sob `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393) — este PR não as toca. [BACKFILL §C3.5 DO #397, pago pelo PR de registro `docs/registro-397` (2026-10-01): `merge_commit 513937b0555e2a6175e7e89d8ae9e44dbc995f8a` de `gh pr view 397 --json mergeCommit`; `approved_head 67c2c280612cb644f246af0b5410cab59afe028d` LIDO DA ATA `J-B-GOV-PAUSA.md` (linha \"approved_head\"), não de `gh pr view` — o head do PR no merge era `5fed0a55`, o objeto aprovado mais o commit de registro da própria junta.]"
   },
   {
-    "snapshot_date": "2026-10-01",
+    "snapshot_date": "2026-10-02",
     "version": "B-SAN3-11",
-    "pr": null,
+    "pr": 401,
     "merge_commit": null,
     "approved_head": null,
     "flutter_tests": "864/864",
     "backend_tests": "3052/3054",
     "frontend_smoke_tests": "1218/1218",
-    "blocks_completed": 169,
+    "blocks_completed": 170,
     "description": "B-SAN3-11: corrige o dossiê de custódia para rotular vistorias substituídas. E1: tipo +3 campos, E2: adapter +3 campos, E3: painel três estados (substituída/atual/única), E4: guard CE-G1 (census AST), E5: 16 testes novos. Fecha P-CHK-DOSSIE-VERSAO-NA-UI (item 8 do gate vendável).",
     "status": "published_per_pr",
-    "note": "flutter_tests e backend_tests CARREGADOS (§C3.3): PR não toca mobile/ nem src/ backend. frontend_smoke_tests EXECUTADO: 1202->1218 (+16 testes T1-T14). merge_commit/approved_head null na autoria (backfill pós-merge)."
+    "note": "flutter_tests e backend_tests CARREGADOS (§C3.3): o PR não toca mobile/ nem src/, tests/ da raiz ou prisma/. frontend_smoke_tests EXECUTADO no head 92cfc05e: 1202/1202->1218/1218 (+16 testes: T1-T14 + T5b + T7b). ERRATA 1 (§15): T13/T14 re-formados (arnês sem teto, mutação normalizada com prova); contagem inalterada. blocks_completed recontado contra a origin/main 4ab9d232 (169) -> 170. merge_commit/approved_head null na autoria (backfill pós-merge).",
+    "backfill_note": "`pr 401` (o PR já existia na autoria da errata); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. Nenhum backfill devido por este PR: a última entrada da `main` (#397, `4ab9d232`) já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398. Se outro PR que conte bloco mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então."
   }
 ]

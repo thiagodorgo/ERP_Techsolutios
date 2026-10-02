@@ -3017,17 +3017,22 @@ mandato idêntico nos três textos.
 **Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
 pagos pelo #395.
 
-## B-SAN3-11 — 2026-10-01
+## B-SAN3-11 — 2026-10-01 (recontado em 2026-10-02, ERRATA 1)
 
-**Bloco**: B-SAN3-11 · **PR**: (null na autoria — backfill pós-merge) · **Data**: 2026-10-01
+**Bloco**: B-SAN3-11 · **PR**: #401 (`merge_commit`/`approved_head` null na autoria — backfill pós-merge) · **Data**: 2026-10-01; recontagem 2026-10-02
 
-| Métrica | Anterior | Este PR | Δ |
+| Métrica | Anterior (`origin/main` `4ab9d232`, #397) | Este PR | Δ |
 |---|---|---|---|
-| `blocks_completed` | 168 | **169** | +1 |
-| `frontend_smoke_tests` | 1202/1202 | **1218/1218** | +16 |
+| `blocks_completed` | 169 | **170** | +1 |
+| `frontend_smoke_tests` | 1202/1202 | **1218/1218** (executado no head `92cfc05e`, checkout CRLF) | +16 |
 | `flutter_tests` | 864/864 | 864/864 (carregado §C3.3) | 0 |
 | `backend_tests` | 3052/3054 | 3052/3054 (carregado §C3.3) | 0 |
 
 **Descrição**: Corrige o dossiê de custódia para rotular vistorias substituídas (`supersededByRunId`/`reopenedFromRunId`/`currentRunId`). E1: tipo +3 campos, E2: adapter +3 campos, E3: painel três estados, E4: guard CE-G1, E5: 16 testes novos (T1-T14). Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
 
-`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5).
+**ERRATA 1 (§15):** T13/T14 re-formados (arnês sem teto, mutação normalizada com prova); contagem inalterada.
+`blocks_completed` recontado contra a `origin/main` de agora (`4ab9d232`, que já publicava 169 pelo #397) — na autoria
+original o bloco contara 168 → 169 contra o merge-base `5b6e1036`. `mvp_demo`/`mvp_vendavel` intocados.
+
+`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5). Nenhum backfill devido por este PR: a
+entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
