@@ -3,6 +3,7 @@ import pino from "pino";
 import { createApp } from "./app.js";
 import { createPortalApp } from "./portal-app.js";
 import { env } from "./config/env.js";
+import { assertRuntimeDatabaseRoleIfEnforced } from "./database/runtime-role.bootstrap.js";
 import { startJobWorkerIfEnabled } from "./infra/jobs/job-worker.bootstrap.js";
 import { createCoreSaasService } from "./modules/core-saas/index.js";
 
@@ -13,6 +14,7 @@ const logger = pino({ level: env.LOG_LEVEL });
 // importado). Os imports dinâmicos continuam lá dentro: quem importa `app.ts` não puxa o worker.
 
 async function main(): Promise<void> {
+  await assertRuntimeDatabaseRoleIfEnforced({ logger });
   const coreSaasRuntime = await createCoreSaasService();
   const app = createApp(coreSaasRuntime);
 
