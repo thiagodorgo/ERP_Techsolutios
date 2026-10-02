@@ -4977,7 +4977,7 @@ publicado **rotulado como parcial**, com denominador e taxa, para o próximo blo
 - **KPI:** valores inalterados (3403/3405, 169); o history fecha a citação N/K que o K1 e o K1b deixaram marcada
   "matriz publicada no K2" (plano §14.12 passo 5).
 
-## B-GOV-PAUSA (PR #397, na autoria, 2026-10-01) — sob ordem de pausa, o agente grava o estado e para sozinho
+## B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho — MERGEADO `513937b0` (2026-10-01)
 
 - **Decisão transcrita:** `D-PAUSA-GRAVA-E-PARA` (dono, 2026-10-01) — vira a norma **P7** do protocolo de junta
   resiliente (`CLAUDE.md` §C7.7, espelho `AGENTS.md`, fonte `PROTOCOLO-JUNTA-RESILIENTE.md`, linha `[P7]` no modelo de
@@ -4985,13 +4985,19 @@ publicado **rotulado como parcial**, com denominador e taxa, para o próximo blo
   (`docs/revisoes/SAN3/B-GOV-PAUSA-plano.md`: 17 elaborações, 7 achados dentro do bloco) e emendado por dev de
   identidade nova (`dev-pausa-emenda`): S-01, S-02, S-03, S-04, S-05, S-07 e S-11, declarados como T-18…T-24 em
   `controle/decisoes.md`.
-- **Junta:** maioria de 3, sem crítico (plano §8; briefing `omega/juntas/BRIEFING-B-GOV-PAUSA.md`) — **ainda não
-  votou**; é a primeira junta sob a P7.
-- **Abertas, com dono:** `P-GOV-OBITUARIO-SEMTETO` (pré-existente; próximo bloco de registro ou este, por decisão na
-  ata) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10; `B-GOV-CICLOS-RESIDUAIS`). Índice pelo gerador: **423** cabeçalhos /
-  **412** IDs, **111** FECHADAS, **312** ABERTAS.
+- **Junta:** APROVADO **3 × 0** (maioria de 3, sem crítico) sobre `67c2c280` — 0 bloqueia, 2 ajuste (C1-A1, C1-A3), 7
+  nota; primeira junta sob a P7 (nenhuma PAUSA recebida, nenhuma queda). Ata `omega/juntas/J-B-GOV-PAUSA.md`; votos,
+  inspetor e porteiros em `omega/juntas/votos/B-GOV-PAUSA/`.
+- **Porteiro do #397:** `LIBERADO COM RESSALVA` — dívidas pagas pelo registro **#398** (`5bcdcc58`): backfill §C3.5
+  (`merge_commit 513937b0`, `approved_head 67c2c280` lido da ata), as duas pendências dos ajustes da C1 e uma errata
+  pós-merge no corpo do PR. **Porteiro do #398:** `LIBERADO COM RESSALVA` — esta trilha defasada e a razão declarada
+  para não rodar a limpeza padrão (ver `codex/log-execucao.md`), pagas pelo registro do #398.
+- **Abertas, com dono:** `P-GOV-OBITUARIO-SEMTETO` (pré-existente), `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10),
+  `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` (C1-A1) e `P-GOV-PAUSA-CASO-SEM-FONTE` (C1-A3; a fonte do caso foi versionada
+  em `votos/B-GOV-PAUSA/00-caso-dev-t4-trilha.md`) — dono `B-GOV-CICLOS-RESIDUAIS` nas três últimas. Índice pelo
+  gerador depois do #398: **425** cabeçalhos / **414** IDs, **111** FECHADAS, **314** ABERTAS.
 - **KPI:** `blocks_completed` 168 → 169 (recontado contra a `origin/main` `5b6e1036`); trilhas de teste carregadas com
-  nota (nenhum código nem teste tocado); `pr 397`, `merge_commit`/`approved_head` `null` na autoria.
+  nota (nenhum código nem teste tocado); `pr 397`, e o backfill de `merge_commit`/`approved_head` pago pelo #398.
 
 ## B-GOV-MANDATO — ciclo 4 (PR #393): E2 e E3 do Dev-S4 (2026-10-01) — o pré-voo e a ferramenta consertados, e o registro
 
