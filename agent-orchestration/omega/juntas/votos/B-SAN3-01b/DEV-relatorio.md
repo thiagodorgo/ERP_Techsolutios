@@ -110,3 +110,58 @@ $ (… Node 20 …)
 
 **E5 — `frontend/package.json`:** só `scripts["test:smoke"]`, +1 caminho logo depois de `tests/work-orders-honest-errors.test.tsx`
 (`git diff -U0 | grep -c '^[-+][^-+]'` → 2 linhas; posição 102 da lista; 142 → 143 arquivos).
+
+## §E2/E3 — Guard por alcance (qualquer profundidade + fecho + fronteira + `[G1b]`), cabeçalhos (MEDIDO, 2026-10-02T05:47Z–05:55Z)
+
+**E2 — `frontend/tests/work-orders-honest-errors.test.tsx`, seção G reescrita (algoritmo do Apêndice A do plano, sobre o
+MESMO `GuardHost`):** `mockOrigin` vira ponto fixo sobre re-exports em profundidade arbitrária (`export *`, `export {a as b}
+from`, `export * as ns from`, re-export LOCAL de binding importado, `export default x`), com memo por host e guarda de ciclo;
+o varrido cobre RAÍZES (2 pastas + `useServiceQuoteReferences.ts`, do disco) e o FECHO de import (estático não-tipo, re-export,
+`import()`), em profundidade; `[G1b]` novo aplica a P-B (literal de objeto com `id`/`code` CONSTANTE em `catch`/`.catch(`/`??`/`||`
+fora de `isMockMode()`) às raízes; denominadores do §4.4 do plano no `[G1]` (arquivos por raiz > 0, arquivo de fronteira
+presente, fecho > 0, referências ≥ 10, sítio sabido `work-orders.service.ts → getMockWorkOrdersData` visto E guardado) e no
+`[G1b]` (literais em ramo de falha vistos ≥ 10); `[G2]` com as 15 formas de hoje + 14 novas (as 12 do §0.5 L1, C1–C12, mais
+namespace re-exportado e um negativo de literal legítimo), cada uma com `leaks`, `refs`, `literals` e `closureLeaks`
+esperados; `[G3]` em disco com barrel de 3 níveis, literal inline em `catch` e helper FORA da pasta (fecho) → lista exata.
+Os `[W1]`/`[W2]` de regex saíram (viraram o E1); o comentário da seção G traz os residuais R1–R5. Os dois guards publicam N
+por `t.diagnostic` (linhas `#` do TAP) em toda execução.
+
+Falsificação encontrada e corrigida ANTES de medir (registrada por honestidade, §A6): a 1ª versão da porta do algoritmo tinha
+um `else` pendurado (sem chaves) no `export * from`, que colava no `if (name !== "default")` interno — barrel de 2 níveis
+voltava a passar (`[G2]` (q) e `[G3]` vermelhos: 66/64/2). Corrigido com `const reexported = origin === "all" ? … : origin`.
+
+**E3 — só comentário, nos três cabeçalhos** (`git diff -U0 | grep -vcE '^[-+]//'` → 0 linhas não-comentário em cada um):
+`dispatches.service.ts` l.22-29 · `repository.ts` l.5-11 · `useServiceQuoteReferences.ts` l.11-19 — dizem o que o `[G1]`/`[G1b]`
+provam (profundidade arbitrária / N níveis, fecho, as três raízes, entidade inline) **e o que não provam** (R2–R4); no
+`useServiceQuoteReferences.ts` a frase "em mock/erro voltam vazios" sai (P-o′: em `VITE_USE_MOCKS=true` a coluna de OS
+recebe 6 itens de demonstração — medido no plano). `work-orders.service.ts` NÃO foi tocado (fora da fronteira, §2.3 do plano):
+o texto dele vira verdadeiro pelo E2.
+
+```
+$ for f in <os 3 arquivos>; do grep -q -E 'profundidade|N níveis' $f && grep -q -i 'fecho' $f && grep -q 'não prova' $f && echo "$f ok" || echo "$f VERMELHO"; done
+frontend/src/modules/operations/dispatches/dispatches.service.ts ok
+frontend/src/modules/work-orders/repository.ts ok
+frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts ok
+$ grep -c 'em mock/erro voltam vazios' frontend/src/modules/registry/service-quotes/useServiceQuoteReferences.ts
+0
+```
+
+### Bateria do §8 no head da entrega (E1–E5 aplicados) — MEDIDO, 05:52:58Z–05:55:07Z
+
+```
+$ (cd frontend && VITE_USE_MOCKS=false node --test --import tsx tests/work-orders-page-live.test.tsx tests/work-orders-honest-errors.test.tsx)   # Node 22.22.0
+# tests 79 # pass 79 # fail 0      ec=0     (13 + 66 — a contagem esperada do §8: 67 − 2 + 1 = 66; 13; bloco 79)
+# [G1] raízes=81 (por pasta 64/16 + 1 arquivo) · fecho=48 · referências de origem mock nas raízes=20 (guardadas=20) · vazamentos raiz/fecho=0/0
+# [G1b] literais de objeto em ramo de falha vistos nas raízes=19 · com identidade constante=0
+   ← iguais aos do gerador do plano no head 3b1fe0f9 (RAÍZES 81 · FECHO 48 · refs 20 · VISTOS 19 · 0/0): a propriedade VALE hoje (P-g)
+$ (… PATH=/opt/node20/bin:$PATH …)   # Node 20.20.0
+# tests 79 # pass 79 # fail 0      ec=0
+$ npm --prefix frontend run check                  → tsc -b --noEmit   ec=0   (18 s)
+$ npm --prefix frontend run test:smoke             # Node 22
+# tests 1214 # pass 1214 # fail 0 # skipped 0      ec=0   (35 s; 143 arquivos)   ← 1202 − 2 + 1 + 13 = 1214, o esperado do §8
+$ (cd frontend && PATH=/opt/node20/bin:$PATH npm run test:smoke)   # Node 20
+# tests 1214 # pass 1214 # fail 0 # skipped 0      ec=0   (41 s)
+$ npm --prefix frontend run build                  → ✓ built in 9.75s   ec=0 ; rm -rf frontend/dist frontend/tsconfig.tsbuildinfo (§C5)
+```
+
+Pendentes desta seção (medidos nas seguintes): mutações do §7 (seção §M), KPI (§E6), registro (§E7).
