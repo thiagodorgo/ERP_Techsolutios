@@ -66,10 +66,14 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 6. **Registrar a ata** — votos + justificativa em `docs/juntas/` (ou `agent-orchestration/omega/juntas/`).
    **Junta sem registro = merge inválido.** Verde da junta + CI verde = merge (§C7.1).
 
-> **Resiliência de junta (P1–P6 — §C7.7 do `AGENTS.md`, inline):** toda cadeira grava **evidência
+> **Resiliência de junta (P1–P7 — §C7.7 do `AGENTS.md`, inline):** toda cadeira grava **evidência
 > incremental** em `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` a cada
 > item, escreve o **voto em arquivo ANTES da mensagem final** (mensagem final = 1 linha), nasce como
 > esqueleto `EM APURAÇÃO`, mandato ≤3 itens, máximo 2 disparos em paralelo, quedas em `00-quedas.md`.
+> **Sob ordem de pausa do dono (P7, `D-PAUSA-GRAVA-E-PARA`)**, todo agente vivo termina o comando em curso,
+> grava `## PAUSA <hora UTC>` (head · feito · falta · próximo comando · meio-escritos) no seu arquivo de
+> evidência — quem não tem um, no arquivo de saída que o mandato nomeia — e para sozinho com 1 linha, sem
+> iniciar item novo; a retomada é pela mesma identidade, do mesmo mandato. Pausa não é morte nem parada.
 
 > **Regra da dúvida (§C7.3):** qualquer incerteza → adote `agente-pesquisador-web` (≥3 fontes) e registre
 > a PD em `docs/omega-pd.md` **antes** de decidir. Dúvida sem pesquisa = veto.
