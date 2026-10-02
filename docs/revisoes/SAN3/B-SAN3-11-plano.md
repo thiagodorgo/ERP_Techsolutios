@@ -1317,3 +1317,133 @@ Medido (M12): `origin/main` = `4ab9d232` → `blocks_completed 169`, `frontend_s
 checkout (regex cega a `\r`, mutação sem prova) parte do veredito; a errata tira o relógio do veredito, normaliza e prova toda mutação,
 limita o diff ao arquivo de teste + KPI recontado contra a main de agora, e devolve o bloco à junta 1 pelo caminho inteiro (push → CI →
 mandatos HC=H0 → inspetor novo).
+
+---
+
+### §15-bis — ERRATA 1-bis (2026-10-02) — A17 e A18 eram inalcançáveis pela própria forma de referência da §15.3; o critério muda, a forma fica
+
+**Autoria:** `planejador-mestre`, identidade `planejador-errata1-b-san3-11` (a mesma da §15), **Fable** (obrigatório: o fluxo voltou ao
+planejador após correção de código — §C7.6), mandato `00-mandatos/planejador-errata1bis.md` (md5 EOL-neutro `310f353fad2be576c246beeca01a59b1`,
+versionado em `ff1f69b4`). **Quem achou:** o dev da errata 1 (`dev-errata1-b-san3-11`, Opus 5.5 declarado), que aplicou a §15.3 **verbatim**,
+mediu, e **parou sem decidir** (`DEV-ERRATA1-401.md` §9) — a conduta certa (§C7.4-bis). **Quem desenvolve:** o mesmo dev retoma; a correção
+aqui é de **critério e de registro**, não de código do arnês.
+
+**Natureza:** continuação da errata 1 (terreno, não junta; não abre `R-*`). Os dois achados são **defeitos do planejador** — critérios que a forma
+de referência, escrita por ele, não pode cumprir ("critério impossível de passar", §C7.4(a)). Nenhuma propriedade (P-A, P-B) se afrouxa.
+
+#### 15-bis.1 Medido por esta instância (comando + saída resumida; nada herdado)
+
+| # | Medição | Resultado |
+|---|---|---|
+| N1 | `spawnSync(node -e "setTimeout(…,5000)", {timeout: 200})` em Node v20.19.5 | `status null · signal SIGTERM · error.code ETIMEDOUT` — **os dois campos**; a forma §15.3 (`error` primeiro) devolve `gerador não executou: spawnSync …node.exe ETIMEDOUT`. `process.kill(self, SIGTERM)` no Windows → `status 1, signal null` (sinal sem `error` **não é produzível aqui**; o ramo `status === null` é vivo só em Linux — fica, fecha o tipo) |
+| N2 | Regex `NULL` da §15.7 sobre a linha da forma `return { exitCode: result.status, stdout: result.stdout ?? "" };` | **casa** (`status, stdout: result.stdout ??`) — o `??` é do `stdout`; o instrumento reconhece forma, não propriedade |
+| N3 | Regex nova `/\bstatus\s*(?:\?\?\|\|\|)/` | linha da forma → **não casa**; `result.status ?? 1` (head antigo) → casa; `status||1`, `(result.status \|\| 1)`, `x.status??1` → casa; `status, y ?? 1` → não casa. Limite declarado: coalescência indireta (`const s = result.status; s ?? 1`) não é vista — coberta por A17′ (comportamento) |
+| N4 | Varredura **v2** (15-bis.7) no head do dev `46bd9fbe` | `MUT=5 · EOL=3 · CP=1 · TETO=0 · NULL=0 · WRITE=3`; EOL = `censo.mjs:42` (`$` em nome de arquivo) · `:276` normalizador `/\r\n/g` do `mutate` · `:318` regex de T14 dentro de `mutate(`. Vermelho-controle: `?? 1` restaurado → `NULL=1` |
+| N5 | Controle A17 no head do dev, worktree próprio CRLF: **[a]** `timeout: 1` injetado · **[b]** [a] + os dois `throw` removidos · **[c]** [a] + `?? 1` restaurado | [a] `16 tests · 13 pass · 3 fail`, os 3 `not ok` com `code: 'ERR_TEST_FAILURE'` e `error: 'gerador não executou: … ETIMEDOUT'`; `ERR_ASSERTION`=0; `morto por sinal`=0; `deve deixar gerador vermelho`=0; `deve reportar`=0. **[b]** `ERR_ASSERTION`=**3** (`deve deixar gerador vermelho`=2, `espelho sem descarte`=1). **[c]** idêntico a [a] (o `throw` em `error` dispara antes — o `?? 1` vira código morto; só A18′ o pega) |
+| N6 | `gerar-indice-pendencias.py` no head do dev | `427 cabecalhos / 416 IDs \| FECHADA 111 · ABERTA 315 · SEM-STATUS 1`; diff `273+/271−` = **253 linhas só com o número de linha deslocado · 0 de conteúdo · 2 novas (`P-SAN3-11-*`) · 0 sumidas · 7 de placar**. O `SEM-STATUS` é a **`P-CHK-DOSSIE-VERSAO-NA-UI`**: o bloco escreveu `- **status:** **RESOLVIDA em B-SAN3-11 (2026-10-01)** · …` e a regex da linha de status do gerador não atravessa o 2º `**` → a pendência que o bloco fecha (A15) sai como "sem status", nunca FECHADA |
+| N7 | Mesma entrada com `- **status:** RESOLVIDA em B-SAN3-11 (2026-10-01) · branch …` (1 linha) + gerador | `427 / 416 \| FECHADA **112** · ABERTA 315 · SEM-STATUS **0** · CONTRADITÓRIAS 0`; `P-CHK-DOSSIE-VERSAO-NA-UI` em **FECHADAS**; as duas `P-SAN3-11-*` em ABERTAS (BAIXA, dono sim) |
+| N8 | KPI em `3208cf13` pelo blob; `origin/main` re-buscada | `version B-SAN3-11 · blocks 170 · smoke 1218/1218 · pr 401 · merge_commit/approved_head null · history n=166 (…397, 401)`; `origin/main` **continua `4ab9d232`** → recontagem vigente |
+| N9 | Ramo | `origin/fix/dossie-versao-da-vistoria` = `ff1f69b4` (+ só `00-mandatos/planejador-errata1bis.md` sobre `508240fb`); `46bd9fbe` **não descende** dele → integrar por **merge** antes do push |
+| N10 | Forma commitada em `92cfc05e` (blob) | verbatim da §15.3; só o arquivo de teste (`15+/17−`); `3208cf13` só `Kpis/*`; `46bd9fbe` só `DEV-relatorio.md` (append) |
+
+#### 15-bis.2 Decisões — por propriedade, com a mutação que deixa cada critério vermelho
+
+**D1 → o critério muda; a forma fica.** A propriedade P-A ("morte por tempo/sinal vira exceção com a causa nomeada; nunca código de saída")
+**vale** na forma (N1, N5[a]). O que estava errado era A17 cobrar a **mensagem** de um ramo que a morte por teto não alcança. A17 é
+substituído por **A17′** (15-bis.6): sob teto, os três vermelhos são **exceções do arnês**, nenhum é asserção. Mutação que o deixa vermelho:
+remover os dois `throw` (N5[b], `ERR_ASSERTION`=3). Não se reordena a forma nem se enriquece a mensagem: mudar código para caber num critério
+errado é o anti-padrão; e o ramo `status === null` fica porque fecha o tipo (`exitCode: number`) e é o caso Linux.
+
+**D2 → o instrumento muda; o alvo é enumerado.** A regex `NULL` passa a enunciar a propriedade — coalescência aplicada **a `status`**
+(`\bstatus\s*(?:\?\?|\|\|)`), não "um `??` na mesma linha" (N2/N3). **A18′**: `TETO=0 · NULL=0 · CP=1 · EOL=3`, com os três `EOL` **nomeados**
+(N4) e toda `MUT` de fonte dentro de `mutate(`. Mutação que o deixa vermelho: `?? 1` restaurado → `NULL=1` (N4). O "pode continuar 2" da §15.7
+está **revogado**: o terceiro `EOL` é o normalizador — a própria correção da P-B.
+
+**Observação do dev → dentro do escopo, E9.** O §6 do plano já permite `pendencias.md` e `pendencias-indice.md` ("se o gerador de índice o
+exigir" — exige: existe na ref e o cabeçalho do índice manda regenerar); a §15.5 os omitiu. A regeneração é limpa (N6) **e** revela que a
+linha de status da `P-CHK-DOSSIE-VERSAO-NA-UI`, escrita pelo commit original do bloco (`dd58142f`, 2026-10-01 — **dentro-do-bloco**, dono
+`B-SAN3-11`), não é lida pelo gerador: a entrega publicaria como "sem status" a pendência que diz fechar. Conserto de 1 linha + 1 regen (N7).
+
+#### 15-bis.3 Entrega nova — E9 (registro do próprio bloco; sem código)
+
+1. `agent-orchestration/controle/pendencias.md`, entrada `## P-CHK-DOSSIE-VERSAO-NA-UI` (l.2244): **só** a linha de status passa a
+   `- **status:** RESOLVIDA em B-SAN3-11 (2026-10-01) · branch \`fix/dossie-versao-da-vistoria\`` (sai o `**…**` interno; o resto da linha e
+   os sub-itens E1–E5/Bateria/dono ficam). `git diff --numstat -- pendencias.md` = `1 1`.
+2. `python agent-orchestration/controle/gerar-indice-pendencias.py` → `agent-orchestration/controle/pendencias-indice.md` regenerado;
+   placar esperado `427 cabecalhos / 416 IDs | FECHADA 112 · ABERTA 315` e `SEM STATUS — 0`. Nenhuma edição manual no índice.
+3. Commit próprio: `docs(registro): B-SAN3-11 — linha de status da P-CHK-DOSSIE-VERSAO-NA-UI na forma do gerador e indice regenerado (ERRATA 1-bis)`.
+
+#### 15-bis.4 O que VALE do que o dev já commitou localmente (verificado pelo blob, N8–N10)
+
+| Commit | Conteúdo | Veredito |
+|---|---|---|
+| `1654ae57` | merge da `origin/main` 4ab9d232 (7 conflitos, só registro/KPI, as duas entradas) | **vale** (§15.10 cumprido; `origin/main` não andou) |
+| `92cfc05e` | E6 + E7, só `frontend/tests/patios-dossie-versao.smoke.test.tsx` | **vale, intocado** — nenhum commit novo no arquivo de teste |
+| `3208cf13` | E8, recontagem contra a main de agora (170 · 1218/1218 · pr 401 · n=166) | **vale** |
+| `46bd9fbe` | `DEV-relatorio.md`, seção da parada (append) | **vale** — registro não se reescreve; a seção da retomada entra depois dela |
+As medições do dev em `92cfc05e` (16/16 nos dois terrenos, 1218/1218) são **dele**, mas o head final será outro (merge de N9 + E9): a bateria
+da §15.8 roda **inteira no head final**, nos dois terrenos (A22) — é o que conta.
+
+#### 15-bis.5 Ordem do que falta (o dev, sem decidir nada fora disto)
+
+0. `git fetch origin` → `git merge origin/fix/dossie-versao-da-vistoria` (traz `ff1f69b4` e o que o orquestrador versionar com esta errata:
+   §15-bis no plano + relatórios do planejador); conflitos esperados **0**; se houver, **as duas entradas**, a do ramo depois; **nunca rebase**.
+   `w-dev11lf` → `git -c core.autocrlf=false checkout --detach <head>` a cada head novo (CR=0 conferido).
+1. **E9** (15-bis.3) → commit.
+2. Controles no **head final**, terreno CRLF (CR>0 no adapter colado), cada um por mutação em cópia de trabalho, TAP contado, restauração por
+   cópia e `git diff --stat` vazio: **A17′** ([a] verde do critério **e** [b] vermelho-controle), **A19** (CRLF obrigatório; depois LF),
+   **A20**, **A21**. A medição [a]/[b] já feita por esta errata (N5) não substitui a do dev no head final.
+3. Bateria §15.8 **inteira**, nos dois terrenos, no head final: `check` · 16/16 · `test:smoke` N/N (TAP) · varredura **v2** → A18′ ·
+   `kpi-freeze --check` · guards · listas de diff (A25 + 15-bis.8) · `git diff --check` · **A26** (gerador → `git diff --stat` vazio).
+4. Se `test:smoke` der N ≠ 1218 ou a `origin/main` tiver andado: recontagem de novo pela regra (main + 1; TAP), commit `fix(kpi)`.
+5. Registro: `DEV-relatorio.md` seção `## ERRATA 1 — retomada (1-bis) — <UTC>` (append, com N5-equivalentes do dev, A19–A21, A26, varredura v2,
+   os dois terrenos); 1 linha em `log-execucao.md` e `status-geral.md` → commit `docs(junta)`.
+6. `git merge-base --is-ancestor origin/fix/dossie-versao-da-vistoria HEAD; echo $?` → `0` → `git push origin HEAD:fix/dossie-versao-da-vistoria`
+   (fast-forward; nunca `--force`). Depois: CI no head → mandatos regenerados (HC = H0) → **inspetor novo** → junta 1 (§15.11, inalterado).
+7. Ao fim: 0 processo com `w-dev11` na CommandLine → `git worktree remove --force` dos dois worktrees do dev.
+
+#### 15-bis.6 Critérios — A17′ e A18′ SUBSTITUEM A17 e A18; A26 é novo; A19–A25 ficam como na §15.6
+
+| # | Critério (verde) | Mutação que o deixa VERMELHO | Onde |
+|---|---|---|---|
+| A17′ | P-A por comportamento: com a **única** mutação `timeout: 1,` nas opções do `spawnSync` de `runCenso`, o TAP tem `# fail 3` (T12, T13, T14), e **cada** `not ok` é exceção do arnês — `grep -cE "gerador (não executou\|morto por sinal)"` = **3**, `grep -c ERR_ASSERTION` = **0**, `grep -c 'deve deixar gerador vermelho'` = 0, `grep -c 'deve reportar'` = 0, `grep -c 'espelho sem descarte'` = 0 — e o arquivo restaurado (`git diff --stat` vazio) | além do teto, remover os dois `throw` de `runCenso` → `ERR_ASSERTION` = 3 (N5[b]) | dev (controle no head final), C2 |
+| A18′ | Varredura **v2** (15-bis.7) no head final: `TETO=0 · NULL=0 · CP=1 · EOL=3`, os três `EOL` sendo exatamente `scripts/san3-11-dossie-vistoria-censo.mjs:42`, o normalizador `/\r\n/g` de `mutate` e a regex de T14 dentro de `mutate(`; toda `MUT` de fonte dentro de `mutate(` (as de T11, l.234/251, são recorte de HTML) | restaurar `exitCode: result.status ?? 1` → `NULL=1` (N4); ou tirar o normalizador → `EOL=2` | dev, C3 (script) |
+| A26 | E9: no head final, `python agent-orchestration/controle/gerar-indice-pendencias.py` deixa `git diff --stat` **vazio**; o índice tem `SEM STATUS … — 0`, `CONTRADITORIAS … — 0`, `P-CHK-DOSSIE-VERSAO-NA-UI` sob `## FECHADAS` e as duas `P-SAN3-11-*` sob ABERTAS; `git diff --numstat origin/main...HEAD -- agent-orchestration/controle/pendencias.md` cobre a linha de status (sem o `**` interno: `grep -c 'status:\*\* \*\*RESOLVIDA' pendencias.md` = 0) | deixar o `**` interno → `SEM-STATUS 1` e a P-CHK fora de FECHADAS (N6); editar o índice à mão → regen deixa diff | dev, C3 (A15) |
+
+#### 15-bis.7 Instrumento v2 — a única linha que muda na varredura da §15.7 (e o auto-teste)
+
+Em `san3-11-errata1-varredura.mjs` (cópia local do dev; **não** entra no repositório), a linha
+```js
+  ["NULL", /\bstatus\b[^;\n]*(?:\?\?|\|\|)/],
+```
+passa a
+```js
+  ["NULL", /\bstatus\s*(?:\?\?|\|\|)/], // ERRATA 1-bis: coalescência aplicada a `status` (propriedade), não "status e um ?? na mesma linha" (forma)
+```
+(e o comentário do cabeçalho, `NULL = \`status\` coalescido diretamente (\`status ?? x\` / \`status \|\| x\`)`). md5 EOL-neutro do script v2
+desta instância: `646b13719214cedd6cc8fbd6296364e5`. **Auto-teste antes de usar** (cola a saída no relatório):
+`node -e 'const r=/\bstatus\s*(?:\?\?|\|\|)/;console.log(r.test("return { exitCode: result.status, stdout: result.stdout ?? \"\" };"), r.test("exitCode: result.status ?? 1"))'`
+→ `false true`. (Lembrete da §15.7: mover o script por arquivo, nunca por heredoc em Bash.)
+
+#### 15-bis.8 Escopo (§C4) — a emenda à §15.5
+
+**PERMITIDO** = §15.5 **mais** `agent-orchestration/controle/pendencias.md` (**só** a linha de status da `P-CHK-DOSSIE-VERSAO-NA-UI`) e
+`agent-orchestration/controle/pendencias-indice.md` (**só** como saída do gerador) — ambos já no §6 do plano. **Nada mais muda**: o arquivo de
+teste fica como em `92cfc05e` (`git diff 92cfc05e HEAD -- frontend/tests/patios-dossie-versao.smoke.test.tsx` **vazio** no head final —
+critério A25 ganha esta linha); `scripts/**`, `frontend/src/**`, `frontend/package.json`, `.github/**` continuam PROIBIDOS.
+
+#### 15-bis.9 Registro e o erro do planejador, nomeado
+
+- Esta §15-bis é apensada pelo orquestrador; o dev não a edita. O arquivo de saída do planejador (`ERRATA-1bis-B-SAN3-11.md`, trilha de medição)
+  é versionado ao lado de `PLANEJADOR-errata1-relatorio.md`.
+- **O que a errata 1 errou:** (1) A17 foi escrito a partir do rótulo da **sonda** (que decidia por `status === null`) e não da **forma** (que
+  testa `error` primeiro) — critério tirado da réplica, não do artefato, e nunca executado contra a forma antes de publicar; (2) A18 usava um
+  instrumento que reconhece forma, e o alvo `EOL` foi contado antes de a forma existir; (3) a §15.5 estreitou o escopo por omissão. Classe para
+  a casa: **plano que publica forma de referência e critério sobre ela executa o critério contra a forma antes de publicar.** Pego por execução
+  do executor, que parou e devolveu por escrito — a máquina funcionou como desenhada (§C7.4-bis).
+- Pendências novas: **nenhuma**. A condição Windows "sinal sem `error` não é produzível" (N1) é nota de terreno, não achado.
+
+**Uma linha:** A17 e A18 pediam o que a forma de referência não pode dar; a 1-bis troca os dois critérios por A17′ (os três vermelhos sob
+teto são exceções do arnês, zero asserções — vermelho-controle: tirar os `throw`) e A18′ (instrumento que vê `status` coalescido, `EOL=3`
+nomeados), mantém o código do arnês como está, traz para dentro o par `pendencias.md`/índice com a linha de status da `P-CHK-DOSSIE-VERSAO-NA-UI`
+na forma que o gerador lê (E9/A26), e devolve o dev ao caminho: merge do ramo → E9 → controles → bateria nos dois terrenos → registro → push.
