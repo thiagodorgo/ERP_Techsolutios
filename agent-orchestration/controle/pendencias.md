@@ -9935,3 +9935,47 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-06a` (tem `frontend/src/App.tsx` na fronteira e o `coordenador-de-acessos` na junta).
 - **bloqueia:** não (impacto 0 nos papéis existentes; o backend é a autoridade final).
 - **teste de encerramento:** o guard de `/work-orders/new` usa a mesma régua do backend (`includes` estrito) ou um teste papel a papel (catálogo executado) prova que nenhum papel sem `work_orders:create` passa pelo guard de rota.
+
+> Abertas pelo registro do #402 (`docs/registro-402`, 2026-10-02) a partir das notas da junta `J-B-SAN3-01b`, como a ata e
+> o porteiro do #402 mandaram. O ajuste `A-C1-01` não vira pendência: é o backfill §C3.5 que este mesmo registro paga. A nota
+> da C2 sobre a troca de organização já tem classe e dono (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, `B-SAN3-06a`).
+
+## P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo que um módulo é dado de demonstração: dado fabricado fora da convenção nasce classificado como real — MÉDIA
+
+- status: ABERTA (aberta pelo registro do #402, a partir da nota **N-C1-01** da junta `J-B-SAN3-01b`).
+- **prova (N = 1 mutação da cadeira; forma: módulo `work-orders.demo-data.ts`, fora da convenção `*.mock.ts(x)`/`mocks/`, devolvido pelo service no `catch` → bateria do bloco 79/79 verde, `[G1]` 0 vazamentos, `[G1b]` 0 fabricados; causa: `isMockModulePath` classifica a origem por convenção de nome):** `votos/B-SAN3-01b/C1-voto.json`, achado `N-C1-01`.
+- **escopo:** `pre-existente` — `isMockModulePath` nasceu em `83a3c68c` (2026-09-19, `B-SAN3-01`); o `B-SAN3-01b` não o tocou.
+- **efeito medido:** nenhum módulo assim existe hoje (a mutação foi da cadeira). É a fronteira por onde um dado fabricado novo entraria sem o guard ver.
+- **dono proposto pelo orquestrador:** `B-SAN3-06c`, que já é dono do dado demonstrativo da web (`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`); o planejador do bloco confirma ou devolve.
+- **bloqueia:** não.
+- **teste de encerramento:** a origem de dado de demonstração é decidida por propriedade (o que o módulo devolve e por qual caminho é alcançado), e a mutação `work-orders.demo-data.ts` deixa o guard vermelho.
+
+## P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa a régua do backend vale para o catálogo de hoje, e não separa a inclusão estrita de um atalho de plataforma — BAIXA
+
+- status: ABERTA (aberta pelo registro do #402, a partir de uma nota `dentro-do-bloco` da C2 da junta `J-B-SAN3-01b`).
+- **prova (N = 2 mutações da cadeira; forma: M2c-i, atalho de plataforma, fica verde 13/13; M2c-ii, papel separador de sonda, é acusado em `[GB1]`/`[GB2]`; o atalho por rótulo "Super Admin" não é exercitável porque o arnês monta o papel pela chave):** `votos/B-SAN3-01b/C2-voto.json` e `C2-evidencia.md`.
+- **escopo:** `dentro-do-bloco` (nota; não reprovou). A propriedade "régua = inclusão estrita" está provada por parse e pela sonda, não pelo catálogo.
+- **efeito medido:** hoje nenhum papel do catálogo separa as duas réguas; a prova enfraquece no dia em que um papel separador existir sem teste.
+- **dono proposto pelo orquestrador:** `B-SAN3-06a`, dono das permissões por papel no front (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`); o planejador do bloco confirma ou devolve.
+- **bloqueia:** não.
+- **teste de encerramento:** o teste papel a papel do botão inclui um papel separador permanente, ou o atalho por rótulo passa a ser exercitável pelo arnês.
+
+## P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard leva a `/work-orders/new` sem o gate de `work_orders:create` — MÉDIA
+
+- status: ABERTA (aberta pelo registro do #402, a partir de uma nota `pre-existente` da C2 da junta `J-B-SAN3-01b`).
+- **prova (N = 1 botão; forma: `frontend/src/pages/DashboardPage.tsx` l.365-368 no objeto `cdf370dc`, sem gate; `git diff 4ab9d232..cdf370dc -- DashboardPage.tsx` = 0):** `votos/B-SAN3-01b/C2-voto.json`.
+- **escopo:** `pre-existente` — o último commit no arquivo antes da base é `0a38f1be` (2026-08-04); o arquivo está fora do PERMITIDO do plano do `01b`.
+- **efeito medido:** um papel sem `work_orders:create` vê o botão; a rota e o backend recusam. É falso positivo de interface, não escalada.
+- **dono:** `B-SAN3-06c` (proposto pela C2; já é dono de `DashboardPage.tsx` por outras pendências, l.9411 e l.9447).
+- **bloqueia:** não.
+- **teste de encerramento:** o botão do Dashboard usa a mesma régua do backend e do botão da lista, provado por teste papel a papel.
+
+## P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS diverge do PNG e do protótipo, mas segue o design padronizado do dono — BAIXA
+
+- status: ABERTA (aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`).
+- **prova (forma: kicker, título 22 × 20, subtítulo, alinhamento, borda, Filtrar e Exportar omitidos, padding e borda do botão "Nova OS", contra `docs/claude-code-handoff/screen-refs/web/ordens-servico.png` e `docs/claude-code-handoff/ERP Web.dc.html` l.288-296; idêntico pixel a pixel no head-base):** `votos/B-SAN3-01b/C3-voto.json`, achado `C3-N1`.
+- **escopo:** `pre-existente` — `0a38f1be` (#331) e `d43314bd` (#332), 2026-08-04; o cabeçalho segue `docs/juntas/J-TELAS-PADRONIZADAS.md` §1.
+- **efeito medido:** divergência visual, não de regra.
+- **dono:** decisão do dono — qual referência vale para o cabeçalho da lista de OS, o PNG de `screen-refs/` ou o design padronizado de `J-TELAS-PADRONIZADAS`. Sem bloco dono até a decisão.
+- **bloqueia:** não.
+- **teste de encerramento:** a decisão registrada em `controle/decisoes.md` e o cabeçalho conforme a referência escolhida.
