@@ -3056,14 +3056,14 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
 
-## B-SAN3-11 — 2026-10-01 (recontado em 2026-10-02, ERRATA 1)
+## B-SAN3-11 — 2026-10-01 (recontado em 2026-10-02: ERRATA 1 e integração pós-#402)
 
-**Bloco**: B-SAN3-11 · **PR**: #401 (`merge_commit`/`approved_head` null na autoria — backfill pós-merge) · **Data**: 2026-10-01; recontagem 2026-10-02
+**Bloco**: B-SAN3-11 · **PR**: #401 (`merge_commit`/`approved_head` null na autoria — backfill pós-merge) · **Data**: 2026-10-01; recontagens 2026-10-02
 
-| Métrica | Anterior (`origin/main` `4ab9d232`, #397) | Este PR | Δ |
+| Métrica | Anterior (`origin/main` `3e40a256`, #402 B-SAN3-01b) | Este PR | Δ |
 |---|---|---|---|
-| `blocks_completed` | 169 | **170** | +1 |
-| `frontend_smoke_tests` | 1202/1202 | **1218/1218** (executado no head `92cfc05e`, checkout CRLF) | +16 |
+| `blocks_completed` | 170 | **171** | +1 |
+| `frontend_smoke_tests` | 1214/1214 | **1230/1230** (executado no head `5c8efa08`, merge da main, checkout CRLF) | +16 |
 | `flutter_tests` | 864/864 | 864/864 (carregado §C3.3) | 0 |
 | `backend_tests` | 3052/3054 | 3052/3054 (carregado §C3.3) | 0 |
 
@@ -3073,5 +3073,10 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 `blocks_completed` recontado contra a `origin/main` de agora (`4ab9d232`, que já publicava 169 pelo #397) — na autoria
 original o bloco contara 168 → 169 contra o merge-base `5b6e1036`. `mvp_demo`/`mvp_vendavel` intocados.
 
-`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5). Nenhum backfill devido por este PR: a
-entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
+**Integração pós-#402 (2026-10-02):** a `main` andou para `3e40a256` (#402, B-SAN3-01b, que publicou 170 e 1214/1214);
+merge, nunca rebase; a linha `test:smoke` do `frontend/package.json` é a UNIÃO dos dois acréscimos
+(`tests/work-orders-page-live.test.tsx` do #402 e `tests/patios-dossie-versao.smoke.test.tsx` do bloco); `blocks_completed`
+recontado pela regra (main + 1 = 171) e `frontend_smoke_tests` pelo TAP do head integrado (1214 + 16 = 1230).
+
+`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5). Backfill DEVIDO e NÃO pago por este PR: a
+entrada do #402 está na `main` com `pr`/`merge_commit`/`approved_head` null; o mandato de integração não o inclui.

@@ -2515,11 +2515,11 @@
     "approved_head": null,
     "flutter_tests": "864/864",
     "backend_tests": "3052/3054",
-    "frontend_smoke_tests": "1218/1218",
-    "blocks_completed": 170,
+    "frontend_smoke_tests": "1230/1230",
+    "blocks_completed": 171,
     "description": "B-SAN3-11: corrige o dossiê de custódia para rotular vistorias substituídas. E1: tipo +3 campos, E2: adapter +3 campos, E3: painel três estados (substituída/atual/única), E4: guard CE-G1 (census AST), E5: 16 testes novos. Fecha P-CHK-DOSSIE-VERSAO-NA-UI (item 8 do gate vendável).",
     "status": "published_per_pr",
-    "note": "flutter_tests e backend_tests CARREGADOS (§C3.3): o PR não toca mobile/ nem src/, tests/ da raiz ou prisma/. frontend_smoke_tests EXECUTADO no head 92cfc05e: 1202/1202->1218/1218 (+16 testes: T1-T14 + T5b + T7b). ERRATA 1 (§15): T13/T14 re-formados (arnês sem teto, mutação normalizada com prova); contagem inalterada. blocks_completed recontado contra a origin/main 4ab9d232 (169) -> 170. merge_commit/approved_head null na autoria (backfill pós-merge).",
-    "backfill_note": "`pr 401` (o PR já existia na autoria da errata); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. Nenhum backfill devido por este PR: a última entrada da `main` (#397, `4ab9d232`) já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398. Se outro PR que conte bloco mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então."
+    "note": "flutter_tests e backend_tests CARREGADOS (§C3.3): o PR não toca mobile/ nem src/, tests/ da raiz ou prisma/. frontend_smoke_tests EXECUTADO no head 5c8efa08 (merge da origin/main 3e40a256, #402): 1214/1214->1230/1230 (+16 testes do bloco: T1-T14 + T5b + T7b; a linha test:smoke é a união dos acréscimos do #402 e do bloco). ERRATA 1 (§15/§15-bis): T13/T14 re-formados; contagem inalterada. blocks_completed recontado contra a origin/main 3e40a256 (170) -> 171. merge_commit/approved_head null na autoria (backfill pós-merge).",
+    "backfill_note": "`pr 401`; `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge. BACKFILL DEVIDO E NÃO PAGO POR ESTE PR: a entrada do B-SAN3-01b (#402, mergeado em `3e40a256`) está na `main` com `pr`/`merge_commit`/`approved_head` = null (na `release` do latest da main e na última entrada do history dela); o mandato de integração deste PR não inclui o backfill — fica com o PR de registro do #402 ou com o orquestrador. Se outro PR que conte bloco mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então."
   }
 ]
