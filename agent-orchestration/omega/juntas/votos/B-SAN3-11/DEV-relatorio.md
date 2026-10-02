@@ -108,3 +108,41 @@ node --test --import tsx tests/kpi-achados-paridade.test.ts    → # tests 6 # p
 node --check Kpis/app.js → ok
 ```
 Só `Kpis/app.js` muda neste commit (gerado, nunca editado à mão). Node v20.20.0.
+
+## ERRATA 1 — 2026-10-02T16:10Z — PARADA POR DIVERGÊNCIA (plano §15 × medição)
+
+**Quem:** `dev-errata1-b-san3-11` (identidade nova e local; Opus 5.5 — o contrato fixa Fable só para gates e planejador); mandato
+`00-mandatos/dev-errata1.md` (md5 EOL-neutro `e348f93ce9f778ccb06cf55bc17790f6`). Não achou (inspetor), não planejou
+(`planejador-errata1-b-san3-11`), não vota. Evidência incremental completa (P1): `scratchpad/DEV-ERRATA1-401.md` da sessão do orquestrador.
+
+**Terrenos:** `C:/Users/AMP/w-dev11` (CRLF, `core.autocrlf=true`, CR no adapter = 583) e `C:/Users/AMP/w-dev11lf` (`core.autocrlf=false`, CR = 0);
+`MINGW64_NT-10.0-22631`, Node v20.19.5; `npm ci` próprio em `frontend/` nos dois e na raiz (`--ignore-scripts`) no CRLF; sem junction.
+
+**Head anterior:** `508240fb`. **Commits locais (NÃO empurrados, por causa da parada):** `1654ae57` merge da `origin/main` `4ab9d232`
+(conflitos só nos 7 arquivos de registro/KPI da §15.10, as duas entradas mantidas, a do bloco por último) · `92cfc05e` E6+E7 verbatim da §15.3
+(só `frontend/tests/patios-dossie-versao.smoke.test.tsx`, 15+ 17-) · `3208cf13` E8 (KPI recontado) · este registro.
+
+```
+baseline @508240fb, CRLF, arquivo isolado   → # tests 16 # pass 15 # fail 1 (T14: "mutação 2 deve deixar gerador vermelho") ec=1
+@92cfc05e, CRLF, arquivo isolado            → # tests 16 # pass 16 # fail 0 ec=0 · 'morto por sinal' = 0
+@92cfc05e, LF, arquivo isolado              → # tests 16 # pass 16 # fail 0 ec=0 · 'morto por sinal' = 0
+@92cfc05e, CRLF, npm --prefix frontend run test:smoke → # tests 1218 # pass 1218 # fail 0 ec=0
+KPI: blocks_completed 169 (origin/main 4ab9d232) -> 170 · frontend_smoke_tests 1218/1218 (TAP acima) · version B-SAN3-11 · release.pr 401
+     merge_commit/approved_head null · history n 165 -> 166 (a do bloco por último) · kpi-freeze --check ec=0 · app.js: 2 linhas [-+]var FROZEN
+guards raiz: kpi-dashboard-charts 17/17 · kpi-dashboard-contraste 6/6 · kpi-achados-paridade 6/6 · node --check Kpis/app.js ok
+escopo: git diff --name-only 508240fb HEAD -- scripts frontend/src frontend/package.json <2 fixtures> .github → 0
+```
+
+**D1 — A17.** Sob teto, o Node preenche `error` (ETIMEDOUT) **e** `signal` (SIGTERM), `status` null (medido por `node -e` com `spawnSync(…, {timeout: 1})`).
+A forma de referência testa `error` antes de `status === null`; o controle A17 executado (`timeout: 1,` no `spawnSync`, revertido com diff vazio) deu
+`# pass 13 # fail 3` — T12, T13, T14 com `gerador não executou: spawnSync C:\nvm4w\nodejs\node.exe ETIMEDOUT`; `grep -c 'morto por sinal'` = **0**
+(o A17 espera 3); `grep -c 'deve deixar gerador vermelho'` = 0. A propriedade P-A vale (a morte vira exceção com causa; nunca "exit 1" passando);
+a mensagem cobrada pelo A17, e a afirmação de M9/VC2, não.
+
+**D2 — A18.** `node san3-11-errata1-varredura.mjs . origin/main` → `MUT=5 · EOL=3 · CP=1 · TETO=0 · NULL=1 · WRITE=3`. O único NULL é a linha de retorno
+da forma de referência (§15.3, l.1116 do plano): `return { exitCode: result.status, stdout: result.stdout ?? "" };` — a regex NULL da §15.7 casa
+`"status, stdout: result.stdout ??"`; o `??` é do `stdout`. O alvo `NULL=0` não é atingível com a forma verbatim. (EOL=3, não 2: a 3ª é a
+normalização `/\r\n/g` do próprio `mutate`.)
+
+**Não decidido aqui (§C7.4-bis):** forma ou critério — é do plano. **Não rodados depois da parada:** A17 de novo, A19 (CRLF e LF), A20, A21, a bateria
+§15.8 completa no head final nos dois terrenos, a linha de `log-execucao.md` e de `status-geral.md`, e o push. Worktrees mantidos para a retomada.
