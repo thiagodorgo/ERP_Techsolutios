@@ -165,3 +165,47 @@ $ npm --prefix frontend run build                  → ✓ built in 9.75s   ec=0
 ```
 
 Pendentes desta seção (medidos nas seguintes): mutações do §7 (seção §M), KPI (§E6), registro (§E7).
+
+## §E6 — KPI no próprio PR (§9 do plano, §C3) — MEDIDO, 2026-10-02T06:00Z
+
+Recontado contra o que a `origin/main` publica NO INSTANTE do commit (`4ab9d232`, #398): `blocks_completed` **169 → 170** (o §9
+do plano dizia 168 → 169 medindo `3b1fe0f9`; o #397 contou bloco entre a medição do plano e esta tarefa — falsificação do §9
+registrada, regra do §9 aplicada: "+1 a partir do valor publicado na `origin/main` no momento do PR").
+
+| Campo | Valor publicado | Origem |
+|---|---|---|
+| `frontend_smoke_tests` | **1214/1214** | EXECUÇÃO REAL (§0.1-bateria acima): Node 22.22.0 e Node 20.20.0; nota: +13 arquivo vivo, +1 `[G1b]`, −2 `[W1]`/`[W2]` movidos |
+| `backend_tests`, `flutter_tests` | 3052/3054 · 864/864 **CARREGADOS** | nota explícita: `git diff --name-only origin/main...HEAD -- src tests mobile prisma` → vazio |
+| `backend_contract_tests_focused`, `flutter_modules`, `mobile_backend_contracts`, `mobile_core_saas_contracts` | intocados | seguem sob `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393) — precedente do #397 |
+| `blocks_completed` | **170** | 169 na `origin/main@4ab9d232` + 1 |
+| `mvp_demo` / `mvp_vendavel` | 99% / 88% **inalterados** | 1 linha no history: bloco de guarda — não move escopo; o item 4 do §4.1 já estava fechado pelo `B-SAN3-01` |
+| `release` | `block: B-SAN3-01b…`, `pr: null`, `merge_commit: null`, `approved_head: null`, `status: published_per_pr` | `pr` é preenchido pelo orquestrador após `gh pr create` (tarefa de nuvem não abre PR) |
+| `kpis-history.json` / `.md` | **append** de 1 entrada (165 → 166) / 1 seção | `backfill_note`: nenhum backfill devido (#397 já pago pelo #398) |
+| `Kpis/app.js` | só a linha `var FROZEN = …` | `node scripts/kpi-freeze.mjs` (gerado, nunca digitado); `Kpis/index.html` não muda |
+
+```
+$ node scripts/kpi-freeze.mjs            → kpi-freeze: cópia congelada reinjetada (snapshot 2026-10-02, 73701 bytes).
+$ node --check Kpis/app.js               → ec=0
+$ node scripts/kpi-freeze.mjs --check    → kpi-freeze: em dia (snapshot 2026-10-02).
+$ node --test --import tsx tests/kpi-dashboard-charts.test.ts tests/kpi-dashboard-contraste.test.ts tests/kpi-achados-paridade.test.ts
+# tests 29 # pass 29 # fail 0            (inclui "a rodada SAN3 tem barra própria" — a entrada B-SAN3-01b cai em SAN3)
+$ git diff --stat -- Kpis   → app.js 2 linhas · kpis-history.json +13 · kpis-history.md +39 · kpis-latest.json 36 (18+/18−)
+```
+
+## §E1-bis — Isolamento por caso no teste vivo (falsificação do próprio arquivo, MEDIDO 2026-10-02T06:00Z–06:08Z)
+
+A 1ª rodada do runner de mutações (§M) mostrou um defeito do arnês, não do produto: um caso vermelho **contaminava os seguintes**
+(`N-PG-PAINEL` → `bloco 80/67/13`, TODOS os casos do arquivo vivo vermelhos, 1º erro dos seguintes "nenhum console.error…"). Causa:
+a asserção falhava antes do `unmount()`, a raiz viva do caso vermelho ficava montada (intervalo capturado a mais, `fetch`
+resolvendo fora de `act` → aviso do React → `console.error` herdado). Sinal ainda era vermelho, mas sem valor diagnóstico — o
+jurado não saberia QUAL caso pegou a mutação. Correção (só no arquivo de teste): `withPage()` monta, roda o corpo e SEMPRE
+desmonta em `finally`; só com o corpo verde o caso assere "zero `console.error`" (um caso vermelho não ganha um 2º erro que
+esconda o 1º); `[MD0]` desmonta em `finally`. Runner parado, arquivo mutado restaurado (`useWorkOrders.ts hash=d6afd5466242 =
+blob`), runner relançado do zero (§M é a rodada completa, pós-correção).
+
+```
+$ (cd frontend && VITE_USE_MOCKS=false node --test --import tsx tests/work-orders-page-live.test.tsx)   # Node 22 / Node 20
+# tests 13 # pass 13 # fail 0  (ec=0, nas duas)
+$ sed N-PG-PAINEL in place → node --test … work-orders-page-live.test.tsx → # tests 13 # pass 10 # fail 3   ec=1
+not ok 2 [PV1] · not ok 3 [PV2] · not ok 7 [PV6]        ← exatamente os casos que leem o painel; restauro hash=544c781ce0b3=blob
+```

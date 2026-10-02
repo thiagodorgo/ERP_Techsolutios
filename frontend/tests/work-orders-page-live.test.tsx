@@ -428,16 +428,42 @@ async function mount(permissions: readonly string[], role: string, tree: (childr
     root.render(tree(h(AuthProvider, null, h(TenantProvider, null, h(PermissionProvider, null, element as never)))) as never);
   });
   await settle();
+  let mounted = true;
   return {
     container,
     html: () => serialize(container),
     unmount: async () => {
+      if (!mounted) return;
+      mounted = false;
       await act(async () => root.unmount());
       dom.doc.body.removeChild(container);
       dom.storage.clear();
-      assert.deepEqual(consoleErrors, [], "nenhum console.error do React/da página durante o caso");
     },
   };
+}
+
+/**
+ * Isolamento por caso: monta, roda o corpo e SEMPRE desmonta (também quando uma asserção falha — senão a raiz viva do caso
+ * vermelho contamina os seguintes: intervalo capturado a mais, `fetch` resolvendo fora de `act`, `console.error` herdado).
+ * Só com o corpo verde é que o caso assere "zero console.error" (um caso vermelho não ganha um 2º erro que esconda o 1º).
+ */
+async function withPage<T>(mountPage: () => Promise<Mounted>, body: (page: Mounted) => Promise<T>): Promise<T> {
+  consoleErrors.length = 0;
+  const page = await mountPage();
+  let ok = false;
+  try {
+    const result = await body(page);
+    ok = true;
+    return result;
+  } finally {
+    await page.unmount();
+    if (ok) {
+      const errors = consoleErrors.splice(0);
+      assert.deepEqual(errors, [], "nenhum console.error do React/da página durante o caso");
+    } else {
+      consoleErrors.length = 0;
+    }
+  }
 }
 
 const listTree = (children: unknown) => h(MemoryRouter, { initialEntries: ["/work-orders"] }, children as never);
@@ -504,21 +530,25 @@ test("[MD0] arnês: React.act existe; efeito com setState muda o DOM; intervalo 
     }, []);
     return h("span", { "data-n": n, "data-probe": "" });
   }
+  consoleErrors.length = 0;
   dom.intervals.length = 0;
   const container = dom.doc.createElement("div");
   dom.doc.body.appendChild(container);
   const root = createRoot(container as unknown as Element);
-  await act(async () => root.render(h(Probe)));
-  const probe = elements(container, (el) => el.hasAttribute("data-probe"));
-  assert.equal(probe.length, 1);
-  assert.equal(probe[0].getAttribute("data-n"), "1", "o efeito rodou e o setState chegou ao DOM");
-  assert.equal(dom.intervals.filter((interval) => interval.fn !== null).length, 1, "o setInterval foi capturado");
-  await new Promise((resolve) => setTimeout(resolve, 40));
-  assert.equal(fired, 0, "o intervalo capturado NÃO disparou sozinho (40 ms > 10 ms de cadência)");
-  await act(async () => root.unmount());
+  try {
+    await act(async () => root.render(h(Probe)));
+    const probe = elements(container, (el) => el.hasAttribute("data-probe"));
+    assert.equal(probe.length, 1);
+    assert.equal(probe[0].getAttribute("data-n"), "1", "o efeito rodou e o setState chegou ao DOM");
+    assert.equal(dom.intervals.filter((interval) => interval.fn !== null).length, 1, "o setInterval foi capturado");
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    assert.equal(fired, 0, "o intervalo capturado NÃO disparou sozinho (40 ms > 10 ms de cadência)");
+  } finally {
+    await act(async () => root.unmount());
+    dom.doc.body.removeChild(container);
+  }
   assert.equal(dom.intervals.filter((interval) => interval.fn !== null).length, 0, "clearInterval no desmonte");
-  dom.doc.body.removeChild(container);
-  assert.deepEqual(consoleErrors, []);
+  assert.deepEqual(consoleErrors.splice(0), []);
 });
 
 // =============================== PV. Página viva × estado do backend (A1–A3) ===============================
@@ -528,101 +558,102 @@ const READ_CREATE = ["work_orders:read", "work_orders:create"];
 test("[PV1] 403 do backend → um único data-state, 'forbidden'; 4 KPIs sem dígito; 0 linhas; sem alerta, sem contagem, sem paginador", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "403";
-  const page = await mountList(READ_CREATE);
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, ["forbidden"], page.html());
-  assert.equal(r.kpiValues.length, 4);
-  assert.ok(noDigit(r.kpiValues), `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
-  assert.equal(r.rows, 0);
-  assert.equal(r.alerts, 0, "sem permissão não é falha de sistema: sem role=alert");
-  assert.deepEqual(r.count, [], "sem contagem de ordens");
-  assert.deepEqual(r.pagerRange, [], "sem paginador");
-  assert.equal(r.retry, 0, "sem 'Tentar novamente'");
-  await page.unmount();
+  await withPage(() => mountList(READ_CREATE), async (page) => {
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, ["forbidden"], page.html());
+    assert.equal(r.kpiValues.length, 4);
+    assert.ok(noDigit(r.kpiValues), `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
+    assert.equal(r.rows, 0);
+    assert.equal(r.alerts, 0, "sem permissão não é falha de sistema: sem role=alert");
+    assert.deepEqual(r.count, [], "sem contagem de ordens");
+    assert.deepEqual(r.pagerRange, [], "sem paginador");
+    assert.equal(r.retry, 0, "sem 'Tentar novamente'");
+  });
 });
 
 test("[PV2] 500 do backend → 'error' com role=alert, 1 'Tentar novamente', KPIs sem dígito e o TEXTO que o service devolveu no painel", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "500";
-  const page = await mountList(READ_CREATE);
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, ["error"], page.html());
-  assert.equal(r.alerts, 1);
-  assert.equal(r.retry, 1);
-  assert.equal(r.kpiValues.length, 4);
-  assert.ok(noDigit(r.kpiValues), `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
-  assert.equal(r.rows, 0);
-  assert.ok(r.panelDetail.flat().includes(SERVICE_ERROR_TEXT), `o painel mostra a razão do service: ${JSON.stringify(r.panelDetail)}`);
-  await page.unmount();
+  await withPage(() => mountList(READ_CREATE), async (page) => {
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, ["error"], page.html());
+    assert.equal(r.alerts, 1);
+    assert.equal(r.retry, 1);
+    assert.equal(r.kpiValues.length, 4);
+    assert.ok(noDigit(r.kpiValues), `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
+    assert.equal(r.rows, 0);
+    assert.ok(r.panelDetail.flat().includes(SERVICE_ERROR_TEXT), `o painel mostra a razão do service: ${JSON.stringify(r.panelDetail)}`);
+  });
 });
 
 test("[PV3] 200 vazio → 'empty' EMBUTIDO (busca presente), KPIs 0, '0 ordens', CTA + botão = 2 'Nova OS' com create, sem paginador", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "200vazio";
-  const page = await mountList(READ_CREATE);
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, ["empty"], page.html());
-  assert.equal(r.search, 1, "o vazio fica dentro do card: a busca continua na tela");
-  assert.deepEqual(r.kpiValues, ["0", "0", "0", "0"]);
-  assert.deepEqual(r.count, ["0 ordens"]);
-  assert.equal(r.novaOs, 2, "cabeçalho + CTA do vazio");
-  assert.equal(r.rows, 0);
-  assert.equal(r.alerts, 0);
-  assert.deepEqual(r.pagerRange, []);
-  await page.unmount();
+  await withPage(() => mountList(READ_CREATE), async (page) => {
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, ["empty"], page.html());
+    assert.equal(r.search, 1, "o vazio fica dentro do card: a busca continua na tela");
+    assert.deepEqual(r.kpiValues, ["0", "0", "0", "0"]);
+    assert.deepEqual(r.count, ["0 ordens"]);
+    assert.equal(r.novaOs, 2, "cabeçalho + CTA do vazio");
+    assert.equal(r.rows, 0);
+    assert.equal(r.alerts, 0);
+    assert.deepEqual(r.pagerRange, []);
+  });
 });
 
 test("[PV4] 200 com 3 → 3 linhas, KPIs das linhas, paginador '1–3 de 3', '3 ordens', nenhum painel de estado", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "200x3";
-  const page = await mountList(READ_CREATE);
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, [], page.html());
-  assert.equal(r.rows, 3);
-  assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "abertas · em andamento · atrasadas · concluídas, derivadas das 3 linhas");
-  assert.deepEqual(r.pagerRange, ["1–3 de 3"]);
-  assert.deepEqual(r.count, ["3 ordens"]);
-  assert.equal(r.alerts, 0);
-  assert.equal(r.novaOs, 1, "só o botão do cabeçalho (sem CTA do vazio)");
-  await page.unmount();
+  await withPage(() => mountList(READ_CREATE), async (page) => {
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, [], page.html());
+    assert.equal(r.rows, 3);
+    assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "abertas · em andamento · atrasadas · concluídas, derivadas das 3 linhas");
+    assert.deepEqual(r.pagerRange, ["1–3 de 3"]);
+    assert.deepEqual(r.count, ["3 ordens"]);
+    assert.equal(r.alerts, 0);
+    assert.equal(r.novaOs, 1, "só o botão do cabeçalho (sem CTA do vazio)");
+  });
 });
 
 test("[PV5] fetch pendente → esqueletos (4 KPI + 4 linhas), sem data-state, sem valor de KPI", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "pendente";
-  const page = await mountList(READ_CREATE);
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, [], page.html());
-  assert.equal(r.kpiSkeletonCards, 4);
-  assert.equal(r.rowSkeletons, 4);
-  assert.deepEqual(r.kpiValues, [], "nenhum valor de KPI enquanto carrega");
-  assert.equal(r.rows, 0);
-  assert.equal(r.alerts, 0);
-  await page.unmount();
+  await withPage(() => mountList(READ_CREATE), async (page) => {
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, [], page.html());
+    assert.equal(r.kpiSkeletonCards, 4);
+    assert.equal(r.rowSkeletons, 4);
+    assert.deepEqual(r.kpiValues, [], "nenhum valor de KPI enquanto carrega");
+    assert.equal(r.rows, 0);
+    assert.equal(r.alerts, 0);
+  });
 });
 
 test("[PV6] 3 OS na tela e 403 em 2º PLANO → 'forbidden', 0 linhas, KPIs sem dígito e SEM faixa de desatualizado (F1b, agora vivo)", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "200x3";
-  const page = await mountList(READ_CREATE);
-  assert.equal(read(page.container).rows, 3, "pré-condição: 3 linhas na tela");
-  listScenario = "403";
-  await backgroundTick();
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, ["forbidden"], page.html());
-  assert.equal(r.rows, 0, "permissão revogada em sessão: a lista SAI (fail-closed)");
-  assert.ok(noDigit(r.kpiValues) && r.kpiValues.length === 4, `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
-  assert.deepEqual(r.stale, [], "não fica 'desatualizada' — não há dado legítimo a manter");
-  await page.unmount();
+  await withPage(() => mountList(READ_CREATE), async (page) => {
+    assert.equal(read(page.container).rows, 3, "pré-condição: 3 linhas na tela");
+    listScenario = "403";
+    await backgroundTick();
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, ["forbidden"], page.html());
+    assert.equal(r.rows, 0, "permissão revogada em sessão: a lista SAI (fail-closed)");
+    assert.ok(noDigit(r.kpiValues) && r.kpiValues.length === 4, `KPIs sem dígito: ${JSON.stringify(r.kpiValues)}`);
+    assert.deepEqual(r.stale, [], "não fica 'desatualizada' — não há dado legítimo a manter");
+  });
 });
 
 test("[PV7] em modo REAL nenhum cenário mostra 'Dados demonstrativos'", async () => {
   installFetch(LIST_ROUTES);
   for (const scenario of ["403", "500", "200vazio", "200x3"] as const) {
     listScenario = scenario;
-    const page = await mountList(READ_CREATE);
-    assert.equal(read(page.container).demo, false, `cenário ${scenario}: ${page.html()}`);
-    await page.unmount();
+    await withPage(
+      () => mountList(READ_CREATE),
+      async (page) => assert.equal(read(page.container).demo, false, `cenário ${scenario}: ${page.html()}`),
+    );
   }
 });
 
@@ -631,21 +662,21 @@ test("[PV7] em modo REAL nenhum cenário mostra 'Dados demonstrativos'", async (
 test("[W1] lista: 3 OS, depois 500 no tick do auto-refresh → data-state 'stale', 3 linhas MANTIDAS, KPIs com dígito, horário na faixa", async () => {
   installFetch(LIST_ROUTES);
   listScenario = "200x3";
-  const page = await mountList(["work_orders:read"]);
-  const before = read(page.container);
-  assert.equal(before.rows, 3);
-  assert.deepEqual(before.stale, []);
-  listScenario = "500";
-  await backgroundTick();
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, ["stale"], page.html());
-  assert.equal(r.rows, 3, "falha em 2º plano MANTÉM as 3 linhas");
-  assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "KPIs continuam os das linhas");
-  assert.equal(r.alerts, 0, "a tela NÃO é trocada pelo erro");
-  assert.equal(r.stale.length, 1);
-  assert.match(r.stale[0], /Dados desatualizados — última atualização às \d{2}:\d{2}/, "a faixa diz quando foi a última atualização boa");
-  assert.equal(r.retry, 1, "'Tentar novamente' da faixa");
-  await page.unmount();
+  await withPage(() => mountList(["work_orders:read"]), async (page) => {
+    const before = read(page.container);
+    assert.equal(before.rows, 3);
+    assert.deepEqual(before.stale, []);
+    listScenario = "500";
+    await backgroundTick();
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, ["stale"], page.html());
+    assert.equal(r.rows, 3, "falha em 2º plano MANTÉM as 3 linhas");
+    assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "KPIs continuam os das linhas");
+    assert.equal(r.alerts, 0, "a tela NÃO é trocada pelo erro");
+    assert.equal(r.stale.length, 1);
+    assert.match(r.stale[0], /Dados desatualizados — última atualização às \d{2}:\d{2}/, "a faixa diz quando foi a última atualização boa");
+    assert.equal(r.retry, 1, "'Tentar novamente' da faixa");
+  });
 });
 
 const DETAIL_DTO = {
@@ -700,22 +731,24 @@ test("[W2] detalhe: OS na tela, depois 500 em 2º plano → 'stale' e o código 
     // `GeneralInfoTab` consulta a fila de aprovações da OS (`approvalController.listPending` → `{ data: [] }`).
     [/\/approvals\/pending(\?|$)/, () => json(200, { data: [] })],
   ]);
-  const page = await mount(
-    ["work_orders:read"],
-    "Operador",
-    (children) => h(MemoryRouter, { initialEntries: ["/work-orders/wo-1"] }, children as never),
-    h(Routes, null, h(Route, { path: "/work-orders/:workOrderId", element: h(WorkOrderDetailPage) })),
-  );
-  const before = read(page.container);
-  assert.deepEqual(before.dataStates, [], page.html());
-  assert.match(page.html(), /OS-000901/, "a OS está na tela");
-  detailMode = "500";
-  await backgroundTick();
-  const r = read(page.container);
-  assert.deepEqual(r.dataStates, ["stale"], page.html());
-  assert.match(page.html(), /OS-000901/, "falha em 2º plano MANTÉM a OS");
-  assert.equal(r.alerts, 0, "a tela NÃO é trocada pelo erro");
-  await page.unmount();
+  const mountDetail = () =>
+    mount(
+      ["work_orders:read"],
+      "Operador",
+      (children) => h(MemoryRouter, { initialEntries: ["/work-orders/wo-1"] }, children as never),
+      h(Routes, null, h(Route, { path: "/work-orders/:workOrderId", element: h(WorkOrderDetailPage) })),
+    );
+  await withPage(mountDetail, async (page) => {
+    const before = read(page.container);
+    assert.deepEqual(before.dataStates, [], page.html());
+    assert.match(page.html(), /OS-000901/, "a OS está na tela");
+    detailMode = "500";
+    await backgroundTick();
+    const r = read(page.container);
+    assert.deepEqual(r.dataStates, ["stale"], page.html());
+    assert.match(page.html(), /OS-000901/, "falha em 2º plano MANTÉM a OS");
+    assert.equal(r.alerts, 0, "a tela NÃO é trocada pelo erro");
+  });
 });
 
 // =============================== GB. Gate do botão × os 13 papéis do catálogo EXECUTADO (A11, A12) ===============================
@@ -735,11 +768,14 @@ test("[GB1] 'Nova OS' do cabeçalho presente SSE o papel tem work_orders:create 
   listScenario = "200x3";
   const wrong: string[] = [];
   for (const [role, perms] of roles) {
-    const page = await mountList(perms, role);
-    const r = read(page.container);
-    const expected = perms.includes("work_orders:create") ? 1 : 0;
-    if (r.headerNovaOs !== expected || r.novaOs !== expected) wrong.push(`${role}: create=${expected ? "sim" : "não"} 'Nova OS' cabeçalho=${r.headerNovaOs} total=${r.novaOs}`);
-    await page.unmount();
+    await withPage(
+      () => mountList(perms, role),
+      async (page) => {
+        const r = read(page.container);
+        const expected = perms.includes("work_orders:create") ? 1 : 0;
+        if (r.headerNovaOs !== expected || r.novaOs !== expected) wrong.push(`${role}: create=${expected ? "sim" : "não"} 'Nova OS' cabeçalho=${r.headerNovaOs} total=${r.novaOs}`);
+      },
+    );
   }
   assert.deepEqual(wrong, [], `papéis cujo cabeçalho diverge da régua da rota POST /work-orders (work_orders:create, includes estrito):\n${wrong.join("\n")}`);
 });
@@ -750,11 +786,14 @@ test("[GB2] no VAZIO, total de 'Nova OS' (cabeçalho + CTA) = 2 com work_orders:
   listScenario = "200vazio";
   const wrong: string[] = [];
   for (const [role, perms] of roles) {
-    const page = await mountList(perms, role);
-    const r = read(page.container);
-    const expected = perms.includes("work_orders:create") ? 2 : 0;
-    if (r.novaOs !== expected) wrong.push(`${role}: create=${expected ? "sim" : "não"} 'Nova OS'=${r.novaOs} (esperado ${expected})`);
-    await page.unmount();
+    await withPage(
+      () => mountList(perms, role),
+      async (page) => {
+        const r = read(page.container);
+        const expected = perms.includes("work_orders:create") ? 2 : 0;
+        if (r.novaOs !== expected) wrong.push(`${role}: create=${expected ? "sim" : "não"} 'Nova OS'=${r.novaOs} (esperado ${expected})`);
+      },
+    );
   }
   assert.deepEqual(wrong, [], `papéis divergentes no vazio:\n${wrong.join("\n")}`);
 });
@@ -765,11 +804,14 @@ test("[GB3] 'Atribuir técnico' (gate field_dispatch:create) continua certo pape
   listScenario = "200x3";
   const wrong: string[] = [];
   for (const [role, perms] of roles) {
-    const page = await mountList(perms, role);
-    const r = read(page.container);
-    const expected = perms.includes("field_dispatch:create") ? 3 : 0;
-    if (r.atribuir !== expected) wrong.push(`${role}: dispatch=${expected ? "sim" : "não"} 'Atribuir'=${r.atribuir}`);
-    await page.unmount();
+    await withPage(
+      () => mountList(perms, role),
+      async (page) => {
+        const r = read(page.container);
+        const expected = perms.includes("field_dispatch:create") ? 3 : 0;
+        if (r.atribuir !== expected) wrong.push(`${role}: dispatch=${expected ? "sim" : "não"} 'Atribuir'=${r.atribuir}`);
+      },
+    );
   }
   assert.deepEqual(wrong, [], `papéis divergentes no 'Atribuir':\n${wrong.join("\n")}`);
 });
