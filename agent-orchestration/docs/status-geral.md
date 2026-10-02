@@ -4815,3 +4815,4 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
 - **Novas pendências**: P-SAN3-11-VIGENTE-NAO-VINCULADA, P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (ambas não-bloqueantes)
 
 Próximo: push do branch → PR → junta.
+- **2026-10-02 — ERRATA 1 + 1-bis aplicadas** (inspetor da junta 1 BLOQUEOU por T13/T14 vermelhos em Windows/CRLF): T13/T14 sem relógio e sem dependência de EOL; KPI recontado contra a main `4ab9d232` (170 blocos, 1218/1218, `pr 401`); `P-CHK-DOSSIE-VERSAO-NA-UI` lida como FECHADA pelo gerador; bateria verde nos dois terrenos. Próximo: CI no head novo → mandatos regenerados (HC=H0) → inspetor novo → junta 1.

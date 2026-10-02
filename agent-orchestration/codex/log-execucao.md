@@ -4746,3 +4746,4 @@ bloco mergear.
 - **Pendências fechadas:** `P-CHK-DOSSIE-VERSAO-NA-UI`
 - **Pendências abertas (não-bloqueantes):** `P-SAN3-11-VIGENTE-NAO-VINCULADA`, `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA`
 - **KPI:** `blocks_completed` 168 → 169; `frontend_smoke_tests` 1202 → 1218 (execução real)
+- **ERRATA 1 + 1-bis aplicadas (2026-10-02, `dev-errata1-b-san3-11`, plano §15/§15-bis):** arnês do gerador sem teto e mutação normalizada com prova (T13/T14, `92cfc05e`); main `4ab9d232` e ramo `1ae41a42` integrados por merge; KPI recontado contra a main (`blocks_completed` 169 → 170, `pr 401`); status da `P-CHK-DOSSIE-VERSAO-NA-UI` na forma do gerador e índice regenerado (FECHADA 112, SEM STATUS 0); bateria verde nos dois terrenos (CRLF e LF: 16/16, `test:smoke` 1218/1218); A17′, A18′, A19–A26 medidos; head empurrado vai a CI → mandatos HC=H0 → inspetor novo → junta 1.

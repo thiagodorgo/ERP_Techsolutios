@@ -146,3 +146,51 @@ normalização `/\r\n/g` do próprio `mutate`.)
 
 **Não decidido aqui (§C7.4-bis):** forma ou critério — é do plano. **Não rodados depois da parada:** A17 de novo, A19 (CRLF e LF), A20, A21, a bateria
 §15.8 completa no head final nos dois terrenos, a linha de `log-execucao.md` e de `status-geral.md`, e o push. Worktrees mantidos para a retomada.
+
+## ERRATA 1 — retomada (1-bis) — 2026-10-02T21:15Z
+
+**Quem:** a mesma identidade `dev-errata1-b-san3-11` (local, Opus 5.5); mandato `00-mandatos/dev-errata1bis.md` (md5 EOL-neutro
+`06591c81ce1512af7546863e093ec1d3`, versionado em `1ae41a42`); fonte: plano §15-bis. A seção da parada (acima) fica como foi escrita.
+
+**Commits desta retomada:** `ba58eafe` merge do ramo remoto `1ae41a42` (0 conflito; nunca rebase) · `1c9466e2` E9 (`docs(registro)`: só a linha de
+status da `P-CHK-DOSSIE-VERSAO-NA-UI` sem o `**` interno + índice regenerado pelo gerador) · este registro. Os 4 commits da errata 1 valem (15-bis.4);
+o arquivo de teste fica como em `92cfc05e` (`git diff 92cfc05e HEAD -- frontend/tests/patios-dossie-versao.smoke.test.tsx` vazio). Os controles e a
+bateria rodaram em `1c9466e2`, o head do código: este commit de registro só acrescenta texto a 3 arquivos de registro (provado no fecho, abaixo).
+
+**Terrenos:** w-dev11 CRLF (CR adapter **583**, CR teste **325**) · w-dev11lf LF (`git -c core.autocrlf=false checkout --detach 1c9466e2`; CR **0**/**0**).
+
+```
+CONTROLES (cópia de trabalho; trocas literais com prova de 1x; restauração byte a byte; git diff --stat [] e git status [] depois de cada um)
+A17′ [a] CRLF  +timeout: 1,                    → 16·13·3 ec=1 · T12/T13/T14 "gerador não executou: spawnSync …node.exe ETIMEDOUT"
+               exceção-arnês=3 · ERR_ASSERTION=0 · 'deve deixar gerador vermelho'=0 · 'deve reportar'=0 · 'espelho sem descarte'=0   → VERDE
+A17′ [b] CRLF  [a] + os dois throw removidos   → 16·13·3 ec=1 · exceção-arnês=0 · ERR_ASSERTION=3 (deve deixar…=2, espelho sem descarte=1) → vermelho-controle VERMELHO
+A19  CRLF      sem .replace(/\r\n/g, "\n")     → 16·15·1 ec=1 · T14 "mutação não aplicou em …processes.adapter.ts (ERRATA 1)"
+A19  LF        idem                            → 16·16·0 ec=0 (por isso o controle é obrigatório em CRLF)
+A20  CRLF (+LF) supersededByRunIdX             → 16·15·1 · T14 "mutação não aplicou em …processes.adapter.ts (ERRATA 1)"
+A21  CRLF (+LF) <ChecklistRunsPanelX           → 16·15·1 · T13 "mutação não aplicou em …DossiePrintDocument.tsx (ERRATA 1)" · grep -c 'checklistRuns={checklistRuns}' = 0
+
+VARREDURA v2 (15-bis.7; md5 EOL-neutro 646b13719214cedd6cc8fbd6296364e5 = o do planejador; auto-teste: false true, também com a regex lida do arquivo)
+CRLF e LF → MUT=5 · EOL=3 · CP=1 · TETO=0 · NULL=0 · WRITE=3   (A18′ VERDE)
+  EOL: scripts/san3-11-dossie-vistoria-censo.mjs:42 · versao.smoke.test.tsx:276 (normalizador do mutate) · :318 (regex de T14 dentro de mutate()
+  controles: `?? 1` restaurado → NULL=1 · normalizador removido → EOL=2
+
+BATERIA §15.8 @ 1c9466e2           CRLF                           LF
+npm --prefix frontend run check    ec=0                           ec=0
+arquivo do bloco                   16/16 ec=0 · morto por sinal 0  16/16 ec=0 · morto por sinal 0
+npm --prefix frontend run test:smoke  1218/1218 ec=0 (121,5 s)    1218/1218 ec=0 (131,9 s)
+raiz: kpi-freeze --check ec=0 · node --check Kpis/app.js ec=0 · kpi-dashboard-charts 17/17 · kpi-dashboard-contraste 6/6 · kpi-achados-paridade 6/6
+A24: git diff origin/main...HEAD -- Kpis/app.js → 2 linhas [-+]var FROZEN, 0 outras
+A25: origin/main...HEAD = 32 arquivos (16 §6 · 1 emenda §15.5 · 14 omega/juntas/** · 1 o plano), FORA 0; commits do dev → 8 arquivos, todos PERMITIDOS;
+     508240fb..HEAD em scripts/ frontend/src/ frontend/package.json <2 fixtures> .github/ → 0; git diff 92cfc05e HEAD -- <teste> → vazio
+A26: gerador → 427 cabeçalhos / 416 IDs | FECHADA 112 · ABERTA 315; git diff --stat []; SEM STATUS 0; CONTRADITORIAS 0;
+     P-CHK-DOSSIE-VERSAO-NA-UI em FECHADAS; P-SAN3-11-* em ABERTAS; grep -c 'status:** **RESOLVIDA' pendencias.md = 0
+git diff --check ec=0 · git diff --check origin/main...HEAD ec=0
+KPI: origin/main 4ab9d232 (re-buscada 21:13Z, não andou) e smoke 1218 = o publicado → sem recontagem (vale 3208cf13: 170 · 1218/1218 · pr 401 · history n=166)
+```
+
+**E9 (antes/depois do gerador):** antes `FECHADA 111 · ABERTA 315 · SEM-STATUS 1` (a `P-CHK-DOSSIE-VERSAO-NA-UI`, cuja linha `**status:** **RESOLVIDA…**` o gerador
+não lia); depois `FECHADA 112 · ABERTA 315 · SEM-STATUS 0`. Delta do índice por seção::ID: 254 linhas só com o número deslocado, 0 de conteúdo, saiu 1
+(P-CHK de ABERTAS·B), entraram 3 (as duas `P-SAN3-11-*` em ABERTAS·B e a P-CHK em FECHADAS); nenhuma edição manual.
+
+**Registro:** 1 linha em `codex/log-execucao.md` e 1 em `docs/status-geral.md`. Pendências novas: nenhuma. Evidência incremental (P1): `scratchpad/DEV-ERRATA1-401.md`
+da sessão do orquestrador, seções R0–R6.
