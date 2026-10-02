@@ -3206,7 +3206,7 @@ nova. **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
 | Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) e carregados pelo `B-GOV-SEM-TETO` (#394) |
 | Blocos Entregues | **168 → 169** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`5b6e1036`, #396; o último PR que contou bloco foi o #394 = 168). O #393 também publica bloco no ramo dele: quem mergear depois **reconta** no pré-merge |
 | mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos agentes, não o produto |
-| pr / merge_commit / approved_head | `397` / `null` / `null` **na autoria** (§C3.5) |
+| pr / merge_commit / approved_head | `397` / `513937b0555e2a6175e7e89d8ae9e44dbc995f8a` / `67c2c280612cb644f246af0b5410cab59afe028d` — backfill §C3.5 do #397: JSON pago pelo #398, `.md` pago aqui pelo #393 (dívida nomeada pelos porteiros do #398 e do #399; valores lidos da entrada `pr: 397` do `kpis-history.json`) |
 
 **O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-10-01
 (`D-PAUSA-GRAVA-E-PARA`): **sob ordem de pausa do dono, o agente grava o estado e para sozinho** — a norma **P7**
@@ -3234,3 +3234,34 @@ mandato idêntico nos três textos.
 
 **Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
 pagos pelo #395.
+
+## 2026-10-01 — B-GOV-MANDATO **ciclo 4 — recontagem** (PR #393) — `published_per_pr`
+
+| métrica | K1b (`9e8cf1cd`) | agora (`aa546ef9`) | origem |
+|---|---|---|---|
+| `backend_tests` | 3403/3405 | **3448/3450** | **N=2 execuções reais locais** de `npm test` (worktree próprio `w-devs4`, Postgres 16 e Redis 7 descartáveis próprios em 127.0.0.1:55471/:56401, portas provadas, `CORE_SAAS_PERSISTENCE` não exportado): RUN1 `3450/3448/0/2` (tests/pass/fail/skipped), 748 s, `ec=0` · RUN2 `3450/3448/0/2` (tests/pass/fail/skipped), 813 s, `ec=0`; sem a linha do GUARD DE SKIP (P8) |
+| `frontend_smoke_tests` · `flutter_tests` | 1202/1202 · 864/864 | idem | carregados com nota §C3.3 — `git diff --name-only 5bcdcc58 HEAD -- frontend mobile` = 0 (re-medido) |
+| `blocks_completed` | 169 | **170** | a `origin/main` (integrada `5bcdcc58`, #398; de agora `4ab9d232`, #399) publica 169 (o #397) + 1 |
+| `mvp_demo` / `mvp_vendavel` | — | **intocados** | §C3.4 |
+| pr / merge_commit / approved_head | — | `393` / `null` / `null` **na autoria** (§C3.5) | backfill pós-merge |
+
+**O que mudou desde o K1b, e o que cada commit fez ao número.** Só os guards mudam o denominador: **T4c**
+(`5b6f4f4a`) +35 no pré-voo e +5 no refs; **T4c-2** (`738f0736`, errata §15.14) +1 no pré-voo (o `[C1c-02f]`) e 3
+linhas existentes trocadas no `[F-7j]`; **T4c-3** (`dd0d409d`, errata §15.15(d)) +4 `[M-EXT]` no pré-voo —
+pré-voo 312 → **352**, refs 39 → **44**. **S4a** (`2ca15eb0`) e **S4b** (`7a156a62`) consertam os artefatos:
+os 24 casos que atacavam o head (vermelhos contra o `faa408c8`) ficam verdes, e nenhum caso existente muda.
+
+**O denominador fecha exato.** Contra o K1b: 3405 + 40 + 5 = **3450**; contra o `$MB`
+(`5bcdcc58`, 3052/3054): 3054 + 352 + 44 = **3450**. Contagem por arquivo: casos do TAP da suíte cujo
+título está no TAP do mesmo guard rodado sozinho no mesmo head (352 e 44).
+
+**Mutação (E4 do ciclo 4) — a publicar no K4b** (`docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md`): identidade
+NOVA (a ferramenta mudou no S4b; o lema do §14.18(3) não se aplica), rodada completa do orquestrador; N/K/
+NAO-COBERTOS/INVALIDOS/TIMEOUT brutos e o [M-1] derivado por conjuntos e por fixture entram aqui no K4b.
+**`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
+
+**Backfill §C3.5 do #397 no `.md`, pago por este PR:** a linha `pr / merge_commit / approved_head` da entrada do #397,
+acima, passa a trazer os valores que o `kpis-history.json` já tinha (pagos pelo #398); o texto de mérito da entrada fica
+como está. As quatro métricas carregadas de trilha mobile (`backend_contract_tests_focused`, `flutter_modules`,
+`mobile_backend_contracts`, `mobile_core_saas_contracts`) voltam a ter a nota §C3.3 do #393, que a integração da
+`main` tinha levado embora.

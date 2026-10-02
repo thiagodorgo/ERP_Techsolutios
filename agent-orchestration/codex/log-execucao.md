@@ -4980,3 +4980,31 @@ com o denominador e a taxa medida, para o próximo bloco retomar sem remedir o q
   "matriz publicada no K2" (plano §14.12 passo 5).
 
 **Limpeza §C5 do ciclo 3 (registrada em 30/09 pelo orquestrador, condição 6 da §8.6 do parecer da auditoria — era a lacuna D-M4):** removidos pelo nome, com 0 processo vivo medido pela linha de comando: os worktrees de dev `w-devt4`, `w-devt5`, `w-devt6`, `w-devs2` (limpos, heads contidos no ramo), os worktrees das cadeiras `w-j3c1/2/2h/3` (1ª instância, caída) e `w-jst1/2/3`, as cópias `w-j3c2-T1/T2/T3` e `w-j3c2-a/b` da C2‴, os worktrees de medição `w-e4`, `w-e4b`, `w-e4c`, `w-e4d`, `w-e4e`, `w-mtmp`, `w-dga/dgb/dgc`, `w-insp393c`, `w-audit393`, `w-plconserto`; os contêineres `pg-j3c3`/`redis-j3c3` (1ª instância) e os `pg-k1*`/`redis-k1*`/`pg-j3c3b` dos devs e da C3‴ (pelos próprios); 30 diretórios `tmp.*`/`mandato-preflight-*` em `/tmp` (28–30/09); 18 processos órfãos de `--jobs` e 2 awk órfãos (28–29/09), por PID conferido no instante. Nada rastreado tocado; base viva `erp-postgres`/`erp-redis` nunca alvo; resíduo alheio (`w-devs393`, `w-devt393` — mantidos por ordem da ERRATA E-6 —, `.claude/worktrees/{b04a,b11,gov-descuido}`) reportado, não varrido. Trilhas: `scratchpad/limpeza-DM4.txt`, `E4/log.txt`.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): E2 e E3 do Dev-S4 (2026-10-01) — o pré-voo e a ferramenta consertados, e o registro
+
+- **Quem:** `dev-scripts-ciclo4-b-gov-mandato` (Dev-S4), plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §15
+  com as erratas §15.14 e §15.15; mandato `agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo4/00-mandatos/dev-scripts.md`.
+- **S4a** (`2ca15eb0`, só `scripts/mandato-preflight.sh`): A15 (status de todo subprocesso lido; morte = 1 REJ que nomeia o
+  componente, `exit 1`, nunca `PRE-VOO OK`; refs fora do contrato 0..3 = morte nomeada, §15.15(b)), C1c-01..06 e a fronteira
+  27. Provas: guard do pré-voo 348/348 (LF e CRLF) e refs 44/44; os 6 pares de §15.0(b) e os 6 componentes de §15.0(c)
+  com shims próprios, vereditos invertidos (awk da passada 2 morto: o pré-voo do ciclo 3 dava `PRE-VOO OK` em 6 de 6
+  insumos, o novo nomeia `awk (passada 2)` em 6 de 6); 17 contra-mutações de 1 linha, cada uma com os `not ok` esperados.
+- **S4b** (`7a156a62`, `scripts/mandato-mutantes.sh` + só o cabeçalho de `scripts/mandato-refs.sh`): `MUTANTE-INVALIDO`
+  (awk compilado antes da cor do guard), causa por ponto, histograma, controles fail-closed (`ec=2`), diferencial que
+  percorre RAIZ, `--timeout` por mutante (fronteira 25), M7(next) em qualquer posição (26), equivalentes por id (28).
+  Drills com vermelho-controle histórico sobre `37549262` em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §5.
+- **D4** (registro): `…-ciclo4-mutantes.md` (identidade, drills, custo — 85 mutantes do pré-voo e 44 do refs chegam ao
+  guard), `…-ciclo4-equivalentes.txt` (id 441), EMENDA — CICLO 4 no comando, pendências (25-28 FECHADAS com o teste
+  de encerramento executado; 29-31 abertas; `P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA`; MUTANTES-REFS e MUTANTES-PREFLIGHT
+  REABERTAS até o K4b) e índice pelo gerador.
+- **K4:** backend **3448/3450** por N=2 execuções reais (Postgres 16 e Redis 7 descartáveis próprios em
+  127.0.0.1:55471/:56401; RUN1 `3450/3448/0/2` (tests/pass/fail/skipped), 748 s, `ec=0` · RUN2 `3450/3448/0/2` (tests/pass/fail/skipped), 813 s, `ec=0`); guards `tests/mandato-preflight.test.ts` **352** e `tests/mandato-refs.test.ts`
+  **44** casos; `blocks_completed` **169 → 170** (a `origin/main` integrada `5bcdcc58` + 1); smoke e Flutter carregados.
+- **Integração da `main` no ramo** (orquestrador, por merge): #397 e #398, antes do E3; o push do D4 foi recusado como
+  fast-forward por um commit do orquestrador (emendas 1-bis nos corpos C1d/C2d/C3d) e o D4, ainda não empurrado, foi
+  rebaseado sobre ele — nenhum commit já empurrado foi reescrito.
+- **Fica para o K4b** (mesma identidade, depois da E4 do orquestrador): as matrizes verbatim, o `[M-1]` por conjuntos e
+  por fixture, o fechamento das duas pendências de mutação e a citação N/K/INVALIDOS/TIMEOUT no history.
+
+**Limpeza §C5 do ciclo 4 — Dev-S4, até o K4 (2026-10-01):** removidos pelo nome — os worktrees `C:/Users/AMP/w-dv4a` (arnês dos drills, com os 7 arquivos de drill não rastreados) e `C:/Users/AMP/w-dvs4c` (só para o commit do S4b), ambos com 0 processo vivo com o nome na linha de comando antes; os conteineres `pg-devs4` e `redis-devs4` (dois conjuntos, um por N=2, removidos pelo próprio script ao fim de cada um); o diretório da rodada de controle que eu invalidei e matei pela marca (`tmp.tMR09C2QgJ`, 11 processos, 27 MB); as cópias de arnês e de mutante no scratchpad. Ficam, como evidência reexecutável, o scratchpad `devs4c/` e os relatórios `DEVS4C.md`/`DEVS4C.trilha.md`, e o worktree `C:/Users/AMP/w-devs4`, mantido para a retomada do K4b (matrizes verbatim depois da E4). Base viva (5432/6379) nunca alvo; `MSYS_NO_PATHCONV` nunca exportada; resíduo alheio só reportado.
