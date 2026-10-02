@@ -89,3 +89,22 @@ npm --prefix frontend run build              → exit 0 (warn chunk size, não e
 node --check Kpis/app.js                     → exit 0
 git diff --check                             → exit 0 (sem whitespace errors)
 ```
+
+## Correção pós-CI — Kpis/app.js (cópia congelada) — 2026-10-02T10:22Z
+
+O CI do PR #401 (job `backend`) ficou vermelho em UM teste: `tests/kpi-dashboard-charts.test.ts` — "a cópia congelada é IDÊNTICA
+ao kpis-latest.json". Causa: atualizei `Kpis/kpis-latest.json` (E6) e NÃO regenerei `Kpis/app.js` por `node scripts/kpi-freeze.mjs`
+(a cópia FROZEN do painel). O que faltou na minha bateria: rodei só `node --check Kpis/app.js` (sintaxe), e não o `kpi-freeze.mjs
+--check` nem os guards do painel — o §C3 e o conhecimento de terreno (§2.4) dizem que o `app.js` só se gera pelo script, e a bateria
+do bloco não os listava; deviam ter entrado assim mesmo.
+
+```
+node scripts/kpi-freeze.mjs --check  (antes) → DIVERGE, ec=1
+node scripts/kpi-freeze.mjs          → cópia congelada reinjetada (snapshot 2026-10-01, 99381 bytes)
+node scripts/kpi-freeze.mjs --check  → em dia (snapshot 2026-10-01), ec=0
+node --test --import tsx tests/kpi-dashboard-charts.test.ts    → # tests 17 # pass 17 # fail 0
+node --test --import tsx tests/kpi-dashboard-contraste.test.ts → # tests 6 # pass 6 # fail 0
+node --test --import tsx tests/kpi-achados-paridade.test.ts    → # tests 6 # pass 6 # fail 0
+node --check Kpis/app.js → ok
+```
+Só `Kpis/app.js` muda neste commit (gerado, nunca editado à mão). Node v20.20.0.
