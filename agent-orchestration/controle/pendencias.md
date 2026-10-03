@@ -497,7 +497,7 @@
   PRÉ-EXISTENTE e plataforma-wide (não do Ω3-d). RLS fica como defense-in-depth para quando o app conectar
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11) · **severidade:** a classificar · **dono:** `B-SAN3-05` + dono do ambiente
 - **junta do PR #386, ciclo 1 (C2-03, 2026-09-12):** a lista das leituras de plataforma que quebram sob papel sem `BYPASSRLS` inclui também `replaceTenantCharges`/`listTenantCharges` (`src/modules/cloud-charges/cloud-charge-prisma.repository.ts:24-25,166-212,238-240`, sem contexto; `tenant_cloud_charges` tem policy com `USING` e `WITH CHECK`). Plano SAN3 v5: fronteira do `B-SAN3-05`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
@@ -7442,7 +7442,7 @@ medido, e `fly.production.toml` não o declara.
 O **rateio** já não depende disso — este bloco o passou a ler por tenant, sob contexto. O que resta são as
 leituras de plataforma **fora** do rateio.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
+- **status:** EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11) · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
 - **plano SAN3 (2026-09-11, crítico r2, CR2-02):** entra no gate como pré-requisito do item 9 — no dia em que o papel de runtime deixar de ter `BYPASSRLS`, estas leituras (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `RlsPrismaCloudUsageRepository`) zeram o resumo de uso da plataforma e a tela Cloud Billing. Bloco `B-SAN3-05`.
   (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
   descartável, papel `NOSUPERUSER NOBYPASSRLS`.
@@ -9979,3 +9979,45 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** decisão do dono — qual referência vale para o cabeçalho da lista de OS, o PNG de `screen-refs/` ou o design padronizado de `J-TELAS-PADRONIZADAS`. Sem bloco dono até a decisão.
 - **bloqueia:** não.
 - **teste de encerramento:** a decisão registrada em `controle/decisoes.md` e o cabeçalho conforme a referência escolhida.
+
+## P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA (2026-10-03) — leitura da projeção diária sem chamador — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-08`.
+- `cloud-cost-allocation-prisma.repository.ts:238` não tem chamador em `src/`; ao remover o sítio morto, atualizar o congelado do ratchet para retirar a chave `new PrismaCloudCostAllocationRepository(prisma) CRU`.
+- **bloqueia:** não.
+
+## P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
+- `forEachTenantInOneTx` e o canário privados do rateio duplicam os públicos de `rls.ts`; o gerador v3 confia em ambos pelo símbolo.
+- **bloqueia:** não.
+
+## P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL (2026-10-03) — suíte de banco ainda roda majoritariamente como administrador — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-ARNES-2`.
+- Rodar a suíte `-db` inteira sob papel real fecha o residual semântico do ratchet: hoje 13 suítes escrevem catálogo, 8 fazem DDL e 10 usam helpers. O `SUITES` de `backend-postgres` também pertence a esse bloco.
+- **bloqueia:** não bloqueia este PR; bloqueia declarar a cobertura dinâmica fora da superfície de plataforma.
+
+## P-SAN3-05-POSTURA-NO-HEALTH (2026-10-03) — postura do papel no readiness — MÉDIA
+
+- **status:** ABERTA · **escopo:** `fora-do-bloco` · **dono:** observabilidade (orquestrador deve nomear o bloco).
+- Publicar a postura do papel em `/health/ready`, fora de `checks`; o corpo público e o arquivo ficam fora da fronteira permitida de `B-SAN3-05`.
+- **bloqueia:** não.
+
+## P-SAN3-05-SECURITY-DEFINER-INVENTARIO (2026-10-03) — funções de dono que escapa — ALTA
+
+- **status:** ABERTA · **escopo:** `residual-de-segurança` · **dono:** `B-SAN3-10`.
+- Inventariar funções `SECURITY DEFINER` cujo dono escapa do RLS e que o runtime pode executar; a medição deste bloco encontrou `auth_login_candidates`, criada por ato humano.
+- **bloqueia:** não bloqueia este PR; permanece risco nominal até o inventário.
+
+## P-SAN3-05-STAGING-CD-AMARRACAO (2026-10-03) — CD de staging depende dos atos de provisão — ALTA
+
+- **status:** ABERTA · **escopo:** `fora-do-bloco` · **dono:** bloco que toque workflows (`B-SAN3-10` ou `B-ARNES-2`).
+- Amarrar mecanicamente `STAGING_DEPLOY_ENABLED` aos Atos 1–2 de staging. Até lá, a variável permanece desligada; `.github/workflows/**` é proibido em `B-SAN3-05`.
+- **bloqueia:** ligar o CD de staging, não este PR.
+
+## P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT (2026-09-06) — teste reescreve a regra do default — MÉDIA
+
+- **status:** EM ANDAMENTO · **escopo:** `pre-existente` — origem `fe2748c` (#380) · **dono:** `B-O6R-07b` / segurança.
+- O teste anterior reescrevia a regra em vez de ler o export e deixou 13/13 mutantes verdes. O T2 de `B-SAN3-05` exerce o export em processo filho; o registro permanece até o merge e a validação do bloco.
+- **bloqueia:** não.

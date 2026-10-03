@@ -594,6 +594,28 @@ restrito à única entrada do Map. A suite terminou com zero `s305_%` em papéis
 Rodada de mutações A1–A24 e T13. Antes dela, contar processos com `w-j4c` no `CommandLine`; se houver, aplicar a espera do
 mandato em passos de 5 minutos até 60 minutos e registrar cada medição.
 
-## §8 — Bateria do §8 — EM APURACAO
+## §8 — Mutações e bateria do §8 — EM APURACAO
+
+### ESPERA OBRIGATÓRIA ANTES DA RODADA DE MUTAÇÕES — 2026-10-03T18:12:50Z
+
+A junta do PR #393 continuava ativa. Nenhuma mutação nem `npm test` inteiro começou. Medições de
+`Win32_Process.CommandLine` contendo `w-j4c`, em marcos de cinco minutos:
+
+| UTC | processos | observação |
+|---|---:|---|
+| 17:56:57Z | 13 | início da espera; contagem bruta do comando original |
+| 18:02:23Z | 11 | primeiro marco; contagem bruta |
+| 18:07:37Z | 18 | segundo marco; 17 externos + o próprio PowerShell da medição |
+| 18:12:50Z | 13 | terceiro marco; contagem passou a excluir `$PID`: 8 `bash`, 2 `codex`, 3 `esbuild` |
+
+Durante a espera, só houve trabalho documental leve: os seis IDs `P-SAN3-05-*` do §13 foram abertos, os dois registros de
+RLS passaram ao estado literal exigido por A19 e o registro pré-existente `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` foi
+nomeado. A contagem distinta é **6**. A primeira tentativa chamou o caminho inexistente
+`scripts/gerar-indice-pendencias.mjs` e falhou com `MODULE_NOT_FOUND`, sem mutação; a fonte real encontrada no ramo é
+`agent-orchestration/controle/gerar-indice-pendencias.py`, executada em seguida: **439 cabeçalhos / 428 IDs**, 115 fechadas,
+321 abertas e 3 sem status.
+
+O próximo marco de carga é 18:17:50Z; a rodada continua suspensa até a carga zerar ou completar os 60 minutos previstos.
+
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
