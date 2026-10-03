@@ -852,18 +852,35 @@ test("[P4] detalhe: not-found / forbidden / error / stale são 4 estados distint
   for (const html of [notFound, forbidden, failed, stale]) assert.doesNotMatch(html, /\bAPI\b|fallback|mock|dados locais/);
 });
 
-// =============================== G. Ciclo 2 · P3 — mock só por ALCANCE (AST), não por texto ===============================
-// C4-02: o G1 do ciclo 1 era LÉXICO (linha que cita `getMock` e não cita `isMockMode()`), e deixou passar o `else` de
-// `if (isMockMode()) {}`, a linha com comentário citando `isMockMode()`, a constante `mock…` sem o prefixo e o service
-// NOVO. A propriedade agora é decidida sobre a árvore sintática do TypeScript:
-//   · escopo = todo *.ts/*.tsx de `modules/work-orders/**` e `modules/operations/dispatches/**`, ENUMERADO DO DISCO
-//     (arquivo novo entra sozinho), sem *.test.* e sem os próprios módulos de mock;
-//   · origem mock = o IMPORT (não o nome): módulo `*.mock.ts(x)` ou sob `mocks/`, direto ou via barrel um nível
-//     (`export *` / `export { … } from`); `import * as M`, default e `import()` dinâmico também contam;
-//   · permitido = só o ramo VERDADEIRO de `isMockMode()` importado de `config/env` — o `then` de `if (isMockMode())`,
-//     o `whenTrue` de `isMockMode() ? … : …` e a direita de `isMockMode() && …`. Forma positiva única: `else`,
-//     `!isMockMode()`, `isMockMode` declarado no arquivo ou importado de outro módulo NÃO valem;
-//   · comentário não existe na AST. Sem lista de exceção.
+// =============================== G. Ciclo 2 · P3 → B-SAN3-01b — mock só por ALCANCE (AST), em qualquer profundidade ===============================
+// C4-02 (ciclo 2): o G1 do ciclo 1 era LÉXICO e deixou passar o `else`, o comentário, a constante sem prefixo e o service NOVO —
+// a propriedade passou a ser decidida sobre a árvore sintática. C4-01/C4-02 do `B-SAN3-01` (ciclo 2, `P-SAN3-01B-GUARD-ALCANCE-
+// MENOR-QUE-AS-RAIZES`): o G1 do ciclo 2 resolvia re-export de UM nível e varria só as duas pastas — `N-BARREL2` (barrel de 2
+// níveis), `N-LITERAL` (entidade inventada inline) e `N-FORA-RAIZ` (o arquivo de fronteira) ficavam verdes. Este bloco deriva o
+// guard da PROPRIEDADE, não de lista escrita à mão (CE-G1):
+//   · P-A (mock por alcance) — em nenhum arquivo ESCANEADO um identificador cuja ORIGEM é módulo de mock (`*.mock.ts(x)` ou sob
+//     `mocks/`) — por import direto, barrel de N NÍVEIS (`export *` / `export { a as b } from` / `export * as ns from`), re-export
+//     LOCAL de binding importado (`import {x} from mock; export { x as y }`), `export default x`, `import * as`, default ou
+//     `import()` dinâmico — é alcançável fora do ramo VERDADEIRO de `isMockMode()` importado de `config/env`;
+//   · P-B (entidade fabricada inline) — em nenhum arquivo das RAÍZES um literal de objeto com IDENTIDADE (`id`/`code`) de valor
+//     CONSTANTE (string/número/template) nasce em RAMO DE FALHA (corpo de `catch`, callback de `.catch(`, direita de `??`/`||`)
+//     fora do ramo verdadeiro de `isMockMode()`;
+//   · RAÍZES = todo *.ts/*.tsx de `modules/work-orders/**` e `modules/operations/dispatches/**` MAIS o arquivo de fronteira
+//     `modules/registry/service-quotes/useServiceQuoteReferences.ts`, ENUMERADOS DO DISCO (arquivo novo entra sozinho), sem
+//     *.test.* e sem os próprios módulos de mock; FECHO = tudo que as raízes importam (estático não-tipo, re-export, `import()`),
+//     em profundidade, dentro de `src/` (especificador relativo) — um helper FORA das raízes que embrulha o mock é fabricação na
+//     tela de OS do mesmo jeito;
+//   · permitido = só o ramo VERDADEIRO de `isMockMode()` de `config/env`: o `then` de `if (isMockMode())`, o `whenTrue` de
+//     `isMockMode() ? … : …` e a direita de `isMockMode() && …`. `else`, `!isMockMode()`, `isMockMode` declarado no arquivo ou
+//     importado de outro módulo NÃO valem; comentário não existe na AST. Sem lista de exceção; default = NEGAR.
+// O que o guard NÃO prova (residual declarado — §0.5 L1 do plano; hoje sem membro, medido por `grep`/`find`):
+//   R1 import por especificador nu ou alias (`@/`, `~/`) — `grep -rn -E 'from "(@|~)/' frontend/src` → 0;
+//   R2 ramo de falha escrito sem `catch`/`.catch(`/`??`/`||` (ex.: `if (!ok) return { id: "x" }`);
+//   R3 identidade por outra chave (`uuid`, `numero`) ou valor não constante (`String(Date.now())`);
+//   R4 dado de demonstração fora da convenção `*.mock.ts(x)`/`mocks/` — `find frontend/src -iname '*demo*' …` → 0;
+//   R5 `import x = require()` — `grep` → 0.
+// O algoritmo é o de `gen/alcance.mjs` (Apêndice A do plano), sobre o MESMO host abstrato (`GuardHost.read`): [G2] roda sobre
+// arquivos virtuais, [G1]/[G1b]/[G3] sobre o disco.
 
 type GuardHost = { readonly read: (path: string) => string | null };
 
@@ -872,9 +889,10 @@ const diskHost: GuardHost = { read: (path) => (existsSync(path) && statSync(path
 const slash = (path: string) => path.split("\\").join("/");
 const isMockModulePath = (path: string) => /(^|\/)mocks\//.test(slash(path)) || /\.mock\.tsx?$/.test(slash(path));
 const isEnvModulePath = (path: string) => /(^|\/)config\/env\.tsx?$/.test(slash(path));
+const isTestPath = (path: string) => /\.test\./.test(slash(path));
 
 function resolveModule(host: GuardHost, from: string, spec: string): string | null {
-  if (!spec.startsWith(".")) return null;
+  if (!spec.startsWith(".")) return null; // especificador nu = node_modules (residual R1 declarado)
   const base = resolve(dirname(from), spec);
   for (const candidate of [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")]) {
     if (/\.tsx?$/.test(candidate) && host.read(candidate) !== null) return candidate;
@@ -889,189 +907,347 @@ function parseModule(path: string, text: string): ts.SourceFile {
 const hasExportModifier = (node: ts.Node) =>
   ts.canHaveModifiers(node) && (ts.getModifiers(node) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
 
-/** Nomes que um módulo exporta (declarações exportadas, listas locais `export { a }` e `export default`). */
-function exportedNames(sf: ts.SourceFile): Set<string> {
+/** Nomes que um módulo DECLARA e exporta (função/classe/enum/const exportadas, `export default`). */
+function declaredExports(sf: ts.SourceFile): Set<string> {
   const names = new Set<string>();
   for (const st of sf.statements) {
     if (ts.isExportAssignment(st)) names.add("default");
-    if (ts.isExportDeclaration(st) && !st.moduleSpecifier && st.exportClause && ts.isNamedExports(st.exportClause)) {
-      for (const el of st.exportClause.elements) names.add(el.name.text);
-    }
     if (!hasExportModifier(st)) continue;
-    if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st) || ts.isEnumDeclaration(st)) && st.name) names.add(st.name.text);
+    const isDefault = (ts.getModifiers(st) ?? []).some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
+    if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st) || ts.isEnumDeclaration(st)) && st.name) names.add(isDefault ? "default" : st.name.text);
     if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name)) names.add(d.name.text);
   }
   return names;
 }
 
-/** `"all"` = o próprio módulo é de mock; `Set` = barrel que re-exporta esses nomes de mock; `null` = não é mock. */
-function mockOrigin(host: GuardHost, target: string): "all" | Set<string> | null {
-  if (isMockModulePath(target)) return "all";
-  const text = host.read(target);
-  if (text === null) return null;
-  const reexported = new Set<string>();
-  for (const st of parseModule(target, text).statements) {
-    if (!ts.isExportDeclaration(st) || !st.moduleSpecifier || !ts.isStringLiteral(st.moduleSpecifier) || st.isTypeOnly) continue;
-    const inner = resolveModule(host, target, st.moduleSpecifier.text);
-    if (!inner || !isMockModulePath(inner)) continue;
-    if (st.exportClause && ts.isNamedExports(st.exportClause)) {
-      for (const el of st.exportClause.elements) if (!el.isTypeOnly) reexported.add(el.name.text);
-    } else if (!st.exportClause) {
-      const innerText = host.read(inner);
-      if (innerText !== null) for (const name of exportedNames(parseModule(inner, innerText))) reexported.add(name);
-    } else {
-      return "all"; // `export * as ns from "./x.mock"`: o namespace inteiro é mock
+type ImportBinding = { readonly target: string; readonly imported: string }; // imported = "*" (namespace) | "default" | nome
+type MockOrigin = "all" | Set<string>; // "all" = o módulo inteiro é mock; Set = nomes exportados cuja origem é mock (vazio = nenhum)
+type MockRef = { readonly where: string; readonly name: string; readonly target: string; readonly guarded: boolean };
+type FileScan = {
+  readonly refs: MockRef[];
+  readonly literals: string[];
+  readonly failureObjects: number;
+  readonly edges: string[];
+};
+
+/** O guard sobre um host: caches por host (parse e origem), para [G2] isolar cada fixture e [G1]/[G3] não reparsear barrels. */
+function createGuard(host: GuardHost) {
+  const parsed = new Map<string, ts.SourceFile>();
+  const parse = (path: string): ts.SourceFile => {
+    let sf = parsed.get(path);
+    if (!sf) {
+      sf = parseModule(path, host.read(path) ?? "");
+      parsed.set(path, sf);
     }
+    return sf;
+  };
+
+  /** Bindings de VALOR importados por um arquivo: local → { target, imported }. */
+  function importBindings(file: string): Map<string, ImportBinding> {
+    const out = new Map<string, ImportBinding>();
+    for (const st of parse(file).statements) {
+      if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier)) continue;
+      const clause = st.importClause;
+      if (!clause || clause.isTypeOnly) continue;
+      const target = resolveModule(host, file, st.moduleSpecifier.text);
+      if (!target) continue;
+      if (clause.name) out.set(clause.name.text, { target, imported: "default" });
+      const bindings = clause.namedBindings;
+      if (bindings && ts.isNamespaceImport(bindings)) out.set(bindings.name.text, { target, imported: "*" });
+      if (bindings && ts.isNamedImports(bindings)) {
+        for (const el of bindings.elements) if (!el.isTypeOnly) out.set(el.name.text, { target, imported: (el.propertyName ?? el.name).text });
+      }
+    }
+    return out;
   }
-  return reexported.size > 0 ? reexported : null;
+
+  // ORIGEM MOCK em profundidade arbitrária — ponto fixo sobre re-exports, com memo e guarda de ciclo.
+  const originMemo = new Map<string, MockOrigin>();
+  function mockOrigin(file: string, stack = new Set<string>()): MockOrigin {
+    if (isMockModulePath(file)) return "all";
+    const memo = originMemo.get(file);
+    if (memo) return memo;
+    if (stack.has(file) || host.read(file) === null) return new Set();
+    stack.add(file);
+    const names = new Set<string>();
+    const has = (target: string, name: string) => {
+      const origin = mockOrigin(target, stack);
+      return origin === "all" || origin.has(name);
+    };
+    const any = (target: string) => {
+      const origin = mockOrigin(target, stack);
+      return origin === "all" || origin.size > 0;
+    };
+    const imports = importBindings(file);
+    for (const st of parse(file).statements) {
+      if (ts.isExportDeclaration(st) && !st.isTypeOnly) {
+        if (st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier)) {
+          const target = resolveModule(host, file, st.moduleSpecifier.text);
+          if (!target) continue;
+          const origin = mockOrigin(target, stack);
+          if (!st.exportClause) {
+            // `export * from` — tudo menos default (do módulo de mock inteiro, ou do que o barrel abaixo já marcou como mock)
+            const reexported = origin === "all" ? declaredExports(parse(target)) : origin;
+            for (const name of reexported) if (name !== "default") names.add(name);
+          } else if (ts.isNamespaceExport(st.exportClause)) {
+            if (any(target)) names.add(st.exportClause.name.text); // `export * as ns from`
+          } else {
+            for (const el of st.exportClause.elements) if (!el.isTypeOnly && has(target, (el.propertyName ?? el.name).text)) names.add(el.name.text);
+          }
+        } else if (st.exportClause && ts.isNamedExports(st.exportClause)) {
+          // `export { a as b }` de binding IMPORTADO (re-export local)
+          for (const el of st.exportClause.elements) {
+            const binding = imports.get((el.propertyName ?? el.name).text);
+            if (binding && (binding.imported === "*" ? any(binding.target) : has(binding.target, binding.imported))) names.add(el.name.text);
+          }
+        }
+      }
+      if (ts.isExportAssignment(st) && ts.isIdentifier(st.expression)) {
+        // `export default x` de binding importado
+        const binding = imports.get(st.expression.text);
+        if (binding && (binding.imported === "*" ? any(binding.target) : has(binding.target, binding.imported))) names.add("default");
+      }
+    }
+    stack.delete(file);
+    originMemo.set(file, names);
+    return names;
+  }
+
+  const isMockBinding = (binding: ImportBinding) => {
+    const origin = mockOrigin(binding.target);
+    return origin === "all" || (binding.imported === "*" ? origin.size > 0 : origin.has(binding.imported));
+  };
+
+  function analyze(file: string, label: string): FileScan {
+    const sf = parse(file);
+    const imports = importBindings(file);
+
+    let authority: string | null = null;
+    for (const [local, binding] of imports) if (isEnvModulePath(binding.target) && binding.imported === "isMockMode") authority = local;
+    // Autoridade LOCAL anula a guarda: se o nome do `isMockMode` importado também é declarado no arquivo (const, function,
+    // parâmetro, classe), nenhuma chamada a ele conta como `isMockMode()` de `config/env`.
+    if (authority !== null) {
+      const name = authority;
+      const shadowed = (node: ts.Node): boolean => {
+        const declared =
+          (ts.isVariableDeclaration(node) || ts.isFunctionDeclaration(node) || ts.isParameter(node) || ts.isClassDeclaration(node)) &&
+          node.name !== undefined &&
+          ts.isIdentifier(node.name) &&
+          node.name.text === name;
+        return declared || (ts.forEachChild(node, shadowed) ?? false);
+      };
+      if (shadowed(sf)) authority = null;
+    }
+    const isGuard = (expr: ts.Expression) =>
+      authority !== null && ts.isCallExpression(expr) && ts.isIdentifier(expr.expression) && expr.expression.text === authority && expr.arguments.length === 0;
+
+    // Alcançável em modo real = não está no ramo verdadeiro de NENHUMA guarda ancestral.
+    const guarded = (node: ts.Node): boolean => {
+      let child: ts.Node = node;
+      for (let parent = node.parent; parent && !ts.isSourceFile(parent); child = parent, parent = parent.parent) {
+        if (ts.isIfStatement(parent) && isGuard(parent.expression) && child === parent.thenStatement) return true;
+        if (ts.isConditionalExpression(parent) && isGuard(parent.condition) && child === parent.whenTrue) return true;
+        if (ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken && isGuard(parent.left) && child === parent.right) return true;
+      }
+      return false;
+    };
+    // Ramo de FALHA (P-B): corpo de `catch`, callback de `.catch(`, direita de `??`/`||`.
+    const inFailure = (node: ts.Node): string | null => {
+      let child: ts.Node = node;
+      for (let parent = node.parent; parent && !ts.isSourceFile(parent); child = parent, parent = parent.parent) {
+        if (ts.isCatchClause(parent) && child === parent.block) return "catch";
+        if (
+          ts.isBinaryExpression(parent) &&
+          child === parent.right &&
+          (parent.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken || parent.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+        ) {
+          return ts.tokenToString(parent.operatorToken.kind) ?? "??";
+        }
+        if (ts.isCallExpression(parent) && ts.isPropertyAccessExpression(parent.expression) && parent.expression.name.text === "catch" && parent.arguments.some((arg) => arg === child)) {
+          return ".catch(";
+        }
+      }
+      return null;
+    };
+
+    const line = (node: ts.Node) => sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+    const mockLocals = new Map<string, ImportBinding>();
+    for (const [local, binding] of imports) if (isMockBinding(binding)) mockLocals.set(local, binding);
+    const isNamePosition = (id: ts.Identifier) => {
+      const p = id.parent;
+      return (
+        (ts.isPropertyAccessExpression(p) && p.name === id) ||
+        (ts.isPropertyAssignment(p) && p.name === id) ||
+        (ts.isQualifiedName(p) && p.right === id) ||
+        ts.isExportSpecifier(p) ||
+        ts.isImportSpecifier(p) ||
+        ts.isImportClause(p) ||
+        ts.isNamespaceImport(p)
+      );
+    };
+    const constLike = (expr: ts.Expression | undefined) =>
+      expr !== undefined && (ts.isStringLiteralLike(expr) || ts.isNumericLiteral(expr) || ts.isTemplateExpression(expr) || ts.isNoSubstitutionTemplateLiteral(expr));
+
+    const refs: MockRef[] = [];
+    const literals: string[] = [];
+    let failureObjects = 0;
+    const edges: string[] = [];
+    const visit = (node: ts.Node) => {
+      if (ts.isImportDeclaration(node)) return;
+      if (ts.isIdentifier(node) && !isNamePosition(node)) {
+        const binding = mockLocals.get(node.text);
+        if (binding) refs.push({ where: `${label}:${line(node)}`, name: node.text, target: binding.target, guarded: guarded(node) });
+      }
+      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        const [arg] = node.arguments;
+        const target = arg && ts.isStringLiteralLike(arg) ? resolveModule(host, file, arg.text) : null;
+        if (target) {
+          edges.push(target);
+          const origin = mockOrigin(target);
+          if (origin === "all" || origin.size > 0) refs.push({ where: `${label}:${line(node)}`, name: `import("${arg.text}")`, target, guarded: guarded(node) });
+        }
+      }
+      if (ts.isObjectLiteralExpression(node)) {
+        const where = inFailure(node);
+        if (where !== null && !guarded(node)) {
+          failureObjects += 1;
+          const identity = node.properties.filter(
+            (p): p is ts.PropertyAssignment =>
+              ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && ["id", "code"].includes(p.name.text) && constLike(p.initializer),
+          );
+          if (identity.length > 0) {
+            literals.push(`${label}:${line(node)} {${identity.map((p) => `${(p.name as ts.Identifier | ts.StringLiteral).text}: ${p.initializer.getText(sf)}`).join(", ")}} em ${where}`);
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sf);
+    for (const st of sf.statements) {
+      if ((ts.isImportDeclaration(st) || ts.isExportDeclaration(st)) && st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier)) {
+        const typeOnly = ts.isImportDeclaration(st) ? (st.importClause ? st.importClause.isTypeOnly : false) : st.isTypeOnly;
+        if (typeOnly) continue;
+        const target = resolveModule(host, file, st.moduleSpecifier.text);
+        if (target) edges.push(target);
+      }
+    }
+    return { refs, literals, failureObjects, edges };
+  }
+
+  return { analyze, mockOrigin };
 }
 
-type MockScan = { readonly refs: number; readonly leaks: string[] };
+type ReachScan = {
+  /** arquivos raiz analisados */
+  readonly roots: string[];
+  /** fecho fora das raízes, em profundidade (sem módulos de mock, sem testes) */
+  readonly closure: string[];
+  readonly rootRefs: MockRef[];
+  readonly rootLeaks: string[];
+  readonly closureLeaks: string[];
+  readonly rootLiterals: string[];
+  readonly rootFailureObjects: number;
+};
 
-function scanMockReach(host: GuardHost, file: string, text: string, label = file): MockScan {
-  const sf = parseModule(file, text);
-  const mockNames = new Set<string>();
-  const mockNamespaces = new Map<string, "all" | Set<string>>();
-  const dynamicMock = (spec: string) => {
-    const target = resolveModule(host, file, spec);
-    return target !== null && mockOrigin(host, target) !== null;
-  };
-  let authority: string | null = null;
-
-  for (const st of sf.statements) {
-    if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier)) continue;
-    const clause = st.importClause;
-    if (!clause || clause.isTypeOnly) continue;
-    const target = resolveModule(host, file, st.moduleSpecifier.text);
-    if (!target) continue;
-    const bindings = clause.namedBindings;
-    if (isEnvModulePath(target) && bindings && ts.isNamedImports(bindings)) {
-      for (const el of bindings.elements) if (!el.isTypeOnly && (el.propertyName ?? el.name).text === "isMockMode") authority = el.name.text;
-    }
-    const origin = mockOrigin(host, target);
-    if (!origin) continue;
-    if (clause.name && (origin === "all" || origin.has("default"))) mockNames.add(clause.name.text);
-    if (bindings && ts.isNamespaceImport(bindings)) mockNamespaces.set(bindings.name.text, origin);
-    if (bindings && ts.isNamedImports(bindings)) {
-      for (const el of bindings.elements) {
-        if (el.isTypeOnly) continue;
-        if (origin === "all" || origin.has((el.propertyName ?? el.name).text)) mockNames.add(el.name.text);
-      }
+/** Varre RAÍZES (lista dada: do disco em [G1]/[G3], virtual em [G2]) + FECHO de import; rótulos relativos a `labelRoot`. */
+function scanReach(host: GuardHost, rootFiles: readonly string[], labelRoot: string): ReachScan {
+  const guard = createGuard(host);
+  const label = (file: string) => slash(relative(labelRoot, file));
+  const roots = rootFiles.filter((file) => !isTestPath(file) && !isMockModulePath(file) && host.read(file) !== null).sort();
+  const rootSet = new Set(roots);
+  const seen = new Map<string, FileScan>();
+  const parentOf = new Map<string, string>();
+  const queue = [...roots];
+  while (queue.length > 0) {
+    const file = queue.shift()!;
+    if (seen.has(file) || isMockModulePath(file) || isTestPath(file)) continue;
+    const scan = guard.analyze(file, label(file));
+    seen.set(file, scan);
+    for (const target of scan.edges) {
+      if (!seen.has(target) && !parentOf.has(target)) parentOf.set(target, file);
+      queue.push(target);
     }
   }
-
-  // Autoridade LOCAL anula a guarda: se o nome do `isMockMode` importado também é declarado no arquivo (const,
-  // function, parâmetro, classe), nenhuma chamada a ele conta como `isMockMode()` de `config/env`.
-  if (authority !== null) {
-    const name = authority;
-    const shadowed = (node: ts.Node): boolean => {
-      const declared =
-        (ts.isVariableDeclaration(node) || ts.isFunctionDeclaration(node) || ts.isParameter(node) || ts.isClassDeclaration(node)) &&
-        node.name !== undefined &&
-        ts.isIdentifier(node.name) &&
-        node.name.text === name;
-      return declared || (ts.forEachChild(node, shadowed) ?? false);
-    };
-    if (shadowed(sf)) authority = null;
-  }
-
-  const isGuard = (expr: ts.Expression) =>
-    authority !== null && ts.isCallExpression(expr) && ts.isIdentifier(expr.expression) && expr.expression.text === authority && expr.arguments.length === 0;
-
-  // Alcançável em modo real = não está no ramo verdadeiro de NENHUMA guarda ancestral.
-  const guarded = (node: ts.Node): boolean => {
-    let child: ts.Node = node;
-    for (let parent = node.parent; parent && !ts.isSourceFile(parent); child = parent, parent = parent.parent) {
-      if (ts.isIfStatement(parent) && isGuard(parent.expression) && child === parent.thenStatement) return true;
-      if (ts.isConditionalExpression(parent) && isGuard(parent.condition) && child === parent.whenTrue) return true;
-      if (
-        ts.isBinaryExpression(parent) &&
-        parent.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
-        isGuard(parent.left) &&
-        child === parent.right
-      ) {
-        return true;
-      }
+  const pathTo = (file: string) => {
+    const chain: string[] = [];
+    for (let current: string | undefined = file; current; current = parentOf.get(current)) {
+      chain.unshift(label(current));
+      if (rootSet.has(current)) break;
     }
-    return false;
+    return chain.join(" → ");
   };
-
-  let refs = 0;
-  const leaks: string[] = [];
-  const count = (node: ts.Node, what: string) => {
-    refs += 1;
-    if (!guarded(node)) leaks.push(`${label}:${sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1} ${what}`);
+  const leak = (ref: MockRef) => `${ref.where} ${ref.name} ← ${label(ref.target)}`;
+  const closure = [...seen.keys()].filter((file) => !rootSet.has(file)).sort();
+  const rootScans = roots.map((file) => seen.get(file)!);
+  return {
+    roots,
+    closure,
+    rootRefs: rootScans.flatMap((scan) => scan.refs),
+    rootLeaks: rootScans.flatMap((scan) => scan.refs.filter((ref) => !ref.guarded).map(leak)),
+    closureLeaks: closure.flatMap((file) =>
+      seen
+        .get(file)!
+        .refs.filter((ref) => !ref.guarded)
+        .map((ref) => `${leak(ref)}   [caminho: ${pathTo(file)}]`),
+    ),
+    rootLiterals: rootScans.flatMap((scan) => scan.literals),
+    rootFailureObjects: rootScans.reduce((sum, scan) => sum + scan.failureObjects, 0),
   };
-  const isNamePosition = (id: ts.Identifier) => {
-    const p = id.parent;
-    return (
-      (ts.isPropertyAccessExpression(p) && p.name === id) ||
-      (ts.isPropertyAssignment(p) && p.name === id) ||
-      (ts.isQualifiedName(p) && p.right === id) ||
-      ts.isExportSpecifier(p) ||
-      ts.isImportSpecifier(p) ||
-      ts.isImportClause(p) ||
-      ts.isNamespaceImport(p)
-    );
-  };
-  const visit = (node: ts.Node) => {
-    if (ts.isImportDeclaration(node)) return;
-    if (ts.isIdentifier(node) && !isNamePosition(node)) {
-      if (mockNames.has(node.text)) count(node, node.text);
-      const ns = mockNamespaces.get(node.text);
-      if (ns !== undefined) {
-        const p = node.parent;
-        const benign = ns !== "all" && ts.isPropertyAccessExpression(p) && p.expression === node && !ns.has(p.name.text);
-        if (!benign) count(node, node.text);
-      }
-    }
-    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      const [arg] = node.arguments;
-      if (arg && ts.isStringLiteralLike(arg) && dynamicMock(arg.text)) count(node, `import("${arg.text}")`);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sf);
-  return { refs, leaks };
 }
 
 function listSources(dir: string, acc: string[] = []): string[] {
+  if (!existsSync(dir)) return acc;
   for (const name of readdirSync(dir)) {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) listSources(path, acc);
-    else if (/\.tsx?$/.test(name) && !/\.test\./.test(name) && !isMockModulePath(path)) acc.push(path);
+    else if (/\.tsx?$/.test(name) && !isTestPath(path) && !isMockModulePath(path)) acc.push(path);
   }
   return acc;
 }
 
-function scanDirs(dirs: readonly string[], root: string) {
-  let refs = 0;
-  const leaks: string[] = [];
-  const files = dirs.map((dir) => {
-    const found = listSources(dir);
-    for (const file of found) {
-      const scan = scanMockReach(diskHost, file, readFileSync(file, "utf8"), slash(relative(root, file)));
-      refs += scan.refs;
-      leaks.push(...scan.leaks);
-    }
-    return found.length;
-  });
-  return { files, refs, leaks };
-}
-
 const FRONTEND_ROOT = fileURLToPath(new URL("../", import.meta.url));
+// As RAÍZES: duas pastas + o arquivo de fronteira (a linha do §5 do PLANO_SAN3 — `useServiceQuoteReferences.ts` consome a lista de
+// OS e estava FORA do alcance do G1 do ciclo 2: `N-FORA-RAIZ`).
 const GUARDED_DIRS = [
   fileURLToPath(new URL("../src/modules/work-orders/", import.meta.url)),
   fileURLToPath(new URL("../src/modules/operations/dispatches/", import.meta.url)),
 ];
+// O arquivo de fronteira é nomeado DUAS vezes de propósito: na lista de raízes E no denominador do [G1] (`BOUNDARY_FILE`).
+// Mutação `GUARDED_FILES = []` (A10 do plano) ficou VERDE na 1ª versão — o denominador iterava a própria lista (laço vazio).
+const BOUNDARY_FILE = fileURLToPath(new URL("../src/modules/registry/service-quotes/useServiceQuoteReferences.ts", import.meta.url));
+const GUARDED_FILES = [BOUNDARY_FILE];
+// Sítio SABIDO (denominador de [G1]): `work-orders.service.ts` referencia `getMockWorkOrdersData` atrás de `isMockMode()`.
+const KNOWN_SITE = { file: "src/modules/work-orders/work-orders.service.ts", name: "getMockWorkOrdersData" };
 
-test("[G1] alcance real: em work-orders/** e operations/dispatches/** nenhum identificador de origem mock é alcançável fora do ramo verdadeiro de isMockMode()", () => {
-  const { files, refs, leaks } = scanDirs(GUARDED_DIRS, FRONTEND_ROOT);
-  // Denominador: a varredura tem de ENXERGAR os dois módulos e as referências legítimas ao mock (as que ficam atrás
-  // de isMockMode()); um guard que não resolve import nenhum passaria "verde" sem olhar nada.
-  assert.ok(files[0] > 0 && files[1] > 0, `arquivos varridos por módulo: ${files.join(" / ")}`);
-  assert.ok(refs >= 10, `referências de origem mock vistas: ${refs}`);
-  assert.deepEqual(leaks, [], "identificador de origem mock alcançável em modo real");
+function scanGuardedRoots(): ReachScan & { readonly filesPerDir: number[] } {
+  const perDir = GUARDED_DIRS.map((dir) => listSources(dir));
+  const scan = scanReach(diskHost, [...perDir.flat(), ...GUARDED_FILES], FRONTEND_ROOT);
+  return { ...scan, filesPerDir: perDir.map((files) => files.length) };
+}
+
+test("[G1] alcance real: em work-orders/**, operations/dispatches/**, no arquivo de fronteira e em todo o FECHO de import, nenhum identificador de origem mock (em QUALQUER profundidade de re-export) é alcançável fora do ramo verdadeiro de isMockMode()", (t) => {
+  const scan = scanGuardedRoots();
+  t.diagnostic(`[G1] raízes=${scan.roots.length} (por pasta ${scan.filesPerDir.join("/")} + ${GUARDED_FILES.length} arquivo) · fecho=${scan.closure.length} · referências de origem mock nas raízes=${scan.rootRefs.length} (guardadas=${scan.rootRefs.filter((ref) => ref.guarded).length}) · vazamentos raiz/fecho=${scan.rootLeaks.length}/${scan.closureLeaks.length}`);
+  // Denominadores: a varredura tem de ENXERGAR as raízes, o arquivo de fronteira, o fecho e as referências legítimas ao mock
+  // (as que ficam atrás de isMockMode()) — e um sítio SABIDO. Um guard que não resolve import nenhum passaria "verde" sem olhar nada.
+  assert.ok(scan.filesPerDir.every((n) => n > 0), `arquivos varridos por pasta-raiz: ${scan.filesPerDir.join(" / ")}`);
+  assert.ok(GUARDED_FILES.length >= 1, "há arquivo-raiz avulso declarado (o de fronteira)");
+  assert.ok(scan.roots.includes(BOUNDARY_FILE), `arquivo de fronteira presente nas raízes: ${slash(relative(FRONTEND_ROOT, BOUNDARY_FILE))}`);
+  assert.ok(scan.closure.length > 0, `fecho de import fora das raízes: ${scan.closure.length} arquivo(s)`);
+  assert.ok(scan.rootRefs.length >= 10, `referências de origem mock vistas nas raízes: ${scan.rootRefs.length}`);
+  const known = scan.rootRefs.find((ref) => ref.where.startsWith(`${KNOWN_SITE.file}:`) && ref.name === KNOWN_SITE.name);
+  assert.ok(known, `sítio sabido visto: ${KNOWN_SITE.file} → ${KNOWN_SITE.name}`);
+  assert.equal(known.guarded, true, "o sítio sabido está atrás de isMockMode() (o guard distingue guardado de solto)");
+  assert.deepEqual(scan.rootLeaks, [], "identificador de origem mock alcançável em modo real (raízes)");
+  assert.deepEqual(scan.closureLeaks, [], "identificador de origem mock alcançável em modo real (fecho de import das raízes)");
+});
+
+test("[G1b] entidade fabricada inline: nas raízes nenhum literal de objeto com identidade (`id`/`code`) CONSTANTE nasce em ramo de falha (catch / .catch( / ?? / ||) fora de isMockMode()", (t) => {
+  const scan = scanGuardedRoots();
+  t.diagnostic(`[G1b] literais de objeto em ramo de falha vistos nas raízes=${scan.rootFailureObjects} · com identidade constante=${scan.rootLiterals.length}`);
+  // Denominador: o varredor tem de ENXERGAR literais de objeto em ramo de falha (os legítimos, sem identidade — ex.: `{ items: [], … }`).
+  assert.ok(scan.rootFailureObjects >= 10, `literais de objeto em ramo de falha vistos nas raízes: ${scan.rootFailureObjects}`);
+  assert.deepEqual(scan.rootLiterals, [], "literal com identidade constante em ramo de falha (entidade inventada)");
 });
 
 // Arquivos virtuais para o auto-teste do guard (G2): o mesmo código do G1, sobre um host em memória.
@@ -1081,6 +1257,15 @@ const VIRTUAL_FILES: Record<string, string> = {
   "fake-env.ts": "export function isMockMode() { return true; }\n",
   "x.mock.ts": "export function getMockX() { return 1; }\nexport const mockItems = [1];\n",
   "barrel.ts": 'export * from "./x.mock";\nexport const real = 1;\n',
+  // B-SAN3-01b — as formas do §0.5 L1 do plano (controles C1–C12 do gerador)
+  "reexport-a.ts": 'export * from "./x.mock";\n',
+  "reexport-b.ts": 'export * from "./reexport-a";\n',
+  "reexport-c.ts": 'export { getMockX as detalheDemo } from "./reexport-b";\n',
+  "reexport-local.ts": 'import { getMockX } from "./x.mock";\nexport { getMockX as fallbackDetail };\n',
+  "reexport-default.ts": 'import { getMockX } from "./x.mock";\nexport default getMockX;\n',
+  "barrel-ns.ts": 'export * as demo from "./x.mock";\n',
+  "lib/wo-demo.ts": 'export * from "../x.mock";\n',
+  "lib/wo-demo2.ts": 'import { getMockX } from "../x.mock";\nexport const demo = (id: string) => getMockX();\n',
 };
 const virtualHost = (fixture: string): GuardHost => {
   const table = new Map(Object.entries({ ...VIRTUAL_FILES, "a.ts": fixture }).map(([k, v]) => [slash(join(VIRTUAL, k)), v]));
@@ -1088,44 +1273,90 @@ const virtualHost = (fixture: string): GuardHost => {
 };
 const ENV = 'import { isMockMode } from "./config/env";\n';
 const MOCK = 'import { getMockX, mockItems } from "./x.mock";\n';
-const G2_FIXTURES: ReadonlyArray<readonly [label: string, code: string, leaks: number, refs: number]> = [
-  ["(a) `?? getMockX()` solto", `${MOCK}export async function f(r: unknown) { return adapt(r) ?? getMockX(); }`, 1, 1],
-  ["(b) `else` de `if (isMockMode()) {}`", `${ENV}${MOCK}export function f() { if (isMockMode()) { return 0; } else { return getMockX(); } }`, 1, 1],
-  ["(c) código com comentário citando isMockMode()", `${ENV}${MOCK}export function f(r: unknown) {\n  if (isMockMode()) return 0;\n  return adapt(r) ?? getMockX(); // isMockMode()\n}`, 1, 1],
-  ["(d) constante `mockItems` sem o prefixo getMock", `${MOCK}export const items = (r: unknown[]) => (r.length ? r : mockItems);`, 1, 1],
-  ["(e) bloco `if (isMockMode()) { … }`", `${ENV}${MOCK}export function f() { if (isMockMode()) { const c = getMockX(); return c; } return 0; }`, 0, 1],
-  ["(f) `isMockMode() ? mock : real`", `${ENV}${MOCK}export const f = (real: number) => (isMockMode() ? getMockX() : real);`, 0, 1],
-  ["(g) `isMockMode() && mock`", `${ENV}${MOCK}export const f = () => isMockMode() && mockItems;`, 0, 1],
-  ["(h) `isMockMode` local", `${MOCK}const isMockMode = () => true;\nexport function f() { if (isMockMode()) return getMockX(); return 0; }`, 1, 1],
-  ["(i) import de config/env sombreado por declaração local", `${ENV}${MOCK}export function f(isMockMode: () => boolean) { if (isMockMode()) return getMockX(); return 0; }`, 1, 1],
-  ["(j) isMockMode importado de OUTRO módulo", `import { isMockMode } from "./fake-env";\n${MOCK}export function f() { if (isMockMode()) return getMockX(); return 0; }`, 1, 1],
-  ["(k) forma negada `!isMockMode()` com mock no else", `${ENV}${MOCK}export function f() { if (!isMockMode()) return 0; else return getMockX(); }`, 1, 1],
-  ["(l) via barrel um nível", `import { getMockX } from "./barrel";\nexport const f = () => getMockX();`, 1, 1],
-  ["(m) `import * as M` de mock", `import * as M from "./x.mock";\nexport const f = () => M.getMockX();`, 1, 1],
-  ["(n) `import()` dinâmico de mock", `export async function f() { const m = await import("./x.mock"); return m.getMockX(); }`, 1, 1],
-  ["(o) nome real do barrel não é mock", `import { real } from "./barrel";\nexport const f = () => real;`, 0, 0],
+type G2Fixture = {
+  readonly label: string;
+  readonly code: string;
+  /** vazamentos na raiz `a.ts` */
+  readonly leaks: number;
+  /** referências de origem mock VISTAS na raiz (guardadas ou não) */
+  readonly refs: number;
+  /** literais com identidade constante em ramo de falha na raiz (P-B) */
+  readonly literals?: number;
+  /** vazamentos no FECHO (arquivos que `a.ts` importa) */
+  readonly closureLeaks?: number;
+};
+const G2_FIXTURES: readonly G2Fixture[] = [
+  { label: "(a) `?? getMockX()` solto", code: `${MOCK}export async function f(r: unknown) { return adapt(r) ?? getMockX(); }`, leaks: 1, refs: 1 },
+  { label: "(b) `else` de `if (isMockMode()) {}`", code: `${ENV}${MOCK}export function f() { if (isMockMode()) { return 0; } else { return getMockX(); } }`, leaks: 1, refs: 1 },
+  { label: "(c) código com comentário citando isMockMode()", code: `${ENV}${MOCK}export function f(r: unknown) {\n  if (isMockMode()) return 0;\n  return adapt(r) ?? getMockX(); // isMockMode()\n}`, leaks: 1, refs: 1 },
+  { label: "(d) constante `mockItems` sem o prefixo getMock", code: `${MOCK}export const items = (r: unknown[]) => (r.length ? r : mockItems);`, leaks: 1, refs: 1 },
+  { label: "(e) bloco `if (isMockMode()) { … }`", code: `${ENV}${MOCK}export function f() { if (isMockMode()) { const c = getMockX(); return c; } return 0; }`, leaks: 0, refs: 1 },
+  { label: "(f) `isMockMode() ? mock : real`", code: `${ENV}${MOCK}export const f = (real: number) => (isMockMode() ? getMockX() : real);`, leaks: 0, refs: 1 },
+  { label: "(g) `isMockMode() && mock`", code: `${ENV}${MOCK}export const f = () => isMockMode() && mockItems;`, leaks: 0, refs: 1 },
+  { label: "(h) `isMockMode` local", code: `${MOCK}const isMockMode = () => true;\nexport function f() { if (isMockMode()) return getMockX(); return 0; }`, leaks: 1, refs: 1 },
+  { label: "(i) import de config/env sombreado por declaração local", code: `${ENV}${MOCK}export function f(isMockMode: () => boolean) { if (isMockMode()) return getMockX(); return 0; }`, leaks: 1, refs: 1 },
+  { label: "(j) isMockMode importado de OUTRO módulo", code: `import { isMockMode } from "./fake-env";\n${MOCK}export function f() { if (isMockMode()) return getMockX(); return 0; }`, leaks: 1, refs: 1 },
+  { label: "(k) forma negada `!isMockMode()` com mock no else", code: `${ENV}${MOCK}export function f() { if (!isMockMode()) return 0; else return getMockX(); }`, leaks: 1, refs: 1 },
+  { label: "(l) via barrel um nível", code: `import { getMockX } from "./barrel";\nexport const f = () => getMockX();`, leaks: 1, refs: 1 },
+  { label: "(m) `import * as M` de mock", code: `import * as M from "./x.mock";\nexport const f = () => M.getMockX();`, leaks: 1, refs: 1 },
+  { label: "(n) `import()` dinâmico de mock", code: `export async function f() { const m = await import("./x.mock"); return m.getMockX(); }`, leaks: 1, refs: 1 },
+  { label: "(o) nome real do barrel não é mock", code: `import { real } from "./barrel";\nexport const f = () => real;`, leaks: 0, refs: 0 },
+  // ---- B-SAN3-01b: as 12 formas do §0.5 L1 (C1–C12), mais o namespace re-exportado ----
+  { label: "(p) C1 barrel de 1 nível (a forma que o G1 do ciclo 2 pegava)", code: `import { getMockX } from "./reexport-a";\nexport const f = () => getMockX();`, leaks: 1, refs: 1 },
+  { label: "(q) C2 barrel de 2 NÍVEIS (N-BARREL2)", code: `import { getMockX } from "./reexport-b";\nexport const f = () => getMockX();`, leaks: 1, refs: 1 },
+  { label: "(r) C3 barrel de 3 níveis com RENOME", code: `import { detalheDemo } from "./reexport-c";\nexport const f = () => detalheDemo();`, leaks: 1, refs: 1 },
+  { label: "(s) C4 literal INLINE com identidade constante em catch (N-LITERAL)", code: `export async function f(p: Promise<unknown>) { try { return await p; } catch { return { id: "", code: "OS-FALLBACK", title: "Ordem indisponível", status: "open" }; } }`, leaks: 0, refs: 0, literals: 1 },
+  { label: "(t) C5 barrel FORA das raízes", code: `import { getMockX } from "./lib/wo-demo";\nexport const f = () => getMockX();`, leaks: 1, refs: 1 },
+  { label: "(u) C6 helper FORA das raízes que embrulha o mock — só o FECHO pega", code: `import { demo } from "./lib/wo-demo2";\nexport const f = () => demo("x");`, leaks: 0, refs: 0, closureLeaks: 1 },
+  { label: "(v) C7 re-export LOCAL de binding importado", code: `import { fallbackDetail } from "./reexport-local";\nexport const f = () => fallbackDetail();`, leaks: 1, refs: 1 },
+  { label: "(w) C8 arquivo-raiz avulso importando mock sem guarda (a forma do N-FORA-RAIZ)", code: `${MOCK}export const workOrderOptionsFallback = () => mockItems.map((o) => ({ id: String(o), label: String(o) }));`, leaks: 1, refs: 1 },
+  { label: "(x) C9 NEGATIVO: mock no ramo verdadeiro via barrel de 2 níveis", code: `${ENV}import { getMockX } from "./reexport-b";\nexport const f = () => (isMockMode() ? getMockX() : null);`, leaks: 0, refs: 1 },
+  { label: "(y) C10 `export default` de binding de mock (o consumidor E o barrel vazam)", code: `import d from "./reexport-default";\nexport const f = () => d();`, leaks: 1, refs: 1, closureLeaks: 1 },
+  { label: "(z) C11 NEGATIVO `{ id, workOrder: null }` em catch + POSITIVO `r ?? { code: \"OS-DEMO\" }`", code: `export async function a(p: Promise<unknown>, id: string) { try { return await p; } catch { return { id, workOrder: null }; } }\nexport const b = (r: { code?: string } | null) => r ?? { code: "OS-DEMO" };`, leaks: 0, refs: 0, literals: 1 },
+  { label: "(aa) C12 `import()` dinâmico via barrel de 2 níveis", code: `export async function f() { const m = await import("./reexport-b"); return m.getMockX(); }`, leaks: 1, refs: 1 },
+  { label: "(ab) `export * as ns from mock` consumido solto", code: `import { demo } from "./barrel-ns";\nexport const f = () => demo.getMockX();`, leaks: 1, refs: 1 },
+  { label: "(ac) NEGATIVO: literal com identidade fora de ramo de falha (construção legítima)", code: `export const make = (id: string) => ({ id, code: "OS-" + id, status: "open" });\nexport const empty = () => ({ items: [], pagination: { limit: 20, offset: 0, total: 0 } });`, leaks: 0, refs: 0, literals: 0 },
 ];
 
-test("[G2] auto-teste do guard por alcance: formas que vazam ficam vermelhas, formas guardadas ficam verdes", () => {
-  for (const [label, code, leaks, refs] of G2_FIXTURES) {
-    const scan = scanMockReach(virtualHost(code), join(VIRTUAL, "a.ts"), code, "a.ts");
-    assert.equal(scan.leaks.length, leaks, `${label} → ${JSON.stringify(scan.leaks)}`);
-    assert.equal(scan.refs, refs, `${label}: referências de origem mock VISTAS`);
+test("[G2] auto-teste do guard por alcance: as formas que vazam ficam vermelhas (raiz OU fecho), as guardadas ficam verdes, com `leaks`, `refs`, `literals` e `closureLeaks` esperados", () => {
+  for (const fixture of G2_FIXTURES) {
+    const scan = scanReach(virtualHost(fixture.code), [join(VIRTUAL, "a.ts")], VIRTUAL);
+    assert.equal(scan.rootLeaks.length, fixture.leaks, `${fixture.label} → vazamentos na raiz ${JSON.stringify(scan.rootLeaks)}`);
+    assert.equal(scan.rootRefs.length, fixture.refs, `${fixture.label}: referências de origem mock VISTAS na raiz`);
+    assert.equal(scan.rootLiterals.length, fixture.literals ?? 0, `${fixture.label} → literais com identidade em ramo de falha ${JSON.stringify(scan.rootLiterals)}`);
+    assert.equal(scan.closureLeaks.length, fixture.closureLeaks ?? 0, `${fixture.label} → vazamentos no fecho ${JSON.stringify(scan.closureLeaks)}`);
   }
 });
 
-test("[G3] a enumeração vem do DISCO: arquivo novo num diretório varrido, importando mock sem guarda, fica vermelho", () => {
-  const dir = mkdtempSync(join(tmpdir(), "b-san3-01-g3-"));
+test("[G3] a enumeração vem do DISCO: arquivo novo numa pasta varrida com barrel de 3 níveis, literal inline em catch e helper FORA da pasta (fecho) ficam vermelhos com a lista exata", () => {
+  const dir = mkdtempSync(join(tmpdir(), "b-san3-01b-g3-"));
   try {
-    mkdirSync(join(dir, "config"));
-    writeFileSync(join(dir, "config", "env.ts"), VIRTUAL_FILES["config/env.ts"]);
-    writeFileSync(join(dir, "x.mock.ts"), VIRTUAL_FILES["x.mock.ts"]);
-    writeFileSync(join(dir, "guardado.service.ts"), `${ENV}${MOCK}export function f() { if (isMockMode()) return getMockX(); return 0; }\n`);
-    writeFileSync(join(dir, "novo.service.ts"), `${MOCK}export function f() { return mockItems; }\n`);
-    const { files, refs, leaks } = scanDirs([dir], dir);
-    assert.deepEqual(files, [3], "env + guardado + novo (o módulo de mock não é varrido)");
-    assert.equal(refs, 2);
-    assert.deepEqual(leaks, ["novo.service.ts:2 mockItems"]);
+    const src = join(dir, "src");
+    mkdirSync(join(src, "config"), { recursive: true });
+    mkdirSync(join(src, "modules", "x"), { recursive: true });
+    mkdirSync(join(src, "lib"), { recursive: true });
+    writeFileSync(join(src, "config", "env.ts"), VIRTUAL_FILES["config/env.ts"]);
+    writeFileSync(join(src, "modules", "x", "x.mock.ts"), VIRTUAL_FILES["x.mock.ts"]);
+    writeFileSync(join(src, "modules", "x", "reexport-a.ts"), 'export * from "./x.mock";\n');
+    writeFileSync(join(src, "modules", "x", "reexport-b.ts"), 'export * from "./reexport-a";\n');
+    writeFileSync(join(src, "modules", "x", "reexport-c.ts"), 'export { getMockX as detalheDemo } from "./reexport-b";\n');
+    writeFileSync(join(src, "modules", "x", "guardado.service.ts"), `import { isMockMode } from "../../config/env";\n${MOCK}export function f() { if (isMockMode()) return getMockX(); return 0; }\n`);
+    writeFileSync(join(src, "modules", "x", "novo.service.ts"), 'import { detalheDemo } from "./reexport-c";\nexport function f() { return detalheDemo(); }\n');
+    writeFileSync(join(src, "modules", "x", "literal.service.ts"), 'export async function g(p: Promise<unknown>) {\n  try { return await p; } catch { return { id: "", code: "OS-FALLBACK" }; }\n}\n');
+    writeFileSync(join(src, "lib", "wo-demo2.ts"), 'import { getMockX } from "../modules/x/x.mock";\nexport const demo = () => getMockX();\n');
+    writeFileSync(join(src, "modules", "x", "fecho.service.ts"), 'import { demo } from "../../lib/wo-demo2";\nexport const h = () => demo();\n');
+    const roots = listSources(join(src, "modules", "x"));
+    const scan = scanReach(diskHost, roots, src);
+    assert.deepEqual(
+      scan.roots.map((file) => slash(relative(src, file))),
+      ["modules/x/fecho.service.ts", "modules/x/guardado.service.ts", "modules/x/literal.service.ts", "modules/x/novo.service.ts", "modules/x/reexport-a.ts", "modules/x/reexport-b.ts", "modules/x/reexport-c.ts"],
+      "env fica fora da pasta; o módulo de mock não é varrido; os barrels e os services novos entram sozinhos",
+    );
+    assert.deepEqual(scan.closure.map((file) => slash(relative(src, file))), ["config/env.ts", "lib/wo-demo2.ts"], "o fecho alcança o helper FORA da pasta");
+    assert.equal(scan.rootRefs.length, 2, "guardado.service (guardado) + novo.service (solto)");
+    assert.deepEqual(scan.rootLeaks, ["modules/x/novo.service.ts:2 detalheDemo ← modules/x/reexport-c.ts"]);
+    assert.deepEqual(scan.closureLeaks, ["lib/wo-demo2.ts:2 getMockX ← modules/x/x.mock.ts   [caminho: modules/x/fecho.service.ts → lib/wo-demo2.ts]"]);
+    assert.deepEqual(scan.rootLiterals, ['modules/x/literal.service.ts:2 {id: "", code: "OS-FALLBACK"} em catch']);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -1140,23 +1371,12 @@ test("[S1] WorkOrderCreatePage chama runCreateWorkOrder e NÃO chama createWorkO
   assert.doesNotMatch(page, /import \{[^}]*\bcreateWorkOrder\b[^}]*\} from "\.\.\/work-orders\.service"/);
 });
 
-// =============================== W. Ciclo 2 · P4 — fiação dos hooks vigiada ===============================
-// C4-04: a regra "desatualizado mantém os dados" (R1/R4) só existe se o hook repassar o `background` do `refresh`
-// ao reducer — trocar por `false` no hook deixava 47/47 verdes. Como o S1 vigia o create, W1/W2 vigiam a fiação.
-
-test("[W1] useWorkOrders repassa o `background` do refresh ao nextListState", async () => {
-  const hook = await readFile(new URL("../src/modules/work-orders/useWorkOrders.ts", import.meta.url), "utf8");
-  assert.match(hook, /useCallback\(\s*async\s*\(\s*background\s*=\s*false\s*\)/, "o refresh recebe `background`");
-  assert.match(hook, /nextListState\(\s*prev\s*,\s*result\s*,\s*background\s*\)/, "e o entrega ao reducer");
-  assert.equal(hook.match(/nextListState\(/g)?.length, 1, "uma única chamada ao reducer");
-});
-
-test("[W2] useWorkOrderDetail repassa o `background` do refresh ao nextDetailState", async () => {
-  const hook = await readFile(new URL("../src/modules/work-orders/useWorkOrderDetail.ts", import.meta.url), "utf8");
-  assert.match(hook, /useCallback\(\s*async\s*\(\s*background\s*=\s*false\s*\)/, "o refresh recebe `background`");
-  assert.match(hook, /nextDetailState\(\s*prev\s*,\s*\{\s*detail\s*,\s*timeline\s*\}\s*,\s*background\s*\)/, "e o entrega ao reducer");
-  assert.equal(hook.match(/nextDetailState\(/g)?.length, 1, "uma única chamada ao reducer");
-});
+// =============================== W. Ciclo 2 · P4 → B-SAN3-01b — fiação dos hooks vigiada por COMPORTAMENTO ===============================
+// C4-04 (ciclo 2): a regra "desatualizado mantém os dados" (R1/R4) só existe se o hook repassar o `background` do `refresh` ao
+// reducer. Os vigias `[W1]`/`[W2]` eram REGEX sobre o texto dos hooks (A-03 da ata: `N-W1TXT` — `const background = false`
+// dentro do callback — mantinha o regex verde). Saíram daqui e vivem em `tests/work-orders-page-live.test.tsx`, por
+// comportamento: a página REAL com o hook REAL, 3 OS na tela, 500 no tick do auto-refresh → `data-state="stale"` com as
+// linhas mantidas (lista) e com a OS no DOM (detalhe). Nenhum hook foi tocado para isso.
 
 // =============================== V. Ciclo 2 · P5 — estado desenhado = estado renderizado ===============================
 // C3-B1/A1/A2/A3: os painéis reproduzem a ficha de `docs/claude-code-handoff/ERP Web.dc.html` l.362-382 (borda,

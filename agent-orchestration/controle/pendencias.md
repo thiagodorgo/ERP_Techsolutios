@@ -9486,7 +9486,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (2026-09-18) — o botão "Nova OS" do cabeçalho da lista aparece para quem não tem `work_orders:create` — BAIXA
 
-- status: ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`, E4 do plano — `WorkOrdersPage.tsx` passa a renderizar o botão "Nova OS" do cabeçalho só com `canCreate` (`permissions.includes("work_orders:create")`, a mesma régua da rota `POST /work-orders` e do CTA do vazio). Prova: `frontend/tests/work-orders-page-live.test.tsx` `[GB1]`/`[GB2]` iteram os 13 papéis de `ROLE_PERMISSIONS` executado; no head-base os dois ficam VERMELHOS listando 7 papéis (`technician, viewer, finance, inventory, field_technician, auditor, support`), e verdes com o E4; mutações `canCreate = includes("work_orders:read")` e CTA sem `canCreate` → vermelho — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §E1/E4 e §M. Valor anterior, preservado: "ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)")
 - **prova:** sonda RBAC da C2 como `viewer` (read sim, create não): o botão "Nova OS" do cabeçalho está presente; `/work-orders/new` → guard "Acesso nao autorizado"; `POST /work-orders` direto → 403 `permission_required`. O papel é negado, mas o elemento de ação continua visível. `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (botão do `PageHeader`, l.249-252 no head do ciclo 2). O CTA "Nova OS" do estado vazio, novo no ciclo 2, já nasce com o gate.
 - **escopo:** `pre-existente` — o botão sem gate está na página desde `9f12ea99` (2026-06-09; `02bd7dab` l.233); o diff do `B-SAN3-01` não toca a linha.
 - **dono:** `B-SAN3-01b` · `fix/web-guarda-por-alcance-e-estado-da-pagina`.
@@ -9554,7 +9554,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **teste de encerramento:** E1 da cópia avulsa verde numa base sem OS (busca presente e `[data-state="empty"]` visível) e a C3 aceitar o vazio embutido contra a ficha.
 ## P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está amarrada ao estado que o reducer produziu — ALTA
 
-- status: ABERTA (achado A-01 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, E1 do plano — `frontend/tests/work-orders-page-live.test.tsx` monta a `WorkOrdersPage` REAL com o hook REAL rodando efeitos sobre um DOM mínimo escrito no próprio teste, com os bytes do backend em `fetch`: `[PV1]` 403 → `forbidden` e KPIs sem dígito, `[PV2]` 500 → `error`+alerta+texto do service, `[PV3]`–`[PV5]` vazio/3 linhas/pendente, `[PV6]` 403 em 2º plano. Teste de encerramento cumprido: a mutação `N-PG-PAINEL` fica VERMELHA — bloco 79/76/3 (`[PV1]` `[PV2]` `[PV6]`), smoke 1214/1211/3; `N-PG-KPI` idem — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §M (restauro provado por hash). Valor anterior, preservado: "ABERTA (achado A-01 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)")
 - **prova:** mutação `N-PG-PAINEL` em `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (trocar `status={status}` por `status="empty"` no `WorkOrdersLoadState`) → a página REAL mostra o 403 como `data-state="empty"`, "Nenhuma ordem de serviço" e KPIs `0|0|0|0`, com `node --test tests/work-orders-honest-errors.test.tsx` 67/67, `tsc` ec=0 e `test:smoke` 1193/1193 — nada fica vermelho. Controle `N-PG-SEED`: com o estado certo, `[forbidden]` e KPIs "—".
 - **escopo:** `dentro-do-bloco` (o código da página é do `B-SAN3-01`); os testes amarram o reducer e os componentes com props passados à mão, e ninguém vigia os props que a página passa.
 - **dono:** `B-SAN3-01b` (bloco novo do gate, `fix/web-guarda-por-alcance-e-estado-da-pagina`).
@@ -9563,7 +9563,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o próximo membro dentro das próprias raízes — ALTA
 
-- status: ABERTA (achado A-02 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, E2+E3 do plano — o `[G1]` de `frontend/tests/work-orders-honest-errors.test.tsx` resolve re-export em profundidade ARBITRÁRIA (barrel de N níveis, re-export local, `default`, namespace, `import()`), varre o FECHO de import das raízes e o arquivo de fronteira `useServiceQuoteReferences.ts`, com denominadores (81 raízes, fecho 48, 20 referências guardadas, sítio sabido); `[G1b]` novo pega entidade fabricada inline (`id`/`code` constante em `catch`/`.catch(`/`??`/`||`). Teste de encerramento cumprido: `N-BARREL2`, `N-BARREL3`, `N-LITERAL`, `N-FORA-RAIZ` ficam VERMELHAS no bloco e no smoke — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §M; os cabeçalhos de `dispatches.service.ts`, `repository.ts` e `useServiceQuoteReferences.ts` dizem o que o guard prova e o que não prova (R2–R4). Valor anterior, preservado: "ABERTA (achado A-02 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)")
 - **prova:** mutação `N-BARREL2` (arquivos novos `reexport-a.ts` → `export * from "./work-orders.mock"`, `reexport-b.ts` → `export * from "./reexport-a"`, e um service novo com `catch → getMockWorkOrderDetail` importado de `./reexport-b`) → em modo real (`VITE_USE_MOCKS=false`, backend 500) a tela recebe `OS-000101`, com `[G1]` VERDE, bloco 67/67, `tsc` e smoke verdes; o controle com barrel de UM nível fica vermelho. Mutação `N-LITERAL`: entidade fabricada escrita inline (`id=""`, `code="OS-FALLBACK"`) em arquivo novo das raízes também nasce permitida — a classe é maior que o import de mock.
 - **escopo:** `dentro-do-bloco` (o guard e os cabeçalhos dos services são do `B-SAN3-01`; o cabeçalho afirma um alcance que a mutação desmente).
 - **dono:** `B-SAN3-01b`.
@@ -9572,7 +9572,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são textuais — MÉDIA
 
-- status: ABERTA (achado A-03, ajuste, da cadeira C4 do ciclo 2 do `B-SAN3-01`)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, E1 do plano — `[W1]`/`[W2]` deixam de ser regex sobre o texto dos hooks e vivem em `frontend/tests/work-orders-page-live.test.tsx` por COMPORTAMENTO: 3 OS (ou a OS do detalhe) na tela, 500 no tick capturado do auto-refresh → `data-state="stale"` com o dado mantido; nenhum hook foi tocado. Teste de encerramento cumprido: `N-W1TXT` e `N-W2TXT` ficam VERMELHAS no bloco e no smoke — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §M. Valor anterior, preservado: "ABERTA (achado A-03, ajuste, da cadeira C4 do ciclo 2 do `B-SAN3-01`)")
 - **prova:** mutação `N-W1TXT` em `frontend/src/modules/work-orders/useWorkOrders.ts` (embrulhar o `setState` num bloco que redefine `background = false`) mantém as três asserções textuais do `[W1]` satisfeitas, com bloco 67/67, `tsc` e smoke verdes.
 - **escopo:** `dentro-do-bloco`. A quebra vai na direção fail-closed (a falha em 2º plano passa a mostrar o painel de erro em vez de manter o dado com a faixa): não chega dado fabricado à tela — por isso ajuste, não bloqueio.
 - **dono:** `B-SAN3-01b`.
@@ -9905,3 +9905,77 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-GOV-CICLOS-RESIDUAIS`.
 - **bloqueia:** não.
 - **teste de encerramento:** os cinco lugares citam um só número com a sua fonte (`00-caso-dev-t4-trilha.md`) ou rebaixam "medido" para estimativa declarada; espelho `CLAUDE.md`⇔`AGENTS.md` preservado.
+
+> Abertas pelo `B-SAN3-01b` (tarefa de nuvem, `dev-b-san3-01b`, 2026-10-02) a partir do §13 do plano `docs/revisoes/SAN3/B-SAN3-01b-plano.md`
+> (N2, N4, N5): o que o bloco mediu e NÃO pega, nomeado com dono. Evidência: `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+
+## P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a mensagem de recusa com todos os gates verdes — MÉDIA
+
+- status: ABERTA (aberta pelo `B-SAN3-01b`, §13 N2 do plano)
+- **prova (N = 1 mutação; forma: `N-S1ERR` em `frontend/src/modules/work-orders/pages/WorkOrderCreatePage.tsx` — `setError,` → `setError: () => undefined,` — medida pelo plano em `3b1fe0f9` e reexecutada pelo dev no head da entrega: bloco verde, `tsc` ec=0, smoke verde; causa: o `[S1]` de `work-orders-honest-errors.test.tsx` é REGEX ("a página chama `runCreateWorkOrder`"), e o e2e `tests/e2e/critical-flows.spec.ts` que asserta `role="alert"` no 422 não roda na CI — `ci.yml` não tem job e2e (jobs: backend, backend-postgres, frontend, owner-portal, authority-portal, flutter, docker)):** a recusa do backend ao criar OS pode deixar de chegar ao operador sem nada ficar vermelho.
+- **escopo:** `pre-existente` — o `[S1]` nasceu no `B-SAN3-01` (`83a3c68`, 2026-09-19) e a página é da raiz do histórico (`f4ef511`, 2026-08-11); `WorkOrderCreatePage.tsx` está no PROIBIDO do `B-SAN3-01b` (§6 do plano).
+- **dono:** `B-SAN3-10` — a fronteira dele tem `tests/e2e/**` e o job e2e da CI; com o job, o E2 do e2e fica vermelho sob `N-S1ERR`.
+- **bloqueia:** não bloqueia o gate por si (fail-closed: a OS não é criada; o que falta é a mensagem).
+- **teste de encerramento:** `N-S1ERR` aplicada → algum gate que a CI executa fica vermelho (job e2e com o E2, ou um teste vivo da `WorkOrderCreatePage` com o arnês do E1).
+
+## P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da lista de OS não são distinguidos sem evento de usuário — BAIXA
+
+- status: ABERTA (aberta pelo `B-SAN3-01b`, §13 N4 do plano)
+- **prova (N = 9 de 39 sítios de decisão gerados do AST de `WorkOrdersPage.tsx` pelo gerador do Apêndice C do plano; forma: `node gen/sitios-pagina.mjs frontend --oracle "node --test --import tsx tests/work-orders-page-live.test.tsx"`, VERDE só nos sítios de tipo `attr onRetry` (faixa de desatualizado), `attr filtered`, `attr onAdvance`, `attr onRevoke`, `attr onConfirm`, `attr onPrev`, `attr onNext`, `attr canPrev`, `attr canNext`; causa: são callbacks/flags de interação (clique, digitação, paginação) — a matriz de cenários do teste vivo não dispara eventos de usuário):** trocar um desses por `undefined` não muda o que a página mostra sem interação.
+- **escopo:** `dentro-do-bloco` como residual DECLARADO (§13 N4) — não é fabricação nem decisão sobre estado; a propriedade do bloco ("o que a página mostra é função do estado") está provada nos outros 30.
+- **dono:** fila pós-gate (§7.3 do `PLANO_SAN3.md`); o arnês do E1 (`withPage`, DOM mínimo com `addEventListener`) aceita eventos quando alguém precisar.
+- **bloqueia:** não.
+- **teste de encerramento:** o oráculo de sítios fica VERMELHO também nesses 9 (teste que dispara clique/digitação/paginação na página viva), ou a fila pós-gate dispensa com registro.
+
+## P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de `/work-orders/new` usa `hasAny` com atalho de plataforma, mais frouxo que o backend — BAIXA
+
+- status: ABERTA (aberta pelo `B-SAN3-01b`, §13 N5 do plano)
+- **prova (N = 0 papéis afetados hoje; forma: `frontend/src/App.tsx` l.776-780 `PermissionGuard permissions={["work_orders:create"]}` → `hasAny` (`PermissionProvider.tsx`) = `includes` OU `isPlatformAdmin` (`navigation/types.ts`: papel "Super Admin" ou `platform:tenants:read`); papéis do catálogo com `platform:tenants:read` = `super_admin`, `platform_admin`, ambos COM `work_orders:create` (medido pelo plano em `gen/bypass.mts`); o backend compara por `includes` estrito (`rbac.middleware.ts`); a página (`WorkOrdersPage.tsx`) usa `permissions.includes`, a régua do backend):** duas réguas para a mesma permissão — hoje coincidem nos 13 papéis, mas um papel de plataforma sem `create` passaria pelo guard de rota e seria recusado pelo backend.
+- **escopo:** `pre-existente` — `App.tsx` e o `PermissionGuard` antecedem o bloco e estão no PROIBIDO do `B-SAN3-01b` (§6 do plano).
+- **dono:** `B-SAN3-06a` (tem `frontend/src/App.tsx` na fronteira e o `coordenador-de-acessos` na junta).
+- **bloqueia:** não (impacto 0 nos papéis existentes; o backend é a autoridade final).
+- **teste de encerramento:** o guard de `/work-orders/new` usa a mesma régua do backend (`includes` estrito) ou um teste papel a papel (catálogo executado) prova que nenhum papel sem `work_orders:create` passa pelo guard de rota.
+
+> Abertas pelo registro do #402 (`docs/registro-402`, 2026-10-02) a partir das notas da junta `J-B-SAN3-01b`, como a ata e
+> o porteiro do #402 mandaram. O ajuste `A-C1-01` não vira pendência: é o backfill §C3.5 que este mesmo registro paga. A nota
+> da C2 sobre a troca de organização já tem classe e dono (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, `B-SAN3-06a`).
+
+## P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo que um módulo é dado de demonstração: dado fabricado fora da convenção nasce classificado como real — MÉDIA
+
+- status: ABERTA (aberta pelo registro do #402, a partir da nota **N-C1-01** da junta `J-B-SAN3-01b`).
+- **prova (N = 1 mutação da cadeira; forma: módulo `work-orders.demo-data.ts`, fora da convenção `*.mock.ts(x)`/`mocks/`, devolvido pelo service no `catch` → bateria do bloco 79/79 verde, `[G1]` 0 vazamentos, `[G1b]` 0 fabricados; causa: `isMockModulePath` classifica a origem por convenção de nome):** `votos/B-SAN3-01b/C1-voto.json`, achado `N-C1-01`.
+- **escopo:** `pre-existente` — `isMockModulePath` nasceu em `83a3c68c` (2026-09-19, `B-SAN3-01`); o `B-SAN3-01b` não o tocou.
+- **efeito medido:** nenhum módulo assim existe hoje (a mutação foi da cadeira). É a fronteira por onde um dado fabricado novo entraria sem o guard ver.
+- **dono:** `B-SAN3-06c`, que já é dono do dado demonstrativo da web (`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`) — atribuído pelo registro do #403.
+- **bloqueia:** não.
+- **teste de encerramento:** a origem de dado de demonstração é decidida por propriedade (o que o módulo devolve e por qual caminho é alcançado), e a mutação `work-orders.demo-data.ts` deixa o guard vermelho.
+
+## P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa a régua do backend vale para o catálogo de hoje, e não separa a inclusão estrita de um atalho de plataforma — BAIXA
+
+- status: ABERTA (aberta pelo registro do #402, a partir de uma nota `dentro-do-bloco` da C2 da junta `J-B-SAN3-01b`).
+- **prova (N = 2 mutações da cadeira; forma: M2c-i, atalho de plataforma, fica verde 13/13; M2c-ii, papel separador de sonda, é acusado em `[GB1]`/`[GB2]`; o atalho por rótulo "Super Admin" não é exercitável porque o arnês monta o papel pela chave):** `votos/B-SAN3-01b/C2-voto.json` e `C2-evidencia.md`.
+- **escopo:** `dentro-do-bloco` (nota; não reprovou). A propriedade "régua = inclusão estrita" está provada por parse e pela sonda, não pelo catálogo.
+- **efeito medido:** hoje nenhum papel do catálogo separa as duas réguas; a prova enfraquece no dia em que um papel separador existir sem teste.
+- **dono:** `B-SAN3-06a`, dono das permissões por papel no front (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`) — atribuído pelo registro do #403.
+- **bloqueia:** não.
+- **teste de encerramento:** o teste papel a papel do botão inclui um papel separador permanente, ou o atalho por rótulo passa a ser exercitável pelo arnês.
+
+## P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard leva a `/work-orders/new` sem o gate de `work_orders:create` — MÉDIA
+
+- status: ABERTA (aberta pelo registro do #402, a partir de uma nota `pre-existente` da C2 da junta `J-B-SAN3-01b`).
+- **prova (N = 1 botão; forma: `frontend/src/pages/DashboardPage.tsx` l.365-368 no objeto `cdf370dc`, sem gate; `git diff 4ab9d232..cdf370dc -- DashboardPage.tsx` = 0):** `votos/B-SAN3-01b/C2-voto.json`.
+- **escopo:** `pre-existente` — o último commit no arquivo antes da base é `0a38f1be` (2026-08-04); o arquivo está fora do PERMITIDO do plano do `01b`.
+- **efeito medido:** um papel sem `work_orders:create` vê o botão; a rota e o backend recusam. É falso positivo de interface, não escalada.
+- **dono:** `B-SAN3-06c` (proposto pela C2; já é dono de `DashboardPage.tsx` por outras pendências, l.9411 e l.9447).
+- **bloqueia:** não.
+- **teste de encerramento:** o botão do Dashboard usa a mesma régua do backend e do botão da lista, provado por teste papel a papel.
+
+## P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS diverge do PNG e do protótipo, mas segue o design padronizado do dono — BAIXA
+
+- status: ABERTA (aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`).
+- **prova (forma: kicker, título 22 × 20, subtítulo, alinhamento, borda, Filtrar e Exportar omitidos, padding e borda do botão "Nova OS", contra `docs/claude-code-handoff/screen-refs/web/ordens-servico.png` e `docs/claude-code-handoff/ERP Web.dc.html` l.288-296; idêntico pixel a pixel no head-base):** `votos/B-SAN3-01b/C3-voto.json`, achado `C3-N1`.
+- **escopo:** `pre-existente` — `0a38f1be` (#331) e `d43314bd` (#332), 2026-08-04; o cabeçalho segue `docs/juntas/J-TELAS-PADRONIZADAS.md` §1.
+- **efeito medido:** divergência visual, não de regra.
+- **dono:** decisão do dono — qual referência vale para o cabeçalho da lista de OS, o PNG de `screen-refs/` ou o design padronizado de `J-TELAS-PADRONIZADAS`. Sem bloco dono até a decisão.
+- **bloqueia:** não.
+- **teste de encerramento:** a decisão registrada em `controle/decisoes.md` e o cabeçalho conforme a referência escolhida.

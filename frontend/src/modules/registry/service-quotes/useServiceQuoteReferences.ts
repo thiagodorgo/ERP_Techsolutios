@@ -10,7 +10,14 @@ import type { ServiceQuoteReferenceOption } from "./service-quotes.types";
 
 // Ω3-a — resolve os RÓTULOS humanos das colunas Serviço/OS/Cliente (veto cognicao-visual: UUID cru na
 // coluna) e preenche os selects do modal. Espelho de useTariffReferences; reaproveita os services já
-// existentes. D-007: em mock/erro voltam vazios (a coluna cai no fallback shortRef, nunca fabrica).
+// existentes. D-007: em ERRO as listas voltam vazias (a coluna cai no fallback shortRef, nunca fabrica); em modo de
+// demonstração explícito (`VITE_USE_MOCKS=true`) a coluna de OS recebe os itens de demonstração do service de OS (6, e a
+// de clientes volta vazia — medido no plano do B-SAN3-01b): este hook não decide o modo, só repassa o que os services devolvem.
+// B-SAN3-01b: este arquivo é RAIZ do guard `[G1]`/`[G1b]` (`work-orders-honest-errors.test.tsx`), que prova por alcance em
+// profundidade arbitrária (barrel de N níveis, re-export local, `default`, namespace, `import()`) e por todo o fecho de
+// import que identificador de origem mock só chega aqui pelo ramo verdadeiro de `isMockMode()` dos services, e que nenhuma
+// entidade inline (`id`/`code` constante) nasce em ramo de falha. O que o guard não prova: ramo de falha sem
+// `catch`/`.catch(`/`??`/`||`, identidade por outra chave ou não constante, dado de demonstração fora de `*.mock`/`mocks/`.
 export type ServiceQuoteReferences = {
   readonly services: ServiceQuoteReferenceOption[];
   readonly customers: ServiceQuoteReferenceOption[];
