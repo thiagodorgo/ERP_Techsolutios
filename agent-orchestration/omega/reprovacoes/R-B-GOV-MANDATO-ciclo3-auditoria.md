@@ -405,3 +405,66 @@ O `B-GOV-CICLOS-RESIDUAIS` (`36f68126` §2.2, M-04(ii)) já desenha: *"o mesmo `
 ### 8.12 Limpeza (§C5, 1 linha) e fechamento
 
 Criado e removido pelo nome: worktree `C:/Users/AMP/w-plconserto` (`git worktree remove --force`, `status --porcelain` 0 antes; `npm ci` próprio, sem junction; 0 processo vivo por `CommandLine` antes da remoção); cópias `mandato-preflight.{lf,m305,m298}.sh` apagadas antes (porcelain 0 conferido após cada rodada); ficam no scratchpad, como evidência reexecutável, `plconserto/` (briefing extraído, `neg.md`, `pos.md`, mandato transcrito, `secao-8.md`, saídas `.out/.err`) e `PLANO-CONSERTO-MAQUINA.md`; nenhum contêiner criado; base viva `erp-postgres`/`erp-redis` nunca alvo; nenhum arquivo rastreado tocado além deste (§8 apensada ao fim; nada acima editado — `git diff -U0` sem linha `-`). Resíduo alheio (`w-devs393`, `w-devt393`, `w-conh`, `.claude/worktrees/*`) **reportado, não varrido**.
+
+## 9. Atestação — o conserto consertou? (§8.7; a mesma identidade da auditoria re-executa (d), (c) e (a) quanto à A15)
+
+**Papel:** atestação (§8.7 deste parecer = M-04(ii) do `B-GOV-CICLOS-RESIDUAIS` §2.2) · **Identidade:** `auditor-maquina-b-gov-mandato-c3` (a mesma dos §0–§7; não é cadeira, não é dev, não planejou o conserto; não vota, não propõe correção, não herda a §9 de ninguém) · **Modelo:** Fable 5.1 (`claude-fable-5-1`), sem substituição · **Mandato:** `agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo4/00-mandatos/auditor-atestacao.md`, versionado em `47d113fb`, `mandato_md5` EOL-neutro `b15da98eb22f727a3f3c760447e56bc4` (disco = blob `47d113fb:` = o declarado no disparo; pré-voo `OK` no head do lançamento `d031518d`, cerca `HC = H0`) · **Objeto:** `chore/mandato-refs-e-preflight` em `47d113fba02da1ec1a0e60ec7d25441e78b3414e` (= `origin`; `merge-base` com `origin/main` = `origin/main`) · **Terreno:** worktree detached próprio `C:/Users/AMP/w-aud4` no head (1,9 s; `porcelain` 0), `npm ci` próprio (326 pacotes, 22 s, `node_modules` diretório real, 0 junction), `env | grep -c '^MSYS_NO_PATHCONV='` = 0 (a variável só inline, no stub do replay e em dois `git rev-parse`), `timeout` em tudo que executou artefato, `tail -f` nunca, base viva `erp-postgres`/`erp-redis` nunca alvo (este papel não abre banco), nenhum contêiner · **Data:** 2026-10-03 04:47Z–05:18Z · **Evidência incremental (P1), com hora por passo:** `scratchpad/ATESTACAO-393-C4.md` (+ `scratchpad/aud4/`: `replay.sh`, `replay-refs.sh`, `replay/` com `.log/.err/.ec` por mandato e `00-resumo.psv`, `arn/aplica.sh` + os 2 blobs extraídos, `fx/` 6 fixtures, `dois-lados/` saídas por arnês × fixture, `conta.ps1`/`conta.pat`).
+
+**O que esta §9 é e não é.** Re-executa, com comando e saída, exatamente as três peças que o §8.7 dá a esta identidade — **(d)**, **(c)** e **(a) quanto à A15** — e nada além. O critério de (d) é o da **errata §15.15(b)** do plano (REPLAY no commit `A` que versionou cada mandato, com o instrumento de `A` e a colagem gravada no blob): a re-execução viva no head reprova por construção (A8) e não é critério — a §15.9 l.1934 lê-se assim desde a errata. Tudo o que o plano, as erratas e o §8 afirmam entrou aqui como **hipótese**; cada número abaixo foi medido por mim em 2026-10-03.
+
+### 9.1 (d) — o mandato é artefato verificado por máquina (D-M2, P2a–P2c): replay do pré-voo em `A`, 21 mandatos
+
+Stub = l.2081-2104 do plano, EOL-neutro (24 l., `bash -n` ok, md5 `0d198ab5…`). Por mandato (`aud4/replay.sh`, 05:01:31Z → 05:03:27Z): `A` por `git log --diff-filter=A`; **PRE1** `git merge-base --is-ancestor H0 A && … H0 HEAD`; **PRE2** `git diff --quiet HC A -- scripts/mandato-preflight.sh scripts/mandato-refs.sh`; **P-b** `rev-parse HEAD:M = rev-parse A:M`; worktree detached `C:/Users/AMP/w-aud4-A<8>` em `A` (13 criados; `A` = head usa o `w-aud4`); `( cd $WA && REPLAY_REV=$A REPLAY_M=$M MANDATO_REFS=<stub> timeout -k 10 300 bash scripts/mandato-preflight.sh "$M" 393 )`, `ec` em arquivo, nunca por cano.
+
+```
+21 mandatos em 00-mandatos/ (o disparo listou 17; c1d, c2d, c3d e inspetor nasceram em 47d113fb com o meu) · n=1 commit em 21/21 (P2a: nenhum editado depois)
+PRE1 OK 21/21 · PRE2 OK 21/21 (instrumento de HC = instrumento de A) · P-b OK 21/21 (blob do head = blob de A) · cerca presente (HC) 21/21 (P2b)
+replay: PRE-VOO OK ec=0 em 20/21 — auditor-atestacao c1d c2d c3d conferente-reconferencia conferente dev-scripts-k4b3 dev-scripts-k4b4 dev-scripts dev-tests-t4c5 dev-tests fabrica-1bis fabrica-1quater fabrica-1ter fabrica inspetor planejador-errata2 planejador-errata3 planejador-errata4 planejador
+        cada um com `COLAGEM l.11-NN: refs do PR #393 confere` + 1 AVISO `approved_head NAO DETERMINAVEL (ec=3)`, como no lançamento; stderr do artefato 0 B em 21/21
+        ec=1 em 1/21 — planejador-errata.md (A=60f4f79f, H0=335cf09d, HC=987cde17): `REJEITADO SHA '987cde178d349d71e690f6f7238069af6683b202' nao esta na saida de mandato-refs.sh 393`
+HC = H0 em 20/21; o único HC ≠ H0 é o mesmo planejador-errata.md
+```
+
+**Leitura.** P2a, P2b e P2c estão **em vigor e medidos**: todo papel do ciclo 4 nasceu de um arquivo versionado antes dele, com a cerca do veredito, e o instrumento do lançamento re-executado em `A` aprova 20 de 21. O único `ec=1` é **a exceção única que a §15.15(b) já publicou com a causa** (cerca gravada sobre head local não empurrado, `987cde17`, enquanto a colagem do GitHub dizia `335cf09d`; segundo a errata, o arquivo *sem a cerca* — o que o agente leu — passou, e o conteúdo é o do blob que o agente declarou) — e a **regra que a errata instituiu, `HC = H0`, está cumprida em todos os 15 mandatos nascidos depois dela**, inclusive os 5 de `47d113fb`. A hipótese "todos OK" do meu mandato é **derrubada em 1/21**, por um fato que **a própria máquina consertada produziu e registrou** (o replay pegou; o planejador publicou; o inspetor registra; a C3⁗ classifica — §15.15(b)): não é omissão nem fato novo, e a classificação de gravidade **não é minha**. O que atesto em (d) é o que o §8.3 pediu: mandato como artefato, veredito gravado, re-executado por máquina — e re-executado por mim.
+
+### 9.2 (c) — a boa notícia tem conferente (D-M1, P1b): a §15.0(d) existe com semente e identidade, e 1 ponto de cada lado reproduz
+
+```
+§15.0(d) presente: l.1747 — Semente **`20261001393`** · identidade `planejador-ciclo4-b-gov-mandato` ≠ runner da E4 = orquestrador ≠ devs da ferramenta = Dev-S/Dev-S-2
+semente → amostra (python 3.13: random.seed(20261001393); random.sample(sorted(VERMELHOS), ceil(0.2*100)) sobre os 100 ids VERMELHO da composta, recontados: 100 linhas, 100 únicos):
+   187 195 219 255 298 327 356 373 390 393 399 431 457 469 470 481 493 520 523 541  = os 20 publicados
+arnês do ciclo 3 reconstruído do objeto: `git cat-file -p faa408c8` (hash-object = faa408c8, CR 0) · `aplica()` verbatim de `git cat-file -p 37549262` (53 l.) · 6 fixtures próprias LF · sem PR (`MANDATO_REFS=/bin/false`) · `timeout -k 5 60` · antes de qualquer cor de guard
+lado VERMELHO — 298 (sorteado): M10, `if (isento(num)) return` → `if (0)) return`, diff 2 l., bash -n ok → AWK-INVALIDO (stderr `awk: cmd. line:24: if (0)) return` em 6/6) · comportamento DIFERE: neg / hip-sem-token / grep-sem-i ec 1→0 `PRE-VOO OK` (o fail-open da §1.5)  = linha 298 da tabela
+lado VERDE — 245 (equivalente declarado): M7(salto), `*) continue ;;` → `*) : ;;`, diff 2 l., bash -n ok → PROGRAMA (stderr 0 B em 6/6) · IGUAL em 6/6, inclusive 2 fixtures com cerca que não é colagem (único caminho que passa pela l.245) · causa na fonte: a l.248 `[ -n "$N" ] || continue` descarta o bloco de qualquer modo  = linha 245 da tabela ("resiste")
+controles: pristino determinístico (2 execuções IGUAL), aprova pos/fences (ec=0) e rejeita neg/hip-sem-token/grep-sem-i/fora (ec=1, 1 REJ)
+```
+
+**Leitura.** A amostra dos dois lados existe, com semente que reproduz o sorteio, identidade distinta do runner e dos devs, e **1 ponto de cada lado reproduz por caminho próprio** (arnês meu, fixtures minhas, mutante pelo `aplica()` do blob). P1b está em vigor no plano do ciclo 4. Contexto, não meu item: a conferência do ciclo 4 (`votos/B-GOV-MANDATO-ciclo4/00-conferencia-dois-lados.md`) existe e a última linha dela é `CONFERIDO — ponto 263 (reconferência T4c-5 …)`.
+
+### 9.3 (a) quanto à A15 — fail-closed inclui a própria morte (D-M3): o item "morte interna" no corpo da C1⁗, com o vermelho-controle sobre `faa408c8` declarado
+
+```
+.claude/agents/especialistas/jurado-mandato-c1d-invariancia-e-morte-interna.md @47d113fb: blob 3866d02b · md5 EOL-neutro 7b13b3f196de8626c0529c8142260b95 · 502 l.
+.agents/agents/especialistas/…c1d…md: blob 024ef924 · md5 81db2cc2358ab5ce8b02fcba6dcfea5f · 508 l. — diferem SÓ no frontmatter Codex (D-INTEROP); do 1º `# ` em diante md5 4f80d87d… nos dois = corpo idêntico
+contagens (iguais nos 2 espelhos): 'morte interna' 6 · faa408c8 23 · 'passada 2' 3 · 'sem ser mandad' 1 · 'mata cada componente' 2 · 'vermelho-controle' 7 · mandato_md5 4
+S0: `node scripts/sync-agent-agents.mjs --check` → `OK — 42 agentes, espelho consistente.` ec=0
+l.342 `## Item 2 — MORTE INTERNA (A15): mate cada componente — sobre faa408c8 PRIMEIRO, depois sobre o head` · componentes: awk oráculo, awk passada 2, awk filtro, tr, sed, git, refs · l.359-364 "Ordem obrigatória — faa408c8 ANTES do head … o que você reportar daí é o vermelho-controle histórico do item, e é o teste de encerramento de D-M3 … se o seu item não acusar nada em faa408c8, o item é forma, não propriedade, e a cadeira é inválida — declare-o com as palavras 'o item NÃO CUMPRIU'"
+```
+
+**Leitura.** O que o §8.4(iv) exigia antes de abrir o ciclo 4 — item "morte interna" na cadeira de fail-closed, com vermelho-controle histórico sobre `faa408c8` — está no corpo, nos dois espelhos, com a sanção do §8.4(iii) escrita (item que não acusa em `faa408c8` = cadeira inválida). A classe A15 que nenhuma composição cobria (§2) agora tem cadeira nomeada — e o meu próprio controle de 9.2 (m298 → `PRE-VOO OK` com a passada 2 morta) é a instância que ela tem de reportar sem ser mandada.
+
+### 9.4 Limpeza (§C5, 1 linha) e fechamento — 05:18Z
+
+Criado e removido pelo nome: worktree `C:/Users/AMP/w-aud4` (`git worktree remove --force`, ec=0; `porcelain` 0 antes; o `npm ci` próprio vai junto; `git worktree list | grep -c w-aud4` = 0; em disco = 0) e os 13 worktrees do replay `C:/Users/AMP/w-aud4-A*` (removidos às 05:03:44Z, `porcelain` 0 em cada; restantes 0); cópias do arnês `aud4/arn/{pris,m298,m245}` apagadas após conferir `hash-object` = `faa408c8` (403K → 60K; ficam os 2 blobs extraídos, `aplica.sh`, fixtures e saídas como evidência reexecutável); processos vivos com o nome do worktree, dos arneses ou do artefato na linha de comando, contados por `aud4/conta.ps1` (padrão só no arquivo `conta.pat`, invocação sem os nomes; exclui o próprio PID e o pai): **N=0** (05:12:15Z); resíduo do pré-voo em `/tmp` criado nesta sessão: 0; nenhum contêiner criado; base viva nunca alvo; nenhum arquivo rastreado tocado além deste (só a §9, apensada ao fim em LF como o resto do arquivo; `git diff -U0` com 0 linhas `-`; `git diff --check` limpo; `porcelain` de `w-mandato` sem este arquivo = 0); resíduo alheio (`w-nuv05`, `w-nuv05d`, `w-nuv09`, `w-nuv11`, `w-pvnuv`, `w-pvpr`, `w-pvreg`, `.claude/worktrees/{b04a,b11,gov-descuido}`) **reportado, não varrido**. Nota de honestidade: três tentativas minhas morreram antes de produzir resultado — a derivação da semente com caminho MSYS passado ao Python do Windows (A4), a 1ª contagem de processos com `[/\]` não terminado no regex .NET (o `printf` comeu uma barra) e a 1ª tentativa de apensar esta seção num único comando de shell, cortado no limite de linha de comando do Windows (classe A10, a mesma do §8.0) — as três descartadas antes de ler qualquer número, e a terceira conferida: nada executou (worktree presente, parecer = `HEAD`, `porcelain` 0). Valem a derivação com `cygpath -m`, a contagem com padrão sem barra invertida e esta seção escrita em arquivo e apensada por `cat`.
+
+### 9.5 Veredito da atestação
+
+| peça (§8.7) | o que o conserto prometeu | medido | resultado |
+|---|---|---|---|
+| (d) D-M2 | mandato = artefato versionado antes do papel, com cerca, re-executável por máquina | 21/21 artefato com cerca e 1 commit; replay em `A` OK 20/21; o 1 REJ é a exceção publicada pela §15.15(b), com `HC = H0` cumprido nos 15 posteriores | **verificado** (com a exceção nomeada, a classificar pela C3⁗) |
+| (c) D-M1 | a boa notícia tem conferente: amostra dos dois lados com semente e identidade ≠ runner ≠ dev | §15.0(d) presente; semente reproduz os 20; 298 (vermelho) e 245 (verde) reproduzem por caminho próprio | **verificado** |
+| (a) A15 / D-M3 | cadeira de fail-closed com item "morte interna" e vermelho-controle sobre `faa408c8` | item 2 no corpo da C1⁗, 2 espelhos, S0 verde, sanção do §8.4(iii) escrita | **verificado** |
+
+Nenhuma peça ficou sem medição; a única hipótese do meu mandato derrubada ("todos OK" em (d)) caiu por um fato que a própria máquina consertada registrou e cuja gravidade tem dono nomeado. O ciclo 4 pode abrir pela máquina: o inspetor confere as 7 condições da §8.6 (esta §9 é a condição 1).
+
+CONSERTO VERIFICADO — máquina sã para o ciclo 4
