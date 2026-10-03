@@ -5058,3 +5058,19 @@ conferência podem pedir retomada); 0 processo vivo com os nomes do Dev-S4 na li
 
 **Limpeza §C5 do K4b-2:** os conteineres `pg-devs4`/`redis-devs4` do N=2 removidos pelo nome pelo próprio script; nenhum
 worktree novo; o `C:/Users/AMP/w-devs4` segue mantido; 0 processo vivo com os nomes do Dev-S4; base viva nunca alvo.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b-3 do Dev-S4 (2026-10-02) — as 39 versões viáveis, a fronteira 34 e o KPI depois do T4c-5
+
+- **§4.3** de `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` (só adição; plano §15.17(g), passo 5-bis): as 39
+  versões viáveis dos `MUTANTE-INVALIDO` pela conferência `8849b1cd` — 26 + 2 cobertas · 8 sem mudança (equivalentes por
+  fixture, duas tentativas independentes) · 2 `TIMEOUT` cobertos por tempo · 1 `VIAVEL-NAO-COBERTA` (263), coberta pelo
+  `[V263]` do T4c-5 e sujeita à reconferência; **`[M-1]` por conjuntos (fórmula da §15.15(d)) = {263} hoje → ∅ depois do
+  T4c-5 e da reconferência**.
+- **Fronteira 34** (a ferramenta gera a troca de M7 que não compila; a versão viável não entra na matriz): §7 item 8 do
+  mesmo arquivo e item 34 de `P-GOV-MANDATO-3-FRONTEIRAS` (título 24–33 → 24–34); índice pelo gerador.
+- **KPI:** o T4c-5 acrescentou o `[V263]` ao guard do pré-voo (355 → 356; refs 44) → backend **3452/3454** por N=2 execuções
+  reais em Postgres e Redis descartáveis próprios (RUN1 `3454/3452/0/2`, 965 s, `ec=0` · RUN2 `3454/3452/0/2`, 847 s, `ec=0`). `blocks_completed` **170, inalterado** — a recontagem contra a
+  `main` do pré-inspetor é **devida**: a `main` andou com o #402 (B-SAN3-01b, 169 → 170) e o #403 (registro), e publica 170.
+
+**Limpeza §C5 do K4b-3:** os contêineres `pg-devs4b`/`redis-devs4b` do N=2 removidos pelo nome pelo próprio script; o
+worktree `C:/Users/AMP/w-devs4b` fica de pé até o orquestrador empurrar; 0 processo vivo do Dev-S4; base viva nunca alvo.

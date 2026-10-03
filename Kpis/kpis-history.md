@@ -3283,3 +3283,19 @@ como está. As quatro métricas carregadas de trilha mobile (`backend_contract_t
 3450 + 3 = **3453**; contra o `$MB` (`5bcdcc58`, 3052/3054): 3054 + 355 + 44 = **3453**.
 
 **Mutação:** matriz do ciclo 4 completa e delta publicadas (`docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §3, §4 e §4.2): refs `N=44 K=44 NAO-COBERTOS=0`; pré-voo completa `N=84 K=80 NAO-COBERTOS=4 INVALIDOS=37 TIMEOUT=1` e delta `--only 359,372,612` `N=3 K=3 NAO-COBERTOS=0` sob o lema do §14.18(3) → **[M-1] por conjuntos = ∅** (o 441 é equivalente conferido por id e por fixture). **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
+
+## 2026-10-02 — B-GOV-MANDATO **ciclo 4 — recontagem após o T4c-5** (PR #393) — `published_per_pr`
+
+| métrica | K4b-2 | agora (`6db0aab8`) | origem |
+|---|---|---|---|
+| `backend_tests` | 3451/3453 | **3452/3454** | **N=2 execuções reais locais** de `npm test` (worktree próprio `w-devs4b`, Postgres 16 e Redis 7 descartáveis próprios em 127.0.0.1:55481/:56411, portas provadas, `CORE_SAAS_PERSISTENCE` não exportado): RUN1 `3454/3452/0/2` (tests/pass/fail/skipped), 965 s, `ec=0` · RUN2 `3454/3452/0/2` (tests/pass/fail/skipped), 847 s, `ec=0`; sem a linha do GUARD DE SKIP (P8) |
+| `frontend_smoke_tests` · `flutter_tests` | 1202/1202 · 864/864 | idem | carregados com nota §C3.3 (re-medido: `git diff --name-only 4ab9d232 HEAD -- frontend mobile` = 0); a `main` de agora publica smoke 1214/1214 pelo #402 — reconciliação na integração pré-merge |
+| `blocks_completed` | 170 | **170** | o mesmo bloco; **recontagem contra a `main` do pré-inspetor devida** (a `main` publica 170 pelo #402) |
+| `mvp_demo` / `mvp_vendavel` | — | **intocados** | §C3.4 |
+| pr / merge_commit / approved_head | — | `393` / `null` / `null` **na autoria** (§C3.5) | backfill pós-merge |
+
+**O que mudou desde o K4b-2.** O T4c-5 do Dev-T4 (errata 4, plano §15.17) acrescentou 1 caso ao guard do pré-voo —
+o `[V263]`, para a versão viável do ponto 263 que a conferência achou VERDE (CONF-01) — e nada mais: 355 → **356**; refs
+**44**. Contra o K4b-2: 3453 + 1 = **3454**; contra a `origin/main` (3052/3054): 3054 + 356 + 44 = **3454**.
+
+**Mutação:** as 39 versões viáveis dos `MUTANTE-INVALIDO` pela conferência `8849b1cd` publicadas em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §4.3 (26 + 2 cobertas · 8 sem mudança · 2 `TIMEOUT` · 1 `VIAVEL-NAO-COBERTA`, o 263) → **[M-1] por conjuntos (fórmula da §15.15(d)) = {263} hoje → ∅ depois do T4c-5 e da reconferência**; fronteira 34 aberta (§7 item 8). **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
