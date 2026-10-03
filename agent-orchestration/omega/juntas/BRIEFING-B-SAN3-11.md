@@ -116,3 +116,71 @@ medir" = REPROVADO.** Nenhuma cadeira propõe correção (§C7.4-bis). As três 
 outras. Evidência incremental em `votos/B-SAN3-11/C<n>-evidencia.md` e voto em `votos/B-SAN3-11/C<n>-voto.json`,
 nascido como esqueleto `EM APURAÇÃO` e gravado item a item (P1, P2). Sob PAUSA, grava `## PAUSA <hora UTC>` e para
 (P7).
+
+---
+
+# Ciclo 2 — junta 2 (2026-10-03)
+
+> Escrito pelo orquestrador antes do inspetor da junta 2. Tudo aqui é insumo a re-verificar: quem mede, mede de novo.
+
+## Objeto
+
+O head do PR 401, resolvido por quem mede por `git` e por `gh`, nunca digitado, com os check-runs concluídos. O código do
+ciclo 2 terminou na fatia D3 (`80bd7bc1`, push do dev); depois dele o ramo só recebe registro do orquestrador (este
+briefing, os mandatos, o parecer do inspetor). A base é `origin/main` `b404815c` (#404), integrada **por merge** em
+`77abde50` (a `main`) e `8c8f4a1c` (o registro do orquestrador no ramo).
+
+## O que o ciclo 2 mudou
+
+- **Plano:** a §16 (ciclo 2, commit `feb0d838`) e a emenda **§16-bis** (`876d9a93`, md5 EOL-neutro da seção `f18fd9ed`),
+  que reescreve A17′, A18′ e A25 como propriedade (A17″, A18″, A25″) e corrige o texto do T22 (só a abertura).
+- **Código e teste** (dev `dev-ciclo2-b-san3-11`, Opus 5.5): E10 `7cd227d1` (links de versão com afordância que não
+  navegam), E11 `4d159e09` (adapter fail-closed nas três chaves de versão), E12 `eb218a90` (gerador v2 do censo por tipo e
+  por decisão), E13 `a73fb35f` (T3′, T11′, T12 com a saída do v2 e T15–T22).
+- **Registro e KPI:** E14 `c628a87a` (as duas pendências do bloco com dono do plano da rodada; índice pelo gerador), E15
+  `070b9a03` (recontagem contra a `main` `b404815c`, `blocks_completed` 171, `backfill_note` do #402) e o registro
+  `80bd7bc1` (seção CICLO 2 do `DEV-relatorio.md` com os controles da 16-bis.4 medidos no head empurrado `070b9a03`).
+- **Corpos das três cadeiras do ciclo 2**, nos dois espelhos, no commit `876d9a93`, com os apensos da §16-bis.5 ao fim da
+  C3′ (obrigatório) e da C2′; a C1′ sem emenda.
+
+O relato do dev, item a item, está no relatório de execução dele (insumo, não fato): as baterias da §16.6 nos dois
+terrenos (arquivo do bloco 24/24, regressões do dossiê 53/53, `test:smoke` 1238/1238, build ok), as mutações M1–M9 e os
+critérios da §16.5 por mutação. O A28(b) (tirar só os dois `onClick`) fica verde no `renderToString` — só o navegador o vê
+(C1′).
+
+## Quórum e cadeiras
+
+**Unanimidade de 3 com veto** (§C7.1-ter(b): o dossiê é prova do estado do veículo). Sem crítico. Sem suplente nomeado;
+queda relança a mesma identidade, que não herda conclusão; voto perdido nunca aprova.
+
+| cadeira | identidade | itens (linha da tabela 16.8 do plano) | worktree |
+|---|---|---|---|
+| C1′ | `jurado-san3-11-c2-afordancia-e-ancora` | A27 + A28 nas 3 superfícies com B1/B3 e o cenário L; A29 + impressão real + A12/A14; T4 vermelho-controle no head-base com o M1 do objeto (C1-06) | `w-s11k2a` |
+| C2′ | `jurado-san3-11-c2-enumeracao-tipada` | gerador v2 + M1–M9 + mutação própria nova; A30/A31 + T3′/T15/T16; T12–T14 e T20–T22 nos dois terrenos + A17″/A19–A21 | `w-s11k2b` (CRLF) e `w-s11k2blf` (LF) |
+| C3′ | `jurado-san3-11-c2-registro-e-escopo` | P-o + T10 + T11′ (A34); diff × 16.4 (A37) + `DossiePrintDocument` `1 1` + A18″ + A25″; A15′ + A26 + A35 + A36 | `w-s11k2c` |
+
+Evidência em `votos/B-SAN3-11/C<n>c2-evidencia.md` e voto em `votos/B-SAN3-11/C<n>c2-voto.json`, nascido como esqueleto
+`EM APURAÇÃO` e gravado item a item (P1, P2). No máximo **duas** cadeiras rodam ao mesmo tempo (P5 e a regra do dono de
+no máximo 2 agentes vivos); nenhuma lê o voto ou o worktree das outras.
+
+**Modelo:** todas as cadeiras e o inspetor rodam em **Opus 5.5**. O inspetor e o planejador têm `fable` no frontmatter; a
+substituição é **declarada** (§C7.6-bis): decisão do dono de 2026-10-03, *"Fable agora só em blocos que toque em dinheiro
+até segunda ordem"*; o B-SAN3-11 não toca dinheiro. O planejador da §16-bis também rodou em Opus pela mesma decisão,
+contra a obrigação de Fable do §C7.6 no retorno ao planejador — a decisão do dono é fonte §A1.1.
+
+**Inelegíveis, por nome:** a lista do corpo de cada cadeira (plano §16.1) — as três cadeiras da junta 1, os planejadores
+(§0–§14, errata 1, ciclo 2), os devs (nuvem, errata 1, ciclo 2), as duas instâncias do inspetor da junta 1 e a 3ª
+instância (a desta junta), o orquestrador, a `agente-fabrica` e as outras duas cadeiras desta junta.
+
+## Anomalia de terreno (registrada, conferida)
+
+Das **05:46:00Z às 11:20:32Z** o `core.autocrlf` efetivo do repositório foi `false` em todos os worktrees: o dev do ciclo
+2 rodou `git config core.autocrlf false` sem `--worktree` com `extensions.worktreeConfig=true`, o que gravou na config
+comum. Ele declarou e consertou às 11:20Z; o orquestrador conferiu (`true` vindo da config do sistema em todos os
+worktrees; só o worktree LF do dev tinha `false` por `--worktree`, e já foi removido). O único worktree criado na janela
+foi esse; nenhum commit entrou com CR. Quem mede confere `git config core.autocrlf` antes de criar o seu worktree.
+
+## Pré-existentes, ambiente e regra de voto
+
+Valem as seções "Pré-existentes nomeados pelo plano", "Ambiente de quem mede" e "Regra de voto" do ciclo 1, acima, com o
+nome dos arquivos deste ciclo. As duas pendências que o bloco abriu agora têm dono do plano da rodada (E14).
