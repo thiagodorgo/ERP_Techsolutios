@@ -1,0 +1,63 @@
+{
+  "cadeira": "C1",
+  "identidade": "guardiao-fail-closed",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "mandato_md5": "bc98b2d0dbbde560612e032ae7b52513",
+  "corpo_md5_eol_neutro": "5b0f7f5d31df366b69ac2cc8c113e963",
+  "junta": "J1 B-SAN3-01b (PR 402)",
+  "objeto": "cdf370dcb4c817e1c4292aed1204140951616971",
+  "legalidade": "VERDE — inspetor LIBERADO COM RESSALVA (passada2), C1 elegivel; objeto cdf370dc, CI 14/14 concluido verde; delta desde cerca 2cfd4f48 so registro",
+  "itens": {
+    "1_mutacoes_0_6_e_oraculo_A3": {
+      "veredito": "VERDE",
+      "medido_em": "2026-10-02T21:26Z-21:54Z",
+      "resumo": "baseline no objeto: bloco 79/79, check 0, smoke 1214/1214. 9 mutacoes do §0.6 no worktree descartavel w-j01bc1 (ancora EOL-consciente, aplicacao e restauro provados): N-PG-PAINEL 79/76/3 + smoke 1214/1211/3; N-PG-KPI idem; N-W1TXT 79/78/1 [W1] + smoke 1213/1; N-W2TXT 79/78/1 [W2]; N-BARREL1 (controle) [G1]; N-BARREL2 [G1] ← reexport-b; N-LITERAL [G1b]; N-FORA-RAIZ [G1] useServiceQuoteReferences.ts:11 — todas VERMELHAS no bloco e no smoke, tsc 0. N-S1ERR 79/79 + 1214/1214 VERDE = §13 N2 pre-existente. Oraculo A3: 41 sitios (39 + 2 do gate), VERMELHO 32/41, os 9 verdes = exatamente a lista de interacao do A3; controle com honest-errors 0/41."
+    },
+    "2_gerador_apendice_A_e_12_controles_G1_G1b": {
+      "veredito": "VERDE",
+      "medido_em": "2026-10-02T21:54Z-21:59Z",
+      "resumo": "gerador do Apendice A (verbatim) no objeto: raizes 81, fecho 48, refs 20, VAZAMENTOS 0, FABRICA 0 = plano. 12 controles em memoria (com 1 linha de portabilidade Windows no instrumento): 72 linhas md5 ee39f02a = plano. 12 controles EM DISCO contra o teste do head: C1,C2,C3,C5,C6(fecho),C7,C8,C10,C12 -> [G1] vermelho com a lista exata; C4 e C11 -> [G1b] (C11 so o positivo OS-DEMO; o negativo {id, workOrder:null} nao acusado); C9 negativo 79/79 verde. A10: resolveModule cego -> [G1]+[G2]+[G3]; GUARDED_FILES=[] -> [G1]; pula catch -> [G1b] (vistos 5) +[G2]+[G3]. Restauro provado em todas."
+    },
+    "3_bateria_8_escopo_A16_kpi_9": {
+      "veredito": "VERDE",
+      "medido_em": "2026-10-02T21:26Z-22:08Z",
+      "resumo": "Bateria §8 no objeto (Node 20.19.5): npm ci fe 0; check 0; bloco 79/79 (e 5x seguidas 79/79); smoke 1214/1214; build 0 + dist/tsbuildinfo limpos; node --check Kpis/app.js 0; kpi-freeze em dia; kpi tests 29/29; indice de pendencias regenerado = versionado (hash 8b64e6b2); git diff --check 0. A16: diff do dev (4075462a..b02745b7) = 16 arquivos ⊆ PERMITIDO; 3 cabecalhos so comentario (tokens TS iguais 211/165/610); package.json so test:smoke +1 caminho; 0 PROIBIDO no diff inteiro; corpo da C2 e votos = registro do orquestrador declarado §A2, precedente aadaa6d5 conferido. A14: laco ok x3 no head, VERMELHO x3 no head-base; cada afirmacao dos cabecalhos executada (inclusive .catch( e || em disco -> [G1b]); mockmode.mts no head = texto novo. KPI: smoke 1214/1214 = execucao; blocks 169->170 a partir da main; carregados com nota; mvp intocados; history append puro; app.js so FROZEN; index.html intocado."
+    }
+  },
+  "achados": [
+    {
+      "id": "N-C1-01",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "isMockModulePath (origem mock por convencao de nome) nasceu em 83a3c68c 2026-09-19 (B-SAN3-01): git log -S'const isMockModulePath' origin/main -- frontend/tests/work-orders-honest-errors.test.tsx",
+      "propriedade_ausente": "modulo de dado de demonstracao FORA da convencao *.mock.ts(x)/mocks/ e classificado como real: o membro nao previsto nasce PERMITIDO",
+      "evidencia": "mutacao em disco work-orders.demo-data.ts + service que o devolve no catch -> bloco 79/79/0 ec=0, [G1] refs 20 vazamentos 0/0, [G1b] FABRICA 0",
+      "declarado": "residual R4 no comentario do guard (teste l.880), plano §0.5 L1 R4 e §13 N3 (sem membro hoje); a declaracao e verdadeira por execucao",
+      "reprova": false,
+      "nota_regra": "pela §C7.1-ter(a) achado pre-existente vira pendencia nomeada com bloco dono; o plano §13 N3 decidiu nenhuma pendencia (sem membro hoje: find/grep -> 0 no head); a ata decide"
+    },
+    {
+      "id": "A-C1-01",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "propriedade_ausente": "release.pr e a entrada nova do kpis-history.json seguem pr: null com o PR #402 ja criado",
+      "evidencia": "gh pr view 402 --json createdAt -> 2026-10-02T07:19:51Z; 6 commits do orquestrador depois (c0ec08a5..cdf370dc) sem preencher; git show HEAD:Kpis/kpis-latest.json -> release.pr null; plano §9: pr preenchido depois do gh pr create; backfill_note: o orquestrador abre o PR e preenche",
+      "motivo": "nao altera numero; §C3.5 diz que null nesses campos na autoria nao bloqueia e o backfill pos-merge reconcilia",
+      "reprova": false
+    }
+  ],
+  "voto": "A FAVOR",
+  "mutacoes_aplicadas": {
+    "onde": "worktree descartavel C:/Users/AMP/w-j01bc1 (detached em cdf370dc), nunca a arvore do dono nem a do dev",
+    "lista": "N-PG-PAINEL, N-PG-KPI, N-W1TXT, N-W2TXT, N-S1ERR, N-BARREL1, N-BARREL2, N-LITERAL, N-FORA-RAIZ; oraculo A3 (41 sitios) e controle (0/41); 12 controles do Apendice A em disco; A10 x3 (resolveModule cego, GUARDED_FILES=[], pula catch); R4 (demo fora da convencao); G1b .catch( e ||",
+    "restauro": "git hash-object = blob do HEAD ou existe=false em todas; porcelain vazio depois de cada uma"
+  },
+  "sem_executar": [
+    "vermelho-controle do gate no head-base e CE-G2 (mandato da C2)",
+    "paridade visual do cabecalho (C3)",
+    "sondas de pagina viva do Apendice B sob as mutacoes (a cor veio do bloco e do smoke, criterio do §7)"
+  ],
+  "linha_de_voto": "VOTO: A FAVOR — fail-closed provado por mutação (N-BARREL2/N-LITERAL/N-FORA-RAIZ, N-PG-PAINEL/N-PG-KPI, N-W1TXT/N-W2TXT e os 11 controles positivos do Apêndice A omitidos ⇒ teste do bloco E smoke vermelhos; A10 x3 vermelhos; negativos verdes; oráculo A3 32/41 com os 9 verdes = a lista de interação; N-S1ERR verde = N2 pré-existente) — 1 ajuste (A-C1-01) e 1 nota pré-existente (N-C1-01), nenhum bloqueia",
+  "limpeza": "worktree w-j01bc1 removido por git worktree remove --force com 0 processo vivo; worktree list -> 0",
+  "gravado_em": "2026-10-02T22:11Z"
+}
