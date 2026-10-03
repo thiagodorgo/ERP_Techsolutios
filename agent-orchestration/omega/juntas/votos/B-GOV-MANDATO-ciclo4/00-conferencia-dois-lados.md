@@ -217,3 +217,111 @@ fim 2026-10-02T21:08:33Z
 O que CONFERIU (registro; a linha final é a última linha deste arquivo): semente 2026100211; VERMELHOS 16/16 (pré-voo) + 9/9 (refs) + 3/3 (delta) programa+comportamento+causa publicada reproduzida; VERDES 4/4 com fixture própria (441 sem discriminar = equivalente confere; 359/372/612 discriminados = não-cobertos reais, fechados pela delta); INVÁLIDOS 39/39 confirmados (viáveis: 26 cobertas no pré-voo + 2 no refs = 28, 1 não coberta = 263, 8 sem mudança, 2 TIMEOUT); TIMEOUT 1/1 reproduzido (micro-experimento, `aplica()`+insumo, ferramenta); custo re-multiplicado: refs 4 256 s (−3,5 %), pré-voo 18 879 s (−0,5 %), delta 3 370 s (−12,9 %).
 
 `DIVERGE 263 — ponto 263: a versão VIÁVEL do operador M7(salto) publicado como MUTANTE-INVALIDO muda o comportamento (a linha `## <outro>` sai listada duas vezes como conteúdo fora) e o guard fica VERDE (fail=0/352): ponto VERDE não declarado no arquivo de equivalentes (propriedade ausente: cobertura ou equivalência declarada para a versão viável) | evidência: `bin/viavel.py` sobre a cópia pristina (`arnes/m-v263`, preservada em `pontos/v263/mandato-preflight.viavel-263.sh`) (l.263 `continue`→`;`, diff=2, bash -n ok, 13 awk compilam, insumos fixos ec=0/1 sem diagnóstico), bateria 2/53 (`f05`, `f49`) + dirigida `v263-dois-cabecalhos-X` DIFERE, `guard.sh` → `pontos/v263/guard.txt` fail=0 tests=352 ec=0 (TAP preservado em `pontos/v263/guard.tap`: `# tests 352 / # pass 352 / # fail 0`; o artefato mutado preservado em `pontos/v263/mandato-preflight.viavel-263.sh`, hash `713ebc52`) | volta ao Dev-T4/Dev-S4 antes da junta`
+
+## 15. Reconferencia (T4c-5)
+
+papel=conferente-dois-lados (passo 6-bis, §15.17(g)) | identidade=conferente-dois-lados-b-gov-mandato-c4 (instancia nova, nada herdado) | modelo=fable | mandato_md5=c893a0dd71f0f95ee17071de32e14273 (agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo4/00-mandatos/conferente-reconferencia.md, lido por C:/Users/AMP/w-mandato/…, blob em b3205ac9 = c893a0dd71f0f95ee17071de32e14273, IGUAIS) | corpo_md5=c4bef537e1fdc469cf5900a34cbe7ae5 (disco: scratchpad/corpos/…; blob b3205ac9:.claude/agents/especialistas/conferente-dois-lados-b-gov-mandato-c4.md = c4bef537e1fdc469cf5900a34cbe7ae5; IGUAIS)
+
+Item unico: ponto 263 (versao viavel do operador, `continue` -> `;`). Nada mais. Todo md5 e EOL-neutro (`tr -d '\r' | md5sum`) salvo onde dito.
+
+### 15.1 Objeto e terreno
+
+2026-10-03T03:32:22Z — medido por: `git fetch origin chore/mandato-refs-e-preflight; git rev-parse origin/chore/mandato-refs-e-preflight; git -C C:/Users/AMP/w-mandato rev-parse HEAD`
+```
+origin/chore/mandato-refs-e-preflight = b3205ac99466c526c9d0a856cdd95e5efb2d5efa
+w-mandato HEAD                          = b3205ac99466c526c9d0a856cdd95e5efb2d5efa
+mandato versionado em b3205ac9 = head do ramo (o pre-voo do mandato foi feito em fb64da75, o commit anterior; o head moveu ao versionar o proprio mandato)
+env | grep -c '^MSYS_NO_PATHCONV=' = 0 · git version 2.53.0.windows.2 · node v20.19.5 · MINGW64_NT-10.0-22631 3.6.6-1cdd4371.x86_64 x86_64
+```
+conclusao parcial: objeto = b3205ac99466c526c9d0a856cdd95e5efb2d5efa; md5 do mandato e do corpo conferidos contra os blobs do head.
+
+### 15.2 Identidade — blobs do head × conferência versionada; guard = o do T4c-5, só adições
+
+2026-10-03T03:35:23Z — medido por: `for f in scripts/mandato-refs.sh scripts/mandato-preflight.sh scripts/mandato-mutantes.sh tests/mandato-refs.test.ts tests/mandato-preflight.test.ts docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-equivalentes.txt; do git rev-parse b3205ac99466c526c9d0a856cdd95e5efb2d5efa:$f; done; G=$(git rev-parse b3205ac99466c526c9d0a856cdd95e5efb2d5efa:tests/mandato-preflight.test.ts); git diff --numstat 9483be74 $G; git diff --numstat 2275bea0 $G; git diff -U0 9483be74 $G | grep -cE '^-[^-]'; git log --format='%H %s' -1 b3205ac99466c526c9d0a856cdd95e5efb2d5efa -- tests/mandato-preflight.test.ts`
+```
+refs            e1ed8f0d  = conferência §6.3 (e1ed8f0d)      IGUAL
+pré-voo         093499a8  = conferência §6.1/§8 (093499a8)   IGUAL
+ferramenta      373e5728  = conferência (373e5728)           IGUAL
+guard do refs   a8bd601b  = conferência §6.3 (a8bd601b)      IGUAL
+equivalentes    123e6afd  = §15.17(a) (123e6afd)             IGUAL
+guard do pré-voo 47cfaeba = o do commit T4c-5 faf87d8c (test(mandato): errata 15.17 - caso [V263] …) — SIM, mesmo blob
+numstat 9483be74 (T4c-4) -> 47cfaeba: 30 0 · linhas removidas (-U0, '^-[^-]'): 0   -> só adições
+numstat 2275bea0 (K4)    -> 47cfaeba: 111 0 · linhas removidas: 0                -> só adições
+ocorrências de 'V263' no guard do head: 1
+worktree: git worktree add --detach C:/Users/AMP/w-conf4b b3205ac99466c526c9d0a856cdd95e5efb2d5efa -> porcelain=0, HEAD=b3205ac99466c526c9d0a856cdd95e5efb2d5efa (caminho curto; não existia antes)
+```
+conclusão parcial: identidade CONFERE — os 4 blobs (refs, pré-voo, ferramenta, equivalentes) e o guard do refs são os da conferência; o guard do pré-voo é o do T4c-5 e só acrescenta (30 linhas sobre o T4c-4, 111 sobre o K4, 0 removidas).
+
+### 15.3 Terreno — worktree próprio, `npm ci` próprio, arnês pristino por `checkout` restrito, controle arnês × árvore
+
+2026-10-03T03:35Z–03:41Z — medido por: `cd C:/Users/AMP/w-conf4b && timeout 900 npm ci --no-audit --no-fund` · `/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command "(Get-Item C:/Users/AMP/w-conf4b/node_modules) | Select-Object Attributes,LinkType"` · `bash scratchpad/conf4b/arnes.sh` (→ `conf4b/arnes.log`) · `bash scratchpad/conf4b/ponto263.sh` (→ `conf4b/ponto263.log`, bloco CONTROLE)
+```
+npm ci ec=0 — added 326 packages in 18s · node_modules: Attributes=Directory, LinkType=(vazio) → 0 junction · porcelain do worktree = 0
+arnês p = scratchpad/conf4b/arn/p: git init · git -c core.autocrlf=false fetch --depth 1 <repo> refs/remotes/origin/chore/mandato-refs-e-preflight (FETCH_HEAD = b3205ac9…) ·
+  git -c core.autocrlf=false checkout FETCH_HEAD -- scripts tests src/config mobile/flutter_app/lib/core/sync/sync_action_store.dart docs/revisoes/SAN3 CLAUDE.md package.json (a lista DECLARADA no cabeçalho de scripts/mandato-mutantes.sh, l.22-27) · commit local → rastreados=340, porcelain=0
+  hash-object --no-filters = blob do head nos 6 artefatos: refs e1ed8f0d · pré-voo 093499a8 · ferramenta 373e5728 · guard-refs a8bd601b · guard-pré-voo 47cfaeba · equivalentes 123e6afd — 6/6 IGUAL
+  CR no pré-voo = 0 · CR no guard = 0 · GNU Awk 5.3.2
+CONTROLE (A11): o pré-voo da ÁRVORE (w-conf4b) e o do ARNÊS sobre a mesma fixture → stdout igual (caminho normalizado) e ec igual: fF-X-e-cinco ec=1 · fE-positivo ec=0 → arvore = arnes
+```
+Desvios meus, declarados: (i) a 1ª tentativa de arnês fez checkout da ÁRVORE INTEIRA (3632 arquivos; 2 falharam por *Filename too long*; porcelain=2) — descartada e refeita restrita à lista declarada, como o §15.8 manda; nada disso tocou rastreado (o arnês vive no scratchpad). (ii) `powershell.exe` não está no PATH deste shell (`command not found`) — usado pelo caminho completo, a lição do §15.17(e). (iii) rastreados=340 aqui × 339 no §15.17(a)/DEVT4C5: `git ls-tree -r` das mesmas dependências dá **340 em 8849b1cd e em b3205ac9** (`comm` vazio) — a diferença é da receita (`archive`+`tar` lá, `checkout` aqui), não do objeto; informação, não divergência.
+conclusão parcial: terreno próprio e arnês pristino provados (hash = blob, CR 0, controle arnês = árvore).
+
+### 15.4 O mutante viável do 263 pelo `aplica()` verbatim — programa provado, comportamento ANTES da cor
+
+2026-10-03T03:41:18Z–03:41:36Z — medido por: `sed -n '395,450p' <ferramenta@head> > conf4b/aplica.sh` (verbatim) · `aplica_viavel.sh` = `aplica.sh` com **1 linha** trocada (l.47, o `sed` do M7(salto): `/:/` → `/;/`, rótulo `V-M7(salto:;)`; `diff` = 4 linhas: a do nome e a l.47) · `bash scratchpad/conf4b/ponto263.sh`
+```
+l.263 pristina: [        continue]
+aplica_viavel (arn/v263) -> V-M7(salto:;)   l.263 = [        ;]
+aplica verbatim (arn/inv263, descartável) -> M7(salto)   l.263 = [        :]   ← a forma da ferramenta: awk morre (`componente interno morreu: awk (oraculo) (ec=1) — awk: cmd. line:27: :`) = MUTANTE-INVALIDO, como publicado
+diff p × v263: 2 linhas (263c263)  ·  bash -n ok  ·  CR=0
+md5(EOL-neutro)=ded47005036ae11a285568c0b5542c17  hash-object=713ebc52   = esperado §15.17(g) (ded47005… / 713ebc52)
+cmp com conf4/pontos/v263/mandato-preflight.viavel-263.sh: BYTE-IDENTICO  ·  pristino intacto (093499a8)
+PROGRAMA: bash -n ok; stderr 0 B nas 4 fixtures; 0 diagnóstico de interpretador (syntax error|unexpected|command not found|unbound variable); insumo positivo → PRE-VOO OK ec=0 nos dois
+COMPORTAMENTO (fixtures PRÓPRIAS em conf4b/fx/, LF; TMPDIR=<arnês>/tmp MANDATO_REFS=/bin/false timeout -k 5 60 bash <art> <fx>; pristino 2× = determinístico nas 4):
+  fixture               ec p/v  REJ p/v  stderr  listadas p -> v              veredito
+  fF-X-e-cinco          1/1     1/1      0B/0B   [1,2,3,4,5] -> [1,1,2,3,4]   DIFERE (l.1 `## X` nomeada 2×; a 5ª linha real `5: q4` SOME)
+  fB-medido-com-texto   1/1     1/1      0B/0B   [1] -> [1,1]                 DIFERE (`## MEDIDO — texto` nomeada 2×)
+  fC-Y-e-uma            1/1     1/1      0B/0B   [1,2] -> [1,1,2]             DIFERE
+  fE-positivo           0/0     0/0      0B/0B   [] -> []                     IGUAL (controle positivo: PRE-VOO OK nos dois)
+```
+Observação de terreno (minha, pega pelo portão A2): a 1ª derivação do `aplica_viavel` não substituiu nada (ainda gerava `:`) — o `diff` mostrou `:`, o md5 saiu `5c59d5d2…` ≠ esperado e o `cmp` acusou antes de qualquer cor; refeita por linha/substring e re-rodada; esta tabela é da 2ª rodada (log `conf4b/ponto263.log`).
+conclusão parcial: o v263 é o mutante da §15.17(b)/(g) (byte-idêntico), é programa e muda o observável do autor em 3/4 fixtures próprias — resta a cor do guard inteiro (15.5).
+
+### 15.5 A cor — guard INTEIRO do head (47cfaeba, T4c-5) sobre o pristino (linha de base própria) e sobre o v263, em paralelo, TAP em arquivo
+
+2026-10-03T03:42:50Z (lançamento dos dois) — medido por: `bash scratchpad/conf4b/guards.sh` — para cada arnês `<t>` ∈ {p, v263}: `cd C:/Users/AMP/w-conf4b && TMPDIR=<arnês>/tmp timeout -k 30 2700 node --test --import tsx --test-reporter=tap <arnês>/tests/mandato-preflight.test.ts > conf4b/out/guard-<t>.tap 2> conf4b/out/guard-<t>.err; echo $? > conf4b/out/guard-<t>.ec` (relógio em `conf4b/out/guards.log`). Esperado pela §15.17(g): p → `fail 0`, `tests 356`; v263 → `fail ≥ 1`, 1º `not ok` = `[V263]`.
+2026-10-03T03:50:50Z (fim dos dois; `bash scratchpad/conf4b/fim.sh` → `conf4b/fim.log`) — lido dos TAPs em arquivo, `ec` de arquivo:
+```
+arnês   pré-voo   guard     # tests  # pass  # fail  # cancelled  # skipped  not ok  ec  stderr  relógio
+p       093499a8  47cfaeba  356      356     0       0            0          0       0   0 B     03:42:50Z→03:50:50Z (480 s, em paralelo com o v263)   ← LINHA DE BASE PRÓPRIA = esperado (fail 0, tests 356)
+v263    713ebc52  47cfaeba  356      355     1       0            0          1       1   0 B     03:42:50Z→03:50:49Z (479 s)                           ← VERMELHO: fail=1 ≥ 1
+1º (e único) not ok do v263: `not ok 356 - [V263] cada linha fora das secoes e nomeada NO MAXIMO uma vez, e a janela de 5 so carrega linhas distintas, em ordem — …`
+  1ª asserção que falha: `linha nomeada mais de uma vez, ou fora de ordem: [1,1,2,3,4]` (location …/arn/v263/tests/mandato-preflight.test.ts:131:15), com a listagem `1: ## X` duas vezes e sem a 5ª linha real
+[V263] no p: `ok 356 - [V263] …` (verde no pristino; vermelho só pelo mutante — a asserção vê o que as 355 antigas não viam)
+arneses depois das rodadas: p pré-voo=093499a8 guard=47cfaeba · v263 pré-voo=713ebc52 (o mutante continua) guard=47cfaeba — intactos
+head do worktree b3205ac9… = `ls-remote` do ramo b3205ac9… (o ramo não andou durante a reconferência) · porcelain do worktree = 0
+```
+conclusão parcial: o esperado da §15.17(g) para o passo 6-bis reproduz por caminho próprio — `fail ≥ 1` com o 1º `not ok` = `[V263]`, e nenhum outro caso cai (355 verdes): o caso novo é específico do ponto.
+
+### 15.6 Recontagem — o que este item move
+
+- `VIAVEL-NAO-COBERTA` (classe da §15.15(d)): **1 → 0** — o 263, único ponto dessa classe na conferência (§8/§11, CONF-01), agora tem caso que o vê (`[V263]`, vermelho pela versão viável de 1 linha, verde no head).
+- `[M-1]` por conjuntos (fórmula da §15.15(d)/§15.17(g)) = NÃO-COBERTOS da ferramenta (∅ — K4b-2, publicado; **fora deste item**, não re-medido aqui) ∪ VIAVEL-NAO-COBERTA (**∅**, medido acima) − equivalentes com fixture = **∅**.
+- `# tests` do pré-voo no head: **356** (p e v263), `fail 0` no pristino — iguais aos números da §15.17(g) (355 → 356) e do DEVT4C5 (356/356). A lista histórica (26), a E1 (49) e o `backend_tests` **não** são deste item (C3⁗).
+
+### 15.7 Achados
+
+- **Nenhum achado novo.** O CONF-01 (ponto 263, `bloqueia`, `dentro-do-bloco`) **fecha por reexecução própria**: a propriedade ausente que nomeei — *"a versão viável do 263 muda o comportamento e nenhum caso a vê"* — deixou de valer no head b3205ac9 (guard 47cfaeba): o caso `[V263]` do T4c-5 a vê (`fail=1/356`, 1º `not ok` = `[V263]`) e só ela (355 verdes). Escopo e gravidade do CONF-01 ficam como registrados; a correção foi do Dev-T4 (§C7.4-bis: eu achei, não consertei; aqui só medi).
+- Notas (`nota`, informação): (a) a forma da ferramenta para o 263 (`:`) continua `MUTANTE-INVALIDO` — reproduzido (`awk (oraculo) … cmd. line:27: :`), coerente com a matriz e com a fronteira 34; (b) rastreados do arnês 340 por `checkout` × 339 por `archive` (§15.17(a)/DEVT4C5), com `ls-tree` = 340 nos dois commits — diferença de receita, não do objeto.
+
+### 15.8 `o_que_executei` — reexecutável por terceiro (cwd, env, insumo, `ec` de arquivo)
+
+Tudo em `scratchpad/conf4b/` (fica, reexecutável): `arnes.sh` (→ `arnes.log`), `aplica.sh` (verbatim l.395-450 da ferramenta @b3205ac9) e `aplica_viavel.sh` (1 linha trocada, l.47), `ponto263.sh` (→ `ponto263.log`; fixtures próprias em `fx/`; saídas por fixture em `out/<fixture>.{p1,p2,v,arvore}.{out,err,ec}`), `guards.sh` (→ `out/guard-{p,v263}.{tap,err,ec}`, `out/guards.log`), `fim.sh` (→ `fim.log`), `conta.ps1`, `limpeza.sh` (→ `limpeza.log`). Ambiente: `env | grep -c '^MSYS_NO_PATHCONV='` = 0 (nunca exportada; nenhum `git show` precisou dela — usei SHA em vez de `origin/<ramo>:caminho`, que o MSYS converte e devolve o md5 do vazio `d41d8cd9…` — aconteceu na minha 1ª medição do corpo e foi descartada), git 2.53.0.windows.2, node v20.19.5, GNU Awk 5.3.2, MINGW64_NT-10.0-22631; cwd dos guards = `C:/Users/AMP/w-conf4b` (npm ci próprio, 0 junction); `timeout -k 5 60` em toda execução de artefato (pristino e mutado) e `timeout -k 30 2700` nos guards; TAP e `ec` sempre em arquivo, nunca `| tail`/`| tee`; base viva (5432/6379) nunca alvo — nenhum comando meu lê `DATABASE_URL`/`REDIS_URL`, e o guard do mandato não toca banco; nada escrito no repositório (porcelain do worktree 0 antes/depois; árvore principal não tocada); nunca `git clean`/`git stash`/`tail -f`. Os comandos de derrubada do mandato (`head -3 … | grep -ic mandato_md5` ≥ 1; `grep -ic V263` ≥ 1; `tail -1 … | grep -icE 'CONFERIDO|DIVERGE'` = 1; `grep -ic 'medido por'` ≥ 1) são re-executáveis sobre este arquivo.
+
+### 15.9 Limpeza (§C5) — 1 linha, medida
+
+2026-10-03T03:53:03Z — medido por: `bash scratchpad/conf4b/limpeza.sh` (→ `conf4b/limpeza.log`; contagem de processos por `conta.ps1` com o padrão DENTRO do arquivo, excluindo a própria medição): removidos pelo nome os arneses `conf4b/arn/{p,v263,inv263}` (99M antes; pristino conferido por `hash-object` = blob antes e depois das rodadas, 15.5); processos vivos com o nome do worktree ou do arnês: **vivos=0**; worktree removido (git worktree remove --force); worktree na lista: 0 · dir existe: nao; arvore principal porcelain (so os caminhos do bloco): 0; MSYS_NO_PATHCONV exportada: 0 · conteineres meus: 0; nenhum arquivo rastreado tocado (porcelain do worktree = 0 antes da remoção); residuo alheio (reportado, nao tocado): b04a b11 gov-descuido w-mandato w-nuv05 w-nuv05d w-nuv09 w-nuv11 w-pvnuv w-pvpr w-pvreg.
+
+### 15.10 Linha final
+
+CONFERIDO — ponto 263 (reconferência T4c-5, passo 6-bis da §15.17): identidade IGUAL à conferência (refs e1ed8f0d · pré-voo 093499a8 · ferramenta 373e5728 · equivalentes 123e6afd · guard-refs a8bd601b; guard do pré-voo 47cfaeba = T4c-5 faf87d8c, só adições: +30/−0 sobre 9483be74); linha de base própria no arnês pristino do head fail=0/356; v263 pelo `aplica()` viável (`continue` → `;`) md5 ded47005036ae11a285568c0b5542c17 / hash 713ebc52 = §15.17(g), byte-idêntico ao preservado; programa (bash -n, stderr 0 B, 0 diagnóstico); comportamento muda em 3/4 fixtures próprias ([1,2,3,4,5] → [1,1,2,3,4]); guard inteiro sobre o mutante fail=1/356 com o 1º e único `not ok` = [V263]; VIAVEL-NAO-COBERTA 1 → 0; [M-1] por conjuntos = ∅ — CONF-01 fechado por reexecução própria; volta à fila do inspetor.
