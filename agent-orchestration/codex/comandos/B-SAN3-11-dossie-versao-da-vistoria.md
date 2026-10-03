@@ -55,3 +55,7 @@ git diff --check
 - `blocks_completed`: 168 → **169**
 - Guard CE-G1: exit 0 (DESCARTADAS=0, pontos sem consulta=0)
 - Pendência `P-CHK-DOSSIE-VERSAO-NA-UI`: **RESOLVIDA**
+
+### Ciclo 2 (§16) — 2026-10-03
+
+A junta 1 reprovou `defa502e` por 0 × 3 (C1-01, C2-01, C2-02, C3-B1). O ciclo 2 (plano §16, emendado pela §16-bis; dev `dev-ciclo2-b-san3-11` em três fatias) troca cada guarda que reconhecia forma pela propriedade: os links de versão usam `.pat-link` e não navegam (foco e realce na linha; ids únicos com `idPrefix` na impressão); o adapter recusa resposta com chave de versão ausente ou inválida (`ChecklistRunContractError`, o painel cai no estado de erro existente); o gerador v2 confere emissor, espelho e adapter nos dois sentidos e reconhece a vistoria pelo tipo e a consulta pela decisão; as duas pendências do bloco ganham dono do plano da rodada. Arquivo do bloco 16 → 24 testes; `test:smoke` 1238/1238 nos dois terrenos; `blocks_completed` 171 contra a main `b404815c`.

@@ -220,3 +220,77 @@ recontagem 53d7f8e3: blocks_completed 170 (main) → 171 · frontend_smoke_tests
 
 **Backfill:** a entrada do #402 está na main com `pr`/`merge_commit`/`approved_head` = null (merge `3e40a256`; ata `J-B-SAN3-01b.md` na main). O mandato de integração
 não inclui pagá-lo: está declarado como devido e não pago no `backfill_note` e no `kpis-history.md`. Não decidido aqui. Evidência incremental: `scratchpad/DEV-INTEG-401.md` (I0–I2, J0–J5).
+
+## CICLO 2 — 2026-10-03T12:25Z
+
+**Quem:** `dev-ciclo2-b-san3-11` (local, Opus 5.5) — não achou, não planejou, não vota. Três fatias com mandatos próprios em
+`00-mandatos/`: D1 código (`dev-ciclo2-D1.md`, md5 EOL-neutro `756ec663…`), D2 testes e controles (`dev-ciclo2-D2.md`, `2570adcd…`),
+D3 integração, KPI e registro (`dev-ciclo2-D3.md`, regenerado em `566e3454`, `a806ace8…`). Fonte: plano §16 e §16-bis (a §16-bis
+responde às quatro divergências que o dev mediu na D2: T22 → só a abertura; A17′ → A17″; A18′ → A18″; A25 → A25″). Evidência incremental
+completa (comando · saída · hora UTC de cada passo): `scratchpad/DEV-C2-401.md`, seções D1, D2, D2 retomada e D3.
+
+**Terrenos:** `C:/Users/AMP/w-dc2` (CRLF: `core.autocrlf=true`, 602 CR no adapter) e `C:/Users/AMP/w-dc2lf` (LF: `core.autocrlf=false` no
+`config.worktree` dele, 0 CR); `npm ci` próprio em `frontend/` nos dois e na raiz do w-dc2; sem junction; Node v20.19.5. **Incidente declarado:**
+às 05:46:00Z o `git config core.autocrlf false` rodado dentro do w-dc2lf sem `--worktree` gravou na config COMUM do repositório
+(`extensions.worktreeConfig=true`) — `core.autocrlf` efetivo `false` em todos os worktrees até 11:20:32Z, quando o dev desfez (`--unset` na
+comum + `--worktree` no w-dc2lf). Nenhum CR entrou em commit na janela (único commit nela: `d1c1a519`, 0 CR).
+
+**Head anterior → novo:** `653532f7` (ciclo 1, objeto `defa502e`) → código e KPI em `070b9a03` (empurrado fast-forward sobre `566e3454`); este
+registro vem no commit seguinte.
+
+```
+merge 77abde50 = feb0d838 + origin/main b404815c (#404): 6 conflitos, todos KPI/registro (os 6 que a §16 mediu), 0 em código; as duas entradas, a do bloco por último
+E10 7cd227d1  ChecklistRunsPanel: os 2 links com className="pat-link" + onClick → focusVersionRow(event, scope, targetId) (escopo = a <table> por ref;
+              preventDefault só com alvo; scrollIntoView({block:"center"}); focus({preventScroll:true})); realce inline 1600 ms; prop idPrefix="vistoria";
+              DossiePrintDocument só idPrefix="vistoria-impressa" (numstat 653532f7..HEAD = 1 1); nenhum CSS novo
+E11 4d159e09  processes.adapter: ChecklistRunContractError + readVersionRef nas 3 chaves (ausente/inválido lança; null passa); o descarte por id/templateId/startedAt vem antes
+E12 eb218a90  gerador v2 = Apêndice E verbatim (208 linhas, md5 EOL-neutro e5fd8ebb7bbead617668ed43c1e55c29)
+E13 a73fb35f  patios-dossie-versao 16 → 24 (T3′, T11′, T12 com a saída do v2, T15–T22; runCenso/mutate inalterados); checklist: só as fixtures ganham as 3 chaves, 0 asserção removida
+merge 8c8f4a1c = a73fb35f + ramo 566e3454 (registro do orquestrador: §16-bis, mandatos, corpos das 3 cadeiras), sem conflito
+E14 c628a87a  P-SAN3-11-VIGENTE-NAO-VINCULADA → dono trilha CHECKLIST P1, PR-05; P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA → dono B-O6R-12 (l.258); índice pelo gerador
+E15 070b9a03  KPI contra b404815c: blocks_completed 170 → 171 · frontend_smoke_tests 1214 → 1238/1238 (TAP) · history n 166 → 167 (o bloco por último) ·
+              backfill_note nos 3 lugares sem "NÃO PAGO" (o #402 já preenchido: pr 402 · 3e40a256 · cdf370dc) · kpi-freeze --check ec=0 · mvp_* intocados
+
+bateria §16.6 @a73fb35f (= árvore de código de 070b9a03), CRLF | LF:
+  check ec=0 | ec=0 · arquivo do bloco # tests 24 # pass 24 # fail 0, morto por sinal 0 (63,8 s | 101,0 s) · regressões do dossiê 53/53 | 53/53
+  gerador TS_ROOT=<frontend>: ec=0, descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0 | idem
+  test:smoke # tests 1238 # pass 1238 # fail 0 | idem · build ec=0 e dist removido | idem · A14 (2 git grep) vazios | vazios
+raiz @070b9a03: kpi-freeze --check ec=0 · node --check Kpis/app.js ec=0 · guards kpi-dashboard-charts 17/17 + contraste 6/6 + achados-paridade 6/6
+  índice regenerado = versionado (md5 EOL-neutro 441c4ac2…) · diff 653532f7..HEAD sem src/styles/components-ui/package.json/.github/modal/página/hook/service
+  git diff --name-only origin/main...HEAD -- src tests mobile prisma: vazio · git diff --check 653532f7 HEAD: ec=0
+
+controles por mutação (cópia de trabalho, prova de aplicação, restauração por cópia, git diff --stat vazio, nunca commitados), CRLF:
+  M1 M2 M2b M4 M8 M9 → gerador ec=1 (receptor run | vistoria | checklistRuns[0] | run | (run as …) | x desconhecido=1) · M3 ec=0 (sim) · M7 ec=0 (residual iv)
+  M5 M5b M5c → ec=1, SEM EMISSOR (1) ×2 · M6 (só a abertura) → ec=1, L0 VAZIO: SIM, SEM EMISSOR (12) ×2
+  A30 (?? null numa chave) → T3′/T15/T16 vermelhos ("Missing expected exception: currentRunId ausente…", "Missing expected rejection.")
+  A31 (adapter engole e devolve parcial) → T16 "Missing expected rejection." (+ T3′/T15)
+  A27 (sem pat-link) → T17 "link sem o idioma da casa: <a href="#vistoria-run-u1">"
+  A29 (sem idPrefix na impressão) → T18 + T11′ "impressão: run-v1 deve sair uma vez como id="vistoria-impressa-run-v1" 0 !== 1"
+  A34 (title={run.currentRunId}) → T11′ "painel: run-u2 aparece 3× mas só 1 como id e 1 como href" (+ T17)
+  A28 helper sem preventDefault → T19 "0 !== 1"; sem block:"center" → T19 deep-equal; helper não exportado → o arquivo não carrega
+       (residual declarado: tirar SÓ os onClick fica verde no renderToString — é medição do navegador, da C1′)
+  A32/A33 (gerador v1 no lugar do v2) → T12/T20/T21/T22 vermelhos ("espelho sem chave sem emissor", "espelho declara chave que o emissor não emite",
+       "o ponto novo é visto pelo TIPO, não pelo nome", "emissor ilegível é vermelho")
+  A19 (mutate sem normalizador) → CRLF: T14 "mutação não aplicou em …processes.adapter.ts (ERRATA 1)"; LF: 24/24 · A20 → T14 "mutação não aplicou"
+  A21 (fallback do T13 quebrado) → T13 "mutação não aplicou em …DossiePrintDocument.tsx"; grep -c 'checklistRuns={checklistRuns}' = 0
+  T4 (C1-06): head-base (código da origin/main, T4 verbatim) → "deve conter chip 'Versão substituída'", actual '' (a base tem ui-tone-success=true,
+       sem id); colado junto com M1 do C1 no objeto → mesmo erro com a linha presente e ui-tone-success">Concluído dentro dela
+
+controles da §16-bis.4 item 2 NO HEAD EMPURRADO 070b9a03 (instrumentos F1–F4 do Apêndice F, md5 conferidos: 3702f28f · ac503317 · 2519a717 · 45ffba03):
+  A17″ F3: N = 6 (T12, T13, T14, T20, T21, T22), chamadas runCenso( = 6 (92cfc05e e 653532f7: N = 3); sob timeout: 1, → # tests 24 # pass 18 # fail 6,
+       conjunto dos not ok = os N, exceção do arnês 6, ERR_ASSERTION 0, deve deixar/deve reportar/espelho sem descarte 0;
+       sem os dois throw → ERR_ASSERTION 6, exceção 0
+  A18″ F1, base = merge-base b404815c: MUT=9 · EOL=3 · CP=1 · TETO=0 · NULL=0 · WRITE=4; por classe MUT-html 3 · MUT-norm 1 · MUT-mutate 5 · EOL-norm 1 ·
+       EOL-mutate 1 · EOL-nome 1 · CP-arnes 1; CLASSE 0; normalizador sim → verde. O hit (m) EOL lido: :487, callback sobre o próprio argumento.
+       V1 status ?? 1 → NULL=1 VERMELHO · V2 sem normalizador → EOL=2 e normalizador NAO, VERMELHO · V3 regex do T14 fora de mutate( → MUT=9 · EOL=3
+       (totais iguais) e 2 hits na CLASSE, VERMELHO
+  A25″ F2 [653532f7, 070b9a03]: tocados 31 · próprio 28 · da-main 3 (os pareceres do #404); em frontend/scripts/src/.github: 6 próprios, 0 da main =
+       os 6 da tabela 16.3; package.json, .github e o fixture de impressão fora. Controle: global.css alterado → 7 próprios, global.css entre eles.
+       (b) F3: runCenso fdf1a8cc… · mutate c6663a49… no objeto = em 92cfc05e; controles timeout → 781ff0e7…, sem normalizador → mutate 8b899f03…
+       (c) log-execucao.md e status-geral.md marcados próprios só pelo contexto do merge: linhas + do bloco iguais em S e E (19/19 e 15/15, comm 0/0)
+  T22 F4: original 0 · só-abertura (o T22 commitado) 0 · abertura+fecho (texto antigo) 2 diagnósticos sintáticos
+```
+
+**Pendências:** nenhuma nova. As duas do bloco ganharam dono do plano da rodada (E14); nota de governança (16.7.3) para a ata:
+`gerar-indice-pendencias.py:98` lê qualquer texto como dono `sim`. **Limpeza §C5:** worktrees removidos pelo nome ao fim da D3 (registrado no
+`scratchpad/DEV-C2-401.md`).
