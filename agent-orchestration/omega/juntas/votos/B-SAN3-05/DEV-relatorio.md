@@ -462,6 +462,52 @@ Your response above was stopped by a safety classifier — this is not a tool or
 - **terreno da nuvem:** nada vivo — cluster `54405` e worktrees removidos (secao PARADA); o worktree usado para este commit e
   removido logo depois do push.
 
+## RETOMADA — dev-b-san3-05-sucessor-2 (local) — 2026-10-03T17:25:47Z
+
+Papel: dev · Identidade: dev-b-san3-05-sucessor-2 · Modelo: GPT-5.6 Sol (**substituicao declarada pelo dono** do GPT-6 Astra nomeado no mandato; decisao de 2026-10-03: Sol e o padrao do Codex, Astra fica para gate e planejador de demanda com dinheiro) · mandato_md5 EOL-neutro: 552d24b6ef32b69d0f61979c78285355
+
+### MEDIDO — terreno e mandato
+
+`uname -a; node -v; git rev-parse HEAD; git rev-parse origin/main; git config --get core.autocrlf`
+```
+MINGW64_NT-10.0-22631 N3SOH82 3.6.6-1cdd4371.x86_64 2026-01-15 22:20 UTC x86_64 Msys
+v20.19.5
+34f251226d9cda51ece16ca4a3f69173b363c48a
+b404815ce3d1f1b8e5121bd1526978f7222e7479
+true
+```
+
+`tr -d '\r' < agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/dev-sucessor-2.md | md5sum`
+```
+552d24b6ef32b69d0f61979c78285355  -
+```
+
+O worktree `C:/Users/AMP/w-s05d` estava limpo e `HEAD = origin/fix/runtime-role-sem-bypass = 34f25122`. Autor local ja era
+`thiagodorgo <42915563+thiagodorgo@users.noreply.github.com>`. `where psql` e `where pg_ctl` nao acharam binarios nativos;
+`where docker` achou o Docker Desktop. A escolha entre Postgres nativo e contêiner fica para a medicao do terreno do cluster,
+sem tocar `erp-postgres:5432` nem `erp-redis:6379`.
+
+### QUEDAS E RETOMADAS
+
+| UTC aproximada | fase | erro/decisao | estado persistido |
+|---|---|---|---|
+| 2026-10-03T17:11Z | leitura integral do plano v3, chegando ao Apêndice C; nenhum passo pesado iniciado | limite de uso da conta OpenAI; a sessao caiu | worktree limpo, nenhum commit nem arquivo meio-escrito |
+| 2026-10-03T17:20Z | primeira retomada, ainda na leitura do plano | retomada ordenada pelo orquestrador | worktree conferido; leitura continuou |
+| 2026-10-03T17:24Z | leitura do plano | o dono fechou a janela para trocar o modelo | worktree limpo, nenhum commit nem arquivo meio-escrito |
+| 2026-10-03T17:25:47Z | segunda retomada | GPT-5.6 Sol, substituicao declarada acima | este registro P1; proximo passo: terminar a leitura integral do plano a partir do Apêndice C |
+
+### CARGA COMPARTILHADA
+
+Antes desta entrega, `Get-CimInstance Win32_Process | Where-Object CommandLine -like '*w-j4c*'` encontrou **15** processos
+(incluindo shells, `esbuild` e sessoes Codex dos worktrees `w-j4c2*`). Nenhum passo pesado foi iniciado. Antes de `npm test`
+inteiro ou da rodada de mutacoes, a espera de ate 60 minutos em passos de 5 minutos continua obrigatoria.
+
+### HIPOTESE
+
+As secoes §0–§7 e RETOMADA do sucessor-1 continuam apenas como roteiro P3. Cada comando registrado sera reexecutado localmente;
+qualquer divergencia vira falsificacao escrita. O proximo comando e continuar a leitura integral de
+`docs/revisoes/SAN3/B-SAN3-05-plano.md` a partir do Apêndice C; nenhum arquivo de implementacao esta meio-escrito.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
