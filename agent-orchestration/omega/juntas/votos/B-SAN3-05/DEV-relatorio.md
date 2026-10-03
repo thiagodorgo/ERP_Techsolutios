@@ -384,6 +384,40 @@ Divergencias: so as declaradas na abertura (Node `v20.20.2` × `v20.20.0`; `orig
 de teste, md5, contagem ou inventario divergiu. O boot real manual (§2) e o substituto do H1 (§4) nao foram refeitos a mao:
 o T15 e o T14b, abaixo, os re-medem como teste.
 
+## PARADA — bloqueio da ferramenta — 2026-10-03T11:35:58Z
+
+Papel: dev · Identidade: dev-b-san3-05-sucessor-1 · Modelo: claude-opus-5-5 · mandato_md5: 62f6873ca8f43cafb2ab91fb579c9235
+
+A ferramenta bloqueou de novo. Pela regra do pedido de retomada: gravo a mensagem literal e o que estava em curso, empurro e
+PARO, sem contornar.
+
+### A mensagem literal do bloqueio
+
+```
+Your response above was stopped by a safety classifier — this is not a tool or API error. The rest of it was withheld, and tool calls in it that had not finished did not run. Do not produce that content again, even reworded.
+```
+
+### O que estava em curso
+
+Inicio do item 2 da cauda: a suite `tests/san3-05-runtime-role-guard-db.test.ts` (T5–T9, T8b, T8c, T8d, T14a/b, T15). Eu tinha
+acabado de LER, para escrever essa suite, o §2 e o §4 do plano v3 e as §4–§6 do `PLANEJADOR-v3-relatorio.md` (o catalogo de
+cenarios dos papeis, das vias de escape provadas e do script). O bloqueio caiu na resposta seguinte a essa leitura, **antes de
+qualquer escrita**: o arquivo da suite nao existe no disco, `git status --porcelain` → 0. E o **mesmo ponto** em que o
+antecessor parou (§7: "a escrita desse arquivo foi interrompida … por um bloqueio da ferramenta") — duas sessoes de nuvem,
+duas paradas, no mesmo arquivo.
+
+### Estado (forma da PAUSA)
+
+- **head antes deste commit:** `5893921215f1ce8e96a8eb32bd577447e1c900d5` (= `origin/fix/runtime-role-sem-bypass`).
+- **feito nesta retomada:** abertura medida (`9f84df6`); P3 — re-execucao das §0–§7, 17 itens, nenhuma divergencia de saida (`5893921`).
+- **falta (inalterado em relacao ao §7):** T5–T9, T8b–T8d, T14 (a/b) e T15 na suite `-db` da trava; a entrada A21 da
+  `FROZEN_ALLOWLIST`; a rodada de mutacoes (A1–A24); a bateria do §8; o `npm test` real para o KPI; o E8 (Kpis/* e registro); o §10.
+- **proximo comando (nao executado):** escrever `tests/san3-05-runtime-role-guard-db.test.ts`. Nao o executo: a mesma escrita foi
+  bloqueada nas duas sessoes, e retomar ou mudar o caminho e decisao do dono/orquestrador, nao do dev.
+- **meio-escritos:** nenhum.
+- **limpeza:** cluster proprio `54405` (`/var/lib/postgresql/san3_05_s1`) parado e removido pelo nome; worktree do head-base
+  `/home/user/wt-s1-base` removido (`pgrep` pelo caminho = 0 antes); o worktree do ramo e removido depois deste push.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
