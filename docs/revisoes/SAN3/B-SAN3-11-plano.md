@@ -1809,3 +1809,271 @@ frontend\src\modules\patios\processes\pages\ProcessoDossiePage.tsx:142 | runs={c
 ```
 
 **Mutações executadas contra esta forma** (comando, terreno e saída resumida na trilha §2.0; restauração por md5 após cada uma): M1 `run`→ec=1 · M2 `vistoria`→ec=1 · M2b `checklistRuns[0]?.status`→ec=1 · M4 leitura em atributo→ec=1 · M3 helper correto→ec=0 · M7 guarda que não distingue→ec=0 (residual iv) · M8 cast→ec=1 · M9 `any`→ec=1 (`receptor desconhecido=1`) · M5/M5b/M5c DTO sem chave→ec=1 (`SEM EMISSOR (1)`) · M6 `Object.freeze`→ec=1 (`L0 VAZIO: SIM`) · T14 adapter sem `supersededByRunId`→ec=1 (`DESCARTADAS pelo adapter (1)`) · T13 `run.status` na impressão→ec=1. Cópia sem `node_modules` (forma de T13/T14) com `TS_ROOT=<frontend real>`: ec=0, 5,1 s.
+
+## §16-bis — Emenda ao ciclo 2 (2026-10-03): A17′, A18′ e A25 reescritos como PROPRIEDADE para o objeto do ciclo 2; o texto do T22 corrigido; os intervalos medidos sem o ruído do merge
+
+**Autoria:** `planejador-mestre`, identidade `planejador-ciclo2-b-san3-11` (a da §16), em **Opus 5.5 por substituição declarada** (§C7.6-bis — papel: planejador-mestre · modelo que rodou: Opus 5.5 · por que o Fable faltou: decisão do dono de 2026-10-03, fonte §A1.1, "Fable agora só em blocos que toquem em dinheiro até segunda ordem"; o B-SAN3-11 não toca dinheiro). Mandato `00-mandatos/planejador-ciclo2-bis.md` (md5 EOL-neutro `80c06834a1940fdab8a0751f32fe8563`, versionado em `d1c1a519`). Trilha (comando · saída · hora UTC de cada item): `PLANO-C2bis-B-SAN3-11.md`, itens M0–M6. Medido no worktree próprio `C:/Users/AMP/w-plc2b` (detached em `a73fb35f`, CRLF, `npm ci` próprio em `frontend/`, sem junction, criado com `core.autocrlf` = `true` conferido) e nos blobs de `5f6aaf56`, `92cfc05e`, `defa502e`, `653532f7`, `feb0d838` e `a73fb35f`. Insumos lidos como relato — o DEV-C2-401 (D2 §1, §3 parte C, §4 e a retomada) e o relatório da fábrica (FABRICA-401-c2) —; tudo o que vai abaixo foi re-medido.
+
+**Natureza:** emenda de RÉGUA, sem código. A §16.5 manteve A17′, A18′ e A25 "como estão", mas o ciclo 2 mudou justamente o que eles contam: T20–T22 entram no mesmo arnês, o gerador vira o v2 do Apêndice E, o E13 muda o arquivo de teste. Lidos ao pé da letra sobre o objeto do ciclo 2, o **A17′ falha com o código certo** (6, não 3), o **A18′ passa por coincidência de número** (a `:42` é outra linha de outro gerador) e o **A25 não pode passar por construção** — e, no intervalo dele, é vermelho por causa dos merges que a §15.10 mandou fazer. É a classe do C2-01/C2-02 do lado da régua: critério que reconhece uma FORMA (um número, um número de linha, um intervalo two-dot) em vez de enunciar a propriedade. **Nenhuma decisão da §16 muda; nada do produto muda; o dev não refaz código nem teste.**
+
+### 16-bis.1 Medido (resumo; comando e saída completos na trilha)
+
+| Item | Comando | Saída |
+|---|---|---|
+| N do arnês | `node plc2b-arnes.mjs <wt> 92cfc05e 653532f7 feb0d838 a73fb35f` (Apêndice F3; AST do TypeScript sobre o blob) | errata e ciclo 1: N = **3** (T12, T13, T14); `a73fb35f`: N = **6** (T12, T13, T14, T20, T21, T22); chamadas `runCenso(` = N nos quatro; texto de `runCenso` (`fdf1a8cc…`) e de `mutate` (`c6663a49…`) **idênticos** em `92cfc05e` e `a73fb35f` |
+| A17′ no objeto | `timeout: 1,` no `spawnSync` de `runCenso`, terreno CRLF, `node --test` do arquivo do bloco | `a73fb35f`: `# tests 24 # pass 18 # fail 6`; `not ok` = {T12, T13, T14, T20, T21, T22}; `gerador (não executou\|morto por sinal)` = 6 (todos `ETIMEDOUT` → `gerador não executou`); `ERR_ASSERTION` = 0. Sem os dois `throw`: `ERR_ASSERTION` = 6, exceção do arnês = 0. Controle em `feb0d838`: `# fail 3`, {T12, T13, T14}, 3 e 0 |
+| A18′ no objeto | varredura v2 (`646b1371…`) com base `b404815c` (= merge-base) | `MUT=9 · EOL=3 · CP=1 · TETO=0 · NULL=0 · WRITE=4`; a `censo.mjs:42` do v1 (`/\.(ts\|tsx)$/.test(name)`, `653532f7`) e a do v2 (`/[.](ts\|tsx)$/.test(name)`, `a73fb35f`) são linhas diferentes de geradores diferentes, de mesma natureza |
+| A18′ pela posição na AST | `node plc2b-classifica.mjs <wt> <merge-base> <varredura>` (Apêndice F1) | html 3 · normalizador 1+1 · `mutate(` 5+1 · nome de arquivo 1 · arnês 1 · CLASSE **0** → verde. V1 `status ?? 1` → `NULL=1`, vermelho; V2 sem o normalizador → `EOL=2` e "(m) sem (n)", vermelho; **V3 regex do T14 fora de `mutate(`** → `MUT=9 · EOL=3` (**os totais do A18′ passam**) e 2 hits na CLASSE, vermelho |
+| A25 no intervalo dele | `git diff --name-only 5f6aaf56 defa502e -- scripts frontend/src frontend/package.json <os 2 fixtures> .github` | **5 caminhos → vermelho**: `frontend/package.json` + 4 de `frontend/src` trazidos pelo merge `5c8efa08` (main `3e40a256` = #402); 4 merges no intervalo, todos mandados pela §15.10. Linha da 15-bis.8 (`git diff 92cfc05e defa502e -- <arquivo do bloco>`): 0 linhas, verde |
+| A25 pelo delta próprio | `bash plc2b-delta-proprio.sh <repo> S E <pathspec>` (Apêndice F2; `patch-id --stable` do patch do bloco contra a `main` em S e em E) | errata: próprio = `patios-dossie-versao.smoke.test.tsx` (permitido) + `frontend/package.json`, este **artefato de linha única compartilhada** (o bloco acrescenta o mesmo conjunto `{tests/patios-dossie-versao.smoke.test.tsx}` ao `test:smoke` em S e em E; o #402 editou a mesma linha); da-main = os 4 de `frontend/src`. Ciclo 2 (`653532f7..a73fb35f`): próprio = os 6 da tabela 16.3, da-main 0; `frontend/package.json`, `.github/**` e o fixture de impressão intocados. Controle: `global.css` alterado na árvore → 7 próprios, `global.css` entre eles |
+| T22 | `node plc2b-t22.mjs <wt>` (Apêndice F4; `parseDiagnostics` do TypeScript sobre o DTO do head) | original 0 · **só a abertura (o T22 commitado, l.549) 0** · **abertura + fecho `}))),` (o texto da tabela de testes da §16.5) 2** (`34: ',' expected. \| 34: Property assignment expected.`) |
+
+### 16-bis.2 Critérios — para o objeto do ciclo 2, SUBSTITUEM A17′, A18′ e A25 (com a linha que a 15-bis.8 lhe acrescentou); o texto do T22 é corrigido
+
+| # | Critério (verde) | Mutação que o deixa VERMELHO | Onde |
+|---|---|---|---|
+| A17″ (substitui A17′) | P-A por comportamento, com **N gerado**: N = número de `test(...)` de topo do arquivo do bloco que chamam `runCenso`, contado pela AST do TypeScript **no blob do objeto** (Apêndice F3), e o total de chamadas `runCenso(` no arquivo = N. Com a **única** mutação `timeout: 1,` nas opções do `spawnSync` de `runCenso`, terreno CRLF: `# fail N`; o **conjunto dos nomes** dos `not ok` = o conjunto dos N (por nome, não por contagem); **cada** `not ok` é exceção nomeada do arnês — `grep -cE "gerador (não executou\|morto por sinal)"` = N (as duas vias de morte continuam nomeadas: `result.error` e `result.status === null`), `grep -c ERR_ASSERTION` = 0, `deve deixar gerador vermelho` = `deve reportar` = `espelho sem descarte` = 0 —; arquivo restaurado (`git diff --stat` vazio). Hoje N = 6. | além do teto, remover os dois `throw` de `runCenso` → `ERR_ASSERTION` = N e exceção do arnês = 0 (a morte vira asserção; medido: 6 e 0) | dev (controle no head empurrado) · C2′ |
+| A18″ (substitui A18′) | Varredura v2 (15-bis.7, md5 `646b13719214cedd6cc8fbd6296364e5`) com base = **`git merge-base origin/main HEAD`** (não o nome `origin/main`: se a `main` andar sem novo merge, o two-dot conta o que a `main` mudou): `TETO=0 · NULL=0 · CP=1`, e **cada** hit `EOL`/`MUT`/`CP` classificado pela **posição na AST**, não pelo número da linha (Apêndice F1). Fora da classe só: (n) o normalizador `.replace(/\r\n/g, "\n")` dentro de `function mutate`; (m) dentro do callback de uma chamada `mutate(` — **e só porque (n) existe**: sem o normalizador, (m) é a classe; (h) `MUT` `.replace(/<[^>]*>/g, " ")` sobre HTML renderizado; (f) `EOL` `$` sobre NOME de arquivo (`/…$/.test(name)`) no gerador; `CP` só dentro de `function runCenso`. **Zero hit fora dessas classes**, e cada hit (m) é lido (o instrumento supõe que o callback opera sobre o próprio argumento; hoje há 1, a regex do T14). Hoje: MUT 9 = h 3 + n 1 + m 5; EOL 3 = n 1 + m 1 + f 1; CP 1. | V1 `exitCode: result.status ?? 1` → `NULL=1`; V2 sem o normalizador → `EOL=2` e "(m) sem (n)"; V3 a regex do T14 fora de `mutate(` (`writeFileSync(p, readFileSync(p, "utf8").replace(/\s*supersededByRunId:.*\n/, "\n"))`) → totais **iguais** aos do A18′ (`EOL=3`, `MUT=9`) e 2 hits na classe — o caso que o literal deixava passar | dev (instrumento) · C3′ |
+| A25″ (substitui A25 + a linha da 15-bis.8) | "O diff da correção fica dentro do escopo", medido como **delta próprio** do bloco no intervalo do ciclo **[`653532f7`, objeto]**, separado do que a `main` trouxe por merge (Apêndice F2: `p` é próprio sse o `patch-id --stable` de `git diff $(git merge-base origin/main X) X -- p` difere entre X = `653532f7` e X = objeto): (a) delta próprio ⊆ tabela 16.3 + emendas 16.4 — hoje, em código e teste, os 6 (painel, impressão `1 1`, adapter, fixtures do checklist, arquivo do bloco, gerador); `frontend/package.json`, `.github/**` e `patios-dossie-print.smoke.test.tsx` **fora** do delta próprio; (b) **o arnês da errata intocado** — md5 EOL-neutro do texto das funções `runCenso` e `mutate` pela AST (Apêndice F3) no objeto = em `92cfc05e` (`fdf1a8cc91c9ab9389eaed5490447b21` · `c6663a49f7a0913e7981b5e8608c004a`): é isso que a linha da 15-bis.8 protegia, e o E13 muda o arquivo, não o arnês; (c) caminho marcado próprio cujo conteúdo próprio é o mesmo em S e em E (linha única compartilhada com a `main`, como a lista `test:smoke`) é **declarado com a comparação de conteúdo** (`comm` do conjunto que o bloco acrescenta), nunca absolvido em silêncio. | (a) alterar `frontend/src/styles/global.css` → `global.css` no delta próprio, fora do 16.4 (medido na árvore: 7 próprios); (b) `timeout: 1,` em `runCenso` → `781ff0e7…` ≠ `fdf1a8cc…`; sem o normalizador → `mutate` `8b899f03…` ≠ `c6663a49…` | dev (cola no DEV-relatorio) · C3′ |
+| T22 (texto corrigido) | gerador, cópia com **só a abertura** `runs.map((run) => ({` → `runs.map((run) => Object.freeze({` no DTO via `mutate` — o fecho `})),` fica, porque já fecha os dois — → `L0 VAZIO (emissor ilegível): SIM` + exit 1; a cópia mutada tem **0 diagnósticos sintáticos** (`parseDiagnostics` do TypeScript, Apêndice F4): o vermelho vem da propriedade (emissor que funciona mas não é literal de objeto), não de um arquivo quebrado. É a forma commitada em `a73fb35f` (l.549), a M6 da §16 e a do corpo da C2′ (l.275). | a forma "abertura + fecho `}))),`" do texto antigo → 2 diagnósticos sintáticos (o vermelho deixa de provar a propriedade) | C2′ (mede os 0 diagnósticos) |
+
+**A37 — mesma classe, emenda de MÉTODO (o critério fica):** o "`git diff --name-only 653532f7 HEAD` sem …" vira leitura auxiliar; o que vale é o **delta próprio** do mesmo intervalo (Apêndice F2) ⊆ 16.4. Hoje os dois coincidem (o único merge do ciclo 2, `77abde50`, trouxe só registro do #404: 21 tocados, 16 próprios, 5 da `main`, nenhum em código), mas, se a `main` andar com código e o ramo a integrar de novo antes do push, o two-dot reprovaria por construção.
+
+### 16-bis.3 Intervalos — onde cada um se mede
+- **A17″:** o objeto da junta (o head do ciclo 2 empurrado), terreno CRLF; N recontado no blob do objeto — nunca herdado deste texto.
+- **A18″:** os arquivos de `git diff --name-only $(git merge-base origin/main HEAD) HEAD -- frontend/tests scripts` (o bloco inteiro contra a `main` integrada), conteúdo do objeto.
+- **A25″:** (a) e (c) no intervalo `[653532f7, objeto]` pelo delta próprio; (b) `92cfc05e` × objeto (o arnês nasceu na errata).
+- **A37:** o mesmo intervalo do A25″(a), pelo delta próprio.
+- **A25 no intervalo DA ERRATA** (`5f6aaf56..defa502e`): **não se cobra no ciclo 2** — é critério do objeto da junta 1 (`defa502e`), que não é o objeto desta junta — e fica registrado como medido aqui (16-bis.1): o literal é vermelho só pelo merge; o delta próprio é o arquivo do bloco (permitido) mais a linha compartilhada do `package.json` (mesmo conjunto em S e em E); a linha da 15-bis.8 é verde.
+
+### 16-bis.4 O que o dev faz (fatia D3; sem código novo)
+1. **Nada a refazer em código ou teste.** `a73fb35f` já atende os quatro: A17″ (N = 6, 6/6 exceção do arnês, `ERR_ASSERTION` 0; sem os `throw`, 6), A18″ (classe 0), A25″ (6 próprios ⊆ 16.3; arnês intacto) e o T22 corrigido (é a forma commitada).
+2. No `DEV-relatorio.md` `## CICLO 2`: os controles A17″ (N gerado e os dois TAP), A18″ (saída do Apêndice F1 e V1/V2/V3) e A25″ (saída do F2 e do F3), **medidos no head empurrado**, e o T22 com os 0 diagnósticos (F4). Se a `main` andar e o ramo a integrar de novo antes do push: A18″ com o novo merge-base, A25″ e A37 pelo delta próprio. O orquestrador acrescenta este item ao mandato da D3 (`dev-ciclo2-D3.md`), que é anterior a esta emenda.
+3. **KPI:** esta emenda não move nada (nenhum teste, nenhum código). O `frontend_smoke_tests` continua o do TAP do head empurrado (A36).
+4. As divergências que o dev declarou (D2 §4 e o fecho) ficam respondidas aqui — T22 → forma só-abertura; A17′ → A17″; A18′ → A18″; A25 → A25″ — e nenhuma vira pendência.
+
+### 16-bis.5 Corpos das cadeiras do ciclo 2 (em disco em `w-nuv11/.claude/agents/especialistas/`, ainda não versionados)
+- **C1′ `jurado-san3-11-c2-afordancia-e-ancora.md`: sem emenda.** Só cita A17′ para dizer que não é dela (l.391).
+- **C3′ `jurado-san3-11-c2-registro-e-escopo.md`: emenda OBRIGATÓRIA antes do inspetor.** O vermelho do item 2 (l.338-339) inclui "A25 vermelho no intervalo da errata" — e o literal é vermelho nesse intervalo (5 caminhos, todos de merge ou da linha compartilhada): a cadeira reprovaria por construção. O item 2(d) também mede o A18′ com base no nome `origin/main` e classifica "por leitura".
+- **C2′ `jurado-san3-11-c2-enumeracao-tipada.md`: emenda curta, recomendada.** Sem ela a cadeira não reprova por construção (o vermelho dela já é `ERR_ASSERTION > 0`, l.398, e o item 3(b) já manda contar N por script), mas ainda manda publicar "o literal 3" como régua a classificar e não mede os 0 diagnósticos do T22.
+- **Texto pronto** abaixo — apensar verbatim ao fim de cada corpo e espelhar em `.agents/agents/especialistas/` por `scripts/sync-agent-agents.mjs`; onde corpo e apenso divergirem, **vale o apenso**. Quem escreve corpo é a `agente-fabrica` (ou o orquestrador apensa este texto verbatim); o orquestrador versiona os dois espelhos antes do inspetor.
+
+**Apenso da C3′:**
+```
+## Apenso da §16-bis (2026-10-03) — vale sobre o item 2 onde divergir
+A §16-bis do plano (no objeto) substitui, para o objeto do ciclo 2, o A18′ pelo A18″ e o A25 (com a linha da 15-bis.8) pelo
+A25″, e muda o MÉTODO do A37. Leia-a no blob do objeto antes do item 2 (§A7).
+- 2(c) A37: o critério é o DELTA PRÓPRIO do intervalo [653532f7, objeto] (Apêndice F2 da §16-bis: patch-id do patch do bloco
+  contra a main em S e em E) ⊆ 16.4; o two-dot `git diff --name-only 653532f7 <objeto>` é leitura auxiliar. Publique as listas
+  PRÓPRIO e DA-MAIN.
+- 2(d) A18″: base = `git merge-base origin/main <objeto>` (não o nome origin/main); TETO=0 · NULL=0 · CP=1 e cada hit EOL/MUT/CP
+  classificado pela POSIÇÃO NA AST (Apêndice F1, ou instrumento seu com a mesma regra): (n) normalizador em `function mutate`;
+  (m) callback de `mutate(` — só porque (n) existe; (h) recorte de HTML; (f) `$` sobre nome de arquivo no gerador; CP em
+  `function runCenso`; zero hit fora delas; leia cada hit (m). O literal `censo.mjs:42` e `EOL=3` não são régua; publique-os só
+  como nota. Vermelho-controle: V3 (regex do T14 fora de `mutate(`) — totais iguais, 2 hits na classe.
+- 2(e) A25″: (a) delta próprio de [653532f7, objeto] ⊆ 16.3 + 16.4, sem `frontend/package.json`, `.github/**`,
+  `patios-dossie-print.smoke.test.tsx`; (b) md5 EOL-neutro de `runCenso` e `mutate` pela AST (Apêndice F3) no objeto = em
+  92cfc05e (`fdf1a8cc91c9ab9389eaed5490447b21` · `c6663a49f7a0913e7981b5e8608c004a`); (c) caminho próprio de linha única
+  compartilhada com a main é declarado com a comparação de conteúdo. O A25 no intervalo DA ERRATA (5f6aaf56..defa502e) NÃO se
+  cobra: é critério do objeto da junta 1; a §16-bis o mediu (literal vermelho só por merge, que a §15.10 mandou fazer; delta
+  próprio permitido; linha da 15-bis.8 verde).
+- No vermelho do item 2, onde se lê "A18′ com TETO/NULL > 0, CP ≠ 1, ou MUT de fonte fora de mutate(; A25 vermelho no intervalo
+  da errata", leia: "A18″ com TETO/NULL > 0, CP ≠ 1, hit fora das classes (n)(m)(h)(f)/arnês, ou (m) sem (n); A25″ (a) com
+  caminho próprio fora de 16.3 + 16.4, ou (b) com md5 do arnês diferente do de 92cfc05e".
+```
+
+**Apenso da C2′:**
+```
+## Apenso da §16-bis (2026-10-03) — vale sobre o item 3 onde divergir
+A §16-bis do plano (no objeto) substitui, para o objeto do ciclo 2, o A17′ pelo A17″ e corrige o texto do T22. Leia-a no blob
+do objeto antes do item 3 (§A7).
+- 3(b) A17″: N = test() de topo que chamam `runCenso`, contados pela AST no blob do objeto (Apêndice F3 da §16-bis, ou
+  instrumento seu), e chamadas `runCenso(` = N. Sob `timeout: 1,`: `# fail N`, o CONJUNTO dos nomes dos `not ok` = o conjunto
+  dos N, exceção do arnês = N, `ERR_ASSERTION` = 0; sem os dois `throw`: `ERR_ASSERTION` = N. O literal `3` do A17′ não é régua
+  no ciclo 2 — não o publique como divergência a classificar. Vermelho: conjunto diferente, `ERR_ASSERTION` > 0 sob o teto, ou
+  exceção do arnês < N.
+- 3(a) T22: a mutação certa é SÓ a abertura (`runs.map((run) => ({` → `runs.map((run) => Object.freeze({`; o fecho `})),`
+  fica). Meça por `parseDiagnostics` do TypeScript (Apêndice F4, ou seu) que a cópia mutada do DTO tem 0 diagnósticos
+  sintáticos — o `ok` do T22 tem de vir da propriedade, não de um arquivo quebrado. A forma "abertura + fecho `}))),`" (texto
+  antigo da tabela da §16.5) dá 2 diagnósticos e não serve de prova.
+```
+
+### 16-bis.6 Riscos, residuais declarados e rollback
+- **R-bis1 (linha compartilhada):** o patch-id marca como próprio um caminho em que o bloco e a `main` editam a MESMA linha (medido: `frontend/package.json` no intervalo da errata). Regra (c) do A25″: declarar com a comparação de conteúdo — nunca absolver em silêncio, nunca reprovar sem olhar o conteúdo.
+- **R-bis2 (callback que lê outro arquivo):** a classe (m) do A18″ supõe que o callback de `mutate(` opera sobre o argumento já normalizado; um callback que lesse outro arquivo cru escaparia do instrumento. Mitigação: cada hit (m) é lido (hoje 1).
+- **R-bis3 (guarda do T22):** o T22 asserta que a mutação aplicou, mas não que a cópia continua parseável; trocar a âncora por uma forma quebrada o deixaria verde pelo motivo errado. Residual de guarda, não defeito presente: a C2′ mede os 0 diagnósticos neste objeto, e mudança futura da âncora é edição do teste, julgada pela junta que a receber. Sem pendência.
+- **R-bis4 (`main` andando antes do push):** A18″ pelo merge-base e A25″/A37 pelo delta próprio não enxergam o que a `main` mudou sem merge e separam o que entrou por merge.
+- **Rollback:** retirar a §16-bis devolve a §16.5 com as três impossibilidades medidas acima. Sem código, sem dado, sem migration.
+
+### Apêndice F — instrumentos da §16-bis (verbatim; ficam FORA do repositório como código, como a varredura da §15.7; **mover por arquivo, nunca por heredoc em Bash nem por `node -e`** — carregam barras invertidas que o transporte colapsa, e isso se reproduziu de novo nesta emenda)
+
+#### F1 — `plc2b-classifica.mjs` — classificador do A18″ pela posição na AST (chama a varredura v2 da §15-bis.7) (md5 EOL-neutro `3702f28f8ca899543597fea02a60c320`, 63 linhas)
+```js
+// plc2b: roda a varredura v2 (646b1371) e CLASSIFICA cada hit pela posicao na AST (nao pelo numero da linha).
+// Uso: node classifica.mjs <worktree> <base-ref = $(git merge-base origin/main HEAD)> [<varredura v2, md5 646b1371>]
+// Classes fora do defeito: EOL-nome (regex sobre nome de arquivo: `.test(name)` no gerador) · EOL/MUT-norm (o normalizador
+//   `.replace(/\r\n/g, "\n")` dentro de `function mutate`) · EOL/MUT-mutate (dentro do callback de uma chamada `mutate(`)
+//   · MUT-html (`.replace(/<[^>]*>/g, " ")` sobre HTML renderizado) · CP-arnes (dentro de `function runCenso`).
+// Qualquer outro hit EOL/MUT/CP = CLASSE (vermelho). TETO/NULL > 0 = vermelho. EOL-mutate so e legitimo se o normalizador existe.
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+const [wt, base, varr] = process.argv.slice(2);
+const here = dirname(fileURLToPath(import.meta.url));
+const out = execFileSync(process.execPath, [varr ?? join(here, "san3-11-errata1-varredura.mjs"), wt, base], { encoding: "utf8" });
+const require = createRequire(join(wt, "frontend", "package.json"));
+const ts = require("typescript");
+const NORMALIZADOR = String.raw`.replace(/\r\n/g, "\n")`;
+const ranges = {};
+const rangesOf = (file) => {
+  if (ranges[file]) return ranges[file];
+  const text = readFileSync(join(wt, file), "utf8").replace(/\r\n/g, "\n");
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const line = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  const r = { mutateFn: null, runCensoFn: null, mutateCalls: [] };
+  const visit = (n) => {
+    if (ts.isFunctionDeclaration(n) && n.name?.text === "mutate") r.mutateFn = [line(n.getStart(sf)), line(n.end)];
+    if (ts.isFunctionDeclaration(n) && n.name?.text === "runCenso") r.runCensoFn = [line(n.getStart(sf)), line(n.end)];
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "mutate" && n.arguments[1]) r.mutateCalls.push([line(n.arguments[1].getStart(sf)), line(n.arguments[1].end)]);
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return (ranges[file] = r);
+};
+const inR = (l, r) => r && l >= r[0] && l <= r[1];
+const tally = {}; const classe = [];
+let totals = "";
+for (const row of out.split("\n")) {
+  if (row.startsWith("# TOTAIS")) { totals = row; continue; }
+  const m = row.match(/^(.+?):(\d+) \| (\w+) \| (.*)$/);
+  if (!m) continue;
+  const [, file, ln, klass, txt] = m; const l = Number(ln);
+  let c = null;
+  if (file.startsWith("scripts/")) {
+    if (klass === "EOL" && /\/\S*\$\/\.test\(name\)/.test(txt) && !/readFileSync|\.replace\(/.test(txt)) c = "EOL-nome";
+  } else {
+    const r = rangesOf(file);
+    if (inR(l, r.mutateFn) && (klass === "EOL" || klass === "MUT") && txt.includes(NORMALIZADOR)) c = `${klass}-norm`;
+    else if (r.mutateCalls.some((x) => inR(l, x)) && (klass === "EOL" || klass === "MUT")) c = `${klass}-mutate`;
+    else if (klass === "MUT" && txt.includes(`.replace(/<[^>]*>/g, " ")`) && !/readFileSync/.test(txt)) c = "MUT-html";
+    else if (klass === "CP" && inR(l, r.runCensoFn)) c = "CP-arnes";
+    else if (klass === "WRITE") c = "WRITE";
+  }
+  if (["TETO", "NULL"].includes(klass)) c = null;
+  const key = c ?? `CLASSE-${klass}`;
+  tally[key] = (tally[key] ?? 0) + 1;
+  if (!c) classe.push(`${file}:${l} | ${klass} | ${txt.slice(0, 100)}`);
+}
+console.log(totals);
+console.log("# por classe:", Object.entries(tally).map(([k, v]) => `${k}=${v}`).join(" · "));
+console.log(`# CLASSE (vermelho) (${classe.length}):`); for (const c of classe) console.log("  " + c);
+const normOk = !(tally["EOL-mutate"] > 0) || tally["EOL-norm"] === 1;
+console.log(`# normalizador em mutate (exigido se ha EOL-mutate): ${normOk ? "sim" : "NAO"}`);
+console.log(`# VEREDITO A18: ${normOk && classe.length === 0 && /TETO=0/.test(totals) && /NULL=0/.test(totals) && /CP=1\b/.test(totals) ? "verde" : "VERMELHO"}`);
+```
+
+#### F2 — `plc2b-delta-proprio.sh` — delta próprio do bloco num intervalo, separado do merge (A25″, A37) (md5 EOL-neutro `ac50331715f6344b3629a3dc67a88330`, 22 linhas)
+```bash
+#!/usr/bin/env bash
+# plc2b: delta PROPRIO do bloco num intervalo [S,E] do ramo, separado do que veio da main por merge.
+# Para cada caminho tocado em S..E (two-dot), compara o patch do BLOCO contra a main em S e em E:
+#   P(x,p) = git diff $(git merge-base origin/main x) x -- p   (o que o bloco muda em p, visto em x)
+# p e do delta proprio de [S,E] sse patch-id(P(S,p)) != patch-id(P(E,p)). Caminho que so a main mexeu: P(S)=P(E) (vazio ou igual).
+# E=WT mede a ARVORE de trabalho contra o HEAD dela (para controle por mutacao sem commit).
+# Uso: bash plc2b-delta-proprio.sh <repo> <S> <E|WT> [pathspec...]
+set -u
+repo=$1; S=$2; E=$3; shift 3
+mbS=$(git -C "$repo" merge-base origin/main "$S")
+if [ "$E" = WT ]; then mbE=$(git -C "$repo" merge-base origin/main HEAD); else mbE=$(git -C "$repo" merge-base origin/main "$E"); fi
+echo "# S=$S (mb $mbS) · E=$E (mb $mbE) · pathspec=${*:-<tudo>}"
+pid() { if [ "$2" = WT ]; then git -C "$repo" diff "$1" -- "$3"; else git -C "$repo" diff "$1" "$2" -- "$3"; fi | git -C "$repo" patch-id --stable | cut -d' ' -f1; }
+names() { if [ "$E" = WT ]; then git -C "$repo" diff --name-only "$S" -- "$@"; else git -C "$repo" diff --name-only "$S" "$E" -- "$@"; fi; }
+n_all=0; n_own=0; n_main=0
+while IFS= read -r p; do
+  [ -z "$p" ] && continue
+  n_all=$((n_all+1))
+  a=$(pid "$mbS" "$S" "$p"); b=$(pid "$mbE" "$E" "$p")
+  if [ "$a" != "$b" ]; then n_own=$((n_own+1)); echo "PROPRIO  $p"; else n_main=$((n_main+1)); echo "DA-MAIN  $p"; fi
+done < <(names "$@")
+echo "# tocados S..E=$n_all · proprio=$n_own · so-da-main=$n_main"
+```
+
+#### F3 — `plc2b-arnes.mjs` — N do arnês e md5 do texto de runCenso/mutate pela AST, por ref ou árvore (A17″, A25″(b)) (md5 EOL-neutro `2519a717e6a5fbdca26a94fcbd73c77e`, 43 linhas)
+```js
+// plc2b: pela AST do TypeScript (frontend/node_modules), no BLOB de cada ref:
+//  (1) quais test(...) de topo chamam runCenso (N e nomes) — a fonte do numero do A17;
+//  (2) md5 EOL-neutro do texto das funcoes runCenso e mutate (o arnes da §15) em cada ref.
+// Uso: node plc2b-arnes.mjs <worktree-com-frontend/node_modules> <ref> [<ref> ...]
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+const [wt, ...refs] = process.argv.slice(2);
+const require = createRequire(join(wt, "frontend", "package.json"));
+const ts = require("typescript");
+const FILE = "frontend/tests/patios-dossie-versao.smoke.test.tsx";
+const md5 = (s) => createHash("md5").update(s.replace(/\r/g, "")).digest("hex");
+for (const ref of refs) {
+  const text = (ref === "WT" ? readFileSync(join(wt, FILE), "utf8") : execFileSync("git", ["-C", wt, "show", `${ref}:${FILE}`], { encoding: "utf8", maxBuffer: 1 << 26 })).replace(/\r\n/g, "\n");
+  const sf = ts.createSourceFile(FILE, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const callers = [], nonCallers = [];
+  const fnText = {};
+  const callsIdent = (node, name) => {
+    let found = false;
+    const visit = (n) => { if (found) return; if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === name) { found = true; return; } ts.forEachChild(n, visit); };
+    visit(node);
+    return found;
+  };
+  for (const st of sf.statements) {
+    if (ts.isFunctionDeclaration(st) && st.name && ["runCenso", "mutate"].includes(st.name.text)) fnText[st.name.text] = st.getText(sf);
+    if (ts.isExpressionStatement(st) && ts.isCallExpression(st.expression) && ts.isIdentifier(st.expression.expression) && st.expression.expression.text === "test") {
+      const arg0 = st.expression.arguments[0];
+      const name = arg0 && (ts.isStringLiteral(arg0) || ts.isNoSubstitutionTemplateLiteral(arg0)) ? arg0.text : "<nome nao literal>";
+      const id = name.split(":")[0];
+      (callsIdent(st.expression, "runCenso") ? callers : nonCallers).push(id);
+    }
+  }
+  // chamadas a runCenso FORA de test(...) de topo (fail-closed: tem de ser 0, senao o N nao descreve o arnes)
+  let total = 0;
+  const visitAll = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "runCenso") total++; ts.forEachChild(n, visitAll); };
+  visitAll(sf);
+  console.log(`# ref ${ref} · test() de topo = ${callers.length + nonCallers.length} · parseDiagnostics = ${sf.parseDiagnostics.length}`);
+  console.log(`  N (test() que chamam runCenso) = ${callers.length}: ${callers.join(", ")}`);
+  console.log(`  chamadas runCenso( no arquivo = ${total}`);
+  console.log(`  md5 EOL-neutro runCenso = ${fnText.runCenso ? md5(fnText.runCenso) : "AUSENTE"} · mutate = ${fnText.mutate ? md5(fnText.mutate) : "AUSENTE"}`);
+}
+```
+
+#### F4 — `plc2b-t22.mjs` — diagnósticos sintáticos das duas formas da mutação do T22 (md5 EOL-neutro `45ffba039567b921d2b252bd929720a8`, 25 linhas)
+```js
+// plc2b: as duas formas da mutacao do T22 sobre o DTO do head — diagnosticos SINTATICOS do TypeScript e saida do emissor.
+// Uso: node plc2b-t22.mjs <worktree>
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { join } from "node:path";
+const wt = process.argv[2];
+const require = createRequire(join(wt, "frontend", "package.json"));
+const ts = require("typescript");
+const DTO = "src/modules/impound/impound.checklist-link.dto.ts";
+const src = readFileSync(join(wt, DTO), "utf8").replace(/\r\n/g, "\n");
+const OPEN = "runs.map((run) => ({", OPEN2 = "runs.map((run) => Object.freeze({";
+const count = (s, a) => s.split(a).length - 1;
+console.log(`abertura '${OPEN}' no DTO: ${count(src, OPEN)} · fecho '})),' no DTO: ${count(src, "})),")}`);
+const openIdx = src.indexOf(OPEN);
+const closeIdx = src.indexOf("})),", openIdx);
+const forms = {
+  original: src,
+  "so-abertura (o T22 commitado, l.549)": src.replace(OPEN, OPEN2),
+  "abertura+fecho (o texto da §16.5)": src.slice(0, closeIdx).replace(OPEN, OPEN2) + "}))),"+ src.slice(closeIdx + "})),".length),
+};
+for (const [name, text] of Object.entries(forms)) {
+  const sf = ts.createSourceFile(DTO, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const diags = sf.parseDiagnostics.map((d) => `${sf.getLineAndCharacterOfPosition(d.start).line + 1}: ${ts.flattenDiagnosticMessageText(d.messageText, " ")}`);
+  console.log(`- ${name}: diagnosticos sintaticos = ${diags.length}${diags.length ? " -> " + diags.join(" | ") : ""}`);
+}
+```
+
+**Fim da §16-bis.**
