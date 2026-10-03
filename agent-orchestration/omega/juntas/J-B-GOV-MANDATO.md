@@ -320,3 +320,46 @@ abrir o ciclo 4**, auditoria da orquestração e da junta, por identidade que n�
 desenvolveu, respondendo (a)–(e) **por execução**, com parecer em
 `omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md`. Sem ele, o inspetor não libera o ciclo 4.
 Evidência das cadeiras e do inspetor em `agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo3/`.
+
+---
+
+# Ciclo 4 — junta 4 (PR #393)
+
+> Esqueleto escrito pelo orquestrador antes da junta (2026-10-02). Cada linha `EM APURAÇÃO` é preenchida com o
+> que as cadeiras e o inspetor gravaram, nunca com o que o orquestrador espera.
+
+- **Objeto julgado:** EM APURAÇÃO — o head que as três cadeiras resolverem, cada uma por `git` e por `gh`.
+- **Base:** `origin/main` em `b404815c`, integrada por merge em `325030c8` e `4535ebb3`.
+- **Legalidade do ciclo 4:** EM APURAÇÃO — §9 do parecer `R-B-GOV-MANDATO-ciclo3-auditoria.md` (atestação).
+- **Inspetor de terreno:** EM APURAÇÃO — `votos/B-GOV-MANDATO-ciclo4/00-inspetor-terreno.md`.
+- **Quórum:** maioria de 3, sem veto, sem suplente (§15.9).
+
+## VEREDITO: EM APURAÇÃO
+
+| cadeira | identidade | md5 do corpo | modelo | voto | achados |
+|---|---|---|---|---|---|
+| C1⁗ — invariância e morte interna | `jurado-mandato-c1d-invariancia-e-morte-interna` | `fa887726…` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| C2⁗ — cobertura e dois lados | `jurado-mandato-c2d-cobertura-e-dois-lados` | `0bb59aa2…` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| C3⁗ — escopo, KPI, registro e mandato | `jurado-mandato-c3d-escopo-kpi-registro-mandato` | `34aac689…` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+
+## Mandatos como artefato
+
+Um por papel em `votos/B-GOV-MANDATO-ciclo4/00-mandatos/`, versionado antes do lançamento, com a cerca do veredito
+do pré-voo. O `mandato_md5` declarado por cada papel na 1ª linha do seu artefato: EM APURAÇÃO (conferido pela C3⁗,
+item 4).
+
+## Quedas e substituições de modelo (P6, §C7.6-bis)
+
+EM APURAÇÃO — `votos/B-GOV-MANDATO-ciclo4/00-quedas.md`, se houver queda.
+
+## §C7.4-bis — quem ocupou cada papel no ciclo 4
+
+| papel | quem |
+|---|---|
+| auditor da máquina (ciclo 3 → 4) | `auditor-maquina-b-gov-mandato-c3` — parecer §0–§7; atestação §9 |
+| quem desenhou o conserto da máquina | `planejador-conserto-maquina-b-gov-mandato` — §8 do parecer |
+| planejador | `planejador-ciclo4-b-gov-mandato` (Fable): §15 e as erratas §15.14, §15.15, §15.16 e §15.17 |
+| devs | `dev-tests-ciclo4-b-gov-mandato` (T4c, T4c-2, T4c-3, T4c-4, T4c-5) · `dev-scripts-ciclo4-b-gov-mandato` (S4a, S4b, D4, K4, K4b, K4b-2, K4b-3, K4b-4) |
+| conferente dos dois lados | `conferente-dois-lados-b-gov-mandato-c4` (Fable): conferência (DIVERGE 263) e reconferência (CONFERIDO) |
+| achadores (pareceres e votos) | o inspetor da junta 4; C1⁗, C2⁗, C3⁗ |
+| orquestrador | registro, integrações por merge, versionamento de corpos e mandatos, rodadas da E4; **não escreveu código** |

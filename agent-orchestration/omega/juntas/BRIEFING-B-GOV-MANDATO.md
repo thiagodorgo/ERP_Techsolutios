@@ -273,3 +273,154 @@ Todo voto declara **`gravidade`** (`bloqueia` | `ajuste` | `nota`) **e `escopo`*
 `bloqueia`, escreva qual controle da §1.1 do plano foi aplicado. Achado `pre-existente` **não reprova**: vira
 pendência nomeada com bloco dono. **"Não consigo medir" = REPROVADO.** Nenhuma cadeira propõe correção
 (§C7.4-bis). As três votam **juntas**, sem ler o voto umas das outras.
+
+---
+
+# Ciclo 4 — junta 4 (PR #393)
+
+> Escrito pelo orquestrador em 2026-10-02. O desenho do ciclo está na §15 do plano
+> (`docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md`, §15.0 a §15.16) e nas §8 e §9 do parecer da auditoria.
+> Nada deste briefing é fato herdado: cada número tem a fonte nomeada, e a cadeira mede de novo.
+
+- **Objeto:** o head do ramo `chore/mandato-refs-e-preflight`, resolvido pela própria cadeira (`git rev-parse`
+  cruzado com `gh pr view 393 --json headRefOid`), nunca digitado. Depois do K4b-2 (`663eeb00`) entraram: a
+  conferência dos dois lados (DIVERGE 263), a errata 4 (§15.17), o caso `[V263]` (T4c-5), o registro do K4b-3, a
+  reconferência (CONFERIDO), duas integrações da `main` por merge, a recontagem do K4b-4, este briefing, o
+  esqueleto da ata, os mandatos da junta e a §9 do parecer.
+- **Base:** `origin/main` em `b404815c` (#404), integrada **por merge** duas vezes: `325030c8` (a `main` do #399) e
+  `4535ebb3` (a do #402, #403 e #404). Conflitos só em registro e KPI. A resolução foi provada por multiconjunto em cada
+  arquivo. A única sobreposição real foi a linha do backfill do #397 no `kpis-history.md`, preenchida pelos dois lados
+  com o mesmo fato e resolvida a favor da `main`. O histórico JSON foi resolvido pela estrutura: a base é
+  subsequência do ramo, e a entrada do B-SAN3-01b entra logo depois da última entrada da base. `merge-base` =
+  `origin/main`.
+- **Legalidade do ciclo 4:** o §C7.4 item 4 da `main` manda auditar a máquina antes do ciclo 4. O parecer
+  `omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md` traz a §8 (o conserto) e recebe a §9 (a atestação do
+  auditor, §8.7) **antes** do inspetor. Sem `CONSERTO VERIFICADO` na §9, o inspetor não libera.
+- **Quórum:** maioria de 3, sem veto, sem suplente (§15.9). Queda relança a **mesma** identidade, que não herda nada
+  como conclusão; voto perdido nunca conta como aprovação; evidência incremental a cada item; PAUSA pela P7.
+
+## As três cadeiras (§15.9)
+
+| cadeira | identidade | md5 EOL-neutro do corpo no head (`.claude` · `.agents`) | competência |
+|---|---|---|---|
+| **C1⁗** | `jurado-mandato-c1d-invariancia-e-morte-interna` | `fa8877262ff4370293b21c18a1b09f60` · `ad7ff64d66d532b10f4cb18628093887` | propriedade × forma, partir e juntar; morte interna (A15) |
+| **C2⁗** | `jurado-mandato-c2d-cobertura-e-dois-lados` | `0bb59aa2fcc14b67755fc6566e821106` · `ff00d3d26042f1536aa05471ad728986` | cobertura por mutação; honestidade da matriz; os dois lados |
+| **C3⁗** | `jurado-mandato-c3d-escopo-kpi-registro-mandato` | `34aac6893fc0c488914f56d5fdc7fc0a` · `07b7d75ac003d6e508d0292399f4f742` | escopo por geração; número; registro; mandatos como artefato |
+
+Os corpos nasceram em `8859c142` e receberam as emendas 1-bis (`e3133ab4`, errata 15.15), 1-ter (`441b0b31`,
+errata 15.16) e 1-quater (`95a8d071`, errata 15.17), sempre nos dois espelhos, com `sync-agent-agents.mjs --check`
+verde. A emenda 1-quater da C1⁗ foi aplicada por adição, como a 1-ter, e a fábrica declarou essa leitura. Os md5 da
+tabela acima são os de antes da 1-quater; cada cadeira declara o md5 do corpo que aplicou, medido no objeto. O diretório de agentes da sessão
+do orquestrador não contém esses corpos: cada cadeira roda lendo o corpo do head e declara o md5 que aplicou.
+
+## Inelegibilidade, conferida por nome (§15.9)
+
+- **Cadeiras dos ciclos 1 a 3:** `jurado-mandato-c1-prevoo-fail-closed`, `jurado-mandato-c2-pergunta-feita`,
+  `jurado-mandato-c3-escopo-kpi-registro`, `guardiao-fail-closed`, `medidor-de-cobertura-do-artefato`,
+  `jurado-mandato-c3b-fronteira-numero-registro`, `jurado-mandato-c1c-invariancia-de-forma`,
+  `jurado-mandato-c2c-cobertura-por-mutacao`, `jurado-mandato-c3c-fronteira-numero-registro`; e a instância do
+  inspetor da junta 3.
+- **Devs dos ciclos 1 a 3:** `aa051e8cc3eb1c1a0`, `a4ed42a5e3a81bdd3`, Dev-T e Dev-S do ciclo 3,
+  `dev-t3-mandato-b8-refs`, `dev-t4-mandato-refs-win32`, `dev-t5-mandato-v18-win32`, `dev-t6-mandato-preflight-16`,
+  `dev-s2-mandato-registro`.
+- **Planejador das §1 a §14.20** e as duas identidades da tabela §8.10 do parecer: `auditor-maquina-b-gov-mandato-c3`
+  (atesta a §9 e só) e `planejador-conserto-maquina-b-gov-mandato`.
+- **Ciclo 4, com os commits de cada um:**
+  - `planejador-ciclo4-b-gov-mandato` (Fable): a §15 e as erratas §15.14 (`0f044fa3`), §15.15 (`82bab561`), §15.16
+    (`891dc04f`) e §15.17 (`49fe307f`).
+  - `dev-tests-ciclo4-b-gov-mandato` (Opus 5.5, mandato `1af9e7fc…`): T4c `5b6f4f4a`, T4c-2 `738f0736`, T4c-3
+    `dd0d409d`, T4c-4 `3778faaf`, T4c-5 `faf87d8c` (mandato `4d44336f…`).
+  - `dev-scripts-ciclo4-b-gov-mandato` (Opus 5.5, mandato `198b08ed…`): S4a `2ca15eb0`, S4b `7a156a62`, D4 `aa546ef9`,
+    K4 `bb641b77`, K4b `408149a7`, K4b-2 `663eeb00`, K4b-3 `e92f04e7` e `fb64da75` (mandato `70f57c52…`), K4b-4
+    `95bd6f96` (mandato `eb89683d…`).
+  - `conferente-dois-lados-b-gov-mandato-c4` (Fable): a conferência dos dois lados (mandato `ddbf4be9…`) e a
+    reconferência do 263 (instância nova, mandato `c893a0dd…`).
+  - As instâncias da `agente-fabrica` que escreveram os quatro corpos e as emendas 1-bis, 1-ter e 1-quater.
+  - O orquestrador: registro, integrações por merge, versionamento de corpos e mandatos, e as rodadas da E4.
+
+## As matrizes — insumo obrigatório (§15.4)
+
+Publicadas verbatim em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` (K4b `408149a7`, delta no K4b-2
+`663eeb00`). A identidade de cada matriz é a tripla artefato + guard + ferramenta, mais o ambiente do §0 daquele
+arquivo.
+
+| matriz | tripla | resultado bruto | `[M-1]` por conjuntos |
+|---|---|---|---|
+| refs, rodada completa | `e1ed8f0d` · `a8bd601b` · `373e5728` | `N=44 K=44 NAO-COBERTOS=0 EXCLUIDOS=52 ANOMALIAS=1 INVALIDOS=2 TIMEOUT=0` | ∅ |
+| pré-voo, rodada completa | `093499a8` · `2275bea0` · `373e5728`, equivalentes `123e6afd` | `N=84 K=80 NAO-COBERTOS=4 EXCLUIDOS=60 ANOMALIAS=0 INVALIDOS=37 TIMEOUT=1`, equivalente 441 conferido | {359, 372, 612} |
+| pré-voo, delta da R1 (guard do T4c-4) | §4.2 do arquivo das matrizes | `N=3 K=3 NAO-COBERTOS=0` sob o lema do §14.18(3) | ∅ |
+
+A lista histórica do vermelho-controle é uma propriedade do artefato antigo e tem **26** itens depois do T4c-4
+(§15.16), não 24. O `[V263]` do T4c-5 é `[M-EXT]` e a lista continua 26 (§15.17).
+
+**A §4.3 do arquivo das matrizes (K4b-3)** registra as 39 versões viáveis dos `MUTANTE-INVALIDO`, pela conferência:
+28 cobertas, 8 sem mudança de comportamento (equivalentes por fixture, sem linha `id:` no arquivo de equivalentes),
+2 que não terminam (cobertas por tempo) e 1 não coberta, o 263, coberta pelo `[V263]` e reconferida. A ferramenta
+não muda neste ciclo: a troca do M7 que não compila é a **fronteira 34** (`P-GOV-MANDATO-3-FRONTEIRAS`, dono
+`B-GOV-MANDATO-2`). `[M-1]` por conjuntos: **∅**.
+
+## A conferência dos dois lados (§15.5)
+
+Versionada em `votos/B-GOV-MANDATO-ciclo4/00-conferencia-dois-lados.md`. A **1ª passada** deu **DIVERGE 263**
+(semente `2026100211`): 16 + 9 + 3 vermelhos, 4 verdes, 39 inválidos e o TIMEOUT conferiram, mas a versão viável do
+M7(salto) no ponto 263 mudava o comportamento com o guard verde (CONF-01, bloqueia). A errata 4 decidiu o remédio. A
+**reconferência** do 263 (§15 do arquivo, passo 6-bis) deu **CONFERIDO**: identidade das matrizes igual à da
+conferência, base própria `fail=0/356`, e o mutante viável deixa o guard vermelho com o único `not ok` = `[V263]`. A
+última linha do arquivo é `CONFERIDO`. O conferente caiu duas vezes por limite de sessão da conta e foi retomado
+(`votos/B-GOV-MANDATO-ciclo4/00-quedas.md`). Uma linha da conferência foi versionada com 1 espaço final a menos,
+declarado no commit.
+
+## Dívida do orquestrador, declarada antes de a junta achar
+
+- **O mandato `planejador-errata` (`60f4f79f`) tem a cerca com `head=987cde17`**, o head local do orquestrador no
+  lançamento, que nunca foi empurrado. A colagem do mesmo mandato diz `335cf09d`. O replay da §15.15 achou. O commit
+  está preservado no remoto em `wip/c4-cerca-mandato-errata-987cde17`. Desde então, todo gerador de mandato exige
+  head local = head do PR no remoto antes de gerar (regra HC = H0), e só gera com o CI quieto.
+- **Duas tentativas de mandato foram rejeitadas pelo pré-voo e nunca versionadas:** a do conferente, por um SHA fora
+  da colagem na hipótese, e a da fábrica 1-ter, gerada com o CI em voo.
+- **O merge `26730e2b` foi commitado sem a checagem de espaço em branco como trava.** Medido depois com
+  `git diff --check 26730e2b^1 26730e2b`: as únicas ocorrências são linhas de
+  `votos/B-GOV-PAUSA/C2-evidencia.md`, arquivo que veio da `main` (#397) e que o #393 não escreveu. Os commits
+  seguintes travam a checagem antes do commit.
+- **Desvio declarado pelo Dev-T4 no T4c-5:** ele leu trechos de `scripts/mandato-preflight.sh`, o que a regra 2 do §8
+  do plano não permite ao dev de testes. Nenhum script foi editado (o diff do T4c-5 é só `tests/mandato-preflight.test.ts`,
+  +30/−0). A junta julga.
+
+## Nota de terreno, pré-existente: o CI intermitente
+
+No head do T4c-4 (`3778faaf`) o job `backend-postgres` ficou vermelho no teardown de
+`tests/o6r06-usage-atomic-db.test.ts` (l.740, bloco `B-O6R-06`). O job foi reexecutado sozinho e passou, com os sete
+check-runs verdes. É intermitente e anterior a este bloco. A pendência com dono nasce no registro pós-merge, fora deste
+PR, porque `pendencias.md` não está entre os caminhos que a §15.6 autoriza ao orquestrador. Um vermelho igual no
+objeto é insumo do voto, e a cadeira classifica o escopo com a evidência de origem.
+
+## Reprovação por construção — cobrar isto não é achado
+
+- As fronteiras **9–11, 13–22 e 24–33** estão declaradas em `P-GOV-MANDATO-3-FRONTEIRAS`. As 32 (corte de bytes) e 33
+  (`ANOMALIA-EQUIV` some quando os não-cobertos são vazios) foram registradas no ciclo 4.
+- **A re-execução viva do pré-voo de mandato antigo reprova por construção** (§15.15, classe A8): a colagem envelhece
+  quando o head anda. O critério é o **replay** no commit que versionou o mandato; a re-execução viva fica como
+  registro.
+- **Os números da §15.3 e da §15.7 estão superados.** A divisão de casos da E1 é 36 no pré-voo + 5 no refs = 41
+  entradas de TAP, contada contra o head do lançamento do Dev-T4 (§15.15 (c3)); com o T4c-5 são **49** (§15.17). O
+  KPI vale pelo K4b-3 e pelo K4b-4: backend **3452/3454** por N=2, pré-voo 356, refs 44, `blocks_completed`
+  **171** contra a `main` integrada. A cadeira mede de novo e compara com esses números, não com os da §15.3.
+- **Flutter e smoke web** não são tocados pelo bloco: o KPI os carrega com nota.
+- Os blobs dos artefatos são os da tripla publicada. Cobrar mudança de artefato depois da matriz é cobrar uma matriz
+  nova.
+
+## Ambiente de quem mede
+
+O mesmo do ciclo 3 (ERRATA E-11): nunca `export MSYS_NO_PATHCONV=1`; publique `env | grep -c '^MSYS_NO_PATHCONV='` = 0,
+`git --version`, `node -v` e `uname -srm` antes de medir; base viva nunca é alvo; worktree próprio em caminho curto,
+removido pelo nome depois de conferir que nenhum processo seu está vivo nele; nunca `tail -f`; timeout em tudo o que
+executa artefato mutado. Sob ordem de PAUSA, a cadeira termina o comando em curso, grava a seção `## PAUSA <hora UTC>`
+na evidência e para sozinha (P7).
+
+## Regra de voto
+
+Todo voto declara **`gravidade`** (`bloqueia` | `ajuste` | `nota`) **e `escopo`** (`dentro-do-bloco` |
+`pre-existente`, este com evidência de data ou origem — sem ela conta como `dentro-do-bloco`). Achado
+`pre-existente` não reprova: vira pendência nomeada com bloco dono. **"Não consigo medir" = REPROVADO.** Nenhuma
+cadeira propõe correção (§C7.4-bis). As três votam juntas, sem ler o voto umas das outras, e o voto vai no fim do
+próprio arquivo de evidência, em JSON.
