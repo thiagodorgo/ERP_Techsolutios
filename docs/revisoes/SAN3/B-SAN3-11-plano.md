@@ -1447,3 +1447,365 @@ critério A25 ganha esta linha); `scripts/**`, `frontend/src/**`, `frontend/pack
 teto são exceções do arnês, zero asserções — vermelho-controle: tirar os `throw`) e A18′ (instrumento que vê `status` coalescido, `EOL=3`
 nomeados), mantém o código do arnês como está, traz para dentro o par `pendencias.md`/índice com a linha de status da `P-CHK-DOSSIE-VERSAO-NA-UI`
 na forma que o gerador lê (E9/A26), e devolve o dev ao caminho: merge do ramo → E9 → controles → bateria nos dois terrenos → registro → push.
+
+---
+
+## §16 — Ciclo 2 (2026-10-03) — os links ganham afordância e deixam de navegar; ausência de chave fica do lado fechado (adapter + gerador P-L0); o gerador reconhece a vistoria pelo tipo e a consulta pela decisão (P-L3); as pendências ganham dono do plano da rodada; a `main` b404815c entra por merge
+
+**Autoria:** `planejador-mestre`, identidade `planejador-ciclo2-b-san3-11`, **Fable** (obrigatório: retorno ao planejador após reprovação, §C7.6; sem substituição), mandato `00-mandatos/planejador-ciclo2.md` (md5 EOL-neutro `81b77e7891cc7bb653577e4ad2dbbe90`, versionado em `653532f7`). Esta identidade não escreveu §0–§15-bis, não desenvolveu, não votou. Trilha de medição (comando · saída · hora UTC de cada item): o arquivo de saída desta instância, versionado pelo orquestrador em `agent-orchestration/omega/juntas/votos/B-SAN3-11/PLANEJADOR-ciclo2-relatorio.md`.
+
+**Origem:** `omega/reprovacoes/R-B-SAN3-11-1.md` — junta 1 **REPROVADO 0×3** sobre `defa502e` (ata `J-B-SAN3-11.md`): bloqueiam C1-01, C2-01, C2-02, C3-B1; ajustes C1-02/03/04, C3-A1/A2; notas C1-05/06, C2-03, C3-N1. **Todos re-medidos por execução própria** no head `653532f7` — código, testes e KPI byte-idênticos a `defa502e` (`git diff --name-only defa502e 653532f7 -- frontend/src frontend/tests frontend/package.json scripts src Kpis` vazio) — em dois worktrees detached desta máquina (CRLF e LF): os quatro são **defeitos reais, dentro-do-bloco** (§1 da trilha: estilo computado no Chromium; M5/M5b/M5c/M6 e M1–M4 com gerador + `tsc` + sonda de runtime; leitura das pendências × `PLANO_SAN3.md`). Nenhum pré-existente foi usado.
+
+**Natureza:** ciclo 2 da junta (§C7.4) — não é errata de terreno. A `main` andou para `b404815c` (#404, registro) e o PR está `CONFLICTING`: **6 conflitos, todos KPI/registro, 0 em código** (`git merge-tree --write-tree --name-only origin/main 653532f7`: `Kpis/app.js`, `Kpis/kpis-history.json`, `Kpis/kpis-latest.json`, `codex/log-execucao.md`, `controle/pendencias-indice.md`, `docs/status-geral.md`).
+
+### 16.1 Papéis (§C7.4-bis) e inelegíveis, por nome
+| papel | quem |
+|---|---|
+| quem achou | `cognicao-visual`, `guardiao-fail-closed`, `coordenador-de-acessos` (junta 1) — não planejam, não desenvolvem, não votam |
+| quem planeja | `planejador-ciclo2-b-san3-11` (Fable) — não desenvolve, não vota |
+| quem desenvolve | `dev-ciclo2-b-san3-11`: identidade **nova e local** (esta máquina — os controles A19/A17′ e a medição do C1-01 só existem aqui), nomeada pelo orquestrador em `00-mandatos/dev-ciclo2-D{1,2,3}.md` (≤3 itens cada, P4: D1 código · D2 testes e controles · D3 integração, KPI e registro); não é `dev-san3-11-dossie` (nuvem, `dd58142f`) nem `dev-errata1-b-san3-11`; não vota |
+| inspetor | `inspetor-de-terreno-da-junta`, **3ª instância** (identidade nova, Fable) |
+| junta | 3 identidades novas escritas pela `agente-fabrica` (16.8); Opus 5.5 declarado; **unanimidade de 3** |
+| porteiro | `porteiro-pos-merge` (Fable) |
+**Inelegíveis para cadeira, inspeção ou dev do ciclo 2:** `cognicao-visual` · `guardiao-fail-closed` · `coordenador-de-acessos` · o `planejador-mestre` de §0–§14 · `planejador-errata1-b-san3-11` · `planejador-ciclo2-b-san3-11` · `dev-san3-11-dossie` · `dev-errata1-b-san3-11` · as duas instâncias do inspetor da junta 1 · o orquestrador.
+
+### 16.2 Decisões — por propriedade, cada uma com a evidência que a derrubou e a mutação que a vigia
+**D-C2-1 — substitui o parágrafo "Decisão declarada…" do §4.** `null` **emitido** pelo DTO ⇒ "não se aplica" (vigente/única), contrato A5/B3. **Chave ausente ou valor inválido (não é `string` não-vazia nem `null`) NÃO é `null`: é quebra do contrato de 12 chaves (A4) e fica do lado fechado** — o adapter recusa a resposta inteira lançando `ChecklistRunContractError`; o `catch` já existente do hook (`useProcessChecklistRuns.ts:50-58`, não-`ApiError` → `setError("Não foi possível carregar os checklists do guincho.")`) põe o painel no **estado de erro que já existe** (Alert + "Tentar novamente"); **nenhuma linha é apresentada**. A frase "o guard E4 é o que impede o DTO de deixar de emitir a chave sem ninguém ver" **sai**: falsa por execução (DTO sem cada uma das 3 chaves e L0 vazio → gerador v1 ec=0; §1.1). Tri-estado: **rejeitado na UI** (não se inventa "não informado" como estado de negócio) e **aceito no adapter** (ausente/inválido ≠ `null`). Por que recusar a resposta e não descartar o item (como `id` ausente, `adapter.ts:531`): item sem `id` é irrenderizável e o descarte o esconde; item sem chave de versão é renderizável **errado** — a substituída vira "Concluído" verde (M5), o dossiê afirma "não está vinculada" com a vigente na lista (M5b). Num documento vendido como prova, "não foi possível carregar" é honesto; lista incompleta sem aviso não é (D-007 do PR-08; `B-SAN3-01b`: a web não fabrica dado). Ordem: o descarte por `id/templateId/startedAt` (existente) vem **antes**; a validação de versão só roda em itens que passaram.
+**D-C2-2 — gerador P-L0.** As três cópias da verdade são **o mesmo conjunto nos dois sentidos** (`espelho ⊆ emitido` e `adapter ⊆ emitido`, além de `emitido ⊆ espelho/adapter`) e **L0 vazio é vermelho** ("emissor ilegível"). Medido no protótipo: M5/M5b/M5c → `SEM EMISSOR (1): <chave>`; M6 → `L0 VAZIO: SIM`. Vigia: T20, T22.
+**D-C2-3 — gerador P-L3.** "Vistoria" é decidida pelo **tipo** do receptor pelo checker do TypeScript (`ChecklistRunSummaryItem`, ou a forma de resumo `id · templateVersion · status · startedAt`; `any`/desconhecido = vistoria = **negar**; cast lido pela expressão por baixo), e "consulta" é a **decisão sob o ponto** (`?:`, `&&`, `||`, `??`, `if`) cuja condição lê `supersededByRunId`/`currentRunId`/`reopenedFromRunId`, resolvendo `const`/função do mesmo arquivo. Nome de variável e "qualquer leitura em qualquer lugar da função" **saem**. Medido: M2 (receptor `vistoria`), M2b (índice), M4 (leitura em atributo), M8 (cast), M9 (`any`) → ec=1; M3 (helper correto) → ec=0; M7 → residual (iv), 16.9. Vigia: T21 (+T13).
+**D-C2-4 — link e âncora.** Os dois links usam o **idioma de link da casa** (`.pat-link`, `app.css:3099-3112`; `:focus-visible` em `:3322-3328`; 8 usos em `.tsx`) e **não navegam**: `onClick` → helper puro `focusVersionRow` (escopo = a própria `<table>` por `ref`; `preventDefault` só se achar o alvo; `scrollIntoView({ block: "center" })`; `focus({ preventScroll: true })`; realce inline ~1,6 s com `outline: 2px solid #2563EB`). Ids únicos no DOM via prop `idPrefix` (print = `"vistoria-impressa"`). **Sem CSS novo** — `frontend/src/styles/**` continua PROIBIDO.
+**D-C2-5 — A15 por propriedade (A15′).** Dono válido = bloco do §5 do `PLANO_SAN3.md` (forma canônica `` `B-XXX-NN` (plano SAN3, …) ``) **ou** trilha com precedente em `pendencias.md`; e o texto da pendência não contradiz o que o §13 mediu. O check `grep -c dono` **sai** do A15 (reconhecia a palavra, não a propriedade — como a regex `(?!a atribuir)` do gerador de índice, 16.7).
+
+### 16.3 Entregas do ciclo 2 (E10–E15) e arquivos tocados — caminhos exatos, regra do espelho
+| E | Entrega | Arquivo(s) | Espelho |
+|---|---|---|---|
+| E10 | Links com afordância; âncora que não navega; realce; `idPrefix` | `frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx` (os 2 `<a>`: `className="pat-link"` + `onClick`; `export function focusVersionRow(event, scope, targetId)`; `useState` do realce + `useEffect` com `setTimeout` 1600 ms; `ref` da `<table>`; prop `idPrefix = "vistoria"` em `id=` e nos 2 `href=`) · `frontend/src/modules/patios/processes/components/DossiePrintDocument.tsx` (**só** l.95: `idPrefix="vistoria-impressa"`) | `.pat-link` em `StaleDataBanner.tsx:22` e `PatiosPage.tsx:176`; foco `#2563eb` de `app.css:3322-3328` |
+| E11 | Adapter fail-closed nas 3 chaves de versão | `frontend/src/modules/patios/processes/processes.adapter.ts`: `export class ChecklistRunContractError extends Error { name = "ChecklistRunContractError" }`; `readVersionRef(record, [camel, snake])` — 1ª chave presente (`key in record`): `null` ⇒ `null`; `string` não-vazia ⇒ `trim()`; outro ⇒ `throw new ChecklistRunContractError("campo de versão inválido: <chave>")`; nenhuma presente ⇒ `throw … ("campo de versão ausente: <chave>")`; l.546-548 passam a usar o helper; `adaptChecklistRunsResponse` **não captura** | `ApiError` (`services/api/client.ts:10`) como erro nomeado; `readString` (l.461) como forma do helper |
+| E12 | Gerador v2 (P-L0 + P-L3) | `scripts/san3-11-dossie-vistoria-censo.mjs` = **Apêndice E verbatim** (md5 EOL-neutro `e5fd8ebb7bbead617668ed43c1e55c29`, 208 linhas; dependência única `typescript` 5.9.3 de `frontend/node_modules`; `TS_ROOT` = o `frontend/` real, como hoje) | o v1 (mesmas camadas e linhas de saída, acrescidas) |
+| E13 | Testes: T3′, T11′, T12 (saída nova), T15–T22; fixtures existentes | `frontend/tests/patios-dossie-versao.smoke.test.tsx` (16 → **24** testes; `runCenso`/`mutate` da §15 **inalterados**) · `frontend/tests/patios-dossie-checklist.smoke.test.tsx` (**só** fixtures dos testes de adapter l.59-74 e l.75-86: os itens que hoje passam pelo filtro `id/templateId/startedAt` ganham `reopenedFromRunId: null, supersededByRunId: null, currentRunId: null`; os itens sem `id`/sem `templateId` de l.79-80 continuam descartados com ou sem as chaves; **nenhuma asserção removida**) | `finance-titles.test.tsx:[G1]/[G2]` e `api-client.test.ts` (stub de `globalThis.fetch` + `process.env.VITE_USE_MOCKS = "false"` + `await import`) para T16 |
+| E14 | Pendências com dono do plano da rodada, texto medido, índice | `agent-orchestration/controle/pendencias.md` (**só** as duas entradas `P-SAN3-11-*`, l.9988-10012) · `agent-orchestration/controle/pendencias-indice.md` (só saída do gerador) | `P-WEB-CHK-EXECUCOES-INEXISTENTES` (l.8493) |
+| E15 | Integração da `origin/main` (b404815c) por merge; KPI recontado; `backfill_note` verdadeira; registro | `Kpis/kpis-latest.json` · `Kpis/kpis-history.json` · `Kpis/kpis-history.md` · `Kpis/app.js` (só `kpi-freeze`) · `agent-orchestration/codex/log-execucao.md` · `agent-orchestration/docs/status-geral.md` · `agent-orchestration/codex/comandos/B-SAN3-11-dossie-versao-da-vistoria.md` (1 parágrafo "ciclo 2") · `agent-orchestration/omega/juntas/votos/B-SAN3-11/DEV-relatorio.md` (seção `## CICLO 2`) | §15.9–§15.10 |
+`processes.types.ts`: **sem mudança prevista** (o espelho já é `string | null`) — permitido só se o `tsc` exigir algo para a classe de erro; se mexer, 1 linha + nota no DEV-relatorio. `useProcessChecklistRuns.ts` e `processes.service.ts`: **intocados** — medido: o service não captura (`processes.service.ts:96-100`), o hook já trata não-`ApiError` como erro genérico (`useProcessChecklistRuns.ts:56-57`).
+
+### 16.4 Escopo (§C4) — PERMITIDO e PROIBIDO; emendas ao §6, §15.5 e §15-bis.8
+**PERMITIDO (e nada mais):** os arquivos da tabela 16.3 · `agent-orchestration/omega/juntas/**` (registro do orquestrador: ata, mandatos, briefing, pareceres, corpos espelhados em `.claude/agents/especialistas/` + `.agents/agents/especialistas/`) · `docs/revisoes/SAN3/B-SAN3-11-plano.md` (**só** esta §16, apensada pelo orquestrador — o dev não a edita).
+**Emendas:** (a) `+ frontend/src/modules/patios/processes/components/DossiePrintDocument.tsx` **só** o atributo `idPrefix` na linha do painel (`git diff --numstat 653532f7 HEAD -- <arquivo>` = `1 1`); (b) `scripts/san3-11-dossie-vistoria-censo.mjs` **volta a PERMITIDO** — a §15.5 o proibira porque o defeito da errata não morava nele; C2-01 e C2-02 moram (a proibição da §15.5 vale só para a classe da errata); (c) `patios-dossie-checklist.smoke.test.tsx` só fixtures (já no §6); (d) `Kpis/app.js` só como saída de `node scripts/kpi-freeze.mjs` (§15.5, inalterada).
+**PROIBIDO:** tudo o do §6, em especial `src/**` (**o DTO não muda** — o contrato já é de 12 chaves; quem o vigia é o gerador e o adapter) · `frontend/src/styles/**` e `frontend/src/components/ui/**` (**nenhum CSS novo**: `.pat-link` já existe) · `frontend/package.json` (o arquivo já está na lista `test:smoke`) · `VehicleDossieModal.tsx`, `ProcessoDossiePage.tsx`, `useProcessChecklistRuns.ts`, `processes.service.ts` · `agent-orchestration/controle/gerar-indice-pendencias.py` (governança, 16.7) · `.github/**` · `CLAUDE.md`/`AGENTS.md` · `Kpis/index.html`, `Kpis/styles.css` · `prisma/**`, `mobile/**`, lockfiles. **Se a medição do dev provar que o defeito mora fora do PERMITIDO, ele PARA e escreve** (comando + saída no DEV-relatorio); não corrige fora.
+
+### 16.5 Critérios de aceite do ciclo 2 — cada um com a MUTAÇÃO que o deixa vermelho (A2–A14, A16, A19–A26, A17′, A18′ ficam; A15 → A15′)
+| # | Critério (verde) | Mutação que o deixa VERMELHO | Onde |
+|---|---|---|---|
+| A27 | P-C1 repouso/hover/foco: no navegador real (app no Vite + Chromium, fixtures B1/B3), `getComputedStyle(a)` ≠ `getComputedStyle(a.parentElement)` em repouso (`color rgb(37,99,235)`, `font-weight 700` vs `rgb(100,116,139)`/400), sob `:hover` muda (`text-decoration-line underline`, `color rgb(29,78,216)`), sob `:focus-visible` `outline` ≠ `none` — nas 3 superfícies; na impressão o link sai distinguível (cor/peso) | tirar `className="pat-link"` → link = pai (o estado medido em §1.3 da trilha) | C1′ · T17 |
+| A28 | P-C1 clique: clicar em "Ver versão vigente"/"Ver versão anterior" **não** muda `location.hash` nem `history.length`; `document.activeElement` vira a `<tr>` alvo; a linha-alvo fica **inteiramente visível** (retângulo fora do `stickyHead`) inclusive no cenário L (B + 8 únicas, 1440×700); a linha recebe o realce inline por ≥1 s; o modal segue aberto | voltar ao `<a href>` sem `onClick` → `#vistoria-…` na URL e `history.length` +1 | C1′ · T19 |
+| A29 | Ids únicos: com o modal aberto na aba Checklist, `querySelectorAll` por `[id="vistoria-<id>"]` devolve **1** por vistoria; o portal de impressão usa `vistoria-impressa-<id>` | tirar `idPrefix="vistoria-impressa"` do print → 2 | C1′ · T18 |
+| A30 | Adapter fail-closed: para cada uma das 3 chaves, **ausente** → `ChecklistRunContractError`; `null` → `null`; `""`/número/objeto → `ChecklistRunContractError`; camel e snake aceitos; item sem `id/templateId/startedAt` continua **descartado** (não lança) | restaurar `readString(...) ?? null` em qualquer chave → T3′/T15 vermelhos | T3′ · T15 · C2′ |
+| A31 | Fail-closed ponta a ponta: `listProcessChecklistRuns` com `fetch` devolvendo `{items:[u1 sem currentRunId, u2]}` **rejeita** com `ChecklistRunContractError`; com as 12 chaves resolve 2 runs (u2 antes de u1) | capturar no adapter e devolver `[]`/parcial → resolve | T16 · C2′ (no navegador: Alert "Não foi possível carregar…" + 0 linhas) |
+| A32 | Gerador P-L0: cópia com DTO sem `currentRunId` → `# SEM EMISSOR no espelho (1): currentRunId` (e no adapter), exit 1; cópia com `Object.freeze({…})` → `# L0 VAZIO (emissor ilegível): SIM`, exit 1; head → todas as contagens 0, exit 0 | gerador v1 no lugar do v2 → saída sem `SEM EMISSOR`, exit 0 | T12 · T20 · T22 · C2′ |
+| A33 | Gerador P-L3: cópia com `checklistRuns.map((vistoria) => …vistoria.status…)` no modal → linha `receptor=vistoria \| tipo vistoria: sim \| … NÃO`, exit 1; M2b (índice), M4 (leitura em atributo), M8 (cast), M9 (`any`) **todas** exit 1 quando a C2′ as executar; M3 (helper correto) exit 0 | voltar à regex de nome `run\|checklist` → M2 exit 0 | T21 · C2′ |
+| A34 | T11′ exclusividade: para cada id de vistoria renderizado, ocorrências no HTML = `id="<prefixo>-<id>"` + `href="#<prefixo>-<id>"`, nas 3 superfícies (painel, impressão com `idPrefix`, `VehicleDossieView`) | `title={run.currentRunId}` no `<a>` → T11′ vermelho | T11′ · C3′ |
+| A15′ | Pendências do bloco com **dono do plano da rodada** (bloco do §5 do PLANO_SAN3 ou trilha com precedente) e texto coerente com o §13; índice regenerado = versionado | `dono: a definir` ou `B-SAN3-12` → C3′ vermelho; índice editado à mão → regen deixa diff | C3′ · A26 |
+| A35 | `backfill_note` verdadeira nos 3 lugares: `grep -c "NÃO PAGO"` em `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md` = 0 e o texto cita `pr 402 · 3e40a256 · cdf370dc` como já preenchidos (pago pelo #403) | deixar o texto do head | C3′ |
+| A36 | KPI contra a main de então: `blocks_completed` = main + 1 (**171** contra b404815c); `frontend_smoke_tests` por TAP nos **dois** terrenos (N/N iguais); history n = main + 1 (**167**), bloco por último; `release.pr 401`, `merge_commit`/`approved_head` `null`; `kpi-freeze --check` ec=0 | copiar 1230; esquecer o freeze | C3′ · A23/A24 |
+| A37 | Diff do ciclo 2 ⊆ 16.4: `git diff --name-only 653532f7 HEAD` sem `src/`, `styles/`, `components/ui/`, `package.json`, `.github/`, modal, página, hook, service; `DossiePrintDocument.tsx` numstat `1 1`; `git diff --name-only origin/main...HEAD -- src tests mobile prisma` vazio | tocar `global.css` | C3′ |
+| A38 | Bateria 16.6 verde nos dois terrenos e na CI (check-runs **concluídos** no head empurrado); arquivo do bloco **24/24**; `test:smoke` N/N por execução; `morto por sinal` = 0 | qualquer vermelho | dev · inspetor novo · C2′ |
+
+**Testes — baseline N = 12 (§8), meta M ≥ 24: o arquivo do bloco vai de 16 a 24 e os 12 do painel ficam (36 ≥ 24).** `node:test`; T1–T11 `renderToString`; T12–T14 e T20–T22 processo filho (arnês da §15: `runCenso` sem teto, `mutate` normalizado com prova — **inalterados**); T16 com stub de `fetch`.
+| T | Teste | Critério |
+|---|---|---|
+| T3′ (substitui T3) | adapter: chave **ausente** (as 3, uma a uma) → `assert.throws(…, ChecklistRunContractError)`; `null` explícito → `null`; `superseded_by_run_id: null` (snake) → `null` | A30 |
+| T11′ (substitui T11) | exclusividade de atributo nas 3 superfícies + tudo o que T11 já assertava (UUID/`tenant`/`work_order` fora do texto; ids não-UUID das fixtures fora do texto) | A34 |
+| T12 (mesma função, saída nova) | gerador no head → `descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0`, exit 0 | A32 |
+| T15 | adapter: valor inválido (`""`, `42`, `{ id: "run-u2" }`) em cada chave → lança; item sem `id` **e** sem as chaves → descartado, não lança (`[]`) | A30 |
+| T16 | service: `process.env.VITE_USE_MOCKS = "false"`; `globalThis.fetch` stub (restaurado em `finally`); `await import("../src/modules/patios/processes/processes.service")`; payload sem `currentRunId` → `assert.rejects(() => listProcessChecklistRuns({}, "p1"), (e) => e instanceof ChecklistRunContractError)`; payload completo → 2 runs, `[0].id === "run-u2"` | A31 |
+| T17 | painel B1/B3: os dois `<a>` saem com `class="pat-link"` e `href="#vistoria-…"`; nenhum `<a` sem `class="pat-link"` no HTML das linhas | A27 |
+| T18 | `DossiePrintDocument` com substituída e vigente na lista: `id="vistoria-impressa-run-u1"` e `href="#vistoria-impressa-run-u2"` presentes; `id="vistoria-run-` **ausente**; o painel puro mantém `id="vistoria-run-u1"` | A29 |
+| T19 | `focusVersionRow` com fakes (`event.preventDefault` espião; `scope.querySelector` devolvendo um alvo com espiões `scrollIntoView`/`focus`): alvo achado → `preventDefault` 1×, `scrollIntoView({ block: "center" })` 1×, `focus({ preventScroll: true })` 1×, devolve o id; `scope.querySelector` → `null` → `preventDefault` 0×, devolve `null` | A28 |
+| T20 | gerador, cópia com a linha `currentRunId: run.currentRunId ?? null,` removida do DTO via `mutate` (regex sobre texto LF, com prova) → `SEM EMISSOR no espelho (1): currentRunId` + exit 1 | A32 |
+| T21 | gerador, cópia com o ponto M2 injetado em `VehicleDossieModal.tsx` via `mutate` (import de `getChecklistRunStatusLabel` + um `<p>` com receptor `vistoria` ao lado do painel) → linha `receptor=vistoria` … `consulta substituição: NÃO` + exit 1 | A33 |
+| T22 | gerador, cópia com `runs.map((run) => ({` → `runs.map((run) => Object.freeze({` e o fecho `})),` → `}))),` no DTO via `mutate` → `L0 VAZIO (emissor ilegível): SIM` + exit 1 | A32 |
+T13/T14 ficam (T13: `DossiePrintDocument.tsx:<n> … NÃO`; T14: `DESCARTADAS pelo adapter (1)`). As cópias de T20–T22 copiam o mesmo que T13/T14 (`src/modules/impound/impound.checklist-link.dto.ts`, `frontend/src/**`, `package.json`); o gerador roda com `TS_ROOT=<frontend real>` — o `tsconfig.json` e o `typescript` vêm dali (medido na cópia sem `node_modules`: ec=0, 5,1 s).
+
+### 16.6 Bateria do ciclo 2 — nos DOIS terrenos, `timeout` externo, `ec` por variável, nunca `tail -f`
+Terrenos do dev: `C:/Users/AMP/w-dev11c2` (CRLF; `tr -cd '\r' < frontend/src/modules/patios/processes/processes.adapter.ts | wc -c` > 0 colado) e `C:/Users/AMP/w-dev11c2lf` (`git -c core.autocrlf=false worktree add --detach`; CR = 0 colado; checkouts sempre com `-c core.autocrlf=false`). `npm ci --no-audit --no-fund` em `frontend/` nos dois; raiz uma vez `npm ci --ignore-scripts` (guards do KPI; Playwright se quiser antecipar A27/A28). Sem junction. Removidos ao fim com **0 processo vivo** — contagem por `Get-CimInstance Win32_Process` via **`C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe`** (o `powershell` não está no PATH do Git Bash desta máquina — medido pelo planejador). Base viva nunca alvo. Mutações só por arquivo de spec + helper com âncora única e prova (bytes/CR antes→depois); conteúdo com barra invertida dupla **nunca por heredoc** (o transporte colapsa a dupla em simples — medido pelo planejador em 04:10Z) e comandos longos em partes ≤ 7 KB.
+Em **cada** terreno:
+```
+npm --prefix frontend run check ; ec=$?                                                                                 # 0
+( cd frontend && timeout 1200 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx > ../tap-versao.log 2>&1 ; echo ec=$? )  # 24/24; grep -c 'morto por sinal' = 0
+( cd frontend && timeout 900 node --test --import tsx tests/patios-dossie-checklist.smoke.test.tsx tests/patios-dossie-print.smoke.test.tsx tests/patios-dossie-modal.smoke.test.tsx tests/patios-dossie.smoke.test.tsx tests/patios-dossie-deeplink.smoke.test.tsx tests/patios-dossie-history.smoke.test.tsx tests/checklists-run-lock.test.ts ; echo ec=$? )   # regressões do dossiê
+TS_ROOT=<frontend> timeout 300 node scripts/san3-11-dossie-vistoria-censo.mjs . ; ec=$?                                 # 0; saída colada (todas as contagens 0)
+timeout 1800 npm --prefix frontend run test:smoke > tap-smoke.log 2>&1 ; ec=$?                                          # N/N por execução → KPI
+npm --prefix frontend run build && rm -rf frontend/dist                                                                 # §C5
+git grep -n -E 'Versao|substituida|vigente nao' -- frontend/src ; git grep -n -i -E '\btenant\b' -- frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx   # vazios (A14)
+# Controles com mutação em cópia de trabalho, prova de aplicação, restauração por cópia, `git diff --stat` vazio depois, NUNCA commitados — cada um com comando · TAP resumido · mensagem exata:
+#   A30 (`?? null` restaurado numa chave → T3′/T15 vermelhos) · A31 (adapter engole → T16 vermelho) · A32/A33 (gerador v1 no lugar do v2 → T20/T21/T22 vermelhos)
+#   A27 (sem `pat-link` → T17) · A29 (sem `idPrefix` → T18) · A34 (`title={run.currentRunId}` → T11′) · A17′/A19/A20/A21 da §15 (o arnês não mudou)
+#   T4 vermelho-controle no head-base COLADO JUNTO com M1 no objeto (chip verde presente) — responde C1-06
+```
+Na raiz, uma vez: `node scripts/kpi-freeze.mjs --check ; echo ec=$?` (0) · `node --check Kpis/app.js` · `node --test --import tsx tests/kpi-dashboard-charts.test.ts` · `python agent-orchestration/controle/gerar-indice-pendencias.py` → `git diff --stat -- agent-orchestration/controle/pendencias-indice.md` vazio (A26; o gerador grava LF — comparar por `tr -d '\r' | md5sum`, lição da C3 do ciclo 1) · `git diff --name-only origin/main...HEAD` (⊆ 16.4) · `git diff --name-only 653532f7 HEAD` (⊆ 16.4; `DossiePrintDocument.tsx` numstat `1 1`) · varredura v2 da §15-bis.7 → `TETO=0 · NULL=0 · CP=1 · EOL=3` (A18′) · **`git diff --check` em linha própria antes de cada commit**. O `npm test` da raiz não é exigido (nada em `src/`). Tudo colado em `DEV-relatorio.md` seção `## CICLO 2 — <UTC>`, por terreno.
+
+### 16.7 Integração da `origin/main`, KPI (§C3), pendências e registro
+1. **Primeiro commit do ciclo:** `git fetch origin main` · `git merge origin/main` (b404815c) — **nunca rebase** (o ramo tem mandatos e pareceres que citam SHAs). Conflitos esperados (medidos): `Kpis/app.js`, `Kpis/kpis-history.json`, `Kpis/kpis-latest.json`, `agent-orchestration/codex/log-execucao.md`, `agent-orchestration/controle/pendencias-indice.md`, `agent-orchestration/docs/status-geral.md` — **as duas entradas ficam, a do bloco por último**; `app.js` resolve-se regenerando (`node scripts/kpi-freeze.mjs`); o índice regenerando (A26). **0 conflito em código.** Depois, commits próprios (Conventional Commits; `git diff --check` em linha própria antes de cada): `fix(patios): B-SAN3-11 ciclo 2 — links com afordância que não navegam; adapter fail-closed (E10/E11)` · `fix(test): B-SAN3-11 ciclo 2 — gerador v2 por tipo e decisão; T3′/T11′/T15–T22 (E12/E13)` · `docs(registro): B-SAN3-11 ciclo 2 — pendências com dono do plano da rodada e índice (E14)` · `fix(kpi): B-SAN3-11 ciclo 2 — recontagem contra a main b404815c e backfill_note verdadeira (E15)`.
+2. **KPI:** `blocks_completed` **171** = 170 (b404815c) + 1 — regra: a main de então + 1 (se a main andar antes do push, reconta); `frontend_smoke_tests` **por execução** nos dois terrenos (TAP `# tests/# pass` colado; esperado 1214 + 24 = **1238** se a main não tocar `frontend/`; vale o medido); `backend_tests 3052/3054` e `flutter_tests 864/864` carregados com nota (`git diff --name-only origin/main...HEAD -- src tests mobile prisma` vazio, colado); `version "B-SAN3-11"`, `release.pr 401`, `merge_commit`/`approved_head` **null**, `status "published_per_pr"`, `snapshot_date` do dia; history n = **167** (166 + 1), bloco por último; `kpis-history.md` ganha 1 linha "CICLO 2 (§16): links com afordância, adapter fail-closed, gerador v2, pendências com dono; +8 testes (16 → 24)"; **`backfill_note` nos 3 lugares = o texto do A35**; `node scripts/kpi-freeze.mjs` → `app.js` (2 linhas `var FROZEN`), `--check` ec=0. `mvp_demo`/`mvp_vendavel` intocados.
+3. **Pendências (E14, A15′):** `P-SAN3-11-VIGENTE-NAO-VINCULADA` → `**dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))`; corpo: causa = P-d (`reopenRun` **copia** `related_entity_type/id` — `checklist-prisma.repository.ts:806-807`; o AUTO-link roda **só na abertura** da custódia — `impound-prisma.repository.ts:205-215`; a rota MANUAL `POST …/link-checklist-run` existe sem UI), remédio = o do §13 (backend lista os sucessores da cadeia com origem `DERIVED` **ou** `reopenRun` propaga os vínculos — decisão da junta do bloco dono); saem "B-SAN3-12 ou bloco dedicado" e "gerou uma nova order". `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` → `**dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)`; corpo: "o repositório ordena por `created_at` do **vínculo** (iguais na mesma tx do AUTO-link ⇒ indefinida, B1b); **o adapter reordena por `startedAt desc`** (`processes.adapter.ts:557-558`) e essa é a ordem do dossiê (B1c/T5); informativa — nenhum consumidor além do frontend"; sai "o painel exibe as runs na ordem recebida (sem reordenar)". Índice regenerado. **Nenhuma pendência nova.** **Nota de governança** (ata do ciclo 2, 1 linha; dono: orquestrador → bloco de governança de registro, na mesma fila da divergência §11 do `CLAUDE.md`): `gerar-indice-pendencias.py:98` lê "a definir" e qualquer texto como dono `sim` — o instrumento reconhece a palavra.
+4. **Registro:** `DEV-relatorio.md` `## CICLO 2 — <UTC>` (terrenos, bateria, controles com mensagem exata, varredura v2, KPI antes/depois, head anterior 653532f7 → novo); `log-execucao.md` e `status-geral.md` 1 linha cada; `comandos/B-SAN3-11-….md` 1 parágrafo "ciclo 2 (§16)"; esta §16 e `PLANEJADOR-ciclo2-relatorio.md` versionados pelo orquestrador; ata `J-B-SAN3-11.md` ganha "## ciclo 2" (quem ocupou cada papel; quedas P6; a nota de governança).
+
+### 16.8 Junta do ciclo 2 — composição para a `agente-fabrica`, inspetor novo, sequência
+**Quórum: unanimidade de 3** (§C7.1-ter(b), inalterado: o dossiê é prova do estado do veículo). Sem crítico. Cadeiras em **Opus 5.5 declarado** (o contrato fixa Fable só para gates e planejador). Corpos novos em `.claude/agents/especialistas/jurado-san3-11-c2-*.md` + espelho `.agents/agents/especialistas/` (`node scripts/sync-agent-agents.mjs --check` verde); **`git add -f` nos dois espelhos e commit no ramo** — o ignore global cobre os dois diretórios, e corpo não commitado no ramo julgado não conta; a `agente-fabrica` não tem Bash: **o orquestrador versiona**. Mandatos ≤3 itens (P4; medir ≠ julgar), P1–P7 verbatim do contrato no disparo; cada cadeira declara modelo e md5 EOL-neutro do corpo na 1ª linha da evidência.
+| cadeira | identidade (nova) | competência que a fábrica escreve no corpo | itens |
+|---|---|---|---|
+| C1′ afordância, âncora e superfícies | `jurado-san3-11-c2-afordancia-e-ancora` | cognição visual **e** interação medida no navegador real (app no Vite + Playwright/Chromium: `getComputedStyle`, `matches(":hover")`/`matches(":focus-visible")`, `location.hash`/`history.length`, retângulo do alvo × `stickyHead`, contagem de ids, `emulateMedia print`); conhece o design system do repo (tokens, família `.pat-*`), a §11 do contrato e os vetos de microinteração ("elemento interativo sem hover/foco visível"; "clique sem retorno") | (1) A27 + A28 nas 3 superfícies com B1/B3 **e** o cenário L (lista longa, 1440×700); (2) A29 (ids únicos com o modal aberto) + impressão real (`window.print` → `media print`) + A12/A14 byte a byte; (3) T4 vermelho-controle no head-base **com** M1 do objeto (C1-06) |
+| C2′ enumeração tipada e fail-closed | `jurado-san3-11-c2-enumeracao-tipada` | fail-closed por **álgebra e execução**: lê AST e checker do TypeScript, escreve mutações próprias com âncora única e prova de aplicação em CRLF, roda gerador e suíte em cópia descartável; conhece a família "guarda que reconhece forma em vez de enunciar propriedade" (§C7.4(a)), o padrão `db-catalog-write-guard` e o veto "allowlist vazia que significa tudo" | (1) gerador v2 no head + **M1–M9 deste §16 executadas** (M2/M2b/M4/M8/M9 vermelhas; M3 verde; **M7 verde = residual (iv): julga se há ponto novo com essa forma no diff**) + **uma mutação própria nova**; (2) A30/A31 (adapter e service fail-closed; `ChecklistRunContractError` até o estado de erro do painel no navegador) + T3′/T15/T16 com controles; (3) T12–T14 e T20–T22 nos dois terrenos (`duration_ms`, `morto por sinal` = 0) + A17′/A19–A21 |
+| C3′ registro, escopo e acesso | `jurado-san3-11-c2-registro-e-escopo` | cadeia de acesso e §allowlist (P-o por script, guarda dupla, `canReadChecklist`), disciplina de escopo por pathspec, registro honesto (pendência com dono **do plano da rodada** — confere o bloco no §5 do `PLANO_SAN3.md` ou o precedente da trilha; índice gerado × versionado; KPI por execução × carregado; `backfill_note` × history da `main` real) | (1) P-o + T10 + T11′ (A34) com a mutação `title=`; (2) diff × 16.4 (A37) + `DossiePrintDocument` numstat `1 1` + A18′ (varredura v2) + A25; (3) A15′ + A26 + A35 + A36 (KPI recontado contra a main integrada **e** a de agora) |
+**Inspetor novo** (Fable, 3ª instância): worktree próprio por cadeira que muta (C1′, C2′), `npm ci` próprio, S0 (`sync-agent-agents.mjs --check`), **check-runs concluídos no head empurrado** (gatilho de push: só head novo dispara; `cancelled`/`queued` conta como ausente), inelegibilidade por nome (16.1), baseline **24/24** e `test:smoke` N/N nos **dois** terrenos, corpos das 3 cadeiras commitados no ramo (md5 EOL-neutro), plano de perda; **`LIBERADO` antes do primeiro disparo**. P5: ≤2 cadeiras em paralelo.
+**Sequência:** merge da main → E10–E15 em commits próprios → bateria 16.6 nos dois terrenos → `git merge-base --is-ancestor origin/fix/dossie-versao-da-vistoria HEAD; echo $?` = 0 → `git push origin HEAD:fix/dossie-versao-da-vistoria` (nunca `--force`) → CI no head → mandatos regenerados (`bash scripts/mandato-refs.sh 401`, **HC = H0**) → inspetor novo → junta ciclo 2 → verde = merge + `porteiro-pos-merge`. Reprovação → `omega/reprovacoes/R-B-SAN3-11-2.md`, ciclo 3 com papéis recompostos; `bloqueia` no ciclo 3 → auditoria da máquina antes do 4 (`D-SEM-TETO-AUDITORIA-NO-3`).
+
+### 16.9 Riscos, residuais declarados e rollback
+| R | Risco | Mitigação |
+|---|---|---|
+| R9 | Erro de contrato derruba a aba inteira (um item mal formado → nenhuma vistoria visível) | decisão D-C2-1, declarada: num documento de prova, "não foi possível carregar" + "Tentar novamente" vence lista errada; o DTO real emite as 12 chaves sempre (A4) — o caminho só vive se o backend quebrar o contrato, e aí o gerador P-L0 já ficou vermelho na CI |
+| R10 | `ts.createProgram` lento ou frágil nas cópias (T13/T14/T20–T22) | medido: 2,4–7,3 s por execução; 5,1 s na cópia sem `node_modules` (resolução bare pelo `TS_ROOT`); 6 execuções ≈ 30–60 s no Windows; `runCenso` sem teto (§15) — morte aparece como morte, nunca como veredito |
+| R11 | **Residual (iv):** guarda que lê o campo e não distingue os ramos (M7) passa no gerador | declarado; M7 no mandato da C2′ para **julgar**; T4–T11 cobrem o painel; ponto novo com essa forma é achado de leitura do diff, não de guard |
+| R12 | `.pat-link` é 12px dentro de `<small>` 11px | é o idioma da classe (usada em contextos 11–13px); a C1′ julga a composição; a propriedade é cor/peso/hover/foco, não o px |
+| R13 | `focusVersionRow` sem `document` (SSR) | só roda no `onClick`; `renderToString` nunca o chama; T19 usa fakes |
+| R14 | A main anda de novo antes do push | regra "main de então + 1"; re-merge; recontagem |
+| R15 | Os dois testes de adapter existentes (`patios-dossie-checklist…:59-86`) ficam vermelhos com o adapter fail-closed se as fixtures não ganharem as 3 chaves | E13 nomeia as linhas; "nenhuma asserção removida" continua; a C3′ lê o diff dessas fixtures |
+**Rollback:** `git revert` dos commits do ciclo 2 no ramo; estado anterior `653532f7`. Nenhuma migration, nenhum dado.
+
+**Uma linha:** a junta 1 pegou quatro guardas que reconheciam forma — `<a>` cru que herda o reset, `?? null` que iguala "não sei" a "não foi substituída", regex de nome de variável e `grep -c dono` — e o ciclo 2 troca cada uma pela propriedade, **executada antes de publicada**: link com o idioma da casa que não navega, adapter que recusa contrato quebrado (o §4 reescrito), gerador v2 que vê tipo e decisão (M2/M2b/M4/M8/M9 e M5/M5b/M5c/M6 vermelhos; M7 declarado), pendências com dono do plano da rodada, `main` b404815c por merge e KPI recontado — 8 testes novos (24 no arquivo), nos dois terrenos, com identidade nova em cada papel.
+
+### Apêndice E — o gerador v2 (verbatim; md5 EOL-neutro `e5fd8ebb7bbead617668ed43c1e55c29`; 208 linhas) — o dev commita como `scripts/san3-11-dossie-vistoria-censo.mjs`
+
+```js
+#!/usr/bin/env node
+// B-SAN3-11 — GERADOR v2 (ciclo 2) — censo CE-G1 por PROPRIEDADE, com o checker de tipos do TypeScript.
+// PROPRIEDADES (não lista de nomes):
+//   P-L0  as três cópias da verdade (DTO emite · espelho declara · adapter consome) são o MESMO conjunto, nos dois sentidos,
+//         e um emissor ilegível (L0 vazio) é vermelho — pega remoção de chave no emissor (M5/M5b/M5c) e L0 vazio (M6).
+//   P-L3  todo ponto de JSX que renderiza a SITUAÇÃO de uma vistoria (x.status ou helper de situação) — "vistoria" decidida
+//         pelo TIPO do receptor (ChecklistRunSummaryItem, ou a forma de resumo id/templateVersion/status/startedAt), nunca pelo
+//         nome da variável — está sob uma DECISÃO (?:, &&, ||, ??, if) cuja condição lê o estado de substituição
+//         (supersededByRunId/currentRunId/reopenedFromRunId), resolvendo const/função do mesmo arquivo. Receptor de tipo
+//         desconhecido/any = vistoria (negar); ponto sem decisão = NÃO.
+// Camadas: L0 DTO · L1 espelho · L2 adapter · L3 pontos · L4 consumidores. Uso: node censo-v2.mjs <repo-root>
+// TS_ROOT = diretório do frontend com node_modules + tsconfig.json (default <root>/frontend). Cópias temporárias (T13/T14)
+// não têm node_modules: especificadores bare (react, react/jsx-runtime…) são resolvidos a partir do TS_ROOT.
+import { createRequire } from "node:module";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
+
+const root = resolve(process.argv[2] ?? ".");
+const TS_ROOT = resolve(process.env.TS_ROOT ?? join(root, "frontend"));
+const require = createRequire(join(TS_ROOT, "package.json"));
+const ts = require("typescript");
+
+const DTO = "src/modules/impound/impound.checklist-link.dto.ts";
+const TYPES = "frontend/src/modules/patios/processes/processes.types.ts";
+const ADAPTER = "frontend/src/modules/patios/processes/processes.adapter.ts";
+const PROCESSES_DIR = "frontend/src/modules/patios/processes";
+const FRONTEND_SRC = "frontend/src";
+const STATUS_HELPERS = new Set(["getChecklistRunStatusLabel", "getChecklistRunStatusTone"]);
+const VERSION_FIELDS = new Set(["supersededByRunId", "currentRunId", "reopenedFromRunId"]);
+const SUMMARY_SHAPE = ["id", "templateVersion", "status", "startedAt"];
+const VISTORIA_TYPE = "ChecklistRunSummaryItem";
+
+function parse(rel) {
+  const text = readFileSync(join(root, rel), "utf8");
+  return ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+}
+function walk(node, fn) { fn(node); ts.forEachChild(node, (c) => walk(c, fn)); }
+function line(sf, node) { return sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1; }
+function listFiles(dir, acc = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) listFiles(p, acc); else if (/[.](ts|tsx)$/.test(name) && !/[.]d[.]ts$/.test(name)) acc.push(p);
+  }
+  return acc;
+}
+
+// ── L0 / L1 / L2 (AST sintática basta) ──
+function dtoKeys() {
+  const sf = parse(DTO); const keys = [];
+  walk(sf, (n) => {
+    if (ts.isFunctionDeclaration(n) && n.name?.text === "toChecklistRunSummaryListDto") walk(n, (m) => {
+      if (ts.isCallExpression(m) && ts.isPropertyAccessExpression(m.expression) && m.expression.name.text === "map") {
+        const arrow = m.arguments[0];
+        if (arrow && ts.isArrowFunction(arrow)) {
+          let body = arrow.body; if (ts.isParenthesizedExpression(body)) body = body.expression;
+          if (ts.isObjectLiteralExpression(body)) for (const p of body.properties) if (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) keys.push(p.name.getText(sf));
+        }
+      }
+    });
+  });
+  return keys;
+}
+function mirrorKeys() {
+  const sf = parse(TYPES); const keys = [];
+  walk(sf, (n) => { if (ts.isTypeAliasDeclaration(n) && n.name.text === VISTORIA_TYPE && ts.isTypeLiteralNode(n.type)) for (const m of n.type.members) if (ts.isPropertySignature(m)) keys.push(m.name.getText(sf)); });
+  return keys;
+}
+function adapterKeys() {
+  const sf = parse(ADAPTER); const keys = [];
+  walk(sf, (n) => {
+    if (ts.isFunctionDeclaration(n) && n.name?.text === "adaptChecklistRun") walk(n, (m) => {
+      if (ts.isReturnStatement(m) && m.expression && ts.isObjectLiteralExpression(m.expression)) for (const p of m.expression.properties) if (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) keys.push(p.name.getText(sf));
+    });
+  });
+  return keys;
+}
+
+// ── L3 / L4 com o checker de tipos ──
+function importsAny(sf, names) {
+  let hit = false;
+  walk(sf, (n) => { if (ts.isImportDeclaration(n) && n.importClause?.namedBindings && ts.isNamedImports(n.importClause.namedBindings)) for (const e of n.importClause.namedBindings.elements) if (names.has(e.name.text)) hit = true; });
+  return hit;
+}
+function l3Files() {
+  const files = new Set(listFiles(join(root, PROCESSES_DIR)).map((p) => relative(root, p)));
+  for (const p of listFiles(join(root, FRONTEND_SRC))) { const rel = relative(root, p); if (files.has(rel)) continue; const sf = parse(rel); if (importsAny(sf, new Set([VISTORIA_TYPE, "ChecklistRunsPanel"]))) files.add(rel); }
+  return [...files].sort();
+}
+function buildProgram(files) {
+  const cfg = ts.readConfigFile(join(TS_ROOT, "tsconfig.json"), ts.sys.readFile);
+  if (cfg.error) throw new Error("tsconfig ilegível em TS_ROOT: " + ts.flattenDiagnosticMessageText(cfg.error.messageText, " "));
+  const parsed = ts.parseJsonConfigFileContent(cfg.config, ts.sys, TS_ROOT);
+  const options = { ...parsed.options, noEmit: true, skipLibCheck: true, composite: false, incremental: false, tsBuildInfoFile: undefined };
+  const host = ts.createCompilerHost(options, true);
+  const anchor = join(TS_ROOT, "src", "__censo_anchor__.ts"); // resolução de especificadores bare quando a cópia não tem node_modules
+  host.resolveModuleNames = (names, containing, _reused, _redirect, opts) => names.map((name) => {
+    const direct = ts.resolveModuleName(name, containing, opts, host).resolvedModule;
+    if (direct || name.startsWith(".") || name.startsWith("/")) return direct;
+    return ts.resolveModuleName(name, anchor, opts, host).resolvedModule;
+  });
+  host.resolveTypeReferenceDirectives = (names, containing, _redirect, opts) => names.map((n) => {
+    const name = typeof n === "string" ? n : n.fileName;
+    const direct = ts.resolveTypeReferenceDirective(name, containing, opts, host).resolvedTypeReferenceDirective;
+    return direct ?? ts.resolveTypeReferenceDirective(name, anchor, opts, host).resolvedTypeReferenceDirective;
+  });
+  return ts.createProgram({ rootNames: files.map((f) => join(root, f)), options, host });
+}
+function enclosingFunction(node) { let p = node.parent; while (p && !(ts.isArrowFunction(p) || ts.isFunctionExpression(p) || ts.isFunctionDeclaration(p) || ts.isMethodDeclaration(p))) p = p.parent; return p; }
+function inJsx(n) { for (let p = n.parent; p; p = p.parent) if (ts.isJsxElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxExpression(p) || ts.isJsxFragment(p)) return true; return false; }
+function unwrapCasts(e) { while (e && (ts.isAsExpression(e) || ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isTypeAssertionExpression(e) || (typeof ts.isSatisfiesExpression === "function" && ts.isSatisfiesExpression(e)))) e = e.expression; return e; } // o TIPO que vale é o da expressão por baixo do cast
+function typeIsVistoria(type) {
+  if (!type) return "desconhecido";
+  if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return "desconhecido";
+  const parts = type.isUnion && type.isUnion() ? type.types : [type];
+  for (const t of parts) {
+    if (t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)) continue;
+    const name = t.aliasSymbol?.name ?? t.symbol?.name;
+    if (name === VISTORIA_TYPE) return "sim";
+    if (SUMMARY_SHAPE.every((p) => t.getProperty(p))) return "sim";
+  }
+  return "nao";
+}
+function exprReadsVersion(expr, checker, seen, depth) {
+  if (!expr || depth > 5) return false;
+  let hit = false;
+  walk(expr, (n) => {
+    if (hit) return;
+    if (ts.isPropertyAccessExpression(n) && VERSION_FIELDS.has(n.name.text)) { hit = true; return; }
+    if (ts.isIdentifier(n) && VERSION_FIELDS.has(n.text) && ts.isBindingElement(n.parent)) { hit = true; return; }
+    if (ts.isIdentifier(n)) {
+      const sym = checker.getSymbolAtLocation(n); const decl = sym?.valueDeclaration ?? sym?.declarations?.[0];
+      if (!decl || seen.has(decl)) return; seen.add(decl);
+      if (ts.isVariableDeclaration(decl) && decl.initializer) { if (exprReadsVersion(decl.initializer, checker, seen, depth + 1)) hit = true; }
+      else if ((ts.isFunctionDeclaration(decl) || ts.isArrowFunction(decl) || ts.isFunctionExpression(decl)) && decl.body) { if (exprReadsVersion(decl.body, checker, seen, depth + 1)) hit = true; }
+    }
+  });
+  return hit;
+}
+// a DECISÃO sob a qual o ponto está: sobe do ponto até a função envolvente coletando condições de ?:, &&/||/??, if
+function guardedByVersion(node, fn, checker) {
+  const conds = [];
+  for (let c = node, p = node.parent; p && p !== fn; c = p, p = p.parent) {
+    if (ts.isConditionalExpression(p) && (p.whenTrue === c || p.whenFalse === c)) conds.push(p.condition);
+    else if (ts.isBinaryExpression(p) && p.right === c) { const k = p.operatorToken.kind; if (k === ts.SyntaxKind.AmpersandAmpersandToken || k === ts.SyntaxKind.BarBarToken || k === ts.SyntaxKind.QuestionQuestionToken) conds.push(p.left); }
+    else if (ts.isIfStatement(p) && (p.thenStatement === c || p.elseStatement === c)) conds.push(p.expression);
+  }
+  return conds.some((cond) => exprReadsVersion(cond, checker, new Set(), 0));
+}
+
+function censo(files) {
+  const program = buildProgram(files); const checker = program.getTypeChecker();
+  const sites = []; const consumers = [];
+  for (const rel of files) {
+    const sf = program.getSourceFile(join(root, rel)); if (!sf) continue;
+    walk(sf, (n) => {
+      if (rel.endsWith(".tsx")) {
+        let receptor = null; let unknownReceptor = false; // expressão cujo TIPO decide se é vistoria
+        if (ts.isPropertyAccessExpression(n) && n.name.text === "status") receptor = n.expression;
+        else if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && STATUS_HELPERS.has(n.expression.text)) {
+          const a = n.arguments[0];
+          if (a && ts.isPropertyAccessExpression(a) && a.name.text === "status") receptor = a.expression; else { receptor = a ?? n; unknownReceptor = true; }
+        }
+        if (receptor && inJsx(n)) {
+          const ln = line(sf, n); const key = `${rel}:${ln}`;
+          if (!sites.some((s) => s.key === key)) {
+            const vis = unknownReceptor ? "desconhecido" : typeIsVistoria(checker.getTypeAtLocation(unwrapCasts(receptor)));
+            if (vis !== "nao") {
+              const fn = enclosingFunction(n);
+              const consulta = guardedByVersion(n, fn, checker) ? "sim" : "NÃO";
+              sites.push({ key, file: rel, line: ln, receptor: unknownReceptor ? "?" : receptor.getText(sf).slice(0, 40), tipo: vis, expr: n.getText(sf).slice(0, 60), consulta });
+            }
+          }
+        }
+      }
+      if ((ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) && n.tagName.getText(sf) === "ChecklistRunsPanel") {
+        const runsAttr = n.attributes.properties.find((a) => ts.isJsxAttribute(a) && a.name.getText(sf) === "runs");
+        consumers.push({ file: rel, line: line(sf, n), runs: runsAttr ? runsAttr.initializer.getText(sf).slice(0, 40) : "(sem runs)" });
+      }
+    });
+  }
+  return { sites, consumers };
+}
+
+const t0 = Date.now();
+const emitted = dtoKeys(), mirror = mirrorKeys(), consumed = adapterKeys();
+const dropMirror = emitted.filter((k) => !mirror.includes(k)), dropAdapter = emitted.filter((k) => !consumed.includes(k));
+const semEmissorMirror = mirror.filter((k) => !emitted.includes(k)), semEmissorAdapter = consumed.filter((k) => !emitted.includes(k));
+const l0Vazio = emitted.length === 0;
+const files = l3Files();
+const { sites, consumers } = censo(files);
+console.log(`# L0 DTO emite (${emitted.length}): ${emitted.join(", ")}`);
+console.log(`# L1 espelho ${VISTORIA_TYPE} (${mirror.length}): ${mirror.join(", ")}`);
+console.log(`# L2 adapter consome (${consumed.length}): ${consumed.join(", ")}`);
+console.log(`# DESCARTADAS pelo espelho (${dropMirror.length}): ${dropMirror.join(", ") || "∅"}`);
+console.log(`# DESCARTADAS pelo adapter (${dropAdapter.length}): ${dropAdapter.join(", ") || "∅"}`);
+console.log(`# SEM EMISSOR no espelho (${semEmissorMirror.length}): ${semEmissorMirror.join(", ") || "∅"}`);
+console.log(`# SEM EMISSOR no adapter (${semEmissorAdapter.length}): ${semEmissorAdapter.join(", ") || "∅"}`);
+console.log(`# L0 VAZIO (emissor ilegível): ${l0Vazio ? "SIM" : "não"}`);
+console.log(`# L3 arquivos varridos (${files.length}): ${files.join(" · ")}`);
+console.log(`# L3 pontos de apresentação da situação de uma vistoria (${sites.length}):`);
+for (const s of sites) console.log(`${s.file}:${s.line} | receptor=${s.receptor} | tipo vistoria: ${s.tipo} | ${s.expr} | consulta substituição: ${s.consulta}`);
+console.log(`# L4 consumidores do painel (${consumers.length}):`);
+for (const c of consumers) console.log(`${c.file}:${c.line} | runs=${c.runs}`);
+const naoConsulta = sites.filter((s) => s.consulta !== "sim");
+const desconhecidos = sites.filter((s) => s.tipo === "desconhecido");
+const total = dropMirror.length + dropAdapter.length + semEmissorMirror.length + semEmissorAdapter.length + (l0Vazio ? 1 : 0) + naoConsulta.length;
+console.log(`# VEREDITO: descartadas=${dropMirror.length + dropAdapter.length} · sem emissor=${semEmissorMirror.length + semEmissorAdapter.length} · L0 vazio=${l0Vazio ? 1 : 0} · pontos sem consulta=${naoConsulta.length} (receptor desconhecido=${desconhecidos.length}) · ${Date.now() - t0} ms`);
+process.exitCode = total === 0 ? 0 : 1;
+
+```
+
+**Saída no head `653532f7`** (`TS_ROOT=C:/Users/AMP/w-plc2lf/frontend node censo-v2.mjs .`, terreno LF, exit 0; a linha `# L3 arquivos varridos (26): …` elidida — igual à do Apêndice A):
+
+```
+# L0 DTO emite (12): id, templateId, templateName, templateVersion, status, relatedEntityType, relatedEntityId, startedAt, completedAt, reopenedFromRunId, supersededByRunId, currentRunId
+# L1 espelho ChecklistRunSummaryItem (12): id, templateId, templateName, templateVersion, status, relatedEntityType, relatedEntityId, startedAt, completedAt, reopenedFromRunId, supersededByRunId, currentRunId
+# L2 adapter consome (12): id, templateId, templateName, templateVersion, status, relatedEntityType, relatedEntityId, startedAt, completedAt, reopenedFromRunId, supersededByRunId, currentRunId
+# DESCARTADAS pelo espelho (0): ∅
+# DESCARTADAS pelo adapter (0): ∅
+# SEM EMISSOR no espelho (0): ∅
+# SEM EMISSOR no adapter (0): ∅
+# L0 VAZIO (emissor ilegível): não
+# L3 pontos de apresentação da situação de uma vistoria (2):
+frontend\src\modules\patios\processes\components\ChecklistRunsPanel.tsx:116 | receptor=run | tipo vistoria: sim | getChecklistRunStatusLabel(run.status) | consulta substituição: sim
+frontend\src\modules\patios\processes\components\ChecklistRunsPanel.tsx:119 | receptor=run | tipo vistoria: sim | getChecklistRunStatusTone(run.status) | consulta substituição: sim
+# L4 consumidores do painel (3):
+frontend\src\modules\patios\processes\components\DossiePrintDocument.tsx:95 | runs={checklistRuns}
+frontend\src\modules\patios\processes\components\VehicleDossieModal.tsx:233 | runs={checklistRuns}
+frontend\src\modules\patios\processes\pages\ProcessoDossiePage.tsx:142 | runs={checklistRuns}
+# VEREDITO: descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0 (receptor desconhecido=0) · 2674 ms
+```
+
+**Mutações executadas contra esta forma** (comando, terreno e saída resumida na trilha §2.0; restauração por md5 após cada uma): M1 `run`→ec=1 · M2 `vistoria`→ec=1 · M2b `checklistRuns[0]?.status`→ec=1 · M4 leitura em atributo→ec=1 · M3 helper correto→ec=0 · M7 guarda que não distingue→ec=0 (residual iv) · M8 cast→ec=1 · M9 `any`→ec=1 (`receptor desconhecido=1`) · M5/M5b/M5c DTO sem chave→ec=1 (`SEM EMISSOR (1)`) · M6 `Object.freeze`→ec=1 (`L0 VAZIO: SIM`) · T14 adapter sem `supersededByRunId`→ec=1 (`DESCARTADAS pelo adapter (1)`) · T13 `run.status` na impressão→ec=1. Cópia sem `node_modules` (forma de T13/T14) com `TS_ROOT=<frontend real>`: ec=0, 5,1 s.
