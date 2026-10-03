@@ -2988,7 +2988,7 @@ próprio texto, §C7.4-bis) fez três coisas:
 | Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) e carregados pelo `B-GOV-SEM-TETO` (#394) |
 | Blocos Entregues | **168 → 169** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`5b6e1036`, #396; o último PR que contou bloco foi o #394 = 168). O #393 também publica bloco no ramo dele: quem mergear depois **reconta** no pré-merge |
 | mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos agentes, não o produto |
-| pr / merge_commit / approved_head | `397` / `null` / `null` **na autoria** (§C3.5) |
+| pr / merge_commit / approved_head | `397` / `513937b0…` / `67c2c280…` — backfill §C3.5 pago pelo #398 |
 
 **O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-10-01
 (`D-PAUSA-GRAVA-E-PARA`): **sob ordem de pausa do dono, o agente grava o estado e para sozinho** — a norma **P7**
@@ -3027,7 +3027,7 @@ pagos pelo #395.
 | Backend / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 864/864. Este PR **não toca `src/`, `tests/` da raiz nem `mobile/`** (`git diff --name-only origin/main...HEAD -- src tests mobile prisma` → vazio); últimos valores oficiais publicados pelo `B-SAN3-00` (#392) |
 | Blocos Entregues | **169 → 170** — +1 bloco de guarda do gate SAN3, contado a partir do valor publicado na `origin/main` (`4ab9d232`, #398; o último PR que contou bloco foi o #397 = 169). Se outro PR mergear antes, **reconta** no pré-merge |
 | mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): bloco de guarda — não move escopo; o item 4 do §4.1 já estava fechado pelo `B-SAN3-01` |
-| pr / merge_commit / approved_head | `null` / `null` / `null` **na autoria** (§C3.5) — tarefa de nuvem; o orquestrador abre o PR e preenche `pr` |
+| pr / merge_commit / approved_head | `402` / `3e40a256…` / `cdf370dc…` — backfill §C3.5 pago pelo #403 |
 
 **O que o bloco entrega** (decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`; plano `docs/revisoes/SAN3/B-SAN3-01b-plano.md`;
 relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`):

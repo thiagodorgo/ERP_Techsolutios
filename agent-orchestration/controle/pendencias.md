@@ -9946,7 +9946,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **prova (N = 1 mutação da cadeira; forma: módulo `work-orders.demo-data.ts`, fora da convenção `*.mock.ts(x)`/`mocks/`, devolvido pelo service no `catch` → bateria do bloco 79/79 verde, `[G1]` 0 vazamentos, `[G1b]` 0 fabricados; causa: `isMockModulePath` classifica a origem por convenção de nome):** `votos/B-SAN3-01b/C1-voto.json`, achado `N-C1-01`.
 - **escopo:** `pre-existente` — `isMockModulePath` nasceu em `83a3c68c` (2026-09-19, `B-SAN3-01`); o `B-SAN3-01b` não o tocou.
 - **efeito medido:** nenhum módulo assim existe hoje (a mutação foi da cadeira). É a fronteira por onde um dado fabricado novo entraria sem o guard ver.
-- **dono proposto pelo orquestrador:** `B-SAN3-06c`, que já é dono do dado demonstrativo da web (`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`); o planejador do bloco confirma ou devolve.
+- **dono:** `B-SAN3-06c`, que já é dono do dado demonstrativo da web (`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`) — atribuído pelo registro do #403.
 - **bloqueia:** não.
 - **teste de encerramento:** a origem de dado de demonstração é decidida por propriedade (o que o módulo devolve e por qual caminho é alcançado), e a mutação `work-orders.demo-data.ts` deixa o guard vermelho.
 
@@ -9956,7 +9956,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **prova (N = 2 mutações da cadeira; forma: M2c-i, atalho de plataforma, fica verde 13/13; M2c-ii, papel separador de sonda, é acusado em `[GB1]`/`[GB2]`; o atalho por rótulo "Super Admin" não é exercitável porque o arnês monta o papel pela chave):** `votos/B-SAN3-01b/C2-voto.json` e `C2-evidencia.md`.
 - **escopo:** `dentro-do-bloco` (nota; não reprovou). A propriedade "régua = inclusão estrita" está provada por parse e pela sonda, não pelo catálogo.
 - **efeito medido:** hoje nenhum papel do catálogo separa as duas réguas; a prova enfraquece no dia em que um papel separador existir sem teste.
-- **dono proposto pelo orquestrador:** `B-SAN3-06a`, dono das permissões por papel no front (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`); o planejador do bloco confirma ou devolve.
+- **dono:** `B-SAN3-06a`, dono das permissões por papel no front (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`) — atribuído pelo registro do #403.
 - **bloqueia:** não.
 - **teste de encerramento:** o teste papel a papel do botão inclui um papel separador permanente, ou o atalho por rótulo passa a ser exercitável pelo arnês.
 
